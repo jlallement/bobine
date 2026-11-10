@@ -533,7 +533,7 @@
     },
     {
       "name": "lucide-react",
-      "version": "1.68.0",
+      "version": "1.70.0",
       "in": ["renderer"]
     },
     {
@@ -798,7 +798,7 @@
     },
     {
       "name": "rolldown",
-      "version": "1.2.15",
+      "version": "1.2.16",
       "in": ["main", "renderer"]
     },
     {
@@ -913,7 +913,7 @@
     },
     {
       "name": "vite",
-      "version": "8.3.5",
+      "version": "8.3.6",
       "in": ["renderer"]
     },
     {
