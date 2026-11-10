@@ -3,17 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { CirclePause, CircleSlash } from 'lucide-react'
 import type { TranscriptItem } from '@shared/transcript'
 import { turnLimitAnswers, type TurnLimitAnswer } from '@shared/turn-limit'
-import type { ParseKeys } from 'i18next'
+import type { ParseKeysWithoutVariables } from 'i18next'
 import { TurnControlsContext } from '../../turn-controls'
 import '../../turn-guards.css'
 
-const BUTTONS: Record<TurnLimitAnswer, ParseKeys> = {
+const BUTTONS: Record<TurnLimitAnswer, ParseKeysWithoutVariables> = {
   continue: 'turnGuards.limit.continue',
   reopen: 'turnGuards.limit.reopen',
   renew: 'turnGuards.limit.renew'
 }
 
-const ANSWERED: Record<TurnLimitAnswer, ParseKeys> = {
+const ANSWERED: Record<TurnLimitAnswer, ParseKeysWithoutVariables> = {
   continue: 'turnGuards.limit.continued',
   reopen: 'turnGuards.limit.reopened',
   renew: 'turnGuards.limit.renewed'

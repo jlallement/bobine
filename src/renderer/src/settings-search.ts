@@ -4,7 +4,7 @@
  * rend les sections et vérifie qu'aucun libellé affiché ne manque ici. Les libellés passent par les
  * mêmes clés que l'affichage, dans la langue courante (fiche 074).
  */
-import i18next, { type ParseKeys } from 'i18next'
+import i18next, { type ParseKeysWithoutVariables } from 'i18next'
 import { hasAllWords, searchWords } from '@shared/conversation-search'
 import { INTERFACE_SHORTCUTS, SHORTCUTS } from '@shared/shortcuts'
 import type { ProfileSummary } from '@shared/agent'
@@ -46,7 +46,7 @@ export interface SettingsEntry {
 }
 
 /** Un réglage : clé de son libellé affiché, clé des mots qui y mènent. */
-type IndexedSetting = readonly [SearchPlace, ParseKeys, ParseKeys]
+type IndexedSetting = readonly [SearchPlace, ParseKeysWithoutVariables, ParseKeysWithoutVariables]
 
 const INDEX: readonly IndexedSetting[] = [
   ['general', 'settings.general.you', 'settingsSearch.you'],

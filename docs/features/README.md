@@ -225,6 +225,7 @@ chaque création ou changement de statut.
 | [218](218-publication-preversion.md) | Publier une préversion (1.0.0-beta.1) depuis un dépôt public : titres `X.Y.Z-beta.N — date` dans Nouveautés, Release « préversion », Info.plist numérique, ordre semver de la marque du profil ; `release.yml` en lecture sauf `publish`, tag sur `main` exigé, actions épinglées par SHA, Dependabot, gitleaks en CI | fait | P1 |
 | [219](219-readme-public.md) | README public en anglais pour la bêta 1.0.0-beta.1 : bêta, Gatekeeper sans notarisation, prérequis, non-affiliation (IBM, OpenCode, Anthropic) ; installation et CONTRIBUTING alignés ; description et topics du dépôt proposés | fait | P1 |
 | [220](220-version-1-0-0-beta-1.md) | Version 1.0.0-beta.1, bêta publique : notes de Release en anglais puis en français, version et notes datées du 10 novembre 2026 ; dépôt public, tag et Release préversion par le tech lead | fait | P1 |
+| [221](221-i18next-27.md) | i18next 27 et react-i18next 18 : clés sans variables typées `ParseKeysWithoutVariables` (vérification stricte des variables par défaut), changements de comportement relus, avis de licence régénérés | en cours | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

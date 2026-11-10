@@ -3,7 +3,7 @@
  * choix que pour la tâche en cours : l'app le retient, par agent et par outil, pour les outils qui
  * ne touchent ni aux fichiers ni aux commandes (ex. « Updating todo list » de Bob, un outil MCP).
  */
-import { t, type ParseKeys } from 'i18next'
+import { t, type ParseKeysWithoutVariables } from 'i18next'
 import type { PermissionOption, PermissionOptionKind } from './acp-sdk.mts'
 
 /** Genres d'outils jamais retenus : ils modifient des fichiers ou lancent des commandes. */
@@ -107,7 +107,7 @@ const KNOWN_TOOL_TITLES = {
  * son titre exact.
  */
 export function rememberedToolText(title: string): string {
-  const key = (KNOWN_TOOL_TITLES as Record<string, ParseKeys | undefined>)[
+  const key = (KNOWN_TOOL_TITLES as Record<string, ParseKeysWithoutVariables | undefined>)[
     title.trim().toLowerCase()
   ]
   return key ? t(key) : title
