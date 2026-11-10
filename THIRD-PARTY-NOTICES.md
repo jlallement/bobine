@@ -178,7 +178,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [property-information](https://github.com/wooorm/property-information) | 7.2.0 | MIT | interface | [T62](#t62) |
 | [react](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
 | [react-dom](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
-| [react-i18next](https://github.com/i18next/react-i18next) | 17.1.12 | MIT | interface | [T64](#t64) |
+| [react-i18next](https://github.com/i18next/react-i18next) | 17.1.13 | MIT | interface | [T64](#t64) |
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 10.1.0 | MIT | interface | [T65](#t65) |
 | [react-remove-scroll](https://github.com/theKashey/react-remove-scroll) | 2.7.2 | MIT | interface | [T13](#t13) |
 | [react-remove-scroll-bar](https://github.com/theKashey/react-remove-scroll-bar) | 2.3.8 | MIT | interface | [T66](#t66) |
@@ -2787,7 +2787,7 @@ SOFTWARE.
 
 ### T64
 
-Used by: react-i18next 17.1.12.
+Used by: react-i18next 17.1.13.
 
 ```text
 The MIT License (MIT)
