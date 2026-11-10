@@ -1,6 +1,6 @@
 # 220 — Version 1.0.0-beta.1 (bêta publique)
 
-- **Statut** : en cours (version prête ; dépôt public, tag et Release : tech lead)
+- **Statut** : fait
 - **Dépend de** : 059, 212, 213 à 219
 - **Agents** : les deux.
 
@@ -27,10 +27,10 @@ Décision du propriétaire : les notes de la Release GitHub sont en **anglais pu
 - [x] `pnpm package` et `pnpm e2e:packaged` (ad hoc) : `Bobine-1.0.0-beta.1-arm64.dmg`,
       Info.plist `CFBundleShortVersionString` = `1.0.0`, `CFBundleVersion` = `1.0.0-beta.1`,
       dossier `licenses` présent.
-- [ ] (Tech lead) Nouveau dépôt public, `main` poussé, tag `v1.0.0-beta.1`, workflow Release
+- [x] (Tech lead) Nouveau dépôt public, `main` poussé, tag `v1.0.0-beta.1`, workflow Release
       vert, Release marquée **préversion** (`gh release view v1.0.0-beta.1 --json isPrerelease`),
       `releases/latest` inchangé, notes FR/EN lisibles.
-- [ ] (Tech lead) DMG publié téléchargé, monté en lecture seule : version 1.0.0-beta.1, arm64,
+- [x] (Tech lead) DMG publié téléchargé, monté en lecture seule : version 1.0.0-beta.1, arm64,
       SHA-256 relevé.
 
 ## Plan
@@ -59,7 +59,24 @@ Même chemin que la 0.11.2 (fiche 212), avec le chemin de préversion de la fich
   Info.plist `CFBundleShortVersionString` = `1.0.0`, `CFBundleVersion` = `1.0.0-beta.1` ;
   `Resources/licenses` présent (LICENSE, NOTICE, THIRD-PARTY-NOTICES.md, electron, fonts) ;
   `codesign --verify --deep --strict` valide ; `pnpm e2e:packaged` vert.
+- 2026-11-10 — Publication (tech lead). Dépôt public `jlallement/bobine` créé depuis l'instantané
+  de `main` (arbre identique, gitleaks : aucune fuite) ; CI du premier push verte (`verify`
+  Linux, gitleaks). Réglages : signalement privé des failles, secret scanning et push protection,
+  alertes et correctifs Dependabot, approbation des workflows des contributeurs externes, jeton
+  des workflows en lecture, règles « `main` protégée » (ni suppression ni push forcé) et « tags de
+  version » (`v*` réservés aux administrateurs), description et topics. Tag `v1.0.0-beta.1` :
+  workflow Release vert (run 42794342882 : garde, .dmg, publication ; Linux sauté). Release
+  **préversion**, aucune « Latest » ; notes « English » puis « Français ». DMG publié téléchargé :
+  `Bobine-1.0.0-beta.1-arm64.dmg`, 147 687 131 octets, SHA-256
+  `5134d71131b3258bd12c47aa3aad23434f60619a1c768de1274a71ea961cab8b` ; `hdiutil verify` valide ;
+  monté en lecture seule : `CFBundleShortVersionString` 1.0.0, `CFBundleVersion` 1.0.0-beta.1,
+  arm64, `licenses/` présent, signature ad hoc valide. Reste : ouvrir le DMG publié sur un Mac
+  (Gatekeeper, libellés du README) ; point 16 de la barre V1 (bêta de deux semaines).
 
 ## Écarts au plan
 
-- Aucun.
+- Le dépôt public part d'un instantané en un seul commit (`2fc3d444`, adresse noreply) ; l'ancien
+  dépôt, historique complet, devient `jlallement/bobine-private`. Avant de le créer, les fausses
+  clés des tests ont été marquées `gitleaks:allow` dans le code (`3ae68e32` côté privé) : les
+  empreintes de `.gitleaksignore` dépendent des commits et n'auraient plus valu.
+- Publication Linux non activée : job sauté, comme prévu.
