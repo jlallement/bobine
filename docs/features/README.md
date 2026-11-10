@@ -225,6 +225,7 @@ chaque création ou changement de statut.
 | [218](218-publication-preversion.md) | Publier une préversion (1.0.0-beta.1) depuis un dépôt public : titres `X.Y.Z-beta.N — date` dans Nouveautés, Release « préversion », Info.plist numérique, ordre semver de la marque du profil ; `release.yml` en lecture sauf `publish`, tag sur `main` exigé, actions épinglées par SHA, Dependabot, gitleaks en CI | fait | P1 |
 | [219](219-readme-public.md) | README public en anglais pour la bêta 1.0.0-beta.1 : bêta, Gatekeeper sans notarisation, prérequis, non-affiliation (IBM, OpenCode, Anthropic) ; installation et CONTRIBUTING alignés ; description et topics du dépôt proposés | fait | P1 |
 | [220](220-version-1-0-0-beta-1.md) | Version 1.0.0-beta.1, bêta publique : notes de Release en anglais puis en français, version et notes datées du 10 novembre 2026 ; dépôt public, tag et Release préversion par le tech lead | fait | P1 |
+| [221](221-i18next-27.md) | i18next 27 et react-i18next 18 : clés sans variables typées `ParseKeysWithoutVariables` (vérification stricte des variables par défaut), changements de comportement relus, avis de licence régénérés | fait | P2 |
 | [222](222-jsdom-31.md) | jsdom 31 (essais seulement) : les échecs de la PR Dependabot venaient de son verrou (`parse5-parser-stream@8.1.0` servi avec `parse5@8.0.1`, sans `flushCharacters`), pas de jsdom ni du pilote ; verrou régénéré, aucun code changé | fait | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine

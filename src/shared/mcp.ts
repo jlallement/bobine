@@ -1,4 +1,4 @@
-import { t, type ParseKeys } from 'i18next' /**
+import { t, type ParseKeysWithoutVariables } from 'i18next' /**
  * Serveurs MCP des agents (fiche 025). Ils restent déclarés dans les fichiers de chaque agent (Bob :
  * `~/.bob/settings/mcp.json`, OpenCode : `~/.config/opencode/opencode.json`…) : l'app les montre et
  * les modifie, dans un format commun, sans rien garder de son côté.
@@ -63,12 +63,12 @@ export const APP_TOOLS_SERVER_NAME = 'bobine'
  */
 export interface AppToolFamily {
   id: string
-  title: ParseKeys
-  summary: ParseKeys
+  title: ParseKeysWithoutVariables
+  summary: ParseKeysWithoutVariables
   /** Quand la famille est proposée à une conversation. */
-  condition: ParseKeys
+  condition: ParseKeysWithoutVariables
   /** Quand elle demande l'accord de l'utilisateur ; absent s'il n'est jamais demandé. */
-  approval?: ParseKeys
+  approval?: ParseKeysWithoutVariables
   /** Ses outils, avec la description que lit l'agent (en anglais). */
   tools: { name: string; description: string }[]
   /** Poids estimé de ses définitions dans le contexte, en jetons (fiche 109). */

@@ -17,7 +17,7 @@ Bobine runs on [Electron](https://www.electronjs.org) 45.2.3 (MIT, license text
 
 ## npm packages shipped in the app
 
-188 packages, copied into the app by the build (`out/`: main process,
+187 packages, copied into the app by the build (`out/`: main process,
 interface) or added by the packager (production dependencies, `app.asar`). Development tools
 that ship nothing (compilers, test runners, linters, the packager itself) are not listed; Vite
 and Rolldown are, for the small runtime helpers they add to the build output.
@@ -120,7 +120,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [highlight.js](https://github.com/highlightjs/highlight.js) | 11.11.2 | BSD-3-Clause | interface | [T43](#t43) |
 | [html-parse-stringify](https://github.com/i18next/html-parse-stringify) | 4.0.1 | MIT | interface | [T44](#t44) |
 | [html-url-attributes](https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes) | 3.0.1 | MIT | interface | [T45](#t45) |
-| [i18next](https://github.com/i18next/i18next) | 26.7.1 | MIT | main process, interface | [T46](#t46) |
+| [i18next](https://github.com/i18next/i18next) | 27.0.1 | MIT | main process, interface | [T46](#t46) |
 | [ignore](https://github.com/kaelzhang/node-ignore) | 7.0.14 | MIT | main process | [T47](#t47) |
 | [inline-style-parser](https://github.com/remarkablemark/inline-style-parser) | 0.2.7 | MIT | interface | [T48](#t48) |
 | [internmap](https://github.com/mbostock/internmap) | 2.0.3 | ISC | interface | [T49](#t49) |
@@ -178,7 +178,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [property-information](https://github.com/wooorm/property-information) | 7.2.0 | MIT | interface | [T62](#t62) |
 | [react](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
 | [react-dom](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
-| [react-i18next](https://github.com/i18next/react-i18next) | 17.1.13 | MIT | interface | [T64](#t64) |
+| [react-i18next](https://github.com/i18next/react-i18next) | 18.0.1 | MIT | interface | [T64](#t64) |
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 10.1.0 | MIT | interface | [T65](#t65) |
 | [react-remove-scroll](https://github.com/theKashey/react-remove-scroll) | 2.7.2 | MIT | interface | [T13](#t13) |
 | [react-remove-scroll-bar](https://github.com/theKashey/react-remove-scroll-bar) | 2.3.8 | MIT | interface | [T66](#t66) |
@@ -207,7 +207,6 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [unist-util-visit-parents](https://github.com/syntax-tree/unist-util-visit-parents) | 6.0.2 | MIT | interface | [T15](#t15) |
 | [use-callback-ref](https://github.com/theKashey/use-callback-ref/) | 1.3.3 | MIT | interface | [T13](#t13) |
 | [use-sidecar](https://github.com/theKashey/use-sidecar) | 1.1.3 | MIT | interface | [T13](#t13) |
-| [use-sync-external-store](https://github.com/react/react) | 1.7.0 | MIT | interface | [T63](#t63) |
 | [vfile](https://github.com/vfile/vfile) | 6.0.3 | MIT | interface | [T76](#t76) |
 | [vfile-message](https://github.com/vfile/vfile-message) | 4.0.3 | MIT | interface | [T33](#t33) |
 | [vite](https://github.com/vitejs/vite) | 8.3.6 | MIT | interface | [T78](#t78) |
@@ -2179,7 +2178,7 @@ THE SOFTWARE.
 
 ### T46
 
-Used by: i18next 26.7.1.
+Used by: i18next 27.0.1.
 
 ```text
 The MIT License (MIT)
@@ -2759,7 +2758,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T63
 
-Used by: react 19.3.1, react-dom 19.3.1, scheduler 0.28.0, use-sync-external-store 1.7.0.
+Used by: react 19.3.1, react-dom 19.3.1, scheduler 0.28.0.
 
 ```text
 MIT License
@@ -2787,7 +2786,7 @@ SOFTWARE.
 
 ### T64
 
-Used by: react-i18next 17.1.13.
+Used by: react-i18next 18.0.1.
 
 ```text
 The MIT License (MIT)

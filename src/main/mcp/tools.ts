@@ -3,7 +3,7 @@
  * navigateur, simulateurs, terminal. Chaque module déclare ses outils ; l'hôte d'agent assemble ceux
  * d'une session.
  */
-import type { ParseKeys } from 'i18next'
+import type { ParseKeysWithoutVariables } from 'i18next'
 import type { AskUserArgs } from '@shared/ask-user'
 import type { ChildDecision, ChildProposal } from '@shared/children'
 import { APP_TOOLS_SERVER_NAME } from '@shared/mcp'
@@ -92,13 +92,13 @@ export interface ToolContext {
  * traduction (`appToolFamilies.<id>`), à tenir d'accord avec `enabled` et les demandes d'accord.
  */
 export interface AppToolAbout {
-  title: ParseKeys
+  title: ParseKeysWithoutVariables
   /** Ce que le module permet, en une phrase. */
-  summary: ParseKeys
+  summary: ParseKeysWithoutVariables
   /** Quand il est proposé (`enabled`, ou les outils selon la conversation). */
-  condition: ParseKeys
+  condition: ParseKeysWithoutVariables
   /** Quand il demande l'accord de l'utilisateur ; absent s'il ne le demande jamais. */
-  approval?: ParseKeys
+  approval?: ParseKeysWithoutVariables
 }
 
 export interface AppToolModule {

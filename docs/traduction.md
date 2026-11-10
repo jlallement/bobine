@@ -11,7 +11,9 @@ ajouter une langue. Décisions : ADR-0014 ; mise en place : fiche 074.
 Se traduisent **tous les textes de l'interface** : boutons, menus, réglages, avis du fil,
 dialogues, notifications, demandes d'autorisation, diagnostic, export Markdown. Ils vivent dans
 `src/shared/i18n/locales/<langue>.json`. `fr.json` est la référence ; les clés et leurs variables
-sont vérifiées par le typage et par `locales.test.ts`.
+sont vérifiées par le typage et par `locales.test.ts`. Depuis i18next 27 (fiche 221), `t()` exige
+les variables d'un texte qui en a : une table de clés traduites sans valeurs se type
+`ParseKeysWithoutVariables`, pas `ParseKeys` (une clé à variables y est alors refusée).
 
 Ne se traduit **jamais** :
 - ce qui vient de l'agent (réponses, questions, formulaires, erreurs ACP) ou lui est envoyé
