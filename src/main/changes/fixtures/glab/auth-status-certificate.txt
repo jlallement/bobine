@@ -1,0 +1,14 @@
+localhost:8443
+  x localhost:8443: API call failed: Get "https://localhost:8443/api/v4/user": tls: failed to verify certificate: x509: certificate signed by unknown authority
+  ✓ Git operations for localhost:8443 configured to use ssh protocol.
+  ✓ API calls for localhost:8443 are made over https protocol.
+  ✓ REST API Endpoint: https://localhost:8443/api/v4/
+  ✓ GraphQL Endpoint: https://localhost:8443/api/graphql/
+  ✓ Token found in configuration file (plaintext): **************************
+  ! To store this token more securely, run glab auth login --hostname localhost:8443 to move it into the operating system keyring.
+          
+   ERROR  
+          
+                                                                                                                      
+  x could not authenticate to one or more of the configured GitLab instances.                                         
+

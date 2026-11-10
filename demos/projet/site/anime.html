@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Bobinette — Animation</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .scene {
+        position: relative;
+        height: 260px;
+        cursor: pointer;
+        overflow: hidden;
+      }
+      #carre {
+        position: absolute;
+        left: 16px;
+        top: 24px;
+        width: 96px;
+        height: 96px;
+        border-radius: 12px;
+        background: #ea580c;
+        transition:
+          left 1s ease-in-out,
+          transform 1s ease-in-out;
+      }
+      .scene.partie #carre {
+        left: calc(100% - 112px);
+        transform: rotate(180deg);
+      }
+      .consigne {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        margin: 0;
+        color: var(--discret);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="entete">
+      <a href="index.html" class="logo">La Bobinette</a>
+      <nav>
+        <a href="boutique.html">Boutique</a>
+        <a href="inscription.html">Inscription</a>
+        <a href="anime.html">Animation</a>
+        <a href="formes.html">Formes</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Le carré voyageur</h1>
+      <div class="scene carte" id="scene">
+        <div id="carre"></div>
+        <p class="consigne">Cliquez dans le cadre : le carré traverse en une seconde.</p>
+      </div>
+    </main>
+    <script>
+      const scene = document.getElementById('scene')
+      scene.addEventListener('click', () => scene.classList.toggle('partie'))
+    </script>
+  </body>
+</html>

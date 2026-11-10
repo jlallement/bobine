@@ -1,0 +1,21 @@
+node_modules/
+dist/
+out/
+.env
+.env.local
+.DS_Store
+*.log
+.claude/settings.local.json
+*.tsbuildinfo
+e2e/captures/
+.idea/
+# AXe extrait (ADR-0010) ; son archive, vendor/archives/, est versionnée.
+vendor/axe/
+coverage/
+
+# Essais e2e : tampon « suite complète verte » et durées du dernier passage (fiche 115).
+e2e/.last-green.json
+e2e/.durations.json
+
+# Pilote de Bobine (fiche 206) : instance pilotée, journaux et captures des sessions.
+.pilote/

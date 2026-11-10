@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="450" viewBox="0 0 640 450">
+  <!-- Fond de la fenêtre du .dmg (source de build/background.png et background@2x.png, voir
+       scripts/make-dmg-background.mjs). En points : l'app est posée en (170, 190), le lien
+       Applications en (470, 190) — electron-builder.yml, section dmg.
+       La fenêtre a la taille de l'image, barre de titre comprise : les ~32 points du bas sont
+       cachés, rien n'y est dessiné. Fond clair : macOS écrit en noir le nom des icônes.
+       Une seule image pour tous : textes en français puis en anglais (fiche 074). -->
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF8F2"/>
+      <stop offset="1" stop-color="#EEE7D7"/>
+    </linearGradient>
+    <radialGradient id="halo">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ombre" x="-10%" y="-40%" width="120%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#4F4428" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+  <rect width="640" height="450" fill="url(#fond)"/>
+
+  <!-- Fils de la bobine, en filigrane. -->
+  <g fill="none" stroke="#165C63" stroke-linecap="round">
+    <path d="M-20 300 C 110 238, 210 392, 350 318 S 560 214, 680 262" stroke-opacity="0.07" stroke-width="2"/>
+    <path d="M-20 322 C 120 262, 226 414, 366 340 S 574 240, 680 290" stroke-opacity="0.045" stroke-width="1.5"/>
+  </g>
+
+  <text x="320" y="56" text-anchor="middle" fill="#165C63"
+        font-family="-apple-system, system-ui, sans-serif" font-size="22" font-weight="700"
+        letter-spacing="-0.2">Installer Bobine</text>
+  <text x="320" y="80" text-anchor="middle" fill="#165C63" fill-opacity="0.72"
+        font-family="-apple-system, system-ui, sans-serif" font-size="15" font-weight="600"
+        letter-spacing="-0.1">Install Bobine</text>
+
+  <!-- Halos sous les deux icônes. -->
+  <circle cx="170" cy="190" r="92" fill="url(#halo)"/>
+  <circle cx="470" cy="190" r="92" fill="url(#halo)"/>
+
+  <!-- Flèche en points de couture, de l'app vers Applications. -->
+  <g fill="none" stroke="#165C63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.75">
+    <path d="M246 176 C 290 138, 350 138, 392 172" stroke-dasharray="1 9"/>
+    <path d="M381.2 172.8 L395.1 174.5 L390.5 161.3"/>
+  </g>
+  <text x="320" y="204" text-anchor="middle" fill="#165C63"
+        font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600">Glissez sur Applications</text>
+  <text x="320" y="221" text-anchor="middle" fill="#165C63" fill-opacity="0.72"
+        font-family="-apple-system, system-ui, sans-serif" font-size="12.5" font-weight="600">Drag to Applications</text>
+  <text x="320" y="241" text-anchor="middle" fill="#857E6E"
+        font-family="-apple-system, system-ui, sans-serif" font-size="11.5">pour tous les utilisateurs</text>
+  <text x="320" y="256" text-anchor="middle" fill="#857E6E"
+        font-family="-apple-system, system-ui, sans-serif" font-size="11.5">for all users</text>
+
+  <!-- Sans droits d'administrateur : l'app s'installe elle-même (fiche 073). -->
+  <rect x="100" y="316" width="440" height="60" rx="24" fill="#FFFFFF" stroke="#E5DDCB" filter="url(#ombre)"/>
+  <g transform="translate(128.5 346)" fill="none" stroke="#165C63" stroke-width="1.7" stroke-linecap="round">
+    <circle cx="0" cy="-4" r="3.6"/>
+    <path d="M-6.5 7 C -6.5 2, 6.5 2, 6.5 7"/>
+  </g>
+  <text x="146" y="341.5" fill="#4A463D"
+        font-family="-apple-system, system-ui, sans-serif" font-size="13"><tspan fill="#165C63" font-weight="600">Pas les droits d’administrateur ?</tspan> Double-cliquez sur Bobine.</text>
+  <text x="146" y="359.5" fill="#857E6E"
+        font-family="-apple-system, system-ui, sans-serif" font-size="12.5"><tspan fill="#165C63" fill-opacity="0.72" font-weight="600">No administrator rights?</tspan> Double-click Bobine.</text>
+</svg>

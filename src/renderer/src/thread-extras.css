@@ -1,0 +1,181 @@
+/* Fil (fiche 156) : durée du tour, images en grand, ouvrir dans l'éditeur, « Où en était-on ? ». */
+
+/* Durée du tour, à côté de l'heure de la dernière réponse. */
+.msg-duration {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+  align-self: center;
+}
+
+/* Image d'un message ou capture d'outil : un bouton qui l'ouvre en grand. */
+.image-zoom-trigger {
+  padding: 0;
+  cursor: zoom-in;
+  line-height: 0;
+}
+.image-zoom-trigger.msg-image {
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.image-zoom-trigger.msg-image img {
+  display: block;
+  max-width: 240px;
+  max-height: 180px;
+  min-width: 56px;
+  min-height: 56px;
+  object-fit: cover;
+}
+.image-zoom {
+  width: auto;
+  max-width: calc(100vw - 96px);
+  max-height: calc(100vh - 96px);
+  padding: 0;
+  overflow: hidden;
+}
+.image-zoom-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  background: var(--surface);
+}
+.image-zoom-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.image-zoom-body img {
+  display: block;
+  max-width: calc(100vw - 96px);
+  max-height: calc(100vh - 96px);
+  object-fit: contain;
+  cursor: grab;
+}
+
+/* « Ouvrir dans <éditeur> » : discret, visible au survol de ce qu'il ouvre. */
+.open-in-editor {
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.12s;
+  vertical-align: middle;
+}
+.open-in-editor:focus-visible,
+.tool-location:hover .open-in-editor,
+.file-link-group:hover .open-in-editor,
+.diff-header:hover .open-in-editor {
+  opacity: 1;
+}
+.tool-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+/* Dans une phrase, le bouton ne prend aucune place : il apparaît au survol, juste après le lien. */
+.file-link-group {
+  position: relative;
+}
+.file-link-group .open-in-editor {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--bg);
+}
+
+/* « Où en était-on ? » : carte repliable en bas du fil. */
+.resume-card {
+  margin: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+.resume-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-2);
+}
+.resume-card > summary::-webkit-details-marker {
+  display: none;
+}
+.resume-card .resume-title {
+  font-weight: 600;
+  color: var(--text);
+}
+.resume-card .resume-when {
+  color: var(--muted);
+  font-size: 12px;
+  flex: 1;
+}
+.resume-card .chevron {
+  transition: transform 0.12s;
+  color: var(--muted);
+}
+.resume-card[open] .chevron {
+  transform: rotate(90deg);
+}
+.resume-close {
+  color: var(--muted);
+}
+.resume-body {
+  padding: 0 14px 12px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.resume-body h4 {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.resume-body p {
+  margin: 0;
+  color: var(--text);
+}
+.resume-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.resume-body li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.resume-body code {
+  font-size: 12px;
+}
+.resume-icon {
+  flex: none;
+  color: var(--muted);
+}
+.resume-icon.done {
+  color: var(--ok);
+}
+.resume-icon.running {
+  color: var(--accent);
+}
+.resume-more {
+  color: var(--muted);
+  font-size: 12px;
+}
+.resume-note {
+  font-size: 11.5px;
+  color: var(--muted) !important;
+}

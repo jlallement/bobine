@@ -1,0 +1,91 @@
+{
+  "comments": [],
+  "headRefOid": "d43c4e3ad3c34332c803a568f85f116e3ee58f19",
+  "isDraft": true,
+  "mergeable": "MERGEABLE",
+  "number": 14927,
+  "reviewDecision": "REVIEW_REQUIRED",
+  "reviews": [
+    {
+      "author": {
+        "login": "reviewer-0"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Review text.",
+      "submittedAt": "2026-11-03T21:27:59Z",
+      "includesCreatedEdit": false,
+      "reactionGroups": [],
+      "state": "COMMENTED",
+      "commit": {
+        "oid": "d43c4e3ad3c34332c803a568f85f116e3ee58f19"
+      }
+    }
+  ],
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:29:08Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41722208901/job/126217657403",
+      "name": "label-external",
+      "startedAt": "2026-11-03T21:29:09Z",
+      "status": "COMPLETED",
+      "workflowName": "PR Triaging"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:23:31Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41721000240/job/126213408501",
+      "name": "CodeQL-Build (go, manual, ./.github/codeql/codeql-config.yml)",
+      "startedAt": "2026-11-03T21:21:08Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:27:04Z",
+      "conclusion": "FAILURE",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41720844033/job/126212878432",
+      "name": "build (windows-latest)",
+      "startedAt": "2026-11-03T21:20:11Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:22:59Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41720843855/job/126212878043",
+      "name": "lint",
+      "startedAt": "2026-11-03T21:20:09Z",
+      "status": "COMPLETED",
+      "workflowName": "Lint"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:20:13Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41720845088/job/126212885818",
+      "name": "label-external / label_issues",
+      "startedAt": "2026-11-03T21:20:09Z",
+      "status": "COMPLETED",
+      "workflowName": "PR Triaging"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T21:24:48Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41720844033/job/126212878347",
+      "name": "build (ubuntu-latest)",
+      "startedAt": "2026-11-03T21:20:09Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    }
+  ],
+  "title": "Example change",
+  "url": "https://github.com/example/app/pull/14927",
+  "mergeStateStatus": "BLOCKED",
+  "baseRefName": "feature-base"
+}

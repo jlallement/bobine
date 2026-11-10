@@ -1,0 +1,13 @@
+localhost:8929
+  x localhost:8929: API call failed: context deadline exceeded
+  ✓ Git operations for localhost:8929 configured to use http protocol.
+  ✓ API calls for localhost:8929 are made over http protocol.
+  ✓ REST API Endpoint: http://localhost:8929/api/v4/
+  ✓ GraphQL Endpoint: http://localhost:8929/api/graphql/
+  ✓ Token found in operating system keyring: **************************
+          
+   ERROR  
+          
+                                                                                                                      
+  x could not authenticate to one or more of the configured GitLab instances.                                         
+

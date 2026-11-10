@@ -1,0 +1,115 @@
+/*
+ * Mouvements de l'interface (fiche 185, idées P1, P2, P5, P6, P7). Sobres, une seule fois, jamais
+ * en boucle ; tous coupés quand macOS demande de réduire les animations (dernier bloc).
+ */
+:root {
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  /* Hauteur animable vers `auto` (dépliage des blocs, P5). */
+  interpolate-size: allow-keywords;
+}
+
+/* P1 : le panneau de droite glisse en arrivant au lieu d'apparaître d'un coup. */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+.side-panel.entering:not(.maximized) {
+  animation: panel-in 180ms var(--ease-out);
+}
+
+/* P2 : une carte qui attend une action arrive (montée de 6 px et fondu), une fois. */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.permission-card,
+.aside-card,
+.worktree-setup.approval {
+  animation: card-in var(--motion-base) var(--ease-out);
+}
+
+/*
+ * P5 : les blocs du fil se déplient en douceur ; le texte du dessous suit au lieu de sauter. Seule
+ * la hauteur s'anime : le contenu est là dès l'ouverture (recherche ⌘F, copie, lecteurs d'écran),
+ * et la fermeture reste immédiate.
+ */
+.thread details::details-content {
+  block-size: 0;
+  overflow: clip;
+  /* Les anneaux de focus (2 px, décalés de 2 px) et les ombres du contenu ne sont pas rognés. */
+  overflow-clip-margin: 6px;
+  transition: block-size 140ms var(--ease-out);
+}
+
+.thread details[open]::details-content {
+  block-size: auto;
+}
+
+/* P6 : les puces de mode et de modèle arrivent en fondu, à la place gardée pour elles (F11). */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.composer-bar .mode-chip,
+.composer-bar .model-chip {
+  animation: chip-in var(--motion-fast) ease-out;
+}
+
+/* P7 : le bouton d'envoi passe du neutre à l'accent, et s'enfonce un peu sous le doigt. */
+.send-button {
+  transition:
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    transform 80ms ease;
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel.entering:not(.maximized),
+  .composer-bar .mode-chip,
+  .composer-bar .model-chip,
+  .permission-card,
+  .aside-card,
+  .worktree-setup.approval {
+    animation: none;
+  }
+
+  .thread details::details-content,
+  .send-button {
+    transition: none;
+  }
+
+  .send-button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* P4 : le bilan du tour arrive en fondu. */
+@keyframes summary-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.turn-summary {
+  animation: summary-in 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-summary {
+    animation: none;
+  }
+}

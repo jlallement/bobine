@@ -1,0 +1,76 @@
+{
+  "comments": [],
+  "headRefOid": "04c4ebf52e7033a83eb38e9741c8ace05bf8617b",
+  "isDraft": false,
+  "mergeable": "CONFLICTING",
+  "number": 5,
+  "reviewDecision": "",
+  "reviews": [],
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:49:06Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652147/job/122363777056",
+      "name": "CodeQL-Build (go, manual, ./.github/codeql/codeql-config.yml)",
+      "startedAt": "2026-10-27T17:46:03Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:48:20Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652200/job/122363776816",
+      "name": "lint",
+      "startedAt": "2026-10-27T17:46:04Z",
+      "status": "COMPLETED",
+      "workflowName": "Lint"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:49:58Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652299/job/122363777935",
+      "name": "build (ubuntu-latest)",
+      "startedAt": "2026-10-27T17:46:03Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:47:01Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652147/job/122363777327",
+      "name": "CodeQL-Build (actions, none, security-and-quality)",
+      "startedAt": "2026-10-27T17:46:04Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:53:45Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652299/job/122363778241",
+      "name": "build (windows-latest)",
+      "startedAt": "2026-10-27T17:46:07Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-27T17:51:33Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/40553652299/job/122363777336",
+      "name": "build (macos-latest)",
+      "startedAt": "2026-10-27T17:46:04Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    }
+  ],
+  "title": "Update README (conflict)",
+  "url": "https://github.com/example/app/pull/5",
+  "mergeStateStatus": "DIRTY",
+  "baseRefName": "main"
+}

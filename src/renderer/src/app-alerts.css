@@ -1,0 +1,49 @@
+/* Avis de l'app en haut de la fenêtre (fiche 194) : par-dessus le fil, sans masquer la saisie. */
+.app-alerts {
+  position: fixed;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 60;
+}
+
+.app-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 10px 11px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-menu);
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.app-alert > svg {
+  color: var(--warn);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.app-alert-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-alert-text small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.app-alert-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}

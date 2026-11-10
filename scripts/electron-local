@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Electron obtenu ailleurs (fiche 065) : sur un Mac au réseau verrouillé, le script d'installation
+# d'Electron ne peut pas le télécharger. On lui donne l'archive (ou l'app) récupérée autrement.
+#
+#   pnpm electron-local ~/Downloads/electron-v44.7.0-darwin-arm64.zip   empreinte SHA-256 vérifiée
+#   pnpm electron-local ~/Downloads/Electron.app                         version vérifiée seulement
+#
+# Extrait sans l'attribut de quarantaine (`ditto --noqtn`) : rien à retirer ensuite, même sans
+# droits d'administrateur. Même résultat que le script d'Electron : `dist/` et `path.txt`.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+pkg="$(cd "${ELECTRON_PACKAGE_DIR:-node_modules/electron}" 2>/dev/null && pwd || true)"
+source="${1:-}"
+if [[ -z "$source" ]]; then
+  echo "Usage : pnpm electron-local <electron-vX.Y.Z-darwin-arm64.zip | Electron.app>" >&2
+  exit 2
+fi
+if [[ -z "$pkg" || ! -f "$pkg/package.json" ]]; then
+  echo "✗ Paquet electron introuvable : lancez d'abord pnpm install" >&2
+  exit 1
+fi
+version="$(node -p 'require(process.argv[1]).version' "$pkg/package.json")"
+arch="$(uname -m)"
+[[ "$arch" == "x86_64" ]] && arch="x64"
+name="electron-v${version}-darwin-${arch}.zip"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/dist"
+
+if [[ -d "$source" ]]; then
+  app="$source"
+  [[ -d "$source/Electron.app" ]] && app="$source/Electron.app"
+  found="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" 2>/dev/null || true)"
+  if [[ "$found" != "$version" ]]; then
+    echo "✗ $app : version ${found:-inconnue}, attendu $version" >&2
+    exit 1
+  fi
+  echo "⚠ Une app ne se vérifie que par sa version : préférez l'archive $name (empreinte vérifiée)."
+  ditto --noqtn "$app" "$tmp/dist/Electron.app"
+  printf '%s' "$version" > "$tmp/dist/version"
+else
+  if [[ ! -f "$source" ]]; then
+    echo "✗ Introuvable : $source" >&2
+    exit 1
+  fi
+  if [[ "$(basename "$source")" != "$name" ]]; then
+    echo "⚠ Nom inattendu : $(basename "$source") (attendu $name)"
+  fi
+  # Empreintes publiées par Electron, livrées dans son paquet npm.
+  expected="$(node -e 'process.stdout.write(require(process.argv[1])[process.argv[2]] ?? "")' "$pkg/checksums.json" "$name")"
+  actual="$(shasum -a 256 "$source" | cut -d' ' -f1)"
+  if [[ -z "$expected" || "$actual" != "$expected" ]]; then
+    echo "✗ Empreinte SHA-256 inattendue pour $name : $actual (attendu ${expected:-inconnue})" >&2
+    exit 1
+  fi
+  # Recopiée sans ses attributs étendus (quarantaine d'un téléchargement), puis extraite.
+  cat "$source" > "$tmp/electron.zip"
+  ditto -x -k --noqtn "$tmp/electron.zip" "$tmp/dist"
+  found="$(sed 's/^v//' "$tmp/dist/version" 2>/dev/null || true)"
+  if [[ "$found" != "$version" ]]; then
+    echo "✗ Version dans l'archive : ${found:-inconnue}, attendu $version" >&2
+    exit 1
+  fi
+fi
+
+if [[ ! -x "$tmp/dist/Electron.app/Contents/MacOS/Electron" ]]; then
+  echo "✗ Electron.app/Contents/MacOS/Electron absent" >&2
+  exit 1
+fi
+rm -rf "$pkg/dist"
+mv "$tmp/dist" "$pkg/dist"
+if [[ -f "$pkg/dist/electron.d.ts" ]]; then mv "$pkg/dist/electron.d.ts" "$pkg/electron.d.ts"; fi
+printf '%s' 'Electron.app/Contents/MacOS/Electron' > "$pkg/path.txt"
+echo "✓ Electron $version installé ($pkg/dist)"

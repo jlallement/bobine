@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Copie le projet de démonstration (demos/projet) dans un dossier neuf, en dépôt git : l'agent y
+# travaille sans toucher au dépôt de Bobine, et relancer ce script remet tout à zéro.
+#
+#   demos/preparer                 → ~/bobine-demo
+#   demos/preparer ~/ailleurs/demo → le dossier donné
+set -euo pipefail
+
+source_dir="$(cd "$(dirname "$0")" && pwd)/projet"
+dest="${1:-$HOME/bobine-demo}"
+marker=".bobine-demo"
+
+if [[ -e "$dest" ]]; then
+  if [[ ! -f "$dest/$marker" ]]; then
+    echo "« $dest » existe déjà et ne vient pas de ce script : choisissez un autre dossier." >&2
+    exit 1
+  fi
+  # Dossier créé par ce script : on le remet à zéro (les changements de l'agent sont perdus).
+  rm -rf "$dest"
+fi
+
+mkdir -p "$dest"
+cp -R "$source_dir/." "$dest/"
+touch "$dest/$marker"
+(
+  cd "$dest"
+  git init -q
+  git add -A
+  git -c user.name="Bobine" -c user.email="demo@bobine.invalid" commit -qm "La Bobinette : projet de démonstration"
+)
+echo "Prêt : $dest — ouvrez ce dossier dans Bobine (voir demos/README.md)."

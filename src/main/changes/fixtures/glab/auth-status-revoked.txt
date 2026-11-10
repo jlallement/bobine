@@ -1,0 +1,14 @@
+localhost:8929
+  x localhost:8929: API call failed: GET http://localhost:8929/api/v4/user: 401 {error: invalid_token}, {error_description: Token was revoked. You have to re-authorize from the user.}
+  ✓ Git operations for localhost:8929 configured to use ssh protocol.
+  ✓ API calls for localhost:8929 are made over http protocol.
+  ✓ REST API Endpoint: http://localhost:8929/api/v4/
+  ✓ GraphQL Endpoint: http://localhost:8929/api/graphql/
+  ✓ Token found in configuration file (plaintext): **************************
+  ! To store this token more securely, run glab auth login --hostname localhost:8929 to move it into the operating system keyring.
+          
+   ERROR  
+          
+                                                                                                                      
+  x could not authenticate to one or more of the configured GitLab instances.                                         
+

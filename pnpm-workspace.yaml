@@ -1,0 +1,8 @@
+# Dépendances autorisées à exécuter un script d'installation (binaires natifs).
+allowBuilds:
+  electron: true
+  esbuild: true
+  # Binaires précompilés (N-API) livrés dans le paquet : pas de compilation à l'installation.
+  node-pty: false
+  # Installateur Windows tiré par electron-builder : inutile sur macOS.
+  electron-winstaller: false

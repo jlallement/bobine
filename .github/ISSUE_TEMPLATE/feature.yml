@@ -1,0 +1,27 @@
+name: Feature request
+description: Something Bobine could do, or do better.
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: How it could look in the app. An example from another tool helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent concerned
+      description: Bobine stays generic across agents (ADR-0011); say if this is specific to one.
+      options:
+        - Any agent
+        - IBM Bob
+        - OpenCode

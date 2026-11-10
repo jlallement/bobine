@@ -1,0 +1,144 @@
+/*
+ * Pendant le tour (fiche 157) : commande sans sortie, compaction en un clic, plafond de coût.
+ * Couleurs : jetons de thème (fiche 134) dont les couples sont vérifiés AA par `themes.test.ts`
+ * (`warn` sur le fond, la surface et `warn-soft` ; le texte sur `warn-soft` comme `.turn-retry`).
+ */
+
+/* Commande sans sortie : sous la ligne de la carte, visible sans la déplier. */
+.stalled-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 2px 24px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.stalled-notice > svg {
+  color: var(--warn);
+  flex-shrink: 0;
+}
+
+.stalled-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.stalled-interrupt {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.stalled-interrupt:hover {
+  background: var(--surface-2);
+}
+
+/* « Compacter », à côté de la puce de consommation orange (ou rouge, contexte plein). */
+.compact-chip.warn {
+  color: var(--warn);
+}
+
+.compact-chip.full {
+  color: var(--err);
+}
+
+/* Plafond de la conversation, dans le détail de la consommation. */
+.usage-cap-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.settings-input.usage-cap-input {
+  width: 110px;
+  padding: 4px 7px;
+}
+
+.usage-cap-unit {
+  color: var(--muted);
+}
+
+.usage-cap-choice {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+}
+
+.usage-cap-choice[aria-pressed='true'] {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* Carte « Plafond atteint ». */
+.cost-cap-card {
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.cost-cap-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cost-cap-title > svg {
+  color: var(--warn);
+}
+
+.cost-cap-detail,
+.cost-cap-answer {
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.cost-cap-answer {
+  font-weight: 600;
+}
+
+.cost-cap-held {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warn);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.cost-cap-held q {
+  display: block;
+  margin-top: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cost-cap-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Montants des réglages (plafond par défaut). */
+.settings-input.settings-number {
+  width: 140px;
+  text-align: right;
+}

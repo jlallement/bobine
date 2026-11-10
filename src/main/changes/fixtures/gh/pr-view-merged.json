@@ -1,0 +1,91 @@
+{
+  "comments": [],
+  "headRefOid": "f44bd1dcc58a718327a4d1df89ea3d1145c827b2",
+  "isDraft": false,
+  "mergeable": "UNKNOWN",
+  "number": 14918,
+  "reviewDecision": "APPROVED",
+  "reviews": [
+    {
+      "author": {
+        "login": "reviewer-0"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "",
+      "submittedAt": "2026-11-03T17:32:31Z",
+      "includesCreatedEdit": false,
+      "reactionGroups": [],
+      "state": "APPROVED",
+      "commit": {
+        "oid": "f44bd1dcc58a718327a4d1df89ea3d1145c827b2"
+      }
+    }
+  ],
+  "state": "MERGED",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:33:19Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684918474/job/126088020787",
+      "name": "CodeQL-Build (go, manual, ./.github/codeql/codeql-config.yml)",
+      "startedAt": "2026-11-03T17:30:39Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:30:38Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684920417/job/126088032921",
+      "name": "close-from-default-branch / close-from-default-branch",
+      "startedAt": "2026-11-03T17:30:38Z",
+      "status": "COMPLETED",
+      "workflowName": "PR Triaging"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:32:33Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684918597/job/126088020830",
+      "name": "lint",
+      "startedAt": "2026-11-03T17:30:40Z",
+      "status": "COMPLETED",
+      "workflowName": "Lint"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:30:44Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684920417/job/126088030325",
+      "name": "label-external / label_issues",
+      "startedAt": "2026-11-03T17:30:40Z",
+      "status": "COMPLETED",
+      "workflowName": "PR Triaging"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:33:32Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684918496/job/126088019974",
+      "name": "build (ubuntu-latest)",
+      "startedAt": "2026-11-03T17:30:39Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-03T17:31:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/41684918474/job/126088021125",
+      "name": "CodeQL-Build (actions, none, security-and-quality)",
+      "startedAt": "2026-11-03T17:30:40Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    }
+  ],
+  "title": "Example change",
+  "url": "https://github.com/example/app/pull/14918",
+  "mergeStateStatus": "UNKNOWN",
+  "baseRefName": "trunk"
+}

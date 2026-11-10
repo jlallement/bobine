@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Droits du « hardened runtime » (exigé par la notarisation), pour l'app, ses assistants Electron,
+  spawn-helper (node-pty) et AXe : justifiés dans la fiche 111. Signature ad hoc ou Developer ID :
+  le même fichier. Un droit de plus ou de moins passe par la fiche (scripts/signing.mts le vérifie).
+  Pas besoin d'autres droits : l'app n'est pas dans le bac à sable (réseau, fichiers, trousseau
+  libres), ne pilote aucune app par Apple Events, n'utilise ni micro ni caméra ; la capture d'écran
+  passe par /usr/sbin/screencapture (autorisation de macOS, pas un droit).
+-->
+<plist version="1.0">
+  <dict>
+    <!-- V8 (processus principal et assistants) : compilation à la volée du JavaScript. -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- Electron : mémoire exécutable non signée (droit de son modèle par défaut, gardé ; à
+         essayer sans le jour du certificat, fiche 111). -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- Bibliothèques d'une autre équipe : node-pty (pty.node) chargé par le processus principal ;
+         sans équipe (ad hoc), la validation les refuserait toutes. Voir fiche 111 pour le retirer. -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+  </dict>
+</plist>

@@ -1,0 +1,128 @@
+{
+  "opencodeVersion": "2.0.32",
+  "recordedAt": "2026-10-17",
+  "model": "opencode/big-pickle",
+  "observations": {
+    "initialize": {
+      "agent": "OpenCode",
+      "protocolVersion": 1,
+      "loadSession": true,
+      "sessionCapabilities": ["additionalDirectories", "close", "delete", "fork", "list", "resume"],
+      "prompt": {
+        "image": true,
+        "audio": false,
+        "embeddedContext": true
+      },
+      "mcp": {
+        "http": true,
+        "sse": false
+      },
+      "authMethods": ["opencode-login"],
+      "extensions": ["opencode/child-session-updates"]
+    },
+    "session/new": {
+      "legacyModes": false,
+      "options": ["mode:mode", "model:model"],
+      "modes": ["build", "plan"],
+      "commands": ["compact", "goal", "init", "review"]
+    },
+    "session/list": {
+      "fields": ["cwd", "sessionId", "title", "updatedAt"],
+      "emptyTitle": true,
+      "nextCursor": true,
+      "withoutFolderListsRepo": true
+    },
+    "session/load, resume, delete": {
+      "load": "ok",
+      "resume": "ok",
+      "delete": "ok",
+      "gone": true
+    },
+    "fournisseurs": {
+      "listed": true,
+      "onlyListed": true,
+      "selected": "ok",
+      "keyFromEnv": true,
+      "path": "/v1/chat/completions",
+      "answered": true,
+      "stopReason": "end_turn",
+      "extraCaCerts": true,
+      "proxy": true,
+      "proxyConnect": true
+    },
+    "réponse simple": {
+      "stopReason": "end_turn",
+      "usageUpdate": ["cost", "sessionUpdate", "size", "used"],
+      "usageCurrency": "USD",
+      "turnUsage": true
+    },
+    "sous-agent": {
+      "called": true,
+      "title": "subagent",
+      "kind": "think",
+      "inputKeys": ["agent", "description", "prompt"],
+      "recognized": true,
+      "childMarker": true,
+      "childKinds": ["agent_message_chunk", "tool_call", "tool_call_update"],
+      "childToolIdsPrefixed": true,
+      "childTitleIsDescription": true,
+      "resultTag": "subagent",
+      "metadataSessionId": true,
+      "sessionIdFound": true,
+      "childInList": true,
+      "subagentUpdate": false,
+      "permissionAsked": false,
+      "childLoadable": true
+    },
+    "question": {
+      "asked": true,
+      "keys": ["qN", "qN_custom"],
+      "toolCallId": true,
+      "recognized": true
+    },
+    "outils de l’app": {
+      "called": true,
+      "via": "code",
+      "codeCardTitle": "execute",
+      "citedByRunningCard": true,
+      "toolCallsStatus": "completed",
+      "imageInContent": true
+    },
+    "édition": {
+      "edited": true,
+      "fullDiff": true,
+      "createdFileDiff": false,
+      "permissionAsked": false
+    },
+    "liste de tâches": {
+      "plan": false,
+      "todoTools": []
+    },
+    "compaction": {
+      "ran": true,
+      "statuses": ["completed", "in_progress"],
+      "summaryChunks": true
+    },
+    "modifications rejouées": {
+      "edited": true,
+      "tools": ["edit"],
+      "patchKept": true,
+      "diffLost": true,
+      "rebuilt": true
+    },
+    "règles": {
+      "answered": true,
+      "expected": ["ALPHA", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "HOTEL", "INDIA"],
+      "loaded": ["ALPHA", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "HOTEL", "INDIA"],
+      "match": true
+    },
+    "flux": {
+      "plan": false,
+      "unknown": []
+    }
+  },
+  "offline": {
+    "opencodeVersion": "2.2.5",
+    "recordedAt": "2026-11-05"
+  }
+}

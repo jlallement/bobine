@@ -1,0 +1,40 @@
+build (windows-latest)	UNKNOWN STEP	﻿2026-11-03T21:20:12.3085509Z Current runner version: '2.338.2'
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:20:12.3127374Z ##[group]Runner Image Provisioner
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:20:12.3128130Z Hosted Compute Agent
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:06.5313048Z ok  	github.com/example/app/v2/pkg/cmd/repo/read-dir	1.174s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:06.9009132Z ok  	github.com/example/app/v2/pkg/cmd/repo/read-file	1.264s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:06.9781812Z ok  	github.com/example/app/v2/pkg/cmd/repo/rename	1.122s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:08.3686442Z ok  	github.com/example/app/v2/pkg/cmd/repo/setdefault	1.172s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:08.6101655Z ok  	github.com/example/app/v2/pkg/cmd/repo/shared	1.063s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1735597Z ok  	github.com/example/app/v2/pkg/cmd/repo/sync	7.544s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1736188Z ok  	github.com/example/app/v2/pkg/cmd/repo/unarchive	1.112s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1736660Z ok  	github.com/example/app/v2/pkg/cmd/repo/view	1.506s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1737290Z --- FAIL: TestResetExperimentDetachesIntegrationWithoutDeletingAccounts (0.03s)
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1739207Z     reset_experiment_test.go:22: 
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1740890Z         	Error Trace:	D:/a/example/app/pkg/cmd/root/reset_experiment_test.go:22
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1741769Z         	Error:      	Received unexpected error:
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1742774Z         	            	persistent identities are not supported on Windows by this prototype
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1743692Z         	Test:       	TestResetExperimentDetachesIntegrationWithoutDeletingAccounts
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1744338Z Error: unknown flag: --anything
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1744559Z 
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1744691Z FAIL
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1745017Z FAIL	github.com/example/app/v2/pkg/cmd/root	1.680s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1745477Z ?   	github.com/example/app/v2/pkg/cmd/ruleset	[no test files]
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1745992Z ok  	github.com/example/app/v2/pkg/cmd/ruleset/check	1.071s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:16.1746478Z ok  	github.com/example/app/v2/pkg/cmd/ruleset/list	1.126s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:57.7388324Z ok  	github.com/example/app/v2/pkg/surveyext	1.033s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:57.7388656Z ?   	github.com/example/app/v2/script	[no test files]
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:58.0305624Z ok  	github.com/example/app/v2/script/api-host-gateway/gateway	1.077s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:58.6942502Z ok  	github.com/example/app/v2/script/identity-e2e	1.041s
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:58.6943093Z ?   	github.com/example/app/v2/test	[no test files]
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:58.6943562Z ?   	github.com/example/app/v2/utils	[no test files]
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:26:58.6943971Z FAIL
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:00.0546342Z ##[error]Process completed with exit code 1.
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:00.0766845Z Post job cleanup.
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:00.0770953Z ##[start-action display=Install Go;id=__a0bb9a7d-2ca6-47b6-bec2-c80c6a539a7b.__actions_setup-go]
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:01.6029204Z /github/runner_temp/git-credentials-XXXX.config
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:01.6060758Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-15461dcf\-f86d\-4d0d\-b9ef\-85541ede8ab1\.config
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:01.6357732Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:02.0874857Z Removing credentials config 'D:\a\_temp\git-credentials-XXXX.config'
+build (windows-latest)	UNKNOWN STEP	2026-11-03T21:27:02.1054871Z Cleaning up orphan processes
+

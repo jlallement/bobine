@@ -1,0 +1,17 @@
+# Pour le nouveau code, préférer le marqueur en ligne « gitleaks:allow » : il survit aux réécritures d'historique.
+# gitleaks (scan de l'historique, fiche 105) : fausse alerte, clé factice d'une suite e2e.
+73ddb443cbf327b91f81f48bac0be91668e13d92:e2e/suites/auth.mjs:generic-api-key:6
+# Audit d'ouverture du dépôt (fiche 218) : valeurs factices des tests, relues une à une — motifs
+# de démonstration du détecteur de secrets de l'app (GitLab, AWS, Google, JWT d'exemple), filtre
+# de la mémoire, URL GitLab fictive, masquage des échanges ACP. Ne pas recopier les valeurs ici :
+# ce fichier est lui-même analysé.
+7fb2897246b0e2efcd07bc378588731d14342bf5:src/main/secret-scan.test.ts:gitlab-pat:8
+7fb2897246b0e2efcd07bc378588731d14342bf5:src/main/secret-scan.test.ts:aws-access-token:10
+c9c6e56dcc452bdd2e0a1eed2fdf64b242f8b430:src/main/secret-scan.test.ts:gcp-api-key:37
+c9c6e56dcc452bdd2e0a1eed2fdf64b242f8b430:src/main/secret-scan.test.ts:jwt:38
+c9c6e56dcc452bdd2e0a1eed2fdf64b242f8b430:src/main/memory/memory-ipc.test.ts:gcp-api-key:105
+7ed7caa5715933bc2020cfef0194d450c15ae912:src/main/memory/memory-ipc.test.ts:generic-api-key:48
+09671c8b3f6bad7ad0384f31d78fa26383f1ef4b:src/main/memory/memory-ipc.test.ts:generic-api-key:120
+a0e19ab0f8960876215f3514a8eb27b9af052c24:src/main/changes/worktree-cycle-forge.test.ts:generic-api-key:29
+ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:generic-api-key:39
+ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:generic-api-key:49

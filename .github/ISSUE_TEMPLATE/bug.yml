@@ -1,0 +1,52 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The quickest way to fill this in: **Settings › Diagnostics › Report
+        an issue** opens this form with your version and diagnostic report already filled in.
+        Security problems go through [SECURITY.md](../blob/main/SECURITY.md), not here.
+  - type: input
+    id: version
+    attributes:
+      label: Bobine version
+      description: Settings › About, or the first line of the diagnostic report.
+      placeholder: 0.3.0 (packaged) · Electron 45.0.0 · macOS 27.0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Diagnostic report
+      description: |
+        Settings › Diagnostics › « Copy report ». Nothing in it is sent to a model; it lists the
+        agents found, their versions, the trial session, MCP servers, Xcode and simulators. If
+        « Report an issue » truncated it, paste the rest here.
+      render: text
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      options:
+        - IBM Bob
+        - OpenCode
+        - Several / not related to an agent
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log excerpt (optional)
+      description: |
+        Help › Show log (`~/Library/Logs/Bobine/main.log`), or `agents.log` at the Detailed level.
+        Check for anything private before pasting.
+      render: text

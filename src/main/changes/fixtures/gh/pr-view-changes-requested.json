@@ -1,0 +1,156 @@
+{
+  "comments": [
+    {
+      "author": {
+        "login": "commenter-0"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Comment text.",
+      "createdAt": "2026-07-17T05:21:50Z",
+      "includesCreatedEdit": false,
+      "isMinimized": true,
+      "minimizedReason": "OUTDATED",
+      "viewerDidAuthor": false
+    },
+    {
+      "author": {
+        "login": "commenter-1"
+      },
+      "authorAssociation": "NONE",
+      "body": "Comment text.",
+      "createdAt": "2026-07-17T05:21:51Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "viewerDidAuthor": false
+    },
+    {
+      "author": {
+        "login": "commenter-2"
+      },
+      "authorAssociation": "NONE",
+      "body": "Comment text.",
+      "createdAt": "2026-07-17T05:59:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": true,
+      "minimizedReason": "spam",
+      "viewerDidAuthor": false
+    }
+  ],
+  "headRefOid": "7031269eafb54c8b814883a4757db7eb9f2a6100",
+  "isDraft": false,
+  "mergeable": "MERGEABLE",
+  "number": 13899,
+  "reviewDecision": "CHANGES_REQUESTED",
+  "reviews": [
+    {
+      "author": {
+        "login": "reviewer-0"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Review text.",
+      "submittedAt": "2026-07-17T04:43:37Z",
+      "includesCreatedEdit": false,
+      "reactionGroups": [],
+      "state": "CHANGES_REQUESTED",
+      "commit": {
+        "oid": "c82266c2dcc3285033605501837434af1faeddfe"
+      }
+    },
+    {
+      "author": {
+        "login": "reviewer-1"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Review text.",
+      "submittedAt": "2026-07-20T20:49:53Z",
+      "includesCreatedEdit": false,
+      "reactionGroups": [],
+      "state": "COMMENTED",
+      "commit": {
+        "oid": "8fbdb9b0f4e293af8a30ab1e0b79511fe1e37630"
+      }
+    },
+    {
+      "author": {
+        "login": "reviewer-2"
+      },
+      "authorAssociation": "NONE",
+      "body": "",
+      "submittedAt": "2026-07-21T02:21:02Z",
+      "includesCreatedEdit": false,
+      "reactionGroups": [],
+      "state": "COMMENTED",
+      "commit": {
+        "oid": "745dc6816d3178220ca73b34836f72b08750254b"
+      }
+    }
+  ],
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:07:17Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252329/job/100073180039",
+      "name": "CodeQL-Build (go, manual, ./.github/codeql/codeql-config.yml)",
+      "startedAt": "2026-09-02T00:04:33Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:06:51Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252349/job/100073180720",
+      "name": "lint",
+      "startedAt": "2026-09-02T00:04:33Z",
+      "status": "COMPLETED",
+      "workflowName": "Lint"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:10:01Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252178/job/100073179354",
+      "name": "build (ubuntu-latest)",
+      "startedAt": "2026-09-02T00:04:32Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:05:15Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252329/job/100073180127",
+      "name": "CodeQL-Build (actions, none, security-and-quality)",
+      "startedAt": "2026-09-02T00:04:33Z",
+      "status": "COMPLETED",
+      "workflowName": "Code Scanning"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:15:13Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252178/job/100073179547",
+      "name": "build (windows-latest)",
+      "startedAt": "2026-09-02T00:04:33Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-02T00:11:25Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/example/app/actions/runs/33534252178/job/100073179614",
+      "name": "build (macos-latest)",
+      "startedAt": "2026-09-02T00:04:34Z",
+      "status": "COMPLETED",
+      "workflowName": "Unit and Integration Tests"
+    }
+  ],
+  "title": "Example change",
+  "url": "https://github.com/example/app/pull/13899",
+  "mergeStateStatus": "BLOCKED",
+  "baseRefName": "trunk"
+}

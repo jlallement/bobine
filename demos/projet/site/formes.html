@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Bobinette — Formes</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .formes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(80px, 140px));
+        gap: 16px;
+      }
+      .formes svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="entete">
+      <a href="index.html" class="logo">La Bobinette</a>
+      <nav>
+        <a href="boutique.html">Boutique</a>
+        <a href="inscription.html">Inscription</a>
+        <a href="anime.html">Animation</a>
+        <a href="formes.html">Formes</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Six formes</h1>
+      <div class="formes">
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <rect x="15" y="15" width="70" height="70" fill="#dc2626" />
+          </svg>
+        </div>
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="36" fill="#16a34a" />
+          </svg>
+        </div>
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="50,12 88,84 12,84" fill="#2563eb" />
+          </svg>
+        </div>
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon
+              points="50,8 61,38 93,38 67,57 77,88 50,69 23,88 33,57 7,38 39,38"
+              fill="#eab308"
+            />
+          </svg>
+        </div>
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="50,10 88,50 50,90 12,50" fill="#9333ea" />
+          </svg>
+        </div>
+        <div class="carte">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="30,14 70,14 90,50 70,86 30,86 10,50" fill="#ea580c" />
+          </svg>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

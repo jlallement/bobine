@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Bobinette — Inscription</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      form {
+        max-width: 420px;
+        display: grid;
+        gap: 14px;
+      }
+      label {
+        display: grid;
+        gap: 4px;
+        font-weight: 600;
+        color: #2b2620;
+      }
+      label.case {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 400;
+      }
+      input[type='text'],
+      input[type='email'],
+      input[type='password'],
+      input[type='number'] {
+        font: inherit;
+        padding: 9px 12px;
+        border: 1px solid var(--bord);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--texte);
+      }
+      .erreur {
+        color: #dc2626;
+        font-weight: 400;
+        font-size: 14px;
+        min-height: 1.2em;
+      }
+      #resultat {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="entete">
+      <a href="index.html" class="logo">La Bobinette</a>
+      <nav>
+        <a href="boutique.html">Boutique</a>
+        <a href="inscription.html">Inscription</a>
+        <a href="anime.html">Animation</a>
+        <a href="formes.html">Formes</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Rejoindre l'atelier</h1>
+      <form id="inscription" class="carte" novalidate>
+        <label>
+          Prénom
+          <input type="text" name="prenom" autocomplete="given-name" />
+          <span class="erreur" data-pour="prenom"></span>
+        </label>
+        <label>
+          Adresse e-mail
+          <input type="email" name="email" autocomplete="email" />
+          <span class="erreur" data-pour="email"></span>
+        </label>
+        <label>
+          Mot de passe (8 caractères au moins)
+          <input type="password" name="motDePasse" autocomplete="new-password" />
+          <span class="erreur" data-pour="motDePasse"></span>
+        </label>
+        <label>
+          Âge
+          <input type="number" name="age" min="1" max="120" />
+          <span class="erreur" data-pour="age"></span>
+        </label>
+        <label class="case">
+          <input type="checkbox" name="conditions" />
+          J'accepte le règlement de l'atelier
+        </label>
+        <span class="erreur" data-pour="conditions"></span>
+        <button type="submit" class="principal">Créer mon compte</button>
+        <p id="resultat" role="status"></p>
+      </form>
+    </main>
+
+    <script>
+      const formulaire = document.getElementById('inscription')
+
+      function verifier(donnees) {
+        const erreurs = {}
+        if (!donnees.get('prenom').trim()) erreurs.prenom = 'Indiquez votre prénom.'
+        if (!/^[a-z0-9]+@[a-z0-9-]+\.[a-z]{2,}$/.test(donnees.get('email'))) {
+          erreurs.email = 'Adresse e-mail invalide.'
+        }
+        if (donnees.get('motDePasse').length < 8) erreurs.motDePasse = 'Huit caractères au moins.'
+        const age = Number(donnees.get('age'))
+        if (!Number.isInteger(age) || age < 1 || age > 120) erreurs.age = 'Âge entre 1 et 120 ans.'
+        if (!donnees.get('conditions')) erreurs.conditions = 'Acceptez le règlement pour continuer.'
+        return erreurs
+      }
+
+      formulaire.addEventListener('submit', (evenement) => {
+        evenement.preventDefault()
+        const donnees = new FormData(formulaire)
+        const erreurs = verifier(donnees)
+        for (const zone of formulaire.querySelectorAll('.erreur')) {
+          zone.textContent = erreurs[zone.dataset.pour] ?? ''
+        }
+        document.getElementById('resultat').textContent = Object.keys(erreurs).length
+          ? ''
+          : `Bienvenue, ${donnees.get('prenom').trim()} !`
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+/* Bandeau d'un tour qui attend pour réessayer (fiche 142), d'après la maquette `reseau`. */
+.turn-retry {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--warn-soft);
+  margin: 4px 0 18px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.turn-retry > svg {
+  color: var(--warn);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.turn-retry-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.turn-retry-text small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.turn-retry .btn {
+  flex-shrink: 0;
+}

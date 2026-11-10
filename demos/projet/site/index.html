@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Bobinette</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .pages {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        margin: 20px 0 32px;
+      }
+      .pages a {
+        text-decoration: none;
+        color: inherit;
+      }
+      .pages h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      .pages p,
+      .histoire p {
+        margin: 0;
+        color: var(--discret);
+      }
+      .histoire p + p {
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="entete">
+      <a href="index.html" class="logo">La Bobinette</a>
+      <nav>
+        <a href="boutique.html">Boutique</a>
+        <a href="inscription.html">Inscription</a>
+        <a href="anime.html">Animation</a>
+        <a href="formes.html">Formes</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Bienvenue à La Bobinette</h1>
+      <p>
+        Un petit café de quartier, et le site qui sert de terrain de jeu aux démonstrations de
+        Bobine.
+      </p>
+
+      <div class="pages">
+        <a class="carte" href="boutique.html">
+          <h2>Boutique</h2>
+          <p>Un comptoir, un panier, une commande.</p>
+        </a>
+        <a class="carte" href="inscription.html">
+          <h2>Inscription</h2>
+          <p>Un formulaire avec ses vérifications.</p>
+        </a>
+        <a class="carte" href="anime.html">
+          <h2>Animation</h2>
+          <p>Un carré qui bouge quand on clique.</p>
+        </a>
+        <a class="carte" href="formes.html">
+          <h2>Formes</h2>
+          <p>Six formes à entourer sur une capture.</p>
+        </a>
+      </div>
+
+      <section class="histoire">
+        <h2>Notre histoire</h2>
+        <p>
+          La Bobinette a ouvert ses portes dans un ancien atelier de couture. Les bobines de fil
+          sont restées sur les étagères, entre les pots de café et les bocaux de biscuits.
+        </p>
+        <p>
+          Le matin, on y sert un café filtre doux et des croissants encore tièdes. L'après-midi, le
+          thé infuse pendant que les habitués travaillent sur la grande table du fond.
+        </p>
+        <p>
+          Le soir, la boutique se transforme en atelier : on y répare des vêtements, on y apprend à
+          coudre un bouton, et parfois à écrire un premier programme.
+        </p>
+        <p>
+          Les cookies sont faits sur place, avec du chocolat noir et une pincée de fleur de sel. Il
+          n'en reste jamais après seize heures.
+        </p>
+        <p>
+          Le dimanche, la boutique ferme plus tôt : on range les bobines par couleur et on prépare
+          la vitrine de la semaine.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

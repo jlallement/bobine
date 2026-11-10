@@ -1,0 +1,5 @@
+{"trace":{"agent":"bob","version":"2.0.9","recordedAt":"2026-11-07","name":"session/new : sans connexion"}}
+{"from":"client","t":0,"msg":{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"elicitation":{"form":{},"url":{}}},"clientInfo":{"name":"bobine-sonde","version":"0.0.0"}}}}
+{"from":"agent","t":400,"msg":{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"agentCapabilities":{"_meta":{"bob/extensions":{"version":1}},"loadSession":true,"sessionCapabilities":{"list":{},"delete":{},"resume":{},"close":{}},"promptCapabilities":{"embeddedContext":true,"image":true},"mcpCapabilities":{"http":true}},"authMethods":[{"id":"sso","name":"Log in with SSO","description":"Opens your browser to authenticate with IBM SSO"}],"agentInfo":{"name":"bob-shell","title":"Bob","version":"2.0.9"}}}}
+{"from":"client","t":400,"msg":{"jsonrpc":"2.0","id":1,"method":"session/new","params":{"cwd":"<dossier>","mcpServers":[]}}}
+{"from":"agent","t":1406,"msg":{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Authentication required"}}}

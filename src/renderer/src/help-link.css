@@ -1,0 +1,39 @@
+/* Liens « ? » de l'interface (fiche 186). */
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.help-link:hover,
+.help-link:focus-visible {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.help-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.help-footer-link:hover,
+.help-footer-link:focus-visible {
+  color: var(--accent);
+}
+
+/* Lien d'aide en bas à gauche d'un dialogue : les boutons restent à droite. */
+.confirm-actions-start {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+}

@@ -1,0 +1,177 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.6-reconstituee/rejeu-tardif.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.6-reconstituee/rejeu-tardif.ndjson 1`] = `
+[
+  "utilisateur : Réponds juste « pong ».",
+  "agent : pong",
+  "utilisateur : Réponds juste « pong 2 ».",
+  "agent : pong 2",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.6-reconstituee/taches-autorisations-annulation.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.6-reconstituee/taches-autorisations-annulation.ndjson 1`] = `
+[
+  "utilisateur : Implémente le chantier 7 du README : compléter les tests manquants de …",
+  "outil [completed] Updating todo list (other) · autorisation allow",
+  "plan : in_progress, pending, pending, pending, pending, pending, pending, pending",
+  "outil [completed] Listing files in /dossier (read)",
+  "outil [completed] Reading file /dossier/README.md (read)",
+  "agent : Now let me run the existing tests to see what passes:",
+  "outil [completed] cd /dossier && npm test 2>&1 (execute) · autorisation allow",
+  "agent : All 27 tests pass. Now I have a clear picture. Let me check the test t…",
+  "outil [refused] node -e "const { JSDOM } = await import('jsdom').c… (execute) · autorisation reject",
+  "outil [cancelled] cd /dossier && node --test test/server.test.js 2>&… (execute) · autorisation cancelled",
+  "avis (info) : Réponse interrompue.",
+  "utilisateur : Fais court : seulement deux tests HTTP dans test/server.test.js (POST …",
+  "outil [completed] Updating todo list (other) · autorisation allow_always",
+  "plan : completed, completed, completed, completed, completed",
+  "outil [completed] Inserting content into /dossier/test/server.test.j… (edit) · autorisation allow · 1 diff",
+  "outil [completed] cd /dossier && npm test 2>&1 (execute) · autorisation allow",
+  "agent : 29/29. Commit :",
+  "outil [completed] cd /dossier && git add test/server.test.js && git … (execute) · autorisation allow",
+  "outil [completed] Updating todo list (other)",
+  "agent : Deux tests ajoutés dans [\`test/server.test.js\`](test/server.test.js) :…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/commande-hors-dossier-et-sudo-refusees.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/commande-hors-dossier-et-sudo-refusees.ndjson 1`] = `
+[
+  "utilisateur : Run exactly this shell command: echo hi > /maison/dehors/x.properties",
+  "outil [refused] echo hi > /maison/dehors/x.properties (execute) · autorisation reject",
+  "agent : The command was rejected by the user (or the system). The shell execut…",
+  "utilisateur : Run: sudo -n true",
+  "outil [refused] sudo -n true (execute) · autorisation reject",
+  "agent : The command was rejected again. Both attempts have been cancelled by t…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/creation-fichier-neuf-autorisee-une-fois.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/creation-fichier-neuf-autorisee-une-fois.ndjson 1`] = `
+[
+  "utilisateur : Create the file notes/alpha.txt containing exactly the word: bonjour. …",
+  "outil [completed] Writing file /dossier/notes/alpha.txt (edit) · autorisation allow · 1 diff",
+  "agent : [\`notes/alpha.txt\`](notes/alpha.txt) created containing exactly the wo…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/demandes-paralleles-cancel-request.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/demandes-paralleles-cancel-request.ndjson 1`] = `
+[
+  "utilisateur : Ne pose pas de question. Crée en parallèle, en un seul tour et sans at…",
+  "outil [completed] Writing file /dossier/b.txt (edit) · autorisation allow_always · 1 diff",
+  "outil [completed] Writing file /dossier/c.txt (edit) · autorisation allow_always · 1 diff",
+  "outil [completed] Writing file /dossier/a.txt (edit) · autorisation allow_always · 1 diff",
+  "agent : Les trois fichiers ont été créés en parallèle en un seul tour : - [\`a.…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/limite-etapes-session-rouverte.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/limite-etapes-session-rouverte.ndjson 1`] = `
+[
+  "utilisateur : Lis a.txt, puis b.txt, puis c.txt, une lecture à la fois, et dis-moi l…",
+  "outil [completed] Reading file /dossier/a.txt (read)",
+  "outil [completed] Reading file /dossier/b.txt (read)",
+  "turn-limit",
+  "utilisateur : Continue là où tu t’es arrêté.",
+  "turn-limit",
+  "utilisateur : Lis a.txt, puis b.txt, puis c.txt, une lecture à la fois, et dis-moi l…",
+  "outil [completed] Reading file /dossier/a.txt (read)",
+  "outil [completed] Reading file /dossier/b.txt (read)",
+  "utilisateur : Continue là où tu t’es arrêté.",
+  "outil [completed] Reading file /dossier/c.txt (read)",
+  "agent : Les trois mots sont : - [\`a.txt\`](a.txt) → **mota** - [\`b.txt\`](b.txt)…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/liste-de-taches-autorisee-une-fois.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/liste-de-taches-autorisee-une-fois.ndjson 1`] = `
+[
+  "utilisateur : Ajoute mul et div dans src/math.js avec des tests, puis committe. Util…",
+  "outil [completed] Updating todo list (other) · autorisation allow",
+  "plan : in_progress, pending, pending",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/refus-au-tour-cle-refusee-licence-acceptee-sur-ce-mac.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/refus-au-tour-cle-refusee-licence-acceptee-sur-ce-mac.ndjson 1`] = `
+[
+  "utilisateur : ping",
+  "avis (error) : Erreur : Internal error",
+  "utilisateur : ping",
+  "avis (error) : Erreur : Internal error",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > bob-2.0.9/session-new-sans-connexion.ndjson : le fil rejoué est celui de l’instantané, sans doublon > bob-2.0.9/session-new-sans-connexion.ndjson 1`] = `[]`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.0.32-reconstituee/execute-sous-agent-arriere-plan-patch.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.0.32-reconstituee/execute-sous-agent-arriere-plan-patch.ndjson 1`] = `
+[
+  "utilisateur : Lance l'app et montre-moi la page d'accueil.",
+  "outil [failed] execute (other)",
+  "agent : Il n’y a pas de configuration de lancement : il faut créer \`.bob/launc…",
+  "utilisateur : Lance un sous-agent pour auditer la sécurité de server.js pendant que …",
+  "outil [completed] subagent (think) · sous-agent general · 3 sous lui",
+  "outil [completed] read (read)",
+  "outil [completed] git status --short (execute)",
+  "agent : Le sous-agent audite \`server.js\` en lecture seule. De mon côté, j’ajou…",
+  "outil [completed] patch (edit) · 2 diff",
+  "outil [completed] npm test (execute)",
+  "agent : Test ajouté dans [test/server.test.js](test/server.test.js) : \`GET /ap…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/commande-dans-un-sous-dossier.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/commande-dans-un-sous-dossier.ndjson 1`] = `
+[
+  "utilisateur : Lance exactement une seule commande avec ton outil bash : « ls », en r…",
+  "outil [completed] ls (execute) · autorisation once",
+  "agent : La commande \`ls\` dans \`docs\` affiche un seul fichier : \`guide.md\`.",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/commande-hors-du-dossier-refusee.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/commande-hors-du-dossier-refusee.ndjson 1`] = `
+[
+  "utilisateur : Lance exactement une seule commande avec ton outil bash : « ls », en r…",
+  "réflexion : The user wants me to run exactly one bash command: \`ls\` with workdir \`…",
+  "outil [refused] ls (execute) · autorisation reject",
+  "avis (info) : Réponse interrompue.",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/creation-autorisation-demandee.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/creation-autorisation-demandee.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user says do exactly three things …",
+  "outil [completed] write (edit) · autorisation once · 1 diff",
+  "outil [completed] edit (edit) · autorisation once · 1 diff",
+  "outil [completed] write (edit) · autorisation once · 1 diff",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/creation-autorisation-demandee-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/creation-autorisation-demandee-2.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user says do exactly three things …",
+  "outil [completed] write (edit) · 1 diff",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/creation-autorisee-d-office.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/creation-autorisee-d-office.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user says do exactly three things,…",
+  "outil [completed] write (edit) · 1 diff",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/creation-autorisee-d-office-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.2.5/creation-autorisee-d-office-2.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user says do exactly three things,…",
+  "outil [completed] write (edit) · 1 diff",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;

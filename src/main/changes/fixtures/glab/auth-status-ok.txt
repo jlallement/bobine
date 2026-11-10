@@ -1,0 +1,7 @@
+localhost:8929
+  ✓ Logged in to localhost:8929 as qa-dev (keyring)
+  ✓ Git operations for localhost:8929 configured to use http protocol.
+  ✓ API calls for localhost:8929 are made over http protocol.
+  ✓ REST API Endpoint: http://localhost:8929/api/v4/
+  ✓ GraphQL Endpoint: http://localhost:8929/api/graphql/
+  ✓ Token found in operating system keyring: **************************

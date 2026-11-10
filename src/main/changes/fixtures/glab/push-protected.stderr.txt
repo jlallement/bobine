@@ -1,0 +1,4 @@
+remote: GitLab: You are not allowed to push code to protected branches on this project.
+To http://localhost:8929/qa-dev/demo.git
+ ! [remote rejected] rel-1-local -> rel-1 (pre-receive hook declined)
+erreur : impossible de pousser des références vers 'http://localhost:8929/qa-dev/demo.git'

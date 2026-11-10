@@ -1,0 +1,287 @@
+/*
+ * Règles d'approbation pour tous les projets (fiche 215) : section repliée en pied de carte de
+ * commande, ligne de réponse, page Réglages › Agents › <agent> › Approbations.
+ */
+
+/* --- Carte de commande --- */
+
+.global-rule {
+  padding: 2px 18px 12px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.global-rule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.global-rule-toggle:hover .global-rule-title {
+  text-decoration: underline;
+}
+
+.global-rule-title {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.global-rule-tools {
+  color: var(--muted);
+}
+
+.global-rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 0 20px;
+}
+
+.global-rule-label {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.global-rule-part {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-rule-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.global-rule-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.global-rule-hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.global-rule-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-2);
+}
+
+.global-rule-warn > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warn);
+}
+
+/* Effet de bord de la première fois : neutre, comme une note des réglages. */
+.global-rule-first {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.global-rule-error {
+  margin: 0;
+  color: var(--err);
+}
+
+.global-rule-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* --- Ligne de réponse --- */
+
+.global-rule-answer {
+  color: var(--muted);
+}
+
+.global-rule-answer .link-button {
+  font-size: inherit;
+}
+
+/* --- Réglages › Agents › <agent> › Approbations --- */
+
+.approvals-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.approvals-file code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+}
+
+.approvals-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.settings-banner.approvals-banner {
+  align-items: flex-start;
+}
+
+.approvals-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approvals-banner-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.approvals-add {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.approvals-add .settings-input,
+.approvals-command .settings-input {
+  flex: 1;
+  width: auto;
+  font-family: var(--font-mono);
+}
+
+.approvals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.approvals-command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 10px 4px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.approvals-command > code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+  background: none;
+}
+
+.approvals-list-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.approvals-badge {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.approvals-card-note {
+  margin: 0 14px 12px;
+}
+
+.approvals-edit {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Partie déjà décidée par les listes de Bob : montrée, ni cochable ni modifiable. */
+.global-rule-part.covered {
+  padding: 4px 0;
+  color: var(--muted);
+}
+
+.global-rule-part.covered code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+}
+
+.global-rule-covered-state {
+  flex: none;
+  font-size: 12px;
+}
+
+/* « Gérer » : un lien qui se voit comme tel dans une ligne discrète (recette QA). */
+.global-rule-manage {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Code dans les avertissements et l'encadré « première fois » : police à chasse fixe, sans fond. */
+.global-rule-warn code,
+.global-rule-first code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: none;
+  padding: 0;
+}
+
+/* Confirmation d'un préfixe d'un seul mot à autoriser, sous le champ (recette QA). */
+.approvals-command {
+  flex-wrap: wrap;
+}
+
+.approvals-one-word {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.approvals-command > .approvals-one-word {
+  padding: 4px 0 0;
+  border-bottom: 0;
+}
+
+/* Ligne de réponse avec la règle écrite : elle passe à la ligne plutôt que d'écraser le libellé. */
+.permission-answer:has(.global-rule-answer) {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.permission-answer .global-rule-answer {
+  white-space: normal;
+}

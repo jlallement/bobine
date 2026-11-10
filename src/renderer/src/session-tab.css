@@ -1,0 +1,391 @@
+/* Onglet « Session » du panneau (fiche 166). */
+
+.session-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 13px;
+}
+
+.side-panel.maximized .session-tab {
+  max-width: var(--column-width, 740px);
+  margin: 0 auto;
+}
+
+.session-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.session-title-value {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--text-2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+}
+
+.session-row-label {
+  flex: 0 0 84px;
+  color: var(--text-2);
+}
+
+.session-row-value {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+/*
+ * Valeurs de l'environnement (fiche 166) : une seule colonne — icône de 16 px, 6 px, texte. Les
+ * liens et les puces gardent leur marge intérieure (zone de survol), compensée par une marge
+ * négative égale : leur icône tombe sur le bord de la colonne.
+ */
+.session-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text);
+}
+
+.session-value.session-none {
+  color: var(--muted);
+}
+
+.session-value svg,
+.session-link svg,
+.session-chip svg:first-child {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+/* Puces du modèle et du mode, discrètes ici seulement (la zone de saisie garde les siennes). */
+.chip.session-chip {
+  height: 28px;
+  max-width: calc(100% + 18px);
+  margin-left: -9px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: inherit;
+}
+
+.chip.session-chip:hover:not(:disabled),
+.chip.session-chip[data-state='open'] {
+  background: var(--surface-2);
+}
+
+.chip.session-chip .chip-label {
+  max-width: none;
+}
+
+.chip.session-chip:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.session-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: calc(100% + 12px);
+  height: 28px;
+  padding: 0 6px;
+  margin-left: -6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.session-link:hover {
+  background: var(--surface-2);
+}
+
+.session-link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Autres dossiers (fiche 179) : un dossier par ligne, puis « Ajouter un dossier… » ou la note. */
+.session-row.session-folders {
+  height: auto;
+  min-height: 32px;
+  align-items: flex-start;
+  padding: 2px 0;
+}
+
+.session-folders .session-row-label {
+  /* Libellé sur deux lignes au besoin, la première alignée sur le premier dossier. */
+  padding-top: 6px;
+  line-height: 1.25;
+}
+
+.session-folder-list {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.session-folder {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.session-folder-remove {
+  flex: none;
+  color: var(--muted);
+}
+
+.session-link:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.session-link:disabled:hover {
+  background: none;
+}
+
+/* Agent qui ne les prend pas : dossiers gardés, grisés, avec la raison. */
+.session-folders:not([data-supported]) .session-folder .session-link {
+  color: var(--muted);
+}
+
+.session-folders-note {
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Barre du contexte : une part par catégorie, le reste (libre) en fond. */
+.session-bar {
+  display: flex;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.session-bar-part {
+  height: 100%;
+}
+
+.session-bar-part + .session-bar-part {
+  border-left: 1px solid var(--bg);
+}
+
+.session-c1 {
+  --session-color: var(--chart-1);
+}
+
+.session-c2 {
+  --session-color: var(--chart-2);
+}
+
+.session-c3 {
+  --session-color: var(--chart-3);
+}
+
+.session-c4 {
+  /* Mémoire (fiche 182) : quatrième catégorie, entre deux couleurs du graphique, pas l'accent. */
+  --session-color: color-mix(in srgb, var(--chart-2) 45%, var(--chart-3));
+}
+
+.session-other {
+  --session-color: var(--chart-other);
+}
+
+.session-free {
+  --session-color: var(--surface-3);
+}
+
+.session-bar-part,
+.session-dot {
+  background: var(--session-color);
+}
+
+.session-lines,
+.session-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.session-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-xs);
+}
+
+.session-dot.session-free {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.session-line-label {
+  color: var(--text);
+}
+
+.session-line-value {
+  margin-left: auto;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.session-hint,
+.session-empty {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.session-changes {
+  font-variant-numeric: tabular-nums;
+}
+
+.session-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  min-width: 0;
+}
+
+.session-entry-icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.session-entry-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.session-entry-label {
+  display: block;
+  text-align: left;
+}
+
+.session-entry-duration {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.session-entries.finished .session-entry {
+  color: var(--text-2);
+}
+
+.session-finished-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 2px 4px;
+  margin-left: -4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.session-finished-toggle:hover {
+  background: var(--surface-2);
+}
+
+/* Autres MCP (fiche 166) : mesure sur demande seulement. */
+.session-measure {
+  padding: 0 4px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.session-measure:hover {
+  text-decoration: underline;
+}
+
+.session-line-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-line-note {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.session-remeasure {
+  width: 20px;
+  height: 20px;
+}
+
+/* Ligne « Mémoire » (fiche 182) : mène à Réglages › Mémoire ; le chevron et le survol le disent. */
+.session-line-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  border-radius: var(--radius-xs);
+}
+
+.session-line-link:hover {
+  background: color-mix(in srgb, var(--surface-3) 55%, transparent);
+}
+
+.session-line-link > svg {
+  color: var(--muted);
+}

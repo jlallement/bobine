@@ -1,0 +1,36 @@
+# Mises à jour proposées par Dependabot (fiche 218) : une fois par semaine, en pull request
+# (`ci.yml` les vérifie). Mineures et correctifs groupés en une PR par écosystème ; chaque version
+# majeure seule (à lire : notes de version, `pnpm e2e` pour Electron et l'interface).
+# Une nouvelle dépendance reste une décision de fiche (AGENTS.md) : Dependabot ne fait que monter.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm-mineures:
+        update-types: [minor, patch]
+
+  # Actions épinglées par SHA (commentaire `# vX.Y.Z`) : Dependabot met les deux à jour.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions-mineures:
+        update-types: [minor, patch]

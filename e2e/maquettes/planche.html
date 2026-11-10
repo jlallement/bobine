@@ -1,0 +1,919 @@
+<title>Maquettes de Bobine</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<style>
+  /* Planche de maquettes : colonne de lecture large, chaque domaine = constat, captures, raisons. Jetons repris de Bobine. */
+  :root {
+    --bg: #faf9f5;
+    --panel: #ffffff;
+    --line: #e3e0d6;
+    --ink: #2b2a26;
+    --ink-2: #4d4b45;
+    --muted: #7d7a72;
+    --accent: #c96442;
+    --accent-soft: #f6e6df;
+    --chip: #f0eee6;
+    --shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 8px 28px rgb(0 0 0 / 0.06);
+    --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #262624;
+      --panel: #30302e;
+      --line: #3e3d39;
+      --ink: #f0eee6;
+      --ink-2: #d4d1c7;
+      --muted: #a19e95;
+      --accent: #d97757;
+      --accent-soft: #3d2c25;
+      --chip: #383835;
+      --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 8px 28px rgb(0 0 0 / 0.25);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #262624;
+    --panel: #30302e;
+    --line: #3e3d39;
+    --ink: #f0eee6;
+    --ink-2: #d4d1c7;
+    --muted: #a19e95;
+    --accent: #d97757;
+    --accent-soft: #3d2c25;
+    --chip: #383835;
+    --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 8px 28px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--bg);
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-block: 40px 80px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.15;
+    margin: 0 0 10px;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: 22px;
+    margin: 0;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+  }
+  .lead {
+    color: var(--ink-2);
+    max-width: 70ch;
+  }
+  .lead + .lead {
+    margin-top: 8px;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--chip);
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+
+  .bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    margin: 26px 0 0;
+    padding: 10px 0;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toc {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .toc a {
+    color: var(--ink-2);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 9px;
+    border-radius: 7px;
+  }
+  .toc a:hover,
+  .toc a:focus-visible {
+    background: var(--chip);
+    color: var(--ink);
+    outline: none;
+  }
+  .seg {
+    display: inline-flex;
+    background: var(--chip);
+    border-radius: 8px;
+    padding: 2px;
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  }
+  .seg button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .seg-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  section.domain {
+    padding-top: 46px;
+    scroll-margin-top: 60px;
+  }
+  .dhead {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .tag {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tag b {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+  .cols > div {
+    min-width: 0;
+  }
+  .cols ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--ink-2);
+  }
+  .cols li + li {
+    margin-top: 4px;
+  }
+  .today {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 18px;
+  }
+  .today figure {
+    margin: 0;
+  }
+  .today p {
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .today .src {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .shots {
+    display: grid;
+    gap: 22px;
+  }
+  figure.shot {
+    margin: 0;
+  }
+  figure.shot img,
+  .today img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    cursor: zoom-in;
+    background: var(--panel);
+  }
+  figure.shot figcaption {
+    font-size: 14px;
+    color: var(--ink-2);
+    margin-top: 8px;
+    max-width: 80ch;
+  }
+  figure.shot figcaption b {
+    color: var(--ink);
+  }
+  .pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+  .why {
+    margin-top: 18px;
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 14px;
+    color: var(--ink-2);
+    font-size: 14px;
+    max-width: 85ch;
+  }
+  .why b {
+    color: var(--ink);
+  }
+
+  .decide {
+    margin-top: 56px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .decide ol {
+    margin: 10px 0 0;
+    padding-left: 20px;
+  }
+  .decide li {
+    margin-top: 10px;
+    color: var(--ink-2);
+  }
+  .decide li b {
+    color: var(--ink);
+  }
+  .reco {
+    display: inline-block;
+    font-size: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0 8px;
+    margin-left: 4px;
+    font-weight: 600;
+  }
+  .foot {
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgb(0 0 0 / 0.82);
+    display: grid;
+    place-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    cursor: zoom-out;
+  }
+  .lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 820px) {
+    .cols,
+    .pair {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .today {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    h1 {
+      font-size: 25px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <h1>Maquettes de Bobine</h1>
+  <p class="lead">
+    Les maquettes de tout ce que la feuille de route du 23 octobre change à l’interface. Elles sont
+    faites dans l’app buildée, avec du DOM injecté et l’agent factice déguisé en Bob ou en OpenCode
+    : aucun code produit, mais les vrais composants, les vraies couleurs, en clair et en sombre. Les
+    données sont des exemples.
+  </p>
+  <p class="lead">
+    Chaque domaine montre l’app d’aujourd’hui, puis la version proposée et ce qui la justifie. Pour
+    l’interface, les choix sont tranchés ; les décisions qui vous reviennent sont rassemblées à la
+    fin. Cliquez une capture pour l’agrandir.
+  </p>
+
+  <div class="bar">
+    <nav class="toc" aria-label="Domaines">
+      <a href="#activite">Activité</a><a href="#navigateur">Navigateur</a
+      ><a href="#barre">Barre latérale</a><a href="#reglages">Réglages</a>
+      <a href="#apparence">Apparence</a><a href="#consommation">Consommation</a
+      ><a href="#journal">Journal et ACP</a><a href="#clavier">Clavier</a
+      ><a href="#reseau">Réseau</a><a href="#decisions">À décider</a>
+    </nav>
+    <span class="seg-label" id="seg-label">Captures</span>
+    <div class="seg" role="group" aria-labelledby="seg-label">
+      <button type="button" id="shot-light" data-scheme="light">Clair</button>
+      <button type="button" id="shot-dark" data-scheme="dark">Sombre</button>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ Activité -->
+  <section class="domain" id="activite">
+    <div class="dhead">
+      <h2>Ce que fait l’agent pendant un tour</h2>
+      <span class="tag">fiche <b>127</b> · itération 0</span>
+    </div>
+    <div class="today">
+      <figure>
+        <img
+          src="img/avant-activite.jpg"
+          alt="Aujourd’hui : carte « patch » et indicateur « patch… 11 s »"
+        />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          OpenCode annonce l’outil « patch » sans contenu, puis se tait pendant que le modèle écrit
+          le patch (38,7 s mesurées). Bobine affiche le nom brut « patch », et le chronomètre compte
+          le tour entier depuis votre message : « patch… 1 min 29 » se lit comme la durée du patch.
+        </p>
+        <p class="src">Capture de la recette du 23 octobre, OpenCode 2.0.32 et GPT-6.1 Sol.</p>
+      </div>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img
+          data-shot="maq-activite-1-pendant"
+          alt="Proposé : « Prépare une modification… 38 s »"
+        />
+        <figcaption>
+          <b>Pendant l’attente.</b> Sans fichier connu, la carte prend le nom de son genre : «
+          Prépare une modification… » (ou une commande, une lecture, une recherche). Le temps
+          affiché est celui de l’étape en cours ; la durée du tour passe en infobulle.
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <img
+          data-shot="maq-activite-2-etape-suivante"
+          alt="Proposé : modification finie, puis « Lance npm test… 12 s »"
+        />
+        <figcaption>
+          <b>Étape suivante.</b> Dès que les fichiers arrivent, la carte dit « Modification de
+          public/app.js et 2 autres ». Le chronomètre repart à zéro pour l’étape suivante : « Lance
+          npm test… 12 s ».
+        </figcaption>
+      </figure>
+    </div>
+    <p class="why">
+      <b>Pourquoi.</b> On garde une seule ligne d’état, sans chronomètre par carte : l’information
+      reste à un seul endroit. On ne lit rien de propre à OpenCode, seulement l’état
+      <code>pending</code> d’ACP, qui veut dire « entrée en cours d’écriture ». Bob n’y voit aucune
+      différence : il envoie ses cartes complètes.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------- Navigateur -->
+  <section class="domain" id="navigateur">
+    <div class="dhead">
+      <h2>Navigateur intégré</h2>
+      <span class="tag">fiches <b>129</b>, <b>130</b> (itération 1), <b>132</b> (itération 2)</span>
+    </div>
+    <div class="today">
+      <figure>
+        <img
+          src="img/avant-navigateur.jpg"
+          alt="Aujourd’hui : page coupée à droite dans le panneau"
+        />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          La page est une vraie vue native, ce qui est la bonne base. Mais une taille d’écran
+          imposée par l’agent reste figée, invisible, et coupe le bas de la page, qu’on ne peut plus
+          faire défiler. ⌘+ grossit toute l’app et décale la vue.
+        </p>
+        <p class="src">
+          Capture de la recette du 23 octobre avec Bob : page de bureau coupée à droite.
+        </p>
+      </div>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img
+          data-shot="maq-navigateur-1-panneau"
+          alt="Proposé : la page suit la largeur du panneau et défile"
+        />
+        <figcaption>
+          <b>La page suit le panneau et défile</b>, à la molette, au trackpad et au clavier, comme
+          dans Claude Code. Quand on élargit ou rétrécit la colonne, la page se remet en page
+          aussitôt. Deux ajouts dans la barre : le zoom de la page (⌘+ / ⌘− quand elle a le focus),
+          affiché dans l’adresse seulement s’il n’est pas à 100 %, et « Annoter ».
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <img
+          data-shot="maq-navigateur-2-agrandi"
+          alt="Proposé : panneau agrandi, la page occupe toute la largeur"
+        />
+        <figcaption>
+          <b>Panneau agrandi.</b> La page prend toute la largeur et se remet en page, comme quand on
+          redimensionne la colonne. Rien d’autre à régler : pas de menu de tailles d’écran.
+        </figcaption>
+      </figure>
+    </div>
+    <p class="why">
+      <b>Tailles d’écran : pas de menu</b> (votre remarque du 23 octobre). L’agent garde son outil
+      <code>browser_resize</code> pour essayer une page en mobile ; s’il s’en sert, la taille qu’il
+      impose ne coupe plus la page et s’annule à la fin de son tour. La page revient alors à la
+      largeur du panneau.
+    </p>
+    <figure class="shot">
+      <img
+        data-shot="maq-navigateur-3-annoter"
+        alt="Proposé : annoter au clic, épingles numérotées et bulles"
+      />
+      <figcaption>
+        <b>Annoter à l’endroit du clic, comme dans Figma.</b> Avec « Annoter », un clic pose une
+        épingle numérotée et ouvre une bulle pour écrire ; ⌘↩ l’ajoute. Les remarques s’empilent,
+        puis partent ensemble avec « Envoyer à l’agent ». L’agent reçoit la capture avec les
+        épingles et, pour chacune, le texte, la position et l’élément sous le clic (sélecteur et
+        texte).
+      </figcaption>
+    </figure>
+    <p class="why">
+      <b>Pourquoi c’est simple</b> (votre remarque du 23 octobre) : en mode Annoter, la page est
+      figée, c’est-à-dire remplacée le temps de l’annotation par sa capture. L’interface peut alors
+      dessiner épingles et bulles par-dessus, ce qu’elle ne peut pas faire sur la vue native. On
+      réutilise la capture et le message de l’annotation d’image (fiche 067), et un seul appel au
+      CDP retrouve l’élément sous chaque clic. Pour changer de page ou faire défiler, on sort du
+      mode (Échap). La sélection d’éléments façon DevTools est écartée.
+    </p>
+  </section>
+
+  <!-- ------------------------------------------------------ Barre latérale -->
+  <section class="domain" id="barre">
+    <div class="dhead">
+      <h2>Barre latérale</h2>
+      <span class="tag">fiches <b>133</b>, <b>134</b> · itération 3</span>
+    </div>
+    <div class="today">
+      <figure>
+        <img
+          src="img/avant-barre.jpg"
+          alt="Aujourd’hui : dossier « 20261023-1033-d26b » séparé de sa mère, archives dessinées comme un dossier"
+        />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          Les titres de section (« À traiter », « Par dossier ») sont plus discrets que les
+          dossiers. « Archivées » est dessiné comme un dossier, au milieu de la liste. Chaque fille
+          en worktree fait son propre dossier (« 20261023-1033-d26b »), loin de sa mère. Il y a des
+          chiffres partout.
+        </p>
+        <p class="src">Capture de la recette du 23 octobre avec Bob.</p>
+      </div>
+    </div>
+    <div class="pair">
+      <figure class="shot">
+        <img data-shot="maq-barre-1-dossiers" alt="Proposé : mode Dossiers" />
+        <figcaption>
+          <b>Mode Dossiers.</b> Chaque dossier se replie : son chevron est toujours visible, juste
+          après le nom (aucun décalage), et un dossier replié n’affiche que son nom. Le dossier est
+          le projet : les filles en worktree restent sous leur mère, reliées par une ligne fine,
+          sans retrait.
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <img data-shot="maq-barre-2-recents" alt="Proposé : mode Récents" />
+        <figcaption>
+          <b>Mode Récents.</b> Même structure : les filles restent sous leur mère, reliées par la
+          même ligne. « Nouvelle conversation » et « Rechercher » ne défilent plus avec la liste.
+        </figcaption>
+      </figure>
+    </div>
+    <figure class="shot" style="margin-top: 22px">
+      <img data-shot="maq-barre-3-menu" alt="Proposé : menu « … » au survol d’une conversation" />
+      <figcaption>
+        <b>Rien ne se perd.</b> Au survol, chaque conversation, fille comprise, garde son bouton « …
+        » et son menu : Renommer, Épingler, Ouvrir à côté, Lancer en parallèle…, Exporter en
+        Markdown ou en JSON, Archiver, Supprimer. Le glisser pour redimensionner la barre, la
+        recherche ⌘K, le tri Récents / Dossiers et le repli gardé des dossiers restent aussi. Seule
+        la présentation change.
+      </figcaption>
+    </figure>
+    <p class="why">
+      <b>Une règle pour la colonne de gauche :</b> il n’y a plus de colonne d’icône vide : les
+      titres partent du bord, comme l’en-tête du dossier, ce qui leur rend environ 30 px de largeur.
+      Seules les filles sont décalées. Un trait fin part un peu sous le titre de la mère et descend
+      en coudes arrondis, terminés par une petite flèche vers chaque fille. La mère est donc
+      toujours plus à gauche qu’elles. C’est le seul niveau de décalage. L’en-tête de dossier n’a
+      pas d’icône. Il se reconnaît à trois signes : son nom en gras, plus foncé que les
+      conversations ; le chevron qui le suit ; et l’espace au-dessus de lui. L’état est toujours à
+      droite, en icône quand c’en est un (roue pour « en cours », coche verte pour « finie »), en
+      texte quand c’est une heure (« il y a 6 min »). La raison d’« À traiter » (✋ autorisation, ✓
+      compte rendu) passe devant la seconde ligne. Ainsi, une icône à gauche veut toujours dire la
+      même chose. <b>Les branches</b> (« Repartir de ce message ») ne sont plus rangées sous leur
+      origine : ce sont des conversations à part entière, et leur origine est dite dans leur en-tête
+      et dans l’infobulle. Un seul compteur reste, celui d’« À traiter ». Titres de section en
+      petites capitales, trois points de différence avec une ligne : taille, casse, graisse.
+    </p>
+  </section>
+
+  <!-- ------------------------------------------------------------ Réglages -->
+  <section class="domain" id="reglages">
+    <div class="dhead">
+      <h2>Réglages</h2>
+      <span class="tag">fiches <b>135</b>, <b>143</b>, <b>144</b> · itérations 3 et 5</span>
+    </div>
+    <div class="today">
+      <figure>
+        <img src="img/avant-reglages-agents.jpg" alt="Aujourd’hui : onglet Agents et dossiers" />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          Neuf onglets, dont « Agents et dossiers », qui empile 11 sections (environ 4 écrans), et «
+          Général », qui aligne 13 réglages sans aucun titre. L’apparence est éclatée sur trois
+          onglets. Certaines informations sont en double : « Relire le PATH », la version de l’app.
+          Les aides font souvent 3 ou 4 phrases.
+        </p>
+        <p class="src">Capture de l’app actuelle, onglet « Agents et dossiers ».</p>
+      </div>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img
+          data-shot="maq-reglages-1-notifications"
+          alt="Proposé : trois groupes d’onglets, page Notifications en cartes"
+        />
+        <figcaption>
+          <b>Treize onglets en trois groupes</b>, séparés par un espace : l’app, le travail, le
+          suivi et la maintenance. Chaque page suit le même gabarit : titre de section, puis carte.
+          Un réglage qui dépend d’un autre est en retrait sous lui. Une note d’état, comme « macOS
+          bloque les bannières », devient un bandeau avec l’action qui la règle.
+        </figcaption>
+      </figure>
+      <div class="pair">
+        <figure class="shot">
+          <img data-shot="maq-reglages-3-agents" alt="Proposé : liste des agents" />
+          <figcaption>
+            <b>Agents.</b> Une ligne par agent, avec son état. Le réseau d’entreprise passe dans «
+            Avancé », replié, avec un résumé de son état.
+          </figcaption>
+        </figure>
+        <figure class="shot">
+          <img data-shot="maq-reglages-4-agent-opencode" alt="Proposé : page de l’agent OpenCode" />
+          <figcaption>
+            <b>La page d’un agent</b> rassemble ce qui le concerne : connexion, fournisseurs de
+            modèles, ce qu’il annonce, ce qui lui est propre. Ses sections viennent de son profil
+            (ADR-0011) : l’interface n’a aucun code propre à un agent.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+    <p class="why">
+      <b>Pourquoi.</b> On reprend le modèle de Réglages Système de macOS : groupes dans la colonne,
+      cartes titrées, une fiche par élément. La recherche dans les réglages (fiche 051) reste la
+      porte d’entrée rapide. Les clés enregistrées ne changent pas, seul le rangement change :
+      aucune migration.
+    </p>
+  </section>
+
+  <!-- ------------------------------------------------------------ Apparence -->
+  <section class="domain" id="apparence">
+    <div class="dhead">
+      <h2>Apparence</h2>
+      <span class="tag"
+        >fiches <b>128</b>, <b>136</b>, <b>142</b>, <b>143</b> · itérations 0, 3 et 5</span
+      >
+    </div>
+    <div class="today">
+      <figure>
+        <img
+          src="img/avant-reglages-conversation.jpg"
+          alt="Aujourd’hui : « Sans empattements » / « À empattements »"
+        />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          « Sans empattements » et « À empattements ». Thème et accent sont dans Général, polices et
+          taille dans Conversation, la police du terminal dans Terminal. Les blocs de code restent
+          sombres en Clair et en Sépia, et le terminal ne suit ni Sépia ni l’accent. « Système »
+          interdit Sépia et Nuit noire.
+        </p>
+        <p class="src">Capture de l’app actuelle, onglet « Conversation ».</p>
+      </div>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img data-shot="maq-reglages-2-apparence" alt="Proposé : section Apparence avec aperçu" />
+        <figcaption>
+          <b>Une seule page, aperçu en tête</b> : réponse, code et terminal changent pendant qu’on
+          règle. On choisit le mode (Système, Clair, Sombre) puis un thème clair et un thème sombre
+          : Sépia et Nuit noire suivent enfin le Mac. Six accents, plus « Comme le Mac ».
+          <b>Le choix des polices est libre</b> : pour les réponses, le sans serif ou le serif du
+          système, ou n’importe quelle police installée sur le Mac ; pour le code (blocs, diffs,
+          sorties) et pour le terminal, chacun sa police à chasse fixe installée et sa taille (liste
+          ouverte sur la capture).
+        </figcaption>
+      </figure>
+    </div>
+    <p class="why">
+      <b>Pourquoi pas de thèmes importables ni d’accent libre :</b> tous les couples thème × accent
+      sont vérifiés par un test de contraste (AA), ce qu’un thème importé ne garantit pas. Les
+      couleurs du code, de l’ANSI et du terminal viennent des mêmes jetons que l’interface, d’où une
+      seule source de vérité.
+    </p>
+  </section>
+
+  <!-- -------------------------------------------------------- Consommation -->
+  <section class="domain" id="consommation">
+    <div class="dhead">
+      <h2>Consommation</h2>
+      <span class="tag"
+        >fiches <b>131</b> (collecte, itération 1), <b>145</b> (vue, itération 6)</span
+      >
+    </div>
+    <div class="cols">
+      <div>
+        <h3>Aujourd’hui</h3>
+        <ul>
+          <li>Seulement le détail de la conversation ouverte (puce sous la zone de saisie).</li>
+          <li>
+            Le modèle n’est enregistré nulle part ; supprimer une conversation ou changer d’agent
+            efface sa consommation.
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3>Proposé</h3>
+        <ul>
+          <li>
+            Un journal, un tour par ligne, tenu dès l’itération 1 : chaque jour sans lui est perdu.
+          </li>
+          <li>
+            Un onglet Réglages › Consommation pour toutes les conversations ; la puce garde celle en
+            cours.
+          </li>
+        </ul>
+      </div>
+    </div>
+    <figure class="shot">
+      <img data-shot="maq-consommation" alt="Proposé : tableau de consommation" />
+      <figcaption>
+        <b>Période et agent en haut, puis quatre chiffres, puis le détail.</b> Graphique par jour
+        (échanges, jetons ou coût), par modèle, par projet, conversations les plus longues ; export
+        CSV. Les bobcoins et les dollars ne s’additionnent jamais. Le quota de Bob « sur ce Mac »
+        quitte la puce pour cette page. En bas, « Remettre à zéro… » efface l’historique après
+        confirmation.
+      </figcaption>
+    </figure>
+    <p class="why">
+      <b>Pourquoi un onglet des réglages</b> et pas une fenêtre : la fenêtre des réglages fait 940
+      px, assez pour ces vues. La recherche dans les réglages la trouve, et il n’y a pas de fenêtre
+      de plus à maintenir. Le graphique est en SVG fait maison, sans dépendance, avec des couleurs
+      vérifiées pour le daltonisme.
+    </p>
+  </section>
+
+  <!-- ------------------------------------------------------ Journal et ACP -->
+  <section class="domain" id="journal">
+    <div class="dhead">
+      <h2>Journal et échanges ACP</h2>
+      <span class="tag">fiches <b>156</b>, <b>157</b> · ajout du 23 octobre</span>
+    </div>
+    <div class="today">
+      <figure>
+        <img
+          src="img/avant-diagnostic.jpg"
+          alt="Aujourd’hui : Réglages › Diagnostic, boutons main.log et agents.log"
+        />
+      </figure>
+      <div>
+        <h3>Aujourd’hui</h3>
+        <p>
+          Les journaux s’ouvrent déjà, mais c’est difficile à trouver. Il faut passer par Réglages ›
+          Diagnostic, où les boutons « main.log » et « agents.log » sont entre le résumé et les
+          vérifications, ou par Aide › Afficher le journal. Les échanges ACP bruts ne se lisent que
+          dans <code>agents.log</code>, au niveau Trace, avec des extraits tronqués.
+        </p>
+        <p class="src">Capture de l’app actuelle, Réglages › Diagnostic.</p>
+      </div>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img
+          data-shot="maq-journal-diagnostic"
+          alt="Proposé : carte Journal en tête du Diagnostic"
+        />
+        <figcaption>
+          <b>Le journal en premier.</b> Dans Diagnostic, la carte « Journal » vient juste après le
+          résumé : chaque fichier avec sa taille et ce qu’il contient, « Ouvrir » (dans Console) et
+          l’icône du Finder, puis le niveau du journal. La recherche dans les réglages trouve «
+          journal » et « log ». Le chemin du dossier n’est plus répété : l’icône du Finder y mène.
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <img data-shot="maq-acp-echanges" alt="Proposé : onglet Échanges ACP dans le panneau" />
+        <figcaption>
+          <b>Échanges ACP, un outil du panneau</b>, qu’on ouvre par le « + » comme le terminal.
+          Chaque message JSON-RPC de la conversation, dans les deux sens : heure, sens (→ vers
+          l’agent, ← de l’agent), méthode ou type de mise à jour, détail, taille, temps de réponse.
+          Un clic déplie le JSON brut. Les morceaux de texte sont regroupés (on peut les déplier un
+          à un), avec un filtre, une pause, la copie et le lien vers <code>agents.log</code>. Ici,
+          on voit directement que le « patch » d’OpenCode est resté 38,8 s en
+          <code>pending</code> sans rien envoyer.
+        </figcaption>
+      </figure>
+    </div>
+    <p class="why">
+      <b>Facile à faire</b>, parce que tout passe déjà par un seul endroit : chaque ligne lue ou
+      écrite vers l’agent traverse le relevé de <code>agents.log</code> (fiche 080). On en garde une
+      copie en mémoire par conversation, les 2 000 derniers messages, avec les secrets masqués comme
+      dans le journal, et le panneau la reçoit en direct. Ça marche quel que soit le niveau du
+      journal, pour tous les agents, et rien n’est écrit sur le disque en plus.
+    </p>
+  </section>
+
+  <!-- -------------------------------------------------------------- Skills -->
+  <section class="domain" id="skills">
+    <div class="dhead">
+      <h2>Skills</h2>
+      <span class="tag">fiche <b>146</b> · en réserve</span>
+    </div>
+    <p class="why">
+      <b>En réserve</b> (votre remarque du 23 octobre). Les maquettes de
+      <code>/create-skill</code> et de la liste des skills sont retirées ; l’étude reste dans la
+      feuille de route pour plus tard.
+    </p>
+  </section>
+
+  <!-- ------------------------------------------------------------- Clavier -->
+  <section class="domain" id="clavier">
+    <div class="dhead">
+      <h2>Clavier, palette et mentions</h2>
+      <span class="tag">fiches <b>137</b>, <b>153</b>, <b>154</b> · écartées</span>
+    </div>
+    <p class="why">
+      <b>Écartées</b> (votre remarque du 23 octobre) : répondre au clavier aux cartes, palette ⌘K
+      élargie et nouvelles mentions <code>@</code>. Les maquettes sont retirées.
+    </p>
+  </section>
+
+  <!-- -------------------------------------------------------------- Réseau -->
+  <section class="domain" id="reseau">
+    <div class="dhead">
+      <h2>Panne réseau</h2>
+      <span class="tag">fiche <b>152</b> · itération 8</span>
+    </div>
+    <figure class="shot">
+      <img data-shot="maq-reseau" alt="Proposé : bandeau de connexion perdue" />
+      <figcaption>
+        <b>Un message court et une reconnexion automatique</b>, avec des intervalles qui s’allongent
+        : 5 tentatives, après 2, 4, 8, 16 puis 32 s (environ une minute en tout). Votre message
+        reste dans la file. Après la cinquième tentative, le bandeau dit « Connexion impossible » et
+        seul « Réessayer » reste. Aujourd’hui, aucune erreur réseau n’est reconnue.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ------------------------------------------------------------ Décider -->
+  <section class="decide" id="decisions">
+    <h2>Ce qui vous revient</h2>
+    <p class="lead" style="margin-top: 6px">
+      Les choix d’interface ci-dessus sont tranchés. Ces points sont des choix structurants ou des
+      retours sur des décisions déjà validées.
+    </p>
+    <ol>
+      <li>
+        <b>Barre latérale : « À traiter · N ».</b> On garde le compteur.
+        <span class="reco">tranché le 23 octobre</span>
+      </li>
+      <li>
+        <b>Police du code et du terminal.</b> Elles restent séparées, chacune avec sa taille.
+        <span class="reco">tranché le 23 octobre</span>
+      </li>
+      <li>
+        <b>Format du journal de consommation.</b> SQLite, avec <code>node:sqlite</code>, déjà
+        utilisé pour lire la base de Bob. ADR à écrire avant l’itération 1.
+        <span class="reco">tranché le 23 octobre</span>
+      </li>
+    </ol>
+    <p class="foot">
+      Sans maquette, parce que l’interface ne change pas ou presque : l’instantané git par tour
+      (l’option « Remettre les fichiers dans leur état d’alors » de « Repartir de ce message »
+      devient fiable), la préparation des worktrees, le rappel des messages par ↑, l’accessibilité,
+      et tout ce qui touche à la qualité (itérations 4 et 7).
+    </p>
+  </section>
+</div>
+
+<div class="lightbox" id="lightbox" hidden><img id="lightbox-img" alt="" /></div>
+
+<script>
+  ;(() => {
+    const root = document.documentElement
+    const prefersDark = () => {
+      const t = root.getAttribute('data-theme')
+      if (t) return t === 'dark'
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+    let scheme = prefersDark() ? 'dark' : 'light'
+    try {
+      scheme = localStorage.getItem('maq-scheme') || scheme
+    } catch (e) {}
+    const apply = () => {
+      document.querySelectorAll('img[data-shot]').forEach((img) => {
+        img.src = `img/${img.dataset.shot}-${scheme}.jpg`
+      })
+      document
+        .querySelectorAll('.seg button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.scheme === scheme)))
+    }
+    document.querySelectorAll('.seg button').forEach((b) =>
+      b.addEventListener('click', () => {
+        scheme = b.dataset.scheme
+        try {
+          localStorage.setItem('maq-scheme', scheme)
+        } catch (e) {}
+        apply()
+      })
+    )
+    apply()
+    const box = document.getElementById('lightbox'),
+      big = document.getElementById('lightbox-img')
+    document.addEventListener('click', (e) => {
+      const img = e.target.closest('figure img')
+      if (img) {
+        big.src = img.src
+        big.alt = img.alt
+        box.hidden = false
+        return
+      }
+      if (e.target.closest('#lightbox')) box.hidden = true
+    })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') box.hidden = true
+    })
+  })()
+</script>

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Construit l'app macOS (fiches 012, 153) : dist/mac[-arm64]/Bobine.app et dist/*.dmg. Avec --linux
+# (préversion, fiche 145), sur une machine Linux : dist/*.AppImage et dist/*.deb.
+#
+#   pnpm package             .app + .dmg
+#   pnpm package --dir       .app seule (plus rapide)
+#   pnpm package --dry-run   essai à blanc : dit comment l'app serait signée, rien n'est construit
+#   pnpm package --strict    une configuration de signature incomplète est une erreur (release.yml)
+#   pnpm package --linux     AppImage + .deb, pour l'architecture de la machine (Linux seulement)
+#
+# Signature (fiche 111, scripts/signing.mts) : « ad hoc » par défaut (l'app se lance sur la machine
+# qui l'a construite). Jamais un certificat pris d'office dans le trousseau : il faut le désigner
+# (CSC_NAME, ou CSC_LINK + CSC_KEY_PASSWORD). Notarisation et agrafage de l'app et du .dmg :
+# APPLE_API_KEY (chemin du .p8) + APPLE_API_KEY_ID + APPLE_API_ISSUER, ou APPLE_ID +
+# APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID, ou APPLE_KEYCHAIN_PROFILE (certificat
+# « Developer ID Application »).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# Linux (fiche 145, ADR-0032) : demandé explicitement (`--linux`), jamais deviné d'après la
+# machine. Ni signature ni notarisation, ni AXe (simulateur iOS absent). node-pty n'a pas de binaire
+# précompilé pour Linux : compilé s'il manque, comme dans ci.yml (build-essential, python3) ; N-API,
+# valable pour l'Electron de l'app.
+if [[ " $* " == *" --linux "* ]]; then
+  args=()
+  for arg in "$@"; do [[ "$arg" == --linux ]] || args+=("$arg"); done
+  ./scripts/check-electron
+  if [[ ! -f node_modules/node-pty/build/Release/pty.node ]]; then
+    (cd node_modules/node-pty && npx --yes node-gyp@12 rebuild && node scripts/post-install.js)
+  fi
+  pnpm -s build
+  # Avis de licence livrés avec l'app à jour pour ce build (fiche 217).
+  pnpm -s third-party-notices --check
+  exec pnpm exec electron-builder --linux ${args[@]+"${args[@]}"}
+fi
+
+dry_run=0
+dir_only=0
+strict=()
+builder_args=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=1 ;;
+    --strict) strict=(--strict) ;;
+    --dir) dir_only=1 ;;
+    *) builder_args+=("$arg") ;;
+  esac
+done
+
+# Info.plist (fiche 218) : Apple attend trois entiers dans CFBundleShortVersionString ; pour une
+# préversion (`1.0.0-beta.1`), sa partie numérique (`1.0.0`). CFBundleVersion (Finder : « 1.0.0
+# (1.0.0-beta.1) ») et app.getVersion() (lu dans package.json) gardent la version complète.
+version="$(node -p "require('./package.json').version")"
+short_version="${version%%[-+]*}"
+if [[ ! "$short_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "✗ Version « $version » : attendu X.Y.Z, éventuellement suivi d’un suffixe (-beta.1)." >&2
+  exit 1
+fi
+
+signing="node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/signing.mts"
+if [[ $dry_run -eq 1 ]]; then
+  exec $signing check ${strict[@]+"${strict[@]}"}
+fi
+# Variables fixes (jamais un secret) : signing_args, notarize_dmg, CSC_IDENTITY_AUTO_DISCOVERY.
+plan="$($signing plan ${strict[@]+"${strict[@]}"})"
+eval "$plan"
+
+# Electron de node_modules repris tel quel (electronDist, fiche 065) : il doit être là.
+./scripts/check-electron
+# AXe livré avec l'app (ADR-0009) : téléchargé et vérifié s'il manque.
+./scripts/fetch-axe
+pnpm -s build
+# Avis de licence livrés avec l'app à jour pour ce build (fiche 217) : sinon, rien n'est construit.
+pnpm -s third-party-notices --check
+# Le hook afterSign ne produit que les DMG demandés par cette invocation. Il s’exécute avant
+# la fermeture du trousseau .p12 d’electron-builder ; un manifeste vide révèle un hook sauté.
+export BOBINE_DMG_MANIFEST=''
+if [[ $dir_only -eq 0 ]]; then
+  BOBINE_DMG_MANIFEST="$(mktemp "${TMPDIR:-/tmp}/bobine-dmg-manifest.XXXXXX")"
+  trap 'rm -f "$BOBINE_DMG_MANIFEST"' EXIT
+fi
+# (Tableaux peut-être vides : forme compatible avec le bash 3.2 de macOS et `set -u`.)
+pnpm exec electron-builder --mac --dir "-c.mac.bundleShortVersion=$short_version" ${signing_args[@]+"${signing_args[@]}"} ${builder_args[@]+"${builder_args[@]}"}
+
+if [[ $dir_only -eq 0 ]]; then
+  if [[ ! -s "$BOBINE_DMG_MANIFEST" ]]; then
+    echo '✗ Aucun DMG créé : le hook après signature ne s’est pas exécuté.' >&2
+    exit 1
+  fi
+  # Seulement les images de ce lancement, jamais un ancien DMG resté dans dist/.
+  while IFS= read -r image; do
+    if [[ $notarize_dmg -eq 1 ]]; then $signing notarize-dmg "$image"; fi
+  done < "$BOBINE_DMG_MANIFEST"
+fi

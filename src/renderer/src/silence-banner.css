@@ -1,0 +1,39 @@
+/* Bandeau d'un agent silencieux (fiche 194) : ton neutre, de la famille du bandeau de reprise. */
+.silence-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  margin: 4px 0 18px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.silence-banner > svg {
+  color: var(--muted);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.silence-banner-text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.silence-banner-text small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.silence-banner-actions {
+  display: flex;
+  margin-left: auto;
+  gap: 6px;
+  flex-shrink: 0;
+}

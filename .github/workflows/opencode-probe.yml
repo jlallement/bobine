@@ -1,0 +1,65 @@
+# Sonde d'OpenCode sans modèle (fiche 198, risque R4 de la fiche 187) : une fois par semaine,
+# `pnpm opencode-probe --offline` contre la dernière version d'OpenCode publiée sur GitHub. Gratuit
+# (aucun modèle, aucun secret), Linux seulement, court. Un échec veut dire qu'OpenCode a changé :
+# lire le résumé, puis suivre docs/acp.md (« Sonde d'OpenCode »).
+#
+# OpenCode 2 n'est pas sur npm (`opencode-ai@latest` y reste en 1.x) : le binaire Linux vient de la
+# release GitHub, vérifié avec le `SHA256SUMS` publié dans la même release (protège d'un
+# téléchargement abîmé, pas d'une release compromise : il vient de la même source).
+name: Sonde OpenCode
+
+on:
+  schedule:
+    # Le lundi à 06:17 UTC (minute impaire : moins de files d'attente à l'heure pile).
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opencode-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: sonde OpenCode sans modèle (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # La sonde n'a besoin ni d'Electron ni de node-pty.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Télécharger la dernière version d'OpenCode
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/ci/fetch-opencode.sh "$RUNNER_TEMP/opencode"
+          echo "$RUNNER_TEMP/opencode" >> "$GITHUB_PATH"
+
+      - run: opencode --version
+
+      - name: Sonde sans modèle
+        run: |
+          set -o pipefail
+          pnpm opencode-probe --offline | tee "$RUNNER_TEMP/sonde.txt"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo '```'
+            cat "$RUNNER_TEMP/sonde.txt" 2>/dev/null || echo 'Sonde non lancée.'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

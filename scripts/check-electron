@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Electron installé ? (fiche 065) Sinon, dit quoi faire, plutôt qu'une erreur obscure au lancement.
+# Appelé avant `pnpm dev`, `pnpm preview` et `pnpm package`.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+pkg="${ELECTRON_PACKAGE_DIR:-node_modules/electron}"
+if [[ ! -f "$pkg/package.json" ]]; then
+  echo "✗ Dépendances absentes : lancez pnpm install" >&2
+  exit 1
+fi
+installed() { [[ -f "$pkg/path.txt" && -x "$pkg/dist/$(cat "$pkg/path.txt")" ]]; }
+installed && exit 0
+# Chemin résolu : `require` prendrait « node_modules/… » pour un nom de paquet.
+version="$(node -p 'require(require("node:path").resolve(process.argv[1])).version' "$pkg/package.json")"
+# Depuis Electron 44.7.2, `pnpm install` ne télécharge plus le binaire : Electron le fait au
+# premier lancement, avec son `install.js` (proxy, ELECTRON_MIRROR…). On le fait ici, avant le
+# lancement ou la construction de l'app ; sans réseau, le message plus bas dit quoi faire.
+if [[ -f "$pkg/install.js" ]]; then
+  echo "▶ Téléchargement d'Electron $version (une seule fois)"
+  if node "$pkg/install.js" && installed; then
+    exit 0
+  fi
+fi
+arch="$(uname -m)"
+[[ "$arch" == "x86_64" ]] && arch="x64"
+name="electron-v${version}-darwin-${arch}.zip"
+cat >&2 <<EOT
+✗ Electron $version n'est pas installé : son téléchargement n'a pas abouti (réseau, proxy).
+  Récupérez l'archive $name par un autre moyen :
+    https://github.com/electron/electron/releases/download/v$version/$name
+  puis :
+    pnpm electron-local <chemin de l'archive>
+  Avec le réseau : node $pkg/install.js
+EOT
+exit 1

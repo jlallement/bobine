@@ -1,0 +1,124 @@
+/* Intégrité du profil (fiches 196, 197) : avis du lancement, lecture seule, restauration, corbeille. */
+
+/* Avis du lancement, en tête de la fenêtre. */
+.profile-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  width: 100%;
+}
+
+/* Avis du profil : le composant commun `.notice` (couleur selon la gravité), plus ses actions et ×. */
+.profile-notice {
+  align-items: flex-start;
+  padding-right: 8px;
+}
+
+.profile-notice-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.profile-notice-actions {
+  display: inline-flex;
+  gap: 12px;
+}
+
+.profile-notice-detail {
+  flex-basis: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* Lecture seule : la saisie reste visible, inerte, avec la phrase et le lien dessous. */
+.composer-readonly-inner {
+  opacity: 0.55;
+}
+
+/* La phrase prend la marge du bas de la saisie (sinon coupée au bord de la fenêtre). */
+.composer-readonly .composer-dock {
+  padding-bottom: 0;
+}
+
+.composer-readonly > .readonly-line {
+  margin: 6px 0 14px;
+}
+
+.readonly-line {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.settings-readonly {
+  margin: 0 0 14px;
+  text-align: left;
+}
+
+.settings-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* Restaurer une sauvegarde : confirmation dans la carte (rien n'est perdu : pas de rouge). */
+.restore-confirm {
+  margin: 0 16px 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+.restore-confirm-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.restore-confirm-text {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.restore-confirm-text + .restore-confirm-text {
+  margin-top: 6px;
+}
+
+.restore-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Corbeille : au-delà de huit lignes environ, la liste défile. */
+.trash-list {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.trash-list > li {
+  flex-wrap: wrap;
+}
+
+.trash-item-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trash-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

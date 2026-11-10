@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Contrat de "fini" : doit passer avant de déclarer une tâche terminée (voir AGENTS.md).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+fail=0
+step() { printf '\n▶ %s\n' "$1"; }
+
+step "Documentation"
+for f in AGENTS.md CLAUDE.md docs/README.md docs/architecture.md docs/adr/README.md docs/features/README.md; do
+  [[ -f "$f" ]] || { echo "  ✗ manquant : $f"; fail=1; }
+done
+# Chaque fiche (hors modèle) doit être référencée dans l'index
+for f in docs/features/[0-9]*.md; do
+  [[ -e "$f" ]] || continue
+  name=$(basename "$f")
+  grep -q "($name)" docs/features/README.md || { echo "  ✗ fiche absente de l'index : $name"; fail=1; }
+done
+# Idem pour les ADR
+for f in docs/adr/[0-9]*.md; do
+  [[ -e "$f" ]] || continue
+  name=$(basename "$f")
+  grep -q "($name)" docs/adr/README.md || { echo "  ✗ ADR absent de l'index : $name"; fail=1; }
+done
+[[ $fail -eq 0 ]] && echo "  ✓ ok"
+
+if [[ -f package.json ]]; then
+  step "Lint";      pnpm -s lint      || fail=1
+  step "Typecheck"; pnpm -s typecheck || fail=1
+  step "Tests";     pnpm -s test      || fail=1
+else
+  echo -e "\n(pas encore de package.json : lint/typecheck/tests ignorés — voir fiche 001)"
+fi
+
+if [[ $fail -ne 0 ]]; then echo -e "\n✗ verify a échoué"; exit 1; fi
+echo -e "\n✓ verify ok"

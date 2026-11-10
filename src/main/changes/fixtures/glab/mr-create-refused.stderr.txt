@@ -1,0 +1,8 @@
+Failed to create merge request. Created recovery file: /Users/u/.config/glab-cli/../glab-config/recover/qa-dev/demo/mr.json
+Run the command again with the '--recover' option to retry.
+          
+   ERROR  
+          
+  Get "http://localhost:8929/api/v4/projects/qa-dev%2Fdemo?license=true&with_custom_attributes=true": dial tcp        
+  [::1]:8929: connect: connection refused.                                                                            
+

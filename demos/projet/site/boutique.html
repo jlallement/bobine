@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Bobinette — Boutique</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .comptoir {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      .produits {
+        display: grid;
+        grid-template-columns: repeat(2, 200px);
+        gap: 16px;
+      }
+      .produit {
+        text-align: center;
+      }
+      .vignette {
+        height: 96px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 44px;
+        margin-bottom: 10px;
+      }
+      .produit h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .prix {
+        margin: 2px 0 10px;
+        color: var(--discret);
+      }
+      .panier {
+        flex: 1 1 260px;
+      }
+      .panier h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      #lignes {
+        list-style: none;
+        margin: 0 0 12px;
+        padding: 0;
+      }
+      #lignes li {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--bord);
+      }
+      #lignes:empty::before {
+        content: 'Votre panier est vide.';
+        color: var(--discret);
+      }
+      .total {
+        display: flex;
+        justify-content: space-between;
+        font-size: 18px;
+        margin: 0 0 14px;
+      }
+      #message {
+        min-height: 1.5em;
+        margin: 10px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="entete">
+      <a href="index.html" class="logo">La Bobinette</a>
+      <nav>
+        <a href="boutique.html">Boutique</a>
+        <a href="inscription.html">Inscription</a>
+        <a href="anime.html">Animation</a>
+        <a href="formes.html">Formes</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Le comptoir</h1>
+      <div class="comptoir">
+        <section class="produits">
+          <article class="produit carte">
+            <div class="vignette" style="background: #ead7c3">☕</div>
+            <h2>Café</h2>
+            <p class="prix">2,50 €</p>
+            <button data-nom="Café" data-prix="2.5">Ajouter</button>
+          </article>
+          <article class="produit carte">
+            <div class="vignette" style="background: #f6e2b3">🥐</div>
+            <h2>Croissant</h2>
+            <p class="prix">1,80 €</p>
+            <button data-nom="Croissant" data-prix="1.8">Ajouter</button>
+          </article>
+          <article class="produit carte">
+            <div class="vignette" style="background: #d9e8cf">🍵</div>
+            <h2>Thé</h2>
+            <p class="prix">3,00 €</p>
+            <button data-nom="Thé" data-prix="3">Ajouter</button>
+          </article>
+          <article class="produit carte">
+            <div class="vignette" style="background: #e8d5cd">🍪</div>
+            <h2>Cookie</h2>
+            <p class="prix">2,20 €</p>
+            <button data-nom="Cookie" data-prix="2.2">Ajouter</button>
+          </article>
+        </section>
+
+        <aside class="panier carte">
+          <h2>Panier</h2>
+          <ul id="lignes"></ul>
+          <p class="total">Total <strong id="total">0,00 €</strong></p>
+          <button id="commander" class="principal">Commander</button>
+          <p id="message" role="status"></p>
+        </aside>
+      </div>
+    </main>
+    <div id="toast" class="toast" role="status">Ajouté au panier</div>
+
+    <script>
+      const panier = []
+      const euros = (montant) => montant.toFixed(2).replace('.', ',') + ' €'
+
+      function afficher() {
+        const liste = document.getElementById('lignes')
+        liste.innerHTML = ''
+        for (const ligne of panier) {
+          const element = document.createElement('li')
+          element.textContent = `${ligne.nom} × ${ligne.quantite}`
+          const prix = document.createElement('span')
+          prix.textContent = euros(ligne.prix * ligne.quantite)
+          element.append(prix)
+          liste.append(element)
+        }
+        let total = 0
+        for (let i = 0; i < panier.length - 1; i++) {
+          total += panier[i].prix * panier[i].quantite
+        }
+        document.getElementById('total').textContent = euros(total)
+      }
+
+      function signaler() {
+        const toast = document.getElementById('toast')
+        toast.classList.add('visible')
+        setTimeout(() => toast.classList.remove('visible'), 150)
+      }
+
+      for (const bouton of document.querySelectorAll('.produit button')) {
+        bouton.addEventListener('click', () => {
+          const nom = bouton.dataset.nom
+          const ligne = panier.find((l) => l.nom === nom)
+          if (ligne) ligne.quantite += 1
+          else panier.push({ nom, prix: Number(bouton.dataset.prix), quantite: 1 })
+          afficher()
+          signaler()
+        })
+      }
+
+      document.getElementById('commander').addEventListener('click', async () => {
+        const reponse = await fetch('/api/commandes', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(panier)
+        })
+        const commande = await reponse.json()
+        document.getElementById('message').textContent =
+          `Commande n° ${commande.numero} enregistrée.`
+      })
+    </script>
+  </body>
+</html>

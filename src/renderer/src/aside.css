@@ -1,0 +1,140 @@
+/* Carte « Aparté » au-dessus de la zone de saisie (fiche 180) : légère, à côté du fil. */
+.aside-card {
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  font-size: 13.5px;
+  overflow: hidden;
+}
+
+.aside-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.aside-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.aside-sub {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.aside-cost {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.aside-body {
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  padding: 0 14px;
+  border-top: 1px solid var(--border);
+}
+
+.aside-exchange {
+  padding: 10px 0;
+}
+
+.aside-exchange + .aside-exchange {
+  border-top: 1px solid var(--border);
+}
+
+.aside-question {
+  margin: 0 0 6px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.aside-answer {
+  overflow-wrap: anywhere;
+}
+
+.aside-answer > :first-child {
+  margin-top: 0;
+}
+
+.aside-answer > :last-child {
+  margin-bottom: 6px;
+}
+
+.aside-working {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-2);
+}
+
+.aside-refused {
+  margin: 4px 0 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.aside-error {
+  margin: 8px 0;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--err-soft);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.aside-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.aside-input {
+  width: 100%;
+  min-height: 32px;
+  max-height: 120px;
+  resize: vertical;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.aside-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.aside-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aside-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}

@@ -1,0 +1,15 @@
+{
+  "comments": [],
+  "headRefOid": "04c4ebf52e7033a83eb38e9741c8ace05bf8617b",
+  "isDraft": false,
+  "mergeable": "UNKNOWN",
+  "number": 6,
+  "reviewDecision": "",
+  "reviews": [],
+  "state": "OPEN",
+  "statusCheckRollup": [],
+  "title": "Update README",
+  "url": "https://github.com/example/app/pull/6",
+  "mergeStateStatus": "UNKNOWN",
+  "baseRefName": "main"
+}

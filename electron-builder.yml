@@ -1,0 +1,109 @@
+# Packaging (fiches 012, 153) : electron-builder produit l’app, le hook natif le DMG ; AppImage et
+# .deb sous Linux (fiche 145, ADR-0032 : construits sous Linux, une architecture par machine).
+# Identifiant d'avant le nom « Bobine », gardé (ADR-0012) : autorisations de macOS (notifications…)
+# et réglages rattachés à l'app restent valables.
+appId: dev.bobine.app
+productName: Bobine
+copyright: Copyright © 2026 Jérôme Lallement
+directories:
+  output: dist
+  buildResources: build
+# Electron repris de node_modules (déjà installé, vérifié) : rien à télécharger pour construire
+# l'app, même sans réseau (fiche 065). C'est celui du système qui construit : l'app Linux se
+# construit donc sous Linux (fiche 145).
+electronDist: node_modules/electron/dist
+# Seul le résultat du build entre dans l'app ; l'agent factice (src/mock-agent) reste au dépôt.
+# Les dépendances de production (node-pty, @xterm/headless…) sont ajoutées par electron-builder.
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+  # Inventaire des paquets embarqués (fiche 217) : sert aux avis de licence, pas à l'app.
+  - '!out/third-party/**'
+  # node-pty : seuls les binaires précompilés pour macOS servent (pas les sources ni Windows).
+  - '!node_modules/node-pty/{src,deps,third_party,scripts,binding.gyp,typings}/**'
+  - '!node_modules/node-pty/prebuilds/win32-*/**'
+  - '!node_modules/node-pty/lib/**/*.test.js'
+  # En-têtes C++ pour compiler node-pty : inutiles avec les binaires précompilés.
+  - '!node_modules/node-addon-api/**'
+# Textes de licence (fiche 217), dans Contents/Resources/licenses (macOS) et resources/licenses
+# (Linux) : ceux de Bobine, les avis des composants tiers (`pnpm third-party-notices`, vérifiés
+# avant la construction par scripts/package), ceux d'Electron et de Chromium, et ceux de la police
+# embarquée. Complète les extraResources de chaque système (AXe sous macOS).
+extraResources:
+  - from: LICENSE
+    to: licenses/LICENSE
+  - from: NOTICE
+    to: licenses/NOTICE
+  - from: THIRD-PARTY-NOTICES.md
+    to: licenses/THIRD-PARTY-NOTICES.md
+  - from: node_modules/electron/dist/LICENSE
+    to: licenses/electron/LICENSE
+  - from: node_modules/electron/dist/LICENSES.chromium.html
+    to: licenses/electron/LICENSES.chromium.html
+  - from: src/renderer/src/assets/fonts
+    to: licenses/fonts
+    filter: ['*.txt']
+# Langues de l'interface de Chromium (menus contextuels, boîtes de dialogue) : celles de l'app.
+electronLanguages: [fr, en]
+# node-pty est livré précompilé pour macOS (N-API, valable pour toute version d'Electron) : pas de
+# recompilation. Sous Linux, `pnpm package --linux` le compile avant s'il manque (fiche 145).
+npmRebuild: false
+# Module natif et `spawn-helper` (lancé par node-pty) : hors de l'archive asar, pour être exécutables.
+# `build/Release` : le module compilé sous Linux.
+asarUnpack:
+  - node_modules/node-pty/prebuilds/**
+  - node_modules/node-pty/build/Release/**
+# Verrous de l'exécutable Electron (« fuses ») : l'app packagée ne sert pas de Node générique et
+# ne charge que son archive, vérifiée. L'agent factice (ELECTRON_RUN_AS_NODE) n'existe qu'en dev.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.png
+  # Electron local : architecture de la machine, arm64 sur le runner de publication.
+  target: dir
+  # Signature : scripts/package choisit (scripts/signing.mts, fiche 111) : ad hoc par défaut,
+  # certificat Developer ID seulement s'il est désigné ; `pnpm package --dry-run` dit lequel.
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Activée par scripts/package (avec dmg.sign) quand les identifiants Apple sont fournis.
+  notarize: false
+  # AXe (ADR-0009, fiche 043) : touchers, lecture d'écran et vidéo du simulateur iOS, livré avec
+  # l'app. `scripts/fetch-axe` le met dans vendor/axe (version épinglée, SHA-256 et signature
+  # vérifiés) ; copié dans Contents/Resources/axe et re-signé avec l'app (mêmes droits que
+  # build/entitlements.mac.plist). Ses frameworks gardent leurs liens symboliques.
+  extraResources:
+    - from: vendor/axe
+      to: axe
+  extendInfo:
+    # Thème clair / sombre suivi automatiquement.
+    NSRequiresAquaSystemAppearance: false
+# Le hook crée le DMG avant la fermeture du trousseau temporaire de signature (ADR-0034).
+afterSign: ./scripts/native-dmg.mts
+dmg:
+  title: Bobine
+  artifactName: Bobine-${version}-${arch}.${ext}
+  writeUpdateInfo: false
+  # Configuration de nom/signature lue par le hook, sans lancer la cible dmg-builder.
+# Préversion Linux (fiche 145, ADR-0032) : AppImage (partout, sans droits) et .deb (Ubuntu,
+# Debian), pour l'architecture de la machine qui construit (x64 et arm64 : une machine GitHub
+# chacune). Pas de signature : la somme SHA-256 est publiée avec la version.
+linux:
+  target: [AppImage, deb]
+  category: Development
+  icon: build/icon.png
+  executableName: bobine
+  synopsis: Desktop app for ACP coding agents
+  # Champ exigé par le .deb (sinon lu dans `author` de package.json, qui n'a pas d'adresse).
+  maintainer: Bobine <https://github.com/jlallement/bobine>
+  artifactName: Bobine-${version}-${arch}.${ext}
+  # node-pty : le module compilé sous Linux (build/Release) ; ses binaires macOS et Windows
+  # ne servent pas.
+  files:
+    - '!node_modules/node-pty/prebuilds/**'

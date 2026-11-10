@@ -1,0 +1,18 @@
+/*
+ * Icônes des invites du terminal (fiche 201) : « MesloLGS Nerd Font » (Nerd Fonts 3.5.1 ; Meslo
+ * Apache 2.0, patch Nerd Fonts MIT, licences à côté du fichier), livrée avec l'app, chargée depuis
+ * le disque (CSP `default-src 'self'`, aucun réseau). Nom propre à Bobine : ne masque pas une copie
+ * installée par l'utilisateur. Placée après SF Mono et Menlo : ses lettres ne servent jamais.
+ *
+ * Variante sans « Mono » : chaque icône avance d'une cellule (0,6 em, comme Menlo et SF Mono),
+ * donc xterm.js ne la corrige pas et la laisse dans la même `<span>` que l'espace qui la suit ; le
+ * dessin déborde sur cet espace (≈ 1,5 lettre, comme dans iTerm ou Terminal) sans être recouvert
+ * par le fond de la cellule suivante. « Symbols Nerd Font Mono » (avance de 1 em) était coupée.
+ */
+@font-face {
+  font-family: 'Bobine Nerd Font';
+  src: url('./assets/fonts/MesloLGSNerdFont-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+}

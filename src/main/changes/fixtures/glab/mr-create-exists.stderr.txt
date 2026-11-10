@@ -1,0 +1,11 @@
+
+Creating merge request for feat-2 into main in qa-dev/demo
+
+Failed to create merge request. Created recovery file: /Users/u/.config/glab-cli/../glab-config/recover/qa-dev/demo/mr.json
+Run the command again with the '--recover' option to retry.
+          
+   ERROR  
+          
+  POST http://localhost:8929/api/v4/projects/qa-dev%2Fdemo/merge_requests: 409 {message: [Another open merge request  
+  already exists for this source branch: !2]}.                                                                        
+

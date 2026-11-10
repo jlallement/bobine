@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# AXe (ADR-0009, ADR-0010, fiche 043) : touchers, lecture d'écran et vidéo du simulateur iOS.
+# Extrait dans vendor/axe/ (ignoré par git) depuis l'archive versionnée dans vendor/archives/ —
+# téléchargée puis rangée là si elle manque. Version épinglée, SHA-256 de l'archive et signature
+# Developer ID du binaire vérifiés à chaque fois. Utilisé par `pnpm dev` et copié dans l'app
+# packagée (extraResources).
+#
+#   pnpm fetch-axe            extrait si la bonne version n'est pas déjà là
+#   pnpm fetch-axe --force    réextrait
+#
+# Pour passer à une nouvelle version : changer AXE_VERSION et AXE_SHA256 (shasum -a 256 de
+# l'archive publiée), lancer `pnpm fetch-axe` (qui range la nouvelle archive et ses licences dans
+# vendor/archives/ : les committer, retirer les anciennes), puis `pnpm simulator-smoke`, et mettre
+# l'ADR-0009 à jour.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# AXe ne sert qu'au simulateur iOS : rien à faire hors de macOS (CI Linux…).
+if [[ "$(uname)" != "Darwin" ]]; then
+  exit 0
+fi
+
+AXE_VERSION="1.8.0"
+AXE_SHA256="7b76340b72e90d0f211bc7c4636f15009076eff07acef2f2b632b175debd8834"
+# Developer ID Application de Cameron Cooke (auteur d'AXe).
+AXE_TEAM="BR6WD3M6ZD"
+URL="https://github.com/cameroncooke/AXe/releases/download/v${AXE_VERSION}/AXe-macOS-v${AXE_VERSION}-universal.tar.gz"
+RAW="https://raw.githubusercontent.com/cameroncooke/AXe/v${AXE_VERSION}"
+DEST="vendor/axe"
+ARCHIVES="vendor/archives"
+ARCHIVE="$ARCHIVES/AXe-macOS-v${AXE_VERSION}-universal.tar.gz"
+LICENSES="$ARCHIVES/AXe-${AXE_VERSION}-LICENSES.txt"
+
+if [[ "${1:-}" != "--force" && -x "$DEST/axe" && "$(cat "$DEST/.version" 2>/dev/null)" == "$AXE_VERSION" ]]; then
+  echo "AXe $AXE_VERSION déjà dans $DEST"
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+if [[ -f "$ARCHIVE" ]]; then
+  echo "▶ AXe $AXE_VERSION depuis $ARCHIVE"
+  # Recopiée sans ses attributs étendus : dépôt récupéré en zip par un navigateur, l'archive porte
+  # l'attribut de quarantaine, que `tar` reporterait sur chaque fichier extrait (fiche 065).
+  cat "$ARCHIVE" > "$tmp/axe.tar.gz"
+else
+  echo "▶ Téléchargement d'AXe $AXE_VERSION"
+  curl -fsSL -o "$tmp/axe.tar.gz" "$URL"
+fi
+actual="$(shasum -a 256 "$tmp/axe.tar.gz" | cut -d' ' -f1)"
+if [[ "$actual" != "$AXE_SHA256" ]]; then
+  echo "✗ SHA-256 inattendu : $actual (attendu $AXE_SHA256)" >&2
+  exit 1
+fi
+mkdir -p "$tmp/axe"
+tar -xzf "$tmp/axe.tar.gz" -C "$tmp/axe"
+# Les frameworks ont des dossiers vides (ex. Versions/A/Frameworks) et des liens symboliques de
+# convention qui y mènent : electron-builder ne copie pas les dossiers vides, le lien se retrouve
+# cassé dans l'app et la signature échoue. Inutiles à l'exécution (la signature scelle les
+# fichiers, pas les dossiers vides) : retirés, liens compris.
+find "$tmp/axe" -type d -empty -delete
+find "$tmp/axe" -type l ! -exec test -e {} \; -delete
+team="$(codesign -dv --verbose=2 "$tmp/axe/axe" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
+if [[ "$team" != "$AXE_TEAM" ]]; then
+  echo "✗ Signature inattendue du binaire (TeamIdentifier=${team:-aucun}, attendu $AXE_TEAM)" >&2
+  exit 1
+fi
+# Archive passée par un navigateur, ou marquée par un outil de sécurité : l'attribut de quarantaine
+# passe aux fichiers extraits, et macOS bloque alors AXe. Empreinte SHA-256 et signature vérifiées
+# ci-dessus : on le retire (fichiers de l'utilisateur, sans droits admin).
+xattr -dr com.apple.quarantine "$tmp/axe" 2>/dev/null || true
+found="$("$tmp/axe/axe" --version)"
+if [[ "$found" != "$AXE_VERSION" ]]; then
+  echo "✗ Version inattendue : $found (attendu $AXE_VERSION)" >&2
+  exit 1
+fi
+# Avis de licence (MIT) d'AXe et de ses dépendances (idb de Meta), livrés avec l'app : ceux rangés
+# avec l'archive, sinon assemblés depuis le dépôt d'AXe.
+if [[ -f "$LICENSES" ]]; then
+  cp "$LICENSES" "$tmp/axe/LICENSES.txt"
+else
+  {
+    echo "AXe $AXE_VERSION — https://github.com/cameroncooke/AXe"
+    echo
+    curl -fsSL "$RAW/LICENSE"
+    echo
+    echo
+    curl -fsSL "$RAW/THIRD_PARTY_LICENSES"
+  } > "$tmp/axe/LICENSES.txt"
+fi
+# Archive et licences vérifiées rangées avec le dépôt (ADR-0010) : plus rien à télécharger ailleurs.
+mkdir -p "$ARCHIVES"
+[[ -f "$ARCHIVE" ]] || cp "$tmp/axe.tar.gz" "$ARCHIVE"
+[[ -f "$LICENSES" ]] || cp "$tmp/axe/LICENSES.txt" "$LICENSES"
+rm -rf "$DEST"
+mkdir -p "$(dirname "$DEST")"
+mv "$tmp/axe" "$DEST"
+echo "$AXE_VERSION" > "$DEST/.version"
+echo "✓ AXe $AXE_VERSION dans $DEST ($(du -sh "$DEST" | cut -f1))"

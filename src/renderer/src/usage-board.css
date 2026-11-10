@@ -1,0 +1,590 @@
+/*
+ * « Mon activité » (fiche 144, d'après le tableau de la fiche 137) : une page de la fenêtre
+ * principale, maquette « tableau de bord » validée le 24/10. Filtres, grille d'activité, quatre
+ * chiffres clés, graphique (SVG), tableaux. Couleurs des séries : jetons `--chart-*`, de la grille :
+ * `--heat-*` (src/shared/themes.ts) ; le texte garde les couleurs du texte.
+ *
+ * Responsive : la page n'a pas la largeur de la fenêtre (barre latérale, panneau), d'où des
+ * requêtes de conteneur sur `.activity-scroll` plutôt que sur la fenêtre. Jamais de défilement
+ * horizontal de la page : ce qui est large (grille, tableau par modèle) défile dans sa carte.
+ */
+.activity-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  container-type: inline-size;
+  container-name: activity;
+}
+
+.activity {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 4px 32px 48px;
+  min-width: 0;
+}
+
+.activity-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 14px;
+}
+
+.activity-filters-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* À droite ; seul sur sa ligne quand la place manque. */
+.activity-filters-group.end {
+  margin-left: auto;
+}
+
+.activity-filters .btn,
+.activity-heat-head .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-chart-head .grow,
+.activity-heat-head .grow,
+.activity-heat-foot .grow {
+  flex: 1;
+}
+
+.activity-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-nav b {
+  font-weight: 500;
+  padding: 0 6px;
+  min-width: 128px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.activity-nav .icon-button:disabled {
+  opacity: 0.35;
+}
+
+.activity-day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.activity-day-chip .icon-button {
+  color: var(--muted);
+}
+
+/* Grille d'activité */
+.settings-card.activity-heat-card {
+  padding: 14px 18px 12px;
+  min-width: 0;
+}
+
+.activity-heat-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.activity-heat-head b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-heat-body {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.activity-heat-days {
+  flex: none;
+  display: block;
+}
+
+.activity-heat-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.activity-heat-inner {
+  position: relative;
+  margin-left: auto;
+}
+
+.activity-heat-scroll svg {
+  display: block;
+  overflow: visible;
+}
+
+.activity-heat-days text,
+.activity-heat-scroll svg text {
+  font-size: 10.5px;
+  fill: var(--muted);
+  font-family: var(--font-ui);
+}
+
+.activity-heat-cell {
+  cursor: pointer;
+}
+
+.heat-level-0 {
+  fill: var(--surface-2);
+  background: var(--surface-2);
+}
+
+.heat-level-1 {
+  fill: var(--heat-1);
+  background: var(--heat-1);
+}
+
+.heat-level-2 {
+  fill: var(--heat-2);
+  background: var(--heat-2);
+}
+
+.heat-level-3 {
+  fill: var(--heat-3);
+  background: var(--heat-3);
+}
+
+.heat-level-4 {
+  fill: var(--heat-4);
+  background: var(--heat-4);
+}
+
+.activity-heat-cell.dim {
+  opacity: 0.28;
+}
+
+.activity-heat-cell:hover {
+  stroke: var(--text-2);
+  stroke-width: 1;
+}
+
+.activity-heat-ring {
+  fill: none;
+  pointer-events: none;
+}
+
+.activity-heat-ring.today {
+  stroke: var(--text-2);
+  stroke-width: 1;
+}
+
+.activity-heat-ring.picked {
+  stroke: var(--text);
+  stroke-width: 1.6;
+}
+
+/* Infobulle d'un jour : texte inversé, comme celle du graphique ; à gauche dans la moitié droite. */
+.activity-heat-tip {
+  position: absolute;
+  transform: translate(10px, -100%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-menu);
+  z-index: 2;
+}
+
+.activity-heat-tip.left {
+  transform: translate(calc(-100% - 10px), -100%);
+}
+
+.activity-heat-tip span {
+  opacity: 0.85;
+  font-size: 11.5px;
+}
+
+.activity-heat-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.activity-heat-foot i {
+  width: 11px;
+  height: 11px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+}
+
+.activity-delta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.activity-delta svg {
+  flex-shrink: 0;
+}
+
+.activity-table-scroll {
+  overflow-x: auto;
+}
+
+.usage-table.wide {
+  min-width: 560px;
+}
+
+.usage-note {
+  margin: -8px 4px 12px;
+  overflow-wrap: anywhere;
+}
+
+.usage-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.usage-kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.usage-kpi-label,
+.usage-kpi-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.usage-kpi-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-kpi-sub {
+  margin-top: 2px;
+}
+
+.settings-card.usage-chart-card {
+  margin-top: 12px;
+  padding: 14px 16px 10px;
+}
+
+.usage-chart-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.usage-chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.usage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.usage-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-legend i,
+.usage-chart-tip i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+  flex: none;
+}
+
+.usage-chart {
+  position: relative;
+}
+
+.usage-chart svg {
+  display: block;
+}
+
+.usage-chart svg text {
+  font-size: 11px;
+  fill: var(--muted);
+  font-family: var(--font-ui);
+}
+
+.usage-chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.usage-chart-hover {
+  fill: var(--text);
+  opacity: 0.06;
+}
+
+.usage-chart-hit {
+  fill: transparent;
+}
+
+.usage-chart-empty {
+  height: 170px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.usage-chart-foot {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Mesure qui ne couvre qu'une partie des agents (fiche 147) : la note le dit, icône en tête. */
+.usage-coverage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-coverage svg {
+  flex-shrink: 0;
+}
+
+/* Infobulle d'un jour : texte inversé, comme la maquette ; à gauche du jour dans la moitié droite. */
+.usage-chart-tip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-menu);
+  z-index: 1;
+}
+
+.usage-chart-tip.left {
+  transform: translateX(calc(-100% - 10px));
+}
+
+.usage-chart-tip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-chart-tip span.none {
+  opacity: 0.7;
+}
+
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.usage-table th {
+  text-align: right;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.usage-table td {
+  text-align: right;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.usage-table th:first-child,
+.usage-table td:first-child {
+  text-align: left;
+}
+
+/* Chiffres sur une ligne : le nom (première colonne) prend ce qui reste. */
+.usage-table td:not(:first-child) {
+  white-space: nowrap;
+}
+
+.usage-table td small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.usage-table .usage-name {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-xs);
+  margin-right: 8px;
+}
+
+.usage-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.usage-bar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.usage-bar-cell i {
+  height: 6px;
+  border-radius: var(--radius-xs);
+  background: var(--border-strong);
+  display: inline-block;
+}
+
+.usage-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.usage-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.usage-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Largeur de la page, pas de la fenêtre : barre latérale et panneau ouverts, elle rétrécit. */
+@container activity (max-width: 760px) {
+  .activity {
+    padding: 4px 20px 40px;
+  }
+
+  .usage-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .usage-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container activity (max-width: 440px) {
+  .activity {
+    padding: 4px 14px 32px;
+  }
+
+  .activity-nav b {
+    min-width: 0;
+    padding: 0 2px;
+  }
+
+  /* Les segments (période, regroupement, mesure) passent à la ligne plutôt que de déborder. */
+  .activity .segmented {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .activity .segmented button {
+    padding: 3px 8px;
+  }
+
+  .activity-filters .settings-input {
+    max-width: 100%;
+  }
+
+  .usage-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

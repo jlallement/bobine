@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/verify)",
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build)",
+      "Bash(pnpm format)",
+      "Bash(pnpm mock-agent:*)",
+      "Bash(pnpm e2e)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm -s lint)",
+      "Bash(pnpm -s typecheck)",
+      "Bash(pnpm -s test)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": ["Read(./.env.local)", "Read(./.env)"]
+  }
+}

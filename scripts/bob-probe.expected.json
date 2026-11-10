@@ -1,0 +1,119 @@
+{
+  "bobVersion": "2.1.0",
+  "recordedAt": "2026-11-09",
+  "observations": {
+    "initialize": {
+      "agent": "bob-shell",
+      "title": "Bob",
+      "protocolVersion": 1,
+      "loadSession": true,
+      "sessionCapabilities": ["close", "delete", "list", "resume"],
+      "prompt": {
+        "image": true,
+        "audio": false,
+        "embeddedContext": true
+      },
+      "mcp": {
+        "http": true,
+        "sse": false
+      },
+      "authMethods": ["sso"],
+      "extensions": {
+        "bob/extensions": 1
+      }
+    },
+    "session/list avant connexion": {
+      "sessions": 0
+    },
+    "session/new : dossier non approuvé": {
+      "code": -32000,
+      "message": "Authentication required"
+    },
+    "session/new : dossier refusé (Don’t trust), clé": {
+      "code": -32600,
+      "message": "Invalid request: Workspace \"<dossier>\" is not trusted. Pass --trust to trust each workspace opened by this ACP server, or run Bob Shell interactively in this folder and choose a trust level, then reopen the ACP session."
+    },
+    "session/new : sans connexion": {
+      "code": -32000,
+      "message": "Authentication required"
+    },
+    "session/new : clé, licence non acceptée": {
+      "opened": true,
+      "modes": ["agent", "plan", "ask"]
+    },
+    "licence au premier message (formulaire refusé), clé": {
+      "form": {
+        "mode": "form",
+        "fields": ["accept"],
+        "message": "Bob Shell requires the IBM license agreement. Review the license files:"
+      },
+      "prompt": {
+        "code": -32600,
+        "message": "Invalid request: A license agreement is required. Review it with --show-license and accept it with --accept-license."
+      }
+    },
+    "refus au tour : clé refusée (licence acceptée sur ce Mac)": {
+      "sessionNew": {
+        "opened": true
+      },
+      "prompt": {
+        "code": -32603,
+        "message": "Internal error",
+        "data": {
+          "details": "ApiKeyError: {\"id\":\"harness\",\"title\":\"Request Failed\",\"description\":\"Invalid or expired API key.\"}"
+        }
+      },
+      "again": {
+        "code": -32603,
+        "message": "Internal error",
+        "data": {
+          "details": "ApiKeyError: {\"id\":\"harness\",\"title\":\"Request Failed\",\"description\":\"Invalid or expired API key.\"}"
+        }
+      }
+    },
+    "deux clés différentes": {
+      "refused": true,
+      "reason": "Error: BOBSHELL_API_KEY and BOB_API_KEY are both set but have different values. Unset BOBSHELL_API_KEY and use BOB_API_KEY going forward."
+    },
+    "règles d’approbation : settings.json après lancement": {
+      "keys": {
+        "allowedExecutors": "object[]",
+        "allowed_permissions": "string[]",
+        "forbiddenApprovalGroups": "[]",
+        "outsideWorkspaceAllowed": "boolean",
+        "permissionOptions": "object[]"
+      },
+      "kept": true
+    },
+    "base locale (coûts)": {
+      "columns": [
+        "approval_config",
+        "costs",
+        "created_at",
+        "directory",
+        "env",
+        "first_message",
+        "git_branch",
+        "git_sha",
+        "id",
+        "is_pinned",
+        "is_unread",
+        "last_error",
+        "lock_lease_until",
+        "locked_by",
+        "message_queue",
+        "parent_id",
+        "project_id",
+        "status",
+        "task_type",
+        "time_archived",
+        "title",
+        "updated_at",
+        "version"
+      ]
+    },
+    "bob chat (quota, /status)": {
+      "options": ["--trust", "--disable-mcp", "--disable-subagents"]
+    }
+  }
+}

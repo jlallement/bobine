@@ -1,0 +1,51 @@
+/* Agents ACP déclarés (fiche 141) : ligne « Ajouter un agent ACP… », formulaire, page. */
+
+/* L'icône + occupe la place de l'avatar, pour que le texte s'aligne sur les noms des agents. */
+.agent-list-add {
+  color: var(--accent);
+}
+
+.agent-list-add > svg {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.custom-agent-intro {
+  margin: 0 4px 12px;
+}
+
+.custom-agent-form {
+  gap: 12px;
+}
+
+.custom-agent-optional {
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mcp-form small.custom-agent-error {
+  color: var(--err);
+}
+
+.mcp-form small code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.mcp-form [aria-invalid='true'] {
+  border-color: var(--err);
+}
+
+.custom-agent-next {
+  margin-right: auto;
+  align-self: center;
+}
+
+.agent-head-actions {
+  display: flex;
+  gap: 6px;
+}

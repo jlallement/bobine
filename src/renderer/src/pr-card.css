@@ -1,0 +1,179 @@
+/* ===== Suivi de la PR et de la CI (fiche 176) ===== */
+
+.pr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 12.5px;
+}
+
+.pr-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pr-head > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.pr-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-title:hover {
+  color: var(--accent);
+}
+
+.pr-state {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+.pr-state-open {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.pr-state-merged {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+
+.pr-refresh {
+  flex: none;
+  padding: 2px 4px;
+}
+
+.pr-checks-line {
+  font-weight: 500;
+}
+
+.pr-summary-failed {
+  color: var(--err);
+}
+
+.pr-summary-passed {
+  color: var(--ok);
+}
+
+.pr-summary-pending,
+.pr-summary-awaited {
+  color: var(--warn);
+}
+
+/* Aucun contrôle : pas de CI détectée, ou rien de signalé (0.9.1, D16). */
+.pr-summary-none {
+  color: var(--muted);
+}
+
+.pr-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 140px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.pr-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pr-check svg {
+  flex: none;
+}
+
+.pr-check a,
+.pr-check span {
+  overflow: hidden;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-check a:hover {
+  color: var(--accent);
+}
+
+.pr-check-failed svg {
+  color: var(--err);
+}
+
+.pr-check-passed svg {
+  color: var(--ok);
+}
+
+.pr-check-pending svg {
+  color: var(--warn);
+}
+
+.pr-check-skipped svg {
+  color: var(--muted);
+}
+
+.pr-meta.pr-conflicting {
+  color: var(--warn);
+}
+
+.pr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.pr-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.pr-option input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.pr-error {
+  color: var(--err);
+}
+
+/* Pourquoi « Fusionner quand tout est vert » attend (0.9.1, D20). */
+.pr-waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--muted);
+}
+
+.pr-waiting svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.pr-waiting.pr-warn {
+  color: var(--warn);
+}

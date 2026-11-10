@@ -1,0 +1,102 @@
+/* Filets d'erreur par élément du fil, onglet du panneau, page de réglages (fiche 194). */
+.item-error {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text-2);
+  font-size: 13px;
+  background: var(--surface-2);
+  margin: 6px 0;
+}
+
+.item-error-head {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.item-error-head > svg {
+  color: var(--muted);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.item-error-head b {
+  color: var(--text);
+}
+
+.safe-details {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.safe-details summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.safe-details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11.5px/1.4 var(--font-mono);
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin: 6px 0;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.pane-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 34px 26px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.pane-error > svg {
+  color: var(--muted);
+}
+
+.pane-error > b {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.pane-error > .btn {
+  margin-top: 6px;
+}
+
+.pane-error .safe-details {
+  align-self: stretch;
+  text-align: left;
+}
+
+/* Commande à taper citée par un message de l'app (fiche 194) : en code, avec « Copier ». */
+.command-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.command-text code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Lien d'un avis du fil vers le journal (fiche 194). */
+.notice-action {
+  margin-left: auto;
+  flex-shrink: 0;
+}

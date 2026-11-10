@@ -1,0 +1,48 @@
+{
+  "recentWorkspaces": [
+    "/private/tmp/claude-501/-Users-jerome-Dev-bobine/c6df784b-48d0-408a-95c3-26e183c9aa86/scratchpad/profils/projet"
+  ],
+  "agentsSeen": {
+    "mock": {
+      "name": "Agent factice",
+      "version": "0.1.0",
+      "seenAt": "2026-11-07T00:30:57.261Z",
+      "load": true,
+      "resume": true,
+      "delete": true,
+      "image": true,
+      "embeddedContext": true,
+      "mcpHttp": true,
+      "list": true,
+      "additionalDirectories": false
+    }
+  },
+  "models": {
+    "mock": {
+      "controlId": "model",
+      "options": [
+        {
+          "value": "factice-rapide",
+          "name": "Factice rapide"
+        },
+        {
+          "value": "factice-precis",
+          "name": "Factice précis"
+        }
+      ],
+      "recent": [
+        "factice-rapide"
+      ]
+    }
+  },
+  "window": {
+    "x": 116,
+    "y": 33,
+    "width": 1280,
+    "height": 820
+  },
+  "profileId": "mock",
+  "workspace": "/private/tmp/claude-501/-Users-jerome-Dev-bobine/c6df784b-48d0-408a-95c3-26e183c9aa86/scratchpad/profils/projet",
+  "theme": "dark",
+  "density": "compact"
+}

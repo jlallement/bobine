@@ -1,0 +1,9 @@
+test	Run sleep 20	2026-11-06T17:10:00.1234567Z ##[group]Run sleep 20
+test	Run sleep 20	2026-11-06T17:10:01.1234567Z [36;1msleep 20[0m
+test	Run sleep 20	2026-11-06T17:10:02.1234567Z [36;1mif [ -f FAIL ]; then echo "FAIL qa: FAIL file is present"; echo "Error: expected no FAIL file"; exit 1; fi[0m
+test	Run sleep 20	2026-11-06T17:10:03.1234567Z [36;1mecho ok[0m
+test	Run sleep 20	2026-11-06T17:10:04.1234567Z shell: /usr/bin/bash -e {0}
+test	Run sleep 20	2026-11-06T17:10:05.1234567Z ##[endgroup]
+test	Run sleep 20	2026-11-06T17:10:06.1234567Z FAIL qa: FAIL file is present
+test	Run sleep 20	2026-11-06T17:10:07.1234567Z Error: expected no FAIL file
+test	Run sleep 20	2026-11-06T17:10:08.1234567Z ##[error]Process completed with exit code 1.

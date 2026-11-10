@@ -1,0 +1,11 @@
+out/
+dist/
+node_modules/
+pnpm-lock.yaml
+*.md
+e2e/captures/
+vendor/
+coverage/
+.claude/worktrees/
+.worktrees/
+e2e/fixtures/profils/

@@ -1,0 +1,86 @@
+/*
+ * Coloration syntaxique des blocs de code (fiche 134) : les classes de highlight.js branchées sur
+ * les jetons `--syn-*` de la palette (`shared/themes.ts`), à la place de la feuille `github-dark`.
+ * Regroupement repris de cette feuille, à huit couleurs.
+ */
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+code.hljs {
+  padding: 3px 5px;
+}
+.hljs {
+  color: var(--code-fg);
+  background: var(--code-bg);
+}
+.hljs-keyword,
+.hljs-doctag,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-variable.language_ {
+  color: var(--syn-keyword);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-meta .hljs-string,
+.hljs-char.escape_ {
+  color: var(--syn-string);
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula,
+.hljs-quote {
+  color: var(--syn-comment);
+  font-style: italic;
+}
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: var(--syn-number);
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--syn-function);
+}
+.hljs-type,
+.hljs-built_in,
+.hljs-title.class_,
+.hljs-title.class_.inherited__ {
+  color: var(--syn-type);
+}
+.hljs-name,
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-pseudo {
+  color: var(--syn-tag);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-property,
+.hljs-selector-attr,
+.hljs-meta {
+  color: var(--syn-attr);
+}
+.hljs-section,
+.hljs-strong {
+  font-weight: 600;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-addition {
+  color: var(--ok);
+  background: var(--diff-new);
+}
+.hljs-deletion {
+  color: var(--err);
+  background: var(--diff-old);
+}

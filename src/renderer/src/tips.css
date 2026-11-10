@@ -1,0 +1,91 @@
+/* Astuces de Bobine (fiche 191) : languette discrète, teinte d'accent très légère. */
+.tip-tab {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 6px 10px 6px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  animation: tip-in 160ms ease-out;
+}
+
+/* Sur le bord haut de la saisie : elle ne pousse pas le fil et ne couvre rien. */
+.tip-composer {
+  margin: 0 14px -1px;
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+/* Au pied d'une carte, au-dessus de l'action qu'elle concerne. */
+.tip-card {
+  margin-top: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.tip-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.tip-text {
+  /* Ce qui ne tient pas sur une ligne (mesuré, pas un seuil) : les actions passent dessous. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tip-text kbd {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tip-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tip-link {
+  color: var(--accent);
+}
+
+.tip-never {
+  color: var(--muted);
+}
+
+.tip-link:hover,
+.tip-never:hover {
+  text-decoration: underline;
+}
+
+.tip-close {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+}
+
+.tip-close:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip-tab {
+    animation: none;
+  }
+}
