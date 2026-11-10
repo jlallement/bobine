@@ -224,7 +224,7 @@ chaque création ou changement de statut.
 | [217](217-licences-dans-l-app.md) | Textes de licence livrés avec l'app (`Resources/licenses`) : avis tiers générés d'après ce que le build embarque (`pnpm third-party-notices`), doubles licences choisies (elkjs EPL-2.0, dompurify Apache-2.0), Electron et Chromium, police ; contrôle de dérive (verify, e2e, packaging) ; `copyright`, `author`, `homepage`, `bugs` | fait | P1 |
 | [218](218-publication-preversion.md) | Publier une préversion (1.0.0-beta.1) depuis un dépôt public : titres `X.Y.Z-beta.N — date` dans Nouveautés, Release « préversion », Info.plist numérique, ordre semver de la marque du profil ; `release.yml` en lecture sauf `publish`, tag sur `main` exigé, actions épinglées par SHA, Dependabot, gitleaks en CI | fait | P1 |
 | [219](219-readme-public.md) | README public en anglais pour la bêta 1.0.0-beta.1 : bêta, Gatekeeper sans notarisation, prérequis, non-affiliation (IBM, OpenCode, Anthropic) ; installation et CONTRIBUTING alignés ; description et topics du dépôt proposés | fait | P1 |
-| [220](220-version-1-0-0-beta-1.md) | Version 1.0.0-beta.1, bêta publique : notes de Release en anglais puis en français, version et notes datées du 10 novembre 2026 ; dépôt public, tag et Release préversion par le tech lead | en cours | P1 |
+| [220](220-version-1-0-0-beta-1.md) | Version 1.0.0-beta.1, bêta publique : notes de Release en anglais puis en français, version et notes datées du 10 novembre 2026 ; dépôt public, tag et Release préversion par le tech lead | fait | P1 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception
