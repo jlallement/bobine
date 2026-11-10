@@ -93,6 +93,16 @@ Fichiers :
     déréférencées, `v4` = `v4.3.0` (`b906aff`), pas `v4.4.0` (qui passe à Node 24) — épinglé sur
     `v4.3.0` pour ne rien changer.
 
+- 2026-11-10 — Première passe de Dependabot sur le dépôt public (10 PR). Fusionnées : actions
+  `checkout` 7, `setup-node` 7, `upload-artifact` 7, `download-artifact` 8, `pnpm/action-setup` 6
+  (CI verte ; `release.yml` pas encore rejoué avec elles : à surveiller au prochain tag),
+  `react-i18next` 17.1.13, `lucide-react` 1.70.0 et `vite` 8.3.6 (avis de licence régénérés et
+  poussés sur la PR, puis `verify` ; e2e `base` et `startup` pour vite). Fermée : `@types/node` 26
+  (Electron 45 embarque Node 24) — majeures de `@types/node` ignorées dans `dependabot.yml`.
+  Laissées ouvertes : `i18next` 27 (typage de `t()` cassé, à monter avec `react-i18next` 18) et
+  `jsdom` 31 (trois tests du pilote, clic par libellé). Le générateur d'avis écrit
+  `inventory.json` sans le format de Prettier : passer `prettier --write` après lui.
+
 ## Écarts au plan
 
 - Le contrôle tag ↔ `package.json` a quitté le job `dmg` pour `guard` (Ubuntu, avant le Mac).

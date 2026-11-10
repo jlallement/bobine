@@ -15,6 +15,11 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Les types de Node suivent le Node embarqué par Electron (24 pour Electron 45) : on les
+      # monte de version majeure avec Electron, pas avant.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       npm-mineures:
         update-types: [minor, patch]
