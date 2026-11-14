@@ -26,7 +26,13 @@ import {
 import { messageOf } from '@shared/errors'
 import type { ChildChoices, ChildConversations, ChildStatus } from '../conversations/children'
 import { log } from '../log'
-import { roleSnapshot, rolesParagraph, type RoleSnapshot, type RoleView } from '@shared/roles'
+import {
+  roleSnapshot,
+  rolesForAgent,
+  rolesParagraph,
+  type RoleSnapshot,
+  type RoleView
+} from '@shared/roles'
 import { roleDefaults } from '../roles/choice'
 import { reportFindingsTool, type ReviewTools } from './review-tools'
 import { argsOf, textResult, type AppTool, type AppToolModule, type ToolArgs } from './tools'
@@ -333,7 +339,11 @@ function roleProperty(host: ChildTools, motherId: string): ToolArgs {
   return {
     role: {
       type: 'string',
-      description: `Optional: the name of a role to start the child with (its instructions, agent, mode and tools come with it). Roles: ${roles.map((r) => r.name).join(', ')}.`
+      description: `Optional: the name of a role to start the child with (its instructions, agent, mode and tools come with it). Roles: ${rolesForAgent(
+        roles
+      )
+        .shown.map((r) => r.name)
+        .join(', ')}.`
     }
   }
 }
@@ -348,7 +358,7 @@ function roleOf(
   try {
     return host.findRole(motherId, name)
   } catch {
-    const known = activeRoles(host, motherId).map((r) => r.name)
+    const known = rolesForAgent(activeRoles(host, motherId)).shown.map((r) => r.name)
     return `Unknown role "${name}". ${known.length ? `Roles: ${known.join(', ')}.` : 'No role is defined.'} Omit \`role\` to start a child without a role.`
   }
 }

@@ -477,7 +477,9 @@ describe('start_child avec un rôle (fiche 223)', () => {
   it('la description et l’argument `role` citent les rôles actifs ; sans rôle, ni l’un ni l’autre', () => {
     const start = setup({ roles: ROLES }).tool('start_child').definition
     expect(start.description).toContain('- security-expert: Quand security-expert (read-only)')
-    expect(JSON.stringify(start.inputSchema)).toContain('Roles: security-expert, flutter-expert')
+    expect(JSON.stringify(start.inputSchema)).toContain(
+      'Roles: ailleurs, fast, flutter-expert, security-expert'
+    )
     const plain = setup().tool('start_child').definition
     expect(plain.description).not.toContain('Roles:')
     expect(JSON.stringify(plain.inputSchema)).not.toContain('"role"')
@@ -487,7 +489,7 @@ describe('start_child avec un rôle (fiche 223)', () => {
     const s = setup({ roles: ROLES })
     const result = await s.tool('start_child').call({ title: 'T', prompt: 'P', role: 'astronaute' })
     expect(result.isError).toBe(true)
-    expect(textOf(result)).toContain('Unknown role "astronaute". Roles: security-expert,')
+    expect(textOf(result)).toContain('Unknown role "astronaute". Roles: ailleurs, fast,')
     expect(s.asked).toEqual([])
     expect(s.calls).toEqual([])
   })

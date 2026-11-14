@@ -217,7 +217,8 @@ function parseHeader(lines: string[], offset: number): Header | RoleError {
   for (const [i, line] of lines.entries()) {
     const at = i + offset
     if (!line.trim() || line.trimStart().startsWith('#')) continue
-    const item = /^\s+-\s*(.*)$/.exec(line)
+    // Élément de liste, indenté ou non (`mcp:` puis `- terminal`).
+    const item = /^\s*-\s*(.*)$/.exec(line)
     if (item) {
       if (!list) return { code: 'syntax', line: at }
       const value = scalar(item[1] ?? '')
@@ -265,13 +266,13 @@ export function checkRole(fields: {
   const name = typeof fields.name === 'string' ? fields.name.trim() : ''
   if (!ROLE_NAME.test(name)) return fail('name', 'name')
   const label = typeof fields.label === 'string' && fields.label.trim() ? fields.label.trim() : name
-  if (label.length > ROLE_LIMITS.label) return fail('label', 'label')
+  if (label.length > ROLE_LIMITS.label || /[\r\n]/.test(label)) return fail('label', 'label')
   const icon = typeof fields.icon === 'string' && fields.icon.trim() ? fields.icon.trim() : 'bot'
   if (!ICON_NAME.test(icon) || icon.length > ROLE_LIMITS.label) return fail('icon', 'icon')
   const color = fields.color === undefined || fields.color === '' ? 'graphite' : fields.color
   if (!ACCENT_COLORS.includes(color as AccentColor)) return fail('color', 'color')
   const description = typeof fields.description === 'string' ? fields.description.trim() : ''
-  if (!description || description.length > ROLE_LIMITS.description) {
+  if (!description || description.length > ROLE_LIMITS.description || /[\r\n]/.test(description)) {
     return fail('description', 'description')
   }
   const optional: Partial<Pick<RoleDefinition, 'agent' | 'mode' | 'model'>> = {}
@@ -320,7 +321,7 @@ const BOOLEANS: Record<string, boolean> = { true: true, yes: true, false: false,
  */
 export function parseRoleFile(content: string, fallbackName: string): RoleParse {
   const normalized = content.replace(/^﻿/, '').replace(/\r\n?/g, '\n')
-  const match = /^---\n([\s\S]*?)\n---(?:\n|$)([\s\S]*)$/.exec(normalized)
+  const match = /^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)([\s\S]*)$/.exec(normalized)
   if (!match) return { ok: false, error: { code: 'noHeader' } }
   const header = parseHeader((match[1] ?? '').split('\n'), 2)
   if ('code' in header) return { ok: false, error: header as RoleError }
@@ -405,11 +406,39 @@ export const roleStamp = (role: RoleDefinition): RoleStamp => ({
   ...(role.mcp ? { mcp: role.mcp } : {})
 })
 
-/** Une ligne par rôle, pour l'agent de la mère (description de `start_child`, contexte). */
-export function roleLines(roles: readonly RoleDefinition[]): string[] {
-  return roles.map(
-    (role) => `- ${role.name}: ${role.description}${role.readOnly ? ' (read-only)' : ''}`
-  )
+/**
+ * Rôles donnés à l'agent de la mère (relecture de la fiche 223) : au plus `ROLES_FOR_AGENT`, les
+ * fournis et personnels d'abord (un dépôt ne peut pas en pousser cent dans le contexte), puis
+ * ceux du projet ; un rôle non cité reste utilisable par son nom.
+ */
+export const ROLES_FOR_AGENT = 20
+const DESCRIPTION_FOR_AGENT = 200
+const AGENT_ORDER: readonly RoleScope[] = ['builtin', 'user', 'project']
+
+export function rolesForAgent<T extends RoleDefinition & { scope?: RoleScope }>(
+  roles: readonly T[]
+): { shown: T[]; more: number } {
+  const rank = (role: T) => AGENT_ORDER.indexOf(role.scope ?? 'project')
+  const sorted = [...roles].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+  return {
+    shown: sorted.slice(0, ROLES_FOR_AGENT),
+    more: Math.max(0, roles.length - ROLES_FOR_AGENT)
+  }
+}
+
+const clipDescription = (text: string) =>
+  text.length > DESCRIPTION_FOR_AGENT ? `${text.slice(0, DESCRIPTION_FOR_AGENT - 1)}…` : text
+
+/** Une ligne par rôle, pour l'agent de la mère (description de `start_child`, contexte), bornée. */
+export function roleLines(roles: readonly (RoleDefinition & { scope?: RoleScope })[]): string[] {
+  const { shown, more } = rolesForAgent(roles)
+  return [
+    ...shown.map(
+      (role) =>
+        `- ${role.name}: ${clipDescription(role.description)}${role.readOnly ? ' (read-only)' : ''}`
+    ),
+    ...(more ? [`- and ${more} more role(s), usable by name.`] : [])
+  ]
 }
 
 /** Paragraphe sur les rôles, joint au contexte de session et à la description de `start_child`. */

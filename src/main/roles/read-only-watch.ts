@@ -32,6 +32,7 @@ export interface ReadOnlyWatchDeps {
 
 interface Turn {
   workspace: string
+  /** Empreinte de départ ; `undefined` : elle n'a pas pu être prise. */
   baseline: Promise<string | undefined>
   /** Une autre conversation du dossier a lancé un outil qui peut écrire pendant le tour. */
   shared: boolean
@@ -70,6 +71,11 @@ export class ReadOnlyWatch {
     this.prepared.delete(id)
   }
 
+  /** L'envoi préparé n'a pas eu lieu (échec) : son empreinte ne sert plus. */
+  unprepare(id: string): void {
+    this.prepared.delete(id)
+  }
+
   /**
    * Avant d'envoyer un message de Bobine à une fille en lecture seule : l'empreinte de départ de
    * son prochain tour. Sans effet pour une autre conversation ; ne lève jamais.
@@ -78,7 +84,12 @@ export class ReadOnlyWatch {
     const child = this.find(id)
     if (!child?.role?.readOnly || !child.startedFrom) return
     const { workspace } = child
-    const fingerprint = await folderFingerprint(this.deps.run, workspace).catch(() => undefined)
+    const fingerprint = await folderFingerprint(this.deps.run, workspace).catch(
+      (error: unknown) => {
+        log.warn('Lecture seule : empreinte de départ impossible :', messageOf(error))
+        return undefined
+      }
+    )
     this.prepared.set(id, { workspace, ...(fingerprint ? { fingerprint } : {}) })
   }
 
@@ -96,6 +107,8 @@ export class ReadOnlyWatch {
   }
 
   private turnStarted(id: string): void {
+    // Un second message pendant le tour (file d'attente) ne remplace pas l'empreinte de départ.
+    if (this.turns.has(id)) return
     const ready = this.prepared.get(id)
     this.prepared.delete(id)
     if (ready) {
@@ -111,7 +124,10 @@ export class ReadOnlyWatch {
     const { workspace } = child
     this.turns.set(id, {
       workspace,
-      baseline: folderFingerprint(this.deps.run, workspace).catch(() => undefined),
+      baseline: folderFingerprint(this.deps.run, workspace).catch((error: unknown) => {
+        log.warn('Lecture seule : empreinte de départ impossible :', messageOf(error))
+        return undefined
+      }),
       shared: false
     })
   }
@@ -127,12 +143,26 @@ export class ReadOnlyWatch {
   }
 
   private async check(id: string, turn: Turn): Promise<void> {
+    if (turn.shared) return
     const before = await turn.baseline
-    if (!before || turn.shared) return
-    const after = await folderFingerprint(this.deps.run, turn.workspace).catch(() => undefined)
-    if (!after || after === before) return
+    const after = before
+      ? await folderFingerprint(this.deps.run, turn.workspace).catch((error: unknown) => {
+          log.warn('Lecture seule : empreinte de fin impossible :', messageOf(error))
+          return undefined
+        })
+      : undefined
     const child = this.find(id)
     if (!child) return
+    if (!before || !after) {
+      // git en échec ou trop lent : pas de jugement, mais pas de silence non plus.
+      this.deps.conversations.post(id, {
+        type: 'notice',
+        level: 'warning',
+        message: { key: 'roles.notice.watchFailed' }
+      })
+      return
+    }
+    if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
     this.deps.conversations.post(id, {
       type: 'notice',

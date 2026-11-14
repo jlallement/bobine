@@ -4792,6 +4792,7 @@ export type FrResources = {
       readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).'
       readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.'
       readonly projectOverrides: 'Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.'
+      readonly watchFailed: 'La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).'
     }
   }
 }

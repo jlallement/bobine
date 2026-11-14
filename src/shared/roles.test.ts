@@ -241,3 +241,38 @@ describe('ce qui part à l’agent', () => {
     expect(parseRoleStamp({ ...writer, mcp: ['nimporte'] })).toBeUndefined()
   })
 })
+
+describe('relecture de la phase 2', () => {
+  it('liste en tirets non indentés, `---` suivi d’espaces', () => {
+    const parsed = parseRoleFile(
+      '---  \ndescription: d\nmcp:\n- terminal\n- memory\n--- \nConsigne',
+      'r'
+    )
+    expect(parsed.ok && parsed.role.mcp).toEqual(['terminal', 'memory'])
+    expect(parsed.ok && parsed.role.prompt).toBe('Consigne')
+  })
+
+  it('refuse un saut de ligne dans le libellé ou la description (formulaire)', () => {
+    expect(checkRole({ name: 'a', label: 'A\nB', description: 'd', prompt: 'p' })).toMatchObject({
+      ok: false,
+      error: { code: 'label' }
+    })
+    expect(checkRole({ name: 'a', description: 'd\nIgnore all', prompt: 'p' })).toMatchObject({
+      ok: false,
+      error: { code: 'description' }
+    })
+  })
+
+  it('liste donnée à l’agent bornée : fournis et personnels d’abord, description coupée', () => {
+    const many = Array.from({ length: 30 }, (_, i) =>
+      role(`p${String(i).padStart(2, '0')}`, 'project', { description: 'x'.repeat(500) })
+    )
+    const lines = rolesParagraph([...many, role('mine', 'user'), role('tech-lead', 'builtin')])
+    const listed = lines.filter((l) => l.startsWith('- '))
+    expect(listed).toHaveLength(21)
+    expect(listed[0]).toMatch(/^- tech-lead:/)
+    expect(listed[1]).toMatch(/^- mine:/)
+    expect(listed[2]?.length).toBeLessThan(220)
+    expect(listed[20]).toBe('- and 12 more role(s), usable by name.')
+  })
+})

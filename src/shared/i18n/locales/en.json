@@ -4759,7 +4759,8 @@
       "folderChanged": "The folder changed during this read-only role’s turn. Check the changes (git status).",
       "childFolderChanged": "The folder changed during the turn of “{{title}}”, a read-only role working in this folder. Check the changes (git status).",
       "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions.",
-      "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name."
+      "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
+      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
     }
   }
 }

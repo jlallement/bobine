@@ -507,6 +507,7 @@ export class ChildConversations {
     // `prompt` se résout à la fin du tour : rien à attendre ici. Un échec est dit dans le fil visé.
     void (launching ? launching.then(send) : send()).catch((error: unknown) => {
       this.sending.delete(target.id)
+      this.readOnly.unprepare(target.id)
       this.conversations.post(target.id, {
         type: 'notice',
         level: 'error',
@@ -552,6 +553,7 @@ export class ChildConversations {
       await turn
     } catch (error) {
       launched()
+      this.readOnly.unprepare(childId)
       // La consigne n'a pas pu partir (agent à connecter…) : rendue dans le fil de la fille, et
       // la mère le sait par un compte rendu en erreur (son agent ne l'attend plus).
       this.sending.delete(childId)

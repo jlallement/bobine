@@ -24,8 +24,9 @@ const CHILD = summary('f', {
 /** git factice : `git status` rend l'état courant du dossier. */
 function setup() {
   let folder = 'propre'
+  let failing = false
   const run: Run = async (_file, args) => ({
-    code: 0,
+    code: failing ? 128 : 0,
     stdout: Buffer.from(args[0] === 'status' ? folder : ''),
     stderr: ''
   })
@@ -44,6 +45,9 @@ function setup() {
     settle,
     write: () => {
       folder = `${folder}+`
+    },
+    fail: () => {
+      failing = true
     }
   }
 }
@@ -94,5 +98,28 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     await s.watch.prepare('m')
     s.send('m', userMessage)
     expect(s.watch.watching).toBe(0)
+  })
+
+  it('git en échec : pas de jugement, mais c’est dit dans le fil de la fille', async () => {
+    const s = setup()
+    await s.watch.prepare('f')
+    s.send('f', userMessage)
+    s.fail()
+    s.send('f', turnEnd)
+    await s.settle()
+    expect(s.posted.map(([id, e]) => [id, e.type === 'notice' && e.message])).toEqual([
+      ['f', { key: 'roles.notice.watchFailed' }]
+    ])
+  })
+
+  it('un second message pendant le tour garde l’empreinte de départ', async () => {
+    const s = setup()
+    await s.watch.prepare('f')
+    s.send('f', userMessage)
+    s.write()
+    s.send('f', userMessage)
+    s.send('f', turnEnd)
+    await s.settle()
+    expect(s.posted.map(([id]) => id)).toEqual(['f', 'm'])
   })
 })
