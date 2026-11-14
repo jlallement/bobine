@@ -59,7 +59,7 @@ export const hintShown = (state: Pick<TipsState, 'hintUses'>, id: HintId): boole
   (state.hintUses?.[id] ?? 0) < HINT_MAX_USES
 
 /** La fonction du rappel a servi une fois de plus. */
-export function countHintUse(state: TipsState, id: HintId): TipsState {
+export function countHintUse<T extends Pick<TipsState, 'hintUses'>>(state: T, id: HintId): T {
   const uses = state.hintUses?.[id] ?? 0
   if (uses >= HINT_MAX_USES) return state
   return { ...state, hintUses: { ...state.hintUses, [id]: uses + 1 } }

@@ -189,6 +189,16 @@ export type FrResources = {
     readonly keep: 'Garder'
   }
   readonly composer: {
+    readonly history: {
+      readonly position: '{{index}}/{{count}}'
+      readonly escape: 'Échap'
+      readonly clear: 'vider'
+      readonly announce: 'Message envoyé {{index}} sur {{count}} : ↑ ↓ pour parcourir, Échap pour vider'
+      readonly hint: 'Messages précédents'
+      readonly lost_one: '{{count}} pièce jointe non reprise'
+      readonly lost_many: '{{count}} pièces jointes non reprises'
+      readonly lost_other: '{{count}} pièces jointes non reprises'
+    }
     readonly theAgent: 'L’agent'
     readonly readOnly: {
       readonly title: 'Conversation en lecture seule'

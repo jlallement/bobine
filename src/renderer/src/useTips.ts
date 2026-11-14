@@ -7,7 +7,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ConversationSummary } from '@shared/agent'
 import {
+  countHintUse,
   firstDayToday,
+  hintShown,
+  type HintId,
   localDay,
   mayShowTip,
   REVIEW_TIP_FILES,
@@ -30,6 +33,10 @@ export interface Tips {
   used: (id: TipId) => void
   /** Ouvre « Faire relire… » si la conversation ouverte a un gros changement pas encore relu. */
   review?: () => void
+  /** Rappel discret (fiche 225) : affiché tant que sa fonction n'a pas servi trois fois. */
+  hint?: (id: HintId) => boolean
+  /** La fonction du rappel a servi : une fois de plus. */
+  hintUsed?: (id: HintId) => void
   /** « Planifier… » de l'astuce du message répété : ouvre la page des tâches, préremplie. */
   planRepeated?: () => void
   /** Tâche à préremplir à l'ouverture de la page des tâches planifiées, puis oubliée. */
@@ -133,7 +140,24 @@ export function useTips({
     [record]
   )
 
-  return { current, offer, close, never, used }
+  const hint = useCallback(
+    (id: HintId) => enabled && !!state && hintShown(state, id),
+    [enabled, state]
+  )
+  const hintUsed = useCallback((id: HintId) => {
+    const known = live.current.state
+    if (!known || !hintShown(known, id)) return
+    // Compté tout de suite (trois ↑ rapides ne font pas quatre utilisations), puis au main.
+    const counted = countHintUse(known, id)
+    live.current = { ...live.current, state: counted }
+    setState(counted)
+    void window.api.tips
+      .record(id, 'used')
+      .then(setState)
+      .catch(() => undefined)
+  }, [])
+
+  return { current, offer, close, never, used, hint, hintUsed }
 }
 
 /**

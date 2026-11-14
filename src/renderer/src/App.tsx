@@ -380,6 +380,7 @@ export function App() {
       snapshot={snapshot}
       settings={c.settings}
       usage={transcript.usage}
+      sentHistory={transcript.sentHistory}
       usageActions={guards.usageActions}
       autoFocus
       onSend={send}
