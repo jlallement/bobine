@@ -2,8 +2,21 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { BUILTIN_EN } from '../../src/main/roles/builtin-en.ts'
+import { BUILTIN_FR } from '../../src/main/roles/builtin-fr.ts'
+import { L, LANG, check, withApp } from '../lib.mjs'
 import { conversationTooltip } from '../sidebar-tooltip.mjs'
+
+/**
+ * Rôle fourni dans la langue des essais (ADR-0046), tel que l'app le montre : insécables du
+ * français posées comme `main/roles/builtin.ts` le fait.
+ */
+function builtin(name) {
+  const texts = (LANG === 'en' ? BUILTIN_EN : BUILTIN_FR)[name]
+  const shown = (text) =>
+    LANG === 'en' ? text : text.replace(/ ([:;?!%»])/g, '\u00a0$1').replace(/« /g, '«\u00a0')
+  return { description: shown(texts.description), prompt: shown(texts.prompt.join('\n')) }
+}
 
 /** Rôle de projet qui remplace le « Code reviewer » fourni (même nom), partagé par git. */
 const PROJECT_REVIEWER = `---
@@ -97,7 +110,7 @@ export async function rolesGestionSuite(scheme) {
         })
         check(
           tip.includes(L('roles.builtin.securityExpert')) &&
-            tip.includes(L('rolesSettings.builtinDescription.securityExpert')),
+            tip.includes(builtin('security-expert').description),
           'section Équipe : infobulle au survol, nom et description traduite du rôle fourni'
         )
 
@@ -252,7 +265,7 @@ export async function rolesGestionSuite(scheme) {
         )
         check(
           (await ui.ev(`${row('tech-lead')}.querySelector('.role-row-desc').textContent`)) ===
-            L('rolesSettings.builtinDescription.techLead'),
+            builtin('tech-lead').description,
           'rôle fourni : description affichée dans la langue de l’interface'
         )
         check(
@@ -314,7 +327,44 @@ export async function rolesGestionSuite(scheme) {
           !(await ui.ev(`!!${ui.$('role-edit-delete')}`)),
           'rôle fourni : pas de « Supprimer », bandeau « enregistré en rôle personnel »'
         )
+        check(
+          (await ui.ev(`${ui.$('role-description')}.value`)) === builtin('tech-lead').description &&
+            (await ui.ev(`${ui.$('role-prompt')}.value`)) === builtin('tech-lead').prompt,
+          'rôle fourni : description et consigne dans la langue de l’interface (ADR-0046)'
+        )
         await ui.shot('r10-edition-fourni')
+
+        // Changer la langue de l'interface relit les rôles fournis (ADR-0046) : liste et édition.
+        const choose = async (language) => {
+          await ui.click(ui.$('settings-general'))
+          await ui.waitFor(`!!${ui.$('settings-language')}`)
+          await ui.ev(`(() => {
+            const select = ${ui.$('settings-language')}
+            Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, '${language}')
+            select.dispatchEvent(new Event('change', { bubbles: true }))
+            return true
+          })()`)
+          await ui.waitFor(`document.documentElement.lang === '${language}'`)
+          await ui.click(ui.$('settings-roles'))
+          await ui.waitFor(`!!${row('tech-lead')}`)
+        }
+        const other = LANG === 'en' ? 'fr' : 'en'
+        const otherTexts = (LANG === 'en' ? BUILTIN_FR : BUILTIN_EN)['tech-lead']
+        await choose(other)
+        await ui.waitFor(
+          `${row('tech-lead')}.querySelector('.role-row-desc').textContent.replace(/\\u00a0/g, ' ') === ${JSON.stringify(otherTexts.description)}`
+        )
+        await ui.click(`${row('tech-lead')}.querySelector('[data-testid=role-row-open]')`)
+        await ui.waitFor(`!!${ui.$('role-edit-builtin')}`)
+        await ui.waitFor(
+          `${ui.$('role-prompt')}.value.replace(/\\u00a0/g, ' ') === ${JSON.stringify(otherTexts.prompt.join('\n'))}`
+        )
+        check(true, 'langue changée : liste et édition du rôle fourni dans la nouvelle langue')
+        await choose(LANG)
+        await ui.waitFor(
+          `${row('tech-lead')}.querySelector('.role-row-desc').textContent === ${JSON.stringify(builtin('tech-lead').description)}`
+        )
+        check(true, 'langue d’origine : rôles fournis relus dans cette langue')
       },
       undefined,
       // Réponse simple, sans demande d'autorisation (la fille joue le même scénario).
