@@ -419,22 +419,24 @@ const READ_ONLY_LINES: Record<ReadOnlyLevel, string> = {
 }
 
 /**
- * Premier message d'une fille lancée avec un rôle : la consigne du rôle en tête, sauf si l'agent
- * a pris le mode natif du rôle (`native`) ; la lecture seule toujours dite ; puis la tâche.
+ * Premier message d'une fille lancée avec un rôle : la consigne du rôle en tête, **toujours**,
+ * même quand l'agent a pris le mode natif du rôle (un mode du même nom n'a pas forcément la même
+ * consigne ; le doublon avec un mode personnel de Bob est accepté) ; la lecture seule dite ; puis
+ * la tâche.
  */
 export function roleOpening(
   role: RoleDefinition,
   task: string,
-  options: { native: boolean; readOnly?: ReadOnlyLevel }
+  options: { readOnly?: ReadOnlyLevel } = {}
 ): string {
-  const inside = [
-    ...(options.native ? [] : [role.prompt.trim()]),
-    ...(options.readOnly ? [READ_ONLY_LINES[options.readOnly]] : [])
-  ]
-  if (inside.length === 0) return task.trim()
-  return [`<bobine_role name="${role.name}">`, ...inside, '</bobine_role>', '', task.trim()].join(
-    '\n'
-  )
+  return [
+    `<bobine_role name="${role.name}">`,
+    role.prompt.trim(),
+    ...(options.readOnly ? [READ_ONLY_LINES[options.readOnly]] : []),
+    '</bobine_role>',
+    '',
+    task.trim()
+  ].join('\n')
 }
 
 /** Rôle retenu relu sur le disque (index des conversations) ; `undefined` s'il est mal formé. */

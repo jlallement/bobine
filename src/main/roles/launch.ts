@@ -31,16 +31,16 @@ export function nativeMode(
 }
 
 /**
- * Lecture seule d'une fille : imposée quand l'agent demande avant d'écrire, ou quand le rôle a
- * pris son mode natif ; seulement demandée pour un agent qui écrit sans demander.
+ * Lecture seule d'une fille : imposée (refus de Bobine) quand l'agent demande avant d'écrire ;
+ * seulement demandée pour un agent qui écrit sans demander, **même** dans un mode natif : rien ne
+ * prouve que ce mode interdise l'écriture (`mode: build` chez OpenCode écrit).
  */
 export function readOnlyLevel(
   role: RoleDefinition,
-  native: boolean,
   writesWithoutAsking: boolean
 ): ReadOnlyLevel | undefined {
   if (!role.readOnly) return undefined
-  return writesWithoutAsking && !native ? 'requested' : 'enforced'
+  return writesWithoutAsking ? 'requested' : 'enforced'
 }
 
 /**
@@ -61,7 +61,7 @@ export async function roleFirstMessage(
     native =
       (current?.type === 'select' && current.currentValue === mode.value) ||
       (await host
-        .setControl(child.id, mode.controlId, mode.value)
+        .setControl(child.id, mode.controlId, mode.value, { remember: false })
         .then(() => true)
         .catch((error: unknown) => {
           log.warn(`Mode natif du rôle ${role.name} non posé :`, error)
@@ -76,7 +76,7 @@ export async function roleFirstMessage(
     })
   }
   const profile = host.settingsView().profiles.find((p) => p.id === child.profileId)
-  const readOnly = readOnlyLevel(role, native, !!profile?.writesWithoutAsking)
+  const readOnly = readOnlyLevel(role, !!profile?.writesWithoutAsking)
   if (readOnly === 'requested') {
     host.post(child.id, {
       type: 'notice',
@@ -87,5 +87,5 @@ export async function roleFirstMessage(
       }
     })
   }
-  return roleOpening(role, task, { native, ...(readOnly ? { readOnly } : {}) })
+  return roleOpening(role, task, readOnly ? { readOnly } : {})
 }

@@ -932,20 +932,24 @@ export class ConversationManager {
   }
 
   /** Change un réglage et le mémorise pour ce profil (réappliqué aux prochaines sessions). */
-  async setControl(id: string, controlId: string, value: ControlValue): Promise<void> {
+  async setControl(
+    id: string,
+    controlId: string,
+    value: ControlValue,
+    { remember = true }: { remember?: boolean } = {}
+  ): Promise<void> {
     const conversation = this.get(id)
     if (!conversation.host) throw new Error(t('conversations.error.noLiveAgent'))
     await conversation.host.setControl(controlId, value)
-    this.settings.rememberControl(conversation.record.profileId, controlId, value)
+    // Mode d'un rôle, modèle d'une fille (fiche 223) : pour cette conversation seulement.
+    if (remember) this.settings.rememberControl(conversation.record.profileId, controlId, value)
   }
 
   rename(id: string, title: string): void {
     const clean = title.trim().slice(0, 200)
     if (!clean) throw new Error(t('conversations.error.emptyTitle'))
-    this.updateRecord(id, (record) => {
-      record.title = clean
-      record.titleSource = 'user'
-    })
+    const renamed: Partial<ConversationRecord> = { title: clean, titleSource: 'user' }
+    this.updateRecord(id, (record) => Object.assign(record, renamed))
   }
 
   /**

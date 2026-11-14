@@ -40,12 +40,11 @@ describe('lancement d’une fille avec un rôle (fiche 223)', () => {
   })
 
   it('lecture seule imposée, ou seulement demandée pour un agent qui écrit sans demander', () => {
-    const readOnly = role({ readOnly: true })
-    expect(readOnlyLevel(role(), false, true)).toBeUndefined()
-    expect(readOnlyLevel(readOnly, false, false)).toBe('enforced')
-    expect(readOnlyLevel(readOnly, false, true)).toBe('requested')
-    // Le mode natif choisi par le rôle fait foi chez un agent qui ne demande rien.
-    expect(readOnlyLevel(readOnly, true, true)).toBe('enforced')
+    const readOnly = role({ readOnly: true, mode: 'build' })
+    expect(readOnlyLevel(role(), true)).toBeUndefined()
+    expect(readOnlyLevel(readOnly, false)).toBe('enforced')
+    // Un mode natif ne prouve pas la lecture seule (relecture) : seulement demandée.
+    expect(readOnlyLevel(readOnly, true)).toBe('requested')
   })
 })
 

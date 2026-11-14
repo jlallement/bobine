@@ -191,15 +191,16 @@ describe('ce qui part à l’agent', () => {
   })
 
   it('premier message : consigne du rôle sans mode natif, lecture seule toujours dite', () => {
-    const plain = roleOpening(secu, 'Audite auth.js', { native: false, readOnly: 'enforced' })
+    const plain = roleOpening(secu, 'Audite auth.js', { readOnly: 'enforced' })
     expect(plain.startsWith('<bobine_role name="security-expert">\nAudit only.\n')).toBe(true)
     expect(plain).toContain('Bobine refuses your write requests.')
     expect(plain.endsWith('</bobine_role>\n\nAudite auth.js')).toBe(true)
-    const native = roleOpening(secu, 'Audite auth.js', { native: true, readOnly: 'requested' })
-    expect(native).not.toContain('Audit only.')
-    expect(native).toContain('Bobine checks the folder after each of your turns')
+    // Consigne toujours là, mode natif ou non (relecture).
+    const requested = roleOpening(secu, 'Audite auth.js', { readOnly: 'requested' })
+    expect(requested).toContain('Audit only.')
+    expect(requested).toContain('Bobine checks the folder after each of your turns')
     const writer = role('dev', 'user', { prompt: 'Code.' })
-    expect(roleOpening(writer, 'Tâche', { native: true })).toBe('Tâche')
+    expect(roleOpening(writer, 'Tâche')).toBe('<bobine_role name="dev">\nCode.\n</bobine_role>\n\nTâche')
   })
 
   it('rôle retenu relu du disque : vérifié, retiré s’il est abîmé', () => {

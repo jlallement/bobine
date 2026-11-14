@@ -3127,7 +3127,7 @@
     },
     "writesWithoutAsking": {
       "label": "Writes without asking",
-      "detail": "{{agent}} changes files without asking for permission (default setting): a role’s read-only mode is only requested, unless the role picks a native mode; Bobine reports any change to the folder."
+      "detail": "{{agent}} changes files without asking for permission (default setting): a role’s read-only mode is only requested there, even in a native mode; Bobine reports any change to the folder."
     }
   },
   "permissionOption": {
@@ -4758,7 +4758,7 @@
       "readOnlyRequested": "Read-only is only requested: {{agent}} writes without asking for permission. Bobine checks the folder after each turn and reports any change.",
       "folderChanged": "The folder changed during this read-only role’s turn. Check the changes (git status).",
       "childFolderChanged": "The folder changed during the turn of “{{title}}”, a read-only role working in this folder. Check the changes (git status).",
-      "modeMissing": "The agent has no “{{mode}}” mode for this role: the role’s instructions go in the first message."
+      "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions."
     }
   }
 }

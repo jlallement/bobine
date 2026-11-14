@@ -429,8 +429,11 @@ export async function applyModel(
     .snapshot?.controls.find((c) => c.id === model.controlId)
   if (control?.type !== 'select' || control.currentValue === model.value) return
   if (!control.options.some((o) => o.value === model.value)) return
-  await conversations.setControl(childId, model.controlId, model.value).catch((error) => {
-    // La fille part quand même, avec le modèle que l'agent a pris.
-    log.warn('Modèle de la conversation fille non appliqué :', error)
-  })
+  // Pour cette fille seulement : le défaut du profil reste celui de l'utilisateur (fiche 223).
+  await conversations
+    .setControl(childId, model.controlId, model.value, { remember: false })
+    .catch((error) => {
+      // La fille part quand même, avec le modèle que l'agent a pris.
+      log.warn('Modèle de la conversation fille non appliqué :', error)
+    })
 }

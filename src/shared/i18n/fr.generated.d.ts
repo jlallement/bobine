@@ -3075,7 +3075,7 @@ export type FrResources = {
     }
     readonly writesWithoutAsking: {
       readonly label: 'Écrit sans demander'
-      readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’est que demandée, sauf mode natif choisi par le rôle ; Bobine signale tout changement du dossier.'
+      readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier.'
     }
   }
   readonly permissionOption: {
@@ -4790,7 +4790,7 @@ export type FrResources = {
       readonly readOnlyRequested: 'Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.'
       readonly folderChanged: 'Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).'
       readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).'
-      readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la consigne du rôle part dans le premier message.'
+      readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.'
     }
   }
 }
