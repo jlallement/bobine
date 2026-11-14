@@ -77,5 +77,10 @@ export const ROLE_ICONS: Readonly<Record<string, LucideIcon>> = {
 
 export const ROLE_ICON_NAMES = Object.keys(ROLE_ICONS)
 
-/** Composant de l'icône d'un rôle ; icône par défaut pour un nom inconnu. */
-export const roleIcon = (name: string): LucideIcon => ROLE_ICONS[name] ?? Bot
+/**
+ * Composant de l'icône d'un rôle ; icône par défaut pour un nom inconnu. `Object.hasOwn` : un nom
+ * hérité de l'objet (`constructor`, `toString`, `__proto__`), valide pour l'en-tête d'un fichier,
+ * ne doit pas rendre une fonction d'`Object` (écran blanc).
+ */
+export const roleIcon = (name: string): LucideIcon =>
+  Object.hasOwn(ROLE_ICONS, name) ? (ROLE_ICONS[name] ?? Bot) : Bot
