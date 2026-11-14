@@ -122,7 +122,10 @@ humain était derrière le clavier**. On ne désactive rien et on ne contourne r
     passe maintenant `BOBINE_PRESET_FOLDER=<d>` (profil temporaire seulement) ; le premier choix de
     dossier de Bobine rend ce dossier sans fenêtre, une seule fois (`takePresetFolder`,
     `main/dialogs.ts`, testé) ; les suivants ouvrent la vraie fenêtre. L'accueil reste joué en
-    entier (`cliquer "Choisir…"`).
+    entier (`cliquer "Choisir…"`). Relecture du tech lead : ce crochet d'essai n'est suivi que sur
+    un profil temporaire (`--profil-temporaire`, fiche 148) ; sur le profil de l'utilisateur ou
+    dans l'app installée, la variable est ignorée et dite une fois au journal (nouveau
+    `log.debug`, écrit au niveau Détaillé). Testé dans les deux cas.
   - `envoyer` insérait le texte au curseur et emportait un brouillon laissé dans la zone de saisie.
     La zone est d'abord vidée comme au clavier (⌘A puis ⌫, commandes d'édition `selectAll` et
     `deleteBackward` du protocole DevTools), son contenu vérifié avant Entrée, et un message qui

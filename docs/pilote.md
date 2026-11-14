@@ -57,7 +57,9 @@ pnpm pilote arreter
   158). Sur le profil temporaire, l'accueil demande encore « Où travailler ? » : le premier
   « Choisir… » rend ce dossier sans la fenêtre de macOS (`BOBINE_PRESET_FOLDER`, une seule fois ;
   les choix suivants ouvrent la vraie fenêtre). L'accueil se joue donc en entier, par computer use
-  ou `pnpm pilote cliquer "Choisir…"`. Avec `--profil`, rien n'est préréglé.
+  ou `pnpm pilote cliquer "Choisir…"`. Avec `--profil`, rien n'est préréglé. Bobine ne suit cette
+  variable que sur un profil temporaire (`--profil-temporaire`) : ailleurs, elle l'ignore et le dit
+  une fois au journal (niveau Détaillé).
 - **`arreter`** : quitte cette instance et elle seule (SIGTERM, puis SIGKILL à son groupe de
   processus au bout de 10 s), par son pid, après avoir vérifié que ce pid porte bien le port de
   débogage du pilote (un pid réutilisé par un autre programme n'est jamais tué). Après un SIGKILL,
