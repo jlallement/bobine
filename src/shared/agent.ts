@@ -574,6 +574,8 @@ export type AgentEvent =
   | { type: 'memory-proposal'; proposal: import('./memory').MemoryProposal }
   /** Index de la mémoire joint à la session (fiche 182) : son poids, pour l'onglet Session. */
   | { type: 'memory-context'; tokens: number }
+  /** Documents d'une discussion créés ou modifiés pendant le tour (fiche 224), posé par l'app. */
+  | { type: 'documents'; names: string[] }
   /** La conversation continue avec un autre agent (fiche 108), posé par l'app dans son fil. */
   | { type: 'handover'; handover: Handover }
   /** Départ du worktree de la conversation (fiches 110, 117), posé par l'app en tête de son fil. */

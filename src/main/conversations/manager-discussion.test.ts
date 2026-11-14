@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -9,7 +9,7 @@ import { discussionsRoot } from './discussion-space'
 import { ConversationTrash } from './trash'
 
 /** Espace Discussion (fiche 224) : gestionnaire sur des dossiers jetables, agent factice. */
-function launch() {
+function launch(scenario = 'echo') {
   const root = mkdtempSync(join(tmpdir(), 'discussion-'))
   const workspace = mkdtempSync(join(tmpdir(), 'projet-'))
   const conversationsDir = join(root, 'conversations')
@@ -17,7 +17,7 @@ function launch() {
     id: 'texte',
     label: 'Factice',
     command: process.execPath,
-    args: [MOCK_AGENT_ENTRY, '--scenario', 'echo', '--delay', '0', '--store', join(root, 's')],
+    args: [MOCK_AGENT_ENTRY, '--scenario', scenario, '--delay', '0', '--store', join(root, 's')],
     env: {}
   }
   const manager = new ConversationManager({
@@ -105,6 +105,23 @@ describe('espace Discussion (fiche 224)', () => {
     expect(kinds).toContain('user')
     expect(manager.view(id).transcript.items).toHaveLength(before)
     expect(manager.settingsView().recentWorkspaces).toContain(workspace)
+    manager.stopAll()
+  })
+
+  it('agent factice `discussion-document` : écriture accordée dans les documents, refusée hors du dossier', async () => {
+    const { manager } = launch('discussion-document')
+    const view = await manager.create({ space: 'discussion' })
+    const id = view.summary.id
+    await manager.prompt(id, 'Fais la synthèse')
+    const folder = view.summary.workspace
+    expect(readFileSync(join(folder, 'Synthèse.md'), 'utf8')).toContain('L’Ouest')
+    expect(existsSync(join(folder, 'jamais.md'))).toBe(false)
+    const keys = manager
+      .view(id)
+      .transcript.items.flatMap((i) =>
+        i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []
+      )
+    expect(keys).toEqual(['discussion.notice.writeAllowed', 'discussion.notice.writeRefused'])
     manager.stopAll()
   })
 })

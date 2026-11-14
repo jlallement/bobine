@@ -2806,6 +2806,14 @@ export type FrResources = {
       readonly quit: 'Quitter'
     }
     readonly restore: { readonly title: 'Sauvegarde à restaurer'; readonly button: 'Choisir' }
+    readonly saveDocument: {
+      readonly title: 'Enregistrer une copie du document'
+      readonly button: 'Enregistrer ici'
+    }
+    readonly continueInProject: {
+      readonly title: 'Continuer la discussion dans un projet'
+      readonly button: 'Continuer ici'
+    }
   }
   readonly quit: {
     readonly title_one: 'Un agent travaille encore'
@@ -5020,6 +5028,61 @@ export type FrResources = {
     readonly notice: {
       readonly writeAllowed: 'Écriture accordée dans les documents de la discussion : {{tool}}'
       readonly writeRefused: 'Écriture refusée hors des documents de la discussion : {{tool}}'
+    }
+    readonly error: {
+      readonly notDiscussion: 'Cette conversation n’est pas une discussion : elle n’a pas de documents.'
+    }
+    readonly space: {
+      readonly label: 'Espace'
+      readonly code: 'Code'
+      readonly discussion: 'Discussion'
+    }
+    readonly newDiscussion: 'Nouvelle discussion'
+    readonly recent: 'Récentes'
+    readonly greeting: '{{hello}}, sur quoi travaille-t-on ?'
+    readonly greetingWithName: '{{hello}} {{name}}, sur quoi travaille-t-on ?'
+    readonly placeholder: 'Posez une question, demandez un texte, joignez un document…'
+    readonly dropHint: 'Glissez ici des PDF, Word, Excel ou images : ils restent avec la discussion.'
+    readonly suggestions: {
+      readonly summarize: {
+        readonly label: 'Résume un document'
+        readonly text: 'Résume le document joint en quelques points : '
+      }
+      readonly table: {
+        readonly label: 'Fais un tableau'
+        readonly text: 'Fais un tableau à partir de '
+      }
+      readonly email: { readonly label: 'Rédige un e-mail'; readonly text: 'Rédige un e-mail ' }
+      readonly explain: {
+        readonly label: 'Explique une notion'
+        readonly text: 'Explique-moi simplement '
+      }
+    }
+    readonly documents: {
+      readonly tab: 'Documents'
+      readonly heading: 'Documents de la discussion · {{count}}'
+      readonly add: 'Ajouter un document…'
+      readonly drop: 'Glissez un document ici pour l’ajouter'
+      readonly empty: 'Aucun document pour l’instant.'
+      readonly open: 'Ouvrir'
+      readonly saveCopy: 'Enregistrer une copie…'
+      readonly reveal: 'Afficher dans le Finder'
+      readonly noPreview: 'Pas d’aperçu pour ce document : ouvrez-le avec son app.'
+      readonly truncated: 'Aperçu coupé : le document est plus long.'
+      readonly saved: 'Copie enregistrée : {{path}}'
+      readonly added: 'Ajouté aux documents : {{names}}'
+      readonly meta: '{{size}} · {{date}}'
+      readonly cardTitle: 'Documents créés ou modifiés'
+    }
+    readonly continue: {
+      readonly menu: 'Continuer dans un projet…'
+      readonly title: 'Continuer dans un projet'
+      readonly text: 'Une nouvelle conversation s’ouvre dans l’espace Code, dans le dossier que vous allez choisir. Cette discussion lui est passée avec votre premier message ; elle reste telle quelle ici.'
+      readonly copy_one: 'Copier le document dans le projet (dossier documents/)'
+      readonly copy_other: 'Copier les {{count}} documents dans le projet (dossier documents/)'
+      readonly choose: 'Choisir le dossier…'
+      readonly cancel: 'Annuler'
+      readonly copy_many: 'Copier les {{count}} documents dans le projet (dossier documents/)'
     }
   }
 }

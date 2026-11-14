@@ -80,6 +80,7 @@ import { folderHandlers } from './conversations/additional-directories-ipc'
 import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
 import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
+import { documentsHandlers } from './documents/ipc'
 
 /** Sous-ensemble d'`ipcMain` dont on a besoin : permet de tester sans Electron. */
 /** Envoie un évènement aux fenêtres de l'app (rien pendant la fermeture : à l'appelant de voir). */
@@ -157,6 +158,8 @@ export type ConversationController = Pick<
   | 'ready'
   | 'post'
   | 'settings'
+  | 'subscribe'
+  | 'continueInProject'
 >
 
 /** Réglages de l'app que les handlers changent (implémenté par SettingsStore, fiche 089). */
@@ -252,10 +255,13 @@ function parseAgentSession(value: unknown): AgentSessionView {
 
 function parseConfigureRequest(value: unknown): AgentConfigureRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { profileId, workspace } = value as Record<string, unknown>
+  const { profileId, workspace, space } = value as Record<string, unknown>
+  if (space !== undefined && space !== 'code' && space !== 'discussion')
+    throw new Error('Paramètre invalide : space')
   return {
     profileId: profileId === undefined ? undefined : str(profileId, 'profileId'),
-    workspace: workspace === undefined ? undefined : str(workspace, 'workspace')
+    workspace: workspace === undefined ? undefined : str(workspace, 'workspace'),
+    ...(space ? { space } : {})
   }
 }
 
@@ -488,6 +494,12 @@ export function createHandlers(
     ...turnLimitHandlers(c),
     ...memoryHandlers(deps.memory, deps.memoryIpc),
     ...rolesHandlers(deps.roles),
+    ...documentsHandlers(c, {
+      chooseFiles: deps.chooseFiles,
+      chooseDirectory: deps.chooseDirectory,
+      openPath: deps.changes.openPath,
+      reveal: deps.changes.reveal
+    }),
     ...scheduleHandlers(deps.scheduler),
     ...profileHandlers(deps.profile),
     ...handoverHandlers(c, () => deps.providers?.list() ?? []),

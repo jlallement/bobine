@@ -180,6 +180,8 @@ export type TranscriptItem =
    * (D10) ; elle l'a reçu sans qu'il soit répété dans le fil.
    */
   | ({ kind: 'handover'; id: number; resent?: number } & Handover)
+  /** Documents d'une discussion créés ou modifiés pendant le tour (fiche 224) : leurs cartes. */
+  | { kind: 'documents'; id: number; names: string[] }
   /**
    * Départ du worktree de la conversation (fiche 117). Les fils d'avant gardent leurs deux avis
    * (`notice` de clés `worktrees.notice.*`, fiche 110).
@@ -405,6 +407,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return { ...state, usage: withAsideCost(state.usage, event.cost) }
     case 'memory-context':
       return { ...state, memoryTokens: event.tokens }
+    case 'documents':
+      return push(state, { kind: 'documents', names: event.names })
     case 'cost-cap-set':
     case 'cost-cap-reached':
     case 'cost-cap-answer':
@@ -469,9 +473,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     case 'subagent-update': {
       // Seuls ses outils et ses messages : sa réflexion alourdirait l'historique sans servir.
       const kind = event.update.sessionUpdate
-      if (kind !== 'tool_call' && kind !== 'tool_call_update' && kind !== 'agent_message_chunk') {
+      if (kind !== 'tool_call' && kind !== 'tool_call_update' && kind !== 'agent_message_chunk')
         return state
-      }
       // Outil du sous-agent sorti dans le fil (autorisation demandée) : sa suite y va aussi.
       if (
         (kind === 'tool_call' || kind === 'tool_call_update') &&

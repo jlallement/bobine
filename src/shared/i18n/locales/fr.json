@@ -2956,6 +2956,14 @@
     "restore": {
       "title": "Sauvegarde à restaurer",
       "button": "Choisir"
+    },
+    "saveDocument": {
+      "title": "Enregistrer une copie du document",
+      "button": "Enregistrer ici"
+    },
+    "continueInProject": {
+      "title": "Continuer la discussion dans un projet",
+      "button": "Continuer ici"
     }
   },
   "quit": {
@@ -5202,6 +5210,64 @@
     "notice": {
       "writeAllowed": "Écriture accordée dans les documents de la discussion : {{tool}}",
       "writeRefused": "Écriture refusée hors des documents de la discussion : {{tool}}"
+    },
+    "error": {
+      "notDiscussion": "Cette conversation n’est pas une discussion : elle n’a pas de documents."
+    },
+    "space": {
+      "label": "Espace",
+      "code": "Code",
+      "discussion": "Discussion"
+    },
+    "newDiscussion": "Nouvelle discussion",
+    "recent": "Récentes",
+    "greeting": "{{hello}}, sur quoi travaille-t-on ?",
+    "greetingWithName": "{{hello}} {{name}}, sur quoi travaille-t-on ?",
+    "placeholder": "Posez une question, demandez un texte, joignez un document…",
+    "dropHint": "Glissez ici des PDF, Word, Excel ou images : ils restent avec la discussion.",
+    "suggestions": {
+      "summarize": {
+        "label": "Résume un document",
+        "text": "Résume le document joint en quelques points : "
+      },
+      "table": {
+        "label": "Fais un tableau",
+        "text": "Fais un tableau à partir de "
+      },
+      "email": {
+        "label": "Rédige un e-mail",
+        "text": "Rédige un e-mail "
+      },
+      "explain": {
+        "label": "Explique une notion",
+        "text": "Explique-moi simplement "
+      }
+    },
+    "documents": {
+      "tab": "Documents",
+      "heading": "Documents de la discussion · {{count}}",
+      "add": "Ajouter un document…",
+      "drop": "Glissez un document ici pour l’ajouter",
+      "empty": "Aucun document pour l’instant.",
+      "open": "Ouvrir",
+      "saveCopy": "Enregistrer une copie…",
+      "reveal": "Afficher dans le Finder",
+      "noPreview": "Pas d’aperçu pour ce document : ouvrez-le avec son app.",
+      "truncated": "Aperçu coupé : le document est plus long.",
+      "saved": "Copie enregistrée : {{path}}",
+      "added": "Ajouté aux documents : {{names}}",
+      "meta": "{{size}} · {{date}}",
+      "cardTitle": "Documents créés ou modifiés"
+    },
+    "continue": {
+      "menu": "Continuer dans un projet…",
+      "title": "Continuer dans un projet",
+      "text": "Une nouvelle conversation s’ouvre dans l’espace Code, dans le dossier que vous allez choisir. Cette discussion lui est passée avec votre premier message ; elle reste telle quelle ici.",
+      "copy_one": "Copier le document dans le projet (dossier documents/)",
+      "copy_other": "Copier les {{count}} documents dans le projet (dossier documents/)",
+      "choose": "Choisir le dossier…",
+      "cancel": "Annuler",
+      "copy_many": "Copier les {{count}} documents dans le projet (dossier documents/)"
     }
   }
 }
