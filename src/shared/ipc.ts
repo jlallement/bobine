@@ -38,6 +38,7 @@ import type { ConversationCap } from './cost-cap'
 import type { HandoverTarget } from './handover'
 import { MEMORY_CHANNELS, type MemoryIpcContract } from './memory-ipc'
 import { ROLES_CHANNELS, type RolesIpcContract } from './roles-ipc'
+import { DOCUMENTS_CHANNELS, type DocumentsIpcContract } from './documents-ipc'
 import type { GitChanges, GitFileDiff, RevertOutcome } from './changes'
 import type { FileLinkOutcome, FileOpenOutcome, MarkdownDocument } from './file-links'
 import type { EditorInfo, EditorOpenOutcome } from './editors'
@@ -145,7 +146,12 @@ export interface InstalledFonts {
 
 /** Canaux "invoke" : le renderer demande, le main répond. */
 export interface IpcInvokeContract
-  extends MemoryIpcContract, ProfileIpcContract, ApprovalRulesIpcContract, RolesIpcContract {
+  extends
+    MemoryIpcContract,
+    ProfileIpcContract,
+    ApprovalRulesIpcContract,
+    RolesIpcContract,
+    DocumentsIpcContract {
   'app:getInfo': { args: []; result: AppInfo }
   /** Polices installées (fiche 136), lues une fois par le main. */
   'app:fonts': { args: []; result: InstalledFonts }
@@ -1110,5 +1116,6 @@ export const IPC_CHANNELS = [
   ...MEMORY_CHANNELS,
   ...PROFILE_CHANNELS,
   ...APPROVAL_RULES_CHANNELS,
-  ...ROLES_CHANNELS
+  ...ROLES_CHANNELS,
+  ...DOCUMENTS_CHANNELS
 ] as const satisfies readonly IpcChannel[]

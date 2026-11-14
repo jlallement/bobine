@@ -2,7 +2,7 @@
  * Sauvegarde du profil (fiches 043, 197) : copie datée, dans un dossier choisi hors du dossier de
  * données, de tout ce qui fait le profil — conversations (corbeille comprise), réglages,
  * autorisations retenues, tâches planifiées, consommation, mémoire (souvenirs et empreintes,
- * fiche 182), marque de version — sans les secrets (clés d'API et clé des empreintes de la
+ * fiche 182), documents des discussions (fiche 224), marque de version — sans les secrets (clés d'API et clé des empreintes de la
  * mémoire, chiffrées par le trousseau de ce Mac ; variables d'environnement des agents déclarés ;
  * identifiants du proxy) ni les fichiers temporaires. Restaurée sur un autre Mac, les souvenirs
  * sont à revalider (leurs empreintes ne correspondent plus à la clé de ce Mac). Écrite dans `<nom>.partiel`, renommée à la fin : une
@@ -35,6 +35,8 @@ export const PROFILE_ENTRIES = {
   // Mémoire (fiche 182) : souvenirs et empreintes ; jamais `memory.key` (trousseau de ce Mac).
   memory: 'dir',
   'memory.approved.json': 'file',
+  // Documents des discussions (fiche 224) : sans eux, une discussion restaurée serait vide.
+  discussions: 'dir',
   [PROFILE_FILE]: 'file'
 } as const satisfies Record<string, 'dir' | 'file'>
 
@@ -172,6 +174,14 @@ export async function backupProfile(
       await cp(memory, join(partial, 'memory'), {
         recursive: true,
         filter: (source) => !source.endsWith('.tmp')
+      })
+    }
+    // Discussions : leurs documents, sans lien symbolique (une sauvegarde n'en a jamais).
+    const discussions = join(userData, 'discussions')
+    if (existsSync(discussions)) {
+      await cp(discussions, join(partial, 'discussions'), {
+        recursive: true,
+        filter: (source) => !source.endsWith('.tmp') && !lstatSync(source).isSymbolicLink()
       })
     }
     for (const name of ['approvals.json', 'scheduled-tasks.json', 'memory.approved.json']) {

@@ -1,0 +1,223 @@
+/*
+ * Espace Discussion (fiche 224, maquettes E1–E6) : sélecteur Code | Discussion en tête de la barre
+ * latérale, accueil (zone de dépôt), cartes de documents du fil, panneau « Documents ».
+ */
+
+/* Sélecteur d'espace : deux segments, celui de l'espace affiché en relief. */
+.space-switch {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 10px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.space-switch button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.space-switch button[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent);
+  font-weight: 600;
+}
+.space-switch kbd {
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Accueil : où déposer des documents. */
+.discussion-drop-hint {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Cartes des documents créés ou modifiés pendant un tour. */
+.document-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.document-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  max-width: 560px;
+}
+.document-card .document-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+}
+.document-card .document-text {
+  flex: 1;
+  min-width: 0;
+}
+.document-card .document-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.document-card .document-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.document-card .btn {
+  white-space: nowrap;
+}
+
+/* Panneau « Documents » : la liste, puis l'aperçu du document choisi. */
+.documents-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.documents-list {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.documents-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 4px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.documents-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.documents-row:hover,
+.documents-row[aria-selected='true'] {
+  background: var(--surface-2);
+}
+.documents-row .documents-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.documents-row .documents-meta {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.documents-drop {
+  margin-top: 8px;
+  padding: 9px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+.documents-drop.over {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.documents-empty {
+  margin: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.documents-preview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px;
+}
+.documents-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.documents-preview-bar .documents-preview-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.documents-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text);
+}
+.documents-preview img {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+}
+.documents-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Carte d'autorisation d'une discussion : la commande repliée sous « Détails techniques ». */
+.permission-details > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}

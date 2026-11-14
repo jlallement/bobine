@@ -51,7 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
-import { askReadOnly, automaticAnswer, readOnlyRefusal } from './permission-answers'
+import { askReadOnly, automaticAnswer, hostRules } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
@@ -139,6 +139,8 @@ export interface AgentHostOptions {
   initialMode?: 'plan' | 'execute'
   /** Fille d'un rôle en lecture seule (fiche 223) : demandes d'écriture refusées d'office. */
   readOnly?: boolean
+  /** Discussion (fiche 224) : écritures accordées dans ce dossier, refusées ailleurs. */
+  writeArea?: string
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */
   timeouts?: Partial<typeof TIMEOUTS>
   /**
@@ -837,11 +839,9 @@ export class AgentHost {
     const automatic = automaticAnswer(
       { ...params, toolCall },
       {
-        autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
-        remembered: this.options.rememberedTools,
-        place,
-        readOnly: this.options.readOnly,
-        onRefused: (refused) => this.options.emit(readOnlyRefusal(refused))
+        ...hostRules(this.options, this.updates.knownLocations(toolCall.toolCallId)),
+        autoAllowed: (call) => this.appTools.autoAllowed(call),
+        place
       }
     )
     if (automatic) return automatic

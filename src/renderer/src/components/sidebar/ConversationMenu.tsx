@@ -7,6 +7,7 @@ import {
   Columns2,
   FileDown,
   FileJson,
+  FolderInput,
   Pencil,
   Pin,
   PinOff,
@@ -32,6 +33,8 @@ export interface ConversationActions {
   onOpenBeside?: () => void
   /** « Lancer en parallèle… » : une conversation fille (fiche 097). */
   onLaunchChild?: () => void
+  /** « Continuer dans un projet… » d'une discussion (fiche 224). */
+  onContinueInProject?: () => void
 }
 
 /**
@@ -48,15 +51,28 @@ export function ConversationMenuItems({
   onArchive,
   onDelete,
   onOpenBeside,
-  onLaunchChild
+  onLaunchChild,
+  onContinueInProject
 }: ConversationActions & { conversation: ConversationSummary; testIdPrefix: string }) {
   const { t } = useTranslation()
   const id = (name: string) => `${testIdPrefix}-${name}`
   // Profil en lecture seule (fiche 196) : désactivé, la raison en infobulle.
   const { readOnly } = useProfileStatus()
   const locked = readOnly ? { disabled: true, title: t('profile.readOnly.line') } : {}
+  const discussion = conversation.space === 'discussion'
   return (
     <>
+      {discussion && onContinueInProject && !conversation.draft && (
+        <Dropdown.Item
+          className="menu-item"
+          onSelect={onContinueInProject}
+          data-testid={id('continue-in-project')}
+          {...locked}
+        >
+          <FolderInput size={15} className="menu-icon" />
+          <span className="menu-text">{t('discussion.continue.menu')}</span>
+        </Dropdown.Item>
+      )}
       <Dropdown.Item className="menu-item" onSelect={onPin} data-testid={id('pin')} {...locked}>
         {conversation.pinned ? (
           <PinOff size={15} className="menu-icon" />
@@ -78,7 +94,9 @@ export function ConversationMenuItems({
         </Dropdown.Item>
       )}
       {/* Une fille n'a pas de filles (un seul niveau) ; une mère est dans l'historique, active. */}
+      {/* Pas de filles dans une discussion (fiche 224). */}
       {onLaunchChild &&
+        !discussion &&
         !conversation.draft &&
         !conversation.archived &&
         !conversation.startedFrom && (

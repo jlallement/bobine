@@ -779,7 +779,8 @@
       "folderFallback": "The folder “{{folder}}” no longer exists: the conversation starts from “{{fallback}}”."
     },
     "branchSuffix": "branch",
-    "saveFailedDiskFull": "Couldn’t save {{what}}: the disk is full. Free up some space: Bobine tries again at the next save, and when quitting."
+    "saveFailedDiskFull": "Couldn’t save {{what}}: the disk is full. Free up some space: Bobine tries again at the next save, and when quitting.",
+    "newDiscussionTitle": "New chat"
   },
   "copy": {
     "action": "Copy",
@@ -2052,7 +2053,8 @@
       "changes": "Changes",
       "document": "Preview",
       "acp": "ACP messages",
-      "session": "Session"
+      "session": "Session",
+      "documents": "Documents"
     }
   },
   "android": {
@@ -2628,7 +2630,9 @@
       "shortcuts": "Keyboard Shortcuts",
       "activity": "My activity",
       "aside": "Aside…",
-      "help": "Bobine Help"
+      "help": "Bobine Help",
+      "space-code": "Code space",
+      "space-discussion": "Chat space"
     },
     "interface": {
       "send": {
@@ -2860,6 +2864,14 @@
     "restore": {
       "title": "Backup to restore",
       "button": "Choose"
+    },
+    "saveDocument": {
+      "title": "Save a copy of the document",
+      "button": "Save here"
+    },
+    "continueInProject": {
+      "title": "Continue the chat in a project",
+      "button": "Continue here"
     }
   },
   "quit": {
@@ -3742,7 +3754,9 @@
       "renewTitle": "New session with {{agent}}",
       "renewDetailNoResume": "{{agent}} can’t resume its earlier session. The earlier exchange is passed on as text with the first message.",
       "renewDetailLost": "{{agent}} lost its earlier session. The earlier exchange is passed on as text with the first message.",
-      "renewDetailTurnLimit": "{{agent}} refused to continue in its earlier session, whose step limit was reached. The earlier exchange is passed on as text with your message."
+      "renewDetailTurnLimit": "{{agent}} refused to continue in its earlier session, whose step limit was reached. The earlier exchange is passed on as text with your message.",
+      "discussionTitle": "Continued from a chat",
+      "discussionDetail": "The chat is sent as text to {{agent}} with your first message. The chat itself stays as it was in the Chat space."
     }
   },
   "aboutWindow": {
@@ -5070,5 +5084,78 @@
       "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
       "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
     }
+  },
+  "discussion": {
+    "notice": {
+      "writeAllowed": "Write allowed in the chat’s documents: {{tool}}",
+      "writeRefused": "Write refused outside the chat’s documents: {{tool}}",
+      "limitRequestedOnly": "Limit to the documents only requested: {{agent}} writes and runs commands without asking for permission. After each turn Bobine shows the documents that changed, but cannot see what it writes elsewhere.",
+      "attachmentMissing": "Attachment not found, not sent: {{names}}"
+    },
+    "error": {
+      "notDiscussion": "This conversation is not a chat: it has no documents.",
+      "noRoles": "No roles in a chat: continue it in a project to call on a role.",
+      "notOpenable": "This file does not open from Bobine: it could run a program. Use “Show in Finder”."
+    },
+    "space": {
+      "label": "Space",
+      "code": "Code",
+      "discussion": "Chat"
+    },
+    "newDiscussion": "New chat",
+    "recent": "Recent",
+    "greeting": "{{hello}}, what are we working on?",
+    "greetingWithName": "{{hello}} {{name}}, what are we working on?",
+    "placeholder": "Ask a question, request a text, attach a document…",
+    "dropHint": "Drop PDF, Word, Excel or image files here: they stay with the chat.",
+    "suggestions": {
+      "summarize": {
+        "label": "Summarize a document",
+        "text": "Summarize the attached document in a few points: "
+      },
+      "table": {
+        "label": "Make a table",
+        "text": "Make a table from "
+      },
+      "email": {
+        "label": "Write an email",
+        "text": "Write an email "
+      },
+      "explain": {
+        "label": "Explain a concept",
+        "text": "Explain simply "
+      }
+    },
+    "documents": {
+      "tab": "Documents",
+      "heading": "Chat documents · {{count}}",
+      "add": "Add a document…",
+      "drop": "Drop a document here to add it",
+      "empty": "No documents yet.",
+      "open": "Open",
+      "saveCopy": "Save a copy…",
+      "reveal": "Show in Finder",
+      "noPreview": "No preview for this document: open it in its app.",
+      "truncated": "Preview cut: the document is longer.",
+      "saved": "Copy saved: {{path}}",
+      "added": "Added to the documents: {{names}}",
+      "meta": "{{size}} · {{date}}",
+      "cardTitle": "Documents created or changed"
+    },
+    "continue": {
+      "menu": "Continue in a project…",
+      "title": "Continue in a project",
+      "text": "A new conversation opens in the Code space, in the folder you are about to choose. This chat is passed to it with your first message; it stays as it is here.",
+      "copy_one": "Copy the document into the project (documents/ folder)",
+      "copy_other": "Copy the {{count}} documents into the project (documents/ folder)",
+      "choose": "Choose the folder…",
+      "cancel": "Cancel"
+    },
+    "permission": {
+      "execute": "{{agent}} wants to run a program on your Mac",
+      "executeSub": "It is waiting for your answer. The technical detail is below, if you want to read it.",
+      "details": "Technical details"
+    },
+    "requestedOnlyHint": "{{agent}} writes without asking for permission: staying within the chat’s documents is only requested of it."
   }
 }

@@ -2,6 +2,20 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- Chat space: Bobine is also a chat, next to the code. The Code | Chat switcher at the top of the
+  sidebar (⌘1 / ⌘2) opens a space with no project, to ask a question, write an email or work on
+  documents. Drop PDF, Word, Excel or image files there: they are copied into the chat (your
+  originals are not touched) and stay with it. Documents the agent creates or changes show up as
+  cards in the thread and in the “Documents” panel (preview, Open, Save a copy…). There the agent
+  has none of Bobine’s tools (browser, terminal, child conversations); its writes are allowed in
+  the chat’s documents and refused elsewhere, and each answer is shown. “Continue in a project…”
+  (title menu) picks up the chat in a Code-space conversation, with the documents copied if you
+  want.
+
 ## 1.0.0-beta.3 — November 14, 2026
 
 ### New

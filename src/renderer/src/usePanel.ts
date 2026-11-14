@@ -79,8 +79,10 @@ export function usePanel(options: {
    * recouvre (« Mon activité » fermée). Absent : jamais.
    */
   autoOpen?: { eligible: boolean; sidebarOpen: boolean }
+  /** Espace Discussion (fiche 224) : ses « Documents », pas d'outils de Bobine. */
+  discussion?: boolean
 }) {
-  const { conversationId, request, items, hasChanges, autoOpen } = options
+  const { conversationId, request, items, hasChanges, autoOpen, discussion } = options
   const [panel, setPanel] = useState(loadPanel)
   const update = useCallback(
     (change: Partial<PanelState>) => setPanel((current) => ({ ...current, ...change })),
@@ -194,7 +196,8 @@ export function usePanel(options: {
     closed: new Set(conversationId ? (closedTabs[conversationId] ?? []) : []),
     hasChanges,
     hasPreview: !!preview,
-    unavailable: unavailablePanelTabs(platformFeatures()),
+    unavailable: unavailablePanelTabs(platformFeatures(), discussion),
+    discussion: !!discussion,
     arrival
   })
   // Ordre d'arrivée retenu (fiche 154) : un onglet qui apparaît s'ajoute à droite et ne bouge plus ;

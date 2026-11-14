@@ -70,6 +70,8 @@ export interface ConversationRecord {
    * proposées dans « Reprendre une session… ». Les plus récentes, bornées.
    */
   asideSessions?: { profileId: string; sessionId: string }[]
+  /** Discussion (fiche 224) : `workspace` est son dossier de documents, tenu par Bobine. */
+  space?: 'discussion'
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -91,7 +93,7 @@ export function isRecord(value: unknown): value is ConversationRecord {
 
 /** Résumé de consommation vérifié : un résumé mal formé est retiré, pas la conversation. */
 function withUsage(record: ConversationRecord): ConversationRecord {
-  const checked = withRole(record)
+  const checked = withSpace(withRole(record))
   if (checked.usage === undefined) return checked
   const { usage, ...rest } = checked
   const digest = parseUsageDigest(usage)
@@ -104,6 +106,13 @@ function withRole(record: ConversationRecord): ConversationRecord {
   const { role, ...rest } = record
   const stamp = parseRoleStamp(role)
   return stamp ? { ...rest, role: stamp } : rest
+}
+
+/** Espace (fiche 224) : seule valeur retenue, `discussion` ; toute autre est retirée (espace Code). */
+function withSpace(record: ConversationRecord): ConversationRecord {
+  if (record.space === undefined || record.space === 'discussion') return record
+  const { space: _ignored, ...rest } = record
+  return rest
 }
 
 /** Autres dossiers (fiche 179) : seulement des chemins ; une liste abîmée est retirée. */

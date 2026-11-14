@@ -93,6 +93,8 @@ export interface VisibleTabsInput {
   hasChanges: boolean
   /** Un document est en aperçu (l'onglet « Aperçu » n'existe qu'à cette condition). */
   hasPreview: boolean
+  /** Espace Discussion (fiche 224) : l'onglet « Documents » n'existe qu'à cette condition. */
+  discussion?: boolean
   /** Outils que la plateforme n'a pas (`unavailablePanelTabs`) : jamais affichés. */
   unavailable?: ReadonlySet<PanelTab>
   /**
@@ -102,9 +104,19 @@ export interface VisibleTabsInput {
   arrival?: readonly PanelTab[]
 }
 
-/** Onglets d'outils absents de la plateforme (fiche 145) : ni affichés, ni proposés par « + ». */
-export function unavailablePanelTabs(features: PlatformFeatures): ReadonlySet<PanelTab> {
-  return new Set<PanelTab>(features.simulator ? [] : ['simulator'])
+/**
+ * Onglets d'outils absents de la plateforme (fiche 145) ou de l'espace (fiche 224) : ni affichés,
+ * ni proposés par « + ». Une discussion n'a pas les outils de Bobine (navigateur, simulateurs,
+ * terminal) ; seule une discussion a ses « Documents ».
+ */
+export function unavailablePanelTabs(
+  features: PlatformFeatures,
+  discussion = false
+): ReadonlySet<PanelTab> {
+  const tools: PanelTab[] = discussion
+    ? ['browser', 'simulator', 'android', 'terminal']
+    : ['documents', ...(features.simulator ? [] : (['simulator'] as const))]
+  return new Set<PanelTab>(tools)
 }
 
 /**
@@ -114,11 +126,15 @@ export function unavailablePanelTabs(features: PlatformFeatures): ReadonlySet<Pa
  */
 export function visiblePanelTabs(input: VisibleTabsInput): PanelTab[] {
   const { used, active, opened, closed, hasChanges, hasPreview, unavailable, arrival = [] } = input
+  const { discussion = false } = input
   const shown = PANEL_TABS.map((tab) => tab.id).filter((id) => {
     if (unavailable?.has(id)) return false
     if (id === 'document') return hasPreview
+    if (id === 'documents' && !discussion) return false
     if (id === active) return true
     if (closed.has(id)) return false
+    // Documents d'une discussion (fiche 224) : toujours là, tant qu'on ne les a pas fermés.
+    if (id === 'documents') return true
     // « Session » (fiche 166) : toujours là, tant qu'on ne l'a pas fermé.
     if (id === 'session') return true
     return used.has(id) || opened.has(id) || (id === 'changes' && hasChanges)
@@ -195,7 +211,8 @@ export function saveClosedTabs(closed: Record<string, PanelTab[]>): void {
 /** Outils proposés par le menu « + » : ceux qui n'ont pas d'onglet, si la plateforme les a. */
 export function hiddenPanelTabs(
   visible: readonly PanelTab[],
-  unavailable: ReadonlySet<PanelTab> = new Set()
+  // « Documents » (fiche 224) : seulement dans une discussion, qui le dit en le retirant d'ici.
+  unavailable: ReadonlySet<PanelTab> = new Set<PanelTab>(['documents'])
 ): PanelTab[] {
   return PANEL_TABS.map((tab) => tab.id).filter(
     (id) => id !== 'document' && !visible.includes(id) && !unavailable.has(id)

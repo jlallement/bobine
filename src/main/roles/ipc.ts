@@ -24,6 +24,8 @@ export interface RolesIpcDeps {
    * rien envoyer à son agent : un `@rôle` en premier message y rattache ses filles.
    */
   keepDraft?: (conversationId: string, text: string) => void
+  /** Conversation de l'espace Discussion (fiche 224) : pas de rôles, `@rôle` refusé. */
+  inDiscussion?: (conversationId: string) => boolean
 }
 
 const SCOPES: readonly RoleScope[] = ['builtin', 'user', 'project']
@@ -97,6 +99,7 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       if (!children) throw new Error(t('ipc.unavailable.children'))
       const id = optionalId(conversationId)
       if (!id) throw new Error('Paramètre invalide : conversationId')
+      if (available().inDiscussion?.(id)) throw new Error(t('discussion.error.noRoles'))
       const parsed = parseRolesStartRequest(request)
       const keep = available().keepDraft
       return startRoleChildren(children, id, parsed, keep ? () => keep(id, parsed.text) : undefined)

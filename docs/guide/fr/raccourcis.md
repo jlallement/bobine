@@ -22,6 +22,8 @@ clavier.
 | ⌘F | Rechercher… | Édition |
 | ⌘G | Rechercher le suivant | Édition |
 | ⇧⌘G | Rechercher le précédent | Édition |
+| ⌘1 | Espace Code | Affichage |
+| ⌘2 | Espace Discussion | Affichage |
 | ⌘B | Barre latérale | Affichage |
 | ⌘J | Panneau de droite | Affichage |
 | ⇧⌘J | Agrandir le panneau | Affichage |

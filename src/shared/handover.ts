@@ -29,7 +29,7 @@ export interface Handover {
    * d'y continuer, sa limite d'étapes atteinte (`turn-limit`, fiche 209). Absent : bascule vers un
    * autre agent, choisie par l'utilisateur.
    */
-  reason?: 'no-resume' | 'session-lost' | 'turn-limit'
+  reason?: 'no-resume' | 'session-lost' | 'turn-limit' | 'discussion'
 }
 
 /** Où partent les messages, du plus précis au plus vague. */
@@ -93,7 +93,9 @@ export function handoverMessageCount(items: readonly TranscriptItem[]): number {
 const RENEWAL_CAUSE: Record<NonNullable<Handover['reason']>, string> = {
   'no-resume': 'that could not be resumed',
   'session-lost': 'that could not be resumed',
-  'turn-limit': 'that had reached its step limit'
+  'turn-limit': 'that had reached its step limit',
+  // Fiche 224 : une discussion de l'espace Discussion, continuée dans un projet.
+  discussion: 'held as a chat, outside any project folder'
 }
 
 /**

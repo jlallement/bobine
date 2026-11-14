@@ -7,6 +7,8 @@ import type { GitBranchInfo } from '../common/Menus'
  * garde sa place pour le mode, le modèle et l'agent. Mêmes menus au clic qu'avant.
  */
 export function ComposerContext(props: {
+  /** Espace Discussion (fiche 224) : ni dossier ni branche à montrer. */
+  hidden?: boolean | undefined
   settings: AgentSettingsView | null
   /** Réponse ou démarrage en cours : pas de dossier à changer. */
   locked: boolean
@@ -26,7 +28,7 @@ export function ComposerContext(props: {
   const { settings, branch, gitBranch } = props
   // Conversation en worktree : sa branche est déjà la puce du dossier.
   const ownBranch = gitBranch && gitBranch.name !== branch ? gitBranch : undefined
-  if (!settings && !ownBranch) return null
+  if (props.hidden || (!settings && !ownBranch)) return null
   return (
     <ComposerFocus.Provider value={props.onFocusInput}>
       <div className="composer-context" data-testid="composer-context">

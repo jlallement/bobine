@@ -1,4 +1,5 @@
 import type { ImageAttachment } from '@shared/attachments'
+import { DocumentsTab } from '../discussion/DocumentsPanel'
 import { PaneBoundary } from '../common/SafeBoundary'
 import { Check, ListChecks, Maximize2, Minimize2, PanelLeft, X } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
@@ -31,6 +32,8 @@ const ATTACHED_NOTICE_MS = 3000
 let animatedOpening = 0
 
 interface Props {
+  /** Espace Discussion (fiche 224) : onglet « Documents », pas d'outils de Bobine. */
+  discussion?: boolean
   /** Numéro de l'ouverture réelle du panneau (`usePanel`) : il glisse en arrivant (fiche 185, P1). */
   opening?: number
   /** Conversation affichée (son navigateur, sa liste de tâches). */
@@ -99,6 +102,7 @@ interface Props {
  * (fiche 082).
  */
 export function SidePanel({
+  discussion,
   conversationId,
   workspace,
   title,
@@ -175,7 +179,7 @@ export function SidePanel({
   }
   const stopDrag = () => (dragging.current = false)
 
-  const hidden = hiddenPanelTabs(tabs, unavailablePanelTabs(platformFeatures()))
+  const hidden = hiddenPanelTabs(tabs, unavailablePanelTabs(platformFeatures(), discussion))
   const label = (id: PanelTab) => PANEL_TABS.find((entry) => entry.id === id)?.label ?? id
   const sizeLabel = maximized ? t('sidePanel.restore') : t('sidePanel.maximize')
 
@@ -347,6 +351,7 @@ export function SidePanel({
               onClose={preview.onClose}
             />
           )}
+          <DocumentsTab tab={tab} conversationId={conversationId} items={items} />
           {conversationId && (
             <ToolTab
               tab={tab}

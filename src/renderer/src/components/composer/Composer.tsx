@@ -79,6 +79,11 @@ interface Props {
   settings: AgentSettingsView | null
   /** Conversation encore vide (accueil) : l'invite demande quoi faire, pas de répondre. */
   fresh?: boolean
+  /**
+   * Espace Discussion (fiche 224) : ni dossier ni branche sous la saisie, pas de puce de mode
+   * (le mode reste dans les réglages de la session), invite propre.
+   */
+  discussion?: boolean
   /** Consommation rapportée par l'agent pour cette conversation. */
   usage?: ConversationUsage
   /** Compaction en un clic, plafond de coût (fiche 157). */
@@ -155,7 +160,15 @@ const hasPlaceholder = (status: string): status is (typeof PLACEHOLDER_STATUSES)
  * Invite de la zone de saisie : selon l'agent, le dossier à choisir, le mode plan (fiche 098), une
  * conversation encore vide, ou répondre.
  */
-function placeholderOf(view: ComposerView, fresh: boolean, profileLabel: string | undefined) {
+function placeholderOf(
+  view: ComposerView,
+  where: { fresh?: boolean | undefined; discussion?: boolean | undefined },
+  profileLabel: string | undefined
+) {
+  const fresh = !!where.fresh
+  const discussion = where.discussion
+  // Espace Discussion (fiche 224) : une conversation neuve, agent prêt.
+  if (discussion && fresh && view.status === 'ready') return i18next.t('discussion.placeholder')
   const { status } = view
   if (view.blocker?.kind === 'workspace') return i18next.t('composer.placeholder.needsFolder')
   const refused = refusedTurnText(view.blocker, 'placeholder')
@@ -496,7 +509,7 @@ export function Composer(props: Props) {
           onKeyUp={trackCaret}
           onClick={trackCaret}
           onPaste={onPaste}
-          placeholder={placeholderOf(view, !!props.fresh, snapshot?.info.profileLabel)}
+          placeholder={placeholderOf(view, props, snapshot?.info.profileLabel)}
           aria-describedby={view.planMode ? planHintId : undefined}
           rows={1}
           disabled={!!blocker}
@@ -514,6 +527,7 @@ export function Composer(props: Props) {
           hasContent={hasContent}
           controls={controls}
           modeControl={modeControl}
+          hideMode={props.discussion}
           modelControl={view.modelControl}
           agentLabel={agentLabel}
           usage={props.usage}
@@ -547,6 +561,7 @@ export function Composer(props: Props) {
         agentLabel={agentLabel}
       />
       <ComposerContext
+        hidden={props.discussion}
         settings={settings}
         locked={locked}
         branch={props.branch}

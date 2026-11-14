@@ -107,6 +107,12 @@ export const READ_ONLY_SAFE = [
   'changes:open',
   'changes:reveal',
   'git:status',
+  // Documents d'une discussion (fiche 224) : lus, ouverts, montrés, copiés hors du profil.
+  'documents:list',
+  'documents:open',
+  'documents:reveal',
+  'documents:saveCopy',
+  'documents:preview',
   'worktree:info',
   'worktree:orphans',
   'pr:status',
@@ -293,7 +299,11 @@ export const PROFILE_CHANGING = [
   'roles:startChildren',
   // Écrit dans les fichiers d'un agent ET dans le registre du profil : jamais l'un sans l'autre.
   'roles:export',
-  'roles:exportRemove'
+  'roles:exportRemove',
+  // Copiés dans le dossier de la discussion, dans le profil (fiche 224).
+  'documents:add',
+  'documents:pick',
+  'discussion:continueInProject'
 ] as const satisfies readonly IpcChannel[]
 
 const SAFE: ReadonlySet<string> = new Set(READ_ONLY_SAFE)

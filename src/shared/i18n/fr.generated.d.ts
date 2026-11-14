@@ -817,6 +817,7 @@ export type FrResources = {
     }
     readonly branchSuffix: 'branche'
     readonly saveFailedDiskFull: 'Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant.'
+    readonly newDiscussionTitle: 'Nouvelle discussion'
   }
   readonly copy: {
     readonly action: 'Copier'
@@ -2101,6 +2102,7 @@ export type FrResources = {
       readonly document: 'Aperçu'
       readonly acp: 'Échanges ACP'
       readonly session: 'Session'
+      readonly documents: 'Documents'
     }
   }
   readonly android: {
@@ -2598,6 +2600,8 @@ export type FrResources = {
       readonly activity: 'Mon activité'
       readonly aside: 'Aparté…'
       readonly help: 'Aide de Bobine'
+      readonly 'space-code': 'Espace Code'
+      readonly 'space-discussion': 'Espace Discussion'
     }
     readonly interface: {
       readonly send: { readonly label: 'Envoyer le message' }
@@ -2805,6 +2809,14 @@ export type FrResources = {
       readonly quit: 'Quitter'
     }
     readonly restore: { readonly title: 'Sauvegarde à restaurer'; readonly button: 'Choisir' }
+    readonly saveDocument: {
+      readonly title: 'Enregistrer une copie du document'
+      readonly button: 'Enregistrer ici'
+    }
+    readonly continueInProject: {
+      readonly title: 'Continuer la discussion dans un projet'
+      readonly button: 'Continuer ici'
+    }
   }
   readonly quit: {
     readonly title_one: 'Un agent travaille encore'
@@ -3732,6 +3744,8 @@ export type FrResources = {
       readonly renewDetailNoResume: '{{agent}} ne sait pas reprendre sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.'
       readonly renewDetailLost: '{{agent}} a perdu sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.'
       readonly renewDetailTurnLimit: '{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message.'
+      readonly discussionTitle: 'Suite d’une discussion'
+      readonly discussionDetail: 'L’échange de la discussion est transmis en texte à {{agent}} avec votre premier message. La discussion reste telle quelle dans l’espace Discussion.'
     }
   }
   readonly aboutWindow: {
@@ -5086,5 +5100,76 @@ export type FrResources = {
       readonly projectOverrides: 'Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.'
       readonly watchFailed: 'La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).'
     }
+  }
+  readonly discussion: {
+    readonly notice: {
+      readonly writeAllowed: 'Écriture accordée dans les documents de la discussion : {{tool}}'
+      readonly writeRefused: 'Écriture refusée hors des documents de la discussion : {{tool}}'
+      readonly limitRequestedOnly: 'Limite aux documents seulement demandée : {{agent}} écrit et lance des commandes sans demander d’autorisation. Bobine montre après chaque tour les documents changés, mais ne voit pas ce qu’il écrit ailleurs.'
+      readonly attachmentMissing: 'Pièce jointe introuvable, non envoyée : {{names}}'
+    }
+    readonly error: {
+      readonly notDiscussion: 'Cette conversation n’est pas une discussion : elle n’a pas de documents.'
+      readonly noRoles: 'Pas de rôles dans une discussion : continuez-la dans un projet pour faire appel à un rôle.'
+      readonly notOpenable: 'Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le Finder ».'
+    }
+    readonly space: {
+      readonly label: 'Espace'
+      readonly code: 'Code'
+      readonly discussion: 'Discussion'
+    }
+    readonly newDiscussion: 'Nouvelle discussion'
+    readonly recent: 'Récentes'
+    readonly greeting: '{{hello}}, sur quoi travaille-t-on ?'
+    readonly greetingWithName: '{{hello}} {{name}}, sur quoi travaille-t-on ?'
+    readonly placeholder: 'Posez une question, demandez un texte, joignez un document…'
+    readonly dropHint: 'Glissez ici des PDF, Word, Excel ou images : ils restent avec la discussion.'
+    readonly suggestions: {
+      readonly summarize: {
+        readonly label: 'Résume un document'
+        readonly text: 'Résume le document joint en quelques points : '
+      }
+      readonly table: {
+        readonly label: 'Fais un tableau'
+        readonly text: 'Fais un tableau à partir de '
+      }
+      readonly email: { readonly label: 'Rédige un e-mail'; readonly text: 'Rédige un e-mail ' }
+      readonly explain: {
+        readonly label: 'Explique une notion'
+        readonly text: 'Explique-moi simplement '
+      }
+    }
+    readonly documents: {
+      readonly tab: 'Documents'
+      readonly heading: 'Documents de la discussion · {{count}}'
+      readonly add: 'Ajouter un document…'
+      readonly drop: 'Glissez un document ici pour l’ajouter'
+      readonly empty: 'Aucun document pour l’instant.'
+      readonly open: 'Ouvrir'
+      readonly saveCopy: 'Enregistrer une copie…'
+      readonly reveal: 'Afficher dans le Finder'
+      readonly noPreview: 'Pas d’aperçu pour ce document : ouvrez-le avec son app.'
+      readonly truncated: 'Aperçu coupé : le document est plus long.'
+      readonly saved: 'Copie enregistrée : {{path}}'
+      readonly added: 'Ajouté aux documents : {{names}}'
+      readonly meta: '{{size}} · {{date}}'
+      readonly cardTitle: 'Documents créés ou modifiés'
+    }
+    readonly continue: {
+      readonly menu: 'Continuer dans un projet…'
+      readonly title: 'Continuer dans un projet'
+      readonly text: 'Une nouvelle conversation s’ouvre dans l’espace Code, dans le dossier que vous allez choisir. Cette discussion lui est passée avec votre premier message ; elle reste telle quelle ici.'
+      readonly copy_one: 'Copier le document dans le projet (dossier documents/)'
+      readonly copy_other: 'Copier les {{count}} documents dans le projet (dossier documents/)'
+      readonly choose: 'Choisir le dossier…'
+      readonly cancel: 'Annuler'
+      readonly copy_many: 'Copier les {{count}} documents dans le projet (dossier documents/)'
+    }
+    readonly permission: {
+      readonly execute: '{{agent}} veut lancer un programme sur votre Mac'
+      readonly executeSub: 'Il attend votre accord. Le détail technique est dessous, si vous voulez le lire.'
+      readonly details: 'Détails techniques'
+    }
+    readonly requestedOnlyHint: '{{agent}} écrit sans demander d’autorisation : rester dans les documents de la discussion lui est seulement demandé.'
   }
 }

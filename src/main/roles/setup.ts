@@ -63,7 +63,11 @@ export function appRoles(
       folderOf,
       children: () => live().children,
       exports,
-      keepDraft: (id, text) => live().conversations.keepDraft(id, text)
+      keepDraft: (id, text) => live().conversations.keepDraft(id, text),
+      inDiscussion: (id) =>
+        live()
+          .conversations.state()
+          .conversations.some((c) => c.id === id && c.space === 'discussion')
     },
     forChildren: {
       roles: library,

@@ -1,4 +1,5 @@
 import type { ToolCallContent, ToolKind } from '../../../../shared/acp-sdk.mts'
+import { DiscussionContext } from '../discussion/DocumentCards'
 import {
   Ban,
   Brain,
@@ -408,6 +409,52 @@ function PermissionAnswer({
   )
 }
 
+/**
+ * Question d'une carte d'autorisation. Dans une discussion (fiche 224, maquette E4), une commande
+ * est dite en clair pour qui ne lit pas le shell ; son détail reste dessous, replié.
+ */
+function PermissionQuestion({ item, agentName }: { item: ToolItem; agentName: string }) {
+  const { t } = useTranslation()
+  if (useContext(DiscussionContext) && item.toolKind === 'execute') {
+    return (
+      <div>
+        <div className="pc-title">{t('discussion.permission.execute', { agent: agentName })}</div>
+        <div className="pc-sub">{t('discussion.permission.executeSub')}</div>
+      </div>
+    )
+  }
+  return (
+    <div>
+      <div className="pc-title">
+        {item.subagent
+          ? t('toolCall.permission.question.subagent')
+          : item.todos
+            ? t('toolCall.permission.question.todos')
+            : createsFile(item)
+              ? t('toolCall.permission.question.create')
+              : t(
+                  hasQuestion(item.toolKind ?? 'other')
+                    ? `toolCall.permission.question.${item.toolKind as (typeof QUESTION_KINDS)[number]}`
+                    : 'toolCall.permission.question.other'
+                )}
+      </div>
+      <div className="pc-sub">{t('toolCall.permission.waiting')}</div>
+    </div>
+  )
+}
+
+/** Commande d'une carte : dans une discussion (fiche 224), repliée sous « Détails techniques ». */
+function PlainCommand({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
+  if (!useContext(DiscussionContext)) return <>{children}</>
+  return (
+    <details className="permission-details" data-testid="permission-details">
+      <summary>{t('discussion.permission.details')}</summary>
+      {children}
+    </details>
+  )
+}
+
 /** Autorisation d'un outil ; `body` : son détail, à la place de celui de l'outil (sous-agent). */
 export function PermissionView({
   item,
@@ -461,22 +508,7 @@ export function PermissionView({
     >
       <div className="pc-head">
         <ShieldAlert size={18} className="pc-icon" />
-        <div>
-          <div className="pc-title">
-            {item.subagent
-              ? t('toolCall.permission.question.subagent')
-              : item.todos
-                ? t('toolCall.permission.question.todos')
-                : createsFile(item)
-                  ? t('toolCall.permission.question.create')
-                  : t(
-                      hasQuestion(item.toolKind ?? 'other')
-                        ? `toolCall.permission.question.${item.toolKind as (typeof QUESTION_KINDS)[number]}`
-                        : 'toolCall.permission.question.other'
-                    )}
-          </div>
-          <div className="pc-sub">{t('toolCall.permission.waiting')}</div>
-        </div>
+        <PermissionQuestion item={item} agentName={agentName} />
       </div>
       {body ? (
         <div className="pc-body">{body}</div>
@@ -492,12 +524,14 @@ export function PermissionView({
             {!item.todos && item.args && <ToolArgsView args={item.args} />}
             {/* La commande entière, à lire avant d'accepter (0.11, M1). */}
             {command && (
-              <CommandBlock
-                command={command}
-                workspace={workspace}
-                locations={item.locations}
-                announced={announcedTitle(item)}
-              />
+              <PlainCommand>
+                <CommandBlock
+                  command={command}
+                  workspace={workspace}
+                  locations={item.locations}
+                  announced={announcedTitle(item)}
+                />
+              </PlainCommand>
             )}
             {(item.content.length > 0 || item.locations.length > 0) && (
               <ToolDetails

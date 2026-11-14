@@ -106,7 +106,25 @@ describe('onglets du panneau (fiche 082)', () => {
     })
     expect(visible).toEqual(['session', 'browser'])
     expect(hiddenPanelTabs(visible, unavailable)).not.toContain('simulator')
-    expect(unavailablePanelTabs(ALL_FEATURES).size).toBe(0)
+    // Hors d'une discussion, seul l'onglet « Documents » manque (fiche 224).
+    expect([...unavailablePanelTabs(ALL_FEATURES)]).toEqual(['documents'])
+  })
+
+  it('discussion (fiche 224) : « Documents » toujours là, pas d’outils de Bobine', () => {
+    const unavailable = unavailablePanelTabs(ALL_FEATURES, true)
+    const visible = visiblePanelTabs({
+      used: new Set(['browser']),
+      active: 'session',
+      opened: new Set(),
+      closed: new Set(),
+      hasChanges: false,
+      hasPreview: false,
+      unavailable,
+      discussion: true
+    })
+    expect(visible).toEqual(['session', 'documents'])
+    expect(hiddenPanelTabs(visible, unavailable)).not.toContain('terminal')
+    expect(hiddenPanelTabs(['session'], unavailable)).toContain('documents')
   })
 
   it('onglet qui apparaît (fiche 154) : à droite, les autres ne bougent plus', () => {

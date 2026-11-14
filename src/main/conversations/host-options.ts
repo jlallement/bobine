@@ -4,6 +4,7 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
+import { DISCUSSION_CONTEXT, ensureDiscussionFolder } from './discussion-space'
 import {
   capabilitiesReminder,
   childContext,
@@ -42,7 +43,8 @@ export interface HostOptionsInput {
     | 'memory'
     | 'agentHome'
     | 'roles'
-  >
+  > &
+    Partial<Pick<ConversationManagerOptions, 'conversationsDir'>>
   settings: SettingsStore
   /** Fil de la conversation au moment de l'envoi. */
   items: () => readonly TranscriptItem[]
@@ -65,6 +67,8 @@ function deniedCommandOption(
 
 export function hostOptions(input: HostOptionsInput): AgentHostOptions {
   const { profile, record, app, settings, works } = input
+  // Discussion dont le dossier a disparu (Finder) : recréé avant que l'agent y démarre (fiche 224).
+  if (app.conversationsDir) ensureDiscussionFolder(app.conversationsDir, record)
   const pending: { notice?: ReturnType<typeof noticeFor> } = {}
   // Avis de version montré au premier « prêt » qui suit l'annonce, s'il n'a jamais été vu : la
   // clé n'est retenue que quand l'avis entre dans le fil (fiche 198).
@@ -101,8 +105,10 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     ...deniedCommandOption(profile, app.agentHome, record.workspace),
     toolServer: app.toolServer,
     // Rôle (fiche 223) : seulement ses familles d'outils s'il les choisit ; écritures refusées.
-    toolModules: roleToolModules(app.toolModules, record.role),
+    // Discussion (fiche 224) : aucun outil de Bobine ; écritures accordées dans ses documents.
+    toolModules: record.space === 'discussion' ? [] : roleToolModules(app.toolModules, record.role),
     ...(record.role?.readOnly ? { readOnly: true } : {}),
+    ...(record.space === 'discussion' ? { writeArea: record.workspace } : {}),
     initialControls: { ...profile.defaultControls, ...settings.current.controls?.[profile.id] },
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],
@@ -134,6 +140,8 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Index de la mémoire (fiche 182) : à une session qui a reçu `remember` (mémoire activée, pas
     // un relecteur, famille « Mémoire » pas coupée).
     sessionContext: (tools, moment) => {
+      // Discussion (fiche 224) : ni filles ni mémoire ; seulement où elle se passe.
+      if (record.space === 'discussion') return DISCUSSION_CONTEXT
       const capabilities = tools.includes('start_child')
         ? childrenSessionContext(settings.preferences().childProposals, moment, roles())
         : undefined

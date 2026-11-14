@@ -109,3 +109,23 @@ describe('ProfileUpdates : diffs des demandes d’autorisation, pour tout agent 
     expect(updates.adapt(done)).toBe(done)
   })
 })
+
+describe('ProfileUpdates : emplacements du tool_call (fiche 224, Bob 2.1.0)', () => {
+  it('la demande reste celle de l’agent (libellé, notification) ; ses emplacements connus à part', () => {
+    const updates = new ProfileUpdates({}, '/d')
+    updates.adapt({
+      sessionUpdate: 'tool_call',
+      toolCallId: 't1',
+      title: 'Modification de config.json',
+      kind: 'edit',
+      locations: [{ path: '/projet/config.json' }]
+    })
+    // Régression de la relecture : recopier les emplacements changeait la raison affichée
+    // (« Modification de /projet/config.json ») dans l'espace Code aussi.
+    expect(
+      updates.permission({ toolCallId: 't1', title: 'Modification de config.json' }).locations
+    ).toBeUndefined()
+    expect(updates.knownLocations('t1')).toEqual([{ path: '/projet/config.json' }])
+    expect(updates.knownLocations('autre')).toBeUndefined()
+  })
+})

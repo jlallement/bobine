@@ -15,6 +15,7 @@ import './motion.css'
 import './profile.css'
 import './onboarding.css'
 import './roles.css'
+import './discussion.css'
 
 // Fenêtre d'aide (fiche 186) : son code, son style et le guide restent hors du morceau principal.
 const HelpWindow = lazy(() =>
