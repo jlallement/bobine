@@ -542,11 +542,17 @@ input[type='checkbox'] {
 }
 
 /* Titre aligné à gauche : un bouton qui ouvre le menu de la conversation. */
+/*
+ * En-tête étroit (fenêtre de 1 280 px, panneau ouvert, fille avec rôle et « depuis… ») : le titre
+ * se tronque mais reste lisible, « depuis… » et le rôle cèdent d'abord, et rien ne déborde sur le
+ * panneau (essais réels de la fiche 223).
+ */
 .main-title {
   display: inline-flex;
+  flex: 0 1 auto;
   align-items: center;
   gap: 4px;
-  min-width: 0;
+  min-width: 96px;
   max-width: min(520px, 60%);
   padding: 5px 8px;
   margin-left: -8px;
@@ -579,6 +585,7 @@ input[type='checkbox'] {
 
 /* Fille (fiche 117) : « ↳ depuis « mère » » après le titre, qui ramène à la mère. */
 .main-title-origin {
+  flex: 0 4 auto;
   min-width: 0;
   max-width: min(320px, 30%);
   margin-left: 2px;
@@ -10060,6 +10067,7 @@ html.about-page body {
   flex: 1;
 }
 .temporary-chip {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;

@@ -200,6 +200,27 @@ async function mainRun(ui) {
     'en-tête de la fille : son rôle, lecture seule garantie'
   )
   await ui.shot('roles-travail-7-fille-entete')
+  // En-tête étroit (essais réels : 1 280 px, panneau ouvert, pastille « Profil temporaire ») : la
+  // pastille est posée comme en profil temporaire ; le titre reste lisible, rien ne déborde.
+  const narrow = await ui.ev(`(() => {
+    const header = document.querySelector('.main-header')
+    const chip = document.createElement('span')
+    chip.className = 'temporary-chip no-drag'
+    chip.dataset.e2e = 'chip'
+    chip.textContent = ${JSON.stringify(L('settings.data.fresh.chip'))}
+    header.querySelector('.grow').after(chip)
+    const right = header.getBoundingClientRect().right
+    return {
+      title: header.querySelector('.main-title').getBoundingClientRect().width,
+      overflow: [...header.children].some((el) => el.getBoundingClientRect().right > right + 1)
+    }
+  })()`)
+  check(
+    narrow.title >= 90 && !narrow.overflow,
+    `en-tête d'une fille étroit : titre lisible (${Math.round(narrow.title)} px), rien ne déborde`
+  )
+  await ui.shot('roles-travail-7b-entete-etroit')
+  await ui.ev(`document.querySelector('[data-e2e=chip]')?.remove()`)
   await ui.click(ui.$('title-origin'))
   await ui.waitFor(`!${ui.$('role-title-badge')}`)
 
