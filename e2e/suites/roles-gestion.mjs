@@ -31,10 +31,12 @@ Consigne.
 /**
  * Rôles, interface de gestion (fiche 223, phase 3A) : section « Équipe » de la barre latérale,
  * assistant de création en trois étapes (Qui, Comment, Avec quoi) jusqu'au fichier
- * `.bobine/roles/<nom>.md` du projet, « Créer et essayer » qui confie un travail au rôle (fille en
- * lecture seule, avatar du rôle sous sa mère), Réglages › Rôles (rôle de projet qui remplace un
- * rôle fourni, fichier écarté avec sa raison), modifier, désactiver, supprimer, état vide. Agent
- * factice, dépôt git jetable ; rien d'autre n'est touché.
+ * `.bobine/roles/<nom>.md` du projet, « Créer et essayer » qui pose le jeton du rôle dans la saisie
+ * (puis fille en lecture seule, avatar du rôle sous sa mère), clic sur un rôle de la section
+ * Équipe (même jeton), « Enregistrer comme rôle » sur une fille sans rôle (assistant prérempli),
+ * Réglages › Rôles (rôle de projet qui remplace un rôle fourni, fichier écarté avec sa raison),
+ * modifier, désactiver, supprimer, état vide. Agent factice, dépôt git jetable ; rien d'autre
+ * n'est touché.
  */
 export async function rolesGestionSuite(scheme) {
   console.log(`\n— Rôles : gestion (${scheme})`)
@@ -142,9 +144,13 @@ export async function rolesGestionSuite(scheme) {
         )
         await ui.shot('r4-assistant-avec-quoi')
 
-        // Créer et essayer : le fichier est écrit, « Confier à Expert perf » s'ouvre.
+        // Créer et essayer : le fichier est écrit, le jeton du rôle est posé dans la saisie.
+        const input = `document.querySelector('[data-testid="composer-input"]')`
+        const token = (name) =>
+          `document.querySelector('[data-testid=role-token][data-role="${name}"]')`
         await ui.click(ui.$('role-wizard-create-try'))
-        await ui.waitFor(`${ui.$('role-child-dialog')}?.dataset.role === 'expert-perf'`)
+        await ui.waitFor(`!${ui.$('role-wizard')}`)
+        await ui.waitFor(`!!${token('expert-perf')}`)
         const file = readFileSync(created, 'utf8')
         check(
           file.includes('name: expert-perf') &&
@@ -153,19 +159,82 @@ export async function rolesGestionSuite(scheme) {
             file.includes('Tu es un expert en performances.'),
           'fichier .bobine/roles/expert-perf.md écrit dans le projet (en-tête et consigne)'
         )
-        await fill('role-child-prompt', 'Pourquoi la page d’accueil est-elle lente ?')
-        await ui.shot('r5-confier')
-        await ui.click(ui.$('role-child-launch'))
-        await ui.waitFor(`!${ui.$('role-child-dialog')}`)
+        await ui.ev(`${input}.focus()`)
+        await ui.type('Pourquoi la page d’accueil est-elle lente ?')
+        await ui.shot('r5-essayer-jeton')
+        await ui.enter()
         // La fille apparaît sous sa mère, avec l'avatar du rôle.
         const child = `document.querySelector('[data-testid=history-item][data-mother] [data-testid=history-role]')`
         await ui.waitFor(`${child}?.dataset.icon === 'gauge'`, 30_000)
+        // La saisie se vide quand le main a rendu les filles lancées (après la liste).
+        await ui.waitFor(`${input}.value === '' && !${token('expert-perf')}`)
         check(
           true,
-          'fille lancée avec le rôle : son avatar (icône et couleur) dans la barre latérale'
+          'fille lancée avec le rôle depuis le jeton : son avatar dans la barre latérale, saisie vidée'
         )
         await ui.waitFor(`${team}.includes('expert-perf')`)
         await ui.shot('r6-fille-avec-role')
+
+        // Section Équipe : un clic pose le même jeton (un seul chemin pour invoquer un rôle).
+        await ui.click(
+          `document.querySelector('[data-testid=team-role][data-role=security-expert]')`
+        )
+        await ui.waitFor(`!!${token('security-expert')}`)
+        await ui.waitFor(`document.activeElement === ${input}`)
+        check(
+          (await ui.ev(`${ui.$('role-destination')}.innerText`)).includes(
+            L('roles.builtin.securityExpert')
+          ),
+          'section Équipe : jeton du rôle dans la saisie, qui a le focus ; « Partira à… » le nomme'
+        )
+        await ui.shot('r5b-equipe-jeton')
+        await ui.ev(`${input}.setSelectionRange(0, 0)`)
+        await ui.press('Backspace')
+        await ui.waitFor(`!${token('security-expert')}`)
+
+        // Une fille sans rôle qui a rendu son compte rendu : « Enregistrer comme rôle… ».
+        await ui.click(ui.$('title-menu'))
+        await ui.waitFor(
+          `${ui.$('title-launch-child')} && !${ui.$('title-launch-child')}.hasAttribute('data-disabled')`
+        )
+        await ui.click(ui.$('title-launch-child'))
+        await ui.waitFor(`!!${ui.$('child-dialog')}`)
+        await ui.ev(`${ui.$('child-prompt')}.focus()`)
+        await ui.type('Relis le diff de l’authentification. Ne modifie rien.')
+        await ui.click(ui.$('child-launch'))
+        await ui.waitFor(`!${ui.$('child-dialog')}`, 30_000)
+        const save = `document.querySelector('[data-testid=child-report]:not([data-role]) [data-testid=child-report-save-role]')`
+        await ui.waitFor(`!!${save}`, 30_000)
+        check(
+          !(await ui.ev(
+            `!!document.querySelector('[data-testid=child-report][data-role] [data-testid=child-report-save-role]')`
+          )),
+          'compte rendu : « Enregistrer comme rôle » seulement pour la fille sans rôle'
+        )
+        await ui.ev(`${save}.scrollIntoView({ block: 'center' })`)
+        await ui.shot('r11-enregistrer-comme-role')
+        await ui.click(save)
+        await ui.waitFor(`${step} === 'who'`)
+        await fill('role-label', 'Relecteur auth')
+        await fill('role-description', 'Relit un diff qui touche à l’authentification.')
+        await ui.click(ui.$('role-wizard-next'))
+        await ui.waitFor(`${step} === 'how'`)
+        check(
+          (await ui.ev(`${ui.$('role-prompt')}.value`)) ===
+            'Relis le diff de l’authentification. Ne modifie rien.',
+          'assistant prérempli : la demande faite à la fille devient la consigne'
+        )
+        await ui.shot('r12-assistant-prerempli')
+        await ui.click(ui.$('role-wizard-next'))
+        await ui.waitFor(`${step} === 'with'`)
+        check(
+          (await ui.ev(`${ui.$('role-agent')}.value`)) === 'mock',
+          'assistant prérempli : l’agent de la fille'
+        )
+        await ui.click(ui.$('role-wizard-cancel'))
+        await ui.waitFor(`!!${ui.$('role-wizard-discard')}`)
+        await ui.click(ui.$('role-wizard-discard'))
+        await ui.waitFor(`!${ui.$('role-wizard')}`)
 
         // Réglages › Rôles : trois groupes, rôle du projet qui remplace le fourni, fichier écarté.
         await ui.click(ui.$('open-settings'))

@@ -1147,6 +1147,8 @@ export const SUITES = [
       `${R}roles/`,
       `${R}roles.css`,
       `${C}settings/ConfirmRow.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${C}thread/Transcript.tsx`,
       `${C}sidebar/HistoryItem.tsx`,
       `${C}sidebar/SidebarSection.tsx`,
       `${C}dialogs/AppDialogs.tsx`,
