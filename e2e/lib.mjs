@@ -683,6 +683,17 @@ export async function withApp(
         }
       },
       /**
+       * Flèche avec son code de touche (fiche 225) : le navigateur fait aussi son geste natif
+       * (le curseur monte ou descend d'une ligne dans une zone de saisie) si la page ne l'empêche
+       * pas. `press` envoie un code nul, sans geste natif.
+       */
+      arrow: async (key) => {
+        const vk = { ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40 }[key]
+        for (const type of ['rawKeyDown', 'keyUp']) {
+          await cdp('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: vk })
+        }
+      },
+      /**
        * Ferme le panneau de droite s'il est ouvert (fiche 166 : il s'ouvre de lui-même sur
        * « Session » au premier message) ; fermé à la main, il reste fermé pour la conversation.
        */

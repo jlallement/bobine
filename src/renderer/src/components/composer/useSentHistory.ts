@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { parseSentHistory, type SentEntry, type SentRole } from '@shared/sent-history'
+import { addSentEntry, parseSentHistory, type SentEntry, type SentRole } from '@shared/sent-history'
 import { endOfFirstLine, onFirstLine, onLastLine, textareaCaretTops } from '../../visual-lines'
 import type { ComposerHistoryState } from '../../composer-keys'
 
@@ -55,7 +55,12 @@ export function useSentHistory(options: {
   attachments: number
 }) {
   const { conversationId, text, tokens, attachments } = options
-  const entries = useMemo(() => parseSentHistory(options.raw), [options.raw])
+  const { raw } = options
+  const parsed = useMemo(() => parseSentHistory(raw), [raw])
+  // Message tout juste envoyé : dans la liste tout de suite, sans attendre l'aller-retour du main
+  // (↑ juste après l'envoi le trouve) ; le fil reçu ensuite le contient et prend le relais.
+  const [optimistic, setOptimistic] = useState<{ base: unknown; list: SentEntry[] }>()
+  const entries = optimistic && optimistic.base === raw ? optimistic.list : parsed
   const [recalled, setRecalled] = useState<Recalled>()
   // Pièces jointes du message repris, qui ne reviennent pas : dit tant que la saisie n'est pas vide.
   const [lost, setLost] = useState(0)
@@ -84,6 +89,7 @@ export function useSentHistory(options: {
   const record = useCallback(
     (entry: SentEntry) => {
       if (!conversationId) return
+      setOptimistic({ base: raw, list: addSentEntry(entries, entry) })
       // Jamais un envoi empêché par l'historique : un échec (profil en lecture seule…) est ignoré.
       try {
         void window.api.conversations.recordSent(conversationId, entry).catch(() => undefined)
@@ -91,7 +97,7 @@ export function useSentHistory(options: {
         // API absente (essais de composants) : rien à garder.
       }
     },
-    [conversationId]
+    [conversationId, raw, entries]
   )
   return {
     entries,

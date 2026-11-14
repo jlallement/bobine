@@ -16,6 +16,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   de la discussion et refusées ailleurs, et chaque réponse est dite. « Continuer dans un projet… »
   (menu du titre) reprend la discussion dans une conversation de l'espace Code, documents copiés
   si vous le voulez.
+- Saisie : ↑ dans une saisie vide reprend le dernier message envoyé de la conversation, ↑ encore
+  les précédents, ↓ revient (puis rend la saisie vide). Le message revient tel que tapé, avec ses
+  jetons `@rôle` ; dans un message de plusieurs lignes, les flèches parcourent d'abord les lignes.
+  Une pastille « 9/10 » dit où vous en êtes, Échap vide la saisie, et toute modification en fait
+  un brouillon ordinaire. Chaque conversation a son historique, gardé avec elle.
 
 ## 1.0.0-beta.3 — 14 novembre 2026
 

@@ -1,6 +1,6 @@
 # 225 — Historique de la saisie : rappeler un message envoyé (↑ / ↓)
 
-- **Statut** : en cours
+- **Statut** : fait (relecture du tech lead)
 - **Dépend de** : 020 (file d'attente), 026 (brouillons), 089 (touches de la saisie), 191 (astuces),
   223 (rôles), 224 (espace Discussion)
 - **Agents** : les deux — rien de propre à un agent : l'historique est tenu par Bobine, côté main,
@@ -45,7 +45,8 @@ variante A de l'indicateur retenue).
   pas. 100 entrées au plus, doublons consécutifs fusionnés. Les commandes de l'app (`/clear`,
   `/context`…) n'y entrent pas : ce ne sont pas des messages.
 - **Stockage** : avec la conversation, dans son fil sur le disque (`sentHistory`, à côté de
-  `items`), écrit par le main ; le renderer passe par l'IPC typé. Jamais déduit du fil. Il part
+  `items`), écrit par le main (évènement d'app `sent-recorded`) ; le renderer le dit par l'IPC
+  typé (`conversation:recordSent`) et le relit avec le fil. Jamais déduit du fil. Il part
   avec la conversation à la corbeille, en revient avec elle, est effacé avec elle, et avec
   « Recommencer à neuf » (tout le dossier `conversations`).
 - **Indicateur** (variante A) : pastille « 9/10 · ↑↓ · Échap vider » posée sur le bord haut de la
@@ -78,21 +79,23 @@ variante A de l'indicateur retenue).
    nombre de pièces jointes), `addSentEntry` (vide ignoré, doublon consécutif fusionné, 100 au
    plus), `parseSentEntry` / `parseSentHistory` (ce qui vient du renderer ou du disque est vérifié).
    `TranscriptState.sentHistory` ; l'évènement `reset` (rejeu de session) le garde comme `usage`.
-2. **Main** — `ConversationManager.sentHistory(id)` / `recordSent(id, entry)` (fil chargé à la
-   demande, écrit tout de suite) ; canaux `conversation:sentHistory` (lecture, sûr en lecture
-   seule) et `conversation:recordSent` (écriture) dans `conversations/sent-history-ipc.ts` ; la
+2. **Main** — canal `conversation:recordSent` (écriture) dans `conversations/sent-history-ipc.ts` :
+   l'entrée vérifiée part dans le fil par `manager.post` (évènement d'app `sent-recorded`, réduit
+   par `reduceTranscript`, écrit comme le fil, renvoyé au renderer comme tout évènement) ; la
    fille enregistre sa consigne à son lancement (`children.ts`). Corbeille, restauration,
    effacement, réinitialisation : rien à faire, l'historique est dans le fichier du fil (essais).
-3. **Astuces** — `TipsState.hintUses` (`history` : nombre d'utilisations, 3 au plus), canal
-   `tips:hintUsed`, remis à zéro par « Tout réafficher » ; `Tips.hintShown` / `hintUsed`.
+3. **Astuces** — `TipsState.hintUses` (`history` : nombre d'utilisations, 3 au plus), compté par
+   `tips:record('history', 'used')`, remis à zéro par « Tout réafficher » ; `Tips.hint` /
+   `hintUsed`.
 4. **Touches** — `composer-keys.ts` : état `history` (nombre, position, première / dernière ligne
    affichée, entrée possible), actions `history-move` et `history-exit`. `visual-lines.ts` :
    ligne affichée du curseur par un miroir du `textarea` (mesure injectable, essais sans mise en
    page) et fin de la première ligne affichée.
-5. **Interface** — `useSentHistory.ts` (chargement, ajout optimiste, parcours, modification →
-   brouillon), `SentHistoryHint.tsx` (pastille, annonce, rappel, pièces jointes non reprises) ;
-   `Composer.tsx` branche le tout (la gestion des touches sort dans `composer-key-down.ts` pour
-   rester sous 800 lignes) ; `useRoleCompose` : jetons remplacés au rappel, envoi aux rôles
+5. **Interface** — `useSentHistory.ts` (liste lue du fil, ajout optimiste, parcours,
+   modification → brouillon), `useComposerHistory.ts` (rappel, envoi, rappel discret),
+   `SentHistory.tsx` (pastille, annonce, rappel, pièces jointes non reprises) ; `Composer.tsx`
+   branche le tout (la gestion des touches sort dans `composer-key-down.ts`, le bas de la saisie
+   dans `ComposerBelow`, pour rester sous les seuils de taille et de complexité) ; `useRoleCompose` : jetons remplacés au rappel, envoi aux rôles
    signalé (`onSent`). CSS dans `styles.css` (jetons du thème, clair et sombre).
 6. **Essais** — unitaires : touches (priorités, lignes, bornes, Échap), lignes affichées (repli
    simulé), historique partagé (doublons, plafond, validation), manager (par conversation, fille,
@@ -104,3 +107,24 @@ Aucune nouvelle dépendance.
 ## Journal
 
 - 2026-11-14 : fiche et plan.
+- 2026-11-14 : fait, en trois commits (stockage côté main, saisie, e2e et clôture).
+  - Écarts au plan : pas de canal de lecture (`conversation:sentHistory`) ni de méthodes du
+    gestionnaire : `manager.ts` est à son plafond de lignes ; l'historique passe par un évènement
+    d'app (`sent-recorded`) comme le plafond de coût, et le renderer le lit dans le fil qu'il a
+    déjà (`transcript.sentHistory`). Pas de canal `tips:hintUsed` : `src/shared/ipc.ts` est à
+    800 lignes ; `tips:record` accepte un rappel avec l'action `used`. `transcript.ts` aussi à
+    son plafond : ce que le fil garde au rejeu et l'ajout d'une entrée sont dans
+    `transcript-kept.ts`.
+  - Ajout optimiste : ↑ juste après un envoi trouvait encore l'ancienne liste (l'évènement du
+    main arrive un peu après) — vu par l'e2e ; la liste locale prend le message tout de suite.
+  - Écarts aux maquettes : un rôle supprimé revient en « @Libellé » (pas « @nom ») ; la ligne
+    « N pièces jointes non reprises » reste après une modification, jusqu'à ce que la saisie
+    soit vide (la maquette ne dit rien) ; le rappel suit aussi le réglage « Astuces de Bobine ».
+    La pastille peut chevaucher la languette d'une astuce (fiche 191) si les deux paraissent en
+    même temps (aparté pendant une réponse, contexte presque plein) : cas rare, laissé tel quel.
+  - Essais e2e : `ui.arrow` (flèche avec son code de touche, geste natif du curseur) ajouté à
+    `e2e/lib.mjs`, sans toucher `press`.
+- 2026-11-14 : `./scripts/verify` vert ; e2e `historique-saisie composer queue roles-travail`
+  (clair et sombre) vertes en français et en anglais (`--lang en`) ; captures
+  `e2e/captures/historique-{1-rappel,2-jeton-role,3-plusieurs-lignes,4-modification}-{light,dark}.png`
+  (et `en-…`) comparées aux planches 1 à 5 des maquettes.

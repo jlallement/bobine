@@ -244,6 +244,15 @@ describe('historique de la saisie (fiche 225)', () => {
     })
   })
 
+  it('↑ juste après l’envoi : le message parti, sans attendre le main', () => {
+    const { input, key, pill } = setup()
+    fireEvent.change(input, { target: { value: 'Tout juste parti' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    key('ArrowUp')
+    expect(input.value).toBe('Tout juste parti')
+    expect(pill()).toContain('7/7')
+  })
+
   it('rappel « ↑ Messages précédents » : saisie vide avec le focus, tant qu’il n’a pas servi 3 fois', () => {
     setup()
     expect(screen.queryByTestId('history-hint')).toBeNull()

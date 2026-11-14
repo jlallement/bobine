@@ -1363,6 +1363,30 @@ export const SUITES = [
     ]
   },
   {
+    // Historique de la saisie (fiche 225) : ↑ / ↓, lignes d'abord, jeton de rôle, Échap, fille.
+    name: 'historique-saisie',
+    file: 'historique-saisie.mjs',
+    run: 'historiqueSaisieSuite',
+    themes: BOTH,
+    sources: [
+      `${C}composer/SentHistory.tsx`,
+      `${C}composer/useSentHistory.ts`,
+      `${C}composer/useComposerHistory.ts`,
+      `${C}composer/composer-key-down.ts`,
+      `${C}roles/useRoleCompose.tsx`,
+      `${R}composer-keys.ts`,
+      `${R}visual-lines.ts`,
+      `${R}useTextareaLayout.ts`,
+      `${R}useTips.ts`,
+      `${R}sent-history.css`,
+      'src/shared/sent-history.ts',
+      'src/shared/transcript-kept.ts',
+      'src/shared/tips.ts',
+      'src/main/conversations/sent-history-ipc.ts',
+      'src/main/conversations/children.ts'
+    ]
+  },
+  {
     name: 'touches',
     file: 'touches.mjs',
     run: 'touchesSuite',
