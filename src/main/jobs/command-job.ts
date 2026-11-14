@@ -8,6 +8,8 @@ import { stopGroup } from '../process-group'
 import { trackChild } from '../process-registry'
 
 const MAX_LINES = 2000
+/** Lecture de la sortie restante après la fin du processus, au plus (voir `close`). */
+const DRAIN_MS = 2000
 
 /**
  * Travaux en cours (fiche 195) : lancés dans leur propre groupe et notés au registre des processus,
@@ -81,7 +83,14 @@ export function startCommandJob(
       resolve()
     }
     child.on('error', (error) => end(false, `${file}: error: ${error.message}`))
-    child.on('exit', (code) => end(code === 0))
+    // Fin sur `close` (sortie lue jusqu'au bout), pas sur `exit` : à la sortie du processus, ses
+    // dernières lignes peuvent encore attendre dans les tubes, et sous charge le travail finissait
+    // sans elles (essai instable). Un sous-processus qui garde les tubes ouverts après la sortie
+    // du chef (démon lancé en arrière-plan) ne retient pas le travail plus de `DRAIN_MS`.
+    child.on('close', (code) => end(code === 0))
+    child.on('exit', (code) => {
+      setTimeout(() => end(code === 0), DRAIN_MS).unref()
+    })
   })
   return job
 }
