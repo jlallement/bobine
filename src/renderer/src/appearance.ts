@@ -2,7 +2,7 @@
  * Apparence de l'interface (fiches 027, 136) : polices et tailles, largeur du fil, accent et thème
  * du mode, posés sur la page. Partagée par la fenêtre principale, la fenêtre rapide (fiche 062) et
  * la fenêtre À propos. Le clair ou sombre suit `nativeTheme`, réglé par le main ; le thème de
- * chaque mode (Sépia, Nuit noire) est repris à chaque changement de mode.
+ * chaque mode (Nuit noire, Fjord, Aurore…) est repris à chaque changement de mode.
  */
 import type { Preferences } from '@shared/preferences'
 import { PRESENTATION_FONT_BOOST } from '@shared/presentation'
@@ -95,7 +95,7 @@ let presenting = false
 let watching = false
 const darkQuery = () => window.matchMedia?.('(prefers-color-scheme: dark)')
 
-/** Variante du mode affiché (`data-palette`) : Sépia, Fjord, Nuit noire, Fjord nuit, ou rien. */
+/** Variante du mode affiché (`data-palette`) : Nuit noire, Fjord, Fjord nuit, Aurore, Aurore nuit, ou rien. */
 function applyPalette(): void {
   if (!current) return
   const palette = paletteFor(current, darkQuery()?.matches ?? false)

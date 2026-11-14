@@ -67,28 +67,51 @@ describe('parsePreferences', () => {
     }
   })
 
-  it('thème (fiche 136) : l’ancien Sépia ou Nuit noire devient un mode et le thème de ce mode', () => {
-    expect(parsePreferences({ theme: 'sepia' })).toEqual({ theme: 'light', lightTheme: 'sepia' })
+  it('thème (fiche 136) : l’ancien Nuit noire devient un mode et le thème de ce mode', () => {
     expect(parsePreferences({ theme: 'black' })).toEqual({ theme: 'dark', darkTheme: 'black' })
-    expect(parsePreferences({ theme: 'system', lightTheme: 'sepia', darkTheme: 'black' })).toEqual({
+    expect(parsePreferences({ theme: 'system', lightTheme: 'fjord', darkTheme: 'black' })).toEqual({
       theme: 'system',
-      lightTheme: 'sepia',
+      lightTheme: 'fjord',
       darkTheme: 'black'
     })
     // Un thème de l'autre mode n'est pas accepté.
-    expect(parsePreferences({ lightTheme: 'black', darkTheme: 'sepia' })).toEqual({})
+    expect(parsePreferences({ lightTheme: 'black', darkTheme: 'fjord' })).toEqual({})
     // Fjord (fiche 168) : Fjord en clair, Fjord nuit en sombre, jamais l'inverse.
     expect(parsePreferences({ lightTheme: 'fjord', darkTheme: 'fjordNight' })).toEqual({
       lightTheme: 'fjord',
       darkTheme: 'fjordNight'
     })
     expect(parsePreferences({ lightTheme: 'fjordNight', darkTheme: 'fjord' })).toEqual({})
+    // Aurore (fiche 226) : Aurore en clair, Aurore nuit en sombre, jamais l'inverse.
+    expect(parsePreferences({ lightTheme: 'aurora', darkTheme: 'auroraNight' })).toEqual({
+      lightTheme: 'aurora',
+      darkTheme: 'auroraNight'
+    })
+    expect(parsePreferences({ lightTheme: 'auroraNight', darkTheme: 'aurora' })).toEqual({})
     // Le thème par défaut ne change pas.
     expect(DEFAULT_PREFERENCES).toMatchObject({
       theme: 'system',
       lightTheme: 'light',
       darkTheme: 'dark'
     })
+  })
+
+  it('Sépia retiré (fiche 226) : un thème enregistré Sépia devient Clair', () => {
+    // Ancien mode `sepia` (avant la fiche 136) : le mode Clair, thème Clair.
+    expect(parsePreferences({ theme: 'sepia' })).toEqual({ theme: 'light', lightTheme: 'light' })
+    // Thème clair Sépia (fiche 136) : valeur inconnue, donc le thème Clair par défaut.
+    const sepia = parsePreferences({ theme: 'light', lightTheme: 'sepia', darkTheme: 'black' })
+    expect(sepia).toEqual({ theme: 'light', darkTheme: 'black' })
+    const prefs = { ...DEFAULT_PREFERENCES, ...sepia }
+    expect(prefs.lightTheme).toBe('light')
+    expect(themeChoiceOf(prefs)).toBe('light')
+    // En « Système », le thème sombre choisi reste ; le clair revient à Clair.
+    const system = {
+      ...DEFAULT_PREFERENCES,
+      ...parsePreferences({ theme: 'system', lightTheme: 'sepia', darkTheme: 'auroraNight' })
+    }
+    expect(system).toMatchObject({ theme: 'system', lightTheme: 'light', darkTheme: 'auroraNight' })
+    expect(THEME_CHOICES).not.toContain('sepia')
   })
 
   it('polices (fiche 136) : un nom de police installée, les anciens choix repris par leur nom', () => {
@@ -116,7 +139,17 @@ describe('parsePreferences', () => {
     expect(parsePreferences({ accent: 'system' })).toEqual({})
   })
 
-  it('sept thèmes en une rangée : le thème coché et les préférences de chacun', () => {
+  it('huit thèmes en deux rangées : le thème coché et les préférences de chacun', () => {
+    expect(THEME_CHOICES).toEqual([
+      'system',
+      'light',
+      'fjord',
+      'aurora',
+      'dark',
+      'black',
+      'fjordNight',
+      'auroraNight'
+    ])
     for (const choice of THEME_CHOICES) {
       const prefs = { ...DEFAULT_PREFERENCES, ...themeChoicePreferences(choice) }
       expect(themeChoiceOf(prefs)).toBe(choice)
@@ -126,7 +159,11 @@ describe('parsePreferences', () => {
       lightTheme: 'light',
       darkTheme: 'dark'
     })
-    expect(themeChoicePreferences('sepia')).toEqual({ theme: 'light', lightTheme: 'sepia' })
+    expect(themeChoicePreferences('aurora')).toEqual({ theme: 'light', lightTheme: 'aurora' })
+    expect(themeChoicePreferences('auroraNight')).toEqual({
+      theme: 'dark',
+      darkTheme: 'auroraNight'
+    })
     expect(themeChoicePreferences('black')).toEqual({ theme: 'dark', darkTheme: 'black' })
     expect(themeChoicePreferences('fjord')).toEqual({ theme: 'light', lightTheme: 'fjord' })
     expect(themeChoicePreferences('fjordNight')).toEqual({

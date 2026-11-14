@@ -19,19 +19,29 @@
 import type { AccentColor, DarkTheme, Density, LightTheme, ThemePreference } from './preferences'
 // Extension explicite : `pnpm themes-css` lit ce fichier avec Node, sans résolution de Vite.
 import { contrastRatio, mix } from './contrast.ts'
+import { AURORA_TINTS, touchVariables } from './theme-aurora.ts'
 
 /**
- * Palettes : Clair, Sombre, leurs variantes Sépia (claire) et Nuit noire (sombre), et le thème
- * Fjord en deux variantes, Fjord (claire) et Fjord nuit (sombre, fiche 168).
+ * Palettes : Clair, Sombre, la variante Nuit noire (sombre), et les thèmes Fjord (fiche 168) et
+ * Aurore (fiche 226, à la place de Sépia), chacun en une variante claire et une sombre.
  */
-export const PALETTES = ['light', 'dark', 'sepia', 'black', 'fjord', 'fjordNight'] as const
+export const PALETTES = [
+  'light',
+  'dark',
+  'black',
+  'fjord',
+  'fjordNight',
+  'aurora',
+  'auroraNight'
+] as const
 
 /** Palettes posées sur la page (`data-palette`) : toutes sauf Clair et Sombre, celles de `:root`. */
 export const VARIANT_PALETTES = [
-  'sepia',
   'black',
   'fjord',
-  'fjordNight'
+  'fjordNight',
+  'aurora',
+  'auroraNight'
 ] as const satisfies readonly Palette[]
 export type Palette = (typeof PALETTES)[number]
 
@@ -46,7 +56,7 @@ export const ACCENTS = [
 ] as const satisfies readonly AccentColor[]
 
 /** Couleurs neutres d'une palette, du fond au texte. */
-interface Neutrals {
+export interface Neutrals {
   bg: string
   sidebar: string
   surface: string
@@ -72,7 +82,7 @@ interface Neutrals {
  * bleu reste au plus foncé qui passe 4,5:1 : il sert aussi de fond aux invites (powerlevel10k pose
  * le dossier en blanc sur le bleu ANSI).
  */
-interface Hues {
+export interface Hues {
   red: string
   redBright: string
   redSoft: string
@@ -94,14 +104,14 @@ interface Hues {
 }
 
 /** Une teinte d'accent : la couleur, son survol, et le texte posé dessus. */
-interface AccentTint {
+export interface AccentTint {
   accent: string
   hover: string
   on: string
 }
 
 /** Couche 1 : les teintes de base d'une palette. */
-interface PaletteTints {
+export interface PaletteTints {
   scheme: 'light' | 'dark'
   neutrals: Neutrals
   hues: Hues
@@ -123,8 +133,8 @@ const SHADOWS = {
  * Couleurs du graphique de consommation (fiche 137), dans un ordre fixe (`--chart-1…3`) : un agent
  * ou un modèle garde la sienne (`chartSlot` du profil), jamais selon son rang. Validées par le
  * validateur de palette (daltonisme et vision normale, toutes paires, sur `surface`) : les barres
- * empilées sont séparées d'un filet et chaque série est nommée (légende, infobulle). Sépia et Nuit
- * noire reprennent celles de leur mode. Au-delà : « Autres », en `borderStrong`.
+ * empilées sont séparées d'un filet et chaque série est nommée (légende, infobulle). Les variantes
+ * (Nuit noire, Fjord, Aurore) reprennent celles de leur mode. Au-delà : « Autres », en `borderStrong`.
  */
 export const CHART = {
   light: ['#c96442', '#4a78c2', '#0f9d8a'],
@@ -253,53 +263,6 @@ export const TINTS: Record<Palette, PaletteTints> = {
       violet: { accent: '#a387f0', hover: '#b59df3', on: '#1a1918' },
       pink: { accent: '#e27aa9', hover: '#e993ba', on: '#1a1918' },
       graphite: { accent: '#a9a8a2', hover: '#bbbab4', on: '#1a1918' }
-    }
-  },
-  // Sépia (sur le mode clair) : papier jauni, pour lire longtemps ; teintes plus brunes.
-  sepia: {
-    scheme: 'light',
-    neutrals: {
-      bg: '#f4ecd8',
-      sidebar: '#ebe1c8',
-      surface: '#fbf6e9',
-      surface2: '#efe5cc',
-      surface3: '#e5d9bb',
-      border: '#ddcfae',
-      borderStrong: '#8f7f5f',
-      text: '#3b3022',
-      text2: '#57472f',
-      muted: '#6f5f45',
-      codeBg: '#f0e7d1',
-      codeFg: '#3b3022',
-      ansi: ['#3b3022', '#6f5f45', '#57472f', '#fbf6e9']
-    },
-    hues: {
-      red: '#9c2a17',
-      redBright: '#ad3520',
-      redSoft: '#f6d9cc',
-      orange: '#7a4a05',
-      amber: '#8a5400',
-      amberSoft: '#f5e3bf',
-      yellow: '#7a5200',
-      yellowBright: '#875c00',
-      green: '#3d6420',
-      greenBright: '#47732a',
-      greenSoft: '#e3ebcc',
-      cyan: '#22605a',
-      cyanBright: '#2a6e66',
-      blue: '#2a5a8a',
-      blueBright: '#33669c',
-      violet: '#6b3f8f',
-      magenta: '#8a3060',
-      magentaBright: '#97386c'
-    },
-    accents: {
-      orange: { accent: '#a14d2a', hover: '#8e4325', on: '#ffffff' },
-      blue: { accent: '#2d5a94', hover: '#264d80', on: '#ffffff' },
-      green: { accent: '#3a6a35', hover: '#305a2c', on: '#ffffff' },
-      violet: { accent: '#6a4796', hover: '#5b3c82', on: '#ffffff' },
-      pink: { accent: '#963160', hover: '#822a53', on: '#ffffff' },
-      graphite: { accent: '#5c5547', hover: '#4d473b', on: '#ffffff' }
     }
   },
   // Nuit noire (sur le mode sombre) : noir profond, teintes plus vives.
@@ -442,7 +405,9 @@ export const TINTS: Record<Palette, PaletteTints> = {
       pink: { accent: '#e47fad', hover: '#ea98bd', on: '#11151b' },
       graphite: { accent: '#a9b2bd', hover: '#bac2cb', on: '#11151b' }
     }
-  }
+  },
+  // Aurore et Aurore nuit (fiche 226) : base presque neutre ; leurs touches dans `theme-aurora.ts`.
+  ...AURORA_TINTS
 }
 
 /** Jetons de la coloration syntaxique (`--syn-*`). */
@@ -496,6 +461,11 @@ export interface ThemeTokens {
   chartOther: string
   /** Niveaux de la grille d'activité (`--heat-1…4`, fiche 144). */
   heat: readonly string[]
+  /**
+   * Touches (fiche 226, ADR-0049) : variables `--touch-*` et `--glass-*` déjà écrites, celles
+   * d'Aurore ou les neutres des autres thèmes.
+   */
+  touch: Readonly<Record<string, string>>
 }
 
 export function themeTokens(palette: Palette, accent: AccentColor): ThemeTokens {
@@ -560,7 +530,8 @@ export function themeTokens(palette: Palette, accent: AccentColor): ThemeTokens 
     ],
     chart: CHART[scheme],
     chartOther: n.borderStrong,
-    heat: heatScale(tint.accent, n.surface, n.text)
+    heat: heatScale(tint.accent, n.surface, n.text),
+    touch: touchVariables(palette, accent)
   }
 }
 
@@ -575,19 +546,23 @@ export function cssVariables(tokens: ThemeTokens): Record<string, string> {
   tokens.ansi.forEach((color, i) => (variables[`--ansi-${i}`] = color))
   tokens.chart.forEach((color, i) => (variables[`--chart-${i + 1}`] = color))
   tokens.heat.forEach((color, i) => (variables[`--heat-${i + 1}`] = color))
+  Object.assign(variables, tokens.touch)
   return variables
 }
 
-/** Thème choisi pour chaque mode (fiche 136) : Clair, Sépia ou Fjord ; Sombre, Nuit noire ou Fjord nuit. */
+/**
+ * Thème choisi pour chaque mode (fiche 136) : Clair, Fjord ou Aurore ; Sombre, Nuit noire, Fjord
+ * nuit ou Aurore nuit.
+ */
 export interface ModeThemes {
   lightTheme: LightTheme
   darkTheme: DarkTheme
 }
 
 /**
- * Palette affichée : la variante posée sur la page (`data-palette`) si elle va avec le mode (Sépia
- * ou Fjord en clair, Nuit noire ou Fjord nuit en sombre, comme le CSS généré), sinon le clair ou le
- * sombre.
+ * Palette affichée : la variante posée sur la page (`data-palette`) si elle va avec le mode (Fjord
+ * ou Aurore en clair, Nuit noire, Fjord nuit ou Aurore nuit en sombre, comme le CSS généré), sinon
+ * le clair ou le sombre.
  */
 export function paletteOf(variant: string | undefined, dark: boolean): Palette {
   const found = VARIANT_PALETTES.find((palette) => palette === variant)

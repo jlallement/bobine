@@ -22,7 +22,7 @@ export interface KeyContext {
   editQueued: (id: string) => Promise<void>
   setControl: (id: string, value: ControlValue) => void
   /**
-   * Historique de la saisie (fiche 225) : son état pour cette touche (la ligne affichée du curseur
+   * Historique de la saisie (fiche 227) : son état pour cette touche (la ligne affichée du curseur
    * mesurée au besoin), et ce qu'il fait.
    */
   history: (input: HTMLTextAreaElement, key: string) => ComposerHistoryState

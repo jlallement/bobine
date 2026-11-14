@@ -1,6 +1,6 @@
 /**
  * Ce que l'app tient dans le fil d'une conversation, à côté de ce que dit l'agent : la consommation
- * cumulée, le plafond de coût (fiche 157), l'historique de la saisie (fiche 225).
+ * cumulée, le plafond de coût (fiche 157), l'historique de la saisie (fiche 227).
  */
 import { addSentEntry, type SentEntry } from './sent-history'
 import type { TranscriptState } from './transcript'

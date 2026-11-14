@@ -17,7 +17,7 @@ function fitHeight(el: HTMLTextAreaElement) {
 export function useTextareaLayout(text: string) {
   const textarea = useRef<HTMLTextAreaElement>(null)
   const pendingCaret = useRef<number | null>(null)
-  // Message repris de l'historique (fiche 225) : le champ remonte en haut (↑) ou descend (↓).
+  // Message repris de l'historique (fiche 227) : le champ remonte en haut (↑) ou descend (↓).
   const pendingScroll = useRef<'top' | 'bottom' | null>(null)
   useLayoutEffect(() => {
     const el = textarea.current

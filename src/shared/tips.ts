@@ -12,7 +12,7 @@ export const isTipId = (value: unknown): value is TipId =>
   typeof value === 'string' && (TIP_IDS as readonly string[]).includes(value)
 
 /**
- * Rappels discrets (fiche 225) : pas des astuces (ni quota du jour, ni carte) ; ils s'effacent
+ * Rappels discrets (fiche 227) : pas des astuces (ni quota du jour, ni carte) ; ils s'effacent
  * pour de bon après `HINT_MAX_USES` utilisations de leur fonction.
  */
 export const HINT_IDS = ['history'] as const
@@ -36,7 +36,7 @@ export interface TipsState {
    * texte) du dossier et du message, et les jours où il a été envoyé.
    */
   sent?: SentMessage[]
-  /** Utilisations de la fonction d'un rappel (fiche 225), bornées à `HINT_MAX_USES`. */
+  /** Utilisations de la fonction d'un rappel (fiche 227), bornées à `HINT_MAX_USES`. */
   hintUses?: Partial<Record<HintId, number>>
 }
 

@@ -104,7 +104,7 @@ describe('mode suivant (Maj+Tab)', () => {
   })
 })
 
-describe('historique de la saisie (fiche 225)', () => {
+describe('historique de la saisie (fiche 227)', () => {
   const history = (change: Partial<ComposerHistoryState> = {}): ComposerHistoryState => ({
     count: 10,
     index: undefined,

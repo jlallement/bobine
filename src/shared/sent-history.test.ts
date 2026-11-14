@@ -11,7 +11,7 @@ import { emptyTranscript, reduceTranscript } from './transcript'
 
 const role = { name: 'security-expert', label: 'Expert sécu' }
 
-describe('historique de la saisie (fiche 225)', () => {
+describe('historique de la saisie (fiche 227)', () => {
   it('doublons consécutifs fusionnés (le plus récent gagne), pas les doublons séparés', () => {
     let list: SentEntry[] = []
     for (const text of ['continue', 'continue', 'continue']) list = addSentEntry(list, { text })

@@ -8,7 +8,7 @@
  * - Entrée envoie, Maj+Entrée insère un retour à la ligne (sauf composition IME en cours).
  * - Échap arrête la réponse ; ↑ dans une zone vide reprend le dernier message en attente.
  * - Maj+Tab passe au mode suivant, comme dans Claude Code.
- * - Historique de la saisie (fiche 225), après tout le reste : ↑ dans une saisie vide reprend le
+ * - Historique de la saisie (fiche 227), après tout le reste : ↑ dans une saisie vide reprend le
  *   dernier message envoyé ; dans un message repris non modifié, ↑ depuis sa première ligne
  *   affichée passe au précédent (rien sur le premier), ↓ depuis sa dernière au suivant (après le
  *   dernier : saisie vide) ; ailleurs, les flèches déplacent le curseur. Échap le quitte et vide
@@ -24,7 +24,7 @@ export interface ComposerKey {
   modified?: boolean
 }
 
-/** Historique de la saisie de la conversation (fiche 225). */
+/** Historique de la saisie de la conversation (fiche 227). */
 export interface ComposerHistoryState {
   /** Messages envoyés gardés. */
   count: number

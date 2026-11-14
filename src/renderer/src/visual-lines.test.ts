@@ -35,7 +35,7 @@ const plan = [
   '2. Montre-moi le diff.'
 ].join('\n')
 
-describe('lignes affichées (fiche 225)', () => {
+describe('lignes affichées (fiche 227)', () => {
   const topOf = layout(plan, 60)
 
   it('la ligne repliée compte pour deux : première, milieu, dernière', () => {

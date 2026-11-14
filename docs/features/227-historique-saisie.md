@@ -1,4 +1,4 @@
-# 225 — Historique de la saisie : rappeler un message envoyé (↑ / ↓)
+# 227 — Historique de la saisie : rappeler un message envoyé (↑ / ↓)
 
 - **Statut** : fait (relecture du tech lead)
 - **Dépend de** : 020 (file d'attente), 026 (brouillons), 089 (touches de la saisie), 191 (astuces),

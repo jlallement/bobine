@@ -321,7 +321,7 @@ export function createApi(
       /** Plafond de coût de la conversation, `null` : celui des réglages (fiche 157). */
       setCostCap: (id: string, cap: ConversationCap | null) =>
         invoke('conversation:setCostCap', id, cap),
-      /** Message envoyé, tel que tapé : historique de la saisie (fiche 225). */
+      /** Message envoyé, tel que tapé : historique de la saisie (fiche 227). */
       recordSent: (id: string, entry: SentEntry) => invoke('conversation:recordSent', id, entry),
       answerCostCap: (id: string, itemId: number, answer: CostCapAnswer) =>
         invoke('conversation:answerCostCap', id, itemId, answer),

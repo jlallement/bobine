@@ -10,7 +10,7 @@ import {
 } from './useSentHistory'
 
 /**
- * L'historique de la saisie branché sur `Composer` (fiche 225, sorti pour sa taille) : ce que
+ * L'historique de la saisie branché sur `Composer` (fiche 227, sorti pour sa taille) : ce que
  * fait un rappel (texte, jetons, curseur, menus), ce qui part dans l'historique à l'envoi, le
  * rappel « ↑ Messages précédents ».
  */

@@ -49,7 +49,7 @@ async function saved(manager: ConversationManager): Promise<string> {
   return id
 }
 
-describe('historique de la saisie : stockage (fiche 225)', () => {
+describe('historique de la saisie : stockage (fiche 227)', () => {
   it('par conversation, vérifié, gardé avec le fil, retrouvé au redémarrage', async () => {
     const env = environment()
     const app = env.launch()

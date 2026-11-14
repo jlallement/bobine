@@ -206,7 +206,7 @@ export class SettingsStore {
   }
 
   /**
-   * « Tout réafficher » : plus aucune astuce masquée, les rappels repartent de zéro (fiche 225) ;
+   * « Tout réafficher » : plus aucune astuce masquée, les rappels repartent de zéro (fiche 227) ;
    * le quota du jour reste.
    */
   resetTips(): TipsState {
@@ -214,7 +214,7 @@ export class SettingsStore {
     return this.setTips({ ...rest, hidden: [] })
   }
 
-  /** La fonction d'un rappel a servi (fiche 225) : il s'efface après `HINT_MAX_USES`. */
+  /** La fonction d'un rappel a servi (fiche 227) : il s'efface après `HINT_MAX_USES`. */
   recordHintUse(id: HintId): TipsState {
     const state = this.tips()
     const next = countHintUse(state, id)

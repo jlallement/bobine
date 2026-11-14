@@ -3,7 +3,7 @@ import '../../sent-history.css'
 import { useTranslation } from 'react-i18next'
 
 /**
- * Historique de la saisie (fiche 225, maquettes `01-historique`, variante A) : la pastille
+ * Historique de la saisie (fiche 227, maquettes `01-historique`, variante A) : la pastille
  * « 9/10 · ↑↓ · Échap vider » posée sur le bord haut de la saisie (elle ne prend ni place ni
  * hauteur : rien ne bouge à chaque ↑), l'annonce aux lecteurs d'écran, le rappel de la saisie vide
  * et la ligne des pièces jointes non reprises.

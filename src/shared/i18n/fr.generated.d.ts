@@ -1313,11 +1313,13 @@ export type FrResources = {
         readonly hint: 'Système : Clair le jour, Sombre la nuit, comme le Mac.'
         readonly system: 'Système'
         readonly light: 'Clair'
-        readonly sepia: 'Sépia'
         readonly dark: 'Sombre'
         readonly black: 'Nuit noire'
         readonly fjord: 'Fjord'
         readonly fjordNight: 'Fjord nuit'
+        readonly aurora: 'Aurore'
+        readonly auroraNight: 'Aurore nuit'
+        readonly new: 'Nouveau'
       }
       readonly accent: {
         readonly label: 'Couleur d’accent'
@@ -1611,7 +1613,7 @@ export type FrResources = {
   readonly settingsSearch: {
     readonly firstName: 'nom accueil salutation bonjour'
     readonly language: 'langue language interface anglais english français traduction'
-    readonly theme: 'apparence thème mode clair sombre système sépia papier nuit noire noir oled couleurs'
+    readonly theme: 'apparence thème mode clair sombre système aurore nuit noire noir oled fjord couleurs'
     readonly accent: 'couleur orange bleu violet rose vert graphite boutons'
     readonly keepAwake: 'veille sommeil éveillé écran batterie'
     readonly keepCookies: 'navigateur intégré cookies connexion session garder'
@@ -2247,6 +2249,7 @@ export type FrResources = {
   }
   readonly sidePanel: {
     readonly resize: 'Redimensionner le panneau'
+    readonly resizeHint: 'Glisser pour régler la largeur · double-clic : largeur par défaut'
     readonly close: 'Fermer le panneau'
     readonly closeTab: 'Fermer l’onglet {{tab}}'
     readonly maximize: 'Agrandir le panneau (⇧⌘J)'

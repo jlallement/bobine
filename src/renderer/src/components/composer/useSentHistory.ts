@@ -4,7 +4,7 @@ import { endOfFirstLine, onFirstLine, onLastLine, textareaCaretTops } from '../.
 import type { ComposerHistoryState } from '../../composer-keys'
 
 /**
- * Historique de la saisie (fiche 225) : les messages envoyés de la conversation, gardés par le
+ * Historique de la saisie (fiche 227) : les messages envoyés de la conversation, gardés par le
  * main dans son fil (`sentHistory`, reçu ici avec lui), parcourus par ↑ / ↓.
  *
  * Un message repris le reste tant que la saisie montre exactement ce qui a été repris (texte,

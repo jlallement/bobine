@@ -108,7 +108,8 @@ export async function settingsSuite(scheme) {
           'réglages : quatorze onglets en trois groupes'
         )
         await ui.shot('81-general')
-        // Apparence (fiche 136) : sept thèmes en une rangée (Fjord, fiche 168), polices et tailles, aperçu.
+        // Apparence (fiche 136) : huit thèmes en deux rangées (Fjord, fiche 168 ; Aurore, fiche
+        // 226), polices et tailles, aperçu.
         await ui.click(ui.$('settings-appearance'))
         await ui.waitFor(`!!${ui.$('appearance-preview')}`)
         await ui.shot('81-apparence')
@@ -119,7 +120,7 @@ export async function settingsSuite(scheme) {
           'mode « Sombre » appliqué à toute l’app (nativeTheme)'
         )
         // Le mode des essais est imposé à la page (`prefers-color-scheme`) : le thème de ce mode.
-        const variant = scheme === 'dark' ? 'black' : 'sepia'
+        const variant = scheme === 'dark' ? 'black' : 'aurora'
         await ui.click(ui.$(`theme-${variant}`))
         await ui.waitFor(`document.documentElement.dataset.palette === '${variant}'`)
         check(

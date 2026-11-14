@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { L, check, withApp } from '../lib.mjs'
 
 /**
- * Historique de la saisie (fiche 225), contre l'agent factice, dans un dépôt git jetable (un
+ * Historique de la saisie (fiche 227), contre l'agent factice, dans un dépôt git jetable (un
  * message à un rôle lance une fille dans un worktree) :
  * - trois messages : un long d'une ligne (replié à l'affichage), un de plusieurs lignes, un pour
  *   le rôle `security-expert` (jeton posé par le menu `@`) ;

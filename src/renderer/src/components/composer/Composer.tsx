@@ -151,7 +151,7 @@ interface Props {
   onOpenTerminal: () => void
   /** Rôles (fiche 223) : menu `@`, jetons, envoi d'une fille par rôle. */
   roles?: ComposerRoles
-  /** Historique de la saisie de la conversation (`sentHistory` de son fil, fiche 225). */
+  /** Historique de la saisie de la conversation (`sentHistory` de son fil, fiche 227). */
   sentHistory?: unknown
 }
 
@@ -321,7 +321,7 @@ export function Composer(props: Props) {
   const trackCaret = (event: SyntheticEvent<HTMLTextAreaElement>) =>
     setCaret(event.currentTarget.selectionStart)
 
-  // Historique de la saisie (fiche 225) : ↑ / ↓ rappellent les messages envoyés.
+  // Historique de la saisie (fiche 227) : ↑ / ↓ rappellent les messages envoyés.
   const history = useComposerHistory({
     conversationId: draftKey,
     raw: props.sentHistory,
@@ -423,7 +423,7 @@ export function Composer(props: Props) {
     if (own) {
       if (!canSend) return
       onSend(expandCommand(own.command.prompt, own.args), attachments.toSend())
-      // L'historique garde la commande tapée, jamais sa consigne développée (fiche 225).
+      // L'historique garde la commande tapée, jamais sa consigne développée (fiche 227).
       recordSent(text)
       changeText('')
       attachments.clear()
@@ -507,7 +507,7 @@ export function Composer(props: Props) {
         onSubmit={submit}
         data-plan={view.planMode || undefined}
       >
-        {/* Ancre sans hauteur : pastille et rappel posés sans rien déplacer (fiche 225). */}
+        {/* Ancre sans hauteur : pastille et rappel posés sans rien déplacer (fiche 227). */}
         <div className="sent-history-anchor">
           <SentHistoryPill index={history.index} count={history.count} />
           {history.hint(queued.length === 0 && !blocker) && <SentHistoryHint />}

@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import type { InstalledFonts } from '@shared/ipc'
 import type { AccentColor, Preferences } from '@shared/preferences'
 import { ACCENTS, TINTS, type Palette } from '@shared/themes'
+import { auroraThumbnail, isAuroraPalette } from '@shared/theme-aurora'
 import { terminalFontCss } from '../../appearance'
 import { currentPalette, subscribeTheme, themeKey } from '../../theme'
 
@@ -74,17 +75,25 @@ export function FontSelect({
   )
 }
 
-/** Petite fenêtre aux couleurs d'une palette : fond, barre latérale, deux lignes. */
+/**
+ * Petite fenêtre aux couleurs d'une palette : fond, barre latérale, deux lignes. Aurore (fiche
+ * 226) : la première ligne prend le dégradé de l'action principale.
+ */
 function Miniature({ palette }: { palette: Palette }) {
   const { neutrals } = TINTS[palette]
+  const first = isAuroraPalette(palette) ? auroraThumbnail(palette).line : neutrals.border
   return (
     <>
       <i style={{ background: neutrals.sidebar }} />
-      <b style={{ background: neutrals.border }} />
+      <b style={{ background: first }} />
       <b style={{ background: neutrals.border }} />
     </>
   )
 }
+
+/** Fond d'une vignette : celui de la palette ; Aurore, avec sa lueur en haut à gauche. */
+const thumbnailBackground = (palette: Palette) =>
+  isAuroraPalette(palette) ? auroraThumbnail(palette).background : TINTS[palette].neutrals.bg
 
 /** Vignette d'un thème ; « Système » : moitié Clair, moitié Sombre. */
 export function ThemeChoice({
@@ -92,13 +101,16 @@ export function ThemeChoice({
   label,
   checked,
   onChoose,
-  testId
+  testId,
+  badge
 }: {
   palette: Palette | 'system'
   label: string
   checked: boolean
   onChoose: () => void
   testId: string
+  /** Mention sous le nom (« Nouveau », fiche 226). */
+  badge?: string
 }) {
   return (
     <button
@@ -120,13 +132,16 @@ export function ThemeChoice({
       ) : (
         <span
           className="theme-thumb"
-          style={{ background: TINTS[palette].neutrals.bg }}
+          style={{ background: thumbnailBackground(palette) }}
           aria-hidden
         >
           <Miniature palette={palette} />
         </span>
       )}
-      {label}
+      <span className="theme-choice-label">
+        {label}
+        {badge && <span className="theme-choice-badge">{badge}</span>}
+      </span>
     </button>
   )
 }

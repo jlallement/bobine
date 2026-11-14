@@ -233,7 +233,7 @@ export interface TranscriptState {
   halted?: { status: string; detail: string | undefined } | undefined
   /** Jetons estimés de l'index de la mémoire joint à la session en cours (fiche 182). */
   memoryTokens?: number
-  /** Messages envoyés, tels que tapés (fiche 225) : posés par l'app, jamais déduits du fil. */
+  /** Messages envoyés, tels que tapés (fiche 227) : posés par l'app, jamais déduits du fil. */
   sentHistory?: import('./sent-history').SentEntry[]
 }
 

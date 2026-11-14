@@ -6,6 +6,15 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveau
 
+- Nouveau thème Aurore, en clair (« Aurore ») et en sombre (« Aurore nuit »), à la place de Sépia :
+  une base sobre et quelques touches d'aurore (une lueur en haut de la barre latérale, votre bulle
+  en dégradé doux, un liseré coloré autour de la saisie quand vous écrivez, le bouton principal en
+  dégradé, une ombre teintée sous les demandes d'autorisation, du verre dépoli sur les menus et les
+  Réglages). Avec « Réduire la transparence » ou « Augmenter le contraste » de macOS, le verre
+  devient opaque et les dégradés unis. Si vous utilisiez Sépia, Bobine passe sur Clair.
+- Le panneau de droite s'ouvre à 320 px au lieu de 380 : plus de place pour la conversation. La
+  largeur que vous réglez en tirant le bord est retenue ; un double-clic sur le bord revient à la
+  largeur par défaut (il agrandissait le panneau : le bouton ⤢ le fait toujours).
 - Espace Discussion : Bobine sert aussi de chat, à côté du code. Le sélecteur Code | Discussion,
   en haut de la barre latérale (⌘1 / ⌘2), ouvre un espace sans projet pour poser une question,
   rédiger un e-mail ou travailler sur des documents. Glissez-y des PDF, Word, Excel ou images :

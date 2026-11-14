@@ -225,7 +225,7 @@ export class ChildConversations {
         at: Date.now()
       }
     })
-    // Historique de la saisie de la fille (fiche 225) : il commence par sa consigne.
+    // Historique de la saisie de la fille (fiche 227) : il commence par sa consigne.
     this.conversations.post(child.id, { type: 'sent-recorded', entry: { text } })
     for (const message of request.notices ?? []) {
       this.conversations.post(child.id, { type: 'notice', level: 'info', message })

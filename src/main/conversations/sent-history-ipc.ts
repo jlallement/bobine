@@ -1,5 +1,5 @@
 /**
- * Historique de la saisie (fiche 225) : le renderer dit le message envoyé, tel que tapé ; le main
+ * Historique de la saisie (fiche 227) : le renderer dit le message envoyé, tel que tapé ; le main
  * le vérifie et le pose dans le fil de la conversation (`sent-recorded`), qui le garde sur le
  * disque avec elle (corbeille, effacement, réinitialisation : comme le fil).
  */

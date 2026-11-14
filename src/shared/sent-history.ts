@@ -1,5 +1,5 @@
 /**
- * Historique de la saisie (fiche 225) : les messages envoyés d'une conversation, tels que tapés,
+ * Historique de la saisie (fiche 227) : les messages envoyés d'une conversation, tels que tapés,
  * pour les rappeler par ↑ / ↓. Gardé par le main avec la conversation (`sentHistory` de son fil) ;
  * ce qui vient du renderer ou du disque est vérifié ici.
  */

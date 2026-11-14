@@ -642,7 +642,7 @@ export function createHandlers(
     },
     'tips:state': () => tipsView(settings.tipsSince(localDay(new Date()))),
     'tips:record': (id, action) => {
-      // Rappel (fiche 225) : seulement « utilisé », compté.
+      // Rappel (fiche 227) : seulement « utilisé », compté.
       if (isHintId(id) && action === 'used') return tipsView(settings.recordHintUse(id))
       if (!isTipId(id) || !TIP_ACTIONS.includes(action)) throw new Error('Astuce invalide')
       // Le jour est celui du main : le renderer ne choisit pas la date du quota.

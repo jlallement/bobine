@@ -1,5 +1,5 @@
 /**
- * Lignes affichées d'une zone de saisie (fiche 225) : une ligne repliée compte pour plusieurs.
+ * Lignes affichées d'une zone de saisie (fiche 227) : une ligne repliée compte pour plusieurs.
  * Le `textarea` ne dit pas où est son curseur : un miroir invisible, aux mêmes styles et à la même
  * largeur, place le texte jusqu'à une position, puis un repère suivi du reste du texte (pour que
  * le repli des mots soit le même). La hauteur du repère dit la ligne.

@@ -663,7 +663,7 @@ describe('IPC', () => {
     expect(send.mock.calls.filter((c) => c[0] === 'tips:changed')).toHaveLength(2)
     expect(await call('tips:noteMessage', '/projet', 'un message')).toBe(true)
     expect(() => call('tips:noteMessage', 42, 'x')).toThrow('Message invalide')
-    // Rappel « ↑ Messages précédents » (fiche 225) : rappel connu seulement.
+    // Rappel « ↑ Messages précédents » (fiche 227) : rappel connu seulement.
     expect(await call('tips:record', 'history', 'used')).toMatchObject({
       hintUses: { history: 1 }
     })

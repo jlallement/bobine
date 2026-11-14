@@ -33,7 +33,7 @@ export interface Tips {
   used: (id: TipId) => void
   /** Ouvre « Faire relire… » si la conversation ouverte a un gros changement pas encore relu. */
   review?: () => void
-  /** Rappel discret (fiche 225) : affiché tant que sa fonction n'a pas servi trois fois. */
+  /** Rappel discret (fiche 227) : affiché tant que sa fonction n'a pas servi trois fois. */
   hint?: (id: HintId) => boolean
   /** La fonction du rappel a servi : une fois de plus. */
   hintUsed?: (id: HintId) => void

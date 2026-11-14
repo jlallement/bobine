@@ -613,7 +613,7 @@ export type AgentEvent =
    */
   | { type: 'aside-cost'; cost: { amount: number; currency: string } }
   /**
-   * Message envoyé, tel que tapé (fiche 225), posé par l'app : entre dans l'historique de la
+   * Message envoyé, tel que tapé (fiche 227), posé par l'app : entre dans l'historique de la
    * saisie de la conversation (`sentHistory`), rien dans le fil.
    */
   | { type: 'sent-recorded'; entry: import('./sent-history').SentEntry }

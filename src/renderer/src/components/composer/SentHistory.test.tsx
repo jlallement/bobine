@@ -1,5 +1,5 @@
 /**
- * Historique de la saisie dans `Composer` (fiche 225) : ↑ / ↓, pastille, Échap, modification,
+ * Historique de la saisie dans `Composer` (fiche 227) : ↑ / ↓, pastille, Échap, modification,
  * jetons de rôle, pièces jointes non reprises, commande tapée, rappel de la saisie vide.
  * (Les lignes affichées sont essayées dans `visual-lines.test.ts` et la suite e2e : jsdom ne met
  * rien en page, tout message y tient sur une ligne.)
@@ -121,7 +121,7 @@ function setup(
   return { ...props, recordSent, tips, roles, input, key, pill }
 }
 
-describe('historique de la saisie (fiche 225)', () => {
+describe('historique de la saisie (fiche 227)', () => {
   it('↑ : le dernier envoyé (6/6), puis les précédents ; ↓ revient, puis rend la saisie vide', () => {
     const { input, key, pill, tips } = setup()
     key('ArrowUp')

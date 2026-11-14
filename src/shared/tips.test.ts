@@ -44,7 +44,7 @@ describe('astuces de Bobine (fiche 191)', () => {
   })
 })
 
-describe('rappels (fiche 225)', () => {
+describe('rappels (fiche 227)', () => {
   it('trois utilisations, puis effacé ; compteur du disque borné et validé', () => {
     let state = EMPTY_TIPS
     for (let i = 0; i < 2; i++) state = countHintUse(state, 'history')

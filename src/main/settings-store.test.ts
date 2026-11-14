@@ -273,7 +273,7 @@ describe('astuces (fiche 191)', () => {
     expect(settings.resetTips()).toEqual({ hidden: [], lastShownDay: '2026-11-07' })
   })
 
-  it('rappel « ↑ Messages précédents » (fiche 225) : 3 utilisations, puis plus rien ; « Tout réafficher » le rend', () => {
+  it('rappel « ↑ Messages précédents » (fiche 227) : 3 utilisations, puis plus rien ; « Tout réafficher » le rend', () => {
     const { settings, save } = store()
     for (let i = 0; i < 5; i++) settings.recordHintUse('history')
     expect(settings.tips().hintUses).toEqual({ history: 3 })
