@@ -6,6 +6,7 @@ import { toolGroupState, toolGroupSummary, type ToolItem } from '@shared/tool-gr
 import { ToolCall, ToolImages, WorkspaceContext, type RespondPermission } from './ToolCall'
 import { appToolText } from '@shared/app-tools'
 import { toolText } from '@shared/tool-label'
+import { DiscussionContext } from '../discussion/DocumentCards'
 
 /**
  * Outils consécutifs regroupés (fiche 047) : une ligne de résumé, les cartes au dépliage. L'outil en
@@ -22,6 +23,9 @@ export const ToolGroup = memo(
     onRespond: RespondPermission
   }) {
     const workspace = useContext(WorkspaceContext)
+    const { t } = useTranslation()
+    // Discussion (fiche 224) : son dossier se dit « Documents ».
+    const documents = useContext(DiscussionContext) ? t('discussion.documents.tab') : undefined
     const { running, failed, refused, cancelled } = toolGroupState(items)
     const images = items.findLast((item) => item.images?.length)?.images
     return (
@@ -34,7 +38,9 @@ export const ToolGroup = memo(
               {running && (
                 <span className="tool-group-current">
                   {' — '}
-                  {running.appTool ? appToolText(running.appTool) : toolText(running, workspace)}
+                  {running.appTool
+                    ? appToolText(running.appTool)
+                    : toolText(running, workspace, documents)}
                 </span>
               )}
             </span>

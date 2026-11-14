@@ -85,6 +85,8 @@ export interface UsageBoardOptions {
    * (l'ouvrir écrit : WAL, migrations, base abîmée mise de côté).
    */
   readOnly?: boolean
+  /** Dossier des discussions (fiche 224) : « Par projet » les compte sur une ligne. */
+  discussionsRoot?: string
 }
 
 /** Délai qui regroupe les changements d'un tour (ligne écrite, puis son coût). */
@@ -150,7 +152,8 @@ function usageBoard(
       ...(first !== undefined ? { first } : {}),
       ...(comparison ? { comparison } : {}),
       agentSlot: (id) => profile(id)?.chartSlot,
-      title: (id) => titles.get(id)
+      title: (id) => titles.get(id),
+      ...(options.discussionsRoot ? { discussionsRoot: options.discussionsRoot } : {})
     })
   }
   const heatmap = (query: UsageHeatQuery): UsageHeatmap => {

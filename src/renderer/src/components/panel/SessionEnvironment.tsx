@@ -1,4 +1,4 @@
-import { Bot, Cpu, Folder, GitBranch } from 'lucide-react'
+import { Bot, Cpu, FileText, Folder, GitBranch } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ControlValue, SessionControl } from '@shared/agent'
@@ -13,6 +13,11 @@ export interface SessionEnvironmentProps {
   canSet: boolean
   onSetControl: (id: string, value: ControlValue) => void
   workspace?: string | undefined
+  /**
+   * Discussion (fiche 224) : son dossier est tenu par Bobine et nommé d'après un identifiant ; on
+   * montre « Documents : Cette discussion », jamais ce nom ni le chemin.
+   */
+  discussion?: boolean | undefined
   onRevealWorkspace: () => void
   /** Branche du worktree de la conversation (fiche 036), sinon branche git du dossier. */
   worktreeBranch?: string | undefined
@@ -74,7 +79,23 @@ export function SessionEnvironment(props: SessionEnvironmentProps) {
           />
         </Row>
       )}
-      {props.workspace && (
+      {props.workspace && props.discussion && (
+        <Row label={t('sessionTab.documents')}>
+          <Tip label={`${revealLabel} — ${t('sessionTab.discussionDocuments')}`}>
+            <button
+              type="button"
+              className="session-link"
+              onClick={props.onRevealWorkspace}
+              data-testid="session-folder"
+              data-discussion
+            >
+              <FileText size={16} />
+              <span className="session-link-text">{t('sessionTab.thisDiscussion')}</span>
+            </button>
+          </Tip>
+        </Row>
+      )}
+      {props.workspace && !props.discussion && (
         <Row label={t('sessionTab.folder')}>
           <Tip label={`${revealLabel} — ${props.workspace}`}>
             <button

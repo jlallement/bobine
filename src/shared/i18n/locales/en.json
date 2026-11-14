@@ -503,7 +503,8 @@
         "confirm": "Erase all recorded usage? This can’t be undone.",
         "confirmAction": "Reset",
         "done": "Usage reset. The next exchanges will be counted."
-      }
+      },
+      "discussions": "Chats"
     }
   },
   "elicitation": {
@@ -2192,7 +2193,8 @@
       "off": "Off",
       "altSpace": "⌥Space",
       "shiftAltSpace": "⇧⌥Space"
-    }
+    },
+    "targetNoFolder": "New conversation · {{agent}}"
   },
   "document": {
     "reload": "Reload",
@@ -4035,7 +4037,10 @@
     "addFolderTip": "The agent sees this folder too. Its session restarts right away with the new list; the thread is kept.",
     "removeFolder": "Remove {{name}} from the conversation",
     "foldersBusy": "After the agent’s reply",
-    "foldersUnsupported": "Not sent: {{agent}} only takes its working folder."
+    "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
+    "documents": "Documents",
+    "discussionDocuments": "Chat documents",
+    "thisDiscussion": "This chat"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",

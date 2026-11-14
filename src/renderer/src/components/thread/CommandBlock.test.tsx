@@ -6,6 +6,7 @@ import { SHOWN_CHARS, SHOWN_LINES, toolCommandOf } from '@shared/command-view'
 import { ARM_MS, useArmedCard } from './useArmedCard'
 import { toolInputOf } from '@shared/tool-label'
 import { ToolCall, WorkspaceContext } from './ToolCall'
+import { DiscussionContext } from '../discussion/DocumentCards'
 
 type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
 
@@ -89,6 +90,25 @@ describe('Carte « Autoriser cette commande ? » (0.11, M1)', () => {
     expect(screen.getAllByText('1').length).toBeGreaterThan(0)
     expect(screen.getByTestId('command-cwd').textContent).toContain('/tmp/build-2291')
     expect(screen.getByTestId('command-outside')).toBeTruthy()
+  })
+
+  it('discussion (fiche 224) : son dossier se dit « Documents », jamais son identifiant', () => {
+    const folder = '/data/discussions/3973c57d-c6ab'
+    render(
+      <DiscussionContext.Provider value>
+        <WorkspaceContext.Provider value={folder}>
+          <ToolCall
+            item={tool({ command: { text: `ls ${folder}/out`, cwd: `${folder}/out` } })}
+            onRespond={vi.fn()}
+          />
+        </WorkspaceContext.Provider>
+      </DiscussionContext.Provider>
+    )
+    const card = screen.getByTestId('command-block')
+    expect(screen.getByTestId('command-cwd-text').textContent).toBe('Documents/out')
+    expect(screen.getByTestId('command-chip').textContent).toBe('Documents')
+    expect(screen.getByTestId('command-chip').getAttribute('title')).toBe('Documents')
+    expect(card.outerHTML).not.toMatch(/3973c57d/)
   })
 
   it('Copier : toute la commande, même affichée en partie', async () => {

@@ -64,6 +64,21 @@ describe('chemins', () => {
     expect(relativePath(`${WS}/src/books.js`, undefined)).toBe(`${WS}/src/books.js`)
   })
 
+  it('discussion (fiche 224) : le dossier se dit « Documents », en libellé comme en infobulle', () => {
+    const D = '/data/discussions/3973c57d'
+    expect(relativePath(D, D, 'Documents')).toBe('Documents/')
+    const folder = toolLabel(tool({ locations: [{ path: D }] }), D, 'Documents')
+    expect(folder?.text).toBe('Lecture de Documents/')
+    expect(folder?.detail).toBe('Documents/')
+    const file = toolLabel(tool({ locations: [{ path: `${D}/Synthèse.md` }] }), D, 'Documents')
+    expect(file?.text).toBe('Lecture de Synthèse.md')
+    expect(file?.detail).toBe('Documents/Synthèse.md')
+    // Hors du dossier : le chemin entier, comme ailleurs.
+    expect(toolLabel(tool({ locations: [{ path: '/tmp/x.md' }] }), D, 'Documents')?.detail).toBe(
+      '/tmp/x.md'
+    )
+  })
+
   it('tronqués au milieu, le nom du fichier toujours entier', () => {
     expect(shortenPath('src/books.js')).toBe('src/books.js')
     const long = 'src/renderer/src/components/thread/ToolCall.tsx'

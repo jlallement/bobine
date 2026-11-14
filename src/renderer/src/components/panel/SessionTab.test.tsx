@@ -3,7 +3,9 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contextBreakdown } from '@shared/context-breakdown'
 import type { TranscriptItem } from '@shared/transcript'
+import i18next from 'i18next'
 import { SessionContext } from './SessionContext'
+import { SessionEnvironment } from './SessionEnvironment'
 import { SessionRunning } from './SessionRunning'
 import { useMcpTokens } from './SessionTab'
 
@@ -158,5 +160,47 @@ describe('onglet « Session » : en cours (fiche 166)', () => {
     expect(screen.queryByTestId('session-finished')).toBeNull()
     fireEvent.click(screen.getByTestId('session-finished-toggle'))
     expect(screen.getByTestId('session-finished').textContent).toContain('web')
+  })
+})
+
+describe('onglet « Session » : dossier d’une discussion (fiche 224)', () => {
+  const folder = '/Users/moi/Library/Application Support/Bobine/discussions/3973c57d-c6ab-4c06'
+  const env = (discussion: boolean, onRevealWorkspace = vi.fn()) =>
+    wrap(
+      <SessionEnvironment
+        agentLabel="Bob"
+        modelControl={undefined}
+        modeControl={undefined}
+        canSet={false}
+        onSetControl={() => {}}
+        workspace={folder}
+        discussion={discussion}
+        onRevealWorkspace={onRevealWorkspace}
+        onOpenGit={() => {}}
+        finder
+      />
+    )
+
+  it('« Documents : Cette discussion », jamais l’identifiant ni le chemin ; s’affiche dans le Finder', async () => {
+    const onReveal = vi.fn()
+    env(true, onReveal)
+    const button = screen.getByTestId('session-folder')
+    expect(button.textContent).toBe(i18next.t('sessionTab.thisDiscussion'))
+    expect(screen.getByTestId('session-environment').textContent).not.toMatch(/3973c57d/)
+    expect(screen.getByText(i18next.t('sessionTab.documents'))).toBeTruthy()
+    fireEvent.focus(button)
+    await waitFor(() =>
+      expect(screen.getAllByRole('tooltip')[0]?.textContent).toBe(
+        `${i18next.t('workspaceMenu.revealFinder')} — ${i18next.t('sessionTab.discussionDocuments')}`
+      )
+    )
+    expect(document.body.textContent).not.toMatch(/discussions\//)
+    fireEvent.click(button)
+    expect(onReveal).toHaveBeenCalled()
+  })
+
+  it('espace Code : le nom du dossier, comme avant', () => {
+    env(false)
+    expect(screen.getByTestId('session-folder').textContent).toBe('3973c57d-c6ab-4c06')
   })
 })

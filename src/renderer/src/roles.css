@@ -1286,27 +1286,34 @@
   color: var(--text-2);
 }
 
-/* En-tête d'une fille : son rôle. */
+/* En-tête d'une fille : son rôle. Entier, il ne se serre pas : le titre cède d'abord ; faute de
+   place, la pastille se réduit à son icône (`.compact`, `useCompactBadge`), puis le nom du rôle
+   se termine par « … ». Jamais une pastille coupée au milieu d'une lettre. */
 .role-title-badge {
   display: inline-flex;
-  flex: 0 2 auto;
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   min-width: 22px;
-  overflow: hidden;
   font-size: 12.5px;
   color: var(--text-2);
 }
 .role-title-badge > * {
   flex-shrink: 0;
 }
-.role-title-badge > .role-title-label,
-.role-title-badge > .role-tag {
+.role-title-badge.compact {
+  flex-shrink: 1;
+  /* Au moins l'avatar et l'icône : seul le nom du rôle se raccourcit. */
+  min-width: auto;
+}
+.role-title-badge .role-tag.compact {
+  padding: 2px 6px;
+}
+.role-title-badge.compact > .role-title-label {
   flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .role-title-label {
   font-weight: 500;

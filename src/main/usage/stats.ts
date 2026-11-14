@@ -171,7 +171,12 @@ export interface StatsContext {
   title: (conversationId: string) => string | undefined
   /** Jour local d'une heure UTC (`localDay` par défaut). */
   dayOf?: (ms: number) => string
+  /** Dossier des discussions (fiche 224) : leurs tours comptent sur une seule ligne. */
+  discussionsRoot?: string
 }
+
+/** Clé de la ligne « Discussions » de « Par projet » (jamais un chemin : ne commence pas par `/`). */
+export const DISCUSSIONS_KEY = 'discussions'
 
 const tokensOf = (row: TurnRow) => (row.tokens.input ?? 0) + (row.tokens.output ?? 0)
 const hasTokens = (row: TurnRow) => Object.keys(row.tokens).length > 0
@@ -298,9 +303,19 @@ function addModel(rows: Map<string, UsageModelRow>, row: TurnRow): void {
   }
 }
 
-function addProject(rows: Map<string, UsageProjectRow>, row: TurnRow): void {
-  const key = row.repoRoot ?? row.workspace ?? ''
-  const entry = rows.get(key) ?? { key, name: key ? basename(key) : '', turns: 0, tokens: 0 }
+function addProject(
+  rows: Map<string, UsageProjectRow>,
+  row: TurnRow,
+  discussionsRoot: string | undefined
+): void {
+  const path = row.repoRoot ?? row.workspace ?? ''
+  const discussion = !!discussionsRoot && path.startsWith(`${discussionsRoot}/`)
+  const key = discussion ? DISCUSSIONS_KEY : path
+  const entry =
+    rows.get(key) ??
+    (discussion
+      ? { key, name: '', discussions: true as const, turns: 0, tokens: 0 }
+      : { key, name: key ? basename(key) : '', turns: 0, tokens: 0 })
   entry.turns += 1
   entry.tokens += tokensOf(row)
   rows.set(key, entry)
@@ -362,7 +377,7 @@ export function usageStats(
   for (const row of rows) {
     addTotals(totals, row)
     addModel(byModel, row)
-    addProject(byProject, row)
+    addProject(byProject, row, context.discussionsRoot)
     addConversation(conversations, row)
     const bucket = buckets.get(bucketOf(kind, row.startedAt, dayOf))
     if (!bucket) continue

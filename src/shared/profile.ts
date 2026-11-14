@@ -43,6 +43,8 @@ export interface TrashEntry {
   id: string
   title: string
   workspace: string
+  /** Discussion (fiche 224) : son dossier, tenu par Bobine, n'est pas montré. */
+  space?: 'discussion'
   /** Date de suppression (ISO). */
   deletedAt: string
   /** Date à laquelle elle sera effacée pour de bon (ISO). */

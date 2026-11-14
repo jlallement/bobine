@@ -189,6 +189,12 @@ function placeholderOf(
     : i18next.t('composer.placeholder.default')
 }
 
+/** En tête du menu `@` : le nom du dossier ; « Documents » dans une discussion (fiche 224). */
+const fileMenuName = (workspace: string | undefined, discussion: boolean | undefined) =>
+  discussion
+    ? i18next.t('discussion.documents.tab')
+    : (workspace?.split('/').filter(Boolean).at(-1) ?? '')
+
 const NO_USER_COMMANDS: UserCommand[] = []
 const NO_ROLES: readonly { name: string; label: string }[] = []
 const NO_AGENT_COMMANDS: AgentCommand[] = []
@@ -485,7 +491,7 @@ export function Composer(props: Props) {
         <FileMenu
           items={mentions.entries}
           active={mentions.active}
-          workspaceName={snapshot?.info.workspace.split('/').filter(Boolean).at(-1) ?? ''}
+          workspaceName={fileMenuName(snapshot?.info.workspace, props.discussion)}
           onHover={mentions.setActive}
           onPick={pickEntry}
           {...(props.roles ? { roles: roleCompose.menu(mentions.mention?.query) ?? {} } : {})}

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { activityLabel, currentActivity, currentStepId, elapsedLabel } from '@shared/activity'
 import type { TranscriptItem } from '@shared/transcript'
 import { SpoolMark } from '../common/SpoolMark'
+import { DiscussionContext } from '../discussion/DocumentCards'
 
 /** Début du tour en cours, par conversation (garde le chrono en changeant de conversation). */
 const turnStarts = new Map<string, { userId: number; start: number }>()
@@ -57,7 +58,9 @@ export function WorkingIndicator({
     const timer = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(timer)
   }, [])
-  const activity = currentActivity(items, workspace)
+  // Discussion (fiche 224) : son dossier se dit « Documents ».
+  const documents = useContext(DiscussionContext) ? t('discussion.documents.tab') : undefined
+  const activity = currentActivity(items, workspace, documents)
   const waiting = activity.kind === 'permission' || activity.kind === 'question'
   return (
     <div

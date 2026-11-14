@@ -1,5 +1,5 @@
 import { ArrowDown, Check, Copy, Folder } from 'lucide-react'
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   commandFolderOf,
@@ -9,6 +9,7 @@ import {
   SHOWN_CHARS,
   SHOWN_LINES,
   visibleText,
+  withRootLabel,
   type FolderLocation,
   type ToolCommand
 } from '@shared/command-view'
@@ -16,6 +17,7 @@ import { safeCut } from '@shared/display-cap'
 import { countText } from '@shared/i18n/format'
 import { sizeText } from '../../acp-view'
 import { useDisplayText } from '../../presentation'
+import { DiscussionContext } from '../discussion/DocumentCards'
 
 /** Durée du « Copié ». */
 const COPIED_MS = 1500
@@ -54,8 +56,10 @@ export function CommandBlock({
   const folder = commandFolderOf(command.cwd, workspace, locations)
   const cwd = folder?.full
   const outside = folder?.outside ?? false
-  const short = folder?.short
-  const fullCwd = cwd ? visibleText(show(cwd)) : undefined
+  // Discussion (fiche 224) : son dossier se dit « Documents », jamais son identifiant ni son chemin.
+  const documents = useDocumentsLabel()
+  const short = folder?.short && documents ? withRootLabel(folder.short, documents) : folder?.short
+  const fullCwd = cwd ? (documents && short ? short : visibleText(show(cwd))) : undefined
   const invisible = hasInvisible(command.text)
   const total = command.total ?? command.text.length
   const cut =
@@ -206,12 +210,13 @@ export function CommandBlock({
 function FolderChips({ text, workspace }: { text: string; workspace: string | undefined }) {
   const { t } = useTranslation()
   const show = useDisplayText()
+  const documents = useDocumentsLabel()
   const chunks = useMemo(() => folderChunks(text, workspace), [text, workspace])
   return (
     <>
       {chunks.map((chunk, i) => {
         if (typeof chunk === 'string') return chunk
-        const path = visibleText(show(chunk.folder))
+        const path = documents ?? visibleText(show(chunk.folder))
         return (
           <span
             key={i}
@@ -222,12 +227,18 @@ function FolderChips({ text, workspace }: { text: string; workspace: string | un
             data-testid="command-chip"
           >
             <Folder size={12} aria-hidden />
-            {chunk.name}
+            {documents ?? chunk.name}
           </span>
         )
       })}
     </>
   )
+}
+
+/** Nom montré pour le dossier d'une discussion (fiche 224) ; `undefined` dans l'espace Code. */
+function useDocumentsLabel(): string | undefined {
+  const { t } = useTranslation()
+  return useContext(DiscussionContext) ? t('discussion.documents.tab') : undefined
 }
 
 /** « Copier » : la commande entière gardée, brute ; « Copié » dit pendant 1,5 s. */

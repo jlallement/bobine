@@ -162,10 +162,15 @@ const MAX_PATH = 48
 const MAX_TARGET = 60
 
 /** Chemin relatif au dossier de la conversation ; hors du dossier, tel quel. */
-export function relativePath(path: string, workspace: string | undefined): string {
+export function relativePath(
+  path: string,
+  workspace: string | undefined,
+  rootName?: string
+): string {
   if (!workspace) return path
   const base = workspace.replace(/\/+$/, '')
-  if (path === base) return `${base.split('/').filter(Boolean).at(-1) ?? ''}/`
+  // Le dossier lui-même : son nom, ou `rootName` (« Documents » d'une discussion, fiche 224).
+  if (path === base) return `${rootName ?? base.split('/').filter(Boolean).at(-1) ?? ''}/`
   return path.startsWith(`${base}/`) ? path.slice(base.length + 1) : path
 }
 
@@ -177,9 +182,10 @@ export function relativePath(path: string, workspace: string | undefined): strin
  */
 export function filePathParts(
   path: string,
-  workspace: string | undefined
+  workspace: string | undefined,
+  rootName?: string
 ): { dir: string; name: string } {
-  const relative = relativePath(path, workspace)
+  const relative = relativePath(path, workspace, rootName)
   // Hors du dossier : `~` pour le dossier personnel, exact quand l'app le connaît (fiche 214).
   const shown =
     relative === path
@@ -255,18 +261,33 @@ interface FileTarget {
 }
 
 /** Cible d'un outil de fichier : le premier emplacement, sinon le chemin de `rawInput`. */
-function fileTarget(item: LabelledTool, workspace: string | undefined): FileTarget | undefined {
+function fileTarget(
+  item: LabelledTool,
+  workspace: string | undefined,
+  rootName?: string
+): FileTarget | undefined {
   const paths = item.locations.length ? item.locations.map((l) => l.path) : []
   const first = paths[0] ?? item.input?.path
   if (!first) return undefined
-  const shown = shortenPath(relativePath(first, workspace))
+  const shown = shortenPath(relativePath(first, workspace, rootName))
   const others = paths.length - 1
+  // Discussion (fiche 224) : en infobulle aussi, ses documents sans le chemin de son dossier.
+  const full = (path: string) =>
+    rootName && relativePath(path, workspace, rootName) !== path
+      ? inRoot(path, workspace, rootName)
+      : path
   return {
     text: others > 0 ? t('toolCall.label.others', { target: shown, count: others }) : shown,
-    detail: paths.length > 1 ? paths.join('\n') : first,
+    detail: paths.length > 1 ? paths.map(full).join('\n') : full(first),
     first,
     others
   }
+}
+
+/** Chemin dans le dossier, sous le nom `rootName` : « Documents/Synthèse.md ». */
+function inRoot(path: string, workspace: string | undefined, rootName: string): string {
+  const relative = relativePath(path, workspace, rootName)
+  return relative.startsWith(`${rootName}/`) ? relative : `${rootName}/${relative}`
 }
 
 /** Repère de la cible dans un libellé traduit (jamais dans un chemin ni une traduction). */
@@ -290,12 +311,13 @@ type FileKey =
 function fileLabel(
   key: FileKey,
   target: FileTarget,
-  workspace: string | undefined
+  workspace: string | undefined,
+  rootName?: string
 ): Pick<ToolLabel, 'text' | 'detail' | 'file'> {
   const slot =
     target.others > 0 ? t('toolCall.label.others', { target: SLOT, count: target.others }) : SLOT
   const around = t(key, { target: slot }).split(SLOT)
-  const { dir, name } = filePathParts(target.first, workspace)
+  const { dir, name } = filePathParts(target.first, workspace, rootName)
   return {
     text: t(key, { target: target.text }),
     detail: target.detail,
@@ -370,11 +392,19 @@ function untargetedLabel(item: LabelledTool): ToolLabel | undefined {
  * Libellé lisible d'un outil de l'agent, d'après son genre et sa cible ; `undefined` quand le
  * titre de l'agent doit rester (genre inconnu, sans cible).
  */
-export function toolLabel(item: LabelledTool, workspace?: string): ToolLabel | undefined {
-  return targetLabel(item, workspace) ?? untargetedLabel(item)
+export function toolLabel(
+  item: LabelledTool,
+  workspace?: string,
+  rootName?: string
+): ToolLabel | undefined {
+  return targetLabel(item, workspace, rootName) ?? untargetedLabel(item)
 }
 
-function targetLabel(item: LabelledTool, workspace: string | undefined): ToolLabel | undefined {
+function targetLabel(
+  item: LabelledTool,
+  workspace: string | undefined,
+  rootName: string | undefined
+): ToolLabel | undefined {
   const kind = item.toolKind ?? 'other'
   // Liste de tâches (Bob : « Updating todo list », genre « other ») : quoi, et combien.
   const todos = item.input?.todos
@@ -391,26 +421,26 @@ function targetLabel(item: LabelledTool, workspace: string | undefined): ToolLab
   if (kind === 'search') {
     const pattern = item.input?.pattern
     if (pattern) {
-      const where = fileTarget(item, workspace)
+      const where = fileTarget(item, workspace, rootName)
       return {
         text: t('toolCall.label.search', { target: shorten(pattern) }),
         detail: where ? `${pattern}\n${where.detail}` : pattern
       }
     }
-    const where = fileTarget(item, workspace)
+    const where = fileTarget(item, workspace, rootName)
     if (!where) return undefined
     const key = isListTitle(item.title) ? 'toolCall.label.list' : 'toolCall.label.searchIn'
-    return fileLabel(key, where, workspace)
+    return fileLabel(key, where, workspace, rootName)
   }
   if (kind === 'read' || kind === 'edit' || kind === 'delete' || kind === 'move') {
-    const target = fileTarget(item, workspace)
+    const target = fileTarget(item, workspace, rootName)
     if (!target) return undefined
     if (createsFile(item)) {
-      return { ...fileLabel('toolCall.label.create', target, workspace), created: true }
+      return { ...fileLabel('toolCall.label.create', target, workspace, rootName), created: true }
     }
     const key =
       kind === 'read' && isListTitle(item.title) ? 'toolCall.label.list' : FILE_KINDS[kind]
-    return fileLabel(key, target, workspace)
+    return fileLabel(key, target, workspace, rootName)
   }
   return undefined
 }
@@ -432,6 +462,6 @@ function commandLabel(item: LabelledTool, workspace: string | undefined): ToolLa
 }
 
 /** Ce que la carte affiche : le libellé, sinon le titre de l'agent nettoyé (fiche 125). */
-export function toolText(item: LabelledTool, workspace?: string): string {
-  return toolLabel(item, workspace)?.text ?? cleanTitle(item.title, workspace)
+export function toolText(item: LabelledTool, workspace?: string, rootName?: string): string {
+  return toolLabel(item, workspace, rootName)?.text ?? cleanTitle(item.title, workspace)
 }

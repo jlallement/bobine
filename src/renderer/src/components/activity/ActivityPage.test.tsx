@@ -109,7 +109,8 @@ const STATS: UsageStats = {
   ],
   byProject: [
     { key: '/p/bobine', name: 'bobine', turns: 2, tokens: 1540 },
-    { key: '/p/carnet', name: 'carnet', turns: 2, tokens: 0 }
+    { key: '/p/carnet', name: 'carnet', turns: 2, tokens: 0 },
+    { key: 'discussions', name: '', discussions: true, turns: 1, tokens: 0 }
   ],
   conversations: [
     {
@@ -366,7 +367,11 @@ describe('Mon activité (fiches 137 et 144)', () => {
       'IBM Bob · modèle non communiqué2non communiqué0,75 Bobcoins0,375 Bobcoins'
     )
     expect(models[2]).toContain('non communiqué—')
-    expect(screen.getAllByTestId('usage-project-row')).toHaveLength(2)
+    const projects = screen.getAllByTestId('usage-project-row')
+    expect(projects).toHaveLength(3)
+    // Les discussions (fiche 224) : une ligne, sans chemin en infobulle.
+    expect(projects[2]?.textContent).toBe('Discussions1')
+    expect(projects[2]?.querySelector('[title]')).toBeNull()
     fireEvent.click(screen.getByTestId('usage-conversation-open'))
     expect(onOpen).toHaveBeenCalledWith('oc1')
     expect(screen.getByText('Conversation supprimée')).toBeTruthy()

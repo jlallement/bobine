@@ -257,7 +257,55 @@ async function mainRun(ui) {
     `en-tête d'une fille étroit : titre lisible (${Math.round(narrow.title)} px), rien ne déborde`
   )
   await ui.shot('roles-travail-7b-entete-etroit')
+  // Fenêtre au plus étroit (800 px, panneau replié) : le titre cède d'abord, puis la pastille se
+  // réduit à son icône ; jamais coupée au milieu d'une lettre.
+  const header = `(() => {
+    const header = document.querySelector('.main-header')
+    const badge = document.querySelector('[data-testid=role-title-badge]')
+    const pill = badge.querySelector('[data-testid=role-read-only]')
+    const b = badge.getBoundingClientRect()
+    const p = pill.getBoundingClientRect()
+    const right = header.getBoundingClientRect().right
+    return {
+      title: header.querySelector('.main-title').getBoundingClientRect().width,
+      clipped: p.right > b.right + 0.5 || p.left < b.left - 0.5 || pill.scrollWidth > pill.clientWidth + 1,
+      overflow: [...header.children]
+        .filter((el) => !el.dataset.e2e)
+        .some((el) => el.getBoundingClientRect().right > right + 1),
+      compact: pill.classList.contains('compact') && !!pill.querySelector('svg')
+    }
+  })()`
+  const wide = await ui.ev(header)
+  check(
+    !wide.clipped,
+    `en-tête étroit, profil temporaire : pastille entière (${wide.compact ? 'icône' : 'texte'})`
+  )
   await ui.ev(`document.querySelector('[data-e2e=chip]')?.remove()`)
+  await ui.viewport(800)
+  const tight = await ui.ev(header)
+  check(
+    !tight.clipped && !tight.overflow && tight.title >= 90,
+    `en-tête d'une fille à 800 px : pastille entière (${tight.compact ? 'icône' : 'texte'}), titre ${Math.round(tight.title)} px, rien ne déborde`
+  )
+  await ui.shot('roles-travail-7c-entete-800')
+  // Encore moins de place (la pastille « Profil temporaire », qui ne se raccourcit pas) : la
+  // pastille de la lecture seule se réduit à son icône, entière.
+  await ui.ev(`(() => {
+    const chip = document.createElement('span')
+    chip.className = 'temporary-chip no-drag'
+    chip.dataset.e2e = 'chip'
+    chip.textContent = ${JSON.stringify(L('settings.data.fresh.chip'))}
+    document.querySelector('.main-header .grow').after(chip)
+  })()`)
+  await ui.waitFor(`!!document.querySelector('[data-testid=role-title-badge][data-compact]')`, 5000)
+  const squeezed = await ui.ev(header)
+  check(
+    squeezed.compact && !squeezed.clipped && squeezed.title >= 90,
+    `en-tête d'une fille à 800 px, profil temporaire : pastille réduite à son icône, entière ; titre ${Math.round(squeezed.title)} px`
+  )
+  await ui.shot('roles-travail-7d-entete-800-icone')
+  await ui.ev(`document.querySelector('[data-e2e=chip]')?.remove()`)
+  await ui.viewport()
   await ui.click(ui.$('title-origin'))
   await ui.waitFor(`!${ui.$('role-title-badge')}`)
 

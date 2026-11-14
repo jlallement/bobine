@@ -1,5 +1,5 @@
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
-import { basename } from '../common/Menus'
+import { projectName } from '../../useSpace'
 import { closeRoleWizard, invokeRole, useRolesUi } from '../../roles/roles-store'
 import { RoleWizard } from './RoleWizard'
 
@@ -26,7 +26,7 @@ export function RolesHost({
       prefill={ui.wizard.prefill}
       conversationId={active?.id}
       conversationProfileId={active?.profileId}
-      project={active ? basename(active.project ?? active.workspace) : undefined}
+      project={projectName(active)}
       profiles={profiles}
       canTry={canTry}
       onClose={closeRoleWizard}

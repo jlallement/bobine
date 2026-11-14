@@ -117,6 +117,7 @@ import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import { revealWindow, showRestored, trackWindowState, visibleBounds } from './window-state'
 import { defaultWorkspaceFor } from './conversations/agentless'
+import { discussionsRoot } from './conversations/discussion-space'
 import { imposedLiveLimit } from './conversations/live-agents'
 import { chooseDirectory, chooseFiles, saveCsv, saveFile } from './dialogs'
 
@@ -706,7 +707,8 @@ async function start(): Promise<void> {
     profiles,
     history: historyStore,
     onChanged: () => send('usage:changed', null),
-    readOnly: profile.readOnly()
+    readOnly: profile.readOnly(),
+    discussionsRoot: discussionsRoot(join(app.getPath('userData'), 'conversations'))
   })
 
   /** Dernière valeur de « Garder les cookies du navigateur » (fiche 072). */

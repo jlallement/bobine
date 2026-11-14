@@ -86,6 +86,26 @@ export async function discussionSuite(scheme) {
         await ui.waitFor(`${ui.$('documents-preview')}?.innerText.includes('Synthèse')`)
         check(true, 'panneau « Documents » : deux documents, aperçu du plus récent')
         await ui.shot('discussion-3-documents')
+        // Onglet « Session » : « Documents · Cette discussion », jamais l'identifiant de son dossier.
+        const sessionTab = `document.querySelector('.side-panel-tab-main[aria-label=${JSON.stringify(L('panel.tab.session'))}]')`
+        if (await ui.ev(`!!${sessionTab} && !${sessionTab}.closest('[data-overflow]')`)) {
+          await ui.click(sessionTab)
+        } else {
+          await ui.click(ui.$('panel-more'))
+          await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
+          await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=session]')`)
+        }
+        await ui.waitFor(`!!${ui.$('session-folder')}`)
+        check(
+          (await ui.ev(`${ui.$('session-folder')}.innerText`)) === L('sessionTab.thisDiscussion') &&
+            !(await ui.ev(`${ui.$('session-tab')}.textContent`)).includes(id),
+          'onglet « Session » : « Documents · Cette discussion », sans l’identifiant du dossier'
+        )
+        await ui.shot('discussion-3b-session')
+        check(
+          !(await ui.ev(`${ui.$('thread')}.textContent`)).includes(id),
+          'fil d’une discussion : les outils disent « Documents », jamais l’identifiant du dossier'
+        )
 
         // E4 : une commande demandée, dite en clair ; le détail replié.
         await ui.send('/scenario discussion-commande')
@@ -95,6 +115,10 @@ export async function discussionSuite(scheme) {
             L('discussion.permission.details')
           ) && (await ui.ev(`${ui.$('permission-details')}.open === false`)),
           'carte d’autorisation en clair, commande repliée sous « Détails techniques »'
+        )
+        check(
+          !(await ui.ev(`${ui.$('permission')}.textContent`)).includes(id),
+          'commande d’une discussion : son dossier se dit « Documents », jamais son identifiant'
         )
         await ui.shot('discussion-5-autorisation')
         await ui.click(`${ui.$('permission')}.querySelector('.pc-actions .btn.ghost')`)

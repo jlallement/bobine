@@ -145,6 +145,15 @@ const hasParentSegment = (path: string) => path.split('/').includes('..')
  * `/etc` s'affiche « projet/lien » ; le chemin entier reste en infobulle et pour le lecteur d'écran.
  * Le texte passe par `visibleText` (caractères invisibles ou bidi rendus visibles).
  */
+/**
+ * Forme courte d'un dossier (`shortFolder`, « projet/src ») dont la racine reçoit un autre nom :
+ * dans une discussion (fiche 224), « Documents/src » au lieu de l'identifiant de son dossier.
+ */
+export function withRootLabel(short: string, label: string): string {
+  const slash = short.indexOf('/')
+  return `${label}${slash === -1 ? '' : short.slice(slash)}`
+}
+
 export function shortFolder(
   cwd: string | undefined,
   workspace: string | undefined

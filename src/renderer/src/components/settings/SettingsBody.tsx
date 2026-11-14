@@ -17,7 +17,7 @@ import type { AgentSubPage, SettingsDialogProps } from './SettingsDialog'
 import { ApprovalRulesPage } from './ApprovalRulesPage'
 import { ShortcutsSettings } from './ShortcutsSettings'
 import { RolesSettings } from '../roles/RolesSettings'
-import { basename } from '../common/Menus'
+import { projectName } from '../../useSpace'
 
 /** Formulaire d'un agent ACP déclaré (fiche 141) : `id` absent, un nouvel agent. */
 export interface AgentForm {
@@ -99,7 +99,7 @@ export function SettingsBody({
         <RolesSettings
           conversationId={active?.id}
           conversationProfileId={active?.profileId}
-          project={active ? basename(active.project ?? active.workspace) : undefined}
+          project={projectName(active)}
           profiles={settings.profiles}
           onClose={() => props.onOpenChange(false)}
         />

@@ -1085,3 +1085,12 @@ dans **ADR-0046** (accepté).
     @code-reviewer relisez calc.js` directement (capture `roles-travail-0-premier-message`).
   - Vérifications : `./scripts/verify` vert ; `pnpm build && pnpm e2e roles-travail roles-export
     roles-gestion --jobs 3` : 6/6, et 6/6 en `--lang en`.
+- **2026-11-15** (`fix/nuit-produit`) : pastille « lecture seule » coupée au milieu d'un mot dans
+  l'en-tête d'une fille étroit. Le rôle de l'en-tête ne se serre plus (`flex-shrink: 0`) : le titre
+  cède d'abord, jusqu'à sa largeur minimale ; faute de place, la pastille se réduit à son icône
+  (texte pour le lecteur d'écran et en infobulle, focusable), puis le nom du rôle se termine par
+  « … ». Décision mesurée (`useCompactBadge`) : espace libre de l'en-tête et marge du titre, contre
+  la largeur du rôle entier, avec 4 px d'hystérésis. Tests : `RoleWork.test.tsx` ; e2e
+  `roles-travail` : à 1 280 px avec la pastille « Profil temporaire », puis à 800 px sans et avec
+  (captures `roles-travail-7b`, `7c-entete-800`, `7d-entete-800-icone`). Hors périmètre : la
+  pastille « Profil temporaire » ne se raccourcit pas, et à 800 px elle déborde à elle seule.

@@ -113,6 +113,18 @@ describe('export d’une conversation (fiche 043)', () => {
     expect(md).not.toMatch(/\n{3,}/)
   })
 
+  it('Markdown d’une discussion (fiche 224) : pas de ligne « Dossier »', () => {
+    const discussion = {
+      ...summary,
+      workspace: '/data/discussions/3973c57d',
+      space: 'discussion' as const
+    }
+    const md = exportConversation(discussion, transcript, 'markdown', new Date(2026, 9, 13))
+    expect(md).toContain('- Agent\u00a0: IBM Bob')
+    expect(md).not.toContain('3973c57d')
+    expect(exportConversation(summary, transcript, 'markdown')).toContain('/Users/x/projet')
+  })
+
   it('JSON : fil complet, réimportable', () => {
     const json = JSON.parse(exportConversation(summary, transcript, 'json')) as {
       format: string

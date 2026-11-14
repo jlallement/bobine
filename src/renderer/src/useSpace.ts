@@ -10,6 +10,18 @@ export const spaceOf = (
 ): ConversationSpace => c?.space ?? 'code'
 
 /**
+ * Nom du projet d'une conversation (rôles du projet, fiche 223) ; aucun pour une discussion
+ * (fiche 224) : son dossier, tenu par Bobine, n'est pas un projet et n'est jamais nommé.
+ */
+export const projectName = (
+  c: Pick<ConversationSummary, 'space' | 'project' | 'workspace'> | null | undefined
+): string | undefined => {
+  if (!c || spaceOf(c) === 'discussion') return undefined
+  const path = c.project ?? c.workspace
+  return path.split('/').filter(Boolean).at(-1) ?? path
+}
+
+/**
  * Espace affiché (fiche 224) : celui de la conversation active. Changer d'espace rouvre la
  * conversation la plus récente de cet espace, sinon en crée une ; le choix est retenu sur ce poste
  * et repris au lancement.

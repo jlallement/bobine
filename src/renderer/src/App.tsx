@@ -751,6 +751,7 @@ export function App() {
             {beside.summary && beside.view && (
               <ConversationScope
                 conversationId={beside.summary.id}
+                discussion={beside.summary.space === 'discussion'}
                 openLink={beside.openLink}
                 loadSubagentWork={beside.loadSubagentWork}
               >
@@ -828,6 +829,7 @@ export function App() {
                   settings: c.settings,
                   transcript,
                   workspace: c.activeSummary?.workspace,
+                  discussion,
                   worktreeBranch: c.activeSummary?.branch,
                   gitBranch: git?.branch,
                   running,

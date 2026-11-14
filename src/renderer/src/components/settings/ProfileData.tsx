@@ -120,7 +120,9 @@ export function TrashList({ readOnly }: { readOnly: boolean }) {
       })
     })
   const folder = (entry: TrashEntry) =>
-    entry.workspace.split('/').filter(Boolean).at(-1) ?? t('settings.data.trash.noFolder')
+    entry.space === 'discussion'
+      ? t('discussion.space.discussion')
+      : (entry.workspace.split('/').filter(Boolean).at(-1) ?? t('settings.data.trash.noFolder'))
   return (
     <>
       <SettingsTitle help="settingsTrash">{t('settings.data.trash.title')}</SettingsTitle>

@@ -104,6 +104,21 @@ describe('dialogues de la fenêtre', () => {
     expect(screen.queryByTestId('search')).toBeNull()
   })
 
+  it('résultat d’une discussion (fiche 224) : « Discussion », pas le nom de son dossier', () => {
+    const c = fakeConversations()
+    c.list.push({
+      ...summary('d', 'Courrier'),
+      space: 'discussion',
+      workspace: '/data/discussions/3973c57d-c6ab'
+    })
+    render(<MainWindow c={c} onFindIn={vi.fn()} />)
+    fireEvent.click(screen.getByText('search'))
+    fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'courrier' } })
+    const result = screen.getByTestId('search-result')
+    expect(result.textContent).toContain('Agent · Discussion')
+    expect(result.textContent).not.toContain('3973c57d')
+  })
+
   it('trouvée par son contenu : ⌘F s’y ouvrira sur ces mots (fiche 086)', async () => {
     search.mockResolvedValue([{ id: 'b', snippet: 'le mot rare', highlights: [[3, 11]] }])
     const { c, onFindIn } = setup()

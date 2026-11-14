@@ -334,7 +334,8 @@ export class ConversationManager {
     return {
       profileId: profile.id,
       profileLabel: profile.label,
-      workspace: defaults?.workspace ?? active.record.workspace
+      // Depuis une discussion (fiche 224) : pas son dossier, comme `create` (`inheritedFolder`).
+      workspace: defaults?.workspace ?? ds.inheritedFolder(active.record, this.settings.current)
     }
   }
 
