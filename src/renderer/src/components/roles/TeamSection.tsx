@@ -16,11 +16,17 @@ import { RoleAvatar } from './RoleAvatar'
 export function TeamSection({
   conversationId,
   folded,
-  onToggle
+  onToggle,
+  onShowConversation
 }: {
   conversationId: string | null
   folded: boolean
   onToggle: () => void
+  /**
+   * Aucune saisie à l'écran (page « Mon activité »…) : ramène la conversation affichée, dont la
+   * saisie reçoit alors le jeton (`invokeRole` le garde un instant).
+   */
+  onShowConversation: () => void
 }) {
   const { t } = useTranslation()
   const { readOnly } = useProfileStatus()
@@ -61,7 +67,7 @@ export function TeamSection({
               <button
                 className="team-avatar"
                 aria-label={t('team.assign', { label: role.label })}
-                onClick={() => invokeRole(role.name)}
+                onClick={() => invokeRole(role.name) || onShowConversation()}
                 data-testid="team-role"
                 data-role={role.name}
               >

@@ -297,6 +297,9 @@ export function Sidebar(props: Props) {
             conversationId={props.activeId}
             folded={sections.isFolded('team')}
             onToggle={() => sections.toggle('team')}
+            onShowConversation={() =>
+              props.activeId ? props.onSelect(props.activeId) : props.onNew()
+            }
           />
           {/* Les états restent sur place ; les liens mère-filles gardent leur tracé (fiche 149). */}
           {pinned.length > 0 && (
