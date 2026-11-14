@@ -1014,3 +1014,36 @@ dans **ADR-0046** (accepté).
     `--lang en`. Avec les vrais `bob` et `opencode` dans le PATH, le menu les propose aussi
     (dossier personnel d'essai : rien d'écrit hors du bac à sable).
 
+
+### Relecture de la phase 4 (2026-11-14)
+
+- 2026-11-14 : **correctifs après la relecture tech lead** (branche `feat/223-export`) :
+  1. **`feat/223-langues` fusionnée** (rôles fournis bilingues, ADR-0046) : conflits réglés en
+     gardant les deux côtés (changelogs : « Nouveau » puis « Amélioré » ; index des ADR : 0046 puis
+     0047 ; journal de la fiche : les deux sections). `exportedDescription` retiré : un rôle fourni
+     arrive déjà dans la langue de l'interface, et c'est ce qui part dans l'agent
+     (`export/ipc.test.ts`, fr puis en).
+  2. **Textes de la feuille** : plus aucun outil nommé (« Bob Shell, Bob IDE », « d'OpenCode ») ni
+     mode de Bob (« Agent, Plan, Ask ») dans les textes d'un format ; l'agent est toujours son
+     libellé (« … parmi ses modes, sous le nom X, dans Bobine et hors de Bobine aussi », « Dans
+     Bobine, lancer ce rôle dans ce mode / avec cet agent »).
+  3. **Refus montré** : rattaché à la version enregistrée du rôle ; effacé à l'enregistrement et
+     par une action réussie (e2e : plus de conflit à côté de « le rôle a changé depuis »).
+  4. **En-tête de la page d'un rôle** : titre et sous-titre sur une ligne chacun (« … », chemin
+     complet en infobulle), les actions passent dessous faute de place (e2e `rx8-entete-nom-long`,
+     libellé de 39 caractères).
+  5. **Installations sans rôle** : groupe en bas de Réglages › Rôles (canal
+     `roles:exportOrphans`, `RoleExports.orphans`), chaque ligne avec « Retirer » (mêmes règles,
+     confirmation si modifiée à la main) ; enregistrer un rôle installé sous un nouvel identifiant
+     le dit (« Installé sous l'ancien identifiant … »).
+  6. **Sonde de Bob** : les deux modes personnalisés sont écrits par l'adaptateur de Bobine
+     (personnel en lecture seule `[read, mcp]`, projet `[read, edit, execute, mcp]`) ; nouvelle
+     option `--only` (ces sondages ne lisent rien du vrai `~/.bob`, contrat non jugé sur une
+     partie, pas de `--accept`). `pnpm bob-probe --only "modes personnalisés"` sur **Bob 2.1.0** :
+     modes `agent`, `plan`, `ask`, puis `bobine-sonde-perso` (personnel) et `bobine-sonde-projet`
+     (projet) ; `session/set_mode` → `{}` ; fichiers gardés tels quels ; réponses identiques aux
+     attentes (aucune acceptation). Le passage complet n'a pas été relancé (il lit
+     `licenseConsent` et le schéma de `bob.db` dans le vrai `~/.bob`).
+  - Vérifications : `./scripts/verify` vert ; `pnpm build && pnpm e2e roles-export roles-gestion
+    roles-travail --jobs 3` : 6/6, et 6/6 en `--lang en` ; captures regardées (`rx2-feuille-bob`,
+    `rx4-role-change`, `rx8-entete-nom-long`, `rx9-sans-role`, `-light` / `-dark`, `en-…`).

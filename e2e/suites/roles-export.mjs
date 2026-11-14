@@ -21,6 +21,19 @@ customModes:
     groups: [read]
 `
 
+/** Rôle du projet au libellé le plus long permis. */
+const LONG_ROLE = `---
+name: relecteur-des-migrations
+label: Relecteur des migrations de la base SQL
+icon: database
+color: green
+description: Relit les migrations de base de données avant fusion.
+read-only: true
+---
+
+Tu relis les migrations.
+`
+
 /** Mode du projet du même nom, que Bobine n'a pas écrit : jamais touché. */
 const FOREIGN_PROJECT_MODES = `customModes:
   - slug: code-reviewer
@@ -50,6 +63,9 @@ export async function rolesExportSuite(scheme) {
   writeFileSync(join(home, '.bob', 'settings', 'custom_modes.yaml'), USER_MODES)
   writeFileSync(join(workspace, '.bob', 'custom_modes.yaml'), FOREIGN_PROJECT_MODES)
   writeFileSync(join(workspace, 'README.md'), '# Boutique\n')
+  // Rôle du projet au nom long (40 caractères) : en-tête de sa page, puis renommé (sans rôle).
+  mkdirSync(join(workspace, '.bobine', 'roles'), { recursive: true })
+  writeFileSync(join(workspace, '.bobine', 'roles', 'relecteur-des-migrations.md'), LONG_ROLE)
   const git = (...args) =>
     execFileSync('git', ['-c', 'user.name=e2e', '-c', 'user.email=e2e@example.invalid', ...args], {
       cwd: workspace
@@ -75,6 +91,15 @@ export async function rolesExportSuite(scheme) {
 const F = (format, key) => L(`roleExport.format.${format}.${key}`)
 const row = (name) => `document.querySelector('[data-testid=role-row][data-role=${name}]')`
 const rows = `[...document.querySelectorAll('[data-testid=role-export-row]')].map((r) => r.dataset.state)`
+
+/** Saisie comme au clavier pour React : valeur posée puis évènement `input`. */
+const fill = (ui, testId, value) =>
+  ui.ev(`(() => {
+    const el = ${ui.$(testId)}
+    const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement : HTMLInputElement
+    Object.getOwnPropertyDescriptor(proto.prototype, 'value').set.call(el, ${JSON.stringify(value)})
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  })()`)
 
 /** Réglages › Rôles, puis la page du rôle. */
 async function openRole(ui, name) {
@@ -167,6 +192,10 @@ async function bobRun(ui, { home, workspace }) {
   await ui.waitFor(
     `${ui.$('role-edit')}?.dataset.scope === 'user' && ${rows}.join() === 'roleChanged'`
   )
+  check(
+    !(await ui.ev(`!!${ui.$('role-export-error')}`)),
+    'rôle réenregistré : le refus d’avant n’est plus montré'
+  )
   await ui.shot('rx4-role-change')
   await ui.click(ui.$('role-export-update'))
   await ui.waitFor(`${rows}.join() === 'upToDate'`)
@@ -205,6 +234,9 @@ async function bobRun(ui, { home, workspace }) {
 async function openCodeRun(ui, { workspace }) {
   const agentFile = join(workspace, '.opencode', 'agents', 'security-expert.md')
   await ui.ready()
+  // Une conversation de l'historique : son dossier est le projet (rôles de `.bobine/roles/`).
+  await ui.send('Bonjour')
+  await ui.ready()
   await openRole(ui, 'security-expert')
   await openSheet(ui)
   check(
@@ -236,4 +268,46 @@ async function openCodeRun(ui, { workspace }) {
   await ui.click(ui.$('confirm-row-confirm'))
   await ui.waitFor(`!${ui.$('role-export-rows')}`)
   check(!existsSync(agentFile), 'retiré après confirmation : le fichier de l’agent est supprimé')
+
+  // Nom long : le sous-titre tient sur une ligne (chemin en infobulle), les actions passent dessous.
+  // Rôle du projet : installé pour le projet (portée du rôle, par défaut).
+  const longFile = join(workspace, '.opencode', 'agents', 'relecteur-des-migrations.md')
+  await ui.click(ui.$('role-edit-back'))
+  await openRole(ui, 'relecteur-des-migrations')
+  const where = ui.$('role-edit-where')
+  check(
+    (await ui.ev(`getComputedStyle(${where}).whiteSpace`)) === 'nowrap' &&
+      (await ui.ev(`${where}.title`)).endsWith('/.bobine/roles/relecteur-des-migrations.md') &&
+      (await ui.ev(
+        `document.querySelector('.role-edit-title').getBoundingClientRect().width >= 200`
+      )),
+    'en-tête : nom long lisible, sous-titre sur une ligne, chemin complet en infobulle'
+  )
+  await ui.shot('rx8-entete-nom-long')
+
+  // Installé puis renommé : l'ancienne installation reste visible (« Installations sans rôle »).
+  await openSheet(ui)
+  await ui.click(ui.$('role-export-install'))
+  await ui.waitFor(`!${ui.$('role-export-sheet')} && ${rows}.join() === 'upToDate'`)
+  await fill(ui, 'role-name', 'relecteur-migrations')
+  await ui.click(ui.$('role-edit-save'))
+  await ui.waitFor(`${ui.$('role-edit')}?.dataset.role === 'relecteur-migrations'`)
+  await ui.waitFor(`!!${ui.$('role-edit-saved')}`)
+  check(
+    (await ui.ev(`${ui.$('role-edit-saved')}.innerText`)).includes('relecteur-des-migrations'),
+    'renommé alors qu’installé : dit à l’enregistrement (ancien identifiant)'
+  )
+  await ui.click(ui.$('role-edit-back'))
+  await ui.waitFor(`!!${ui.$('roles-group-orphans')}`)
+  await ui.ev(`${ui.$('roles-group-orphans')}.scrollIntoView({ block: 'center' })`)
+  check(
+    (await ui.ev(`${ui.$('roles-group-orphans')}.innerText`)).includes(
+      'relecteur-des-migrations'
+    ) && existsSync(longFile),
+    '« Installations sans rôle » : l’installation du rôle renommé reste visible'
+  )
+  await ui.shot('rx9-sans-role')
+  await ui.click(`${ui.$('roles-group-orphans')}.querySelector('[data-testid=role-export-remove]')`)
+  await ui.waitFor(`!${ui.$('roles-group-orphans')}`)
+  check(!existsSync(longFile), 'installation sans rôle retirée : fichier de l’agent supprimé')
 }
