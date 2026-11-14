@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## 1.0.0-beta.3 — November 14, 2026
+## Next version
 
 ### New
 
@@ -15,6 +15,11 @@ What changes for you, version by version. Shown in Settings › About.
   the chat’s documents and refused elsewhere, and each answer is shown. “Continue in a project…”
   (title menu) picks up the chat in a Code-space conversation, with the documents copied if you
   want.
+
+## 1.0.0-beta.3 — November 14, 2026
+
+### New
+
 - Roles: “Install in…” on a role’s page adds it as an IBM Bob mode (Bob Shell, Bob IDE) or as an
   OpenCode agent, for you or for the project. The sheet says where and what, shows the exact text,
   backs up the file before writing, and never touches a mode or agent Bobine did not write; the

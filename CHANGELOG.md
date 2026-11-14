@@ -2,7 +2,7 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## 1.0.0-beta.3 — 14 novembre 2026
+## Prochaine version
 
 ### Nouveau
 
@@ -16,6 +16,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   de la discussion et refusées ailleurs, et chaque réponse est dite. « Continuer dans un projet… »
   (menu du titre) reprend la discussion dans une conversation de l'espace Code, documents copiés
   si vous le voulez.
+
+## 1.0.0-beta.3 — 14 novembre 2026
+
+### Nouveau
+
 - Rôles : « Installer dans… » sur la page d'un rôle l'ajoute comme mode d'IBM Bob (Bob Shell, Bob
   IDE) ou comme agent d'OpenCode, pour vous ou pour le projet. La feuille dit où et quoi, montre le
   texte exact, copie le fichier avant d'écrire, et ne touche jamais un mode ou un agent que Bobine
