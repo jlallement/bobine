@@ -161,8 +161,8 @@ question, seul le rôle sait quel mode lui convient.
 
 ## Critères d'acceptation
 
-- [ ] Un rôle se crée par le parcours retenu sur maquettes, se modifie et se supprime dans Réglages
-      › Rôles ; portée personnelle ou projet (`.bobine/roles/*.md`), relu à chaud.
+- [x] Un rôle se crée par le parcours retenu sur maquettes, se modifie et se supprime dans Réglages
+      › Rôles ; portée personnelle ou projet (`.bobine/roles/*.md`), relu à chaud (phase 3A).
 - [x] Un fichier de rôle invalide est signalé (nom du fichier, raison) sans bloquer les autres
       (phase 2 : `roles:list` rend les problèmes ; l'écran viendra en phase 3).
 - [ ] `@` dans la saisie liste les rôles ; `@rôle texte` propose la fille avec ce rôle.
@@ -391,3 +391,98 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
   - Vérifications après correctifs : `./scripts/verify` vert (code de sortie 0 ; 429 fichiers,
     3 875 essais) ; `pnpm build && pnpm e2e --changed` : 192/192 vertes, clair et sombre, code de
     sortie 0, 15 min 00 s.
+
+### Phase 3A — interface : créer, modifier, gérer
+
+- 2026-11-14 : **phase 3A faite** (branche `feat/223-roles-ui-create`), d'après les maquettes
+  validées (A1–A3, B3, 04-1 à 04-3, section Équipe de 01-0). Renderer seulement : aucun canal
+  nouveau, `roles:*` de la phase 2 et `conversation:startChild` avec `role`.
+  - **Point d'entrée pour la phase 3B** (menu `@` « + Nouveau rôle », « Enregistrer comme rôle »
+    sur une fille) : `openRoleWizard(prefill?: Partial<RoleDraft>)` de
+    `renderer/src/roles/roles-store.ts`. `RoleDraft` (`roles/role-draft.ts`) : `label`, `name`,
+    `icon`, `color`, `description`, `prompt`, `agent`, `mode`, `model`, `readOnly`, `mcp` (`null` :
+    toutes), `scope` (`user` | `project`). Un libellé sans nom donne le nom ; une icône ou une
+    couleur données ne sont plus suggérées. L'assistant est monté une fois (`RolesHost`, dans
+    `AppDialogs`) : rien à brancher d'autre. Aussi : `openRoleChild(nom)` ouvre « Confier à
+    <rôle> » (consigne, puis fille de la conversation affichée avec ce rôle), et `RoleAvatar`
+    (`components/roles/RoleAvatar.tsx`) dessine l'icône et la couleur d'un rôle (`RoleBadge`,
+    `RoleStamp` ou définition) dans la teinte de la palette affichée : à réutiliser pour les cartes
+    de proposition, de fille et « Sous-tâches » plutôt qu'en écrire un second.
+  - **Attendu de 3B** : « Créer et essayer » et le clic sur un rôle de la section Équipe ouvrent
+    « Confier à <rôle> » (dialogue à part) faute de saisie préremplie ; une fois le menu `@` en
+    place, ils pourraient poser `@nom ` dans la saisie (à décider à la fusion).
+  - **Assistant** (`components/roles/RoleWizard.tsx`, aperçu `RolePreview.tsx`) : Qui (nom avec
+    son avatar, identifiant tiré du nom tant qu'on ne l'écrit pas, 21 icônes Lucide et les 6
+    couleurs d'accent, suggérées d'après le nom ; « Quand faire appel à lui ? » avec compteur et
+    exemples), Comment (tuiles des rôles fournis — définition d'origine, même remplacés —, celle
+    de même icône présélectionnée, « Page blanche » ; une consigne écrite à la main n'est remplacée
+    qu'après confirmation), Avec quoi (agent, mode, modèle, lecture seule, outils de Bobine,
+    portée). Validation par étape (toutes les erreurs de l'étape, sous leur champ, `aria-invalid`),
+    `checkRole` du partagé avant l'envoi ; un refus du main (nom pris, lien refusé…) ramène à
+    l'étape du champ, une exception (pas de projet, profil en lecture seule) s'affiche en pied.
+    ⌘↩ : étape suivante ou créer ; Entrée dans le nom : suivante ; Échap ou Annuler après une
+    saisie : « Abandonner ce rôle ? » ; clic hors de la fenêtre sans effet.
+  - **Lecture seule seulement demandée** : dite sous l'interrupteur quand l'agent choisi (ou celui
+    de la conversation) a `ProfileSummary.writesWithoutAsking` — aucun nom d'agent dans l'UI.
+  - **Réglages › Rôles** (`RolesSettings.tsx`, onglet `roles` après Agents) : groupes Ce projet
+    (nom du dossier), Personnels, Fournis avec Bobine (« n sur m actifs ») ; chaque ligne : avatar,
+    libellé, description, pastilles « Remplace un rôle fourni/personnel » (`hides`), agent du rôle
+    (« absent » s'il n'est pas installé), « Lecture seule », interrupteur d'activation (par nom,
+    toutes portées), ligne pâlie si désactivé ; « Fichiers écartés » avec chemin et raison
+    (`roles.error.*`). Sans rôle à soi : état vide « Montez votre équipe » (04-3) au-dessus des
+    rôles fournis.
+  - **Modifier** (`RoleEditPage.tsx`) : un écran, les champs de l'assistant (`RoleFields.tsx`,
+    communs) ; Enregistrer / Annuler les modifications en pied collé ; renommer passe
+    `previousName` ; bandeau « Partagé par git » pour un rôle du projet ; un rôle fourni s'enregistre
+    en rôle personnel du même nom (bandeau, bouton « Enregistrer en rôle personnel », pas de
+    Supprimer) ; Essayer, Dupliquer (assistant prérempli), Supprimer avec confirmation dans la page
+    (`ConfirmRow`).
+  - **Section « Équipe »** (`TeamSection.tsx`, en tête de la liste défilante de la barre latérale,
+    repliable comme les autres, repli retenu sous `team`) : rôles actifs du projet affiché en
+    avatars (infobulle : nom et description) ; clic : « Confier à <rôle> » ; « + » : assistant.
+    Fille avec rôle : son avatar avant le titre dans la barre latérale (`HistoryItem`), « Rôle : … »
+    dans l'infobulle.
+  - **Conversation encore vide** : une fille ne s'y rattache pas (refus du main) ; « Confier à »
+    le dit d'emblée et « Créer et essayer » n'est pas proposé.
+  - **Écarts aux maquettes** (choix du plus simple et fiable) :
+    - pas de « Décrire en une phrase » ni d'« Améliorer avec l'agent… » (non retenus) ; l'état vide
+      n'a qu'un bouton « Créer mon premier rôle » (pas « Partir d'un modèle » à part : les tuiles
+      sont à l'étape 2) ; pas de « Parcourir les modèles » ni de galerie ;
+    - agent : liste déroulante (les agents installés peuvent être nombreux) au lieu d'un sélecteur
+      segmenté ; mode et modèle : champs libres (« Par défaut de l'agent ») — les listes d'un agent
+      ne se connaissent qu'avec une session ouverte ;
+    - « Serveurs MCP propres au rôle » → « Outils de Bobine » (familles, sens de `mcp` validé en
+      phase 2) ;
+    - édition : enregistrement par bouton, pas automatique ; disposition empilée (pas en
+      libellé / champ sur deux colonnes) ; pas de menu « … » (Dupliquer, Supprimer en boutons), ni
+      « Ouvrir le fichier », « Rendre personnel », « Installer dans Bob / OpenCode » (phase 4) ;
+      portée non modifiable après création ; pas de « utilisé N fois » ;
+    - pas de réglage « L'agent peut proposer des rôles » (celui des filles, Réglages ›
+      Conversations, vaut déjà) ; pas d'animation (avatar qui « vole », ligne qui clignote) ;
+    - section Équipe : un clic ouvre « Confier à… » (fille de la conversation affichée), pas une
+      nouvelle conversation ;
+    - aperçu « Dans le fil, au travail » : texte fixe (« au travail », « relit le code ») ;
+    - l'icône et la couleur sur la carte de proposition, de fille et « Sous-tâches » restent à la
+      phase 3B.
+  - **Tests** : `roles/role-draft.test.ts` (nom tiré du libellé, suggestions, préremplissage,
+    validation par étape, champs envoyés, erreur du main placée), `RoleWizard.test.tsx` (erreurs
+    de l'étape 1, trois étapes au clavier avec modèle présélectionné et portée projet, nom pris
+    renvoyé à l'étape 1, « seulement demandée », sans projet, Échap, remplacement de consigne),
+    `RolesSettings.test.tsx` (groupes, `hides`, fichier écarté, activation, état vide, renommage,
+    rôle fourni enregistré en personnel, suppression confirmée) ; `settings-search.test.ts` (14
+    onglets). Suite e2e **`roles-gestion`** (agent factice `streaming-texte`, dépôt jetable avec un
+    rôle de projet `code-reviewer` et un fichier fautif) : section Équipe, assistant (erreurs, trois
+    étapes, fichier écrit), « Créer et essayer » jusqu'à la fille avec son avatar, Réglages › Rôles
+    (remplacement, fichier écarté), modifier, désactiver, supprimer deux rôles jusqu'à l'état vide
+    (le fourni revient), page d'un rôle fourni ; clair et sombre, fr et `--lang en`. Captures
+    regardées : `e2e/captures/r1-equipe`, `r2-assistant-qui`, `r3-assistant-comment`,
+    `r4-assistant-avec-quoi`, `r5-confier`, `r6-fille-avec-role`, `r7-reglages-roles`,
+    `r8-edition`, `r9-vide`, `r10-edition-fourni` (`-light` / `-dark`, `en-…`).
+  - Aucune dépendance nouvelle ; aucun seuil ESLint relevé. Glossaire (`docs/traduction.md`) :
+    rôle, consigne, équipe, confier, fichier écarté.
+
+  - Vérifications : `./scripts/verify` vert (code de sortie 0 ; 432 fichiers, 3 896 essais).
+    `pnpm build && pnpm e2e --changed --jobs 2` (toutes les suites : barre latérale et textes
+    sont communs) : 192/194 vertes en 23 min 07 s ; les 2 échecs étaient `settings` (clair et
+    sombre), qui comptait treize onglets — corrigé à quatorze (Rôles), suite rejouée seule : 2/2
+    vertes. `roles-gestion` aussi en `--lang en` : 2/2 vertes.
