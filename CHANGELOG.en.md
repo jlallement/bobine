@@ -2,6 +2,14 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Long thread: jumping to an early message from the outline, or searching the thread, no longer
+  freezes the app (17 s on a 1,250-exchange thread, just over a second now); scrolling up the
+  thread is smoother too.
+
 ## 1.0.0-beta.4 — November 14, 2026
 
 ### New

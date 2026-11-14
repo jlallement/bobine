@@ -116,6 +116,21 @@ humain était derrière le clavier**. On ne désactive rien et on ne contourne r
   54 cartes d'autorisation ; 3 défauts sérieux, devenus les fiches 209, 210 et 211, corrigés et
   vérifiés avec de vrais agents le 2026-11-09. Mesure : le pilote consomme environ 200 000 jetons
   Sonnet par 30 minutes.
+- 2026-11-15 — Nuit de stabilité, deux accrocs du pilote :
+  - `lancer --dossier <d>` sur le profil temporaire s'arrêtait à l'étape « Où travailler ? » de
+    l'accueil : « Choisir… » ouvre la fenêtre de macOS, que le pilote ne conduit pas. Le pilote
+    passe maintenant `BOBINE_PRESET_FOLDER=<d>` (profil temporaire seulement) ; le premier choix de
+    dossier de Bobine rend ce dossier sans fenêtre, une seule fois (`takePresetFolder`,
+    `main/dialogs.ts`, testé) ; les suivants ouvrent la vraie fenêtre. L'accueil reste joué en
+    entier (`cliquer "Choisir…"`).
+  - `envoyer` insérait le texte au curseur et emportait un brouillon laissé dans la zone de saisie.
+    La zone est d'abord vidée comme au clavier (⌘A puis ⌫, commandes d'édition `selectAll` et
+    `deleteBackward` du protocole DevTools), son contenu vérifié avant Entrée, et un message qui
+    n'est pas parti est dit avec ce qui reste dans la zone.
+  - `cliquer` passait déjà par de vrais évènements souris (`page.mouse`) ; une ligne de l'historique
+    se vise par son titre (le bouton `.history-open` le plus intérieur) : rien à changer.
+  - Suite e2e `pilote` : lancement avec `--dossier`, « Choisir… » dans l'accueil, dossier vérifié
+    sur la conversation ; envoi par-dessus un brouillon (curseur au début), message exact vérifié.
 
 ## Écarts au plan
 

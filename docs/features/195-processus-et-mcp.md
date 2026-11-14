@@ -118,3 +118,9 @@ la barre V1 (fiche 187, point 10) doit avoir son scénario factice.
   serveur voulu), pas de signalement (aucun moyen simple et fiable de la rattacher à l'agent sous
   macOS) ; comportement écrit dans `docs/acp.md` (Compatibilité Bob) et le CHANGELOG ne promet plus
   « tout ». Le groupe du processus d'arrière-plan du vrai Bob reste à relever en recette.
+- 2026-11-15 — Nuit de stabilité : `command-job.test.ts` échouait parfois sous charge (sortie vide
+  d'un `/bin/sh`, noté fiche 223). Course réelle : le travail finissait sur `exit`, émis quand le
+  processus sort, alors que ses dernières lignes peuvent encore attendre dans les tubes. Il finit
+  maintenant sur `close` (tubes lus jusqu'au bout) ; un sous-processus qui garderait les tubes
+  ouverts après la sortie du chef ne retient pas le travail plus de 2 s. Essai : 1 500 lignes puis
+  une ligne d'erreur, toutes gardées.

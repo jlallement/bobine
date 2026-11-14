@@ -91,3 +91,13 @@ charge montre des écarts acceptables (une seule lecture par fichier modifié, e
     `./scripts/verify` vert (549 tests) ; `pnpm e2e history` vert (clair et sombre).
   - Reste : la lecture d'un fil à l'ouverture d'une conversation est toujours synchrone (non
     mesurée sur un très gros fil) ; à reprendre seulement si ça se voit.
+- 2026-11-15 — Nuit de stabilité : l'essai « recherche sans charger les fils » échouait sous charge
+  (`expected 103 to be less than 100`, une fois en CI, deux fois sur le Mac). Mesuré : la recherche
+  ne bloque pas 100 ms ; son plus long bloc est de 12 à 16 ms au repos pour des fils de 0,7 Mo
+  (lecture JSON environ 0,3 ms, texte sans Markdown 1,5 ms, texte plié 5 à 8 ms). L'écart venait de
+  la mesure à l'horloge, qui compte le temps où le système suspend le processus d'essai quand la
+  machine est chargée. L'essai mesure maintenant le temps processeur du fil entre deux tours de
+  boucle (`process.threadCpuUsage`, Node 23.9 et plus) : seul le travail fait par ce fil compte, le
+  seuil de 100 ms ne bouge pas. Dans le code, un tour de boucle de plus entre la lecture JSON et le
+  texte plié (`content-search.ts`) : deux blocs courts plutôt qu'un long pour un fil de plusieurs
+  Mo.

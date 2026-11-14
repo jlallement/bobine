@@ -97,3 +97,16 @@ des gestes explicites ; à reprendre si l'essai réel le montre gênant.
   lui-même si rien n'a bougé. e2e : position conservée à 0 px, à 1 500 px comme à 0. Tests
   unitaires de `useEntryWindow` (fil vide puis arrivée, recherche, élément dans un groupe d'outils,
   identifiants non contigus, fil raccourci, conversation suivante).
+- 2026-11-15 — Nuit de stabilité : la suite e2e `perf` échouait sous charge
+  (« Input.dispatchMouseEvent sans réponse : délai dépassé (60 s) »). Cause réelle, pas l'outil
+  d'essai : le clic du sommaire vers le premier message (tout le fil rendu d'un coup) figeait
+  l'interface **17 s au repos** (« Interface sans réponse » au journal, plus de 60 s sous charge).
+  Profil du renderer : 16,5 s dans la mesure de `FileLabelParts` (libellé des outils de fichier,
+  fiche 203), appelée au montage de chaque ligne dans un `useLayoutEffect` : une mise en page forcée
+  par ligne, sur un document qui grandit. La mesure ne se fait plus que dans le rappel de
+  l'observateur de taille commun (qui signale chaque ligne une fois, après la mise en page et
+  avant l'affichage), toutes les lignes d'un coup et rendues ensemble (`flushSync`, pas d'image
+  intermédiaire). Mesures (Mac au repos) : sommaire vers le premier message 17,9 s → 1,2 à 1,4 s ;
+  remonter jusqu'au début du fil 12,8 s → 3,7 s, tâches longues de 117 à 293 ms (croissantes) → 52 à
+  60 ms (stables) ; suite `perf` 65 s → 23 s. Nouveau budget e2e : sommaire vers le premier
+  message < 5 s.
