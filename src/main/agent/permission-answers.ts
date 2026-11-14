@@ -9,7 +9,11 @@
  * commandes restent posées à l'utilisateur (une relecture lance `git diff`, les tests). Un agent
  * qui écrit sans demander n'est pas arrêté ici : voir `roles/read-only-watch.ts`.
  */
-import type { RequestPermissionRequest, RequestPermissionResponse } from '../../shared/acp-sdk.mts'
+import type {
+  RequestPermissionRequest,
+  RequestPermissionResponse,
+  ToolCallLocation
+} from '../../shared/acp-sdk.mts'
 import type { AgentEvent } from '@shared/agent'
 import { rememberableTool } from '@shared/permissions'
 import { permissionRisks, type RiskContext } from './permission-risk'
@@ -33,20 +37,26 @@ export interface PermissionRules {
    * déplacer) est accordée une fois, refusée ou posée selon toutes ses cibles (`write-area.ts`).
    */
   writeArea?: string | undefined
+  /** Emplacements du `tool_call` d'une demande qui n'en porte pas (`ProfileUpdates`). */
+  knownLocations?: ToolCallLocation[] | undefined
 }
 
 /** Règles tirées des options d'un hôte d'agent (lecture seule, documents, accords retenus). */
-export function hostRules(options: {
-  rememberedTools?: PermissionRules['remembered']
-  readOnly?: boolean | undefined
-  writeArea?: string | undefined
-  emit: (event: AgentEvent) => void
-}): Pick<PermissionRules, 'remembered' | 'readOnly' | 'writeArea' | 'notify'> {
+export function hostRules(
+  options: {
+    rememberedTools?: PermissionRules['remembered']
+    readOnly?: boolean | undefined
+    writeArea?: string | undefined
+    emit: (event: AgentEvent) => void
+  },
+  knownLocations?: ToolCallLocation[]
+): Pick<PermissionRules, 'remembered' | 'readOnly' | 'writeArea' | 'notify' | 'knownLocations'> {
   return {
     remembered: options.rememberedTools,
     readOnly: options.readOnly,
     writeArea: options.writeArea,
-    notify: options.emit
+    notify: options.emit,
+    knownLocations
   }
 }
 
@@ -63,7 +73,10 @@ function writeAreaAnswer(
 ): RequestPermissionResponse | undefined {
   const area = rules.writeArea
   if (!area || !WRITE_KINDS.has(params.toolCall.kind ?? '')) return undefined
-  const verdict = writeAreaVerdict(area, params.toolCall)
+  // Emplacements repris du `tool_call` pour décider seulement : la demande reste celle de l'agent.
+  const call = params.toolCall
+  const located = call.locations?.length ? call : { ...call, locations: rules.knownLocations ?? [] }
+  const verdict = writeAreaVerdict(area, located)
   if (verdict.decision === 'ask') return undefined
   const allowed = verdict.decision === 'allow'
   const option = allowed

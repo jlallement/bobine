@@ -5,7 +5,7 @@
  * tout, ce qui est générique : le diff de la demande d'autorisation (fiche 202), les fichiers
  * nouveaux d'après le disque quand l'outil est proposé (`new-files.ts`, fiche 203).
  */
-import type { SessionUpdate, ToolCallUpdate } from '../../shared/acp-sdk.mts'
+import type { ToolCallLocation, SessionUpdate, ToolCallUpdate } from '../../shared/acp-sdk.mts'
 import type { AgentProfile } from './profiles'
 import { SubagentMarker } from './subagent-marks'
 import { existsOnDisk, noteProposedFiles, withNewFiles, type FileExists } from './new-files'
@@ -69,12 +69,17 @@ export class ProfileUpdates {
     const soFar = this.calls.notePermission(toolCall)
     noteProposedFiles(soFar, toolCall, this.exists)
     const marked = this.marker.markPermission(withNewFiles(toolCall, soFar))
-    // Genre annoncé plus tôt (`tool_call`) quand la demande n'en porte pas (fiche 223) ; de même
-    // pour ses emplacements (Bob 2.1.0, fiche 224).
-    const kind = marked.kind || !soFar.kind ? {} : { kind: soFar.kind }
-    const located =
-      marked.locations?.length || !soFar.locations ? {} : { locations: soFar.locations }
-    return { ...marked, ...kind, ...located }
+    // Genre annoncé plus tôt (`tool_call`) quand la demande n'en porte pas (fiche 223).
+    return marked.kind || !soFar.kind ? marked : { ...marked, kind: soFar.kind }
+  }
+
+  /**
+   * Emplacements annoncés par le `tool_call` d'une demande qui n'en porte pas (Bob 2.1.0, fiche
+   * 224) : pour la seule décision d'écriture d'une discussion. La demande montrée reste telle que
+   * l'agent l'a envoyée (son libellé, sa notification).
+   */
+  knownLocations(toolCallId: string): ToolCallLocation[] | undefined {
+    return this.calls.locationsOf(toolCallId)
   }
 
   /** Nouvelle session ou agent arrêté. */

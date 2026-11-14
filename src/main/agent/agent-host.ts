@@ -838,7 +838,11 @@ export class AgentHost {
     const toolCall = this.updates.permission(params.toolCall)
     const automatic = automaticAnswer(
       { ...params, toolCall },
-      { ...hostRules(this.options), autoAllowed: (call) => this.appTools.autoAllowed(call), place }
+      {
+        ...hostRules(this.options, this.updates.knownLocations(toolCall.toolCallId)),
+        autoAllowed: (call) => this.appTools.autoAllowed(call),
+        place
+      }
     )
     if (automatic) return automatic
     const risks = permissionRisks(toolCall, place)

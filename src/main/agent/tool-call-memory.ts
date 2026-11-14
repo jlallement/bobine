@@ -65,6 +65,11 @@ export class ToolCallMemory {
     return known
   }
 
+  /** Derniers emplacements non vides annoncés pour cet appel, s'il y en a eu. */
+  locationsOf(toolCallId: string): ToolCallLocation[] | undefined {
+    return this.calls.get(toolCallId)?.locations
+  }
+
   /** L'appel est fini (terminé, en échec, annulé) : plus rien à compléter. */
   forget(toolCallId: string): void {
     this.calls.delete(toolCallId)

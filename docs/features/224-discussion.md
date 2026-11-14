@@ -254,3 +254,9 @@ coder. Aucune nouvelle dépendance prévue.
 - **2026-11-14** (suite) : `main` fusionné (phase 4 de la fiche 223, puis 1.0.0-beta.3), ADR
   renuméroté **0048** ; `@rôle` refusé aussi par le main dans une discussion. Relecture du tech
   lead traitée (B1, B2, I1–I6, M1–M6, voir la section dédiée), avec ses tests.
+- **2026-11-14** (suite) : régression trouvée par la suite complète du tech lead (`inbox`,
+  `notifications`, clair et sombre) — recopier les emplacements du `tool_call` dans la demande
+  d'autorisation changeait son libellé partout (« Modification de /projet/config.json » au lieu de
+  « … config.json »), espace Code compris. La demande reste désormais celle de l'agent ; les
+  emplacements connus (`ProfileUpdates.knownLocations`) ne servent qu'à la décision d'écriture
+  d'une discussion. Test de non-régression dans `tool-call-memory.test.ts`.

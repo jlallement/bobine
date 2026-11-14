@@ -110,26 +110,22 @@ describe('ProfileUpdates : diffs des demandes d’autorisation, pour tout agent 
   })
 })
 
-describe('ProfileUpdates : emplacements repris du tool_call (fiche 224, Bob 2.1.0)', () => {
-  it('demande sans emplacement : ceux du tool_call ; demande qui en porte : les siens', () => {
+describe('ProfileUpdates : emplacements du tool_call (fiche 224, Bob 2.1.0)', () => {
+  it('la demande reste celle de l’agent (libellé, notification) ; ses emplacements connus à part', () => {
     const updates = new ProfileUpdates({}, '/d')
     updates.adapt({
       sessionUpdate: 'tool_call',
       toolCallId: 't1',
-      title: 'Updating /d/a.docx',
+      title: 'Modification de config.json',
       kind: 'edit',
-      locations: [{ path: '/d/a.docx' }]
+      locations: [{ path: '/projet/config.json' }]
     })
-    expect(updates.permission({ toolCallId: 't1', kind: 'edit' }).locations).toEqual([
-      { path: '/d/a.docx' }
-    ])
+    // Régression de la relecture : recopier les emplacements changeait la raison affichée
+    // (« Modification de /projet/config.json ») dans l'espace Code aussi.
     expect(
-      updates.permission({ toolCallId: 't1', kind: 'edit', locations: [{ path: '/d/b.md' }] })
-        .locations
-    ).toEqual([{ path: '/d/b.md' }])
-    // Le diff d'une demande reste dans la demande : la règle d'écriture le compte aussi.
-    const withDiff = updates.permission({ toolCallId: 't1', kind: 'edit', content: [DIFF] })
-    expect(withDiff.locations).toEqual([{ path: '/d/b.md' }])
-    expect(withDiff.content).toEqual([DIFF])
+      updates.permission({ toolCallId: 't1', title: 'Modification de config.json' }).locations
+    ).toBeUndefined()
+    expect(updates.knownLocations('t1')).toEqual([{ path: '/projet/config.json' }])
+    expect(updates.knownLocations('autre')).toBeUndefined()
   })
 })
