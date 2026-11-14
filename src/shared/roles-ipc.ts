@@ -93,6 +93,8 @@ export interface RoleExportIpcContract {
   }
   /** Installations de ce rôle (projet : celles du dossier de la conversation). */
   'roles:exportStatus': { args: [role: RoleExportRef]; result: RoleExportStatus[] }
+  /** Installations dont le rôle n'existe plus (renommé, supprimé) : Réglages › Rôles. */
+  'roles:exportOrphans': { args: [conversationId?: string]; result: RoleExportStatus[] }
   /** Retire l'entrée de Bobine ; `force` : même modifiée à la main (après confirmation). */
   'roles:exportRemove': { args: [key: string, force?: boolean]; result: RoleExportRemoveResult }
 }
@@ -107,6 +109,7 @@ export const ROLES_CHANNELS = [
   'roles:exportPreview',
   'roles:export',
   'roles:exportStatus',
+  'roles:exportOrphans',
   'roles:exportRemove'
 ] as const
 

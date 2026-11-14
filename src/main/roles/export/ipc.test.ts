@@ -30,7 +30,10 @@ function handlers() {
   return roleExportHandlers(() => ({
     exports,
     // Comme la bibliothèque : les rôles fournis relus dans la langue du moment.
-    library: { definition: (_scope, name) => builtinRoles().find((r) => r.name === name) },
+    library: {
+      definition: (_scope, name) => builtinRoles().find((r) => r.name === name),
+      list: () => ({ roles: [], problems: [] })
+    },
     folderOf: () => undefined
   }))
 }

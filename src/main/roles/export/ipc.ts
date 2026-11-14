@@ -16,13 +16,17 @@ import { roleToExport, type RoleExports, type RoleToExport } from './service'
 
 export interface RoleExportIpcDeps {
   exports: RoleExports
-  library: Pick<RoleLibrary, 'definition'>
+  library: Pick<RoleLibrary, 'definition' | 'list'>
   /** Dossier du projet d'une conversation (celui de la mère pour une fille). */
   folderOf: (conversationId: string) => string | undefined
 }
 
 type RoleExportChannel =
-  'roles:exportPreview' | 'roles:export' | 'roles:exportStatus' | 'roles:exportRemove'
+  | 'roles:exportPreview'
+  | 'roles:export'
+  | 'roles:exportStatus'
+  | 'roles:exportOrphans'
+  | 'roles:exportRemove'
 
 export function roleExportHandlers(
   deps: () => RoleExportIpcDeps | undefined
@@ -65,6 +69,16 @@ export function roleExportHandlers(
     'roles:exportStatus': (ref) => {
       const { role, folder } = resolve(ref)
       return available().exports.status(role, folder)
+    },
+    'roles:exportOrphans': (conversationId) => {
+      const d = available()
+      if (conversationId !== undefined && (typeof conversationId !== 'string' || !conversationId)) {
+        throw new Error('Paramètre invalide : conversationId')
+      }
+      const folder = conversationId ? d.folderOf(conversationId) : undefined
+      // Tous les rôles connus, actifs ou non : un rôle désactivé n'est pas « sans rôle ».
+      const names = new Set(d.library.list(folder).roles.map((r) => r.name))
+      return d.exports.orphans((name) => names.has(name), folder)
     },
     'roles:exportRemove': (key, force) => {
       if (typeof key !== 'string' || !key) throw new Error('Paramètre invalide : key')

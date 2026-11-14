@@ -220,6 +220,22 @@ export class RoleExports {
   }
 
   /**
+   * Installations dont le rôle n'existe plus (renommé, supprimé) : personnelles, et du projet de ce
+   * dossier seulement (ailleurs, on ne sait pas). Elles restent visibles et se retirent.
+   */
+  orphans(roleExists: (name: string) => boolean, workspace?: string): RoleExportStatus[] {
+    return this.options.registry
+      .all()
+      .filter(
+        (r) =>
+          !roleExists(r.id) &&
+          this.adapterFor(r.format) !== undefined &&
+          (r.scope === 'user' || (workspace !== undefined && r.workspace === workspace))
+      )
+      .flatMap((r) => this.statusOf(r) ?? [])
+  }
+
+  /**
    * Mode natif installé pour ce rôle et cet agent avec « lancer dans ce mode » (projet : ce
    * dossier, préféré à l'installation personnelle) ; `undefined` sinon.
    */
@@ -237,7 +253,7 @@ export class RoleExports {
     return found ? { id: found.id, readOnly: found.readOnly } : undefined
   }
 
-  private statusOf(record: RoleExportRecord, role: RoleToExport): RoleExportStatus | undefined {
+  private statusOf(record: RoleExportRecord, role?: RoleToExport): RoleExportStatus | undefined {
     const adapter = this.adapterFor(record.format)
     if (!adapter) return undefined
     const place = adapter.place(record.scope, record.id, this.options.locations, record.workspace)
@@ -259,7 +275,7 @@ export class RoleExports {
     record: RoleExportRecord,
     adapter: RoleExportAdapter,
     place: { root: string; shown: string },
-    role: RoleToExport
+    role: RoleToExport | undefined
   ): RoleExportState {
     const read = readTarget(record.file, place.root, record.scope, place.shown)
     if ('error' in read) return 'unreadable'
@@ -270,6 +286,8 @@ export class RoleExports {
     // Changé = ce qui serait écrit aujourd'hui n'est plus ce qui l'a été : un changement d'icône
     // ou de couleur, qui n'entre pas dans l'agent, ne compte pas (l'empreinte du rôle, `role`, est
     // gardée pour le journal du registre).
+    // Installation sans rôle (renommé, supprimé) : rien à comparer.
+    if (!role) return 'upToDate'
     return adapter.fingerprintOf(role) !== record.written ? 'roleChanged' : 'upToDate'
   }
 

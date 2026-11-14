@@ -172,7 +172,8 @@ export const READ_ONLY_SAFE = [
   'roles:list',
   'roles:read',
   'roles:exportPreview',
-  'roles:exportStatus'
+  'roles:exportStatus',
+  'roles:exportOrphans'
 ] as const satisfies readonly IpcChannel[]
 
 /**

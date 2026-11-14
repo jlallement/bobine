@@ -17,6 +17,7 @@ import { openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles
 import { problemPath } from '../../roles/role-text'
 import { roleErrorText } from './RoleFields'
 import { RoleAvatar } from './RoleAvatar'
+import { RoleExportOrphans } from './RoleExportOrphans'
 import { RoleEditPage } from './RoleEditPage'
 
 export interface RolesSettingsProps {
@@ -111,6 +112,11 @@ function RolesList(props: RolesSettingsProps & { onOpen: (role: RoleView) => voi
         })
       )}
       {listing.problems.length > 0 && <RoleProblems problems={listing.problems} />}
+      <RoleExportOrphans
+        conversationId={props.conversationId}
+        profiles={props.profiles}
+        listing={listing}
+      />
     </section>
   )
 }

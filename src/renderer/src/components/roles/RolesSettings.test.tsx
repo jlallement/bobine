@@ -46,7 +46,8 @@ beforeEach(() => {
     save: vi.fn(async () => ({ ok: true })),
     setEnabled: vi.fn(async () => undefined),
     remove: vi.fn(async () => true),
-    exportStatus: vi.fn(async () => [])
+    exportStatus: vi.fn(async () => []),
+    exportOrphans: vi.fn(async () => [])
   }
   Object.assign(window, { api: { ...api, roles: calls } })
 })

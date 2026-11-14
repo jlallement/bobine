@@ -301,6 +301,28 @@ describe('mode natif pour Bobine (useInBobine)', () => {
   })
 })
 
+describe('installations sans rôle (renommé, supprimé)', () => {
+  it('restent visibles et se retirent ; projet : seulement dans son dossier', () => {
+    const exports = service()
+    exports.install(role(), userTarget(), undefined, { useInBobine: false })
+    exports.install(role({ name: 'sec' }), { profileId: 'bob', scope: 'project' }, project, {
+      useInBobine: false
+    })
+    expect(exports.orphans(() => true, project)).toEqual([])
+    const orphans = exports.orphans(() => false, project)
+    expect(orphans.map((o) => [o.id, o.scope, o.state])).toEqual([
+      ['code-reviewer', 'user', 'upToDate'],
+      ['sec', 'project', 'upToDate']
+    ])
+    expect(exports.orphans(() => false, join(root, 'autre')).map((o) => o.id)).toEqual([
+      'code-reviewer'
+    ])
+    const reviewer = orphans.find((o) => o.id === 'code-reviewer')
+    expect(exports.remove(reviewer?.key ?? '')).toEqual({ ok: true })
+    expect(exports.orphans(() => false, project).map((o) => o.id)).toEqual(['sec'])
+  })
+})
+
 describe('registre et copies', () => {
   it('registre illisible : repart vide, rien de ce que Bobine avait écrit n’est touché', () => {
     const exports = service()

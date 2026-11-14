@@ -521,6 +521,8 @@ export function createApi(
         options: IpcArgs<'roles:export'>[2]
       ) => invoke('roles:export', role, target, options),
       exportStatus: (role: IpcArgs<'roles:exportStatus'>[0]) => invoke('roles:exportStatus', role),
+      exportOrphans: (conversationId?: string) =>
+        invoke('roles:exportOrphans', ...(conversationId !== undefined ? [conversationId] : [])),
       exportRemove: (key: string, force?: boolean) =>
         invoke('roles:exportRemove', key, ...(force !== undefined ? [force] : []))
     },
