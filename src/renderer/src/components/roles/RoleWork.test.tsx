@@ -256,3 +256,38 @@ describe('fil de la fille d’un rôle (essais réels avant 1.0.0-beta.2)', () =
     expect(screen.getByTestId('role-brief-text').textContent).toBe('Audit only.')
   })
 })
+
+describe('coût d’un compte rendu (essais réels avant 1.0.0-beta.2)', () => {
+  const report = (id: number, amount: number): TranscriptItem => ({
+    kind: 'child-report',
+    id,
+    childId: 'a',
+    title: 'Fille a',
+    outcome: 'done',
+    files: [],
+    fileCount: 0,
+    added: 0,
+    removed: 0,
+    excerpt: 'Rien.',
+    at: id,
+    usage: { cost: { amount, currency: 'bobcoin' } }
+  })
+  const costs = () =>
+    screen.getAllByTestId('child-report-usage').map((u) => u.textContent?.replace(/\s/g, ' '))
+
+  it('coût lu après le tour (Bob) : le dernier compte rendu prend celui de la fille, comme « Sous-tâches »', () => {
+    const late = { ...child('a', secu), usage: { cost: { amount: 0.1137, currency: 'bobcoin' } } }
+    render(
+      <Transcript
+        items={[started(1, 'a', secu), report(2, 0.01), report(3, 0.0371)]}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={{ children: [late], attention: {}, onOpen: vi.fn(), profiles }}
+      />
+    )
+    const shown = costs()
+    expect(shown[0]).toContain('0,01')
+    expect(shown[1]).toContain('0,1137')
+    expect(screen.getByTestId('subtask-cost').textContent?.replace(/\s/g, ' ')).toContain('0,1137')
+  })
+})

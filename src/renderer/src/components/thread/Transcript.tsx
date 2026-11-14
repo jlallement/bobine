@@ -63,7 +63,7 @@ import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
 const SHOW_LOG_NOTICES: ReadonlySet<string> = new Set(['appTools.serverDown'])
 import { useEntryWindow } from './useEntryWindow'
 import { FindQueryContext } from './CappedText'
-import type { NoticeLink as NoticeLinkTarget } from '@shared/agent'
+import type { ConversationSummary, NoticeLink as NoticeLinkTarget } from '@shared/agent'
 import { requestSettings } from '../../open-settings'
 import { MemoryProposalCard } from './MemoryProposalCard'
 import { saveAsRoleAction } from '../../roles/save-as-role'
@@ -224,6 +224,10 @@ export function Transcript({
   const launches = new Map(
     items.flatMap((i) => (i.kind === 'child-started' ? [[i.childId, i] as const] : []))
   )
+  // Dernier compte rendu de chaque fille : son coût suit celui de la fille (lu après le tour).
+  const lastReports = new Map(
+    items.flatMap((i) => (i.kind === 'child-report' ? [[i.childId, i.id] as const] : []))
+  )
   const renderEntry = (entry: (typeof entries)[number]) => {
     if (entry.kind === 'tools') {
       return (
@@ -296,7 +300,7 @@ export function Transcript({
       return (
         <ChildReportItem
           key={item.id}
-          item={item}
+          item={withLateCost(item, lastReports, subtasks?.children)}
           pending={lastUser === undefined || item.id > lastUser}
           byAgent={launches.get(item.childId)?.by === 'agent'}
           role={launches.get(item.childId)?.role}
@@ -801,4 +805,21 @@ function Compaction({ item }: { item: Extract<TranscriptItem, { kind: 'compactio
       {item.error && <div className="compaction-summary error">{item.error}</div>}
     </details>
   )
+}
+
+/**
+ * Coût d'un compte rendu (fiche 117) : celui de la fille à la fin de son tour. Un agent qui
+ * enregistre son coût juste après sa réponse (Bob, lu hors protocole, fiche 157) le donne après le
+ * compte rendu : le **dernier** compte rendu d'une fille au repos prend donc son coût actuel, le
+ * même que la ligne de « Sous-tâches » ; un compte rendu plus ancien garde le sien.
+ */
+function withLateCost(
+  item: Extract<TranscriptItem, { kind: 'child-report' }>,
+  lastReports: ReadonlyMap<string, number>,
+  children: readonly ConversationSummary[] | undefined
+): Extract<TranscriptItem, { kind: 'child-report' }> {
+  if (lastReports.get(item.childId) !== item.id) return item
+  const child = children?.find((c) => c.id === item.childId)
+  if (!child?.usage || child.status === 'busy') return item
+  return { ...item, usage: child.usage }
 }
