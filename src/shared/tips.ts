@@ -11,6 +11,17 @@ export type TipId = (typeof TIP_IDS)[number]
 export const isTipId = (value: unknown): value is TipId =>
   typeof value === 'string' && (TIP_IDS as readonly string[]).includes(value)
 
+/**
+ * Rappels discrets (fiche 225) : pas des astuces (ni quota du jour, ni carte) ; ils s'effacent
+ * pour de bon après `HINT_MAX_USES` utilisations de leur fonction.
+ */
+export const HINT_IDS = ['history'] as const
+export type HintId = (typeof HINT_IDS)[number]
+export const HINT_MAX_USES = 3
+
+export const isHintId = (value: unknown): value is HintId =>
+  typeof value === 'string' && (HINT_IDS as readonly string[]).includes(value)
+
 export interface TipsState {
   /** Astuces masquées pour toujours : « Ne plus montrer », ou fonction déjà utilisée. */
   hidden: TipId[]
@@ -25,6 +36,8 @@ export interface TipsState {
    * texte) du dossier et du message, et les jours où il a été envoyé.
    */
   sent?: SentMessage[]
+  /** Utilisations de la fonction d'un rappel (fiche 225), bornées à `HINT_MAX_USES`. */
+  hintUses?: Partial<Record<HintId, number>>
 }
 
 export interface SentMessage {
@@ -39,6 +52,27 @@ export interface TipsView extends Omit<TipsState, 'sent' | 'salt'> {
   quietMs: number
   /** Règle « aucune astuce le jour du premier lancement » en vigueur (levée pour les essais). */
   firstDayRule: boolean
+}
+
+/** Le rappel peut-il encore paraître ? */
+export const hintShown = (state: Pick<TipsState, 'hintUses'>, id: HintId): boolean =>
+  (state.hintUses?.[id] ?? 0) < HINT_MAX_USES
+
+/** La fonction du rappel a servi une fois de plus. */
+export function countHintUse(state: TipsState, id: HintId): TipsState {
+  const uses = state.hintUses?.[id] ?? 0
+  if (uses >= HINT_MAX_USES) return state
+  return { ...state, hintUses: { ...state.hintUses, [id]: uses + 1 } }
+}
+
+function parseHintUses(raw: unknown): Partial<Record<HintId, number>> {
+  const obj = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
+  const uses: Partial<Record<HintId, number>> = {}
+  for (const id of HINT_IDS) {
+    const n = obj[id]
+    if (typeof n === 'number' && Number.isInteger(n) && n > 0) uses[id] = Math.min(n, HINT_MAX_USES)
+  }
+  return uses
 }
 
 /** Pas d'astuce aujourd'hui : c'est le jour du premier lancement (relu à chaque fois). */
@@ -143,12 +177,14 @@ export function parseTipsState(raw: unknown): TipsState {
   const first = obj['firstDay']
   const salt = obj['salt']
   const sent = parseSent(obj['sent'])
+  const hintUses = parseHintUses(obj['hintUses'])
   return {
     ...(typeof salt === 'string' && /^[0-9a-f]{64}$/.test(salt) ? { salt } : {}),
     hidden,
     ...(typeof day === 'string' && DAY.test(day) ? { lastShownDay: day } : {}),
     ...(typeof first === 'string' && DAY.test(first) ? { firstDay: first } : {}),
-    ...(sent.length ? { sent } : {})
+    ...(sent.length ? { sent } : {}),
+    ...(Object.keys(hintUses).length ? { hintUses } : {})
   }
 }
 

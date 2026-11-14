@@ -92,6 +92,7 @@ function fakeSettings() {
     tips: vi.fn(() => ({ hidden: [] })),
     recordTip: vi.fn(() => ({ hidden: [] })),
     resetTips: vi.fn(() => ({ hidden: [] })),
+    recordHintUse: vi.fn(() => ({ hidden: [], hintUses: { history: 1 } })),
     noteSentMessage: vi.fn(() => true),
     tipsSince: vi.fn(() => ({ hidden: [] }))
   }
@@ -662,6 +663,12 @@ describe('IPC', () => {
     expect(send.mock.calls.filter((c) => c[0] === 'tips:changed')).toHaveLength(2)
     expect(await call('tips:noteMessage', '/projet', 'un message')).toBe(true)
     expect(() => call('tips:noteMessage', 42, 'x')).toThrow('Message invalide')
+    // Rappel « ↑ Messages précédents » (fiche 225) : rappel connu seulement.
+    expect(await call('tips:record', 'history', 'used')).toMatchObject({
+      hintUses: { history: 1 }
+    })
+    expect(settings.recordHintUse).toHaveBeenCalledWith('history')
+    expect(() => call('tips:record', 'history', 'never')).toThrow('Astuce invalide')
   })
 })
 

@@ -1,5 +1,6 @@
 import type { AppAlert, AppAlertKind } from '@shared/app-alerts'
-import type { TipAction, TipId, TipsView } from '@shared/tips'
+import type { HintId, TipAction, TipId, TipsView } from '@shared/tips'
+import type { SentEntry } from '@shared/sent-history'
 import type { HelpTarget, HelpTopic } from '@shared/help-topics'
 import type { ScheduledTaskInput } from '@shared/schedule'
 import type { UserCommand } from '@shared/user-commands'
@@ -131,7 +132,7 @@ export function createApi(
     /** Astuces de Bobine (fiche 191). */
     tips: {
       state: () => invoke('tips:state'),
-      record: (id: TipId, action: TipAction) => invoke('tips:record', id, action),
+      record: (id: TipId | HintId, action: TipAction) => invoke('tips:record', id, action),
       reset: () => invoke('tips:reset'),
       noteMessage: (folder: string, text: string) => invoke('tips:noteMessage', folder, text),
       onChanged: (listener: (view: TipsView) => void) => subscribe('tips:changed', listener)
@@ -320,6 +321,8 @@ export function createApi(
       /** Plafond de coût de la conversation, `null` : celui des réglages (fiche 157). */
       setCostCap: (id: string, cap: ConversationCap | null) =>
         invoke('conversation:setCostCap', id, cap),
+      /** Message envoyé, tel que tapé : historique de la saisie (fiche 225). */
+      recordSent: (id: string, entry: SentEntry) => invoke('conversation:recordSent', id, entry),
       answerCostCap: (id: string, itemId: number, answer: CostCapAnswer) =>
         invoke('conversation:answerCostCap', id, itemId, answer),
       /** Réponse à la carte « limite d'étapes » (fiche 209). */
