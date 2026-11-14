@@ -1,4 +1,4 @@
-# ADR-0046 — Espace Discussion : même moteur, dossier tenu par Bobine, interface à part
+# ADR-0048 — Espace Discussion : même moteur, dossier tenu par Bobine, interface à part
 
 - **Statut** : proposé
 - **Date** : 2026-11-14

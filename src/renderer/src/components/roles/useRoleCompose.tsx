@@ -72,10 +72,13 @@ export function useRoleCompose(options: {
   const [hidden, setHidden] = useState(inviteHidden)
   // Envoi aux rôles en cours (plusieurs secondes : `git worktree add`) : un second envoi attend.
   const [sending, setSending] = useState(false)
+  // Rôles en cours de lancement : la ligne « Partira à… » les montre, saisie déjà vidée.
+  const [sendingTo, setSendingTo] = useState<string[]>([])
   const sendingNow = useRef(false)
-  const setBusy = (busy: boolean) => {
+  const setBusy = (busy: boolean, names: string[] = []) => {
     sendingNow.current = busy
     setSending(busy)
+    setSendingTo(busy ? names : [])
   }
   // Jetons et texte à jour, lus à la fin d'un envoi (la saisie a pu changer entre-temps).
   const tokensNow = useRef(tokens)
@@ -116,16 +119,25 @@ export function useRoleCompose(options: {
       options.onWarn(i18next.t('roleWork.destination.attachments'))
       return
     }
-    setBusy(true)
+    setBusy(true, to.names)
+    // Saisie vidée tout de suite, remise en cas d'échec : une conversation neuve entre dans
+    // l'historique pendant l'envoi et la saisie est remontée (accueil → fil) ; elle ne doit pas
+    // reprendre le texte parti (essai réel de la phase 4).
+    const before = tokensNow.current
+    const others = before.filter((t) => !to.names.includes(t))
+    update(others)
+    at.changeText('', 0)
     void roles
       .send(to.names, to.text)
       .then(({ started, failed }) => {
-        if (started.length === 0) return
-        const others = tokensNow.current.filter((t) => !to.names.includes(t))
+        if (started.length === 0) {
+          update(before)
+          if (textNow.current === '') at.changeText(at.text, at.text.length)
+          return
+        }
+        if (!failed.length) return
         update([...others, ...to.names.filter((n) => failed.includes(n))])
-        if (textNow.current !== at.text) return
-        const rest = failed.length ? to.text : ''
-        at.changeText(rest, rest.length)
+        if (textNow.current === '') at.changeText(to.text, to.text.length)
       })
       .finally(() => setBusy(false))
   }
@@ -235,9 +247,13 @@ export function useRoleCompose(options: {
     /** Jetons et ligne « Partira à… » pour ce texte. */
     view: (text: string) => {
       textNow.current = text
-      const targets = chosen(text)
+      const typed = chosen(text)
+      const targets =
+        typed.length || !sending
+          ? typed
+          : sendingTo.flatMap((name) => list.find((r) => r.name === name) ?? [])
       // Rien à demander une fois les `@nom` retirés : l'envoi attend, la ligne le dit.
-      const empty = targets.length > 0 && !roleRecipients(tokens, text, list).text.trim()
+      const empty = typed.length > 0 && !roleRecipients(tokens, text, list).text.trim()
       return {
         tokens: shownTokens,
         targets,
@@ -247,7 +263,7 @@ export function useRoleCompose(options: {
           !!roles?.elsewhere?.length && splitRoleMentions(text, roles.elsewhere).names.length > 0,
         sending,
         /** L'envoi aux rôles est possible (bouton). */
-        ready: targets.length > 0 && !empty && !sending,
+        ready: typed.length > 0 && !empty && !sending,
         remove: (name: string) => update(tokens.filter((t) => t !== name))
       }
     }
@@ -298,8 +314,7 @@ export function RoleDestinationFor({
   sending,
   roles,
   profileId,
-  agentLabel,
-  fresh
+  agentLabel
 }: {
   targets: readonly RoleView[]
   empty: boolean
@@ -307,7 +322,6 @@ export function RoleDestinationFor({
   roles: ComposerRoles | undefined
   profileId: string | undefined
   agentLabel: string
-  fresh: boolean
 }): ReactNode {
   const single = targets.length === 1 ? targets[0] : undefined
   const profile = single ? roleProfile(single, roles?.profiles ?? [], profileId) : undefined
@@ -316,7 +330,6 @@ export function RoleDestinationFor({
       roles={targets}
       agentLabel={profile?.label ?? agentLabel}
       readOnly={single ? readOnlyShown(single.readOnly, profile) : undefined}
-      draft={fresh}
       empty={empty}
       sending={sending}
     />

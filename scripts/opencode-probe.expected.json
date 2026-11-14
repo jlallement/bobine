@@ -119,10 +119,26 @@
     "flux": {
       "plan": false,
       "unknown": []
+    },
+    "rôles installés (agents)": {
+      "modeOption": "mode:mode",
+      "listed": {
+        "perso": true,
+        "projet": true
+      },
+      "legacyModes": [],
+      "selected": {
+        "perso": true,
+        "projet": true
+      },
+      "kept": {
+        "perso": true,
+        "projet": true
+      }
     }
   },
   "offline": {
     "opencodeVersion": "2.2.5",
-    "recordedAt": "2026-11-05"
+    "recordedAt": "2026-11-14"
   }
 }

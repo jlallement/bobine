@@ -111,6 +111,23 @@ l'interface (qui n'a aucun effet sur les agents) ; `e2e/lib.mjs` la pose à cell
 essais comparent les textes de l'agent avec `M('phrase française')`, comme ceux de l'app avec
 `L('clé')`.
 
+### Modes installés comme Bob ou OpenCode (fiche 223, phase 4)
+
+`--modes-installes bob|opencode --perso <dossier>` : à chaque ouverture de session, l'agent factice
+relit les fichiers où Bobine installe un rôle, sous le dossier personnel d'essai `<dossier>` (jamais
+le vrai) et dans le dossier de travail, et liste ces modes après les siens (`code`, `ask`, `plan`),
+comme Bob 2.1.0 ; `session/set_mode` les accepte (`src/mock-agent/modes-installes.mts`) :
+
+- `bob` : `customModes:` de `<dossier>/.bob/settings/custom_modes.yaml` puis de
+  `<travail>/.bob/custom_modes.yaml` (`id` = `slug`, `name`, `description`) ;
+- `opencode` : `<dossier>/.config/opencode/agents/*.md` puis `<travail>/.opencode/agents/*.md`
+  (`id` = nom du fichier ; ni `mode: subagent`, ni `hidden: true`). OpenCode les met dans le
+  réglage « Session Mode » ; l'agent factice, dans ses `modes` (même chemin dans l'app).
+
+Dans l'app : `MOCK_AGENT_ROLE_EXPORT=bob|opencode`, **seulement avec `BOBINE_CONFIG_HOME`** (le
+profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces options). Suite e2e
+`roles-export` ; `/scenario echo` dans la fille d'un rôle dit le mode où elle a été mise.
+
 ## Scénarios
 
 | Nom | Ce qu'il simule |

@@ -1,6 +1,6 @@
 {
   "bobVersion": "2.1.0",
-  "recordedAt": "2026-11-09",
+  "recordedAt": "2026-11-14",
   "observations": {
     "initialize": {
       "agent": "bob-shell",
@@ -84,6 +84,68 @@
         "permissionOptions": "object[]"
       },
       "kept": true
+    },
+    "modes personnalisés : ~/.bob/settings/custom_modes.yaml, clé": {
+      "opened": true,
+      "currentModeId": "agent",
+      "modes": [
+        {
+          "id": "agent",
+          "name": "Agent",
+          "description": "Take your idea, or plan, and bring it to life"
+        },
+        {
+          "id": "plan",
+          "name": "Plan",
+          "description": "Plans tasks: analyzes requirements, researches and designs implementation steps"
+        },
+        {
+          "id": "ask",
+          "name": "Ask",
+          "description": "Ask questions and get explanations"
+        },
+        {
+          "id": "bobine-sonde-perso",
+          "name": "Sonde Bobine perso",
+          "description": "Mode personnel de la sonde de Bobine"
+        }
+      ],
+      "setMode": {
+        "ok": true,
+        "response": {}
+      },
+      "yamlKept": true
+    },
+    "modes personnalisés : <dossier>/.bob/custom_modes.yaml, clé": {
+      "opened": true,
+      "currentModeId": "agent",
+      "modes": [
+        {
+          "id": "agent",
+          "name": "Agent",
+          "description": "Take your idea, or plan, and bring it to life"
+        },
+        {
+          "id": "plan",
+          "name": "Plan",
+          "description": "Plans tasks: analyzes requirements, researches and designs implementation steps"
+        },
+        {
+          "id": "ask",
+          "name": "Ask",
+          "description": "Ask questions and get explanations"
+        },
+        {
+          "id": "bobine-sonde-projet",
+          "name": "Sonde Bobine projet",
+          "description": "Mode de projet de la sonde de Bobine"
+        }
+      ],
+      "setMode": {
+        "ok": true,
+        "response": {}
+      },
+      "yamlKept": true
     },
     "base locale (coûts)": {
       "columns": [

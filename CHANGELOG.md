@@ -16,6 +16,21 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   de la discussion et refusées ailleurs, et chaque réponse est dite. « Continuer dans un projet… »
   (menu du titre) reprend la discussion dans une conversation de l'espace Code, documents copiés
   si vous le voulez.
+- Rôles : « Installer dans… » sur la page d'un rôle l'ajoute comme mode d'IBM Bob (Bob Shell, Bob
+  IDE) ou comme agent d'OpenCode, pour vous ou pour le projet. La feuille dit où et quoi, montre le
+  texte exact, copie le fichier avant d'écrire, et ne touche jamais un mode ou un agent que Bobine
+  n'a pas écrit ; la page dit ensuite s'il est à jour, propose « Mettre à jour » quand le rôle a
+  changé et « Retirer ». Dans Bobine, le rôle peut alors être lancé dans ce mode : sa lecture seule
+  est tenue par l'agent lui-même.
+
+### Amélioré
+
+- Rôles : `@rôle` peut être le tout premier message d'une nouvelle conversation ; elle entre dans
+  l'historique et la conversation fille s'y rattache. La fille d'un rôle répond dans la langue de
+  l'interface, nommée à l'agent.
+- Rôles fournis : leur description (« Quand faire appel à lui ? ») et leur consigne sont
+  maintenant en français ou en anglais, selon la langue de l'interface ; un rôle personnel tiré
+  d'un rôle fourni garde la langue affichée.
 
 ## 1.0.0-beta.2 — 14 novembre 2026
 

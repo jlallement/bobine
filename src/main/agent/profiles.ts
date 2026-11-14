@@ -50,6 +50,9 @@ import { OPENCODE_DIFF_SOURCE } from './opencode-diffs'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
 import { describeCapabilities, type AgentAnnouncement } from './capabilities'
 import { t } from 'i18next'
+import type { RoleExportAdapter } from '../roles/export/format'
+import { BOB_CUSTOM_MODES } from '../roles/export/bob-custom-modes'
+import { OPENCODE_AGENTS } from '../roles/export/opencode-agents'
 
 /** « Toujours » de Bob (relevé sur 2.0.9, fiche 213) : la conversation ; commande et parties, groupe des modifications. */
 const BOB_ALWAYS_SCOPE: AlwaysScope = {
@@ -179,6 +182,12 @@ export interface AgentProfile {
    */
   approvalRules?: ApprovalRulesSource
   /**
+   * Format où l'agent lit des modes ou agents écrits par l'utilisateur (fiche 223, phase 4,
+   * ADR-0047) : « Installer dans… » y écrit un rôle (Bob : `custom_modes.yaml` ; OpenCode :
+   * `agents/<id>.md`), sur un geste explicite, après une copie de sauvegarde.
+   */
+  roleExport?: RoleExportAdapter
+  /**
    * Fichiers d'exclusion de l'agent (fiche 155 : `.bobignore`…) : Bobine ne propose pas ces
    * fichiers aux mentions `@`, `@git-changes` les saute, les joindre demande confirmation.
    */
@@ -305,6 +314,27 @@ function mockLanguageArgs(env: ProfileContext['env']): string[] {
   return language ? ['--langue', language] : []
 }
 
+/**
+ * Rôles installés par l'agent factice comme Bob ou OpenCode (fiche 223, `MOCK_AGENT_ROLE_EXPORT`) :
+ * seulement avec un dossier personnel d'essai (`BOBINE_CONFIG_HOME`), jamais les vrais fichiers.
+ */
+const MOCK_ROLE_EXPORT: Record<string, RoleExportAdapter> = {
+  bob: BOB_CUSTOM_MODES,
+  opencode: OPENCODE_AGENTS
+}
+
+function mockRoleExport(env: ProfileContext['env']): { roleExport?: RoleExportAdapter } {
+  const format = MOCK_ROLE_EXPORT[env['MOCK_AGENT_ROLE_EXPORT'] ?? '']
+  return format && env['BOBINE_CONFIG_HOME'] ? { roleExport: format } : {}
+}
+
+/** L'agent factice lit alors ces fichiers et liste leurs modes après les siens. */
+function mockRoleExportArgs(env: ProfileContext['env']): string[] {
+  const home = env['BOBINE_CONFIG_HOME']
+  const kind = env['MOCK_AGENT_ROLE_EXPORT']
+  return home && kind && MOCK_ROLE_EXPORT[kind] ? ['--modes-installes', kind, '--perso', home] : []
+}
+
 export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
   const profiles: AgentProfile[] = []
   // Dossier personnel des agents : un autre pour les essais, jamais les vrais fichiers de Bob.
@@ -350,6 +380,7 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
         ...(ctx.env['MOCK_AGENT_DIRECTORIES'] === '1' ? ['--dossiers-en-plus'] : []),
         // Sans réglages de session (ni modèle), comme Bob (fiche 210 : carte sans modèle).
         ...(ctx.env['MOCK_AGENT_OPTIONS'] === 'none' ? ['--sans-options'] : []),
+        ...mockRoleExportArgs(ctx.env),
         ...mockLanguageArgs(ctx.env)
       ],
       env: { ELECTRON_RUN_AS_NODE: '1' },
@@ -370,6 +401,9 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Règles d'approbation écrites comme Bob (fiche 215), SEULEMENT dans un dossier personnel
       // d'essai : sans `BOBINE_CONFIG_HOME` (`pnpm dev`), un clic écrirait le vrai `~/.bob`.
       ...(ctx.env['BOBINE_CONFIG_HOME'] ? { approvalRules: BOB_APPROVAL_RULES } : {}),
+      // Rôles installés comme Bob ou OpenCode (`MOCK_AGENT_ROLE_EXPORT`, fiche 223), aussi
+      // seulement dans un dossier personnel d'essai.
+      ...mockRoleExport(ctx.env),
       // Fournisseurs de modèles comme OpenCode (fiche 104), pour les essais des réglages.
       providers: OPENCODE_PROVIDERS,
       // Comme Bob : clé d'API, connexion dans un terminal, licence à lire (fiche 022).
@@ -507,6 +541,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       exclusions: BOB_EXCLUSIONS,
       // Règles d'approbation globales, comme Bob IDE (fiche 215, ADR-0044).
       approvalRules: BOB_APPROVAL_RULES,
+      // Rôles installés comme modes personnalisés (fiche 223, ADR-0047 ; 2.1.0, `pnpm bob-probe`).
+      roleExport: BOB_CUSTOM_MODES,
       // Bob 2.0.6 lit BOB_API_KEY ; BOBSHELL_API_KEY (ancien nom) est retiré quand l'app pose la
       // sienne, Bob refusant deux valeurs différentes. Clé personnelle : une clé « générale » exige
       // `--team-id`, que `bob acp` n'accepte pas.
@@ -565,6 +601,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Points d'accès compatibles OpenAI (modèles internes) dans `opencode.json` (fiche 104).
       providers: OPENCODE_PROVIDERS,
       rules: OPENCODE_RULES,
+      // Rôles installés comme agents (fiche 223, ADR-0047 ; 2.2.5, `pnpm opencode-probe --offline`).
+      roleExport: OPENCODE_AGENTS,
       // 1.19 et 2.0.31 : essais réels (fiches 056, 078) ; 2.0.32 : `scripts/opencode-probe.expected.json`.
       // 2.2.5 : `pnpm opencode-probe --offline` (fiche 198) ; pas de `minVersion` : aucune casse
       // relevée avec une version plus ancienne (seulement un avertissement).
@@ -642,6 +680,7 @@ export function summarizeProfiles(
       ...(profile.childModelChoice ? { childModel: true } : {}),
       ...(profile.writesWithoutAsking ? { writesWithoutAsking: true } : {}),
       ...(profile.approvalRules ? { approvalRules: true } : {}),
+      ...(profile.roleExport ? { roleExport: profile.roleExport.format } : {}),
       ...(profile.destination ? { destination: profile.destination } : {}),
       ...(profile.custom ? { custom: profile.custom } : {})
     }

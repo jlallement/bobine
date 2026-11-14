@@ -2,7 +2,6 @@ import { CornerDownLeft, Ellipsis, FolderGit2, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { RoleView } from '@shared/roles'
 import { RoleAvatar, RoleStack } from './RoleAvatar'
-import { roleDescription } from './role-view'
 
 /**
  * Rôles dans le menu `@` de la saisie (fiche 223, maquettes 02-1, 02-2, 02-7) : en tête, avant
@@ -90,17 +89,17 @@ export function RoleMenuRow({
     <button
       {...common}
       className={`command-item role-item${active ? ' active' : ''}`}
-      title={roleDescription(role)}
+      title={role.description}
       aria-label={t('roleWork.menu.option', {
         label: role.label,
-        description: roleDescription(role)
+        description: role.description
       })}
       data-testid="role-item"
       data-role={role.name}
     >
       <RoleAvatar role={role} size={22} />
       <span className="role-item-name">{role.label}</span>
-      <span className="command-description">{roleDescription(role)}</span>
+      <span className="command-description">{role.description}</span>
       {role.scope === 'project' && (
         <span className="role-item-project" title={t('roleWork.menu.project')}>
           <FolderGit2 size={13} aria-label={t('roleWork.menu.project')} />

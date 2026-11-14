@@ -4,6 +4,7 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
+import { DISCUSSION_CONTEXT } from './discussion-space'
 import {
   capabilitiesReminder,
   childContext,
@@ -136,6 +137,8 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Index de la mémoire (fiche 182) : à une session qui a reçu `remember` (mémoire activée, pas
     // un relecteur, famille « Mémoire » pas coupée).
     sessionContext: (tools, moment) => {
+      // Discussion (fiche 224) : ni filles ni mémoire ; seulement où elle se passe.
+      if (record.space === 'discussion') return DISCUSSION_CONTEXT
       const capabilities = tools.includes('start_child')
         ? childrenSessionContext(settings.preferences().childProposals, moment, roles())
         : undefined

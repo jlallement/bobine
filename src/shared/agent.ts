@@ -19,6 +19,7 @@ import type { PermissionRisk } from './permissions'
 import type { Preferences } from './preferences'
 import type { QuickEntryStatus } from './quick-entry'
 import type { SubagentRun } from './subagent'
+import type { RoleExportFormat } from './role-export'
 import type { TranscriptItem } from './transcript'
 import type {
   ChildInstruction,
@@ -334,6 +335,11 @@ export interface ProfileSummary {
    * `approvalRules:change` les lisent et les changent.
    */
   approvalRules?: boolean
+  /**
+   * Un rôle peut s'installer dans cet agent, dans ce format (fiche 223, phase 4) : « Installer
+   * dans… » de la page d'un rôle.
+   */
+  roleExport?: RoleExportFormat
   /** Agent déclaré par l'utilisateur (fiche 141) : sa déclaration, pour la modifier. */
   custom?: CustomAgent
 }

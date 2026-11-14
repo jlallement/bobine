@@ -109,3 +109,27 @@ describe('startRoleChildren', () => {
     ])
   })
 })
+
+describe('`@rôle` en premier message d’une conversation neuve (essai réel, fiche 223)', () => {
+  it('le brouillon entre dans l’historique une fois, juste avant la première fille', async () => {
+    const { fake, start } = host([role('a'), role('b')])
+    const order: string[] = []
+    start.mockImplementation(async () => {
+      order.push('fille')
+      return { id: `fille-${order.length}` } as ConversationSummary
+    })
+    const keep = vi.fn(() => order.push('gardée'))
+    const result = await startRoleChildren(fake, 'mere', { roles: ['a', 'b'], text: 'Relis' }, keep)
+    expect(keep).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['gardée', 'fille', 'fille'])
+    expect(result.started.map((s) => s.role)).toEqual(['a', 'b'])
+  })
+
+  it('aucun rôle ne part : la conversation reste un brouillon', async () => {
+    const { fake } = host([])
+    const keep = vi.fn()
+    const result = await startRoleChildren(fake, 'mere', { roles: ['x'], text: 'Relis' }, keep)
+    expect(keep).not.toHaveBeenCalled()
+    expect(result.failed.map((f) => f.role)).toEqual(['x'])
+  })
+})

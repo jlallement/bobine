@@ -185,7 +185,7 @@ coder. Aucune nouvelle dépendance prévue.
   `DocumentsPanel`, `ContinueInProjectDialog`), `discussion.css`, barre latérale, accueil, saisie,
   panneau, menu de la conversation, carte d'autorisation (`PermissionQuestion`, `PlainCommand`).
 - **Agent factice** : `scenarios-discussion.mts` ; **e2e** : `e2e/suites/discussion.mjs`.
-- **Doc** : ADR-0046, `docs/acp.md` (relevés), `docs/architecture.md`, `docs/mock-agent.md`,
+- **Doc** : ADR-0048, `docs/acp.md` (relevés), `docs/architecture.md`, `docs/mock-agent.md`,
   `docs/traduction.md`, guide des raccourcis, changelogs.
 
 ## Écarts au plan et aux maquettes
@@ -222,5 +222,5 @@ coder. Aucune nouvelle dépendance prévue.
   Maquettes E1–E6 (`e2e/maquettes/screens-discussion.mjs`) validées par l'utilisateur le même jour.
 - **2026-11-14** (suite, sur `feat/224-discussion`, à la demande du tech lead) : relevés réels
   (Bob 2.1.0 : 0,77 bobcoin, réglages de Bob identiques avant / après ; OpenCode 2.2.5 gratuit),
-  puis cœur, documents, interface, agent factice, essais, ADR-0046. `./scripts/verify` vert à
+  puis cœur, documents, interface, agent factice, essais, ADR-0048. `./scripts/verify` vert à
   chaque incrément. Voir « Écarts ».

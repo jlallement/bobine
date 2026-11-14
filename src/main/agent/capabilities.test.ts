@@ -97,6 +97,7 @@ describe('capacités des agents (fiche 054)', () => {
       'ignore-files',
       'mcp-files',
       'approval-rules',
+      'role-export',
       'api-key',
       'auth-method-labels',
       'license',
@@ -116,6 +117,7 @@ describe('capacités des agents (fiche 054)', () => {
       'compact-command',
       'rules-files',
       'mcp-files',
+      'role-export',
       'model-providers',
       'terminal-login',
       'tested-versions'
@@ -129,6 +131,7 @@ describe('capacités des agents (fiche 054)', () => {
     expect(bob['ignore-files']).toContain('`.bobignore`')
     expect(bob['auth-method-labels']).toContain('(sso)')
     expect(bob['approval-rules']).toContain('`~/.bob/settings/settings.json`')
+    expect(bob['role-export']).toContain('`~/.bob/settings/custom_modes.yaml`')
   })
 
   it('chaque repère de Bob et d’OpenCode figure dans la matrice de docs/agents.md', () => {

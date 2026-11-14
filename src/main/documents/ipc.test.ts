@@ -18,7 +18,7 @@ const summary = (id: string, workspace: string, space?: 'discussion'): Conversat
   ...(space ? { space } : {})
 })
 
-function setup() {
+function setup(writesWithoutAsking = false) {
   const folder = mkdtempSync(join(tmpdir(), 'docs-'))
   const project = mkdtempSync(join(tmpdir(), 'projet-'))
   const posted: [string, AgentEvent][] = []
@@ -29,6 +29,17 @@ function setup() {
       activeId: 'd'
     }),
     post: (id, event) => posted.push([id, event]),
+    settingsView: () => ({ profiles: [{ id: 'p', label: 'P', writesWithoutAsking }] }),
+    view: () => ({
+      transcript: {
+        items: posted.map(([, e], n) => ({
+          id: n,
+          kind: 'notice' as const,
+          level: 'warning' as const,
+          ...(e.type === 'notice' && typeof e.message === 'object' ? { message: e.message } : {})
+        }))
+      }
+    }),
     subscribe: (l) => ((listener = l), () => {}),
     continueInProject: vi.fn(async () => ({}) as never)
   }
@@ -129,6 +140,25 @@ describe('documents d’une discussion (fiche 224)', () => {
     ])
     expect(attachToDocuments(host, 'c', [{ kind: 'file', path: outside }])).toEqual([
       { kind: 'file', path: outside }
+    ])
+  })
+
+  it('agent qui écrit sans demander : la limite aux documents seulement demandée, dite une fois', () => {
+    const { posted, status } = setup(true)
+    status('d', 'busy')
+    status('d', 'ready')
+    status('d', 'busy')
+    status('d', 'ready')
+    status('c', 'busy')
+    expect(posted).toEqual([
+      [
+        'd',
+        {
+          type: 'notice',
+          level: 'warning',
+          message: { key: 'discussion.notice.limitRequestedOnly', params: { agent: 'P' } }
+        }
+      ]
     ])
   })
 })

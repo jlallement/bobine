@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 
@@ -69,4 +69,22 @@ export function ContinueInProjectDialog({
       </Dialog.Portal>
     </Dialog.Root>
   )
+}
+
+/** Dialogue « Continuer dans un projet… » tenu à part de la fenêtre : l'ouvrir, et son rendu. */
+export function useContinueInProject(onOpened: (id: string) => void): {
+  open: (discussion: ConversationSummary) => void
+  dialog: ReactNode
+} {
+  const [discussion, setDiscussion] = useState<ConversationSummary | null>(null)
+  return {
+    open: setDiscussion,
+    dialog: discussion && (
+      <ContinueInProjectDialog
+        discussion={discussion}
+        onClose={() => setDiscussion(null)}
+        onOpened={onOpened}
+      />
+    )
+  }
 }

@@ -181,6 +181,20 @@ function fileItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.approvalRules.bob')
     })
   }
+  // Un repère par format d'installation des rôles (fiche 223, phase 4, ADR-0047).
+  if (profile.roleExport?.format === 'bob-custom-modes') {
+    items.push({
+      id: 'role-export',
+      label: t('capabilities.roleExport.label'),
+      detail: t('capabilities.roleExport.bob')
+    })
+  } else if (profile.roleExport?.format === 'opencode-agents') {
+    items.push({
+      id: 'role-export',
+      label: t('capabilities.roleExport.label'),
+      detail: t('capabilities.roleExport.opencode')
+    })
+  }
   if (profile.providers) {
     items.push({
       id: 'model-providers',

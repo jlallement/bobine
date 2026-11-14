@@ -59,6 +59,11 @@ const DISCUSSION_SUGGESTIONS = [
 interface Props {
   /** Espace Discussion (fiche 224) : salutation, suggestions et zone de dépôt propres. */
   discussion?: boolean
+  /**
+   * Agent qui écrit sans demander d'autorisation (profil `writesWithoutAsking`) : son nom, pour
+   * dire que rester dans les documents lui est seulement demandé (fiche 224).
+   */
+  requestedOnly?: string | undefined
   userName: string
   /** Carte de l'aparté et zone de saisie, rendues par l'app. */
   asideCard: ReactNode
@@ -106,7 +111,7 @@ export function Welcome(props: Props) {
       {props.asideCard}
       {props.composer}
       {props.discussion ? (
-        <DiscussionSuggestions fill={props.fill} />
+        <DiscussionSuggestions fill={props.fill} requestedOnly={props.requestedOnly} />
       ) : (
         <div className="suggestions" data-testid="suggestions">
           {testCommand && (
@@ -156,7 +161,13 @@ export function Welcome(props: Props) {
 }
 
 /** Accueil de l'espace Discussion (fiche 224) : suggestions de chat, et où déposer des documents. */
-function DiscussionSuggestions({ fill }: { fill: (text: string) => void }) {
+function DiscussionSuggestions({
+  fill,
+  requestedOnly
+}: {
+  fill: (text: string) => void
+  requestedOnly?: string | undefined
+}) {
   const { t } = useTranslation()
   return (
     <>
@@ -177,6 +188,11 @@ function DiscussionSuggestions({ fill }: { fill: (text: string) => void }) {
         <FileUp size={16} />
         {t('discussion.dropHint')}
       </div>
+      {requestedOnly && (
+        <p className="welcome-hint" data-testid="discussion-requested-only">
+          {t('discussion.requestedOnlyHint', { agent: requestedOnly })}
+        </p>
+      )}
     </>
   )
 }

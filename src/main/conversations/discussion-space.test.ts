@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -64,10 +64,17 @@ describe('espace Discussion (fiche 224)', () => {
     expect(listDocuments(join(dir, 'absent'))).toEqual([])
   })
 
-  it('un nom de document ne sort pas du dossier', () => {
+  it('un document est un fichier ordinaire du dossier : ni chemin, ni caché, ni lien symbolique', () => {
     const dir = folder()
+    writeFileSync(join(dir, 'a.docx'), 'x')
     expect(documentPath(dir, 'a.docx')).toBe(join(dir, 'a.docx'))
-    for (const bad of ['../a', 'x/y', '.bob', '']) expect(() => documentPath(dir, bad)).toThrow()
+    const secret = join(folder(), 'secret.txt')
+    writeFileSync(secret, 'clé')
+    symlinkSync(secret, join(dir, 'lien.txt'))
+    mkdirSync(join(dir, 'sous'))
+    for (const bad of ['../a', 'x/y', '.bob', '', 'lien.txt', 'sous', 'absent.txt'])
+      expect(() => documentPath(dir, bad)).toThrow()
+    expect(listDocuments(dir).map((d) => d.name)).toEqual(['a.docx'])
   })
 
   it('documents créés ou modifiés pendant un tour', () => {

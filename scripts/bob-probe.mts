@@ -3,7 +3,11 @@
  * docs/acp.md (« Compatibilité Bob ») et compare ses réponses à celles attendues. À lancer après
  * chaque mise à jour de Bob Shell. Jamais en CI.
  *
- *   pnpm bob-probe [--bob <commande>] [--accept] [--traces]
+ *   pnpm bob-probe [--bob <commande>] [--accept] [--traces] [--only <nom>…]
+ *
+ * `--only` : seulement les sondages dont le nom contient un des textes (ex. `modes personnalisés`) ;
+ * ne compare que ceux-là, sans `--accept`. Les sondages des modes personnalisés ne lisent rien du
+ * vrai `~/.bob`.
  *
  * Aucun message n'atteint le modèle : 0 bobcoin (le « ping » de 2.0.9 bute sur la licence,
  * refusée). Bob tourne avec un dossier personnel jetable (`HOME`), sans clé d'API de
@@ -54,6 +58,7 @@ import {
   type Observations
 } from '../src/main/agent/bob-probe.ts'
 import { ProbeTraces } from '../src/main/agent/acp-trace.ts'
+import { BOB_CUSTOM_MODES } from '../src/main/roles/export/bob-custom-modes.ts'
 
 const EXPECTED_FILE = join(dirname(fileURLToPath(import.meta.url)), 'bob-probe.expected.json')
 const PROBE_TIMEOUT_MS = 30_000
@@ -63,9 +68,18 @@ const { values } = parseArgs({
   options: {
     bob: { type: 'string', default: 'bob' },
     accept: { type: 'boolean' },
-    traces: { type: 'boolean' }
+    traces: { type: 'boolean' },
+    only: { type: 'string', multiple: true }
   }
 })
+if (values.only && values.accept) {
+  console.error(
+    '--only et --accept ne vont pas ensemble : les attentes viennent d’un passage complet.'
+  )
+  process.exit(2)
+}
+/** Sondage à faire : tous, ou ceux dont le nom contient un des `--only`. */
+const wanted = (name: string) => !values.only || values.only.some((o) => name.includes(o))
 const bob = values.bob ?? 'bob'
 const TRACES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../src/main/agent/__traces__')
 const traces = new ProbeTraces('bob', values.traces === true)
@@ -310,6 +324,95 @@ async function approvalFormat(ctx: ClientContext, box: Sandbox): Promise<Observa
   }
 }
 
+/**
+ * Modes personnalisés de la sonde (fiche 223) : un personnel en lecture seule (groupes
+ * `[read, mcp]`), un de projet qui travaille (`[read, edit, execute, mcp]`), écrits EXACTEMENT comme
+ * Bobine les installe (`BOB_CUSTOM_MODES.put`, phase 4).
+ */
+const CUSTOM_MODES = {
+  perso: {
+    id: 'bobine-sonde-perso',
+    label: 'Sonde Bobine perso',
+    description: 'Mode personnel de la sonde de Bobine',
+    prompt: 'You are a probe mode used by Bobine. Never used for real work.',
+    readOnly: true
+  },
+  projet: {
+    id: 'bobine-sonde-projet',
+    label: 'Sonde Bobine projet',
+    description: 'Mode de projet de la sonde de Bobine',
+    prompt: 'You are a probe mode used by Bobine. Never used for real work.',
+    readOnly: false
+  }
+} as const
+
+/** `custom_modes.yaml` tel que Bobine l'écrit (fichier neuf). */
+function customModesYaml(mode: (typeof CUSTOM_MODES)[keyof typeof CUSTOM_MODES]): string {
+  const put = BOB_CUSTOM_MODES.put(undefined, mode)
+  if ('error' in put || put.text === null) throw new Error('mode de la sonde refusé par Bobine')
+  return put.text
+}
+
+/** Fichier de modes personnalisés : personnel (HOME jetable) ou de projet (dossier de travail). */
+const customModesFile = (box: Sandbox, scope: keyof typeof CUSTOM_MODES) =>
+  scope === 'perso'
+    ? join(box.home, '.bob', 'settings', 'custom_modes.yaml')
+    : join(box.workspace, '.bob', 'custom_modes.yaml')
+
+const writeCustomModes = (scope: keyof typeof CUSTOM_MODES) => (box: Sandbox) => {
+  const file = customModesFile(box, scope)
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, customModesYaml(CUSTOM_MODES[scope]))
+}
+
+/**
+ * Modes personnalisés de Bob (`custom_modes.yaml`) listés par ACP ? Session ouverte : modes rendus
+ * (id, nom, description) ; si le mode de la sonde y est, `session/set_mode` vers lui. Aucun
+ * message : 0 bobcoin. Dit aussi si Bob a gardé le fichier tel quel.
+ */
+const customModesProbe =
+  (scope: keyof typeof CUSTOM_MODES) =>
+  async (ctx: ClientContext, box: Sandbox): Promise<Observation> => {
+    await initialize(ctx)
+    const file = customModesFile(box, scope)
+    const slug = CUSTOM_MODES[scope].id
+    let observed: Observation
+    try {
+      const session = await ctx.request(methods.agent.session.new, {
+        cwd: box.workspace,
+        mcpServers: []
+      })
+      const available = session.modes?.availableModes ?? []
+      const setMode = available.some((m) => m.id === slug)
+        ? await ctx
+            .request(methods.agent.session.setMode, { sessionId: session.sessionId, modeId: slug })
+            .then(
+              (r) => ({ ok: true, response: JSON.parse(JSON.stringify(r ?? null)) as unknown }),
+              (error: unknown) => errorOf(error, box)
+            )
+        : null
+      await ctx
+        .request(methods.agent.session.close, { sessionId: session.sessionId })
+        .catch(() => {})
+      observed = {
+        opened: true,
+        currentModeId: session.modes?.currentModeId ?? null,
+        modes: available.map((m) => ({
+          id: m.id,
+          name: m.name,
+          description: m.description ?? null
+        })),
+        setMode
+      }
+    } catch (error) {
+      observed = { sessionNew: errorOf(error, box) }
+    }
+    const kept = existsSync(file)
+      ? readFileSync(file, 'utf8') === customModesYaml(CUSTOM_MODES[scope])
+      : 'supprimé'
+    return { ...observed, yamlKept: kept }
+  }
+
 const probes: [string, () => Promise<Observation>][] = [
   [
     'initialize',
@@ -391,6 +494,26 @@ const probes: [string, () => Promise<Observation>][] = [
     APPROVAL_FORMAT_PROBE,
     () => withBob(['--trust'], { BOB_API_KEY: FAKE_KEY }, approvalFormat, approvalRules)
   ],
+  [
+    'modes personnalisés : ~/.bob/settings/custom_modes.yaml, clé',
+    () =>
+      withBob(
+        ['--trust'],
+        { BOB_API_KEY: FAKE_KEY },
+        customModesProbe('perso'),
+        writeCustomModes('perso')
+      )
+  ],
+  [
+    'modes personnalisés : <dossier>/.bob/custom_modes.yaml, clé',
+    () =>
+      withBob(
+        ['--trust'],
+        { BOB_API_KEY: FAKE_KEY },
+        customModesProbe('projet'),
+        writeCustomModes('projet')
+      )
+  ],
   ['base locale (coûts)', () => Promise.resolve(bobDbSchema())],
   ['bob chat (quota, /status)', () => bobStatusContract()]
 ]
@@ -441,6 +564,7 @@ async function main(): Promise<void> {
   console.log(`Sonde du contrat ACP de Bob — ${bob} ${version}\n`)
   const observations: Observations = {}
   for (const [name, run] of probes) {
+    if (!wanted(name)) continue
     traces.current = name
     try {
       observations[name] = await run()
@@ -456,7 +580,9 @@ async function main(): Promise<void> {
   }
 
   console.log('\nContrat de l’app')
-  const checks = contractChecks(observations)
+  // `--only` : le contrat repose sur tous les sondages, il n'est pas jugé sur une partie.
+  const checks = values.only ? [] : contractChecks(observations)
+  if (values.only) console.log('  (non vérifié avec --only)')
   for (const check of checks) {
     const mark = check.unverified ? '?' : check.ok ? '✓' : '✗'
     console.log(`  ${mark} ${check.label}${check.unverified ? ' (pas vérifié cette fois)' : ''}`)
@@ -465,7 +591,13 @@ async function main(): Promise<void> {
   const expected = existsSync(EXPECTED_FILE)
     ? (JSON.parse(readFileSync(EXPECTED_FILE, 'utf8')) as Expected)
     : undefined
-  const changes = expected ? diffObservations(expected.observations, observations) : []
+  // `--only` : seuls les sondages faits sont comparés.
+  const compared = expected
+    ? values.only
+      ? Object.fromEntries(Object.entries(expected.observations).filter(([k]) => k in observations))
+      : expected.observations
+    : {}
+  const changes = expected ? diffObservations(compared, observations) : []
   console.log(
     `\nRéponses comparées à celles de Bob ${expected?.bobVersion ?? '(aucune attente)'}` +
       (expected ? ` (${expected.recordedAt})` : '')

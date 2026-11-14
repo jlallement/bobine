@@ -5,7 +5,8 @@
  *
  * Variables d'environnement équivalentes : MOCK_AGENT_SCENARIO, MOCK_AGENT_DELAY_MS, MOCK_AGENT_LANG,
  * MOCK_AGENT_PANNE (`--panne`, fiche 195), MOCK_AGENT_MAX_ETAPES (`--max-etapes`, fiche 209), MOCK_AGENT_SLOW_START_MS (`--demarrage-lent`), MOCK_AGENT_TENACE=1 (ignore SIGTERM et la fin de la connexion, fiche 195)
- * (`--langue en` : l'agent parle anglais, fiche 167).
+ * (`--langue en` : l'agent parle anglais, fiche 167). `--modes-installes bob|opencode --perso <dossier>` :
+ * modes installés comme Bob ou OpenCode, listés après les siens (fiche 223).
  * stdout est réservé au protocole : les journaux vont sur stderr.
  */
 import { Readable, Writable } from 'node:stream'
@@ -47,7 +48,9 @@ const { values } = parseArgs({
     'dossiers-en-plus': { type: 'boolean' },
     nom: { type: 'string' },
     'max-etapes': { type: 'string' },
-    langue: { type: 'string' }
+    langue: { type: 'string' },
+    'modes-installes': { type: 'string' },
+    perso: { type: 'string' }
   }
 })
 
@@ -73,6 +76,12 @@ const maxStepsText = values['max-etapes'] ?? process.env['MOCK_AGENT_MAX_ETAPES'
 const maxSteps = maxStepsText === undefined ? undefined : Number(maxStepsText)
 if (maxSteps !== undefined && (!Number.isInteger(maxSteps) || maxSteps < 1)) {
   console.error(`[mock-agent] limite d'étapes invalide : ${String(maxStepsText)}`)
+  process.exit(2)
+}
+// Modes installés comme Bob ou OpenCode (fiche 223, phase 4), lus sous un dossier personnel d'essai.
+const installedKind = values['modes-installes']
+if (installedKind && (!['bob', 'opencode'].includes(installedKind) || !values.perso)) {
+  console.error('[mock-agent] --modes-installes bob|opencode demande --perso <dossier>')
   process.exit(2)
 }
 if (!Number.isFinite(delayMs) || delayMs < 0) {
@@ -116,7 +125,10 @@ const connection = connectMockAgent(stream, {
   ...(values.nom ? { title: values.nom } : {}),
   ...(maxSteps !== undefined ? { maxSteps } : {}),
   language: mockLanguage(values.langue ?? process.env['MOCK_AGENT_LANG']),
-  ...(values.devise ? { costCurrency: values.devise } : {})
+  ...(values.devise ? { costCurrency: values.devise } : {}),
+  ...(installedKind && values.perso
+    ? { installedModes: { kind: installedKind as 'bob' | 'opencode', home: values.perso } }
+    : {})
 })
 // Agent tenace (fiche 195) : ignore SIGTERM et survit à la fin de sa connexion ; seul un SIGKILL
 // l'arrête (essais « rien ne reste en quittant » et orphelins après un `kill -9` de Bobine).

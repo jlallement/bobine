@@ -559,7 +559,6 @@ export function Composer(props: Props) {
         roles={props.roles}
         profileId={snapshot?.info.profileId ?? settings?.profileId}
         agentLabel={agentLabel}
-        fresh={!!props.fresh}
       />
       <ComposerContext
         hidden={props.discussion}

@@ -52,8 +52,13 @@ export interface RoleWizardProps {
 
 const PRIORITY: readonly RoleScope[] = ['builtin', 'user', 'project']
 
-/** Rôles fournis, pour les tuiles de l'étape 2 : leur définition d'origine, même remplacés. */
+/**
+ * Rôles fournis, pour les tuiles de l'étape 2 : leur définition d'origine, même remplacés, dans la
+ * langue de l'interface (ADR-0046).
+ */
 function useTemplates(listing: RolesListing | null): Role[] {
+  const { i18n } = useTranslation()
+  const language = i18n.language
   const [templates, setTemplates] = useState<Role[]>([])
   const names = (listing?.roles ?? [])
     .filter((r) => r.scope === 'builtin' || r.hides?.includes('builtin'))
@@ -69,7 +74,7 @@ function useTemplates(listing: RolesListing | null): Role[] {
     return () => {
       alive = false
     }
-  }, [names])
+  }, [names, language])
   return templates
 }
 

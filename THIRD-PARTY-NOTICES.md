@@ -17,7 +17,7 @@ Bobine runs on [Electron](https://www.electronjs.org) 45.2.3 (MIT, license text
 
 ## npm packages shipped in the app
 
-187 packages, copied into the app by the build (`out/`: main process,
+188 packages, copied into the app by the build (`out/`: main process,
 interface) or added by the packager (production dependencies, `app.asar`). Development tools
 that ship nothing (compilers, test runners, linters, the packager itself) are not listed; Vite
 and Rolldown are, for the small runtime helpers they add to the build output.
@@ -210,7 +210,8 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [vfile](https://github.com/vfile/vfile) | 6.0.3 | MIT | interface | [T76](#t76) |
 | [vfile-message](https://github.com/vfile/vfile-message) | 4.0.3 | MIT | interface | [T33](#t33) |
 | [vite](https://github.com/vitejs/vite) | 8.3.6 | MIT | interface | [T78](#t78) |
-| [zod](https://github.com/colinhacks/zod) | 4.6.7 | MIT | main process | [T79](#t79) |
+| [yaml](https://github.com/eemeli/yaml) | 2.9.0 | ISC | app (production dependency) | [T79](#t79) |
+| [zod](https://github.com/colinhacks/zod) | 4.6.7 | MIT | main process | [T80](#t80) |
 
 ## Dual-licensed packages: license chosen
 
@@ -233,8 +234,8 @@ One font is embedded: MesloLGS Nerd Font Regular, from the
 by the terminal panel only for icons missing from the other fonts. The font file is shipped as
 published, unmodified.
 
-- Meslo LG (Copyright 2009, 2010, 2013 André Berg), Apache-2.0: [T80](#t80).
-- Nerd Fonts patcher (Copyright (c) 2014 Ryan L McIntyre), MIT: [T81](#t81).
+- Meslo LG (Copyright 2009, 2010, 2013 André Berg), Apache-2.0: [T81](#t81).
+- Nerd Fonts patcher (Copyright (c) 2014 Ryan L McIntyre), MIT: [T82](#t82).
 - Icon sets merged into the font by Nerd Fonts, each under its own license (table from the font's
   README):
 
@@ -258,9 +259,9 @@ published, unmodified.
 Attributions. The Codicons glyphs are © Microsoft Corporation and the Font Awesome glyphs are
 © Fonticons, Inc. (https://fontawesome.com); both are licensed under the Creative Commons
 Attribution 4.0 International license (https://creativecommons.org/licenses/by/4.0/,
-[T82](#t82)). Nerd Fonts rescaled and repositioned these glyphs to fit the font; Bobine
+[T83](#t83)). Nerd Fonts rescaled and repositioned these glyphs to fit the font; Bobine
 does not modify them further. Pomicons (Reserved Font Name "Pomicons") and Weather Icons are
-licensed under the SIL Open Font License 1.1 ([T83](#t83)). The other icon sets are under
+licensed under the SIL Open Font License 1.1 ([T84](#t84)). The other icon sets are under
 the licenses listed in the table.
 
 ## Interface fonts, icons and artwork
@@ -5267,6 +5268,26 @@ Repository: https://github.com/sveltejs/zimmerframe
 
 ### T79
 
+Used by: yaml 2.9.0.
+
+```text
+Copyright Eemeli Aro <eemeli@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+### T80
+
 Used by: zod 4.6.7.
 
 ```text
@@ -5293,7 +5314,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### T80
+### T81
 
 Used by: Meslo LG.
 
@@ -5518,7 +5539,7 @@ limitations under the License.
    limitations under the License.
 ```
 
-### T81
+### T82
 
 Used by: Nerd Fonts.
 
@@ -5546,7 +5567,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### T82
+### T83
 
 Used by: Codicons and Font Awesome glyphs.
 
@@ -5948,7 +5969,7 @@ public licenses.
 Creative Commons may be contacted at creativecommons.org.
 ```
 
-### T83
+### T84
 
 Used by: Pomicons and Weather Icons glyphs.
 

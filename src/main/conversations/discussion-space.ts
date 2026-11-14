@@ -8,6 +8,7 @@
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   rmdirSync,
@@ -16,6 +17,7 @@ import {
 } from 'node:fs'
 import { basename, dirname, extname, join, relative } from 'node:path'
 import { t } from 'i18next'
+import { APP_CONTEXT_OPENINGS } from '@shared/app-context'
 import type { AgentConfigureRequest, ConversationSpace } from '@shared/agent'
 import type { DiscussionDocument } from '@shared/documents'
 import type { AgentRef } from '@shared/handover'
@@ -74,7 +76,8 @@ export function listDocuments(folder: string): DiscussionDocument[] {
     .filter((name) => !name.startsWith('.'))
     .flatMap((name) => {
       try {
-        const stat = statSync(join(folder, name))
+        // Un lien symbolique n'est pas un document : il mènerait hors du dossier.
+        const stat = lstatSync(join(folder, name))
         return stat.isFile()
           ? [{ name, size: stat.size, modifiedAt: stat.mtime.toISOString() }]
           : []
@@ -108,12 +111,17 @@ export function addDocuments(folder: string, paths: readonly string[]): string[]
   })
 }
 
-/** Chemin d'un document de la discussion ; refusé s'il sort du dossier ou est caché. */
+/**
+ * Chemin d'un document de la discussion : un nom simple (ni dossier, ni `..`, ni fichier caché),
+ * un fichier ordinaire du dossier (pas un lien symbolique, qui mènerait ailleurs). Sinon refusé.
+ */
 export function documentPath(folder: string, name: string): string {
   if (name !== basename(name) || name.startsWith('.') || name.length === 0) {
     throw new Error(`Document invalide : ${name}`)
   }
-  return join(folder, name)
+  const path = join(folder, name)
+  if (!lstatSync(path).isFile()) throw new Error(`Document invalide : ${name}`)
+  return path
 }
 
 /** Empreinte des documents (nom → taille et date) : ce qu'un tour a créé ou modifié. */
@@ -234,3 +242,20 @@ export function nextFolder(
   const next = worktree ? join(worktree.root, relative(worktree.path, workspace)) : workspace
   return isDirectory(next) ? next : (defaultWorkspace ?? NO_FOLDER)
 }
+
+/**
+ * Consigne de session d'une discussion (fiche 224), en anglais comme tout ce qui part à l'agent
+ * (ADR-0014) : où il est, et rien d'écrit hors des documents. C'est ce qui « demande » la limite à
+ * un agent qui écrit sans demander d'autorisation ; pour les autres, Bobine la tient aussi
+ * (`writeArea`).
+ */
+export const DISCUSSION_CONTEXT = [
+  APP_CONTEXT_OPENINGS.discussion,
+  'For context, about where this conversation happens (Bobine). This is not a task.',
+  'The user is chatting with you outside any project. Your working directory is this chat’s',
+  'documents folder: the files the user attaches are copied there, and the files you make for the',
+  'user belong there. Write only inside this folder: do not create, change or delete files anywhere',
+  'else, not even temporary ones, and do not install anything. Bobine allows the writes you ask for',
+  'inside this folder and refuses the others.',
+  '</bobine_discussion>'
+].join('\n')

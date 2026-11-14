@@ -1,5 +1,4 @@
-import type { ConversationSummary } from '@shared/agent'
-import { ContinueInProjectDialog } from './components/discussion/ContinueInProjectDialog'
+import { useContinueInProject } from './components/discussion/ContinueInProjectDialog'
 import { useSpace } from './useSpace'
 import { onSettingsRequest } from './open-settings'
 import * as Tooltip from '@radix-ui/react-tooltip'
@@ -86,7 +85,7 @@ export function App() {
   const spaces = useSpace(c)
   const discussion = spaces.space === 'discussion'
   // « Continuer dans un projet… » d'une discussion (fiche 224) : son dialogue.
-  const [continuing, setContinuing] = useState<ConversationSummary | null>(null)
+  const continuing = useContinueInProject(c.select)
   const onboarding = useOnboarding({ conversationId: c.activeId, pageOpen: activity.open })
   const snapshot = c.active?.snapshot ?? null
   // Quota de l'agent actif, s'il sait le lire (Bob : bobcoins, fiche 091).
@@ -436,13 +435,7 @@ export function App() {
     <TipsContext.Provider value={tips}>
       <Tooltip.Provider>
         <div className="app">
-          {continuing && (
-            <ContinueInProjectDialog
-              discussion={continuing}
-              onClose={() => setContinuing(null)}
-              onOpened={c.select}
-            />
-          )}
+          {continuing.dialog}
           <Sidebar
             open={sidebarOpen}
             onToggle={() => setSidebarOpen(false)}
@@ -527,7 +520,7 @@ export function App() {
                       onArchive={() => c.archive(activeTitle.id, !activeTitle.archived)}
                       onDelete={() => dialogs.setDeleting(activeTitle)}
                       onLaunchChild={() => dialogs.setLaunching(activeTitle)}
-                      onContinueInProject={() => setContinuing(activeTitle)}
+                      onContinueInProject={() => continuing.open(activeTitle)}
                     />
                   ) : null}
                   {activeTitle?.role ? (
@@ -635,6 +628,9 @@ export function App() {
                 ) : empty ? (
                   <Welcome
                     discussion={discussion}
+                    requestedOnly={
+                      activeProfile?.writesWithoutAsking ? activeProfile.label : undefined
+                    }
                     userName={prefs?.userName ?? ''}
                     asideCard={asideCard}
                     composer={composer}

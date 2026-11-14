@@ -15,6 +15,7 @@ import {
 import { invokeRole, openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
 import { ConfirmRow } from '../settings/ConfirmRow'
 import { RoleAvatar } from './RoleAvatar'
+import { useRoleExport } from './RoleExportStatus'
 import {
   AgentFields,
   AppearanceFields,
@@ -27,7 +28,7 @@ import {
 } from './RoleFields'
 import type { RolesSettingsProps } from './RolesSettings'
 
-type Status = { kind: 'saved' } | { kind: 'failed'; text: string } | null
+type Status = { kind: 'saved'; renamedFrom?: string } | { kind: 'failed'; text: string } | null
 
 /**
  * Modifier un rôle (fiche 223, maquettes B3 et 04-2) : un seul écran, les mêmes champs que
@@ -43,9 +44,12 @@ export function RoleEditPage(
     onMoved: (role: { scope: RoleScope; name: string }) => void
   }
 ) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [role, setRole] = useState<Role | null | undefined>(undefined)
   const [draft, setDraft] = useState<RoleDraft | null>(null)
+  // Un rôle fourni se relit dans la nouvelle langue de l'interface (ADR-0046) ; l'enregistrer
+  // crée un rôle personnel dans la langue affichée.
+  const language = props.scope === 'builtin' ? i18n.language : undefined
   useEffect(() => {
     let alive = true
     window.api.roles.read(props.scope, props.name, props.conversationId).then(
@@ -59,7 +63,7 @@ export function RoleEditPage(
     return () => {
       alive = false
     }
-  }, [props.scope, props.name, props.conversationId])
+  }, [props.scope, props.name, props.conversationId, language])
   const back = (
     <button
       className="settings-crumb role-edit-back"
@@ -121,6 +125,13 @@ function RoleEditForm(
   const target = builtin ? 'user' : role.scope === 'project' ? 'project' : 'user'
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftFromRole(role))
   const options = props.conversationId ? { conversationId: props.conversationId } : {}
+  // « Installer dans… » (phase 4) : bouton dans l'en-tête, lignes d'état dessous.
+  const exported = useRoleExport({
+    role: { scope: role.scope, name: role.name, ...options, icon: role.icon, color: role.color },
+    profiles: props.profiles,
+    dirty,
+    saved: JSON.stringify(role)
+  })
 
   const change: DraftChange = (next) => {
     props.onDraft(next)
@@ -140,7 +151,9 @@ function RoleEditForm(
       })
       if (!result.ok) return setErrors({ [errorField(result.error)]: result.error })
       rolesChanged()
-      setStatus({ kind: 'saved' })
+      // Renommé alors qu'il est installé : l'ancienne installation reste, sous l'ancien nom (phase 4).
+      const renamed = !builtin && checked.role.name !== role.name && exported.installed > 0
+      setStatus({ kind: 'saved', ...(renamed ? { renamedFrom: role.name } : {}) })
       props.onSaved({ ...checked.role, scope: target })
     } catch (e) {
       setStatus({ kind: 'failed', text: ipcErrorText(e) })
@@ -178,8 +191,15 @@ function RoleEditForm(
       <div className="role-edit-head">
         <RoleAvatar role={draft} size={44} />
         <div className="role-edit-title">
-          <h3>{draft.label || role.label}</h3>
-          <span className="role-edit-where">
+          <h3 title={draft.label || role.label}>{draft.label || role.label}</h3>
+          {/* Une ligne : coupée par « … », le chemin complet en infobulle. */}
+          <span
+            className="role-edit-where"
+            title={
+              builtin ? undefined : (role.file ?? roleFileHint({ name: role.name, scope: target }))
+            }
+            data-testid="role-edit-where"
+          >
             {t(`rolesSettings.scope.${role.scope}`)}
             {!builtin && (
               <>
@@ -216,6 +236,7 @@ function RoleEditForm(
             <Copy size={13} aria-hidden />
             {t('rolesSettings.edit.duplicate')}
           </button>
+          {exported.button}
           {!builtin && (
             <button
               className="btn small danger"
@@ -228,6 +249,7 @@ function RoleEditForm(
           )}
         </div>
       </div>
+      {exported.panel}
       {confirmDelete && (
         <ConfirmRow
           message={t('rolesSettings.edit.deleteConfirm', { label: role.label })}
@@ -265,7 +287,9 @@ function RoleEditForm(
       <div className="role-edit-foot">
         {status?.kind === 'saved' && !dirty && (
           <span className="role-edit-saved" role="status" data-testid="role-edit-saved">
-            {t('rolesSettings.edit.saved')}
+            {status.renamedFrom
+              ? t('roleExport.renamed', { old: status.renamedFrom })
+              : t('rolesSettings.edit.saved')}
           </span>
         )}
         {status?.kind === 'failed' && (

@@ -15,9 +15,9 @@ import type { RoleProblem, RoleScope, RoleView } from '@shared/roles'
 import { ipcErrorText } from '../../ipc-errors'
 import { openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
 import { problemPath } from '../../roles/role-text'
-import { roleDescription } from './role-view'
 import { roleErrorText } from './RoleFields'
 import { RoleAvatar } from './RoleAvatar'
+import { RoleExportOrphans } from './RoleExportOrphans'
 import { RoleEditPage } from './RoleEditPage'
 
 export interface RolesSettingsProps {
@@ -112,6 +112,11 @@ function RolesList(props: RolesSettingsProps & { onOpen: (role: RoleView) => voi
         })
       )}
       {listing.problems.length > 0 && <RoleProblems problems={listing.problems} />}
+      <RoleExportOrphans
+        conversationId={props.conversationId}
+        profiles={props.profiles}
+        listing={listing}
+      />
     </section>
   )
 }
@@ -187,7 +192,7 @@ function RoleRow({
         <RoleAvatar role={role} size={32} />
         <span className="role-row-text">
           <span className="role-row-label">{role.label}</span>
-          <span className="role-row-desc">{roleDescription(role)}</span>
+          <span className="role-row-desc">{role.description}</span>
         </span>
         <span className="role-row-tags">
           {role.hides?.length ? (

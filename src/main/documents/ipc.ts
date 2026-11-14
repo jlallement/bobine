@@ -20,6 +20,7 @@ import type {
 } from '@shared/agent'
 import type { PromptAttachment } from '@shared/attachments'
 import type { DocumentPreview } from '@shared/documents'
+import type { TranscriptItem } from '@shared/transcript'
 import type { DocumentsChannel } from '@shared/documents-ipc'
 import type { IpcHandlers } from '@shared/ipc'
 import {
@@ -36,6 +37,11 @@ import type { ConversationListeners } from '../conversations/conversation'
 /** Ce que les documents demandent au gestionnaire des conversations. */
 export interface DocumentsHost {
   state(): ConversationsState
+  /** Profils (`writesWithoutAsking`) et fil (avis déjà posé), pour dire honnêtement la limite. */
+  settingsView(): {
+    profiles: readonly { id: string; label: string; writesWithoutAsking?: boolean }[]
+  }
+  view(id: string): { transcript: { items: readonly TranscriptItem[] } }
   continueInProject(id: string, workspace: string): Promise<ConversationView>
   post(id: string, event: AgentEvent): void
   subscribe(listeners: ConversationListeners): () => void
@@ -118,6 +124,7 @@ export async function previewOf(
  */
 export function watchTurns(host: DocumentsHost): () => void {
   const before = new Map<string, Map<string, string>>()
+  const told = new Set<string>()
   return host.subscribe({
     event: ({ conversationId: id, event }: ConversationEvent) => {
       if (event.type !== 'status') return
@@ -126,12 +133,39 @@ export function watchTurns(host: DocumentsHost): () => void {
       const busy = event.snapshot.status === 'busy'
       const start = before.get(id)
       if (busy && !start) before.set(id, documentsFingerprint(summary.workspace))
+      if (busy && !told.has(id)) {
+        told.add(id)
+        tellRequestedOnly(host, id, summary.profileId)
+      }
       if (busy || !start) return
       before.delete(id)
       const names = changedDocuments(start, documentsFingerprint(summary.workspace))
       if (names.length > 0) host.post(id, { type: 'documents', names })
     },
     deleted: (id) => before.delete(id)
+  })
+}
+
+const REQUESTED_ONLY = 'discussion.notice.limitRequestedOnly'
+
+/**
+ * Agent qui écrit sans demander d'autorisation (profil `writesWithoutAsking`, comme pour la lecture
+ * seule d'un rôle, fiche 223) : la limite aux documents ne lui est que demandée (consigne de
+ * session) ; le fil le dit une fois, au premier tour.
+ */
+function tellRequestedOnly(host: DocumentsHost, id: string, profileId: string): void {
+  const profile = host.settingsView().profiles.find((p) => p.id === profileId)
+  if (!profile?.writesWithoutAsking) return
+  const said = host
+    .view(id)
+    .transcript.items.some(
+      (i) => i.kind === 'notice' && i.message !== undefined && i.message.key === REQUESTED_ONLY
+    )
+  if (said) return
+  host.post(id, {
+    type: 'notice',
+    level: 'warning',
+    message: { key: REQUESTED_ONLY, params: { agent: profile.label } }
   })
 }
 

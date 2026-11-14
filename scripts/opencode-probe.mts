@@ -64,6 +64,7 @@ import { ProbeTraces } from '../src/main/agent/acp-trace.ts'
 import { activeRules } from '../src/main/agent-config/rules.ts'
 import { OPENCODE_RULES } from '../src/main/agent-config/opencode-rules.ts'
 import { questionsOf } from '../src/shared/questions.ts'
+import { OPENCODE_AGENTS, openCodeAgentFile } from '../src/main/roles/export/opencode-agents.ts'
 import {
   openCodeSubagentOf as subagentOf,
   openCodeSubagentSessionId as subagentSessionId
@@ -378,6 +379,94 @@ async function probeSessions(): Promise<Observations> {
       }
     })
     return { ...opened.observations, 'session/load, resume, delete': reopened }
+  } finally {
+    rmSync(box.home, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Rôles installés comme agents (fiche 223, phase 4) : un agent écrit EXACTEMENT comme Bobine
+ * (`openCodeAgentFile`), personnel (`$XDG_CONFIG_HOME/opencode/agents/`, lecture seule, avec
+ * `permissions`) et du projet (`.opencode/agents/`, sans). Sans modèle : listés dans les modes par
+ * ACP ? choisis par `session/set_config_option` ? Que les permissions tiennent ne se voit qu'avec
+ * un modèle (non sondé).
+ */
+async function probeRoleAgents(): Promise<Observation> {
+  const box = sandbox()
+  const agent = (id: string, readOnly: boolean) => ({
+    id,
+    label: id,
+    description: `Bobine probe agent (${readOnly ? 'read-only' : 'read-write'}).`,
+    prompt: 'You are a probe agent written by Bobine. Never used for real work.',
+    readOnly
+  })
+  try {
+    const written = {
+      perso: OPENCODE_AGENTS.place('user', 'bobine-sonde-perso', {
+        home: box.home,
+        xdgConfigHome: box.env['XDG_CONFIG_HOME']
+      }).file,
+      projet: OPENCODE_AGENTS.place(
+        'project',
+        'bobine-sonde-projet',
+        { home: box.home },
+        box.workspace
+      ).file
+    }
+    for (const [scope, file] of Object.entries(written)) {
+      mkdirSync(dirname(file), { recursive: true })
+      writeFileSync(file, openCodeAgentFile(agent(`bobine-sonde-${scope}`, scope === 'perso')))
+    }
+    return await withOpenCode(box, async (ctx) => {
+      await initialize(ctx)
+      const session = await newSession(ctx, box)
+      const mode = (session.configOptions ?? []).find((o) => o.category === 'mode')
+      const values =
+        mode && 'options' in mode
+          ? (mode.options as { value?: unknown }[]).flatMap((o) =>
+              typeof o.value === 'string' ? [o.value] : []
+            )
+          : []
+      const legacy = (session.modes?.availableModes ?? []).map((m) => m.id)
+      // Chaque agent choisi dans sa propre session : la réponse dit le mode en cours.
+      const select = async (value: string): Promise<boolean | string> => {
+        if (!mode) return false
+        const own = await newSession(ctx, box)
+        return ctx
+          .request(methods.agent.session.setConfigOption, {
+            sessionId: own.sessionId,
+            configId: mode.id,
+            value
+          })
+          .then(
+            (r) => {
+              const current = (r.configOptions ?? []).find((o) => o.id === mode.id)?.currentValue
+              return current === value || `mode en cours : ${String(current)}`
+            },
+            (error: { message?: string }) => `refusé : ${error.message ?? '?'}`
+          )
+      }
+      return {
+        modeOption: mode ? `${mode.id}:${mode.category ?? ''}` : null,
+        listed: {
+          perso: values.includes('bobine-sonde-perso'),
+          projet: values.includes('bobine-sonde-projet')
+        },
+        legacyModes: legacy.filter((id) => id.startsWith('bobine-sonde')).sort(),
+        selected: {
+          perso: await select('bobine-sonde-perso'),
+          projet: await select('bobine-sonde-projet')
+        },
+        kept: {
+          perso:
+            readFileSync(written.perso, 'utf8') ===
+            openCodeAgentFile(agent('bobine-sonde-perso', true)),
+          projet:
+            readFileSync(written.projet, 'utf8') ===
+            openCodeAgentFile(agent('bobine-sonde-projet', false))
+        }
+      }
+    })
   } finally {
     rmSync(box.home, { recursive: true, force: true })
   }
@@ -1200,6 +1289,7 @@ async function main(): Promise<void> {
   })
   await record(observations, 'sessions', probeSessions, true)
   await record(observations, 'fournisseurs', probeProviders)
+  await record(observations, 'rôles installés (agents)', probeRoleAgents)
   for (const key of ['session/new', 'session/list', 'session/load, resume, delete']) {
     if (observations[key]) console.log(`      ${key} : ${JSON.stringify(observations[key])}`)
   }

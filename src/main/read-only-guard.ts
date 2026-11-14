@@ -176,7 +176,10 @@ export const READ_ONLY_SAFE = [
   'memory:export',
   'memory:reveal',
   'roles:list',
-  'roles:read'
+  'roles:read',
+  'roles:exportPreview',
+  'roles:exportStatus',
+  'roles:exportOrphans'
 ] as const satisfies readonly IpcChannel[]
 
 /**
@@ -294,6 +297,9 @@ export const PROFILE_CHANGING = [
   'roles:setEnabled',
   'roles:remove',
   'roles:startChildren',
+  // Écrit dans les fichiers d'un agent ET dans le registre du profil : jamais l'un sans l'autre.
+  'roles:export',
+  'roles:exportRemove',
   // Copiés dans le dossier de la discussion, dans le profil (fiche 224).
   'documents:add',
   'documents:pick',
