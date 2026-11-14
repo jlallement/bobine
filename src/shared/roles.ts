@@ -7,6 +7,7 @@
  * consigne. Ce module lit et vérifie ces fichiers, les range par priorité (projet, puis personnel,
  * puis fournis) et écrit ce qui part à l'agent (en anglais, ADR-0014). Rien ici ne touche au disque.
  */
+import type { Language } from './i18n'
 import { ACCENT_COLORS, type AccentColor } from './preferences'
 
 /** D'où vient un rôle : fourni par Bobine, personnel (tous les projets), ou du projet. */
@@ -479,6 +480,20 @@ const READ_ONLY_LINES: Record<ReadOnlyLevel, string> = {
 /** Dernière ligne de la consigne : la fille répond dans la langue de la demande (texte pour l'agent). */
 export const ROLE_LANGUAGE_LINE = "Reply in the language of the user's request."
 
+/** Nom anglais des langues de l'interface, pour la ligne envoyée à l'agent (ADR-0014). */
+const LANGUAGE_NAMES: Record<Language, string> = { fr: 'French', en: 'English' }
+
+/**
+ * Langue de la réponse, nommée quand on connaît celle de l'interface : Bob 2.1.0 ignorait la ligne
+ * générique et répondait en anglais à une demande en français (essai réel, fiche 223). Le texte
+ * reste en anglais (ADR-0014), seule la langue y est nommée.
+ */
+export function roleLanguageLine(language?: Language): string {
+  return language
+    ? `Reply in ${LANGUAGE_NAMES[language]}, the language of the user's request.`
+    : ROLE_LANGUAGE_LINE
+}
+
 /**
  * Premier message d'une fille lancée avec un rôle : la demande de l'utilisateur **en tête** (un
  * agent qui titre sa tâche d'après le début du message, Bob, garde la demande : fiche 125, D18),
@@ -489,7 +504,7 @@ export const ROLE_LANGUAGE_LINE = "Reply in the language of the user's request."
 export function roleOpening(
   role: RoleDefinition,
   task: string,
-  options: { readOnly?: ReadOnlyLevel } = {}
+  options: { readOnly?: ReadOnlyLevel; language?: Language } = {}
 ): string {
   return [
     task.trim(),
@@ -497,7 +512,7 @@ export function roleOpening(
     `<bobine_role name="${role.name}">`,
     role.prompt.trim(),
     ...(options.readOnly ? [READ_ONLY_LINES[options.readOnly]] : []),
-    ROLE_LANGUAGE_LINE,
+    roleLanguageLine(options.language),
     '</bobine_role>'
   ].join('\n')
 }

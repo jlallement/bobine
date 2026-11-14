@@ -5,6 +5,7 @@
  */
 import type { ConversationSummary, SessionControl } from '@shared/agent'
 import { roleOpening, type ReadOnlyLevel, type RoleDefinition, type RoleScope } from '@shared/roles'
+import { currentLanguage } from '../i18n'
 import { log } from '../log'
 import type { ConversationManager } from '../conversations/manager'
 
@@ -113,5 +114,6 @@ export async function roleFirstMessage(
       }
     })
   }
-  return roleOpening(role, task, readOnly ? { readOnly } : {})
+  // Langue de l'interface nommée pour la réponse (essai réel : Bob ignorait la ligne générique).
+  return roleOpening(role, task, { ...(readOnly ? { readOnly } : {}), language: currentLanguage() })
 }
