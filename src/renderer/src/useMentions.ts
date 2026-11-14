@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { mentionAt, type WorkspaceFile } from '@shared/attachments'
 import { matchContextMentions } from '@shared/context-mentions'
-import { matchRoles } from '@shared/role-mentions'
+import { matchRoleGroups } from '@shared/role-mentions'
 import type { RoleView } from '@shared/roles'
 import type { MentionEntry } from './components/composer/FileMenu'
 import { roleMenuEntries } from './components/roles/RoleMenu'
@@ -54,21 +54,22 @@ export function useMentions(options: {
   }, [query, onSearchFiles])
   const roles = options.roles
   const contexts = mention ? matchContextMentions(mention.query) : []
-  // Un rôle trouvé par sa seule description ne passe pas devant `@git-changes` ou `@terminal`
-  // tapés par leur nom : il n'est proposé que si aucune mention de contexte ne correspond.
+  // Rôles trouvés par leur nom ou leur libellé : en tête. Par leur seule description (`@test`,
+  // `@api`…) : après les fichiers, pour qu'Entrée prenne `tests/…` et non un rôle ; et jamais
+  // quand `@git-changes` ou `@terminal` correspond.
+  const groups =
+    mention && roles
+      ? matchRoleGroups(roles.list, mention.query, {
+          descriptions: contexts.length === 0,
+          describe: roleDescription
+        })
+      : { byName: [], byDescription: [] }
   const roleEntries =
     mention && roles
-      ? roleMenuEntries(
-          matchRoles(roles.list, mention.query, {
-            descriptions: contexts.length === 0,
-            describe: roleDescription
-          }),
-          mention.query,
-          {
-            all: allRolesAt === mention.start,
-            canCreate: roles.canCreate
-          }
-        )
+      ? roleMenuEntries(groups.byName, mention.query, {
+          all: allRolesAt === mention.start,
+          canCreate: roles.canCreate
+        })
       : []
   // « + Nouveau rôle » en dernier : jamais pris par Entrée devant une mention ou un fichier.
   const entries: MentionEntry[] = [
@@ -78,6 +79,11 @@ export function useMentions(options: {
       mention: m
     })),
     ...files.map((f) => ({ kind: 'file' as const, file: f })),
+    ...groups.byDescription.map((role) => ({
+      kind: 'role' as const,
+      role,
+      byDescription: true as const
+    })),
     ...roleEntries.filter((e) => e.kind === 'role-new')
   ]
   return {

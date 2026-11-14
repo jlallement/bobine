@@ -56,6 +56,7 @@ function setup(
     sent?: boolean
     onCreate?: ComposerRoles['onCreate']
     invokable?: boolean
+    files?: string[]
   } = {}
 ) {
   const send = vi.fn(async () => options.sent ?? true)
@@ -82,7 +83,9 @@ function setup(
         draftKey={`c-${Math.random()}`}
         onSend={onSend}
         onWarn={onWarn}
-        onSearchFiles={vi.fn(async () => [])}
+        onSearchFiles={vi.fn(async () =>
+          (options.files ?? []).map((relative) => ({ path: `/w/${relative}`, relative }))
+        )}
         onPickFiles={vi.fn(async () => [])}
         onUnqueue={vi.fn(async () => undefined)}
         onUseApiKey={vi.fn(async () => {})}
@@ -157,6 +160,26 @@ describe('menu `@` : rôles en tête', () => {
     expect(roleNames()).toEqual([])
     key('Enter')
     expect(input.value).toBe('Relis @git-changes ')
+    expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+
+  it('rôle trouvé par sa seule description : après les fichiers, Entrée prend le fichier', async () => {
+    const { type, key, input } = setup({
+      list: [
+        role('qa-expert', 'Expert qualité', {
+          description: 'Écrit les tests manquants.',
+          scope: 'user'
+        })
+      ],
+      files: ['tests/app.test.ts']
+    })
+    type('Relis @test')
+    await screen.findByTestId('file-item')
+    const options = [...screen.getByTestId('file-menu').querySelectorAll('[role=option]')]
+    expect(options.map((o) => o.getAttribute('data-testid'))).toEqual(['file-item', 'role-item'])
+    expect(screen.getByTestId('role-menu-by-description')).toBeTruthy()
+    key('Enter')
+    expect(input.value).toContain('@tests/app.test.ts')
     expect(screen.queryByTestId('role-token')).toBeNull()
   })
 

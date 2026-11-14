@@ -19,18 +19,18 @@ export function searchable(text: string): string {
 type Searchable = Pick<RoleDefinition, 'name' | 'label' | 'description'>
 
 /**
- * Rôles qui correspondent à ce qui est tapé après `@` : d'abord ceux dont le nom ou un mot du
- * libellé commence par la recherche, puis ceux dont la description la contient (sauf
- * `descriptions: false`). Recherche vide : tous, dans l'ordre reçu.
+ * Rôles qui correspondent à ce qui est tapé après `@`, en deux groupes : ceux dont le nom ou un mot
+ * du libellé commence par la recherche (`byName`), puis ceux dont seule la description la contient
+ * (`byDescription`, vide avec `descriptions: false`). Recherche vide : tous, dans l'ordre reçu.
  */
-export function matchRoles<T extends Searchable>(
+export function matchRoleGroups<T extends Searchable>(
   roles: readonly T[],
   query: string,
   options: { descriptions?: boolean; describe?: (role: T) => string } = {}
-): T[] {
+): { byName: T[]; byDescription: T[] } {
   const describe = options.describe ?? ((role: T) => role.description)
   const q = searchable(query.trim())
-  if (!q) return [...roles]
+  if (!q) return { byName: [...roles], byDescription: [] }
   const byName = roles.filter(
     (r) =>
       searchable(r.name).startsWith(q) ||
@@ -39,10 +39,20 @@ export function matchRoles<T extends Searchable>(
         .some((word) => word.startsWith(q)) ||
       searchable(r.label).startsWith(q)
   )
-  if (options.descriptions === false) return byName
+  if (options.descriptions === false) return { byName, byDescription: [] }
   const byDescription = roles.filter(
     (r) => !byName.includes(r) && searchable(describe(r)).includes(q)
   )
+  return { byName, byDescription }
+}
+
+/** Les deux groupes de `matchRoleGroups` à la suite : le nom ou le libellé d'abord. */
+export function matchRoles<T extends Searchable>(
+  roles: readonly T[],
+  query: string,
+  options: { descriptions?: boolean; describe?: (role: T) => string } = {}
+): T[] {
+  const { byName, byDescription } = matchRoleGroups(roles, query, options)
   return [...byName, ...byDescription]
 }
 

@@ -24,11 +24,14 @@ export type MentionEntry =
 const isRoleEntry = (entry: MentionEntry): entry is RoleMenuEntry =>
   entry.kind === 'role' || entry.kind === 'role-more' || entry.kind === 'role-new'
 /**
- * Rôles de la section en tête. « + Nouveau rôle » est à part, en fin de menu (dernier au clavier) :
- * Entrée après `@git` ou `@src` prend la mention ou le fichier, pas la création d'un rôle.
+ * Rôles de la section en tête (trouvés par leur nom ou leur libellé). Les rôles trouvés par leur
+ * seule description et « + Nouveau rôle » sont en fin de menu, après les fichiers (derniers au
+ * clavier) : Entrée après `@git`, `@test` ou `@src` prend la mention ou le fichier.
  */
 const isRoleSection = (entry: MentionEntry): boolean =>
-  entry.kind === 'role' || entry.kind === 'role-more'
+  (entry.kind === 'role' && !entry.byDescription) || entry.kind === 'role-more'
+const isLateRole = (entry: MentionEntry): boolean =>
+  (entry.kind === 'role' && !!entry.byDescription) || entry.kind === 'role-new'
 
 /** Rôles dans le menu (fiche 223) : invitation sans rôle, création et gestion si l'app les ouvre. */
 export interface RoleMenuOptions {
@@ -149,10 +152,15 @@ export function FileMenu({ items, active, workspaceName, onHover, onPick, roles 
             )
           })
         )}
+        {items.some((entry) => entry.kind === 'role' && entry.byDescription) && (
+          <div className="menu-label role-menu-label" data-testid="role-menu-by-description">
+            <span>{t('roleWork.menu.byDescription')}</span>
+          </div>
+        )}
         {items.map((entry, i) =>
-          entry.kind === 'role-new' ? (
+          isRoleEntry(entry) && isLateRole(entry) ? (
             <RoleMenuRow
-              key={entry.kind}
+              key={entry.kind === 'role' ? `role:${entry.role.name}` : entry.kind}
               entry={entry}
               index={i}
               active={i === active}

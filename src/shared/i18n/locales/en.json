@@ -4178,6 +4178,7 @@
     },
     "menu": {
       "title": "Roles",
+      "byDescription": "Roles whose description matches",
       "hint": "Your request will go to a child conversation",
       "all_one": "All roles ({{count}})",
       "all_other": "All roles ({{count}})",

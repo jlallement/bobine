@@ -4350,6 +4350,7 @@
     },
     "menu": {
       "title": "Rôles",
+      "byDescription": "Rôles dont la description correspond",
       "hint": "Votre demande partira dans une conversation fille",
       "all_one": "Tous les rôles ({{count}})",
       "all_many": "Tous les rôles ({{count}})",

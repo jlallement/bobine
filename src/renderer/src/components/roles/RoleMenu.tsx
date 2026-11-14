@@ -12,7 +12,8 @@ import { roleDescription } from './role-view'
 
 /** Entrées du menu `@` propres aux rôles. */
 export type RoleMenuEntry =
-  | { kind: 'role'; role: RoleView }
+  /** `byDescription` : trouvé par sa seule description, montré après les fichiers. */
+  | { kind: 'role'; role: RoleView; byDescription?: true }
   | { kind: 'role-more'; count: number }
   | { kind: 'role-new'; query: string }
 

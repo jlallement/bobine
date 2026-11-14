@@ -4187,6 +4187,7 @@ export type FrResources = {
     }
     readonly menu: {
       readonly title: 'Rôles'
+      readonly byDescription: 'Rôles dont la description correspond'
       readonly hint: 'Votre demande partira dans une conversation fille'
       readonly all_one: 'Tous les rôles ({{count}})'
       readonly all_many: 'Tous les rôles ({{count}})'
