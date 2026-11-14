@@ -340,10 +340,12 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
   // Dossier personnel des agents : un autre pour les essais, jamais les vrais fichiers de Bob.
   const home = ctx.env['BOBINE_CONFIG_HOME'] ?? homedir()
   if (mockAgentWanted(ctx)) {
+    const showcase = ctx.env['MOCK_AGENT_SHOWCASE'] === '1'
     profiles.push({
       id: 'mock',
       get label() {
-        return t('profiles.mock.label')
+        // Vitrine du README (fiche 225) : « Agent de démo », jamais « factice » dans les captures.
+        return showcase ? t('profiles.mock.showcaseLabel') : t('profiles.mock.label')
       },
       // Orange (fiche 144) : le bleu et le vert d'eau vont à IBM Bob et OpenCode.
       chartSlot: 0,
@@ -376,6 +378,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
         ...(ctx.env['MOCK_AGENT_REPLAY'] === 'late' ? ['--rejeu-tardif-ms', '50'] : []),
         // Nom annoncé à `initialize` autre que celui du profil, comme Bob (« Bob » pour « IBM Bob »).
         ...(ctx.env['MOCK_AGENT_NOM'] ? ['--nom', ctx.env['MOCK_AGENT_NOM']] : []),
+        // Vitrine du README (fiche 225) : nom et modèles « de démo ».
+        ...(showcase ? ['--vitrine'] : []),
         // Annonce `additionalDirectories`, comme OpenCode (fiche 179).
         ...(ctx.env['MOCK_AGENT_DIRECTORIES'] === '1' ? ['--dossiers-en-plus'] : []),
         // Sans réglages de session (ni modèle), comme Bob (fiche 210 : carte sans modèle).
@@ -466,8 +470,9 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Comme OpenCode 2 : diffs d'un « patch » rejoué retrouvés dans sa sortie (fiche 096).
       diffSource: OPENCODE_DIFF_SOURCE,
       toolStatus: OPENCODE_TOOL_STATUS,
+      // Pas d'invitation à `/scenario` dans les captures de la vitrine (fiche 225).
       get welcomeHint() {
-        return t('profiles.mock.welcomeHint')
+        return showcase ? undefined : t('profiles.mock.welcomeHint')
       },
       get destination() {
         return t('profiles.mock.destination')

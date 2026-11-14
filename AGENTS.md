@@ -37,6 +37,7 @@ Lire avant toute tâche non triviale :
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
 | Publier une version (.dmg sur GitHub) | `pnpm build && pnpm e2e --if-needed` vert (suite complète), version dans `package.json`, « Prochaine version » de `CHANGELOG.md` (et « Next version » de `CHANGELOG.en.md`) renommée `X.Y.Z — date`, `main` poussé, puis `git tag vX.Y.Z && git push origin vX.Y.Z` (tag hors de `main` refusé) ; préversion `X.Y.Z-beta.N` : même chemin, Release marquée préversion — fiches 059, 218 |
+| Captures du README (vitrine, image de partage, GIF, vidéo) | à chaque version, et après un changement d'apparence : `pnpm build && pnpm vitrine` puis `pnpm vitrine --lang fr` (agent de démo, sans modèle ; `ffmpeg` et `gifski` requis, `--sans-video` sinon) — fiche 225 |
 | Electron sans réseau (archive obtenue ailleurs) | `pnpm electron-local <electron-vX-darwin-arm64.zip>` — fiche 065 |
 | AXe (simulateur iOS) en dev | extrait par `pnpm dev` / `pnpm preview` (sinon `pnpm fetch-axe`) — essai réel : `pnpm simulator-smoke` |
 | Sonde du contrat de Bob (après chaque mise à jour de Bob, 0 bobcoin) | `pnpm bob-probe` — voir `docs/acp.md` |

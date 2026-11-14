@@ -3285,6 +3285,7 @@
   "profiles": {
     "mock": {
       "label": "Agent factice",
+      "showcaseLabel": "Agent de démo",
       "apiKey": "Clé d’API factice",
       "welcomeHint": "Agent factice : tapez `/scenario` pour voir les scénarios.",
       "destination": "cet ordinateur (agent factice, aucun réseau)"

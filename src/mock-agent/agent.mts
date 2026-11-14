@@ -107,6 +107,11 @@ export interface MockAgentOptions {
   /** Nom annoncé à `initialize` (`--nom`) ; « Agent factice » par défaut. */
   title?: string
   /**
+   * Vitrine (`--vitrine`, fiche 225) : « Agent de démo » et modèles « Démo … », pour les captures
+   * du README où rien ne doit dire « factice ».
+   */
+  showcase?: boolean
+  /**
    * Clé de `_meta` lue à `session/new` pour le mode de départ (`--mode-depart <clé>`, fiche 163),
    * comme `bob/mode` chez Bob 2.0.6+ : mode inconnu refusé (`invalidParams`).
    */
@@ -256,7 +261,7 @@ const MODELS = {
 } as const
 
 /** Options de configuration ACP exposées par l'agent factice (sauf avec --sans-options). */
-function configOptions(session: SessionState): SessionConfigOption[] {
+function configOptions(session: SessionState, showcase = false): SessionConfigOption[] {
   return [
     {
       id: 'model',
@@ -267,20 +272,24 @@ function configOptions(session: SessionState): SessionConfigOption[] {
       options:
         LONG_MODELS.length > 0
           ? [
-              { value: MODELS.rapide, name: 'factice/Factice rapide' },
-              { value: MODELS.precis, name: 'factice/Factice précis' },
+              { value: MODELS.rapide, name: showcase ? 'Démo rapide' : 'factice/Factice rapide' },
+              { value: MODELS.precis, name: showcase ? 'Démo précis' : 'factice/Factice précis' },
               ...LONG_MODELS
             ]
           : [
               {
                 group: 'rapides',
                 name: 'Rapides',
-                options: [{ value: MODELS.rapide, name: 'Factice rapide' }]
+                options: [
+                  { value: MODELS.rapide, name: showcase ? 'Démo rapide' : 'Factice rapide' }
+                ]
               },
               {
                 group: 'precis',
                 name: 'Précis',
-                options: [{ value: MODELS.precis, name: 'Factice précis' }]
+                options: [
+                  { value: MODELS.precis, name: showcase ? 'Démo précis' : 'Factice précis' }
+                ]
               },
               ...(PROVIDER_MODELS.length > 0
                 ? [{ group: 'fournisseurs', name: 'Fournisseurs', options: PROVIDER_MODELS }]
@@ -333,7 +342,9 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
   const controls = (session: SessionState) => ({
     modes: { currentModeId: session.modeId, availableModes: modesOf(session.cwd) },
     configOptions:
-      options.withConfigOptions === false ? undefined : sayAll(configOptions(session), language)
+      options.withConfigOptions === false
+        ? undefined
+        : sayAll(configOptions(session, options.showcase), language)
   })
   /**
    * Autres dossiers reçus à l'ouverture (fiche 179) : sans la capacité annoncée, un client qui en
@@ -385,7 +396,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         : (scenario.announce?.protocolVersion ?? PROTOCOL_VERSION)) as number,
       agentInfo: {
         name: 'mock-agent',
-        title: options.title ?? say('Agent factice', language),
+        title: options.title ?? say(options.showcase ? 'Agent de démo' : 'Agent factice', language),
         version: scenario.announce?.version ?? '0.1.0'
       },
       agentCapabilities: {
@@ -552,7 +563,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         throw RequestError.invalidParams({ configId: params.configId, value })
       }
       persist(session)
-      return { configOptions: sayAll(configOptions(session), language) }
+      return { configOptions: sayAll(configOptions(session, options.showcase), language) }
     })
     .onRequest(methods.agent.session.setMode, async ({ params, client }) => {
       const session = getSession(sessions, params.sessionId)

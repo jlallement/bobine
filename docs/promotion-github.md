@@ -1,7 +1,7 @@
 # Faire connaître Bobine sur GitHub — état des lieux et plan
 
-Statut : **plan, à valider** (2026-11-14). Rien n'est encore changé sur GitHub ; chaque action
-publique (réglages du dépôt, publications, listes) attend l'accord de l'utilisateur.
+Statut : **plan validé, partie « dépôt » en cours** (fiche 225). Rien n'est changé sur GitHub ;
+chaque action publique (réglages du dépôt, publications, listes) attend l'accord de l'utilisateur.
 
 ## 1. Ce qui se fait d'habitude
 
@@ -69,7 +69,7 @@ Manques, du plus visible au moins visible :
 | A6 | GIF court (≤ 5 Mo, 10 à 20 s) : `@role` → deux conversations filles en parallèle → cartes qui se remplissent ; et un MP4 de 45 à 60 s pour l'éditeur web | fort | moyen (outil d'encodage, voir § 4) |
 | A7 | Modèle de notes de version avec une capture par nouveauté (dans `.github/workflows/release.yml` ou à la main au moment du tag) | moyen | faible |
 | A8 | Modèles d'issue : ajouter « Question » renvoyant vers Discussions si elles sont ouvertes | faible | faible |
-| A9 | Fiche de fonctionnalité (`docs/features/224-vitrine-github.md`) et index, selon AGENTS.md | — | faible |
+| A9 | Fiche de fonctionnalité (`docs/features/225-vitrine-github.md`) et index, selon AGENTS.md | — | faible |
 
 ### B. Ce qui demande l'accord de l'utilisateur (actions publiques, je ne fais rien sans « oui »)
 
@@ -84,8 +84,8 @@ Manques, du plus visible au moins visible :
 | B7 | Pull request à `agentclientprotocol/agent-client-protocol` : une ligne dans « Desktop and Web » | fort pour ce public | faible |
 | B8 | Ajouter des captures aux notes des Releases existantes (beta.2, beta.3) | faible | faible |
 | B9 | Étiquettes `good first issue` / `help wanted` sur 3 à 5 issues réelles | faible | faible |
-| B10 | Publications : « Show HN », Reddit, Zulip ACP, éventuellement communautés IBM Bob. **Plutôt après** A1–A6 et une beta stable ; idéalement à la 1.0.0 | fort mais ponctuel | moyen (rédiger, puis répondre) |
-| B11 | Page d'accueil (GitHub Pages) | faible à ce stade | moyen ; à reporter (§ 6) |
+| B10 | Publications : « Show HN », Reddit, Zulip ACP, éventuellement communautés IBM Bob. **Plutôt après** A1–A6 et une beta stable ; **à la 1.0** (décision du 2026-11-14) | fort mais ponctuel | moyen (rédiger, puis répondre) |
+| B11 | Page d'accueil (GitHub Pages) | faible à ce stade | moyen ; **à la 1.0** (décision du 2026-11-14) |
 
 Ordre proposé : A1 → A2 → A3/A4 → A5 → A6, revue, puis B1, B2, B3, B4, B7 ; B5 et B6 ensuite ;
 B10 à la 1.0.0.
@@ -120,8 +120,8 @@ d'essai et du français dans l'interface anglaise. Les captures du guide
 
 - **Script** `e2e/vitrine-captures.mjs`, sur le modèle de `e2e/guide-captures.mjs` (même
   `withApp`, même profil temporaire, app buildée, agent factice) :
-  `pnpm build && node e2e/vitrine-captures.mjs [--lang en|fr] [--scheme light|dark]`, sortie
-  dans `docs/images/readme/<langue>/`. Raccourci `pnpm vitrine` ; à relancer à chaque version
+  `pnpm build && pnpm vitrine [--lang fr] [--sans-video]`, sortie dans
+  `docs/images/readme/<langue>/`. Raccourci `pnpm vitrine` ; à relancer à chaque version
   (ligne ajoutée à la procédure de publication d'AGENTS.md, fiche 218).
 - **Scénarios d'agent factice « vitrine »** (`src/mock-agent/scenarios-vitrine.mts`) au texte
   réaliste en anglais et en français, sur le projet `demos/projet` : lancés par `--scenario`
@@ -154,14 +154,73 @@ anglais ; `README.fr.md` complet avec les images en français ; un lien en tête
 l'autre. Le reste de la documentation reste en français (AGENTS.md). Les notes de version
 restent bilingues (anglais puis français, déjà en place).
 
-## 6. Questions ouvertes
+## 6. Décisions (2026-11-14)
 
-1. Nom de l'agent dans les captures : un nom neutre (« Demo agent ») ou l'agent factice déguisé
-   en IBM Bob / OpenCode ? Proposition : neutre, pour ne rien laisser croire de faux sur Bob.
-2. README anglais en tête et `README.fr.md` complet (proposé), ou README bilingue unique ?
-3. Page d'accueil GitHub Pages maintenant, plus tard (à la 1.0.0), ou jamais ?
-4. Ouvrir Discussions ?
-5. Publications : lesquelles (Show HN, Reddit, Zulip ACP, communautés IBM Bob) et quand
-   (maintenant en beta, ou à la 1.0.0) ?
-6. Installer `ffmpeg` (et `gifski`) par Homebrew pour produire GIF et vidéo ?
-7. Proposer Bobine à la liste officielle des clients ACP dès maintenant ?
+1. Dans les captures, l'agent s'appelle « Demo agent » (« Agent de démo » en français) ; jamais un
+   faux IBM Bob ou OpenCode.
+2. `README.md` en anglais reste la page principale ; `README.fr.md` complet, images en français.
+3. Page d'accueil et publications (Show HN, Reddit…) : **à la 1.0**, pas avant.
+4. Discussions et pull request à la liste des clients ACP : textes prêts ci-dessous ; le
+   coordinateur demande l'accord de l'utilisateur avant de les faire.
+5. `ffmpeg` et `gifski` installés par Homebrew (outils de développement, non livrés).
+6. Thème : clair et sombre actuels ; le thème « Aurore » en préparation se capturera en relançant
+   `pnpm vitrine`.
+
+## 7. Textes prêts (à publier seulement avec l'accord de l'utilisateur)
+
+### Discussions : message d'accueil (catégorie « Announcements », épinglé)
+
+Titre : **Welcome to Bobine's discussions**
+
+> Hi, and thanks for stopping by!
+>
+> Bobine is a macOS desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks
+> the [Agent Client Protocol](https://agentclientprotocol.com). It is in public beta, so your
+> feedback shapes what comes next.
+>
+> Where to post:
+>
+> - **Q&A**: installing, setting up an agent, « how do I… ». Please say your macOS version, your
+>   agent and its version (Settings › Diagnostics › « Copy report » gives all of it).
+> - **Ideas**: what you would like Bobine to do. One idea per thread, with the problem it solves.
+> - **Show and tell**: roles you wrote, workflows, screenshots.
+> - **Bugs** go to [Issues](https://github.com/jlallement/bobine/issues/new/choose) (Settings ›
+>   Diagnostics › « Report an issue » fills the template for you), and security problems to the
+>   [private advisory form](https://github.com/jlallement/bobine/security/advisories/new).
+>
+> Questions in French are welcome too: *les questions en français sont les bienvenues.*
+
+Catégories proposées : Announcements (annonces, réservé au mainteneur), Q&A (format question et
+réponse), Ideas, Show and tell. Une fois ouvertes : ajouter un lien « Questions » vers les
+Discussions dans `.github/ISSUE_TEMPLATE/config.yml` (contact_links), non fait tant qu'elles sont
+fermées (le lien mènerait à une page vide).
+
+### Liste des clients ACP : la ligne
+
+Fichier `docs/get-started/clients.mdx` du dépôt `agentclientprotocol/agent-client-protocol`,
+section « Desktop and Web », à sa place dans l'ordre alphabétique (après « Bellows », avant
+« Braide ») :
+
+```md
+- [Bobine](https://github.com/jlallement/bobine) — open-source (Apache-2.0) desktop app made first for IBM Bob, also OpenCode and any ACP agent: permission cards with diffs, roles called with `@` that work in parallel child conversations (git worktrees), and a built-in browser, iOS Simulator and Android emulator the agent drives (macOS)
+```
+
+### Liste des clients ACP : la pull request
+
+Titre : `docs(clients): add Bobine`
+
+> Adds [Bobine](https://github.com/jlallement/bobine) to « Desktop and Web ».
+>
+> Bobine is an open-source (Apache-2.0) macOS desktop client for ACP agents. It was built first
+> for IBM Bob (`bob acp`) and also runs OpenCode (`opencode acp`) and any agent declared by
+> command. It uses the TypeScript SDK on the client side: permission requests with diffs, plans,
+> session config options and modes, elicitation forms (questions with choices), `session/load`
+> and `session/resume`, and it serves an MCP server that gives the agent a built-in browser, the
+> iOS Simulator and the Android emulator.
+>
+> Public beta, macOS 13+ on Apple Silicon. Independent project, not affiliated with IBM.
+
+Avant d'ouvrir la pull request : relire le `CONTRIBUTING.md` du dépôt du protocole (format,
+`npm run spellcheck`, prettier), et vérifier que chaque fonction citée est bien dans la version
+publiée.
+

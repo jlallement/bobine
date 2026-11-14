@@ -293,6 +293,8 @@ jobs:
           sparse-checkout: |
             CHANGELOG.en.md
             CHANGELOG.md
+            docs/images/readme/en/hero-light.png
+            docs/images/releases
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -329,6 +331,25 @@ jobs:
           if grep -q '[^[:space:]]' notes-fr.md; then
             if [[ -s notes.md ]]; then printf '\n---\n\n' >> notes.md; fi
             { echo '## Français'; cat notes-fr.md; } >> notes.md
+          fi
+          # En tête des notes (fiche 225) : l'image de la version (`docs/images/releases/<version>.png`)
+          # si elle existe, sinon l'image de tête du README ; puis le chemin d'installation non signée.
+          if [[ -s notes.md ]]; then
+            raw="https://github.com/$GH_REPO/raw/$GITHUB_REF_NAME"
+            {
+              if [[ -f "docs/images/releases/$version.png" ]]; then
+                echo "![Bobine $version]($raw/docs/images/releases/$version.png)"
+              elif [[ -f docs/images/readme/en/hero-light.png ]]; then
+                echo "![Bobine]($raw/docs/images/readme/en/hero-light.png)"
+              fi
+              echo
+              echo "**Install:** download \`Bobine-$version-arm64.dmg\` below (Apple Silicon, macOS 13+)." \
+                "The app is not notarized: the first launch needs" \
+                "**System Settings › Privacy & Security › Open Anyway** ([how](https://github.com/$GH_REPO#install))."
+              echo
+              cat notes.md
+            } > notes-full.md
+            mv notes-full.md notes.md
           fi
           if [[ -s notes.md ]]; then notes=(--notes-file notes.md); else notes=(--generate-notes); fi
           cat notes.md

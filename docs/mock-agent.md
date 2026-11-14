@@ -51,6 +51,7 @@ pnpm mock-agent --scenario permission     # parle ACP sur stdin/stdout
 | `--mode-depart <clé>` | — | non | Mode de départ lu dans `_meta[<clé>]` à `session/new`, comme `bob/mode` chez Bob 2.0.6+ (fiche 163) ; mode inconnu refusé (`invalidParams`) |
 | `--trust` | — | non | Tous les dossiers sont approuvés (comme `bob acp --trust`) ; sinon, un fichier `.mock-agent-trusted` approuve un dossier |
 | `--nom <titre>` | — | `Agent factice` | Nom annoncé à `initialize` (`agentInfo.title`), celui que montre l'interface |
+| `--vitrine` | `MOCK_AGENT_SHOWCASE=1` (app) | non | Vitrine du README (fiche 225) : nom « Agent de démo » (« Demo agent »), modèles « Démo rapide » et « Démo précis » ; dans l'app, le profil s'appelle aussi « Agent de démo » et l'accueil ne propose plus `/scenario`. Pour les captures de `pnpm vitrine`, avec le scénario `vitrine` |
 | `--max-etapes <N>` | `MOCK_AGENT_MAX_ETAPES` | `3` | Limite d'étapes d'une session, pour les scénarios `limite-etapes-*` (fiche 209) |
 | `--langue <fr\|en>` | `MOCK_AGENT_LANG` (app et agent) | `fr` | Langue de l'agent (fiche 167) : nom, modes, options et modèles, commandes « / », écho, libellés de permission et phrases des scénarios courants. Les essais `pnpm e2e --lang en` la posent à la langue des essais ; voir ci-dessous |
 
@@ -187,6 +188,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `outil-mcp-bob` | Comme Bob 2.0.9 : outil `kind: other` « Running Meteo (essai) » avec `rawInput` `{ ville, unite, jours }` : la carte montre les arguments, « Toujours » est retenu par Bobine pour cet outil (fiche 214) |
 | `liste-taches-bob` | Comme Bob 2.0.9 (trace `bob-2.0.9/liste-de-taches-autorisee-une-fois`) : « Updating todo list », `kind: "other"`, `rawInput.todos` en texte à cases (`[x]`, `[-]`, `[ ]`) ; les tâches arrivent aux données de la carte (`todos`, analyseur `src/shared/todos.ts`) — fiche 214 |
 | `roles-delegue` | Rôles (fiche 223) : `start_child` avec `role: security-expert` (rôle fourni, en lecture seule) et une tâche qui joue `echo` : la fille dit ce qu'elle a reçu (consigne du rôle en tête, lecture seule) |
+| `vitrine` | Vitrine du README (fiche 225), en anglais ou en français (`--langue`), sur le projet « La Bobinette » (`SHOWCASE_PROJECT`) : choisit sa suite d'après le message. Par défaut : tests lancés (un échec), lecture de `cart.py` / `panier.py`, correction soumise à autorisation avec son diff puis écrite, tests verts, liste de tâches qui avance. « export » : question à choix (format). « the shop » / « la boutique » : `MOCK_BROWSER_URL` ouverte dans le navigateur intégré. Consigne de l'expert sécurité ou du relecteur de code (fille d'un `@rôle`) : leur compte rendu |
 | `roles-inconnu` | `start_child` avec `role: astronaute` : refusé avec la liste des rôles connus, cité dans le fil (fiche 223) |
 | `role-ecrit-avec-demande` | Fille en lecture seule qui demande à écrire `notes.md` (`kind: edit`, options de Bob) : Bobine refuse d'office, la fille le dit (« Écriture refusée… ») ; acceptée, elle écrirait vraiment (fiche 223) |
 | `role-ecrit-sans-genre` | Fille en lecture seule : outil annoncé `kind: edit` (`tool_call`), puis une demande d'autorisation **sans** `kind` : Bobine retient le genre annoncé et refuse (relecture de la fiche 223) |
@@ -342,6 +344,7 @@ Un scénario (`src/mock-agent/scenarios.mts`) est une liste d'**étapes** :
 | `{ kind: 'opencode-patch', files }` | Outil « patch » d'OpenCode 2.0.32 : `files: [{ path, content? , edit? }]` (plusieurs entrées pour un fichier s'enchaînent), écriture réelle, diffs en direct et `rawOutput.metadata.files[]` ; l'échange gardé pour le rejeu n'a que les diffs des fichiers créés, comme OpenCode quand un fichier a changé depuis |
 | `{ kind: 'when-prompt', includes, then, else }` | Suite selon le message reçu (contient `includes`, sans tenir compte de la casse) |
 | `{ kind: 'when-model', model, then, else }` | Suite selon le modèle de la session au moment du message (fiche 210) |
+| `{ kind: 'by-language', fr, en }` | Suite écrite dans chaque langue de l'agent (`--langue`), pour les textes longs que le dictionnaire de `langue.mts` ne couvre pas (scénario `vitrine`, fiche 225) |
 | `{ kind: 'echo' }` | Décrit le prompt reçu |
 | `{ kind: 'child', sessionId, steps }` | Joue des étapes au nom d'un sous-agent |
 | `{ kind: 'opencode-child', child, steps }` | Joue des étapes comme le travail d'un sous-agent d'OpenCode 2 : dans le flux de la session, marquées `_meta["opencode/child-session"]`, outils préfixés `<id>:` et titrés « <titre> : <outil> » |
