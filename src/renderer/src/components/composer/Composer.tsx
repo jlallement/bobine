@@ -533,6 +533,11 @@ export function Composer(props: Props) {
       {view.planMode && roleView.targets.length === 0 && (
         <PlanHint id={planHintId} nextMode={view.nextModeName} />
       )}
+      {roleView.notHere && (
+        <p className="role-destination role-not-here" role="status" data-testid="role-not-here">
+          {t('team.notHere')}
+        </p>
+      )}
       <RoleDestinationFor
         targets={roleView.targets}
         empty={roleView.empty}

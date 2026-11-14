@@ -23,13 +23,14 @@ export function useComposerRoles(
   const eligible = !!conversation && !conversation.startedFrom && !conversation.reviewOf
   // Rôles lus, avec la conversation pour laquelle ils l'ont été : rien d'une autre conversation.
   const [read, setRead] = useState<{ id: string; list: RoleView[] }>()
+  // Lus aussi pour une fille ou un relecteur : un `@rôle` tapé y est signalé (pas envoyé à un rôle).
   const load = useCallback((): Promise<RoleView[]> => {
-    if (!id || !eligible) return Promise.resolve(NO_ROLES)
+    if (!id) return Promise.resolve(NO_ROLES)
     return window.api.roles.list(id).then(
       (listing) => {
         const list = listing.roles.filter((role) => role.enabled)
         setRead({ id, list })
-        return list
+        return eligible ? list : NO_ROLES
       },
       () => {
         setRead({ id, list: NO_ROLES })
@@ -53,7 +54,8 @@ export function useComposerRoles(
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
-  const list = eligible && read && read.id === id ? read.list : NO_ROLES
+  const known = read && read.id === id ? read.list : NO_ROLES
+  const list = eligible ? known : NO_ROLES
   const send = useCallback(
     async (names: string[], text: string) => {
       if (!id) return { started: [], failed: names }
@@ -74,5 +76,14 @@ export function useComposerRoles(
     },
     [id, list, warn]
   )
-  return { list, invokable: eligible, refresh, reload: load, send, profiles, ...extra }
+  return {
+    list,
+    invokable: eligible,
+    ...(eligible ? {} : { elsewhere: known }),
+    refresh,
+    reload: load,
+    send,
+    profiles,
+    ...extra
+  }
 }

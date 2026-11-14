@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { ProfileSummary } from '@shared/agent'
 import { matchContextMentions } from '@shared/context-mentions'
-import { roleRecipients } from '@shared/role-mentions'
+import { roleRecipients, splitRoleMentions } from '@shared/role-mentions'
 import type { RoleView } from '@shared/roles'
 import i18next from 'i18next'
 import type { RoleMenuOptions } from '../composer/FileMenu'
@@ -24,6 +24,12 @@ export interface ComposerRoles {
    * d'ailleurs (section Équipe, Réglages › Rôles, assistant) y devient un jeton, sinon c'est dit.
    */
   invokable?: boolean
+  /**
+   * Conversation qui ne confie pas de travail à un rôle (fille, relecteur) : les rôles du projet,
+   * pour dire qu'un `@rôle` tapé part en texte à son agent (`team.notHere`) — l'envoi n'est pas
+   * intercepté.
+   */
+  elsewhere?: readonly RoleView[]
   /** Relit les rôles (fichiers changés) : à l'ouverture du menu `@`. */
   refresh: () => void
   /** Lance une fille par rôle ; les rôles lancés et ceux refusés (raison déjà dite). */
@@ -182,7 +188,7 @@ export function useRoleCompose(options: {
         dispatch(to, at)
         return true
       }
-      if (!roles.reload || !unknownMention(text, list)) return false
+      if (!roles.reload || !roles.invokable || !unknownMention(text, list)) return false
       setBusy(true)
       void roles.reload().then(
         (fresh) => {
@@ -208,7 +214,7 @@ export function useRoleCompose(options: {
     menu: (query: string | undefined): RoleMenuOptions | undefined =>
       roles
         ? {
-            ...(list.length === 0 && !hidden
+            ...(list.length === 0 && !hidden && roles.invokable !== false
               ? {
                   invite: {
                     onHide: () => {
@@ -236,6 +242,9 @@ export function useRoleCompose(options: {
         tokens: shownTokens,
         targets,
         empty,
+        /** `@rôle` tapé là où il ne lance pas de fille : il part en texte, c'est dit. */
+        notHere:
+          !!roles?.elsewhere?.length && splitRoleMentions(text, roles.elsewhere).names.length > 0,
         sending,
         /** L'envoi aux rôles est possible (bouton). */
         ready: targets.length > 0 && !empty && !sending,

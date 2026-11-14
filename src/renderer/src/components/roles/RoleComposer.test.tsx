@@ -59,6 +59,7 @@ function setup(
     files?: string[]
     send?: ComposerRoles['send']
     reload?: ComposerRoles['reload']
+    elsewhere?: RoleView[]
   } = {}
 ) {
   const send = vi.fn(
@@ -71,6 +72,7 @@ function setup(
     invokable: options.invokable ?? true,
     refresh: vi.fn(),
     ...(options.reload ? { reload: options.reload } : {}),
+    ...(options.elsewhere ? { elsewhere: options.elsewhere } : {}),
     send,
     profiles: (options.profiles ?? [
       { id: 'mock', label: 'Agent factice', available: true }
@@ -441,5 +443,26 @@ describe('envoi aux rôles : un seul à la fois, rien de perdu (relecture phase 
     input.setSelectionRange(0, 0)
     key('Backspace')
     expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+})
+
+describe('`@rôle` tapé dans une fille (essais réels avant 1.0.0-beta.2)', () => {
+  it('c’est dit sous la saisie, aucun rôle au menu, et le message part tel quel à son agent', async () => {
+    const reload = vi.fn(async () => [])
+    const { type, key, send, onSend } = setup({
+      list: [],
+      invokable: false,
+      elsewhere: ROLES,
+      reload
+    })
+    type('@security-expert relis auth.js')
+    expect(screen.getByTestId('role-not-here').textContent).toContain('conversation mère')
+    expect(screen.queryByTestId('role-item')).toBeNull()
+    expect(screen.queryByTestId('roles-invite')).toBeNull()
+    key('Escape')
+    await act(async () => key('Enter'))
+    expect(send).not.toHaveBeenCalled()
+    expect(reload).not.toHaveBeenCalled()
+    expect(onSend).toHaveBeenCalledWith('@security-expert relis auth.js', [])
   })
 })
