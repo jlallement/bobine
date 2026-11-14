@@ -1004,9 +1004,11 @@ export class AgentHost {
   private connect(launched: AgentProcess): ClientConnection {
     return (
       client({ name: 'bobine' })
-        // `signal` : l'agent peut retirer sa demande (`$/cancel_request`, fiche 214).
+        // `signal` : l'agent peut retirer sa demande (`$/cancel_request`, fiche 214). Les demandes
+        // et les `session/update` ont des files distinctes : le `tool_call` reçu avant passe
+        // d'abord (genre de l'outil retenu pour la lecture seule d'un rôle, fiche 223).
         .onRequest(methods.client.session.requestPermission, ({ params, signal }) =>
-          this.onPermissionRequest(params, signal)
+          settleNotifications().then(() => this.onPermissionRequest(params, signal))
         )
         .onRequest(methods.client.elicitation.create, ({ params }) => this.onElicitation(params))
         // Fin d'une élicitation par URL : rien à faire de plus côté app.
