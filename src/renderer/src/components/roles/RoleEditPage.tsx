@@ -12,7 +12,7 @@ import {
   type DraftErrors,
   type RoleDraft
 } from '../../roles/role-draft'
-import { invokeRole, openRoleWizard, rolesChanged } from '../../roles/roles-store'
+import { invokeRole, openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
 import { ConfirmRow } from '../settings/ConfirmRow'
 import { RoleAvatar } from './RoleAvatar'
 import {
@@ -114,6 +114,9 @@ function RoleEditForm(
   const [status, setStatus] = useState<Status>(null)
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Rôle désactivé : la saisie ne le connaît pas, « Essayer » attend qu'on l'active.
+  const { listing } = useRolesListing(props.conversationId)
+  const off = listing?.roles.some((r) => r.name === role.name && !r.enabled) ?? false
   const builtin = role.scope === 'builtin'
   const target = builtin ? 'user' : role.scope === 'project' ? 'project' : 'user'
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftFromRole(role))
@@ -195,8 +198,14 @@ function RoleEditForm(
                 invokeRole(role.name)
                 props.onClose?.()
               }}
-              disabled={dirty}
-              title={dirty ? t('rolesSettings.edit.saveFirst') : undefined}
+              disabled={dirty || off}
+              title={
+                dirty
+                  ? t('rolesSettings.edit.saveFirst')
+                  : off
+                    ? t('rolesSettings.edit.enableFirst')
+                    : undefined
+              }
               data-testid="role-edit-try"
             >
               <Play size={13} aria-hidden />

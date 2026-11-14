@@ -4926,6 +4926,7 @@
       "missing": "This role no longer exists (file deleted or renamed).",
       "copyLabel": "{{label}} (copy)",
       "try": "Try",
+      "enableFirst": "Turn this role on first (Settings › Roles).",
       "saveFirst": "Save your changes first.",
       "duplicate": "Duplicate",
       "delete": "Delete",

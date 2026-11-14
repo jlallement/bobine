@@ -5127,6 +5127,7 @@
       "missing": "Ce rôle n’existe plus (fichier supprimé ou renommé).",
       "copyLabel": "{{label}} (copie)",
       "try": "Essayer",
+      "enableFirst": "Activez d’abord ce rôle (Réglages › Rôles).",
       "saveFirst": "Enregistrez d’abord vos changements.",
       "duplicate": "Dupliquer",
       "delete": "Supprimer",

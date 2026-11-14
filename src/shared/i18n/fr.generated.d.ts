@@ -4945,6 +4945,7 @@ export type FrResources = {
       readonly missing: 'Ce rôle n’existe plus (fichier supprimé ou renommé).'
       readonly copyLabel: '{{label}} (copie)'
       readonly try: 'Essayer'
+      readonly enableFirst: 'Activez d’abord ce rôle (Réglages › Rôles).'
       readonly saveFirst: 'Enregistrez d’abord vos changements.'
       readonly duplicate: 'Dupliquer'
       readonly delete: 'Supprimer'

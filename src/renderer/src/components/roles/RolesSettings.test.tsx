@@ -142,6 +142,17 @@ describe('Réglages › Rôles (fiche 223, phase 3A)', () => {
     )
   })
 
+  it('« Essayer » : désactivé pour un rôle désactivé, avec la raison', async () => {
+    await show()
+    fireEvent.click(
+      within(screen.getAllByTestId('role-row')[2] as HTMLElement).getByTestId('role-row-open')
+    )
+    await waitFor(() =>
+      expect((screen.getByTestId('role-edit-try') as HTMLButtonElement).disabled).toBe(true)
+    )
+    expect(screen.getByTestId('role-edit-try').title).toContain('Activez d’abord ce rôle')
+  })
+
   it('supprimer un rôle du projet demande confirmation, puis revient à la liste', async () => {
     await show()
     fireEvent.click(
