@@ -109,6 +109,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | répond… | responding… | |
 | action requise | action required | |
 | lecture seule | read-only | |
+| lecture seule demandée (rôle, agent qui écrit sans demander) | read-only requested | Fiche 223 : seulement demandée, jamais garantie. |
 | mode plan, plan | plan mode, plan | |
 | exécution (mode de départ) | Act | Décision 3 ; paire Plan / Act. |
 | remarque (sur un plan) | comment | « Envoyer mes remarques » → « Send my comments ». |
@@ -119,6 +120,11 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | commande « / » | slash command | |
 | commande personnelle / du projet | personal command / project command | Comme Claude Code. |
 | commande de l'app | app command | |
+| rôle ; rôle fourni / personnel / du projet | role; built-in / personal / project role | Fiche 223 (phase 3A). Jamais « agent » ni « mode » pour un rôle. |
+| consigne (d'un rôle) | instructions | Le corps du fichier de rôle. |
+| équipe (section de la barre latérale) | team | Les rôles actifs. |
+| confier (un travail) à un rôle | hand (work) to a role | « Confier un travail à Expert sécurité » → « Hand work to Security expert ». |
+| fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
 | règles actives | active rules | |
 | capacités, ce qu'il annonce | capabilities, what it reports | |
 | propre à (un agent) | specific to | |

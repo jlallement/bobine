@@ -1142,7 +1142,8 @@
       "privacy": "Privacy",
       "data": "Data",
       "diagnostics": "Diagnostics",
-      "about": "What’s new"
+      "about": "What’s new",
+      "roles": "Roles"
     },
     "commands": {
       "project": {
@@ -1645,7 +1646,8 @@
     "tips": "tip hint help suggestion",
     "memory": "memory memories remember forget agents index Claude",
     "restore": "restore backup revert replace undo",
-    "trash": "trash deleted erase permanently recover restore"
+    "trash": "trash deleted erase permanently recover restore",
+    "roles": "roles team expert specialist reviewer tech lead agents sub-agents modes @"
   },
   "diagnostics": {
     "group": {
@@ -2975,7 +2977,8 @@
       "freshStart": "Start fresh unavailable",
       "aside": "The aside is not available here.",
       "help": "Help unavailable",
-      "onboarding": "First-launch welcome unavailable"
+      "onboarding": "First-launch welcome unavailable",
+      "roles": "Roles are not available here."
     },
     "emptyMessage": "Empty message",
     "emptyPrompt": "Empty prompt"
@@ -3123,6 +3126,10 @@
       "label": "Other folders in a conversation",
       "yes": "Folders added in the Session tab are given to it along with the working folder (`additionalDirectories`).",
       "no": "The agent only sees the working folder: nothing to add in the Session tab."
+    },
+    "writesWithoutAsking": {
+      "label": "Writes without asking",
+      "detail": "{{agent}} changes files without asking for permission (default setting): a role’s read-only mode is only requested there, even in a native mode; Bobine reports any change to the folder."
     }
   },
   "permissionOption": {
@@ -4154,6 +4161,74 @@
       "stopped": "The aside’s agent stopped."
     }
   },
+  "roleWork": {
+    "brief": "Role instructions",
+    "readOnly": "read-only",
+    "readOnlyRequested": "read-only requested",
+    "readOnlyRequestedHint": "This conversation's agent writes without asking for permission: read-only is only requested, and Bobine checks the folder after each turn.",
+    "writes": "writes code",
+    "mode": "{{mode}} mode",
+    "byAgent": "proposed by the agent",
+    "prompt": "Instructions",
+    "hides": "Project role: it replaces the {{scopes}} role with the same name.",
+    "titleBadge": "Role: {{label}}",
+    "scope": {
+      "builtin": "built-in",
+      "user": "personal",
+      "project": "project"
+    },
+    "menu": {
+      "title": "Roles",
+      "byDescription": "Roles whose description matches",
+      "hint": "Your request will go to a child conversation",
+      "all_one": "All roles ({{count}})",
+      "all_other": "All roles ({{count}})",
+      "option": "{{label}}: {{description}}",
+      "project": "Project role (from the repository)",
+      "new": "New role…",
+      "newNamed": "New role “{{name}}”",
+      "manage": "Manage"
+    },
+    "invite": {
+      "title": "Hand this work to a role",
+      "text": "A security expert, a reviewer, an architect… created once, called with @, working in a child conversation.",
+      "create": "Create a role",
+      "hide": "Don't show again"
+    },
+    "token": {
+      "remove": "Remove {{label}}"
+    },
+    "destination": {
+      "one": "Will go to <strong>{{label}}</strong>, in a child conversation",
+      "many_one": "Will go to <strong>{{count}} role</strong>, one child conversation each, in parallel",
+      "many_other": "Will go to <strong>{{count}} roles</strong>, one child conversation each, in parallel",
+      "sameFolder": "in this folder",
+      "worktree": "its own worktree",
+      "draft": "Write in this conversation first: a role starts from a conversation in the history.",
+      "attachments": "Attachments don't go to roles: remove them, or send without a role.",
+      "empty": "Write your request after the role: that is what is sent.",
+      "sending": "Starting…",
+      "failed": "{{label}} did not start: {{error}}"
+    },
+    "state": {
+      "running": "working",
+      "waiting": "waiting for you",
+      "unread": "sent its report",
+      "done": "finished",
+      "error": "failed"
+    },
+    "report": {
+      "done": "{{role}} sent its report — {{title}}",
+      "stopped": "{{role}} was stopped — {{title}}",
+      "error": "{{role}} failed — {{title}}",
+      "saveAsRole": "Save as role…"
+    },
+    "proposalsWhere": "The agent proposes handing this work to child conversations: a read-only role works in this folder, the others each in its own worktree. You can also ask it to do it here.",
+    "where": {
+      "sameFolder": "in this folder",
+      "worktree": "its own worktree"
+    }
+  },
   "review": {
     "action": "Request review…",
     "actionTip": "Request review: another agent reviews these changes, without modifying anything, and leaves comments on the diff",
@@ -4711,6 +4786,212 @@
     },
     "terminal": {
       "denied": "Command denied everywhere by the agent’s rules (“{{command}}”): Bobine won’t run it with its own tools either."
+    }
+  },
+  "roleForm": {
+    "label": {
+      "label": "Name",
+      "placeholder": "Security expert",
+      "missing": "Give the role a name."
+    },
+    "name": {
+      "label": "Identifier",
+      "hint": "Typed after @; lowercase letters, digits and hyphens.",
+      "replaces": "Will replace the role “{{label}}” ({{scope}}) with the same identifier."
+    },
+    "icon": "Icon",
+    "color": "Color",
+    "suggested": "Suggested from the name: pick others if you like.",
+    "description": {
+      "label": "When to call on it?",
+      "hint": "One or two sentences. The main agent uses it to choose who to hand work to.",
+      "placeholder": "Reviews sensitive code: authentication, secrets, untrusted input. Call before merging.",
+      "goodTitle": "Says when to call it",
+      "goodText": "“Call before merging a change that touches security.”",
+      "vagueTitle": "Too vague",
+      "vagueText": "“A very skilled security expert.”"
+    },
+    "prompt": {
+      "label": "Instructions",
+      "hint": "Received by the role at the start of each child conversation, before your request. Markdown accepted.",
+      "placeholder": "You are… For each problem found: where, why, what to do."
+    },
+    "tools": {
+      "label": "Bobine tools",
+      "all": "All of the conversation’s",
+      "hint": "Questions and the link with the parent conversation always stay."
+    },
+    "agent": {
+      "label": "Agent",
+      "conversation": "The conversation’s",
+      "missing": "{{agent}} (unavailable)",
+      "hint": "Mode and model: leave empty for the agent’s own. A mode the agent lacks is ignored; the instructions are still sent."
+    },
+    "mode": {
+      "label": "Mode"
+    },
+    "model": {
+      "label": "Model"
+    },
+    "agentDefault": "Agent default",
+    "readOnly": {
+      "label": "Read-only",
+      "hint": "Same folder, no worktree: Bobine refuses its writes and checks the folder after each turn.",
+      "requested": "With {{agent}}, read-only is only requested: this agent writes without asking for permission. Bobine reports any change to the folder."
+    },
+    "scope": {
+      "label": "Scope",
+      "user": "Personal",
+      "userHint": "In all my projects, on this computer.",
+      "project": "This project · {{project}}",
+      "projectNone": "This project",
+      "projectHint": "Shared through git: .bobine/roles/",
+      "projectMissing": "Open a conversation in a project to save a role there."
+    }
+  },
+  "roleWizard": {
+    "title": "New role",
+    "description": "Create a role in three steps: who, how, with what.",
+    "steps": "Steps",
+    "step": {
+      "who": "Who",
+      "how": "How",
+      "with": "With what"
+    },
+    "templates": "Start from a template",
+    "blank": "Blank page",
+    "blankHint": "you write everything",
+    "replacePrompt": "Replace the instructions already written with those of “{{label}}”?",
+    "replace": "Replace",
+    "discard": "Discard this role? What you entered will be lost.",
+    "discardConfirm": "Discard",
+    "keepEditing": "Keep editing",
+    "shortcut": "⌘ Return: next step, or create",
+    "shortcutKeys": "⌘↩",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create",
+    "createAndTry": "Create and try",
+    "preview": {
+      "title": "Preview",
+      "live": "live",
+      "unnamed": "New role",
+      "noDescription": "When to call on it…",
+      "menu": "In the @ menu",
+      "thread": "In the thread, at work",
+      "reading": "reviewing the code",
+      "working": "at work",
+      "sidebar": "In the sidebar",
+      "childTitle": "Review the diff",
+      "fileProject": "Saved in {{file}}: your teammates get it with their next git pull.",
+      "fileUser": "Saved in your personal roles ({{file}}), for all your projects."
+    }
+  },
+  "rolesSettings": {
+    "intro": "Specialized agents, called with @ or chosen by the agent. Each one works in a child conversation.",
+    "new": "New role",
+    "userAside": "all your projects",
+    "builtinAside": "{{active}} of {{total}} on",
+    "group": {
+      "project": "This project",
+      "user": "Personal",
+      "builtin": "Built into Bobine"
+    },
+    "scope": {
+      "builtin": "built-in",
+      "user": "personal",
+      "project": "project"
+    },
+    "hides": "Replaces a {{scopes}} role",
+    "agentMissing": "{{agent}} missing",
+    "readOnly": "Read-only",
+    "builtinDescription": {
+      "uxUiExpert": "Designs or reviews user interfaces: layout, hierarchy, wording, accessibility, consistency with the existing design system.",
+      "flutterExpert": "Builds or fixes Flutter and Dart code: widgets, state management, platform channels, tests.",
+      "frontArchitect": "Shapes the front-end architecture: component boundaries, state and data flow, performance, build and dependencies.",
+      "backArchitect": "Shapes the back-end architecture: APIs, data model and migrations, consistency, scalability, failure handling.",
+      "securityExpert": "Audits the security of a change or a module (injection, secrets, authentication, permissions, dependencies). Changes nothing.",
+      "techLead": "Plans and reviews like a demanding tech lead: splits work, spots risks, checks robustness and maintainability. Changes nothing.",
+      "codeReviewer": "Reviews a change before merge: correctness, tests, readability, conventions of the project. Changes nothing."
+    },
+    "enabled": "{{label}}: on",
+    "empty": {
+      "title": "Build your team",
+      "text": "A security expert who reviews before merging, a strict reviewer, an architect… Create them once, call them with @ whenever you want. The built-in roles below are ready to use.",
+      "action": "Create my first role"
+    },
+    "problems": {
+      "title": "Files left out"
+    },
+    "edit": {
+      "missing": "This role no longer exists (file deleted or renamed).",
+      "copyLabel": "{{label}} (copy)",
+      "try": "Try",
+      "enableFirst": "Turn this role on first (Settings › Roles).",
+      "saveFirst": "Save your changes first.",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "deleteConfirm": "Delete the role “{{label}}”? Its file is erased; a built-in role with the same name takes its place again.",
+      "projectBanner": "Shared through git: your changes will need a commit.",
+      "builtinBanner": "Built-in role: your changes will be saved as a personal role with the same name, which replaces it.",
+      "saved": "Saved",
+      "reset": "Undo changes",
+      "saveAsUser": "Save as personal role"
+    }
+  },
+  "team": {
+    "title": "Team",
+    "new": "New role…",
+    "empty": "No active role",
+    "assign": "Hand work to {{label}}",
+    "roleTip": "Role: {{label}}",
+    "notHere": "A child conversation can’t hand work to a role: open its parent conversation."
+  },
+  "roles": {
+    "none": "none",
+    "builtin": {
+      "uxUiExpert": "UX/UI expert",
+      "flutterExpert": "Flutter expert",
+      "frontArchitect": "Front-end architect",
+      "backArchitect": "Back-end architect",
+      "securityExpert": "Security expert",
+      "techLead": "Tech lead",
+      "codeReviewer": "Code reviewer"
+    },
+    "error": {
+      "noHeader": "No header: the file must start with a “---” line.",
+      "syntax": "Line {{line}} of the header cannot be read.",
+      "unknownField": "Unknown header field: {{field}}.",
+      "duplicateField": "Header field repeated: {{field}}.",
+      "name": "Invalid name: lowercase letters, digits and dashes, 40 characters at most.",
+      "label": "Label too long (40 characters at most).",
+      "icon": "Invalid icon: a Lucide icon name, such as “shield-check”.",
+      "color": "Invalid color: orange, blue, violet, pink, green or graphite.",
+      "description": "Description missing or too long (300 characters at most).",
+      "value": "Invalid value for {{field}}.",
+      "readOnly": "“read-only” expects true or false.",
+      "mcp": "Unknown tool family in “mcp”: {{field}}.",
+      "prompt": "Instructions missing or too long (20,000 characters at most).",
+      "tooLarge": "File too large (64 KB at most).",
+      "duplicateName": "Another role already has this name here.",
+      "unreadable": "File cannot be read.",
+      "unknownRole": "Unknown or disabled role: {{name}}. Roles: {{roles}}.",
+      "noProject": "This conversation has no project folder.",
+      "builtinFile": "A built-in role cannot be written or deleted: turn it off, or save a personal role with the same name.",
+      "notWritten": "Role not saved: the profile is read-only.",
+      "link": "Symbolic link refused: a role is never read or written through a link.",
+      "tooMany": "More than 100 roles in this folder: the next ones are not read."
+    },
+    "notice": {
+      "writeRefused": "Write refused by Bobine: this role is read-only ({{tool}}).",
+      "readOnlyRequested": "Read-only is only requested: {{agent}} writes without asking for permission. Bobine checks the folder after each turn and reports any change.",
+      "folderChanged": "The folder changed during this read-only role’s turn. Check the changes (git status).",
+      "childFolderChanged": "The folder changed during the turn of “{{title}}”, a read-only role working in this folder. Check the changes (git status).",
+      "agentMissing": "The role’s agent “{{agent}}” isn’t available here: the child works with this conversation’s agent.",
+      "modelMissing": "The role’s model “{{model}}” can’t be chosen here: the agent takes its own model.",
+      "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions.",
+      "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
+      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
     }
   }
 }

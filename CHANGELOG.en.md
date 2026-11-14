@@ -2,6 +2,31 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- Roles: specialists to hand work to, each in a child conversation that carries its icon and
+  color. Seven roles are built in (UX/UI expert, Flutter expert, front-end architect, back-end
+  architect, security expert, tech lead, code reviewer); create your own in three steps (who, how,
+  with what), from a built-in role, a blank page or a successful child conversation (“Save as
+  role…” on its report), just for you or for the project (`.bobine/roles/`, shared through git).
+  To call on a role, type `@` in the message box (roles come first) or click it in the “Team”
+  section of the sidebar: it becomes a token, the “Will go to…” line says where the message goes,
+  and sending starts one child conversation per role mentioned, in parallel. The agent also knows
+  your roles and can propose to hand them work. Read-only roles work in your folder without
+  writing to it: Bobine refuses their writes and reports any change to the folder (for an agent
+  that writes without asking, read-only is only requested, and you are told). Edit, turn off or
+  delete them in Settings › Roles, which also flags a project role that replaces another one and
+  the files left out.
+
+### Improved
+
+- Child conversations: the agent proposes them on its own when they help — several independent
+  tasks, long work to follow separately, a review or audit by a fresh pair of eyes — without you
+  having to insist; a short reminder repeats this after the conversation is summarized and when a
+  conversation is resumed (unless set to “Never”).
+
 ## 1.0.0-beta.1 — November 10, 2026
 
 The first public beta of Bobine: expect rough edges, and please report them on GitHub. The app

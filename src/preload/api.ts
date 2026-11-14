@@ -485,6 +485,34 @@ export function createApi(
       onChanged: (listener: (view: IpcEventContract['aside:changed']) => void) =>
         subscribe('aside:changed', listener)
     },
+    /** Rôles (fiche 223) : Réglages › Rôles, menu `@`, assistant de création (phase 3). */
+    roles: {
+      list: (conversationId?: string) =>
+        invoke('roles:list', ...(conversationId !== undefined ? [conversationId] : [])),
+      read: (scope: IpcArgs<'roles:read'>[0], name: string, conversationId?: string) =>
+        invoke(
+          'roles:read',
+          scope,
+          name,
+          ...(conversationId !== undefined ? [conversationId] : [])
+        ),
+      save: (
+        scope: IpcArgs<'roles:save'>[0],
+        role: IpcArgs<'roles:save'>[1],
+        options?: IpcArgs<'roles:save'>[2]
+      ) => invoke('roles:save', scope, role, ...(options !== undefined ? [options] : [])),
+      setEnabled: (name: string, enabled: boolean) => invoke('roles:setEnabled', name, enabled),
+      remove: (scope: IpcArgs<'roles:remove'>[0], name: string, conversationId?: string) =>
+        invoke(
+          'roles:remove',
+          scope,
+          name,
+          ...(conversationId !== undefined ? [conversationId] : [])
+        ),
+      /** `@rôle …` de la saisie : une fille par rôle cité (phase 3B). */
+      startChildren: (conversationId: string, request: IpcArgs<'roles:startChildren'>[1]) =>
+        invoke('roles:startChildren', conversationId, request)
+    },
     /** Mémoire commune aux agents (fiche 182) : carte du fil, Réglages › Mémoire. */
     memory: {
       decide: (decision: MemoryDecision) => invoke('memory:decide', decision),

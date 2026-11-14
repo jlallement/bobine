@@ -168,7 +168,9 @@ export const READ_ONLY_SAFE = [
   'memory:projects',
   'memory:list',
   'memory:export',
-  'memory:reveal'
+  'memory:reveal',
+  'roles:list',
+  'roles:read'
 ] as const satisfies readonly IpcChannel[]
 
 /**
@@ -281,7 +283,11 @@ export const PROFILE_CHANGING = [
   'memory:clear',
   'memory:approve',
   'memory:move',
-  'memory:attach'
+  'memory:attach',
+  'roles:save',
+  'roles:setEnabled',
+  'roles:remove',
+  'roles:startChildren'
 ] as const satisfies readonly IpcChannel[]
 
 const SAFE: ReadonlySet<string> = new Set(READ_ONLY_SAFE)

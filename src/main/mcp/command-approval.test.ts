@@ -113,3 +113,16 @@ describe('approveCommand : commandes refusées partout par l’agent (fiche 215,
     expect(t.context.ask).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('fille d’un rôle en lecture seule (relecture fiche 223)', () => {
+  it('un accord « toujours dans ce projet » ne vaut pas : la commande est demandée, sans ce choix', async () => {
+    const always = memory()
+    always.add('/projet', 'npm test')
+    const s = setup(['Lancer'], always)
+    const result = await approveCommand({ ...s.context, readOnly: true }, s.approval('npm test'))
+    expect(result).toBeUndefined()
+    expect(s.context.ask).toHaveBeenCalledTimes(1)
+    const asked = vi.mocked(s.context.ask).mock.calls[0]?.[0]
+    expect(asked?.options.map((o) => o.label)).not.toContain(alwaysInProject())
+  })
+})

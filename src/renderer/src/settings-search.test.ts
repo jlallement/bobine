@@ -32,8 +32,9 @@ describe('searchSettings (fiche 051)', () => {
     expect(labels('remettre à zéro')).toContain('data:Remettre à zéro')
   })
 
-  it('treize onglets en trois groupes (Mémoire, fiche 182), sans Consommation (fiches 136, 144)', () => {
-    expect(SETTINGS_GROUPS.map((group) => group.length)).toEqual([4, 5, 4])
+  it('quatorze onglets en trois groupes (Mémoire, fiche 182 ; Rôles, fiche 223), sans Consommation (fiches 136, 144)', () => {
+    expect(SETTINGS_GROUPS.map((group) => group.length)).toEqual([4, 6, 4])
+    expect(labels('equipe')).toContain('roles:Rôles')
     expect(SETTINGS_GROUPS.flat()).not.toContain('usage')
     expect(labels('sites autorises')).toContain('privacy:Autorisé sans demander')
     expect(labels('worktree')).toContain('data:Worktrees orphelins')

@@ -25,6 +25,8 @@ import {
   type ChildChoice
 } from '../sidebar/child-options'
 import type { RespondElicitation } from './ElicitationCard'
+import { RoleAvatar } from '../roles/RoleAvatar'
+import { ProposalRoleMeta } from '../roles/RoleWork'
 
 /**
  * Carte « Tâches proposées » (fiche 112) : les propositions de conversations filles d'un même tour
@@ -123,7 +125,14 @@ export function ChildProposals({
               <span className="proposals-summary"> · {summary.join(', ')}</span>
             )}
           </div>
-          <div className="pc-sub">{t('children.proposals.worktree')}</div>
+          {/* Un rôle en lecture seule travaille dans le dossier de la mère (fiche 223). */}
+          <div className="pc-sub">
+            {t(
+              items.some((item) => item.prompt.child.role?.readOnly)
+                ? 'roleWork.proposalsWhere'
+                : 'children.proposals.worktree'
+            )}
+          </div>
         </div>
       </div>
       <div className="proposal-rows">
@@ -164,7 +173,7 @@ function ProposalRow({
   onRespond: RespondElicitation
 }) {
   const { t } = useTranslation()
-  const { title, prompt } = item.prompt.child
+  const { title, prompt, role } = item.prompt.child
   const suggestion = suggestionOf(item.prompt.child, info, model)
   const [open, setOpen] = useState(false)
   // Agent ou modèle suggéré par la mère (fiche 160) : les sélecteurs sont ouverts d'emblée, le
@@ -174,6 +183,10 @@ function ProposalRow({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const outcome = outcomeOf(item)
+  // Agent qui fera tourner la fille (choisi sur la carte) : lecture seule garantie ou demandée.
+  const chosenProfile = info?.profiles.find(
+    (p) => p.id === (choice.profileId || info.mother.profileId)
+  )
 
   const decide = (action: ChildDecisionAction) => {
     const extra = action === 'start' && info ? childChoiceRequest(info.mother, model, choice) : {}
@@ -218,7 +231,16 @@ function ProposalRow({
           data-testid="proposal-title"
         >
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span>{title}</span>
+          {role && <RoleAvatar role={role} size={22} />}
+          <span>
+            {role ? (
+              <>
+                <strong className="proposal-role-label">{role.label}</strong> — {title}
+              </>
+            ) : (
+              title
+            )}
+          </span>
         </button>
         {outcome && <OutcomeBadge outcome={outcome} />}
         <span className="grow" />
@@ -268,6 +290,14 @@ function ProposalRow({
           </span>
         )}
       </div>
+      {role && outcome === undefined && (
+        <ProposalRoleMeta
+          role={role}
+          profile={chosenProfile}
+          // Agent proposé par la mère : déjà dit par la ligne de suggestion.
+          agentLabel={suggestion.shown ? undefined : chosenProfile?.label}
+        />
+      )}
       {suggestion.shown && outcome === undefined && (
         <ProposedChoice agent={suggestion.agent} model={suggestion.model} why={suggestion.why} />
       )}

@@ -26,6 +26,14 @@ import {
 import { messageOf } from '@shared/errors'
 import type { ChildChoices, ChildConversations, ChildStatus } from '../conversations/children'
 import { log } from '../log'
+import {
+  roleSnapshot,
+  rolesForAgent,
+  rolesParagraph,
+  type RoleSnapshot,
+  type RoleView
+} from '@shared/roles'
+import { roleDefaults, type RoleDefaults } from '../roles/choice'
 import { reportFindingsTool, type ReviewTools } from './review-tools'
 import { argsOf, textResult, type AppTool, type AppToolModule, type ToolArgs } from './tools'
 import type { ToolContext, ToolResult } from './tools'
@@ -43,26 +51,28 @@ export type ChildTools = Pick<
   | 'messageParent'
   | 'choices'
   | 'recommend'
+  | 'rolesFor'
+  | 'findRole'
 > & { reviews: ReviewTools }
 
 const START_CHILD =
   'Start a child conversation: another agent that works in parallel, in its own git worktree ' +
-  "(a new branch from this folder's last commit), on a task you describe. The user sees it under " +
-  'this conversation, can open it, talk to it and stop it, and approves each one. Proposing ' +
-  'one is cheap: nothing starts until the user decides on a card (start it, do it here, or ' +
-  'refuse), so propose rather than guess. Use it for ' +
-  'long, independent tasks that change files and that the user may want to follow separately, ' +
-  'such as several independent features at once. Do not use it to read or search code, to ' +
-  'answer a question, or for a small fix: do those yourself (or with your own sub-agents). After ' +
-  'starting children, end your turn unless you have other work: you will be woken up once, with ' +
-  'all their reports, when every child you started has finished its turn. You are their tech ' +
-  'lead: you may suggest the agent and model that fit each task (`agent`, `model`, `why`; omit ' +
-  'them to keep yours), the user confirms or changes them; then check their work. A report is a short note, never the diff, and not proof: check ' +
-  'the branch yourself (git, risky files, project checks) or with a sub-agent, send fixes with ' +
+  "(a new branch from this folder's last commit), on an instruction you write. The user sees it " +
+  'under this conversation, can open it, talk to it and stop it. Proposing one is cheap: nothing ' +
+  'starts until the user decides on a card (start it, do it here, or refuse), so propose rather ' +
+  'than guess. Use it, one call per piece of work, when the user asks for several independent ' +
+  'tasks (one child each, in parallel), for a long task the user will want to follow separately, ' +
+  'or for a review or an audit by a fresh pair of eyes (security, performance, a second opinion ' +
+  'on a module). Do it yourself for a question, reading or searching code, a small fix, or tasks ' +
+  'that depend on one another or change the same files. After starting children, end your turn ' +
+  'unless you have other work: you will be woken up once, with all their reports, when every ' +
+  'child you started has finished its turn. You are their tech lead: you may suggest the agent ' +
+  'and model that fit each task (`agent`, `model`, `why`; omit them to keep yours), the user ' +
+  'confirms or changes them. A report is a short note, never the diff, and not proof: check the ' +
+  'branch yourself (git, risky files, project checks) or with a sub-agent, send fixes with ' +
   'message_child, then call recommend_merge. Never merge a branch yourself: the user merges. ' +
-  'A child cannot start children. ' +
-  'Only this tool creates a child conversation: your own sub-agents are not child conversations, ' +
-  'so never call them that.'
+  'A child cannot start children. Your own sub-agents are not child conversations: never call ' +
+  'them that.'
 
 const MESSAGE_CHILD =
   'Send a message to one of your child conversations (ids from start_child or child_status), to ' +
@@ -180,7 +190,7 @@ function motherTools(
   return [
     tool(
       'start_child',
-      START_CHILD,
+      startChildDescription(host, id),
       {
         title: {
           type: 'string',
@@ -207,19 +217,25 @@ function motherTools(
           type: 'string',
           description:
             'Optional, a few words shown to the user: why you suggest this agent or model.'
-        }
+        },
+        ...roleProperty(host, id)
       },
       ['title', 'prompt'],
       async (args) => {
-        const agent = optional(args, 'agent')
+        // Rôle (fiche 223) : inconnu, refusé avec la liste ; son agent et son modèle repris quand
+        // le profil le permet, sauf `agent` / `model` passés par la mère.
+        const role = roleOf(host, id, optional(args, 'role'))
+        if (typeof role === 'string') return textResult(role, true)
+        const defaults: RoleDefaults = role
+          ? roleDefaults(host.choices(id), role)
+          : { notes: [], missing: {} }
+        const agent = optional(args, 'agent') ?? defaults.agent
+        const wantedModel =
+          optional(args, 'model') ?? (optional(args, 'agent') ? undefined : defaults.model)
         // Profil sans choix de modèle : `model` passé quand même (vrai Bob, même absent du
         // schéma) est ignoré et l'agent en est averti, plutôt qu'un appel refusé (« échec »).
-        const ignored = !agent && !!optional(args, 'model') && !modelChoosable(host, id)
-        const choice = resolveChoice(
-          host.choices(id),
-          agent,
-          ignored ? undefined : optional(args, 'model')
-        )
+        const ignored = !agent && !!wantedModel && !modelChoosable(host, id)
+        const choice = resolveChoice(host.choices(id), agent, ignored ? undefined : wantedModel)
         if (typeof choice === 'string') return textResult(choice, true)
         const prompt = text(args, 'prompt')
         const command = leadingCommand(prompt, 'prompt')
@@ -229,10 +245,19 @@ function motherTools(
           title: text(args, 'title'),
           prompt,
           ...choice,
-          ...(why ? { why: clip(why, WHY_CHARS) } : {})
+          ...(why ? { why: clip(why, WHY_CHARS) } : {}),
+          // Rôle figé à la carte : la fille lancée est celle que l'utilisateur a vue (relecture).
+          ...(role ? { role: roleSnapshot(role) } : {})
         })
-        return ignored && !result.isError
-          ? { ...result, content: [{ type: 'text', text: MODEL_IGNORED }, ...result.content] }
+        const notes = [...(ignored ? [MODEL_IGNORED] : []), ...defaults.notes]
+        return notes.length && !result.isError
+          ? {
+              ...result,
+              content: [
+                ...notes.map((n) => ({ type: 'text' as const, text: n })),
+                ...result.content
+              ]
+            }
           : result
       }
     ),
@@ -292,6 +317,52 @@ function motherTools(
       }
     )
   ]
+}
+
+/** Rôles actifs de la mère ; aucun si la conversation est inconnue. */
+function activeRoles(host: ChildTools, motherId: string): RoleView[] {
+  try {
+    return host.rolesFor(motherId)
+  } catch {
+    return []
+  }
+}
+
+/** Description de `start_child`, suivie des rôles de la mère (fiche 223). */
+function startChildDescription(host: ChildTools, motherId: string): string {
+  const roles = rolesParagraph(activeRoles(host, motherId))
+  return roles.length ? `${START_CHILD}\n\n${roles.join('\n')}` : START_CHILD
+}
+
+/** Argument `role`, seulement s'il y a des rôles actifs. */
+function roleProperty(host: ChildTools, motherId: string): ToolArgs {
+  const roles = activeRoles(host, motherId)
+  if (roles.length === 0) return {}
+  return {
+    role: {
+      type: 'string',
+      description: `Optional: the name of a role to start the child with (its instructions, agent, mode and tools come with it). Roles: ${rolesForAgent(
+        roles
+      )
+        .shown.map((r) => r.name)
+        .join(', ')}.`
+    }
+  }
+}
+
+/** Rôle demandé : actif, sinon l'erreur pour l'agent avec les rôles connus ; rien sans `role`. */
+function roleOf(
+  host: ChildTools,
+  motherId: string,
+  name: string | undefined
+): RoleView | string | undefined {
+  if (!name) return undefined
+  try {
+    return host.findRole(motherId, name)
+  } catch {
+    const known = rolesForAgent(activeRoles(host, motherId)).shown.map((r) => r.name)
+    return `Unknown role "${name}". ${known.length ? `Roles: ${known.join(', ')}.` : 'No role is defined.'} Omit \`role\` to start a child without a role.`
+  }
 }
 
 /**
@@ -434,7 +505,12 @@ async function startChild(
     asking.set(id, Math.max(0, (asking.get(id) ?? 1) - 1))
   }
   const start = (decision: ChildDecision) =>
-    launch(host, id, { title, prompt, ...decision }, asking.get(id) ?? 0)
+    launch(
+      host,
+      id,
+      { title, prompt, ...decision, ...(proposal.role ? { role: proposal.role } : {}) },
+      asking.get(id) ?? 0
+    )
   const decision = await context.proposeChild(proposal, (late) => {
     release()
     switch (late.action) {
@@ -494,7 +570,13 @@ function cannotStart(
 async function launch(
   host: ChildTools,
   id: string,
-  { title, prompt, profileId, model }: { title: string; prompt: string } & ChildDecision,
+  {
+    title,
+    prompt,
+    profileId,
+    model,
+    role
+  }: { title: string; prompt: string; role?: RoleSnapshot } & ChildDecision,
   asking: number
 ): Promise<ToolResult> {
   // Le temps de répondre à la carte, d'autres filles ont pu partir.
@@ -503,11 +585,20 @@ async function launch(
   try {
     const child = await host.start(
       id,
-      { text: prompt, title, ...(profileId ? { profileId } : {}), ...(model ? { model } : {}) },
+      {
+        text: prompt,
+        title,
+        ...(profileId ? { profileId } : {}),
+        ...(model ? { model } : {}),
+        ...(role ? { roleSnapshot: role } : {})
+      },
       'agent'
     )
+    const where = role?.readOnly
+      ? `It works in parallel as the read-only role "${role.name}", in this folder (no worktree, no branch).`
+      : `It works in parallel${role ? ` as the role "${role.name}"` : ''} in its own worktree.`
     return textResult(
-      `Child conversation "${child.title}" started (id: ${child.id}${child.branch ? `, branch: ${child.branch}` : ''}). It works in parallel in its own worktree. End your turn when you have nothing else to do: you will be woken up with the reports when all the child conversations you started have finished their turn.`
+      `Child conversation "${child.title}" started (id: ${child.id}${child.branch ? `, branch: ${child.branch}` : ''}). ${where} End your turn when you have nothing else to do: you will be woken up with the reports when all the child conversations you started have finished their turn.`
     )
   } catch (error) {
     log.warn('Conversation fille non lancée :', error)

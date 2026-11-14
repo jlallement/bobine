@@ -81,6 +81,8 @@ import {
   withTimeout,
   worktreeStartEvent,
   rulesOf,
+  childDetachedRequest,
+  type ChildLink,
   type DetachedRequest,
   type Origin
 } from './helpers'
@@ -97,6 +99,7 @@ import { sameDigest, usageDigest } from '@shared/usage'
 import type { AppToolFamily, ConversationAppTools } from '@shared/mcp'
 import { appToolsCatalog, conversationAppTools, switchedOff } from '../mcp/catalog'
 import type { AppToolModule } from '../mcp/tools'
+import type { RoleLibrary } from '../roles/library'
 
 export interface ConversationManagerOptions {
   profiles: AgentProfile[]
@@ -162,6 +165,8 @@ export interface ConversationManagerOptions {
   /** Serveur MCP de l'app et modules d'outils fournis aux agents (fiches 028, 029). */
   toolServer?: AgentHostOptions['toolServer']
   toolModules?: AgentHostOptions['toolModules']
+  /** Rôles actifs d'un dossier (fiche 223), pour le contexte de session et `@rôle`. */
+  roles?: Pick<RoleLibrary, 'active'>
   /** Retour du réseau, pour les tours qui attendent de réessayer (fiche 142). */
   networkWatch?: AgentHostOptions['network']
   /** Attentes entre les tentatives (raccourcies en test, sinon `RETRY_DELAYS_MS`). */
@@ -441,25 +446,17 @@ export class ConversationManager {
     text: string,
     profileId?: string,
     onCreated?: (child: ConversationSummary) => void,
-    review?: { of: string }
+    link: ChildLink = {}
   ): Promise<ConversationSummary> {
-    const mother = this.get(motherId).record
-    // Relecteur (fiche 177) : dans le dossier de la conversation relue, sans worktree à lui (le
-    // supprimer ne supprime rien d'autre). Son agent : celui demandé, sinon celui de l'auteur.
-    const author = review && this.get(review.of).record
-    return this.createDetached({
-      from: author
-        ? { workspace: author.workspace, profileId: profileId ?? author.profileId }
-        : mother,
-      profileId,
-      worktree: !author,
-      title: titleFrom(text),
-      record: {
-        startedFrom: { id: motherId, title: mother.title },
-        ...(author ? { reviewOf: { id: author.id, title: author.title } } : {})
-      },
-      onCreated
-    })
+    const author = link.of ? this.get(link.of).record : undefined
+    return this.createDetached(
+      childDetachedRequest(this.get(motherId).record, author, {
+        text,
+        ...(profileId ? { profileId } : {}),
+        ...(onCreated ? { onCreated } : {}),
+        ...(link.role ? { role: link.role } : {})
+      })
+    )
   }
 
   /**
@@ -935,20 +932,24 @@ export class ConversationManager {
   }
 
   /** Change un réglage et le mémorise pour ce profil (réappliqué aux prochaines sessions). */
-  async setControl(id: string, controlId: string, value: ControlValue): Promise<void> {
+  async setControl(
+    id: string,
+    controlId: string,
+    value: ControlValue,
+    { remember = true }: { remember?: boolean } = {}
+  ): Promise<void> {
     const conversation = this.get(id)
     if (!conversation.host) throw new Error(t('conversations.error.noLiveAgent'))
     await conversation.host.setControl(controlId, value)
-    this.settings.rememberControl(conversation.record.profileId, controlId, value)
+    // Mode d'un rôle, modèle d'une fille (fiche 223) : pour cette conversation seulement.
+    if (remember) this.settings.rememberControl(conversation.record.profileId, controlId, value)
   }
 
   rename(id: string, title: string): void {
     const clean = title.trim().slice(0, 200)
     if (!clean) throw new Error(t('conversations.error.emptyTitle'))
-    this.updateRecord(id, (record) => {
-      record.title = clean
-      record.titleSource = 'user'
-    })
+    const renamed: Partial<ConversationRecord> = { title: clean, titleSource: 'user' }
+    this.updateRecord(id, (record) => Object.assign(record, renamed))
   }
 
   /**

@@ -31,12 +31,13 @@ import type { AndroidState } from './android'
 import type { CommandLineStatus, LaunchPrefill } from './command-line'
 import type { TerminalsChange, TerminalTabInfo } from './terminal'
 import type { AttentionDetails, AttentionState, NotificationStatus } from './attention'
-import type { ChildCapacity, ChildLaunchState } from './children'
+import type { ChildCapacity, ChildLaunchState, ChildStartRequest } from './children'
 import type { ChildrenMerge, ChildrenMergePlan } from './children-merge'
 import type { CustomAgentDraft } from './custom-agents'
 import type { ConversationCap } from './cost-cap'
 import type { HandoverTarget } from './handover'
 import { MEMORY_CHANNELS, type MemoryIpcContract } from './memory-ipc'
+import { ROLES_CHANNELS, type RolesIpcContract } from './roles-ipc'
 import type { GitChanges, GitFileDiff, RevertOutcome } from './changes'
 import type { FileLinkOutcome, FileOpenOutcome, MarkdownDocument } from './file-links'
 import type { EditorInfo, EditorOpenOutcome } from './editors'
@@ -144,7 +145,7 @@ export interface InstalledFonts {
 
 /** Canaux "invoke" : le renderer demande, le main répond. */
 export interface IpcInvokeContract
-  extends MemoryIpcContract, ProfileIpcContract, ApprovalRulesIpcContract {
+  extends MemoryIpcContract, ProfileIpcContract, ApprovalRulesIpcContract, RolesIpcContract {
   'app:getInfo': { args: []; result: AppInfo }
   /** Polices installées (fiche 136), lues une fois par le main. */
   'app:fonts': { args: []; result: InstalledFonts }
@@ -331,16 +332,7 @@ export interface IpcInvokeContract
    * avec la consigne comme premier message ; la conversation affichée ne change pas.
    */
   'conversation:startChild': {
-    args: [
-      id: string,
-      request: {
-        text: string
-        /** Titre de la fille (proposition expirée relancée, fiche 112) ; absent : le début de la consigne. */
-        title?: string
-        profileId?: string
-        model?: { controlId: string; value: string }
-      }
-    ]
+    args: [id: string, request: ChildStartRequest]
     result: ConversationSummary
   }
   /**
@@ -1117,5 +1109,6 @@ export const IPC_CHANNELS = [
   'terminal:snapshot',
   ...MEMORY_CHANNELS,
   ...PROFILE_CHANNELS,
-  ...APPROVAL_RULES_CHANNELS
+  ...APPROVAL_RULES_CHANNELS,
+  ...ROLES_CHANNELS
 ] as const satisfies readonly IpcChannel[]

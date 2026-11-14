@@ -149,6 +149,12 @@ export interface AgentProfile {
    */
   childModelChoice?: 'ask'
   /**
+   * L'agent écrit dans le dossier sans demander d'autorisation, réglé par défaut (OpenCode : relevé
+   * 2.2.5, `docs/agents.md`). Un rôle en lecture seule (fiche 223) n'y est alors que demandé, sauf
+   * mode natif choisi par le rôle : Bobine ne peut refuser que ce qu'on lui demande.
+   */
+  writesWithoutAsking?: true
+  /**
    * Fichiers où l'agent déclare ses serveurs MCP (fiche 025), modifiables dans l'app, et leur
    * format (fiche 140).
    */
@@ -313,6 +319,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       chartSlot: 0,
       // Modèle de fille suggéré puis confirmé, comme OpenCode ; `MOCK_CHILD_MODEL=none` : comme Bob.
       ...(ctx.env['MOCK_CHILD_MODEL'] === 'none' ? {} : { childModelChoice: 'ask' as const }),
+      // Écrit sans demander, comme OpenCode (`MOCK_AGENT_WRITES=silent`, e2e `roles-travail`, fiche 223).
+      ...(ctx.env['MOCK_AGENT_WRITES'] === 'silent' ? { writesWithoutAsking: true as const } : {}),
       command: ctx.execPath,
       args: [
         join(ctx.appPath, 'src/mock-agent/main.mts'),
@@ -546,6 +554,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       chartSlot: 2,
       // Réglage « Model » par ACP : la mère peut suggérer un modèle, l'utilisateur le confirme.
       childModelChoice: 'ask',
+      // Aucune demande d'autorisation par défaut (2.2.5) : lecture seule d'un rôle seulement demandée.
+      writesWithoutAsking: true,
       command: 'opencode',
       // ACP natif. Clés des fournisseurs : `opencode auth login` ou variables d'environnement.
       args: ['acp'],
@@ -630,6 +640,7 @@ export function summarizeProfiles(
       command: displayedCommand(profile),
       ...(profile.providers ? { providers: true } : {}),
       ...(profile.childModelChoice ? { childModel: true } : {}),
+      ...(profile.writesWithoutAsking ? { writesWithoutAsking: true } : {}),
       ...(profile.approvalRules ? { approvalRules: true } : {}),
       ...(profile.destination ? { destination: profile.destination } : {}),
       ...(profile.custom ? { custom: profile.custom } : {})

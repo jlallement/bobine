@@ -79,6 +79,7 @@ import { t } from 'i18next'
 import { folderHandlers } from './conversations/additional-directories-ipc'
 import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
+import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
 
 /** Sous-ensemble d'`ipcMain` dont on a besoin : permet de tester sans Electron. */
 /** Envoie un évènement aux fenêtres de l'app (rien pendant la fermeture : à l'appelant de voir). */
@@ -334,6 +335,8 @@ export function createHandlers(
       /** Mémoire commune aux agents (fiche 182) et ses dialogues. */
       memory?: MemoryService
       memoryIpc?: MemoryIpcDeps
+      /** Rôles (fiche 223). */
+      roles?: RolesIpcDeps
       /** Tâches planifiées (fiche 178). */
       scheduler?: Parameters<typeof scheduleHandlers>[0]
       /** Intégrité du profil : avis, corbeille, restauration (fiches 196, 197). */
@@ -484,6 +487,7 @@ export function createHandlers(
     ...costCapHandlers(deps.costCap),
     ...turnLimitHandlers(c),
     ...memoryHandlers(deps.memory, deps.memoryIpc),
+    ...rolesHandlers(deps.roles),
     ...scheduleHandlers(deps.scheduler),
     ...profileHandlers(deps.profile),
     ...handoverHandlers(c, () => deps.providers?.list() ?? []),

@@ -274,6 +274,13 @@ export function specificItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.childModel.detail', { agent: name })
     })
   }
+  if (profile.writesWithoutAsking) {
+    items.push({
+      id: 'writes-without-asking',
+      label: t('capabilities.writesWithoutAsking.label'),
+      detail: t('capabilities.writesWithoutAsking.detail', { agent: name })
+    })
+  }
   if (profile.emptySessionTitle) {
     items.push({
       id: 'hidden-empty-sessions',

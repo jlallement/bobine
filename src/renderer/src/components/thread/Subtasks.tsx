@@ -1,4 +1,5 @@
 import {
+  BookmarkPlus,
   Check,
   ChevronRight,
   CircleExclamationPoint,
@@ -12,10 +13,11 @@ import {
 import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
-import type { ConversationSummary } from '@shared/agent'
+import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import {
   childRecommendations,
+  childState,
   recapLead,
   type ChildState,
   type ChildVerdict
@@ -24,6 +26,7 @@ import { childRows } from '@shared/children-rows'
 import type { TranscriptItem } from '@shared/transcript'
 import { digestsTotal, formatCost, formatTokens, type UsageDigest } from '@shared/usage'
 import { Markdown } from './Markdown'
+import { useProfileStatus } from '../common/Profile'
 import { ConversationStateIcon } from '../common/ConversationState'
 import { Tip } from '../common/Menus'
 export { ConversationStateIcon as ChildStateIcon } from '../common/ConversationState'
@@ -35,6 +38,9 @@ import {
   type ChildrenMergeActions
 } from './SubtasksMerge'
 import { countText } from '@shared/i18n/format'
+import type { RoleBadge } from '@shared/roles'
+import { RoleAvatar, RoleStack } from '../roles/RoleAvatar'
+import { RoleLaunch, RoleSubtaskHead, useChildActivity } from '../roles/RoleWork'
 
 /**
  * Conversations filles dans le fil de la mère (fiche 097) : la ligne d'un lancement, la carte
@@ -52,6 +58,8 @@ export interface SubtasksInfo {
   motherId?: string
   /** Fusion des filles finies depuis la carte (fiche 120) ; absent : pas de pied de carte. */
   merge?: ChildrenMergeActions
+  /** Profils (fiche 223) : lecture seule seulement demandée d'un rôle, selon l'agent de la fille. */
+  profiles?: readonly ProfileSummary[]
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
@@ -185,19 +193,32 @@ export function Branch({ name }: { name: string }) {
 }
 
 /**
- * Lancement d'une fille ; le dernier porte la carte « Sous-tâches » (`info`) : une ligne par fille,
- * dans l'ordre des lancements.
+ * Lancement d'une fille ; le dernier (`last`) porte la carte « Sous-tâches » : une ligne par
+ * fille, dans l'ordre des lancements. La fille d'un rôle (fiche 223) a sa carte à son identité.
  */
 export function ChildStarted({
   item,
   items,
-  info
+  info,
+  last = !!info
 }: {
   item: Started
   items: readonly TranscriptItem[]
   info?: SubtasksInfo
+  last?: boolean
 }) {
   const { t } = useTranslation()
+  const card = last && info && info.children.length > 0 && (
+    <SubtasksCard items={items} info={info} />
+  )
+  if (item.role) {
+    return (
+      <>
+        <RoleLaunchItem item={item} role={item.role} info={info} />
+        {card}
+      </>
+    )
+  }
   return (
     <>
       <InstructionDetails childId={item.childId} prompt={item.prompt} testId="child-started">
@@ -208,8 +229,34 @@ export function ChildStarted({
           })}
         </span>
       </InstructionDetails>
-      {info && info.children.length > 0 && <SubtasksCard items={items} info={info} />}
+      {card}
     </>
+  )
+}
+
+function RoleLaunchItem({
+  item,
+  role,
+  info
+}: {
+  item: Started
+  role: RoleBadge
+  info: SubtasksInfo | undefined
+}) {
+  const child = info?.children.find((c) => c.id === item.childId)
+  const activity = useChildActivity(child ? [child.id] : [])
+  return (
+    <RoleLaunch
+      role={role}
+      title={item.title}
+      prompt={item.prompt}
+      byAgent={item.by === 'agent'}
+      child={child}
+      state={child && info ? childState(child, info.attention[child.id]) : undefined}
+      activity={child ? activity.get(child.id) : undefined}
+      profiles={info?.profiles ?? []}
+      onOpen={child && info ? () => info.onOpen(child.id) : undefined}
+    />
   )
 }
 
@@ -228,9 +275,12 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
   const presenting = usePresentation()
   const merging = useChildrenMerge(info.motherId, info.merge, rows, items)
   const verdicts = useMemo(() => childRecommendations(items), [items])
+  const activity = useChildActivity(rows.map((r) => r.child.id))
+  const roles = rows.flatMap((r) => (r.child.role ? [r.child.role] : []))
   return (
     <div className="subtasks" data-testid="subtasks">
       <div className="subtasks-head">
+        {roles.length > 0 && <RoleStack roles={roles} />}
         <strong>{t('children.card.title')}</strong>
         {counts.length > 0 && <span className="muted"> · {counts.join(', ')}</span>}
         {total && !presenting && (
@@ -257,7 +307,16 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
             data-state={state}
           >
             <span className="subtask-info">
-              <span className="subtask-title">{child.title}</span>
+              {child.role ? (
+                <RoleSubtaskHead
+                  role={child.role}
+                  state={state}
+                  title={child.title}
+                  activity={activity.get(child.id)}
+                />
+              ) : (
+                <span className="subtask-title">{child.title}</span>
+              )}
               <span className="subtask-meta">
                 {child.branch && <Branch name={child.branch} />}
                 {report && <FileStats report={report} />}
@@ -353,32 +412,55 @@ export function ChildReportItem({
   item,
   pending,
   byAgent = false,
-  onOpen
+  role,
+  onOpen,
+  onSaveAsRole
 }: {
   item: Report
   pending: boolean
   byAgent?: boolean
+  /** Rôle de la fille (fiche 223) : son avatar et son nom dans le titre. */
+  role?: RoleBadge | undefined
   /** Ouvrir la fille ; absent si elle a été supprimée. */
   onOpen?: () => void
+  /**
+   * « Enregistrer comme rôle » (fiche 223, maquette 01-C2) : seulement pour une fille sans rôle
+   * qui a rendu son compte rendu ; ouvre l'assistant prérempli.
+   */
+  onSaveAsRole?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   const usageText = useUsageText()
+  // Profil en lecture seule (fiche 196) : aucun rôle ne s'enregistre, le geste n'est pas proposé.
+  const { readOnly } = useProfileStatus()
   const [open, setOpen] = useState(false)
   const detailsId = useId()
   const Icon = OUTCOME_ICONS[item.outcome]
   // Ce qu'avait coûté la fille à ce compte rendu (fiche 117) ; rien pour un ancien compte rendu.
   const usage = usageText(item.usage)
   const turns = item.usage?.turns
-  const headline = t(`children.report.${item.outcome}`, { title: item.title })
+  const headline = role
+    ? t(`roleWork.report.${item.outcome}`, { role: role.label, title: item.title })
+    : t(`children.report.${item.outcome}`, { title: item.title })
   const lead = recapLead(item.excerpt ?? '')
   return (
     <div
-      className={`child-report ${item.outcome}`}
+      className={`child-report ${item.outcome}${role ? ' role-report' : ''}`}
       data-testid="child-report"
       data-outcome={item.outcome}
+      data-role={role?.name}
       data-open={open || undefined}
     >
-      <Icon size={14} className="child-report-icon" />
+      {role ? (
+        <RoleAvatar
+          role={role}
+          size={22}
+          state={item.outcome === 'done' ? 'done' : 'error'}
+          className="child-report-icon"
+        />
+      ) : (
+        <Icon size={14} className="child-report-icon" />
+      )}
       <div className="child-report-body">
         <div className="child-report-head">
           {onOpen ? (
@@ -429,6 +511,18 @@ export function ChildReportItem({
                 </span>
               ) : null}
             </div>
+          </div>
+        )}
+        {onSaveAsRole && !role && !readOnly && item.outcome === 'done' && (
+          <div className="child-report-actions">
+            <button
+              className="btn small"
+              onClick={onSaveAsRole}
+              data-testid="child-report-save-role"
+            >
+              <BookmarkPlus size={13} aria-hidden />
+              {t('roleWork.report.saveAsRole')}
+            </button>
           </div>
         )}
         {pending && (

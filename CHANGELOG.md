@@ -2,6 +2,32 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- Rôles : des spécialistes à qui confier un travail, chacun dans une conversation fille qui porte
+  son icône et sa couleur. Sept rôles sont fournis (expert UX/UI, expert Flutter, architecte
+  front-end, architecte back-end, expert sécurité, tech lead, code reviewer) ; créez les vôtres en
+  trois étapes (qui, comment, avec quoi), à partir d'un rôle fourni, d'une page blanche ou d'une
+  conversation fille réussie (« Enregistrer comme rôle… » sur son compte rendu), pour vous seul ou
+  pour le projet (`.bobine/roles/`, partagé par git). Pour faire appel à un rôle, tapez `@` dans la
+  saisie (les rôles viennent en tête) ou cliquez-le dans la section « Équipe » de la barre
+  latérale : il devient un jeton, la ligne « Partira à… » dit où ira le message, et l'envoi lance
+  une conversation fille par rôle cité, en parallèle. L'agent connaît aussi vos rôles et peut
+  proposer de leur confier un travail. Les rôles en lecture seule travaillent dans votre dossier
+  sans rien y écrire : Bobine refuse leurs écritures et signale tout changement du dossier (pour
+  un agent qui écrit sans demander, la lecture seule n'est que demandée, et c'est dit). Modifiez,
+  désactivez ou supprimez-les dans Réglages › Rôles, qui signale aussi un rôle du projet qui en
+  remplace un autre et les fichiers écartés.
+
+### Amélioré
+
+- Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
+  indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
+  sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et
+  à la reprise d'une conversation (sauf réglage « Jamais »).
+
 ## 1.0.0-beta.1 — 10 novembre 2026
 
 Première bêta publique de Bobine : attendez-vous à des aspérités, et signalez-les sur GitHub.

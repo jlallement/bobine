@@ -15,11 +15,12 @@ import {
   Sparkles,
   SquareSlash,
   Stethoscope,
+  Users,
   X
 } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { EmptyState } from '../common/EmptyState'
-import type { AgentSettingsView, NewConversationDefaults } from '@shared/agent'
+import type { AgentSettingsView, ConversationSummary, NewConversationDefaults } from '@shared/agent'
 import { type Preferences } from '@shared/preferences'
 import type { UserCommand } from '@shared/user-commands'
 import type { CustomAgentDraft } from '@shared/custom-agents'
@@ -60,6 +61,7 @@ const SECTION_ICONS: Record<SettingsSection, ReactNode> = {
   shortcuts: <Keyboard size={15} />,
   conversation: <MessagesSquare size={15} />,
   agents: <Bot size={15} />,
+  roles: <Users size={15} />,
   memory: <Bookmark size={15} />,
   mcp: <Plug size={15} />,
   commands: <SquareSlash size={15} />,
@@ -131,6 +133,11 @@ export interface SettingsDialogProps {
   /** Commandes « / » du projet de la conversation active (fiche 045). */
   projectCommands: UserCommand[]
   onCommands: (commands: UserCommand[]) => void
+  /** Conversation affichée (fiche 223) : son projet pour Réglages › Rôles. */
+  activeConversation?: Pick<
+    ConversationSummary,
+    'id' | 'profileId' | 'workspace' | 'project'
+  > | null
 }
 
 /** Réglages de l'app (fiche 027), comme ceux de Claude Desktop : ⌘, ou la roue dentée. */

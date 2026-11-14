@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { mentionAt, type WorkspaceFile } from '@shared/attachments'
 import { matchContextMentions } from '@shared/context-mentions'
+import { matchRoleGroups } from '@shared/role-mentions'
+import type { RoleView } from '@shared/roles'
 import type { MentionEntry } from './components/composer/FileMenu'
+import { roleMenuEntries } from './components/roles/RoleMenu'
+import { roleDescription } from './components/roles/role-view'
 
 /** Délai avant de chercher les fichiers du dossier pendant la frappe. */
 const SEARCH_DELAY_MS = 120
 
 /**
  * Mentions `@` de la zone de saisie (fiches 005, 057 ; sorti de `Composer`, fiche 089) : au curseur,
- * les mentions de contexte (`@git-changes`, `@terminal`) puis les fichiers du dossier, cherchés
- * pendant la frappe. Pas de menu `@` pendant celui des commandes « / », ni quand la saisie est
+ * les rôles (fiche 223, en tête), les mentions de contexte (`@git-changes`, `@terminal`) puis les
+ * fichiers du dossier, cherchés pendant la frappe. Pas de menu `@` pendant celui des commandes « / », ni quand la saisie est
  * bloquée ; Échap le referme jusqu'au texte suivant.
  */
 export function useMentions(options: {
@@ -20,11 +24,15 @@ export function useMentions(options: {
   /** Saisie bloquée (action requise, lecture seule). */
   blocked: boolean
   onSearchFiles: (query: string) => Promise<WorkspaceFile[]>
+  /** Rôles actifs (fiche 223) ; `canCreate` : « + Nouveau rôle » proposé. */
+  roles?: { list: readonly RoleView[]; canCreate: boolean }
 }) {
   const { onSearchFiles } = options
   const [files, setFiles] = useState<WorkspaceFile[]>([])
   const [active, setActive] = useState(0)
   const [dismissed, setDismissed] = useState(false)
+  // « Tous les rôles (8) » : la liste entière, pour la mention où il a été choisi.
+  const [allRolesAt, setAllRolesAt] = useState<number>()
   const mention = options.commandMenuOpen ? undefined : mentionAt(options.text, options.caret)
   const open = mention !== undefined && !dismissed && !options.blocked
   const query = mention?.query
@@ -44,12 +52,39 @@ export function useMentions(options: {
       clearTimeout(timer)
     }
   }, [query, onSearchFiles])
+  const roles = options.roles
+  const contexts = mention ? matchContextMentions(mention.query) : []
+  // Rôles trouvés par leur nom ou leur libellé : en tête. Par leur seule description (`@test`,
+  // `@api`…) : après les fichiers, pour qu'Entrée prenne `tests/…` et non un rôle ; et jamais
+  // quand `@git-changes` ou `@terminal` correspond.
+  const groups =
+    mention && roles
+      ? matchRoleGroups(roles.list, mention.query, {
+          descriptions: contexts.length === 0,
+          describe: roleDescription
+        })
+      : { byName: [], byDescription: [] }
+  const roleEntries =
+    mention && roles
+      ? roleMenuEntries(groups.byName, mention.query, {
+          all: allRolesAt === mention.start,
+          canCreate: roles.canCreate
+        })
+      : []
+  // « + Nouveau rôle » en dernier : jamais pris par Entrée devant une mention ou un fichier.
   const entries: MentionEntry[] = [
-    ...(mention ? matchContextMentions(mention.query) : []).map((m) => ({
+    ...roleEntries.filter((e) => e.kind !== 'role-new'),
+    ...contexts.map((m) => ({
       kind: 'context' as const,
       mention: m
     })),
-    ...files.map((f) => ({ kind: 'file' as const, file: f }))
+    ...files.map((f) => ({ kind: 'file' as const, file: f })),
+    ...groups.byDescription.map((role) => ({
+      kind: 'role' as const,
+      role,
+      byDescription: true as const
+    })),
+    ...roleEntries.filter((e) => e.kind === 'role-new')
   ]
   return {
     /** Mention en cours de saisie au curseur. */
@@ -59,6 +94,8 @@ export function useMentions(options: {
     active,
     setActive,
     dismiss: () => setDismissed(true),
+    /** « Tous les rôles » : la liste entière, la même entrée reste surlignée. */
+    showAllRoles: () => setAllRolesAt(mention?.start),
     /** Le texte change : le menu peut se rouvrir. */
     textChanged: () => setDismissed(false)
   }

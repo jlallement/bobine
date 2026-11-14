@@ -15,7 +15,7 @@ import type { ProfileSummary } from '@shared/agent'
  */
 export const SETTINGS_GROUPS = [
   ['general', 'appearance', 'notifications', 'shortcuts'],
-  ['conversation', 'agents', 'memory', 'mcp', 'commands'],
+  ['conversation', 'agents', 'roles', 'memory', 'mcp', 'commands'],
   ['privacy', 'data', 'diagnostics', 'about']
 ] as const
 
@@ -100,6 +100,8 @@ const INDEX: readonly IndexedSetting[] = [
   ['agents', 'customAgents.add', 'settingsSearch.customAgent'],
   ['agents', 'settings.network.label', 'settingsSearch.network'],
   ['agents', 'settings.network.proxy.label', 'settingsSearch.proxy'],
+  ['roles', 'settings.section.roles', 'settingsSearch.roles'],
+  ['roles', 'rolesSettings.new', 'settingsSearch.roles'],
   ['memory', 'settings.memory.enabled.label', 'settingsSearch.memory'],
   ['memory', 'settings.memory.entries', 'settingsSearch.memory'],
   ['agents', 'settings.network.noProxy.label', 'settingsSearch.noProxy'],

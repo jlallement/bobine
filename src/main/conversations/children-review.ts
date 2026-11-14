@@ -15,9 +15,8 @@
  *   étape : en cours, remarques rendues, fini sans remarques, échec.
  */
 import { t } from 'i18next'
-import { createHash } from 'node:crypto'
-import { readFile, stat } from 'node:fs/promises'
-import { join, relative, resolve, sep } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { relative, resolve, sep } from 'node:path'
 import type { ConversationEvent, ConversationSummary } from '@shared/agent'
 import { clip } from '@shared/children'
 import { messageOf } from '@shared/errors'
@@ -39,6 +38,7 @@ import { insideWorkspace } from '../changes/git'
 import { log } from '../log'
 import { hasFolder } from './agentless'
 import type { ChildConversations, ChildRequest } from './children'
+import { folderFingerprint } from './folder-fingerprint'
 import { inGitRepo } from './helpers'
 import type { ConversationManager } from './manager'
 
@@ -334,26 +334,9 @@ export class ChildReviews {
     }
   }
 
-  /**
-   * Empreinte du dossier : HEAD, état, diff des fichiers suivis, taille et date des fichiers
-   * nouveaux (leur contenu n'est pas dans le diff).
-   */
-  async fingerprint(workspace: string): Promise<string> {
-    const hash = createHash('sha256')
-    const head = await this.git(workspace, ['rev-parse', 'HEAD'])
-    hash.update(head.stdout)
-    const status = await this.git(workspace, ['status', '--porcelain=v1', '-z', '-uall', '--', '.'])
-    if (status.code !== 0) throw new Error(status.stderr)
-    hash.update(status.stdout)
-    hash.update((await this.git(workspace, ['diff', 'HEAD', '--binary', '--', '.'])).stdout)
-    const untracked = lines(
-      text((await this.git(workspace, ['ls-files', '--others', '--exclude-standard'])).stdout)
-    )
-    for (const file of untracked) {
-      const info = await stat(join(workspace, file)).catch(() => null)
-      hash.update(`${file}\0${info?.size ?? -1}\0${info?.mtimeMs ?? -1}\0`)
-    }
-    return hash.digest('hex')
+  /** Empreinte du dossier (`folder-fingerprint.ts`). */
+  fingerprint(workspace: string): Promise<string> {
+    return folderFingerprint(this.deps.run, workspace)
   }
 
   /** Chemin vérifié (dans le dossier, rendu relatif) et code cité, lu dans le fichier. */
@@ -446,8 +429,11 @@ export async function applyModel(
     .snapshot?.controls.find((c) => c.id === model.controlId)
   if (control?.type !== 'select' || control.currentValue === model.value) return
   if (!control.options.some((o) => o.value === model.value)) return
-  await conversations.setControl(childId, model.controlId, model.value).catch((error) => {
-    // La fille part quand même, avec le modèle que l'agent a pris.
-    log.warn('Modèle de la conversation fille non appliqué :', error)
-  })
+  // Pour cette fille seulement : le défaut du profil reste celui de l'utilisateur (fiche 223).
+  await conversations
+    .setControl(childId, model.controlId, model.value, { remember: false })
+    .catch((error) => {
+      // La fille part quand même, avec le modèle que l'agent a pris.
+      log.warn('Modèle de la conversation fille non appliqué :', error)
+    })
 }

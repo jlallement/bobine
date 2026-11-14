@@ -92,6 +92,8 @@ Depuis Electron (fiche 003) : `ELECTRON_RUN_AS_NODE=1 <electron> src/mock-agent/
 seul liste les scénarios. Pratique pour tout essayer depuis l'UI sans relancer l'agent. La commande
 est lue dans le **dernier** bloc de texte du prompt (une branche, fiche 023, envoie d'abord
 l'échange repris en contexte).
+Premier message d'une fille lancée avec un rôle (fiche 223, contient `<bobine_role`, placé après
+la demande) : `/scenario <nom>` est cherché sur n'importe quelle ligne de la demande.
 L'agent annonce ces commandes (`available_commands_update`) juste après l'ouverture de session :
 `/scenario <nom>`, `/aide` (= `/scenario`) et `/demo` (= `/scenario demo`), proposées par le menu « / ».
 
@@ -167,6 +169,11 @@ essais comparent les textes de l'agent avec `M('phrase française')`, comme ceux
 | `commande-dossier-bob` | Comme Bob 2.0.9 : `cd {cwd} && npm test` (titre et `rawInput.command`) : le dossier de la conversation est une pastille « workspace » (chemin entier en infobulle) ; avec `MOCK_AGENT_ALWAYS_SCOPE=bob`, le profil factice déclare la portée de « Toujours » comme Bob (« Toujours dans cette conversation » et sa précision) — fiche 214 |
 | `outil-mcp-bob` | Comme Bob 2.0.9 : outil `kind: other` « Running Meteo (essai) » avec `rawInput` `{ ville, unite, jours }` : la carte montre les arguments, « Toujours » est retenu par Bobine pour cet outil (fiche 214) |
 | `liste-taches-bob` | Comme Bob 2.0.9 (trace `bob-2.0.9/liste-de-taches-autorisee-une-fois`) : « Updating todo list », `kind: "other"`, `rawInput.todos` en texte à cases (`[x]`, `[-]`, `[ ]`) ; les tâches arrivent aux données de la carte (`todos`, analyseur `src/shared/todos.ts`) — fiche 214 |
+| `roles-delegue` | Rôles (fiche 223) : `start_child` avec `role: security-expert` (rôle fourni, en lecture seule) et une tâche qui joue `echo` : la fille dit ce qu'elle a reçu (consigne du rôle en tête, lecture seule) |
+| `roles-inconnu` | `start_child` avec `role: astronaute` : refusé avec la liste des rôles connus, cité dans le fil (fiche 223) |
+| `role-ecrit-avec-demande` | Fille en lecture seule qui demande à écrire `notes.md` (`kind: edit`, options de Bob) : Bobine refuse d'office, la fille le dit (« Écriture refusée… ») ; acceptée, elle écrirait vraiment (fiche 223) |
+| `role-ecrit-sans-genre` | Fille en lecture seule : outil annoncé `kind: edit` (`tool_call`), puis une demande d'autorisation **sans** `kind` : Bobine retient le genre annoncé et refuse (relecture de la fiche 223) |
+| `role-ecrit-sans-demander` | Fille qui écrit `notes-role.md` sans rien demander, comme OpenCode réglé par défaut : le garde-fou de Bobine le voit à la fin du tour (fiche 223). Avec `MOCK_AGENT_WRITES=silent` (app), le profil factice déclare `writesWithoutAsking` comme OpenCode : la lecture seule d'un rôle n'est alors que demandée, et l'interface le dit (e2e `roles-travail`, phase 3B) |
 | `sous-agent` | Session enfant annoncée par `subagent_update`, ses updates arrivent sur la même connexion |
 | `echo` | Décrit les réglages appliqués (mode, modèle…) et le prompt reçu (texte, images, fichiers) — sert aussi aux remarques sur la page (fiche 132, suite `browser-annotate`) : un message, une image |
 | `dossiers` | Dit le dossier de travail et les autres dossiers reçus à l'ouverture de la session (`additionalDirectories`), « Aucun autre dossier reçu. » sinon, puis la ligne de contexte de l'app sur ces dossiers s'il y en a une dans le message (fiche 179) |
@@ -338,7 +345,8 @@ suite e2e `filles`. Les filles prennent l'agent de la mère : sa consigne commen
 `/scenario …`, et ses tours suivants jouent le scénario de lancement (`echo` dans les essais).
 
 `echo` montre aussi le contexte de session : dans un dépôt git, avec les outils des filles, le
-premier message d'une session arrive précédé du bloc `<bobine_capabilities>` (fiche 118).
+premier message d'une session arrive avec le bloc `<bobine_capabilities>` (fiche 118) ; après
+`/compact` ou à la reprise d'une session (`--store`), le même bloc en rappel court (fiche 223).
 
 ## L'utiliser dans les tests
 

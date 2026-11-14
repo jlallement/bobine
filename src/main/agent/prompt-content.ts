@@ -18,6 +18,7 @@ import {
   type PromptAttachment,
   type PromptCapabilities
 } from '@shared/attachments'
+import type { SessionMoment } from '@shared/app-context'
 import type { ContextSource } from '@shared/context-mentions'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
@@ -48,22 +49,31 @@ export function withContext(
 }
 
 /**
+ * Contexte de session d'après les outils de l'app reçus par la session et le moment où il part
+ * (fiche 223 : complet à une session neuve, rappel après une reprise ou une compaction).
+ */
+export type SessionContext = (
+  appTools: readonly string[],
+  moment: SessionMoment
+) => string | undefined | Promise<string | undefined>
+
+/**
  * Contexte de session (fiche 118 ; index de la mémoire, fiche 182, lu sur le disque) : synchrone
  * quand rien n'est à lire, pour ne pas retarder l'envoi ; une erreur de lecture n'empêche pas
- * l'envoi (journal, sans contexte).
+ * l'envoi (journal, sans contexte). Rien quand aucun n'est dû (`moment` absent).
  */
 export function sessionContextOf(
-  options: {
-    sessionContext?: (tools: readonly string[]) => string | undefined | Promise<string | undefined>
-  },
-  appTools: readonly string[] | undefined
+  options: { sessionContext?: SessionContext },
+  appTools: readonly string[] | undefined,
+  moment: SessionMoment | undefined
 ): string | undefined | Promise<string | undefined> {
+  if (!moment) return undefined
   const failed = (error: unknown) => {
     log.warn(`Contexte de session indisponible : ${String(error)}`)
     return undefined
   }
   try {
-    const context = options.sessionContext?.(appTools ?? [])
+    const context = options.sessionContext?.(appTools ?? [], moment)
     return context instanceof Promise ? context.catch(failed) : context
   } catch (error) {
     return failed(error)

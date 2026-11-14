@@ -99,13 +99,13 @@ export async function settingsSuite(scheme) {
 
         await menu('settings')
         await ui.waitFor(`!!${ui.$('settings')}`)
-        // Trois groupes, treize onglets (fiches 136, 144 : la consommation est une page à part ;
-        // fiche 182 : Mémoire).
+        // Trois groupes, quatorze onglets (fiches 136, 144 : la consommation est une page à part ;
+        // fiche 182 : Mémoire ; fiche 223 : Rôles).
         check(
           (await ui.ev(
-            `document.querySelectorAll('.settings-nav-item').length === 13 && document.querySelectorAll('.settings-nav-gap').length === 2`
+            `document.querySelectorAll('.settings-nav-item').length === 14 && document.querySelectorAll('.settings-nav-gap').length === 2`
           )) === true,
-          'réglages : treize onglets en trois groupes'
+          'réglages : quatorze onglets en trois groupes'
         )
         await ui.shot('81-general')
         // Apparence (fiche 136) : sept thèmes en une rangée (Fjord, fiche 168), polices et tailles, aperçu.

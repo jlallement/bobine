@@ -1206,7 +1206,8 @@
       "privacy": "Confidentialité",
       "data": "Données",
       "diagnostics": "Diagnostic",
-      "about": "Nouveautés"
+      "about": "Nouveautés",
+      "roles": "Rôles"
     },
     "commands": {
       "project": {
@@ -1717,7 +1718,8 @@
     "tips": "astuce conseil aide suggestion languette",
     "memory": "mémoire souvenirs retenir oublier agents index Claude",
     "restore": "restaurer sauvegarde revenir remplacer annuler",
-    "trash": "corbeille supprimées effacer définitivement récupérer restaurer"
+    "trash": "corbeille supprimées effacer définitivement récupérer restaurer",
+    "roles": "rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @"
   },
   "diagnostics": {
     "group": {
@@ -3076,7 +3078,8 @@
       "freshStart": "Recommencer à neuf indisponible",
       "aside": "L’aparté n’est pas disponible ici.",
       "help": "Aide indisponible",
-      "onboarding": "Accueil du premier lancement indisponible"
+      "onboarding": "Accueil du premier lancement indisponible",
+      "roles": "Les rôles ne sont pas disponibles ici."
     },
     "emptyMessage": "Message vide",
     "emptyPrompt": "Prompt vide"
@@ -3224,6 +3227,10 @@
       "label": "Autres dossiers dans une conversation",
       "yes": "Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).",
       "no": "L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session."
+    },
+    "writesWithoutAsking": {
+      "label": "Écrit sans demander",
+      "detail": "{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier."
     }
   },
   "permissionOption": {
@@ -4326,6 +4333,76 @@
       "stopped": "L’agent de l’aparté s’est arrêté."
     }
   },
+  "roleWork": {
+    "brief": "Consigne du rôle",
+    "readOnly": "lecture seule",
+    "readOnlyRequested": "lecture seule demandée",
+    "readOnlyRequestedHint": "L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.",
+    "writes": "écrit du code",
+    "mode": "mode {{mode}}",
+    "byAgent": "proposé par l’agent",
+    "prompt": "Consigne",
+    "hides": "Rôle du projet : il remplace le rôle {{scopes}} du même nom.",
+    "titleBadge": "Rôle : {{label}}",
+    "scope": {
+      "builtin": "fourni",
+      "user": "personnel",
+      "project": "du projet"
+    },
+    "menu": {
+      "title": "Rôles",
+      "byDescription": "Rôles dont la description correspond",
+      "hint": "Votre demande partira dans une conversation fille",
+      "all_one": "Tous les rôles ({{count}})",
+      "all_many": "Tous les rôles ({{count}})",
+      "all_other": "Tous les rôles ({{count}})",
+      "option": "{{label}} : {{description}}",
+      "project": "Rôle du projet (vient du dépôt)",
+      "new": "Nouveau rôle…",
+      "newNamed": "Nouveau rôle « {{name}} »",
+      "manage": "Gérer"
+    },
+    "invite": {
+      "title": "Confiez ce travail à un rôle",
+      "text": "Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, au travail dans une conversation fille.",
+      "create": "Créer un rôle",
+      "hide": "Ne plus montrer"
+    },
+    "token": {
+      "remove": "Retirer {{label}}"
+    },
+    "destination": {
+      "one": "Partira à <strong>{{label}}</strong>, dans une conversation fille",
+      "many_one": "Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle",
+      "many_many": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
+      "many_other": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
+      "sameFolder": "dans ce dossier",
+      "worktree": "son worktree",
+      "draft": "Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.",
+      "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
+      "empty": "Écrivez votre demande après le rôle : c’est elle qui part.",
+      "sending": "Lancement…",
+      "failed": "{{label}} n’est pas parti : {{error}}"
+    },
+    "state": {
+      "running": "au travail",
+      "waiting": "attend votre accord",
+      "unread": "a rendu son compte rendu",
+      "done": "a fini",
+      "error": "en échec"
+    },
+    "report": {
+      "done": "{{role}} a rendu son compte rendu — {{title}}",
+      "stopped": "{{role}} a été arrêté — {{title}}",
+      "error": "{{role}} a échoué — {{title}}",
+      "saveAsRole": "Enregistrer comme rôle…"
+    },
+    "proposalsWhere": "L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
+    "where": {
+      "sameFolder": "dans ce dossier",
+      "worktree": "son worktree"
+    }
+  },
   "review": {
     "action": "Faire relire…",
     "actionTip": "Faire relire : un autre agent relit ces modifications, sans rien modifier, et pose ses remarques sur le diff",
@@ -4910,6 +4987,212 @@
     },
     "terminal": {
       "denied": "Commande refusée partout par les règles de l’agent (« {{command}} ») : Bobine ne la lance pas non plus avec ses propres outils."
+    }
+  },
+  "roleForm": {
+    "label": {
+      "label": "Nom",
+      "placeholder": "Expert sécurité",
+      "missing": "Donnez un nom au rôle."
+    },
+    "name": {
+      "label": "Identifiant",
+      "hint": "Tapé après @ ; minuscules, chiffres et tirets.",
+      "replaces": "Remplacera le rôle « {{label}} » ({{scope}}) du même identifiant."
+    },
+    "icon": "Icône",
+    "color": "Couleur",
+    "suggested": "Suggérées d’après le nom : choisissez-en d’autres si vous voulez.",
+    "description": {
+      "label": "Quand faire appel à lui ?",
+      "hint": "Une ou deux phrases. L’agent principal s’en sert pour choisir à qui confier un travail.",
+      "placeholder": "Relit le code sensible : authentification, secrets, entrées non fiables. À appeler avant de fusionner.",
+      "goodTitle": "Dit quand l’appeler",
+      "goodText": "« À appeler avant de fusionner un changement qui touche la sécurité. »",
+      "vagueTitle": "Trop vague",
+      "vagueText": "« Un expert en sécurité très compétent. »"
+    },
+    "prompt": {
+      "label": "Consigne",
+      "hint": "Reçue par le rôle au début de chaque conversation fille, avant votre demande. Markdown accepté.",
+      "placeholder": "Tu es… Pour chaque problème trouvé : où, pourquoi, quoi faire."
+    },
+    "tools": {
+      "label": "Outils de Bobine",
+      "all": "Tous ceux de la conversation",
+      "hint": "Les questions et le lien avec la conversation mère restent toujours."
+    },
+    "agent": {
+      "label": "Agent",
+      "conversation": "Celui de la conversation",
+      "missing": "{{agent}} (indisponible)",
+      "hint": "Mode et modèle : laissez vide pour ceux de l’agent. Un mode que l’agent n’a pas est ignoré, la consigne part quand même."
+    },
+    "mode": {
+      "label": "Mode"
+    },
+    "model": {
+      "label": "Modèle"
+    },
+    "agentDefault": "Par défaut de l’agent",
+    "readOnly": {
+      "label": "Lecture seule",
+      "hint": "Même dossier, sans worktree : Bobine refuse ses écritures et vérifie le dossier après chaque tour.",
+      "requested": "Avec {{agent}}, la lecture seule n’est que demandée : cet agent écrit sans demander d’autorisation. Bobine signale tout changement du dossier."
+    },
+    "scope": {
+      "label": "Portée",
+      "user": "Personnel",
+      "userHint": "Dans tous mes projets, sur cet ordinateur.",
+      "project": "Ce projet · {{project}}",
+      "projectNone": "Ce projet",
+      "projectHint": "Partagé par git : .bobine/roles/",
+      "projectMissing": "Ouvrez une conversation dans un projet pour y enregistrer un rôle."
+    }
+  },
+  "roleWizard": {
+    "title": "Nouveau rôle",
+    "description": "Créer un rôle en trois étapes : qui, comment, avec quoi.",
+    "steps": "Étapes",
+    "step": {
+      "who": "Qui",
+      "how": "Comment",
+      "with": "Avec quoi"
+    },
+    "templates": "Partir d’un modèle",
+    "blank": "Page blanche",
+    "blankHint": "vous écrivez tout",
+    "replacePrompt": "Remplacer la consigne déjà écrite par celle de « {{label}} » ?",
+    "replace": "Remplacer",
+    "discard": "Abandonner ce rôle ? Ce qui a été saisi sera perdu.",
+    "discardConfirm": "Abandonner",
+    "keepEditing": "Continuer",
+    "shortcut": "⌘ Entrée : étape suivante, ou créer",
+    "shortcutKeys": "⌘↩",
+    "back": "Retour",
+    "next": "Suivant",
+    "create": "Créer",
+    "createAndTry": "Créer et essayer",
+    "preview": {
+      "title": "Aperçu",
+      "live": "en direct",
+      "unnamed": "Nouveau rôle",
+      "noDescription": "Quand faire appel à lui…",
+      "menu": "Dans le menu @",
+      "thread": "Dans le fil, au travail",
+      "reading": "relit le code",
+      "working": "au travail",
+      "sidebar": "Dans la barre latérale",
+      "childTitle": "Relire le diff",
+      "fileProject": "Enregistré dans {{file}} : vos collègues le recevront avec le prochain git pull.",
+      "fileUser": "Enregistré dans vos rôles personnels ({{file}}), pour tous vos projets."
+    }
+  },
+  "rolesSettings": {
+    "intro": "Des agents spécialisés, appelés avec @ ou choisis par l’agent. Chacun travaille dans une conversation fille.",
+    "new": "Nouveau rôle",
+    "userAside": "tous vos projets",
+    "builtinAside": "{{active}} sur {{total}} actifs",
+    "group": {
+      "project": "Ce projet",
+      "user": "Personnels",
+      "builtin": "Fournis avec Bobine"
+    },
+    "scope": {
+      "builtin": "fourni",
+      "user": "personnel",
+      "project": "du projet"
+    },
+    "hides": "Remplace un rôle {{scopes}}",
+    "agentMissing": "{{agent}} absent",
+    "readOnly": "Lecture seule",
+    "builtinDescription": {
+      "uxUiExpert": "Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.",
+      "flutterExpert": "Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.",
+      "frontArchitect": "Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.",
+      "backArchitect": "Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.",
+      "securityExpert": "Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.",
+      "techLead": "Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.",
+      "codeReviewer": "Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien."
+    },
+    "enabled": "{{label}} : actif",
+    "empty": {
+      "title": "Montez votre équipe",
+      "text": "Un expert sécu qui relit avant la fusion, un reviewer strict, un architecte… Créez-les une fois, appelez-les avec @ quand vous voulez. Les rôles fournis ci-dessous sont déjà prêts.",
+      "action": "Créer mon premier rôle"
+    },
+    "problems": {
+      "title": "Fichiers écartés"
+    },
+    "edit": {
+      "missing": "Ce rôle n’existe plus (fichier supprimé ou renommé).",
+      "copyLabel": "{{label}} (copie)",
+      "try": "Essayer",
+      "enableFirst": "Activez d’abord ce rôle (Réglages › Rôles).",
+      "saveFirst": "Enregistrez d’abord vos changements.",
+      "duplicate": "Dupliquer",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer le rôle « {{label}} » ? Son fichier est effacé ; un rôle fourni du même nom reprend sa place.",
+      "projectBanner": "Partagé par git : vos changements seront à committer.",
+      "builtinBanner": "Rôle fourni : vos changements seront enregistrés en rôle personnel du même nom, qui le remplace.",
+      "saved": "Enregistré",
+      "reset": "Annuler les modifications",
+      "saveAsUser": "Enregistrer en rôle personnel"
+    }
+  },
+  "team": {
+    "title": "Équipe",
+    "new": "Nouveau rôle…",
+    "empty": "Aucun rôle actif",
+    "assign": "Confier un travail à {{label}}",
+    "roleTip": "Rôle : {{label}}",
+    "notHere": "Une conversation fille ne confie pas de travail à un rôle : ouvrez sa conversation mère."
+  },
+  "roles": {
+    "none": "aucun",
+    "builtin": {
+      "uxUiExpert": "Expert UX/UI",
+      "flutterExpert": "Expert Flutter",
+      "frontArchitect": "Architecte front-end",
+      "backArchitect": "Architecte back-end",
+      "securityExpert": "Expert sécurité",
+      "techLead": "Tech lead",
+      "codeReviewer": "Code reviewer"
+    },
+    "error": {
+      "noHeader": "Pas d’en-tête : le fichier doit commencer par une ligne « --- ».",
+      "syntax": "Ligne {{line}} illisible dans l’en-tête.",
+      "unknownField": "Champ inconnu dans l’en-tête : {{field}}.",
+      "duplicateField": "Champ répété dans l’en-tête : {{field}}.",
+      "name": "Nom invalide : minuscules, chiffres et tirets, 40 caractères au plus.",
+      "label": "Libellé trop long (40 caractères au plus).",
+      "icon": "Icône invalide : un nom d’icône Lucide, comme « shield-check ».",
+      "color": "Couleur invalide : orange, blue, violet, pink, green ou graphite.",
+      "description": "Description manquante ou trop longue (300 caractères au plus).",
+      "value": "Valeur invalide pour {{field}}.",
+      "readOnly": "« read-only » attend true ou false.",
+      "mcp": "Famille d’outils inconnue dans « mcp » : {{field}}.",
+      "prompt": "Consigne manquante ou trop longue (20 000 caractères au plus).",
+      "tooLarge": "Fichier trop gros (64 Ko au plus).",
+      "duplicateName": "Un autre rôle porte déjà ce nom à cet endroit.",
+      "unreadable": "Fichier illisible.",
+      "unknownRole": "Rôle inconnu ou désactivé : {{name}}. Rôles : {{roles}}.",
+      "noProject": "Cette conversation n’a pas de dossier de projet.",
+      "builtinFile": "Un rôle fourni ne s’écrit ni ne se supprime : désactivez-le, ou enregistrez un rôle personnel du même nom.",
+      "notWritten": "Rôle non enregistré : le profil est en lecture seule.",
+      "link": "Lien symbolique refusé : un rôle ne se lit ni ne s’écrit à travers un lien.",
+      "tooMany": "Plus de 100 rôles dans ce dossier : les suivants ne sont pas lus."
+    },
+    "notice": {
+      "writeRefused": "Écriture refusée par Bobine : ce rôle est en lecture seule ({{tool}}).",
+      "readOnlyRequested": "Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.",
+      "folderChanged": "Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).",
+      "childFolderChanged": "Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).",
+      "agentMissing": "Agent du rôle « {{agent}} » indisponible ici : la fille travaille avec l’agent de cette conversation.",
+      "modelMissing": "Modèle du rôle « {{model}} » impossible à choisir ici : l’agent prend son propre modèle.",
+      "modeMissing": "L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.",
+      "projectOverrides": "Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.",
+      "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status)."
     }
   }
 }

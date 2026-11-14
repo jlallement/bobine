@@ -1015,6 +1015,31 @@ export const SUITES = [
     ]
   },
   {
+    // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, filles des rôles, proposition.
+    name: 'roles-travail',
+    file: 'roles-travail.mjs',
+    run: 'rolesTravailSuite',
+    themes: BOTH,
+    sources: [
+      `${C}roles/`,
+      `${C}composer/FileMenu.tsx`,
+      `${C}thread/ChildProposals.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${R}useMentions.ts`,
+      `${R}useComposerRoles.ts`,
+      `${R}roles.css`,
+      `${R}roles/`,
+      'src/shared/role-mentions.ts',
+      'src/shared/roles.ts',
+      'src/shared/roles-ipc.ts',
+      'src/shared/children.ts',
+      'src/main/roles/',
+      'src/main/conversations/children.ts',
+      'src/main/mcp/children-tools.ts',
+      'src/mock-agent/scenarios-roles.mts'
+    ]
+  },
+  {
     name: 'filles-fusion',
     file: 'filles-fusion.mjs',
     run: 'fillesFusionSuite',
@@ -1108,6 +1133,30 @@ export const SUITES = [
       'src/main/conversations/branching.ts',
       'src/main/conversations/restore-files.ts',
       'src/shared/branch.ts'
+    ]
+  },
+  {
+    // Rôles, interface de gestion (fiche 223, phase 3A) : assistant, Réglages › Rôles, Équipe.
+    name: 'roles-gestion',
+    file: 'roles-gestion.mjs',
+    run: 'rolesGestionSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      `${C}roles/`,
+      `${R}roles/`,
+      `${R}roles.css`,
+      `${C}settings/ConfirmRow.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${C}thread/Transcript.tsx`,
+      `${C}sidebar/HistoryItem.tsx`,
+      `${C}sidebar/SidebarSection.tsx`,
+      `${C}dialogs/AppDialogs.tsx`,
+      `${R}settings-search.ts`,
+      'src/shared/roles.ts',
+      'src/shared/roles-ipc.ts',
+      'src/shared/children.ts',
+      'src/main/roles/'
     ]
   },
   {

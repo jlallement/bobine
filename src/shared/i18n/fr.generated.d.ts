@@ -1177,6 +1177,7 @@ export type FrResources = {
       readonly data: 'Données'
       readonly diagnostics: 'Diagnostic'
       readonly about: 'Nouveautés'
+      readonly roles: 'Rôles'
     }
     readonly commands: {
       readonly project: {
@@ -1680,6 +1681,7 @@ export type FrResources = {
     readonly memory: 'mémoire souvenirs retenir oublier agents index Claude'
     readonly restore: 'restaurer sauvegarde revenir remplacer annuler'
     readonly trash: 'corbeille supprimées effacer définitivement récupérer restaurer'
+    readonly roles: 'rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @'
   }
   readonly diagnostics: {
     readonly group: {
@@ -2926,6 +2928,7 @@ export type FrResources = {
       readonly aside: 'L’aparté n’est pas disponible ici.'
       readonly help: 'Aide indisponible'
       readonly onboarding: 'Accueil du premier lancement indisponible'
+      readonly roles: 'Les rôles ne sont pas disponibles ici.'
     }
     readonly emptyMessage: 'Message vide'
     readonly emptyPrompt: 'Prompt vide'
@@ -3071,6 +3074,10 @@ export type FrResources = {
       readonly label: 'Autres dossiers dans une conversation'
       readonly yes: 'Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).'
       readonly no: 'L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session.'
+    }
+    readonly writesWithoutAsking: {
+      readonly label: 'Écrit sans demander'
+      readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier.'
     }
   }
   readonly permissionOption: {
@@ -4163,6 +4170,71 @@ export type FrResources = {
       readonly stopped: 'L’agent de l’aparté s’est arrêté.'
     }
   }
+  readonly roleWork: {
+    readonly brief: 'Consigne du rôle'
+    readonly readOnly: 'lecture seule'
+    readonly readOnlyRequested: 'lecture seule demandée'
+    readonly readOnlyRequestedHint: 'L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.'
+    readonly writes: 'écrit du code'
+    readonly mode: 'mode {{mode}}'
+    readonly byAgent: 'proposé par l’agent'
+    readonly prompt: 'Consigne'
+    readonly hides: 'Rôle du projet : il remplace le rôle {{scopes}} du même nom.'
+    readonly titleBadge: 'Rôle : {{label}}'
+    readonly scope: {
+      readonly builtin: 'fourni'
+      readonly user: 'personnel'
+      readonly project: 'du projet'
+    }
+    readonly menu: {
+      readonly title: 'Rôles'
+      readonly byDescription: 'Rôles dont la description correspond'
+      readonly hint: 'Votre demande partira dans une conversation fille'
+      readonly all_one: 'Tous les rôles ({{count}})'
+      readonly all_many: 'Tous les rôles ({{count}})'
+      readonly all_other: 'Tous les rôles ({{count}})'
+      readonly option: '{{label}} : {{description}}'
+      readonly project: 'Rôle du projet (vient du dépôt)'
+      readonly new: 'Nouveau rôle…'
+      readonly newNamed: 'Nouveau rôle « {{name}} »'
+      readonly manage: 'Gérer'
+    }
+    readonly invite: {
+      readonly title: 'Confiez ce travail à un rôle'
+      readonly text: 'Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, au travail dans une conversation fille.'
+      readonly create: 'Créer un rôle'
+      readonly hide: 'Ne plus montrer'
+    }
+    readonly token: { readonly remove: 'Retirer {{label}}' }
+    readonly destination: {
+      readonly one: 'Partira à <strong>{{label}}</strong>, dans une conversation fille'
+      readonly many_one: 'Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle'
+      readonly many_many: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
+      readonly many_other: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
+      readonly sameFolder: 'dans ce dossier'
+      readonly worktree: 'son worktree'
+      readonly draft: 'Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.'
+      readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
+      readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
+      readonly sending: 'Lancement…'
+      readonly failed: '{{label}} n’est pas parti : {{error}}'
+    }
+    readonly state: {
+      readonly running: 'au travail'
+      readonly waiting: 'attend votre accord'
+      readonly unread: 'a rendu son compte rendu'
+      readonly done: 'a fini'
+      readonly error: 'en échec'
+    }
+    readonly report: {
+      readonly done: '{{role}} a rendu son compte rendu — {{title}}'
+      readonly stopped: '{{role}} a été arrêté — {{title}}'
+      readonly error: '{{role}} a échoué — {{title}}'
+      readonly saveAsRole: 'Enregistrer comme rôle…'
+    }
+    readonly proposalsWhere: 'L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.'
+    readonly where: { readonly sameFolder: 'dans ce dossier'; readonly worktree: 'son worktree' }
+  }
   readonly review: {
     readonly action: 'Faire relire…'
     readonly actionTip: 'Faire relire : un autre agent relit ces modifications, sans rien modifier, et pose ses remarques sur le diff'
@@ -4743,6 +4815,202 @@ export type FrResources = {
     }
     readonly terminal: {
       readonly denied: 'Commande refusée partout par les règles de l’agent (« {{command}} ») : Bobine ne la lance pas non plus avec ses propres outils.'
+    }
+  }
+  readonly roleForm: {
+    readonly label: {
+      readonly label: 'Nom'
+      readonly placeholder: 'Expert sécurité'
+      readonly missing: 'Donnez un nom au rôle.'
+    }
+    readonly name: {
+      readonly label: 'Identifiant'
+      readonly hint: 'Tapé après @ ; minuscules, chiffres et tirets.'
+      readonly replaces: 'Remplacera le rôle « {{label}} » ({{scope}}) du même identifiant.'
+    }
+    readonly icon: 'Icône'
+    readonly color: 'Couleur'
+    readonly suggested: 'Suggérées d’après le nom : choisissez-en d’autres si vous voulez.'
+    readonly description: {
+      readonly label: 'Quand faire appel à lui ?'
+      readonly hint: 'Une ou deux phrases. L’agent principal s’en sert pour choisir à qui confier un travail.'
+      readonly placeholder: 'Relit le code sensible : authentification, secrets, entrées non fiables. À appeler avant de fusionner.'
+      readonly goodTitle: 'Dit quand l’appeler'
+      readonly goodText: '« À appeler avant de fusionner un changement qui touche la sécurité. »'
+      readonly vagueTitle: 'Trop vague'
+      readonly vagueText: '« Un expert en sécurité très compétent. »'
+    }
+    readonly prompt: {
+      readonly label: 'Consigne'
+      readonly hint: 'Reçue par le rôle au début de chaque conversation fille, avant votre demande. Markdown accepté.'
+      readonly placeholder: 'Tu es… Pour chaque problème trouvé : où, pourquoi, quoi faire.'
+    }
+    readonly tools: {
+      readonly label: 'Outils de Bobine'
+      readonly all: 'Tous ceux de la conversation'
+      readonly hint: 'Les questions et le lien avec la conversation mère restent toujours.'
+    }
+    readonly agent: {
+      readonly label: 'Agent'
+      readonly conversation: 'Celui de la conversation'
+      readonly missing: '{{agent}} (indisponible)'
+      readonly hint: 'Mode et modèle : laissez vide pour ceux de l’agent. Un mode que l’agent n’a pas est ignoré, la consigne part quand même.'
+    }
+    readonly mode: { readonly label: 'Mode' }
+    readonly model: { readonly label: 'Modèle' }
+    readonly agentDefault: 'Par défaut de l’agent'
+    readonly readOnly: {
+      readonly label: 'Lecture seule'
+      readonly hint: 'Même dossier, sans worktree : Bobine refuse ses écritures et vérifie le dossier après chaque tour.'
+      readonly requested: 'Avec {{agent}}, la lecture seule n’est que demandée : cet agent écrit sans demander d’autorisation. Bobine signale tout changement du dossier.'
+    }
+    readonly scope: {
+      readonly label: 'Portée'
+      readonly user: 'Personnel'
+      readonly userHint: 'Dans tous mes projets, sur cet ordinateur.'
+      readonly project: 'Ce projet · {{project}}'
+      readonly projectNone: 'Ce projet'
+      readonly projectHint: 'Partagé par git : .bobine/roles/'
+      readonly projectMissing: 'Ouvrez une conversation dans un projet pour y enregistrer un rôle.'
+    }
+  }
+  readonly roleWizard: {
+    readonly title: 'Nouveau rôle'
+    readonly description: 'Créer un rôle en trois étapes : qui, comment, avec quoi.'
+    readonly steps: 'Étapes'
+    readonly step: { readonly who: 'Qui'; readonly how: 'Comment'; readonly with: 'Avec quoi' }
+    readonly templates: 'Partir d’un modèle'
+    readonly blank: 'Page blanche'
+    readonly blankHint: 'vous écrivez tout'
+    readonly replacePrompt: 'Remplacer la consigne déjà écrite par celle de « {{label}} » ?'
+    readonly replace: 'Remplacer'
+    readonly discard: 'Abandonner ce rôle ? Ce qui a été saisi sera perdu.'
+    readonly discardConfirm: 'Abandonner'
+    readonly keepEditing: 'Continuer'
+    readonly shortcut: '⌘ Entrée : étape suivante, ou créer'
+    readonly shortcutKeys: '⌘↩'
+    readonly back: 'Retour'
+    readonly next: 'Suivant'
+    readonly create: 'Créer'
+    readonly createAndTry: 'Créer et essayer'
+    readonly preview: {
+      readonly title: 'Aperçu'
+      readonly live: 'en direct'
+      readonly unnamed: 'Nouveau rôle'
+      readonly noDescription: 'Quand faire appel à lui…'
+      readonly menu: 'Dans le menu @'
+      readonly thread: 'Dans le fil, au travail'
+      readonly reading: 'relit le code'
+      readonly working: 'au travail'
+      readonly sidebar: 'Dans la barre latérale'
+      readonly childTitle: 'Relire le diff'
+      readonly fileProject: 'Enregistré dans {{file}} : vos collègues le recevront avec le prochain git pull.'
+      readonly fileUser: 'Enregistré dans vos rôles personnels ({{file}}), pour tous vos projets.'
+    }
+  }
+  readonly rolesSettings: {
+    readonly intro: 'Des agents spécialisés, appelés avec @ ou choisis par l’agent. Chacun travaille dans une conversation fille.'
+    readonly new: 'Nouveau rôle'
+    readonly userAside: 'tous vos projets'
+    readonly builtinAside: '{{active}} sur {{total}} actifs'
+    readonly group: {
+      readonly project: 'Ce projet'
+      readonly user: 'Personnels'
+      readonly builtin: 'Fournis avec Bobine'
+    }
+    readonly scope: {
+      readonly builtin: 'fourni'
+      readonly user: 'personnel'
+      readonly project: 'du projet'
+    }
+    readonly hides: 'Remplace un rôle {{scopes}}'
+    readonly agentMissing: '{{agent}} absent'
+    readonly readOnly: 'Lecture seule'
+    readonly builtinDescription: {
+      readonly uxUiExpert: 'Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.'
+      readonly flutterExpert: 'Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.'
+      readonly frontArchitect: 'Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.'
+      readonly backArchitect: 'Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.'
+      readonly securityExpert: 'Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.'
+      readonly techLead: 'Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.'
+      readonly codeReviewer: 'Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien.'
+    }
+    readonly enabled: '{{label}} : actif'
+    readonly empty: {
+      readonly title: 'Montez votre équipe'
+      readonly text: 'Un expert sécu qui relit avant la fusion, un reviewer strict, un architecte… Créez-les une fois, appelez-les avec @ quand vous voulez. Les rôles fournis ci-dessous sont déjà prêts.'
+      readonly action: 'Créer mon premier rôle'
+    }
+    readonly problems: { readonly title: 'Fichiers écartés' }
+    readonly edit: {
+      readonly missing: 'Ce rôle n’existe plus (fichier supprimé ou renommé).'
+      readonly copyLabel: '{{label}} (copie)'
+      readonly try: 'Essayer'
+      readonly enableFirst: 'Activez d’abord ce rôle (Réglages › Rôles).'
+      readonly saveFirst: 'Enregistrez d’abord vos changements.'
+      readonly duplicate: 'Dupliquer'
+      readonly delete: 'Supprimer'
+      readonly deleteConfirm: 'Supprimer le rôle « {{label}} » ? Son fichier est effacé ; un rôle fourni du même nom reprend sa place.'
+      readonly projectBanner: 'Partagé par git : vos changements seront à committer.'
+      readonly builtinBanner: 'Rôle fourni : vos changements seront enregistrés en rôle personnel du même nom, qui le remplace.'
+      readonly saved: 'Enregistré'
+      readonly reset: 'Annuler les modifications'
+      readonly saveAsUser: 'Enregistrer en rôle personnel'
+    }
+  }
+  readonly team: {
+    readonly title: 'Équipe'
+    readonly new: 'Nouveau rôle…'
+    readonly empty: 'Aucun rôle actif'
+    readonly assign: 'Confier un travail à {{label}}'
+    readonly roleTip: 'Rôle : {{label}}'
+    readonly notHere: 'Une conversation fille ne confie pas de travail à un rôle : ouvrez sa conversation mère.'
+  }
+  readonly roles: {
+    readonly none: 'aucun'
+    readonly builtin: {
+      readonly uxUiExpert: 'Expert UX/UI'
+      readonly flutterExpert: 'Expert Flutter'
+      readonly frontArchitect: 'Architecte front-end'
+      readonly backArchitect: 'Architecte back-end'
+      readonly securityExpert: 'Expert sécurité'
+      readonly techLead: 'Tech lead'
+      readonly codeReviewer: 'Code reviewer'
+    }
+    readonly error: {
+      readonly noHeader: 'Pas d’en-tête : le fichier doit commencer par une ligne « --- ».'
+      readonly syntax: 'Ligne {{line}} illisible dans l’en-tête.'
+      readonly unknownField: 'Champ inconnu dans l’en-tête : {{field}}.'
+      readonly duplicateField: 'Champ répété dans l’en-tête : {{field}}.'
+      readonly name: 'Nom invalide : minuscules, chiffres et tirets, 40 caractères au plus.'
+      readonly label: 'Libellé trop long (40 caractères au plus).'
+      readonly icon: 'Icône invalide : un nom d’icône Lucide, comme « shield-check ».'
+      readonly color: 'Couleur invalide : orange, blue, violet, pink, green ou graphite.'
+      readonly description: 'Description manquante ou trop longue (300 caractères au plus).'
+      readonly value: 'Valeur invalide pour {{field}}.'
+      readonly readOnly: '« read-only » attend true ou false.'
+      readonly mcp: 'Famille d’outils inconnue dans « mcp » : {{field}}.'
+      readonly prompt: 'Consigne manquante ou trop longue (20 000 caractères au plus).'
+      readonly tooLarge: 'Fichier trop gros (64 Ko au plus).'
+      readonly duplicateName: 'Un autre rôle porte déjà ce nom à cet endroit.'
+      readonly unreadable: 'Fichier illisible.'
+      readonly unknownRole: 'Rôle inconnu ou désactivé : {{name}}. Rôles : {{roles}}.'
+      readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
+      readonly builtinFile: 'Un rôle fourni ne s’écrit ni ne se supprime : désactivez-le, ou enregistrez un rôle personnel du même nom.'
+      readonly notWritten: 'Rôle non enregistré : le profil est en lecture seule.'
+      readonly link: 'Lien symbolique refusé : un rôle ne se lit ni ne s’écrit à travers un lien.'
+      readonly tooMany: 'Plus de 100 rôles dans ce dossier : les suivants ne sont pas lus.'
+    }
+    readonly notice: {
+      readonly writeRefused: 'Écriture refusée par Bobine : ce rôle est en lecture seule ({{tool}}).'
+      readonly readOnlyRequested: 'Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.'
+      readonly folderChanged: 'Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).'
+      readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).'
+      readonly agentMissing: 'Agent du rôle « {{agent}} » indisponible ici : la fille travaille avec l’agent de cette conversation.'
+      readonly modelMissing: 'Modèle du rôle « {{model}} » impossible à choisir ici : l’agent prend son propre modèle.'
+      readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.'
+      readonly projectOverrides: 'Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.'
+      readonly watchFailed: 'La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).'
     }
   }
 }

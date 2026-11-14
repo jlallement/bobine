@@ -51,11 +51,12 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
+import { askReadOnly, automaticAnswer, readOnlyRefusal } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
 import type { SessionDirectories } from './additional-directories'
-import { buildPrompt, sessionContextOf, withContext } from './prompt-content'
+import { buildPrompt, sessionContextOf, withContext, type SessionContext } from './prompt-content'
 import { CHILDREN_REQUEST, originContext, type MessageOrigin } from '@shared/children'
 import type { AgentProfile } from './profiles'
 import { markRefused, noteAnswered, type RefusedModelsOfProfile } from './refused-models'
@@ -136,6 +137,8 @@ export interface AgentHostOptions {
    * son mode de travail ; appliqué après les réglages initiaux.
    */
   initialMode?: 'plan' | 'execute'
+  /** Fille d'un rôle en lecture seule (fiche 223) : demandes d'écriture refusées d'office. */
+  readOnly?: boolean
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */
   timeouts?: Partial<typeof TIMEOUTS>
   /**
@@ -151,13 +154,13 @@ export interface AgentHostOptions {
    * Texte joint avant le prochain message envoyé, lu à l'envoi (file d'attente comprise) :
    * nouvelles des conversations filles (fiche 097).
    */
-  extraContext?: () => string | undefined
+  extraContext?: (text: string, appTools: readonly string[]) => string | undefined
   /**
    * Texte joint au premier message de chaque session ouverte (nouvelle, rouverte, après un
-   * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus : ce que
-   * l'app offre (fiche 118), index de la mémoire (fiche 182, lu sur le disque : asynchrone).
+   * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus et le moment
+   * (fiche 223) : ce que l'app offre (fiche 118), index de la mémoire (fiche 182, asynchrone).
    */
-  sessionContext?: (appTools: readonly string[]) => string | undefined | Promise<string | undefined>
+  sessionContext?: SessionContext
   /** Ce que l'agent annonce à `initialize` (fiche 054), à chaque démarrage. */
   onAnnounced?: (announcement: AgentAnnouncement) => void
   /**
@@ -249,8 +252,11 @@ export class AgentHost {
   private sendNowPending = false
   /** Un message est en préparation (pièces jointes lues) : l'agent est encore « prêt ». */
   private preparing = false
-  /** Session ouverte qui n'a pas encore reçu son contexte de session (fiche 118). */
-  private sessionContextDue = false
+  /**
+   * Contexte de session dû au prochain message (fiche 118), et à quel moment (fiche 223) : session
+   * neuve, rouverte, ou compaction ; absent : rien à joindre.
+   */
+  private sessionContextDue?: Parameters<SessionContext>[1]
   private promptCaps: PromptCapabilities = { image: false, embeddedContext: false }
   private support: SessionSupport = NO_SESSION_SUPPORT
   /** Rejeu en cours (`session/load`) : seuls moments où les messages utilisateur viennent de l'agent. */
@@ -311,7 +317,8 @@ export class AgentHost {
         this.lateAnswers.push(text)
         this.flushLateAnswer()
       },
-      ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {})
+      ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {}),
+      readOnly: options.readOnly
     })
   }
 
@@ -534,7 +541,7 @@ export class AgentHost {
         buildPrompt(text, attachments, this.promptCaps, agentLabel, this.options.contextText),
         // Relance avec fil gardé (fiche 121, D21) : le rejeu tardif ne doit pas croiser le tour.
         this.replay.waitCalm(this.timeout('replayWaitMs'), scopeText(this.logScope())),
-        this.sessionContextDue ? sessionContextOf(this.options, this.appToolNames) : undefined
+        sessionContextOf(this.options, this.appToolNames, this.sessionContextDue)
       ])
     } finally {
       this.preparing = false
@@ -548,10 +555,10 @@ export class AgentHost {
     // le début du premier message, Bob) ; le contexte de session, au premier message de la session
     // seulement (fiche 118), et après une compaction (fiche 182 : l'index a pu être résumé).
     const compaction = isCompactionRequest(text, this.compactCommand())
-    this.sessionContextDue = compaction
+    this.sessionContextDue = compaction ? 'compacted' : undefined
     const blocks = withContext(built.blocks, [
       options.askChildren && CHILDREN_REQUEST,
-      this.options.extraContext?.(),
+      this.options.extraContext?.(text, this.appToolNames ?? []),
       this.options.directories?.context(sessionId),
       options.from && originContext(options.from),
       options.context,
@@ -823,26 +830,24 @@ export class AgentHost {
     params: RequestPermissionRequest,
     signal?: AbortSignal
   ): RequestPermissionResponse | Promise<RequestPermissionResponse> {
-    // Outils de l'app qui n'agissent que dans l'app (question, panneau) : accordés sans demander.
-    const allow = params.options.find((o) => o.kind === 'allow_once')
-    if (allow && this.appTools.autoAllowed(params.toolCall)) {
-      return { outcome: { outcome: 'selected', optionId: allow.optionId } }
-    }
     // Écriture hors du dossier, droits d'administrateur… : dits sur la carte (fiche 211).
     const place = { workspace: this.options.workspace, home: homedir() }
-    // Outil déjà « toujours autorisé » dans une conversation précédente (fiche 042), sauf risque.
-    const remembered = rememberableTool(params.toolCall)
-    if (
-      remembered &&
-      this.options.rememberedTools?.has(remembered) &&
-      permissionRisks(params.toolCall, place).length === 0
-    ) {
-      const always = params.options.find((o) => o.kind === 'allow_always') ?? allow
-      if (always) return { outcome: { outcome: 'selected', optionId: always.optionId } }
-    }
+    // Genre retenu des mises à jour de l'outil : une demande peut venir sans `kind` (relecture 223).
     const toolCall = this.updates.permission(params.toolCall)
+    const automatic = automaticAnswer(
+      { ...params, toolCall },
+      {
+        autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
+        remembered: this.options.rememberedTools,
+        place,
+        readOnly: this.options.readOnly,
+        onRefused: (refused) => this.options.emit(readOnlyRefusal(refused))
+      }
+    )
+    if (automatic) return automatic
     const risks = permissionRisks(toolCall, place)
-    return this.requests.permission({ ...params, toolCall }, risks, signal)
+    const ask = (asked: RequestPermissionRequest) => this.requests.permission(asked, risks, signal)
+    return askReadOnly({ ...params, toolCall }, this.options.readOnly, ask)
   }
 
   /** Formulaire ou page demandés par l'agent (`elicitation/create`), traduits pour l'interface. */
@@ -906,7 +911,7 @@ export class AgentHost {
         }
         this.options.emit({ type: 'update', update })
         // Compaction faite par l'agent (fiche 182) : le contexte de session repart au message suivant.
-        if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = true
+        if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = 'compacted'
         if (route.trackSubagents) this.subagents.note(update)
         // Coût hors protocole relu à la fin d'un outil : le plafond le voit pendant le tour.
         this.cost.noteUpdate(update)
@@ -1000,9 +1005,11 @@ export class AgentHost {
   private connect(launched: AgentProcess): ClientConnection {
     return (
       client({ name: 'bobine' })
-        // `signal` : l'agent peut retirer sa demande (`$/cancel_request`, fiche 214).
+        // `signal` : l'agent peut retirer sa demande (`$/cancel_request`, fiche 214). Les demandes
+        // et les `session/update` ont des files distinctes : le `tool_call` reçu avant passe
+        // d'abord (genre de l'outil retenu pour la lecture seule d'un rôle, fiche 223).
         .onRequest(methods.client.session.requestPermission, ({ params, signal }) =>
-          this.onPermissionRequest(params, signal)
+          settleNotifications().then(() => this.onPermissionRequest(params, signal))
         )
         .onRequest(methods.client.elicitation.create, ({ params }) => this.onElicitation(params))
         // Fin d'une élicitation par URL : rien à faire de plus côté app.
@@ -1201,7 +1208,8 @@ export class AgentHost {
     if (this.child !== child) return // Arrêté pendant l'ouverture.
     this.blocker = undefined
     this.sessionId = session.sessionId
-    this.sessionContextDue = true
+    // Session rouverte (même identifiant) : son historique a déjà le contexte complet (fiche 223).
+    this.sessionContextDue = session.sessionId === reopen?.sessionId ? 'resumed' : 'opened'
     this.cost.report()
     this.modes = session.modes ?? undefined
     this.configOptions = session.configOptions ?? undefined
@@ -1233,11 +1241,13 @@ export class AgentHost {
     if (this.connection !== connection || this.sessionId !== sessionId) return
     this.replay.finish()
     this.ignoreReplay = false
-    const fresh = sessionId !== turn.sessionId
-    const session = fresh ? await sessionContextOf(this.options, this.appToolNames) : undefined
+    const fresh = sessionId !== turn.sessionId ? ('opened' as const) : undefined
+    const session = await sessionContextOf(this.options, this.appToolNames, fresh)
     if (this.connection !== connection || this.sessionId !== sessionId) return
-    const contexts = fresh ? [this.options.extraContext?.(), session] : []
-    this.sessionContextDue = false
+    const contexts = fresh
+      ? [this.options.extraContext?.('', this.appToolNames ?? []), session]
+      : []
+    this.sessionContextDue = undefined
     this.options.emit({ type: 'resent', ...(fresh ? { fresh: true as const } : {}) })
     this.setStatus('busy')
     void this.runTurn(connection, sessionId, withContext(turn.blocks, contexts))

@@ -19,8 +19,17 @@ export const APP_CONTEXT_OPENINGS = {
   origin: 'The message above comes from your',
   aside: '<bobine_aside>',
   memory: '<bobine_memory>',
-  memoryOutcomes: '<bobine_memory_outcomes>'
+  memoryOutcomes: '<bobine_memory_outcomes>',
+  /** Consigne d'un rôle, après la demande du premier message d'une fille (fiche 223). */
+  role: '<bobine_role'
 } as const
+
+/**
+ * Moment où le contexte de session part (fiches 118, 223) : session neuve (`opened`), session
+ * rouverte dont l'historique a déjà reçu le contexte complet (`resumed` : `session/load` ou
+ * `session/resume`), ou premier message après une compaction (`compacted`).
+ */
+export type SessionMoment = 'opened' | 'resumed' | 'compacted'
 
 /** Débuts d'avant la fiche 125 (le contexte partait avant le message), dans d'anciens titres. */
 const LEGACY_OPENINGS = ['The next message comes from your']

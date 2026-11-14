@@ -53,6 +53,8 @@ import {
 import { ChildProposals, type ProposalsInfo } from './ChildProposals'
 import { useTranslation } from 'react-i18next'
 import { stripAppContext } from '@shared/app-context'
+import { splitRoleBrief } from '@shared/roles'
+import { RoleBriefFold } from '../roles/RoleWork'
 import { CostCapCard } from './CostCapCard'
 import { TurnLimitCard } from './TurnLimitCard'
 import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
@@ -61,9 +63,10 @@ import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
 const SHOW_LOG_NOTICES: ReadonlySet<string> = new Set(['appTools.serverDown'])
 import { useEntryWindow } from './useEntryWindow'
 import { FindQueryContext } from './CappedText'
-import type { NoticeLink as NoticeLinkTarget } from '@shared/agent'
+import type { ConversationSummary, NoticeLink as NoticeLinkTarget } from '@shared/agent'
 import { requestSettings } from '../../open-settings'
 import { MemoryProposalCard } from './MemoryProposalCard'
+import { saveAsRoleAction } from '../../roles/save-as-role'
 
 const NOTICE_ICONS = {
   info: Info,
@@ -218,8 +221,12 @@ export function Transcript({
   // Carte « Sous-tâches » au dernier lancement d'une fille (fiche 097) ; filles lancées par l'agent,
   // dont les comptes rendus partiront à son réveil.
   const lastLaunch = items.findLast((i) => i.kind === 'child-started')?.id
-  const byAgent = new Set(
-    items.flatMap((i) => (i.kind === 'child-started' && i.by === 'agent' ? [i.childId] : []))
+  const launches = new Map(
+    items.flatMap((i) => (i.kind === 'child-started' ? [[i.childId, i] as const] : []))
+  )
+  // Dernier compte rendu de chaque fille : son coût suit celui de la fille (lu après le tour).
+  const lastReports = new Map(
+    items.flatMap((i) => (i.kind === 'child-report' ? [[i.childId, i.id] as const] : []))
   )
   const renderEntry = (entry: (typeof entries)[number]) => {
     if (entry.kind === 'tools') {
@@ -278,7 +285,7 @@ export function Transcript({
           key={item.id}
           item={item}
           items={items}
-          {...(subtasks && item.id === lastLaunch ? { info: subtasks } : {})}
+          {...(subtasks ? { info: subtasks, last: item.id === lastLaunch } : {})}
         />
       )
     }
@@ -293,10 +300,12 @@ export function Transcript({
       return (
         <ChildReportItem
           key={item.id}
-          item={item}
+          item={withLateCost(item, lastReports, subtasks?.children)}
           pending={lastUser === undefined || item.id > lastUser}
-          byAgent={byAgent.has(item.childId)}
+          byAgent={launches.get(item.childId)?.by === 'agent'}
+          role={launches.get(item.childId)?.role}
           {...(open && subtasks ? { onOpen: () => subtasks.onOpen(item.childId) } : {})}
+          onSaveAsRole={saveAsRoleAction(item, launches.get(item.childId), subtasks?.children)}
         />
       )
     }
@@ -563,6 +572,8 @@ function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }>
   // Texte collé ouvert en aperçu (fiche 155).
   const [reading, setReading] = useState<number | null>(null)
   const read = reading === null ? undefined : item.attachments?.[reading]
+  // Fille d'un rôle (fiche 223) : la consigne du rôle, jointe après la demande, repliée.
+  const { request, brief } = splitRoleBrief(item.text)
   return (
     <>
       {item.attachments && item.attachments.length > 0 && (
@@ -593,7 +604,8 @@ function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }>
           )}
         </div>
       )}
-      {item.text && <div className="msg-user">{item.text}</div>}
+      {request && <div className="msg-user">{request}</div>}
+      {brief !== undefined && <RoleBriefFold brief={brief} />}
       {read?.kind === 'text' && (
         <PastedTextDialog name={read.name} text={read.text} onClose={() => setReading(null)} />
       )}
@@ -793,4 +805,21 @@ function Compaction({ item }: { item: Extract<TranscriptItem, { kind: 'compactio
       {item.error && <div className="compaction-summary error">{item.error}</div>}
     </details>
   )
+}
+
+/**
+ * Coût d'un compte rendu (fiche 117) : celui de la fille à la fin de son tour. Un agent qui
+ * enregistre son coût juste après sa réponse (Bob, lu hors protocole, fiche 157) le donne après le
+ * compte rendu : le **dernier** compte rendu d'une fille au repos prend donc son coût actuel, le
+ * même que la ligne de « Sous-tâches » ; un compte rendu plus ancien garde le sien.
+ */
+function withLateCost(
+  item: Extract<TranscriptItem, { kind: 'child-report' }>,
+  lastReports: ReadonlyMap<string, number>,
+  children: readonly ConversationSummary[] | undefined
+): Extract<TranscriptItem, { kind: 'child-report' }> {
+  if (lastReports.get(item.childId) !== item.id) return item
+  const child = children?.find((c) => c.id === item.childId)
+  if (!child?.usage || child.status === 'busy') return item
+  return { ...item, usage: child.usage }
 }

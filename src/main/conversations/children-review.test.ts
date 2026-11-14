@@ -193,6 +193,12 @@ describe('relecture avant fusion (fiche 177)', () => {
     writeFileSync(join(env.repo, 'nouveau.txt'), 'a\nb\n')
     const reviewer = await env.reviews.start(author, { focus: '/scenario relecture-vide' })
     await expect(env.reviews.start(reviewer.id)).rejects.toThrow(t('review.error.reviewer'))
+    // Un relecteur ne lance pas de fille, ni par `start_child` ni par `@rôle` (fiche 223) : il est
+    // toujours rattaché (`startedFrom`), le refus « un seul niveau » vaut.
+    expect(reviewer.startedFrom).toBeDefined()
+    await expect(
+      env.children.start(reviewer.id, { text: 'Relis', role: 'code-reviewer' })
+    ).rejects.toThrow(t('children.error.oneLevel'))
     await expect(
       env.reviews.report(reviewer.id, {
         findings: [
