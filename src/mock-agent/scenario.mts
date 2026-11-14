@@ -171,6 +171,11 @@ export type Step =
   /** Suite différente selon le modèle de la session au moment du message (fiche 210). */
   | { kind: 'when-model'; model: string; then: Step[]; else: Step[] }
   /**
+   * Suite écrite dans chaque langue de l'agent (`--langue`), pour des textes longs que le
+   * dictionnaire de `langue.mts` ne couvre pas : scénarios « vitrine » (fiche 225).
+   */
+  | { kind: 'by-language'; fr: Step[]; en: Step[] }
+  /**
    * Fait échouer le tour avec une erreur JSON-RPC interne : `message` s'ajoute à « Internal error »,
    * `data` est joint tel quel (Bob y met la cause, dans `details`). `code` : autre code JSON-RPC
    * (le message est alors `message` seul) ; `stderr` : ligne écrite avant sur la sortie d'erreur.
@@ -454,6 +459,8 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
     }
     case 'when-model':
       return playSteps(ctx.model === step.model ? step.then : step.else, ctx)
+    case 'by-language':
+      return playSteps(lang(ctx) === 'en' ? step.en : step.fr, ctx)
     case 'login-required':
       if (
         ctx.loggedIn ||

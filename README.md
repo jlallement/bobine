@@ -1,35 +1,121 @@
-# Bobine
+<p align="center">
+  <img src="build/icon.png" width="112" height="112" alt="">
+</p>
 
-**A macOS desktop app for ACP coding agents: IBM Bob and OpenCode.** Chat with the agent, approve
-its changes, and watch it drive a built-in browser, an iOS Simulator or an Android emulator, all
-in one window.
+<h1 align="center">Bobine</h1>
 
-> **Public beta (1.0.0-beta.1).** Bobine works daily for its author, but it has had one user so
-> far: expect rough edges and please [report issues](https://github.com/jlallement/bobine/issues/new/choose).
-> The app is **not notarized by Apple** yet, so macOS needs one extra step to open it
-> ([see below](#install)).
+<p align="center">
+  <strong>A macOS desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks
+  the Agent Client Protocol.</strong><br>
+  Chat with the agent, approve each change with its diff, hand work to specialists running in
+  parallel, and watch the agent drive a built-in browser, the iOS Simulator or an Android
+  emulator, all in one window.
+</p>
 
-[Version française](README.fr.md) · [User guide](docs/guide/en/README.md) ·
-[What's new](CHANGELOG.en.md)
+<p align="center">
+  <a href="https://github.com/jlallement/bobine/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=release"></a>
+  <img alt="macOS 13+ on Apple Silicon" src="https://img.shields.io/badge/macOS-13%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
+  <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
+  <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
+</p>
 
-![Bobine asking for permission before editing a file, with the diff](docs/images/bobine.png)
+<p align="center">
+  <a href="https://github.com/jlallement/bobine/releases"><strong>Download for macOS</strong></a> ·
+  <a href="#install">Install</a> ·
+  <a href="docs/guide/en/README.md">User guide</a> ·
+  <a href="CHANGELOG.en.md">What's new</a> ·
+  <a href="README.fr.md">Français</a>
+</p>
 
-## What Bobine is
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme/en/hero-dark.png">
+  <img alt="Bobine: the agent ran the tests, found the bug and asks before editing cart.py, with the diff" src="docs/images/readme/en/hero-light.png">
+</picture>
 
-- A desktop client for any agent that speaks the
-  [Agent Client Protocol](https://agentclientprotocol.com) (ACP): the app starts the agent,
-  streams its replies, shows diffs and permission requests, and keeps the conversation history.
-- Made first for **IBM Bob** (`bob acp`): SSO or API key, folder trust, license and bobcoins spent
-  are all handled in the app.
-- Also works with **[OpenCode](https://opencode.ai)** (`opencode acp`): its free models, or your
-  own providers.
-- Tools the agent can use through the app: a built-in browser with console and network panes,
-  terminals, the iOS Simulator (taps, screen reading, video) and the Android emulator, questions
-  with choices, annotated plans, child conversations working in parallel in git worktrees, git
-  and pull-request follow-up.
+> **Public beta.** Bobine is used every day by its author, but by few people so far: expect rough
+> edges and please [report them](https://github.com/jlallement/bobine/issues/new/choose). The app
+> is **not notarized by Apple**, so macOS asks for one extra step the first time you open it
+> ([see Install](#install)).
 
-Bobine is not an agent: it embeds no model and calls none. The agents are installed separately,
-and talk to their own models with your own account or key.
+## Why Bobine
+
+- **Any ACP agent, one window.** Bobine starts the agent on your Mac and gives it a real desktop
+  interface: streamed answers, diffs, permission cards, plans, history.
+- **IBM Bob first.** SSO or API key, folder trust, license and bobcoins spent are handled in the
+  app. [OpenCode](https://opencode.ai) works too, with its free models or your own providers.
+- **You stay in control.** Every edit and command the agent asks for shows up as a card with the
+  diff or the exact command, and nothing runs until you answer.
+- **Work in parallel.** Call specialists (`@security-expert`, `@code-reviewer`…) or let the agent
+  split the work: each child conversation runs on its own, in the folder or in a git worktree.
+- **The agent can see what it builds.** A built-in browser with console and network, terminals,
+  the iOS Simulator and the Android emulator, all driven by the agent and shown next to the
+  conversation.
+- **No model inside.** Bobine embeds no model and calls none, and has no telemetry: your agent
+  talks to its own service, with your own account or key.
+
+## A tour
+
+### Approve each change, with the diff
+
+The agent explains what it found and asks before touching a file. Afterwards, the **Changes**
+panel shows everything the conversation changed, file by file, next to the git view.
+
+![The Changes panel shows the fix to cart.py](docs/images/readme/en/changes.png)
+
+### Hand work to specialists
+
+Type `@` to call a role: seven are built in (UX/UI expert, security expert, code reviewer, tech
+lead…), and you can write your own, for you or for the project. Each role works in its own child
+conversation, in parallel, and reports back.
+
+![Two roles review the cart in parallel and report back](docs/images/readme/en/roles.gif)
+
+<details>
+<summary>The <code>@</code> menu and the reports</summary>
+
+![The @ menu lists the roles first](docs/images/readme/en/roles-menu.png)
+
+![The security expert and the code reviewer have reported](docs/images/readme/en/roles.png)
+
+</details>
+
+### The agent asks before guessing
+
+Questions with choices, plans you can annotate before the agent starts, a task list pinned above
+the message box. And, as in a terminal, **↑** in an empty message box brings back what you sent
+before, roles included.
+
+![The agent asks which export format to use](docs/images/readme/en/questions.png)
+
+<details>
+<summary>The sent-message history (↑)</summary>
+
+![↑ brought back the last message sent, with its position 1/1](docs/images/readme/en/history.png)
+
+</details>
+
+### Let the agent see the result
+
+The agent opens pages in a built-in browser (with console and network), and drives the iOS
+Simulator and the Android emulator: taps, screen reading, contact sheets, video.
+
+![The agent opened the shop page in the built-in browser](docs/images/readme/en/browser.png)
+
+### Chat, without a project
+
+Not everything is code. The **Chat** space holds conversations without a project folder: ask a
+question, write an email, summarize a document. What the agent writes is kept in the chat's
+**Documents** tab, ready to open or save.
+
+![The agent drafted an email and kept it in the chat's documents](docs/images/readme/en/discussion.png)
+
+### Light, dark and Aurora
+
+Light and Dark, Fjord, and **Aurora** and **Aurora Night**: a near-neutral base with a few light
+touches (a soft glow, a gradient on your messages and on the main action, frosted menus). Six
+accents, the system font or your own, a compact density and a presentation mode for demos.
+
+![The same conversation in Light, Dark, Aurora and Aurora Night](docs/images/readme/en/themes.png)
 
 ## Supported agents
 
@@ -38,9 +124,9 @@ and talk to their own models with your own account or key.
 | IBM Bob (`bob acp`) | main target | 2.0.6, 2.0.9, 2.1.0 |
 | OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5 |
 
-Other ACP agents can be declared in Settings › Agents, without any guarantee. A mock agent is
-used for development and tests only. Details, agent by agent: [`docs/agents.md`](docs/agents.md)
-(French). Settings › Diagnostics warns when an agent reports a version that has not been tested.
+Other ACP agents can be declared in Settings › Agents, without any guarantee. Details, agent by
+agent: [`docs/agents.md`](docs/agents.md) (French). Settings › Diagnostics warns when an agent
+reports a version that has not been tested.
 
 ## Install
 
@@ -88,6 +174,37 @@ Something does not work? Settings › Diagnostics checks everything at once (age
 session, MCP servers, Xcode, simulators), with the fix for each problem, and « Report an issue »
 opens a prefilled GitHub issue.
 
+## FAQ
+
+**Does Bobine send my code anywhere?** No. Bobine has no telemetry and calls no model. It starts
+the agent you chose on your Mac; what leaves your Mac is what that agent sends to its own service.
+Settings › Privacy and Settings › Data show what Bobine keeps on your Mac, and let you back it
+up or erase it.
+
+**Do I need IBM Bob?** No. Bob is the main target, but OpenCode works with its free models, and
+any ACP agent can be declared in Settings › Agents.
+
+**Why does macOS block the first launch?** Bobine is signed ad hoc and not notarized by Apple.
+Open it once through **System Settings › Privacy & Security › Open Anyway** (see
+[Install](#install)); the source is here to read and build yourself.
+
+**Intel Mac, Windows?** Not for now: the `.dmg` is for Apple Silicon only. Linux packages exist
+as an experimental preview.
+
+**Is it a fork of another app?** No. It is inspired by desktop apps for coding agents, and built
+from scratch on Electron, React and the
+[ACP TypeScript SDK](https://github.com/agentclientprotocol/typescript-sdk).
+
+## Roadmap
+
+- **Now: public beta.** Fixes from real use, compatibility with new versions of Bob and OpenCode.
+- **1.0:** the quality bar of the first stable version, a full test pass by a QA role, a second
+  pass of the interface audit.
+- **Ideas, not scheduled:** rewind a conversation to before a turn; give the same task to two
+  agents and keep the best result.
+
+The detailed roadmap (French) is in [`docs/feuille-de-route-v1.md`](docs/feuille-de-route-v1.md).
+
 ## Documentation
 
 - **User guide**: [English](docs/guide/en/README.md) · [français](docs/guide/fr/README.md).
@@ -110,7 +227,15 @@ pnpm package      # build Bobine.app and a .dmg
 ./scripts/verify  # lint, typecheck, unit tests
 ```
 
-Rules for contributions: [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
+## Contributing
+
+Bug reports with the diagnostic report (Settings › Diagnostics › « Report an issue ») and small,
+well-tested fixes are the most useful contributions right now. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) first; security problems go through
+[SECURITY.md](SECURITY.md), not a public issue.
+
+The screenshots and the animation on this page are made by a script, against a scripted demo
+agent, without any model or personal data: `pnpm build && pnpm vitrine`.
 
 ## Known limitations
 

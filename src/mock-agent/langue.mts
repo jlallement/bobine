@@ -22,6 +22,10 @@ export function mockLanguage(value: string | undefined): MockLanguage {
 const EN: Record<string, string> = {
   // Agent, modes, réglages, commandes.
   'Agent factice': 'Mock agent',
+  // Vitrine du README (fiche 225, `--vitrine`).
+  'Agent de démo': 'Demo agent',
+  'Démo rapide': 'Demo fast',
+  'Démo précis': 'Demo precise',
   // Autres dossiers (fiche 179).
   'Dossier de travail': 'Working folder',
   'Autres dossiers': 'Other folders',

@@ -478,6 +478,8 @@ export async function withApp(
       ev,
       waitFor,
       $,
+      // Protocole DevTools brut : images de la vidéo de la vitrine (fiche 225).
+      cdp,
       dialogs,
       // Le point d'état de l'agent dans la barre latérale (pas ceux de Réglages › Agents).
       ready: () => waitFor(`!!document.querySelector('${AGENT_DOT}.ready')`),

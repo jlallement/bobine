@@ -13,6 +13,7 @@ import {
 } from './scenario.mts'
 import { childScenarios } from './scenarios-filles.mts'
 import { roleScenarios } from './scenarios-roles.mts'
+import { showcaseScenarios } from './scenarios-vitrine.mts'
 import { discussionScenarios } from './scenarios-discussion.mts'
 import { reviewScenarios } from './scenarios-relecture.mts'
 import { memoryScenarios } from './scenarios-memoire.mts'
@@ -2993,7 +2994,9 @@ export const scenarios: Record<string, Scenario> = {
   // Rôles (fiche 223) : délégation, rôle inconnu, lecture seule.
   ...roleScenarios,
   // Espace Discussion (fiche 224) : documents lus et écrits, écriture hors du dossier refusée.
-  ...discussionScenarios
+  ...discussionScenarios,
+  // Vitrine du README (fiche 225).
+  ...showcaseScenarios
 }
 
 export const DEFAULT_SCENARIO = 'demo'

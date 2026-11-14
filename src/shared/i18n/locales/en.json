@@ -3208,6 +3208,7 @@
   "profiles": {
     "mock": {
       "label": "Mock agent",
+      "showcaseLabel": "Demo agent",
       "apiKey": "Mock API key",
       "welcomeHint": "Mock agent: type `/scenario` to see the scenarios.",
       "destination": "this computer (mock agent, no network)"

@@ -3157,6 +3157,7 @@ export type FrResources = {
   readonly profiles: {
     readonly mock: {
       readonly label: 'Agent factice'
+      readonly showcaseLabel: 'Agent de démo'
       readonly apiKey: 'Clé d’API factice'
       readonly welcomeHint: 'Agent factice : tapez `/scenario` pour voir les scénarios.'
       readonly destination: 'cet ordinateur (agent factice, aucun réseau)'

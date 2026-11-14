@@ -1,35 +1,124 @@
-# Bobine
+<p align="center">
+  <img src="build/icon.png" width="112" height="112" alt="">
+</p>
 
-**Une application de bureau macOS pour les agents de code ACP : IBM Bob et OpenCode.** Converser
-avec l'agent, approuver ses modifications, et le regarder piloter un navigateur intégré, le
-simulateur iOS ou l'émulateur Android, dans une seule fenêtre.
+<h1 align="center">Bobine</h1>
 
-> **Bêta publique (1.0.0-beta.1).** Bobine sert tous les jours à son auteur, mais une seule
-> personne l'a utilisée : attendez-vous à des aspérités et [signalez-les](https://github.com/jlallement/bobine/issues/new/choose).
-> L'app n'est **pas encore notarisée par Apple** : macOS demande une étape de plus pour
-> l'ouvrir ([voir plus bas](#installer)).
+<p align="center">
+  <strong>Une application de bureau macOS pour les agents de code ACP : IBM Bob, OpenCode, ou
+  tout agent qui parle l'Agent Client Protocol.</strong><br>
+  Converser avec l'agent, approuver chaque modification avec son diff, confier du travail à des
+  spécialistes qui avancent en parallèle, et regarder l'agent piloter un navigateur intégré, le
+  simulateur iOS ou l'émulateur Android, dans une seule fenêtre.
+</p>
 
-[English version](README.md) · [Guide de l'utilisateur](docs/guide/fr/README.md) ·
-[Nouveautés](CHANGELOG.md)
+<p align="center">
+  <a href="https://github.com/jlallement/bobine/releases"><img alt="Dernière version" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=version"></a>
+  <img alt="macOS 13+ sur Apple Silicon" src="https://img.shields.io/badge/macOS-13%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
+  <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
+  <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
+</p>
 
-![Bobine demande l'autorisation avant de modifier un fichier, avec le diff](docs/images/bobine-fr.png)
+<p align="center">
+  <a href="https://github.com/jlallement/bobine/releases"><strong>Télécharger pour macOS</strong></a> ·
+  <a href="#installer">Installer</a> ·
+  <a href="docs/guide/fr/README.md">Guide de l'utilisateur</a> ·
+  <a href="CHANGELOG.md">Nouveautés</a> ·
+  <a href="README.md">English</a>
+</p>
 
-## Ce que Bobine est
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme/fr/hero-dark.png">
+  <img alt="Bobine : l'agent a lancé les tests, trouvé le défaut et demande avant de modifier panier.py, avec le diff" src="docs/images/readme/fr/hero-light.png">
+</picture>
 
-- Un client de bureau pour tout agent qui parle l'[Agent Client
-  Protocol](https://agentclientprotocol.com) (ACP) : l'app lance l'agent, affiche ses réponses en
-  continu, ses diffs et ses demandes d'autorisation, et garde l'historique des conversations.
-- Pensée d'abord pour **IBM Bob** (`bob acp`) : SSO ou clé d'API, confiance du dossier, licence,
-  bobcoins dépensés, tout se passe dans l'app.
-- Marche aussi avec **[OpenCode](https://opencode.ai)** (`opencode acp`) : ses modèles gratuits ou
+> **Bêta publique.** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
+> attendez-vous à des aspérités et [signalez-les](https://github.com/jlallement/bobine/issues/new/choose).
+> L'app n'est **pas notarisée par Apple** : macOS demande une étape de plus à la première
+> ouverture ([voir Installer](#installer)).
+
+## Pourquoi Bobine
+
+- **Tout agent ACP, une seule fenêtre.** Bobine lance l'agent sur votre Mac et lui donne une vraie
+  interface de bureau : réponses en continu, diffs, cartes d'autorisation, plans, historique.
+- **IBM Bob d'abord.** SSO ou clé d'API, confiance du dossier, licence et bobcoins dépensés se
+  gèrent dans l'app. [OpenCode](https://opencode.ai) marche aussi, avec ses modèles gratuits ou
   vos propres fournisseurs.
-- Des outils que l'agent utilise à travers l'app : navigateur intégré avec console et réseau,
-  terminaux, simulateur iOS (touchers, lecture de l'écran, vidéo) et émulateur Android, questions
-  à choix, plans annotés, conversations filles en parallèle dans des worktrees git, suivi de git
-  et des pull requests.
+- **Vous gardez la main.** Chaque modification ou commande que l'agent demande arrive en carte,
+  avec le diff ou la commande exacte, et rien ne part avant votre réponse.
+- **Travailler en parallèle.** Appeler des spécialistes (`@security-expert`, `@code-reviewer`…)
+  ou laisser l'agent partager le travail : chaque conversation fille avance de son côté, dans le
+  dossier ou dans un worktree git.
+- **L'agent voit ce qu'il construit.** Navigateur intégré avec console et réseau, terminaux,
+  simulateur iOS et émulateur Android, pilotés par l'agent et montrés à côté de la conversation.
+- **Aucun modèle dedans.** Bobine n'embarque ni n'appelle aucun modèle, et n'envoie aucune
+  télémétrie : votre agent parle à son propre service, avec votre compte ou votre clé.
 
-Bobine n'est pas un agent : elle n'embarque aucun modèle et n'en appelle aucun. Les agents
-s'installent à part et parlent à leurs modèles avec votre propre compte ou clé.
+## Visite
+
+### Approuver chaque modification, avec le diff
+
+L'agent explique ce qu'il a trouvé et demande avant de toucher un fichier. Ensuite, le panneau
+**Modifications** montre tout ce que la conversation a changé, fichier par fichier, à côté de la
+vue git.
+
+![Le panneau Modifications montre la correction de panier.py](docs/images/readme/fr/changes.png)
+
+### Confier du travail à des spécialistes
+
+Tapez `@` pour appeler un rôle : sept sont fournis (expert UX/UI, expert sécurité, relecteur de
+code, tech lead…), et vous pouvez écrire les vôtres, pour vous ou pour le projet. Chaque rôle
+travaille dans sa conversation fille, en parallèle, et rend compte.
+
+![Deux rôles relisent le panier en parallèle et rendent compte](docs/images/readme/fr/roles.gif)
+
+<details>
+<summary>Le menu <code>@</code> et les comptes rendus</summary>
+
+![Le menu @ propose les rôles en tête](docs/images/readme/fr/roles-menu.png)
+
+![L'expert sécurité et le relecteur ont rendu compte](docs/images/readme/fr/roles.png)
+
+</details>
+
+### L'agent demande plutôt que deviner
+
+Questions à choix, plans à annoter avant que l'agent commence, liste de tâches épinglée au-dessus
+de la zone de saisie. Et, comme dans un terminal, **↑** dans une saisie vide rappelle ce que vous
+avez déjà envoyé, rôles compris.
+
+![L'agent demande quel format d'export choisir](docs/images/readme/fr/questions.png)
+
+<details>
+<summary>L'historique des messages envoyés (↑)</summary>
+
+![↑ a rappelé le dernier message envoyé, avec sa position 1/1](docs/images/readme/fr/history.png)
+
+</details>
+
+### Laisser l'agent voir le résultat
+
+L'agent ouvre des pages dans un navigateur intégré (avec console et réseau), et pilote le
+simulateur iOS et l'émulateur Android : touchers, lecture de l'écran, planches contact, vidéo.
+
+![L'agent a ouvert la boutique dans le navigateur intégré](docs/images/readme/fr/browser.png)
+
+### Discuter, sans projet
+
+Tout n'est pas du code. L'espace **Discussion** garde des conversations sans dossier de projet :
+poser une question, faire écrire un e-mail, résumer un document. Ce que l'agent écrit reste dans
+l'onglet **Documents** de la discussion, prêt à ouvrir ou à enregistrer.
+
+![L'agent a rédigé un e-mail et l'a gardé dans les documents de la discussion](docs/images/readme/fr/discussion.png)
+
+### Clair, sombre et Aurore
+
+Clair et Sombre, Fjord, et **Aurore** et **Aurore nuit** : une base presque neutre et quelques
+touches légères (une lueur douce, un dégradé sur vos messages et sur l'action principale, des menus
+en verre dépoli). Six accents, la police du système ou la vôtre, une densité compacte et un mode
+présentation pour les démonstrations.
+
+![La même conversation en Clair, Sombre, Aurore et Aurore nuit](docs/images/readme/fr/themes.png)
 
 ## Agents pris en charge
 
@@ -90,6 +179,39 @@ Quelque chose ne marche pas ? Réglages › Diagnostic vérifie tout d'un coup (
 session d'essai, serveurs MCP, Xcode, simulateurs), avec la marche à suivre pour chaque problème,
 et « Signaler un problème » ouvre une issue GitHub préremplie.
 
+## Questions fréquentes
+
+**Bobine envoie-t-elle mon code quelque part ?** Non. Bobine n'a pas de télémétrie et n'appelle
+aucun modèle. Elle lance sur votre Mac l'agent que vous avez choisi ; ce qui quitte votre Mac, c'est
+ce que cet agent envoie à son propre service. Réglages › Confidentialité et Réglages › Données
+montrent ce que Bobine garde sur votre Mac, et permettent de le sauvegarder ou de l'effacer.
+
+**Faut-il IBM Bob ?** Non. Bob est la cible principale, mais OpenCode marche avec ses modèles
+gratuits, et tout agent ACP se déclare dans Réglages › Agents.
+
+**Pourquoi macOS bloque-t-il le premier lancement ?** Bobine est signée ad hoc et n'est pas
+notarisée par Apple. Ouvrez-la une fois par **Réglages Système › Confidentialité et sécurité ›
+Ouvrir quand même** (voir [Installer](#installer)) ; les sources sont ici, à lire et à construire
+vous-même.
+
+**Mac Intel, Windows ?** Pas pour l'instant : le `.dmg` est pour Apple Silicon seulement. Des
+paquets Linux existent en préversion expérimentale.
+
+**Est-ce un fork d'une autre app ?** Non. Elle s'inspire des apps de bureau pour agents de code,
+et elle est écrite de zéro avec Electron, React et le
+[SDK TypeScript d'ACP](https://github.com/agentclientprotocol/typescript-sdk).
+
+## Feuille de route
+
+- **Maintenant : bêta publique.** Corrections venues de l'usage réel, compatibilité avec les
+  nouvelles versions de Bob et d'OpenCode.
+- **1.0 :** la barre de qualité de la première version stable, une recette complète par un rôle
+  QA, un second passage de l'audit d'interface.
+- **Idées, pas encore prévues :** revenir avant un tour d'une conversation ; donner la même tâche
+  à deux agents et garder le meilleur résultat.
+
+La feuille de route détaillée : [`docs/feuille-de-route-v1.md`](docs/feuille-de-route-v1.md).
+
 ## Documentation
 
 - **Guide de l'utilisateur** : [français](docs/guide/fr/README.md) · [English](docs/guide/en/README.md).
@@ -111,7 +233,15 @@ pnpm package      # construire Bobine.app et un .dmg
 ./scripts/verify  # lint, types, tests unitaires
 ```
 
-Règles pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md) (en anglais) et [AGENTS.md](AGENTS.md).
+## Contribuer
+
+Les rapports de bogue avec le rapport de diagnostic (Réglages › Diagnostic › « Signaler un
+problème ») et les petites corrections bien testées sont les contributions les plus utiles en ce
+moment. Lire d'abord [CONTRIBUTING.md](CONTRIBUTING.md) (en anglais) et [AGENTS.md](AGENTS.md) ;
+un problème de sécurité passe par [SECURITY.md](SECURITY.md), pas par une issue publique.
+
+Les captures et l'animation de cette page sont faites par un script, contre un agent de démo
+scripté, sans modèle ni donnée personnelle : `pnpm build && pnpm vitrine --lang fr`.
 
 ## Limites connues
 
