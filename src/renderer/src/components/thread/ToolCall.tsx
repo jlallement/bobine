@@ -265,14 +265,12 @@ export function ToolCall({
         >
           <div className="tool-details">
             {command && (
-              <PlainCommand>
-                <CommandBlock
-                  command={command}
-                  workspace={workspace}
-                  locations={item.locations}
-                  announced={announcedTitle(item)}
-                />
-              </PlainCommand>
+              <CommandBlock
+                command={command}
+                workspace={workspace}
+                locations={item.locations}
+                announced={announcedTitle(item)}
+              />
             )}
             <ToolDetails
               item={item}
@@ -526,12 +524,14 @@ export function PermissionView({
             {!item.todos && item.args && <ToolArgsView args={item.args} />}
             {/* La commande entière, à lire avant d'accepter (0.11, M1). */}
             {command && (
-              <CommandBlock
-                command={command}
-                workspace={workspace}
-                locations={item.locations}
-                announced={announcedTitle(item)}
-              />
+              <PlainCommand>
+                <CommandBlock
+                  command={command}
+                  workspace={workspace}
+                  locations={item.locations}
+                  announced={announcedTitle(item)}
+                />
+              </PlainCommand>
             )}
             {(item.content.length > 0 || item.locations.length > 0) && (
               <ToolDetails

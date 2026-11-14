@@ -9,7 +9,7 @@
  * commandes restent posées à l'utilisateur (une relecture lance `git diff`, les tests). Un agent
  * qui écrit sans demander n'est pas arrêté ici : voir `roles/read-only-watch.ts`.
  */
-import { isAbsolute, relative, resolve } from 'node:path'
+import { basename, isAbsolute, relative, resolve } from 'node:path'
 import type { RequestPermissionRequest, RequestPermissionResponse } from '../../shared/acp-sdk.mts'
 import type { AgentEvent } from '@shared/agent'
 import { rememberableTool } from '@shared/permissions'
@@ -73,16 +73,15 @@ function writeAreaAnswer(
     : (params.options.find((o) => o.kind === 'reject_once') ??
       params.options.find((o) => o.kind === 'reject_always'))
   if (!option && allowed) return undefined
-  rules.notify?.(writeAreaNotice(params.toolCall, allowed))
+  // Le fichier, pas le titre de l'outil : son nom dans les documents, le chemin s'il sort.
+  const shown = allowed ? basename(paths[0] ?? '') : (paths.find((p) => !isInside(area, p)) ?? '')
+  rules.notify?.(writeAreaNotice(shown, allowed))
   return option ? selected(option.optionId) : { outcome: { outcome: 'cancelled' } }
 }
 
 /** Ligne du fil qui dit l'écriture accordée ou refusée d'une discussion (fiche 224). */
-function writeAreaNotice(
-  toolCall: RequestPermissionRequest['toolCall'],
-  allowed: boolean
-): AgentEvent {
-  const tool = toolCall.title ?? toolCall.kind ?? ''
+function writeAreaNotice(file: string, allowed: boolean): AgentEvent {
+  const tool = file
   return allowed
     ? {
         type: 'notice',

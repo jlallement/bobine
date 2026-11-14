@@ -687,7 +687,7 @@ describe('largeur de la barre latérale (fiche 113)', () => {
     render(sidebar([code, chat], { space: 'discussion', onSpace }))
     expect(screen.getByText('E-mail')).toBeTruthy()
     expect(screen.queryByText('Projet')).toBeNull()
-    expect(screen.getByTestId('open-scheduled').hidden).toBe(true)
+    expect(screen.queryByTestId('open-scheduled')).toBeNull()
     expect(screen.queryByTestId('team-section')).toBeNull()
     fireEvent.click(screen.getByTestId('space-code'))
     expect(onSpace).toHaveBeenCalledWith('code')

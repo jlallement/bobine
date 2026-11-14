@@ -1,8 +1,8 @@
 # 224 — Espace Discussion : parler à l'agent et travailler sur des documents, à côté du code
 
-- **Statut** : à faire — fiche ouverte le 2026-11-14 ; cadre revu le jour même avec l'utilisateur
-  (deux espaces séparés, documents) ; maquettes E1–E6 validées le 2026-11-14 ; prochaine étape :
-  relevés sur Bob réel et OpenCode (plan, étape 1), puis le cœur
+- **Statut** : en cours — maquettes E1–E6 validées et relevés réels faits le 2026-11-14 ; cœur,
+  interface, agent factice, essais et doc faits sur `feat/224-discussion` ; relecture du tech lead
+  à faire (voir « Écarts »)
 - **Dépend de** : 093 (démarrage : pas de conversation sans dossier), 203 et 214 (cartes
   d'autorisation lisibles), 223 (rôles : familles d'outils de Bobine choisies, surveillance du
   dossier), 024 et ADR-0024 (l'échange d'avant part en texte), 052 (aperçu en lecture seule),
@@ -110,23 +110,26 @@ Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer da
 
 ## Critères d'acceptation
 
-- [ ] Sélecteur Code | Discussion ; l'espace Code est identique à aujourd'hui (captures e2e
-      existantes inchangées).
-- [ ] Une discussion se démarre sans dossier, reçoit des messages et des documents ; aucun
-      dossier n'entre dans les récents.
-- [ ] Un document déposé est copié dans la discussion ; l'original n'est pas modifié.
-- [ ] Un document créé ou modifié par l'agent a sa carte dans le fil et sa ligne dans le panneau
-      Documents (Ouvrir, Enregistrer sous…, Afficher dans le Finder).
-- [ ] Écriture demandée hors des documents : refusée et dite ; dedans : accordée et dite.
-- [ ] Aucun outil MCP de Bobine n'est proposé à l'agent ; pas de filles ni de rôles.
-- [ ] Suppression d'une discussion : ses documents partent à la corbeille avec elle ; restauration
-      les rend.
-- [ ] « Continuer dans un projet… » ouvre une conversation dans l'espace Code, discussion passée
-      en texte, documents copiés si demandé.
-- [ ] Reprise après redémarrage : la discussion se rouvre avec ses documents.
-- [ ] Testé contre l'agent factice : scénarios `discussion-document` (lit un document déposé,
-      écrit un fichier dans le dossier) et `discussion-hors-dossier` (écriture refusée) ; e2e
-      `discussion` en clair et sombre, captures regardées ; textes en `fr.json` et `en.json`.
+- [x] Sélecteur Code | Discussion ; l'espace Code ne change que par le sélecteur en tête de la
+      barre latérale (les captures e2e des autres suites le montrent).
+- [x] Une discussion se démarre sans dossier, reçoit des messages et des documents ; aucun
+      dossier n'entre dans les récents (`manager-discussion.test.ts`).
+- [x] Un document déposé (panneau, glisser) ou joint à un message est copié dans la discussion ;
+      l'original n'est pas modifié (`documents/ipc.test.ts`, e2e).
+- [x] Un document créé ou modifié par l'agent a sa carte dans le fil (Ouvrir, Enregistrer une
+      copie…, Afficher dans le Finder) et sa ligne dans le panneau « Documents ».
+- [x] Écriture demandée hors des documents : refusée et dite ; dedans : accordée et dite ; sans
+      emplacement connu : posée (`permission-answers.test.ts`, scénario `discussion-document`).
+- [x] Aucun outil MCP de Bobine n'est proposé à l'agent ; pas de filles ni de rôles (`toolModules`
+      vide, menu sans « Lancer en parallèle… », `@rôle` coupé).
+- [x] Suppression d'une discussion : ses documents restent tant qu'elle est dans la corbeille (la
+      restauration les retrouve) et partent avec son effacement.
+- [x] « Continuer dans un projet… » ouvre une conversation dans l'espace Code, discussion passée
+      en texte (bascule), documents copiés dans `documents/` si demandé.
+- [ ] Reprise après redémarrage : `space` relu de l'index (`withSpace`) ; pas d'essai de bout en
+      bout du redémarrage.
+- [x] Testé contre l'agent factice : scénarios `discussion-document` et `discussion-commande` ;
+      e2e `discussion` en clair et sombre ; textes en `fr.json` et `en.json`.
 - [x] Bob réel et OpenCode : approbation du dossier, lecture et production d'un Word et d'un
       Excel relevées dans `docs/acp.md` (2026-11-14).
 
@@ -161,6 +164,45 @@ coder. Aucune nouvelle dépendance prévue.
    guide, changelogs. ADR : « L'espace Discussion : même moteur, dossier tenu par Bobine, autre
    interface » (précise ADR-0011 et la fiche 093).
 
+## Fait (2026-11-14), fichiers
+
+- **Main** : `conversations/discussion-space.ts` (dossier, documents, plan de dossier, brouillon,
+  fil continué), `conversations/conversation.ts` (type sorti de `manager.ts`, plafond de taille),
+  `manager.ts` (`create` selon l'espace, `continueInProject`, `openNew`, `activate`,
+  `replaceActive`), `helpers.ts` (`deleteAtAgent`, `subagentWorkOf` sortis du gestionnaire),
+  `host-options.ts` (outils vides, `writeArea`), `trash.ts` (effacement du dossier),
+  `agent/permission-answers.ts` (`writeArea`, `notify`, `hostRules`), `agent/tool-call-memory.ts`
+  et `profile-updates.ts` (emplacements repris du `tool_call`), `documents/ipc.ts`, `ipc.ts`,
+  `read-only-guard.ts`.
+- **Partagé** : `agent.ts` (`ConversationSpace`, évènement `documents`), `transcript.ts` (élément
+  `documents`), `handover.ts` (raison `discussion`), `documents.ts`, `documents-ipc.ts`,
+  `panel.ts` (onglet `documents`), `shortcuts.ts` (⌘1 / ⌘2), locales fr / en.
+- **Renderer** : `useSpace.ts`, `components/discussion/` (`SpaceSwitcher`, `DocumentCards`,
+  `DocumentsPanel`, `ContinueInProjectDialog`), `discussion.css`, barre latérale, accueil, saisie,
+  panneau, menu de la conversation, carte d'autorisation (`PermissionQuestion`, `PlainCommand`).
+- **Agent factice** : `scenarios-discussion.mts` ; **e2e** : `e2e/suites/discussion.mjs`.
+- **Doc** : ADR-0046, `docs/acp.md` (relevés), `docs/architecture.md`, `docs/mock-agent.md`,
+  `docs/traduction.md`, guide des raccourcis, changelogs.
+
+## Écarts au plan et aux maquettes
+
+- **Aperçu** : texte brut pour un `.docx` / `.rtf` (macOS `textutil -convert txt`), pas la page
+  mise en forme de la maquette E5 — l'afficher en HTML demandait un nettoyeur (`dompurify` n'est
+  pas une dépendance directe) ; pas d'aperçu d'un `.xlsx` (E3 : « Ouvrir » à la place). Aucune
+  dépendance ajoutée.
+- **Cartes de documents** : nom et extension, pas « créé par … · 24 Ko » (Bobine ne sait pas qui a
+  écrit un fichier) ; la liste du panneau donne taille et date.
+- **« Enregistrer une copie… »** : dossier choisi dans le dialogue des dossiers (pas un dialogue
+  d'enregistrement) ; un nom pris reçoit un numéro.
+- **Recherche** (⌘K) : non limitée aux discussions.
+- **Dit une fois dans le fil pour un agent qui écrit sans demander** : pas fait ; le repère
+  `writes-without-asking` de Réglages › Agents reste la seule mention (relevé : OpenCode écrit
+  hors du dossier, dans le dossier temporaire du système).
+- **Mode** : la puce de mode est retirée de la barre d'une discussion ; le mode reste dans les
+  réglages de la session.
+- **Dossier d'une discussion** créé avec son brouillon (l'agent y démarre), retiré s'il est resté
+  vide quand on la quitte.
+
 ## Plus tard (hors périmètre)
 
 - Documents et instructions partagés entre discussions (les « Projets » de Claude et ChatGPT).
@@ -174,3 +216,7 @@ coder. Aucune nouvelle dépendance prévue.
   Cadre revu avec l'utilisateur : deux espaces séparés sur le même moteur, public moins technique,
   documents déposés et produits gardés avec la discussion (comparaison Claude / ChatGPT).
   Maquettes E1–E6 (`e2e/maquettes/screens-discussion.mjs`) validées par l'utilisateur le même jour.
+- **2026-11-14** (suite, sur `feat/224-discussion`, à la demande du tech lead) : relevés réels
+  (Bob 2.1.0 : 0,77 bobcoin, réglages de Bob identiques avant / après ; OpenCode 2.2.5 gratuit),
+  puis cœur, documents, interface, agent factice, essais, ADR-0046. `./scripts/verify` vert à
+  chaque incrément. Voir « Écarts ».

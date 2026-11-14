@@ -480,18 +480,19 @@ function SidebarFixed(
         <kbd className="sidebar-kbd">{ACTIVITY_KEYS}</kbd>
       </button>
 
-      <button
-        hidden={props.discussion}
-        className={`sidebar-item${props.scheduledOpen ? ' active' : ''}`}
-        aria-current={props.scheduledOpen ? 'page' : undefined}
-        onClick={props.onScheduled}
-        data-testid="open-scheduled"
-      >
-        <span className="icon-badge plain">
-          <CalendarClock size={15} />
-        </span>
-        <span className="label">{t('sidebar.scheduled')}</span>
-      </button>
+      {!props.discussion && (
+        <button
+          className={`sidebar-item${props.scheduledOpen ? ' active' : ''}`}
+          aria-current={props.scheduledOpen ? 'page' : undefined}
+          onClick={props.onScheduled}
+          data-testid="open-scheduled"
+        >
+          <span className="icon-badge plain">
+            <CalendarClock size={15} />
+          </span>
+          <span className="label">{t('sidebar.scheduled')}</span>
+        </button>
+      )}
     </div>
   )
 }
