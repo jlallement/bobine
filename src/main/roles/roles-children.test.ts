@@ -19,6 +19,7 @@ import { gitCommand, queuedGit } from '../git/git-queue'
 import { childrenToolsModule } from '../mcp/children-tools'
 import { AppToolServer } from '../mcp/tool-server'
 import { builtinRoles } from './builtin'
+import { startRoleChildren } from './invoke'
 import { RoleLibrary } from './library'
 
 function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<void> {
@@ -289,5 +290,33 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(reply).not.toContain('- questions:')
     await env.manager.prompt(env.mother, 'Rien de spécial')
     expect(env.lastReply(env.mother)).not.toContain('Roles (start_child')
+  })
+
+  it('`@rôle` de la saisie (phase 3B) : une fille par rôle, même texte, rôle inconnu rendu à part', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert', 'ux-ui-expert', 'astronaute'],
+      text: 'Relis le carnet.'
+    })
+    expect(result.started.map((s) => s.role)).toEqual(['security-expert', 'ux-ui-expert'])
+    expect(result.failed).toEqual([
+      { role: 'astronaute', error: expect.stringMatching(/astronaute/) }
+    ])
+    await waitFor(() => env.childrenOf().length === 2)
+    const byRole = Object.fromEntries(env.childrenOf().map((c) => [c.role?.name, c]))
+    // Lecture seule : le dossier de la mère ; l'autre : son worktree.
+    expect(byRole['security-expert']?.workspace).toBe(env.repo)
+    expect(byRole['ux-ui-expert']?.branch).toBeTruthy()
+    for (const child of env.childrenOf()) {
+      await env.settled(child.id)
+      const first = env.firstMessage(child.id)
+      expect(first?.kind === 'user' && first.text).toMatch(/<bobine_role name="[a-z-]+">/)
+      expect(env.lastReply(child.id)).toContain('Relis le carnet.')
+    }
+    const started = env.items(env.mother).filter((i) => i.kind === 'child-started')
+    expect(started.map((i) => i.kind === 'child-started' && i.role?.name)).toEqual([
+      'security-expert',
+      'ux-ui-expert'
+    ])
   })
 })

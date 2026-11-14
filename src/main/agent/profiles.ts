@@ -319,6 +319,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       chartSlot: 0,
       // Modèle de fille suggéré puis confirmé, comme OpenCode ; `MOCK_CHILD_MODEL=none` : comme Bob.
       ...(ctx.env['MOCK_CHILD_MODEL'] === 'none' ? {} : { childModelChoice: 'ask' as const }),
+      // Écrit sans demander, comme OpenCode (`MOCK_AGENT_WRITES=silent`, e2e `roles-travail`, fiche 223).
+      ...(ctx.env['MOCK_AGENT_WRITES'] === 'silent' ? { writesWithoutAsking: true as const } : {}),
       command: ctx.execPath,
       args: [
         join(ctx.appPath, 'src/mock-agent/main.mts'),
