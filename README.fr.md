@@ -32,6 +32,8 @@
   <img alt="Bobine : l'agent a lancé les tests, trouvé le défaut et demande avant de modifier panier.py, avec le diff" src="docs/images/readme/fr/hero-light.png">
 </picture>
 
+<p align="center"><a href="docs/images/readme/fr/demo.mp4">▶ Voir la démo de 20 secondes</a></p>
+
 > **Bêta publique.** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
 > attendez-vous à des aspérités et [signalez-les](https://github.com/jlallement/bobine/issues/new/choose).
 > L'app n'est **pas notarisée par Apple** : macOS demande une étape de plus à la première

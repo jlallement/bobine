@@ -32,6 +32,8 @@
   <img alt="Bobine: the agent ran the tests, found the bug and asks before editing cart.py, with the diff" src="docs/images/readme/en/hero-light.png">
 </picture>
 
+<p align="center"><a href="docs/images/readme/en/demo.mp4">▶ Watch the 20-second demo</a></p>
+
 > **Public beta.** Bobine is used every day by its author, but by few people so far: expect rough
 > edges and please [report them](https://github.com/jlallement/bobine/issues/new/choose). The app
 > is **not notarized by Apple**, so macOS asks for one extra step the first time you open it
