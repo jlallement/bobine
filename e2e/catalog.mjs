@@ -1111,6 +1111,28 @@ export const SUITES = [
     ]
   },
   {
+    // Rôles, interface de gestion (fiche 223, phase 3A) : assistant, Réglages › Rôles, Équipe.
+    name: 'roles-gestion',
+    file: 'roles-gestion.mjs',
+    run: 'rolesGestionSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      `${C}roles/`,
+      `${R}roles/`,
+      `${R}roles.css`,
+      `${C}settings/ConfirmRow.tsx`,
+      `${C}sidebar/HistoryItem.tsx`,
+      `${C}sidebar/SidebarSection.tsx`,
+      `${C}dialogs/AppDialogs.tsx`,
+      `${R}settings-search.ts`,
+      'src/shared/roles.ts',
+      'src/shared/roles-ipc.ts',
+      'src/shared/children.ts',
+      'src/main/roles/'
+    ]
+  },
+  {
     name: 'custom-agent',
     file: 'custom-agent.mjs',
     run: 'customAgentSuite',
