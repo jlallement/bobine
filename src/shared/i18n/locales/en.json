@@ -2194,6 +2194,7 @@
   },
   "sidePanel": {
     "resize": "Resize panel",
+    "resizeHint": "Drag to set the width · double-click: default width",
     "close": "Close panel",
     "closeTab": "Close the {{tab}} tab",
     "maximize": "Maximize panel (⇧⌘J)",

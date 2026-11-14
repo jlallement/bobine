@@ -2239,6 +2239,7 @@ export type FrResources = {
   }
   readonly sidePanel: {
     readonly resize: 'Redimensionner le panneau'
+    readonly resizeHint: 'Glisser pour régler la largeur · double-clic : largeur par défaut'
     readonly close: 'Fermer le panneau'
     readonly closeTab: 'Fermer l’onglet {{tab}}'
     readonly maximize: 'Agrandir le panneau (⇧⌘J)'

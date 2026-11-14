@@ -92,6 +92,8 @@ interface Props {
   onTab: (tab: PanelTab) => void
   onClose: () => void
   onResize: (width: number) => void
+  /** Double-clic sur le bord : largeur par défaut (fiche 226). */
+  onResetWidth: () => void
 }
 
 /**
@@ -132,6 +134,7 @@ export function SidePanel({
   onTab,
   onClose,
   onResize,
+  onResetWidth,
   opening = 0
 }: Props) {
   const { t } = useTranslation()
@@ -198,12 +201,15 @@ export function SidePanel({
           role="separator"
           aria-orientation="vertical"
           aria-label={t('sidePanel.resize')}
+          title={t('sidePanel.resizeHint')}
+          data-testid="side-panel-resize"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={stopDrag}
           onPointerCancel={stopDrag}
-          // Double-clic sur la poignée : agrandi (fiche 082).
-          onDoubleClick={() => onMaximize(true)}
+          // Double-clic sur la poignée : largeur par défaut, comme la barre latérale (fiche 226 ;
+          // il agrandissait le panneau, fiche 082 : le bouton et le menu Affichage le font).
+          onDoubleClick={onResetWidth}
         />
       )}
       <header className={`side-panel-head drag${onShowSidebar ? ' with-lights' : ''}`}>

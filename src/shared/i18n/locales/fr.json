@@ -2282,6 +2282,7 @@
   },
   "sidePanel": {
     "resize": "Redimensionner le panneau",
+    "resizeHint": "Glisser pour régler la largeur · double-clic : largeur par défaut",
     "close": "Fermer le panneau",
     "closeTab": "Fermer l’onglet {{tab}}",
     "maximize": "Agrandir le panneau (⇧⌘J)",
