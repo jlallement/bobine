@@ -6,6 +6,15 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- New Aurora theme, light (“Aurora”) and dark (“Aurora Night”), replacing Sepia: a calm base with
+  a few aurora touches (a glow at the top of the sidebar, your message bubble in a soft gradient, a
+  colored ring around the message box while you type, the main button in a gradient, a tinted
+  shadow under permission requests, frosted glass on menus and Settings). With macOS “Reduce
+  transparency” or “Increase contrast”, the glass turns opaque and the gradients solid. If you used
+  Sepia, Bobine switches to Light.
+- The right panel opens at 320 px instead of 380, leaving more room for the conversation. The width
+  you set by dragging its edge is kept; double-clicking the edge goes back to the default width (it
+  used to maximize the panel: the ⤢ button still does).
 - Chat space: Bobine is also a chat, next to the code. The Code | Chat switcher at the top of the
   sidebar (⌘1 / ⌘2) opens a space with no project, to ask a question, write an email or work on
   documents. Drop PDF, Word, Excel or image files there: they are copied into the chat (your

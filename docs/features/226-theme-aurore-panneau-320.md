@@ -1,6 +1,6 @@
 # 226 — Thème Aurore à la place de Sépia, panneau de droite à 320 px
 
-- **Statut** : en cours
+- **Statut** : fait (reste : suite e2e complète par le tech lead, essai à la vraie souris)
 - **Dépend de** : 134 (jetons de thème, contrastes), 136 (Apparence, thème par mode), 168 (Fjord),
   113 (barre latérale réglable), 029 / 082 / 173 (panneau de droite)
 - **Agents** : les deux. Rien ne dépend de l'agent : couleurs, décor et largeur du panneau.
@@ -17,11 +17,11 @@ premier lancement, le texte du fil gagne 60 px par ligne.
 
 ### Thème
 
-- [ ] Deux palettes `aurora` (clair, « Aurore » / « Aurora ») et `auroraNight` (sombre,
+- [x] Deux palettes `aurora` (clair, « Aurore » / « Aurora ») et `auroraNight` (sombre,
       « Aurore nuit » / « Aurora Night ») dans les jetons, avec les trois couches et six accents ;
       base presque neutre (nuit `#15171d`, jour `#fbfcfe`), dégradés de base de 1 à 2 % de
       luminosité (barre latérale, haut du fil, panneau, cartes).
-- [ ] Les six touches, dosage « légères » seulement (pas de filet de 2 px en haut du fil) :
+- [x] Les six touches, dosage « légères » seulement (pas de filet de 2 px en haut du fil) :
       1. lueur d'aurore confinée en haut de la barre latérale ;
       2. bulle de l'utilisateur en dégradé deux tons ;
       3. liseré dégradé de la saisie, au focus seulement ;
@@ -29,38 +29,38 @@ premier lancement, le texte du fil gagne 60 px par ligne.
          « Nouvelle conversation », conversation active en pastille) ;
       5. ombre teintée sous les cartes d'autorisation et de plan ;
       6. verre (`backdrop-filter`) seulement sur ce qui flotte : menus, popovers, Réglages.
-- [ ] Jetons de « touche » (`--touch-*`, `--glass-*`) neutres dans les autres thèmes : Clair,
+- [x] Jetons de « touche » (`--touch-*`, `--glass-*`) neutres dans les autres thèmes : Clair,
       Sombre, Nuit noire, Fjord et Fjord nuit ne changent pas d'un pixel (vérifié aux captures).
-- [ ] Test de contraste étendu : les deux extrémités de chaque dégradé, la lueur composée en tout
+- [x] Test de contraste étendu : les deux extrémités de chaque dégradé, la lueur composée en tout
       point de la barre latérale sous les traits du feu (trois largeurs de barre), le verre composé
       sur le contenu flouté derrière lui ; texte 4,5:1, texte sur l'action 4,5:1 pour chaque accent.
-- [ ] Repli « Réduire la transparence » / « Augmenter le contraste » de macOS
+- [x] Repli « Réduire la transparence » / « Augmenter le contraste » de macOS
       (`prefers-reduced-transparency: reduce`, `prefers-contrast: more`, exposés par Chromium dans
       Electron 45) : verre opaque, lueur retirée, dégradés unis ; aucun réglage de plus.
-- [ ] Aucun `backdrop-filter` ni dégradé animé sur ce qui défile dans le fil.
-- [ ] Sépia retiré ; un thème enregistré `sepia` (ancien `theme` ou `lightTheme`) devient Clair.
-- [ ] Réglages › Apparence : vignettes en deux rangées (Système, Clair, Fjord, Aurore / Sombre,
+- [x] Aucun `backdrop-filter` ni dégradé animé sur ce qui défile dans le fil.
+- [x] Sépia retiré ; un thème enregistré `sepia` (ancien `theme` ou `lightTheme`) devient Clair.
+- [x] Réglages › Apparence : vignettes en deux rangées (Système, Clair, Fjord, Aurore / Sombre,
       Nuit noire, Fjord nuit, Aurore nuit), celles d'Aurore avec leur lueur et le trait dégradé,
       marquées « Nouveau ».
-- [ ] ADR : les dégradés et le verre sortent du « couleurs seulement » de l'ADR-0027 (ADR-0049).
+- [x] ADR : les dégradés et le verre sortent du « couleurs seulement » de l'ADR-0027 (ADR-0049).
 
 ### Panneau de droite (planches P1–P3)
 
-- [ ] Largeur par défaut 320 px (au lieu de 380).
-- [ ] La largeur n'est enregistrée qu'après un glissement du bord par l'utilisateur, plus à chaque
+- [x] Largeur par défaut 320 px (au lieu de 380).
+- [x] La largeur n'est enregistrée qu'après un glissement du bord par l'utilisateur, plus à chaque
       changement du panneau.
-- [ ] Une largeur enregistrée égale à 380 (l'ancien défaut, enregistré d'office) vaut « jamais
+- [x] Une largeur enregistrée égale à 380 (l'ancien défaut, enregistré d'office) vaut « jamais
       réglée » : 320. **Écart assumé** : quelqu'un qui avait choisi exactement 380 à la main repart
       à 320.
-- [ ] Double-clic sur le bord : retour à la largeur par défaut, comme la barre latérale (fiche
+- [x] Double-clic sur le bord : retour à la largeur par défaut, comme la barre latérale (fiche
       113) ; il n'agrandit plus le panneau (le bouton et le menu Affichage le font toujours).
       Infobulle du bord : « Glisser pour régler la largeur · double-clic : largeur par défaut ».
-- [ ] Tests unitaires de chaque point.
+- [x] Tests unitaires de chaque point.
 
 ### Essais
 
-- [ ] `./scripts/verify` vert.
-- [ ] e2e des suites touchées (thèmes, Apparence, panneau), clair et sombre, en français puis en
+- [x] `./scripts/verify` vert.
+- [x] e2e des suites touchées (thèmes, Apparence, panneau), clair et sombre, en français puis en
       anglais ; captures de la fenêtre en Aurore et Aurore nuit et de la page Apparence, comparées
       aux maquettes.
 
@@ -85,8 +85,8 @@ V5, V6), planches P1–P3, scripts `contrast3.py` et `contrast3-lueur.py`.
    `sepia` (ancien `theme` ou `lightTheme`) → Clair. Tests.
 3. **Apparence** : grille de quatre colonnes, vignette d'Aurore (lueur, trait dégradé), « Nouveau »
    (`settings.appearance.theme.new`), textes fr/en, mots de la recherche des réglages.
-4. **Touches dans le CSS** : nouveau `src/renderer/src/aurora.css` (importé après `styles.css`),
-   qui ne lit que les variables `--touch-*` / `--glass-*` ; aucune couleur en dur.
+4. **Touches dans le CSS** : les variables `--touch-*` / `--glass-*` lues dans les règles de base
+   de `styles.css` (écart : pas de `aurora.css`, voir le journal) ; aucune couleur en dur.
 5. **Panneau** : `panel-width.ts` (défaut 320, lecture de l'ancien `width` sauf 380, `customWidth`
    écrit seulement après un glissement, retour au défaut) ; `usePanel` expose `resize` et
    `resetWidth` ; `SidePanel` : double-clic → largeur par défaut, infobulle. Tests unitaires.
@@ -100,3 +100,54 @@ Aucune nouvelle dépendance.
 
 - 2026-11-14 — Fiche et plan écrits d'après les maquettes v3 validées (« Touches légères ») et
   les planches P1–P3.
+- 2026-11-14 — Fait.
+  - **Jetons** : `src/shared/theme-aurora.ts` (palettes, touches en données, `touchVariables`,
+    `touchFallbackVariables`, vignette) ; `themes.ts` sans Sépia ; `ThemeTokens.touch` posé par
+    `cssVariables` ; `themes-css.mts` écrit Aurore et Aurore nuit et leur repli sous
+    `(prefers-reduced-transparency: reduce)` / `(prefers-contrast: more)`. Accents d'Aurore
+    autres que l'orange et teintes vives non montrées dans les maquettes : repris de Fjord /
+    Fjord nuit, ajustés à la base, vérifiés par le test. Fin du dégradé d'action pour chaque
+    accent : vers le rose la nuit, le prune le jour (question 3 des maquettes, réponse par défaut).
+  - **Test de contraste** (`theme-aurora.test.ts`) : lueur composée en tout point de la barre
+    latérale à partir de 8 px sous le haut (feux au-dessus), pour 220, 300 et 440 px, sur chacun des
+    trois arrêts du fond ; pastille posée sur ces points ; deux bouts du haut du fil, du panneau,
+    de la carte, de son pied, de la bulle ; verre composé sur le fond, une carte, la barre
+    latérale ou le texte flouté ; texte sur l'action aux deux bouts, survol compris, pour les six
+    accents. Contrôle : le test échoue si la lueur du jour passe à 45 % ou si la bulle de nuit
+    s'éclaircit. `scripts/glass-guard.test.ts` : `backdrop-filter` seulement sur `.menu` et
+    `.settings-dialog`, aucune étape d'animation ne lit une touche.
+  - **CSS** : touches lues en place dans les règles de base de `styles.css` plutôt que dans un
+    `aurora.css` à part : une règle à part, de même spécificité et chargée après, aurait écrasé les
+    variantes plus spécifiques (carte à risque, saisie en mode Plan ou vers un rôle, bouton
+    désactivé). Les valeurs neutres rendent exactement l'aspect d'avant (bordure transparente du
+    bouton principal sur un fond de l'accent = bordure de l'accent).
+  - **Préférences** : `theme: 'sepia'` → Clair (mode et thème) ; `lightTheme: 'sepia'` ignoré →
+    Clair. Apparence : grille de quatre colonnes, « Nouveau » sous Aurore et Aurore nuit.
+  - **Panneau** : `panel-width.ts` ; `bobine.panel` n'écrit plus `width` mais `customWidth`,
+    seulement après un glissement ; ancien `width` lu une fois (380 = jamais réglé) ; double-clic
+    → 320 et plus rien d'enregistré ; infobulle du bord.
+  - **Effet de bord corrigé** : à 320 px, « Ajouter au message » du terminal passait sur deux
+    lignes, la barre grandissait, xterm se recalibrait et perdait la sélection (e2e `terminal`) :
+    bouton gardé sur une ligne, les onglets cèdent la place.
+  - **e2e** : nouvelle suite `aurore` (vignette, six touches, verre, repli émulé par
+    `Emulation.setEmulatedMedia`, nouveau `ui.media` dans `e2e/lib.mjs`) ; `panel` (320 par défaut,
+    largeur enregistrée après le glissement seulement, double-clic) ; `settings`, `fun`, `composer`
+    et `palette.mjs` passent de Sépia à Aurore. Suites jouées, clair et sombre, en français et en
+    anglais : aurore, settings, fun, composer, panel, command-output, tables, mermaid, terminal,
+    onglets-etroits, browser-view, session, debordements — vertes. Captures `a1-apparence-aurore`,
+    `a2-aurore-fenetre`, `a2b-aurore-menu`, `a3-aurore-repli` (`-light` : Aurore, `-dark` : Aurore
+    nuit) regardées et comparées aux planches V1, V2, V5, V6.
+  - **Écarts aux maquettes** :
+    - le menu en verre capturé est le menu « + » du panneau, pas celui des modèles (grisé pendant
+      que l'agent attend l'accord) ; le liseré au focus et le menu ouvert sont donc sur deux
+      captures ;
+    - la carte d'autorisation garde un bord `--border` en Aurore comme la maquette, mais
+      `--border-strong` revient avec « Augmenter le contraste » ;
+    - le voile derrière les Réglages reste celui de l'app (noir à 28 %), la maquette du jour avait un
+      voile bleuté plus clair ;
+    - l'app a depuis la fiche 224 le sélecteur Code | Discussion en haut de la barre latérale : il
+      est sous la lueur (contraste couvert par le test, qui mesure toute la surface) ;
+    - ombres des menus : celles du mode (`--shadow-menu`), pas celles, un peu plus marquées, de la
+      maquette ;
+    - le liseré au focus n'a pas de seuil de contraste (décoratif, ADR-0049) : le jour, le bout
+      sarcelle est très pâle sur blanc, comme dans la maquette.
