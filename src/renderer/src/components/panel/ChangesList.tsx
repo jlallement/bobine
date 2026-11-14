@@ -101,12 +101,14 @@ export function ChangesFileList({
                   </>
                 )}
               </span>
-              {view === 'conversation' &&
-                (reverted.has(row.key) ? (
-                  <span className="muted changes-reverted" data-testid="changes-reverted">
-                    {t('changes.reverted')}
-                  </span>
-                ) : (
+              {view === 'conversation' && reverted.has(row.key) && (
+                <span className="muted changes-reverted" data-testid="changes-reverted">
+                  {t('changes.reverted')}
+                </span>
+              )}
+              {/* Actions de la ligne : au survol ou au clavier dans un panneau étroit (fiche 226). */}
+              <span className="changes-actions">
+                {view === 'conversation' && !reverted.has(row.key) && (
                   <Tip label={t('changes.revert')}>
                     <button
                       className={`icon-button small${reverting === row.key ? ' active' : ''}`}
@@ -117,28 +119,29 @@ export function ChangesFileList({
                       <Undo2 size={13} />
                     </button>
                   </Tip>
-                ))}
-              <Tip label={t('changes.open')}>
-                <button
-                  className="icon-button small"
-                  aria-label={t('changes.openLabel', { path: row.path })}
-                  disabled={!row.openable}
-                  onClick={() => row.openable && onAct('open', row.openable)}
-                  data-testid="changes-open"
-                >
-                  <SquareArrowOutUpRight size={13} />
-                </button>
-              </Tip>
-              <Tip label={t('changes.reveal')}>
-                <button
-                  className="icon-button small"
-                  aria-label={t('changes.revealLabel', { path: row.path })}
-                  disabled={!row.openable}
-                  onClick={() => row.openable && onAct('reveal', row.openable)}
-                >
-                  <FolderOpen size={13} />
-                </button>
-              </Tip>
+                )}
+                <Tip label={t('changes.open')}>
+                  <button
+                    className="icon-button small"
+                    aria-label={t('changes.openLabel', { path: row.path })}
+                    disabled={!row.openable}
+                    onClick={() => row.openable && onAct('open', row.openable)}
+                    data-testid="changes-open"
+                  >
+                    <SquareArrowOutUpRight size={13} />
+                  </button>
+                </Tip>
+                <Tip label={t('changes.reveal')}>
+                  <button
+                    className="icon-button small"
+                    aria-label={t('changes.revealLabel', { path: row.path })}
+                    disabled={!row.openable}
+                    onClick={() => row.openable && onAct('reveal', row.openable)}
+                  >
+                    <FolderOpen size={13} />
+                  </button>
+                </Tip>
+              </span>
             </div>
             {reverting === row.key && (
               <div className="changes-confirm" data-testid="changes-revert-ask">

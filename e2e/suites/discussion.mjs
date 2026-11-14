@@ -73,9 +73,15 @@ export async function discussionSuite(scheme) {
         // Panneau « Documents » : la liste et l'aperçu du document choisi.
         if (!(await ui.ev(`!!${ui.$('side-panel')}`))) await ui.click(ui.$('panel-toggle'))
         await ui.waitFor(`!!${ui.$('side-panel')}`)
-        await ui.click(
-          `[...document.querySelectorAll('.side-panel-tab-main')].find((b) => b.innerText.includes(${JSON.stringify(L('panel.tab.documents'))}))`
-        )
+        // Par son nom accessible : à 320 px (fiche 226), les onglets peuvent n'être que des icônes
+        // (fiche 185) ; rangé dans « + » s'il n'a pas de place dans la rangée.
+        const documentsTab = `document.querySelector('.side-panel-tab-main[aria-label=${JSON.stringify(L('panel.tab.documents'))}]')`
+        await ui.waitFor(`!!${documentsTab}`)
+        if (await ui.ev(`!!${documentsTab}.closest('[data-overflow]')`)) {
+          await ui.click(ui.$('panel-more'))
+          await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
+          await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=documents]')`)
+        } else await ui.click(documentsTab)
         await ui.waitFor(`document.querySelectorAll('[data-testid=documents-row]').length === 2`)
         await ui.waitFor(`${ui.$('documents-preview')}?.innerText.includes('Synthèse')`)
         check(true, 'panneau « Documents » : deux documents, aperçu du plus récent')

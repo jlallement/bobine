@@ -5577,6 +5577,7 @@ a.btn {
   list-style: none;
   margin: 0;
   padding: 4px 8px 16px;
+  container: changes / inline-size;
 }
 
 .changes-row {
@@ -5589,6 +5590,43 @@ a.btn {
 
 .changes-row:hover {
   background: var(--surface-2);
+}
+
+.changes-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/*
+ * Panneau étroit (320 px par défaut, fiche 226) : les trois actions de la ligne prenaient la place
+ * du nom de fichier. Elles se posent par-dessus les chiffres, au survol de la ligne ou quand l'une
+ * d'elles a le clavier (toujours dans l'ordre de tabulation), et restent pendant « Annuler ? ».
+ */
+@container changes (max-width: 380px) {
+  .changes-row {
+    position: relative;
+  }
+
+  .changes-actions {
+    position: absolute;
+    top: 0;
+    right: 4px;
+    bottom: 0;
+    padding-left: 6px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .changes-row:hover .changes-actions,
+  .changes-row:focus-within .changes-actions,
+  .changes-row:has(.icon-button.active) .changes-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .changes-toggle {

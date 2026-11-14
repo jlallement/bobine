@@ -151,3 +151,20 @@ Aucune nouvelle dépendance.
       maquette ;
     - le liseré au focus n'a pas de seuil de contraste (décoratif, ADR-0049) : le jour, le bout
       sarcelle est très pâle sur blanc, comme dans la maquette.
+- 2026-11-14 — Après la fusion (suite e2e complète du tech lead), deux régressions du panneau à
+  320 px, corrigées :
+  - **Modifications** : à 320 px, les trois actions de chaque ligne (annuler, ouvrir, montrer dans
+    le Finder) prenaient la place du nom (« configuration-par-d… »). Le CSS donnait déjà la
+    priorité au nom sur le dossier, mais il n'y avait plus de place. Dans une liste de 380 px ou
+    moins (requête de conteneur `changes`), les actions se posent par-dessus les chiffres, au survol
+    de la ligne ou quand l'une d'elles a le clavier (elles restent dans l'ordre de tabulation), et
+    pendant « Annuler ? ». Le nom tient entier, le dossier se coupe d'abord.
+  - **Documents** (espace Discussion) : l'aperçu réduisait le nom du document à « S… » ; les boutons
+    passent maintenant à la ligne sous le nom.
+  - **Onglets du panneau en icônes seules** à 320 px : c'est le comportement prévu par la fiche 185
+    (crans `compact` puis `tight`, nom accessible et infobulle gardés). Il est jugé acceptable avec
+    deux ou trois onglets, et n'est pas changé. La suite `discussion` trouve l'onglet par son nom
+    accessible (et passe par « + » s'il y est rangé), plus par son texte affiché.
+  - Listes vérifiées aux captures : Session, Tâches, Documents, Modifications.
+  - e2e `discussion`, `autorisation-commande`, `panel`, `onglets-etroits`, `aurore` en clair et en
+    sombre, en français et en anglais : vertes.

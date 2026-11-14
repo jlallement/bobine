@@ -181,15 +181,19 @@
   overflow: auto;
   padding: 14px 16px;
 }
+/* Le nom du document d'abord, entier s'il tient sur la ligne ; les boutons passent dessous quand le
+   panneau est étroit (320 px par défaut, fiche 226), au lieu de réduire le nom à « S… ». */
 .documents-preview-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
   color: var(--text);
 }
 .documents-preview-bar .documents-preview-name {
-  flex: 1;
+  flex: 1 0 auto;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
