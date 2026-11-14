@@ -5,6 +5,7 @@
  */
 import type { ConversationSummary, SessionControl } from '@shared/agent'
 import { roleOpening, type ReadOnlyLevel, type RoleDefinition, type RoleScope } from '@shared/roles'
+import { currentLanguage } from '../i18n'
 import { log } from '../log'
 import type { ConversationManager } from '../conversations/manager'
 
@@ -37,21 +38,33 @@ export function nativeMode(
  */
 export function readOnlyLevel(
   role: RoleDefinition,
-  writesWithoutAsking: boolean
+  writesWithoutAsking: boolean,
+  /** Mode installé par Bobine en lecture seule (phase 4) : les droits de l'agent la tiennent. */
+  heldByAgent = false
 ): ReadOnlyLevel | undefined {
   if (!role.readOnly) return undefined
-  return writesWithoutAsking ? 'requested' : 'enforced'
+  return writesWithoutAsking && !heldByAgent ? 'requested' : 'enforced'
+}
+
+/** Mode installé par Bobine pour ce rôle et cet agent (phase 4, « lancer dans ce mode »). */
+export interface InstalledMode {
+  id: string
+  /** Installé en lecture seule : les droits du mode interdisent d'écrire. */
+  readOnly: boolean
 }
 
 /**
- * Agent de la fille prêt : son mode natif posé si le rôle en nomme un que la session connaît,
- * puis le premier message. Ce qui n'a pas pu se faire est dit dans le fil de la fille.
+ * Agent de la fille prêt : son mode natif posé si le rôle en nomme un que la session connaît —
+ * sinon, sans `mode`, celui que Bobine a installé pour ce rôle dans cet agent (`installed`, phase
+ * 4) s'il est dans les modes de la session —, puis le premier message. Ce qui n'a pas pu se faire
+ * est dit dans le fil de la fille.
  */
 export async function roleFirstMessage(
   host: RoleLaunchHost,
   child: ConversationSummary,
   role: RoleDefinition & { scope?: RoleScope; hides?: RoleScope[] },
-  task: string
+  task: string,
+  installed?: InstalledMode
 ): Promise<string> {
   // Rôle du projet qui en remplace un fourni ou personnel du même nom : dit, le dépôt décide.
   if (role.scope === 'project' && role.hides?.length) {
@@ -62,7 +75,8 @@ export async function roleFirstMessage(
     })
   }
   const controls = host.view(child.id).snapshot?.controls ?? []
-  const mode = nativeMode(controls, role.mode)
+  const fromInstall = !role.mode && installed ? installed : undefined
+  const mode = nativeMode(controls, role.mode ?? fromInstall?.id)
   let native = false
   if (mode) {
     const current = controls.find((c) => c.id === mode.controlId)
@@ -84,7 +98,12 @@ export async function roleFirstMessage(
     })
   }
   const profile = host.settingsView().profiles.find((p) => p.id === child.profileId)
-  const readOnly = readOnlyLevel(role, !!profile?.writesWithoutAsking)
+  const readOnly = readOnlyLevel(
+    role,
+    !!profile?.writesWithoutAsking,
+    native && fromInstall?.readOnly === true
+  )
+  if (native && fromInstall) log.info(`Rôle ${role.name} : mode installé ${fromInstall.id} posé`)
   if (readOnly === 'requested') {
     host.post(child.id, {
       type: 'notice',
@@ -95,5 +114,6 @@ export async function roleFirstMessage(
       }
     })
   }
-  return roleOpening(role, task, readOnly ? { readOnly } : {})
+  // Langue de l'interface nommée pour la réponse (essai réel : Bob ignorait la ligne générique).
+  return roleOpening(role, task, { ...(readOnly ? { readOnly } : {}), language: currentLanguage() })
 }

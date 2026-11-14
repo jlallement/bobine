@@ -50,7 +50,7 @@ import { applyModel, ChildReviews } from './children-review'
 import type { Message } from '@shared/i18n/message'
 import { roleBadge, roleStamp, type RoleSnapshot, type RoleView } from '@shared/roles'
 import type { RoleLibrary } from '../roles/library'
-import { roleFirstMessage } from '../roles/launch'
+import { roleFirstMessage, type InstalledMode } from '../roles/launch'
 import { ReadOnlyWatch } from '../roles/read-only-watch'
 import type { Run } from '../simulator/run'
 import { gitRun } from '../git/git-queue'
@@ -131,6 +131,15 @@ export interface ChildOptions {
   run?: Run
   /** Rôles (fiche 223) ; absent : aucun rôle. */
   roles?: Pick<RoleLibrary, 'active' | 'find'>
+  /**
+   * Mode installé par Bobine pour ce rôle dans l'agent de ce profil, avec « lancer dans ce mode »
+   * (fiche 223, phase 4) ; `conversationId` : la fille (son projet est celui de sa mère).
+   */
+  nativeRoleMode?: (
+    profileId: string,
+    role: string,
+    conversationId: string
+  ) => InstalledMode | undefined
 }
 
 export class ChildConversations {
@@ -152,6 +161,7 @@ export class ChildConversations {
   /** Relectures avant fusion (fiche 177) : des filles d'un genre à part. */
   readonly reviews: ChildReviews
   private readonly roles: ChildOptions['roles']
+  private readonly nativeRoleMode: ChildOptions['nativeRoleMode']
   /** Garde-fou des rôles en lecture seule (fiche 223). */
   private readonly readOnly: ReadOnlyWatch
 
@@ -159,6 +169,7 @@ export class ChildConversations {
     this.conversations = conversations
     this.reviews = new ChildReviews({ conversations, children: this, run: options.run ?? gitRun })
     this.roles = options.roles
+    this.nativeRoleMode = options.nativeRoleMode
     this.readOnly = new ReadOnlyWatch({
       conversations,
       summary: (id) => this.summary(id),
@@ -550,7 +561,10 @@ export class ChildConversations {
       if (model || role) await this.conversations.ready(childId)
       if (model) await applyModel(this.conversations, childId, model)
       // Rôle (fiche 223) : mode natif si l'agent l'a, sinon sa consigne en tête du message.
-      const first = role ? await roleFirstMessage(this.conversations, child, role, text) : text
+      const installed = role && this.nativeRoleMode?.(child.profileId, role.name, childId)
+      const first = role
+        ? await roleFirstMessage(this.conversations, child, role, text, installed || undefined)
+        : text
       // Lecture seule : l'empreinte du dossier avant que la consigne ne parte (garde-fou).
       if (role?.readOnly) await this.readOnly.prepare(childId)
       // Le tour de la fille ne se termine pas avant longtemps : `launch` n'est pas attendu.

@@ -43,9 +43,16 @@ export function parseRolesStartRequest(value: unknown): RolesStartRequest {
 export async function startRoleChildren(
   host: RoleInvokeHost,
   motherId: string,
-  request: RolesStartRequest
+  request: RolesStartRequest,
+  /**
+   * Appelé une fois, juste avant la première fille : une conversation encore vide entre dans
+   * l'historique (titrée d'après la demande, sans message à son agent) pour que ses filles s'y
+   * rattachent. Rien si aucun rôle ne part.
+   */
+  beforeFirst?: () => void
 ): Promise<RolesStartResult> {
   const result: RolesStartResult = { started: [], failed: [] }
+  let ready = false
   // L'une après l'autre : deux `git worktree add` à la fois dans le même dépôt peuvent se gêner,
   // et le plafond des filles se compte juste. Chaque lancement rend la main dès la fille créée.
   for (const name of request.roles) {
@@ -73,6 +80,10 @@ export async function startRoleChildren(
             ]
           : [])
       ]
+      if (!ready) {
+        beforeFirst?.()
+        ready = true
+      }
       const child = await host.start(motherId, {
         text: request.text,
         role: role.name,

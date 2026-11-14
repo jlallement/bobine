@@ -3075,6 +3075,11 @@ export type FrResources = {
       readonly yes: 'Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).'
       readonly no: 'L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session.'
     }
+    readonly roleExport: {
+      readonly label: 'Rôles installés dans l’agent'
+      readonly bob: '« Installer dans… » d’un rôle l’écrit comme mode personnalisé de Bob, dans `~/.bob/settings/custom_modes.yaml` (partagé avec Bob IDE) ou `.bob/custom_modes.yaml` du projet ; seul ce mode est ajouté, le reste du fichier est gardé, copié avant d’écrire.'
+      readonly opencode: '« Installer dans… » d’un rôle l’écrit comme agent d’OpenCode, dans `~/.config/opencode/agents/` ou `.opencode/agents/` du projet (un fichier par agent, copié avant d’être remplacé).'
+    }
     readonly writesWithoutAsking: {
       readonly label: 'Écrit sans demander'
       readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier.'
@@ -4213,7 +4218,6 @@ export type FrResources = {
       readonly many_other: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
       readonly sameFolder: 'dans ce dossier'
       readonly worktree: 'son worktree'
-      readonly draft: 'Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.'
       readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
       readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
       readonly sending: 'Lancement…'
@@ -4926,15 +4930,6 @@ export type FrResources = {
     readonly hides: 'Remplace un rôle {{scopes}}'
     readonly agentMissing: '{{agent}} absent'
     readonly readOnly: 'Lecture seule'
-    readonly builtinDescription: {
-      readonly uxUiExpert: 'Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.'
-      readonly flutterExpert: 'Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.'
-      readonly frontArchitect: 'Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.'
-      readonly backArchitect: 'Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.'
-      readonly securityExpert: 'Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.'
-      readonly techLead: 'Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.'
-      readonly codeReviewer: 'Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien.'
-    }
     readonly enabled: '{{label}} : actif'
     readonly empty: {
       readonly title: 'Montez votre équipe'
@@ -4957,6 +4952,85 @@ export type FrResources = {
       readonly reset: 'Annuler les modifications'
       readonly saveAsUser: 'Enregistrer en rôle personnel'
     }
+  }
+  readonly roleExport: {
+    readonly button: 'Installer dans…'
+    readonly saveFirst: 'Enregistrez d’abord vos modifications.'
+    readonly menuHint: 'Seuls les agents installés qui savent recevoir un rôle sont proposés.'
+    readonly title: 'Installer « {{label}} » dans {{agent}}'
+    readonly where: 'Où'
+    readonly scope: {
+      readonly user: 'Pour vous, dans tous vos projets'
+      readonly project: 'Ce projet seulement'
+    }
+    readonly scopeShort: { readonly user: 'pour vous'; readonly project: 'ce projet' }
+    readonly projectNote: 'Partagé par git : à committer. Absent des filles en arbre de travail tant qu’il n’est pas commité.'
+    readonly rights: 'Droits dans {{agent}}'
+    readonly backup: 'Sauvegarde'
+    readonly later: 'Les changements suivants du rôle ne sont pas recopiés tout seuls : Bobine vous proposera « Mettre à jour ».'
+    readonly showText: 'Voir ce qui sera écrit'
+    readonly hideText: 'Masquer ce qui sera écrit'
+    readonly textLabel: 'Texte écrit dans {{file}}'
+    readonly install: 'Installer'
+    readonly installing: 'Installation…'
+    readonly useHintReadOnly: 'La lecture seule est alors tenue par {{agent}} lui-même, pas seulement demandée.'
+    readonly format: {
+      readonly 'bob-custom-modes': {
+        readonly menu: 'un mode, dans Bobine et hors de Bobine'
+        readonly intro: '{{agent}} l’affichera parmi ses modes, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.'
+        readonly userNote: 'Fichier partagé avec les autres modes : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.'
+        readonly kind: 'Mode'
+        readonly readOnly: 'lecture seule : lire et outils (ni écriture, ni commandes)'
+        readonly readWrite: 'lire, modifier, lancer des commandes, outils'
+        readonly backup: 'copie du fichier avant d’écrire, dans les données de Bobine'
+        readonly use: 'Dans Bobine, lancer ce rôle dans ce mode'
+        readonly foreign: '{{agent}} a déjà un mode « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
+        readonly prompt: 'devient la définition du mode (`roleDefinition`)'
+        readonly promptLabel: 'Consigne'
+      }
+      readonly 'opencode-agents': {
+        readonly menu: 'un agent, dans Bobine et hors de Bobine'
+        readonly intro: '{{agent}} l’affichera parmi ses agents, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.'
+        readonly kind: 'Agent'
+        readonly readOnly: 'lecture seule : modifications et commandes refusées'
+        readonly readWrite: 'modifications et commandes permises, selon les réglages de l’agent'
+        readonly prompt: 'remplace la consigne de base de l’agent pour ce mode'
+        readonly promptLabel: 'Consigne'
+        readonly backup: 'si un fichier du même nom existe, copie avant d’écrire'
+        readonly use: 'Dans Bobine, lancer ce rôle avec cet agent'
+        readonly foreign: '{{agent}} a déjà un agent « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
+        readonly userNote: 'Un fichier pour cet agent seulement : rien d’autre n’y est écrit.'
+      }
+    }
+    readonly status: {
+      readonly installed: 'Installé dans {{agent}}'
+      readonly upToDate: 'à jour'
+      readonly roleChanged: 'le rôle a changé depuis'
+      readonly handEdited: 'modifié à la main depuis'
+      readonly missing: 'n’est plus dans le fichier'
+      readonly unreadable: 'fichier illisible : rien n’est fait'
+      readonly update: 'Mettre à jour'
+      readonly replace: 'Remplacer'
+      readonly reinstall: 'Réinstaller'
+      readonly remove: 'Retirer'
+      readonly replaceConfirm: 'Remplacer « {{id}} », modifié à la main depuis, par le rôle ? Le fichier est copié avant.'
+      readonly removeConfirm: 'Retirer « {{id}} », modifié à la main depuis ? Le fichier est copié avant.'
+    }
+    readonly error: {
+      readonly reserved: '« {{id}} » est un nom réservé par {{agent}} : changez l’identifiant du rôle pour l’installer.'
+      readonly handEdited: '« {{id}} » a été modifié à la main depuis : rien n’a été changé.'
+      readonly link: '{{file}} passe par un lien symbolique : Bobine n’y écrit pas.'
+      readonly invalidFile: '{{file}} ne se lit pas comme prévu ({{detail}}) : Bobine ne le réécrit pas.'
+      readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
+      readonly unsupported: 'Cet agent ne sait pas recevoir de rôle.'
+      readonly changed: '{{file}} a changé pendant l’écriture, à chaque essai : rien n’a été écrit.'
+      readonly writeFailed: 'Écriture impossible dans {{file}} : {{detail}}'
+    }
+    readonly orphans: {
+      readonly title: 'Installations sans rôle'
+      readonly hint: 'Le rôle a été renommé ou supprimé, mais son mode ou son agent est toujours installé : retirez-le, ou réinstallez le rôle sous son nouvel identifiant.'
+    }
+    readonly renamed: 'Enregistré. Installé sous l’ancien identifiant « {{old}} » : retirez-le dans « Installations sans rôle », ou réinstallez ce rôle.'
   }
   readonly team: {
     readonly title: 'Équipe'

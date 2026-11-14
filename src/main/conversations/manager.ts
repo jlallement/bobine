@@ -82,6 +82,7 @@ import {
   worktreeStartEvent,
   rulesOf,
   childDetachedRequest,
+  reopenOf,
   type ChildLink,
   type DetachedRequest,
   type Origin
@@ -621,14 +622,8 @@ export class ConversationManager {
       this.saveIndex()
       this.emitList()
     }
-    if (conversation.draft) {
-      // Premier message : la conversation entre dans l'historique.
-      conversation.draft = false
-      conversation.record.title = titleFrom(text || attachments.map(attachmentName).join(', '))
-      conversation.record.titleSource = 'message'
-      conversation.record.sessionId = host.currentSessionId
-      this.touch(conversation)
-    }
+    // Premier message : la conversation entre dans l'historique.
+    if (conversation.draft) this.enterHistory(conversation, text, attachments)
     // `/split` (fiche 118) : sans `start_child` dans la session, rien ne part.
     const tools = host.appToolNames
     if (options.askChildren && tools && !tools.includes('start_child')) {
@@ -970,6 +965,24 @@ export class ConversationManager {
   }
 
   /**
+   * Brouillon gardé dans l'historique sans rien envoyer à l'agent : un `@rôle` tapé en premier
+   * message y rattache ses filles (fiche 223). Titre tiré de la demande.
+   */
+  keepDraft(id: string, text: string): void {
+    if (this.get(id).draft) this.enterHistory(this.get(id), text, [])
+  }
+
+  /** Un brouillon entre dans l'historique, titré d'après son premier message. */
+  private enterHistory(conversation: Conversation, text: string, files: PromptAttachment[]): void {
+    conversation.draft = false
+    const title = titleFrom(text || files.map(attachmentName).join(', '))
+    Object.assign(conversation.record, { title, titleSource: 'message' })
+    conversation.record.sessionId = conversation.host?.currentSessionId
+    this.touch(conversation)
+    this.emitList()
+  }
+
+  /**
    * Supprime une conversation. `fromAgent` (par défaut) : la session est aussi supprimée de
    * l'historique de l'agent (`session/delete`, s'il l'annonce) ; un agent arrêté est démarré
    * brièvement pour cela.
@@ -1229,9 +1242,7 @@ export class ConversationManager {
     // Conversation en worktree quittée sans message : le worktree, encore intact, disparaît aussi
     // (sans `force` : s'il a été modifié entre-temps, il reste).
     const { worktree } = conversation.record
-    if (worktree && this.options.worktrees) {
-      void this.options.worktrees.remove(worktree).catch(() => {})
-    }
+    if (worktree) void this.options.worktrees?.remove(worktree).catch(() => {})
   }
 
   /** Agent vivant pour cette conversation (créé si besoin), puis éviction des plus anciens. */
@@ -1280,18 +1291,11 @@ export class ConversationManager {
           settings: this.settings,
           works: this.subagentWorks,
           items: () => this.transcriptOf(conversation).items,
-          // Fil gardé dès qu'il contient quelque chose (fiche 103, ADR-0021) : le rejeu de
-          // l'agent ne refait un fil que s'il n'y en a pas (session reprise d'ailleurs, fichier
-          // illisible).
-          reopen:
-            sessionId && !conversation.draft
-              ? {
-                  sessionId,
-                  ...(options.keepTranscript || this.transcriptOf(conversation).items.length > 0
-                    ? { keepTranscript: true }
-                    : {})
-                }
-              : undefined,
+          reopen: reopenOf(
+            sessionId,
+            conversation.draft,
+            !!options.keepTranscript || this.transcriptOf(conversation).items.length > 0
+          ),
           // Un hôte remplacé ou arrêté ne doit plus rien émettre.
           emit: (event) => {
             if (conversation.host === host) this.onEvent(conversation, event)

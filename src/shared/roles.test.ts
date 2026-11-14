@@ -7,6 +7,7 @@ import {
   parseRoleFile,
   parseRoleStamp,
   ROLE_LANGUAGE_LINE,
+  roleLanguageLine,
   roleOpening,
   rolesParagraph,
   splitRoleBrief,
@@ -223,6 +224,27 @@ describe('ce qui part à l’agent', () => {
       brief: 'Code.'
     })
     expect(splitRoleBrief('Rien de spécial')).toEqual({ request: 'Rien de spécial' })
+  })
+
+  it('langue de la réponse nommée quand celle de l’interface est connue (essai réel de Bob)', () => {
+    expect(roleLanguageLine('fr')).toBe("Reply in French, the language of the user's request.")
+    expect(roleLanguageLine('en')).toBe("Reply in English, the language of the user's request.")
+    expect(roleLanguageLine()).toBe(ROLE_LANGUAGE_LINE)
+    const writer = role('dev', 'user', { prompt: 'Code.' })
+    const opening = roleOpening(writer, 'Relis calc.js', { language: 'fr' })
+    expect(opening).toContain(
+      "\nReply in French, the language of the user's request.\n</bobine_role>"
+    )
+    expect(splitRoleBrief(opening)).toEqual({
+      request: 'Relis calc.js',
+      brief: "Code.\nReply in French, the language of the user's request."
+    })
+    // Fil d'avant : l'ancienne ligne générique se replie pareil.
+    expect(
+      splitRoleBrief(
+        `Relis calc.js\n\n<bobine_role name="dev">\nCode.\n${ROLE_LANGUAGE_LINE}\n</bobine_role>`
+      )
+    ).toEqual({ request: 'Relis calc.js', brief: `Code.\n${ROLE_LANGUAGE_LINE}` })
   })
 
   it('rôle retenu en lecture seule : la lecture seule survit à un badge abîmé (relecture)', () => {

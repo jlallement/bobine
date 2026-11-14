@@ -3228,6 +3228,11 @@
       "yes": "Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).",
       "no": "L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session."
     },
+    "roleExport": {
+      "label": "Rôles installés dans l’agent",
+      "bob": "« Installer dans… » d’un rôle l’écrit comme mode personnalisé de Bob, dans `~/.bob/settings/custom_modes.yaml` (partagé avec Bob IDE) ou `.bob/custom_modes.yaml` du projet ; seul ce mode est ajouté, le reste du fichier est gardé, copié avant d’écrire.",
+      "opencode": "« Installer dans… » d’un rôle l’écrit comme agent d’OpenCode, dans `~/.config/opencode/agents/` ou `.opencode/agents/` du projet (un fichier par agent, copié avant d’être remplacé)."
+    },
     "writesWithoutAsking": {
       "label": "Écrit sans demander",
       "detail": "{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier."
@@ -4378,7 +4383,6 @@
       "many_other": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
       "sameFolder": "dans ce dossier",
       "worktree": "son worktree",
-      "draft": "Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.",
       "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
       "empty": "Écrivez votre demande après le rôle : c’est elle qui part.",
       "sending": "Lancement…",
@@ -5106,15 +5110,6 @@
     "hides": "Remplace un rôle {{scopes}}",
     "agentMissing": "{{agent}} absent",
     "readOnly": "Lecture seule",
-    "builtinDescription": {
-      "uxUiExpert": "Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.",
-      "flutterExpert": "Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.",
-      "frontArchitect": "Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.",
-      "backArchitect": "Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.",
-      "securityExpert": "Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.",
-      "techLead": "Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.",
-      "codeReviewer": "Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien."
-    },
     "enabled": "{{label}} : actif",
     "empty": {
       "title": "Montez votre équipe",
@@ -5139,6 +5134,88 @@
       "reset": "Annuler les modifications",
       "saveAsUser": "Enregistrer en rôle personnel"
     }
+  },
+  "roleExport": {
+    "button": "Installer dans…",
+    "saveFirst": "Enregistrez d’abord vos modifications.",
+    "menuHint": "Seuls les agents installés qui savent recevoir un rôle sont proposés.",
+    "title": "Installer « {{label}} » dans {{agent}}",
+    "where": "Où",
+    "scope": {
+      "user": "Pour vous, dans tous vos projets",
+      "project": "Ce projet seulement"
+    },
+    "scopeShort": {
+      "user": "pour vous",
+      "project": "ce projet"
+    },
+    "projectNote": "Partagé par git : à committer. Absent des filles en arbre de travail tant qu’il n’est pas commité.",
+    "rights": "Droits dans {{agent}}",
+    "backup": "Sauvegarde",
+    "later": "Les changements suivants du rôle ne sont pas recopiés tout seuls : Bobine vous proposera « Mettre à jour ».",
+    "showText": "Voir ce qui sera écrit",
+    "hideText": "Masquer ce qui sera écrit",
+    "textLabel": "Texte écrit dans {{file}}",
+    "install": "Installer",
+    "installing": "Installation…",
+    "useHintReadOnly": "La lecture seule est alors tenue par {{agent}} lui-même, pas seulement demandée.",
+    "format": {
+      "bob-custom-modes": {
+        "menu": "un mode, dans Bobine et hors de Bobine",
+        "intro": "{{agent}} l’affichera parmi ses modes, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.",
+        "userNote": "Fichier partagé avec les autres modes : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.",
+        "kind": "Mode",
+        "readOnly": "lecture seule : lire et outils (ni écriture, ni commandes)",
+        "readWrite": "lire, modifier, lancer des commandes, outils",
+        "backup": "copie du fichier avant d’écrire, dans les données de Bobine",
+        "use": "Dans Bobine, lancer ce rôle dans ce mode",
+        "foreign": "{{agent}} a déjà un mode « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.",
+        "prompt": "devient la définition du mode (`roleDefinition`)",
+        "promptLabel": "Consigne"
+      },
+      "opencode-agents": {
+        "menu": "un agent, dans Bobine et hors de Bobine",
+        "intro": "{{agent}} l’affichera parmi ses agents, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.",
+        "kind": "Agent",
+        "readOnly": "lecture seule : modifications et commandes refusées",
+        "readWrite": "modifications et commandes permises, selon les réglages de l’agent",
+        "prompt": "remplace la consigne de base de l’agent pour ce mode",
+        "promptLabel": "Consigne",
+        "backup": "si un fichier du même nom existe, copie avant d’écrire",
+        "use": "Dans Bobine, lancer ce rôle avec cet agent",
+        "foreign": "{{agent}} a déjà un agent « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.",
+        "userNote": "Un fichier pour cet agent seulement : rien d’autre n’y est écrit."
+      }
+    },
+    "status": {
+      "installed": "Installé dans {{agent}}",
+      "upToDate": "à jour",
+      "roleChanged": "le rôle a changé depuis",
+      "handEdited": "modifié à la main depuis",
+      "missing": "n’est plus dans le fichier",
+      "unreadable": "fichier illisible : rien n’est fait",
+      "update": "Mettre à jour",
+      "replace": "Remplacer",
+      "reinstall": "Réinstaller",
+      "remove": "Retirer",
+      "replaceConfirm": "Remplacer « {{id}} », modifié à la main depuis, par le rôle ? Le fichier est copié avant.",
+      "removeConfirm": "Retirer « {{id}} », modifié à la main depuis ? Le fichier est copié avant."
+    },
+    "error": {
+      "reserved": "« {{id}} » est un nom réservé par {{agent}} : changez l’identifiant du rôle pour l’installer.",
+      "handEdited": "« {{id}} » a été modifié à la main depuis : rien n’a été changé.",
+      "link": "{{file}} passe par un lien symbolique : Bobine n’y écrit pas.",
+      "invalidFile": "{{file}} ne se lit pas comme prévu ({{detail}}) : Bobine ne le réécrit pas.",
+      "noProject": "Cette conversation n’a pas de dossier de projet.",
+      "unsupported": "Cet agent ne sait pas recevoir de rôle.",
+      "changed": "{{file}} a changé pendant l’écriture, à chaque essai : rien n’a été écrit.",
+      "writeFailed": "Écriture impossible dans {{file}} : {{detail}}"
+    },
+    "orphans": {
+      "title": "Installations sans rôle",
+      "hint": "Le rôle a été renommé ou supprimé, mais son mode ou son agent est toujours installé : retirez-le, ou réinstallez le rôle sous son nouvel identifiant."
+    },
+    "renamed": "Enregistré. Installé sous l’ancien identifiant « {{old}} » : retirez-le dans « Installations sans rôle », ou réinstallez ce rôle."
   },
   "team": {
     "title": "Équipe",

@@ -1160,6 +1160,23 @@ export const SUITES = [
     ]
   },
   {
+    // « Installer dans Bob / OpenCode » (fiche 223, phase 4) : feuille, états, retrait, mode installé.
+    name: 'roles-export',
+    file: 'roles-export.mjs',
+    run: 'rolesExportSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      `${C}roles/`,
+      `${R}roles.css`,
+      `${C}settings/ConfirmRow.tsx`,
+      'src/shared/role-export.ts',
+      'src/shared/roles-ipc.ts',
+      'src/main/roles/',
+      'src/mock-agent/modes-installes.mts'
+    ]
+  },
+  {
     name: 'custom-agent',
     file: 'custom-agent.mjs',
     run: 'customAgentSuite',

@@ -2,6 +2,26 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- Roles: “Install in…” on a role’s page adds it as an IBM Bob mode (Bob Shell, Bob IDE) or as an
+  OpenCode agent, for you or for the project. The sheet says where and what, shows the exact text,
+  backs up the file before writing, and never touches a mode or agent Bobine did not write; the
+  page then says whether it is up to date, offers “Update” when the role has changed, and
+  “Remove”. In Bobine, the role can then run in that mode: its read-only is held by the agent
+  itself.
+
+### Improved
+
+- Roles: `@role` can be the very first message of a new conversation; it enters the history and
+  the child conversation is attached to it. A role's child answers in the interface language,
+  named to the agent.
+- Built-in roles: their description (“When to call on it?”) and their instructions now come in
+  English or French, following the interface language; a personal role made from a built-in role
+  keeps the language shown.
+
 ## 1.0.0-beta.2 — November 14, 2026
 
 ### New

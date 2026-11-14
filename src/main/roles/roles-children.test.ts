@@ -168,7 +168,8 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(first?.kind === 'user' && first.text).toMatch(/\n\n<bobine_role name="security-expert">/)
     expect(first?.kind === 'user' && first.text.startsWith('<bobine_role')).toBe(false)
     const reply = env.lastReply(child.id)
-    expect(reply).toContain('application security expert')
+    // Consigne du rôle fourni dans la langue de l'interface (ADR-0046), enveloppe en anglais.
+    expect(reply).toContain('expert en sécurité applicative')
     expect(reply).toContain('Bobine refuses your write requests.')
     expect(reply).toContain('Audite le module de connexion.')
   })
@@ -327,5 +328,31 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
       'security-expert',
       'ux-ui-expert'
     ])
+  })
+
+  it('`@rôle` en premier message d’une conversation neuve : elle entre dans l’historique, la fille s’y rattache', async () => {
+    const env = await environment()
+    const fresh = (await env.manager.create({ workspace: env.repo })).summary.id
+    expect(env.manager.view(fresh).summary.draft).toBe(true)
+    const text = 'Relis calc.js et dis-moi ce qui cloche.'
+    const result = await startRoleChildren(
+      env.children,
+      fresh,
+      { roles: ['security-expert'], text },
+      () => env.manager.keepDraft(fresh, text)
+    )
+    expect(result.started.map((s) => s.role)).toEqual(['security-expert'])
+    const mother = env.manager.state().conversations.find((c) => c.id === fresh)
+    expect(mother?.draft).toBe(false)
+    expect(mother?.title).toBe(text)
+    // Aucun message à l'agent de la mère : seulement la carte de la fille dans son fil.
+    expect(env.items(fresh).map((i) => i.kind)).toEqual(['child-started'])
+    const child = env.manager.state().conversations.find((c) => c.startedFrom?.id === fresh)
+    expect(child?.role?.name).toBe('security-expert')
+    await env.settled(child?.id ?? '')
+    const first = env.firstMessage(child?.id ?? '')
+    expect(first?.kind === 'user' && first.text).toContain(
+      "Reply in French, the language of the user's request."
+    )
   })
 })

@@ -383,3 +383,17 @@ export function sharesWorktree(
     [...all].some((c) => c !== conversation && !c.draft && c.record.worktree?.path === path)
   )
 }
+
+/**
+ * Réouverture d'une session gardée par l'hôte d'une conversation de l'historique (fiche 103,
+ * ADR-0021) : fil gardé dès qu'il contient quelque chose, le rejeu de l'agent ne refait un fil que
+ * s'il n'y en a pas (session reprise d'ailleurs, fichier illisible). Un brouillon n'a rien à rouvrir.
+ */
+export function reopenOf(
+  sessionId: string | undefined,
+  draft: boolean,
+  keepTranscript: boolean
+): { sessionId: string; keepTranscript?: true } | undefined {
+  if (!sessionId || draft) return undefined
+  return { sessionId, ...(keepTranscript ? { keepTranscript: true as const } : {}) }
+}

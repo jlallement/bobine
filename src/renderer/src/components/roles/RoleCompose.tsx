@@ -2,7 +2,6 @@ import { Split, X } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { RoleView } from '@shared/roles'
 import { RoleAvatar, RoleStack, useRoleStyle } from './RoleAvatar'
-import { roleDescription } from './role-view'
 
 /**
  * Saisie d'un message pour des rôles (fiche 223, maquettes 02-3 et 02-4) : les jetons des rôles
@@ -34,7 +33,7 @@ function RoleToken({ role, onRemove }: { role: RoleView; onRemove: () => void })
     <span
       className="role-token"
       style={style}
-      title={roleDescription(role)}
+      title={role.description}
       data-testid="role-token"
       data-role={role.name}
     >
@@ -63,7 +62,6 @@ export function RoleDestination({
   roles,
   agentLabel,
   readOnly,
-  draft,
   empty = false,
   sending = false
 }: {
@@ -72,8 +70,6 @@ export function RoleDestination({
   agentLabel: string | undefined
   /** Lecture seule de l'unique rôle. */
   readOnly: ReadOnlyShown
-  /** Conversation encore vide : les filles se rattachent à une conversation de l'historique. */
-  draft: boolean
   /** Rien à demander une fois les `@rôle` retirés : l'envoi est désactivé, la ligne dit pourquoi. */
   empty?: boolean
   /** Filles en cours de lancement : un second envoi attend. */
@@ -120,7 +116,6 @@ export function RoleDestination({
       {details.length > 0 && (
         <span className="role-destination-detail">· {details.join(' · ')}</span>
       )}
-      {draft && <span className="role-destination-warn">{t('roleWork.destination.draft')}</span>}
       {empty && !sending && (
         <span className="role-destination-warn" data-testid="role-destination-empty">
           {t('roleWork.destination.empty')}
