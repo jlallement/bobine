@@ -30,6 +30,7 @@ import { scenarios as defaultCatalog } from './scenarios.mts'
 import { SessionStore, type StoredSession } from './store.mts'
 import { DEFAULT_MAX_STEPS, playWithinLimit, StepCounters } from './limite-etapes.mts'
 import { describeSettings, say, sayAll, type MockLanguage } from './langue.mts'
+import { installedModes, type InstalledModesOptions } from './modes-installes.mts'
 
 export interface MockAgentOptions {
   /** Scénario joué par défaut à chaque prompt. */
@@ -114,6 +115,11 @@ export interface MockAgentOptions {
   language?: MockLanguage
   /** Limite d'étapes d'une session (`--max-etapes`, fiche 209) ; défaut `DEFAULT_MAX_STEPS`. */
   maxSteps?: number
+  /**
+   * Modes installés comme Bob ou OpenCode (`--modes-installes`, fiche 223, phase 4) : relus à
+   * chaque ouverture de session, listés après les siens.
+   */
+  installedModes?: InstalledModesOptions
   catalog?: Record<string, Scenario>
 }
 
@@ -319,8 +325,13 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         .catch(() => {})
     }, 0)
   }
+  /** Ses modes, puis ceux installés (relus dans les fichiers à chaque fois). */
+  const modesOf = (cwd: string) => [
+    ...sayAll(MODES, language),
+    ...(options.installedModes ? installedModes(options.installedModes, cwd) : [])
+  ]
   const controls = (session: SessionState) => ({
-    modes: { currentModeId: session.modeId, availableModes: sayAll(MODES, language) },
+    modes: { currentModeId: session.modeId, availableModes: modesOf(session.cwd) },
     configOptions:
       options.withConfigOptions === false ? undefined : sayAll(configOptions(session), language)
   })
@@ -545,7 +556,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
     })
     .onRequest(methods.agent.session.setMode, async ({ params, client }) => {
       const session = getSession(sessions, params.sessionId)
-      if (!MODES.some((m) => m.id === params.modeId)) {
+      if (!modesOf(session.cwd).some((m) => m.id === params.modeId)) {
         throw RequestError.invalidParams({ modeId: params.modeId })
       }
       session.modeId = params.modeId
