@@ -218,8 +218,8 @@ export function Transcript({
   // Carte « Sous-tâches » au dernier lancement d'une fille (fiche 097) ; filles lancées par l'agent,
   // dont les comptes rendus partiront à son réveil.
   const lastLaunch = items.findLast((i) => i.kind === 'child-started')?.id
-  const byAgent = new Set(
-    items.flatMap((i) => (i.kind === 'child-started' && i.by === 'agent' ? [i.childId] : []))
+  const launches = new Map(
+    items.flatMap((i) => (i.kind === 'child-started' ? [[i.childId, i] as const] : []))
   )
   const renderEntry = (entry: (typeof entries)[number]) => {
     if (entry.kind === 'tools') {
@@ -278,7 +278,7 @@ export function Transcript({
           key={item.id}
           item={item}
           items={items}
-          {...(subtasks && item.id === lastLaunch ? { info: subtasks } : {})}
+          {...(subtasks ? { info: subtasks, last: item.id === lastLaunch } : {})}
         />
       )
     }
@@ -295,7 +295,8 @@ export function Transcript({
           key={item.id}
           item={item}
           pending={lastUser === undefined || item.id > lastUser}
-          byAgent={byAgent.has(item.childId)}
+          byAgent={launches.get(item.childId)?.by === 'agent'}
+          role={launches.get(item.childId)?.role}
           {...(open && subtasks ? { onOpen: () => subtasks.onOpen(item.childId) } : {})}
         />
       )

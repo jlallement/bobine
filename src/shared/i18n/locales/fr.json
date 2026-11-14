@@ -4331,6 +4331,66 @@
       "stopped": "L’agent de l’aparté s’est arrêté."
     }
   },
+  "roleWork": {
+    "readOnly": "lecture seule",
+    "readOnlyRequested": "lecture seule demandée",
+    "readOnlyRequestedHint": "L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.",
+    "writes": "écrit du code",
+    "mode": "mode {{mode}}",
+    "byAgent": "proposé par l’agent",
+    "prompt": "Consigne",
+    "hides": "Rôle du projet : il remplace le rôle {{scopes}} du même nom.",
+    "titleBadge": "Rôle : {{label}}",
+    "scope": {
+      "builtin": "fourni",
+      "user": "personnel",
+      "project": "du projet"
+    },
+    "menu": {
+      "title": "Rôles",
+      "hint": "Votre demande partira dans une conversation fille",
+      "all_one": "Tous les rôles ({{count}})",
+      "all_many": "Tous les rôles ({{count}})",
+      "all_other": "Tous les rôles ({{count}})",
+      "option": "{{label}} : {{description}}",
+      "project": "Rôle du projet (vient du dépôt)",
+      "new": "Nouveau rôle…",
+      "newNamed": "Nouveau rôle « {{name}} »",
+      "manage": "Gérer"
+    },
+    "invite": {
+      "title": "Confiez ce travail à un rôle",
+      "text": "Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, au travail dans une conversation fille.",
+      "create": "Créer un rôle",
+      "hide": "Ne plus montrer"
+    },
+    "token": {
+      "remove": "Retirer {{label}}"
+    },
+    "destination": {
+      "one": "Partira à <strong>{{label}}</strong>, dans une conversation fille",
+      "many_one": "Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle",
+      "many_many": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
+      "many_other": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
+      "sameFolder": "dans ce dossier",
+      "worktree": "son worktree",
+      "draft": "Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.",
+      "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
+      "failed": "{{label}} n’est pas parti : {{error}}"
+    },
+    "state": {
+      "running": "au travail",
+      "waiting": "attend votre accord",
+      "unread": "a rendu son compte rendu",
+      "done": "a fini",
+      "error": "en échec"
+    },
+    "report": {
+      "done": "{{role}} a rendu son compte rendu — {{title}}",
+      "stopped": "{{role}} a été arrêté — {{title}}",
+      "error": "{{role}} a échoué — {{title}}"
+    }
+  },
   "review": {
     "action": "Faire relire…",
     "actionTip": "Faire relire : un autre agent relit ces modifications, sans rien modifier, et pose ses remarques sur le diff",

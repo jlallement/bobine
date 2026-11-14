@@ -4159,6 +4159,64 @@
       "stopped": "The aside’s agent stopped."
     }
   },
+  "roleWork": {
+    "readOnly": "read-only",
+    "readOnlyRequested": "read-only requested",
+    "readOnlyRequestedHint": "This conversation's agent writes without asking for permission: read-only is only requested, and Bobine checks the folder after each turn.",
+    "writes": "writes code",
+    "mode": "{{mode}} mode",
+    "byAgent": "proposed by the agent",
+    "prompt": "Instructions",
+    "hides": "Project role: it replaces the {{scopes}} role with the same name.",
+    "titleBadge": "Role: {{label}}",
+    "scope": {
+      "builtin": "built-in",
+      "user": "personal",
+      "project": "project"
+    },
+    "menu": {
+      "title": "Roles",
+      "hint": "Your request will go to a child conversation",
+      "all_one": "All roles ({{count}})",
+      "all_other": "All roles ({{count}})",
+      "option": "{{label}}: {{description}}",
+      "project": "Project role (from the repository)",
+      "new": "New role…",
+      "newNamed": "New role “{{name}}”",
+      "manage": "Manage"
+    },
+    "invite": {
+      "title": "Hand this work to a role",
+      "text": "A security expert, a reviewer, an architect… created once, called with @, working in a child conversation.",
+      "create": "Create a role",
+      "hide": "Don't show again"
+    },
+    "token": {
+      "remove": "Remove {{label}}"
+    },
+    "destination": {
+      "one": "Will go to <strong>{{label}}</strong>, in a child conversation",
+      "many_one": "Will go to <strong>{{count}} role</strong>, one child conversation each, in parallel",
+      "many_other": "Will go to <strong>{{count}} roles</strong>, one child conversation each, in parallel",
+      "sameFolder": "in this folder",
+      "worktree": "its own worktree",
+      "draft": "Write in this conversation first: a role starts from a conversation in the history.",
+      "attachments": "Attachments don't go to roles: remove them, or send without a role.",
+      "failed": "{{label}} did not start: {{error}}"
+    },
+    "state": {
+      "running": "working",
+      "waiting": "waiting for you",
+      "unread": "sent its report",
+      "done": "finished",
+      "error": "failed"
+    },
+    "report": {
+      "done": "{{role}} sent its report — {{title}}",
+      "stopped": "{{role}} was stopped — {{title}}",
+      "error": "{{role}} failed — {{title}}"
+    }
+  },
   "review": {
     "action": "Request review…",
     "actionTip": "Request review: another agent reviews these changes, without modifying anything, and leaves comments on the diff",

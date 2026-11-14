@@ -1,0 +1,257 @@
+/**
+ * `@rôle` dans la saisie (fiche 223, phase 3B) : menu `@` avec les rôles en tête, jeton, retour
+ * arrière, ligne « Partira à… », envoi d'une fille par rôle, rôle inconnu laissé en texte.
+ */
+import * as Tooltip from '@radix-ui/react-tooltip'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import type { AgentSnapshot, ProfileSummary } from '@shared/agent'
+import type { RoleView } from '@shared/roles'
+import { Composer } from '../composer/Composer'
+import type { ComposerRoles } from './useRoleCompose'
+
+vi.mock('../panel/TerminalTab', () => ({ INSERT_TEXT_EVENT: 'bob:insert-text' }))
+
+const snapshot: AgentSnapshot = {
+  status: 'ready',
+  info: { profileId: 'mock', profileLabel: 'Agent factice', workspace: '/tmp/projet' },
+  controls: [],
+  commands: [],
+  promptCapabilities: { image: true, embeddedContext: true },
+  queued: []
+}
+
+const role = (name: string, label: string, extra: Partial<RoleView> = {}): RoleView => ({
+  name,
+  label,
+  icon: 'shield-check',
+  color: 'orange',
+  description: `${label}, sa description`,
+  readOnly: false,
+  prompt: 'p',
+  scope: 'builtin',
+  enabled: true,
+  ...extra
+})
+
+const ROLES = [
+  role('security-expert', 'Expert sécu', { readOnly: true }),
+  role('code-reviewer', 'Code reviewer', { color: 'blue', icon: 'scan-search', readOnly: true }),
+  role('tech-lead', 'Tech lead'),
+  role('ux-ui-expert', 'Expert UX/UI'),
+  role('front-architect', 'Architecte front'),
+  role('back-architect', 'Architecte back', { description: 'API, sécurité des API' }),
+  role('flutter-expert', 'Expert Flutter', { scope: 'project' })
+]
+
+function setup(
+  options: {
+    list?: RoleView[]
+    profiles?: Partial<ProfileSummary>[]
+    fresh?: boolean
+    sent?: boolean
+    onCreate?: ComposerRoles['onCreate']
+  } = {}
+) {
+  const send = vi.fn(async () => options.sent ?? true)
+  const roles: ComposerRoles = {
+    list: options.list ?? ROLES,
+    refresh: vi.fn(),
+    send,
+    profiles: (options.profiles ?? [
+      { id: 'mock', label: 'Agent factice', available: true }
+    ]) as ProfileSummary[],
+    ...(options.onCreate ? { onCreate: options.onCreate } : {})
+  }
+  const onSend = vi.fn()
+  const onWarn = vi.fn()
+  const noop = vi.fn()
+  render(
+    <Tooltip.Provider>
+      <Composer
+        snapshot={snapshot}
+        settings={null}
+        roles={roles}
+        fresh={options.fresh ?? false}
+        draftKey={`c-${Math.random()}`}
+        onSend={onSend}
+        onWarn={onWarn}
+        onSearchFiles={vi.fn(async () => [])}
+        onPickFiles={vi.fn(async () => [])}
+        onUnqueue={vi.fn(async () => undefined)}
+        onUseApiKey={vi.fn(async () => {})}
+        onAppCommand={noop}
+        onCancel={noop}
+        onSendNow={noop}
+        onRestart={noop}
+        onConfigure={noop}
+        onChooseWorkspace={noop}
+        onSetControl={noop}
+        onContinueInNew={noop}
+        onAuthenticate={noop}
+        onRetry={noop}
+        onRunStep={noop}
+        onTrustForSession={noop}
+        onOpenTerminal={noop}
+      />
+    </Tooltip.Provider>
+  )
+  const input = screen.getByTestId('composer-input') as HTMLTextAreaElement
+  const type = (value: string) => {
+    fireEvent.change(input, { target: { value, selectionStart: value.length } })
+    fireEvent.keyUp(input, { key: 'x' })
+  }
+  const key = (k: string) => fireEvent.keyDown(input, { key: k })
+  return { input, type, key, send, onSend, onWarn, roles }
+}
+
+const roleNames = () => screen.queryAllByTestId('role-item').map((i) => i.dataset['role'])
+
+describe('menu `@` : rôles en tête', () => {
+  it('cinq rôles, « Tous les rôles (7) », puis les fichiers ; marque d’un rôle du projet', () => {
+    const { type } = setup()
+    type('Relis le diff @')
+    expect(roleNames()).toEqual(ROLES.slice(0, 5).map((r) => r.name))
+    expect(screen.getByTestId('role-more').textContent).toContain('Tous les rôles (7)')
+    fireEvent.mouseDown(screen.getByTestId('role-more'))
+    expect(roleNames()).toHaveLength(7)
+    expect(within(screen.getByTestId('file-menu')).getByText('Rôles')).toBeTruthy()
+    const flutter = screen
+      .getAllByTestId('role-item')
+      .find((i) => i.dataset['role'] === 'flutter-expert')
+    expect(flutter?.querySelector('.role-item-project')).toBeTruthy()
+  })
+
+  it('filtre : nom d’abord, puis la description ; accents ignorés', () => {
+    const { type } = setup()
+    type('Relis @secu')
+    expect(roleNames()).toEqual(['security-expert', 'back-architect'])
+  })
+
+  it('« + Nouveau rôle » seulement si l’app sait ouvrir l’assistant', () => {
+    const onCreate = vi.fn()
+    const first = setup()
+    first.type('@zz')
+    expect(screen.queryByTestId('role-new')).toBeNull()
+    expect(screen.queryByTestId('role-menu-new')).toBeNull()
+    first.input.remove()
+    document.body.innerHTML = ''
+    const second = setup({ onCreate })
+    second.type('@zz')
+    fireEvent.mouseDown(screen.getByTestId('role-new'))
+    expect(onCreate).toHaveBeenCalledWith('zz')
+  })
+
+  it('aucun rôle actif : une invitation, qu’on peut écarter', () => {
+    localStorage.removeItem('bobine.rolesInviteHidden')
+    const { type } = setup({ list: [] })
+    type('@')
+    expect(screen.getByTestId('roles-invite')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('roles-invite-hide'))
+    expect(screen.queryByTestId('roles-invite')).toBeNull()
+    expect(localStorage.getItem('bobine.rolesInviteHidden')).toBe('1')
+  })
+})
+
+describe('jeton et envoi', () => {
+  it('Entrée choisit le rôle : un jeton, `@requête` sort du texte ; « Partira à… »', () => {
+    const { type, key, input } = setup()
+    type('@sécu')
+    key('Enter')
+    expect(input.value).toBe('')
+    const token = screen.getByTestId('role-token')
+    expect(token.dataset['role']).toBe('security-expert')
+    const line = screen.getByTestId('role-destination')
+    expect(line.textContent).toContain('Partira à Expert sécu, dans une conversation fille')
+    expect(line.textContent).toContain('lecture seule')
+    expect(line.textContent).toContain('dans ce dossier')
+    expect(input.closest('form')?.className).toContain('to-role')
+  })
+
+  it('flèches puis Entrée : le rôle surligné ; Échap referme le menu', () => {
+    const { type, key } = setup()
+    type('@')
+    key('ArrowDown')
+    key('Enter')
+    expect(screen.getByTestId('role-token').dataset['role']).toBe('code-reviewer')
+    type('@')
+    expect(screen.getByTestId('file-menu')).toBeTruthy()
+    key('Escape')
+    expect(screen.queryByTestId('file-menu')).toBeNull()
+  })
+
+  it('retour arrière en tête de la saisie : le dernier jeton part d’un coup', () => {
+    const { type, key, input } = setup()
+    type('@sécu')
+    key('Enter')
+    type('@tech')
+    key('Enter')
+    expect(screen.getAllByTestId('role-token')).toHaveLength(2)
+    input.setSelectionRange(0, 0)
+    key('Backspace')
+    expect(screen.getAllByTestId('role-token').map((t) => t.dataset['role'])).toEqual([
+      'security-expert'
+    ])
+  })
+
+  it('un jeton : une fille, le texte sans rien d’autre ; rien à la conversation', async () => {
+    const { type, key, send, onSend, input } = setup()
+    type('@sécu')
+    key('Enter')
+    type('relis le diff du paiement')
+    await act(async () => key('Enter'))
+    expect(send).toHaveBeenCalledWith(['security-expert'], 'relis le diff du paiement')
+    expect(onSend).not.toHaveBeenCalled()
+    expect(input.value).toBe('')
+    expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+
+  it('deux `@rôle` tapés en entier : deux filles, en parallèle, même texte', async () => {
+    const { type, key, send } = setup()
+    type('@security-expert @code-reviewer relisez avant la fusion')
+    expect(screen.getByTestId('role-destination').textContent).toContain(
+      'Partira à 2 rôles, une conversation fille chacun, en parallèle'
+    )
+    key('Escape')
+    await act(async () => key('Enter'))
+    expect(send).toHaveBeenCalledWith(
+      ['security-expert', 'code-reviewer'],
+      'relisez avant la fusion'
+    )
+  })
+
+  it('rôle inconnu : laissé en texte, le message part à la conversation', () => {
+    const { type, key, send, onSend } = setup()
+    type('Demande à @astronaute la météo')
+    key('Escape')
+    key('Enter')
+    expect(send).not.toHaveBeenCalled()
+    expect(onSend).toHaveBeenCalledWith('Demande à @astronaute la météo', [])
+  })
+
+  it('aucune fille partie : le texte et le jeton restent', async () => {
+    const { type, key, input } = setup({ sent: false })
+    type('@sécu')
+    key('Enter')
+    type('relis')
+    await act(async () => key('Enter'))
+    expect(input.value).toBe('relis')
+    expect(screen.getByTestId('role-token')).toBeTruthy()
+  })
+
+  it('agent qui écrit sans demander : « lecture seule demandée »', () => {
+    const { type, key } = setup({
+      profiles: [{ id: 'mock', label: 'Agent factice', available: true, writesWithoutAsking: true }]
+    })
+    type('@sécu')
+    key('Enter')
+    expect(screen.getByTestId('role-destination').textContent).toContain('lecture seule demandée')
+  })
+
+  it('conversation encore vide : la ligne le dit', () => {
+    const { type, key } = setup({ fresh: true })
+    type('@sécu')
+    key('Enter')
+    expect(screen.getByTestId('role-destination').textContent).toContain('Écrivez d’abord')
+  })
+})
