@@ -78,7 +78,8 @@ import { SettingsStore } from './settings-store'
 import { ConversationStore } from './conversations/store'
 import { HistoryWriter } from './conversations/history-writer'
 import { ConversationManager } from './conversations/manager'
-import { ChildConversations } from './conversations/children'
+import type { ChildConversations } from './conversations/children'
+import { setupChildren } from './conversations/children-setup'
 import { childrenToolsModule } from './mcp/children-tools'
 import { appMemory } from './memory/setup'
 import { conversationRelease } from './conversation-release'
@@ -685,16 +686,11 @@ async function start(): Promise<void> {
   })
   // Conversations filles (fiche 097) : compte rendu posé chez la mère à chaque fin de tour, après
   // l'évènement de la fille parti vers les fenêtres ; réveil groupé de la mère (étape 2).
-  const childConversations = new ChildConversations(conversations, {
+  const childConversations = setupChildren(conversations, {
     attention: () => attention.state(),
     launchesChanged: (state) => send('conversation:childLaunchesChanged', state)
   })
   children = childConversations
-  conversations.subscribe({
-    event: (payload) => childConversations.onEvent(payload),
-    list: () => childConversations.listChanged(),
-    deleted: (id) => childConversations.forget(id)
-  })
   // Agent prêt (session ouverte) : quota encore inconnu relu malgré un échec récent (fiche 205).
   conversations.subscribe(quotaOnReady(quotas, (id) => conversations.profileOf(id)))
   // Plafond de coût par conversation (fiche 157, ADR-0035).

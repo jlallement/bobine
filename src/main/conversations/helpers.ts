@@ -307,6 +307,38 @@ export interface DetachedRequest {
   onCreated?: (summary: ConversationSummary) => void
 }
 
+/** Ce qui lie une fille à autre chose que sa mère : la conversation qu'elle relit (fiche 177). */
+export interface ChildLink {
+  /** Relecteur : identifiant de la conversation relue. */
+  of?: string
+}
+
+/**
+ * Création d'une fille de `mother` (fiche 097) : dans un nouveau worktree du dossier de la mère ;
+ * relecteur (fiche 177) dans le dossier de la conversation relue, sans worktree à lui (le supprimer
+ * ne supprime rien d'autre), avec l'agent demandé, sinon celui de l'auteur.
+ */
+export function childDetachedRequest(
+  mother: ConversationRecord,
+  author: ConversationRecord | undefined,
+  request: { text: string; profileId?: string; onCreated?: DetachedRequest['onCreated'] }
+): DetachedRequest {
+  const { profileId, onCreated } = request
+  return {
+    from: author
+      ? { workspace: author.workspace, profileId: profileId ?? author.profileId }
+      : mother,
+    ...(profileId ? { profileId } : {}),
+    worktree: !author,
+    title: titleFrom(request.text),
+    record: {
+      startedFrom: { id: mother.id, title: mother.title },
+      ...(author ? { reviewOf: { id: author.id, title: author.title } } : {})
+    },
+    ...(onCreated ? { onCreated } : {})
+  }
+}
+
 /**
  * Règles actives d'une conversation (fiche 056) : selon le profil et le mode actif. Les règles
  * peuvent changer d'une version de l'agent à l'autre : celle de son dernier démarrage (`version`).

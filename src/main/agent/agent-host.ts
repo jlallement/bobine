@@ -51,6 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
+import { automaticAnswer } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
@@ -826,23 +827,14 @@ export class AgentHost {
     params: RequestPermissionRequest,
     signal?: AbortSignal
   ): RequestPermissionResponse | Promise<RequestPermissionResponse> {
-    // Outils de l'app qui n'agissent que dans l'app (question, panneau) : accordés sans demander.
-    const allow = params.options.find((o) => o.kind === 'allow_once')
-    if (allow && this.appTools.autoAllowed(params.toolCall)) {
-      return { outcome: { outcome: 'selected', optionId: allow.optionId } }
-    }
     // Écriture hors du dossier, droits d'administrateur… : dits sur la carte (fiche 211).
     const place = { workspace: this.options.workspace, home: homedir() }
-    // Outil déjà « toujours autorisé » dans une conversation précédente (fiche 042), sauf risque.
-    const remembered = rememberableTool(params.toolCall)
-    if (
-      remembered &&
-      this.options.rememberedTools?.has(remembered) &&
-      permissionRisks(params.toolCall, place).length === 0
-    ) {
-      const always = params.options.find((o) => o.kind === 'allow_always') ?? allow
-      if (always) return { outcome: { outcome: 'selected', optionId: always.optionId } }
-    }
+    const automatic = automaticAnswer(params, {
+      autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
+      remembered: this.options.rememberedTools,
+      place
+    })
+    if (automatic) return automatic
     const toolCall = this.updates.permission(params.toolCall)
     const risks = permissionRisks(toolCall, place)
     return this.requests.permission({ ...params, toolCall }, risks, signal)

@@ -81,6 +81,8 @@ import {
   withTimeout,
   worktreeStartEvent,
   rulesOf,
+  childDetachedRequest,
+  type ChildLink,
   type DetachedRequest,
   type Origin
 } from './helpers'
@@ -441,25 +443,16 @@ export class ConversationManager {
     text: string,
     profileId?: string,
     onCreated?: (child: ConversationSummary) => void,
-    review?: { of: string }
+    link: ChildLink = {}
   ): Promise<ConversationSummary> {
-    const mother = this.get(motherId).record
-    // Relecteur (fiche 177) : dans le dossier de la conversation relue, sans worktree à lui (le
-    // supprimer ne supprime rien d'autre). Son agent : celui demandé, sinon celui de l'auteur.
-    const author = review && this.get(review.of).record
-    return this.createDetached({
-      from: author
-        ? { workspace: author.workspace, profileId: profileId ?? author.profileId }
-        : mother,
-      profileId,
-      worktree: !author,
-      title: titleFrom(text),
-      record: {
-        startedFrom: { id: motherId, title: mother.title },
-        ...(author ? { reviewOf: { id: author.id, title: author.title } } : {})
-      },
-      onCreated
-    })
+    const author = link.of ? this.get(link.of).record : undefined
+    return this.createDetached(
+      childDetachedRequest(this.get(motherId).record, author, {
+        text,
+        ...(profileId ? { profileId } : {}),
+        ...(onCreated ? { onCreated } : {})
+      })
+    )
   }
 
   /**
