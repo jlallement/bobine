@@ -329,4 +329,30 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
       'ux-ui-expert'
     ])
   })
+
+  it('`@rôle` en premier message d’une conversation neuve : elle entre dans l’historique, la fille s’y rattache', async () => {
+    const env = await environment()
+    const fresh = (await env.manager.create({ workspace: env.repo })).summary.id
+    expect(env.manager.view(fresh).summary.draft).toBe(true)
+    const text = 'Relis calc.js et dis-moi ce qui cloche.'
+    const result = await startRoleChildren(
+      env.children,
+      fresh,
+      { roles: ['security-expert'], text },
+      () => env.manager.keepDraft(fresh, text)
+    )
+    expect(result.started.map((s) => s.role)).toEqual(['security-expert'])
+    const mother = env.manager.state().conversations.find((c) => c.id === fresh)
+    expect(mother?.draft).toBe(false)
+    expect(mother?.title).toBe(text)
+    // Aucun message à l'agent de la mère : seulement la carte de la fille dans son fil.
+    expect(env.items(fresh).map((i) => i.kind)).toEqual(['child-started'])
+    const child = env.manager.state().conversations.find((c) => c.startedFrom?.id === fresh)
+    expect(child?.role?.name).toBe('security-expert')
+    await env.settled(child?.id ?? '')
+    const first = env.firstMessage(child?.id ?? '')
+    expect(first?.kind === 'user' && first.text).toContain(
+      "Reply in French, the language of the user's request."
+    )
+  })
 })

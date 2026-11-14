@@ -4383,7 +4383,6 @@
       "many_other": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
       "sameFolder": "dans ce dossier",
       "worktree": "son worktree",
-      "draft": "Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.",
       "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
       "empty": "Écrivez votre demande après le rôle : c’est elle qui part.",
       "sending": "Lancement…",

@@ -4218,7 +4218,6 @@ export type FrResources = {
       readonly many_other: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
       readonly sameFolder: 'dans ce dossier'
       readonly worktree: 'son worktree'
-      readonly draft: 'Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.'
       readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
       readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
       readonly sending: 'Lancement…'

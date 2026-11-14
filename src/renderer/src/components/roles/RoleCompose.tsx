@@ -62,7 +62,6 @@ export function RoleDestination({
   roles,
   agentLabel,
   readOnly,
-  draft,
   empty = false,
   sending = false
 }: {
@@ -71,8 +70,6 @@ export function RoleDestination({
   agentLabel: string | undefined
   /** Lecture seule de l'unique rôle. */
   readOnly: ReadOnlyShown
-  /** Conversation encore vide : les filles se rattachent à une conversation de l'historique. */
-  draft: boolean
   /** Rien à demander une fois les `@rôle` retirés : l'envoi est désactivé, la ligne dit pourquoi. */
   empty?: boolean
   /** Filles en cours de lancement : un second envoi attend. */
@@ -119,7 +116,6 @@ export function RoleDestination({
       {details.length > 0 && (
         <span className="role-destination-detail">· {details.join(' · ')}</span>
       )}
-      {draft && <span className="role-destination-warn">{t('roleWork.destination.draft')}</span>}
       {empty && !sending && (
         <span className="role-destination-warn" data-testid="role-destination-empty">
           {t('roleWork.destination.empty')}

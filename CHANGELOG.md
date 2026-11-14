@@ -15,6 +15,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Amélioré
 
+- Rôles : `@rôle` peut être le tout premier message d'une nouvelle conversation ; elle entre dans
+  l'historique et la conversation fille s'y rattache. La fille d'un rôle répond dans la langue de
+  l'interface, nommée à l'agent.
 - Rôles fournis : leur description (« Quand faire appel à lui ? ») et leur consigne sont
   maintenant en français ou en anglais, selon la langue de l'interface ; un rôle personnel tiré
   d'un rôle fourni garde la langue affichée.

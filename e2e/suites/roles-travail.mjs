@@ -45,6 +45,8 @@ export async function rolesTravailSuite(scheme) {
   git('commit', '-q', '-m', 'init')
   const env = { BOBINE_WORKSPACE: workspace }
   try {
+    // Conversation neuve : `@rôle` en tout premier message (essai réel de la phase 4).
+    await withApp(scheme, (ui) => freshRun(ui), undefined, 'streaming-texte', env)
     await withApp(scheme, (ui) => mainRun(ui), undefined, 'streaming-texte', env)
     await withApp(
       scheme,
@@ -76,6 +78,41 @@ function reveal(ui, element) {
 async function typeIn(ui, text) {
   await ui.ev(`${input}.focus()`)
   await ui.type(text)
+}
+
+/**
+ * `@rôle` comme tout premier message d'une conversation neuve : la conversation entre dans
+ * l'historique (titrée d'après la demande, sans message à son agent), la fille s'y rattache, deux
+ * rôles cités donnent deux filles.
+ */
+async function freshRun(ui) {
+  await ui.ready()
+  check(
+    (await ui.ev(`document.querySelectorAll('[data-testid=history-item]').length`)) === 0,
+    'conversation neuve : rien encore dans l’historique'
+  )
+  await typeIn(ui, '@security-expert @code-reviewer relisez calc.js')
+  await ui.press('Escape')
+  await ui.waitFor(`!!${ui.$('role-destination')}`)
+  await ui.enter()
+  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 2`, 30000)
+  check(
+    (await ui.ev(`${input}.value`)) === '',
+    'premier message `@rôle` : parti, saisie vidée, aucun refus'
+  )
+  await ui.waitFor(
+    `[...document.querySelectorAll('[data-testid=history-item]')].some((i) => i.innerText.includes('relisez calc.js'))`
+  )
+  await ui.waitFor(
+    `document.querySelectorAll('[data-testid=history-item][data-mother]').length === 2`,
+    30000
+  )
+  check(
+    true,
+    'la conversation est dans l’historique, titrée d’après la demande ; deux filles dessous'
+  )
+  await ui.waitFor(`document.querySelectorAll('[data-testid=child-report]').length === 2`, 30000)
+  await ui.shot('roles-travail-0-premier-message')
 }
 
 async function mainRun(ui) {

@@ -19,6 +19,11 @@ export interface RolesIpcDeps {
   children?: () => RoleInvokeHost | undefined
   /** Installer un rôle dans un agent (phase 4) ; absent : canaux refusés. */
   exports?: RoleExports
+  /**
+   * Conversation encore vide (brouillon) gardée dans l'historique, titrée d'après `text`, sans
+   * rien envoyer à son agent : un `@rôle` en premier message y rattache ses filles.
+   */
+  keepDraft?: (conversationId: string, text: string) => void
 }
 
 const SCOPES: readonly RoleScope[] = ['builtin', 'user', 'project']
@@ -92,7 +97,9 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       if (!children) throw new Error(t('ipc.unavailable.children'))
       const id = optionalId(conversationId)
       if (!id) throw new Error('Paramètre invalide : conversationId')
-      return startRoleChildren(children, id, parseRolesStartRequest(request))
+      const parsed = parseRolesStartRequest(request)
+      const keep = available().keepDraft
+      return startRoleChildren(children, id, parsed, keep ? () => keep(id, parsed.text) : undefined)
     }
   }
 }

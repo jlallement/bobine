@@ -321,11 +321,11 @@ describe('jeton et envoi', () => {
     expect(screen.getByTestId('role-destination').textContent).toContain('lecture seule demandée')
   })
 
-  it('conversation encore vide : la ligne le dit', () => {
+  it('conversation encore vide : rien ne retient le premier `@rôle` (elle entre dans l’historique)', () => {
     const { type, key } = setup({ fresh: true })
     type('@sécu')
     key('Enter')
-    expect(screen.getByTestId('role-destination').textContent).toContain('Écrivez d’abord')
+    expect(screen.getByTestId('role-destination').textContent).not.toContain('Écrivez d’abord')
   })
 })
 

@@ -1047,3 +1047,41 @@ dans **ADR-0046** (accepté).
   - Vérifications : `./scripts/verify` vert ; `pnpm build && pnpm e2e roles-export roles-gestion
     roles-travail --jobs 3` : 6/6, et 6/6 en `--lang en` ; captures regardées (`rx2-feuille-bob`,
     `rx4-role-change`, `rx8-entete-nom-long`, `rx9-sans-role`, `-light` / `-dark`, `en-…`).
+
+### Essai réel de la phase 4, puis correctifs (2026-11-14)
+
+- 2026-11-14 : **essai réel** (pilote, profil temporaire, installations pour le projet, dépôt
+  d'essai jetable) :
+  - **Bob 2.1.0** : `.bob/custom_modes.yaml` écrit en français ; la fille a démarré dans le mode
+    installé « Code reviewer », a trouvé les deux bogues et a refusé de modifier quand on le lui a
+    demandé — mais elle a **répondu en anglais** (la ligne « Reply in the language of the user's
+    request. » ignorée).
+  - **OpenCode** (modèle gratuit) : fille lancée avec l'agent `code-reviewer`, réponse en
+    français, restée en lecture seule.
+  - Suite e2e complète verte sur la branche (198/198) avant les correctifs ci-dessous.
+  - **Défaut** : `@rôle` en tout premier message d'une conversation neuve refusé (« Écrivez
+    d'abord dans cette conversation… »), le texte restant dans la saisie.
+- 2026-11-14 : **correctifs** :
+  1. **Langue nommée** : la dernière ligne du bloc `<bobine_role>` nomme la langue de l'interface
+     (`roleLanguageLine` : « Reply in French, the language of the user's request. », « Reply in
+     English, … ») ; texte en anglais (ADR-0014), seule la langue y est nommée ; sans langue
+     connue, l'ancienne ligne. `splitRoleBrief` replie l'ancienne comme la nouvelle (fils
+     d'avant). Les filles sans rôle n'avaient pas de ligne de langue : rien à changer.
+  2. **`@rôle` en premier message** : la conversation neuve entre dans l'historique juste avant
+     la première fille (`ConversationManager.keepDraft`, titre tiré de la demande, aucun message à
+     son agent ; rien si aucun rôle ne part), puis les filles s'y rattachent comme d'habitude
+     (carte dans le fil, « Sous-tâches », Équipe, une fille par rôle cité). `manager.ts` étant au
+     plafond, le passage à l'historique est mis en commun (`enterHistory`) et la réouverture
+     sortie dans `helpers.ts` (`reopenOf`). La saisie est vidée dès l'envoi et remise en cas
+     d'échec (la conversation passe de l'accueil au fil, la saisie est remontée) ; « Lancement… »
+     reste affiché pendant l'envoi. Le message « Écrivez d'abord… » de la ligne « Partira à… »
+     est retiré. **Écart** : le message de l'utilisateur n'est pas ajouté au fil de la mère comme
+     un message envoyé : comme pour une mère existante, c'est la carte de chaque fille qui montre
+     la demande et son rôle.
+  - Essais : `roles.test.ts` (langue nommée, ancienne ligne repliée), `invoke.test.ts` (brouillon
+    gardé une fois, avant la première fille ; rien si aucun rôle ne part), `roles-children.test.ts`
+    (agent factice : conversation neuve, fille rattachée, ligne « Reply in French »),
+    `RoleComposer.test.tsx` ; e2e `roles-travail` : conversation neuve → `@security-expert
+    @code-reviewer relisez calc.js` directement (capture `roles-travail-0-premier-message`).
+  - Vérifications : `./scripts/verify` vert ; `pnpm build && pnpm e2e roles-travail roles-export
+    roles-gestion --jobs 3` : 6/6, et 6/6 en `--lang en`.

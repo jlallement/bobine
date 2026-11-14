@@ -15,6 +15,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Improved
 
+- Roles: `@role` can be the very first message of a new conversation; it enters the history and
+  the child conversation is attached to it. A role's child answers in the interface language,
+  named to the agent.
 - Built-in roles: their description (“When to call on it?”) and their instructions now come in
   English or French, following the interface language; a personal role made from a built-in role
   keeps the language shown.
