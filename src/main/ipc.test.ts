@@ -30,6 +30,8 @@ const view = {
 function fakeConversations() {
   return {
     state: vi.fn(() => ({ conversations: [], activeId: 'c1' })),
+    subscribe: vi.fn(() => () => {}),
+    continueInProject: vi.fn(async () => view),
     view: vi.fn(() => view),
     select: vi.fn(() => view),
     create: vi.fn(async () => view),

@@ -222,6 +222,21 @@ développement) : le coût d'un aparté court devrait être celui d'un échange 
 | Sous-agents | Outil `spawn_subagent` (actif par défaut, `--disable-subagents`) : autorisation demandée, puis seulement l'appel d'outil et son résultat `<task_result>` ; rien de la session du sous-agent, pas de `subagent_update`. Coût du sous-agent dans sa propre tâche (`parent_id`), non ajouté au parent | Carte « Sous-agent » (type, consigne, réponse sans `<task_result>`) ; coût de la conversation = tâche + sous-agents ; durée et coût du sous-agent en direct sur sa carte (fiche 053) | ✅ Bob réel 2026-10-13 (≈ 0,054 bobcoin), fiche 010 ; coût en direct : agent factice, ✅ Bob réel 2026-10-14 (coût relu 0,0029 → 0,006 → 0,0094 pendant les 8 s du sous-agent, = base de Bob ; 0,080 bobcoin l'essai) ; grille 139 : « sous-agent, message envoyé pendant » (`sous-agent-bob`, message en file) |
 | Télémétrie | Statistiques d'usage envoyées par défaut (désactivables dans `/settings` de Bob) | — | Script d'installation |
 
+### Documents Office et dossier de discussion (fiche 224, relevé réel le 2026-11-14)
+
+Bob **2.1.0**, connexion de l'utilisateur, `bob acp` sans `--trust` ni `--auto-approve`, dossier
+neuf `…/discussions/<id>/` jamais décidé, un `.xlsx` déposé, demande : « lis-le et écris un Word
+`Synthèse.docx` dans ce dossier » ; écritures accordées une fois, rien d'installé ; **0,77 bobcoin**
+(nombreuses retouches du `.docx`). Réglages de Bob (`settings.json`, `trustedFolders.json`)
+identiques avant et après.
+
+| Sujet | Observé |
+|---|---|
+| Dossier jamais décidé | `session/new` ouvert sans demande de confiance (comme 2.0.9) ; modes `agent`, `plan`, `ask`, mode `agent` |
+| Fichiers Office | Bob les traite **lui-même**, sans commande : compétence « Using skill office-insights » (`kind: other`, sans demande d'autorisation), puis lectures `kind: read` titrées « Analysing structure of <chemin> » / « Reading <chemin> » / « Validating <chemin> » (`rawInput: { path, mode: outline \| text \| get \| validate, query? }`, `locations` = le fichier) |
+| Écriture d'un `.docx` | `kind: edit`, titres « Updating / Adding content to / Removing content from <chemin> », `rawInput: { path, operation: batch \| add \| remove, ops \| props \| query }` ; **une autorisation par retouche** (`allow_once`, `allow_always`, `reject_once`) ; **`locations` parfois vide** dans la demande d'autorisation (le chemin n'est alors que dans `rawInput.path`) |
+| Traces dans le dossier | Bob crée `.bob/plugins/` (vide) dans le dossier de travail |
+
 ### Contrat testé automatiquement (fiche 139)
 
 Ce qui précède est vérifié, à chaque `./scripts/verify`, par la **grille de conformité**
@@ -342,6 +357,17 @@ remplace la 1) a un ACP réécrit (`packages/cli/src/acp`). Relevés réels, mod
 | Agents écrits par Bobine (fiche 223, phase 4, ADR-0047) | **2.2.5, `pnpm opencode-probe --offline`** (HOME et `XDG_*` jetables, aucun modèle) : un agent `mode: primary` écrit comme Bobine dans `$XDG_CONFIG_HOME/opencode/agents/<id>.md` (avec `permissions` refusant `edit`, `shell`, `subagent`) ou `<dossier>/.opencode/agents/<id>.md` est **listé dans le réglage « Session Mode »** (`mode:mode`, pas de `modes`) et s'y choisit par `session/set_config_option` ; fichier gardé tel quel. Une fois, deux changements de mode de suite dans la **même** session ont rendu l'ancien mode au second (non reproduit ; la sonde change de session pour chaque agent). Format d'après la documentation publique (« Agents », « Permissions », V2) ; que les permissions tiennent ne se voit qu'avec un modèle : **non sondé** | « Installer dans… » d'un rôle (un fichier par agent, copié avant d'être remplacé) ; « lancer avec cet agent » choisit ce mode pour la fille du rôle, et la lecture seule compte alors comme tenue par OpenCode. Noms réservés : `build`, `plan`, `general`, `explore` (et `compaction`, `title`, `summary`). Seul le format V2 est écrit (OpenCode 1.x non pris en charge) |
 | Configuration | Mêmes fichiers que la 1 ; format natif `mcp.servers.<nom>` (`disabled`), `permissions` en tableau, `agents`, `commands`… ; `cli.json` pour le terminal | Serveurs MCP des deux formats (fiche 025) |
 | Fournisseurs de modèles (fiche 104) | Bloc `provider.<id>` (`npm: "@ai-sdk/openai-compatible"`, `name`, `options.baseURL`, `options.apiKey: "{env:VAR}"`, `models.<id>.name`), `enabled_providers` (seuls proposés), `disabled_providers` ; `{env:VAR}` lu dans l'environnement de `opencode acp` ; `NODE_EXTRA_CA_CERTS` et `HTTPS_PROXY` honorés (relevé 2.0.32 du 2026-10-21, faux point d'accès) | Réglages › Agents › Fournisseurs de modèles : écrits dans le fichier, clé chiffrée dans le trousseau et posée par la variable, « Tester » (`GET /models` par le même proxy et les mêmes certificats), réseau d'entreprise pour tous les agents |
+
+### Documents Office et dossier de discussion (fiche 224, relevé réel le 2026-11-14)
+
+OpenCode **2.2.5**, modèle gratuit `opencode/big-pickle`, `HOME` et `XDG_*` jetables, réglages par
+défaut, même demande que pour Bob (« n'installe rien »).
+
+| Sujet | Observé |
+|---|---|
+| Autorisations | **Aucune demandée** : commandes (`kind: execute`, titre « shell », `rawInput: { cwd }`) et écritures faites sans demander |
+| Fichiers Office | Pas d'outil dédié : `python-docx` / `openpyxl` absents, il **décompresse le `.xlsx` dans le dossier temporaire du système** (`$TMPDIR/opencode/xlsx_extract`, hors du dossier de travail), le lit (`kind: read`), puis fabrique le `.docx` à la main (bibliothèque standard de Python) |
+| Résultat | `Synthèse.docx` écrit dans le dossier ; l'extraction temporaire supprimée par lui |
 
 ### Sonde de suivi (fiche 078)
 

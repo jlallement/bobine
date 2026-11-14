@@ -1,4 +1,15 @@
-import { BookOpen, Bug, ClipboardList, FlaskConical, ShieldCheck } from 'lucide-react'
+import {
+  BookOpen,
+  Bug,
+  ClipboardList,
+  FileText,
+  FileUp,
+  FlaskConical,
+  Lightbulb,
+  Mail,
+  ShieldCheck,
+  Table
+} from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
@@ -10,7 +21,7 @@ import { Onboarding } from './onboarding/Onboarding'
 import type { OnboardingController } from './onboarding/useOnboarding'
 
 /** Salutation selon l'heure, avec le prénom choisi dans les réglages. */
-export function greeting(name: string, hour = new Date().getHours()): string {
+export function greeting(name: string, hour = new Date().getHours(), discussion = false): string {
   const hello = i18next.t(
     hour >= 5 && hour < 12
       ? 'home.hello.morning'
@@ -18,6 +29,11 @@ export function greeting(name: string, hour = new Date().getHours()): string {
         ? 'home.hello.afternoon'
         : 'home.hello.evening'
   )
+  if (discussion) {
+    return name
+      ? i18next.t('discussion.greetingWithName', { hello, name })
+      : i18next.t('discussion.greeting', { hello })
+  }
   return name
     ? i18next.t('home.greetingWithName', { hello, name })
     : i18next.t('home.greeting', { hello })
@@ -32,7 +48,22 @@ const SUGGESTIONS = [
   { id: 'plan', icon: <ClipboardList size={15} /> }
 ] as const
 
+/** Suggestions de l'espace Discussion (fiche 224) : clés `discussion.suggestions.<id>.*`. */
+const DISCUSSION_SUGGESTIONS = [
+  { id: 'summarize', icon: <FileText size={15} /> },
+  { id: 'table', icon: <Table size={15} /> },
+  { id: 'email', icon: <Mail size={15} /> },
+  { id: 'explain', icon: <Lightbulb size={15} /> }
+] as const
+
 interface Props {
+  /** Espace Discussion (fiche 224) : salutation, suggestions et zone de dépôt propres. */
+  discussion?: boolean
+  /**
+   * Agent qui écrit sans demander d'autorisation (profil `writesWithoutAsking`) : son nom, pour
+   * dire que rester dans les documents lui est seulement demandé (fiche 224).
+   */
+  requestedOnly?: string | undefined
   userName: string
   /** Carte de l'aparté et zone de saisie, rendues par l'app. */
   asideCard: ReactNode
@@ -75,33 +106,39 @@ export function Welcome(props: Props) {
     <div className="welcome column" style={{ width: '100%' }} data-testid="welcome">
       <h1 className="greeting">
         <SpoolMark size={38} motion="intro" />
-        {greeting(props.userName)}
+        {greeting(props.userName, undefined, props.discussion)}
       </h1>
       {props.asideCard}
       {props.composer}
-      <div className="suggestions" data-testid="suggestions">
-        {testCommand && (
-          <button
-            className="suggestion"
-            onClick={() => props.fill(t('onboarding.home.runTestsText', { command: testCommand }))}
-            data-testid="suggestion-run-tests"
-          >
-            <FlaskConical size={15} />
-            {t('onboarding.home.runTests', { command: testCommand })}
-          </button>
-        )}
-        {SUGGESTIONS.filter((s) => !(testCommand && s.id === 'tests')).map((s) => (
-          <button
-            key={s.id}
-            className="suggestion"
-            onClick={() => props.fill(t(`home.suggestions.${s.id}.text`))}
-            data-testid="suggestion"
-          >
-            {s.icon}
-            {t(`home.suggestions.${s.id}.label`)}
-          </button>
-        ))}
-      </div>
+      {props.discussion ? (
+        <DiscussionSuggestions fill={props.fill} requestedOnly={props.requestedOnly} />
+      ) : (
+        <div className="suggestions" data-testid="suggestions">
+          {testCommand && (
+            <button
+              className="suggestion"
+              onClick={() =>
+                props.fill(t('onboarding.home.runTestsText', { command: testCommand }))
+              }
+              data-testid="suggestion-run-tests"
+            >
+              <FlaskConical size={15} />
+              {t('onboarding.home.runTests', { command: testCommand })}
+            </button>
+          )}
+          {SUGGESTIONS.filter((s) => !(testCommand && s.id === 'tests')).map((s) => (
+            <button
+              key={s.id}
+              className="suggestion"
+              onClick={() => props.fill(t(`home.suggestions.${s.id}.text`))}
+              data-testid="suggestion"
+            >
+              {s.icon}
+              {t(`home.suggestions.${s.id}.label`)}
+            </button>
+          ))}
+        </div>
+      )}
       {onboarding.hints && (
         // Juste après l'accueil : deux pages du guide, puis l'aide entière (fiche 188).
         <p className="welcome-help" data-testid="welcome-help">
@@ -120,5 +157,42 @@ export function Welcome(props: Props) {
         </p>
       )}
     </div>
+  )
+}
+
+/** Accueil de l'espace Discussion (fiche 224) : suggestions de chat, et où déposer des documents. */
+function DiscussionSuggestions({
+  fill,
+  requestedOnly
+}: {
+  fill: (text: string) => void
+  requestedOnly?: string | undefined
+}) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <div className="suggestions" data-testid="suggestions">
+        {DISCUSSION_SUGGESTIONS.map((s) => (
+          <button
+            key={s.id}
+            className="suggestion"
+            onClick={() => fill(t(`discussion.suggestions.${s.id}.text`))}
+            data-testid="suggestion"
+          >
+            {s.icon}
+            {t(`discussion.suggestions.${s.id}.label`)}
+          </button>
+        ))}
+      </div>
+      <div className="discussion-drop-hint" data-testid="discussion-drop-hint">
+        <FileUp size={16} />
+        {t('discussion.dropHint')}
+      </div>
+      {requestedOnly && (
+        <p className="welcome-hint" data-testid="discussion-requested-only">
+          {t('discussion.requestedOnlyHint', { agent: requestedOnly })}
+        </p>
+      )}
+    </>
   )
 }

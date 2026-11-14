@@ -39,6 +39,10 @@ function profile(conversations: string[] = ['a', 'b']): string {
   writeFileSync(join(data, 'memory', 'projets', 'souvenir.md'), 'Un souvenir')
   writeFileSync(join(data, 'memory.approved.json'), '{"souvenir.md":"hmac:x"}')
   writeFileSync(join(data, 'memory.key'), 'clé chiffrée par le trousseau')
+  // Documents d'une discussion (fiche 224), dont un lien symbolique jamais sauvegardé.
+  mkdirSync(join(data, 'discussions', 'd1'), { recursive: true })
+  writeFileSync(join(data, 'discussions', 'd1', 'Synthèse.docx'), 'doc')
+  symlinkSync(join(data, 'settings.json'), join(data, 'discussions', 'd1', 'lien.json'))
   const db = new DatabaseSync(join(data, 'usage.sqlite'))
   db.exec('CREATE TABLE t (n INTEGER); INSERT INTO t VALUES (42)')
   db.close()
@@ -71,6 +75,10 @@ describe('sauvegarde du profil (fiches 043, 197)', () => {
     )
     expect(existsSync(join(folder, 'memory.approved.json'))).toBe(true)
     expect(existsSync(join(folder, 'memory.key'))).toBe(false)
+    // Discussions (fiche 224) : leurs documents, jamais un lien symbolique.
+    expect(readFileSync(join(folder, 'discussions', 'd1', 'Synthèse.docx'), 'utf8')).toBe('doc')
+    expect(existsSync(join(folder, 'discussions', 'd1', 'lien.json'))).toBe(false)
+    expect(checkBackup(folder, data).ok).toBe(true)
     const copy = new DatabaseSync(join(folder, 'usage.sqlite'), { readOnly: true })
     expect(copy.prepare('SELECT n FROM t').get()).toEqual({ n: 42 })
     copy.close()
@@ -230,6 +238,8 @@ describe('restauration (fiche 197)', () => {
     expect(existsSync(join(data, 'api-keys.json'))).toBe(true)
     expect(readFileSync(join(data, 'memory.key'), 'utf8')).toBe('clé chiffrée par le trousseau')
     expect(existsSync(join(data, 'memory', 'projets', 'souvenir.md'))).toBe(true)
+    // Les documents des discussions reviennent avec elles (fiche 224).
+    expect(readFileSync(join(data, 'discussions', 'd1', 'Synthèse.docx'), 'utf8')).toBe('doc')
     const kept = done.kind === 'restored' ? done.keptIn : ''
     expect(readdirSync(join(kept, 'conversations')).sort()).toContain('b.json')
     expect(checkBackup(kept, data)).toMatchObject({ ok: true, conversations: 2 })

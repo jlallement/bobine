@@ -1,3 +1,7 @@
+import type { AgentEvent } from '@shared/agent'
+import { mkdtempSync, realpathSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { RequestPermissionRequest } from '../../shared/acp-sdk.mts'
 import { askReadOnly, automaticAnswer, type PermissionRules } from './permission-answers'
@@ -24,8 +28,10 @@ function rules(extra: Partial<PermissionRules> = {}) {
     rules: {
       autoAllowed: () => false,
       place: { workspace: '/projet', home: '/maison' },
-      onRefused: (toolCall: RequestPermissionRequest['toolCall']) =>
-        refused.push(toolCall.title ?? ''),
+      notify: (event: AgentEvent) => {
+        if (event.type === 'notice' && typeof event.message === 'object')
+          refused.push(String(event.message.params?.['tool'] ?? ''))
+      },
       ...extra
     } satisfies PermissionRules
   }
@@ -105,5 +111,29 @@ describe('demande posée à une fille en lecture seule (essais réels avant 1.0.
     expect(
       await askReadOnly(plain, false, async (r) => answer(r.options[1]?.optionId ?? ''))
     ).toEqual(answer('always'))
+  })
+
+  it('discussion (fiche 224) : réponse d’office dite dans le fil ; posée quand le dossier est inconnu', () => {
+    const area = realpathSync(mkdtempSync(join(tmpdir(), 'zone-')))
+    const notes: AgentEvent[] = []
+    const discussion = {
+      autoAllowed: () => false,
+      place: { workspace: area, home: '/maison' },
+      writeArea: area,
+      notify: (e: AgentEvent) => notes.push(e)
+    } satisfies PermissionRules
+    const at = (kind: 'edit' | 'execute', ...paths: string[]) => ({
+      ...request(kind),
+      toolCall: { ...request(kind).toolCall, locations: paths.map((path) => ({ path })) }
+    })
+    const yes = { outcome: { outcome: 'selected', optionId: 'yes' } }
+    const no = { outcome: { outcome: 'selected', optionId: 'no' } }
+    expect(automaticAnswer(at('edit', join(area, 'Synthèse.docx')), discussion)).toEqual(yes)
+    expect(automaticAnswer(at('edit', '/tmp/ailleurs.md'), discussion)).toEqual(no)
+    expect(automaticAnswer(at('execute', area), discussion)).toBeUndefined()
+    expect(automaticAnswer(at('edit', '/absent/x'), { ...discussion, writeArea: '/absent' })).toBe(
+      undefined
+    )
+    expect(notes.map((n) => (n.type === 'notice' ? n.level : ''))).toEqual(['info', 'warning'])
   })
 })

@@ -526,6 +526,23 @@ export function createApi(
       exportRemove: (key: string, force?: boolean) =>
         invoke('roles:exportRemove', key, ...(force !== undefined ? [force] : []))
     },
+    /** Documents d'une discussion (fiche 224) : panneau « Documents », cartes du fil. */
+    documents: {
+      list: (conversationId: string) => invoke('documents:list', conversationId),
+      add: (conversationId: string, paths: string[]) =>
+        invoke('documents:add', conversationId, paths),
+      pick: (conversationId: string) => invoke('documents:pick', conversationId),
+      open: (conversationId: string, name: string) =>
+        invoke('documents:open', conversationId, name),
+      reveal: (conversationId: string, name: string) =>
+        invoke('documents:reveal', conversationId, name),
+      saveCopy: (conversationId: string, name: string) =>
+        invoke('documents:saveCopy', conversationId, name),
+      preview: (conversationId: string, name: string) =>
+        invoke('documents:preview', conversationId, name),
+      continueInProject: (conversationId: string, options: { copyDocuments: boolean }) =>
+        invoke('discussion:continueInProject', conversationId, options)
+    },
     /** Mémoire commune aux agents (fiche 182) : carte du fil, Réglages › Mémoire. */
     memory: {
       decide: (decision: MemoryDecision) => invoke('memory:decide', decision),

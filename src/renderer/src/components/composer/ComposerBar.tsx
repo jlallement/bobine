@@ -35,6 +35,8 @@ interface Props {
   hasContent: boolean
   controls: SessionControl[]
   modeControl: SessionControl | undefined
+  /** Espace Discussion (fiche 224) : la puce de mode reste dans les réglages de la session. */
+  hideMode?: boolean | undefined
   modelControl: SessionControl | undefined
   agentLabel: string
   usage: ConversationUsage | undefined
@@ -89,7 +91,7 @@ export function ComposerBar(props: Props) {
           onPickFiles={props.onPickFiles}
           onCaptureScreen={props.onCaptureScreen}
         />
-        {props.modeControl ? (
+        {props.modeControl && !props.hideMode ? (
           <ModeChip
             control={props.modeControl}
             disabled={status !== 'ready'}

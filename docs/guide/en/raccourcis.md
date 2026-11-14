@@ -21,6 +21,8 @@ The same list is in the app: Help › Keyboard Shortcuts (⌘/), or Settings ›
 | ⌘F | Find… | Edit |
 | ⌘G | Find Next | Edit |
 | ⇧⌘G | Find Previous | Edit |
+| ⌘1 | Code space | View |
+| ⌘2 | Chat space | View |
 | ⌘B | Sidebar | View |
 | ⌘J | Side Panel | View |
 | ⇧⌘J | Maximize Panel | View |

@@ -20,7 +20,12 @@ export function useComposerRoles(
   extra: Pick<ComposerRoles, 'onCreate' | 'onManage'> = {}
 ): ComposerRoles {
   const id = conversation?.id
-  const eligible = !!conversation && !conversation.startedFrom && !conversation.reviewOf
+  // Ni fille, ni relecteur, ni discussion (fiche 224 : pas de rôles hors d'un projet).
+  const eligible =
+    !!conversation &&
+    !conversation.startedFrom &&
+    !conversation.reviewOf &&
+    conversation.space !== 'discussion'
   // Rôles lus, avec la conversation pour laquelle ils l'ont été : rien d'une autre conversation.
   const [read, setRead] = useState<{ id: string; list: RoleView[] }>()
   // Lus aussi pour une fille ou un relecteur : un `@rôle` tapé y est signalé (pas envoyé à un rôle).

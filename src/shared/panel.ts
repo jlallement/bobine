@@ -14,6 +14,8 @@ export type PanelTab =
   | 'acp'
   | 'changes'
   | 'document'
+  /** Documents d'une discussion (fiche 224) : seulement dans l'espace Discussion. */
+  | 'documents'
 
 export const PANEL_TABS: { id: PanelTab; label: string }[] = [
   // Résumé de la session courante (fiche 166) : toujours en tête, sauf fermé à la main.
@@ -71,6 +73,13 @@ export const PANEL_TABS: { id: PanelTab; label: string }[] = [
     id: 'document',
     get label() {
       return t('panel.tab.document')
+    }
+  },
+  // Documents de la discussion (fiche 224) : toujours là dans l'espace Discussion.
+  {
+    id: 'documents',
+    get label() {
+      return t('panel.tab.documents')
     }
   }
 ]

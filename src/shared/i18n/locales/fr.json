@@ -830,7 +830,8 @@
       "folderFallback": "Le dossier « {{folder}} » n’existe plus : la conversation part de « {{fallback}} »."
     },
     "branchSuffix": "branche",
-    "saveFailedDiskFull": "Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant."
+    "saveFailedDiskFull": "Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant.",
+    "newDiscussionTitle": "Nouvelle discussion"
   },
   "copy": {
     "action": "Copier",
@@ -2140,7 +2141,8 @@
       "changes": "Modifications",
       "document": "Aperçu",
       "acp": "Échanges ACP",
-      "session": "Session"
+      "session": "Session",
+      "documents": "Documents"
     }
   },
   "android": {
@@ -2720,7 +2722,9 @@
       "shortcuts": "Raccourcis clavier",
       "activity": "Mon activité",
       "aside": "Aparté…",
-      "help": "Aide de Bobine"
+      "help": "Aide de Bobine",
+      "space-code": "Espace Code",
+      "space-discussion": "Espace Discussion"
     },
     "interface": {
       "send": {
@@ -2955,6 +2959,14 @@
     "restore": {
       "title": "Sauvegarde à restaurer",
       "button": "Choisir"
+    },
+    "saveDocument": {
+      "title": "Enregistrer une copie du document",
+      "button": "Enregistrer ici"
+    },
+    "continueInProject": {
+      "title": "Continuer la discussion dans un projet",
+      "button": "Continuer ici"
     }
   },
   "quit": {
@@ -3893,7 +3905,9 @@
       "renewTitle": "Nouvelle session avec {{agent}}",
       "renewDetailNoResume": "{{agent}} ne sait pas reprendre sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.",
       "renewDetailLost": "{{agent}} a perdu sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.",
-      "renewDetailTurnLimit": "{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message."
+      "renewDetailTurnLimit": "{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message.",
+      "discussionTitle": "Suite d’une discussion",
+      "discussionDetail": "L’échange de la discussion est transmis en texte à {{agent}} avec votre premier message. La discussion reste telle quelle dans l’espace Discussion."
     }
   },
   "aboutWindow": {
@@ -5272,5 +5286,79 @@
       "projectOverrides": "Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.",
       "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status)."
     }
+  },
+  "discussion": {
+    "notice": {
+      "writeAllowed": "Écriture accordée dans les documents de la discussion : {{tool}}",
+      "writeRefused": "Écriture refusée hors des documents de la discussion : {{tool}}",
+      "limitRequestedOnly": "Limite aux documents seulement demandée : {{agent}} écrit et lance des commandes sans demander d’autorisation. Bobine montre après chaque tour les documents changés, mais ne voit pas ce qu’il écrit ailleurs.",
+      "attachmentMissing": "Pièce jointe introuvable, non envoyée : {{names}}"
+    },
+    "error": {
+      "notDiscussion": "Cette conversation n’est pas une discussion : elle n’a pas de documents.",
+      "noRoles": "Pas de rôles dans une discussion : continuez-la dans un projet pour faire appel à un rôle.",
+      "notOpenable": "Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le Finder »."
+    },
+    "space": {
+      "label": "Espace",
+      "code": "Code",
+      "discussion": "Discussion"
+    },
+    "newDiscussion": "Nouvelle discussion",
+    "recent": "Récentes",
+    "greeting": "{{hello}}, sur quoi travaille-t-on ?",
+    "greetingWithName": "{{hello}} {{name}}, sur quoi travaille-t-on ?",
+    "placeholder": "Posez une question, demandez un texte, joignez un document…",
+    "dropHint": "Glissez ici des PDF, Word, Excel ou images : ils restent avec la discussion.",
+    "suggestions": {
+      "summarize": {
+        "label": "Résume un document",
+        "text": "Résume le document joint en quelques points : "
+      },
+      "table": {
+        "label": "Fais un tableau",
+        "text": "Fais un tableau à partir de "
+      },
+      "email": {
+        "label": "Rédige un e-mail",
+        "text": "Rédige un e-mail "
+      },
+      "explain": {
+        "label": "Explique une notion",
+        "text": "Explique-moi simplement "
+      }
+    },
+    "documents": {
+      "tab": "Documents",
+      "heading": "Documents de la discussion · {{count}}",
+      "add": "Ajouter un document…",
+      "drop": "Glissez un document ici pour l’ajouter",
+      "empty": "Aucun document pour l’instant.",
+      "open": "Ouvrir",
+      "saveCopy": "Enregistrer une copie…",
+      "reveal": "Afficher dans le Finder",
+      "noPreview": "Pas d’aperçu pour ce document : ouvrez-le avec son app.",
+      "truncated": "Aperçu coupé : le document est plus long.",
+      "saved": "Copie enregistrée : {{path}}",
+      "added": "Ajouté aux documents : {{names}}",
+      "meta": "{{size}} · {{date}}",
+      "cardTitle": "Documents créés ou modifiés"
+    },
+    "continue": {
+      "menu": "Continuer dans un projet…",
+      "title": "Continuer dans un projet",
+      "text": "Une nouvelle conversation s’ouvre dans l’espace Code, dans le dossier que vous allez choisir. Cette discussion lui est passée avec votre premier message ; elle reste telle quelle ici.",
+      "copy_one": "Copier le document dans le projet (dossier documents/)",
+      "copy_other": "Copier les {{count}} documents dans le projet (dossier documents/)",
+      "choose": "Choisir le dossier…",
+      "cancel": "Annuler",
+      "copy_many": "Copier les {{count}} documents dans le projet (dossier documents/)"
+    },
+    "permission": {
+      "execute": "{{agent}} veut lancer un programme sur votre Mac",
+      "executeSub": "Il attend votre accord. Le détail technique est dessous, si vous voulez le lire.",
+      "details": "Détails techniques"
+    },
+    "requestedOnlyHint": "{{agent}} écrit sans demander d’autorisation : rester dans les documents de la discussion lui est seulement demandé."
   }
 }

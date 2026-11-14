@@ -228,6 +228,7 @@ chaque création ou changement de statut.
 | [221](221-i18next-27.md) | i18next 27 et react-i18next 18 : clés sans variables typées `ParseKeysWithoutVariables` (vérification stricte des variables par défaut), changements de comportement relus, avis de licence régénérés | fait | P2 |
 | [222](222-jsdom-31.md) | jsdom 31 (essais seulement) : les échecs de la PR Dependabot venaient de son verrou (`parse5-parser-stream@8.1.0` servi avec `parse5@8.0.1`, sans `flushCharacters`), pas de jsdom ni du pilote ; verrou régénéré, aucun code changé | fait | P2 |
 | [223](223-roles.md) | Rôles : agents spécialisés créés une fois et invoqués par `@rôle` ou par l'agent (`start_child` + `role`), visibles au travail ; filles lancées sans insister | fait | P2 |
+| [224](224-discussion.md) | Espace Discussion à côté de l'espace Code (sélecteur Code \| Discussion) : chat et documents (déposés, produits, gardés avec la discussion) pour un public moins technique ; dossier tenu par Bobine, écritures bornées aux documents, outils de Bobine coupés ; « Continuer dans un projet… » | en cours (fait, relecture du tech lead) | P2 |
 | [225](225-vitrine-github.md) | Vitrine GitHub : README illustré (anglais et français), captures, GIF et vidéo régénérés par `pnpm vitrine` contre un « Agent de démo » sans modèle, image de partage, image en tête des notes de version | en cours | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine

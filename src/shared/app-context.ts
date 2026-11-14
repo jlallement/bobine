@@ -21,7 +21,9 @@ export const APP_CONTEXT_OPENINGS = {
   memory: '<bobine_memory>',
   memoryOutcomes: '<bobine_memory_outcomes>',
   /** Consigne d'un rôle, après la demande du premier message d'une fille (fiche 223). */
-  role: '<bobine_role'
+  role: '<bobine_role',
+  /** Où se passe une discussion (fiche 224) : ses documents, et rien d'écrit ailleurs. */
+  discussion: '<bobine_discussion>'
 } as const
 
 /**
