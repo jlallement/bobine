@@ -4,7 +4,7 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
-import { capabilitiesContext, childContext, childNews } from '@shared/children'
+import { childContext, childNews, childrenSessionContext } from '@shared/children'
 import { handoverContext } from '@shared/handover'
 import { memoryOutcomeContext, memoryOutcomes } from '@shared/memory'
 import { estimateTokens } from '@shared/usage'
@@ -110,12 +110,13 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       )
     },
     // Ce que l'app offre, au premier message de chaque session (fiche 118) : à une mère possible,
-    // c'est-à-dire une session qui a reçu `start_child` (dépôt git, pas une fille, outils actifs).
+    // c'est-à-dire une session qui a reçu `start_child` (dépôt git, pas une fille, outils actifs) :
+    // en entier à une session neuve, en rappel court à une reprise ou après une compaction (223).
     // Index de la mémoire (fiche 182) : à une session qui a reçu `remember` (mémoire activée, pas
     // un relecteur, famille « Mémoire » pas coupée).
-    sessionContext: (tools) => {
+    sessionContext: (tools, moment) => {
       const capabilities = tools.includes('start_child')
-        ? capabilitiesContext(settings.preferences().childProposals)
+        ? childrenSessionContext(settings.preferences().childProposals, moment)
         : undefined
       // Relu à l'envoi : une mémoire coupée depuis l'ouverture de la session ne donne plus d'index.
       const memoryOn = settings.preferences().memoryEnabled

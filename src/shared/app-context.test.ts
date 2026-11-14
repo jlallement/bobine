@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { stripAppContext } from './app-context'
 import { branchContext } from './branch'
-import { capabilitiesContext, CHILDREN_REQUEST, originContext } from './children'
+import {
+  capabilitiesContext,
+  capabilitiesReminder,
+  CHILDREN_REQUEST,
+  originContext
+} from './children'
 import { handoverContext } from './handover'
 
 describe('stripAppContext (fiche 125)', () => {
@@ -21,6 +26,7 @@ describe('stripAppContext (fiche 125)', () => {
   it('chaque contexte que l’app joint est reconnu', () => {
     const contexts = [
       capabilitiesContext('always'),
+      capabilitiesReminder('whenFitting'),
       CHILDREN_REQUEST,
       branchContext([]),
       handoverContext([

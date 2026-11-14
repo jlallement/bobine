@@ -22,6 +22,13 @@ export const APP_CONTEXT_OPENINGS = {
   memoryOutcomes: '<bobine_memory_outcomes>'
 } as const
 
+/**
+ * Moment où le contexte de session part (fiches 118, 223) : session neuve (`opened`), session
+ * rouverte dont l'historique a déjà reçu le contexte complet (`resumed` : `session/load` ou
+ * `session/resume`), ou premier message après une compaction (`compacted`).
+ */
+export type SessionMoment = 'opened' | 'resumed' | 'compacted'
+
 /** Débuts d'avant la fiche 125 (le contexte partait avant le message), dans d'anciens titres. */
 const LEGACY_OPENINGS = ['The next message comes from your']
 

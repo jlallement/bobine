@@ -148,7 +148,7 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     // Autorisés d'office ; descriptions en anglais, qui disent aussi quand ne pas s'en servir.
     const start = setup().tool('start_child')
     expect(start.autoAllow).toBe(true)
-    expect(start.definition.description).toMatch(/Do not use it to read or search code/)
+    expect(start.definition.description).toMatch(/Do it yourself for a question, reading or search/)
     expect(start.definition.inputSchema).toMatchObject({ required: ['title', 'prompt'] })
   })
 
@@ -403,6 +403,26 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     expect(sent).toMatch(new RegExp(`… \\(cut: ${long.trim().length} characters in all\\)$`))
     await s.tool('message_parent').call({ message: 'Court.' })
     expect(s.calls[1]?.[3]).toBe('Court.')
+  })
+
+  it('start_child en positif (fiche 223) : quand déléguer d’abord, les exclusions ensuite', () => {
+    const start = setup().tool('start_child').definition.description
+    const at = (text: string) => {
+      const index = start.indexOf(text)
+      expect(index, text).toBeGreaterThanOrEqual(0)
+      return index
+    }
+    const exclusions = at('Do it yourself for')
+    for (const text of [
+      'several independent tasks',
+      'follow separately',
+      'a review or an audit by a fresh pair of eyes'
+    ]) {
+      expect(at(text)).toBeLessThan(exclusions)
+    }
+    // Plus de renvoi vers les sous-agents de l'agent pour un travail séparé ; générique.
+    expect(start).not.toContain('with your own sub-agents')
+    expect(start).not.toMatch(/\bBob\b|OpenCode/)
   })
 
   it('le compte rendu n’est pas une preuve : les descriptions le disent', () => {

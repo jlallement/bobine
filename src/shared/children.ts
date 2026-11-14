@@ -5,7 +5,7 @@
  */
 import type { ElicitationSchema, StopReason } from './acp-sdk.mts'
 import type { ConversationSummary } from './agent'
-import { APP_CONTEXT_OPENINGS } from './app-context'
+import { APP_CONTEXT_OPENINGS, type SessionMoment } from './app-context'
 import type { AttentionKind, AttentionState } from './attention'
 import { conversationChanges, relativeTo } from './changes'
 import type { TranscriptItem } from './transcript'
@@ -512,55 +512,91 @@ export type ChildProposals = 'never' | 'whenFitting' | 'always'
 export const CHILD_PROPOSALS: readonly ChildProposals[] = ['never', 'whenFitting', 'always']
 
 /**
- * Contexte de session d'une mère possible (fiche 118), joint au premier message de chaque session
- * de son agent : ce que l'app lui offre et quand s'en servir. Sans lui, l'agent ne connaît
+ * Contexte de session d'une mère possible (fiche 118), joint au premier message d'une session
+ * neuve de son agent : ce que l'app lui offre et quand s'en servir. Sans lui, l'agent ne connaît
  * `start_child` que par sa description, et ses propres sous-agents, mis en avant par son system
- * prompt, gagnent toujours. Générique (rien de propre à un agent), en anglais (ADR-0014).
- * `undefined` si le réglage dit « Jamais ».
+ * prompt, gagnent toujours. Écrit en positif (fiche 223) : quand déléguer d'abord, les exclusions
+ * ensuite. Générique (rien de propre à un agent), en anglais (ADR-0014). `undefined` si le
+ * réglage dit « Jamais ».
  */
 export function capabilitiesContext(proposals: ChildProposals): string | undefined {
   if (proposals === 'never') return undefined
   const when =
     proposals === 'always'
       ? [
-          'The user wants you to always propose child conversations before starting work that has',
-          'several parts: one start_child call per part, even for parts that look small. Only do',
-          'the work yourself when it is a single piece of work, a question, or reading code.'
+          'The user wants you to always propose child conversations before work that has several',
+          'parts (one start_child call per part, even small ones) and for any review or audit.',
+          'Do the work yourself only for a single piece of work, a question, or reading code.'
         ]
       : [
           'Propose child conversations (one start_child call per piece of work) when:',
-          '- the message holds several independent tasks that change different files;',
-          '- a task is long and the user will want to follow it separately.',
-          'Do not propose them to read or search code, to answer a question, for a small fix, for',
-          'tasks that depend on one another, or for tasks that change the same files: do those',
-          'yourself.'
+          '- the user asks for several independent tasks: one child each, working in parallel;',
+          '- a task is long and the user will want to follow it separately;',
+          '- the work calls for a review or an audit by a fresh pair of eyes (security,',
+          '  performance, a second opinion on a module).',
+          'Do the rest yourself: questions, reading or searching code, small fixes, and tasks that',
+          'depend on one another or change the same files.'
         ]
   return [
     APP_CONTEXT_OPENINGS.capabilities,
     'For context, about the app the user talks to you through (Bobine). This is not a task.',
     '',
-    'The user may give you several independent pieces of work in one message. Your start_child',
-    'tool (from the bobine tool server) opens a child conversation: another agent that works in',
-    'parallel, in its own git worktree and branch, on an instruction you write. The user sees it',
-    'under this conversation and can open it, talk to it and stop it. Proposing one costs nothing:',
-    'nothing starts until the user decides, on a card (Start, Do it here, Refuse).',
+    'Your start_child tool (from the bobine tool server) opens a child conversation: another agent',
+    'that works in parallel, in its own git worktree and branch, on an instruction you write. The',
+    'user sees it under this conversation and can open it, talk to it and stop it. Proposing one',
+    'costs nothing: nothing starts until the user decides, on a card (Start, Do it here, Refuse).',
     '',
     ...when,
+    'For a separate piece of work, start_child is the tool, not your own sub-agents.',
     '',
-    'Your own sub-agents, if you have any, are for reading and searching within this conversation,',
-    'not for carrying out a separate piece of work: use start_child for that.',
-    '',
-    'You act as the tech lead of your child conversations. You may suggest the agent, and the model',
-    'when your profile allows it (start_child `agent`, `model` and `why`): these are suggestions the',
-    'user confirms or changes before the child starts. At the end of each of their',
-    'turns you get a short report, never the diff: it is not proof. Check the work yourself (git on',
-    'the branch, the risky files, the project checks) or have a sub-agent review it, send fixes with',
-    'message_child (the child keeps its context), then give your verdict with recommend_merge.',
+    'You are the tech lead of your child conversations. You may suggest their agent, and the model',
+    'when your profile allows it (start_child `agent`, `model`, `why`): the user confirms. After',
+    'proposing, end your turn with a short summary: you are told what the user decided, and woken',
+    'up when the children have finished, with a short report each (never the diff: not proof).',
+    'Check their work yourself (git on the branch, the risky files, the project checks) or with a',
+    'sub-agent, send fixes with message_child, then give your verdict with recommend_merge.',
     'Never merge a branch yourself: the user merges.',
-    'After proposing child conversations, end your turn with a short summary: you will be told',
-    'what the user decided, and woken up when the children have finished.',
     '</bobine_capabilities>'
   ].join('\n')
+}
+
+/**
+ * Rappel court du contexte de session (fiche 223), à la place du contexte complet quand
+ * l'historique de l'agent l'a déjà reçu (session rouverte) ou l'a résumé (après une compaction) :
+ * quelques lignes, pas à chaque message (coût en contexte). Même balise que le contexte complet.
+ * `undefined` si le réglage dit « Jamais ».
+ */
+export function capabilitiesReminder(proposals: ChildProposals): string | undefined {
+  if (proposals === 'never') return undefined
+  const when =
+    proposals === 'always'
+      ? [
+          'The user wants one per part before any work with several parts, and for any review or audit.',
+          'Do a single piece of work, a question or reading code yourself.'
+        ]
+      : [
+          'Propose one per piece of work for several independent tasks, long work the user will',
+          'want to follow, or a review or audit by a fresh pair of eyes. Do questions, small fixes',
+          'and tasks on the same files yourself.'
+        ]
+  return [
+    APP_CONTEXT_OPENINGS.capabilities,
+    'Reminder, not a task: start_child proposes a child conversation, an agent working in',
+    'parallel in its own git worktree; nothing starts until the user approves it on a card.',
+    ...when,
+    '</bobine_capabilities>'
+  ].join('\n')
+}
+
+/**
+ * Ce que reçoit une mère possible selon le moment (fiche 223) : le contexte complet à une session
+ * neuve, le rappel à une session rouverte ou après une compaction.
+ */
+export function childrenSessionContext(
+  proposals: ChildProposals,
+  moment: SessionMoment
+): string | undefined {
+  return moment === 'opened' ? capabilitiesContext(proposals) : capabilitiesReminder(proposals)
 }
 
 /**

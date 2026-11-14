@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   activeChildren,
   capabilitiesContext,
+  capabilitiesReminder,
+  childrenSessionContext,
   CHILDREN_REQUEST,
   childContext,
   childDecisionContent,
@@ -348,17 +350,10 @@ describe('filles proposées par l’agent (fiche 118)', () => {
     expect(fitting.startsWith('<bobine_capabilities>')).toBe(true)
     expect(fitting.endsWith('</bobine_capabilities>')).toBe(true)
     for (const text of [
-      'several independent pieces of work in one message',
       'start_child',
       'its own git worktree',
-      'Proposing one costs nothing',
+      'Proposing one',
       'Start, Do it here, Refuse',
-      'change different files',
-      'follow it separately',
-      'to answer a question, for a small fix',
-      'depend on one another',
-      'change the same files',
-      'Your own sub-agents',
       'end your turn'
     ]) {
       expect(fitting).toContain(text)
@@ -367,11 +362,65 @@ describe('filles proposées par l’agent (fiche 118)', () => {
     expect(fitting).not.toMatch(/\bBob\b|OpenCode|spawn_subagent|conversation fille/)
   })
 
+  it('en positif (fiche 223) : quand déléguer d’abord, les exclusions ensuite', () => {
+    const fitting = capabilitiesContext('whenFitting') ?? ''
+    const at = (text: string) => {
+      const index = fitting.indexOf(text)
+      expect(index, text).toBeGreaterThanOrEqual(0)
+      return index
+    }
+    const delegate = [
+      at('several independent tasks'),
+      at('follow it separately'),
+      at('a review or an audit by a fresh pair of eyes')
+    ]
+    const exclusions = at('Do the rest yourself')
+    for (const index of delegate) expect(index).toBeLessThan(exclusions)
+    for (const text of ['questions', 'small fixes', 'depend on one another', 'same files']) {
+      expect(at(text)).toBeGreaterThan(exclusions)
+    }
+    // Plus de renvoi vers les sous-agents de l'agent pour un travail séparé, ni d'interdits en tête.
+    expect(fitting).not.toMatch(/sub-agents, if you have any, are for/)
+    expect(fitting).not.toContain('Do not propose them')
+    expect(fitting).toContain('start_child is the tool, not your own sub-agents')
+  })
+
   it('« Toujours demander » : proposer avant tout travail en plusieurs parties', () => {
     const always = capabilitiesContext('always') ?? ''
-    expect(always).toContain('always propose child conversations before starting work that has')
-    expect(always).not.toContain('Do not propose them')
-    expect(always).toContain('Proposing one costs nothing')
+    expect(always).toContain('always propose child conversations before work that has several')
+    expect(always).toContain('any review or audit')
+    expect(always).not.toContain('Do the rest yourself')
+    expect(always).toContain('Proposing one')
+  })
+
+  it('rappel (fiche 223) : quelques lignes, même balise, rien pour « Jamais »', () => {
+    expect(capabilitiesReminder('never')).toBeUndefined()
+    for (const proposals of ['whenFitting', 'always'] as const) {
+      const reminder = capabilitiesReminder(proposals) ?? ''
+      const lines = reminder.split('\n')
+      expect(lines[0]).toBe('<bobine_capabilities>')
+      expect(lines.at(-1)).toBe('</bobine_capabilities>')
+      // 3 à 5 lignes de texte entre les balises.
+      expect(lines.length - 2).toBeGreaterThanOrEqual(3)
+      expect(lines.length - 2).toBeLessThanOrEqual(5)
+      expect(reminder).toContain('start_child')
+      expect(reminder).toContain('approves it on a card')
+      expect(reminder).toContain('review or audit')
+      expect(reminder).not.toMatch(/\bBob\b|OpenCode|conversation fille/)
+      expect(reminder.length).toBeLessThan((capabilitiesContext(proposals) ?? '').length / 3)
+    }
+    expect(capabilitiesReminder('whenFitting')).toContain('several independent tasks')
+  })
+
+  it('selon le moment : complet à une session neuve, rappel après reprise ou compaction', () => {
+    expect(childrenSessionContext('whenFitting', 'opened')).toBe(capabilitiesContext('whenFitting'))
+    expect(childrenSessionContext('whenFitting', 'resumed')).toBe(
+      capabilitiesReminder('whenFitting')
+    )
+    expect(childrenSessionContext('always', 'compacted')).toBe(capabilitiesReminder('always'))
+    for (const moment of ['opened', 'resumed', 'compacted'] as const) {
+      expect(childrenSessionContext('never', moment)).toBeUndefined()
+    }
   })
 
   it('demande de /split : une fille par chantier, chacune dans son worktree, fin du tour', () => {

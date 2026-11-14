@@ -55,7 +55,7 @@ import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
 import type { SessionDirectories } from './additional-directories'
-import { buildPrompt, sessionContextOf, withContext } from './prompt-content'
+import { buildPrompt, sessionContextOf, withContext, type SessionContext } from './prompt-content'
 import { CHILDREN_REQUEST, originContext, type MessageOrigin } from '@shared/children'
 import type { AgentProfile } from './profiles'
 import { markRefused, noteAnswered, type RefusedModelsOfProfile } from './refused-models'
@@ -154,10 +154,10 @@ export interface AgentHostOptions {
   extraContext?: () => string | undefined
   /**
    * Texte joint au premier message de chaque session ouverte (nouvelle, rouverte, après un
-   * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus : ce que
-   * l'app offre (fiche 118), index de la mémoire (fiche 182, lu sur le disque : asynchrone).
+   * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus et le moment
+   * (fiche 223) : ce que l'app offre (fiche 118), index de la mémoire (fiche 182, asynchrone).
    */
-  sessionContext?: (appTools: readonly string[]) => string | undefined | Promise<string | undefined>
+  sessionContext?: SessionContext
   /** Ce que l'agent annonce à `initialize` (fiche 054), à chaque démarrage. */
   onAnnounced?: (announcement: AgentAnnouncement) => void
   /**
@@ -249,8 +249,11 @@ export class AgentHost {
   private sendNowPending = false
   /** Un message est en préparation (pièces jointes lues) : l'agent est encore « prêt ». */
   private preparing = false
-  /** Session ouverte qui n'a pas encore reçu son contexte de session (fiche 118). */
-  private sessionContextDue = false
+  /**
+   * Contexte de session dû au prochain message (fiche 118), et à quel moment (fiche 223) : session
+   * neuve, rouverte, ou compaction ; absent : rien à joindre.
+   */
+  private sessionContextDue?: Parameters<SessionContext>[1]
   private promptCaps: PromptCapabilities = { image: false, embeddedContext: false }
   private support: SessionSupport = NO_SESSION_SUPPORT
   /** Rejeu en cours (`session/load`) : seuls moments où les messages utilisateur viennent de l'agent. */
@@ -534,7 +537,7 @@ export class AgentHost {
         buildPrompt(text, attachments, this.promptCaps, agentLabel, this.options.contextText),
         // Relance avec fil gardé (fiche 121, D21) : le rejeu tardif ne doit pas croiser le tour.
         this.replay.waitCalm(this.timeout('replayWaitMs'), scopeText(this.logScope())),
-        this.sessionContextDue ? sessionContextOf(this.options, this.appToolNames) : undefined
+        sessionContextOf(this.options, this.appToolNames, this.sessionContextDue)
       ])
     } finally {
       this.preparing = false
@@ -548,7 +551,7 @@ export class AgentHost {
     // le début du premier message, Bob) ; le contexte de session, au premier message de la session
     // seulement (fiche 118), et après une compaction (fiche 182 : l'index a pu être résumé).
     const compaction = isCompactionRequest(text, this.compactCommand())
-    this.sessionContextDue = compaction
+    this.sessionContextDue = compaction ? 'compacted' : undefined
     const blocks = withContext(built.blocks, [
       options.askChildren && CHILDREN_REQUEST,
       this.options.extraContext?.(),
@@ -906,7 +909,7 @@ export class AgentHost {
         }
         this.options.emit({ type: 'update', update })
         // Compaction faite par l'agent (fiche 182) : le contexte de session repart au message suivant.
-        if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = true
+        if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = 'compacted'
         if (route.trackSubagents) this.subagents.note(update)
         // Coût hors protocole relu à la fin d'un outil : le plafond le voit pendant le tour.
         this.cost.noteUpdate(update)
@@ -1201,7 +1204,8 @@ export class AgentHost {
     if (this.child !== child) return // Arrêté pendant l'ouverture.
     this.blocker = undefined
     this.sessionId = session.sessionId
-    this.sessionContextDue = true
+    // Session rouverte (même identifiant) : son historique a déjà le contexte complet (fiche 223).
+    this.sessionContextDue = session.sessionId === reopen?.sessionId ? 'resumed' : 'opened'
     this.cost.report()
     this.modes = session.modes ?? undefined
     this.configOptions = session.configOptions ?? undefined
@@ -1233,11 +1237,11 @@ export class AgentHost {
     if (this.connection !== connection || this.sessionId !== sessionId) return
     this.replay.finish()
     this.ignoreReplay = false
-    const fresh = sessionId !== turn.sessionId
-    const session = fresh ? await sessionContextOf(this.options, this.appToolNames) : undefined
+    const fresh = sessionId !== turn.sessionId ? ('opened' as const) : undefined
+    const session = await sessionContextOf(this.options, this.appToolNames, fresh)
     if (this.connection !== connection || this.sessionId !== sessionId) return
     const contexts = fresh ? [this.options.extraContext?.(), session] : []
-    this.sessionContextDue = false
+    this.sessionContextDue = undefined
     this.options.emit({ type: 'resent', ...(fresh ? { fresh: true as const } : {}) })
     this.setStatus('busy')
     void this.runTurn(connection, sessionId, withContext(turn.blocks, contexts))

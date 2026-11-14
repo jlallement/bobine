@@ -47,22 +47,22 @@ export type ChildTools = Pick<
 
 const START_CHILD =
   'Start a child conversation: another agent that works in parallel, in its own git worktree ' +
-  "(a new branch from this folder's last commit), on a task you describe. The user sees it under " +
-  'this conversation, can open it, talk to it and stop it, and approves each one. Proposing ' +
-  'one is cheap: nothing starts until the user decides on a card (start it, do it here, or ' +
-  'refuse), so propose rather than guess. Use it for ' +
-  'long, independent tasks that change files and that the user may want to follow separately, ' +
-  'such as several independent features at once. Do not use it to read or search code, to ' +
-  'answer a question, or for a small fix: do those yourself (or with your own sub-agents). After ' +
-  'starting children, end your turn unless you have other work: you will be woken up once, with ' +
-  'all their reports, when every child you started has finished its turn. You are their tech ' +
-  'lead: you may suggest the agent and model that fit each task (`agent`, `model`, `why`; omit ' +
-  'them to keep yours), the user confirms or changes them; then check their work. A report is a short note, never the diff, and not proof: check ' +
-  'the branch yourself (git, risky files, project checks) or with a sub-agent, send fixes with ' +
+  "(a new branch from this folder's last commit), on an instruction you write. The user sees it " +
+  'under this conversation, can open it, talk to it and stop it. Proposing one is cheap: nothing ' +
+  'starts until the user decides on a card (start it, do it here, or refuse), so propose rather ' +
+  'than guess. Use it, one call per piece of work, when the user asks for several independent ' +
+  'tasks (one child each, in parallel), for a long task the user will want to follow separately, ' +
+  'or for a review or an audit by a fresh pair of eyes (security, performance, a second opinion ' +
+  'on a module). Do it yourself for a question, reading or searching code, a small fix, or tasks ' +
+  'that depend on one another or change the same files. After starting children, end your turn ' +
+  'unless you have other work: you will be woken up once, with all their reports, when every ' +
+  'child you started has finished its turn. You are their tech lead: you may suggest the agent ' +
+  'and model that fit each task (`agent`, `model`, `why`; omit them to keep yours), the user ' +
+  'confirms or changes them. A report is a short note, never the diff, and not proof: check the ' +
+  'branch yourself (git, risky files, project checks) or with a sub-agent, send fixes with ' +
   'message_child, then call recommend_merge. Never merge a branch yourself: the user merges. ' +
-  'A child cannot start children. ' +
-  'Only this tool creates a child conversation: your own sub-agents are not child conversations, ' +
-  'so never call them that.'
+  'A child cannot start children. Your own sub-agents are not child conversations: never call ' +
+  'them that.'
 
 const MESSAGE_CHILD =
   'Send a message to one of your child conversations (ids from start_child or child_status), to ' +
