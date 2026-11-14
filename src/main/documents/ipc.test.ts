@@ -1,11 +1,18 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentEvent, ConversationEvent, ConversationSummary } from '@shared/agent'
 import type { ConversationListeners } from '../conversations/conversation'
 import { canOpenDocument } from '@shared/documents'
-import { attachToDocuments, documentsHandlers, previewOf, type DocumentsHost } from './ipc'
+import {
+  attachToDocuments,
+  documentsHandlers,
+  previewOf,
+  textutilText,
+  type DocumentsHost
+} from './ipc'
 
 const summary = (id: string, workspace: string, space?: 'discussion'): ConversationSummary => ({
   id,
@@ -125,6 +132,34 @@ describe('documents d’une discussion (fiche 224)', () => {
     })
     expect(await previewOf(join(dir, 'd.xlsx'), toText)).toEqual({ kind: 'none' })
   })
+
+  // Relecture M1 (fiche 224) : `textutil` lit le descripteur ouvert en `O_NOFOLLOW`, pas le chemin.
+  it.runIf(process.platform === 'darwin')(
+    'texte d’un Word par textutil : lu par le descripteur, jamais à travers un lien',
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'textutil-'))
+      const outside = mkdtempSync(join(tmpdir(), 'dehors-'))
+      writeFileSync(join(dir, 'a.txt'), 'Bonjour le monde\n')
+      execFileSync('/usr/bin/textutil', ['-convert', 'docx', join(dir, 'a.txt')])
+      expect(await textutilText(join(dir, 'a.docx'))).toBe('Bonjour le monde\n')
+      // Un RTF nommé .doc : reconnu au contenu, comme avant.
+      execFileSync('/usr/bin/textutil', ['-convert', 'rtf', join(dir, 'a.txt')])
+      execFileSync('/bin/cp', [join(dir, 'a.rtf'), join(dir, 'b.doc')])
+      expect(await textutilText(join(dir, 'b.doc'))).toBe('Bonjour le monde\n')
+      execFileSync('/usr/bin/textutil', [
+        '-convert',
+        'docx',
+        '-output',
+        join(outside, 's.docx'),
+        join(dir, 'a.txt')
+      ])
+      symlinkSync(join(outside, 's.docx'), join(dir, 'lien.docx'))
+      expect(await textutilText(join(dir, 'lien.docx'))).toBeUndefined()
+      execFileSync('/usr/bin/mkfifo', [join(dir, 'tube.docx')])
+      expect(await textutilText(join(dir, 'tube.docx'))).toBeUndefined()
+      expect(await textutilText(join(dir, 'absent.docx'))).toBeUndefined()
+    }
+  )
 
   it('fichiers joints à une discussion : copiés dans ses documents, l’agent reçoit la copie', () => {
     const { host, folder, project } = setup()

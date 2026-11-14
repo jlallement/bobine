@@ -7,8 +7,16 @@
  * Arguments vérifiés ici : une conversation qui n'est pas une discussion n'a pas de documents, un
  * nom de document ne sort pas de son dossier.
  */
-import { execFile } from 'node:child_process'
-import { closeSync, constants, copyFileSync, openSync, readFileSync, statSync } from 'node:fs'
+import { spawn } from 'node:child_process'
+import {
+  closeSync,
+  constants,
+  copyFileSync,
+  fstatSync,
+  openSync,
+  readFileSync,
+  statSync
+} from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import { t } from 'i18next'
 import type {
@@ -82,15 +90,65 @@ function str(value: unknown, name: string): string {
   return value
 }
 
-/** `textutil -convert txt -stdout` (macOS) : le texte d'un document Word ou RTF, sinon rien. */
+/** Sortie de `textutil` gardée au plus (octets) ; au-delà, pas d'aperçu. */
+const TEXTUTIL_MAX = 5_000_000
+const TEXTUTIL_TIMEOUT_MS = 10_000
+
+/**
+ * `textutil -convert txt -stdout` (macOS) : le texte d'un document Word ou RTF, sinon rien.
+ *
+ * Le document est ouvert ici sans suivre de lien symbolique (`O_NOFOLLOW`, comme `readNoFollow`),
+ * et `textutil` le lit par ce même descripteur (`/dev/fd/3`) : un lien posé entre le contrôle de
+ * `documentPath` et la lecture ne fait pas lire un fichier extérieur (relecture M1, fiche 224).
+ * `textutil` reconnaît le format au contenu, pas à l'extension (relevé du 2026-11-15).
+ */
 export function textutilText(path: string): Promise<string | undefined> {
   if (process.platform !== 'darwin') return Promise.resolve(undefined)
+  let fd: number
+  try {
+    // `O_NONBLOCK` : un tube nommé posé à la place du document n'attend pas un écrivain.
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+  } catch {
+    return Promise.resolve(undefined)
+  }
+  try {
+    if (!fstatSync(fd).isFile()) {
+      closeSync(fd)
+      return Promise.resolve(undefined)
+    }
+  } catch {
+    closeSync(fd)
+    return Promise.resolve(undefined)
+  }
   return new Promise((resolve) => {
-    execFile(
-      '/usr/bin/textutil',
-      ['-convert', 'txt', '-stdout', path],
-      { maxBuffer: 5_000_000, timeout: 10_000 },
-      (error, stdout) => resolve(error ? undefined : stdout)
+    const chunks: Buffer[] = []
+    let size = 0
+    let done = false
+    const finish = (text: string | undefined) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      resolve(text)
+    }
+    const child = spawn('/usr/bin/textutil', ['-convert', 'txt', '-stdout', '/dev/fd/3'], {
+      stdio: ['ignore', 'pipe', 'ignore', fd]
+    })
+    // Le descripteur est passé à `textutil` : celui du main se ferme tout de suite.
+    closeSync(fd)
+    const timer = setTimeout(() => {
+      child.kill()
+      finish(undefined)
+    }, TEXTUTIL_TIMEOUT_MS)
+    child.stdout?.on('data', (chunk: Buffer) => {
+      size += chunk.length
+      if (size > TEXTUTIL_MAX) {
+        child.kill()
+        finish(undefined)
+      } else chunks.push(chunk)
+    })
+    child.on('error', () => finish(undefined))
+    child.on('close', (code) =>
+      finish(code === 0 ? Buffer.concat(chunks).toString('utf8') : undefined)
     )
   })
 }
