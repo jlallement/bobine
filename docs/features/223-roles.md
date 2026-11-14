@@ -207,6 +207,54 @@ Contraintes : `conversations/manager.ts`, `agent-host.ts`, `main/index.ts`, `sha
 dans ses propres modules, et un fichier au plafond est découpé avant d'y ajouter. Aucune nouvelle
 dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles et leur portée.
 
+### Phase 4 — « Installer dans Bob / OpenCode » (plan, 2026-11-14)
+
+D'après les maquettes validées 05-1 à 05-4 et les faits relevés : Bob 2.1.0 (`pnpm bob-probe`,
+commit `71e5b90`) liste par ACP les modes de `~/.bob/settings/custom_modes.yaml` et de
+`<dossier>/.bob/custom_modes.yaml` après `agent`, `plan`, `ask` ; OpenCode (documentation publique,
+à confirmer par `pnpm opencode-probe --offline`) lit `~/.config/opencode/agents/<id>.md` et
+`<dossier>/.opencode/agents/<id>.md`. Export à sens unique, toujours sur un geste explicite.
+
+**Dépendance nouvelle** : `yaml` (eemeli, ISC, accord de l'utilisateur) — son API `Document`
+ajoute, remplace ou retire notre seule entrée de `custom_modes.yaml` en gardant le reste du fichier
+et ses commentaires ; `pnpm third-party-notices` mis à jour. ADR-0047 (Bobine écrit des rôles dans
+les fichiers des agents).
+
+Fichiers :
+- `src/shared/role-export.ts` (nouveau) : formats (`bob-custom-modes`, `opencode-agents`), portées,
+  aperçu, état d'une installation, erreurs ; canaux `roles:export*` ajoutés au contrat de
+  `roles-ipc.ts` (`shared/ipc.ts` au plafond : rien à y ajouter).
+- `src/main/roles/export/` (nouveau) : `bob-custom-modes.ts` et `opencode-agents.ts` (un adaptateur
+  par format : chemin, noms réservés, texte écrit, lecture et retrait de notre entrée),
+  `registry.ts` (registre des exports dans les données de Bobine), `backup.ts` (copie datée, nombre
+  borné, avant toute écriture d'un fichier existant), `service.ts` (aperçu, installer, mettre à
+  jour, retirer, état ; conflit, modification à la main, lien refusé), `ipc.ts`, `native.ts`
+  (mode natif installé pour `useInBobine`).
+- `src/main/agent/profiles.ts` : capacité `roleExport` (Bob : `bob-custom-modes` ; OpenCode :
+  `opencode-agents` ; agent factice : selon `MOCK_AGENT_ROLE_EXPORT`) ; `capabilities.ts` : repère
+  `role-export` dans `specificItems` ; `ProfileSummary.roleExport`.
+- `src/main/roles/launch.ts`, `conversations/children.ts`, `roles/setup.ts` : au lancement d'une
+  fille, rôle sans `mode` et installé avec « lancer dans ce mode » pour ce profil (projet : même
+  dossier) : son mode natif s'il est dans les modes de la session ; lecture seule alors tenue par
+  l'agent (`enforced`) si l'installation l'était.
+- `src/main/index.ts` (au plafond) : profils et dossier des agents sortis dans un module, pour
+  passer ce qu'il faut à `appRoles` sans ajouter de ligne.
+- Renderer : `components/roles/RoleExport*.tsx` (bouton et menu « Installer dans… », feuille,
+  lignes d'état), `RoleEditPage.tsx` les monte ; textes dans `fr.json` et `en.json`.
+- Agent factice : `MOCK_AGENT_ROLE_EXPORT=bob|opencode` → `--modes-exportes bob|opencode`, il lit
+  les fichiers du dossier personnel d'essai et du dossier de travail et liste ces modes après les
+  siens ; `docs/mock-agent.md`.
+- `scripts/opencode-probe.mts` : sondage sans modèle d'un agent écrit comme Bobine (personnel et
+  projet), listé dans les modes par ACP ?
+- E2e : suite `roles-export` (installer, à jour, rôle changé puis mettre à jour, conflit, retirer,
+  `useInBobine` qui pose le mode), clair et sombre, fr et en.
+- Docs : `docs/agents.md` (matrice), `docs/acp.md` (Bob, OpenCode), `docs/architecture.md`,
+  `docs/mock-agent.md`, ADR-0047, `CHANGELOG.md` et `CHANGELOG.en.md`.
+
+Étapes, `./scripts/verify` entre chacune : (1) adaptateurs et leurs essais ; (2) sonde
+d'OpenCode ; (3) registre, sauvegarde, service et essais ; (4) profils, IPC ; (5) `useInBobine` au
+lancement ; (6) agent factice ; (7) interface ; (8) e2e ; (9) docs et clôture.
+
 ## Journal
 
 - 2026-11-14 : fiche écrite ; diagnostic de la délégation lu dans le code ; maquettes demandées
