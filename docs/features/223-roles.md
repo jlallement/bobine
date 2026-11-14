@@ -862,3 +862,36 @@ essai qui échouait avant.
 8. **`docs/acp.md`** : ligne Rôles mise à jour avec l'observé de Bob 2.1.0.
 
 Non repris : n° 7 et 8 des écarts (cartes « Expirée », attendu ; pilote, hors fiche).
+
+### Rôles fournis bilingues (2026-11-14)
+
+Demande de l'utilisateur : la description (« Quand faire appel à lui ? ») et la consigne des sept
+rôles fournis suivent la langue de l'interface, comme leur libellé. Exception à ADR-0014 écrite
+dans **ADR-0046** (accepté).
+
+- **Textes en code** : `main/roles/builtin-en.ts` (noms, type `BuiltinTexts`, anglais d'origine)
+  et `builtin-fr.ts` (français écrit d'après l'anglais, vocabulaire du glossaire, « tu » ; compte
+  rendu pour la mère gardé dans les deux langues). `builtin.ts` garde ce qui ne dépend pas de la
+  langue (icône, couleur, lecture seule) et `builtinRoles(langue = langue courante)` ; insécables
+  du français posées par `frenchSpaces` (les textes s'écrivent avec des espaces ordinaires).
+  Fichiers de données sans import à l'exécution : la suite e2e `roles-gestion` les lit.
+- **Langue au moment de la lecture** : `builtinRoles()` est appelé à chaque lecture de la
+  bibliothèque (`roles:list`, `roles:read`, contexte de session, `start_child`). Le renderer relit
+  au changement de langue : `useRolesListing` (liste, Équipe, menu `@`), la page d'édition d'un
+  rôle fourni, les tuiles de l'assistant. Un `RoleSnapshot` déjà figé garde sa langue (essai).
+  Modifier un rôle fourni enregistre un rôle personnel dans la langue affichée.
+- **Code mort retiré** : `shownDescription` (`role-text.ts`), `roleDescription` (`role-view.ts`),
+  l'option `describe` de `matchRoleGroups` et les clés `rolesSettings.builtinDescription.*` : la
+  description reçue du main est déjà dans la bonne langue, un seul chemin.
+- **Inchangé** : l'enveloppe `<bobine_role>` reste en anglais et demande toujours de répondre dans
+  la langue de la demande.
+- **Essais** : `builtin.test.ts` (deux langues, sept rôles valides, mêmes noms, icônes, couleurs et
+  lecture seule ; changement de langue ; rôle figé), `roles-children.test.ts` (consigne française
+  reçue par la fille). E2e `roles-gestion` : description et consigne du rôle fourni dans la langue
+  des essais, puis langue changée dans Réglages › Général et retour (liste et page d'édition
+  relues). Pour cela la suite tient la langue par `settings.json` (`BOBINE_LANG` vidé), comme la
+  suite `language`. `roles-gestion` et `roles-travail` vertes en français et en anglais, clair et
+  sombre ; captures `r10-edition-fourni-*` et `en-r10-edition-fourni-*` regardées.
+- **Écart à signaler** : la consigne de l'expert sécurité garde quatre niveaux de gravité
+  (« critique, haute, moyenne, basse »), fidèle à l'anglais (« critical, high, medium, low »),
+  alors que le glossaire n'en a que trois pour l'interface et proscrit « critique ». À trancher.

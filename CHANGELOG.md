@@ -2,6 +2,14 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Amélioré
+
+- Rôles fournis : leur description (« Quand faire appel à lui ? ») et leur consigne sont
+  maintenant en français ou en anglais, selon la langue de l'interface ; un rôle personnel tiré
+  d'un rôle fourni garde la langue affichée.
+
 ## 1.0.0-beta.2 — 14 novembre 2026
 
 ### Nouveau

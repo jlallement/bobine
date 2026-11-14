@@ -17,7 +17,9 @@ les variables d'un texte qui en a : une table de clés traduites sans valeurs se
 
 Ne se traduit **jamais** :
 - ce qui vient de l'agent (réponses, questions, formulaires, erreurs ACP) ou lui est envoyé
-  (descriptions et résultats d'outils, contexte joint au message) ;
+  (descriptions et résultats d'outils, contexte joint au message) ; seule exception, les rôles
+  fournis : description et consigne écrites dans chaque langue, en code
+  (`main/roles/builtin-<langue>.ts`, ADR-0046) ;
 - le journal (`main/log.ts`) et les erreurs de programmation (« Paramètre invalide… ») ;
 - les noms de produits et d'outils, le code, les chemins, les commandes, les variables
   d'environnement (voir « Ne pas traduire »).
