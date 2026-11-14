@@ -70,13 +70,15 @@ export function useMentions(options: {
           }
         )
       : []
+  // « + Nouveau rôle » en dernier : jamais pris par Entrée devant une mention ou un fichier.
   const entries: MentionEntry[] = [
-    ...roleEntries,
+    ...roleEntries.filter((e) => e.kind !== 'role-new'),
     ...contexts.map((m) => ({
       kind: 'context' as const,
       mention: m
     })),
-    ...files.map((f) => ({ kind: 'file' as const, file: f }))
+    ...files.map((f) => ({ kind: 'file' as const, file: f })),
+    ...roleEntries.filter((e) => e.kind === 'role-new')
   ]
   return {
     /** Mention en cours de saisie au curseur. */

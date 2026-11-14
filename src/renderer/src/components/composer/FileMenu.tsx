@@ -23,6 +23,12 @@ export type MentionEntry =
 
 const isRoleEntry = (entry: MentionEntry): entry is RoleMenuEntry =>
   entry.kind === 'role' || entry.kind === 'role-more' || entry.kind === 'role-new'
+/**
+ * Rôles de la section en tête. « + Nouveau rôle » est à part, en fin de menu (dernier au clavier) :
+ * Entrée après `@git` ou `@src` prend la mention ou le fichier, pas la création d'un rôle.
+ */
+const isRoleSection = (entry: MentionEntry): boolean =>
+  entry.kind === 'role' || entry.kind === 'role-more'
 
 /** Rôles dans le menu (fiche 223) : invitation sans rôle, création et gestion si l'app les ouvre. */
 export interface RoleMenuOptions {
@@ -68,14 +74,14 @@ export function FileMenu({ items, active, workspaceName, onHover, onPick, roles 
     >
       <div className="command-list" ref={list}>
         {roles?.invite && <RolesInvite onCreate={roles.onCreate} onHide={roles.invite.onHide} />}
-        {items.some(isRoleEntry) && (
+        {items.some(isRoleSection) && (
           <div className="menu-label role-menu-label">
             <span>{t('roleWork.menu.title')}</span>
             <span className="role-menu-hint">{t('roleWork.menu.hint')}</span>
           </div>
         )}
         {items.map((entry, i) =>
-          isRoleEntry(entry) ? (
+          isRoleEntry(entry) && isRoleSection(entry) ? (
             <RoleMenuRow
               key={entry.kind === 'role' ? `role:${entry.role.name}` : entry.kind}
               entry={entry}
@@ -142,6 +148,18 @@ export function FileMenu({ items, active, workspaceName, onHover, onPick, roles 
               </button>
             )
           })
+        )}
+        {items.map((entry, i) =>
+          entry.kind === 'role-new' ? (
+            <RoleMenuRow
+              key={entry.kind}
+              entry={entry}
+              index={i}
+              active={i === active}
+              onHover={onHover}
+              onPick={() => onPick(entry)}
+            />
+          ) : null
         )}
       </div>
       <div className="command-footer role-menu-footer">

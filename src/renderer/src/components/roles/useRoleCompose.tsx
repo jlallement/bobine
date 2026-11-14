@@ -83,8 +83,13 @@ export function useRoleCompose(options: {
     add(name)
     // Un rôle tout juste créé n'est pas encore dans la liste : son jeton paraît à la relecture.
     roles.refresh()
-    // Après la fermeture d'un dialogue (assistant, Réglages), qui rend le focus à son déclencheur.
-    requestAnimationFrame(() => options.focus?.())
+    // Focus à la saisie tout de suite (section Équipe), et encore après la fermeture d'un dialogue
+    // (assistant, Réglages) : Radix y rend le focus à son déclencheur dans une minuterie à 0 ms
+    // posée au démontage, après ce geste ; deux tours de minuterie passent derrière elle.
+    // (Pas `requestAnimationFrame` : il ne tourne pas dans une fenêtre cachée.)
+    const focus = options.focus
+    focus?.()
+    setTimeout(() => setTimeout(() => focus?.()))
   })
   return {
     tokens,

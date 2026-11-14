@@ -41,7 +41,10 @@ const ROLES = [
   role('tech-lead', 'Tech lead'),
   role('ux-ui-expert', 'Expert UX/UI'),
   role('front-architect', 'Architecte front'),
-  role('back-architect', 'Architecte back', { description: 'API, sécurité des API', scope: 'user' }),
+  role('back-architect', 'Architecte back', {
+    description: 'API, sécurité des API',
+    scope: 'user'
+  }),
   role('flutter-expert', 'Expert Flutter', { scope: 'project' })
 ]
 
@@ -155,6 +158,17 @@ describe('menu `@` : rôles en tête', () => {
     key('Enter')
     expect(input.value).toBe('Relis @git-changes ')
     expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+
+  it('« + Nouveau rôle » en dernier : Entrée après `@git` prend `@git-changes`', () => {
+    const onCreate = vi.fn()
+    const { type, key, input } = setup({ onCreate })
+    type('Relis @git')
+    const options = [...screen.getByTestId('file-menu').querySelectorAll('[role=option]')]
+    expect(options.at(-1)?.getAttribute('data-testid')).toBe('role-new')
+    key('Enter')
+    expect(input.value).toBe('Relis @git-changes ')
+    expect(onCreate).not.toHaveBeenCalled()
   })
 
   it('« + Nouveau rôle » seulement si l’app sait ouvrir l’assistant', () => {
