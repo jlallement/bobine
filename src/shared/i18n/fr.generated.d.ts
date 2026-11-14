@@ -5087,5 +5087,10 @@ export type FrResources = {
       readonly cancel: 'Annuler'
       readonly copy_many: 'Copier les {{count}} documents dans le projet (dossier documents/)'
     }
+    readonly permission: {
+      readonly execute: '{{agent}} veut lancer un programme sur votre Mac'
+      readonly executeSub: 'Il attend votre accord. Le détail technique est dessous, si vous voulez le lire.'
+      readonly details: 'Détails techniques'
+    }
   }
 }

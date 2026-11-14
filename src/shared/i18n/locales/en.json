@@ -5069,6 +5069,11 @@
       "copy_other": "Copy the {{count}} documents into the project (documents/ folder)",
       "choose": "Choose the folder…",
       "cancel": "Cancel"
+    },
+    "permission": {
+      "execute": "{{agent}} wants to run a program on your Mac",
+      "executeSub": "It is waiting for your answer. The technical detail is below, if you want to read it.",
+      "details": "Technical details"
     }
   }
 }

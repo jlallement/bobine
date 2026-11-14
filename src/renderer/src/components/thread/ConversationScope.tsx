@@ -3,7 +3,7 @@ import { FileLinksContext, type OpenFileLink } from './FileLink'
 import { EditorContext } from './OpenInEditor'
 import { SubagentWorkContext, type LoadSubagentWork } from '../../subagent-work'
 import { useEditorAction } from '../../useEditor'
-import { ThreadConversationContext } from '../discussion/DocumentCards'
+import { DiscussionContext, ThreadConversationContext } from '../discussion/DocumentCards'
 import type { LinkNotices } from '../../useFileLinks'
 
 /**
@@ -15,9 +15,12 @@ export function ConversationScope({
   notices,
   openLink,
   loadSubagentWork,
+  discussion = false,
   children
 }: {
   conversationId: string | null | undefined
+  /** Fil d'une discussion (fiche 224). */
+  discussion?: boolean
   /** Avis du fil (fichier absent, hors du dossier) ; absents : rien n'est dit. */
   notices?: LinkNotices
   openLink: OpenFileLink
@@ -30,7 +33,7 @@ export function ConversationScope({
       <SubagentWorkContext.Provider value={loadSubagentWork}>
         <EditorContext.Provider value={editor}>
           <ThreadConversationContext.Provider value={conversationId ?? null}>
-            {children}
+            <DiscussionContext.Provider value={discussion}>{children}</DiscussionContext.Provider>
           </ThreadConversationContext.Provider>
         </EditorContext.Provider>
       </SubagentWorkContext.Provider>

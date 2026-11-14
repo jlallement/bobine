@@ -71,5 +71,28 @@ export const discussionScenarios: Record<string, Scenario> = {
       ...bobEdit('disc_outside', '{cwd}/../hors-discussion.md', 'hors\n', 'jamais.md'),
       { kind: 'text', text: 'Voici la synthèse : **Synthèse.md**, dans vos documents.' }
     ]
+  },
+  'discussion-commande': {
+    description:
+      'Espace Discussion (fiche 224, maquette E4) : demande à lancer une commande (`kind: execute`) pour fabriquer un document ; la carte la dit en clair, le détail replié',
+    steps: [
+      { kind: 'text', text: 'Je prépare le document Word.\n\n' },
+      {
+        kind: 'permission',
+        toolCall: {
+          toolCallId: 'disc_cmd',
+          title: 'python3 make_report.py "Ventes T3.csv"',
+          kind: 'execute',
+          status: 'pending',
+          rawInput: { command: 'python3 make_report.py "Ventes T3.csv"' }
+        },
+        options: [...options],
+        branches: {
+          allow: [done('disc_cmd', 'completed'), { kind: 'text', text: 'Document prêt.' }],
+          always: [done('disc_cmd', 'completed'), { kind: 'text', text: 'Document prêt.' }],
+          reject: [done('disc_cmd', 'failed'), { kind: 'text', text: 'Commande refusée.' }]
+        }
+      }
+    ]
   }
 }

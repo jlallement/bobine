@@ -1040,6 +1040,31 @@ export const SUITES = [
     ]
   },
   {
+    // Espace Discussion (fiche 224) : sélecteur, accueil, documents, continuer dans un projet.
+    name: 'discussion',
+    file: 'discussion.mjs',
+    run: 'discussionSuite',
+    themes: BOTH,
+    sources: [
+      `${C}discussion/`,
+      `${C}panel/SidePanel.tsx`,
+      `${C}sidebar/ConversationMenu.tsx`,
+      `${C}composer/ComposerContext.tsx`,
+      `${C}composer/ComposerBar.tsx`,
+      `${R}useSpace.ts`,
+      `${R}discussion.css`,
+      `${R}panel-tabs.ts`,
+      `${R}usePanel.ts`,
+      'src/shared/documents.ts',
+      'src/shared/documents-ipc.ts',
+      'src/shared/panel.ts',
+      'src/main/documents/',
+      'src/main/conversations/discussion-space.ts',
+      'src/main/agent/permission-answers.ts',
+      'src/mock-agent/scenarios-discussion.mts'
+    ]
+  },
+  {
     name: 'filles-fusion',
     file: 'filles-fusion.mjs',
     run: 'fillesFusionSuite',

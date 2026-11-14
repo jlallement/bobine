@@ -5271,6 +5271,11 @@
       "choose": "Choisir le dossier…",
       "cancel": "Annuler",
       "copy_many": "Copier les {{count}} documents dans le projet (dossier documents/)"
+    },
+    "permission": {
+      "execute": "{{agent}} veut lancer un programme sur votre Mac",
+      "executeSub": "Il attend votre accord. Le détail technique est dessous, si vous voulez le lire.",
+      "details": "Détails techniques"
     }
   }
 }

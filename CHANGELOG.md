@@ -2,6 +2,21 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- Espace Discussion : Bobine sert aussi de chat, à côté du code. Le sélecteur Code | Discussion,
+  en haut de la barre latérale (⌘1 / ⌘2), ouvre un espace sans projet pour poser une question,
+  rédiger un e-mail ou travailler sur des documents. Glissez-y des PDF, Word, Excel ou images :
+  ils sont copiés dans la discussion (vos originaux ne sont pas touchés) et y restent avec elle.
+  Les documents que l'agent crée ou modifie apparaissent en cartes dans le fil et dans le panneau
+  « Documents » (aperçu, Ouvrir, Enregistrer une copie…). L'agent n'y a pas les outils de Bobine
+  (navigateur, terminal, conversations filles) ; ses écritures sont accordées dans les documents
+  de la discussion et refusées ailleurs, et chaque réponse est dite. « Continuer dans un projet… »
+  (menu du titre) reprend la discussion dans une conversation de l'espace Code, documents copiés
+  si vous le voulez.
+
 ## 1.0.0-beta.2 — 14 novembre 2026
 
 ### Nouveau

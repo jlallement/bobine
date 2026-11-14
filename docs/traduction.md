@@ -90,6 +90,9 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | Bobine | Bobine | Nom propre, jamais traduit. |
 | projet indépendant, non affilié à IBM | independent project, not affiliated with IBM | Fenêtre À propos (fiche 216). Toujours « non affilié à », jamais « non officiel ». |
 | agent | agent | |
+| discussion (espace Discussion) | chat (Chat space) | Fiche 224 : l'espace sans projet. « Nouvelle discussion » → « New chat ». |
+| documents (d'une discussion) | documents | Fiche 224 : jamais « dossier » ni « fichiers » dans l'espace Discussion. |
+| espace Code | Code space | Fiche 224. |
 | l'agent factice | the mock agent | « Agent factice » (profil) → « Mock agent ». |
 | profil (d'agent) | profile | |
 | outil, outils de l'app | tool, app tools | |

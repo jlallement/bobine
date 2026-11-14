@@ -6,6 +6,9 @@ import { Tip } from '../common/Menus'
 /** Conversation dont le fil est affiché (cartes de documents, fiche 224). */
 export const ThreadConversationContext = createContext<string | null>(null)
 
+/** Le fil affiché est celui d'une discussion (fiche 224) : cartes d'autorisation dites en clair. */
+export const DiscussionContext = createContext(false)
+
 /** Extension d'un document, en capitales (« DOCX »), pour sa carte. */
 export const documentKind = (name: string): string => {
   const dot = name.lastIndexOf('.')

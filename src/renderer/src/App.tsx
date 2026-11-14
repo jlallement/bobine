@@ -486,6 +486,7 @@ export function App() {
           >
             <ConversationScope
               conversationId={c.activeId}
+              discussion={discussion}
               notices={c}
               openLink={links.openActiveLink}
               loadSubagentWork={links.loadActiveSubagentWork}
