@@ -18,6 +18,7 @@ import type {
   ConversationSummary,
   ConversationView
 } from '@shared/agent'
+import type { PromptAttachment } from '@shared/attachments'
 import type { DocumentPreview } from '@shared/documents'
 import type { DocumentsChannel } from '@shared/documents-ipc'
 import type { IpcHandlers } from '@shared/ipc'
@@ -29,6 +30,7 @@ import {
   freeName,
   listDocuments
 } from '../conversations/discussion-space'
+import { isInside } from '../agent/permission-answers'
 import type { ConversationListeners } from '../conversations/conversation'
 
 /** Ce que les documents demandent au gestionnaire des conversations. */
@@ -40,16 +42,18 @@ export interface DocumentsHost {
 }
 
 /** Résumé d'une conversation ; `undefined` si elle n'existe plus. */
-const summaryOf = (host: DocumentsHost, id: string): ConversationSummary | undefined =>
-  host.state().conversations.find((c) => c.id === id)
+const summaryOf = (
+  host: Pick<DocumentsHost, 'state'>,
+  id: string
+): ConversationSummary | undefined => host.state().conversations.find((c) => c.id === id)
 
 export interface DocumentsIpcDeps {
   chooseFiles: (defaultPath: string) => Promise<string[]>
   chooseDirectory: (labels?: { title: string; buttonLabel: string }) => Promise<string | null>
   openPath: (path: string) => Promise<string>
   reveal: (path: string) => void
-  /** Conversion d'un document Word ou RTF en HTML (macOS `textutil`) ; remplaçable en essai. */
-  toHtml?: (path: string) => Promise<string | undefined>
+  /** Texte d'un document Word ou RTF (macOS `textutil`) ; remplaçable en essai. */
+  toText?: (path: string) => Promise<string | undefined>
 }
 
 /** Aperçu texte : au-delà, coupé. */
@@ -72,13 +76,13 @@ function str(value: unknown, name: string): string {
   return value
 }
 
-/** `textutil -convert html -stdout` (macOS) : le HTML d'un document Word ou RTF, sinon rien. */
-export function textutilHtml(path: string): Promise<string | undefined> {
+/** `textutil -convert txt -stdout` (macOS) : le texte d'un document Word ou RTF, sinon rien. */
+export function textutilText(path: string): Promise<string | undefined> {
   if (process.platform !== 'darwin') return Promise.resolve(undefined)
   return new Promise((resolve) => {
     execFile(
       '/usr/bin/textutil',
-      ['-convert', 'html', '-stdout', path],
+      ['-convert', 'txt', '-stdout', path],
       { maxBuffer: 5_000_000, timeout: 10_000 },
       (error, stdout) => resolve(error ? undefined : stdout)
     )
@@ -88,20 +92,22 @@ export function textutilHtml(path: string): Promise<string | undefined> {
 /** Aperçu d'un document, selon son extension. */
 export async function previewOf(
   path: string,
-  toHtml: (path: string) => Promise<string | undefined> = textutilHtml
+  toText: (path: string) => Promise<string | undefined> = textutilText
 ): Promise<DocumentPreview> {
   const ext = extname(path).toLowerCase()
-  if (TEXT.has(ext)) {
-    const text = readFileSync(path, 'utf8')
-    return { kind: 'text', text: text.slice(0, TEXT_LIMIT), truncated: text.length > TEXT_LIMIT }
-  }
+  const asText = (text: string): DocumentPreview => ({
+    kind: 'text',
+    text: text.slice(0, TEXT_LIMIT),
+    truncated: text.length > TEXT_LIMIT
+  })
+  if (TEXT.has(ext)) return asText(readFileSync(path, 'utf8'))
   const mimeType = IMAGES[ext]
   if (mimeType && statSync(path).size <= IMAGE_LIMIT) {
     return { kind: 'image', mimeType, data: readFileSync(path).toString('base64') }
   }
   if (RICH.has(ext)) {
-    const html = await toHtml(path)
-    if (html) return { kind: 'html', html }
+    const text = await toText(path)
+    if (text) return asText(text)
   }
   return { kind: 'none' }
 }
@@ -175,7 +181,7 @@ export function documentsHandlers(
       copyFileSync(source, path)
       return path
     },
-    'documents:preview': (id, name) => previewOf(pathOf(id, name), deps.toHtml),
+    'documents:preview': (id, name) => previewOf(pathOf(id, name), deps.toText),
     'discussion:continueInProject': async (id, options) => {
       const folder = folderOf(id)
       const target = await deps.chooseDirectory({
@@ -189,4 +195,24 @@ export function documentsHandlers(
       return host.continueInProject(str(id, 'id'), target)
     }
   }
+}
+
+/**
+ * Fichiers joints à un message d'une discussion : copiés dans ses documents (l'original n'est pas
+ * touché), et c'est la copie que l'agent reçoit. Un fichier déjà dans les documents reste tel quel ;
+ * une autre conversation garde ses pièces jointes.
+ */
+export function attachToDocuments(
+  host: Pick<DocumentsHost, 'state'>,
+  id: string,
+  attachments: PromptAttachment[]
+): PromptAttachment[] {
+  const summary = summaryOf(host, id)
+  if (summary?.space !== 'discussion') return attachments
+  const folder = summary.workspace
+  return attachments.map((a) => {
+    if (a.kind !== 'file' || isInside(folder, a.path)) return a
+    const [name] = addDocuments(folder, [a.path])
+    return name ? { kind: 'file', path: join(folder, name) } : a
+  })
 }

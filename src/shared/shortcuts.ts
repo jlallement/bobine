@@ -34,6 +34,9 @@ export type MenuCommand =
   | 'aside'
   /** Aide › Aide de Bobine (fiche 186) : traitée par le main, qui ouvre la fenêtre d'aide. */
   | 'help'
+  /** Présentation › Espace Code / Espace Discussion (fiche 224). */
+  | 'space-code'
+  | 'space-discussion'
 
 export interface Shortcut {
   command: MenuCommand
@@ -47,6 +50,24 @@ export interface Shortcut {
 }
 
 export const SHORTCUTS: readonly Shortcut[] = [
+  {
+    command: 'space-code',
+    get label() {
+      return t('shortcuts.menu.space-code')
+    },
+    accelerator: 'CmdOrCtrl+1',
+    keys: '⌘1',
+    menu: 'view'
+  },
+  {
+    command: 'space-discussion',
+    get label() {
+      return t('shortcuts.menu.space-discussion')
+    },
+    accelerator: 'CmdOrCtrl+2',
+    keys: '⌘2',
+    menu: 'view'
+  },
   {
     command: 'new-conversation',
     get label() {

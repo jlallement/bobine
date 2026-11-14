@@ -2102,6 +2102,7 @@ export type FrResources = {
       readonly document: 'Aperçu'
       readonly acp: 'Échanges ACP'
       readonly session: 'Session'
+      readonly documents: 'Documents'
     }
   }
   readonly android: {
@@ -2599,6 +2600,8 @@ export type FrResources = {
       readonly activity: 'Mon activité'
       readonly aside: 'Aparté…'
       readonly help: 'Aide de Bobine'
+      readonly 'space-code': 'Espace Code'
+      readonly 'space-discussion': 'Espace Discussion'
     }
     readonly interface: {
       readonly send: { readonly label: 'Envoyer le message' }

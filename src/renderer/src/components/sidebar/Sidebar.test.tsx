@@ -35,6 +35,8 @@ function sidebar(
     onSearch?: () => void
     onSelect?: (id: string) => void
     onLaunchChild?: (c: ConversationSummary) => void
+    space?: 'code' | 'discussion'
+    onSpace?: (space: 'code' | 'discussion') => void
   } = {}
 ) {
   return (
@@ -43,6 +45,8 @@ function sidebar(
         open
         onToggle={vi.fn()}
         conversations={conversations}
+        space={extra.space ?? 'code'}
+        onSpace={extra.onSpace ?? vi.fn()}
         activeId={extra.activeId ?? null}
         attention={extra.attention ?? {}}
         attentionDetails={extra.details ?? {}}
@@ -674,5 +678,18 @@ describe('largeur de la barre latérale (fiche 113)', () => {
     expect(tags[0]?.getAttribute('aria-label')).toMatch(
       /^Exécution planifiée de «\s?Revue du matin\s?»$/
     )
+  })
+
+  it('espace Discussion (fiche 224) : seulement les discussions, ni Équipe ni tâches planifiées', () => {
+    const onSpace = vi.fn()
+    const code = conversation('c1', { title: 'Projet' })
+    const chat = conversation('d1', { title: 'E-mail', space: 'discussion' })
+    render(sidebar([code, chat], { space: 'discussion', onSpace }))
+    expect(screen.getByText('E-mail')).toBeTruthy()
+    expect(screen.queryByText('Projet')).toBeNull()
+    expect(screen.getByTestId('open-scheduled').hidden).toBe(true)
+    expect(screen.queryByTestId('team-section')).toBeNull()
+    fireEvent.click(screen.getByTestId('space-code'))
+    expect(onSpace).toHaveBeenCalledWith('code')
   })
 })

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentEvent, ConversationEvent, ConversationSummary } from '@shared/agent'
 import type { ConversationListeners } from '../conversations/conversation'
-import { documentsHandlers, previewOf, type DocumentsHost } from './ipc'
+import { attachToDocuments, documentsHandlers, previewOf, type DocumentsHost } from './ipc'
 
 const summary = (id: string, workspace: string, space?: 'discussion'): ConversationSummary => ({
   id,
@@ -93,23 +93,42 @@ describe('documents d’une discussion (fiche 224)', () => {
     expect(host.continueInProject).toHaveBeenCalledWith('d', project)
   })
 
-  it('aperçu : texte, image, document Word converti, sinon rien', async () => {
+  it('aperçu : texte, image, texte d’un document Word, sinon rien', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'apercu-'))
     writeFileSync(join(dir, 'a.md'), '# Titre')
     writeFileSync(join(dir, 'b.png'), Buffer.from([1, 2]))
     writeFileSync(join(dir, 'c.docx'), 'x')
     writeFileSync(join(dir, 'd.xlsx'), 'x')
-    const toHtml = async () => '<p>Bonjour</p>'
-    expect(await previewOf(join(dir, 'a.md'), toHtml)).toEqual({
+    const toText = async () => 'Bonjour'
+    expect(await previewOf(join(dir, 'a.md'), toText)).toEqual({
       kind: 'text',
       text: '# Titre',
       truncated: false
     })
-    expect(await previewOf(join(dir, 'b.png'), toHtml)).toMatchObject({ kind: 'image' })
-    expect(await previewOf(join(dir, 'c.docx'), toHtml)).toEqual({
-      kind: 'html',
-      html: '<p>Bonjour</p>'
+    expect(await previewOf(join(dir, 'b.png'), toText)).toMatchObject({ kind: 'image' })
+    expect(await previewOf(join(dir, 'c.docx'), toText)).toEqual({
+      kind: 'text',
+      text: 'Bonjour',
+      truncated: false
     })
-    expect(await previewOf(join(dir, 'd.xlsx'), toHtml)).toEqual({ kind: 'none' })
+    expect(await previewOf(join(dir, 'd.xlsx'), toText)).toEqual({ kind: 'none' })
+  })
+
+  it('fichiers joints à une discussion : copiés dans ses documents, l’agent reçoit la copie', () => {
+    const { host, folder, project } = setup()
+    const outside = join(project, 'Ventes.xlsx')
+    writeFileSync(outside, 'v')
+    writeFileSync(join(folder, 'déjà.txt'), 'x')
+    const sent = attachToDocuments(host, 'd', [
+      { kind: 'file', path: outside },
+      { kind: 'file', path: join(folder, 'déjà.txt') }
+    ])
+    expect(sent).toEqual([
+      { kind: 'file', path: join(folder, 'Ventes.xlsx') },
+      { kind: 'file', path: join(folder, 'déjà.txt') }
+    ])
+    expect(attachToDocuments(host, 'c', [{ kind: 'file', path: outside }])).toEqual([
+      { kind: 'file', path: outside }
+    ])
   })
 })

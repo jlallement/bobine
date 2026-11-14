@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   FileDiff,
   FileText,
+  Files,
   Gauge,
   Globe,
   ListChecks,
@@ -68,5 +69,6 @@ export const PANEL_ICONS: Record<PanelTab, ComponentType<IconProps>> = {
   tasks: ListChecks,
   acp: ArrowLeftRight,
   changes: FileDiff,
-  document: FileText
+  document: FileText,
+  documents: Files
 }

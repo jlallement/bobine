@@ -80,7 +80,7 @@ import { folderHandlers } from './conversations/additional-directories-ipc'
 import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
 import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
-import { documentsHandlers } from './documents/ipc'
+import { attachToDocuments, documentsHandlers } from './documents/ipc'
 
 /** Sous-ensemble d'`ipcMain` dont on a besoin : permet de tester sans Electron. */
 /** Envoie un évènement aux fenêtres de l'app (rien pendant la fermeture : à l'appelant de voir). */
@@ -553,7 +553,9 @@ export function createHandlers(
       if (typeof text !== 'string') throw new Error('Prompt invalide')
       const files = parseAttachments(attachments)
       if (!text.trim() && files.length === 0) throw new Error(t('ipc.emptyPrompt'))
-      await c.prompt(str(id, 'id'), text, files, parsePromptRequest(options))
+      // Discussion (fiche 224) : les fichiers joints sont copiés dans ses documents.
+      const sent = attachToDocuments(c, str(id, 'id'), files)
+      await c.prompt(str(id, 'id'), text, sent, parsePromptRequest(options))
       return undefined
     },
     'agent:unqueue': (id, messageId) => c.unqueue(str(id, 'id'), str(messageId, 'messageId')),

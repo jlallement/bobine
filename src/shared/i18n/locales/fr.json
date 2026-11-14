@@ -2141,7 +2141,8 @@
       "changes": "Modifications",
       "document": "Aperçu",
       "acp": "Échanges ACP",
-      "session": "Session"
+      "session": "Session",
+      "documents": "Documents"
     }
   },
   "android": {
@@ -2721,7 +2722,9 @@
       "shortcuts": "Raccourcis clavier",
       "activity": "Mon activité",
       "aside": "Aparté…",
-      "help": "Aide de Bobine"
+      "help": "Aide de Bobine",
+      "space-code": "Espace Code",
+      "space-discussion": "Espace Discussion"
     },
     "interface": {
       "send": {

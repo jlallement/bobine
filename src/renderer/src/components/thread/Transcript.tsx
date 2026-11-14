@@ -1,4 +1,5 @@
 import { ReviewCard } from './ReviewCard'
+import { DocumentCards } from '../discussion/DocumentCards'
 import {
   ArrowRightLeft,
   BellRing,
@@ -722,6 +723,8 @@ const Item = memo(function Item({
       return <Compaction item={item} />
     case 'handover':
       return <HandoverDivider item={item} />
+    case 'documents':
+      return <DocumentCards names={item.names} />
     case 'cost-cap':
       return <CostCapCard item={item} />
     case 'turn-limit':

@@ -1,3 +1,6 @@
+import type { ConversationSummary } from '@shared/agent'
+import { ContinueInProjectDialog } from './components/discussion/ContinueInProjectDialog'
+import { useSpace } from './useSpace'
 import { onSettingsRequest } from './open-settings'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { FileDiff, ListChecks, PanelLeft, PanelRight, SquarePen } from 'lucide-react'
@@ -79,6 +82,11 @@ export function App() {
   // « Mon activité » (fiche 144) : refermée dès qu'une conversation s'ouvre, d'où `c` enveloppé.
   const activity = useActivityPage(useConversations())
   const c = activity.conversations
+  // Espace Code ou Discussion (fiche 224) : celui de la conversation active.
+  const spaces = useSpace(c)
+  const discussion = spaces.space === 'discussion'
+  // « Continuer dans un projet… » d'une discussion (fiche 224) : son dialogue.
+  const [continuing, setContinuing] = useState<ConversationSummary | null>(null)
   const onboarding = useOnboarding({ conversationId: c.activeId, pageOpen: activity.open })
   const snapshot = c.active?.snapshot ?? null
   // Quota de l'agent actif, s'il sait le lire (Bob : bobcoins, fiche 091).
@@ -102,7 +110,8 @@ export function App() {
     items: transcript.items,
     hasChanges: changes.files > 0,
     // Ouvert d'office sur « Session » à l'ouverture d'une conversation (fiche 166).
-    autoOpen: { eligible: !empty && !activity.open, sidebarOpen }
+    autoOpen: { eligible: !empty && !activity.open, sidebarOpen },
+    discussion
   })
   // Branche git du dossier, à côté du dossier dans la zone de saisie (fiche 049).
   const git = useGitStatus(c.activeId, snapshot?.status === 'busy')
@@ -231,7 +240,9 @@ export function App() {
     if (id) c.select(id)
   }
   useMenuCommands({
-    'new-conversation': () => c.create(),
+    'new-conversation': spaces.create,
+    'space-code': () => spaces.choose('code'),
+    'space-discussion': () => spaces.choose('discussion'),
     search: dialogs.openSearch,
     find: () => openFind(),
     'find-next': () => (find.open ? threadFind.next() : openFind()),
@@ -352,6 +363,7 @@ export function App() {
       onOpenCaptureSettings={() => window.api.capture.openSettings()}
       key={c.activeId ?? ''}
       fresh={empty}
+      discussion={discussion}
       {...(c.activeId ? { draftKey: c.activeId } : {})}
       {...(c.activeSummary?.branch ? { branch: c.activeSummary.branch } : {})}
       {...(git?.branch
@@ -424,6 +436,13 @@ export function App() {
     <TipsContext.Provider value={tips}>
       <Tooltip.Provider>
         <div className="app">
+          {continuing && (
+            <ContinueInProjectDialog
+              discussion={continuing}
+              onClose={() => setContinuing(null)}
+              onOpened={c.select}
+            />
+          )}
           <Sidebar
             open={sidebarOpen}
             onToggle={() => setSidebarOpen(false)}
@@ -445,7 +464,9 @@ export function App() {
             onOpenNotificationSettings={c.openNotificationSettings}
             snapshot={snapshot}
             {...quota}
-            onNew={() => c.create()}
+            onNew={spaces.create}
+            space={spaces.space}
+            onSpace={spaces.choose}
             onSelect={c.select}
             onRename={c.rename}
             onRequestDelete={dialogs.setDeleting}
@@ -505,6 +526,7 @@ export function App() {
                       onArchive={() => c.archive(activeTitle.id, !activeTitle.archived)}
                       onDelete={() => dialogs.setDeleting(activeTitle)}
                       onLaunchChild={() => dialogs.setLaunching(activeTitle)}
+                      onContinueInProject={() => setContinuing(activeTitle)}
                     />
                   ) : null}
                   {activeTitle?.role ? (
@@ -611,6 +633,7 @@ export function App() {
                   />
                 ) : empty ? (
                   <Welcome
+                    discussion={discussion}
                     userName={prefs?.userName ?? ''}
                     asideCard={asideCard}
                     composer={composer}
@@ -747,6 +770,7 @@ export function App() {
             )}
             {panel.open && activity.page !== 'scheduled' && (
               <SidePanel
+                discussion={discussion}
                 opening={panel.opening}
                 conversationId={c.activeId}
                 {...(c.activeSummary

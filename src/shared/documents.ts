@@ -12,11 +12,10 @@ export interface DiscussionDocument {
 }
 
 /**
- * Aperçu d'un document : texte brut (texte, Markdown, CSV…), image, HTML tiré d'un document Word ou
- * RTF par `textutil` (macOS, nettoyé à l'affichage), ou rien (« Ouvrir » reste possible).
+ * Aperçu d'un document : texte brut (texte, Markdown, CSV…, et le texte d'un document Word ou RTF
+ * tiré par `textutil` sur macOS), image, ou rien (« Ouvrir » reste possible).
  */
 export type DocumentPreview =
   | { kind: 'text'; text: string; truncated: boolean }
   | { kind: 'image'; mimeType: string; data: string }
-  | { kind: 'html'; html: string }
   | { kind: 'none' }

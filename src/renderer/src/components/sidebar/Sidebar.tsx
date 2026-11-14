@@ -21,7 +21,9 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 import { usePresentation } from '../../presentation'
-import type { AgentSnapshot, ConversationSummary } from '@shared/agent'
+import type { AgentSnapshot, ConversationSpace, ConversationSummary } from '@shared/agent'
+import { SpaceSwitcher } from '../discussion/SpaceSwitcher'
+import { spaceOf } from '../../useSpace'
 import type { AgentQuota } from '@shared/usage'
 import { AgentQuotaStatus } from './AgentQuotaStatus'
 import type { AttentionDetails, AttentionState } from '@shared/attention'
@@ -99,6 +101,9 @@ interface Props {
   onScheduled?: () => void
   /** « Reprendre une session… » (fiche 055). */
   onResumeSession: () => void
+  /** Espace affiché (fiche 224) : la liste ne montre que ses conversations. */
+  space: ConversationSpace
+  onSpace: (space: ConversationSpace) => void
 }
 
 /** Raccourci de « Mon activité », tel que le menu l'affiche. */
@@ -150,7 +155,7 @@ export function Sidebar(props: Props) {
   const statusText = agentStatusText(snapshot)
   const launches = props.childLaunches ?? NO_LAUNCHES
   const listed = withChildLaunches(
-    props.conversations.filter((c) => !c.draft),
+    props.conversations.filter((c) => !c.draft && spaceOf(c) === props.space),
     launches
   )
   const preparing = new Set(launches.map((launch) => launchRowId(launch.id)))
@@ -177,9 +182,12 @@ export function Sidebar(props: Props) {
   const [archiveOpen, setArchiveOpen] = useState(
     () => readLocal<unknown>(ARCHIVE_OPEN_KEY, false) === true
   )
-  const [grouping, setGrouping] = useState<Grouping>(() =>
+  const [chosenGrouping, setGrouping] = useState<Grouping>(() =>
     readLocal<Grouping>(GROUPING_KEY, 'recent') === 'folder' ? 'folder' : 'recent'
   )
+  // Espace Discussion (fiche 224) : pas de dossiers, pas d'Équipe, pas de tâches planifiées.
+  const discussion = props.space === 'discussion'
+  const grouping: Grouping = discussion ? 'recent' : chosenGrouping
   const folders = useFoldedSet(FOLDED_KEY)
   const sections = useFoldedSet(SECTIONS_KEY)
   useChildVisibility(props.conversations, launches, sections.unfold, folders.unfold, list)
@@ -262,45 +270,20 @@ export function Sidebar(props: Props) {
 
       <nav className="sidebar-body">
         {/* Zone fixe (fiche 131) : ne défile pas avec la liste. */}
-        <div className={`sidebar-fixed${scrolled ? ' scrolled' : ''}`} data-testid="sidebar-fixed">
-          <NewConversationButton onNew={props.onNew} />
-
-          <button
-            className={`sidebar-item${props.activityOpen ? ' active' : ''}`}
-            aria-current={props.activityOpen ? 'page' : undefined}
-            onClick={props.onActivity}
-            data-testid="open-activity"
-          >
-            <span className="icon-badge plain">
-              <ChartColumn size={15} />
-            </span>
-            <span className="label">{t('sidebar.activity')}</span>
-            <kbd className="sidebar-kbd">{ACTIVITY_KEYS}</kbd>
-          </button>
-
-          <button
-            className={`sidebar-item${props.scheduledOpen ? ' active' : ''}`}
-            aria-current={props.scheduledOpen ? 'page' : undefined}
-            onClick={props.onScheduled}
-            data-testid="open-scheduled"
-          >
-            <span className="icon-badge plain">
-              <CalendarClock size={15} />
-            </span>
-            <span className="label">{t('sidebar.scheduled')}</span>
-          </button>
-        </div>
+        <SidebarFixed {...props} scrolled={scrolled} discussion={discussion} />
 
         <div className="sidebar-scroll" data-testid="history" ref={list} onScroll={onScroll}>
           {/* Équipe (fiche 223) : les rôles actifs du projet affiché, repliable. */}
-          <TeamSection
-            conversationId={props.activeId}
-            folded={sections.isFolded('team')}
-            onToggle={() => sections.toggle('team')}
-            onShowConversation={() =>
-              props.activeId ? props.onSelect(props.activeId) : props.onNew()
-            }
-          />
+          {!discussion && (
+            <TeamSection
+              conversationId={props.activeId}
+              folded={sections.isFolded('team')}
+              onToggle={() => sections.toggle('team')}
+              onShowConversation={() =>
+                props.activeId ? props.onSelect(props.activeId) : props.onNew()
+              }
+            />
+          )}
           {/* Les états restent sur place ; les liens mère-filles gardent leur tracé (fiche 149). */}
           {pinned.length > 0 && (
             <SidebarSection
@@ -316,17 +299,25 @@ export function Sidebar(props: Props) {
           {others.length > 0 && (
             <SidebarSection
               id="history"
-              label={grouping === 'recent' ? t('sidebar.recent') : t('sidebar.byFolder')}
+              label={
+                discussion
+                  ? t('discussion.recent')
+                  : grouping === 'recent'
+                    ? t('sidebar.recent')
+                    : t('sidebar.byFolder')
+              }
               folded={sections.isFolded('history')}
               onToggle={() => sections.toggle('history')}
               testId="history-list"
               tools={
-                <GroupingMenu
-                  grouping={grouping}
-                  onChoose={chooseGrouping}
-                  onResumeSession={props.onResumeSession}
-                  onHold={hold}
-                />
+                discussion ? undefined : (
+                  <GroupingMenu
+                    grouping={grouping}
+                    onChoose={chooseGrouping}
+                    onResumeSession={props.onResumeSession}
+                    onHold={hold}
+                  />
+                )
               }
             >
               {grouping === 'recent'
@@ -436,7 +427,7 @@ function agentStatusText(snapshot: AgentSnapshot | null): string {
  * « Nouvelle conversation ». Profil en lecture seule (fiche 196) : désactivée, la raison en
  * infobulle — rien de neuf ne s'y enregistrerait.
  */
-function NewConversationButton({ onNew }: { onNew: () => void }) {
+function NewConversationButton({ onNew, discussion }: { onNew: () => void; discussion: boolean }) {
   const { t } = useTranslation()
   const { readOnly } = useProfileStatus()
   return (
@@ -450,7 +441,57 @@ function NewConversationButton({ onNew }: { onNew: () => void }) {
       <span className="icon-badge">
         <Plus size={13} strokeWidth={2.5} />
       </span>
-      <span className="label">{t('sidebar.newConversation')}</span>
+      <span className="label">
+        {discussion ? t('discussion.newDiscussion') : t('sidebar.newConversation')}
+      </span>
     </button>
+  )
+}
+
+/**
+ * Zone fixe du haut (fiche 131), qui ne défile pas avec la liste : l'espace (fiche 224), nouvelle
+ * conversation, « Mon activité », tâches planifiées (pas dans l'espace Discussion).
+ */
+function SidebarFixed(
+  props: Pick<
+    Props,
+    'space' | 'onSpace' | 'onNew' | 'activityOpen' | 'onActivity' | 'scheduledOpen' | 'onScheduled'
+  > & { scrolled: boolean; discussion: boolean }
+) {
+  const { t } = useTranslation()
+  return (
+    <div
+      className={`sidebar-fixed${props.scrolled ? ' scrolled' : ''}`}
+      data-testid="sidebar-fixed"
+    >
+      <SpaceSwitcher space={props.space} onChoose={props.onSpace} />
+      <NewConversationButton onNew={props.onNew} discussion={props.discussion} />
+
+      <button
+        className={`sidebar-item${props.activityOpen ? ' active' : ''}`}
+        aria-current={props.activityOpen ? 'page' : undefined}
+        onClick={props.onActivity}
+        data-testid="open-activity"
+      >
+        <span className="icon-badge plain">
+          <ChartColumn size={15} />
+        </span>
+        <span className="label">{t('sidebar.activity')}</span>
+        <kbd className="sidebar-kbd">{ACTIVITY_KEYS}</kbd>
+      </button>
+
+      <button
+        hidden={props.discussion}
+        className={`sidebar-item${props.scheduledOpen ? ' active' : ''}`}
+        aria-current={props.scheduledOpen ? 'page' : undefined}
+        onClick={props.onScheduled}
+        data-testid="open-scheduled"
+      >
+        <span className="icon-badge plain">
+          <CalendarClock size={15} />
+        </span>
+        <span className="label">{t('sidebar.scheduled')}</span>
+      </button>
+    </div>
   )
 }

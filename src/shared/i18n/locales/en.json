@@ -2053,7 +2053,8 @@
       "changes": "Changes",
       "document": "Preview",
       "acp": "ACP messages",
-      "session": "Session"
+      "session": "Session",
+      "documents": "Documents"
     }
   },
   "android": {
@@ -2629,7 +2630,9 @@
       "shortcuts": "Keyboard Shortcuts",
       "activity": "My activity",
       "aside": "Aside…",
-      "help": "Bobine Help"
+      "help": "Bobine Help",
+      "space-code": "Code space",
+      "space-discussion": "Chat space"
     },
     "interface": {
       "send": {

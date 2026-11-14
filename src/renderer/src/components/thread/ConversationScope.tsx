@@ -3,6 +3,7 @@ import { FileLinksContext, type OpenFileLink } from './FileLink'
 import { EditorContext } from './OpenInEditor'
 import { SubagentWorkContext, type LoadSubagentWork } from '../../subagent-work'
 import { useEditorAction } from '../../useEditor'
+import { ThreadConversationContext } from '../discussion/DocumentCards'
 import type { LinkNotices } from '../../useFileLinks'
 
 /**
@@ -27,7 +28,11 @@ export function ConversationScope({
   return (
     <FileLinksContext.Provider value={openLink}>
       <SubagentWorkContext.Provider value={loadSubagentWork}>
-        <EditorContext.Provider value={editor}>{children}</EditorContext.Provider>
+        <EditorContext.Provider value={editor}>
+          <ThreadConversationContext.Provider value={conversationId ?? null}>
+            {children}
+          </ThreadConversationContext.Provider>
+        </EditorContext.Provider>
       </SubagentWorkContext.Provider>
     </FileLinksContext.Provider>
   )
