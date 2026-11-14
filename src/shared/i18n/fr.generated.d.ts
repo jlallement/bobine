@@ -3075,6 +3075,11 @@ export type FrResources = {
       readonly yes: 'Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).'
       readonly no: 'L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session.'
     }
+    readonly roleExport: {
+      readonly label: 'Rôles installés dans l’agent'
+      readonly bob: '« Installer dans… » d’un rôle l’écrit comme mode personnalisé de Bob, dans `~/.bob/settings/custom_modes.yaml` (partagé avec Bob IDE) ou `.bob/custom_modes.yaml` du projet ; seul ce mode est ajouté, le reste du fichier est gardé, copié avant d’écrire.'
+      readonly opencode: '« Installer dans… » d’un rôle l’écrit comme agent d’OpenCode, dans `~/.config/opencode/agents/` ou `.opencode/agents/` du projet (un fichier par agent, copié avant d’être remplacé).'
+    }
     readonly writesWithoutAsking: {
       readonly label: 'Écrit sans demander'
       readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’y est que demandée, même dans un mode natif ; Bobine signale tout changement du dossier.'

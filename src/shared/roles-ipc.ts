@@ -14,6 +14,15 @@ import type {
   RoleScope,
   RolesListing
 } from './roles'
+import type {
+  RoleExportOptions,
+  RoleExportPreview,
+  RoleExportRef,
+  RoleExportRemoveResult,
+  RoleExportResult,
+  RoleExportStatus,
+  RoleExportTarget
+} from './role-export'
 
 /** `@rôle …` envoyé depuis la saisie : une fille par rôle cité, avec le même texte (phase 3B). */
 export interface RolesStartRequest {
@@ -32,7 +41,7 @@ export interface RolesStartResult {
 /** Rôles cités au plus dans un message (au-delà, refusé : le plafond des filles tranche avant). */
 export const MAX_ROLES_PER_MESSAGE = 10
 
-export interface RolesIpcContract {
+export interface RolesIpcContract extends RoleExportIpcContract {
   /** Rôles connus (fournis, personnels, du projet de la conversation), actifs ou non, et fichiers écartés. */
   'roles:list': { args: [conversationId?: string]; result: RolesListing }
   /** Définition d'un rôle d'une portée, pour le formulaire ; `null` s'il n'y est pas. */
@@ -67,13 +76,38 @@ export interface RolesIpcContract {
   }
 }
 
+/**
+ * Installer un rôle dans un agent (phase 4, ADR-0047) : agents proposés = profils qui déclarent
+ * `roleExport` (`ProfileSummary.roleExport`). Le rôle est désigné comme dans Réglages › Rôles.
+ */
+export interface RoleExportIpcContract {
+  /** Ce qui serait écrit, et où (feuille « Installer dans… »). */
+  'roles:exportPreview': {
+    args: [role: RoleExportRef, profileId: string]
+    result: RoleExportPreview
+  }
+  /** Installe ou met à jour ; refusé sans rien changer si l'entrée n'est pas à Bobine. */
+  'roles:export': {
+    args: [role: RoleExportRef, target: RoleExportTarget, options: RoleExportOptions]
+    result: RoleExportResult
+  }
+  /** Installations de ce rôle (projet : celles du dossier de la conversation). */
+  'roles:exportStatus': { args: [role: RoleExportRef]; result: RoleExportStatus[] }
+  /** Retire l'entrée de Bobine ; `force` : même modifiée à la main (après confirmation). */
+  'roles:exportRemove': { args: [key: string, force?: boolean]; result: RoleExportRemoveResult }
+}
+
 export const ROLES_CHANNELS = [
   'roles:list',
   'roles:read',
   'roles:save',
   'roles:setEnabled',
   'roles:remove',
-  'roles:startChildren'
+  'roles:startChildren',
+  'roles:exportPreview',
+  'roles:export',
+  'roles:exportStatus',
+  'roles:exportRemove'
 ] as const
 
 export type RolesChannel = (typeof ROLES_CHANNELS)[number]

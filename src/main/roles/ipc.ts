@@ -8,6 +8,8 @@ import type { RoleFileScope, RoleScope } from '@shared/roles'
 import type { RolesChannel } from '@shared/roles-ipc'
 import type { RoleLibrary } from './library'
 import { parseRolesStartRequest, startRoleChildren, type RoleInvokeHost } from './invoke'
+import { roleExportHandlers } from './export/ipc'
+import type { RoleExports } from './export/service'
 
 export interface RolesIpcDeps {
   library: RoleLibrary
@@ -15,6 +17,8 @@ export interface RolesIpcDeps {
   folderOf: (conversationId: string) => string | undefined
   /** Conversations filles (`@rôle` de la saisie) ; absentes : `roles:startChildren` refusé. */
   children?: () => RoleInvokeHost | undefined
+  /** Installer un rôle dans un agent (phase 4) ; absent : canaux refusés. */
+  exports?: RoleExports
 }
 
 const SCOPES: readonly RoleScope[] = ['builtin', 'user', 'project']
@@ -51,6 +55,11 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
     return id ? available().folderOf(id) : undefined
   }
   return {
+    ...roleExportHandlers(() =>
+      deps?.exports
+        ? { exports: deps.exports, library: deps.library, folderOf: deps.folderOf }
+        : undefined
+    ),
     'roles:list': (conversationId) => available().library.list(folder(conversationId)),
     'roles:read': (scope, roleName, conversationId) =>
       available().library.definition(scopeOf(scope), name(roleName), folder(conversationId)) ??

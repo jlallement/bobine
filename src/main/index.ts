@@ -87,7 +87,7 @@ import { conversationRelease } from './conversation-release'
 import { backupProfile } from './conversations/backup'
 import { AppProfile } from './profile-app'
 import { setupScheduler } from './scheduler/scheduler-ipc'
-import { resolveProfiles } from './agent/profiles'
+import { appAgents } from './agent/app-agents'
 import { setupQuotas } from './agent/quota-setup'
 import { quotaAfterCheck, quotaOnReady } from './agent/quota'
 import { createOnboarding, firstLaunchFacts } from './onboarding/onboarding'
@@ -335,20 +335,9 @@ async function start(): Promise<void> {
     log.error('Serveur d’outils de l’app indisponible :', error)
   })
 
-  const profiles = resolveProfiles({
-    appPath: app.getAppPath(),
-    execPath: process.execPath,
-    isPackaged: app.isPackaged,
-    env: process.env,
-    mockStore: join(app.getPath('userData'), 'mock-agent-sessions')
-  })
-  // Serveurs MCP déclarés dans les fichiers des agents (fiche 025). BOBINE_CONFIG_HOME : autre
-  // dossier personnel, pour que les essais ne touchent jamais les vrais fichiers de Bob et d'OpenCode.
-  const configHome = process.env['BOBINE_CONFIG_HOME']
-  const agentFiles = {
-    home: configHome ?? homedir(),
-    ...(configHome ? {} : { xdgConfigHome: process.env['XDG_CONFIG_HOME'] })
-  }
+  // Profils des agents ; serveurs MCP déclarés dans leurs fichiers (fiche 025), sous un autre
+  // dossier personnel pendant les essais (BOBINE_CONFIG_HOME).
+  const { profiles, configHome, agentFiles } = appAgents()
   const mcp = new McpSettings(profiles, agentFiles)
   // Règles d'approbation globales des agents (fiche 215) : même dossier personnel que les MCP.
   const approvalRules = new ApprovalRulesSettings(profiles, agentFiles)
@@ -568,7 +557,10 @@ async function start(): Promise<void> {
     settings
   )
   // Rôles (fiche 223) : fournis, personnels, du projet.
-  const roles = appRoles(userData, settings, () => ({ conversations, children }))
+  const roles = appRoles(userData, settings, () => ({ conversations, children }), {
+    profiles,
+    locations: agentFiles
+  })
   const { worktrees, preparation } = preparedWorktrees(gitRun, approvals.worktreeSetups)
   const conversations = new ConversationManager({
     settings,
@@ -691,7 +683,7 @@ async function start(): Promise<void> {
   // Conversations filles (fiche 097) : compte rendu posé chez la mère à chaque fin de tour, après
   // l'évènement de la fille parti vers les fenêtres ; réveil groupé de la mère (étape 2).
   const childConversations = (children = setupChildren(conversations, {
-    roles: roles.library,
+    ...roles.forChildren,
     attention: () => attention.state(),
     launchesChanged: (state) => send('conversation:childLaunchesChanged', state)
   }))

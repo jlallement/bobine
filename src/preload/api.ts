@@ -511,7 +511,18 @@ export function createApi(
         ),
       /** `@rôle …` de la saisie : une fille par rôle cité (phase 3B). */
       startChildren: (conversationId: string, request: IpcArgs<'roles:startChildren'>[1]) =>
-        invoke('roles:startChildren', conversationId, request)
+        invoke('roles:startChildren', conversationId, request),
+      /** « Installer dans… » un agent (phase 4, ADR-0047). */
+      exportPreview: (role: IpcArgs<'roles:exportPreview'>[0], profileId: string) =>
+        invoke('roles:exportPreview', role, profileId),
+      export: (
+        role: IpcArgs<'roles:export'>[0],
+        target: IpcArgs<'roles:export'>[1],
+        options: IpcArgs<'roles:export'>[2]
+      ) => invoke('roles:export', role, target, options),
+      exportStatus: (role: IpcArgs<'roles:exportStatus'>[0]) => invoke('roles:exportStatus', role),
+      exportRemove: (key: string, force?: boolean) =>
+        invoke('roles:exportRemove', key, ...(force !== undefined ? [force] : []))
     },
     /** Mémoire commune aux agents (fiche 182) : carte du fil, Réglages › Mémoire. */
     memory: {

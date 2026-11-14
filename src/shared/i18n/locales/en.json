@@ -3127,6 +3127,11 @@
       "yes": "Folders added in the Session tab are given to it along with the working folder (`additionalDirectories`).",
       "no": "The agent only sees the working folder: nothing to add in the Session tab."
     },
+    "roleExport": {
+      "label": "Roles installed in the agent",
+      "bob": "A role’s “Install in…” writes it as a Bob custom mode, in `~/.bob/settings/custom_modes.yaml` (shared with Bob IDE) or the project’s `.bob/custom_modes.yaml`; only that mode is added, the rest of the file is kept, and the file is backed up before writing.",
+      "opencode": "A role’s “Install in…” writes it as an OpenCode agent, in `~/.config/opencode/agents/` or the project’s `.opencode/agents/` (one file per agent, backed up before being replaced)."
+    },
     "writesWithoutAsking": {
       "label": "Writes without asking",
       "detail": "{{agent}} changes files without asking for permission (default setting): a role’s read-only mode is only requested there, even in a native mode; Bobine reports any change to the folder."
