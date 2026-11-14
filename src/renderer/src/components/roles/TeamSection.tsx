@@ -4,7 +4,7 @@ import { Tip } from '../common/Menus'
 import { useProfileStatus } from '../common/Profile'
 import { SidebarSection } from '../sidebar/SidebarSection'
 import { openRoleChild, openRoleWizard, useRolesListing } from '../../roles/roles-store'
-import { shownDescription } from '../../roles/role-text'
+import { roleDescription } from './role-view'
 import { RoleAvatar } from './RoleAvatar'
 
 /**
@@ -54,7 +54,7 @@ export function TeamSection({
         {roles.map((role) => (
           <span role="listitem" key={role.name}>
             <Tip
-              label={`${role.label}\n${shownDescription(role)}`}
+              label={`${role.label}\n${roleDescription(role)}`}
               side="right"
               className="history-tooltip"
             >

@@ -40,7 +40,7 @@ const ROLES = [
   role('tech-lead', 'Tech lead'),
   role('ux-ui-expert', 'Expert UX/UI'),
   role('front-architect', 'Architecte front'),
-  role('back-architect', 'Architecte back', { description: 'API, sécurité des API' }),
+  role('back-architect', 'Architecte back', { description: 'API, sécurité des API', scope: 'user' }),
   role('flutter-expert', 'Expert Flutter', { scope: 'project' })
 ]
 
@@ -126,6 +126,21 @@ describe('menu `@` : rôles en tête', () => {
     const { type } = setup()
     type('Relis @secu')
     expect(roleNames()).toEqual(['security-expert', 'back-architect'])
+  })
+
+  it('rôle fourni : description traduite affichée et cherchée (pas celle de l’agent)', () => {
+    const { type } = setup({
+      list: [
+        role('security-expert', 'Expert sécu', {
+          description: 'Audits the security of a change (injection, secrets, authentication).'
+        })
+      ]
+    })
+    type('@authentif')
+    expect(roleNames()).toEqual(['security-expert'])
+    const item = screen.getByTestId('role-item')
+    expect(item.textContent).toContain('Audite la sécurité')
+    expect(item.textContent).not.toContain('Audits the security')
   })
 
   it('`@git` : `@git-changes` d’abord, pas un rôle trouvé par sa seule description', () => {

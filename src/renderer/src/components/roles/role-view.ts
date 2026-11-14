@@ -5,7 +5,8 @@
  * ici : seule la capacité déclarée par le profil compte (ADR-0011).
  */
 import type { ProfileSummary } from '@shared/agent'
-import type { RoleDefinition } from '@shared/roles'
+import type { RoleDefinition, RoleView } from '@shared/roles'
+import { shownDescription } from '../../roles/role-text'
 
 type Profiles = readonly Pick<
   ProfileSummary,
@@ -42,10 +43,11 @@ export function readOnlyShown(
 }
 
 /**
- * Description d'un rôle telle que l'interface l'affiche et la cherche (menu `@`, jeton) : le seul
- * endroit où l'interface la lit. Aujourd'hui celle du fichier (en anglais pour les rôles fournis) ;
- * la description traduite de la phase 3A se branchera ici.
+ * Description d'un rôle telle que l'interface l'affiche et la cherche (menu `@`, jeton, infobulles,
+ * Réglages › Rôles, section Équipe) : le seul endroit où l'interface la lit. Traduite pour un rôle
+ * fourni (`shownDescription`), celle du fichier sinon ; l'agent, lui, reçoit toujours celle du
+ * fichier (ADR-0014).
  */
-export function roleDescription(role: Pick<RoleDefinition, 'description'>): string {
-  return role.description
+export function roleDescription(role: Pick<RoleView, 'name' | 'scope' | 'description'>): string {
+  return shownDescription(role)
 }
