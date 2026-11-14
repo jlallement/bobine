@@ -8,6 +8,7 @@ import { ReviewDialog } from '../panel/ReviewDialog'
 import { DeleteDialog } from '../sidebar/ConversationMenu'
 import { ResumeDialog } from './ResumeDialog'
 import { SearchDialog } from './SearchDialog'
+import { RolesHost } from '../roles/RolesHost'
 import {
   SettingsDialog,
   type AgentPageRequest,
@@ -119,6 +120,7 @@ export function AppDialogs({
         onPreferences={c.setPreferences}
         projectCommands={projectCommands}
         onCommands={c.setCommands}
+        activeConversation={c.activeSummary}
         onNotifications={c.setNotifications}
         onOpenNotificationSettings={c.openNotificationSettings}
         onForgetWorkspace={c.forgetWorkspace}
@@ -137,6 +139,8 @@ export function AppDialogs({
           onOpenActivity()
         }}
       />
+      {/* Assistant de création d'un rôle et « Confier à… » (fiche 223), d'où qu'ils viennent. */}
+      <RolesHost active={c.activeSummary} profiles={c.settings?.profiles ?? []} />
       {searchKey !== null && (
         <SearchDialog
           key={searchKey}
