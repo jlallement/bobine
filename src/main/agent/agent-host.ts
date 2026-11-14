@@ -51,7 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
-import { automaticAnswer, readOnlyRefusal } from './permission-answers'
+import { askReadOnly, automaticAnswer, readOnlyRefusal } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
@@ -846,7 +846,8 @@ export class AgentHost {
     )
     if (automatic) return automatic
     const risks = permissionRisks(toolCall, place)
-    return this.requests.permission({ ...params, toolCall }, risks, signal)
+    const ask = (asked: RequestPermissionRequest) => this.requests.permission(asked, risks, signal)
+    return askReadOnly({ ...params, toolCall }, this.options.readOnly, ask)
   }
 
   /** Formulaire ou page demandés par l'agent (`elicitation/create`), traduits pour l'interface. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RequestPermissionRequest } from '../../shared/acp-sdk.mts'
-import { automaticAnswer, type PermissionRules } from './permission-answers'
+import { askReadOnly, automaticAnswer, type PermissionRules } from './permission-answers'
 
 const OPTIONS: RequestPermissionRequest['options'] = [
   { optionId: 'yes', name: 'Allow once', kind: 'allow_once' },
@@ -74,5 +74,36 @@ describe('réponses automatiques aux demandes d’autorisation', () => {
     expect(
       automaticAnswer(request('other'), rules({ remembered: { has: () => true } }).rules)
     ).toEqual({ outcome: { outcome: 'selected', optionId: 'always' } })
+  })
+})
+
+describe('demande posée à une fille en lecture seule (essais réels avant 1.0.0-beta.2)', () => {
+  const answer = (optionId: string) => ({ outcome: { outcome: 'selected' as const, optionId } })
+
+  it('les options « toujours » de l’agent ne sont pas proposées ; une réponse « toujours » part en « une fois »', async () => {
+    let asked: RequestPermissionRequest | undefined
+    const result = await askReadOnly(request('execute'), true, async (r) => {
+      asked = r
+      return answer('always')
+    })
+    expect(asked?.options.map((o) => o.kind)).toEqual(['allow_once', 'reject_once'])
+    expect(result).toEqual(answer('yes'))
+  })
+
+  it('pas d’option « une fois » de même sens : « toujours » reste (seul choix) ; hors lecture seule, tel quel', async () => {
+    const onlyAlways = request('execute', [
+      { optionId: 'always', name: 'Always allow', kind: 'allow_always' },
+      { optionId: 'no', name: 'Reject', kind: 'reject_once' }
+    ])
+    let asked: RequestPermissionRequest | undefined
+    await askReadOnly(onlyAlways, true, async (r) => {
+      asked = r
+      return answer('no')
+    })
+    expect(asked?.options.map((o) => o.optionId)).toEqual(['always', 'no'])
+    const plain = request('execute')
+    expect(
+      await askReadOnly(plain, false, async (r) => answer(r.options[1]?.optionId ?? ''))
+    ).toEqual(answer('always'))
   })
 })

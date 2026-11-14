@@ -76,3 +76,32 @@ export function automaticAnswer(
   }
   return undefined
 }
+
+/** Option « une fois » qui répond à la place d'une option « toujours » de même sens. */
+const ONCE = { allow_always: 'allow_once', reject_always: 'reject_once' } as const
+
+/**
+ * Demande posée à l'utilisateur pour une fille en lecture seule (fiche 223) : aucun accord
+ * « toujours » ne vaut pour elle, donc les options `allow_always` / `reject_always` de l'agent ne
+ * sont pas proposées quand une option « une fois » de même sens existe ; une réponse « toujours »
+ * qui arriverait quand même part en « une fois ». Autre conversation : la demande telle quelle.
+ */
+export function askReadOnly(
+  params: RequestPermissionRequest,
+  readOnly: boolean | undefined,
+  ask: (asked: RequestPermissionRequest) => Promise<RequestPermissionResponse>
+): Promise<RequestPermissionResponse> {
+  if (!readOnly) return ask(params)
+  const onceOf = (kind: string) =>
+    kind in ONCE
+      ? params.options.find((o) => o.kind === ONCE[kind as keyof typeof ONCE])
+      : undefined
+  const options = params.options.filter((o) => !onceOf(o.kind))
+  return ask({ ...params, options }).then((answer) => {
+    if (answer.outcome.outcome !== 'selected') return answer
+    const { optionId } = answer.outcome
+    const chosen = params.options.find((o) => o.optionId === optionId)
+    const once = chosen ? onceOf(chosen.kind) : undefined
+    return once ? selected(once.optionId) : answer
+  })
+}
