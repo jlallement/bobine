@@ -60,6 +60,8 @@ async function environment() {
     )
   projectRole('questions', 'mode: ask\n')
   projectRole('sans-mode', 'mode: inexistant\n')
+  // Rôle du projet qui remplace un rôle fourni du même nom.
+  projectRole('tech-lead', 'read-only: true\n')
   const mock = (id: string, extra: Partial<AgentProfile> = {}): AgentProfile => ({
     id,
     label: `Factice ${id}`,
@@ -256,6 +258,15 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const first = env.firstMessage(child.id)
     expect(first?.kind === 'user' && first.text).toContain('CONSIGNE-SANS-MODE')
     expect(env.notices(child.id)).toContain('roles.notice.modeMissing')
+  })
+
+  it('rôle du projet qui remplace un rôle fourni : signalé dans la liste et dans le fil', async () => {
+    const env = await environment()
+    const child = await env.children.start(env.mother, { text: 'Plan', role: 'tech-lead' })
+    await env.settled(child.id)
+    expect(env.notices(child.id)).toContain('roles.notice.projectOverrides')
+    const first = env.firstMessage(child.id)
+    expect(first?.kind === 'user' && first.text).toContain('CONSIGNE-TECH-LEAD')
   })
 
   it('rôle inconnu par l’IPC : refusé avec la liste, aucune fille', async () => {

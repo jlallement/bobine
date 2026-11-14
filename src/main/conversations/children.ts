@@ -47,7 +47,7 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
 import { applyModel, ChildReviews } from './children-review'
-import { roleBadge, roleStamp, type RoleDefinition, type RoleView } from '@shared/roles'
+import { roleBadge, roleStamp, type RoleSnapshot, type RoleView } from '@shared/roles'
 import type { RoleLibrary } from '../roles/library'
 import { roleFirstMessage } from '../roles/launch'
 import { ReadOnlyWatch } from '../roles/read-only-watch'
@@ -71,6 +71,8 @@ export interface ChildRequest {
    * outils. Son agent et son modèle sont choisis par l'appelant (carte, dialogue).
    */
   role?: string
+  /** Rôle figé à la carte de `start_child` (relecture de la fiche 223) : l'emporte sur `role`. */
+  roleSnapshot?: RoleSnapshot
 }
 
 /** Une fille vue par `child_status`. */
@@ -188,7 +190,8 @@ export class ChildConversations {
     }
     const { active, max } = this.capacity(motherId)
     if (active >= max) throw new Error(t('children.limit', { count: max }))
-    const role = request.role ? this.findRole(motherId, request.role) : undefined
+    const role =
+      request.roleSnapshot ?? (request.role ? this.findRole(motherId, request.role) : undefined)
 
     const created = await this.prepare(motherId, text, request, role)
     const title = request.title?.trim()
@@ -246,7 +249,7 @@ export class ChildConversations {
     motherId: string,
     text: string,
     request: ChildRequest,
-    role: RoleDefinition | undefined
+    role: RoleSnapshot | undefined
   ): Promise<ConversationSummary> {
     const id = randomUUID()
     const launch: ChildLaunch = { id, motherId, title: request.title?.trim() || titleFrom(text) }
@@ -532,7 +535,7 @@ export class ChildConversations {
   private async launch(
     child: ConversationSummary,
     text: string,
-    { model, role }: { model: ChildRequest['model']; role: RoleDefinition | undefined },
+    { model, role }: { model: ChildRequest['model']; role: RoleSnapshot | undefined },
     launched: () => void
   ): Promise<void> {
     const childId = child.id

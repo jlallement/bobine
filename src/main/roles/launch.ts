@@ -4,7 +4,7 @@
  * lecture seule toujours dite à l'agent, et dite à l'utilisateur quand elle n'est que demandée.
  */
 import type { ConversationSummary, SessionControl } from '@shared/agent'
-import { roleOpening, type ReadOnlyLevel, type RoleDefinition } from '@shared/roles'
+import { roleOpening, type ReadOnlyLevel, type RoleDefinition, type RoleScope } from '@shared/roles'
 import { log } from '../log'
 import type { ConversationManager } from '../conversations/manager'
 
@@ -50,9 +50,17 @@ export function readOnlyLevel(
 export async function roleFirstMessage(
   host: RoleLaunchHost,
   child: ConversationSummary,
-  role: RoleDefinition,
+  role: RoleDefinition & { scope?: RoleScope; hides?: RoleScope[] },
   task: string
 ): Promise<string> {
+  // Rôle du projet qui en remplace un fourni ou personnel du même nom : dit, le dépôt décide.
+  if (role.scope === 'project' && role.hides?.length) {
+    host.post(child.id, {
+      type: 'notice',
+      level: 'warning',
+      message: { key: 'roles.notice.projectOverrides', params: { name: role.name } }
+    })
+  }
   const controls = host.view(child.id).snapshot?.controls ?? []
   const mode = nativeMode(controls, role.mode)
   let native = false

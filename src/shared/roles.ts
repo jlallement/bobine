@@ -129,6 +129,35 @@ export interface RoleBadge {
   readOnly?: true
 }
 
+/**
+ * Rôle figé dans une proposition de `start_child` (relecture de la fiche 223) : sa définition au
+ * moment de la carte, sa portée et les rôles qu'il remplace (un rôle de projet peut remplacer un
+ * rôle fourni ou personnel du même nom : c'est dit).
+ */
+export interface RoleSnapshot extends RoleDefinition {
+  scope: RoleScope
+  hides?: RoleScope[]
+}
+
+export function roleSnapshot(role: RoleSnapshot): RoleSnapshot {
+  const { name, label, icon, color, description, agent, mode, model, readOnly, mcp, prompt } = role
+  return {
+    name,
+    label,
+    icon,
+    color,
+    description,
+    ...(agent ? { agent } : {}),
+    ...(mode ? { mode } : {}),
+    ...(model ? { model } : {}),
+    readOnly,
+    ...(mcp ? { mcp: [...mcp] } : {}),
+    prompt,
+    scope: role.scope,
+    ...(role.hides?.length ? { hides: [...role.hides] } : {})
+  }
+}
+
 /** Rôle retenu dans l'enregistrement d'une fille à son lancement (un fichier changé ensuite n'y touche pas). */
 export interface RoleStamp extends RoleBadge {
   mcp?: string[]
@@ -439,24 +468,41 @@ export function roleOpening(
   ].join('\n')
 }
 
-/** Rôle retenu relu sur le disque (index des conversations) ; `undefined` s'il est mal formé. */
+/**
+ * Rôle retenu relu sur le disque (index des conversations) ; `undefined` s'il est mal formé. Une
+ * fille en lecture seule le reste même si son badge est abîmé (relecture de la fiche 223) : badge
+ * de repli, et aucune famille d'outils si la liste est illisible.
+ */
 export function parseRoleStamp(raw: unknown): RoleStamp | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined
-  const r = raw as Record<string, unknown>
-  const { name, label, icon, color, readOnly, mcp } = r
-  if (typeof name !== 'string' || !ROLE_NAME.test(name)) return undefined
-  if (typeof label !== 'string' || !label || label.length > ROLE_LIMITS.label) return undefined
-  if (typeof icon !== 'string' || !ICON_NAME.test(icon)) return undefined
-  if (!ACCENT_COLORS.includes(color as AccentColor)) return undefined
+  const { name, label, icon, color, readOnly, mcp } = raw as Record<string, unknown>
   const known = ROLE_TOOL_FAMILIES as readonly string[]
-  if (mcp !== undefined && !(Array.isArray(mcp) && mcp.every((id) => known.includes(id as string))))
-    return undefined
+  const validName = typeof name === 'string' && ROLE_NAME.test(name) ? name : undefined
+  const validLabel =
+    typeof label === 'string' && label && label.length <= ROLE_LIMITS.label ? label : undefined
+  const validIcon = typeof icon === 'string' && ICON_NAME.test(icon) ? icon : undefined
+  const validColor = ACCENT_COLORS.includes(color as AccentColor)
+    ? (color as AccentColor)
+    : undefined
+  const validMcp =
+    mcp === undefined || (Array.isArray(mcp) && mcp.every((id) => known.includes(id as string)))
+  if (readOnly === true) {
+    const fallbackName = validName ?? 'role'
+    return {
+      name: fallbackName,
+      label: validLabel ?? fallbackName,
+      icon: validIcon ?? 'bot',
+      color: validColor ?? 'graphite',
+      readOnly: true,
+      ...(validMcp ? (Array.isArray(mcp) ? { mcp: mcp as string[] } : {}) : { mcp: [] })
+    }
+  }
+  if (!validName || !validLabel || !validIcon || !validColor || !validMcp) return undefined
   return {
-    name,
-    label,
-    icon,
-    color: color as AccentColor,
-    ...(readOnly === true ? { readOnly: true as const } : {}),
+    name: validName,
+    label: validLabel,
+    icon: validIcon,
+    color: validColor,
     ...(Array.isArray(mcp) ? { mcp: mcp as string[] } : {})
   }
 }

@@ -26,7 +26,7 @@ import {
 import { messageOf } from '@shared/errors'
 import type { ChildChoices, ChildConversations, ChildStatus } from '../conversations/children'
 import { log } from '../log'
-import { roleBadge, rolesParagraph, type RoleBadge, type RoleView } from '@shared/roles'
+import { roleSnapshot, rolesParagraph, type RoleSnapshot, type RoleView } from '@shared/roles'
 import { roleDefaults } from '../roles/choice'
 import { reportFindingsTool, type ReviewTools } from './review-tools'
 import { argsOf, textResult, type AppTool, type AppToolModule, type ToolArgs } from './tools'
@@ -238,7 +238,8 @@ function motherTools(
           prompt,
           ...choice,
           ...(why ? { why: clip(why, WHY_CHARS) } : {}),
-          ...(role ? { role: roleBadge(role) } : {})
+          // Rôle figé à la carte : la fille lancée est celle que l'utilisateur a vue (relecture).
+          ...(role ? { role: roleSnapshot(role) } : {})
         })
         const notes = [...(ignored ? [MODEL_IGNORED] : []), ...defaults.notes]
         return notes.length && !result.isError
@@ -563,7 +564,7 @@ async function launch(
     profileId,
     model,
     role
-  }: { title: string; prompt: string; role?: RoleBadge } & ChildDecision,
+  }: { title: string; prompt: string; role?: RoleSnapshot } & ChildDecision,
   asking: number
 ): Promise<ToolResult> {
   // Le temps de répondre à la carte, d'autres filles ont pu partir.
@@ -577,7 +578,7 @@ async function launch(
         title,
         ...(profileId ? { profileId } : {}),
         ...(model ? { model } : {}),
-        ...(role ? { role: role.name } : {})
+        ...(role ? { roleSnapshot: role } : {})
       },
       'agent'
     )

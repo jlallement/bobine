@@ -492,28 +492,38 @@ describe('start_child avec un rôle (fiche 223)', () => {
     expect(s.calls).toEqual([])
   })
 
-  it('délègue à un rôle : sa pastille sur la carte, son nom à la fille, la lecture seule dite', async () => {
+  it('délègue à un rôle : figé sur la carte (consigne, mode, lecture seule), lancé tel quel', async () => {
     const s = setup({ roles: ROLES })
     const result = await s
       .tool('start_child')
       .call({ title: 'Audit', prompt: 'Audite', role: 'security-expert' })
-    expect(s.asked).toEqual([
-      {
-        title: 'Audit',
-        prompt: 'Audite',
-        role: {
-          name: 'security-expert',
-          label: 'security-expert',
-          icon: 'shield-check',
-          color: 'orange',
-          readOnly: true
-        }
-      }
-    ])
+    const frozen = {
+      name: 'security-expert',
+      label: 'security-expert',
+      icon: 'shield-check',
+      color: 'orange',
+      description: 'Quand security-expert',
+      readOnly: true,
+      prompt: 'p',
+      scope: 'builtin'
+    }
+    expect(s.asked).toEqual([{ title: 'Audit', prompt: 'Audite', role: frozen }])
     expect(s.calls).toEqual([
-      ['start', 'm', { text: 'Audite', title: 'Audit', role: 'security-expert' }, 'agent']
+      ['start', 'm', { text: 'Audite', title: 'Audit', roleSnapshot: frozen }, 'agent']
     ])
     expect(textOf(result)).toContain('read-only role "security-expert", in this folder')
+  })
+
+  it('rôle changé entre la carte et le lancement : la fille part avec ce que la carte montrait', async () => {
+    const roles = [role('tech-lead', { prompt: 'v1', readOnly: true })]
+    const s = setup({ roles, answer: 'late' })
+    await s.tool('start_child').call({ title: 'Plan', prompt: 'Planifie', role: 'tech-lead' })
+    // Le fichier du dépôt change pendant que la carte attend (rôle devenu « écrivain »).
+    roles[0] = role('tech-lead', { prompt: 'v2', readOnly: false })
+    s.late({ action: 'start' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const request = s.calls[0]?.[2] as { roleSnapshot?: { prompt: string; readOnly: boolean } }
+    expect(request.roleSnapshot).toMatchObject({ prompt: 'v1', readOnly: true })
   })
 
   it('agent et modèle du rôle repris quand le profil le permet, sinon une note', async () => {

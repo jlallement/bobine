@@ -200,7 +200,29 @@ describe('ce qui part à l’agent', () => {
     expect(requested).toContain('Audit only.')
     expect(requested).toContain('Bobine checks the folder after each of your turns')
     const writer = role('dev', 'user', { prompt: 'Code.' })
-    expect(roleOpening(writer, 'Tâche')).toBe('<bobine_role name="dev">\nCode.\n</bobine_role>\n\nTâche')
+    expect(roleOpening(writer, 'Tâche')).toBe(
+      '<bobine_role name="dev">\nCode.\n</bobine_role>\n\nTâche'
+    )
+  })
+
+  it('rôle retenu en lecture seule : la lecture seule survit à un badge abîmé (relecture)', () => {
+    const damaged = {
+      name: 'Bad Name',
+      label: '',
+      icon: '??',
+      color: 'red',
+      readOnly: true,
+      mcp: ['x']
+    }
+    expect(parseRoleStamp(damaged)).toEqual({
+      name: 'role',
+      label: 'role',
+      icon: 'bot',
+      color: 'graphite',
+      readOnly: true,
+      mcp: []
+    })
+    expect(parseRoleStamp({ ...damaged, readOnly: false })).toBeUndefined()
   })
 
   it('rôle retenu relu du disque : vérifié, retiré s’il est abîmé', () => {
@@ -213,9 +235,9 @@ describe('ce qui part à l’agent', () => {
       mcp: ['terminal']
     }
     expect(parseRoleStamp(stamp)).toEqual(stamp)
-    expect(parseRoleStamp({ ...stamp, color: 'red' })).toBeUndefined()
-    expect(parseRoleStamp({ ...stamp, mcp: ['nimporte'] })).toBeUndefined()
     const { readOnly: _readOnly, ...writer } = stamp
     expect(parseRoleStamp({ ...stamp, readOnly: 'yes' })).toEqual(writer)
+    expect(parseRoleStamp({ ...writer, color: 'red' })).toBeUndefined()
+    expect(parseRoleStamp({ ...writer, mcp: ['nimporte'] })).toBeUndefined()
   })
 })

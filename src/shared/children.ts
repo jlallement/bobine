@@ -8,7 +8,13 @@ import type { ConversationSummary } from './agent'
 import { APP_CONTEXT_OPENINGS, type SessionMoment } from './app-context'
 import type { AttentionKind, AttentionState } from './attention'
 import { conversationChanges, relativeTo } from './changes'
-import { roleLines, rolesParagraph, type RoleBadge, type RoleDefinition } from './roles'
+import {
+  roleLines,
+  rolesParagraph,
+  type RoleBadge,
+  type RoleDefinition,
+  type RoleSnapshot
+} from './roles'
 import type { TranscriptItem } from './transcript'
 import type { UsageDigest } from './usage'
 
@@ -418,8 +424,11 @@ export interface ChildProposal {
   model?: { controlId: string; value: string }
   /** Pourquoi cet agent ou ce modèle, en quelques mots, montré sur la carte. */
   why?: string
-  /** Rôle demandé (fiche 223), montré sur la carte. */
-  role?: RoleBadge
+  /**
+   * Rôle demandé (fiche 223), figé quand la carte est créée : la carte le montre (consigne, mode,
+   * lecture seule, outils, portée) et le lancement l'utilise tel quel, sans relire le fichier.
+   */
+  role?: RoleSnapshot
 }
 
 /** Ce que l'utilisateur décide d'une proposition : la fille, le travail ici, ou rien. */
