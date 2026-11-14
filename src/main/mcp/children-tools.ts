@@ -33,7 +33,7 @@ import {
   type RoleSnapshot,
   type RoleView
 } from '@shared/roles'
-import { roleDefaults } from '../roles/choice'
+import { roleDefaults, type RoleDefaults } from '../roles/choice'
 import { reportFindingsTool, type ReviewTools } from './review-tools'
 import { argsOf, textResult, type AppTool, type AppToolModule, type ToolArgs } from './tools'
 import type { ToolContext, ToolResult } from './tools'
@@ -226,7 +226,9 @@ function motherTools(
         // le profil le permet, sauf `agent` / `model` passés par la mère.
         const role = roleOf(host, id, optional(args, 'role'))
         if (typeof role === 'string') return textResult(role, true)
-        const defaults = role ? roleDefaults(host.choices(id), role) : { notes: [] }
+        const defaults: RoleDefaults = role
+          ? roleDefaults(host.choices(id), role)
+          : { notes: [], missing: {} }
         const agent = optional(args, 'agent') ?? defaults.agent
         const wantedModel =
           optional(args, 'model') ?? (optional(args, 'agent') ? undefined : defaults.model)

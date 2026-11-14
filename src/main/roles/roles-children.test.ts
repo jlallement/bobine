@@ -255,11 +255,17 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
 
   it('mode natif absent : la consigne du rôle part en tête du premier message, et c’est dit', async () => {
     const env = await environment()
-    const child = await env.children.start(env.mother, { text: 'Tâche', role: 'sans-mode' })
+    const child = await env.children.start(env.mother, {
+      text: 'Tâche',
+      role: 'sans-mode',
+      // Agent du rôle indisponible (`startRoleChildren`) : une ligne dans le fil de la fille.
+      notices: [{ key: 'roles.notice.agentMissing', params: { agent: 'absent' } }]
+    })
     await env.settled(child.id)
     const first = env.firstMessage(child.id)
     expect(first?.kind === 'user' && first.text).toContain('CONSIGNE-SANS-MODE')
     expect(env.notices(child.id)).toContain('roles.notice.modeMissing')
+    expect(env.notices(child.id)).toContain('roles.notice.agentMissing')
   })
 
   it('rôle du projet qui remplace un rôle fourni : signalé dans la liste et dans le fil', async () => {

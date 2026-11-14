@@ -10,6 +10,7 @@
  */
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
+import type { Message } from '@shared/i18n/message'
 import {
   MAX_ROLES_PER_MESSAGE,
   type RolesStartRequest,
@@ -53,9 +54,29 @@ export async function startRoleChildren(
       const choices = host.choices(motherId)
       const defaults = roleDefaults(choices, role)
       const choice = resolveChoice(choices, defaults.agent, defaults.model)
+      // Agent ou modèle du rôle laissés de côté : une ligne dans le fil de la fille.
+      const notices: Message[] = [
+        ...(defaults.missing.agent
+          ? [
+              {
+                key: 'roles.notice.agentMissing' as const,
+                params: { agent: defaults.missing.agent }
+              }
+            ]
+          : []),
+        ...(defaults.missing.model
+          ? [
+              {
+                key: 'roles.notice.modelMissing' as const,
+                params: { model: defaults.missing.model }
+              }
+            ]
+          : [])
+      ]
       const child = await host.start(motherId, {
         text: request.text,
         role: role.name,
+        ...(notices.length ? { notices } : {}),
         // Agent ou modèle du rôle introuvables ici : la fille prend ceux de la mère.
         ...(typeof choice === 'string' ? {} : choice)
       })

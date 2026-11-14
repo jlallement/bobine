@@ -88,7 +88,12 @@ describe('startRoleChildren', () => {
     const { fake, start } = host([role('a', { agent: 'autre' }), role('b', { agent: 'absent' })])
     await startRoleChildren(fake, 'mere', { roles: ['a', 'b'], text: 'x' })
     expect(start.mock.calls[0]?.[1]).toEqual({ text: 'x', role: 'a', profileId: 'autre' })
-    expect(start.mock.calls[1]?.[1]).toEqual({ text: 'x', role: 'b' })
+    // Agent indisponible : la fille prend celui de la mère, et son fil le dit (une ligne).
+    expect(start.mock.calls[1]?.[1]).toEqual({
+      text: 'x',
+      role: 'b',
+      notices: [{ key: 'roles.notice.agentMissing', params: { agent: 'absent' } }]
+    })
   })
 
   it('rôle inconnu et plafond : rendus avec leur raison, les autres partent', async () => {

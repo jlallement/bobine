@@ -47,6 +47,7 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
 import { applyModel, ChildReviews } from './children-review'
+import type { Message } from '@shared/i18n/message'
 import { roleBadge, roleStamp, type RoleSnapshot, type RoleView } from '@shared/roles'
 import type { RoleLibrary } from '../roles/library'
 import { roleFirstMessage } from '../roles/launch'
@@ -73,6 +74,8 @@ export interface ChildRequest {
   role?: string
   /** Rôle figé à la carte de `start_child` (relecture de la fiche 223) : l'emporte sur `role`. */
   roleSnapshot?: RoleSnapshot
+  /** Lignes dites dans le fil de la fille dès son lancement (agent du rôle indisponible…). */
+  notices?: Message[]
 }
 
 /** Une fille vue par `child_status`. */
@@ -211,6 +214,9 @@ export class ChildConversations {
         at: Date.now()
       }
     })
+    for (const message of request.notices ?? []) {
+      this.conversations.post(child.id, { type: 'notice', level: 'info', message })
+    }
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
     void this.launch(child, text, { model: request.model, role }, () => {
