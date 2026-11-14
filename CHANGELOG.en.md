@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Improved
+
+- Child conversations: the agent proposes them on its own when they help — several independent
+  tasks, long work to follow separately, a review or audit by a fresh pair of eyes — without you
+  having to insist; a short reminder repeats this after the conversation is summarized and when a
+  conversation is resumed (unless set to “Never”).
+
 ## 1.0.0-beta.1 — November 10, 2026
 
 The first public beta of Bobine: expect rough edges, and please report them on GitHub. The app

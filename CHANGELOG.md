@@ -2,6 +2,15 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Amélioré
+
+- Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
+  indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
+  sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et
+  à la reprise d'une conversation (sauf réglage « Jamais »).
+
 ## 1.0.0-beta.1 — 10 novembre 2026
 
 Première bêta publique de Bobine : attendez-vous à des aspérités, et signalez-les sur GitHub.

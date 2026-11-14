@@ -338,7 +338,8 @@ suite e2e `filles`. Les filles prennent l'agent de la mère : sa consigne commen
 `/scenario …`, et ses tours suivants jouent le scénario de lancement (`echo` dans les essais).
 
 `echo` montre aussi le contexte de session : dans un dépôt git, avec les outils des filles, le
-premier message d'une session arrive précédé du bloc `<bobine_capabilities>` (fiche 118).
+premier message d'une session arrive avec le bloc `<bobine_capabilities>` (fiche 118) ; après
+`/compact` ou à la reprise d'une session (`--store`), le même bloc en rappel court (fiche 223).
 
 ## L'utiliser dans les tests
 

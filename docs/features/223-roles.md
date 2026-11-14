@@ -1,6 +1,7 @@
 # 223 — Rôles : des agents spécialisés à invoquer, et des filles lancées sans insister
 
-- **Statut** : à faire (fiche et maquettes en relecture par l'utilisateur)
+- **Statut** : en cours — phase 1 (délégation) faite le 2026-11-14 ; phases 2 à 4 à faire
+  (maquettes en relecture par l'utilisateur)
 - **Dépend de** : 045 (commandes personnelles, fichiers Markdown du projet), 097 et 160
   (conversations filles, agent et modèle d'une fille, ADR-0019, ADR-0036), 112 (carte de
   propositions), 118 (filles proposées par l'agent, contexte de session), 177 (relecteur en lecture
@@ -115,8 +116,8 @@ travail. Un rôle de Bobine est écrit une fois et marche avec tous les agents.
 - [ ] Les serveurs MCP du rôle sont ceux passés à la session de la fille.
 - [ ] Icône et couleur du rôle sur la carte de la fille, dans « Sous-tâches » et dans la barre
       latérale ; textes en français et en anglais.
-- [ ] Contexte de session et description de `start_child` réécrits ; rappel après compaction et
-      reprise ; banc de délégation joué avant et après, résultats dans le journal.
+- [x] Contexte de session et description de `start_child` réécrits ; rappel après compaction et
+      reprise ; banc de délégation joué avant et après, résultats dans le journal (phase 1).
 - [ ] Testé contre l'agent factice : scénarios « délègue à un rôle », « rôle inconnu », « rôle en
       lecture seule qui tente d'écrire », « mode natif présent / absent ».
 - [ ] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en.
@@ -146,3 +147,77 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
 
 - 2026-11-14 : fiche écrite ; diagnostic de la délégation lu dans le code ; maquettes demandées
   (plusieurs parcours de création, rôles au travail, Réglages › Rôles), en attente de validation.
+- 2026-11-14 : **phase 1 (délégation) faite**, sans interface.
+  - **Textes réécrits en positif** (anglais, génériques) : description de `start_child`
+    (`main/mcp/children-tools.ts`) et contexte de session `capabilitiesContext`
+    (`shared/children.ts`) disent d'abord quand déléguer (plusieurs tâches indépendantes, long
+    travail à suivre, relecture ou audit par un regard neuf), puis les exclusions (question,
+    lecture de code, petit correctif, tâches dépendantes ou sur les mêmes fichiers). Retirés :
+    « (or with your own sub-agents) » de `start_child`, et le paragraphe qui réservait les
+    sous-agents à la lecture ; à la place une ligne : « For a separate piece of work, start_child is
+    the tool, not your own sub-agents. » Paragraphe « tech lead » resserré (même contenu).
+  - **Rappel court** `capabilitiesReminder` (même balise `<bobine_capabilities>`, 3 ou 4 lignes de
+    texte) : le contexte de session porte désormais son moment (`SessionMoment` de
+    `shared/app-context.ts`). Session neuve (`opened`) : contexte complet ; session rouverte sous le
+    même identifiant (`resumed` : `session/load` ou `session/resume`, dont l'historique a déjà le
+    contexte complet) et premier message après une compaction (`compacted` : `/compact` ou
+    `compaction_update`) : le rappel. Rien ailleurs, rien avec « Jamais »
+    (`childrenSessionContext`). L'index de la mémoire (fiche 182) part aux mêmes moments qu'avant.
+    **Écart** : la fiche prévoyait le rappel *en plus* ; il *remplace* le contexte complet qui
+    repartait déjà à ces deux moments (fiches 118 et 182) — moins de contexte, et les détails
+    restent dans la description de l'outil. Le rappel « quand le message nomme un rôle » attend
+    la phase 2.
+  - `agent-host.ts` (plafond) : à lignes égales (1 046), le drapeau booléen devient le moment ;
+    type `SessionContext` dans `prompt-content.ts`.
+  - **Relecture sans worktree depuis `start_child` : pas faite.** Le mécanisme de la fiche 177 ne
+    s'y prête pas simplement : `ChildReviews.start` refuse quand l'auteur répond (or `start_child`
+    est appelé en plein tour) ; il relit un diff (point de comparaison, liste de fichiers, refus si
+    rien à relire), pas un audit libre d'un module ; ses remarques passent par `report_findings`
+    vers une carte de l'auteur ; et la carte de proposition devrait dire « relecture en lecture
+    seule », donc changer d'interface. À faire en phase 2 avec `read-only` des rôles.
+  - Agent factice : aucun comportement de protocole nouveau (même bloc de texte, même balise : le
+    scénario `chantiers` réagit au rappel comme au contexte). `docs/mock-agent.md`, `docs/acp.md`
+    et `docs/architecture.md` le disent.
+  - Tests : `shared/children.test.ts` (ordre « quand déléguer » puis exclusions, rappel de 3 à 5
+    lignes, « Jamais »), `shared/app-context.test.ts` (rappel reconnu par `stripAppContext`),
+    `mcp/children-tools.test.ts` (description en positif, plus de renvoi aux sous-agents),
+    `agent/session-context.test.ts` (agent factice : complet au premier message, rien au
+    deuxième, rappel une fois après `/compact`, rappel une fois après `session/load`, rien avec
+    « Jamais » aux trois moments). Vérifié qu'il échoue si la reprise est prise pour une session
+    neuve.
+  - **Banc de délégation** (à la main, hors essais automatiques) : OpenCode 2.2.5, modèle gratuit
+    GLM-5.3-Flash Free (Zen), `pnpm pilote lancer --agents-neufs` (profil temporaire, dossier
+    personnel vide pour l'agent), dépôt jetable `calc` (git, 5 petits modules) remis à zéro avant
+    chaque consigne, une nouvelle conversation par consigne, réglage par défaut « Quand ça s'y
+    prête », cartes de proposition laissées sans réponse. Avant : build du commit `3699121` ;
+    après : build de `5bdf87b`. Coût : 0.
+
+    | # | Consigne | Attendu | Avant | Après |
+    |---|---|---|---|---|
+    | 1 | Trois fonctions indépendantes (`slugify`, `clamp`, `addDays`), chacune avec son test | déléguer | 3 filles ✓ | 3 filles ✓ |
+    | 2 | « Fais relire src/auth.js par un regard neuf » | déléguer | fait lui-même ✗ | 1 fille ✓ |
+    | 3 | « Audite la sécurité et la performance de auth.js et store.js » | déléguer | fait lui-même ✗ | 2 filles ✓ |
+    | 4 | Tests complets de math.js et, à côté, doc de strings.js | déléguer | 2 filles ✓ | 2 filles ✓ |
+    | 5 | Réécrire store.js (JSON, migration, tests), « je veux le suivre à part » | déléguer | 1 fille ✓ | 1 fille ✓ |
+    | 6 | CLI `bin/calc.js` et, séparément, export CSV | déléguer | 2 filles ✓ | 1er essai : fait lui-même ✗ (« l'outil n'était pas disponible ») ; 2e essai : 2 filles ✓ |
+    | 7 | « Que fait hash ? » | ne pas déléguer | répond ✓ | répond ✓ |
+    | 8 | Faute de frappe dans divide | ne pas déléguer | corrige ✓ | corrige ✓ |
+    | 9 | Renommer `sum` puis ajouter `average` (même fichier, dépendantes) | ne pas déléguer | fait ✓ | fait ✓ |
+    | 10 | « Où est géré le stockage des utilisateurs ? » | ne pas déléguer | répond ✓ | répond ✓ |
+
+    Décompte (premier essai de chaque consigne) : **avant** 4 délégations justes, 0 à tort,
+    2 absences à tort (relecture, audit) ; **après** 5 justes, 0 à tort, 1 absence à tort (n° 6,
+    juste au second essai). Le gain visé (relecture et audit) est là ; le n° 6 du premier essai
+    reste inexpliqué : l'agent dit l'outil indisponible, aucun appel `start_child` dans le fil, et
+    le journal de Bobine (niveau par défaut) n'en dit rien. Une suite e2e tournait en même temps sur
+    la machine. Un seul tirage par consigne et par build : un échantillon, pas une mesure ; à
+    rejouer avec un autre modèle gratuit et plusieurs tirages si l'écart compte. Bob non joué
+    (bobcoins : sur décision de l'utilisateur).
+  - Vérifications : `./scripts/verify` vert (code de sortie 0 ; 3 808 essais). `pnpm e2e --changed`
+    sur le build de `5bdf87b` : 192/192 vertes, clair et sombre (toutes les suites : `agent-host.ts`
+    est commun), code de sortie 0. Rien ne change à l'écran : captures non comparées une à une.
+  - Après les docs, `verify` a échoué une fois sur `conformance-bob.test.ts` › « prompt simple »
+    (« agent exited, attendu ready » ; aucun code touché depuis le premier passage vert), puis ce
+    fichier vert 3 fois seul et `verify` vert de nouveau (code 0) : essai instable sous charge,
+    noté ici, non corrigé dans cette phase.
+
