@@ -483,6 +483,67 @@ const OPEN_THE_SHOP: Step[] = [
   }
 ]
 
+/** Espace Discussion (fiche 224) : un e-mail rédigé, gardé comme document de la discussion. */
+const WRITE_AN_EMAIL: Step = bilingual((lang) => {
+  const en = lang === 'en'
+  const file = en ? 'Email to the roaster.md' : 'E-mail au torréfacteur.md'
+  const draft = en
+    ? 'Subject: 10 kg more for Friday\n\nHello Marc,\n\nOur Saturday market went better than planned: could you add **10 kg of the house blend** to Friday’s delivery? Same grind as usual.\n\nThank you, and see you on Friday!\n\nLéa, La Bobinette'
+    : 'Objet : 10 kg de plus pour vendredi\n\nBonjour Marc,\n\nLe marché de samedi a mieux marché que prévu : pourriez-vous ajouter **10 kg du mélange maison** à la livraison de vendredi ? Même mouture que d’habitude.\n\nMerci, et à vendredi !\n\nLéa, La Bobinette'
+  const id = 'vitrine_email'
+  const title = en ? `Writing ${file}` : `Écriture de ${file}`
+  const status = (value: 'completed' | 'failed'): Step => ({
+    kind: 'update',
+    update: { sessionUpdate: 'tool_call_update', toolCallId: id, status: value }
+  })
+  const written: Step[] = [
+    { kind: 'write-file', path: file, content: `${draft}\n` },
+    status('completed')
+  ]
+  return [
+    {
+      kind: 'text',
+      text: en
+        ? 'Here is a short, friendly draft:\n\n'
+        : 'Voici un brouillon court et cordial :\n\n'
+    },
+    {
+      kind: 'text',
+      text: `${draft
+        .split('\n')
+        .map((l) => `> ${l}`)
+        .join('\n')}\n\n`
+    },
+    {
+      kind: 'update',
+      update: {
+        sessionUpdate: 'tool_call',
+        toolCallId: id,
+        title,
+        kind: 'edit',
+        status: 'pending',
+        locations: [{ path: `{cwd}/${file}` }]
+      }
+    },
+    {
+      kind: 'permission',
+      toolCall: { toolCallId: id, title, kind: 'edit' },
+      options: [
+        { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+        { optionId: 'always', name: 'Always allow', kind: 'allow_always' },
+        { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+      ],
+      branches: { allow: written, always: written, reject: [status('failed')] }
+    },
+    {
+      kind: 'text',
+      text: en
+        ? `I also saved it in your documents: **${file}**.`
+        : `Je l’ai aussi gardé dans vos documents : **${file}**.`
+    }
+  ]
+})
+
 /** Choisit la suite d'après le message reçu (sans tenir compte de la casse). */
 const when = (includes: string[], then: Step[], otherwise: Step[]): Step[] => {
   const [first, ...rest] = includes
@@ -493,7 +554,7 @@ const when = (includes: string[], then: Step[], otherwise: Step[]): Step[] => {
 export const showcaseScenarios: Record<string, Scenario> = {
   vitrine: {
     description:
-      'Vitrine du README (fiche 225), anglais ou français selon `--langue` : test de la remise corrigé avec autorisation et diff ; « export » : question à choix ; « the shop » / « la boutique » : page MOCK_BROWSER_URL dans le navigateur ; consigne d’un rôle expert sécurité ou relecteur : leur compte rendu',
+      'Vitrine du README (fiche 225), anglais ou français selon `--langue` : test de la remise corrigé avec autorisation et diff ; « export » : question à choix ; « the shop » / « la boutique » : page MOCK_BROWSER_URL dans le navigateur ; « email » / « e-mail » : brouillon d’e-mail gardé en document (espace Discussion) ; consigne d’un rôle expert sécurité ou relecteur : leur compte rendu',
     steps: when(
       ['application security expert', 'expert en sécurité applicative'],
       [SECURITY_REVIEW],
@@ -503,7 +564,11 @@ export const showcaseScenarios: Record<string, Scenario> = {
         when(
           ['export'],
           [ASK_FIRST],
-          when(['the shop', 'la boutique'], OPEN_THE_SHOP, [FIX_THE_TEST])
+          when(
+            ['the shop', 'la boutique'],
+            OPEN_THE_SHOP,
+            when(['email', 'e-mail'], [WRITE_AN_EMAIL], [FIX_THE_TEST])
+          )
         )
       )
     )

@@ -95,6 +95,14 @@ simulateur iOS et l'émulateur Android : touchers, lecture de l'écran, planches
 
 ![L'agent a ouvert la boutique dans le navigateur intégré](docs/images/readme/fr/browser.png)
 
+### Discuter, sans projet
+
+Tout n'est pas du code. L'espace **Discussion** garde des conversations sans dossier de projet :
+poser une question, faire écrire un e-mail, résumer un document. Ce que l'agent écrit reste dans
+l'onglet **Documents** de la discussion, prêt à ouvrir ou à enregistrer.
+
+![L'agent a rédigé un e-mail et l'a gardé dans les documents de la discussion](docs/images/readme/fr/discussion.png)
+
 ### Clair et sombre
 
 Thèmes clair et sombre avec six accents, la police du système ou la vôtre, une densité compacte et

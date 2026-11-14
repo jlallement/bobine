@@ -93,6 +93,14 @@ Simulator and the Android emulator: taps, screen reading, contact sheets, video.
 
 ![The agent opened the shop page in the built-in browser](docs/images/readme/en/browser.png)
 
+### Chat, without a project
+
+Not everything is code. The **Chat** space holds conversations without a project folder: ask a
+question, write an email, summarize a document. What the agent writes is kept in the chat's
+**Documents** tab, ready to open or save.
+
+![The agent drafted an email and kept it in the chat's documents](docs/images/readme/en/discussion.png)
+
 ### Light and dark
 
 Light and dark themes with six accents, the system font or your own, a compact density and a

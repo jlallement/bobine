@@ -11,7 +11,8 @@
  * la vidéo dans `e2e/captures/vitrine-*`).
  *
  * Sorties, dans `docs/images/readme/<langue>/` : `hero-light.png`, `hero-dark.png`,
- * `changes.png`, `roles-menu.png`, `roles.png`, `questions.png`, `browser.png`, `themes.png` ;
+ * `changes.png`, `roles-menu.png`, `roles.png`, `questions.png`, `browser.png`,
+ * `discussion.png`, `themes.png` ;
  * en anglais seulement : `docs/images/social-preview.png` (1280×640, à déposer à la main dans
  * Settings › General de GitHub). Vidéo : `e2e/captures/vitrine/<langue>/demo.mp4` (non versionnée,
  * à déposer par l'éditeur web de GitHub) et `docs/images/readme/<langue>/roles.gif`.
@@ -36,7 +37,7 @@ import {
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { LANG, captures, root, sleep, withApp } from './lib.mjs'
+import { L, LANG, MAIN_PORT, captures, root, sleep, withApp } from './lib.mjs'
 import { SHOWCASE_PROJECT } from '../src/mock-agent/scenarios-vitrine.mts'
 
 const EN = LANG === 'en'
@@ -44,8 +45,12 @@ const WITH_VIDEO = !process.argv.includes('--sans-video')
 const KEEP = process.argv.includes('--garder')
 /** Thèmes montrés (`prefers-color-scheme`) ; un nouveau thème s'ajoute ici et dans `themes.png`. */
 const SCHEMES = ['light', 'dark']
+/**
+ * Fenêtre des essais, à sa taille réelle (1280×820) : une taille émulée décalerait les vues natives
+ * (navigateur intégré) dans les captures.
+ */
 const WIDTH = 1280
-const HEIGHT = 800
+const HEIGHT = 820
 /** Largeur des images du README : le double d'une colonne de README, net sur un écran Retina. */
 const README_WIDTH = 1600
 const GIF_MAX_BYTES = 5 * 1024 * 1024
@@ -75,13 +80,15 @@ const PROMPTS = EN
       fix: 'The discount test fails. Can you fix it?',
       review: 'review the cart before the release',
       questions: 'Add an export of the orders',
-      browser: 'Open the shop and check the page'
+      browser: 'Open the shop and check the page',
+      email: 'Write an email to our coffee roaster: we need 10 kg more for Friday.'
     }
   : {
       fix: 'Le test de la remise échoue, tu peux corriger ?',
       review: 'relisez le panier avant la mise en ligne',
       questions: 'Ajoute un export des commandes',
-      browser: 'Ouvre la boutique et vérifie la page'
+      browser: 'Ouvre la boutique et vérifie la page',
+      email: 'Écris un e-mail au torréfacteur : il nous faut 10 kg de plus pour vendredi.'
     }
 
 /** Page de la boutique servie au navigateur intégré. */
@@ -135,10 +142,32 @@ async function checkClean(ui, name) {
   }
 }
 
+/**
+ * Une capture à la fois : une image de la vidéo prise pendant une capture d'écran la gâche
+ * (image de tête en mosaïque).
+ */
+let lock = Promise.resolve()
+function exclusive(fn) {
+  const run = lock.then(fn)
+  lock = run.catch(() => {})
+  return run
+}
+
 /** Capture contrôlée, réduite à `README_WIDTH` dans le dossier du README. */
 async function shot(ui, name, scheme = 'light') {
   await checkClean(ui, name)
-  await ui.shot(`vitrine-${name}`)
+  // Aucun survol dans l'image (poignée de la barre latérale, infobulle) : la fenêtre est à
+  // l'écran, le vrai pointeur de la machine peut passer dessus. Le temps de la capture seulement.
+  await ui.hover({ x: WIDTH - 4, y: HEIGHT - 4 })
+  await ui.ev(
+    `(() => { const s = document.createElement('style'); s.id = 'vitrine-sans-survol'; s.textContent = '* { pointer-events: none !important }'; document.head.append(s) })()`
+  )
+  await sleep(300)
+  try {
+    await exclusive(() => ui.shot(`vitrine-${name}`))
+  } finally {
+    await ui.ev(`document.getElementById('vitrine-sans-survol')?.remove()`)
+  }
   const raw = join(captures, `${EN ? 'en-' : ''}vitrine-${name}-${scheme}.png`)
   const file = join(out, `${name}.png`)
   execFileSync('sips', ['--resampleWidth', String(README_WIDTH), raw, '--out', file], {
@@ -159,9 +188,12 @@ async function typeSlowly(ui, text) {
   }
 }
 
-/** Choisit un rôle dans le menu `@` : `@début`, puis Entrée sur le rôle en tête. */
-async function pickRole(ui, query, role) {
-  await typeSlowly(ui, `@${query}`)
+/**
+ * Choisit un rôle dans le menu `@` : `@` (s'il n'est pas déjà tapé) et le début de son nom, puis
+ * Entrée sur le rôle en tête.
+ */
+async function pickRole(ui, query, role, { at = true } = {}) {
+  await typeSlowly(ui, `${at ? '@' : ''}${query}`)
   await ui.waitFor(
     `document.querySelector('[data-testid=role-item]')?.dataset.role === '${role}'`,
     5000
@@ -184,11 +216,13 @@ function record(ui) {
   const loop = (async () => {
     while (running) {
       const at = Date.now()
-      const r = await ui.cdp('Page.captureScreenshot', {
-        format: 'jpeg',
-        quality: 92,
-        clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 0.5 }
-      })
+      const r = await exclusive(() =>
+        ui.cdp('Page.captureScreenshot', {
+          format: 'jpeg',
+          quality: 92,
+          clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 0.5 }
+        })
+      )
       if (r.result?.data) {
         const file = join(dir, `${String(frames.length).padStart(5, '0')}.jpg`)
         writeFileSync(file, Buffer.from(r.result.data, 'base64'))
@@ -389,6 +423,8 @@ const env = (dir, extra = {}) => ({
 /** Envoie le message tapé (Entrée), puis attend l'état voulu. */
 async function sendTyped(ui, text) {
   await typeSlowly(ui, text)
+  // Tout est bien arrivé dans la saisie (une conversation qui s'ouvre peut perdre une frappe).
+  await ui.waitFor(`${ui.$('composer-input')}?.value === ${JSON.stringify(text)}`, 5000)
   await sleep(WITH_VIDEO ? 400 : 0)
   await ui.enter()
 }
@@ -423,15 +459,15 @@ async function fixTheTest(ui, scheme, { changes = true } = {}) {
 async function reviewWithRoles(ui) {
   await ui.click(ui.$('new-conversation'))
   await ui.waitFor(`${ui.$('composer-input')}?.value === ''`)
+  await sleep(500)
+  await ui.closePanel()
   await typeSlowly(ui, '@')
   await ui.waitFor(`!!document.querySelector('[data-testid=role-item]')`)
   await sleep(600)
   await shot(ui, 'roles-menu')
-  await ui.press('Backspace')
-  await ui.waitFor(`!document.querySelector('[data-testid=role-item]')`)
-  await pickRole(ui, 'secu', 'security-expert')
-  await pickRole(ui, 'code', 'code-reviewer')
-  await typeSlowly(ui, PROMPTS.review)
+  await pickRole(ui, 'secu', 'security-expert', { at: false })
+  await pickRole(ui, ' @code', 'code-reviewer', { at: false })
+  await typeSlowly(ui, ` ${PROMPTS.review}`)
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   await sleep(WITH_VIDEO ? 900 : 300)
   await ui.enter()
@@ -444,6 +480,7 @@ async function reviewWithRoles(ui) {
 async function askFirst(ui) {
   await ui.click(ui.$('new-conversation'))
   await ui.waitFor(`${ui.$('composer-input')}?.value === ''`)
+  await sleep(500)
   await sendTyped(ui, PROMPTS.questions)
   await ui.waitFor(`!!document.querySelector('[data-testid=choice]')`, 30_000)
   await sleep(800)
@@ -453,11 +490,30 @@ async function askFirst(ui) {
 async function openTheShop(ui) {
   await ui.click(ui.$('new-conversation'))
   await ui.waitFor(`${ui.$('composer-input')}?.value === ''`)
+  await sleep(500)
   await sendTyped(ui, PROMPTS.browser)
   await ui.waitFor(`!!document.querySelector('.side-panel-tab.active[data-tab=browser]')`, 30_000)
   await ui.ready()
   await sleep(2000)
   await shot(ui, 'browser')
+}
+
+/** Espace Discussion (fiche 224) : un e-mail rédigé, gardé dans les documents. */
+async function writeAnEmail(ui) {
+  await ui.click(ui.$('space-discussion'))
+  await ui.waitFor(`!!${ui.$('discussion-drop-hint')}`)
+  await ui.ready()
+  await sendTyped(ui, PROMPTS.email)
+  await ui.waitFor(`!!${ui.$('document-card')}`, 30_000)
+  await ui.ready()
+  if (!(await ui.ev(`!!${ui.$('side-panel')}`))) await ui.click(ui.$('panel-toggle'))
+  await ui.waitFor(`!!${ui.$('side-panel')}`)
+  await ui.click(
+    `[...document.querySelectorAll('.side-panel-tab-main')].find((b) => b.innerText.includes(${JSON.stringify(L('panel.tab.documents'))}))`
+  )
+  await ui.waitFor(`!!${ui.$('documents-preview')}`)
+  await sleep(1000)
+  await shot(ui, 'discussion')
 }
 
 const server = createServer((_, res) => {
@@ -477,7 +533,6 @@ try {
       await withApp(
         'light',
         async (ui) => {
-          await ui.viewport(WIDTH, HEIGHT)
           await ui.ready()
           await sleep(600)
           const video = WITH_VIDEO ? record(ui) : undefined
@@ -500,10 +555,13 @@ try {
           }
           await askFirst(ui)
           await openTheShop(ui)
+          await writeAnEmail(ui)
         },
         undefined,
         'vitrine',
-        env(dir, { MOCK_BROWSER_URL: shopUrl })
+        env(dir, { MOCK_BROWSER_URL: shopUrl }),
+        // Inspecteur du main : la page du navigateur intégré (vue native) entre dans la capture.
+        [`--inspect=${MAIN_PORT}`]
       )
     } finally {
       rmSync(base, { recursive: true, force: true })
@@ -517,7 +575,6 @@ try {
       await withApp(
         scheme,
         async (ui) => {
-          await ui.viewport(WIDTH, HEIGHT)
           await ui.ready()
           heroRaw[scheme] = await fixTheTest(ui, scheme, { changes: false })
         },
@@ -539,7 +596,6 @@ try {
       await withApp(
         'light',
         async (ui) => {
-          await ui.viewport(WIDTH, HEIGHT)
           await ui.ready()
           await socialPreview(ui, heroRaw.light, join(root, 'docs', 'images', 'social-preview.png'))
         },

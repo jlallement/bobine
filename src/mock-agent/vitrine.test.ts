@@ -94,4 +94,16 @@ describe('vitrine (fiche 225)', () => {
     })
     expect(agentText(result.updates)).toContain('CSV it is')
   })
+
+  it('« e-mail » : brouillon cité, puis gardé en document avec l’accord', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitrine-discussion-'))
+    const result = await turn(
+      'fr',
+      'Écris un e-mail au torréfacteur',
+      { onPermission: () => ({ outcome: { outcome: 'selected', optionId: 'allow' } }) },
+      dir
+    )
+    expect(agentText(result.updates)).toContain('Bonjour Marc')
+    expect(readFileSync(join(dir, 'E-mail au torréfacteur.md'), 'utf8')).toContain('10 kg')
+  })
 })

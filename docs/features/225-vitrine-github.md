@@ -1,7 +1,9 @@
 # 225 — Vitrine GitHub : README illustré, captures reproductibles, image de partage, vidéo
 
-- **Statut** : en cours
-- **Dépend de** : 186 (captures du guide), 219 (README public), 223 (rôles)
+- **Statut** : fait (relecture du tech lead à faire) ; actions sur GitHub en attente de l'accord de
+  l'utilisateur (voir `docs/promotion-github.md`)
+- **Dépend de** : 186 (captures du guide), 219 (README public), 223 (rôles), 224 (espace
+  Discussion)
 - **Agents** : aucun (documentation et outillage) ; les captures utilisent l'agent factice en mode
   vitrine, jamais un vrai agent ni un faux IBM Bob ou OpenCode
 
@@ -13,16 +15,16 @@ visuels, ni rien qui bouge. Plan et audit : [`docs/promotion-github.md`](../prom
 
 ## Critères d'acceptation
 
-- [ ] `pnpm build && pnpm vitrine [--lang fr]` régénère toutes les images du README, le GIF, la
+- [x] `pnpm build && pnpm vitrine [--lang fr]` régénère toutes les images du README, le GIF, la
       vidéo et l'image de partage, sans modèle ni donnée personnelle, et refuse une capture qui
       montre « factice », « mock », `/scenario` ou un chemin de la machine.
-- [ ] L'agent s'appelle « Agent de démo » / « Demo agent » partout dans les captures (profil,
+- [x] L'agent s'appelle « Agent de démo » / « Demo agent » partout dans les captures (profil,
       `agentInfo.title`, modèles « Démo … ») ; jamais un faux IBM Bob ou OpenCode.
-- [ ] README anglais restructuré (accroche, badges, téléchargement, image de tête claire et
+- [x] README anglais restructuré (accroche, badges, téléchargement, image de tête claire et
       sombre, « Why Bobine », visite illustrée, FAQ, feuille de route) ; `README.fr.md` complet.
-- [ ] GIF ≤ 5 Mo ; MP4 < 10 Mo (dépôt par l'éditeur web de GitHub).
-- [ ] Notes de version : image en tête et ligne d'installation non signée.
-- [ ] Testé contre l'agent factice : `src/mock-agent/vitrine.test.ts` (scénario `vitrine`,
+- [x] GIF ≤ 5 Mo ; MP4 < 10 Mo (dépôt par l'éditeur web de GitHub).
+- [x] Notes de version : image en tête et ligne d'installation non signée.
+- [x] Testé contre l'agent factice : `src/mock-agent/vitrine.test.ts` (scénario `vitrine`,
       `--vitrine`).
 
 ## Plan
@@ -50,6 +52,18 @@ visuels, ni rien qui bouge. Plan et audit : [`docs/promotion-github.md`](../prom
 - 2026-11-14 — Scénario `vitrine`, option `--vitrine`, profil de démo, script de captures, README
   anglais et français, en-tête des notes de version. Captures : en attente du feu vert (une suite
   e2e complète tournait sur la machine).
+- 2026-11-14 — `main` fusionnée (espace Discussion, fiche 224) : branche « email » du scénario
+  `vitrine` et capture `discussion.png` (onglet Documents). Captures faites en anglais et en
+  français, toutes regardées : rien de « factice », de `/scenario` ni de chemin de la machine.
+  Poids : images du README 230 à 360 Ko chacune (1600 px) ; `roles.gif` 669 Ko (en) et 770 Ko
+  (fr), 960 px, 11 s ; `demo.mp4` 522 Ko (en) et 549 Ko (fr), 1280×820, 21 s, dans
+  `e2e/captures/vitrine/<langue>/` (non versionné) ; `social-preview.png` 1280×640, 174 Ko.
+- Problèmes rencontrés et réglés dans le script : une image de la vidéo prise pendant une capture
+  gâchait celle-ci (mosaïque) : une capture à la fois ; une fenêtre émulée (1280×800) laissait la
+  page du navigateur intégré vide : taille réelle de la fenêtre et inspecteur du main ; le vrai
+  pointeur de la machine survolait la poignée de la barre latérale : survol coupé le temps de la
+  capture ; une frappe perdue à l'ouverture d'une conversation : saisie vérifiée avant l'envoi.
+- Les anciennes captures `docs/images/bobine.png` et `bobine-fr.png` sont retirées (plus citées).
 - Écart au plan : simulateur iOS et émulateur Android non capturés (leurs faux outils d'essai
   montrent un iPhone factice et un flux interrompu) ; le README les décrit en texte. Thèmes : clair
   et sombre seulement, le thème « Aurore » en préparation pourra s'ajouter à `SCHEMES` du script
