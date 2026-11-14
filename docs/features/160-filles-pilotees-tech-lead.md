@@ -154,3 +154,6 @@ et des branches que la mère « dit » à l'utilisateur de fusionner) sans le mo
   `childModelChoice`, `start_child` n'a donc plus d'argument `model` ; Bob le passant quand même
   (consigne qui l'invite à suggérer un modèle), il est ignoré — la fille part sans — et la réponse
   de l'outil l'en avertit, au lieu d'un appel refusé. `ChildConversations.start` le refuse toujours.
+- 2026-11-14 (fiche 223, relecture) : le modèle choisi pour une fille (`applyModel`) était aussi
+  retenu comme modèle par défaut du profil (`setControl` mémorise) ; posé désormais pour la fille
+  seulement (`setControl(…, { remember: false })`).

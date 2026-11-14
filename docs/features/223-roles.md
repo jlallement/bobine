@@ -74,9 +74,10 @@ Détail :
    ne gonfle pas, utile avec Bob qui sature vite), elle est visible, ouvrable, arrêtable, et rend
    un compte rendu. Lecture seule : même dossier, comme le relecteur de la fiche 177 ; sinon son
    worktree, comme toute fille. Voir « Lecture seule : ce qui est garanti » ci-dessous.
-3. **Consigne** : si l'agent a le mode nommé par `mode` (liste des modes ACP de sa session), la
-   fille est ouverte dans ce mode (prompt système et restrictions natives) ; sinon la consigne du
-   rôle part en tête de son premier message (ACP ne permet pas de poser un prompt système).
+3. **Consigne** : la consigne du rôle part **toujours** en tête du premier message (ACP ne permet
+   pas de poser un prompt système) ; si l'agent a le mode nommé par `mode` (modes ou options de
+   catégorie `mode` de sa session), la fille est en plus mise dans ce mode, pour elle seulement
+   (relecture du 2026-11-14 : avant, la consigne n'était envoyée que sans mode natif).
 4. **Deux façons d'invoquer, une seule définition** :
    - l'utilisateur : `@rôle …` dans la saisie lance la fille avec ce rôle et ce texte ;
    - l'agent : `start_child` reçoit un argument `role`, et la liste des rôles (nom + description)
@@ -115,8 +116,13 @@ Bobine ne peut refuser que ce qu'un agent lui demande. Trois garde-fous, sans en
    texte dit seulement « le dossier a changé »).
 
 Un agent qui **écrit sans demander** (OpenCode réglé par défaut, profil `writesWithoutAsking`) n'est
-pas arrêté par 2 : sa lecture seule n'est **que demandée**, sauf si le rôle nomme un mode natif qui
-la tient (`mode: plan` pour OpenCode), et le fil de la fille le dit dès le lancement. Bobine
+pas arrêté par 2 : sa lecture seule n'est **que demandée**, même si le rôle nomme un mode natif
+(rien ne prouve que ce mode interdise l'écriture ; `mode: plan` d'OpenCode aide, mais `build`
+écrit), et le fil de la fille le dit dès le lancement. Une fille en lecture seule n'a droit à aucun
+accord « toujours » (outils de l'agent retenus, commandes « toujours dans ce projet » des outils de
+Bobine) : tout est demandé. Hors périmètre, noté : Bob demande un changement de mode avec
+`kind: "other"`, non attrapé par le refus de `switch_mode` (impact limité, les écritures restent
+refusées). Bobine
 n'impose pas d'office le mode plan de l'agent : celui de Bob écrit un plan et finit par une
 question, seul le rôle sait quel mode lui convient.
 
@@ -161,7 +167,7 @@ question, seul le rôle sait quel mode lui convient.
       (phase 2 : `roles:list` rend les problèmes ; l'écran viendra en phase 3).
 - [ ] `@` dans la saisie liste les rôles ; `@rôle texte` propose la fille avec ce rôle.
 - [x] `start_child` accepte `role` ; un rôle inconnu est refusé avec la liste des rôles connus.
-- [x] Le mode natif est utilisé quand l'agent l'a, la consigne en premier message sinon.
+- [x] Le mode natif est utilisé quand l'agent l'a ; la consigne part toujours en premier message.
 - [x] Un rôle en lecture seule travaille dans le même dossier ; ses demandes d'écriture sont
       refusées et dites ; une écriture faite sans demander est signalée (voir « Lecture seule »).
 - [x] Les outils du rôle (`mcp` : familles d'outils de Bobine) sont ceux passés à la session de la
@@ -344,3 +350,44 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
     (`ConversationSummary.role`), mention « lecture seule seulement demandée » dans l'interface
     (`ProfileSummary.writesWithoutAsking`) ; valider le sens de `mcp` (familles de Bobine) ;
     évènement de liste changée si l'écran doit suivre les fichiers à chaud.
+- 2026-11-14 : **relecture de la phase 2** (relecture indépendante, vérifiée par le tech lead) et
+  correctifs, chacun avec un essai qui échouait avant :
+  1. **Écrasement par lien symbolique** (bloquant) : `writeFileAtomic` et `writeFileAtomicAsync`
+     (`storage.ts`, toute l'app) retirent un temporaire préexistant puis le créent en exclusif
+     (`wx`), copie de sauvegarde en exclusif aussi ; la bibliothèque ne lit ni n'écrit à travers
+     `.bobine` ou `.bobine/roles` liens (problème `link` signalé), et refuse un `<nom>.md` lien.
+  2. **Mode et modèle retenus pour le profil** (bloquant) : `ConversationManager.setControl(…,
+     { remember: false })`, utilisé par le mode d'un rôle **et** par `applyModel` — même défaut
+     corrigé pour le modèle d'une fille de la fiche 160 et du relecteur de la fiche 177 : il
+     devenait le modèle par défaut du profil.
+  3. **Niveau de lecture seule** : pour un agent `writesWithoutAsking`, toujours « demandée », mode
+     natif ou non (`mode: build` écrit).
+  4. **Consigne toujours envoyée**, mode natif ou non ; ADR-0045 révisé (note datée, avant fusion,
+     à la demande du tech lead).
+  5. **Rôle de projet** : la proposition fige la définition (`RoleSnapshot` : consigne, mode,
+     lecture seule, outils, portée, rôles remplacés), la carte de la phase 3 pourra les montrer,
+     et le lancement part du figé sans relire par nom ; un rôle de projet qui en remplace un
+     fourni ou personnel est signalé (`hides` dans la liste, ligne dans le fil de la fille).
+  6. **Genre de l'outil** : la demande d'autorisation prend le `kind` annoncé par le `tool_call`
+     quand elle n'en porte pas (`ProfileUpdates.permission`), avant le refus de lecture seule ;
+     scénario `role-ecrit-sans-genre`.
+  7. **Accords « toujours »** ignorés pour une fille en lecture seule (outils retenus de l'agent,
+     commandes « toujours dans ce projet » des outils de Bobine, choix non proposé).
+  8. **Écrasement du fichier d'un autre rôle** : `save` refuse un `<nom>.md` qui existe et n'est pas
+     celui du rôle renommé (`duplicateName`).
+  9. **Lecture seule perdue au rechargement** : un rôle retenu en lecture seule le reste avec un
+     badge de repli si son libellé, son icône ou sa couleur sont abîmés (outils : aucun si la liste
+     est illisible).
+  - Mineurs : empreinte git qui échoue sur toute erreur ou délai (`ls-files -z`) et tour non
+    vérifié dit dans le fil (`roles.notice.watchFailed`) ; empreinte préparée oubliée si l'envoi
+    échoue ; un second message pendant un tour garde l'empreinte de départ ; en-tête : listes en
+    tirets non indentés, `---` suivi d'espaces ; libellé et description sans saut de ligne ;
+    fichier lu dans sa limite de taille, plus de 100 fichiers signalé (`tooMany`) ; liste des rôles
+    donnée à l'agent bornée à 20 (fournis et personnels d'abord, description coupée à 200
+    caractères, « and N more »).
+  - Sens de `mcp` (familles d'outils de Bobine) validé par le tech lead.
+  - Le test de la phase 2 « mode natif présent » vérifie désormais la consigne envoyée et l'absence
+    de réglage retenu pour le profil.
+  - Vérifications après correctifs : `./scripts/verify` vert (code de sortie 0 ; 429 fichiers,
+    3 875 essais) ; `pnpm build && pnpm e2e --changed` : 192/192 vertes, clair et sombre, code de
+    sortie 0, 15 min 00 s.

@@ -30,16 +30,20 @@ l'utilisateur le 2026-11-14 (décisions 3, 5, 7 et 8 de la fiche).
    projet l'emporte sur le personnel, qui l'emporte sur le fourni. La désactivation est retenue
    par nom dans les réglages (`rolesOff`). Un rôle fourni ne s'écrit ni ne se supprime :
    l'enregistrer en personnel le remplace.
-3. **Un rôle s'exécute toujours dans une conversation fille.** Mode natif si la session de
-   l'agent l'expose (`mode`), sinon la consigne en tête du premier message ; le rôle est retenu
-   dans l'enregistrement de la fille à son lancement (nom, libellé, icône, couleur, lecture seule,
-   familles d'outils).
+3. **Un rôle s'exécute toujours dans une conversation fille.** La consigne du rôle part
+   **toujours** en tête du premier message ; le mode natif (`mode`) est posé en plus si la session
+   de l'agent l'expose, pour cette fille seulement (jamais retenu comme défaut du profil). Le rôle
+   proposé par `start_child` est figé sur la carte (définition complète) et la fille part de ce
+   figé ; il est retenu dans l'enregistrement de la fille (nom, libellé, icône, couleur, lecture
+   seule, familles d'outils). Un rôle de projet qui en remplace un fourni ou personnel est
+   signalé. Rien ne se lit ni ne s'écrit à travers un lien symbolique du dépôt.
 4. **Lecture seule** : même dossier que la mère, sans worktree ; Bobine refuse d'office les
    demandes d'écriture (`edit`, `delete`, `move`, `switch_mode`), le dit à l'agent dans sa
    consigne et compare l'empreinte git du dossier avant et après chaque tour (écart signalé à la
    fille et à la mère). Pour un agent qui écrit sans demander (profil `writesWithoutAsking`,
-   OpenCode), la lecture seule n'est **que demandée** sauf mode natif choisi par le rôle, et c'est
-   dit dans le fil de la fille : Bobine ne prétend pas une garantie qu'elle n'a pas.
+   OpenCode), la lecture seule n'est **que demandée**, même dans un mode natif (rien ne prouve
+   qu'il interdise l'écriture), et c'est dit dans le fil de la fille : Bobine ne prétend pas une
+   garantie qu'elle n'a pas. Aucun accord « toujours » ne vaut pour une fille en lecture seule.
 
 ## Alternatives écartées
 
@@ -64,9 +68,16 @@ l'utilisateur le 2026-11-14 (décisions 3, 5, 7 et 8 de la fiche).
   est déclarée dans un profil (OpenCode).
 - Un rôle de projet non commité est lu dans le dossier de la mère, jamais dans le worktree d'une
   fille (qui part du dernier commit).
-- La lecture seule d'un agent qui écrit sans demander n'est garantie que par son mode natif ;
-  sinon, l'écriture est seulement détectée après coup, rien n'est défait.
+- La lecture seule d'un agent qui écrit sans demander n'est jamais garantie par Bobine :
+  l'écriture est seulement détectée après coup, rien n'est défait ; un tour que git n'a pas pu
+  vérifier le dit.
 - Un tour où une autre conversation du même dossier lance un outil qui écrit n'est pas jugé
   (pas d'accusation à tort) ; une modification faite à la main pendant le tour serait signalée.
 - À surveiller : nouveaux champs (versions de Bobine qui se croisent dans un dépôt), et l'export
   vers Bob et OpenCode (phase 4).
+
+---
+
+Révisé le 2026-11-14, avant fusion, après la relecture de la phase 2 (demande du tech lead) :
+consigne toujours envoyée (et non plus seulement sans mode natif), mode natif qui ne vaut plus
+preuve de lecture seule, rôle figé sur la carte, liens refusés. Décision de fond inchangée.

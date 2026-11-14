@@ -172,6 +172,7 @@ essais comparent les textes de l'agent avec `M('phrase française')`, comme ceux
 | `roles-delegue` | Rôles (fiche 223) : `start_child` avec `role: security-expert` (rôle fourni, en lecture seule) et une tâche qui joue `echo` : la fille dit ce qu'elle a reçu (consigne du rôle en tête, lecture seule) |
 | `roles-inconnu` | `start_child` avec `role: astronaute` : refusé avec la liste des rôles connus, cité dans le fil (fiche 223) |
 | `role-ecrit-avec-demande` | Fille en lecture seule qui demande à écrire `notes.md` (`kind: edit`, options de Bob) : Bobine refuse d'office, la fille le dit (« Écriture refusée… ») ; acceptée, elle écrirait vraiment (fiche 223) |
+| `role-ecrit-sans-genre` | Fille en lecture seule : outil annoncé `kind: edit` (`tool_call`), puis une demande d'autorisation **sans** `kind` : Bobine retient le genre annoncé et refuse (relecture de la fiche 223) |
 | `role-ecrit-sans-demander` | Fille qui écrit `notes-role.md` sans rien demander, comme OpenCode réglé par défaut : le garde-fou de Bobine le voit à la fin du tour (fiche 223) |
 | `sous-agent` | Session enfant annoncée par `subagent_update`, ses updates arrivent sur la même connexion |
 | `echo` | Décrit les réglages appliqués (mode, modèle…) et le prompt reçu (texte, images, fichiers) — sert aussi aux remarques sur la page (fiche 132, suite `browser-annotate`) : un message, une image |
