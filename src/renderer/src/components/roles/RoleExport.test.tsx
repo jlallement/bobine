@@ -40,7 +40,7 @@ const profiles = [
   { id: 'agent-c', label: 'Agent C', available: true }
 ] as ProfileSummary[]
 
-function Page(props: { profiles?: readonly ProfileSummary[]; dirty?: boolean }) {
+function Page(props: { profiles?: readonly ProfileSummary[]; dirty?: boolean; saved?: string }) {
   const exported = useRoleExport({
     role: {
       scope: 'user',
@@ -50,7 +50,8 @@ function Page(props: { profiles?: readonly ProfileSummary[]; dirty?: boolean }) 
       color: 'blue'
     },
     profiles: props.profiles ?? profiles,
-    dirty: props.dirty ?? false
+    dirty: props.dirty ?? false,
+    saved: props.saved ?? 'v1'
   })
   return (
     <>
@@ -127,7 +128,7 @@ describe('« Installer dans… » (fiche 223, phase 4)', () => {
       ok: false,
       error: { code: 'foreign', detail: 'code-reviewer', file: '~/.a/modes.yaml' }
     })
-    render(<Page />)
+    const { rerender } = render(<Page />)
     openMenu()
     fireEvent.click(await screen.findByTestId('role-export-target-agent-a'))
     await screen.findByTestId('role-export-place-user')
@@ -136,6 +137,9 @@ describe('« Installer dans… » (fiche 223, phase 4)', () => {
     expect(text).toContain('Agent A a déjà un mode')
     expect(text).toContain('code-reviewer')
     expect(text).toContain('que Bobine n’a pas écrit')
+    // Le rôle réenregistré : le refus n'est plus d'actualité.
+    rerender(<Page saved="v2" />)
+    expect(screen.queryByTestId('role-export-error')).toBeNull()
   })
 
   it('rôle changé : « Mettre à jour » ; modifié à la main : retirer seulement après confirmation', async () => {
@@ -161,5 +165,23 @@ describe('« Installer dans… » (fiche 223, phase 4)', () => {
   it('modifications non enregistrées : bouton désactivé', () => {
     render(<Page dirty />)
     expect((screen.getByTestId('role-export-button') as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('« Installations sans rôle » (relecture phase 4)', () => {
+  it('liste les installations d’un rôle renommé ou supprimé, et les retire', async () => {
+    const orphan = status({ id: 'ancien-nom', key: 'k9' })
+    calls['exportOrphans'] = vi.fn(async () => [orphan])
+    calls['exportRemove'] = vi.fn(async () => ({ ok: true }))
+    Object.assign(window, { api: { ...api, roles: calls } })
+    const { RoleExportOrphans } = await import('./RoleExportOrphans')
+    render(<RoleExportOrphans conversationId="c1" profiles={profiles} listing={1} />)
+    const row = await screen.findByTestId('role-export-row')
+    expect(row.textContent).toContain('ancien-nom')
+    expect(screen.queryByTestId('role-export-update')).toBeNull()
+    calls['exportOrphans']?.mockResolvedValue([])
+    fireEvent.click(screen.getByTestId('role-export-remove'))
+    await waitFor(() => expect(calls['exportRemove']).toHaveBeenCalledWith('k9', false))
+    await waitFor(() => expect(screen.queryByTestId('roles-group-orphans')).toBeNull())
   })
 })

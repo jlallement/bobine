@@ -33,7 +33,13 @@ export function roleExportErrorText(
   return i18next.t(`roleExport.error.${error.code}`, params)
 }
 
-type Shown = { error: RoleExportError; format?: RoleExportFormat; agent: string } | null
+/** Refus montré, pour la version du rôle où il est arrivé (`saved`) : un rôle réenregistré l'efface. */
+type Shown = {
+  error: RoleExportError
+  format?: RoleExportFormat
+  agent: string
+  saved: string
+} | null
 
 /**
  * « Installer dans… » sur la page d'un rôle (fiche 223, phase 4, maquettes 05-1 et 05-4) : le
@@ -47,7 +53,9 @@ export function useRoleExport(props: {
   profiles: readonly ProfileSummary[]
   /** Modifications non enregistrées : le fichier du rôle n'est pas encore ce qui serait écrit. */
   dirty: boolean
-}): { button: ReactNode; panel: ReactNode } {
+  /** Empreinte du rôle enregistré : quand elle change, un refus montré n'est plus d'actualité. */
+  saved: string
+}): { button: ReactNode; panel: ReactNode; installed: number } {
   const { t } = useTranslation()
   const targets = props.profiles.filter((p) => p.roleExport && p.available)
   const [statuses, setStatuses] = useState<RoleExportStatus[]>([])
@@ -78,7 +86,7 @@ export function useRoleExport(props: {
     setConfirm(null)
     setShown(null)
     const failed = (error: RoleExportError) =>
-      setShown({ error, format: status.format, agent: status.profileLabel })
+      setShown({ error, format: status.format, agent: status.profileLabel, saved: props.saved })
     try {
       if (action === 'remove') {
         const result = await window.api.roles.exportRemove(
@@ -187,7 +195,7 @@ export function useRoleExport(props: {
           ))}
         </div>
       )}
-      {shown && (
+      {shown && shown.saved === props.saved && (
         <p className="role-export-error" role="alert" data-testid="role-export-error">
           <Info size={15} aria-hidden />
           <span>{roleExportErrorText(shown.error, shown.format, shown.agent)}</span>
@@ -205,8 +213,11 @@ export function useRoleExport(props: {
               setShown({
                 error,
                 ...(profile?.roleExport ? { format: profile.roleExport } : {}),
-                agent: profile?.label ?? sheet
+                agent: profile?.label ?? sheet,
+                saved: props.saved
               })
+            } else {
+              setShown(null)
             }
             refresh()
           }}
@@ -214,7 +225,7 @@ export function useRoleExport(props: {
       )}
     </>
   )
-  return { button, panel }
+  return { button, panel, installed: statuses.length }
 }
 
 const STATE_ICONS = {
@@ -225,19 +236,23 @@ const STATE_ICONS = {
   unreadable: AlertTriangle
 } as const
 
-function StatusRow({
+export function StatusRow({
   status,
   agent,
-  onAct
+  onAct,
+  orphan = false
 }: {
   status: RoleExportStatus
   agent: string
   onAct: (action: 'update' | 'replace' | 'remove') => void
+  /** Installation sans rôle : son identifiant en tête, seulement « Retirer ». */
+  orphan?: boolean
 }) {
   const { t } = useTranslation()
   const Icon = STATE_ICONS[status.state]
-  const update =
-    status.state === 'roleChanged'
+  const update = orphan
+    ? null
+    : status.state === 'roleChanged'
       ? t('roleExport.status.update')
       : status.state === 'missing'
         ? t('roleExport.status.reinstall')
@@ -254,6 +269,8 @@ function StatusRow({
     >
       <Icon size={15} aria-hidden className="role-export-row-icon" />
       <span className="role-export-row-text">
+        {orphan && <code className="role-export-row-id">{status.id}</code>}
+        {orphan && ' · '}
         {t('roleExport.status.installed', { agent })}
         <small>
           {' · '}

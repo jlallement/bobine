@@ -28,7 +28,7 @@ import {
 } from './RoleFields'
 import type { RolesSettingsProps } from './RolesSettings'
 
-type Status = { kind: 'saved' } | { kind: 'failed'; text: string } | null
+type Status = { kind: 'saved'; renamedFrom?: string } | { kind: 'failed'; text: string } | null
 
 /**
  * Modifier un rôle (fiche 223, maquettes B3 et 04-2) : un seul écran, les mêmes champs que
@@ -129,7 +129,8 @@ function RoleEditForm(
   const exported = useRoleExport({
     role: { scope: role.scope, name: role.name, ...options, icon: role.icon, color: role.color },
     profiles: props.profiles,
-    dirty
+    dirty,
+    saved: JSON.stringify(role)
   })
 
   const change: DraftChange = (next) => {
@@ -150,7 +151,9 @@ function RoleEditForm(
       })
       if (!result.ok) return setErrors({ [errorField(result.error)]: result.error })
       rolesChanged()
-      setStatus({ kind: 'saved' })
+      // Renommé alors qu'il est installé : l'ancienne installation reste, sous l'ancien nom (phase 4).
+      const renamed = !builtin && checked.role.name !== role.name && exported.installed > 0
+      setStatus({ kind: 'saved', ...(renamed ? { renamedFrom: role.name } : {}) })
       props.onSaved({ ...checked.role, scope: target })
     } catch (e) {
       setStatus({ kind: 'failed', text: ipcErrorText(e) })
@@ -188,8 +191,15 @@ function RoleEditForm(
       <div className="role-edit-head">
         <RoleAvatar role={draft} size={44} />
         <div className="role-edit-title">
-          <h3>{draft.label || role.label}</h3>
-          <span className="role-edit-where">
+          <h3 title={draft.label || role.label}>{draft.label || role.label}</h3>
+          {/* Une ligne : coupée par « … », le chemin complet en infobulle. */}
+          <span
+            className="role-edit-where"
+            title={
+              builtin ? undefined : (role.file ?? roleFileHint({ name: role.name, scope: target }))
+            }
+            data-testid="role-edit-where"
+          >
             {t(`rolesSettings.scope.${role.scope}`)}
             {!builtin && (
               <>
@@ -277,7 +287,9 @@ function RoleEditForm(
       <div className="role-edit-foot">
         {status?.kind === 'saved' && !dirty && (
           <span className="role-edit-saved" role="status" data-testid="role-edit-saved">
-            {t('rolesSettings.edit.saved')}
+            {status.renamedFrom
+              ? t('roleExport.renamed', { old: status.renamedFrom })
+              : t('rolesSettings.edit.saved')}
           </span>
         )}
         {status?.kind === 'failed' && (

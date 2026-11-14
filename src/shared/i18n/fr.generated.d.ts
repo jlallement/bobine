@@ -4977,28 +4977,28 @@ export type FrResources = {
     readonly useHintReadOnly: 'La lecture seule est alors tenue par {{agent}} lui-même, pas seulement demandée.'
     readonly format: {
       readonly 'bob-custom-modes': {
-        readonly menu: 'un mode de Bob (Bob Shell, Bob IDE, Bobine)'
-        readonly intro: '{{agent}} l’affichera parmi ses modes (Agent, Plan, Ask, … {{label}}), dans Bob Shell, Bob IDE et Bobine.'
-        readonly userNote: 'Fichier partagé avec Bob IDE : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.'
+        readonly menu: 'un mode, dans Bobine et hors de Bobine'
+        readonly intro: '{{agent}} l’affichera parmi ses modes, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.'
+        readonly userNote: 'Fichier partagé avec les autres modes : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.'
         readonly kind: 'Mode'
         readonly readOnly: 'lecture seule : lire et outils (ni écriture, ni commandes)'
         readonly readWrite: 'lire, modifier, lancer des commandes, outils'
         readonly backup: 'copie du fichier avant d’écrire, dans les données de Bobine'
-        readonly use: 'Dans Bobine, lancer ce rôle dans ce mode de Bob'
+        readonly use: 'Dans Bobine, lancer ce rôle dans ce mode'
         readonly foreign: '{{agent}} a déjà un mode « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
         readonly prompt: 'devient la définition du mode (`roleDefinition`)'
         readonly promptLabel: 'Consigne'
       }
       readonly 'opencode-agents': {
-        readonly menu: 'un agent d’OpenCode'
-        readonly intro: '{{agent}} l’affichera parmi ses agents (build, plan, … {{label}}), dans son terminal et dans Bobine.'
+        readonly menu: 'un agent, dans Bobine et hors de Bobine'
+        readonly intro: '{{agent}} l’affichera parmi ses agents, sous le nom {{label}}, dans Bobine et hors de Bobine aussi.'
         readonly kind: 'Agent'
         readonly readOnly: 'lecture seule : modifications et commandes refusées'
-        readonly readWrite: 'modifications et commandes permises, selon vos réglages d’OpenCode'
-        readonly prompt: 'remplace la consigne de base d’OpenCode pour cet agent'
+        readonly readWrite: 'modifications et commandes permises, selon les réglages de l’agent'
+        readonly prompt: 'remplace la consigne de base de l’agent pour ce mode'
         readonly promptLabel: 'Consigne'
         readonly backup: 'si un fichier du même nom existe, copie avant d’écrire'
-        readonly use: 'Dans Bobine, lancer ce rôle avec cet agent d’OpenCode'
+        readonly use: 'Dans Bobine, lancer ce rôle avec cet agent'
         readonly foreign: '{{agent}} a déjà un agent « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
         readonly userNote: 'Un fichier pour cet agent seulement : rien d’autre n’y est écrit.'
       }
@@ -5027,6 +5027,11 @@ export type FrResources = {
       readonly changed: '{{file}} a changé pendant l’écriture, à chaque essai : rien n’a été écrit.'
       readonly writeFailed: 'Écriture impossible dans {{file}} : {{detail}}'
     }
+    readonly orphans: {
+      readonly title: 'Installations sans rôle'
+      readonly hint: 'Le rôle a été renommé ou supprimé, mais son mode ou son agent est toujours installé : retirez-le, ou réinstallez le rôle sous son nouvel identifiant.'
+    }
+    readonly renamed: 'Enregistré. Installé sous l’ancien identifiant « {{old}} » : retirez-le dans « Installations sans rôle », ou réinstallez ce rôle.'
   }
   readonly team: {
     readonly title: 'Équipe'

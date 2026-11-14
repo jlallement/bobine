@@ -4961,28 +4961,28 @@
     "useHintReadOnly": "Read-only is then held by {{agent}} itself, not just requested.",
     "format": {
       "bob-custom-modes": {
-        "menu": "a Bob mode (Bob Shell, Bob IDE, Bobine)",
-        "intro": "{{agent}} will list it among its modes (Agent, Plan, Ask, … {{label}}), in Bob Shell, Bob IDE and Bobine.",
-        "userNote": "File shared with Bob IDE: only the “{{id}}” mode is added; the rest of the file and its comments stay as they are.",
+        "menu": "a mode, in Bobine and outside it",
+        "intro": "{{agent}} will list it among its modes, as {{label}}, in Bobine and outside it too.",
+        "userNote": "File shared with the other modes: only the “{{id}}” mode is added; the rest of the file and its comments stay as they are.",
         "kind": "Mode",
         "readOnly": "read-only: read and tools (no writing, no commands)",
         "readWrite": "read, edit, run commands, tools",
         "backup": "the file is copied before writing, in Bobine’s data",
-        "use": "In Bobine, run this role in this Bob mode",
+        "use": "In Bobine, run this role in this mode",
         "foreign": "{{agent}} already has a “{{id}}” mode that Bobine did not write: nothing was changed. Change the role’s identifier to install it.",
         "prompt": "becomes the mode’s definition (`roleDefinition`)",
         "promptLabel": "Instructions"
       },
       "opencode-agents": {
-        "menu": "an OpenCode agent",
-        "intro": "{{agent}} will list it among its agents (build, plan, … {{label}}), in its terminal and in Bobine.",
+        "menu": "an agent, in Bobine and outside it",
+        "intro": "{{agent}} will list it among its agents, as {{label}}, in Bobine and outside it too.",
         "kind": "Agent",
         "readOnly": "read-only: edits and commands denied",
-        "readWrite": "edits and commands allowed, as set in OpenCode",
-        "prompt": "replaces OpenCode’s base instructions for this agent",
+        "readWrite": "edits and commands allowed, as set in the agent",
+        "prompt": "replaces the agent’s base instructions for this mode",
         "promptLabel": "Instructions",
         "backup": "if a file with that name exists, it is copied before writing",
-        "use": "In Bobine, run this role with this OpenCode agent",
+        "use": "In Bobine, run this role with this agent",
         "foreign": "{{agent}} already has a “{{id}}” agent that Bobine did not write: nothing was changed. Change the role’s identifier to install it.",
         "userNote": "A file for this agent only: nothing else is written in it."
       }
@@ -5010,7 +5010,12 @@
       "unsupported": "This agent can’t receive a role.",
       "changed": "{{file}} changed while writing, every time: nothing was written.",
       "writeFailed": "Couldn’t write {{file}}: {{detail}}"
-    }
+    },
+    "orphans": {
+      "title": "Installations without a role",
+      "hint": "The role was renamed or deleted, but its mode or agent is still installed: remove it, or install the role again under its new identifier."
+    },
+    "renamed": "Saved. Installed under the old identifier “{{old}}”: remove it in “Installations without a role”, or install this role again."
   },
   "team": {
     "title": "Team",

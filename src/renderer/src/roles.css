@@ -861,11 +861,13 @@
 .role-edit-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
 }
 
+/* Le titre garde sa place : faute de largeur, les actions passent dessous (relecture phase 4). */
 .role-edit-title {
-  flex: 1;
+  flex: 1 1 240px;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -877,17 +879,24 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .role-edit-where {
   font-size: 12.5px;
   color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .role-edit-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-left: auto;
 }
 
 .role-edit-actions .btn {
@@ -1566,4 +1575,12 @@
   flex-shrink: 0;
   margin-top: 2px;
   color: var(--err);
+}
+
+.role-export-orphans-hint {
+  margin: 0 0 8px;
+}
+
+.role-export-row-id {
+  font-size: 12.5px;
 }
