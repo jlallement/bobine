@@ -71,7 +71,7 @@ export function loadRenderer(win: BrowserWindow, hash?: string): void {
 
 /**
  * Fond d'une fenêtre avant que sa page ne s'affiche : le `--bg` du thème enregistré (fiche 134),
- * sans éclair de clair ou de sombre en Sépia ou Nuit noire. `nativeTheme` est déjà réglé.
+ * sans éclair de clair ou de sombre en Nuit noire, Fjord ou Aurore. `nativeTheme` est déjà réglé.
  */
 const themeBackground = (prefs: ModePreferences) =>
   windowBackground(prefs, nativeTheme.shouldUseDarkColors)

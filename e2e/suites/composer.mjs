@@ -451,7 +451,7 @@ export async function composerSuite(scheme) {
 /**
  * Mode Plan visible (fiche 098), avec le plan dans un fichier (scénario `plan-fichier`) : couleur,
  * pastille, invite, ligne de rappel ; retour à la normale par Maj+Tab et « Exécuter le plan » ;
- * accent violet (Plan bleu), Sépia ou Nuit noire selon la passe.
+ * accent violet (Plan bleu), Aurore ou Nuit noire selon la passe.
  */
 async function planModeVisible(scheme) {
   const workspace = mkdtempSync(join(tmpdir(), 'bob-e2e-plan-visible-'))
@@ -565,24 +565,24 @@ async function planModeVisible(scheme) {
           '« Exécuter le plan » : en Code, la zone de saisie redevient normale'
         )
 
-        // Accent violet : le Plan passe au bleu ; Sépia (clair) ou Nuit noire (sombre) ; Fjord.
+        // Accent violet : le Plan passe au bleu ; Aurore (clair) ou Nuit noire (sombre) ; Fjord.
         await ui.click(ui.$('mode-chip'))
         await ui.waitFor(`!!${ui.$('control-mode-plan')}`)
         await ui.click(ui.$('control-mode-plan'))
         await ui.waitFor(planOn)
-        const palette = scheme === 'dark' ? 'black' : 'sepia'
+        const palette = scheme === 'dark' ? 'black' : 'aurora'
         const before = await ui.ev(`({ ...document.documentElement.dataset })`)
         const themes = [
           { accent: 'violet', palette: '', name: 'accent violet' },
           {
             accent: before.accent ?? '',
             palette,
-            name: palette === 'black' ? 'Nuit noire' : 'Sépia'
+            name: palette === 'black' ? 'Nuit noire' : 'Aurore'
           },
           {
             accent: 'violet',
             palette,
-            name: `${palette === 'black' ? 'Nuit noire' : 'Sépia'}, accent violet`
+            name: `${palette === 'black' ? 'Nuit noire' : 'Aurore'}, accent violet`
           },
           // Fjord (fiche 168) : Fjord en clair, Fjord nuit en sombre.
           {

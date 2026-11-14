@@ -565,6 +565,20 @@ export async function withApp(
        * Fenêtre émulée à cette largeur (fiche 092 : demi-écran, plus étroit que la fenêtre ne le
        * permet) ; sans largeur, retour à la vraie taille.
        */
+      /**
+       * Préférences d'affichage de macOS émulées en plus du mode des essais (fiche 226) :
+       * `{ 'prefers-reduced-transparency': 'reduce' }`, `{ 'prefers-contrast': 'more' }` ; sans
+       * rien, retour au seul mode.
+       */
+      media: async (features = {}) => {
+        await cdp('Emulation.setEmulatedMedia', {
+          features: [
+            { name: 'prefers-color-scheme', value: scheme },
+            ...Object.entries(features).map(([name, value]) => ({ name, value }))
+          ]
+        })
+        await sleep(150)
+      },
       viewport: async (width, height = 820) => {
         if (width) {
           await cdp('Emulation.setDeviceMetricsOverride', {

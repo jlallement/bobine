@@ -10,26 +10,30 @@ export type ThemePreference = 'system' | 'light' | 'dark'
 export const THEME_MODES: readonly ThemePreference[] = ['system', 'light', 'dark']
 
 /** Thème du mode clair et du mode sombre (fiche 136) : « Système » garde celui de chaque mode. */
-export type LightTheme = 'light' | 'sepia' | 'fjord'
-export type DarkTheme = 'dark' | 'black' | 'fjordNight'
-export const LIGHT_THEMES: readonly LightTheme[] = ['light', 'sepia', 'fjord']
-export const DARK_THEMES: readonly DarkTheme[] = ['dark', 'black', 'fjordNight']
+export type LightTheme = 'light' | 'fjord' | 'aurora'
+export type DarkTheme = 'dark' | 'black' | 'fjordNight' | 'auroraNight'
+export const LIGHT_THEMES: readonly LightTheme[] = ['light', 'fjord', 'aurora']
+export const DARK_THEMES: readonly DarkTheme[] = ['dark', 'black', 'fjordNight', 'auroraNight']
 
 /**
- * Les thèmes de Réglages › Apparence, en une rangée (essai à la souris du 24/10 ; Fjord et Fjord
- * nuit, fiche 168) : « Système » suit macOS avec Clair et Sombre ; les autres fixent le mode et son
- * thème.
+ * Les thèmes de Réglages › Apparence, en deux rangées de quatre (fiche 226) : « Système » et les
+ * thèmes clairs, puis les sombres, chaque thème sous sa variante claire. « Système » suit macOS
+ * avec Clair et Sombre ; les autres fixent le mode et son thème.
  */
 export type ThemeChoice = 'system' | LightTheme | DarkTheme
 export const THEME_CHOICES: readonly ThemeChoice[] = [
   'system',
   'light',
-  'sepia',
   'fjord',
+  'aurora',
   'dark',
   'black',
-  'fjordNight'
+  'fjordNight',
+  'auroraNight'
 ]
+
+/** Thèmes marqués « Nouveau » dans Réglages › Apparence (fiche 226). */
+export const NEW_THEME_CHOICES: readonly ThemeChoice[] = ['aurora', 'auroraNight']
 
 /** Le thème coché, d'après les préférences enregistrées. */
 export function themeChoiceOf(prefs: Pick<Preferences, 'theme' | 'lightTheme' | 'darkTheme'>) {
@@ -45,8 +49,8 @@ export function themeChoicePreferences(
     case 'system':
       return { theme: 'system', lightTheme: 'light', darkTheme: 'dark' }
     case 'light':
-    case 'sepia':
     case 'fjord':
+    case 'aurora':
       return { theme: 'light', lightTheme: choice }
     default:
       return { theme: 'dark', darkTheme: choice }
@@ -124,7 +128,7 @@ export interface Preferences {
   language: LanguagePreference
   /** Niveau du journal enregistré (fiche 080) ; Trace ne l'est jamais. */
   logLevel: 'normal' | 'detailed'
-  /** Mode : Système, Clair ou Sombre. Avant la fiche 136, aussi `sepia` et `black` (repris). */
+  /** Mode : Système, Clair ou Sombre. Avant la fiche 136, aussi `sepia` (Clair) et `black` (repris). */
   theme: ThemePreference
   lightTheme: LightTheme
   darkTheme: DarkTheme
@@ -256,13 +260,14 @@ function sizeIn(value: unknown, limits: { min: number; max: number }): number | 
 }
 
 /**
- * Mode et thèmes (fiche 136) : l'ancien `sepia` devient le mode Clair avec le thème clair Sépia,
- * l'ancien `black` le mode Sombre avec le thème sombre Nuit noire.
+ * Mode et thèmes (fiche 136) : l'ancien `black` devient le mode Sombre avec le thème sombre Nuit
+ * noire. Sépia, retiré (fiche 226), devient Clair : l'ancien `theme: 'sepia'` le mode Clair avec
+ * le thème Clair, `lightTheme: 'sepia'` le thème Clair (valeur inconnue, donc le défaut).
  */
 function parseTheme(obj: Record<string, unknown>, result: Partial<Preferences>): void {
   const theme = obj['theme']
   if (THEME_MODES.includes(theme as ThemePreference)) result.theme = theme as ThemePreference
-  if (theme === 'sepia') Object.assign(result, { theme: 'light', lightTheme: 'sepia' })
+  if (theme === 'sepia') Object.assign(result, { theme: 'light', lightTheme: 'light' })
   if (theme === 'black') Object.assign(result, { theme: 'dark', darkTheme: 'black' })
   if (LIGHT_THEMES.includes(obj['lightTheme'] as LightTheme)) {
     result.lightTheme = obj['lightTheme'] as LightTheme

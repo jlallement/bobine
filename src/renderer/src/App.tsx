@@ -849,7 +849,8 @@ export function App() {
                 onTerminalFocused={panel.terminalFocused}
                 onTab={(tab) => panel.update({ tab })}
                 onClose={() => panel.update({ open: false })}
-                onResize={(width) => panel.update({ width })}
+                onResize={panel.resize}
+                onResetWidth={panel.resetWidth}
               />
             )}
           </div>

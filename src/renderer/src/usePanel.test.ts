@@ -38,17 +38,67 @@ const doc = (title: string) => ({ title }) as unknown as MarkdownDocument
 beforeEach(() => localStorage.clear())
 
 describe('panneau de droite : état mémorisé (fiche 029)', () => {
-  it('par défaut : fermé, sur « Session » ; chaque changement est mémorisé', () => {
+  it('par défaut : fermé, sur « Session », 320 px ; ouverture et onglet mémorisés', () => {
     const { result, run } = setup()
-    expect(result.current).toMatchObject({ open: false, tab: 'session', width: 380 })
-    run(() => result.current.update({ open: true, tab: 'browser', width: 500 }))
-    expect(saved()).toEqual({ open: true, tab: 'browser', width: 500 })
+    expect(result.current).toMatchObject({ open: false, tab: 'session', width: 320 })
+    run(() => result.current.update({ open: true, tab: 'browser' }))
+    // Fiche 226 : la largeur n'est pas enregistrée tant qu'on n'a pas tiré le bord.
+    expect(saved()).toEqual({ open: true, tab: 'browser' })
   })
 
   it('relu au lancement, sans l’aperçu d’un document et pas plus étroit que le minimum', () => {
-    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'document', width: 10 }))
+    localStorage.setItem(
+      'bobine.panel',
+      JSON.stringify({ open: true, tab: 'document', customWidth: 10 })
+    )
     const { result } = setup()
     expect(result.current).toMatchObject({ open: true, tab: 'session', width: 280 })
+  })
+})
+
+describe('largeur du panneau (fiche 226)', () => {
+  it('tirée à la main : retenue, et relue au lancement suivant', () => {
+    const { result, run, unmount } = setup()
+    run(() => result.current.resize(412))
+    expect(result.current.width).toBe(412)
+    expect(saved()).toEqual({ open: false, tab: 'session', customWidth: 412 })
+    // Un autre changement du panneau garde la largeur tirée.
+    run(() => result.current.update({ open: true, tab: 'terminal' }))
+    expect(saved()).toEqual({ open: true, tab: 'terminal', customWidth: 412 })
+    unmount()
+    expect(setup().result.current.width).toBe(412)
+  })
+
+  it('jamais plus étroite que le minimum', () => {
+    const { result, run } = setup()
+    run(() => result.current.resize(100))
+    expect(result.current.width).toBe(280)
+  })
+
+  it('double-clic sur le bord : retour au défaut, plus rien d’enregistré', () => {
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, customWidth: 450 }))
+    const { result, run } = setup()
+    expect(result.current.width).toBe(450)
+    run(() => result.current.resetWidth())
+    expect(result.current.width).toBe(320)
+    expect(saved()).toEqual({ open: true, tab: 'session' })
+  })
+
+  it('reprise : l’ancien défaut enregistré d’office (380) vaut « jamais réglée »', () => {
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session', width: 380 }))
+    const { result, run } = setup()
+    expect(result.current.width).toBe(320)
+    // Le prochain enregistrement oublie l'ancienne largeur.
+    run(() => result.current.update({ tab: 'terminal' }))
+    expect(saved()).toEqual({ open: true, tab: 'terminal' })
+  })
+
+  it('reprise : une autre ancienne largeur est gardée, enregistrée comme réglée', () => {
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session', width: 420 }))
+    const { result, run } = setup()
+    expect(result.current.width).toBe(420)
+    run(() => result.current.update({ tab: 'terminal' }))
+    expect(saved()).toEqual({ open: true, tab: 'terminal', customWidth: 420 })
   })
 })
 

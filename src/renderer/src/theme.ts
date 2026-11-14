@@ -1,8 +1,8 @@
 /**
  * Thème affiché (fiche 134) : palette et accent lus sur la page, et l'abonnement à leurs
  * changements. Le clair ou le sombre suit `nativeTheme` (réglé par le main, vu par
- * `prefers-color-scheme`) ; Sépia, Nuit noire et l'accent sont posés par `applyAppearance`
- * (`data-palette`, `data-accent`). Pour ce qui ne lit pas le CSS : xterm, Mermaid.
+ * `prefers-color-scheme`) ; les variantes (Nuit noire, Fjord, Aurore) et l'accent sont posés par
+ * `applyAppearance` (`data-palette`, `data-accent`). Pour ce qui ne lit pas le CSS : xterm, Mermaid.
  */
 import { accentOf, paletteOf, themeTokens, type Palette, type ThemeTokens } from '@shared/themes'
 

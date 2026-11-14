@@ -246,7 +246,7 @@ export function Sidebar(props: Props) {
         onPointerMove={onResizeMove}
         onPointerUp={onResizeEnd}
         onPointerCancel={onResizeEnd}
-        // Double-clic sur la poignée : largeur par défaut (comme le panneau, fiche 082).
+        // Double-clic sur la poignée : largeur par défaut (comme le panneau, fiche 226).
         onDoubleClick={resetWidth}
       />
       <div className="sidebar-header drag">

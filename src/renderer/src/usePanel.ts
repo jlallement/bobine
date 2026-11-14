@@ -16,30 +16,48 @@ import {
   visiblePanelTabs
 } from './panel-tabs'
 import { platformFeatures } from './platform-features'
+import { PANEL_DEFAULT_WIDTH, panelWidthToSave, savedPanelWidth } from './panel-width'
 import { fittedSidebarWidth, readSidebarWidth } from './components/sidebar/sidebar-width'
 
 export interface PanelState {
   open: boolean
   tab: PanelTab
   width: number
+  /** Largeur tirée à la main (fiche 226) : seule celle-là est enregistrée. */
+  customWidth: boolean
 }
 
 const PANEL_KEY = 'bobine.panel'
 
-/** État du panneau mémorisé pour cette fenêtre (commodité : absent, on repart des défauts). */
+/** État enregistré dans `bobine.panel` (`width` : ancienne largeur, lue une dernière fois). */
+interface SavedPanel {
+  open?: unknown
+  tab?: unknown
+  width?: unknown
+  customWidth?: unknown
+}
+
+/**
+ * État du panneau mémorisé pour cette fenêtre (commodité : absent, on repart des défauts). La
+ * largeur n'est reprise que si l'utilisateur l'a réglée (fiche 226, `panel-width.ts`).
+ */
 function loadPanel(): PanelState {
-  const fallback: PanelState = { open: false, tab: 'session', width: 380 }
+  const fallback: PanelState = {
+    open: false,
+    tab: 'session',
+    width: PANEL_DEFAULT_WIDTH,
+    customWidth: false
+  }
   try {
-    const saved = JSON.parse(
-      localStorage.getItem(PANEL_KEY) ?? 'null'
-    ) as Partial<PanelState> | null
+    const saved = JSON.parse(localStorage.getItem(PANEL_KEY) ?? 'null') as SavedPanel | null
     if (!saved) return fallback
+    const custom = savedPanelWidth(saved)
     return {
       open: saved.open === true,
       // L'aperçu d'un document ne survit pas au redémarrage (fiche 052).
       tab: isPanelTab(saved.tab) && saved.tab !== 'document' ? saved.tab : fallback.tab,
-      width:
-        typeof saved.width === 'number' ? Math.max(PANEL_MIN_WIDTH, saved.width) : fallback.width
+      width: custom ?? fallback.width,
+      customWidth: custom !== null
     }
   } catch {
     return fallback
@@ -48,7 +66,14 @@ function loadPanel(): PanelState {
 
 function savePanel(panel: PanelState): void {
   try {
-    localStorage.setItem(PANEL_KEY, JSON.stringify(panel))
+    localStorage.setItem(
+      PANEL_KEY,
+      JSON.stringify({
+        open: panel.open,
+        tab: panel.tab,
+        ...panelWidthToSave(panel.width, panel.customWidth)
+      })
+    )
   } catch {
     // Stockage indisponible : le panneau repartira de ses réglages par défaut.
   }
@@ -89,6 +114,15 @@ export function usePanel(options: {
     []
   )
   useEffect(() => savePanel(panel), [panel])
+  // Bord tiré à la main : la largeur est retenue ; double-clic : retour au défaut (fiche 226).
+  const resize = useCallback(
+    (width: number) => update({ width: Math.max(PANEL_MIN_WIDTH, width), customWidth: true }),
+    [update]
+  )
+  const resetWidth = useCallback(
+    () => update({ width: PANEL_DEFAULT_WIDTH, customWidth: false }),
+    [update]
+  )
   // Ouverture réelle (fermé → ouvert) : le panneau glisse en arrivant, une fois (fiche 185, P1).
   // Un panneau déjà ouvert qui se remonte (agrandi puis réduit, page des tâches) ne rejoue rien.
   const [openings, setOpenings] = useState({ open: panel.open, count: 0 })
@@ -228,6 +262,8 @@ export function usePanel(options: {
     width: fittedPanelWidth(panel.width, room.window, room.shown),
     maxWidth: fittedPanelWidth(Number.POSITIVE_INFINITY, room.window, room.shown),
     update,
+    resize,
+    resetWidth,
     maximized,
     setMaximized,
     tabs,
