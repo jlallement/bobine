@@ -125,6 +125,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | équipe (section de la barre latérale) | team | Les rôles actifs. |
 | confier (un travail) à un rôle | hand (work) to a role | « Confier un travail à Expert sécurité » → « Hand work to Security expert ». |
 | fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
+| installer (un rôle) dans un agent ; retirer | install (a role) in an agent; remove | Fiche 223, phase 4 : mode de Bob, agent d'OpenCode. |
 | règles actives | active rules | |
 | capacités, ce qu'il annonce | capabilities, what it reports | |
 | propre à (un agent) | specific to | |

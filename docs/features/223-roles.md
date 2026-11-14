@@ -1,7 +1,8 @@
 # 223 — Rôles : des agents spécialisés à invoquer, et des filles lancées sans insister
 
-- **Statut** : en cours — phases 1 (délégation), 2 (rôles, cœur sans interface) et 3 (interface :
-  3A gestion, 3B rôles au travail, intégrées) faites le 2026-11-14 ; phase 4 (export) à faire
+- **Statut** : fait — phases 1 (délégation), 2 (rôles, cœur sans interface), 3 (interface : 3A
+  gestion, 3B rôles au travail, intégrées) et 4 (« Installer dans Bob / OpenCode ») faites le
+  2026-11-14
 - **Dépend de** : 045 (commandes personnelles, fichiers Markdown du projet), 097 et 160
   (conversations filles, agent et modèle d'une fille, ADR-0019, ADR-0036), 112 (carte de
   propositions), 118 (filles proposées par l'agent, contexte de session), 177 (relecteur en lecture
@@ -9,9 +10,10 @@
 - **Agents** : tous. Un rôle est une conversation fille ordinaire, lancée avec une consigne, un
   mode et des outils choisis : rien de propre à un agent hors des profils (ADR-0011). Une seule
   capacité déclarée dans un profil : `writesWithoutAsking` (OpenCode, repère
-  `writes-without-asking`), qui dit que la lecture seule n'y est que demandée. L'export vers le
-  mode natif d'un agent (phase 4) passera par un adaptateur du profil, déclaré dans
-  `specificItems` et dans la matrice de `docs/agents.md`.
+  `writes-without-asking`), qui dit que la lecture seule n'y est que demandée. Phase 4 :
+  « Installer dans… » passe par un adaptateur déclaré dans le profil (`roleExport` : Bob
+  `bob-custom-modes`, OpenCode `opencode-agents`, repère `role-export` de `specificItems` et de la
+  matrice de `docs/agents.md`, ADR-0047).
 
 ## Pourquoi
 
@@ -185,9 +187,11 @@ question, seul le rôle sait quel mode lui convient.
       (`roles-gestion` : création, jeton posé par « Créer et essayer » et par la section Équipe,
       « Enregistrer comme rôle » ; `roles-travail` : `@rôle`, deux filles, proposition, lecture
       seule demandée.)
-- [ ] Phase 4 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
+- [x] Phase 4 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
       (modes personnels de Bob relus par ACP ? format des agents d'OpenCode), export à sens
-      unique, copie de sauvegarde avant d'écrire, déclaré dans les profils (ADR-0011).
+      unique, copie de sauvegarde avant d'écrire, déclaré dans les profils (ADR-0011). (Bob 2.1.0
+      par `pnpm bob-probe`, OpenCode 2.2.5 par `pnpm opencode-probe --offline` ; ADR-0047 ; e2e
+      `roles-export`.)
 
 ## Plan
 
@@ -910,3 +914,70 @@ essai qui échouait avant.
 8. **`docs/acp.md`** : ligne Rôles mise à jour avec l'observé de Bob 2.1.0.
 
 Non repris : n° 7 et 8 des écarts (cartes « Expirée », attendu ; pilote, hors fiche).
+
+### Phase 4 — « Installer dans Bob / OpenCode » (2026-11-14)
+
+- 2026-11-14 : **phase 4 faite** (branche `feat/223-export`), d'après les maquettes validées 05-1 à
+  05-4 et le plan ci-dessus ; ADR-0047.
+  - **Faits relevés** : Bob 2.1.0 (`pnpm bob-probe`, commit `71e5b90`) liste par ACP les modes de
+    `custom_modes.yaml` (personnel et projet) après `agent`, `plan`, `ask`. OpenCode **2.2.5**
+    (`pnpm opencode-probe --offline`, nouveau sondage « rôles installés (agents) », attentes
+    acceptées) : un agent écrit **exactement comme Bobine** (`openCodeAgentFile`), personnel
+    (`$XDG_CONFIG_HOME/opencode/agents/`, avec `permissions`) et du projet
+    (`.opencode/agents/`), est listé dans le réglage « Session Mode » et s'y choisit ; nouveau
+    contrôle « rôles installés comme agents … listés et choisis par ACP ». Que les permissions
+    tiennent demande un modèle : non sondé. Groupes de Bob d'après la documentation d'IBM
+    (`read`, `edit`, `execute`, `mcp`… — la sonde de Bob écrivait `command`, que la documentation
+    ne connaît pas : sans effet sur ce qu'elle vérifie).
+  - **Dépendance nouvelle** : `yaml` 2.9.0 (eemeli, ISC), accord de l'utilisateur ; avis de licence
+    régénérés (`pnpm build && pnpm third-party-notices`).
+  - **Main** : `main/roles/export/` (adaptateurs purs sur le texte, déclarés dans les profils —
+    la règle ESLint des modules d'agent l'impose ; fichiers, copies, registre, service, IPC) ;
+    `agent/app-agents.ts` sorti de `index.ts` (au plafond) ; `roles/setup.ts` crée `RoleExports`
+    et passe `nativeRoleMode` aux filles ; `roles/launch.ts` : mode installé posé quand le rôle n'a
+    pas de `mode` et que la session l'annonce, lecture seule alors `enforced` si l'installation
+    l'était (`readOnlyLevel(…, heldByAgent)`). Canaux `roles:export*` classés : aperçu et état
+    sûrs, installer et retirer refusés en lecture seule du profil (`read-only-guard.ts`).
+  - **Interface** : `RoleExportStatus.tsx` (`useRoleExport` : bouton et menu « Installer dans… »,
+    lignes d'état, erreur « rien n'a été changé »), `RoleExportSheet.tsx` (feuille) ; textes
+    `roleExport.*` (fr, en), dont les textes propres à un format (`roleExport.format.<format>.*`) ;
+    aucun nom d'agent dans le code de l'interface : nom listé, fichier partagé et consigne de base
+    remplacée viennent de l'adaptateur (`listedAs`, `sharedFile`, `replacesBasePrompt`).
+  - **Agent factice** : `--modes-installes bob|opencode --perso <dossier>`
+    (`MOCK_AGENT_ROLE_EXPORT`, seulement avec `BOBINE_CONFIG_HOME`), `docs/mock-agent.md`.
+  - **Écarts aux maquettes et aux décisions** :
+    - le conflit, comme les autres refus (lien, fichier illisible, modifié à la main), ferme la
+      feuille et s'affiche en ligne rouge sur la page (05-4) ; un identifiant réservé est dit
+      dans la feuille, « Installer » désactivé ;
+    - états en plus de la maquette : « modifié à la main depuis » (« Remplacer » et « Retirer »,
+      chacun après confirmation dans la ligne), « n'est plus dans le fichier » (« Réinstaller »),
+      « fichier illisible » (aucune action) ; « Retirer » d'une entrée intacte part sans
+      confirmation, comme sur la maquette (copie faite avant) ;
+    - « Installer dans… » désactivé tant que le rôle a des modifications non enregistrées (Bobine
+      relit le rôle enregistré) ;
+    - feuille d'OpenCode : la phrase sur les filles en worktree est aussi dite (la maquette ne
+      disait que « à committer ») ; la ligne « lecture seule tenue par l'agent » est dite pour les
+      deux agents, seulement pour un rôle en lecture seule ;
+    - « le rôle a changé depuis » compare ce qui serait écrit aujourd'hui à ce qui l'a été : une
+      icône ou une couleur changée ne compte pas ; un rôle fourni installé puis l'interface passée
+      dans une autre langue compte (libellé et description traduits) ;
+    - liens symboliques : le fichier lui-même est refusé partout, et pour un projet chaque dossier
+      du chemin ; ADR-0044 suit le lien de `settings.json` — ici refusé (ADR-0047) ;
+    - un rôle renommé laisse son ancienne installation sans ligne (registre par identifiant) : à
+      retirer avant de renommer, non dit dans l'interface ;
+    - format V2 d'OpenCode seulement (OpenCode 1.x non pris en charge pour l'installation).
+  - **Tests** : `main/roles/export/adapters.test.ts` (fusion YAML : commentaires gardés, autres
+    modes intacts, notre entrée remplacée puis retirée en rendant le fichier d'origine, fichiers
+    refusés ; fichier d'OpenCode), `service.test.ts` (aperçu, installer, à jour, rôle changé et
+    mise à jour, copie avant d'écrire, conflit, modifié à la main, entrée absente, noms réservés,
+    liens, fichier illisible, fichier changé pendant l'écriture, `nativeMode`, registre illisible,
+    copies bornées), `launch.test.ts` (mode installé posé, absent de la session, `mode` du rôle
+    prioritaire, lecture seule), `mock-agent/modes-installes.test.ts`, `RoleExport.test.tsx`,
+    `capabilities.test.ts`, `opencode-probe.test.ts`. Tous dans des dossiers jetables.
+  - **E2e** `roles-export` (clair et sombre, fr et `--lang en`) : captures `rx1-bouton`,
+    `rx2-feuille-bob`, `rx3-installe-conflit`, `rx4-role-change`, `rx5-fille-mode-installe`,
+    `rx6-feuille-opencode`, `rx7-modifie-a-la-main` (`-light` / `-dark`, `en-…`), regardées.
+    `pnpm build && pnpm e2e roles-export roles-gestion --jobs 2` : 4/4 vertes, et 4/4 en
+    `--lang en`. Avec les vrais `bob` et `opencode` dans le PATH, le menu les propose aussi
+    (dossier personnel d'essai : rien d'écrit hors du bac à sable).
+

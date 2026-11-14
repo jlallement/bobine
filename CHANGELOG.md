@@ -2,6 +2,17 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- Rôles : « Installer dans… » sur la page d'un rôle l'ajoute comme mode d'IBM Bob (Bob Shell, Bob
+  IDE) ou comme agent d'OpenCode, pour vous ou pour le projet. La feuille dit où et quoi, montre le
+  texte exact, copie le fichier avant d'écrire, et ne touche jamais un mode ou un agent que Bobine
+  n'a pas écrit ; la page dit ensuite s'il est à jour, propose « Mettre à jour » quand le rôle a
+  changé et « Retirer ». Dans Bobine, le rôle peut alors être lancé dans ce mode : sa lecture seule
+  est tenue par l'agent lui-même.
+
 ## 1.0.0-beta.2 — 14 novembre 2026
 
 ### Nouveau
