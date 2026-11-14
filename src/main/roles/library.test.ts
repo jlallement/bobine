@@ -3,6 +3,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  symlinkSync,
   utimesSync,
   writeFileSync
 } from 'node:fs'
@@ -130,5 +131,48 @@ describe('bibliothèque des rôles (fiche 223)', () => {
     expect(library.remove('user', 'doc')).toBe(true)
     expect(library.remove('user', 'doc')).toBe(false)
     expect(library.find(undefined, 'doc')).toBeUndefined()
+  })
+
+  it('n’écrit jamais à travers un lien du projet (relecture)', () => {
+    const { library, root, project, projectDir } = setup()
+    const victim = join(root, 'zshrc')
+    writeFileSync(victim, 'intact')
+    const draft = { name: 'x', description: 'd', prompt: 'p', readOnly: false }
+    // `<nom>.md` lien vers un fichier de l'utilisateur.
+    symlinkSync(victim, join(projectDir, 'x.md'))
+    expect(library.save('project', draft, project)).toEqual({
+      ok: false,
+      error: { code: 'link', field: 'name' }
+    })
+    expect(readFileSync(victim, 'utf8')).toBe('intact')
+    // `.bobine/roles` lien vers un autre dossier.
+    const elsewhere = join(root, 'ailleurs')
+    mkdirSync(elsewhere)
+    const linked = join(root, 'projet-lien')
+    mkdirSync(join(linked, '.bobine'), { recursive: true })
+    symlinkSync(elsewhere, join(linked, '.bobine', 'roles'))
+    expect(library.save('project', draft, linked)).toMatchObject({
+      ok: false,
+      error: { code: 'link' }
+    })
+    expect(existsSync(join(elsewhere, 'x.md'))).toBe(false)
+    writeFileSync(join(elsewhere, 'y.md'), file('Lien'))
+    expect(library.find(linked, 'y')).toBeUndefined()
+    expect(library.remove('project', 'y', linked)).toBe(false)
+    expect(existsSync(join(elsewhere, 'y.md'))).toBe(true)
+  })
+
+  it('n’écrase pas le fichier d’un autre rôle (nom déclaré dans l’en-tête)', () => {
+    const { library, userDir } = setup()
+    // `a.md` déclare le rôle `autre` : enregistrer le rôle `a` écraserait ce fichier.
+    writeFileSync(join(userDir, 'a.md'), `---\nname: autre\ndescription: d\n---\np\n`)
+    const result = library.save('user', {
+      name: 'a',
+      description: 'd',
+      prompt: 'p',
+      readOnly: false
+    })
+    expect(result).toEqual({ ok: false, error: { code: 'duplicateName', field: 'name' } })
+    expect(readFileSync(join(userDir, 'a.md'), 'utf8')).toContain('name: autre')
   })
 })

@@ -13,6 +13,7 @@
  */
 import {
   closeSync,
+  constants,
   copyFileSync,
   existsSync,
   fsyncSync,
@@ -113,7 +114,10 @@ export async function writeFileAtomicAsync(
   if (isReadOnly(file)) return false
   refuseProtected(file)
   const tmp = `${file}.${process.pid}-${++asyncTmpCounter}.tmp`
-  const handle = await open(tmp, 'w', options.mode ?? 0o666)
+  // Jamais à travers un lien : un temporaire laissé là (ou posé par un dépôt) est retiré, puis
+  // créé exclusivement (`wx` ne suit pas un lien qui serait apparu entre-temps).
+  await rm(tmp, { force: true })
+  const handle = await open(tmp, 'wx', options.mode ?? 0o666)
   try {
     try {
       await handle.writeFile(text)
@@ -128,7 +132,8 @@ export async function writeFileAtomicAsync(
       return false
     }
     if (options.backup && existsSync(file)) {
-      await copyFile(file, `${file}.bak.tmp`)
+      await rm(`${file}.bak.tmp`, { force: true })
+      await copyFile(file, `${file}.bak.tmp`, constants.COPYFILE_EXCL)
       await rename(`${file}.bak.tmp`, `${file}.bak`)
     }
     await rename(tmp, file)
@@ -181,7 +186,9 @@ export function writeFileAtomic(
   refuseProtected(file)
   const tmp = `${file}.tmp`
   try {
-    const fd = openSync(tmp, 'w', options.mode ?? 0o666)
+    // Jamais à travers un lien (relecture de la fiche 223) : voir `writeFileAtomicAsync`.
+    rmSync(tmp, { force: true })
+    const fd = openSync(tmp, 'wx', options.mode ?? 0o666)
     try {
       writeSync(fd, text)
       fsyncSync(fd)
@@ -190,7 +197,8 @@ export function writeFileAtomic(
     }
     // Dernière bonne version gardée à côté : de quoi repartir si la suivante s'abîme.
     if (options.backup && existsSync(file)) {
-      copyFileSync(file, `${file}.bak.tmp`)
+      rmSync(`${file}.bak.tmp`, { force: true })
+      copyFileSync(file, `${file}.bak.tmp`, constants.COPYFILE_EXCL)
       renameSync(`${file}.bak.tmp`, `${file}.bak`)
     }
     renameSync(tmp, file)

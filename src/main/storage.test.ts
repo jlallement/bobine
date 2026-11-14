@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -27,5 +27,22 @@ describe('écritures atomiques', () => {
     expect(readFileSync(`${file}.bak`, 'utf8')).toBe('{"v":0}')
     expect(readdirSync(dir).some((f) => f.endsWith('.tmp'))).toBe(false)
     expect(readJson(file)).toEqual({ ok: true, value: { v: 2 } })
+  })
+})
+
+describe('écriture atomique et liens symboliques (relecture fiche 223)', () => {
+  it('un temporaire préexistant qui est un lien n’écrit jamais dans sa cible', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'atomique-lien-'))
+    const victim = join(dir, 'victime.txt')
+    writeFileSync(victim, 'intact')
+    const file = join(dir, 'role.md')
+    symlinkSync(victim, `${file}.tmp`)
+    symlinkSync(victim, `${file}.bak.tmp`)
+    writeFileSync(file, 'ancien')
+    expect(writeFileAtomic(file, 'nouveau', { backup: true })).toBe(true)
+    expect(readFileSync(victim, 'utf8')).toBe('intact')
+    expect(readFileSync(file, 'utf8')).toBe('nouveau')
+    expect(await writeFileAtomicAsync(file, 'encore', { backup: true })).toBe(true)
+    expect(readFileSync(victim, 'utf8')).toBe('intact')
   })
 })

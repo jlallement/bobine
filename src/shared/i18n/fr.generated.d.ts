@@ -4782,6 +4782,8 @@ export type FrResources = {
       readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
       readonly builtinFile: 'Un rôle fourni ne s’écrit ni ne se supprime : désactivez-le, ou enregistrez un rôle personnel du même nom.'
       readonly notWritten: 'Rôle non enregistré : le profil est en lecture seule.'
+      readonly link: 'Lien symbolique refusé : un rôle ne se lit ni ne s’écrit à travers un lien.'
+      readonly tooMany: 'Plus de 100 rôles dans ce dossier : les suivants ne sont pas lus.'
     }
     readonly notice: {
       readonly writeRefused: 'Écriture refusée par Bobine : ce rôle est en lecture seule ({{tool}}).'

@@ -4749,7 +4749,9 @@
       "unknownRole": "Unknown or disabled role: {{name}}. Roles: {{roles}}.",
       "noProject": "This conversation has no project folder.",
       "builtinFile": "A built-in role cannot be written or deleted: turn it off, or save a personal role with the same name.",
-      "notWritten": "Role not saved: the profile is read-only."
+      "notWritten": "Role not saved: the profile is read-only.",
+      "link": "Symbolic link refused: a role is never read or written through a link.",
+      "tooMany": "More than 100 roles in this folder: the next ones are not read."
     },
     "notice": {
       "writeRefused": "Write refused by Bobine: this role is read-only ({{tool}}).",

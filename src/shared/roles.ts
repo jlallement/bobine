@@ -97,6 +97,8 @@ export type RoleErrorCode =
   | 'tooLarge'
   | 'duplicateName'
   | 'unreadable'
+  | 'link'
+  | 'tooMany'
 
 /** Pourquoi un fichier de rôle est écarté : la clé `roles.error.<code>` le dit à l'utilisateur. */
 export interface RoleError {

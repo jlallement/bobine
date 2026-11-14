@@ -14,8 +14,18 @@
  * le worktree d'une fille (l'appelant passe le bon dossier).
  */
 import { t } from 'i18next'
-import { mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import {
+  closeSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readSync,
+  statSync,
+  unlinkSync
+} from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import {
   checkRole,
   mergeRoles,
@@ -109,13 +119,20 @@ export class RoleLibrary {
     if (!checked.ok) return checked
     const { role } = checked
     const dir = this.dirOf(scope, projectDir)
+    // Jamais à travers un lien posé par un dépôt (`.bobine`, `.bobine/roles`, `<nom>.md`).
+    if (linkedDir(dir)) return { ok: false, error: { code: 'link' } }
     const existing = this.read(dir, scope).roles
     const previous = previousName ? existing.find((r) => r.name === previousName) : undefined
-    if (role.name !== previousName && existing.some((r) => r.name === role.name)) {
+    const file = join(dir, `${role.name}.md`)
+    if (isLink(file)) return { ok: false, error: { code: 'link', field: 'name' } }
+    // Un autre rôle porte ce nom, ou son fichier (un en-tête peut nommer le rôle autrement).
+    if (
+      (role.name !== previousName && existing.some((r) => r.name === role.name)) ||
+      (existsSync(file) && file !== previous?.file)
+    ) {
       return { ok: false, error: { code: 'duplicateName', field: 'name' } }
     }
     mkdirSync(dir, { recursive: true })
-    const file = join(dir, `${role.name}.md`)
     if (!writeFileAtomic(file, serializeRole(role))) throw new Error(t('roles.error.notWritten'))
     if (previous?.file && previous.file !== file) unlinkSync(previous.file)
     this.cache.delete(dir)
@@ -126,6 +143,7 @@ export class RoleLibrary {
   /** Supprime le fichier d'un rôle personnel ou du projet ; un rôle fourni se désactive. */
   remove(scope: RoleFileScope, name: string, projectDir?: string): boolean {
     const dir = this.dirOf(scope, projectDir)
+    if (linkedDir(dir)) return false
     const role = this.read(dir, scope).roles.find((r) => r.name === name)
     if (!role?.file) return false
     unlinkSync(role.file)
@@ -151,17 +169,21 @@ export class RoleLibrary {
 
   /** Rôles d'un dossier, relus seulement si son empreinte a changé. Dossier absent : aucun. */
   private read(dir: string, scope: RoleFileScope): DirRead {
-    let names: string[]
+    if (linkedDir(dir)) {
+      // Dossier de rôles qui est un lien : rien n'est lu, et c'est signalé.
+      return { ...EMPTY, problems: [{ scope, file: dir, error: { code: 'link' } }] }
+    }
+    let all: string[]
     try {
-      names = readdirSync(dir, { withFileTypes: true })
+      all = readdirSync(dir, { withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
         .map((entry) => entry.name)
         .sort()
-        .slice(0, ROLE_LIMITS.files)
     } catch {
       this.cache.delete(dir)
       return EMPTY
     }
+    const names = all.slice(0, ROLE_LIMITS.files)
     const stats = names.map((name) => {
       try {
         const info = statSync(join(dir, name))
@@ -174,6 +196,9 @@ export class RoleLibrary {
     const cached = this.cache.get(dir)
     if (cached?.signature === signature) return cached
     const fresh = readFiles(dir, scope, stats)
+    if (all.length > names.length) {
+      fresh.problems.push({ scope, file: dir, error: { code: 'tooMany' } })
+    }
     this.cache.set(dir, { signature, ...fresh })
     for (const problem of fresh.problems) {
       this.options.log?.(`Rôle écarté : ${problem.file} (${problem.error.code})`)
@@ -199,11 +224,13 @@ function readFiles(
       problem({ code: 'tooLarge' })
       continue
     }
-    let content: string
-    try {
-      content = readFileSync(file, 'utf8')
-    } catch {
+    const content = readBounded(file)
+    if (content === undefined) {
       problem({ code: 'unreadable' })
+      continue
+    }
+    if (content === null) {
+      problem({ code: 'tooLarge' })
       continue
     }
     const parsed = parseRoleFile(content, basename(name, '.md').toLowerCase())
@@ -218,4 +245,38 @@ function readFiles(
     roles.push({ ...parsed.role, scope, file })
   }
   return { roles, problems }
+}
+
+/** Lien symbolique ? (absent : non) */
+function isLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+/** Le dossier des rôles, ou son parent (`.bobine`), est-il un lien ? */
+const linkedDir = (dir: string) => isLink(dir) || isLink(dirname(dir))
+
+/**
+ * Contenu d'un fichier lu sans dépasser la limite (le fichier peut grossir entre `stat` et la
+ * lecture) : `null` s'il est trop gros, `undefined` s'il est illisible.
+ */
+function readBounded(file: string): string | null | undefined {
+  let fd: number
+  try {
+    fd = openSync(file, 'r')
+  } catch {
+    return undefined
+  }
+  try {
+    const buffer = Buffer.alloc(ROLE_LIMITS.fileBytes + 1)
+    const length = readSync(fd, buffer, 0, buffer.length, 0)
+    return length > ROLE_LIMITS.fileBytes ? null : buffer.subarray(0, length).toString('utf8')
+  } catch {
+    return undefined
+  } finally {
+    closeSync(fd)
+  }
 }
