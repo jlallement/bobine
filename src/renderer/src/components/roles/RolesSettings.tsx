@@ -15,7 +15,6 @@ import type { RoleProblem, RoleScope, RoleView } from '@shared/roles'
 import { ipcErrorText } from '../../ipc-errors'
 import { openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
 import { problemPath } from '../../roles/role-text'
-import { roleDescription } from './role-view'
 import { roleErrorText } from './RoleFields'
 import { RoleAvatar } from './RoleAvatar'
 import { RoleEditPage } from './RoleEditPage'
@@ -187,7 +186,7 @@ function RoleRow({
         <RoleAvatar role={role} size={32} />
         <span className="role-row-text">
           <span className="role-row-label">{role.label}</span>
-          <span className="role-row-desc">{roleDescription(role)}</span>
+          <span className="role-row-desc">{role.description}</span>
         </span>
         <span className="role-row-tags">
           {role.hides?.length ? (

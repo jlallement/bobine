@@ -7,9 +7,11 @@
  * une fois avec les dialogues de l'app, affiche l'assistant ; la saisie reçoit les jetons.
  *
  * `rolesChanged` prévient les listes ouvertes après un enregistrement ; elles se relisent aussi
- * quand la fenêtre reprend le focus (un fichier de rôle modifié à la main, un `git pull`).
+ * quand la fenêtre reprend le focus (un fichier de rôle modifié à la main, un `git pull`) et quand
+ * la langue de l'interface change (rôles fournis dans la nouvelle langue, ADR-0046).
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { RolesListing } from '@shared/roles'
 import type { RoleDraft } from './role-draft'
 
@@ -107,8 +109,8 @@ export function resetRolesUi(): void {
 }
 
 /**
- * Rôles connus pour le projet de cette conversation (`roles:list`), relus après un changement et
- * au retour du focus. `null` tant que la première lecture n'est pas arrivée ; une lecture qui
+ * Rôles connus pour le projet de cette conversation (`roles:list`), relus après un changement, au
+ * retour du focus et au changement de langue (le main a déjà changé la sienne). `null` tant que la première lecture n'est pas arrivée ; une lecture qui
  * échoue laisse la dernière liste (et `error`).
  */
 export function useRolesListing(conversationId?: string | null): {
@@ -117,6 +119,8 @@ export function useRolesListing(conversationId?: string | null): {
   reload: () => void
 } {
   const { version } = useRolesUi()
+  const { i18n } = useTranslation()
+  const language = i18n.language
   const [listing, setListing] = useState<RolesListing | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [focusSeq, setFocusSeq] = useState(0)
@@ -141,6 +145,6 @@ export function useRolesListing(conversationId?: string | null): {
     return () => {
       alive = false
     }
-  }, [conversationId, version, focusSeq])
+  }, [conversationId, version, focusSeq, language])
   return { listing, error, reload }
 }

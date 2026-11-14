@@ -4926,15 +4926,6 @@ export type FrResources = {
     readonly hides: 'Remplace un rôle {{scopes}}'
     readonly agentMissing: '{{agent}} absent'
     readonly readOnly: 'Lecture seule'
-    readonly builtinDescription: {
-      readonly uxUiExpert: 'Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.'
-      readonly flutterExpert: 'Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.'
-      readonly frontArchitect: 'Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.'
-      readonly backArchitect: 'Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.'
-      readonly securityExpert: 'Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.'
-      readonly techLead: 'Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.'
-      readonly codeReviewer: 'Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien.'
-    }
     readonly enabled: '{{label}} : actif'
     readonly empty: {
       readonly title: 'Montez votre équipe'
