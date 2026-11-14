@@ -11,7 +11,8 @@
  * la vidéo dans `e2e/captures/vitrine-*`).
  *
  * Sorties, dans `docs/images/readme/<langue>/` : `hero-light.png`, `hero-dark.png`,
- * `changes.png`, `roles-menu.png`, `roles.png`, `questions.png`, `browser.png`,
+ * `hero-aurora.png`, `hero-aurora-night.png`,
+ * `changes.png`, `history.png`, `roles-menu.png`, `roles.png`, `questions.png`, `browser.png`,
  * `discussion.png`, `themes.png` ;
  * en anglais seulement : `docs/images/social-preview.png` (1280×640, à déposer à la main dans
  * Settings › General de GitHub). Vidéo : `e2e/captures/vitrine/<langue>/demo.mp4` (non versionnée,
@@ -43,8 +44,17 @@ import { SHOWCASE_PROJECT } from '../src/mock-agent/scenarios-vitrine.mts'
 const EN = LANG === 'en'
 const WITH_VIDEO = !process.argv.includes('--sans-video')
 const KEEP = process.argv.includes('--garder')
-/** Thèmes montrés (`prefers-color-scheme`) ; un nouveau thème s'ajoute ici et dans `themes.png`. */
-const SCHEMES = ['light', 'dark']
+/**
+ * Thèmes montrés : mode du système (`prefers-color-scheme`) et variante choisie dans Réglages ›
+ * Apparence (`palette`, rien pour Clair et Sombre). Le premier fait tout le parcours ; les autres,
+ * l'image de tête seule (`hero-<nom>.png`) ; tous entrent dans `themes.png`, dans cet ordre.
+ */
+const THEMES = [
+  { name: 'light', scheme: 'light' },
+  { name: 'dark', scheme: 'dark' },
+  { name: 'aurora', scheme: 'light', palette: 'aurora' },
+  { name: 'aurora-night', scheme: 'dark', palette: 'auroraNight' }
+]
 /**
  * Fenêtre des essais, à sa taille réelle (1280×820) : une taille émulée décalerait les vues natives
  * (navigateur intégré) dans les captures.
@@ -98,7 +108,7 @@ const SHOP_PAGE = `<!doctype html><html lang="${LANG}"><head><meta charset="utf-
   header { display: flex; justify-content: space-between; align-items: center; padding: 20px 32px; background: #6b3f2a; color: #fff }
   header b { font-size: 22px } .cart { background: #fff3; padding: 6px 14px; border-radius: 99px }
   h1 { margin: 32px 32px 8px; font-size: 28px } p.lead { margin: 0 32px 24px; color: #7a6152 }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 32px 32px }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; padding: 0 32px 32px }
   .card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 10px #0001 }
   .dot { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 12px }
   .price { font-weight: 600 } button { margin-top: 10px; border: 0; background: #c4633f; color: #fff; padding: 8px 16px; border-radius: 8px; font: inherit }
@@ -326,19 +336,28 @@ function encodeGif(mp4, from, to, file) {
   throw new Error(`GIF trop lourd même réduit : ${kb(file)}`)
 }
 
-/** Clair à gauche, sombre à droite : moitiés de l'image de tête des deux thèmes. */
-function themes(light, dark, file) {
+/** Les images de tête de tous les thèmes, en mosaïque de deux colonnes. */
+function themes(heroes, file) {
+  const inputs = heroes.flatMap((hero) => ['-i', hero])
+  const half = README_WIDTH / 2
+  const scaled = heroes.map((_, i) => `[${i}:v]scale=${half}:-1:flags=lanczos[t${i}]`).join(';')
+  // Deux colonnes : x = 0 ou w0, y = somme des hauteurs des rangées au-dessus.
+  const layout = heroes
+    .map((_, i) => {
+      const x = i % 2 === 0 ? '0' : 'w0'
+      const rows = Math.floor(i / 2)
+      const y = rows === 0 ? '0' : Array.from({ length: rows }, () => 'h0').join('+')
+      return `${x}_${y}`
+    })
+    .join('|')
+  const stack = heroes.map((_, i) => `[t${i}]`).join('')
   execFileSync('ffmpeg', [
     '-y',
     '-loglevel',
     'error',
-    '-i',
-    light,
-    '-i',
-    dark,
+    ...inputs,
     '-filter_complex',
-    '[0:v]crop=iw/2:ih:0:0[l];[1:v]crop=iw/2:ih:iw/2:0[r];[l][r]hstack,' +
-      `scale=${README_WIDTH}:-1:flags=lanczos`,
+    `${scaled};${stack}xstack=inputs=${heroes.length}:layout=${layout}:fill=white`,
     '-frames:v',
     '1',
     '-update',
@@ -346,6 +365,19 @@ function themes(light, dark, file) {
     file
   ])
   console.log(`  ✓ themes.png (${kb(file)})`)
+}
+
+/** Choisit une variante de thème dans Réglages › Apparence (Aurore, Aurore nuit…). */
+async function choosePalette(ui, palette) {
+  await ui.click(ui.$('open-settings'))
+  await ui.waitFor(`!!${ui.$('settings')}`)
+  await ui.click(ui.$('settings-appearance'))
+  await ui.waitFor(`!!${ui.$(`theme-${palette}`)}`)
+  await ui.click(ui.$(`theme-${palette}`))
+  await ui.waitFor(`document.documentElement.dataset.palette === '${palette}'`)
+  await ui.key('Escape')
+  await ui.waitFor(`!${ui.$('settings')}`)
+  await sleep(400)
 }
 
 /**
@@ -432,11 +464,12 @@ async function sendTyped(ui, text) {
 const permissionCard = `document.querySelector('[data-testid=permission]')`
 
 /** Le test corrigé : carte d'autorisation (image de tête), puis Modifications. */
-async function fixTheTest(ui, scheme, { changes = true } = {}) {
+async function fixTheTest(ui, theme, { changes = true } = {}) {
   await sendTyped(ui, PROMPTS.fix)
   await ui.waitFor(`!!${permissionCard}`, 30_000)
+  await ui.waitFor(`${permissionCard}.hasAttribute('data-armed')`, 5000)
   await sleep(1200)
-  const raw = await shot(ui, `hero-${scheme}`, scheme)
+  const raw = await shot(ui, `hero-${theme.name}`, theme.scheme)
   if (!changes) return raw
   await ui.click(`${permissionCard}.querySelector('button[data-kind=allow_once]')`)
   await ui.ready()
@@ -452,6 +485,14 @@ async function fixTheTest(ui, scheme, { changes = true } = {}) {
   }
   await sleep(800)
   await shot(ui, 'changes')
+  // Historique des messages envoyés (fiche 227) : ↑ dans la saisie vide rappelle le dernier.
+  await ui.ev(`${ui.$('composer-input')}.focus()`)
+  await ui.arrow('ArrowUp')
+  await ui.waitFor(`!!${ui.$('history-pill')}`, 5000)
+  await sleep(600)
+  await shot(ui, 'history')
+  await ui.arrow('ArrowDown')
+  await ui.waitFor(`${ui.$('composer-input')}?.value === ''`, 5000)
   return raw
 }
 
@@ -508,9 +549,12 @@ async function writeAnEmail(ui) {
   await ui.ready()
   if (!(await ui.ev(`!!${ui.$('side-panel')}`))) await ui.click(ui.$('panel-toggle'))
   await ui.waitFor(`!!${ui.$('side-panel')}`)
-  await ui.click(
-    `[...document.querySelectorAll('.side-panel-tab-main')].find((b) => b.innerText.includes(${JSON.stringify(L('panel.tab.documents'))}))`
-  )
+  // Onglet « Documents » : par son libellé accessible (le panneau étroit cache les libellés).
+  if (!(await ui.ev(`!!${ui.$('documents-preview')}`))) {
+    await ui.click(
+      `document.querySelector('.side-panel-tab-main[aria-label=${JSON.stringify(L('panel.tab.documents'))}]')`
+    )
+  }
   await ui.waitFor(`!!${ui.$('documents-preview')}`)
   await sleep(1000)
   await shot(ui, 'discussion')
@@ -536,7 +580,7 @@ try {
           await ui.ready()
           await sleep(600)
           const video = WITH_VIDEO ? record(ui) : undefined
-          heroRaw.light = await fixTheTest(ui, 'light')
+          heroRaw.light = await fixTheTest(ui, THEMES[0])
           video?.mark('roles')
           await reviewWithRoles(ui)
           await sleep(1500)
@@ -569,14 +613,15 @@ try {
   }
 
   // 2. Les autres thèmes : l'image de tête seule.
-  for (const scheme of SCHEMES.filter((s) => s !== 'light')) {
+  for (const theme of THEMES.slice(1)) {
     const { dir, base } = project()
     try {
       await withApp(
-        scheme,
+        theme.scheme,
         async (ui) => {
           await ui.ready()
-          heroRaw[scheme] = await fixTheTest(ui, scheme, { changes: false })
+          if (theme.palette) await choosePalette(ui, theme.palette)
+          heroRaw[theme.name] = await fixTheTest(ui, theme, { changes: false })
         },
         undefined,
         'vitrine',
@@ -587,7 +632,10 @@ try {
     }
   }
 
-  themes(heroRaw.light, heroRaw.dark, join(out, 'themes.png'))
+  themes(
+    THEMES.map((theme) => heroRaw[theme.name]),
+    join(out, 'themes.png')
+  )
 
   // 3. Image de partage (anglais seulement), dessinée dans l'app en thème clair.
   if (EN) {

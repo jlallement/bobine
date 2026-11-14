@@ -84,9 +84,17 @@ travaille dans sa conversation fille, en parallèle, et rend compte.
 ### L'agent demande plutôt que deviner
 
 Questions à choix, plans à annoter avant que l'agent commence, liste de tâches épinglée au-dessus
-de la zone de saisie.
+de la zone de saisie. Et, comme dans un terminal, **↑** dans une saisie vide rappelle ce que vous
+avez déjà envoyé, rôles compris.
 
 ![L'agent demande quel format d'export choisir](docs/images/readme/fr/questions.png)
+
+<details>
+<summary>L'historique des messages envoyés (↑)</summary>
+
+![↑ a rappelé le dernier message envoyé, avec sa position 1/1](docs/images/readme/fr/history.png)
+
+</details>
 
 ### Laisser l'agent voir le résultat
 
@@ -103,12 +111,14 @@ l'onglet **Documents** de la discussion, prêt à ouvrir ou à enregistrer.
 
 ![L'agent a rédigé un e-mail et l'a gardé dans les documents de la discussion](docs/images/readme/fr/discussion.png)
 
-### Clair et sombre
+### Clair, sombre et Aurore
 
-Thèmes clair et sombre avec six accents, la police du système ou la vôtre, une densité compacte et
-un mode présentation pour les démonstrations.
+Clair et Sombre, Fjord, et **Aurore** et **Aurore nuit** : une base presque neutre et quelques
+touches légères (une lueur douce, un dégradé sur vos messages et sur l'action principale, des menus
+en verre dépoli). Six accents, la police du système ou la vôtre, une densité compacte et un mode
+présentation pour les démonstrations.
 
-![La même conversation en thème clair et en thème sombre](docs/images/readme/fr/themes.png)
+![La même conversation en Clair, Sombre, Aurore et Aurore nuit](docs/images/readme/fr/themes.png)
 
 ## Agents pris en charge
 

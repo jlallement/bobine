@@ -63,6 +63,14 @@ visuels, ni rien qui bouge. Plan et audit : [`docs/promotion-github.md`](../prom
   page du navigateur intégré vide : taille réelle de la fenêtre et inspecteur du main ; le vrai
   pointeur de la machine survolait la poignée de la barre latérale : survol coupé le temps de la
   capture ; une frappe perdue à l'ouverture d'une conversation : saisie vérifiée avant l'envoi.
+- 2026-11-14 — `main` fusionnée (fiches 226 et 227) : thèmes `THEMES` du script (Clair, Sombre,
+  Aurore, Aurore nuit, plus de Sépia), `hero-aurora.png` et `hero-aurora-night.png`, `themes.png` en
+  mosaïque 2×2 des quatre ; capture `history.png` (↑ dans la saisie, pastille 1/1) ; panneau de
+  droite à 320 px : onglet Documents choisi par son libellé accessible, page de la boutique en
+  grille fluide. Image de tête : Clair / Sombre gardés pour la paire `<picture>` (Aurore est plus
+  soignée de près, mais l'écart ne se voit pas à la taille d'un README). Tout regénéré (en, fr),
+  regardé, contrôlé : `roles.gif` 643 Ko (en) et 693 Ko (fr) ; `demo.mp4` 539 Ko (en, 22 s) et
+  575 Ko (fr, 23 s) ; `themes.png` 588 et 622 Ko ; autres images 240 à 500 Ko.
 - Les anciennes captures `docs/images/bobine.png` et `bobine-fr.png` sont retirées (plus citées).
 - Écart au plan : simulateur iOS et émulateur Android non capturés (leurs faux outils d'essai
   montrent un iPhone factice et un flux interrompu) ; le README les décrit en texte. Thèmes : clair

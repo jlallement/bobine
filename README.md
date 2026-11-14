@@ -82,9 +82,17 @@ conversation, in parallel, and reports back.
 ### The agent asks before guessing
 
 Questions with choices, plans you can annotate before the agent starts, a task list pinned above
-the message box.
+the message box. And, as in a terminal, **↑** in an empty message box brings back what you sent
+before, roles included.
 
 ![The agent asks which export format to use](docs/images/readme/en/questions.png)
+
+<details>
+<summary>The sent-message history (↑)</summary>
+
+![↑ brought back the last message sent, with its position 1/1](docs/images/readme/en/history.png)
+
+</details>
 
 ### Let the agent see the result
 
@@ -101,12 +109,13 @@ question, write an email, summarize a document. What the agent writes is kept in
 
 ![The agent drafted an email and kept it in the chat's documents](docs/images/readme/en/discussion.png)
 
-### Light and dark
+### Light, dark and Aurora
 
-Light and dark themes with six accents, the system font or your own, a compact density and a
-presentation mode for demos.
+Light and Dark, Fjord, and **Aurora** and **Aurora Night**: a near-neutral base with a few light
+touches (a soft glow, a gradient on your messages and on the main action, frosted menus). Six
+accents, the system font or your own, a compact density and a presentation mode for demos.
 
-![The same conversation in the light and the dark theme](docs/images/readme/en/themes.png)
+![The same conversation in Light, Dark, Aurora and Aurora Night](docs/images/readme/en/themes.png)
 
 ## Supported agents
 
