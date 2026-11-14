@@ -52,16 +52,23 @@ export function useMentions(options: {
     }
   }, [query, onSearchFiles])
   const roles = options.roles
+  const contexts = mention ? matchContextMentions(mention.query) : []
+  // Un rôle trouvé par sa seule description ne passe pas devant `@git-changes` ou `@terminal`
+  // tapés par leur nom : il n'est proposé que si aucune mention de contexte ne correspond.
   const roleEntries =
     mention && roles
-      ? roleMenuEntries(matchRoles(roles.list, mention.query), mention.query, {
-          all: allRolesAt === mention.start,
-          canCreate: roles.canCreate
-        })
+      ? roleMenuEntries(
+          matchRoles(roles.list, mention.query, { descriptions: contexts.length === 0 }),
+          mention.query,
+          {
+            all: allRolesAt === mention.start,
+            canCreate: roles.canCreate
+          }
+        )
       : []
   const entries: MentionEntry[] = [
     ...roleEntries,
-    ...(mention ? matchContextMentions(mention.query) : []).map((m) => ({
+    ...contexts.map((m) => ({
       kind: 'context' as const,
       mention: m
     })),

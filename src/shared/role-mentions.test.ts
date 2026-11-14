@@ -32,6 +32,12 @@ describe('matchRoles', () => {
     expect(matchRoles(roles, 'ui').map((r) => r.name)).toEqual(['ux-ui-expert'])
     expect(matchRoles(roles, 'zzz')).toEqual([])
   })
+  it('`descriptions: false` : nom et libellé seulement', () => {
+    expect(matchRoles(roles, 'sé', { descriptions: false }).map((r) => r.name)).toEqual([
+      'security-expert'
+    ])
+    expect(matchRoles(roles, 'diff', { descriptions: false })).toEqual([])
+  })
 })
 
 describe('splitRoleMentions', () => {

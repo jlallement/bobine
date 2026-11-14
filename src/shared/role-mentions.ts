@@ -20,10 +20,14 @@ type Searchable = Pick<RoleDefinition, 'name' | 'label' | 'description'>
 
 /**
  * Rôles qui correspondent à ce qui est tapé après `@` : d'abord ceux dont le nom ou un mot du
- * libellé commence par la recherche, puis ceux dont la description la contient. Recherche vide :
- * tous, dans l'ordre reçu.
+ * libellé commence par la recherche, puis ceux dont la description la contient (sauf
+ * `descriptions: false`). Recherche vide : tous, dans l'ordre reçu.
  */
-export function matchRoles<T extends Searchable>(roles: readonly T[], query: string): T[] {
+export function matchRoles<T extends Searchable>(
+  roles: readonly T[],
+  query: string,
+  options: { descriptions?: boolean } = {}
+): T[] {
   const q = searchable(query.trim())
   if (!q) return [...roles]
   const byName = roles.filter(
@@ -34,6 +38,7 @@ export function matchRoles<T extends Searchable>(roles: readonly T[], query: str
         .some((word) => word.startsWith(q)) ||
       searchable(r.label).startsWith(q)
   )
+  if (options.descriptions === false) return byName
   const byDescription = roles.filter(
     (r) => !byName.includes(r) && searchable(r.description).includes(q)
   )

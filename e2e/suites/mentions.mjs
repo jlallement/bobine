@@ -67,7 +67,8 @@ export async function mentionsSuite(scheme) {
         await ui.waitFor(`${contextItems}.length === 1`)
         await ui.shot('j0-mention-git')
         await ui.enter()
-        await ui.type('et @te')
+        // `@te` proposerait d'abord le rôle « Tech lead » (fiche 223 : les rôles en tête).
+        await ui.type('et @term')
         await ui.waitFor(`${contextItems}[0]?.innerText.includes('@terminal')`)
         await ui.enter()
         const chips = await ui.ev(

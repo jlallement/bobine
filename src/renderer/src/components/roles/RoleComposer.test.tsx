@@ -128,6 +128,17 @@ describe('menu `@` : rôles en tête', () => {
     expect(roleNames()).toEqual(['security-expert', 'back-architect'])
   })
 
+  it('`@git` : `@git-changes` d’abord, pas un rôle trouvé par sa seule description', () => {
+    const { type, key, input } = setup({
+      list: [role('code-reviewer', 'Code reviewer', { description: 'Lit le git diff.' })]
+    })
+    type('Relis @git')
+    expect(roleNames()).toEqual([])
+    key('Enter')
+    expect(input.value).toBe('Relis @git-changes ')
+    expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+
   it('« + Nouveau rôle » seulement si l’app sait ouvrir l’assistant', () => {
     const onCreate = vi.fn()
     const first = setup()
