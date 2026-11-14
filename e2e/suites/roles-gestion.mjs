@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, check, withApp } from '../lib.mjs'
+import { conversationTooltip } from '../sidebar-tooltip.mjs'
 
 /** Rôle de projet qui remplace le « Code reviewer » fourni (même nom), partagé par git. */
 const PROJECT_REVIEWER = `---
@@ -80,6 +81,23 @@ export async function rolesGestionSuite(scheme) {
           'barre latérale : section Équipe, sept rôles actifs (le relecteur du projet remplace le fourni)'
         )
         await ui.shot('r1-equipe')
+        // Chaque tuile se nomme : nom pour les lecteurs d'écran, infobulle nom et description
+        // (traduite pour un rôle fourni).
+        const tile = `document.querySelector('[data-testid=team-role][data-role=security-expert]')`
+        check(
+          (await ui.ev(`${tile}.getAttribute('aria-label')`)) ===
+            L('team.assign', { label: L('roles.builtin.securityExpert') }),
+          'section Équipe : chaque tuile a un nom accessible'
+        )
+        const tip = await conversationTooltip(ui, tile, {
+          hover: true,
+          capture: 'r1b-equipe-infobulle'
+        })
+        check(
+          tip.includes(L('roles.builtin.securityExpert')) &&
+            tip.includes(L('rolesSettings.builtinDescription.securityExpert')),
+          'section Équipe : infobulle au survol, nom et description traduite du rôle fourni'
+        )
 
         // Assistant, étape 1 : Qui. « Suivant » à vide montre les erreurs.
         await ui.click(ui.$('team-new'))
@@ -164,9 +182,17 @@ export async function rolesGestionSuite(scheme) {
           'Réglages › Rôles : le relecteur du projet dit qu’il remplace le rôle fourni'
         )
         check(
-          (await ui.ev(`${ui.$('role-problem')}.innerText`)).includes('faute.md') &&
+          (await ui.ev(`${row('tech-lead')}.querySelector('.role-row-desc').textContent`)) ===
+            L('rolesSettings.builtinDescription.techLead'),
+          'rôle fourni : description affichée dans la langue de l’interface'
+        )
+        check(
+          (await ui.ev(`${ui.$('role-problem')}.innerText`)).startsWith('.bobine/roles/faute.md') &&
+            (await ui.ev(`${ui.$('role-problem')}.querySelector('[title]').title`)).endsWith(
+              '/.bobine/roles/faute.md'
+            ) &&
             (await ui.ev(`${ui.$('role-problem')}.innerText`)).includes('read-onyl'),
-          'fichier écarté montré avec sa raison (champ inconnu)'
+          'fichier écarté : chemin relatif au projet (complet en infobulle) et raison'
         )
         await ui.shot('r7-reglages-roles')
 

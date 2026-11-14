@@ -81,7 +81,9 @@ describe('Réglages › Rôles (fiche 223, phase 3A)', () => {
     expect(within(rows[0] as HTMLElement).getByTestId('role-hides').textContent).toBe(
       'Remplace un rôle fourni'
     )
-    expect(screen.getByTestId('role-problem').textContent).toContain('faute.md')
+    expect(screen.getByTestId('role-problem').textContent).toContain('.bobine/roles/faute.md')
+    expect(screen.getByTestId('role-problem').textContent).not.toContain('/p/')
+    expect(screen.getByTitle('/p/.bobine/roles/faute.md')).toBeTruthy()
     expect(screen.getByTestId('role-problem').textContent).toContain('read-onyl')
     expect(screen.queryByTestId('roles-empty')).toBeNull()
   })

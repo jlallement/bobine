@@ -486,3 +486,16 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
     sont communs) : 192/194 vertes en 23 min 07 s ; les 2 échecs étaient `settings` (clair et
     sombre), qui comptait treize onglets — corrigé à quatorze (Rôles), suite rejouée seule : 2/2
     vertes. `roles-gestion` aussi en `--lang en` : 2/2 vertes.
+- 2026-11-14 : **relecture tech lead de la phase 3A**, correctifs :
+  1. Description d'un rôle fourni affichée dans la langue de l'interface
+     (`rolesSettings.builtinDescription.*`, `shownDescription` de `renderer/src/roles/role-text.ts`)
+     dans Réglages › Rôles et l'infobulle de la section Équipe ; celle envoyée à l'agent reste en
+     anglais (ADR-0014). Les tuiles de l'assistant n'affichent pas de description. **Choix** : l'écran
+     d'édition d'un rôle fourni montre la description de l'agent (anglaise), celle qui sera
+     enregistrée dans le rôle personnel qui le remplace. `main/roles/builtin.test.ts` fige les sept
+     noms traduits.
+  2. Fichier écarté : chemin relatif à sa portée (`.bobine/roles/faute.md`, `roles/faute.md`), chemin
+     complet en infobulle (`problemPath`).
+  3. Section Équipe : les maquettes 01-0 et 03-6 n'y montrent que les avatars, nom et description en
+     infobulle au survol ; chaque tuile a déjà son infobulle et son nom accessible (« Confier un
+     travail à … ») — vérifiés par l'e2e (capture `r1b-equipe-infobulle`).

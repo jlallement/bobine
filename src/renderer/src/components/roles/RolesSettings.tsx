@@ -14,6 +14,7 @@ import type { ProfileSummary } from '@shared/agent'
 import type { RoleProblem, RoleScope, RoleView } from '@shared/roles'
 import { ipcErrorText } from '../../ipc-errors'
 import { openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
+import { problemPath, shownDescription } from '../../roles/role-text'
 import { roleErrorText } from './RoleFields'
 import { RoleAvatar } from './RoleAvatar'
 import { RoleEditPage } from './RoleEditPage'
@@ -183,7 +184,7 @@ function RoleRow({
         <RoleAvatar role={role} size="md" />
         <span className="role-row-text">
           <span className="role-row-label">{role.label}</span>
-          <span className="role-row-desc">{role.description}</span>
+          <span className="role-row-desc">{shownDescription(role)}</span>
         </span>
         <span className="role-row-tags">
           {role.hides?.length ? (
@@ -254,7 +255,9 @@ function RoleProblems({ problems }: { problems: RoleProblem[] }) {
       <ul className="settings-list roles-list">
         {problems.map((problem) => (
           <li key={problem.file} className="role-problem" data-testid="role-problem">
-            <span className="role-problem-file">{problem.file}</span>
+            <span className="role-problem-file" title={problem.file}>
+              {problemPath(problem)}
+            </span>
             <span className="role-problem-reason">{roleErrorText(problem.error)}</span>
           </li>
         ))}
