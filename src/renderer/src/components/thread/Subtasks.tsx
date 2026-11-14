@@ -26,6 +26,7 @@ import { childRows } from '@shared/children-rows'
 import type { TranscriptItem } from '@shared/transcript'
 import { digestsTotal, formatCost, formatTokens, type UsageDigest } from '@shared/usage'
 import { Markdown } from './Markdown'
+import { useProfileStatus } from '../common/Profile'
 import { ConversationStateIcon } from '../common/ConversationState'
 import { Tip } from '../common/Menus'
 export { ConversationStateIcon as ChildStateIcon } from '../common/ConversationState'
@@ -430,6 +431,8 @@ export function ChildReportItem({
 }) {
   const { t } = useTranslation()
   const usageText = useUsageText()
+  // Profil en lecture seule (fiche 196) : aucun rôle ne s'enregistre, le geste n'est pas proposé.
+  const { readOnly } = useProfileStatus()
   const [open, setOpen] = useState(false)
   const detailsId = useId()
   const Icon = OUTCOME_ICONS[item.outcome]
@@ -510,7 +513,7 @@ export function ChildReportItem({
             </div>
           </div>
         )}
-        {onSaveAsRole && !role && item.outcome === 'done' && (
+        {onSaveAsRole && !role && !readOnly && item.outcome === 'done' && (
           <div className="child-report-actions">
             <button
               className="btn small"
