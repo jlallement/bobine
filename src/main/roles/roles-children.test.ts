@@ -199,6 +199,18 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     ).toBe(false)
   })
 
+  it('lecture seule : demande sans `kind` après un outil annoncé `edit` → refusée (genre retenu)', async () => {
+    const env = await environment()
+    const child = await env.children.start(env.mother, {
+      text: 'Relis.\n/scenario role-ecrit-sans-genre',
+      role: 'code-reviewer'
+    })
+    await env.settled(child.id)
+    expect(env.lastReply(child.id)).toContain('Écriture refusée')
+    expect(env.notices(child.id)).toContain('roles.notice.writeRefused')
+    expect(existsSync(join(env.repo, 'notes.md'))).toBe(false)
+  })
+
   it('agent qui écrit sans demander : lecture seule seulement demandée, et l’écriture signalée', async () => {
     const env = await environment()
     const child = await env.children.start(env.mother, {
@@ -214,18 +226,27 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     await waitFor(() => env.notices(env.mother).includes('roles.notice.childFolderChanged'))
   })
 
-  it('mode natif présent : la fille y est mise, sans la consigne du rôle dans le message', async () => {
+  it('mode natif présent : la fille y est mise, consigne du rôle quand même ; rien de retenu pour le profil', async () => {
     const env = await environment()
     // Rôle du projet non commité : la fille travaille dans un worktree où il n'est pas.
-    const child = await env.children.start(env.mother, { text: 'Question ?', role: 'questions' })
+    const child = await env.children.start(env.mother, {
+      text: 'Question ?',
+      role: 'questions',
+      model: { controlId: 'model', value: 'factice-precis' }
+    })
     expect(child.branch).toBeDefined()
     await env.settled(child.id)
-    expect(
-      env.manager.view(child.id).snapshot?.controls.find((c) => c.category === 'mode')
-    ).toMatchObject({ currentValue: 'ask' })
+    const controls = env.manager.view(child.id).snapshot?.controls ?? []
+    expect(controls.find((c) => c.category === 'mode')).toMatchObject({ currentValue: 'ask' })
+    expect(controls.find((c) => c.id === 'model')).toMatchObject({
+      currentValue: 'factice-precis'
+    })
     const first = env.firstMessage(child.id)
-    expect(first?.kind === 'user' && first.text).toBe('Question ?')
+    expect(first?.kind === 'user' && first.text).toContain('CONSIGNE-QUESTIONS')
+    expect(first?.kind === 'user' && first.text).toContain('Question ?')
     expect(env.notices(child.id)).not.toContain('roles.notice.modeMissing')
+    // Le mode et le modèle d'une fille ne deviennent pas ceux du profil (relecture, fiche 160).
+    expect(env.manager.settings.current.controls?.['mock'] ?? {}).toEqual({})
   })
 
   it('mode natif absent : la consigne du rôle part en tête du premier message, et c’est dit', async () => {

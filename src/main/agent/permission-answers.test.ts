@@ -67,4 +67,12 @@ describe('réponses automatiques aux demandes d’autorisation', () => {
     expect(automaticAnswer(request('edit'), rules().rules)).toBeUndefined()
     expect(refused).toEqual([])
   })
+
+  it('lecture seule : un outil « toujours autorisé » est quand même demandé (relecture)', () => {
+    const { rules: readOnly } = rules({ readOnly: true, remembered: { has: () => true } })
+    expect(automaticAnswer(request('other'), readOnly)).toBeUndefined()
+    expect(
+      automaticAnswer(request('other'), rules({ remembered: { has: () => true } }).rules)
+    ).toEqual({ outcome: { outcome: 'selected', optionId: 'always' } })
+  })
 })

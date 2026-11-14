@@ -83,5 +83,46 @@ export const roleScenarios: Record<string, Scenario> = {
       { kind: 'write-file', path: 'notes-role.md', content: 'écrit sans demander\n' },
       { kind: 'text', text: 'Fichier écrit sans demander.' }
     ]
+  },
+  'role-ecrit-sans-genre': {
+    description:
+      'Fille en lecture seule : outil annoncé `kind: edit`, puis une demande d’autorisation **sans** `kind` (forme permise par ACP) ; Bobine retient le genre annoncé et refuse',
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'role_edit_bare',
+          title: 'Writing file notes.md',
+          kind: 'edit',
+          status: 'pending'
+        }
+      },
+      {
+        kind: 'permission',
+        toolCall: { toolCallId: 'role_edit_bare' },
+        options: [
+          { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+          { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+        ],
+        branches: {
+          allow: [
+            { kind: 'write-file', path: 'notes.md', content: 'écrit malgré la lecture seule\n' },
+            { kind: 'text', text: 'Écriture acceptée.' }
+          ],
+          reject: [
+            {
+              kind: 'update',
+              update: {
+                sessionUpdate: 'tool_call_update',
+                toolCallId: 'role_edit_bare',
+                status: 'failed'
+              }
+            },
+            { kind: 'text', text: 'Écriture refusée : je reste en lecture seule.' }
+          ]
+        }
+      }
+    ]
   }
 }

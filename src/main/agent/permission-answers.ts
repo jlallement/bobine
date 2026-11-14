@@ -64,7 +64,8 @@ export function automaticAnswer(
   }
   const allow = params.options.find((o) => o.kind === 'allow_once')
   if (allow && rules.autoAllowed(params.toolCall)) return selected(allow.optionId)
-  const remembered = rememberableTool(params.toolCall)
+  // Fille en lecture seule : aucun accord « toujours » ne vaut, tout est demandé.
+  const remembered = rules.readOnly ? undefined : rememberableTool(params.toolCall)
   if (
     remembered &&
     rules.remembered?.has(remembered) &&

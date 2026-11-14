@@ -54,6 +54,8 @@ export interface AppToolsBridgeOptions {
   tellAgent: (text: string) => void
   /** Règles de l'agent : partie d'une commande refusée partout (fiche 215), ou `undefined`. */
   deniedCommand?: (command: string) => string | undefined
+  /** Fille d'un rôle en lecture seule (fiche 223) : aucun accord « toujours » des outils de l'app. */
+  readOnly?: boolean | undefined
 }
 
 export class AppToolsBridge {
@@ -325,6 +327,7 @@ export class AppToolsBridge {
     return {
       workspace: this.options.workspace,
       conversationId: this.options.conversationId ?? 'default',
+      ...(this.options.readOnly ? { readOnly: true } : {}),
       ask: async (args, onLate) => {
         const outcome = await this.elicit(this.questionPrompt(args), (response) =>
           onLate?.(choicesOf(response))

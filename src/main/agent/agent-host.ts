@@ -317,7 +317,8 @@ export class AgentHost {
         this.lateAnswers.push(text)
         this.flushLateAnswer()
       },
-      ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {})
+      ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {}),
+      readOnly: options.readOnly
     })
   }
 
@@ -831,15 +832,19 @@ export class AgentHost {
   ): RequestPermissionResponse | Promise<RequestPermissionResponse> {
     // Écriture hors du dossier, droits d'administrateur… : dits sur la carte (fiche 211).
     const place = { workspace: this.options.workspace, home: homedir() }
-    const automatic = automaticAnswer(params, {
-      autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
-      remembered: this.options.rememberedTools,
-      place,
-      readOnly: this.options.readOnly,
-      onRefused: (refused) => this.options.emit(readOnlyRefusal(refused))
-    })
-    if (automatic) return automatic
+    // Genre retenu des mises à jour de l'outil : une demande peut venir sans `kind` (relecture 223).
     const toolCall = this.updates.permission(params.toolCall)
+    const automatic = automaticAnswer(
+      { ...params, toolCall },
+      {
+        autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
+        remembered: this.options.rememberedTools,
+        place,
+        readOnly: this.options.readOnly,
+        onRefused: (refused) => this.options.emit(readOnlyRefusal(refused))
+      }
+    )
+    if (automatic) return automatic
     const risks = permissionRisks(toolCall, place)
     return this.requests.permission({ ...params, toolCall }, risks, signal)
   }

@@ -79,6 +79,8 @@ export interface ToolContext {
   ) => Promise<ChildDecision | 'late'>
   /** Message envoyé à l'agent au nom de l'utilisateur dès qu'il est prêt (après une réponse tardive). */
   tellAgent: (text: string) => void
+  /** Fille d'un rôle en lecture seule (fiche 223) : chaque commande est demandée, sans « toujours ». */
+  readOnly?: boolean
   /**
    * Partie de cette commande que les règles de l'agent refusent partout (son profil déclare des
    * règles d'approbation, fiche 215), ou `undefined`. Les outils de l'app ne la lancent pas : sans

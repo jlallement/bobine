@@ -35,7 +35,9 @@ export async function approveCommand(
   context: ToolContext,
   approval: CommandApproval
 ): Promise<ToolResult | undefined> {
-  const { session, key, always, workspace, command } = approval
+  const { session, key, workspace, command } = approval
+  // Fille en lecture seule (fiche 223) : un accord « toujours » ne vaut pas, et n'est pas proposé.
+  const always = context.readOnly ? undefined : approval.always
   // Refusée partout par les règles de l'agent : jamais lancée, même déjà autorisée ici (fiche 215).
   const denied = context.deniedCommand?.(command)
   if (denied !== undefined) {

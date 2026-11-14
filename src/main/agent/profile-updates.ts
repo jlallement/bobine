@@ -68,7 +68,9 @@ export class ProfileUpdates {
   permission(toolCall: ToolCallUpdate): ToolCallUpdate {
     const soFar = this.calls.notePermission(toolCall)
     noteProposedFiles(soFar, toolCall, this.exists)
-    return this.marker.markPermission(withNewFiles(toolCall, soFar))
+    const marked = this.marker.markPermission(withNewFiles(toolCall, soFar))
+    // Genre annoncé plus tôt (`tool_call`) quand la demande n'en porte pas (fiche 223).
+    return marked.kind || !soFar.kind ? marked : { ...marked, kind: soFar.kind }
   }
 
   /** Nouvelle session ou agent arrêté. */
