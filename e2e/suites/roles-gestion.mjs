@@ -67,6 +67,10 @@ export async function rolesGestionSuite(scheme) {
   git('add', '.')
   git('commit', '-q', '-m', 'init')
   const created = join(rolesDir, 'expert-perf.md')
+  // Langue tenue par le réglage, pas par `BOBINE_LANG` (vidé) : la fin de la suite la change dans
+  // Réglages › Général (ADR-0046). Départ dans la langue des essais.
+  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-roles-data-'))
+  writeFileSync(join(userData, 'settings.json'), JSON.stringify({ language: LANG }))
   try {
     await withApp(
       scheme,
@@ -366,12 +370,13 @@ export async function rolesGestionSuite(scheme) {
         )
         check(true, 'langue d’origine : rôles fournis relus dans cette langue')
       },
-      undefined,
+      userData,
       // Réponse simple, sans demande d'autorisation (la fille joue le même scénario).
       'streaming-texte',
-      { BOBINE_WORKSPACE: workspace }
+      { BOBINE_WORKSPACE: workspace, BOBINE_LANG: '' }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
+    rmSync(userData, { recursive: true, force: true })
   }
 }
