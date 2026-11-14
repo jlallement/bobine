@@ -6,7 +6,7 @@
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { ReactNode } from 'react'
-import { act, render as testingRender, screen } from '@testing-library/react'
+import { act, fireEvent, render as testingRender, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { IpcEventContract } from '@shared/ipc'
@@ -15,7 +15,8 @@ import type { RoleSnapshot } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
 import { ChildProposals } from '../thread/ChildProposals'
 import { Transcript } from '../thread/Transcript'
-import { RoleTitleBadge } from './RoleWork'
+import { RoleReadOnlyTag, RoleTitleBadge } from './RoleWork'
+import { badgeCompact } from './useCompactBadge'
 
 const render = (ui: ReactNode) => testingRender(ui, { wrapper: Tooltip.Provider })
 
@@ -231,6 +232,37 @@ it('en-tête de la fille : son rôle et sa lecture seule', () => {
   const badge = screen.getByTestId('role-title-badge')
   expect(badge.textContent).toContain('Expert sécu')
   expect(badge.textContent).toContain('lecture seule demandée')
+})
+
+describe('en-tête étroit d’une fille : la pastille se réduit à son icône', () => {
+  it('réduite : l’icône seule, le texte pour le lecteur d’écran et en infobulle', async () => {
+    render(<RoleReadOnlyTag level="enforced" compact />)
+    const tag = screen.getByTestId('role-read-only')
+    expect(tag.classList.contains('compact')).toBe(true)
+    expect(tag.querySelector('svg')).toBeTruthy()
+    expect(tag.querySelector('.sr-only')?.textContent).toBe('lecture seule')
+    expect(tag.tabIndex).toBe(0)
+    fireEvent.focus(tag)
+    await waitFor(() =>
+      expect(screen.getAllByRole('tooltip')[0]?.textContent).toBe('lecture seule')
+    )
+  })
+
+  it('demandée et réduite : l’infobulle dit aussi pourquoi', async () => {
+    render(<RoleReadOnlyTag level="requested" compact />)
+    fireEvent.focus(screen.getByTestId('role-read-only'))
+    await waitFor(() =>
+      expect(screen.getAllByRole('tooltip')[0]?.textContent).toMatch(/^lecture seule demandée — /)
+    )
+  })
+
+  it('entière tant qu’elle tient ; réduite au-delà ; rendue entière avec une marge', () => {
+    expect(badgeCompact(false, { natural: 200, available: 200 })).toBe(false)
+    expect(badgeCompact(false, { natural: 200, available: 199 })).toBe(true)
+    // Réduite : pas d'aller-retour au pixel près.
+    expect(badgeCompact(true, { natural: 200, available: 202 })).toBe(true)
+    expect(badgeCompact(true, { natural: 200, available: 204 })).toBe(false)
+  })
 })
 
 describe('fil de la fille d’un rôle (essais réels avant 1.0.0-beta.2)', () => {

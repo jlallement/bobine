@@ -1,5 +1,5 @@
 import { ChevronRight, Eye, EyeOff, FolderGit2, Pencil, TriangleAlert } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { ChildState } from '@shared/children'
@@ -7,6 +7,7 @@ import type { RoleBadge, RoleScope, RoleSnapshot } from '@shared/roles'
 import { Tip } from '../common/Menus'
 import { RoleAvatar, roleAvatarState, useRoleStyle } from './RoleAvatar'
 import { readOnlyShown } from './role-view'
+import { useCompactBadge } from './useCompactBadge'
 
 /**
  * Rôles au travail (fiche 223, maquettes 03-1 à 03-5) : la fille d'un rôle dans le fil de sa
@@ -59,38 +60,44 @@ export function RoleStateText({ state }: { state: ChildState }) {
  * Lecture seule d'une fille : garantie (« lecture seule »), seulement demandée (l'agent écrit
  * sans demander : « lecture seule demandée », expliqué en infobulle), ou un rôle qui écrit.
  */
-export function RoleReadOnlyTag({
-  level,
-  writes = false
-}: {
-  level: 'enforced' | 'requested' | undefined
-  /** Rôle qui écrit du code : dit aussi (carte de proposition). */
-  writes?: boolean
-}) {
+export const RoleReadOnlyTag = forwardRef<
+  HTMLSpanElement,
+  {
+    level: 'enforced' | 'requested' | undefined
+    /** Rôle qui écrit du code : dit aussi (carte de proposition). */
+    writes?: boolean
+    /** En-tête étroit : l'icône seule, le texte en infobulle et pour le lecteur d'écran. */
+    compact?: boolean
+  }
+>(function RoleReadOnlyTag({ level, writes = false, compact = false }, ref) {
   const { t } = useTranslation()
   if (!level) {
     if (!writes) return null
     return (
-      <span className="role-tag" data-testid="role-writes">
+      <span className="role-tag" data-testid="role-writes" ref={ref}>
         <Pencil size={12} />
         {t('roleWork.writes')}
       </span>
     )
   }
   const requested = level === 'requested'
+  const text = t(requested ? 'roleWork.readOnlyRequested' : 'roleWork.readOnly')
   const tag = (
     <span
-      className={`role-tag read-only${requested ? ' requested' : ''}`}
+      ref={ref}
+      className={`role-tag read-only${requested ? ' requested' : ''}${compact ? ' compact' : ''}`}
       data-testid="role-read-only"
       data-level={level}
-      tabIndex={requested ? 0 : undefined}
+      tabIndex={requested || compact ? 0 : undefined}
     >
-      {requested ? <EyeOff size={12} /> : <Eye size={12} />}
-      {t(requested ? 'roleWork.readOnlyRequested' : 'roleWork.readOnly')}
+      {requested ? <EyeOff size={12} aria-hidden /> : <Eye size={12} aria-hidden />}
+      {compact ? <span className="sr-only">{text}</span> : text}
     </span>
   )
-  return requested ? <Tip label={t('roleWork.readOnlyRequestedHint')}>{tag}</Tip> : tag
-}
+  const hint = requested ? t('roleWork.readOnlyRequestedHint') : undefined
+  const tip = compact ? (hint ? `${text} — ${hint}` : text) : hint
+  return tip ? <Tip label={tip}>{tag}</Tip> : tag
+})
 
 /** Lecture seule d'une fille déjà lancée, d'après son agent. */
 export function childReadOnly(
@@ -263,16 +270,23 @@ export function RoleTitleBadge({
   profiles: readonly Pick<ProfileSummary, 'id' | 'writesWithoutAsking'>[]
 }) {
   const { t } = useTranslation()
+  const badge = useRef<HTMLSpanElement>(null)
+  const pill = useRef<HTMLSpanElement>(null)
+  const level = childReadOnly(child, profiles)
+  // Fenêtre étroite : le titre cède d'abord, puis la pastille se réduit à son icône.
+  const compact = useCompactBadge(badge, pill, `${level ?? ''}:${t('roleWork.readOnly')}`)
   if (!child.role) return null
   return (
     <span
-      className="role-title-badge no-drag"
+      ref={badge}
+      className={`role-title-badge no-drag${compact ? ' compact' : ''}`}
       aria-label={t('roleWork.titleBadge', { label: child.role.label })}
       data-testid="role-title-badge"
+      data-compact={compact || undefined}
     >
       <RoleAvatar role={child.role} size={22} />
       <span className="role-title-label">{child.role.label}</span>
-      <RoleReadOnlyTag level={childReadOnly(child, profiles)} />
+      <RoleReadOnlyTag ref={pill} level={level} compact={compact} />
     </span>
   )
 }
