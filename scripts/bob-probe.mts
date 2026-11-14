@@ -310,6 +310,98 @@ async function approvalFormat(ctx: ClientContext, box: Sandbox): Promise<Observa
   }
 }
 
+/** Modes personnalisés de la sonde (fiche 223) : un personnel en lecture seule, un de projet. */
+const CUSTOM_MODES = {
+  perso: {
+    slug: 'bobine-sonde-perso',
+    name: 'Sonde Bobine perso',
+    description: 'Mode personnel de la sonde de Bobine',
+    groups: ['read', 'mcp']
+  },
+  projet: {
+    slug: 'bobine-sonde-projet',
+    name: 'Sonde Bobine projet',
+    description: 'Mode de projet de la sonde de Bobine',
+    groups: ['read', 'edit', 'command', 'mcp']
+  }
+} as const
+
+/** `custom_modes.yaml` au format documenté par IBM (`customModes:`, `slug`, `name`, `groups`…). */
+function customModesYaml(mode: (typeof CUSTOM_MODES)[keyof typeof CUSTOM_MODES]): string {
+  return [
+    'customModes:',
+    `  - slug: ${mode.slug}`,
+    `    name: ${mode.name}`,
+    `    description: ${mode.description}`,
+    '    roleDefinition: You are a probe mode used by Bobine. Never used for real work.',
+    '    whenToUse: Never; this mode only checks that Bob lists custom modes over ACP.',
+    '    customInstructions: Do nothing.',
+    '    groups:',
+    ...mode.groups.map((g) => `      - ${g}`),
+    ''
+  ].join('\n')
+}
+
+/** Fichier de modes personnalisés : personnel (HOME jetable) ou de projet (dossier de travail). */
+const customModesFile = (box: Sandbox, scope: keyof typeof CUSTOM_MODES) =>
+  scope === 'perso'
+    ? join(box.home, '.bob', 'settings', 'custom_modes.yaml')
+    : join(box.workspace, '.bob', 'custom_modes.yaml')
+
+const writeCustomModes = (scope: keyof typeof CUSTOM_MODES) => (box: Sandbox) => {
+  const file = customModesFile(box, scope)
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, customModesYaml(CUSTOM_MODES[scope]))
+}
+
+/**
+ * Modes personnalisés de Bob (`custom_modes.yaml`) listés par ACP ? Session ouverte : modes rendus
+ * (id, nom, description) ; si le mode de la sonde y est, `session/set_mode` vers lui. Aucun
+ * message : 0 bobcoin. Dit aussi si Bob a gardé le fichier tel quel.
+ */
+const customModesProbe =
+  (scope: keyof typeof CUSTOM_MODES) =>
+  async (ctx: ClientContext, box: Sandbox): Promise<Observation> => {
+    await initialize(ctx)
+    const file = customModesFile(box, scope)
+    const slug = CUSTOM_MODES[scope].slug
+    let observed: Observation
+    try {
+      const session = await ctx.request(methods.agent.session.new, {
+        cwd: box.workspace,
+        mcpServers: []
+      })
+      const available = session.modes?.availableModes ?? []
+      const setMode = available.some((m) => m.id === slug)
+        ? await ctx
+            .request(methods.agent.session.setMode, { sessionId: session.sessionId, modeId: slug })
+            .then(
+              (r) => ({ ok: true, response: JSON.parse(JSON.stringify(r ?? null)) as unknown }),
+              (error: unknown) => errorOf(error, box)
+            )
+        : null
+      await ctx
+        .request(methods.agent.session.close, { sessionId: session.sessionId })
+        .catch(() => {})
+      observed = {
+        opened: true,
+        currentModeId: session.modes?.currentModeId ?? null,
+        modes: available.map((m) => ({
+          id: m.id,
+          name: m.name,
+          description: m.description ?? null
+        })),
+        setMode
+      }
+    } catch (error) {
+      observed = { sessionNew: errorOf(error, box) }
+    }
+    const kept = existsSync(file)
+      ? readFileSync(file, 'utf8') === customModesYaml(CUSTOM_MODES[scope])
+      : 'supprimé'
+    return { ...observed, yamlKept: kept }
+  }
+
 const probes: [string, () => Promise<Observation>][] = [
   [
     'initialize',
@@ -390,6 +482,26 @@ const probes: [string, () => Promise<Observation>][] = [
   [
     APPROVAL_FORMAT_PROBE,
     () => withBob(['--trust'], { BOB_API_KEY: FAKE_KEY }, approvalFormat, approvalRules)
+  ],
+  [
+    'modes personnalisés : ~/.bob/settings/custom_modes.yaml, clé',
+    () =>
+      withBob(
+        ['--trust'],
+        { BOB_API_KEY: FAKE_KEY },
+        customModesProbe('perso'),
+        writeCustomModes('perso')
+      )
+  ],
+  [
+    'modes personnalisés : <dossier>/.bob/custom_modes.yaml, clé',
+    () =>
+      withBob(
+        ['--trust'],
+        { BOB_API_KEY: FAKE_KEY },
+        customModesProbe('projet'),
+        writeCustomModes('projet')
+      )
   ],
   ['base locale (coûts)', () => Promise.resolve(bobDbSchema())],
   ['bob chat (quota, /status)', () => bobStatusContract()]
