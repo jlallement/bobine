@@ -19,7 +19,9 @@ export const APP_CONTEXT_OPENINGS = {
   origin: 'The message above comes from your',
   aside: '<bobine_aside>',
   memory: '<bobine_memory>',
-  memoryOutcomes: '<bobine_memory_outcomes>'
+  memoryOutcomes: '<bobine_memory_outcomes>',
+  /** Consigne d'un rôle, après la demande du premier message d'une fille (fiche 223). */
+  role: '<bobine_role'
 } as const
 
 /**

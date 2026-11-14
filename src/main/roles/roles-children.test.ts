@@ -164,7 +164,9 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(started).toMatchObject({ role: { name: 'security-expert', readOnly: true } })
     await env.settled(child.id)
     const first = env.firstMessage(child.id)
-    expect(first?.kind === 'user' && first.text).toMatch(/^<bobine_role name="security-expert">/)
+    // La demande en tête (titre de Bob, fiche 125), la consigne du rôle après.
+    expect(first?.kind === 'user' && first.text).toMatch(/\n\n<bobine_role name="security-expert">/)
+    expect(first?.kind === 'user' && first.text.startsWith('<bobine_role')).toBe(false)
     const reply = env.lastReply(child.id)
     expect(reply).toContain('application security expert')
     expect(reply).toContain('Bobine refuses your write requests.')

@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import { stripAppContext } from './app-context'
 import {
   checkRole,
   mentionedRoles,
   mergeRoles,
   parseRoleFile,
   parseRoleStamp,
+  ROLE_LANGUAGE_LINE,
   roleOpening,
   rolesParagraph,
+  splitRoleBrief,
   serializeRole,
   type Role,
   type RoleDefinition
@@ -190,19 +193,36 @@ describe('ce qui part à l’agent', () => {
     expect(mentionedRoles('(@tech) ok', roles).map((r) => r.name)).toEqual(['tech'])
   })
 
-  it('premier message : consigne du rôle sans mode natif, lecture seule toujours dite', () => {
+  it('premier message : la demande d’abord, puis la consigne, la lecture seule et la langue', () => {
     const plain = roleOpening(secu, 'Audite auth.js', { readOnly: 'enforced' })
-    expect(plain.startsWith('<bobine_role name="security-expert">\nAudit only.\n')).toBe(true)
+    expect(
+      plain.startsWith('Audite auth.js\n\n<bobine_role name="security-expert">\nAudit only.\n')
+    ).toBe(true)
     expect(plain).toContain('Bobine refuses your write requests.')
-    expect(plain.endsWith('</bobine_role>\n\nAudite auth.js')).toBe(true)
+    expect(plain.endsWith(`${ROLE_LANGUAGE_LINE}\n</bobine_role>`)).toBe(true)
     // Consigne toujours là, mode natif ou non (relecture).
     const requested = roleOpening(secu, 'Audite auth.js', { readOnly: 'requested' })
     expect(requested).toContain('Audit only.')
     expect(requested).toContain('Bobine checks the folder after each of your turns')
     const writer = role('dev', 'user', { prompt: 'Code.' })
     expect(roleOpening(writer, 'Tâche')).toBe(
-      '<bobine_role name="dev">\nCode.\n</bobine_role>\n\nTâche'
+      `Tâche\n\n<bobine_role name="dev">\nCode.\n${ROLE_LANGUAGE_LINE}\n</bobine_role>`
     )
+    // Bob titre d'après le début du message : la demande ; le bloc est un contexte de l'app.
+    expect(stripAppContext(plain)).toBe('Audite auth.js')
+  })
+
+  it('fil de la fille : la demande, et la consigne à part (bloc après, ou en tête dans les anciens fils)', () => {
+    const writer = role('dev', 'user', { prompt: 'Code.\nBien.' })
+    expect(splitRoleBrief(roleOpening(writer, 'Tâche\n  indentée'))).toEqual({
+      request: 'Tâche\n  indentée',
+      brief: `Code.\nBien.\n${ROLE_LANGUAGE_LINE}`
+    })
+    expect(splitRoleBrief('<bobine_role name="dev">\nCode.\n</bobine_role>\n\nTâche')).toEqual({
+      request: 'Tâche',
+      brief: 'Code.'
+    })
+    expect(splitRoleBrief('Rien de spécial')).toEqual({ request: 'Rien de spécial' })
   })
 
   it('rôle retenu en lecture seule : la lecture seule survit à un badge abîmé (relecture)', () => {

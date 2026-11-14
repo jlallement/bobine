@@ -722,9 +722,9 @@ function pickScenario(
     const chosen = catalog[named ?? 'relecture']
     if (chosen && !chosen.session) return chosen
   }
-  // Premier message d'une fille avec un rôle (fiche 223) : la consigne du rôle vient en tête,
-  // `/scenario` sur une ligne de la tâche, après.
-  if (text.startsWith('<bobine_role')) {
+  // Premier message d'une fille avec un rôle (fiche 223) : la demande en tête, la consigne du rôle
+  // après (`<bobine_role>`) ; `/scenario` sur une ligne de la demande.
+  if (text.includes('<bobine_role')) {
     const named = /^\/scenario\s+(\S+)/m.exec(text)?.[1]
     const chosen = named ? catalog[named] : undefined
     if (chosen && !chosen.session) return chosen

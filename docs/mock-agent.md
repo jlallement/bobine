@@ -92,8 +92,8 @@ Depuis Electron (fiche 003) : `ELECTRON_RUN_AS_NODE=1 <electron> src/mock-agent/
 seul liste les scénarios. Pratique pour tout essayer depuis l'UI sans relancer l'agent. La commande
 est lue dans le **dernier** bloc de texte du prompt (une branche, fiche 023, envoie d'abord
 l'échange repris en contexte).
-Premier message d'une fille lancée avec un rôle (fiche 223, commence par `<bobine_role`) :
-`/scenario <nom>` est cherché sur n'importe quelle ligne, après la consigne du rôle.
+Premier message d'une fille lancée avec un rôle (fiche 223, contient `<bobine_role`, placé après
+la demande) : `/scenario <nom>` est cherché sur n'importe quelle ligne de la demande.
 L'agent annonce ces commandes (`available_commands_update`) juste après l'ouverture de session :
 `/scenario <nom>`, `/aide` (= `/scenario`) et `/demo` (= `/scenario demo`), proposées par le menu « / ».
 

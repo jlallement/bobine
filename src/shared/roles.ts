@@ -476,11 +476,15 @@ const READ_ONLY_LINES: Record<ReadOnlyLevel, string> = {
     'about any change.'
 }
 
+/** Dernière ligne de la consigne : la fille répond dans la langue de la demande (texte pour l'agent). */
+export const ROLE_LANGUAGE_LINE = "Reply in the language of the user's request."
+
 /**
- * Premier message d'une fille lancée avec un rôle : la consigne du rôle en tête, **toujours**,
- * même quand l'agent a pris le mode natif du rôle (un mode du même nom n'a pas forcément la même
- * consigne ; le doublon avec un mode personnel de Bob est accepté) ; la lecture seule dite ; puis
- * la tâche.
+ * Premier message d'une fille lancée avec un rôle : la demande de l'utilisateur **en tête** (un
+ * agent qui titre sa tâche d'après le début du message, Bob, garde la demande : fiche 125, D18),
+ * puis le bloc `<bobine_role>` : la consigne du rôle, **toujours**, même quand l'agent a pris le mode
+ * natif du rôle (un mode du même nom n'a pas forcément la même consigne ; le doublon avec un mode
+ * personnel de Bob est accepté), la lecture seule dite, et la langue de la réponse.
  */
 export function roleOpening(
   role: RoleDefinition,
@@ -488,13 +492,25 @@ export function roleOpening(
   options: { readOnly?: ReadOnlyLevel } = {}
 ): string {
   return [
+    task.trim(),
+    '',
     `<bobine_role name="${role.name}">`,
     role.prompt.trim(),
     ...(options.readOnly ? [READ_ONLY_LINES[options.readOnly]] : []),
-    '</bobine_role>',
-    '',
-    task.trim()
+    ROLE_LANGUAGE_LINE,
+    '</bobine_role>'
   ].join('\n')
+}
+
+/**
+ * Premier message d'une fille vu dans son fil : la demande, et la consigne du rôle à part (repliée
+ * à l'affichage). Le bloc peut être en tête (fils d'avant la relecture) ou après la demande.
+ */
+export function splitRoleBrief(text: string): { request: string; brief?: string } {
+  const block = /<bobine_role(?: [^>]*)?>\n?([\s\S]*?)\n?<\/bobine_role>/.exec(text)
+  if (!block) return { request: text }
+  const request = (text.slice(0, block.index) + text.slice(block.index + block[0].length)).trim()
+  return { request, brief: (block[1] ?? '').trim() }
 }
 
 /**
