@@ -205,13 +205,14 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
     expect(onOpen).toHaveBeenCalledWith('a')
     // Seul le compte rendu d'après le dernier message attend de partir à l'agent.
     const reports = screen.getAllByTestId('child-report')
-    // Replié (fiche 171) : titre et première phrase ; branche et fichiers au dépli.
+    // Replié (fiche 171) : titre et première phrase ; branche et fichiers au dépli. Fille sans
+    // rôle qui a fini : « Enregistrer comme rôle… » (fiche 223).
     expect(reports[0]?.textContent).toBe(
-      '«\u00a0Fille b\u00a0» a fini son tour12 tests passent.Afficher le détail'
+      '«\u00a0Fille b\u00a0» a fini son tour12 tests passent.Afficher le détailEnregistrer comme rôle…'
     )
     fireEvent.click(reports[0]?.querySelector('[data-testid=child-report-toggle]') ?? document.body)
     expect(reports[0]?.textContent).toBe(
-      '«\u00a0Fille b\u00a0» a fini son tourMasquer le détail12 tests passent.bobine/b3 fichiers +62 −4'
+      '«\u00a0Fille b\u00a0» a fini son tourMasquer le détail12 tests passent.bobine/b3 fichiers +62 −4Enregistrer comme rôle…'
     )
     expect(reports.map((r) => !!r.querySelector('[data-testid=child-report-pending]'))).toEqual([
       false,

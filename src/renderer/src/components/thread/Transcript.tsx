@@ -64,6 +64,7 @@ import { FindQueryContext } from './CappedText'
 import type { NoticeLink as NoticeLinkTarget } from '@shared/agent'
 import { requestSettings } from '../../open-settings'
 import { MemoryProposalCard } from './MemoryProposalCard'
+import { saveAsRoleAction } from '../../roles/save-as-role'
 
 const NOTICE_ICONS = {
   info: Info,
@@ -298,6 +299,7 @@ export function Transcript({
           byAgent={launches.get(item.childId)?.by === 'agent'}
           role={launches.get(item.childId)?.role}
           {...(open && subtasks ? { onOpen: () => subtasks.onOpen(item.childId) } : {})}
+          onSaveAsRole={saveAsRoleAction(item, launches.get(item.childId), subtasks?.children)}
         />
       )
     }

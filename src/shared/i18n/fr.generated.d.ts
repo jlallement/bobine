@@ -4226,6 +4226,7 @@ export type FrResources = {
       readonly done: '{{role}} a rendu son compte rendu — {{title}}'
       readonly stopped: '{{role}} a été arrêté — {{title}}'
       readonly error: '{{role}} a échoué — {{title}}'
+      readonly saveAsRole: 'Enregistrer comme rôle…'
     }
     readonly proposalsWhere: 'L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.'
     readonly where: { readonly sameFolder: 'dans ce dossier'; readonly worktree: 'son worktree' }

@@ -150,6 +150,8 @@ describe('filles des rôles dans le fil de la mère', () => {
     expect(report.dataset['role']).toBe('security-expert')
     expect(report.textContent).toContain('Expert sécu a rendu son compte rendu — Fille a')
     expect(report.querySelector('[data-testid=role-avatar]')).toBeTruthy()
+    // Fille d'un rôle : rien à enregistrer comme rôle.
+    expect(report.querySelector('[data-testid=child-report-save-role]')).toBeNull()
   })
 })
 

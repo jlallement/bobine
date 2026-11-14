@@ -4216,7 +4216,8 @@
     "report": {
       "done": "{{role}} sent its report — {{title}}",
       "stopped": "{{role}} was stopped — {{title}}",
-      "error": "{{role}} failed — {{title}}"
+      "error": "{{role}} failed — {{title}}",
+      "saveAsRole": "Save as role…"
     },
     "proposalsWhere": "The agent proposes handing this work to child conversations: a read-only role works in this folder, the others each in its own worktree. You can also ask it to do it here.",
     "where": {

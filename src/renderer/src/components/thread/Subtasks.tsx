@@ -1,4 +1,5 @@
 import {
+  BookmarkPlus,
   Check,
   ChevronRight,
   CircleExclamationPoint,
@@ -411,7 +412,8 @@ export function ChildReportItem({
   pending,
   byAgent = false,
   role,
-  onOpen
+  onOpen,
+  onSaveAsRole
 }: {
   item: Report
   pending: boolean
@@ -420,6 +422,11 @@ export function ChildReportItem({
   role?: RoleBadge | undefined
   /** Ouvrir la fille ; absent si elle a été supprimée. */
   onOpen?: () => void
+  /**
+   * « Enregistrer comme rôle » (fiche 223, maquette 01-C2) : seulement pour une fille sans rôle
+   * qui a rendu son compte rendu ; ouvre l'assistant prérempli.
+   */
+  onSaveAsRole?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   const usageText = useUsageText()
@@ -501,6 +508,18 @@ export function ChildReportItem({
                 </span>
               ) : null}
             </div>
+          </div>
+        )}
+        {onSaveAsRole && !role && item.outcome === 'done' && (
+          <div className="child-report-actions">
+            <button
+              className="btn small"
+              onClick={onSaveAsRole}
+              data-testid="child-report-save-role"
+            >
+              <BookmarkPlus size={13} aria-hidden />
+              {t('roleWork.report.saveAsRole')}
+            </button>
           </div>
         )}
         {pending && (

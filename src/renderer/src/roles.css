@@ -1291,3 +1291,10 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* « Enregistrer comme rôle » sous le compte rendu d'une fille sans rôle (maquette 01-C2). */
+.child-report-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}

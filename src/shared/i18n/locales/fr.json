@@ -4390,7 +4390,8 @@
     "report": {
       "done": "{{role}} a rendu son compte rendu — {{title}}",
       "stopped": "{{role}} a été arrêté — {{title}}",
-      "error": "{{role}} a échoué — {{title}}"
+      "error": "{{role}} a échoué — {{title}}",
+      "saveAsRole": "Enregistrer comme rôle…"
     },
     "proposalsWhere": "L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
     "where": {
