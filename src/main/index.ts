@@ -914,8 +914,17 @@ async function start(): Promise<void> {
               quickEntry.setCapturing(true)
               for (const w of hidden) w.hide()
               return () => {
-                for (const w of hidden) if (!w.isDestroyed()) w.show()
-                if (focused && !focused.isDestroyed()) focused.focus()
+                // Essais (`BOBINE_SHOW_INACTIVE`, fiche 106) : remontrées sans prendre le focus de
+                // la machine. Avec `show()` et `focus()`, l'app d'essai passait au premier plan
+                // après chaque capture, et une frappe de l'utilisateur à côté tombait dans la
+                // fenêtre rapide (« plus tards » dans la suite `quick`).
+                for (const w of hidden) {
+                  if (!w.isDestroyed()) {
+                    if (SHOW_INACTIVE) w.showInactive()
+                    else w.show()
+                  }
+                }
+                if (focused && !focused.isDestroyed() && !SHOW_INACTIVE) focused.focus()
                 quickEntry.setCapturing(false)
               }
             }
