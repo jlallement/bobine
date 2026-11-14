@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Question or idea
+    url: https://github.com/jlallement/bobine/discussions
+    about: Ask a question, share an idea or a workflow in Discussions.
   - name: Security vulnerability
     url: https://github.com/jlallement/bobine/security/advisories/new
     about: Report a security problem privately, not as a public issue.
