@@ -1,14 +1,16 @@
 # 223 — Rôles : des agents spécialisés à invoquer, et des filles lancées sans insister
 
-- **Statut** : en cours — phase 1 (délégation) faite le 2026-11-14 ; phases 2 à 4 à faire
-  (maquettes en relecture par l'utilisateur)
+- **Statut** : en cours — phase 1 (délégation) et phase 2 (rôles, cœur sans interface) faites le
+  2026-11-14 ; phases 3 (interface, maquettes validées) et 4 (export) à faire
 - **Dépend de** : 045 (commandes personnelles, fichiers Markdown du projet), 097 et 160
   (conversations filles, agent et modèle d'une fille, ADR-0019, ADR-0036), 112 (carte de
   propositions), 118 (filles proposées par l'agent, contexte de session), 177 (relecteur en lecture
   seule dans le même dossier), 013 (modes et options de session)
 - **Agents** : tous. Un rôle est une conversation fille ordinaire, lancée avec une consigne, un
-  mode et des serveurs MCP choisis : rien de propre à un agent hors des profils (ADR-0011). Seul
-  l'export vers le mode natif d'un agent (phase 2) passe par un adaptateur du profil, déclaré dans
+  mode et des outils choisis : rien de propre à un agent hors des profils (ADR-0011). Une seule
+  capacité déclarée dans un profil : `writesWithoutAsking` (OpenCode, repère
+  `writes-without-asking`), qui dit que la lecture seule n'y est que demandée. L'export vers le
+  mode natif d'un agent (phase 4) passera par un adaptateur du profil, déclaré dans
   `specificItems` et dans la matrice de `docs/agents.md`.
 
 ## Pourquoi
@@ -23,7 +25,25 @@ Bob (modes personnels) et OpenCode (agents) savent déjà définir des agents sp
 dans son format, et Bobine ne sait ni les créer, ni les invoquer d'un geste, ni les montrer au
 travail. Un rôle de Bobine est écrit une fois et marche avec tous les agents.
 
-## Décisions proposées
+## Décisions
+
+Validées par l'utilisateur le 2026-11-14 (format : [ADR-0045](../adr/0045-roles-fichiers-markdown.md)) :
+
+- Section « Équipe » repliable dans la barre latérale (phase 3) ; pas de palette ⌘K.
+- Les sept rôles fournis (expert UX/UI, expert Flutter, architecte front, architecte back, expert
+  sécu, tech lead, code reviewer) sont **actifs d'office, désactivables** ; modifiables et
+  supprimables côté personnel (un rôle personnel du même nom les remplace).
+- Plusieurs `@rôle` dans un message : **une fille par rôle, en parallèle** (saisie en phase 3 ; le
+  cœur lance N filles avec rôles).
+- À nom égal, le rôle du **projet** l'emporte sur le rôle personnel (qui l'emporte sur le fourni).
+- Création (phase 3) : **assistant en 3 étapes** (Qui / Comment / Avec quoi, maquettes A1–A3) ;
+  édition par **un écran unique** (formulaire, maquette B3) ; les entrées « sur place » (menu `@`
+  « + Nouveau rôle », « Enregistrer comme rôle » sur une fille) ouvrent l'assistant prérempli.
+  « Décrire en une phrase » n'est pas retenu pour l'instant.
+- Format ci-dessous (fichier Markdown à en-tête), ADR-0045 accepté.
+- Couleurs de rôle : uniquement les **couleurs d'accent existantes** de l'app.
+
+Détail :
 
 1. **Un rôle = un fichier Markdown** à en-tête, comme les commandes personnelles (fiche 045) et les
    sous-agents de Claude Code :
@@ -32,24 +52,28 @@ travail. Un rôle de Bobine est écrit une fois et marche avec tous les agents.
    name: expert-secu
    label: Expert sécu
    icon: shield-check          # icône Lucide
-   color: red                  # une des couleurs d'accent du thème
+   color: orange               # une des couleurs d'accent : orange, blue, violet, pink, green, graphite
    description: Audite la sécurité d'un changement (injection, secrets, permissions). Ne modifie rien.
    agent: opencode             # facultatif : sinon l'agent de la conversation
-   mode: expert-secu           # facultatif : mode natif utilisé si l'agent l'a
+   mode: plan                  # facultatif : mode natif utilisé si l'agent l'a (valeur ou nom)
    model: …                    # facultatif, profils qui permettent le choix du modèle
-   read-only: true             # Bobine refuse ses écritures ; même dossier, sans worktree (fiche 177)
-   mcp: [simulator]            # facultatif : serveurs MCP propres au rôle
+   read-only: true             # même dossier, sans worktree ; écritures refusées et surveillées
+   mcp: [terminal, browser]    # facultatif : familles d'outils de Bobine données à la fille
    ---
    Tu es un expert en sécurité applicative. Pour chaque risque : preuve (fichier:ligne),
    scénario d'attaque, gravité, correctif minimal…
    ```
-   Portée : **projet** (`.bobine/roles/` du dossier, partagé par git) ou **personnel** (dossier de
-   données de Bobine, tous les projets). Le projet l'emporte à nom égal. Sept rôles d'exemple
-   fournis, désactivables : ceux cités par l'utilisateur.
+   Portée : **projet** (`.bobine/roles/` du dossier de la mère, partagé par git) ou **personnel**
+   (`<données de Bobine>/roles/`, tous les projets). Le projet l'emporte à nom égal. Sept rôles
+   fournis, actifs d'office et désactivables : ceux cités par l'utilisateur. `mcp` désigne les
+   familles d'outils de Bobine (`terminal`, `browser`, `preview`, `ios-simulator`,
+   `android-emulator`, `memory`) : sans lui, la fille a toutes celles de la conversation ; avec,
+   seulement celles-là (plus les questions et le lien avec la mère). Les serveurs MCP propres à un
+   agent restent dans ses fichiers (fiche 025).
 2. **Un rôle s'exécute toujours dans une conversation fille.** Elle a son propre contexte (la mère
    ne gonfle pas, utile avec Bob qui sature vite), elle est visible, ouvrable, arrêtable, et rend
    un compte rendu. Lecture seule : même dossier, comme le relecteur de la fiche 177 ; sinon son
-   worktree, comme toute fille.
+   worktree, comme toute fille. Voir « Lecture seule : ce qui est garanti » ci-dessous.
 3. **Consigne** : si l'agent a le mode nommé par `mode` (liste des modes ACP de sa session), la
    fille est ouverte dans ce mode (prompt système et restrictions natives) ; sinon la consigne du
    rôle part en tête de son premier message (ACP ne permet pas de poser un prompt système).
@@ -69,6 +93,32 @@ travail. Un rôle de Bobine est écrit une fois et marche avec tous les agents.
    restriction réelle passe par le mode natif) ; un agent qui crée seul ses rôles (il peut en
    proposer un, l'utilisateur valide) ; la synchronisation dans les deux sens avec les fichiers des
    agents.
+
+## Lecture seule : ce qui est garanti (phase 2)
+
+Bobine ne peut refuser que ce qu'un agent lui demande. Trois garde-fous, sans en promettre plus :
+
+1. **Consigne** : le premier message dit à la fille qu'elle est en lecture seule (pas de fichier
+   créé, modifié, supprimé ou déplacé, pas de commit, pas de commande qui écrit).
+2. **Refus d'office** : toute demande d'autorisation de genre `edit`, `delete`, `move` ou
+   `switch_mode` est refusée par Bobine (option « refuser », sinon annulée), avant tout accord
+   d'office ou « toujours autorisé » ; une ligne du fil le dit. Les commandes (`execute`) restent
+   posées à l'utilisateur : une relecture lance `git diff` ou les tests. Bob demande avant d'écrire
+   (`kind: edit`, traces 2.0.9) : refus effectif.
+3. **Surveillance du dossier**, indépendante des demandes : empreinte git (HEAD, `status`, `diff`,
+   fichiers nouveaux) prise avant l'envoi d'un message de Bobine à la fille (consigne, message de
+   la mère) — au départ du tour pour un message tapé dans la fille —, comparée à la fin du tour.
+   Un écart est dit dans le fil de la fille et dans celui de la mère (même dossier). Rien n'est
+   défait ni arrêté : le tour est déjà fini, l'utilisateur voit et décide. Pour ne pas accuser à
+   tort, un tour n'est pas jugé si une autre conversation du même dossier a lancé pendant ce temps
+   un outil qui peut écrire ; une modification faite à la main pendant le tour serait signalée (le
+   texte dit seulement « le dossier a changé »).
+
+Un agent qui **écrit sans demander** (OpenCode réglé par défaut, profil `writesWithoutAsking`) n'est
+pas arrêté par 2 : sa lecture seule n'est **que demandée**, sauf si le rôle nomme un mode natif qui
+la tient (`mode: plan` pour OpenCode), et le fil de la fille le dit dès le lancement. Bobine
+n'impose pas d'office le mode plan de l'agent : celui de Bob écrit un plan et finit par une
+question, seul le rôle sait quel mode lui convient.
 
 ## Lancer des filles sans insister
 
@@ -107,21 +157,23 @@ travail. Un rôle de Bobine est écrit une fois et marche avec tous les agents.
 
 - [ ] Un rôle se crée par le parcours retenu sur maquettes, se modifie et se supprime dans Réglages
       › Rôles ; portée personnelle ou projet (`.bobine/roles/*.md`), relu à chaud.
-- [ ] Un fichier de rôle invalide est signalé (nom du fichier, raison) sans bloquer les autres.
+- [x] Un fichier de rôle invalide est signalé (nom du fichier, raison) sans bloquer les autres
+      (phase 2 : `roles:list` rend les problèmes ; l'écran viendra en phase 3).
 - [ ] `@` dans la saisie liste les rôles ; `@rôle texte` propose la fille avec ce rôle.
-- [ ] `start_child` accepte `role` ; un rôle inconnu est refusé avec la liste des rôles connus.
-- [ ] Le mode natif est utilisé quand l'agent l'a, la consigne en premier message sinon.
-- [ ] Un rôle en lecture seule travaille dans le même dossier ; ses demandes d'écriture sont
-      refusées et dites.
-- [ ] Les serveurs MCP du rôle sont ceux passés à la session de la fille.
+- [x] `start_child` accepte `role` ; un rôle inconnu est refusé avec la liste des rôles connus.
+- [x] Le mode natif est utilisé quand l'agent l'a, la consigne en premier message sinon.
+- [x] Un rôle en lecture seule travaille dans le même dossier ; ses demandes d'écriture sont
+      refusées et dites ; une écriture faite sans demander est signalée (voir « Lecture seule »).
+- [x] Les outils du rôle (`mcp` : familles d'outils de Bobine) sont ceux passés à la session de la
+      fille.
 - [ ] Icône et couleur du rôle sur la carte de la fille, dans « Sous-tâches » et dans la barre
       latérale ; textes en français et en anglais.
 - [x] Contexte de session et description de `start_child` réécrits ; rappel après compaction et
       reprise ; banc de délégation joué avant et après, résultats dans le journal (phase 1).
-- [ ] Testé contre l'agent factice : scénarios « délègue à un rôle », « rôle inconnu », « rôle en
-      lecture seule qui tente d'écrire », « mode natif présent / absent ».
+- [x] Testé contre l'agent factice : scénarios « délègue à un rôle », « rôle inconnu », « rôle en
+      lecture seule qui tente d'écrire » (avec et sans demande), « mode natif présent / absent ».
 - [ ] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en.
-- [ ] Phase 2 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
+- [ ] Phase 4 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
       (modes personnels de Bob relus par ACP ? format des agents d'OpenCode), export à sens
       unique, copie de sauvegarde avant d'écrire, déclaré dans les profils (ADR-0011).
 
@@ -221,3 +273,74 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
     fichier vert 3 fois seul et `verify` vert de nouveau (code 0) : essai instable sous charge,
     noté ici, non corrigé dans cette phase.
 
+- 2026-11-14 : **phase 2 (rôles, cœur sans interface) faite.** Décisions de l'utilisateur
+  reportées (section « Décisions »), format accepté : ADR-0045.
+  - **Découpage d'abord** (commit `refactor:` à part, sans changement de comportement) : réponses
+    automatiques aux autorisations sorties d'`agent-host.ts` (`agent/permission-answers.ts`),
+    création d'une fille sortie du gestionnaire (`childDetachedRequest` de `helpers.ts`),
+    branchement des filles sorti d'`index.ts` (`conversations/children-setup.ts`), empreinte git
+    sortie de `children-review.ts` (`conversations/folder-fingerprint.ts`). Après la phase :
+    `agent-host.ts` 1 045/1 050, `manager.ts` 1 047/1 050, `index.ts` 850/850, `shared/ipc.ts`
+    790/800 (requête de `conversation:startChild` devenue `ChildStartRequest`), `transcript.ts`
+    inchangé (798/800) ; aucun seuil relevé.
+  - **Format et bibliothèque** : `shared/roles.ts` (en-tête lu sans dépendance, comme les
+    commandes de la fiche 045 mais avec listes et commentaires ; champ inconnu = fichier écarté,
+    erreurs `{ code, field, line }` traduites `roles.error.*`), `main/roles/library.ts`
+    (fournis, personnels `<données>/roles/`, projet `.bobine/roles/` de la **mère**), sept rôles
+    fournis en anglais (`main/roles/builtin.ts`, libellés traduits) : `ux-ui-expert`,
+    `flutter-expert`, `front-architect`, `back-architect`, `security-expert` (lecture seule),
+    `tech-lead` (lecture seule), `code-reviewer` (lecture seule). Désactivation par nom
+    (`rolesOff` des réglages). Canaux `roles:list`, `roles:read`, `roles:save`,
+    `roles:setEnabled`, `roles:remove` (preload `roles.*`, profil en lecture seule : seuls
+    `list` et `read` passent).
+  - **Délégation** : `start_child` prend `role` (inconnu ou désactivé : refusé avec la liste) ;
+    les rôles actifs (nom, « quand l'utiliser », lecture seule) dans sa description et dans le
+    contexte de session complet et le rappel ; rappel joint aussi quand le message de
+    l'utilisateur nomme un rôle (`@nom`, `extraContext(text, tools)` de l'hôte, reporté de la
+    phase 1). Agent et modèle du rôle repris quand le profil le permet (`roles/choice.ts`), sinon
+    une note pour la mère ; ce qu'elle passe elle-même l'emporte ; la carte porte la pastille du
+    rôle (`ChildProposal.role`). `ChildConversations.start` prend `role` par son nom (servira à
+    `@rôle` en phase 3, une fille par rôle) ; rôle retenu dans l'enregistrement de la fille
+    (`ConversationRecord.role`, vérifié à la relecture de l'index), son résumé et `child-started`.
+  - **Mode et consigne** : agent prêt, mode natif posé par `setControl` si un mode de la session a
+    la valeur ou le nom du rôle (`roles/launch.ts`), et alors pas de consigne dans le message ;
+    sinon la consigne en tête du premier message (`<bobine_role>`), et une ligne du fil dit que le
+    mode manque. **Limite** : comme le modèle choisi d'une fille (fiche 160), le mode n'est posé
+    qu'au lancement, pas à une session rouverte plus tard.
+  - **Outils** (`mcp`) : **écart** — la fiche citait `mcp: [simulator]` comme « serveurs MCP
+    propres au rôle ». Bobine ne passe aujourd'hui à l'agent que son propre serveur ; les serveurs
+    MCP d'un agent vivent dans ses fichiers (fiche 025) et les repasser en `session/new` les
+    doublerait sans rien de documenté chez Bob. `mcp` choisit donc les **familles d'outils de
+    Bobine** données à la fille (`roleToolModules`), à valider par l'utilisateur.
+  - **Lecture seule** (voir la section dédiée) : pas le mécanisme de la fiche 177 tel quel (qui
+    relit un diff et rend `report_findings`), mais ses deux briques : même dossier sans worktree
+    (`childDetachedRequest`) et empreinte git ; plus le refus d'office des demandes d'écriture
+    (`AgentHostOptions.readOnly`), et l'honnêteté pour un agent qui écrit sans demander (retour
+    du tech lead du 2026-11-14) : capacité `writesWithoutAsking` déclarée dans le profil
+    d'OpenCode (repère `writes-without-asking`, Réglages › Agents et `docs/agents.md`), ligne
+    « lecture seule seulement demandée » dans le fil de la fille, garde-fou par empreinte avant et
+    après chaque tour. Le garde-fou ne défait ni n'arrête rien. **Écart** : pas d'arrêt de la
+    fille, le tour est déjà fini quand l'écart se voit.
+  - **Agent factice** : scénarios `roles-delegue`, `roles-inconnu`, `role-ecrit-avec-demande`,
+    `role-ecrit-sans-demander` ; `/scenario` reconnu après la consigne d'un rôle
+    (`docs/mock-agent.md`). Mode natif présent / absent joué avec `echo` (mode `ask` de l'agent
+    factice, ou un mode qu'il n'a pas).
+  - **Tests** : `shared/roles.test.ts` (lecture, refus motivés, aller-retour, priorité,
+    désactivation, `@nom`, premier message), `roles/library.test.ts` (fournis, priorité, fichier
+    invalide signalé, relecture à chaud, désactivation, écriture, renommage, suppression),
+    `agent/permission-answers.test.ts`, `roles/launch.test.ts` (mode natif, niveau de lecture
+    seule, familles d'outils), `roles/read-only-watch.test.ts`, `mcp/children-tools.test.ts`
+    (argument `role`), `roles/roles-children.test.ts` (agent factice : délégation, rôle inconnu
+    par l'outil et par l'IPC, écriture demandée puis refusée, écriture sans demander signalée chez
+    la fille et la mère, mode natif présent / absent, rôle de projet non commité lu dans le dossier
+    de la mère, rôles dans le contexte et rappel sur `@nom`). Aucun vrai modèle ni vrai agent.
+  - Vérifications : `./scripts/verify` vert (code de sortie 0 ; 429 fichiers, 3 860 essais).
+    `pnpm build && pnpm e2e --changed` : 192/192 vertes, clair et sombre (toutes les suites :
+    `agent-host.ts` est commun), code de sortie 0, 15 min 10 s. Rien ne change à l'écran (pas
+    d'interface en phase 2) : captures non comparées une à une.
+  - Points ouverts pour la phase 3 : écran Réglages › Rôles et assistant (canaux prêts), menu `@`
+    (une fille par rôle, `ChildStartRequest.role`), icône et couleur sur la carte de proposition
+    (`ChildProposal.role`), dans « Sous-tâches » (`child-started.role`) et la barre latérale
+    (`ConversationSummary.role`), mention « lecture seule seulement demandée » dans l'interface
+    (`ProfileSummary.writesWithoutAsking`) ; valider le sens de `mcp` (familles de Bobine) ;
+    évènement de liste changée si l'écran doit suivre les fichiers à chaud.

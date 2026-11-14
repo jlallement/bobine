@@ -325,6 +325,11 @@ export interface ProfileSummary {
    */
   childModel?: boolean
   /**
+   * L'agent écrit sans demander d'autorisation (profil `writesWithoutAsking`, fiche 223) : la
+   * lecture seule d'un rôle n'est alors que demandée, sauf mode natif choisi par le rôle.
+   */
+  writesWithoutAsking?: boolean
+  /**
    * Le profil déclare des règles d'approbation globales (fiche 215) : `approvalRules:get` /
    * `approvalRules:change` les lisent et les changent.
    */
@@ -648,6 +653,8 @@ export interface ConversationSummary {
   startedFrom?: { id: string; title: string }
   /** Relecteur (fiche 177) : la conversation dont il relit le travail. */
   reviewOf?: { id: string; title: string }
+  /** Rôle d'une fille (fiche 223), retenu à son lancement. */
+  role?: import('./roles').RoleStamp
   /** Archivée : rangée à part dans la barre latérale. */
   archived?: boolean
   /** Exécution d'une tâche planifiée (fiche 178) : la tâche et son nom au lancement. */

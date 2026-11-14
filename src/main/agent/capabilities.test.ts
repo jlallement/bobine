@@ -111,6 +111,7 @@ describe('capacités des agents (fiche 054)', () => {
       'replay-diffs',
       'execute-errors',
       'child-model',
+      'writes-without-asking',
       'hidden-empty-sessions',
       'compact-command',
       'rules-files',

@@ -94,6 +94,8 @@ export interface Settings {
   network?: NetworkSettings
   /** Familles d'outils de Bobine coupées (fiche 109) : plus déclarées aux prochaines sessions. */
   appToolsOff?: string[]
+  /** Rôles désactivés, par nom (fiche 223) : plus proposés, quelle que soit leur portée. */
+  rolesOff?: string[]
   /** Agents ACP déclarés dans Réglages › Agents (fiche 141). */
   customAgents?: CustomAgent[]
   /** Accueil du premier lancement (fiche 188) : en cours, fini ou passé. */
@@ -149,6 +151,7 @@ const KNOWN: Record<keyof Settings, true> = {
   window: true,
   network: true,
   appToolsOff: true,
+  rolesOff: true,
   customAgents: true,
   tipsEnabled: true,
   tipsState: true,
@@ -227,6 +230,7 @@ function parseSettings(obj: Record<string, unknown>): Settings {
     ...(onboarding ? { onboarding } : {}),
     ...nonEmpty('network', parseNetworkSettings(obj['network'])),
     ...parseAppToolsOff(obj['appToolsOff']),
+    ...parseRolesOff(obj['rolesOff']),
     ...(parseCustomAgents(obj['customAgents']).length
       ? { customAgents: parseCustomAgents(obj['customAgents']) }
       : {}),
@@ -241,6 +245,13 @@ function parseAppToolsOff(raw: unknown): Pick<Settings, 'appToolsOff'> {
   if (!Array.isArray(raw)) return {}
   const ids = [...new Set(raw.filter((v): v is string => typeof v === 'string' && v !== ''))]
   return ids.length ? { appToolsOff: ids } : {}
+}
+
+/** Noms de rôles désactivés : des textes, sans doublon ; absent s'il n'y en a aucun. */
+function parseRolesOff(raw: unknown): Pick<Settings, 'rolesOff'> {
+  if (!Array.isArray(raw)) return {}
+  const names = [...new Set(raw.filter((v): v is string => typeof v === 'string' && v !== ''))]
+  return names.length ? { rolesOff: names } : {}
 }
 
 const nonEmpty = <K extends string, V extends object>(key: K, value: V) =>

@@ -51,7 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
-import { automaticAnswer } from './permission-answers'
+import { automaticAnswer, readOnlyRefusal } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
@@ -137,6 +137,8 @@ export interface AgentHostOptions {
    * son mode de travail ; appliqué après les réglages initiaux.
    */
   initialMode?: 'plan' | 'execute'
+  /** Fille d'un rôle en lecture seule (fiche 223) : demandes d'écriture refusées d'office. */
+  readOnly?: boolean
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */
   timeouts?: Partial<typeof TIMEOUTS>
   /**
@@ -152,7 +154,7 @@ export interface AgentHostOptions {
    * Texte joint avant le prochain message envoyé, lu à l'envoi (file d'attente comprise) :
    * nouvelles des conversations filles (fiche 097).
    */
-  extraContext?: () => string | undefined
+  extraContext?: (text: string, appTools: readonly string[]) => string | undefined
   /**
    * Texte joint au premier message de chaque session ouverte (nouvelle, rouverte, après un
    * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus et le moment
@@ -555,7 +557,7 @@ export class AgentHost {
     this.sessionContextDue = compaction ? 'compacted' : undefined
     const blocks = withContext(built.blocks, [
       options.askChildren && CHILDREN_REQUEST,
-      this.options.extraContext?.(),
+      this.options.extraContext?.(text, this.appToolNames ?? []),
       this.options.directories?.context(sessionId),
       options.from && originContext(options.from),
       options.context,
@@ -832,7 +834,9 @@ export class AgentHost {
     const automatic = automaticAnswer(params, {
       autoAllowed: (toolCall) => this.appTools.autoAllowed(toolCall),
       remembered: this.options.rememberedTools,
-      place
+      place,
+      readOnly: this.options.readOnly,
+      onRefused: (refused) => this.options.emit(readOnlyRefusal(refused))
     })
     if (automatic) return automatic
     const toolCall = this.updates.permission(params.toolCall)
@@ -1232,7 +1236,9 @@ export class AgentHost {
     const fresh = sessionId !== turn.sessionId ? ('opened' as const) : undefined
     const session = await sessionContextOf(this.options, this.appToolNames, fresh)
     if (this.connection !== connection || this.sessionId !== sessionId) return
-    const contexts = fresh ? [this.options.extraContext?.(), session] : []
+    const contexts = fresh
+      ? [this.options.extraContext?.('', this.appToolNames ?? []), session]
+      : []
     this.sessionContextDue = undefined
     this.options.emit({ type: 'resent', ...(fresh ? { fresh: true as const } : {}) })
     this.setStatus('busy')

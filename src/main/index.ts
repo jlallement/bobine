@@ -82,6 +82,7 @@ import type { ChildConversations } from './conversations/children'
 import { setupChildren } from './conversations/children-setup'
 import { childrenToolsModule } from './mcp/children-tools'
 import { appMemory } from './memory/setup'
+import { appRoles } from './roles/setup'
 import { conversationRelease } from './conversation-release'
 import { backupProfile } from './conversations/backup'
 import { AppProfile } from './profile-app'
@@ -561,11 +562,13 @@ async function start(): Promise<void> {
   let children: ChildConversations | undefined = undefined
   // Mémoire commune aux agents (fiche 182).
   const memory = appMemory(
-    app.getPath('userData'),
+    userData,
     () => conversations,
     () => children,
     settings
   )
+  // Rôles (fiche 223) : fournis, personnels, du projet.
+  const roles = appRoles(userData, settings, () => conversations)
   const { worktrees, preparation } = preparedWorktrees(gitRun, approvals.worktreeSetups)
   const conversations = new ConversationManager({
     settings,
@@ -590,6 +593,7 @@ async function start(): Promise<void> {
       memory.tools
     ],
     memory: memory.service,
+    roles: roles.library,
     keepLive: (id) => children?.keepLive(id) ?? false,
     // Agents vivants au plus : le réglage, sauf `BOBINE_MAX_LIVE` (essais, e2e `filles`, fiche 102).
     maxLive: imposedLiveLimit(process.env),
@@ -686,11 +690,11 @@ async function start(): Promise<void> {
   })
   // Conversations filles (fiche 097) : compte rendu posé chez la mère à chaque fin de tour, après
   // l'évènement de la fille parti vers les fenêtres ; réveil groupé de la mère (étape 2).
-  const childConversations = setupChildren(conversations, {
+  const childConversations = (children = setupChildren(conversations, {
+    roles: roles.library,
     attention: () => attention.state(),
     launchesChanged: (state) => send('conversation:childLaunchesChanged', state)
-  })
-  children = childConversations
+  }))
   // Agent prêt (session ouverte) : quota encore inconnu relu malgré un échec récent (fiche 205).
   conversations.subscribe(quotaOnReady(quotas, (id) => conversations.profileOf(id)))
   // Plafond de coût par conversation (fiche 157, ADR-0035).
@@ -989,6 +993,7 @@ async function start(): Promise<void> {
         costCap,
         memory: memory.service,
         memoryIpc: memory.ipc,
+        roles: roles.ipc,
         scheduler,
         // Après la garde du plafond de coût, qu'elle enchaîne (fiche 175).
         worktreeSetup: connectWorktreePreparation(conversations, preparation),

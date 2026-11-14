@@ -1,3 +1,4 @@
+import type { RoleView } from '@shared/roles'
 import { describe, expect, it } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import type { ChildDecision, ChildProposal } from '@shared/children'
@@ -58,6 +59,8 @@ function setup(
     motherGone?: boolean
     /** Carte de propositions tenue ouverte par l'essai. */
     propose?: ToolContext['proposeChild']
+    /** Rôles actifs de la mère (fiche 223). */
+    roles?: RoleView[]
     choices?: ChildChoices
   } = {}
 ) {
@@ -106,6 +109,12 @@ function setup(
     choices: () => options.choices ?? CHOICES,
     recommend: (motherId, child, ready, note) => {
       calls.push(['recommend', motherId, child.id, ready, note])
+    },
+    rolesFor: () => options.roles ?? [],
+    findRole: (_id, name) => {
+      const role = (options.roles ?? []).find((r) => r.name === name)
+      if (!role) throw new Error(`unknown ${name}`)
+      return role
     }
   }
   const context: ToolContext = {
@@ -442,5 +451,90 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     const gone = await orphan.tool('message_parent').call({ message: 'Allô ?' })
     expect(gone.isError).toBe(true)
     expect(orphan.calls).toEqual([])
+  })
+})
+
+describe('start_child avec un rôle (fiche 223)', () => {
+  const role = (name: string, extra: Partial<RoleView> = {}): RoleView => ({
+    name,
+    label: name,
+    icon: 'bot',
+    color: 'blue',
+    description: `Quand ${name}`,
+    readOnly: false,
+    prompt: 'p',
+    scope: 'builtin',
+    enabled: true,
+    ...extra
+  })
+  const ROLES = [
+    role('security-expert', { readOnly: true, color: 'orange', icon: 'shield-check' }),
+    role('flutter-expert', { agent: 'opencode' }),
+    role('fast', { model: 'factice-precis' }),
+    role('ailleurs', { agent: 'bob', model: 'factice-precis' })
+  ]
+
+  it('la description et l’argument `role` citent les rôles actifs ; sans rôle, ni l’un ni l’autre', () => {
+    const start = setup({ roles: ROLES }).tool('start_child').definition
+    expect(start.description).toContain('- security-expert: Quand security-expert (read-only)')
+    expect(JSON.stringify(start.inputSchema)).toContain('Roles: security-expert, flutter-expert')
+    const plain = setup().tool('start_child').definition
+    expect(plain.description).not.toContain('Roles:')
+    expect(JSON.stringify(plain.inputSchema)).not.toContain('"role"')
+  })
+
+  it('rôle inconnu : refusé avec la liste des rôles connus, sans carte', async () => {
+    const s = setup({ roles: ROLES })
+    const result = await s.tool('start_child').call({ title: 'T', prompt: 'P', role: 'astronaute' })
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('Unknown role "astronaute". Roles: security-expert,')
+    expect(s.asked).toEqual([])
+    expect(s.calls).toEqual([])
+  })
+
+  it('délègue à un rôle : sa pastille sur la carte, son nom à la fille, la lecture seule dite', async () => {
+    const s = setup({ roles: ROLES })
+    const result = await s
+      .tool('start_child')
+      .call({ title: 'Audit', prompt: 'Audite', role: 'security-expert' })
+    expect(s.asked).toEqual([
+      {
+        title: 'Audit',
+        prompt: 'Audite',
+        role: {
+          name: 'security-expert',
+          label: 'security-expert',
+          icon: 'shield-check',
+          color: 'orange',
+          readOnly: true
+        }
+      }
+    ])
+    expect(s.calls).toEqual([
+      ['start', 'm', { text: 'Audite', title: 'Audit', role: 'security-expert' }, 'agent']
+    ])
+    expect(textOf(result)).toContain('read-only role "security-expert", in this folder')
+  })
+
+  it('agent et modèle du rôle repris quand le profil le permet, sinon une note', async () => {
+    const withAgent = setup({ roles: ROLES })
+    await withAgent.tool('start_child').call({ title: 'F', prompt: 'P', role: 'flutter-expert' })
+    expect(withAgent.asked[0]?.profileId).toBe('opencode')
+    // `agent` passé par la mère l'emporte.
+    const mine = setup({ roles: ROLES })
+    await mine
+      .tool('start_child')
+      .call({ title: 'F', prompt: 'P', role: 'flutter-expert', agent: 'mock' })
+    expect(mine.asked[0]?.profileId).toBeUndefined()
+    const withModel = setup({ roles: ROLES })
+    await withModel.tool('start_child').call({ title: 'F', prompt: 'P', role: 'fast' })
+    expect(withModel.asked[0]?.model).toEqual({ controlId: 'model', value: 'factice-precis' })
+    const unavailable = setup({ roles: ROLES })
+    const result = await unavailable
+      .tool('start_child')
+      .call({ title: 'F', prompt: 'P', role: 'ailleurs' })
+    expect(result.isError).toBeFalsy()
+    expect(unavailable.asked[0]?.profileId).toBeUndefined()
+    expect(textOf(result)).toContain('The role\'s agent "bob" is not available here')
   })
 })

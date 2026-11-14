@@ -227,7 +227,7 @@ chaque création ou changement de statut.
 | [220](220-version-1-0-0-beta-1.md) | Version 1.0.0-beta.1, bêta publique : notes de Release en anglais puis en français, version et notes datées du 10 novembre 2026 ; dépôt public, tag et Release préversion par le tech lead | fait | P1 |
 | [221](221-i18next-27.md) | i18next 27 et react-i18next 18 : clés sans variables typées `ParseKeysWithoutVariables` (vérification stricte des variables par défaut), changements de comportement relus, avis de licence régénérés | fait | P2 |
 | [222](222-jsdom-31.md) | jsdom 31 (essais seulement) : les échecs de la PR Dependabot venaient de son verrou (`parse5-parser-stream@8.1.0` servi avec `parse5@8.0.1`, sans `flushCharacters`), pas de jsdom ni du pilote ; verrou régénéré, aucun code changé | fait | P2 |
-| [223](223-roles.md) | Rôles : agents spécialisés créés une fois et invoqués par `@rôle` ou par l'agent (`start_child` + `role`), visibles au travail ; filles lancées sans insister | en cours (phase 1 faite) | P2 |
+| [223](223-roles.md) | Rôles : agents spécialisés créés une fois et invoqués par `@rôle` ou par l'agent (`start_child` + `role`), visibles au travail ; filles lancées sans insister | en cours (phases 1 et 2 faites) | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

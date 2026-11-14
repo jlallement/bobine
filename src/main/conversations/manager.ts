@@ -99,6 +99,7 @@ import { sameDigest, usageDigest } from '@shared/usage'
 import type { AppToolFamily, ConversationAppTools } from '@shared/mcp'
 import { appToolsCatalog, conversationAppTools, switchedOff } from '../mcp/catalog'
 import type { AppToolModule } from '../mcp/tools'
+import type { RoleLibrary } from '../roles/library'
 
 export interface ConversationManagerOptions {
   profiles: AgentProfile[]
@@ -164,6 +165,8 @@ export interface ConversationManagerOptions {
   /** Serveur MCP de l'app et modules d'outils fournis aux agents (fiches 028, 029). */
   toolServer?: AgentHostOptions['toolServer']
   toolModules?: AgentHostOptions['toolModules']
+  /** Rôles actifs d'un dossier (fiche 223), pour le contexte de session et `@rôle`. */
+  roles?: Pick<RoleLibrary, 'active'>
   /** Retour du réseau, pour les tours qui attendent de réessayer (fiche 142). */
   networkWatch?: AgentHostOptions['network']
   /** Attentes entre les tentatives (raccourcies en test, sinon `RETRY_DELAYS_MS`). */
@@ -450,7 +453,8 @@ export class ConversationManager {
       childDetachedRequest(this.get(motherId).record, author, {
         text,
         ...(profileId ? { profileId } : {}),
-        ...(onCreated ? { onCreated } : {})
+        ...(onCreated ? { onCreated } : {}),
+        ...(link.role ? { role: link.role } : {})
       })
     )
   }

@@ -17,6 +17,7 @@ import { log } from '../log'
 import type { TranscriptState } from '@shared/transcript'
 import type { WorktreeInfo } from '../changes/worktrees'
 import { parseUsageDigest, type UsageDigest } from '@shared/usage'
+import { parseRoleStamp, type RoleStamp } from '@shared/roles'
 import { quarantine, readJson, writeFileAtomic, writeFileAtomicAsync } from '../storage'
 
 export interface ConversationRecord {
@@ -56,6 +57,8 @@ export interface ConversationRecord {
   startedFrom?: { id: string; title: string }
   /** Relecteur (fiche 177) : la conversation dont il relit le travail, dans le même dossier. */
   reviewOf?: { id: string; title: string }
+  /** Rôle d'une fille (fiche 223) : retenu à son lancement (lecture seule, outils, icône). */
+  role?: RoleStamp
   /** Consommation résumée, pour la liste (fiche 109) ; le détail est dans le fil. */
   usage?: UsageDigest
   /** Exécution d'une tâche planifiée (fiche 178) : la tâche et son nom au lancement. */
@@ -88,10 +91,19 @@ export function isRecord(value: unknown): value is ConversationRecord {
 
 /** Résumé de consommation vérifié : un résumé mal formé est retiré, pas la conversation. */
 function withUsage(record: ConversationRecord): ConversationRecord {
-  if (record.usage === undefined) return record
-  const { usage, ...rest } = record
+  const checked = withRole(record)
+  if (checked.usage === undefined) return checked
+  const { usage, ...rest } = checked
   const digest = parseUsageDigest(usage)
   return digest ? { ...rest, usage: digest } : rest
+}
+
+/** Rôle d'une fille (fiche 223) vérifié : un rôle mal formé est retiré, pas la conversation. */
+function withRole(record: ConversationRecord): ConversationRecord {
+  if (record.role === undefined) return record
+  const { role, ...rest } = record
+  const stamp = parseRoleStamp(role)
+  return stamp ? { ...rest, role: stamp } : rest
 }
 
 /** Autres dossiers (fiche 179) : seulement des chemins ; une liste abîmée est retirée. */

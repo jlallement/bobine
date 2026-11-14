@@ -330,6 +330,22 @@ export class SettingsStore {
     log.info(`Outils de Bobine : famille ${id} ${enabled ? 'activée' : 'coupée'}`)
   }
 
+  /** Rôles désactivés, par nom (fiche 223). */
+  rolesOff(): ReadonlySet<string> {
+    return new Set(this.settings.rolesOff ?? [])
+  }
+
+  /** Active ou désactive un rôle : vaut pour les prochaines sessions et le prochain `start_child`. */
+  setRoleEnabled(name: string, enabled: boolean): void {
+    const off = this.rolesOff()
+    if (off.has(name) !== enabled) return
+    const next = enabled ? [...off].filter((n) => n !== name) : [...off, name]
+    const { rolesOff: _previous, ...rest } = this.settings
+    this.settings = next.length ? { ...rest, rolesOff: next } : rest
+    this.save()
+    log.info(`Rôle ${name} ${enabled ? 'activé' : 'désactivé'}`)
+  }
+
   /* ---------- Agents ---------- */
 
   /** Annonce d'un agent à son démarrage (fiche 054) : retenue si elle a changé. */

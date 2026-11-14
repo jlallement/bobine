@@ -2926,6 +2926,7 @@ export type FrResources = {
       readonly aside: 'L’aparté n’est pas disponible ici.'
       readonly help: 'Aide indisponible'
       readonly onboarding: 'Accueil du premier lancement indisponible'
+      readonly roles: 'Les rôles ne sont pas disponibles ici.'
     }
     readonly emptyMessage: 'Message vide'
     readonly emptyPrompt: 'Prompt vide'
@@ -3071,6 +3072,10 @@ export type FrResources = {
       readonly label: 'Autres dossiers dans une conversation'
       readonly yes: 'Les dossiers ajoutés dans l’onglet Session lui sont donnés avec le dossier de travail (`additionalDirectories`).'
       readonly no: 'L’agent ne voit que le dossier de travail : rien à ajouter dans l’onglet Session.'
+    }
+    readonly writesWithoutAsking: {
+      readonly label: 'Écrit sans demander'
+      readonly detail: '{{agent}} modifie les fichiers sans demander d’autorisation (réglage par défaut) : la lecture seule d’un rôle n’est que demandée, sauf mode natif choisi par le rôle ; Bobine signale tout changement du dossier.'
     }
   }
   readonly permissionOption: {
@@ -4743,6 +4748,47 @@ export type FrResources = {
     }
     readonly terminal: {
       readonly denied: 'Commande refusée partout par les règles de l’agent (« {{command}} ») : Bobine ne la lance pas non plus avec ses propres outils.'
+    }
+  }
+  readonly roles: {
+    readonly none: 'aucun'
+    readonly builtin: {
+      readonly uxUiExpert: 'Expert UX/UI'
+      readonly flutterExpert: 'Expert Flutter'
+      readonly frontArchitect: 'Architecte front'
+      readonly backArchitect: 'Architecte back'
+      readonly securityExpert: 'Expert sécu'
+      readonly techLead: 'Tech lead'
+      readonly codeReviewer: 'Code reviewer'
+    }
+    readonly error: {
+      readonly noHeader: 'Pas d’en-tête : le fichier doit commencer par une ligne « --- ».'
+      readonly syntax: 'Ligne {{line}} illisible dans l’en-tête.'
+      readonly unknownField: 'Champ inconnu dans l’en-tête : {{field}}.'
+      readonly duplicateField: 'Champ répété dans l’en-tête : {{field}}.'
+      readonly name: 'Nom invalide : minuscules, chiffres et tirets, 40 caractères au plus.'
+      readonly label: 'Libellé trop long (40 caractères au plus).'
+      readonly icon: 'Icône invalide : un nom d’icône Lucide, comme « shield-check ».'
+      readonly color: 'Couleur invalide : orange, blue, violet, pink, green ou graphite.'
+      readonly description: 'Description manquante ou trop longue (300 caractères au plus).'
+      readonly value: 'Valeur invalide pour {{field}}.'
+      readonly readOnly: '« read-only » attend true ou false.'
+      readonly mcp: 'Famille d’outils inconnue dans « mcp » : {{field}}.'
+      readonly prompt: 'Consigne manquante ou trop longue (20 000 caractères au plus).'
+      readonly tooLarge: 'Fichier trop gros (64 Ko au plus).'
+      readonly duplicateName: 'Un autre rôle porte déjà ce nom à cet endroit.'
+      readonly unreadable: 'Fichier illisible.'
+      readonly unknownRole: 'Rôle inconnu ou désactivé : {{name}}. Rôles : {{roles}}.'
+      readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
+      readonly builtinFile: 'Un rôle fourni ne s’écrit ni ne se supprime : désactivez-le, ou enregistrez un rôle personnel du même nom.'
+      readonly notWritten: 'Rôle non enregistré : le profil est en lecture seule.'
+    }
+    readonly notice: {
+      readonly writeRefused: 'Écriture refusée par Bobine : ce rôle est en lecture seule ({{tool}}).'
+      readonly readOnlyRequested: 'Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.'
+      readonly folderChanged: 'Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).'
+      readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).'
+      readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la consigne du rôle part dans le premier message.'
     }
   }
 }

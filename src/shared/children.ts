@@ -8,6 +8,7 @@ import type { ConversationSummary } from './agent'
 import { APP_CONTEXT_OPENINGS, type SessionMoment } from './app-context'
 import type { AttentionKind, AttentionState } from './attention'
 import { conversationChanges, relativeTo } from './changes'
+import { roleLines, rolesParagraph, type RoleBadge, type RoleDefinition } from './roles'
 import type { TranscriptItem } from './transcript'
 import type { UsageDigest } from './usage'
 
@@ -21,7 +22,20 @@ export interface ChildStart {
   prompt: string
   /** Lancée par l'agent de la mère (`start_child`, étape 2) ; absent : par l'utilisateur. */
   by?: 'agent'
+  /** Rôle de la fille (fiche 223), pour son icône et sa couleur. */
+  role?: RoleBadge
   at: number
+}
+
+/** « Lancer en parallèle… » (canal `conversation:startChild`) : ce que le renderer demande. */
+export interface ChildStartRequest {
+  text: string
+  /** Titre de la fille (proposition expirée relancée, fiche 112) ; absent : le début de la consigne. */
+  title?: string
+  profileId?: string
+  model?: { controlId: string; value: string }
+  /** Rôle de la fille, par son nom (fiche 223, `@rôle`). */
+  role?: string
 }
 
 /** Consigne acceptée pour une fille existante, conservée dans le fil de sa mère (fiche 150). */
@@ -404,6 +418,8 @@ export interface ChildProposal {
   model?: { controlId: string; value: string }
   /** Pourquoi cet agent ou ce modèle, en quelques mots, montré sur la carte. */
   why?: string
+  /** Rôle demandé (fiche 223), montré sur la carte. */
+  role?: RoleBadge
 }
 
 /** Ce que l'utilisateur décide d'une proposition : la fille, le travail ici, ou rien. */
@@ -519,7 +535,10 @@ export const CHILD_PROPOSALS: readonly ChildProposals[] = ['never', 'whenFitting
  * ensuite. Générique (rien de propre à un agent), en anglais (ADR-0014). `undefined` si le
  * réglage dit « Jamais ».
  */
-export function capabilitiesContext(proposals: ChildProposals): string | undefined {
+export function capabilitiesContext(
+  proposals: ChildProposals,
+  roles: readonly RoleDefinition[] = []
+): string | undefined {
   if (proposals === 'never') return undefined
   const when =
     proposals === 'always'
@@ -556,6 +575,7 @@ export function capabilitiesContext(proposals: ChildProposals): string | undefin
     'Check their work yourself (git on the branch, the risky files, the project checks) or with a',
     'sub-agent, send fixes with message_child, then give your verdict with recommend_merge.',
     'Never merge a branch yourself: the user merges.',
+    ...(roles.length ? ['', ...rolesParagraph(roles)] : []),
     '</bobine_capabilities>'
   ].join('\n')
 }
@@ -566,7 +586,10 @@ export function capabilitiesContext(proposals: ChildProposals): string | undefin
  * quelques lignes, pas à chaque message (coût en contexte). Même balise que le contexte complet.
  * `undefined` si le réglage dit « Jamais ».
  */
-export function capabilitiesReminder(proposals: ChildProposals): string | undefined {
+export function capabilitiesReminder(
+  proposals: ChildProposals,
+  roles: readonly RoleDefinition[] = []
+): string | undefined {
   if (proposals === 'never') return undefined
   const when =
     proposals === 'always'
@@ -584,6 +607,12 @@ export function capabilitiesReminder(proposals: ChildProposals): string | undefi
     'Reminder, not a task: start_child proposes a child conversation, an agent working in',
     'parallel in its own git worktree; nothing starts until the user approves it on a card.',
     ...when,
+    ...(roles.length
+      ? [
+          'Roles (start_child `role`): hand the work to the matching specialist.',
+          ...roleLines(roles)
+        ]
+      : []),
     '</bobine_capabilities>'
   ].join('\n')
 }
@@ -594,9 +623,12 @@ export function capabilitiesReminder(proposals: ChildProposals): string | undefi
  */
 export function childrenSessionContext(
   proposals: ChildProposals,
-  moment: SessionMoment
+  moment: SessionMoment,
+  roles: readonly RoleDefinition[] = []
 ): string | undefined {
-  return moment === 'opened' ? capabilitiesContext(proposals) : capabilitiesReminder(proposals)
+  return moment === 'opened'
+    ? capabilitiesContext(proposals, roles)
+    : capabilitiesReminder(proposals, roles)
 }
 
 /**

@@ -6,6 +6,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Amélioré
 
+- Rôles : l'agent connaît désormais les spécialistes fournis (expert UX/UI, expert Flutter,
+  architectes front et back, expert sécu, tech lead, code reviewer) et ceux de vos fichiers
+  `.bobine/roles/` ; il peut confier un travail à l'un d'eux dans une conversation fille. Les
+  rôles en lecture seule travaillent dans votre dossier sans rien y écrire : Bobine refuse leurs
+  écritures et signale tout changement du dossier. L'écran pour les créer et les gérer arrive
+  bientôt.
 - Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
   indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
   sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et

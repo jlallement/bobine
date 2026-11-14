@@ -4,7 +4,14 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
-import { childContext, childNews, childrenSessionContext } from '@shared/children'
+import {
+  capabilitiesReminder,
+  childContext,
+  childNews,
+  childrenSessionContext
+} from '@shared/children'
+import { mentionedRoles, ROLE_KEPT_FAMILIES, type RoleStamp } from '@shared/roles'
+import type { AppToolModule } from '../mcp/tools'
 import { handoverContext } from '@shared/handover'
 import { memoryOutcomeContext, memoryOutcomes } from '@shared/memory'
 import { estimateTokens } from '@shared/usage'
@@ -34,6 +41,7 @@ export interface HostOptionsInput {
     | 'retryDelaysMs'
     | 'memory'
     | 'agentHome'
+    | 'roles'
   >
   settings: SettingsStore
   /** Fil de la conversation au moment de l'envoi. */
@@ -68,6 +76,13 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     if (settings.claimVersionNotice(profile.id, notice.key)) input.emit(notice.event)
   }
   const mode = settings.current.newConversation?.mode
+  // Rôles actifs du dossier de la conversation, relus à chaque envoi (fichiers changés à chaud).
+  const roles = () => app.roles?.active(record.workspace) ?? []
+  const mentionReminder = (text: string) => {
+    const named = text.includes('@') ? mentionedRoles(text, roles()) : []
+    if (named.length === 0) return undefined
+    return capabilitiesReminder(settings.preferences().childProposals, named)
+  }
   return {
     profile,
     workspace: record.workspace,
@@ -85,7 +100,9 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Commandes refusées partout par les règles de l'agent (fiche 215) : ni par lui, ni par l'app.
     ...deniedCommandOption(profile, app.agentHome, record.workspace),
     toolServer: app.toolServer,
-    toolModules: app.toolModules,
+    // Rôle (fiche 223) : seulement ses familles d'outils s'il les choisit ; écritures refusées.
+    toolModules: roleToolModules(app.toolModules, record.role),
+    ...(record.role?.readOnly ? { readOnly: true } : {}),
     initialControls: { ...profile.defaultControls, ...settings.current.controls?.[profile.id] },
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],
@@ -101,12 +118,14 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Échange d'avant une bascule (fiche 108) et nouvelles des filles (fiche 097), joints au
     // prochain message.
     // Issue des propositions de mémoire décidées depuis (fiche 182).
-    extraContext: () => {
+    // Rappel des rôles quand le message en nomme un (`@nom`, fiche 223), à une mère possible.
+    extraContext: (text, tools) => {
       const items = input.items()
       return joinContext(
         handoverContext(items),
         childContext(childNews(items)),
-        memoryOutcomeContext(memoryOutcomes(items))
+        memoryOutcomeContext(memoryOutcomes(items)),
+        tools.includes('start_child') ? mentionReminder(text) : undefined
       )
     },
     // Ce que l'app offre, au premier message de chaque session (fiche 118) : à une mère possible,
@@ -116,7 +135,7 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // un relecteur, famille « Mémoire » pas coupée).
     sessionContext: (tools, moment) => {
       const capabilities = tools.includes('start_child')
-        ? childrenSessionContext(settings.preferences().childProposals, moment)
+        ? childrenSessionContext(settings.preferences().childProposals, moment, roles())
         : undefined
       // Relu à l'envoi : une mémoire coupée depuis l'ouverture de la session ne donne plus d'index.
       const memoryOn = settings.preferences().memoryEnabled
@@ -153,4 +172,14 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     reopen: input.reopen,
     emit
   }
+}
+
+/** Familles d'outils de Bobine d'une fille avec un rôle qui les choisit (`mcp`), sinon toutes. */
+export function roleToolModules(
+  modules: readonly AppToolModule[] | undefined,
+  role: RoleStamp | undefined
+): readonly AppToolModule[] | undefined {
+  const wanted = role?.mcp
+  if (!modules || !wanted) return modules
+  return modules.filter((m) => ROLE_KEPT_FAMILIES.includes(m.id) || wanted.includes(m.id))
 }

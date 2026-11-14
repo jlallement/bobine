@@ -22,6 +22,7 @@ import { log } from '../log'
 import { MODE_CONTROL_ID } from '../agent/session-controls'
 import { activeRules } from '../agent-config/rules'
 import type { RuleFileView } from '@shared/rules'
+import type { RoleStamp } from '@shared/roles'
 import { hasFolder } from './agentless'
 import type { ConversationRecord } from './store'
 
@@ -186,6 +187,7 @@ export function summaryOf(
     ...(record.branchedFrom ? { branchedFrom: record.branchedFrom } : {}),
     ...motherOf(record, find),
     ...(record.reviewOf ? { reviewOf: record.reviewOf } : {}),
+    ...(record.role ? { role: record.role } : {}),
     ...(record.archived ? { archived: true } : {}),
     ...(record.scheduled ? { scheduled: record.scheduled } : {}),
     ...(record.usage ? { usage: record.usage } : {}),
@@ -303,14 +305,16 @@ export interface DetachedRequest {
   worktree: boolean
   title: string
   /** Lien posé dans l'enregistrement : mère (fiche 097), relue (fiche 177), tâche planifiée (fiche 178). */
-  record?: Pick<ConversationRecord, 'startedFrom' | 'reviewOf' | 'scheduled'>
+  record?: Pick<ConversationRecord, 'startedFrom' | 'reviewOf' | 'scheduled' | 'role'>
   onCreated?: (summary: ConversationSummary) => void
 }
 
-/** Ce qui lie une fille à autre chose que sa mère : la conversation qu'elle relit (fiche 177). */
+/** Ce qui lie une fille à autre chose que sa mère : conversation relue (177), rôle (223). */
 export interface ChildLink {
   /** Relecteur : identifiant de la conversation relue. */
   of?: string
+  /** Rôle de la fille ; en lecture seule, elle travaille dans le dossier de sa mère. */
+  role?: RoleStamp
 }
 
 /**
@@ -321,19 +325,25 @@ export interface ChildLink {
 export function childDetachedRequest(
   mother: ConversationRecord,
   author: ConversationRecord | undefined,
-  request: { text: string; profileId?: string; onCreated?: DetachedRequest['onCreated'] }
+  request: {
+    text: string
+    profileId?: string
+    onCreated?: DetachedRequest['onCreated']
+    role?: RoleStamp
+  }
 ): DetachedRequest {
-  const { profileId, onCreated } = request
+  const { profileId, onCreated, role } = request
+  // Rôle en lecture seule (fiche 223) : dans le dossier de la mère, sans worktree, comme un relecteur.
+  const here = author ?? (role?.readOnly ? mother : undefined)
   return {
-    from: author
-      ? { workspace: author.workspace, profileId: profileId ?? author.profileId }
-      : mother,
+    from: here ? { workspace: here.workspace, profileId: profileId ?? here.profileId } : mother,
     ...(profileId ? { profileId } : {}),
-    worktree: !author,
+    worktree: !here,
     title: titleFrom(request.text),
     record: {
       startedFrom: { id: mother.id, title: mother.title },
-      ...(author ? { reviewOf: { id: author.id, title: author.title } } : {})
+      ...(author ? { reviewOf: { id: author.id, title: author.title } } : {}),
+      ...(role ? { role } : {})
     },
     ...(onCreated ? { onCreated } : {})
   }

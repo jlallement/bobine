@@ -47,6 +47,10 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
 import { applyModel, ChildReviews } from './children-review'
+import { roleBadge, roleStamp, type RoleDefinition, type RoleView } from '@shared/roles'
+import type { RoleLibrary } from '../roles/library'
+import { roleFirstMessage } from '../roles/launch'
+import { ReadOnlyWatch } from '../roles/read-only-watch'
 import type { Run } from '../simulator/run'
 import { gitRun } from '../git/git-queue'
 import { inGitRepo, titleFrom } from './helpers'
@@ -62,6 +66,11 @@ export interface ChildRequest {
   profileId?: string
   /** Modèle choisi (réglage de catégorie `model`) ; absent : celui que prend l'agent. */
   model?: { controlId: string; value: string }
+  /**
+   * Rôle de la fille, par son nom (fiche 223) : sa consigne, son mode, sa lecture seule et ses
+   * outils. Son agent et son modèle sont choisis par l'appelant (carte, dialogue).
+   */
+  role?: string
 }
 
 /** Une fille vue par `child_status`. */
@@ -115,6 +124,8 @@ export interface ChildOptions {
   launchesChanged?: (state: ChildLaunchState) => void
   /** git des relectures (fiche 177) ; par défaut, la file de l'app. */
   run?: Run
+  /** Rôles (fiche 223) ; absent : aucun rôle. */
+  roles?: Pick<RoleLibrary, 'active' | 'find'>
 }
 
 export class ChildConversations {
@@ -135,10 +146,19 @@ export class ChildConversations {
   private readonly launching = new Map<string, Promise<void>>()
   /** Relectures avant fusion (fiche 177) : des filles d'un genre à part. */
   readonly reviews: ChildReviews
+  private readonly roles: ChildOptions['roles']
+  /** Garde-fou des rôles en lecture seule (fiche 223). */
+  private readonly readOnly: ReadOnlyWatch
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
     this.reviews = new ChildReviews({ conversations, children: this, run: options.run ?? gitRun })
+    this.roles = options.roles
+    this.readOnly = new ReadOnlyWatch({
+      conversations,
+      summary: (id) => this.summary(id),
+      run: options.run ?? gitRun
+    })
     this.attention = options.attention ?? (() => ({}))
     this.launchesChanged = options.launchesChanged ?? (() => {})
     this.waking = new ChildWake({
@@ -168,8 +188,9 @@ export class ChildConversations {
     }
     const { active, max } = this.capacity(motherId)
     if (active >= max) throw new Error(t('children.limit', { count: max }))
+    const role = request.role ? this.findRole(motherId, request.role) : undefined
 
-    const created = await this.prepare(motherId, text, request)
+    const created = await this.prepare(motherId, text, request, role)
     const title = request.title?.trim()
     if (title) this.conversations.rename(created.id, title)
     const child = title ? { ...created, title: this.summary(created.id).title } : created
@@ -183,12 +204,13 @@ export class ChildConversations {
         ...(child.branch ? { branch: child.branch } : {}),
         prompt: text,
         ...(by ? { by } : {}),
+        ...(role ? { role: roleBadge(role) } : {}),
         at: Date.now()
       }
     })
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
-    void this.launch(child, text, request.model, () => {
+    void this.launch(child, text, { model: request.model, role }, () => {
       launched()
       this.launching.delete(child.id)
     })
@@ -223,17 +245,24 @@ export class ChildConversations {
   private async prepare(
     motherId: string,
     text: string,
-    request: ChildRequest
+    request: ChildRequest,
+    role: RoleDefinition | undefined
   ): Promise<ConversationSummary> {
     const id = randomUUID()
     const launch: ChildLaunch = { id, motherId, title: request.title?.trim() || titleFrom(text) }
     this.preparing.set(id, launch)
     this.publishLaunches()
     try {
-      return await this.conversations.createChild(motherId, text, request.profileId, (child) => {
-        this.preparing.set(id, { ...launch, conversationId: child.id })
-        this.publishLaunches()
-      })
+      return await this.conversations.createChild(
+        motherId,
+        text,
+        request.profileId,
+        (child) => {
+          this.preparing.set(id, { ...launch, conversationId: child.id })
+          this.publishLaunches()
+        },
+        role ? { role: roleStamp(role) } : {}
+      )
     } finally {
       this.preparing.delete(id)
       this.publishLaunches()
@@ -258,6 +287,34 @@ export class ChildConversations {
   summary(id: string): ConversationSummary {
     const listed = this.conversations.state().conversations.find((c) => c.id === id)
     return listed ?? this.conversations.view(id).summary
+  }
+
+  /**
+   * Rôles actifs pour une conversation (fiche 223) : ceux du dossier de la mère pour une fille (un
+   * rôle non commité n'est pas dans son worktree), sinon ceux de son propre dossier.
+   */
+  rolesFor(id: string): RoleView[] {
+    if (!this.roles) return []
+    const summary = this.summary(id)
+    const folder = summary.startedFrom
+      ? this.conversations.state().conversations.find((c) => c.id === summary.startedFrom?.id)
+          ?.workspace
+      : summary.workspace
+    return this.roles.active(folder && hasFolder(folder) ? folder : undefined)
+  }
+
+  /** Rôle actif de ce nom pour une mère ; sinon une erreur qui cite les rôles connus. */
+  findRole(motherId: string, name: string): RoleView {
+    const wanted = name.trim().replace(/^@/, '').toLowerCase()
+    const roles = this.rolesFor(motherId)
+    const role = roles.find((r) => r.name === wanted)
+    if (role) return role
+    throw new Error(
+      t('roles.error.unknownRole', {
+        name,
+        roles: roles.map((r) => r.name).join(', ') || t('roles.none')
+      })
+    )
   }
 
   /** Filles d'une conversation, dans l'ordre de la liste (hors archivées). */
@@ -392,6 +449,7 @@ export class ChildConversations {
     }
     this.waking.onEvent(payload)
     this.reviews.onEvent(payload)
+    this.readOnly.onEvent(payload)
   }
 
   /** Liste changée (fille archivée…) : le réveil groupé revoit les mères qui attendent. */
@@ -405,6 +463,7 @@ export class ChildConversations {
     this.sending.delete(id)
     this.waking.forget(id)
     this.reviews.forget(id)
+    this.readOnly.forget(id)
   }
 
   /** Mère qui attend ses filles. */
@@ -436,7 +495,12 @@ export class ChildConversations {
     const launching = this.launching.get(target.id)
     const queued = !!launching || (target.status !== 'ready' && target.status !== 'stopped')
     this.sending.add(target.id)
-    const send = () => this.conversations.prompt(target.id, text, [], { from })
+    // Rôle en lecture seule au repos : empreinte du dossier avant l'envoi (en file d'attente, elle
+    // se prend au départ du tour).
+    const send = () =>
+      (queued ? Promise.resolve() : this.readOnly.prepare(target.id)).then(() =>
+        this.conversations.prompt(target.id, text, [], { from })
+      )
     // `prompt` se résout à la fin du tour : rien à attendre ici. Un échec est dit dans le fil visé.
     void (launching ? launching.then(send) : send()).catch((error: unknown) => {
       this.sending.delete(target.id)
@@ -468,17 +532,19 @@ export class ChildConversations {
   private async launch(
     child: ConversationSummary,
     text: string,
-    model: ChildRequest['model'],
+    { model, role }: { model: ChildRequest['model']; role: RoleDefinition | undefined },
     launched: () => void
   ): Promise<void> {
     const childId = child.id
     try {
-      if (model) {
-        await this.conversations.ready(childId)
-        await applyModel(this.conversations, childId, model)
-      }
+      if (model || role) await this.conversations.ready(childId)
+      if (model) await applyModel(this.conversations, childId, model)
+      // Rôle (fiche 223) : mode natif si l'agent l'a, sinon sa consigne en tête du message.
+      const first = role ? await roleFirstMessage(this.conversations, child, role, text) : text
+      // Lecture seule : l'empreinte du dossier avant que la consigne ne parte (garde-fou).
+      if (role?.readOnly) await this.readOnly.prepare(childId)
       // Le tour de la fille ne se termine pas avant longtemps : `launch` n'est pas attendu.
-      const turn = this.conversations.prompt(childId, text)
+      const turn = this.conversations.prompt(childId, first)
       launched()
       await turn
     } catch (error) {
@@ -538,12 +604,15 @@ export function childHandlers(
 /* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
 function parseChildRequest(value: unknown): ChildRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { text, title, profileId, model } = value as Record<string, unknown>
+  const { text, title, profileId, model, role } = value as Record<string, unknown>
   if (typeof text !== 'string') throw new Error('Paramètre invalide : text')
   if (title !== undefined && typeof title !== 'string')
     throw new Error('Paramètre invalide : title')
   if (profileId !== undefined && (typeof profileId !== 'string' || !profileId)) {
     throw new Error('Paramètre invalide : profileId')
+  }
+  if (role !== undefined && (typeof role !== 'string' || !role.trim())) {
+    throw new Error('Paramètre invalide : role')
   }
   const choice =
     typeof model === 'object' && model !== null ? (model as Record<string, unknown>) : {}
@@ -559,6 +628,7 @@ function parseChildRequest(value: unknown): ChildRequest {
     ...(typeof profileId === 'string' ? { profileId } : {}),
     ...(model !== undefined
       ? { model: { controlId: String(choice.controlId), value: String(choice.value) } }
-      : {})
+      : {}),
+    ...(typeof role === 'string' ? { role: role.trim() } : {})
   }
 }

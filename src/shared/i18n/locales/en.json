@@ -2975,7 +2975,8 @@
       "freshStart": "Start fresh unavailable",
       "aside": "The aside is not available here.",
       "help": "Help unavailable",
-      "onboarding": "First-launch welcome unavailable"
+      "onboarding": "First-launch welcome unavailable",
+      "roles": "Roles are not available here."
     },
     "emptyMessage": "Empty message",
     "emptyPrompt": "Empty prompt"
@@ -3123,6 +3124,10 @@
       "label": "Other folders in a conversation",
       "yes": "Folders added in the Session tab are given to it along with the working folder (`additionalDirectories`).",
       "no": "The agent only sees the working folder: nothing to add in the Session tab."
+    },
+    "writesWithoutAsking": {
+      "label": "Writes without asking",
+      "detail": "{{agent}} changes files without asking for permission (default setting): a role’s read-only mode is only requested, unless the role picks a native mode; Bobine reports any change to the folder."
     }
   },
   "permissionOption": {
@@ -4711,6 +4716,47 @@
     },
     "terminal": {
       "denied": "Command denied everywhere by the agent’s rules (“{{command}}”): Bobine won’t run it with its own tools either."
+    }
+  },
+  "roles": {
+    "none": "none",
+    "builtin": {
+      "uxUiExpert": "UX/UI expert",
+      "flutterExpert": "Flutter expert",
+      "frontArchitect": "Front-end architect",
+      "backArchitect": "Back-end architect",
+      "securityExpert": "Security expert",
+      "techLead": "Tech lead",
+      "codeReviewer": "Code reviewer"
+    },
+    "error": {
+      "noHeader": "No header: the file must start with a “---” line.",
+      "syntax": "Line {{line}} of the header cannot be read.",
+      "unknownField": "Unknown header field: {{field}}.",
+      "duplicateField": "Header field repeated: {{field}}.",
+      "name": "Invalid name: lowercase letters, digits and dashes, 40 characters at most.",
+      "label": "Label too long (40 characters at most).",
+      "icon": "Invalid icon: a Lucide icon name, such as “shield-check”.",
+      "color": "Invalid color: orange, blue, violet, pink, green or graphite.",
+      "description": "Description missing or too long (300 characters at most).",
+      "value": "Invalid value for {{field}}.",
+      "readOnly": "“read-only” expects true or false.",
+      "mcp": "Unknown tool family in “mcp”: {{field}}.",
+      "prompt": "Instructions missing or too long (20,000 characters at most).",
+      "tooLarge": "File too large (64 KB at most).",
+      "duplicateName": "Another role already has this name here.",
+      "unreadable": "File cannot be read.",
+      "unknownRole": "Unknown or disabled role: {{name}}. Roles: {{roles}}.",
+      "noProject": "This conversation has no project folder.",
+      "builtinFile": "A built-in role cannot be written or deleted: turn it off, or save a personal role with the same name.",
+      "notWritten": "Role not saved: the profile is read-only."
+    },
+    "notice": {
+      "writeRefused": "Write refused by Bobine: this role is read-only ({{tool}}).",
+      "readOnlyRequested": "Read-only is only requested: {{agent}} writes without asking for permission. Bobine checks the folder after each turn and reports any change.",
+      "folderChanged": "The folder changed during this read-only role’s turn. Check the changes (git status).",
+      "childFolderChanged": "The folder changed during the turn of “{{title}}”, a read-only role working in this folder. Check the changes (git status).",
+      "modeMissing": "The agent has no “{{mode}}” mode for this role: the role’s instructions go in the first message."
     }
   }
 }
