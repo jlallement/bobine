@@ -14,7 +14,7 @@ const ERROR_SETTLE_MS = 1100
 
 const load = () => import('../../mermaid-render')
 
-/** Thème de l'app : clair ou sombre, variante (Sépia, Nuit noire), accent — pour redessiner. */
+/** Thème de l'app : clair ou sombre, variante (Nuit noire, Fjord, Aurore), accent — pour redessiner. */
 function useThemeKey(): string {
   return useSyncExternalStore(subscribeTheme, themeKey)
 }

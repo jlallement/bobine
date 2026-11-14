@@ -1333,11 +1333,13 @@
         "hint": "Système : Clair le jour, Sombre la nuit, comme le Mac.",
         "system": "Système",
         "light": "Clair",
-        "sepia": "Sépia",
         "dark": "Sombre",
         "black": "Nuit noire",
         "fjord": "Fjord",
-        "fjordNight": "Fjord nuit"
+        "fjordNight": "Fjord nuit",
+        "aurora": "Aurore",
+        "auroraNight": "Aurore nuit",
+        "new": "Nouveau"
       },
       "accent": {
         "label": "Couleur d’accent",
@@ -1639,7 +1641,7 @@
   "settingsSearch": {
     "firstName": "nom accueil salutation bonjour",
     "language": "langue language interface anglais english français traduction",
-    "theme": "apparence thème mode clair sombre système sépia papier nuit noire noir oled couleurs",
+    "theme": "apparence thème mode clair sombre système aurore nuit noire noir oled fjord couleurs",
     "accent": "couleur orange bleu violet rose vert graphite boutons",
     "keepAwake": "veille sommeil éveillé écran batterie",
     "keepCookies": "navigateur intégré cookies connexion session garder",

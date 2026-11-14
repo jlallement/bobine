@@ -1268,11 +1268,13 @@
         "hint": "System: Light by day, Dark by night, like the Mac.",
         "system": "System",
         "light": "Light",
-        "sepia": "Sepia",
         "dark": "Dark",
         "black": "Black",
         "fjord": "Fjord",
-        "fjordNight": "Fjord Night"
+        "fjordNight": "Fjord Night",
+        "aurora": "Aurora",
+        "auroraNight": "Aurora Night",
+        "new": "New"
       },
       "accent": {
         "label": "Accent color",
@@ -1567,7 +1569,7 @@
   "settingsSearch": {
     "firstName": "name welcome greeting hello",
     "language": "language langue interface english anglais french français translation",
-    "theme": "appearance theme mode light dark system sepia paper black night oled colors",
+    "theme": "appearance theme mode light dark system aurora black night oled fjord colors",
     "accent": "color orange blue violet pink green graphite buttons",
     "keepAwake": "sleep awake display screen battery",
     "keepCookies": "built-in browser cookies sign-in session keep",

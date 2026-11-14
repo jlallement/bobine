@@ -100,6 +100,8 @@ input[type='checkbox'] {
   width: var(--sidebar-width, 300px);
   flex-shrink: 0;
   background: var(--sidebar);
+  /* Aurore (fiche 226) : lueur en haut et fond à peine dégradé ; `none` dans les autres thèmes. */
+  background-image: var(--touch-sidebar);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -185,7 +187,9 @@ input[type='checkbox'] {
 }
 
 .sidebar-item.active {
-  background: var(--surface-3);
+  /* Aurore (fiche 226) : pastille dégradée posée sur la barre latérale (touche 4). */
+  background-color: var(--touch-pill-base);
+  background-image: var(--touch-pill);
   color: var(--text);
 }
 
@@ -217,6 +221,7 @@ input[type='checkbox'] {
 .sidebar-item.primary .icon-badge {
   border-radius: var(--radius-pill);
   background: var(--accent);
+  background-image: var(--touch-action);
   color: var(--on-accent);
 }
 
@@ -431,6 +436,9 @@ input[type='checkbox'] {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* Aurore (fiche 226) : lavis en haut du fil, fixe (il ne défile pas avec le fil). */
+  background-image: var(--touch-main);
+  background-repeat: no-repeat;
   /* Le défilement du fil pilote le dégradé sous la barre de titre (fiche 049). */
   timeline-scope: --thread;
 }
@@ -731,6 +739,9 @@ button.main-title-origin:hover {
   padding: var(--density-msg-pad) 16px;
   border-radius: var(--radius-lg);
   background: var(--surface-2);
+  /* Aurore (fiche 226) : dégradé deux tons (touche 2), une couleur seulement : rien qui coûte au
+     défilement. */
+  background-image: var(--touch-bubble);
   white-space: pre-wrap;
   line-height: 1.5;
   font-size: calc(var(--conv-size) - 1px);
@@ -1707,10 +1718,12 @@ tr.diff-selected td {
 /* Carte de permission */
 
 .permission-card {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--touch-card-border);
   background: var(--surface);
+  /* Aurore (fiche 226) : haut à peine teinté et ombre teintée (touche 5). */
+  background-image: var(--touch-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--touch-card-shadow);
   overflow: hidden;
 }
 
@@ -2112,6 +2125,7 @@ tr.diff-selected td {
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: var(--sidebar);
+  background-image: var(--touch-card-foot);
 }
 
 .btn {
@@ -2149,9 +2163,17 @@ a.btn {
   color: var(--on-accent);
 }
 
+/* Aurore (fiche 226) : un même dégradé doux pour l'action principale (touche 4) ; bordure
+   transparente sur le fond (même rendu qu'une bordure de l'accent dans les autres thèmes). */
+.btn.primary:not(:disabled) {
+  background-image: var(--touch-action);
+  border-color: transparent;
+}
+
 .btn.primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background-image: var(--touch-action-hover);
+  border-color: transparent;
 }
 
 /* Pas encore possible : neutre comme Envoyer, l'accent arrive quand l'action l'est. */
@@ -2641,8 +2663,14 @@ a.btn {
     box-shadow 0.15s ease;
 }
 
+/* Aurore (fiche 226) : liseré dégradé et halo, au focus seulement (touche 3) ; ailleurs la bordure
+   forte et l'ombre d'avant. Le mode Plan et la saisie vers un rôle gardent les leurs. */
 .composer:focus-within {
-  border-color: var(--border-strong);
+  border-color: var(--touch-ring-border);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--touch-ring) border-box var(--surface);
+  box-shadow: var(--touch-ring-glow);
 }
 
 .composer textarea {
@@ -2895,8 +2923,16 @@ a.btn {
   flex-shrink: 0;
 }
 
+.send-button:not(:disabled, .stop) {
+  background-image: var(--touch-action);
+}
+
 .send-button:hover:not(:disabled) {
   background: var(--accent-hover);
+}
+
+.send-button:hover:not(:disabled, .stop) {
+  background-image: var(--touch-action-hover);
 }
 
 /* Rien à envoyer : neutre, sans teinte ; l'accent n'arrive qu'au premier caractère (fiche 170). */
@@ -2951,10 +2987,13 @@ a.btn {
     var(--radix-popover-content-available-height, 100vh)
   );
   overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* Aurore (fiche 226) : verre dépoli, seulement sur ce qui flotte (touche 6). */
+  background: var(--glass-menu);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-menu-line);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-menu);
+  box-shadow: var(--glass-menu-shadow);
   padding: 6px;
   z-index: 50;
   font-size: 13.5px;
@@ -4350,6 +4389,9 @@ a.btn {
   flex-direction: column;
   min-width: 0;
   background: var(--bg);
+  /* Aurore (fiche 226) : haut à peine teinté. */
+  background-image: var(--touch-panel);
+  background-repeat: no-repeat;
   border-left: 1px solid var(--border);
 }
 
@@ -4370,6 +4412,7 @@ a.btn {
 .side-panel-head {
   height: 52px;
   flex-shrink: 0;
+  background-image: var(--touch-panel-head);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5695,6 +5738,11 @@ kbd {
   height: min(720px, calc(100vh - 64px));
   display: flex;
   overflow: hidden;
+  /* Aurore (fiche 226) : verre dépoli, la fenêtre des Réglages flotte (touche 6). */
+  background: var(--glass-sheet);
+  -webkit-backdrop-filter: var(--glass-blur-sheet);
+  backdrop-filter: var(--glass-blur-sheet);
+  box-shadow: var(--glass-sheet-shadow);
 }
 
 /* Colonne de droite : en-tête fixe, contenu qui défile dessous. */
@@ -5724,7 +5772,7 @@ kbd {
 .settings-nav {
   width: 210px;
   flex-shrink: 0;
-  background: var(--sidebar);
+  background: var(--glass-nav);
   border-right: 1px solid var(--border);
   padding: 18px 10px;
   display: flex;
@@ -8334,22 +8382,37 @@ kbd {
 }
 
 /*
- * Vignettes des thèmes clair et sombre (Réglages › Apparence, fiche 136). Sept depuis Fjord
- * (fiche 168) : vignettes un peu plus petites, l'aide de la ligne garde de quoi se lire, et la
- * rangée passe à la ligne plutôt que de déborder.
+ * Vignettes des thèmes clair et sombre (Réglages › Apparence, fiche 136). Huit depuis Aurore
+ * (fiche 226), en deux rangées de quatre : « Système » et les thèmes clairs, puis les sombres, chaque
+ * thème sombre sous sa variante claire. L'aide de la ligne garde de quoi se lire.
  */
 .theme-choices {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: end;
+  align-items: start;
+  gap: 10px 8px;
+}
+
+.theme-choice-label {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+}
+
+/* « Nouveau » sous le nom (fiche 226) : petit, dans l'accent. */
+.theme-choice-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .settings-row-text:has(+ .settings-row-control .theme-choices) {
   min-width: 170px;
 }
 
-/* Les vignettes passent à la ligne plutôt que de sortir de la carte (fiche 185, F4). */
+/* Les vignettes ne sortent pas de la carte (fiche 185, F4) : la colonne d'aide cède d'abord. */
 .settings-row-control:has(.theme-choices) {
   flex-shrink: 1;
   min-width: 0;

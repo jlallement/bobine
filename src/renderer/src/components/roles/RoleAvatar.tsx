@@ -39,7 +39,7 @@ export function roleAvatarState(state: ChildState): RoleAvatarState {
 }
 
 /**
- * Teinte d'une couleur de rôle dans la palette affichée (clair, sombre, sépia…) : une des couleurs
+ * Teinte d'une couleur de rôle dans la palette affichée (clair, sombre, Aurore…) : une des couleurs
  * d'accent de l'app (décision 8), suivie au changement de thème ; graphite pour une valeur inconnue.
  */
 export function useRoleTint(color: string): string {

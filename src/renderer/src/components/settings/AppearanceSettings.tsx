@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import {
+  NEW_THEME_CHOICES,
   CODE_FONT_SIZES,
   DENSITIES,
   CONVERSATION_FONT_SIZES,
@@ -47,7 +48,7 @@ export function AppearanceSettings({
   )
 }
 
-/** Thème (cinq vignettes, « Système » suit le Mac en Clair et Sombre) et accent. */
+/** Thème (huit vignettes en deux rangées, « Système » suit le Mac en Clair et Sombre) et accent. */
 function InterfaceCard({
   preferences,
   onPreferences
@@ -77,6 +78,9 @@ function InterfaceCard({
                 checked={themeChoiceOf(preferences) === choice}
                 onChoose={() => onPreferences(themeChoicePreferences(choice))}
                 testId={`theme-${choice}`}
+                {...(NEW_THEME_CHOICES.includes(choice)
+                  ? { badge: t('settings.appearance.theme.new') }
+                  : {})}
               />
             ))}
           </div>
