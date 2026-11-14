@@ -27,8 +27,15 @@ export function currentStepId(items: readonly TranscriptItem[]): number {
   return last?.id ?? -1
 }
 
-/** `workspace` : dossier de la conversation, pour des chemins relatifs (fiche 107). */
-export function currentActivity(items: readonly TranscriptItem[], workspace?: string): Activity {
+/**
+ * `workspace` : dossier de la conversation, pour des chemins relatifs (fiche 107) ; `rootName` : le
+ * nom à lui donner (« Documents » d'une discussion, fiche 224).
+ */
+export function currentActivity(
+  items: readonly TranscriptItem[],
+  workspace?: string,
+  rootName?: string
+): Activity {
   const start = items.findLastIndex((i) => i.kind === 'user')
   const turn = items.slice(start + 1)
   // Ce qui attend l'utilisateur passe avant tout.
@@ -46,7 +53,7 @@ export function currentActivity(items: readonly TranscriptItem[], workspace?: st
       ? t('activity.subagent', { task: last.subagent.task })
       : last.appTool
         ? appToolText(last.appTool)
-        : toolText(last, workspace)
+        : toolText(last, workspace, rootName)
     return { kind: 'tool', title }
   }
   if (last?.kind === 'agent') return { kind: 'writing' }

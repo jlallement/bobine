@@ -10,6 +10,7 @@ import {
   outsideWorkspace,
   sameFolder,
   shortFolder,
+  withRootLabel,
   hasInvisible,
   quoteArg,
   toolCommandOf,
@@ -409,6 +410,11 @@ describe('Dossier de la commande dit court (fiche 203, sécurité M1)', () => {
     expect(shortFolder(WS, `${WS}/`)).toBe('projet')
     expect(shortFolder(`${WS}/src/renderer`, WS)).toBe('projet/src/renderer')
     expect(shortFolder(`${WS}//src/./renderer/`, WS)).toBe('projet/src/renderer')
+  })
+
+  it('discussion (fiche 224) : la racine prend un autre nom (« Documents »)', () => {
+    expect(withRootLabel('3973c57d-c6ab', 'Documents')).toBe('Documents')
+    expect(withRootLabel('3973c57d-c6ab/out/v2', 'Documents')).toBe('Documents/out/v2')
   })
 
   it('hors du dossier : jamais raccourci (chemin entier affiché)', () => {

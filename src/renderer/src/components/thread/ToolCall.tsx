@@ -71,6 +71,15 @@ type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
 
 export { WorkspaceContext }
 
+/**
+ * Titre de l'agent pour l'infobulle ; dans une discussion (fiche 224), le chemin de son dossier y
+ * devient « Documents ».
+ */
+function agentTitle(title: string, workspace: string | undefined, documents: string | undefined) {
+  if (!documents || !workspace) return title
+  return title.split(workspace.replace(/\/+$/, '')).join(documents)
+}
+
 /** Infobulle d'un libellé lisible : la cible en entier, puis le titre de l'agent (s'ils disent plus). */
 export function labelHint(label: ToolLabel, title: string): string | undefined {
   const parts = [label.detail, title].filter(
@@ -185,6 +194,8 @@ export function ToolCall({
   // Mode présentation (fiche 159) : le dossier personnel en `~` jusque dans les infobulles.
   const show = useDisplayText()
   const { t } = useTranslation()
+  // Discussion (fiche 224) : son dossier se dit « Documents », jamais par son identifiant.
+  const documents = useContext(DiscussionContext) ? t('discussion.documents.tab') : undefined
   // Sortie du mode plan : le plan à valider remplace l'autorisation générique.
   if (item.toolKind === 'switch_mode' && item.permission) {
     return (
@@ -198,7 +209,7 @@ export function ToolCall({
   // plusieurs outils appelés par du code (fiche 079) : leurs libellés à la suite. Outil de
   // l'agent : ce qu'il a fait et sur quoi (fiche 107), la cible entière et le titre en infobulle.
   const appTitle = appToolsText(item)
-  const label = !appTitle ? toolLabel(item, workspace) : undefined
+  const label = !appTitle ? toolLabel(item, workspace, documents) : undefined
   // Commande que lance l'outil (0.11, M1) : entière en infobulle de la ligne, toujours.
   const command = !appTitle ? commandOfTool(item) : undefined
   const commandHint = command
@@ -208,7 +219,10 @@ export function ToolCall({
     <span title={show(item.title)}>{show(appTitle)}</span>
   ) : label ? (
     <span
-      title={commandHint ?? labelHint(label, item.title)?.replace(/.+/s, show)}
+      title={
+        commandHint ??
+        labelHint(label, agentTitle(item.title, workspace, documents))?.replace(/.+/s, show)
+      }
       className={label.file && !label.code ? 'tool-file-label' : undefined}
       data-testid="tool-label"
     >

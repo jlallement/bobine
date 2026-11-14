@@ -244,7 +244,11 @@ export function QuickEntry() {
           <Camera size={15} />
         </button>
         <span className="quick-target" title={info?.workspace} data-testid="quick-target">
-          {info ? t('quick.target', { agent: info.agentLabel, folder }) : ''}
+          {info
+            ? folder
+              ? t('quick.target', { agent: info.agentLabel, folder })
+              : t('quick.targetNoFolder', { agent: info.agentLabel })
+            : ''}
         </span>
         <button
           type="button"

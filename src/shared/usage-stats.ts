@@ -97,6 +97,8 @@ export interface UsageModelRow {
 export interface UsageProjectRow {
   key: string
   name: string
+  /** Toutes les discussions (fiche 224), en une ligne : leurs dossiers ne sont jamais nommés. */
+  discussions?: true
   turns: number
   tokens: number
 }

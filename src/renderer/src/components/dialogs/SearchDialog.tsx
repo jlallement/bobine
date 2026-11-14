@@ -124,7 +124,10 @@ export function SearchDialog({
                       <span className="search-result-tag">{t('search.shown')}</span>
                     )}
                     <span className="search-result-side">
-                      {c.profileLabel} · {basename(c.workspace)}
+                      {c.profileLabel} ·{' '}
+                      {c.space === 'discussion'
+                        ? t('discussion.space.discussion')
+                        : basename(c.workspace)}
                     </span>
                   </div>
                   {hit && <Snippet hit={hit} />}

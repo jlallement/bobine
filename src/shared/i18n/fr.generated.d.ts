@@ -547,6 +547,7 @@ export type FrResources = {
         readonly confirmAction: 'Remettre à zéro'
         readonly done: 'Consommation remise à zéro. Les prochains échanges seront comptés.'
       }
+      readonly discussions: 'Discussions'
     }
   }
   readonly elicitation: {
@@ -2239,6 +2240,7 @@ export type FrResources = {
       readonly altSpace: '⌥Espace'
       readonly shiftAltSpace: '⇧⌥Espace'
     }
+    readonly targetNoFolder: 'Nouvelle conversation · {{agent}}'
   }
   readonly document: {
     readonly reload: 'Relire'
@@ -4032,6 +4034,9 @@ export type FrResources = {
     readonly removeFolder: 'Retirer {{name}} de la conversation'
     readonly foldersBusy: 'Après la réponse de l’agent'
     readonly foldersUnsupported: 'Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.'
+    readonly documents: 'Documents'
+    readonly discussionDocuments: 'Documents de la discussion'
+    readonly thisDiscussion: 'Cette discussion'
   }
   readonly prTrack: {
     readonly title: '#{{number}} {{title}}'

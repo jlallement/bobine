@@ -551,7 +551,8 @@
         "confirm": "Effacer toute la consommation enregistrée ? C’est définitif.",
         "confirmAction": "Remettre à zéro",
         "done": "Consommation remise à zéro. Les prochains échanges seront comptés."
-      }
+      },
+      "discussions": "Discussions"
     }
   },
   "elicitation": {
@@ -2281,7 +2282,8 @@
       "off": "Désactivé",
       "altSpace": "⌥Espace",
       "shiftAltSpace": "⇧⌥Espace"
-    }
+    },
+    "targetNoFolder": "Nouvelle conversation · {{agent}}"
   },
   "document": {
     "reload": "Relire",
@@ -4194,7 +4196,10 @@
     "addFolderTip": "L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.",
     "removeFolder": "Retirer {{name}} de la conversation",
     "foldersBusy": "Après la réponse de l’agent",
-    "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail."
+    "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
+    "documents": "Documents",
+    "discussionDocuments": "Documents de la discussion",
+    "thisDiscussion": "Cette discussion"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",

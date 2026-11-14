@@ -106,8 +106,10 @@ export function ProjectTable({ rows }: { rows: readonly UsageProjectRow[] }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.key} data-testid="usage-project-row">
-                <td className="usage-name" title={row.key || undefined}>
-                  {row.name || <small>{t('usage.board.noFolder')}</small>}
+                <td className="usage-name" title={(!row.discussions && row.key) || undefined}>
+                  {row.discussions
+                    ? t('usage.board.discussions')
+                    : row.name || <small>{t('usage.board.noFolder')}</small>}
                 </td>
                 <td>
                   <span className="usage-bar-cell">

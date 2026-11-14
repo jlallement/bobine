@@ -692,4 +692,16 @@ describe('largeur de la barre latérale (fiche 113)', () => {
     fireEvent.click(screen.getByTestId('space-code'))
     expect(onSpace).toHaveBeenCalledWith('code')
   })
+
+  it('infobulle d’une discussion (fiche 224) : jamais le chemin de son dossier', async () => {
+    const chat = conversation('d1', {
+      title: 'E-mail',
+      space: 'discussion',
+      workspace: '/data/discussions/3973c57d-c6ab'
+    })
+    render(sidebar([chat], { space: 'discussion' }))
+    const tip = await rowTip('d1')
+    expect(tip).toContain('E-mail')
+    expect(tip).not.toContain('3973c57d')
+  })
 })

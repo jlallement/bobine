@@ -62,6 +62,8 @@ describe('espace Discussion (fiche 224)', () => {
     const discussion = await manager.create({ space: 'discussion' })
     const again = await manager.configure(discussion.summary.id, { profileId: 'texte' })
     expect(again.summary.space).toBe('discussion')
+    // Fenêtre rapide depuis une discussion : la cible est le dossier de projet, pas le sien.
+    expect(manager.newConversationTarget().workspace).toBe(workspace)
     const code = await manager.create()
     expect(code.summary.space).toBeUndefined()
     // Jamais le dossier d'une discussion hérité par une conversation de l'espace Code.

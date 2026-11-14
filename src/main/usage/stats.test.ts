@@ -330,6 +330,28 @@ describe('statistiques sur un journal fixe (fiche 137)', () => {
     ])
   })
 
+  it('par projet : les discussions (fiche 224) sur une seule ligne, sans nommer leurs dossiers', () => {
+    const root = '/data/discussions'
+    const rows = [
+      row('d1:1', { workspace: `${root}/3973c57d`, tokens: { input: 10 } }),
+      row('d2:1', { workspace: `${root}/8c1f0a22` }),
+      row('c1:1', { workspace: '/Users/ada/carnet' }),
+      // Voisin au nom qui commence pareil : un projet comme un autre.
+      row('c2:1', { workspace: '/data/discussions-copie' })
+    ]
+    const { byProject } = usageStats(
+      rows,
+      JOURNAL,
+      { scope: 'week', date: '2026-10-24' },
+      { ...context, discussionsRoot: root }
+    )
+    expect(byProject.map((p) => [p.key, p.name, p.discussions, p.turns])).toEqual([
+      ['discussions', '', true, 2],
+      ['/data/discussions-copie', 'discussions-copie', undefined, 1],
+      ['/Users/ada/carnet', 'carnet', undefined, 1]
+    ])
+  })
+
   it('dix conversations au plus, les plus longues d’abord', () => {
     const many = Array.from({ length: 14 }, (_, i) =>
       Array.from({ length: i + 1 }, (_, k) => row(`c${i}:${k}`, { startedAt: at(24, 1, k) }))

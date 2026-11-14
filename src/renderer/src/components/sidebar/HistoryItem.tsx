@@ -123,7 +123,8 @@ export function HistoryItem({
       : []),
     ...(!mother && activity ? [activity.label] : []),
     ...(conversation.branch ? [t('sidebar.worktree', { branch: conversation.branch })] : []),
-    conversation.workspace
+    // Une discussion (fiche 224) : son dossier, tenu par Bobine, n'est jamais nommé.
+    ...(conversation.space === 'discussion' ? [] : [conversation.workspace])
   ].join('\n')
   // Une conversation qui attend est « non lue » : son titre en gras, seul signal (fiche 125).
   const unread = !!attention

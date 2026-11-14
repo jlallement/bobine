@@ -228,11 +228,19 @@ coder. Aucune nouvelle dépendance prévue.
 - **Agent qui écrit sans demander** : consigne de session `<bobine_discussion>` (rester dans les
   documents, ne rien installer), avis « seulement demandée » une fois dans le fil, ligne sur
   l'accueil — d'après `writesWithoutAsking` du profil.
-- **Notés** : M1 — l'aperçu lit en `O_NOFOLLOW` ; `textutil` reçoit un chemin (contrôlé juste avant
-  par `documentPath`), pas de descripteur : une course entre ce contrôle et sa lecture reste
-  possible, dans le dossier de la discussion seulement. M5 — un brouillon de l'espace Code est
-  encore créé à chaque lancement, même quand l'espace retenu est Discussion (`useSpace` bascule
-  ensuite) : sans effet sur les dossiers, à reprendre si le démarrage de l'agent gêne.
+- **Notés** : M1 — **fait le 2026-11-15** : l'aperçu lit en `O_NOFOLLOW` ; `textutil` lit le
+  même descripteur (ouvert en `O_NOFOLLOW | O_NONBLOCK`, fichier ordinaire vérifié par `fstat`,
+  passé en `/dev/fd/3`) : plus de course entre le contrôle de `documentPath` et la lecture.
+  `textutil` reconnaît le format au contenu (un RTF nommé `.doc` reste lu ; `-format` forcé
+  échouerait, et avec un code de sortie 0 — relevé du 2026-11-15). M5 — un brouillon de l'espace
+  Code est encore créé à chaque lancement, même quand l'espace retenu est Discussion (`useSpace`
+  bascule ensuite) : **laissé tel quel (2026-11-15)**. L'espace retenu vit dans le `localStorage`
+  du renderer, et le main crée et démarre le brouillon (`startActive`) avant que la fenêtre ne
+  charge. L'éviter demande de déplacer l'espace retenu dans les réglages du main (nouvelle
+  préférence, écrite à chaque changement d'espace) et de choisir au lancement la discussion la plus
+  récente au lieu d'un brouillon : un changement du chemin de démarrage (accueil, avis du
+  lancement, prise en main), pas une correction bornée. Sans effet sur les dossiers ; l'agent du
+  brouillon Code est relâché comme tout brouillon quitté.
 
 ## Plus tard (hors périmètre)
 
@@ -260,3 +268,18 @@ coder. Aucune nouvelle dépendance prévue.
   « … config.json »), espace Code compris. La demande reste désormais celle de l'agent ; les
   emplacements connus (`ProfileUpdates.knownLocations`) ne servent qu'à la décision d'écriture
   d'une discussion. Test de non-régression dans `tool-call-memory.test.ts`.
+- **2026-11-15** (`fix/nuit-produit`) : le dossier d'une discussion n'est plus montré sous son
+  identifiant. Onglet Session : ligne « Documents : Cette discussion » (infobulle « Afficher dans
+  le Finder — Documents de la discussion », même action qu'avant) ; libellés d'outils, infobulles,
+  « en cours » et groupe d'outils (`toolLabel(…, rootName)`), dossier d'une commande et ses
+  pastilles (`withRootLabel`), menu `@` (« Documents ») ; recherche (⌘K) et corbeille :
+  « Discussion » ; infobulle de la barre latérale et export Markdown : sans le chemin ; Mon
+  activité › Par projet : une ligne « Discussions » (`discussionsRoot`) ; Rôles du projet : pas de
+  « projet » pour une discussion (`projectName`). Bug trouvé en passant : la fenêtre rapide,
+  ouverte depuis une discussion, visait son dossier (`newConversationTarget` passe maintenant par
+  `inheritedFolder`, comme `create`). Restent nommés : le chemin d'une écriture refusée **hors** du
+  dossier (c'est le but), et le dossier dans le Finder. M1 fait, M5 laissé (voir « Notés »). Tests :
+  `SessionTab`, `CommandBlock`, `Sidebar`, `AppDialogs`, `ProfileData`, `ActivityPage`,
+  `useSpace`, `tool-label`, `command-view`, `export`, `trash`, `stats`, `manager-discussion`,
+  `documents/ipc` (textutil réel sur macOS : lien et tube refusés) ; e2e `discussion` (onglet
+  Session, fil et commande sans l'identifiant ; capture `discussion-3b-session`).

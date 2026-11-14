@@ -56,6 +56,16 @@ describe('corbeille des conversations (fiche 196)', () => {
     expect(readdirSync(trash.dir)).toEqual([])
   })
 
+  it('discussion (fiche 224) : la ligne le dit, pour ne pas montrer son dossier', () => {
+    const { dir, trash } = setup()
+    writeFileSync(join(dir, 'd.json'), '{"version":1,"items":[],"nextId":1}')
+    trash.put({ ...record('d'), space: 'discussion' }, undefined, join(dir, 'd.json'))
+    writeFileSync(join(dir, 'c.json'), '{"version":1,"items":[],"nextId":1}')
+    trash.put(record('c'), undefined, join(dir, 'c.json'))
+    const spaces = Object.fromEntries(trash.list().map((e) => [e.id, e.space]))
+    expect(spaces).toEqual({ d: 'discussion', c: undefined })
+  })
+
   it('fil chargé : le plus récent, celui de la mémoire, avec la copie de l’enregistrement', () => {
     const { dir, trash } = setup()
     writeFileSync(join(dir, 'b.json'), '{"items":[],"nextId":1}')

@@ -104,6 +104,7 @@ export class ConversationTrash {
         id: record.id,
         title: record.title,
         workspace: record.workspace,
+        ...(record.space === 'discussion' ? { space: record.space } : {}),
         deletedAt,
         erasedAt: new Date(Date.parse(deletedAt) + TRASH_DAYS * DAY_MS).toISOString()
       }))

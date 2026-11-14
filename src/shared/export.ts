@@ -64,7 +64,10 @@ export function exportConversation(
     `# ${summary.title}`,
     '',
     `- ${t('export.agent', { agent })}`,
-    `- ${t('export.folder', { folder: summary.workspace })}`,
+    // Discussion (fiche 224) : son dossier, tenu par Bobine, n'est pas nommé.
+    ...(summary.space === 'discussion'
+      ? []
+      : [`- ${t('export.folder', { folder: summary.workspace })}`]),
     `- ${t('export.updatedAt', { date: summary.updatedAt })}`,
     `- ${t('export.exportedAt', { date: dateOf(now) })}`,
     ''

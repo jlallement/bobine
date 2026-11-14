@@ -27,6 +27,8 @@ export interface SessionTabData {
   settings: AgentSettingsView | null
   transcript: TranscriptState
   workspace?: string | undefined
+  /** Discussion (fiche 224) : dossier tenu par Bobine, montré comme ses documents. */
+  discussion?: boolean | undefined
   /** Branche du worktree de la conversation (fiche 036). */
   worktreeBranch?: string | undefined
   /** Branche git du dossier (fiche 049). */
@@ -186,6 +188,7 @@ export function SessionTab({
         canSet={view.status === 'ready'}
         onSetControl={data.onSetControl}
         workspace={data.workspace}
+        discussion={data.discussion}
         onRevealWorkspace={data.onRevealWorkspace}
         worktreeBranch={data.worktreeBranch}
         gitBranch={data.gitBranch}

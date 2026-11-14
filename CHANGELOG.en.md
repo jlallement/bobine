@@ -2,6 +2,18 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Chat space: a chat's folder no longer shows up under its identifier (“3973c57d-…”). The
+  Session tab says “Documents: This chat” (a click shows it in Finder), the agent's tools and
+  commands say “Documents”, and search, the trash, the sidebar tooltip and the export no longer
+  show its path; in My activity, chats count on a single “Chats” row. The quick entry window,
+  opened from a chat, targets your project folder rather than the chat's.
+- Header of a child conversation in a narrow window: the title shortens first, then the
+  “read-only” pill shrinks to its icon (the text in a tooltip), instead of being cut mid-word.
+
 ## 1.0.0-beta.4 — November 14, 2026
 
 ### New

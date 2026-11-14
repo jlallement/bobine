@@ -2,6 +2,20 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Espace Discussion : le dossier d'une discussion n'apparaît plus sous son identifiant
+  (« 3973c57d-… »). L'onglet Session dit « Documents : Cette discussion » (un clic l'affiche dans
+  le Finder), les outils et commandes de l'agent disent « Documents », et la recherche, la
+  corbeille, l'infobulle de la barre latérale et l'export n'en montrent plus le chemin ; dans Mon
+  activité, les discussions comptent sur une seule ligne « Discussions ». La fenêtre rapide,
+  ouverte depuis une discussion, vise votre dossier de projet et non celui de la discussion.
+- En-tête d'une conversation fille dans une fenêtre étroite : le titre se raccourcit d'abord, puis
+  la pastille « lecture seule » se réduit à son icône (le texte en infobulle), au lieu d'être
+  coupée au milieu d'un mot.
+
 ## 1.0.0-beta.4 — 14 novembre 2026
 
 ### Nouveau
