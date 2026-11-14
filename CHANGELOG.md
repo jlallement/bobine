@@ -15,6 +15,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - En-tête d'une conversation fille dans une fenêtre étroite : le titre se raccourcit d'abord, puis
   la pastille « lecture seule » se réduit à son icône (le texte en infobulle), au lieu d'être
   coupée au milieu d'un mot.
+- Long fil : aller à un message du début par le sommaire, ou chercher dans le fil, ne fige plus
+  l'app (17 s sur un fil de 1 250 échanges, un peu plus d'une seconde maintenant) ; remonter le fil
+  est aussi plus fluide.
 
 ## 1.0.0-beta.4 — 14 novembre 2026
 

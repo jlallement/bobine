@@ -138,6 +138,9 @@ export class ContentSearch {
       return cached
     }
     const transcript = await this.source.readTranscriptAsync(id)
+    // Un tour de boucle entre la lecture (JSON) et le texte plié : deux blocs courts plutôt qu'un
+    // long, pour un fil de plusieurs méga-octets.
+    await new Promise((resolve) => setImmediate(resolve))
     const text = transcript ? searchableText(transcript) : EMPTY
     this.forget(id)
     this.diskTexts.set(id, { ...text, stamp, run })

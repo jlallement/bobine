@@ -100,3 +100,9 @@ d'Electron).
 - 2026-10-23 — Écart (fiche 124, défaut D3 de la recette) : sans l'autorisation « Enregistrement de
   l'écran », la capture ne lance plus `screencapture` et la fenêtre rapide dit pourquoi, avec un
   bouton vers le réglage de macOS ; une capture refusée après la sélection (code ≠ 0) le dit aussi.
+- 2026-11-15 — Nuit de stabilité : `quick light` a échoué une fois au début d'une campagne
+  complète, avec « Message gardé pour plus tard**s** » dans la zone de saisie : une frappe de la
+  machine dans la fenêtre rapide. Après une capture, les fenêtres masquées revenaient par `show()`
+  et la fenêtre d'avant reprenait le focus (`focus()`), même pour les essais montrés sans focus
+  (`BOBINE_SHOW_INACTIVE`, fiche 106) : l'app d'essai passait au premier plan. Elles reviennent
+  maintenant par `showInactive()`, sans `focus()`, dans ce mode (`index.ts`, `hideWindows`).

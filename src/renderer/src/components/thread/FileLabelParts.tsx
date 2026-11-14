@@ -1,17 +1,27 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type { LabelFile } from '@shared/tool-label'
 import { useDisplayText } from '../../presentation'
 
 /**
  * Un seul observateur de taille pour toutes les lignes d'outil (un fil peut en compter des
  * centaines) : chaque ligne y inscrit son rappel.
+ *
+ * La mesure se fait seulement dans son rappel, jamais au montage : l'observateur signale chaque
+ * élément observé une première fois, après la mise en page et avant l'affichage. Toutes les
+ * lignes d'un rendu sont alors mesurées d'un coup, sur une seule mise en page, puis rendues
+ * ensemble (`flushSync`, avant l'affichage : pas d'image avec le dossier puis sans). Mesurée au
+ * montage dans chaque ligne, une mise en page forcée par ligne : 1 250 lignes d'un long fil rendu
+ * d'un coup (sommaire, recherche) figeaient l'interface 17 s (fiche 193, nuit de stabilité).
  */
 const callbacks = new WeakMap<Element, () => void>()
 let observer: ResizeObserver | undefined
 function observe(element: Element, callback: () => void): () => void {
   if (typeof ResizeObserver === 'undefined') return () => undefined
   observer ??= new ResizeObserver((entries) => {
-    for (const entry of entries) callbacks.get(entry.target)?.()
+    flushSync(() => {
+      for (const entry of entries) callbacks.get(entry.target)?.()
+    })
   })
   callbacks.set(element, callback)
   observer.observe(element)
@@ -52,7 +62,6 @@ export function FileLabelParts({ file }: { file: LabelFile }) {
       const stub = STUB_EM * parseFloat(getComputedStyle(label).fontSize || '13')
       setNoDir(text + nameWidth + stub > width + 0.5)
     }
-    measure()
     return observe(title, measure)
   }, [file.dir, file.name, file.before, file.after])
   return (

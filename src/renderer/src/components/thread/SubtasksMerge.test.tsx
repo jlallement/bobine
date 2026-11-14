@@ -197,6 +197,11 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     expect(screen.queryByTestId('subtasks-merge-start')).toBeNull()
     fireEvent.click(screen.getByTestId('subtasks-merge-retry'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['b', 'c'], false))
+    // Les boutons restent désactivés tant que « Réessayer » n'a pas fini : un clic trop tôt sur
+    // « Abandonner » tombait sur un bouton désactivé (perdu sous charge). On attend qu'il revienne.
+    await waitFor(() =>
+      expect((screen.getByTestId('subtasks-merge-abort') as HTMLButtonElement).disabled).toBe(false)
+    )
     fireEvent.click(screen.getByTestId('subtasks-merge-abort'))
     await waitFor(() => expect(actions.abort).toHaveBeenCalledWith('b'))
     fireEvent.click(screen.getByTestId('subtasks-merge-show'))

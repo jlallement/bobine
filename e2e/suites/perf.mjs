@@ -25,7 +25,12 @@ const BUDGET = {
   /** Plus long arrêt de la boucle d'évènements pendant « Afficher tout » (par paquets). */
   showAllGapMs: 1000,
   /** Tâche la plus longue pendant le streaming du bloc de code, sur ce fil. */
-  streamTaskMs: 400
+  streamTaskMs: 400,
+  /**
+   * Sommaire vers le premier message, tout le fil rendu d'un coup (avant : 17 s figées, une mise en
+   * page forcée par ligne d'outil de fichier ; 60 s et plus sous charge).
+   */
+  revealFirstMs: 5000
 }
 
 export async function perfSuite(scheme) {
@@ -231,11 +236,18 @@ async function longThreadWindow(ui) {
   await ui.waitFor(
     `document.querySelector('[data-testid=outline-item]')?.getBoundingClientRect().width > 0`
   )
+  const revealStart = Date.now()
   await ui.click(`document.querySelectorAll('[data-testid=outline-item]')[0]`)
   await ui.waitFor(
-    `${FIRST_RENDERED} && (() => { const r = ${THREAD}.querySelector('[data-item-id="1"]').getBoundingClientRect(); const box = ${SCROLLER}.getBoundingClientRect(); return r.top >= box.top - 5 && r.top < box.bottom })()`
+    `${FIRST_RENDERED} && (() => { const r = ${THREAD}.querySelector('[data-item-id="1"]').getBoundingClientRect(); const box = ${SCROLLER}.getBoundingClientRect(); return r.top >= box.top - 5 && r.top < box.bottom })()`,
+    60_000
   )
-  check(true, 'sommaire : premier message rendu et amené à l’écran')
+  const revealMs = Date.now() - revealStart
+  console.log(`    sommaire vers le premier message (tout le fil rendu) : ${revealMs} ms`)
+  check(
+    revealMs < BUDGET.revealFirstMs,
+    `sommaire : premier message rendu et amené à l’écran en < ${BUDGET.revealFirstMs} ms`
+  )
   await ui.click(ui.$('scroll-to-bottom'))
   await ui.waitFor(
     `(() => { const s = ${SCROLLER}; return s.scrollHeight - s.scrollTop - s.clientHeight < 60 })()`

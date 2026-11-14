@@ -53,6 +53,13 @@ pnpm pilote arreter
   et Claude n'y tape pas de mot de passe. `--agent-factice <scénario>` : l'agent factice imposé
   (build de développement seulement, jamais dans l'app packagée). Une seule instance pilotée à la
   fois.
+- **`lancer --dossier <projet>`** : Bobine ouverte sur ce dossier (comme `bobine <dossier>`, fiche
+  158). Sur le profil temporaire, l'accueil demande encore « Où travailler ? » : le premier
+  « Choisir… » rend ce dossier sans la fenêtre de macOS (`BOBINE_PRESET_FOLDER`, une seule fois ;
+  les choix suivants ouvrent la vraie fenêtre). L'accueil se joue donc en entier, par computer use
+  ou `pnpm pilote cliquer "Choisir…"`. Avec `--profil`, rien n'est préréglé. Bobine ne suit cette
+  variable que sur un profil temporaire (`--profil-temporaire`) : ailleurs, elle l'ignore et le dit
+  une fois au journal (niveau Détaillé).
 - **`arreter`** : quitte cette instance et elle seule (SIGTERM, puis SIGKILL à son groupe de
   processus au bout de 10 s), par son pid, après avoir vérifié que ce pid porte bien le port de
   débogage du pilote (un pid réutilisé par un autre programme n'est jamais tué). Après un SIGKILL,
@@ -83,7 +90,10 @@ pnpm pilote arreter
 - **`capture`** : PNG dans `captures/` du journal ; `--demi` : moitié de la taille ; `--zone` :
   le fil, la dernière carte, le panneau, ou la fenêtre (défaut).
 - **Actions de secours** (`envoyer`, `repondre`, `cliquer`, `panneau`) : de vrais évènements
-  souris et clavier envoyés par le protocole DevTools, pas `element.click()`. `repondre` attend
+  souris et clavier envoyés par le protocole DevTools, pas `element.click()`. `envoyer` vide d'abord
+  la zone de saisie (⌘A puis ⌫ : un brouillon ne part pas avec le message), vérifie qu'elle contient
+  exactement le texte, puis Entrée ; s'il ne part pas, l'erreur dit ce qui reste dans la zone (les
+  pièces jointes, elles, restent). `repondre` attend
   que la carte soit armée (fiche 203). `cliquer` vise l'élément cliquable visible dont le nom
   (texte ou `aria-label`) vaut le libellé, à défaut le contient ; s'il ne le trouve pas, il liste
   ce qui est cliquable. Computer use reste le chemin principal ; ces actions servent aux essais et
@@ -110,7 +120,8 @@ Dossier du pilote : `BOBINE_PILOTE_DIR`, sinon `.pilote/` à la racine du dépô
 Boucle type d'une étape :
 
 1. `pnpm pilote lancer --dossier ~/carnet` (ou l'app installée : `--app /Applications/Bobine.app`).
-2. Computer use : cliquer, choisir un dossier dans la fenêtre de macOS, taper la demande, Entrée.
+2. Computer use : passer l'accueil (« Choisir… » prend le dossier de `--dossier`, sans fenêtre de
+   macOS), taper la demande, Entrée.
 3. `pnpm pilote attendre` : rien ne se dépense pendant que l'agent travaille.
 4. Selon la raison : `carte` → lire la carte dans la sortie, décider, cliquer le bouton (computer
    use ; `repondre` en secours) ; `tour-fini` → juger la réponse (`etat --long`, une capture si
@@ -145,7 +156,8 @@ casser le reste ; la suite e2e `pilote` le voit.
 ## Limites
 
 - Fenêtre principale seulement : ni la fenêtre rapide, ni l'aide, ni les fenêtres de macOS
-  (choix de dossier, trousseau, navigateur du SSO), qui restent à computer use.
+  (choix de dossier — sauf le premier, avec `--dossier` —, trousseau, navigateur du SSO), qui
+  restent à computer use.
 - La page du navigateur intégré et l'écran du simulateur sont des vues natives : absentes des
   captures du pilote (computer use les voit).
 - `attendre` juge sur ce qui est à l'écran : un tour qui avance sans rien afficher ressemble à un

@@ -690,3 +690,11 @@ autorisation, puis `tools/call`.
   reprendre la fille**, tandis qu’OpenCode la reprend et corrige le fichier. Le choix appartient
   au modèle, il ne découle pas automatiquement d’ACP.
   Consignes consultables et résultats détaillés : [fiche 150](150-consignes-conversations-filles.md).
+- 2026-11-15 — Nuit de stabilité : « réveil groupé » échouait parfois sous charge (un seul compte
+  rendu au réveil au lieu de deux). L'essai lançait les deux filles mère au repos : la première
+  pouvait finir avant que la seconde soit lancée (worktrees à la file), et la mère était réveillée
+  pour elle seule, ce qui est le comportement voulu. Un vrai `start_child` lance les filles pendant
+  un tour de la mère : l'essai le fait maintenant (tour de la mère qui attend un accord pendant les
+  deux lancements). Même nuit, `SubtasksMerge.test.tsx` : « Abandonner » cliqué pendant que
+  « Réessayer » tournait encore (bouton désactivé, clic perdu sous charge) ; l'essai attend que le
+  bouton revienne.

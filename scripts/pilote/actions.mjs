@@ -88,33 +88,49 @@ export async function answerCard(page, label) {
 
 /** Zone de saisie de la conversation. */
 const COMPOSER = '[data-testid=composer-input]'
+/** Touche ⌘ des évènements du protocole DevTools (`modifiers`). */
+const META = 4
 
 /**
- * Écrit le texte dans la zone de saisie et l'envoie (Entrée). Vérifie que le message est parti :
- * un nouveau message de l'utilisateur dans le fil, ou la zone vidée (message mis en file).
+ * Écrit le texte dans la zone de saisie et l'envoie (Entrée). La zone est d'abord vidée comme au
+ * clavier (⌘A puis ⌫) : un brouillon laissé là partirait avec le message, et le texte serait
+ * inséré au curseur. Vérifie que la zone contient exactement le texte avant Entrée, puis que le
+ * message est parti : un nouveau message de l'utilisateur dans le fil, ou la zone vidée (message
+ * mis en file). Sinon, une erreur dit ce qui reste dans la zone.
  */
 export async function sendMessage(page, text) {
   if (!(await page.ev(`!!document.querySelector('${COMPOSER}')`))) {
     throw new Error('pas de zone de saisie à l’écran (accueil, réglages ouverts ?)')
   }
   const users = `document.querySelectorAll('.msg-user').length`
+  const value = `(document.querySelector('${COMPOSER}')?.value ?? '')`
   const before = await page.ev(users)
   const box = await page.ev(
     `(() => { const b = document.querySelector('${COMPOSER}').getBoundingClientRect(); return { x: b.x + 20, y: b.y + b.height / 2 } })()`
   )
   await page.mouse(box.x, box.y)
   await page.ev(`document.querySelector('${COMPOSER}').focus()`)
+  if ((await page.ev(value)) !== '') {
+    await page.key('a', { code: 'KeyA', modifiers: META, commands: ['selectAll'] })
+    await page.key('Backspace', { commands: ['deleteBackward'] })
+    const left = await page.ev(value)
+    if (left !== '') throw new Error(`zone de saisie pas vidée : « ${left.slice(0, 120)} »`)
+  }
   await page.insertText(text)
-  await sleep(100)
+  const typed = await page.ev(value)
+  if (typed !== text) {
+    throw new Error(`zone de saisie : « ${typed.slice(0, 120)} » au lieu du message`)
+  }
   await page.key('Enter')
+  let state = { users: before, value: typed }
   for (let i = 0; i < 50; i++) {
-    const state = await page.ev(
-      `({ users: ${users}, value: document.querySelector('${COMPOSER}')?.value ?? '' })`
-    )
+    state = await page.ev(`({ users: ${users}, value: ${value} })`)
     if (state.users > before || state.value.trim() === '') return
     await sleep(100)
   }
-  throw new Error('message pas parti (toujours dans la zone de saisie)')
+  throw new Error(
+    `message pas parti : toujours dans la zone de saisie (« ${state.value.slice(0, 120)} »)`
+  )
 }
 
 /** Centre d'un élément (sélecteur), ou rien s'il n'est pas à l'écran. */

@@ -10,6 +10,20 @@ describe('commande longue en tâche de fond', () => {
     expect(runningJobs()).toBe(0)
   })
 
+  it('sortie lue jusqu’au bout : les dernières lignes ne se perdent pas à la sortie du processus', async () => {
+    // À la sortie (`exit`), les tubes peuvent encore contenir de la sortie : sous charge, le
+    // travail finissait sans ses dernières lignes. Il finit maintenant à `close`.
+    const job = startCommandJob(
+      '/bin/sh',
+      ['-c', 'i=0; while [ $i -lt 1500 ]; do echo "ligne $i"; i=$((i+1)); done; echo fin >&2'],
+      { cwd: '/' }
+    )
+    expect(await waitAtMost(job, 10_000)).toBe(true)
+    expect(job.status).toBe('succeeded')
+    expect(job.lines).toHaveLength(1501)
+    expect(job.lines).toEqual(expect.arrayContaining(['ligne 0', 'ligne 1499', 'fin']))
+  })
+
   it('l’agent raccroche (fiche 195) : l’attente s’arrête, le travail continue', async () => {
     const job = startCommandJob('/bin/sh', ['-c', 'sleep 30'], { cwd: '/' })
     const gone = new AbortController()

@@ -949,11 +949,18 @@ describe('ConversationManager', () => {
     )
 
     const { manager } = env.launch()
-    let maxGap = 0
-    let last = Date.now()
+    // Plus long bloc synchrone entre deux tours de la boucle, mesuré en temps processeur de ce
+    // fil (`threadCpuUsage`), pas à l'horloge : sous charge (verify, e2e en parallèle), le système
+    // suspend le processus des dizaines de millisecondes sans que la recherche y soit pour rien,
+    // et l'horloge comptait cette attente (103 ms vus en CI). Le temps processeur du fil, lui, ne
+    // compte que le travail fait entre deux tours, celui de la recherche : 12 à 16 ms au plus sur
+    // un Mac au repos pour des fichiers de 0,7 Mo (lecture, puis texte plié, en deux tours).
+    let maxBlockMs = 0
+    let last = process.threadCpuUsage()
     const probe = setInterval(() => {
-      const now = Date.now()
-      maxGap = Math.max(maxGap, now - last)
+      const now = process.threadCpuUsage()
+      const spentMs = (now.user - last.user + now.system - last.system) / 1000
+      maxBlockMs = Math.max(maxBlockMs, spentMs)
       last = now
     }, 5)
     const hits = await manager.search('aiguille botte')
@@ -961,7 +968,7 @@ describe('ConversationManager', () => {
     expect(hits.map((h) => h.id)).toEqual(['ancienne-3'])
     // Aucun fil gardé en mémoire, et la boucle d'évènements a tourné entre deux fichiers.
     expect(manager.loadedTranscripts()).toEqual([])
-    expect(maxGap).toBeLessThan(100)
+    expect(maxBlockMs).toBeLessThan(100)
 
     // Deuxième recherche : plus aucune lecture de fil.
     const read = vi.spyOn(ConversationStore.prototype, 'readTranscriptAsync')

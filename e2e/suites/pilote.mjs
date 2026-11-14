@@ -1,13 +1,15 @@
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
+import { connect } from '../../scripts/pilote/cdp.mjs'
 import { L, LANG, M, NEUTRAL_AGENT_ENV, NEUTRAL_ENV, PORT, check, captures, root } from '../lib.mjs'
 
 /**
  * Pilote de Bobine (fiche 206) : la commande elle-même, telle que Claude s'en sert pendant une
- * session longue, contre l'app buildée et l'agent factice. Lancement sur un profil temporaire,
- * accueil, carte d'autorisation (`attendre` → `carte`), réponse, tour fini, tour figé (`calme`),
+ * session longue, contre l'app buildée et l'agent factice. Lancement sur un profil temporaire
+ * avec `--dossier` (l'accueil le prend par « Choisir… », sans fenêtre de macOS), envoi par-dessus
+ * un brouillon (la zone est vidée d'abord), carte d'autorisation (`attendre` → `carte`), réponse, tour fini, tour figé (`calme`),
  * Arrêter, notes et intervention, résumé du journal, arrêt de cette instance seulement.
  * `pnpm e2e pilote --lang en` : la même chose en anglais (libellés par `L`, agent par `M`).
  */
@@ -37,9 +39,21 @@ export async function piloteSuite() {
     return { code: r.status, out: r.stdout ?? '', err: r.stderr ?? '' }
   }
   const instance = () => JSON.parse(readFileSync(join(dir, 'pilote', 'instance.json'), 'utf8'))
+  // Le projet du testeur : `--dossier`, repris par l'étape « Où travailler ? » de l'accueil.
+  const project = join(dir, 'projet-du-pilote')
+  mkdirSync(project)
+  /** Évalue dans la fenêtre de Bobine, comme les essais (hors des commandes du pilote). */
+  const inPage = async (expression) => {
+    const page = await connect(PORT)
+    try {
+      return await page.ev(expression)
+    } finally {
+      page.close()
+    }
+  }
   let pid
   try {
-    const launched = pilote('lancer', '--port', String(PORT), '--lang', LANG)
+    const launched = pilote('lancer', '--port', String(PORT), '--lang', LANG, '--dossier', project)
     check(launched.code === 0, `lancer : Bobine démarrée (${launched.err.trim() || 'ok'})`)
     pid = instance().pid
     check(
@@ -55,8 +69,16 @@ export async function piloteSuite() {
       `attendre : étape suivante de l’accueil (${firstLine(wait)})`
     )
     pilote('cliquer', L('onboarding.continue'))
-    pilote('cliquer', L('onboarding.folder.create'))
+    const chosen = pilote('cliquer', L('onboarding.folder.choose'))
+    check(chosen.code === 0, `accueil : « Choisir… » (${chosen.err.trim() || chosen.out.trim()})`)
     pilote('attendre', '--max', '30s')
+    const workspace = await inPage(
+      `(async () => { const s = await window.api.conversations.get(); return !!document.querySelector('[data-testid=onboarding-send]') && s.conversations.find((c) => c.id === s.activeId)?.workspace })()`
+    )
+    check(
+      typeof workspace === 'string' && workspace.endsWith(`/${basename(project)}`),
+      'lancer --dossier : l’accueil travaille dans ce dossier, sans fenêtre de macOS'
+    )
     pilote('cliquer', L('onboarding.trial.send'))
     wait = pilote('attendre', '--max', '30s')
     check(wait.out.includes(L('onboarding.start')), 'accueil : essai fini, « Commencer » proposé')
@@ -69,9 +91,21 @@ export async function piloteSuite() {
       'etat : agent prêt, accueil fini'
     )
 
-    // Carte d'autorisation.
+    // Carte d'autorisation, envoyée par-dessus un brouillon laissé dans la zone de saisie.
+    await inPage(`(() => {
+      const input = document.querySelector('[data-testid=composer-input]')
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, 'brouillon à jeter ')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.setSelectionRange(0, 0)
+      return true
+    })()`)
     const sent = pilote('envoyer', '/scenario permission')
     check(sent.code === 0, `envoyer : message parti (${sent.err.trim() || sent.out.trim()})`)
+    check(
+      (await inPage(`[...document.querySelectorAll('.msg-user')].at(-1)?.innerText.trim()`)) ===
+        '/scenario permission',
+      'envoyer : zone vidée d’abord, le brouillon ne part pas avec le message'
+    )
     wait = pilote('attendre', '--max', '60s')
     check(wait.code === 10 && wait.out.startsWith('carte'), `attendre → carte (${firstLine(wait)})`)
     const withCard = pilote('etat')

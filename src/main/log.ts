@@ -157,6 +157,10 @@ function write(level: LogLevel, message: string, details: unknown[]): void {
 }
 
 export const log = {
+  /** Détail de débogage : écrit seulement au niveau Détaillé ou Trace (fiche 080). */
+  debug: (message: string, ...details: unknown[]) => {
+    if (logs('detailed')) write('debug', message, details)
+  },
   info: (message: string, ...details: unknown[]) => write('info', message, details),
   warn: (message: string, ...details: unknown[]) => write('warn', message, details),
   error: (message: string, ...details: unknown[]) => write('error', message, details)

@@ -5,6 +5,8 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog } from 'electron'
 import { t } from 'i18next'
+import { TEMPORARY_SWITCH } from './fresh-start'
+import { log } from './log'
 
 export async function chooseFiles(defaultPath: string): Promise<string[]> {
   const options = {
@@ -20,12 +22,35 @@ export async function chooseFiles(defaultPath: string): Promise<string[]> {
   return result.canceled ? [] : result.filePaths
 }
 
+/**
+ * Réponse du premier choix de dossier, sans la fenêtre de macOS (`BOBINE_PRESET_FOLDER`, pilote,
+ * fiche 206) : `pnpm pilote lancer --dossier <d>` sur un profil neuf passe l'étape « Où
+ * travailler ? » de l'accueil par « Choisir… », que le pilote ne sait pas conduire dans la fenêtre
+ * de macOS. Une seule fois : les choix suivants ouvrent la vraie fenêtre.
+ *
+ * Crochet d'essai : suivi **seulement sur un profil temporaire** (`--profil-temporaire`, fiche
+ * 148), celui du pilote. Ailleurs (profil de l'utilisateur, app installée), la variable est
+ * ignorée, et dite une fois au journal (niveau Détaillé). Pur, testé.
+ */
+export function takePresetFolder(env: NodeJS.ProcessEnv, temporaryProfile: boolean): string | null {
+  const folder = env['BOBINE_PRESET_FOLDER']?.trim()
+  delete env['BOBINE_PRESET_FOLDER']
+  if (!folder) return null
+  if (!temporaryProfile) {
+    log.debug('BOBINE_PRESET_FOLDER ignorée : profil temporaire seulement (--profil-temporaire)')
+    return null
+  }
+  return folder
+}
+
 export async function chooseDirectory(
   labels: { title: string; buttonLabel: string } = {
     title: t('dialogs.workspace.title'),
     buttonLabel: t('dialogs.workspace.button')
   }
 ): Promise<string | null> {
+  const preset = takePresetFolder(process.env, app.commandLine.hasSwitch(TEMPORARY_SWITCH))
+  if (preset) return preset
   const options = {
     ...labels,
     properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[]

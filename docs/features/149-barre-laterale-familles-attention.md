@@ -184,6 +184,18 @@ font partie des changements.
     lancement, navigation, accord, lecture et transition de création. L'aperçu navigateur local
     a été refusé par la politique des URL `file:` ; pas de validation visuelle des maquettes
     dans un navigateur. Les captures Electron concernent le produit actuel.
+- 2026-11-15 — Nuit de stabilité : « survol prolongé : une seule infobulle » échouait parfois sous
+  charge (suites `history`, `roles-gestion`), suivi de `TypeError: Cannot read properties of null
+  (reading 'scrollWidth')`. Cette erreur venait de l'essai lui-même (`ui.ev` de
+  `e2e/sidebar-tooltip.mjs` qui lisait la bulle déjà fermée), pas de l'app : les bulles de l'app
+  ne lisent jamais `scrollWidth`, et celle des `title` (`title-tooltips.ts`) vérifie déjà
+  `isConnected` et annule son minuteur. Ni la souris réelle ni une fenêtre d'une autre suite
+  n'atteignent une fenêtre d'essai (vérifié : fenêtre d'une autre app ouverte puis fermée dessus,
+  souris de macOS déplacée dessus, aucun évènement reçu). L'essai attend maintenant sur des
+  conditions réelles : un enregistreur dans la page compte les bulles ouvertes à chaque changement
+  pendant le survol (la propriété vérifiée : jamais deux), et note ce qui a pu fermer la bulle
+  (ligne détachée ou déplacée, pointeur sorti, défilement) ; une bulle fermée ainsi est rouverte
+  une fois, en le disant ; sinon l'échec dit ce qui a été vu au lieu d'une erreur de page.
 
 ## Direction après relecture des maquettes
 

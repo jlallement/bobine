@@ -99,16 +99,21 @@ export async function connect(port) {
       await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 })
     }
   }
-  const key = async (name, { modifiers = 0 } = {}) => {
-    const codes = { Enter: 13, Escape: 27, Tab: 9 }
+  /**
+   * Une touche. `commands` : commandes d'édition de macOS qu'elle déclenche (`selectAll` pour ⌘A,
+   * `deleteBackward` pour ⌫) ; sans elles, Chromium ne les exécute pas pour une touche simulée.
+   */
+  const key = async (name, { modifiers = 0, code = name, commands } = {}) => {
+    const codes = { Enter: 13, Escape: 27, Tab: 9, Backspace: 8, a: 65 }
     for (const type of ['keyDown', 'keyUp']) {
       await send('Input.dispatchKeyEvent', {
         type,
         key: name,
-        code: name,
+        code,
         modifiers,
         windowsVirtualKeyCode: codes[name] ?? 0,
-        ...(type === 'keyDown' && name === 'Enter' ? { text: '\r' } : {})
+        ...(type === 'keyDown' && name === 'Enter' ? { text: '\r' } : {}),
+        ...(type === 'keyDown' && commands ? { commands } : {})
       })
     }
   }

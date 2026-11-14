@@ -13,6 +13,9 @@ What changes for you, version by version. Shown in Settings › About.
   opened from a chat, targets your project folder rather than the chat's.
 - Header of a child conversation in a narrow window: the title shortens first, then the
   “read-only” pill shrinks to its icon (the text in a tooltip), instead of being cut mid-word.
+- Long thread: jumping to an early message from the outline, or searching the thread, no longer
+  freezes the app (17 s on a 1,250-exchange thread, just over a second now); scrolling up the
+  thread is smoother too.
 
 ## 1.0.0-beta.4 — November 14, 2026
 
