@@ -129,7 +129,11 @@ Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer da
 - [ ] Reprise après redémarrage : `space` relu de l'index (`withSpace`) ; pas d'essai de bout en
       bout du redémarrage.
 - [x] Testé contre l'agent factice : scénarios `discussion-document` et `discussion-commande` ;
-      e2e `discussion` en clair et sombre ; textes en `fr.json` et `en.json`.
+      e2e `discussion` en clair et sombre (vert le 2026-11-14, captures `discussion-1` à `-5`
+      regardées) ; textes en `fr.json` et `en.json`. **À faire avant fusion** : `App.tsx`,
+      `Sidebar.tsx`, `Composer.tsx`, `shared/agent.ts` et `shared/ipc.ts` sont des sources
+      communes à toutes les suites — la suite complète doit tourner (non lancée ici, consigne du
+      tech lead).
 - [x] Bob réel et OpenCode : approbation du dossier, lecture et production d'un Word et d'un
       Excel relevées dans `docs/acp.md` (2026-11-14).
 

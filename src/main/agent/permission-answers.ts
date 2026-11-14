@@ -74,7 +74,8 @@ function writeAreaAnswer(
       params.options.find((o) => o.kind === 'reject_always'))
   if (!option && allowed) return undefined
   // Le fichier, pas le titre de l'outil : son nom dans les documents, le chemin s'il sort.
-  const shown = allowed ? basename(paths[0] ?? '') : (paths.find((p) => !isInside(area, p)) ?? '')
+  const outside = paths.find((p) => !isInside(area, p))
+  const shown = allowed ? basename(paths[0] ?? '') : outside ? resolve(area, outside) : ''
   rules.notify?.(writeAreaNotice(shown, allowed))
   return option ? selected(option.optionId) : { outcome: { outcome: 'cancelled' } }
 }
