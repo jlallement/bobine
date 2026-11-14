@@ -396,6 +396,18 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     const env = environment()
     const { manager, children, items } = env
     const mother = await env.mother()
+    // Comme un vrai `start_child` : les deux filles sont lancées pendant un tour de la mère (ici,
+    // un tour qui attend un accord). Lancées mère au repos, la première pouvait finir avant que la
+    // seconde soit lancée (worktrees à la file, sous charge), et la mère était réveillée avec un
+    // seul compte rendu : c'était l'essai, pas le réveil groupé.
+    const permission = () => {
+      const tool = items(mother).findLast(
+        (i) => i.kind === 'tool' && i.permission?.state === 'pending'
+      )
+      return tool?.kind === 'tool' ? tool.permission?.requestId : undefined
+    }
+    void manager.prompt(mother, '/scenario permission')
+    await waitFor(() => !!permission())
     const a = await children.start(
       mother,
       { text: 'Fais A', title: 'Import CSV', profileId: 'modifs' },
@@ -409,6 +421,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     })
     await children.start(mother, { text: 'Fais B', profileId: 'echo' }, 'agent')
     expect(children.holds(mother)).toBe(true)
+    manager.respondPermission(mother, permission() ?? '', 'allow')
 
     await waitFor(() => env.wakes(mother) === 1)
     await waitFor(() => manager.view(mother).summary.status === 'ready')
