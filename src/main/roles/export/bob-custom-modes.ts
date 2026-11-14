@@ -115,6 +115,9 @@ export const BOB_CUSTOM_MODES: RoleExportAdapter = {
         : join(root, '.bob', 'custom_modes.yaml')
     return { file, root, shown: shownPath(file, root, scope) }
   },
+  listedAs: (role) => role.label,
+  sharedFile: true,
+  replacesBasePrompt: false,
   reserved: BOB_RESERVED,
   entryText: (role) =>
     withNewline(new Document({ customModes: [bobModeEntry(role)] }).toString(OPTIONS)),

@@ -45,6 +45,12 @@ export interface RoleExportAdapter {
     loc: ExportLocations,
     workspace?: string
   ) => { file: string; root: string; shown: string }
+  /** Nom sous lequel l'agent liste le rôle (son libellé, ou son identifiant). */
+  listedAs: (role: ExportedRole) => string
+  /** Fichier partagé avec d'autres modes (seule notre entrée y est écrite), ou un fichier à nous. */
+  sharedFile: boolean
+  /** La consigne remplace la consigne de base de l'agent pour ce mode. */
+  replacesBasePrompt: boolean
   /** Identifiants que l'agent garde pour lui (comparés sans la casse). */
   reserved: readonly string[]
   /** Texte montré par « Voir ce qui sera écrit » : l'entrée du mode, ou le fichier entier. */

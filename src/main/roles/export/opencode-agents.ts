@@ -62,6 +62,9 @@ export const OPENCODE_AGENTS: RoleExportAdapter = {
     // `XDG_CONFIG_HOME` hors du dossier personnel : chemin affiché en entier.
     return { file, root, shown: shownPath(file, root, scope) }
   },
+  listedAs: (role) => role.id,
+  sharedFile: false,
+  replacesBasePrompt: true,
   reserved: OPENCODE_RESERVED,
   entryText: openCodeAgentFile,
   fingerprintOf: (role) => fingerprint(openCodeAgentFile(role)),

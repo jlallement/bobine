@@ -4963,6 +4963,80 @@ export type FrResources = {
       readonly saveAsUser: 'Enregistrer en rôle personnel'
     }
   }
+  readonly roleExport: {
+    readonly button: 'Installer dans…'
+    readonly saveFirst: 'Enregistrez d’abord vos modifications.'
+    readonly menuHint: 'Seuls les agents installés qui savent recevoir un rôle sont proposés.'
+    readonly title: 'Installer « {{label}} » dans {{agent}}'
+    readonly where: 'Où'
+    readonly scope: {
+      readonly user: 'Pour vous, dans tous vos projets'
+      readonly project: 'Ce projet seulement'
+    }
+    readonly scopeShort: { readonly user: 'pour vous'; readonly project: 'ce projet' }
+    readonly projectNote: 'Partagé par git : à committer. Absent des filles en arbre de travail tant qu’il n’est pas commité.'
+    readonly rights: 'Droits dans {{agent}}'
+    readonly backup: 'Sauvegarde'
+    readonly later: 'Les changements suivants du rôle ne sont pas recopiés tout seuls : Bobine vous proposera « Mettre à jour ».'
+    readonly showText: 'Voir ce qui sera écrit'
+    readonly hideText: 'Masquer ce qui sera écrit'
+    readonly textLabel: 'Texte écrit dans {{file}}'
+    readonly install: 'Installer'
+    readonly installing: 'Installation…'
+    readonly useHintReadOnly: 'La lecture seule est alors tenue par {{agent}} lui-même, pas seulement demandée.'
+    readonly format: {
+      readonly 'bob-custom-modes': {
+        readonly menu: 'un mode de Bob (Bob Shell, Bob IDE, Bobine)'
+        readonly intro: '{{agent}} l’affichera parmi ses modes (Agent, Plan, Ask, … {{label}}), dans Bob Shell, Bob IDE et Bobine.'
+        readonly userNote: 'Fichier partagé avec Bob IDE : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.'
+        readonly kind: 'Mode'
+        readonly readOnly: 'lecture seule : lire et outils (ni écriture, ni commandes)'
+        readonly readWrite: 'lire, modifier, lancer des commandes, outils'
+        readonly backup: 'copie du fichier avant d’écrire, dans les données de Bobine'
+        readonly use: 'Dans Bobine, lancer ce rôle dans ce mode de Bob'
+        readonly foreign: '{{agent}} a déjà un mode « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
+        readonly prompt: 'devient la définition du mode (`roleDefinition`)'
+        readonly promptLabel: 'Consigne'
+      }
+      readonly 'opencode-agents': {
+        readonly menu: 'un agent d’OpenCode'
+        readonly intro: '{{agent}} l’affichera parmi ses agents (build, plan, … {{label}}), dans son terminal et dans Bobine.'
+        readonly kind: 'Agent'
+        readonly readOnly: 'lecture seule : modifications et commandes refusées'
+        readonly readWrite: 'modifications et commandes permises, selon vos réglages d’OpenCode'
+        readonly prompt: 'remplace la consigne de base d’OpenCode pour cet agent'
+        readonly promptLabel: 'Consigne'
+        readonly backup: 'si un fichier du même nom existe, copie avant d’écrire'
+        readonly use: 'Dans Bobine, lancer ce rôle avec cet agent d’OpenCode'
+        readonly foreign: '{{agent}} a déjà un agent « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.'
+        readonly userNote: 'Un fichier pour cet agent seulement : rien d’autre n’y est écrit.'
+      }
+    }
+    readonly status: {
+      readonly installed: 'Installé dans {{agent}}'
+      readonly upToDate: 'à jour'
+      readonly roleChanged: 'le rôle a changé depuis'
+      readonly handEdited: 'modifié à la main depuis'
+      readonly missing: 'n’est plus dans le fichier'
+      readonly unreadable: 'fichier illisible : rien n’est fait'
+      readonly update: 'Mettre à jour'
+      readonly replace: 'Remplacer'
+      readonly reinstall: 'Réinstaller'
+      readonly remove: 'Retirer'
+      readonly replaceConfirm: 'Remplacer « {{id}} », modifié à la main depuis, par le rôle ? Le fichier est copié avant.'
+      readonly removeConfirm: 'Retirer « {{id}} », modifié à la main depuis ? Le fichier est copié avant.'
+    }
+    readonly error: {
+      readonly reserved: '« {{id}} » est un nom réservé par {{agent}} : changez l’identifiant du rôle pour l’installer.'
+      readonly handEdited: '« {{id}} » a été modifié à la main depuis : rien n’a été changé.'
+      readonly link: '{{file}} passe par un lien symbolique : Bobine n’y écrit pas.'
+      readonly invalidFile: '{{file}} ne se lit pas comme prévu ({{detail}}) : Bobine ne le réécrit pas.'
+      readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
+      readonly unsupported: 'Cet agent ne sait pas recevoir de rôle.'
+      readonly changed: '{{file}} a changé pendant l’écriture, à chaque essai : rien n’a été écrit.'
+      readonly writeFailed: 'Écriture impossible dans {{file}} : {{detail}}'
+    }
+  }
   readonly team: {
     readonly title: 'Équipe'
     readonly new: 'Nouveau rôle…'

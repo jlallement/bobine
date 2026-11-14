@@ -71,8 +71,14 @@ export interface RoleExportPreview {
   format: RoleExportFormat
   /** Identifiant du mode ou de l'agent (le nom du rôle). */
   id: string
-  /** Nom affiché dans l'agent (libellé du rôle). */
+  /** Libellé du rôle. */
   label: string
+  /** Nom sous lequel l'agent le liste (libellé pour un mode de Bob, identifiant pour OpenCode). */
+  listedAs: string
+  /** Fichier partagé avec d'autres modes : seule l'entrée de Bobine y est écrite. */
+  sharedFile: boolean
+  /** La consigne remplace la consigne de base de l'agent. */
+  replacesBasePrompt: boolean
   readOnly: boolean
   /** Portée proposée d'abord : celle du rôle (projet → ce projet). */
   defaultScope: RoleExportScope

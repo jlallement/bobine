@@ -15,6 +15,7 @@ import {
 import { invokeRole, openRoleWizard, rolesChanged, useRolesListing } from '../../roles/roles-store'
 import { ConfirmRow } from '../settings/ConfirmRow'
 import { RoleAvatar } from './RoleAvatar'
+import { useRoleExport } from './RoleExportStatus'
 import {
   AgentFields,
   AppearanceFields,
@@ -121,6 +122,12 @@ function RoleEditForm(
   const target = builtin ? 'user' : role.scope === 'project' ? 'project' : 'user'
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftFromRole(role))
   const options = props.conversationId ? { conversationId: props.conversationId } : {}
+  // « Installer dans… » (phase 4) : bouton dans l'en-tête, lignes d'état dessous.
+  const exported = useRoleExport({
+    role: { scope: role.scope, name: role.name, ...options, icon: role.icon, color: role.color },
+    profiles: props.profiles,
+    dirty
+  })
 
   const change: DraftChange = (next) => {
     props.onDraft(next)
@@ -216,6 +223,7 @@ function RoleEditForm(
             <Copy size={13} aria-hidden />
             {t('rolesSettings.edit.duplicate')}
           </button>
+          {exported.button}
           {!builtin && (
             <button
               className="btn small danger"
@@ -228,6 +236,7 @@ function RoleEditForm(
           )}
         </div>
       </div>
+      {exported.panel}
       {confirmDelete && (
         <ConfirmRow
           message={t('rolesSettings.edit.deleteConfirm', { label: role.label })}

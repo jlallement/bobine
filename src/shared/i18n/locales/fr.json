@@ -5145,6 +5145,83 @@
       "saveAsUser": "Enregistrer en rôle personnel"
     }
   },
+  "roleExport": {
+    "button": "Installer dans…",
+    "saveFirst": "Enregistrez d’abord vos modifications.",
+    "menuHint": "Seuls les agents installés qui savent recevoir un rôle sont proposés.",
+    "title": "Installer « {{label}} » dans {{agent}}",
+    "where": "Où",
+    "scope": {
+      "user": "Pour vous, dans tous vos projets",
+      "project": "Ce projet seulement"
+    },
+    "scopeShort": {
+      "user": "pour vous",
+      "project": "ce projet"
+    },
+    "projectNote": "Partagé par git : à committer. Absent des filles en arbre de travail tant qu’il n’est pas commité.",
+    "rights": "Droits dans {{agent}}",
+    "backup": "Sauvegarde",
+    "later": "Les changements suivants du rôle ne sont pas recopiés tout seuls : Bobine vous proposera « Mettre à jour ».",
+    "showText": "Voir ce qui sera écrit",
+    "hideText": "Masquer ce qui sera écrit",
+    "textLabel": "Texte écrit dans {{file}}",
+    "install": "Installer",
+    "installing": "Installation…",
+    "useHintReadOnly": "La lecture seule est alors tenue par {{agent}} lui-même, pas seulement demandée.",
+    "format": {
+      "bob-custom-modes": {
+        "menu": "un mode de Bob (Bob Shell, Bob IDE, Bobine)",
+        "intro": "{{agent}} l’affichera parmi ses modes (Agent, Plan, Ask, … {{label}}), dans Bob Shell, Bob IDE et Bobine.",
+        "userNote": "Fichier partagé avec Bob IDE : seul le mode « {{id}} » est ajouté, le reste du fichier et ses commentaires restent tels quels.",
+        "kind": "Mode",
+        "readOnly": "lecture seule : lire et outils (ni écriture, ni commandes)",
+        "readWrite": "lire, modifier, lancer des commandes, outils",
+        "backup": "copie du fichier avant d’écrire, dans les données de Bobine",
+        "use": "Dans Bobine, lancer ce rôle dans ce mode de Bob",
+        "foreign": "{{agent}} a déjà un mode « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.",
+        "prompt": "devient la définition du mode (`roleDefinition`)",
+        "promptLabel": "Consigne"
+      },
+      "opencode-agents": {
+        "menu": "un agent d’OpenCode",
+        "intro": "{{agent}} l’affichera parmi ses agents (build, plan, … {{label}}), dans son terminal et dans Bobine.",
+        "kind": "Agent",
+        "readOnly": "lecture seule : modifications et commandes refusées",
+        "readWrite": "modifications et commandes permises, selon vos réglages d’OpenCode",
+        "prompt": "remplace la consigne de base d’OpenCode pour cet agent",
+        "promptLabel": "Consigne",
+        "backup": "si un fichier du même nom existe, copie avant d’écrire",
+        "use": "Dans Bobine, lancer ce rôle avec cet agent d’OpenCode",
+        "foreign": "{{agent}} a déjà un agent « {{id}} » que Bobine n’a pas écrit : rien n’a été changé. Changez l’identifiant du rôle pour l’installer.",
+        "userNote": "Un fichier pour cet agent seulement : rien d’autre n’y est écrit."
+      }
+    },
+    "status": {
+      "installed": "Installé dans {{agent}}",
+      "upToDate": "à jour",
+      "roleChanged": "le rôle a changé depuis",
+      "handEdited": "modifié à la main depuis",
+      "missing": "n’est plus dans le fichier",
+      "unreadable": "fichier illisible : rien n’est fait",
+      "update": "Mettre à jour",
+      "replace": "Remplacer",
+      "reinstall": "Réinstaller",
+      "remove": "Retirer",
+      "replaceConfirm": "Remplacer « {{id}} », modifié à la main depuis, par le rôle ? Le fichier est copié avant.",
+      "removeConfirm": "Retirer « {{id}} », modifié à la main depuis ? Le fichier est copié avant."
+    },
+    "error": {
+      "reserved": "« {{id}} » est un nom réservé par {{agent}} : changez l’identifiant du rôle pour l’installer.",
+      "handEdited": "« {{id}} » a été modifié à la main depuis : rien n’a été changé.",
+      "link": "{{file}} passe par un lien symbolique : Bobine n’y écrit pas.",
+      "invalidFile": "{{file}} ne se lit pas comme prévu ({{detail}}) : Bobine ne le réécrit pas.",
+      "noProject": "Cette conversation n’a pas de dossier de projet.",
+      "unsupported": "Cet agent ne sait pas recevoir de rôle.",
+      "changed": "{{file}} a changé pendant l’écriture, à chaque essai : rien n’a été écrit.",
+      "writeFailed": "Écriture impossible dans {{file}} : {{detail}}"
+    }
+  },
   "team": {
     "title": "Équipe",
     "new": "Nouveau rôle…",

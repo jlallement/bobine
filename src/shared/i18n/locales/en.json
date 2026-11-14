@@ -4944,6 +4944,83 @@
       "saveAsUser": "Save as personal role"
     }
   },
+  "roleExport": {
+    "button": "Install in…",
+    "saveFirst": "Save your changes first.",
+    "menuHint": "Only installed agents that can receive a role are listed.",
+    "title": "Install “{{label}}” in {{agent}}",
+    "where": "Where",
+    "scope": {
+      "user": "For you, in all your projects",
+      "project": "This project only"
+    },
+    "scopeShort": {
+      "user": "for you",
+      "project": "this project"
+    },
+    "projectNote": "Shared through git: commit it. Child conversations in a worktree don’t see it until it is committed.",
+    "rights": "Rights in {{agent}}",
+    "backup": "Backup",
+    "later": "Later changes to the role are not copied automatically: Bobine will offer “Update”.",
+    "showText": "Show what will be written",
+    "hideText": "Hide what will be written",
+    "textLabel": "Text written in {{file}}",
+    "install": "Install",
+    "installing": "Installing…",
+    "useHintReadOnly": "Read-only is then held by {{agent}} itself, not just requested.",
+    "format": {
+      "bob-custom-modes": {
+        "menu": "a Bob mode (Bob Shell, Bob IDE, Bobine)",
+        "intro": "{{agent}} will list it among its modes (Agent, Plan, Ask, … {{label}}), in Bob Shell, Bob IDE and Bobine.",
+        "userNote": "File shared with Bob IDE: only the “{{id}}” mode is added; the rest of the file and its comments stay as they are.",
+        "kind": "Mode",
+        "readOnly": "read-only: read and tools (no writing, no commands)",
+        "readWrite": "read, edit, run commands, tools",
+        "backup": "the file is copied before writing, in Bobine’s data",
+        "use": "In Bobine, run this role in this Bob mode",
+        "foreign": "{{agent}} already has a “{{id}}” mode that Bobine did not write: nothing was changed. Change the role’s identifier to install it.",
+        "prompt": "becomes the mode’s definition (`roleDefinition`)",
+        "promptLabel": "Instructions"
+      },
+      "opencode-agents": {
+        "menu": "an OpenCode agent",
+        "intro": "{{agent}} will list it among its agents (build, plan, … {{label}}), in its terminal and in Bobine.",
+        "kind": "Agent",
+        "readOnly": "read-only: edits and commands denied",
+        "readWrite": "edits and commands allowed, as set in OpenCode",
+        "prompt": "replaces OpenCode’s base instructions for this agent",
+        "promptLabel": "Instructions",
+        "backup": "if a file with that name exists, it is copied before writing",
+        "use": "In Bobine, run this role with this OpenCode agent",
+        "foreign": "{{agent}} already has a “{{id}}” agent that Bobine did not write: nothing was changed. Change the role’s identifier to install it.",
+        "userNote": "A file for this agent only: nothing else is written in it."
+      }
+    },
+    "status": {
+      "installed": "Installed in {{agent}}",
+      "upToDate": "up to date",
+      "roleChanged": "the role has changed since",
+      "handEdited": "edited by hand since",
+      "missing": "no longer in the file",
+      "unreadable": "file can’t be read: nothing is done",
+      "update": "Update",
+      "replace": "Replace",
+      "reinstall": "Reinstall",
+      "remove": "Remove",
+      "replaceConfirm": "Replace “{{id}}”, edited by hand since, with the role? The file is copied first.",
+      "removeConfirm": "Remove “{{id}}”, edited by hand since? The file is copied first."
+    },
+    "error": {
+      "reserved": "“{{id}}” is a name reserved by {{agent}}: change the role’s identifier to install it.",
+      "handEdited": "“{{id}}” was edited by hand since: nothing was changed.",
+      "link": "{{file}} goes through a symbolic link: Bobine doesn’t write there.",
+      "invalidFile": "{{file}} can’t be read as expected ({{detail}}): Bobine doesn’t rewrite it.",
+      "noProject": "This conversation has no project folder.",
+      "unsupported": "This agent can’t receive a role.",
+      "changed": "{{file}} changed while writing, every time: nothing was written.",
+      "writeFailed": "Couldn’t write {{file}}: {{detail}}"
+    }
+  },
   "team": {
     "title": "Team",
     "new": "New role…",

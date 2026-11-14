@@ -1322,3 +1322,248 @@
 .role-brief .child-instruction-text {
   align-self: stretch;
 }
+
+/* « Installer dans… » (fiche 223, phase 4, maquettes 05-1 à 05-4). */
+.role-export-menu {
+  /* Au-dessus de la fenêtre des Réglages (61), d'où il s'ouvre. */
+  z-index: 64;
+  max-width: 320px;
+}
+
+.role-export-menu .menu-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-export-menu-hint {
+  cursor: default;
+  align-items: flex-start;
+}
+
+.role-export-overlay {
+  z-index: 62;
+}
+
+.role-export-sheet {
+  z-index: 63;
+  width: min(640px, calc(100vw - 64px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.role-export-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 8px;
+}
+
+.role-export-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.role-export-body {
+  padding: 4px 24px 16px;
+  overflow-y: auto;
+  min-height: 0;
+  font-size: 13.5px;
+}
+
+.role-export-intro {
+  margin: 0 0 12px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.role-export-intro b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.role-export-label {
+  font-weight: 600;
+  margin: 4px 0 8px;
+}
+
+.role-export-place {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.role-export-place.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.role-export-place input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.role-export-place > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.role-export-path {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.role-export-note {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.role-export-facts {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 14px 0;
+}
+
+.role-export-facts dt {
+  color: var(--text-2);
+}
+
+.role-export-facts dd {
+  margin: 0;
+}
+
+.role-export-use {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.role-export-use input {
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.role-export-use small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.role-export-later {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin: 12px 0 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.role-export-text {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.role-export-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.role-export-foot .btn.link,
+.role-export-row .btn.link {
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.role-export-row .btn.link {
+  padding: 4px 6px;
+}
+
+.role-export-row .btn.link.danger-link {
+  color: var(--err);
+}
+
+.role-export-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.role-export-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+
+.role-export-row.roleChanged,
+.role-export-row.handEdited,
+.role-export-row.missing {
+  background: var(--warn-soft);
+  border-color: transparent;
+}
+
+.role-export-row-icon {
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.role-export-row.upToDate .role-export-row-icon {
+  color: var(--ok);
+}
+
+.role-export-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.role-export-row-text small {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.role-export-error {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--err-soft);
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.role-export-error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--err);
+}
