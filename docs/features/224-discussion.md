@@ -63,14 +63,17 @@ Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer da
    jamais touché) ; ce que l'agent produit y reste. Gardé aussi longtemps que la discussion, mis à
    la corbeille avec elle (30 jours, comme une conversation). Jamais dans les dossiers récents ;
    pas de git, de worktree, de règles du projet, de mémoire commune, de serveurs MCP « projet » ni
-   de serveurs de dev. **À relever sur Bob réel** avant de coder : demande-t-il l'approbation de
-   chaque sous-dossier (carte « Dossier non approuvé », fiche 093) ou celle du parent suffit-elle ?
+   de serveurs de dev. **Relevé** (Bob 2.1.0, 2026-11-14) : un dossier neuf jamais décidé s'ouvre
+   sans demande de confiance ; Bob y crée `.bob/plugins/` (les fichiers cachés ne sont pas montrés
+   comme documents).
 2. **Mode** : le mode de travail habituel de l'agent (l'agent doit pouvoir écrire un document) ;
    pas le mode `ask` de Bob (lecture seule, première version abandonnée). L'utilisateur garde la
    puce de mode s'il veut changer, repliée dans les réglages de session.
 3. **Écritures bornées aux documents** : une demande d'écriture (`edit`, `delete`, `move`) dont
    les emplacements sortent du dossier de la discussion est **refusée d'office** et dite ; dedans,
-   elle est accordée d'office (dit dans le fil, une ligne). Un agent qui écrit sans demander
+   elle est accordée d'office (dit dans le fil, une ligne). Emplacements : ceux de la demande,
+   sinon ceux de l'appel d'outil déjà reçu (Bob envoie parfois une demande sans `locations`) ;
+   aucun emplacement connu : la demande reste posée à l'utilisateur. Un agent qui écrit sans demander
    (`writesWithoutAsking`, OpenCode) : surveillance du dossier par liste de fichiers ; ce qui
    change **hors** du dossier, Bobine ne peut ni l'empêcher ni le voir — c'est dit dans Réglages ›
    Agents, pas promis.
@@ -94,14 +97,16 @@ Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer da
      ADR-0024) ; les documents peuvent être copiés dans le projet (case cochée). La discussion
      reste telle quelle.
 
-## Ce qui dépend de l'agent (à relever, rien de supposé)
+## Ce qui dépend de l'agent (relevé le 2026-11-14, `docs/acp.md`)
 
-- Lire un `.docx`, `.xlsx`, `.pdf` : outil de lecture de l'agent, ou commande. Option générique
-  à décider plus tard : Bobine joint une version texte d'un document déposé (macOS `textutil`
-  pour Word / RTF), sans rien de propre à un agent.
-- Produire un `.docx` / `.xlsx` : en général une commande (Python, bibliothèques installées ou
-  non sur le Mac). Relevé à faire sur Bob réel (au travail) et OpenCode, consigné dans
-  `docs/acp.md` et `docs/agents.md` ; l'accueil ne propose que ce qui marche.
+- **Bob 2.1.0** lit et écrit les fichiers Office **lui-même** (compétence « office-insights »,
+  lectures `read`, retouches `edit` du `.docx`), sans commande ; il demande une autorisation par
+  retouche — d'où l'accord d'office dans les documents (décision 3). 0,77 bobcoin pour le relevé.
+- **OpenCode 2.2.5** (modèle gratuit) : pas d'outil Office ; commandes Python faites **sans rien
+  demander**, extraction du `.xlsx` dans le dossier temporaire du système (hors de la
+  discussion), `.docx` fabriqué à la main. La limite aux documents n'y est que demandée : dit dans
+  Réglages › Agents (repère `writes-without-asking`, déjà déclaré) et une fois dans le fil.
+- Version texte jointe aux documents déposés (`textutil`) : inutile pour Bob, reportée.
 
 ## Critères d'acceptation
 
@@ -122,8 +127,8 @@ Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer da
 - [ ] Testé contre l'agent factice : scénarios `discussion-document` (lit un document déposé,
       écrit un fichier dans le dossier) et `discussion-hors-dossier` (écriture refusée) ; e2e
       `discussion` en clair et sombre, captures regardées ; textes en `fr.json` et `en.json`.
-- [ ] Bob réel et OpenCode : approbation du dossier, lecture et production d'un Word et d'un
-      Excel relevées dans `docs/acp.md`.
+- [x] Bob réel et OpenCode : approbation du dossier, lecture et production d'un Word et d'un
+      Excel relevées dans `docs/acp.md` (2026-11-14).
 
 ## Plan
 
