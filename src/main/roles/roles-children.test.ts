@@ -16,23 +16,12 @@ import type { ChildConversations } from '../conversations/children'
 import { setupChildren } from '../conversations/children-setup'
 import { ConversationManager } from '../conversations/manager'
 import { gitCommand, queuedGit } from '../git/git-queue'
+import { until } from '../conversations/manager-until'
 import { childrenToolsModule } from '../mcp/children-tools'
 import { AppToolServer } from '../mcp/tool-server'
 import { builtinRoles } from './builtin'
 import { startRoleChildren } from './invoke'
 import { RoleLibrary } from './library'
-
-function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const started = Date.now()
-    const check = () => {
-      if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
-      setTimeout(check, 10)
-    }
-    check()
-  })
-}
 
 const cleanups: (() => void)[] = []
 afterEach(() => {
@@ -105,6 +94,8 @@ async function environment() {
   const mother = manager.state().activeId
   await manager.startActive()
   await manager.prompt(mother, 'Organise le carnet')
+  // Attente sur évènement du gestionnaire (pas de sondage serré : essai stable sous charge).
+  const waitFor = (predicate: () => boolean, what: string) => until(manager, predicate, what)
   const items = (id: string) => manager.view(id).transcript.items
   const lastReply = (id: string) =>
     items(id).findLast((i): i is Extract<TranscriptItem, { kind: 'agent' }> => i.kind === 'agent')
@@ -115,7 +106,10 @@ async function environment() {
     )
   const firstMessage = (id: string) => items(id).find((i) => i.kind === 'user')
   const settled = async (id: string) => {
-    await waitFor(() => lastReply(id) !== '' && manager.view(id).summary.status === 'ready')
+    await waitFor(
+      () => lastReply(id) !== '' && manager.view(id).summary.status === 'ready',
+      `réponse finie de ${id}`
+    )
   }
   const cards = () =>
     items(mother).filter(
@@ -123,7 +117,7 @@ async function environment() {
         i.kind === 'elicitation' && i.state === 'pending'
     )
   const accept = async () => {
-    await waitFor(() => cards().length > 0)
+    await waitFor(() => cards().length > 0, 'carte de proposition de la mère')
     const card = cards()[0]
     manager.respondElicitation(mother, card?.requestId ?? '', {
       action: 'accept',
@@ -142,7 +136,8 @@ async function environment() {
     firstMessage,
     settled,
     accept,
-    childrenOf
+    childrenOf,
+    waitFor
   }
 }
 
@@ -152,7 +147,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const turn = env.manager.prompt(env.mother, '/scenario roles-delegue')
     await env.accept()
     await turn
-    await waitFor(() => env.childrenOf().length === 1)
+    await env.waitFor(() => env.childrenOf().length === 1, 'une fille')
     const child = env.childrenOf()[0]
     if (!child) throw new Error('pas de fille')
     expect(child.role).toEqual({
@@ -225,8 +220,14 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(env.notices(child.id)).toContain('roles.notice.readOnlyRequested')
     const first = env.firstMessage(child.id)
     expect(first?.kind === 'user' && first.text).toContain('Bobine checks the folder')
-    await waitFor(() => env.notices(child.id).includes('roles.notice.folderChanged'))
-    await waitFor(() => env.notices(env.mother).includes('roles.notice.childFolderChanged'))
+    await env.waitFor(
+      () => env.notices(child.id).includes('roles.notice.folderChanged'),
+      'écart signalé chez la fille'
+    )
+    await env.waitFor(
+      () => env.notices(env.mother).includes('roles.notice.childFolderChanged'),
+      'écart signalé chez la mère'
+    )
   })
 
   it('mode natif présent : la fille y est mise, consigne du rôle quand même ; rien de retenu pour le profil', async () => {
@@ -302,7 +303,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(result.failed).toEqual([
       { role: 'astronaute', error: expect.stringMatching(/astronaute/) }
     ])
-    await waitFor(() => env.childrenOf().length === 2)
+    await env.waitFor(() => env.childrenOf().length === 2, 'deux filles')
     const byRole = Object.fromEntries(env.childrenOf().map((c) => [c.role?.name, c]))
     // Lecture seule : le dossier de la mère ; l'autre : son worktree.
     expect(byRole['security-expert']?.workspace).toBe(env.repo)

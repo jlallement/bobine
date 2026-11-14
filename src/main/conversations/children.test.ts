@@ -14,17 +14,19 @@ import { AppToolServer } from '../mcp/tool-server'
 import { childrenToolsModule } from '../mcp/children-tools'
 import { ChildConversations, childHandlers, type ChildOptions } from './children'
 import { ConversationManager } from './manager'
+import { until } from './manager-until'
 
+/** Gestionnaire de l'essai en cours (un seul par essai), suivi par `waitFor`. */
+let current: ConversationManager | undefined
+
+/**
+ * Attente sur évènement du gestionnaire de l'essai (`until`) : pas de sondage serré qui recalcule
+ * les fils toutes les 10 ms, cause de dépassements sous charge. Délai par défaut sous celui d'un
+ * essai (15 s) : un échec dit ce qui était attendu plutôt qu'un essai coupé.
+ */
 function waitFor(predicate: () => boolean, timeoutMs = 10_000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const started = Date.now()
-    const check = () => {
-      if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
-      setTimeout(check, 10)
-    }
-    check()
-  })
+  if (!current) throw new Error('waitFor : aucun gestionnaire')
+  return until(current, predicate, predicate.toString(), timeoutMs)
 }
 
 /**
@@ -82,6 +84,7 @@ function environment(toolServer?: AppToolServer, maxLive?: number, options: Chil
     worktrees: new Worktrees(queuedGit(gitCommand)),
     agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
   })
+  current = manager
   const module = new ChildConversations(manager, options)
   children = module
   manager.subscribe({
@@ -384,7 +387,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     ).resolves.toMatchObject({ startedFrom: { id: mother } })
   })
 
-  it('réveil groupé : une fois, avec les comptes rendus ; jamais pour une fille lancée à la main', async () => {
+  it('réveil groupé : une fois, avec les comptes rendus des filles lancées par l’agent', async () => {
     const env = environment()
     const { manager, children, items } = env
     const mother = await env.mother()
@@ -402,7 +405,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     await children.start(mother, { text: 'Fais B', profileId: 'echo' }, 'agent')
     expect(children.holds(mother)).toBe(true)
 
-    await waitFor(() => env.wakes(mother) === 1, 20_000)
+    await waitFor(() => env.wakes(mother) === 1)
     await waitFor(() => manager.view(mother).summary.status === 'ready')
     const told = env.lastReply(mother)
     expect(told).toContain('<child_conversations>')
@@ -410,14 +413,21 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     expect(told.match(/finished its turn/g)).toHaveLength(2)
     expect(told).toContain(WAKE_TEXT)
     expect(children.holds(mother)).toBe(false)
+    await settle()
+    expect(env.wakes(mother)).toBe(1)
+  })
 
-    // Lancée à la main : son compte rendu attend le prochain message, sans réveil.
+  it('jamais de réveil pour une fille lancée à la main : son compte rendu attend le prochain message', async () => {
+    const env = environment()
+    const { children, items } = env
+    const mother = await env.mother()
     const manual = await children.start(mother, { text: 'Fais C', profileId: 'echo' })
+    expect(children.holds(mother)).toBe(false)
     await waitFor(() =>
       items(mother).some((i) => i.kind === 'child-report' && i.childId === manual.id)
     )
     await settle()
-    expect(env.wakes(mother)).toBe(1)
+    expect(env.wakes(mother)).toBe(0)
   })
 
   it('messages : file d’attente de la conversation visée, avec leur provenance', async () => {
@@ -673,7 +683,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
         .flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
         .join('')
       expect(replies).toContain('J’ai lancé deux conversations filles')
-      await waitFor(() => env.wakes(env.mother) === 1, 20_000)
+      await waitFor(() => env.wakes(env.mother) === 1)
       await waitFor(() => env.manager.view(env.mother).summary.status === 'ready')
       // La mère (scénario `echo` par défaut) a reçu les deux comptes rendus avec le réveil.
       const told = env.lastReply(env.mother)
