@@ -31,31 +31,22 @@
 .role-avatar svg {
   color: var(--role);
 }
-/* Au travail : un anneau de sa couleur qui tourne (2,4 s par tour), fixe si les animations sont réduites. */
-.role-avatar[data-state='running']::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: var(--radius-sm);
-  border: 2px solid transparent;
-  border-top-color: var(--role);
-  border-left-color: var(--role);
-  animation: role-ring 2.4s linear infinite;
-}
-.role-avatar.sm[data-state='running']::before,
-.role-avatar.xs[data-state='running']::before {
-  inset: -3px;
-  border-width: 1.5px;
+/*
+ * Au travail : un anneau de sa couleur, dans le carré de l'avatar (rien ne déborde), qui pulse
+ * doucement ; fixe si les animations sont réduites.
+ */
+.role-avatar[data-state='running'] {
+  box-shadow: inset 0 0 0 2px var(--role);
+  animation: role-ring 1.6s ease-in-out infinite;
 }
 @keyframes role-ring {
-  to {
-    transform: rotate(360deg);
+  50% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--role) 45%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .role-avatar[data-state='running']::before {
+  .role-avatar[data-state='running'] {
     animation: none;
-    border-color: var(--role);
   }
 }
 /* Pastille : attend votre accord (ambre), a rendu (vert), échec ou arrêt (rouge). */

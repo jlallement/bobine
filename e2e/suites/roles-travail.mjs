@@ -164,6 +164,13 @@ async function mainRun(ui) {
   await ui.shot('roles-travail-5-deux-roles')
   await ui.enter()
   await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 3`, 30000)
+  // Au travail : l'anneau de l'avatar (maquette 03-5), pris au vol tant qu'une fille répond.
+  await ui.waitFor(
+    `!!document.querySelector('[data-testid=role-avatar][data-state=running]')`,
+    15000
+  )
+  await reveal(ui, `document.querySelector('[data-testid=role-avatar][data-state=running]')`)
+  await ui.shot('roles-travail-5b-au-travail')
   await ui.waitFor(
     `[...document.querySelectorAll('[data-testid=subtask-row]')].length === 3 && !document.querySelector('[data-testid=role-launch][data-state=running]')`,
     60000
