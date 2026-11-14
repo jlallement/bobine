@@ -119,6 +119,25 @@ function providerChecks(providers: Observation): ContractCheck[] {
 }
 
 /**
+ * Rôles installés comme agents d'OpenCode (fiche 223, phase 4) : un agent écrit comme Bobine,
+ * personnel et du projet, est listé dans le réglage de mode par ACP et s'y choisit.
+ */
+function roleAgentsCheck(observed: Observation): ContractCheck[] {
+  // Sondage absent (attentes d'avant la phase 4) : rien à vérifier.
+  if (Object.keys(observed).length === 0) return []
+  const both = (key: string) => {
+    const value = observed[key] as Record<string, unknown> | undefined
+    return value?.['perso'] === true && value['projet'] === true
+  }
+  return [
+    {
+      label: 'rôles installés comme agents (agents/<id>.md) listés et choisis par ACP',
+      ok: both('listed') && both('selected') && both('kept')
+    }
+  ]
+}
+
+/**
  * Ce dont l'app a besoin dans les réponses d'OpenCode (docs/acp.md, docs/agents.md) : un échec veut
  * dire qu'une fonctionnalité de l'app ne marchera plus avec cette version d'OpenCode.
  */
@@ -152,7 +171,8 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       label: 'session rechargée puis reprise (load, resume)',
       ok: reopen['load'] === 'ok' && reopen['resume'] === 'ok'
     },
-    ...providerChecks(get(observations, 'fournisseurs'))
+    ...providerChecks(get(observations, 'fournisseurs')),
+    ...roleAgentsCheck(get(observations, 'rôles installés (agents)'))
   ]
   if (observations['réponse simple'] === undefined) return checks
   const simple = get(observations, 'réponse simple')
