@@ -207,6 +207,33 @@ coder. Aucune nouvelle dépendance prévue.
 - **Dossier d'une discussion** créé avec son brouillon (l'agent y démarre), retiré s'il est resté
   vide quand on la quitte.
 
+## Relecture du tech lead (2026-11-14) : sûreté de l'espace
+
+- **Écritures** (`agent/write-area.ts`) : cibles = emplacements (repris du `tool_call` au besoin)
+  ∪ chemins des diffs. Une cible dehors (chemin, ou lien symbolique sur le chemin — chemin réel de
+  l'ancêtre existant le plus profond) : refusé. Accordé une fois seulement si chaque cible est un
+  document du premier niveau, visible, pas un lien. Posé à l'utilisateur : chemin relatif ou `~`,
+  aucune cible, emplacements et diffs en désaccord, fichier caché ou sous-dossier (`.bob/`,
+  `.opencode/`), déplacement.
+- **Dossiers** : une branche a son propre dossier, documents copiés ; l'effacement garde un
+  dossier qu'une autre conversation (index ou corbeille) désigne. Brouillon quitté sans document :
+  son dossier part même avec `.bob/` ; au lancement, les dossiers que plus rien ne connaît
+  partent s'ils n'ont aucun document (sinon gardés, et dit au journal). Dossier disparu : recréé
+  avant le démarrage de l'agent. Sauvegarde et restauration emportent `discussions/` (sans lien
+  symbolique ; l'état gardé avant une restauration en est débarrassé).
+- **Documents** : jamais un lien symbolique (liste, aperçu, ouverture, copie) ; « Ouvrir » limité
+  aux documents et images (`canOpenDocument`) ; copie ailleurs sans écraser (`COPYFILE_EXCL`) ;
+  dépôt par copie cachée puis renommage ; pièce jointe disparue non envoyée, et dite ; « Continuer
+  dans un projet » crée la conversation avant de copier ; `needs-action` ne finit pas un tour.
+- **Agent qui écrit sans demander** : consigne de session `<bobine_discussion>` (rester dans les
+  documents, ne rien installer), avis « seulement demandée » une fois dans le fil, ligne sur
+  l'accueil — d'après `writesWithoutAsking` du profil.
+- **Notés** : M1 — l'aperçu lit en `O_NOFOLLOW` ; `textutil` reçoit un chemin (contrôlé juste avant
+  par `documentPath`), pas de descripteur : une course entre ce contrôle et sa lecture reste
+  possible, dans le dossier de la discussion seulement. M5 — un brouillon de l'espace Code est
+  encore créé à chaque lancement, même quand l'espace retenu est Discussion (`useSpace` bascule
+  ensuite) : sans effet sur les dossiers, à reprendre si le démarrage de l'agent gêne.
+
 ## Plus tard (hors périmètre)
 
 - Documents et instructions partagés entre discussions (les « Projets » de Claude et ChatGPT).
@@ -224,3 +251,6 @@ coder. Aucune nouvelle dépendance prévue.
   (Bob 2.1.0 : 0,77 bobcoin, réglages de Bob identiques avant / après ; OpenCode 2.2.5 gratuit),
   puis cœur, documents, interface, agent factice, essais, ADR-0048. `./scripts/verify` vert à
   chaque incrément. Voir « Écarts ».
+- **2026-11-14** (suite) : `main` fusionné (phase 4 de la fiche 223, puis 1.0.0-beta.3), ADR
+  renuméroté **0048** ; `@rôle` refusé aussi par le main dans une discussion. Relecture du tech
+  lead traitée (B1, B2, I1–I6, M1–M6, voir la section dédiée), avec ses tests.

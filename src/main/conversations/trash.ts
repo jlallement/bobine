@@ -15,8 +15,8 @@ import type { AgentEvent } from '@shared/agent'
 import type { TranscriptState } from '@shared/transcript'
 import type { TrashEntry } from '@shared/profile'
 import { log } from '../log'
-import { fsyncDir, isReadOnly, writeFileAtomic } from '../storage'
-import { eraseDiscussionFolder } from './discussion-space'
+import { fsyncDir, isReadOnly, readJson, writeFileAtomic } from '../storage'
+import { discussionFolder, eraseDiscussionFolder, sweepDiscussionFolders } from './discussion-space'
 import type { HistoryWriter } from './history-writer'
 import {
   isRecord,
@@ -78,7 +78,10 @@ export class ConversationTrash {
    */
   settle(records: ConversationRecord[], fileOf: (id: string) => string): ConversationRecord[] {
     const pending = new Set(this.metas().map((meta) => meta.record.id))
-    if (pending.size === 0 || isReadOnly(join(this.dir, 'x'))) return records
+    if (isReadOnly(join(this.dir, 'x'))) return records
+    // Dossiers de discussion que plus rien ne connaît (fiche 224) : brouillons d'avant l'arrêt.
+    sweepDiscussionFolders(dirname(this.dir), new Set([...pending, ...records.map((r) => r.id)]))
+    if (pending.size === 0) return records
     for (const id of pending) {
       const live = fileOf(id)
       if (!existsSync(live)) continue
@@ -131,8 +134,13 @@ export class ConversationTrash {
   erase(id: string): void {
     if (!SAFE_ID.test(id)) throw new Error(`Identifiant de conversation invalide : ${id}`)
     this.writable()
-    // Discussion (fiche 224) : ses documents, restés en place, partent avec elle.
-    if (this.meta(id)?.record.space === 'discussion') eraseDiscussionFolder(dirname(this.dir), id)
+    // Discussion (fiche 224) : ses documents, restés en place, partent avec elle — jamais un
+    // dossier qu'une autre conversation (vivante ou dans la corbeille) désigne encore.
+    if (this.meta(id)?.record.space === 'discussion') {
+      const folder = discussionFolder(dirname(this.dir), id)
+      if (this.folderShared(id, folder)) log.warn(`Dossier de discussion gardé (partagé) : ${id}`)
+      else eraseDiscussionFolder(dirname(this.dir), id)
+    }
     for (const suffix of ['.json', '.meta.json']) {
       rmSync(join(this.dir, `${id}${suffix}`), { force: true })
     }
@@ -156,6 +164,15 @@ export class ConversationTrash {
     if (erased)
       log.info(`Corbeille : ${erased} conversation(s) de plus de ${TRASH_DAYS} jours effacée(s)`)
     return erased
+  }
+
+  /** Une autre conversation que `id`, dans l'index ou la corbeille, a `folder` pour dossier. */
+  private folderShared(id: string, folder: string): boolean {
+    const read = readJson(join(dirname(this.dir), 'index.json'))
+    const live = read.ok && Array.isArray(read.value) ? read.value.filter(isRecord) : []
+    return [...live, ...this.metas().map((m) => m.record)].some(
+      (r) => r.id !== id && r.workspace === folder
+    )
   }
 
   private meta(id: string): TrashMeta | undefined {

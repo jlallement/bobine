@@ -91,14 +91,7 @@ import {
 } from './helpers'
 import { hostOptions } from './host-options'
 import { draftConversation, type Conversation, type ConversationListeners } from './conversation'
-import {
-  continuedTranscript,
-  discussionDraft,
-  nextFolder,
-  dropEmptyDiscussionFolder,
-  folderPlan,
-  sameDraft
-} from './discussion-space'
+import * as ds from './discussion-space'
 import { answerTurnLimit, type TurnLimitAnswer } from './turn-limit'
 import { agentsToStop, releaseAgent } from './live-agents'
 import type { ApiKeyStore } from '../agent-config/api-keys'
@@ -386,16 +379,21 @@ export class ConversationManager {
     const profileId = this.profileOrDefault(
       request.profileId ?? defaults?.profileId ?? active.record.profileId
     ).id
-    const plan = folderPlan(request, active.record, this.settings.current, this.fallbackFolders())
+    const plan = ds.folderPlan(
+      request,
+      active.record,
+      this.settings.current,
+      this.fallbackFolders()
+    )
     const { discussion, wanted, workspace } = plan
     // Toujours pas de dossier (agent changé avant d'en choisir un) : rien à retenir (fiche 093).
     if (!discussion && hasFolder(workspace)) this.settings.rememberWorkspace(profileId, workspace)
     // Déjà une conversation vide.
-    if (active.draft && sameDraft(active.record, profileId, plan))
+    if (active.draft && ds.sameDraft(active.record, profileId, plan))
       return this.view(active.record.id)
     if (active.draft) this.discard(active)
     const conversation = discussion
-      ? this.adopt(discussionDraft(profileId, this.options.conversationsDir))
+      ? this.adopt(ds.discussionDraft(profileId, this.options.conversationsDir))
       : this.createDraft(profileId, wanted)
     return this.activate(conversation)
   }
@@ -425,7 +423,7 @@ export class ConversationManager {
     const { profileId, title } = source.record
     this.settings.rememberWorkspace(profileId, workspace)
     const agent = { profileId, label: this.profileOrDefault(profileId).label }
-    const transcript = continuedTranscript(this.transcriptOf(source), agent)
+    const transcript = ds.continuedTranscript(this.transcriptOf(source), agent)
     return this.activate(this.openNew(profileId, workspace, transcript, { title }))
   }
 
@@ -790,13 +788,14 @@ export class ConversationManager {
 
     const { profileId, workspace, worktree, space } = source.record
     // Même worktree que l'originale : il reste à elle (voir `sharesWorktree`). Même espace : une
-    // branche de discussion en partage les documents (fiche 224).
+    // branche de discussion a son propre dossier, documents copiés (fiche 224).
     const conversation = this.openNew(profileId, workspace, prepared.transcript, {
       title: prepared.title,
       branchedFrom: { id: source.record.id, title: source.record.title },
       ...(worktree ? { worktree } : {}),
       ...(space ? { space } : {})
     })
+    ds.forkDiscussionFolder(this.options.conversationsDir, conversation.record, workspace)
     this.activeId = conversation.record.id
     this.ensureLive(conversation)
     this.emitList()
@@ -1215,8 +1214,8 @@ export class ConversationManager {
     const profileId = this.profileOrDefault(record.profileId).id
     const draft =
       record.space === 'discussion'
-        ? this.adopt(discussionDraft(profileId, this.options.conversationsDir))
-        : this.createDraft(profileId, nextFolder(record, gone, this.options.defaultWorkspace))
+        ? this.adopt(ds.discussionDraft(profileId, this.options.conversationsDir))
+        : this.createDraft(profileId, ds.nextFolder(record, gone, this.options.defaultWorkspace))
     this.activeId = draft.record.id
     if (this.startable(draft)) this.ensureLive(draft)
   }
@@ -1247,9 +1246,8 @@ export class ConversationManager {
     // (sans `force` : s'il a été modifié entre-temps, il reste).
     const { worktree } = conversation.record
     if (worktree) void this.options.worktrees?.remove(worktree).catch(() => {})
-    // Discussion quittée sans message (fiche 224) : son dossier part s'il est resté vide.
-    if (conversation.record.space === 'discussion')
-      dropEmptyDiscussionFolder(conversation.record.workspace)
+    // Discussion quittée sans message (fiche 224) : son dossier part s'il n'a aucun document.
+    ds.dropDraftFolder(this.options.conversationsDir, conversation.record)
   }
 
   /** Agent vivant pour cette conversation (créé si besoin), puis éviction des plus anciens. */

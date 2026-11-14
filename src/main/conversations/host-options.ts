@@ -4,7 +4,7 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
-import { DISCUSSION_CONTEXT } from './discussion-space'
+import { DISCUSSION_CONTEXT, ensureDiscussionFolder } from './discussion-space'
 import {
   capabilitiesReminder,
   childContext,
@@ -43,7 +43,8 @@ export interface HostOptionsInput {
     | 'memory'
     | 'agentHome'
     | 'roles'
-  >
+  > &
+    Partial<Pick<ConversationManagerOptions, 'conversationsDir'>>
   settings: SettingsStore
   /** Fil de la conversation au moment de l'envoi. */
   items: () => readonly TranscriptItem[]
@@ -66,6 +67,8 @@ function deniedCommandOption(
 
 export function hostOptions(input: HostOptionsInput): AgentHostOptions {
   const { profile, record, app, settings, works } = input
+  // Discussion dont le dossier a disparu (Finder) : recréé avant que l'agent y démarre (fiche 224).
+  if (app.conversationsDir) ensureDiscussionFolder(app.conversationsDir, record)
   const pending: { notice?: ReturnType<typeof noticeFor> } = {}
   // Avis de version montré au premier « prêt » qui suit l'annonce, s'il n'a jamais été vu : la
   // clé n'est retenue que quand l'avis entre dans le fil (fiche 198).

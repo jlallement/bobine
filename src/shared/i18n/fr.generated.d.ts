@@ -5106,10 +5106,12 @@ export type FrResources = {
       readonly writeAllowed: 'Écriture accordée dans les documents de la discussion : {{tool}}'
       readonly writeRefused: 'Écriture refusée hors des documents de la discussion : {{tool}}'
       readonly limitRequestedOnly: 'Limite aux documents seulement demandée : {{agent}} écrit et lance des commandes sans demander d’autorisation. Bobine montre après chaque tour les documents changés, mais ne voit pas ce qu’il écrit ailleurs.'
+      readonly attachmentMissing: 'Pièce jointe introuvable, non envoyée : {{names}}'
     }
     readonly error: {
       readonly notDiscussion: 'Cette conversation n’est pas une discussion : elle n’a pas de documents.'
       readonly noRoles: 'Pas de rôles dans une discussion : continuez-la dans un projet pour faire appel à un rôle.'
+      readonly notOpenable: 'Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le Finder ».'
     }
     readonly space: {
       readonly label: 'Espace'

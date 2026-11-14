@@ -6,12 +6,13 @@
  * effacé avec elle.
  */
 import {
+  constants,
   copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
   readdirSync,
-  rmdirSync,
+  renameSync,
   rmSync,
   statSync
 } from 'node:fs'
@@ -40,6 +41,21 @@ export function discussionFolder(conversationsDir: string, id: string): string {
   return join(discussionsRoot(conversationsDir), id)
 }
 
+/**
+ * Dossier d'une discussion disparu (supprimé dans le Finder) : recréé, vide, avant que son agent
+ * démarre — sinon l'agent refuse de s'ouvrir dans un dossier absent. Seulement le sien.
+ */
+export function ensureDiscussionFolder(
+  conversationsDir: string,
+  record: Pick<ConversationRecord, 'id' | 'space' | 'workspace'>
+): void {
+  if (record.space !== 'discussion' || !SAFE_ID.test(record.id)) return
+  if (record.workspace !== discussionFolder(conversationsDir, record.id)) return
+  if (existsSync(record.workspace)) return
+  mkdirSync(record.workspace, { recursive: true })
+  log.warn(`Dossier de discussion recréé (disparu) : ${record.id}`)
+}
+
 /** Crée le dossier d'une discussion (vide) et le rend. */
 export function createDiscussionFolder(conversationsDir: string, id: string): string {
   const folder = discussionFolder(conversationsDir, id)
@@ -47,12 +63,49 @@ export function createDiscussionFolder(conversationsDir: string, id: string): st
   return folder
 }
 
-/** Brouillon de discussion quitté sans message : son dossier part s'il est resté vide. */
-export function dropEmptyDiscussionFolder(folder: string): void {
+/**
+ * Dossier d'une discussion qu'on peut retirer : exactement `discussions/<id>` (enfant direct, nom
+ * sûr, pas un lien symbolique) et sans aucun document visible. Les traces de l'agent (`.bob/`)
+ * ne comptent pas : Bob en crée dès son démarrage.
+ */
+function removableFolder(conversationsDir: string, id: string): string | undefined {
+  if (!SAFE_ID.test(id)) return undefined
+  const folder = discussionFolder(conversationsDir, id)
   try {
-    rmdirSync(folder)
+    if (!lstatSync(folder).isDirectory()) return undefined
   } catch {
-    // Pas vide (document déposé, trace de l'agent) ou déjà parti : laissé tel quel.
+    return undefined
+  }
+  return listDocuments(folder).length === 0 ? folder : undefined
+}
+
+/** Brouillon de discussion quitté sans message : son dossier part s'il n'a aucun document. */
+export function dropDraftFolder(
+  conversationsDir: string,
+  record: Pick<ConversationRecord, 'id' | 'space' | 'workspace'>
+): void {
+  if (record.space !== 'discussion') return
+  const folder = removableFolder(conversationsDir, record.id)
+  // Seulement le dossier de cette discussion, jamais un autre qu'elle désignerait.
+  if (folder && folder === record.workspace) rmSync(folder, { recursive: true, force: true })
+}
+
+/**
+ * Au lancement : dossiers de `discussions/` qu'aucune conversation (index ou corbeille) ne connaît
+ * plus — brouillons laissés par un arrêt de l'app. Retirés seulement sans document visible (un
+ * document déposé dans un brouillon n'est jamais effacé : il reste, et le journal le dit).
+ */
+export function sweepDiscussionFolders(conversationsDir: string, known: ReadonlySet<string>): void {
+  let names: string[]
+  try {
+    names = readdirSync(discussionsRoot(conversationsDir))
+  } catch {
+    return
+  }
+  for (const id of names.filter((name) => !known.has(name))) {
+    const folder = removableFolder(conversationsDir, id)
+    if (folder) rmSync(folder, { recursive: true, force: true })
+    else log.warn(`Dossier de discussion inconnu gardé (documents dedans) : ${id}`)
   }
 }
 
@@ -104,9 +157,18 @@ export function freeName(folder: string, name: string): string {
 export function addDocuments(folder: string, paths: readonly string[]): string[] {
   mkdirSync(folder, { recursive: true })
   return paths.flatMap((path) => {
-    if (!statSync(path).isFile()) return []
+    // Fichier absent ou qui n'en est pas un : sauté (l'appelant le dit).
+    if (!existsSync(path) || !statSync(path).isFile()) return []
     const name = freeName(folder, basename(path))
-    copyFileSync(path, join(folder, name))
+    // Copié sous un nom caché puis renommé : jamais de document à moitié copié dans la liste.
+    const partial = join(folder, `.${name}.${process.pid}.tmp`)
+    try {
+      copyFileSync(path, partial, constants.COPYFILE_EXCL)
+      renameSync(partial, join(folder, name))
+    } catch (error) {
+      rmSync(partial, { force: true })
+      throw error
+    }
     return [name]
   })
 }
@@ -259,3 +321,21 @@ export const DISCUSSION_CONTEXT = [
   'inside this folder and refuses the others.',
   '</bobine_discussion>'
 ].join('\n')
+
+/**
+ * Branche d'une discussion (« Repartir d'un message », fiche 023) : son propre dossier, avec une
+ * copie des documents de l'originale — jamais le même dossier (l'effacer emporterait l'autre).
+ */
+export function forkDiscussionFolder(
+  conversationsDir: string,
+  record: Pick<ConversationRecord, 'id' | 'space' | 'workspace'>,
+  sourceFolder: string
+): void {
+  if (record.space !== 'discussion') return
+  const folder = createDiscussionFolder(conversationsDir, record.id)
+  addDocuments(
+    folder,
+    listDocuments(sourceFolder).map((d) => join(sourceFolder, d.name))
+  )
+  record.workspace = folder
+}

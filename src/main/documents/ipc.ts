@@ -8,8 +8,8 @@
  * nom de document ne sort pas de son dossier.
  */
 import { execFile } from 'node:child_process'
-import { copyFileSync, readFileSync, statSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { closeSync, constants, copyFileSync, openSync, readFileSync, statSync } from 'node:fs'
+import { basename, extname, join } from 'node:path'
 import { t } from 'i18next'
 import type {
   AgentEvent,
@@ -19,7 +19,7 @@ import type {
   ConversationView
 } from '@shared/agent'
 import type { PromptAttachment } from '@shared/attachments'
-import type { DocumentPreview } from '@shared/documents'
+import { canOpenDocument, type DocumentPreview } from '@shared/documents'
 import type { TranscriptItem } from '@shared/transcript'
 import type { DocumentsChannel } from '@shared/documents-ipc'
 import type { IpcHandlers } from '@shared/ipc'
@@ -95,6 +95,19 @@ export function textutilText(path: string): Promise<string | undefined> {
   })
 }
 
+/**
+ * Lit un fichier sans suivre de lien symbolique (`O_NOFOLLOW`) : un lien posé entre le contrôle
+ * de `documentPath` et la lecture ne fait pas lire un fichier extérieur.
+ */
+function readNoFollow(path: string): Buffer {
+  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW)
+  try {
+    return readFileSync(fd)
+  } finally {
+    closeSync(fd)
+  }
+}
+
 /** Aperçu d'un document, selon son extension. */
 export async function previewOf(
   path: string,
@@ -106,10 +119,10 @@ export async function previewOf(
     text: text.slice(0, TEXT_LIMIT),
     truncated: text.length > TEXT_LIMIT
   })
-  if (TEXT.has(ext)) return asText(readFileSync(path, 'utf8'))
+  if (TEXT.has(ext)) return asText(readNoFollow(path).toString('utf8'))
   const mimeType = IMAGES[ext]
   if (mimeType && statSync(path).size <= IMAGE_LIMIT) {
-    return { kind: 'image', mimeType, data: readFileSync(path).toString('base64') }
+    return { kind: 'image', mimeType, data: readNoFollow(path).toString('base64') }
   }
   if (RICH.has(ext)) {
     const text = await toText(path)
@@ -131,13 +144,15 @@ export function watchTurns(host: DocumentsHost): () => void {
       const summary = summaryOf(host, id)
       if (summary?.space !== 'discussion') return
       const busy = event.snapshot.status === 'busy'
+      // Une autorisation à donner (`needs-action`) suspend le tour, ne le finit pas.
+      const inTurn = busy || event.snapshot.status === 'needs-action'
       const start = before.get(id)
       if (busy && !start) before.set(id, documentsFingerprint(summary.workspace))
       if (busy && !told.has(id)) {
         told.add(id)
         tellRequestedOnly(host, id, summary.profileId)
       }
-      if (busy || !start) return
+      if (inTurn || !start) return
       before.delete(id)
       const names = changedDocuments(start, documentsFingerprint(summary.workspace))
       if (names.length > 0) host.post(id, { type: 'documents', names })
@@ -199,7 +214,11 @@ export function documentsHandlers(
       const folder = folderOf(id)
       return addDocuments(folder, await deps.chooseFiles(folder))
     },
-    'documents:open': (id, name) => deps.openPath(pathOf(id, name)),
+    'documents:open': (id, name) => {
+      const path = pathOf(id, name)
+      if (!canOpenDocument(String(name))) throw new Error(t('discussion.error.notOpenable'))
+      return deps.openPath(path)
+    },
     'documents:reveal': (id, name) => {
       deps.reveal(pathOf(id, name))
       return undefined
@@ -212,7 +231,8 @@ export function documentsHandlers(
       })
       if (!target) return null
       const path = join(target, freeName(target, str(name, 'name')))
-      copyFileSync(source, path)
+      // Jamais par-dessus un fichier apparu entre-temps.
+      copyFileSync(source, path, constants.COPYFILE_EXCL)
       return path
     },
     'documents:preview': (id, name) => previewOf(pathOf(id, name), deps.toText),
@@ -224,9 +244,11 @@ export function documentsHandlers(
       })
       if (!target) return null
       const copy = typeof options === 'object' && options !== null && options.copyDocuments === true
+      // La conversation d'abord : une copie qui échoue ne la perd pas.
+      const view = await host.continueInProject(str(id, 'id'), target)
       const documents = listDocuments(folder).map((d) => join(folder, d.name))
       if (copy && documents.length > 0) addDocuments(join(target, 'documents'), documents)
-      return host.continueInProject(str(id, 'id'), target)
+      return view
     }
   }
 }
@@ -237,16 +259,28 @@ export function documentsHandlers(
  * une autre conversation garde ses pièces jointes.
  */
 export function attachToDocuments(
-  host: Pick<DocumentsHost, 'state'>,
+  host: Pick<DocumentsHost, 'state' | 'post'>,
   id: string,
   attachments: PromptAttachment[]
 ): PromptAttachment[] {
   const summary = summaryOf(host, id)
   if (summary?.space !== 'discussion') return attachments
   const folder = summary.workspace
-  return attachments.map((a) => {
-    if (a.kind !== 'file' || isInside(folder, a.path)) return a
+  const missing: string[] = []
+  const sent = attachments.flatMap((a): PromptAttachment[] => {
+    if (a.kind !== 'file' || isInside(folder, a.path)) return [a]
     const [name] = addDocuments(folder, [a.path])
-    return name ? { kind: 'file', path: join(folder, name) } : a
+    if (name) return [{ kind: 'file', path: join(folder, name) }]
+    missing.push(basename(a.path))
+    return []
   })
+  // Fichier joint disparu entre-temps : pas envoyé, et le fil le dit.
+  if (missing.length > 0) {
+    host.post(id, {
+      type: 'notice',
+      level: 'warning',
+      message: { key: 'discussion.notice.attachmentMissing', params: { names: missing.join(', ') } }
+    })
+  }
+  return sent
 }

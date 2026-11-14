@@ -5290,11 +5290,13 @@
     "notice": {
       "writeAllowed": "Écriture accordée dans les documents de la discussion : {{tool}}",
       "writeRefused": "Écriture refusée hors des documents de la discussion : {{tool}}",
-      "limitRequestedOnly": "Limite aux documents seulement demandée : {{agent}} écrit et lance des commandes sans demander d’autorisation. Bobine montre après chaque tour les documents changés, mais ne voit pas ce qu’il écrit ailleurs."
+      "limitRequestedOnly": "Limite aux documents seulement demandée : {{agent}} écrit et lance des commandes sans demander d’autorisation. Bobine montre après chaque tour les documents changés, mais ne voit pas ce qu’il écrit ailleurs.",
+      "attachmentMissing": "Pièce jointe introuvable, non envoyée : {{names}}"
     },
     "error": {
       "notDiscussion": "Cette conversation n’est pas une discussion : elle n’a pas de documents.",
-      "noRoles": "Pas de rôles dans une discussion : continuez-la dans un projet pour faire appel à un rôle."
+      "noRoles": "Pas de rôles dans une discussion : continuez-la dans un projet pour faire appel à un rôle.",
+      "notOpenable": "Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le Finder »."
     },
     "space": {
       "label": "Espace",

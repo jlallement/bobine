@@ -1,5 +1,6 @@
 import { FileText, FolderOpen, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState, type DragEvent } from 'react'
+import { canOpenDocument } from '@shared/documents'
 import { useTranslation } from 'react-i18next'
 import type { DiscussionDocument, DocumentPreview } from '@shared/documents'
 import type { TranscriptItem } from '@shared/transcript'
@@ -137,9 +138,11 @@ export function DocumentsPanel({
         <div className="documents-preview" data-testid="documents-preview">
           <div className="documents-preview-bar">
             <span className="documents-preview-name">{selected}</span>
-            <button className="btn small" onClick={() => void api.open(conversationId, selected)}>
-              {t('discussion.documents.open')}
-            </button>
+            {canOpenDocument(selected) && (
+              <button className="btn small" onClick={() => void api.open(conversationId, selected)}>
+                {t('discussion.documents.open')}
+              </button>
+            )}
             <button
               className="btn small ghost"
               onClick={() => void api.saveCopy(conversationId, selected)}

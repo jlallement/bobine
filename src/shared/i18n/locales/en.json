@@ -5089,11 +5089,13 @@
     "notice": {
       "writeAllowed": "Write allowed in the chat’s documents: {{tool}}",
       "writeRefused": "Write refused outside the chat’s documents: {{tool}}",
-      "limitRequestedOnly": "Limit to the documents only requested: {{agent}} writes and runs commands without asking for permission. After each turn Bobine shows the documents that changed, but cannot see what it writes elsewhere."
+      "limitRequestedOnly": "Limit to the documents only requested: {{agent}} writes and runs commands without asking for permission. After each turn Bobine shows the documents that changed, but cannot see what it writes elsewhere.",
+      "attachmentMissing": "Attachment not found, not sent: {{names}}"
     },
     "error": {
       "notDiscussion": "This conversation is not a chat: it has no documents.",
-      "noRoles": "No roles in a chat: continue it in a project to call on a role."
+      "noRoles": "No roles in a chat: continue it in a project to call on a role.",
+      "notOpenable": "This file does not open from Bobine: it could run a program. Use “Show in Finder”."
     },
     "space": {
       "label": "Space",

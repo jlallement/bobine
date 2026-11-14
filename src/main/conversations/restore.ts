@@ -14,11 +14,12 @@
  * comme avant, et un avis le dit. Une demande ne se rejoue jamais.
  */
 import {
+  type Dirent,
   cpSync,
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync
 } from 'node:fs'
@@ -169,6 +170,9 @@ function keep(
     renameSync(join(userData, name), join(keptIn, name))
     step(`moving:${name}`)
   }
+  // Un lien symbolique laissé par un agent dans une discussion (fiche 224) n'est pas un document,
+  // et rendrait l'état gardé non restaurable (`checkBackup` refuse les liens) : retiré.
+  dropSymlinks(join(keptIn, 'discussions'))
   const manifest: Manifest = {
     formatVersion: PROFILE_FORMAT_VERSION,
     app: appVersion,
@@ -178,6 +182,20 @@ function keep(
   writeFileAtomic(join(keptIn, BACKUP_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
   fsyncDir(keptIn)
   fsyncDir(userData)
+}
+
+function dropSymlinks(dir: string): void {
+  let entries: Dirent[]
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return
+  }
+  for (const entry of entries) {
+    const path = join(dir, entry.name)
+    if (entry.isSymbolicLink()) rmSync(path, { force: true })
+    else if (entry.isDirectory()) dropSymlinks(path)
+  }
 }
 
 function place(userData: string, staging: string, step: StepHook): void {

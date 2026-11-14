@@ -109,3 +109,27 @@ describe('ProfileUpdates : diffs des demandes d’autorisation, pour tout agent 
     expect(updates.adapt(done)).toBe(done)
   })
 })
+
+describe('ProfileUpdates : emplacements repris du tool_call (fiche 224, Bob 2.1.0)', () => {
+  it('demande sans emplacement : ceux du tool_call ; demande qui en porte : les siens', () => {
+    const updates = new ProfileUpdates({}, '/d')
+    updates.adapt({
+      sessionUpdate: 'tool_call',
+      toolCallId: 't1',
+      title: 'Updating /d/a.docx',
+      kind: 'edit',
+      locations: [{ path: '/d/a.docx' }]
+    })
+    expect(updates.permission({ toolCallId: 't1', kind: 'edit' }).locations).toEqual([
+      { path: '/d/a.docx' }
+    ])
+    expect(
+      updates.permission({ toolCallId: 't1', kind: 'edit', locations: [{ path: '/d/b.md' }] })
+        .locations
+    ).toEqual([{ path: '/d/b.md' }])
+    // Le diff d'une demande reste dans la demande : la règle d'écriture le compte aussi.
+    const withDiff = updates.permission({ toolCallId: 't1', kind: 'edit', content: [DIFF] })
+    expect(withDiff.locations).toEqual([{ path: '/d/b.md' }])
+    expect(withDiff.content).toEqual([DIFF])
+  })
+})

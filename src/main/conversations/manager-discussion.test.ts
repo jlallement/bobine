@@ -1,16 +1,23 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
 import { ConversationManager } from './manager'
-import { discussionsRoot } from './discussion-space'
+import { discussionFolder, discussionsRoot } from './discussion-space'
 import { ConversationTrash } from './trash'
 
 /** Espace Discussion (fiche 224) : gestionnaire sur des dossiers jetables, agent factice. */
-function launch(scenario = 'echo') {
-  const root = mkdtempSync(join(tmpdir(), 'discussion-'))
+function launch(scenario = 'echo', root = mkdtempSync(join(tmpdir(), 'discussion-'))) {
   const workspace = mkdtempSync(join(tmpdir(), 'projet-'))
   const conversationsDir = join(root, 'conversations')
   const profile: AgentProfile = {
@@ -122,6 +129,97 @@ describe('espace Discussion (fiche 224)', () => {
         i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []
       )
     expect(keys).toEqual(['discussion.notice.writeAllowed', 'discussion.notice.writeRefused'])
+    manager.stopAll()
+  })
+
+  it('B1 : une branche a son propre dossier ; effacer l’originale ne touche pas la branche', async () => {
+    const { manager, conversationsDir } = launch()
+    const a = await manager.create({ space: 'discussion' })
+    await manager.prompt(a.summary.id, 'Bonjour')
+    writeFileSync(join(a.summary.workspace, 'Synthèse.docx'), 'doc')
+    const asked = manager.view(a.summary.id).transcript.items.find((i) => i.kind === 'user')
+    const b = await manager.branch(a.summary.id, asked?.id ?? 0, 'Autre chose')
+    expect(b.summary.space).toBe('discussion')
+    expect(b.summary.workspace).toBe(discussionFolder(conversationsDir, b.summary.id))
+    expect(readFileSync(join(b.summary.workspace, 'Synthèse.docx'), 'utf8')).toBe('doc')
+    await manager.delete(a.summary.id, { fromAgent: false })
+    new ConversationTrash(conversationsDir).erase(a.summary.id)
+    expect(existsSync(a.summary.workspace)).toBe(false)
+    expect(readFileSync(join(b.summary.workspace, 'Synthèse.docx'), 'utf8')).toBe('doc')
+    manager.stopAll()
+  })
+
+  it('effacement : jamais un dossier qu’une autre conversation désigne ; une conversation Code ne touche pas `discussions/`', async () => {
+    const { manager, conversationsDir, workspace } = launch()
+    const a = await manager.create({ space: 'discussion' })
+    await manager.prompt(a.summary.id, 'Bonjour')
+    const code = await manager.create({ workspace })
+    await manager.prompt(code.summary.id, 'Bonjour')
+    const before = readdirSync(discussionsRoot(conversationsDir)).sort()
+    await manager.delete(code.summary.id, { fromAgent: false })
+    new ConversationTrash(conversationsDir).erase(code.summary.id)
+    expect(readdirSync(discussionsRoot(conversationsDir)).sort()).toEqual(before)
+    // Un autre enregistrement (dans l'index, comme une branche d'avant la correction) qui désigne
+    // le dossier de A : gardé à l'effacement.
+    await manager.delete(a.summary.id, { fromAgent: false })
+    const index = join(conversationsDir, 'index.json')
+    const records = JSON.parse(readFileSync(index, 'utf8')) as unknown[]
+    const now = new Date().toISOString()
+    const branch = { id: 'branche-ancienne', title: 'B', titleSource: 'app', profileId: 'texte' }
+    writeFileSync(
+      index,
+      JSON.stringify([
+        ...records,
+        {
+          ...branch,
+          workspace: a.summary.workspace,
+          space: 'discussion',
+          createdAt: now,
+          updatedAt: now
+        }
+      ])
+    )
+    new ConversationTrash(conversationsDir).erase(a.summary.id)
+    expect(existsSync(a.summary.workspace)).toBe(true)
+    manager.stopAll()
+  })
+
+  it('I3 : brouillon avec les traces de l’agent (`.bob/`) mais sans document : son dossier part', async () => {
+    const { manager } = launch()
+    const draft = await manager.create({ space: 'discussion' })
+    mkdirSync(join(draft.summary.workspace, '.bob', 'plugins'), { recursive: true })
+    await manager.create()
+    expect(existsSync(draft.summary.workspace)).toBe(false)
+    manager.stopAll()
+  })
+
+  it('I3 : au lancement, les dossiers que plus rien ne connaît partent, sauf s’ils ont un document', async () => {
+    const first = launch()
+    const kept = await first.manager.create({ space: 'discussion' })
+    await first.manager.prompt(kept.summary.id, 'Bonjour')
+    first.manager.stopAll()
+    const root = discussionsRoot(first.conversationsDir)
+    mkdirSync(join(root, 'brouillon-perdu', '.bob'), { recursive: true })
+    mkdirSync(join(root, 'avec-document'))
+    writeFileSync(join(root, 'avec-document', 'note.txt'), 'x')
+    const again = launch('echo', first.root)
+    expect(readdirSync(root).sort()).toEqual(
+      expect.arrayContaining(['avec-document', kept.summary.id])
+    )
+    expect(readdirSync(root)).not.toContain('brouillon-perdu')
+    again.manager.stopAll()
+  })
+
+  it('I5 : dossier supprimé dans le Finder : recréé, l’agent repart', async () => {
+    const { manager } = launch()
+    const view = await manager.create({ space: 'discussion' })
+    await manager.prompt(view.summary.id, 'Bonjour')
+    manager.stopAll()
+    rmSync(view.summary.workspace, { recursive: true, force: true })
+    await manager.restart(view.summary.id)
+    await manager.prompt(view.summary.id, 'Encore')
+    expect(existsSync(view.summary.workspace)).toBe(true)
+    expect(manager.view(view.summary.id).snapshot?.status).not.toBe('error')
     manager.stopAll()
   })
 })

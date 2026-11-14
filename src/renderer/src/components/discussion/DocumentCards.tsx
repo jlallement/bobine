@@ -1,5 +1,6 @@
 import { FileText, FolderOpen } from 'lucide-react'
 import { createContext, useContext } from 'react'
+import { canOpenDocument } from '@shared/documents'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 
@@ -39,9 +40,11 @@ export function DocumentCards({ names }: { names: readonly string[] }) {
             <div className="document-name">{name}</div>
             <div className="document-meta">{documentKind(name)}</div>
           </span>
-          <button className="btn small" onClick={() => void documents.open(id, name)}>
-            {t('discussion.documents.open')}
-          </button>
+          {canOpenDocument(name) && (
+            <button className="btn small" onClick={() => void documents.open(id, name)}>
+              {t('discussion.documents.open')}
+            </button>
+          )}
           <button className="btn small ghost" onClick={() => void documents.saveCopy(id, name)}>
             {t('discussion.documents.saveCopy')}
           </button>

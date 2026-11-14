@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentEvent, ConversationEvent, ConversationSummary } from '@shared/agent'
 import type { ConversationListeners } from '../conversations/conversation'
+import { canOpenDocument } from '@shared/documents'
 import { attachToDocuments, documentsHandlers, previewOf, type DocumentsHost } from './ipc'
 
 const summary = (id: string, workspace: string, space?: 'discussion'): ConversationSummary => ({
@@ -50,7 +51,7 @@ function setup(writesWithoutAsking = false) {
     reveal: vi.fn()
   }
   const handlers = documentsHandlers(host, deps)
-  const status = (id: string, s: 'busy' | 'ready') =>
+  const status = (id: string, s: 'busy' | 'ready' | 'needs-action') =>
     listener.event?.({
       conversationId: id,
       event: { type: 'status', snapshot: { status: s } }
@@ -160,5 +161,54 @@ describe('documents d’une discussion (fiche 224)', () => {
         }
       ]
     ])
+  })
+
+  it('I6 : « Ouvrir » seulement pour un document ou une image ; un exécutable : refusé', async () => {
+    const { handlers, folder, deps } = setup()
+    for (const name of ['lance.command', 'a.terminal', 'x.webloc', 'page.html', 'b.svg'])
+      writeFileSync(join(folder, name), 'x')
+    writeFileSync(join(folder, 'Synthèse.docx'), 'x')
+    for (const name of ['lance.command', 'a.terminal', 'x.webloc', 'page.html', 'b.svg'])
+      expect(() => handlers['documents:open']('d', name)).toThrow()
+    await handlers['documents:open']('d', 'Synthèse.docx')
+    expect(deps.openPath).toHaveBeenCalledTimes(1)
+    expect(canOpenDocument('Photo.HEIC')).toBe(true)
+    expect(canOpenDocument('sans-extension')).toBe(false)
+  })
+
+  it('M3 : pièce jointe disparue : pas envoyée, et dit dans le fil', () => {
+    const { host, posted } = setup()
+    const sent = attachToDocuments(host, 'd', [{ kind: 'file', path: '/nulle/part/absent.pdf' }])
+    expect(sent).toEqual([])
+    expect(posted).toEqual([
+      [
+        'd',
+        {
+          type: 'notice',
+          level: 'warning',
+          message: { key: 'discussion.notice.attachmentMissing', params: { names: 'absent.pdf' } }
+        }
+      ]
+    ])
+  })
+
+  it('M6 : une autorisation à donner suspend le tour sans le finir', () => {
+    const { folder, posted, status } = setup()
+    status('d', 'busy')
+    status('d', 'needs-action')
+    writeFileSync(join(folder, 'Synthèse.docx'), 'neuf')
+    status('d', 'busy')
+    expect(posted).toEqual([])
+    status('d', 'ready')
+    expect(posted).toEqual([['d', { type: 'documents', names: ['Synthèse.docx'] }]])
+  })
+
+  it('M2 : la copie n’écrase jamais un fichier existant', async () => {
+    const { handlers, folder, project } = setup()
+    writeFileSync(join(folder, 'a.txt'), 'x')
+    writeFileSync(join(project, 'a.txt'), 'à garder')
+    writeFileSync(join(project, 'a (2).txt'), 'à garder aussi')
+    expect(await handlers['documents:saveCopy']('d', 'a.txt')).toBe(join(project, 'a (3).txt'))
+    expect(readFileSync(join(project, 'a (2).txt'), 'utf8')).toBe('à garder aussi')
   })
 })

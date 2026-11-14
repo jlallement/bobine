@@ -9,11 +9,13 @@
  * commandes restent posées à l'utilisateur (une relecture lance `git diff`, les tests). Un agent
  * qui écrit sans demander n'est pas arrêté ici : voir `roles/read-only-watch.ts`.
  */
-import { basename, isAbsolute, relative, resolve } from 'node:path'
 import type { RequestPermissionRequest, RequestPermissionResponse } from '../../shared/acp-sdk.mts'
 import type { AgentEvent } from '@shared/agent'
 import { rememberableTool } from '@shared/permissions'
 import { permissionRisks, type RiskContext } from './permission-risk'
+import { writeAreaVerdict } from './write-area'
+
+export { isInside } from './write-area'
 
 export interface PermissionRules {
   /** Outil de l'app accordé d'office (question, panneau). */
@@ -28,8 +30,7 @@ export interface PermissionRules {
   notify?: (event: AgentEvent) => void
   /**
    * Discussion (fiche 224) : dossier de ses documents. Une demande d'écrire (modifier, supprimer,
-   * déplacer) dont tous les emplacements y sont est accordée une fois ; un emplacement ailleurs,
-   * refusée. Sans emplacement connu, la demande est posée à l'utilisateur.
+   * déplacer) est accordée une fois, refusée ou posée selon toutes ses cibles (`write-area.ts`).
    */
   writeArea?: string | undefined
 }
@@ -52,31 +53,25 @@ export function hostRules(options: {
 /** Genres ACP d'une écriture de fichier, réglés par `writeArea`. */
 const WRITE_KINDS: ReadonlySet<string> = new Set(['edit', 'delete', 'move'])
 
-/** `path` est dans `folder` (ou est `folder`), sans remonter par `..`. */
-export function isInside(folder: string, path: string): boolean {
-  const rel = relative(resolve(folder), resolve(folder, path))
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
-}
-
-/** Réponse d'office à une écriture d'une discussion, ou `undefined` (rien à décider ici). */
+/**
+ * Réponse d'office à une écriture d'une discussion (règles dans `write-area.ts`), ou `undefined` :
+ * la demande est posée à l'utilisateur.
+ */
 function writeAreaAnswer(
   params: RequestPermissionRequest,
   rules: PermissionRules
 ): RequestPermissionResponse | undefined {
   const area = rules.writeArea
   if (!area || !WRITE_KINDS.has(params.toolCall.kind ?? '')) return undefined
-  const paths = (params.toolCall.locations ?? []).map((l) => l.path)
-  if (paths.length === 0) return undefined
-  const allowed = paths.every((p) => isInside(area, p))
+  const verdict = writeAreaVerdict(area, params.toolCall)
+  if (verdict.decision === 'ask') return undefined
+  const allowed = verdict.decision === 'allow'
   const option = allowed
     ? params.options.find((o) => o.kind === 'allow_once')
     : (params.options.find((o) => o.kind === 'reject_once') ??
       params.options.find((o) => o.kind === 'reject_always'))
   if (!option && allowed) return undefined
-  // Le fichier, pas le titre de l'outil : son nom dans les documents, le chemin s'il sort.
-  const outside = paths.find((p) => !isInside(area, p))
-  const shown = allowed ? basename(paths[0] ?? '') : outside ? resolve(area, outside) : ''
-  rules.notify?.(writeAreaNotice(shown, allowed))
+  rules.notify?.(writeAreaNotice(verdict.file, allowed))
   return option ? selected(option.optionId) : { outcome: { outcome: 'cancelled' } }
 }
 
