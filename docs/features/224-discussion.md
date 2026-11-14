@@ -1,0 +1,171 @@
+# 224 — Espace Discussion : parler à l'agent et travailler sur des documents, à côté du code
+
+- **Statut** : à faire — fiche ouverte le 2026-11-14 ; cadre revu le jour même avec l'utilisateur
+  (deux espaces séparés, documents) ; maquettes E1–E6 validées le 2026-11-14 ; prochaine étape :
+  relevés sur Bob réel et OpenCode (plan, étape 1), puis le cœur
+- **Dépend de** : 093 (démarrage : pas de conversation sans dossier), 203 et 214 (cartes
+  d'autorisation lisibles), 223 (rôles : familles d'outils de Bobine choisies, surveillance du
+  dossier), 024 et ADR-0024 (l'échange d'avant part en texte), 052 (aperçu en lecture seule),
+  ADR-0018 (téléchargements : « Enregistrer sous… »), ADR-0031 (pages de l'app dans la zone
+  principale)
+- **Agents** : tous. Une discussion est une conversation ordinaire de l'agent, ouverte dans un
+  dossier tenu par Bobine, avec moins d'outils et une autre interface : rien de propre à un agent
+  (ADR-0011). Ce que l'agent sait faire d'un Word ou d'un Excel dépend de lui ; Bobine ne promet
+  que ce qui est relevé (voir « Ce qui dépend de l'agent »).
+
+## Pourquoi
+
+L'utilisateur veut aussi se servir de Bobine **comme d'un chat**, et l'ouvrir à un **public moins
+technique** qui travaille avec des documents : poser une question, faire rédiger un e-mail,
+résumer un PDF, tirer un tableau d'un Excel, produire un Word. Aujourd'hui toute conversation exige
+un dossier de projet (fiche 093), et tout l'écran parle de code (git, branche, worktree, diffs,
+terminal).
+
+Première version des maquettes (D1–D5, 2026-11-14) refusée : la discussion était glissée dans
+l'espace Code (entrée du menu du dossier, section dans la même liste, bulles dans « Récents ») —
+« trop mélangé ». Décision : **deux espaces séparés, Code et Discussion, sur le même moteur**.
+
+## Ce que font Claude et ChatGPT, et ce qu'on en garde
+
+Relevé de mémoire (mi-2026), à revérifier avant de citer ailleurs :
+
+| | Claude (Chat) | ChatGPT | Bobine (proposé) |
+|---|---|---|---|
+| Espaces | onglets Chat / Cowork / Code | un seul (Projets à part) | sélecteur **Code \| Discussion** en tête de la barre latérale |
+| Donner un fichier | trombone ou glisser ; carte dans le message | idem | idem : pièce jointe, carte dans le message, copie dans la discussion |
+| Produire un fichier | code dans un bac à sable de la conversation (Word, Excel, PDF…) ; carte « Télécharger » ; Artifacts à droite | Python dans un bac à sable (`/mnt/data`) ; lien de téléchargement ; Canvas à droite | l'agent écrit dans le dossier de la discussion ; **carte de fichier dans le fil** (Ouvrir, Enregistrer sous…, Afficher dans le Finder) ; panneau **Documents** |
+| Durée des fichiers | gardés avec la conversation | **expirent** (bac à sable vidé) | gardés avec la discussion, corbeille avec elle |
+| Partage entre conversations | Projets | Projets | plus tard |
+
+Différence de fond : chez eux le code tourne sur leurs serveurs ; chez Bobine, l'agent tourne sur
+le Mac de l'utilisateur, avec ses outils et ses autorisations. Même moteur que l'espace Code (comme
+Cowork reprend le moteur de Claude Code) : la différence est dans ce qu'on montre et ce qu'on
+demande.
+
+## Ce qui distingue les deux espaces
+
+| | Code | Discussion |
+|---|---|---|
+| Dossier | choisi par l'utilisateur (son projet) | tenu par Bobine, jamais nommé : on voit des « documents » |
+| À l'écran | git, branche, worktree, diffs, terminal, navigateur, simulateur, Équipe | messages, cartes de fichiers, panneau Documents (aperçu) |
+| Agent | mode de travail, filles, rôles, outils de Bobine | outils de Bobine coupés ; pas de filles ni de rôles |
+| Autorisations | cartes techniques | même mécanisme, dit en clair (« Créer « Synthèse.docx » dans les documents de cette discussion ? ») |
+| Vocabulaire | projet, dossier, commit | discussion, document, enregistrer |
+| Accueil | « Explique ce projet », « Trouve des bugs »… | « Résume un document », « Fais un tableau », « Rédige un e-mail », « Explique une notion » |
+
+Communs : Réglages, agent et modèle, « Mon activité » (la consommation compte les deux espaces).
+Propres à Code : Tâches planifiées, Équipe. Le seul pont : **« Continuer dans un projet… »**.
+
+## Décisions (validées avec les maquettes E1–E6, 2026-11-14)
+
+1. **Dossier de travail par discussion** : `<données>/discussions/<id>/`, créé au premier message
+   ou au premier document déposé. Ce que l'utilisateur glisse y est **copié** (l'original n'est
+   jamais touché) ; ce que l'agent produit y reste. Gardé aussi longtemps que la discussion, mis à
+   la corbeille avec elle (30 jours, comme une conversation). Jamais dans les dossiers récents ;
+   pas de git, de worktree, de règles du projet, de mémoire commune, de serveurs MCP « projet » ni
+   de serveurs de dev. **À relever sur Bob réel** avant de coder : demande-t-il l'approbation de
+   chaque sous-dossier (carte « Dossier non approuvé », fiche 093) ou celle du parent suffit-elle ?
+2. **Mode** : le mode de travail habituel de l'agent (l'agent doit pouvoir écrire un document) ;
+   pas le mode `ask` de Bob (lecture seule, première version abandonnée). L'utilisateur garde la
+   puce de mode s'il veut changer, repliée dans les réglages de session.
+3. **Écritures bornées aux documents** : une demande d'écriture (`edit`, `delete`, `move`) dont
+   les emplacements sortent du dossier de la discussion est **refusée d'office** et dite ; dedans,
+   elle est accordée d'office (dit dans le fil, une ligne). Un agent qui écrit sans demander
+   (`writesWithoutAsking`, OpenCode) : surveillance du dossier par liste de fichiers ; ce qui
+   change **hors** du dossier, Bobine ne peut ni l'empêcher ni le voir — c'est dit dans Réglages ›
+   Agents, pas promis.
+4. **Commandes** : toujours demandées à l'utilisateur, jamais « toujours autorisées » d'office.
+   Une carte de commande dans une discussion dit **ce que la commande fait** en une phrase (titre
+   annoncé par l'agent, fiche 203) avant le détail technique, replié.
+5. **Outils** : familles d'outils de Bobine vides (`roleToolModules`, fiche 223) : ni navigateur,
+   ni terminal, ni simulateur, ni filles, ni mémoire. Les serveurs MCP personnels de l'agent
+   restent les siens (fiche 025).
+6. **Interface** :
+   - Sélecteur **Code | Discussion** en tête de la barre latérale, ⌘1 / ⌘2, dernier espace
+     retenu. L'espace Code est **inchangé**.
+   - Espace Discussion : « Nouvelle discussion », Épinglées, Récentes, recherche limitée aux
+     discussions ; ni Équipe, ni dossiers, ni puce de dossier ou de branche sous la saisie.
+   - Documents : glisser sur la fenêtre ou trombone ; carte dans le message ; carte de fichier
+     dans le fil pour chaque document créé ou modifié par l'agent ; panneau **Documents** à droite
+     (liste, aperçu en lecture seule, Ouvrir avec l'app par défaut, Enregistrer sous…, Afficher
+     dans le Finder).
+   - « Continuer dans un projet… » (menu du titre) : choisir un dossier ouvre une conversation
+     **dans l'espace Code**, avec la discussion passée en texte avant le premier message (comme
+     ADR-0024) ; les documents peuvent être copiés dans le projet (case cochée). La discussion
+     reste telle quelle.
+
+## Ce qui dépend de l'agent (à relever, rien de supposé)
+
+- Lire un `.docx`, `.xlsx`, `.pdf` : outil de lecture de l'agent, ou commande. Option générique
+  à décider plus tard : Bobine joint une version texte d'un document déposé (macOS `textutil`
+  pour Word / RTF), sans rien de propre à un agent.
+- Produire un `.docx` / `.xlsx` : en général une commande (Python, bibliothèques installées ou
+  non sur le Mac). Relevé à faire sur Bob réel (au travail) et OpenCode, consigné dans
+  `docs/acp.md` et `docs/agents.md` ; l'accueil ne propose que ce qui marche.
+
+## Critères d'acceptation
+
+- [ ] Sélecteur Code | Discussion ; l'espace Code est identique à aujourd'hui (captures e2e
+      existantes inchangées).
+- [ ] Une discussion se démarre sans dossier, reçoit des messages et des documents ; aucun
+      dossier n'entre dans les récents.
+- [ ] Un document déposé est copié dans la discussion ; l'original n'est pas modifié.
+- [ ] Un document créé ou modifié par l'agent a sa carte dans le fil et sa ligne dans le panneau
+      Documents (Ouvrir, Enregistrer sous…, Afficher dans le Finder).
+- [ ] Écriture demandée hors des documents : refusée et dite ; dedans : accordée et dite.
+- [ ] Aucun outil MCP de Bobine n'est proposé à l'agent ; pas de filles ni de rôles.
+- [ ] Suppression d'une discussion : ses documents partent à la corbeille avec elle ; restauration
+      les rend.
+- [ ] « Continuer dans un projet… » ouvre une conversation dans l'espace Code, discussion passée
+      en texte, documents copiés si demandé.
+- [ ] Reprise après redémarrage : la discussion se rouvre avec ses documents.
+- [ ] Testé contre l'agent factice : scénarios `discussion-document` (lit un document déposé,
+      écrit un fichier dans le dossier) et `discussion-hors-dossier` (écriture refusée) ; e2e
+      `discussion` en clair et sombre, captures regardées ; textes en `fr.json` et `en.json`.
+- [ ] Bob réel et OpenCode : approbation du dossier, lecture et production d'un Word et d'un
+      Excel relevées dans `docs/acp.md`.
+
+## Plan
+
+Maquettes validées ; le code commence par les relevés (étape 1). Plus de trois fichiers : plan présenté avant de
+coder. Aucune nouvelle dépendance prévue.
+
+1. **Relevés** (Bob au travail, OpenCode modèle gratuit) : approbation de
+   `<données>/discussions/<id>`, lecture et production `.docx` / `.xlsx`, titres des commandes.
+   Traces rejouées par l'agent factice (contrat réel avant le code).
+2. **Cœur (main)** :
+   - `src/shared/` : `ConversationRecord.space: 'code' | 'discussion'` (absent = code, lu tel quel
+     à la relecture de l'index) ; résumé, IPC `documents:*` (liste, ajouter, ouvrir, enregistrer
+     sous, afficher).
+   - `src/main/conversations/` : dossier de la discussion (création, corbeille et restauration
+     avec la conversation), exclu des récents ; `readFolder` / `workspaceOf` rendent « rien » pour
+     git, règles, mémoire, MCP projet, serveurs de dev.
+   - Hôte : familles d'outils vides ; réponses d'office aux autorisations d'écriture selon les
+     emplacements (dedans / dehors), sur le modèle de `AgentHostOptions.readOnly` (fiche 223) ;
+     surveillance du dossier par liste de fichiers ; documents créés ou modifiés repérés à la fin
+     du tour pour les cartes.
+   - Continuer dans un projet : nouvelle conversation de l'espace Code + élément de passage en
+     texte (ADR-0024, sans changer d'agent), copie facultative des documents.
+3. **Agent factice** : scénarios `discussion-document`, `discussion-hors-dossier` ;
+   `docs/mock-agent.md`.
+4. **Interface** (après validation des maquettes) : sélecteur et espace retenu, barre latérale de
+   l'espace Discussion, accueil et suggestions, cartes de documents (message et fil), panneau
+   Documents, cartes d'autorisation en clair, « Continuer dans un projet… », raccourcis ⌘1 / ⌘2 ;
+   i18n fr / en (glossaire : « discussion » / « chat », « documents » / « documents »).
+5. **Essais et doc** : unitaires (gestionnaire, hôte, index), e2e `discussion` ; `docs/architecture.md`,
+   guide, changelogs. ADR : « L'espace Discussion : même moteur, dossier tenu par Bobine, autre
+   interface » (précise ADR-0011 et la fiche 093).
+
+## Plus tard (hors périmètre)
+
+- Documents et instructions partagés entre discussions (les « Projets » de Claude et ChatGPT).
+- Version texte jointe aux documents déposés (`textutil`).
+- Recherche web : seulement si l'agent l'a lui-même.
+
+## Journal
+
+- **2026-11-14** : fiche ouverte (utiliser Bobine comme un chat). Maquettes D1–D5 (discussion dans
+  l'espace Code, dossier vide en lecture seule, mode `ask`) refusées : trop mélangé avec le code.
+  Cadre revu avec l'utilisateur : deux espaces séparés sur le même moteur, public moins technique,
+  documents déposés et produits gardés avec la discussion (comparaison Claude / ChatGPT).
+  Maquettes E1–E6 (`e2e/maquettes/screens-discussion.mjs`) validées par l'utilisateur le même jour.
