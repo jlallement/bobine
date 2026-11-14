@@ -455,6 +455,11 @@ describe('textes et lancement', () => {
       BOBINE_AGENT_PROFILE: 'mock',
       MOCK_AGENT_SCENARIO: 'permission'
     })
+    // `--dossier` sur le profil temporaire : le premier « Choisir… » de l'accueil le rend.
+    expect(launchEnv({}, { dossier: '/tmp/projet' })).toEqual({
+      BOBINE_PRESET_FOLDER: '/tmp/projet'
+    })
+    expect(launchEnv({}, { dossier: '/tmp/projet', profil: '/tmp/profil' })).toEqual({})
   })
 })
 

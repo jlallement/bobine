@@ -125,9 +125,14 @@ export function launchArgs({ base, port, options }) {
   return args
 }
 
-/** Environnement de Bobine : celui du pilote, plus la langue et l'agent factice demandés. */
+/**
+ * Environnement de Bobine : celui du pilote, plus la langue et l'agent factice demandés. Avec
+ * `--dossier` sur le profil temporaire, le premier « Choisir… » (étape « Où travailler ? » de
+ * l'accueil) rend ce dossier sans la fenêtre de macOS (`BOBINE_PRESET_FOLDER`, une seule fois).
+ */
 export function launchEnv(env, options) {
   const out = { ...env }
+  if (options.dossier && !options.profil) out.BOBINE_PRESET_FOLDER = resolve(options.dossier)
   if (options.lang) {
     out.BOBINE_LANG = options.lang
     out.MOCK_AGENT_LANG = options.lang
