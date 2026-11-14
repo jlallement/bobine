@@ -230,6 +230,7 @@ chaque création ou changement de statut.
 | [223](223-roles.md) | Rôles : agents spécialisés créés une fois et invoqués par `@rôle` ou par l'agent (`start_child` + `role`), visibles au travail ; filles lancées sans insister | fait | P2 |
 | [224](224-discussion.md) | Espace Discussion à côté de l'espace Code (sélecteur Code \| Discussion) : chat et documents (déposés, produits, gardés avec la discussion) pour un public moins technique ; dossier tenu par Bobine, écritures bornées aux documents, outils de Bobine coupés ; « Continuer dans un projet… » | en cours (fait, relecture du tech lead) | P2 |
 | [226](226-theme-aurore-panneau-320.md) | Thème Aurore / Aurore nuit à la place de Sépia (« Touches légères » : lueur en haut de la barre latérale, bulle, liseré de la saisie, action principale en dégradé, ombre teintée des cartes, verre sur ce qui flotte ; repli d'accessibilité de macOS) ; panneau de droite à 320 px, largeur retenue seulement après un glissement, double-clic : largeur par défaut | fait | P2 |
+| [227](227-historique-saisie.md) | Historique de la saisie : ↑ / ↓ rappellent les messages envoyés de la conversation (texte tapé, jetons `@rôle`), lignes d'abord, pastille « 9/10 · ↑↓ · Échap vider », rappel « ↑ Messages précédents » ; gardé avec le fil, par conversation | fait (relecture du tech lead) | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

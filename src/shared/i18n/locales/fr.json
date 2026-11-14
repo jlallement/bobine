@@ -187,6 +187,16 @@
     "keep": "Garder"
   },
   "composer": {
+    "history": {
+      "position": "{{index}}/{{count}}",
+      "escape": "Échap",
+      "clear": "vider",
+      "announce": "Message envoyé {{index}} sur {{count}} : ↑ ↓ pour parcourir, Échap pour vider",
+      "hint": "Messages précédents",
+      "lost_one": "{{count}} pièce jointe non reprise",
+      "lost_many": "{{count}} pièces jointes non reprises",
+      "lost_other": "{{count}} pièces jointes non reprises"
+    },
     "theAgent": "L’agent",
     "readOnly": {
       "title": "Conversation en lecture seule",

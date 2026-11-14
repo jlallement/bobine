@@ -23,7 +23,9 @@ import { useCommandMenu } from '../../useCommandMenu'
 import { useMentions } from '../../useMentions'
 import { useComposerInbox } from '../../useComposerInbox'
 import { useTextareaLayout } from '../../useTextareaLayout'
-import { composerKeyAction, nextOption } from '../../composer-keys'
+import { composerKeyDown } from './composer-key-down'
+import { useComposerHistory } from './useComposerHistory'
+import { LostAttachments, SentHistoryHint, SentHistoryPill } from './SentHistory'
 import { composerView, type ComposerView } from '../../composer-view'
 import { FileMenu, type MentionEntry } from './FileMenu'
 import { ComposerAttachments } from './ComposerAttachments'
@@ -149,6 +151,8 @@ interface Props {
   onOpenTerminal: () => void
   /** Rôles (fiche 223) : menu `@`, jetons, envoi d'une fille par rôle. */
   roles?: ComposerRoles
+  /** Historique de la saisie de la conversation (`sentHistory` de son fil, fiche 227). */
+  sentHistory?: unknown
 }
 
 /** Statuts qui ont leur propre texte d'invite (clé `composer.placeholder.<statut>`). */
@@ -186,6 +190,7 @@ function placeholderOf(
 }
 
 const NO_USER_COMMANDS: UserCommand[] = []
+const NO_ROLES: readonly { name: string; label: string }[] = []
 const NO_AGENT_COMMANDS: AgentCommand[] = []
 
 /**
@@ -259,7 +264,6 @@ function useInbox(
 }
 
 export function Composer(props: Props) {
-  const { t } = useTranslation()
   const { snapshot, settings, onSend, onCancel, draftKey } = props
   const view = composerView(snapshot, settings)
   const { status, busy, queued, locked, controls, modeControl, agentLabel, blocker } = view
@@ -299,7 +303,8 @@ export function Composer(props: Props) {
     draftKey,
     menuOpen: mentions.open,
     onWarn: props.onWarn,
-    focus: focusInput
+    focus: focusInput,
+    onSent: (sent) => recordSent(sent.text, sent.tokens)
   })
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)
@@ -315,6 +320,17 @@ export function Composer(props: Props) {
   }
   const trackCaret = (event: SyntheticEvent<HTMLTextAreaElement>) =>
     setCaret(event.currentTarget.selectionStart)
+
+  // Historique de la saisie (fiche 227) : ↑ / ↓ rappellent les messages envoyés.
+  const history = useComposerHistory({
+    conversationId: draftKey,
+    raw: props.sentHistory,
+    text,
+    roles: { known: props.roles?.list ?? NO_ROLES, compose: roleCompose },
+    attachments: attachments.items.length,
+    ...{ textarea, changeText, placeCaret, commandMenu, mentions, tips }
+  })
+  const recordSent = history.recordSent
 
   const pickEntry = (entry: MentionEntry) => {
     const { mention } = mentions
@@ -371,7 +387,11 @@ export function Composer(props: Props) {
     else if (command.source === 'user' || command.source === 'project') {
       const own = userCommandOf(`/${command.name}`, userCommands, agentCommands)
       if (own) onSend(expandCommand(own.command.prompt, ''))
-    } else onSend(`/${command.name}`)
+      if (own) recordSent(`/${command.name}`)
+    } else {
+      onSend(`/${command.name}`)
+      recordSent(`/${command.name}`)
+    }
     changeText('')
   }
 
@@ -403,6 +423,8 @@ export function Composer(props: Props) {
     if (own) {
       if (!canSend) return
       onSend(expandCommand(own.command.prompt, own.args), attachments.toSend())
+      // L'historique garde la commande tapée, jamais sa consigne développée (fiche 227).
+      recordSent(text)
       changeText('')
       attachments.clear()
       return
@@ -415,6 +437,7 @@ export function Composer(props: Props) {
     }
     if (!canSend) return
     onSend(text, attachments.toSend())
+    recordSent(text)
     // Message tapé par l'utilisateur : compté pour l'astuce « Planifier… » (fiche 191).
     tips?.noteSent?.(snapshot?.info.workspace, text)
     attachments.clear()
@@ -426,7 +449,8 @@ export function Composer(props: Props) {
     composerKeyDown(event, {
       ...{ roleCompose, mentions, commandMenu, busy, text, queued, modeControl, status },
       ...{ pickEntry, pickCommand, submit, onCancel, editQueued },
-      setControl: props.onSetControl
+      setControl: props.onSetControl,
+      ...history.keys
     })
 
   if (status === 'read-only') {
@@ -483,6 +507,11 @@ export function Composer(props: Props) {
         onSubmit={submit}
         data-plan={view.planMode || undefined}
       >
+        {/* Ancre sans hauteur : pastille et rappel posés sans rien déplacer (fiche 227). */}
+        <div className="sent-history-anchor">
+          <SentHistoryPill index={history.index} count={history.count} />
+          {history.hint(queued.length === 0 && !blocker) && <SentHistoryHint />}
+        </div>
         <QueuedMessages
           items={queued}
           busy={busy}
@@ -496,6 +525,7 @@ export function Composer(props: Props) {
           onPutBack={putBack}
         />
         <RoleTokens roles={roleView.tokens} onRemove={roleView.remove} />
+        <LostAttachments count={history.lost} />
         {commandMenu.pendingHint && (
           <div className="command-pending" data-testid="command-hint">
             /{commandMenu.typed} <span>{commandMenu.pendingHint}</span>
@@ -508,6 +538,7 @@ export function Composer(props: Props) {
           onKeyDown={onKeyDown}
           onKeyUp={trackCaret}
           onClick={trackCaret}
+          {...history.focusProps}
           onPaste={onPaste}
           placeholder={placeholderOf(view, props, snapshot?.info.profileLabel)}
           aria-describedby={view.planMode ? planHintId : undefined}
@@ -547,6 +578,44 @@ export function Composer(props: Props) {
       {view.planMode && roleView.targets.length === 0 && (
         <PlanHint id={planHintId} nextMode={view.nextModeName} />
       )}
+      <ComposerBelow
+        props={props}
+        roleView={roleView}
+        profileId={snapshot?.info.profileId ?? settings?.profileId}
+        agentLabel={agentLabel}
+        locked={locked}
+        status={status}
+        focusInput={focusInput}
+      />
+    </div>
+  )
+}
+
+/**
+ * Sous la saisie : où partira un message pour des rôles (fiche 223), dossier et branche, agent
+ * arrêté ou en échec (sorti de `Composer` pour sa taille, fiche 089).
+ */
+function ComposerBelow({
+  props,
+  roleView,
+  profileId,
+  agentLabel,
+  locked,
+  status,
+  focusInput
+}: {
+  props: Props
+  roleView: ReturnType<ReturnType<typeof useRoleCompose>['view']>
+  profileId: string | undefined
+  agentLabel: string
+  locked: boolean
+  status: string
+  focusInput: () => void
+}) {
+  const { t } = useTranslation()
+  const settings = props.settings
+  return (
+    <>
       {roleView.notHere && (
         <p className="role-destination role-not-here" role="status" data-testid="role-not-here">
           {t('team.notHere')}
@@ -557,7 +626,7 @@ export function Composer(props: Props) {
         empty={roleView.empty}
         sending={roleView.sending}
         roles={props.roles}
-        profileId={snapshot?.info.profileId ?? settings?.profileId}
+        profileId={profileId}
         agentLabel={agentLabel}
       />
       <ComposerContext
@@ -581,83 +650,8 @@ export function Composer(props: Props) {
           </button>
         </div>
       )}
-    </div>
+    </>
   )
-}
-
-/** Ce que les touches de la saisie lisent et déclenchent (`composerKeyDown`). */
-interface KeyContext {
-  roleCompose: { removeLast: () => boolean }
-  mentions: ReturnType<typeof useMentions>
-  commandMenu: ReturnType<typeof useCommandMenu>
-  busy: boolean
-  text: string
-  queued: readonly { id: string }[]
-  modeControl: SessionControl | undefined
-  status: string
-  pickEntry: (entry: MentionEntry) => void
-  pickCommand: (command: AgentCommand, complete: boolean) => void
-  submit: (event?: FormEvent) => void
-  onCancel: () => void
-  editQueued: (id: string) => Promise<void>
-  setControl: (id: string, value: ControlValue) => void
-}
-
-/** Touches de la zone de saisie (`composer-keys.ts`), sorti de `Composer` (taille bornée). */
-function composerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>, c: KeyContext): unknown {
-  const { mentions, commandMenu, queued, modeControl } = c
-  // Retour arrière en tête de la saisie : le dernier jeton de rôle part d'un coup (fiche 223).
-  const input = event.currentTarget
-  if (event.key === 'Backspace' && input.selectionStart === 0 && input.selectionEnd === 0) {
-    if (c.roleCompose.removeLast()) return event.preventDefault()
-  }
-  const action = composerKeyAction(
-    { key: event.key, shift: event.shiftKey, composing: event.nativeEvent.isComposing },
-    {
-      mentions: { open: mentions.open, count: mentions.entries.length, active: mentions.active },
-      commands: {
-        open: commandMenu.open,
-        count: commandMenu.matches.length,
-        active: commandMenu.active
-      },
-      busy: c.busy,
-      empty: !c.text,
-      hasQueued: queued.length > 0,
-      canCycleMode: !!modeControl && c.status === 'ready'
-    }
-  )
-  if (action.kind === 'none') return
-  event.preventDefault()
-  switch (action.kind) {
-    case 'mention-move':
-      return mentions.setActive(action.index)
-    case 'mention-pick': {
-      const picked = mentions.entries[mentions.active]
-      return picked && c.pickEntry(picked)
-    }
-    case 'mention-dismiss':
-      return mentions.dismiss()
-    case 'command-move':
-      return commandMenu.setActive(action.index)
-    case 'command-pick': {
-      const picked = commandMenu.matches[commandMenu.active]
-      return picked && c.pickCommand(picked, action.complete)
-    }
-    case 'command-dismiss':
-      return commandMenu.dismiss()
-    case 'submit':
-      return c.submit(event)
-    case 'cancel':
-      return c.onCancel()
-    case 'edit-last-queued': {
-      const lastQueued = queued.at(-1)
-      return lastQueued && void c.editQueued(lastQueued.id)
-    }
-    case 'next-mode': {
-      const next = modeControl && nextOption(modeControl)
-      return modeControl && next && c.setControl(modeControl.id, next)
-    }
-  }
 }
 
 /** Rappel du mode Plan sous la zone de saisie (fiche 098) : la couleur n'est pas le seul signal. */

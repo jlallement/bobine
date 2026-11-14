@@ -272,6 +272,17 @@ describe('astuces (fiche 191)', () => {
     })
     expect(settings.resetTips()).toEqual({ hidden: [], lastShownDay: '2026-11-07' })
   })
+
+  it('rappel « ↑ Messages précédents » (fiche 227) : 3 utilisations, puis plus rien ; « Tout réafficher » le rend', () => {
+    const { settings, save } = store()
+    for (let i = 0; i < 5; i++) settings.recordHintUse('history')
+    expect(settings.tips().hintUses).toEqual({ history: 3 })
+    expect(save.mock.lastCall?.[0].tipsState?.hintUses).toEqual({ history: 3 })
+    const saves = save.mock.calls.length
+    settings.recordHintUse('history')
+    expect(save.mock.calls.length).toBe(saves)
+    expect(settings.resetTips().hintUses).toBeUndefined()
+  })
 })
 
 describe('message répété (fiche 191)', () => {

@@ -17,6 +17,8 @@ function fitHeight(el: HTMLTextAreaElement) {
 export function useTextareaLayout(text: string) {
   const textarea = useRef<HTMLTextAreaElement>(null)
   const pendingCaret = useRef<number | null>(null)
+  // Message repris de l'historique (fiche 227) : le champ remonte en haut (↑) ou descend (↓).
+  const pendingScroll = useRef<'top' | 'bottom' | null>(null)
   useLayoutEffect(() => {
     const el = textarea.current
     if (!el) return
@@ -24,6 +26,10 @@ export function useTextareaLayout(text: string) {
     if (pendingCaret.current !== null) {
       el.setSelectionRange(pendingCaret.current, pendingCaret.current)
       pendingCaret.current = null
+    }
+    if (pendingScroll.current) {
+      el.scrollTop = pendingScroll.current === 'top' ? 0 : el.scrollHeight
+      pendingScroll.current = null
     }
   }, [text])
   useLayoutEffect(() => {
@@ -39,8 +45,9 @@ export function useTextareaLayout(text: string) {
     resize.observe(el)
     return () => resize.disconnect()
   }, [])
-  const placeCaret = useCallback((caret: number) => {
+  const placeCaret = useCallback((caret: number, scroll?: 'top' | 'bottom') => {
     pendingCaret.current = caret
+    pendingScroll.current = scroll ?? null
   }, [])
   return { textarea, placeCaret }
 }

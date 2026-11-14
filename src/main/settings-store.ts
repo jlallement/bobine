@@ -11,11 +11,13 @@ import type { OnboardingMark } from '@shared/onboarding'
 import { createHmac, randomBytes } from 'node:crypto'
 import {
   applyTipAction,
+  countHintUse,
   localDay,
   EMPTY_TIPS,
   normalizeMessage,
   noteSentMessage,
   withoutSent,
+  type HintId,
   type TipAction,
   type TipId,
   type TipsState
@@ -203,10 +205,20 @@ export class SettingsStore {
     return noted.repeated
   }
 
-  /** « Tout réafficher » : plus aucune astuce masquée (le quota du jour reste). */
+  /**
+   * « Tout réafficher » : plus aucune astuce masquée, les rappels repartent de zéro (fiche 227) ;
+   * le quota du jour reste.
+   */
   resetTips(): TipsState {
-    const { hidden: _hidden, ...rest } = this.tips()
+    const { hidden: _hidden, hintUses: _uses, ...rest } = this.tips()
     return this.setTips({ ...rest, hidden: [] })
+  }
+
+  /** La fonction d'un rappel a servi (fiche 227) : il s'efface après `HINT_MAX_USES`. */
+  recordHintUse(id: HintId): TipsState {
+    const state = this.tips()
+    const next = countHintUse(state, id)
+    return next === state ? state : this.setTips(next)
   }
 
   notificationsEnabled(): boolean {

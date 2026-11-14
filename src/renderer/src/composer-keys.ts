@@ -8,6 +8,11 @@
  * - Entrée envoie, Maj+Entrée insère un retour à la ligne (sauf composition IME en cours).
  * - Échap arrête la réponse ; ↑ dans une zone vide reprend le dernier message en attente.
  * - Maj+Tab passe au mode suivant, comme dans Claude Code.
+ * - Historique de la saisie (fiche 227), après tout le reste : ↑ dans une saisie vide reprend le
+ *   dernier message envoyé ; dans un message repris non modifié, ↑ depuis sa première ligne
+ *   affichée passe au précédent (rien sur le premier), ↓ depuis sa dernière au suivant (après le
+ *   dernier : saisie vide) ; ailleurs, les flèches déplacent le curseur. Échap le quitte et vide
+ *   la saisie, avant d'arrêter la réponse.
  */
 
 export interface ComposerKey {
@@ -15,6 +20,21 @@ export interface ComposerKey {
   shift: boolean
   /** Composition IME en cours (saisie du japonais…) : Entrée la valide, n'envoie rien. */
   composing: boolean
+  /** ⌥, ⌃ ou ⌘ tenue (⌘↑ : début du texte) : jamais pour l'historique. */
+  modified?: boolean
+}
+
+/** Historique de la saisie de la conversation (fiche 227). */
+export interface ComposerHistoryState {
+  /** Messages envoyés gardés. */
+  count: number
+  /** Message repris affiché, non modifié (0 : le plus ancien) ; `undefined` : hors historique. */
+  index: number | undefined
+  /** Saisie vide : ni texte, ni jeton de rôle, ni pièce jointe. */
+  blank: boolean
+  /** Curseur sur la première / la dernière ligne affichée du texte (replis compris). */
+  firstLine: boolean
+  lastLine: boolean
 }
 
 export interface ComposerMenuState {
@@ -34,6 +54,8 @@ export interface ComposerKeyState {
   hasQueued: boolean
   /** Un mode à choisir, agent prêt. */
   canCycleMode: boolean
+  /** Absent : pas d'historique (saisie rapide). */
+  history?: ComposerHistoryState
 }
 
 export type ComposerKeyAction =
@@ -50,6 +72,10 @@ export type ComposerKeyAction =
   | { kind: 'cancel' }
   | { kind: 'edit-last-queued' }
   | { kind: 'next-mode' }
+  /** Message `index` de l'historique repris ; `from` : la flèche (où poser le curseur). */
+  | { kind: 'history-move'; index: number; from: 'up' | 'down' }
+  /** Hors de l'historique, saisie vidée. */
+  | { kind: 'history-exit' }
 
 type MenuAction = { kind: 'move'; index: number } | { kind: 'prevent' | 'pick' | 'dismiss' }
 
@@ -82,10 +108,36 @@ export function composerKeyAction(key: ComposerKey, state: ComposerKeyState): Co
     if (action) return { kind: 'prevent' }
   }
   if (key.key === 'Enter' && !key.shift && !key.composing) return { kind: 'submit' }
+  const history = historyAction(key, state)
+  if (history?.kind === 'history-exit' && key.key === 'Escape') return history
   if (key.key === 'Escape' && state.busy) return { kind: 'cancel' }
   if (key.key === 'ArrowUp' && state.empty && state.hasQueued) return { kind: 'edit-last-queued' }
+  if (history) return history
   if (key.key === 'Tab' && key.shift && state.canCycleMode) return { kind: 'next-mode' }
   return { kind: 'none' }
+}
+
+/** Flèche ou Échap pour l'historique de la saisie ; `undefined` : la touche n'est pas pour lui. */
+function historyAction(
+  key: ComposerKey,
+  { history: h }: ComposerKeyState
+): ComposerKeyAction | undefined {
+  if (!h || key.composing || key.shift || key.modified) return undefined
+  const move = (index: number, from: 'up' | 'down') =>
+    ({ kind: 'history-move', index, from }) as const
+  if (h.index === undefined) {
+    // Entrée dans l'historique : par ↑ seulement, saisie vide, au moins un message envoyé.
+    return key.key === 'ArrowUp' && h.blank && h.count > 0 ? move(h.count - 1, 'up') : undefined
+  }
+  if (key.key === 'Escape') return { kind: 'history-exit' }
+  // Lignes d'abord : ailleurs que sur la première (↑) ou la dernière ligne (↓), le curseur bouge.
+  if (key.key === 'ArrowUp' && h.firstLine) {
+    return h.index > 0 ? move(h.index - 1, 'up') : { kind: 'prevent' }
+  }
+  if (key.key === 'ArrowDown' && h.lastLine) {
+    return h.index < h.count - 1 ? move(h.index + 1, 'down') : { kind: 'history-exit' }
+  }
+  return undefined
 }
 
 /** Option suivante d'un réglage à choix (Maj+Tab : mode suivant, en boucle). */

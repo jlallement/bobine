@@ -24,6 +24,11 @@ What changes for you, version by version. Shown in Settings › About.
   the chat’s documents and refused elsewhere, and each answer is shown. “Continue in a project…”
   (title menu) picks up the chat in a Code-space conversation, with the documents copied if you
   want.
+- Composer: ↑ in an empty composer brings back the last message you sent in this conversation, ↑
+  again the earlier ones, ↓ goes forward (then back to an empty composer). The message comes back
+  as typed, with its `@role` tokens; in a multi-line message the arrows move through the lines
+  first. A “9/10” pill shows where you are, Esc clears the composer, and any edit turns it into a
+  regular draft. Each conversation has its own history, kept with it.
 
 ## 1.0.0-beta.3 — November 14, 2026
 

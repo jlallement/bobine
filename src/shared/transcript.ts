@@ -51,6 +51,7 @@ import type { WorktreeStart } from './worktree-cycle'
 import { reduceWorktreeSetup, type WorktreeSetup } from './worktree-setup'
 import { contentOrKept } from './tool-call-kept'
 import { compactionReply } from './compaction-reply'
+import { keptOnReset, withSentEntry } from './transcript-kept'
 export { withSubagentWork } from './subagent'
 
 export type TranscriptItem =
@@ -232,6 +233,8 @@ export interface TranscriptState {
   halted?: { status: string; detail: string | undefined } | undefined
   /** Jetons estimés de l'index de la mémoire joint à la session en cours (fiche 182). */
   memoryTokens?: number
+  /** Messages envoyés, tels que tapés (fiche 227) : posés par l'app, jamais déduits du fil. */
+  sentHistory?: import('./sent-history').SentEntry[]
 }
 
 /** Images gardées par carte d'outil. */
@@ -321,13 +324,8 @@ function blocksText(blocks: { type: string; text?: string }[]): string {
 export function reduceTranscript(state: TranscriptState, event: AgentEvent): TranscriptState {
   switch (event.type) {
     case 'reset':
-      // Rejeu d'une session rechargée : le fil est reconstruit, la consommation cumulée et le
-      // plafond restent.
-      return {
-        ...emptyTranscript,
-        ...(state.usage ? { usage: state.usage } : {}),
-        ...(state.costCap ? { costCap: state.costCap } : {})
-      }
+      // Rejeu d'une session rechargée : le fil est reconstruit, sans perdre ce que l'app tient.
+      return { ...emptyTranscript, ...keptOnReset(state) }
     case 'cancel-requested':
       return { ...state, cancelling: true }
     case 'user-message':
@@ -415,6 +413,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return reduceCostCap(state, event)
     case 'turn-limit-answer':
       return reduceTurnLimitAnswer(state, event)
+    case 'sent-recorded':
+      return withSentEntry(state, event.entry)
     case 'child-started':
       return push(state, { kind: 'child-started', ...event.child })
     case 'child-instruction':

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyTipAction,
+  countHintUse,
   EMPTY_TIPS,
+  hintShown,
   localDay,
   MAX_SENT,
   mayShowTip,
@@ -39,6 +41,20 @@ describe('astuces de Bobine (fiche 191)', () => {
     expect(parseTipsState('x')).toEqual({ hidden: [] })
     expect(parseTipsState({ lastShownDay: 'hier' })).toEqual({ hidden: [] })
     expect(localDay(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
+  })
+})
+
+describe('rappels (fiche 227)', () => {
+  it('trois utilisations, puis effacé ; compteur du disque borné et validé', () => {
+    let state = EMPTY_TIPS
+    for (let i = 0; i < 2; i++) state = countHintUse(state, 'history')
+    expect(hintShown(state, 'history')).toBe(true)
+    state = countHintUse(state, 'history')
+    expect(hintShown(state, 'history')).toBe(false)
+    expect(countHintUse(state, 'history')).toBe(state)
+    expect(parseTipsState({ hintUses: { history: 9, nope: 2 } }).hintUses).toEqual({ history: 3 })
+    expect(parseTipsState({ hintUses: { history: -1 } }).hintUses).toBeUndefined()
+    expect(parseTipsState({ hintUses: 'x' }).hintUses).toBeUndefined()
   })
 })
 

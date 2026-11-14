@@ -126,6 +126,7 @@ export function BesidePane({
           snapshot={snapshot}
           settings={null}
           {...(transcript.usage ? { usage: transcript.usage } : {})}
+          sentHistory={transcript.sentHistory}
           onSend={actions.send}
           onSearchFiles={actions.searchFiles}
           onPickFiles={actions.pickFiles}

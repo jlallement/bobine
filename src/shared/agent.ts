@@ -612,6 +612,11 @@ export type AgentEvent =
    * conversation (`usage.earlier`), rien dans le fil.
    */
   | { type: 'aside-cost'; cost: { amount: number; currency: string } }
+  /**
+   * Message envoyé, tel que tapé (fiche 227), posé par l'app : entre dans l'historique de la
+   * saisie de la conversation (`sentHistory`), rien dans le fil.
+   */
+  | { type: 'sent-recorded'; entry: import('./sent-history').SentEntry }
 
 /** Réponse à la carte « Plafond atteint » (fiche 157). */
 export type CostCapAnswer = 'continue' | 'stop'

@@ -162,6 +162,15 @@
     "keep": "Keep"
   },
   "composer": {
+    "history": {
+      "position": "{{index}}/{{count}}",
+      "escape": "Esc",
+      "clear": "clear",
+      "announce": "Sent message {{index}} of {{count}}: ↑ ↓ to browse, Esc to clear",
+      "hint": "Previous messages",
+      "lost_one": "{{count}} attachment not restored",
+      "lost_other": "{{count}} attachments not restored"
+    },
     "theAgent": "The agent",
     "readOnly": {
       "title": "Read-only conversation",
