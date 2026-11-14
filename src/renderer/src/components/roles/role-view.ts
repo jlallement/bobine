@@ -40,3 +40,12 @@ export function readOnlyShown(
   if (!readOnly) return undefined
   return profile?.writesWithoutAsking ? 'requested' : 'enforced'
 }
+
+/**
+ * Description d'un rôle telle que l'interface l'affiche et la cherche (menu `@`, jeton) : le seul
+ * endroit où l'interface la lit. Aujourd'hui celle du fichier (en anglais pour les rôles fournis) ;
+ * la description traduite de la phase 3A se branchera ici.
+ */
+export function roleDescription(role: Pick<RoleDefinition, 'description'>): string {
+  return role.description
+}

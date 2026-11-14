@@ -125,7 +125,14 @@ export function ChildProposals({
               <span className="proposals-summary"> · {summary.join(', ')}</span>
             )}
           </div>
-          <div className="pc-sub">{t('children.proposals.worktree')}</div>
+          {/* Un rôle en lecture seule travaille dans le dossier de la mère (fiche 223). */}
+          <div className="pc-sub">
+            {t(
+              items.some((item) => item.prompt.child.role?.readOnly)
+                ? 'roleWork.proposalsWhere'
+                : 'children.proposals.worktree'
+            )}
+          </div>
         </div>
       </div>
       <div className="proposal-rows">

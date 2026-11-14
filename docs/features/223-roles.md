@@ -489,6 +489,14 @@ branche).
   puis Entrée prenait le code reviewer, dont la description cite `git diff`). En revanche, `@te`
   propose d'abord « Tech lead » (rôles en tête, maquette 02-1) : l'e2e `mentions` tape désormais
   `@term`.
+- **Relecture du tech lead** (corrigée) : l'anneau « au travail » tournait hors du carré de
+  l'avatar (un toit au-dessus) : remplacé par un anneau **dans** le carré, qui pulse (fixe si les
+  animations sont réduites) — écart à 03-5 (« anneau qui tourne »). La carte de proposition disait
+  « chacune dans son propre worktree » même pour un rôle en lecture seule : en-tête adapté
+  (`roleWork.proposalsWhere`) et lieu dit par ligne (« dans ce dossier » / « son worktree »). La
+  description d'un rôle est lue par une seule fonction, `roleDescription` (`components/roles/
+  role-view.ts`), pour l'affichage et la recherche du menu `@` : la description traduite de la 3A
+  s'y branchera. Capture du nouvel état : `roles-travail-5b-au-travail-{light,dark}.png`.
 - **Vérifications** : `./scripts/verify` vert (code de sortie 0, lu directement ; 434 fichiers,
   3 916 essais). `pnpm build && pnpm e2e --changed --jobs 2` (toutes les suites : `Composer.tsx` et
   `Transcript.tsx` sont communs) : 190/194, 4 échecs, tous de `mentions` (clair et sombre, la

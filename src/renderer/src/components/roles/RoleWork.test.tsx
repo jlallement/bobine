@@ -199,6 +199,11 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
     expect(screen.getByTestId('proposal-role-mode').textContent).toBe('mode plan')
     expect(meta.textContent).toContain('Agent factice')
     expect(screen.getByTestId('proposal-role-hides').textContent).toContain('fourni')
+    // Lecture seule : dans le dossier de la mère, pas un worktree ; l'en-tête le dit aussi.
+    expect(screen.getByTestId('proposal-role-where').textContent).toBe('dans ce dossier')
+    expect(screen.getByTestId('proposals').querySelector('.pc-sub')?.textContent).toContain(
+      'lecture seule travaille dans ce dossier'
+    )
   })
 
   it('agent qui écrit sans demander : lecture seule seulement demandée, sans nom d’agent', async () => {
@@ -212,6 +217,10 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
   it('rôle qui écrit : « écrit du code »', async () => {
     await show(snapshot({ readOnly: false, hides: undefined }))
     expect(screen.getByTestId('role-writes').textContent).toBe('écrit du code')
+    expect(screen.getByTestId('proposal-role-where').textContent).toBe('son worktree')
+    expect(screen.getByTestId('proposals').querySelector('.pc-sub')?.textContent).toContain(
+      'chacune dans son propre worktree'
+    )
   })
 })
 

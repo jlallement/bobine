@@ -2,6 +2,7 @@ import { Split, X } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { RoleView } from '@shared/roles'
 import { RoleAvatar, RoleStack, useRoleTint } from './RoleAvatar'
+import { roleDescription } from './role-view'
 
 /**
  * Saisie d'un message pour des rôles (fiche 223, maquettes 02-3 et 02-4) : les jetons des rôles
@@ -33,7 +34,7 @@ function RoleToken({ role, onRemove }: { role: RoleView; onRemove: () => void })
     <span
       className="role-token"
       style={style}
-      title={role.description}
+      title={roleDescription(role)}
       data-testid="role-token"
       data-role={role.name}
     >

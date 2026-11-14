@@ -5,6 +5,7 @@ import { matchRoles } from '@shared/role-mentions'
 import type { RoleView } from '@shared/roles'
 import type { MentionEntry } from './components/composer/FileMenu'
 import { roleMenuEntries } from './components/roles/RoleMenu'
+import { roleDescription } from './components/roles/role-view'
 
 /** Délai avant de chercher les fichiers du dossier pendant la frappe. */
 const SEARCH_DELAY_MS = 120
@@ -58,7 +59,10 @@ export function useMentions(options: {
   const roleEntries =
     mention && roles
       ? roleMenuEntries(
-          matchRoles(roles.list, mention.query, { descriptions: contexts.length === 0 }),
+          matchRoles(roles.list, mention.query, {
+            descriptions: contexts.length === 0,
+            describe: roleDescription
+          }),
           mention.query,
           {
             all: allRolesAt === mention.start,

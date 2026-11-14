@@ -232,6 +232,9 @@ export function ProposalRoleMeta({
           {t('roleWork.mode', { mode: role.mode })}
         </span>
       )}
+      <span className="role-tag" data-testid="proposal-role-where">
+        {t(role.readOnly ? 'roleWork.where.sameFolder' : 'roleWork.where.worktree')}
+      </span>
       {agentLabel && <span className="role-tag plain">{agentLabel}</span>}
       {role.scope === 'project' && (
         <span className="role-tag" data-testid="proposal-role-project">

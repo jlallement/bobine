@@ -4215,6 +4215,11 @@
       "done": "{{role}} sent its report — {{title}}",
       "stopped": "{{role}} was stopped — {{title}}",
       "error": "{{role}} failed — {{title}}"
+    },
+    "proposalsWhere": "The agent proposes handing this work to child conversations: a read-only role works in this folder, the others each in its own worktree. You can also ask it to do it here.",
+    "where": {
+      "sameFolder": "in this folder",
+      "worktree": "its own worktree"
     }
   },
   "review": {

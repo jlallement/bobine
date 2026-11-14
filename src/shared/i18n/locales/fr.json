@@ -4389,6 +4389,11 @@
       "done": "{{role}} a rendu son compte rendu — {{title}}",
       "stopped": "{{role}} a été arrêté — {{title}}",
       "error": "{{role}} a échoué — {{title}}"
+    },
+    "proposalsWhere": "L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
+    "where": {
+      "sameFolder": "dans ce dossier",
+      "worktree": "son worktree"
     }
   },
   "review": {
