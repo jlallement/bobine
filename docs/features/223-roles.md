@@ -746,3 +746,86 @@ vide d'un `/bin/sh` sous charge), est vert seul trois fois : noté, non corrigé
 Vérifications : `./scripts/verify` vert trois fois de suite (code de sortie 0, lu directement ;
 445 fichiers, 3 971 essais). `pnpm build && pnpm e2e roles-gestion roles-travail mentions --jobs 3` :
 6/6 vertes, code de sortie 0 (après le feu vert du tech lead).
+
+### Essais réels avant 1.0.0-beta.2 (2026-11-14)
+
+Build de `51cb748` (`out/`), `pnpm pilote lancer` sur profil temporaire. OpenCode 2.2.5, modèle
+gratuit GLM-5.3-Flash Free (Zen), `--agents-neufs`, coût 0. Bob 2.1.0 (commit `8afc0007b`), sa
+propre configuration (sans `--agents-neufs`), 3 consignes. `~/.bob/settings/*.json` et
+`~/.bob/trustedFolders.json` sauvegardés avant, inchangés après (`diff` vide), recopiés quand même.
+
+**Banc de délégation** (OpenCode ; même dépôt `calc`, mêmes 10 consignes que la phase 1, une
+nouvelle conversation par consigne, « Quand ça s'y prête », cartes laissées sans réponse), plus
+4 consignes qui nomment un rôle sans dire `start_child`. Un tirage par consigne (aucune ratée).
+
+| # | Consigne | Attendu | Phase 1 (après) | Obtenu | Rôle choisi |
+|---|---|---|---|---|---|
+| 1 | Trois fonctions indépendantes, chacune avec son test | déléguer | 3 filles ✓ | 3 filles ✓ | aucun |
+| 2 | « Fais relire src/auth.js par un regard neuf » | déléguer | 1 fille ✓ | 1 fille ✓ | `code-reviewer` |
+| 3 | Audit sécurité et performance de auth.js et store.js | déléguer | 2 filles ✓ | 2 filles ✓ | `security-expert`, `tech-lead` |
+| 4 | Tests de math.js et, à côté, doc de strings.js | déléguer | 2 filles ✓ | 2 filles ✓ | aucun |
+| 5 | Réécrire store.js, « je veux le suivre à part » | déléguer | 1 fille ✓ | 1 fille ✓ | aucun |
+| 6 | CLI `bin/calc.js` et, séparément, export CSV | déléguer | ✗ puis ✓ | 2 filles ✓ | aucun |
+| 7 | « Que fait hash ? » | ne pas déléguer | répond ✓ | répond ✓ | — |
+| 8 | Faute de frappe dans divide | ne pas déléguer | corrige ✓ | corrige ✓ | — |
+| 9 | Renommer `sum` puis ajouter `average` | ne pas déléguer | fait ✓ | fait ✓ | — |
+| 10 | « Où est géré le stockage des utilisateurs ? » | ne pas déléguer | répond ✓ | répond ✓ | — |
+| 11 | « Fais relire src/auth.js par l'expert sécurité » | `security-expert` | — | 1 fille ✓ | `security-expert` |
+| 12 | « Demande au tech lead un plan pour ajouter une CLI » | `tech-lead` | — | 1 fille ✓ | `tech-lead` |
+| 13 | « J'aimerais l'avis du code reviewer sur store.js » | `code-reviewer` | — | 1 fille ✓ | `code-reviewer` |
+| 14 | « Ajoute une fonction `median` à math.js » | ne pas déléguer | — | fait ✓ | — |
+
+Décompte au premier tirage : 6/6 sur les consignes à déléguer du banc d'origine (phase 1 : avant
+4/6, après 5/6), 0 à tort ; les trois rôles nommés sont reconnus, et l'agent choisit aussi un rôle
+de lui-même quand il convient (n° 2 et 3). Cartes : badge et libellé du rôle, « lecture seule
+demandée », « dans ce dossier ». Un seul tirage : un échantillon.
+
+**Rôles au travail** (OpenCode) :
+- `@code-reviewer relis math.js` (mère non vide) : fille lancée sans carte, avatar et badge,
+  carte « Sous-tâches », compte rendu titré du rôle ✓ (compte rendu en anglais : la consigne du
+  rôle l'est). Ligne « Lecture seule seulement demandée… » en tête du fil de la fille ✓.
+- `@security-expert @code-reviewer relisez auth.js` : deux filles en parallèle, deux comptes
+  rendus ✓.
+- `@code-reviewer corrige directement la faute dans divide` : OpenCode écrit sans demander (le
+  fichier change) ; avertissement de lancement ✓, « Le dossier a changé pendant le tour… » dans le
+  fil de la fille et dans celui de la mère ✓. Le modèle dit lui-même qu'il est sorti de son rôle.
+- Rôle personnel `planificateur` (`mode: plan`, fichier `.md` écrit dans `<profil>/roles/`, pas
+  par l'assistant) : apparu dans la section Équipe sans redémarrage ; la fille démarre en mode
+  **Plan** ✓, la mère reste en Build, et une nouvelle conversation ensuite démarre en **Build** ✓.
+
+**Bob** (3 consignes, ≈ 0,31 bobcoin affichés : 0,0821 + 0,1137 + 0,1123) :
+- « Fais relire src/auth.js par l'expert sécurité » : proposition avec rôle `security-expert`,
+  « lecture seule » (garantie), « dans ce dossier » ✓.
+- `@code-reviewer relis src/math.js` : fille avec badge, compte rendu ✓. La fille a demandé une
+  commande `git log … && git diff …` (posée à l'utilisateur, comme prévu ; accordée une fois).
+- `@code-reviewer corrige la faute dans divide` : Bob demande l'écriture (`Applying diff…`,
+  `kind: edit`), **refus automatique**, « Écriture refusée par Bobine : ce rôle est en lecture
+  seule » dans le fil, Bob continue sans s'arrêter et rend sa relecture ; dossier inchangé ✓.
+  Confirme les deux points « à vérifier » de `docs/acp.md` (rôle passé sans insister, refus
+  accepté).
+
+**Écarts et accrocs** (aucun bloquant pour la publication) :
+1. **Titre des filles chez Bob** (gênant) : la consigne `<bobine_role>` part en tête du premier
+   message, or Bob titre sa tâche d'après le début du message (fiche 125, D18) : les filles
+   s'appellent « Code review setup for src directory », « Code review setup for French
+   message » au lieu de la demande. Pas chez OpenCode.
+2. **Consigne du rôle affichée brute** (gênant) : dans le fil de la fille, le premier message
+   montre le bloc `<bobine_role …>…</bobine_role>` en entier (OpenCode et Bob), alors que la carte
+   de la mère le replie sous « Consigne ».
+3. **`@rôle` tapé dans une fille** (mineur) : `@security-expert @code-reviewer relisez auth.js`
+   envoyé par erreur dans une fille part tel quel à l'agent de la fille, sans avertissement (le
+   clic Équipe, lui, avertit).
+4. **En-tête d'une fille, fenêtre de 1 280 px avec panneau ouvert** (mineur) : le titre
+   disparaît (il ne reste que « ↳ »), et la pastille « Profil temporaire » chevauche l'onglet
+   « Session » du panneau.
+5. **Coût du compte rendu chez Bob** (mineur) : « Sous-tâches » dit 0,1137 bobcoin pour la fille,
+   la carte du compte rendu 0,0371.
+6. **« Toujours dans cette conversation »** proposé sur une demande de commande d'une fille Bob en
+   lecture seule (option `allow_always` de Bob) ; la fiche dit qu'aucun accord « toujours » n'est
+   proposé à une fille en lecture seule — à trancher (non essayé).
+7. **Cartes « Expirée »** (attendu) : les agents OpenCode inactifs sont arrêtés (code 130 au
+   journal) ; les propositions des conversations précédentes passent « Expirée » avec « Lancer »
+   gardé (« L'agent a redémarré entre-temps »).
+8. Pilote : `etat` ne listait pas la carte de propositions « en attente » des n° 11 à 13 (visible
+   en capture) ; `cliquer` ambigu entre une conversation de la barre latérale et le lien
+   « ↳ depuis » ou l'entrée du panneau.
