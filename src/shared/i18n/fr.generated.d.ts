@@ -4816,7 +4816,7 @@ export type FrResources = {
   readonly roleForm: {
     readonly label: {
       readonly label: 'Nom'
-      readonly placeholder: 'Expert sécu'
+      readonly placeholder: 'Expert sécurité'
       readonly missing: 'Donnez un nom au rôle.'
     }
     readonly name: {
@@ -4966,9 +4966,9 @@ export type FrResources = {
     readonly builtin: {
       readonly uxUiExpert: 'Expert UX/UI'
       readonly flutterExpert: 'Expert Flutter'
-      readonly frontArchitect: 'Architecte front'
-      readonly backArchitect: 'Architecte back'
-      readonly securityExpert: 'Expert sécu'
+      readonly frontArchitect: 'Architecte front-end'
+      readonly backArchitect: 'Architecte back-end'
+      readonly securityExpert: 'Expert sécurité'
       readonly techLead: 'Tech lead'
       readonly codeReviewer: 'Code reviewer'
     }

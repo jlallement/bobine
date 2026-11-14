@@ -4988,7 +4988,7 @@
   "roleForm": {
     "label": {
       "label": "Nom",
-      "placeholder": "Expert sécu",
+      "placeholder": "Expert sécurité",
       "missing": "Donnez un nom au rôle."
     },
     "name": {
@@ -5148,9 +5148,9 @@
     "builtin": {
       "uxUiExpert": "Expert UX/UI",
       "flutterExpert": "Expert Flutter",
-      "frontArchitect": "Architecte front",
-      "backArchitect": "Architecte back",
-      "securityExpert": "Expert sécu",
+      "frontArchitect": "Architecte front-end",
+      "backArchitect": "Architecte back-end",
+      "securityExpert": "Expert sécurité",
       "techLead": "Tech lead",
       "codeReviewer": "Code reviewer"
     },
