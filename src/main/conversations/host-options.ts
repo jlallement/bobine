@@ -101,8 +101,10 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     ...deniedCommandOption(profile, app.agentHome, record.workspace),
     toolServer: app.toolServer,
     // Rôle (fiche 223) : seulement ses familles d'outils s'il les choisit ; écritures refusées.
-    toolModules: roleToolModules(app.toolModules, record.role),
+    // Discussion (fiche 224) : aucun outil de Bobine ; écritures accordées dans ses documents.
+    toolModules: record.space === 'discussion' ? [] : roleToolModules(app.toolModules, record.role),
     ...(record.role?.readOnly ? { readOnly: true } : {}),
+    ...(record.space === 'discussion' ? { writeArea: record.workspace } : {}),
     initialControls: { ...profile.defaultControls, ...settings.current.controls?.[profile.id] },
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],

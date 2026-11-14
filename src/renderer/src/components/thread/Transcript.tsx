@@ -761,15 +761,18 @@ function HandoverDivider({ item }: { item: Extract<TranscriptItem, { kind: 'hand
       <div className="handover-divider-line">
         {item.reason ? <RefreshCw size={14} /> : <ArrowRightLeft size={14} />}
         <span>
-          {item.reason
-            ? t('handover.thread.renewTitle', { agent })
-            : t('handover.thread.title', { agent: handoverName(item) })}
+          {item.reason === 'discussion'
+            ? t('handover.thread.discussionTitle')
+            : item.reason
+              ? t('handover.thread.renewTitle', { agent })
+              : t('handover.thread.title', { agent: handoverName(item) })}
         </span>
       </div>
       <div className="handover-divider-detail">
         {item.reason === 'no-resume' && t('handover.thread.renewDetailNoResume', { agent })}
         {item.reason === 'session-lost' && t('handover.thread.renewDetailLost', { agent })}
         {item.reason === 'turn-limit' && t('handover.thread.renewDetailTurnLimit', { agent })}
+        {item.reason === 'discussion' && t('handover.thread.discussionDetail', { agent })}
         {!item.reason && t('handover.thread.detail', { from: item.from.label })}
       </div>
     </div>

@@ -817,6 +817,7 @@ export type FrResources = {
     }
     readonly branchSuffix: 'branche'
     readonly saveFailedDiskFull: 'Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant.'
+    readonly newDiscussionTitle: 'Nouvelle discussion'
   }
   readonly copy: {
     readonly action: 'Copier'
@@ -3727,6 +3728,8 @@ export type FrResources = {
       readonly renewDetailNoResume: '{{agent}} ne sait pas reprendre sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.'
       readonly renewDetailLost: '{{agent}} a perdu sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.'
       readonly renewDetailTurnLimit: '{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message.'
+      readonly discussionTitle: 'Suite d’une discussion'
+      readonly discussionDetail: 'L’échange de la discussion est transmis en texte à {{agent}} avec votre premier message. La discussion reste telle quelle dans l’espace Discussion.'
     }
   }
   readonly aboutWindow: {
@@ -5011,6 +5014,12 @@ export type FrResources = {
       readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.'
       readonly projectOverrides: 'Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.'
       readonly watchFailed: 'La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).'
+    }
+  }
+  readonly discussion: {
+    readonly notice: {
+      readonly writeAllowed: 'Écriture accordée dans les documents de la discussion : {{tool}}'
+      readonly writeRefused: 'Écriture refusée hors des documents de la discussion : {{tool}}'
     }
   }
 }

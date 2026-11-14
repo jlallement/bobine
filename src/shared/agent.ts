@@ -437,6 +437,11 @@ export interface NewConversationDefaults {
 export interface AgentConfigureRequest {
   profileId?: string
   workspace?: string
+  /**
+   * Espace de la nouvelle conversation (fiche 224). Absent : celui de la conversation active quand
+   * seul l'agent change, l'espace Code sinon. `discussion` ignore `workspace`.
+   */
+  space?: ConversationSpace
 }
 
 export type AgentEvent =
@@ -663,7 +668,12 @@ export interface ConversationSummary {
   usage?: import('./usage').UsageDigest
   /** Cartes « Retenir ce souvenir ? » en attente (fiche 182) : pastille « Mémoire ». */
   memoryPending?: number
+  /** Espace Discussion (fiche 224) : dossier tenu par Bobine ; absent = espace Code. */
+  space?: ConversationSpace
 }
+
+/** Espace d'une conversation (fiche 224) : `code` (un dossier de projet) ou `discussion`. */
+export type ConversationSpace = 'code' | 'discussion'
 
 export interface ConversationsState {
   conversations: ConversationSummary[]

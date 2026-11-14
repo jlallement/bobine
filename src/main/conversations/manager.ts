@@ -23,7 +23,6 @@ import type {
   AgentEvent,
   AgentSessionView,
   AgentSettingsView,
-  AgentSnapshot,
   AgentStatus,
   ControlValue,
   ConversationEvent,
@@ -79,6 +78,9 @@ import {
   summaryOf,
   titleFrom,
   withTimeout,
+  AGENT_DELETE_TIMEOUT_MS,
+  deleteAtAgent,
+  subagentWorkOf,
   worktreeStartEvent,
   rulesOf,
   childDetachedRequest,
@@ -87,6 +89,15 @@ import {
   type Origin
 } from './helpers'
 import { hostOptions } from './host-options'
+import { draftConversation, type Conversation, type ConversationListeners } from './conversation'
+import {
+  continuedTranscript,
+  discussionDraft,
+  nextFolder,
+  dropEmptyDiscussionFolder,
+  folderPlan,
+  sameDraft
+} from './discussion-space'
 import { answerTurnLimit, type TurnLimitAnswer } from './turn-limit'
 import { agentsToStop, releaseAgent } from './live-agents'
 import type { ApiKeyStore } from '../agent-config/api-keys'
@@ -198,35 +209,8 @@ export interface ConversationManagerOptions {
   trash?: ConversationTrash
 }
 
-/** Ce qu'on peut suivre du gestionnaire en plus de `emit` et `emitList` (fiche 089). */
-export interface ConversationListeners {
-  event?: (payload: ConversationEvent) => void
-  list?: (state: ConversationsState) => void
-  deleted?: (id: string) => void
-  /** Sortie de l'app : tout s'arrête (apartés, fiche 180). */
-  stopped?: () => void
-}
-
-interface Conversation {
-  record: ConversationRecord
-  /** Fil de la conversation, lu du disque à la première demande (`transcriptOf`, fiche 043). */
-  transcript?: TranscriptState
-  host?: AgentHost
-  snapshot?: AgentSnapshot
-  lastUsed: number
-  /** Dernière demande du fil (fiche 046) : les moins récents sont libérés en premier. */
-  readAt: number
-  draft: boolean
-  /**
-   * Numéro du dernier évènement émis : la vue le porte, et l'interface ignore un évènement déjà
-   * compris dans une vue arrivée avant lui (sinon un morceau de réponse s'affichait deux fois).
-   */
-  seq?: number
-}
-
 const MAX_IDLE_TRANSCRIPTS = 4
 /** Démarrage d'un agent arrêté, puis `session/delete` : au-delà, on abandonne. */
-const AGENT_DELETE_TIMEOUT_MS = 20_000
 
 export class ConversationManager {
   private readonly options: ConversationManagerOptions
@@ -401,24 +385,69 @@ export class ConversationManager {
     const profileId = this.profileOrDefault(
       request.profileId ?? defaults?.profileId ?? active.record.profileId
     ).id
-    const wanted = request.workspace ?? defaults?.workspace ?? active.record.workspace
-    // Dossier demandé introuvable : refusé. Hérité et disparu (worktree nettoyé, 0.9.1, D21) :
-    // la conversation part d'un dossier qui existe, et le dit (`createDraft`).
-    if (request.workspace !== undefined && hasFolder(wanted) && !isDirectory(wanted))
-      throw new Error(t('conversations.error.folderMissing', { folder: wanted }))
-    const { workspace } = usableFolder(wanted, this.fallbackFolders())
+    const plan = folderPlan(request, active.record, this.settings.current, this.fallbackFolders())
+    const { discussion, wanted, workspace } = plan
     // Toujours pas de dossier (agent changé avant d'en choisir un) : rien à retenir (fiche 093).
-    if (hasFolder(workspace)) this.settings.rememberWorkspace(profileId, workspace)
-
-    const same = active.record.profileId === profileId && active.record.workspace === workspace
-    if (active.draft && same) return this.view(active.record.id) // Déjà une conversation vide.
+    if (!discussion && hasFolder(workspace)) this.settings.rememberWorkspace(profileId, workspace)
+    // Déjà une conversation vide.
+    if (active.draft && sameDraft(active.record, profileId, plan))
+      return this.view(active.record.id)
     if (active.draft) this.discard(active)
-    const conversation = this.createDraft(profileId, wanted)
+    const conversation = discussion
+      ? this.adopt(discussionDraft(profileId, this.options.conversationsDir))
+      : this.createDraft(profileId, wanted)
+    return this.activate(conversation)
+  }
+
+  /**
+   * Rend `conversation` active, démarre son agent s'il le peut et l'attend. Rend la vue de l'active
+   * (une autre, choisie pendant le démarrage : celle-là).
+   */
+  private async activate(conversation: Conversation): Promise<ConversationView> {
     this.activeId = conversation.record.id
     if (this.startable(conversation)) this.ensureLive(conversation)
     this.emitList()
     await conversation.host?.start()
-    return this.view(this.activeId) // Autre conversation choisie pendant le démarrage : celle-là.
+    return this.view(this.activeId)
+  }
+
+  /**
+   * Continuer une discussion dans un projet (fiche 224) : nouvelle conversation de l'espace Code
+   * dans `workspace`, même agent ; le fil de la discussion y est repris, suivi d'une bascule
+   * (`handover`, raison `discussion`) : il part en texte avec le premier message (ADR-0024). La
+   * discussion reste telle quelle.
+   */
+  async continueInProject(id: string, workspace: string): Promise<ConversationView> {
+    const source = this.get(id)
+    if (!isDirectory(workspace))
+      throw new Error(t('conversations.error.folderMissing', { folder: workspace }))
+    const { profileId, title } = source.record
+    this.settings.rememberWorkspace(profileId, workspace)
+    const agent = { profileId, label: this.profileOrDefault(profileId).label }
+    const transcript = continuedTranscript(this.transcriptOf(source), agent)
+    return this.activate(this.openNew(profileId, workspace, transcript, { title }))
+  }
+
+  /**
+   * Nouvelle conversation de l'historique (pas un brouillon : jetée sinon quand on va ailleurs
+   * pendant que l'agent démarre), avec son fil ; le brouillon actif est jeté. Titre venu de l'app :
+   * l'agent ne le remplace pas (fiche 125).
+   */
+  private openNew(
+    profileId: string,
+    workspace: string,
+    transcript: TranscriptState,
+    fields: Partial<ConversationRecord>
+  ): Conversation {
+    const active = this.get(this.activeId)
+    if (active.draft) this.discard(active)
+    const conversation = this.createDraft(profileId, workspace)
+    conversation.transcript = transcript
+    Object.assign(conversation.record, { titleSource: 'app' }, fields)
+    conversation.draft = false
+    this.touch(conversation)
+    this.flush(conversation)
+    return conversation
   }
 
   /**
@@ -429,11 +458,7 @@ export class ConversationManager {
     const conversation = await this.inNewWorktree(this.get(fromId).record)
     const active = this.get(this.activeId)
     if (active.draft) this.discard(active)
-    this.activeId = conversation.record.id
-    this.ensureLive(conversation)
-    this.emitList()
-    await conversation.host?.start()
-    return this.view(conversation.record.id)
+    return this.activate(conversation)
   }
 
   /**
@@ -695,14 +720,8 @@ export class ConversationManager {
     this.profileById(profileId)
     if (!isDirectory(session.cwd))
       throw new Error(t('conversations.error.folderMissing', { folder: session.cwd }))
-    const conversation: Conversation = {
-      record: resumedRecord(randomUUID(), profileId, session),
-      transcript: emptyTranscript,
-      lastUsed: Date.now(),
-      readAt: Date.now(),
-      draft: false
-    }
-    this.conversations.set(conversation.record.id, conversation)
+    const conversation = this.adopt(resumedRecord(randomUUID(), profileId, session))
+    conversation.draft = false
     this.saveIndex()
     log.info(`Session reprise (${profileId}) : ${session.sessionId} dans ${session.cwd}`)
     return this.select(conversation.record.id)
@@ -714,24 +733,22 @@ export class ConversationManager {
    */
   subagentWork(id: string, toolCallId: string): Promise<TranscriptItem[]> {
     const conversation = this.get(id)
-    const tool = this.transcriptOf(conversation).items.find(
-      (item) => item.kind === 'tool' && item.toolCallId === toolCallId
-    )
-    const run = tool?.kind === 'tool' ? tool.subagentRun : undefined
     const profile = this.profileOf(id)
-    if (!run?.sessionId || !profile?.subagentReplay) {
-      return Promise.reject(new Error(t('conversations.error.noSubagentWork')))
-    }
-    return this.subagentWorks.load(
-      {
-        profile,
-        workspace: conversation.record.workspace,
-        clientVersion: this.options.clientVersion,
-        sessionId: run.sessionId,
-        credentials: () => this.settings.credentials(profile)
-      },
-      // Sous-agent qui travaille encore (fiche 122) : relu, pas gardé.
-      { fresh: !!run.background && run.endedAt === undefined }
+    return subagentWorkOf(
+      this.transcriptOf(conversation).items,
+      toolCallId,
+      profile,
+      (sessionId, fresh) =>
+        this.subagentWorks.load(
+          {
+            profile: profile as AgentProfile,
+            workspace: conversation.record.workspace,
+            clientVersion: this.options.clientVersion,
+            sessionId,
+            credentials: () => this.settings.credentials(profile as AgentProfile)
+          },
+          { fresh }
+        )
     )
   }
 
@@ -776,21 +793,15 @@ export class ConversationManager {
       options
     )
 
-    const active = this.get(this.activeId)
-    if (active.draft) this.discard(active)
-    const conversation = this.createDraft(source.record.profileId, source.record.workspace)
-    conversation.transcript = prepared.transcript
-    conversation.record.branchedFrom = { id: source.record.id, title: source.record.title }
-    // Même worktree que l'originale : il reste à elle (voir `sharesWorktree`).
-    if (source.record.worktree) conversation.record.worktree = source.record.worktree
-    // Dans l'historique tout de suite (un brouillon serait jeté si l'on va ailleurs pendant que
-    // l'agent démarre).
-    conversation.draft = false
-    conversation.record.title = prepared.title
-    // Titre de l'original et sa marque : l'agent de la branche ne le remplace pas (fiche 125).
-    conversation.record.titleSource = 'app'
-    this.touch(conversation)
-    this.flush(conversation)
+    const { profileId, workspace, worktree, space } = source.record
+    // Même worktree que l'originale : il reste à elle (voir `sharesWorktree`). Même espace : une
+    // branche de discussion en partage les documents (fiche 224).
+    const conversation = this.openNew(profileId, workspace, prepared.transcript, {
+      title: prepared.title,
+      branchedFrom: { id: source.record.id, title: source.record.title },
+      ...(worktree ? { worktree } : {}),
+      ...(space ? { space } : {})
+    })
     this.activeId = conversation.record.id
     this.ensureLive(conversation)
     this.emitList()
@@ -982,21 +993,14 @@ export class ConversationManager {
     this.trashed.writable()
     const conversation = this.get(id)
     const { sessionId } = conversation.record
-    let agentDeleted = false
-    if (options.fromAgent !== false && sessionId && !conversation.draft) {
-      try {
-        const host =
+    const asked = options.fromAgent !== false && !!sessionId && !conversation.draft
+    const agentDeleted =
+      asked &&
+      (await deleteAtAgent(
+        () =>
           conversation.host ??
           (this.retired(conversation) ? undefined : this.ensureLive(conversation))
-        if (host) {
-          await withTimeout(host.start(), AGENT_DELETE_TIMEOUT_MS)
-          agentDeleted = await withTimeout(host.deleteSession(), AGENT_DELETE_TIMEOUT_MS)
-        }
-      } catch {
-        // Best-effort : l'agent peut refuser ou ne pas démarrer ; la conversation disparaît quand
-        // même de l'app.
-      }
-    }
+      ))
     conversation.host?.stop()
     // Worktree supprimé à la demande, une fois l'agent arrêté (il y travaillait).
     const { worktree } = conversation.record
@@ -1018,17 +1022,7 @@ export class ConversationManager {
     if (!conversation.draft) await this.trashed.put(conversation, agentDeleted)
     this.contentSearch.forget(id)
     this.saveIndex()
-    if (id === this.activeId) {
-      const { profileId, workspace } = conversation.record
-      // Conversation en worktree : la suivante repart dans le dépôt principal (même sous-dossier).
-      const next = worktree ? join(worktree.root, relative(worktree.path, workspace)) : workspace
-      const draft = this.createDraft(
-        this.profileOrDefault(profileId).id,
-        isDirectory(next) ? next : (this.options.defaultWorkspace ?? NO_FOLDER)
-      )
-      this.activeId = draft.record.id
-      if (this.startable(draft)) this.ensureLive(draft)
-    }
+    if (id === this.activeId) this.replaceActive(conversation.record, true)
     this.emitList()
     return this.state()
   }
@@ -1049,11 +1043,7 @@ export class ConversationManager {
       releaseAgent(conversation)
       this.options.onReleased?.(id, 'archived')
       this.beside.delete(id)
-      if (id === this.activeId) {
-        const draft = this.createDraft(conversation.record.profileId, conversation.record.workspace)
-        this.activeId = draft.record.id
-        if (this.startable(draft)) this.ensureLive(draft)
-      }
+      if (id === this.activeId) this.replaceActive(conversation.record, false)
     } else {
       delete conversation.record.archived
     }
@@ -1204,16 +1194,30 @@ export class ConversationManager {
     return [this.settings.current.newConversation?.workspace, this.options.defaultWorkspace]
   }
 
+  /**
+   * Brouillon qui remplace l'active supprimée (`gone`) ou archivée : même agent, même espace ; dans
+   * l'espace Code, même dossier (le dépôt principal pour un worktree supprimé, fiche 036).
+   */
+  private replaceActive(record: ConversationRecord, gone: boolean): void {
+    const profileId = this.profileOrDefault(record.profileId).id
+    const draft =
+      record.space === 'discussion'
+        ? this.adopt(discussionDraft(profileId, this.options.conversationsDir))
+        : this.createDraft(profileId, nextFolder(record, gone, this.options.defaultWorkspace))
+    this.activeId = draft.record.id
+    if (this.startable(draft)) this.ensureLive(draft)
+  }
+
+  /** Brouillon tenu par le gestionnaire. */
+  private adopt(record: ConversationRecord): Conversation {
+    const conversation = draftConversation(record)
+    this.conversations.set(record.id, conversation)
+    return conversation
+  }
+
   private createDraft(profileId: string, wanted: string): Conversation {
     const { workspace, gone } = usableFolder(wanted, this.fallbackFolders())
-    const conversation: Conversation = {
-      record: draftRecord(profileId, workspace, t('conversations.newTitle')),
-      transcript: emptyTranscript,
-      lastUsed: Date.now(),
-      readAt: Date.now(),
-      draft: true
-    }
-    this.conversations.set(conversation.record.id, conversation)
+    const conversation = this.adopt(draftRecord(profileId, workspace, t('conversations.newTitle')))
     this.awaitsFolder(conversation)
     const message = gone && folderGoneMessage(gone, workspace)
     if (message) this.onEvent(conversation, { type: 'notice', level: 'warning', message })
@@ -1232,6 +1236,9 @@ export class ConversationManager {
     if (worktree && this.options.worktrees) {
       void this.options.worktrees.remove(worktree).catch(() => {})
     }
+    // Discussion quittée sans message (fiche 224) : son dossier part s'il est resté vide.
+    if (conversation.record.space === 'discussion')
+      dropEmptyDiscussionFolder(conversation.record.workspace)
   }
 
   /** Agent vivant pour cette conversation (créé si besoin), puis éviction des plus anciens. */
@@ -1481,3 +1488,4 @@ function notePendingMemory(conversation: Conversation): boolean {
   else delete conversation.record.memoryPending
   return true
 }
+export type { ConversationListeners } from './conversation'

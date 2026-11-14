@@ -9,6 +9,7 @@
 import type {
   SessionUpdate,
   ToolCallContent,
+  ToolCallLocation,
   ToolCallUpdate,
   ToolKind
 } from '../../shared/acp-sdk.mts'
@@ -21,6 +22,11 @@ export interface ToolCallSoFar {
   kind?: ToolKind
   /** Dernière entrée brute non vide (une mise à jour peut la renvoyer vide : `{}`). */
   rawInput?: unknown
+  /**
+   * Derniers emplacements non vides : Bob 2.1.0 envoie parfois sa demande d'autorisation sans
+   * `locations`, annoncées par le `tool_call` (fiche 224).
+   */
+  locations?: ToolCallLocation[]
   /** Diffs de sa demande d'autorisation, s'il y en a eu une. */
   permissionDiffs: Diff[]
   /** Fichiers proposés déjà regardés sur le disque (`new-files.ts`, fiche 203). */
@@ -70,7 +76,9 @@ export class ToolCallMemory {
 
   private merge(
     id: string,
-    part: Pick<ToolCallUpdate, 'kind' | 'rawInput'> & { title?: string | null | undefined }
+    part: Pick<ToolCallUpdate, 'kind' | 'rawInput' | 'locations'> & {
+      title?: string | null | undefined
+    }
   ): ToolCallSoFar {
     const known = this.calls.get(id) ?? {
       permissionDiffs: [],
@@ -83,6 +91,7 @@ export class ToolCallMemory {
     if (part.title) known.title = part.title
     if (part.kind) known.kind = part.kind
     if (!isEmptyInput(part.rawInput)) known.rawInput = part.rawInput
+    if (part.locations && part.locations.length > 0) known.locations = part.locations
     while (this.calls.size > MAX_CALLS) {
       const oldest = this.calls.keys().next().value
       if (oldest === undefined) break

@@ -779,7 +779,8 @@
       "folderFallback": "The folder “{{folder}}” no longer exists: the conversation starts from “{{fallback}}”."
     },
     "branchSuffix": "branch",
-    "saveFailedDiskFull": "Couldn’t save {{what}}: the disk is full. Free up some space: Bobine tries again at the next save, and when quitting."
+    "saveFailedDiskFull": "Couldn’t save {{what}}: the disk is full. Free up some space: Bobine tries again at the next save, and when quitting.",
+    "newDiscussionTitle": "New chat"
   },
   "copy": {
     "action": "Copy",
@@ -3737,7 +3738,9 @@
       "renewTitle": "New session with {{agent}}",
       "renewDetailNoResume": "{{agent}} can’t resume its earlier session. The earlier exchange is passed on as text with the first message.",
       "renewDetailLost": "{{agent}} lost its earlier session. The earlier exchange is passed on as text with the first message.",
-      "renewDetailTurnLimit": "{{agent}} refused to continue in its earlier session, whose step limit was reached. The earlier exchange is passed on as text with your message."
+      "renewDetailTurnLimit": "{{agent}} refused to continue in its earlier session, whose step limit was reached. The earlier exchange is passed on as text with your message.",
+      "discussionTitle": "Continued from a chat",
+      "discussionDetail": "The chat is sent as text to {{agent}} with your first message. The chat itself stays as it was in the Chat space."
     }
   },
   "aboutWindow": {
@@ -4992,6 +4995,12 @@
       "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions.",
       "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
       "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
+    }
+  },
+  "discussion": {
+    "notice": {
+      "writeAllowed": "Write allowed in the chat’s documents: {{tool}}",
+      "writeRefused": "Write refused outside the chat’s documents: {{tool}}"
     }
   }
 }

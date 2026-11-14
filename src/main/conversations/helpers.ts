@@ -23,6 +23,7 @@ import { MODE_CONTROL_ID } from '../agent/session-controls'
 import { activeRules } from '../agent-config/rules'
 import type { RuleFileView } from '@shared/rules'
 import type { RoleStamp } from '@shared/roles'
+import type { TranscriptItem } from '@shared/transcript'
 import { hasFolder } from './agentless'
 import type { ConversationRecord } from './store'
 
@@ -191,7 +192,8 @@ export function summaryOf(
     ...(record.archived ? { archived: true } : {}),
     ...(record.scheduled ? { scheduled: record.scheduled } : {}),
     ...(record.usage ? { usage: record.usage } : {}),
-    ...(record.memoryPending ? { memoryPending: record.memoryPending } : {})
+    ...(record.memoryPending ? { memoryPending: record.memoryPending } : {}),
+    ...(record.space ? { space: record.space } : {})
   }
 }
 
@@ -382,4 +384,41 @@ export function sharesWorktree(
     !!path &&
     [...all].some((c) => c !== conversation && !c.draft && c.record.worktree?.path === path)
   )
+}
+
+/** Délai laissé à un agent pour démarrer puis supprimer une session (fiche 196). */
+export const AGENT_DELETE_TIMEOUT_MS = 20_000
+
+/**
+ * Supprime la session chez l'agent, au mieux : il peut refuser ou ne pas démarrer, la conversation
+ * disparaît quand même de l'app. Rend `true` si l'agent l'a supprimée.
+ */
+export async function deleteAtAgent(host: () => AgentHost | undefined): Promise<boolean> {
+  try {
+    const live = host()
+    if (!live) return false
+    await withTimeout(live.start(), AGENT_DELETE_TIMEOUT_MS)
+    return await withTimeout(live.deleteSession(), AGENT_DELETE_TIMEOUT_MS)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Travail d'un sous-agent dont l'agent garde la session (profil `subagentReplay`, fiche 053) :
+ * rejoué dans un agent à part, sans appel au modèle. Un sous-agent qui travaille encore (fiche
+ * 122) est relu sans être gardé (`fresh`).
+ */
+export function subagentWorkOf(
+  items: readonly TranscriptItem[],
+  toolCallId: string,
+  profile: AgentProfile | undefined,
+  load: (sessionId: string, fresh: boolean) => Promise<TranscriptItem[]>
+): Promise<TranscriptItem[]> {
+  const tool = items.find((item) => item.kind === 'tool' && item.toolCallId === toolCallId)
+  const run = tool?.kind === 'tool' ? tool.subagentRun : undefined
+  if (!run?.sessionId || !profile?.subagentReplay) {
+    return Promise.reject(new Error(t('conversations.error.noSubagentWork')))
+  }
+  return load(run.sessionId, !!run.background && run.endedAt === undefined)
 }

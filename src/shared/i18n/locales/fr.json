@@ -830,7 +830,8 @@
       "folderFallback": "Le dossier « {{folder}} » n’existe plus : la conversation part de « {{fallback}} »."
     },
     "branchSuffix": "branche",
-    "saveFailedDiskFull": "Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant."
+    "saveFailedDiskFull": "Impossible d’enregistrer {{what}} : le disque est plein. Libérez de la place : Bobine réessaie à la prochaine écriture, et en quittant.",
+    "newDiscussionTitle": "Nouvelle discussion"
   },
   "copy": {
     "action": "Copier",
@@ -3887,7 +3888,9 @@
       "renewTitle": "Nouvelle session avec {{agent}}",
       "renewDetailNoResume": "{{agent}} ne sait pas reprendre sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.",
       "renewDetailLost": "{{agent}} a perdu sa session précédente. L’échange précédent lui est transmis en texte avec le premier message.",
-      "renewDetailTurnLimit": "{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message."
+      "renewDetailTurnLimit": "{{agent}} refusait de continuer dans sa session précédente, dont la limite d’étapes était atteinte. L’échange précédent lui est transmis en texte avec votre message.",
+      "discussionTitle": "Suite d’une discussion",
+      "discussionDetail": "L’échange de la discussion est transmis en texte à {{agent}} avec votre premier message. La discussion reste telle quelle dans l’espace Discussion."
     }
   },
   "aboutWindow": {
@@ -5193,6 +5196,12 @@
       "modeMissing": "L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.",
       "projectOverrides": "Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.",
       "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status)."
+    }
+  },
+  "discussion": {
+    "notice": {
+      "writeAllowed": "Écriture accordée dans les documents de la discussion : {{tool}}",
+      "writeRefused": "Écriture refusée hors des documents de la discussion : {{tool}}"
     }
   }
 }

@@ -16,6 +16,7 @@ import type { TranscriptState } from '@shared/transcript'
 import type { TrashEntry } from '@shared/profile'
 import { log } from '../log'
 import { fsyncDir, isReadOnly, writeFileAtomic } from '../storage'
+import { eraseDiscussionFolder } from './discussion-space'
 import type { HistoryWriter } from './history-writer'
 import {
   isRecord,
@@ -130,6 +131,8 @@ export class ConversationTrash {
   erase(id: string): void {
     if (!SAFE_ID.test(id)) throw new Error(`Identifiant de conversation invalide : ${id}`)
     this.writable()
+    // Discussion (fiche 224) : ses documents, restés en place, partent avec elle.
+    if (this.meta(id)?.record.space === 'discussion') eraseDiscussionFolder(dirname(this.dir), id)
     for (const suffix of ['.json', '.meta.json']) {
       rmSync(join(this.dir, `${id}${suffix}`), { force: true })
     }

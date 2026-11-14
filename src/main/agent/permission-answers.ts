@@ -9,6 +9,7 @@
  * commandes restent posées à l'utilisateur (une relecture lance `git diff`, les tests). Un agent
  * qui écrit sans demander n'est pas arrêté ici : voir `roles/read-only-watch.ts`.
  */
+import { isAbsolute, relative, resolve } from 'node:path'
 import type { RequestPermissionRequest, RequestPermissionResponse } from '../../shared/acp-sdk.mts'
 import type { AgentEvent } from '@shared/agent'
 import { rememberableTool } from '@shared/permissions'
@@ -21,9 +22,78 @@ export interface PermissionRules {
   remembered?: { has: (title: string) => boolean } | undefined
   /** Dossier de la conversation et dossier personnel, pour repérer les risques. */
   place: RiskContext
-  /** Rôle en lecture seule (fiche 223) : écritures refusées, `onRefused` prévenu. */
+  /** Rôle en lecture seule (fiche 223) : écritures refusées, et dit par `notify`. */
   readOnly?: boolean | undefined
-  onRefused?: (toolCall: RequestPermissionRequest['toolCall']) => void
+  /** Ligne du fil qui dit une réponse d'office (refus d'un rôle, écriture d'une discussion). */
+  notify?: (event: AgentEvent) => void
+  /**
+   * Discussion (fiche 224) : dossier de ses documents. Une demande d'écrire (modifier, supprimer,
+   * déplacer) dont tous les emplacements y sont est accordée une fois ; un emplacement ailleurs,
+   * refusée. Sans emplacement connu, la demande est posée à l'utilisateur.
+   */
+  writeArea?: string | undefined
+}
+
+/** Règles tirées des options d'un hôte d'agent (lecture seule, documents, accords retenus). */
+export function hostRules(options: {
+  rememberedTools?: PermissionRules['remembered']
+  readOnly?: boolean | undefined
+  writeArea?: string | undefined
+  emit: (event: AgentEvent) => void
+}): Pick<PermissionRules, 'remembered' | 'readOnly' | 'writeArea' | 'notify'> {
+  return {
+    remembered: options.rememberedTools,
+    readOnly: options.readOnly,
+    writeArea: options.writeArea,
+    notify: options.emit
+  }
+}
+
+/** Genres ACP d'une écriture de fichier, réglés par `writeArea`. */
+const WRITE_KINDS: ReadonlySet<string> = new Set(['edit', 'delete', 'move'])
+
+/** `path` est dans `folder` (ou est `folder`), sans remonter par `..`. */
+export function isInside(folder: string, path: string): boolean {
+  const rel = relative(resolve(folder), resolve(folder, path))
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+/** Réponse d'office à une écriture d'une discussion, ou `undefined` (rien à décider ici). */
+function writeAreaAnswer(
+  params: RequestPermissionRequest,
+  rules: PermissionRules
+): RequestPermissionResponse | undefined {
+  const area = rules.writeArea
+  if (!area || !WRITE_KINDS.has(params.toolCall.kind ?? '')) return undefined
+  const paths = (params.toolCall.locations ?? []).map((l) => l.path)
+  if (paths.length === 0) return undefined
+  const allowed = paths.every((p) => isInside(area, p))
+  const option = allowed
+    ? params.options.find((o) => o.kind === 'allow_once')
+    : (params.options.find((o) => o.kind === 'reject_once') ??
+      params.options.find((o) => o.kind === 'reject_always'))
+  if (!option && allowed) return undefined
+  rules.notify?.(writeAreaNotice(params.toolCall, allowed))
+  return option ? selected(option.optionId) : { outcome: { outcome: 'cancelled' } }
+}
+
+/** Ligne du fil qui dit l'écriture accordée ou refusée d'une discussion (fiche 224). */
+function writeAreaNotice(
+  toolCall: RequestPermissionRequest['toolCall'],
+  allowed: boolean
+): AgentEvent {
+  const tool = toolCall.title ?? toolCall.kind ?? ''
+  return allowed
+    ? {
+        type: 'notice',
+        level: 'info',
+        message: { key: 'discussion.notice.writeAllowed', params: { tool } }
+      }
+    : {
+        type: 'notice',
+        level: 'warning',
+        message: { key: 'discussion.notice.writeRefused', params: { tool } }
+      }
 }
 
 /** Genres ACP refusés à un rôle en lecture seule. */
@@ -59,9 +129,11 @@ export function automaticAnswer(
     const reject =
       params.options.find((o) => o.kind === 'reject_once') ??
       params.options.find((o) => o.kind === 'reject_always')
-    rules.onRefused?.(params.toolCall)
+    rules.notify?.(readOnlyRefusal(params.toolCall))
     return reject ? selected(reject.optionId) : { outcome: { outcome: 'cancelled' } }
   }
+  const area = writeAreaAnswer(params, rules)
+  if (area) return area
   const allow = params.options.find((o) => o.kind === 'allow_once')
   if (allow && rules.autoAllowed(params.toolCall)) return selected(allow.optionId)
   // Fille en lecture seule : aucun accord « toujours » ne vaut, tout est demandé.

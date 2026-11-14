@@ -69,8 +69,12 @@ export class ProfileUpdates {
     const soFar = this.calls.notePermission(toolCall)
     noteProposedFiles(soFar, toolCall, this.exists)
     const marked = this.marker.markPermission(withNewFiles(toolCall, soFar))
-    // Genre annoncé plus tôt (`tool_call`) quand la demande n'en porte pas (fiche 223).
-    return marked.kind || !soFar.kind ? marked : { ...marked, kind: soFar.kind }
+    // Genre annoncé plus tôt (`tool_call`) quand la demande n'en porte pas (fiche 223) ; de même
+    // pour ses emplacements (Bob 2.1.0, fiche 224).
+    const kind = marked.kind || !soFar.kind ? {} : { kind: soFar.kind }
+    const located =
+      marked.locations?.length || !soFar.locations ? {} : { locations: soFar.locations }
+    return { ...marked, ...kind, ...located }
   }
 
   /** Nouvelle session ou agent arrêté. */
