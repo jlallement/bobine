@@ -1,7 +1,9 @@
 /**
  * Icônes de rôle (fiche 223) : noms Lucide d'un en-tête de rôle (`icon: shield-check`) et leur
- * composant, pris dans `lucide-react` déjà livré (aucune dépendance). Un nom inconnu de cette
- * liste (rôle écrit à la main) s'affiche avec l'icône par défaut.
+ * composant, pris dans `lucide-react` déjà livré (aucune dépendance). Une liste choisie, pas tout
+ * Lucide (le paquet entier pèserait sur la fenêtre) ; la même pour la grille de l'assistant et pour
+ * l'affichage. Un nom inconnu de cette liste (rôle écrit à la main) s'affiche avec l'icône par
+ * défaut, le rôle reste utilisable.
  */
 import {
   Accessibility,
@@ -9,22 +11,32 @@ import {
   Bot,
   Brain,
   Bug,
+  Cloud,
   Code,
   Compass,
   Database,
+  Eye,
+  FileText,
   FlaskConical,
   Gauge,
+  GitBranch,
   Globe,
+  Layers,
   LayoutDashboard,
   Lock,
   Palette,
   PenTool,
   Rocket,
   ScanSearch,
+  Search,
   Server,
   ShieldCheck,
   Smartphone,
+  Terminal,
+  TestTube,
+  Users,
   Wrench,
+  Zap,
   type LucideIcon
 } from 'lucide-react'
 
@@ -50,7 +62,17 @@ export const ROLE_ICONS: Readonly<Record<string, LucideIcon>> = {
   brain: Brain,
   code: Code,
   wrench: Wrench,
-  bot: Bot
+  bot: Bot,
+  cloud: Cloud,
+  eye: Eye,
+  'file-text': FileText,
+  'git-branch': GitBranch,
+  layers: Layers,
+  search: Search,
+  terminal: Terminal,
+  'test-tube': TestTube,
+  users: Users,
+  zap: Zap
 }
 
 export const ROLE_ICON_NAMES = Object.keys(ROLE_ICONS)

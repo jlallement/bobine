@@ -19,6 +19,11 @@ What changes for you, version by version. Shown in Settings › About.
   `.bobine/roles/` files; it can hand work to one of them in a child conversation. Read-only roles
   work in your folder without writing to it: Bobine refuses their writes and reports any change to
   the folder. The screen to create and manage them is coming soon.
+- Roles at work: type `@` in the message box and roles come first; a chosen role becomes a
+  token, the “Will go to…” line says where the message goes, and sending starts one child
+  conversation per role mentioned, in parallel. Children, “Subtasks”, reports and the agent's
+  proposals show the role's icon and color, and say whether it is read-only (or only requested,
+  for an agent that writes without asking).
 - Child conversations: the agent proposes them on its own when they help — several independent
   tasks, long work to follow separately, a review or audit by a fresh pair of eyes — without you
   having to insist; a short reminder repeats this after the conversation is summarized and when a

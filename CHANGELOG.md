@@ -21,6 +21,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   rôles en lecture seule travaillent dans votre dossier sans rien y écrire : Bobine refuse leurs
   écritures et signale tout changement du dossier. L'écran pour les créer et les gérer arrive
   bientôt.
+- Rôles au travail : tapez `@` dans la saisie, les rôles viennent en tête ; un rôle choisi devient
+  un jeton, la ligne « Partira à… » dit où ira le message, et l'envoi lance une conversation fille
+  par rôle cité, en parallèle. Les filles, les « Sous-tâches », les comptes rendus et les
+  propositions de l'agent portent l'icône et la couleur du rôle, et disent s'il est en lecture
+  seule (ou seulement demandée, pour un agent qui écrit sans demander).
 - Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
   indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
   sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et

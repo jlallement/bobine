@@ -153,7 +153,7 @@ export function HistoryItem({
               {conversation.role && (
                 <RoleAvatar
                   role={conversation.role}
-                  size="xs"
+                  size={18}
                   className="history-role"
                   testId="history-role"
                 />

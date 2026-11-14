@@ -101,7 +101,7 @@ export function NameFields({
       <Field label={t('roleForm.label.label')} error={errors.label} draft={draft}>
         {(ids) => (
           <div className="role-name-input">
-            <RoleAvatar role={draft} size="sm" />
+            <RoleAvatar role={draft} size={24} />
             <input
               id={ids.input}
               className="field-input"
@@ -182,7 +182,7 @@ export function AppearanceFields({ draft, onChange }: { draft: RoleDraft; onChan
               onClick={() => choose({ icon })}
               data-testid={`role-icon-${icon}`}
             >
-              <RoleAvatar role={{ icon, color: draft.color }} size="sm" />
+              <RoleAvatar role={{ icon, color: draft.color }} size={24} />
             </button>
           ))}
         </div>
@@ -373,7 +373,7 @@ export function TemplateTiles({
             onClick={() => onPick(template)}
             data-testid={`role-template-${template.name}`}
           >
-            <RoleAvatar role={template} size="md" />
+            <RoleAvatar role={template} size={32} />
             <span className="role-template-text">
               <span className="role-template-label">{template.label}</span>
               {template.readOnly && (
@@ -390,7 +390,7 @@ export function TemplateTiles({
           onClick={() => onPick(null)}
           data-testid="role-template-blank"
         >
-          <span className="role-avatar md blank" aria-hidden>
+          <span className="role-avatar s32 blank" aria-hidden>
             <FileText size={16} />
           </span>
           <span className="role-template-text">

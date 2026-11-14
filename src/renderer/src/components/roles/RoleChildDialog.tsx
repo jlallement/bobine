@@ -58,7 +58,7 @@ export function RoleChildDialog({
           data-role={role.name}
         >
           <div className="role-child-head">
-            <RoleAvatar role={role} size="lg" />
+            <RoleAvatar role={role} size={44} />
             <Dialog.Title className="confirm-title">
               {t('team.child.title', { label: role.label })}
             </Dialog.Title>

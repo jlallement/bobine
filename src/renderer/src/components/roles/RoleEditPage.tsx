@@ -173,7 +173,7 @@ function RoleEditForm(
       data-scope={role.scope}
     >
       <div className="role-edit-head">
-        <RoleAvatar role={draft} size="lg" />
+        <RoleAvatar role={draft} size={44} />
         <div className="role-edit-title">
           <h3>{draft.label || role.label}</h3>
           <span className="role-edit-where">

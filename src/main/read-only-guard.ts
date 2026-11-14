@@ -286,7 +286,8 @@ export const PROFILE_CHANGING = [
   'memory:attach',
   'roles:save',
   'roles:setEnabled',
-  'roles:remove'
+  'roles:remove',
+  'roles:startChildren'
 ] as const satisfies readonly IpcChannel[]
 
 const SAFE: ReadonlySet<string> = new Set(READ_ONLY_SAFE)

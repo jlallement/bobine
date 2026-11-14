@@ -181,7 +181,7 @@ function RoleRow({
       data-enabled={role.enabled}
     >
       <button className="role-row-open" onClick={onOpen} data-testid="role-row-open">
-        <RoleAvatar role={role} size="md" />
+        <RoleAvatar role={role} size={32} />
         <span className="role-row-text">
           <span className="role-row-label">{role.label}</span>
           <span className="role-row-desc">{shownDescription(role)}</span>
@@ -231,7 +231,7 @@ function RolesEmpty({ builtin }: { builtin: RoleView[] }) {
     <div className="roles-empty" data-testid="roles-empty">
       <div className="roles-empty-avatars" aria-hidden>
         {builtin.slice(0, 3).map((role, i) => (
-          <RoleAvatar key={role.name} role={role} size="lg" className={i === 1 ? 'center' : ''} />
+          <RoleAvatar key={role.name} role={role} size={44} className={i === 1 ? 'center' : ''} />
         ))}
         {builtin.length === 0 && <Users size={26} />}
       </div>

@@ -27,7 +27,7 @@ export function RolePreview({ draft, showFile }: { draft: RoleDraft; showFile: b
       <div className="role-preview-block">
         <span className="role-preview-caption">{t('roleWizard.preview.menu')}</span>
         <div className="role-preview-card role-preview-menu">
-          <RoleAvatar role={draft} size="sm" />
+          <RoleAvatar role={draft} size={24} />
           <span className="role-preview-name">{label}</span>
           <span className="role-preview-desc">{description}</span>
         </div>
@@ -38,7 +38,7 @@ export function RolePreview({ draft, showFile }: { draft: RoleDraft; showFile: b
           className="role-preview-card role-preview-work"
           style={{ '--role': tint } as CSSProperties}
         >
-          <RoleAvatar role={draft} size="md" />
+          <RoleAvatar role={draft} size={32} />
           <span className="role-preview-work-text">
             <span className="role-preview-name">{label}</span>
             <span className="role-preview-desc">
@@ -51,7 +51,7 @@ export function RolePreview({ draft, showFile }: { draft: RoleDraft; showFile: b
         <span className="role-preview-caption">{t('roleWizard.preview.sidebar')}</span>
         <div className="role-preview-card role-preview-side">
           <CornerDownRight size={14} aria-hidden className="role-preview-link" />
-          <RoleAvatar role={draft} size="xs" />
+          <RoleAvatar role={draft} size={18} />
           <span className="role-preview-name">{t('roleWizard.preview.childTitle')}</span>
           <LoaderCircle size={14} aria-hidden className="role-preview-spin" />
         </div>

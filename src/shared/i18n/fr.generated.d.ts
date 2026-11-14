@@ -4170,6 +4170,66 @@ export type FrResources = {
       readonly stopped: 'L’agent de l’aparté s’est arrêté.'
     }
   }
+  readonly roleWork: {
+    readonly readOnly: 'lecture seule'
+    readonly readOnlyRequested: 'lecture seule demandée'
+    readonly readOnlyRequestedHint: 'L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.'
+    readonly writes: 'écrit du code'
+    readonly mode: 'mode {{mode}}'
+    readonly byAgent: 'proposé par l’agent'
+    readonly prompt: 'Consigne'
+    readonly hides: 'Rôle du projet : il remplace le rôle {{scopes}} du même nom.'
+    readonly titleBadge: 'Rôle : {{label}}'
+    readonly scope: {
+      readonly builtin: 'fourni'
+      readonly user: 'personnel'
+      readonly project: 'du projet'
+    }
+    readonly menu: {
+      readonly title: 'Rôles'
+      readonly hint: 'Votre demande partira dans une conversation fille'
+      readonly all_one: 'Tous les rôles ({{count}})'
+      readonly all_many: 'Tous les rôles ({{count}})'
+      readonly all_other: 'Tous les rôles ({{count}})'
+      readonly option: '{{label}} : {{description}}'
+      readonly project: 'Rôle du projet (vient du dépôt)'
+      readonly new: 'Nouveau rôle…'
+      readonly newNamed: 'Nouveau rôle « {{name}} »'
+      readonly manage: 'Gérer'
+    }
+    readonly invite: {
+      readonly title: 'Confiez ce travail à un rôle'
+      readonly text: 'Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, au travail dans une conversation fille.'
+      readonly create: 'Créer un rôle'
+      readonly hide: 'Ne plus montrer'
+    }
+    readonly token: { readonly remove: 'Retirer {{label}}' }
+    readonly destination: {
+      readonly one: 'Partira à <strong>{{label}}</strong>, dans une conversation fille'
+      readonly many_one: 'Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle'
+      readonly many_many: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
+      readonly many_other: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
+      readonly sameFolder: 'dans ce dossier'
+      readonly worktree: 'son worktree'
+      readonly draft: 'Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.'
+      readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
+      readonly failed: '{{label}} n’est pas parti : {{error}}'
+    }
+    readonly state: {
+      readonly running: 'au travail'
+      readonly waiting: 'attend votre accord'
+      readonly unread: 'a rendu son compte rendu'
+      readonly done: 'a fini'
+      readonly error: 'en échec'
+    }
+    readonly report: {
+      readonly done: '{{role}} a rendu son compte rendu — {{title}}'
+      readonly stopped: '{{role}} a été arrêté — {{title}}'
+      readonly error: '{{role}} a échoué — {{title}}'
+    }
+    readonly proposalsWhere: 'L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.'
+    readonly where: { readonly sameFolder: 'dans ce dossier'; readonly worktree: 'son worktree' }
+  }
   readonly review: {
     readonly action: 'Faire relire…'
     readonly actionTip: 'Faire relire : un autre agent relit ces modifications, sans rien modifier, et pose ses remarques sur le diff'

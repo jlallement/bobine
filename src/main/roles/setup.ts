@@ -3,6 +3,7 @@
  * désactivés dans les réglages) et ce que demandent ses canaux IPC.
  */
 import { join } from 'node:path'
+import type { ChildConversations } from '../conversations/children'
 import type { ConversationManager } from '../conversations/manager'
 import { log } from '../log'
 import type { SettingsStore } from '../settings-store'
@@ -13,7 +14,11 @@ import { RoleLibrary } from './library'
 export function appRoles(
   userData: string,
   settings: Pick<SettingsStore, 'rolesOff' | 'setRoleEnabled'>,
-  conversations: () => Pick<ConversationManager, 'state'>
+  /** Conversations, et leurs filles (`@rôle` de la saisie, phase 3B) : créées après. */
+  live: () => {
+    conversations: Pick<ConversationManager, 'state'>
+    children?: ChildConversations | undefined
+  }
 ): { library: RoleLibrary; ipc: RolesIpcDeps } {
   const library = new RoleLibrary({
     userDir: join(userData, 'roles'),
@@ -24,12 +29,12 @@ export function appRoles(
   })
   // Le projet d'une fille est le dossier de sa mère : un rôle non commité n'est pas dans son worktree.
   const folderOf = (id: string) => {
-    const list = conversations().state().conversations
+    const list = live().conversations.state().conversations
     const conversation = list.find((c) => c.id === id)
     if (!conversation) return undefined
     const mother =
       conversation.startedFrom && list.find((c) => c.id === conversation.startedFrom?.id)
     return (mother ?? conversation).workspace || undefined
   }
-  return { library, ipc: { library, folderOf } }
+  return { library, ipc: { library, folderOf, children: () => live().children } }
 }

@@ -568,7 +568,7 @@ async function start(): Promise<void> {
     settings
   )
   // Rôles (fiche 223) : fournis, personnels, du projet.
-  const roles = appRoles(userData, settings, () => conversations)
+  const roles = appRoles(userData, settings, () => ({ conversations, children }))
   const { worktrees, preparation } = preparedWorktrees(gitRun, approvals.worktreeSetups)
   const conversations = new ConversationManager({
     settings,

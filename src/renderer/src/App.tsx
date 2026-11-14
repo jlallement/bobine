@@ -11,6 +11,8 @@ import { BesidePane } from './components/thread/BesidePane'
 import { AppDialogs, useAppDialogs } from './components/dialogs/AppDialogs'
 import { InstallDialog } from './components/dialogs/InstallDialog'
 import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
+import { RoleTitleBadge } from './components/roles/RoleWork'
+import { useComposerRoles } from './useComposerRoles'
 import { ConversationScope } from './components/thread/ConversationScope'
 import { ResumeCard } from './components/thread/ResumeCard'
 import { Composer } from './components/composer/Composer'
@@ -332,8 +334,12 @@ export function App() {
   const asideCard = aside.visible && (
     <AsideCard aside={aside} items={transcript.items} inbox={composerInbox} />
   )
+  // Rôles (fiche 223) : menu `@`, une fille par rôle cité ; « + Nouveau rôle » et « Gérer » viendront
+  // avec l'assistant et Réglages › Rôles (phase 3A).
+  const composerRoles = useComposerRoles(c.activeSummary, c.settings?.profiles ?? [], c.warn)
   const editor = (
     <Composer
+      roles={composerRoles}
       composerInbox={composerInbox}
       // Capture d'une zone de l'écran, si la plateforme la permet (fiche 145).
       {...(platformFeatures().screenCapture
@@ -496,6 +502,9 @@ export function App() {
                       onDelete={() => dialogs.setDeleting(activeTitle)}
                       onLaunchChild={() => dialogs.setLaunching(activeTitle)}
                     />
+                  ) : null}
+                  {activeTitle?.role ? (
+                    <RoleTitleBadge child={activeTitle} profiles={c.settings?.profiles ?? []} />
                   ) : null}
                   {/* Une fille dit d'où elle vient, et y ramène (fiche 117). */}
                   {activeTitle?.startedFrom ? (
@@ -662,6 +671,7 @@ export function App() {
                                 children: childrenOf(c.activeId, c.list),
                                 attention: c.attention,
                                 onOpen: c.select,
+                                profiles: c.settings?.profiles ?? [],
                                 ...(c.activeId ? { motherId: c.activeId } : {}),
                                 merge: childrenMergeActions((id) => {
                                   c.select(id)

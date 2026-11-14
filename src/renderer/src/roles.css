@@ -1,42 +1,106 @@
 /*
- * Rôles (fiche 223, phase 3A) : avatar d'un rôle, assistant de création, Réglages › Rôles, section
- * « Équipe » de la barre latérale. Couleur d'un rôle : une des couleurs d'accent de l'app, posée en
- * `--role` par `RoleAvatar` (teinte de la palette affichée, claire ou sombre).
+ * Rôles (fiche 223) : avatar d'un rôle et ses états (maquette 03-5), assistant de création,
+ * Réglages › Rôles, section « Équipe » de la barre latérale (phase 3A) ; menu `@`, jetons et ligne
+ * « Partira à… » de la saisie, fille d'un rôle dans le fil de sa mère, lignes de « Sous-tâches »,
+ * proposition de l'agent, en-tête de la fille (phase 3B). Couleur d'un rôle : une des couleurs
+ * d'accent de l'app, posée en `--role` par `useRoleStyle` (teinte de la palette affichée, claire ou
+ * sombre) ; tout le reste en découle.
  */
 
 /* Avatar : l'icône dans sa couleur, sur un fond pâle de la même couleur. */
 .role-avatar {
   --role: var(--muted);
-  display: inline-grid;
-  place-items: center;
+  --role-size: 30px;
+  position: relative;
+  display: inline-flex;
   flex-shrink: 0;
-  color: var(--role);
-  background: color-mix(in srgb, var(--role) 14%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--role) 26%, transparent);
+  align-items: center;
+  justify-content: center;
+  width: var(--role-size);
+  height: var(--role-size);
   border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--role) 30%, transparent);
+  background: color-mix(in srgb, var(--role) 14%, var(--surface));
+  color: var(--role);
 }
-.role-avatar.xs {
-  width: 18px;
-  height: 18px;
+.role-avatar.s18 {
+  --role-size: 18px;
   border-radius: var(--radius-xs);
 }
-.role-avatar.sm {
-  width: 24px;
-  height: 24px;
+.role-avatar.s22 {
+  --role-size: 22px;
+  border-radius: var(--radius-xs);
 }
-.role-avatar.md {
-  width: 32px;
-  height: 32px;
+.role-avatar.s24 {
+  --role-size: 24px;
 }
-.role-avatar.lg {
-  width: 44px;
-  height: 44px;
+.role-avatar.s32 {
+  --role-size: 32px;
+}
+.role-avatar.s44 {
+  --role-size: 44px;
   border-radius: var(--radius-md);
+}
+.role-avatar svg {
+  color: var(--role);
 }
 .role-avatar.blank {
   color: var(--muted);
   background: var(--surface);
   border: 1px dashed var(--border-strong);
+}
+/*
+ * Au travail : un anneau de sa couleur, dans le carré de l'avatar (rien ne déborde), qui pulse
+ * doucement ; fixe si les animations sont réduites.
+ */
+.role-avatar[data-state='running'] {
+  box-shadow: inset 0 0 0 2px var(--role);
+  animation: role-ring 1.6s ease-in-out infinite;
+}
+@keyframes role-ring {
+  50% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--role) 45%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-avatar[data-state='running'] {
+    animation: none;
+  }
+}
+/* Pastille : attend votre accord (ambre), a rendu (vert), échec ou arrêt (rouge). */
+.role-avatar[data-state='waiting']::after,
+.role-avatar[data-state='done']::after,
+.role-avatar[data-state='error']::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--surface);
+  background: var(--warn);
+}
+.role-avatar[data-state='done']::after {
+  background: var(--ok);
+}
+.role-avatar[data-state='error']::after {
+  background: var(--err);
+}
+.role-avatar[data-state='off'] {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.role-stack {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+.role-stack .role-avatar + .role-avatar {
+  margin-left: -5px;
+}
+.role-stack .role-avatar {
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 /* —— Assistant de création (maquettes A1 à A3) —— */
@@ -918,4 +982,324 @@
   .role-preview {
     display: none;
   }
+}
+
+/* —— Rôles au travail (phase 3B) —— */
+
+/* Menu `@` : section des rôles en tête (maquettes 02-1, 02-2). */
+.role-menu-label {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.role-menu-hint {
+  margin-left: auto;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.command-item.role-item {
+  align-items: center;
+}
+.role-item-name {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.role-item-project,
+.role-item-enter {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.role-item-project {
+  display: inline-flex;
+}
+.role-more,
+.role-new {
+  color: var(--muted);
+}
+.role-new {
+  color: var(--accent);
+}
+.role-more-icon {
+  margin: 0 4px;
+}
+.role-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.role-menu-actions {
+  display: inline-flex;
+  gap: 12px;
+  margin-left: auto;
+}
+.role-menu-actions .link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+}
+.role-menu-actions .accent {
+  color: var(--accent);
+}
+/* Aucun rôle actif (maquette 02-7) : une invitation, pas un trou. */
+.roles-invite {
+  display: flex;
+  gap: 12px;
+  padding: 10px 10px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.roles-invite-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.roles-invite-text strong {
+  color: var(--text);
+  font-size: 13.5px;
+}
+.roles-invite-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Saisie pour des rôles (maquettes 02-3, 02-4) : jetons, liseré, ligne « Partira à… ». */
+.role-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.role-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--role) 35%, transparent);
+  background: color-mix(in srgb, var(--role) 12%, var(--surface));
+  color: var(--role);
+  font-size: 13px;
+  font-weight: 500;
+  animation: role-token-in 0.12s ease-out;
+}
+@keyframes role-token-in {
+  from {
+    transform: scale(0.92);
+    opacity: 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-token {
+    animation: none;
+  }
+}
+.role-token-remove {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+.role-token-remove:hover,
+.role-token-remove:focus-visible {
+  opacity: 1;
+  background: color-mix(in srgb, var(--role) 18%, transparent);
+}
+.composer.to-role,
+.composer.to-role:focus-within {
+  border-color: var(--role);
+  box-shadow:
+    var(--shadow),
+    0 0 0 3px color-mix(in srgb, var(--role) 16%, transparent);
+}
+.composer.to-roles,
+.composer.to-roles:focus-within {
+  border-color: var(--border-strong);
+}
+.role-destination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+  animation: composer-plan-hint-in 0.15s ease;
+}
+.role-destination.single {
+  color: var(--role);
+}
+.role-destination-detail {
+  color: var(--muted);
+}
+.role-destination-warn {
+  flex-basis: 100%;
+  color: var(--warn);
+}
+
+/* Fille d'un rôle dans le fil de sa mère (maquette 03-1). */
+.role-launch {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--role);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 13.5px;
+}
+.role-launch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.role-launch-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+.role-launch-head .grow {
+  flex: 1;
+}
+.role-launch-title {
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.role-launch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.role-launch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.role-launch-toggle[aria-expanded='true'] .chevron {
+  transform: rotate(90deg);
+}
+.role-launch .child-instruction-text {
+  margin-left: 0;
+}
+.role-launch + .subtasks,
+.role-launch + .role-launch {
+  margin-top: -6px;
+}
+.role-state {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.role-state[data-state='running'] {
+  color: var(--role, var(--accent));
+}
+.role-state[data-state='waiting'] {
+  color: var(--warn);
+}
+.role-state[data-state='unread'] {
+  color: var(--ok);
+}
+.role-state[data-state='error'] {
+  color: var(--err);
+}
+.role-tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  white-space: nowrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.role-tag.requested {
+  color: var(--warn);
+}
+.role-tag.warn {
+  color: var(--warn);
+}
+
+/* Lignes de « Sous-tâches » à l'identité du rôle (maquette 03-2). */
+.subtasks-head .role-stack {
+  align-self: center;
+  margin-right: 4px;
+}
+.role-subtask-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.role-subtask-head strong {
+  font-weight: 600;
+}
+.role-subtask-doing {
+  margin-left: 30px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subtask-info:has(.role-subtask-head) .subtask-meta {
+  margin-left: 30px;
+}
+
+/* Compte rendu d'un rôle (maquette 03-4) : liseré et avatar de sa couleur. */
+.child-report.role-report .child-report-icon {
+  margin-top: 1px;
+}
+
+/* Proposition de l'agent (maquette 03-3) : rôle figé, ce qu'il peut faire. */
+.proposal-title .role-avatar svg {
+  color: var(--role);
+}
+.proposal-role-label {
+  font-weight: 600;
+}
+.proposal-role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 2px 0 0 44px;
+}
+.role-tag.plain {
+  color: var(--text-2);
+}
+
+/* En-tête d'une fille : son rôle. */
+.role-title-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.role-title-label {
+  font-weight: 500;
+  white-space: nowrap;
 }

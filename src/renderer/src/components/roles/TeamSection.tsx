@@ -65,7 +65,7 @@ export function TeamSection({
                 data-testid="team-role"
                 data-role={role.name}
               >
-                <RoleAvatar role={role} size="md" />
+                <RoleAvatar role={role} size={32} />
               </button>
             </Tip>
           </span>

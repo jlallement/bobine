@@ -7,11 +7,14 @@ import type { IpcHandlers } from '@shared/ipc'
 import type { RoleFileScope, RoleScope } from '@shared/roles'
 import type { RolesChannel } from '@shared/roles-ipc'
 import type { RoleLibrary } from './library'
+import { parseRolesStartRequest, startRoleChildren, type RoleInvokeHost } from './invoke'
 
 export interface RolesIpcDeps {
   library: RoleLibrary
   /** Dossier du projet d'une conversation (celui de la mère pour une fille) ; `undefined` sans dossier. */
   folderOf: (conversationId: string) => string | undefined
+  /** Conversations filles (`@rôle` de la saisie) ; absentes : `roles:startChildren` refusé. */
+  children?: () => RoleInvokeHost | undefined
 }
 
 const SCOPES: readonly RoleScope[] = ['builtin', 'user', 'project']
@@ -74,6 +77,13 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       return undefined
     },
     'roles:remove': (scope, roleName, conversationId) =>
-      available().library.remove(fileScope(scope), name(roleName), folder(conversationId))
+      available().library.remove(fileScope(scope), name(roleName), folder(conversationId)),
+    'roles:startChildren': (conversationId, request) => {
+      const children = available().children?.()
+      if (!children) throw new Error(t('ipc.unavailable.children'))
+      const id = optionalId(conversationId)
+      if (!id) throw new Error('Paramètre invalide : conversationId')
+      return startRoleChildren(children, id, parseRolesStartRequest(request))
+    }
   }
 }

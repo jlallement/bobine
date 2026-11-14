@@ -508,7 +508,10 @@ export function createApi(
           scope,
           name,
           ...(conversationId !== undefined ? [conversationId] : [])
-        )
+        ),
+      /** `@rôle …` de la saisie : une fille par rôle cité (phase 3B). */
+      startChildren: (conversationId: string, request: IpcArgs<'roles:startChildren'>[1]) =>
+        invoke('roles:startChildren', conversationId, request)
     },
     /** Mémoire commune aux agents (fiche 182) : carte du fil, Réglages › Mémoire. */
     memory: {
