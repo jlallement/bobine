@@ -374,10 +374,17 @@ export function Composer(props: Props) {
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
-    // Message pour des rôles (fiche 223) : une fille par rôle, rien à la conversation.
-    if (status !== 'read-only' && roleCompose.submit(text, attachments.items.length, changeText)) {
+    // Message pour des rôles (fiche 223) : une fille par rôle, rien à la conversation ; un `@nom`
+    // inconnu fait relire les rôles, puis l'envoi ordinaire s'il n'en nomme aucun.
+    if (
+      status !== 'read-only' &&
+      roleCompose.submit(text, attachments.items.length, changeText, sendToConversation)
+    ) {
       return
     }
+    sendToConversation()
+  }
+  const sendToConversation = () => {
     // Commande personnelle ou du projet (fiche 045) : la consigne développée part à l'agent.
     const own = userCommandOf(text, userCommands, agentCommands)
     if (own) {
@@ -503,7 +510,7 @@ export function Composer(props: Props) {
           status={status}
           blocked={!!blocker}
           locked={locked}
-          canSend={canSend || (roleView.targets.length > 0 && text.trim() !== '' && !blocker)}
+          canSend={roleView.targets.length > 0 ? roleView.ready && !blocker : canSend}
           hasContent={hasContent}
           controls={controls}
           modeControl={modeControl}
@@ -528,6 +535,8 @@ export function Composer(props: Props) {
       )}
       <RoleDestinationFor
         targets={roleView.targets}
+        empty={roleView.empty}
+        sending={roleView.sending}
         roles={props.roles}
         profileId={snapshot?.info.profileId ?? settings?.profileId}
         agentLabel={agentLabel}

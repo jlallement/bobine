@@ -63,7 +63,9 @@ export function RoleDestination({
   roles,
   agentLabel,
   readOnly,
-  draft
+  draft,
+  empty = false,
+  sending = false
 }: {
   roles: readonly RoleView[]
   /** Agent de la fille (un seul rôle). */
@@ -72,6 +74,10 @@ export function RoleDestination({
   readOnly: ReadOnlyShown
   /** Conversation encore vide : les filles se rattachent à une conversation de l'historique. */
   draft: boolean
+  /** Rien à demander une fois les `@rôle` retirés : l'envoi est désactivé, la ligne dit pourquoi. */
+  empty?: boolean
+  /** Filles en cours de lancement : un second envoi attend. */
+  sending?: boolean
 }) {
   const { t } = useTranslation()
   const single = roles.length === 1 ? roles[0] : undefined
@@ -115,6 +121,16 @@ export function RoleDestination({
         <span className="role-destination-detail">· {details.join(' · ')}</span>
       )}
       {draft && <span className="role-destination-warn">{t('roleWork.destination.draft')}</span>}
+      {empty && !sending && (
+        <span className="role-destination-warn" data-testid="role-destination-empty">
+          {t('roleWork.destination.empty')}
+        </span>
+      )}
+      {sending && (
+        <span className="role-destination-detail" data-testid="role-destination-sending">
+          {t('roleWork.destination.sending')}
+        </span>
+      )}
     </div>
   )
 }

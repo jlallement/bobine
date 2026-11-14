@@ -4214,6 +4214,8 @@ export type FrResources = {
       readonly worktree: 'son worktree'
       readonly draft: 'Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.'
       readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
+      readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
+      readonly sending: 'Lancement…'
       readonly failed: '{{label}} n’est pas parti : {{error}}'
     }
     readonly state: {

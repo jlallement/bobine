@@ -4379,6 +4379,8 @@
       "worktree": "son worktree",
       "draft": "Écrivez d’abord dans cette conversation : un rôle part d’une conversation de l’historique.",
       "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
+      "empty": "Écrivez votre demande après le rôle : c’est elle qui part.",
+      "sending": "Lancement…",
       "failed": "{{label}} n’est pas parti : {{error}}"
     },
     "state": {

@@ -4205,6 +4205,8 @@
       "worktree": "its own worktree",
       "draft": "Write in this conversation first: a role starts from a conversation in the history.",
       "attachments": "Attachments don't go to roles: remove them, or send without a role.",
+      "empty": "Write your request after the role: that is what is sent.",
+      "sending": "Starting…",
       "failed": "{{label}} did not start: {{error}}"
     },
     "state": {

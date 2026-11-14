@@ -57,13 +57,20 @@ function setup(
     onCreate?: ComposerRoles['onCreate']
     invokable?: boolean
     files?: string[]
+    send?: ComposerRoles['send']
+    reload?: ComposerRoles['reload']
   } = {}
 ) {
-  const send = vi.fn(async () => options.sent ?? true)
+  const send = vi.fn(
+    options.send ??
+      (async (names: string[], _text: string) =>
+        (options.sent ?? true) ? { started: names, failed: [] } : { started: [], failed: names })
+  )
   const roles: ComposerRoles = {
     list: options.list ?? ROLES,
     invokable: options.invokable ?? true,
     refresh: vi.fn(),
+    ...(options.reload ? { reload: options.reload } : {}),
     send,
     profiles: (options.profiles ?? [
       { id: 'mock', label: 'Agent factice', available: true }
@@ -350,5 +357,89 @@ describe('rôle invoqué d’ailleurs (section Équipe, Réglages, assistant) : 
     })
     expect(screen.queryByTestId('role-token')).toBeNull()
     expect(onWarn).toHaveBeenCalledWith(expect.stringContaining('conversation mère'))
+  })
+})
+
+describe('envoi aux rôles : un seul à la fois, rien de perdu (relecture phase 3)', () => {
+  const deferred = () => {
+    let resolve: (value: { started: string[]; failed: string[] }) => void = () => {}
+    const promise = new Promise<{ started: string[]; failed: string[] }>((r) => (resolve = r))
+    return { promise, resolve }
+  }
+
+  it('pendant l’envoi : second Entrée sans effet, bouton désactivé, « Lancement… » ; le texte tapé entre-temps reste', async () => {
+    const pending = deferred()
+    const { type, key, send, input } = setup({ send: () => pending.promise })
+    type('@security-expert relis')
+    key('Escape')
+    await act(async () => key('Enter'))
+    await act(async () => key('Enter'))
+    expect(send).toHaveBeenCalledTimes(1)
+    expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('role-destination-sending')).toBeTruthy()
+    type('autre chose')
+    await act(async () => pending.resolve({ started: ['security-expert'], failed: [] }))
+    expect(input.value).toBe('autre chose')
+  })
+
+  it('échec partiel : le texte et le jeton du rôle refusé restent', async () => {
+    const { type, key, input } = setup({
+      send: async () => ({ started: ['security-expert'], failed: ['code-reviewer'] })
+    })
+    type('@security-expert @code-reviewer relisez')
+    key('Escape')
+    await act(async () => key('Enter'))
+    expect(input.value).toBe('relisez')
+    expect(screen.getAllByTestId('role-token').map((t) => t.dataset['role'])).toEqual([
+      'code-reviewer'
+    ])
+  })
+
+  it('rien à demander après le rôle : bouton désactivé et dit pourquoi, Entrée n’envoie rien', async () => {
+    const { type, key, send, onSend } = setup()
+    type('@security-expert')
+    key('Escape')
+    expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('role-destination-empty').textContent).toContain(
+      'Écrivez votre demande'
+    )
+    await act(async () => key('Enter'))
+    expect(send).not.toHaveBeenCalled()
+    expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('`@nom` inconnu à l’envoi : la liste est relue ; le rôle tout juste créé reçoit la demande', async () => {
+    const created = role('perf-expert', 'Expert perf', { scope: 'user' })
+    const reload = vi.fn(async () => [...ROLES, created])
+    const { type, key, send, onSend } = setup({ reload })
+    type('@perf-expert fais X')
+    key('Escape')
+    await act(async () => key('Enter'))
+    expect(reload).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith(['perf-expert'], 'fais X')
+    expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('`@nom` toujours inconnu après relecture : le message part à la conversation', async () => {
+    const reload = vi.fn(async () => ROLES)
+    const { type, key, send, onSend } = setup({ reload })
+    type('Demande à @astronaute la météo')
+    key('Escape')
+    await act(async () => key('Enter'))
+    expect(reload).toHaveBeenCalledTimes(1)
+    expect(send).not.toHaveBeenCalled()
+    expect(onSend).toHaveBeenCalledWith('Demande à @astronaute la météo', [])
+  })
+
+  it('retour arrière : le dernier jeton **visible** part (pas celui d’un rôle pas encore lu)', () => {
+    const { type, key, input } = setup()
+    type('@sécu')
+    key('Enter')
+    act(() => {
+      invokeRole('pas-encore-lu')
+    })
+    input.setSelectionRange(0, 0)
+    key('Backspace')
+    expect(screen.queryByTestId('role-token')).toBeNull()
   })
 })

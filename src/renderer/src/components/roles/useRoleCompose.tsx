@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { ProfileSummary } from '@shared/agent'
+import { matchContextMentions } from '@shared/context-mentions'
 import { roleRecipients } from '@shared/role-mentions'
 import type { RoleView } from '@shared/roles'
 import i18next from 'i18next'
@@ -25,8 +26,10 @@ export interface ComposerRoles {
   invokable?: boolean
   /** Relit les rôles (fichiers changés) : à l'ouverture du menu `@`. */
   refresh: () => void
-  /** Lance une fille par rôle ; `true` si au moins une est partie (sinon le texte reste). */
-  send: (names: string[], text: string) => Promise<boolean>
+  /** Lance une fille par rôle ; les rôles lancés et ceux refusés (raison déjà dite). */
+  send: (names: string[], text: string) => Promise<{ started: string[]; failed: string[] }>
+  /** Relit les rôles et les rend (un `@nom` inconnu à l'envoi : rôle tout juste créé ?). */
+  reload?: () => Promise<readonly RoleView[]>
   profiles: readonly ProfileSummary[]
   /** Assistant de création, prérempli du nom tapé (phase 3A). */
   onCreate?: (name?: string) => void
@@ -61,8 +64,19 @@ export function useRoleCompose(options: {
   const { roles, draftKey, menuOpen } = options
   const [tokens, setTokens] = useState<string[]>(() => (draftKey && kept.get(draftKey)) || [])
   const [hidden, setHidden] = useState(inviteHidden)
+  // Envoi aux rôles en cours (plusieurs secondes : `git worktree add`) : un second envoi attend.
+  const [sending, setSending] = useState(false)
+  const sendingNow = useRef(false)
+  const setBusy = (busy: boolean) => {
+    sendingNow.current = busy
+    setSending(busy)
+  }
+  // Jetons et texte à jour, lus à la fin d'un envoi (la saisie a pu changer entre-temps).
+  const tokensNow = useRef(tokens)
+  const textNow = useRef('')
   const list = roles?.list ?? []
   const update = (next: string[]) => {
+    tokensNow.current = next
     setTokens(next)
     if (draftKey) kept.set(draftKey, next)
   }
@@ -78,6 +92,37 @@ export function useRoleCompose(options: {
   }
   const shownTokens = tokens.flatMap((name) => list.find((r) => r.name === name) ?? [])
   const add = (name: string) => update(tokens.includes(name) ? tokens : [...tokens, name])
+  /**
+   * Une fille par rôle. Toutes parties : jetons retirés, saisie vidée si elle n'a pas changé.
+   * Certaines refusées : leurs jetons restent (les `@nom` tapés deviennent des jetons) avec la
+   * demande, pour réessayer ; aucune partie : rien ne bouge.
+   */
+  const dispatch = (
+    to: { names: string[]; text: string },
+    at: {
+      text: string
+      attachmentCount: number
+      changeText: (value: string, caret?: number) => void
+    }
+  ) => {
+    if (!roles || !to.text.trim()) return
+    if (at.attachmentCount > 0) {
+      options.onWarn(i18next.t('roleWork.destination.attachments'))
+      return
+    }
+    setBusy(true)
+    void roles
+      .send(to.names, to.text)
+      .then(({ started, failed }) => {
+        if (started.length === 0) return
+        const others = tokensNow.current.filter((t) => !to.names.includes(t))
+        update([...others, ...to.names.filter((n) => failed.includes(n))])
+        if (textNow.current !== at.text) return
+        const rest = failed.length ? to.text : ''
+        at.changeText(rest, rest.length)
+      })
+      .finally(() => setBusy(false))
+  }
   useRoleInvoked(roles, (name) => {
     if (!roles?.invokable) return options.onWarn(i18next.t('team.notHere'))
     add(name)
@@ -119,32 +164,45 @@ export function useRoleCompose(options: {
       }
     },
     /**
-     * Envoi : des rôles cités, une fille chacun (rien à la conversation) ; le texte et les jetons
-     * partent quand au moins une fille est lancée. `false` : aucun rôle, envoi ordinaire.
+     * Envoi : des rôles cités, une fille chacun (rien à la conversation). `false` : aucun rôle,
+     * envoi ordinaire ; un `@nom` inconnu fait d'abord relire la liste, et `orElse` fait l'envoi
+     * ordinaire s'il ne nomme toujours aucun rôle.
      */
     submit: (
       text: string,
       attachmentCount: number,
-      changeText: (value: string, caret?: number) => void
+      changeText: (value: string, caret?: number) => void,
+      orElse: () => void
     ): boolean => {
-      const to = roles && roleRecipients(tokens, text, list)
-      if (!roles || !to?.names.length) return false
-      if (!to.text.trim()) return true
-      if (attachmentCount > 0) {
-        options.onWarn(i18next.t('roleWork.destination.attachments'))
+      if (!roles) return false
+      if (sendingNow.current) return true
+      const at = { text, attachmentCount, changeText }
+      const to = roleRecipients(tokensNow.current, text, list)
+      if (to.names.length) {
+        dispatch(to, at)
         return true
       }
-      void roles.send(to.names, to.text).then((sent) => {
-        if (!sent) return
-        update([])
-        changeText('', 0)
-      })
+      if (!roles.reload || !unknownMention(text, list)) return false
+      setBusy(true)
+      void roles.reload().then(
+        (fresh) => {
+          setBusy(false)
+          const again = roleRecipients(tokensNow.current, text, fresh)
+          if (again.names.length) dispatch(again, at)
+          else orElse()
+        },
+        () => {
+          setBusy(false)
+          orElse()
+        }
+      )
       return true
     },
     /** Retour arrière en tête de la saisie : le dernier jeton part ; `true` s'il y en avait un. */
     removeLast: () => {
-      if (shownTokens.length === 0) return false
-      update(tokens.slice(0, -1))
+      const last = shownTokens.at(-1)
+      if (!last) return false
+      update(tokens.filter((t) => t !== last.name))
       return true
     },
     menu: (query: string | undefined): RoleMenuOptions | undefined =>
@@ -169,12 +227,35 @@ export function useRoleCompose(options: {
           }
         : undefined,
     /** Jetons et ligne « Partira à… » pour ce texte. */
-    view: (text: string) => ({
-      tokens: shownTokens,
-      targets: chosen(text),
-      remove: (name: string) => update(tokens.filter((t) => t !== name))
-    })
+    view: (text: string) => {
+      textNow.current = text
+      const targets = chosen(text)
+      // Rien à demander une fois les `@nom` retirés : l'envoi attend, la ligne le dit.
+      const empty = targets.length > 0 && !roleRecipients(tokens, text, list).text.trim()
+      return {
+        tokens: shownTokens,
+        targets,
+        empty,
+        sending,
+        /** L'envoi aux rôles est possible (bouton). */
+        ready: targets.length > 0 && !empty && !sending,
+        remove: (name: string) => update(tokens.filter((t) => t !== name))
+      }
+    }
   }
+}
+
+/**
+ * Un `@nom` qui pourrait être un rôle sans être dans la liste (rôle créé depuis la dernière
+ * lecture) : forme d'un identifiant de rôle, ni fichier (`.`, `/`), ni `@git-changes` /
+ * `@terminal`.
+ */
+function unknownMention(text: string, list: readonly Pick<RoleView, 'name'>[]): boolean {
+  const known = new Set(list.map((r) => r.name))
+  return [...text.matchAll(/(?:^|[\s(,;:])@([a-z0-9][a-z0-9-]*)(?![\w./-])/gi)].some((m) => {
+    const name = (m[1] ?? '').toLowerCase()
+    return !known.has(name) && !matchContextMentions(name).some((c) => c.name === name)
+  })
 }
 
 /** Rôle invoqué d'ailleurs (`invokeRole`) : reçu par la saisie qui a des rôles, la plus récente. */
@@ -204,12 +285,16 @@ export function useRoleFrame(targets: readonly RoleView[]): {
 /** La ligne « Partira à… » sous la saisie, pour les rôles visés. */
 export function RoleDestinationFor({
   targets,
+  empty,
+  sending,
   roles,
   profileId,
   agentLabel,
   fresh
 }: {
   targets: readonly RoleView[]
+  empty: boolean
+  sending: boolean
   roles: ComposerRoles | undefined
   profileId: string | undefined
   agentLabel: string
@@ -223,6 +308,8 @@ export function RoleDestinationFor({
       agentLabel={profile?.label ?? agentLabel}
       readOnly={single ? readOnlyShown(single.readOnly, profile) : undefined}
       draft={fresh}
+      empty={empty}
+      sending={sending}
     />
   )
 }
