@@ -39,6 +39,12 @@ export async function panelSuite(scheme) {
       // Le panneau arrive en glissant (fiche 185, P1) : on le prend immobile.
       await ui.waitFor(`${ui.$('side-panel')}.getAnimations().length === 0`)
       const before = await width()
+      const saved = () => ui.ev(`JSON.parse(localStorage.getItem('bobine.panel') ?? '{}')`)
+      // Fiche 226 : 320 px par défaut, et la largeur n'est pas enregistrée sans glissement.
+      check(
+        Math.abs(before - 320) < 2 && !('customWidth' in (await saved())),
+        `panneau à 320 px par défaut, largeur non enregistrée (${before} px)`
+      )
       const handle = await ui.ev(
         `(() => { const b = document.querySelector('.side-panel-resize').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + 200 } })()`
       )
@@ -77,6 +83,10 @@ export async function panelSuite(scheme) {
         )
       }
       check(Math.abs(after - before - 80) < 4, 'panneau redimensionné à la souris')
+      check(
+        Math.abs((await saved()).customWidth - after) < 2,
+        'largeur tirée à la main : enregistrée (customWidth)'
+      )
       await ui.shot('23-panneau-taches')
 
       // Onglets nommés (fiche 082) : seulement les outils qui servent, les autres dans « + ».
@@ -150,11 +160,22 @@ export async function panelSuite(scheme) {
           !(await ui.ev(`document.querySelector('main').inert`)),
         'Affichage › Agrandir le panneau : réduit, à sa largeur d’avant'
       )
+      // Double-clic sur la poignée (fiche 226) : largeur par défaut, comme la barre latérale.
+      check(
+        (await ui.ev(`document.querySelector('.side-panel-resize').title`)) ===
+          L('sidePanel.resizeHint'),
+        'poignée : infobulle « glisser · double-clic : largeur par défaut »'
+      )
       await ui.ev(
         `document.querySelector('.side-panel-resize').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`
       )
+      await ui.waitFor(`Math.abs(${panel}.getBoundingClientRect().width - 320) < 2`)
+      check(
+        !(await ui.ev(`${maximized}`)) && !('customWidth' in (await saved())),
+        'double-clic sur la poignée : 320 px, plus de largeur enregistrée'
+      )
+      await ui.click(ui.$('panel-maximize'))
       await ui.waitFor(maximized)
-      check(true, 'double-clic sur la poignée : agrandi')
       // Barre latérale masquée : le panneau laisse la place des boutons de la fenêtre et offre de
       // la rouvrir.
       await ui.click(`document.querySelector('.sidebar-header .icon-button:last-of-type')`)

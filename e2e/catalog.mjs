@@ -23,6 +23,7 @@ export const GLOBAL_SOURCES = [
   `${R}themes.generated.css`,
   `${R}syntax.css`,
   'src/shared/themes.ts',
+  'src/shared/theme-aurora.ts',
   'e2e/palette.mjs',
   `${R}App.tsx`,
   `${C}Welcome.tsx`,
@@ -97,6 +98,7 @@ const PANEL = [
   `${C}panel/SidePanel.tsx`,
   `${C}panel/PanelIcons.tsx`,
   `${R}panel-tabs.ts`,
+  `${R}panel-width.ts`,
   `${R}usePanel.ts`
 ]
 /** Appareils (simulateur iOS, Android) : cadre, gestes, planche contact. */
@@ -1381,6 +1383,20 @@ export const SUITES = [
       ...APPEARANCE,
       `${R}time.ts`,
       'src/main/quit-guard.ts'
+    ]
+  },
+  {
+    // Thème Aurore (fiche 226) : vignette, touches, verre, repli d'accessibilité de macOS.
+    name: 'aurore',
+    file: 'aurore.mjs',
+    run: 'auroreSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      ...APPEARANCE,
+      `${C}common/ModelMenu.tsx`,
+      `${C}thread/ToolCall.tsx`,
+      'scripts/themes-css.mts'
     ]
   },
   {

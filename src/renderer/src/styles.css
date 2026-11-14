@@ -5421,6 +5421,14 @@ a.btn {
   flex: 1;
 }
 
+/* « Ajouter au message » sur une ligne (fiche 226) : dans le panneau à 320 px, le libellé passait à
+   la ligne ; la barre grandissait, xterm se recalibrait et perdait la sélection. Les onglets cèdent
+   la place (ils défilent). */
+.terminal-bar > .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .terminal-tabs {
   display: flex;
   align-items: center;

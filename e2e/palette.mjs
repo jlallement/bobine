@@ -1,13 +1,13 @@
 /**
  * Palettes dans les essais (fiche 134) : chaque suite tourne en clair et en sombre ; celles qui
  * montrent du code, une sortie de commande, le terminal ou Mermaid prennent aussi une capture dans
- * la variante du mode, Sépia sur le clair et Nuit noire sur le sombre. Couleurs attendues tirées
- * des jetons (`src/shared/themes.ts`, chargé tel quel par Node).
+ * la variante du mode, Aurore sur le clair (Sépia avant la fiche 226) et Nuit noire sur le sombre.
+ * Couleurs attendues tirées des jetons (`src/shared/themes.ts`, chargé tel quel par Node).
  */
 import { themeTokens } from '../src/shared/themes.ts'
 
 /** Variante essayée dans ce mode. */
-export const variantOf = (scheme) => (scheme === 'dark' ? 'black' : 'sepia')
+export const variantOf = (scheme) => (scheme === 'dark' ? 'black' : 'aurora')
 
 /** Jetons d'une palette, accent par défaut (celui des essais). */
 export const tokensOf = (palette) => themeTokens(palette, 'orange')
