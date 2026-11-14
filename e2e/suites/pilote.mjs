@@ -72,10 +72,11 @@ export async function piloteSuite() {
     const chosen = pilote('cliquer', L('onboarding.folder.choose'))
     check(chosen.code === 0, `accueil : « Choisir… » (${chosen.err.trim() || chosen.out.trim()})`)
     pilote('attendre', '--max', '30s')
+    const workspace = await inPage(
+      `(async () => { const s = await window.api.conversations.get(); return !!document.querySelector('[data-testid=onboarding-send]') && s.conversations.find((c) => c.id === s.activeId)?.workspace })()`
+    )
     check(
-      await inPage(
-        `!!document.querySelector('[data-testid=onboarding-send]') && document.body.innerText.includes(${JSON.stringify(basename(project))})`
-      ),
+      typeof workspace === 'string' && workspace.endsWith(`/${basename(project)}`),
       'lancer --dossier : l’accueil travaille dans ce dossier, sans fenêtre de macOS'
     )
     pilote('cliquer', L('onboarding.trial.send'))
