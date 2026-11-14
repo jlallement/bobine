@@ -1,7 +1,7 @@
 # 223 — Rôles : des agents spécialisés à invoquer, et des filles lancées sans insister
 
-- **Statut** : en cours — phase 1 (délégation) et phase 2 (rôles, cœur sans interface) faites le
-  2026-11-14 ; phases 3 (interface, maquettes validées) et 4 (export) à faire
+- **Statut** : en cours — phases 1 (délégation), 2 (rôles, cœur sans interface) et 3 (interface :
+  3A gestion, 3B rôles au travail, intégrées) faites le 2026-11-14 ; phase 4 (export) à faire
 - **Dépend de** : 045 (commandes personnelles, fichiers Markdown du projet), 097 et 160
   (conversations filles, agent et modèle d'une fille, ADR-0019, ADR-0036), 112 (carte de
   propositions), 118 (filles proposées par l'agent, contexte de session), 177 (relecteur en lecture
@@ -173,16 +173,18 @@ question, seul le rôle sait quel mode lui convient.
       refusées et dites ; une écriture faite sans demander est signalée (voir « Lecture seule »).
 - [x] Les outils du rôle (`mcp` : familles d'outils de Bobine) sont ceux passés à la session de la
       fille.
-- [ ] Icône et couleur du rôle sur la carte de la fille, dans « Sous-tâches » et dans la barre
-      latérale ; textes en français et en anglais. (Phase 3B faite : carte de la fille, « Sous-tâches »,
-      compte rendu, proposition, en-tête de la fille ; barre latérale : phase 3A.)
+- [x] Icône et couleur du rôle sur la carte de la fille, dans « Sous-tâches » et dans la barre
+      latérale ; textes en français et en anglais. (Phase 3B : carte de la fille, « Sous-tâches »,
+      compte rendu, proposition, en-tête de la fille ; barre latérale : phase 3A ; un seul avatar
+      depuis l'intégration.)
 - [x] Contexte de session et description de `start_child` réécrits ; rappel après compaction et
       reprise ; banc de délégation joué avant et après, résultats dans le journal (phase 1).
 - [x] Testé contre l'agent factice : scénarios « délègue à un rôle », « rôle inconnu », « rôle en
       lecture seule qui tente d'écrire » (avec et sans demande), « mode natif présent / absent ».
-- [ ] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en. (Phase 3B :
-      `roles-travail` pour `@rôle`, deux filles, proposition, lecture seule demandée ; création :
-      phase 3A.)
+- [x] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en.
+      (`roles-gestion` : création, jeton posé par « Créer et essayer » et par la section Équipe,
+      « Enregistrer comme rôle » ; `roles-travail` : `@rôle`, deux filles, proposition, lecture
+      seule demandée.)
 - [ ] Phase 4 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
       (modes personnels de Bob relus par ACP ? format des agents d'OpenCode), export à sens
       unique, copie de sauvegarde avant d'écrire, déclaré dans les profils (ADR-0011).
@@ -614,3 +616,84 @@ branche).
   Captures : `e2e/captures/roles-travail-{1-menu, 2-filtre, 3-jeton, 4-fille, 5-deux-roles,
   6-sous-taches, 7-fille-entete, 8-proposition, 9-jeton-demandee, 10-proposition-demandee,
   11-fille-demandee}-{light,dark}.png` (et `en-…`).
+
+### Intégration 3A + 3B (2026-11-14)
+
+Branches `feat/223-roles-ui-create` (3A) et `feat/223-roles-ui-work` (3B) fusionnées dans
+`feat/223-roles` (`--no-ff`), puis branchées l'une sur l'autre.
+
+- **Conflits** : `docs/architecture.md` et cette fiche (les deux phases gardées) ;
+  `components/roles/RoleAvatar.tsx`, ajouté par les deux branches. Les locales, le type généré,
+  les changelogs et le glossaire ont fusionné sans conflit.
+- **Un seul avatar, une seule liste d'icônes, une seule feuille de style** (résolu dans le commit
+  de fusion, c'était le conflit) : `RoleAvatar` garde les états de la maquette 03-5 (3B) et
+  `label` / `testId` (3A, `data-testid="role-avatar"` par défaut) ; `useRoleTint` rend la teinte
+  (3A), `useRoleStyle` le style `--role` (3B). Les deux phases avaient chacune leur échelle de
+  tailles (`sm` valait 24 px en 3A et 22 px en 3B) : la taille est désormais le côté en pixels
+  (18, 22, 24, 30, 32, 44), chaque appel garde sa taille d'avant. Icônes :
+  `renderer/src/roles/role-icons.ts` seul, 31 icônes (les 21 de l'assistant, dans le même ordre,
+  puis les 10 que seule la 3B affichait) — **écart visuel assumé** : la grille de l'assistant a une
+  rangée de plus, pour que tout ce qui s'affiche puisse se choisir. Styles : `roles-work.css`
+  versé dans `roles.css` (importé par `main.tsx`), règles d'avatar en un seul bloc ; liseré de
+  l'avatar à 30 % de la couleur partout (3A : 26 %, différence imperceptible).
+- **Descriptions** : `roleDescription` (3B, `role-view.ts`) passe par `shownDescription` (3A) ;
+  menu `@` (affichage et recherche), jeton, infobulles, Réglages › Rôles et section Équipe lisent
+  la description par elle : traduite pour un rôle fourni, celle du fichier sinon ; l'agent reçoit
+  toujours celle du fichier (ADR-0014).
+- **Entrées croisées** : « + Nouveau rôle » et « Créer un rôle » du menu `@` ouvrent l'assistant
+  prérempli du nom tapé (`openRoleWizardNamed` : `perf-expert` → « Perf expert ») ; « Gérer »
+  ouvre Réglages › Rôles.
+- **Décision : un seul chemin pour invoquer un rôle depuis l'interface, le jeton `@rôle`.** Un
+  clic sur un rôle de la section Équipe, « Essayer » (Réglages › Rôles, qui se ferment) et « Créer
+  et essayer » (assistant) posent le jeton du rôle dans la saisie de la conversation affichée
+  (`invokeRole`, reçu par `useRoleCompose`) et lui donnent le focus ; l'utilisateur écrit sa
+  demande et envoie, comme avec le menu `@` (une fille par rôle, `roles:startChildren`). Le
+  dialogue « Confier à… » (`RoleChildDialog`, `openRoleChild`, clés `team.child.*`) est retiré.
+  Une fille ou un relecteur ne prend pas de jeton : un avertissement dit d'ouvrir la conversation
+  mère (`team.notHere`). Une conversation encore vide prend le jeton ; la ligne « Partira à… » dit
+  déjà qu'une fille se rattache à une conversation de l'historique (3B), et « Créer et essayer »
+  n'y est pas proposé.
+- **« Enregistrer comme rôle… »** (maquette 01-C2) : sur le compte rendu d'une fille **sans rôle**
+  qui a fini son tour (`outcome: done`, consigne présente dans le fil), un bouton ouvre l'assistant
+  prérempli (`roles/save-as-role.ts`) : consigne = la demande faite à la fille
+  (`child-started.prompt`), agent = le sien, modèle = la valeur du réglage de modèle de sa session
+  (lue par `conversation:view`, rien si la session est illisible), lecture seule cochée si elle n'a
+  modifié aucun fichier. **Écart** : pas de fenêtre posée sur la carte ni de nom / description
+  proposés d'après le titre ni d'« Améliorer » (l'assistant prérempli, décidé le 2026-11-14, est le
+  plus simple) ; la fille ne reçoit pas après coup l'avatar du rôle créé.
+- **Libellés des rôles fournis** (demande de l'utilisateur) : « Expert sécurité », « Architecte
+  back-end », « Architecte front-end » (anglais inchangé : Security expert, Back-end architect,
+  Front-end architect) ; identifiants inchangés ; `builtin.test.ts` les fige.
+- **Essais instables** : `roles-children.test.ts` et `children.test.ts` sondaient toutes les
+  10 ms en recalculant les fils (`manager.view`), ce qui chargeait la machine quand `verify`
+  fait tourner 440 fichiers à la fois, et « réveil groupé » attendait jusqu'à 20 s dans un essai
+  limité à 15 s. Ils attendent désormais sur les évènements du gestionnaire (`until` de
+  `conversations/manager-until.ts` : vérification à chaque évènement et changement de liste, un
+  contrôle lent de rattrapage toutes les 250 ms, délai de 10 s sous celui de l'essai, message qui
+  dit ce qui était attendu). « Réveil groupé » est coupé en deux essais (réveil des filles lancées
+  par l'agent ; aucune pour une fille lancée à la main). Mêmes vérifications, aucun délai relevé.
+- **Tests** : `RoleComposer.test.tsx` (description traduite affichée et cherchée, jeton posé par
+  `invokeRole`, refus dans une fille), `roles/roles-store.test.ts`, `roles/save-as-role.test.ts`,
+  `Transcript.test.tsx` et `RoleWork.test.tsx` (bouton seulement sans rôle),
+  `main/roles/builtin.test.ts` (libellés fr / en), `conversations/manager-until.test.ts`. E2e
+  `roles-gestion` : « Créer et essayer » pose le jeton puis la fille part avec le rôle, clic sur la
+  section Équipe (jeton, focus, « Partira à… »), « Enregistrer comme rôle » sur une fille lancée par
+  « Lancer en parallèle… » (consigne et agent repris), puis abandon de l'assistant.
+- **Régression vue par l'e2e `mentions`, corrigée** : une fois « + Nouveau rôle » branché, il
+  passait en tête du menu `@` quand aucun rôle ne correspondait, et Entrée après `@git` ou `@term`
+  ouvrait l'assistant au lieu de prendre la mention. Il est désormais **en fin de menu** (après
+  les mentions et les fichiers, à l'écran comme au clavier) — écart à la maquette 02-1, qui le
+  plaçait sous les rôles ; il reste aussi dans le pied du menu. Essai : `RoleComposer.test.tsx`.
+  Le focus revient à la saisie après la fermeture de l'assistant ou des Réglages (Radix rend le
+  focus au déclencheur dans une minuterie à 0 ms ; `requestAnimationFrame` ne tourne pas dans une
+  fenêtre cachée, ce que l'e2e a montré).
+- **Vérifications** : `./scripts/verify` vert (code de sortie 0, lu directement ; 442 fichiers,
+  3 954 essais, après le dernier correctif). `pnpm build && pnpm
+  e2e roles-gestion roles-travail mentions settings filles --jobs 3` : premier passage 5 échecs
+  (`mentions` clair et sombre : la régression ci-dessus ; `roles-gestion` : deux attentes de
+  l'essai lui-même, saisie vidée et focus vérifiés trop tôt), corrigés ; second passage 10/10
+  vertes, code de sortie 0. `--lang en` sur `roles-gestion roles-travail` : 4/4 vertes, code 0.
+  Suite complète non jouée (le tech lead la lance à la fin). Captures regardées :
+  `e2e/captures/roles-travail-1-menu-*` (descriptions en français, nouveaux libellés, « + Nouveau
+  rôle… » et « Gérer » au pied), `r7-reglages-roles-*`, `r1-equipe-*`, `r5b-equipe-jeton-*`,
+  `r11-enregistrer-comme-role-*`, `r12-assistant-prerempli-*` (et `en-…`).

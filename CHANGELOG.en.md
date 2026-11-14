@@ -6,24 +6,22 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
-- Roles: create your specialists in three steps (who, how, with what), from a built-in role or a
-  blank page, just for you or for the project (`.bobine/roles/`, shared through git); edit, turn
-  off or delete them in Settings › Roles, which also flags a project role that replaces another
-  one and the files left out. The “Team” section of the sidebar shows the active roles: one click
-  hands them work in a child conversation, which carries the role’s icon and color.
+- Roles: specialists to hand work to, each in a child conversation that carries its icon and
+  color. Seven roles are built in (UX/UI expert, Flutter expert, front-end architect, back-end
+  architect, security expert, tech lead, code reviewer); create your own in three steps (who, how,
+  with what), from a built-in role, a blank page or a successful child conversation (“Save as
+  role…” on its report), just for you or for the project (`.bobine/roles/`, shared through git).
+  To call on a role, type `@` in the message box (roles come first) or click it in the “Team”
+  section of the sidebar: it becomes a token, the “Will go to…” line says where the message goes,
+  and sending starts one child conversation per role mentioned, in parallel. The agent also knows
+  your roles and can propose to hand them work. Read-only roles work in your folder without
+  writing to it: Bobine refuses their writes and reports any change to the folder (for an agent
+  that writes without asking, read-only is only requested, and you are told). Edit, turn off or
+  delete them in Settings › Roles, which also flags a project role that replaces another one and
+  the files left out.
 
 ### Improved
 
-- Roles: the agent now knows the built-in specialists (UX/UI expert, Flutter expert, front-end
-  and back-end architects, security expert, tech lead, code reviewer) and those in your
-  `.bobine/roles/` files; it can hand work to one of them in a child conversation. Read-only roles
-  work in your folder without writing to it: Bobine refuses their writes and reports any change to
-  the folder. The screen to create and manage them is coming soon.
-- Roles at work: type `@` in the message box and roles come first; a chosen role becomes a
-  token, the “Will go to…” line says where the message goes, and sending starts one child
-  conversation per role mentioned, in parallel. Children, “Subtasks”, reports and the agent's
-  proposals show the role's icon and color, and say whether it is read-only (or only requested,
-  for an agent that writes without asking).
 - Child conversations: the agent proposes them on its own when they help — several independent
   tasks, long work to follow separately, a review or audit by a fresh pair of eyes — without you
   having to insist; a short reminder repeats this after the conversation is summarized and when a

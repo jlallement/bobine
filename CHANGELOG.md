@@ -6,26 +6,23 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveau
 
-- Rôles : créez vos spécialistes en trois étapes (qui, comment, avec quoi), à partir d'un rôle
-  fourni ou d'une page blanche, pour vous seul ou pour le projet (`.bobine/roles/`, partagé par
-  git) ; modifiez-les, désactivez-les ou supprimez-les dans Réglages › Rôles, qui signale aussi
-  un rôle du projet qui en remplace un autre et les fichiers écartés. La section « Équipe » de la
-  barre latérale montre les rôles actifs : un clic leur confie un travail dans une conversation
-  fille, qui porte l'icône et la couleur du rôle.
+- Rôles : des spécialistes à qui confier un travail, chacun dans une conversation fille qui porte
+  son icône et sa couleur. Sept rôles sont fournis (expert UX/UI, expert Flutter, architecte
+  front-end, architecte back-end, expert sécurité, tech lead, code reviewer) ; créez les vôtres en
+  trois étapes (qui, comment, avec quoi), à partir d'un rôle fourni, d'une page blanche ou d'une
+  conversation fille réussie (« Enregistrer comme rôle… » sur son compte rendu), pour vous seul ou
+  pour le projet (`.bobine/roles/`, partagé par git). Pour faire appel à un rôle, tapez `@` dans la
+  saisie (les rôles viennent en tête) ou cliquez-le dans la section « Équipe » de la barre
+  latérale : il devient un jeton, la ligne « Partira à… » dit où ira le message, et l'envoi lance
+  une conversation fille par rôle cité, en parallèle. L'agent connaît aussi vos rôles et peut
+  proposer de leur confier un travail. Les rôles en lecture seule travaillent dans votre dossier
+  sans rien y écrire : Bobine refuse leurs écritures et signale tout changement du dossier (pour
+  un agent qui écrit sans demander, la lecture seule n'est que demandée, et c'est dit). Modifiez,
+  désactivez ou supprimez-les dans Réglages › Rôles, qui signale aussi un rôle du projet qui en
+  remplace un autre et les fichiers écartés.
 
 ### Amélioré
 
-- Rôles : l'agent connaît désormais les spécialistes fournis (expert UX/UI, expert Flutter,
-  architectes front et back, expert sécu, tech lead, code reviewer) et ceux de vos fichiers
-  `.bobine/roles/` ; il peut confier un travail à l'un d'eux dans une conversation fille. Les
-  rôles en lecture seule travaillent dans votre dossier sans rien y écrire : Bobine refuse leurs
-  écritures et signale tout changement du dossier. L'écran pour les créer et les gérer arrive
-  bientôt.
-- Rôles au travail : tapez `@` dans la saisie, les rôles viennent en tête ; un rôle choisi devient
-  un jeton, la ligne « Partira à… » dit où ira le message, et l'envoi lance une conversation fille
-  par rôle cité, en parallèle. Les filles, les « Sous-tâches », les comptes rendus et les
-  propositions de l'agent portent l'icône et la couleur du rôle, et disent s'il est en lecture
-  seule (ou seulement demandée, pour un agent qui écrit sans demander).
 - Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
   indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
   sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et
