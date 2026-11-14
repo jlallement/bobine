@@ -668,18 +668,6 @@
   margin-top: 3px;
 }
 
-/* —— Confier à un rôle —— */
-.role-child-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.role-child-head .confirm-title {
-  margin: 0;
-}
-
 /* —— Réglages › Rôles (maquettes 04-1 à 04-3) —— */
 .roles-settings {
   display: flex;

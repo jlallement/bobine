@@ -3,15 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 import { useProfileStatus } from '../common/Profile'
 import { SidebarSection } from '../sidebar/SidebarSection'
-import { openRoleChild, openRoleWizard, useRolesListing } from '../../roles/roles-store'
+import { invokeRole, openRoleWizard, useRolesListing } from '../../roles/roles-store'
 import { roleDescription } from './role-view'
 import { RoleAvatar } from './RoleAvatar'
 
 /**
  * Section « Équipe » de la barre latérale (fiche 223, décision 1, maquette 01-0) : les rôles
- * actifs pour le projet de la conversation affichée, en avatars. Un clic confie un travail au
- * rôle (« Confier à… », une fille de la conversation affichée) ; « + » ouvre l'assistant de
- * création. Repliable comme les autres sections.
+ * actifs pour le projet de la conversation affichée, en avatars. Un clic pose le jeton `@rôle`
+ * dans la saisie de cette conversation (le même chemin que le menu `@`) ; « + » ouvre l'assistant
+ * de création. Repliable comme les autres sections.
  */
 export function TeamSection({
   conversationId,
@@ -61,7 +61,7 @@ export function TeamSection({
               <button
                 className="team-avatar"
                 aria-label={t('team.assign', { label: role.label })}
-                onClick={() => openRoleChild(role.name)}
+                onClick={() => invokeRole(role.name)}
                 data-testid="team-role"
                 data-role={role.name}
               >

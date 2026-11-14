@@ -1,19 +1,12 @@
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import { basename } from '../common/Menus'
-import {
-  closeRoleChild,
-  closeRoleWizard,
-  openRoleChild,
-  useRolesListing,
-  useRolesUi
-} from '../../roles/roles-store'
-import { RoleChildDialog } from './RoleChildDialog'
+import { closeRoleWizard, invokeRole, useRolesUi } from '../../roles/roles-store'
 import { RoleWizard } from './RoleWizard'
 
 /**
- * Dialogues des rôles (fiche 223, phase 3A), montés une fois avec ceux de l'app : l'assistant de
- * création (`openRoleWizard`) et « Confier à <rôle> » (`openRoleChild`), quel que soit l'écran
- * qui les demande. La conversation active donne le projet et la mère de la fille.
+ * Assistant de création des rôles (fiche 223, `openRoleWizard`), monté une fois avec les
+ * dialogues de l'app, quel que soit l'écran qui le demande. La conversation active donne le
+ * projet ; « Créer et essayer » pose le jeton du rôle créé dans sa saisie (`invokeRole`).
  */
 export function RolesHost({
   active,
@@ -23,34 +16,24 @@ export function RolesHost({
   profiles: readonly ProfileSummary[]
 }) {
   const ui = useRolesUi()
-  const { listing } = useRolesListing(ui.child ? active?.id : null)
-  const childRole = ui.child ? listing?.roles.find((r) => r.name === ui.child?.role) : undefined
+  // Une fille ou un relecteur ne confie pas de travail à un rôle ; une conversation vide non plus
+  // (une fille se rattache à une conversation de l'historique).
+  const canTry = !!active && !active.draft && !active.startedFrom && !active.reviewOf
+  if (!ui.wizard) return null
   return (
-    <>
-      {ui.wizard && (
-        <RoleWizard
-          key={ui.wizard.seq}
-          prefill={ui.wizard.prefill}
-          conversationId={active?.id}
-          conversationProfileId={active?.profileId}
-          project={active ? basename(active.project ?? active.workspace) : undefined}
-          profiles={profiles}
-          canTry={!!active && !active.draft}
-          onClose={closeRoleWizard}
-          onCreated={(name, tryIt) => {
-            closeRoleWizard()
-            if (tryIt) openRoleChild(name)
-          }}
-        />
-      )}
-      {ui.child && childRole && (
-        <RoleChildDialog
-          key={ui.child.seq}
-          role={childRole}
-          mother={active}
-          onClose={closeRoleChild}
-        />
-      )}
-    </>
+    <RoleWizard
+      key={ui.wizard.seq}
+      prefill={ui.wizard.prefill}
+      conversationId={active?.id}
+      conversationProfileId={active?.profileId}
+      project={active ? basename(active.project ?? active.workspace) : undefined}
+      profiles={profiles}
+      canTry={canTry}
+      onClose={closeRoleWizard}
+      onCreated={(name, tryIt) => {
+        closeRoleWizard()
+        if (tryIt) invokeRole(name)
+      }}
+    />
   )
 }

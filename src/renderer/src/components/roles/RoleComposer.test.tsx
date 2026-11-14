@@ -9,6 +9,7 @@ import type { AgentSnapshot, ProfileSummary } from '@shared/agent'
 import type { RoleView } from '@shared/roles'
 import { Composer } from '../composer/Composer'
 import type { ComposerRoles } from './useRoleCompose'
+import { invokeRole } from '../../roles/roles-store'
 
 vi.mock('../panel/TerminalTab', () => ({ INSERT_TEXT_EVENT: 'bob:insert-text' }))
 
@@ -51,11 +52,13 @@ function setup(
     fresh?: boolean
     sent?: boolean
     onCreate?: ComposerRoles['onCreate']
+    invokable?: boolean
   } = {}
 ) {
   const send = vi.fn(async () => options.sent ?? true)
   const roles: ComposerRoles = {
     list: options.list ?? ROLES,
+    invokable: options.invokable ?? true,
     refresh: vi.fn(),
     send,
     profiles: (options.profiles ?? [
@@ -279,5 +282,36 @@ describe('jeton et envoi', () => {
     type('@sécu')
     key('Enter')
     expect(screen.getByTestId('role-destination').textContent).toContain('Écrivez d’abord')
+  })
+})
+
+describe('rôle invoqué d’ailleurs (section Équipe, Réglages, assistant) : un seul chemin', () => {
+  it('le jeton `@rôle` est posé dans la saisie, les rôles relus ; le texte reste', () => {
+    const { type, roles, send } = setup()
+    type('Relis le diff')
+    act(() => {
+      expect(invokeRole('code-reviewer')).toBe(true)
+    })
+    const token = screen.getByTestId('role-token')
+    expect(token.dataset['role']).toBe('code-reviewer')
+    expect((screen.getByTestId('composer-input') as HTMLTextAreaElement).value).toBe(
+      'Relis le diff'
+    )
+    expect(roles.refresh).toHaveBeenCalled()
+    // Deux fois le même rôle : un seul jeton.
+    act(() => {
+      invokeRole('code-reviewer')
+    })
+    expect(screen.getAllByTestId('role-token')).toHaveLength(1)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('conversation qui ne lance pas de filles : rien n’est posé, c’est dit', () => {
+    const { onWarn } = setup({ invokable: false })
+    act(() => {
+      invokeRole('code-reviewer')
+    })
+    expect(screen.queryByTestId('role-token')).toBeNull()
+    expect(onWarn).toHaveBeenCalledWith(expect.stringContaining('conversation mère'))
   })
 })

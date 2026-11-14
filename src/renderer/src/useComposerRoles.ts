@@ -48,5 +48,5 @@ export function useComposerRoles(
     },
     [id, list, warn]
   )
-  return { list, refresh, send, profiles, ...extra }
+  return { list, invokable: eligible, refresh, send, profiles, ...extra }
 }

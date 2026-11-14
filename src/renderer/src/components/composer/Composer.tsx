@@ -285,7 +285,8 @@ export function Composer(props: Props) {
     roles: props.roles,
     draftKey,
     menuOpen: mentions.open,
-    onWarn: props.onWarn
+    onWarn: props.onWarn,
+    focus: focusInput
   })
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)

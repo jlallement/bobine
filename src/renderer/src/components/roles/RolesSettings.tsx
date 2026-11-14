@@ -27,6 +27,8 @@ export interface RolesSettingsProps {
   /** Nom du dossier de la conversation active. */
   project?: string | undefined
   profiles: readonly ProfileSummary[]
+  /** Ferme les Réglages (« Essayer » pose le jeton du rôle dans la saisie). */
+  onClose?: () => void
 }
 
 /**

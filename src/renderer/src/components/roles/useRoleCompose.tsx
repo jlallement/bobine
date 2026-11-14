@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { ProfileSummary } from '@shared/agent'
 import { roleRecipients } from '@shared/role-mentions'
 import type { RoleView } from '@shared/roles'
@@ -8,6 +8,7 @@ import type { RoleMenuEntry } from './RoleMenu'
 import { RoleDestination, RoleTokens } from './RoleCompose'
 import { useRoleStyle } from './RoleAvatar'
 import { readOnlyShown, roleProfile } from './role-view'
+import { onRoleInvoked } from '../../roles/roles-store'
 
 /**
  * Ce que la saisie sait des rôles (fiche 223, phase 3B), fourni par l'app : rôles actifs de la
@@ -17,6 +18,11 @@ import { readOnlyShown, roleProfile } from './role-view'
 export interface ComposerRoles {
   /** Rôles actifs ; vide pour une conversation qui ne lance pas de filles (fille, relecteur). */
   list: readonly RoleView[]
+  /**
+   * La conversation peut confier un travail à un rôle (ni fille ni relecteur) : un rôle invoqué
+   * d'ailleurs (section Équipe, Réglages › Rôles, assistant) y devient un jeton, sinon c'est dit.
+   */
+  invokable?: boolean
   /** Relit les rôles (fichiers changés) : à l'ouverture du menu `@`. */
   refresh: () => void
   /** Lance une fille par rôle ; `true` si au moins une est partie (sinon le texte reste). */
@@ -49,6 +55,8 @@ export function useRoleCompose(options: {
   draftKey: string | undefined
   menuOpen: boolean
   onWarn: (message: string) => void
+  /** Rend le focus à la saisie (rôle invoqué d'ailleurs). */
+  focus?: () => void
 }) {
   const { roles, draftKey, menuOpen } = options
   const [tokens, setTokens] = useState<string[]>(() => (draftKey && kept.get(draftKey)) || [])
@@ -70,6 +78,14 @@ export function useRoleCompose(options: {
   }
   const shownTokens = tokens.flatMap((name) => list.find((r) => r.name === name) ?? [])
   const add = (name: string) => update(tokens.includes(name) ? tokens : [...tokens, name])
+  useRoleInvoked(roles, (name) => {
+    if (!roles?.invokable) return options.onWarn(i18next.t('team.notHere'))
+    add(name)
+    // Un rôle tout juste créé n'est pas encore dans la liste : son jeton paraît à la relecture.
+    roles.refresh()
+    // Après la fermeture d'un dialogue (assistant, Réglages), qui rend le focus à son déclencheur.
+    requestAnimationFrame(() => options.focus?.())
+  })
   return {
     tokens,
     add,
@@ -154,6 +170,19 @@ export function useRoleCompose(options: {
       remove: (name: string) => update(tokens.filter((t) => t !== name))
     })
   }
+}
+
+/** Rôle invoqué d'ailleurs (`invokeRole`) : reçu par la saisie qui a des rôles, la plus récente. */
+function useRoleInvoked(roles: ComposerRoles | undefined, receive: (name: string) => void): void {
+  const latest = useRef(receive)
+  useEffect(() => {
+    latest.current = receive
+  })
+  const listening = !!roles
+  useEffect(
+    () => (listening ? onRoleInvoked((name) => latest.current(name)) : undefined),
+    [listening]
+  )
 }
 
 /** Saisie aux couleurs du rôle (un seul) ou neutre (plusieurs) : le liseré de la maquette 02-3. */

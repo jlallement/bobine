@@ -12,7 +12,7 @@ import {
   type DraftErrors,
   type RoleDraft
 } from '../../roles/role-draft'
-import { openRoleChild, openRoleWizard, rolesChanged } from '../../roles/roles-store'
+import { invokeRole, openRoleWizard, rolesChanged } from '../../roles/roles-store'
 import { ConfirmRow } from '../settings/ConfirmRow'
 import { RoleAvatar } from './RoleAvatar'
 import {
@@ -190,7 +190,11 @@ function RoleEditForm(
           {props.conversationId && (
             <button
               className="btn small"
-              onClick={() => openRoleChild(role.name)}
+              onClick={() => {
+                // Le jeton du rôle dans la saisie ; les Réglages se ferment pour l'y montrer.
+                invokeRole(role.name)
+                props.onClose?.()
+              }}
               disabled={dirty}
               title={dirty ? t('rolesSettings.edit.saveFirst') : undefined}
               data-testid="role-edit-try"

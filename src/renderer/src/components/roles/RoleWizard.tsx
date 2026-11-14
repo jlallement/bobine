@@ -40,10 +40,13 @@ export interface RoleWizardProps {
   /** Nom du dossier de la conversation, pour « Ce projet » ; absent : pas de projet. */
   project?: string | undefined
   profiles: readonly ProfileSummary[]
-  /** « Créer et essayer » possible : une conversation de l'historique pour mère. */
+  /**
+   * « Créer et essayer » possible : le jeton du rôle créé sera posé dans la saisie de la
+   * conversation affichée, une conversation de l'historique qui peut être mère.
+   */
   canTry?: boolean
   onClose: () => void
-  /** Rôle enregistré ; `tryIt` : « Créer et essayer » (lui confier un travail tout de suite). */
+  /** Rôle enregistré ; `tryIt` : « Créer et essayer » (son jeton `@rôle` dans la saisie). */
   onCreated: (name: string, tryIt: boolean) => void
 }
 

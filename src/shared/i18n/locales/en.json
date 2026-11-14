@@ -4939,16 +4939,7 @@
     "empty": "No active role",
     "assign": "Hand work to {{label}}",
     "roleTip": "Role: {{label}}",
-    "child": {
-      "title": "Hand to {{label}}",
-      "description": "A child conversation of “{{title}}” starts with this role: its instructions, agent and tools. It appears under its parent.",
-      "noConversation": "Open a conversation first: the role works in a child conversation of it.",
-      "draft": "Write in this conversation first: the role works in a child conversation, attached to a conversation of the history.",
-      "prompt": "What you ask of it",
-      "placeholder": "Review the authentication diff before merging.",
-      "readOnly": "Read-only role: it works in the same folder, without a worktree, and changes nothing.",
-      "launch": "Hand over"
-    }
+    "notHere": "A child conversation can’t hand work to a role: open its parent conversation."
   },
   "roles": {
     "none": "none",

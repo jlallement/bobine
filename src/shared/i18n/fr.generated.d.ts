@@ -4958,16 +4958,7 @@ export type FrResources = {
     readonly empty: 'Aucun rôle actif'
     readonly assign: 'Confier un travail à {{label}}'
     readonly roleTip: 'Rôle : {{label}}'
-    readonly child: {
-      readonly title: 'Confier à {{label}}'
-      readonly description: 'Une conversation fille de « {{title}} » part avec ce rôle : sa consigne, son agent et ses outils. Elle apparaît sous sa mère.'
-      readonly noConversation: 'Ouvrez d’abord une conversation : le rôle travaille dans une conversation fille de celle-ci.'
-      readonly draft: 'Écrivez d’abord dans cette conversation : le rôle travaille dans une conversation fille, rattachée à une conversation de l’historique.'
-      readonly prompt: 'Ce que vous lui demandez'
-      readonly placeholder: 'Relis le diff de l’authentification avant la fusion.'
-      readonly readOnly: 'Rôle en lecture seule : il travaille dans le même dossier, sans worktree, et ne modifie rien.'
-      readonly launch: 'Confier'
-    }
+    readonly notHere: 'Une conversation fille ne confie pas de travail à un rôle : ouvrez sa conversation mère.'
   }
   readonly roles: {
     readonly none: 'aucun'

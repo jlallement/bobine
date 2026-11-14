@@ -1,9 +1,10 @@
 /**
- * Gestes des rôles partagés par la fenêtre (fiche 223, phase 3A) : un seul point d'entrée pour
- * ouvrir l'assistant de création (`openRoleWizard`, éventuellement prérempli) et pour confier un
- * travail à un rôle (`openRoleChild`). Les écrans qui les appellent (section Équipe, Réglages ›
- * Rôles, menu `@` et « Enregistrer comme rôle » de la phase 3B) n'ont rien à recevoir en
- * propriété : `RolesHost`, monté une fois avec les dialogues de l'app, les affiche.
+ * Gestes des rôles partagés par la fenêtre (fiche 223) : un seul point d'entrée pour ouvrir
+ * l'assistant de création (`openRoleWizard`, éventuellement prérempli) et pour confier un travail
+ * à un rôle (`invokeRole` : le jeton `@rôle` dans la saisie, le seul chemin pour invoquer un rôle
+ * depuis l'interface). Les écrans qui les appellent (section Équipe, Réglages › Rôles, menu `@`,
+ * « Enregistrer comme rôle » d'une fille) n'ont rien à recevoir en propriété : `RolesHost`, monté
+ * une fois avec les dialogues de l'app, affiche l'assistant ; la saisie reçoit les jetons.
  *
  * `rolesChanged` prévient les listes ouvertes après un enregistrement ; elles se relisent aussi
  * quand la fenêtre reprend le focus (un fichier de rôle modifié à la main, un `git pull`).
@@ -15,13 +16,11 @@ import type { RoleDraft } from './role-draft'
 export interface RolesUiState {
   /** Assistant ouvert, avec son préremplissage ; `seq` change à chaque ouverture. */
   wizard: { prefill: Partial<RoleDraft>; seq: number } | null
-  /** « Confier à ce rôle » ouvert : le nom du rôle. */
-  child: { role: string; seq: number } | null
   /** Change à chaque rôle enregistré, supprimé, activé ou désactivé. */
   version: number
 }
 
-let state: RolesUiState = { wizard: null, child: null, version: 0 }
+let state: RolesUiState = { wizard: null, version: 0 }
 let seq = 0
 const listeners = new Set<() => void>()
 
@@ -44,17 +43,40 @@ export function openRoleWizard(prefill: Partial<RoleDraft> = {}): void {
   update({ wizard: { prefill, seq: ++seq } })
 }
 
+/**
+ * Assistant ouvert depuis le menu `@` (« + Nouveau rôle », « Créer un rôle ») : ce qui était tapé
+ * après `@` devient le nom du rôle (`perf-expert` → « Perf expert », identifiant `perf-expert`).
+ */
+export function openRoleWizardNamed(typed?: string): void {
+  openRoleWizard(typed?.trim() ? { label: roleLabelFromTyped(typed) } : {})
+}
+
+/** `perf-expert` → « Perf expert » : tirets et soulignés en espaces, première lettre en capitale. */
+export function roleLabelFromTyped(typed: string): string {
+  const words = typed.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 export function closeRoleWizard(): void {
   update({ wizard: null })
 }
 
-/** Ouvre « Confier à <rôle> » : une consigne, puis une conversation fille avec ce rôle. */
-export function openRoleChild(role: string): void {
-  update({ child: { role, seq: ++seq } })
+const invoked = new Set<(name: string) => void>()
+
+/**
+ * Confie un travail à un rôle : son jeton `@rôle` est posé dans la saisie de la conversation
+ * affichée, qui prend le focus ; l'utilisateur écrit sa demande et envoie (une fille avec ce rôle,
+ * fiche 223 phase 3B). `false` si aucune saisie ne l'a reçu.
+ */
+export function invokeRole(name: string): boolean {
+  for (const listener of invoked) listener(name)
+  return invoked.size > 0
 }
 
-export function closeRoleChild(): void {
-  update({ child: null })
+/** La saisie qui reçoit les jetons (celle de la conversation affichée) ; rend le désabonnement. */
+export function onRoleInvoked(listener: (name: string) => void): () => void {
+  invoked.add(listener)
+  return () => invoked.delete(listener)
 }
 
 /** Un rôle a été enregistré, supprimé, activé ou désactivé : les listes se relisent. */
@@ -68,7 +90,7 @@ export function useRolesUi(): RolesUiState {
 
 /** Remet l'état à zéro (essais). */
 export function resetRolesUi(): void {
-  state = { wizard: null, child: null, version: 0 }
+  state = { wizard: null, version: 0 }
 }
 
 /**

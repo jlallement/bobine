@@ -101,6 +101,7 @@ export function SettingsBody({
           conversationProfileId={active?.profileId}
           project={active ? basename(active.project ?? active.workspace) : undefined}
           profiles={settings.profiles}
+          onClose={() => props.onOpenChange(false)}
         />
       )
     }

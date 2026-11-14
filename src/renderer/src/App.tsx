@@ -13,6 +13,7 @@ import { InstallDialog } from './components/dialogs/InstallDialog'
 import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
+import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
 import { ResumeCard } from './components/thread/ResumeCard'
 import { Composer } from './components/composer/Composer'
@@ -334,9 +335,12 @@ export function App() {
   const asideCard = aside.visible && (
     <AsideCard aside={aside} items={transcript.items} inbox={composerInbox} />
   )
-  // Rôles (fiche 223) : menu `@`, une fille par rôle cité ; « + Nouveau rôle » et « Gérer » viendront
-  // avec l'assistant et Réglages › Rôles (phase 3A).
-  const composerRoles = useComposerRoles(c.activeSummary, c.settings?.profiles ?? [], c.warn)
+  // Rôles (fiche 223) : menu `@`, une fille par rôle cité ; « + Nouveau rôle » ouvre l'assistant
+  // prérempli du nom tapé, « Gérer » Réglages › Rôles.
+  const composerRoles = useComposerRoles(c.activeSummary, c.settings?.profiles ?? [], c.warn, {
+    onCreate: openRoleWizardNamed,
+    onManage: () => dialogs.setSettingsSection('roles')
+  })
   const editor = (
     <Composer
       roles={composerRoles}
