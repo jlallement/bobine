@@ -697,3 +697,52 @@ Branches `feat/223-roles-ui-create` (3A) et `feat/223-roles-ui-work` (3B) fusion
   `e2e/captures/roles-travail-1-menu-*` (descriptions en français, nouveaux libellés, « + Nouveau
   rôle… » et « Gérer » au pied), `r7-reglages-roles-*`, `r1-equipe-*`, `r5b-equipe-jeton-*`,
   `r11-enregistrer-comme-role-*`, `r12-assistant-prerempli-*` (et `en-…`).
+
+### Relecture phase 3 (2026-11-14)
+
+Relecture indépendante de l'interface des rôles, points confirmés par le tech lead ; un commit
+`fix:` par point (ou groupe lié), chacun avec un essai qui échouait avant.
+
+1. **Icône héritée d'`Object`** (`icon: constructor`, `toString`, `__proto__`, valides pour l'en-tête)
+   : `roleIcon` rendait `Object`, écran blanc. Clés propres seulement (`Object.hasOwn`), icône par
+   défaut sinon ; c'est la validation à l'affichage (le fichier n'est pas rejeté).
+   `role-icons.test.tsx`.
+2. **Double envoi** : un envoi aux rôles à la fois (état `sending`, réf. et état), bouton
+   désactivé et « Lancement… » ; la saisie n'est vidée que si son texte n'a pas changé.
+3. **Texte des filles réécrit** : seuls `@nom` et l'espace qui suit sont retirés ; indentation,
+   listes et code gardés ; une mention dans un bloc ``` ou entre `` ` `` n'en est pas une.
+4. **Liste de la saisie pas à jour** : relue après `rolesChanged` et au retour du focus ; à l'envoi,
+   un `@nom` inconnu qui a la forme d'un rôle fait relire la liste une fois avant de décider (rôle
+   tout juste créé : il reçoit la demande ; sinon envoi ordinaire). `useComposerRoles.test.ts`.
+5. **Rôles trouvés par leur seule description** : après les fichiers, sous leur propre libellé
+   (« Rôles dont la description correspond ») ; `@test` + Entrée prend `tests/…`.
+6. **Échec partiel** : la demande et les jetons des rôles refusés restent (les `@nom` tapés
+   deviennent des jetons).
+7. **Rien à demander après le rôle** : bouton désactivé, la ligne « Partira à… » dit pourquoi.
+8. **Relecteur comme mère** : déjà refusé — un relecteur est toujours rattaché (`startedFrom`), le
+   refus « un seul niveau » vaut pour `start_child` comme pour `@rôle`. Essai ajouté qui le fige
+   (`children-review.test.ts`), pas de code changé.
+9. **Profil en lecture seule** : Réglages › Rôles est déjà inerte (`fieldset` de la fiche 196, sauf
+   Données, Diagnostic, À propos), la saisie aussi ; restait « Enregistrer comme rôle », masqué.
+10. **« Essayer » sur un rôle désactivé** : désactivé avec la raison (« Activez d'abord ce rôle »).
+    Retour arrière : retire le dernier jeton **visible**.
+11. **Clic Équipe sans saisie à l'écran** (« Mon activité », « Tâches planifiées ») : le rôle attend
+    10 s la prochaine saisie (`invokeRole`), la section ramène la conversation affichée (ou en
+    ouvre une nouvelle s'il n'y en a pas).
+12. **Mentions** : `(@code-reviewer)` ne laisse pas `()`, `@a,@code-reviewer` reconnu, casse ignorée.
+13. **Agent ou modèle du rôle indisponibles** : une ligne dans le fil de la fille
+    (`roles.notice.agentMissing` / `modelMissing`, d'après `roleDefaults().missing`).
+
+Trouvé en route : `verify` a échoué une fois sur `roles-children.test.ts` › « demande sans `kind` »
+(attente de 10 s dépassée). Cause probable, lue dans le code : les demandes ACP et les
+`session/update` passent par des files distinctes du SDK, la demande d'autorisation pouvait être
+traitée avant le `tool_call` qui la précède ; le genre retenu (`edit`) manquait, l'écriture n'était
+pas refusée et la fille attendait une carte. Le gestionnaire laisse désormais passer les
+notifications reçues (`settleNotifications`, comme la fin d'un tour) avant de répondre. Course non
+reproduite à la demande (10 lancements parallèles verts avant le correctif) : pas d'essai qui
+échoue avant pour ce point. Un autre échec isolé, sans lien (`jobs/command-job.test.ts`, sortie
+vide d'un `/bin/sh` sous charge), est vert seul trois fois : noté, non corrigé.
+
+Vérifications : `./scripts/verify` vert trois fois de suite (code de sortie 0, lu directement ;
+445 fichiers, 3 971 essais). `pnpm build && pnpm e2e roles-gestion roles-travail mentions --jobs 3` :
+6/6 vertes, code de sortie 0 (après le feu vert du tech lead).
