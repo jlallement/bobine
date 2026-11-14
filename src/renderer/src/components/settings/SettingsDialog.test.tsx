@@ -319,17 +319,22 @@ describe('SettingsDialog — clés d’API (fiche 100)', () => {
 })
 
 describe('SettingsDialog — apparence (fiche 136)', () => {
-  it('cinq thèmes sur une ligne, six accents : chaque choix part dans les préférences', () => {
+  it('huit thèmes, six accents : chaque choix part dans les préférences ; Aurore « Nouveau »', () => {
     const onPreferences = vi.fn()
     render(<SettingsDialog {...dialogProps('appearance')} onPreferences={onPreferences} />)
     expect(screen.getByTestId('theme-system').getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(screen.getByTestId('theme-sepia'))
+    expect(screen.queryByTestId('theme-sepia')).toBeNull()
+    // Fiche 226 : Aurore et Aurore nuit marquées « Nouveau », et elles seules.
+    expect(screen.getByTestId('theme-aurora').textContent).toContain('Nouveau')
+    expect(screen.getByTestId('theme-auroraNight').textContent).toContain('Nouveau')
+    expect(screen.getByTestId('theme-fjord').textContent).not.toContain('Nouveau')
+    fireEvent.click(screen.getByTestId('theme-aurora'))
     fireEvent.click(screen.getByTestId('theme-black'))
     fireEvent.click(screen.getByTestId('theme-system'))
     fireEvent.click(screen.getByTestId('accent-graphite'))
     expect(screen.queryByTestId('accent-system')).toBeNull()
     expect(onPreferences.mock.calls.map(([change]) => change)).toEqual([
-      { theme: 'light', lightTheme: 'sepia' },
+      { theme: 'light', lightTheme: 'aurora' },
       { theme: 'dark', darkTheme: 'black' },
       { theme: 'system', lightTheme: 'light', darkTheme: 'dark' },
       { accent: 'graphite' }

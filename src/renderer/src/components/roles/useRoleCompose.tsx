@@ -66,6 +66,8 @@ export function useRoleCompose(options: {
   onWarn: (message: string) => void
   /** Rend le focus à la saisie (rôle invoqué d'ailleurs). */
   focus?: () => void
+  /** Message parti aux rôles, tel que tapé, avec ses jetons : historique de la saisie (fiche 227). */
+  onSent?: (sent: { text: string; tokens: string[] }) => void
 }) {
   const { roles, draftKey, menuOpen } = options
   const [tokens, setTokens] = useState<string[]>(() => (draftKey && kept.get(draftKey)) || [])
@@ -119,6 +121,7 @@ export function useRoleCompose(options: {
       options.onWarn(i18next.t('roleWork.destination.attachments'))
       return
     }
+    options.onSent?.({ text: at.text, tokens: tokensNow.current })
     setBusy(true, to.names)
     // Saisie vidée tout de suite, remise en cas d'échec : une conversation neuve entre dans
     // l'historique pendant l'envoi et la saisie est remontée (accueil → fil) ; elle ne doit pas
@@ -157,6 +160,8 @@ export function useRoleCompose(options: {
   return {
     tokens,
     add,
+    /** Jetons d'un message repris de l'historique de la saisie (fiche 227). */
+    replace: (names: readonly string[]) => update([...names]),
     /**
      * Entrée de rôle choisie dans le menu `@` : le rôle devient un jeton (`@requête` sort du
      * texte), « Tous les rôles » déplie la liste, « + Nouveau rôle » ouvre l'assistant.

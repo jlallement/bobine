@@ -208,6 +208,11 @@ describe('conversations filles (fiche 097)', () => {
     expect(child.branch).toMatch(/^bobine\//)
     expect(child.workspace.startsWith(join(env.repo, '.worktrees'))).toBe(true)
     expect(child.profileId).toBe('modifs')
+    // Historique de la saisie de la fille (fiche 227) : sa consigne, et rien de la mère.
+    expect(manager.view(child.id).transcript.sentHistory).toEqual([
+      { text: 'Ajoute un import CSV' }
+    ])
+    expect(manager.view(mother).transcript.sentHistory).toBeUndefined()
     // La conversation affichée ne change pas.
     expect(manager.state().activeId).toBe(mother)
     expect(items(mother).at(-1)).toMatchObject({

@@ -1,0 +1,97 @@
+/*
+ * Historique de la saisie (fiche 227, maquettes `01-historique`, variante A). L'ancre n'a pas de
+ * hauteur : elle est en tête du contenu de la saisie (sous sa marge interne de 12 px en haut,
+ * 10 px à droite) ; la pastille se pose sur la bordure haute, le rappel dans la première ligne.
+ */
+.sent-history-anchor {
+  position: relative;
+  height: 0;
+}
+
+.sent-history-pill {
+  position: absolute;
+  /* Centrée sur la bordure haute (24 px de haut), à 20 px du bord droit. */
+  top: -25px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding: 0 9px 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: sent-history-in 120ms ease-out;
+}
+
+.sent-history-pos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sent-history-sep {
+  color: var(--border-strong);
+}
+
+.sent-history-keys {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.sent-history-pill kbd,
+.sent-history-hint kbd {
+  font-size: 11px;
+  line-height: 15px;
+  padding: 0 5px;
+}
+
+/* Rappel de la saisie vide : à droite dans la première ligne, couleur atténuée. */
+.sent-history-hint {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sent-history-hint kbd {
+  color: var(--muted);
+}
+
+/* Pièces jointes du message repris, qui ne reviennent pas. */
+.sent-history-lost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+@keyframes sent-history-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sent-history-pill {
+    animation: none;
+  }
+}

@@ -23,6 +23,7 @@ export const GLOBAL_SOURCES = [
   `${R}themes.generated.css`,
   `${R}syntax.css`,
   'src/shared/themes.ts',
+  'src/shared/theme-aurora.ts',
   'e2e/palette.mjs',
   `${R}App.tsx`,
   `${C}Welcome.tsx`,
@@ -97,6 +98,7 @@ const PANEL = [
   `${C}panel/SidePanel.tsx`,
   `${C}panel/PanelIcons.tsx`,
   `${R}panel-tabs.ts`,
+  `${R}panel-width.ts`,
   `${R}usePanel.ts`
 ]
 /** Appareils (simulateur iOS, Android) : cadre, gestes, planche contact. */
@@ -1363,6 +1365,30 @@ export const SUITES = [
     ]
   },
   {
+    // Historique de la saisie (fiche 227) : ↑ / ↓, lignes d'abord, jeton de rôle, Échap, fille.
+    name: 'historique-saisie',
+    file: 'historique-saisie.mjs',
+    run: 'historiqueSaisieSuite',
+    themes: BOTH,
+    sources: [
+      `${C}composer/SentHistory.tsx`,
+      `${C}composer/useSentHistory.ts`,
+      `${C}composer/useComposerHistory.ts`,
+      `${C}composer/composer-key-down.ts`,
+      `${C}roles/useRoleCompose.tsx`,
+      `${R}composer-keys.ts`,
+      `${R}visual-lines.ts`,
+      `${R}useTextareaLayout.ts`,
+      `${R}useTips.ts`,
+      `${R}sent-history.css`,
+      'src/shared/sent-history.ts',
+      'src/shared/transcript-kept.ts',
+      'src/shared/tips.ts',
+      'src/main/conversations/sent-history-ipc.ts',
+      'src/main/conversations/children.ts'
+    ]
+  },
+  {
     name: 'touches',
     file: 'touches.mjs',
     run: 'touchesSuite',
@@ -1381,6 +1407,20 @@ export const SUITES = [
       ...APPEARANCE,
       `${R}time.ts`,
       'src/main/quit-guard.ts'
+    ]
+  },
+  {
+    // Thème Aurore (fiche 226) : vignette, touches, verre, repli d'accessibilité de macOS.
+    name: 'aurore',
+    file: 'aurore.mjs',
+    run: 'auroreSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      ...APPEARANCE,
+      `${C}common/ModelMenu.tsx`,
+      `${C}thread/ToolCall.tsx`,
+      'scripts/themes-css.mts'
     ]
   },
   {

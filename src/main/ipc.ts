@@ -1,4 +1,5 @@
 import {
+  isHintId,
   isTipId,
   localDay,
   TIP_ACTIONS,
@@ -44,6 +45,7 @@ import { Asides, type AsideConversations } from './conversations/aside'
 import type { ChildrenMerger } from './conversations/children-merge'
 import { handoverHandlers } from './conversations/handover'
 import { costCapHandlers, type CostCapGuard } from './conversations/cost-cap'
+import { sentHistoryHandlers } from './conversations/sent-history-ipc'
 import { turnLimitHandlers } from './conversations/turn-limit'
 import { scheduleHandlers } from './scheduler/scheduler-ipc'
 import { profileHandlers, type ProfileIpcDeps } from './profile-ipc'
@@ -179,6 +181,7 @@ export type SettingsController = Pick<
   | 'tips'
   | 'recordTip'
   | 'resetTips'
+  | 'recordHintUse'
   | 'noteSentMessage'
   | 'tipsSince'
 >
@@ -492,6 +495,7 @@ export function createHandlers(
     ...onboardingHandlers(deps.onboarding),
     ...costCapHandlers(deps.costCap),
     ...turnLimitHandlers(c),
+    ...sentHistoryHandlers(c),
     ...memoryHandlers(deps.memory, deps.memoryIpc),
     ...rolesHandlers(deps.roles),
     ...documentsHandlers(c, {
@@ -638,6 +642,8 @@ export function createHandlers(
     },
     'tips:state': () => tipsView(settings.tipsSince(localDay(new Date()))),
     'tips:record': (id, action) => {
+      // Rappel (fiche 227) : seulement « utilisé », compté.
+      if (isHintId(id) && action === 'used') return tipsView(settings.recordHintUse(id))
       if (!isTipId(id) || !TIP_ACTIONS.includes(action)) throw new Error('Astuce invalide')
       // Le jour est celui du main : le renderer ne choisit pas la date du quota.
       const view = tipsView(settings.recordTip(id, action, localDay(new Date())))

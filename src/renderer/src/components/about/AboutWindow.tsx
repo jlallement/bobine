@@ -31,7 +31,7 @@ export function AboutWindow() {
     void window.api.app.getInfo().then(setInfo)
   }, [])
 
-  // Apparence de l'app (accent, Sépia, Nuit noire…), suivie quand elle change.
+  // Apparence de l'app (accent, Nuit noire, Aurore…), suivie quand elle change.
   useEffect(() => {
     void window.api.settings.get().then((s) => applyAppearance(s))
     return window.api.settings.onChanged((s) => applyAppearance(s))

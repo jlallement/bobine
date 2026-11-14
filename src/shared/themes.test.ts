@@ -22,7 +22,7 @@ import {
 const TEXT = 4.5
 const UI = 3
 
-type Role = Exclude<keyof ThemeTokens, 'scheme' | 'syn' | 'ansi' | 'chart' | 'heat'>
+type Role = Exclude<keyof ThemeTokens, 'scheme' | 'syn' | 'ansi' | 'chart' | 'heat' | 'touch'>
 
 /** Couples à vérifier : [nom du texte, sa couleur, nom du fond, sa couleur, seuil]. */
 function pairs(t: ThemeTokens): [string, string, string, string, number][] {
@@ -130,9 +130,13 @@ describe('jetons de thème (fiche 134)', () => {
   })
 
   it('palette affichée et fond des fenêtres au lancement', () => {
-    expect(paletteOf('sepia', false)).toBe('sepia')
+    expect(paletteOf('aurora', false)).toBe('aurora')
     // Une variante qui ne va pas avec le mode est ignorée, comme dans le CSS généré (fiche 136).
-    expect(paletteOf('sepia', true)).toBe('dark')
+    expect(paletteOf('aurora', true)).toBe('dark')
+    expect(paletteOf('auroraNight', true)).toBe('auroraNight')
+    expect(paletteOf('auroraNight', false)).toBe('light')
+    // Sépia, retiré (fiche 226) : une page qui le porterait encore affiche le clair.
+    expect(paletteOf('sepia', false)).toBe('light')
     expect(paletteOf('black', false)).toBe('light')
     expect(paletteOf('', true)).toBe('dark')
     expect(paletteOf(undefined, false)).toBe('light')
@@ -149,10 +153,13 @@ describe('jetons de thème (fiche 134)', () => {
     ).toBe('#f5f7fa')
     expect(accentOf('violet')).toBe('violet')
     expect(accentOf('rose')).toBe('orange')
-    const themes = { lightTheme: 'sepia', darkTheme: 'black' } as const
+    const themes = { lightTheme: 'aurora', darkTheme: 'black' } as const
     expect(windowBackground({ ...themes, theme: 'system' }, true)).toBe('#000000')
-    expect(windowBackground({ ...themes, theme: 'system' }, false)).toBe('#f4ecd8')
-    expect(windowBackground({ ...themes, theme: 'light' }, true)).toBe('#f4ecd8')
+    expect(windowBackground({ ...themes, theme: 'system' }, false)).toBe('#fbfcfe')
+    expect(windowBackground({ ...themes, theme: 'light' }, true)).toBe('#fbfcfe')
+    expect(
+      windowBackground({ lightTheme: 'light', darkTheme: 'auroraNight', theme: 'dark' }, false)
+    ).toBe('#15171d')
     expect(
       windowBackground({ lightTheme: 'light', darkTheme: 'dark', theme: 'system' }, true)
     ).toBe('#262624')

@@ -4,7 +4,7 @@
  * Les actions sur un agent désignent toujours leur conversation (`id`).
  */
 import type { AppAlert, AppAlertKind } from './app-alerts'
-import type { TipAction, TipId, TipsView } from './tips'
+import type { HintId, TipAction, TipId, TipsView } from './tips'
 import type { HelpTarget, HelpTopic } from './help-topics'
 import type { ScheduledTask, ScheduledTaskInput } from './schedule'
 import type { FreshStartInfo, ResetPlan } from './fresh-start'
@@ -25,6 +25,7 @@ import type {
   BrowserZoom
 } from './browser'
 import type { DevServersChange, DevServerView } from './launch'
+import type { SentEntry } from './sent-history'
 import type { PageFreeze, PageLayerEvent, PageLayerTheme, PagePin } from './page-notes'
 import type { SimulatorState } from './simulator'
 import type { AndroidState } from './android'
@@ -406,6 +407,8 @@ export interface IpcInvokeContract
   'conversation:removeFolder': { args: [id: string, folder: string]; result: undefined }
   /** Plafond de coût propre à la conversation, ou `null` pour celui des réglages (fiche 157). */
   'conversation:setCostCap': { args: [id: string, cap: ConversationCap | null]; result: undefined }
+  /** Message envoyé, tel que tapé, pour l'historique de la saisie (fiche 227). */
+  'conversation:recordSent': { args: [id: string, entry: SentEntry]; result: undefined }
   /** Réponse à la carte « Plafond atteint » (fiche 157). */
   'conversation:answerCostCap': {
     args: [id: string, itemId: number, answer: CostCapAnswer]
@@ -471,7 +474,8 @@ export interface IpcInvokeContract
   'settings:setPreferences': { args: [change: Partial<Preferences>]; result: AgentSettingsView }
   /** Astuces de Bobine (fiche 191) : état, une astuce montrée / masquée / utilisée, tout réafficher. */
   'tips:state': { args: []; result: TipsView }
-  'tips:record': { args: [id: TipId, action: TipAction]; result: TipsView }
+  /** Rappel (fiche 227) : seulement `used`, compté ; il s'efface après `HINT_MAX_USES`. */
+  'tips:record': { args: [id: TipId | HintId, action: TipAction]; result: TipsView }
   'tips:reset': { args: []; result: TipsView }
   /** Message envoyé dans ce dossier : vrai au troisième jour différent (« Planifier… »). */
   'tips:noteMessage': { args: [folder: string, text: string]; result: boolean }
@@ -958,6 +962,7 @@ export const IPC_CHANNELS = [
   'conversation:addFolder',
   'conversation:removeFolder',
   'conversation:setCostCap',
+  'conversation:recordSent',
   'conversation:answerCostCap',
   'conversation:answerTurnLimit',
   'conversation:createWorktree',

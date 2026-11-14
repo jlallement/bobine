@@ -8,7 +8,7 @@ import { L, LANG, check, withApp, M } from '../lib.mjs'
 const bobcoins = (n) => `${n.toLocaleString(LANG)} Bobcoins`
 
 /**
- * Options d'ambiance : prénom et suggestions de l'accueil, thèmes Sépia et Nuit noire, police du
+ * Options d'ambiance : prénom et suggestions de l'accueil, thèmes Aurore et Nuit noire, police du
  * code, sommaire de la conversation, bobcoins dépensés (base de Bob d'essai, dans le détail de la
  * consommation d'une conversation qui compte en bobcoins).
  */
@@ -40,18 +40,18 @@ export async function funSuite(scheme) {
         await ui.ev(`${ui.$('settings-user-name')}.focus()`)
         await ui.type('Jérôme')
         await ui.ev(`${ui.$('settings-user-name')}.blur()`)
-        // Sépia (clair) ou Nuit noire (sombre), d'après le mode imposé à la page par les essais.
+        // Aurore (clair, fiche 226) ou Nuit noire (sombre), d'après le mode imposé à la page.
         await ui.click(ui.$('settings-appearance'))
-        const variant = scheme === 'dark' ? 'black' : 'sepia'
+        const variant = scheme === 'dark' ? 'black' : 'aurora'
         await ui.click(ui.$(`theme-${variant}`))
         await ui.waitFor(`document.documentElement.dataset.palette === '${variant}'`)
         check(
           (await ui.ev(
             `getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()`
-          )) === (variant === 'black' ? '#000000' : '#f4ecd8'),
-          variant === 'black' ? 'thème Nuit noire : fond noir' : 'thème Sépia : fond papier'
+          )) === (variant === 'black' ? '#000000' : '#fbfcfe'),
+          variant === 'black' ? 'thème Nuit noire : fond noir' : 'thème Aurore : fond blanc froid'
         )
-        await ui.shot(variant === 'black' ? 'e0-nuit-noire' : 'e0-sepia')
+        await ui.shot(variant === 'black' ? 'e0-nuit-noire' : 'e0-aurore')
         // Polices à chasse fixe installées, lues par le main (fiche 136).
         await ui.waitFor(
           `[...${ui.$('settings-code-font')}.options].some((o) => o.value === 'Menlo')`

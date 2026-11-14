@@ -75,7 +75,7 @@ anglais : Entrée → **Return**, Échap → **Esc**, Espace → **Space**, Maj 
 
 **Mots-clés de la recherche des réglages** (`settingsSearch.*`) : ce ne sont pas des phrases mais
 des mots qui mènent à un réglage. Mettre les synonymes qu'un anglophone taperait, pas une
-traduction mot à mot (`theme` : « appearance light dark sepia black colors mode »).
+traduction mot à mot (`theme` : « appearance light dark aurora black colors mode »).
 
 **Chemins de macOS et d'Xcode** : reprendre le libellé exact de la version anglaise de macOS
 (« System Settings › Privacy & Security › … »), à vérifier sur la version visée plutôt que traduit.
@@ -239,7 +239,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | Raccourcis clavier | Keyboard shortcuts | |
 | Diagnostic | Diagnostics | |
 | À propos, Nouveautés | About, What's new | |
-| thème : système, clair, sombre, sépia, nuit noire | theme: system, light, dark, sepia, black | « Nuit noire » → « Black ». |
+| thème : système, clair, sombre, nuit noire, Fjord, Fjord nuit, Aurore, Aurore nuit | theme: system, light, dark, black, Fjord, Fjord Night, Aurora, Aurora Night | « Nuit noire » → « Black » ; Sépia retiré (fiche 226). |
 | couleur d'accent | accent color | Orthographe américaine. |
 | police (Serif, Sans serif) | font (serif, sans serif) | Fiche 128 : « Sans serif » et « Serif » en français aussi (plus « à empattements »), qui reste un synonyme caché de la recherche. |
 | empêcher la mise en veille | prevent sleep | |

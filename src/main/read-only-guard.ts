@@ -235,6 +235,7 @@ export const PROFILE_CHANGING = [
   'conversation:addFolder',
   'conversation:removeFolder',
   'conversation:setCostCap',
+  'conversation:recordSent',
   'conversation:answerCostCap',
   'conversation:answerTurnLimit',
   'conversation:createWorktree',
