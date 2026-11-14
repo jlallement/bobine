@@ -1298,3 +1298,15 @@
   gap: 8px;
   margin-top: 6px;
 }
+
+/* Fil d'une fille : la consigne du rôle sous la demande, repliée (relecture des essais réels). */
+.role-brief {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+.role-brief .child-instruction-text {
+  align-self: stretch;
+}

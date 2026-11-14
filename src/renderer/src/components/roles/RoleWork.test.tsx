@@ -232,3 +232,27 @@ it('en-tête de la fille : son rôle et sa lecture seule', () => {
   expect(badge.textContent).toContain('Expert sécu')
   expect(badge.textContent).toContain('lecture seule demandée')
 })
+
+describe('fil de la fille d’un rôle (essais réels avant 1.0.0-beta.2)', () => {
+  it('premier message : la demande seule, la consigne du rôle repliée sous « Consigne du rôle »', () => {
+    render(
+      <Transcript
+        items={[
+          {
+            kind: 'user',
+            id: 1,
+            text: 'Relis auth.js\n\n<bobine_role name="security-expert">\nAudit only.\n</bobine_role>'
+          }
+        ]}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+      />
+    )
+    const message = document.querySelector('.msg-user') as HTMLElement
+    expect(message.textContent).toBe('Relis auth.js')
+    expect(document.body.textContent).not.toContain('<bobine_role')
+    expect(screen.queryByTestId('role-brief-text')).toBeNull()
+    act(() => screen.getByTestId('role-brief-toggle').click())
+    expect(screen.getByTestId('role-brief-text').textContent).toBe('Audit only.')
+  })
+})

@@ -53,6 +53,8 @@ import {
 import { ChildProposals, type ProposalsInfo } from './ChildProposals'
 import { useTranslation } from 'react-i18next'
 import { stripAppContext } from '@shared/app-context'
+import { splitRoleBrief } from '@shared/roles'
+import { RoleBriefFold } from '../roles/RoleWork'
 import { CostCapCard } from './CostCapCard'
 import { TurnLimitCard } from './TurnLimitCard'
 import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
@@ -566,6 +568,8 @@ function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }>
   // Texte collé ouvert en aperçu (fiche 155).
   const [reading, setReading] = useState<number | null>(null)
   const read = reading === null ? undefined : item.attachments?.[reading]
+  // Fille d'un rôle (fiche 223) : la consigne du rôle, jointe après la demande, repliée.
+  const { request, brief } = splitRoleBrief(item.text)
   return (
     <>
       {item.attachments && item.attachments.length > 0 && (
@@ -596,7 +600,8 @@ function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }>
           )}
         </div>
       )}
-      {item.text && <div className="msg-user">{item.text}</div>}
+      {request && <div className="msg-user">{request}</div>}
+      {brief !== undefined && <RoleBriefFold brief={brief} />}
       {read?.kind === 'text' && (
         <PastedTextDialog name={read.name} text={read.text} onClose={() => setReading(null)} />
       )}

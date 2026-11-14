@@ -4171,6 +4171,7 @@ export type FrResources = {
     }
   }
   readonly roleWork: {
+    readonly brief: 'Consigne du rôle'
     readonly readOnly: 'lecture seule'
     readonly readOnlyRequested: 'lecture seule demandée'
     readonly readOnlyRequestedHint: 'L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.'

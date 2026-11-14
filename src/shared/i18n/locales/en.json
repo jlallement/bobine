@@ -4162,6 +4162,7 @@
     }
   },
   "roleWork": {
+    "brief": "Role instructions",
     "readOnly": "read-only",
     "readOnlyRequested": "read-only requested",
     "readOnlyRequestedHint": "This conversation's agent writes without asking for permission: read-only is only requested, and Bobine checks the folder after each turn.",

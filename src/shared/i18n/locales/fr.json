@@ -4334,6 +4334,7 @@
     }
   },
   "roleWork": {
+    "brief": "Consigne du rôle",
     "readOnly": "lecture seule",
     "readOnlyRequested": "lecture seule demandée",
     "readOnlyRequestedHint": "L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.",

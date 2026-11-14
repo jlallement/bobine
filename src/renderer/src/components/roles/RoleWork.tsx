@@ -276,3 +276,32 @@ export function RoleTitleBadge({
     </span>
   )
 }
+
+/**
+ * Premier message d'une fille avec un rôle, dans son fil (fiche 223) : la demande, et la consigne du
+ * rôle repliée sous « Consigne du rôle », comme sur la carte de la mère — le bloc `<bobine_role>`
+ * est un contexte de l'app, pas du texte de l'utilisateur.
+ */
+export function RoleBriefFold({ brief }: { brief: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="role-brief" data-testid="role-brief">
+      <button
+        type="button"
+        className="link-button role-launch-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        data-testid="role-brief-toggle"
+      >
+        {t('roleWork.brief')}
+        <ChevronRight size={12} className="chevron" />
+      </button>
+      {open && (
+        <div className="child-instruction-text" data-testid="role-brief-text">
+          {brief}
+        </div>
+      )}
+    </div>
+  )
+}
