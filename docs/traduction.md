@@ -119,6 +119,11 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | commande « / » | slash command | |
 | commande personnelle / du projet | personal command / project command | Comme Claude Code. |
 | commande de l'app | app command | |
+| rôle ; rôle fourni / personnel / du projet | role; built-in / personal / project role | Fiche 223 (phase 3A). Jamais « agent » ni « mode » pour un rôle. |
+| consigne (d'un rôle) | instructions | Le corps du fichier de rôle. |
+| équipe (section de la barre latérale) | team | Les rôles actifs. |
+| confier (un travail) à un rôle | hand (work) to a role | « Confier à Expert sécu » → « Hand to Security expert ». |
+| fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
 | règles actives | active rules | |
 | capacités, ce qu'il annonce | capabilities, what it reports | |
 | propre à (un agent) | specific to | |

@@ -11,6 +11,7 @@ import { Tip } from '../common/Menus'
 import { conversationState } from './conversation-state'
 import { ConversationMenuItems } from './ConversationMenu'
 import { rowDay } from '../../time'
+import { RoleAvatar } from '../roles/RoleAvatar'
 import '../../memory.css'
 
 /** Place d'une fille sous sa mère : le lien part sous la mère, s'arrête au coude sous la dernière. */
@@ -111,6 +112,7 @@ export function HistoryItem({
     conversation.title,
     ...(isBranch ? [t('sidebar.branchOf', { title: branchOf })] : []),
     ...(scheduled ? [t('sidebar.scheduledTip', { name: scheduled.name })] : []),
+    ...(conversation.role ? [t('team.roleTip', { label: conversation.role.label })] : []),
     ...(mother
       ? [
           t('sidebar.childOf', {
@@ -148,6 +150,14 @@ export function HistoryItem({
           )}
           <span className="row-main">
             <span className="row-title">
+              {conversation.role && (
+                <RoleAvatar
+                  role={conversation.role}
+                  size="xs"
+                  className="history-role"
+                  testId="history-role"
+                />
+              )}
               <span className="label">{label}</span>
               {isBranch && (
                 <span

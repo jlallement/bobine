@@ -16,6 +16,8 @@ import { PrivacySettings } from './PrivacySettings'
 import type { AgentSubPage, SettingsDialogProps } from './SettingsDialog'
 import { ApprovalRulesPage } from './ApprovalRulesPage'
 import { ShortcutsSettings } from './ShortcutsSettings'
+import { RolesSettings } from '../roles/RolesSettings'
+import { basename } from '../common/Menus'
 
 /** Formulaire d'un agent ACP déclaré (fiche 141) : `id` absent, un nouvel agent. */
 export interface AgentForm {
@@ -91,6 +93,17 @@ export function SettingsBody({
           onAgentForm={onAgentForm}
         />
       )
+    case 'roles': {
+      const active = props.activeConversation
+      return (
+        <RolesSettings
+          conversationId={active?.id}
+          conversationProfileId={active?.profileId}
+          project={active ? basename(active.project ?? active.workspace) : undefined}
+          profiles={settings.profiles}
+        />
+      )
+    }
     case 'memory':
       return <MemorySettings settings={settings} onPreferences={props.onPreferences} />
     case 'mcp':

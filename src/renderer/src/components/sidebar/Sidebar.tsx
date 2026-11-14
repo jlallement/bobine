@@ -50,6 +50,7 @@ import {
 import { GroupingMenu, NotificationsBlocked, type Grouping } from './SidebarMenus'
 import { FolderGroup, SidebarSection, readLocal, useFoldedSet, writeLocal } from './SidebarSection'
 import { useProfileStatus } from '../common/Profile'
+import { TeamSection } from '../roles/TeamSection'
 
 interface Props {
   open: boolean
@@ -105,7 +106,7 @@ const ACTIVITY_KEYS = SHORTCUTS.find((s) => s.command === 'activity')?.keys ?? '
 const GROUPING_KEY = 'bob:historique-regroupement'
 /** Dossiers repliés : leur chemin (le projet, fiche 131 ; le dossier de travail avant). */
 const FOLDED_KEY = 'bob:dossiers-replies'
-/** Sections repliées (fiche 131) : `pinned`, `history`. Archivées a sa clé, repliée par défaut. */
+/** Sections repliées (fiche 131) : `team`, `pinned`, `history`. Archivées a sa clé, repliée par défaut. */
 const SECTIONS_KEY = 'bob:sections-repliees'
 const ARCHIVE_OPEN_KEY = 'bob:archives-ouvertes'
 const NO_LAUNCHES: ChildLaunch[] = []
@@ -291,6 +292,12 @@ export function Sidebar(props: Props) {
         </div>
 
         <div className="sidebar-scroll" data-testid="history" ref={list} onScroll={onScroll}>
+          {/* Équipe (fiche 223) : les rôles actifs du projet affiché, repliable. */}
+          <TeamSection
+            conversationId={props.activeId}
+            folded={sections.isFolded('team')}
+            onToggle={() => sections.toggle('team')}
+          />
           {/* Les états restent sur place ; les liens mère-filles gardent leur tracé (fiche 149). */}
           {pinned.length > 0 && (
             <SidebarSection

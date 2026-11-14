@@ -4,6 +4,14 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## Next version
 
+### New
+
+- Roles: create your specialists in three steps (who, how, with what), from a built-in role or a
+  blank page, just for you or for the project (`.bobine/roles/`, shared through git); edit, turn
+  off or delete them in Settings › Roles, which also flags a project role that replaces another
+  one and the files left out. The “Team” section of the sidebar shows the active roles: one click
+  hands them work in a child conversation, which carries the role’s icon and color.
+
 ### Improved
 
 - Roles: the agent now knows the built-in specialists (UX/UI expert, Flutter expert, front-end

@@ -4,6 +4,15 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ## Prochaine version
 
+### Nouveau
+
+- Rôles : créez vos spécialistes en trois étapes (qui, comment, avec quoi), à partir d'un rôle
+  fourni ou d'une page blanche, pour vous seul ou pour le projet (`.bobine/roles/`, partagé par
+  git) ; modifiez-les, désactivez-les ou supprimez-les dans Réglages › Rôles, qui signale aussi
+  un rôle du projet qui en remplace un autre et les fichiers écartés. La section « Équipe » de la
+  barre latérale montre les rôles actifs : un clic leur confie un travail dans une conversation
+  fille, qui porte l'icône et la couleur du rôle.
+
 ### Amélioré
 
 - Rôles : l'agent connaît désormais les spécialistes fournis (expert UX/UI, expert Flutter,
