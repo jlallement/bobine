@@ -829,3 +829,36 @@ demandée », « dans ce dossier ». Un seul tirage : un échantillon.
 8. Pilote : `etat` ne listait pas la carte de propositions « en attente » des n° 11 à 13 (visible
    en capture) ; `cliquer` ambigu entre une conversation de la barre latérale et le lien
    « ↳ depuis » ou l'entrée du panneau.
+
+### Correctifs après essais réels (2026-11-14)
+
+D'après « Essais réels avant 1.0.0-beta.2 » ci-dessus ; un commit `fix:` par point, chacun avec un
+essai qui échouait avant.
+
+1. **Demande d'abord, consigne après** (fiche 125, D18) : `roleOpening` met la demande en tête,
+   puis le bloc `<bobine_role>` (consigne entière, lecture seule, langue). Le bloc est un contexte
+   de l'app (`APP_CONTEXT_OPENINGS.role`) : `stripAppContext` coupe un titre de Bob à la demande.
+   L'agent factice cherche `/scenario` dans la demande.
+2. **Consigne repliée dans le fil de la fille** : `splitRoleBrief` sépare la demande du bloc (après
+   ou, pour les fils d'avant, en tête) ; le premier message montre la demande seule et « Consigne du
+   rôle » repliable, comme la carte de la mère (`RoleBriefFold`).
+3. **Langue** : dernière ligne du bloc « Reply in the language of the user's request. »
+   (`ROLE_LANGUAGE_LINE`, texte pour l'agent, non traduit).
+4. **« Toujours » pour une fille en lecture seule** : `askReadOnly` retire les options
+   `allow_always` / `reject_always` de l'agent quand une option « une fois » de même sens existe,
+   et une réponse « toujours » qui arriverait quand même part en « une fois ».
+5. **`@rôle` dans une fille** : les rôles du projet sont lus aussi pour une fille (`elsewhere`) ;
+   un `@rôle` tapé y est signalé sous la saisie (`team.notHere`), le menu `@` n'en propose aucun
+   (ni l'invitation), et le message part tel quel à son agent.
+6. **En-tête étroit** : le titre garde 96 px au moins et se tronque, « depuis… » et le badge du
+   rôle cèdent d'abord, la pastille « Profil temporaire » ne rétrécit pas ; rien ne déborde sur le
+   panneau. Vérifié par `roles-travail` (pastille posée, 1 280 px, panneau ouvert ; avant : titre
+   à 22 px). Au plus étroit, la pastille « lecture seule » du badge est coupée (sans « … »).
+7. **Coût du compte rendu chez Bob** : cause — le compte rendu est fait à la fin du tour, alors que
+   le coût de Bob est lu hors protocole juste après, puis 1,5 s plus tard (fiche 157). Le dernier
+   compte rendu d'une fille au repos prend désormais son coût actuel, le même que « Sous-tâches » ;
+   un compte rendu plus ancien garde le sien. Le texte du compte rendu donné à l'agent de la mère
+   n'est pas changé.
+8. **`docs/acp.md`** : ligne Rôles mise à jour avec l'observé de Bob 2.1.0.
+
+Non repris : n° 7 et 8 des écarts (cartes « Expirée », attendu ; pilote, hors fiche).
