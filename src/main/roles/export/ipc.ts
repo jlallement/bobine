@@ -11,7 +11,6 @@ import {
   parseRoleExportTarget,
   type RoleExportRef
 } from '@shared/role-export'
-import type { Role } from '@shared/roles'
 import type { RoleLibrary } from '../library'
 import { roleToExport, type RoleExports, type RoleToExport } from './service'
 
@@ -24,26 +23,6 @@ export interface RoleExportIpcDeps {
 
 type RoleExportChannel =
   'roles:exportPreview' | 'roles:export' | 'roles:exportStatus' | 'roles:exportRemove'
-
-/** Description traduite de chaque rôle fourni (`builtin.ts`), comme dans Réglages › Rôles. */
-const BUILTIN_DESCRIPTIONS: Record<string, () => string> = {
-  'ux-ui-expert': () => t('rolesSettings.builtinDescription.uxUiExpert'),
-  'flutter-expert': () => t('rolesSettings.builtinDescription.flutterExpert'),
-  'front-architect': () => t('rolesSettings.builtinDescription.frontArchitect'),
-  'back-architect': () => t('rolesSettings.builtinDescription.backArchitect'),
-  'security-expert': () => t('rolesSettings.builtinDescription.securityExpert'),
-  'tech-lead': () => t('rolesSettings.builtinDescription.techLead'),
-  'code-reviewer': () => t('rolesSettings.builtinDescription.codeReviewer')
-}
-
-/**
- * Description écrite dans l'agent : dans la langue de l'interface pour un rôle fourni (elle
- * s'affiche dans la liste des modes de l'agent), telle quelle sinon.
- */
-export function exportedDescription(role: Pick<Role, 'name' | 'scope' | 'description'>): string {
-  if (role.scope !== 'builtin') return role.description
-  return BUILTIN_DESCRIPTIONS[role.name]?.() ?? role.description
-}
 
 export function roleExportHandlers(
   deps: () => RoleExportIpcDeps | undefined
@@ -60,7 +39,8 @@ export function roleExportHandlers(
     const role = d.library.definition(ref.scope, ref.name, folder)
     if (!role) throw new Error(t('rolesSettings.edit.missing'))
     return {
-      role: roleToExport(role, exportedDescription(role)),
+      // Rôle fourni : textes dans la langue de l'interface (ADR-0046), relus à chaque appel.
+      role: roleToExport(role),
       ...(folder ? { folder } : {})
     }
   }

@@ -13,6 +13,12 @@ What changes for you, version by version. Shown in Settings › About.
   “Remove”. In Bobine, the role can then run in that mode: its read-only is held by the agent
   itself.
 
+### Improved
+
+- Built-in roles: their description (“When to call on it?”) and their instructions now come in
+  English or French, following the interface language; a personal role made from a built-in role
+  keeps the language shown.
+
 ## 1.0.0-beta.2 — November 14, 2026
 
 ### New

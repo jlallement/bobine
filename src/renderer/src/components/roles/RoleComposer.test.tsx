@@ -146,19 +146,17 @@ describe('menu `@` : rôles en tête', () => {
     expect(roleNames()).toEqual(['security-expert', 'back-architect'])
   })
 
-  it('rôle fourni : description traduite affichée et cherchée (pas celle de l’agent)', () => {
+  it('rôle fourni : description reçue du main (déjà dans la langue de l’interface), affichée et cherchée', () => {
     const { type } = setup({
       list: [
         role('security-expert', 'Expert sécu', {
-          description: 'Audits the security of a change (injection, secrets, authentication).'
+          description: 'Audite la sécurité d’un changement (injection, secrets, authentification).'
         })
       ]
     })
     type('@authentif')
     expect(roleNames()).toEqual(['security-expert'])
-    const item = screen.getByTestId('role-item')
-    expect(item.textContent).toContain('Audite la sécurité')
-    expect(item.textContent).not.toContain('Audits the security')
+    expect(screen.getByTestId('role-item').textContent).toContain('Audite la sécurité')
   })
 
   it('`@git` : `@git-changes` d’abord, pas un rôle trouvé par sa seule description', () => {

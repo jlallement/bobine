@@ -4910,15 +4910,6 @@
     "hides": "Replaces a {{scopes}} role",
     "agentMissing": "{{agent}} missing",
     "readOnly": "Read-only",
-    "builtinDescription": {
-      "uxUiExpert": "Designs or reviews user interfaces: layout, hierarchy, wording, accessibility, consistency with the existing design system.",
-      "flutterExpert": "Builds or fixes Flutter and Dart code: widgets, state management, platform channels, tests.",
-      "frontArchitect": "Shapes the front-end architecture: component boundaries, state and data flow, performance, build and dependencies.",
-      "backArchitect": "Shapes the back-end architecture: APIs, data model and migrations, consistency, scalability, failure handling.",
-      "securityExpert": "Audits the security of a change or a module (injection, secrets, authentication, permissions, dependencies). Changes nothing.",
-      "techLead": "Plans and reviews like a demanding tech lead: splits work, spots risks, checks robustness and maintainability. Changes nothing.",
-      "codeReviewer": "Reviews a change before merge: correctness, tests, readability, conventions of the project. Changes nothing."
-    },
     "enabled": "{{label}}: on",
     "empty": {
       "title": "Build your team",

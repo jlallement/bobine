@@ -44,9 +44,12 @@ export function RoleEditPage(
     onMoved: (role: { scope: RoleScope; name: string }) => void
   }
 ) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [role, setRole] = useState<Role | null | undefined>(undefined)
   const [draft, setDraft] = useState<RoleDraft | null>(null)
+  // Un rôle fourni se relit dans la nouvelle langue de l'interface (ADR-0046) ; l'enregistrer
+  // crée un rôle personnel dans la langue affichée.
+  const language = props.scope === 'builtin' ? i18n.language : undefined
   useEffect(() => {
     let alive = true
     window.api.roles.read(props.scope, props.name, props.conversationId).then(
@@ -60,7 +63,7 @@ export function RoleEditPage(
     return () => {
       alive = false
     }
-  }, [props.scope, props.name, props.conversationId])
+  }, [props.scope, props.name, props.conversationId, language])
   const back = (
     <button
       className="settings-crumb role-edit-back"

@@ -287,15 +287,14 @@ export class RoleExports {
 
 const fail = (error: RoleExportError): RoleExportResult => ({ ok: false, error })
 
-/** Le rôle tel qu'il part dans l'agent ; `description` : celle à montrer (traduite si fournie). */
+/** Le rôle tel qu'il part dans l'agent (un rôle fourni : dans la langue de l'interface). */
 export function roleToExport(
-  role: Parameters<typeof serializeRole>[0] & { scope: RoleToExport['scope'] },
-  description = role.description
+  role: Parameters<typeof serializeRole>[0] & { scope: RoleToExport['scope'] }
 ): RoleToExport {
   return {
     id: role.name,
     label: role.label,
-    description,
+    description: role.description,
     prompt: role.prompt,
     readOnly: role.readOnly,
     scope: role.scope,

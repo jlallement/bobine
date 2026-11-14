@@ -168,7 +168,8 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(first?.kind === 'user' && first.text).toMatch(/\n\n<bobine_role name="security-expert">/)
     expect(first?.kind === 'user' && first.text.startsWith('<bobine_role')).toBe(false)
     const reply = env.lastReply(child.id)
-    expect(reply).toContain('application security expert')
+    // Consigne du rôle fourni dans la langue de l'interface (ADR-0046), enveloppe en anglais.
+    expect(reply).toContain('expert en sécurité applicative')
     expect(reply).toContain('Bobine refuses your write requests.')
     expect(reply).toContain('Audite le module de connexion.')
   })

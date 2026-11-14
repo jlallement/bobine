@@ -26,9 +26,8 @@ type Searchable = Pick<RoleDefinition, 'name' | 'label' | 'description'>
 export function matchRoleGroups<T extends Searchable>(
   roles: readonly T[],
   query: string,
-  options: { descriptions?: boolean; describe?: (role: T) => string } = {}
+  options: { descriptions?: boolean } = {}
 ): { byName: T[]; byDescription: T[] } {
-  const describe = options.describe ?? ((role: T) => role.description)
   const q = searchable(query.trim())
   if (!q) return { byName: [...roles], byDescription: [] }
   const byName = roles.filter(
@@ -41,7 +40,7 @@ export function matchRoleGroups<T extends Searchable>(
   )
   if (options.descriptions === false) return { byName, byDescription: [] }
   const byDescription = roles.filter(
-    (r) => !byName.includes(r) && searchable(describe(r)).includes(q)
+    (r) => !byName.includes(r) && searchable(r.description).includes(q)
   )
   return { byName, byDescription }
 }

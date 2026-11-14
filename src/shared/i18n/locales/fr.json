@@ -5111,15 +5111,6 @@
     "hides": "Remplace un rôle {{scopes}}",
     "agentMissing": "{{agent}} absent",
     "readOnly": "Lecture seule",
-    "builtinDescription": {
-      "uxUiExpert": "Conçoit ou relit les interfaces : mise en page, hiérarchie, textes, accessibilité, cohérence avec le système de design existant.",
-      "flutterExpert": "Écrit ou corrige du code Flutter et Dart : widgets, gestion d’état, canaux de plateforme, tests.",
-      "frontArchitect": "Dessine l’architecture front : découpage des composants, état et flux de données, performances, build et dépendances.",
-      "backArchitect": "Dessine l’architecture back : API, modèle de données et migrations, cohérence, montée en charge, gestion des pannes.",
-      "securityExpert": "Audite la sécurité d’un changement ou d’un module (injection, secrets, authentification, permissions, dépendances). Ne modifie rien.",
-      "techLead": "Planifie et relit comme un tech lead exigeant : découpe le travail, repère les risques, vérifie robustesse et maintenabilité. Ne modifie rien.",
-      "codeReviewer": "Relit un changement avant fusion : justesse, tests, lisibilité, conventions du projet. Ne modifie rien."
-    },
     "enabled": "{{label}} : actif",
     "empty": {
       "title": "Montez votre équipe",
