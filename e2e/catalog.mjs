@@ -1015,6 +1015,30 @@ export const SUITES = [
     ]
   },
   {
+    // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, filles des rôles, proposition.
+    name: 'roles-travail',
+    file: 'roles-travail.mjs',
+    run: 'rolesTravailSuite',
+    themes: BOTH,
+    sources: [
+      `${C}roles/`,
+      `${C}composer/FileMenu.tsx`,
+      `${C}thread/ChildProposals.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${R}useMentions.ts`,
+      `${R}useComposerRoles.ts`,
+      `${R}roles-work.css`,
+      'src/shared/role-mentions.ts',
+      'src/shared/roles.ts',
+      'src/shared/roles-ipc.ts',
+      'src/shared/children.ts',
+      'src/main/roles/',
+      'src/main/conversations/children.ts',
+      'src/main/mcp/children-tools.ts',
+      'src/mock-agent/scenarios-roles.mts'
+    ]
+  },
+  {
     name: 'filles-fusion',
     file: 'filles-fusion.mjs',
     run: 'fillesFusionSuite',
