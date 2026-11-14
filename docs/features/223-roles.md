@@ -165,7 +165,8 @@ question, seul le rôle sait quel mode lui convient.
       › Rôles ; portée personnelle ou projet (`.bobine/roles/*.md`), relu à chaud.
 - [x] Un fichier de rôle invalide est signalé (nom du fichier, raison) sans bloquer les autres
       (phase 2 : `roles:list` rend les problèmes ; l'écran viendra en phase 3).
-- [ ] `@` dans la saisie liste les rôles ; `@rôle texte` propose la fille avec ce rôle.
+- [x] `@` dans la saisie liste les rôles ; `@rôle texte` lance la fille avec ce rôle (phase 3B :
+      sans carte d'accord, l'utilisateur l'a demandé ; plusieurs `@rôle` : une fille chacun).
 - [x] `start_child` accepte `role` ; un rôle inconnu est refusé avec la liste des rôles connus.
 - [x] Le mode natif est utilisé quand l'agent l'a ; la consigne part toujours en premier message.
 - [x] Un rôle en lecture seule travaille dans le même dossier ; ses demandes d'écriture sont
@@ -173,12 +174,15 @@ question, seul le rôle sait quel mode lui convient.
 - [x] Les outils du rôle (`mcp` : familles d'outils de Bobine) sont ceux passés à la session de la
       fille.
 - [ ] Icône et couleur du rôle sur la carte de la fille, dans « Sous-tâches » et dans la barre
-      latérale ; textes en français et en anglais.
+      latérale ; textes en français et en anglais. (Phase 3B faite : carte de la fille, « Sous-tâches »,
+      compte rendu, proposition, en-tête de la fille ; barre latérale : phase 3A.)
 - [x] Contexte de session et description de `start_child` réécrits ; rappel après compaction et
       reprise ; banc de délégation joué avant et après, résultats dans le journal (phase 1).
 - [x] Testé contre l'agent factice : scénarios « délègue à un rôle », « rôle inconnu », « rôle en
       lecture seule qui tente d'écrire » (avec et sans demande), « mode natif présent / absent ».
-- [ ] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en.
+- [ ] E2e : création d'un rôle, `@rôle`, carte de la fille, clair et sombre, fr et en. (Phase 3B :
+      `roles-travail` pour `@rôle`, deux filles, proposition, lecture seule demandée ; création :
+      phase 3A.)
 - [ ] Phase 4 seulement : « Installer dans Bob / OpenCode », d'après leur documentation publique
       (modes personnels de Bob relus par ACP ? format des agents d'OpenCode), export à sens
       unique, copie de sauvegarde avant d'écrire, déclaré dans les profils (ADR-0011).
@@ -391,3 +395,106 @@ dépendance (icônes Lucide déjà présentes). Un ADR pour le format des rôles
   - Vérifications après correctifs : `./scripts/verify` vert (code de sortie 0 ; 429 fichiers,
     3 875 essais) ; `pnpm build && pnpm e2e --changed` : 192/192 vertes, clair et sombre, code de
     sortie 0, 15 min 00 s.
+
+### Phase 3B — interface : invoquer et voir les rôles au travail (2026-11-14)
+
+Maquettes validées suivies : 02-1, 02-2, 02-3, 02-4, 02-7, 03-1 à 03-5. Hors périmètre (non faits) :
+02-5 carte au survol, 02-6 bande « Confier à… », 03-6 panneau Équipe, 03-7 présence en barre de
+titre, 03-8 tableau d'équipe. Barre latérale, Réglages › Rôles et assistant : phase 3A (autre
+branche).
+
+- **Envoi direct** (décision) : `@rôle …` lance la fille sans carte d'accord — c'est l'utilisateur
+  qui le demande, en toutes lettres. Plusieurs `@rôle` : une fille par rôle, même texte, rien
+  envoyé à la mère. Canal `roles:startChildren` (`shared/roles-ipc.ts`, `main/roles/invoke.ts`) :
+  rôles vérifiés et lancés **l'un après l'autre** (deux `git worktree add` à la fois dans un même
+  dépôt peuvent se gêner, et le plafond des filles se compte juste), agent et modèle du rôle repris
+  par `roleDefaults` comme pour `start_child` (sinon ceux de la mère) ; un rôle refusé (inconnu,
+  désactivé, plafond) n'empêche pas les autres : sa raison est dite dans le fil. Refusé en lecture
+  seule du profil (`read-only-guard.ts`). `appRoles` prend un seul accès tardif
+  `() => ({ conversations, children })` (`index.ts` reste à 850 lignes).
+- **Menu `@`** (`FileMenu`, `useMentions`, `components/roles/RoleMenu.tsx`) : section « Rôles » en
+  tête, cinq rôles tant que rien n'est tapé puis « Tous les rôles (N) », recherche sans accents
+  (nom et mots du libellé d'abord, puis description : `shared/role-mentions.ts`), marque d'un rôle
+  du projet, clavier inchangé (↑↓, Tab/Entrée, Échap), libellés ARIA. Aucun rôle actif :
+  l'invitation de 02-7, « Ne plus montrer » retenu dans le navigateur.
+- **Jeton et « Partira à… »** (`useRoleCompose`, `RoleCompose.tsx`) : un rôle choisi devient un
+  jeton (`@requête` sort du texte), retiré par × ou par retour arrière en tête de la saisie ; un
+  `@nom` tapé en entier compte aussi ; un `@mot` inconnu reste du texte. Liseré de la couleur du
+  rôle (neutre à plusieurs), ligne « Partira à… » : agent, lecture seule (garantie ou demandée),
+  « dans ce dossier » ou « son worktree » ; plusieurs rôles : avatars empilés et un résumé.
+- **Rôles au travail** (`RoleWork.tsx`, `RoleAvatar.tsx`) : la fille d'un rôle remplace la ligne
+  « Conversation fille lancée » par une carte à son identité (avatar à son état, nom du rôle, ce
+  qu'elle fait, lecture seule, consigne dépliable, « Ouvrir ») ; « Sous-tâches » : avatars empilés
+  en tête, chaque ligne avec l'avatar, le nom du rôle, son état et l'outil en cours (dernier
+  `tool_call` reçu de la fille par `agent:event`, effacé en fin de tour) ; compte rendu titré du
+  rôle ; proposition de l'agent : badge, « Rôle — titre », lecture seule garantie / demandée ou
+  « écrit du code », mode, agent choisi sur la carte, marque du projet et avertissement « il
+  remplace le rôle fourni/personnel du même nom » (du `RoleSnapshot` figé) ; en-tête de la fille :
+  avatar, nom, lecture seule. États de l'avatar unifiés (03-5) : repos, au travail (anneau qui
+  tourne, fixe si les animations sont réduites), attend votre accord, a rendu, échec.
+- **Lecture seule seulement demandée** : d'après `ProfileSummary.writesWithoutAsking` du profil de
+  la fille (ou de celui choisi sur la carte), jamais d'après un nom d'agent ; dite « lecture seule
+  demandée », expliquée en infobulle, sur la ligne « Partira à… », la proposition, la carte et
+  l'en-tête de la fille (`role-view.ts`).
+- **Couleurs** : seulement `ACCENT_COLORS`, valeur prise dans `TINTS` de la palette affichée
+  (`useRoleTint`, suit le thème) et posée en `--role`. Icônes : une liste choisie de Lucide
+  (`role-icons.ts`, 30 icônes, `bot` par défaut) — pas tout le paquet. Aucune dépendance.
+- **Découpages** (plafonds ESLint) : touches de la saisie sorties de `Composer` (`composerKeyDown`,
+  même comportement) ; logique des jetons dans `useRoleCompose`. `Transcript.tsx` : lancement
+  passé à chaque fille (`last` pour la carte « Sous-tâches »), rôle passé au compte rendu.
+- **Agent factice** : `MOCK_AGENT_WRITES=silent` déclare `writesWithoutAsking` sur le profil
+  factice (comme OpenCode), pour l'e2e ; aucun scénario nouveau.
+- **Écarts aux maquettes** :
+  1. Le jeton n'est pas **dans** la ligne de texte (une zone de saisie `textarea` ne sait pas
+     afficher un bloc insécable) : les jetons sont en tête de la saisie, au-dessus du texte ; le
+     retour arrière en tête du texte retire le dernier. Un `@nom` tapé en entier reste du texte
+     (pas de jeton), mais compte à l'envoi et la ligne « Partira à… » le dit.
+  2. 03-1 : pas de bouton « Arrêter » ni de compteur « 4 fichiers lus · 2 recherches » sur la
+     carte de la fille (pas d'information fiable côté mère) ; l'action en cours vient du dernier
+     outil annoncé pendant que la carte est affichée (rien n'est relu d'avant). La carte
+     « Sous-tâches » reste aussi pour une seule fille (fusion, coût, comme aujourd'hui).
+  3. 03-2 : pas de « Autoriser / Refuser » sur la ligne (la demande d'accord reste dans la fille,
+     ouverte d'un clic) ; pas de « Tout arrêter ».
+  4. 03-3 : titre de la carte inchangé (« 1 tâche proposée ») — une mère n'a jamais de rôle (une
+     fille ne lance pas de fille) ; pas de pied « Proposé d'après la description… » ni de
+     « Tout lancer ».
+  5. 03-4 : pas de pastilles de gravité ni de « Voir les remarques » (un rôle ne rend pas de
+     remarques structurées, contrairement au relecteur de la fiche 177).
+  6. 02-1 : pas de « coût ≈ 3 × une relecture » (02-4) ; « + Nouveau rôle » et « Gérer » sont
+     prévus mais masqués tant que l'app ne sait pas les ouvrir (phase 3A).
+  7. Conversation encore vide : une fille se rattache à une conversation de l'historique
+     (`children.error.draft`) ; la ligne « Partira à… » le dit avant l'envoi, l'erreur reste
+     celle du cœur. Les pièces jointes ne partent pas aux rôles : l'envoi le dit et ne part pas.
+- **À brancher après la fusion avec la phase 3A** : `ComposerRoles.onCreate(name?)` (« + Nouveau
+  rôle » du menu `@` et « Créer un rôle » de l'invitation, assistant prérempli du nom tapé) et
+  `ComposerRoles.onManage()` (« Gérer » → Réglages › Rôles) dans `useComposerRoles` (App.tsx,
+  quatrième argument) ; « Enregistrer comme rôle » sur une fille (3A) ; réconcilier les avatars
+  (`components/roles/RoleAvatar.tsx`, `role-icons.ts`, `roles-work.css`) avec ceux de la barre
+  latérale de la 3A pour n'en garder qu'un ; relire la liste quand les fichiers changent (le menu
+  la relit à chaque ouverture).
+- **Tests** : `shared/role-mentions.test.ts` (recherche, `@nom` d'un message, plusieurs rôles,
+  rôle inconnu laissé en texte, retours à la ligne), `main/roles/invoke.test.ts` (requête
+  vérifiée, une fille par rôle, agent du rôle, refus rendus), `roles-children.test.ts` (agent
+  factice : deux rôles et un inconnu, lecture seule dans le dossier de la mère, worktree sinon),
+  `components/roles/RoleComposer.test.tsx` (menu, filtre, clavier, jeton, retour arrière, envoi,
+  deux rôles, inconnu, aucune fille partie, lecture seule demandée, conversation vide),
+  `RoleWork.test.tsx` (carte de la fille, « Sous-tâches » et outil en cours, compte rendu,
+  proposition : badge, mode, garantie / demandée, « écrit du code », projet qui remplace),
+  `role-view.test.ts`. E2e `roles-travail` (agent factice, dépôt jetable avec un rôle du projet) :
+  menu `@`, filtre, jeton, retour arrière, une fille, deux filles, « Sous-tâches », en-tête de la
+  fille, proposition, puis `MOCK_AGENT_WRITES=silent` : lecture seule demandée (ligne, carte,
+  en-tête). Clair, sombre, et `--lang en`.
+- **Menu `@` partagé** : un rôle trouvé par sa seule description ne passe pas devant
+  `@git-changes` / `@terminal` tapés par leur nom (régression vue par l'e2e `mentions` : `@git`
+  puis Entrée prenait le code reviewer, dont la description cite `git diff`). En revanche, `@te`
+  propose d'abord « Tech lead » (rôles en tête, maquette 02-1) : l'e2e `mentions` tape désormais
+  `@term`.
+- **Vérifications** : `./scripts/verify` vert (code de sortie 0, lu directement ; 434 fichiers,
+  3 916 essais). `pnpm build && pnpm e2e --changed --jobs 2` (toutes les suites : `Composer.tsx` et
+  `Transcript.tsx` sont communs) : 190/194, 4 échecs, tous de `mentions` (clair et sombre, la
+  régression ci-dessus) ; corrigée, puis `pnpm e2e mentions roles-travail composer attachments
+  commands user-commands --jobs 2` : 12/12 vertes. `roles-travail` aussi en `--lang en` : vert.
+  La suite complète n'a pas été rejouée après le correctif (seulement les suites du menu `@`).
+{1-menu, 2-filtre, 3-jeton, 4-fille, 5-deux-roles,
+  6-sous-taches, 7-fille-entete, 8-proposition, 9-jeton-demandee, 10-proposition-demandee,
+  11-fille-demandee}-{light,dark}.png` (et `en-…`).
