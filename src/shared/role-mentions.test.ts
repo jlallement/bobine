@@ -59,6 +59,43 @@ describe('splitRoleMentions', () => {
   it('nom plus long qu’un rôle : pas le rôle', () => {
     expect(splitRoleMentions('@security-expert-2 x', roles).names).toEqual([])
   })
+  it('indentation et listes gardées : seuls `@nom` et son espace partent', () => {
+    const text = [
+      '@code-reviewer relis :',
+      '```python',
+      'def f(x):',
+      '    if x:',
+      '        return  x',
+      '```',
+      '  - un point',
+      '    - un sous-point'
+    ].join('\n')
+    expect(splitRoleMentions(text, roles).text).toBe(text.replace('@code-reviewer ', ''))
+  })
+  it('mention dans du code : pas une mention', () => {
+    const fenced = 'Voici :\n```\n@code-reviewer garde-moi\n```'
+    expect(splitRoleMentions(fenced, roles)).toEqual({ names: [], text: fenced })
+    const inline = 'Le texte `@security-expert` reste.'
+    expect(splitRoleMentions(inline, roles)).toEqual({ names: [], text: inline })
+    expect(splitRoleMentions('`@code-reviewer` puis @code-reviewer relis', roles)).toEqual({
+      names: ['code-reviewer'],
+      text: '`@code-reviewer` puis relis'
+    })
+  })
+  it('`(@nom)`, `@a,@nom`, casse ignorée', () => {
+    expect(splitRoleMentions('Relis (@code-reviewer) le diff', roles)).toEqual({
+      names: ['code-reviewer'],
+      text: 'Relis le diff'
+    })
+    expect(splitRoleMentions('@a,@code-reviewer relis', roles)).toEqual({
+      names: ['code-reviewer'],
+      text: '@a,relis'
+    })
+    expect(splitRoleMentions('@Code-Reviewer relis', roles)).toEqual({
+      names: ['code-reviewer'],
+      text: 'relis'
+    })
+  })
   it('garde les retours à la ligne', () => {
     expect(splitRoleMentions('@code-reviewer Relis.\n/scenario echo', roles).text).toBe(
       'Relis.\n/scenario echo'
