@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Role, RolesListing, RoleView } from '@shared/roles'
 import { RolesSettings } from './RolesSettings'
@@ -52,6 +52,9 @@ beforeEach(() => {
   Object.assign(window, { api: { ...api, roles: calls } })
 })
 afterEach(() => {
+  // Démonter d'abord : remise avant le démontage de Testing Library, l'`api` d'origine (sans
+  // `roles`) était lue par un effet encore monté (instable sur la CI, fiche 229).
+  cleanup()
   Object.assign(window, { api })
 })
 

@@ -1,9 +1,8 @@
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { applyRestore, planRestore } from './restore-files'
-import { abs } from '../test-platform'
 
 const full = (path: string, oldText: string | null, newText: string) => ({
   path,
@@ -35,7 +34,8 @@ describe('remettre les fichiers dans leur état d’alors (fiche 023)', () => {
     expect(plan[1]?.created).toBe(true)
     const { restored, skipped } = await applyRestore(root, changes)
     expect(restored).toEqual([join(root, 'a.txt'), join(root, 'cree.txt')])
-    expect(skipped).toEqual([join(root, 'touche.txt'), abs('/etc/hosts')])
+    // `/etc/hosts` résolu depuis le dossier (sous Windows, à la racine de son lecteur).
+    expect(skipped).toEqual([join(root, 'touche.txt'), resolve(root, '/etc/hosts')])
     expect(readFileSync(join(root, 'a.txt'), 'utf8')).toBe('avant')
     expect(existsSync(join(root, 'cree.txt'))).toBe(false)
     expect(readFileSync(join(root, 'touche.txt'), 'utf8')).toBe('modifié à la main')
