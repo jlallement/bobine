@@ -3,8 +3,8 @@
  * (inventaire du build, `bundled-plugin.mts`) et les `dependencies` qu'electron-builder ajoute à
  * l'app. Lit les textes de licence dans `node_modules` (installation pnpm).
  */
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
+import { join, sep } from 'node:path'
 import { comparePackages, type BundledPackage } from './bundled-plugin.mts'
 
 /** Inventaire versionné (`scripts/third-party/inventory.json`). */
@@ -99,18 +99,27 @@ const readJson = (path: string): PackageJson =>
   JSON.parse(readFileSync(path, 'utf8')) as PackageJson
 
 /**
- * Dossier d'un paquet installé, d'après son nom et sa version exacte : d'abord
- * `node_modules/.pnpm/<nom>@<version>[_pairs]/node_modules/<nom>`, sinon `node_modules/<nom>`.
+ * Dossier d'un paquet installé, d'après son nom et sa version exacte : un dossier du magasin
+ * `node_modules/.pnpm/<dossier>/node_modules/<nom>` dont le `package.json` porte cette version (le dossier
+ * réel plutôt qu'un lien vers lui), sinon `node_modules/<nom>`. Le nom du dossier du magasin n'est
+ * pas deviné : sous Windows, pnpm le raccourcit et le termine par un hachage, parfois avant même la
+ * version (`@radix-ui+react-compose-ref_b3d765…`, vu dans la VM, fiche 229).
  */
 export function findPackageDir(root: string, pkg: BundledPackage): string {
   const store = join(root, 'node_modules', '.pnpm')
-  const prefix = `${pkg.name.replace('/', '+')}@${pkg.version}`
-  const candidates = existsSync(store)
+  const own = `${pkg.name.replace('/', '+')}@`
+  const inStore = existsSync(store)
     ? readdirSync(store)
-        .filter((entry) => entry === prefix || entry.startsWith(`${prefix}_`))
         .map((entry) => join(store, entry, 'node_modules', pkg.name))
+        .filter((dir) => existsSync(join(dir, 'package.json')))
     : []
-  candidates.push(join(root, 'node_modules', pkg.name))
+  // Le dossier propre au paquet d'abord (nom complet, ou dossier réel et non un lien de voisin).
+  const rank = (dir: string) =>
+    (dir.includes(`${sep}${own}`) ? 0 : 2) + (lstatSync(dir).isSymbolicLink() ? 1 : 0)
+  const candidates = [
+    ...inStore.sort((a, b) => rank(a) - rank(b)),
+    join(root, 'node_modules', pkg.name)
+  ]
   for (const dir of candidates) {
     const file = join(dir, 'package.json')
     if (existsSync(file) && readJson(file).version === pkg.version) return dir
