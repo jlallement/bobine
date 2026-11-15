@@ -677,9 +677,13 @@ async function askAndCheck(ui, scenario, command, shot) {
   )
   if (scrolls) {
     // La molette au bout du bloc ne fait pas défiler le fil (overscroll-behavior: contain) :
-    // bloc en haut, molette vers le haut, alors que le fil peut remonter.
+    // bloc en haut, molette vers le haut, alors que le fil peut remonter. Le bloc est d'abord
+    // entièrement à l'écran : dans une fenêtre basse (Linux sous xvfb, fil de 512 px), la carte
+    // dépasse le fil et `scrollIntoView` de la carte laissait le haut du bloc 10 px sous le bord ;
+    // Chromium remonte alors le fil de ces 10 px pour le montrer, puis plus rien (fiche 145).
     const scroller = `document.querySelector('[data-testid=thread]').closest('.scroll')`
     await scrollPre(ui, 0)
+    await ui.ev(`${PRE}.scrollIntoView({ block: 'nearest' })`)
     const before = await ui.ev(`${scroller}.scrollTop`)
     const at = await ui.center(PRE)
     await ui.wheel(at, 0, -400)

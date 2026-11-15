@@ -709,3 +709,21 @@ lancé, rien d'autre à installer sur le Mac.
   `main` 9f42391 ; conversation, code sans et avec ligatures, Apparence, en clair, sombre et
   Aurore nuit). Mac : `pnpm e2e --changed` **207/208**, seule `history` sombre rouge (infobulle,
   verte seule ensuite) ; aucune suite ne dépendait de la largeur de SF Pro.
+- 2026-11-15 — **`terminal` et `autorisation-commande` sous Linux, à la cause** (consigne de
+  Jérôme : corriger proprement, sinon laisser rouge et le dire).
+  - `autorisation-commande` (molette) : **corrigé (essai)**. Dans la fenêtre de xvfb, le fil fait
+    512 px et la carte le dépasse : après `scrollIntoView` de la carte, le haut du bloc de la
+    commande était 10,2 px sous le bord du fil ; la première molette remontait le fil de ces
+    10 px pour montrer le bloc, puis plus rien (`overscroll-behavior: contain` tient). L'essai met
+    désormais le bloc entièrement à l'écran avant la molette, ce que son intention supposait ;
+    rien de changé dans l'app. Vert sous Linux et sur le Mac.
+  - `terminal` (encre des icônes) : **mesure corrigée, un échec réel reste, rouge**. Chromium sous
+    Linux arrondit les bornes de l'encre au pixel entier (« W » : 0..8, cellule de 7,53) : un débord
+    d'une fraction de pixel devenait −1,00. Les mesures se font maintenant à 64 fois la taille,
+    ramenées ensuite (précision de 1/64 px, seuil inchangé) : l'icône dossier (f07c) passe. Reste
+    la flèche powerline U+E0B0 de MesloLGS Nerd Font : son dessin commence 0,59 px à gauche de sa
+    cellule sous Linux (FreeType), 0,446 px sur le Mac (même fichier), pour une tolérance de
+    0,5 px. Pas de correction propre dans l'app (police du terminal inchangée par D9, aucun
+    réglage de rendu à imposer pour un essai). Piste : décider si un séparateur powerline, dessiné
+    pour chevaucher d'une fraction de pixel la cellule voisine, relève de cette règle ; ou
+    vérifier à l'écran sous Linux qu'aucune coupure n'est visible avant d'en parler.
