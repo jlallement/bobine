@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Essais de bout en bout sous Linux, en local, dans un conteneur Docker (fiche 145).
+#
+#   pnpm e2e:linux                     toutes les suites (Ubuntu 24.04, xvfb + openbox)
+#   pnpm e2e:linux startup about       seulement ces suites (mêmes options que `pnpm e2e`)
+#   pnpm e2e:linux --reset …           repart d'un volume vide (dépendances réinstallées)
+#
+# Le dépôt est monté en lecture seule et copié dans un volume Docker (`bobine-e2e-linux`) qui
+# garde les node_modules Linux, le magasin pnpm et le build : ceux du Mac ne sont jamais touchés.
+# Captures dans e2e/captures/linux/. `--changed` n'est pas pris en charge (pas de git dans le
+# conteneur) : nommer les suites.
+#
+# Bac à sable de Chromium : l'app garde le sien (jamais de --no-sandbox). Il crée des espaces de
+# noms utilisateur, que le profil seccomp par défaut de Docker refuse à un processus sans
+# CAP_SYS_ADMIN ; le conteneur tourne donc sans ce filtre (`seccomp=unconfined`), en utilisateur
+# ordinaire, sans aucune capacité ajoutée. C'est le pendant du réglage AppArmor du job de CI.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+image=bobine-e2e-linux
+volume=bobine-e2e-linux
+
+command -v docker >/dev/null || { echo "docker introuvable (Docker Desktop : open -a Docker)" >&2; exit 2; }
+docker info >/dev/null 2>&1 || { echo "Docker ne répond pas (Docker Desktop lancé ?)" >&2; exit 2; }
+
+if [[ "${1:-}" == "--reset" ]]; then
+  shift
+  docker volume rm -f "$volume" >/dev/null
+fi
+for arg in "$@"; do
+  [[ "$arg" == --changed* ]] && { echo "--changed : pas de git dans le conteneur, nommer les suites" >&2; exit 2; }
+done
+
+pnpm_version=$(node -p 'require("./package.json").packageManager.split("@")[1]')
+docker build -q -t "$image" --build-arg "PNPM_VERSION=$pnpm_version" docker/e2e-linux >/dev/null
+
+# Commit du build (fenêtre À propos) : pas de git dans le conteneur.
+commit=$(git rev-parse --short HEAD 2>/dev/null || true)
+
+mkdir -p e2e/captures/linux
+tty=()
+[[ -t 1 ]] && tty=(-t)
+exec docker run --rm --init -i ${tty[@]+"${tty[@]}"} \
+  --security-opt seccomp=unconfined \
+  --shm-size=1g \
+  -e "BOBINE_BUILD_COMMIT=$commit" \
+  -v "$PWD:/src:ro" \
+  -v "$volume:/home/bobine" \
+  -v "$PWD/e2e/captures/linux:/captures" \
+  "$image" "$@"

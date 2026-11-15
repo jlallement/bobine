@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Lance une commande avec un gestionnaire de fenêtres léger (openbox) sur l'écran X courant
+# (fiche 145). Sous `xvfb` nu, aucune fenêtre n'est jamais agrandie ni ne reçoit le focus : les
+# essais e2e qui en dépendent échoueraient pour une raison étrangère à l'app.
+#
+#   xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e startup
+#
+# Utilisé par le job Linux de `e2e.yml` et par `pnpm e2e:linux` (conteneur).
+set -euo pipefail
+[[ -n "${DISPLAY:-}" ]] || { echo "with-wm : pas d'écran X (DISPLAY), à lancer sous xvfb-run" >&2; exit 2; }
+command -v openbox >/dev/null || { echo "with-wm : openbox introuvable" >&2; exit 2; }
+
+openbox --sm-disable >/dev/null 2>&1 &
+wm=$!
+trap 'kill "$wm" 2>/dev/null || true' EXIT
+
+# Prêt quand il s'annonce sur la fenêtre racine (norme EWMH), 10 s au plus.
+for _ in $(seq 100); do
+  xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q 'window id' && break
+  kill -0 "$wm" 2>/dev/null || { echo "with-wm : openbox s'est arrêté au démarrage" >&2; exit 2; }
+  sleep 0.1
+done
+
+"$@"

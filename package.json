@@ -36,6 +36,7 @@
     "guide-shortcuts": "BOBINE_WRITE_GUIDE=1 vitest run --project node scripts/guide-shortcuts.test.ts",
     "e2e": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON e2e/run.mjs",
     "vitrine": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON e2e/vitrine-captures.mjs",
+    "e2e:linux": "./scripts/e2e-linux",
     "e2e:pretag": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON e2e/run.mjs --if-needed",
     "fetch-axe": "./scripts/fetch-axe",
     "electron-local": "./scripts/electron-local",
