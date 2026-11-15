@@ -21,6 +21,7 @@ import {
   settingsWithoutSecrets
 } from './backup'
 import { applyPendingRestore, RESTORE_JOB, requestRestore } from './restore'
+import { POSIX_MODES } from '../test-platform'
 
 /** Un petit profil : des conversations, une à la corbeille, réglages, autorisations, tâches. */
 function profile(conversations: string[] = ['a', 'b']): string {
@@ -311,18 +312,21 @@ describe('restauration (fiche 197)', () => {
     expect(readdirSync(join(data, 'conversations'))).toContain('x.json')
   })
 
-  it('copie impossible (fichier illisible dans la sauvegarde) : rien n’a bougé', async () => {
-    const data = profile(['a'])
-    const backup = await backupProfile(profile(['x']), target(), '0.11.0')
-    chmodSync(join(backup, 'settings.json'), 0o000)
-    requestRestore(data, backup)
-    const done = applyPendingRestore(data, '0.11.0')
-    chmodSync(join(backup, 'settings.json'), 0o644)
-    expect(done.kind).toBe('failed')
-    expect(readFileSync(join(data, 'settings.json'), 'utf8')).toContain('dark')
-    expect(readdirSync(join(data, 'conversations'))).toContain('a.json')
-    expect(readdirSync(data).some((n) => n.startsWith('.restauration-'))).toBe(false)
-  })
+  it.runIf(POSIX_MODES)(
+    'copie impossible (fichier illisible dans la sauvegarde) : rien n’a bougé',
+    async () => {
+      const data = profile(['a'])
+      const backup = await backupProfile(profile(['x']), target(), '0.11.0')
+      chmodSync(join(backup, 'settings.json'), 0o000)
+      requestRestore(data, backup)
+      const done = applyPendingRestore(data, '0.11.0')
+      chmodSync(join(backup, 'settings.json'), 0o644)
+      expect(done.kind).toBe('failed')
+      expect(readFileSync(join(data, 'settings.json'), 'utf8')).toContain('dark')
+      expect(readdirSync(join(data, 'conversations'))).toContain('a.json')
+      expect(readdirSync(data).some((n) => n.startsWith('.restauration-'))).toBe(false)
+    }
+  )
 
   it('sauvegarde disparue entre-temps : échec dit, profil intact, demande oubliée', () => {
     const data = profile()

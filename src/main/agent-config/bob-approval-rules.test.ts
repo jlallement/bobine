@@ -25,6 +25,8 @@ import {
   approvalRulesHandlers,
   deniedCommandOf
 } from './approval-rules-settings'
+import { POSIX_MODES } from '../test-platform'
+import { native } from '../test-platform'
 
 /** Dossier personnel jetable : jamais le vrai `~/.bob`. */
 function setup(content?: string, hooks: ApprovalRulesHooks = {}) {
@@ -207,7 +209,7 @@ describe('règles d’approbation de Bob : lecture (fiche 215)', () => {
     })
   })
 
-  it('fichier illisible (droits) : erreur typée, rien écrit', () => {
+  it.runIf(POSIX_MODES)('fichier illisible (droits) : erreur typée, rien écrit', () => {
     if (process.getuid?.() === 0) return // root lit tout
     const { file, rules } = setup('{}')
     chmodSync(file, 0o000)
@@ -225,7 +227,7 @@ describe('règles d’approbation de Bob : lecture (fiche 215)', () => {
 })
 
 describe('règles d’approbation de Bob : écriture impossible (fiche 215)', () => {
-  it('dossier en lecture seule : erreur typée, fichier intact', () => {
+  it.runIf(POSIX_MODES)('dossier en lecture seule : erreur typée, fichier intact', () => {
     if (process.getuid?.() === 0) return // root écrit partout
     const { file, rules, home } = setup('{ "a": 1 }')
     const dir = join(home, '.bob', 'settings')
@@ -262,7 +264,7 @@ describe('règles d’approbation de Bob : commandes (fiche 215)', () => {
     expect(result.rules.exists).toBe(true)
     // Rien à sauvegarder : le fichier n'existait pas.
     expect(existsSync(`${file}${BACKUP_SUFFIX}`)).toBe(false)
-    expect(statSync(file).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(file).mode & 0o777).toBe(0o600)
   })
 
   it('sans `allowedExecutors` : la liste par défaut est recopiée (piège vu le 2026-11-09)', () => {
@@ -368,7 +370,7 @@ describe('règles d’approbation de Bob : commandes (fiche 215)', () => {
     expect(text.endsWith('}\n')).toBe(true)
     // Copie : le fichier tel qu'il était, sous un nom propre à Bobine ; droits gardés.
     expect(readFileSync(`${file}${BACKUP_SUFFIX}`, 'utf8')).toBe(BOB_IDE_FILE)
-    expect(statSync(file).mode & 0o777).toBe(0o640)
+    if (POSIX_MODES) expect(statSync(file).mode & 0o777).toBe(0o640)
     // Aucun temporaire laissé.
     expect(readdirSync(join(file, '..')).sort()).toEqual([
       'settings.json',
@@ -593,7 +595,10 @@ describe('règles d’approbation : profils et IPC (fiche 215)', () => {
       error: { code: 'unsupported' }
     })
     const read = handlers['approvalRules:get']('bob')
-    expect(read).toMatchObject({ ok: true, rules: { file: '~/.bob/settings/settings.json' } })
+    expect(read).toMatchObject({
+      ok: true,
+      rules: { file: native('~/.bob/settings/settings.json') }
+    })
     expect(() => handlers['approvalRules:get']('')).toThrow(/profileId/)
     expect(() =>
       handlers['approvalRules:change']('bob', {

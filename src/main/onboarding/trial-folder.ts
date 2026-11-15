@@ -5,6 +5,7 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join, sep } from 'node:path'
 import type { FolderHints } from '@shared/onboarding'
+import { homeShown } from '../home-display'
 
 /** Au-delà, on renonce (un dossier `essai-100` n'arrive pas par hasard). */
 const MAX_TRIES = 100
@@ -38,7 +39,7 @@ export function createTrialFolder(parent: string, name: string, root: string): s
 
 /** Chemin montré à l'utilisateur : `~` pour le dossier personnel. */
 export function displayPath(path: string, home: string): string {
-  return path === home || path.startsWith(home + sep) ? `~${path.slice(home.length)}` : path
+  return path === home ? '~' : homeShown(path, home)
 }
 
 export function folderHints(folder: string): FolderHints {

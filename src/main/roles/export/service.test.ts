@@ -18,6 +18,7 @@ import { BOB_CUSTOM_MODES } from './bob-custom-modes'
 import { OPENCODE_AGENTS } from './opencode-agents'
 import { RoleExportRegistry } from './registry'
 import { RoleExports, roleToExport, type ExportProfile } from './service'
+import { native } from '../../test-platform'
 
 /** Tout se passe dans un dossier jetable : jamais le vrai ~/.bob ni ~/.config/opencode. */
 let root: string
@@ -91,8 +92,8 @@ describe('installer un rôle dans Bob', () => {
       id: 'code-reviewer',
       defaultScope: 'project',
       places: [
-        { scope: 'user', file: '~/.bob/settings/custom_modes.yaml', exists: false },
-        { scope: 'project', file: '.bob/custom_modes.yaml', exists: false }
+        { scope: 'user', file: native('~/.bob/settings/custom_modes.yaml'), exists: false },
+        { scope: 'project', file: native('.bob/custom_modes.yaml'), exists: false }
       ]
     })
     expect(preview.text).toContain('slug: code-reviewer')
@@ -149,7 +150,7 @@ describe('installer un rôle dans Bob', () => {
     })
     expect(result).toEqual({
       ok: false,
-      error: { code: 'foreign', detail: 'code-reviewer', file: '.bob/custom_modes.yaml' }
+      error: { code: 'foreign', detail: 'code-reviewer', file: native('.bob/custom_modes.yaml') }
     })
     expect(readFileSync(bobProjectFile(), 'utf8')).toBe(theirs)
     expect(backups()).toEqual([])
@@ -248,7 +249,10 @@ describe('installer un rôle dans OpenCode', () => {
     const exports = service()
     expect(
       exports.install(role(), userTarget('opencode'), undefined, { useInBobine: true })
-    ).toMatchObject({ ok: true, status: { file: '~/.config/opencode/agents/code-reviewer.md' } })
+    ).toMatchObject({
+      ok: true,
+      status: { file: native('~/.config/opencode/agents/code-reviewer.md') }
+    })
     expect(readFileSync(openCodeFile(), 'utf8')).toContain('mode: primary')
     writeFileSync(openCodeFile('security'), 'à moi\n')
     expect(

@@ -6,7 +6,7 @@
  */
 import { statSync } from 'node:fs'
 import { glob, open } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative } from 'node:path'
+import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { MarkdownDocument } from '@shared/file-links'
 import type { RuleFileView } from '@shared/rules'
 import type { RulesSource } from '../agent/adapters.ts'
@@ -68,7 +68,7 @@ function label(path: string, ctx: RulesContext): string {
   const fromWorkspace = relative(ctx.workspace, path)
   if (!fromWorkspace.startsWith('..') && !isAbsolute(fromWorkspace)) return fromWorkspace
   const fromHome = relative(ctx.home, path)
-  if (!fromHome.startsWith('..') && !isAbsolute(fromHome)) return `~/${fromHome}`
+  if (!fromHome.startsWith('..') && !isAbsolute(fromHome)) return `~${sep}${fromHome}`
   return path
 }
 

@@ -30,6 +30,7 @@ import { ConversationStore } from './store'
 import { ApiKeyStore, type Cipher } from '../agent-config/api-keys'
 import { noticeText, type TranscriptState } from '@shared/transcript'
 import { BOB_RULES } from '../agent-config/bob-rules'
+import { native } from '../test-platform'
 
 function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -421,7 +422,7 @@ describe('ConversationManager', () => {
     )
     expect(personal).toMatchObject({
       text: 'Réponds court.',
-      relative: '~/.bob/rules-code/style.md'
+      relative: native('~/.bob/rules-code/style.md')
     })
     await expect(
       app.manager.readDocument(id, join(home, '.bob', 'rules-plan', 'plan.md'))

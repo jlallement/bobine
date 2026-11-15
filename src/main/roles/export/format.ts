@@ -7,6 +7,7 @@
  */
 import { createHash } from 'node:crypto'
 import type { RoleExportError, RoleExportFormat, RoleExportScope } from '@shared/role-export'
+import { underHome } from '../../home-display'
 
 /** Ce qui part dans le fichier de l'agent, tiré du rôle (textes déjà dans la bonne langue). */
 export interface ExportedRole {
@@ -85,7 +86,8 @@ export const exportedPrompt = (role: ExportedRole): string =>
 
 /** Chemin affiché : `~` pour le dossier personnel, relatif pour le projet. */
 export function shownPath(file: string, root: string, scope: RoleExportScope): string {
-  const base = root.replace(/\/+$/, '')
-  if (!file.startsWith(`${base}/`)) return file
-  return scope === 'user' ? `~${file.slice(base.length)}` : file.slice(base.length + 1)
+  // Sous la racine (dossier personnel ou projet) : la même règle que les Réglages (`home-display`).
+  const rest = underHome(file, root)
+  if (rest === undefined) return file
+  return scope === 'user' ? `~${rest}` : rest.slice(1)
 }

@@ -30,3 +30,10 @@ export const ON_MACOS = process.platform === 'darwin'
  * rendent `resolve` et `join` de l'app à partir de `/projet`.
  */
 export const abs = (posixPath: string): string => resolve(posixPath)
+
+/**
+ * Chemin montré par l'app (`~/…`, relatif) écrit à la façon POSIX dans un essai : le même sous
+ * macOS et Linux ; sous Windows, avec `\` comme le rend l'app (`~\.bob\x`).
+ */
+export const native = (posixShown: string): string =>
+  ON_WINDOWS ? posixShown.replace(/\//g, '\\') : posixShown

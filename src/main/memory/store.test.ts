@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MEMORY_LIMITS, type MemoryPlace } from '@shared/memory'
 import { MemoryStore } from './store'
+import { POSIX_MODES } from '../test-platform'
 
 const USER: MemoryPlace = { scope: 'user' }
 const PROJECT: MemoryPlace = { scope: 'project', projectId: 'app-0123abcd' }
@@ -37,8 +38,8 @@ describe('MemoryStore (fiche 182)', () => {
     const written = await store.write(USER, entry('tabs'))
     expect(written.ok).toBe(true)
     const dir = join(root, 'user')
-    expect(statSync(dir).mode & 0o777).toBe(0o700)
-    expect(statSync(join(dir, 'tabs.md')).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(dir).mode & 0o777).toBe(0o700)
+    if (POSIX_MODES) expect(statSync(join(dir, 'tabs.md')).mode & 0o777).toBe(0o600)
     expect(readFileSync(join(dir, 'tabs.md'), 'utf8')).toContain('Corps de tabs.')
     expect(readFileSync(join(dir, 'MEMORY.md'), 'utf8')).toBe(
       '- [tabs](tabs.md) — Description de tabs\n'

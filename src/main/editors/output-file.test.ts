@@ -8,6 +8,7 @@ import {
   toolOutputsDir,
   writeOutputFile
 } from './output-file'
+import { POSIX_MODES } from '../test-platform'
 
 describe('sortie ouverte dans l’éditeur (fiche 192)', () => {
   it('fichier 0600 au nom tiré au hasard, dans un dossier 0700 de l’app ; nettoyé', async () => {
@@ -18,8 +19,8 @@ describe('sortie ouverte dans l’éditeur (fiche 192)', () => {
     expect(basename(a)).toMatch(/^sortie-[0-9a-f-]{36}\.txt$/)
     expect(a).not.toBe(b)
     expect(readFileSync(a, 'utf8')).toBe('ligne 1\nligne 2\n')
-    expect(statSync(a).mode & 0o777).toBe(0o600)
-    expect(statSync(dir).mode & 0o777).toBe(0o700)
+    if (POSIX_MODES) expect(statSync(a).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(dir).mode & 0o777).toBe(0o700)
     cleanOutputFiles(dir)
     expect(existsSync(dir)).toBe(false)
     expect(() => cleanOutputFiles(dir)).not.toThrow()
@@ -42,8 +43,8 @@ describe('dossier des sorties hors du profil (fiche 196)', () => {
     expect(toolOutputsDir(temp, profile)).toBe(dir)
     expect(toolOutputsDir(temp, mkdtempSync(join(tmpdir(), 'autre-')))).not.toBe(dir)
     const file = await writeOutputFile(dir, 'sortie')
-    expect(statSync(dir).mode & 0o777).toBe(0o700)
-    expect(statSync(file).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(dir).mode & 0o777).toBe(0o700)
+    if (POSIX_MODES) expect(statSync(file).mode & 0o777).toBe(0o600)
     cleanOutputFiles(dir)
     expect(existsSync(dir)).toBe(false)
   })

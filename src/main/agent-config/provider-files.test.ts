@@ -5,6 +5,7 @@ import { parse } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 import { AgentProvidersConfig } from './provider-files'
 import { OPENCODE_PROVIDERS } from './opencode-providers'
+import { native } from '../test-platform'
 
 const setup = () => {
   const home = mkdtempSync(join(tmpdir(), 'providers-home-'))
@@ -48,7 +49,7 @@ describe('fournisseurs de modèles d’OpenCode (fiche 104)', () => {
       only: false,
       providers: [{ ...llmaas, key: { kind: 'env', env: 'LLMAAS_API_KEY' } }]
     })
-    expect(config.display()).toBe('~/.config/opencode/opencode.json')
+    expect(config.display()).toBe(native('~/.config/opencode/opencode.json'))
   })
 
   it('fichier existant : commentaires, autres réglages, champs inconnus du fournisseur et des modèles gardés ; .bak écrit', () => {
@@ -176,6 +177,6 @@ describe('fournisseurs de modèles d’OpenCode (fiche 104)', () => {
     writeFileSync(join(xdg, 'opencode', 'opencode.jsonc'), '{}')
     const config = new AgentProvidersConfig(OPENCODE_PROVIDERS, { home, xdgConfigHome: xdg })
     expect(config.file()).toBe(join(xdg, 'opencode', 'opencode.jsonc'))
-    expect(config.display()).toBe('~/cfg/opencode/opencode.jsonc')
+    expect(config.display()).toBe(native('~/cfg/opencode/opencode.jsonc'))
   })
 })
