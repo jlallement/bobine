@@ -3,8 +3,7 @@
  * les sondes MCP et les serveurs de développement sont lancés dans leur propre groupe (`detached`) :
  * le groupe emporte toute la chaîne (ex. `npx` → adaptateur → agent). N'importe pas `electron`.
  */
-import { execFileSync, type ChildProcess } from 'node:child_process'
-import { win32 } from 'node:path'
+import type { ChildProcess } from 'node:child_process'
 
 /** Délai laissé à un processus pour s'arrêter de lui-même avant le SIGKILL. */
 export const STOP_GRACE_MS = 3000
@@ -104,11 +103,10 @@ export function terminateLeftovers(pgid: number, graceMs = STOP_GRACE_MS): boole
 export function stopGroup(
   child: ChildProcess,
   graceMs = STOP_GRACE_MS,
-  platform: NodeJS.Platform = process.platform,
-  killTree: (pid: number) => void = taskkillTree
+  platform: NodeJS.Platform = process.platform
 ): void {
   if (platform === 'win32') {
-    stopByHandle(child, graceMs, killTree)
+    stopByHandle(child, graceMs)
     return
   }
   if (child.exitCode !== null || child.signalCode !== null) {
@@ -123,35 +121,14 @@ export function stopGroup(
  * par l'app ; fiche 229, lot 7a) : ni groupes ni signaux, et `process.kill(pid)` tue **ce numéro**,
  * que Windows réattribue très vite (le plus petit libre). Le SIGKILL différé d'un processus déjà
  * sorti tuait ainsi un autre processus (relevé : processus de vitest morts avec le code 1). Arrêt
- * immédiat de **tout l'arbre** (`taskkill /T /F`, par les parents : le `node` lancé par un
- * `cmd.exe` part avec lui), seulement si le processus tourne encore, et de façon synchrone : tant
- * que la boucle de node n'a pas traité sa sortie, node garde son handle et Windows ne réattribue
- * pas son numéro. Repli : son handle (`child.kill`), qui ne vise jamais un autre processus.
+ * par le handle du processus lancé (`child.kill`), qui ne vise jamais un autre processus ; rien si
+ * il est déjà sorti.
  */
-function stopByHandle(child: ChildProcess, graceMs: number, killTree: (pid: number) => void): void {
+function stopByHandle(child: ChildProcess, graceMs: number): void {
   const running = () => child.exitCode === null && child.signalCode === null
   if (!running()) return
-  if (child.pid !== undefined) {
-    try {
-      killTree(child.pid)
-      return
-    } catch {
-      // taskkill introuvable ou refusé : le processus lancé seul, par son handle.
-    }
-  }
   child.kill('SIGTERM')
   setTimeout(() => {
     if (running()) child.kill('SIGKILL')
   }, graceMs).unref()
-}
-
-/** `taskkill /T /F /PID` : l'arbre par les parents, de force, en attendant la fin. */
-function taskkillTree(pid: number): void {
-  const root = process.env['SystemRoot'] ?? process.env['SYSTEMROOT']
-  const file = root ? win32.join(root, 'System32', 'taskkill.exe') : 'taskkill.exe'
-  execFileSync(file, ['/T', '/F', '/PID', String(pid)], {
-    windowsHide: true,
-    stdio: 'ignore',
-    timeout: 5000
-  })
 }

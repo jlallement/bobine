@@ -179,24 +179,9 @@ describe('arrêt sous Windows sans objets de tâche (fiche 229, lot 7a)', () => 
     vi.restoreAllMocks()
   })
 
-  it('tout l’arbre, tout de suite, seulement s’il tourne ; jamais par process.kill', () => {
+  it('par le handle du processus, jamais par son numéro (réattribué sous Windows)', () => {
     const child = fakeChild(4242)
-    const killTree = vi.fn()
-    stopGroup(child, STOP_GRACE_MS, 'win32', killTree)
-    expect(killTree).toHaveBeenCalledWith(4242)
-    expect(child.kill).not.toHaveBeenCalled()
-    const gone = Object.assign(fakeChild(4243), { exitCode: 0 })
-    stopGroup(gone, STOP_GRACE_MS, 'win32', killTree)
-    expect(killTree).toHaveBeenCalledTimes(1)
-    expect(kill).not.toHaveBeenCalled()
-  })
-
-  it('taskkill impossible : par le handle du processus, jamais par son numéro', () => {
-    const child = fakeChild(4242)
-    const refused = () => {
-      throw new Error('taskkill')
-    }
-    stopGroup(child, STOP_GRACE_MS, 'win32', refused)
+    stopGroup(child, STOP_GRACE_MS, 'win32')
     expect(child.kill).toHaveBeenCalledWith('SIGTERM')
     vi.advanceTimersByTime(STOP_GRACE_MS)
     expect(child.kill).toHaveBeenLastCalledWith('SIGKILL')
@@ -204,16 +189,13 @@ describe('arrêt sous Windows sans objets de tâche (fiche 229, lot 7a)', () => 
   })
 
   it('sorti avant la fin du délai : plus rien ; déjà sorti : rien du tout', () => {
-    const refused = () => {
-      throw new Error('taskkill')
-    }
     const child = fakeChild(4242)
-    stopGroup(child, STOP_GRACE_MS, 'win32', refused)
+    stopGroup(child, STOP_GRACE_MS, 'win32')
     Object.assign(child, { exitCode: 1 })
     vi.advanceTimersByTime(STOP_GRACE_MS)
     expect(child.kill).toHaveBeenCalledTimes(1)
     const gone = Object.assign(fakeChild(4243), { exitCode: 0 })
-    stopGroup(gone, STOP_GRACE_MS, 'win32', refused)
+    stopGroup(gone, STOP_GRACE_MS, 'win32')
     expect(gone.kill).not.toHaveBeenCalled()
     expect(kill).not.toHaveBeenCalled()
   })

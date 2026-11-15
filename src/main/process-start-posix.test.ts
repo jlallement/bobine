@@ -17,6 +17,9 @@ vi.mock('./process-registry', async (original) => ({
   trackChild
 }))
 
+// Sous Windows, la préparation des essais a déjà chargé `process-tree` (objets de tâche,
+// `test-setup.ts`) : rechargé ici, avec les simulations ci-dessus et sans configuration.
+vi.resetModules()
 const { startProcess } = await import('./process-tree')
 const { configureProcessLaunch, launchSystem } = await import('./process-launch')
 
