@@ -264,3 +264,79 @@ describe('pager (fiche 126)', () => {
     expect(envs[1]).toMatchObject({ PAGER: 'cat', GIT_PAGER: 'cat', HOME: '/h' })
   })
 })
+
+describe('PowerShell sous Windows (fiche 229, D5)', () => {
+  it('shell et arguments donnés ; pwsh.exe et cmd.exe comptent comme l’invite', () => {
+    vi.useFakeTimers({ now: 0 })
+    try {
+      const spawned: Array<{ shell: string; args: string[] }> = []
+      let current = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe'
+      const manager = new TerminalManager({
+        spawn: (shell, args) => {
+          spawned.push({ shell, args })
+          return {
+            pid: 1,
+            get process() {
+              return current
+            },
+            onData: () => {},
+            onExit: () => {},
+            write: () => {},
+            resize: () => {},
+            kill: () => {}
+          }
+        },
+        shell: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+        shellArgs: ['-NoLogo'],
+        shellNames: ['pwsh', 'powershell', 'cmd'],
+        onData: () => {},
+        onChange: () => {}
+      })
+      managers.push(manager)
+      manager.create('c1', tmpdir())
+      expect(spawned[0]).toEqual({
+        shell: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+        args: ['-NoLogo']
+      })
+      vi.setSystemTime(5000)
+      expect(manager.list('c1')[0]).toMatchObject({ busy: false })
+      current = 'CMD.EXE'
+      expect(manager.list('c1')[0]).toMatchObject({ busy: false })
+      current = 'node.exe'
+      expect(manager.list('c1')[0]).toMatchObject({ busy: true })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('sans noms en plus (Unix) : `pwsh` est un programme comme un autre, `-l` par défaut', () => {
+    vi.useFakeTimers({ now: 0 })
+    try {
+      const args: string[][] = []
+      const manager = new TerminalManager({
+        spawn: (_shell, a) => {
+          args.push(a)
+          return {
+            pid: 1,
+            process: 'pwsh',
+            onData: () => {},
+            onExit: () => {},
+            write: () => {},
+            resize: () => {},
+            kill: () => {}
+          }
+        },
+        shell: '/bin/zsh',
+        onData: () => {},
+        onChange: () => {}
+      })
+      managers.push(manager)
+      manager.create('c1', tmpdir())
+      vi.setSystemTime(5000)
+      expect(args[0]).toEqual(['-l'])
+      expect(manager.list('c1')[0]).toMatchObject({ busy: true })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

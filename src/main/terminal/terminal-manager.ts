@@ -70,6 +70,13 @@ const AGENT_ENV = { PAGER: 'cat', GIT_PAGER: 'cat' }
 export interface TerminalManagerOptions {
   spawn: SpawnPty
   shell?: string
+  /** Arguments du shell ; par défaut `-l` (shell de connexion). PowerShell : `-NoLogo` (D5). */
+  shellArgs?: string[]
+  /**
+   * Autres noms de shells, comparés sans dossier, sans `.exe` et sans casse (Windows : `pwsh`,
+   * `powershell`, `cmd` ; ConPTY rend le nom du programme).
+   */
+  shellNames?: string[]
   env?: () => NodeJS.ProcessEnv
   /** Sortie d'un onglet, pour l'affichage. */
   onData: (conversationId: string, tabId: string, data: string) => void
@@ -104,7 +111,7 @@ export class TerminalManager {
   ): TerminalTabInfo {
     const conversation = this.conversation(conversationId)
     const id = String(conversation.next++)
-    const pty = this.options.spawn(this.shell, ['-l'], {
+    const pty = this.options.spawn(this.shell, this.options.shellArgs ?? ['-l'], {
       ...size,
       cwd,
       env: {
@@ -298,7 +305,16 @@ export class TerminalManager {
     if (!current) return false
     const name = basename(current).replace(/^-/, '')
     // `/bin/sh` est bash sur macOS : tout shell connu compte comme l'invite.
-    return name !== basename(this.shell) && !SHELLS.has(name)
+    if (name === basename(this.shell) || SHELLS.has(name)) return false
+    const others = this.options.shellNames
+    if (!others) return true
+    const bare =
+      name
+        .split('\\')
+        .pop()
+        ?.replace(/\.exe$/i, '')
+        .toLowerCase() ?? ''
+    return !others.includes(bare)
   }
 
   /**

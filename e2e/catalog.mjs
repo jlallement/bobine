@@ -1762,7 +1762,8 @@ export const SUITES = [
     ]
   },
   {
-    // Capacités de la plateforme (fiche 145) : Mac puis Linux imposé, dans la même suite.
+    // Capacités de la plateforme (fiches 145, 229) : Mac, puis Linux et Windows imposés, dans la
+    // même suite.
     name: 'platform',
     file: 'platform.mjs',
     run: 'platformSuite',

@@ -3,14 +3,15 @@ import { formatKeys } from '../../src/shared/shortcuts.ts'
 
 /**
  * Capacités de la plateforme (fiche 145) : la même app, lancée avec les capacités du Mac puis avec
- * celles de Linux (`BOBINE_PLATFORM`), montre ou masque ce qui n'existe que sur macOS : onglet du
+ * celles de Linux et de Windows (`BOBINE_PLATFORM`, fiches 145 et 229 : Windows a les capacités de
+ * Linux, cadre natif et ☰ compris), montre ou masque ce qui n'existe que sur macOS : onglet du
  * simulateur dans le « + » du panneau, capture d'écran de la zone de saisie, groupe iOS du
- * Diagnostic ; forme du menu, cadre de la fenêtre, notation des raccourcis (lot 2). Sur le Mac, les deux ; sous Linux, Linux seulement : les capacités du Mac y
+ * Diagnostic ; forme du menu, cadre de la fenêtre, notation des raccourcis (lot 2). Sur le Mac, les trois ; sous Linux, Linux seulement : les capacités du Mac y
  * appelleraient des fonctions d'Electron propres à macOS (`getMediaAccessStatus`).
  */
 export async function platformSuite() {
   console.log('\n— Capacités de la plateforme')
-  for (const platform of process.platform === 'darwin' ? ['darwin', 'linux'] : ['linux']) {
+  for (const platform of process.platform === 'darwin' ? ['darwin', 'linux', 'win32'] : ['linux']) {
     const mac = platform === 'darwin'
     await withApp(
       'light',
@@ -52,7 +53,7 @@ export async function platformSuite() {
                   // Barre d'Electron jamais montrée (fiche 145, variante D) : vue sous Linux ;
                   // macOS n'a pas de barre dans la fenêtre (toujours « visible » pour Electron).
                   (!shape.bar || process.platform === 'darwin'),
-            `${platform} : menu ${mac ? 'de macOS' : 'Linux, sans barre'} (${JSON.stringify(shape)})`
+            `${platform} : menu ${mac ? 'de macOS' : 'dans la fenêtre (☰), sans barre'} (${JSON.stringify(shape)})`
           )
         } finally {
           main.close()

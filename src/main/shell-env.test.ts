@@ -2,7 +2,14 @@ import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { applyShellEnv, extractEnv, loginShellEnv, mergePath } from './shell-env'
+import {
+  applyShellEnv,
+  extractEnv,
+  loginShellEnv,
+  mergePath,
+  parseWindowsEnv,
+  WINDOWS_ENV_SCRIPT
+} from './shell-env'
 
 const M = '__BOBINE_ENV__'
 
@@ -60,5 +67,28 @@ describe('shell-env', () => {
     expect(result.values).toEqual({})
     expect(result.problem).toContain('n’a pas répondu')
     expect(result.ms).toBeLessThan(2000)
+  })
+})
+
+describe('environnement sous Windows (fiche 229)', () => {
+  it('PATH fusionné sur `;`, sans casse ni `\\` final en double, sous la clé `Path`', () => {
+    expect(
+      mergePath('C:\\Windows;C:\\Users\\a\\AppData\\Roaming\\npm', 'c:\\windows\\;D:\\x', 'windows')
+    ).toBe('C:\\Windows;C:\\Users\\a\\AppData\\Roaming\\npm;D:\\x')
+    const env: NodeJS.ProcessEnv = { Path: 'C:\\Windows' }
+    applyShellEnv({ PATH: 'C:\\npm' }, env, 'windows')
+    expect(env).toEqual({ Path: 'C:\\npm;C:\\Windows' })
+  })
+
+  it('variables enregistrées lues en JSON ; vides et sortie illisible ignorées', () => {
+    expect(
+      parseWindowsEnv('{"PATH":"C:\\\\a;C:\\\\b","HTTPS_PROXY":"","XDG_CONFIG_HOME":null}')
+    ).toEqual({
+      PATH: 'C:\\a;C:\\b'
+    })
+    expect(parseWindowsEnv('oups')).toEqual({})
+    // Script constant : seulement les variables connues, rien de l’extérieur.
+    expect(WINDOWS_ENV_SCRIPT).toContain("'PATH','XDG_CONFIG_HOME'")
+    expect(WINDOWS_ENV_SCRIPT).toContain("GetEnvironmentVariable($n,'User')")
   })
 })

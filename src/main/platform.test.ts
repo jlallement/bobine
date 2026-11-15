@@ -23,9 +23,18 @@ describe('capacités de la plateforme (fiche 145)', () => {
     })
   })
 
+  it('sous Windows, comme Linux : rien de ce que seul macOS a (fiche 229)', () => {
+    expect(platformFeatures('win32')).toEqual(platformFeatures('linux'))
+    expect(Object.values(platformFeatures('win32')).some(Boolean)).toBe(false)
+    expect(currentPlatformFeatures({ BOBINE_PLATFORM: 'win32' }, 'darwin')).toEqual(
+      platformFeatures('win32')
+    )
+  })
+
   it('nom du système des infos techniques', () => {
     expect(systemName('darwin')).toBe('macOS')
     expect(systemName('linux')).toBe('Linux')
+    expect(systemName('win32')).toBe('Windows')
     expect(systemName('freebsd')).toBe('freebsd')
   })
 
@@ -38,7 +47,7 @@ describe('capacités de la plateforme (fiche 145)', () => {
 
 describe('argument du renderer', () => {
   it('relues telles quelles depuis la ligne de commande du renderer', () => {
-    for (const platform of ['darwin', 'linux']) {
+    for (const platform of ['darwin', 'linux', 'win32']) {
       const features = platformFeatures(platform)
       expect(featuresFromArgv(['electron', featuresArgument(features)])).toEqual(features)
     }

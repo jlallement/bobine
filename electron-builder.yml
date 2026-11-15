@@ -26,6 +26,12 @@ files:
   - '!node_modules/node-pty/lib/**/*.test.js'
   # En-têtes C++ pour compiler node-pty : inutiles avec les binaires précompilés.
   - '!node_modules/node-addon-api/**'
+  # koffi (objets de tâche de Windows, ADR-0050) : jamais livré dans les apps Mac et Linux (ni son
+  # code, ni ses binaires @koromix/koffi-*). Ici, et non sous `mac:` : une liste de seules
+  # exclusions par plateforme fait ajouter `**/*` par electron-builder (tout le dépôt dans l'app).
+  # Le paquet Windows (fiche 229, lot 6) devra l'y remettre.
+  - '!node_modules/koffi/**'
+  - '!node_modules/@koromix/**'
 # Textes de licence (fiche 217), dans Contents/Resources/licenses (macOS) et resources/licenses
 # (Linux) : ceux de Bobine, les avis des composants tiers (`pnpm third-party-notices`, vérifiés
 # avant la construction par scripts/package), ceux d'Electron et de Chromium, et ceux de la police

@@ -8,7 +8,8 @@
  * Les deux fichiers sont lus dans le dossier d'origine (`root`), pas dans le worktree : un fichier
  * pas encore commité compte. `agents.log` dit la commande, le code et la durée, jamais la sortie.
  */
-import { spawn } from 'node:child_process'
+import type { ChildProcessByStdio } from 'node:child_process'
+import type { Readable } from 'node:stream'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
@@ -24,8 +25,7 @@ import {
   type WorktreeConfig,
   type WorktreeSetup
 } from '@shared/worktree-setup'
-import { stopGroup } from '../process-group'
-import { trackChild } from '../process-registry'
+import { startProcess, stopTree } from '../process-tree'
 import type { Run } from '../simulator/run'
 import { copyIncluded } from './worktree-include'
 import type { WorktreeInfo } from './worktrees'
@@ -55,15 +55,11 @@ export type ShellRun = (
 export const shellRun: ShellRun = (command, { cwd, env, timeoutMs, onOutput, signal }) =>
   new Promise((resolve) => {
     let timedOut = false
-    const child = spawn(command, {
-      cwd,
-      env,
-      shell: true,
-      detached: process.platform !== 'win32',
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
-    trackChild(child, [command])
-    const stop = () => stopGroup(child)
+    // `sh -c`, ou `cmd.exe` sous Windows, dans son propre groupe ou job (`process-launch.ts`).
+    const child = startProcess(command, [], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }, true, [
+      command
+    ]).child as ChildProcessByStdio<null, Readable, Readable>
+    const stop = () => stopTree(child)
     const timer = setTimeout(() => {
       timedOut = true
       stop()

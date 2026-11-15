@@ -3,9 +3,9 @@
  * (voir ADR-0002). Cible : Bob. OpenCode (modèles gratuits) et l'agent factice servent aux essais ;
  * Claude Code et Codex ont leur propre application et ne sont plus proposés (2026-10-11).
  */
-import { accessSync, constants, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, isAbsolute, join } from 'node:path'
+import { findProgram, launchContext, pathKey } from '../process-launch'
 import type { AlwaysScope, ControlValue, ProfileSummary } from '@shared/agent'
 import type { CustomAgent } from '@shared/custom-agents'
 import type { ApiKeySpec } from '../agent-config/api-keys'
@@ -652,22 +652,14 @@ export function displayedCommand(profile: Pick<AgentProfile, 'command' | 'args'>
     .join(' ')
 }
 
-/** Chemin de l'exécutable : tel quel s'il contient un `/`, sinon cherché dans le PATH. */
+/**
+ * Chemin de l'exécutable : tel quel s'il contient un `/`, sinon cherché dans le PATH. Sous
+ * Windows, avec `PATHEXT` (`bob` → `bob.cmd`) et le séparateur `;` (`process-launch.ts`).
+ */
 export function findExecutable(command: string, pathEnv: string | undefined): string | undefined {
-  const candidates = command.includes('/')
-    ? [command]
-    : (pathEnv ?? '')
-        .split(':')
-        .filter(Boolean)
-        .map((dir) => join(dir, command))
-  return candidates.find((file) => {
-    try {
-      accessSync(file, constants.X_OK)
-      return statSync(file).isFile()
-    } catch {
-      return false
-    }
-  })
+  const ctx = launchContext()
+  const env = { ...ctx.env, [pathKey(ctx.env, ctx.system)]: pathEnv }
+  return findProgram(command, { ...ctx, env })
 }
 
 export function summarizeProfiles(

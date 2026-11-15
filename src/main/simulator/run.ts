@@ -3,6 +3,7 @@
  * pouvoir le tester sans Xcode.
  */
 import { execFile } from 'node:child_process'
+import { launchSystem } from '../process-launch'
 
 export interface RunResult {
   code: number
@@ -28,6 +29,8 @@ export const runCommand: Run = (file, args, options = {}) =>
         encoding: 'buffer',
         maxBuffer: 64 * 1024 * 1024,
         timeout: options.timeoutMs ?? 60_000,
+        // Sous Windows, pas de fenêtre de console (git, adb…) ; rien de changé ailleurs.
+        ...(launchSystem() === 'windows' ? { windowsHide: true } : {}),
         ...(options.cwd ? { cwd: options.cwd } : {}),
         ...(options.env ? { env: options.env } : {})
       },

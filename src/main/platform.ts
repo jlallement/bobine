@@ -3,11 +3,14 @@
  * pour décider qu'une fonction existe, une fois, depuis `index.ts` ; les modules reçoivent ces
  * capacités (injection), ils ne testent pas le système eux-mêmes. Ce qui ne peut pas marcher est
  * masqué, pas laissé en panne. `BOBINE_PLATFORM` impose un système (essais : les capacités de
- * Linux sur un Mac). N'importe pas `electron`.
+ * Linux ou de Windows sur un Mac) ; il ne change jamais la façon de lancer les processus, qui suit
+ * le vrai système (`process-launch.ts`, ADR-0050). N'importe pas `electron`.
  */
 import type { PlatformFeatures } from '@shared/platform'
 
 export function platformFeatures(platform: string): PlatformFeatures {
+  // Windows (fiche 229, ADR-0050) comme Linux : rien de ce que seul macOS a ; cadre natif et menu ☰
+  // (étape intermédiaire de D4), raccourcis en Ctrl, barres de défilement dessinées par l'app.
   const mac = platform === 'darwin'
   return {
     // Xcode et `simctl` n'existent que sur macOS.
@@ -52,7 +55,12 @@ export function fontSource(platform: string): FontSource | undefined {
   return platform === 'darwin' ? 'appkit' : platform === 'linux' ? 'fontconfig' : undefined
 }
 
-/** Nom du système pour les infos techniques (fiche 116) : celui de la vraie machine. */
+const SYSTEM_NAMES: Record<string, string> = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }
+
+/**
+ * Nom du système pour les infos techniques (fiche 116) : celui de la vraie machine. Windows 11
+ * annonce encore `10.0.<build>` (`getSystemVersion`) : le numéro de build le distingue (≥ 22000).
+ */
 export function systemName(platform: string): string {
-  return platform === 'darwin' ? 'macOS' : platform === 'linux' ? 'Linux' : platform
+  return SYSTEM_NAMES[platform] ?? platform
 }
