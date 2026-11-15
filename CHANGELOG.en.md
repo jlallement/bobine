@@ -2,6 +2,18 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Improved
+
+- Deleting a parent conversation offers to delete its child conversations too (checked by
+  default); unchecked, they carry on alone as ordinary conversations.
+
+### Fixes
+
+- Archiving a parent conversation also archives its children; a child whose parent was deleted
+  becomes an ordinary conversation instead of staying tied to one that no longer exists.
+
 ## 1.0.0-beta.5 — November 15, 2026
 
 ### Fixes

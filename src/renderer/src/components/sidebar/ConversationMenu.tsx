@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog'
 import { useProfileStatus } from '../common/Profile'
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import {
@@ -16,10 +15,10 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Tip } from '../common/Menus'
-import type { ConversationSummary, WorktreeStatusView } from '@shared/agent'
+import type { ConversationSummary } from '@shared/agent'
 import type { ChildCapacity } from '@shared/children'
 import type { ExportFormat } from '@shared/export'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 
 /** Ce qu'on peut faire d'une conversation (menu de la barre latérale et du titre, fiche 049). */
 export interface ConversationActions {
@@ -213,121 +212,5 @@ function LaunchChildItem({
     <Tip label={reason ?? ''} side="right">
       {item}
     </Tip>
-  )
-}
-
-/**
- * Confirmation de suppression (fiche 026), à la place de la boîte du navigateur. Pour une
- * conversation en worktree (fiche 036) : ce qui serait perdu, et le choix de supprimer le worktree.
- */
-export function DeleteDialog({
-  conversation,
-  onWorktreeStatus,
-  onClose,
-  onConfirm
-}: {
-  conversation: ConversationSummary
-  onWorktreeStatus: (id: string) => Promise<WorktreeStatusView | null>
-  onClose: () => void
-  onConfirm: (options: { fromAgent: boolean; removeWorktree: boolean }) => void
-}) {
-  const { t } = useTranslation()
-  // Jamais coché d'office (fiche 196) : c'est le seul geste définitif, la corbeille ne le rattrape pas.
-  const [fromAgent, setFromAgent] = useState(false)
-  const [worktree, setWorktree] = useState<WorktreeStatusView | null>(null)
-  // Coché d'office seulement s'il n'y a rien à perdre ; sinon c'est à l'utilisateur de cocher.
-  const [removeWorktree, setRemoveWorktree] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (!conversation.branch) return
-    let alive = true
-    void onWorktreeStatus(conversation.id)
-      .then((status) => alive && setWorktree(status))
-      .catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [conversation.id, conversation.branch, onWorktreeStatus])
-  const safe = !!worktree && (worktree.missing || (worktree.dirty === 0 && worktree.ahead === 0))
-  const remove = removeWorktree ?? safe
-  const losses = worktree
-    ? [
-        worktree.dirty > 0 && t('deleteDialog.loss.dirty', { count: worktree.dirty }),
-        worktree.ahead > 0 && t('deleteDialog.loss.ahead', { count: worktree.ahead })
-      ].filter(Boolean)
-    : []
-  return (
-    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog confirm-dialog" data-testid="delete-dialog">
-          <Dialog.Title className="confirm-title">
-            {t('deleteDialog.title', { title: conversation.title })}
-          </Dialog.Title>
-          <Dialog.Description className="confirm-text">
-            {t('deleteDialog.description')}
-          </Dialog.Description>
-          {/* Seulement si l'agent sait supprimer une session (fiche 196). */}
-          {conversation.agentDeletes && (
-            <label className="confirm-option">
-              <input
-                type="checkbox"
-                checked={fromAgent}
-                onChange={(e) => setFromAgent(e.target.checked)}
-                data-testid="delete-from-agent"
-              />
-              <span>
-                <Trans
-                  t={t}
-                  i18nKey="deleteDialog.fromAgent"
-                  values={{ agent: conversation.profileLabel }}
-                  components={{ muted: <span className="muted" /> }}
-                />
-              </span>
-            </label>
-          )}
-          {conversation.branch && (
-            <label className="confirm-option">
-              <input
-                type="checkbox"
-                checked={remove}
-                disabled={!worktree}
-                onChange={(e) => setRemoveWorktree(e.target.checked)}
-                data-testid="delete-worktree"
-              />
-              <span>
-                <Trans
-                  t={t}
-                  i18nKey="deleteDialog.worktree"
-                  values={{ branch: conversation.branch }}
-                  components={{ code: <code /> }}
-                />
-                {losses.length > 0 && (
-                  <span className="confirm-warning" data-testid="delete-worktree-losses">
-                    {' '}
-                    {t('deleteDialog.losses', { losses: losses.join(', ') })}
-                  </span>
-                )}
-              </span>
-            </label>
-          )}
-          <div className="confirm-actions">
-            <Dialog.Close className="btn ghost">{t('common.cancel')}</Dialog.Close>
-            <button
-              className="btn danger"
-              autoFocus
-              onClick={() =>
-                onConfirm({
-                  fromAgent: fromAgent && conversation.agentDeletes === true,
-                  removeWorktree: !!conversation.branch && remove
-                })
-              }
-              data-testid="delete-confirm"
-            >
-              {t('deleteDialog.confirm')}
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   )
 }

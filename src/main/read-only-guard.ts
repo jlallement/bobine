@@ -83,6 +83,7 @@ export const READ_ONLY_SAFE = [
   'conversation:release',
   'conversation:childLaunches',
   'conversation:childCapacity',
+  'conversation:family',
   'conversation:worktreeStatus',
   'conversation:branchPreview',
   'conversation:handoverTargets',

@@ -439,13 +439,10 @@ export class ChildrenMerger {
 
   /** État posé dans le fil de la mère ; mère supprimée entre-temps : la chaîne s'arrête. */
   private emit(motherId: string, run: Run): void {
-    try {
-      this.deps.conversations.post(motherId, {
-        type: 'children-merge',
-        merge: structuredClone(run.merge)
-      })
-    } catch {
-      run.stop = true
-    }
+    const posted = this.deps.conversations.post(motherId, {
+      type: 'children-merge',
+      merge: structuredClone(run.merge)
+    })
+    if (!posted) run.stop = true
   }
 }

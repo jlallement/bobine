@@ -17,6 +17,7 @@ function fakeManager(refused: boolean, reopen: boolean) {
     post: (_id: string, event: AgentEvent) => {
       posted.push(event)
       transcript = reduceTranscript(transcript, event)
+      return true
     },
     prompt: vi.fn(() => Promise.resolve())
   }

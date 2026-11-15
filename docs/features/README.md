@@ -232,6 +232,7 @@ chaque création ou changement de statut.
 | [225](225-vitrine-github.md) | Vitrine GitHub : README illustré (anglais et français), captures, GIF et vidéo régénérés par `pnpm vitrine` contre un « Agent de démo » sans modèle, image de partage, image en tête des notes de version | fait (relecture du tech lead) | P2 |
 | [226](226-theme-aurore-panneau-320.md) | Thème Aurore / Aurore nuit à la place de Sépia (« Touches légères » : lueur en haut de la barre latérale, bulle, liseré de la saisie, action principale en dégradé, ombre teintée des cartes, verre sur ce qui flotte ; repli d'accessibilité de macOS) ; panneau de droite à 320 px, largeur retenue seulement après un glissement, double-clic : largeur par défaut | fait | P2 |
 | [227](227-historique-saisie.md) | Historique de la saisie : ↑ / ↓ rappellent les messages envoyés de la conversation (texte tapé, jetons `@rôle`), lignes d'abord, pastille « 9/10 · ↑↓ · Échap vider », rappel « ↑ Messages précédents » ; gardé avec le fil, par conversation | fait (relecture du tech lead) | P2 |
+| [228](228-suppression-mere-filles.md) | Supprimer ou archiver une mère : confirmation qui nomme ses filles, « Supprimer aussi ses N filles » cochée par défaut (sinon elles deviennent ordinaires, avec une note) ; archivage en cascade ; plus aucun envoi perdu vers une conversation partie ; liens morts réparés au chargement | fait | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IPC_CHANNELS } from '@shared/ipc'
 import type { ConversationView } from '@shared/agent'
+import type { FamilyMember } from '@shared/children'
 import {
   createHandlers,
   registerIpcHandlers,
@@ -37,7 +38,13 @@ function fakeConversations() {
     create: vi.fn(async () => view),
     configure: vi.fn(async () => view),
     rename: vi.fn(),
-    delete: vi.fn(async () => ({ conversations: [], activeId: 'c2' })),
+    delete: vi.fn(async (_id: string, _options?: unknown) => ({
+      conversations: [],
+      activeId: 'c2'
+    })),
+    family: vi.fn((): FamilyMember[] => []),
+    updateRecord: vi.fn(),
+    post: vi.fn(() => true),
     setPinned: vi.fn(),
     search: vi.fn(() => [{ id: 'c1', snippet: 'postgres', highlights: [[0, 8]] }]),
     prompt: vi.fn(async () => {}),
@@ -629,6 +636,24 @@ describe('IPC', () => {
       fromAgent: true,
       removeWorktree: true
     })
+    // Les filles (fiche 228) : supprimées seulement sur demande explicite, des plus profondes d'abord.
+    conversations.family.mockReturnValue([
+      { id: 'pf', title: 'Petite-fille', motherId: 'f' },
+      { id: 'f', title: 'Fille', motherId: 'c1' }
+    ])
+    expect(await call('conversation:family', 'c1')).toHaveLength(2)
+    conversations.delete.mockClear()
+    await call('conversation:delete', 'c1', { children: 'delete', fromAgent: false })
+    expect(conversations.delete.mock.calls.map((c) => c[0])).toEqual(['pf', 'f', 'c1'])
+    expect(conversations.delete).toHaveBeenNthCalledWith(1, 'pf', {
+      fromAgent: false,
+      removeWorktree: false
+    })
+    conversations.delete.mockClear()
+    await call('conversation:delete', 'c1', { children: 'oui' })
+    expect(conversations.delete.mock.calls.map((c) => c[0])).toEqual(['c1'])
+    expect(conversations.updateRecord).toHaveBeenCalledWith('f', expect.any(Function))
+    conversations.family.mockReturnValue([])
     call('conversation:pin', 'c1', true)
     expect(conversations.setPinned).toHaveBeenCalledWith('c1', true)
     expect(() => call('conversation:pin', 'c1', 'oui')).toThrow('pinned')

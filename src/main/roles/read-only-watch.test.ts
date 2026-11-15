@@ -32,7 +32,7 @@ function setup() {
   })
   const posted: [string, AgentEvent][] = []
   const watch = new ReadOnlyWatch({
-    conversations: { post: (id, event) => posted.push([id, event]) },
+    conversations: { post: (id, event) => posted.push([id, event]) > 0 },
     summary: (id) => (id === 'f' ? CHILD : summary(id)),
     run
   })

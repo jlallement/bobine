@@ -15,7 +15,8 @@ import type {
   ElicitationAnswer,
   NewConversationDefaults,
   PromptRequest,
-  QueuedMessage
+  QueuedMessage,
+  DeleteOptions
 } from '@shared/agent'
 import type { AttentionDetails, AttentionState, NotificationStatus } from '@shared/attention'
 import type { PanelTab } from '@shared/panel'
@@ -471,6 +472,8 @@ export function useConversations() {
     createWorktree: () =>
       withActive((id) => window.api.conversations.createWorktree(id).then(showView)),
     worktreeStatus: (id: string) => window.api.conversations.worktreeStatus(id),
+    /** Descendance d'une conversation, pour la confirmation de suppression (fiche 228). */
+    family: (id: string) => window.api.conversations.family(id),
     /** Archive une conversation, ou la ressort (une nouvelle conversation remplace l'active). */
     archive: (id: string, archived: boolean) => {
       window.api.conversations
@@ -501,7 +504,7 @@ export function useConversations() {
     },
     /** Sauvegarde de l'historique (Réglages) ; l'erreur revient au dialogue. */
     backupHistory: (): Promise<string | null> => window.api.app.backupHistory(),
-    remove: (id: string, options: { fromAgent?: boolean; removeWorktree?: boolean } = {}) => {
+    remove: (id: string, options: DeleteOptions = {}) => {
       forgetView(id)
       window.api.conversations
         .delete(id, options)

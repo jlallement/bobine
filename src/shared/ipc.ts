@@ -32,7 +32,7 @@ import type { AndroidState } from './android'
 import type { CommandLineStatus, LaunchPrefill } from './command-line'
 import type { TerminalsChange, TerminalTabInfo } from './terminal'
 import type { AttentionDetails, AttentionState, NotificationStatus } from './attention'
-import type { ChildCapacity, ChildLaunchState, ChildStartRequest } from './children'
+import type { ChildCapacity, ChildLaunchState, ChildStartRequest, FamilyMember } from './children'
 import type { ChildrenMerge, ChildrenMergePlan } from './children-merge'
 import type { CustomAgentDraft } from './custom-agents'
 import type { ConversationCap } from './cost-cap'
@@ -108,6 +108,7 @@ import type {
   ConversationsState,
   ConversationSummary,
   ConversationView,
+  DeleteOptions,
   QueuedMessage,
   PromptRequest,
   WorktreeStatusView
@@ -313,11 +314,13 @@ export interface IpcInvokeContract
   /** Nouvelle conversation (éventuellement avec un autre agent ou dossier). */
   'conversation:create': { args: [request: AgentConfigureRequest]; result: ConversationView }
   'conversation:rename': { args: [id: string, title: string]; result: undefined }
-  /** Supprime une conversation ; `fromAgent` (par défaut) : aussi dans l'historique de l'agent. */
-  'conversation:delete': {
-    args: [id: string, options?: { fromAgent?: boolean; removeWorktree?: boolean }]
-    result: ConversationsState
-  }
+  /**
+   * Supprime une conversation ; `fromAgent` (par défaut) : aussi dans l'historique de l'agent ;
+   * `children` : le sort de ses filles (fiche 228).
+   */
+  'conversation:delete': { args: [id: string, options?: DeleteOptions]; result: ConversationsState }
+  /** Descendance d'une conversation, archivées comprises (confirmation de suppression, fiche 228). */
+  'conversation:family': { args: [id: string]; result: FamilyMember[] }
   /** Nouvelle conversation dans un worktree git, depuis le dossier de `id` (fiche 036). */
   'conversation:createWorktree': { args: [id: string]; result: ConversationView }
   /**
@@ -958,6 +961,7 @@ export const IPC_CHANNELS = [
   'conversation:create',
   'conversation:rename',
   'conversation:delete',
+  'conversation:family',
   'conversation:pin',
   'conversation:addFolder',
   'conversation:removeFolder',

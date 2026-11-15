@@ -312,8 +312,10 @@ export function createApi(
         invoke('conversation:approveWorktreeSetup', id, signature),
       skipWorktreeSetup: (id: string) => invoke('conversation:skipWorktreeSetup', id),
       stopWorktreeSetup: (id: string) => invoke('conversation:stopWorktreeSetup', id),
-      delete: (id: string, options?: { fromAgent?: boolean; removeWorktree?: boolean }) =>
+      delete: (id: string, options?: IpcArgs<'conversation:delete'>[1]) =>
         invoke('conversation:delete', id, ...(options ? [options] : [])),
+      /** Descendance d'une conversation (fiche 228). */
+      family: (id: string) => invoke('conversation:family', id),
       pin: (id: string, pinned: boolean) => invoke('conversation:pin', id, pinned),
       /** Autres dossiers de la conversation (fiche 179). */
       addFolder: (id: string) => invoke('conversation:addFolder', id),

@@ -1,4 +1,3 @@
-import { memoryProposals } from '@shared/memory'
 /**
  * ConversationManager : l'historique des conversations et leurs agents.
  *
@@ -17,6 +16,8 @@ import { attachmentName, type PromptAttachment } from '@shared/attachments'
 import { randomUUID } from 'node:crypto'
 import { join, relative } from 'node:path'
 import { ConversationTrash, TrashLink } from './trash'
+import { archiveMembers, busyArchiveError, descendants, memberOf, repairOrphans } from './family'
+import type { FamilyMember } from '@shared/children'
 import type { ExclusionSource } from '../agent/adapters'
 import type {
   AgentConfigureRequest,
@@ -68,7 +69,6 @@ import { ConversationStore, type ConversationRecord } from './store'
 import {
   damagedTranscriptNotice,
   proposedTitle,
-  dropDraftSession,
   trackDraftDrop,
   profileOrDefault,
   warnIfStopped,
@@ -77,7 +77,6 @@ import {
   draftRecord,
   summaryOf,
   titleFrom,
-  withTimeout,
   AGENT_DELETE_TIMEOUT_MS,
   deleteAtAgent,
   subagentWorkOf,
@@ -85,6 +84,9 @@ import {
   rulesOf,
   childDetachedRequest,
   reopenOf,
+  notePendingMemory,
+  draftSessionsOpen,
+  dropAllDraftSessions,
   type ChildLink,
   type DetachedRequest,
   type Origin
@@ -270,6 +272,8 @@ export class ConversationManager {
     this.trashed = new TrashLink(trash, this.store, this.writer)
     // Suppressions laissées en route par un arrêt brutal : finies (fiche 196).
     const records = trash.settle(this.store.loadIndex(), (id) => this.store.fileOf(id))
+    // Filles d'une mère supprimée par une version précédente : liens morts retirés (fiche 228).
+    if (repairOrphans(records).length) this.writer.index(records)
     // Seul l'index est lu au démarrage ; chaque fil l'est à sa première demande (fiche 043).
     for (const record of records) {
       this.conversations.set(record.id, { record, lastUsed: 0, readAt: 0, draft: false })
@@ -526,9 +530,15 @@ export class ConversationManager {
     this.emitList()
   }
 
-  /** Évènement de l'app posé dans le fil d'une conversation (conversations filles, fiche 097). */
-  post(id: string, event: AgentEvent): void {
-    this.onEvent(this.get(id), event)
+  /**
+   * Évènement de l'app posé dans le fil d'une conversation (fiche 097). Conversation partie entre-temps
+   * (mère supprimée…) : écarté et consigné, jamais levé (fiche 228) ; rend s'il a été posé.
+   */
+  post(id: string, event: AgentEvent): boolean {
+    const conversation = this.conversations.get(id)
+    if (conversation) this.onEvent(conversation, event)
+    else log.warn(`Évènement « ${event.type} » écarté : conversation ${id.slice(0, 8)} inconnue`)
+    return !!conversation
   }
 
   /** Options d'hôte d'une conversation, pour son aparté (fiche 180, `aside.ts` les restreint). */
@@ -643,6 +653,7 @@ export class ConversationManager {
     if (conversation.record.archived) {
       // Écrire dans une conversation archivée la ressort.
       delete conversation.record.archived
+      delete conversation.record.archivedWith
       this.saveIndex()
       this.emitList()
     }
@@ -1040,26 +1051,26 @@ export class ConversationManager {
     return this.state()
   }
 
+  /** Descendance d'une conversation (fiche 228), des plus profondes aux plus proches, archivées comprises. */
+  family(id: string): FamilyMember[] {
+    return descendants(
+      [...this.conversations.values()].map((c) => c.record),
+      id
+    ).map(memberOf)
+  }
+
   /**
    * Archive une conversation (hors des « Récents », son agent est arrêté) ou la ressort. La
    * conversation affichée archivée laisse place à une nouvelle conversation.
    */
   setArchived(id: string, archived: boolean): ConversationsState {
-    const conversation = this.get(id)
-    if (conversation.draft) return this.state()
-    if (archived) {
-      if (conversation.snapshot?.status === 'busy') {
-        throw new Error(t('conversations.error.busyArchive'))
-      }
-      conversation.record.archived = true
-      delete conversation.record.pinned
-      releaseAgent(conversation)
-      this.options.onReleased?.(id, 'archived')
-      this.beside.delete(id)
-      if (id === this.activeId) this.replaceActive(conversation.record, false)
-    } else {
-      delete conversation.record.archived
-    }
+    if (this.get(id).draft) return this.state()
+    // Sa descendance suit (fiche 228) : archivée avec elle, ressortie si elle l'a été avec elle.
+    const records = [...this.conversations.values()].map((c) => c.record)
+    const members = archiveMembers(records, id, archived).map((r) => this.get(r.id))
+    const busy = archived && members.find((c) => c.snapshot?.status === 'busy')
+    if (busy) throw new Error(busyArchiveError(busy.record, id))
+    for (const member of members) this.archiveOne(member, archived, id)
     this.saveIndex()
     this.emitList()
     this.releaseTranscripts()
@@ -1123,26 +1134,15 @@ export class ConversationManager {
    * conversation vide quittée est en cours de suppression.
    */
   hasDraftSessions(): boolean {
-    const opening = (c: Conversation) =>
-      c.draft && c.host && (c.host.currentSessionId || c.host.snapshot().status === 'starting')
-    return this.dropping.size > 0 || [...this.conversations.values()].some(opening)
+    return draftSessionsOpen(this.conversations.values(), this.dropping)
   }
 
   /**
    * Avant de quitter : la session de chaque conversation vide est supprimée chez son agent (voir
    * `dropDraftSession`), dans la limite de `timeoutMs` en tout.
    */
-  async dropDraftSessions(timeoutMs: number): Promise<void> {
-    const drops: Promise<void>[] = []
-    for (const conversation of this.conversations.values()) {
-      const host = conversation.host
-      if (!conversation.draft || !host) continue
-      conversation.host = undefined
-      drops.push(dropDraftSession(host, timeoutMs))
-    }
-    // Celles des conversations vides déjà quittées, encore en cours.
-    const pending = Promise.all([...this.dropping])
-    await Promise.all([...drops, withTimeout(pending, timeoutMs).catch(() => {})])
+  dropDraftSessions(timeoutMs: number): Promise<void> {
+    return dropAllDraftSessions(this.conversations.values(), this.dropping, timeoutMs)
   }
 
   /** Avis montré dans la conversation de l'accueil au lancement (avant `startActive`). */
@@ -1469,6 +1469,20 @@ export class ConversationManager {
     this.writer.index([...this.conversations.values()].filter((c) => !c.draft).map((c) => c.record))
   }
 
+  /** Archive une conversation (agent arrêté), ou la ressort ; `top` : celle que l'on archive. */
+  private archiveOne(conversation: Conversation, archived: boolean, top: string): void {
+    const { record } = conversation
+    delete record.archivedWith
+    if (!archived) return void delete record.archived
+    record.archived = true
+    if (record.id !== top) record.archivedWith = top
+    delete record.pinned
+    releaseAgent(conversation)
+    this.options.onReleased?.(record.id, 'archived')
+    this.beside.delete(record.id)
+    if (record.id === this.activeId) this.replaceActive(record, false)
+  }
+
   private summary(conversation: Conversation): ConversationSummary {
     const seen = this.settings.current.agentsSeen
     return summaryOf(conversation, this.options.profiles, (id) => this.conversations.get(id), seen)
@@ -1481,14 +1495,4 @@ export class ConversationManager {
   }
 }
 
-/** Cartes de mémoire en attente (fiche 182), gardées dans la fiche pour la pastille ; vrai si changé. */
-function notePendingMemory(conversation: Conversation): boolean {
-  const pending = memoryProposals(conversation.transcript?.items ?? []).filter(
-    (p) => p.status === 'pending'
-  ).length
-  if ((conversation.record.memoryPending ?? 0) === pending) return false
-  if (pending) conversation.record.memoryPending = pending
-  else delete conversation.record.memoryPending
-  return true
-}
 export type { ConversationListeners } from './conversation'

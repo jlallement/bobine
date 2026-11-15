@@ -793,6 +793,7 @@ export type FrResources = {
       readonly noLiveAgent: 'Aucun agent actif pour cette conversation'
       readonly emptyTitle: 'Titre vide'
       readonly busyArchive: 'L’agent répond encore : arrêtez-le avant d’archiver la conversation'
+      readonly busyArchiveChild: '« {{title}} », une conversation fille, répond encore : arrêtez-la avant d’archiver sa mère'
       readonly unknown: 'Conversation inconnue : {{id}}'
       readonly busyFolders: 'L’agent répond encore : changez les dossiers de la conversation après sa réponse'
     }
@@ -880,6 +881,21 @@ export type FrResources = {
     readonly fromAgent: 'Supprimer aussi chez {{agent}} <muted>(définitif : la conversation ne pourra plus être reprise)</muted>'
     readonly worktree: 'Supprimer aussi le worktree et la branche <code>{{branch}}</code>'
     readonly losses: '— perdus : {{losses}}'
+    readonly children_one: 'Supprimer aussi sa conversation fille'
+    readonly children_other: 'Supprimer aussi ses {{count}} conversations filles'
+    readonly children_many: 'Supprimer aussi ses {{count}} conversations filles'
+    readonly childBusy: 'au travail'
+    readonly childBusyStop: 'au travail, sera arrêtée'
+    readonly childrenDelete_one: 'Elle va aussi à la corbeille. Son worktree est gardé.'
+    readonly childrenDelete_other: 'Elles vont aussi à la corbeille. Leurs worktrees sont gardés.'
+    readonly childrenDelete_many: 'Elles vont aussi à la corbeille. Leurs worktrees sont gardés.'
+    readonly childrenKeep_one: 'Elle deviendra une conversation ordinaire ; son fil le dira.'
+    readonly childrenKeep_other: 'Elles deviendront des conversations ordinaires ; leur fil le dira.'
+    readonly childrenKeep_many: 'Elles deviendront des conversations ordinaires ; leur fil le dira.'
+    readonly fromAgents: 'Supprimer aussi chez {{agent}} <muted>(définitif : ces conversations ne pourront plus être reprises)</muted>'
+    readonly fromAgentKeeping_one: '{{agents}} ne sait pas supprimer une session : celles de ses conversations y restent.'
+    readonly fromAgentKeeping_other: '{{agents}} ne savent pas supprimer une session : celles de leurs conversations y restent.'
+    readonly fromAgentKeeping_many: '{{agents}} ne savent pas supprimer une session : celles de leurs conversations y restent.'
   }
   readonly modelMenu: {
     readonly search: 'Rechercher un modèle…'
@@ -3381,6 +3397,7 @@ export type FrResources = {
     readonly notice: {
       readonly promptFailed: 'La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}'
       readonly messageFailed: 'Le message d’une autre conversation n’a pas pu partir ({{error}}).'
+      readonly motherDeleted: 'Conversation mère « {{title}} » supprimée : cette conversation continue seule, ses comptes rendus restent ici.'
     }
     readonly startedByAgent: 'L’agent a lancé la conversation fille « {{title}} »'
     readonly limit_one: '{{count}} conversation fille est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.'

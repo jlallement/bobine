@@ -756,6 +756,7 @@
       "noLiveAgent": "No active agent for this conversation",
       "emptyTitle": "Empty title",
       "busyArchive": "The agent is still responding: stop it before archiving the conversation",
+      "busyArchiveChild": "“{{title}}”, a child conversation, is still responding: stop it before archiving its parent",
       "unknown": "Unknown conversation: {{id}}",
       "busyFolders": "The agent is still responding: change the conversation’s folders after its reply"
     },
@@ -839,7 +840,18 @@
     "title": "Delete “{{title}}”?",
     "fromAgent": "Also delete in {{agent}} <muted>(permanent: the conversation can’t be resumed anymore)</muted>",
     "worktree": "Also delete the worktree and the branch <code>{{branch}}</code>",
-    "losses": "— lost: {{losses}}"
+    "losses": "— lost: {{losses}}",
+    "children_one": "Also delete its child conversation",
+    "children_other": "Also delete its {{count}} child conversations",
+    "childBusy": "working",
+    "childBusyStop": "working, will be stopped",
+    "childrenDelete_one": "It goes to the trash too. Its worktree is kept.",
+    "childrenDelete_other": "They go to the trash too. Their worktrees are kept.",
+    "childrenKeep_one": "It will become an ordinary conversation; its thread will say so.",
+    "childrenKeep_other": "They will become ordinary conversations; their thread will say so.",
+    "fromAgents": "Also delete in {{agent}} <muted>(permanent: these conversations can’t be resumed anymore)</muted>",
+    "fromAgentKeeping_one": "{{agents}} can’t delete a session: its conversations’ sessions stay there.",
+    "fromAgentKeeping_other": "{{agents}} can’t delete a session: their conversations’ sessions stay there."
   },
   "modelMenu": {
     "search": "Search models…",
@@ -3430,7 +3442,8 @@
     },
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
-      "messageFailed": "A message from another conversation could not be sent ({{error}})."
+      "messageFailed": "A message from another conversation could not be sent ({{error}}).",
+      "motherDeleted": "Parent conversation “{{title}}” deleted: this conversation carries on alone, and its reports stay here."
     },
     "startedByAgent": "The agent started the child conversation “{{title}}”",
     "limit_one": "{{count}} child conversation is already running: that is the limit set in Settings › Conversations.",

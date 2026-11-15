@@ -5,7 +5,7 @@ import type { Conversations } from '../../useConversations'
 import { BranchDialog } from './BranchDialog'
 import { ChildDialog } from '../sidebar/ChildDialog'
 import { ReviewDialog } from '../panel/ReviewDialog'
-import { DeleteDialog } from '../sidebar/ConversationMenu'
+import { DeleteDialog } from '../sidebar/DeleteDialog'
 import { ResumeDialog } from './ResumeDialog'
 import { SearchDialog } from './SearchDialog'
 import { RolesHost } from '../roles/RolesHost'
@@ -170,6 +170,7 @@ export function AppDialogs({
           key={deleting.id}
           conversation={deleting}
           onWorktreeStatus={c.worktreeStatus}
+          onFamily={c.family}
           onClose={() => dialogs.setDeleting(null)}
           onConfirm={(options) => {
             void c.remove(deleting.id, options)

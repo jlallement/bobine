@@ -97,12 +97,14 @@ async function setup(titles: string[], launchOrder?: number[]) {
       return { id, title: child.title, workspace: child.workspace, worktree: child.worktree }
     },
     post: (id: string, event: AgentEvent) => {
-      if (id !== 'mere') throw new Error('inconnue')
+      // Conversation inconnue : écarté, comme le gestionnaire (fiche 228).
+      if (id !== 'mere') return false
       apply(event)
       if (event.type === 'children-merge') {
         merges.push(event.merge)
         options.onPost(event.merge)
       }
+      return true
     },
     prompt: async (id: string, text: string) => {
       prompts.push({ id, text })
