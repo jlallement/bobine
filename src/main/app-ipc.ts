@@ -2,6 +2,7 @@
  * Canaux de l'app elle-même (sortis d'`ipc.ts`, fiche 116) : infos, erreurs de l'interface,
  * journal, relance, installation (fiche 073) et fenêtre À propos (fiche 116).
  */
+import type { AppMenu } from './app-menu'
 import type { InstalledFonts, IpcHandlers } from '@shared/ipc'
 import type { Language } from '@shared/i18n/language'
 import { t } from 'i18next'
@@ -43,6 +44,8 @@ export interface AppIpcDeps {
   takeLaunch?: () => LaunchPrefill | null
   /** Polices installées (fiche 136) ; listes vides par défaut (essais, hors macOS). */
   fonts?: () => Promise<InstalledFonts>
+  /** Menu ☰ de Bobine hors macOS (fiche 145, `app-menu.ts`). */
+  menu?: Pick<AppMenu, 'model' | 'invoke'>
   /** Mode présentation (fiche 159) : lecture et changement. */
   presentation?: { active: () => boolean; set: (active: boolean) => void }
   /** Fenêtre À propos (fiche 116, injectée : fenêtres, agents). */
@@ -96,6 +99,11 @@ export function appHandlers(
       ...(deps.freshStart ? { freshStart: deps.freshStart.info } : {})
     }),
     'app:fonts': () => deps.fonts?.() ?? { families: [], monospace: [] },
+    'app:menu': () => deps.menu?.model() ?? null,
+    'app:menuInvoke': (id) => {
+      deps.menu?.invoke(id)
+      return undefined
+    },
     'app:presentation': () => deps.presentation?.active() ?? false,
     'app:setPresentation': (active) => {
       if (typeof active !== 'boolean') throw new Error('Paramètre invalide : active')

@@ -21,7 +21,15 @@ export function platformFeatures(platform: string): PlatformFeatures {
     // Libellé « Afficher dans le Finder » (fiche 158).
     finder: mac,
     // `app.dock.setBadge` ; seul Unity affichait un compteur sous Linux (fiche 145, écarts).
-    dockBadge: mac
+    dockBadge: mac,
+    // Barre de menu globale de macOS ; sous Linux, menu de la fenêtre masqué, Alt l'affiche.
+    appMenu: mac,
+    // `titleBarStyle: 'hiddenInset'` et ses feux ; sous Linux, la barre de titre du système.
+    insetTitleBar: mac,
+    // Touche Commande ; ailleurs, Ctrl (les accélérateurs `CmdOrCtrl` suivent d'eux-mêmes).
+    commandKey: mac,
+    // Barres superposées de macOS ; sous Linux, Chromium dessine des barres épaisses à flèches.
+    overlayScrollbars: mac
   }
 }
 

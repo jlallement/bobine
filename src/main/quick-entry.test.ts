@@ -21,7 +21,7 @@ describe('raccourci global de la fenêtre rapide (fiche 062)', () => {
     const { api, registered } = shortcuts()
     const registrar = new QuickShortcutRegistrar(api, () => {})
     expect(registrar.apply('alt-cmd-b')).toEqual({ shortcut: 'alt-cmd-b', refused: false })
-    expect([...registered]).toEqual(['Alt+Command+B'])
+    expect([...registered]).toEqual(['Alt+CommandOrControl+B'])
     registrar.apply('alt-space')
     expect([...registered]).toEqual(['Alt+Space'])
     expect(registrar.apply('off')).toEqual({ shortcut: 'off', refused: false })

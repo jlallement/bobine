@@ -5188,5 +5188,14 @@
       "details": "Technical details"
     },
     "requestedOnlyHint": "{{agent}} writes without asking for permission: staying within the chat’s documents is only requested of it."
+  },
+  "keys": {
+    "ctrl": "Ctrl",
+    "alt": "Alt",
+    "shift": "Shift",
+    "space": "Space"
+  },
+  "appMenu": {
+    "label": "Bobine menu"
   }
 }

@@ -1,3 +1,4 @@
+import { displayKeys } from '@shared/shortcuts'
 import { MessageSquare, MessageSquarePlus, Send, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -139,7 +140,7 @@ export function PageAnnotator({
                 data-testid="page-note-save"
               >
                 {draft.existing ? t('diffNotes.update') : t('diffNotes.add')}
-                <kbd>⌘↩</kbd>
+                <kbd>{displayKeys('⌘↩')}</kbd>
               </button>
             </div>
           </div>

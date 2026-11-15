@@ -1,9 +1,60 @@
 /**
- * Raccourcis clavier de l'app (fiche 027) : source unique pour le menu macOS (main) et la liste
- * des réglages (renderer). Les raccourcis du menu marchent même quand le clavier est dans le
- * terminal ou dans une page du navigateur intégré. Libellés traduits à la lecture (fiche 074).
+ * Raccourcis clavier de l'app (fiche 027) : source unique pour le menu (main) et la liste des
+ * réglages (renderer). Les raccourcis du menu marchent même quand le clavier est dans le terminal ou
+ * dans une page du navigateur intégré. Libellés traduits à la lecture (fiche 074).
+ *
+ * Notation (fiche 145) : les raccourcis s'écrivent ici comme sur macOS (⇧⌘U) ; hors macOS
+ * (capacité `commandKey` absente), le renderer les affiche à la façon de Linux (Ctrl+Maj+U) par
+ * `displayKeys`, seul endroit qui convertit : listes de raccourcis, textes traduits (post-traitement
+ * `keyNotation`), pages de l'aide. Les accélérateurs `CmdOrCtrl` font déjà Ctrl hors macOS.
  */
-import { t } from 'i18next'
+import { t, type PostProcessorModule } from 'i18next'
+
+/** Noms des touches de modification hors macOS, dans la langue de l'interface. */
+export interface KeyNames {
+  ctrl: string
+  alt: string
+  shift: string
+}
+
+/** Touches de macOS en tête d'un raccourci, et ce qui suit : `-clic`, ou ` Entrée`. */
+const MAC_KEYS = /([⌃⌥⇧⌘]+)(-(?=\p{L})| (?=\p{L}))?/gu
+
+/**
+ * Raccourcis d'un texte à la façon de Linux (pur) : ⇧⌘U → Ctrl+Maj+U, ⌥⌘↑ → Ctrl+Alt+↑, ⌃` →
+ * Ctrl+`, ⌘ Entrée → Ctrl+Entrée, ⌥-clic → Alt-clic. ⌘ et ⌃ donnent Ctrl. `null` : tel quel.
+ */
+export function formatKeys(text: string, names: KeyNames | null): string {
+  if (!names) return text
+  return text.replace(MAC_KEYS, (_, mods: string, after: string | undefined) => {
+    const parts = [
+      /[⌘⌃]/.test(mods) ? names.ctrl : null,
+      mods.includes('⌥') ? names.alt : null,
+      mods.includes('⇧') ? names.shift : null
+    ].filter((part): part is string => part !== null)
+    return parts.join('+') + (after === '-' ? '-' : '+')
+  })
+}
+
+/** Notation du renderer, réglée une fois au démarrage (`setKeyNotation`) ; macOS par défaut. */
+let commandKey = true
+
+export function setKeyNotation(command: boolean): void {
+  commandKey = command
+}
+
+/** Raccourcis d'un texte dans la notation de la plateforme. */
+export function displayKeys(text: string): string {
+  if (commandKey || !/[⌃⌥⇧⌘]/.test(text)) return text
+  return formatKeys(text, { ctrl: t('keys.ctrl'), alt: t('keys.alt'), shift: t('keys.shift') })
+}
+
+/** Post-traitement i18next : les raccourcis des textes traduits dans la notation de la plateforme. */
+export const keyNotation: PostProcessorModule = {
+  type: 'postProcessor',
+  name: 'keyNotation',
+  process: (value) => displayKeys(value)
+}
 
 /** Commande envoyée par le menu au renderer. */
 export type MenuCommand =
@@ -56,7 +107,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.space-code')
     },
     accelerator: 'CmdOrCtrl+1',
-    keys: '⌘1',
+    get keys() {
+      return displayKeys('⌘1')
+    },
     menu: 'view'
   },
   {
@@ -65,7 +118,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.space-discussion')
     },
     accelerator: 'CmdOrCtrl+2',
-    keys: '⌘2',
+    get keys() {
+      return displayKeys('⌘2')
+    },
     menu: 'view'
   },
   {
@@ -74,7 +129,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.new-conversation')
     },
     accelerator: 'CmdOrCtrl+N',
-    keys: '⌘N',
+    get keys() {
+      return displayKeys('⌘N')
+    },
     menu: 'file'
   },
   {
@@ -83,7 +140,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.search')
     },
     accelerator: 'CmdOrCtrl+K',
-    keys: '⌘K',
+    get keys() {
+      return displayKeys('⌘K')
+    },
     menu: 'file'
   },
   {
@@ -92,7 +151,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.resume-session')
     },
     accelerator: 'CmdOrCtrl+Shift+O',
-    keys: '⇧⌘O',
+    get keys() {
+      return displayKeys('⇧⌘O')
+    },
     menu: 'file'
   },
   {
@@ -101,7 +162,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.settings')
     },
     accelerator: 'CmdOrCtrl+,',
-    keys: '⌘,',
+    get keys() {
+      return displayKeys('⌘,')
+    },
     menu: 'app'
   },
   {
@@ -110,7 +173,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.focus-composer')
     },
     accelerator: 'CmdOrCtrl+L',
-    keys: '⌘L',
+    get keys() {
+      return displayKeys('⌘L')
+    },
     menu: 'conversation'
   },
   {
@@ -119,7 +184,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.stop')
     },
     accelerator: 'CmdOrCtrl+.',
-    keys: '⌘.',
+    get keys() {
+      return displayKeys('⌘.')
+    },
     menu: 'conversation'
   },
   {
@@ -128,7 +195,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.aside')
     },
     accelerator: 'CmdOrCtrl+Shift+A',
-    keys: '⇧⌘A',
+    get keys() {
+      return displayKeys('⇧⌘A')
+    },
     menu: 'conversation'
   },
   {
@@ -137,7 +206,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.previous-conversation')
     },
     accelerator: 'Alt+CmdOrCtrl+Up',
-    keys: '⌥⌘↑',
+    get keys() {
+      return displayKeys('⌥⌘↑')
+    },
     menu: 'conversation'
   },
   {
@@ -146,7 +217,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.next-conversation')
     },
     accelerator: 'Alt+CmdOrCtrl+Down',
-    keys: '⌥⌘↓',
+    get keys() {
+      return displayKeys('⌥⌘↓')
+    },
     menu: 'conversation'
   },
   {
@@ -155,7 +228,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.find')
     },
     accelerator: 'CmdOrCtrl+F',
-    keys: '⌘F',
+    get keys() {
+      return displayKeys('⌘F')
+    },
     menu: 'edit'
   },
   {
@@ -164,7 +239,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.find-next')
     },
     accelerator: 'CmdOrCtrl+G',
-    keys: '⌘G',
+    get keys() {
+      return displayKeys('⌘G')
+    },
     menu: 'edit'
   },
   {
@@ -173,7 +250,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.find-previous')
     },
     accelerator: 'CmdOrCtrl+Shift+G',
-    keys: '⇧⌘G',
+    get keys() {
+      return displayKeys('⇧⌘G')
+    },
     menu: 'edit'
   },
   {
@@ -182,7 +261,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.toggle-sidebar')
     },
     accelerator: 'CmdOrCtrl+B',
-    keys: '⌘B',
+    get keys() {
+      return displayKeys('⌘B')
+    },
     menu: 'view'
   },
   {
@@ -191,7 +272,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.toggle-panel')
     },
     accelerator: 'CmdOrCtrl+J',
-    keys: '⌘J',
+    get keys() {
+      return displayKeys('⌘J')
+    },
     menu: 'view'
   },
   {
@@ -200,7 +283,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.maximize-panel')
     },
     accelerator: 'CmdOrCtrl+Shift+J',
-    keys: '⇧⌘J',
+    get keys() {
+      return displayKeys('⇧⌘J')
+    },
     menu: 'view'
   },
   {
@@ -209,7 +294,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.toggle-terminal')
     },
     accelerator: 'Ctrl+`',
-    keys: '⌃`',
+    get keys() {
+      return displayKeys('⌃`')
+    },
     menu: 'view'
   },
   {
@@ -218,7 +305,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.show-changes')
     },
     accelerator: 'CmdOrCtrl+Shift+D',
-    keys: '⇧⌘D',
+    get keys() {
+      return displayKeys('⇧⌘D')
+    },
     menu: 'view'
   },
   {
@@ -227,7 +316,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.activity')
     },
     accelerator: 'CmdOrCtrl+Shift+U',
-    keys: '⇧⌘U',
+    get keys() {
+      return displayKeys('⇧⌘U')
+    },
     menu: 'window'
   },
   {
@@ -237,7 +328,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
     },
     // ⇧⌘/ sur un clavier américain : macOS l'affiche ⌘?.
     accelerator: 'CmdOrCtrl+?',
-    keys: '⌘?',
+    get keys() {
+      return displayKeys('⌘?')
+    },
     menu: 'help'
   },
   {
@@ -246,7 +339,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
       return t('shortcuts.menu.shortcuts')
     },
     accelerator: 'CmdOrCtrl+/',
-    keys: '⌘/',
+    get keys() {
+      return displayKeys('⌘/')
+    },
     menu: 'help'
   }
 ]
@@ -254,19 +349,25 @@ export const SHORTCUTS: readonly Shortcut[] = [
 /** Raccourcis gérés par l'interface elle-même (zone de saisie, cartes…), pour la liste. */
 export const INTERFACE_SHORTCUTS: readonly { keys: string; label: string }[] = [
   {
-    keys: '↩',
+    get keys() {
+      return displayKeys('↩')
+    },
     get label() {
       return t('shortcuts.interface.send.label')
     }
   },
   {
-    keys: '⇧↩',
+    get keys() {
+      return displayKeys('⇧↩')
+    },
     get label() {
       return t('shortcuts.interface.newline.label')
     }
   },
   {
-    keys: '⇧⇥',
+    get keys() {
+      return displayKeys('⇧⇥')
+    },
     get label() {
       return t('shortcuts.interface.mode.label')
     }
@@ -280,19 +381,25 @@ export const INTERFACE_SHORTCUTS: readonly { keys: string; label: string }[] = [
     }
   },
   {
-    keys: '/',
+    get keys() {
+      return displayKeys('/')
+    },
     get label() {
       return t('shortcuts.interface.commands.label')
     }
   },
   {
-    keys: '@',
+    get keys() {
+      return displayKeys('@')
+    },
     get label() {
       return t('shortcuts.interface.mention.label')
     }
   },
   {
-    keys: '↑',
+    get keys() {
+      return displayKeys('↑')
+    },
     get label() {
       return t('shortcuts.interface.recall.label')
     }

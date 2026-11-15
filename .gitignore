@@ -19,3 +19,6 @@ e2e/.durations.json
 
 # Pilote de Bobine (fiche 206) : instance pilotée, journaux et captures des sessions.
 .pilote/
+
+# Fichiers temporaires laissés par `sed -i` de macOS (BSD) quand il échoue.
+.!*

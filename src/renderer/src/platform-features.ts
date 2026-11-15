@@ -8,3 +8,11 @@ import { ALL_FEATURES, type PlatformFeatures } from '@shared/platform'
 export function platformFeatures(): PlatformFeatures {
   return (window.api as Partial<Window['api']>).app?.features ?? ALL_FEATURES
 }
+
+/**
+ * Touche des raccourcis tenue (fiche 145) : ⌘ sur macOS, Ctrl ailleurs, comme les accélérateurs
+ * `CmdOrCtrl` du menu. Pour les raccourcis que l'interface gère elle-même.
+ */
+export function commandPressed(event: { metaKey: boolean; ctrlKey: boolean }): boolean {
+  return platformFeatures().commandKey ? event.metaKey : event.ctrlKey
+}

@@ -43,7 +43,6 @@ import {
   dialog,
   globalShortcut,
   ipcMain,
-  Menu,
   nativeImage,
   nativeTheme,
   powerMonitor,
@@ -60,6 +59,7 @@ import { QuitFlow } from './quit-guard'
 import { stopAllJobs } from './jobs/command-job'
 import { setupUsageJournal, USAGE_DB_FILE } from './usage/setup'
 import { buildMenuTemplate, zoomInterface } from './menu'
+import { appMenu } from './app-menu'
 import { Presentation } from './presentation'
 import { followFullScreen } from './full-screen-menu'
 import { McpSettings } from './agent-config/mcp-settings'
@@ -95,7 +95,7 @@ import { quickEntryDeps } from './quick-entry-deps'
 import { createHandlers, registerIpcHandlers, type SendEvent } from './ipc'
 import { broadcast, trustedSender } from './app-windows'
 import { applyShellEnv, loginShellEnv } from './shell-env'
-import { migrateUserData } from './user-data-migration'
+import { oldAppStillOpen } from './old-app'
 import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
 import { fontLister } from './fonts'
@@ -224,29 +224,7 @@ initI18n(resolveLanguage(startLanguage, app.getPreferredSystemLanguages()))
 // Dossier personnel : les libellés de cartes (et des notifications) disent `~` (fiche 214).
 setHomeFolder(homedir())
 
-/**
- * Ancien nom (fiche 069, ADR-0013) : le dossier `bob-desktop` devient `bobine` au premier lancement.
- * Rend vrai si l'ancienne app est encore ouverte : elle écrit dans ce dossier, on attend qu'elle
- * soit fermée.
- */
-function oldAppStillOpen(): boolean {
-  if (freshStart.isolated) return false
-  const previous = join(app.getPath('appData'), 'bob-desktop')
-  try {
-    const migration = migrateUserData(previous, userData)
-    if (migration.kind === 'moved') log.info(`Dossier de données repris de ${previous}`)
-    if (migration.kind === 'imported') {
-      log.info(`Conversations reprises de ${previous} : ${migration.conversations}`)
-    }
-    if (migration.kind !== 'busy') return false
-  } catch (error) {
-    log.error('Reprise du dossier de données impossible :', error)
-    return false
-  }
-  dialog.showErrorBox(t('dialogs.oldApp.title'), t('dialogs.oldApp.message'))
-  return true
-}
-const blockedByOldApp = oldAppStillOpen()
+const blockedByOldApp = oldAppStillOpen(freshStart.isolated, userData)
 // Erreurs non rattrapées : journal et avis, l'app continue (fiche 194).
 failures.watchMainErrors()
 app.on('child-process-gone', (_event, details) => {
@@ -512,35 +490,35 @@ async function start(): Promise<void> {
 
   // Menu macOS et raccourcis (fiche 027) : chaque entrée envoie sa commande à l'interface ;
   // reconstruit quand le raccourci de la fenêtre rapide ou la langue changent.
-  const refreshMenu = () =>
-    Menu.setApplicationMenu(
-      Menu.buildFromTemplate(
-        buildMenuTemplate({
-          appName: app.getName(),
-          dev: !app.isPackaged,
-          fullScreen: mainWindow?.isFullScreen() === true,
-          toggleFullScreen: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()),
-          presentation: { active: presentation.active, toggle: () => presentation.toggle() },
-          showLog,
-          about: () => about.show(),
-          help: () => help.show(null, { search: true }),
-          // La page du navigateur qui a le focus, sinon l'interface (fiche 129).
-          zoom: (action) => {
-            if (browser.zoomFocused(action)) return
-            const target = webContents.getFocusedWebContents() ?? mainWindow?.webContents
-            if (target && !target.isDestroyed()) zoomInterface(target, action)
-          },
-          send: (command) => {
-            focusMainWindow()
-            broadcast('app:command', command)
-          },
-          quickEntry: {
-            open: () => quickEntry.show(),
-            accelerator: QUICK_SHORTCUTS[quickShortcut.state.shortcut].accelerator
-          }
-        })
-      )
-    )
+  // Hors macOS, la barre du menu n'est jamais montrée : Bobine le dessine (☰, fiche 145).
+  const menu = appMenu(features, () =>
+    buildMenuTemplate({
+      appName: app.getName(),
+      appMenu: features.appMenu,
+      dev: !app.isPackaged,
+      fullScreen: mainWindow?.isFullScreen() === true,
+      toggleFullScreen: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()),
+      presentation: { active: presentation.active, toggle: () => presentation.toggle() },
+      showLog,
+      about: () => about.show(),
+      help: () => help.show(null, { search: true }),
+      // La page du navigateur qui a le focus, sinon l'interface (fiche 129).
+      zoom: (action) => {
+        if (browser.zoomFocused(action)) return
+        const target = webContents.getFocusedWebContents() ?? mainWindow?.webContents
+        if (target && !target.isDestroyed()) zoomInterface(target, action)
+      },
+      send: (command) => {
+        focusMainWindow()
+        broadcast('app:command', command)
+      },
+      quickEntry: {
+        open: () => quickEntry.show(),
+        accelerator: QUICK_SHORTCUTS[quickShortcut.state.shortcut].accelerator
+      }
+    })
+  )
+  const refreshMenu = () => menu.refresh()
   refreshMenu()
   followFullScreen(refreshMenu)
   presentation.onChange((active) => {
@@ -845,6 +823,7 @@ async function start(): Promise<void> {
         platform: process.platform,
         ...(managesNativeLanguage ? { nativeLanguage: launchLanguage(app.getLocale()) } : {}),
         fonts: fontLister(fontSource(process.platform)),
+        menu,
         presentation: { active: () => presentation.active, set: (on) => presentation.set(on) },
         showLog,
         alerts: failures.alertsIpc,

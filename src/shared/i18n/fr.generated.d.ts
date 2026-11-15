@@ -5208,4 +5208,11 @@ export type FrResources = {
     }
     readonly requestedOnlyHint: '{{agent}} écrit sans demander d’autorisation : rester dans les documents de la discussion lui est seulement demandé.'
   }
+  readonly keys: {
+    readonly ctrl: 'Ctrl'
+    readonly alt: 'Alt'
+    readonly shift: 'Maj'
+    readonly space: 'Espace'
+  }
+  readonly appMenu: { readonly label: 'Menu de Bobine' }
 }

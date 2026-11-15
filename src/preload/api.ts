@@ -77,6 +77,9 @@ export function createApi(
       getInfo: () => invoke('app:getInfo'),
       /** Polices installées (fiche 136). */
       fonts: () => invoke('app:fonts'),
+      /** Menu ☰ de Bobine hors macOS (fiche 145) : modèle, puis l'entrée choisie. */
+      menu: () => invoke('app:menu'),
+      menuInvoke: (id: string) => invoke('app:menuInvoke', id),
       /** Mode présentation (fiche 159). */
       presentation: () => invoke('app:presentation'),
       setPresentation: (active: boolean) => invoke('app:setPresentation', active),

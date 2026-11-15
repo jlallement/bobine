@@ -2,7 +2,7 @@ import { useContinueInProject } from './components/discussion/ContinueInProjectD
 import { useSpace } from './useSpace'
 import { onSettingsRequest } from './open-settings'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { FileDiff, ListChecks, PanelLeft, PanelRight, SquarePen } from 'lucide-react'
+import { FileDiff, ListChecks, PanelRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { childRows, childrenOf } from '@shared/children-rows'
 import { changesSummary, conversationChanges } from '@shared/changes'
@@ -59,6 +59,7 @@ import { useOnboarding } from './components/onboarding/useOnboarding'
 import { useTranslation } from 'react-i18next'
 import { ipcErrorText } from './ipc-errors'
 import { platformFeatures } from './platform-features'
+import { CollapsedSidebarButtons } from './components/sidebar/CollapsedSidebarButtons'
 import { useTurnGuards } from './useTurnGuards'
 import { TurnControlsContext } from './turn-controls'
 import { GlobalRulesContext, type GlobalRules } from './components/thread/global-rules'
@@ -494,21 +495,10 @@ export function App() {
                 {drop.dragging && <DropOverlay />}
                 <header className={`main-header drag${sidebarOpen ? '' : ' with-lights'}`}>
                   {!sidebarOpen ? (
-                    <>
-                      <Tip label={t('app.showSidebar')} command="toggle-sidebar">
-                        <button
-                          className="icon-button no-drag"
-                          onClick={() => setSidebarOpen(true)}
-                        >
-                          <PanelLeft size={18} />
-                        </button>
-                      </Tip>
-                      <Tip label={t('app.newConversation')} command="new-conversation">
-                        <button className="icon-button no-drag" onClick={() => c.create()}>
-                          <SquarePen size={17} />
-                        </button>
-                      </Tip>
-                    </>
+                    <CollapsedSidebarButtons
+                      onShowSidebar={() => setSidebarOpen(true)}
+                      onNew={() => c.create()}
+                    />
                   ) : null}
                   {/* Titre à gauche, avec le menu de la conversation (fiche 049). */}
                   {activeTitle ? (

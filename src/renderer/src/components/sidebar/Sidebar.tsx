@@ -1,3 +1,5 @@
+import { platformFeatures } from '../../platform-features'
+import { AppMenuButton } from '../common/AppMenu'
 import i18next from 'i18next'
 import { refusedTurnText } from '../../turn-auth-text'
 import {
@@ -107,7 +109,8 @@ interface Props {
 }
 
 /** Raccourci de « Mon activité », tel que le menu l'affiche. */
-const ACTIVITY_KEYS = SHORTCUTS.find((s) => s.command === 'activity')?.keys ?? ''
+/** Raccourci de « Mon activité », lu au rendu : sa notation suit la plateforme (fiche 145). */
+const activityKeys = () => SHORTCUTS.find((s) => s.command === 'activity')?.keys ?? ''
 const GROUPING_KEY = 'bob:historique-regroupement'
 /** Dossiers repliés : leur chemin (le projet, fiche 131 ; le dossier de travail avant). */
 const FOLDED_KEY = 'bob:dossiers-replies'
@@ -250,6 +253,8 @@ export function Sidebar(props: Props) {
         onDoubleClick={resetWidth}
       />
       <div className="sidebar-header drag">
+        {/* Menu ☰ de Bobine hors macOS (fiche 145), à gauche ; barre repliée : dans l'en-tête. */}
+        {props.open && !platformFeatures().appMenu && <AppMenuButton />}
         {/* Rechercher en icône (fiche 144), à gauche du bouton qui masque la barre. */}
         <Tip label={t('sidebar.search')} command="search">
           <button
@@ -477,7 +482,7 @@ function SidebarFixed(
           <ChartColumn size={15} />
         </span>
         <span className="label">{t('sidebar.activity')}</span>
-        <kbd className="sidebar-kbd">{ACTIVITY_KEYS}</kbd>
+        <kbd className="sidebar-kbd">{activityKeys()}</kbd>
       </button>
 
       {!props.discussion && (

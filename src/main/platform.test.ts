@@ -14,7 +14,11 @@ describe('capacités de la plateforme (fiche 145)', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
-      dockBadge: false
+      dockBadge: false,
+      appMenu: false,
+      insetTitleBar: false,
+      commandKey: false,
+      overlayScrollbars: false
     })
   })
 
@@ -50,7 +54,11 @@ describe('argument du renderer', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
-      dockBadge: false
+      dockBadge: false,
+      appMenu: false,
+      insetTitleBar: false,
+      commandKey: false,
+      overlayScrollbars: false
     })
   })
 
@@ -62,7 +70,11 @@ describe('argument du renderer', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
-      dockBadge: false
+      dockBadge: false,
+      appMenu: false,
+      insetTitleBar: false,
+      commandKey: false,
+      overlayScrollbars: false
     })
   })
 })

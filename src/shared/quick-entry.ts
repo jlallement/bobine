@@ -4,6 +4,7 @@
  * (⌥Espace tape l'espace insécable sur un clavier français).
  */
 import { t } from 'i18next'
+import { displayKeys } from './shortcuts'
 export const QUICK_SHORTCUTS = {
   off: {
     get label() {
@@ -12,7 +13,16 @@ export const QUICK_SHORTCUTS = {
     accelerator: '',
     keys: ''
   },
-  'alt-cmd-b': { label: '⌥⌘B', accelerator: 'Alt+Command+B', keys: '⌥⌘B' },
+  // ⌥⌘B sur macOS, Ctrl+Alt+B ailleurs (fiche 145).
+  'alt-cmd-b': {
+    get label() {
+      return displayKeys('⌥⌘B')
+    },
+    accelerator: 'Alt+CommandOrControl+B',
+    get keys() {
+      return displayKeys('⌥⌘B')
+    }
+  },
   'alt-space': {
     get label() {
       return t('quick.shortcut.altSpace')

@@ -88,7 +88,9 @@ export async function quickSuite(scheme) {
         const main = await mainProcess()
         try {
           check(
-            await main.evaluate(`require('electron').globalShortcut.isRegistered('Alt+Command+B')`),
+            await main.evaluate(
+              `require('electron').globalShortcut.isRegistered('Alt+CommandOrControl+B')`
+            ),
             'raccourci global ⌥⌘B enregistré'
           )
           await menuItem(main, 'quick-entry')
@@ -248,14 +250,14 @@ export async function quickSuite(scheme) {
           await ui.waitFor(`${ui.$('settings-quick-shortcut')}.value === 'off'`)
           await sleep(300)
           const off = await main.evaluate(
-            `require('electron').globalShortcut.isRegistered('Alt+Command+B')`
+            `require('electron').globalShortcut.isRegistered('Alt+CommandOrControl+B')`
           )
           await setShortcut('alt-cmd-b')
           await sleep(300)
           check(
             !off &&
               (await main.evaluate(
-                `require('electron').globalShortcut.isRegistered('Alt+Command+B')`
+                `require('electron').globalShortcut.isRegistered('Alt+CommandOrControl+B')`
               )),
             'réglage : raccourci désactivé, puis remis'
           )
