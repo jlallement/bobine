@@ -29,7 +29,7 @@ Lire avant toute tâche non triviale :
 |---|---|
 | Installer | `pnpm install` |
 | Lancer en dev | `pnpm dev` |
-| **Vérifier (obligatoire avant de dire « fini »)** | `./scripts/verify` (sous Windows : `bash scripts/verify` depuis Git Bash, fiche 229) |
+| **Vérifier (obligatoire avant de dire « fini »)** | `./scripts/verify` (sous Windows : `bash scripts/verify` depuis Git Bash) ; en CI, bloquant sur macOS, Linux et Windows (`ci.yml`) — fiche 229 |
 | Tests seuls | `pnpm test` |
 | Build | `pnpm build` |
 | Formater | `pnpm format` |
@@ -38,7 +38,7 @@ Lire avant toute tâche non triviale :
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` (sous Linux et Windows : l'app installée, `.deb` ou NSIS, fiche 229) ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
 | Installeur Windows (préversion, NSIS) | `pnpm package --win` (`--x64`, `--arm64`, `--dir`), depuis le Mac ou Windows (là : `node scripts/package-win.mts`) — fiche 229 |
-| Publier une version (.dmg sur GitHub) | `pnpm build && pnpm e2e --if-needed` vert (suite complète), version dans `package.json`, « Prochaine version » de `CHANGELOG.md` (et « Next version » de `CHANGELOG.en.md`) renommée `X.Y.Z — date`, `main` poussé, puis `git tag vX.Y.Z && git push origin vX.Y.Z` (tag hors de `main` refusé) ; préversion `X.Y.Z-beta.N` : même chemin, Release marquée préversion — fiches 059, 218 |
+| Publier une version (.dmg sur GitHub) | `pnpm build && pnpm e2e --if-needed` vert (suite complète), version dans `package.json`, « Prochaine version » de `CHANGELOG.md` (et « Next version » de `CHANGELOG.en.md`) renommée `X.Y.Z — date`, `main` poussé, puis `git tag vX.Y.Z && git push origin vX.Y.Z` (tag hors de `main` refusé ; rien n'est construit tant que `ci.yml` n'est pas vert sur les trois systèmes pour ce commit) ; préversion `X.Y.Z-beta.N` : même chemin, Release marquée préversion — fiches 059, 218 |
 | Captures du README (vitrine, image de partage, GIF, vidéo) | à chaque version, et après un changement d'apparence : `pnpm build && pnpm vitrine` puis `pnpm vitrine --lang fr` (agent de démo, sans modèle ; `ffmpeg` et `gifski` requis, `--sans-video` sinon) — fiche 225 |
 | Electron sans réseau (archive obtenue ailleurs) | `pnpm electron-local <electron-vX-darwin-arm64.zip>` — fiche 065 |
 | AXe (simulateur iOS) en dev | extrait par `pnpm dev` / `pnpm preview` (sinon `pnpm fetch-axe`) — essai réel : `pnpm simulator-smoke` |
@@ -59,8 +59,10 @@ Une tâche est terminée seulement si :
    sombre), et leurs captures ont été regardées ; c'est aussi ce qui tourne **avant chaque push**.
    La suite complète (`pnpm e2e --if-needed`) tourne **avant un tag de version**, et quand le lot
    le justifie (refonte, fichier partagé par beaucoup de suites). Sur GitHub, `verify`
-   tourne à chaque pull request (`ci.yml`, Linux) ; les e2e seulement à la main (`e2e.yml`,
-   onglet Actions : Mac, ou Linux sous `xvfb` en expérimental, fiche 145).
+   tourne à chaque pull request et poussée sur `main`, **bloquant sur macOS, Linux et Windows**
+   (`ci.yml`, fiche 229) : un essai propre à un système y est sauté par capacité, avec la raison
+   (`src/main/test-platform.ts`), jamais en vrac. Les e2e Linux partent à chaque poussée sur
+   `main`, non bloquants (échecs connus) ; macOS et Windows à la main (`e2e.yml`, onglet Actions).
 3. La fiche `docs/features/NNN-*.md` est à jour (statut, ce qui a été fait, écarts au plan).
 4. Si une décision structurante a été prise : un ADR existe dans `docs/adr/`.
 5. Si l'architecture a bougé : `docs/architecture.md` est à jour.

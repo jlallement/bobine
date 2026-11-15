@@ -1,5 +1,6 @@
 # Essais de bout en bout (fiche 105) : la suite complète (`pnpm e2e`, clair et sombre, puis en
-# anglais) sur un Mac de GitHub, lancée à la main depuis l'onglet Actions. Pas rattachée au tag ni
+# anglais) sur un Mac de GitHub, lancée à la main depuis l'onglet Actions. Le job Linux part aussi
+# de lui-même à chaque poussée sur `main` (fiche 229), sans bloquer. Pas rattachée au tag ni
 # aux pull requests : Electron doit encore faire ses preuves sur un runner GitHub (fenêtres,
 # presse-papiers, menus), et un échec ne doit pas bloquer une version. Les captures sont gardées
 # en artefact pour être regardées.
@@ -16,6 +17,9 @@
 name: End-to-end
 
 on:
+  # Linux à chaque poussée sur `main` (fiche 229), non bloquant ; le reste à la main.
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       suites:
@@ -76,11 +80,14 @@ jobs:
           path: e2e/captures/
           retention-days: 7
 
+  # Lancé aussi à chaque poussée sur `main` (fiche 229). Non bloquant (`continue-on-error`) tant que
+  # des échecs connus restent sous Linux : police DejaVu (captures), `pannes-visibles`.
   e2e-linux:
-    name: pnpm e2e (Linux x64, expérimental)
-    if: inputs.systeme == 'linux' || inputs.systeme == 'les-deux'
+    name: pnpm e2e (Linux x64, non bloquant — échecs connus DejaVu, pannes-visibles)
+    if: github.event_name == 'push' || inputs.systeme == 'linux' || inputs.systeme == 'les-deux'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    continue-on-error: true
     steps:
       - name: Suites demandées
         run: |

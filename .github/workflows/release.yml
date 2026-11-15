@@ -18,7 +18,7 @@
 #
 # Dépôt public (fiche 218) : le jeton est en lecture partout ; seul le job `publish`, qui ne fait
 # que télécharger les fichiers construits et créer la Release, l'a en écriture. Une Release ne part
-# que d'un commit de `main` (job `guard`). Un tag avec suffixe (`v1.0.0-beta.1`) donne une
+# que d'un commit de `main` dont `ci.yml` est vert sur macOS, Linux et Windows (job `guard`). Un tag avec suffixe (`v1.0.0-beta.1`) donne une
 # Release « préversion », jamais « Latest ». Actions tierces épinglées par SHA (Dependabot).
 #
 # Signature (fiche 111). Sans secret, signature ad hoc, comme `pnpm package` en local. Avec ces
@@ -52,9 +52,12 @@ concurrency:
 
 jobs:
   guard:
-    name: tag ↔ version, commit de main
+    name: tag ↔ version, commit de main, CI verte
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 70
+    permissions:
+      contents: read
+      checks: read
     steps:
       # Historique complet : `origin/main` sert à vérifier d'où part le tag.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,6 +83,44 @@ jobs:
             echo "::error::Tag $GITHUB_REF_NAME sur $GITHUB_SHA, absent de main : pousser main avant le tag."
             exit 1
           fi
+
+      # CI bloquante sur les trois systèmes (fiche 229, décision de Jérôme) : un tag ne construit
+      # rien tant que `ci.yml` n'est pas vert sur macOS, Linux et Windows pour ce commit. Lecture
+      # du statut du commit par l'API (jeton du job, lecture seule, aucun secret) ; on attend les
+      # jobs encore en cours (poussée de `main` juste avant le tag), une heure au plus.
+      - name: CI verte sur les trois systèmes pour ce commit
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          required=('verify (macOS)' 'verify (Linux)' 'verify (Windows)')
+          deadline=$((SECONDS + 3600))
+          while :; do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?filter=latest&per_page=100" \
+              --jq '.check_runs[] | [.name, .status, (.conclusion // "")] | @tsv')"
+            waiting=()
+            for name in "${required[@]}"; do
+              line="$(awk -F '\t' -v n="$name" '$1 == n' <<< "$runs" | head -n 1)"
+              status="$(cut -f2 <<< "$line")"
+              conclusion="$(cut -f3 <<< "$line")"
+              if [[ -z "$line" || "$status" != "completed" ]]; then
+                waiting+=("$name")
+              elif [[ "$conclusion" != "success" ]]; then
+                echo "::error::$name : $conclusion sur $GITHUB_SHA. Corriger, pousser main, puis reposer le tag."
+                exit 1
+              fi
+            done
+            if [[ ${#waiting[@]} -eq 0 ]]; then
+              echo "CI verte sur les trois systèmes pour $GITHUB_SHA."
+              break
+            fi
+            if (( SECONDS > deadline )); then
+              echo "::error::CI pas terminée après une heure : ${waiting[*]}."
+              exit 1
+            fi
+            echo "En attente : ${waiting[*]}"
+            sleep 30
+          done
 
   dmg:
     name: .dmg (macOS arm64)
