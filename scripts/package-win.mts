@@ -84,8 +84,11 @@ export const WINDOWS_EXCLUSIONS = [
   '!node_modules/node-pty/prebuilds/**/*.pdb',
   '!node_modules/node-pty/prebuilds/*/{pty.node,winpty.dll,winpty-agent.exe}',
   // koffi : ses sources C, ses dépendances vendues et sa doc ne servent pas ; binaire de
-  // l'architecture construite seulement.
-  '!node_modules/koffi/{src,vendor,doc}/**',
+  // l'architecture construite seulement. `src/` porte aussi son code (`index.cjs` charge
+  // `src/koffi/index.cjs`, puis `src/koffi/src/static.cjs`) : seules les sources C en sortent
+  // (sans quoi koffi ne se charge pas et l'app retombe sur `taskkill`, vu dans la VM).
+  '!node_modules/koffi/src/**/*.{cc,hh,S,asm,def,inc,txt}',
+  '!node_modules/koffi/{vendor,doc}/**',
   '!node_modules/@koromix/!(koffi-win32-${arch})/**'
 ]
 
@@ -155,12 +158,19 @@ export function expectedFiles(arch: WindowsArch): string[] {
 export const koffiBinary = (arch: WindowsArch): RegExp =>
   new RegExp(`(^|/)@koromix/koffi-win32-${arch}/win32_${arch}/koffi\\.node$`)
 
+/** Fichiers que koffi lit pour se charger (`index.cjs` → `src/koffi/index.cjs` → `src/static.cjs`). */
+export const KOFFI_LOADER = [
+  'index.cjs',
+  'src/koffi/index.cjs',
+  'src/koffi/src/static.cjs'
+] as const
+
 /** Seules entrées admises à la racine de l'asar : le build, les dépendances, package.json. */
 export const ASAR_ROOTS = ['node_modules', 'out', 'package.json']
 
 /**
  * Ce qui ne va pas dans l'asar : entrées hors de `ASAR_ROOTS` (le dépôt entier, si `files` est mal
- * combiné), koffi absent, binaires de koffi d'un autre système.
+ * combiné), koffi absent ou incomplet, binaires de koffi d'un autre système.
  */
 export function asarProblems(entries: readonly string[], arch: WindowsArch): string[] {
   const paths = entries.map((e) => e.replace(/\\/g, '/').replace(/^\/+/, ''))
@@ -170,6 +180,13 @@ export function asarProblems(entries: readonly string[], arch: WindowsArch): str
     .sort()
     .map((root) => `hors du build dans app.asar : ${root}`)
   if (!paths.includes('node_modules/koffi/package.json')) problems.push('koffi absent de app.asar')
+  else {
+    for (const file of KOFFI_LOADER) {
+      if (!paths.includes(`node_modules/koffi/${file}`)) {
+        problems.push(`koffi incomplet dans app.asar : ${file} (il ne se chargerait pas)`)
+      }
+    }
+  }
   const others = new Set(
     paths
       .map((p) => /(?:^|\/)@koromix\/([^/]+)/.exec(p)?.[1])

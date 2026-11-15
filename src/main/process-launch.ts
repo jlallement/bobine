@@ -21,7 +21,7 @@
  *    commande à cet endroit.
  */
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process'
-import { accessSync, constants, lstatSync, statSync } from 'node:fs'
+import { accessSync, closeSync, constants, lstatSync, openSync, readSync, statSync } from 'node:fs'
 import { posix, win32 } from 'node:path'
 
 /** Famille du système pour les processus : groupes et signaux, ou objets de tâche et `.cmd`. */
@@ -326,8 +326,8 @@ function isAppExecutionAlias(file: string, error: unknown): boolean {
  * Windows non plus (voir `WINDOWS_HANDLES` dans la fiche 229).
  */
 export const CLOSE_FDS_SCRIPT =
-  'for f in /proc/$$/fd/*; do n=${f##*/}; ' +
-  'if [ "$n" -gt 2 ]; then { exec {n}>&-; } 2>/dev/null; fi; done; exec -- "$@"'
+  'k=$1; shift; for f in /proc/$$/fd/*; do n=${f##*/}; ' +
+  'if [ "$n" -gt "$k" ]; then { exec {n}>&-; } 2>/dev/null; fi; done; exec -- "$@"'
 
 /** `bash` du relais, posé au démarrage sous Linux seulement ; absent : pas de relais. */
 let closeFdsShell: string | undefined
@@ -342,24 +342,92 @@ export function configureFdRelay(
   return closeFdsShell
 }
 
+/** Ce que le relais doit savoir du lancement. */
+export interface RelayOptions {
+  /** Dossier du lancement : un programme donné par un chemin relatif s'y résout, comme `exec`. */
+  cwd?: string | URL | undefined
+  /** `stdio` du lancement : les descripteurs qu'il passe (3 et plus) sont gardés, pas fermés. */
+  stdio?: SpawnOptions['stdio']
+  /** Début d'un fichier (essais : simulé). */
+  readHead?: (file: string) => Buffer | undefined
+}
+
+/** Plus haut descripteur que le lancement passe à l'enfant (2, ou au-delà par `stdio`). */
+export function highestPassedFd(stdio: SpawnOptions['stdio']): number {
+  return Array.isArray(stdio) ? Math.max(2, stdio.length - 1) : 2
+}
+
+/** Les 128 premiers octets d'un fichier ; rien s'il ne se lit pas. */
+function fileHead(file: string): Buffer | undefined {
+  let fd: number | undefined
+  try {
+    fd = openSync(file, 'r')
+    const head = Buffer.alloc(128)
+    return head.subarray(0, readSync(fd, head, 0, 128, 0))
+  } catch {
+    return undefined
+  } finally {
+    if (fd !== undefined) closeSync(fd)
+  }
+}
+
+/**
+ * Le noyau exécutera-t-il ce programme tel quel ? Un ELF, ou un script `#!` dont l'interpréteur
+ * existe et s'exécute. Le relais n'est pris que dans ces cas : son `exec` y réussit forcément,
+ * comme celui de `spawn`. Dans les autres (interpréteur absent, fichier ni ELF ni `#!`), `spawn`
+ * rend ses propres erreurs, que `bash` ne sait pas reproduire (`ENOENT` devenu un code 127,
+ * repli de glibc par `/bin/sh` devenu un code 126, mesurés dans Docker) : le lancement reste
+ * direct, et les messages de l'app (« commande introuvable », agent qui ne démarre pas) sont
+ * les mêmes. Un format reconnu par le noyau (`binfmt_misc` : Wine, `.jar`…) ne se distingue pas
+ * d'un fichier invalide sans l'exécuter : il reste direct aussi (fiche 145, reste connu).
+ */
+export function kernelExecutes(
+  program: string,
+  readHead: (file: string) => Buffer | undefined,
+  isProgram: (file: string) => boolean
+): boolean {
+  const head = readHead(program)
+  if (!head || head.length < 4) return false
+  if (head[0] === 0x7f && head.subarray(1, 4).toString('latin1') === 'ELF') return true
+  if (head[0] !== 0x23 || head[1] !== 0x21) return false
+  const interpreter = head.subarray(2).toString('latin1').split('\n')[0]?.trim().split(/\s+/)[0]
+  return !!interpreter && posix.isAbsolute(interpreter) && isProgram(interpreter)
+}
+
 /**
  * Le plan, lancé par le relais quand il est posé (Linux) : `bash -c CLOSE_FDS_SCRIPT bobine-fds
- * <programme> <arguments>`. Le programme est d'abord cherché dans le PATH : introuvable, le plan
- * reste tel quel, et `spawn` rend `ENOENT` comme avant (messages « commande introuvable », « git
- * est introuvable »).
+ * <dernier descripteur gardé> <programme> <arguments>`. Le programme est d'abord résolu comme
+ * `exec` le ferait (PATH, ou chemin relatif au `cwd` du lancement) : introuvable, ou que le
+ * noyau n'exécuterait pas tel quel (`kernelExecutes`), le plan reste tel quel et `spawn` rend
+ * ses erreurs comme avant. Les descripteurs que `stdio` passe sont gardés.
  */
 export function withClosedFds(
   plan: LaunchPlan,
   ctx: LaunchContext,
-  shell: string | undefined = closeFdsShell
+  shell: string | undefined = closeFdsShell,
+  options: RelayOptions = {}
 ): LaunchPlan {
   if (!shell || ctx.system !== 'posix') return plan
-  const program = findProgram(plan.file, ctx)
-  if (!program) return plan
+  const cwd = options.cwd instanceof URL ? options.cwd.pathname : options.cwd
+  const file =
+    isPathLike(plan.file, 'posix') && !posix.isAbsolute(plan.file)
+      ? posix.resolve(cwd ?? process.cwd(), plan.file)
+      : plan.file
+  const program = findProgram(file, ctx)
+  if (!program || !kernelExecutes(program, options.readHead ?? fileHead, ctx.isProgram)) {
+    return plan
+  }
   return {
     ...plan,
     file: shell,
-    args: ['-c', CLOSE_FDS_SCRIPT, 'bobine-fds', program, ...plan.args]
+    args: [
+      '-c',
+      CLOSE_FDS_SCRIPT,
+      'bobine-fds',
+      String(highestPassedFd(options.stdio)),
+      program,
+      ...plan.args
+    ]
   }
 }
 
@@ -370,11 +438,14 @@ export function withClosedFds(
 export function relayed(
   file: string,
   args: readonly string[],
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  options: RelayOptions = {}
 ): [string, string[]] {
   const plan = withClosedFds(
     { file, args: [...args], verbatim: false, kind: 'direct' },
-    launchContext(env)
+    launchContext(env),
+    closeFdsShell,
+    options
   )
   return [plan.file, plan.args]
 }
@@ -410,7 +481,10 @@ export function launchProgram(
   const plan = shellCommand ? planShellCommand(command, ctx) : planLaunch(command, args, ctx)
   // Linux : par le relais qui ferme les descripteurs hérités ; le plan rendu reste celui de la
   // commande (journal, registre).
-  const launched = withClosedFds(plan, ctx)
+  const launched = withClosedFds(plan, ctx, closeFdsShell, {
+    cwd: options.cwd,
+    stdio: options.stdio
+  })
   const child = spawn(launched.file, launched.args, launchOptions(plan, ctx.system, options))
   return { child, plan }
 }

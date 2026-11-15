@@ -49,7 +49,9 @@ export const spawnNodePty: SpawnPty = (shell, args, options) => {
   const pty = require('node-pty') as typeof import('node-pty')
   // Linux : le shell du terminal ne reçoit pas les descripteurs du main (fiche 145) ; même pid
   // après `exec`, même nom de processus. Ailleurs, tel quel.
-  const [file, argv] = relayed(shell, args, options.env as NodeJS.ProcessEnv)
+  const [file, argv] = relayed(shell, args, options.env as NodeJS.ProcessEnv, {
+    cwd: options.cwd
+  })
   const term = pty.spawn(file, argv, {
     name: 'xterm-256color',
     cols: options.cols,

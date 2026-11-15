@@ -81,7 +81,14 @@ describe('paquet Windows (fiche 229)', () => {
   })
 
   it('app.asar : le build, les dépendances, package.json ; koffi de l’architecture', () => {
-    const base = ['/out/main/index.js', '/node_modules/koffi/package.json', '/package.json']
+    const base = [
+      '/out/main/index.js',
+      '/node_modules/koffi/package.json',
+      '/node_modules/koffi/index.cjs',
+      '/node_modules/koffi/src/koffi/index.cjs',
+      '/node_modules/koffi/src/koffi/src/static.cjs',
+      '/package.json'
+    ]
     expect(
       asarProblems([...base, '/node_modules/@koromix/koffi-win32-arm64/package.json'], 'arm64')
     ).toEqual([])
@@ -103,6 +110,43 @@ describe('paquet Windows (fiche 229)', () => {
       'koffi absent de app.asar',
       "binaire de koffi d'un autre système : koffi-darwin-arm64"
     ])
+  })
+
+  it('koffi sans son code de chargement (src/*.cjs exclu à tort) : dit, il ne se chargerait pas', () => {
+    expect(
+      asarProblems(
+        [
+          '/out/main/index.js',
+          '/node_modules/koffi/package.json',
+          '/node_modules/koffi/index.cjs',
+          '/package.json',
+          '/node_modules/@koromix/koffi-win32-arm64/package.json'
+        ],
+        'arm64'
+      )
+    ).toEqual([
+      'koffi incomplet dans app.asar : src/koffi/index.cjs (il ne se chargerait pas)',
+      'koffi incomplet dans app.asar : src/koffi/src/static.cjs (il ne se chargerait pas)'
+    ])
+  })
+
+  it('les exclusions de koffi gardent son code JavaScript, pas ses sources C', async () => {
+    const { matchesGlob } = await import('node:path')
+    const excluded = (path: string) =>
+      WINDOWS_EXCLUSIONS.some((rule) =>
+        matchesGlob(path, rule.slice(1).replace('${arch}', 'arm64'))
+      )
+    for (const file of ['index.cjs', 'src/koffi/index.cjs', 'src/koffi/src/static.cjs']) {
+      expect(excluded(`node_modules/koffi/${file}`)).toBe(false)
+    }
+    for (const file of [
+      'src/koffi/src/ffi.cc',
+      'src/koffi/src/abi_arm64.S',
+      'vendor/x.h',
+      'doc/a.md'
+    ]) {
+      expect(excluded(`node_modules/koffi/${file}`)).toBe(true)
+    }
   })
 
   it('reprend la liste `files` de la racine, adaptée à Windows', () => {

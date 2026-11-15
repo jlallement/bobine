@@ -660,3 +660,22 @@ lancé, rien d'autre à installer sur le Mac.
   Nerd Font reste.
   Mac : `./scripts/verify` vert ; `pnpm e2e pannes-visibles terminal session restart fresh-start
   startup notifications` 13/13.
+- 2026-11-15 — **Relais des descripteurs : trois corrections après relecture** (branche
+  `claude/relais-linux`).
+  1. Un programme donné par un chemin relatif (`./bin/agent`) est résolu contre le `cwd` du
+     lancement (comme `exec` après le changement de dossier), plus contre celui du main :
+     `launchProgram`, `runCommand`, pty, worktrees passent leur `cwd` (`RelayOptions`).
+  2. Les descripteurs passés par `stdio` (3 et plus) sont gardés : le relais reçoit le dernier
+     descripteur à garder (`highestPassedFd`) et ne ferme que les autres.
+  3. Mêmes erreurs qu'un `spawn` direct : mesuré dans Docker, `bash` rendait 127 pour un
+     interpréteur `#!` absent (au lieu d'`ENOENT`) et 126 pour un fichier ni ELF ni `#!` (au lieu
+     du repli de glibc par `/bin/sh`). Le relais n'est pris que si le noyau exécute le programme
+     tel quel (`kernelExecutes` : ELF, ou `#!` dont l'interpréteur existe) ; sinon lancement
+     direct, et rien ne s'exécute dans le cas d'erreur, donc rien ne fuit. **Reste connu** : un
+     format reconnu par `binfmt_misc` (Wine, `.jar`…) ou un script sans `#!` ne se distingue pas
+     d'un fichier invalide sans l'exécuter ; il reste en lancement direct et garde les
+     descripteurs hérités.
+  Essais : `process-fds.test.ts` (unitaires, et deux réels sous Linux : descripteurs hérités
+  fermés et passés gardés ; six cas d'échec identiques avec et sans relais), verts dans Docker ;
+  `pnpm e2e:linux pannes-visibles restart fresh-start session startup` verts, `terminal` avec le
+  seul échec connu des icônes Nerd Font.

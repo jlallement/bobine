@@ -262,18 +262,28 @@ export class Worktrees {
     try {
       // Windows (fiche 229) : environnement de git de l'app (chemins longs) ; Unix : comme avant.
       const env = this.system === 'windows' ? { env: gitEnv(process.env, 'windows') } : {}
-      execFileSync(...relayed(this.git, ['worktree', 'remove', info.path]), {
-        cwd: info.root,
-        stdio: 'ignore',
-        timeout: 10_000,
-        ...env
-      })
-      execFileSync(...relayed(this.git, ['branch', '-D', info.branch]), {
-        cwd: info.root,
-        stdio: 'ignore',
-        timeout: 10_000,
-        ...env
-      })
+      execFileSync(
+        ...relayed(this.git, ['worktree', 'remove', info.path], process.env, {
+          cwd: info.root
+        }),
+        {
+          cwd: info.root,
+          stdio: 'ignore',
+          timeout: 10_000,
+          ...env
+        }
+      )
+      execFileSync(
+        ...relayed(this.git, ['branch', '-D', info.branch], process.env, {
+          cwd: info.root
+        }),
+        {
+          cwd: info.root,
+          stdio: 'ignore',
+          timeout: 10_000,
+          ...env
+        }
+      )
     } catch {
       // Modifié entre-temps, ou déjà parti : on n'insiste pas.
     }
