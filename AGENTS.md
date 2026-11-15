@@ -37,6 +37,7 @@ Lire avant toute tâche non triviale :
 | Essais de bout en bout sous Linux (en local, Docker) | `pnpm e2e:linux [suites…]` : Ubuntu 24.04 dans Docker (Docker Desktop lancé), `xvfb` + openbox, `node_modules` Linux dans un volume à part (ceux du Mac jamais touchés), captures dans `e2e/captures/linux/` ; `--reset` repart d'un volume vide — fiche 145 |
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
+| Installeur Windows (préversion, NSIS) | `pnpm package --win` (`--x64`, `--arm64`, `--dir`), depuis le Mac ou Windows (là : `node scripts/package-win.mts`) — fiche 229 |
 | Publier une version (.dmg sur GitHub) | `pnpm build && pnpm e2e --if-needed` vert (suite complète), version dans `package.json`, « Prochaine version » de `CHANGELOG.md` (et « Next version » de `CHANGELOG.en.md`) renommée `X.Y.Z — date`, `main` poussé, puis `git tag vX.Y.Z && git push origin vX.Y.Z` (tag hors de `main` refusé) ; préversion `X.Y.Z-beta.N` : même chemin, Release marquée préversion — fiches 059, 218 |
 | Captures du README (vitrine, image de partage, GIF, vidéo) | à chaque version, et après un changement d'apparence : `pnpm build && pnpm vitrine` puis `pnpm vitrine --lang fr` (agent de démo, sans modèle ; `ffmpeg` et `gifski` requis, `--sans-video` sinon) — fiche 225 |
 | Electron sans réseau (archive obtenue ailleurs) | `pnpm electron-local <electron-vX-darwin-arm64.zip>` — fiche 065 |

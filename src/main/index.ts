@@ -102,6 +102,7 @@ import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
 import { fontLister } from './fonts'
 import { currentPlatformFeatures, fontSource, systemName } from './platform'
+import { applyAppUserModelId } from './app-user-model-id'
 import { createMainBrowserWindow, createQuickWindow, loadRenderer } from './renderer-windows'
 import { technicalFacts } from './about-window'
 import { appAboutWindow, appHelpWindow, helpIpc } from './secondary-windows'
@@ -204,6 +205,8 @@ function focusMainWindow(): void {
 const userData = freshStart.userData(app.getPath('userData'))
 app.setName('Bobine')
 app.setPath('userData', userData)
+// Notifications de Windows (fiche 229) : identifiant du raccourci posé par l'installeur ; rien ailleurs.
+applyAppUserModelId(app, process.platform)
 
 // Journal (fiche 041) : `~/Library/Logs/Bobine/main.log` ; avec un dossier de données imposé
 // (essais), le journal y reste aussi.

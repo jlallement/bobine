@@ -8,6 +8,11 @@
 # un gestionnaire de fenêtres (openbox), en français seulement ; en local : `pnpm e2e:linux`. Les
 # suites qui demandent une capacité absente de Linux (simulateur iOS) sont
 # sautées et nommées par le lanceur ; un échec dit ce qui reste à faire pour la préversion.
+#
+# Windows, expérimental (fiche 229) : la même suite sur `windows-latest` (bureau réel, pas d'écran
+# virtuel), en français, en Git Bash ; pnpm lance aussi ses scripts par bash (`script-shell`),
+# puisque `pree2e` est un script bash. Très rouge tant que les lots 2, 3 et 7 (processus, chemins,
+# faux outils en node) ne sont pas dans `main`. « les-deux » reste macOS + Linux.
 name: End-to-end
 
 on:
@@ -20,7 +25,7 @@ on:
       systeme:
         description: 'Système'
         type: choice
-        options: [macos, linux, les-deux]
+        options: [macos, linux, windows, les-deux]
         default: macos
 
 permissions:
@@ -34,7 +39,7 @@ env:
 jobs:
   e2e:
     name: pnpm e2e (macOS arm64)
-    if: inputs.systeme != 'linux'
+    if: inputs.systeme == 'macos' || inputs.systeme == 'les-deux'
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -73,7 +78,7 @@ jobs:
 
   e2e-linux:
     name: pnpm e2e (Linux x64, expérimental)
-    if: inputs.systeme != 'macos'
+    if: inputs.systeme == 'linux' || inputs.systeme == 'les-deux'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -127,5 +132,51 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-captures-linux
+          path: e2e/captures/
+          retention-days: 7
+
+  e2e-windows:
+    name: pnpm e2e (Windows x64, expérimental)
+    if: inputs.systeme == 'windows'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      # Scripts de package.json (`pree2e` : ./scripts/check-electron) par bash, pas par `cmd`.
+      npm_config_script_shell: C:\Program Files\Git\bin\bash.exe
+    steps:
+      - name: Suites demandées
+        run: |
+          if [[ ! "$SUITES" =~ ^[A-Za-z0-9\ ._=-]*$ ]]; then
+            echo "::error::Suites refusées : seulement des noms de suites et des options (pnpm e2e --list)."
+            exit 1
+          fi
+      - name: Fins de ligne (LF)
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Identité git pour les essais
+        run: |
+          git config --global user.name "Bobine CI"
+          git config --global user.email "ci@users.noreply.github.com"
+      - run: pnpm build
+      - name: Essais (français)
+        run: |
+          read -ra suites <<< "$SUITES"
+          pnpm e2e ${suites[@]+"${suites[@]}"}
+      - name: Captures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-captures-windows
           path: e2e/captures/
           retention-days: 7

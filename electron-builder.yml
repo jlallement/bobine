@@ -97,6 +97,48 @@ dmg:
   artifactName: Bobine-${version}-${arch}.${ext}
   writeUpdateInfo: false
   # Configuration de nom/signature lue par le hook, sans lancer la cible dmg-builder.
+# Préversion Windows (fiche 229, D1 à D3, ADR-0050) : installeur NSIS pour l'utilisateur seul
+# (`%LOCALAPPDATA%\Programs\bobine`, jamais de droits d'administrateur), raccourcis du menu Démarrer
+# et du bureau, x64 et arm64 (une construction par architecture : `pnpm package --win`). Pas de
+# signature : SmartScreen avertit au premier lancement, la somme SHA-256 est publiée.
+win:
+  icon: build/icon.ico
+  target: nsis
+  # Rien à publier pour une mise à jour automatique (il n'y en a pas) : pas de latest.yml.
+  publish: null
+  # Fichiers : `scripts/package-win.mts` reprend la liste `files` de la racine (jamais une liste à
+  # part ici : une liste de seules exclusions y ferait entrer tout le dépôt) et l'adapte à Windows :
+  # node-pty et koffi de l'architecture construite seulement (`windowsFiles`), sans .pdb ni winpty.
+  # Le .node de koffi (objets de tâche, ADR-0050) hors de l'asar, comme celui de node-pty.
+  asarUnpack:
+    - node_modules/@koromix/koffi-win32-*/**/*.node
+  # ConPTY (conpty.dll, OpenConsole.exe) vient de Windows Terminal (Microsoft, MIT) : son texte de
+  # licence est livré à côté des autres (fiche 217).
+  # koffi est exclu des avis de licence (absent des apps Mac et Linux, `EXCLUDED_FROM_APP`) : son
+  # texte (MIT, aussi celui de ses binaires `@koromix/koffi-*`) est livré ici.
+  extraResources:
+    - from: scripts/third-party/texts/microsoft-terminal-LICENSE.txt
+      to: licenses/conpty/LICENSE.txt
+    - from: node_modules/koffi/LICENSE.txt
+      to: licenses/koffi/LICENSE.txt
+# NSIS 3.12 en un seul paquet (makensis pour macOS arm64, Linux et Windows), au lieu du 3.0.4 de
+# 2019 dont le makensis pour macOS n'existe qu'en x86_64 (Rosetta). Même outil sur le Mac et sur le
+# runner Windows de GitHub. Ne sert qu'à l'installeur Windows.
+toolsets:
+  nsis: '1.2.1'
+nsis:
+  # Un clic, sans choix : pour l'utilisateur seul, donc jamais d'élévation (D1).
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Bobine
+  # Données gardées à la désinstallation, comme sur le Mac.
+  deleteAppDataOnUninstall: false
+  artifactName: Bobine-${version}-${arch}.${ext}
+  # Pas de mise à jour automatique (fiche 229, section 10) : pas de .blockmap (ni de latest.yml :
+  # `win.publish`).
+  differentialPackage: false
 # Préversion Linux (fiche 145, ADR-0032) : AppImage (partout, sans droits) et .deb (Ubuntu,
 # Debian), pour l'architecture de la machine qui construit (x64 et arm64 : une machine GitHub
 # chacune). Pas de signature : la somme SHA-256 est publiée avec la version.

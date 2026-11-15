@@ -8,6 +8,8 @@
 #   pnpm package --strict    une configuration de signature incomplète est une erreur (release.yml)
 #   pnpm package --linux     AppImage + .deb, pour l'architecture de la machine (Linux seulement),
 #                            puis contrôle du .deb (scripts/check-linux-package.mts)
+#   pnpm package --win       installeurs NSIS x64 et arm64 (préversion, fiche 229), depuis le Mac
+#                            ou Windows : scripts/package-win.mts (--x64, --arm64, --dir)
 #
 # Signature (fiche 111, scripts/signing.mts) : « ad hoc » par défaut (l'app se lance sur la machine
 # qui l'a construite). Jamais un certificat pris d'office dans le trousseau : il faut le désigner
@@ -17,6 +19,12 @@
 # « Developer ID Application »).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# Windows (fiche 229) : demandé explicitement (`--win`), en node pour tourner aussi sous Windows,
+# où pnpm lance les scripts par `cmd` (`node scripts/package-win.mts` y est appelé directement).
+if [[ " $* " == *" --win "* || " $* " == *" --windows "* ]]; then
+  exec node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/package-win.mts "$@"
+fi
 
 # Linux (fiche 145, ADR-0032) : demandé explicitement (`--linux`), jamais deviné d'après la
 # machine. Ni signature ni notarisation, ni AXe (simulateur iOS absent). node-pty n'a pas de binaire

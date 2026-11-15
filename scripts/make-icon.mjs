@@ -10,12 +10,19 @@
  * nouvelle build/icon.png ; `scripts/linux-icons.test.ts` vérifie qu'elles sont là et à leur taille.
  *
  *   pnpm exec electron scripts/make-icon.mjs --linux
+ *
+ * Avec `--win` (fiche 229) : build/icon.ico, une image par taille de `WINDOWS_ICON_SIZES` (16 à
+ * 256 px), réduites depuis build/icon.png comme pour Linux ; `scripts/windows-icon.test.ts` vérifie
+ * les tailles.
+ *
+ *   pnpm exec electron scripts/make-icon.mjs --win
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, nativeImage } from 'electron'
 import { LINUX_ICON_SIZES } from './linux-icons.mjs'
+import { WINDOWS_ICON_SIZES, encodeIco } from './windows-icon.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const svg = readFileSync(join(root, 'build', 'icon.svg'), 'utf8')
@@ -23,6 +30,17 @@ const svg = readFileSync(join(root, 'build', 'icon.svg'), 'utf8')
 app.dock?.hide()
 // Pas d'`await` au niveau supérieur avant `ready` : Electron ne démarrerait pas.
 void app.whenReady().then(async () => {
+  if (process.argv.includes('--win')) {
+    const source = nativeImage.createFromPath(join(root, 'build', 'icon.png'))
+    const images = WINDOWS_ICON_SIZES.map((size) => ({
+      size,
+      png: source.resize({ width: size, height: size, quality: 'best' }).toPNG()
+    }))
+    writeFileSync(join(root, 'build', 'icon.ico'), encodeIco(images))
+    console.log(`build/icon.ico : ${WINDOWS_ICON_SIZES.map((n) => `${n}x${n}`).join(', ')}`)
+    app.quit()
+    return
+  }
   if (process.argv.includes('--linux')) {
     const source = nativeImage.createFromPath(join(root, 'build', 'icon.png'))
     const dir = join(root, 'build', 'icons')
