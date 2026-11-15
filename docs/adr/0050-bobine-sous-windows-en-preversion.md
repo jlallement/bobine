@@ -1,7 +1,8 @@
 # ADR-0050 — Bobine sous Windows en préversion
 
-- **Statut** : proposé (décisions D1 à D9 tranchées par Jérôme le 2026-11-15, fiche 229 ; le
-  moyen d'obtenir l'objet de tâche de D9, et sa dépendance, attendent son accord)
+- **Statut** : accepté (décisions D1 à D9 tranchées par Jérôme le 2026-11-15, fiche 229 ;
+  `koffi` accepté par Jérôme le 2026-11-15 : « Ok pour koffi », à condition que rien ne change
+  dans l'app Mac)
 - **Date** : 2026-11-15
 - **Complète** : [ADR-0032](0032-bobine-multiplateforme.md) (qui annonçait « Windows plus tard,
   ADR à part ») ; ne le remplace pas
@@ -95,7 +96,7 @@ relisant les variables du registre (`HKCU\Environment`, puis `HKLM\…\Session M
 est normalisée à un seul endroit (une seule clé, celle que l'environnement emploie déjà : `Path`
 sous Windows), et les fusions coupent sur `path.delimiter` du système.
 
-**Arbre de processus (D9)** — moyen retenu, sous réserve de l'accord sur la dépendance :
+**Arbre de processus (D9)** — moyen retenu :
 
 - **Un objet de tâche par processus lancé** (agent, sonde MCP, serveur de développement, commande
   d'un travail), créé par l'app avec `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, **sans** sortie
@@ -111,10 +112,13 @@ sous Windows), et les fusions coupent sur `path.delimiter` du système.
   vérifié par `Win32_Process` (`ProcessId`, `ParentProcessId`, `CreationDate`, `CommandLine`, lus
   par `Get-CimInstance` en PowerShell) avec les mêmes règles qu'avec `ps` (même commande, même
   heure de départ, sinon pid réattribué), au lieu des groupes.
-- **Obtenir les appels Win32 sans module à compiler** : **`koffi`** (FFI, MIT), dépendance chargée
-  seulement sous Windows, par `require` paresseux, derrière une interface (`JobApi`) que les essais
-  simulent. Ses binaires précompilés (`@koromix/koffi-win32-x64`, `-win32-arm64`) sont des paquets
-  optionnels par plateforme : rien n'est compilé, et le `.dmg` n'en contient pas.
+- **Obtenir les appels Win32 sans module à compiler** : **`koffi`** (FFI, MIT), version épinglée
+  3.3.8, chargée seulement sous Windows, par `require` paresseux, derrière une interface (`JobApi`)
+  que les essais simulent. Ses binaires précompilés (`@koromix/koffi-win32-x64`, `-win32-arm64`)
+  sont des paquets optionnels par plateforme : rien n'est compilé. Exclue des apps Mac et Linux
+  (`files` d'`electron-builder.yml`, `EXCLUDED_FROM_APP` des avis de licence) : le `.dmg` n'en
+  contient rien. Seul son script d'installation (`cnoke`, choix du binaire) est autorisé dans
+  `allowBuilds`.
 - **Repli** si `koffi` ne se charge pas (antivirus, paquet absent) : `taskkill /T /F /PID` pour
   arrêter, plus le job de libuv (enfants directs tués si le main plante) et le registre relu au
   démarrage. Le repli est dit dans le journal et dans le Diagnostic, jamais en silence.

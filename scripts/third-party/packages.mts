@@ -18,8 +18,11 @@ export interface Inventory {
 /**
  * Dépendances de production exclues de l'app par `files` d'electron-builder.yml (en-têtes C++
  * pour compiler node-pty : rien n'en est livré). Un test vérifie que l'exclusion y est toujours.
+ * `koffi` (objets de tâche, ADR-0050) n'est livré que dans l'app Windows : exclu des apps Mac et
+ * Linux, il entrera dans les avis de l'app Windows avec son binaire `@koromix/koffi-win32-*`
+ * (fiche 229, lot 6).
  */
-export const EXCLUDED_FROM_APP = ['node-addon-api']
+export const EXCLUDED_FROM_APP = ['node-addon-api', 'koffi']
 
 /** Licence choisie pour un paquet à double licence, et pourquoi c'est permis. */
 export interface LicenseChoice {

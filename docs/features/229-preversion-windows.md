@@ -31,7 +31,7 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
 - [x] Décisions D1 à D9 tranchées par Jérôme (2026-11-15).
 - [x] ADR « Bobine sous Windows en préversion » écrit
       (ADR-0032 l'annonçait) : [ADR-0050](../adr/0050-bobine-sous-windows-en-preversion.md),
-      proposé (dépendance `koffi` soumise à Jérôme).
+      accepté (`koffi` accepté par Jérôme le 2026-11-15).
 - [ ] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
       et démarre ; désinstallation propre (données gardées, comme sur le Mac).
 - [ ] Même sécurité que sur macOS : `contextIsolation`, `sandbox`, CSP, `electronFuses`, agent
@@ -356,7 +356,21 @@ qui complète ADR-0032 sans le modifier. D1 à D8 repris ; lancement (`PATHEXT`,
 obtenu par **`koffi`** (FFI, binaires précompilés win32 x64/arm64), repli `taskkill /T`. Options
 comparées dans l'ADR (aucun addon N-API maintenu pour les jobs ; relais PowerShell `Add-Type`
 écarté : lent, bloqué par AppLocker/WDAC, motif signalé par les antivirus ; binaire relais à
-compiler écarté). **`koffi` n'est pas ajouté** : soumis à Jérôme le 2026-11-15, en attente.
+compiler écarté). `koffi` soumis à Jérôme puis **accepté** le 2026-11-15 (« Ok pour koffi »),
+à trois conditions : rien ne change dans l'app Mac, avis de licence à jour, seul son script
+d'installation autorisé dans pnpm. ADR passé à « accepté ».
+
+**Dépendance ajoutée : `koffi` 3.3.8** (MIT, Niels Martignène), version exacte, dans
+`dependencies`. FFI vers `kernel32.dll` pour les objets de tâche (`job-api-koffi.ts`), sans rien
+compiler : binaires précompilés en paquets optionnels par plateforme (`@koromix/koffi-<os>-<arch>`,
+tous au lockfile ; pnpm n'installe que celui de la machine). `allowBuilds: koffi: true` (son script
+`cnoke` choisit le binaire), rien d'autre d'ajouté. Chargée **sous Windows seulement** :
+`process-safety.ts` fait `import('./process-safety-windows')` dans la seule branche Windows, et ce
+module (avec `job-api-koffi.ts`, `process-tree-windows.ts`, `process-registry-windows.ts`) est
+un fichier à part du build (`out/main/process-safety-windows-*.js`) jamais chargé sur macOS ni
+sous Linux. Exclue des apps Mac et Linux par `files` (racine) d'`electron-builder.yml` et
+`EXCLUDED_FROM_APP` des avis de licence ; l'app Windows (lot 6) devra l'y remettre, avec
+`asarUnpack` de son `.node` et ses avis (koffi + `@koromix/koffi-win32-*`).
 
 **Lot 1 — capacités.** Fait.
 - `platformFeatures('win32')` = celles de Linux : rien de ce que seul macOS a ; cadre natif et
@@ -406,7 +420,11 @@ compiler écarté). **`koffi` n'est pas ajouté** : soumis à Jérôme le 2026-1
   `powershell.exe` de `SystemRoot`, `-NoLogo` ; `pwsh`, `powershell`, `cmd` comptent comme
   l'invite (sans `.exe` ni casse). Unix : rien d'imposé, `$SHELL -l` comme avant.
 - ✅ `runCommand` (git, adb, outils) : `windowsHide`.
-- Reste : `koffi` et son `JobApi` réel (après accord) ; relais `fresh-start` / `reset` (scripts
+- ✅ `job-api-koffi.ts` : `JobApi` réel (`CreateJobObjectW`, `SetInformationJobObject` avec
+  `KILL_ON_JOB_CLOSE` seul, `OpenProcess` + `AssignProcessToJobObject`,
+  `QueryInformationJobObject` pour compter, `TerminateJobObject`, `CloseHandle`) ; koffi qui ne se
+  charge pas : repli `taskkill`, dit au journal.
+- Reste : relais `fresh-start` / `reset` (scripts
   `/bin/sh`) ; `editors.ts`, `terminal-app.ts`, `chime.ts`, `fonts.ts`, `documents/ipc.ts`
   (`spawn` directs propres au bureau : lot 5) ; émulateur Android détaché (lot 5) ;
   `simulator/*` (macOS seulement) ; ConPTY réel (Ctrl+C, couleurs, redimensionnement) à essayer
@@ -439,10 +457,42 @@ compiler écarté). **`koffi` n'est pas ajouté** : soumis à Jérôme le 2026-1
   - **repli taskkill** : `WindowsTrees` arrête `cmd.exe → slow-agent.cmd → node` en entier ;
   - variables du registre (`WINDOWS_ENV_SCRIPT`) et `Win32_Process` : lus et analysés (≈ 1 s
     chacun).
+  - **koffi dans la VM** (paquets `koffi-3.3.8.tgz` et `@koromix/koffi-win32-arm64-3.3.8.tgz`
+    obtenus par `npm pack`, intégrité SHA-512 identique au lockfile, vérifiée aussi par
+    `Get-FileHash` dans la VM ; décompressés dans le dossier d'essai, rien d'installé ailleurs) :
+    `WindowsTrees` en mode `jobs` avec le vrai `JobApi` — arrêt de `cmd.exe → .cmd → node` en
+    entier, sans `taskkill` ; **plantage simulé du main** (`Stop-Process -Force` du `node` qui
+    tient les jobs) : `cmd.exe` et le `node` de l'agent meurent ; enfant sorti en laissant un
+    petit-enfant : job gardé (compté actif), puis arrêté par `stop`.
 - Installé dans la VM : **Node 24.22.3** (zip officiel `node-v24.22.3-win-arm64.zip` de
   nodejs.org, SHA-256 `b3cc74a2…434f14` vérifié contre `SHASUMS256.txt` sur le Mac puis par
   `Get-FileHash` dans la VM), décompressé dans `C:\Users\jerome\bobine-229`, PATH du système
   non modifié. git non installé (pas nécessaire à ces essais).
+
+**Ce qui change sur macOS et Linux** (consigne de Jérôme : « ne casse pas la version macOS ») :
+rien dans le comportement. Les appels à `spawn` reçoivent exactement les mêmes arguments et
+options qu'avant (`process-start-posix.test.ts` les fige : commande telle quelle, `detached`,
+aucune option de Windows ; `/bin/sh -c` pour les lignes de shell ; mêmes commandes notées au
+registre), les arrêts passent par les mêmes fonctions de `process-group.ts` et `process-registry.ts`
+(inchangés, `process-tree.test.ts`), le shell de connexion et ses lignes de journal sont les
+mêmes, le terminal garde `$SHELL -l` et sa reconnaissance de l'invite, les capacités de `darwin`
+et `linux` sont identiques (suite `platform`). Différences de code sans effet : un appel de plus
+(`configureProcessLaunch('posix')`, valeur déjà par défaut) ; `findExecutable` réécrit sur
+`findProgram` (même algorithme : PATH sur `:`, `X_OK`, fichier ordinaire) ; la préparation des
+worktrees passe `/bin/sh -c` explicitement au lieu de `shell: true` (ce que Node fait lui-même) ;
+`out/main/index.js` contient les fonctions pures de Windows (`process-launch.ts`, lecture du
+registre de `shell-env.ts`), jamais appelées hors Windows. Paquet Mac reconstruit : `app.asar` =
+`out/`, `package.json`, `node_modules/{@xterm, jsonc-parser, node-pty, yaml}`, aucun fichier
+`koffi` ni `@koromix` dans le `.app`.
+
+**Vérifications** (2026-11-15) : `./scripts/verify` vert ; `pnpm third-party-notices --check`
+vert (inventaire inchangé : koffi exclu des apps Mac et Linux) ; `pnpm install --frozen-lockfile`
+vert sur le Mac et sous Linux x64 (Docker `node:24-bookworm`, vrai lockfile, `koffi` se charge) ;
+e2e : campagne complète `--changed` 203/204 (seul `about dark`, presse-papiers écrit au même
+moment par la suite `command` lancée en parallèle, vert rejoué seul), puis `session`, `terminal`,
+`commands`, `command-output`, `filles`, `pannes-visibles`, `restart`, `platform`, `about` en clair
+et sombre : 16/16 sur le build final ; `platform --verbose` : Mac inchangé, Linux et Windows
+simulés sur le Mac. Captures du terminal regardées.
 
 ## Essais
 
@@ -517,3 +567,9 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
   au plan : pas de module `spawnProgram` unique mais deux (`process-launch` pur, `process-tree`
   pour le cycle de vie) ; `cross-spawn` écarté (règles réécrites, `/v:off` en plus, retours à la
   ligne refusés) ; relais `fresh-start`/`reset` et `spawn` du bureau (lot 5) pas encore portés.
+- 2026-11-15 — **`koffi` accepté** par Jérôme : ajouté (3.3.8 exacte, `allowBuilds` limité à
+  lui), `JobApi` réel essayé dans la VM (arbre, plantage du main, orphelin), code Windows chargé
+  par `import()` sous Windows seulement, exclu des apps Mac et Linux. ADR-0050 accepté. Écueil
+  évité : une liste `files` de seules exclusions sous `mac:` faisait entrer tout le dépôt dans
+  l'app (vu en listant l'`app.asar`) ; exclusions remises à la racine. La section `linux:` a déjà
+  une telle liste (`!node_modules/node-pty/prebuilds/**`) : paquets Linux à vérifier (fiche 145).

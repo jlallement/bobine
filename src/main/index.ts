@@ -290,7 +290,9 @@ async function start(): Promise<void> {
     `Démarrage de Bobine ${app.getVersion()} (Electron ${process.versions.electron}), journal ${getVerbosity()}`
   )
   // Avant tout lancement : processus du lancement précédent, permissions (fiche 138).
-  setupProcessSafety(userData, processes)
+  // Sous Windows seulement, une promesse (objets de tâche) ; sous Unix, rien à attendre.
+  const windowsProcesses = setupProcessSafety(userData, processes)
+  if (windowsProcesses) await windowsProcesses
   // Lancée depuis le Finder, l'app n'a qu'un environnement minimal : on reprend celui du shell
   // (PATH, et où OpenCode range sa configuration globale et ses skills).
   // Dernière lecture, pour le diagnostic (fiche 061).
