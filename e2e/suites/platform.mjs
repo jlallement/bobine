@@ -25,22 +25,24 @@ export async function platformSuite() {
             return {
               top: Menu.getApplicationMenu().items.length,
               window: Menu.getApplicationMenu().items.some((i) => String(i.role).toLowerCase() === 'windowmenu'),
-              autoHide: win.isMenuBarAutoHide()
+              bar: win.isMenuBarVisible()
             }
           })()`)
           check(
             mac
-              ? shape.top === 7 && shape.window && !shape.autoHide
+              ? shape.top === 7 && shape.window
               : shape.top === 5 &&
                   !shape.window &&
-                  // Barre masquée : macOS ne connaît pas l'option (toujours faux), vue sous Linux.
-                  (shape.autoHide || process.platform === 'darwin'),
-            `${platform} : menu ${mac ? 'de macOS' : 'Linux, masqué (Alt)'} (${JSON.stringify(shape)})`
+                  // Barre d'Electron jamais montrée (fiche 145, variante D) : vue sous Linux ;
+                  // macOS n'a pas de barre dans la fenêtre (toujours « visible » pour Electron).
+                  (!shape.bar || process.platform === 'darwin'),
+            `${platform} : menu ${mac ? 'de macOS' : 'Linux, sans barre'} (${JSON.stringify(shape)})`
           )
         } finally {
           main.close()
         }
         const page = await ui.ev(`({
+          appMenu: !!document.querySelector('[data-testid=app-menu]'),
           activity: document.querySelector('.sidebar-kbd')?.innerText,
           frame: document.documentElement.classList.contains('native-frame'),
           scrollbars: document.documentElement.classList.contains('classic-scrollbars'),
@@ -49,10 +51,11 @@ export async function platformSuite() {
         const names = { ctrl: L('keys.ctrl'), alt: L('keys.alt'), shift: L('keys.shift') }
         check(
           page.activity === formatKeys('⇧⌘U', mac ? null : names) &&
+            page.appMenu === !mac &&
             page.frame === !mac &&
             page.scrollbars === !mac &&
             page.lights === (mac ? '84px' : '10px'),
-          `${platform} : raccourcis ${page.activity}, ${mac ? 'feux de macOS' : 'cadre du système, barres fines'} (${JSON.stringify(page)})`
+          `${platform} : raccourcis ${page.activity}, ${mac ? 'feux de macOS' : 'cadre du système, ☰, barres fines'} (${JSON.stringify(page)})`
         )
         check(
           (await ui.ev(`!!${ui.$('capture')}`)) === mac,

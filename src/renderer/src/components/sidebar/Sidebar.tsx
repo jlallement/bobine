@@ -1,3 +1,5 @@
+import { platformFeatures } from '../../platform-features'
+import { AppMenuButton } from '../common/AppMenu'
 import i18next from 'i18next'
 import { refusedTurnText } from '../../turn-auth-text'
 import {
@@ -251,6 +253,8 @@ export function Sidebar(props: Props) {
         onDoubleClick={resetWidth}
       />
       <div className="sidebar-header drag">
+        {/* Menu ☰ de Bobine hors macOS (fiche 145), à gauche ; barre repliée : dans l'en-tête. */}
+        {props.open && !platformFeatures().appMenu && <AppMenuButton />}
         {/* Rechercher en icône (fiche 144), à gauche du bouton qui masque la barre. */}
         <Tip label={t('sidebar.search')} command="search">
           <button

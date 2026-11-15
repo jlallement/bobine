@@ -3,6 +3,7 @@
  * Toute nouvelle capacité exposée au renderer s'ajoute ici, et nulle part ailleurs.
  * Les actions sur un agent désignent toujours leur conversation (`id`).
  */
+import { APP_MENU_CHANNELS, type AppMenuIpcContract } from './app-menu'
 import type { AppAlert, AppAlertKind } from './app-alerts'
 import type { HintId, TipAction, TipId, TipsView } from './tips'
 import type { HelpTarget, HelpTopic } from './help-topics'
@@ -61,14 +62,7 @@ import type { ContentHit } from './conversation-search'
 import type { TranscriptItem } from './transcript'
 import type { RuleFileView } from './rules'
 import type { AgentQuota } from './usage'
-import type {
-  AgentSpendView,
-  UsageExportKind,
-  UsageHeatmap,
-  UsageHeatQuery,
-  UsageQuery,
-  UsageStats
-} from './usage-stats'
+import { USAGE_CHANNELS, type UsageIpcContract } from './usage-ipc'
 import type { MenuCommand } from './shortcuts'
 import type { Language } from './i18n/language'
 import type { LogStatus, Verbosity } from './log-level'
@@ -152,6 +146,8 @@ export interface IpcInvokeContract
     ProfileIpcContract,
     ApprovalRulesIpcContract,
     RolesIpcContract,
+    AppMenuIpcContract,
+    UsageIpcContract,
     DocumentsIpcContract {
   'app:getInfo': { args: []; result: AppInfo }
   /** Polices installées (fiche 136), lues une fois par le main. */
@@ -171,22 +167,6 @@ export interface IpcInvokeContract
   'help:target': { args: []; result: { target: HelpTarget; search: boolean } }
   /** Lien « Nouveautés » de l'aide : Réglages › Nouveautés dans la fenêtre principale. */
   'help:showChangelog': { args: []; result: undefined }
-  /** Tableau de consommation (fiche 137) : statistiques d'une période et d'un agent. */
-  'usage:stats': { args: [query: UsageQuery]; result: UsageStats }
-  /** Grille d'activité de « Mon activité » (fiche 144). */
-  'usage:heatmap': { args: [query: UsageHeatQuery]; result: UsageHeatmap }
-  /** Export CSV par « Enregistrer sous » : chemin écrit, ou `null` si annulé. */
-  'usage:export': { args: [query: UsageQuery, kind: UsageExportKind]; result: string | null }
-  /** « Remettre à zéro » : vide le journal de consommation (le quota des agents n'est pas touché). */
-  'usage:reset': { args: []; result: undefined }
-  /** Dépense récente sur ce Mac des agents dont le profil sait la lire (Bob : sa base). */
-  'usage:spends': { args: []; result: AgentSpendView[] }
-  /** Le journal a-t-il au moins un tour ? État vide de « Mon activité » (fiche 185, F9). */
-  'usage:hasAny': { args: []; result: boolean }
-  /** Derniers quotas lus (fiche 091). */
-  'usage:quotas': { args: []; result: AgentQuota[] }
-  /** Relit le quota d'un agent (ou de tous), puis rend les derniers quotas lus. */
-  'usage:refreshQuota': { args: [profileId?: string]; result: AgentQuota[] }
   /** Tâches planifiées (fiche 178). */
   'schedule:list': { args: []; result: ScheduledTask[] }
   /** Crée (`id` nul) ou modifie une tâche ; rend la liste à jour. */
@@ -906,14 +886,6 @@ export const IPC_CHANNELS = [
   'app:commandStatus',
   'app:installCommand',
   'app:uninstallCommand',
-  'usage:stats',
-  'usage:heatmap',
-  'usage:export',
-  'usage:reset',
-  'usage:spends',
-  'usage:hasAny',
-  'usage:quotas',
-  'usage:refreshQuota',
   'schedule:list',
   'schedule:save',
   'schedule:setPaused',
@@ -1122,5 +1094,7 @@ export const IPC_CHANNELS = [
   ...PROFILE_CHANNELS,
   ...APPROVAL_RULES_CHANNELS,
   ...ROLES_CHANNELS,
-  ...DOCUMENTS_CHANNELS
+  ...DOCUMENTS_CHANNELS,
+  ...APP_MENU_CHANNELS,
+  ...USAGE_CHANNELS
 ] as const satisfies readonly IpcChannel[]

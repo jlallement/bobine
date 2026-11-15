@@ -5179,6 +5179,10 @@
   "keys": {
     "ctrl": "Ctrl",
     "alt": "Alt",
-    "shift": "Shift"
+    "shift": "Shift",
+    "space": "Space"
+  },
+  "appMenu": {
+    "label": "Bobine menu"
   }
 }

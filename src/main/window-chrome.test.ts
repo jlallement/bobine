@@ -10,9 +10,7 @@ describe('cadre des fenêtres (fiche 145)', () => {
     })
   })
 
-  it('Linux : décorations du système, barre de menu masquée (Alt)', () => {
-    expect(windowChrome(platformFeatures('linux'), 'hidden', { x: 14, y: 14 })).toEqual({
-      autoHideMenuBar: true
-    })
+  it('Linux : décorations du système (la barre de menu, jamais montrée : app-menu.ts)', () => {
+    expect(windowChrome(platformFeatures('linux'), 'hidden', { x: 14, y: 14 })).toEqual({})
   })
 })

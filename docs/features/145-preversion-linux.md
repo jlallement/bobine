@@ -100,7 +100,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 | D4 | Clés d'API que Bobine pose aux agents (`BOB_API_KEY`, fournisseurs de la fiche 104, agents personnalisés de la fiche 141) | **Comme VS Code / Bob IDE** : trousseau s'il existe ; sinon fichier en droits 600 non chiffré, dit en une ligne dans Réglages › Agents, sans boîte de dialogue bloquante | Usage relevé : sous Linux, Claude Code garde toujours ses identifiants en clair, droits 600 (`~/.claude/.credentials.json`), OpenCode aussi (`auth.json`) ; VS Code, donc Bob IDE, chiffre par le trousseau et propose sinon un « chiffrement faible » (`--password-store=basic`, clé fixe de Chromium, presque du clair). Refuser d'enregistrer ne protégerait guère plus que ce que font les agents eux-mêmes. |
 | D5 | Bob sous Linux | **Annoncé** | Bob fonctionne sous Linux, IBM le livre en `.deb` (Jérôme). Contrat vérifié par `pnpm bob-probe` dans la machine virtuelle ; noté dans « Compatibilité Bob » de `docs/acp.md`. |
 | D6 | Bureau visé | **Ubuntu 24.04 GNOME**, Wayland et X11 | Le plus répandu ; essais dans UTM sur le Mac. Les autres bureaux « devraient marcher », sans promesse. |
-| D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux ») | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **barre de menu masquée** (`autoHideMenuBar`, Alt l'affiche, comme Signal ou Element) | La barre du système respecte le thème et l'ordre des boutons réglé dans le bureau, sous GNOME comme KDE, X11 comme Wayland ; un menu reste joignable au clavier et par les lecteurs d'écran. |
+| D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux » ; menu revu le jour même par Jérôme, **variante D**) | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **menu ☰ dessiné par Bobine** dans l'en-tête de la barre latérale, ouvert par le bouton ou par Alt seul ; la barre de menu d'Electron n'est **jamais** montrée (le menu reste installé pour ses raccourcis Ctrl) | La barre du système respecte le thème et l'ordre des boutons du bureau, sous GNOME comme KDE, X11 comme Wayland. La barre de menu d'Electron (première version de D8, `autoHideMenuBar`) ne se style pas : bandeau gris qui ne suit pas le thème, cadre de focus vert (essai de Jérôme, VM GNOME, Aurore nuit). Le menu ☰ suit les thèmes, reste joignable au clavier et par les lecteurs d'écran. **À revoir pour Windows** (fiche à venir), où les usages diffèrent. |
 | D7 | Publication | **Même version que le Mac** : AppImage et `.deb` joints à la version GitHub du `.dmg` | Un seul numéro, un seul tag ; « préversion Linux » dit dans les notes et l'À propos. Première publication après la 0.6.0 macOS, une fois Linux validé. |
 
 Choix d'interface : voir D8 (remplace le choix d'origine, `titleBarOverlay` aux couleurs du
@@ -137,8 +137,19 @@ node-pty.
 **Lot 2 — fenêtres et textes (renderer).** Fait le 2026-11-15, sauf la dernière ligne (D8).
 - ✅ Capacités `appMenu`, `insetTitleBar`, `commandKey`, `overlayScrollbars` (`platform.ts`).
 - ✅ `window-chrome.ts` : sur macOS, `titleBarStyle` et feux comme avant ; ailleurs, décorations
-  du système et `autoHideMenuBar` (fenêtre principale, aide) ; la fenêtre À propos sans menu.
-  Classe `native-frame` sur `<html>` : plus de marge de 84 px pour les feux.
+  du système ; la fenêtre À propos sans menu. Classe `native-frame` sur `<html>` : plus de marge
+  de 84 px pour les feux.
+- ✅ Menu ☰ (variante D) : `app-menu.ts` installe le menu d'Electron (raccourcis Ctrl actifs) et,
+  hors macOS, n'en montre jamais la barre (`setMenuBarVisibility(false)`, chaque fenêtre, même
+  créée plus tard). `serializeMenu` et `appMenuModel` (`menu.ts`) tirent du même modèle le menu
+  dessiné : entrées de Fichier en tête, Édition, Affichage, Conversation en sous-menus, Réglages,
+  Aide, À propos, Quitter. Canaux `app:menu` (modèle) et `app:menuInvoke` (seuls les identifiants
+  du modèle courant ; les rôles Copier, Coller… sur la page qui a le clavier, focus rendu d'abord
+  là où il était). `AppMenuButton` (Radix : `menu`, `menuitem`, flèches, Entrée, Échap, focus
+  rendu au bouton) : en-tête de la barre latérale, à gauche ; barre repliée : en tête de l'en-tête
+  de la conversation (`CollapsedSidebarButtons`). Alt seul (appuyé puis relâché sans autre touche,
+  ni AltGr, ni Alt+Tab, ni composition) l'ouvre ou le ferme. Ni la fenêtre rapide, ni l'À propos,
+  ni l'aide ne l'ont.
 - ✅ `menu.ts` : menu Linux sans menu « Bobine », Services, Masquer, Fenêtre ni « Coller et
   adapter le style » (Ctrl+Maj+V colle déjà sans mise en forme sous Linux) ; Fichier : nouvelle
   conversation, rechercher, reprendre, Fenêtre rapide, Réglages (Ctrl+,), Fermer la fenêtre,
@@ -151,8 +162,9 @@ node-pty.
   (`keys.ctrl`, `keys.alt`, `keys.shift` : Maj en français). Fenêtre rapide : `Alt+CommandOrControl+B`
   (Ctrl+Alt+B sous Linux ; identique sur macOS). Gestionnaires qui n'écoutaient que `metaKey`
   (recherche des Réglages, historique de l'aide, champs des rôles) : `commandPressed`.
-- ✅ Barres de défilement fines aux couleurs du thème (`scrollbar-width: thin`,
-  `--border-strong`) sans `overlayScrollbars` (classe `classic-scrollbars`).
+- ✅ Barres de défilement fines, sans flèches, aux couleurs du thème (`::-webkit-scrollbar`,
+  `--border-strong`) sans `overlayScrollbars` (classe `classic-scrollbars`) ; `scrollbar-width:
+  thin` gardait les flèches sous Linux.
 - `fr.json` / `en.json` : relire les textes qui citent Mac, Finder, Dock, Trousseau (les ⌘ sont
   convertis) ; version générique quand elle suffit, sinon variante par capacité. Glossaire de
   `docs/traduction.md` complété. Reste à faire.
@@ -505,4 +517,15 @@ lancé, rien d'autre à installer sur le Mac.
   décorations de GNOME à voir dans la VM. Pas de ligne au journal des modifications : rien ne
   change sur le Mac, et la préversion Linux n'est pas publiée. Écart : Fichier garde aussi
   « Rechercher une conversation » et « Reprendre une session » (raccourcis du menu Fichier).
+- 2026-11-15 — **Menu ☰, variante D** (essai de Jérôme dans la VM GNOME : barre de titre native,
+  raccourcis Ctrl et thèmes bons ; barre de menu d'Electron par Alt « pas jolie », impossible à
+  styler). Décision D8 mise à jour : voir le lot 2. Vérifié : unitaires (modèle sérialisé, rangement
+  ☰, seuls les identifiants du modèle acceptés, accélérateurs affichés, Alt seul) ; e2e `settings`
+  sous Linux (Docker) : barre d'Electron jamais visible, ☰ par le bouton et par Alt, Échap rend le
+  focus, Affichage › Barre latérale depuis ☰ (barre latérale ouverte puis repliée), captures en
+  clair, en sombre et Aurore nuit ; `platform` sur le Mac (pas de ☰ sur macOS, ☰ avec les
+  capacités de Linux), `startup`, `quick`, `panel` verts sur le Mac. Les raccourcis Ctrl du menu
+  sans barre ne passent pas par le protocole DevTools : vérifiés avec de vraies touches (xdotool,
+  Xvfb et openbox, dans le conteneur : Ctrl+B replie puis rouvre la barre latérale ; Alt ouvre ☰,
+  aucune barre d'Electron). À revoir pour Windows (fiche à venir).
 

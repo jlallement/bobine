@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MenuItemConstructorOptions } from 'electron'
 import { SHORTCUTS } from '@shared/shortcuts'
-import { buildMenuTemplate, zoomInterface } from './menu'
+import { appMenuIds, type AppMenuItem } from '@shared/app-menu'
+import { appMenuModel, buildMenuTemplate, zoomInterface } from './menu'
 
 const flatten = (items: MenuItemConstructorOptions[]): MenuItemConstructorOptions[] =>
   items.flatMap((i) => [i, ...(Array.isArray(i.submenu) ? flatten(i.submenu) : [])])
@@ -246,5 +247,61 @@ describe('menu Linux (fiche 145)', () => {
       'Fenêtre',
       'Aide'
     ])
+  })
+})
+
+describe('modèle du menu ☰ (fiche 145, maquette D)', () => {
+  const linux = buildMenuTemplate({
+    appName: 'Bobine',
+    appMenu: false,
+    dev: false,
+    send: vi.fn(),
+    about: vi.fn(),
+    showLog: vi.fn(),
+    zoom: vi.fn(),
+    presentation: { active: true, toggle: vi.fn() },
+    quickEntry: { open: vi.fn(), accelerator: 'Alt+CommandOrControl+B' }
+  })
+  const model = appMenuModel(linux)
+  const shape = (items: AppMenuItem[]): unknown[] =>
+    items.map((i) => (i.kind === 'separator' ? '—' : i.kind === 'submenu' ? `${i.id} ›` : i.id))
+
+  it('Fichier en tête, sous-menus, Réglages, Aide, À propos, puis Quitter', () => {
+    expect(shape(model)).toEqual([
+      'new-conversation',
+      'search',
+      'resume-session',
+      'quick-entry',
+      '—',
+      'role:close',
+      '—',
+      'menu-edit ›',
+      'menu-view ›',
+      'menu-conversation ›',
+      '—',
+      'settings',
+      'menu-help ›',
+      'about',
+      '—',
+      'role:quit'
+    ])
+  })
+
+  it('même source que le menu d’Electron : chaque raccourci une fois, rôles et cases compris', () => {
+    const items = (list: AppMenuItem[]): AppMenuItem[] =>
+      list.flatMap((i) => (i.kind === 'submenu' ? items(i.items) : [i]))
+    const flat = items(model).filter((i) => i.kind === 'item')
+    for (const shortcut of SHORTCUTS) {
+      const found = flat.filter((i) => i.kind === 'item' && i.id === shortcut.command)
+      expect([shortcut.command, found.length]).toEqual([shortcut.command, 1])
+      expect(found[0]?.kind === 'item' && found[0].accelerator).toBe(shortcut.accelerator)
+    }
+    const byId = (id: string) => flat.find((i) => i.kind === 'item' && i.id === id)
+    expect(byId('role:copy')).toMatchObject({ accelerator: 'CmdOrCtrl+C', enabled: true })
+    expect(byId('presentation')).toMatchObject({ checked: true })
+    expect(byId('zoom-in-equal')).toBeUndefined()
+    expect(byId('role:pasteAndMatchStyle')).toBeUndefined()
+    expect(appMenuIds(model).has('menu-edit')).toBe(false)
+    expect(appMenuIds(model).has('role:copy')).toBe(true)
   })
 })

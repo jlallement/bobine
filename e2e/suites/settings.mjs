@@ -54,6 +54,7 @@ export async function settingsSuite(scheme) {
               linux.mac.length === 0,
             `menu Linux : Réglages et Quitter (Ctrl+Q) dans Fichier, plein écran F11, À propos en dernier (${JSON.stringify(linux)})`
           )
+          await appMenuLinux(ui, main, scheme)
         }
         // Puces de la barre latérale dans la notation de la plateforme (⌘1, ⇧⌘U ou Ctrl+1, Ctrl+Maj+U).
         const chips = await ui.ev(
@@ -460,4 +461,94 @@ export async function settingsSuite(scheme) {
     {},
     [`--inspect=${MAIN_PORT}`]
   )
+}
+
+/**
+ * Menu ☰ de Bobine hors macOS (fiche 145, variante D) : la barre de menu d'Electron n'est jamais
+ * montrée, pas même par Alt ; le bouton et Alt seul ouvrent le menu dessiné par Bobine, Échap le
+ * ferme et rend le focus au bouton ; une entrée d'un sous-menu agit, depuis la barre latérale
+ * comme depuis l'en-tête quand elle est repliée.
+ */
+async function appMenuLinux(ui, main, scheme) {
+  const barShown = () =>
+    main.evaluate(
+      `require('electron').BrowserWindow.getAllWindows().some((w) => w.isMenuBarVisible())`
+    )
+  const content = ui.$('app-menu-content')
+  const sidebarClosed = `!!document.querySelector('.sidebar.collapsed')`
+  check(!(await barShown()), 'barre de menu d’Electron jamais montrée')
+
+  await ui.click(ui.$('app-menu'))
+  await ui.waitFor(`!!${content}`)
+  const items = await ui.ev(
+    `[...${content}.querySelectorAll(':scope > [role^=menuitem]')].map((i) => i.innerText.replace(/\\s+/g, ' ').trim())`
+  )
+  check(
+    items[0]?.startsWith(L('shortcuts.menu.new-conversation')) &&
+      items[0]?.endsWith(K('⌘N')) &&
+      items.some((i) => i.startsWith(L('menu.edit'))) &&
+      items.at(-1)?.startsWith(L('menu.quit', { app: 'Bobine' })) &&
+      (await ui.ev(`${content}.getAttribute('role')`)) === 'menu',
+    `bouton ☰ : menu de Bobine, raccourcis en Ctrl (${items.join(' | ')})`
+  )
+  await ui.shot('app-menu-ouvert')
+  await ui.key('Escape')
+  await ui.waitFor(`!${content}`)
+  // Radix rend le focus au bouton juste après la fermeture.
+  check(
+    await ui
+      .waitFor(`document.activeElement === ${ui.$('app-menu')}`, 2000)
+      .then(() => true)
+      .catch(() => false),
+    'Échap : menu refermé, focus rendu au bouton ☰'
+  )
+
+  // Alt seul, puis relâché : le menu de Bobine, jamais la barre d'Electron.
+  await ui.press('Alt', 1)
+  await ui.waitFor(`!!${content}`)
+  check(!(await barShown()), 'Alt seul : le menu ☰ s’ouvre, pas la barre d’Electron')
+  await ui.press('Alt', 1)
+  await ui.waitFor(`!${content}`)
+
+  // Affichage › Barre latérale : une entrée d'un sous-menu passe par le main (`app:menuInvoke`).
+  await ui.click(ui.$('app-menu'))
+  await ui.waitFor(`!!${content}`)
+  await ui.click(ui.$('app-menu-menu-view'))
+  await ui.waitFor(`!!${ui.$('app-menu-menu-view-content')}`)
+  await ui.shot('app-menu-sous-menu')
+  await ui.click(ui.$('app-menu-toggle-sidebar'))
+  await ui.waitFor(sidebarClosed)
+  check(
+    await ui.ev(`!!document.querySelector('.main-header [data-testid=app-menu]')`),
+    'Affichage › Barre latérale depuis ☰ : barre repliée, ☰ dans l’en-tête'
+  )
+  // Retour par l'entrée du menu ☰ de l'en-tête. Les raccourcis Ctrl du menu sans barre (Ctrl+B…)
+  // ne se vérifient qu'avec de vraies touches : le protocole DevTools ne passe pas par les
+  // accélérateurs d'Electron (essayé avec xdotool dans le conteneur, fiche 145).
+  await ui.click(ui.$('app-menu'))
+  await ui.waitFor(`!!${content}`)
+  await ui.click(ui.$('app-menu-menu-view'))
+  await ui.waitFor(`!!${ui.$('app-menu-menu-view-content')}`)
+  await ui.click(ui.$('app-menu-toggle-sidebar'))
+  await ui.waitFor(`!${sidebarClosed}`)
+  if (scheme === 'dark') await auroraNight(ui, content)
+}
+
+/** Capture du menu ☰ sur Aurore nuit (fiche 226), le thème essayé dans la VM. */
+async function auroraNight(ui, content) {
+  await ui.click(ui.$('open-settings'))
+  await ui.click(ui.$('settings-appearance'))
+  await ui.click(ui.$('theme-auroraNight'))
+  await ui.waitFor(`document.documentElement.dataset.palette === 'auroraNight'`)
+  await ui.key('Escape')
+  await ui.waitFor(`!${ui.$('settings')}`)
+  await ui.click(ui.$('app-menu'))
+  await ui.waitFor(`!!${content}`)
+  await ui.shot('app-menu-aurore-nuit')
+  await ui.key('Escape')
+  await ui.waitFor(`!${content}`)
+  await ui.click(ui.$('open-settings'))
+  await ui.click(ui.$('settings-appearance'))
+  await ui.click(ui.$('theme-system'))
+  await ui.key('Escape')
 }

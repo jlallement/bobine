@@ -79,9 +79,9 @@ input[type='checkbox'] {
 
 /*
  * Hors macOS (fiche 145) : la fenêtre a la barre de titre du système, pas de feux à éviter
- * (`native-frame`) ; et Chromium y dessine des barres de défilement épaisses à flèches : fines et
- * aux couleurs du thème (`classic-scrollbars`). `:where` : sans priorité, une règle propre à un
- * élément (barre masquée…) l'emporte. Classes posées d'après les capacités (`main.tsx`).
+ * (`native-frame`) ; et Chromium y dessine des barres de défilement épaisses à flèches : fines, sans
+ * flèches, aux couleurs du thème (`classic-scrollbars`). `:where` : sans priorité, une règle propre
+ * à un élément (barre masquée, bloc de commande) l'emporte. Classes posées d'après les capacités (`main.tsx`).
  */
 html.native-frame .sidebar-header {
   padding-left: 10px;
@@ -92,9 +92,33 @@ html.native-frame .main-header.with-lights {
 html.native-frame .side-panel-head.with-lights {
   padding-left: 14px;
 }
-:where(html.classic-scrollbars) * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+/* Menu ☰ de Bobine (fiche 145) : à gauche de l'en-tête de la barre latérale. */
+.sidebar-header > [data-testid='app-menu'] {
+  margin-right: auto;
+}
+/* Raccourcis du menu ☰ : alignés à droite, sans couper le libellé. */
+.app-menu .app-menu-keys {
+  margin-left: 16px;
+  max-width: none;
+  font-variant-numeric: tabular-nums;
+}
+:where(html.classic-scrollbars) ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+:where(html.classic-scrollbars) ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+}
+:where(html.classic-scrollbars) ::-webkit-scrollbar-track,
+:where(html.classic-scrollbars) ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* Sans flèches aux extrémités (`scrollbar-width: thin` les garde sous Linux). */
+:where(html.classic-scrollbars) ::-webkit-scrollbar-button {
+  display: none;
 }
 
 .no-drag {

@@ -8,6 +8,7 @@
  * Quitter, Affichage › Plein écran en F11, Aide › À propos en dernier), dans la fenêtre.
  */
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
+import type { AppMenuItem } from '@shared/app-menu'
 import { SHORTCUTS, type MenuCommand, type Shortcut } from '@shared/shortcuts'
 import { t } from 'i18next'
 
@@ -211,6 +212,7 @@ function linuxMenu(
 ): MenuItemConstructorOptions[] {
   return [
     {
+      id: 'menu-file',
       label: t('menu.file'),
       submenu: [
         ...of('file'),
@@ -223,6 +225,7 @@ function linuxMenu(
       ]
     },
     {
+      id: 'menu-edit',
       label: t('menu.edit'),
       submenu: [
         { role: 'undo', label: t('menu.undo') },
@@ -238,6 +241,7 @@ function linuxMenu(
       ]
     },
     {
+      id: 'menu-view',
       label: t('menu.view'),
       submenu: [
         ...of('view'),
@@ -255,8 +259,9 @@ function linuxMenu(
         ...devItems(options.dev)
       ]
     },
-    { label: t('menu.conversation'), submenu: of('conversation') },
+    { id: 'menu-conversation', label: t('menu.conversation'), submenu: of('conversation') },
     {
+      id: 'menu-help',
       label: t('menu.help'),
       submenu: [
         ...of('help'),
@@ -360,4 +365,97 @@ function zoomItems(zoom: MenuOptions['zoom']): MenuItemConstructorOptions[] {
       click: () => zoom('out')
     }
   ]
+}
+
+/** Raccourcis des rôles d'Electron hors macOS, pour les afficher dans le menu de Bobine. */
+const ROLE_ACCELERATORS: Partial<Record<string, string>> = {
+  undo: 'CmdOrCtrl+Z',
+  redo: 'CmdOrCtrl+Shift+Z',
+  cut: 'CmdOrCtrl+X',
+  copy: 'CmdOrCtrl+C',
+  paste: 'CmdOrCtrl+V',
+  selectAll: 'CmdOrCtrl+A',
+  close: 'CmdOrCtrl+W'
+}
+
+/**
+ * Menu sérialisé pour le renderer (fiche 145), tiré du même modèle que le menu d'Electron : une
+ * entrée d'un rôle a l'identifiant `role:<rôle>` ; les entrées cachées (`visible: false`) et les
+ * séparateurs en trop disparaissent.
+ */
+export function serializeMenu(items: readonly MenuItemConstructorOptions[]): AppMenuItem[] {
+  const out: AppMenuItem[] = []
+  for (const item of items) {
+    if (item.visible === false) continue
+    if (item.type === 'separator') {
+      if (out.length > 0 && out.at(-1)?.kind !== 'separator') out.push({ kind: 'separator' })
+      continue
+    }
+    const id = item.id ?? (item.role ? `role:${item.role}` : undefined)
+    if (!id || !item.label) continue
+    if (Array.isArray(item.submenu)) {
+      out.push({ kind: 'submenu', id, label: item.label, items: serializeMenu(item.submenu) })
+      continue
+    }
+    const accelerator =
+      typeof item.accelerator === 'string'
+        ? item.accelerator
+        : item.role
+          ? ROLE_ACCELERATORS[item.role]
+          : undefined
+    out.push({
+      kind: 'item',
+      id,
+      label: item.label,
+      ...(accelerator ? { accelerator } : {}),
+      enabled: item.enabled !== false,
+      ...(item.type === 'checkbox' ? { checked: item.checked === true } : {})
+    })
+  }
+  if (out.at(-1)?.kind === 'separator') out.pop()
+  return out
+}
+
+/**
+ * Menu ☰ de Bobine (maquette D, fiche 145) : le menu Linux rangé dans un seul menu. Les entrées de
+ * Fichier en tête, puis Édition, Affichage et Conversation en sous-menus, puis Réglages, Aide (en
+ * sous-menu) et À propos, enfin Quitter. Seulement un autre rangement des mêmes entrées.
+ */
+export function appMenuModel(linux: readonly MenuItemConstructorOptions[]): AppMenuItem[] {
+  const top = serializeMenu(linux)
+  const menu = (id: string) => {
+    const found = top.find((i) => i.kind === 'submenu' && i.id === id)
+    return found?.kind === 'submenu' ? found : undefined
+  }
+  const file = menu('menu-file')?.items ?? []
+  const helpMenu = menu('menu-help')
+  const help = helpMenu?.items ?? []
+  const pick = (list: AppMenuItem[], id: string) =>
+    list.filter((i) => i.kind !== 'separator' && i.id === id)
+  const without = (list: AppMenuItem[], ids: string[]) =>
+    tidySeparators(list.filter((i) => i.kind === 'separator' || !ids.includes(i.id)))
+  return tidySeparators([
+    ...without(file, ['settings', 'role:quit']),
+    { kind: 'separator' },
+    ...['menu-edit', 'menu-view', 'menu-conversation'].flatMap((id) => {
+      const found = menu(id)
+      return found ? [found] : []
+    }),
+    { kind: 'separator' },
+    ...pick(file, 'settings'),
+    ...(helpMenu ? [{ ...helpMenu, items: without(help, ['about', 'role:about']) }] : []),
+    ...pick(help, 'about'),
+    ...pick(help, 'role:about'),
+    { kind: 'separator' },
+    ...pick(file, 'role:quit')
+  ])
+}
+
+/** Séparateurs en tête, en fin ou doublés, retirés d'une liste déjà sérialisée. */
+function tidySeparators(list: AppMenuItem[]): AppMenuItem[] {
+  return list.filter(
+    (item, i) =>
+      item.kind !== 'separator' ||
+      (i > 0 && i < list.length - 1 && list[i - 1]?.kind !== 'separator')
+  )
 }
