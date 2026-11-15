@@ -533,6 +533,26 @@ export async function withApp(
       dialogs,
       // Le point d'état de l'agent dans la barre latérale (pas ceux de Réglages › Agents).
       ready: () => waitFor(`!!document.querySelector('${AGENT_DOT}.ready')`),
+      /**
+       * Amène un élément à l'écran avant un clic, comme un utilisateur : rien s'il y est déjà (à
+       * l'arrondi de la mise en page près) ; sinon au milieu de ce qui le fait défiler, et l'on
+       * attend qu'il y soit. Au milieu, pas au plus près : remonté de moins de 60 px, le fil se
+       * croit encore en bas et y revient à la prochaine nouveauté (`useThreadScroll`) ; le clic
+       * tombait alors à côté (fiche 145).
+       */
+      reveal: (selector) =>
+        waitFor(`(() => {
+          const el = ${selector}
+          if (!el) return false
+          const box = () => el.closest('.scroll')?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight }
+          const shown = () => {
+            const r = el.getBoundingClientRect()
+            return r.top >= box().top - 1 && r.bottom <= box().bottom + 1
+          }
+          if (shown()) return true
+          el.scrollIntoView({ block: 'center' })
+          return shown()
+        })()`),
       shot: async (name) => {
         await sleep(250)
         const r = await cdp('Page.captureScreenshot', { format: 'png' })

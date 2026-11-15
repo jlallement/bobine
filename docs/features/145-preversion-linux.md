@@ -18,7 +18,8 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
    ADR-0051) ; reste D6 (essai fait sur Ubuntu 26.04, pas 24.04).
 2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
    le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
-   lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
+   lancés (`pannes-visibles`), barres de défilement et molette de Linux, encre des icônes du
+   terminal (`terminal`) ; les débordements dus à DejaVu sont réglés par les polices livrées (D9).
 3. **Lot 2** — fait le 2026-11-15 (textes Mac/Finder/Dock/Trousseau compris, avec la fiche 229 ;
    restent les textes des polices de Réglages › Apparence, repris par la fiche des polices).
 4. **Lot 3** — intégration au bureau (git en langue fixe, clés d'API sans trousseau D4 : faits) ;
@@ -105,6 +106,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 | D6 | Bureau visé | **Ubuntu 24.04 GNOME**, Wayland et X11 | Le plus répandu ; essais dans UTM sur le Mac. Les autres bureaux « devraient marcher », sans promesse. |
 | D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux » ; menu revu le jour même par Jérôme, **variante D**) | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **menu ☰ dessiné par Bobine** dans l'en-tête de la barre latérale, ouvert par le bouton ou par Alt seul ; la barre de menu d'Electron n'est **jamais** montrée (le menu reste installé pour ses raccourcis Ctrl) | La barre du système respecte le thème et l'ordre des boutons du bureau, sous GNOME comme KDE, X11 comme Wayland. La barre de menu d'Electron (première version de D8, `autoHideMenuBar`) ne se style pas : bandeau gris qui ne suit pas le thème, cadre de focus vert (essai de Jérôme, VM GNOME, Aurore nuit). Le menu ☰ suit les thèmes, reste joignable au clavier et par les lecteurs d'écran. **À revoir pour Windows** (fiche à venir), où les usages diffèrent. |
 | D7 | Publication | **Même version que le Mac** : AppImage et `.deb` joints à la version GitHub du `.dmg` | Un seul numéro, un seul tag ; « préversion Linux » dit dans les notes et l'À propos. Première publication après la 0.6.0 macOS, une fois Linux validé. |
+| D9 | Polices (Jérôme, 2026-11-15 : option B, puis **option C** le même jour, « embarque aussi pour le mac ») | **Inter** (interface) et **JetBrains Mono** (code, diffs) livrées et utilisées **sur les trois systèmes, Mac compris** ; terminal inchangé (Meslo pour les icônes) ; ligatures coupées dans le texte, **coupées + réglage** dans le code ; polices du système au choix dans Réglages › Apparence | DejaVu Sans, plus large que SF, faisait déborder l'interface ; une même police partout rend l'app prévisible. `woff2` publiés (rsms/inter 4.1, JetBrains Mono 2.304), empreintes vérifiées, OFL 1.1 livrée et citée. [ADR-0052](../adr/0052-polices-livrees-inter-jetbrains-mono.md) |
 
 Choix d'interface : voir D8 (remplace le choix d'origine, `titleBarOverlay` aux couleurs du
 thème, écarté le 2026-11-15).
@@ -679,3 +681,91 @@ lancé, rien d'autre à installer sur le Mac.
   fermés et passés gardés ; six cas d'échec identiques avec et sans relais), verts dans Docker ;
   `pnpm e2e:linux pannes-visibles restart fresh-start session startup` verts, `terminal` avec le
   seul échec connu des icônes Nerd Font.
+- 2026-11-15 — **Polices livrées hors macOS (D9)**. Inter 4.1 (variable, droite et italique) et
+  JetBrains Mono 2.304 (400, 500, 600, 700, italique : les graisses du CSS ; pas de `woff2` variable
+  publié) copiées des archives des versions GitHub, identiques aux fichiers du dépôt à leur tag
+  (SHA-256 : `InterVariable.woff2` 693b77d4…, `InterVariable-Italic.woff2` e564f652…,
+  `JetBrainsMono-Regular.woff2` a9cb1cd8…, `-Italic` cb6a1b24…, `-Medium` 086c48df…, `-SemiBold`
+  918edad5…, `-Bold` c503cc5e…), ≈ 820 Ko. Aucune dépendance npm.
+  - Capacité `bundledFonts` (vraie hors macOS) : classe `bundled-fonts` sur `html`,
+    `bundled-fonts.css` redéfinit `--font-ui` et `--font-mono` ; piles du Mac identiques. Inter
+    redessine `=>` et `!=` (alternances contextuelles) : ligatures coupées dans le texte de
+    l'interface hors macOS (vu sur la première maquette : l'aide du réglage affichait ⇒).
+  - Ligatures du code : préférence `codeLigatures` (non par défaut), interrupteur dans Réglages ›
+    Apparence sur toutes les plateformes (sur le Mac, SF Mono n'en a pas ; une police installée
+    comme Fira Code, oui), `--code-ligatures` suivi par chaque règle qui pose la police du code.
+  - Polices du système au choix hors macOS : « Système (sans serif) » (`system-sans`) pour les
+    réponses, « Chasse fixe du système » (`system-mono`) pour le code ; Inter et JetBrains Mono par
+    défaut. Le serif reste celui de `:root` (Georgia), attendu par `settings`.
+  - Paquets : exclues de l'app Mac par `files` (racine), remises dans `linux.files` et pour Windows
+    (`ROOT_ONLY_EXCLUSIONS`) ; licences dans `licenses/fonts/` des apps Linux et Windows seulement.
+    Contrôles : `.deb` et Windows (police ou licence absente = échec), `e2e:packaged` sur le Mac
+    (polices absentes de `app.asar`). Avis de licence : section « Inter and JetBrains Mono ».
+  - e2e : suite `polices` (police chargée depuis l'app ou celle du système, ligatures, captures),
+    scénario factice `ligatures`. Sous Linux (Docker) : `plan`, `roles-travail` passent désormais ;
+    `autorisation-commande` : la mention ne passe plus à la ligne parce que le chemin du dossier
+    temporaire est `/tmp` sous Linux (long sous macOS) — vérification rendue indépendante du
+    chemin (« · » seulement entre le chemin et la mention) ; restent la molette
+    (`commande-tres-longue`) et `terminal` : icônes e0b0 et f07c encrées à −1 px, bornes en pixels
+    entiers (−1.00..8.00) avec une cellule de 7,53 px identique en DejaVu Sans Mono et en Meslo
+    (même dessin d'origine) — pas une question de largeur ; la Nerd Font placée avant la police du
+    système n'y changeait rien (essayé, retiré). À suivre avec le lot 2.
+  - Maquettes avant / après (Linux, Docker ; avant = `main` 74afc45) : conversation en clair, en
+    sombre et en Aurore nuit, code sans et avec ligatures, Réglages › Apparence —
+    `e2e/captures/linux/maquettes-polices/` (non versionné), envoyées pour validation.
+- 2026-11-15 — **Polices : option C** (Jérôme, le même jour : « embarque aussi pour le mac »).
+  La capacité `bundledFonts` disparaît : Inter et JetBrains Mono en tête de `--font-ui` et
+  `--font-mono` partout (`styles.css`), les piles du système d'avant gardées en repli
+  (`--font-system-ui`, `--font-system-mono`) et pour les choix « Système (sans serif) » et
+  « Chasse fixe du système », Mac compris ; ligatures coupées dans tout le texte. Paquets : plus
+  d'exclusion pour le Mac, polices et licences dans chaque app (`.app`, `.deb`, AppImage, NSIS),
+  vérifiées par `e2e:packaged`, le contrôle du `.deb` et celui de Windows. Décision :
+  [ADR-0052](../adr/0052-polices-livrees-inter-jetbrains-mono.md). Linux (Docker), suite
+  complète : **196/204** (188/202 avant les polices) ; restent `terminal` (×2, encre des icônes),
+  `autorisation-commande` (×2, molette), `pannes-visibles` (×2, fd hérités), et deux instabilités
+  vertes au second passage (`filles-tech-lead` sombre, `roles-gestion` clair : infobulle au
+  clavier). **Validé par Jérôme** (« Oui je valide ») sur les maquettes Linux et Mac (avant :
+  `main` 9f42391 ; conversation, code sans et avec ligatures, Apparence, en clair, sombre et
+  Aurore nuit). Mac : `pnpm e2e --changed` **207/208**, seule `history` sombre rouge (infobulle,
+  verte seule ensuite) ; aucune suite ne dépendait de la largeur de SF Pro.
+- 2026-11-15 — **`terminal` et `autorisation-commande` sous Linux, à la cause** (consigne de
+  Jérôme : corriger proprement, sinon laisser rouge et le dire).
+  - `autorisation-commande` (molette) : **corrigé (essai)**. Dans la fenêtre de xvfb, le fil fait
+    512 px et la carte le dépasse : après `scrollIntoView` de la carte, le haut du bloc de la
+    commande était 10,2 px sous le bord du fil ; la première molette remontait le fil de ces
+    10 px pour montrer le bloc, puis plus rien (`overscroll-behavior: contain` tient). L'essai met
+    désormais le bloc entièrement à l'écran avant la molette, ce que son intention supposait ;
+    rien de changé dans l'app. Vert sous Linux et sur le Mac.
+  - `terminal` (encre des icônes) : **mesure corrigée, un échec réel reste, rouge**. Chromium sous
+    Linux arrondit les bornes de l'encre au pixel entier (« W » : 0..8, cellule de 7,53) : un débord
+    d'une fraction de pixel devenait −1,00. Les mesures se font maintenant à 64 fois la taille,
+    ramenées ensuite (précision de 1/64 px, seuil inchangé) : l'icône dossier (f07c) passe. Reste
+    la flèche powerline U+E0B0 de MesloLGS Nerd Font : son dessin commence 0,59 px à gauche de sa
+    cellule sous Linux (FreeType), 0,446 px sur le Mac (même fichier), pour une tolérance de
+    0,5 px. Pas de correction propre dans l'app (police du terminal inchangée par D9, aucun
+    réglage de rendu à imposer pour un essai). Piste : décider si un séparateur powerline, dessiné
+    pour chevaucher d'une fraction de pixel la cellule voisine, relève de cette règle ; ou
+    vérifier à l'écran sous Linux qu'aucune coupure n'est visible avant d'en parler.
+  - `filles-tech-lead` et `filles-fusion` (rouges sur la branche, vertes sur `main`) : **corrigés
+    (essais)**. Avec Inter, les lignes ont une autre hauteur : sous Linux, la première ligne de la
+    carte « Sous-tâches » se retrouvait au-dessus du bord du fil (bouton « Ouvrir » à 51,5 pour un
+    fil qui commence à 52), et le bouton « › » du compte rendu bougeait encore quand l'essai
+    cliquait (le pied « Terminé » arrive après le texte). Les clics tombaient à côté. Nouvel outil
+    d'essai `ui.reveal(sélecteur)` (`e2e/lib.mjs`) : rien si l'élément est déjà à l'écran, sinon
+    au milieu de ce qui le fait défiler, comme un utilisateur avant de cliquer (au milieu : remonté
+    de moins de 60 px, le fil se croit encore en bas et y revient, `useThreadScroll`) ;
+    `filles-tech-lead` attend aussi la fin du tour. Rien de changé dans l'app. Verts sous Linux
+    (deux passages) et sur le Mac.
+  - Rouges sous Linux qui ne viennent pas de cette branche (rouges aussi sur `main` b137697, dans
+    Docker) : `auth` et `providers` (clé « chiffrée » attendue, gardée en clair sans trousseau
+    depuis D4 ; à voir avec la fiche 229), `browser` (menu « + » : page native masquée puis
+    réaffichée), `pilote` (envoi : brouillon). Pas touchés ici.
+  - Bilan de la nuit (2026-11-16), suite complète dans Docker : **branche 193/206**, `main`
+    b137697 **185/204** (21 rouges, dont `plan`, `roles-travail`, `autorisation-commande`,
+    `filles-*` que les polices et ces corrections règlent). Mac, `pnpm e2e --changed` : **208/208**.
+    Rouges restants sur la branche : `terminal` (×2, flèche powerline, ci-dessus), `auth`,
+    `providers`, `browser` (×2 chacun) et `pilote` (aussi rouges sur `main`), et sous la charge de
+    la suite complète seulement, verts seuls sur la branche comme sur `main` : `perf` sombre,
+    `session` sombre (infobulle), `roles-gestion` sombre (infobulle), `finitions` (×2 au dernier
+    passage, ×1 au précédent ; rangée d'actions du survol jamais affichée : l'état de survol ne
+    suit pas sous charge, à suivre — vert sur `main` au même passage).

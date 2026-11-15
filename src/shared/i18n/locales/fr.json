@@ -1386,9 +1386,10 @@
       },
       "conversationFont": {
         "label": "Police des réponses",
-        "hint": "Sans serif ou serif du système, ou une police installée sur le Mac.",
-        "sans": "Système (sans serif)",
-        "serif": "Serif (New York)",
+        "hint": "Inter (livrée avec Bobine), une police du système ou une police installée.",
+        "inter": "Inter",
+        "systemSans": "Système (sans serif)",
+        "serif": "Serif du système",
         "installed": "Polices installées"
       },
       "conversationSize": {
@@ -1415,11 +1416,16 @@
       "codeFont": {
         "label": "Police du code",
         "hint": "Blocs de code, diffs et sorties de commandes.",
-        "system": "SF Mono (système)",
+        "jetbrains": "JetBrains Mono",
+        "systemMono": "Chasse fixe du système",
         "installed": "Polices à chasse fixe installées"
       },
       "codeSize": {
         "label": "Taille du code"
+      },
+      "codeLigatures": {
+        "label": "Ligatures du code",
+        "hint": "Dessine != en ≠ et => en flèche, si la police du code en a."
       },
       "terminalFont": {
         "label": "Police du terminal",
@@ -1727,6 +1733,7 @@
     "thread": "fil réponses police taille largeur",
     "codeAndTerminal": "code terminal police monospace taille",
     "codeFontSize": "code taille blocs diffs sorties zoom",
+    "codeLigatures": "ligatures != ≠ flèche => police code jetbrains fira",
     "whenDone": "notifications dock bannière fini attend",
     "sound": "son alerte bip",
     "children": "sous-tâches conversations filles parallèle",

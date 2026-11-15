@@ -114,6 +114,7 @@ export class SettingsStore {
       keepAwake: s.keepAwake ?? DEFAULT_PREFERENCES.keepAwake,
       codeFont: s.codeFont ?? DEFAULT_PREFERENCES.codeFont,
       codeFontSize: s.codeFontSize ?? DEFAULT_PREFERENCES.codeFontSize,
+      codeLigatures: s.codeLigatures ?? DEFAULT_PREFERENCES.codeLigatures,
       userName: s.userName ?? DEFAULT_PREFERENCES.userName,
       quickEntryShortcut: s.quickEntryShortcut ?? DEFAULT_PREFERENCES.quickEntryShortcut,
       attentionSound: s.attentionSound ?? DEFAULT_PREFERENCES.attentionSound,

@@ -129,6 +129,17 @@ describe('parsePreferences', () => {
       expect(parsePreferences({ codeFont: bad, conversationFont: bad })).toEqual({})
     }
     expect(parsePreferences({ codeFontSize: 30 })).toEqual({})
+    // Polices du système, proposées quand l'app livre les siennes (fiche 145).
+    expect(parsePreferences({ codeFont: 'system-mono', conversationFont: 'system-sans' })).toEqual({
+      codeFont: 'system-mono',
+      conversationFont: 'system-sans'
+    })
+  })
+
+  it('ligatures du code (fiche 145) : non par défaut, oui ou non repris tel quel', () => {
+    expect(DEFAULT_PREFERENCES.codeLigatures).toBe(false)
+    expect(parsePreferences({ codeLigatures: true })).toEqual({ codeLigatures: true })
+    expect(parsePreferences({ codeLigatures: 'yes' })).toEqual({})
   })
 
   it('accent (fiche 136) : six teintes ; « Comme le Mac » (`system`, retiré) revient au défaut', () => {

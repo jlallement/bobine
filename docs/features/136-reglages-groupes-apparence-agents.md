@@ -236,3 +236,8 @@ Pas de nouvelle dépendance.
   (`changelogVersions` dans `AboutSettings.tsx`). Maquette regardée avant de coder
   (`maq-nouveautes`). Essais : unitaires (versions, une seule ouverte, anglais), e2e `settings` et
   `about` en clair et en sombre.
+- 2026-11-15 — **Polices livrées** (fiche 145, D9 ; ADR-0052) : la police des réponses propose
+  « Inter » (par défaut, `sans`), « Système (sans serif) » (`system-sans`), « Serif du système »
+  (`serif`) ; celle du code « JetBrains Mono » (par défaut, `system`) et « Chasse fixe du
+  système » (`system-mono`) ; nouvel interrupteur « Ligatures du code » (`codeLigatures`, non par
+  défaut). Sur les trois systèmes.

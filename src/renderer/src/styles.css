@@ -6,12 +6,19 @@
 
 :root {
   /* Couleurs : jetons de thème générés (`themes.generated.css`, depuis `shared/themes.ts`). */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  /*
+   * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0052) : Inter pour
+   * l'interface, JetBrains Mono pour le code (`bundled-fonts.css`) ; celles du système en repli,
+   * et au choix dans Réglages › Apparence (`--font-system-*`).
+   */
+  --font-system-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-system-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ui: 'Bobine Inter', var(--font-system-ui);
   --font-serif: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
   /* Fil de conversation : police et taille réglables (réglages › Conversation). */
   --conv-font: var(--font-ui);
   --conv-size: 15px;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-mono: 'Bobine JetBrains Mono', var(--font-system-mono);
   color-scheme: light;
   font-family: var(--font-ui);
   font-size: 14px;
@@ -54,6 +61,7 @@ button:disabled {
 code,
 pre {
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: var(--code-size, 12.5px);
 }
 
@@ -1462,6 +1470,7 @@ pre.tool-output {
   border-radius: var(--radius-md);
   overflow: hidden;
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: calc(var(--code-size, 12.5px) - 0.5px);
   background: var(--surface);
 }
@@ -1960,6 +1969,7 @@ tr.diff-selected td {
   margin: 0;
   padding: 9px 12px;
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
   line-height: 18px;
   color: var(--code-fg);
@@ -2086,6 +2096,7 @@ tr.diff-selected td {
   grid-template-columns: max-content 1fr;
   gap: 3px 14px;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
 }
 
@@ -3148,6 +3159,7 @@ a.btn {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
 }
 
@@ -3523,6 +3535,7 @@ a.btn {
 .blocker-details p {
   margin-top: 6px;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
   color: var(--muted);
   white-space: pre-wrap;
@@ -3581,6 +3594,7 @@ a.btn {
 
 .blocker-message {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px !important;
   color: var(--muted) !important;
   white-space: pre-wrap;
@@ -4100,6 +4114,7 @@ a.btn {
   flex-shrink: 0;
   max-width: 45%;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 13px;
   font-weight: 500;
   overflow: hidden;
@@ -4139,6 +4154,7 @@ a.btn {
 .command-pending {
   padding: 10px 18px 0;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
   color: var(--text-2);
 }
@@ -4279,6 +4295,7 @@ a.btn {
   overflow: auto;
   color: var(--code-fg);
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: calc(var(--code-size, 12.5px) - 0.5px);
   line-height: 1.5;
   white-space: pre-wrap;
@@ -5089,6 +5106,7 @@ a.btn {
   border-top: 1px solid var(--border);
   background: var(--surface-2);
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   line-height: 1.45;
   white-space: pre-wrap;
@@ -5624,6 +5642,7 @@ a.btn {
 .changes-branch {
   min-width: 0;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   color: var(--muted);
   overflow: hidden;
@@ -5753,6 +5772,7 @@ a.btn {
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
 }
 
 .changes-badge.add {
@@ -5773,6 +5793,7 @@ a.btn {
 .changes-stats {
   flex-shrink: 0;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   margin-right: 4px;
 }
@@ -5797,6 +5818,7 @@ a.btn {
 .panel-toggle .diff-added,
 .panel-toggle .diff-removed {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
 }
 
@@ -6508,6 +6530,7 @@ kbd {
 
 .settings-list-main.mono {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
 }
 
@@ -8169,6 +8192,7 @@ kbd {
 }
 .app-tool-names li {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   padding: 2px 7px;
   border: 1px solid var(--border);
@@ -8213,6 +8237,7 @@ kbd {
 }
 .mono {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
 }
 /* État d'un serveur MCP (fiche 060) : pastille. */
 .mcp-dot {
@@ -8303,6 +8328,7 @@ kbd {
 }
 .mcp-form .mono {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
 }
 .mcp-form input:focus,
@@ -9046,6 +9072,7 @@ kbd {
 }
 .diag-command code {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   padding: 3px 7px;
   border-radius: var(--radius-sm);
@@ -9460,6 +9487,7 @@ html.about-page body {
 }
 .log-file-name {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 13px;
 }
 .log-file-size {
@@ -9539,6 +9567,7 @@ html.about-page body {
 .worktree-start .mono,
 .worktree-conflicts .mono {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
 }
 
@@ -9591,6 +9620,7 @@ html.about-page body {
 
 .worktree-form textarea {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
 }
 
@@ -9659,6 +9689,7 @@ html.about-page body {
   padding: 0 0 0 19px;
   list-style: none;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
   color: var(--text-2);
 }
@@ -9700,6 +9731,7 @@ html.about-page body {
 
 .worktree-hint code {
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 0.95em;
   overflow-wrap: anywhere;
 }
@@ -9831,6 +9863,7 @@ html.about-page body {
 }
 .handover-where code {
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
   font-weight: 400;
 }
@@ -10039,6 +10072,7 @@ html.about-page body {
   min-height: 0;
   overflow: auto;
   font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
 }
 
@@ -10156,6 +10190,7 @@ html.about-page body {
   overflow: auto;
   color: var(--text);
   font: 12px/1.55 var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
   white-space: pre;
   user-select: text;
 }
@@ -10374,6 +10409,7 @@ html.about-page body {
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   font-family: var(--font-code, var(--font-mono));
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;

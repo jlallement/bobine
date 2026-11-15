@@ -63,7 +63,8 @@ describe('argument du renderer', () => {
   })
 
   it('liste vide : `none`, aucune capacité, même raccourcie par Chromium', () => {
-    expect(featuresArgument(platformFeatures('linux'))).toBe('--bobine-features=none')
+    const none = featuresFromArgv(['--bobine-features=none'])
+    expect(featuresArgument(none)).toBe('--bobine-features=none')
     expect(featuresFromArgv(['--bobine-features'])).toEqual(
       featuresFromArgv(['--bobine-features='])
     )

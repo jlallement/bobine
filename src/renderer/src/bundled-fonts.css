@@ -1,0 +1,72 @@
+/*
+ * Polices livrées avec l'app, sur macOS, Linux et Windows (fiche 145, D9 ; ADR-0052) : Inter pour
+ * l'interface (rsms/inter v4.1, variable, graisses 100 à 900) et JetBrains Mono pour le code et
+ * les diffs (JetBrains/JetBrainsMono v2.304 : 400, 500, 600, 700 et l'italique, les graisses du
+ * CSS). Fichiers `woff2` publiés, non modifiés, licence OFL 1.1 à côté
+ * (`assets/fonts/*-LICENSE.txt`), chargés depuis le disque (CSP `default-src 'self'`, aucun
+ * réseau). Noms propres à Bobine : ne masquent pas une copie installée par l'utilisateur. Les
+ * piles sont dans `:root` (styles.css). Le terminal garde sa police (terminal-symbols.css).
+ */
+@font-face {
+  font-family: 'Bobine Inter';
+  src: url('./assets/fonts/InterVariable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine Inter';
+  src: url('./assets/fonts/InterVariable-Italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Medium.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Bobine JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+/*
+ * Inter redessine `=>` en flèche et `!=` en ≠ (alternances contextuelles) : coupées dans tout le
+ * texte, les vrais caractères ; le code suit son propre réglage (`--code-ligatures`).
+ */
+:root {
+  font-variant-ligatures: none;
+}

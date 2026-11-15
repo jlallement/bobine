@@ -14,6 +14,7 @@ import {
   unpackedDir,
   windowsPackageProblems
 } from './package-win.mts'
+import { BUNDLED_FONT_FILES } from './bundled-fonts.mjs'
 
 /** Petit en-tête PE : « MZ », pointeur en 0x3c, « PE\0\0 » puis le champ Machine. */
 function fakeExe(machine: number): Buffer {
@@ -81,13 +82,17 @@ describe('paquet Windows (fiche 229)', () => {
   })
 
   it('app.asar : le build, les dépendances, package.json ; koffi de l’architecture', () => {
+    const fonts = BUNDLED_FONT_FILES.map(
+      (f) => `/out/renderer/assets/${f.replace('.woff2', '-Ab1_cD2e.woff2')}`
+    )
     const base = [
       '/out/main/index.js',
       '/node_modules/koffi/package.json',
       '/node_modules/koffi/index.cjs',
       '/node_modules/koffi/src/koffi/index.cjs',
       '/node_modules/koffi/src/koffi/src/static.cjs',
-      '/package.json'
+      '/package.json',
+      ...fonts
     ]
     expect(
       asarProblems([...base, '/node_modules/@koromix/koffi-win32-arm64/package.json'], 'arm64')
@@ -108,7 +113,8 @@ describe('paquet Windows (fiche 229)', () => {
       'hors du build dans app.asar : src',
       'hors du build dans app.asar : vendor',
       'koffi absent de app.asar',
-      "binaire de koffi d'un autre système : koffi-darwin-arm64"
+      "binaire de koffi d'un autre système : koffi-darwin-arm64",
+      ...BUNDLED_FONT_FILES.map((f) => `police absente de app.asar : ${f}`)
     ])
   })
 

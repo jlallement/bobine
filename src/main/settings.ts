@@ -45,6 +45,8 @@ export interface Settings {
   keepAwake?: boolean
   codeFont?: Preferences['codeFont']
   codeFontSize?: Preferences['codeFontSize']
+  /** Ligatures de la police du code (fiche 145) ; non si absent. */
+  codeLigatures?: boolean
   userName?: string
   /** Raccourci global de la fenêtre rapide (fiche 062) ; ⌥⌘B si absent. */
   quickEntryShortcut?: Preferences['quickEntryShortcut']
@@ -129,6 +131,7 @@ const KNOWN: Record<keyof Settings, true> = {
   keepAwake: true,
   codeFont: true,
   codeFontSize: true,
+  codeLigatures: true,
   userName: true,
   quickEntryShortcut: true,
   attentionSound: true,

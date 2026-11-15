@@ -49,9 +49,21 @@ export async function terminalPanelSuite(scheme) {
           const family = getComputedStyle(rowsEl).fontFamily
           const size = parseFloat(getComputedStyle(rowsEl).fontSize)
           const face = [...document.fonts].find((f) => f.family.replace(/"/g, '') === 'Bobine Nerd Font')
+          // Mesures à 64 fois la taille, ramenées ensuite : Chromium sous Linux arrondit les bornes
+          // de l'encre au pixel entier (« W » : 0..8 pour une cellule de 7,53), ce qui ferait d'un
+          // débord voulu d'une fraction de pixel (flèche powerline) un débord d'un pixel entier.
+          const scale = 64
           const g = document.createElement('canvas').getContext('2d')
-          g.font = size + 'px ' + family
-          const cell = g.measureText('W').width
+          g.font = size * scale + 'px ' + family
+          const measure = (text) => {
+            const m = g.measureText(text)
+            return {
+              width: m.width / scale,
+              actualBoundingBoxLeft: m.actualBoundingBoxLeft / scale,
+              actualBoundingBoxRight: m.actualBoundingBoxRight / scale
+            }
+          }
+          const cell = measure('W').width
           const lines = [...rowsEl.children]
           const spacing = (e) => parseFloat(e.style.letterSpacing) || 0
           const bad = []
@@ -59,7 +71,7 @@ export async function terminalPanelSuite(scheme) {
           for (const [prefix, chars] of cases) {
             const line = lines.filter((l) => l.textContent.startsWith(prefix)).at(-1)
             for (const ch of chars) {
-              const m = g.measureText(ch)
+              const m = measure(ch)
               const span = line && [...line.querySelectorAll('span')].find((s) => s.textContent.includes(ch))
               const shares = !!span && span.textContent.includes(ch + ' ')
               const ok =

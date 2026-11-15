@@ -39,6 +39,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
+import { FONT_LICENSES, missingFonts } from './bundled-fonts.mjs'
 
 export type WindowsArch = 'x64' | 'arm64'
 export const WINDOWS_ARCHS: readonly WindowsArch[] = ['x64', 'arm64']
@@ -150,7 +151,8 @@ export function expectedFiles(arch: WindowsArch): string[] {
     'resources/licenses/conpty/LICENSE.txt',
     'resources/licenses/koffi/LICENSE.txt',
     'resources/licenses/electron/LICENSE',
-    'resources/licenses/electron/LICENSES.chromium.html'
+    'resources/licenses/electron/LICENSES.chromium.html',
+    ...FONT_LICENSES.map((f) => `resources/licenses/fonts/${f}`)
   ]
 }
 
@@ -170,7 +172,7 @@ export const ASAR_ROOTS = ['node_modules', 'out', 'package.json']
 
 /**
  * Ce qui ne va pas dans l'asar : entrées hors de `ASAR_ROOTS` (le dépôt entier, si `files` est mal
- * combiné), koffi absent ou incomplet, binaires de koffi d'un autre système.
+ * combiné), koffi absent ou incomplet, binaires de koffi d'un autre système, polices livrées absentes.
  */
 export function asarProblems(entries: readonly string[], arch: WindowsArch): string[] {
   const paths = entries.map((e) => e.replace(/\\/g, '/').replace(/^\/+/, ''))
@@ -194,7 +196,7 @@ export function asarProblems(entries: readonly string[], arch: WindowsArch): str
   )
   for (const name of [...others].sort())
     problems.push(`binaire de koffi d'un autre système : ${name}`)
-  return problems
+  return [...problems, ...missingFonts(paths)]
 }
 
 /**

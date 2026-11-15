@@ -105,9 +105,10 @@ export async function fillesTechLeadSuite(scheme) {
         writeFileSync(join(folders['Notes'], 'NOTES.md'), '# Notes\n')
         await commitAll(folders['Notes'], 'docs: notes')
         // Revenir à la mère depuis une fille : la carte relit les branches.
-        await ui.click(
-          `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
-        )
+        // Le bouton d'abord à l'écran, comme un utilisateur (fiche 145).
+        const open = `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
+        await ui.reveal(open)
+        await ui.click(open)
         await ui.waitFor(`!!${ui.$('title-origin')}`)
         await ui.click(ui.$('title-origin'))
         await ui.waitFor(
@@ -152,6 +153,10 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.waitFor(`!!${pending}`, 30000)
         await ui.click(pending)
         await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
+        // Tour fini (son pied « Terminé » arrive après le texte et fait défiler le fil) et bouton
+        // à l'écran avant le clic : sinon le clic tombait là où le bouton n'était plus (fiche 145).
+        await ui.ready()
+        await ui.reveal(ui.$('child-report-toggle'))
         await ui.click(ui.$('child-report-toggle'))
         // Le compte rendu se déplie au rendu suivant : sur une machine lente (job Linux de
         // GitHub, fiche 145), lu tout de suite, il était encore replié.

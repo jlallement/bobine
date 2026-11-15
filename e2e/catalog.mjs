@@ -1516,6 +1516,14 @@ export const SUITES = [
   },
   { name: 'tables', file: 'tables.mjs', run: 'tablesSuite', themes: BOTH, sources: [] },
   {
+    // Fiche 145 (D9) : Inter et JetBrains Mono livrées, ligatures du code (Réglages › Apparence).
+    name: 'polices',
+    file: 'polices.mjs',
+    run: 'policesSuite',
+    themes: BOTH,
+    sources: [...SETTINGS, ...APPEARANCE, `${R}bundled-fonts.css`, `${R}styles.css`]
+  },
+  {
     name: 'debordements',
     file: 'debordements.mjs',
     run: 'overflowSuite',

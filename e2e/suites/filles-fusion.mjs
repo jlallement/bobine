@@ -97,9 +97,11 @@ export async function fillesFusionSuite(scheme) {
 
         /** Revenir à la mère depuis une fille : la carte relit les branches. */
         const reread = async () => {
-          await ui.click(
-            `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
-          )
+          const open = `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
+          // Comme un utilisateur : le bouton d'abord à l'écran. Le haut de la carte peut être
+          // au-dessus du fil (selon la hauteur des lignes, fiche 145) : le clic tombait dehors.
+          await ui.reveal(open)
+          await ui.click(open)
           await ui.waitFor(`!!${ui.$('title-origin')}`)
           await ui.click(ui.$('title-origin'))
           await ui.waitFor(

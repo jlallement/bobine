@@ -98,7 +98,10 @@ export function axeVersion(root: string): string {
   return version
 }
 
-/** Police embarquée : version, tableau des jeux d'icônes et textes, lus dans le dépôt. */
+/**
+ * Polices embarquées : Meslo (version, jeux d'icônes), Inter et JetBrains Mono ; textes
+ * lus dans le dépôt.
+ */
 export function fontNotices(root: string): NoticesInput['font'] {
   const readme = readText(join(root, FONTS, 'MesloLGSNerdFont-README.txt'))
   const version = /release v(\d+(?:\.\d+)*)/.exec(readme)?.[1]
@@ -116,7 +119,11 @@ export function fontNotices(root: string): NoticesInput['font'] {
     meslo: component('Meslo LG', 'Apache-2.0', `${FONTS}/MesloLG-LICENSE.txt`, 'LICENSE'),
     nerdFonts: component('Nerd Fonts', 'MIT', `${FONTS}/NerdFonts-LICENSE.txt`),
     ccBy: component('Codicons and Font Awesome glyphs', 'CC-BY-4.0', `${TEXTS}/CC-BY-4.0.txt`),
-    ofl: component('Pomicons and Weather Icons glyphs', 'OFL-1.1', `${TEXTS}/OFL-1.1.txt`)
+    ofl: component('Pomicons and Weather Icons glyphs', 'OFL-1.1', `${TEXTS}/OFL-1.1.txt`),
+    // Polices livrées (fiche 145, D9) : la licence publiée avec chacune (OFL 1.1 et son
+    // avis de copyright).
+    inter: component('Inter', 'OFL-1.1', `${FONTS}/Inter-LICENSE.txt`),
+    jetbrainsMono: component('JetBrains Mono', 'OFL-1.1', `${FONTS}/JetBrainsMono-LICENSE.txt`)
   }
 }
 

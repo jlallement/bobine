@@ -27,6 +27,8 @@ import {
 import { homedir, tmpdir, userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { FONT_LICENSES, missingFonts } from '../scripts/bundled-fonts.mjs'
+import { asarEntries } from '../scripts/check-linux-package.mts'
 
 // Linux et Windows (fiches 145, 229) : l'app installée (`.deb`, installeur NSIS), essai à part.
 if (process.platform !== 'darwin') {
@@ -383,6 +385,17 @@ async function reset({ trashWritable }) {
   }
 }
 
+/** Polices livrées (Inter, JetBrains Mono : fiche 145, D9) : dans l'archive de l'app. */
+function bundledFonts() {
+  console.log('\n▶ Polices livrées (app.asar)')
+  const entries = asarEntries(readFileSync(join(app, 'Contents', 'Resources', 'app.asar')))
+  const missing = missingFonts(entries)
+  check(
+    entries.length > 0 && missing.length === 0,
+    `Inter et JetBrains Mono dans l'app${missing.length ? ` (${missing.join(', ')})` : ''}`
+  )
+}
+
 /**
  * Textes de licence livrés avec l'app (fiche 217) : ceux de Bobine, les avis des composants tiers
  * (identiques à ceux du dépôt), Electron et Chromium, la police.
@@ -398,7 +411,8 @@ function licenses() {
     'electron/LICENSES.chromium.html',
     'fonts/MesloLG-LICENSE.txt',
     'fonts/NerdFonts-LICENSE.txt',
-    'fonts/MesloLGSNerdFont-README.txt'
+    'fonts/MesloLGSNerdFont-README.txt',
+    ...FONT_LICENSES.map((f) => `fonts/${f}`)
   ]) {
     check(read(file).length > 0, `${file} livré`)
   }
@@ -416,6 +430,7 @@ function licenses() {
 
 try {
   licenses()
+  bundledFonts()
   const already = appProcesses()
   if (already.length) {
     throw new Error(`l'app essayée tourne déjà (${already.join(', ')}) : fermez-la d'abord`)

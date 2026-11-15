@@ -12,7 +12,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Linux sans trousseau de session (ni GNOME Keyring ni KWallet) : une clé d'API est gardée en
   clair dans un fichier que vous seul pouvez lire, et Réglages › Agents le dit, avec de quoi la
   chiffrer ; elle l'est dès qu'un trousseau répond.
-
+- Réglages › Apparence : « Ligatures du code », coupées par défaut (`!=` reste `!=`) ; activées,
+  une police du code qui en a dessine `!=` en ≠ et `=>` en flèche.
+- Nouvelles polices, les mêmes sur Mac, Linux et Windows : Inter pour l'interface, JetBrains Mono
+  pour le code et les diffs, livrées avec Bobine. Celles du système (SF Pro, SF Mono sur le Mac)
+  restent au choix dans Réglages › Apparence ; le terminal ne change pas.
 - Supprimer une conversation mère propose de supprimer aussi ses conversations filles (coché
   d'office) ; décoché, elles continuent seules, comme des conversations ordinaires.
 

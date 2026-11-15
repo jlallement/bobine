@@ -291,6 +291,7 @@
   left: 10px;
   color: var(--muted);
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-ligatures: var(--code-ligatures, none);
 }
 
 .role-at-input .field-input {
@@ -300,6 +301,7 @@
 
 .field-input.mono {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
 }
 
@@ -365,6 +367,7 @@
 
 .role-prompt {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12.5px;
 }
 
@@ -838,6 +841,7 @@
 
 .role-problem-file {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-ligatures: var(--code-ligatures, none);
   font-size: 12px;
   overflow-wrap: anywhere;
 }

@@ -48,6 +48,7 @@ extraResources:
     to: licenses/electron/LICENSE
   - from: node_modules/electron/dist/LICENSES.chromium.html
     to: licenses/electron/LICENSES.chromium.html
+  # Polices livrées : MesloLGS Nerd Font (terminal), Inter et JetBrains Mono (fiche 145, D9).
   - from: src/renderer/src/assets/fonts
     to: licenses/fonts
     filter: ['*.txt']

@@ -356,19 +356,50 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     const options = (id: string) =>
       [...(screen.getByTestId(id) as HTMLSelectElement).options].map((o) => o.textContent)
     expect(options('settings-conversation-font')).toEqual([
+      'Inter',
       'Système (sans serif)',
-      'Serif (New York)',
+      'Serif du système',
       'Avenir Next',
       'Menlo'
     ])
     expect(options('settings-code-font')).toEqual([
-      'SF Mono (système)',
+      'JetBrains Mono',
+      'Chasse fixe du système',
       'JetBrains Mono (non installée)',
       'Menlo'
     ])
     expect(options('settings-terminal-font')).toEqual(['Automatique', 'Menlo'])
     fireEvent.change(screen.getByTestId('settings-terminal-font'), { target: { value: 'Menlo' } })
     expect(onPreferences).toHaveBeenCalledWith({ terminalFontFamily: 'Menlo' })
+  })
+
+  it('polices livrées (fiche 145, D9) : Inter et JetBrains Mono par défaut, celles du système au choix', async () => {
+    render(<SettingsDialog {...dialogProps('appearance')} />)
+    await act(async () => {})
+    const options = (id: string) =>
+      [...(screen.getByTestId(id) as HTMLSelectElement).options].map((o) => o.value)
+    expect(options('settings-conversation-font')).toEqual([
+      'sans',
+      'system-sans',
+      'serif',
+      'Avenir Next',
+      'Menlo'
+    ])
+    expect(options('settings-code-font')).toEqual(['system', 'system-mono', 'Menlo'])
+    expect(
+      (screen.getByTestId('settings-code-font') as HTMLSelectElement).selectedOptions[0]
+        ?.textContent
+    ).toBe('JetBrains Mono')
+  })
+
+  it('ligatures du code (fiche 145) : coupées par défaut, un interrupteur les active', async () => {
+    const onPreferences = vi.fn()
+    render(<SettingsDialog {...dialogProps('appearance')} onPreferences={onPreferences} />)
+    await act(async () => {})
+    const toggle = screen.getByTestId('settings-code-ligatures') as HTMLInputElement
+    expect(toggle.checked).toBe(false)
+    fireEvent.click(toggle)
+    expect(onPreferences).toHaveBeenCalledWith({ codeLigatures: true })
   })
 })
 

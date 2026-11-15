@@ -1356,9 +1356,10 @@ export type FrResources = {
       }
       readonly conversationFont: {
         readonly label: 'Police des réponses'
-        readonly hint: 'Sans serif ou serif du système, ou une police installée sur le Mac.'
-        readonly sans: 'Système (sans serif)'
-        readonly serif: 'Serif (New York)'
+        readonly hint: 'Inter (livrée avec Bobine), une police du système ou une police installée.'
+        readonly inter: 'Inter'
+        readonly systemSans: 'Système (sans serif)'
+        readonly serif: 'Serif du système'
         readonly installed: 'Polices installées'
       }
       readonly conversationSize: {
@@ -1385,10 +1386,15 @@ export type FrResources = {
       readonly codeFont: {
         readonly label: 'Police du code'
         readonly hint: 'Blocs de code, diffs et sorties de commandes.'
-        readonly system: 'SF Mono (système)'
+        readonly jetbrains: 'JetBrains Mono'
+        readonly systemMono: 'Chasse fixe du système'
         readonly installed: 'Polices à chasse fixe installées'
       }
       readonly codeSize: { readonly label: 'Taille du code' }
+      readonly codeLigatures: {
+        readonly label: 'Ligatures du code'
+        readonly hint: 'Dessine != en ≠ et => en flèche, si la police du code en a.'
+      }
       readonly terminalFont: {
         readonly label: 'Police du terminal'
         readonly hint: 'Automatique : une « Nerd Font » installée, sinon SF Mono.'
@@ -1689,6 +1695,7 @@ export type FrResources = {
     readonly thread: 'fil réponses police taille largeur'
     readonly codeAndTerminal: 'code terminal police monospace taille'
     readonly codeFontSize: 'code taille blocs diffs sorties zoom'
+    readonly codeLigatures: 'ligatures != ≠ flèche => police code jetbrains fira'
     readonly whenDone: 'notifications dock bannière fini attend'
     readonly sound: 'son alerte bip'
     readonly children: 'sous-tâches conversations filles parallèle'
