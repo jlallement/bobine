@@ -21,6 +21,8 @@ describe('polices livrées hors macOS (fiche 145)', () => {
     ])
     expect(bundled).toContain("--font-ui: 'Bobine Inter'")
     expect(bundled).toContain("--font-mono: 'Bobine JetBrains Mono'")
+    // Flèches d'Inter (`=>`, `!=`) coupées dans le texte de l'interface.
+    expect(bundled).toMatch(/html\.bundled-fonts {[^}]*font-variant-ligatures: none;/)
     // Chaque fichier déclaré est livré (et seulement des woff2 locaux : aucun réseau).
     const urls = [...bundled.matchAll(/url\('([^']+)'\)/g)].map((m) => m[1] ?? '')
     expect(urls.map((u) => u.split('/').at(-1)).sort()).toEqual([...BUNDLED_FONT_FILES].sort())

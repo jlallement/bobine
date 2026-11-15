@@ -64,8 +64,10 @@ export async function policesSuite(scheme) {
       `code en ${families(off.family)[0]}${FEATURES.bundledFonts ? ', chargée depuis l’app' : ''}`
     )
     check(
-      off.block === 'none' && off.inline === 'none' && off.prose === 'normal',
-      `ligatures du code coupées par défaut, texte inchangé (${off.block}, ${off.inline}, ${off.prose})`
+      off.block === 'none' &&
+        off.inline === 'none' &&
+        off.prose === (FEATURES.bundledFonts ? 'none' : 'normal'),
+      `ligatures du code coupées par défaut ; texte ${FEATURES.bundledFonts ? 'sans les flèches d’Inter' : 'inchangé'} (${off.block}, ${off.inline}, ${off.prose})`
     )
     await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
     await ui.shot('p1-code-sans-ligatures')
@@ -96,8 +98,8 @@ export async function policesSuite(scheme) {
 
     const on = await look()
     check(
-      on.block === 'normal' && on.inline === 'normal',
-      `ligatures du code activées (${on.block}, ${on.inline})`
+      on.block === 'normal' && on.inline === 'normal' && on.prose === off.prose,
+      `ligatures du code activées, texte inchangé (${on.block}, ${on.inline}, ${on.prose})`
     )
     await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
     await ui.shot('p3-code-ligatures')

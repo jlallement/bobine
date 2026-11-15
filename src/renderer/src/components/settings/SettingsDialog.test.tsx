@@ -390,7 +390,7 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     expect(
       (screen.getByTestId('settings-code-font') as HTMLSelectElement).selectedOptions[0]
         ?.textContent
-    ).toBe('JetBrains Mono (livrée avec Bobine)')
+    ).toBe('JetBrains Mono')
   })
 
   it('ligatures du code (fiche 145) : coupées par défaut, un interrupteur les active', async () => {

@@ -68,8 +68,12 @@
 /*
  * Piles de polices hors macOS ; sur macOS, celles de `:root` (styles.css), inchangées. Le serif
  * reste celui de `:root` (Georgia, puis le serif du système).
+ *
+ * Inter redessine `=>` en flèche et `!=` en ≠ (alternances contextuelles) : coupées dans tout le
+ * texte, les vrais caractères ; le code suit son propre réglage (`--code-ligatures`).
  */
 html.bundled-fonts {
   --font-ui: 'Bobine Inter', system-ui, sans-serif;
   --font-mono: 'Bobine JetBrains Mono', ui-monospace, monospace;
+  font-variant-ligatures: none;
 }

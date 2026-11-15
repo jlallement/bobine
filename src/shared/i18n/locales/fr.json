@@ -1390,7 +1390,7 @@
         "sans": "Système (sans serif)",
         "serif": "Serif (New York)",
         "installed": "Polices installées",
-        "inter": "Inter (livrée avec Bobine)",
+        "inter": "Inter",
         "systemSans": "Système (sans serif)",
         "systemSerif": "Système (serif)",
         "hintBundled": "Inter (livrée avec Bobine), une police du système ou une police installée."
@@ -1421,7 +1421,7 @@
         "hint": "Blocs de code, diffs et sorties de commandes.",
         "system": "SF Mono (système)",
         "installed": "Polices à chasse fixe installées",
-        "jetbrains": "JetBrains Mono (livrée avec Bobine)",
+        "jetbrains": "JetBrains Mono",
         "systemMono": "Chasse fixe du système"
       },
       "codeSize": {

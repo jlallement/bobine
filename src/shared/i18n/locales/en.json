@@ -1320,7 +1320,7 @@
         "sans": "System (sans serif)",
         "serif": "Serif (New York)",
         "installed": "Installed fonts",
-        "inter": "Inter (bundled with Bobine)",
+        "inter": "Inter",
         "systemSans": "System (sans serif)",
         "systemSerif": "System (serif)",
         "hintBundled": "Inter (bundled with Bobine), a system font or an installed font."
@@ -1351,7 +1351,7 @@
         "hint": "Code blocks, diffs and command output.",
         "system": "SF Mono (system)",
         "installed": "Installed monospaced fonts",
-        "jetbrains": "JetBrains Mono (bundled with Bobine)",
+        "jetbrains": "JetBrains Mono",
         "systemMono": "System monospace"
       },
       "codeSize": {

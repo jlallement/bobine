@@ -18,7 +18,8 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
    ADR-0051) ; reste D6 (essai fait sur Ubuntu 26.04, pas 24.04).
 2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
    le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
-   lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
+   lancés (`pannes-visibles`), barres de défilement et molette de Linux, encre des icônes du
+   terminal (`terminal`) ; les débordements dus à DejaVu sont réglés par les polices livrées (D9).
 3. **Lot 2** — fait le 2026-11-15 (textes Mac/Finder/Dock/Trousseau compris, avec la fiche 229 ;
    restent les textes des polices de Réglages › Apparence, repris par la fiche des polices).
 4. **Lot 3** — intégration au bureau (git en langue fixe, clés d'API sans trousseau D4 : faits) ;
@@ -105,6 +106,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 | D6 | Bureau visé | **Ubuntu 24.04 GNOME**, Wayland et X11 | Le plus répandu ; essais dans UTM sur le Mac. Les autres bureaux « devraient marcher », sans promesse. |
 | D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux » ; menu revu le jour même par Jérôme, **variante D**) | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **menu ☰ dessiné par Bobine** dans l'en-tête de la barre latérale, ouvert par le bouton ou par Alt seul ; la barre de menu d'Electron n'est **jamais** montrée (le menu reste installé pour ses raccourcis Ctrl) | La barre du système respecte le thème et l'ordre des boutons du bureau, sous GNOME comme KDE, X11 comme Wayland. La barre de menu d'Electron (première version de D8, `autoHideMenuBar`) ne se style pas : bandeau gris qui ne suit pas le thème, cadre de focus vert (essai de Jérôme, VM GNOME, Aurore nuit). Le menu ☰ suit les thèmes, reste joignable au clavier et par les lecteurs d'écran. **À revoir pour Windows** (fiche à venir), où les usages diffèrent. |
 | D7 | Publication | **Même version que le Mac** : AppImage et `.deb` joints à la version GitHub du `.dmg` | Un seul numéro, un seul tag ; « préversion Linux » dit dans les notes et l'À propos. Première publication après la 0.6.0 macOS, une fois Linux validé. |
+| D9 | Polices hors macOS (Jérôme, 2026-11-15, option B) | **Inter** (interface) et **JetBrains Mono** (code, diffs) livrées sous Linux et Windows, capacité `bundledFonts` ; macOS inchangé (SF Pro, SF Mono) ; terminal inchangé (Meslo pour les icônes) ; ligatures du code **coupées + réglage** (Réglages › Apparence) ; les polices du système restent au choix | DejaVu Sans, plus large que SF, faisait déborder l'interface ; une police livrée rend Linux et Windows prévisibles. `woff2` publiés (rsms/inter 4.1, JetBrains Mono 2.304), empreintes vérifiées, OFL 1.1 livrée et citée, exclus de l'app Mac par `files` d'electron-builder |
 
 Choix d'interface : voir D8 (remplace le choix d'origine, `titleBarOverlay` aux couleurs du
 thème, écarté le 2026-11-15).
@@ -660,3 +662,35 @@ lancé, rien d'autre à installer sur le Mac.
   Nerd Font reste.
   Mac : `./scripts/verify` vert ; `pnpm e2e pannes-visibles terminal session restart fresh-start
   startup notifications` 13/13.
+- 2026-11-15 — **Polices livrées hors macOS (D9)**. Inter 4.1 (variable, droite et italique) et
+  JetBrains Mono 2.304 (400, 500, 600, 700, italique : les graisses du CSS ; pas de `woff2` variable
+  publié) copiées des archives des versions GitHub, identiques aux fichiers du dépôt à leur tag
+  (SHA-256 : `InterVariable.woff2` 693b77d4…, `InterVariable-Italic.woff2` e564f652…,
+  `JetBrainsMono-Regular.woff2` a9cb1cd8…, `-Italic` cb6a1b24…, `-Medium` 086c48df…, `-SemiBold`
+  918edad5…, `-Bold` c503cc5e…), ≈ 820 Ko. Aucune dépendance npm.
+  - Capacité `bundledFonts` (vraie hors macOS) : classe `bundled-fonts` sur `html`,
+    `bundled-fonts.css` redéfinit `--font-ui` et `--font-mono` ; piles du Mac identiques. Inter
+    redessine `=>` et `!=` (alternances contextuelles) : ligatures coupées dans le texte de
+    l'interface hors macOS (vu sur la première maquette : l'aide du réglage affichait ⇒).
+  - Ligatures du code : préférence `codeLigatures` (non par défaut), interrupteur dans Réglages ›
+    Apparence sur toutes les plateformes (sur le Mac, SF Mono n'en a pas ; une police installée
+    comme Fira Code, oui), `--code-ligatures` suivi par chaque règle qui pose la police du code.
+  - Polices du système au choix hors macOS : « Système (sans serif) » (`system-sans`) pour les
+    réponses, « Chasse fixe du système » (`system-mono`) pour le code ; Inter et JetBrains Mono par
+    défaut. Le serif reste celui de `:root` (Georgia), attendu par `settings`.
+  - Paquets : exclues de l'app Mac par `files` (racine), remises dans `linux.files` et pour Windows
+    (`ROOT_ONLY_EXCLUSIONS`) ; licences dans `licenses/fonts/` des apps Linux et Windows seulement.
+    Contrôles : `.deb` et Windows (police ou licence absente = échec), `e2e:packaged` sur le Mac
+    (polices absentes de `app.asar`). Avis de licence : section « Inter and JetBrains Mono ».
+  - e2e : suite `polices` (police chargée depuis l'app ou celle du système, ligatures, captures),
+    scénario factice `ligatures`. Sous Linux (Docker) : `plan`, `roles-travail` passent désormais ;
+    `autorisation-commande` : la mention ne passe plus à la ligne parce que le chemin du dossier
+    temporaire est `/tmp` sous Linux (long sous macOS) — vérification rendue indépendante du
+    chemin (« · » seulement entre le chemin et la mention) ; restent la molette
+    (`commande-tres-longue`) et `terminal` : icônes e0b0 et f07c encrées à −1 px, bornes en pixels
+    entiers (−1.00..8.00) avec une cellule de 7,53 px identique en DejaVu Sans Mono et en Meslo
+    (même dessin d'origine) — pas une question de largeur ; la Nerd Font placée avant la police du
+    système n'y changeait rien (essayé, retiré). À suivre avec le lot 2.
+  - Maquettes avant / après (Linux, Docker ; avant = `main` 74afc45) : conversation en clair, en
+    sombre et en Aurore nuit, code sans et avec ligatures, Réglages › Apparence —
+    `e2e/captures/linux/maquettes-polices/` (non versionné), envoyées pour validation.

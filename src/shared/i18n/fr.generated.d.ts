@@ -1360,7 +1360,7 @@ export type FrResources = {
         readonly sans: 'Système (sans serif)'
         readonly serif: 'Serif (New York)'
         readonly installed: 'Polices installées'
-        readonly inter: 'Inter (livrée avec Bobine)'
+        readonly inter: 'Inter'
         readonly systemSans: 'Système (sans serif)'
         readonly systemSerif: 'Système (serif)'
         readonly hintBundled: 'Inter (livrée avec Bobine), une police du système ou une police installée.'
@@ -1391,7 +1391,7 @@ export type FrResources = {
         readonly hint: 'Blocs de code, diffs et sorties de commandes.'
         readonly system: 'SF Mono (système)'
         readonly installed: 'Polices à chasse fixe installées'
-        readonly jetbrains: 'JetBrains Mono (livrée avec Bobine)'
+        readonly jetbrains: 'JetBrains Mono'
         readonly systemMono: 'Chasse fixe du système'
       }
       readonly codeSize: { readonly label: 'Taille du code' }
