@@ -100,10 +100,35 @@ export function terminateLeftovers(pgid: number, graceMs = STOP_GRACE_MS): boole
  * Arrête un processus lancé par l'app et son groupe. Déjà sorti : ce qui reste de son groupe est
  * arrêté (fiche 195), sans jamais viser son pid seul.
  */
-export function stopGroup(child: ChildProcess, graceMs = STOP_GRACE_MS): void {
+export function stopGroup(
+  child: ChildProcess,
+  graceMs = STOP_GRACE_MS,
+  platform: NodeJS.Platform = process.platform
+): void {
+  if (platform === 'win32') {
+    stopByHandle(child, graceMs)
+    return
+  }
   if (child.exitCode !== null || child.signalCode !== null) {
     if (child.pid !== undefined) terminateLeftovers(child.pid, graceMs)
     return
   }
   if (child.pid === undefined || !terminateGroup(child.pid, graceMs)) child.kill()
+}
+
+/**
+ * Sous Windows sans objets de tâche (essais, sondes, scripts : `process-tree.ts` n'est configuré que
+ * par l'app ; fiche 229, lot 7a) : ni groupes ni signaux, et `process.kill(pid)` tue **ce numéro**,
+ * que Windows réattribue très vite (le plus petit libre). Le SIGKILL différé d'un processus déjà
+ * sorti tuait ainsi un autre processus (relevé : processus de vitest morts avec le code 1). Arrêt
+ * par le handle du processus lancé (`child.kill`), qui ne vise jamais un autre processus ; rien si
+ * il est déjà sorti.
+ */
+function stopByHandle(child: ChildProcess, graceMs: number): void {
+  const running = () => child.exitCode === null && child.signalCode === null
+  if (!running()) return
+  child.kill('SIGTERM')
+  setTimeout(() => {
+    if (running()) child.kill('SIGKILL')
+  }, graceMs).unref()
 }

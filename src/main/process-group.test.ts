@@ -36,7 +36,7 @@ describe('arrêt d’un groupe de processus', () => {
 
   it('SIGTERM au groupe, puis SIGKILL au groupe au bout de 3 s', () => {
     const child = fakeChild(4242)
-    stopGroup(child)
+    stopGroup(child, STOP_GRACE_MS, 'darwin')
     expect(kill.mock.calls).toEqual([[-4242, 'SIGTERM']])
     vi.advanceTimersByTime(STOP_GRACE_MS - 1)
     expect(kill).toHaveBeenCalledTimes(1)
@@ -49,7 +49,7 @@ describe('arrêt d’un groupe de processus', () => {
 
   it('SIGKILL au groupe même si le chef est sorti entre-temps (ses descendants restent)', () => {
     const child = fakeChild(4242)
-    stopGroup(child)
+    stopGroup(child, STOP_GRACE_MS, 'darwin')
     Object.assign(child, { signalCode: 'SIGTERM' })
     vi.advanceTimersByTime(STOP_GRACE_MS)
     expect(kill).toHaveBeenLastCalledWith(-4242, 'SIGKILL')
@@ -57,7 +57,7 @@ describe('arrêt d’un groupe de processus', () => {
 
   it('chef déjà sorti, groupe encore peuplé (fiche 195) : SIGTERM puis SIGKILL au groupe seul', () => {
     const child = Object.assign(fakeChild(4242), { signalCode: 'SIGKILL' })
-    stopGroup(child)
+    stopGroup(child, STOP_GRACE_MS, 'darwin')
     vi.advanceTimersByTime(STOP_GRACE_MS)
     expect(kill.mock.calls).toEqual([
       [-4242, 'SIGTERM'],
@@ -72,7 +72,7 @@ describe('arrêt d’un groupe de processus', () => {
       return true
     })
     const child = Object.assign(fakeChild(4242), { exitCode: 0 })
-    stopGroup(child)
+    stopGroup(child, STOP_GRACE_MS, 'darwin')
     vi.advanceTimersByTime(STOP_GRACE_MS)
     expect(kill.mock.calls.every(([pid]: unknown[]) => (pid as number) < 0)).toBe(true)
     expect(kill.mock.calls.filter((call: unknown[]) => call[1] === 'SIGKILL')).toEqual([])
@@ -81,14 +81,14 @@ describe('arrêt d’un groupe de processus', () => {
 
   it('sans pid, ou plus personne dans le groupe : `child.kill()`', () => {
     const noPid = fakeChild(undefined)
-    stopGroup(noPid)
+    stopGroup(noPid, STOP_GRACE_MS, 'darwin')
     expect(noPid.kill).toHaveBeenCalled()
 
     kill.mockImplementation(() => {
       throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
     })
     const gone = fakeChild(4242)
-    stopGroup(gone)
+    stopGroup(gone, STOP_GRACE_MS, 'darwin')
     expect(gone.kill).toHaveBeenCalled()
     vi.advanceTimersByTime(STOP_GRACE_MS)
     // Pas de SIGKILL programmé pour un groupe qui n'existait déjà plus.
@@ -163,5 +163,40 @@ describe('en quittant : SIGKILL des groupes arrêtés (fiche 195)', () => {
     expect(await settleStoppedGroups(1000, 5)).toBe(0)
     expect(Date.now() - started).toBeLessThan(500)
     expect(kill).not.toHaveBeenCalledWith(-6161, 'SIGKILL')
+  })
+})
+
+describe('arrêt sous Windows sans objets de tâche (fiche 229, lot 7a)', () => {
+  let kill: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('par le handle du processus, jamais par son numéro (réattribué sous Windows)', () => {
+    const child = fakeChild(4242)
+    stopGroup(child, STOP_GRACE_MS, 'win32')
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM')
+    vi.advanceTimersByTime(STOP_GRACE_MS)
+    expect(child.kill).toHaveBeenLastCalledWith('SIGKILL')
+    expect(kill).not.toHaveBeenCalled()
+  })
+
+  it('sorti avant la fin du délai : plus rien ; déjà sorti : rien du tout', () => {
+    const child = fakeChild(4242)
+    stopGroup(child, STOP_GRACE_MS, 'win32')
+    Object.assign(child, { exitCode: 1 })
+    vi.advanceTimersByTime(STOP_GRACE_MS)
+    expect(child.kill).toHaveBeenCalledTimes(1)
+    const gone = Object.assign(fakeChild(4243), { exitCode: 0 })
+    stopGroup(gone, STOP_GRACE_MS, 'win32')
+    expect(gone.kill).not.toHaveBeenCalled()
+    expect(kill).not.toHaveBeenCalled()
   })
 })
