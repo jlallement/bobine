@@ -8,10 +8,12 @@
  * N'importe pas `electron`.
  */
 import { readFileSync, realpathSync, statSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { t } from 'i18next'
 import { delay } from '../delay'
+import { launchSystem, type ProcessSystem } from '../process-launch'
 import { runCommand, type Run, type RunResult } from '../simulator/run'
+import { isGitProgram, windowsGitConfig } from './git-platform'
 
 export type GitKind = 'read' | 'write'
 
@@ -157,32 +159,53 @@ export function repoKeyOf(dir: string): string {
  * `LC_ALL` et `LANG` pour les seuls messages (gettext), sans changer le jeu de caractères des
  * hooks du dépôt ; `C` : pas de traduction. Sans effet sur le git d'Apple, jamais traduit.
  */
-export function gitEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+export function gitEnv(
+  env: NodeJS.ProcessEnv,
+  system: ProcessSystem = launchSystem()
+): NodeJS.ProcessEnv {
   // `GIT_TERMINAL_PROMPT=0` (fiche 195) : sans terminal, git échoue vite au lieu d'attendre un nom
   // d'utilisateur ou un mot de passe que personne ne tapera.
-  return { ...env, LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' }
+  const base = { ...env, LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' }
+  return system === 'posix' ? base : windowsGitEnv(base)
+}
+
+/**
+ * Git for Windows (fiche 229) : WINDOWS_LANGUAGE_NOTE. Chemins longs (`windowsGitConfig`).
+ */
+function windowsGitEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return windowsGitConfig(env)
 }
 
 /**
  * git absent (fiche 195) : `spawn git ENOENT`, ou le git d'Apple sans ses outils de ligne de
  * commande (« invalid active developer path »). Message clair à la place, pour l'utilisateur.
  */
-const GIT_MISSING = /spawn \S*git ENOENT|xcrun: error: invalid active developer path/
+const GIT_MISSING = /spawn \S*git(\.exe)? ENOENT|xcrun: error: invalid active developer path/i
 
-export function explainMissingGit(result: RunResult): RunResult {
+export function explainMissingGit(
+  result: RunResult,
+  system: ProcessSystem = launchSystem()
+): RunResult {
   if (result.code === 0 || !GIT_MISSING.test(result.stderr)) return result
-  return { ...result, stderr: t('git.missing') }
+  return { ...result, stderr: missingGitMessage(system) }
+}
+
+/** git introuvable : outils d'Apple sur Unix (comme avant), Git for Windows sous Windows. */
+export function missingGitMessage(system: ProcessSystem = launchSystem()): string {
+  return t(system === 'windows' ? 'git.missingWindows' : 'git.missing')
 }
 
 /** `Run` dont les commandes git parlent anglais (`gitEnv`) ; les autres passent tout droit. */
 export function withGitLanguage(
   run: Run,
   env: () => NodeJS.ProcessEnv = () => process.env,
-  isGit: (file: string) => boolean = (file) => basename(file) === 'git'
+  isGit: (file: string) => boolean = (file) => isGitProgram(file)
 ): Run {
   return (file, args, options = {}) =>
     isGit(file)
-      ? run(file, args, { ...options, env: gitEnv(options.env ?? env()) }).then(explainMissingGit)
+      ? run(file, args, { ...options, env: gitEnv(options.env ?? env()) }).then((result) =>
+          explainMissingGit(result)
+        )
       : run(file, args, options)
 }
 
@@ -203,7 +226,7 @@ export interface QueuedGitOptions {
  * erreur est rendue telle quelle (montrée en entier par `gitError`, fiche 123).
  */
 export function queuedGit(run: Run, options: QueuedGitOptions = {}): Run {
-  const isGit = options.isGit ?? ((file: string) => basename(file) === 'git')
+  const isGit = options.isGit ?? ((file: string) => isGitProgram(file))
   const retryDelayMs = options.retryDelayMs ?? 400
   const keyOf = options.keyOf ?? repoKeyOf
   // Une file par dépôt rencontré, gardée : il y en a peu.
