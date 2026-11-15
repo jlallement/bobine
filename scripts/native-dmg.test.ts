@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import type { AfterPackContext, MacPackager } from 'electron-builder'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import afterSign, { createDmg, signDmg } from './native-dmg.mts'
+import { MACOS_FEATURES } from '../src/main/test-platform'
 
 const { native } = vi.hoisted(() => ({ native: vi.fn() }))
 vi.mock('node:child_process', () => ({ execFileSync: native }))
@@ -39,7 +40,8 @@ function fixture() {
   return { root, app, destination, volume: 'Bobine' }
 }
 
-describe('DMG natif (fiche 153)', () => {
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)('DMG natif (fiche 153)', () => {
   it('prépare l’app et Applications, vérifie puis remplace atomiquement le livrable', async () => {
     const options = fixture()
     mkdirSync(join(options.root, 'dist'))

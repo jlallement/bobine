@@ -14,6 +14,7 @@ import {
   signingPlan,
   type SigningPlan
 } from './signing.mts'
+import { MACOS_FEATURES } from '../src/main/test-platform'
 
 const ROOT = join(import.meta.dirname, '..')
 
@@ -180,52 +181,56 @@ describe('plan de signature (fiche 111)', () => {
   })
 })
 
-describe('essai à blanc : configuration lue par electron-builder (fiche 111)', () => {
-  it('droits du runtime durci : exactement ceux justifiés dans la fiche', () => {
-    const plist = readFileSync(join(ROOT, 'build', 'entitlements.mac.plist'), 'utf8')
-    expect(entitlementKeys(plist).sort()).toEqual([...REQUIRED_ENTITLEMENTS].sort())
-  })
-
-  it('ad hoc : le chargeur et le schéma d’electron-builder acceptent la configuration', async () => {
-    const config = await checkConfiguration(signingPlan({}))
-    expect(config.mac).toMatchObject({
-      identity: '-',
-      hardenedRuntime: true,
-      notarize: false,
-      entitlements: 'build/entitlements.mac.plist',
-      entitlementsInherit: 'build/entitlements.mac.plist'
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)(
+  'essai à blanc : configuration lue par electron-builder (fiche 111)',
+  () => {
+    it('droits du runtime durci : exactement ceux justifiés dans la fiche', () => {
+      const plist = readFileSync(join(ROOT, 'build', 'entitlements.mac.plist'), 'utf8')
+      expect(entitlementKeys(plist).sort()).toEqual([...REQUIRED_ENTITLEMENTS].sort())
     })
-    expect(config.dmg?.['sign']).toBeUndefined()
-  })
 
-  it('Developer ID + notarisation : certificat désigné, notarisation et .dmg signé', async () => {
-    const config = await checkConfiguration(signingPlan({ ...DEVELOPER_ID, ...apiKey() }))
-    expect(config.mac?.['identity']).toBeUndefined()
-    expect(config.mac).toMatchObject({ hardenedRuntime: true, notarize: true })
-    expect(config.dmg?.['sign']).toBe(true)
-  })
-
-  it('pnpm package --dry-run : plan affiché, rien de construit ni signé', () => {
-    const env = { ...cleanEnv(), ...DEVELOPER_ID, ...apiKey() }
-    const result = spawnSync(join(ROOT, 'scripts', 'package'), ['--dry-run', '--strict'], {
-      env,
-      encoding: 'utf8'
+    it('ad hoc : le chargeur et le schéma d’electron-builder acceptent la configuration', async () => {
+      const config = await checkConfiguration(signingPlan({}))
+      expect(config.mac).toMatchObject({
+        identity: '-',
+        hardenedRuntime: true,
+        notarize: false,
+        entitlements: 'build/entitlements.mac.plist',
+        entitlementsInherit: 'build/entitlements.mac.plist'
+      })
+      expect(config.dmg?.['sign']).toBeUndefined()
     })
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stderr).toContain('Signature Developer ID')
-    expect(result.stderr).toContain('notarize=true, dmg.sign=true')
-    expect(result.stdout + result.stderr).not.toContain('building')
-  })
 
-  it('pnpm package --dry-run --strict refuse une configuration incomplète', () => {
-    const result = spawnSync(join(ROOT, 'scripts', 'package'), ['--dry-run', '--strict'], {
-      env: { ...cleanEnv(), ...DEVELOPER_ID },
-      encoding: 'utf8'
+    it('Developer ID + notarisation : certificat désigné, notarisation et .dmg signé', async () => {
+      const config = await checkConfiguration(signingPlan({ ...DEVELOPER_ID, ...apiKey() }))
+      expect(config.mac?.['identity']).toBeUndefined()
+      expect(config.mac).toMatchObject({ hardenedRuntime: true, notarize: true })
+      expect(config.dmg?.['sign']).toBe(true)
     })
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain('Certificat sans identifiants de notarisation')
-  })
-})
+
+    it('pnpm package --dry-run : plan affiché, rien de construit ni signé', () => {
+      const env = { ...cleanEnv(), ...DEVELOPER_ID, ...apiKey() }
+      const result = spawnSync(join(ROOT, 'scripts', 'package'), ['--dry-run', '--strict'], {
+        env,
+        encoding: 'utf8'
+      })
+      expect(result.status, result.stderr).toBe(0)
+      expect(result.stderr).toContain('Signature Developer ID')
+      expect(result.stderr).toContain('notarize=true, dmg.sign=true')
+      expect(result.stdout + result.stderr).not.toContain('building')
+    })
+
+    it('pnpm package --dry-run --strict refuse une configuration incomplète', () => {
+      const result = spawnSync(join(ROOT, 'scripts', 'package'), ['--dry-run', '--strict'], {
+        env: { ...cleanEnv(), ...DEVELOPER_ID },
+        encoding: 'utf8'
+      })
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('Certificat sans identifiants de notarisation')
+    })
+  }
+)
 
 describe('notarisation du .dmg (fiche 111)', () => {
   it('soumet, attend, agrafe, puis vérifie avec Gatekeeper (xcrun et spctl simulés)', () => {

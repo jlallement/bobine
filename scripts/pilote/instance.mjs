@@ -64,13 +64,27 @@ const canListen = (port) =>
  */
 export function ours(instance) {
   try {
-    const command = execFileSync('ps', ['-o', 'command=', '-p', String(instance.pid)], {
-      encoding: 'utf8'
-    })
+    const command = commandLineOf(Number(instance.pid))
     return command.includes(`--remote-debugging-port=${instance.port}`)
   } catch {
     return false
   }
+}
+
+/**
+ * Ligne de commande d'un processus : `ps` sous Unix ; sous Windows (sans `ps`), celle que garde
+ * `Win32_Process` (fiche 229).
+ */
+function commandLineOf(pid) {
+  if (process.platform !== 'win32') {
+    return execFileSync('ps', ['-o', 'command=', '-p', String(pid)], { encoding: 'utf8' })
+  }
+  if (!Number.isInteger(pid) || pid <= 0) return ''
+  const query = `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`
+  return execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', query], {
+    encoding: 'utf8',
+    windowsHide: true
+  })
 }
 
 /** Port libre dans 9300–9399 (les essais e2e prennent 9555 et plus). */

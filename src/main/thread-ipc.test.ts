@@ -9,7 +9,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { threadHandlers, type ThreadIpcDeps } from './thread-ipc'
 import { cleanDraggedImages, writeDraggedImage } from './images/image-drag'
@@ -97,7 +97,7 @@ describe('writeDraggedImage', () => {
       { mimeType: 'image/png', data: PNG, name: 'écran.png' },
       dir
     )
-    expect(file.endsWith('/écran.png')).toBe(true)
+    expect(file.endsWith(`${sep}écran.png`)).toBe(true)
     expect(readFileSync(file)).toEqual(Buffer.from(PNG, 'base64'))
     expect(
       await writeDraggedImage({ mimeType: 'image/png', data: PNG, name: 'écran.png' }, dir)

@@ -10,7 +10,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentSessionView, ConversationEvent, ConversationsState } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
@@ -30,7 +30,19 @@ import { ConversationStore } from './store'
 import { ApiKeyStore, type Cipher } from '../agent-config/api-keys'
 import { noticeText, type TranscriptState } from '@shared/transcript'
 import { BOB_RULES } from '../agent-config/bob-rules'
-import { native } from '../test-platform'
+import { native, ON_WINDOWS, POSIX_MODES } from '../test-platform'
+
+/**
+ * Le dossier d'une conversation disparaît. Sous Windows, le dossier courant d'un agent vivant ne se
+ * supprime pas (EPERM) : les agents s'arrêtent d'abord, comme quand l'utilisateur ferme le projet.
+ * macOS et Linux : supprimé sous l'agent, comme avant.
+ */
+function vanish(dir: string, manager: { stopAll(): void }): void {
+  if (ON_WINDOWS) {
+    manager.stopAll()
+    rmSync(dir, { recursive: true, force: true, maxRetries: 50, retryDelay: 100 })
+  } else rmSync(dir, { recursive: true, force: true })
+}
 
 function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -299,7 +311,7 @@ describe('ConversationManager', () => {
     if (!second) throw new Error('second message absent')
 
     const preview = await app.manager.branchPreview(id, second.id)
-    expect(preview.files.map((f) => [f.path.split('/').at(-1), f.status, f.created])).toEqual([
+    expect(preview.files.map((f) => [basename(f.path), f.status, f.created])).toEqual([
       ['README.md', 'restore', false],
       ['app.js', 'restore', true]
     ])
@@ -448,7 +460,7 @@ describe('ConversationManager', () => {
     await app.manager.delete(plein, { fromAgent: false })
     const all = await app.manager.agentSessions('titres')
     expect(all.map((s) => s.title)).toEqual(['Factice : plein'])
-    rmSync(env.workspaceB, { recursive: true, force: true })
+    vanish(env.workspaceB, app.manager)
     expect(await app.manager.agentSessions('titres')).toEqual([])
     await expect(app.manager.agentSessions('inconnu')).rejects.toThrow('Agent inconnu')
     app.manager.stopAll()
@@ -997,23 +1009,26 @@ describe('ConversationManager', () => {
     await waitFor(() => !manager.loadedTranscripts().includes(first))
     expect(manager.view(first).transcript.items).toEqual(before)
 
-    // Écriture impossible : le fil, plus frais que le disque, reste en mémoire.
-    manager.select(first)
-    await ready(first)
-    chmodSync(dir, 0o500)
-    try {
-      await manager.prompt(first, 'Deuxième sujet')
-      const third = (await manager.create({ profileId: 'titres' })).summary.id
-      await ready(third)
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      await manager.settled()
-      expect(manager.loadedTranscripts()).toContain(first)
-    } finally {
-      chmodSync(dir, 0o700)
-    }
-    // À la fermeture, il est écrit : rien n'est perdu.
-    manager.stopAll()
-    expect(readFileSync(join(dir, `${first}.json`), 'utf8')).toContain('Deuxième sujet')
+    // Écriture impossible (droits Unix : `chmod` ne rend pas un dossier non inscriptible sous
+    // Windows, POSIX_MODES) : le fil, plus frais que le disque, reste en mémoire.
+    if (POSIX_MODES) {
+      manager.select(first)
+      await ready(first)
+      chmodSync(dir, 0o500)
+      try {
+        await manager.prompt(first, 'Deuxième sujet')
+        const third = (await manager.create({ profileId: 'titres' })).summary.id
+        await ready(third)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await manager.settled()
+        expect(manager.loadedTranscripts()).toContain(first)
+      } finally {
+        chmodSync(dir, 0o700)
+      }
+      // À la fermeture, il est écrit : rien n'est perdu.
+      manager.stopAll()
+      expect(readFileSync(join(dir, `${first}.json`), 'utf8')).toContain('Deuxième sujet')
+    } else manager.stopAll()
     vi.restoreAllMocks()
   })
 
@@ -1134,7 +1149,7 @@ describe('ConversationManager', () => {
     const app = env.launch()
     const gone = realpathSync(mkdtempSync(join(tmpdir(), 'ws-gone-')))
     await app.manager.create({ workspace: gone })
-    rmSync(gone, { recursive: true, force: true })
+    vanish(gone, app.manager)
     const next = await app.manager.create()
     expect(next.summary.workspace).not.toBe(gone)
     expect(existsSync(next.summary.workspace)).toBe(true)
@@ -1145,7 +1160,7 @@ describe('ConversationManager', () => {
     await strict.manager.create({ workspace: env.workspaceB })
     const vanishing = realpathSync(mkdtempSync(join(tmpdir(), 'ws-gone-')))
     await strict.manager.create({ workspace: vanishing })
-    rmSync(vanishing, { recursive: true, force: true })
+    vanish(vanishing, strict.manager)
     expect(strict.manager.settingsView().recentWorkspaces).toContain(env.workspaceB)
     expect((await strict.manager.create()).summary.workspace).toBe('')
     strict.manager.stopAll()
@@ -1511,7 +1526,7 @@ describe('ConversationManager', () => {
       .map((i) => (i.kind === 'notice' ? noticeText(i) : ''))
     expect(notices).toEqual([
       'Modification annulée\u00a0: README.md est revenu à son état d’avant la conversation.',
-      'Modification annulée\u00a0: src/app.js, créé par l’agent, a été supprimé.',
+      `Modification annulée\u00a0: ${native('src/app.js')}, créé par l’agent, a été supprimé.`,
       'README.md n’a pas été touché\u00a0: il est déjà dans son état d’avant la conversation.',
       'README.md n’a pas été touché\u00a0: il a été modifié depuis (ou supprimé).'
     ])

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildErrors, findXcodeProjects, hasAppleProject, XcodeBuilds } from './xcode'
+import { MACOS_FEATURES } from '../test-platform'
 
 const dir = () => mkdtempSync(join(tmpdir(), 'xcode-'))
 
@@ -32,7 +33,8 @@ const request = (workspace: string) => ({
   udid: 'A'
 })
 
-describe('projets et compilation Xcode', () => {
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)('projets et compilation Xcode', () => {
   it('projets trouvés (espaces de travail d’abord), dossiers lourds ignorés', () => {
     const root = dir()
     mkdirSync(join(root, 'ios/Runner.xcodeproj'), { recursive: true })

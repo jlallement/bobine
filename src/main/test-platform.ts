@@ -23,9 +23,6 @@ export const POSIX_MODES = !ON_WINDOWS
  */
 export const POSIX_PATHS = !ON_WINDOWS
 
-/** Fonction propre à macOS (app installée par elle-même, DMG, signature, Xcode, simulateur). */
-export const ON_MACOS = process.platform === 'darwin'
-
 /**
  * Chemin absolu de la machine pour un chemin POSIX d'essai déjà normalisé (`/projet/src/a.js`) :
  * le même sous macOS et Linux ; sous Windows, sur le lecteur courant (`D:\projet\src\a.js`), comme le
@@ -63,3 +60,10 @@ export function tempDir(prefix: string): string {
  * essayés à part (`process-*-windows`).
  */
 export const POSIX_PROCESSES = !ON_WINDOWS
+
+/**
+ * Fonctions propres à macOS (DMG, signature et notarisation, installation par l'app elle-même,
+ * Xcode, AXe) : essayées sous macOS et Linux avec de faux outils en `sh` ; absentes de Windows
+ * (capacités `selfInstall` et `simulator`, fiche 145 ; paquet Windows : `pnpm package --windows`).
+ */
+export const MACOS_FEATURES = !ON_WINDOWS
