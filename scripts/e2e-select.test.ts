@@ -25,6 +25,13 @@ import { ALL_FEATURES } from '../src/shared/platform.ts'
 const ROOT = join(import.meta.dirname, '..')
 
 describe('parseArgs', () => {
+  it('--skip : suites écartées, répétable ; la suite n’est plus complète (fiche 145)', () => {
+    const o = parseArgs(['--skip', 'perf', '--skip=aurore'])
+    expect(o.skip).toEqual(['perf', 'aurore'])
+    expect(isFullRun(o)).toBe(false)
+    expect(() => parseArgs(['--skip'])).toThrow('--skip : suite manquante')
+  })
+
   it('par défaut : toutes les suites, deux thèmes, 3 jobs, base main', () => {
     const o = parseArgs([])
     expect(o).toMatchObject({ suites: [], schemes: ['light', 'dark'], jobs: 3, base: 'main' })

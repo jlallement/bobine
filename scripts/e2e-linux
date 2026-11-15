@@ -4,6 +4,7 @@
 #   pnpm e2e:linux                     toutes les suites (Ubuntu 24.04, xvfb + openbox)
 #   pnpm e2e:linux startup about       seulement ces suites (mêmes options que `pnpm e2e`)
 #   pnpm e2e:linux --reset …           repart d'un volume vide (dépendances réinstallées)
+#   BOBINE_E2E_CPUS=1 pnpm e2e:linux …  processeur limité, pour retrouver les échecs liés au temps
 #
 # Le dépôt est monté en lecture seule et copié dans un volume Docker (`bobine-e2e-linux`) qui
 # garde les node_modules Linux, le magasin pnpm et le build : ceux du Mac ne sont jamais touchés.
@@ -40,7 +41,10 @@ commit=$(git rev-parse --short HEAD 2>/dev/null || true)
 mkdir -p e2e/captures/linux
 tty=()
 [[ -t 1 ]] && tty=(-t)
-exec docker run --rm --init -i ${tty[@]+"${tty[@]}"} \
+# Machine lente comme le job de GitHub (2 cœurs partagés) : BOBINE_E2E_CPUS=1 pnpm e2e:linux …
+cpus=()
+[[ -n "${BOBINE_E2E_CPUS:-}" ]] && cpus=(--cpus "$BOBINE_E2E_CPUS")
+exec docker run --rm --init -i ${tty[@]+"${tty[@]}"} ${cpus[@]+"${cpus[@]}"} \
   --security-opt seccomp=unconfined \
   --shm-size=1g \
   -e "BOBINE_BUILD_COMMIT=$commit" \

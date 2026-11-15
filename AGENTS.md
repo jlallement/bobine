@@ -34,7 +34,7 @@ Lire avant toute tâche non triviale :
 | Build | `pnpm build` |
 | Formater | `pnpm format` |
 | **Essais de bout en bout** | pendant le travail, les suites touchées par les fichiers modifiés depuis `main` : `pnpm build && pnpm e2e --changed` (ou nommées : `pnpm e2e <suite>…`, `pnpm e2e --list`) ; **avant chaque push** : `pnpm build && pnpm e2e --changed` ; **avant un tag de version** : `pnpm build && pnpm e2e --if-needed` (suite complète, 3 suites en parallèle, ≈ 4 min ; rien si elle est déjà verte pour ces sources et ce build) — captures dans `e2e/captures/` ; `--jobs N` (1 : une à la fois), `--dry-run` ; interface en anglais : `--lang en` (captures `en-…`) — fiche 115 |
-| Essais de bout en bout sous Linux (en local, Docker) | `pnpm e2e:linux [suites…]` : Ubuntu 24.04 dans Docker (Docker Desktop lancé), `xvfb` + openbox, `node_modules` Linux dans un volume à part (ceux du Mac jamais touchés), captures dans `e2e/captures/linux/` ; `--reset` repart d'un volume vide — fiche 145 |
+| Essais de bout en bout sous Linux (en local, Docker) | `pnpm e2e:linux [suites…]` : Ubuntu 24.04 dans Docker (Docker Desktop lancé), `xvfb` + openbox, `node_modules` Linux dans un volume à part (ceux du Mac jamais touchés), captures dans `e2e/captures/linux/` ; `--reset` repart d'un volume vide ; `BOBINE_E2E_CPUS=1` simule une machine lente — fiche 145 |
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
 | Installeur Windows (préversion, NSIS) | `pnpm package --win` (`--x64`, `--arm64`, `--dir`), depuis le Mac ou Windows (là : `node scripts/package-win.mts`) — fiche 229 |

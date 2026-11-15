@@ -604,4 +604,18 @@ lancé, rien d'autre à installer sur le Mac.
   | `user-commands`, `session` (infobulle), `gitlab`, `filles-fusion`, `roles-gestion` (infobulle), `permissions` : un thème chacun | **Instabilité** : vertes dans l'autre thème, dans Docker et au passage précédent pour la plupart | Job Linux en `--jobs 2` (2 cœurs) |
   | `terminal`, `roles-travail`, `plan`, `autorisation-commande` | **Connues** : métriques de police, molette | Lot 2 |
   | `pannes-visibles` | **Connue** : fd hérités (port DevTools) | Fiche à part |
+- 2026-11-15 — **Troisième passage sur GitHub** (run 43735503242, `main` 7d3add3, `--jobs 2`) :
+  **187/202** ; `aurore` et `onboarding` passent.
+
+  | Suites | Cause | Suite donnée |
+  |---|---|---|
+  | `user-commands` (les deux thèmes) | **Essai** : envoi par Entrée puis `ready()` tout de suite ; sur une machine lente, l'agent était encore « prêt » d'avant l'envoi, la réponse lue en cours (capture : « J'ai », « Écrit… 0 s ») | On attend que le message soit parti, comme `ui.send` |
+  | `filles-tech-lead` (sombre, deux passages de suite) | **Essai** : compte rendu lu juste après le clic qui le déplie, encore replié sur la capture | On attend le texte déplié |
+  | `perf` (clair) | **Machine** : tâche 1/202, premier lancement sur une machine neuve ; diff de 5000 lignes ouvert en 5369 ms, celui de 20000 en 169 ms juste après, `perf` sombre verte ; d'un passage à l'autre, les mêmes mesures varient du simple au quadruple | Job Linux de GitHub : `perf` sortie de l'essai noté (`--skip perf`, nouvelle option du lanceur, qui le dit), jouée dans une étape à part qui ne fait pas échouer le job ; seuils inchangés, tenus sur le Mac et dans `pnpm e2e:linux` |
+  | `history` (clair) | **Instabilité** : infobulle au clavier jamais ouverte, comme `session` et `roles-gestion` au passage précédent ; non reproduite dans Docker, même à 0,5 processeur | À suivre |
+  | `terminal`, `roles-travail`, `plan`, `autorisation-commande`, `pannes-visibles` | **Connues** | Lot 2, fiche à part |
+
+  `BOBINE_E2E_CPUS=1 pnpm e2e:linux …` limite le processeur du conteneur pour retrouver ce genre
+  d'échec ; ni `user-commands` sans correctif, ni les infobulles n'y ont échoué (l'ordre des
+  échanges sur GitHub reste plus lent).
 

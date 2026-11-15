@@ -153,6 +153,9 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.click(pending)
         await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
         await ui.click(ui.$('child-report-toggle'))
+        // Le compte rendu se déplie au rendu suivant : sur une machine lente (job Linux de
+        // GitHub, fiche 145), lu tout de suite, il était encore replié.
+        await ui.waitFor(`!!${ui.$('child-report-excerpt')}?.innerText`)
         const excerpt = await ui.ev(`${ui.$('child-report-excerpt')}?.innerText ?? ''`)
         check(
           (await ui.ev(`${ui.$('child-report')}.innerText`)).includes(

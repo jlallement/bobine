@@ -81,8 +81,7 @@ export async function userCommandsSuite(scheme) {
         await ui.waitFor(`document.querySelectorAll('[data-testid=command-item]').length === 1`)
         await ui.shot('35-commandes-personnelles-menu')
         await ui.type(' Jérôme')
-        await ui.press('Enter')
-        await ui.ready()
+        await sendTyped(ui)
         check(
           (await ui.lastAgentText()).includes(quoted('Dis bonjour à Jérôme')),
           '« /salut Jérôme » : l’agent reçoit la consigne développée'
@@ -97,8 +96,7 @@ export async function userCommandsSuite(scheme) {
         await ui.press('Tab')
         await ui.waitFor(`${ui.$('composer-input')}.value === '/revue '`)
         await ui.type('src/app.js')
-        await ui.press('Enter')
-        await ui.ready()
+        await sendTyped(ui)
         check(
           (await ui.lastAgentText()).includes(quoted('Fais une revue de src/app.js.')),
           '« /revue src/app.js » : consigne du projet développée, reçue par l’agent'
@@ -111,4 +109,17 @@ export async function userCommandsSuite(scheme) {
   } finally {
     rmSync(workspace, { recursive: true, force: true })
   }
+}
+
+/**
+ * Entrée, puis la réponse entière : on attend que le message soit parti (le tour a commencé)
+ * avant d'attendre l'agent prêt, comme `ui.send`. Sans cela, sur une machine lente (job Linux de
+ * GitHub, fiche 145), l'agent encore « prêt » d'avant l'envoi faisait lire une réponse en cours.
+ */
+async function sendTyped(ui) {
+  const users = `document.querySelectorAll('.msg-user').length`
+  const before = await ui.ev(users)
+  await ui.press('Enter')
+  await ui.waitFor(`${users} > ${before}`)
+  await ui.ready()
 }
