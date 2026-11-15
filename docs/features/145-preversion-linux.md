@@ -535,4 +535,17 @@ lancé, rien d'autre à installer sur le Mac.
   raccourcis) ; `platform` vérifie sur le Mac la barre du système (menu « Bobine », Services,
   Masquer…, Fenêtre), les feux à leur place (18, 19), pas de ☰. Joués sur le Mac, clair et
   sombre : `startup`, `platform`, `settings`, `about` verts, captures regardées.
+- 2026-11-15 — **Job Linux de `e2e.yml` arrêté avant la première suite** sur `main` (bcca473,
+  run 43716586498, x64) : avis de licence, `node_modules/electron/dist/LICENSE` absent. Cause :
+  Electron 45 n'a plus de script d'installation (`allowBuilds` n'y peut rien) ; il télécharge son
+  binaire au premier usage ou par son `install.js`, ce que `scripts/check-electron` fait déjà
+  avant `pnpm dev`, `preview` et `package`, mais pas avant `pnpm e2e`, qui lit `dist/` (avis de
+  licence) avant de lancer l'app. Le job macOS avait le même trou. Correction : `pree2e`,
+  `pree2e:pretag` et `previtrine` lancent `check-electron` ; le contournement de
+  `docker/e2e-linux/entrypoint.sh` part. Le contrôle des avis n'est pas touché. `release.yml`
+  (`pnpm package`) et `ci.yml` (`verify` ne lit pas `dist/`) n'avaient pas le trou. Vérifié :
+  `pnpm e2e:linux --reset startup` (volume neuf, arm64 : téléchargement, avis à jour, suite
+  verte) ; x64 émulé (`node:24-bookworm`, `--platform linux/amd64`) : `pnpm install` sans
+  `dist/`, puis `pree2e` le télécharge, `third-party-notices --check` vert. Le message de
+  `check-electron` nomme l'archive du bon système (`linux` ou `darwin`).
 
