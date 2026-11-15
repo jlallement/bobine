@@ -10,12 +10,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ON_WINDOWS, tempDir } from '../test-platform'
-import {
-  openFileLink,
-  openWorkspaceFile,
-  readMarkdown,
-  type FileOpeners
-} from './file-links'
+import { openFileLink, openWorkspaceFile, readMarkdown, type FileOpeners } from './file-links'
 
 /**
  * Un script exécutable : un fichier au bit `x` sous Unix ; sous Windows, qui n'a pas ce bit, un
