@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
-import { join, posix, win32 } from 'node:path'
+import { posix, win32 } from 'node:path'
 import type { ForgeAdapter } from './forge'
 import { firstUrl, forgeFailure } from './forge'
 

@@ -26,7 +26,8 @@ export default defineConfig({
         'src/mock-agent/**',
         'src/renderer/src/main.tsx',
         'src/renderer/src/test-setup.ts',
-        'src/shared/i18n/test-setup.ts'
+        'src/shared/i18n/test-setup.ts',
+        'src/main/test-setup.ts'
       ],
       reporter: ['text-summary', 'html']
     },
@@ -39,7 +40,7 @@ export default defineConfig({
           include: ['src/**/*.test.ts', 'scripts/**/*.test.ts', 'scripts/**/*.test.mjs'],
           exclude: ['src/renderer/**', '**/node_modules/**'],
           environment: 'node',
-          setupFiles: ['src/shared/i18n/test-setup.ts']
+          setupFiles: ['src/shared/i18n/test-setup.ts', 'src/main/test-setup.ts']
         }
       },
       {
