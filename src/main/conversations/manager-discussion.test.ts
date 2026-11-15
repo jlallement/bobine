@@ -102,7 +102,10 @@ describe('espace Discussion (fiche 224)', () => {
     expect(active.space).toBe('discussion')
     expect(existsSync(join(view.summary.workspace, 'Synthèse.docx'))).toBe(true)
     new ConversationTrash(conversationsDir).erase(id)
-    expect(existsSync(view.summary.workspace)).toBe(false)
+    // Sous Windows, effacé quand son agent s'est arrêté (nouvel essai).
+    await vi.waitFor(() => expect(existsSync(view.summary.workspace)).toBe(false), {
+      timeout: 8000
+    })
     expect(readdirSync(discussionsRoot(conversationsDir))).toContain(active.id)
     manager.stopAll()
   })
