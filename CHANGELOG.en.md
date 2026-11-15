@@ -13,6 +13,11 @@ What changes for you, version by version. Shown in Settings › About.
   in a file only you can read, and Settings › Agents says so, with how to encrypt it; it is
   encrypted as soon as a keyring answers.
 
+- Settings › Appearance: “Code ligatures”, off by default (`!=` stays `!=`); when on, a code font
+  that has them draws `!=` as ≠ and `=>` as an arrow.
+- On Linux and Windows, Bobine bundles its fonts: Inter for the interface, JetBrains Mono for code
+  and diffs, instead of the system fonts, often wider. The system fonts remain available in
+  Settings › Appearance. Nothing changes on the Mac.
 - Deleting a parent conversation offers to delete its child conversations too (checked by
   default); unchecked, they carry on alone as ordinary conversations.
 

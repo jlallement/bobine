@@ -1516,6 +1516,22 @@ export const SUITES = [
   },
   { name: 'tables', file: 'tables.mjs', run: 'tablesSuite', themes: BOTH, sources: [] },
   {
+    // Fiche 145 : Inter et JetBrains Mono livrées hors macOS, ligatures du code (Réglages ›
+    // Apparence) ; captures avant / après sous Linux.
+    name: 'polices',
+    file: 'polices.mjs',
+    run: 'policesSuite',
+    themes: BOTH,
+    sources: [
+      ...SETTINGS,
+      ...APPEARANCE,
+      `${R}bundled-fonts.css`,
+      `${R}main.tsx`,
+      'src/shared/platform.ts',
+      'src/main/platform.ts'
+    ]
+  },
+  {
     name: 'debordements',
     file: 'debordements.mjs',
     run: 'overflowSuite',

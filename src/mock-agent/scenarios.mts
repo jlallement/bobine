@@ -1258,6 +1258,36 @@ export const scenarios: Record<string, Scenario> = {
       }
     ]
   },
+  ligatures: {
+    description:
+      'Texte et code pleins de suites que les polices à ligatures redessinent (!=, =>, <=…), fiche 145',
+    steps: [
+      {
+        kind: 'text',
+        text: [
+          'Le test `a != b` échoue quand `x => x >= 0` renvoie faux ; voici le correctif :',
+          '',
+          '```ts',
+          '// Compare deux versions : -1, 0 ou 1.',
+          'export const compare = (a: Version, b: Version): -1 | 0 | 1 => {',
+          '  if (a.major !== b.major) return a.major < b.major ? -1 : 1',
+          '  if (a.minor != b.minor && a.minor <= b.minor) return -1',
+          '  const ok = a.patch >= 0 || a.tag === undefined',
+          '  return ok ? 0 : (a.patch ?? 0) > b.patch ? 1 : -1',
+          '}',
+          '',
+          'const pipe = items.map((it) => it.id) // -> [1, 2, 3]',
+          'const mask = 0xFF & flags; const url = "https://www.example.com"',
+          '```',
+          '',
+          '```diff',
+          '- if (a.minor < b.minor) return -1',
+          '+ if (a.minor != b.minor && a.minor <= b.minor) return -1',
+          '```'
+        ].join('\n')
+      }
+    ]
+  },
   'fil-long': {
     description:
       'Long fil : 300 appels d’outils terminés en 30 étapes (mesure du rendu, fiche 047)',

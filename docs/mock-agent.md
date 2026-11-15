@@ -142,6 +142,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `connexion-coupee` | Commence à répondre, puis ferme stdout sans s'arrêter : connexion coupée, processus vivant (fiche 195) |
 | `tableaux` | Tableaux Markdown : alignements (`:---`, `---:`, `:---:`), puis un tableau large de huit colonnes |
 | `code-colore` | Blocs de code colorés (TypeScript, JSON, HTML, shell, diff) : coloration syntaxique de la palette (fiche 134) |
+| `ligatures` | Texte et blocs de code (TypeScript, diff) pleins de `!=`, `=>`, `<=`, `===`, `->` : ligatures du code coupées ou activées (fiche 145) |
 | `mermaid` | Diagrammes Mermaid (fiche 063) : organigramme, séquence, puis un bloc invalide |
 | `lien-html` | Lien vers une page HTML du dossier, `site/index.html` (fiche 064) |
 | `pensee` | Réflexion (`agent_thought_chunk`) puis réponse |

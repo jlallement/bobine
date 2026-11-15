@@ -199,12 +199,14 @@ async function commandCards(ui) {
     up.outside && up.text.startsWith('/') && !up.text.includes('..') && up.locations === 1,
     `OpenCode, workdir « ../.. » : alerte « hors du dossier », chemin entier (« ${up.text} »), emplacement gardé`
   )
+  // Le chemin est celui du dossier temporaire du système : long sur macOS (`/private/var/…`), la
+  // mention passe à la ligne ; `/tmp` sous Linux, elle tient à côté (fiche 145). Dans les deux cas,
+  // « · » seulement entre le chemin et la mention, jamais en début de ligne.
   check(
     up.warns.length === 1 &&
       !up.warns[0].text.includes('·') &&
-      up.warns[0].lineStart &&
-      !up.warns[0].dotShown,
-    `mention passée à la ligne : « ${up.warns[0]?.text} » sans « · » en début de ligne`
+      up.warns[0].dotShown === !up.warns[0].lineStart,
+    `mention ${up.warns[0]?.lineStart ? 'passée à la ligne, sans' : 'à côté du chemin, après'} « · » : « ${up.warns[0]?.text} »`
   )
   await ui.shot('F203-b3-commande-relatif-sortant')
   await accept(ui)

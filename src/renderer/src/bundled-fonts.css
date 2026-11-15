@@ -65,9 +65,11 @@
   font-display: block;
 }
 
-/* Piles de polices hors macOS ; sur macOS, celles de `:root` (styles.css), inchangées. */
+/*
+ * Piles de polices hors macOS ; sur macOS, celles de `:root` (styles.css), inchangées. Le serif
+ * reste celui de `:root` (Georgia, puis le serif du système).
+ */
 html.bundled-fonts {
   --font-ui: 'Bobine Inter', system-ui, sans-serif;
-  --font-serif: ui-serif, serif;
   --font-mono: 'Bobine JetBrains Mono', ui-monospace, monospace;
 }
