@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_FEATURES, featuresArgument, featuresFromArgv } from '@shared/platform'
-import { currentPlatformFeatures, platformFeatures } from './platform'
+import { currentPlatformFeatures, platformFeatures, systemName } from './platform'
 
 describe('capacités de la plateforme (fiche 145)', () => {
   it('toutes sur macOS', () => {
@@ -13,8 +13,15 @@ describe('capacités de la plateforme (fiche 145)', () => {
       selfInstall: false,
       nativeLanguage: false,
       screenCapture: false,
-      finder: false
+      finder: false,
+      dockBadge: false
     })
+  })
+
+  it('nom du système des infos techniques', () => {
+    expect(systemName('darwin')).toBe('macOS')
+    expect(systemName('linux')).toBe('Linux')
+    expect(systemName('freebsd')).toBe('freebsd')
   })
 
   it('BOBINE_PLATFORM impose un système (essais)', () => {
@@ -42,7 +49,8 @@ describe('argument du renderer', () => {
       selfInstall: false,
       nativeLanguage: false,
       screenCapture: false,
-      finder: false
+      finder: false,
+      dockBadge: false
     })
   })
 
@@ -53,7 +61,8 @@ describe('argument du renderer', () => {
       selfInstall: false,
       nativeLanguage: false,
       screenCapture: false,
-      finder: false
+      finder: false,
+      dockBadge: false
     })
   })
 })

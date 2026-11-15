@@ -7,6 +7,12 @@ const VIEW = `require('electron').BrowserWindow.getAllWindows().flatMap((w) => w
 /** Fenêtre de l'app qui porte les pages. */
 const WIN = `require('electron').BrowserWindow.getAllWindows().find((w) => w.contentView.children.length > 0)`
 
+/**
+ * Modificateur des raccourcis de navigateur dans la page : ⌘ sur macOS, Ctrl ailleurs, comme
+ * `pageShortcut` (fiche 145) qui suit le vrai système, pas `BOBINE_PLATFORM`.
+ */
+const COMMAND = process.platform === 'darwin' ? 'meta' : 'control'
+
 /** Touche envoyée à la page comme par le clavier (Electron), avec ses modificateurs. */
 const keyEvents = (keyCode, modifiers = []) => [
   { type: 'keyDown', keyCode, modifiers },
@@ -174,7 +180,7 @@ async function viewChecks(ui, main, url) {
 
   // Zoom de la page : ⌘+ tapé dans la page, puce dans le champ d'adresse.
   const chip = () => ui.ev(`${ui.$('browser-zoom')}?.innerText ?? ''`)
-  await input(keyEvents('=', ['meta']))
+  await input(keyEvents('=', [COMMAND]))
   await ui.waitFor(`!!${ui.$('browser-zoom')}`)
   check(
     (await chip()) === L('browser.zoom.chip', { percent: 110 }) &&
@@ -182,7 +188,7 @@ async function viewChecks(ui, main, url) {
       (await main.evaluate(`${WIN}.webContents.getZoomFactor()`)) === 1,
     `⌘+ dans la page : la page seule à 110 %, puce « ${await chip()} » (${show(g)})`
   )
-  await input(keyEvents('-', ['meta']))
+  await input(keyEvents('-', [COMMAND]))
   await ui.waitFor(`!${ui.$('browser-zoom')}`)
   check(true, '⌘− dans la page : retour à 100 %, plus de puce')
   // Le menu Présentation, page au focus : c'est la page qui zoome. Le focus natif n'existe que si
@@ -204,10 +210,10 @@ async function viewChecks(ui, main, url) {
     )
   } else {
     console.log('    (app au second plan : menu « Zoom avant » page au focus non essayé ici)')
-    await input(keyEvents('=', ['meta']))
+    await input(keyEvents('=', [COMMAND]))
     await ui.waitFor(`!!${ui.$('browser-zoom')}`)
   }
-  await input([...keyEvents('=', ['meta']), ...keyEvents('=', ['meta'])])
+  await input([...keyEvents('=', [COMMAND]), ...keyEvents('=', [COMMAND])])
   await ui.waitFor(
     `${ui.$('browser-zoom')}?.innerText === ${JSON.stringify(L('browser.zoom.chip', { percent: 150 }))}`
   )
@@ -233,7 +239,7 @@ async function viewChecks(ui, main, url) {
 
 /** ⌘L, ⌘R, ⌘[ et ⌘] tapés dans la page. */
 async function shortcuts(ui, inPage, input, url) {
-  await input(keyEvents('L', ['meta']))
+  await input(keyEvents('L', [COMMAND]))
   check(
     await ui
       .waitFor(`document.activeElement === ${ui.$('browser-address')}`, 3000)
@@ -242,7 +248,7 @@ async function shortcuts(ui, inPage, input, url) {
   )
   await ui.ev(`${ui.$('browser-address')}.blur()`)
   const loads = Number(await inPage('sessionStorage.n'))
-  await input(keyEvents('R', ['meta']))
+  await input(keyEvents('R', [COMMAND]))
   let reloaded = false
   for (let i = 0; i < 40 && !reloaded; i++) {
     await sleep(100)
@@ -254,16 +260,16 @@ async function shortcuts(ui, inPage, input, url) {
   await ui.type(`${url}deux`)
   await ui.enter()
   await ui.waitFor(`${ui.$('browser-address')}.value.endsWith('/deux')`)
-  await input(keyEvents('[', ['meta']))
+  await input(keyEvents('[', [COMMAND]))
   const back = await ui
     .waitFor(`${ui.$('browser-address')}.value.endsWith('/vue')`, 5000)
     .catch(() => false)
-  await input(keyEvents(']', ['meta']))
+  await input(keyEvents(']', [COMMAND]))
   const forward = await ui
     .waitFor(`${ui.$('browser-address')}.value.endsWith('/deux')`, 5000)
     .catch(() => false)
   check(back && forward, '⌘[ et ⌘] dans la page : précédent, suivant')
-  await input(keyEvents('[', ['meta']))
+  await input(keyEvents('[', [COMMAND]))
   await ui.waitFor(`${ui.$('browser-address')}.value.endsWith('/vue')`)
 }
 

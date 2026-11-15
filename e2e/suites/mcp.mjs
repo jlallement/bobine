@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { L, NEUTRAL_ENV, check, withApp } from '../lib.mjs'
+import { FEATURES, L, NEUTRAL_ENV, check, withApp } from '../lib.mjs'
 
 /** Serveur MCP d'essai (stdio) : trois outils, un prompt ; `--plante` s'arrête en erreur. */
 const FIXTURE = fileURLToPath(new URL('../fixtures/mcp-serveur.mjs', import.meta.url))
@@ -69,10 +69,11 @@ export async function mcpSuite(scheme) {
             'terminal',
             'browser',
             'preview',
-            'ios-simulator',
+            // Outils `ios_*` seulement là où la plateforme a le simulateur (fiche 145).
+            ...(FEATURES.simulator ? ['ios-simulator'] : []),
             'children',
             'memory'
-          ].every((id) => ids.includes(id)),
+          ].every((id) => ids.includes(id)) && ids.includes('ios-simulator') === FEATURES.simulator,
           `toutes les familles d’outils de Bobine (${ids.join(', ')})`
         )
         const total = families.reduce((sum, f) => sum + countOf(f.count), 0)
@@ -84,7 +85,9 @@ export async function mcpSuite(scheme) {
         check(
           family('ask-user')?.condition === L('appToolFamilies.always') &&
             family('ask-user')?.approval === '' &&
-            family('ios-simulator')?.condition === L('appToolFamilies.ios-simulator.condition') &&
+            (!FEATURES.simulator ||
+              family('ios-simulator')?.condition ===
+                L('appToolFamilies.ios-simulator.condition')) &&
             family('children')?.condition === L('appToolFamilies.children.condition') &&
             family('terminal')?.approval === L('appToolFamilies.terminal.approval') &&
             families.filter((f) => f.approval).length === families.length - 1,

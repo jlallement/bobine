@@ -16,9 +16,9 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
 
 1. **Décisions à revoir après l'essai réel** : D1 (l'AppImage ne démarre pas sur un Ubuntu
    récent : `.deb` seul en préversion ?) et D6 (essai fait sur Ubuntu 26.04, pas 24.04).
-2. **e2e Linux verts** (`e2e.yml`, Système : `linux` ; 90/125 au premier passage, voir le
-   journal) : conditionner les suites mêlées (lot 5), gestionnaire de fenêtres dans le job,
-   corriger ce qu'elles trouvent.
+2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
+   le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
+   lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
 3. **Lot 2** — barre de titre et menu Linux, raccourcis Ctrl, textes Mac/Finder/Dock/⌘,
    `desktopName`.
 4. **Lot 3** — intégration au bureau (git en langue fixe : fait), clés d'API sans trousseau (D4) ;
@@ -198,10 +198,16 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   suites qui en demandent une absente (`simulator`), et ne note pas vert un passage qui en a
   sauté. Nouvelle suite `platform` : l'app avec les capacités du Mac puis de Linux, sur le Mac.
   Le faux `xcrun` reste tel quel (script `sh`, sans effet sans simulateur).
-- Suites mêlées, à conditionner quand Linux tournera : `quick` et `annotate` (capture d'écran),
-  `inbox` et `notifications` (compteur du Dock), `settings` (rebond du Dock), `mcp` (outils
-  `ios_*`). Sous `BOBINE_PLATFORM=linux`, elles échoueraient sur ces vérifications.
-- Job manuel `e2e.yml` sous `ubuntu-24.04` avec `xvfb-run`.
+- ✅ Suites mêlées conditionnées par les capacités (`FEATURES` de `e2e/lib.mjs`, 2026-11-15) :
+  compteur du Dock (`inbox`, `notifications` ; nouvelle capacité `dockBadge`, le main ne pose
+  plus le compteur sans elle), capture d'écran (`quick`, `composer`, `annotate` : image collée à
+  la place), iOS et AXe (`mcp`, `diagnostic`, `panel`), police du code (`fun` : Menlo par AppKit,
+  DejaVu Sans Mono par fontconfig), fenêtre À propos (`minimizable`, sans effet sous Linux) et
+  système des infos techniques (`about`). Sur macOS, mêmes vérifications qu'avant. Le rebond du Dock (`settings`,
+  `notifications`) passe par son journal d'essai : rien à conditionner avant le lot 3.
+- ✅ Job manuel `e2e.yml` sous `ubuntu-24.04` avec `xvfb-run` et openbox (`scripts/with-wm`).
+- ✅ En local : `pnpm e2e:linux [suites…]` (Docker, Ubuntu 24.04 ; voir « Essais Linux en
+  local »).
 - Essai réel : Ubuntu 24.04 arm64 dans UTM sur le Mac, sessions Wayland puis X11.
 
 **Lot 6 — clore.** `docs/installation.md` (section Linux : AppImage, `.deb`, trousseau, KVM),
@@ -242,6 +248,34 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
    (« Ubuntu sur Xorg »). Essayer les deux.
 9. **Sans trousseau** (D4) : créer un autre utilisateur, ou arrêter `gnome-keyring-daemon`, puis
    lancer l'app depuis un terminal.
+
+## Essais Linux en local (Docker)
+
+`pnpm e2e:linux [suites…]` (`scripts/e2e-linux`, image `docker/e2e-linux/`) : Docker Desktop
+lancé, rien d'autre à installer sur le Mac.
+
+- **Image** : Ubuntu 24.04 (arm64 sur un Mac Apple Silicon), node 24 de nodejs.org (somme
+  vérifiée), pnpm de `packageManager` par corepack, `build-essential` et `python3` (node-pty),
+  `xvfb`, openbox, bibliothèques d'Electron, polices DejaVu et Liberation, `SHELL=/bin/bash`
+  (sans lui, l'app retombe sur `/bin/zsh`, absent). Construite au premier lancement, puis en
+  cache.
+- **Sources** : le dépôt est monté en lecture seule et copié (`rsync`, sans `.git`,
+  `node_modules`, `out`, captures ni état des essais) dans un volume Docker,
+  `bobine-e2e-linux`, qui garde les `node_modules` Linux, le magasin pnpm et le build. Ceux du
+  Mac ne sont jamais touchés. `--reset` repart d'un volume vide.
+- **Lancement** : `pnpm install`, binaire d'Electron posé par son script s'il manque (le premier
+  `pnpm install` du volume ne l'avait pas fait), node-pty compilé s'il manque, `pnpm build`, puis
+  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai).
+  `--init` : `xvfb-run` ne doit pas être le processus 1 (il attend un signal de Xvfb qui ne lui
+  parvient pas).
+- **Captures** : `e2e/captures/linux/` du Mac.
+- **Bac à sable de Chromium** : l'app garde le sien, jamais de `--no-sandbox`. Il crée des
+  espaces de noms utilisateur, que le filtre seccomp par défaut de Docker refuse à un processus
+  sans `CAP_SYS_ADMIN` : le conteneur tourne sans ce filtre (`--security-opt seccomp=unconfined`),
+  en utilisateur ordinaire (Electron refuse le bac à sable en root), sans capacité ajoutée. C'est
+  le pendant du réglage AppArmor du job de CI ; rien ne change dans l'app.
+- **Limites** : pas de git dans le conteneur, donc pas de `--changed` (nommer les suites) ; une
+  seule campagne à la fois, Mac compris.
 
 ## Écarts assumés par rapport à macOS
 
@@ -360,3 +394,45 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
   déjà employé par `diagnostic`, exposé dans `NEUTRAL_AGENT_ENV` du pilote commun. Le diagnostic
   des capacités ne lance plus les vrais agents installés. Les contrôles darwin/Linux simulés
   passent, sans changement des capacités ni de l’interface du produit.
+- 2026-11-15 — **e2e Linux en local et lot 5.** `pnpm e2e:linux` (Docker, voir « Essais Linux
+  en local ») : Ubuntu 24.04 arm64 sur le Mac, `xvfb` + openbox, `node_modules` Linux dans un
+  volume à part. Job Linux de `e2e.yml` avec openbox (`scripts/with-wm`, commun). **Score Linux
+  local : 154/202 avant, 188/202 après** (202 tâches : 101 suites × 2 thèmes, `platform` seule,
+  `simulator` sautée ; le passage GitHub du 25/10 en comptait 125). Fait :
+  - Lot 5 : vérifications du Mac conditionnées par `FEATURES` (capacités de `platform.ts`, par
+    `e2e/lib.mjs`) ; nouvelle capacité **`dockBadge`** (compteur posé par le main seulement avec
+    elle ; le réglage reste affiché sous Linux : textes Dock du lot 2). Sur macOS, mêmes
+    vérifications (deux attentes ajoutées : voir plus bas).
+  - Corrigé dans l'app : fenêtre rapide sans bouton de capture sans `screenCapture` (oublié au
+    lot 1) ; **fenêtre rapide qui ne rapetissait plus** après l'annotation (Electron fige min =
+    max d'une fenêtre non redimensionnable sous Linux : `setMinimumSize` avant `setSize`) ;
+    polices installées lues par `fc-list` sous Linux (`fontSource`, lot 3 avancé : la suite `fun`
+    attendait Menlo, liste vide hors macOS) ; « macOS » écrit en dur dans les infos techniques et
+    la ligne Version du Diagnostic (`systemName` : `Linux 6.x`) ; commit du build donné par
+    `BOBINE_BUILD_COMMIT` quand les sources n'ont pas de `.git` (conteneur).
+  - Corrigé dans les essais : `browser-view` tapait ⌘ (le raccourci de page est Ctrl hors macOS,
+    déjà géré par l'app) ; `platform` ne simule plus le Mac sous Linux (API d'Electron propres à
+    macOS) ; `minimizable` d'À propos non vérifié hors macOS (Electron le dit toujours vrai) ;
+    trois lectures avant chargement asynchrone (`discussion`, `astuces`, `regles-approbation`),
+    vraies sur le Mac aussi ; `pannes-visibles` comptait les `sleep` de son autre thème (verrou
+    `sleeps-machine`) ; la sortie de l'app est jointe à « fenêtre absente ».
+  - Lancement de `android`, `diagnostic`, `about`, `usage-board` : verts en local (openbox) ;
+    `ENOTEMPTY` pas reproduit. Cause probable, trouvée sur `pannes-visibles` : ci-dessous.
+
+  **Reste rouge (14 tâches), par cause :**
+  - **fd hérités par les enfants du main** (`pannes-visibles`, 2) : sous Linux, l'agent garde le
+    socket d'écoute DevTools de l'app (vu dans `/proc/<pid>/fd`) et d'autres fd de Chromium ;
+    après `kill -9`, l'orphelin tient le port et le relancement n'a pas de fenêtre. macOS n'hérite
+    de rien (libuv, `POSIX_SPAWN_CLOEXEC_DEFAULT`). À traiter à part (processus, lot 3) ; sans
+    doute aussi les lancements ratés et `ENOTEMPTY` du passage GitHub.
+  - **Métriques de police** (DejaVu Sans, plus large que SF ; pas de police Linux dans
+    `--font-ui`) : `plan` (barre de boutons qui bouge, 2), `roles-travail` (en-tête étroit, 2),
+    `autorisation-commande` (retour à la ligne de la mention, 2), `terminal` (icônes Nerd Font
+    qui débordent de leur cellule, 2). À voir avec l'apparence Linux (lot 2).
+  - **Barres de défilement classiques** (15 px, pas en surimpression) : `debordements`
+    (« la conversation garde 485 px » au lieu de 500, 2).
+  - **Molette de synthèse** : `autorisation-commande` (bout du bloc qui fait défiler le fil ;
+    dans les 2 tâches ci-dessus), à regarder.
+  - **Intermittents, un seul thème** : `filles` (light), `finitions` (dark).
+  - Lot 2 seul : aucune suite (les textes ⌘ et Dock ne sont pas vérifiés par les e2e).
+

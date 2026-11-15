@@ -236,6 +236,8 @@ async function pageChecks(ui, settings) {
     '« Gérer » : Réglages › Agents › agent › Approbations'
   )
   const group = (id) => `document.querySelector('[data-testid=approval-group][data-group=${id}]')`
+  // Les groupes arrivent après le titre (règles lues dans le fichier de Bob).
+  await ui.waitFor(`!!${group('execute')}`)
   check(
     (await ui.ev(`${group('execute')}.querySelector('input').checked`)) &&
       !(await ui.ev(`${group('todo')}.querySelector('input').checked`)),

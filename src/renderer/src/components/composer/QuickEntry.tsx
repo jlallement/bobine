@@ -15,6 +15,7 @@ import { ImageAnnotator } from './ImageAnnotator'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
 import { ipcErrorText } from '../../ipc-errors'
+import { platformFeatures } from '../../platform-features'
 
 type Image = Extract<PromptAttachment, { kind: 'image' }>
 
@@ -233,16 +234,19 @@ export function QuickEntry() {
         />
       )}
       <div className="quick-bar">
-        <button
-          type="button"
-          className="chip icon-chip"
-          onClick={() => void capture()}
-          title={t('composer.capture.tip')}
-          aria-label={t('composer.capture.label')}
-          data-testid="quick-capture"
-        >
-          <Camera size={15} />
-        </button>
+        {/* Capture d'une zone de l'écran, si la plateforme la permet (fiche 145). */}
+        {platformFeatures().screenCapture && (
+          <button
+            type="button"
+            className="chip icon-chip"
+            onClick={() => void capture()}
+            title={t('composer.capture.tip')}
+            aria-label={t('composer.capture.label')}
+            data-testid="quick-capture"
+          >
+            <Camera size={15} />
+          </button>
+        )}
         <span className="quick-target" title={info?.workspace} data-testid="quick-target">
           {info
             ? folder

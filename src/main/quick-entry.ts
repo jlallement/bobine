@@ -114,7 +114,11 @@ export class QuickEntry {
     const win = this.win
     if (!win || !Number.isFinite(height)) return
     const [width = QUICK_WIDTH] = win.getSize()
-    win.setSize(width, Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, height))))
+    const next = Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, height)))
+    // Sous Linux, Electron fige la taille minimale d'une fenêtre non redimensionnable à sa taille
+    // après un agrandissement : sans l'abaisser, elle ne rapetisse plus (fiche 145).
+    win.setMinimumSize(width, next)
+    win.setSize(width, next)
   }
 
   /** Pendant une capture, la fenêtre se masque sans que la perte du focus compte. */

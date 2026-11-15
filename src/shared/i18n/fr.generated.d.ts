@@ -1821,7 +1821,7 @@ export type FrResources = {
       readonly androidSdk: 'SDK Android'
       readonly androidSdkMissing: 'pas trouvé'
       readonly androidSdkMissingFix: 'Seulement pour les apps Android : installez Android Studio (l’app trouve son SDK même hors du PATH).'
-      readonly versionDetail: '{{version}} ({{kind}}) · Electron {{electron}} · macOS {{os}}'
+      readonly versionDetail: '{{version}} ({{kind}}) · Electron {{electron}} · {{os}}'
       readonly packaged: 'app installée'
       readonly development: 'développement'
       readonly simulatorsAvailable_one: '{{count}} disponible'

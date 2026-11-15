@@ -4,11 +4,12 @@ import { NEUTRAL_AGENT_ENV, check, withApp } from '../lib.mjs'
  * Capacités de la plateforme (fiche 145) : la même app, lancée avec les capacités du Mac puis avec
  * celles de Linux (`BOBINE_PLATFORM`), montre ou masque ce qui n'existe que sur macOS : onglet du
  * simulateur dans le « + » du panneau, capture d'écran de la zone de saisie, groupe iOS du
- * Diagnostic. Jouable sur le Mac comme sous Linux.
+ * Diagnostic. Sur le Mac, les deux ; sous Linux, Linux seulement : les capacités du Mac y
+ * appelleraient des fonctions d'Electron propres à macOS (`getMediaAccessStatus`).
  */
 export async function platformSuite() {
   console.log('\n— Capacités de la plateforme')
-  for (const platform of ['darwin', 'linux']) {
+  for (const platform of process.platform === 'darwin' ? ['darwin', 'linux'] : ['linux']) {
     const mac = platform === 'darwin'
     await withApp(
       'light',

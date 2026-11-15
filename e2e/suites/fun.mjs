@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { fontSource } from '../../src/main/platform.ts'
 import { L, LANG, check, withApp, M } from '../lib.mjs'
 
 /** Montant en bobcoins tel que l'app l'écrit dans la langue des essais. */
@@ -52,19 +53,21 @@ export async function funSuite(scheme) {
           variant === 'black' ? 'thème Nuit noire : fond noir' : 'thème Aurore : fond blanc froid'
         )
         await ui.shot(variant === 'black' ? 'e0-nuit-noire' : 'e0-aurore')
-        // Polices à chasse fixe installées, lues par le main (fiche 136).
+        // Polices à chasse fixe installées, lues par le main (fiche 136) : Menlo par AppKit sur
+        // macOS, DejaVu Sans Mono (présente sur tout Ubuntu) par fontconfig sous Linux (fiche 145).
+        const codeFont = fontSource(process.platform) === 'appkit' ? 'Menlo' : 'DejaVu Sans Mono'
         await ui.waitFor(
-          `[...${ui.$('settings-code-font')}.options].some((o) => o.value === 'Menlo')`
+          `[...${ui.$('settings-code-font')}.options].some((o) => o.value === ${JSON.stringify(codeFont)})`
         )
         await ui.ev(`(() => {
           const select = ${ui.$('settings-code-font')}
-          select.value = 'Menlo'
+          select.value = ${JSON.stringify(codeFont)}
           select.dispatchEvent(new Event('change', { bubbles: true }))
         })()`)
         await ui.waitFor(
-          `getComputedStyle(document.documentElement).getPropertyValue('--font-code').includes('Menlo')`
+          `getComputedStyle(document.documentElement).getPropertyValue('--font-code').includes(${JSON.stringify(codeFont)})`
         )
-        check(true, 'police du code : Menlo')
+        check(true, `police du code : ${codeFont}`)
         await ui.click(ui.$('theme-system'))
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('settings')}`)

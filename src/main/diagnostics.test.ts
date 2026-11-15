@@ -44,7 +44,7 @@ const devices = JSON.stringify({
 
 function facts(overrides: Partial<SystemFacts> = {}): SystemFacts {
   return {
-    app: { version: '0.1.1', electron: '38.2.0', os: '26.0', packaged: true },
+    app: { version: '0.1.1', electron: '38.2.0', os: 'macOS 26.0', packaged: true },
     workspace,
     home,
     shell: { path: '/bin/zsh' },

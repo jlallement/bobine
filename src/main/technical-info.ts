@@ -9,7 +9,9 @@ export interface TechnicalFacts {
   version: string
   build: { date: string; commit: string }
   versions: { electron: string; chrome: string; node: string }
-  /** Version de macOS (`process.getSystemVersion()`), ex. `26.0`. */
+  /** Nom du système (`systemName`, fiche 145), ex. `macOS`, `Linux`. */
+  system: string
+  /** Version du système (`process.getSystemVersion()`), ex. `26.0`. */
   os: string
   arch: string
   /** Langue de l'interface. */
@@ -25,7 +27,7 @@ export function technicalInfo(facts: TechnicalFacts): string {
     `Electron ${facts.versions.electron}`,
     `Chromium ${facts.versions.chrome}`,
     `Node ${facts.versions.node}`,
-    `macOS ${facts.os} (${facts.arch})`,
+    `${facts.system} ${facts.os} (${facts.arch})`,
     `Interface language: ${facts.language}`,
     `Agents: ${agents.length ? '' : 'none installed'}`.trimEnd(),
     ...agents.map((agent) => {

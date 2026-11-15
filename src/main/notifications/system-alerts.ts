@@ -16,7 +16,9 @@ import { GROUP_WINDOW_MS, timerSchedule } from './grouping'
 
 export function systemAlerts(
   preferences: () => Preferences,
-  notificationsEnabled: () => boolean
+  notificationsEnabled: () => boolean,
+  /** Capacité `dockBadge` de la plateforme (fiche 145). */
+  dockBadge: boolean
 ): {
   /** Joue un son tout de suite (« Écouter » des Réglages). */
   playSound: (sound: Exclude<AttentionSound, 'off'>) => void
@@ -44,7 +46,7 @@ export function systemAlerts(
     playSound,
     // Hors macOS, pas de Dock : pas de compteur.
     badge: createDockBadge({
-      dock: app.dock,
+      dock: dockBadge ? app.dock : undefined,
       enabled: () => notificationsEnabled() && preferences().dockBadge
     }),
     attention: {

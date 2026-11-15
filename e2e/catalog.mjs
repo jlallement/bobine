@@ -1127,6 +1127,8 @@ export const SUITES = [
     file: 'pannes-visibles.mjs',
     run: 'failuresVisibleSuite',
     themes: BOTH,
+    // Compte ses `sleep` dans `ps` de toute la machine : ses deux thèmes jamais ensemble.
+    locks: ['sleeps-machine'],
     sources: [
       ...REPLAY,
       `${C}common/SafeBoundary.tsx`,

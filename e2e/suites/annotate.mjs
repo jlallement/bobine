@@ -1,8 +1,8 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { MAIN_PORT, attachPage, check, mainProcess, sleep, withApp } from '../lib.mjs'
+import { FEATURES, MAIN_PORT, attachPage, check, mainProcess, sleep, withApp } from '../lib.mjs'
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/capture.png', import.meta.url))
 
@@ -43,6 +43,26 @@ export async function annotateSuite(scheme) {
   const screencapture = join(bin, 'screencapture')
   writeFileSync(screencapture, `#!/bin/sh\nfor last; do :; done\ncp "${FIXTURE}" "$last"\n`)
   chmodSync(screencapture, 0o755)
+  /**
+   * Image jointe par la capture d'écran simulée (même fixture) ; sans capture d'écran (capacité
+   * `screenCapture`, fiche 145), collée dans le champ : l'annotation est la même.
+   */
+  const attachImage = async (page, button, input) => {
+    if (FEATURES.screenCapture) {
+      await page.waitFor(`!!${page.$(button)}`)
+      return page.click(page.$(button))
+    }
+    const base64 = readFileSync(FIXTURE).toString('base64')
+    await page.ev(`(() => {
+      const bytes = Uint8Array.from(atob('${base64}'), (c) => c.charCodeAt(0))
+      const data = new DataTransfer()
+      data.items.add(new File([bytes], 'capture.png', { type: 'image/png' }))
+      const input = ${page.$(input)}
+      input.focus()
+      input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+      return true
+    })()`)
+  }
   const image = (selector) =>
     `(() => { const img = ${selector}; return img ? { src: img.src.length + ':' + img.src.slice(-40), w: img.naturalWidth, h: img.naturalHeight } : null })()`
   try {
@@ -50,7 +70,7 @@ export async function annotateSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
-        await ui.click(ui.$('capture'))
+        await attachImage(ui, 'capture', 'composer-input')
         await ui.waitFor(`!!document.querySelector('[data-testid=attachment-annotate] img')`)
         const before = await ui.ev(
           image(`document.querySelector('[data-testid=attachment-annotate] img')`)
@@ -134,8 +154,8 @@ export async function annotateSuite(scheme) {
           )
           const quick = await attachPage('#quick', scheme)
           try {
-            await quick.waitFor(`!!${quick.$('quick-capture')}`)
-            await quick.click(quick.$('quick-capture'))
+            await quick.waitFor(`!!${quick.$('quick-input')}`)
+            await attachImage(quick, 'quick-capture', 'quick-input')
             await quick.waitFor(`!!document.querySelector('[data-testid=quick-annotate] img')`)
             const q0 = await quick.ev(
               image(`document.querySelector('[data-testid=quick-annotate] img')`)
