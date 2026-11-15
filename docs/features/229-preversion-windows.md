@@ -1016,13 +1016,21 @@ vérification sur macOS et Linux) ; **(b)** vrai défaut de l'app sous Windows, 
 **(c)** relève des lots 4 (git) et 5 (bureau : éditeurs, Android…), seulement listé ; **(r)** reste
 à porter, hors de ce lot.
 
-Capacités des essais (`src/main/test-platform.ts`, un essai sauté l'est par l'une d'elles, avec la
-raison, et seulement quand la fonction n'existe pas sous Windows) : `POSIX_MODES` (droits `0600`,
-`chmod 000`), `POSIX_PATHS` (version Unix d'une fonction dont Windows a la sienne, essayée à part),
-`POSIX_PROCESSES` (groupes, signaux, `ps`), `LOGIN_SHELL`, `MACOS_FEATURES` (DMG, signature,
-installation par l'app, Xcode, AXe : essayés sous macOS et Linux avec de faux outils `sh`).
-Aides : `abs('/projet')` (= `resolve`, identique sous Unix), `native('~/x')` (`\` sous Windows),
-`tempDir()` (noms longs sous Windows).
+Capacités des essais (`src/main/test-platform.ts`). Consigne de Jérôme (nuit du 2026-11-15) :
+« corriger tout ce qui est corrigeable », sans forcer. Un essai n'est sauté que si la fonction
+qu'il essaie n'existe pas sous Windows, et la raison est écrite ; aucun seuil relevé, aucune
+assertion affaiblie, aucune condition propre aux essais dans l'app. Les capacités : `POSIX_MODES`
+(droits `0600`, `chmod 000` : Windows a des ACL), `POSIX_PATHS` (version Unix d'une fonction dont
+Windows a la sienne, essayée à part en `path.win32`), `POSIX_PROCESSES` (groupes, signaux, `ps` ;
+objets de tâche sous Windows), `LOGIN_SHELL` (variables enregistrées sous Windows),
+`POSIX_SHELL` (assistants `sh` remplacés par PowerShell, essayés par `reset-windows.test.ts` ;
+commande `bobine` masquée sous Windows), `MACOS_FEATURES` (DMG, signature, installation par
+l'app, Xcode, AXe). Aides : `abs('/projet')` (= `resolve`, identique sous Unix), `native('~/x')`
+(`\` sous Windows), `tempDir()` (noms longs sous Windows), `fakeProgram()` (faux outil : `sh`
+sous Unix, `.cmd`/`.bat` qui lance node sous Windows). Deux sauts posés en cours de lot ont été
+**retirés** : Android (porté, voir plus bas) et « connexion coupée » (reste rouge, voir plus bas).
+Délai d'un essai : 60 s sous Windows (15 s ailleurs), le coût d'un processus y étant bien plus
+grand (essais à vrais dépôts git jusqu'à ~14 s sous charge) ; aucune vérification ne change.
 
 | Fichier | Cl. | Cause et suite |
 |---|---|---|
@@ -1085,24 +1093,62 @@ script de 30 lignes sans rien apporter. Poste Windows : `bash scripts/verify` de
 corrections de l'app ne changent rien hors Windows : chaque branche Windows est conditionnée par
 la plateforme ou par la forme du chemin, et les règles Unix sont gardées à l'identique.
 
-**Vérifié dans la VM** (Windows 11 ARM64, accord de Jérôme dans la session) : MinGit déjà en place,
-pnpm 12.11.2 par corepack (`COREPACK_HOME` dans `bobine-229`, PATH passé à la commande seulement),
-clone de `main` + branche par un bundle, `pnpm install --frozen-lockfile`, `vitest run` complet :
-**52 essais en échec sur 4 544** (contre 283 sur `windows-latest` au départ), 60 sautés (capacités
-ci-dessus). Corrigé en plus grâce à la VM : diffs d'OpenCode comptés deux fois au rejeu (chemin
-`/x` contre `D:\x`, `opencode-diffs.ts`), règles `instructions` absolues d'OpenCode jamais trouvées
-sous Windows (motif coupé après `C`, `opencode-rules.ts`, `globFiles`), effacement d'une discussion
-de la corbeille (`EPERM`), agent factice à délai nul (`setTimeout(0)` ≈ 15 ms sous Windows : des
-milliers de morceaux dépassaient le délai des essais).
+**Vérifié dans la VM** (Windows 11 ARM64, accord de Jérôme dans la session) : MinGit (installé par
+la session des lots 4-5), pnpm 12.11.2 par corepack (`COREPACK_HOME` dans `bobine-229`, PATH passé
+à la commande seulement), clone de `main` + branche par un bundle, `pnpm install
+--frozen-lockfile`, `vitest run` complet. Après rebase sur les lots 4, 5 et 8 : **VM_RESULT**.
 
-Les 52 restants :
+Corrigé à la cause grâce à la VM (en plus du tableau) :
 
-| Fichiers | Essais | Cl. |
-|---|---|---|
-| `changes/worktree-cycle`, `conversations/children-merge`, `conversations/children`, `changes/git`, `changes/forge`, `git/git-queue`, `changes/worktrees`, `changes/worktree-setup`, `manager.test` (worktree préparé) | 26 | c (lot 4, git) |
-| `android/gradle`, `android/android-tools`, `editors/editors`, `files/file-links` (liens `C:\…` et `file://C:` non reconnus par `parseFileLink`) | 11 | c (lot 5) |
-| `reset` (relais `sh`), `fresh-start` (relais `sh`), `command-line` (commande `bobine` en `sh`), `terminal/terminal-manager` (shells POSIX, ConPTY à essayer) | 14 | r |
-| `agent-host` « connexion coupée, processus vivant » (délai) ; `conformance-bob` « sous-agent, message pendant qu'il travaille » (instable sous charge : vert seul) | 2 | r |
+- diffs d'OpenCode comptés deux fois au rejeu (`/x` contre `D:\x`, `opencode-diffs.ts`) ;
+- règles `instructions` absolues d'OpenCode jamais trouvées (motif coupé après `C`,
+  `opencode-rules.ts`, `globFiles` : motif écrit avec `/`) ;
+- effacement d'une discussion de la corbeille (`EPERM` : nouvel essai, jamais d'exception) ;
+- agent factice à délai nul (`setTimeout(0)` ≈ 15 ms sous Windows : des milliers de morceaux
+  dépassaient le délai des essais ; `setImmediate` sous Windows) ;
+- chemins relatifs des modifications (`relativeTo`, partagé : onglet Modifications, comptes
+  rendus des filles) ;
+- « Committer » d'un renommage ou d'une suppression indexée : chemins comparés à ceux de git
+  (`docs/new.md`, pas `docs\new.md`, `worktree-cycle.ts`) ;
+- `runCommand` (gh, glab, adb, aapt2) lançait un `.cmd` directement (`EINVAL`) : `planLaunch` ;
+- configuration de glab construite à la façon du système donné (`forge-gitlab.ts`) ;
+- éditeurs : chemins d'apps de macOS en POSIX partout (`editors.ts`) ;
+- liens de fichiers des réponses : `C:\…` et `file:///C:/…` sont des fichiers, pas des schémas
+  (`shared/file-links.ts`) ;
+- **Android porté** : SDK sous `%LOCALAPPDATA%\Android\Sdk` (ou `ANDROID_HOME`), `adb.exe`,
+  `emulator.exe`, `aapt2.exe`, Java d'Android Studio, `gradlew.bat` (par `cmd.exe`, montré
+  `.\gradlew.bat`), émulateur sans console ; macOS et Linux inchangés (`sdk.test.ts`).
+
+**Reste rouge sous Windows (cause et piste)** : `agent-host` « connexion coupée, processus
+vivant (fiche 195) ». L'app détecte la coupure sous Windows comme ailleurs ; c'est le **scénario de
+l'agent factice** qui ne s'y simule pas : un processus node ne sait pas fermer sa sortie standard
+sans sortir (relevé dans la VM : ni `end()`, ni `destroy()`, ni `closeSync(1)`, ni
+`CloseHandle(GetStdHandle(-11))` par koffi ne ferment le tube vu par le parent, qui en garde un
+double ; sur le Mac, `end()` est vu en 80 ms). Piste : un faux agent hors de node (petit programme
+natif, ou PowerShell qui parle assez d'ACP pour ouvrir une session) ; ou décider que ce scénario
+est propre à Unix (un agent node ne peut pas le produire sous Windows) — décision au tech lead et
+à Jérôme, pas prise ici.
+
+**Défaut connu, non exigé par les essais** : un toast cliqué depuis le Centre de notifications ne
+ramène pas la fenêtre (limite d'Electron, lot 5). Aucun essai unitaire ne l'exige ; la suite e2e
+`notifications` émet le clic sur l'objet de notification de l'app (la bonne conversation
+s'affiche) et ne vérifie pas le premier plan de la fenêtre.
+
+### CI bloquante sur les trois systèmes (décision de Jérôme, 2026-11-15)
+
+« ok rends la CI bloquante sur les trois » :
+
+- `ci.yml` : `verify (macOS)` (nouveau, `macos-latest`), `verify (Linux)`, `verify (Windows)`
+  (plus de `continue-on-error`) : les trois bloquent une pull request et une poussée sur `main`.
+- `release.yml` : le job `guard` attend, pour le commit tagué, les trois jobs `verify` de
+  `ci.yml` (API des « check runs », jeton du job en lecture `checks: read`, aucun secret), une
+  heure au plus ; un échec, ou une CI pas finie, arrête tout avant la moindre construction.
+  Script essayé avec un faux `gh` : vert, rouge, en cours puis vert.
+- `e2e.yml` : le job Linux part aussi à chaque poussée sur `main`, **non bloquant**
+  (`continue-on-error`) tant que les échecs connus restent (police DejaVu, `pannes-visibles`), et
+  son nom le dit ; macOS et Windows restent à la main.
+- Conséquence : tant que l'essai « connexion coupée » est rouge sous Windows, `verify (Windows)`
+  l'est aussi, et aucun tag ne construit de version.
 
 ## Journal
 
@@ -1272,3 +1318,9 @@ Les 52 restants :
   52 échecs sur 4 544 (c : lots 4 et 5 ; r : relais `sh`, commande `bobine`, terminal, deux
   délais), et quatre défauts de plus corrigés (diffs d'OpenCode au rejeu, règles absolues
   d'OpenCode, effacement d'une discussion, agent factice à délai nul).
+- 2026-11-15 — **Lot 7a, suite** (consigne de Jérôme : « corriger tout ce qui est corrigeable »,
+  sans forcer) : rebasé sur les lots 4, 5 et 8 ; vitest dans la VM jusqu'à un seul rouge
+  (« connexion coupée », scénario non simulable sous Windows, documenté) ; Android porté ; dix
+  autres défauts corrigés à la cause (liste dans la section) ; sauts Android et « connexion
+  coupée » retirés. CI bloquante sur macOS, Linux et Windows, version conditionnée par la CI,
+  e2e Linux à chaque poussée sur `main` (non bloquant).
