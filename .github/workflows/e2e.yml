@@ -115,10 +115,13 @@ jobs:
       - name: Bac à sable de Chromium
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: pnpm build
+      # Deux tâches à la fois : la machine a 2 cœurs ; à 3, des essais liés au temps (infobulles,
+      # durées) échouaient d'un passage à l'autre (fiche 145). Une option `--jobs` des suites
+      # demandées passe après et l'emporte.
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
-          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e ${suites[@]+"${suites[@]}"}
+          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs 2 ${suites[@]+"${suites[@]}"}
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

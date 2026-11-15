@@ -1588,6 +1588,9 @@ export const SUITES = [
     file: 'perf.mjs',
     run: 'perfSuite',
     themes: BOTH,
+    // Mesure des durées : jamais avec d'autres apps d'essai sur la machine (sur les 2 cœurs du
+    // job Linux de GitHub, elles faisaient passer les seuils, fiche 145).
+    alone: true,
     sources: [
       ...TOOLS,
       `${R}useThreadScroll.ts`,

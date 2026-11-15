@@ -1,4 +1,4 @@
-import { L, check, withApp } from '../lib.mjs'
+import { FEATURES, L, check, withApp } from '../lib.mjs'
 import { tokensOf } from '../palette.mjs'
 
 /** Valeur calculée d'une propriété CSS d'un élément. */
@@ -37,9 +37,14 @@ export async function auroreSuite(scheme) {
           tokensOf(palette).bg,
         `thème ${palette} appliqué (fond ${tokensOf(palette).bg})`
       )
+      // Verre dépoli là où la plateforme le permet (capacité `glass`) ; ailleurs opaque, sans flou
+      // (fiche 145 : un flou ou un fondu inachevé laissait lire à travers).
+      const glassy = (filter) => (FEATURES.glass ? filter.includes('blur') : filter === 'none')
       check(
-        (await ui.ev(style('.settings-dialog', 'backdrop-filter'))).includes('blur'),
-        'Réglages en verre dépoli (touche 6)'
+        glassy(await ui.ev(style('.settings-dialog', 'backdrop-filter'))),
+        FEATURES.glass
+          ? 'Réglages en verre dépoli (touche 6)'
+          : 'Réglages opaques, sans flou (fiche 145)'
       )
       await ui.shot('a1-apparence-aurore')
       await ui.key('Escape')
@@ -85,12 +90,14 @@ export async function auroreSuite(scheme) {
       await ui.click(ui.$('panel-more'))
       await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
       check(
-        (
+        glassy(
           await ui.ev(
             `getComputedStyle(${ui.$('panel-more-menu')}).getPropertyValue('backdrop-filter')`
           )
-        ).includes('blur'),
-        'menu du panneau en verre dépoli (touche 6)'
+        ),
+        FEATURES.glass
+          ? 'menu du panneau en verre dépoli (touche 6)'
+          : 'menu du panneau opaque, sans flou (fiche 145)'
       )
       await ui.shot('a2b-aurore-menu')
       await ui.key('Escape')
