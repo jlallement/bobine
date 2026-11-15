@@ -36,7 +36,7 @@ import type {
 } from '@shared/agent'
 import { useTranslation } from 'react-i18next'
 import { useDisplayPath } from '../../presentation'
-import { platformFeatures } from '../../platform-features'
+import { platformFeatures, revealLabelKey } from '../../platform-features'
 import i18next from 'i18next'
 import { SHORTCUTS, type MenuCommand } from '@shared/shortcuts'
 import { folderName } from '@shared/windows-paths'
@@ -213,7 +213,7 @@ export function WorkspaceMenu({
 }) {
   const { t } = useTranslation()
   const displayPath = useDisplayPath()
-  const finder = platformFeatures().finder
+  const features = platformFeatures()
   // Pas encore de dossier (fiche 093) : la puce invite à en choisir un, la liste n'en montre pas.
   const workspaces =
     !settings.workspace || settings.recentWorkspaces.includes(settings.workspace)
@@ -283,9 +283,7 @@ export function WorkspaceMenu({
                 data-testid="workspace-reveal"
               >
                 <FolderOpen size={16} className="menu-icon" />
-                <ItemText
-                  title={t(finder ? 'workspaceMenu.revealFinder' : 'workspaceMenu.revealFiles')}
-                />
+                <ItemText title={t(revealLabelKey(features))} />
               </Dropdown.Item>
             )}
             <Dropdown.Item

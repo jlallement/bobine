@@ -1,4 +1,5 @@
 import { FolderPlus, FolderSymlink, X } from 'lucide-react'
+import { revealLabelKey } from '../../platform-features'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 import { folderName } from '@shared/windows-paths'
@@ -13,6 +14,8 @@ export interface SessionFoldersProps {
   agentLabel: string
   /** Le Finder (macOS) ou le gestionnaire de fichiers (fiche 145). */
   finder: boolean
+  /** Windows : « Explorateur de fichiers » (fiche 229). */
+  explorer?: boolean
   onAdd: () => void
   onRemove: (folder: string) => void
   onReveal: (folder: string) => void
@@ -27,7 +30,7 @@ const baseName = (path: string) => folderName(path)
 export function SessionFolders(props: SessionFoldersProps) {
   const { t } = useTranslation()
   if (!props.supported && props.folders.length === 0) return null
-  const revealLabel = t(props.finder ? 'workspaceMenu.revealFinder' : 'workspaceMenu.revealFiles')
+  const revealLabel = t(revealLabelKey({ finder: props.finder, explorer: props.explorer === true }))
   return (
     <div
       className="session-row session-folders"

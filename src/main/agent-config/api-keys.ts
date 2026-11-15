@@ -81,12 +81,19 @@ export class ApiKeyStore {
    */
   private availability: Promise<boolean> | undefined
   private readonly timeoutMs: number
+  /** Chiffrement indisponible : trousseau de macOS (défaut) ou DPAPI de Windows (fiche 229). */
+  private readonly unavailable: 'apiKeys.noKeychain' | 'apiKeys.noKeychainWindows'
 
-  constructor(file: string, cipher: Cipher, options: { timeoutMs?: number } = {}) {
+  constructor(
+    file: string,
+    cipher: Cipher,
+    options: { timeoutMs?: number; windows?: boolean } = {}
+  ) {
     this.file = file
     this.cipher = cipher
     this.keys = load(file)
     this.timeoutMs = options.timeoutMs ?? KEYCHAIN_TIMEOUT_MS
+    this.unavailable = options.windows ? 'apiKeys.noKeychainWindows' : 'apiKeys.noKeychain'
   }
 
   has(profileId: string, env: string): boolean {
@@ -100,7 +107,7 @@ export class ApiKeyStore {
     // Délai dépassé : une réponse tardive du trousseau est ignorée, rien n'est enregistré en silence.
     let late = false
     const encrypting = (async () => {
-      if (!(await this.keychainAvailable())) throw new Error(t('apiKeys.noKeychain'))
+      if (!(await this.keychainAvailable())) throw new Error(t(this.unavailable))
       if (late) return undefined
       return this.cipher.encrypt(key)
     })()

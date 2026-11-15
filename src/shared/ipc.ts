@@ -132,6 +132,8 @@ export interface AppInfo {
   nativeLanguage?: Language
   /** Profil temporaire, `--reinitialiser` (fiche 148). */
   freshStart?: FreshStartInfo
+  /** Système encore en préversion (Windows, fiche 229) : dit dans l'À propos. */
+  preview?: 'windows'
 }
 
 /** Polices installées sur le Mac (fiche 136) : toutes les familles, et celles à chasse fixe. */

@@ -184,3 +184,33 @@ function openersOf(calls: string[]): FileOpeners {
     reveal: (path) => calls.push(`reveal ${path}`)
   }
 }
+
+describe('fichiers qui s’exécutent sous Windows (fiche 229)', () => {
+  it('l’extension décide : scripts, programmes, raccourcis, images disque', async () => {
+    const { mayExecuteOn } = await import('./file-links')
+    for (const name of [
+      'a.exe',
+      'b.CMD',
+      'c.bat',
+      'd.ps1',
+      'e.vbs',
+      'f.lnk',
+      'g.msi',
+      'h.iso',
+      'i.js'
+    ]) {
+      expect(mayExecuteOn(`C:\\x\\${name}`, 0o666, 'windows')).toBe(true)
+    }
+    for (const name of ['a.txt', 'b.md', 'c.png', 'd.html', 'e.pdf', 'f.ts']) {
+      expect(mayExecuteOn(`C:\\x\\${name}`, 0o666, 'windows')).toBe(false)
+    }
+  })
+
+  it('Unix : comme avant (liste de macOS et bit x)', async () => {
+    const { mayExecuteOn } = await import('./file-links')
+    expect(mayExecuteOn('/x/a.sh', 0o644, 'posix')).toBe(true)
+    expect(mayExecuteOn('/x/outil', 0o755, 'posix')).toBe(true)
+    expect(mayExecuteOn('/x/a.exe', 0o644, 'posix')).toBe(false)
+    expect(mayExecuteOn('/x/a.txt', 0o644, 'posix')).toBe(false)
+  })
+})

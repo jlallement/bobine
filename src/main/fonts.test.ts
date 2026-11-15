@@ -61,6 +61,33 @@ describe('polices installées (fiche 136)', () => {
   it('source choisie d’après le système', () => {
     expect(fontSource('darwin')).toBe('appkit')
     expect(fontSource('linux')).toBe('fontconfig')
-    expect(fontSource('win32')).toBeUndefined()
+    expect(fontSource('freebsd')).toBeUndefined()
+  })
+})
+
+describe('polices sous Windows (fiche 229)', () => {
+  it('source GDI+ sous Windows seulement ; les autres inchangées', async () => {
+    const { fontSource } = await import('./platform')
+    expect(fontSource('win32')).toBe('gdi')
+    expect(fontSource('darwin')).toBe('appkit')
+    expect(fontSource('linux')).toBe('fontconfig')
+  })
+
+  it('sortie du script lue, polices d’icônes écartées de la chasse fixe', async () => {
+    const { fontLister } = await import('./fonts')
+    const output = JSON.stringify({
+      families: ['Segoe UI', 'Consolas', 'Marlett', 'Segoe Fluent Icons'],
+      monospace: ['Consolas', 'Marlett', 'Segoe Fluent Icons', 'Cascadia Mono']
+    })
+    const seen: string[][] = []
+    const list = fontLister('gdi', async (command, args) => {
+      seen.push([command, ...args])
+      return output
+    })
+    expect(await list()).toEqual({
+      families: ['Consolas', 'Marlett', 'Segoe Fluent Icons', 'Segoe UI'],
+      monospace: ['Cascadia Mono', 'Consolas']
+    })
+    expect(seen[0]?.slice(1, 5)).toEqual(['-NoLogo', '-NoProfile', '-NonInteractive', '-Command'])
   })
 })

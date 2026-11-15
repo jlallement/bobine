@@ -23,6 +23,16 @@ describe('canaux de l’app et de la fenêtre À propos (fiche 116)', () => {
     expect((await appHandlers(base)['app:getInfo']()).commit).toBe('dev')
   })
 
+  it('app:getInfo : « préversion » sous Windows seulement (fiche 229)', async () => {
+    expect((await appHandlers({ ...base, platform: 'win32' })['app:getInfo']()).preview).toBe(
+      'windows'
+    )
+    expect(await appHandlers(base)['app:getInfo']()).not.toHaveProperty('preview')
+    expect(await appHandlers({ ...base, platform: 'linux' })['app:getInfo']()).not.toHaveProperty(
+      'preview'
+    )
+  })
+
   it('about:* : bloc d’infos, fermeture, nouveautés ; indisponible sans fenêtre', async () => {
     const about = {
       technicalInfo: vi.fn(() => 'Bobine 0.4.0'),

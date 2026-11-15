@@ -194,6 +194,7 @@ export function SessionTab({
         gitBranch={data.gitBranch}
         onOpenGit={data.onOpenGit}
         finder={platformFeatures().finder}
+        explorer={platformFeatures().explorer}
         folders={
           <SessionFolders
             folders={data.additionalDirectories ?? []}
@@ -201,6 +202,7 @@ export function SessionTab({
             busy={view.status === 'busy'}
             agentLabel={view.agentLabel}
             finder={platformFeatures().finder}
+            explorer={platformFeatures().explorer}
             onAdd={() => void window.api.conversations.addFolder(conversationId).catch(warn)}
             onRemove={(folder) =>
               void window.api.conversations.removeFolder(conversationId, folder).catch(warn)

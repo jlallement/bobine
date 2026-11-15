@@ -9,11 +9,18 @@
  *
  * Sans Electron ici (testé) : `fresh-start-app.ts` le branche.
  */
-import { spawn as nodeSpawn, type SpawnOptions } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import {
+  spawn as nodeSpawn,
+  spawnSync as nodeSpawnSync,
+  type SpawnOptions,
+  type SpawnSyncOptions
+} from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
+import { launchSystem, windowsPowerShell, type ProcessSystem } from './process-launch'
 import { helperEnv } from './reset'
+import { detachedPowerShell, selfDeleting, windowsCleanupScript } from './reset-windows'
 
 export const TEMPORARY_SWITCH = 'profil-temporaire'
 export const FRESH_AGENTS_SWITCH = 'agents-neufs'
@@ -43,6 +50,10 @@ export interface FreshStartIo {
   tmp: string
   env: NodeJS.ProcessEnv
   pid: number
+  /** Système des processus (défaut : celui de la machine) ; Windows : ménage en PowerShell. */
+  system?: ProcessSystem
+  /** Windows : relais attendu jusqu'au bout (`detachedPowerShell`). */
+  spawnSync?: (command: string, args: string[], options: SpawnSyncOptions) => unknown
 }
 
 /**
@@ -103,6 +114,7 @@ export interface FreshStart {
 
 const defaultIo = (): FreshStartIo => ({
   spawn: (command, args, options) => nodeSpawn(command, args, options),
+  spawnSync: (command, args, options) => nodeSpawnSync(command, args, options),
   tmp: tmpdir(),
   env: process.env,
   pid: process.pid
@@ -129,6 +141,20 @@ export function createFreshStart(app: FreshStartApp, io: FreshStartIo = defaultI
           if (cleaned) return
           cleaned = true
           rmSync(created, { recursive: true, force: true })
+          if ((io.system ?? launchSystem()) === 'windows') {
+            // Relais attendu (≈ 1 s, l'app quitte) : voir `detachedPowerShell`.
+            const scriptFile = join(io.tmp, `${basename(created)}-menage.ps1`)
+            const script = windowsCleanupScript(created, io.pid, 600, TEMPORARY_PREFIX)
+            writeFileSync(scriptFile, selfDeleting(script, scriptFile))
+            const [command, args] = detachedPowerShell(windowsPowerShell(io.env), scriptFile)
+            const relay = io.spawnSync ?? nodeSpawnSync
+            relay(command, args, {
+              stdio: 'ignore',
+              windowsHide: true,
+              env: helperEnv(io.env)
+            })
+            return
+          }
           io.spawn(
             '/bin/sh',
             ['-c', TEMPORARY_CLEANUP, 'bobine-cleanup', created, String(io.pid), '600'],

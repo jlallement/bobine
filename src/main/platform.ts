@@ -23,6 +23,8 @@ export function platformFeatures(platform: string): PlatformFeatures {
     screenCapture: mac,
     // Libellé « Afficher dans le Finder » (fiche 158).
     finder: mac,
+    // « Afficher dans l'Explorateur » (fiche 229).
+    explorer: platform === 'win32',
     // `app.dock.setBadge` ; seul Unity affichait un compteur sous Linux (fiche 145, écarts).
     dockBadge: mac,
     // Barre de menu globale de macOS ; sous Linux, menu de la fenêtre masqué, Alt l'affiche.
@@ -47,12 +49,21 @@ export function currentPlatformFeatures(
   return platformFeatures(env['BOBINE_PLATFORM'] || platform)
 }
 
-/** Où lire les polices installées (`fonts.ts`) : AppKit sur macOS, fontconfig sous Linux. */
-export type FontSource = 'appkit' | 'fontconfig'
+/**
+ * Où lire les polices installées (`fonts.ts`) : AppKit sur macOS, fontconfig sous Linux, GDI+ par
+ * PowerShell sous Windows (fiche 229).
+ */
+export type FontSource = 'appkit' | 'fontconfig' | 'gdi'
 
 /** Source des polices du vrai système (pas de `BOBINE_PLATFORM` : la commande doit exister). */
 export function fontSource(platform: string): FontSource | undefined {
+  if (platform === 'win32') return 'gdi'
   return platform === 'darwin' ? 'appkit' : platform === 'linux' ? 'fontconfig' : undefined
+}
+
+/** Système encore en préversion (ADR-0050, D7) : dit dans l'À propos ; aucun sur macOS et Linux. */
+export function previewOf(platform: string): 'windows' | undefined {
+  return platform === 'win32' ? 'windows' : undefined
 }
 
 const SYSTEM_NAMES: Record<string, string> = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }
