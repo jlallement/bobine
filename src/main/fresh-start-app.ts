@@ -17,7 +17,8 @@ import {
   resetFolderName,
   resetInventory,
   resetPaths,
-  takeResetFailure
+  takeResetFailure,
+  takeResetKept
 } from './reset'
 import { bundleOf, installDirs, isInstalled } from './self-install'
 
@@ -109,7 +110,9 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
     info: { temporary: freshStart.temporary, askReset: freshStart.askReset },
     plan: async () => ({
       items: await resetInventory(userData(), resetPaths(outside())),
-      keychain: !isolated,
+      // Windows (fiche 229) : pas d'entrée de trousseau ; la clé DPAPI est dans `Local State`,
+      // déjà dans le dossier de données qui part à la corbeille.
+      keychain: !isolated && launchSystem() !== 'windows',
       canUninstall: !!bundle()
     }),
     reset: (uninstall) => {
@@ -148,6 +151,11 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
  * dans le dossier de données, est montrée une fois au lancement.
  */
 export function reportResetFailure(notify: (message: Message) => void): void {
+  const kept = takeResetKept(app.getPath('userData'))
+  if (kept) {
+    log.warn(`Réinitialisation faite, données gardées hors de la Corbeille : ${kept}`)
+    notify({ key: 'conversations.notice.resetKeptOutsideTrash', params: { folder: kept } })
+  }
   const failure = takeResetFailure(app.getPath('userData'))
   if (!failure) return
   log.warn(`Réinitialisation précédente non faite, rien n'a été supprimé : ${failure}`)

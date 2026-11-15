@@ -776,6 +776,7 @@
       "transcript": "the conversation"
     },
     "notice": {
+      "resetKeptOutsideTrash": "Bobine was reset, but the Windows Recycle Bin didn’t accept its old data: it stayed in “{{folder}}”. Delete that folder yourself when you no longer need it.",
       "resetFailed": "Bobine could not be reset: nothing was deleted, your data stayed where it was. Details: {{detail}}",
       "folderGone": "The folder “{{folder}}” no longer exists.",
       "historyDamaged_one": "Part of the history was unreadable: the file was set aside ({{files}}).",

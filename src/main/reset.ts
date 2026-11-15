@@ -19,7 +19,12 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { lstat, readdir } from 'node:fs/promises'
 import { join, sep } from 'node:path'
 import { launchSystem, windowsPowerShell, type ProcessSystem } from './process-launch'
-import { detachedPowerShell, selfDeleting, windowsResetScript } from './reset-windows'
+import {
+  detachedPowerShell,
+  RESET_KEPT_NAME,
+  selfDeleting,
+  windowsResetScript
+} from './reset-windows'
 import { RESET_KINDS, type ResetItem, type ResetKind } from '@shared/fresh-start'
 
 /** Entrées du dossier de données propres à l'interface (Chromium) : rangées avec les réglages. */
@@ -252,7 +257,18 @@ export function launchReset(job: ResetJob, io: ResetLaunchIo): string {
  * supprimé, son texte rendu ; rien s'il n'y en a pas.
  */
 export function takeResetFailure(userData: string): string | undefined {
-  const file = join(userData, RESET_FAILURE_NAME)
+  return takeNote(join(userData, RESET_FAILURE_NAME))
+}
+
+/**
+ * Windows (fiche 229) : dossier daté laissé en place, la Corbeille l'ayant refusé (note de
+ * l'assistant), lu une fois ; rien s'il n'y en a pas.
+ */
+export function takeResetKept(userData: string): string | undefined {
+  return takeNote(join(userData, RESET_KEPT_NAME))
+}
+
+function takeNote(file: string): string | undefined {
   let text: string
   try {
     text = readFileSync(file, 'utf8')

@@ -52,6 +52,8 @@ export interface FreshStartIo {
   pid: number
   /** Système des processus (défaut : celui de la machine) ; Windows : ménage en PowerShell. */
   system?: ProcessSystem
+  /** Effacement du profil à la fermeture (essais : simulé) ; par défaut, `rmSync`. */
+  remove?: (dir: string) => void
   /** Windows : relais attendu jusqu'au bout (`detachedPowerShell`). */
   spawnSync?: (command: string, args: string[], options: SpawnSyncOptions) => unknown
 }
@@ -140,7 +142,15 @@ export function createFreshStart(app: FreshStartApp, io: FreshStartIo = defaultI
         app.onWillQuit(() => {
           if (cleaned) return
           cleaned = true
-          rmSync(created, { recursive: true, force: true })
+          // Sous Windows, un fichier encore ouvert fait lever `EPERM` (vu dans la VM, fiche 229) :
+          // l'erreur ne doit pas empêcher l'assistant, qui finit le travail après l'app.
+          const remove =
+            io.remove ?? ((dir: string) => rmSync(dir, { recursive: true, force: true }))
+          try {
+            remove(created)
+          } catch {
+            // L'assistant ci-dessous s'en charge.
+          }
           if ((io.system ?? launchSystem()) === 'windows') {
             // Relais attendu (≈ 1 s, l'app quitte) : voir `detachedPowerShell`.
             const scriptFile = join(io.tmp, `${basename(created)}-menage.ps1`)

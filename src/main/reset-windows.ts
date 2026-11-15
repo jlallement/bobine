@@ -12,7 +12,14 @@
  * utilisable, Windows supprimerait sans rien dire. Sinon le dossier daté reste là, visible.
  * N'importe pas `electron`.
  */
+import { win32 } from 'node:path'
 import type { ResetJob } from './reset'
+
+/**
+ * Note laissée par l'assistant dans le dossier de données quand la Corbeille a refusé le dossier
+ * daté (fiche 229, décision de Jérôme : « le dire au lancement ») : son chemin, lu une fois.
+ */
+export const RESET_KEPT_NAME = 'reinitialisation-hors-corbeille.txt'
 
 /** Arguments de `powershell.exe` qui exécutent `script` (UTF-16LE en base64, comme l'attend
  * `-EncodedCommand`). */
@@ -72,7 +79,15 @@ while (Get-Process -Id ([int]$job.pid) -ErrorAction SilentlyContinue) {
   if ((Get-Date) -gt $deadline) { WaitFailed; exit 1 }
   Start-Sleep -Milliseconds 100
 }
-# Les processus auxiliaires de Chromium finissent juste après l'app.
+# Les processus auxiliaires de Chromium (GPU, réseau…), enfants directs de l'app, tiennent encore
+# des fichiers ouverts juste après elle ; Windows refuse alors de les déplacer ou de les effacer
+# (vu dans la VM : un profil temporaire à moitié effacé). On les attend aussi (10 s au plus).
+$children = (Get-Date).AddSeconds(10)
+while ((Get-Date) -lt $children) {
+  $left = @(Get-CimInstance Win32_Process -Filter ('ParentProcessId = ' + [int]$job.pid) -ErrorAction SilentlyContinue)
+  if ($left.Count -eq 0) { break }
+  Start-Sleep -Milliseconds 200
+}
 Start-Sleep -Milliseconds 500
 `
 
@@ -160,10 +175,21 @@ if ($detail) {
   $tmp = Join-Path $folder '.readme.tmp'
   [IO.File]::WriteAllText($tmp, ($lines -join $CRLF) + $CRLF, (New-Object Text.UTF8Encoding $true))
   Move-Item -LiteralPath $tmp -Destination (Join-Path $folder $job.readme)
-  if ($job.recycle -and (CanRecycle $job.trash)) {
-    try {
-      [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($folder, 'OnlyErrorDialogs', 'SendToRecycleBin')
-    } catch {}
+  if ($job.recycle) {
+    $recycled = $false
+    if (CanRecycle $job.trash) {
+      try {
+        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($folder, 'OnlyErrorDialogs', 'SendToRecycleBin')
+        $recycled = -not (Test-Path -LiteralPath $folder)
+      } catch {}
+    }
+    # Pas dans la Corbeille : le dossier reste là ; la Bobine suivante le dit (takeResetKept).
+    if (-not $recycled) {
+      try {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $job.kept) | Out-Null
+        [IO.File]::WriteAllText($job.kept, $folder + $LF)
+      } catch {}
+    }
   }
 }
 Remove-Item -LiteralPath $job.header -Force -ErrorAction SilentlyContinue
@@ -187,6 +213,7 @@ export function windowsResetScript(job: ResetJob, header: string): string {
       readme: job.readmeName,
       header,
       failure: job.failureFile,
+      kept: win32.join(win32.dirname(job.failureFile), RESET_KEPT_NAME),
       paths: job.paths,
       relaunch: job.relaunch ?? [],
       // Essais : `BOBINE_TRASH_DIR` garde le dossier daté là, sans la vraie Corbeille.
@@ -209,7 +236,11 @@ export function windowsCleanupScript(
 if (-not (Split-Path -Leaf $job.dir).StartsWith($job.prefix)) { exit 2 }
 function WaitFailed {}
 ${WAIT_FOR_APP}
-Remove-Item -LiteralPath $job.dir -Recurse -Force -ErrorAction SilentlyContinue
+# Un fichier encore tenu (antivirus, indexation) : quelques nouvelles tentatives.
+for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $job.dir); $i++) {
+  Remove-Item -LiteralPath $job.dir -Recurse -Force -ErrorAction SilentlyContinue
+  if (Test-Path -LiteralPath $job.dir) { Start-Sleep -Milliseconds 500 }
+}
 `
   )
 }

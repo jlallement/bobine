@@ -25,6 +25,8 @@ export function platformFeatures(platform: string): PlatformFeatures {
     finder: mac,
     // « Afficher dans l'Explorateur » (fiche 229).
     explorer: platform === 'win32',
+    // `C:\Users\x\agent.exe` tapé tel quel dans la commande d'un agent personnalisé.
+    windowsPaths: platform === 'win32',
     // `app.dock.setBadge` ; seul Unity affichait un compteur sous Linux (fiche 145, écarts).
     dockBadge: mac,
     // Barre de menu globale de macOS ; sous Linux, menu de la fenêtre masqué, Alt l'affiche.

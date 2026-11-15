@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, win32 } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { createFreshStart } from './fresh-start'
 import { launchReset, type ResetJob } from './reset'
@@ -8,6 +8,7 @@ import {
   detachedPowerShell,
   encodedPowerShell,
   MAX_COMMAND_LINE,
+  RESET_KEPT_NAME,
   psLiteral,
   scriptLoader,
   selfDeleting,
@@ -81,9 +82,26 @@ describe('assistants de « Recommencer à neuf » sous Windows (fiche 229)', () 
 
   it('Corbeille seulement après un témoin arrivé ; sinon le dossier daté reste', () => {
     const script = windowsResetScript(job, 'h')
-    expect(script).toMatch(/if \(\$job\.recycle -and \(CanRecycle \$job\.trash\)\)/)
+    expect(script).toMatch(/if \(CanRecycle \$job\.trash\)/)
     expect(script).toMatch(/SendToRecycleBin/)
     expect(windowsResetScript({ ...job, recycle: false }, 'h')).toContain('"recycle":false')
+  })
+
+  it('dossier refusé par la Corbeille : note pour la Bobine suivante, lue une fois', async () => {
+    const script = windowsResetScript(job, 'h')
+    expect(script).toContain(
+      `"kept":${JSON.stringify(win32.join(LONG, 'bobine', RESET_KEPT_NAME)).replace(/'/g, "''")}`
+    )
+    expect(script).toMatch(/if \(-not \$recycled\)/)
+    const { takeResetKept } = await import('./reset')
+    const userData = mkdtempSync(join(tmpdir(), 'kept-'))
+    expect(takeResetKept(userData)).toBeUndefined()
+    writeFileSync(
+      join(userData, RESET_KEPT_NAME),
+      'C:\\Users\\x\\AppData\\Roaming\\Bobine — données\n'
+    )
+    expect(takeResetKept(userData)).toBe('C:\\Users\\x\\AppData\\Roaming\\Bobine — données')
+    expect(takeResetKept(userData)).toBeUndefined()
   })
 
   it('launchReset sous Windows : script écrit, relais attendu, pas de /bin/sh', () => {
@@ -122,13 +140,25 @@ describe('assistants de « Recommencer à neuf » sous Windows (fiche 229)', () 
         execPath: 'C:\\Bobine\\Bobine.exe',
         appPath: () => ''
       },
-      { spawn, spawnSync, tmp, env: {}, pid: 7, system: 'windows' }
+      {
+        spawn,
+        spawnSync,
+        tmp,
+        env: {},
+        pid: 7,
+        system: 'windows',
+        // Comme Windows avec un fichier encore ouvert (vu dans la VM) : l'assistant part quand même.
+        remove: () => {
+          throw Object.assign(new Error('EPERM, Permission denied'), { code: 'EPERM' })
+        }
+      }
     )
     const folder = fresh.userData('C:\\ignoré')
     onQuit?.()
     expect(spawn).not.toHaveBeenCalled()
     expect(spawnSync).toHaveBeenCalledTimes(1)
-    expect(existsSync(folder)).toBe(false)
+    // L'effacement de l'app a échoué : le dossier est encore là, l'assistant s'en charge.
+    expect(existsSync(folder)).toBe(true)
     expect(windowsCleanupScript(folder, 7, 600, 'x')).toContain('StartsWith($job.prefix)')
   })
 })

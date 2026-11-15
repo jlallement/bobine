@@ -813,6 +813,7 @@ export type FrResources = {
       readonly transcript: 'la conversation'
     }
     readonly notice: {
+      readonly resetKeptOutsideTrash: 'Bobine a été réinitialisée, mais la Corbeille de Windows n’a pas accepté ses anciennes données : elles sont restées dans « {{folder}} ». Supprimez ce dossier vous-même quand vous n’en aurez plus besoin.'
       readonly resetFailed: 'La réinitialisation de Bobine n’a pas pu se faire : rien n’a été supprimé, vos données sont restées en place. Détail : {{detail}}'
       readonly folderGone: 'Le dossier « {{folder}} » n’existe plus.'
       readonly historyDamaged_one: 'Une partie de l’historique était illisible : le fichier a été mis de côté ({{files}}).'

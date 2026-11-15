@@ -17,6 +17,11 @@ export const PLATFORM_FEATURES = [
   'finder',
   /** Il s'appelle « Explorateur de fichiers » (Windows, fiche 229). */
   'explorer',
+  /**
+   * Chemins et lignes de commande de Windows (fiche 229) : `\` sépare les dossiers et n'échappe
+   * rien (commande d'un agent personnalisé).
+   */
+  'windowsPaths',
   /** Compteur « À traiter » sur l'icône du Dock (fiche 024) ; pas d'API commune ailleurs. */
   'dockBadge',
   /**
@@ -52,6 +57,7 @@ export const ALL_FEATURES: PlatformFeatures = {
   finder: true,
   // Nom propre à Windows : faux sur le Mac, comme les autres valeurs de cette table.
   explorer: false,
+  windowsPaths: false,
   dockBadge: true,
   appMenu: true,
   insetTitleBar: true,

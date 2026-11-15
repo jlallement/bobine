@@ -700,16 +700,80 @@ et gardent la leur à l'identique (essais « Unix : comme avant ») ; `resetPath
 `explorer`, fausse sur le Mac et sous Linux (libellés inchangés) ; `AppInfo.preview` absent hors
 Windows ; `ApiKeyStore` garde le message du trousseau hors Windows.
 
-### Questions à trancher
+### Décisions (Jérôme, 2026-11-15)
 
-1. **Commande `bobine` sous Windows** : masquée pour l'instant. Recommandation : un `bobine.cmd`
-   installé par l'installeur NSIS dans un dossier ajouté au PATH de l'utilisateur, plus tard, sur
-   demande.
-2. **Dossier daté quand la Corbeille est inutilisable** : il reste à côté du dossier de données
-   (`%APPDATA%\Bobine — données du …`) sans que l'app le dise. Recommandation : le dire au
-   lancement suivant (même canal que l'échec, `reportResetFailure`).
-3. **`LC_ALL=C` pour git** : non ajouté, faute de pouvoir l'éprouver avec MinGit. Recommandation :
-   l'essayer avec Git for Windows complet au lot 7 avant d'en décider.
+1. **Commande `bobine` sous Windows** : « Plus tard ». Masquée dans la préversion ; travail futur :
+   un `bobine.cmd` posé dans le PATH de l'utilisateur par l'installeur NSIS.
+2. **Corbeille inutilisable** : « Le dire au lancement ». Fait : l'assistant laisse une note
+   (`reinitialisation-hors-corbeille.txt`, `RESET_KEPT_NAME`) avec le chemin du dossier daté ; la
+   Bobine suivante la lit une fois (`takeResetKept`) et le dit (« Bobine a été réinitialisée, mais
+   la Corbeille de Windows n'a pas accepté ses anciennes données : elles sont restées dans … »).
+   Essai unitaire, et essai réel dans la VM par SSH (Corbeille inutilisable) : note écrite, lue une
+   fois, dossier daté à côté du dossier de données.
+3. **`LC_ALL=C` pour git** : à essayer au lot 7 avec Git for Windows complet.
+
+### Essais de l'app installée dans la VM (2026-11-15)
+
+Installeur arm64 construit sur le Mac (`pnpm package --win --arm64`, quatre fois au fil des
+correctifs), copié avec son empreinte SHA-256 vérifiée dans la VM, installé en silence (`/S`),
+puis mis à jour par-dessus. Pilotage : Bobine lancée sur le bureau de la VM (tâche planifiée
+interactive) avec `--remote-debugging-port`, pilotée depuis le Mac par un tunnel SSH vers ce port
+(`scripts/pilote/cdp.mjs`) ; écran relu par captures de la fenêtre de VMware. Agent : l'agent
+factice empaqueté en un fichier (esbuild), lancé par le `node.exe` de la VM comme **agent
+personnalisé** (l'agent factice intégré passe par `ELECTRON_RUN_AS_NODE`, coupé dans l'app
+packagée).
+
+- **Toasts** : émis pour de vrai (base `wpndatabase.db` de Windows : expéditeur `dev.bobine.app`,
+  « Factice VM · Bonjour depuis la ligne de commande / Demande une autorisation : Modification de
+  config.json »), avec l'icône et le nom « Bobine » dans le centre de notifications. **Clic** :
+  depuis le centre de notifications, le toast disparaît mais la fenêtre réduite **ne revient pas**
+  (suivi 15 s, après un témoin de 28 s sans clic) : limite d'Electron sans activateur COM (le
+  raccourci de l'installeur n'a pas de `ToastActivatorCLSID`). Le clic sur le toast qui surgit à
+  l'écran n'a pas pu être saisi à temps : **non vérifié**. À traiter (lot 7) : activateur COM, ou
+  relancer l'app au clic (`second-instance` ramène déjà la fenêtre).
+- **DPAPI** : clé d'API d'un agent personnalisé enregistrée (« Enregistrée ») ; dans
+  `api-keys.json`, valeur chiffrée (préfixe `v10` de Chromium), pas de texte clair ; **après
+  redémarrage de l'app**, l'agent a reçu la clé (empreinte SHA-256 notée par un relais, identique
+  à celle de la clé saisie). Clé de test, jamais un vrai secret.
+- **Instance unique, `Bobine.exe "<dossier>" "<message>"`** : la seconde exécution sort (code 0),
+  toujours 5 processus Bobine ; la fenêtre ouverte reçoit le dossier (`projet é`) et le message est
+  posé dans la saisie, pas envoyé.
+- **Polices** dans Réglages › Apparence : 136 familles, 21 à chasse fixe (Cascadia, Consolas,
+  Courier New, Lucida Console…), polices d'icônes écartées.
+- **Recommencer à neuf** depuis Réglages › Données : plan affiché, « Tout effacer et fermer » ;
+  Bobine se ferme, le dossier daté (`bobine` + LISEZ-MOI) arrive dans la **Corbeille** (session de
+  bureau : témoin accepté), Bobine se relance d'elle-même sur un profil neuf (sans clés). Scripts
+  temporaires effacés.
+- **Essayer Bobine comme neuve** : seconde Bobine sur un profil temporaire ; fermée, son dossier
+  est **effacé en moins de 6 s** (après correctif, voir plus bas).
+- Au passage : l'app installée dit « git est introuvable sur ce PC. Installez Git for Windows… »
+  (git n'est pas dans le PATH du système de la VM).
+- **Défauts trouvés et corrigés** dans cette passe (chacun avec son essai) :
+  - **Commande d'un agent personnalisé** découpée selon les règles du shell Unix : `\` y échappe,
+    `C:\Users\…\node.exe` devenait `C:Users…node.exe` (« Commande introuvable »). Capacité
+    **`windowsPaths`** (Windows seulement) : formulaire et main découpent à la Windows (`\`
+    littéral ; règle de `CommandLineToArgvW` devant `"` entre guillemets doubles). Revérifié dans
+    la VM : commande collée sans guillemets, agent « Prêt ».
+  - **Profil temporaire jamais effacé** : à la fermeture, l'app efface d'abord le dossier
+    elle-même ; sous Windows, un fichier encore ouvert fait lever `EPERM`, et l'exception sortait
+    avant le lancement de l'assistant. Rattrapée ; l'assistant attend aussi les processus
+    auxiliaires de Chromium (enfants directs de l'app, 10 s au plus), puis réessaie l'effacement.
+  - **Plan de réinitialisation** : « Et la clé Bobine Safe Storage du trousseau » ne s'affiche plus
+    sous Windows (la clé DPAPI est dans `Local State`, déjà dans le dossier de données).
+- **Textes « Mac » vus à l'écran** (à reprendre au lot 8 ; 29 clés de `fr.json` parlent du Mac ou
+  du trousseau, et Linux les montre déjà) : accueil « agent de code installé sur ce Mac »,
+  « chiffrée dans le trousseau macOS », « Agents comme sur un Mac neuf », « Serif (New York) »,
+  « SF Mono (système) ».
+- **Installations dans la VM** : l'app (installée, mise à jour, puis désinstallée par sa commande
+  enregistrée : dossier, raccourcis et entrée de désinstallation retirés ; un premier essai de
+  désinstallation, lancé autrement, n'avait rien fait). Dossier de données d'essai, élément de
+  Corbeille, tâches planifiées et dossier `bobine-229-lot5` effacés ensuite. **Gardé** : MinGit
+  (`C:\Users\jerome\bobine-229\git`), pour le lot 7.
+- **À signaler** : la fenêtre PowerShell administrateur ouverte dans la VM depuis 15 h 21 n'y
+  était plus vers 19 h 58 ; aucun de mes essais ne l'a visée (seuls des processus repérés par leur
+  ligne de commande, ou les fenêtres de Bobine, ont été fermés). Six profils `bobine-profil-*` de
+  16 h 49 à 17 h 24 (essais du lot 6, avant le ménage Windows) et d'autres créés par les essais
+  vitest du lot 7a restent dans `%TEMP%` : pas à moi, laissés.
 
 ## Essais
 
@@ -953,3 +1017,13 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   `./scripts/verify` vert (492 fichiers, 4 570 essais) ; `pnpm e2e git changes notifications
   settings about worktree-cycle worktree-setup platform fresh-start` : 17/17 (clair et sombre),
   captures regardées (Mac inchangé).
+- 2026-11-15 — **Lots 4-5, essais de l'app installée dans la VM** : toasts émis (clic depuis le
+  centre de notifications sans retour de la fenêtre : limite d'Electron, à traiter), DPAPI relu
+  après redémarrage, instance unique et `Bobine.exe <dossier>`, polices, réinitialisation vers la
+  Corbeille et profil temporaire depuis l'interface. Trois défauts trouvés et corrigés (commande
+  d'agent personnalisé à la Windows, capacité `windowsPaths` ; profil temporaire jamais effacé ;
+  trousseau dans le plan). Décisions de Jérôme : commande `bobine` plus tard ; dossier hors
+  Corbeille dit au lancement (fait) ; `LC_ALL=C` au lot 7. App désinstallée, VM rangée (git
+  gardé).
+  `./scripts/verify` vert (4 574 essais) ; `pnpm e2e custom-agent fresh-start platform settings`
+  7/7 (clair et sombre).
