@@ -577,4 +577,15 @@ lancé, rien d'autre à installer sur le Mac.
 
   Pas de bug de l'app propre à x64. À noter : sans libnotify (une AppImage sur un système qui
   ne l'a pas), l'app n'affiche aucune notification et ne le dit pas ; à reprendre avec le lot 3.
+- 2026-11-15 — **Deuxième passage complet sur GitHub** (run 43730467293, `main` 193f9de, avec
+  `libnotify4`) : **184/202** ; `notifications` et `inbox` passent. Les 22 tâches rouges :
+
+  | Suites | Cause | Suite donnée |
+  |---|---|---|
+  | `aurore` (×2, 2 vérifications) | **Nouveau, essai** : la suite attendait le flou du verre, que `no-glass` retire hors macOS | Vérifications par la capacité `glass` : flou sur macOS (inchangé), `none` ailleurs |
+  | `onboarding` (×2, et un thème au passage précédent) | **Essai propre au Mac** : hors macOS, fermer la dernière fenêtre quitte l'app (`window-all-closed`), tous les agents s'arrêtent ; l'essai attendait le nombre d'avant, 0 ou 1 selon que l'agent de la conversation avait démarré | Attendu : 0 agent hors macOS, inchangé sur macOS |
+  | `perf` (×2, 2 vérifications) | **Charge** : des durées mesurées pendant que deux autres apps d'essai tournent sur 2 cœurs | `perf` seule (`alone`), sans toucher aux seuils |
+  | `user-commands`, `session` (infobulle), `gitlab`, `filles-fusion`, `roles-gestion` (infobulle), `permissions` : un thème chacun | **Instabilité** : vertes dans l'autre thème, dans Docker et au passage précédent pour la plupart | Job Linux en `--jobs 2` (2 cœurs) |
+  | `terminal`, `roles-travail`, `plan`, `autorisation-commande` | **Connues** : métriques de police, molette | Lot 2 |
+  | `pannes-visibles` | **Connue** : fd hérités (port DevTools) | Fiche à part |
 

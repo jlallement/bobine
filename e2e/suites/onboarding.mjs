@@ -512,8 +512,11 @@ async function cancelAndCrash(scheme) {
       } finally {
         main.close()
       }
+      // Hors macOS, fermer la dernière fenêtre quitte l'app (`window-all-closed`, index.ts) : plus
+      // aucun agent, celui de la conversation compris. Sur macOS, l'app reste : celui-là reste.
+      const after = process.platform === 'darwin' ? before : 0
       check(
-        (await waitCount(userData, before)) === before,
+        (await waitCount(userData, after)) === after,
         'fenêtre fermée pendant l’essai : son agent arrêté'
       )
     },
