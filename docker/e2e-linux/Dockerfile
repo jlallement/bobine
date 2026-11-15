@@ -37,8 +37,9 @@ RUN set -eu; \
     rm -f "$file" SHASUMS256.txt; \
     node -v
 
-# pnpm à la version de `packageManager` (passée par `scripts/e2e-linux`).
-RUN npm install -g corepack@latest && corepack enable && corepack install -g "pnpm@${PNPM_VERSION}"
+# corepack épinglé (image reproductible) ; pnpm à la version de `packageManager` (passée par
+# `scripts/e2e-linux`).
+RUN npm install -g corepack@0.36.0 && corepack enable && corepack install -g "pnpm@${PNPM_VERSION}"
 
 # Un utilisateur ordinaire : Electron refuse de tourner en root avec son bac à sable, et c'est le
 # cas d'un vrai poste. Son dossier personnel est un volume Docker (sources copiées, node_modules

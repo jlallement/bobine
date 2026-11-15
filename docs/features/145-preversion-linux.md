@@ -199,8 +199,8 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   sauté. Nouvelle suite `platform` : l'app avec les capacités du Mac puis de Linux, sur le Mac.
   Le faux `xcrun` reste tel quel (script `sh`, sans effet sans simulateur).
 - ✅ Suites mêlées conditionnées par les capacités (`FEATURES` de `e2e/lib.mjs`, 2026-11-15) :
-  compteur du Dock (`inbox`, `notifications` ; nouvelle capacité `dockBadge`, le main ne pose
-  plus le compteur sans elle), capture d'écran (`quick`, `composer`, `annotate` : image collée à
+  compteur du Dock (`inbox`, `notifications` ; nouvelle capacité `dockBadge` : sans elle, le main
+  ne pose pas le compteur et Réglages ne proposent ni le réglage ni son résultat de recherche), capture d'écran (`quick`, `composer`, `annotate` : image collée à
   la place), iOS et AXe (`mcp`, `diagnostic`, `panel`), police du code (`fun` : Menlo par AppKit,
   DejaVu Sans Mono par fontconfig), fenêtre À propos (`minimizable`, sans effet sous Linux) et
   système des infos techniques (`about`). Sur macOS, mêmes vérifications qu'avant. Le rebond du Dock (`settings`,
@@ -401,7 +401,7 @@ lancé, rien d'autre à installer sur le Mac.
   `simulator` sautée ; le passage GitHub du 25/10 en comptait 125). Fait :
   - Lot 5 : vérifications du Mac conditionnées par `FEATURES` (capacités de `platform.ts`, par
     `e2e/lib.mjs`) ; nouvelle capacité **`dockBadge`** (compteur posé par le main seulement avec
-    elle ; le réglage reste affiché sous Linux : textes Dock du lot 2). Sur macOS, mêmes
+    elle ; sans elle, réglage et résultat de recherche masqués, après relecture du tech lead). Sur macOS, mêmes
     vérifications (deux attentes ajoutées : voir plus bas).
   - Corrigé dans l'app : fenêtre rapide sans bouton de capture sans `screenCapture` (oublié au
     lot 1) ; **fenêtre rapide qui ne rapetissait plus** après l'annotation (Electron fige min =
@@ -434,5 +434,6 @@ lancé, rien d'autre à installer sur le Mac.
   - **Molette de synthèse** : `autorisation-commande` (bout du bloc qui fait défiler le fil ;
     dans les 2 tâches ci-dessus), à regarder.
   - **Intermittents, un seul thème** : `filles` (light), `finitions` (dark).
+  - Image Docker : corepack épinglé (0.36.0, celui de l'image essayée).
   - Lot 2 seul : aucune suite (les textes ⌘ et Dock ne sont pas vérifiés par les e2e).
 

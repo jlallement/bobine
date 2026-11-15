@@ -2,7 +2,18 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, LANG, dockBadgeIs, MAIN_PORT, check, mainProcess, sleep, withApp, M } from '../lib.mjs'
+import {
+  FEATURES,
+  L,
+  LANG,
+  dockBadgeIs,
+  MAIN_PORT,
+  check,
+  mainProcess,
+  sleep,
+  withApp,
+  M
+} from '../lib.mjs'
 import { conversationTooltip } from '../sidebar-tooltip.mjs'
 
 /**
@@ -188,32 +199,52 @@ async function inbox(ui, main) {
   )
   await ui.shot('inbox-1-etats-sur-place')
 
-  // Réglage « Compteur sur l'icône du Dock », trouvé par la recherche des réglages.
+  // Réglage « Compteur sur l'icône du Dock », trouvé par la recherche des réglages ; seulement là
+  // où la plateforme a ce compteur (fiche 145), absent ailleurs.
   await main.evaluate(
     `(require('electron').Menu.getApplicationMenu().getMenuItemById('settings').click(), true)`
   )
   await ui.waitFor(`!!${ui.$('settings')}`)
   await ui.ev(`${ui.$('settings-search')}.focus(); true`)
-  await ui.type(LANG === 'en' ? 'dock icon count' : 'compteur')
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=settings-result]')].some((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBadge.label'))}))`
-  )
-  await ui.enter()
-  await ui.waitFor(`!!${ui.$('settings-dock-badge')}`)
-  check(
-    await ui.ev(`${ui.$('settings-dock-badge')}.checked`),
-    'Réglages › Général : « Compteur sur l’icône du Dock », activé par défaut'
-  )
-  await ui.click(ui.$('settings-dock-badge'))
-  await ui.waitFor(`!${ui.$('settings-dock-badge')}.checked`)
-  for (let i = 0; i < 30 && !(await badgeIs('')); i++) await sleep(100)
-  check(await badgeIs(''), 'réglage coupé : plus de compteur sur l’icône')
-  await ui.ev(`${ui.$('settings-dock-badge')}.scrollIntoView({ block: 'center' }), true`)
-  await ui.shot('inbox-2-reglage-compteur')
-  await ui.click(ui.$('settings-dock-badge'))
-  await ui.waitFor(`${ui.$('settings-dock-badge')}.checked`)
-  for (let i = 0; i < 30 && !(await badgeIs('4')); i++) await sleep(100)
-  check(await badgeIs('4'), 'réglage rétabli : le compteur revient')
+  if (FEATURES.dockBadge) {
+    await ui.type(LANG === 'en' ? 'dock icon count' : 'compteur')
+    await ui.waitFor(
+      `[...document.querySelectorAll('[data-testid=settings-result]')].some((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBadge.label'))}))`
+    )
+    await ui.enter()
+    await ui.waitFor(`!!${ui.$('settings-dock-badge')}`)
+    check(
+      await ui.ev(`${ui.$('settings-dock-badge')}.checked`),
+      'Réglages › Général : « Compteur sur l’icône du Dock », activé par défaut'
+    )
+    await ui.click(ui.$('settings-dock-badge'))
+    await ui.waitFor(`!${ui.$('settings-dock-badge')}.checked`)
+    for (let i = 0; i < 30 && !(await badgeIs('')); i++) await sleep(100)
+    check(await badgeIs(''), 'réglage coupé : plus de compteur sur l’icône')
+    await ui.ev(`${ui.$('settings-dock-badge')}.scrollIntoView({ block: 'center' }), true`)
+    await ui.shot('inbox-2-reglage-compteur')
+    await ui.click(ui.$('settings-dock-badge'))
+    await ui.waitFor(`${ui.$('settings-dock-badge')}.checked`)
+    for (let i = 0; i < 30 && !(await badgeIs('4')); i++) await sleep(100)
+    check(await badgeIs('4'), 'réglage rétabli : le compteur revient')
+  } else {
+    // « dock » mène aussi au rebond, proposé partout : la recherche a répondu sans le compteur.
+    await ui.type('dock')
+    const results = `[...document.querySelectorAll('[data-testid=settings-result]')].map((r) => r.innerText).join('\\n')`
+    await ui.waitFor(
+      `${results}.includes(${JSON.stringify(L('settings.notifications.dockBounce.label'))})`
+    )
+    const found = await ui.ev(results)
+    await ui.click(
+      `[...document.querySelectorAll('[data-testid=settings-result]')].find((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBounce.label'))}))`
+    )
+    await ui.waitFor(`!!${ui.$('settings-dock-bounce')}`)
+    check(
+      !found.includes(L('settings.notifications.dockBadge.label')) &&
+        !(await ui.ev(`!!${ui.$('settings-dock-badge')}`)),
+      'sans compteur sur l’icône : ni réglage ni résultat de recherche'
+    )
+  }
   await ui.key('Escape')
   await ui.waitFor(`!${ui.$('settings')}`)
 

@@ -1,6 +1,7 @@
 import { TriangleExclamationPoint, Volume2 } from 'lucide-react'
 import { ATTENTION_SOUNDS, type AttentionSound, type Preferences } from '@shared/preferences'
 import { useTranslation } from 'react-i18next'
+import { platformFeatures } from '../../platform-features'
 import { Row, SettingsCard, SettingsTitle } from './rows'
 
 /**
@@ -69,23 +70,26 @@ export function NotificationsSettings({
             <span />
           </label>
         </Row>
-        {/* Compteur « À traiter » du Dock (fiche 119) : coupé avec les notifications. */}
-        <Row
-          sub
-          label={t('settings.notifications.dockBadge.label')}
-          hint={t('settings.notifications.dockBadge.hint')}
-        >
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={preferences.dockBadge}
-              disabled={!notifications}
-              onChange={(e) => onPreferences({ dockBadge: e.target.checked })}
-              data-testid="settings-dock-badge"
-            />
-            <span />
-          </label>
-        </Row>
+        {/* Compteur « À traiter » du Dock (fiche 119) : coupé avec les notifications ; seulement
+            là où la plateforme l'a (fiche 145). */}
+        {platformFeatures().dockBadge && (
+          <Row
+            sub
+            label={t('settings.notifications.dockBadge.label')}
+            hint={t('settings.notifications.dockBadge.hint')}
+          >
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={preferences.dockBadge}
+                disabled={!notifications}
+                onChange={(e) => onPreferences({ dockBadge: e.target.checked })}
+                data-testid="settings-dock-badge"
+              />
+              <span />
+            </label>
+          </Row>
+        )}
       </SettingsCard>
       <SettingsTitle>{t('settings.notifications.sound')}</SettingsTitle>
       <SettingsCard>
