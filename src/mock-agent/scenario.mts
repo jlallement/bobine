@@ -823,10 +823,16 @@ async function streamChunks(
   }
 }
 
-/** Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6. */
+/**
+ * Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6. L'app la lit
+ * pendant que l'agent y écrit : sans délai d'attente, l'écriture échoue (`database is locked`) dès
+ * qu'une lecture la croise, ce qui coupait le tour au hasard (relevé sur `windows-latest`, fiche
+ * 229 ; reproduit sur le Mac : 405 écritures sur 3 000 contre un lecteur en boucle). Un écrivain
+ * SQLite attend que le verrou se libère : 5 s, le défaut de better-sqlite3.
+ */
 function openBobDb(file: string): DatabaseSync {
   mkdirSync(dirname(file), { recursive: true })
-  const db = new DatabaseSync(file)
+  const db = new DatabaseSync(file, { timeout: 5_000 })
   db.exec(`CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY, parent_id TEXT, task_type TEXT NOT NULL DEFAULT 'normal',
     title TEXT NOT NULL DEFAULT '', status TEXT, costs TEXT,
