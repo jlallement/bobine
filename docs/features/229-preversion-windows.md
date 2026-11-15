@@ -573,3 +573,7 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
   évité : une liste `files` de seules exclusions sous `mac:` faisait entrer tout le dépôt dans
   l'app (vu en listant l'`app.asar`) ; exclusions remises à la racine. La section `linux:` a déjà
   une telle liste (`!node_modules/node-pty/prebuilds/**`) : paquets Linux à vérifier (fiche 145).
+- 2026-11-15 — Rebasée sur `main` (`193f9de` : fiches 228, 230, menu opaque, CI Linux ; nouvelle
+  capacité `glass`, absente sous Windows comme sous Linux). `./scripts/verify` vert ; e2e
+  `session`, `terminal`, `commands`, `command-output`, `filles`, `pannes-visibles`, `restart`,
+  `platform`, `about` en clair et sombre : 16/16.
