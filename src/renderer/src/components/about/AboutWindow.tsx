@@ -85,6 +85,11 @@ export function AboutWindow() {
           date: formatBuildDate(info.buildDate, i18n.language)
         })}
       </div>
+      {info.preview === 'windows' && (
+        <div className="about-version" data-testid="about-preview">
+          {t('aboutWindow.windowsPreview')}
+        </div>
+      )}
       <p className="about-description">{t('settings.about.description')}</p>
       <div className="about-actions">
         <button

@@ -5,6 +5,8 @@
 import type { GitStatus } from '@shared/git'
 import type { Run } from '../simulator/run'
 import { gitError } from '../changes/git-errors'
+import { missingGitMessage } from './git-queue'
+import { nativeGitPath } from './git-platform'
 import { t } from 'i18next'
 
 const text = (b: Buffer) => b.toString('utf8')
@@ -13,7 +15,7 @@ const text = (b: Buffer) => b.toString('utf8')
 export function notARepoOrError(stderr: string): null {
   if (/not a git repository/i.test(stderr)) return null
   if (/ENOENT/.test(stderr)) {
-    throw new Error(t('git.missing'))
+    throw new Error(missingGitMessage())
   }
   throw new Error(stderr.trim().split('\n').at(-1) || t('git.failed'))
 }
@@ -72,7 +74,7 @@ export class GitRepo {
     }
     const parsed = parseStatusV2(text(status.stdout))
     return {
-      root: text(top.stdout).trim(),
+      root: nativeGitPath(text(top.stdout).trim()),
       ...(parsed.branch ? { branch: parsed.branch } : {}),
       ...(parsed.upstream ? { upstream: parsed.upstream } : {}),
       ahead: parsed.ahead,

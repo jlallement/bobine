@@ -9,6 +9,14 @@ export function platformFeatures(): PlatformFeatures {
   return (window.api as Partial<Window['api']>).app?.features ?? ALL_FEATURES
 }
 
+/** Libellé « Afficher dans… » : le Finder, l'Explorateur (Windows), sinon le gestionnaire de fichiers. */
+export function revealLabelKey(
+  features: Pick<PlatformFeatures, 'finder' | 'explorer'>
+): 'workspaceMenu.revealFinder' | 'workspaceMenu.revealExplorer' | 'workspaceMenu.revealFiles' {
+  if (features.finder) return 'workspaceMenu.revealFinder'
+  return features.explorer ? 'workspaceMenu.revealExplorer' : 'workspaceMenu.revealFiles'
+}
+
 /**
  * Touche des raccourcis tenue (fiche 145) : ⌘ sur macOS, Ctrl ailleurs, comme les accélérateurs
  * `CmdOrCtrl` du menu. Pour les raccourcis que l'interface gère elle-même.

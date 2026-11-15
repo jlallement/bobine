@@ -1,4 +1,5 @@
 import { Bot, Cpu, FileText, Folder, GitBranch } from 'lucide-react'
+import { revealLabelKey } from '../../platform-features'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ControlValue, SessionControl } from '@shared/agent'
@@ -26,6 +27,8 @@ export interface SessionEnvironmentProps {
   onOpenGit: () => void
   /** Le Finder (macOS) ou le gestionnaire de fichiers (fiche 145). */
   finder: boolean
+  /** Windows : « Explorateur de fichiers » (fiche 229). */
+  explorer?: boolean
   /** Ligne « Autres dossiers » (fiche 179), sous le dossier de travail. */
   folders?: ReactNode
 }
@@ -49,7 +52,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 export function SessionEnvironment(props: SessionEnvironmentProps) {
   const { t } = useTranslation()
   const branch = props.worktreeBranch ?? props.gitBranch
-  const revealLabel = t(props.finder ? 'workspaceMenu.revealFinder' : 'workspaceMenu.revealFiles')
+  const revealLabel = t(revealLabelKey({ finder: props.finder, explorer: props.explorer === true }))
   return (
     <section className="session-section" data-testid="session-environment">
       <h3 className="session-title">{t('sessionTab.environment')}</h3>

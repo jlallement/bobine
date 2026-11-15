@@ -29,7 +29,7 @@ import { connectWorktreePreparation, preparedWorktrees } from './changes/worktre
 import { worktreeCycleDeps } from './changes/worktree-ipc'
 import { childrenMerger } from './conversations/children-merge-ipc'
 import { CostCapGuard } from './conversations/cost-cap'
-import { SystemNotifier } from './notifications/system-notifier'
+import { NOTIFICATION_SETTINGS, SystemNotifier } from './notifications/system-notifier'
 import { searchWorkspaceFiles } from './workspace-files'
 import { openTerminal } from './terminal/terminal-app'
 import { attachLaunch, commandLineDeps, launch, readLaunchArguments } from './launch-app'
@@ -340,7 +340,8 @@ async function start(): Promise<void> {
   const apiKeys = new ApiKeyStore(
     join(app.getPath('userData'), 'api-keys.json'),
     safeStorageCipher(safeStorage, keychainTest),
-    keychainTest
+    // Windows (fiche 229) : `safeStorage` = DPAPI, lié au compte ; rien d'autre ne change.
+    { ...keychainTest, windows: processes === 'windows' }
   )
 
   // Historique et réglages (fiche 089, ADR-0016) : ouverts d'abord, ce qui les lit vient après ;
@@ -474,9 +475,12 @@ async function start(): Promise<void> {
       broadcast('app:openConversation', id)
     },
     onBlocked: (reason) => {
-      log.warn(`Notifications refusées par macOS : ${reason}`)
+      log.warn(
+        `Notifications refusées par ${processes === 'windows' ? 'Windows' : 'macOS'} : ${reason}`
+      )
       if (!quitting) broadcast('notifications:status', { blocked: reason })
-    }
+    },
+    settingsUrl: NOTIFICATION_SETTINGS[processes]
   })
 
   // Mac éveillé tant qu'un agent travaille (réglage « Empêcher la mise en veille »).

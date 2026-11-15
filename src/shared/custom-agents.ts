@@ -67,11 +67,22 @@ export const EMPTY_DRAFT: CustomAgentDraft = {
 }
 
 /**
+ * Règles de la ligne de commande : celles d'un shell Unix (`\` échappe), ou celles de Windows
+ * (fiche 229) où `\` sépare les dossiers (`C:\Users\x\node.exe`) et ne s'échappe jamais.
+ */
+export type CommandLineStyle = 'posix' | 'windows'
+
+/**
  * Découpe une ligne de commande comme un shell, sans rien évaluer : espaces entre les mots,
  * guillemets simples (texte tel quel), doubles (`\"` et `\\` échappés), `\` hors guillemets.
- * `undefined` si un guillemet n'est pas refermé.
+ * Windows : `\` reste tel quel, sauf `\"` dans des guillemets doubles qui ne les ferme pas
+ * (`"C:\a b\"` garde son `\` final). `undefined` si un guillemet n'est pas refermé.
  */
-export function splitCommandLine(line: string): string[] | undefined {
+export function splitCommandLine(
+  line: string,
+  style: CommandLineStyle = 'posix'
+): string[] | undefined {
+  if (style === 'windows') return splitWindowsLine(line)
   const words: string[] = []
   let word: string | undefined
   let quote: '"' | "'" | undefined
@@ -101,8 +112,61 @@ export function splitCommandLine(line: string): string[] | undefined {
   return words
 }
 
+/**
+ * Windows : `\` littéral, sauf devant `"` entre guillemets doubles, où vaut la règle des programmes
+ * Windows (`CommandLineToArgvW`) : 2n `\` puis `"` donnent n `\` et ferment ; 2n+1 donnent n `\` et
+ * un `"`. `"C:\a b\\"` rend donc `C:\a b\`.
+ */
+function splitWindowsLine(line: string): string[] | undefined {
+  const words: string[] = []
+  let word: string | undefined
+  let quote: '"' | "'" | undefined
+  for (let i = 0; i < line.length; i++) {
+    const c = line.charAt(i)
+    if (quote === "'") {
+      if (c === "'") quote = undefined
+      else word += c
+    } else if (quote === '"') {
+      if (c === '\\') {
+        let n = 0
+        while (line[i + n] === '\\') n++
+        if (line[i + n] === '"') {
+          word += '\\'.repeat(Math.floor(n / 2)) + (n % 2 ? '"' : '')
+          if (n % 2 === 0) quote = undefined
+          i += n
+        } else {
+          word += '\\'.repeat(n)
+          i += n - 1
+        }
+      } else if (c === '"') quote = undefined
+      else word += c
+    } else if (/\s/.test(c)) {
+      if (word !== undefined) words.push(word)
+      word = undefined
+    } else if (c === '"' || c === "'") {
+      quote = c
+      word ??= ''
+    } else {
+      word = (word ?? '') + c
+    }
+  }
+  if (quote) return undefined
+  if (word !== undefined) words.push(word)
+  return words
+}
+
+/** Un mot entre guillemets doubles, relu tel quel par `splitWindowsLine`. */
+const quoteWindowsWord = (w: string) =>
+  `"${w.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`
+
 /** Ligne de commande qui redonne ces mots par `splitCommandLine` (guillemets doubles au besoin). */
-export function joinCommandLine(words: readonly string[]): string {
+export function joinCommandLine(
+  words: readonly string[],
+  style: CommandLineStyle = 'posix'
+): string {
+  if (style === 'windows') {
+    return words.map((w) => (/^[^\s"']+$/.test(w) ? w : quoteWindowsWord(w))).join(' ')
+  }
   return words
     .map((w) => (/^[\w@%+=:,./~-]+$/.test(w) ? w : `"${w.replace(/(["\\])/g, '\\$1')}"`))
     .join(' ')
@@ -153,7 +217,10 @@ export function draftFrom(raw: unknown): CustomAgentDraft {
 }
 
 /** Erreurs du formulaire, champ par champ ; vide : il peut être enregistré. */
-export function draftProblems(draft: CustomAgentDraft): CustomAgentProblem[] {
+export function draftProblems(
+  draft: CustomAgentDraft,
+  style: CommandLineStyle = 'posix'
+): CustomAgentProblem[] {
   const problems: CustomAgentProblem[] = []
   const label = draft.label.trim()
   if (!label) problems.push({ field: 'label', key: 'customAgents.problem.labelMissing' })
@@ -163,7 +230,7 @@ export function draftProblems(draft: CustomAgentDraft): CustomAgentProblem[] {
       key: 'customAgents.problem.labelLong',
       params: { max: MAX_LABEL }
     })
-  const words = splitCommandLine(draft.commandLine)
+  const words = splitCommandLine(draft.commandLine, style)
   if (!words) problems.push({ field: 'commandLine', key: 'customAgents.problem.quote' })
   else if (!words[0])
     problems.push({ field: 'commandLine', key: 'customAgents.problem.commandMissing' })
@@ -193,8 +260,12 @@ export function draftProblems(draft: CustomAgentDraft): CustomAgentProblem[] {
 }
 
 /** L'agent d'un formulaire sans erreur (`draftProblems` vide). */
-export function agentFromDraft(draft: CustomAgentDraft, id: string): CustomAgent {
-  const [command = '', ...args] = splitCommandLine(draft.commandLine) ?? []
+export function agentFromDraft(
+  draft: CustomAgentDraft,
+  id: string,
+  style: CommandLineStyle = 'posix'
+): CustomAgent {
+  const [command = '', ...args] = splitCommandLine(draft.commandLine, style) ?? []
   const apiKeyEnv = draft.apiKeyEnv.trim()
   const compactCommand = draft.compactCommand.trim()
   return {
@@ -209,10 +280,10 @@ export function agentFromDraft(draft: CustomAgentDraft, id: string): CustomAgent
 }
 
 /** Le formulaire d'un agent déclaré, pour le modifier. */
-export function draftOf(agent: CustomAgent): CustomAgentDraft {
+export function draftOf(agent: CustomAgent, style: CommandLineStyle = 'posix'): CustomAgentDraft {
   return {
     label: agent.label,
-    commandLine: joinCommandLine([agent.command, ...agent.args]),
+    commandLine: joinCommandLine([agent.command, ...agent.args], style),
     envText: formatEnvLines(agent.env),
     apiKeyEnv: agent.apiKeyEnv ?? '',
     compactCommand: agent.compactCommand ?? ''

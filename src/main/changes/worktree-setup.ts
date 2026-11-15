@@ -13,6 +13,7 @@ import type { Readable } from 'node:stream'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
+import { nativeGitPath } from '../git/git-platform'
 import {
   ARCHIVE_TIMEOUT_MS,
   SETUP_TIMEOUT_MS,
@@ -468,7 +469,7 @@ export class WorktreePreparation {
         timeoutMs: 10_000
       })
       .catch(() => undefined)
-    const common = result?.code === 0 ? result.stdout.toString('utf8').trim() : ''
+    const common = result?.code === 0 ? nativeGitPath(result.stdout.toString('utf8').trim()) : ''
     return common && basename(common) === '.git' ? dirname(common) : root
   }
 

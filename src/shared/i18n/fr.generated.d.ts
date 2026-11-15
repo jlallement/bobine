@@ -813,6 +813,7 @@ export type FrResources = {
       readonly transcript: 'la conversation'
     }
     readonly notice: {
+      readonly resetKeptOutsideTrash: 'Bobine a été réinitialisée, mais la Corbeille de Windows n’a pas accepté ses anciennes données : elles sont restées dans « {{folder}} ». Supprimez ce dossier vous-même quand vous n’en aurez plus besoin.'
       readonly resetFailed: 'La réinitialisation de Bobine n’a pas pu se faire : rien n’a été supprimé, vos données sont restées en place. Détail : {{detail}}'
       readonly folderGone: 'Le dossier « {{folder}} » n’existe plus.'
       readonly historyDamaged_one: 'Une partie de l’historique était illisible : le fichier a été mis de côté ({{files}}).'
@@ -921,6 +922,7 @@ export type FrResources = {
     readonly worktreeHint: 'Sa propre branche et son propre dossier, pour travailler en parallèle'
     readonly revealFinder: 'Afficher dans le Finder'
     readonly revealFiles: 'Afficher dans le gestionnaire de fichiers'
+    readonly revealExplorer: 'Afficher dans l’Explorateur de fichiers'
     readonly copyPath: 'Copier le chemin'
     readonly openTerminal: 'Ouvrir un terminal ici'
   }
@@ -3222,6 +3224,7 @@ export type FrResources = {
     readonly notRepo: 'Ce dossier n’est pas dans un dépôt git.'
     readonly noCommit: 'Le dépôt n’a pas encore de commit : un worktree part d’un commit.'
     readonly outside: 'Worktree hors de {{root}} : {{path}}'
+    readonly lockedWindows: 'Un programme garde des fichiers du worktree ouverts (serveur de développement, éditeur, antivirus) : fermez-le, puis réessayez.\n{{error}}'
     readonly notice: {
       readonly start: 'Worktree créé depuis {{branch}} au commit {{hash}} ({{date}}) : « {{subject}} ».'
       readonly startDetached: 'Worktree créé depuis le commit {{hash}} ({{date}}) : « {{subject}} ».'
@@ -3251,6 +3254,7 @@ export type FrResources = {
   readonly apiKeys: {
     readonly empty: 'Clé vide.'
     readonly invalid: 'Clé invalide.'
+    readonly noKeychainWindows: 'Le chiffrement de Windows (DPAPI) n’est pas disponible pour ce compte : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.'
     readonly noKeychain: 'Le trousseau macOS n’est pas disponible : la clé ne peut pas être enregistrée.'
     readonly keychainTimeout: 'Le trousseau macOS n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Autorisez Bobine dans la fenêtre du trousseau, puis réessayez.'
   }
@@ -3265,6 +3269,7 @@ export type FrResources = {
     readonly empty: 'L’agent n’a rien rejoué de cette session.'
   }
   readonly git: {
+    readonly missingWindows: 'git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
     readonly missing: 'git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
     readonly failed: 'git a échoué'
     readonly statusFailed: 'git status a échoué'
@@ -3787,6 +3792,7 @@ export type FrResources = {
   readonly aboutWindow: {
     readonly version: 'Version {{version}} · {{date}}'
     readonly whatsNew: 'Nouveautés'
+    readonly windowsPreview: 'Préversion Windows'
     readonly github: 'GitHub'
     readonly license: 'Licence Apache 2.0'
     readonly copyInfo: 'Copier les infos techniques'

@@ -776,6 +776,7 @@
       "transcript": "the conversation"
     },
     "notice": {
+      "resetKeptOutsideTrash": "Bobine was reset, but the Windows Recycle Bin didn’t accept its old data: it stayed in “{{folder}}”. Delete that folder yourself when you no longer need it.",
       "resetFailed": "Bobine could not be reset: nothing was deleted, your data stayed where it was. Details: {{detail}}",
       "folderGone": "The folder “{{folder}}” no longer exists.",
       "historyDamaged_one": "Part of the history was unreadable: the file was set aside ({{files}}).",
@@ -877,6 +878,7 @@
     "worktreeHint": "Its own branch and folder, to work in parallel",
     "revealFinder": "Show in Finder",
     "revealFiles": "Show in file manager",
+    "revealExplorer": "Show in File Explorer",
     "copyPath": "Copy path",
     "openTerminal": "Open a terminal here"
   },
@@ -3274,6 +3276,7 @@
     "gitFailed": "git {{command}} failed",
     "notRepo": "This folder isn’t in a git repository.",
     "noCommit": "The repository has no commit yet: a worktree starts from a commit.",
+    "lockedWindows": "A program is keeping files of the worktree open (dev server, editor, antivirus): close it, then try again.\n{{error}}",
     "outside": "Worktree outside {{root}}: {{path}}",
     "notice": {
       "start": "Worktree created from {{branch}} at commit {{hash}} ({{date}}): “{{subject}}”.",
@@ -3302,6 +3305,7 @@
   "apiKeys": {
     "empty": "Empty key.",
     "invalid": "Invalid key.",
+    "noKeychainWindows": "Windows encryption (DPAPI) isn’t available for this account: the key can’t be saved. The agent can still read it from its environment variable.",
     "noKeychain": "The macOS Keychain isn’t available: the key can’t be saved.",
     "keychainTimeout": "The macOS Keychain didn’t answer within {{seconds}} s: the key isn’t saved. Allow Bobine in the Keychain window, then try again."
   },
@@ -3316,6 +3320,7 @@
     "empty": "The agent replayed nothing from this session."
   },
   "git": {
+    "missingWindows": "git can’t be found on this PC. Install Git for Windows (git-scm.com/install/windows), then restart Bobine. Already installed? Settings › Diagnostics › Reload PATH.",
     "missing": "git can’t be found on this Mac. Install Apple’s developer tools: in Terminal, type `xcode-select --install`. Already installed? Settings › Diagnostics › Reload PATH.",
     "failed": "git failed",
     "statusFailed": "git status failed"
@@ -3791,6 +3796,7 @@
     }
   },
   "aboutWindow": {
+    "windowsPreview": "Windows preview",
     "version": "Version {{version}} · {{date}}",
     "whatsNew": "What’s new",
     "github": "GitHub",

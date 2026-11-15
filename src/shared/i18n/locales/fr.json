@@ -827,6 +827,7 @@
       "transcript": "la conversation"
     },
     "notice": {
+      "resetKeptOutsideTrash": "Bobine a été réinitialisée, mais la Corbeille de Windows n’a pas accepté ses anciennes données : elles sont restées dans « {{folder}} ». Supprimez ce dossier vous-même quand vous n’en aurez plus besoin.",
       "resetFailed": "La réinitialisation de Bobine n’a pas pu se faire : rien n’a été supprimé, vos données sont restées en place. Détail : {{detail}}",
       "folderGone": "Le dossier « {{folder}} » n’existe plus.",
       "historyDamaged_one": "Une partie de l’historique était illisible : le fichier a été mis de côté ({{files}}).",
@@ -935,6 +936,7 @@
     "worktreeHint": "Sa propre branche et son propre dossier, pour travailler en parallèle",
     "revealFinder": "Afficher dans le Finder",
     "revealFiles": "Afficher dans le gestionnaire de fichiers",
+    "revealExplorer": "Afficher dans l’Explorateur de fichiers",
     "copyPath": "Copier le chemin",
     "openTerminal": "Ouvrir un terminal ici"
   },
@@ -3381,6 +3383,7 @@
     "notRepo": "Ce dossier n’est pas dans un dépôt git.",
     "noCommit": "Le dépôt n’a pas encore de commit : un worktree part d’un commit.",
     "outside": "Worktree hors de {{root}} : {{path}}",
+    "lockedWindows": "Un programme garde des fichiers du worktree ouverts (serveur de développement, éditeur, antivirus) : fermez-le, puis réessayez.\n{{error}}",
     "notice": {
       "start": "Worktree créé depuis {{branch}} au commit {{hash}} ({{date}}) : « {{subject}} ».",
       "startDetached": "Worktree créé depuis le commit {{hash}} ({{date}}) : « {{subject}} ».",
@@ -3410,6 +3413,7 @@
   "apiKeys": {
     "empty": "Clé vide.",
     "invalid": "Clé invalide.",
+    "noKeychainWindows": "Le chiffrement de Windows (DPAPI) n’est pas disponible pour ce compte : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.",
     "noKeychain": "Le trousseau macOS n’est pas disponible : la clé ne peut pas être enregistrée.",
     "keychainTimeout": "Le trousseau macOS n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Autorisez Bobine dans la fenêtre du trousseau, puis réessayez."
   },
@@ -3424,6 +3428,7 @@
     "empty": "L’agent n’a rien rejoué de cette session."
   },
   "git": {
+    "missingWindows": "git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
     "missing": "git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
     "failed": "git a échoué",
     "statusFailed": "git status a échoué"
@@ -3948,6 +3953,7 @@
   "aboutWindow": {
     "version": "Version {{version}} · {{date}}",
     "whatsNew": "Nouveautés",
+    "windowsPreview": "Préversion Windows",
     "github": "GitHub",
     "license": "Licence Apache 2.0",
     "copyInfo": "Copier les infos techniques",

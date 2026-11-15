@@ -9,10 +9,22 @@
  * élément, puis relance l'app. Jamais touchés : les projets et leurs worktrees, les dossiers
  * des agents.
  */
-import { spawn as nodeSpawn, type SpawnOptions } from 'node:child_process'
+import {
+  spawn as nodeSpawn,
+  spawnSync as nodeSpawnSync,
+  type SpawnOptions,
+  type SpawnSyncOptions
+} from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { lstat, readdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
+import { launchSystem, windowsPowerShell, type ProcessSystem } from './process-launch'
+import {
+  detachedPowerShell,
+  RESET_KEPT_NAME,
+  selfDeleting,
+  windowsResetScript
+} from './reset-windows'
 import { RESET_KINDS, type ResetItem, type ResetKind } from '@shared/fresh-start'
 
 /** Entrées du dossier de données propres à l'interface (Chromium) : rangées avec les réglages. */
@@ -88,6 +100,11 @@ export interface ResetJob {
   relaunch?: string[]
   /** Attente maximale de la fin de Bobine, en dixièmes de seconde (60 s ; les essais l'abrègent). */
   waitTenths?: number
+  /**
+   * Windows (fiche 229) : le dossier daté part ensuite dans la Corbeille de Windows ; `false`
+   * (essais) le laisse dans `trashDir`. Sans effet sur macOS, où `trashDir` est la corbeille.
+   */
+  recycle?: boolean
 }
 
 /** Nom du dossier daté : « Bobine — données du 2026-10-24 20.15 » (pas de « : » sur macOS). */
@@ -203,7 +220,11 @@ export function helperEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 export interface ResetLaunchIo {
   /** Où écrire l'en-tête du LISEZ-MOI (les fichiers temporaires). */
   tmp: string
+  /** Système des processus (défaut : celui de la machine) ; Windows : assistant PowerShell. */
+  system?: ProcessSystem
   spawn?: (command: string, args: string[], options: SpawnOptions) => { unref: () => void }
+  /** Windows : relais attendu jusqu'au bout (`detachedPowerShell`). */
+  spawnSync?: (command: string, args: string[], options: SpawnSyncOptions) => unknown
 }
 
 /**
@@ -214,6 +235,15 @@ export function launchReset(job: ResetJob, io: ResetLaunchIo): string {
   const header = join(io.tmp, `bobine-reinitialisation-${job.pid}.txt`)
   writeFileSync(header, job.readme + '\n')
   const spawn = io.spawn ?? ((c, a, o) => nodeSpawn(c, a, o))
+  if ((io.system ?? launchSystem()) === 'windows') {
+    // Relais attendu (≈ 1 s, l'app quitte de toute façon) : voir `detachedPowerShell`.
+    const scriptFile = join(io.tmp, `bobine-reinitialisation-${job.pid}.ps1`)
+    writeFileSync(scriptFile, selfDeleting(windowsResetScript(job, header), scriptFile))
+    const [command, args] = detachedPowerShell(windowsPowerShell(process.env), scriptFile)
+    const relay = io.spawnSync ?? ((c, a, o) => nodeSpawnSync(c, a, o))
+    relay(command, args, { stdio: 'ignore', windowsHide: true, env: helperEnv(process.env) })
+    return header
+  }
   spawn('/bin/sh', ['-c', RESET_HELPER, 'bobine-reset', ...resetHelperArgs(job, header)], {
     detached: true,
     stdio: 'ignore',
@@ -227,7 +257,18 @@ export function launchReset(job: ResetJob, io: ResetLaunchIo): string {
  * supprimé, son texte rendu ; rien s'il n'y en a pas.
  */
 export function takeResetFailure(userData: string): string | undefined {
-  const file = join(userData, RESET_FAILURE_NAME)
+  return takeNote(join(userData, RESET_FAILURE_NAME))
+}
+
+/**
+ * Windows (fiche 229) : dossier daté laissé en place, la Corbeille l'ayant refusé (note de
+ * l'assistant), lu une fois ; rien s'il n'y en a pas.
+ */
+export function takeResetKept(userData: string): string | undefined {
+  return takeNote(join(userData, RESET_KEPT_NAME))
+}
+
+function takeNote(file: string): string | undefined {
   let text: string
   try {
     text = readFileSync(file, 'utf8')
@@ -241,5 +282,8 @@ export function takeResetFailure(userData: string): string | undefined {
 /** Chemins à mettre à la corbeille : ceux qui existent, sans doublon ni chemin contenu dans un autre. */
 export function resetPaths(paths: readonly (string | undefined)[]): string[] {
   const unique = [...new Set(paths.filter((p): p is string => !!p && existsSync(p)))]
-  return unique.filter((p) => !unique.some((other) => other !== p && p.startsWith(`${other}/`)))
+  // Séparateur du système : `/` sur macOS (comme avant), `\` sous Windows (fiche 229).
+  return unique.filter(
+    (p) => !unique.some((other) => other !== p && p.startsWith(`${other}${sep}`))
+  )
 }

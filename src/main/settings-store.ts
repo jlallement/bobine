@@ -7,6 +7,7 @@
  *
  * N'importe pas `electron` : testable sous Vitest.
  */
+import { launchSystem } from './process-launch'
 import type { OnboardingMark } from '@shared/onboarding'
 import { createHmac, randomBytes } from 'node:crypto'
 import {
@@ -483,7 +484,9 @@ export class SettingsStore {
    */
   saveCustomAgent(rawDraft: unknown, id?: string): string {
     const draft = draftFrom(rawDraft)
-    const problem = draftProblems(draft)[0]
+    // Windows (fiche 229) : `\` des chemins littéral ; ailleurs, règles du shell comme avant.
+    const style = launchSystem() === 'windows' ? 'windows' : 'posix'
+    const problem = draftProblems(draft, style)[0]
     if (problem) throw new Error(translate(problem))
     const agents = this.settings.customAgents ?? []
     const previous = id === undefined ? undefined : agents.find((a) => a.id === id)
@@ -494,7 +497,8 @@ export class SettingsStore {
         newCustomAgentId(
           draft.label,
           this.options.profiles.map((p) => p.id)
-        )
+        ),
+      style
     )
     if (previous?.apiKeyEnv && previous.apiKeyEnv !== agent.apiKeyEnv) this.forgetKey(previous)
     this.setCustomAgents(

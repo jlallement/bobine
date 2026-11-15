@@ -3,20 +3,22 @@
  * l'import, avant tout usage du dossier de données) et ce que l'interface en demande par IPC.
  */
 import { homedir, tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { app } from 'electron'
 import { t } from 'i18next'
 import type { FreshStartInfo, ResetPlan } from '@shared/fresh-start'
 import type { Message } from '@shared/i18n/message'
 import { createFreshStart, resetRelaunch } from './fresh-start'
 import { log } from './log'
+import { launchSystem } from './process-launch'
 import {
   launchReset,
   RESET_FAILURE_NAME,
   resetFolderName,
   resetInventory,
   resetPaths,
-  takeResetFailure
+  takeResetFailure,
+  takeResetKept
 } from './reset'
 import { bundleOf, installDirs, isInstalled } from './self-install'
 
@@ -49,6 +51,7 @@ export interface FreshStartIpc {
 function relaunchAfterReset(installed: string | undefined, userData: string): string[] | undefined {
   const testOpener = process.env['BOBINE_RESET_RELAUNCH']
   if (testOpener === 'off') return undefined
+  if (launchSystem() === 'windows') return windowsRelaunch(userData)
   const bundle = testOpener && app.isPackaged ? bundleOf(process.execPath) : installed
   if (!bundle) return undefined
   return resetRelaunch({
@@ -57,6 +60,31 @@ function relaunchAfterReset(installed: string | undefined, userData: string): st
     temporary: freshStart.temporary,
     ...(freshStart.isolated ? { userDataDir: resolve(userData) } : {})
   })
+}
+
+/**
+ * Windows (fiche 229) : `Bobine.exe` lui-même (pas de `.app` ni d'`open`), avec le dossier de
+ * données imposé de ce lancement s'il y en a un ; l'app installée seulement, comme sur le Mac.
+ */
+function windowsRelaunch(userData: string): string[] | undefined {
+  if (freshStart.temporary || !app.isPackaged) return undefined
+  return [
+    process.execPath,
+    ...(freshStart.isolated ? [`--user-data-dir=${resolve(userData)}`] : [])
+  ]
+}
+
+/**
+ * Où va le dossier daté : la corbeille de macOS ; sous Windows, à côté du dossier de données (même
+ * volume), d'où l'assistant l'envoie dans la Corbeille (`reset-windows.ts`). `BOBINE_TRASH_DIR`
+ * (essais) : ce dossier, sans la vraie Corbeille.
+ */
+function trashOf(userData: string): { trashDir: string; recycle?: boolean } {
+  const imposed = process.env['BOBINE_TRASH_DIR']
+  if (launchSystem() === 'windows') {
+    return imposed ? { trashDir: imposed, recycle: false } : { trashDir: dirname(userData) }
+  }
+  return { trashDir: imposed ?? join(homedir(), '.Trash') }
 }
 
 /** `confirmQuit` : quitter sans la question des conversations en cours (déjà confirmé). */
@@ -73,6 +101,8 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
       : undefined
   ]
   const bundle = () => {
+    // Windows : désinstaller par les Paramètres de Windows (installeur NSIS), pas d'ici.
+    if (launchSystem() === 'windows') return undefined
     const path = app.isPackaged ? bundleOf(process.execPath) : undefined
     return path && isInstalled(path, installDirs(homedir())) ? path : undefined
   }
@@ -80,7 +110,9 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
     info: { temporary: freshStart.temporary, askReset: freshStart.askReset },
     plan: async () => ({
       items: await resetInventory(userData(), resetPaths(outside())),
-      keychain: !isolated,
+      // Windows (fiche 229) : pas d'entrée de trousseau ; la clé DPAPI est dans `Local State`,
+      // déjà dans le dossier de données qui part à la corbeille.
+      keychain: !isolated && launchSystem() !== 'windows',
       canUninstall: !!bundle()
     }),
     reset: (uninstall) => {
@@ -91,7 +123,7 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
         {
           pid: process.pid,
           paths: resetPaths([userData(), ...outside(), uninstall ? installed : undefined]),
-          trashDir: process.env['BOBINE_TRASH_DIR'] ?? join(homedir(), '.Trash'),
+          ...trashOf(userData()),
           folderName: resetFolderName(t('settings.data.fresh.trashFolder'), new Date()),
           readmeName: t('settings.data.fresh.readmeName'),
           readme: t('settings.data.fresh.readme'),
@@ -119,6 +151,11 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
  * dans le dossier de données, est montrée une fois au lancement.
  */
 export function reportResetFailure(notify: (message: Message) => void): void {
+  const kept = takeResetKept(app.getPath('userData'))
+  if (kept) {
+    log.warn(`Réinitialisation faite, données gardées hors de la Corbeille : ${kept}`)
+    notify({ key: 'conversations.notice.resetKeptOutsideTrash', params: { folder: kept } })
+  }
   const failure = takeResetFailure(app.getPath('userData'))
   if (!failure) return
   log.warn(`Réinitialisation précédente non faite, rien n'a été supprimé : ${failure}`)

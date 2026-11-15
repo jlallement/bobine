@@ -1,3 +1,4 @@
+import { platformFeatures } from '../../platform-features'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -30,11 +31,13 @@ export function CustomAgentForm({
   onCancel: () => void
 }) {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState<CustomAgentDraft>(agent ? draftOf(agent) : EMPTY_DRAFT)
+  // Windows (fiche 229) : `\` des chemins littéral, comme le vérifie le main.
+  const style = platformFeatures().windowsPaths ? 'windows' : 'posix'
+  const [draft, setDraft] = useState<CustomAgentDraft>(agent ? draftOf(agent, style) : EMPTY_DRAFT)
   const [touched, setTouched] = useState<ReadonlySet<keyof CustomAgentDraft>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const problems = draftProblems(draft)
+  const problems = draftProblems(draft, style)
   const field = (name: keyof CustomAgentDraft) => ({
     value: draft[name],
     onChange: (e: { target: { value: string } }) => setDraft({ ...draft, [name]: e.target.value }),

@@ -7,6 +7,15 @@
 import { Notification, shell } from 'electron'
 import type { AttentionNotice } from './attention'
 
+/**
+ * Réglages des notifications du système : macOS (comme avant), ou Windows (fiche 229 ; un toast
+ * n'apparaît que si l'identifiant d'app, `app-user-model-id.ts`, est celui du raccourci).
+ */
+export const NOTIFICATION_SETTINGS = {
+  posix: 'x-apple.systempreferences:com.apple.Notifications-Settings.extension',
+  windows: 'ms-settings:notifications'
+} as const
+
 export class SystemNotifier {
   private readonly shown = new Map<string, Set<Notification>>()
   /** Conversations d'une bannière pas encore vues. */
@@ -14,13 +23,17 @@ export class SystemNotifier {
   private readonly onClick: (conversationId: string) => void
   private readonly onBlocked: (reason: string) => void
   private blocked: string | undefined
+  private readonly settingsUrl: string
 
   constructor(options: {
     onClick: (conversationId: string) => void
     onBlocked: (reason: string) => void
+    /** Page des réglages du système ; par défaut, celle de macOS. */
+    settingsUrl?: string
   }) {
     this.onClick = options.onClick
     this.onBlocked = options.onBlocked
+    this.settingsUrl = options.settingsUrl ?? NOTIFICATION_SETTINGS.posix
   }
 
   /** Refus de macOS, s'il y en a eu un. */
@@ -32,8 +45,7 @@ export class SystemNotifier {
   controls(): { status: () => { blocked?: string }; openSettings: () => Promise<void> } {
     return {
       status: () => (this.blocked ? { blocked: this.blocked } : {}),
-      openSettings: () =>
-        shell.openExternal('x-apple.systempreferences:com.apple.Notifications-Settings.extension')
+      openSettings: () => shell.openExternal(this.settingsUrl)
     }
   }
 

@@ -6,6 +6,7 @@
  * montré dans le Finder.
  */
 import { open, realpath, stat } from 'node:fs/promises'
+import { launchSystem, type ProcessSystem } from '../process-launch'
 import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path'
 import {
   isHtmlPath,
@@ -61,6 +62,80 @@ const RISKY_EXTENSIONS = new Set([
   'plugin',
   'bundle',
   'osax'
+])
+
+/**
+ * Types que Windows exécute, installe, monte ou suit quand on les « ouvre » (fiche 229) : ceux de
+ * `PATHEXT`, les scripts de Windows Script Host et de PowerShell, les installeurs, les raccourcis,
+ * les images disque (montées sans la marque « venu d'Internet ») et les panneaux du système. Sous
+ * Windows, le disque ne dit pas qu'un fichier est exécutable (pas de bit `x`) : l'extension seule
+ * décide.
+ */
+const WINDOWS_RISKY_EXTENSIONS = new Set([
+  'exe',
+  'com',
+  'bat',
+  'cmd',
+  'ps1',
+  'psm1',
+  'psd1',
+  'ps1xml',
+  'psc1',
+  'vbs',
+  'vbe',
+  'js',
+  'jse',
+  'wsf',
+  'wsh',
+  'wsc',
+  'ws',
+  'hta',
+  'msi',
+  'msp',
+  'mst',
+  'msc',
+  'msh',
+  'scr',
+  'cpl',
+  'pif',
+  'lnk',
+  'url',
+  'reg',
+  'inf',
+  'scf',
+  'chm',
+  'hlp',
+  'jar',
+  'appx',
+  'appxbundle',
+  'msix',
+  'msixbundle',
+  'appref-ms',
+  'application',
+  'gadget',
+  'settingcontent-ms',
+  'library-ms',
+  'search-ms',
+  'searchconnector-ms',
+  'diagcab',
+  'xll',
+  'xbap',
+  'iso',
+  'img',
+  'vhd',
+  'vhdx',
+  'py',
+  'pyw',
+  'pyz',
+  'pl',
+  'rb',
+  'php',
+  'sh',
+  'bash',
+  'website',
+  'theme',
+  'themepack',
+  'desktopthemepackfile'
 ])
 
 /** Ouvertures par le système (`shell`), remplaçables en essai. */
@@ -156,9 +231,15 @@ export async function openWorkspaceFile(
 }
 
 /** Le système exécuterait ou installerait ce fichier en l'« ouvrant » (extension, bit `x`). */
-function mayExecute(target: string, mode: number): boolean {
-  return RISKY_EXTENSIONS.has(extname(target).slice(1).toLowerCase()) || (mode & 0o111) !== 0
+function mayExecute(target: string, mode: number, system: ProcessSystem = launchSystem()): boolean {
+  const extension = extname(target).slice(1).toLowerCase()
+  if (system === 'windows') return WINDOWS_RISKY_EXTENSIONS.has(extension)
+  return RISKY_EXTENSIONS.has(extension) || (mode & 0o111) !== 0
 }
+
+/** Pour les essais : ce fichier serait-il montré plutôt qu'ouvert, sous ce système ? */
+export const mayExecuteOn = (target: string, mode: number, system: ProcessSystem) =>
+  mayExecute(target, mode, system)
 
 /** Document Markdown du dossier de la conversation, pour l'aperçu (début seul s'il est long). */
 export async function readMarkdown(workspace: string, path: string): Promise<MarkdownDocument> {

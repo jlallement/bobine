@@ -36,6 +36,7 @@ import {
 } from './forge-resolver'
 import { insideWorkspace, parseStatus, statusOf } from './git'
 import { gitError, gitErrorLine } from './git-errors'
+import { nativeGitPath, samePath } from '../git/git-platform'
 import { WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 
 /** Ce que le cycle sait d'une conversation en worktree. */
@@ -886,8 +887,9 @@ export class WorktreeCycle {
     if (result.code !== 0) return []
     const entries: { path: string; branch?: string }[] = []
     for (const line of text(result.stdout).split('\n')) {
-      if (line.startsWith('worktree ')) entries.push({ path: line.slice('worktree '.length) })
-      else if (line.startsWith('branch ')) {
+      if (line.startsWith('worktree ')) {
+        entries.push({ path: nativeGitPath(line.slice('worktree '.length)) })
+      } else if (line.startsWith('branch ')) {
         const current = entries.at(-1)
         if (current) current.branch = line.slice('branch '.length).replace(/^refs\/heads\//, '')
       }
@@ -905,12 +907,12 @@ export class WorktreeCycle {
     for (const root of roots) {
       const top = await this.gitRun(root, ['rev-parse', '--show-toplevel'])
       if (top.code !== 0) continue
-      const repo = text(top.stdout)
+      const repo = nativeGitPath(text(top.stdout))
       if (seen.has(repo)) continue
       seen.add(repo)
       for (const entry of await this.worktreeList(repo)) {
         if (!isInside(join(repo, WORKTREES_DIR), entry.path)) continue
-        if ([...known].some((path) => resolve(path) === resolve(entry.path))) continue
+        if ([...known].some((path) => samePath(resolve(path), resolve(entry.path)))) continue
         const branch = entry.branch ?? ''
         const porcelain = await this.gitRun(entry.path, ['status', '--porcelain', '-uall'])
         found.push({

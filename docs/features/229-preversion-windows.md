@@ -1,6 +1,6 @@
 # 229 — Préversion Windows
 
-- **Statut** : en cours (2026-11-15 : lots 0, 1, 3 et 3b faits, lot 2 en grande partie — voir « Avancement » ;
+- **Statut** : en cours (2026-11-15 : lots 0, 1, 3, 3b, 4 et 5 faits, lot 2 en grande partie — voir « Avancement » ;
   lot 6, packaging, fait : installeurs NSIS x64 et arm64, installés et lancés dans la VM ; CI Windows
   expérimentale)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
@@ -571,6 +571,210 @@ simulés sur le Mac. Captures du terminal regardées.
 - **Essais réels refaits après le rebase** (lots 0 à 3 dans `main`, koffi ajouté) : mêmes
   résultats pour les deux installeurs (sans le binaire de koffi, construits sur le Mac).
 
+## Lots 4 et 5 — git et bureau (faits le 2026-11-15)
+
+Branche `claude/229-windows-lots-4-5` (depuis `main` `0ba4163`). Tout passe par le système des
+processus (`launchSystem()`, ADR-0050) ou par une capacité ; sur macOS et sous Linux, chaque
+fonction touchée rend exactement ce qu'elle rendait (essais « Unix : comme avant » dans chaque
+fichier d'essai).
+
+### Lot 4 — git
+
+- **`git/git-platform.ts`** (nouveau) : `isGitProgram` (`git` ou `git.exe`, sans casse, `\` ou
+  `/`), `nativeGitPath` (`C:/Users/x` de git → `C:\Users\x`, lecteur en majuscule, UNC), `samePath`
+  (sans casse), `windowsGitConfig` (`core.longpaths=true` par `GIT_CONFIG_COUNT`, à la suite de
+  ceux de l'utilisateur, sans toucher à sa configuration).
+- **Chemins rendus par git** passés par `nativeGitPath` : `rev-parse --show-toplevel` (puce de
+  branche, vue Git, worktrees, orphelins), `--git-common-dir`, `worktree list` ; comparaison des
+  worktrees connus par `samePath`.
+- **CRLF** : avec `core.autocrlf=true` (posé par Git for Windows, et par MinGit) ou un attribut
+  `text`, le fichier est en CRLF sur le disque et en LF au dernier commit. `GitChangesReader.fileDiff`
+  le compare comme git (`gitConvertsEol` : `ls-files --eol`, puis `core.autocrlf`), sinon toutes
+  les lignes paraissaient changées. Comptes `+/-` : ceux de `git diff --numstat`, déjà justes ;
+  fichiers non suivis : `\n` comptés, justes en CRLF. Sous Unix : aucune commande de plus.
+- **Langue** : `LANGUAGE=C` gardé ; `LC_ALL=C` **pas ajouté**. MinGit n'a pas de traductions
+  (messages en anglais avec ou sans), l'essai ne départage donc rien ; la doc de gettext dit que
+  `LANGUAGE` suffit quand la langue n'est pas « C ». À revoir avec Git for Windows complet (il
+  livre des traductions) si un message français apparaît.
+- **git absent** : `spawn git(.exe) ENOENT` → « git est introuvable sur ce PC. Installez Git for
+  Windows… » (`git.missingWindows`), aussi pour la vue Git et la puce de branche.
+- **Worktrees** : chemins longs par `core.longpaths` (un worktree à 345 caractères créé et lu
+  dans la VM ; sans le réglage, `git status` y répond « Filename too long »). **Fichier
+  verrouillé** au retrait : git a déjà désinscrit le worktree et effacé ce qu'il pouvait (le
+  relancer répond « is not a working tree », vu dans la VM) ; Bobine attend, efface le reste du
+  dossier (dans `.worktrees` seulement), puis `worktree prune` ; encore verrouillé :
+  « Un programme garde des fichiers du worktree ouverts… » (`worktrees.lockedWindows`). Retrait
+  rapide en quittant (`removeIfUntouchedSync`) : environnement de git de l'app sous Windows.
+- Non fait : dossiers de configuration des forges (`forge-gitlab.ts`, `quota.ts`) sous `%APPDATA%`
+  (paramètre `platform` déjà injecté, branche `win32` à relire) ; hooks par le `sh` de Git for
+  Windows (rien à faire côté app).
+
+### Lot 5 — bureau
+
+- **Notifications** : réglages de Windows (`ms-settings:notifications`) au lieu de ceux de macOS ;
+  un clic ramène la fenêtre (`revealWindow` : restaurée si réduite, puis au premier plan) et ouvre
+  la conversation, comme sur le Mac. L'identifiant d'app est déjà posé (lot 6). **Pas essayé dans
+  la VM** (il faut l'app installée) ; limite connue d'Electron : un toast cliqué depuis le Centre
+  de notifications, après sa disparition, ne rappelle pas l'app (pas d'activateur COM).
+- **Clés d'API** : `safeStorage` = DPAPI sous Windows, rien à changer ; le repli existant (refus
+  d'enregistrer, clé lisible par la variable d'environnement de l'agent) dit « Le chiffrement de
+  Windows (DPAPI) n'est pas disponible… » au lieu du trousseau de macOS. Pas essayé dans la VM.
+- **Explorateur** : capacité **`explorer`** (Windows seulement) → « Afficher dans l'Explorateur de
+  fichiers » là où le Finder était nommé par capacité (menu du dossier, onglet Session, profil).
+  Les textes qui disent encore « Finder » en dur (fiches 145, 158) restent à reprendre (lot 8).
+- **Ouvrir un fichier** : sous Windows, le disque ne dit pas qu'un fichier s'exécute (pas de bit
+  `x`) ; une liste d'extensions de Windows (`exe`, `bat`, `cmd`, `ps1`, `vbs`, `js`, `lnk`,
+  `msi`, `iso`, `reg`, `hta`, `scr`… , `WINDOWS_RISKY_EXTENSIONS`) fait **montrer** ces fichiers
+  dans l'Explorateur au lieu de les ouvrir (un `.bat` ouvert se serait exécuté). macOS : liste et
+  bit `x` comme avant.
+- **Ouvrir dans un terminal** (`terminal-app.ts`) : `wt.exe -d <dossier>` s'il est là, sinon une
+  console PowerShell créée par `Start-Process` dans le dossier. `findProgram` reconnaît désormais
+  les **alias d'exécution d'app** (`%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`, `winget.exe`,
+  `python.exe` du Store) : `stat` les refuse (`EACCES`), `lstat` les voit comme liens (vu dans la
+  VM) ; sans ce correctif, `wt` n'était jamais trouvé.
+- **Polices** (sans dépendance) : source `gdi`, PowerShell + `System.Drawing` (livré avec
+  Windows) ; chasse fixe = `iiiiiiiiii` et `WWWWWWWWWW` de même largeur ; polices d'icônes
+  (Marlett, Segoe Fluent Icons, MDL2…) écartées. Dans la VM : 136 familles, Cascadia, Consolas,
+  Courier New, Lucida Console… en 1,8 s, une fois par lancement. Bloqué (mode de langage
+  restreint) : listes vides, comme avant.
+- **Données** : `%APPDATA%\bobine` d'office (nom du paquet, lu avant `app.setName`), journal dans
+  `%APPDATA%\bobine\logs` : rien à changer.
+- **Recommencer à neuf** (fiches 148, 187) : assistant et ménage du profil temporaire en
+  PowerShell (`reset-windows.ts`), même contrat que les scripts `sh` : attendre la fin de Bobine,
+  tout ou rien (déplacements remis en place au premier échec, raison écrite dans le dossier de
+  données), LISEZ-MOI en UTF-8 avec BOM. Le dossier daté est créé à côté du dossier de données
+  (même volume : un déplacement est un renommage), puis envoyé dans la **Corbeille de Windows**
+  seulement si un fichier témoin y est d'abord bien arrivé ; sinon il reste là, visible. Relance :
+  `Bobine.exe` (avec le `--user-data-dir` imposé s'il y en a un) ; pas de « désinstaller » d'ici
+  (Paramètres de Windows). `resetPaths` compare avec le séparateur du système.
+- **Instance unique, `Bobine.exe <dossier>`** : `requestSingleInstanceLock` et
+  `second-instance` déjà en place ; `parseLaunchArgs` résout le dossier avec `path` du système.
+  La commande `bobine` du terminal (script `sh`) est masquée sous Windows (Réglages › Général).
+  Pas essayé avec l'app dans la VM.
+- **À propos** : « Préversion Windows » sous la version (`AppInfo.preview`, décidé par le main).
+
+### Constats dans la VM (Windows 11 ARM64, 2026-11-15)
+
+- **PowerShell 5.1 lancé `detached` ne fait rien** (sans console, il sort aussitôt avec 0, même
+  `Set-Content` seul), par SSH comme dans la session de bureau ; un enfant attaché meurt avec
+  Bobine (job de libuv). D'où, pour les assistants, un **relais** : un PowerShell caché, attaché,
+  attendu (≈ 0,8 s), lance l'assistant par `Start-Process -WindowStyle Hidden` ; l'assistant
+  survit à son parent. Le script (≈ 5 Ko, deux fois encodé : 37 419 caractères) dépassait la
+  ligne de commande de Windows (32 767) : il est écrit dans un fichier temporaire, chargé par
+  `[ScriptBlock]::Create` (non soumis à la stratégie d'exécution `Restricted`, contrairement à
+  `-File`), et s'efface d'abord.
+- **`SendToRecycleBin` supprime sans rien dire quand la Corbeille n'est pas utilisable** (session
+  SSH : dossier parti, Corbeille vide). D'où le fichier témoin. Dans la session de bureau (tâche
+  planifiée interactive), le dossier daté arrive bien dans la Corbeille, le témoin en est retiré ;
+  par SSH, le dossier reste en place, rien n'est supprimé.
+- Réinitialisation essayée pour de vrai (vrai `launchReset`, relais compris) : cas normal
+  (accents, apostrophe, LISEZ-MOI), cas d'un fichier ouvert sans partage par un autre processus
+  (tout remis en place, raison écrite : « Le processus ne peut pas accéder au fichier… »), cas de
+  la Corbeille. Écueil corrigé en route : `Remove-Item` d'un dossier non vide demande une
+  confirmation, impossible en mode non interactif, et arrêtait le script avant d'écrire la raison.
+- git réel (**MinGit 2.56.1 arm64**, release officielle de git-for-windows, SHA-256
+  `96571e44…b4cc8c` lue dans les notes de la release et dans le `digest` de GitHub, vérifiée sur le
+  Mac et par `Get-FileHash` ; décompressé dans `C:\Users\jerome\bobine-229\git`, PATH du système
+  non modifié) : hors dépôt → `null` ; git absent → message Git for Windows ; dépôt `dépôt é`,
+  fichier remis en CRLF par git puis une ligne changée : vue Git `1+ 1−`, diff sans `\r`,
+  `1+ 1−` ; racine en `C:\…` ; worktree long créé ; retrait verrouillé : réussi après la levée du
+  verrou (5 s), sinon message clair (16 s, dont ≈ 10 s de relances de git lui-même).
+- `openTerminal` dans la session de bureau : repli PowerShell — console `-NoLogo -NoExit` vivante
+  5 s après, `openTerminal` rendu en 0,9 s ; `wt.exe -d` lancé sans erreur (fenêtre non relevée à
+  l'écran). **Incident** : le premier essai fermait les processus `WindowsTerminal` après coup ;
+  Windows 11 tient toutes ses fenêtres dans un seul processus (la console de la tâche d'essai y
+  était aussi) : une fenêtre Windows Terminal ouverte par Jérôme dans la VM, s'il y en avait une,
+  a été fermée. Essais suivants : seuls les processus créés par l'essai sont fermés.
+- Non essayé dans la VM (il faudrait l'app installée, hors consigne) : toasts et leur clic,
+  DPAPI, instance unique et `Bobine.exe <dossier>`, polices dans Réglages, « Recommencer à neuf »
+  depuis l'interface.
+
+### Ce qui change sur macOS et Linux
+
+Rien dans le comportement. Différences de code sans effet : `gitEnv`, `explainMissingGit`,
+`isGitProgram`, `nativeGitPath`, `fileDiff`, `Worktrees.remove`, `mayExecute`, `openTerminal`,
+`launchReset`, le ménage du profil temporaire et `relaunchAfterReset` prennent une branche Windows
+et gardent la leur à l'identique (essais « Unix : comme avant ») ; `resetPaths` compare avec
+`path.sep` (`/` sur le Mac, même résultat) ; `fonts.ts` n'ajoute `windowsHide` que sous Windows ;
+`SystemNotifier` reçoit l'adresse des réglages (celle de macOS par défaut) ; nouvelle capacité
+`explorer`, fausse sur le Mac et sous Linux (libellés inchangés) ; `AppInfo.preview` absent hors
+Windows ; `ApiKeyStore` garde le message du trousseau hors Windows.
+
+### Décisions (Jérôme, 2026-11-15)
+
+1. **Commande `bobine` sous Windows** : « Plus tard ». Masquée dans la préversion ; travail futur :
+   un `bobine.cmd` posé dans le PATH de l'utilisateur par l'installeur NSIS.
+2. **Corbeille inutilisable** : « Le dire au lancement ». Fait : l'assistant laisse une note
+   (`reinitialisation-hors-corbeille.txt`, `RESET_KEPT_NAME`) avec le chemin du dossier daté ; la
+   Bobine suivante la lit une fois (`takeResetKept`) et le dit (« Bobine a été réinitialisée, mais
+   la Corbeille de Windows n'a pas accepté ses anciennes données : elles sont restées dans … »).
+   Essai unitaire, et essai réel dans la VM par SSH (Corbeille inutilisable) : note écrite, lue une
+   fois, dossier daté à côté du dossier de données.
+3. **`LC_ALL=C` pour git** : à essayer au lot 7 avec Git for Windows complet.
+
+### Essais de l'app installée dans la VM (2026-11-15)
+
+Installeur arm64 construit sur le Mac (`pnpm package --win --arm64`, quatre fois au fil des
+correctifs), copié avec son empreinte SHA-256 vérifiée dans la VM, installé en silence (`/S`),
+puis mis à jour par-dessus. Pilotage : Bobine lancée sur le bureau de la VM (tâche planifiée
+interactive) avec `--remote-debugging-port`, pilotée depuis le Mac par un tunnel SSH vers ce port
+(`scripts/pilote/cdp.mjs`) ; écran relu par captures de la fenêtre de VMware. Agent : l'agent
+factice empaqueté en un fichier (esbuild), lancé par le `node.exe` de la VM comme **agent
+personnalisé** (l'agent factice intégré passe par `ELECTRON_RUN_AS_NODE`, coupé dans l'app
+packagée).
+
+- **Toasts** : émis pour de vrai (base `wpndatabase.db` de Windows : expéditeur `dev.bobine.app`,
+  « Factice VM · Bonjour depuis la ligne de commande / Demande une autorisation : Modification de
+  config.json »), avec l'icône et le nom « Bobine » dans le centre de notifications. **Clic** :
+  depuis le centre de notifications, le toast disparaît mais la fenêtre réduite **ne revient pas**
+  (suivi 15 s, après un témoin de 28 s sans clic) : limite d'Electron sans activateur COM (le
+  raccourci de l'installeur n'a pas de `ToastActivatorCLSID`). Le clic sur le toast qui surgit à
+  l'écran n'a pas pu être saisi à temps : **non vérifié**. À traiter (lot 7) : activateur COM, ou
+  relancer l'app au clic (`second-instance` ramène déjà la fenêtre).
+- **DPAPI** : clé d'API d'un agent personnalisé enregistrée (« Enregistrée ») ; dans
+  `api-keys.json`, valeur chiffrée (préfixe `v10` de Chromium), pas de texte clair ; **après
+  redémarrage de l'app**, l'agent a reçu la clé (empreinte SHA-256 notée par un relais, identique
+  à celle de la clé saisie). Clé de test, jamais un vrai secret.
+- **Instance unique, `Bobine.exe "<dossier>" "<message>"`** : la seconde exécution sort (code 0),
+  toujours 5 processus Bobine ; la fenêtre ouverte reçoit le dossier (`projet é`) et le message est
+  posé dans la saisie, pas envoyé.
+- **Polices** dans Réglages › Apparence : 136 familles, 21 à chasse fixe (Cascadia, Consolas,
+  Courier New, Lucida Console…), polices d'icônes écartées.
+- **Recommencer à neuf** depuis Réglages › Données : plan affiché, « Tout effacer et fermer » ;
+  Bobine se ferme, le dossier daté (`bobine` + LISEZ-MOI) arrive dans la **Corbeille** (session de
+  bureau : témoin accepté), Bobine se relance d'elle-même sur un profil neuf (sans clés). Scripts
+  temporaires effacés.
+- **Essayer Bobine comme neuve** : seconde Bobine sur un profil temporaire ; fermée, son dossier
+  est **effacé en moins de 6 s** (après correctif, voir plus bas).
+- Au passage : l'app installée dit « git est introuvable sur ce PC. Installez Git for Windows… »
+  (git n'est pas dans le PATH du système de la VM).
+- **Défauts trouvés et corrigés** dans cette passe (chacun avec son essai) :
+  - **Commande d'un agent personnalisé** découpée selon les règles du shell Unix : `\` y échappe,
+    `C:\Users\…\node.exe` devenait `C:Users…node.exe` (« Commande introuvable »). Capacité
+    **`windowsPaths`** (Windows seulement) : formulaire et main découpent à la Windows (`\`
+    littéral ; règle de `CommandLineToArgvW` devant `"` entre guillemets doubles). Revérifié dans
+    la VM : commande collée sans guillemets, agent « Prêt ».
+  - **Profil temporaire jamais effacé** : à la fermeture, l'app efface d'abord le dossier
+    elle-même ; sous Windows, un fichier encore ouvert fait lever `EPERM`, et l'exception sortait
+    avant le lancement de l'assistant. Rattrapée ; l'assistant attend aussi les processus
+    auxiliaires de Chromium (enfants directs de l'app, 10 s au plus), puis réessaie l'effacement.
+  - **Plan de réinitialisation** : « Et la clé Bobine Safe Storage du trousseau » ne s'affiche plus
+    sous Windows (la clé DPAPI est dans `Local State`, déjà dans le dossier de données).
+- **Textes « Mac » vus à l'écran** (à reprendre au lot 8 ; 29 clés de `fr.json` parlent du Mac ou
+  du trousseau, et Linux les montre déjà) : accueil « agent de code installé sur ce Mac »,
+  « chiffrée dans le trousseau macOS », « Agents comme sur un Mac neuf », « Serif (New York) »,
+  « SF Mono (système) ».
+- **Installations dans la VM** : l'app (installée, mise à jour, puis désinstallée par sa commande
+  enregistrée : dossier, raccourcis et entrée de désinstallation retirés ; un premier essai de
+  désinstallation, lancé autrement, n'avait rien fait). Dossier de données d'essai, élément de
+  Corbeille, tâches planifiées et dossier `bobine-229-lot5` effacés ensuite. **Gardé** : MinGit
+  (`C:\Users\jerome\bobine-229\git`), pour le lot 7.
+- **À signaler** : la fenêtre PowerShell administrateur ouverte dans la VM depuis 15 h 21 n'y
+  était plus vers 19 h 58 ; aucun de mes essais ne l'a visée (seuls des processus repérés par leur
+  ligne de commande, ou les fenêtres de Bobine, ont été fermés). Six profils `bobine-profil-*` de
+  16 h 49 à 17 h 24 (essais du lot 6, avant le ménage Windows) et d'autres créés par les essais
+  vitest du lot 7a restent dans `%TEMP%` : pas à moi, laissés.
+
 ## Essais
 
 **GitHub** : `windows-latest` (x64) et `windows-11-arm` sont gratuits pour un dépôt public. Job
@@ -803,3 +1007,23 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   `./scripts/verify` vert ; `pnpm e2e --changed` (suite complète, `src/main/index.ts` touché) :
   202/204, les deux échecs (infobulles au survol de `history` clair et `roles-gestion` sombre)
   verts en relance seule (4/4).
+- 2026-11-15 — **Lots 4 et 5 (git, bureau)** (branche `claude/229-windows-lots-4-5`) : chemins de
+  git natifs, CRLF comme git, chemins longs, worktree verrouillé, git absent ; notifications,
+  DPAPI, Explorateur, fichiers exécutables de Windows montrés au lieu d'ouverts, terminal (`wt`,
+  alias d'app), polices GDI+, « Recommencer à neuf » en PowerShell (relais, Corbeille vérifiée
+  par un témoin), À propos. Essais réels dans la VM (MinGit installé, empreinte vérifiée) ;
+  incident : une fenêtre Windows Terminal de la VM a pu être fermée par un essai. Écarts : pas de
+  `LC_ALL=C` ; commande `bobine` masquée sous Windows ; forges et `quota.ts` non relus.
+  `./scripts/verify` vert (492 fichiers, 4 570 essais) ; `pnpm e2e git changes notifications
+  settings about worktree-cycle worktree-setup platform fresh-start` : 17/17 (clair et sombre),
+  captures regardées (Mac inchangé).
+- 2026-11-15 — **Lots 4-5, essais de l'app installée dans la VM** : toasts émis (clic depuis le
+  centre de notifications sans retour de la fenêtre : limite d'Electron, à traiter), DPAPI relu
+  après redémarrage, instance unique et `Bobine.exe <dossier>`, polices, réinitialisation vers la
+  Corbeille et profil temporaire depuis l'interface. Trois défauts trouvés et corrigés (commande
+  d'agent personnalisé à la Windows, capacité `windowsPaths` ; profil temporaire jamais effacé ;
+  trousseau dans le plan). Décisions de Jérôme : commande `bobine` plus tard ; dossier hors
+  Corbeille dit au lancement (fait) ; `LC_ALL=C` au lot 7. App désinstallée, VM rangée (git
+  gardé).
+  `./scripts/verify` vert (4 574 essais) ; `pnpm e2e custom-agent fresh-start platform settings`
+  7/7 (clair et sombre).

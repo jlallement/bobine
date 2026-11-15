@@ -9,7 +9,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { translate } from '@shared/i18n/message'
 import type { ProfileNotice, ProfileStatus } from '@shared/profile'
-import { platformFeatures } from '../../platform-features'
+import { platformFeatures, revealLabelKey } from '../../platform-features'
 
 const EMPTY: ProfileStatus = { readOnly: false, notices: [] }
 
@@ -90,7 +90,7 @@ function ProfileNoticeRow({ notice }: { notice: ProfileNotice }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const Icon = ICONS[notice.level]
-  const finder = platformFeatures().finder
+  const features = platformFeatures()
   return (
     <div
       className={`notice notice-${notice.level} profile-notice`}
@@ -108,7 +108,7 @@ function ProfileNoticeRow({ notice }: { notice: ProfileNotice }) {
               onClick={() => void window.api.profile.reveal(notice.id)}
               data-testid="profile-notice-reveal"
             >
-              {t(finder ? 'workspaceMenu.revealFinder' : 'workspaceMenu.revealFiles')}
+              {t(revealLabelKey(features))}
             </button>
           )}
           {notice.detail && (

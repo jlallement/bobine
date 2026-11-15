@@ -2,6 +2,7 @@
  * Canaux de l'app elle-même (sortis d'`ipc.ts`, fiche 116) : infos, erreurs de l'interface,
  * journal, relance, installation (fiche 073) et fenêtre À propos (fiche 116).
  */
+import { previewOf } from './platform'
 import type { AppMenu } from './app-menu'
 import type { InstalledFonts, IpcHandlers } from '@shared/ipc'
 import type { Language } from '@shared/i18n/language'
@@ -96,7 +97,8 @@ export function appHandlers(
       buildDate: build.date,
       commit: build.commit,
       ...(deps.nativeLanguage ? { nativeLanguage: deps.nativeLanguage } : {}),
-      ...(deps.freshStart ? { freshStart: deps.freshStart.info } : {})
+      ...(deps.freshStart ? { freshStart: deps.freshStart.info } : {}),
+      ...(previewOf(deps.platform) ? { preview: previewOf(deps.platform) } : {})
     }),
     'app:fonts': () => deps.fonts?.() ?? { families: [], monospace: [] },
     'app:menu': () => deps.menu?.model() ?? null,

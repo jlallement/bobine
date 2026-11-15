@@ -7,11 +7,15 @@
  */
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { appendFile, mkdir, readFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, rm } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { isDirectory } from '../agent/process-utils'
 import type { Run } from '../simulator/run'
 import { gitError } from './git-errors'
+import { nativeGitPath } from '../git/git-platform'
+import { gitEnv } from '../git/git-queue'
+import { delay } from '../delay'
+import { launchSystem, type ProcessSystem } from '../process-launch'
 import { t } from 'i18next'
 
 export const WORKTREES_DIR = '.worktrees'
@@ -66,9 +70,62 @@ export class Worktrees {
    */
   beforeRemove?: (info: WorktreeInfo) => Promise<void>
 
-  constructor(run: Run, git = 'git') {
+  private readonly system: ProcessSystem
+  /** Attente avant de réessayer une suppression gênée par un fichier ouvert (Windows). */
+  private readonly lockedRetryMs: number
+  /** Efface un dossier (essais : simulé). */
+  private readonly removeDir: (path: string) => Promise<void>
+
+  constructor(
+    run: Run,
+    git = 'git',
+    options: {
+      system?: ProcessSystem
+      lockedRetryMs?: number
+      removeDir?: (path: string) => Promise<void>
+    } = {}
+  ) {
     this.run = run
     this.git = git
+    this.system = options.system ?? launchSystem()
+    this.lockedRetryMs = options.lockedRetryMs ?? 2000
+    this.removeDir =
+      options.removeDir ??
+      ((path) => rm(path, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 }))
+  }
+
+  /**
+   * `git worktree remove`. Sous Windows (fiche 229), un fichier ouvert par un autre programme
+   * (serveur de développement, éditeur, antivirus) empêche d'effacer le dossier. git a pourtant déjà
+   * désinscrit le worktree et effacé le reste (vu dans la VM : le relancer répond « is not a
+   * working tree ») : on attend, puis on efface ce qui reste du dossier (dans `.worktrees`
+   * seulement) et `worktree prune` ; encore verrouillé, on le dit. Unix : une tentative, comme avant.
+   */
+  private async removeWorktree(info: WorktreeInfo, force: boolean): Promise<void> {
+    const args = ['worktree', 'remove', ...(force ? ['--force'] : []), info.path]
+    if (this.system === 'posix') {
+      await this.exec(info.root, args)
+      return
+    }
+    try {
+      await this.exec(info.root, args)
+    } catch (error) {
+      if (!WINDOWS_LOCKED.test(String(error))) throw error
+      await delay(this.lockedRetryMs, { unref: true })
+      await this.removeLeftover(info.path).catch((again: unknown) => {
+        throw new Error(
+          t('worktrees.lockedWindows', {
+            error: again instanceof Error ? again.message : String(again)
+          })
+        )
+      })
+      await this.exec(info.root, ['worktree', 'prune']).catch(() => '')
+    }
+  }
+
+  /** Reste d'un worktree que git n'a pas pu effacer (Windows) ; jamais hors de `.worktrees`. */
+  private removeLeftover(path: string): Promise<void> {
+    return this.removeDir(path)
   }
 
   private async exec(cwd: string, args: string[], timeoutMs = 30_000): Promise<string> {
@@ -98,9 +155,11 @@ export class Worktrees {
   async create(workspace: string): Promise<WorktreeInfo & { workspace: string }> {
     // Dossier disparu (worktree nettoyé, 0.9.1, D21) : dit tout de suite, sans lancer git.
     if (!isDirectory(workspace)) throw new Error(t('worktrees.folderGone', { folder: workspace }))
-    const root = await this.exec(workspace, ['rev-parse', '--show-toplevel']).catch(() => {
-      throw new Error(t('worktrees.notRepo'))
-    })
+    const root = nativeGitPath(
+      await this.exec(workspace, ['rev-parse', '--show-toplevel']).catch(() => {
+        throw new Error(t('worktrees.notRepo'))
+      })
+    )
     const base = await this.exec(workspace, ['rev-parse', 'HEAD']).catch(() => {
       throw new Error(t('worktrees.noCommit'))
     })
@@ -187,12 +246,7 @@ export class Worktrees {
     const status = await this.status(info)
     if (!status.missing) {
       await this.beforeRemove?.(info).catch(() => {})
-      await this.exec(info.root, [
-        'worktree',
-        'remove',
-        ...(options.force ? ['--force'] : []),
-        info.path
-      ])
+      await this.removeWorktree(info, options.force === true)
     } else {
       await this.exec(info.root, ['worktree', 'prune']).catch(() => '')
     }
@@ -206,15 +260,19 @@ export class Worktrees {
   removeIfUntouchedSync(info: WorktreeInfo): void {
     if (!isInside(join(info.root, WORKTREES_DIR), info.path)) return
     try {
+      // Windows (fiche 229) : environnement de git de l'app (chemins longs) ; Unix : comme avant.
+      const env = this.system === 'windows' ? { env: gitEnv(process.env, 'windows') } : {}
       execFileSync(this.git, ['worktree', 'remove', info.path], {
         cwd: info.root,
         stdio: 'ignore',
-        timeout: 10_000
+        timeout: 10_000,
+        ...env
       })
       execFileSync(this.git, ['branch', '-D', info.branch], {
         cwd: info.root,
         stdio: 'ignore',
-        timeout: 10_000
+        timeout: 10_000,
+        ...env
       })
     } catch {
       // Modifié entre-temps, ou déjà parti : on n'insiste pas.
@@ -223,7 +281,7 @@ export class Worktrees {
 
   /** `/.worktrees/` dans `.git/info/exclude` (local au dépôt, jamais commité). */
   private async exclude(root: string): Promise<void> {
-    const common = await this.exec(root, ['rev-parse', '--git-common-dir'])
+    const common = nativeGitPath(await this.exec(root, ['rev-parse', '--git-common-dir']))
     const dir = isAbsolute(common) ? common : resolve(root, common)
     const file = join(dir, 'info', 'exclude')
     const current = await readFile(file, 'utf8').catch(() => '')
@@ -236,6 +294,10 @@ export class Worktrees {
     )
   }
 }
+
+/** Effacement refusé par Windows : fichier ouvert ailleurs, ou accès refusé pendant l'effacement. */
+const WINDOWS_LOCKED =
+  /Permission denied|Directory not empty|Invalid argument|being used by another process|unable to (unlink|rmdir)|failed to delete/i
 
 function isInside(parent: string, child: string): boolean {
   const rel = relative(resolve(parent), resolve(child))

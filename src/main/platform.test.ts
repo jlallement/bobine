@@ -14,6 +14,8 @@ describe('capacités de la plateforme (fiche 145)', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
+      explorer: false,
+      windowsPaths: false,
       dockBadge: false,
       appMenu: false,
       insetTitleBar: false,
@@ -24,8 +26,15 @@ describe('capacités de la plateforme (fiche 145)', () => {
   })
 
   it('sous Windows, comme Linux : rien de ce que seul macOS a (fiche 229)', () => {
-    expect(platformFeatures('win32')).toEqual(platformFeatures('linux'))
-    expect(Object.values(platformFeatures('win32')).some(Boolean)).toBe(false)
+    // Seule différence avec Linux : le gestionnaire de fichiers s'appelle l'Explorateur.
+    expect(platformFeatures('win32')).toEqual({
+      ...platformFeatures('linux'),
+      explorer: true,
+      windowsPaths: true
+    })
+    expect(platformFeatures('darwin').windowsPaths).toBe(false)
+    expect(platformFeatures('darwin').explorer).toBe(false)
+    expect(platformFeatures('linux').explorer).toBe(false)
     expect(currentPlatformFeatures({ BOBINE_PLATFORM: 'win32' }, 'darwin')).toEqual(
       platformFeatures('win32')
     )
@@ -64,6 +73,8 @@ describe('argument du renderer', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
+      explorer: false,
+      windowsPaths: false,
       dockBadge: false,
       appMenu: false,
       insetTitleBar: false,
@@ -81,6 +92,8 @@ describe('argument du renderer', () => {
       nativeLanguage: false,
       screenCapture: false,
       finder: false,
+      explorer: false,
+      windowsPaths: false,
       dockBadge: false,
       appMenu: false,
       insetTitleBar: false,

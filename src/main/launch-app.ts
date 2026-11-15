@@ -3,6 +3,7 @@
  * lancement et ceux d'une seconde instance (`open -n -a Bobine --args …`) arrivent au même
  * contrôleur (sorti d'`index.ts`, au plafond de taille).
  */
+import { launchSystem } from './process-launch'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app, dialog } from 'electron'
@@ -49,6 +50,9 @@ export function attachLaunch(
 export function commandLineDeps(): { commandLine?: CommandLine } {
   const root = process.env['BOBINE_INSTALL_ROOT']
   if (!app.isPackaged && !root) return {}
+  // Windows (fiche 229) : le script est en `sh` ; `Bobine.exe <dossier> ["message"]` se lance tel
+  // quel (instance unique, `second-instance`). La ligne de Réglages est masquée (pas d'état).
+  if (launchSystem() === 'windows') return {}
   const bundle = bundleOf(process.execPath)
   const commandLine = new CommandLine({
     launcher: () => (bundle ? { bundle } : { binary: process.env['APPIMAGE'] ?? process.execPath }),

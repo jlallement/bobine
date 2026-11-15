@@ -7,6 +7,8 @@ import { join, relative, resolve, sep } from 'node:path'
 import type { GitChanges, GitFileChange, GitFileDiff, GitFileStatus } from '@shared/changes'
 import type { Run } from '../simulator/run'
 import { notARepoOrError } from '../git/repo'
+import { nativeGitPath } from '../git/git-platform'
+import { launchSystem, type ProcessSystem } from '../process-launch'
 import { t } from 'i18next'
 
 /** Au-delà, le fichier n'est pas montré (diff illisible, et lourd à transmettre). */
@@ -82,13 +84,30 @@ function countLines(buffer: Buffer): number {
   return buffer[buffer.length - 1] === 10 ? lines : lines + 1
 }
 
+/**
+ * git convertit-il les fins de ligne de ce fichier en l'indexant (fiche 229) ? D'après
+ * `git ls-files --eol` (« i/lf w/crlf attr/text=auto ») et `core.autocrlf` : un attribut `text` ou
+ * `eol` décide ; `-text` l'interdit ; sans attribut, `core.autocrlf` à `true` ou `input`.
+ */
+export function gitConvertsEol(lsFilesEol: string, autocrlf: string): boolean {
+  const attr = /\battr\/(\S*)/.exec(lsFilesEol)?.[1] ?? ''
+  if (/(^|\s)-text\b/.test(attr)) return false
+  if (/(^|\s)(text|eol=)/.test(attr)) return true
+  return ['true', 'input'].includes(autocrlf.trim().toLowerCase())
+}
+
+/** `\r\n` → `\n`, pour comparer la copie de travail à l'index comme git le fait. */
+const toLf = (buffer: Buffer) => Buffer.from(buffer.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+
 export class GitChangesReader {
   private readonly run: Run
   private readonly git: string
+  private readonly system: ProcessSystem
 
-  constructor(run: Run, git = 'git') {
+  constructor(run: Run, git = 'git', system: ProcessSystem = launchSystem()) {
     this.run = run
     this.git = git
+    this.system = system
   }
 
   /** Modifications du dossier par rapport au dernier commit ; `null` hors d'un dépôt git. */
@@ -98,7 +117,8 @@ export class GitChangesReader {
       timeoutMs: 10_000
     })
     if (top.code !== 0) return notARepoOrError(top.stderr)
-    const [root = workspace, prefix = ''] = text(top.stdout).split('\n')
+    const [gitRoot, prefix = ''] = text(top.stdout).split('\n')
+    const root = gitRoot ? nativeGitPath(gitRoot) : workspace
     const hasHead =
       (await this.run(this.git, ['rev-parse', '--verify', '--quiet', 'HEAD'], { cwd: workspace }))
         .code === 0
@@ -151,7 +171,8 @@ export class GitChangesReader {
     const inRepo = relative(resolve(workspace), before).split(sep).join('/')
     const shown = await this.run(this.git, ['show', `HEAD:./${inRepo}`], { cwd: workspace })
     const old = shown.code === 0 ? shown.stdout : null
-    const current = await readFile(file).catch(() => null)
+    const read = await readFile(file).catch(() => null)
+    const current = read && old ? await this.asGitSees(workspace, file, old, read) : read
     if ((old && old.length > MAX_DIFF_BYTES) || (current && current.length > MAX_DIFF_BYTES)) {
       return { oldText: null, newText: null, tooLarge: true }
     }
@@ -159,6 +180,25 @@ export class GitChangesReader {
       return { oldText: null, newText: null, binary: true }
     }
     return { oldText: old ? text(old) : null, newText: current ? text(current) : null }
+  }
+
+  /**
+   * Windows (fiche 229) : avec `core.autocrlf` (réglé par l'installeur de Git for Windows) ou un
+   * attribut `text`, le fichier est en CRLF sur le disque et en LF dans le dépôt ; git compare sans
+   * les `\r`, le diff aussi, sinon toutes les lignes paraissent changées. Unix : tel quel.
+   */
+  private async asGitSees(workspace: string, file: string, old: Buffer, current: Buffer) {
+    if (this.system === 'posix' || old.includes(13) || !current.includes('\r\n')) return current
+    const relativePath = relative(resolve(workspace), file).split(sep).join('/')
+    const [eol, autocrlf] = await Promise.all([
+      this.run(this.git, ['ls-files', '--eol', '--', relativePath], { cwd: workspace }),
+      this.run(this.git, ['config', '--get', 'core.autocrlf'], { cwd: workspace })
+    ])
+    const converts = gitConvertsEol(
+      text(eol.stdout),
+      autocrlf.code === 0 ? text(autocrlf.stdout) : ''
+    )
+    return converts ? toLf(current) : current
   }
 
   private async untrackedStats(

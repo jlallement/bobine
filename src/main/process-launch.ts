@@ -21,7 +21,7 @@
  *    commande à cet endroit.
  */
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process'
-import { accessSync, constants, statSync } from 'node:fs'
+import { accessSync, constants, lstatSync, statSync } from 'node:fs'
 import { posix, win32 } from 'node:path'
 
 /** Famille du système pour les processus : groupes et signaux, ou objets de tâche et `.cmd`. */
@@ -288,15 +288,29 @@ export function launchOptions(
   }
 }
 
-/** Fichier ordinaire (et exécutable sous Unix ; Windows n'a pas de bit d'exécution). */
+/**
+ * Fichier ordinaire (et exécutable sous Unix ; Windows n'a pas de bit d'exécution). Sous Windows,
+ * un alias d'exécution d'app (`%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`, `python.exe` du
+ * Store, `winget.exe`) est un point d'analyse que `stat` refuse (`EACCES`, vérifié dans la VM) et
+ * que `lstat` voit comme un lien : il compte, puisque Windows le lance (fiche 229).
+ */
 export function isProgramFile(system: ProcessSystem): (file: string) => boolean {
   return (file) => {
     try {
       if (system === 'posix') accessSync(file, constants.X_OK)
       return statSync(file).isFile()
-    } catch {
-      return false
+    } catch (error) {
+      return system === 'windows' && isAppExecutionAlias(file, error)
     }
+  }
+}
+
+function isAppExecutionAlias(file: string, error: unknown): boolean {
+  if ((error as NodeJS.ErrnoException | undefined)?.code !== 'EACCES') return false
+  try {
+    return lstatSync(file).isSymbolicLink()
+  } catch {
+    return false
   }
 }
 

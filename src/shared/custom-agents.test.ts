@@ -157,3 +157,31 @@ describe('lecture de settings.json', () => {
     expect(parseCustomAgents(undefined)).toEqual([])
   })
 })
+
+describe('ligne de commande à la Windows (fiche 229)', () => {
+  it('`\\` des chemins gardé ; guillemets pour les espaces', () => {
+    expect(
+      splitCommandLine(
+        'C:\\Users\\x\\node.exe "C:\\Program Files\\a b\\agent.cjs" --scenario demo',
+        'windows'
+      )
+    ).toEqual(['C:\\Users\\x\\node.exe', 'C:\\Program Files\\a b\\agent.cjs', '--scenario', 'demo'])
+    expect(splitCommandLine('\\\\serveur\\partage\\a.exe', 'windows')).toEqual([
+      '\\\\serveur\\partage\\a.exe'
+    ])
+    // Règle de Windows : `\\"` rend `\` et ferme ; `\"` rend `"`.
+    expect(splitCommandLine('"C:\\a b\\\\" x', 'windows')).toEqual(['C:\\a b\\', 'x'])
+    expect(splitCommandLine('"dit \\"oui\\" ici"', 'windows')).toEqual(['dit "oui" ici'])
+    expect(splitCommandLine('"ouvert', 'windows')).toBeUndefined()
+  })
+
+  it('aller-retour : join puis split rend les mêmes mots', () => {
+    const words = ['C:\\Program Files\\Bob\\bob.exe', 'acp', 'a "b"', 'C:\\a b\\', '']
+    expect(splitCommandLine(joinCommandLine(words, 'windows'), 'windows')).toEqual(words)
+  })
+
+  it('Unix : `\\` échappe comme avant', () => {
+    expect(splitCommandLine('C:\\Users\\x')).toEqual(['C:Usersx'])
+    expect(splitCommandLine('/a/My\\ Dir/b')).toEqual(['/a/My Dir/b'])
+  })
+})
