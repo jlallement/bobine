@@ -26,6 +26,12 @@ import type { ImageCodec } from '../filmstrip/sheet'
 import { t } from 'i18next'
 import { delay } from '../delay'
 
+/** Commande pour retrouver l'APK écrit : `find` sous Unix, PowerShell sous Windows (fiche 229). */
+const FIND_APK =
+  process.platform === 'win32'
+    ? '`Get-ChildItem -Recurse -Filter *.apk | Sort-Object LastWriteTime -Descending`'
+    : "`find . -name '*.apk' -newer gradlew`"
+
 /** Attente maximale dans un appel d'outil (Bob abandonne au bout d'environ 60 s). */
 export const ANDROID_TOOL_BUDGET_MS = 40_000
 const DESCRIBE_MAX_CHARS = 20_000
@@ -122,7 +128,7 @@ function createTools(
     }
     if (job.apkSearched) {
       return textResult(
-        `Build succeeded in ${seconds} s, but no APK under ${job.apkSearched.join(', ')}. Find the APK the build wrote (for example \`find . -name '*.apk' -newer gradlew\`) and pass it to android_launch as apk_path.`
+        `Build succeeded in ${seconds} s, but no APK under ${job.apkSearched.join(', ')}. Find the APK the build wrote (for example ${FIND_APK}) and pass it to android_launch as apk_path.`
       )
     }
     return textResult(

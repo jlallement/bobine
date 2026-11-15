@@ -20,7 +20,7 @@ export function findAndroidProjects(workspace: string): string[] {
       return
     }
     const gradle = entries.some((n) => /^settings\.gradle(\.kts)?$/.test(n))
-    if (gradle && entries.includes('gradlew')) {
+    if (gradle && entries.includes(GRADLE_WRAPPER)) {
       found.push(dir)
       return
     }
@@ -130,7 +130,7 @@ export class GradleBuilds {
     }
     const job: GradleJob = Object.assign(
       startCommandJob(
-        join(projectDir, 'gradlew'),
+        join(projectDir, GRADLE_WRAPPER),
         [task, '--console=plain'],
         { cwd: projectDir, env },
         (_done, ok) => {
@@ -147,5 +147,12 @@ export class GradleBuilds {
   }
 }
 
-/** Ligne de commande telle qu'on la montre à l'utilisateur. */
-export const gradleCommand = (task: string) => `./gradlew ${task}`
+/**
+ * Script de Gradle du projet : `gradlew` sous Unix ; sous Windows, `gradlew.bat`, posé à côté par
+ * Gradle (lancé par `cmd.exe`, `process-launch.ts` ; fiche 229).
+ */
+const GRADLE_WRAPPER = process.platform === 'win32' ? 'gradlew.bat' : 'gradlew'
+
+/** Ligne de commande telle qu'on la montre à l'utilisateur (`.\gradlew.bat` sous Windows). */
+export const gradleCommand = (task: string) =>
+  process.platform === 'win32' ? `.\\gradlew.bat ${task}` : `./gradlew ${task}`

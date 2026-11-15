@@ -3,7 +3,7 @@
  * Windows y est sauté **par capacité, avec la raison**, et seulement quand la fonction essayée
  * n'existe pas sous Windows ; ailleurs (macOS, Linux), il tourne exactement comme avant.
  */
-import { mkdtempSync, realpathSync } from 'node:fs'
+import { chmodSync, mkdtempSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -76,8 +76,24 @@ export const MACOS_FEATURES = !ON_WINDOWS
 export const POSIX_SHELL = !ON_WINDOWS
 
 /**
- * Outils Android (SDK, `adb`, `./gradlew`) : pas encore portés sous Windows (`adb.exe`,
- * `gradlew.bat`, SDK sous `%LOCALAPPDATA%`) — l'app n'y trouve pas le SDK. Essayés sous macOS et
- * Linux avec de faux outils `sh` ; à porter (fiche 229, suite du lot 7a).
+ * Faux programme d'essai : un script `sh` exécutable sous Unix (comme avant) ; sous Windows, qui ne
+ * lance pas un script sans extension, un `.cmd` (ou `.bat`) qui passe ses arguments à node, avec le
+ * même comportement écrit en JavaScript. Rend le chemin à lancer.
  */
-export const ANDROID_TOOLS = !ON_WINDOWS
+export function fakeProgram(
+  dir: string,
+  name: string,
+  behaviour: { sh: string; js: string },
+  windowsExtension: '.cmd' | '.bat' = '.cmd'
+): string {
+  if (!ON_WINDOWS) {
+    const file = join(dir, name)
+    writeFileSync(file, `#!/bin/sh\n${behaviour.sh}\n`)
+    chmodSync(file, 0o755)
+    return file
+  }
+  writeFileSync(join(dir, `${name}.js`), behaviour.js)
+  const file = join(dir, `${name}${windowsExtension}`)
+  writeFileSync(file, `@"${process.execPath}" "%~dp0${name}.js" %*\r\n`)
+  return file
+}
