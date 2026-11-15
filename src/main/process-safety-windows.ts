@@ -36,18 +36,26 @@ function windowsJobs(load: () => JobApi): JobApi | undefined {
   }
 }
 
+/** Arbres de Windows de l'app : objets de tâche, sinon repli `taskkill`. Aussi ceux des essais. */
+export function createWindowsTrees(
+  env: NodeJS.ProcessEnv = process.env,
+  loadJobs: () => JobApi = loadJobApi
+): WindowsTrees {
+  return new WindowsTrees({
+    jobs: windowsJobs(loadJobs),
+    taskkill: taskkill(env),
+    log: (line) => log.info(line),
+    graceMs: STOP_GRACE_MS
+  })
+}
+
 export function setupWindowsProcesses(
   previous: ChildEntry[],
   env: NodeJS.ProcessEnv = process.env,
   loadJobs: () => JobApi = loadJobApi
 ): void {
   const kill = taskkill(env)
-  const trees = new WindowsTrees({
-    jobs: windowsJobs(loadJobs),
-    taskkill: kill,
-    log: (line) => log.info(line),
-    graceMs: STOP_GRACE_MS
-  })
+  const trees = createWindowsTrees(env, loadJobs)
   configureProcessTrees(trees)
   log.info(
     trees.mode === 'jobs'

@@ -28,6 +28,8 @@ afterEach(() => {
 
 describe('arbres de processus : un seul point d’entrée (ADR-0050)', () => {
   it('sans configuration (Unix) : exactement les groupes d’avant', async () => {
+    // Sous Windows, la préparation des essais configure les objets de tâche (`test-setup.ts`).
+    configureProcessTrees(undefined)
     const stop = vi.spyOn(group, 'stopGroup').mockImplementation(() => {})
     const settle = vi.spyOn(group, 'settleStoppedGroups').mockResolvedValue(0)
     vi.spyOn(group, 'stoppingGroups').mockReturnValue([7])
