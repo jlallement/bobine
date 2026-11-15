@@ -563,4 +563,18 @@ lancé, rien d'autre à installer sur le Mac.
   flou, même sur Aurore nuit (`settings` sous Linux) ; `platform` vérifie `no-glass` hors macOS
   seulement. À revoir dans la VM avec le prochain `.deb`. Écart : le verre d'Aurore n'est gardé que
   sur macOS, faute de savoir détecter sous Linux où le flou marche vraiment.
+- 2026-11-15 — **Premier passage complet des e2e Linux sur GitHub** (run 43725873020, `main`
+  ae9950a, Ubuntu 24.04 x64, `xvfb` + openbox) : 20 tâches rouges sur 202 (26 vérifications).
+  Causes, comparées au Docker arm64 (188/202) :
+
+  | Suites | Cause | Suite donnée |
+  |---|---|---|
+  | `notifications` (×2, 3 vérifications : notification, puis le clic qui en dépend), `inbox` (×2, bannière groupée) | **Propre à GitHub** : `libnotify4` absente de la machine ; sans elle, `Notification.isSupported()` est faux et l'app n'affiche rien (vérifié dans le conteneur en retirant le paquet). Le `.deb` en dépend, l'image Docker l'a. | Job : dépendances du `.deb` installées (liste d'electron-builder) |
+  | `terminal` (×2), `roles-travail` (×2), `plan` (×2), `autorisation-commande` (×2, retour à la ligne) | **Connue** : métriques de police (DejaVu, plus large que SF) | Lot 2 (apparence Linux) |
+  | `autorisation-commande` (×2, molette au bout du bloc) | **Connue**, cause à chercher | — |
+  | `pannes-visibles` (×2) | **Connue** : fd de Chromium hérités par l'agent (port DevTools) | Fiche à part (processus) |
+  | `user-commands` (clair), `filles-tech-lead` (sombre), `providers` (clair), `onboarding` (sombre), `fil` (clair), `perf` (sombre) | **Instabilité** : un seul thème rouge, l'autre vert ici comme dans Docker, aucune erreur de l'app dans leurs journaux ; machine de 2 cœurs, 3 tâches à la fois (`perf` mesure des durées) | À rejouer ; `--jobs 2` si elles reviennent |
+
+  Pas de bug de l'app propre à x64. À noter : sans libnotify (une AppImage sur un système qui
+  ne l'a pas), l'app n'affiche aucune notification et ne le dit pas ; à reprendre avec le lot 3.
 
