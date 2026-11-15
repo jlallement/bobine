@@ -1,6 +1,6 @@
 # 229 — Préversion Windows
 
-- **Statut** : à faire (fiche de cadrage, 2026-11-15 : inventaire, décisions, plan ; aucun code)
+- **Statut** : à faire (fiche de cadrage, 2026-11-15 : inventaire, décisions tranchées, plan ; aucun code)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
   012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
   commandes), 224 (discussion, zone d'écriture)
@@ -28,7 +28,8 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
 
 ## Critères d'acceptation
 
-- [ ] Décisions D1 à D9 tranchées par Jérôme ; ADR « Bobine sous Windows en préversion » écrit
+- [x] Décisions D1 à D9 tranchées par Jérôme (2026-11-15).
+- [ ] ADR « Bobine sous Windows en préversion » écrit
       (ADR-0032 l'annonçait).
 - [ ] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
       et démarre ; désinstallation propre (données gardées, comme sur le Mac).
@@ -166,7 +167,7 @@ dossier » ; un flux de données alternatif sur le dossier lui-même (`C:\…\<i
 2. **Liens physiques** (`mklink /H`, sans droit, même volume) : le fichier de la discussion **est**
    le fichier d'ailleurs ; `lstat().isFile()` dit vrai, l'écriture est accordée et modifie l'autre
    fichier. Même trou sous macOS et Linux (`ln`) : refuser l'accord automatique si
-   `lstat().nlink > 1` — correctif utile partout, à faire dès le lot 3.
+   `lstat().nlink > 1`. Corrigé à part, sur toutes les plateformes, par la fiche 230 (voir lot 3).
 3. **Chemins « absolus » ambigus** : `\Windows\x` ou `/Users/x` sont absolus pour `path.win32`
    (racine du lecteur courant de **l'app**, pas de l'agent) ; `C:x` ne l'est pas. Un agent sous Git
    Bash peut envoyer `/c/Users/…`. Règle : n'accepter seul qu'un chemin à lettre de lecteur
@@ -298,19 +299,21 @@ Microsoft) aux composants livrés.
 - **Agent factice** : portable (Electron en mode node) ; scénarios à commandes réelles à adapter
   (voir 11). Aucun scénario nouveau pour Bob : rien de propre à Bob sous Windows n'est documenté.
 
-## Décisions à trancher par Jérôme
+## Décisions (tranchées par Jérôme le 2026-11-15)
 
-| N° | Question | Recommandation | Pourquoi |
+Toutes retenues telles que recommandées (« ok pour toutes »).
+
+| N° | Question | Décision | Pourquoi |
 |---|---|---|---|
-| D1 | Format d'installeur : NSIS, MSI, Squirrel, zip portable | **NSIS, installation pour l'utilisateur seul** (`%LOCALAPPDATA%\Programs\Bobine`, sans droits d'administrateur), raccourci du menu Démarrer ; pas de zip portable dans la préversion | Cible par défaut d'electron-builder, la plus essayée ; le raccourci porte l'identifiant d'app sans lequel les notifications ne s'affichent pas. MSI vise le déploiement en entreprise (droits d'administrateur, plus rigide). Squirrel.Windows n'est plus maintenu par electron-builder. Un zip portable n'a ni raccourci (pas de toasts) ni désinstallation : plus tard si on le demande. |
-| D2 | Architectures | **x64 + arm64** | node-pty livre les deux binaires (pas de compilation) ; x64 pour la majorité, arm64 pour la VM du Mac et les PC Snapdragon. GitHub fournit `windows-latest` (x64) et `windows-11-arm` pour les dépôts publics. |
-| D3 | Signature de code | **Constat, pas de recommandation appuyée.** Sans signature : au premier lancement de l'installeur téléchargé, SmartScreen affiche « Windows a protégé votre ordinateur » ; il faut cliquer « Informations complémentaires », puis « Exécuter quand même ». La réputation se gagne au fil des téléchargements, par fichier : chaque version repart de zéro. Sur une installation neuve de Windows 11 où **Smart App Control** est actif, un programme non signé est bloqué sans bouton pour passer outre (il faut désactiver Smart App Control, sans retour possible). Les antivirus d'entreprise peuvent aussi bloquer. | Comme le Mac sans notarisation : un geste de plus pour l'utilisateur, dit dans la page d'installation. Existent si un jour on le veut : Azure Trusted Signing (abonnement mensuel, identité vérifiée), certificat OV ou EV. Somme SHA-256 publiée avec la version dans tous les cas, comme Linux. |
-| D4 | Barre de titre et menu | **Barre intégrée** (`titleBarStyle: 'hidden'` + `titleBarOverlay` aux couleurs du thème, boutons de Windows à droite, dispositions d'ancrage au survol du bouton Agrandir) **et menu ☰ de Linux** (variante D, Alt l'ouvre) ; barre de menu d'Electron jamais montrée. Étape intermédiaire possible : cadre natif + ☰, comme Linux, sans travail. | Les applications Windows récentes (VS Code, Windows Terminal, Teams) intègrent leur barre de titre ; la barre native de Windows 11 ne suit que clair/sombre du système, pas les thèmes de Bobine (Aurore). La barre de menu d'Electron ne se style pas (rejetée pour Linux, D8). Coût : zone de glisser, marge à droite pour les boutons (≈ 140 px, `navigator.windowControlsOverlay`), couleurs à remettre à chaque changement de thème. |
-| D5 | Shell du terminal intégré | **PowerShell** : `pwsh` (7) s'il est installé, sinon `powershell.exe` (5.1, toujours là) ; réglage pour choisir `cmd` ou Git Bash plus tard | `cmd` est l'ancien shell ; PowerShell est celui de Windows Terminal par défaut et celui que la doc de Bob emploie. La VM n'a que PowerShell 5.1. |
-| D6 | WSL | **Hors périmètre** de la préversion : Bobine sous Windows lance des agents Windows ; un dossier `\\wsl$\…` est refusé (ou posé) par la zone d'écriture | Un agent dans WSL parle en chemins Linux (`/home/…`) à une app qui pense en `C:\` : il faudrait traduire tous les chemins ACP. Possible plus tard par un agent personnalisé (`wsl.exe -- opencode acp`, fiche 141), sans promesse. |
-| D7 | Publication | **Même version que le Mac** (même tag), installeurs joints à la Release, « préversion Windows » dans les notes et l'À propos ; job GitHub conditionné par une variable `BOBINE_WINDOWS_RELEASE`, comme Linux | Un seul numéro (ADR-0032). |
-| D8 | Versions de Windows | **Windows 11** (x64, arm64) promis ; Windows 10 22H2 « devrait marcher », sans promesse | Windows 10 n'a plus de mises à jour grand public depuis octobre 2025 ; Electron 45 le prend encore. |
-| D9 | Arbre de processus | **Objet de tâche** (Job Object, arrêt de tout l'arbre quand l'app le ferme ou plante) si un module natif est acceptable ; sinon `taskkill /T /F` et registre par `Win32_Process` | Seul l'objet de tâche garantit « aucun orphelin » même si le main plante (critère de la fiche 138). Nouvelle dépendance native ou petit binaire : ADR. |
+| D1 | Format d'installeur : NSIS, MSI, Squirrel, zip portable | **Tranchée par Jérôme le 2026-11-15.** **NSIS, installation pour l'utilisateur seul** (`%LOCALAPPDATA%\Programs\Bobine`, sans droits d'administrateur), raccourci du menu Démarrer ; pas de zip portable dans la préversion | Cible par défaut d'electron-builder, la plus essayée ; le raccourci porte l'identifiant d'app sans lequel les notifications ne s'affichent pas. MSI vise le déploiement en entreprise (droits d'administrateur, plus rigide). Squirrel.Windows n'est plus maintenu par electron-builder. Un zip portable n'a ni raccourci (pas de toasts) ni désinstallation : plus tard si on le demande. |
+| D2 | Architectures | **Tranchée par Jérôme le 2026-11-15.** **x64 + arm64** | node-pty livre les deux binaires (pas de compilation) ; x64 pour la majorité, arm64 pour la VM du Mac et les PC Snapdragon. GitHub fournit `windows-latest` (x64) et `windows-11-arm` pour les dépôts publics. |
+| D3 | Signature de code | **Tranchée par Jérôme le 2026-11-15.** **Constat, pas de recommandation appuyée.** Sans signature : au premier lancement de l'installeur téléchargé, SmartScreen affiche « Windows a protégé votre ordinateur » ; il faut cliquer « Informations complémentaires », puis « Exécuter quand même ». La réputation se gagne au fil des téléchargements, par fichier : chaque version repart de zéro. Sur une installation neuve de Windows 11 où **Smart App Control** est actif, un programme non signé est bloqué sans bouton pour passer outre (il faut désactiver Smart App Control, sans retour possible). Les antivirus d'entreprise peuvent aussi bloquer. | Comme le Mac sans notarisation : un geste de plus pour l'utilisateur, dit dans la page d'installation. Existent si un jour on le veut : Azure Trusted Signing (abonnement mensuel, identité vérifiée), certificat OV ou EV. Somme SHA-256 publiée avec la version dans tous les cas, comme Linux. |
+| D4 | Barre de titre et menu | **Tranchée par Jérôme le 2026-11-15.** **Barre intégrée** (`titleBarStyle: 'hidden'` + `titleBarOverlay` aux couleurs du thème, boutons de Windows à droite, dispositions d'ancrage au survol du bouton Agrandir) **et menu ☰ de Linux** (variante D, Alt l'ouvre) ; barre de menu d'Electron jamais montrée. Étape intermédiaire permise : cadre natif + ☰, comme Linux, sans travail. | Les applications Windows récentes (VS Code, Windows Terminal, Teams) intègrent leur barre de titre ; la barre native de Windows 11 ne suit que clair/sombre du système, pas les thèmes de Bobine (Aurore). La barre de menu d'Electron ne se style pas (rejetée pour Linux, D8). Coût : zone de glisser, marge à droite pour les boutons (≈ 140 px, `navigator.windowControlsOverlay`), couleurs à remettre à chaque changement de thème. |
+| D5 | Shell du terminal intégré | **Tranchée par Jérôme le 2026-11-15.** **PowerShell** : `pwsh` (7) s'il est installé, sinon `powershell.exe` (5.1, toujours là) ; réglage pour choisir `cmd` ou Git Bash plus tard | `cmd` est l'ancien shell ; PowerShell est celui de Windows Terminal par défaut et celui que la doc de Bob emploie. La VM n'a que PowerShell 5.1. |
+| D6 | WSL | **Tranchée par Jérôme le 2026-11-15.** **Hors périmètre** de la préversion : Bobine sous Windows lance des agents Windows ; un dossier `\\wsl$\…` est refusé (ou posé) par la zone d'écriture | Un agent dans WSL parle en chemins Linux (`/home/…`) à une app qui pense en `C:\` : il faudrait traduire tous les chemins ACP. Possible plus tard par un agent personnalisé (`wsl.exe -- opencode acp`, fiche 141), sans promesse. |
+| D7 | Publication | **Tranchée par Jérôme le 2026-11-15.** **Même version que le Mac** (même tag), installeurs joints à la Release, « préversion Windows » dans les notes et l'À propos ; job GitHub conditionné par une variable `BOBINE_WINDOWS_RELEASE`, comme Linux | Un seul numéro (ADR-0032). |
+| D8 | Versions de Windows | **Tranchée par Jérôme le 2026-11-15.** **Windows 11** (x64, arm64) promis ; Windows 10 22H2 « devrait marcher », sans promesse | Windows 10 n'a plus de mises à jour grand public depuis octobre 2025 ; Electron 45 le prend encore. |
+| D9 | Arbre de processus | **Tranchée par Jérôme le 2026-11-15.** **Objet de tâche** (Job Object, arrêt de tout l'arbre quand l'app le ferme ou plante) (module natif ou petit binaire relais), registre par `Win32_Process` ; ADR au lot 0 | Seul l'objet de tâche garantit « aucun orphelin » même si le main plante (critère de la fiche 138). Nouvelle dépendance native ou petit binaire : ADR. |
 
 ## Plan
 
@@ -327,10 +330,10 @@ capacité `dockBadge` ; `release.yml` conditionné par variable ; pas-à-pas de 
 
 | Lot | Contenu | Taille |
 |---|---|---|
-| 0 | ADR « Bobine sous Windows en préversion » (D1-D9), qui complète ADR-0032 | S (½ j) |
+| 0 | ADR « Bobine sous Windows en préversion » (D1-D9, dont l'objet de tâche de D9 et sa dépendance native), qui complète ADR-0032 | S (½ j) |
 | 1 | `platformFeatures('win32')`, `systemName` (« Windows 11 »), `BOBINE_PLATFORM=win32` ; suite `platform` avec les capacités de Windows simulées sur le Mac | S (½-1 j) |
 | 2 | **Lancer et arrêter** : un seul module `spawnProgram` (recherche `PATHEXT`, `.cmd` par `cmd.exe /d /s /c` avec échappement sûr, `windowsHide`, pas de `detached` qui ouvre une console), `findExecutable`, `Path`/`PATH` et `;`, environnement relu du registre au lieu du shell de connexion ; arbre de processus (D9), `process-registry` par `Win32_Process` ; serveurs de dev ; terminal (ConPTY, D5) ; relais de `fresh-start`/`reset` | L (4-6 j) |
-| 3 | **Chemins et sécurité** : module de chemins partagé (renderer compris) ; `write-area.ts` (points 1 à 7 de la section 5, `nlink > 1` partout) ; `permission-risk.ts` et `command-writes.ts` (dossiers Windows, échec fermé « inconnu ») ; clés sans casse (autorisations, conversations) ; essais `path.win32` sur le Mac, puis NTFS dans la VM ; relecture du tech lead | L (4-5 j) |
+| 3 | **Chemins et sécurité** : module de chemins partagé (renderer compris) ; `write-area.ts` (points 1 et 3 à 7 de la section 5 ; liens physiques, `nlink > 1`, par la fiche 230, toutes plateformes) ; `permission-risk.ts` et `command-writes.ts` (dossiers Windows, échec fermé « inconnu ») ; clés sans casse (autorisations, conversations) ; essais `path.win32` sur le Mac, puis NTFS dans la VM ; relecture du tech lead | L (4-5 j) |
 | 4 | **git** : Git for Windows absent, CRLF dans les diffs et comparaisons, worktrees longs et verrouillés, dossiers des forges | M (2 j) |
 | 5 | **Bureau Windows** : D4 (barre intégrée + ☰), polices (registre), sons, `flashFrame`, notifications (AUMID), terminal externe (`wt.exe`), éditeurs, Explorateur dans les textes, Android (chemins, WHPX), raccourci de la fenêtre rapide | M-L (3-4 j) |
 | 6 | **Packaging** : section `win` (NSIS par utilisateur, x64/arm64, `.ico`, fuses, `asarUnpack` de node-pty `win32`), `pnpm package --windows` (portage en node de la branche Windows), avis de licence, À propos « préversion Windows ». Workflows (`release.yml`) à la fin, quand l'autre session a fini les siens | M (2-3 j) |
@@ -406,3 +409,6 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
 - 2026-11-15 — Fiche de cadrage écrite (sans code) : relevé du code sur `main` (`bcca473`),
   documentation publique d'OpenCode et d'IBM Bob, constats en lecture seule dans la VM Windows 11
   ARM64 (rien installé ni modifié). Décisions D1 à D9 en attente de Jérôme.
+- 2026-11-15 — **D1 à D9 tranchées par Jérôme** telles que recommandées (« ok pour toutes ») :
+  D4 barre intégrée + ☰, étape « cadre natif + ☰ » permise ; D9 objet de tâche, ADR au lot 0.
+  Liens physiques de la zone d'écriture confiés à la fiche 230 (toutes plateformes).
