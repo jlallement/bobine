@@ -17,7 +17,7 @@ import { broadcast } from './app-windows'
 import type { AppAlertKind } from '@shared/app-alerts'
 import { endRunMark, startRunMark } from './crash-marker'
 import { disableConsole, isBrokenPipe, log, logFile } from './log'
-import { settleStoppedGroups, stoppingGroups } from './process-group'
+import { settleStoppedTrees, treesStopping } from './process-tree'
 import { waitForStoppedProcesses, type QuitFlow } from './quit-guard'
 
 /** Sortie de l'app (fiche 089), posée par `start()` : le dialogue des plantages passe par elle. */
@@ -126,7 +126,7 @@ export function watchRendererCrashes(win: BrowserWindow, showLog: () => void): v
 export function settleProcessesOnQuit(): void {
   waitForStoppedProcesses(
     app,
-    () => stoppingGroups().length > 0,
-    () => settleStoppedGroups()
+    () => treesStopping(),
+    () => settleStoppedTrees()
   )
 }

@@ -6,10 +6,10 @@
  * - HTTP « Streamable » : POST JSON-RPC, réponse JSON ou flux SSE, session `Mcp-Session-Id`.
  * Les requêtes du serveur vers le client (racines, échantillonnage…) reçoivent « méthode inconnue ».
  */
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import type { McpServer, McpTestResult } from '@shared/mcp'
 import { killTree, spawnError } from '../agent/process-utils'
-import { trackChild } from '../process-registry'
+import { startProcess } from '../process-tree'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import { estimateTokens } from '@shared/usage'
@@ -145,13 +145,11 @@ function replyError(m: Message): Message {
 
 function stdioChannel(server: McpServer, options: ProbeOptions): Channel & { stderr(): string } {
   if (!server.command) throw new Error(t('mcpProbe.noCommand'))
-  const child: ChildProcessWithoutNullStreams = spawn(server.command, server.args ?? [], {
+  const child = startProcess(server.command, server.args ?? [], {
     cwd: options.cwd,
     env: { ...(options.env ?? process.env), ...(server.env ?? {}) },
-    stdio: ['pipe', 'pipe', 'pipe'],
-    detached: true
-  })
-  trackChild(child, [server.command, ...(server.args ?? [])])
+    stdio: ['pipe', 'pipe', 'pipe']
+  }).child as ChildProcessWithoutNullStreams
   let stderr = ''
   child.stderr.on('data', (d: Buffer) => {
     stderr = (stderr + d.toString()).slice(-STDERR_TAIL)

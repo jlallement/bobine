@@ -3,7 +3,7 @@
  * configuration : deux conversations du même projet partagent « web ». Groupe de processus détaché
  * (arrêté en entier), journaux gardés en mémoire, tout s'arrête avec l'app.
  */
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { connect } from 'node:net'
 import { join, resolve } from 'node:path'
@@ -21,8 +21,7 @@ import {
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import { delay } from '../delay'
-import { stopGroup } from '../process-group'
-import { trackChild } from '../process-registry'
+import { startProcess, stopTree } from '../process-tree'
 
 const MAX_LINES = 1000
 const PORT_POLL_MS = 250
@@ -166,30 +165,34 @@ export class DevServers {
   private spawn(server: Server): void {
     const { config, workspace } = server
     const cwd = resolve(workspace, config.cwd ?? '.')
+    // Commande de shell : `/bin/sh -c`, ou `cmd.exe` sous Windows (`process-launch.ts`).
     const [file, args] = config.command
-      ? ['/bin/sh', ['-c', config.command]]
-      : [config.runtimeExecutable ?? '', config.runtimeArgs]
+      ? [config.command, []]
+      : [config.runtimeExecutable ?? '', config.runtimeArgs ?? []]
     let child: ChildProcess
     try {
-      child = spawn(file, args, {
-        cwd,
-        env: {
-          ...process.env,
-          ...(config.port !== undefined ? { PORT: String(config.port) } : {}),
-          ...config.env,
-          // Journaux lisibles par l'agent, sans codes de couleur.
-          FORCE_COLOR: '0',
-          NO_COLOR: '1'
+      child = startProcess(
+        file,
+        args,
+        {
+          cwd,
+          env: {
+            ...process.env,
+            ...(config.port !== undefined ? { PORT: String(config.port) } : {}),
+            ...config.env,
+            // Journaux lisibles par l'agent, sans codes de couleur.
+            FORCE_COLOR: '0',
+            NO_COLOR: '1'
+          },
+          stdio: ['ignore', 'pipe', 'pipe']
         },
-        detached: true,
-        stdio: ['ignore', 'pipe', 'pipe']
-      })
+        config.command !== undefined
+      ).child
     } catch (error) {
       this.fail(server, error)
       return
     }
     server.child = child
-    trackChild(child, [file, ...args])
     this.log(server, `$ ${commandLine(config)}  (dans ${cwd})`)
     const onData = (chunk: Buffer) => {
       for (const line of stripAnsi(chunk.toString('utf8')).split(/\r?\n/)) {
@@ -251,7 +254,7 @@ export class DevServers {
     ) {
       server.status = 'exited'
     }
-    if (child) stopGroup(child)
+    if (child) stopTree(child)
     this.changed(server.workspace)
   }
 

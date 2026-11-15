@@ -3,7 +3,7 @@
  * (comme les points d'iOS), lecture de l'écran avec références, touchers convertis en pixels. Tout
  * suit l'orientation courante de l'écran (fiche 081).
  */
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import type { AndroidDevice, AndroidState } from '@shared/android'
 import { H264Splitter, type H264Frame } from './h264'
 import type { EncodeBgra, ResizeJpeg } from '../simulator/simulator-manager'
@@ -15,8 +15,7 @@ import { formatUiDump, parseUiDump } from './ui-dump'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import { delay } from '../delay'
-import { stopGroup } from '../process-group'
-import { trackChild } from '../process-registry'
+import { startProcess, stopTree } from '../process-tree'
 
 export interface AndroidManagerOptions {
   run: Run
@@ -226,7 +225,7 @@ export class AndroidManager {
       let idle: NodeJS.Timeout | undefined
       let stderr = ''
       const startedAt = Date.now()
-      const child = spawn(
+      const { child } = startProcess(
         this.options.adb,
         [
           '-s',
@@ -240,10 +239,9 @@ export class AndroidManager {
           '6000000',
           '-'
         ],
-        // Son propre groupe, noté au registre (fiche 195).
-        { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+        // Son propre groupe (ou job), noté au registre (fiche 195).
+        { stdio: ['ignore', 'pipe', 'pipe'] }
       )
-      trackChild(child, [this.options.adb, 'exec-out', 'screenrecord'])
       stream.child = child
       child.stdout?.on('data', (chunk: Buffer) => {
         for (const frame of splitter.push(chunk)) onFrame(frame)
@@ -288,7 +286,7 @@ export class AndroidManager {
     if (!encode) throw new Error('Filming is not available here: use android_screenshot.')
     const { serial, display } = await this.target(conversationId)
     const dp = this.dp(display)
-    const child = spawn(
+    const { child } = startProcess(
       this.options.adb,
       [
         '-s',
@@ -300,9 +298,8 @@ export class AndroidManager {
         `${dp.width}x${dp.height}`,
         '-'
       ],
-      { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+      { stdio: ['ignore', 'pipe', 'pipe'] }
     )
-    trackChild(child, [this.options.adb, 'exec-out', 'screenrecord'])
     const splitter = new RawFrameSplitter()
     const received: { time: number; jpeg: Buffer }[] = []
     let problem: string | undefined
@@ -322,7 +319,7 @@ export class AndroidManager {
         }
       } catch (error) {
         problem = messageOf(error)
-        stopGroup(child)
+        stopTree(child)
         firstFrame()
       }
     })
@@ -351,7 +348,7 @@ export class AndroidManager {
       if (left > 0) await delay(left)
     } finally {
       // Tout le groupe (fiche 208) : un `adb` qui lance des enfants ne les laisse pas derrière lui.
-      stopGroup(child)
+      stopTree(child)
     }
     return received.map((frame) => ({ at: Math.max(0, frame.time - start), jpeg: frame.jpeg }))
   }
@@ -362,7 +359,7 @@ export class AndroidManager {
     clearInterval(stream?.poll)
     // Tout le groupe, attendu en quittant (fiche 208) : SIGTERM au seul chef laissait ses enfants
     // vivre après l'app (chef encore « zombie » quand le registre le vérifie).
-    if (stream?.child) stopGroup(stream.child)
+    if (stream?.child) stopTree(stream.child)
   }
 
   changed(conversationId: string): void {

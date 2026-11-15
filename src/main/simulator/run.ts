@@ -28,6 +28,8 @@ export const runCommand: Run = (file, args, options = {}) =>
         encoding: 'buffer',
         maxBuffer: 64 * 1024 * 1024,
         timeout: options.timeoutMs ?? 60_000,
+        // Sous Windows, pas de fenêtre de console (git, adb…) ; sans effet ailleurs.
+        windowsHide: true,
         ...(options.cwd ? { cwd: options.cwd } : {}),
         ...(options.env ? { env: options.env } : {})
       },

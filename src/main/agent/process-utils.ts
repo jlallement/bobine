@@ -2,14 +2,15 @@
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
-import { stopGroup } from '../process-group'
+import { stopTree } from '../process-tree'
 
 /**
  * Arrête l'agent et son groupe de processus (lancé avec `detached`) : SIGTERM, puis SIGKILL au bout
- * de 3 s s'il vit encore (fiche 138).
+ * de 3 s s'il vit encore (fiche 138). Sous Windows, entrée standard fermée puis objet de tâche
+ * arrêté (ADR-0050).
  */
 export function killTree(child: ChildProcessWithoutNullStreams): void {
-  stopGroup(child)
+  stopTree(child)
 }
 
 /** Délai laissé au processus pour sortir de lui-même après la fin de sa connexion. */

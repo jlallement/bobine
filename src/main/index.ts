@@ -34,7 +34,9 @@ import { searchWorkspaceFiles } from './workspace-files'
 import { openTerminal } from './terminal/terminal-app'
 import { attachLaunch, commandLineDeps, launch, readLaunchArguments } from './launch-app'
 import { setupProcessSafety } from './process-safety'
-import { stopTrackedChildren } from './process-registry'
+import { launchContext, processSystem } from './process-launch'
+import { terminalShell } from './terminal/terminal-shell'
+import { stopRemainingTrees } from './process-tree'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -94,7 +96,7 @@ import { createOnboarding, firstLaunchFacts } from './onboarding/onboarding'
 import { quickEntryDeps } from './quick-entry-deps'
 import { createHandlers, registerIpcHandlers, type SendEvent } from './ipc'
 import { broadcast, trustedSender } from './app-windows'
-import { applyShellEnv, loginShellEnv } from './shell-env'
+import { applyShellEnv, readUserEnv } from './shell-env'
 import { oldAppStillOpen } from './old-app'
 import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
@@ -216,6 +218,8 @@ setVerbosity(imposedLog ?? peekPreferences(join(userData, 'settings.json')).logL
 // par l'app packagée seulement, jamais par les essais (dossier de données imposé).
 // Capacités de la plateforme (fiche 145) : ce qui n'existe que sur macOS est masqué ailleurs.
 const features = currentPlatformFeatures(process.env, process.platform)
+// Lancer et arrêter des processus (ADR-0050) : le vrai système, jamais `BOBINE_PLATFORM`.
+const processes = processSystem(process.platform)
 const managesNativeLanguage = features.nativeLanguage && app.isPackaged && !freshStart.isolated
 const appLanguage = systemAppLanguage(systemPreferences)
 const startLanguage = savedLanguage(join(userData, 'settings.json'))
@@ -286,16 +290,17 @@ async function start(): Promise<void> {
     `Démarrage de Bobine ${app.getVersion()} (Electron ${process.versions.electron}), journal ${getVerbosity()}`
   )
   // Avant tout lancement : processus du lancement précédent, permissions (fiche 138).
-  setupProcessSafety(userData)
+  setupProcessSafety(userData, processes)
   // Lancée depuis le Finder, l'app n'a qu'un environnement minimal : on reprend celui du shell
   // (PATH, et où OpenCode range sa configuration globale et ses skills).
   // Dernière lecture, pour le diagnostic (fiche 061).
   let shellProblem: string | undefined
   const readShellEnv = async (): Promise<string | undefined> => {
-    const shell = await loginShellEnv()
-    applyShellEnv(shell.values, process.env)
-    if (shell.problem) log.warn(`Shell de connexion : ${shell.problem}`)
-    else log.info(`Environnement du shell de connexion lu en ${shell.ms} ms`)
+    // Sous Windows, variables enregistrées au lieu du shell de connexion (ADR-0050).
+    const shell = await readUserEnv(processes)
+    applyShellEnv(shell.values, process.env, processes)
+    if (shell.problem) log.warn(`${shell.source} : ${shell.problem}`)
+    else log.info(`${shell.read} en ${shell.ms} ms`)
     shellProblem = shell.problem
     return shell.problem
   }
@@ -445,6 +450,8 @@ async function start(): Promise<void> {
   // Terminaux à côté de la conversation (fiche 034, ADR-0007).
   const terminals = new TerminalManager({
     spawn: spawnNodePty,
+    // PowerShell sous Windows (D5) ; sous Unix, le shell de l'utilisateur, inchangé.
+    ...terminalShell(launchContext()),
     env: () => process.env,
     terminateForeground,
     onData: (conversationId, tabId, data) => {
@@ -771,7 +778,7 @@ async function start(): Promise<void> {
       onboarding.stop()
       quotas.stop()
       // Ce qu'aucun arrêt ci-dessus n'a visé (essai du diagnostic en cours…) : arrêté aussi (fiche 208).
-      stopTrackedChildren()
+      stopRemainingTrees()
     }
   })
   powerMonitor.on('shutdown', () => quit.confirm())

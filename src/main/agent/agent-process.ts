@@ -5,12 +5,12 @@
  * noté dans `main.log`, et `failed`, rejetée à la mort du processus. Rien de la session : c'est
  * l'affaire d'`AgentHost`. N'importe pas `electron`.
  */
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { Readable, Writable } from 'node:stream'
 import { withEnvChanges, type EnvChanges } from '../agent-config/api-keys'
 import { agentLog, log, logs, type LogScope } from '../log'
 import { addSecret, excerpt } from '../log-redact'
-import { trackChild } from '../process-registry'
+import { startProcess } from '../process-tree'
 import { acpExchanges } from './acp-exchanges'
 import { AcpLog, formatDuration, type Direction } from './acp-log'
 import { spawnError } from './process-utils'
@@ -22,27 +22,26 @@ const STDERR_TAIL = 2000
 
 /**
  * Lance l'agent d'un profil dans `cwd`, avec les clés d'API de l'app posées dans son environnement.
- * Propre groupe de processus : un Ctrl+C dans le terminal ne tue pas l'agent dans le dos de l'app,
- * et killTree() arrête toute la chaîne (ex. npx → adaptateur → agent).
+ * Propre groupe de processus (objet de tâche sous Windows, ADR-0050) : un Ctrl+C dans le terminal
+ * ne tue pas l'agent dans le dos de l'app, et killTree() arrête toute la chaîne (ex. npx →
+ * adaptateur → agent). Un agent installé par npm sous Windows (`bob.cmd`) passe par `cmd.exe`, avec
+ * ses arguments cités (`process-launch.ts`).
  */
 export function spawnAgent(
   profile: AgentProfile,
   options: { cwd: string; extraArgs?: string[]; credentials?: EnvChanges }
 ): ChildProcessWithoutNullStreams {
   const args = [...profile.args, ...(options.extraArgs ?? [])]
-  const child = spawn(profile.command, args, {
+  const { child } = startProcess(profile.command, args, {
     cwd: options.cwd,
     // Journal sur Trace : celui de l'agent aussi, si son profil sait le régler (fiche 165).
     env: withEnvChanges(
       { ...process.env, ...profile.env, ...(logs('trace') ? profile.traceEnv : {}) },
       options.credentials ?? {}
     ),
-    stdio: ['pipe', 'pipe', 'pipe'],
-    detached: true
+    stdio: ['pipe', 'pipe', 'pipe']
   })
-  // Noté pour être arrêté au prochain démarrage si le main plante (fiche 138).
-  trackChild(child, [profile.command, ...args])
-  return child
+  return child as ChildProcessWithoutNullStreams
 }
 
 export interface LaunchOptions {

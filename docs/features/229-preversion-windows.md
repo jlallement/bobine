@@ -1,6 +1,6 @@
 # 229 — Préversion Windows
 
-- **Statut** : à faire (fiche de cadrage, 2026-11-15 : inventaire, décisions tranchées, plan ; aucun code)
+- **Statut** : en cours (2026-11-15 : lots 0 et 1 faits, lot 2 en grande partie — voir « Avancement »)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
   012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
   commandes), 224 (discussion, zone d'écriture)
@@ -29,8 +29,9 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
 ## Critères d'acceptation
 
 - [x] Décisions D1 à D9 tranchées par Jérôme (2026-11-15).
-- [ ] ADR « Bobine sous Windows en préversion » écrit
-      (ADR-0032 l'annonçait).
+- [x] ADR « Bobine sous Windows en préversion » écrit
+      (ADR-0032 l'annonçait) : [ADR-0050](../adr/0050-bobine-sous-windows-en-preversion.md),
+      proposé (dépendance `koffi` soumise à Jérôme).
 - [ ] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
       et démarre ; désinstallation propre (données gardées, comme sur le Mac).
 - [ ] Même sécurité que sur macOS : `contextIsolation`, `sandbox`, CSP, `electronFuses`, agent
@@ -347,6 +348,102 @@ Nouvelles dépendances possibles (à dire dans l'ADR) : module natif ou binaire 
 l'objet de tâche (D9) ; aucune autre prévue (échappement `cmd.exe` écrit dans l'app plutôt que
 `cross-spawn`, à rediscuter au lot 2).
 
+## Avancement
+
+**Lot 0 — ADR.** Fait : [ADR-0050](../adr/0050-bobine-sous-windows-en-preversion.md) (proposé),
+qui complète ADR-0032 sans le modifier. D1 à D8 repris ; lancement (`PATHEXT`, `.cmd` par
+`cmd.exe`, règles de citation écrites), environnement, et D9 : **un objet de tâche par arbre**,
+obtenu par **`koffi`** (FFI, binaires précompilés win32 x64/arm64), repli `taskkill /T`. Options
+comparées dans l'ADR (aucun addon N-API maintenu pour les jobs ; relais PowerShell `Add-Type`
+écarté : lent, bloqué par AppLocker/WDAC, motif signalé par les antivirus ; binaire relais à
+compiler écarté). **`koffi` n'est pas ajouté** : soumis à Jérôme le 2026-11-15, en attente.
+
+**Lot 1 — capacités.** Fait.
+- `platformFeatures('win32')` = celles de Linux : rien de ce que seul macOS a ; cadre natif et
+  menu ☰ (étape intermédiaire de D4), raccourcis en Ctrl, barres fines. Essai unitaire dédié.
+- `systemName('win32')` = « Windows » (infos techniques, À propos).
+- `BOBINE_PLATFORM=win32` simule les capacités de Windows sur le Mac ; il ne change **pas** le
+  lancement des processus, qui suit le vrai système (ADR-0050).
+- Suite e2e `platform` : sur le Mac, Mac, Linux **et Windows** (menu dans la fenêtre sans barre,
+  cadre natif, ☰, Ctrl, pas de capture, pas de simulateur, pas de groupe iOS).
+
+**Lot 2 — processus.** Fait, sauf ce qui est listé « reste ».
+- ✅ `process-launch.ts` (nouveau, seul endroit qui sait lancer) : `processSystem(platform)`,
+  `findProgram` (PATH coupé sur `;` sous Windows, guillemets d'un dossier retirés, `PATHEXT` dans
+  son ordre, `.ps1` en dernier recours, **jamais le dossier courant** : un `bob.cmd` posé dans le
+  dossier d'une conversation ne remplace pas celui de l'utilisateur), `planLaunch` (`.exe` direct ;
+  `.cmd`/`.bat` par `cmd.exe /d /s /v:off /c "<ligne>"` + `windowsVerbatimArguments` ; `.ps1` par
+  `powershell.exe -NoLogo -NoProfile -NonInteractive -File`, sans `-ExecutionPolicy Bypass`),
+  `cmdLine` (citation CRT puis double `^` des caractères spéciaux, retours à la ligne et nul
+  refusés), `planShellCommand` (`/bin/sh -c` ou `cmd.exe /d /s /c` pour une ligne de
+  l'utilisateur), `launchOptions` (Unix : `detached` comme avant ; Windows : jamais `detached`,
+  `windowsHide`, environnement à une clé par nom), `normalizeEnv`, `pathKey` (`Path`).
+  `findExecutable` (profils, `gh`, `glab`, onboarding…) passe par `findProgram`.
+- ✅ `process-tree.ts` (point d'entrée unique) : `startProcess` (lancement + job + registre),
+  `stopTree`, `treesStopping`, `settleStoppedTrees`, `stopRemainingTrees`. Sans configuration
+  (Unix, essais, sondes) : **exactement** `process-group.ts` et `stopTrackedChildren` d'avant.
+  Passent par lui : agents (`spawnAgent`, `killTree`), sondes MCP, travaux (`command-job`),
+  serveurs de développement, préparation des worktrees (plus de `process.platform` dans
+  `worktree-setup.ts`), enregistrement Android, sortie de l'app (`app-failures`, `index.ts`).
+- ✅ `process-tree-windows.ts` : `WindowsTrees` (un job par arbre posé juste après `spawn` ;
+  arrêt : entrée standard fermée, puis job arrêté au bout de 3 s, tout de suite sans entrée
+  standard ; chef sorti pendant l'arrêt : le reste du job tout de suite ; sorti de lui-même : job
+  rendu s'il est vide, gardé sinon ; en quittant : `settle` puis `stopAll`). Interface `JobApi`
+  (créer, placer, compter, arrêter, fermer) simulée dans les essais ; **sans `koffi`, repli
+  `taskkill /T /F` sur le chef vivant**, jamais sur un pid sorti.
+- ✅ Registre sous Windows (`process-registry-windows.ts`) : `Win32_Process` par `Get-CimInstance`
+  (≈ 1 s dans la VM, en tâche de fond au démarrage), même commande sans casse ni extension, même
+  heure (±3 s), sinon pid réattribué laissé ; chef disparu : ses enfants créés après lui sont les
+  racines (`taskkill /T`).
+- ✅ `process-safety.ts` pose le système (lancement, arbres, registre) une fois, depuis `index.ts`
+  (`processSystem(process.platform)`) ; le journal dit « objets de tâche » ou « repli taskkill ».
+- ✅ Environnement : sous Windows, variables enregistrées (machine puis utilisateur, comme
+  Windows les assemble ; `REG_EXPAND_SZ` développées par .NET, vérifié dans la VM) lues par
+  PowerShell (≈ 1 s) au lieu du shell de connexion, aussi pour « Relire le PATH » ;
+  `mergePath` sur `;` sans casse ni `\` final en double ; `applyShellEnv` écrit sous `Path`.
+  Unix : mêmes lignes de journal qu'avant.
+- ✅ Terminal (D5) : `terminal-shell.ts` : `pwsh.exe` s'il est dans le PATH, sinon
+  `powershell.exe` de `SystemRoot`, `-NoLogo` ; `pwsh`, `powershell`, `cmd` comptent comme
+  l'invite (sans `.exe` ni casse). Unix : rien d'imposé, `$SHELL -l` comme avant.
+- ✅ `runCommand` (git, adb, outils) : `windowsHide`.
+- Reste : `koffi` et son `JobApi` réel (après accord) ; relais `fresh-start` / `reset` (scripts
+  `/bin/sh`) ; `editors.ts`, `terminal-app.ts`, `chime.ts`, `fonts.ts`, `documents/ipc.ts`
+  (`spawn` directs propres au bureau : lot 5) ; émulateur Android détaché (lot 5) ;
+  `simulator/*` (macOS seulement) ; ConPTY réel (Ctrl+C, couleurs, redimensionnement) à essayer
+  avec l'app dans la VM (lot 7).
+
+**Essais du lot 2.**
+- Unitaires (tournent sur le Mac et dans `ci.yml`) : `process-launch.test.ts` (recherche
+  `PATHEXT` simulée, insensible à la casse ; citation relue par une implémentation de référence de
+  `CommandLineToArgvW` et de la lecture de `cmd.exe` : **aucun caractère spécial actif** après
+  chacune des deux lectures, 23 arguments piégés retrouvés), `process-tree-windows.test.ts`
+  (jobs simulés : arrêt poli, délai, chef sorti, quitter, repli taskkill, job refusé),
+  `process-registry-windows.test.ts`, `process-tree.test.ts` (sans configuration : les fonctions
+  Unix d'avant), `shell-env.test.ts`, `terminal-shell.test.ts`, `terminal-manager.test.ts`.
+  Les essais Unix existants (`process-group`, `process-registry`, `shell-env`, terminaux réels)
+  sont inchangés et passent.
+- VM Windows 11 ARM64 (SSH), primitives seules, avec le code du dépôt empaqueté par esbuild :
+  - **citation** : un script npm (`cmd-shim`) lancé par `launchProgram` avec 27 arguments piégés
+    (espaces, `"`, `\` finaux, `&`, `|`, `<>`, `%PATH%`, `%~dp0`, `%1`, `%*`, `!USERNAME!`, `^`,
+    `^^`, `(x)`, `;,=`, `*?[]`, accents, CJK, vide…) : **tous reçus à l'identique** ; idem quand le
+    dossier du script contient `%PATH%`. Un dossier contenant `&` ou `)` casse **le script npm
+    lui-même** (`SET dp0=%~dp0` non cité) : hors de notre portée, noté ;
+  - **job de libuv seul** (enfant non `detached`) : au plantage simulé du parent
+    (`Stop-Process -Force`), l'enfant direct meurt, mais le `node` lancé par un `.cmd` **survit** ;
+    avec `detached`, tout survit ;
+  - **job à nous** (`KILL_ON_JOB_CLOSE`, sans sortie, posé par P/Invoke depuis PowerShell, pour
+    l'essai seulement) : propriétaire tué → `cmd.exe` et le `node` lancé par le `.cmd` meurent,
+    aussi quand l'enfant était déjà dans le job de libuv (imbrication), et un petit-enfant dont le
+    parent est déjà sorti est arrêté par `TerminateJobObject` ; un descendant lancé **avant** la
+    pose du job y échappe (d'où la pose synchrone juste après `spawn`) ;
+  - **repli taskkill** : `WindowsTrees` arrête `cmd.exe → slow-agent.cmd → node` en entier ;
+  - variables du registre (`WINDOWS_ENV_SCRIPT`) et `Win32_Process` : lus et analysés (≈ 1 s
+    chacun).
+- Installé dans la VM : **Node 24.22.3** (zip officiel `node-v24.22.3-win-arm64.zip` de
+  nodejs.org, SHA-256 `b3cc74a2…434f14` vérifié contre `SHASUMS256.txt` sur le Mac puis par
+  `Get-FileHash` dans la VM), décompressé dans `C:\Users\jerome\bobine-229`, PATH du système
+  non modifié. git non installé (pas nécessaire à ces essais).
+
 ## Essais
 
 **GitHub** : `windows-latest` (x64) et `windows-11-arm` sont gratuits pour un dépôt public. Job
@@ -412,3 +509,11 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
 - 2026-11-15 — **D1 à D9 tranchées par Jérôme** telles que recommandées (« ok pour toutes ») :
   D4 barre intégrée + ☰, étape « cadre natif + ☰ » permise ; D9 objet de tâche, ADR au lot 0.
   Liens physiques de la zone d'écriture confiés à la fiche 230 (toutes plateformes).
+- 2026-11-15 — **Lots 0 à 2** (session fille, worktree `229-windows-lots-0-2`) : ADR-0050 écrit
+  (proposé), après essais dans la VM du job de libuv et d'un job à nous ; `koffi` soumis à Jérôme,
+  pas ajouté. Lot 1 : capacités de Windows et suite `platform`. Lot 2 : `process-launch.ts`,
+  `process-tree.ts`, `process-tree-windows.ts`, `process-registry-windows.ts`, environnement du
+  registre, PowerShell dans le terminal ; repli `taskkill` actif tant que `koffi` manque. Écarts
+  au plan : pas de module `spawnProgram` unique mais deux (`process-launch` pur, `process-tree`
+  pour le cycle de vie) ; `cross-spawn` écarté (règles réécrites, `/v:off` en plus, retours à la
+  ligne refusés) ; relais `fresh-start`/`reset` et `spawn` du bureau (lot 5) pas encore portés.

@@ -3,9 +3,8 @@
  * mémoire et l'outil de l'agent n'attend qu'un temps borné (Bob abandonne un appel au bout d'environ
  * 60 s), puis l'agent le rappelle.
  */
-import { spawn, type ChildProcess } from 'node:child_process'
-import { stopGroup } from '../process-group'
-import { trackChild } from '../process-registry'
+import type { ChildProcess } from 'node:child_process'
+import { startProcess, stopTree } from '../process-tree'
 
 const MAX_LINES = 2000
 /** Lecture de la sortie restante après la fin du processus, au plus (voir `close`). */
@@ -19,7 +18,7 @@ const running = new Set<ChildProcess>()
 
 /** Arrête tous les travaux en cours, avec leurs sous-processus (en quittant l'app). */
 export function stopAllJobs(): void {
-  for (const child of running) stopGroup(child)
+  for (const child of running) stopTree(child)
   running.clear()
 }
 
@@ -48,15 +47,14 @@ export function startCommandJob(
     done: Promise.resolve()
   }
   job.done = new Promise<void>((resolve) => {
-    const child = spawn(file, args, {
+    // Son propre groupe (ou job) : `xcodebuild` ou gradle emportent leurs sous-processus en
+    // s'arrêtant.
+    const { child } = startProcess(file, args, {
       cwd: options.cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: options.env ?? process.env,
-      // Son propre groupe : `xcodebuild` ou gradle emportent leurs sous-processus en s'arrêtant.
-      detached: true
+      env: options.env ?? process.env
     })
     running.add(child)
-    trackChild(child, [file, ...args])
     let rest = ''
     const push = (line: string) => {
       if (!line.trim()) return
@@ -68,8 +66,8 @@ export function startCommandJob(
       rest = parts.pop() ?? ''
       parts.forEach(push)
     }
-    child.stdout.on('data', onData)
-    child.stderr.on('data', onData)
+    child.stdout?.on('data', onData)
+    child.stderr?.on('data', onData)
     let settled = false
     const end = (ok: boolean, message?: string) => {
       if (settled) return
