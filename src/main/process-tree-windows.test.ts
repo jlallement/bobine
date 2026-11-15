@@ -124,6 +124,34 @@ describe('arbres de processus sous Windows (ADR-0050)', () => {
     expect(jobs.log.slice(-2)).toEqual(['terminate 1', 'close 1'])
   })
 
+  it('un arbre arrêté ne l’est qu’une fois : sa poignée fermée peut servir à un autre job', () => {
+    const jobs = fakeJobs()
+    const trees = new WindowsTrees({
+      jobs: jobs.api,
+      taskkill: vi.fn(),
+      log: vi.fn(),
+      graceMs: 3000
+    })
+    // Sans entrée standard : arrêté tout de suite, puis le chef sort.
+    const server = fakeChild(10, false)
+    trees.adopt(server.child)
+    trees.stop(server.child)
+    server.exit()
+    // Délai de grâce écoulé, puis le chef sort.
+    const agent = fakeChild(11)
+    trees.adopt(agent.child)
+    trees.stop(agent.child)
+    vi.advanceTimersByTime(3000)
+    agent.exit()
+    trees.stop(agent.child)
+    expect(jobs.log.filter((line) => /^(terminate|close) /.test(line))).toEqual([
+      'terminate 1',
+      'close 1',
+      'terminate 2',
+      'close 2'
+    ])
+  })
+
   it('sortie d’elle-même : job rendu s’il est vide, gardé si des descendants vivent', () => {
     const jobs = fakeJobs()
     const trees = new WindowsTrees({

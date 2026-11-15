@@ -42,6 +42,8 @@ interface Tree {
   job?: JobHandle
   stopping?: true
   timer?: NodeJS.Timeout
+  /** Arbre déjà arrêté : sa poignée est fermée, et Windows peut en redonner la valeur. */
+  finished?: true
 }
 
 const exited = (child: ChildProcess) => child.exitCode !== null || child.signalCode !== null
@@ -80,6 +82,7 @@ export class WindowsTrees {
   /** Le chef est sorti : ce qui reste est arrêté s'il était en cours d'arrêt, sinon laissé. */
   private leaderExited(tree: Tree): void {
     if (tree.timer) clearTimeout(tree.timer)
+    if (tree.finished) return
     if (tree.stopping) return this.finish(tree, false)
     const jobs = this.deps.jobs
     // Rien ne reste : la poignée est rendue. Sinon le job reste ouvert (descendants encore au
@@ -92,9 +95,16 @@ export class WindowsTrees {
     }
   }
 
-  /** Arrête l'arbre de force, maintenant. */
+  /**
+   * Arrête l'arbre de force, maintenant, **une seule fois** : une poignée fermée peut être redonnée
+   * par Windows au job d'un processus lancé ensuite ; la terminer une seconde fois (à la sortie du
+   * chef, après le délai de grâce ou un arrêt sans entrée standard) tuait ce processus-là (relevé
+   * dans la VM, fiche 229, lot 7a : agents arrêtés 3 ms après leur lancement).
+   */
   private finish(tree: Tree, sync: boolean): void {
     if (tree.timer) clearTimeout(tree.timer)
+    if (tree.finished) return
+    tree.finished = true
     this.trees.delete(tree.child)
     const { jobs } = this.deps
     if (tree.job && jobs) {
