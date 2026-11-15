@@ -2,7 +2,7 @@
 
 - **Statut** : en cours (2026-11-15 : lots 0, 1, 3, 3b, 4 et 5 faits, lot 2 en grande partie — voir « Avancement » ;
   lot 6, packaging, fait : installeurs NSIS x64 et arm64, installés et lancés dans la VM ; CI Windows
-  expérimentale)
+  expérimentale ; lot 8 en partie : textes de Linux et Windows, `e2e:packaged` de l'app installée)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
   012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
   commandes), 224 (discussion, zone d'écriture)
@@ -51,8 +51,8 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
 - [x] Risques des permissions (hors du dossier, dossiers du système, fichiers de démarrage, droits
       d'administrateur) signalés pour des chemins Windows ; ce qu'on ne sait pas lire est dit
       « inconnu », jamais « sans risque ». Lot 3, 2026-11-15 (« écritures inconnues »).
-- [ ] Rien de propre au Mac visible : ni ⌘, ni Finder, ni Dock, ni Trousseau ; Explorateur,
-      Ctrl, barre des tâches.
+- [x] Rien de propre au Mac visible : ni ⌘, ni Finder, ni Dock, ni Trousseau ; Explorateur,
+      Ctrl, barre des tâches. Lot 8, 2026-11-15 (textes de Réglages › Apparence : fiche des polices).
 - [ ] Terminal intégré : PowerShell (D5) dans ConPTY, couleurs, Ctrl+C, redimensionnement.
 - [ ] git : Git for Windows trouvé (sinon message clair), diffs justes avec `core.autocrlf=true`,
       worktrees à chemins longs.
@@ -775,6 +775,47 @@ packagée).
   16 h 49 à 17 h 24 (essais du lot 6, avant le ménage Windows) et d'autres créés par les essais
   vitest du lot 7a restent dans `%TEMP%` : pas à moi, laissés.
 
+### Lot 8 (en partie) — textes de Linux et de Windows, `e2e:packaged` (2026-11-15)
+
+- **Textes** : `fr.json` et `en.json` restent écrits pour le Mac, à l'identique ; une section
+  `systemTexts` (ajoutée en fin de fichier, rien de réorganisé) donne 54 textes de remplacement
+  hors du Mac (`withoutFinder` : « cet ordinateur », gestionnaire de fichiers, trousseau de la
+  session, `sudo apt install git`…) et 33 pour Windows par-dessus (`explorer` : Explorateur de
+  fichiers, Windows (DPAPI), Git for Windows). Appliqués par `withSystemTexts`
+  (`shared/i18n/system-texts.ts`) dans le main, le renderer et `L()` des e2e, d'après les
+  capacités `finder` et `explorer`, jamais le nom du système. Essais : chaque variante remplace un
+  texte existant avec les mêmes variables ; hors du Mac, plus aucun « Mac », « Finder », « Dock »,
+  « trousseau macOS », sauf 12 textes montrés seulement avec une capacité du Mac (capture d'écran,
+  simulateur, installation par l'app, compteur du Dock) ou de Réglages › Apparence (polices, autre
+  fiche) ; sur le Mac, les ressources sont le même objet.
+- **Aide** : lignes conditionnelles dans le guide (`<!-- si: finder -->`, variantes cachées à
+  GitHub `<!-- si: !finder` … `-->`), filtrées par `forSystem` (`help/guide.ts`) ; 12 pages par
+  langue. Rendu du Mac comparé à celui d'avant : identique. Essai : hors du Mac, aucune page ne
+  parle du Mac, du Finder, du Dock ni du trousseau macOS. Les astuces n'en parlaient pas (⌘ déjà
+  converti).
+- **Réinitialisation** (fiche 148) : « Et la clé Bobine Safe Storage du trousseau » n'est plus
+  annoncée sous Linux (seul `security` de macOS l'efface) : `keychain` du plan seulement sur macOS.
+- **Clés d'API sous Linux sans trousseau** (D4 de la fiche 145) : voir son journal.
+- **Suite `textes-plateforme`** : Réglages › Général, Notifications, Données, Agents avec les
+  capacités de Linux puis de Windows ; clé en clair dite sous Linux (`basic_text` simulé). Captures
+  `textes-{linux,windows}-{general,notifications,cles}`.
+- **`e2e:packaged` sous Linux et Windows** (`e2e/packaged-installed.mjs`, autonome, copiable seul
+  dans une VM ; `packaged.mjs` lui passe la main hors du Mac) : l'app installée démarre sur un profil
+  temporaire, s'ouvre sur l'accueil du premier lancement, isolée, sans agent factice, sans texte du
+  Mac, ouvre un terminal, aucune alerte d'erreur interne, puis quitte (code 0), sans processus
+  restant, profil effacé ; capture et journal du main à côté. Windows : vert sur le build `dir`
+  arm64 de cette branche copié dans un dossier à moi (l'installeur d'une autre session était
+  installé ; l'installation NSIS elle-même est essayée au lot 6), lancé par SSH (les tâches
+  planifiées interactives ne partaient plus) ; Node 24 officiel (zip ARM64, SHA-256 vérifiée) dans
+  `%USERPROFILE%\bobine-finitions`.
+- **Défaut trouvé (Windows, non corrigé)** : fermer un terminal fait lever dans le main
+  « `child_process.fork()` is not supported when the runAsNode fuse is disabled » — node-pty liste
+  les processus de la console par un `fork` (`conpty_console_list_agent`) quand il tue un terminal
+  sans `useConptyDll`, et le fusible `runAsNode: false` l'interdit dans l'app packagée. Effet :
+  bandeau « Bobine a rencontré un problème interne », et les processus de la console ne sont pas
+  listés. Piste : `useConptyDll: true` sous Windows (conpty.dll et OpenConsole.exe livrés ; `kill`
+  sans `fork`), à essayer au lot 7. `e2e:packaged` le détecte (« aucune alerte de l'app »).
+
 ## Essais
 
 **GitHub** : `windows-latest` (x64) et `windows-11-arm` sont gratuits pour un dépôt public. Job
@@ -1027,3 +1068,7 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   gardé).
   `./scripts/verify` vert (4 574 essais) ; `pnpm e2e custom-agent fresh-start platform settings`
   7/7 (clair et sombre).
+- 2026-11-15 — **Lot 8 en partie** (avec la fiche 145, lots 2 et 3) : textes de Linux et Windows
+  par capacités (`systemTexts`, guide `<!-- si: … -->`), clés d'API sans trousseau sous Linux (D4),
+  `e2e:packaged` de l'app installée (`packaged-installed.mjs`), suite `textes-plateforme`. Défaut
+  `fork` de node-pty à la fermeture d'un terminal relevé (voir « Lot 8 »).

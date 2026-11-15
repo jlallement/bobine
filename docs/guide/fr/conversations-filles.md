@@ -91,7 +91,15 @@ conversation mère… », « De la conversation fille… ») ; un clic ouvre l'a
 
 **La vue Filles.** Dans l'onglet **Modifications** de la mère, la vue **Filles** liste les
 worktrees des filles : état, branche, fichiers modifiés, avis de la mère. Pour chacune :
-l'afficher dans le Finder, l'ouvrir dans votre éditeur, [la faire relire](faire-relire.md) ou
+<!-- si: finder -->
+l'afficher dans le Finder,
+<!-- si: !finder !explorer
+l'afficher dans le gestionnaire de fichiers,
+-->
+<!-- si: explorer
+l'afficher dans l'Explorateur de fichiers,
+-->
+l'ouvrir dans votre éditeur, [la faire relire](faire-relire.md) ou
 **Ouvrir** sa conversation.
 
 **Avec IBM Bob en mode Agent**, chaque écriture ou commande d'une fille demande votre accord dans

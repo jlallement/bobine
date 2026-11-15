@@ -68,7 +68,16 @@ fonctions propres peuvent ne pas marcher.
 ## Donner une clé d'API à IBM Bob
 
 À la place de la connexion SSO : Réglages › Agents › IBM Bob › **Connexion** › **Clé d'API Bob
-Shell** › **Définir**. Il faut une clé personnelle. Elle est chiffrée dans le trousseau macOS.
+Shell** › **Définir**. Il faut une clé personnelle.
+<!-- si: finder -->
+Elle est chiffrée dans le trousseau macOS.
+<!-- si: !finder !explorer
+Elle est chiffrée par le trousseau de la session (GNOME Keyring, KWallet) ; sans trousseau, elle
+est gardée en clair dans un fichier que vous seul pouvez lire, et Réglages › Agents le dit.
+-->
+<!-- si: explorer
+Elle est chiffrée par Windows (DPAPI).
+-->
 Vous pouvez aussi la saisir sur la carte « Connexion requise » (**Utiliser une clé d'API**).
 
 <a id="fournisseurs"></a>
@@ -82,8 +91,16 @@ Pour utiliser un point d'accès compatible OpenAI (les modèles internes de votr
 3. **Tester** dit s'il répond, combien de modèles il liste, ou pourquoi pas (connexion refusée,
    proxy, certificat, clé refusée).
 
-**Seulement ces fournisseurs** cache les autres. La clé est chiffrée dans le trousseau macOS,
+**Seulement ces fournisseurs** cache les autres.
+<!-- si: finder -->
+La clé est chiffrée dans le trousseau macOS, jamais écrite dans `opencode.json`.
+<!-- si: !finder !explorer
+La clé est chiffrée par le trousseau de la session (en clair, droits 600, s'il n'y en a pas),
 jamais écrite dans `opencode.json`.
+-->
+<!-- si: explorer
+La clé est chiffrée par Windows (DPAPI), jamais écrite dans `opencode.json`.
+-->
 
 <a id="autre-agent"></a>
 

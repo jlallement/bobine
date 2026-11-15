@@ -67,7 +67,17 @@ specific features may not work.
 ## Give IBM Bob an API key
 
 Instead of SSO sign-in: Settings › Agents › IBM Bob › **Sign-in** › **Bob Shell API key** ›
-**Set**. You need a personal key. It’s encrypted in the macOS Keychain. You can also enter it on
+**Set**. You need a personal key.
+<!-- si: finder -->
+It’s encrypted in the macOS Keychain.
+<!-- si: !finder !explorer
+It’s encrypted by the session keyring (GNOME Keyring, KWallet); without a keyring, it’s kept in
+plain text in a file only you can read, and Settings › Agents says so.
+-->
+<!-- si: explorer
+It’s encrypted by Windows (DPAPI).
+-->
+You can also enter it on
 the “Sign-in required” card (**Use an API key**).
 
 <a id="fournisseurs"></a>
@@ -81,8 +91,16 @@ To use an OpenAI-compatible endpoint (your company’s internal models):
 3. **Test** tells you whether it responds, how many models it lists, or why not (connection
    refused, proxy, certificate, key rejected).
 
-**Only these providers** hides the others. The key is encrypted in the macOS Keychain, never
+**Only these providers** hides the others.
+<!-- si: finder -->
+The key is encrypted in the macOS Keychain, never written to `opencode.json`.
+<!-- si: !finder !explorer
+The key is encrypted by the session keyring (in plain text, mode 600, if there is none), never
 written to `opencode.json`.
+-->
+<!-- si: explorer
+The key is encrypted by Windows (DPAPI), never written to `opencode.json`.
+-->
 
 <a id="autre-agent"></a>
 

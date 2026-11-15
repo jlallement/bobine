@@ -32,8 +32,15 @@ Rien n'est envoyé à un modèle : la session d'essai est supprimée ensuite.
 
 ## Lire le journal
 
-Réglages › Diagnostic › **Journal** montre les deux fichiers, avec **Ouvrir** et **Afficher dans le
-Finder** :
+Réglages › Diagnostic › **Journal** montre les deux fichiers, avec **Ouvrir** et
+<!-- si: finder -->
+**Afficher dans le Finder** :
+<!-- si: !finder !explorer
+**Afficher dans le gestionnaire de fichiers** :
+-->
+<!-- si: explorer
+**Afficher dans l'Explorateur de fichiers** :
+-->
 
 - `main.log` : démarrage, erreurs, agents lancés et arrêtés, durée des tours ;
 - `agents.log` : les échanges avec les agents, aux niveaux Détaillé et Trace.
@@ -59,7 +66,11 @@ Réglages › Diagnostic › **Signaler un problème** ouvre dans votre navigate
 préremplie avec la version et le rapport. Rien ne part avant que vous ne la validiez sur GitHub.
 
 La fenêtre Bobine › À propos de Bobine a aussi **Copier les infos techniques** (version, commit,
+<!-- si: finder -->
 macOS, agents installés), à coller dans un signalement.
+<!-- si: !finder
+système, agents installés), à coller dans un signalement.
+-->
 
 <a id="agent-introuvable"></a>
 
@@ -128,23 +139,32 @@ Après la connexion, Bobine peut mettre jusqu'à 5 minutes à s'en apercevoir.
 Réseau coupé, proxy, limite de débit : Bobine réessaie seule. Un bandeau dit « Connexion perdue »
 et « Nouvelle tentative dans 8 s (3 sur 5) » ; votre message reste en attente et repart sans avoir
 à le renvoyer. Cinq tentatives, de plus en plus espacées, et tout de suite si le réseau revient ou
+<!-- si: finder -->
 si le Mac sort de veille.
+<!-- si: !finder
+si l'ordinateur sort de veille.
+-->
 
 **Réessayer maintenant** n'attend pas ; Échap ou Arrêter abandonne. Après la cinquième :
 « Connexion impossible » et **Réessayer**.
 
 Derrière un proxy d'entreprise : voir [Réseau d'entreprise](agents.md#reseau).
 
+<!-- si: screenCapture -->
 <a id="capture"></a>
 
+<!-- si: screenCapture -->
 ## La capture d'écran est indisponible
 
+<!-- si: screenCapture -->
 La capture d'une zone de l'écran (zone de saisie, fenêtre rapide) demande l'autorisation
 « Enregistrement de l'écran » de macOS. Cochez Bobine dans Réglages Système › Confidentialité et
 sécurité, puis relancez l'app. Le bouton **Ouvrir les Réglages Système** y mène.
 
+<!-- si: screenCapture -->
 Joindre la page du navigateur intégré ou l'écran du simulateur n'en a pas besoin.
 
+<!-- si: finder -->
 Après une mise à jour de Bobine, macOS peut redemander cette autorisation, ainsi que l'accès au
 trousseau (« Bobine Safe Storage ») : répondez **Toujours autoriser**.
 
@@ -177,9 +197,21 @@ dès que l'agent reparle.
 
 ## Après un arrêt inattendu
 
+<!-- si: finder -->
 Si Bobine s'est arrêtée sans quitter (plantage, Mac éteint), elle le dit au lancement suivant et
 range un rapport sur ce Mac, **sans rien envoyer**. **Afficher le rapport** le montre dans le
-Finder ; relisez-le avant de le joindre à un [signalement](#signaler) : il peut contenir des
+Finder ;
+<!-- si: !finder !explorer
+Si Bobine s'est arrêtée sans quitter (plantage, ordinateur éteint), elle le dit au lancement
+suivant et range un rapport sur cet ordinateur, **sans rien envoyer**. **Afficher le rapport** le
+montre dans le gestionnaire de fichiers ;
+-->
+<!-- si: explorer
+Si Bobine s'est arrêtée sans quitter (plantage, ordinateur éteint), elle le dit au lancement
+suivant et range un rapport sur cet ordinateur, **sans rien envoyer**. **Afficher le rapport** le
+montre dans l'Explorateur de fichiers ;
+-->
+relisez-le avant de le joindre à un [signalement](#signaler) : il peut contenir des
 extraits de vos conversations. Vos conversations sont gardées.
 
 Si l'interface s'arrête trois fois en une minute, Bobine propose de se relancer sur l'accueil.

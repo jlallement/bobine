@@ -29,7 +29,14 @@ La ligne « Autres dossiers » n'apparaît qu'une fois l'agent démarré, et seu
 charge plusieurs dossiers. Pendant que l'agent répond, l'ajout et le retrait attendent la fin de sa
 réponse.
 
+<!-- si: finder -->
 Un clic sur le nom d'un dossier l'affiche dans le Finder.
+<!-- si: !finder !explorer
+Un clic sur le nom d'un dossier l'affiche dans le gestionnaire de fichiers.
+-->
+<!-- si: explorer
+Un clic sur le nom d'un dossier l'affiche dans l'Explorateur de fichiers.
+-->
 
 <a id="retirer"></a>
 

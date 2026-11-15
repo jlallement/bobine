@@ -42,4 +42,25 @@ describe('trousseau des essais (fiche 207)', () => {
       vi.useRealTimers()
     }
   })
+
+  it('Linux sans trousseau (D4) : `basic_text` dit « sans trousseau » ; simulable aux essais', async () => {
+    const backend = (name: string) => ({ ...storage(), getSelectedStorageBackend: () => name })
+    expect(await safeStorageCipher(backend('basic_text')).withoutKeychain?.()).toBe(true)
+    expect(await safeStorageCipher(backend('gnome_libsecret')).withoutKeychain?.()).toBe(false)
+    // macOS, Windows : pas de méthode, ou elle lève.
+    expect(await safeStorageCipher(storage()).withoutKeychain?.()).toBe(false)
+    const throwing = {
+      ...storage(),
+      getSelectedStorageBackend: (): string => {
+        throw new Error('x')
+      }
+    }
+    expect(await safeStorageCipher(throwing).withoutKeychain?.()).toBe(false)
+    expect(keychainTestOptions(true, { BOBINE_KEYCHAIN_BACKEND: 'basic_text' })).toEqual({
+      backend: 'basic_text'
+    })
+    expect(keychainTestOptions(false, { BOBINE_KEYCHAIN_BACKEND: 'basic_text' })).toEqual({})
+    const simulated = safeStorageCipher(backend('gnome_libsecret'), { backend: 'basic_text' })
+    expect(await simulated.withoutKeychain?.()).toBe(true)
+  })
 })

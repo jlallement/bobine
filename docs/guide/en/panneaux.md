@@ -75,9 +75,15 @@ Pages the agent opens show up in the **Browser** tab; you can also type an addre
 Before opening a site, it asks for your approval (see
 [Permissions](conversations.md#autorisations)).
 
+<!-- si: finder -->
 - **Links.** In the conversation, a link to an address on your Mac (`http://localhost:3000`…)
   opens in the built-in browser; ⌥-click opens it in your Mac’s browser. Other links open in your
   Mac’s browser.
+<!-- si: !finder
+- **Links.** In the conversation, a link to an address on your computer
+  (`http://localhost:3000`…) opens in the built-in browser; ⌥-click opens it in your browser.
+  Other links open in your browser.
+-->
 - **Zoom.** With the page focused: ⌘+, ⌘− and ⌘0. A “110%” chip in the address bar resets the
   page to 100% in one click. Other shortcuts: [Keyboard shortcuts](raccourcis.md#navigateur).
 - **Screen size.** When the agent sets a size (mobile…), a chip in the address bar says so; a

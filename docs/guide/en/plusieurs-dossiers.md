@@ -27,7 +27,14 @@ it has.
 The “Other folders” line only appears once the agent has started, and only if it supports multiple
 folders. While the agent is responding, adding and removing wait for its response to end.
 
+<!-- si: finder -->
 Click a folder’s name to show it in the Finder.
+<!-- si: !finder !explorer
+Click a folder’s name to show it in the file manager.
+-->
+<!-- si: explorer
+Click a folder’s name to show it in File Explorer.
+-->
 
 <a id="retirer"></a>
 

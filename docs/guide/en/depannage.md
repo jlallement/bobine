@@ -31,7 +31,15 @@ Nothing is sent to a model: the trial session is deleted afterwards.
 
 ## Read the log
 
-Settings › Diagnostics › **Log** shows the two files, with **Open** and **Show in Finder**:
+Settings › Diagnostics › **Log** shows the two files, with **Open** and
+<!-- si: finder -->
+**Show in Finder**:
+<!-- si: !finder !explorer
+**Show in the file manager**:
+-->
+<!-- si: explorer
+**Show in File Explorer**:
+-->
 
 - `main.log`: startup, errors, agents started and stopped, turn durations;
 - `agents.log`: the exchanges with the agents, at the Detailed and Trace levels.
@@ -55,8 +63,12 @@ To understand a problem with an agent: switch to **Detailed**, do the operation 
 Settings › Diagnostics › **Report an issue** opens a GitHub issue in your browser, pre-filled with
 the version and the report. Nothing is sent until you submit it on GitHub.
 
-The Bobine › About Bobine window also has **Copy technical info** (version, commit, macOS,
-installed agents), to paste into a report.
+The Bobine › About Bobine window also has **Copy technical info** (version, commit,
+<!-- si: finder -->
+macOS, installed agents), to paste into a report.
+<!-- si: !finder
+system, installed agents), to paste into a report.
+-->
 
 <a id="agent-introuvable"></a>
 
@@ -123,23 +135,32 @@ After you log in, Bobine can take up to 5 minutes to notice.
 Network down, proxy, rate limit: Bobine retries on its own. A banner shows “Connection lost” and
 “Trying again in 8 s (3 of 5)”; your message stays queued and goes out again without you having to
 resend it. Five attempts, further and further apart, and right away if the network comes back or
+<!-- si: finder -->
 the Mac wakes from sleep.
+<!-- si: !finder
+the computer wakes from sleep.
+-->
 
 **Try again now** doesn’t wait; Esc or Stop gives up. After the fifth: “Can’t connect” and
 **Try again**.
 
 Behind a corporate proxy: see [Corporate network](agents.md#reseau).
 
+<!-- si: screenCapture -->
 <a id="capture"></a>
 
+<!-- si: screenCapture -->
 ## Screenshot is unavailable
 
+<!-- si: screenCapture -->
 Capturing an area of the screen (message box, Quick Entry) needs macOS’s “Screen & System Audio
 Recording” permission. Turn on Bobine in System Settings › Privacy & Security › Screen & System
 Audio Recording, then restart the app. The **Open System Settings** button takes you there.
 
+<!-- si: screenCapture -->
 Attaching the built-in browser’s page or the simulator’s screen doesn’t need it.
 
+<!-- si: finder -->
 After a Bobine update, macOS may ask for this permission again, as well as for keychain access
 (“Bobine Safe Storage”): answer **Always Allow**.
 
@@ -170,8 +191,20 @@ soon as the agent speaks again.
 
 ## After an unexpected stop
 
+<!-- si: finder -->
 If Bobine stopped without quitting (crash, Mac shut down), it says so at the next launch and saves
-a report on this Mac, **without sending anything**. **Show Report** reveals it in the Finder; read
+a report on this Mac, **without sending anything**. **Show Report** reveals it in the Finder;
+<!-- si: !finder !explorer
+If Bobine stopped without quitting (crash, computer shut down), it says so at the next launch and
+saves a report on this computer, **without sending anything**. **Show Report** reveals it in the
+file manager;
+-->
+<!-- si: explorer
+If Bobine stopped without quitting (crash, computer shut down), it says so at the next launch and
+saves a report on this computer, **without sending anything**. **Show Report** reveals it in File
+Explorer;
+-->
+read
 it before attaching it to a [report](#signaler): it may contain excerpts of your conversations.
 Your conversations are kept.
 

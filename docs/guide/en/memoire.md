@@ -45,7 +45,15 @@ memory to see who proposed it and when. You can:
 - **Export…** the memory shown as Markdown;
 - **Attach to a folder…** the memories of a project whose folder was moved.
 
-Memories are Markdown files, in plain text on this Mac (**Show in Finder**). A file changed
+<!-- si: finder -->
+Memories are Markdown files, in plain text on this Mac (**Show in Finder**).
+<!-- si: !finder !explorer
+Memories are Markdown files, in plain text on this computer (**Show in the file manager**).
+-->
+<!-- si: explorer
+Memories are Markdown files, in plain text on this computer (**Show in File Explorer**).
+-->
+A file changed
 outside Bobine, by an editor or by an agent with its own tools, is no longer given to the agents
 until you have read it again: **Keep these changes** approves it.
 

@@ -41,6 +41,8 @@ export interface ProviderEntry extends ModelProvider {
   keyStored: boolean
   /** Enregistrée, mais le trousseau n'a pas su la déchiffrer : à ressaisir. */
   keyUnreadable?: boolean
+  /** Enregistrée en clair (Linux sans trousseau de session, fiche 145, D4). */
+  keyPlaintext?: boolean
   /** La variable `key.env` est déjà dans l'environnement de l'app. */
   keyFromEnvironment: boolean
   /**

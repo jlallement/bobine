@@ -34,8 +34,13 @@ command. OpenCode, by default, asks nothing. See [Agents](agents.md#autorisation
 running a command in the terminal, building, launching the app), Bobine asks, and you always see
 the exact command:
 
+<!-- si: finder -->
 - for a site: **Allow** (for this conversation), **Always allow** (remembered on this Mac) or
   **Deny**;
+<!-- si: !finder
+- for a site: **Allow** (for this conversation), **Always allow** (remembered on this computer)
+  or **Deny**;
+-->
 - for a command or a build: **Run** or **Build**, **Always in this project** (without asking
   again in this folder) or **Deny**.
 

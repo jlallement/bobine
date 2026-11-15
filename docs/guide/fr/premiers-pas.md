@@ -16,8 +16,14 @@ Ici, vous pouvez :
 
 ## Installer Bobine
 
+<!-- si: finder -->
 Bobine est publiée pour macOS (Apple Silicon), en `.dmg`, sur la page des versions du dépôt GitHub.
+<!-- si: !finder
+Sous Linux et Windows, Bobine est en préversion : paquet `.deb`, installeur Windows,
+décrits dans [docs/installation.md](../../installation.md).
+-->
 
+<!-- si: finder -->
 1. Ouvrez le `.dmg`.
 2. Double-cliquez sur Bobine dans sa fenêtre. Elle propose de s'installer elle-même :
    - **Pour tous les utilisateurs de ce Mac** : dans le dossier Applications (il faut les droits
@@ -27,12 +33,15 @@ Bobine est publiée pour macOS (Apple Silicon), en `.dmg`, sur la page des versi
 3. Cliquez sur **Installer**. Bobine se copie, se relance depuis sa nouvelle place et éjecte le
    disque image.
 
+<!-- si: finder -->
 Vous pouvez aussi glisser Bobine sur Applications, comme toute app. **Plus tard** repose la
 question au lancement suivant ; **Ne plus proposer** la fait taire.
 
+<!-- si: finder -->
 **macOS refuse d'ouvrir le `.dmg` ?** Bobine n'est pas encore signée par Apple : un `.dmg`
 téléchargé par un navigateur est mis en quarantaine. Retirez l'attribut avant de l'ouvrir :
 
+<!-- si: finder -->
 ```bash
 xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
 ```
@@ -48,7 +57,11 @@ Pour l'installer depuis les sources, derrière un proxy ou sans réseau : voir
 
 ## Installer un agent
 
+<!-- si: finder -->
 Bobine ne contient pas d'agent : elle pilote celui que vous avez installé sur le Mac.
+<!-- si: !finder
+Bobine ne contient pas d'agent : elle pilote celui que vous avez installé sur l'ordinateur.
+-->
 
 - **IBM Bob** : installez Bob Shell (la commande `bob`).
 - **OpenCode** : installez OpenCode (la commande `opencode`). Il donne accès à des modèles
@@ -69,7 +82,15 @@ votre projet**, puis **Choisir un dossier…**. Aucun agent ne démarre avant ce
 lira et modifiera des fichiers.
 
 Pour changer de dossier ensuite : cliquez sur le dossier sous la zone de saisie (menu **Dossier de
-travail**), puis **Choisir un dossier…**. Le même menu propose **Afficher dans le Finder**,
+travail**), puis **Choisir un dossier…**. Le même menu propose
+<!-- si: finder -->
+**Afficher dans le Finder**,
+<!-- si: !finder !explorer
+**Afficher dans le gestionnaire de fichiers**,
+-->
+<!-- si: explorer
+**Afficher dans l'Explorateur de fichiers**,
+-->
 **Copier le chemin**, **Ouvrir un terminal ici** et
 [Nouvelle conversation dans un worktree](worktrees.md#nouveau-worktree).
 
@@ -102,8 +123,16 @@ Au premier message, Bob peut demander, dans cet ordre :
 1. **Dossier non approuvé** : cliquez sur **Faire confiance à ce dossier**. Bob s'en souvient.
 2. **Connexion requise** : cliquez sur le bouton de connexion proposé par Bob (« Log in with
    SSO ») : la connexion se termine dans votre navigateur. Ou **Utiliser une clé d'API** : collez
-   une clé personnelle, puis **Se connecter**. Elle est chiffrée dans le trousseau macOS, et se
-   change dans Réglages › Agents › IBM Bob.
+   une clé personnelle, puis **Se connecter**.
+   <!-- si: finder -->
+   Elle est chiffrée dans le trousseau macOS,
+   <!-- si: !finder !explorer
+   Elle est chiffrée par le trousseau de la session (en clair, droits 600, s'il n'y en a pas),
+   -->
+   <!-- si: explorer
+   Elle est chiffrée par Windows (DPAPI),
+   -->
+   et se change dans Réglages › Agents › IBM Bob.
 3. **Licence** : selon la version de Bob, un formulaire s'affiche dans la conversation, ou
    **Lire la licence** l'ouvre dans le terminal de Bobine. Acceptez-la vous-même
    (`bob --accept-license` dans un terminal), puis **Réessayer**. Bobine ne l'accepte jamais à

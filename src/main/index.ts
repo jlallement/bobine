@@ -227,7 +227,7 @@ const managesNativeLanguage = features.nativeLanguage && app.isPackaged && !fres
 const appLanguage = systemAppLanguage(systemPreferences)
 const startLanguage = savedLanguage(join(userData, 'settings.json'))
 if (managesNativeLanguage) syncNativeLanguage(appLanguage, startLanguage)
-initI18n(resolveLanguage(startLanguage, app.getPreferredSystemLanguages()))
+initI18n(resolveLanguage(startLanguage, app.getPreferredSystemLanguages()), features)
 // Dossier personnel : les libellés de cartes (et des notifications) disent `~` (fiche 214).
 setHomeFolder(homedir())
 

@@ -234,3 +234,55 @@ describe('trousseau qui ne répond pas (fiche 207)', () => {
     expect(cipher.available).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('Linux sans trousseau de session (fiche 145, D4)', () => {
+  /** Faux `basic_text` : `available()` vrai, mais aucun vrai chiffrement ; bascule possible. */
+  const linuxCipher = (state: { keychain: boolean }) => {
+    const base = fakeCipher()
+    return {
+      available: vi.fn(base.available),
+      encrypt: vi.fn(base.encrypt),
+      decrypt: vi.fn(base.decrypt),
+      withoutKeychain: vi.fn(() => Promise.resolve(!state.keychain))
+    }
+  }
+
+  it('en clair et marquée, jamais un faux chiffrement ; dit par `info` ; posée à l’agent', async () => {
+    const path = file()
+    const cipher = linuxCipher({ keychain: false })
+    const store = new ApiKeyStore(path, cipher)
+    await store.set('bob', 'BOB_API_KEY', 'secret-lin')
+    expect(cipher.encrypt).not.toHaveBeenCalled()
+    expect(JSON.parse(readFileSync(path, 'utf8')).keys.bob.BOB_API_KEY).toBe('plain:secret-lin')
+    expect(statSync(path).mode & 0o777).toBe(0o600)
+    expect(store.info('bob', BOB, {})[0]).toMatchObject({ stored: true, plaintext: true })
+    const again = new ApiKeyStore(path, linuxCipher({ keychain: false }))
+    expect(await again.credentials('bob', BOB)).toMatchObject({ BOB_API_KEY: 'secret-lin' })
+    // Toujours en clair : pas de trousseau apparu.
+    expect(readFileSync(path, 'utf8')).toContain('plain:secret-lin')
+  })
+
+  it('chiffrée dès qu’un trousseau répond, à son prochain usage', async () => {
+    const path = file()
+    await new ApiKeyStore(path, linuxCipher({ keychain: false })).set('bob', 'BOB_API_KEY', 'k1')
+    const cipher = linuxCipher({ keychain: true })
+    const store = new ApiKeyStore(path, cipher)
+    expect(await store.credentials('bob', BOB)).toMatchObject({ BOB_API_KEY: 'k1' })
+    expect(cipher.encrypt).toHaveBeenCalledWith('k1')
+    expect(readFileSync(path, 'utf8')).not.toContain('k1')
+    expect(store.info('bob', BOB, {})[0]?.plaintext).toBeUndefined()
+    expect(await new ApiKeyStore(path, fakeCipher()).credentials('bob', BOB)).toMatchObject({
+      BOB_API_KEY: 'k1'
+    })
+  })
+
+  it('avec un trousseau (macOS, Windows, Linux équipé) : chiffrée comme avant', async () => {
+    const path = file()
+    const cipher = linuxCipher({ keychain: true })
+    const store = new ApiKeyStore(path, cipher)
+    await store.set('bob', 'BOB_API_KEY', 'k2')
+    expect(cipher.encrypt).toHaveBeenCalledWith('k2')
+    expect(readFileSync(path, 'utf8')).not.toContain('k2')
+    expect(store.info('bob', BOB, {})[0]?.plaintext).toBeUndefined()
+  })
+})

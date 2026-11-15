@@ -7,9 +7,12 @@ import type { InitOptions } from 'i18next'
 import en from './locales/en.json'
 import fr from './locales/fr.json'
 import { DEFAULT_LANGUAGE, LANGUAGES, type Language } from './language'
+import { ALL_FEATURES, type PlatformFeatures } from '../platform'
+import { withSystemTexts } from './system-texts'
 
 export * from './language'
 export { typography } from './typography'
+export { systemTextGroups, withSystemTexts } from './system-texts'
 
 export const resources = {
   fr: { translation: fr },
@@ -18,11 +21,18 @@ export const resources = {
 
 /**
  * Réglages communs aux deux processus ; le renderer y ajoute le greffon de React. Chaque instance
- * enregistre aussi `typography` (`.use(typography)`), que `postProcess` applique.
+ * enregistre aussi `typography` (`.use(typography)`), que `postProcess` applique. Les textes suivent
+ * les capacités de la plateforme (`withSystemTexts`) ; sans elles, ceux du Mac.
  */
-export function i18nOptions(language: Language): InitOptions {
+export function i18nOptions(
+  language: Language,
+  features: Pick<PlatformFeatures, 'finder' | 'explorer'> = ALL_FEATURES
+): InitOptions {
   return {
-    resources,
+    resources: {
+      fr: { translation: withSystemTexts(fr, features) },
+      en: { translation: withSystemTexts(en, features) }
+    },
     lng: language,
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: [...LANGUAGES],

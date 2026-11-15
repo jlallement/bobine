@@ -42,7 +42,11 @@ The same list is in the app: Help › Keyboard Shortcuts (⌘/), or Settings ›
 | ⌘/ | Keyboard Shortcuts | Help |
 <!-- /raccourcis:menus -->
 
+<!-- si: finder -->
 The Edit and Window menus also have the usual macOS shortcuts (⌘Z, ⌘C, ⌘V, ⌘A, ⌘M…).
+<!-- si: !finder
+The ☰ menu (or Alt) also has the usual editing shortcuts (⌘Z, ⌘C, ⌘V, ⌘A…).
+-->
 Help › Diagnostics… and Help › Show Log have no shortcut.
 
 <a id="fenetre-rapide"></a>

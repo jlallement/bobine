@@ -1118,7 +1118,9 @@
       "saving": "Saving…",
       "retry": "Try again",
       "keychainWaitTitle": "Waiting for the macOS Keychain…",
-      "keychainWaitText": "A macOS window asks you to allow Bobine (“Bobine Safe Storage”): enter your login password, then “Always Allow”. It may be hidden behind this window."
+      "keychainWaitText": "A macOS window asks you to allow Bobine (“Bobine Safe Storage”): enter your login password, then “Always Allow”. It may be hidden behind this window.",
+      "plaintextState": "Saved in plain text",
+      "plaintextNotice": "No session keyring (GNOME Keyring, KWallet): this key is kept in plain text, in a file only you can read (mode 600), as the agents keep their own. To encrypt it, install a keyring (Ubuntu: sudo apt install gnome-keyring) then log in again: Bobine will encrypt it the next time it’s used. Or remove it here and set {{env}} yourself in your environment."
     },
     "agents": {
       "agents": {
@@ -5206,5 +5208,286 @@
   },
   "appMenu": {
     "label": "Bobine menu"
+  },
+  "systemTexts": {
+    "withoutFinder": {
+      "settings": {
+        "memory": {
+          "enabled": {
+            "hintOff": "Off: agents get neither memories nor the tool; yours stay on this computer."
+          },
+          "reveal": "Show in the file manager",
+          "where": "Shared by all agents, in plain text on this computer.",
+          "keyLocked": "Bobine cannot read its key in the session keyring: memories are not given to agents, and nothing can be approved. Unlock the keyring, then restart Bobine."
+        },
+        "general": {
+          "mac": "Computer",
+          "language": {
+            "hint": "The interface language; “System” follows the system’s."
+          },
+          "keepAwake": {
+            "hint": "The computer stays awake while an agent is working (the display can turn off)."
+          }
+        },
+        "apiKeys": {
+          "keychainWaitTitle": "Waiting for the session keyring…",
+          "keychainWaitText": "The session keyring (GNOME Keyring, KWallet) may ask to be unlocked: enter its password, often your login password. Its window may be hidden behind this one."
+        },
+        "agents": {
+          "page": {
+            "keysHint": "Instead of the agent’s own sign-in. Encrypted by the session keyring if there is one (GNOME Keyring, KWallet)."
+          }
+        },
+        "providers": {
+          "hint": "OpenAI-compatible endpoints (internal models…). The key is kept by the session keyring.",
+          "key": {
+            "help": "Encrypted by the session keyring, set in {{env}} when the agent starts; a plain-text key in the file is replaced by {env:{{env}}}."
+          }
+        },
+        "notifications": {
+          "notifications": {
+            "blocked": "The system blocks Bobine’s banners. The sound still works.",
+            "openSettings": "Open system settings"
+          },
+          "dockBounce": {
+            "label": "Highlight Bobine in the taskbar or dock"
+          }
+        },
+        "data": {
+          "fresh": {
+            "agentsLabel": "Agents as on a new computer"
+          }
+        }
+      },
+      "diagnostics": {
+        "log": {
+          "reveal": "Show in the file manager",
+          "revealLabel": "Show {{file}} in the file manager"
+        }
+      },
+      "changes": {
+        "reveal": "Show in the file manager",
+        "revealLabel": "Show {{path}} in the file manager",
+        "children": {
+          "revealLabel": "Show the worktree of “{{title}}” in the file manager"
+        }
+      },
+      "browser": {
+        "download": {
+          "show": "Show in the file manager"
+        }
+      },
+      "document": {
+        "reveal": "Show in the file manager"
+      },
+      "discussion": {
+        "documents": {
+          "reveal": "Show in the file manager"
+        },
+        "error": {
+          "notOpenable": "This file does not open from Bobine: it could run a program. Use “Show in the file manager”."
+        },
+        "permission": {
+          "execute": "{{agent}} wants to run a program on your computer"
+        }
+      },
+      "fileLink": {
+        "title": "{{location}} — ⌥-click: show in the file manager",
+        "executable": "“{{file}}” can run: shown in the file manager instead of opened.",
+        "outside": "“{{file}}” is outside the conversation’s folder: shown in the file manager."
+      },
+      "imageZoom": {
+        "description": "The image, larger; drag it to the file manager to save it."
+      },
+      "sidebar": {
+        "notifications": {
+          "blocked": "Notifications blocked by the system",
+          "blockedHint": "The system doesn’t show Bobine’s notifications: allow them in its settings. The dots still work."
+        }
+      },
+      "usage": {
+        "board": {
+          "account": {
+            "title": "{{agent}} on this computer",
+            "spend": "Spend on this computer",
+            "spendHint": "From {{agent}}’s database on this computer, Bobine and terminal included. A conversation used during the period counts in full."
+          }
+        }
+      },
+      "blocker": {
+        "auth": {
+          "keyHint": "Saved by Bobine, encrypted by the session keyring if there is one (GNOME Keyring, KWallet); can be changed in Settings › Agents."
+        }
+      },
+      "settingsSearch": {
+        "apiKey": "api key token sign-in keyring kwallet"
+      },
+      "appToolFamilies": {
+        "browser": {
+          "approval": "Approval for a site outside this computer"
+        }
+      },
+      "capabilities": {
+        "apiKey": {
+          "detail": "`{{env}}`, encrypted by the session keyring."
+        },
+        "modelProviders": {
+          "detail": "OpenAI-compatible endpoints (internal models) in `~/.config/opencode/opencode.json`; key encrypted by the session keyring, set at launch."
+        }
+      },
+      "approvals": {
+        "site": {
+          "alwaysDescription": "Remembered on this computer; can be revoked in Settings › Privacy."
+        }
+      },
+      "apiKeys": {
+        "noKeychain": "No session keyring is available: the key can’t be saved. The agent can still read it from its environment variable.",
+        "keychainTimeout": "The session keyring didn’t answer within {{seconds}} s: the key isn’t saved. Unlock it, then try again."
+      },
+      "git": {
+        "missing": "git can’t be found. Install it with your system’s package manager (Ubuntu, Debian: `sudo apt install git`). Already installed? Settings › Diagnostics › Reload PATH."
+      },
+      "worktreeCycle": {
+        "pr": {
+          "certificate": "The certificate of {{host}} is rejected: install the company certificate in the system’s certificate store, then Refresh.",
+          "certificate_mr": "“glab” rejects the certificate of {{host}}: install the company certificate in the system’s certificate store (or “glab config set ca_cert <file> --host {{host}}”), then Refresh."
+        },
+        "mr": {
+          "error": {
+            "certificate": "The certificate of {{host}} is rejected: install the company certificate in the system’s certificate store, then try again."
+          }
+        }
+      },
+      "aboutWindow": {
+        "copyInfoHint": "Version, commit, Electron, system and installed agents, for a bug report"
+      },
+      "customAgents": {
+        "form": {
+          "apiKeyEnvHint": "You enter the key on the agent’s page afterwards; it’s encrypted by the session keyring."
+        }
+      },
+      "scheduled": {
+        "openOnly": "Tasks only run while Bobine is open. Missed runs (computer asleep, app closed) are not replayed: at most one catch-up run.",
+        "keepAwake": "During a run, “Prevent sleep” (Settings › General) keeps the computer awake."
+      },
+      "onboarding": {
+        "agent": {
+          "noneSubtitle": "Bobine drives a coding agent installed on this computer. Install one, then search again."
+        }
+      },
+      "memory": {
+        "keyLocked": "Bobine cannot read its key in the session keyring: nothing can be kept for now."
+      },
+      "appAlert": {
+        "crashed": {
+          "detail": "Your conversations are kept. A report was saved on this computer; nothing was sent. It may contain excerpts of your conversations, or even secrets (end of the log, Bobine’s memory in the .dmp files): read it before attaching it."
+        }
+      }
+    },
+    "explorer": {
+      "settings": {
+        "memory": {
+          "reveal": "Show in File Explorer",
+          "keyLocked": "Bobine cannot decrypt its key (Windows DPAPI): memories are not given to agents, and nothing can be approved. Restart Bobine from your usual Windows account."
+        },
+        "general": {
+          "language": {
+            "hint": "The interface language; “System” follows Windows."
+          }
+        },
+        "apiKeys": {
+          "keychainWaitTitle": "Waiting for Windows encryption…",
+          "keychainWaitText": "Windows encrypts the key for your account (DPAPI); this normally asks for nothing."
+        },
+        "agents": {
+          "page": {
+            "keysHint": "Instead of the agent’s own sign-in. Encrypted by Windows (DPAPI)."
+          }
+        },
+        "providers": {
+          "hint": "OpenAI-compatible endpoints (internal models…). The key is encrypted by Windows (DPAPI).",
+          "key": {
+            "help": "Encrypted by Windows (DPAPI), set in {{env}} when the agent starts; a plain-text key in the file is replaced by {env:{{env}}}."
+          }
+        },
+        "notifications": {
+          "notifications": {
+            "blocked": "Windows blocks Bobine’s banners. The sound still works.",
+            "openSettings": "Open Windows Settings"
+          },
+          "dockBounce": {
+            "label": "Flash Bobine in the taskbar"
+          }
+        }
+      },
+      "diagnostics": {
+        "log": {
+          "reveal": "Show in File Explorer",
+          "revealLabel": "Show {{file}} in File Explorer"
+        }
+      },
+      "changes": {
+        "reveal": "Show in File Explorer",
+        "revealLabel": "Show {{path}} in File Explorer",
+        "children": {
+          "revealLabel": "Show the worktree of “{{title}}” in File Explorer"
+        }
+      },
+      "browser": {
+        "download": {
+          "show": "Show in File Explorer"
+        }
+      },
+      "document": {
+        "reveal": "Show in File Explorer"
+      },
+      "discussion": {
+        "documents": {
+          "reveal": "Show in File Explorer"
+        },
+        "error": {
+          "notOpenable": "This file does not open from Bobine: it could run a program. Use “Show in File Explorer”."
+        }
+      },
+      "fileLink": {
+        "title": "{{location}} — ⌥-click: show in File Explorer",
+        "executable": "“{{file}}” can run: shown in File Explorer instead of opened.",
+        "outside": "“{{file}}” is outside the conversation’s folder: shown in File Explorer."
+      },
+      "imageZoom": {
+        "description": "The image, larger; drag it to File Explorer to save it."
+      },
+      "blocker": {
+        "auth": {
+          "keyHint": "Stored encrypted by Windows (DPAPI); can be changed in Settings › Agents."
+        }
+      },
+      "settingsSearch": {
+        "apiKey": "api key token sign-in encryption dpapi"
+      },
+      "capabilities": {
+        "apiKey": {
+          "detail": "`{{env}}`, encrypted by Windows (DPAPI)."
+        },
+        "modelProviders": {
+          "detail": "OpenAI-compatible endpoints (internal models) in `~/.config/opencode/opencode.json`; key encrypted by Windows (DPAPI), set at launch."
+        }
+      },
+      "apiKeys": {
+        "noKeychain": "Windows encryption (DPAPI) isn’t available for this account: the key can’t be saved. The agent can still read it from its environment variable.",
+        "keychainTimeout": "Windows encryption didn’t answer within {{seconds}} s: the key isn’t saved. Try again."
+      },
+      "git": {
+        "missing": "git can’t be found on this PC. Install Git for Windows (git-scm.com/install/windows), then restart Bobine. Already installed? Settings › Diagnostics › Reload PATH."
+      },
+      "customAgents": {
+        "form": {
+          "apiKeyEnvHint": "You enter the key on the agent’s page afterwards; it’s encrypted by Windows (DPAPI)."
+        }
+      },
+      "memory": {
+        "keyLocked": "Bobine cannot decrypt its key (Windows DPAPI): nothing can be kept for now."
+      }
+    }
   }
 }

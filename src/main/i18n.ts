@@ -13,6 +13,7 @@ import {
   type Language
 } from '@shared/i18n'
 import { parsePreferences, type LanguagePreference } from '@shared/preferences'
+import type { PlatformFeatures } from '@shared/platform'
 
 /** Langue d'un Mac dont aucune langue préférée n'est proposée par l'app (ADR-0014). */
 export const SYSTEM_FALLBACK: Language = 'en'
@@ -56,8 +57,12 @@ export function savedLanguage(settingsFile: string): LanguagePreference {
   }
 }
 
-export function initI18n(language: Language): void {
-  void i18next.use(typography).init(i18nOptions(language))
+/** Textes du main dans cette langue, adaptés au système (capacités, `withSystemTexts`). */
+export function initI18n(
+  language: Language,
+  features?: Pick<PlatformFeatures, 'finder' | 'explorer'>
+): void {
+  void i18next.use(typography).init(i18nOptions(language, features))
 }
 
 /** Change la langue du main ; rend vrai si elle a changé. */

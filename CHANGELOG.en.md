@@ -6,6 +6,13 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Improved
 
+- Linux and Windows (previews): the app no longer talks about the Mac, the Finder, the Dock or the
+  macOS Keychain; it says “this computer”, the file manager (File Explorer on Windows), the
+  session keyring or DPAPI, help included.
+- Linux without a session keyring (no GNOME Keyring or KWallet): an API key is kept in plain text
+  in a file only you can read, and Settings › Agents says so, with how to encrypt it; it is
+  encrypted as soon as a keyring answers.
+
 - Deleting a parent conversation offers to delete its child conversations too (checked by
   default); unchecked, they carry on alone as ordinary conversations.
 

@@ -110,9 +110,10 @@ export function freshStartIpc(confirmQuit: () => void): FreshStartIpc {
     info: { temporary: freshStart.temporary, askReset: freshStart.askReset },
     plan: async () => ({
       items: await resetInventory(userData(), resetPaths(outside())),
-      // Windows (fiche 229) : pas d'entrée de trousseau ; la clé DPAPI est dans `Local State`,
-      // déjà dans le dossier de données qui part à la corbeille.
-      keychain: !isolated && launchSystem() !== 'windows',
+      // macOS seulement (`security`) : sous Windows, la clé DPAPI est dans `Local State`, dans le
+      // dossier de données qui part à la corbeille ; sous Linux, rien n'efface l'entrée du trousseau
+      // de la session : ne pas l'annoncer (fiche 229).
+      keychain: !isolated && process.platform === 'darwin',
       canUninstall: !!bundle()
     }),
     reset: (uninstall) => {

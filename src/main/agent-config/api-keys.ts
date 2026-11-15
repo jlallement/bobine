@@ -1,7 +1,8 @@
 /**
- * Clés d'API des agents (fiche 022), saisies dans l'app : chiffrées (trousseau macOS, via
- * `safeStorage`) dans un fichier des données de l'app, jamais renvoyées au renderer, et posées dans
- * l'environnement de l'agent à son lancement.
+ * Clés d'API des agents (fiche 022), saisies dans l'app : chiffrées (trousseau macOS, DPAPI de
+ * Windows, trousseau de la session sous Linux, via `safeStorage`) dans un fichier des données de
+ * l'app, jamais renvoyées au renderer, et posées dans l'environnement de l'agent à son lancement.
+ * Sous Linux sans trousseau, gardées en clair et dites telles (fiche 145, D4).
  *
  * Le trousseau n'est touché que lorsqu'une clé sert (fiche 100) : saisie (`set`) ou lancement de
  * l'agent qui la lit (`credentials`, une fois par clé et par lancement de l'app). Savoir qu'une clé
@@ -23,7 +24,19 @@ export interface Cipher {
   encrypt(text: string): Promise<Buffer>
   /** `reencrypt` : la clé du trousseau a changé, la valeur est à rechiffrer. */
   decrypt(data: Buffer): Promise<{ text: string; reencrypt: boolean }>
+  /**
+   * Vrai quand le système n'a pas de trousseau et que `encrypt` ne ferait que semblant (Linux,
+   * `basic_text` : clé fixe de Chromium). Absent : il y a toujours un vrai chiffrement.
+   */
+  withoutKeychain?(): Promise<boolean>
 }
+
+/**
+ * Valeur gardée en clair (fiche 145, D4), marquée dans le fichier (`plain:` n'est jamais du base64,
+ * qui n'a pas de `:`) : sous Linux sans trousseau, plutôt qu'un faux chiffrement. Le fichier reste
+ * en droits 600, l'interface le dit, et la valeur est chiffrée dès qu'un trousseau répond.
+ */
+const PLAIN = 'plain:'
 
 /** Clé d'API qu'un agent accepte, déclarée par son profil. */
 export interface ApiKeySpec {
@@ -109,16 +122,22 @@ export class ApiKeyStore {
     const encrypting = (async () => {
       if (!(await this.keychainAvailable())) throw new Error(t(this.unavailable))
       if (late) return undefined
-      return this.cipher.encrypt(key)
+      // Sans trousseau (Linux, D4) : en clair et dit, jamais un faux chiffrement.
+      if (await this.withoutKeychain()) return PLAIN + key
+      return (await this.cipher.encrypt(key)).toString('base64')
     })()
-    const encrypted = await withTimeout(encrypting, this.timeoutMs, () => {
+    const stored = await withTimeout(encrypting, this.timeoutMs, () => {
       late = true
       return new KeychainTimeout(this.timeoutMs)
     })
-    if (!encrypted) throw new KeychainTimeout(this.timeoutMs)
-    this.store(profileId, env, encrypted.toString('base64'))
+    if (!stored) throw new KeychainTimeout(this.timeoutMs)
+    this.store(profileId, env, stored)
     this.plain.set(slot(profileId, env), Promise.resolve(key))
     this.failed.delete(slot(profileId, env))
+  }
+
+  private async withoutKeychain(): Promise<boolean> {
+    return (await this.cipher.withoutKeychain?.()) ?? false
   }
 
   /** Une seule question au trousseau à la fois ; oubliée une fois répondue (ou en échec). */
@@ -170,6 +189,7 @@ export class ApiKeyStore {
       ...(this.has(profileId, spec.env) && this.failed.has(slot(profileId, spec.env))
         ? { unreadable: true }
         : {}),
+      ...(this.keys[profileId]?.[spec.env]?.startsWith(PLAIN) ? { plaintext: true } : {}),
       fromEnvironment: [spec.env, ...(spec.aliases ?? [])].some((name) => !!env[name])
     }))
   }
@@ -204,6 +224,7 @@ export class ApiKeyStore {
     env: string,
     encrypted: string
   ): Promise<string | undefined> {
+    if (encrypted.startsWith(PLAIN)) return this.readPlain(profileId, env, encrypted)
     let decrypted: { text: string; reencrypt: boolean }
     try {
       decrypted = await this.cipher.decrypt(Buffer.from(encrypted, 'base64'))
@@ -220,6 +241,23 @@ export class ApiKeyStore {
       }
     }
     return decrypted.text
+  }
+
+  /**
+   * Valeur gardée en clair (D4) ; chiffrée au passage si un trousseau répond maintenant (installé,
+   * ou session ouverte avec lui). Au mieux : en cas d'échec, elle reste en clair et lisible.
+   */
+  private async readPlain(profileId: string, env: string, stored: string): Promise<string> {
+    const text = stored.slice(PLAIN.length)
+    try {
+      if ((await this.keychainAvailable()) && !(await this.withoutKeychain())) {
+        const encrypted = (await this.cipher.encrypt(text)).toString('base64')
+        if (this.keys[profileId]?.[env] === stored) this.store(profileId, env, encrypted)
+      }
+    } catch {
+      // Rien : la valeur en clair sert toujours.
+    }
+    return text
   }
 
   private store(profileId: string, env: string, encrypted: string): void {

@@ -178,6 +178,7 @@ export class ProvidersSettings {
           ...p,
           keyStored: info?.stored ?? false,
           ...(info?.unreadable ? { keyUnreadable: true } : {}),
+          ...(info?.plaintext ? { keyPlaintext: true } : {}),
           keyFromEnvironment: p.key.kind === 'env' ? !!env[p.key.env] : false
         }
       })
