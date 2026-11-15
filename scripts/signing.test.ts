@@ -232,7 +232,8 @@ describe.runIf(MACOS_FEATURES)(
   }
 )
 
-describe('notarisation du .dmg (fiche 111)', () => {
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)('notarisation du .dmg (fiche 111)', () => {
   it('soumet, attend, agrafe, puis vérifie avec Gatekeeper (xcrun et spctl simulés)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'notarize-'))
     const calls = join(dir, 'calls.txt')

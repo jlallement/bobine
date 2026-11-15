@@ -33,6 +33,7 @@ import { BOB_SUBAGENT_FORMAT } from './bob-subagents'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
 import type { AgentProfile } from './profiles'
 import { native, ON_WINDOWS, POSIX_PROCESSES } from '../test-platform'
+import { homeShown } from '../home-display'
 
 /** Texte affiché d'un avis du fil (traduit s'il est en code, fiche 074). */
 const noticeOf = (item: ReturnType<typeof reduceTranscript>['items'][number] | undefined) =>
@@ -654,7 +655,7 @@ describe('AgentHost', () => {
     generic.host.stop()
     expect(generic.changes().map((f) => [f.path, f.added])).toEqual([
       ['notes.md', 14],
-      ['src/calc.js', 3]
+      [native('src/calc.js'), 3]
     ])
   })
 
@@ -1039,7 +1040,8 @@ describe('AgentHost', () => {
         'commande-ecriture-hors-dossier'
       )
       const path = join(dirname(workspace), 'dehors', 'x.properties')
-      const tilde = path.startsWith(`${homedir()}/`) ? `~${path.slice(homedir().length)}` : path
+      // `~` pour le dossier personnel, à la façon du système (`~\\…` sous Windows).
+      const tilde = homeShown(path, homedir())
       expect(request.risks).toEqual([{ kind: 'outside-folder', path: tilde }])
       host.respondPermission(request.requestId, 'reject')
       await turn
@@ -1081,7 +1083,8 @@ describe('AgentHost', () => {
     it('modification d’un fichier hors du dossier (outil edit) : signalée', async () => {
       const { host, turn, request, workspace } = await riskRequest('ecriture-hors-dossier')
       const path = join(dirname(workspace), 'dehors', 'outil.toml')
-      const tilde = path.startsWith(`${homedir()}/`) ? `~${path.slice(homedir().length)}` : path
+      // `~` pour le dossier personnel, à la façon du système (`~\\…` sous Windows).
+      const tilde = homeShown(path, homedir())
       expect(request.risks).toEqual([{ kind: 'outside-folder', path: tilde }])
       host.respondPermission(request.requestId, 'reject')
       await turn

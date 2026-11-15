@@ -91,8 +91,10 @@ export function upTo(dir: string, root: string): string[] {
 /** Fichiers d'un motif, triés ; rien si le motif est invalide. */
 export async function globFiles(pattern: string, cwd: string): Promise<string[]> {
   const found: string[] = []
+  // Un motif s'écrit avec `/` ; sous Windows, `join` y a mis des `\`, qui y échappent (fiche 229).
+  const written = process.platform === 'win32' ? pattern.replace(/\\/g, '/') : pattern
   try {
-    for await (const match of glob(pattern, { cwd })) {
+    for await (const match of glob(written, { cwd })) {
       const path = isAbsolute(match) ? match : join(cwd, match)
       if (isFile(path)) found.push(path)
     }

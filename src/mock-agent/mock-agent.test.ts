@@ -944,7 +944,10 @@ describe('historique des sessions', () => {
       expect.objectContaining({ file: 'README.md', additions: 1, deletions: 1, status: 'modified' })
     ])
     expect(files[1]).toMatchObject({
-      patch: expect.stringMatching(new RegExp(`^Index: ${join(cwd, 'README.md')}\\n`))
+      // Chemin cité tel quel dans le motif (ses `\\` sous Windows ne sont pas des échappements).
+      patch: expect.stringMatching(
+        new RegExp(`^Index: ${join(cwd, 'README.md').replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}\\n`)
+      )
     })
 
     const replayed: SessionNotification[] = []

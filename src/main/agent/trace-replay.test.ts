@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, resolve, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { conversationChanges } from '@shared/changes'
 import { commandFolderOf } from '@shared/command-view'
@@ -124,7 +124,8 @@ describe('formes relevées dans les traces', () => {
   const changesOf = (name: string) =>
     Object.fromEntries(
       conversationChanges(byName(name)).map((c) => [
-        c.path.replace('/dossier/', ''),
+        // Relatif au dossier du rejeu (sous Windows, un fichier créé y est résolu en `D:\\dossier\\…`).
+        relative(resolve('/dossier'), resolve(c.path)).split(sep).join('/'),
         { created: c.created, added: c.added, removed: c.removed, old: c.diffs[0]?.oldText }
       ])
     )

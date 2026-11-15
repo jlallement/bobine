@@ -426,7 +426,7 @@ describe('ConversationManager', () => {
     const rules = await app.manager.rules(id)
     expect(rules.map((r) => `${r.scope}${r.mode ? `:${r.mode}` : ''} ${r.label}`)).toEqual([
       'project AGENTS.md',
-      'personal:code ~/.bob/rules-code/style.md'
+      native('personal:code ~/.bob/rules-code/style.md')
     ])
     const personal = await app.manager.readDocument(
       id,
@@ -644,7 +644,7 @@ describe('ConversationManager', () => {
     await app.manager.prompt(id, 'Premier')
     // Le dossier de l'historique devient un fichier : toute écriture échoue.
     const dir = join(env.root, 'conversations')
-    execFileSync('rm', ['-rf', dir])
+    rmSync(dir, { recursive: true, force: true })
     writeFileSync(dir, '')
     await app.manager.prompt(id, 'Deuxième')
     await app.manager.prompt(id, 'Troisième')

@@ -26,8 +26,8 @@ afterEach(() => {
 })
 
 describe('lancement sous macOS et Linux : identique à avant (ADR-0050)', () => {
-  it('système par défaut : Unix', () => {
-    expect(launchSystem()).toBe('posix')
+  it('système par défaut : celui de la machine, Unix sur macOS et Linux (lot 7a)', () => {
+    expect(launchSystem()).toBe(process.platform === 'win32' ? 'windows' : 'posix')
   })
 
   it('agent : commande telle quelle, mêmes options plus `detached`, même entrée au registre', () => {
