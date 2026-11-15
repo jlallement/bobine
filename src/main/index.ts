@@ -99,7 +99,7 @@ import { migrateUserData } from './user-data-migration'
 import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
 import { fontLister } from './fonts'
-import { currentPlatformFeatures } from './platform'
+import { currentPlatformFeatures, fontSource, systemName } from './platform'
 import { createMainBrowserWindow, createQuickWindow, loadRenderer } from './renderer-windows'
 import { technicalFacts } from './about-window'
 import { appAboutWindow, appHelpWindow, helpIpc } from './secondary-windows'
@@ -612,7 +612,8 @@ async function start(): Promise<void> {
   const alerts = systemAlerts(
     () => settings.preferences(),
     // Bannières et compteur coupés en mode présentation (fiche 159).
-    () => settings.notificationsEnabled() && !presentation.active
+    () => settings.notificationsEnabled() && !presentation.active,
+    features.dockBadge
   )
   // Compteur « À traiter » du Dock (fiche 119) : la règle de la barre latérale, comptée ici.
   const updateBadge = () =>
@@ -843,7 +844,7 @@ async function start(): Promise<void> {
         electronVersion: process.versions.electron,
         platform: process.platform,
         ...(managesNativeLanguage ? { nativeLanguage: launchLanguage(app.getLocale()) } : {}),
-        fonts: fontLister(),
+        fonts: fontLister(fontSource(process.platform)),
         presentation: { active: () => presentation.active, set: (on) => presentation.set(on) },
         showLog,
         alerts: failures.alertsIpc,
@@ -938,7 +939,7 @@ async function start(): Promise<void> {
               app: {
                 version: app.getVersion(),
                 electron: process.versions.electron,
-                os: process.getSystemVersion(),
+                os: `${systemName(process.platform)} ${process.getSystemVersion()}`,
                 packaged: app.isPackaged
               },
               workspace: conversations.settingsView().workspace,

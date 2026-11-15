@@ -84,6 +84,8 @@ export async function tipsSuite(scheme) {
       )
       await ui.click(ui.$('open-settings'))
       await ui.waitFor(`!!${ui.$('settings-tips')}`, 8000)
+      // Le compte des astuces masquées arrive après la ligne (lecture asynchrone).
+      await ui.waitFor(`!!${ui.$('settings-tips-hidden')}`)
       const hint = await ui.ev(`${ui.$('settings-tips-hidden')}?.innerText`)
       check(
         hint === L('settings.general.tips.hidden', { count: 1 }) &&

@@ -7,6 +7,7 @@ import { app } from 'electron'
 import type { ProfileSummary } from '@shared/agent'
 import { buildInfo } from './build-info'
 import { currentLanguage } from './i18n'
+import { systemName } from './platform'
 import type { TechnicalFacts } from './technical-info'
 import { revealWindow } from './window-state'
 
@@ -85,6 +86,8 @@ export function technicalFacts(agents: ProfileSummary[]): TechnicalFacts {
       chrome: process.versions.chrome,
       node: process.versions.node
     },
+    // Le vrai système, comme sa version et l'architecture (fiche 145).
+    system: systemName(process.platform),
     os: process.getSystemVersion(),
     arch: process.arch,
     language: currentLanguage(),

@@ -1,4 +1,4 @@
-import { L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { FEATURES, L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /** Panneau latéral à onglets, onglet « Tâches » (fiches 029, 035). */
 export async function panelSuite(scheme) {
@@ -108,7 +108,11 @@ export async function panelSuite(scheme) {
         `[...${ui.$('panel-more-menu')}.querySelectorAll('[role=menuitem]')].map((item) => item.dataset.tab).join()`
       )
       check(
-        offered === 'browser,simulator,android,terminal,acp,changes',
+        // Simulateur iOS seulement là où la plateforme l'a (capacité `simulator`, fiche 145).
+        offered ===
+          (FEATURES.simulator
+            ? 'browser,simulator,android,terminal,acp,changes'
+            : 'browser,android,terminal,acp,changes'),
         `menu « + » : les autres outils (${offered})`
       )
       await ui.shot('23b-panneau-autres-outils')

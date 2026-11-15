@@ -6,7 +6,8 @@
 #   pnpm package --dir       .app seule (plus rapide)
 #   pnpm package --dry-run   essai à blanc : dit comment l'app serait signée, rien n'est construit
 #   pnpm package --strict    une configuration de signature incomplète est une erreur (release.yml)
-#   pnpm package --linux     AppImage + .deb, pour l'architecture de la machine (Linux seulement)
+#   pnpm package --linux     AppImage + .deb, pour l'architecture de la machine (Linux seulement),
+#                            puis contrôle du .deb (scripts/check-linux-package.mts)
 #
 # Signature (fiche 111, scripts/signing.mts) : « ad hoc » par défaut (l'app se lance sur la machine
 # qui l'a construite). Jamais un certificat pris d'office dans le trousseau : il faut le désigner
@@ -31,7 +32,12 @@ if [[ " $* " == *" --linux "* ]]; then
   pnpm -s build
   # Avis de licence livrés avec l'app à jour pour ce build (fiche 217).
   pnpm -s third-party-notices --check
-  exec pnpm exec electron-builder --linux ${args[@]+"${args[@]}"}
+  pnpm exec electron-builder --linux ${args[@]+"${args[@]}"}
+  # Icônes hicolor et entrée de bureau du .deb (sauf `--dir` : pas de paquet).
+  if [[ " ${args[*]-} " != *" --dir "* ]]; then
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-linux-package.mts
+  fi
+  exit 0
 fi
 
 dry_run=0

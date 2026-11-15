@@ -34,6 +34,7 @@ export interface AgentCheck {
 }
 
 export interface SystemFacts {
+  /** `os` : nom et version du système (`macOS 26.0`, `Linux 6.8.0`, fiche 145). */
   app: { version: string; electron: string; os: string; packaged: boolean }
   workspace: string
   home: string

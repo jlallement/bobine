@@ -59,7 +59,8 @@ export async function aboutSuite(scheme) {
             win?.visible &&
               win.child &&
               !win.resizable &&
-              !win.minimizable &&
+              // `minimizable` : sans effet sous Linux, où Electron le dit toujours vrai.
+              (!win.minimizable || process.platform !== 'darwin') &&
               win.size === '400x420' &&
               others.length === 0,
             `menu Bobine › À propos : une fenêtre de l’app, attachée, 400 × 420, non redimensionnable, une seule (${JSON.stringify(win)}, ${others.length} de plus)`
@@ -99,10 +100,14 @@ export async function aboutSuite(scheme) {
               /\nElectron \d/.test(copied) &&
               /\nChromium \d/.test(copied) &&
               /\nNode \d/.test(copied) &&
-              /\nmacOS \d+(\.\d+)* \((arm64|x64)\)/.test(copied) &&
+              // Le vrai système (fiche 145) : version de macOS, ou du noyau Linux.
+              (process.platform === 'darwin'
+                ? /\nmacOS \d+(\.\d+)* \((arm64|x64)\)/
+                : /\nLinux \S+ \((arm64|x64)\)/
+              ).test(copied) &&
               copied.includes(`Interface language: ${LANG}`) &&
               copied.includes('\nAgents:\n- '),
-            `« Copier les infos techniques » : version, commit, moteurs, macOS, langue, agents\n${copied}`
+            `« Copier les infos techniques » : version, commit, moteurs, système, langue, agents\n${copied}`
           )
           check(
             (await about.ev(`${about.$('about-copy')}.innerText`)).includes(

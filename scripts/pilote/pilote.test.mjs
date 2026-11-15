@@ -4,7 +4,7 @@
  * protocole DevTools) est essayé par la suite e2e `pilote`.
  */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { JSDOM } from 'jsdom'
@@ -13,7 +13,7 @@ import { clickLabel } from './actions.mjs'
 import { frenchTypography as appTypography } from '../../src/shared/i18n/typography'
 import { formatDuration, parseArgs, parseDuration } from './args.mjs'
 import { excerpt, formatState, toolsLine, turnLine } from './etat.mjs'
-import { launchArgs, launchEnv, ours } from './instance.mjs'
+import { appCommand, launchArgs, launchEnv, ours } from './instance.mjs'
 import { appendEntry, formatSummary, readEntries, summarize } from './journal.mjs'
 import { EXIT_CODES, parseShownDuration, pendingReason, Watcher } from './raison.mjs'
 import { L, frenchTypography, panelTab } from './textes.mjs'
@@ -509,5 +509,43 @@ describe('clic par libellé (fiche 210)', () => {
   it('un cliquable dans un autre (étiquette et son bouton) ne compte qu’une fois', async () => {
     const p = page(`<label><button>Choisir</button></label>`)
     expect(await clickLabel(p, 'Choisir')).toBe('Choisir')
+  })
+})
+
+describe('app lancée (`--app`)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pilote-app-'))
+  const file = (path) => {
+    mkdirSync(join(dir, path, '..'), { recursive: true })
+    writeFileSync(join(dir, path), '')
+    return join(dir, path)
+  }
+
+  it('une .app : son exécutable de Contents/MacOS', () => {
+    const binary = file('Bobine.app/Contents/MacOS/Bobine')
+    expect(appCommand(join(dir, 'Bobine.app'))).toEqual({
+      command: binary,
+      args: [],
+      packaged: true
+    })
+  })
+
+  it('sous Linux, l’exécutable installé ou le dossier qui le contient (fiche 145)', () => {
+    const binary = file('linux-arm64-unpacked/bobine')
+    file('linux-arm64-unpacked/resources/app.asar')
+    expect(appCommand(binary)).toEqual({ command: binary, args: [], packaged: true })
+    expect(appCommand(join(dir, 'linux-arm64-unpacked'))).toEqual({
+      command: binary,
+      args: [],
+      packaged: true
+    })
+  })
+
+  it('sinon le build du dépôt par son Electron ; un dossier sans build est refusé', () => {
+    file('sources/out/main/index.js')
+    expect(appCommand(join(dir, 'sources'))).toMatchObject({
+      args: [join(dir, 'sources')],
+      packaged: false
+    })
+    expect(() => appCommand(join(dir, 'vide'))).toThrow('pas de build')
   })
 })

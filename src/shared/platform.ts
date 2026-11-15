@@ -14,7 +14,9 @@ export const PLATFORM_FEATURES = [
   /** Capture d'une zone de l'écran jointe au message (fiche 062). */
   'screenCapture',
   /** Le gestionnaire de fichiers s'appelle « Finder » (fiche 158) ; ailleurs, son nom générique. */
-  'finder'
+  'finder',
+  /** Compteur « À traiter » sur l'icône du Dock (fiche 024) ; pas d'API commune ailleurs. */
+  'dockBadge'
 ] as const
 
 export type PlatformFeature = (typeof PLATFORM_FEATURES)[number]
@@ -26,7 +28,8 @@ export const ALL_FEATURES: PlatformFeatures = {
   selfInstall: true,
   nativeLanguage: true,
   screenCapture: true,
-  finder: true
+  finder: true,
+  dockBadge: true
 }
 
 export const FEATURES_ARG = '--bobine-features='

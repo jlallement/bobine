@@ -1782,7 +1782,7 @@
       "androidSdk": "Android SDK",
       "androidSdkMissing": "not found",
       "androidSdkMissingFix": "Only for Android apps: install Android Studio (the app finds its SDK even outside the PATH).",
-      "versionDetail": "{{version}} ({{kind}}) · Electron {{electron}} · macOS {{os}}",
+      "versionDetail": "{{version}} ({{kind}}) · Electron {{electron}} · {{os}}",
       "packaged": "installed app",
       "development": "development",
       "simulatorsAvailable_one": "{{count}} available",

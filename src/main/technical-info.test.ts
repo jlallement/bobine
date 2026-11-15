@@ -6,6 +6,7 @@ const facts: TechnicalFacts = {
   version: '0.4.0',
   build: { date: '2026-10-22', commit: 'abc1234' },
   versions: { electron: '44.7.2', chrome: '146.0.7000.0', node: '24.9.0' },
+  system: 'macOS',
   os: '26.0',
   arch: 'arm64',
   language: 'fr',
@@ -37,6 +38,12 @@ describe('infos techniques de la fenêtre À propos (fiche 116)', () => {
         '- IBM Bob 1.3.0',
         '- OpenCode version unknown (not started yet)'
       ].join('\n')
+    )
+  })
+
+  it('sous Linux, le nom du système (fiche 145)', () => {
+    expect(technicalInfo({ ...facts, system: 'Linux', os: '6.8.0-49-generic' })).toContain(
+      '\nLinux 6.8.0-49-generic (arm64)\n'
     )
   })
 

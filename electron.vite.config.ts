@@ -15,8 +15,13 @@ const today = (): string => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** Commit court du dépôt ; `unknown` hors dépôt git (archive des sources). */
+/**
+ * Commit court du dépôt ; `BOBINE_BUILD_COMMIT` s'il est donné (sources copiées sans `.git`, comme
+ * dans le conteneur des essais Linux, fiche 145) ; `unknown` hors dépôt git (archive des sources).
+ */
 const commit = (): string => {
+  const given = process.env['BOBINE_BUILD_COMMIT']
+  if (given && /^[0-9a-f]{7,40}$/.test(given)) return given
   try {
     return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: __dirname })
       .toString()

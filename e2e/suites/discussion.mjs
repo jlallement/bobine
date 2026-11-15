@@ -128,6 +128,8 @@ export async function discussionSuite(scheme) {
         await ui.click(ui.$('title-menu'))
         await ui.click(ui.$('title-continue-in-project'))
         await ui.waitFor(`!!${ui.$('continue-dialog')}`)
+        // La case n'apparaît qu'une fois les documents comptés (lecture asynchrone).
+        await ui.waitFor(`!!${ui.$('continue-copy')}`)
         check(
           await ui.ev(`${ui.$('continue-copy')}?.checked === true`),
           'dialogue : documents copiés par défaut'

@@ -8,6 +8,8 @@ import i18next, { type ParseKeysWithoutVariables } from 'i18next'
 import { hasAllWords, searchWords } from '@shared/conversation-search'
 import { INTERFACE_SHORTCUTS, SHORTCUTS } from '@shared/shortcuts'
 import type { ProfileSummary } from '@shared/agent'
+import type { PlatformFeature } from '@shared/platform'
+import { platformFeatures } from './platform-features'
 
 /**
  * Onglets des réglages (fiche 136), en trois groupes séparés par un espace dans la colonne de
@@ -45,8 +47,16 @@ export interface SettingsEntry {
   page?: string
 }
 
-/** Un réglage : clé de son libellé affiché, clé des mots qui y mènent. */
-type IndexedSetting = readonly [SearchPlace, ParseKeysWithoutVariables, ParseKeysWithoutVariables]
+/**
+ * Un réglage : clé de son libellé affiché, clé des mots qui y mènent, et la capacité de la
+ * plateforme sans laquelle il n'est pas proposé (fiche 145).
+ */
+type IndexedSetting = readonly [
+  SearchPlace,
+  ParseKeysWithoutVariables,
+  ParseKeysWithoutVariables,
+  PlatformFeature?
+]
 
 const INDEX: readonly IndexedSetting[] = [
   ['general', 'settings.general.you', 'settingsSearch.you'],
@@ -80,7 +90,12 @@ const INDEX: readonly IndexedSetting[] = [
   ['notifications', 'settings.notifications.whenDone', 'settingsSearch.whenDone'],
   ['notifications', 'settings.notifications.notifications.label', 'settingsSearch.notifications'],
   ['notifications', 'settings.notifications.dockBounce.label', 'settingsSearch.dockBounce'],
-  ['notifications', 'settings.notifications.dockBadge.label', 'settingsSearch.dockBadge'],
+  [
+    'notifications',
+    'settings.notifications.dockBadge.label',
+    'settingsSearch.dockBadge',
+    'dockBadge'
+  ],
   ['notifications', 'settings.notifications.sound', 'settingsSearch.sound'],
   ['notifications', 'settings.notifications.attentionSound.label', 'settingsSearch.attentionSound'],
   ['conversation', 'settings.conversation.newConversation.label', 'settingsSearch.newConversation'],
@@ -146,11 +161,10 @@ const INDEX: readonly IndexedSetting[] = [
 /** Tous les réglages cherchables, raccourcis clavier compris, dans la langue courante. */
 export function settingsIndex(): SettingsEntry[] {
   const t = i18next.t
-  const settings = INDEX.map(([section, label, keywords]) => ({
-    section,
-    label: t(label),
-    keywords: t(keywords)
-  }))
+  const features = platformFeatures()
+  const settings = INDEX.filter(([, , , feature]) => !feature || features[feature]).map(
+    ([section, label, keywords]) => ({ section, label: t(label), keywords: t(keywords) })
+  )
   const keyword = t('settingsSearch.shortcut')
   const shortcuts = [...SHORTCUTS, ...INTERFACE_SHORTCUTS].map((s): SettingsEntry => ({
     section: 'shortcuts',

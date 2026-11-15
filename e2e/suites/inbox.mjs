@@ -2,7 +2,18 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, LANG, MAIN_PORT, check, mainProcess, sleep, withApp, M } from '../lib.mjs'
+import {
+  FEATURES,
+  L,
+  LANG,
+  dockBadgeIs,
+  MAIN_PORT,
+  check,
+  mainProcess,
+  sleep,
+  withApp,
+  M
+} from '../lib.mjs'
 import { conversationTooltip } from '../sidebar-tooltip.mjs'
 
 /**
@@ -68,6 +79,7 @@ async function inbox(ui, main) {
   const notes = () =>
     main.evaluate(`globalThis.__notes.map((n) => ({ title: n.title, body: n.body }))`)
   const badge = () => main.evaluate(`require('electron').app.dock?.getBadge() ?? null`)
+  const badgeIs = (expected) => dockBadgeIs(main, expected)
   const count = async () =>
     String(await ui.ev(`document.querySelectorAll('.history-item.unread').length`))
   const inboxRow = (id) => `document.querySelector('[data-testid=history-item][data-id="${id}"]')`
@@ -172,7 +184,7 @@ async function inbox(ui, main) {
     (await ui.ev(`document.querySelectorAll('[data-id="${access}"]').length`)) === 1,
     'une conversation qui attend n’apparaît qu’une fois'
   )
-  check((await badge()) === '4', `compteur du Dock : 4, posé par le main (${await badge()})`)
+  check(await badgeIs('4'), `compteur du Dock : 4, posé par le main (${await badge()})`)
 
   // Une seule bannière pour les deux filles (fenêtre élargie dans l'essai).
   for (let i = 0; i < 150 && (await notes()).length < 1; i++) await sleep(100)
@@ -187,32 +199,52 @@ async function inbox(ui, main) {
   )
   await ui.shot('inbox-1-etats-sur-place')
 
-  // Réglage « Compteur sur l'icône du Dock », trouvé par la recherche des réglages.
+  // Réglage « Compteur sur l'icône du Dock », trouvé par la recherche des réglages ; seulement là
+  // où la plateforme a ce compteur (fiche 145), absent ailleurs.
   await main.evaluate(
     `(require('electron').Menu.getApplicationMenu().getMenuItemById('settings').click(), true)`
   )
   await ui.waitFor(`!!${ui.$('settings')}`)
   await ui.ev(`${ui.$('settings-search')}.focus(); true`)
-  await ui.type(LANG === 'en' ? 'dock icon count' : 'compteur')
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=settings-result]')].some((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBadge.label'))}))`
-  )
-  await ui.enter()
-  await ui.waitFor(`!!${ui.$('settings-dock-badge')}`)
-  check(
-    await ui.ev(`${ui.$('settings-dock-badge')}.checked`),
-    'Réglages › Général : « Compteur sur l’icône du Dock », activé par défaut'
-  )
-  await ui.click(ui.$('settings-dock-badge'))
-  await ui.waitFor(`!${ui.$('settings-dock-badge')}.checked`)
-  for (let i = 0; i < 30 && (await badge()) !== ''; i++) await sleep(100)
-  check((await badge()) === '', 'réglage coupé : plus de compteur sur l’icône')
-  await ui.ev(`${ui.$('settings-dock-badge')}.scrollIntoView({ block: 'center' }), true`)
-  await ui.shot('inbox-2-reglage-compteur')
-  await ui.click(ui.$('settings-dock-badge'))
-  await ui.waitFor(`${ui.$('settings-dock-badge')}.checked`)
-  for (let i = 0; i < 30 && (await badge()) !== '4'; i++) await sleep(100)
-  check((await badge()) === '4', 'réglage rétabli : le compteur revient')
+  if (FEATURES.dockBadge) {
+    await ui.type(LANG === 'en' ? 'dock icon count' : 'compteur')
+    await ui.waitFor(
+      `[...document.querySelectorAll('[data-testid=settings-result]')].some((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBadge.label'))}))`
+    )
+    await ui.enter()
+    await ui.waitFor(`!!${ui.$('settings-dock-badge')}`)
+    check(
+      await ui.ev(`${ui.$('settings-dock-badge')}.checked`),
+      'Réglages › Général : « Compteur sur l’icône du Dock », activé par défaut'
+    )
+    await ui.click(ui.$('settings-dock-badge'))
+    await ui.waitFor(`!${ui.$('settings-dock-badge')}.checked`)
+    for (let i = 0; i < 30 && !(await badgeIs('')); i++) await sleep(100)
+    check(await badgeIs(''), 'réglage coupé : plus de compteur sur l’icône')
+    await ui.ev(`${ui.$('settings-dock-badge')}.scrollIntoView({ block: 'center' }), true`)
+    await ui.shot('inbox-2-reglage-compteur')
+    await ui.click(ui.$('settings-dock-badge'))
+    await ui.waitFor(`${ui.$('settings-dock-badge')}.checked`)
+    for (let i = 0; i < 30 && !(await badgeIs('4')); i++) await sleep(100)
+    check(await badgeIs('4'), 'réglage rétabli : le compteur revient')
+  } else {
+    // « dock » mène aussi au rebond, proposé partout : la recherche a répondu sans le compteur.
+    await ui.type('dock')
+    const results = `[...document.querySelectorAll('[data-testid=settings-result]')].map((r) => r.innerText).join('\\n')`
+    await ui.waitFor(
+      `${results}.includes(${JSON.stringify(L('settings.notifications.dockBounce.label'))})`
+    )
+    const found = await ui.ev(results)
+    await ui.click(
+      `[...document.querySelectorAll('[data-testid=settings-result]')].find((r) => r.innerText.includes(${JSON.stringify(L('settings.notifications.dockBounce.label'))}))`
+    )
+    await ui.waitFor(`!!${ui.$('settings-dock-bounce')}`)
+    check(
+      !found.includes(L('settings.notifications.dockBadge.label')) &&
+        !(await ui.ev(`!!${ui.$('settings-dock-badge')}`)),
+      'sans compteur sur l’icône : ni réglage ni résultat de recherche'
+    )
+  }
   await ui.key('Escape')
   await ui.waitFor(`!${ui.$('settings')}`)
 
@@ -226,7 +258,7 @@ async function inbox(ui, main) {
   await away()
   await ui.waitFor(`!${inboxRow(access)}?.classList.contains('unread')`)
   check(
-    (await count()) === '3' && (await badge()) === '3',
+    (await count()) === '3' && (await badgeIs('3')),
     'autorisation donnée : ligne conservée, compteur à 3'
   )
   await ui.click(`${inboxRow(auth)}.querySelector('.history-open')`)
@@ -253,9 +285,9 @@ async function inbox(ui, main) {
     await ui.waitFor(`!${inboxRow(id)}?.classList.contains('unread')`)
   }
   await ui.waitFor(`document.querySelectorAll('.history-item.unread').length === 0`)
-  for (let i = 0; i < 30 && (await badge()) !== ''; i++) await sleep(100)
+  for (let i = 0; i < 30 && !(await badgeIs('')); i++) await sleep(100)
   check(
-    (await badge()) === '' &&
+    (await badgeIs('')) &&
       (await ui.ev(`document.querySelectorAll('[data-testid=history-item].nested').length`)) === 2,
     'tout traité : compteur effacé, conversations conservées et filles sous leur mère'
   )

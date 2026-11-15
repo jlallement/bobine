@@ -89,9 +89,14 @@ const stamp = (date = new Date()) => {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}`
 }
 
+/** Exécutable de l'app packagée sous Linux (`linux.executableName` d'electron-builder.yml). */
+const LINUX_EXECUTABLE = 'bobine'
+
 /**
  * Exécutable et arguments de tête pour l'app demandée : une `.app` (son exécutable de
- * `Contents/MacOS`), ou un dossier de sources buildées (`out/`) lancé par l'Electron du dépôt.
+ * `Contents/MacOS`) ; sous Linux (fiche 145), l'exécutable installé (`/opt/Bobine/bobine`), ou le
+ * dossier qui le contient (`/opt/Bobine`, `dist/linux-arm64-unpacked`) ; sinon un dossier de
+ * sources buildées (`out/`) lancé par l'Electron du dépôt.
  */
 export function appCommand(app) {
   const target = resolve(app ?? root)
@@ -100,6 +105,14 @@ export function appCommand(app) {
     const binary = existsSync(macos) ? readdirSync(macos)[0] : undefined
     if (!binary) throw new Error(`app introuvable : ${target}`)
     return { command: join(macos, binary), args: [], packaged: true }
+  }
+  if (existsSync(target) && statSync(target).isFile()) {
+    return { command: target, args: [], packaged: true }
+  }
+  // Dossier de l'app packagée sous Linux : son exécutable (`executableName`) à côté de resources/.
+  const linux = join(target, LINUX_EXECUTABLE)
+  if (existsSync(join(target, 'resources', 'app.asar')) && existsSync(linux)) {
+    return { command: linux, args: [], packaged: true }
   }
   if (!existsSync(join(target, 'out', 'main', 'index.js'))) {
     throw new Error(`pas de build dans ${target} : pnpm build`)

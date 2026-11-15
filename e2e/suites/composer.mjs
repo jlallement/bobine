@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp, M } from '../lib.mjs'
+import { FEATURES, L, check, sleep, withApp, M } from '../lib.mjs'
 
 /** Position d'un élément dans la fenêtre. */
 const rect = (selector) =>
@@ -317,8 +317,12 @@ export async function composerSuite(scheme) {
       // Fenêtre large : tout est là, rien de tronqué.
       let bar = await ui.ev(barState)
       check(
-        bar.fold === 0 && bar.capture && bar.percent && bar.modeLabel && bar.fits,
-        'fenêtre large : barre complète (capture, pourcentage, nom du mode)'
+        bar.fold === 0 &&
+          bar.capture === FEATURES.screenCapture &&
+          bar.percent &&
+          bar.modeLabel &&
+          bar.fits,
+        `fenêtre large : barre complète (${FEATURES.screenCapture ? 'capture' : 'sans capture d’écran'}, pourcentage, nom du mode)`
       )
       check(!bar.modelCut && !bar.agentCut && !bar.othersCut, '… et aucun nom tronqué')
       await ui.shot('composer-4-barre-large')
@@ -335,17 +339,26 @@ export async function composerSuite(scheme) {
         `760 px : rien de tronqué, sauf le modèle une fois tout replié (${Math.round(bar.model)} px)`
       )
       await ui.shot('composer-5-barre-760')
-      await ui.click(ui.$('attach'))
-      await ui.waitFor(`!!${ui.$('attach-menu-content')}`)
-      check(
-        (await ui.ev(`${ui.$('attach-menu-content')}.innerText`)).includes(
-          L('composer.capture.item')
-        ) && (await ui.ev(`!!${ui.$('attach-files')}`)),
-        '📎 replié : « Joindre des fichiers… » et « Capturer une zone de l’écran »'
-      )
-      await ui.shot('composer-6-menu-joindre')
-      await ui.key('Escape')
-      await ui.waitFor(`!${ui.$('attach-menu-content')}`)
+      // 📎 replié : un menu avec la capture d'écran, là où la plateforme la permet (capacité
+      // `screenCapture`, fiche 145) ; sans elle, 📎 reste le bouton « Joindre des fichiers… ».
+      if (FEATURES.screenCapture) {
+        await ui.click(ui.$('attach'))
+        await ui.waitFor(`!!${ui.$('attach-menu-content')}`)
+        check(
+          (await ui.ev(`${ui.$('attach-menu-content')}.innerText`)).includes(
+            L('composer.capture.item')
+          ) && (await ui.ev(`!!${ui.$('attach-files')}`)),
+          '📎 replié : « Joindre des fichiers… » et « Capturer une zone de l’écran »'
+        )
+        await ui.shot('composer-6-menu-joindre')
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('attach-menu-content')}`)
+      } else {
+        check(
+          (await ui.ev(`${ui.$('attach')}?.getAttribute('aria-haspopup')`)) === null,
+          '📎 replié, sans capture d’écran : bouton « Joindre des fichiers… », sans menu'
+        )
+      }
 
       // Mode plan : icône à part (repliée, le mode n'a plus que son icône).
       const icon = () => ui.ev(`${ui.$('mode-chip')}.querySelector('svg').getAttribute('class')`)

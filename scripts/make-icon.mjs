@@ -3,11 +3,19 @@
  * moteur de rendu d'Electron : rien à installer. electron-builder en tire l'icône macOS (.icns).
  *
  *   pnpm exec electron scripts/make-icon.mjs
+ *
+ * Avec `--linux` (fiche 145) : les tailles du thème d'icônes hicolor, de 16 à 512 px
+ * (build/icons/<n>x<n>.png, lues par electron-builder pour le .deb et l'AppImage), réduites depuis
+ * build/icon.png, qui reste tel quel (l'icône du Mac ne change pas). À relancer après chaque
+ * nouvelle build/icon.png ; `scripts/linux-icons.test.ts` vérifie qu'elles sont là et à leur taille.
+ *
+ *   pnpm exec electron scripts/make-icon.mjs --linux
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, nativeImage } from 'electron'
+import { LINUX_ICON_SIZES } from './linux-icons.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const svg = readFileSync(join(root, 'build', 'icon.svg'), 'utf8')
@@ -15,6 +23,18 @@ const svg = readFileSync(join(root, 'build', 'icon.svg'), 'utf8')
 app.dock?.hide()
 // Pas d'`await` au niveau supérieur avant `ready` : Electron ne démarrerait pas.
 void app.whenReady().then(async () => {
+  if (process.argv.includes('--linux')) {
+    const source = nativeImage.createFromPath(join(root, 'build', 'icon.png'))
+    const dir = join(root, 'build', 'icons')
+    mkdirSync(dir, { recursive: true })
+    for (const size of LINUX_ICON_SIZES) {
+      const png = source.resize({ width: size, height: size, quality: 'best' }).toPNG()
+      writeFileSync(join(dir, `${size}x${size}.png`), png)
+    }
+    console.log(`build/icons : ${LINUX_ICON_SIZES.map((n) => `${n}x${n}`).join(', ')}`)
+    app.quit()
+    return
+  }
   const win = new BrowserWindow({
     width: 1024,
     height: 1024,

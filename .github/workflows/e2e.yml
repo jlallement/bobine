@@ -4,8 +4,9 @@
 # presse-papiers, menus), et un échec ne doit pas bloquer une version. Les captures sont gardées
 # en artefact pour être regardées.
 #
-# Linux, expérimental (fiche 145) : la même suite sous Ubuntu, dans un écran virtuel (`xvfb`), en
-# français seulement. Les suites qui demandent une capacité absente de Linux (simulateur iOS) sont
+# Linux, expérimental (fiche 145) : la même suite sous Ubuntu, dans un écran virtuel (`xvfb`) avec
+# un gestionnaire de fenêtres (openbox), en français seulement ; en local : `pnpm e2e:linux`. Les
+# suites qui demandent une capacité absente de Linux (simulateur iOS) sont
 # sautées et nommées par le lanceur ; un échec dit ce qui reste à faire pour la préversion.
 name: End-to-end
 
@@ -90,9 +91,10 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      # node-pty se compile (pas de binaire précompilé pour Linux) ; xvfb : écran virtuel.
+      # node-pty se compile (pas de binaire précompilé pour Linux) ; xvfb : écran virtuel ; openbox :
+      # gestionnaire de fenêtres (sans lui, ni agrandissement ni focus : `scripts/with-wm`).
       - name: Outils
-        run: sudo apt-get update && sudo apt-get install -y build-essential python3 xvfb
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3 xvfb openbox x11-utils
       - run: pnpm install --frozen-lockfile
       # Comme dans ci.yml : pnpm ne lance pas son script d'installation (`allowBuilds`).
       - name: Compiler node-pty
@@ -110,7 +112,7 @@ jobs:
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
-          xvfb-run -a -s "-screen 0 1920x1200x24" pnpm e2e ${suites[@]+"${suites[@]}"}
+          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e ${suites[@]+"${suites[@]}"}
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  FEATURES,
   L,
   Lpart,
   MAIN_PORT,
@@ -55,8 +56,9 @@ export async function diagnosticSuite(scheme) {
           `[...document.querySelectorAll('[data-testid^=diag-group-]')].map((g) => g.dataset.testid.slice(11)).join(' ')`
         )
         check(
+          // Groupe iOS seulement là où la plateforme a le simulateur (fiche 145).
           groups ===
-            'app environment agent:bob agent:opencode agent:mock mcp providers ios android',
+            `app environment agent:bob agent:opencode agent:mock mcp providers ${FEATURES.simulator ? 'ios ' : ''}android`,
           `groupes : l’app, l’environnement, chaque agent, MCP, fournisseurs, simulateurs (${groups})`
         )
         const mock = await rowState(ui, 'agent:mock', 'session')
@@ -83,9 +85,11 @@ export async function diagnosticSuite(scheme) {
           'PATH du shell de connexion lu'
         )
         check(
-          (await rowState(ui, 'ios', 'axe')).startsWith('optional') &&
+          (!FEATURES.simulator || (await rowState(ui, 'ios', 'axe')).startsWith('optional')) &&
             (await rowState(ui, 'mcp', 'none')).startsWith('optional'),
-          'facultatifs : AXe absent, aucun serveur MCP'
+          FEATURES.simulator
+            ? 'facultatifs : AXe absent, aucun serveur MCP'
+            : 'facultatif : aucun serveur MCP'
         )
         await ui.shot('k0-diagnostic')
 

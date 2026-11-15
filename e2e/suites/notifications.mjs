@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MAIN_PORT, sleep, check, withApp, mainProcess, L, M } from '../lib.mjs'
+import { MAIN_PORT, sleep, check, dockBadgeIs, withApp, mainProcess, L, M } from '../lib.mjs'
 
 /**
  * Notifications macOS, badge du Dock et pastilles (fiche 024), son (fiche 068) et rebond du Dock
@@ -39,7 +39,7 @@ export async function notificationsSuite(scheme) {
         await focus(false)
         const notes = () =>
           main.evaluate(`globalThis.__notes.map((n) => ({ title: n.title, body: n.body }))`)
-        const badge = () => main.evaluate(`require('electron').app.dock.getBadge()`)
+        const badgeIs = (expected) => dockBadgeIs(main, expected)
         const waitNotes = async (count) => {
           for (let i = 0; i < 100 && (await notes()).length < count; i++) await sleep(100)
           return notes()
@@ -63,7 +63,7 @@ export async function notificationsSuite(scheme) {
         check(sounds().join(',') === 'Glass', 'fenêtre sans focus : un son pour la demande (Glass)')
         check(bounces() === 'critical', 'fenêtre sans focus : le Dock rebondit jusqu’au retour')
         await ui.waitFor(waiting)
-        check((await badge()) === '1', 'badge du Dock : 1 conversation en attente')
+        check(await badgeIs('1'), 'badge du Dock : 1 conversation en attente')
         await ui.shot('60-notification-demande')
         // Retour dans l'app : le rebond s'arrête ; la demande, elle, attend toujours.
         await focus(true)
@@ -85,7 +85,7 @@ export async function notificationsSuite(scheme) {
           'fin de la réponse : un seul rebond (informational)'
         )
         await ui.waitFor(`${dot}?.classList.contains('unread')`)
-        check((await badge()) === '1', 'réponse non lue : toujours en attente')
+        check(await badgeIs('1'), 'réponse non lue : toujours en attente')
 
         // Une autre conversation est affichée ; le clic sur la notification ramène la bonne.
         await ui.click(ui.$('new-conversation'))
@@ -97,7 +97,7 @@ export async function notificationsSuite(scheme) {
         check(true, 'clic sur la notification : sa conversation s’affiche')
         await focus(true)
         await ui.waitFor(`!${dot}`)
-        check((await badge()) === '', 'conversation vue : pastille et badge effacés')
+        check(await badgeIs(''), 'conversation vue : pastille et badge effacés')
 
         await ui.click(ui.$('notifications-toggle'))
         await ui.waitFor(`${ui.$('notifications-toggle')}.getAttribute('aria-pressed') === 'false'`)
@@ -107,7 +107,7 @@ export async function notificationsSuite(scheme) {
         await ui.waitFor(waiting)
         await sleep(300)
         check(
-          (await notes()).length === 2 && (await badge()) === '',
+          (await notes()).length === 2 && (await badgeIs('')),
           'notifications coupées : ni notification ni badge, l’icône de demande reste'
         )
         check(

@@ -2,7 +2,18 @@ import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { L, Lpart, MAIN_PORT, attachPage, check, mainProcess, sleep, withApp, M } from '../lib.mjs'
+import {
+  FEATURES,
+  L,
+  Lpart,
+  MAIN_PORT,
+  attachPage,
+  check,
+  mainProcess,
+  sleep,
+  withApp,
+  M
+} from '../lib.mjs'
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/capture.png', import.meta.url))
 
@@ -92,79 +103,87 @@ export async function quickSuite(scheme) {
               'Fichier › Fenêtre rapide : ouverte, rappelle où part le message'
             )
 
-            // Échap pendant la sélection : rien n'est joint.
-            writeFileSync(cancel, '')
-            await quick.click(quick.$('quick-capture'))
-            // La fenêtre se masque pendant la capture, puis revient quand elle est annulée. Une
-            // capture trop rapide pour être vue masquée compte aussi : on attend seulement le retour.
-            await waitQuick(main, false, 2000)
-            check(
-              (await waitQuick(main, true, 15000)) &&
-                !(await quick.ev(`!!${quick.$('quick-images')}`)),
-              'capture annulée : rien de joint, la fenêtre revient'
-            )
-            rmSync(cancel)
-            check(
-              !(await quick.ev(`!!${quick.$('capture-problem')}`)),
-              'capture annulée : aucun message (Échap n’est pas un échec)'
-            )
+            // Capture d'écran (capacité `screenCapture`, fiche 145) : sans elle, pas de bouton.
+            if (FEATURES.screenCapture) {
+              // Échap pendant la sélection : rien n'est joint.
+              writeFileSync(cancel, '')
+              await quick.click(quick.$('quick-capture'))
+              // La fenêtre se masque pendant la capture, puis revient quand elle est annulée. Une
+              // capture trop rapide pour être vue masquée compte aussi : on attend seulement le retour.
+              await waitQuick(main, false, 2000)
+              check(
+                (await waitQuick(main, true, 15000)) &&
+                  !(await quick.ev(`!!${quick.$('quick-images')}`)),
+                'capture annulée : rien de joint, la fenêtre revient'
+              )
+              rmSync(cancel)
+              check(
+                !(await quick.ev(`!!${quick.$('capture-problem')}`)),
+                'capture annulée : aucun message (Échap n’est pas un échec)'
+              )
 
-            // Zone choisie, mais macOS refuse l'image (autorisation jamais accordée) : dit.
-            writeFileSync(refuse, '')
-            await quick.click(quick.$('quick-capture'))
-            await quick.waitFor(`${quick.$('capture-problem')}?.dataset.reason === 'failed'`)
-            await waitQuick(main, true, 15000)
-            check(
-              !(await quick.ev(`!!${quick.$('quick-images')}`)) &&
-                (await quick.ev(`${quick.$('capture-problem')}.innerText`)).includes(
-                  L('composer.capture.unavailable.failed')
-                ),
-              'capture refusée par macOS après la sélection : rien de joint, le dit, réglage à ouvrir'
-            )
-            await quick.shot('l0a-capture-sans-image')
-            rmSync(refuse)
+              // Zone choisie, mais macOS refuse l'image (autorisation jamais accordée) : dit.
+              writeFileSync(refuse, '')
+              await quick.click(quick.$('quick-capture'))
+              await quick.waitFor(`${quick.$('capture-problem')}?.dataset.reason === 'failed'`)
+              await waitQuick(main, true, 15000)
+              check(
+                !(await quick.ev(`!!${quick.$('quick-images')}`)) &&
+                  (await quick.ev(`${quick.$('capture-problem')}.innerText`)).includes(
+                    L('composer.capture.unavailable.failed')
+                  ),
+                'capture refusée par macOS après la sélection : rien de joint, le dit, réglage à ouvrir'
+              )
+              await quick.shot('l0a-capture-sans-image')
+              rmSync(refuse)
 
-            // Autorisation refusée : rien n'est lancé, la fenêtre reste, le message dit pourquoi.
-            await setAccess(main, 'denied')
-            const before = callCount()
-            await quick.click(quick.$('quick-capture'))
-            await quick.waitFor(`${quick.$('capture-problem')}?.dataset.reason === 'denied'`)
-            check(
-              callCount() === before &&
-                (await quickVisible(main)) &&
-                (await quick.ev(`${quick.$('capture-problem')}.innerText`)).includes(
-                  L('composer.capture.unavailable.denied')
-                ),
-              'autorisation refusée : pas de screencapture, fenêtre gardée, message et raison'
-            )
-            await quick.shot('l0b-capture-autorisation-refusee')
-            // « Ouvrir les Réglages Système » : l'adresse du Diagnostic (ouverture simulée).
-            await main.evaluate(`(() => {
-              const { shell } = require('electron')
-              globalThis.__opened = []
-              globalThis.__openExternal ??= shell.openExternal
-              shell.openExternal = async (url) => { globalThis.__opened.push(url) }
-              return true
-            })()`)
-            await quick.click(quick.$('capture-settings'))
-            await sleep(200)
-            const opened = await main.evaluate(`globalThis.__opened`)
-            await main.evaluate(
-              `(require('electron').shell.openExternal = globalThis.__openExternal, true)`
-            )
-            check(
-              opened.length === 1 && opened[0].includes('Privacy_ScreenCapture'),
-              `bouton : ouvre Réglages Système › Enregistrement de l’écran (${opened[0] ?? 'rien'})`
-            )
-            await setAccess(main, null)
+              // Autorisation refusée : rien n'est lancé, la fenêtre reste, le message dit pourquoi.
+              await setAccess(main, 'denied')
+              const before = callCount()
+              await quick.click(quick.$('quick-capture'))
+              await quick.waitFor(`${quick.$('capture-problem')}?.dataset.reason === 'denied'`)
+              check(
+                callCount() === before &&
+                  (await quickVisible(main)) &&
+                  (await quick.ev(`${quick.$('capture-problem')}.innerText`)).includes(
+                    L('composer.capture.unavailable.denied')
+                  ),
+                'autorisation refusée : pas de screencapture, fenêtre gardée, message et raison'
+              )
+              await quick.shot('l0b-capture-autorisation-refusee')
+              // « Ouvrir les Réglages Système » : l'adresse du Diagnostic (ouverture simulée).
+              await main.evaluate(`(() => {
+                const { shell } = require('electron')
+                globalThis.__opened = []
+                globalThis.__openExternal ??= shell.openExternal
+                shell.openExternal = async (url) => { globalThis.__opened.push(url) }
+                return true
+              })()`)
+              await quick.click(quick.$('capture-settings'))
+              await sleep(200)
+              const opened = await main.evaluate(`globalThis.__opened`)
+              await main.evaluate(
+                `(require('electron').shell.openExternal = globalThis.__openExternal, true)`
+              )
+              check(
+                opened.length === 1 && opened[0].includes('Privacy_ScreenCapture'),
+                `bouton : ouvre Réglages Système › Enregistrement de l’écran (${opened[0] ?? 'rien'})`
+              )
+              await setAccess(main, null)
 
-            await quick.click(quick.$('quick-capture'))
-            await quick.waitFor(`document.querySelectorAll('.quick-images img').length === 1`)
-            check(
-              !(await quick.ev(`!!${quick.$('capture-problem')}`)),
-              'autorisation rendue : capture jointe, le message s’en va'
-            )
-            check(true, 'capture jointe comme image')
+              await quick.click(quick.$('quick-capture'))
+              await quick.waitFor(`document.querySelectorAll('.quick-images img').length === 1`)
+              check(
+                !(await quick.ev(`!!${quick.$('capture-problem')}`)),
+                'autorisation rendue : capture jointe, le message s’en va'
+              )
+              check(true, 'capture jointe comme image')
+            } else {
+              check(
+                !(await quick.ev(`!!${quick.$('quick-capture')}`)),
+                'sans capture d’écran : pas de bouton dans la fenêtre rapide'
+              )
+            }
             await quick.ev(`${quick.$('quick-input')}.focus()`)
             await quick.type('Que montre cette capture ?')
             await quick.shot('l0-fenetre-rapide')
@@ -173,7 +192,7 @@ export async function quickSuite(scheme) {
             quick.close()
           }
           await ui.waitFor(
-            `[...document.querySelectorAll('[data-testid=user-message]')].some((m) => m.innerText.includes('Que montre cette capture') && m.querySelector('.msg-attachments img'))`
+            `[...document.querySelectorAll('[data-testid=user-message]')].some((m) => m.innerText.includes('Que montre cette capture') && ${FEATURES.screenCapture ? "!!m.querySelector('.msg-attachments img')" : 'true'})`
           )
           await ui.ready()
           const reply = await ui.lastAgentText()
@@ -185,25 +204,34 @@ export async function quickSuite(scheme) {
           )
           await ui.shot('l1-message-de-la-fenetre-rapide')
 
-          // Capture depuis la zone de saisie.
-          await ui.click(ui.$('capture'))
-          await ui.waitFor(`document.querySelectorAll('[data-testid=attachment] img').length === 1`)
-          check(true, 'zone de saisie : capture jointe')
-          await ui.shot('l2-capture-zone-de-saisie')
+          if (FEATURES.screenCapture) {
+            // Capture depuis la zone de saisie.
+            await ui.click(ui.$('capture'))
+            await ui.waitFor(
+              `document.querySelectorAll('[data-testid=attachment] img').length === 1`
+            )
+            check(true, 'zone de saisie : capture jointe')
+            await ui.shot('l2-capture-zone-de-saisie')
 
-          // Autorisation refusée : dit sous la zone de saisie, avec le réglage à ouvrir.
-          await setAccess(main, 'denied')
-          await ui.click(ui.$('capture'))
-          await ui.waitFor(`${ui.$('capture-problem')}?.dataset.reason === 'denied'`)
-          check(
-            (await ui.ev(`document.querySelectorAll('[data-testid=attachment] img').length`)) ===
-              1 && (await ui.ev(`!!${ui.$('capture-settings')}`)),
-            'zone de saisie, autorisation refusée : message sous la zone de saisie, rien de plus joint'
-          )
-          await ui.shot('l2b-capture-refusee-zone-de-saisie')
-          await setAccess(main, null)
-          await ui.click(ui.$('capture-problem-close'))
-          await ui.waitFor(`!${ui.$('capture-problem')}`)
+            // Autorisation refusée : dit sous la zone de saisie, avec le réglage à ouvrir.
+            await setAccess(main, 'denied')
+            await ui.click(ui.$('capture'))
+            await ui.waitFor(`${ui.$('capture-problem')}?.dataset.reason === 'denied'`)
+            check(
+              (await ui.ev(`document.querySelectorAll('[data-testid=attachment] img').length`)) ===
+                1 && (await ui.ev(`!!${ui.$('capture-settings')}`)),
+              'zone de saisie, autorisation refusée : message sous la zone de saisie, rien de plus joint'
+            )
+            await ui.shot('l2b-capture-refusee-zone-de-saisie')
+            await setAccess(main, null)
+            await ui.click(ui.$('capture-problem-close'))
+            await ui.waitFor(`!${ui.$('capture-problem')}`)
+          } else {
+            check(
+              !(await ui.ev(`!!${ui.$('capture')}`)),
+              'sans capture d’écran : pas de bouton dans la zone de saisie'
+            )
+          }
 
           // Réglage : raccourci désactivé, puis remis.
           const setShortcut = async (value) => {
@@ -266,8 +294,10 @@ export async function quickSuite(scheme) {
             await quick.waitFor(`!!${quick.$('quick-input')}`)
             await quick.ev(`${quick.$('quick-input')}.focus()`)
             await quick.type('Message gardé pour plus tard')
-            await quick.click(quick.$('quick-capture'))
-            await quick.waitFor(`document.querySelectorAll('.quick-images img').length === 1`)
+            if (FEATURES.screenCapture) {
+              await quick.click(quick.$('quick-capture'))
+              await quick.waitFor(`document.querySelectorAll('.quick-images img').length === 1`)
+            }
             await quick.press('Enter')
           } finally {
             quick.close()
@@ -276,11 +306,11 @@ export async function quickSuite(scheme) {
           main.close()
         }
         await ui.waitFor(
-          `${ui.$('composer-input')}.value === 'Message gardé pour plus tard' && document.querySelectorAll('[data-testid=attachment] img').length === 1`
+          `${ui.$('composer-input')}.value === 'Message gardé pour plus tard' && document.querySelectorAll('[data-testid=attachment] img').length === ${FEATURES.screenCapture ? 1 : 0}`
         )
         check(
           await ui.ev(`!!${ui.$('blocker-auth')}`),
-          'agent qui attend une connexion : message et image dans la zone de saisie, sous son panneau'
+          `agent qui attend une connexion : message${FEATURES.screenCapture ? ' et image' : ''} dans la zone de saisie, sous son panneau`
         )
         await ui.shot('l3-message-en-attente')
       },

@@ -16,11 +16,11 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
 
 1. **Décisions à revoir après l'essai réel** : D1 (l'AppImage ne démarre pas sur un Ubuntu
    récent : `.deb` seul en préversion ?) et D6 (essai fait sur Ubuntu 26.04, pas 24.04).
-2. **e2e Linux verts** (`e2e.yml`, Système : `linux` ; 90/125 au premier passage, voir le
-   journal) : conditionner les suites mêlées (lot 5), gestionnaire de fenêtres dans le job,
-   corriger ce qu'elles trouvent.
+2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
+   le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
+   lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
 3. **Lot 2** — barre de titre et menu Linux, raccourcis Ctrl, textes Mac/Finder/Dock/⌘,
-   `desktopName`.
+   (`desktopName` : fait au lot 4 le 2026-11-15).
 4. **Lot 3** — intégration au bureau (git en langue fixe : fait), clés d'API sans trousseau (D4) ;
    vérifier aussi la réinitialisation de la fiche 148 (trousseau, corbeille) sous Linux.
 5. **Lot 4** — « préversion Linux » dans l'À propos, node-pty pour `pnpm dev`, `e2e:packaged`.
@@ -179,6 +179,11 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   `maintainer` du `.deb` : « Bobine <https://github.com/jlallement/bobine> », à confirmer.
 - ✅ node-pty compilé sous Linux comme dans `ci.yml` (`node-gyp rebuild` dans son dossier, N-API :
   valable pour Electron), s'il manque ; `asarUnpack` de `build/Release`.
+- ✅ Icônes et rattachement au dock (2026-11-15) : PNG du thème hicolor de 16 à 512
+  (`build/icons/`, `scripts/make-icon.mjs --linux`, depuis `build/icon.png`), SVG en `scalable`
+  (ajoutée par fpm, `deb.fpm`), `desktopName: bobine.desktop` et `linux.syncDesktopName` (fenêtre
+  rattachée à `bobine.desktop` sous Wayland, `StartupWMClass=bobine`) ; contrôle du .deb après
+  chaque `pnpm package --linux` (`scripts/check-linux-package.mts`).
 - ✅ `pnpm package --linux` : demandé explicitement, jamais deviné d'après la machine (pas de
   signature ni de notarisation, pas de `.dmg`, pas d'AXe) ; sans `--linux`, rien ne change.
   `--dry-run` reste l'essai à blanc de la signature Mac, quelle que soit la machine.
@@ -198,10 +203,16 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   suites qui en demandent une absente (`simulator`), et ne note pas vert un passage qui en a
   sauté. Nouvelle suite `platform` : l'app avec les capacités du Mac puis de Linux, sur le Mac.
   Le faux `xcrun` reste tel quel (script `sh`, sans effet sans simulateur).
-- Suites mêlées, à conditionner quand Linux tournera : `quick` et `annotate` (capture d'écran),
-  `inbox` et `notifications` (compteur du Dock), `settings` (rebond du Dock), `mcp` (outils
-  `ios_*`). Sous `BOBINE_PLATFORM=linux`, elles échoueraient sur ces vérifications.
-- Job manuel `e2e.yml` sous `ubuntu-24.04` avec `xvfb-run`.
+- ✅ Suites mêlées conditionnées par les capacités (`FEATURES` de `e2e/lib.mjs`, 2026-11-15) :
+  compteur du Dock (`inbox`, `notifications` ; nouvelle capacité `dockBadge` : sans elle, le main
+  ne pose pas le compteur et Réglages ne proposent ni le réglage ni son résultat de recherche), capture d'écran (`quick`, `composer`, `annotate` : image collée à
+  la place), iOS et AXe (`mcp`, `diagnostic`, `panel`), police du code (`fun` : Menlo par AppKit,
+  DejaVu Sans Mono par fontconfig), fenêtre À propos (`minimizable`, sans effet sous Linux) et
+  système des infos techniques (`about`). Sur macOS, mêmes vérifications qu'avant. Le rebond du Dock (`settings`,
+  `notifications`) passe par son journal d'essai : rien à conditionner avant le lot 3.
+- ✅ Job manuel `e2e.yml` sous `ubuntu-24.04` avec `xvfb-run` et openbox (`scripts/with-wm`).
+- ✅ En local : `pnpm e2e:linux [suites…]` (Docker, Ubuntu 24.04 ; voir « Essais Linux en
+  local »).
 - Essai réel : Ubuntu 24.04 arm64 dans UTM sur le Mac, sessions Wayland puis X11.
 
 **Lot 6 — clore.** `docs/installation.md` (section Linux : AppImage, `.deb`, trousseau, KVM),
@@ -240,8 +251,48 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
    (`chmod +x`).
 8. **Sessions** : Wayland par défaut ; X11 par la roue dentée de l'écran de connexion
    (« Ubuntu sur Xorg »). Essayer les deux.
-9. **Sans trousseau** (D4) : créer un autre utilisateur, ou arrêter `gnome-keyring-daemon`, puis
+9. **Bac à sable de Chromium pour l'Electron du dépôt** (`pnpm dev`, `pnpm pilote lancer` sans
+   `--app`) : Ubuntu refuse les espaces de noms aux programmes sans profil AppArmor, et Electron
+   s'arrête net (« SUID sandbox helper… chrome-sandbox must be owned by root and mode 4755 »). Une
+   fois par installation de `node_modules` :
+   ```bash
+   sudo chown root:root node_modules/electron/dist/chrome-sandbox
+   sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+   ```
+   (ou un profil AppArmor `userns` pour ce chemin, comme celui que pose le `.deb`). Jamais
+   `--no-sandbox`. L'app installée par le `.deb` n'en a pas besoin.
+10. **Piloter l'app installée** : `pnpm pilote lancer --app /opt/Bobine/bobine` (ou le dossier
+   `dist/linux-*-unpacked`).
+11. **Sans trousseau** (D4) : créer un autre utilisateur, ou arrêter `gnome-keyring-daemon`, puis
    lancer l'app depuis un terminal.
+
+## Essais Linux en local (Docker)
+
+`pnpm e2e:linux [suites…]` (`scripts/e2e-linux`, image `docker/e2e-linux/`) : Docker Desktop
+lancé, rien d'autre à installer sur le Mac.
+
+- **Image** : Ubuntu 24.04 (arm64 sur un Mac Apple Silicon), node 24 de nodejs.org (somme
+  vérifiée), pnpm de `packageManager` par corepack, `build-essential` et `python3` (node-pty),
+  `xvfb`, openbox, bibliothèques d'Electron, polices DejaVu et Liberation, `SHELL=/bin/bash`
+  (sans lui, l'app retombe sur `/bin/zsh`, absent). Construite au premier lancement, puis en
+  cache.
+- **Sources** : le dépôt est monté en lecture seule et copié (`rsync`, sans `.git`,
+  `node_modules`, `out`, captures ni état des essais) dans un volume Docker,
+  `bobine-e2e-linux`, qui garde les `node_modules` Linux, le magasin pnpm et le build. Ceux du
+  Mac ne sont jamais touchés. `--reset` repart d'un volume vide.
+- **Lancement** : `pnpm install`, binaire d'Electron posé par son script s'il manque (le premier
+  `pnpm install` du volume ne l'avait pas fait), node-pty compilé s'il manque, `pnpm build`, puis
+  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai).
+  `--init` : `xvfb-run` ne doit pas être le processus 1 (il attend un signal de Xvfb qui ne lui
+  parvient pas).
+- **Captures** : `e2e/captures/linux/` du Mac.
+- **Bac à sable de Chromium** : l'app garde le sien, jamais de `--no-sandbox`. Il crée des
+  espaces de noms utilisateur, que le filtre seccomp par défaut de Docker refuse à un processus
+  sans `CAP_SYS_ADMIN` : le conteneur tourne sans ce filtre (`--security-opt seccomp=unconfined`),
+  en utilisateur ordinaire (Electron refuse le bac à sable en root), sans capacité ajoutée. C'est
+  le pendant du réglage AppArmor du job de CI ; rien ne change dans l'app.
+- **Limites** : pas de git dans le conteneur, donc pas de `--changed` (nommer les suites) ; une
+  seule campagne à la fois, Mac compris.
 
 ## Écarts assumés par rapport à macOS
 
@@ -322,7 +373,8 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
     d'où un défaut invisible sur le Mac. **Priorité du lot 3** : lancer git avec une langue fixe
     (`LC_ALL=C`) là où l'app lit sa sortie, et reconnaître la limite de système de fichiers.
   - Journal sous Linux : `~/.config/bobine/logs/main.log` (doc et AGENTS.md à compléter).
-  - electron-builder demande `desktopName` (rattacher la fenêtre à l'icône sous GNOME) : lot 2.
+  - electron-builder demande `desktopName` (rattacher la fenêtre à l’icône sous GNOME) : lot 2
+    (fait au lot 4 le 2026-11-15).
   - Erreurs EGL au démarrage : carte graphique de la VM sans OpenGL ES 3, Chromium dessine sans
     accélération ; propre à la VM.
 - 2026-10-25 — **Fusionnée dans `main` en mode expérimental**, à la demande de Jérôme : ne pas
@@ -360,3 +412,77 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
   déjà employé par `diagnostic`, exposé dans `NEUTRAL_AGENT_ENV` du pilote commun. Le diagnostic
   des capacités ne lance plus les vrais agents installés. Les contrôles darwin/Linux simulés
   passent, sans changement des capacités ni de l’interface du produit.
+- 2026-11-15 — **e2e Linux en local et lot 5.** `pnpm e2e:linux` (Docker, voir « Essais Linux
+  en local ») : Ubuntu 24.04 arm64 sur le Mac, `xvfb` + openbox, `node_modules` Linux dans un
+  volume à part. Job Linux de `e2e.yml` avec openbox (`scripts/with-wm`, commun). **Score Linux
+  local : 154/202 avant, 188/202 après** (202 tâches : 101 suites × 2 thèmes, `platform` seule,
+  `simulator` sautée ; le passage GitHub du 25/10 en comptait 125). Fait :
+  - Lot 5 : vérifications du Mac conditionnées par `FEATURES` (capacités de `platform.ts`, par
+    `e2e/lib.mjs`) ; nouvelle capacité **`dockBadge`** (compteur posé par le main seulement avec
+    elle ; sans elle, réglage et résultat de recherche masqués, après relecture du tech lead). Sur macOS, mêmes
+    vérifications (deux attentes ajoutées : voir plus bas).
+  - Corrigé dans l'app : fenêtre rapide sans bouton de capture sans `screenCapture` (oublié au
+    lot 1) ; **fenêtre rapide qui ne rapetissait plus** après l'annotation (Electron fige min =
+    max d'une fenêtre non redimensionnable sous Linux : `setMinimumSize` avant `setSize`) ;
+    polices installées lues par `fc-list` sous Linux (`fontSource`, lot 3 avancé : la suite `fun`
+    attendait Menlo, liste vide hors macOS) ; « macOS » écrit en dur dans les infos techniques et
+    la ligne Version du Diagnostic (`systemName` : `Linux 6.x`) ; commit du build donné par
+    `BOBINE_BUILD_COMMIT` quand les sources n'ont pas de `.git` (conteneur).
+  - Corrigé dans les essais : `browser-view` tapait ⌘ (le raccourci de page est Ctrl hors macOS,
+    déjà géré par l'app) ; `platform` ne simule plus le Mac sous Linux (API d'Electron propres à
+    macOS) ; `minimizable` d'À propos non vérifié hors macOS (Electron le dit toujours vrai) ;
+    trois lectures avant chargement asynchrone (`discussion`, `astuces`, `regles-approbation`),
+    vraies sur le Mac aussi ; `pannes-visibles` comptait les `sleep` de son autre thème (verrou
+    `sleeps-machine`) ; la sortie de l'app est jointe à « fenêtre absente ».
+  - Lancement de `android`, `diagnostic`, `about`, `usage-board` : verts en local (openbox) ;
+    `ENOTEMPTY` pas reproduit. Cause probable, trouvée sur `pannes-visibles` : ci-dessous.
+
+  **Reste rouge (14 tâches), par cause :**
+  - **fd hérités par les enfants du main** (`pannes-visibles`, 2) : sous Linux, l'agent garde le
+    socket d'écoute DevTools de l'app (vu dans `/proc/<pid>/fd`) et d'autres fd de Chromium ;
+    après `kill -9`, l'orphelin tient le port et le relancement n'a pas de fenêtre. macOS n'hérite
+    de rien (libuv, `POSIX_SPAWN_CLOEXEC_DEFAULT`). À traiter à part (processus, lot 3) ; sans
+    doute aussi les lancements ratés et `ENOTEMPTY` du passage GitHub.
+  - **Métriques de police** (DejaVu Sans, plus large que SF ; pas de police Linux dans
+    `--font-ui`) : `plan` (barre de boutons qui bouge, 2), `roles-travail` (en-tête étroit, 2),
+    `autorisation-commande` (retour à la ligne de la mention, 2), `terminal` (icônes Nerd Font
+    qui débordent de leur cellule, 2). À voir avec l'apparence Linux (lot 2).
+  - **Barres de défilement classiques** (15 px, pas en surimpression) : `debordements`
+    (« la conversation garde 485 px » au lieu de 500, 2).
+  - **Molette de synthèse** : `autorisation-commande` (bout du bloc qui fait défiler le fil ;
+    dans les 2 tâches ci-dessus), à regarder.
+  - **Intermittents, un seul thème** : `filles` (light), `finitions` (dark).
+  - Image Docker : corepack épinglé (0.36.0, celui de l'image essayée).
+  - Lot 2 seul : aucune suite (les textes ⌘ et Dock ne sont pas vérifiés par les e2e).
+- 2026-11-15 — **Icône du .deb** (constat du tech lead dans une VM Ubuntu 26.04, GNOME sous
+  Wayland, `.deb` de la beta.5) : le paquet n'installait que `hicolor/1024x1024/apps/bobine.png`,
+  dossier que le thème hicolor ne déclare pas : roue dentée générique dans le dock. Ajout des PNG
+  de 16 à 512 et de la SVG en `scalable`, de `desktopName` et `syncDesktopName` (electron-builder
+  ne se plaint plus de l'app_id), et du contrôle `scripts/check-linux-package.mts` (icônes et
+  `bobine.desktop` : `Icon`, `StartupWMClass`), lancé par `pnpm package --linux`. electron-builder
+  ne prend qu'un dossier de PNG ou une seule SVG : la SVG passe par fpm, donc seulement dans le
+  .deb (l'AppImage garde les PNG). Vérifié : `.deb` arm64 construit dans le conteneur de
+  `pnpm e2e:linux` (Ubuntu 24.04), contrôle vert, liste de `dpkg-deb -c` et `bobine.desktop` lus,
+  `desktopName` présent dans `app.asar`. Pas vérifié : l'icône affichée par GNOME et le
+  rattachement sous Wayland (VM à refaire) ; l'x64 (même configuration). Mac inchangé
+  (`build/icon.png` non régénérée, `pnpm package --dry-run` identique).
+- 2026-11-15 — **Essai réel du tech lead** dans la VM Ubuntu 26.04 arm64 (GNOME sous Wayland,
+  `.deb` de la beta.5, piloté par `pnpm pilote` en SSH). Statut de chaque point :
+  - ✅ Marche : accueil complet, OpenCode 2.2.5 détecté, message d'essai sur un vrai modèle gratuit
+    (Big Pickle), conversation avec un fichier créé et une commande lancée, terminal intégré (bash,
+    node-pty), panneaux Session et Modifications, Réglages › Agents.
+  - ✅ Icône (roue dentée générique) : corrigée (PNG hicolor et SVG `scalable`, entrée précédente) ;
+    à revoir dans la VM avec le prochain `.deb`.
+  - 📝 Noté, à décider : l'app packagée tourne sous **XWayland** ; avec `WAYLAND_DISPLAY` seul
+    (sans `DISPLAY`), elle ne démarre pas (« Missing X server or $DISPLAY ») : Electron 45 n'utilise
+    pas Wayland en natif par défaut. Pas bloquant (GNOME fournit `DISPLAY`) ; piste :
+    `--ozone-platform-hint=auto`.
+  - ⏳ Lot 2, déjà prévu : raccourcis affichés en ⌘ (« ⌘1 », « ⇧⌘U ») ; barres de défilement
+    classiques avec flèches dans les blocs de code.
+  - ✅ Pilote : `--app` acceptait seulement une `.app` (fausse `.app` avec un lien symbolique dans
+    la VM). Accepte maintenant l'exécutable installé (`/opt/Bobine/bobine`) ou le dossier
+    `linux-*-unpacked` (`appCommand` de `scripts/pilote/instance.mjs`, testé ; `docs/pilote.md`).
+  - ✅ Documenté : `pnpm pilote lancer` de développement (Electron du dépôt) s'arrête sur le bac à
+    sable SUID de Chromium ; pas-à-pas de la VM, étape 9 (`chown root` et `chmod 4755` de
+    `chrome-sandbox` une fois, ou profil AppArmor). Jamais `--no-sandbox`.
+

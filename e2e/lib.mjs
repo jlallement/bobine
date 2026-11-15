@@ -17,12 +17,29 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { currentPlatformFeatures } from '../src/main/platform.ts'
 import { mockLanguage, say } from '../src/mock-agent/langue.mts'
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const electron = createRequire(import.meta.url)('electron')
 export const captures = join(root, 'e2e', 'captures')
 mkdirSync(captures, { recursive: true })
+
+/**
+ * Capacités de la plateforme de l'app essayée (fiche 145), `BOBINE_PLATFORM` compris : une suite
+ * mêlée ne vérifie ce qui est propre au Mac (compteur du Dock, capture d'écran, iOS…) que si la
+ * capacité est là, et vérifie sinon que l'app ne le propose pas.
+ */
+export const FEATURES = currentPlatformFeatures(process.env, process.platform)
+
+/**
+ * Compteur sur l'icône de l'app (`main` : `mainProcess()`) : `expected` là où la plateforme a ce
+ * compteur (capacité `dockBadge`) ; ailleurs, jamais posé.
+ */
+export async function dockBadgeIs(main, expected) {
+  const badge = await main.evaluate(`require('electron').app.dock?.getBadge() ?? null`)
+  return FEATURES.dockBadge ? badge === expected : badge === null || badge === ''
+}
 
 /**
  * Langue de l'interface pendant les essais (fiche 074) : `pnpm e2e --lang en` ; le français sinon,
@@ -319,7 +336,16 @@ export async function withApp(
       )
     }
     if (!mainPage(targets)) {
-      throw new Error(`fenêtre de l'app absente au bout d'une minute (port ${PORT})`)
+      // Sans fenêtre, pas de capture d'échec : la fin de la sortie de l'app dit pourquoi (sans les
+      // plaintes de Chromium sur D-Bus, absent sous xvfb).
+      const tail = output
+        .split('\n')
+        .filter((line) => line && !line.includes(':ERROR:dbus/'))
+        .slice(-15)
+        .join('\n      ')
+      throw new Error(
+        `fenêtre de l'app absente au bout d'une minute (port ${PORT}${app.exitCode !== null ? `, app sortie : ${app.exitCode}` : ''})\n      ${tail}`
+      )
     }
     const ws = new WebSocket(mainPage(targets).webSocketDebuggerUrl)
     await new Promise((r) => (ws.onopen = r))
