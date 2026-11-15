@@ -6,19 +6,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Amélioré
 
-- Supprimer une conversation mère : la confirmation nomme ses conversations filles (petites-filles
-  comprises, celles au travail signalées) et propose « Supprimer aussi ses N conversations filles »,
-  coché d'office ; les filles au travail sont arrêtées avant. Décochée, elles continuent seules.
-  « Supprimer aussi chez… » vaut pour chaque conversation supprimée, chez son propre agent.
+- Supprimer une conversation mère propose de supprimer aussi ses conversations filles (coché
+  d'office) ; décoché, elles continuent seules, comme des conversations ordinaires.
 
 ### Corrections
 
-- Conversations filles : supprimer leur mère ne les laisse plus reliées à une conversation qui
-  n'existe plus. Elles continuent seules, comme des conversations ordinaires, et leur fil le dit ;
-  une conversation fille déjà orpheline est réparée au lancement. Archiver une mère archive aussi
-  ses filles, et la sortir des archives les ressort (pas celles archivées avant elle). Un compte
-  rendu, un réveil ou une fusion vers une conversation supprimée entre-temps n'est plus perdu sans
-  rien dire : il est écarté et noté dans le journal.
+- Archiver une conversation mère archive aussi ses filles ; une fille dont la mère a été supprimée
+  redevient une conversation ordinaire au lieu de rester rattachée à une conversation disparue.
 
 ## 1.0.0-beta.5 — 15 novembre 2026
 

@@ -294,32 +294,76 @@ export async function fillesSuite(scheme) {
         await ui.click(ui.$('grouping-recent'))
         await away()
 
-        // Mère supprimée : ses filles restent, en conversations ordinaires.
-        await ui.click(`${row(mother)}.querySelector('[data-testid=history-more]')`)
-        await ui.waitFor(`!!${ui.$('history-delete')}`)
-        await ui.click(ui.$('history-delete'))
-        await ui.waitFor(`!!${ui.$('delete-children')}`)
-        // Fiche 228 : les filles nommées, « Supprimer aussi ses 2 filles » coché d'office.
+        // Fiche 228 : une troisième fille, au travail, que la confirmation signale.
+        await launch(ui.$('title-menu'), 'title-launch-child', '/scenario attend-stop')
+        await ui.click(ui.$('child-launch'))
+        await ui.waitFor(`!${ui.$('child-dialog')}`, 30000)
+        const working = `${rows}.find((r) => r.dataset.mother === '${mother}' && !${JSON.stringify(kids)}.includes(r.dataset.id))`
+        await ui.waitFor(
+          `${working}?.querySelector('.child-state')?.dataset.state === 'running'`,
+          30000
+        )
+        const busy = await ui.ev(`${working}.dataset.id`)
+        const openDelete = async () => {
+          await ui.click(`${row(mother)}.querySelector('[data-testid=history-more]')`)
+          await ui.waitFor(`!!${ui.$('history-delete')}`)
+          await ui.click(ui.$('history-delete'))
+          await ui.waitFor(`!!${ui.$('delete-children')}`)
+          await ui.waitFor(`${ui.$('delete-children-list')}.querySelectorAll('li').length === 3`)
+        }
+        await openDelete()
         check(
           (await ui.ev(`${ui.$('delete-children')}.checked`)) &&
-            (await ui.ev(`${ui.$('delete-children-list')}.querySelectorAll('li').length`)) === 2 &&
             (await ui.ev(`${ui.$('delete-dialog')}.innerText`)).includes(
-              L('deleteDialog.children', { count: 2 })
-            ),
-          'mère supprimée : la confirmation nomme ses 2 filles, case cochée'
+              L('deleteDialog.children', { count: 3 })
+            ) &&
+            (await ui.ev(`${ui.$('delete-child-busy')}?.innerText`)) ===
+              L('deleteDialog.childBusyStop'),
+          'mère supprimée : la confirmation nomme ses 3 filles, case cochée, celle au travail signalée'
         )
         await ui.shot('filles-4a-confirmation')
-        // Case décochée : les filles restent, en conversations ordinaires.
         await ui.click(ui.$('delete-children'))
         await ui.waitFor(`!${ui.$('delete-children')}.checked`)
+        check(
+          (await ui.ev(`${ui.$('delete-child-busy')}?.innerText`)) === L('deleteDialog.childBusy'),
+          'case décochée : la fille au travail le reste'
+        )
         await ui.shot('filles-4b-confirmation-garder')
+        if (scheme === 'dark') {
+          // Aurore nuit (fiche 226) : la même confirmation, cochée.
+          await ui.click(ui.$('delete-children'))
+          await ui.ev(
+            `window.api.settings.setPreferences({ darkTheme: 'auroraNight' }).then(() => true)`
+          )
+          await ui.waitFor(`document.documentElement.dataset.palette === 'auroraNight'`)
+          await sleep(300)
+          await ui.shot('filles-4c-confirmation-aurore-nuit')
+          await ui.ev(`window.api.settings.setPreferences({ darkTheme: 'dark' }).then(() => true)`)
+          await ui.waitFor(`!document.documentElement.dataset.palette`)
+        }
+        // La fille au travail arrêtée, puis lue : la suite vérifie des conversations ordinaires.
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('delete-dialog')}`)
+        await ui.ev(`window.api.agent.cancel(${JSON.stringify(busy)}).then(() => true)`)
+        await ui.waitFor(
+          `${row(busy)}?.querySelector('.child-state')?.dataset.state !== 'running'`,
+          30000
+        )
+        await ui.click(`${row(busy)}.querySelector('.history-open')`)
+        await ui.waitFor(`document.querySelector('.history-item.active')?.dataset.id === '${busy}'`)
+        await ui.click(`${row(mother)}.querySelector('.history-open')`)
+        await away()
+        // Mère supprimée, case décochée : ses filles restent, en conversations ordinaires.
+        await openDelete()
+        await ui.click(ui.$('delete-children'))
+        await ui.waitFor(`!${ui.$('delete-children')}.checked`)
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${row(mother)}`)
         await sleep(300)
         check(
           (await ui.ev(
             `${rows}.filter((r) => r.dataset.branch || r.closest('[data-testid=inbox]')).length`
-          )) === 2 &&
+          )) === 3 &&
             !(await ui.ev(`${rows}.some((r) => r.classList.contains('nested'))`)) &&
             !(await ui.ev(`!!document.querySelector('[data-testid=history-item] .child-state')`)),
           'mère supprimée : les filles restent, en conversations en worktree ordinaires'

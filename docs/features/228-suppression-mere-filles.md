@@ -114,7 +114,7 @@ la case décochée fait.
 
 ## Maquettes
 
-`docs/features/228-maquettes/` : `confirmation.html`, rendue en PNG en clair, en sombre et en Aurore.
+Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
 
 ## Journal
 
@@ -153,3 +153,11 @@ la case décochée fait.
   filles lisaient le `fromAgent` déjà retiré à la mère, corrigé. e2e `filles` : la confirmation
   nomme les 2 filles, case cochée, puis décochée pour garder le scénario « mère supprimée, filles
   ordinaires » ; captures `filles-4a-confirmation`, `filles-4b-confirmation-garder`.
+- 2026-11-15 — relecture du tech lead. Maquettes retirées du dépôt (public, aucune fiche n'y garde
+  les siennes). e2e `filles` : une troisième fille, lancée sur `attend-stop`, est au travail au
+  moment de la confirmation (« au travail, sera arrêtée » cochée, « au travail » décochée) ; en
+  sombre, la même confirmation en Aurore nuit (`filles-4c-confirmation-aurore-nuit`). Elle est
+  ensuite arrêtée et lue, et la suppression part case décochée : les trois filles restent,
+  ordinaires. Changelogs raccourcis ; le détail (évènement écarté et noté dans le journal, liens
+  morts réparés au lancement, filles ressorties des archives avec leur mère seulement si elles y
+  sont entrées avec elle) reste ici.

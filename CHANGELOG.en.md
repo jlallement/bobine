@@ -6,19 +6,13 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Improved
 
-- Deleting a parent conversation: the confirmation names its child conversations (grandchildren
-  included, those still working flagged) and offers “Also delete its N child conversations”,
-  checked by default; working children are stopped first. Unchecked, they carry on alone. “Also
-  delete in…” applies to each deleted conversation, in its own agent.
+- Deleting a parent conversation offers to delete its child conversations too (checked by
+  default); unchecked, they carry on alone as ordinary conversations.
 
 ### Fixes
 
-- Child conversations: deleting their parent no longer leaves them linked to a conversation that
-  no longer exists. They carry on alone, as ordinary conversations, and their thread says so; a
-  child conversation already orphaned is repaired at launch. Archiving a parent also archives its
-  children, and taking it out of the archive brings them back (not those archived before it). A
-  report, wake-up or merge aimed at a conversation deleted in the meantime is no longer silently
-  lost: it is dropped and noted in the log.
+- Archiving a parent conversation also archives its children; a child whose parent was deleted
+  becomes an ordinary conversation instead of staying tied to one that no longer exists.
 
 ## 1.0.0-beta.5 — November 15, 2026
 
