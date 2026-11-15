@@ -312,6 +312,8 @@
         "dotfile": "Changes a personal configuration file:",
         "system": "Touches a system folder:",
         "sharedFile": "Also changes another file, possibly outside the folder (hard link):",
+        "registry": "Changes the Windows registry:",
+        "unknownWrites": "Bobine can’t tell what this command changes: read it before allowing.",
         "privilege": "Asks for administrator rights ({{via}})"
       }
     },

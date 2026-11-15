@@ -177,7 +177,12 @@ export function replayTrace(
       if (m.method === 'session/request_permission') {
         const toolCall = adapters.permission(params['toolCall'] as never)
         // Comme `AgentHost` : les risques de la demande (fiche 211), sur le disque fictif du rejeu.
-        const risks = permissionRisks(toolCall, { workspace, home: REPLAY_HOME, realpath: noDisk })
+        const risks = permissionRisks(toolCall, {
+          workspace,
+          home: REPLAY_HOME,
+          realpath: noDisk,
+          windows: false
+        })
         emit({
           type: 'permission-request',
           requestId: String(m.id),

@@ -1,6 +1,7 @@
 import { FolderPlus, FolderSymlink, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
+import { folderName } from '@shared/windows-paths'
 
 export interface SessionFoldersProps {
   /** Autres dossiers de la conversation (fiche 179), chemins absolus. */
@@ -17,7 +18,7 @@ export interface SessionFoldersProps {
   onReveal: (folder: string) => void
 }
 
-const baseName = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const baseName = (path: string) => folderName(path)
 
 /**
  * Ligne « Autres dossiers » de l'environnement (fiche 179). Rien sans la capacité ni dossier ;

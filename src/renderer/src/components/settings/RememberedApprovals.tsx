@@ -6,6 +6,7 @@ import type { ForgottenApproval } from '@shared/approvals'
 import { rememberedToolText } from '@shared/permissions'
 import { ConfirmRow, useConfirm } from './ConfirmRow'
 import { SettingsTitle } from './rows'
+import { folderName } from '@shared/windows-paths'
 
 /** Une ligne de la liste : ce qui est autorisé, d'où, et de quoi le révoquer. */
 interface Allowed {
@@ -29,8 +30,6 @@ interface AllowedGroup {
   testId: string
   items: Allowed[]
 }
-
-const folderName = (workspace: string) => workspace.split('/').filter(Boolean).at(-1) ?? workspace
 
 /**
  * Réglages › Confidentialité › Autorisé sans demander (fiches 042, 072, 136) : outils, sites, puis

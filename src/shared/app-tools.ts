@@ -6,6 +6,7 @@
  */
 import type { ParseKeys } from 'i18next'
 import { translate, type Message } from './i18n/message'
+import { lastSegment } from './windows-paths.ts'
 
 /** Panneau de l'app concerné par l'outil (sert aussi au résumé d'un groupe d'outils). */
 export type AppToolGroup =
@@ -63,8 +64,7 @@ function shortUrl(value: unknown): string | undefined {
 }
 
 /** Nom du fichier d'un chemin, pris avant de raccourcir (sinon « … » seul, fiche 122). */
-const baseName = (value: unknown) =>
-  quote(typeof value === 'string' ? value.split('/').filter(Boolean).at(-1) : value)
+const baseName = (value: unknown) => quote(typeof value === 'string' ? lastSegment(value) : value)
 
 /** Phrase avec la valeur (« Ouvre example.com »), ou sa variante sans valeur (« Ouvre une page »). */
 function withValue(key: ParseKeys, value: string | undefined, fallback: ParseKeys): Message {

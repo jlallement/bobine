@@ -347,6 +347,8 @@ export type FrResources = {
         readonly dotfile: 'Modifie un fichier de configuration personnel :'
         readonly system: 'Touche un dossier système :'
         readonly sharedFile: 'Modifie aussi un autre fichier, peut-être hors du dossier (lien physique) :'
+        readonly registry: 'Modifie le registre de Windows :'
+        readonly unknownWrites: 'Bobine ne sait pas lire ce que cette commande modifie : relisez-la avant d’autoriser.'
         readonly privilege: 'Demande les droits d’administrateur ({{via}})'
       }
     }

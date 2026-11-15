@@ -56,12 +56,28 @@ export type PermissionRisk =
    * hors du dossier, change aussi.
    */
   | { kind: 'shared-file'; path: string }
+  /** Modifie le registre de Windows (`reg add`, `Set-ItemProperty HKCU:\…`, fiche 229). */
+  | { kind: 'registry'; path: string }
+  /**
+   * Commande que Bobine ne sait pas lire (Windows, fiche 229) : elle peut écrire n'importe où.
+   * Échec fermé : jamais « aucune écriture » pour une commande non lue.
+   */
+  | { kind: 'unknown-writes' }
   /** Demande les droits d'administrateur. */
-  | { kind: 'privilege'; via: PrivilegeCommand }
+  | { kind: 'privilege'; via: PrivilegeCommand | WindowsPrivilegeCommand }
 
 /** Commandes qui demandent les droits d'administrateur, signalées sur la carte. */
 export const PRIVILEGE_COMMANDS = ['sudo', 'su', 'doas', 'pkexec'] as const
 export type PrivilegeCommand = (typeof PRIVILEGE_COMMANDS)[number]
+
+/** Leurs pendants sous Windows (fiche 229, `windows-command-writes.ts`). */
+export const WINDOWS_PRIVILEGE_COMMANDS = [
+  'sudo',
+  'runas',
+  'gsudo',
+  'Start-Process -Verb RunAs'
+] as const
+export type WindowsPrivilegeCommand = (typeof WINDOWS_PRIVILEGE_COMMANDS)[number]
 
 /**
  * Autorisation en attente, avec ses risques s'il y en a : une demande sans risque n'en porte pas

@@ -5,6 +5,7 @@ import type { BackupCheck, TrashEntry } from '@shared/profile'
 import { ipcErrorText } from '../../ipc-errors'
 import { ConfirmRow, useConfirm } from './ConfirmRow'
 import { Row, SettingsTitle } from './rows'
+import { lastSegment } from '@shared/windows-paths'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -122,7 +123,7 @@ export function TrashList({ readOnly }: { readOnly: boolean }) {
   const folder = (entry: TrashEntry) =>
     entry.space === 'discussion'
       ? t('discussion.space.discussion')
-      : (entry.workspace.split('/').filter(Boolean).at(-1) ?? t('settings.data.trash.noFolder'))
+      : (lastSegment(entry.workspace) ?? t('settings.data.trash.noFolder'))
   return (
     <>
       <SettingsTitle help="settingsTrash">{t('settings.data.trash.title')}</SettingsTitle>

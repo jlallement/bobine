@@ -347,6 +347,8 @@
         "dotfile": "Modifie un fichier de configuration personnel :",
         "system": "Touche un dossier système :",
         "sharedFile": "Modifie aussi un autre fichier, peut-être hors du dossier (lien physique) :",
+        "registry": "Modifie le registre de Windows :",
+        "unknownWrites": "Bobine ne sait pas lire ce que cette commande modifie : relisez-la avant d’autoriser.",
         "privilege": "Demande les droits d’administrateur ({{via}})"
       }
     },

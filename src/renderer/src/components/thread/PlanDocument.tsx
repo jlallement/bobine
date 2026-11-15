@@ -12,6 +12,7 @@ import { loadPlanNotes, planNotesKey, savePlanNotes } from '../../plan-notes'
 import { DiffView } from './DiffView'
 import { Markdown } from './Markdown'
 import { useTranslation } from 'react-i18next'
+import { folderName } from '@shared/windows-paths'
 
 export interface PlanActions {
   /** L'agent travaille : pas d'envoi ni d'exécution. */
@@ -23,7 +24,7 @@ export interface PlanActions {
 }
 
 const HIGHLIGHT = 'plan-notes'
-const basename = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const basename = (path: string) => folderName(path)
 
 /**
  * Position de chaque caractère non blanc du conteneur : un passage sélectionné se retrouve dans le

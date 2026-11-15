@@ -73,6 +73,7 @@ import {
 } from '../roles/useRoleCompose'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
+import { lastSegment } from '@shared/windows-paths'
 
 interface Props {
   /** Fichiers déposés sur la conversation, à joindre au message (`useFileDrop`). */
@@ -193,7 +194,7 @@ function placeholderOf(
 const fileMenuName = (workspace: string | undefined, discussion: boolean | undefined) =>
   discussion
     ? i18next.t('discussion.documents.tab')
-    : (workspace?.split('/').filter(Boolean).at(-1) ?? '')
+    : ((workspace === undefined ? undefined : lastSegment(workspace)) ?? '')
 
 const NO_USER_COMMANDS: UserCommand[] = []
 const NO_ROLES: readonly { name: string; label: string }[] = []
