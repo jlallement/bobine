@@ -331,7 +331,8 @@ describe('relecture du tech lead (fiche 189)', () => {
     // node lui-même (un vrai `.exe`, comme glab), endormi par `NODE_OPTIONS=--require` (fiche 229).
     const glab = ON_WINDOWS ? process.execPath : join(dir, 'glab')
     const sleeper = join(dir, 'dort.cjs')
-    writeFileSync(sleeper, 'setTimeout(() => {}, 30000)\n')
+    // Attente bloquante : chargée avant le « script » (`auth`, absent), elle dort 30 s quoi qu'il suive.
+    writeFileSync(sleeper, 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30000)\n')
     const env = ON_WINDOWS
       ? { ...process.env, NODE_OPTIONS: `--require "${sleeper.replace(/\\/g, '/')}"` }
       : undefined
