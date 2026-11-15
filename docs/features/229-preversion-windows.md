@@ -731,8 +731,8 @@ packagée).
   depuis le centre de notifications, le toast disparaît mais la fenêtre réduite **ne revient pas**
   (suivi 15 s, après un témoin de 28 s sans clic) : limite d'Electron sans activateur COM (le
   raccourci de l'installeur n'a pas de `ToastActivatorCLSID`). Le clic sur le toast qui surgit à
-  l'écran n'a pas pu être saisi à temps : **non vérifié**. À traiter (lot 7) : activateur COM, ou
-  relancer l'app au clic (`second-instance` ramène déjà la fenêtre).
+  l'écran n'a pas pu être saisi à temps : **non vérifié**. Suite : activateur d'Electron avec un
+  CLSID fixe et raccourci mis à jour (journal, 2026-11-15) ; clic à revérifier au lot 7.
 - **DPAPI** : clé d'API d'un agent personnalisé enregistrée (« Enregistrée ») ; dans
   `api-keys.json`, valeur chiffrée (préfixe `v10` de Chromium), pas de texte clair ; **après
   redémarrage de l'app**, l'agent a reçu la clé (empreinte SHA-256 notée par un relais, identique
@@ -1077,3 +1077,20 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
 - 2026-11-15 — **D4 close** : Jérôme garde la barre de titre de Windows et le menu ☰ (« ça me va
   comme ça, juste avec le burger ») ; l'étape « cadre natif + ☰ » devient définitive, la barre
   intégrée (`titleBarOverlay`) est abandonnée, ses maquettes effacées.
+- 2026-11-15 — **Clic sur un toast et descripteurs hérités** (branche `claude/fds-et-toasts`).
+  Toasts : Electron 45 a son propre activateur COM (`app.setToastActivatorCLSID`), sans module
+  natif ; Bobine lui donne un **CLSID fixe** (`TOAST_ACTIVATOR_CLSID`, sinon tiré au hasard à
+  chaque lancement) et vérifie au lancement que le raccourci du menu Démarrer le porte
+  (`ensureToastShortcut`, `shell.writeShortcutLink(…, 'update')` ; l'installeur NSIS n'y met que
+  l'AUMID). Vu dans la VM (app installée) : au premier toast, Electron inscrit
+  `HKCU\Software\Classes\CLSID\{55D36188-…}\LocalServer32 = …\Bobine.exe`, et le raccourci porte
+  déjà le CLSID au lancement suivant (journal : « Raccourci des notifications : up-to-date »).
+  **Clic non revérifié** : le bureau de la VM était occupé par une autre activité (connexion à
+  Claude dans Edge) ; un Win+N d'essai y a ouvert le centre de notifications, puis plus aucun
+  geste n'y a été fait. À vérifier au lot 7 (cliquer un toast depuis le centre, fenêtre réduite).
+  Descripteurs (pendant Windows de la fiche 145) : l'app installée arrêtée de force
+  (`Stop-Process -Force`, sans objet de tâche : installeur construit sur le Mac, sans koffi),
+  l'agent (enfant direct) meurt avec elle (job de libuv) et le port DevTools est libéré ; les
+  sockets de Chromium sont créés non héritables (`WSA_FLAG_NO_HANDLE_INHERIT`). Handles de
+  l'agent non listés (pas d'outil installé) : héritage non prouvé absent, symptôme absent.
+  App désinstallée, inscription COM et dossiers d'essai effacés.

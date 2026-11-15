@@ -34,7 +34,7 @@ import { searchWorkspaceFiles } from './workspace-files'
 import { openTerminal } from './terminal/terminal-app'
 import { attachLaunch, commandLineDeps, launch, readLaunchArguments } from './launch-app'
 import { setupProcessSafety } from './process-safety'
-import { launchContext, processSystem } from './process-launch'
+import { configureFdRelay, launchContext, processSystem } from './process-launch'
 import { terminalShell } from './terminal/terminal-shell'
 import { stopRemainingTrees } from './process-tree'
 import { mkdirSync } from 'node:fs'
@@ -102,7 +102,7 @@ import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
 import { fontLister } from './fonts'
 import { currentPlatformFeatures, fontSource, systemName } from './platform'
-import { applyAppUserModelId } from './app-user-model-id'
+import { applyAppUserModelId, windowsToastShortcut } from './app-user-model-id'
 import { createMainBrowserWindow, createQuickWindow, loadRenderer } from './renderer-windows'
 import { technicalFacts } from './about-window'
 import { appAboutWindow, appHelpWindow, helpIpc } from './secondary-windows'
@@ -211,6 +211,9 @@ applyAppUserModelId(app, process.platform)
 // Journal (fiche 041) : `~/Library/Logs/Bobine/main.log` ; avec un dossier de données imposé
 // (essais), le journal y reste aussi.
 initLog(freshStart.isolated ? join(userData, 'logs') : app.getPath('logs'))
+// Toasts cliqués depuis le centre de notifications (fiche 229) : raccourci de l'activateur.
+const toastShortcut = windowsToastShortcut(app, shell, process.platform)
+if (toastShortcut) log.info(`Raccourci des notifications : ${toastShortcut}`)
 // Niveau du journal (fiche 080) : `BOBINE_LOG` l'impose (essais), sinon le niveau enregistré ;
 // Trace ne l'est jamais (il revient au niveau enregistré au lancement suivant).
 const imposedLog = isVerbosity(process.env['BOBINE_LOG']) ? process.env['BOBINE_LOG'] : undefined
@@ -223,6 +226,8 @@ setVerbosity(imposedLog ?? peekPreferences(join(userData, 'settings.json')).logL
 const features = currentPlatformFeatures(process.env, process.platform)
 // Lancer et arrêter des processus (ADR-0050) : le vrai système, jamais `BOBINE_PLATFORM`.
 const processes = processSystem(process.platform)
+// Linux : les enfants ne reçoivent plus les descripteurs de Chromium (fiche 145, `pannes-visibles`).
+configureFdRelay(process.platform)
 const managesNativeLanguage = features.nativeLanguage && app.isPackaged && !freshStart.isolated
 const appLanguage = systemAppLanguage(systemPreferences)
 const startLanguage = savedLanguage(join(userData, 'settings.json'))

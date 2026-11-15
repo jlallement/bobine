@@ -18,6 +18,7 @@ import {
   terminateLeftovers
 } from './process-group'
 import { readJson, writeFileAtomic } from './storage'
+import { relayed } from './process-launch'
 
 export const PIDS_FILE = 'agents.pids'
 
@@ -226,8 +227,7 @@ export function orphanGroups(
 export function listProcesses(): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(
-      'ps',
-      ['-A', '-ww', '-o', 'pid=,ppid=,pgid=,lstart=,command='],
+      ...relayed('ps', ['-A', '-ww', '-o', 'pid=,ppid=,pgid=,lstart=,command=']),
       { env: { ...process.env, LC_ALL: 'C' }, maxBuffer: 16 * 1024 * 1024, timeout: 10_000 },
       (error, stdout) => (error ? reject(error) : resolve(stdout))
     )
@@ -236,7 +236,7 @@ export function listProcesses(): Promise<string> {
 
 /** Processus de la machine, lus tout de suite (en quittant, plus de boucle d'évènements à attendre). */
 export function listProcessesSync(): string {
-  return execFileSync('ps', ['-A', '-ww', '-o', 'pid=,ppid=,pgid=,lstart=,command='], {
+  return execFileSync(...relayed('ps', ['-A', '-ww', '-o', 'pid=,ppid=,pgid=,lstart=,command=']), {
     env: { ...process.env, LC_ALL: 'C' },
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,

@@ -14,7 +14,7 @@
  */
 import { execFile } from 'node:child_process'
 import { t } from 'i18next'
-import { pathKey, windowsPowerShell, type ProcessSystem } from './process-launch'
+import { pathKey, relayed, windowsPowerShell, type ProcessSystem } from './process-launch'
 
 const MARKER = '__BOBINE_ENV__'
 /** Attente maximale du shell de connexion. */
@@ -92,24 +92,22 @@ export function loginShellEnv(
   const args = SHELL_VARIABLES.map((name) => `"$${name}"`).join(' ')
   const started = Date.now()
   return new Promise((resolve) => {
-    execFile(
-      shell,
-      ['-ilc', `printf '${format}' ${args}`],
-      { timeout: timeoutMs, encoding: 'utf8' },
-      (error, stdout) => {
-        const values = extractEnv(stdout ?? '')
-        const ms = Date.now() - started
-        let problem: string | undefined
-        if (error && (error as { killed?: boolean }).killed) {
-          problem = t('shellEnv.timeout', { shell, seconds: Math.round(timeoutMs / 1000) })
-        } else if (error && Object.keys(values).length === 0) {
-          problem = `${shell} : ${error.message.split('\n')[0] ?? t('shellEnv.failed')}`
-        } else if (!values.PATH) {
-          problem = t('shellEnv.noPath', { shell })
-        }
-        resolve({ values, ms, ...(problem ? { problem } : {}) })
+    // Linux : sans les descripteurs hérités du main (un `ssh-agent` lancé par le profil les
+    // garderait) ; ailleurs, tel quel.
+    const [file, argv] = relayed(shell, ['-ilc', `printf '${format}' ${args}`])
+    execFile(file, argv, { timeout: timeoutMs, encoding: 'utf8' }, (error, stdout) => {
+      const values = extractEnv(stdout ?? '')
+      const ms = Date.now() - started
+      let problem: string | undefined
+      if (error && (error as { killed?: boolean }).killed) {
+        problem = t('shellEnv.timeout', { shell, seconds: Math.round(timeoutMs / 1000) })
+      } else if (error && Object.keys(values).length === 0) {
+        problem = `${shell} : ${error.message.split('\n')[0] ?? t('shellEnv.failed')}`
+      } else if (!values.PATH) {
+        problem = t('shellEnv.noPath', { shell })
       }
-    )
+      resolve({ values, ms, ...(problem ? { problem } : {}) })
+    })
   })
 }
 

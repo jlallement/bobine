@@ -6,6 +6,7 @@ import { accessSync, chmodSync, constants, existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import type { SpawnPty } from './terminal-manager'
+import { relayed } from '../process-launch'
 
 const require = createRequire(import.meta.url)
 
@@ -36,7 +37,10 @@ function ensureSpawnHelper(): void {
 export const spawnNodePty: SpawnPty = (shell, args, options) => {
   ensureSpawnHelper()
   const pty = require('node-pty') as typeof import('node-pty')
-  const term = pty.spawn(shell, args, {
+  // Linux : le shell du terminal ne reçoit pas les descripteurs du main (fiche 145) ; même pid
+  // après `exec`, même nom de processus. Ailleurs, tel quel.
+  const [file, argv] = relayed(shell, args, options.env as NodeJS.ProcessEnv)
+  const term = pty.spawn(file, argv, {
     name: 'xterm-256color',
     cols: options.cols,
     rows: options.rows,
