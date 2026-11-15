@@ -28,9 +28,14 @@ elle, fait tourner l'agent sur le Mac de l'utilisateur.
    emplacement ailleurs : refusée ; sans emplacement connu (demande, puis `tool_call` qui la
    précède) : posée à l'utilisateur. Chaque réponse d'office est dite dans le fil. Les commandes
    restent demandées. Bobine ne prétend pas borner ce qu'un agent fait sans demander (OpenCode).
+   Un fichier existant à plusieurs noms (lien physique, `nlink > 1`) n'est jamais accordé
+   d'office : la demande est posée, la carte dit pourquoi (fiche 230, ajout du 2026-11-15, ADR
+   encore proposé).
 4. **Documents** : un fichier joint est copié dans le dossier (l'original n'est jamais touché) et
    c'est la copie que l'agent reçoit ; à la fin de chaque tour, les documents créés ou modifiés
-   sont posés dans le fil (élément `documents`), quel que soit le moyen de l'agent.
+   sont posés dans le fil (élément `documents`), quel que soit le moyen de l'agent. Un document est
+   un fichier ordinaire du premier niveau, ni lien symbolique ni lien physique (fiche 230) : Bobine
+   ne montre, n'ouvre ni ne copie jamais un fichier dont le contenu est celui d'un autre nom.
 5. **Continuer dans un projet** : une nouvelle conversation de l'espace Code dans le dossier
    choisi, le fil de la discussion repris puis une bascule (`handover`, raison `discussion`) ;
    l'échange part en texte avec le premier message (ADR-0024). La discussion reste telle quelle.

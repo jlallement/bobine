@@ -346,6 +346,7 @@ export type FrResources = {
         readonly outside: 'Écrit hors du dossier de la conversation :'
         readonly dotfile: 'Modifie un fichier de configuration personnel :'
         readonly system: 'Touche un dossier système :'
+        readonly sharedFile: 'Modifie aussi un autre fichier, peut-être hors du dossier (lien physique) :'
         readonly privilege: 'Demande les droits d’administrateur ({{via}})'
       }
     }

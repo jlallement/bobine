@@ -15,12 +15,17 @@
  * (`realpath`) de l'ancêtre existant le plus proche, pour qu'un lien symbolique du projet vers
  * `~/.ssh` se voie. Un avertissement, jamais une garantie : l'absence de risque ne dit pas que
  * l'appel est sûr.
+ *
+ * Fichier à plusieurs noms (lien physique, fiche 230) : `realpath` ne le voit pas ; `lstat` du vrai
+ * chemin, `nlink > 1` : y écrire modifie aussi l'autre nom, peut-être hors du dossier. Dit quand
+ * aucune raison plus précise ne l'est déjà pour ce chemin.
  */
 import { realpathSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { PermissionRisk } from '@shared/permissions'
 import { normalizePath, toolCommandOf } from '@shared/command-view'
 import { commandWrites } from './command-writes'
+import { hasOtherNames } from './hard-links'
 
 /** Ce qu'il faut d'un appel d'outil (forme ACP de `ToolCallUpdate`). */
 export interface RiskToolCall {
@@ -37,6 +42,8 @@ export interface RiskContext {
   home: string
   /** Vrai chemin d'un chemin existant ; lève une erreur sinon (par défaut, `fs.realpathSync`). */
   realpath?: (path: string) => string
+  /** Le fichier a d'autres noms (lien physique, fiche 230) ; par défaut, `lstat` et `nlink`. */
+  otherNames?: (path: string) => boolean
 }
 
 /** Genres d'outils qui modifient les fichiers qu'ils désignent. */
@@ -137,6 +144,7 @@ function commandRisks(toolCall: RiskToolCall, workspace: string | undefined, hom
 export function permissionRisks(toolCall: RiskToolCall, context: RiskContext): PermissionRisk[] {
   const { workspace, home } = context
   const realpath = context.realpath ?? ((path: string) => realpathSync(path))
+  const otherNames = context.otherNames ?? hasOtherNames
   const kind = toolCall.kind ?? undefined
   const risks: PermissionRisk[] = []
   let paths: string[] = []
@@ -183,8 +191,14 @@ export function permissionRisks(toolCall: RiskToolCall, context: RiskContext): P
         ? 'home-dotfile'
         : outside
           ? 'outside-folder'
-          : null
-    if (kind) add({ kind, path: shown })
+          : otherNames(real)
+            ? 'shared-file'
+            : null
+    // Lien physique : toujours dans le dossier, dit par son chemin dans le dossier (`Notes.md`),
+    // jamais par celui du dossier (dans une discussion, son identifiant, fiche 224).
+    const inFolder = base && within(lexical, base) && lexical !== base
+    const path = kind === 'shared-file' && inFolder ? lexical.slice(base.length + 1) : shown
+    if (kind) add({ kind, path })
   }
   return risks
 }

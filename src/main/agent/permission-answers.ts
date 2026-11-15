@@ -60,6 +60,17 @@ export function hostRules(
   }
 }
 
+/**
+ * Emplacements repris du `tool_call` quand la demande n'en porte pas (Bob 2.1.0, fiche 224), pour
+ * décider ou repérer les risques seulement : la demande montrée reste celle de l'agent.
+ */
+export function withKnownLocations<T extends RequestPermissionRequest['toolCall']>(
+  call: T,
+  known: ToolCallLocation[] | undefined
+): T {
+  return call.locations?.length ? call : { ...call, locations: known ?? [] }
+}
+
 /** Genres ACP d'une écriture de fichier, réglés par `writeArea`. */
 const WRITE_KINDS: ReadonlySet<string> = new Set(['edit', 'delete', 'move'])
 
@@ -73,10 +84,7 @@ function writeAreaAnswer(
 ): RequestPermissionResponse | undefined {
   const area = rules.writeArea
   if (!area || !WRITE_KINDS.has(params.toolCall.kind ?? '')) return undefined
-  // Emplacements repris du `tool_call` pour décider seulement : la demande reste celle de l'agent.
-  const call = params.toolCall
-  const located = call.locations?.length ? call : { ...call, locations: rules.knownLocations ?? [] }
-  const verdict = writeAreaVerdict(area, located)
+  const verdict = writeAreaVerdict(area, withKnownLocations(params.toolCall, rules.knownLocations))
   if (verdict.decision === 'ask') return undefined
   const allowed = verdict.decision === 'allow'
   const option = allowed

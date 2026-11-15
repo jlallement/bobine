@@ -346,6 +346,7 @@
         "outside": "Écrit hors du dossier de la conversation :",
         "dotfile": "Modifie un fichier de configuration personnel :",
         "system": "Touche un dossier système :",
+        "sharedFile": "Modifie aussi un autre fichier, peut-être hors du dossier (lien physique) :",
         "privilege": "Demande les droits d’administrateur ({{via}})"
       }
     },

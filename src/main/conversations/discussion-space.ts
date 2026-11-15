@@ -6,15 +6,21 @@
  * effacé avec elle.
  */
 import {
+  closeSync,
   constants,
   copyFileSync,
   existsSync,
+  fstatSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readdirSync,
+  readSync,
   renameSync,
   rmSync,
-  statSync
+  statSync,
+  writeSync,
+  type Stats
 } from 'node:fs'
 import { basename, dirname, extname, join, relative } from 'node:path'
 import { t } from 'i18next'
@@ -24,6 +30,7 @@ import type { DiscussionDocument } from '@shared/documents'
 import type { AgentRef } from '@shared/handover'
 import { emptyTranscript, type TranscriptState } from '@shared/transcript'
 import { log } from '../log'
+import { sharesContent } from '../agent/hard-links'
 import { isDirectory } from '../agent/process-utils'
 import { hasFolder, NO_FOLDER } from './agentless'
 import { usableFolder } from './folder-fallback'
@@ -117,6 +124,14 @@ export function eraseDiscussionFolder(conversationsDir: string, id: string): voi
   log.info(`Documents de la discussion effacés : ${id}`)
 }
 
+/**
+ * Un document : fichier ordinaire, ni lien symbolique (il mènerait hors du dossier), ni fichier à
+ * plusieurs noms (lien physique, fiche 230 : son contenu est celui d'un autre fichier, peut-être hors
+ * du dossier — le montrer, le copier ou l'ouvrir lirait ce fichier-là).
+ */
+const isDocumentFile = (stat: Pick<Stats, 'isFile' | 'nlink'>): boolean =>
+  stat.isFile() && !sharesContent(stat)
+
 /** Les documents : fichiers visibles du premier niveau, les plus récents d'abord. */
 export function listDocuments(folder: string): DiscussionDocument[] {
   let names: string[]
@@ -129,9 +144,9 @@ export function listDocuments(folder: string): DiscussionDocument[] {
     .filter((name) => !name.startsWith('.'))
     .flatMap((name) => {
       try {
-        // Un lien symbolique n'est pas un document : il mènerait hors du dossier.
+        // Ni lien symbolique ni lien physique : `isDocumentFile`.
         const stat = lstatSync(join(folder, name))
-        return stat.isFile()
+        return isDocumentFile(stat)
           ? [{ name, size: stat.size, modifiedAt: stat.mtime.toISOString() }]
           : []
       } catch {
@@ -151,19 +166,72 @@ export function freeName(folder: string, name: string): string {
 }
 
 /**
+ * Ouvre un document en lecture, sans suivre de lien symbolique (`O_NOFOLLOW`), et vérifie sur le
+ * descripteur ouvert (`fstat`) que c'est un document : un lien symbolique ou physique posé entre le
+ * contrôle du nom et la lecture ne fait pas lire un fichier extérieur (fiches 224, 230).
+ * `O_NONBLOCK` : un tube nommé posé à la place du document n'attend pas un écrivain. Rend le
+ * descripteur (à fermer) ; lève une erreur sinon.
+ */
+export function openDocument(path: string): number {
+  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+  try {
+    if (isDocumentFile(fstatSync(fd))) return fd
+  } catch {
+    // Fermé ci-dessous.
+  }
+  closeSync(fd)
+  throw new Error(`Document invalide : ${basename(path)}`)
+}
+
+/**
+ * Copie un document de la discussion vers `target` (qui ne doit pas exister), par le descripteur
+ * vérifié d'`openDocument` : jamais le contenu d'un fichier extérieur.
+ */
+export function copyDocument(source: string, target: string): void {
+  const from = openDocument(source)
+  try {
+    const to = openSync(target, 'wx')
+    try {
+      const buffer = Buffer.alloc(1 << 20)
+      for (let read = readSync(from, buffer); read > 0; read = readSync(from, buffer)) {
+        for (let at = 0; at < read;) at += writeSync(to, buffer, at, read - at)
+      }
+    } catch (error) {
+      // Copie à moitié faite : retirée (`target` vient d'être créé ici, `wx`).
+      closeSync(to)
+      rmSync(target, { force: true })
+      throw error
+    }
+    closeSync(to)
+  } finally {
+    closeSync(from)
+  }
+}
+
+/**
  * Copie des fichiers dans les documents d'une discussion ; l'original n'est jamais touché. Un nom
  * déjà pris reçoit un numéro. Rend les noms donnés aux copies.
+ *
+ * `fromDocuments` : les sources sont des documents d'une discussion (branche, « Continuer dans un
+ * projet ») ; elles sont lues par `copyDocument`, et un lien physique ou symbolique est sauté.
+ * Sinon, ce sont des fichiers choisis par l'utilisateur, copiés tels quels.
  */
-export function addDocuments(folder: string, paths: readonly string[]): string[] {
+export function addDocuments(
+  folder: string,
+  paths: readonly string[],
+  options: { fromDocuments?: boolean } = {}
+): string[] {
   mkdirSync(folder, { recursive: true })
   return paths.flatMap((path) => {
     // Fichier absent ou qui n'en est pas un : sauté (l'appelant le dit).
     if (!existsSync(path) || !statSync(path).isFile()) return []
+    if (options.fromDocuments && !isDocumentFile(lstatSync(path))) return []
     const name = freeName(folder, basename(path))
     // Copié sous un nom caché puis renommé : jamais de document à moitié copié dans la liste.
     const partial = join(folder, `.${name}.${process.pid}.tmp`)
     try {
-      copyFileSync(path, partial, constants.COPYFILE_EXCL)
+      if (options.fromDocuments) copyDocument(path, partial)
+      else copyFileSync(path, partial, constants.COPYFILE_EXCL)
       renameSync(partial, join(folder, name))
     } catch (error) {
       rmSync(partial, { force: true })
@@ -175,14 +243,15 @@ export function addDocuments(folder: string, paths: readonly string[]): string[]
 
 /**
  * Chemin d'un document de la discussion : un nom simple (ni dossier, ni `..`, ni fichier caché),
- * un fichier ordinaire du dossier (pas un lien symbolique, qui mènerait ailleurs). Sinon refusé.
+ * un fichier ordinaire du dossier (ni lien symbolique ni lien physique, qui mèneraient ailleurs).
+ * Sinon refusé.
  */
 export function documentPath(folder: string, name: string): string {
   if (name !== basename(name) || name.startsWith('.') || name.length === 0) {
     throw new Error(`Document invalide : ${name}`)
   }
   const path = join(folder, name)
-  if (!lstatSync(path).isFile()) throw new Error(`Document invalide : ${name}`)
+  if (!isDocumentFile(lstatSync(path))) throw new Error(`Document invalide : ${name}`)
   return path
 }
 
@@ -335,7 +404,8 @@ export function forkDiscussionFolder(
   const folder = createDiscussionFolder(conversationsDir, record.id)
   addDocuments(
     folder,
-    listDocuments(sourceFolder).map((d) => join(sourceFolder, d.name))
+    listDocuments(sourceFolder).map((d) => join(sourceFolder, d.name)),
+    { fromDocuments: true }
   )
   record.workspace = folder
 }

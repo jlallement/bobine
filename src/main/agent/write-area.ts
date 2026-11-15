@@ -6,7 +6,8 @@
  * - une cible hors du dossier (chemin, ou lien symbolique qui y mène) : refusé ;
  * - accordé une fois seulement si chaque cible est un document du dossier — un nom visible du
  *   premier niveau (ni sous-dossier, ni fichier caché : `.bob/`, `.opencode/` peuvent déclarer des
- *   commandes ou des serveurs), pas un lien symbolique ;
+ *   commandes ou des serveurs), pas un lien symbolique, et pas un fichier à plusieurs noms (lien
+ *   physique, fiche 230 : y écrire modifierait aussi l'autre nom, peut-être hors du dossier) ;
  * - tout le reste est posé à l'utilisateur : chemin relatif ou `~` (ACP veut des chemins absolus),
  *   aucune cible connue, emplacements et diffs qui ne disent pas la même chose, déplacement (sa
  *   destination n'est pas toujours dite).
@@ -14,6 +15,7 @@
 import { lstatSync, realpathSync } from 'node:fs'
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import type { RequestPermissionRequest } from '../../shared/acp-sdk.mts'
+import { sharesContent } from './hard-links'
 
 export type WriteAreaVerdict =
   { decision: 'allow'; file: string } | { decision: 'refuse'; file: string } | { decision: 'ask' }
@@ -46,13 +48,17 @@ function escapes(area: string, realArea: string, path: string): boolean {
   return real === undefined || !isInside(realArea, real)
 }
 
-/** Document du premier niveau, visible, et pas un lien symbolique (ni un dossier). */
+/**
+ * Document du premier niveau, visible, et pas un lien symbolique (ni un dossier), ni un fichier à
+ * plusieurs noms (fiche 230). `lstat` sur le chemin même : `escapes` a déjà vérifié par `realpath`
+ * que le dossier qui le contient est bien celui de la discussion.
+ */
 function isDocument(area: string, path: string): boolean {
   const rel = relative(resolve(area), resolve(path))
   if (!rel || rel.includes(sep) || rel.startsWith('.')) return false
   try {
     const stat = lstatSync(path)
-    return stat.isFile()
+    return stat.isFile() && !sharesContent(stat)
   } catch {
     return true // À créer : son dossier est celui de la discussion.
   }

@@ -7,7 +7,7 @@ import type { PermissionRisk } from '@shared/permissions'
 /**
  * Bandeau d'une carte d'autorisation à risque (fiche 211, maquette validée) : une ligne par risque
  * repéré par le main (écriture hors du dossier, fichier caché du dossier personnel, dossier du
- * système, droits d'administrateur). Lu avant les boutons. Un avertissement : son absence ne dit
+ * système, fichier à plusieurs noms, droits d'administrateur). Lu avant les boutons. Un avertissement : son absence ne dit
  * jamais que l'appel est sûr, et aucune phrase ne le prétend.
  */
 export function PermissionRisks({ risks }: { risks: readonly PermissionRisk[] }) {
@@ -41,7 +41,8 @@ export function PermissionRisks({ risks }: { risks: readonly PermissionRisk[] })
 const RISK_KEYS = {
   'outside-folder': 'outside',
   'home-dotfile': 'dotfile',
-  'system-path': 'system'
+  'system-path': 'system',
+  'shared-file': 'sharedFile'
 } as const satisfies Record<Exclude<PermissionRisk['kind'], 'privilege'>, string>
 
 const riskKey = (kind: Exclude<PermissionRisk['kind'], 'privilege'>) => RISK_KEYS[kind]

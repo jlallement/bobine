@@ -11,6 +11,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Espace Discussion : un fichier qui porte aussi un autre nom ailleurs sur le Mac (lien physique)
+  n'est plus modifié sans vous demander ; la demande d'autorisation dit pourquoi. Bobine ne le
+  montre plus parmi les documents, et ne l'ouvre ni ne le copie.
 - Archiver une conversation mère archive aussi ses filles ; une fille dont la mère a été supprimée
   redevient une conversation ordinaire au lieu de rester rattachée à une conversation disparue.
 

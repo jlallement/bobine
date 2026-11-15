@@ -1,4 +1,13 @@
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  closeSync,
+  existsSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -7,12 +16,14 @@ import { handoverContext } from '@shared/handover'
 import {
   addDocuments,
   changedDocuments,
+  copyDocument,
   continuedTranscript,
   discussionFolder,
   documentPath,
   documentsFingerprint,
   folderPlan,
   listDocuments,
+  openDocument,
   sameDraft,
   spaceOf
 } from './discussion-space'
@@ -107,5 +118,50 @@ describe('espace Discussion (fiche 224)', () => {
     const context = handoverContext(next.items) ?? ''
     expect(context).toContain('outside any project folder')
     expect(context).toContain('Voici l’e-mail.')
+  })
+})
+
+describe('documents à plusieurs noms (lien physique, fiche 230)', () => {
+  /** Un dossier de discussion avec `Notes.md`, autre nom d'un fichier extérieur. */
+  function linked() {
+    const docs = folder()
+    const secret = join(folder(), 'secret.txt')
+    writeFileSync(secret, 'contenu extérieur')
+    linkSync(secret, join(docs, 'Notes.md'))
+    writeFileSync(join(docs, 'Seul.md'), 'à moi')
+    return { docs, secret }
+  }
+
+  it('pas un document : ni listé, ni désigné, ni ouvert', () => {
+    const { docs } = linked()
+    expect(listDocuments(docs).map((d) => d.name)).toEqual(['Seul.md'])
+    expect(() => documentPath(docs, 'Notes.md')).toThrow()
+    expect(() => openDocument(join(docs, 'Notes.md'))).toThrow()
+    closeSync(openDocument(join(docs, 'Seul.md')))
+    expect(documentsFingerprint(docs).has('Notes.md')).toBe(false)
+  })
+
+  it('jamais copié hors de la discussion (branche, continuer dans un projet, copie)', () => {
+    const { docs } = linked()
+    const target = folder()
+    expect(
+      addDocuments(target, [join(docs, 'Notes.md'), join(docs, 'Seul.md')], {
+        fromDocuments: true
+      })
+    ).toEqual(['Seul.md'])
+    expect(readFileSync(join(target, 'Seul.md'), 'utf8')).toBe('à moi')
+    expect(() => copyDocument(join(docs, 'Notes.md'), join(target, 'copie.md'))).toThrow()
+    expect(existsSync(join(target, 'copie.md'))).toBe(false)
+    // Un lien symbolique non plus.
+    symlinkSync(join(docs, 'Seul.md'), join(docs, 'Lien.md'))
+    expect(addDocuments(target, [join(docs, 'Lien.md')], { fromDocuments: true })).toEqual([])
+  })
+
+  it('un fichier choisi par l’utilisateur, même à plusieurs noms, est copié (nouveau fichier)', () => {
+    const { secret } = linked()
+    const target = folder()
+    expect(addDocuments(target, [secret])).toEqual(['secret.txt'])
+    writeFileSync(join(target, 'secret.txt'), 'changé')
+    expect(readFileSync(secret, 'utf8')).toBe('contenu extérieur')
   })
 })
