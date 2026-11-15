@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { folderGoneMessage, usableFolder, worktreeOrigin } from './folder-fallback'
+import { abs } from '../test-platform'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -16,11 +17,14 @@ const folder = () => {
 
 describe('dossier d’une nouvelle conversation disparu (0.9.1, D21)', () => {
   it('origine d’un dossier de worktree : le dépôt, et le même sous-dossier d’abord', () => {
-    expect(worktreeOrigin('/r/.worktrees/20261106-1849-4f2f')).toEqual(['/r'])
-    expect(worktreeOrigin('/r/.worktrees/20261106-1849-4f2f/app/web')).toEqual(['/r/app/web', '/r'])
-    expect(worktreeOrigin('/r/app')).toEqual([])
+    expect(worktreeOrigin(abs('/r/.worktrees/20261106-1849-4f2f'))).toEqual([abs('/r')])
+    expect(worktreeOrigin(abs('/r/.worktrees/20261106-1849-4f2f/app/web'))).toEqual([
+      abs('/r/app/web'),
+      abs('/r')
+    ])
+    expect(worktreeOrigin(abs('/r/app'))).toEqual([])
     // Worktree pris dans un autre : son propre dépôt, pas celui du dessus.
-    expect(worktreeOrigin('/r/.worktrees/a/.worktrees/b')).toEqual(['/r/.worktrees/a'])
+    expect(worktreeOrigin(abs('/r/.worktrees/a/.worktrees/b'))).toEqual([abs('/r/.worktrees/a')])
   })
 
   it('jamais un dossier pris dans un worktree comme repli (remarque 3)', () => {

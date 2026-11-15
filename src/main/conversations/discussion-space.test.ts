@@ -27,6 +27,7 @@ import {
   sameDraft,
   spaceOf
 } from './discussion-space'
+import { abs } from '../test-platform'
 
 const folder = () => mkdtempSync(join(tmpdir(), 'documents-'))
 
@@ -53,8 +54,8 @@ describe('espace Discussion (fiche 224)', () => {
   })
 
   it('identifiant de discussion sûr exigé', () => {
-    expect(() => discussionFolder('/d/conversations', '../x')).toThrow()
-    expect(discussionFolder('/d/conversations', 'abc-1')).toBe('/d/discussions/abc-1')
+    expect(() => discussionFolder(abs('/d/conversations'), '../x')).toThrow()
+    expect(discussionFolder(abs('/d/conversations'), 'abc-1')).toBe(abs('/d/discussions/abc-1'))
   })
 
   it('documents : fichiers visibles du premier niveau ; copies numérotées, originaux intacts', () => {

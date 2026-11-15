@@ -18,6 +18,7 @@ import {
   quotaStatusDir,
   type QuotaReaderOptions
 } from './quota'
+import { ON_WINDOWS } from '../test-platform'
 
 const source = (read: (context: QuotaContext) => Promise<QuotaReading>): QuotaSource => ({
   id: 'bob-status',
@@ -69,7 +70,7 @@ describe('quota des agents (fiche 091)', () => {
     const seen: AgentQuota[][] = []
     quota.subscribe((quotas) => seen.push(quotas))
     await quota.refresh()
-    expect(context?.cwd).toMatch(/quota-[^/]+\/bob$/)
+    expect(context?.cwd).toMatch(ON_WINDOWS ? /quota-[^\\]+\\bob$/ : /quota-[^/]+\/bob$/)
     expect(context?.timeoutMs).toBe(READ_TIMEOUT_MS)
     expect(context?.env).toMatchObject({ HOME: '/maison', PROFIL: 'bob', BOB_API_KEY: 'cle' })
     expect(deleteSessions).toHaveBeenCalledWith(bob, context?.cwd, ['tache-vide'])
@@ -191,6 +192,9 @@ describe('quota : un seul dossier, pas d’attente à chaque lancement (D6, D11)
     expect(quotaStatusDir('/home/moi', {}, 'linux')).toBe('/home/moi/.cache/bobine/agent-status')
     expect(quotaStatusDir('/home/moi', { XDG_CACHE_HOME: '/c' }, 'linux')).toBe(
       '/c/bobine/agent-status'
+    )
+    expect(quotaStatusDir('C:\\Users\\moi', {}, 'win32')).toBe(
+      'C:\\Users\\moi\\AppData\\Local\\Bobine\\agent-status'
     )
     expect(READ_TIMEOUT_MS).toBeLessThanOrEqual(20_000)
   })

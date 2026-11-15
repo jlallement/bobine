@@ -16,7 +16,7 @@
  * une fois par `RETRY_WHEN_READY_MS` (fiche 205).
  */
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, posix, win32 } from 'node:path'
 import type { AgentQuota } from '@shared/usage'
 import { withEnvChanges, type EnvChanges } from '../agent-config/api-keys'
 import { log } from '../log'
@@ -40,10 +40,15 @@ export const RETRY_WHEN_READY_MS = 15 * 60_000
 /**
  * Dossier stable des lectures de quota, propre à Bobine, sous le dossier personnel des agents
  * (`BOBINE_CONFIG_HOME` en essai) : `~/Library/Caches/Bobine/agent-status` sur macOS,
- * `$XDG_CACHE_HOME/bobine/agent-status` (sinon `~/.cache/…`) ailleurs.
+ * `~\AppData\Local\Bobine\agent-status` sous Windows (fiche 229 : le cache local, jamais un
+ * `.cache` dans le dossier personnel ; tiré du dossier personnel donné, pour qu'un essai reste dans
+ * le sien), `$XDG_CACHE_HOME/bobine/agent-status` (sinon `~/.cache/…`) ailleurs. Chemins à la
+ * façon du système `platform`.
  */
 export function quotaStatusDir(home: string, env: NodeJS.ProcessEnv, platform = process.platform) {
+  const { join } = platform === 'win32' ? win32 : posix
   if (platform === 'darwin') return join(home, 'Library', 'Caches', 'Bobine', 'agent-status')
+  if (platform === 'win32') return join(home, 'AppData', 'Local', 'Bobine', 'agent-status')
   const cache = env['XDG_CACHE_HOME'] || join(home, '.cache')
   return join(cache, 'bobine', 'agent-status')
 }

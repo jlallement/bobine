@@ -9,7 +9,8 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { POSIX_PATHS } from '../test-platform'
 import type { PermissionRisk } from '@shared/permissions'
 import { permissionRisks, type RiskToolCall } from './permission-risk'
 
@@ -20,7 +21,7 @@ const noDisk = (): string => {
 const WS = '/projets/app'
 const HOME = '/maison/ada'
 const risksOf = (toolCall: RiskToolCall, workspace: string | undefined = WS) =>
-  permissionRisks(toolCall, { workspace, home: HOME, realpath: noDisk })
+  permissionRisks(toolCall, { workspace, home: HOME, realpath: noDisk, windows: false })
 const command = (text: string) =>
   risksOf({ kind: 'execute', title: text, rawInput: { command: text } })
 
@@ -144,7 +145,7 @@ describe('risques d’une commande (fiche 211)', () => {
     expect(
       permissionRisks(
         { kind: 'execute', title: 'echo x > ~/.zshrc' },
-        { home: HOME, realpath: noDisk }
+        { home: HOME, realpath: noDisk, windows: false }
       )
     ).toEqual([dot('~/.zshrc')])
   })
@@ -185,14 +186,18 @@ describe('risques d’une écriture de fichier (fiche 211)', () => {
   })
 })
 
-describe('liens symboliques (vrai disque, dossier jetable)', () => {
+// Vrai disque, chemins de la machine : la version POSIX. Sous Windows, la sienne est essayée par
+// `permission-risk-windows.test.ts` et les essais NTFS de la fiche 229 (POSIX_PATHS).
+describe.runIf(POSIX_PATHS)('liens symboliques (vrai disque, dossier jetable)', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'bobine-risques-')))
   afterAll(() => rmSync(root, { recursive: true, force: true }))
   const workspace = join(root, 'projet')
   const home = join(root, 'maison')
-  mkdirSync(workspace)
-  mkdirSync(join(home, '.ssh'), { recursive: true })
-  symlinkSync(join(home, '.ssh'), join(workspace, 'cles'))
+  beforeAll(() => {
+    mkdirSync(workspace)
+    mkdirSync(join(home, '.ssh'), { recursive: true })
+    symlinkSync(join(home, '.ssh'), join(workspace, 'cles'))
+  })
 
   it('un lien du projet vers ~/.ssh : hors du dossier, là où il mène', () => {
     expect(
@@ -213,16 +218,18 @@ describe('liens symboliques (vrai disque, dossier jetable)', () => {
   })
 })
 
-describe('fichier à plusieurs noms (lien physique, fiche 230)', () => {
+describe.runIf(POSIX_PATHS)('fichier à plusieurs noms (lien physique, fiche 230)', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'liens-physiques-')))
   afterAll(() => rmSync(root, { recursive: true, force: true }))
   const ws = join(root, 'projet')
   const ailleurs = join(root, 'ailleurs')
-  mkdirSync(ws)
-  mkdirSync(ailleurs)
-  writeFileSync(join(ailleurs, 'secret.txt'), 'à garder')
-  linkSync(join(ailleurs, 'secret.txt'), join(ws, 'notes.md'))
-  writeFileSync(join(ws, 'seul.md'), 'x')
+  beforeAll(() => {
+    mkdirSync(ws)
+    mkdirSync(ailleurs)
+    writeFileSync(join(ailleurs, 'secret.txt'), 'à garder')
+    linkSync(join(ailleurs, 'secret.txt'), join(ws, 'notes.md'))
+    writeFileSync(join(ws, 'seul.md'), 'x')
+  })
   const risks = (toolCall: RiskToolCall) =>
     permissionRisks(toolCall, { workspace: ws, home: join(root, 'maison') })
   const shared = (path: string): PermissionRisk => ({ kind: 'shared-file', path })

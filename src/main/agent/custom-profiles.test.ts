@@ -3,6 +3,7 @@ import type { CustomAgent } from '@shared/custom-agents'
 import { describeCapabilities } from './capabilities'
 import { applyCustomProfiles, customProfile } from './custom-profiles'
 import { resolveProfiles, summarizeProfiles, type AgentProfile } from './profiles'
+import { abs } from '../test-platform'
 
 const agent = (id: string, extra: Partial<CustomAgent> = {}): CustomAgent => ({
   id,
@@ -45,9 +46,9 @@ describe('profil d’un agent déclaré (fiche 141)', () => {
   })
 
   it('« ~/ » en tête de la commande : le dossier personnel', () => {
-    expect(customProfile(agent('custom-a', { command: '~/bin/agent' }), '/Users/moi').command).toBe(
-      '/Users/moi/bin/agent'
-    )
+    expect(
+      customProfile(agent('custom-a', { command: '~/bin/agent' }), abs('/Users/moi')).command
+    ).toBe(abs('/Users/moi/bin/agent'))
   })
 
   it('rangé après les vrais agents, avant les agents factices ; remplacé en place', () => {

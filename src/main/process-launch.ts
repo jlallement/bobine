@@ -450,7 +450,12 @@ export function relayed(
   return [plan.file, plan.args]
 }
 
-let currentSystem: ProcessSystem = 'posix'
+/**
+ * Par défaut, le système de la machine (lot 7a de la fiche 229) : les sondes, les scripts et les
+ * essais qui n'ouvrent pas l'app ne passent pas par `index.ts`, et sous Windows ils cherchaient un
+ * programme à la façon d'Unix (agent « introuvable »). Sur macOS et Linux : `posix`, comme avant.
+ */
+let currentSystem: ProcessSystem = process.platform === 'win32' ? 'windows' : 'posix'
 
 /** Système des processus de cette machine, posé une fois par `index.ts` (et les sondes). */
 export function configureProcessLaunch(system: ProcessSystem): void {

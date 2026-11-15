@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LaunchController, parseLaunchArgs, userArguments } from './launch-request'
+import { abs } from './test-platform'
 
 describe('userArguments', () => {
   it('saute le chemin de l’app quand Electron la lance depuis les sources', () => {
@@ -20,17 +21,17 @@ describe('userArguments', () => {
 
 describe('parseLaunchArgs', () => {
   it('sans argument : rien à ouvrir', () => {
-    expect(parseLaunchArgs([], '/w')).toBeUndefined()
-    expect(parseLaunchArgs(['  '], '/w')).toBeUndefined()
+    expect(parseLaunchArgs([], abs('/w'))).toBeUndefined()
+    expect(parseLaunchArgs(['  '], abs('/w'))).toBeUndefined()
   })
   it('le dossier est résolu depuis le dossier de travail', () => {
-    expect(parseLaunchArgs(['.'], '/w/projet')).toEqual({ folder: '/w/projet' })
-    expect(parseLaunchArgs(['../autre'], '/w/projet')).toEqual({ folder: '/w/autre' })
-    expect(parseLaunchArgs(['/abs'], '/w')).toEqual({ folder: '/abs' })
+    expect(parseLaunchArgs(['.'], abs('/w/projet'))).toEqual({ folder: abs('/w/projet') })
+    expect(parseLaunchArgs(['../autre'], abs('/w/projet'))).toEqual({ folder: abs('/w/autre') })
+    expect(parseLaunchArgs([abs('/abs')], abs('/w'))).toEqual({ folder: abs('/abs') })
   })
   it('les arguments suivants forment le premier message', () => {
-    expect(parseLaunchArgs(['/p', 'corrige', 'le bug'], '/w')).toEqual({
-      folder: '/p',
+    expect(parseLaunchArgs([abs('/p'), 'corrige', 'le bug'], abs('/w'))).toEqual({
+      folder: abs('/p'),
       message: 'corrige le bug'
     })
   })
@@ -44,25 +45,27 @@ describe('parseLaunchArgs', () => {
       '--remote-debugging-port=9333',
       '-psn_0_12345'
     ]
-    expect(parseLaunchArgs(own, '/w')).toBeUndefined()
-    expect(parseLaunchArgs([...own, '/p', 'bonjour'], '/w')).toEqual({
-      folder: '/p',
+    expect(parseLaunchArgs(own, abs('/w'))).toBeUndefined()
+    expect(parseLaunchArgs([...own, abs('/p'), 'bonjour'], abs('/w'))).toEqual({
+      folder: abs('/p'),
       message: 'bonjour'
     })
-    expect(parseLaunchArgs(['/p', '--profil-temporaire'], '/w')).toEqual({ folder: '/p' })
+    expect(parseLaunchArgs([abs('/p'), '--profil-temporaire'], abs('/w'))).toEqual({
+      folder: abs('/p')
+    })
   })
   it('saute un réglage AppKit et sa valeur (lanceur des essais)', () => {
     const appKit = ['-ApplePersistenceIgnoreState', 'YES']
-    expect(parseLaunchArgs(appKit, '/w')).toBeUndefined()
-    expect(parseLaunchArgs([...appKit, '/p', 'bonjour'], '/w')).toEqual({
-      folder: '/p',
+    expect(parseLaunchArgs(appKit, abs('/w'))).toBeUndefined()
+    expect(parseLaunchArgs([...appKit, abs('/p'), 'bonjour'], abs('/w'))).toEqual({
+      folder: abs('/p'),
       message: 'bonjour'
     })
-    expect(parseLaunchArgs(['/p', ...appKit], '/w')).toEqual({ folder: '/p' })
+    expect(parseLaunchArgs([abs('/p'), ...appKit], abs('/w'))).toEqual({ folder: abs('/p') })
   })
   it('« -- » rend le reste littéral', () => {
-    expect(parseLaunchArgs(['--', '-dossier', '--message'], '/w')).toEqual({
-      folder: '/w/-dossier',
+    expect(parseLaunchArgs(['--', '-dossier', '--message'], abs('/w'))).toEqual({
+      folder: abs('/w/-dossier'),
       message: '--message'
     })
   })

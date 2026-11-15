@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, relative, resolve } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { conversationChanges } from '@shared/changes'
 import { commandFolderOf } from '@shared/command-view'
@@ -19,6 +19,8 @@ const TRACES = join(__dirname, '__traces__')
 function traces(): [string, Trace][] {
   const files = readdirSync(TRACES, { recursive: true, encoding: 'utf8' })
     .filter((f) => f.endsWith('.ndjson'))
+    // Noms en `/` partout (instantanés, recherches) : `readdir` rend des `\` sous Windows.
+    .map((f) => f.split(sep).join('/'))
     .sort()
   return files.map((f) => [f, parseTrace(readFileSync(join(TRACES, f), 'utf8'))])
 }
@@ -93,7 +95,7 @@ describe('traces ACP rejouées (fiche 139)', () => {
     // Le rejeu de `session/load` ramène les messages d'avant : comptés avec ceux envoyés.
     const replayed = transcript.items.filter((i) => i.kind === 'user').length - prompts
     expect(noDuplicates(transcript.items, prompts + replayed)).toEqual([])
-    expect(transcript.items.map(view)).toMatchSnapshot(relative(TRACES, join(TRACES, file)))
+    expect(transcript.items.map(view)).toMatchSnapshot(file)
   })
 })
 
