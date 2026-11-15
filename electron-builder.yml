@@ -114,9 +114,24 @@ linux:
   # Champ exigé par le .deb (sinon lu dans `author` de package.json, qui n'a pas d'adresse).
   maintainer: Bobine <https://github.com/jlallement/bobine>
   artifactName: Bobine-${version}-${arch}.${ext}
-  # node-pty : le module compilé sous Linux (build/Release) ; ses binaires macOS et Windows
-  # ne servent pas.
+  # Les `files` de la racine, repris tels quels, puis ce qui est propre à Linux. Une liste de
+  # seules exclusions ici fait ajouter `**/*` par electron-builder : le dépôt entier (src/, docs/,
+  # e2e/, fichiers locaux) entrait dans le .deb (constaté le 2026-11-15). Les deux listes doivent
+  # rester identiques : `scripts/check-linux-package.test.ts` le vérifie, et le contrôle du .deb
+  # (`check-linux-package.mts`) refuse tout ce qui n'est pas `out/`, `package.json` ou
+  # `node_modules/` dans `app.asar`.
   files:
+    - out/**
+    - package.json
+    - '!**/*.map'
+    - '!out/third-party/**'
+    - '!node_modules/node-pty/{src,deps,third_party,scripts,binding.gyp,typings}/**'
+    - '!node_modules/node-pty/prebuilds/win32-*/**'
+    - '!node_modules/node-pty/lib/**/*.test.js'
+    - '!node_modules/node-addon-api/**'
+    - '!node_modules/koffi/**'
+    - '!node_modules/@koromix/**'
+    # node-pty : le module compilé sous Linux (build/Release) ; ses binaires macOS ne servent pas.
     - '!node_modules/node-pty/prebuilds/**'
 # Icône vectorielle (hicolor/scalable) en plus des PNG : electron-builder ne prend qu'un dossier de
 # PNG ou une seule SVG, la SVG est donc ajoutée au .deb par fpm (chemin relatif à la racine).

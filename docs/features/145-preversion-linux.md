@@ -577,4 +577,20 @@ lancé, rien d'autre à installer sur le Mac.
 
   Pas de bug de l'app propre à x64. À noter : sans libnotify (une AppImage sur un système qui
   ne l'a pas), l'app n'affiche aucune notification et ne le dit pas ; à reprendre avec le lot 3.
+- 2026-11-15 — **Fuite du dépôt dans le .deb** (constat de la session Windows, vérifié ici) : le
+  `.deb` construit depuis `main` (2cea66c) avait **2532 entrées** dans `app.asar`, dont tout
+  `src/`, `docs/`, `e2e/`, `scripts/`, `demos/`, `docker/`, `vendor/`, les `tsconfig*.tsbuildinfo`
+  et les fichiers de la racine (AGENTS.md, CLAUDE.md…). Cause : `linux.files` ne contenait qu'une
+  exclusion (les binaires précompilés de node-pty) ; electron-builder ajoute alors `**/*` en tête.
+  Depuis le clone d'un développeur, des fichiers locaux ignorés par git (`.pilote/`,
+  `e2e/captures/`, `.env.local`, `coverage/`) seraient partis aussi ; dans le conteneur, ils ne sont
+  pas copiés. Correction : `linux.files` reprend les `files` de la racine puis ajoute son
+  exclusion (un test vérifie que les deux listes restent identiques) ; le contrôle du .deb
+  (`check-linux-package.mts`, lancé par `pnpm package --linux`) lit l'en-tête de `app.asar`
+  (sans dépendance) et refuse tout ce qui n'est pas `out/`, `package.json` ou `node_modules/`, et
+  les binaires de node-pty d'autres systèmes. Vérifié : le contrôle refuse le .deb de `main` ;
+  après correction, **392 entrées** (`out/`, `package.json`, `node_modules/`), contrôle vert, app
+  packagée qui démarre sous Xvfb. Mac : configuration inchangée ; `pnpm package --dir` donne
+  `out/`, `package.json`, `node_modules/` et les binaires darwin de node-pty, pas de fuite (il
+  n'y en a jamais eu).
 

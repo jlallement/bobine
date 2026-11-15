@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { packageProblems } from './check-linux-package.mts'
+import { parse } from 'yaml'
+import { asarEntries, asarProblems, packageProblems } from './check-linux-package.mts'
 import { HICOLOR_DIRS, LINUX_ICON_SIZES } from './linux-icons.mjs'
 
 const root = join(__dirname, '..')
@@ -46,5 +47,37 @@ describe('paquet Linux (fiche 145)', () => {
       desktopName?: string
     }
     expect(pkg.desktopName).toBe('bobine.desktop')
+  })
+
+  it('app.asar : seulement le build, package.json et les dépendances', () => {
+    const header = JSON.stringify({
+      files: {
+        'package.json': { size: 2 },
+        out: { files: { main: { files: { 'index.js': { size: 1 } } } } },
+        node_modules: { files: { 'node-pty': { files: { build: { files: {} } } } } }
+      }
+    })
+    const json = Buffer.from(header)
+    const archive = Buffer.alloc(16 + json.length)
+    archive.writeUInt32LE(json.length, 12)
+    json.copy(archive, 16)
+    const entries = asarEntries(archive)
+    expect(entries).toContain('out/main/index.js')
+    expect(asarProblems(entries)).toEqual([])
+    expect(
+      asarProblems([...entries, 'docs/features/145.md', 'src/main/index.ts', '.pilote/x'])
+    ).toEqual(['hors du build dans app.asar : .pilote, docs, src'])
+    expect(asarProblems(['node_modules/node-pty/prebuilds/darwin-arm64/pty.node'])).toEqual([
+      "binaires de node-pty d'autres systèmes dans app.asar"
+    ])
+  })
+
+  it('electron-builder : `linux.files` reprend les `files` de la racine, sans les remplacer', () => {
+    const config = parse(readFileSync(join(root, 'electron-builder.yml'), 'utf8')) as {
+      files: string[]
+      linux: { files: string[] }
+    }
+    expect(config.linux.files.slice(0, config.files.length)).toEqual(config.files)
+    expect(config.linux.files.some((p) => !p.startsWith('!'))).toBe(true)
   })
 })
