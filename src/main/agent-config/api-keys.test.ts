@@ -255,7 +255,7 @@ describe('Linux sans trousseau de session (fiche 145, D4)', () => {
     await store.set('bob', 'BOB_API_KEY', 'secret-lin')
     expect(cipher.encrypt).not.toHaveBeenCalled()
     expect(JSON.parse(readFileSync(path, 'utf8')).keys.bob.BOB_API_KEY).toBe('plain:secret-lin')
-    expect(statSync(path).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(path).mode & 0o777).toBe(0o600)
     expect(store.info('bob', BOB, {})[0]).toMatchObject({ stored: true, plaintext: true })
     const again = new ApiKeyStore(path, linuxCipher({ keychain: false }))
     expect(await again.credentials('bob', BOB)).toMatchObject({ BOB_API_KEY: 'secret-lin' })

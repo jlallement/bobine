@@ -81,11 +81,3 @@ export const POSIX_SHELL = !ON_WINDOWS
  * Linux avec de faux outils `sh` ; à porter (fiche 229, suite du lot 7a).
  */
 export const ANDROID_TOOLS = !ON_WINDOWS
-
-/**
- * Un processus node qui ferme sa sortie standard sans sortir (agent factice « connexion coupée ») :
- * possible sous Unix ; sous Windows, ni `end()`, ni `destroy()`, ni `closeSync(1)` ne ferment le
- * tube vu par le parent (relevé dans la VM, fiche 229, lot 7a). La détection de l'app existe sous
- * Windows aussi ; c'est le scénario qui ne s'y simule pas.
- */
-export const CLOSABLE_STDOUT = !ON_WINDOWS
