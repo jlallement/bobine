@@ -95,20 +95,20 @@ export function dropDraftFolder(
   if (record.space !== 'discussion') return
   const folder = removableFolder(conversationsDir, record.id)
   // Seulement le dossier de cette discussion, jamais un autre qu'elle désignerait.
-  if (folder && folder === record.workspace) removeDraftFolder(folder)
+  if (folder && folder === record.workspace) removeDiscussionFolder(folder)
 }
 
 /** Délais des nouveaux essais (ms), puis le ménage du prochain démarrage (`sweepDiscussionFolders`). */
 const DRAFT_REMOVAL_RETRIES = [200, 500, 1000, 2000, 4000]
 
 /**
- * Supprime le dossier d'un brouillon. Sous Windows, le dossier courant d'un processus vivant ne se
+ * Supprime le dossier d’une discussion (brouillon quitté, corbeille vidée). Sous Windows, le dossier courant d'un processus vivant ne se
  * supprime pas (`EPERM`, relevé sur `windows-latest`, fiche 229) : l'agent du brouillon est à peine
  * arrêté, et l'erreur faisait échouer « Nouvelle conversation ». Nouvel essai un peu plus tard,
  * sans jamais lever ; à défaut, le prochain démarrage l'emporte (dossier d'aucune conversation).
  * macOS et Linux : supprimé tout de suite, comme avant.
  */
-function removeDraftFolder(folder: string, retries = DRAFT_REMOVAL_RETRIES): void {
+function removeDiscussionFolder(folder: string, retries = DRAFT_REMOVAL_RETRIES): void {
   try {
     rmSync(folder, { recursive: true, force: true })
   } catch (error) {
@@ -117,7 +117,7 @@ function removeDraftFolder(folder: string, retries = DRAFT_REMOVAL_RETRIES): voi
       log.warn(`Dossier d'une discussion vide laissé (supprimé au prochain démarrage) :`, error)
       return
     }
-    setTimeout(() => removeDraftFolder(folder, rest), delay).unref()
+    setTimeout(() => removeDiscussionFolder(folder, rest), delay).unref()
   }
 }
 
@@ -144,7 +144,8 @@ export function sweepDiscussionFolders(conversationsDir: string, known: Readonly
 export function eraseDiscussionFolder(conversationsDir: string, id: string): void {
   const folder = discussionFolder(conversationsDir, id)
   if (!existsSync(folder)) return
-  rmSync(folder, { recursive: true, force: true })
+  // Sous Windows, un agent encore arrêté de peu y garde son dossier courant : nouvel essai.
+  removeDiscussionFolder(folder)
   log.info(`Documents de la discussion effacés : ${id}`)
 }
 

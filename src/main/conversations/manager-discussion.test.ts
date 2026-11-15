@@ -17,7 +17,7 @@ import type { AgentProfile } from '../agent/profiles'
 import { ConversationManager } from './manager'
 import { discussionFolder, discussionsRoot } from './discussion-space'
 import { ConversationTrash } from './trash'
-import { tempDir } from '../test-platform'
+import { ON_WINDOWS, tempDir } from '../test-platform'
 
 /** Espace Discussion (fiche 224) : gestionnaire sur des dossiers jetables, agent factice. */
 function launch(scenario = 'echo', root = tempDir('discussion-')) {
@@ -182,7 +182,10 @@ describe('espace Discussion (fiche 224)', () => {
     expect(readFileSync(join(b.summary.workspace, 'Synthèse.docx'), 'utf8')).toBe('doc')
     await manager.delete(a.summary.id, { fromAgent: false })
     new ConversationTrash(conversationsDir).erase(a.summary.id)
-    expect(existsSync(a.summary.workspace)).toBe(false)
+    // Sous Windows, effacé quand son agent s'est arrêté (nouvel essai).
+    await vi.waitFor(() => expect(existsSync(a.summary.workspace)).toBe(false), {
+      timeout: 8000
+    })
     expect(readFileSync(join(b.summary.workspace, 'Synthèse.docx'), 'utf8')).toBe('doc')
     manager.stopAll()
   })
@@ -255,7 +258,13 @@ describe('espace Discussion (fiche 224)', () => {
     const view = await manager.create({ space: 'discussion' })
     await manager.prompt(view.summary.id, 'Bonjour')
     manager.stopAll()
-    rmSync(view.summary.workspace, { recursive: true, force: true })
+    // Sous Windows, l'agent arrêté libère son dossier courant un peu après (EPERM d'ici là).
+    rmSync(
+      view.summary.workspace,
+      ON_WINDOWS
+        ? { recursive: true, force: true, maxRetries: 50, retryDelay: 100 }
+        : { recursive: true, force: true }
+    )
     await manager.restart(view.summary.id)
     await manager.prompt(view.summary.id, 'Encore')
     expect(existsSync(view.summary.workspace)).toBe(true)
