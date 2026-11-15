@@ -727,3 +727,17 @@ lancé, rien d'autre à installer sur le Mac.
     réglage de rendu à imposer pour un essai). Piste : décider si un séparateur powerline, dessiné
     pour chevaucher d'une fraction de pixel la cellule voisine, relève de cette règle ; ou
     vérifier à l'écran sous Linux qu'aucune coupure n'est visible avant d'en parler.
+  - `filles-tech-lead` et `filles-fusion` (rouges sur la branche, vertes sur `main`) : **corrigés
+    (essais)**. Avec Inter, les lignes ont une autre hauteur : sous Linux, la première ligne de la
+    carte « Sous-tâches » se retrouvait au-dessus du bord du fil (bouton « Ouvrir » à 51,5 pour un
+    fil qui commence à 52), et le bouton « › » du compte rendu bougeait encore quand l'essai
+    cliquait (le pied « Terminé » arrive après le texte). Les clics tombaient à côté. Nouvel outil
+    d'essai `ui.reveal(sélecteur)` (`e2e/lib.mjs`) : rien si l'élément est déjà à l'écran, sinon
+    au milieu de ce qui le fait défiler, comme un utilisateur avant de cliquer (au milieu : remonté
+    de moins de 60 px, le fil se croit encore en bas et y revient, `useThreadScroll`) ;
+    `filles-tech-lead` attend aussi la fin du tour. Rien de changé dans l'app. Verts sous Linux
+    (deux passages) et sur le Mac.
+  - Rouges sous Linux qui ne viennent pas de cette branche (rouges aussi sur `main` b137697, dans
+    Docker) : `auth` et `providers` (clé « chiffrée » attendue, gardée en clair sans trousseau
+    depuis D4 ; à voir avec la fiche 229), `browser` (menu « + » : page native masquée puis
+    réaffichée), `pilote` (envoi : brouillon). Pas touchés ici.
