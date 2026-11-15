@@ -1085,10 +1085,24 @@ script de 30 lignes sans rien apporter. Poste Windows : `bash scripts/verify` de
 corrections de l'app ne changent rien hors Windows : chaque branche Windows est conditionnée par
 la plateforme ou par la forme du chemin, et les règles Unix sont gardées à l'identique.
 
-**Non vérifié** : la VM. L'installation de Git for Windows (autorisée par la consigne) a été
-refusée par le garde-fou d'autorisation de la session ; rien n'a été installé ni lancé dans la VM
-pour ce lot. Le compte des essais encore rouges sous Windows reste donc une estimation : ≈ 19 (c,
-lot 4), ≈ 15 (c, lot 5), ≈ 13 (r), à confirmer par le job Windows ou la VM.
+**Vérifié dans la VM** (Windows 11 ARM64, accord de Jérôme dans la session) : MinGit déjà en place,
+pnpm 12.11.2 par corepack (`COREPACK_HOME` dans `bobine-229`, PATH passé à la commande seulement),
+clone de `main` + branche par un bundle, `pnpm install --frozen-lockfile`, `vitest run` complet :
+**52 essais en échec sur 4 544** (contre 283 sur `windows-latest` au départ), 60 sautés (capacités
+ci-dessus). Corrigé en plus grâce à la VM : diffs d'OpenCode comptés deux fois au rejeu (chemin
+`/x` contre `D:\x`, `opencode-diffs.ts`), règles `instructions` absolues d'OpenCode jamais trouvées
+sous Windows (motif coupé après `C`, `opencode-rules.ts`, `globFiles`), effacement d'une discussion
+de la corbeille (`EPERM`), agent factice à délai nul (`setTimeout(0)` ≈ 15 ms sous Windows : des
+milliers de morceaux dépassaient le délai des essais).
+
+Les 52 restants :
+
+| Fichiers | Essais | Cl. |
+|---|---|---|
+| `changes/worktree-cycle`, `conversations/children-merge`, `conversations/children`, `changes/git`, `changes/forge`, `git/git-queue`, `changes/worktrees`, `changes/worktree-setup`, `manager.test` (worktree préparé) | 26 | c (lot 4, git) |
+| `android/gradle`, `android/android-tools`, `editors/editors`, `files/file-links` (liens `C:\…` et `file://C:` non reconnus par `parseFileLink`) | 11 | c (lot 5) |
+| `reset` (relais `sh`), `fresh-start` (relais `sh`), `command-line` (commande `bobine` en `sh`), `terminal/terminal-manager` (shells POSIX, ConPTY à essayer) | 14 | r |
+| `agent-host` « connexion coupée, processus vivant » (délai) ; `conformance-bob` « sous-agent, message pendant qu'il travaille » (instable sous charge : vert seul) | 2 | r |
 
 ## Journal
 
@@ -1254,5 +1268,7 @@ lot 4), ≈ 15 (c, lot 5), ≈ 13 (r), à confirmer par le job Windows ou la VM.
   chemins montrés, liens vers des exécutables Windows ouverts, dossier personnel dans les traces,
   `EPERM` en quittant un brouillon de discussion, `agent-status`, `resetPaths`, avis de licence,
   pilote). `./scripts/verify` vert sur le Mac ; `pnpm e2e --changed` : 204/204 verts (clair et
-  sombre), captures regardées, inchangées. VM non utilisée (installation de Git refusée par le
-  garde-fou de la session ; accord de Jérôme attendu dans la session même).
+  sombre), captures regardées, inchangées. Puis, avec l'accord de Jérôme, vitest dans la VM :
+  52 échecs sur 4 544 (c : lots 4 et 5 ; r : relais `sh`, commande `bobine`, terminal, deux
+  délais), et quatre défauts de plus corrigés (diffs d'OpenCode au rejeu, règles absolues
+  d'OpenCode, effacement d'une discussion, agent factice à délai nul).
