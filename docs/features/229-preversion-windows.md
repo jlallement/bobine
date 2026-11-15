@@ -1161,11 +1161,20 @@ au hasard et des processus de vitest morts ; après, aucun (mesures ci-dessous).
 dans le dossier temporaire de vitest (noms longs, ci-dessus), son effacement final échouait à
 chaque passage sur `windows-latest` (`EPERM`), et dans la VM la commande ne rendait plus la main.
 Cause relevée dans la VM : un `node server.js` lancé par `dev-servers.test.ts` (« ligne de commande
-lancée par le shell », donc `cmd.exe` puis node) survivait à vitest. Sans configuration, `stopTree`
-n'arrêtait sous Windows que le processus lancé (`cmd.exe`), pas son petit-enfant ; l'app, elle,
-configure les objets de tâche au démarrage. Les essais du main les configurent désormais de la même
-façon sous Windows (`test-setup.ts`, `createWindowsTrees` partagé avec l'app) ; macOS et Linux :
-rien de changé.
+lancée par le shell », donc `cmd.exe` puis node) survivait à vitest. Sans configuration (essais,
+sondes), `stopTree` n'arrêtait sous Windows que le processus lancé (`cmd.exe`), pas son
+petit-enfant. Il arrête désormais tout l'arbre (`taskkill /T /F`), tout de suite, seulement si le
+processus tourne encore et de façon synchrone (son numéro ne peut pas avoir été réattribué : node
+garde son handle tant que sa boucle n'a pas traité la sortie) ; repli par le handle. L'app, elle,
+passe par les objets de tâche (inchangé) ; macOS et Linux : rien de changé.
+
+Essayé d'abord, puis **abandonné** : configurer dans les essais les objets de tâche de l'app. Neuf
+essais tombaient dans la VM, parce que l'arrêt de l'app est poli (entrée fermée, 3 s de grâce) et
+que les effacements synchrones qui suivent bloquent la boucle d'évènements. Ce qui révèle un
+**défaut probable de l'app sous Windows**, non corrigé ici (lot 4, worktrees) : en quittant,
+`stopAll` efface aussitôt, en synchrone, le worktree d'une conversation jamais commencée, alors que
+son agent tourne encore dedans ; sous Windows, un dossier courant ne s'efface pas : le worktree et
+sa branche resteraient. À confirmer dans l'app installée.
 
 **Agent factice et base de Bob : verrou attendu.** Échec au hasard de « deux sous-agents de Bob
 en parallèle » sur `windows-latest` (cartes `cancelled`, sans coût) : l'agent factice écrivait dans
