@@ -20,7 +20,7 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
    le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
    lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
 3. **Lot 2** — barre de titre et menu Linux, raccourcis Ctrl, textes Mac/Finder/Dock/⌘,
-   `desktopName`.
+   (`desktopName` : fait au lot 4 le 2026-11-15).
 4. **Lot 3** — intégration au bureau (git en langue fixe : fait), clés d'API sans trousseau (D4) ;
    vérifier aussi la réinitialisation de la fiche 148 (trousseau, corbeille) sous Linux.
 5. **Lot 4** — « préversion Linux » dans l'À propos, node-pty pour `pnpm dev`, `e2e:packaged`.
@@ -179,6 +179,11 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   `maintainer` du `.deb` : « Bobine <https://github.com/jlallement/bobine> », à confirmer.
 - ✅ node-pty compilé sous Linux comme dans `ci.yml` (`node-gyp rebuild` dans son dossier, N-API :
   valable pour Electron), s'il manque ; `asarUnpack` de `build/Release`.
+- ✅ Icônes et rattachement au dock (2026-11-15) : PNG du thème hicolor de 16 à 512
+  (`build/icons/`, `scripts/make-icon.mjs --linux`, depuis `build/icon.png`), SVG en `scalable`
+  (ajoutée par fpm, `deb.fpm`), `desktopName: bobine.desktop` et `linux.syncDesktopName` (fenêtre
+  rattachée à `bobine.desktop` sous Wayland, `StartupWMClass=bobine`) ; contrôle du .deb après
+  chaque `pnpm package --linux` (`scripts/check-linux-package.mts`).
 - ✅ `pnpm package --linux` : demandé explicitement, jamais deviné d'après la machine (pas de
   signature ni de notarisation, pas de `.dmg`, pas d'AXe) ; sans `--linux`, rien ne change.
   `--dry-run` reste l'essai à blanc de la signature Mac, quelle que soit la machine.
@@ -356,7 +361,8 @@ lancé, rien d'autre à installer sur le Mac.
     d'où un défaut invisible sur le Mac. **Priorité du lot 3** : lancer git avec une langue fixe
     (`LC_ALL=C`) là où l'app lit sa sortie, et reconnaître la limite de système de fichiers.
   - Journal sous Linux : `~/.config/bobine/logs/main.log` (doc et AGENTS.md à compléter).
-  - electron-builder demande `desktopName` (rattacher la fenêtre à l'icône sous GNOME) : lot 2.
+  - electron-builder demande `desktopName` (rattacher la fenêtre à l’icône sous GNOME) : lot 2
+    (fait au lot 4 le 2026-11-15).
   - Erreurs EGL au démarrage : carte graphique de la VM sans OpenGL ES 3, Chromium dessine sans
     accélération ; propre à la VM.
 - 2026-10-25 — **Fusionnée dans `main` en mode expérimental**, à la demande de Jérôme : ne pas
@@ -436,4 +442,16 @@ lancé, rien d'autre à installer sur le Mac.
   - **Intermittents, un seul thème** : `filles` (light), `finitions` (dark).
   - Image Docker : corepack épinglé (0.36.0, celui de l'image essayée).
   - Lot 2 seul : aucune suite (les textes ⌘ et Dock ne sont pas vérifiés par les e2e).
+- 2026-11-15 — **Icône du .deb** (constat du tech lead dans une VM Ubuntu 26.04, GNOME sous
+  Wayland, `.deb` de la beta.5) : le paquet n'installait que `hicolor/1024x1024/apps/bobine.png`,
+  dossier que le thème hicolor ne déclare pas : roue dentée générique dans le dock. Ajout des PNG
+  de 16 à 512 et de la SVG en `scalable`, de `desktopName` et `syncDesktopName` (electron-builder
+  ne se plaint plus de l'app_id), et du contrôle `scripts/check-linux-package.mts` (icônes et
+  `bobine.desktop` : `Icon`, `StartupWMClass`), lancé par `pnpm package --linux`. electron-builder
+  ne prend qu'un dossier de PNG ou une seule SVG : la SVG passe par fpm, donc seulement dans le
+  .deb (l'AppImage garde les PNG). Vérifié : `.deb` arm64 construit dans le conteneur de
+  `pnpm e2e:linux` (Ubuntu 24.04), contrôle vert, liste de `dpkg-deb -c` et `bobine.desktop` lus,
+  `desktopName` présent dans `app.asar`. Pas vérifié : l'icône affichée par GNOME et le
+  rattachement sous Wayland (VM à refaire) ; l'x64 (même configuration). Mac inchangé
+  (`build/icon.png` non régénérée, `pnpm package --dry-run` identique).
 

@@ -97,8 +97,13 @@ dmg:
 linux:
   target: [AppImage, deb]
   category: Development
-  icon: build/icon.png
+  # Tailles du thème hicolor, de 16 à 512 px (`scripts/make-icon.mjs --linux`) : une icône seule
+  # en 1024 n'est pas trouvée par GNOME (pas de dossier 1024x1024 dans hicolor).
+  icon: build/icons
   executableName: bobine
+  # Fichier `bobine.desktop` nommé d'après `desktopName` (package.json) : Electron en tire l'app_id
+  # de la fenêtre sous Wayland (WM_CLASS sous X11), qui la rattache à son entrée dans le dock.
+  syncDesktopName: true
   synopsis: Desktop app for ACP coding agents
   # Champ exigé par le .deb (sinon lu dans `author` de package.json, qui n'a pas d'adresse).
   maintainer: Bobine <https://github.com/jlallement/bobine>
@@ -107,3 +112,9 @@ linux:
   # ne servent pas.
   files:
     - '!node_modules/node-pty/prebuilds/**'
+# Icône vectorielle (hicolor/scalable) en plus des PNG : electron-builder ne prend qu'un dossier de
+# PNG ou une seule SVG, la SVG est donc ajoutée au .deb par fpm (chemin relatif à la racine).
+# Vérifié après la construction par `scripts/check-linux-package.mts` (fiche 145).
+deb:
+  fpm:
+    - build/icon.svg=/usr/share/icons/hicolor/scalable/apps/bobine.svg
