@@ -332,7 +332,9 @@ describe('relecture du tech lead (fiche 189)', () => {
     const glab = ON_WINDOWS ? process.execPath : join(dir, 'glab')
     const sleeper = join(dir, 'dort.cjs')
     writeFileSync(sleeper, 'setTimeout(() => {}, 30000)\n')
-    const env = ON_WINDOWS ? { ...process.env, NODE_OPTIONS: `--require "${sleeper}"` } : undefined
+    const env = ON_WINDOWS
+      ? { ...process.env, NODE_OPTIONS: `--require "${sleeper.replace(/\\/g, '/')}"` }
+      : undefined
     if (!ON_WINDOWS) {
       writeFileSync(glab, '#!/bin/sh\nsleep 30\n')
       chmodSync(glab, 0o755)

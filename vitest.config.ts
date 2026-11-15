@@ -13,7 +13,10 @@ export default defineConfig({
   resolve: { alias },
   test: {
     globalSetup: ['scripts/vitest-tmp.ts'],
-    testTimeout: 15_000,
+    // Sous Windows, chaque processus (git, node, cmd) coûte bien plus cher qu'ailleurs : les
+    // essais à vrais dépôts git y prennent jusqu'à ~14 s sous charge (VM ARM64, fiche 229, lot 7a).
+    // Le délai d'un essai y est plus long ; aucune vérification ne change. macOS et Linux : 15 s.
+    testTimeout: process.platform === 'win32' ? 60_000 : 15_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
