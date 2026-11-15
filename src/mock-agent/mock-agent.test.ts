@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { methods, RequestError } from '../shared/acp-sdk.mts'
 import type {
@@ -906,7 +906,17 @@ describe('historique des sessions', () => {
     const completed = (updates: SessionUpdate[]) =>
       ofType(updates, 'tool_call_update').filter((u) => u.status === 'completed')
     const diffPaths = (u: Extract<SessionUpdate, { sessionUpdate: 'tool_call_update' }>) =>
-      (u.content ?? []).flatMap((c) => (c.type === 'diff' ? [c.path.slice(cwd.length + 1)] : []))
+      (u.content ?? []).flatMap((c) =>
+        // Relatif, en `/` (sous Windows, le chemin du diff a des `\`).
+        c.type === 'diff'
+          ? [
+              c.path
+                .slice(cwd.length + 1)
+                .split(sep)
+                .join('/')
+            ]
+          : []
+      )
     const { sessionId, live } = await withMockAgent(
       { scenario: 'patch-opencode', args },
       async (ctx) => {

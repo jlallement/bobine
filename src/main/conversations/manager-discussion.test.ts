@@ -10,16 +10,17 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ConversationEvent } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
 import { ConversationManager } from './manager'
 import { discussionFolder, discussionsRoot } from './discussion-space'
 import { ConversationTrash } from './trash'
+import { tempDir } from '../test-platform'
 
 /** Espace Discussion (fiche 224) : gestionnaire sur des dossiers jetables, agent factice. */
-function launch(scenario = 'echo', root = mkdtempSync(join(tmpdir(), 'discussion-'))) {
+function launch(scenario = 'echo', root = tempDir('discussion-')) {
   const workspace = mkdtempSync(join(tmpdir(), 'projet-'))
   const conversationsDir = join(root, 'conversations')
   const events: ConversationEvent[] = []
@@ -78,7 +79,10 @@ describe('espace Discussion (fiche 224)', () => {
     const { manager } = launch()
     const first = await manager.create({ space: 'discussion' })
     await manager.create()
-    expect(existsSync(first.summary.workspace)).toBe(false)
+    // Sous Windows, le dossier part quand l'agent du brouillon s'est arrêté (nouvel essai).
+    await vi.waitFor(() => expect(existsSync(first.summary.workspace)).toBe(false), {
+      timeout: 8000
+    })
     // Avec un document déposé, le dossier reste.
     const second = await manager.create({ space: 'discussion' })
     writeFileSync(join(second.summary.workspace, 'note.txt'), 'x')
@@ -223,7 +227,9 @@ describe('espace Discussion (fiche 224)', () => {
     const draft = await manager.create({ space: 'discussion' })
     mkdirSync(join(draft.summary.workspace, '.bob', 'plugins'), { recursive: true })
     await manager.create()
-    expect(existsSync(draft.summary.workspace)).toBe(false)
+    await vi.waitFor(() => expect(existsSync(draft.summary.workspace)).toBe(false), {
+      timeout: 8000
+    })
     manager.stopAll()
   })
 

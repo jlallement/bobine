@@ -3,7 +3,9 @@
  * Windows y est sauté **par capacité, avec la raison**, et seulement quand la fonction essayée
  * n'existe pas sous Windows ; ailleurs (macOS, Linux), il tourne exactement comme avant.
  */
-import { resolve } from 'node:path'
+import { mkdtempSync, realpathSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 
 /** Machine Windows (ni macOS ni Linux). */
 export const ON_WINDOWS = process.platform === 'win32'
@@ -37,3 +39,27 @@ export const abs = (posixPath: string): string => resolve(posixPath)
  */
 export const native = (posixShown: string): string =>
   ON_WINDOWS ? posixShown.replace(/\//g, '\\') : posixShown
+
+/**
+ * Shell de connexion Unix (`$SHELL -ilc`) : sous Windows, l'environnement vient des variables
+ * enregistrées (`readUserEnv`, fiche 229, lot 2), aucun shell de connexion n'est lancé.
+ */
+export const LOGIN_SHELL = !ON_WINDOWS
+
+/**
+ * Dossier temporaire neuf. Sous Windows, en noms longs (`realpathSync.native`) : le dossier
+ * temporaire peut s'y écrire en noms courts 8.3 (`C:\Users\RUNNER~1\…`), que la zone d'écriture
+ * d'une discussion pose toujours, alors que le dossier de données de l'app est en noms longs.
+ * macOS et Linux : `mkdtempSync` tel quel, comme avant.
+ */
+export function tempDir(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix))
+  return ON_WINDOWS ? realpathSync.native(dir) : dir
+}
+
+/**
+ * Modèle de processus d'Unix : groupes (`kill(-pgid)`), signaux (`SIGKILL`, `SIGSEGV`), `ps`. Windows
+ * n'a ni groupes ni signaux : ses arbres sont tenus par des objets de tâche (ADR-0050, lot 2),
+ * essayés à part (`process-*-windows`).
+ */
+export const POSIX_PROCESSES = !ON_WINDOWS

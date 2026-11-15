@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { AnyMessage, Stream } from '../../shared/acp-sdk.mts'
 import {
@@ -27,12 +27,21 @@ describe('traces ACP (fiche 139)', () => {
     const msg = {
       cwd: '/tmp/sonde-123/projet',
       home: `${homedir()}/.bob`,
+      // Chemin Windows : ses `\` sont doublés dans le JSON nettoyé (fiche 229).
+      depot: 'C:\\Users\\ada\\depot\\a.ts',
       url: 'http://127.0.0.1:5000/mcp/0123456789abcdef0123',
       env: { BOB_API_KEY: 'cle-tres-secrete' }
     }
-    expect(sanitize(msg, { dossier: '/tmp/sonde-123/projet', home: '/tmp/sonde-123' })).toEqual({
+    expect(
+      sanitize(msg, {
+        dossier: '/tmp/sonde-123/projet',
+        home: '/tmp/sonde-123',
+        windows: 'C:\\Users\\ada'
+      })
+    ).toEqual({
       cwd: '<dossier>',
       home: '<maison>/.bob',
+      depot: '<windows>\\depot\\a.ts',
       url: 'http://127.0.0.1:5000/mcp/«masqué»',
       env: { BOB_API_KEY: '«masqué»' }
     })
@@ -82,10 +91,14 @@ describe('traces ACP (fiche 139)', () => {
     traces.connection(pipe().app, {})
     const root = mkdtempSync(join(tmpdir(), 'traces-'))
     const files = traces.save(root, '2.0.32')
-    expect(files.map((f) => f.slice(root.length + 1))).toEqual([
-      'opencode-2.0.32/reponse-simple.ndjson',
-      'opencode-2.0.32/reponse-simple-2.ndjson'
-    ])
+    expect(
+      files.map((f) =>
+        f
+          .slice(root.length + 1)
+          .split(sep)
+          .join('/')
+      )
+    ).toEqual(['opencode-2.0.32/reponse-simple.ndjson', 'opencode-2.0.32/reponse-simple-2.ndjson'])
     expect(parseTrace(readFileSync(files[0] ?? '', 'utf8')).header).toMatchObject({
       agent: 'opencode',
       version: '2.0.32',

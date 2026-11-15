@@ -52,7 +52,17 @@ export interface Trace {
  */
 export function sanitize<T>(value: T, paths: Record<string, string>): T {
   const masks = { maison: homedir(), ...paths }
-  const text = redact(stablePaths(JSON.stringify(value), masks))
+  // Dans le JSON, un chemin Windows a ses `\` doublés (`C:\\Users\\ada`) : remplacé sous cette forme
+  // d'abord (fiche 229), sinon il restait dans la trace. Sans `\` ni `"` (macOS, Linux) : rien de plus.
+  const escaped = Object.fromEntries(
+    Object.entries(masks)
+      .map(([name, path]) => [name, JSON.stringify(path).slice(1, -1)] as const)
+      .filter(([name, json]) => json !== masks[name as keyof typeof masks])
+  )
+  const json = JSON.stringify(value)
+  const text = redact(
+    stablePaths(Object.keys(escaped).length > 0 ? stablePaths(json, escaped) : json, masks)
+  )
   try {
     return JSON.parse(text) as T
   } catch {

@@ -12,6 +12,7 @@ import {
   type IpcMainLike,
   type IpcSenderEvent
 } from './ipc'
+import { abs } from './test-platform'
 
 const view = {
   summary: {
@@ -611,7 +612,7 @@ describe('IPC', () => {
     const { call, openPath, reveal } = setup()
     expect(await call('files:openLink', 'c1', 'absent.md', { reveal: 'oui' })).toEqual({
       kind: 'missing',
-      path: '/projet/absent.md'
+      path: abs('/projet/absent.md')
     })
     await expect(call('files:openLink', 'c1', 'ftp://exemple.org')).rejects.toThrow('invalide')
     await expect(call('files:readMarkdown', 'c1', '/etc/hosts')).rejects.toThrow()
