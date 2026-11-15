@@ -1028,9 +1028,10 @@ commande `bobine` masquée sous Windows), `MACOS_FEATURES` (DMG, signature, inst
 l'app, Xcode, AXe). Aides : `abs('/projet')` (= `resolve`, identique sous Unix), `native('~/x')`
 (`\` sous Windows), `tempDir()` (noms longs sous Windows), `fakeProgram()` (faux outil : `sh`
 sous Unix, `.cmd`/`.bat` qui lance node sous Windows). Deux sauts posés en cours de lot ont été
-**retirés** : Android (porté, voir plus bas) et « connexion coupée » (reste rouge, voir plus bas).
-Délai d'un essai : 60 s sous Windows (15 s ailleurs), le coût d'un processus y étant bien plus
-grand (essais à vrais dépôts git jusqu'à ~14 s sous charge) ; aucune vérification ne change.
+**retirés** : Android (porté, voir plus bas) et « connexion coupée » (corrigé, voir plus bas).
+Délai d'un essai : 15 s partout, comme avant. Un délai de 60 s propre à Windows, posé un temps, a
+été **retiré** (revue du tech lead) : mesuré sur `windows-latest`, aucun essai n'approche 15 s
+(voir « Mesures »).
 
 | Fichier | Cl. | Cause et suite |
 |---|---|---|
@@ -1125,20 +1126,89 @@ Corrigé à la cause grâce à la VM (en plus du tableau) :
 - configuration de glab construite à la façon du système donné (`forge-gitlab.ts`) ;
 - éditeurs : chemins d'apps de macOS en POSIX partout (`editors.ts`) ;
 - liens de fichiers des réponses : `C:\…` et `file:///C:/…` sont des fichiers, pas des schémas
-  (`shared/file-links.ts`) ;
+  (`shared/file-links.ts`), **seulement avec la capacité `windowsPaths`** (Windows) : sur macOS et
+  Linux, `c:/x` reste un schéma, comme avant (régression relevée en revue, corrigée ; l'essai
+  fixe les deux comportements, sur les trois systèmes) ;
 - **Android porté** : SDK sous `%LOCALAPPDATA%\Android\Sdk` (ou `ANDROID_HOME`), `adb.exe`,
   `emulator.exe`, `aapt2.exe`, Java d'Android Studio, `gradlew.bat` (par `cmd.exe`, montré
   `.\gradlew.bat`), émulateur sans console ; macOS et Linux inchangés (`sdk.test.ts`).
 
-**Reste rouge sous Windows (cause et piste)** : `agent-host` « connexion coupée, processus
-vivant (fiche 195) ». L'app détecte la coupure sous Windows comme ailleurs ; c'est le **scénario de
-l'agent factice** qui ne s'y simule pas : un processus node ne sait pas fermer sa sortie standard
-sans sortir (relevé dans la VM : ni `end()`, ni `destroy()`, ni `closeSync(1)`, ni
-`CloseHandle(GetStdHandle(-11))` par koffi ne ferment le tube vu par le parent, qui en garde un
-double ; sur le Mac, `end()` est vu en 80 ms). Piste : un faux agent hors de node (petit programme
-natif, ou PowerShell qui parle assez d'ACP pour ouvrir une session) ; ou décider que ce scénario
-est propre à Unix (un agent node ne peut pas le produire sous Windows) — décision au tech lead et
-à Jérôme, pas prise ici.
+**« Connexion coupée, processus vivant » (fiche 195) : corrigé.** Le scénario de l'agent factice
+ne fermait pas le tube sous Windows. Cause relevée dans la VM : le processus node garde **deux**
+handles de sa sortie standard, celui de `GetStdHandle(-11)` et un double pris par node (libuv) ;
+tant qu'un des deux reste ouvert, le parent ne voit pas la fin du flux. Personne d'autre ne tient
+le tube : l'agent factice est lancé directement par `node.exe` (pas de `.cmd`, pas de `cmd.exe`
+entre les deux). `src/mock-agent/close-stdout.mts` ferme, sous Windows, tous les handles du
+processus qui désignent le même objet (`CompareObjectHandles`, koffi) : fin du flux vue en
+~300 ms, processus vivant ; macOS et Linux : `end()` seul, comme avant. Le saut posé en cours de
+lot est retiré, l'essai passe sur les trois systèmes. Pour un vrai agent lancé par un `.cmd`
+(`bob.cmd`, `opencode.cmd`) : `cmd.exe` hérite lui aussi du handle de sortie ; si l'agent ferme sa
+sortie sans sortir, l'app ne verrait la coupure qu'à la sortie de `cmd.exe`, c'est-à-dire de
+l'agent (déduit du fonctionnement des handles hérités, pas mesuré avec Bob, indisponible).
+Rien à corriger côté app (elle lit le tube qu'on lui donne) ; la détection reste celle de la sortie
+du processus, déjà couverte.
+
+**Instabilité de la suite sous Windows : cause trouvée et corrigée.** Les « Worker exited
+unexpectedly with exit code 1 » venaient de l'app : l'arrêt d'un processus sans objet de tâche
+visait son **pid** (`process.kill(pid)`) après le délai de grâce ; sous Windows, un pid est
+réutilisé très vite, et le pid d'un agent déjà sorti désignait parfois… un processus de vitest,
+tué par `TerminateProcess` (code de sortie 1). `process-group.ts` arrête désormais par le
+**handle** du processus (`child.kill`), jamais par un pid nu, et seulement s'il tourne encore ;
+macOS et Linux inchangés (groupes, `kill(-pid)`). Relevé sur `windows-latest` : avant, deux échecs
+au hasard et des processus de vitest morts ; après, aucun (mesures ci-dessous).
+
+**Fin du nettoyage final sous Windows (`EPERM`) : corrigé.** Une fois les dossiers des essais
+dans le dossier temporaire de vitest (noms longs, ci-dessus), son effacement final échouait à
+chaque passage sur `windows-latest` (`EPERM`), et dans la VM la commande ne rendait plus la main.
+Cause relevée dans la VM : un `node server.js` lancé par `dev-servers.test.ts` (« ligne de commande
+lancée par le shell », donc `cmd.exe` puis node) survivait à vitest. Sans configuration, `stopTree`
+n'arrêtait sous Windows que le processus lancé (`cmd.exe`), pas son petit-enfant ; l'app, elle,
+configure les objets de tâche au démarrage. Les essais du main les configurent désormais de la même
+façon sous Windows (`test-setup.ts`, `createWindowsTrees` partagé avec l'app) ; macOS et Linux :
+rien de changé.
+
+**Agent factice et base de Bob : verrou attendu.** Échec au hasard de « deux sous-agents de Bob
+en parallèle » sur `windows-latest` (cartes `cancelled`, sans coût) : l'agent factice écrivait dans
+sa base SQLite sans délai d'attente pendant que l'app la lisait ; une écriture qui croise une
+lecture lève `database is locked` et coupe le tour. Reproduit sur le Mac par un lecteur en boucle
+contre un écrivain : 405 écritures sur 3 000 en échec sans délai, 0 avec. L'agent factice attend
+le verrou (5 s, comme better-sqlite3 par défaut). L'app lit en lecture seule et rattrape l'échec
+(relecture suivante) ; si le vrai Bob écrivait sans délai d'attente, une lecture de l'app pourrait
+de même faire échouer une écriture de Bob : non observé, Bob étant indisponible ; à surveiller.
+
+### Mesures (`windows-latest`, 4 cœurs ; macOS et Linux pour comparer)
+
+Six passages de `ci.yml` sur la branche (2026-11-15). Délai d'un essai : 15 s partout.
+
+| Passage | Commit | Windows | macOS | Linux |
+|---|---|---|---|---|
+| 1–3 (43765127770, 43766083419, 43767039842) | avant `2978097` puis avec | 16 échecs reproductibles (noms courts `RUNNER~1`, lecteur de `restore-files`) ; au 1er, 2 échecs au hasard et des processus de vitest morts (arrêt par pid réutilisé) ; aux 2e et 3e, plus aucun | vert, puis `RolesSettings` (corrigé) | vert, puis un échec de conformité OpenCode (ci-dessous) |
+| 4–6 (43768499064, 43769301467, 43770190142) | `17b8d2a` | 4 516 essais verts à chaque passage, sauf une fois « deux sous-agents de Bob » (base verrouillée, corrigé) ; nettoyage final en `EPERM` à chaque passage (corrigé) ; aucun processus de vitest mort | vert ×2, un échec de conformité OpenCode | vert ×3 |
+
+Durée de la suite : Windows 7 à 8 min (471 s au plus lent), macOS ~6 min, Linux ~5 min. VM
+(1 processeur logique) : 337 s, 4 515 verts, 0 échec, 0 processus mort.
+
+Essais les plus lents sous Windows (six passages) : **aucun n'approche 15 s**. Le plus long :
+« réseau coupé en plein flux » 12,7 s (une fois ; 6 à 7 s d'ordinaire), puis :
+
+| Essai | Windows | macOS | Pourquoi |
+|---|---|---|---|
+| conformité « sous-agent, message envoyé pendant qu'il travaille » | 8,2–11 s | 7,2–9,9 s | voulu : l'app relit la session d'un sous-agent en arrière-plan à 2 s puis 3 s plus tard (fin vue ≥ 5 s après), chaque relecture rejouant la session de l'agent (~0,4 s) |
+| `worktree-cycle-forge` « PR par gh simulé » | 6,4–9,9 s | 3,4 s | une trentaine de vrais `git` et de faux `gh` ; sous Windows, chaque faux outil est un `.cmd` lancé par `cmd.exe` puis node (~0,2 s le lancement) |
+| conformité « reprise après redémarrage » | 5,9–8,8 s | 5,2–6,9 s | deux lancements de l'agent et un rejeu |
+| « deux sous-agents de Bob en parallèle » | 5,5 s | 5,1–5,2 s | voulu : 110 pas du scénario, coûts relus toutes les 2 s, dernière relecture 1,5 s après la fin |
+| « réseau coupé en plein flux » | 6,6–12,7 s | 1,4–1,8 s | cinq tentatives, chacune un vrai tour de l'agent factice (délais raccourcis à 20 ms) ; l'écart avec macOS (×5 à ×9) n'est pas expliqué en détail |
+
+Ce qui ralentit Windows : le lancement d'un processus (2 à 3 fois celui du Mac, davantage par
+`cmd.exe`), et jsdom (155 s de création d'environnements contre 67 s sur macOS).
+
+**Reste, hors Windows : conformité OpenCode « sous-agent, message envoyé pendant qu'il
+travaille »**, vue en échec une fois sur Linux et une fois sur macOS en six passages (« fin du
+sous-agent en arrière-plan pas vue »), jamais sous Windows ; code inchangé par ce lot, essai
+inconnu en échec sur `main` (où le job macOS n'existait pas). Mesuré sur le Mac sans charge : fin
+vue 5,9 s après le détachement, à 5,7 s des 8 s qu'attend l'essai ; une relecture manquée (ou
+lente sous charge) la repousse à ~10 s. Non reproduit en six passages simultanés sur le Mac. Ni
+relever l'attente, ni raccourcir les relectures pour l'essai : à décider (tech lead).
 
 **Défaut connu, non exigé par les essais** : un toast cliqué depuis le Centre de notifications ne
 ramène pas la fenêtre (limite d'Electron, lot 5). Aucun essai unitaire ne l'exige ; la suite e2e
@@ -1158,8 +1228,8 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
 - `e2e.yml` : le job Linux part aussi à chaque poussée sur `main`, **non bloquant**
   (`continue-on-error`) tant que les échecs connus restent (police DejaVu, `pannes-visibles`), et
   son nom le dit ; macOS et Windows restent à la main.
-- Conséquence : tant que l'essai « connexion coupée » est rouge sous Windows, `verify (Windows)`
-  l'est aussi, et aucun tag ne construit de version.
+- Conséquence : un échec, même au hasard, sur un des trois systèmes bloque la version ; l'essai
+  de conformité OpenCode ci-dessus est aujourd'hui le seul connu dans ce cas.
 
 ## Journal
 
@@ -1335,3 +1405,11 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
   autres défauts corrigés à la cause (liste dans la section) ; sauts Android et « connexion
   coupée » retirés. CI bloquante sur macOS, Linux et Windows, version conditionnée par la CI,
   e2e Linux à chaque poussée sur `main` (non bloquant).
+- 2026-11-15 — **Lot 7a, revue du tech lead** : liens `C:/…` lus comme fichiers seulement avec la
+  capacité `windowsPaths` (régression du Mac corrigée) ; délai de 60 s propre à Windows retiré
+  (aucun essai n'approche 15 s, mesures dans la section) ; « connexion coupée » corrigé (deux
+  handles de la sortie dans node) ; instabilité de Windows trouvée : arrêt d'un processus par un
+  pid réutilisé (tuait des processus de vitest), arrêt par handle ; noms courts `RUNNER~1`, base de
+  Bob verrouillée par l'agent factice, arbres de processus des essais par objets de tâche. Six
+  passages de `ci.yml` sur la branche ; un échec de conformité OpenCode au hasard, hors Windows,
+  reste (cause mesurée, décision au tech lead).
