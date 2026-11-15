@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Electron installé ? (fiche 065) Sinon, dit quoi faire, plutôt qu'une erreur obscure au lancement.
-# Appelé avant `pnpm dev`, `pnpm preview` et `pnpm package`.
+# Appelé avant `pnpm dev`, `pnpm preview`, `pnpm package`, `pnpm e2e` (et `e2e:pretag`) et
+# `pnpm vitrine` : tout ce qui lance l'app ou lit `node_modules/electron/dist` (avis de licence).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -24,7 +25,9 @@ if [[ -f "$pkg/install.js" ]]; then
 fi
 arch="$(uname -m)"
 [[ "$arch" == "x86_64" ]] && arch="x64"
-name="electron-v${version}-darwin-${arch}.zip"
+[[ "$arch" == "aarch64" ]] && arch="arm64"
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+name="electron-v${version}-${os}-${arch}.zip"
 cat >&2 <<EOT
 ✗ Electron $version n'est pas installé : son téléchargement n'a pas abouti (réseau, proxy).
   Récupérez l'archive $name par un autre moyen :

@@ -17,9 +17,6 @@ cd "$work"
 ln -sfn /captures e2e/captures
 
 pnpm install --frozen-lockfile
-# Binaire d'Electron pour Linux : son script d'installation, s'il n'a pas tourné (constaté au
-# premier `pnpm install` du volume).
-[[ -f node_modules/electron/path.txt ]] || node node_modules/electron/install.js
 # Pas de binaire précompilé de node-pty pour Linux (fiche 145, D3) : compilé comme dans ci.yml.
 if [[ ! -f node_modules/node-pty/build/Release/pty.node ]]; then
   (cd node_modules/node-pty && npx --yes node-gyp@12 rebuild && node scripts/post-install.js)
