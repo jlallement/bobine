@@ -705,4 +705,7 @@ lancé, rien d'autre à installer sur le Mac.
   complète : **196/204** (188/202 avant les polices) ; restent `terminal` (×2, encre des icônes),
   `autorisation-commande` (×2, molette), `pannes-visibles` (×2, fd hérités), et deux instabilités
   vertes au second passage (`filles-tech-lead` sombre, `roles-gestion` clair : infobulle au
-  clavier). e2e et maquettes Mac : en attente (pause des e2e sur le Mac demandée par Jérôme).
+  clavier). **Validé par Jérôme** (« Oui je valide ») sur les maquettes Linux et Mac (avant :
+  `main` 9f42391 ; conversation, code sans et avec ligatures, Apparence, en clair, sombre et
+  Aurore nuit). Mac : `pnpm e2e --changed` **207/208**, seule `history` sombre rouge (infobulle,
+  verte seule ensuite) ; aucune suite ne dépendait de la largeur de SF Pro.
