@@ -1136,3 +1136,33 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   `restart` verts, `terminal` avec le seul échec connu des icônes Nerd Font (fiche 145). Reste :
   le clic sur un toast depuis le centre de notifications, à revérifier quand le bureau de la VM
   est libre (il était en service).
+- 2026-11-15 — **Installeur construit dans la VM et essai réel** (`main` b137697 ; branche
+  `claude/relais-linux`). Construction comme le job Windows de `release.yml` : sources de `main`
+  copiées, pnpm 12.11.2 par corepack (Node 24 de la VM), `pnpm install --frozen-lockfile`, `node
+  scripts/package-win.mts --arm64` ; tout (shims, magasin pnpm, caches d'Electron) dans
+  `C:\Users\jerome\bobine-229-build`, gardé pour reconstruire. **Deux défauts trouvés et
+  corrigés** :
+  - **Avis de licence** : la construction s'arrêtait (« @floating-ui/react-dom@2.1.9 introuvable
+    ») : sous Windows, pnpm raccourcit les dossiers du magasin et les termine par un hachage,
+    parfois avant la version (`@radix-ui+react-compose-ref_b3d765…`). `findPackageDir` cherche
+    désormais le paquet par son contenu (`node_modules/<nom>/package.json` à la bonne version),
+    plus par le nom du dossier. Le job Windows de la CI aurait échoué de même.
+  - **koffi absent de l'app** : l'installeur excluait tout `koffi/src/`, où est aussi son code
+    (`src/koffi/index.cjs`, `src/static.cjs`) ; l'app installée retombait sur `taskkill` (« Cannot
+    find module './src/koffi/index.cjs' »). Seules les sources C sont exclues désormais, et le
+    contrôle de l'asar exige les fichiers que koffi charge (`KOFFI_LOADER`).
+  Essai réel avec l'installeur corrigé (`~/.bob` sauvegardé puis restauré à l'identique, 13
+  fichiers, rien lu ; profil temporaire) : journal « Arbres de processus : objets de tâche
+  (Windows) ». **Bob** : « IBM Bob trouvé », prêt en 5,7 s, essai « OK » (0,023 Bobcoin) ; tâche
+  `bonjour.txt` + `cmd /c ver`, deux cartes accordées (la seconde avec l'avertissement Windows et
+  « Toujours » retiré), ≈ 0,106 Bobcoin ; **terminal** ouvert, commande lancée, fermé : **aucune
+  alerte** (ConPTY de node-pty) ; fermeture de Bobine en **3 s** avec les objets de tâche (plus
+  de 12 s avec le repli `taskkill`), aucun processus de Bob restant, profil effacé. **OpenCode** :
+  essai « OK » en 2,4 s (0 $), tâche faite en 5 s sans carte, fermeture en 4 s, ses deux
+  processus arrêtés. **Toast** : émis pour la carte de la commande (« IBM Bob · … Demande une
+  autorisation : cmd /c ver », base de Windows) ; le raccourci a été mis à jour par l'app («
+  Raccourci des notifications : updated ») ; **le clic depuis le centre de notifications n'a pas pu
+  être fait** : l'affichage de la VM est resté noir (Mac en veille), Win+N ne montrait rien et
+  l'automatisation d'interface restait bloquée. Reste à vérifier, bureau allumé. Rangé : app
+  désinstallée, dossiers d'essai, tâches planifiées et inscription COM effacés ; Bob, OpenCode,
+  MinGit et le dossier de construction gardés.
