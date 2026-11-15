@@ -123,10 +123,21 @@ jobs:
       # Deux tâches à la fois : la machine a 2 cœurs ; à 3, des essais liés au temps (infobulles,
       # durées) échouaient d'un passage à l'autre (fiche 145). Une option `--jobs` des suites
       # demandées passe après et l'emporte.
+      # Sans suites demandées : tout sauf `perf`, jouée à part juste après. Sur cette machine (2 cœurs
+      # partagés, rendu logiciel, caches froids au premier lancement), ses durées varient du simple
+      # au quadruple d'un passage à l'autre (diff de 5000 lignes : 434 puis 5369 ms) : ses seuils y
+      # mesurent la machine, pas l'app. Ils restent tenus sur le Mac et dans `pnpm e2e:linux`.
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
-          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs 2 ${suites[@]+"${suites[@]}"}
+          skip=()
+          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf)
+          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs 2 ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+      # `perf` jouée et montrée, sans faire échouer le job (voir plus haut) : ses mesures restent lisibles.
+      - name: Mesures de performance (indicatives sur cette machine)
+        if: always() && env.SUITES == ''
+        continue-on-error: true
+        run: xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e perf
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

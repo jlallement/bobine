@@ -11,6 +11,7 @@
  *                                       sources et ce build (`pnpm e2e:pretag`, avant un tag)
  *   pnpm e2e --changed --dry-run        ce qui serait joué, sans rien lancer
  *   pnpm e2e --list                     liste des suites
+ *   pnpm e2e --skip perf                tout sauf ces suites (dites, et la suite n'est plus complète)
  *   pnpm e2e base --lang en             interface en anglais (captures `en-…`, fiche 074)
  *
  * En parallèle (`--jobs N`, 3 par défaut), chaque suite et chaque thème tournent dans leur propre
@@ -64,7 +65,9 @@ if (options.list) {
   for (const { name } of SUITES) console.log(name)
   process.exit(0)
 }
-const unknown = options.suites.filter((w) => !SUITES.some(({ name }) => name === w))
+const unknown = [...options.suites, ...options.skip].filter(
+  (w) => !SUITES.some(({ name }) => name === w)
+)
 if (unknown.length) {
   console.error(`Suite inconnue : ${unknown.join(', ')} (voir pnpm e2e --list)`)
   process.exit(2)
@@ -116,6 +119,12 @@ if (options.changed) {
     process.exit(0)
   }
   console.log()
+}
+
+// Suites écartées à la demande (`--skip`, fiche 145) : nommées, et la suite n'est plus complète.
+if (options.skip.length) {
+  names = (names ?? SUITES.map(({ name }) => name)).filter((n) => !options.skip.includes(n))
+  for (const n of options.skip) console.log(`↷ ${n} écartée (--skip)`)
 }
 
 // Capacités de la plateforme (fiche 145) : celles de l'app lancée par les essais, `BOBINE_PLATFORM`

@@ -62,6 +62,8 @@ export interface Options {
   list: boolean
   dryRun: boolean
   verbose: boolean
+  /** Suites écartées (`--skip <suite>`, répétable) : dites par le lanceur, jamais en silence. */
+  skip: string[]
 }
 
 /** Options qui prennent une valeur (`--jobs 3` ou `--jobs=3`). */
@@ -72,10 +74,15 @@ export function parseArgs(argv: readonly string[]): Options {
   const values = new Map<string, string>()
   const flags = new Set<string>()
   const suites: string[] = []
+  const skip: string[] = []
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? ''
     const [key = '', inline] = arg.split(/=(.*)/s, 2)
-    if (VALUED.includes(key)) {
+    if (key === '--skip') {
+      const value = inline ?? argv[++i]
+      if (value === undefined || value.startsWith('--')) throw new Error('--skip : suite manquante')
+      skip.push(value)
+    } else if (VALUED.includes(key)) {
       const value = inline ?? argv[++i]
       if (value === undefined || value.startsWith('--'))
         throw new Error(`${key} : valeur manquante`)
@@ -118,13 +125,14 @@ export function parseArgs(argv: readonly string[]): Options {
     ifNeeded,
     list: flags.has('--list'),
     dryRun: flags.has('--dry-run'),
-    verbose: flags.has('--verbose')
+    verbose: flags.has('--verbose'),
+    skip
   }
 }
 
 /** Suite complète : toutes les suites, les deux thèmes (celle qui peut poser le tampon vert). */
 export const isFullRun = (o: Options): boolean =>
-  !o.suites.length && !o.changed && o.schemes.length === BOTH.length
+  !o.suites.length && !o.changed && !o.skip.length && o.schemes.length === BOTH.length
 
 /** Motif de fichier en expression régulière : `**` traverse les dossiers, `*` et `?` non. */
 export function globToRegExp(glob: string): RegExp {
