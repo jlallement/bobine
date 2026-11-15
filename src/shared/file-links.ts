@@ -69,19 +69,25 @@ export const isHtmlPath = (path: string) => HTML.test(path)
  * Fichier désigné par un lien, ou `undefined` pour un lien web, une ancre, un courriel… :
  * `plan.md`, `./docs/a.md`, `src/app.ts:12`, `src/app.ts#L12`, `/chemin/absolu`, `file:///…`.
  */
-export function parseFileLink(href: string | undefined): FileLink | undefined {
+export function parseFileLink(
+  href: string | undefined,
+  options: { windowsPaths?: boolean } = {}
+): FileLink | undefined {
   if (!href || href.startsWith('#')) return undefined
+  const windows = options.windowsPaths === true
   let raw = href
-  // `README.md:3` a l'air d'un schéma (`README.md:`) : c'est un chemin suivi d'une ligne. De même
-  // `C:\x` ou `C:/x` (lettre de lecteur, fiche 229) : un chemin Windows, pas un schéma `c:`.
-  const pathWithLine = /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(raw) || isDriveAbsolute(raw)
+  // `README.md:3` a l'air d'un schéma (`README.md:`) : c'est un chemin suivi d'une ligne. Sous
+  // Windows seulement (capacité `windowsPaths`, fiche 229), de même `C:\x` ou `C:/x` : un chemin,
+  // pas un schéma `c:`. Ailleurs, comme avant.
+  const pathWithLine =
+    /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(raw) || (windows && isDriveAbsolute(raw))
   if (!pathWithLine && /^[a-z][a-z0-9+.-]*:/i.test(raw)) {
     if (!/^file:/i.test(raw)) return undefined
     try {
       const url = new URL(raw)
-      // `file:///C:/x` : le chemin est `C:/x`, sans la barre qui précède la lettre de lecteur.
+      // `file:///C:/x` sous Windows : le chemin est `C:/x`, sans la barre avant la lettre.
       const path = decodeURIComponent(url.pathname)
-      raw = (/^\/[a-z]:\//i.test(path) ? path.slice(1) : path) + url.hash
+      raw = (windows && /^\/[a-z]:\//i.test(path) ? path.slice(1) : path) + url.hash
     } catch {
       return undefined
     }

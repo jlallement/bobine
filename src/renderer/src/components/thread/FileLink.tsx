@@ -3,6 +3,7 @@ import { parseFileLink, webLinkTarget } from '@shared/file-links'
 import { useTranslation } from 'react-i18next'
 import { useDisplayPath } from '../../presentation'
 import { OpenInEditorButton } from './OpenInEditor'
+import { platformFeatures } from '../../platform-features'
 
 /** Ouvre un lien de fichier (fiche 052) ; `reveal` : le montrer dans le Finder (⌥-clic). */
 export type OpenFileLink = (href: string, options: { reveal: boolean; base?: string }) => void
@@ -28,7 +29,7 @@ export function MarkdownLink({
   const displayPath = useDisplayPath()
   const open = useContext(FileLinksContext)
   const base = useContext(FileLinkBase)
-  const file = parseFileLink(href)
+  const file = parseFileLink(href, { windowsPaths: platformFeatures().windowsPaths })
   if (open && href && webLinkTarget(href)) {
     return (
       <a

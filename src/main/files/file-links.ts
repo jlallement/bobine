@@ -17,6 +17,7 @@ import {
   type MarkdownDocument
 } from '@shared/file-links'
 import { t } from 'i18next'
+import { currentPlatformFeatures } from '../platform'
 
 /** Aperçu : au-delà, seul le début du document est montré. */
 const MAX_MARKDOWN_BYTES = 1_000_000
@@ -170,7 +171,10 @@ export async function openFileLink(
   options: { base?: string; reveal?: boolean },
   openers: FileOpeners
 ): Promise<FileLinkOutcome> {
-  const link = parseFileLink(href)
+  // Chemins Windows lus comme des fichiers seulement là où ils en sont (capacité, fiche 229).
+  const link = parseFileLink(href, {
+    windowsPaths: currentPlatformFeatures(process.env, process.platform).windowsPaths
+  })
   if (!link) throw new Error(t('fileLink.invalid', { href }))
   const root = await real(workspace)
   const base = options.base ? await real(options.base) : root
