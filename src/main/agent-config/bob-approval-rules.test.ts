@@ -25,8 +25,7 @@ import {
   approvalRulesHandlers,
   deniedCommandOf
 } from './approval-rules-settings'
-import { POSIX_MODES } from '../test-platform'
-import { native } from '../test-platform'
+import { native, POSIX_MODES } from '../test-platform'
 
 /** Dossier personnel jetable : jamais le vrai `~/.bob`. */
 function setup(content?: string, hooks: ApprovalRulesHooks = {}) {

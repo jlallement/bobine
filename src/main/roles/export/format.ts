@@ -7,7 +7,7 @@
  */
 import { createHash } from 'node:crypto'
 import type { RoleExportError, RoleExportFormat, RoleExportScope } from '@shared/role-export'
-import { underHome } from '../../home-display'
+import { underHome } from '../../home-display.ts'
 
 /** Ce qui part dans le fichier de l'agent, tiré du rôle (textes déjà dans la bonne langue). */
 export interface ExportedRole {
