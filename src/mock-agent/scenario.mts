@@ -23,6 +23,7 @@ import type {
   StopReason,
   ToolCallUpdate
 } from '../shared/acp-sdk.mts'
+import { closeStdout } from './close-stdout.mts'
 import { say, sayAll, type MockLanguage } from './langue.mts'
 
 /** Connexion faite dans un terminal (`touch .mock-agent-logged-in`, comme `opencode auth login`). */
@@ -519,7 +520,7 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
     }
     case 'close-stdout':
       await new Promise((resolve) => setTimeout(resolve, 20))
-      process.stdout.end()
+      closeStdout()
       // Garde le processus en vie : sans ce minuteur, Node sortirait faute de travail.
       setInterval(() => {}, 60_000)
       return new Promise<void>(() => {})
