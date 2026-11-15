@@ -1,5 +1,4 @@
 import { check, withApp } from '../lib.mjs'
-import { withPalette } from '../palette.mjs'
 
 /** Familles d'une pile CSS calculée, sans guillemets. */
 const families = (css) => css.split(',').map((f) => f.trim().replace(/^["']|["']$/g, ''))
@@ -91,20 +90,40 @@ export async function policesSuite(scheme) {
     await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
     await ui.shot('p3-code-ligatures')
 
-    // Aurore nuit (thème sombre) : la même conversation, ligatures coupées.
+    // Aurore nuit (thème sombre), choisi dans Réglages › Apparence : la page, la conversation sans
+    // ligatures, puis avec.
     if (scheme === 'dark') {
-      await ui.click(ui.$('open-settings'))
-      await ui.waitFor(`!!${ui.$('settings')}`)
-      await ui.click(ui.$('settings-appearance'))
-      await ui.waitFor(`!!${ui.$('settings-code-ligatures')}`)
-      await ui.click(`${ui.$('settings-code-ligatures')}.parentElement`)
-      await ui.waitFor(`!${ui.$('settings-code-ligatures')}.checked`)
-      await ui.key('Escape')
-      await ui.waitFor(`!${ui.$('settings')}`)
-      await withPalette(ui, 'auroraNight', async () => {
+      const appearance = async () => {
+        await ui.click(ui.$('open-settings'))
+        await ui.waitFor(`!!${ui.$('settings')}`)
+        await ui.click(ui.$('settings-appearance'))
+        await ui.waitFor(`!!${ui.$('settings-code-ligatures')}`)
+      }
+      const setLigatures = async (on) => {
+        await ui.click(`${ui.$('settings-code-ligatures')}.parentElement`)
+        await ui.waitFor(`${on ? '' : '!'}${ui.$('settings-code-ligatures')}.checked`)
+      }
+      const close = async () => {
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('settings')}`)
         await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
-        await ui.shot('p4-aurore-nuit')
-      })
+      }
+      await appearance()
+      await ui.click(ui.$('theme-auroraNight'))
+      await ui.waitFor(`document.documentElement.dataset.palette === 'auroraNight'`)
+      await setLigatures(false)
+      await ui.ev(`${ui.$('settings-code-font')}.scrollIntoView({ block: 'center' })`)
+      await ui.shot('p5-aurore-nuit-apparence')
+      await close()
+      await ui.shot('p4-aurore-nuit')
+      await appearance()
+      await setLigatures(true)
+      await close()
+      check(
+        (await ui.ev(`document.documentElement.dataset.palette`)) === 'auroraNight',
+        'Aurore nuit gardée après le réglage des ligatures'
+      )
+      await ui.shot('p6-aurore-nuit-ligatures')
     }
   })
 }
