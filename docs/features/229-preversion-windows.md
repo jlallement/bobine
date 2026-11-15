@@ -319,6 +319,8 @@ Toutes retenues telles que recommandées (« ok pour toutes »).
 | D8 | Versions de Windows | **Tranchée par Jérôme le 2026-11-15.** **Windows 11** (x64, arm64) promis ; Windows 10 22H2 « devrait marcher », sans promesse | Windows 10 n'a plus de mises à jour grand public depuis octobre 2025 ; Electron 45 le prend encore. |
 | D9 | Arbre de processus | **Tranchée par Jérôme le 2026-11-15.** **Objet de tâche** (Job Object, arrêt de tout l'arbre quand l'app le ferme ou plante) (module natif ou petit binaire relais), registre par `Win32_Process` ; ADR au lot 0 | Seul l'objet de tâche garantit « aucun orphelin » même si le main plante (critère de la fiche 138). Nouvelle dépendance native ou petit binaire : ADR. |
 
+**D4, mise à jour (décision de Jérôme le 2026-11-15)** : l'étape « cadre natif + ☰ » est retenue comme **définitive** (« ça me va comme ça, juste avec le burger ») : barre de titre de Windows et menu ☰ de Bobine tels qu'ils sont, sans `titleBarOverlay`. La barre intégrée n'est plus prévue.
+
 ## Plan
 
 Pas de code dans cette fiche. Lots dans l'ordre ; chaque lot garde le Mac et Linux inchangés
@@ -339,7 +341,7 @@ capacité `dockBadge` ; `release.yml` conditionné par variable ; pas-à-pas de 
 | 2 | **Lancer et arrêter** : un seul module `spawnProgram` (recherche `PATHEXT`, `.cmd` par `cmd.exe /d /s /c` avec échappement sûr, `windowsHide`, pas de `detached` qui ouvre une console), `findExecutable`, `Path`/`PATH` et `;`, environnement relu du registre au lieu du shell de connexion ; arbre de processus (D9), `process-registry` par `Win32_Process` ; serveurs de dev ; terminal (ConPTY, D5) ; relais de `fresh-start`/`reset` | L (4-6 j) |
 | 3 | **Chemins et sécurité** : module de chemins partagé (renderer compris) ; `write-area.ts` (points 1 et 3 à 7 de la section 5 ; liens physiques, `nlink > 1`, par la fiche 230, toutes plateformes) ; `permission-risk.ts` et `command-writes.ts` (dossiers Windows, échec fermé « inconnu ») ; clés sans casse (autorisations, conversations) ; essais `path.win32` sur le Mac, puis NTFS dans la VM ; relecture du tech lead | L (4-5 j) |
 | 4 | **git** : Git for Windows absent, CRLF dans les diffs et comparaisons, worktrees longs et verrouillés, dossiers des forges | M (2 j) |
-| 5 | **Bureau Windows** : D4 (barre intégrée + ☰), polices (registre), sons, `flashFrame`, notifications (AUMID), terminal externe (`wt.exe`), éditeurs, Explorateur dans les textes, Android (chemins, WHPX), raccourci de la fenêtre rapide | M-L (3-4 j) |
+| 5 | **Bureau Windows** : D4 (rien de plus : cadre natif + ☰, définitif), polices (registre), sons, `flashFrame`, notifications (AUMID), terminal externe (`wt.exe`), éditeurs, Explorateur dans les textes, Android (chemins, WHPX), raccourci de la fenêtre rapide | M-L (3-4 j) |
 | 6 | **Packaging** : section `win` (NSIS par utilisateur, x64/arm64, `.ico`, fuses, `asarUnpack` de node-pty `win32`), `pnpm package --windows` (portage en node de la branche Windows), avis de licence, À propos « préversion Windows ». Workflows (`release.yml`) à la fin, quand l'autre session a fini les siens | M (2-3 j) |
 | 7 | **Essais** : faux outils en node, scénarios factices sans commandes Unix, `e2e.yml` Système `windows` (`windows-latest`, puis `windows-11-arm`), suites rouges triées comme pour Linux ; VM : installation, OpenCode, discussion, jonctions, Bob | L (4-6 j, selon les rouges) |
 | 8 | **Clore** : `docs/installation.md` (Windows, SmartScreen), `docs/architecture.md`, `docs/agents.md`, « Compatibilité Bob », AGENTS.md (commandes), index, journaux des modifications | S (1 j) |
@@ -377,7 +379,7 @@ sous Linux. Exclue des apps Mac et Linux par `files` (racine) d'`electron-builde
 
 **Lot 1 — capacités.** Fait.
 - `platformFeatures('win32')` = celles de Linux : rien de ce que seul macOS a ; cadre natif et
-  menu ☰ (étape intermédiaire de D4), raccourcis en Ctrl, barres fines. Essai unitaire dédié.
+  menu ☰ (D4, définitif), raccourcis en Ctrl, barres fines. Essai unitaire dédié.
 - `systemName('win32')` = « Windows » (infos techniques, À propos).
 - `BOBINE_PLATFORM=win32` simule les capacités de Windows sur le Mac ; il ne change **pas** le
   lancement des processus, qui suit le vrai système (ADR-0050).
@@ -1072,3 +1074,6 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   par capacités (`systemTexts`, guide `<!-- si: … -->`), clés d'API sans trousseau sous Linux (D4),
   `e2e:packaged` de l'app installée (`packaged-installed.mjs`), suite `textes-plateforme`. Défaut
   `fork` de node-pty à la fermeture d'un terminal relevé (voir « Lot 8 »).
+- 2026-11-15 — **D4 close** : Jérôme garde la barre de titre de Windows et le menu ☰ (« ça me va
+  comme ça, juste avec le burger ») ; l'étape « cadre natif + ☰ » devient définitive, la barre
+  intégrée (`titleBarOverlay`) est abandonnée, ses maquettes effacées.
