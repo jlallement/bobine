@@ -46,9 +46,36 @@ const tidy = (path: string) => {
 }
 
 /**
+ * Variables d'emplacement développées pour juger une cible (lot 3b) ; toute autre (`%PATH%`,
+ * `$env:FOO`) laisse le chemin inconnu.
+ */
+const KNOWN_VARIABLES = new Set(
+  [
+    'USERPROFILE',
+    'HOMEDRIVE',
+    'HOMEPATH',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'TEMP',
+    'TMP',
+    'SystemRoot',
+    'windir',
+    'SystemDrive',
+    'ProgramFiles',
+    'ProgramFiles(x86)',
+    'ProgramFiles(Arm)',
+    'ProgramW6432',
+    'ProgramData',
+    'ALLUSERSPROFILE',
+    'PUBLIC',
+    'OneDrive'
+  ].map((name) => name.toLowerCase())
+)
+
+/**
  * Chemin absolu d'un texte de chemin Windows : `~`, `%VAR%`, `$env:VAR`, `${env:VAR}`, `$HOME`,
  * relatif au dossier `base`, `\…` (racine du lecteur de `base`), `/c/…` (Git Bash). `undefined`
- * quand on ne sait pas : variable inconnue, relatif au lecteur (`C:x`), relatif sans dossier.
+ * quand on ne sait pas : variable hors de `KNOWN_VARIABLES`, relatif au lecteur (`C:x`), relatif sans dossier.
  */
 export function windowsAbsolute(
   value: string,
@@ -58,7 +85,8 @@ export function windowsAbsolute(
 ): string | undefined {
   let unknown = false
   const variable = (name: string) => {
-    const found = name.toLowerCase() === 'home' ? home : env(name)
+    const lower = name.toLowerCase()
+    const found = lower === 'home' ? home : KNOWN_VARIABLES.has(lower) ? env(name) : undefined
     if (found === undefined) unknown = true
     return found ?? ''
   }

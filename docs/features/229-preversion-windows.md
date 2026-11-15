@@ -625,6 +625,64 @@ inconnu, `dir` rien.
   de forme Windows `X:\Users\<nom>` le montre `~` (`abbreviateHome`/`abbreviateHomeIn` sans
   dossier personnel) ; aucun chemin réel du Mac n'a cette forme.
 
+## Lot 3b — lire les commandes Windows courantes (fait le 2026-11-15)
+
+Décision de Jérôme, 2026-11-15 : **« Apprendre les courantes »**. Le lot 3 disait « écritures
+inconnues » de presque toute commande Windows (donc ni « Toujours », ni accord retenu). La prudence
+reste la règle par défaut ; Bobine lit désormais une liste bornée de commandes PowerShell et `cmd`,
+qui retrouvent « Toujours » quand elles n'écrivent que dans le dossier ; le reste reste inconnu.
+Branche `claude/229-windows-lot-3b`, partie de `main` local (`d3fcc5a`).
+
+| Fichier | Rôle |
+|---|---|
+| `agent/windows-shell-words.ts` (nouveau) | découpage commun : `'…'` (`''`), `"…"` (`""`), listes `a, b`, séparateurs `;` `&&` `\|\|` `\|`, redirections ; illisible : `` ` ``, `^`, `$(`, `@(`, `(` `)`, `{` `}`, `&` seul, `<`, `[` ou `#` en début de mot, guillemet non fermé |
+| `agent/windows-cmdlets.ts` (nouveau) | table des cmdlets qui écrivent : paramètres (genre), positions, paramètres communs ; liage à la PowerShell (nom exact ou abréviation sans ambiguïté, `-Nom:valeur`, `-LiteralPath` qui prend la place de `-Path`) |
+| `agent/windows-command-writes.ts` | réécrit : cmdlets, `cmd`, programmes courants, `cd`, registre, droits ; un nom commun aux deux shells sans option `/x` est lu des deux façons, et les deux doivent réussir |
+| `agent/permission-risk-windows.ts` | variables développées limitées aux emplacements connus (`USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`, `TMP`, `SystemRoot`, `windir`, `SystemDrive`, `ProgramFiles*`, `ProgramData`, `ALLUSERSPROFILE`, `PUBLIC`, `OneDrive`, `HOMEDRIVE`, `HOMEPATH`, et `$HOME`/`~`) |
+
+**Reconnu** :
+
+- *PowerShell, lectures* (tous arguments) : `Get-ChildItem` (`gci`, `ls`, `dir`), `Get-Content`
+  (`gc`, `cat`, `type`), `Select-String` (`sls`), `Test-Path`, `Get-Location` (`gl`, `pwd`),
+  `Get-Command` (`gcm`), `Measure-Object` (`measure`), `Get-Process` (`gps`, `ps`),
+  `Write-Output` (`write`, `echo`), `Write-Host`, `Get-Item` (`gi`), `Get-ItemProperty` (`gp`),
+  `Resolve-Path`, `Get-Date`, `Get-FileHash`, `Get-Acl`, `Get-Help`, `Get-Member`,
+  `Select-Object`, `Where-Object` (sans bloc), `Sort-Object` (et `sort` sans argument),
+  `Format-Table`/`-List`/`-Wide`, `Out-String`, `Out-Host`, `Out-Null`, `ConvertTo-Json`,
+  `ConvertFrom-Json`, `Get-PSDrive`, `Get-Volume`, `Get-Alias`, `Get-Unique`, `Compare-Object`,
+  `Group-Object`, `Start-Sleep`, `Clear-Host`, `exit`.
+- *PowerShell, écritures* : `Set-Content`, `Add-Content` (`ac`), `Clear-Content` (`clc`),
+  `Out-File`, `Tee-Object` (`tee`), `Export-Csv` (`epcsv`), `New-Item` (`ni`, fichier ou dossier ;
+  `-Name`), `mkdir`/`md`, `Remove-Item` (`rm`, `del`, `erase`, `rd`, `rmdir`, `ri`), `Copy-Item`
+  (`cp`, `copy`, `cpi`), `Move-Item` (`mv`, `move`, `mi` ; source et destination), `Rename-Item`
+  (`ren`, `rni`), `Expand-Archive`, `Compress-Archive` ; registre : `Set-ItemProperty` (`sp`),
+  `New-ItemProperty`, `Remove-ItemProperty` (`rp`), et toute écriture vers `HKCU:\…`,
+  `Registry::…`.
+- *cmd* : `dir`, `type`, `echo`, `where`, `findstr`, `tree`, `more`, `fc`, `comp`, `whoami`,
+  `hostname`, `ver`, `tasklist`, `ipconfig`, `systeminfo` (lectures) ; `copy`, `xcopy`,
+  `robocopy`, `move`, `del`, `erase`, `rd`, `rmdir`, `md`, `mkdir`, `ren`, `rename` ; `reg`
+  (`query` lit, `add`/`delete`/`import`… registre, `export` fichier), `regedit`.
+- *Programmes courants*, comme sous Unix : `git`, `npm`, `npx`, `pnpm`, `node`, `python`,
+  `python3`, `py`, `cargo`, `dotnet` (`.exe`, `.cmd`, `.bat` acceptés).
+- Redirections `>`, `>>`, `2>`, `*>`… (sauf `$null`, `NUL`), `2>&1` ; tuyaux vers `Out-File`,
+  `Set-Content`, `Tee-Object` ; `cd`/`Set-Location`/`pushd` (absolu, ou relatif depuis un dossier
+  connu), `popd`.
+
+**Toujours inconnu** (essais en table) : commande hors liste (scripts, `iex`/`Invoke-Expression`,
+`powershell`/`pwsh`/`cmd` imbriqués, `-EncodedCommand`, `Start-Process`, `sc`, `curl`,
+`Invoke-WebRequest`, `fsutil`, `mklink`, `icacls`, `sort /o`) ; `&` ; paramètre inconnu (`-Pth`) ou
+abrégé de façon ambiguë (`-Pa`, `-P`) ; paramètre répété, valeur manquante, opérande de trop ;
+cmdlet qui écrit sans chemin (`gci | Remove-Item`) ; `New-Item` de lien (`SymbolicLink`,
+`Junction`, `HardLink`) ; session distante (`-ToSession`) ; autre fournisseur (`Cert:\`, `Env:\`,
+`Function:\`) ; variable hors liste (`$profile`, `$env:FOO`, `%PATH%`) ; `'` dans une commande
+lue à la façon de `cmd` ; une chaîne seule en tête (`"x" | …` : programme lancé pour `cmd`) ;
+segment générique suivi de `..`.
+
+**Essais** : `windows-command-writes.test.ts` (201 cas en table : lectures, programmes, écritures
+PowerShell et `cmd`, pièges, registre et droits, risques nuls qui rendent « Toujours »), plus les
+essais du lot 3 mis à jour (`npm test` n'est plus inconnu ; `cd ..` se suit). macOS et Linux : la
+lecture bash (`command-writes.ts`) et ses essais sont inchangés.
+
 ## Journal
 
 - 2026-11-15 — Fiche de cadrage écrite (sans code) : relevé du code sur `main` (`bcca473`),
@@ -656,3 +714,6 @@ inconnu, `dir` rien.
   affichage `~` et libellés. Essais réels NTFS dans la VM (élevée et non élevée), fichiers jetables
   effacés, rien installé. `./scripts/verify` vert ; `pnpm e2e discussion autorisation-commande` :
   4/4 verts (clair et sombre), captures regardées, identiques à avant (bandeaux de risque du Mac).
+- 2026-11-15 — **Lot 3b** (« apprendre les courantes », décision de Jérôme) : lecture bornée de
+  PowerShell et `cmd`, voir sa section. `./scripts/verify` vert ; `pnpm e2e autorisation-commande`
+  vert en clair et en sombre, captures regardées (inchangées).
