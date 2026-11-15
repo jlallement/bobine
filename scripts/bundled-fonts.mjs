@@ -1,5 +1,5 @@
 /**
- * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0051,
+ * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0052,
  * `src/renderer/src/bundled-fonts.css`) : Inter et JetBrains Mono, copiées par Vite dans
  * `out/renderer/assets/` (nom suivi d'une empreinte). Les contrôles des paquets (.app, .deb,
  * Windows) vérifient qu'elles y sont, avec leurs licences.

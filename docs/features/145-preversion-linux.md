@@ -106,7 +106,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 | D6 | Bureau visé | **Ubuntu 24.04 GNOME**, Wayland et X11 | Le plus répandu ; essais dans UTM sur le Mac. Les autres bureaux « devraient marcher », sans promesse. |
 | D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux » ; menu revu le jour même par Jérôme, **variante D**) | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **menu ☰ dessiné par Bobine** dans l'en-tête de la barre latérale, ouvert par le bouton ou par Alt seul ; la barre de menu d'Electron n'est **jamais** montrée (le menu reste installé pour ses raccourcis Ctrl) | La barre du système respecte le thème et l'ordre des boutons du bureau, sous GNOME comme KDE, X11 comme Wayland. La barre de menu d'Electron (première version de D8, `autoHideMenuBar`) ne se style pas : bandeau gris qui ne suit pas le thème, cadre de focus vert (essai de Jérôme, VM GNOME, Aurore nuit). Le menu ☰ suit les thèmes, reste joignable au clavier et par les lecteurs d'écran. **À revoir pour Windows** (fiche à venir), où les usages diffèrent. |
 | D7 | Publication | **Même version que le Mac** : AppImage et `.deb` joints à la version GitHub du `.dmg` | Un seul numéro, un seul tag ; « préversion Linux » dit dans les notes et l'À propos. Première publication après la 0.6.0 macOS, une fois Linux validé. |
-| D9 | Polices hors macOS (Jérôme, 2026-11-15, option B) | **Inter** (interface) et **JetBrains Mono** (code, diffs) livrées sous Linux et Windows, capacité `bundledFonts` ; macOS inchangé (SF Pro, SF Mono) ; terminal inchangé (Meslo pour les icônes) ; ligatures du code **coupées + réglage** (Réglages › Apparence) ; les polices du système restent au choix | DejaVu Sans, plus large que SF, faisait déborder l'interface ; une police livrée rend Linux et Windows prévisibles. `woff2` publiés (rsms/inter 4.1, JetBrains Mono 2.304), empreintes vérifiées, OFL 1.1 livrée et citée, exclus de l'app Mac par `files` d'electron-builder |
+| D9 | Polices (Jérôme, 2026-11-15 : option B, puis **option C** le même jour, « embarque aussi pour le mac ») | **Inter** (interface) et **JetBrains Mono** (code, diffs) livrées et utilisées **sur les trois systèmes, Mac compris** ; terminal inchangé (Meslo pour les icônes) ; ligatures coupées dans le texte, **coupées + réglage** dans le code ; polices du système au choix dans Réglages › Apparence | DejaVu Sans, plus large que SF, faisait déborder l'interface ; une même police partout rend l'app prévisible. `woff2` publiés (rsms/inter 4.1, JetBrains Mono 2.304), empreintes vérifiées, OFL 1.1 livrée et citée. [ADR-0052](../adr/0052-polices-livrees-inter-jetbrains-mono.md) |
 
 Choix d'interface : voir D8 (remplace le choix d'origine, `titleBarOverlay` aux couleurs du
 thème, écarté le 2026-11-15).
@@ -694,3 +694,15 @@ lancé, rien d'autre à installer sur le Mac.
   - Maquettes avant / après (Linux, Docker ; avant = `main` 74afc45) : conversation en clair, en
     sombre et en Aurore nuit, code sans et avec ligatures, Réglages › Apparence —
     `e2e/captures/linux/maquettes-polices/` (non versionné), envoyées pour validation.
+- 2026-11-15 — **Polices : option C** (Jérôme, le même jour : « embarque aussi pour le mac »).
+  La capacité `bundledFonts` disparaît : Inter et JetBrains Mono en tête de `--font-ui` et
+  `--font-mono` partout (`styles.css`), les piles du système d'avant gardées en repli
+  (`--font-system-ui`, `--font-system-mono`) et pour les choix « Système (sans serif) » et
+  « Chasse fixe du système », Mac compris ; ligatures coupées dans tout le texte. Paquets : plus
+  d'exclusion pour le Mac, polices et licences dans chaque app (`.app`, `.deb`, AppImage, NSIS),
+  vérifiées par `e2e:packaged`, le contrôle du `.deb` et celui de Windows. Décision :
+  [ADR-0052](../adr/0052-polices-livrees-inter-jetbrains-mono.md). Linux (Docker), suite
+  complète : **196/204** (188/202 avant les polices) ; restent `terminal` (×2, encre des icônes),
+  `autorisation-commande` (×2, molette), `pannes-visibles` (×2, fd hérités), et deux instabilités
+  vertes au second passage (`filles-tech-lead` sombre, `roles-gestion` clair : infobulle au
+  clavier). e2e et maquettes Mac : en attente (pause des e2e sur le Mac demandée par Jérôme).

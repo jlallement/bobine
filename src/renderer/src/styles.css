@@ -7,7 +7,7 @@
 :root {
   /* Couleurs : jetons de thème générés (`themes.generated.css`, depuis `shared/themes.ts`). */
   /*
-   * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0051) : Inter pour
+   * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0052) : Inter pour
    * l'interface, JetBrains Mono pour le code (`bundled-fonts.css`) ; celles du système en repli,
    * et au choix dans Réglages › Apparence (`--font-system-*`).
    */
