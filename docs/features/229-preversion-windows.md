@@ -1119,3 +1119,14 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   - Rangé : app désinstallée, dossiers d'essai (`~\Bobine\essai`, `essai-2`), tâches planifiées et
     inscription COM effacés. **Gardés** : Bob et sa connexion, OpenCode (`opencode.exe` dans
     `C:\Users\jerome\bobine-229\node-v24.22.3-win-arm64`, pour le lot 7), MinGit.
+- 2026-11-15 — **Fermer un terminal sous Windows** : « Bobine a rencontré un problème interne »
+  dans l'app installée. Cause : sans `useConptyDll`, `kill()` de node-pty 1.1.0 lance
+  `child_process.fork(conpty_console_list_agent)`, qui passe par `ELECTRON_RUN_AS_NODE` ; le
+  fusible RunAsNode de l'app empaquetée l'interdit. Correctif : `useConptyDll: true` sous Windows
+  seulement (`windowsPtyOptions`, `terminal/node-pty.ts`) ; node-pty prend alors ses propres
+  `conpty.dll` et `OpenConsole.exe`, déjà livrés hors de l'asar (lot 6), sans `fork`. macOS et
+  Linux : aucune option de plus (essai). Rejoué dans la VM : `node e2e/packaged-installed.mjs`
+  dans la session de bureau, app installée depuis `claude/fds-et-toasts` (rebasée sur `main`
+  9f42391) : **tout est bon** (fenêtre, accueil, IBM Bob et OpenCode trouvés, aucun texte du Mac,
+  terminal qui exécute une commande, **aucune alerte**, quitte avec le code 0, aucun processus
+  restant, profil temporaire effacé). App désinstallée ensuite ; Bob, OpenCode et MinGit gardés.
