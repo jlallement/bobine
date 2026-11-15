@@ -3,7 +3,7 @@
  * pouvoir le tester sans Xcode.
  */
 import { execFile } from 'node:child_process'
-import { launchContext, launchSystem, withClosedFds } from '../process-launch'
+import { launchContext, launchSystem, planLaunch, withClosedFds } from '../process-launch'
 
 export interface RunResult {
   code: number
@@ -22,13 +22,19 @@ export type Run = (
 /** Exécution réelle ; ne lève jamais : le code de sortie et la sortie d'erreur sont rendus. */
 export const runCommand: Run = (file, args, options = {}) =>
   new Promise((resolve) => {
-    // Linux : par le relais qui ferme les descripteurs hérités du main (fiche 145) ; ailleurs, tel quel.
-    const plan = withClosedFds(
-      { file, args, verbatim: false, kind: 'direct' },
-      launchContext(options.env ?? process.env),
-      undefined,
-      { cwd: options.cwd }
-    )
+    // Sous Windows, un script `.cmd` (npm) ne se lance pas directement (`EINVAL`) : `cmd.exe`,
+    // comme les agents (`planLaunch`, fiche 229). Linux : par le relais qui ferme les descripteurs
+    // hérités du main (fiche 145) ; macOS : tel quel.
+    const env = options.env ?? process.env
+    const windows = launchSystem() === 'windows'
+    const plan = windows
+      ? planLaunch(file, args, launchContext(env))
+      : withClosedFds(
+          { file, args, verbatim: false, kind: 'direct' },
+          launchContext(env),
+          undefined,
+          { cwd: options.cwd }
+        )
     const child = execFile(
       plan.file,
       plan.args,
@@ -37,7 +43,8 @@ export const runCommand: Run = (file, args, options = {}) =>
         maxBuffer: 64 * 1024 * 1024,
         timeout: options.timeoutMs ?? 60_000,
         // Sous Windows, pas de fenêtre de console (git, adb…) ; rien de changé ailleurs.
-        ...(launchSystem() === 'windows' ? { windowsHide: true } : {}),
+        ...(windows ? { windowsHide: true } : {}),
+        ...(plan.verbatim ? { windowsVerbatimArguments: true } : {}),
         ...(options.cwd ? { cwd: options.cwd } : {}),
         ...(options.env ? { env: options.env } : {})
       },
