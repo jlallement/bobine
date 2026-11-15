@@ -46,7 +46,11 @@ l'exécution échoue (« Lancement impossible »). Voir [Worktrees](worktrees.md
 | Toutes les N heures | de 1 à 24 heures (4 par défaut), compté depuis l'enregistrement |
 | Une fois | la date et l'heure (une date passée est refusée) |
 
+<!-- si: finder -->
 L'heure est celle du Mac.
+<!-- si: !finder
+L'heure est celle de l'ordinateur.
+-->
 
 <a id="plafond"></a>
 
@@ -104,10 +108,18 @@ l'exécution est marquée « à la main ». Le bouton est grisé pendant qu'une 
 
 <a id="bobine-fermee"></a>
 
+<!-- si: finder -->
 ## Quand Bobine est fermée ou le Mac en veille
+<!-- si: !finder
+## Quand Bobine est fermée ou l'ordinateur en veille
+-->
 
-Les tâches ne tournent que lorsque Bobine est ouverte. Les échéances manquées (Mac en veille, app
-fermée) ne sont pas rejouées une par une :
+Les tâches ne tournent que lorsque Bobine est ouverte. Les échéances manquées
+<!-- si: finder -->
+(Mac en veille, app fermée) ne sont pas rejouées une par une :
+<!-- si: !finder
+(ordinateur en veille, app fermée) ne sont pas rejouées une par une :
+-->
 
 - avec **Rattraper une échéance manquée (une seule exécution)** coché (par défaut), une seule
   exécution part au retour, marquée « rattrapage » ;
@@ -115,7 +127,12 @@ fermée) ne sont pas rejouées une par une :
 
 Une exécution ne part jamais tant que la précédente tourne : elle est notée « Sautée ».
 
-Pour que le Mac ne s'endorme pas pendant une exécution : Réglages › Général › **Empêcher la mise
+<!-- si: finder -->
+Pour que le Mac ne s'endorme pas
+<!-- si: !finder
+Pour que l'ordinateur ne s'endorme pas
+-->
+pendant une exécution : Réglages › Général › **Empêcher la mise
 en veille**.
 
 <a id="preparation"></a>

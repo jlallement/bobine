@@ -77,6 +77,11 @@ export interface ApiKeyInfo {
    * changé) : à ressaisir. Inconnu tant qu'aucun agent ne l'a lue (fiche 100).
    */
   unreadable?: boolean
+  /**
+   * Enregistrée en clair (Linux sans trousseau de session, fiche 145, D4) : dit à l'utilisateur,
+   * avec de quoi la chiffrer.
+   */
+  plaintext?: boolean
   /** Présente dans l'environnement de l'app (sous ce nom ou un ancien nom). */
   fromEnvironment: boolean
 }

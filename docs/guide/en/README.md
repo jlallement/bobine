@@ -1,7 +1,13 @@
 # Bobine guide
 
+<!-- si: finder -->
 Bobine is a macOS desktop app that drives a coding agent: **IBM Bob** or **OpenCode**, or any
-other agent that speaks the ACP protocol. You write to the agent as you would in a messaging app;
+other agent that speaks the ACP protocol.
+<!-- si: !finder
+Bobine is a desktop app (macOS; Linux and Windows in preview) that drives a coding agent:
+**IBM Bob** or **OpenCode**, or any other agent that speaks the ACP protocol.
+-->
+You write to the agent as you would in a messaging app;
 it reads your project, proposes changes and runs commands, and Bobine shows you everything it
 does, asks for your approval when needed, and lets you take back control at any time.
 

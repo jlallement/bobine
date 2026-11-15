@@ -2,7 +2,7 @@
 # de GitHub, et l'attache à une Release. Lancement à la main (onglet Actions) : le .dmg est gardé
 # 7 jours comme artefact, sans Release.
 #
-# Préversion Linux (fiche 145, ADR-0032) : AppImage et .deb construits sous Ubuntu, une machine
+# Préversion Linux (fiche 145, ADR-0032, ADR-0051) : le .deb seul, construit sous Ubuntu, une machine
 # par architecture (x64, arm64), puis joints à la Release du .dmg (même tag, même numéro) avec
 # leur somme SHA-256 ; à la main, gardés 7 jours comme artefacts. Expérimentale tant que la
 # variable du dépôt BOBINE_LINUX_RELEASE ne vaut pas `true` (Settings › Secrets and variables ›
@@ -214,7 +214,7 @@ jobs:
           retention-days: 7
 
   linux:
-    name: AppImage et .deb (Linux ${{ matrix.arch }})
+    name: .deb (Linux ${{ matrix.arch }})
     needs: guard
     # Linux expérimental : jamais publié avec un tag sans BOBINE_LINUX_RELEASE (voir en tête).
     if: github.ref_type != 'tag' || vars.BOBINE_LINUX_RELEASE == 'true'
@@ -256,7 +256,7 @@ jobs:
 
       - run: ./scripts/verify
 
-      - name: Construire l'AppImage et le .deb
+      - name: Construire le .deb
         run: pnpm package --linux --publish never
 
       - name: Sommes SHA-256
@@ -265,7 +265,7 @@ jobs:
         run: |
           cd dist
           version="$(node -p "require('../package.json').version")"
-          sha256sum Bobine-"$version"-*.AppImage Bobine-"$version"-*.deb > "SHA256SUMS-linux-$ARCH.txt"
+          sha256sum Bobine-"$version"-*.deb > "SHA256SUMS-linux-$ARCH.txt"
           cat "SHA256SUMS-linux-$ARCH.txt"
 
       # Pour le job `publish` (tag) ou à télécharger (lancement à la main).
@@ -274,7 +274,6 @@ jobs:
         with:
           name: bobine-linux-${{ matrix.arch }}
           path: |
-            dist/*.AppImage
             dist/*.deb
             dist/SHA256SUMS-linux-*.txt
           if-no-files-found: error
@@ -431,6 +430,13 @@ jobs:
                 "The app is not notarized: the first launch needs" \
                 "**System Settings › Privacy & Security › Open Anyway** ([how](https://github.com/$GH_REPO#install))."
               echo
+              # Linux seulement s'il a été construit (BOBINE_LINUX_RELEASE) : .deb seul (ADR-0051).
+              if compgen -G 'dist/Bobine-*.deb' > /dev/null; then
+                echo "**Linux (preview):** \`Bobine-$version-x64.deb\` or \`Bobine-$version-arm64.deb\`" \
+                  "(Ubuntu 24.04+, Debian): \`sudo apt install ./Bobine-$version-<arch>.deb\`" \
+                  "([how](https://github.com/$GH_REPO/blob/main/docs/installation.md#linux-préversion))."
+                echo
+              fi
               # Windows seulement s'il a été construit (BOBINE_WINDOWS_RELEASE).
               if compgen -G 'dist/Bobine-*.exe' > /dev/null; then
                 echo "**Windows (preview):** \`Bobine-$version-x64.exe\` or \`Bobine-$version-arm64.exe\`," \
@@ -449,7 +455,7 @@ jobs:
           # Linux et Windows seulement s'ils ont été construits (BOBINE_LINUX_RELEASE,
           # BOBINE_WINDOWS_RELEASE) ; le .dmg toujours.
           shopt -s nullglob
-          files=(dist/*.dmg dist/*.AppImage dist/*.deb dist/SHA256SUMS-linux-*.txt dist/*.exe dist/SHA256SUMS-windows-*.txt)
+          files=(dist/*.dmg dist/*.deb dist/SHA256SUMS-linux-*.txt dist/*.exe dist/SHA256SUMS-windows-*.txt)
           ls -l "${files[@]}"
           test -f "dist/Bobine-$version-arm64.dmg"
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \

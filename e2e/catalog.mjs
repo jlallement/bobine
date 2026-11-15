@@ -1784,6 +1784,25 @@ export const SUITES = [
     ]
   },
   {
+    // Textes de Linux et de Windows (fiches 145, 229) : Réglages sans Mac, Finder ni Dock ; clé
+    // d'API en clair sous Linux sans trousseau (D4), dite.
+    name: 'textes-plateforme',
+    file: 'textes-plateforme.mjs',
+    run: 'textesPlateformeSuite',
+    themes: BOTH,
+    sources: [
+      'src/shared/i18n/system-texts.ts',
+      'src/shared/i18n/locales/',
+      'src/main/agent-config/api-keys.ts',
+      'src/main/agent-config/keychain-cipher.ts',
+      `${C}settings/ApiKeys.tsx`,
+      `${C}settings/AgentPage.tsx`,
+      `${C}settings/GeneralSettings.tsx`,
+      `${C}settings/NotificationsSettings.tsx`,
+      'src/main/platform.ts'
+    ]
+  },
+  {
     // Dossier et lancement (fiche 158) : menu du dossier, `bobine <dossier>`, commande installée.
     name: 'command',
     file: 'command.mjs',

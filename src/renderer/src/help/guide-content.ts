@@ -4,6 +4,7 @@
  * fenêtre d'aide le charge. Le renderer ne lit jamais le disque.
  */
 import { parseGuide, type Guide, type GuideLang } from './guide'
+import { platformFeatures } from '../platform-features'
 
 const PAGE_LOADERS = import.meta.glob<string>('../../../../docs/guide/*/*.md', {
   query: '?raw',
@@ -38,7 +39,8 @@ const cache = new Map<GuideLang, Promise<Guide>>()
 export function loadGuide(lang: GuideLang): Promise<Guide> {
   let guide = cache.get(lang)
   if (!guide) {
-    guide = loadGuidePages(lang).then((pages) => parseGuide(lang, pages))
+    // Lignes propres au système (`<!-- si: … -->`) d'après les capacités de la fenêtre.
+    guide = loadGuidePages(lang).then((pages) => parseGuide(lang, pages, platformFeatures()))
     cache.set(lang, guide)
   }
   return guide

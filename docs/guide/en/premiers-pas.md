@@ -16,9 +16,15 @@ Here you can:
 
 ## Install Bobine
 
+<!-- si: finder -->
 Bobine is released for macOS (Apple Silicon), as a `.dmg`, on the releases page of the GitHub
 repository.
+<!-- si: !finder
+On Linux and Windows, Bobine is in preview: `.deb` package, Windows installer,
+described in [docs/installation.md](../../installation.md).
+-->
 
+<!-- si: finder -->
 1. Open the `.dmg`.
 2. Double-click Bobine in its window. It offers to install itself:
    - **For all users of this Mac**: in the Applications folder (requires administrator rights);
@@ -27,12 +33,15 @@ repository.
 3. Click **Install**. Bobine copies itself, restarts from its new location and ejects the disk
    image.
 
+<!-- si: finder -->
 You can also drag Bobine onto Applications, like any app. **Later** asks again at the next launch;
 **Don’t ask again** silences it.
 
+<!-- si: finder -->
 **macOS won’t open the `.dmg`?** Bobine isn’t signed by Apple yet: a `.dmg` downloaded by a
 browser is quarantined. Remove the attribute before opening it:
 
+<!-- si: finder -->
 ```bash
 xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
 ```
@@ -47,7 +56,11 @@ To install it from source, behind a proxy or offline: see
 
 ## Install an agent
 
+<!-- si: finder -->
 Bobine doesn’t include an agent: it drives the one you installed on the Mac.
+<!-- si: !finder
+Bobine doesn’t include an agent: it drives the one you installed on the computer.
+-->
 
 - **IBM Bob**: install Bob Shell (the `bob` command).
 - **OpenCode**: install OpenCode (the `opencode` command). It gives access to free models.
@@ -66,7 +79,16 @@ The first time, Bobine asks for the project folder first: **Choose your project 
 there.
 
 To change folders later: click the folder below the message box (**Working folder** menu), then
-**Choose a folder…**. The same menu offers **Show in Finder**, **Copy path**, **Open a terminal
+**Choose a folder…**. The same menu offers
+<!-- si: finder -->
+**Show in Finder**,
+<!-- si: !finder !explorer
+**Show in the file manager**,
+-->
+<!-- si: explorer
+**Show in File Explorer**,
+-->
+**Copy path**, **Open a terminal
 here** and [New conversation in a worktree](worktrees.md#nouveau-worktree).
 
 <a id="premier-message"></a>
@@ -96,8 +118,16 @@ On the first message, Bob may ask, in this order:
 
 1. **Folder not trusted**: click **Trust this folder**. Bob remembers it.
 2. **Sign-in required**: click the sign-in button offered by Bob (“Log in with SSO”): sign-in
-   finishes in your browser. Or **Use an API key**: paste a personal key, then **Sign in**. It is
-   encrypted in the macOS Keychain, and can be changed in Settings › Agents › IBM Bob.
+   finishes in your browser. Or **Use an API key**: paste a personal key, then **Sign in**.
+   <!-- si: finder -->
+   It is encrypted in the macOS Keychain,
+   <!-- si: !finder !explorer
+   It is encrypted by the session keyring (in plain text, mode 600, if there is none),
+   -->
+   <!-- si: explorer
+   It is encrypted by Windows (DPAPI),
+   -->
+   and can be changed in Settings › Agents › IBM Bob.
 3. **License**: depending on the version of Bob, a form appears in the conversation, or **Read the
    license** opens it in Bobine’s terminal. Accept it yourself (`bob --accept-license` in a
    terminal), then **Try again**. Bobine never accepts it for you.

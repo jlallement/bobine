@@ -5,6 +5,12 @@
  */
 
 import { frenchSpaces } from '@shared/i18n/typography'
+import {
+  ALL_FEATURES,
+  PLATFORM_FEATURES,
+  type PlatformFeature,
+  type PlatformFeatures
+} from '@shared/platform'
 import { fold } from './search'
 
 export type GuideLang = 'fr' | 'en'
@@ -140,10 +146,80 @@ export function tableOfContents(readme: string, titles: Record<string, string>):
 export const withoutGithubOnly = (markdown: string): string =>
   markdown.replace(/<!-- hors-app -->[\s\S]*?<!-- \/hors-app -->\n?/g, '')
 
-/** Guide analysé à partir du texte de ses pages. */
-export function parseGuide(lang: GuideLang, raw: Record<string, string>): Guide {
+const SYSTEM_IF = /^\s*<!--\s*si\s*:\s*(.*?)\s*-->\s*$/
+/** Variante cachée à GitHub : `<!-- si: !finder`, ses lignes, puis `-->` seul sur sa ligne. */
+const SYSTEM_HIDDEN = /^\s*<!--\s*si\s*:\s*([^>]*?)\s*$/
+const SYSTEM_END = /^\s*<!--\s*\/si\s*-->\s*$/
+const COMMENT_END = /^\s*-->\s*$/
+
+/** Conditions d'un marqueur `<!-- si: … -->` : capacités, `!` pour leur absence ; toutes requises. */
+export function systemCondition(spec: string): { feature: PlatformFeature; present: boolean }[] {
+  return spec
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => {
+      const name = token.replace(/^!/, '')
+      if (!(PLATFORM_FEATURES as readonly string[]).includes(name)) {
+        throw new Error(`Capacité inconnue dans <!-- si: ${spec} --> : ${name}`)
+      }
+      return { feature: name as PlatformFeature, present: !token.startsWith('!') }
+    })
+}
+
+const holds = (spec: string, features: PlatformFeatures): boolean =>
+  systemCondition(spec).every((c) => features[c.feature] === c.present)
+
+/**
+ * Lignes propres au système (fiches 145, 229), d'après les capacités :
+ * - `<!-- si: finder -->` garde les lignes qui suivent seulement avec la capacité (`!finder` : sans
+ *   elle ; plusieurs : toutes), jusqu'à une ligne vide, au marqueur suivant ou à `<!-- /si -->` ;
+ *   GitHub les montre toujours (le texte du Mac) ;
+ * - `<!-- si: !finder` puis des lignes et `-->` : variante cachée à GitHub, montrée dans l'app
+ *   quand la condition tient.
+ * Markdown réunit les lignes d'un paragraphe : dans l'app, le texte du Mac s'affiche comme s'il n'y
+ * avait aucun marqueur.
+ */
+export function forSystem(markdown: string, features: PlatformFeatures): string {
+  const out: string[] = []
+  let keep = true
+  let hidden: { show: boolean } | undefined
+  for (const line of markdown.split('\n')) {
+    if (hidden) {
+      if (COMMENT_END.test(line)) hidden = undefined
+      else if (hidden.show) out.push(line)
+      continue
+    }
+    const visible = SYSTEM_IF.exec(line)
+    if (visible) {
+      keep = holds(visible[1] ?? '', features)
+      continue
+    }
+    const variant = SYSTEM_HIDDEN.exec(line)
+    if (variant) {
+      hidden = { show: holds(variant[1] ?? '', features) }
+      keep = true
+      continue
+    }
+    if (SYSTEM_END.test(line)) {
+      keep = true
+      continue
+    }
+    if (!line.trim()) keep = true
+    if (keep) out.push(line)
+  }
+  return out.join('\n')
+}
+
+/** Guide analysé à partir du texte de ses pages, pour les capacités de la plateforme. */
+export function parseGuide(
+  lang: GuideLang,
+  raw: Record<string, string>,
+  features: PlatformFeatures = ALL_FEATURES
+): Guide {
   const pages: Record<string, string> = {}
-  for (const [page, text] of Object.entries(raw)) pages[page] = withoutGithubOnly(text)
+  for (const [page, text] of Object.entries(raw)) {
+    pages[page] = forSystem(withoutGithubOnly(text), features)
+  }
   // Français : espace insécable avant « : ; ? ! » dans les titres et les extraits.
   const typo = lang === 'fr' ? frenchSpaces : (text: string) => text
   const titles: Record<string, string> = {}

@@ -1187,7 +1187,9 @@
       "saving": "Enregistrement…",
       "retry": "Réessayer",
       "keychainWaitTitle": "En attente du trousseau macOS…",
-      "keychainWaitText": "Une fenêtre de macOS demande d’autoriser Bobine (« Bobine Safe Storage ») : saisissez le mot de passe de votre session, puis « Toujours autoriser ». Elle peut être cachée derrière cette fenêtre."
+      "keychainWaitText": "Une fenêtre de macOS demande d’autoriser Bobine (« Bobine Safe Storage ») : saisissez le mot de passe de votre session, puis « Toujours autoriser ». Elle peut être cachée derrière cette fenêtre.",
+      "plaintextState": "Enregistrée en clair",
+      "plaintextNotice": "Pas de trousseau de session (GNOME Keyring, KWallet) : cette clé est gardée en clair, dans un fichier que vous seul pouvez lire (droits 600), comme les agents gardent les leurs. Pour la chiffrer, installez un trousseau (Ubuntu : sudo apt install gnome-keyring) puis rouvrez votre session : Bobine la chiffrera à son prochain usage. Ou supprimez-la ici et posez {{env}} vous-même dans votre environnement."
     },
     "agents": {
       "agents": {
@@ -5413,5 +5415,286 @@
   },
   "appMenu": {
     "label": "Menu de Bobine"
+  },
+  "systemTexts": {
+    "withoutFinder": {
+      "settings": {
+        "memory": {
+          "enabled": {
+            "hintOff": "Désactivée : les agents ne reçoivent ni souvenirs ni outil ; les vôtres restent ici."
+          },
+          "reveal": "Afficher dans le gestionnaire de fichiers",
+          "where": "Commune à tous les agents, en clair sur cet ordinateur.",
+          "keyLocked": "Bobine ne peut pas lire sa clé dans le trousseau de la session : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Déverrouillez le trousseau, puis relancez Bobine."
+        },
+        "general": {
+          "mac": "Ordinateur",
+          "language": {
+            "hint": "La langue de l’interface ; « Système » suit celle du système."
+          },
+          "keepAwake": {
+            "hint": "L’ordinateur reste éveillé tant qu’un agent travaille (l’écran peut s’éteindre)."
+          }
+        },
+        "apiKeys": {
+          "keychainWaitTitle": "En attente du trousseau de la session…",
+          "keychainWaitText": "Le trousseau de la session (GNOME Keyring, KWallet) demande peut-être d’être déverrouillé : saisissez son mot de passe, souvent celui de votre session. Sa fenêtre peut être cachée derrière celle-ci."
+        },
+        "agents": {
+          "page": {
+            "keysHint": "À la place de la connexion de l’agent. Chiffrées par le trousseau de la session s’il y en a un (GNOME Keyring, KWallet)."
+          }
+        },
+        "providers": {
+          "hint": "Points d’accès compatibles OpenAI (modèles internes…). Clé gardée par le trousseau de la session.",
+          "key": {
+            "help": "Chiffrée par le trousseau de la session, posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}."
+          }
+        },
+        "notifications": {
+          "notifications": {
+            "blocked": "Le système bloque les bannières de Bobine. Le son marche quand même.",
+            "openSettings": "Ouvrir les réglages du système"
+          },
+          "dockBounce": {
+            "label": "Signaler Bobine dans la barre des tâches ou le dock"
+          }
+        },
+        "data": {
+          "fresh": {
+            "agentsLabel": "Agents comme sur un ordinateur neuf"
+          }
+        }
+      },
+      "diagnostics": {
+        "log": {
+          "reveal": "Afficher dans le gestionnaire de fichiers",
+          "revealLabel": "Afficher {{file}} dans le gestionnaire de fichiers"
+        }
+      },
+      "changes": {
+        "reveal": "Afficher dans le gestionnaire de fichiers",
+        "revealLabel": "Afficher {{path}} dans le gestionnaire de fichiers",
+        "children": {
+          "revealLabel": "Afficher le worktree de « {{title}} » dans le gestionnaire de fichiers"
+        }
+      },
+      "browser": {
+        "download": {
+          "show": "Afficher dans le gestionnaire de fichiers"
+        }
+      },
+      "document": {
+        "reveal": "Montrer dans le gestionnaire de fichiers"
+      },
+      "discussion": {
+        "documents": {
+          "reveal": "Afficher dans le gestionnaire de fichiers"
+        },
+        "error": {
+          "notOpenable": "Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le gestionnaire de fichiers »."
+        },
+        "permission": {
+          "execute": "{{agent}} veut lancer un programme sur votre ordinateur"
+        }
+      },
+      "fileLink": {
+        "title": "{{location}} — ⌥-clic : montrer dans le gestionnaire de fichiers",
+        "executable": "« {{file}} » peut s’exécuter : montré dans le gestionnaire de fichiers plutôt qu’ouvert.",
+        "outside": "« {{file}} » est hors du dossier de la conversation : montré dans le gestionnaire de fichiers."
+      },
+      "imageZoom": {
+        "description": "L’image en grand ; glissez-la vers le gestionnaire de fichiers pour l’enregistrer."
+      },
+      "sidebar": {
+        "notifications": {
+          "blocked": "Notifications bloquées par le système",
+          "blockedHint": "Le système n’affiche pas les notifications de Bobine : autorisez-les dans ses réglages. Les pastilles restent actives."
+        }
+      },
+      "usage": {
+        "board": {
+          "account": {
+            "title": "{{agent}} sur cet ordinateur",
+            "spend": "Dépense sur cet ordinateur",
+            "spendHint": "D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier."
+          }
+        }
+      },
+      "blocker": {
+        "auth": {
+          "keyHint": "Enregistrée par Bobine, chiffrée par le trousseau de la session s’il y en a un (GNOME Keyring, KWallet) ; modifiable dans Réglages → Agents."
+        }
+      },
+      "settingsSearch": {
+        "apiKey": "clé api jeton connexion trousseau keyring kwallet"
+      },
+      "appToolFamilies": {
+        "browser": {
+          "approval": "Accord pour un site hors de cet ordinateur"
+        }
+      },
+      "capabilities": {
+        "apiKey": {
+          "detail": "`{{env}}`, chiffrée par le trousseau de la session."
+        },
+        "modelProviders": {
+          "detail": "Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session, posée au lancement."
+        }
+      },
+      "approvals": {
+        "site": {
+          "alwaysDescription": "Retenu sur cet ordinateur ; révocable dans Réglages › Confidentialité."
+        }
+      },
+      "apiKeys": {
+        "noKeychain": "Aucun trousseau de session n’est disponible : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.",
+        "keychainTimeout": "Le trousseau de la session n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Déverrouillez-le, puis réessayez."
+      },
+      "git": {
+        "missing": "git est introuvable. Installez-le avec le gestionnaire de paquets de votre système (Ubuntu, Debian : `sudo apt install git`). Déjà installé ? Réglages › Diagnostic › Relire le PATH."
+      },
+      "worktreeCycle": {
+        "pr": {
+          "certificate": "Le certificat de {{host}} est refusé : installez le certificat de l’entreprise dans les certificats du système, puis Actualiser.",
+          "certificate_mr": "« glab » refuse le certificat de {{host}} : installez le certificat de l’entreprise dans les certificats du système (ou « glab config set ca_cert <fichier> --host {{host}} »), puis Actualiser."
+        },
+        "mr": {
+          "error": {
+            "certificate": "Le certificat de {{host}} est refusé : installez le certificat de l’entreprise dans les certificats du système, puis réessayez."
+          }
+        }
+      },
+      "aboutWindow": {
+        "copyInfoHint": "Version, commit, Electron, système et agents installés, pour un signalement"
+      },
+      "customAgents": {
+        "form": {
+          "apiKeyEnvHint": "La clé se saisit ensuite sur la page de l’agent, chiffrée par le trousseau de la session."
+        }
+      },
+      "scheduled": {
+        "openOnly": "Les tâches ne tournent que lorsque Bobine est ouverte. Les échéances manquées (ordinateur en veille, app fermée) ne sont pas rejouées : au plus un rattrapage.",
+        "keepAwake": "Pendant une exécution, « Empêcher la mise en veille » (Réglages › Général) garde l’ordinateur éveillé."
+      },
+      "onboarding": {
+        "agent": {
+          "noneSubtitle": "Bobine pilote un agent de code installé sur cet ordinateur. Installez-en un, puis cherchez à nouveau."
+        }
+      },
+      "memory": {
+        "keyLocked": "Bobine ne peut pas lire sa clé dans le trousseau de la session : rien ne peut être retenu pour l’instant."
+      },
+      "appAlert": {
+        "crashed": {
+          "detail": "Vos conversations sont gardées. Un rapport a été rangé sur cet ordinateur ; rien n’a été envoyé. Il peut contenir des extraits de vos conversations, voire des secrets (fin du journal, mémoire de Bobine dans les fichiers .dmp) : relisez-le avant de le joindre."
+        }
+      }
+    },
+    "explorer": {
+      "settings": {
+        "memory": {
+          "reveal": "Afficher dans l’Explorateur de fichiers",
+          "keyLocked": "Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Relancez Bobine depuis votre compte Windows habituel."
+        },
+        "general": {
+          "language": {
+            "hint": "La langue de l’interface ; « Système » suit celle de Windows."
+          }
+        },
+        "apiKeys": {
+          "keychainWaitTitle": "En attente du chiffrement de Windows…",
+          "keychainWaitText": "Windows chiffre la clé pour votre compte (DPAPI) ; cela ne demande normalement rien."
+        },
+        "agents": {
+          "page": {
+            "keysHint": "À la place de la connexion de l’agent. Chiffrées par Windows (DPAPI)."
+          }
+        },
+        "providers": {
+          "hint": "Points d’accès compatibles OpenAI (modèles internes…). Clé chiffrée par Windows (DPAPI).",
+          "key": {
+            "help": "Chiffrée par Windows (DPAPI), posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}."
+          }
+        },
+        "notifications": {
+          "notifications": {
+            "blocked": "Windows bloque les bannières de Bobine. Le son marche quand même.",
+            "openSettings": "Ouvrir les paramètres de Windows"
+          },
+          "dockBounce": {
+            "label": "Faire clignoter Bobine dans la barre des tâches"
+          }
+        }
+      },
+      "diagnostics": {
+        "log": {
+          "reveal": "Afficher dans l’Explorateur de fichiers",
+          "revealLabel": "Afficher {{file}} dans l’Explorateur de fichiers"
+        }
+      },
+      "changes": {
+        "reveal": "Afficher dans l’Explorateur de fichiers",
+        "revealLabel": "Afficher {{path}} dans l’Explorateur de fichiers",
+        "children": {
+          "revealLabel": "Afficher le worktree de « {{title}} » dans l’Explorateur de fichiers"
+        }
+      },
+      "browser": {
+        "download": {
+          "show": "Afficher dans l’Explorateur de fichiers"
+        }
+      },
+      "document": {
+        "reveal": "Montrer dans l’Explorateur de fichiers"
+      },
+      "discussion": {
+        "documents": {
+          "reveal": "Afficher dans l’Explorateur de fichiers"
+        },
+        "error": {
+          "notOpenable": "Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans l’Explorateur de fichiers »."
+        }
+      },
+      "fileLink": {
+        "title": "{{location}} — ⌥-clic : montrer dans l’Explorateur de fichiers",
+        "executable": "« {{file}} » peut s’exécuter : montré dans l’Explorateur de fichiers plutôt qu’ouvert.",
+        "outside": "« {{file}} » est hors du dossier de la conversation : montré dans l’Explorateur de fichiers."
+      },
+      "imageZoom": {
+        "description": "L’image en grand ; glissez-la vers l’Explorateur de fichiers pour l’enregistrer."
+      },
+      "blocker": {
+        "auth": {
+          "keyHint": "Enregistrée chiffrée par Windows (DPAPI) ; modifiable dans Réglages → Agents."
+        }
+      },
+      "settingsSearch": {
+        "apiKey": "clé api jeton connexion chiffrement dpapi"
+      },
+      "capabilities": {
+        "apiKey": {
+          "detail": "`{{env}}`, chiffrée par Windows (DPAPI)."
+        },
+        "modelProviders": {
+          "detail": "Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par Windows (DPAPI), posée au lancement."
+        }
+      },
+      "apiKeys": {
+        "noKeychain": "Le chiffrement de Windows (DPAPI) n’est pas disponible pour ce compte : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.",
+        "keychainTimeout": "Le chiffrement de Windows n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Réessayez."
+      },
+      "git": {
+        "missing": "git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH."
+      },
+      "customAgents": {
+        "form": {
+          "apiKeyEnvHint": "La clé se saisit ensuite sur la page de l’agent, chiffrée par Windows (DPAPI)."
+        }
+      },
+      "memory": {
+        "keyLocked": "Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : rien ne peut être retenu pour l’instant."
+      }
+    }
   }
 }

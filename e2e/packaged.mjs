@@ -8,6 +8,8 @@
  *
  *   pnpm package --dir && pnpm e2e:packaged
  *
+ * Sous Linux et Windows : l'app installée, par `packaged-installed.mjs`.
+ *
  * Aucun agent n'est sollicité (pas de message envoyé). N'arrête que le processus qu'il a lancé.
  */
 import { execFileSync, spawn } from 'node:child_process'
@@ -25,6 +27,12 @@ import {
 import { homedir, tmpdir, userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+// Linux et Windows (fiches 145, 229) : l'app installée (`.deb`, installeur NSIS), essai à part.
+if (process.platform !== 'darwin') {
+  const { main } = await import('./packaged-installed.mjs')
+  process.exit(await main())
+}
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 // BOBINE_PACKAGED_APP : une autre app à essayer (ex. le .dmg d'une Release GitHub, fiche 059).

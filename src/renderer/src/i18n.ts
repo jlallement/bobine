@@ -12,7 +12,8 @@ import { platformFeatures } from './platform-features'
 export function initI18n(language: Language): void {
   // Raccourcis des textes en ⌘ sur macOS, en Ctrl ailleurs (fiche 145).
   setKeyNotation(platformFeatures().commandKey)
-  const options = i18nOptions(language)
+  // Textes du système (« cet ordinateur », Explorateur…) d'après les capacités (fiches 145, 229).
+  const options = i18nOptions(language, platformFeatures())
   void i18next
     .use(initReactI18next)
     .use(typography)

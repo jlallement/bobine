@@ -45,8 +45,17 @@ dépliez un souvenir pour voir qui l'a proposé et quand. Vous pouvez :
 - **Exporter…** la mémoire affichée en Markdown ;
 - **Rattacher à un dossier…** les souvenirs d'un projet dont le dossier a été déplacé.
 
-Les souvenirs sont des fichiers Markdown, en clair sur ce Mac (**Afficher dans le Finder**). Un
-fichier modifié hors de Bobine, par un éditeur ou par un agent avec ses propres outils, n'est plus
+<!-- si: finder -->
+Les souvenirs sont des fichiers Markdown, en clair sur ce Mac (**Afficher dans le Finder**).
+<!-- si: !finder !explorer
+Les souvenirs sont des fichiers Markdown, en clair sur cet ordinateur (**Afficher dans le
+gestionnaire de fichiers**).
+-->
+<!-- si: explorer
+Les souvenirs sont des fichiers Markdown, en clair sur cet ordinateur (**Afficher dans
+l'Explorateur de fichiers**).
+-->
+Un fichier modifié hors de Bobine, par un éditeur ou par un agent avec ses propres outils, n'est plus
 donné aux agents tant que vous ne l'avez pas relu : **Garder ces modifications** le valide.
 
 La mémoire fait partie d'une [sauvegarde](reglages.md#sauvegarde).

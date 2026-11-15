@@ -88,8 +88,16 @@ can write to it. These messages go through the queue and say where they come fro
 parent conversation…”, “From the child conversation…”); one click opens the other conversation.
 
 **The Children view.** In the parent’s **Changes** tab, the **Children** view lists the children’s
-worktrees: state, branch, changed files, the parent’s recommendation. For each one: show it in
-Finder, open it in your editor, [request review](faire-relire.md) or **Open** its conversation.
+worktrees: state, branch, changed files, the parent’s recommendation. For each one:
+<!-- si: finder -->
+show it in Finder,
+<!-- si: !finder !explorer
+show it in the file manager,
+-->
+<!-- si: explorer
+show it in File Explorer,
+-->
+open it in your editor, [request review](faire-relire.md) or **Open** its conversation.
 
 **With IBM Bob in Agent mode**, each write or command of a child asks for your approval in the
 child: it stays on “Waiting for approval” until you answer.

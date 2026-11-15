@@ -46,7 +46,11 @@ branch. The folder must then be a git repository; otherwise the run fails (“Co
 | Every N hours | 1 to 24 hours (4 by default), counted from when you save |
 | Once | the date and time (a past date is refused) |
 
+<!-- si: finder -->
 The time is the Mac’s.
+<!-- si: !finder
+The time is the computer’s.
+-->
 
 <a id="plafond"></a>
 
@@ -103,9 +107,19 @@ button is greyed out while a run is going.
 
 <a id="bobine-fermee"></a>
 
+<!-- si: finder -->
 ## When Bobine is closed or the Mac is asleep
+<!-- si: !finder
+## When Bobine is closed or the computer is asleep
+-->
 
-Tasks only run while Bobine is open. Missed runs (Mac asleep, app closed) are not replayed one by
+Tasks only run while Bobine is open. Missed runs
+<!-- si: finder -->
+(Mac asleep, app closed)
+<!-- si: !finder
+(computer asleep, app closed)
+-->
+are not replayed one by
 one:
 
 - with **Catch up a missed run (a single run)** checked (the default), a single run starts when
@@ -114,7 +128,12 @@ one:
 
 A run never starts while the previous one is still going: it is recorded as “Skipped”.
 
-To keep the Mac awake during a run: Settings › General › **Prevent sleep**.
+<!-- si: finder -->
+To keep the Mac awake
+<!-- si: !finder
+To keep the computer awake
+-->
+during a run: Settings › General › **Prevent sleep**.
 
 <a id="preparation"></a>
 

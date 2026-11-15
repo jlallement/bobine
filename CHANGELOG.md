@@ -6,6 +6,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Amélioré
 
+- Linux et Windows (préversions) : l'app ne parle plus du Mac, du Finder, du Dock ni du trousseau
+  macOS ; elle dit « cet ordinateur », le gestionnaire de fichiers (l'Explorateur sous Windows), le
+  trousseau de la session ou DPAPI, aide comprise.
+- Linux sans trousseau de session (ni GNOME Keyring ni KWallet) : une clé d'API est gardée en
+  clair dans un fichier que vous seul pouvez lire, et Réglages › Agents le dit, avec de quoi la
+  chiffrer ; elle l'est dès qu'un trousseau répond.
+
 - Supprimer une conversation mère propose de supprimer aussi ses conversations filles (coché
   d'office) ; décoché, elles continuent seules, comme des conversations ordinaires.
 

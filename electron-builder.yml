@@ -1,5 +1,6 @@
-# Packaging (fiches 012, 153) : electron-builder produit l’app, le hook natif le DMG ; AppImage et
-# .deb sous Linux (fiche 145, ADR-0032 : construits sous Linux, une architecture par machine).
+# Packaging (fiches 012, 153) : electron-builder produit l’app, le hook natif le DMG ; le
+# .deb sous Linux (fiche 145, ADR-0032, ADR-0051 : construit sous Linux, une architecture par
+# machine).
 # Identifiant d'avant le nom « Bobine », gardé (ADR-0012) : autorisations de macOS (notifications…)
 # et réglages rattachés à l'app restent valables.
 appId: dev.bobine.app
@@ -139,11 +140,13 @@ nsis:
   # Pas de mise à jour automatique (fiche 229, section 10) : pas de .blockmap (ni de latest.yml :
   # `win.publish`).
   differentialPackage: false
-# Préversion Linux (fiche 145, ADR-0032) : AppImage (partout, sans droits) et .deb (Ubuntu,
-# Debian), pour l'architecture de la machine qui construit (x64 et arm64 : une machine GitHub
-# chacune). Pas de signature : la somme SHA-256 est publiée avec la version.
+# Préversion Linux (fiche 145, ADR-0032) : le .deb seul (Ubuntu, Debian ; ADR-0051 : une AppImage
+# n'a pas le profil AppArmor que le .deb pose pour /opt/Bobine/bobine, et le bac à sable de
+# Chromium n'y démarre pas sur Ubuntu 24.04 et plus), pour l'architecture de la machine qui
+# construit (x64 et arm64 : une machine GitHub chacune). Pas de signature : la somme SHA-256 est
+# publiée avec la version.
 linux:
-  target: [AppImage, deb]
+  target: deb
   category: Development
   # Tailles du thème hicolor, de 16 à 512 px (`scripts/make-icon.mjs --linux`) : une icône seule
   # en 1024 n'est pas trouvée par GNOME (pas de dossier 1024x1024 dans hicolor).

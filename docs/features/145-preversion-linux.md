@@ -14,16 +14,18 @@
 
 Le détail est dans les lots du plan et les critères ; ici, l'ordre.
 
-1. **Décisions à revoir après l'essai réel** : D1 (l'AppImage ne démarre pas sur un Ubuntu
-   récent : `.deb` seul en préversion ?) et D6 (essai fait sur Ubuntu 26.04, pas 24.04).
+1. **Décisions à revoir après l'essai réel** : D1 tranchée le 2026-11-15 (`.deb` seul,
+   ADR-0051) ; reste D6 (essai fait sur Ubuntu 26.04, pas 24.04).
 2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
    le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
    lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
-3. **Lot 2** — reste les textes Mac/Finder/Dock/Trousseau (fenêtres, menu, raccourcis en Ctrl et
-   barres de défilement faits le 2026-11-15, D8 ; `desktopName` fait au lot 4).
-4. **Lot 3** — intégration au bureau (git en langue fixe : fait), clés d'API sans trousseau (D4) ;
-   vérifier aussi la réinitialisation de la fiche 148 (trousseau, corbeille) sous Linux.
-5. **Lot 4** — « préversion Linux » dans l'À propos, node-pty pour `pnpm dev`, `e2e:packaged`.
+3. **Lot 2** — fait le 2026-11-15 (textes Mac/Finder/Dock/Trousseau compris, avec la fiche 229 ;
+   restent les textes des polices de Réglages › Apparence, repris par la fiche des polices).
+4. **Lot 3** — intégration au bureau (git en langue fixe, clés d'API sans trousseau D4 : faits) ;
+   la réinitialisation de la fiche 148 n'annonce plus la clé du trousseau sous Linux (rien ne
+   l'effaçait) ; corbeille à vérifier.
+5. **Lot 4** — « préversion Linux » dans l'À propos, node-pty pour `pnpm dev` ; `e2e:packaged`
+   de l'app installée : fait (`e2e/packaged-installed.mjs`), vert sur le `.deb` installé.
 6. **Essais réels** : X11 en plus de Wayland ; Bob par son `.deb`, `pnpm bob-probe`, essai de
    Jérôme.
 7. **Lot 6** — doc (installation, agents, « Compatibilité Bob »), puis `BOBINE_LINUX_RELEASE` à
@@ -55,7 +57,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 - [x] Décisions D1 à D7 tranchées par Jérôme (2026-10-24).
 - [x] ADR « Bobine multiplateforme : macOS, puis Linux en préversion » écrit
       ([ADR-0032](../adr/0032-bobine-multiplateforme.md)).
-- [ ] Une construction Linux produit une AppImage et un `.deb`, x64 et arm64 (D1, D2), qui
+- [ ] Une construction Linux produit un `.deb`, x64 et arm64 (D1 revue : `.deb` seul, D2), qui
       s'installent et démarrent sur Ubuntu 24.04 GNOME (D6), sessions Wayland et X11.
 - [ ] Publiés avec la version du Mac (même tag, même numéro) ; « préversion Linux » dit dans les
       notes de version et la fenêtre À propos (D7).
@@ -72,9 +74,10 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
       lance le terminal de la machine ou disparaît s'il n'y en a pas ; son d'attente joué avec les
       sons du système freedesktop, réglage masqué s'il n'y en a aucun ; « attire l'attention »
       par `flashFrame` à la place du rebond du Dock.
-- [ ] Clés d'API (D4) : chiffrées par le trousseau de la session (GNOME Keyring ou KWallet) ;
+- [x] Clés d'API (D4) : chiffrées par le trousseau de la session (GNOME Keyring ou KWallet) ;
       sans trousseau, fichier en droits 600 non chiffré, et Réglages › Agents le dit en une ligne
-      (installer un trousseau pour chiffrer), sans boîte de dialogue bloquante.
+      (installer un trousseau pour chiffrer), sans boîte de dialogue bloquante. Fait le
+      2026-11-15 (voir le journal) ; pas encore vu dans une vraie session sans trousseau.
 - [ ] Processus : un agent arrêté, ou l'app qui plante puis redémarre, ne laisse aucun processus
       (registre `agents.pids` et `ps` de procps).
 - [ ] Le PATH du shell de connexion est lu au lancement depuis le menu des applications (pas
@@ -94,7 +97,7 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 
 | N° | Question | Décision | Pourquoi |
 |---|---|---|---|
-| D1 | Formats livrés | **AppImage + `.deb`** | AppImage marche partout sans droits, `.deb` couvre Ubuntu et Debian. Flatpak et Snap enferment l'app dans un bac à sable qui empêche de lancer les agents, le terminal et git de la machine : écartés. `.rpm` plus tard si on le demande. |
+| D1 | Formats livrés | **`.deb` seul** (revue par Jérôme le 2026-11-15, « .deb seul », [ADR-0051](../adr/0051-linux-deb-seul.md)) ; d'abord **AppImage + `.deb`** | Sur Ubuntu 24.04 et plus, AppArmor refuse au bac à sable de Chromium ses espaces de noms hors du profil que pose le `.deb` (`/opt/Bobine/bobine`) : une AppImage ne démarre pas sans `--no-sandbox` (jamais) ; elle demande aussi `libfuse2`. L'AppImage pourra revenir sur demande. Raison d'origine : AppImage marche partout sans droits, `.deb` couvre Ubuntu et Debian. Flatpak et Snap enferment l'app dans un bac à sable qui empêche de lancer les agents, le terminal et git de la machine : écartés. `.rpm` plus tard si on le demande. |
 | D2 | Architectures | **x64 + arm64** | x64 pour la majorité, arm64 pour les essais dans une machine virtuelle sur le Mac (UTM) et les machines ARM. Deux jobs GitHub (`ubuntu-24.04`, `ubuntu-24.04-arm`). |
 | D3 | Où construire | **Sur Linux seulement** (constat, pas un choix) | node-pty n'a pas de binaire précompilé pour Linux (`prebuilds/` : darwin et win32 seulement), il se compile avec les outils de la machine. Job `release.yml` sous Ubuntu, et machine virtuelle pour construire à la main. |
 | D4 | Clés d'API que Bobine pose aux agents (`BOB_API_KEY`, fournisseurs de la fiche 104, agents personnalisés de la fiche 141) | **Comme VS Code / Bob IDE** : trousseau s'il existe ; sinon fichier en droits 600 non chiffré, dit en une ligne dans Réglages › Agents, sans boîte de dialogue bloquante | Usage relevé : sous Linux, Claude Code garde toujours ses identifiants en clair, droits 600 (`~/.claude/.credentials.json`), OpenCode aussi (`auth.json`) ; VS Code, donc Bob IDE, chiffre par le trousseau et propose sinon un « chiffrement faible » (`--password-store=basic`, clé fixe de Chromium, presque du clair). Refuser d'enregistrer ne protégerait guère plus que ce que font les agents eux-mêmes. |
@@ -207,12 +210,12 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   signature ni de notarisation, pas de `.dmg`, pas d'AXe) ; sans `--linux`, rien ne change.
   `--dry-run` reste l'essai à blanc de la signature Mac, quelle que soit la machine.
 - ✅ `.github/workflows/release.yml` : job `linux` (x64 `ubuntu-24.04`, arm64 `ubuntu-24.04-arm`)
-  après le `.dmg`, qui joint AppImage, `.deb` et `SHA256SUMS-linux-<arch>.txt` à la Release du
+  après le `.dmg`, qui joint le `.deb` (seul, ADR-0051) et `SHA256SUMS-linux-<arch>.txt` à la Release du
   tag ; à la main, artefacts 7 jours.
 - À propos et `technical-info.ts` disent « préversion Linux ».
 - `pnpm dev` sous Linux : node-pty n'y est pas compilé (`allowBuilds: node-pty: false`) ; à
   régler (compilation dans `predev` sous Linux), sinon le terminal intégré ne marche pas en dev.
-- `e2e/packaged.mjs` : version Linux (démarrage de l'AppImage sous `xvfb-run`).
+- ✅ `e2e/packaged.mjs` : version Linux, l'app installée par le `.deb` (`packaged-installed.mjs`).
 
 **Lot 5 — essais.**
 - Unitaires : `platform.ts`, `fonts.ts` (sortie de `fc-list`), `terminal-app.ts`, `chime.ts`,
@@ -234,7 +237,7 @@ machine virtuelle, puis par le job GitHub (branche à pousser).
   local »).
 - Essai réel : Ubuntu 24.04 arm64 dans UTM sur le Mac, sessions Wayland puis X11.
 
-**Lot 6 — clore.** `docs/installation.md` (section Linux : AppImage, `.deb`, trousseau, KVM),
+**Lot 6 — clore.** `docs/installation.md` (section Linux : `.deb`, pourquoi pas d'AppImage, trousseau — fait ; KVM),
 `docs/architecture.md` (capacités de la plateforme), `docs/agents.md` (Bob et OpenCode sous Linux),
 index, journaux des modifications, fiche.
 
@@ -252,12 +255,11 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
 4. **Outils** :
    ```bash
    sudo apt update
-   sudo apt install -y build-essential python3 git curl xvfb libfuse2t64 gnome-keyring
+   sudo apt install -y build-essential python3 git curl xvfb gnome-keyring
    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
    sudo apt install -y nodejs
    sudo corepack enable
    ```
-   `libfuse2t64` : sans elle, une AppImage ne démarre pas sur Ubuntu 24.04.
 5. **Dépôt** : `git clone https://github.com/jlallement/bobine.git`, branche
    `feat/145-preversion-linux` (poussée d'abord), `pnpm install`, puis
    `(cd node_modules/node-pty && npx --yes node-gyp@12 rebuild && node scripts/post-install.js)`
@@ -266,8 +268,7 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
    `.deb` (`sudo apt install ./<fichier>.deb`), puis `pnpm opencode-probe --offline` et
    `pnpm bob-probe`.
 7. **Vérifier** : `./scripts/verify` ; `pnpm build && xvfb-run -a pnpm e2e platform` ;
-   `pnpm package --linux`, puis `sudo apt install ./dist/Bobine-<version>-arm64.deb` et l'AppImage
-   (`chmod +x`).
+   `pnpm package --linux`, puis `sudo apt install ./dist/Bobine-<version>-arm64.deb`.
 8. **Sessions** : Wayland par défaut ; X11 par la roue dentée de l'écran de connexion
    (« Ubuntu sur Xorg »). Essayer les deux.
 9. **Bac à sable de Chromium pour l'Electron du dépôt** (`pnpm dev`, `pnpm pilote lancer` sans
@@ -318,12 +319,12 @@ lancé, rien d'autre à installer sur le Mac.
 | Fonction | Sous Linux en préversion | Pourquoi |
 |---|---|---|
 | Simulateur iOS | absent | Xcode n'existe que sur macOS |
-| Installation par l'app | absente | AppImage et `.deb` suffisent |
+| Installation par l'app | absente | le `.deb` suffit |
 | Compteur « À traiter » sur l'icône | absent | pas d'API commune (seul Unity l'affichait) |
 | Langue des dialogues du système | celle du bureau | pas d'équivalent à `AppleLanguages` par app |
 | Capture d'écran jointe | masquée | sous Wayland, seul le portail de bureau capture, sans choix de zone ; à reprendre dans une fiche à part (`desktopCapturer` + recadrage dans l'app) |
 | Fenêtre rapide sous Wayland | si le portail l'accepte | les raccourcis globaux passent par le portail, que tous les bureaux n'ont pas |
-| Signature | aucune | pas d'équivalent à Developer ID pour AppImage et `.deb` ; somme SHA-256 publiée avec la version |
+| Signature | aucune | pas d'équivalent à Developer ID pour le `.deb` ; somme SHA-256 publiée avec la version |
 
 ## Risques
 
@@ -618,4 +619,23 @@ lancé, rien d'autre à installer sur le Mac.
   `BOBINE_E2E_CPUS=1 pnpm e2e:linux …` limite le processeur du conteneur pour retrouver ce genre
   d'échec ; ni `user-commands` sans correctif, ni les infobulles n'y ont échoué (l'ordre des
   échanges sur GitHub reste plus lent).
-
+- 2026-11-15 — **Textes, D4, `e2e:packaged`** (avec la fiche 229, lot 8) : textes du Mac remplacés
+  hors du Mac par capacités (`systemTexts`, guide par `<!-- si: … -->`, détail dans la fiche
+  229) ; **D4** : sous `basic_text` (aucun trousseau), `safeStorage` ne « chiffre » plus avec la clé
+  fixe de Chromium : la clé est gardée marquée `plain:` dans `api-keys.json` (droits 600), dite
+  « Enregistrée en clair » avec un avis (installer un trousseau, ou poser la variable soi-même),
+  et chiffrée à son prochain usage dès qu'un trousseau répond ; simulable aux essais
+  (`BOBINE_KEYCHAIN_BACKEND=basic_text`, faux trousseau seulement), suite `textes-plateforme`.
+  **`e2e:packaged`** sous Linux : `packaged.mjs` passe la main à `packaged-installed.mjs` (app
+  installée, profil temporaire, accueil, aucun texte du Mac, terminal, sortie code 0, aucun
+  processus restant, profil effacé) ; vert dans la VM Ubuntu 26.04 ARM64 sur le `.deb` déjà
+  installé (1.0.0-beta.5, écran verrouillé : pas de capture). Le `.deb` de cette branche est
+  construit dans la VM (`~/bobine-finitions/dist/`) mais pas installé : `sudo` demande un mot de
+  passe ; l'app non installée ne démarre pas (bac à sable : `apparmor_restrict_unprivileged_userns`
+  = 1, jamais `--no-sandbox`).
+- 2026-11-15 — **D1 revue par Jérôme : « .deb seul »** ([ADR-0051](../adr/0051-linux-deb-seul.md),
+  remplace le point « Formats » d'ADR-0032) : `linux.target: deb`, `pnpm package --linux` et
+  `release.yml` (artefacts, sommes, notes de version) sans AppImage ; `docs/installation.md` a
+  maintenant sa section Linux (installation, pourquoi pas d'AppImage, trousseau). Rien ne change
+  sur macOS ni sous Windows. Reconstruit dans la VM Ubuntu ARM64 : `dist/` n'a plus que le
+  `.deb` (contrôle `check-linux-package.mts` vert).

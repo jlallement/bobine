@@ -35,8 +35,13 @@ commande. OpenCode, par défaut, ne demande rien. Voir [Agents](agents.md#autori
 navigateur intégré, lancer une commande dans le terminal, compiler, lancer l'app), c'est Bobine
 qui demande, et vous voyez toujours la commande exacte :
 
+<!-- si: finder -->
 - pour un site : **Autoriser** (pour cette conversation), **Toujours autoriser** (retenu sur ce
   Mac) ou **Refuser** ;
+<!-- si: !finder
+- pour un site : **Autoriser** (pour cette conversation), **Toujours autoriser** (retenu sur cet
+  ordinateur) ou **Refuser** ;
+-->
 - pour une commande ou une compilation : **Lancer** ou **Compiler**, **Toujours dans ce projet**
   (sans redemander dans ce dossier) ou **Refuser**.
 

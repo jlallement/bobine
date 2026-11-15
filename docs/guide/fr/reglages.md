@@ -1,6 +1,11 @@
 # Réglages : confidentialité et données
 
-Ce que Bobine retient sur ce Mac, et comment le relire, le sauvegarder ou l'effacer. Bobine
+<!-- si: finder -->
+Ce que Bobine retient sur ce Mac,
+<!-- si: !finder
+Ce que Bobine retient sur cet ordinateur,
+-->
+et comment le relire, le sauvegarder ou l'effacer. Bobine
 n'envoie rien ailleurs qu'à l'agent que vous utilisez : elle n'a pas de télémétrie.
 
 Les réglages (⌘,) sont rangés en trois groupes : Général, Apparence, Notifications, Raccourcis
@@ -50,7 +55,12 @@ Réglages › Confidentialité › **Navigateur intégré** :
 Réglages › Données › **Sauvegarde de l'historique** › **Sauvegarder…** : une copie datée de tout
 le profil (conversations, réglages, autorisations, tâches planifiées, consommation, mémoire), sans
 les clés d'API, dans le dossier de votre choix. Une sauvegarde contient aussi la corbeille.
-Restaurée sur un autre Mac, la mémoire revient, mais ses souvenirs sont à revalider.
+<!-- si: finder -->
+Restaurée sur un autre Mac,
+<!-- si: !finder
+Restaurée sur un autre ordinateur,
+-->
+la mémoire revient, mais ses souvenirs sont à revalider.
 
 **Restaurer…** remet une sauvegarde à la place du profil actuel, après confirmation ; ce qu'il y
 avait avant est gardé à côté et se restaure de la même façon. La restauration remet les
@@ -107,10 +117,22 @@ garder. Le quota des agents, comme celui d'IBM Bob, n'est pas concerné.
 Réglages › Données › **Recommencer à neuf** :
 
 - **Essayer Bobine comme neuve** › **Ouvrir** : une seconde Bobine s'ouvre sur un profil vide,
-  effacé à sa fermeture. La vôtre n'est pas touchée. Avec **Agents comme sur un Mac neuf**, les
+  effacé à sa fermeture. La vôtre n'est pas touchée.
+  <!-- si: finder -->
+  Avec **Agents comme sur un Mac neuf**,
+  <!-- si: !finder
+  Avec **Agents comme sur un ordinateur neuf**,
+  -->
+  les
   agents de cette seconde Bobine redemandent connexion et confiance des dossiers ; vos vraies
   connexions restent.
-- **Réinitialiser Bobine** › **Réinitialiser…** : tout ce que Bobine garde sur ce Mac part dans un
+- **Réinitialiser Bobine** › **Réinitialiser…** : tout ce que Bobine garde
+  <!-- si: finder -->
+  sur ce Mac
+  <!-- si: !finder
+  sur cet ordinateur
+  -->
+  part dans un
   dossier daté de la corbeille, avec un LISEZ-MOI (conversations, réglages, clés d'API, sites
   autorisés, consommation, données du navigateur, journaux). Puis Bobine redémarre comme au
   premier lancement. Cochez **Mettre aussi l'app à la corbeille** pour la désinstaller.

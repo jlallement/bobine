@@ -15,6 +15,16 @@ sont vérifiées par le typage et par `locales.test.ts`. Depuis i18next 27 (fich
 les variables d'un texte qui en a : une table de clés traduites sans valeurs se type
 `ParseKeysWithoutVariables`, pas `ParseKeys` (une clé à variables y est alors refusée).
 
+**Textes propres au système** (fiches 145, 229) : les textes sont écrits pour macOS (« ce Mac »,
+« Finder », « trousseau macOS ») ; la section `systemTexts` de chaque langue donne ceux qui les
+remplacent ailleurs, par groupe de capacités : `withoutFinder` (Linux, Windows : « cet ordinateur »,
+« gestionnaire de fichiers », « trousseau de la session ») puis `explorer` (Windows, par-dessus :
+« Explorateur de fichiers », « Windows (DPAPI) »). Sur le Mac, rien n'est remplacé. Un nouveau
+texte qui nomme le Mac, le Finder ou le Dock y a sa variante, ou est montré seulement avec une
+capacité du Mac (`system-texts.test.ts` le vérifie). Le guide fait de même par des lignes
+`<!-- si: finder -->` et des variantes cachées à GitHub `<!-- si: !finder` … `-->`
+(`forSystem`, `help/guide.ts`).
+
 Ne se traduit **jamais** :
 - ce qui vient de l'agent (réponses, questions, formulaires, erreurs ACP) ou lui est envoyé
   (descriptions et résultats d'outils, contexte joint au message) ; seule exception, les rôles

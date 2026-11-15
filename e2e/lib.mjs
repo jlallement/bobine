@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { currentPlatformFeatures } from '../src/main/platform.ts'
 import { formatKeys } from '../src/shared/shortcuts.ts'
+import { withSystemTexts } from '../src/shared/i18n/system-texts.ts'
 import { mockLanguage, say } from '../src/mock-agent/langue.mts'
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -52,10 +53,14 @@ export const LANG = (() => {
     i >= 0 ? process.argv[i + 1] : process.argv.find((a) => a.startsWith('--lang='))?.slice(7)
   return value ?? 'fr'
 })()
+// Textes du système de l'app essayée (« cet ordinateur », Explorateur…), comme l'app (fiche 229).
 const messages = (() => {
   try {
-    return JSON.parse(
-      readFileSync(join(root, 'src', 'shared', 'i18n', 'locales', `${LANG}.json`), 'utf8')
+    return withSystemTexts(
+      JSON.parse(
+        readFileSync(join(root, 'src', 'shared', 'i18n', 'locales', `${LANG}.json`), 'utf8')
+      ),
+      FEATURES
     )
   } catch {
     return {}

@@ -24,11 +24,13 @@ export function ApiKeyRow(props: {
   const [removing, setRemoving] = useState(false)
   const state = info.unreadable
     ? t('settings.apiKeys.state.unreadable')
-    : info.stored
-      ? t('settings.apiKeys.state.stored')
-      : info.fromEnvironment
-        ? t('settings.apiKeys.state.fromEnv', { env: info.env })
-        : t('settings.apiKeys.state.none')
+    : info.plaintext
+      ? t('settings.apiKeys.plaintextState')
+      : info.stored
+        ? t('settings.apiKeys.state.stored')
+        : info.fromEnvironment
+          ? t('settings.apiKeys.state.fromEnv', { env: info.env })
+          : t('settings.apiKeys.state.none')
   // Jamais silencieux (fiche 207) : en cours, trousseau attendu, délai dépassé (valeur gardée).
   const save = () => {
     if (!value.trim() || saving) return
@@ -139,6 +141,12 @@ export function ApiKeyRow(props: {
       {error && (
         <div className="api-key-error" data-testid="api-key-error">
           {error}
+        </div>
+      )}
+      {/* Linux sans trousseau (fiche 145, D4) : dit, avec de quoi la chiffrer. */}
+      {info.plaintext && !editing && (
+        <div className="api-key-help" role="note" data-testid="api-key-plaintext">
+          {t('settings.apiKeys.plaintextNotice', { env: info.env })}
         </div>
       )}
     </li>

@@ -1,6 +1,11 @@
 # Settings: privacy and data
 
-What Bobine remembers on this Mac, and how to review, back up or erase it. Bobine sends nothing
+<!-- si: finder -->
+What Bobine remembers on this Mac,
+<!-- si: !finder
+What Bobine remembers on this computer,
+-->
+and how to review, back up or erase it. Bobine sends nothing
 anywhere except to the agent you use: it has no telemetry.
 
 Settings (⌘,) come in three groups: General, Appearance, Notifications, Keyboard shortcuts;
@@ -48,8 +53,13 @@ Settings › Privacy › **Built-in browser**:
 
 Settings › Data › **History backup** › **Back up…**: a dated copy of your whole profile
 (conversations, settings, permissions, scheduled tasks, usage, memory), without the API keys, in
-the folder of your choice. A backup also contains the trash. Restored on another Mac, the memory
-comes back, but its memories must be approved again.
+the folder of your choice. A backup also contains the trash.
+<!-- si: finder -->
+Restored on another Mac,
+<!-- si: !finder
+Restored on another computer,
+-->
+the memory comes back, but its memories must be approved again.
 
 **Restore…** puts a backup in place of the current profile, after confirmation; what was there
 before is kept aside and can be restored the same way. Restoring brings back Bobine’s
@@ -104,9 +114,21 @@ quotas, such as IBM Bob’s, aren’t affected.
 Settings › Data › **Start fresh**:
 
 - **Try Bobine as new** › **Open**: a second Bobine opens on an empty profile, erased when it
-  closes. Yours isn’t touched. With **Agents as on a new Mac**, the agents in this second Bobine
+  closes. Yours isn’t touched.
+  <!-- si: finder -->
+  With **Agents as on a new Mac**,
+  <!-- si: !finder
+  With **Agents as on a new computer**,
+  -->
+  the agents in this second Bobine
   ask again for sign-in and folder trust; your real sign-ins stay.
-- **Reset Bobine** › **Reset…**: everything Bobine keeps on this Mac goes into a dated folder in
+- **Reset Bobine** › **Reset…**: everything Bobine keeps
+  <!-- si: finder -->
+  on this Mac
+  <!-- si: !finder
+  on this computer
+  -->
+  goes into a dated folder in
   the Trash, with a README (conversations, settings, API keys, allowed sites, usage, browser data,
   logs). Then Bobine restarts as on first launch. Check **Also move the app to the Trash
   (uninstall)** to uninstall it.

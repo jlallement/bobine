@@ -173,7 +173,7 @@ Bobine ne se met pas à jour toute seule : suivre les Releases du dépôt sur Gi
 Custom › Releases ») et installer chaque nouveau `.dmg` à la place de l'ancien. Derrière un proxy,
 sans droits administrateur, ou sans réseau : [`docs/installation.md`](docs/installation.md).
 
-**Linux (préversion, expérimentale).** AppImage et `.deb` construits sous Linux, sans les outils du
+**Linux (préversion, expérimentale).** Paquets `.deb` (x64, arm64) construits sous Linux, sans les outils du
 simulateur iOS ([fiche 145](docs/features/145-preversion-linux.md)). Ils ne sont pas publiés avec
 cette bêta : pour l'instant, construire depuis les sources sous Linux (plus bas).
 

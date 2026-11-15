@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { HELP_TOPICS } from '@shared/help-topics'
+import { ALL_FEATURES } from '@shared/platform'
 import {
   GUIDE_LANGS,
   HOME_PAGE,
+  forSystem,
+  systemCondition,
   guideLang,
   type GuideLang,
   pageSections,
@@ -122,6 +125,58 @@ describe('guide embarqué (fiche 186)', () => {
         for (const m of text.matchAll(/!\[[^\]]*\]\(([^)\s]+)\)/g)) {
           const key = guideImageKey(m[1] ?? '', lang, page)
           expect(key && GUIDE_IMAGES[key], `${lang}/${page} ${m[1]}`).toBeTruthy()
+        }
+      }
+    }
+  })
+})
+
+describe('lignes propres au système (fiches 145, 229)', () => {
+  const LINUX = { ...ALL_FEATURES, finder: false, explorer: false, screenCapture: false }
+  const WINDOWS = { ...LINUX, explorer: true }
+  const MD = [
+    'Commun.',
+    '<!-- si: finder -->',
+    'Sur le Mac.',
+    '<!-- si: !finder !explorer',
+    'Sous Linux.',
+    '-->',
+    '<!-- si: explorer',
+    'Sous Windows.',
+    '-->',
+    'Suite.',
+    '',
+    '<!-- si: screenCapture -->',
+    '## Capture',
+    '',
+    'Fin.'
+  ].join('\n')
+
+  it('garde les lignes de la plateforme, variantes cachées comprises', () => {
+    expect(forSystem(MD, ALL_FEATURES)).toBe('Commun.\nSur le Mac.\nSuite.\n\n## Capture\n\nFin.')
+    expect(forSystem(MD, LINUX)).toBe('Commun.\nSous Linux.\nSuite.\n\n\nFin.')
+    expect(forSystem(MD, WINDOWS)).toBe('Commun.\nSous Windows.\nSuite.\n\n\nFin.')
+    expect(() => systemCondition('!mac')).toThrow(/Capacité inconnue/)
+  })
+
+  it('les pages n’emploient que des capacités connues', async () => {
+    for (const lang of GUIDE_LANGS) {
+      for (const [page, text] of Object.entries(await loadGuidePages(lang))) {
+        for (const m of text.matchAll(/^\s*<!--\s*si\s*:\s*([^>\n]*?)\s*(?:-->)?\s*$/gm)) {
+          expect(() => systemCondition(m[1] ?? ''), `${lang}/${page}`).not.toThrow()
+        }
+      }
+    }
+  })
+
+  it('hors du Mac, le guide ne parle plus du Mac, du Finder, du Dock ni du trousseau macOS', async () => {
+    const MAC = /\bMac\b|Finder|\bDock\b|[Kk]eychain|trousseau macOS|de macOS|macOS’s/
+    for (const lang of GUIDE_LANGS) {
+      for (const features of [LINUX, WINDOWS]) {
+        const guide = parseGuide(lang, await loadGuidePages(lang), features)
+        for (const [page, text] of Object.entries(guide.pages)) {
+          const left = text.split('\n\n').filter((p) => MAC.test(p))
+          expect(left, `${lang}/${page} ${features.explorer ? 'Windows' : 'Linux'}`).toEqual([])
         }
       }
     }

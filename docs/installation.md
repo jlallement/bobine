@@ -219,6 +219,46 @@ version sont dans Réglages › Nouveautés (`CHANGELOG.md`), la version install
 avec les variables présentes, sans rien construire. Variables et secrets GitHub : fiche 111 et
 commentaire de `.github/workflows/release.yml`.
 
+## Linux (préversion)
+
+Préversion (fiche 145) : pas encore publiée avec les versions ; le `.deb` n'est joint à une
+Release que lorsque la variable du dépôt `BOBINE_LINUX_RELEASE` vaut `true`. D'ici là, le
+construire depuis les sources, **sous Linux** (node-pty s'y compile) :
+
+```bash
+pnpm package --linux          # dist/Bobine-<version>-<arch>.deb (x64 ou arm64, celle de la machine)
+```
+
+**Prérequis** : Ubuntu 24.04 ou plus récent (GNOME, Wayland ou X11), ou Debian ; x64 ou arm64.
+
+**Installation** (droits d'administrateur demandés une fois) :
+
+```bash
+sudo apt install ./Bobine-<version>-<arch>.deb
+```
+
+Bobine s'installe dans `/opt/Bobine`, avec son entrée dans les applications et la commande
+`bobine`. Mise à jour : la même commande avec le nouveau `.deb`. Désinstallation :
+`sudo apt remove bobine` (conversations et réglages gardés dans `~/.config/bobine`).
+
+**Pourquoi un `.deb` seulement, sans AppImage** (ADR-0051) : depuis Ubuntu 24.04, AppArmor refuse
+au bac à sable de Chromium les espaces de noms dont il a besoin, sauf aux programmes qui ont un
+profil. Le `.deb` pose ce profil pour `/opt/Bobine/bobine` ; une AppImage, montée à un chemin
+temporaire, n'en a pas, et ne démarre pas sans `--no-sandbox`, que Bobine n'emploie jamais. Elle
+demande aussi `libfuse2`, absente d'une installation neuve. L'AppImage pourra revenir si on la
+demande, avec une autre réponse au bac à sable.
+
+**Clés d'API** : chiffrées par le trousseau de la session (GNOME Keyring, KWallet). Sans
+trousseau, Bobine les garde en clair dans un fichier que vous seul pouvez lire, et Réglages ›
+Agents le dit ; installez-en un (`sudo apt install gnome-keyring`) et rouvrez votre session :
+elles seront chiffrées à leur prochain usage.
+
+**Vérifier la somme** publiée avec la version (`SHA256SUMS-linux-<arch>.txt`) :
+
+```bash
+sha256sum Bobine-<version>-<arch>.deb
+```
+
 ## Windows (préversion)
 
 Préversion (fiche 229) : pas encore publiée avec les versions ; les installeurs ne sont joints à

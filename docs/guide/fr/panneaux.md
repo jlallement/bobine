@@ -76,9 +76,15 @@ une adresse (`localhost:3000`…). L'agent peut lire la page, cliquer, remplir, 
 Avant d'ouvrir un site, il demande votre accord (voir
 [Autorisations](conversations.md#autorisations)).
 
+<!-- si: finder -->
 - **Liens.** Dans le fil, un lien vers une adresse de votre Mac (`http://localhost:3000`…) s'ouvre
   dans le navigateur intégré ; ⌥-clic l'ouvre dans le navigateur du Mac. Les autres liens
   s'ouvrent dans le navigateur du Mac.
+<!-- si: !finder
+- **Liens.** Dans le fil, un lien vers une adresse de votre ordinateur (`http://localhost:3000`…)
+  s'ouvre dans le navigateur intégré ; ⌥-clic l'ouvre dans votre navigateur. Les autres liens
+  s'ouvrent dans votre navigateur.
+-->
 - **Zoom.** La page ayant le focus : ⌘+, ⌘− et ⌘0. Une puce « 110 % » dans l'adresse remet la page
   à 100 % d'un clic. Les autres raccourcis : [Raccourcis clavier](raccourcis.md#navigateur).
 - **Taille d'écran.** Quand l'agent impose une taille (mobile…), une puce dans l'adresse le dit ;

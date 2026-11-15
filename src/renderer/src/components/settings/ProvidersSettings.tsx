@@ -229,6 +229,7 @@ function AgentProviders({
 function keyState(provider: ProviderEntry): string {
   const t = i18next.t
   if (provider.keyUnreadable) return t('settings.providers.key.unreadable')
+  if (provider.keyPlaintext) return t('settings.apiKeys.plaintextState')
   if (provider.keyStored) return t('settings.providers.key.stored')
   switch (provider.key.kind) {
     case 'env':
@@ -337,6 +338,12 @@ function ProviderRow({
             <span data-testid="provider-key-state">{keyState(provider)}</span>
           </div>
           <ProviderTestLine result={status} />
+          {/* Linux sans trousseau (fiche 145, D4) : dit, avec de quoi la chiffrer. */}
+          {provider.keyPlaintext && provider.key.kind === 'env' && (
+            <div className="api-key-help" role="note" data-testid="provider-key-plaintext">
+              {t('settings.apiKeys.plaintextNotice', { env: provider.key.env })}
+            </div>
+          )}
         </div>
         <button
           className="icon-button small"

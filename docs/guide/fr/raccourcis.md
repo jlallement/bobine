@@ -43,7 +43,11 @@ clavier.
 | ⌘/ | Raccourcis clavier | Aide |
 <!-- /raccourcis:menus -->
 
+<!-- si: finder -->
 Les menus Édition et Fenêtre ont aussi les raccourcis habituels de macOS (⌘Z, ⌘C, ⌘V, ⌘A, ⌘M…).
+<!-- si: !finder
+Le menu ☰ (ou Alt) a aussi les raccourcis habituels d'édition (⌘Z, ⌘C, ⌘V, ⌘A…).
+-->
 Aide › Diagnostic… et Aide › Afficher le journal n'ont pas de raccourci.
 
 <a id="fenetre-rapide"></a>

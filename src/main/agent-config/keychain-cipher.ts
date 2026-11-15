@@ -9,6 +9,12 @@ export interface SafeStorageAsync {
   isAsyncEncryptionAvailable(): Promise<boolean>
   encryptStringAsync(text: string): Promise<Buffer>
   decryptStringAsync(data: Buffer): Promise<{ result: string; shouldReEncrypt: boolean }>
+  /**
+   * Linux : où `safeStorage` range sa clé (`gnome_libsecret`, `kwallet6`…) ; `basic_text` quand il
+   * n'y a aucun trousseau de session, et Chromium « chiffre » alors avec une clé fixe, connue de
+   * tous (fiche 145, D4).
+   */
+  getSelectedStorageBackend?(): string
 }
 
 /**
@@ -22,6 +28,8 @@ export interface SafeStorageAsync {
 export interface KeychainTestOptions {
   delayMs?: number
   timeoutMs?: number
+  /** `BOBINE_KEYCHAIN_BACKEND=basic_text` : Linux sans trousseau, simulé (fiche 145, D4). */
+  backend?: string
 }
 
 export function keychainTestOptions(
@@ -35,7 +43,12 @@ export function keychainTestOptions(
   }
   const delayMs = read('BOBINE_KEYCHAIN_DELAY_MS')
   const timeoutMs = read('BOBINE_KEYCHAIN_TIMEOUT_MS')
-  return { ...(delayMs ? { delayMs } : {}), ...(timeoutMs ? { timeoutMs } : {}) }
+  const backend = env['BOBINE_KEYCHAIN_BACKEND']
+  return {
+    ...(delayMs ? { delayMs } : {}),
+    ...(timeoutMs ? { timeoutMs } : {}),
+    ...(backend ? { backend } : {})
+  }
 }
 
 /**
@@ -65,6 +78,16 @@ export function safeStorageCipher(
       await initialized()
       const { result, shouldReEncrypt } = await storage.decryptStringAsync(data)
       return { text: result, reencrypt: shouldReEncrypt }
+    },
+    // Après `available()` : le choix du trousseau est fait à l'initialisation de `safeStorage`.
+    withoutKeychain: async () => {
+      await initialized()
+      if (test.backend) return test.backend === 'basic_text'
+      try {
+        return storage.getSelectedStorageBackend?.() === 'basic_text'
+      } catch {
+        return false
+      }
     }
   }
 }

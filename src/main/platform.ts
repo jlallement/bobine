@@ -15,7 +15,7 @@ export function platformFeatures(platform: string): PlatformFeatures {
   return {
     // Xcode et `simctl` n'existent que sur macOS.
     simulator: mac,
-    // Copie dans `/Applications` depuis le `.dmg` ; AppImage et `.deb` n'en ont pas besoin.
+    // Copie dans `/Applications` depuis le `.dmg` ; le `.deb` et l'installeur Windows n'en ont pas besoin.
     selfInstall: mac,
     // `AppleLanguages` du domaine de l'app ; pas d'équivalent ailleurs.
     nativeLanguage: mac,

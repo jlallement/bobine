@@ -1160,6 +1160,8 @@ export type FrResources = {
       readonly retry: 'Réessayer'
       readonly keychainWaitTitle: 'En attente du trousseau macOS…'
       readonly keychainWaitText: 'Une fenêtre de macOS demande d’autoriser Bobine (« Bobine Safe Storage ») : saisissez le mot de passe de votre session, puis « Toujours autoriser ». Elle peut être cachée derrière cette fenêtre.'
+      readonly plaintextState: 'Enregistrée en clair'
+      readonly plaintextNotice: 'Pas de trousseau de session (GNOME Keyring, KWallet) : cette clé est gardée en clair, dans un fichier que vous seul pouvez lire (droits 600), comme les agents gardent les leurs. Pour la chiffrer, installez un trousseau (Ubuntu : sudo apt install gnome-keyring) puis rouvrez votre session : Bobine la chiffrera à son prochain usage. Ou supprimez-la ici et posez {{env}} vous-même dans votre environnement.'
     }
     readonly agents: {
       readonly agents: { readonly label: 'Agents' }
@@ -5224,4 +5226,261 @@ export type FrResources = {
     readonly space: 'Espace'
   }
   readonly appMenu: { readonly label: 'Menu de Bobine' }
+  readonly systemTexts: {
+    readonly withoutFinder: {
+      readonly settings: {
+        readonly memory: {
+          readonly enabled: {
+            readonly hintOff: 'Désactivée : les agents ne reçoivent ni souvenirs ni outil ; les vôtres restent ici.'
+          }
+          readonly reveal: 'Afficher dans le gestionnaire de fichiers'
+          readonly where: 'Commune à tous les agents, en clair sur cet ordinateur.'
+          readonly keyLocked: 'Bobine ne peut pas lire sa clé dans le trousseau de la session : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Déverrouillez le trousseau, puis relancez Bobine.'
+        }
+        readonly general: {
+          readonly mac: 'Ordinateur'
+          readonly language: {
+            readonly hint: 'La langue de l’interface ; « Système » suit celle du système.'
+          }
+          readonly keepAwake: {
+            readonly hint: 'L’ordinateur reste éveillé tant qu’un agent travaille (l’écran peut s’éteindre).'
+          }
+        }
+        readonly apiKeys: {
+          readonly keychainWaitTitle: 'En attente du trousseau de la session…'
+          readonly keychainWaitText: 'Le trousseau de la session (GNOME Keyring, KWallet) demande peut-être d’être déverrouillé : saisissez son mot de passe, souvent celui de votre session. Sa fenêtre peut être cachée derrière celle-ci.'
+        }
+        readonly agents: {
+          readonly page: {
+            readonly keysHint: 'À la place de la connexion de l’agent. Chiffrées par le trousseau de la session s’il y en a un (GNOME Keyring, KWallet).'
+          }
+        }
+        readonly providers: {
+          readonly hint: 'Points d’accès compatibles OpenAI (modèles internes…). Clé gardée par le trousseau de la session.'
+          readonly key: {
+            readonly help: 'Chiffrée par le trousseau de la session, posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}.'
+          }
+        }
+        readonly notifications: {
+          readonly notifications: {
+            readonly blocked: 'Le système bloque les bannières de Bobine. Le son marche quand même.'
+            readonly openSettings: 'Ouvrir les réglages du système'
+          }
+          readonly dockBounce: {
+            readonly label: 'Signaler Bobine dans la barre des tâches ou le dock'
+          }
+        }
+        readonly data: {
+          readonly fresh: { readonly agentsLabel: 'Agents comme sur un ordinateur neuf' }
+        }
+      }
+      readonly diagnostics: {
+        readonly log: {
+          readonly reveal: 'Afficher dans le gestionnaire de fichiers'
+          readonly revealLabel: 'Afficher {{file}} dans le gestionnaire de fichiers'
+        }
+      }
+      readonly changes: {
+        readonly reveal: 'Afficher dans le gestionnaire de fichiers'
+        readonly revealLabel: 'Afficher {{path}} dans le gestionnaire de fichiers'
+        readonly children: {
+          readonly revealLabel: 'Afficher le worktree de « {{title}} » dans le gestionnaire de fichiers'
+        }
+      }
+      readonly browser: {
+        readonly download: { readonly show: 'Afficher dans le gestionnaire de fichiers' }
+      }
+      readonly document: { readonly reveal: 'Montrer dans le gestionnaire de fichiers' }
+      readonly discussion: {
+        readonly documents: { readonly reveal: 'Afficher dans le gestionnaire de fichiers' }
+        readonly error: {
+          readonly notOpenable: 'Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans le gestionnaire de fichiers ».'
+        }
+        readonly permission: {
+          readonly execute: '{{agent}} veut lancer un programme sur votre ordinateur'
+        }
+      }
+      readonly fileLink: {
+        readonly title: '{{location}} — ⌥-clic : montrer dans le gestionnaire de fichiers'
+        readonly executable: '« {{file}} » peut s’exécuter : montré dans le gestionnaire de fichiers plutôt qu’ouvert.'
+        readonly outside: '« {{file}} » est hors du dossier de la conversation : montré dans le gestionnaire de fichiers.'
+      }
+      readonly imageZoom: {
+        readonly description: 'L’image en grand ; glissez-la vers le gestionnaire de fichiers pour l’enregistrer.'
+      }
+      readonly sidebar: {
+        readonly notifications: {
+          readonly blocked: 'Notifications bloquées par le système'
+          readonly blockedHint: 'Le système n’affiche pas les notifications de Bobine : autorisez-les dans ses réglages. Les pastilles restent actives.'
+        }
+      }
+      readonly usage: {
+        readonly board: {
+          readonly account: {
+            readonly title: '{{agent}} sur cet ordinateur'
+            readonly spend: 'Dépense sur cet ordinateur'
+            readonly spendHint: 'D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier.'
+          }
+        }
+      }
+      readonly blocker: {
+        readonly auth: {
+          readonly keyHint: 'Enregistrée par Bobine, chiffrée par le trousseau de la session s’il y en a un (GNOME Keyring, KWallet) ; modifiable dans Réglages → Agents.'
+        }
+      }
+      readonly settingsSearch: {
+        readonly apiKey: 'clé api jeton connexion trousseau keyring kwallet'
+      }
+      readonly appToolFamilies: {
+        readonly browser: { readonly approval: 'Accord pour un site hors de cet ordinateur' }
+      }
+      readonly capabilities: {
+        readonly apiKey: { readonly detail: '`{{env}}`, chiffrée par le trousseau de la session.' }
+        readonly modelProviders: {
+          readonly detail: 'Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session, posée au lancement.'
+        }
+      }
+      readonly approvals: {
+        readonly site: {
+          readonly alwaysDescription: 'Retenu sur cet ordinateur ; révocable dans Réglages › Confidentialité.'
+        }
+      }
+      readonly apiKeys: {
+        readonly noKeychain: 'Aucun trousseau de session n’est disponible : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.'
+        readonly keychainTimeout: 'Le trousseau de la session n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Déverrouillez-le, puis réessayez.'
+      }
+      readonly git: {
+        readonly missing: 'git est introuvable. Installez-le avec le gestionnaire de paquets de votre système (Ubuntu, Debian : `sudo apt install git`). Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
+      }
+      readonly worktreeCycle: {
+        readonly pr: {
+          readonly certificate: 'Le certificat de {{host}} est refusé : installez le certificat de l’entreprise dans les certificats du système, puis Actualiser.'
+          readonly certificate_mr: '« glab » refuse le certificat de {{host}} : installez le certificat de l’entreprise dans les certificats du système (ou « glab config set ca_cert <fichier> --host {{host}} »), puis Actualiser.'
+        }
+        readonly mr: {
+          readonly error: {
+            readonly certificate: 'Le certificat de {{host}} est refusé : installez le certificat de l’entreprise dans les certificats du système, puis réessayez.'
+          }
+        }
+      }
+      readonly aboutWindow: {
+        readonly copyInfoHint: 'Version, commit, Electron, système et agents installés, pour un signalement'
+      }
+      readonly customAgents: {
+        readonly form: {
+          readonly apiKeyEnvHint: 'La clé se saisit ensuite sur la page de l’agent, chiffrée par le trousseau de la session.'
+        }
+      }
+      readonly scheduled: {
+        readonly openOnly: 'Les tâches ne tournent que lorsque Bobine est ouverte. Les échéances manquées (ordinateur en veille, app fermée) ne sont pas rejouées : au plus un rattrapage.'
+        readonly keepAwake: 'Pendant une exécution, « Empêcher la mise en veille » (Réglages › Général) garde l’ordinateur éveillé.'
+      }
+      readonly onboarding: {
+        readonly agent: {
+          readonly noneSubtitle: 'Bobine pilote un agent de code installé sur cet ordinateur. Installez-en un, puis cherchez à nouveau.'
+        }
+      }
+      readonly memory: {
+        readonly keyLocked: 'Bobine ne peut pas lire sa clé dans le trousseau de la session : rien ne peut être retenu pour l’instant.'
+      }
+      readonly appAlert: {
+        readonly crashed: {
+          readonly detail: 'Vos conversations sont gardées. Un rapport a été rangé sur cet ordinateur ; rien n’a été envoyé. Il peut contenir des extraits de vos conversations, voire des secrets (fin du journal, mémoire de Bobine dans les fichiers .dmp) : relisez-le avant de le joindre.'
+        }
+      }
+    }
+    readonly explorer: {
+      readonly settings: {
+        readonly memory: {
+          readonly reveal: 'Afficher dans l’Explorateur de fichiers'
+          readonly keyLocked: 'Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Relancez Bobine depuis votre compte Windows habituel.'
+        }
+        readonly general: {
+          readonly language: {
+            readonly hint: 'La langue de l’interface ; « Système » suit celle de Windows.'
+          }
+        }
+        readonly apiKeys: {
+          readonly keychainWaitTitle: 'En attente du chiffrement de Windows…'
+          readonly keychainWaitText: 'Windows chiffre la clé pour votre compte (DPAPI) ; cela ne demande normalement rien.'
+        }
+        readonly agents: {
+          readonly page: {
+            readonly keysHint: 'À la place de la connexion de l’agent. Chiffrées par Windows (DPAPI).'
+          }
+        }
+        readonly providers: {
+          readonly hint: 'Points d’accès compatibles OpenAI (modèles internes…). Clé chiffrée par Windows (DPAPI).'
+          readonly key: {
+            readonly help: 'Chiffrée par Windows (DPAPI), posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}.'
+          }
+        }
+        readonly notifications: {
+          readonly notifications: {
+            readonly blocked: 'Windows bloque les bannières de Bobine. Le son marche quand même.'
+            readonly openSettings: 'Ouvrir les paramètres de Windows'
+          }
+          readonly dockBounce: { readonly label: 'Faire clignoter Bobine dans la barre des tâches' }
+        }
+      }
+      readonly diagnostics: {
+        readonly log: {
+          readonly reveal: 'Afficher dans l’Explorateur de fichiers'
+          readonly revealLabel: 'Afficher {{file}} dans l’Explorateur de fichiers'
+        }
+      }
+      readonly changes: {
+        readonly reveal: 'Afficher dans l’Explorateur de fichiers'
+        readonly revealLabel: 'Afficher {{path}} dans l’Explorateur de fichiers'
+        readonly children: {
+          readonly revealLabel: 'Afficher le worktree de « {{title}} » dans l’Explorateur de fichiers'
+        }
+      }
+      readonly browser: {
+        readonly download: { readonly show: 'Afficher dans l’Explorateur de fichiers' }
+      }
+      readonly document: { readonly reveal: 'Montrer dans l’Explorateur de fichiers' }
+      readonly discussion: {
+        readonly documents: { readonly reveal: 'Afficher dans l’Explorateur de fichiers' }
+        readonly error: {
+          readonly notOpenable: 'Ce fichier ne s’ouvre pas depuis Bobine : il pourrait lancer un programme. Utilisez « Afficher dans l’Explorateur de fichiers ».'
+        }
+      }
+      readonly fileLink: {
+        readonly title: '{{location}} — ⌥-clic : montrer dans l’Explorateur de fichiers'
+        readonly executable: '« {{file}} » peut s’exécuter : montré dans l’Explorateur de fichiers plutôt qu’ouvert.'
+        readonly outside: '« {{file}} » est hors du dossier de la conversation : montré dans l’Explorateur de fichiers.'
+      }
+      readonly imageZoom: {
+        readonly description: 'L’image en grand ; glissez-la vers l’Explorateur de fichiers pour l’enregistrer.'
+      }
+      readonly blocker: {
+        readonly auth: {
+          readonly keyHint: 'Enregistrée chiffrée par Windows (DPAPI) ; modifiable dans Réglages → Agents.'
+        }
+      }
+      readonly settingsSearch: { readonly apiKey: 'clé api jeton connexion chiffrement dpapi' }
+      readonly capabilities: {
+        readonly apiKey: { readonly detail: '`{{env}}`, chiffrée par Windows (DPAPI).' }
+        readonly modelProviders: {
+          readonly detail: 'Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par Windows (DPAPI), posée au lancement.'
+        }
+      }
+      readonly apiKeys: {
+        readonly noKeychain: 'Le chiffrement de Windows (DPAPI) n’est pas disponible pour ce compte : la clé ne peut pas être enregistrée. Elle reste utilisable par la variable d’environnement de l’agent.'
+        readonly keychainTimeout: 'Le chiffrement de Windows n’a pas répondu en {{seconds}} s : la clé n’est pas enregistrée. Réessayez.'
+      }
+      readonly git: {
+        readonly missing: 'git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
+      }
+      readonly customAgents: {
+        readonly form: {
+          readonly apiKeyEnvHint: 'La clé se saisit ensuite sur la page de l’agent, chiffrée par Windows (DPAPI).'
+        }
+      }
+      readonly memory: {
+        readonly keyLocked: 'Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : rien ne peut être retenu pour l’instant.'
+      }
+    }
+  }
 }
