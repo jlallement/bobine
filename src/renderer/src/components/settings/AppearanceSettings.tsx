@@ -18,6 +18,8 @@ import {
   ThemeChoice,
   useInstalledFonts
 } from './AppearanceParts'
+import { SYSTEM_MONO, SYSTEM_SANS } from '../../appearance'
+import { platformFeatures } from '../../platform-features'
 import { requestPresentation, usePresentation } from '../../presentation'
 import { Row, SettingsCard, SettingsTitle, SizeStepper } from './rows'
 
@@ -129,20 +131,33 @@ function ThreadCard({
 }) {
   const { t } = useTranslation()
   const fonts = useInstalledFonts()
+  // Hors macOS (fiche 145) : Inter livrée par défaut, la sans serif du système en plus.
+  const bundled = platformFeatures().bundledFonts
+  const fixed = bundled
+    ? [
+        { id: 'sans', label: t('settings.appearance.conversationFont.inter') },
+        { id: SYSTEM_SANS, label: t('settings.appearance.conversationFont.systemSans') },
+        { id: 'serif', label: t('settings.appearance.conversationFont.systemSerif') }
+      ]
+    : [
+        { id: 'sans', label: t('settings.appearance.conversationFont.sans') },
+        { id: 'serif', label: t('settings.appearance.conversationFont.serif') }
+      ]
   return (
     <>
       <SettingsTitle>{t('settings.appearance.thread')}</SettingsTitle>
       <SettingsCard>
         <Row
           label={t('settings.appearance.conversationFont.label')}
-          hint={t('settings.appearance.conversationFont.hint')}
+          hint={t(
+            bundled
+              ? 'settings.appearance.conversationFont.hintBundled'
+              : 'settings.appearance.conversationFont.hint'
+          )}
         >
           <FontSelect
             value={preferences.conversationFont}
-            fixed={[
-              { id: 'sans', label: t('settings.appearance.conversationFont.sans') },
-              { id: 'serif', label: t('settings.appearance.conversationFont.serif') }
-            ]}
+            fixed={fixed}
             installed={fonts?.families}
             installedLabel={t('settings.appearance.conversationFont.installed')}
             onChange={(conversationFont) => onPreferences({ conversationFont })}
@@ -196,6 +211,13 @@ function CodeCard({
   const { t } = useTranslation()
   const fonts = useInstalledFonts()
   const installedLabel = t('settings.appearance.codeFont.installed')
+  // Hors macOS (fiche 145) : JetBrains Mono livrée par défaut, la chasse fixe du système en plus.
+  const fixed = platformFeatures().bundledFonts
+    ? [
+        { id: 'system', label: t('settings.appearance.codeFont.jetbrains') },
+        { id: SYSTEM_MONO, label: t('settings.appearance.codeFont.systemMono') }
+      ]
+    : [{ id: 'system', label: t('settings.appearance.codeFont.system') }]
   return (
     <>
       <SettingsTitle>{t('settings.appearance.code')}</SettingsTitle>
@@ -206,7 +228,7 @@ function CodeCard({
         >
           <FontSelect
             value={preferences.codeFont}
-            fixed={[{ id: 'system', label: t('settings.appearance.codeFont.system') }]}
+            fixed={fixed}
             installed={fonts?.monospace}
             installedLabel={installedLabel}
             onChange={(codeFont) => onPreferences({ codeFont })}
@@ -220,6 +242,20 @@ function CodeCard({
             onChange={(size) => onPreferences({ codeFontSize: size })}
             testId="settings-code-size"
           />
+        </Row>
+        <Row
+          label={t('settings.appearance.codeLigatures.label')}
+          hint={t('settings.appearance.codeLigatures.hint')}
+        >
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={preferences.codeLigatures}
+              onChange={(e) => onPreferences({ codeLigatures: e.target.checked })}
+              data-testid="settings-code-ligatures"
+            />
+            <span />
+          </label>
         </Row>
         <Row
           label={t('settings.appearance.terminalFont.label')}

@@ -12,6 +12,7 @@ import { startPresentation } from './presentation'
 import { installTitleTooltips } from './title-tooltips'
 import './themes.generated.css'
 import './styles.css'
+import './bundled-fonts.css'
 import './motion.css'
 import './profile.css'
 import './onboarding.css'
@@ -43,6 +44,8 @@ const features = platformFeatures()
 document.documentElement.classList.toggle('native-frame', !features.insetTitleBar)
 document.documentElement.classList.toggle('classic-scrollbars', !features.overlayScrollbars)
 document.documentElement.classList.toggle('no-glass', !features.glass)
+// Inter et JetBrains Mono hors macOS (bundled-fonts.css).
+document.documentElement.classList.toggle('bundled-fonts', features.bundledFonts)
 
 createRoot(root).render(
   <StrictMode>

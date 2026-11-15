@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSettingsView } from '@shared/agent'
+import { ALL_FEATURES } from '@shared/platform'
 import { DEFAULT_PREFERENCES } from '@shared/preferences'
 import { setLanguage } from '../../i18n'
 import {
@@ -369,6 +370,37 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     expect(options('settings-terminal-font')).toEqual(['Automatique', 'Menlo'])
     fireEvent.change(screen.getByTestId('settings-terminal-font'), { target: { value: 'Menlo' } })
     expect(onPreferences).toHaveBeenCalledWith({ terminalFontFamily: 'Menlo' })
+  })
+
+  it('polices livrées hors macOS (fiche 145) : Inter et JetBrains Mono, celles du système en plus', async () => {
+    const api = (window as unknown as { api: { app: Record<string, unknown> } }).api
+    api.app['features'] = { ...ALL_FEATURES, bundledFonts: true }
+    render(<SettingsDialog {...dialogProps('appearance')} />)
+    await act(async () => {})
+    const options = (id: string) =>
+      [...(screen.getByTestId(id) as HTMLSelectElement).options].map((o) => o.value)
+    expect(options('settings-conversation-font')).toEqual([
+      'sans',
+      'system-sans',
+      'serif',
+      'Avenir Next',
+      'Menlo'
+    ])
+    expect(options('settings-code-font')).toEqual(['system', 'system-mono', 'Menlo'])
+    expect(
+      (screen.getByTestId('settings-code-font') as HTMLSelectElement).selectedOptions[0]
+        ?.textContent
+    ).toBe('JetBrains Mono (livrée avec Bobine)')
+  })
+
+  it('ligatures du code (fiche 145) : coupées par défaut, un interrupteur les active', async () => {
+    const onPreferences = vi.fn()
+    render(<SettingsDialog {...dialogProps('appearance')} onPreferences={onPreferences} />)
+    await act(async () => {})
+    const toggle = screen.getByTestId('settings-code-ligatures') as HTMLInputElement
+    expect(toggle.checked).toBe(false)
+    fireEvent.click(toggle)
+    expect(onPreferences).toHaveBeenCalledWith({ codeLigatures: true })
   })
 })
 

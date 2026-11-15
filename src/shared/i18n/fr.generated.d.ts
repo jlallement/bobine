@@ -1360,6 +1360,10 @@ export type FrResources = {
         readonly sans: 'Système (sans serif)'
         readonly serif: 'Serif (New York)'
         readonly installed: 'Polices installées'
+        readonly inter: 'Inter (livrée avec Bobine)'
+        readonly systemSans: 'Système (sans serif)'
+        readonly systemSerif: 'Système (serif)'
+        readonly hintBundled: 'Inter (livrée avec Bobine), une police du système ou une police installée.'
       }
       readonly conversationSize: {
         readonly label: 'Taille des réponses'
@@ -1387,8 +1391,14 @@ export type FrResources = {
         readonly hint: 'Blocs de code, diffs et sorties de commandes.'
         readonly system: 'SF Mono (système)'
         readonly installed: 'Polices à chasse fixe installées'
+        readonly jetbrains: 'JetBrains Mono (livrée avec Bobine)'
+        readonly systemMono: 'Chasse fixe du système'
       }
       readonly codeSize: { readonly label: 'Taille du code' }
+      readonly codeLigatures: {
+        readonly label: 'Ligatures du code'
+        readonly hint: 'Dessine != en ≠ et => en flèche, si la police du code en a.'
+      }
       readonly terminalFont: {
         readonly label: 'Police du terminal'
         readonly hint: 'Automatique : une « Nerd Font » installée, sinon SF Mono.'
@@ -1689,6 +1699,7 @@ export type FrResources = {
     readonly thread: 'fil réponses police taille largeur'
     readonly codeAndTerminal: 'code terminal police monospace taille'
     readonly codeFontSize: 'code taille blocs diffs sorties zoom'
+    readonly codeLigatures: 'ligatures != ≠ flèche => police code jetbrains fira'
     readonly whenDone: 'notifications dock bannière fini attend'
     readonly sound: 'son alerte bip'
     readonly children: 'sous-tâches conversations filles parallèle'

@@ -85,6 +85,7 @@ const INDEX: readonly IndexedSetting[] = [
   ['appearance', 'settings.appearance.code', 'settingsSearch.codeAndTerminal'],
   ['appearance', 'settings.appearance.codeFont.label', 'settingsSearch.codeFont'],
   ['appearance', 'settings.appearance.codeSize.label', 'settingsSearch.codeFontSize'],
+  ['appearance', 'settings.appearance.codeLigatures.label', 'settingsSearch.codeLigatures'],
   ['appearance', 'settings.appearance.terminalFont.label', 'settingsSearch.terminalFont'],
   ['appearance', 'settings.appearance.terminalSize.label', 'settingsSearch.terminalFontSize'],
   ['notifications', 'settings.notifications.whenDone', 'settingsSearch.whenDone'],

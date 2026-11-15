@@ -27,6 +27,8 @@ import {
 import { homedir, tmpdir, userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { bundledFontsIn } from '../scripts/bundled-fonts.mjs'
+import { asarEntries } from '../scripts/check-linux-package.mts'
 
 // Linux et Windows (fiches 145, 229) : l'app installée (`.deb`, installeur NSIS), essai à part.
 if (process.platform !== 'darwin') {
@@ -384,6 +386,20 @@ async function reset({ trashWritable }) {
 }
 
 /**
+ * Polices livrées hors macOS (Inter, JetBrains Mono : fiche 145) : absentes de l'app Mac, qui garde
+ * SF Pro et SF Mono (`files` d'electron-builder.yml).
+ */
+function macFonts() {
+  console.log('\n▶ Polices livrées hors macOS (app.asar)')
+  const entries = asarEntries(readFileSync(join(app, 'Contents', 'Resources', 'app.asar')))
+  const found = bundledFontsIn(entries)
+  check(
+    entries.length > 0 && found.length === 0,
+    `Inter et JetBrains Mono absentes de l'app Mac${found.length ? ` (${found.join(', ')})` : ''}`
+  )
+}
+
+/**
  * Textes de licence livrés avec l'app (fiche 217) : ceux de Bobine, les avis des composants tiers
  * (identiques à ceux du dépôt), Electron et Chromium, la police.
  */
@@ -416,6 +432,7 @@ function licenses() {
 
 try {
   licenses()
+  macFonts()
   const already = appProcesses()
   if (already.length) {
     throw new Error(`l'app essayée tourne déjà (${already.join(', ')}) : fermez-la d'abord`)

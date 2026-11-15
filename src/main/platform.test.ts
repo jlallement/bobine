@@ -7,7 +7,7 @@ describe('capacités de la plateforme (fiche 145)', () => {
     expect(platformFeatures('darwin')).toEqual(ALL_FEATURES)
   })
 
-  it('sous Linux, rien de ce que seul macOS a', () => {
+  it('sous Linux, rien de ce que seul macOS a ; polices livrées', () => {
     expect(platformFeatures('linux')).toEqual({
       simulator: false,
       selfInstall: false,
@@ -21,7 +21,8 @@ describe('capacités de la plateforme (fiche 145)', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      bundledFonts: true
     })
   })
 
@@ -63,7 +64,8 @@ describe('argument du renderer', () => {
   })
 
   it('liste vide : `none`, aucune capacité, même raccourcie par Chromium', () => {
-    expect(featuresArgument(platformFeatures('linux'))).toBe('--bobine-features=none')
+    const none = featuresFromArgv(['--bobine-features=none'])
+    expect(featuresArgument(none)).toBe('--bobine-features=none')
     expect(featuresFromArgv(['--bobine-features'])).toEqual(
       featuresFromArgv(['--bobine-features='])
     )
@@ -80,7 +82,8 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      bundledFonts: false
     })
   })
 
@@ -99,7 +102,8 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      bundledFonts: false
     })
   })
 })

@@ -3,12 +3,16 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { asarEntries, asarProblems, packageProblems } from './check-linux-package.mts'
+import { BUNDLED_FONT_FILES, FONT_LICENSES, MAC_FONTS_EXCLUSION } from './bundled-fonts.mjs'
 import { HICOLOR_DIRS, LINUX_ICON_SIZES } from './linux-icons.mjs'
 
 const root = join(__dirname, '..')
-const icons = HICOLOR_DIRS.map(
-  (dir) => `/usr/share/icons/hicolor/${dir}/apps/bobine.${dir === 'scalable' ? 'svg' : 'png'}`
-)
+const icons = [
+  ...HICOLOR_DIRS.map(
+    (dir) => `/usr/share/icons/hicolor/${dir}/apps/bobine.${dir === 'scalable' ? 'svg' : 'png'}`
+  ),
+  ...FONT_LICENSES.map((f) => `/opt/Bobine/resources/licenses/fonts/${f}`)
+]
 const desktop =
   '[Desktop Entry]\nName=Bobine\nExec=/opt/Bobine/bobine %U\nIcon=bobine\nStartupWMClass=bobine\n'
 
@@ -22,6 +26,9 @@ describe('paquet Linux (fiche 145)', () => {
     const problems = packageProblems(only1024, undefined)
     expect(problems).toContain('icône absente : /usr/share/icons/hicolor/scalable/apps/bobine.svg')
     expect(problems).toContain('icône absente : /usr/share/icons/hicolor/512x512/apps/bobine.png')
+    expect(problems).toContain(
+      'licence absente : /opt/Bobine/resources/licenses/fonts/JetBrainsMono-LICENSE.txt'
+    )
     expect(problems.at(-1)).toBe(
       'entrée de bureau absente : /usr/share/applications/bobine.desktop'
     )
@@ -49,11 +56,20 @@ describe('paquet Linux (fiche 145)', () => {
     expect(pkg.desktopName).toBe('bobine.desktop')
   })
 
-  it('app.asar : seulement le build, package.json et les dépendances', () => {
+  it('app.asar : seulement le build, package.json et les dépendances ; polices livrées', () => {
+    // Noms de Vite : le nom publié suivi d'une empreinte de 8 caractères.
+    const fonts = Object.fromEntries(
+      BUNDLED_FONT_FILES.map((f) => [f.replace('.woff2', '-x_Y-1234.woff2'), { size: 1 }])
+    )
     const header = JSON.stringify({
       files: {
         'package.json': { size: 2 },
-        out: { files: { main: { files: { 'index.js': { size: 1 } } } } },
+        out: {
+          files: {
+            main: { files: { 'index.js': { size: 1 } } },
+            renderer: { files: { assets: { files: fonts } } }
+          }
+        },
         node_modules: { files: { 'node-pty': { files: { build: { files: {} } } } } }
       }
     })
@@ -67,8 +83,14 @@ describe('paquet Linux (fiche 145)', () => {
     expect(
       asarProblems([...entries, 'docs/features/145.md', 'src/main/index.ts', '.pilote/x'])
     ).toEqual(['hors du build dans app.asar : .pilote, docs, src'])
-    expect(asarProblems(['node_modules/node-pty/prebuilds/darwin-arm64/pty.node'])).toEqual([
-      "binaires de node-pty d'autres systèmes dans app.asar"
+    expect(
+      asarProblems([...entries, 'node_modules/node-pty/prebuilds/darwin-arm64/pty.node'])
+    ).toEqual(["binaires de node-pty d'autres systèmes dans app.asar"])
+    // Paquet construit avec la liste du Mac : polices absentes, chacune nommée.
+    const withoutInter = entries.filter((e) => !e.includes('InterVariable'))
+    expect(asarProblems(withoutInter)).toEqual([
+      'police absente de app.asar : InterVariable.woff2',
+      'police absente de app.asar : InterVariable-Italic.woff2'
     ])
   })
 
@@ -77,7 +99,11 @@ describe('paquet Linux (fiche 145)', () => {
       files: string[]
       linux: { files: string[] }
     }
-    expect(config.linux.files.slice(0, config.files.length)).toEqual(config.files)
+    // Seule différence : les polices livrées, exclues de l'app Mac seulement.
+    const shared = config.files.filter((p) => p !== MAC_FONTS_EXCLUSION)
+    expect(shared).toHaveLength(config.files.length - 1)
+    expect(config.linux.files.slice(0, shared.length)).toEqual(shared)
+    expect(config.linux.files).not.toContain(MAC_FONTS_EXCLUSION)
     expect(config.linux.files.some((p) => !p.startsWith('!'))).toBe(true)
   })
 })

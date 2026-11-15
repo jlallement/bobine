@@ -13,6 +13,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { FONT_LICENSES, missingFonts } from './bundled-fonts.mjs'
 import { HICOLOR_DIRS } from './linux-icons.mjs'
 
 /** Nom du programme et de l'entrée de bureau (`executableName`, `desktopName`). */
@@ -21,11 +22,17 @@ export const APP = 'bobine'
 /** Ce qui manque au paquet, d'après ses fichiers (chemins absolus) et son entrée de bureau. */
 export function packageProblems(files: readonly string[], desktop: string | undefined): string[] {
   const present = new Set(files)
-  const problems = HICOLOR_DIRS.map(
-    (dir) => `/usr/share/icons/hicolor/${dir}/apps/${APP}.${dir === 'scalable' ? 'svg' : 'png'}`
-  )
-    .filter((path) => !present.has(path))
-    .map((path) => `icône absente : ${path}`)
+  const problems = [
+    ...HICOLOR_DIRS.map(
+      (dir) => `/usr/share/icons/hicolor/${dir}/apps/${APP}.${dir === 'scalable' ? 'svg' : 'png'}`
+    )
+      .filter((path) => !present.has(path))
+      .map((path) => `icône absente : ${path}`),
+    // Licences des polices livrées (fiche 145).
+    ...FONT_LICENSES.map((f) => `/opt/Bobine/resources/licenses/fonts/${f}`)
+      .filter((path) => !present.has(path))
+      .map((path) => `licence absente : ${path}`)
+  ]
   if (desktop === undefined) {
     return [...problems, `entrée de bureau absente : /usr/share/applications/${APP}.desktop`]
   }
@@ -69,7 +76,7 @@ const ASAR_TOP = new Set(['out', 'package.json', 'node_modules'])
 /**
  * Ce qui n'a rien à faire dans l'archive de l'app : tout ce qui n'est pas le build, `package.json`
  * ou les dépendances (sources, documentation, essais, fichiers locaux…), et les binaires de
- * node-pty pour d'autres systèmes.
+ * node-pty pour d'autres systèmes. Et ce qui doit y être : les polices livrées hors macOS.
  */
 export function asarProblems(entries: readonly string[]): string[] {
   const stray = [...new Set(entries.map((e) => e.split('/')[0] ?? e))].filter(
@@ -78,7 +85,8 @@ export function asarProblems(entries: readonly string[]): string[] {
   const prebuilds = entries.filter((e) => e.startsWith('node_modules/node-pty/prebuilds/'))
   return [
     ...(stray.length ? [`hors du build dans app.asar : ${stray.sort().join(', ')}`] : []),
-    ...(prebuilds.length ? [`binaires de node-pty d'autres systèmes dans app.asar`] : [])
+    ...(prebuilds.length ? [`binaires de node-pty d'autres systèmes dans app.asar`] : []),
+    ...missingFonts(entries)
   ]
 }
 
@@ -120,7 +128,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(
       problems.length
         ? `✗ ${deb}\n${problems.map((p) => `  ${p}`).join('\n')}`
-        : `✓ ${deb} : icônes hicolor (${HICOLOR_DIRS.join(', ')}), ${APP}.desktop, app.asar (out, package.json, node_modules)`
+        : `✓ ${deb} : icônes hicolor (${HICOLOR_DIRS.join(', ')}), ${APP}.desktop, app.asar (out, package.json, node_modules, polices livrées)`
     )
   }
   process.exit(failed ? 1 : 0)

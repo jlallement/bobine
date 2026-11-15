@@ -146,6 +146,11 @@ export interface Preferences {
   codeFont: CodeFont
   /** Taille du code (blocs, diffs, sorties de commandes), en pixels (fiche 136). */
   codeFontSize: number
+  /**
+   * Ligatures de la police du code (`!=` dessiné ≠, `=>` en flèche ; fiche 145) ; non par défaut :
+   * les vrais caractères. Ni le terminal ni l'interface.
+   */
+  codeLigatures: boolean
   /** Prénom pour l'accueil (« Bonsoir Jérôme ») ; vide : pas de prénom. */
   userName: string
   /** Raccourci global de la fenêtre rapide (fiche 062). */
@@ -217,6 +222,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   keepAwake: true,
   codeFont: 'system',
   codeFontSize: 12.5,
+  codeLigatures: false,
   userName: '',
   quickEntryShortcut: DEFAULT_QUICK_SHORTCUT,
   attentionSound: 'Glass',
@@ -304,7 +310,8 @@ const BOOLEAN_PREFERENCES = [
   'dockBadge',
   'costCapEnabled',
   'memoryEnabled',
-  'tipsEnabled'
+  'tipsEnabled',
+  'codeLigatures'
 ] as const
 
 /** Nombre fini dans ses bornes (entier si demandé) ; sinon `undefined`. */

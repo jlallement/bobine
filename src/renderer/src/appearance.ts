@@ -14,16 +14,31 @@ export interface AppearanceSource {
   preferences: Preferences
 }
 
-/** Police des réponses en CSS : celle du système, le serif, ou une police installée. */
+/**
+ * Police des réponses en CSS : celle de l'interface (SF Pro, ou Inter livrée hors macOS), le
+ * serif, la sans serif du système (`system-sans`, proposée quand l'app livre ses polices) ou une
+ * police installée.
+ */
 export function conversationFontCss(font: string): string {
   if (font === 'sans') return 'var(--font-ui)'
   if (font === 'serif') return 'var(--font-serif)'
+  if (font === SYSTEM_SANS) return 'system-ui, sans-serif'
   return `'${font}', var(--font-ui)`
 }
 
-/** Police du code en CSS ; `system` : celle de l'app (SF Mono). */
+/** Sans serif du système (fiche 145) : hors macOS, à la place d'Inter livrée. */
+export const SYSTEM_SANS = 'system-sans'
+/** Police à chasse fixe du système (fiche 145) : hors macOS, à la place de JetBrains Mono. */
+export const SYSTEM_MONO = 'system-mono'
+
+/**
+ * Police du code en CSS ; `system` : celle de l'app (SF Mono, ou JetBrains Mono livrée hors
+ * macOS) ; `system-mono` : la police à chasse fixe du système.
+ */
 export function codeFontCss(font: string): string {
-  return font === 'system' ? 'var(--font-mono)' : `'${font}', var(--font-mono)`
+  if (font === 'system') return 'var(--font-mono)'
+  if (font === SYSTEM_MONO) return 'ui-monospace, monospace'
+  return `'${font}', var(--font-mono)`
 }
 
 /** Nerd Font livrée avec l'app pour les icônes (`terminal-symbols.css`, fiche 201). */
@@ -120,6 +135,8 @@ export function applyAppearance(source: AppearanceSource): void {
   if (prefs.codeFont === 'system') root.removeProperty('--font-code')
   else root.setProperty('--font-code', codeFontCss(prefs.codeFont))
   root.setProperty('--code-size', `${prefs.codeFontSize}px`)
+  // Ligatures du code (fiche 145) : coupées par défaut, `!=` reste `!=`.
+  root.setProperty('--code-ligatures', prefs.codeLigatures ? 'normal' : 'none')
   current = prefs
   applyPalette()
   // Le mode change (« Système » suit macOS) : le thème choisi pour l'autre mode.

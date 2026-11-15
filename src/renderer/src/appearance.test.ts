@@ -55,3 +55,15 @@ describe('police du terminal (fiche 201)', () => {
     expect(terminalSymbolsSettled()).toBe(true)
   })
 })
+
+describe('polices livrées hors macOS (fiche 145)', () => {
+  it('polices du système proposées en plus : sans serif et chasse fixe', async () => {
+    const { codeFontCss, conversationFontCss, SYSTEM_MONO, SYSTEM_SANS } =
+      await import('./appearance')
+    expect(conversationFontCss('sans')).toBe('var(--font-ui)')
+    expect(conversationFontCss(SYSTEM_SANS)).toBe('system-ui, sans-serif')
+    expect(codeFontCss('system')).toBe('var(--font-mono)')
+    expect(codeFontCss(SYSTEM_MONO)).toBe('ui-monospace, monospace')
+    expect(codeFontCss('Fira Code')).toBe("'Fira Code', var(--font-mono)")
+  })
+})

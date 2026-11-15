@@ -1319,7 +1319,11 @@
         "hint": "The system’s sans serif or serif, or a font installed on the Mac.",
         "sans": "System (sans serif)",
         "serif": "Serif (New York)",
-        "installed": "Installed fonts"
+        "installed": "Installed fonts",
+        "inter": "Inter (bundled with Bobine)",
+        "systemSans": "System (sans serif)",
+        "systemSerif": "System (serif)",
+        "hintBundled": "Inter (bundled with Bobine), a system font or an installed font."
       },
       "conversationSize": {
         "label": "Response size",
@@ -1346,10 +1350,16 @@
         "label": "Code font",
         "hint": "Code blocks, diffs and command output.",
         "system": "SF Mono (system)",
-        "installed": "Installed monospaced fonts"
+        "installed": "Installed monospaced fonts",
+        "jetbrains": "JetBrains Mono (bundled with Bobine)",
+        "systemMono": "System monospace"
       },
       "codeSize": {
         "label": "Code size"
+      },
+      "codeLigatures": {
+        "label": "Code ligatures",
+        "hint": "Draws != as ≠ and => as an arrow, if the code font has them."
       },
       "terminalFont": {
         "label": "Terminal font",
@@ -1650,6 +1660,7 @@
     "thread": "conversation responses font size width",
     "codeAndTerminal": "code terminal font monospace size",
     "codeFontSize": "code size blocks diffs output zoom",
+    "codeLigatures": "ligatures != ≠ arrow => code font jetbrains fira",
     "whenDone": "notifications dock banner done waiting",
     "sound": "sound alert beep",
     "children": "subtasks child conversations parallel",

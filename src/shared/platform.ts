@@ -42,7 +42,12 @@ export const PLATFORM_FEATURES = [
    * Surfaces flottantes en verre dépoli (Aurore) et menus qui apparaissent en fondu : fiables sur
    * le compositeur de macOS. Ailleurs, menus opaques, sans fondu (fiche 145).
    */
-  'glass'
+  'glass',
+  /**
+   * Polices livrées avec l'app : Inter pour l'interface, JetBrains Mono pour le code (fiche 145,
+   * `bundled-fonts.css`). Sur macOS, celles du système (SF Pro, SF Mono).
+   */
+  'bundledFonts'
 ] as const
 
 export type PlatformFeature = (typeof PLATFORM_FEATURES)[number]
@@ -63,7 +68,9 @@ export const ALL_FEATURES: PlatformFeatures = {
   insetTitleBar: true,
   commandKey: true,
   overlayScrollbars: true,
-  glass: true
+  glass: true,
+  // Polices du système sur le Mac : rien n'est livré.
+  bundledFonts: false
 }
 
 export const FEATURES_ARG = '--bobine-features='
