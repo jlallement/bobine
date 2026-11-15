@@ -1130,3 +1130,9 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   9f42391) : **tout est bon** (fenêtre, accueil, IBM Bob et OpenCode trouvés, aucun texte du Mac,
   terminal qui exécute une commande, **aucune alerte**, quitte avec le code 0, aucun processus
   restant, profil temporaire effacé). App désinstallée ensuite ; Bob, OpenCode et MinGit gardés.
+- 2026-11-15 — Branche `claude/fds-et-toasts` prête à relire (rebasée sur `main` 9f42391) :
+  `./scripts/verify` vert ; Mac `pnpm e2e pannes-visibles terminal session restart fresh-start
+  startup notifications` 13/13 ; Linux (Docker) `pannes-visibles`, `fresh-start`, `startup`,
+  `restart` verts, `terminal` avec le seul échec connu des icônes Nerd Font (fiche 145). Reste :
+  le clic sur un toast depuis le centre de notifications, à revérifier quand le bureau de la VM
+  est libre (il était en service).
