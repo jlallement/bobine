@@ -121,9 +121,11 @@ export async function overflowSuite(scheme) {
  * quand la fenêtre s'élargit (fiche 173).
  */
 async function roomForConversation(ui) {
+  // Largeur de la conversation, barre de défilement comprise : superposée sur macOS, à côté du
+  // texte ailleurs (fiche 145).
   const layout = () =>
     ui.ev(
-      `(() => ({ panel: document.querySelector('[data-testid=side-panel]')?.getBoundingClientRect().width ?? 0, conversation: document.querySelector('.scroll').clientWidth, tab: document.querySelector('.side-panel-tab.active')?.dataset.tab ?? null }))()`
+      `(() => ({ panel: document.querySelector('[data-testid=side-panel]')?.getBoundingClientRect().width ?? 0, conversation: Math.round(document.querySelector('.scroll').getBoundingClientRect().width), tab: document.querySelector('.side-panel-tab.active')?.dataset.tab ?? null }))()`
     )
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)

@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
-import { L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { FEATURES, L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /**
  * Démarrage (fiche 093) : premier lancement sans dossier (aucun agent avant le choix), dossier
@@ -50,21 +50,24 @@ export async function startupSuite(scheme) {
 
         const main = await mainProcess()
         try {
-          const windowMenu = await main.evaluate(`(() => {
-            const menu = require('electron').Menu.getApplicationMenu()
-            const window = menu.items.find((i) => i.label === ${JSON.stringify(L('menu.window'))})
-            return window.submenu.items.filter((i) => i.type !== 'separator').map((i) => i.label)
-          })()`)
-          check(
-            JSON.stringify(windowMenu) ===
-              JSON.stringify([
-                L('shortcuts.menu.activity'),
-                L('menu.minimize'),
-                L('menu.zoom'),
-                L('menu.front')
-              ]),
-            `menu Fenêtre traduit : ${windowMenu?.join(', ')}`
-          )
+          // Menu Fenêtre de macOS ; ailleurs, pas de menu Fenêtre (`settings`, fiche 145).
+          if (FEATURES.appMenu) {
+            const windowMenu = await main.evaluate(`(() => {
+              const menu = require('electron').Menu.getApplicationMenu()
+              const window = menu.items.find((i) => i.label === ${JSON.stringify(L('menu.window'))})
+              return window.submenu.items.filter((i) => i.type !== 'separator').map((i) => i.label)
+            })()`)
+            check(
+              JSON.stringify(windowMenu) ===
+                JSON.stringify([
+                  L('shortcuts.menu.activity'),
+                  L('menu.minimize'),
+                  L('menu.zoom'),
+                  L('menu.front')
+                ]),
+              `menu Fenêtre traduit : ${windowMenu?.join(', ')}`
+            )
+          }
           // Dialogue natif simulé : il rend le dossier du projet.
           await main.evaluate(`(() => {
             require('electron').dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [${JSON.stringify(project)}] })

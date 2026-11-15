@@ -5378,5 +5378,10 @@
       "details": "Détails techniques"
     },
     "requestedOnlyHint": "{{agent}} écrit sans demander d’autorisation : rester dans les documents de la discussion lui est seulement demandé."
+  },
+  "keys": {
+    "ctrl": "Ctrl",
+    "alt": "Alt",
+    "shift": "Maj"
   }
 }

@@ -12,6 +12,7 @@ import { windowBackground } from '@shared/themes'
 import { featuresArgument, type PlatformFeatures } from '@shared/platform'
 import { homeArgument } from '@shared/path-display'
 import { viewArgument } from '@shared/window-view'
+import { windowChrome } from './window-chrome'
 import { registerAppWindow } from './app-windows'
 import { attachContextMenu } from './context-menu'
 import { rendererArguments } from './i18n'
@@ -92,9 +93,8 @@ export function createMainBrowserWindow(
     minWidth: 800,
     minHeight: 500,
     show: false,
-    titleBarStyle: 'hiddenInset',
     // Feux de la fenêtre centrés sur la hauteur des barres (52 px), comme leurs boutons (fiche 050).
-    trafficLightPosition: { x: 18, y: 19 },
+    ...windowChrome(features, 'hiddenInset', { x: 18, y: 19 }),
     backgroundColor: themeBackground(theme),
     webPreferences: rendererWebPreferences(features)
   })
@@ -140,11 +140,12 @@ export function createAboutWindow(
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 14, y: 14 },
+    ...windowChrome(features, 'hidden', { x: 14, y: 14 }),
     backgroundColor: themeBackground(theme),
     webPreferences: rendererWebPreferences(features)
   })
+  // Hors macOS, le menu de l'app serait dans chaque fenêtre : pas dans celle-ci, simple boîte.
+  if (!features.appMenu) win.removeMenu()
   loadRenderer(win, 'about')
   return win
 }
@@ -164,8 +165,7 @@ export function createHelpWindow(
     minHeight: HELP_MIN_SIZE.height,
     show: false,
     fullscreenable: false,
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 14, y: 14 },
+    ...windowChrome(features, 'hidden', { x: 14, y: 14 }),
     backgroundColor: themeBackground(theme),
     // API réduite à la vue d'aide : le preload lit cette marque (fiche 186).
     webPreferences: {

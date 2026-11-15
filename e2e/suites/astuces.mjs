@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto'
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { K, L, check, sleep, withApp } from '../lib.mjs'
 
 /** Calme d'une conversation neuve ramené à zéro pour l'essai (deux minutes dans l'app). */
 const QUIET = { BOBINE_TIPS_QUIET_MS: '0' }
@@ -34,7 +34,7 @@ export async function tipsSuite(scheme) {
       await ui.waitFor(`!!${ui.$('tip-aside')}`, 6000)
       const text = await ui.ev(`${ui.$('tip-aside')}.innerText`)
       check(
-        text.includes('/btw') && text.includes('⇧⌘A'),
+        text.includes('/btw') && text.includes(K('⇧⌘A')),
         `astuce de l’aparté sur la saisie (${text.replace(/\n/g, ' ')})`
       )
       await ui.shot('astuce-0-aparte')

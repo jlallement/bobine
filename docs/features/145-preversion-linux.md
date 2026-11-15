@@ -19,8 +19,8 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
 2. **e2e Linux verts** (`pnpm e2e:linux` en local, ou `e2e.yml`, Système : `linux`) : 188/202
    le 2026-11-15 (lot 5 fait, openbox). Reste, voir le journal : fd hérités par les processus
    lancés (`pannes-visibles`), métriques de police et barres de défilement de Linux.
-3. **Lot 2** — barre de titre et menu Linux, raccourcis Ctrl, textes Mac/Finder/Dock/⌘,
-   (`desktopName` : fait au lot 4 le 2026-11-15).
+3. **Lot 2** — reste les textes Mac/Finder/Dock/Trousseau (fenêtres, menu, raccourcis en Ctrl et
+   barres de défilement faits le 2026-11-15, D8 ; `desktopName` fait au lot 4).
 4. **Lot 3** — intégration au bureau (git en langue fixe : fait), clés d'API sans trousseau (D4) ;
    vérifier aussi la réinitialisation de la fiche 148 (trousseau, corbeille) sous Linux.
 5. **Lot 4** — « préversion Linux » dans l'À propos, node-pty pour `pnpm dev`, `e2e:packaged`.
@@ -64,9 +64,10 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 - [ ] Rien de propre à macOS n'est visible ni proposé sous Linux : pas d'onglet ni d'outils
       `ios_*`, pas de ligne Xcode au Diagnostic, pas d'installation dans `/Applications`, pas de
       réglage de langue du système, pas de textes « Finder », « Dock », « Trousseau » ni de « ⌘ ».
-- [ ] Barre de titre Linux : boutons de fenêtre du système dessinés à droite par Electron
-      (`titleBarOverlay`), sans la marge de 84 px réservée aux boutons de fenêtre de macOS ;
-      barre de menu masquée, affichée par Alt, raccourcis du menu actifs (`CmdOrCtrl` → Ctrl).
+- [x] Fenêtres Linux (D8, 2026-11-15) : décorations du système (barre de titre, ordre des
+      boutons du bureau), sans la marge de 84 px réservée aux feux de macOS ; barre de menu
+      masquée, affichée par Alt, menu à la façon de Linux ; raccourcis du menu actifs
+      (`CmdOrCtrl` → Ctrl) et affichés en Ctrl ; barres de défilement fines.
 - [ ] Polices installées (Réglages › Apparence) lues par `fc-list` ; « Ouvrir dans un terminal »
       lance le terminal de la machine ou disparaît s'il n'y en a pas ; son d'attente joué avec les
       sons du système freedesktop, réglage masqué s'il n'y en a aucun ; « attire l'attention »
@@ -99,12 +100,11 @@ part, plus tard). Capture d'écran jointe au message : voir les écarts.
 | D4 | Clés d'API que Bobine pose aux agents (`BOB_API_KEY`, fournisseurs de la fiche 104, agents personnalisés de la fiche 141) | **Comme VS Code / Bob IDE** : trousseau s'il existe ; sinon fichier en droits 600 non chiffré, dit en une ligne dans Réglages › Agents, sans boîte de dialogue bloquante | Usage relevé : sous Linux, Claude Code garde toujours ses identifiants en clair, droits 600 (`~/.claude/.credentials.json`), OpenCode aussi (`auth.json`) ; VS Code, donc Bob IDE, chiffre par le trousseau et propose sinon un « chiffrement faible » (`--password-store=basic`, clé fixe de Chromium, presque du clair). Refuser d'enregistrer ne protégerait guère plus que ce que font les agents eux-mêmes. |
 | D5 | Bob sous Linux | **Annoncé** | Bob fonctionne sous Linux, IBM le livre en `.deb` (Jérôme). Contrat vérifié par `pnpm bob-probe` dans la machine virtuelle ; noté dans « Compatibilité Bob » de `docs/acp.md`. |
 | D6 | Bureau visé | **Ubuntu 24.04 GNOME**, Wayland et X11 | Le plus répandu ; essais dans UTM sur le Mac. Les autres bureaux « devraient marcher », sans promesse. |
+| D8 | Fenêtres et menu sous Linux (tech lead, 2026-11-15 : « ce qui se fait habituellement sous Linux ») | **Décorations natives** (`frame` par défaut, ni fenêtre sans cadre ni `titleBarOverlay`) ; **barre de menu masquée** (`autoHideMenuBar`, Alt l'affiche, comme Signal ou Element) | La barre du système respecte le thème et l'ordre des boutons réglé dans le bureau, sous GNOME comme KDE, X11 comme Wayland ; un menu reste joignable au clavier et par les lecteurs d'écran. |
 | D7 | Publication | **Même version que le Mac** : AppImage et `.deb` joints à la version GitHub du `.dmg` | Un seul numéro, un seul tag ; « préversion Linux » dit dans les notes et l'À propos. Première publication après la 0.6.0 macOS, une fois Linux validé. |
 
-Choix d'interface tranchés ici (UX) : boutons de fenêtre du système à droite par
-`titleBarOverlay`, aux couleurs du thème, plutôt qu'un cadre natif qui casserait les barres de
-52 px ; barre de menu masquée (`autoHideMenuBar`) comme les apps Electron courantes sous Linux, le
-menu reste joignable par Alt et ses raccourcis restent actifs.
+Choix d'interface : voir D8 (remplace le choix d'origine, `titleBarOverlay` aux couleurs du
+thème, écarté le 2026-11-15).
 
 ## Plan
 
@@ -134,21 +134,28 @@ node-pty.
 - Section « Compatibilité Bob » de `docs/acp.md` : Bob sous Linux (`.deb` d'IBM, D5), version
   sondée par `pnpm bob-probe` dans la machine virtuelle.
 
-**Lot 2 — fenêtres et textes (renderer).**
-- `renderer-windows.ts` : sous Linux, `titleBarStyle: 'hidden'` + `titleBarOverlay` (couleurs
-  `themeBackground` / texte du thème, hauteur 52), recalé au changement de thème ; fenêtre rapide
-  : `transparent` seulement si le compositeur le permet (sinon fond opaque arrondi).
-- `styles.css` (lignes 140, 442, 3763) : marge des boutons de fenêtre par variable (`--chrome-left`
-  84 px sur macOS, 0 sous Linux ; `env(titlebar-area-width)` à droite), classe posée sur `<html>`
-  d'après les capacités.
-- `menu.ts` : `autoHideMenuBar` sous Linux, menu de l'app sans le menu « Bobine » de macOS
-  (À propos, Réglages et Quitter rangés dans Fichier et Aide).
-- Raccourcis affichés par plateforme (`shared/shortcuts.ts`, champ `keys` : `Ctrl+K` au lieu
-  de `⌘K`) ; gestionnaires clavier du renderer qui n'écoutent que `metaKey` (ex. recherche des
-  Réglages, `SettingsDialog.tsx`) passés à « ⌘ sur macOS, Ctrl ailleurs ».
-- `fr.json` / `en.json` : relire les 33 textes qui citent Mac, Finder, Dock, Trousseau ou ⌘ ;
-  version générique quand elle suffit, sinon variante par capacité (`…FileManager`). Glossaire de
-  `docs/traduction.md` complété.
+**Lot 2 — fenêtres et textes (renderer).** Fait le 2026-11-15, sauf la dernière ligne (D8).
+- ✅ Capacités `appMenu`, `insetTitleBar`, `commandKey`, `overlayScrollbars` (`platform.ts`).
+- ✅ `window-chrome.ts` : sur macOS, `titleBarStyle` et feux comme avant ; ailleurs, décorations
+  du système et `autoHideMenuBar` (fenêtre principale, aide) ; la fenêtre À propos sans menu.
+  Classe `native-frame` sur `<html>` : plus de marge de 84 px pour les feux.
+- ✅ `menu.ts` : menu Linux sans menu « Bobine », Services, Masquer, Fenêtre ni « Coller et
+  adapter le style » (Ctrl+Maj+V colle déjà sans mise en forme sous Linux) ; Fichier : nouvelle
+  conversation, rechercher, reprendre, Fenêtre rapide, Réglages (Ctrl+,), Fermer la fenêtre,
+  Quitter (Ctrl+Q) ; Affichage : espaces, panneaux, Mon activité, zoom, présentation, plein
+  écran en F11 ; Conversation ; Aide : aide, raccourcis, Diagnostic, journal, À propos en
+  dernier. Menu du Mac identique (`menu.test.ts`).
+- ✅ Raccourcis affichés en Ctrl hors macOS, convertis à un seul endroit (`displayKeys` de
+  `shared/shortcuts.ts`) : listes de raccourcis (getters `keys`), textes traduits
+  (post-traitement i18next `keyNotation` du renderer), pages de l'aide ; noms des touches traduits
+  (`keys.ctrl`, `keys.alt`, `keys.shift` : Maj en français). Fenêtre rapide : `Alt+CommandOrControl+B`
+  (Ctrl+Alt+B sous Linux ; identique sur macOS). Gestionnaires qui n'écoutaient que `metaKey`
+  (recherche des Réglages, historique de l'aide, champs des rôles) : `commandPressed`.
+- ✅ Barres de défilement fines aux couleurs du thème (`scrollbar-width: thin`,
+  `--border-strong`) sans `overlayScrollbars` (classe `classic-scrollbars`).
+- `fr.json` / `en.json` : relire les textes qui citent Mac, Finder, Dock, Trousseau (les ⌘ sont
+  convertis) ; version générique quand elle suffit, sinon variante par capacité. Glossaire de
+  `docs/traduction.md` complété. Reste à faire.
 
 **Lot 3 — intégration au bureau Linux (main).**
 - `fonts.ts` : `fc-list : family spacing` (chasse fixe : `spacing=100`).
@@ -485,4 +492,17 @@ lancé, rien d'autre à installer sur le Mac.
   - ✅ Documenté : `pnpm pilote lancer` de développement (Electron du dépôt) s'arrête sur le bac à
     sable SUID de Chromium ; pas-à-pas de la VM, étape 9 (`chown root` et `chmod 4755` de
     `chrome-sandbox` une fois, ou profil AppArmor). Jamais `--no-sandbox`.
+- 2026-11-15 — **Lot 2 (fenêtres, menu, raccourcis, défilement), décision D8** du tech lead :
+  décorations natives et barre de menu masquée (Alt). Fait : voir le lot 2 du plan. Vérifié :
+  `menu.test.ts` (menu Linux, menu du Mac inchangé), notation des raccourcis
+  (`key-notation.test.ts`), cadre des fenêtres (`window-chrome.test.ts`) ; e2e `settings`
+  (forme du menu, puces ⌘1/⇧⌘U ou Ctrl+1/Ctrl+Maj+U, liste des raccourcis, ⌘F ou Ctrl+F),
+  `platform` (macOS et Linux simulé sur le Mac), `startup`, `astuces`, `aide`, `quick`, `about`,
+  `debordements`, `browser-annotate`, `roles-gestion`, `panel` : verts sur le Mac et sous Linux
+  (`pnpm e2e:linux`). `debordements` passe maintenant sous Linux : la conversation garde
+  500 px barre de défilement comprise (l'essai mesure la zone entière). Captures natives de la
+  fenêtre sous Linux (barre de menu par Alt, menu Fichier) prises sous Xvfb et openbox :
+  décorations de GNOME à voir dans la VM. Pas de ligne au journal des modifications : rien ne
+  change sur le Mac, et la préversion Linux n'est pas publiée. Écart : Fichier garde aussi
+  « Rechercher une conversation » et « Reprendre une session » (raccourcis du menu Fichier).
 

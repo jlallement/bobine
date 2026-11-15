@@ -1,7 +1,11 @@
-import { L, LANG, MAIN_PORT, check, withApp, mainProcess } from '../lib.mjs'
+import { COMMAND, FEATURES, K, L, LANG, MAIN_PORT, check, withApp, mainProcess } from '../lib.mjs'
 import { tokensOf } from '../palette.mjs'
 
-/** Réglages, menu macOS et raccourcis, recherche ⌘K (fiche 027). Le menu est cliqué depuis le main. */
+/**
+ * Réglages, menu et raccourcis, recherche ⌘K (fiche 027). Le menu est cliqué depuis le main. Sa
+ * forme et la notation des raccourcis suivent la plateforme (fiche 145) : macOS, ou Linux (sous
+ * Docker, `pnpm e2e:linux`, ou `BOBINE_PLATFORM=linux`).
+ */
 export async function settingsSuite(scheme) {
   console.log(`\n— Réglages et raccourcis (${scheme})`)
   await withApp(
@@ -15,6 +19,52 @@ export async function settingsSuite(scheme) {
             `(require('electron').Menu.getApplicationMenu().getMenuItemById(${JSON.stringify(id)}).click(), true)`
           )
         // Deux conversations, pour la recherche et la navigation.
+        // Menu de la plateforme : celui de macOS (menu « Bobine », Fenêtre) ou celui de Linux.
+        const top = await main.evaluate(
+          `require('electron').Menu.getApplicationMenu().items.map((i) => i.label)`
+        )
+        const linuxTop = ['file', 'edit', 'view', 'conversation', 'help'].map((m) => L(`menu.${m}`))
+        check(
+          FEATURES.appMenu
+            ? top[0] === 'Bobine' && top.includes(L('menu.window'))
+            : JSON.stringify(top) === JSON.stringify(linuxTop),
+          `menus de la plateforme : ${top.join(', ')}`
+        )
+        if (!FEATURES.appMenu) {
+          const linux = await main.evaluate(`(() => {
+            const menu = require('electron').Menu.getApplicationMenu()
+            const items = (i) => i.submenu.items.filter((x) => x.type !== 'separator')
+            const file = items(menu.items[0])
+            const help = items(menu.items.at(-1))
+            const roles = menu.items.flatMap((m) => items(m).map((x) => x.role))
+            return {
+              file: file.map((x) => x.id || x.role),
+              quit: file.at(-1).accelerator,
+              fullscreen: menu.getMenuItemById('fullscreen').accelerator,
+              lastHelp: help.at(-1).id,
+              mac: roles.filter((r) => ['services', 'hide', 'hideothers', 'unhide', 'front', 'pasteandmatchstyle'].includes(String(r).toLowerCase()))
+            }
+          })()`)
+          check(
+            linux.file.includes('settings') &&
+              linux.file.at(-1) === 'quit' &&
+              linux.quit === 'Ctrl+Q' &&
+              linux.fullscreen === 'F11' &&
+              linux.lastHelp === 'about' &&
+              linux.mac.length === 0,
+            `menu Linux : Réglages et Quitter (Ctrl+Q) dans Fichier, plein écran F11, À propos en dernier (${JSON.stringify(linux)})`
+          )
+        }
+        // Puces de la barre latérale dans la notation de la plateforme (⌘1, ⇧⌘U ou Ctrl+1, Ctrl+Maj+U).
+        const chips = await ui.ev(
+          `[${ui.$('space-code')}?.querySelector('kbd')?.innerText, document.querySelector('.sidebar-kbd')?.innerText]`
+        )
+        check(
+          chips[0] === K('⌘1') && chips[1] === K('⇧⌘U'),
+          `barre latérale : raccourcis ${chips.join(', ')}`
+        )
+        await ui.shot('80a-barre-laterale-raccourcis')
+
         await ui.send('Plan de migration Postgres')
         await ui.ready()
         await menu('new-conversation')
@@ -303,8 +353,9 @@ export async function settingsSuite(scheme) {
         const table = await ui.ev(`${ui.$('settings-shortcuts-table')}.innerText`)
         check(
           table.includes(L('shortcuts.menu.new-conversation')) &&
-            table.includes('⌘N') &&
-            table.includes('⌃`'),
+            table.includes(K('⌘N')) &&
+            table.includes(K('⌃`')) &&
+            table.includes(K('⇧⌘U')),
           'réglages : apparence, agents, liste des raccourcis'
         )
         await ui.shot('82-raccourcis')
@@ -324,7 +375,7 @@ export async function settingsSuite(scheme) {
         await ui.shot('85-a-propos')
 
         // Recherche dans les réglages (fiche 051) : ⌘F, résultats, Entrée, réglage mis en avant.
-        await ui.press('f', 4)
+        await ui.press('f', COMMAND)
         await ui.waitFor(`document.activeElement === ${ui.$('settings-search')}`)
         // Un mot du libellé « Empêcher la mise en veille », dans la langue des essais.
         const sleep = LANG === 'en' ? 'sleep' : 'veille'

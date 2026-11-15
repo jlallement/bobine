@@ -18,6 +18,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { currentPlatformFeatures } from '../src/main/platform.ts'
+import { formatKeys } from '../src/shared/shortcuts.ts'
 import { mockLanguage, say } from '../src/mock-agent/langue.mts'
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -75,8 +76,26 @@ export function L(key, params = {}) {
   const value = plural ?? lookup(key)
   if (typeof value !== 'string') throw new Error(`texte inconnu : ${key}`)
   const text = value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name) => String(params[name] ?? ''))
-  return LANG === 'fr' ? frenchTypography(text) : text
+  // Raccourcis dans la notation de la plateforme, comme le renderer (`keyNotation`, fiche 145).
+  return K(LANG === 'fr' ? frenchTypography(text) : text)
 }
+
+/**
+ * Raccourci (ou texte) tel que l'interface l'affiche (fiche 145) : écrit comme sur macOS (⇧⌘U),
+ * en Ctrl+Maj+U sans la capacité `commandKey` (`formatKeys` de `src/shared/shortcuts.ts`).
+ */
+export function K(text) {
+  const lookup = (k) => k.split('.').reduce((node, part) => node?.[part], messages)
+  return formatKeys(
+    text,
+    FEATURES.commandKey
+      ? null
+      : { ctrl: lookup('keys.ctrl'), alt: lookup('keys.alt'), shift: lookup('keys.shift') }
+  )
+}
+
+/** Modificateur CDP de la touche des raccourcis : ⌘ (4) sur macOS, Ctrl (2) ailleurs (fiche 145). */
+export const COMMAND = FEATURES.commandKey ? 4 : 2
 
 /**
  * Texte de l'agent factice dans la langue des essais (fiche 167) : il parle la langue de

@@ -1,10 +1,11 @@
-import { NEUTRAL_AGENT_ENV, check, withApp } from '../lib.mjs'
+import { L, MAIN_PORT, NEUTRAL_AGENT_ENV, check, mainProcess, withApp } from '../lib.mjs'
+import { formatKeys } from '../../src/shared/shortcuts.ts'
 
 /**
  * Capacités de la plateforme (fiche 145) : la même app, lancée avec les capacités du Mac puis avec
  * celles de Linux (`BOBINE_PLATFORM`), montre ou masque ce qui n'existe que sur macOS : onglet du
  * simulateur dans le « + » du panneau, capture d'écran de la zone de saisie, groupe iOS du
- * Diagnostic. Sur le Mac, les deux ; sous Linux, Linux seulement : les capacités du Mac y
+ * Diagnostic ; forme du menu, cadre de la fenêtre, notation des raccourcis (lot 2). Sur le Mac, les deux ; sous Linux, Linux seulement : les capacités du Mac y
  * appelleraient des fonctions d'Electron propres à macOS (`getMediaAccessStatus`).
  */
 export async function platformSuite() {
@@ -15,6 +16,44 @@ export async function platformSuite() {
       'light',
       async (ui) => {
         await ui.ready()
+        // Menu, cadre de fenêtre, raccourcis et barres de défilement de la plateforme (lot 2).
+        const main = await mainProcess()
+        try {
+          const shape = await main.evaluate(`(() => {
+            const { BrowserWindow, Menu } = require('electron')
+            const win = BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().includes('#'))
+            return {
+              top: Menu.getApplicationMenu().items.length,
+              window: Menu.getApplicationMenu().items.some((i) => String(i.role).toLowerCase() === 'windowmenu'),
+              autoHide: win.isMenuBarAutoHide()
+            }
+          })()`)
+          check(
+            mac
+              ? shape.top === 7 && shape.window && !shape.autoHide
+              : shape.top === 5 &&
+                  !shape.window &&
+                  // Barre masquée : macOS ne connaît pas l'option (toujours faux), vue sous Linux.
+                  (shape.autoHide || process.platform === 'darwin'),
+            `${platform} : menu ${mac ? 'de macOS' : 'Linux, masqué (Alt)'} (${JSON.stringify(shape)})`
+          )
+        } finally {
+          main.close()
+        }
+        const page = await ui.ev(`({
+          activity: document.querySelector('.sidebar-kbd')?.innerText,
+          frame: document.documentElement.classList.contains('native-frame'),
+          scrollbars: document.documentElement.classList.contains('classic-scrollbars'),
+          lights: getComputedStyle(document.querySelector('.sidebar-header')).paddingLeft
+        })`)
+        const names = { ctrl: L('keys.ctrl'), alt: L('keys.alt'), shift: L('keys.shift') }
+        check(
+          page.activity === formatKeys('⇧⌘U', mac ? null : names) &&
+            page.frame === !mac &&
+            page.scrollbars === !mac &&
+            page.lights === (mac ? '84px' : '10px'),
+          `${platform} : raccourcis ${page.activity}, ${mac ? 'feux de macOS' : 'cadre du système, barres fines'} (${JSON.stringify(page)})`
+        )
         check(
           (await ui.ev(`!!${ui.$('capture')}`)) === mac,
           `${platform} : capture d’écran ${mac ? 'proposée' : 'masquée'} dans la zone de saisie`
@@ -49,7 +88,8 @@ export async function platformSuite() {
       },
       undefined,
       'demo',
-      { ...NEUTRAL_AGENT_ENV, BOBINE_PLATFORM: platform }
+      { ...NEUTRAL_AGENT_ENV, BOBINE_PLATFORM: platform },
+      [`--inspect=${MAIN_PORT}`]
     )
   }
 }

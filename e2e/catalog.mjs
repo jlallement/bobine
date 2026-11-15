@@ -1771,7 +1771,12 @@ export const SUITES = [
       ...PANEL,
       `${C}composer/AttachButton.tsx`,
       `${C}settings/DiagnosticsSettings.tsx`,
-      'src/main/diagnostics.ts'
+      'src/main/diagnostics.ts',
+      'src/main/platform.ts',
+      'src/shared/platform.ts',
+      'src/main/menu.ts',
+      'src/main/window-chrome.ts',
+      'src/shared/shortcuts.ts'
     ]
   },
   {

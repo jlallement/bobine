@@ -1,7 +1,11 @@
 /**
- * Menu macOS de l'app (fiche 027) : les entrées habituelles (rôles d'Electron pour Édition,
- * Fenêtre…) et les commandes de l'app avec leurs raccourcis (`shared/shortcuts.ts`). Un raccourci du
- * menu marche même quand le clavier est dans le terminal ou dans une page du navigateur intégré.
+ * Menu de l'app (fiche 027) : les entrées habituelles (rôles d'Electron pour Édition, Fenêtre…) et
+ * les commandes de l'app avec leurs raccourcis (`shared/shortcuts.ts`). Un raccourci du menu marche
+ * même quand le clavier est dans le terminal ou dans une page du navigateur intégré.
+ *
+ * Deux formes, choisies par la capacité `appMenu` (fiche 145) : celle de macOS (menu « Bobine »,
+ * Services, Masquer, menu Fenêtre) ; ailleurs, celle des apps Linux (Fichier › Réglages et
+ * Quitter, Affichage › Plein écran en F11, Aide › À propos en dernier), dans la fenêtre.
  */
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import { SHORTCUTS, type MenuCommand, type Shortcut } from '@shared/shortcuts'
@@ -9,6 +13,8 @@ import { t } from 'i18next'
 
 export interface MenuOptions {
   appName: string
+  /** Capacité `appMenu` : forme macOS (par défaut) ou forme Linux (fiche 145). */
+  appMenu?: boolean
   /** Développement : rechargement et outils de développement. */
   dev: boolean
   send: (command: MenuCommand) => void
@@ -57,6 +63,7 @@ export function buildMenuTemplate(options: MenuOptions): MenuItemConstructorOpti
     return item(shortcut)
   }
 
+  if (options.appMenu === false) return linuxMenu(options, { of, command })
   return [
     {
       label: options.appName,
@@ -183,6 +190,134 @@ export function buildMenuTemplate(options: MenuOptions): MenuItemConstructorOpti
           : [])
       ]
     }
+  ]
+}
+
+/** Entrées de l'app tirées de `shared/shortcuts.ts` (voir `buildMenuTemplate`). */
+interface MenuEntries {
+  of: (menu: Shortcut['menu']) => MenuItemConstructorOptions[]
+  command: (id: MenuCommand) => MenuItemConstructorOptions
+}
+
+/**
+ * Menu des apps Linux (fiche 145) : ni menu « Bobine » ni Services, Masquer, Tout afficher, ni
+ * menu Fenêtre (le gestionnaire de fenêtres s'en charge). Réglages et Quitter dans Fichier,
+ * « Mon activité » dans Affichage, plein écran en F11, À propos en dernier dans Aide. Sans « Coller
+ * et adapter le style » : Ctrl+Maj+V colle sans mise en forme partout sous Linux, rien à ajouter.
+ */
+function linuxMenu(
+  options: MenuOptions,
+  { of, command }: MenuEntries
+): MenuItemConstructorOptions[] {
+  return [
+    {
+      label: t('menu.file'),
+      submenu: [
+        ...of('file'),
+        ...quickEntryItems(options.quickEntry),
+        { type: 'separator' },
+        { ...command('settings'), label: t('menu.settings') },
+        { type: 'separator' },
+        { role: 'close', label: t('menu.close') },
+        { role: 'quit', label: t('menu.quit', { app: options.appName }), accelerator: 'Ctrl+Q' }
+      ]
+    },
+    {
+      label: t('menu.edit'),
+      submenu: [
+        { role: 'undo', label: t('menu.undo') },
+        { role: 'redo', label: t('menu.redo') },
+        { type: 'separator' },
+        { role: 'cut', label: t('menu.cut') },
+        { role: 'copy', label: t('menu.copy') },
+        { role: 'paste', label: t('menu.paste') },
+        { role: 'delete', label: t('menu.delete') },
+        { role: 'selectAll', label: t('menu.selectAll') },
+        { type: 'separator' },
+        ...of('edit')
+      ]
+    },
+    {
+      label: t('menu.view'),
+      submenu: [
+        ...of('view'),
+        ...of('window'),
+        { type: 'separator' },
+        ...zoomItems(options.zoom),
+        { type: 'separator' },
+        ...presentationItems(options.presentation),
+        {
+          id: 'fullscreen',
+          label: options.fullScreen ? t('menu.exitFullscreen') : t('menu.fullscreen'),
+          accelerator: 'F11',
+          click: () => options.toggleFullScreen?.()
+        },
+        ...devItems(options.dev)
+      ]
+    },
+    { label: t('menu.conversation'), submenu: of('conversation') },
+    {
+      label: t('menu.help'),
+      submenu: [
+        ...of('help'),
+        {
+          id: 'diagnostics',
+          label: t('menu.diagnostics'),
+          click: () => options.send('diagnostics')
+        },
+        ...(options.showLog
+          ? ([
+              { id: 'show-log', label: t('menu.showLog'), click: options.showLog }
+            ] satisfies MenuItemConstructorOptions[])
+          : []),
+        { type: 'separator' },
+        options.about
+          ? { id: 'about', label: t('menu.about', { app: options.appName }), click: options.about }
+          : { role: 'about', label: t('menu.about', { app: options.appName }) }
+      ]
+    }
+  ]
+}
+
+/** Fichier › Fenêtre rapide : raccourci global, affiché sans être enregistré une seconde fois. */
+function quickEntryItems(quickEntry: MenuOptions['quickEntry']): MenuItemConstructorOptions[] {
+  if (!quickEntry) return []
+  return [
+    {
+      id: 'quick-entry',
+      label: t('menu.quickEntry'),
+      ...(quickEntry.accelerator
+        ? { accelerator: quickEntry.accelerator, registerAccelerator: false }
+        : {}),
+      click: quickEntry.open
+    }
+  ]
+}
+
+/** Affichage › Mode présentation (case cochée), puis un séparateur. */
+function presentationItems(
+  presentation: MenuOptions['presentation']
+): MenuItemConstructorOptions[] {
+  if (!presentation) return []
+  return [
+    {
+      id: 'presentation',
+      label: t('menu.presentation'),
+      type: 'checkbox',
+      checked: presentation.active,
+      click: presentation.toggle
+    },
+    { type: 'separator' }
+  ]
+}
+
+/** Développement : rechargement et outils de développement. */
+function devItems(dev: boolean): MenuItemConstructorOptions[] {
+  if (!dev) return []
+  return [
+    { type: 'separator' },
+    { role: 'reload', label: t('menu.reload') },
+    { role: 'toggleDevTools', label: t('menu.devTools') }
   ]
 }
 

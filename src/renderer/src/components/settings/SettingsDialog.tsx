@@ -1,3 +1,4 @@
+import { commandPressed } from '../../platform-features'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   Bell,
@@ -227,7 +228,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
             setQuery('')
           }}
           onKeyDown={(event) => {
-            if (event.metaKey && event.key.toLowerCase() === 'f') {
+            if (commandPressed(event) && event.key.toLowerCase() === 'f') {
               event.preventDefault()
               searchInput.current?.focus()
               searchInput.current?.select()

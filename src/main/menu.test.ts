@@ -151,3 +151,100 @@ describe('menu de l’app', () => {
     expect(without.some((i) => i.id === 'presentation')).toBe(false)
   })
 })
+
+describe('menu Linux (fiche 145)', () => {
+  const options = {
+    appName: 'Bobine',
+    dev: false,
+    send: vi.fn(),
+    about: vi.fn(),
+    showLog: vi.fn(),
+    zoom: vi.fn(),
+    presentation: { active: false, toggle: vi.fn() },
+    quickEntry: { open: vi.fn(), accelerator: 'Alt+CommandOrControl+B' }
+  }
+  const linux = buildMenuTemplate({ ...options, appMenu: false })
+  const submenu = (label: string) =>
+    (linux.find((m) => m.label === label)?.submenu ?? []) as MenuItemConstructorOptions[]
+
+  it('menus des apps Linux : ni menu « Bobine » ni Fenêtre', () => {
+    expect(linux.map((m) => m.label)).toEqual([
+      'Fichier',
+      'Édition',
+      'Affichage',
+      'Conversation',
+      'Aide'
+    ])
+    const roles = flatten(linux).map((i) => i.role)
+    for (const mac of [
+      'services',
+      'hide',
+      'hideOthers',
+      'unhide',
+      'front',
+      'zoom',
+      'minimize',
+      'windowMenu',
+      'help',
+      'pasteAndMatchStyle'
+    ]) {
+      expect(roles).not.toContain(mac)
+    }
+  })
+
+  it('Fichier : nouvelle conversation, fenêtre rapide, Réglages (Ctrl+,), fermer, Quitter (Ctrl+Q)', () => {
+    const file = submenu('Fichier').filter((i) => i.type !== 'separator')
+    expect(file.map((i) => i.id ?? i.role)).toEqual([
+      'new-conversation',
+      'search',
+      'resume-session',
+      'quick-entry',
+      'settings',
+      'close',
+      'quit'
+    ])
+    expect(file.find((i) => i.id === 'settings')?.accelerator).toBe('CmdOrCtrl+,')
+    expect(file.at(-1)?.accelerator).toBe('Ctrl+Q')
+  })
+
+  it('Affichage : Mon activité et plein écran en F11 ; Aide : À propos en dernier', () => {
+    const view = submenu('Affichage')
+    expect(view.map((i) => i.id)).toContain('activity')
+    expect(view.find((i) => i.id === 'fullscreen')?.accelerator).toBe('F11')
+    const help = submenu('Aide')
+    expect(help.map((i) => i.id).filter(Boolean)).toEqual([
+      'help',
+      'shortcuts',
+      'diagnostics',
+      'show-log',
+      'about'
+    ])
+    ;(help.at(-1)?.click as () => void)()
+    expect(options.about).toHaveBeenCalled()
+  })
+
+  it('chaque raccourci de l’app y est une fois, avec son accélérateur CmdOrCtrl', () => {
+    const items = flatten(linux)
+    for (const shortcut of SHORTCUTS) {
+      const found = items.filter((i) => i.id === shortcut.command)
+      expect([shortcut.command, found.length]).toEqual([shortcut.command, 1])
+      expect(found[0]?.accelerator).toBe(shortcut.accelerator)
+    }
+  })
+
+  it('macOS inchangé : `appMenu` vrai ou absent, même menu', () => {
+    const strip = (items: MenuItemConstructorOptions[]) => JSON.stringify(items)
+    expect(strip(buildMenuTemplate({ ...options, appMenu: true }))).toBe(
+      strip(buildMenuTemplate(options))
+    )
+    expect(buildMenuTemplate(options).map((m) => m.label)).toEqual([
+      'Bobine',
+      'Fichier',
+      'Édition',
+      'Affichage',
+      'Conversation',
+      'Fenêtre',
+      'Aide'
+    ])
+  })
+})

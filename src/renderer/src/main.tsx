@@ -1,3 +1,4 @@
+import { platformFeatures } from './platform-features'
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
@@ -37,6 +38,10 @@ startPresentation()
 // Fenêtre rapide (fiche 062), À propos (fiche 116) et aide (fiche 186) : même page, autre vue.
 const view = { '#quick': 'quick', '#about': 'about', '#help': 'help' }[window.location.hash]
 if (view) document.documentElement.classList.add(`${view}-page`)
+// Cadre et barres de défilement du système hors macOS (fiche 145, styles.css).
+const features = platformFeatures()
+document.documentElement.classList.toggle('native-frame', !features.insetTitleBar)
+document.documentElement.classList.toggle('classic-scrollbars', !features.overlayScrollbars)
 
 createRoot(root).render(
   <StrictMode>

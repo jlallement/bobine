@@ -1,3 +1,5 @@
+import { commandPressed } from '../../platform-features'
+import { displayKeys } from '@shared/shortcuts'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
@@ -154,7 +156,8 @@ export function HelpWindow() {
   }, [uiLang, show])
 
   const page = place && guide?.pages[place.page] !== undefined ? place.page : HOME_PAGE
-  const text = guide?.pages[page] ?? ''
+  // Pages écrites avec les raccourcis de macOS : dans la notation de la plateforme (fiche 145).
+  const text = displayKeys(guide?.pages[page] ?? '')
   // Anti-rebond léger : la recherche suit la frappe sans recalculer à chaque touche.
   useEffect(() => {
     if (!query.trim()) return
@@ -224,10 +227,10 @@ export function HelpWindow() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey && event.key === '[') {
+      if (commandPressed(event) && event.key === '[') {
         event.preventDefault()
         back()
-      } else if (event.metaKey && event.key === ']') {
+      } else if (commandPressed(event) && event.key === ']') {
         event.preventDefault()
         forward()
       }
@@ -283,7 +286,7 @@ export function HelpWindow() {
             data-testid="help-search"
           />
           <kbd className="help-search-keys" aria-hidden>
-            ⌘?
+            {displayKeys('⌘?')}
           </kbd>
         </label>
         {searching ? (

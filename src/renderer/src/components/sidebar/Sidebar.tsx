@@ -107,7 +107,8 @@ interface Props {
 }
 
 /** Raccourci de « Mon activité », tel que le menu l'affiche. */
-const ACTIVITY_KEYS = SHORTCUTS.find((s) => s.command === 'activity')?.keys ?? ''
+/** Raccourci de « Mon activité », lu au rendu : sa notation suit la plateforme (fiche 145). */
+const activityKeys = () => SHORTCUTS.find((s) => s.command === 'activity')?.keys ?? ''
 const GROUPING_KEY = 'bob:historique-regroupement'
 /** Dossiers repliés : leur chemin (le projet, fiche 131 ; le dossier de travail avant). */
 const FOLDED_KEY = 'bob:dossiers-replies'
@@ -477,7 +478,7 @@ function SidebarFixed(
           <ChartColumn size={15} />
         </span>
         <span className="label">{t('sidebar.activity')}</span>
-        <kbd className="sidebar-kbd">{ACTIVITY_KEYS}</kbd>
+        <kbd className="sidebar-kbd">{activityKeys()}</kbd>
       </button>
 
       {!props.discussion && (

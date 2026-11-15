@@ -16,7 +16,21 @@ export const PLATFORM_FEATURES = [
   /** Le gestionnaire de fichiers s'appelle « Finder » (fiche 158) ; ailleurs, son nom générique. */
   'finder',
   /** Compteur « À traiter » sur l'icône du Dock (fiche 024) ; pas d'API commune ailleurs. */
-  'dockBadge'
+  'dockBadge',
+  /**
+   * Menu de l'app dans la barre du système (menu « Bobine », Services, Masquer… ; fiche 027).
+   * Ailleurs : menu dans la fenêtre, masqué, affiché par Alt (fiche 145).
+   */
+  'appMenu',
+  /**
+   * Fenêtres sans barre de titre, boutons de la fenêtre posés sur le contenu (feux de macOS).
+   * Ailleurs : décorations du système (fiche 145).
+   */
+  'insetTitleBar',
+  /** Raccourcis affichés avec ⌘ (⇧⌘U) ; ailleurs, avec Ctrl (Ctrl+Maj+U, fiche 145). */
+  'commandKey',
+  /** Barres de défilement superposées du système ; ailleurs, barres fines dessinées par l'app. */
+  'overlayScrollbars'
 ] as const
 
 export type PlatformFeature = (typeof PLATFORM_FEATURES)[number]
@@ -29,7 +43,11 @@ export const ALL_FEATURES: PlatformFeatures = {
   nativeLanguage: true,
   screenCapture: true,
   finder: true,
-  dockBadge: true
+  dockBadge: true,
+  appMenu: true,
+  insetTitleBar: true,
+  commandKey: true,
+  overlayScrollbars: true
 }
 
 export const FEATURES_ARG = '--bobine-features='

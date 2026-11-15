@@ -1,3 +1,4 @@
+import { commandPressed } from '../../platform-features'
 import { Check, FileText } from 'lucide-react'
 import { useId, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -91,7 +92,7 @@ export function NameFields({
 }) {
   const { t } = useTranslation()
   const enter = (event: KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.metaKey && onEnter) {
+    if (event.key === 'Enter' && !commandPressed(event) && onEnter) {
       event.preventDefault()
       onEnter()
     }

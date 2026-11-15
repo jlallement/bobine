@@ -95,7 +95,7 @@ import { quickEntryDeps } from './quick-entry-deps'
 import { createHandlers, registerIpcHandlers, type SendEvent } from './ipc'
 import { broadcast, trustedSender } from './app-windows'
 import { applyShellEnv, loginShellEnv } from './shell-env'
-import { migrateUserData } from './user-data-migration'
+import { oldAppStillOpen } from './old-app'
 import { agentGroup, systemGroups } from './diagnostics'
 import { QuickEntry, QuickShortcutRegistrar } from './quick-entry'
 import { fontLister } from './fonts'
@@ -224,29 +224,7 @@ initI18n(resolveLanguage(startLanguage, app.getPreferredSystemLanguages()))
 // Dossier personnel : les libellés de cartes (et des notifications) disent `~` (fiche 214).
 setHomeFolder(homedir())
 
-/**
- * Ancien nom (fiche 069, ADR-0013) : le dossier `bob-desktop` devient `bobine` au premier lancement.
- * Rend vrai si l'ancienne app est encore ouverte : elle écrit dans ce dossier, on attend qu'elle
- * soit fermée.
- */
-function oldAppStillOpen(): boolean {
-  if (freshStart.isolated) return false
-  const previous = join(app.getPath('appData'), 'bob-desktop')
-  try {
-    const migration = migrateUserData(previous, userData)
-    if (migration.kind === 'moved') log.info(`Dossier de données repris de ${previous}`)
-    if (migration.kind === 'imported') {
-      log.info(`Conversations reprises de ${previous} : ${migration.conversations}`)
-    }
-    if (migration.kind !== 'busy') return false
-  } catch (error) {
-    log.error('Reprise du dossier de données impossible :', error)
-    return false
-  }
-  dialog.showErrorBox(t('dialogs.oldApp.title'), t('dialogs.oldApp.message'))
-  return true
-}
-const blockedByOldApp = oldAppStillOpen()
+const blockedByOldApp = oldAppStillOpen(freshStart.isolated, userData)
 // Erreurs non rattrapées : journal et avis, l'app continue (fiche 194).
 failures.watchMainErrors()
 app.on('child-process-gone', (_event, details) => {
@@ -517,6 +495,7 @@ async function start(): Promise<void> {
       Menu.buildFromTemplate(
         buildMenuTemplate({
           appName: app.getName(),
+          appMenu: features.appMenu,
           dev: !app.isPackaged,
           fullScreen: mainWindow?.isFullScreen() === true,
           toggleFullScreen: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()),
