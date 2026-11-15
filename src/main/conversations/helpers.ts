@@ -26,6 +26,8 @@ import type { RoleStamp } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
 import { hasFolder } from './agentless'
 import type { ConversationRecord } from './store'
+import { memoryProposals } from '@shared/memory'
+import type { Conversation } from './conversation'
 
 const TITLE_LENGTH = 60
 
@@ -435,4 +437,50 @@ export function reopenOf(
 ): { sessionId: string; keepTranscript?: true } | undefined {
   if (!sessionId || draft) return undefined
   return { sessionId, ...(keepTranscript ? { keepTranscript: true as const } : {}) }
+}
+
+/** Cartes de mémoire en attente (fiche 182), gardées dans la fiche pour la pastille ; vrai si changé. */
+export function notePendingMemory(
+  conversation: Pick<Conversation, 'record' | 'transcript'>
+): boolean {
+  const pending = memoryProposals(conversation.transcript?.items ?? []).filter(
+    (p) => p.status === 'pending'
+  ).length
+  if ((conversation.record.memoryPending ?? 0) === pending) return false
+  if (pending) conversation.record.memoryPending = pending
+  else delete conversation.record.memoryPending
+  return true
+}
+
+/**
+ * Des conversations vides ont une session chez leur agent (ou en ouvrent une), ou une session de
+ * conversation vide quittée est en cours de suppression (`dropping`).
+ */
+export function draftSessionsOpen(
+  conversations: Iterable<Conversation>,
+  dropping: ReadonlySet<Promise<void>>
+): boolean {
+  const opening = (c: Conversation) =>
+    c.draft && c.host && (c.host.currentSessionId || c.host.snapshot().status === 'starting')
+  return dropping.size > 0 || [...conversations].some(opening)
+}
+
+/**
+ * Avant de quitter : la session de chaque conversation vide est supprimée chez son agent (voir
+ * `dropDraftSession`), dans la limite de `timeoutMs` en tout, avec celles déjà en cours.
+ */
+export async function dropAllDraftSessions(
+  conversations: Iterable<Conversation>,
+  dropping: ReadonlySet<Promise<void>>,
+  timeoutMs: number
+): Promise<void> {
+  const drops: Promise<void>[] = []
+  for (const conversation of conversations) {
+    const host = conversation.host
+    if (!conversation.draft || !host) continue
+    conversation.host = undefined
+    drops.push(dropDraftSession(host, timeoutMs))
+  }
+  const pending = Promise.all([...dropping])
+  await Promise.all([...drops, withTimeout(pending, timeoutMs).catch(() => {})])
 }

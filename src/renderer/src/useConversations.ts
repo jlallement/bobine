@@ -15,7 +15,8 @@ import type {
   ElicitationAnswer,
   NewConversationDefaults,
   PromptRequest,
-  QueuedMessage
+  QueuedMessage,
+  DeleteOptions
 } from '@shared/agent'
 import type { AttentionDetails, AttentionState, NotificationStatus } from '@shared/attention'
 import type { PanelTab } from '@shared/panel'
@@ -501,7 +502,7 @@ export function useConversations() {
     },
     /** Sauvegarde de l'historique (Réglages) ; l'erreur revient au dialogue. */
     backupHistory: (): Promise<string | null> => window.api.app.backupHistory(),
-    remove: (id: string, options: { fromAgent?: boolean; removeWorktree?: boolean } = {}) => {
+    remove: (id: string, options: DeleteOptions = {}) => {
       forgetView(id)
       window.api.conversations
         .delete(id, options)

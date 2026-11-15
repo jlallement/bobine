@@ -807,6 +807,7 @@
       "noLiveAgent": "Aucun agent actif pour cette conversation",
       "emptyTitle": "Titre vide",
       "busyArchive": "L’agent répond encore : arrêtez-le avant d’archiver la conversation",
+      "busyArchiveChild": "« {{title}} », une conversation fille, répond encore : arrêtez-la avant d’archiver sa mère",
       "unknown": "Conversation inconnue : {{id}}",
       "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse"
     },
@@ -3541,7 +3542,8 @@
     },
     "notice": {
       "promptFailed": "La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}",
-      "messageFailed": "Le message d’une autre conversation n’a pas pu partir ({{error}})."
+      "messageFailed": "Le message d’une autre conversation n’a pas pu partir ({{error}}).",
+      "motherDeleted": "Conversation mère « {{title}} » supprimée : cette conversation continue seule, ses comptes rendus restent ici."
     },
     "startedByAgent": "L’agent a lancé la conversation fille « {{title}} »",
     "limit_one": "{{count}} conversation fille est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",

@@ -712,3 +712,18 @@ export interface ConversationEvent {
    */
   seq?: number
 }
+
+/** Options de `conversation:delete` (fiches 026, 036, 196, 228). */
+export interface DeleteOptions {
+  /** Aussi dans l'historique de l'agent (`session/delete`) ; par défaut, oui. */
+  fromAgent?: boolean
+  /** Le worktree de la conversation supprimée. */
+  removeWorktree?: boolean
+  /**
+   * Ses filles : supprimées avec elle (`delete`), ou gardées en conversations ordinaires (`keep`,
+   * par défaut : un appel sans avis ne supprime rien de plus que demandé).
+   */
+  children?: 'delete' | 'keep'
+  /** `children: 'delete'` : leurs worktrees aussi (sinon gardés, le travail non fusionné avec). */
+  childWorktrees?: boolean
+}

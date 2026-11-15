@@ -51,6 +51,8 @@ export interface ConversationRecord {
   worktree?: WorktreeInfo
   /** Archivée : hors des « Récents », sans agent ; rouverte au prochain message. */
   archived?: boolean
+  /** Archivée avec sa mère (fiche 228) : l'identifiant de celle-ci ; ressortie avec elle. */
+  archivedWith?: string
   /** Branche d'une autre conversation (fiche 023). */
   branchedFrom?: { id: string; title: string }
   /** Conversation fille, lancée depuis une autre (fiche 097). */

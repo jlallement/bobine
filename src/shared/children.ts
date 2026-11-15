@@ -681,3 +681,13 @@ export function childRecommendations(items: readonly TranscriptItem[]): Map<stri
 export function recommendedIds(verdicts: ReadonlyMap<string, ChildVerdict>): Set<string> {
   return new Set([...verdicts.values()].filter((v) => v.ready && !v.stale).map((v) => v.childId))
 }
+
+/** Une descendante d'une conversation (fiche 228), telle que la confirmation de suppression la nomme. */
+export interface FamilyMember {
+  id: string
+  title: string
+  /** Sa mère directe. */
+  motherId: string
+  /** Elle répond en ce moment : la supprimer l'arrêtera d'abord. */
+  busy?: boolean
+}

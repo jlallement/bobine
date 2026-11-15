@@ -2,6 +2,17 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Child conversations: deleting their parent no longer leaves them linked to a conversation that
+  no longer exists. They carry on alone, as ordinary conversations, and their thread says so; a
+  child conversation already orphaned is repaired at launch. Archiving a parent also archives its
+  children, and taking it out of the archive brings them back (not those archived before it). A
+  report, wake-up or merge aimed at a conversation deleted in the meantime is no longer silently
+  lost: it is dropped and noted in the log.
+
 ## 1.0.0-beta.5 — November 15, 2026
 
 ### Fixes

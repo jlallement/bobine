@@ -56,6 +56,7 @@ import type { Run } from '../simulator/run'
 import { gitRun } from '../git/git-queue'
 import { inGitRepo, titleFrom } from './helpers'
 import type { ConversationManager } from './manager'
+import { detachChild } from './family-delete'
 
 /** Ce que demande « Lancer en parallèle… », ou `start_child`. */
 export interface ChildRequest {
@@ -120,6 +121,7 @@ export type ChildHost = Pick<
   | 'settings'
   | 'settingsView'
   | 'worktreeOf'
+  | 'updateRecord'
 >
 
 export interface ChildOptions {
@@ -213,7 +215,8 @@ export class ChildConversations {
     const child = title ? { ...created, title: this.summary(created.id).title } : created
     if (by) this.waking.await(motherId, child.id)
     this.sending.add(child.id)
-    this.conversations.post(motherId, {
+    // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
+    const posted = this.conversations.post(motherId, {
       type: 'child-started',
       child: {
         childId: child.id,
@@ -225,6 +228,10 @@ export class ChildConversations {
         at: Date.now()
       }
     })
+    if (!posted) {
+      this.waking.forget(motherId)
+      detachChild(this.conversations, child.id, mother.title)
+    }
     // Historique de la saisie de la fille (fiche 227) : il commence par sa consigne.
     this.conversations.post(child.id, { type: 'sent-recorded', entry: { text } })
     for (const message of request.notices ?? []) {
@@ -481,6 +488,11 @@ export class ChildConversations {
 
   /** Conversation supprimée. */
   forget(id: string): void {
+    const held = this.held.get(id)?.length
+    if (held)
+      log.warn(
+        `${held} compte(s) rendu(s) écarté(s) : conversation mère ${id.slice(0, 8)} supprimée`
+      )
     this.held.delete(id)
     this.sending.delete(id)
     this.waking.forget(id)
@@ -577,10 +589,12 @@ export class ChildConversations {
       launched()
       this.readOnly.unprepare(childId)
       // La consigne n'a pas pu partir (agent à connecter…) : rendue dans le fil de la fille, et
-      // la mère le sait par un compte rendu en erreur (son agent ne l'attend plus).
+      // la mère le sait par un compte rendu en erreur (son agent ne l'attend plus). Mère ou fille
+      // supprimées entre-temps (fiche 228) : lues maintenant, pas au lancement.
       this.sending.delete(childId)
       const reason = this.startFailure(childId) ?? messageOf(error)
-      const motherId = child.startedFrom?.id
+      const current = this.conversations.state().conversations.find((c) => c.id === childId)
+      const motherId = current?.startedFrom?.id
       if (motherId) {
         this.conversations.post(motherId, {
           type: 'child-report',
@@ -598,6 +612,8 @@ export class ChildConversations {
 
   /** Pourquoi l'agent d'une fille n'a pas démarré, d'après son état ; `undefined` sinon. */
   private startFailure(childId: string): string | undefined {
+    // Fille supprimée entre-temps : plus d'état à lire.
+    if (!this.conversations.state().conversations.some((c) => c.id === childId)) return undefined
     const snapshot = this.conversations.view(childId).snapshot
     if (snapshot?.status === 'needs-action') return t('children.error.needsAction')
     if (snapshot?.status !== 'error' && snapshot?.status !== 'exited') return undefined

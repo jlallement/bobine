@@ -793,6 +793,7 @@ export type FrResources = {
       readonly noLiveAgent: 'Aucun agent actif pour cette conversation'
       readonly emptyTitle: 'Titre vide'
       readonly busyArchive: 'L’agent répond encore : arrêtez-le avant d’archiver la conversation'
+      readonly busyArchiveChild: '« {{title}} », une conversation fille, répond encore : arrêtez-la avant d’archiver sa mère'
       readonly unknown: 'Conversation inconnue : {{id}}'
       readonly busyFolders: 'L’agent répond encore : changez les dossiers de la conversation après sa réponse'
     }
@@ -3381,6 +3382,7 @@ export type FrResources = {
     readonly notice: {
       readonly promptFailed: 'La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}'
       readonly messageFailed: 'Le message d’une autre conversation n’a pas pu partir ({{error}}).'
+      readonly motherDeleted: 'Conversation mère « {{title}} » supprimée : cette conversation continue seule, ses comptes rendus restent ici.'
     }
     readonly startedByAgent: 'L’agent a lancé la conversation fille « {{title}} »'
     readonly limit_one: '{{count}} conversation fille est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.'

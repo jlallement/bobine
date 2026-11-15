@@ -1,0 +1,130 @@
+# 228 — Supprimer ou archiver une mère : ses filles suivent
+
+- **Statut** : en cours (main process fait ; confirmation : maquettes en attente de validation)
+- **Dépend de** : 097 (filles), 171, 177 (relecteurs), 196 (corbeille)
+- **Agents** : les deux — gestion des conversations côté main, rien de propre à un agent
+
+## Pourquoi
+
+Supprimer une mère laissait ses filles reliées (`startedFrom.id`) à une conversation qui n'existe
+plus. Le résumé masquait le lien, mais l'enregistrement le gardait : un compte rendu, un réveil ou
+une notice posés par un chemin qui avait lu la mère *avant* sa suppression (`post(motherId…)`)
+passaient par `manager.get()`, qui lève « conversation inconnue » — dans un `catch` ou une promesse
+non attendue, donc perdu sans rien dire. Et l'utilisateur ne choisissait rien : ses filles
+restaient, sans que la confirmation les nomme.
+
+## Comportement (validé par Jérôme, 2026-11-15)
+
+1. Supprimer une mère qui a des filles ouvre une confirmation qui les nomme, avec une case
+   « Supprimer aussi ses N filles », cochée par défaut. Les filles au travail sont arrêtées
+   proprement (`session/cancel`) avant d'être supprimées ; les petites-filles suivent, récursivement.
+2. Case décochée : les filles deviennent des conversations ordinaires — lien `startedFrom` coupé,
+   affichage normal, note « Conversation mère supprimée » dans leur fil. Leurs comptes rendus
+   suivants restent dans leur propre fil (il n'y a plus de mère où les poser).
+3. Plus d'envoi perdu en silence : un évènement vers une conversation qui n'existe plus est écarté
+   et consigné dans le journal, jamais d'exception non rattrapée (compte rendu, réveil, fusion,
+   relecture, garde-fou de lecture seule, tout `post`).
+4. Archiver une mère archive ses filles ; la sortir des archives ressort celles archivées avec elle.
+5. Une fille déjà orpheline (laissée par une version précédente) s'affiche comme une conversation
+   ordinaire : son lien mort est **réparé** au chargement (voir Décisions).
+
+## Critères d'acceptation
+
+- [x] `post` vers une conversation inconnue : rien ne lève, une ligne `warn` dans le journal
+      (type d'évènement, identifiant court) ; `post` rend `false`.
+- [x] Compte rendu d'échec de lancement, notice d'échec d'envoi (`deliver`), réveil, fusion,
+      relecture : plus aucune promesse rejetée quand la mère (ou la cible) a disparu.
+- [x] Au chargement, un `startedFrom` qui pointe vers une conversation absente de l'index est retiré
+      de l'enregistrement (journal : combien) ; l'index est réécrit.
+- [x] `conversation:delete` accepte `children: 'delete' | 'keep'` (absent : `keep`, qui ne perd rien).
+  - [x] `delete` : descendance supprimée, des plus profondes aux plus proches, chacune arrêtée
+        proprement si elle travaille, puis la mère. Lecture seule : rien n'est touché.
+  - [x] `keep` : la mère supprimée, chaque fille directe perd son lien et reçoit la note
+        `children.notice.motherDeleted` ; les petites-filles restent sous leur mère (qui survit).
+- [x] Archiver une mère archive sa descendance (marquée `archivedWith`) ; refusé, sans rien changer,
+      si l'une d'elles travaille. Sortir la mère des archives ressort celles marquées `archivedWith`
+      à son nom, pas celles archivées avant (une fille fusionnée et nettoyée, fiche 110, reste aux
+      archives).
+- [ ] Confirmation de suppression qui nomme les filles, case cochée par défaut (maquettes à valider).
+- [x] Tests unitaires (`family.test.ts`, `ipc.test.ts`) et contre l'agent factice
+      (`family-delete.test.ts` : scénarios `echo` et `attend-stop` pour une fille au travail).
+- [ ] e2e de la confirmation (après validation des maquettes), en clair et sombre.
+
+## Décisions
+
+- **Lien mort réparé plutôt qu'ignoré.** Le résumé l'ignorait déjà (`motherOf`), mais l'ignorer
+  laisse un lien latent : restaurer la mère depuis la corbeille (fiche 196) rattacherait des filles
+  que l'utilisateur voit depuis longtemps comme des conversations ordinaires, et chaque lecteur de
+  `record.startedFrom` (coûts par famille, `usage/import.ts`) devrait refaire le contrôle. Réparer
+  donne un seul modèle : une fille a une mère vivante, ou pas de lien — comme après une suppression
+  « garder les filles » (point 2). La note n'est pas posée pour ces anciennes orphelines : on ne sait
+  ni quand ni comment la mère est partie, et ce serait charger chaque fil au démarrage.
+  Conséquence assumée : une mère encore dans la corbeille au lancement ne retrouvera pas ses filles
+  si on la restaure.
+- **`keep` par défaut côté main.** La case est cochée par défaut dans l'interface, mais un appel sans
+  avis (ancien renderer, autre chemin) ne doit rien supprimer de plus que demandé.
+- **`post` tolérant.** Un évènement de l'app vers une conversation partie n'a plus de destinataire :
+  l'écarter avec une ligne de journal vaut mieux qu'une exception que chaque appelant devrait
+  rattraper (beaucoup ne le faisaient pas, dans des `catch` ou des promesses non attendues).
+- **Archiver refusé si une fille travaille**, comme pour la mère elle-même
+  (`conversations.error.busyArchive`) ; le message nomme la fille.
+- **Worktrees des filles gardés par défaut** à la suppression (option `childWorktrees`, fausse par
+  défaut) : une fille peut avoir du travail non fusionné ; la corbeille ne rattrape pas un worktree.
+
+## Plan
+
+**Main (fait d'abord, sans attendre les maquettes).**
+
+- `src/main/conversations/family.ts` (nouveau, pur) : `descendants(records, id)` (des plus profondes
+  aux plus proches, résistant aux boucles), `repairOrphans(records)`, `archiveMembers(records, id,
+  archived)`.
+- `src/main/conversations/family-delete.ts` (nouveau) : `deleteWithChildren(manager, id, options)` —
+  arrêt propre (`cancel`, attente bornée de la fin du tour), suppression des descendantes puis de la
+  mère ; ou suppression de la mère puis `detachChildren`.
+- `manager.ts` (au plafond ESLint de 1050) : `post` tolérant et booléen, `detachChildren`,
+  `setArchived` en cascade, réparation au chargement. Pour la place : `notePendingMemory` et les
+  brouillons à quitter sortent vers `helpers.ts`.
+- `store.ts` : `ConversationRecord.archivedWith?: string`.
+- `children.ts` : `launch` relit la mère au moment de poser le compte rendu d'échec ; `deliver` et
+  `wake` ne lèvent plus quand la cible a disparu ; comptes rendus retenus d'une mère supprimée
+  consignés.
+- `children-merge.ts` : `emit` lit le booléen de `post` au lieu d'un `try`.
+- `ipc.ts`, `shared/ipc.ts`, `preload/api.ts`, `useConversations.ts` : option `children` (et
+  `childWorktrees`) de `conversation:delete` ; canal `conversation:family` (descendance, qui répond)
+  pour la confirmation.
+- i18n : `children.notice.motherDeleted`, `conversations.error.busyArchiveChild`.
+
+**Interface (après validation des maquettes).** `DeleteDialog` (`ConversationMenu.tsx`) : liste des
+filles (titre, état au travail), case « Supprimer aussi ses N filles » cochée par défaut, et ce que
+la case décochée fait.
+
+## Maquettes
+
+`docs/features/228-maquettes/` : `confirmation.html`, rendue en PNG en clair, en sombre et en Aurore.
+
+## Journal
+
+- 2026-11-15 — fiche créée. Constat à la lecture du code : le résumé masque déjà le lien mort
+  (`motherOf` dans `helpers.ts`), donc la barre latérale range l'orpheline comme une conversation
+  ordinaire ; les vraies pertes viennent des chemins qui ont lu la mère avant sa suppression
+  (`launch` dans `children.ts`, `deliver`, `wake`) et posent ensuite chez elle.
+- 2026-11-15 — main process fait. `post` booléen et tolérant ; `family.ts`, `family-delete.ts`
+  (`deleteConversation`, `detachChild`, `familyOf`) ; `setArchived` en cascade avec
+  `ConversationRecord.archivedWith` ; réparation des liens morts au chargement (index réécrit) ;
+  `children.ts` : `launch` relit la mère au moment de poser le compte rendu d'échec, `startFailure`
+  ne lit plus une fille supprimée, une fille dont la mère disparaît pendant sa préparation est
+  détachée (note) au lieu de naître orpheline, comptes rendus retenus d'une mère supprimée consignés ;
+  `children-merge.ts` lit le booléen de `post`. Test de non-régression vérifié en remettant l'ancien
+  code : « Unhandled Rejection » sur le compte rendu d'échec de lancement.
+  Écarts au plan : `DeleteOptions` dans `shared/agent.ts` et `FamilyMember` dans
+  `shared/children.ts` (plafond de 800 lignes de `shared/ipc.ts`) ; pour tenir le plafond de
+  `manager.ts`, `notePendingMemory` et la fermeture des sessions de brouillons
+  (`draftSessionsOpen`, `dropAllDraftSessions`) passent dans `helpers.ts`, sans changement de
+  comportement. Interface actuelle inchangée : elle n'envoie pas encore `children`, donc supprimer
+  une mère garde ses filles (`keep`), avec la note.
+  Maquettes de la confirmation rendues (clair, sombre, Aurore, Aurore nuit) : en attente de
+  validation, interface non codée.
+  Essais : `./scripts/verify` vert ; e2e `history`, `filles`, `filles-visibilite`,
+  `filles-tech-lead`, `filles-fusion`, `profil`, `parallel`, `restart`, `inbox`, `relecture`, en
+  clair et sombre : 19/19 ; un échec isolé de `filles` dark (pointeur des propositions en rafale,
+  trois suites en parallèle) ne s'est pas reproduit en la rejouant seule (2/2).

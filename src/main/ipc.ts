@@ -36,6 +36,7 @@ import type { AgentConfigureRequest, AgentSessionView, ElicitationAnswer } from 
 import { parsePromptRequest } from '@shared/agent'
 import type { ConversationManager } from './conversations/manager'
 import { childHandlers, type ChildConversations } from './conversations/children'
+import { deleteConversation, familyOf } from './conversations/family-delete'
 import { reviewHandlers } from './conversations/children-review'
 import { worktreeHandlers, type WorktreeCycleDeps } from './changes/worktree-ipc'
 import { childrenMergeHandlers } from './conversations/children-merge-ipc'
@@ -123,6 +124,7 @@ export type ConversationController = Pick<
   | 'configure'
   | 'rename'
   | 'delete'
+  | 'family'
   | 'prompt'
   | 'cancel'
   | 'retryTurn'
@@ -469,11 +471,15 @@ export function createHandlers(
     },
     'conversation:delete': (id, options) => {
       const o = typeof options === 'object' && options !== null ? options : {}
-      return c.delete(str(id, 'id'), {
+      return deleteConversation(c, str(id, 'id'), {
         fromAgent: o.fromAgent !== false,
-        removeWorktree: o.removeWorktree === true
+        removeWorktree: o.removeWorktree === true,
+        // Le sort des filles (fiche 228) : seulement ce qui est explicitement demandé.
+        children: o.children === 'delete' ? 'delete' : 'keep',
+        childWorktrees: o.childWorktrees === true
       })
     },
+    'conversation:family': (id) => familyOf(c, str(id, 'id')),
     'conversation:createWorktree': (id) => c.createInWorktree(str(id, 'id')),
     ...worktreeSetupHandlers({
       control: deps.worktreeSetup,
