@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { spawnNodePty } from './node-pty'
 import { terminateForeground } from './foreground'
 import { TerminalManager, type Pty } from './terminal-manager'
+import { ON_WINDOWS, POSIX_PROCESSES, POSIX_SHELL } from '../test-platform'
 
 const managers: TerminalManager[] = []
 afterEach(() => managers.splice(0).forEach((m) => m.closeAll()))
@@ -22,7 +23,8 @@ function setup() {
   return { manager, data, onChange }
 }
 
-describe('terminaux (vrai shell)', () => {
+// `/bin/sh` et `zsh` : Unix ; sous Windows, le terminal réel est essayé avec PowerShell plus bas.
+describe.runIf(POSIX_SHELL)('terminaux (vrai shell)', () => {
   it('onglet dans le dossier, commande lancée, écran lu comme l’utilisateur le voit', async () => {
     const { manager, onChange } = setup()
     const tab = manager.create('c1', tmpdir())
@@ -70,7 +72,8 @@ describe('terminaux (vrai shell)', () => {
   })
 })
 
-describe('« Arrêter » une commande (fiche 166, vrai shell)', () => {
+// Signaux et groupes de processus d'Unix (POSIX_PROCESSES).
+describe.runIf(POSIX_PROCESSES)('« Arrêter » une commande (fiche 166, vrai shell)', () => {
   it('Ctrl+C ignoré : SIGTERM à la commande après le délai ; le shell et l’onglet restent', async () => {
     const { manager, onChange } = setup()
     manager.create('c1', tmpdir())
@@ -340,3 +343,35 @@ describe('PowerShell sous Windows (fiche 229, D5)', () => {
     }
   })
 })
+
+describe.runIf(ON_WINDOWS)(
+  'terminal réel sous Windows : PowerShell dans ConPTY (fiche 229, D5)',
+  () => {
+    it('onglet dans le dossier, commande lancée, écran lu sans séquences d’échappement', async () => {
+      const root = process.env['SystemRoot'] ?? 'C:\\Windows'
+      const manager = new TerminalManager({
+        spawn: spawnNodePty,
+        shell: `${root}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`,
+        shellArgs: ['-NoLogo', '-NoProfile'],
+        shellNames: ['pwsh', 'powershell', 'cmd'],
+        env: () => ({ ...process.env }),
+        onData: () => {},
+        onChange: () => {}
+      })
+      managers.push(manager)
+      const tab = manager.create('c1', tmpdir())
+      expect(tab).toMatchObject({ id: '1', busy: false })
+      manager.run('c1', tmpdir(), 'Write-Output (6*7)', '1')
+      // PowerShell démarre lentement : jusqu'à vingt secondes pour lire « 42 » seul sur sa ligne.
+      const deadline = Date.now() + 20_000
+      let screen = ''
+      while (Date.now() < deadline && !screen.split('\n').some((line) => line.trim() === '42')) {
+        screen = await manager.read('c1', '1', 40, Math.max(0, deadline - Date.now()))
+      }
+      expect(screen.split('\n').map((line) => line.trim())).toContain('42')
+      expect(screen).not.toContain('\u001b')
+      manager.close('c1', '1')
+      expect(manager.list('c1')).toEqual([])
+    })
+  }
+)

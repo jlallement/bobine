@@ -67,3 +67,25 @@ export const POSIX_PROCESSES = !ON_WINDOWS
  * (capacités `selfInstall` et `simulator`, fiche 145 ; paquet Windows : `pnpm package --windows`).
  */
 export const MACOS_FEATURES = !ON_WINDOWS
+
+/**
+ * Assistants et commandes en `sh` d'Unix (ménage du profil temporaire, réinitialisation, commande
+ * `bobine`) : sous Windows, l'app passe par PowerShell (`reset-windows.ts`, essayé à part) ou masque
+ * la fonction (commande `bobine`, plus tard sur décision de Jérôme).
+ */
+export const POSIX_SHELL = !ON_WINDOWS
+
+/**
+ * Outils Android (SDK, `adb`, `./gradlew`) : pas encore portés sous Windows (`adb.exe`,
+ * `gradlew.bat`, SDK sous `%LOCALAPPDATA%`) — l'app n'y trouve pas le SDK. Essayés sous macOS et
+ * Linux avec de faux outils `sh` ; à porter (fiche 229, suite du lot 7a).
+ */
+export const ANDROID_TOOLS = !ON_WINDOWS
+
+/**
+ * Un processus node qui ferme sa sortie standard sans sortir (agent factice « connexion coupée ») :
+ * possible sous Unix ; sous Windows, ni `end()`, ni `destroy()`, ni `closeSync(1)` ne ferment le
+ * tube vu par le parent (relevé dans la VM, fiche 229, lot 7a). La détection de l'app existe sous
+ * Windows aussi ; c'est le scénario qui ne s'y simule pas.
+ */
+export const CLOSABLE_STDOUT = !ON_WINDOWS

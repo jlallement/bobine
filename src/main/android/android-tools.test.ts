@@ -7,6 +7,8 @@ import type { Run } from '../simulator/run'
 import { AndroidManager } from './android-manager'
 import { androidToolsModule } from './android-tools'
 import { GradleBuilds } from './gradle'
+// Faux `adb` et `./gradlew` en `sh` : Android n'est pas encore porté sous Windows (ANDROID_TOOLS).
+import { ANDROID_TOOLS } from '../test-platform'
 
 const UI = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node text="" class="android.widget.LinearLayout" resource-id="" content-desc="" clickable="false" enabled="true" bounds="[0,0][1080,2400]"><node text="Ajouter un" class="android.widget.Button" resource-id="" content-desc="" clickable="true" enabled="true" bounds="[100,1000][500,1100]" /></node></hierarchy>UI hierchary dumped to: /dev/tty`
 
@@ -181,16 +183,19 @@ describe('outils de l’émulateur Android', () => {
     expect(t.calls).toContain('adb -s emulator-5554 logcat -d -t 200 *:E --pid=4242')
   })
 
-  it('Gradle réussi sans APK : « Build succeeded », sans erreur, avec les dossiers cherchés (fiche 122)', async () => {
-    const t = setup()
-    writeFileSync(join(t.context.workspace, 'gradlew'), '#!/bin/sh\necho "BUILD SUCCESSFUL"\n')
-    chmodSync(join(t.context.workspace, 'gradlew'), 0o755)
-    let built = await t.call('android_build')
-    while (built.text.startsWith('Build still running')) built = await t.call('android_build')
-    expect(built.result?.isError).toBeUndefined()
-    expect(built.text).toMatch(/^Build succeeded in \d+ s, but no APK under /)
-    expect(built.text).toContain('flutter-apk')
-  })
+  it.runIf(ANDROID_TOOLS)(
+    'Gradle réussi sans APK : « Build succeeded », sans erreur, avec les dossiers cherchés (fiche 122)',
+    async () => {
+      const t = setup()
+      writeFileSync(join(t.context.workspace, 'gradlew'), '#!/bin/sh\necho "BUILD SUCCESSFUL"\n')
+      chmodSync(join(t.context.workspace, 'gradlew'), 0o755)
+      let built = await t.call('android_build')
+      while (built.text.startsWith('Build still running')) built = await t.call('android_build')
+      expect(built.result?.isError).toBeUndefined()
+      expect(built.text).toMatch(/^Build succeeded in \d+ s, but no APK under /)
+      expect(built.text).toContain('flutter-apk')
+    }
+  )
 
   it('compilation refusée : Gradle n’est pas lancé', async () => {
     const t = setup(['Refuser'])
@@ -236,37 +241,43 @@ describe('planche contact de l’émulateur Android (fiche 076)', () => {
     })
   })
 
-  it('filme avec un second screenrecord en images brutes, à la taille en dp', async () => {
-    const fake = fakeAdb((dir) => {
-      writeFileSync(join(dir, 'a'), rawFrame(4, 8, 10))
-      writeFileSync(join(dir, 'b'), rawFrame(4, 8, 200))
-      return `cat '${dir}/a'; sleep 0.1; cat '${dir}/b'; sleep 5`
-    })
-    const t = setup(undefined, fake.adb)
-    const run = vi.fn(async () => {})
-    const started = Date.now()
-    const frames = await t.manager.film('c1', run, 400)
-    expect(Date.now() - started).toBeLessThan(3000)
-    expect(run).toHaveBeenCalledOnce()
-    expect(readFileSync(fake.args, 'utf8').trim()).toBe(
-      '-s emulator-5554 exec-out screenrecord --output-format=frames --size 411x914 -'
-    )
-    // Pixels RGB devenus BGRA : le bleu en premier ; moments croissants, le premier à 0.
-    expect(frames.map((f) => [...f.jpeg])).toEqual([
-      [10, 4, 8],
-      [200, 4, 8]
-    ])
-    expect(frames[0]?.at).toBe(0)
-    expect(frames[1]?.at).toBeGreaterThan(0)
-  })
+  it.runIf(ANDROID_TOOLS)(
+    'filme avec un second screenrecord en images brutes, à la taille en dp',
+    async () => {
+      const fake = fakeAdb((dir) => {
+        writeFileSync(join(dir, 'a'), rawFrame(4, 8, 10))
+        writeFileSync(join(dir, 'b'), rawFrame(4, 8, 200))
+        return `cat '${dir}/a'; sleep 0.1; cat '${dir}/b'; sleep 5`
+      })
+      const t = setup(undefined, fake.adb)
+      const run = vi.fn(async () => {})
+      const started = Date.now()
+      const frames = await t.manager.film('c1', run, 400)
+      expect(Date.now() - started).toBeLessThan(3000)
+      expect(run).toHaveBeenCalledOnce()
+      expect(readFileSync(fake.args, 'utf8').trim()).toBe(
+        '-s emulator-5554 exec-out screenrecord --output-format=frames --size 411x914 -'
+      )
+      // Pixels RGB devenus BGRA : le bleu en premier ; moments croissants, le premier à 0.
+      expect(frames.map((f) => [...f.jpeg])).toEqual([
+        [10, 4, 8],
+        [200, 4, 8]
+      ])
+      expect(frames[0]?.at).toBe(0)
+      expect(frames[1]?.at).toBeGreaterThan(0)
+    }
+  )
 
-  it('sans image de l’appareil : rien n’est fait, l’agent sait quoi faire', async () => {
-    const fake = fakeAdb(() => `echo "Unknown format 'frames'" >&2; exit 1`)
-    const t = setup(undefined, fake.adb)
-    const run = vi.fn(async () => {})
-    await expect(t.manager.film('c1', run, 400)).rejects.toThrow(
-      /No image from the Android screen.*Unknown format 'frames'.*android_screenshot/
-    )
-    expect(run).not.toHaveBeenCalled()
-  })
+  it.runIf(ANDROID_TOOLS)(
+    'sans image de l’appareil : rien n’est fait, l’agent sait quoi faire',
+    async () => {
+      const fake = fakeAdb(() => `echo "Unknown format 'frames'" >&2; exit 1`)
+      const t = setup(undefined, fake.adb)
+      const run = vi.fn(async () => {})
+      await expect(t.manager.film('c1', run, 400)).rejects.toThrow(
+        /No image from the Android screen.*Unknown format 'frames'.*android_screenshot/
+      )
+      expect(run).not.toHaveBeenCalled()
+    }
+  )
 })

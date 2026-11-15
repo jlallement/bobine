@@ -23,6 +23,7 @@ import {
   takeResetFailure,
   type ResetJob
 } from './reset'
+import { POSIX_SHELL } from './test-platform'
 
 const temp = (name: string) => mkdtempSync(join(tmpdir(), name))
 
@@ -109,7 +110,7 @@ describe('réinitialiser Bobine : l’assistant (fiches 148, 187)', () => {
     const previous = process.env['ELECTRON_RUN_AS_NODE']
     process.env['ELECTRON_RUN_AS_NODE'] = '1'
     try {
-      const header = launchReset(job, { tmp, spawn })
+      const header = launchReset(job, { tmp, spawn, system: 'posix' })
       expect(readFileSync(header, 'utf8')).toBe('r\n')
       expect(spawn).toHaveBeenCalledWith(
         '/bin/sh',
@@ -143,82 +144,91 @@ describe('réinitialiser Bobine : l’assistant (fiches 148, 187)', () => {
     }
   })
 
-  it('pour de vrai : tout part dans le dossier daté, LISEZ-MOI, puis la relance', () => {
-    const userData = fakeUserData()
-    const logs = temp('journaux avec espace é-')
-    writeFileSync(join(logs, 'main.log'), 'journal')
-    const trash = temp('corbeille-')
-    const marker = join(temp('relance-'), 'relancee')
-    const job: ResetJob = {
-      pid: finishedPid(),
-      paths: [userData, logs, '/nulle/part'],
-      trashDir: trash,
-      folderName: 'Bobine — données du 2026-10-24 20.15',
-      readmeName: 'LISEZ-MOI.txt',
-      readme: 'Données de Bobine.',
-      failureFile: join(userData, RESET_FAILURE_NAME),
-      relaunch: ['/bin/sh', '-c', `echo ok > '${marker}'`]
-    }
-    const { run, header } = runHelper(job)
-    expect(run.status, run.stderr).toBe(0)
-    const folder = join(trash, job.folderName)
-    expect(readdirSync(folder).sort()).toEqual(
-      ['LISEZ-MOI.txt', userData.split('/').pop(), logs.split('/').pop()].sort()
-    )
-    expect(existsSync(userData)).toBe(false)
-    expect(existsSync(logs)).toBe(false)
-    expect(readFileSync(join(folder, logs.split('/').pop() ?? '', 'main.log'), 'utf8')).toBe(
-      'journal'
-    )
-    const readme = readFileSync(join(folder, 'LISEZ-MOI.txt'), 'utf8')
-    expect(readme.startsWith('Données de Bobine.\n')).toBe(true)
-    expect(readme).toContain(`  <-  ${userData}`)
-    expect(readme).toContain(`  <-  ${logs}`)
-    expect(existsSync(header)).toBe(false)
-    // La relance part détachée : on l'attend un peu.
-    for (let i = 0; i < 50 && !existsSync(marker); i++) spawnSync('sleep', ['0.05'])
-    expect(readFileSync(marker, 'utf8').trim()).toBe('ok')
-  })
-
-  it('un déplacement échoue : rien n’est supprimé, tout est remis en place, la raison est gardée', () => {
-    const userData = fakeUserData()
-    // Un dossier dont on ne peut pas sortir un élément (parent en lecture seule).
-    const locked = temp('verrou-')
-    const stuck = join(locked, 'journaux')
-    mkdirSync(stuck)
-    writeFileSync(join(stuck, 'main.log'), 'journal')
-    chmodSync(locked, 0o555)
-    const trash = temp('corbeille-')
-    const marker = join(temp('relance-'), 'relancee')
-    try {
-      const { run } = runHelper({
+  // L'assistant `sh` lancé pour de vrai : Unix seulement (POSIX_SHELL).
+  it.runIf(POSIX_SHELL)(
+    'pour de vrai : tout part dans le dossier daté, LISEZ-MOI, puis la relance',
+    () => {
+      const userData = fakeUserData()
+      const logs = temp('journaux avec espace é-')
+      writeFileSync(join(logs, 'main.log'), 'journal')
+      const trash = temp('corbeille-')
+      const marker = join(temp('relance-'), 'relancee')
+      const job: ResetJob = {
         pid: finishedPid(),
-        paths: [userData, stuck],
+        paths: [userData, logs, '/nulle/part'],
         trashDir: trash,
-        folderName: 'Bobine',
+        folderName: 'Bobine — données du 2026-10-24 20.15',
         readmeName: 'LISEZ-MOI.txt',
-        readme: 'r',
+        readme: 'Données de Bobine.',
         failureFile: join(userData, RESET_FAILURE_NAME),
-        keychain: 'Service qui n’existe pas',
         relaunch: ['/bin/sh', '-c', `echo ok > '${marker}'`]
-      })
+      }
+      const { run, header } = runHelper(job)
       expect(run.status, run.stderr).toBe(0)
-      // Le dossier de données, déjà déplacé, est revenu ; la corbeille est vide.
-      expect(readdirSync(join(userData, 'conversations')).sort()).toEqual(['a.json', 'b.json'])
-      expect(existsSync(join(stuck, 'main.log'))).toBe(true)
-      expect(readdirSync(trash)).toEqual([])
-      expect(takeResetFailure(userData)).toContain(stuck)
-      // Lu une fois : supprimé.
-      expect(takeResetFailure(userData)).toBeUndefined()
-      // Relancée quand même, pour dire ce qui s'est passé.
+      const folder = join(trash, job.folderName)
+      expect(readdirSync(folder).sort()).toEqual(
+        ['LISEZ-MOI.txt', userData.split('/').pop(), logs.split('/').pop()].sort()
+      )
+      expect(existsSync(userData)).toBe(false)
+      expect(existsSync(logs)).toBe(false)
+      expect(readFileSync(join(folder, logs.split('/').pop() ?? '', 'main.log'), 'utf8')).toBe(
+        'journal'
+      )
+      const readme = readFileSync(join(folder, 'LISEZ-MOI.txt'), 'utf8')
+      expect(readme.startsWith('Données de Bobine.\n')).toBe(true)
+      expect(readme).toContain(`  <-  ${userData}`)
+      expect(readme).toContain(`  <-  ${logs}`)
+      expect(existsSync(header)).toBe(false)
+      // La relance part détachée : on l'attend un peu.
       for (let i = 0; i < 50 && !existsSync(marker); i++) spawnSync('sleep', ['0.05'])
-      expect(existsSync(marker)).toBe(true)
-    } finally {
-      chmodSync(locked, 0o755)
+      expect(readFileSync(marker, 'utf8').trim()).toBe('ok')
     }
-  })
+  )
 
-  it('corbeille impossible à créer : rien ne bouge', () => {
+  // L'assistant `sh` lancé pour de vrai : Unix seulement (POSIX_SHELL).
+  it.runIf(POSIX_SHELL)(
+    'un déplacement échoue : rien n’est supprimé, tout est remis en place, la raison est gardée',
+    () => {
+      const userData = fakeUserData()
+      // Un dossier dont on ne peut pas sortir un élément (parent en lecture seule).
+      const locked = temp('verrou-')
+      const stuck = join(locked, 'journaux')
+      mkdirSync(stuck)
+      writeFileSync(join(stuck, 'main.log'), 'journal')
+      chmodSync(locked, 0o555)
+      const trash = temp('corbeille-')
+      const marker = join(temp('relance-'), 'relancee')
+      try {
+        const { run } = runHelper({
+          pid: finishedPid(),
+          paths: [userData, stuck],
+          trashDir: trash,
+          folderName: 'Bobine',
+          readmeName: 'LISEZ-MOI.txt',
+          readme: 'r',
+          failureFile: join(userData, RESET_FAILURE_NAME),
+          keychain: 'Service qui n’existe pas',
+          relaunch: ['/bin/sh', '-c', `echo ok > '${marker}'`]
+        })
+        expect(run.status, run.stderr).toBe(0)
+        // Le dossier de données, déjà déplacé, est revenu ; la corbeille est vide.
+        expect(readdirSync(join(userData, 'conversations')).sort()).toEqual(['a.json', 'b.json'])
+        expect(existsSync(join(stuck, 'main.log'))).toBe(true)
+        expect(readdirSync(trash)).toEqual([])
+        expect(takeResetFailure(userData)).toContain(stuck)
+        // Lu une fois : supprimé.
+        expect(takeResetFailure(userData)).toBeUndefined()
+        // Relancée quand même, pour dire ce qui s'est passé.
+        for (let i = 0; i < 50 && !existsSync(marker); i++) spawnSync('sleep', ['0.05'])
+        expect(existsSync(marker)).toBe(true)
+      } finally {
+        chmodSync(locked, 0o755)
+      }
+    }
+  )
+
+  // L'assistant `sh` lancé pour de vrai : Unix seulement (POSIX_SHELL).
+  it.runIf(POSIX_SHELL)('corbeille impossible à créer : rien ne bouge', () => {
     const userData = fakeUserData()
     const trash = temp('corbeille-')
     chmodSync(trash, 0o555)
@@ -240,43 +250,51 @@ describe('réinitialiser Bobine : l’assistant (fiches 148, 187)', () => {
     }
   })
 
-  it('Bobine tourne encore à la fin de l’attente : rien ne bouge, pas de relance', () => {
-    const userData = fakeUserData()
-    const trash = temp('corbeille-')
-    const marker = join(temp('relance-'), 'relancee')
-    const { run } = runHelper({
-      pid: process.pid,
-      waitTenths: 3,
-      paths: [userData],
-      trashDir: trash,
-      folderName: 'Bobine',
-      readmeName: 'LISEZ-MOI.txt',
-      readme: 'r',
-      failureFile: join(userData, RESET_FAILURE_NAME),
-      relaunch: ['/bin/sh', '-c', `echo ok > '${marker}'`]
-    })
-    expect(run.status).toBe(1)
-    expect(readdirSync(trash)).toEqual([])
-    expect(existsSync(join(userData, 'conversations', 'a.json'))).toBe(true)
-    expect(takeResetFailure(userData)).toContain('still running')
-    spawnSync('sleep', ['0.3'])
-    expect(existsSync(marker)).toBe(false)
-  })
+  // L'assistant `sh` lancé pour de vrai : Unix seulement (POSIX_SHELL).
+  it.runIf(POSIX_SHELL)(
+    'Bobine tourne encore à la fin de l’attente : rien ne bouge, pas de relance',
+    () => {
+      const userData = fakeUserData()
+      const trash = temp('corbeille-')
+      const marker = join(temp('relance-'), 'relancee')
+      const { run } = runHelper({
+        pid: process.pid,
+        waitTenths: 3,
+        paths: [userData],
+        trashDir: trash,
+        folderName: 'Bobine',
+        readmeName: 'LISEZ-MOI.txt',
+        readme: 'r',
+        failureFile: join(userData, RESET_FAILURE_NAME),
+        relaunch: ['/bin/sh', '-c', `echo ok > '${marker}'`]
+      })
+      expect(run.status).toBe(1)
+      expect(readdirSync(trash)).toEqual([])
+      expect(existsSync(join(userData, 'conversations', 'a.json'))).toBe(true)
+      expect(takeResetFailure(userData)).toContain('still running')
+      spawnSync('sleep', ['0.3'])
+      expect(existsSync(marker)).toBe(false)
+    }
+  )
 
-  it('deuxième réinitialisation le même jour : un autre dossier, rien d’écrasé', () => {
-    const trash = temp('corbeille-')
-    mkdirSync(join(trash, 'Bobine'))
-    const userData = fakeUserData()
-    const { run } = runHelper({
-      pid: 999_999,
-      paths: [userData],
-      trashDir: trash,
-      folderName: 'Bobine',
-      readmeName: 'LISEZ-MOI.txt',
-      readme: 'r',
-      failureFile: join(userData, RESET_FAILURE_NAME)
-    })
-    expect(run.status, run.stderr).toBe(0)
-    expect(readdirSync(trash).sort()).toEqual(['Bobine', 'Bobine 2'])
-  })
+  // L'assistant `sh` lancé pour de vrai : Unix seulement (POSIX_SHELL).
+  it.runIf(POSIX_SHELL)(
+    'deuxième réinitialisation le même jour : un autre dossier, rien d’écrasé',
+    () => {
+      const trash = temp('corbeille-')
+      mkdirSync(join(trash, 'Bobine'))
+      const userData = fakeUserData()
+      const { run } = runHelper({
+        pid: 999_999,
+        paths: [userData],
+        trashDir: trash,
+        folderName: 'Bobine',
+        readmeName: 'LISEZ-MOI.txt',
+        readme: 'r',
+        failureFile: join(userData, RESET_FAILURE_NAME)
+      })
+      expect(run.status, run.stderr).toBe(0)
+      expect(readdirSync(trash).sort()).toEqual(['Bobine', 'Bobine 2'])
+    }
+  )
 })

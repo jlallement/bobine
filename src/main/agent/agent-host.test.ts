@@ -32,7 +32,7 @@ import { OPENCODE_DIFF_SOURCE } from './opencode-diffs'
 import { BOB_SUBAGENT_FORMAT } from './bob-subagents'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
 import type { AgentProfile } from './profiles'
-import { native, ON_WINDOWS, POSIX_PROCESSES } from '../test-platform'
+import { CLOSABLE_STDOUT, native, ON_WINDOWS, POSIX_PROCESSES } from '../test-platform'
 import { homeShown } from '../home-display'
 
 /** Texte affiché d'un avis du fil (traduit s'il est en code, fiche 074). */
@@ -1599,15 +1599,19 @@ describe('AgentHost', () => {
       }
     )
 
-    it('connexion coupée, processus vivant (fiche 195) : arrêté, la cause est dite', async () => {
-      const { host, transcript } = failing('connexion-coupee')
-      await host.start()
-      await host.prompt('Vas-y')
-      await waitFor(() => host.snapshot().status === 'exited', 10_000)
-      expect(host.snapshot().detail).toContain('connexion avec Bobine s’est coupée')
-      expect(transcript().some((i) => i.kind === 'agent')).toBe(true)
-      host.stop()
-    })
+    // Scénario impossible à simuler sous Windows (CLOSABLE_STDOUT), la détection y existe aussi.
+    it.runIf(CLOSABLE_STDOUT)(
+      'connexion coupée, processus vivant (fiche 195) : arrêté, la cause est dite',
+      async () => {
+        const { host, transcript } = failing('connexion-coupee')
+        await host.start()
+        await host.prompt('Vas-y')
+        await waitFor(() => host.snapshot().status === 'exited', 10_000)
+        expect(host.snapshot().detail).toContain('connexion avec Bobine s’est coupée')
+        expect(transcript().some((i) => i.kind === 'agent')).toBe(true)
+        host.stop()
+      }
+    )
 
     it('flot sur stderr (fiche 195) : le tour se termine, la fin seule est gardée', async () => {
       const { host, transcript } = failing('flot-stderr')
