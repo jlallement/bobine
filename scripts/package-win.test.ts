@@ -126,7 +126,11 @@ describe('paquet Windows (fiche 229)', () => {
           '/node_modules/koffi/package.json',
           '/node_modules/koffi/index.cjs',
           '/package.json',
-          '/node_modules/@koromix/koffi-win32-arm64/package.json'
+          '/node_modules/@koromix/koffi-win32-arm64/package.json',
+          // Polices présentes : seul koffi est en cause ici.
+          ...BUNDLED_FONT_FILES.map(
+            (f) => `/out/renderer/assets/${f.replace('.woff2', '-Ab1_cD2e.woff2')}`
+          )
         ],
         'arm64'
       )
