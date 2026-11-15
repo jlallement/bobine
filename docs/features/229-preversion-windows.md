@@ -1094,3 +1094,28 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   sockets de Chromium sont créés non héritables (`WSA_FLAG_NO_HANDLE_INHERIT`). Handles de
   l'agent non listés (pas d'outil installé) : héritage non prouvé absent, symptôme absent.
   App désinstallée, inscription COM et dossiers d'essai effacés.
+- 2026-11-15 — **Essai réel avec IBM Bob et OpenCode sous Windows** (VM Windows 11 ARM64, app
+  installée depuis `claude/fds-et-toasts`, `pnpm package --win --arm64` construit sur le Mac, donc
+  **sans koffi** : arrêt des arbres par le repli `taskkill`). Captures dans les notes de session
+  (`229-bob-windows/`).
+  - **Bob** (2.1.0, commit `8afc0007b`, installé par npm dans un dossier du PATH utilisateur,
+    connecté en SSO par Jérôme) : profil temporaire, l'accueil dit « IBM Bob trouvé » sans
+    réglage ; Bob prêt en 5,1 s ; message d'essai « OK » en 3,8 s (0,0229 Bobcoin). Tâche : créer
+    `bonjour.txt` puis `cmd /c ver`. Deux cartes « Autoriser une fois » : création du fichier
+    (diff +1) puis la commande, avec l'avertissement Windows « Bobine ne sait pas lire ce que
+    cette commande modifie : relisez-la avant d'autoriser » et « Toujours » retiré (lot 3b) ;
+    dossier affiché `C:\Users\jerome\Bobine\essai`. Fichier écrit, « Windows version:
+    10.0.26300.9457 », terminé en 1 min 31 s, ≈ 0,106 Bobcoin pour la conversation. Bob lancé
+    par `cmd.exe /d /s /v:off /c "…\bob.cmd …"` puis `node` ; à la fermeture de Bobine, **aucun
+    processus restant** (ni `cmd` ni `node` de Bob, 12 s après).
+  - **OpenCode** (zip officiel `opencode-windows-arm64.zip` de la release v2.2.5
+    d'anomalyco/opencode, SHA-256 `4e426a39…f242d8` lu dans le `digest` de la release, vérifié
+    sur le Mac et dans la VM ; `opencode.exe` copié dans le dossier du PATH utilisateur où est
+    Bob) : « OpenCode trouvé », prêt en 1,4 s, essai « OK » en 3,4 s (opencode/Big Pickle,
+    0 $). Même tâche (`bonjour-opencode.txt`, `$PSVersionTable.PSVersion` → 5.1.26100.9457) en
+    6 s, **sans carte** : OpenCode écrit et lance sans demander (son réglage par défaut, déclaré
+    dans son profil). À la fermeture : `opencode acp` et `opencode serve` arrêtés, rien ne reste.
+  - Petit défaut vu : l'accueil propose « ~\Bobine/essai » (séparateurs mélangés).
+  - Rangé : app désinstallée, dossiers d'essai (`~\Bobine\essai`, `essai-2`), tâches planifiées et
+    inscription COM effacés. **Gardés** : Bob et sa connexion, OpenCode (`opencode.exe` dans
+    `C:\Users\jerome\bobine-229\node-v24.22.3-win-arm64`, pour le lot 7), MinGit.
