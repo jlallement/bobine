@@ -219,6 +219,61 @@ version sont dans Réglages › Nouveautés (`CHANGELOG.md`), la version install
 avec les variables présentes, sans rien construire. Variables et secrets GitHub : fiche 111 et
 commentaire de `.github/workflows/release.yml`.
 
+## Windows (préversion)
+
+Préversion (fiche 229) : pas encore publiée avec les versions ; les installeurs ne sont joints à
+une Release que lorsque la variable du dépôt `BOBINE_WINDOWS_RELEASE` vaut `true`. D'ici là, les
+construire depuis les sources, sur un Mac ou sous Windows :
+
+```bash
+pnpm package --win            # dist/Bobine-<version>-x64.exe et -arm64.exe
+pnpm package --win --arm64    # une seule architecture (ou --x64)
+```
+
+**Prérequis** : Windows 11, x64 ou arm64 (Windows 10 22H2 devrait marcher, sans promesse).
+Prendre l'installeur de son processeur : Paramètres › Système › Informations système › « Type du
+système ». Un PC arm64 peut aussi lancer celui en x64 (émulé, plus lent).
+
+**Installation** : double-cliquer sur `Bobine-<version>-x64.exe` (ou `-arm64.exe`). Sans question
+ni droits d'administrateur : Bobine s'installe pour l'utilisateur seul, dans
+`%LOCALAPPDATA%\Programs\bobine`, avec un raccourci dans le menu Démarrer et sur le bureau, puis
+s'ouvre. Le raccourci du menu Démarrer porte l'identifiant de l'app : sans lui, Windows n'affiche
+pas ses notifications.
+
+**SmartScreen** : l'installeur n'est pas signé. Au premier lancement d'un fichier téléchargé,
+Windows affiche « Windows a protégé votre ordinateur » :
+
+1. Cliquer sur **« Informations complémentaires »** (le lien sous le texte).
+2. Vérifier le nom du fichier, puis cliquer sur **« Exécuter quand même »**.
+
+Chaque nouvelle version repart de zéro aux yeux de SmartScreen : le même avertissement revient.
+Avant d'exécuter, on peut comparer la somme du fichier téléchargé à celle publiée avec la version
+(`SHA256SUMS-windows-x64.txt` ou `-arm64.txt`) :
+
+```powershell
+Get-FileHash .\Bobine-<version>-x64.exe   # SHA-256, à comparer au fichier publié
+```
+
+**Smart App Control** : sur une installation neuve de Windows 11, où il est actif (Sécurité
+Windows › Contrôle des applications et du navigateur), un programme non signé est bloqué **sans
+bouton pour passer outre**. La seule issue est de désactiver Smart App Control, et Windows ne
+permet pas de le réactiver ensuite sans réinstaller le système : à décider en connaissance de
+cause. Les antivirus d'entreprise peuvent aussi bloquer un installeur non signé.
+
+**En silence** (déploiement, essais) : `Bobine-<version>-x64.exe /S`.
+
+**Désinstallation** : Paramètres › Applications › Applications installées › Bobine ›
+Désinstaller ; ou en silence :
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\bobine\Uninstall Bobine.exe" /currentuser /S
+```
+
+Les conversations et réglages restent (`%APPDATA%\bobine`), comme sur le Mac.
+
+**Mise à jour** : pas de mise à jour automatique ; installer la nouvelle version par-dessus
+l'ancienne (même endroit).
+
 ## La commande `bobine` du terminal
 
 Comme `code .` : `bobine <dossier> ["premier message"]` ouvre une nouvelle conversation dans ce

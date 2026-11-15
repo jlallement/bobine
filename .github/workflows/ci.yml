@@ -57,6 +57,45 @@ jobs:
       # se sautent d'eux-mêmes hors macOS ; les autres injectent leurs commandes.
       - run: ./scripts/verify
 
+  # Windows, expérimental (fiche 229) : le même `verify` sur `windows-latest`, en Git Bash. Il
+  # échoue tant que les lots 0 à 3 (lancement des processus, chemins) ne sont pas dans `main` :
+  # `continue-on-error` le garde informatif, sans bloquer une pull request. À rendre obligatoire
+  # (retirer `continue-on-error`) quand il est vert.
+  verify-windows:
+    name: verify (Windows, expérimental)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Avant le checkout : fins de ligne LF comme dans le dépôt (sinon Prettier refuse chaque
+      # fichier, et les essais qui lisent des fichiers du dépôt voient des CRLF).
+      - name: Fins de ligne (LF)
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # node-pty livre ses binaires Windows (x64, arm64) : rien à compiler.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Identité git pour les tests
+        run: |
+          git config --global user.name "Bobine CI"
+          git config --global user.email "ci@users.noreply.github.com"
+
+      - run: ./scripts/verify
+
   # Secrets (fiche 218) : gitleaks sur tout l'historique à chaque pull request et poussée sur
   # `main`. Binaire officiel, version et SHA-256 épinglés (pas l'action gitleaks-action : licence
   # demandée aux organisations, et le binaire suffit). Fausses alertes connues (clés factices des

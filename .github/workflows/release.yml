@@ -9,6 +9,13 @@
 # Actions › Variables) : un tag ne construit alors que le .dmg, le lancement à la main construit
 # toujours Linux.
 #
+# Préversion Windows (fiche 229, D1 à D3, D7) : installeurs NSIS (pour l'utilisateur seul, sans droits
+# d'administrateur), une machine Windows par architecture (x64, arm64 : les binaires de koffi sont
+# installés par pnpm pour la machine qui construit), joints à la même Release avec leur somme
+# SHA-256 ; non signés (SmartScreen avertit, docs/installation.md). Même interrupteur que Linux :
+# la variable du dépôt BOBINE_WINDOWS_RELEASE doit valoir `true` pour qu'un tag les construise ;
+# le lancement à la main les construit toujours (gardés 7 jours comme artefacts).
+#
 # Dépôt public (fiche 218) : le jeton est en lecture partout ; seul le job `publish`, qui ne fait
 # que télécharger les fichiers construits et créer la Release, l'a en écriture. Une Release ne part
 # que d'un commit de `main` (job `guard`). Un tag avec suffixe (`v1.0.0-beta.1`) donne une
@@ -273,14 +280,84 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  windows:
+    name: Installeur NSIS (Windows ${{ matrix.arch }})
+    needs: guard
+    # Windows expérimental : jamais publié avec un tag sans BOBINE_WINDOWS_RELEASE (voir en tête).
+    if: github.ref_type != 'tag' || vars.BOBINE_WINDOWS_RELEASE == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, runner: windows-latest }
+          - { arch: arm64, runner: windows-11-arm }
+    defaults:
+      run:
+        shell: bash
+    env:
+      ARCH: ${{ matrix.arch }}
+    steps:
+      # Avant le checkout : fins de ligne LF comme dans le dépôt (Prettier, essais).
+      - name: Fins de ligne (LF)
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Identité git pour les tests
+        run: |
+          git config --global user.name "Bobine CI"
+          git config --global user.email "ci@users.noreply.github.com"
+
+      # Obligatoire pour un tag (Windows activé) ; au lancement à la main, un échec n'empêche pas
+      # de construire l'installeur à essayer, tant que `verify` n'est pas vert sous Windows.
+      - run: ./scripts/verify
+        continue-on-error: ${{ github.ref_type != 'tag' }}
+
+      # En node (pnpm lance les scripts par `cmd` sous Windows) ; contrôle le dossier de l'app.
+      - name: Construire l'installeur
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/package-win.mts "--$ARCH" --publish never
+
+      - name: Somme SHA-256
+        run: |
+          cd dist
+          version="$(node -p "require('../package.json').version")"
+          sha256sum "Bobine-$version-$ARCH.exe" > "SHA256SUMS-windows-$ARCH.txt"
+          cat "SHA256SUMS-windows-$ARCH.txt"
+
+      # Pour le job `publish` (tag) ou à télécharger (lancement à la main).
+      - name: Artefact Windows
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bobine-windows-${{ matrix.arch }}
+          path: |
+            dist/Bobine-*.exe
+            dist/SHA256SUMS-windows-*.txt
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Release GitHub
-    needs: [dmg, linux]
-    # Au tag seulement, .dmg construit et essayé ; Linux construit, ou sauté faute de
-    # BOBINE_LINUX_RELEASE. Un échec de Linux (activé) ne publie rien : pas de Release à moitié.
+    needs: [dmg, linux, windows]
+    # Au tag seulement, .dmg construit et essayé ; Linux et Windows construits, ou sautés faute de
+    # BOBINE_LINUX_RELEASE / BOBINE_WINDOWS_RELEASE. Un échec de l'un d'eux (activé) ne publie
+    # rien : pas de Release à moitié.
     if: >-
       !cancelled() && github.ref_type == 'tag' && needs.dmg.result == 'success' &&
-      (needs.linux.result == 'success' || needs.linux.result == 'skipped')
+      (needs.linux.result == 'success' || needs.linux.result == 'skipped') &&
+      (needs.windows.result == 'success' || needs.windows.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -306,6 +383,13 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: bobine-linux-*
+          merge-multiple: true
+          path: dist
+
+      - if: needs.windows.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: bobine-windows-*
           merge-multiple: true
           path: dist
 
@@ -347,6 +431,13 @@ jobs:
                 "The app is not notarized: the first launch needs" \
                 "**System Settings › Privacy & Security › Open Anyway** ([how](https://github.com/$GH_REPO#install))."
               echo
+              # Windows seulement s'il a été construit (BOBINE_WINDOWS_RELEASE).
+              if compgen -G 'dist/Bobine-*.exe' > /dev/null; then
+                echo "**Windows (preview):** \`Bobine-$version-x64.exe\` or \`Bobine-$version-arm64.exe\`," \
+                  "installed for the current user, no administrator rights. Not signed: if SmartScreen" \
+                  "warns, **More info › Run anyway** ([how](https://github.com/$GH_REPO/blob/main/docs/installation.md#windows-préversion))."
+                echo
+              fi
               cat notes.md
             } > notes-full.md
             mv notes-full.md notes.md
@@ -355,9 +446,10 @@ jobs:
           cat notes.md
           # Préversion semver (`1.0.0-beta.1`, `1.0.0-rc.2`) : jamais « Latest ».
           if [[ "$version" == *-* ]]; then kind=(--prerelease --latest=false); else kind=(); fi
-          # Linux seulement s'il a été construit (BOBINE_LINUX_RELEASE) ; le .dmg toujours.
+          # Linux et Windows seulement s'ils ont été construits (BOBINE_LINUX_RELEASE,
+          # BOBINE_WINDOWS_RELEASE) ; le .dmg toujours.
           shopt -s nullglob
-          files=(dist/*.dmg dist/*.AppImage dist/*.deb dist/SHA256SUMS-linux-*.txt)
+          files=(dist/*.dmg dist/*.AppImage dist/*.deb dist/SHA256SUMS-linux-*.txt dist/*.exe dist/SHA256SUMS-windows-*.txt)
           ls -l "${files[@]}"
           test -f "dist/Bobine-$version-arm64.dmg"
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \

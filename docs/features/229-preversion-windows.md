@@ -1,6 +1,8 @@
 # 229 — Préversion Windows
 
-- **Statut** : en cours (2026-11-15 : lots 0, 1 et 3 faits, lot 2 en grande partie — voir « Avancement »)
+- **Statut** : en cours (2026-11-15 : lots 0, 1 et 3 faits, lot 2 en grande partie — voir « Avancement » ;
+  lot 6, packaging, fait : installeurs NSIS x64 et arm64, installés et lancés dans la VM ; CI Windows
+  expérimentale)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
   012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
   commandes), 224 (discussion, zone d'écriture)
@@ -32,8 +34,9 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
 - [x] ADR « Bobine sous Windows en préversion » écrit
       (ADR-0032 l'annonçait) : [ADR-0050](../adr/0050-bobine-sous-windows-en-preversion.md),
       accepté (`koffi` accepté par Jérôme le 2026-11-15).
-- [ ] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
-      et démarre ; désinstallation propre (données gardées, comme sur le Mac).
+- [x] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
+      et démarre ; désinstallation propre (données gardées, comme sur le Mac). Lot 6, VM ARM64
+      (l'installeur x64 sous émulation) ; reste à voir sur un vrai PC x64.
 - [ ] Même sécurité que sur macOS : `contextIsolation`, `sandbox`, CSP, `electronFuses`, agent
       factice absent de l'app packagée.
 - [ ] Aucune fenêtre de console ne s'ouvre quand l'app lance un agent, une sonde, git ou un
@@ -493,6 +496,80 @@ moment par la suite `command` lancée en parallèle, vert rejoué seul), puis `s
 `commands`, `command-output`, `filles`, `pannes-visibles`, `restart`, `platform`, `about` en clair
 et sombre : 16/16 sur le build final ; `platform --verbose` : Mac inchangé, Linux et Windows
 simulés sur le Mac. Captures du terminal regardées.
+### Lot 6 — packaging (fait le 2026-11-15)
+
+- **electron-builder** (`electron-builder.yml`, section `win` et `nsis`) : NSIS `oneClick`,
+  `perMachine: false` (D1 : `%LOCALAPPDATA%\Programs\bobine`, jamais d'élévation), raccourcis du
+  menu Démarrer et du bureau, données gardées à la désinstallation ; `Bobine-<version>-<arch>.exe`
+  comme le Mac et Linux ; ni `latest.yml` ni `.blockmap` (pas de mise à jour automatique) ; fuses
+  et intégrité de l'asar comme sur le Mac (écrites dans `Bobine.exe`). **makensis 3.12**
+  (`toolsets.nsis: 1.2.1`, paquet unifié d'electron-builder, encore dit « beta ») au lieu du 3.0.4
+  par défaut, dont le makensis pour macOS n'existe qu'en x86_64 (Rosetta absent) : même outil sur
+  le Mac et sur les runners Windows.
+- **Identifiant d'app** : l'installeur pose le raccourci avec `appId` (`dev.bobine.app`) ; sans
+  `app.setAppUserModelId`, Electron prend `electron.app.Bobine` et Windows n'affiche aucune
+  notification. **Une ligne dans `src/main/index.ts`** (strictement nécessaire à l'empaquetage) :
+  `applyAppUserModelId` (`src/main/app-user-model-id.ts`), sous Windows seulement, d'après le vrai
+  système (comme le lancement des processus, ADR-0050), jamais `BOBINE_PLATFORM` ; un test vérifie
+  l'égalité avec `appId`. Sur le Mac : une fonction qui ne fait rien.
+- **`pnpm package --win`** (`--x64`, `--arm64`, `--dir`) : `scripts/package` passe la main à
+  `scripts/package-win.mts` (en node : sous Windows, pnpm lance les scripts par `cmd` ; la CI
+  l'appelle directement). Electron : l'archive Windows officielle de la version installée,
+  téléchargée par `@electron/get` et vérifiée par `electron/checksums.json`, jamais l'Electron du
+  système (`electronDist` est celui du Mac). Une construction `dir` par architecture, puis
+  l'installeur à partir de ce dossier (`--prepackaged`) une fois contrôlé : architecture de
+  `Bobine.exe` (en-tête PE), binaires de node-pty et de koffi de cette architecture seulement,
+  licences, restes de l'archive d'Electron retirés (`default_app.asar`), **contenu de l'asar**
+  limité à `out/`, `node_modules/` et `package.json`, koffi présent. Essais : `scripts/package-win.test.ts`.
+- **Icône** : `build/icon.ico` (16 à 256 px, PNG dans l'ICO), `pnpm exec electron
+  scripts/make-icon.mjs --win`, réduite depuis `build/icon.png` (`scripts/windows-icon.mjs`, essai
+  `scripts/windows-icon.test.ts`) ; aucune dépendance.
+- **Fichiers** : aucune liste `files` dans la section `win` (une liste de seules exclusions par
+  plateforme y fait entrer tout le dépôt). `scripts/package-win.mts` reprend la liste `files` de
+  la racine (`windowsFiles`) dans une configuration temporaire : elle retire les trois exclusions
+  faites pour le Mac et Linux (binaires Windows de node-pty, `koffi`, `@koromix`) — electron-builder
+  ne garde que les exclusions pour `node_modules`, une ligne de la section `win` ne pourrait pas
+  les remettre — et ajoute celles de Windows : node-pty et koffi de l'architecture construite
+  seulement (macro `${arch}`), sans les `.pdb` (≈ 25 Mo) ni **winpty** (repli des Windows d'avant
+  ConPTY, build 18309 : hors D8 ; `pty.node` de Windows est le module winpty), sans les sources C
+  ni la doc de koffi. Une exclusion de la racine renommée fait échouer la construction (et un essai).
+  Racine d'`electron-builder.yml` identique à `main`.
+- **koffi** (ADR-0050) : `asarUnpack` de son `.node` (section `win`), texte de licence livré dans
+  `resources/licenses/koffi/LICENSE.txt` (koffi est dans `EXCLUDED_FROM_APP` des avis, absent des
+  apps Mac et Linux). Ses binaires `@koromix/koffi-win32-<arch>` sont des paquets optionnels que
+  pnpm n'installe **que pour la machine qui construit** : construit depuis le Mac, l'installeur
+  n'a pas les objets de tâche (repli `taskkill`) et le contrôle l'**avertit** ; sous Windows de la
+  même architecture (`release.yml` : une machine par architecture), c'est une **erreur**.
+- **Avis de licence** : ConPTY (`conpty.dll`, `OpenConsole.exe`, de Windows Terminal, MIT de
+  Microsoft) a son texte livré dans `resources/licenses/conpty/LICENSE.txt`
+  (`scripts/third-party/texts/microsoft-terminal-LICENSE.txt`) ; `THIRD-PARTY-NOTICES.md` est
+  inchangé (livré aussi sur le Mac). Le `LICENSES.chromium.html` de l'archive Windows reste à côté
+  de `Bobine.exe`, en plus de celui de `licenses/electron/`.
+- **CI** : `ci.yml`, job `verify (Windows, expérimental)` sur `windows-latest`, `continue-on-error`
+  ; `release.yml`, job `windows` (x64 sur `windows-latest`, arm64 sur `windows-11-arm`) derrière
+  `BOBINE_WINDOWS_RELEASE` comme Linux, SHA-256 publiée, `verify` obligatoire seulement pour un tag
+  ; `e2e.yml`, Système `windows` (Git Bash, `script-shell` de pnpm vers bash). Fins de ligne :
+  `core.autocrlf false` avant le checkout (sinon Prettier refuse chaque fichier). Actions épinglées
+  par SHA, aucun secret.
+- **Essais réels** (VM Windows 11 ARM64, SSH) : installeurs construits **sur le Mac** ; chacun
+  installé en silence (`/S`, 40 s), sans entrée HKLM, raccourcis posés avec l'AUMID
+  `dev.bobine.app`, `Bobine.exe` de la bonne architecture, lancé sur le bureau (tâche planifiée
+  interactive, `--profil-temporaire`) jusqu'à l'écran d'accueil (captures dans les notes de
+  session), puis désinstallé (`/currentuser /S`) : dossier, raccourcis et entrée de
+  désinstallation retirés. Rien d'autre installé ; VM rendue dans son état. L'installeur x64 tourne
+  sous l'émulation d'ARM64.
+- **Mac inchangé** : app reconstruite depuis `main` (`7d3add3`) et depuis cette branche : mêmes
+  fichiers, mêmes tailles, même liste de l'asar (koffi absent) ; seule différence de contenu,
+  `applyAppUserModelId` (sans effet) dans `out/main/index.js`, donc l'empreinte de l'asar dans
+  `Info.plist`. Même comparaison faite avant le rebase, `.dmg` compris.
+- **Écarts au plan** : option `--win` (plus `--windows` accepté) comme demandé ; seule la branche
+  Windows est en node ; « préversion Windows » dans l'À propos et les notes de version : notes
+  faites (`release.yml`), À propos laissé au lot 8 (interface). `verify` sous Windows non lancé
+  (pas de Node dans la VM, rien n'y est installé sans accord) : à lire sur le premier passage du
+  job ; ≈ 41 des 462 fichiers d'essais emploient `sh`/`bash`, `chmod`, des liens symboliques ou
+  des groupes de processus.
+- **Essais réels refaits après le rebase** (lots 0 à 3 dans `main`, koffi ajouté) : mêmes
+  résultats pour les deux installeurs (sans le binaire de koffi, construits sur le Mac).
 
 ## Essais
 
@@ -656,3 +733,12 @@ inconnu, `dir` rien.
   affichage `~` et libellés. Essais réels NTFS dans la VM (élevée et non élevée), fichiers jetables
   effacés, rien installé. `./scripts/verify` vert ; `pnpm e2e discussion autorisation-commande` :
   4/4 verts (clair et sombre), captures regardées, identiques à avant (bandeaux de risque du Mac).
+- 2026-11-15 — **Lot 6 (packaging) fait** : installeurs NSIS x64 et arm64 construits sur le Mac
+  (`pnpm package --win`), installés, lancés et désinstallés dans la VM ; `.ico`, AUMID, CI Windows
+  expérimentale (`ci.yml`, `release.yml` derrière `BOBINE_WINDOWS_RELEASE`, `e2e.yml`) ; `.dmg`
+  du Mac inchangé (comparé). Rebasé sur `main` (`7d3add3`, lots 0 à 3, koffi, `linux.files`) :
+  liste `files` de Windows tirée de la racine par `package-win.mts`, koffi remis pour Windows.
+  Détail : « Lot 6 — packaging ».
+  `./scripts/verify` vert ; `pnpm e2e --changed` (suite complète, `src/main/index.ts` touché) :
+  202/204, les deux échecs (infobulles au survol de `history` clair et `roles-gestion` sombre)
+  verts en relance seule (4/4).
