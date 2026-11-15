@@ -573,7 +573,7 @@ lancé, rien d'autre à installer sur le Mac.
   | `notifications` (×2, 3 vérifications : notification, puis le clic qui en dépend), `inbox` (×2, bannière groupée) | **Propre à GitHub** : `libnotify4` absente de la machine ; sans elle, `Notification.isSupported()` est faux et l'app n'affiche rien (vérifié dans le conteneur en retirant le paquet). Le `.deb` en dépend, l'image Docker l'a. | Job : dépendances du `.deb` installées (liste d'electron-builder) |
   | `terminal` (×2), `roles-travail` (×2), `plan` (×2), `autorisation-commande` (×2, retour à la ligne) | **Connue** : métriques de police (DejaVu, plus large que SF) | Lot 2 (apparence Linux) |
   | `autorisation-commande` (×2, molette au bout du bloc) | **Connue**, cause à chercher | — |
-  | `pannes-visibles` (×2) | **Connue** : fd de Chromium hérités par l'agent (port DevTools) | Fiche à part (processus) |
+  | `pannes-visibles` (×2) | **Corrigée** le 2026-11-15 : fd de Chromium hérités par l'agent (port DevTools), relais `bash` qui les ferme (journal) | — |
   | `user-commands` (clair), `filles-tech-lead` (sombre), `providers` (clair), `onboarding` (sombre), `fil` (clair), `perf` (sombre) | **Instabilité** : un seul thème rouge, l'autre vert ici comme dans Docker, aucune erreur de l'app dans leurs journaux ; machine de 2 cœurs, 3 tâches à la fois (`perf` mesure des durées) | À rejouer ; `--jobs 2` si elles reviennent |
 
   Pas de bug de l'app propre à x64. À noter : sans libnotify (une AppImage sur un système qui
@@ -604,7 +604,7 @@ lancé, rien d'autre à installer sur le Mac.
   | `perf` (×2, 2 vérifications) | **Charge** : des durées mesurées pendant que deux autres apps d'essai tournent sur 2 cœurs | `perf` seule (`alone`), sans toucher aux seuils |
   | `user-commands`, `session` (infobulle), `gitlab`, `filles-fusion`, `roles-gestion` (infobulle), `permissions` : un thème chacun | **Instabilité** : vertes dans l'autre thème, dans Docker et au passage précédent pour la plupart | Job Linux en `--jobs 2` (2 cœurs) |
   | `terminal`, `roles-travail`, `plan`, `autorisation-commande` | **Connues** : métriques de police, molette | Lot 2 |
-  | `pannes-visibles` | **Connue** : fd hérités (port DevTools) | Fiche à part |
+  | `pannes-visibles` | **Corrigée** le 2026-11-15 : fd hérités (relais `bash`, journal) | — |
 - 2026-11-15 — **Troisième passage sur GitHub** (run 43735503242, `main` 7d3add3, `--jobs 2`) :
   **187/202** ; `aurore` et `onboarding` passent.
 
@@ -639,3 +639,24 @@ lancé, rien d'autre à installer sur le Mac.
   maintenant sa section Linux (installation, pourquoi pas d'AppImage, trousseau). Rien ne change
   sur macOS ni sous Windows. Reconstruit dans la VM Ubuntu ARM64 : `dist/` n'a plus que le
   `.deb` (contrôle `check-linux-package.mts` vert).
+- 2026-11-15 — **fd hérités : corrigé à la cause** (branche `claude/fds-et-toasts`). Sous Linux,
+  tout lancement du main passe par un relais `bash` qui ferme les descripteurs au-delà de 2 (liste
+  lue dans `/proc/$$/fd`) puis `exec` la commande (même pid : groupe, registre et arrêt
+  inchangés) : `CLOSE_FDS_SCRIPT`, `withClosedFds` et `relayed` dans `process-launch.ts`, posés
+  par `configureFdRelay(process.platform)` au démarrage. Couverts : agents, commandes, sondes MCP,
+  serveurs de dev, préparation des worktrees (`startProcess`) ; git et outils (`runCommand`) ;
+  shell du terminal (node-pty) ; shell de connexion ; `fc-list` ; `ps` ; éditeurs ; émulateur
+  Android ; assistants de réinitialisation et du profil temporaire ; seconde Bobine du profil
+  temporaire. Pourquoi `bash` : le `sh` d'Ubuntu (dash) refuse `exec 150>&-` (descripteur à deux
+  chiffres, erreur de syntaxe qui arrête le shell, vu dans Docker). Programme introuvable : pas
+  de relais, `spawn` rend `ENOENT` comme avant (« commande introuvable », « git est
+  introuvable »). Sans `bash` : pas de relais (comme avant). macOS : aucun relais (libuv y lance
+  par `posix_spawn` avec `POSIX_SPAWN_CLOEXEC_DEFAULT`), lancements identiques (essai figé de
+  `process-start-posix.test.ts`). Windows : voir la fiche 229 (l'agent meurt avec l'app, port
+  libéré, vérifié dans la VM). Essais : `process-fds.test.ts` (dont un réel sous Linux : deux
+  descripteurs passés par `stdio` arrivent sans relais, plus avec ; vert dans Docker) ;
+  `pnpm e2e:linux pannes-visibles` **2/2** (rouge avant : `bind() failed: Address already in
+  use`), `fresh-start`, `startup`, `restart` verts ; `terminal` : seul l'échec connu des icônes
+  Nerd Font reste.
+  Mac : `./scripts/verify` vert ; `pnpm e2e pannes-visibles terminal session restart fresh-start
+  startup notifications` 13/13.

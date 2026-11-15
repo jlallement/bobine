@@ -18,6 +18,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Linux: agents and commands started by Bobine no longer receive its open files and
+  connections; an agent left behind after Bobine was force-quit no longer stops it from
+  starting again.
 - Chat space: a file that also has another name elsewhere on your Mac (hard link) is no longer
   changed without asking you; the permission request says why. Bobine no longer lists it among
   the documents, and neither opens nor copies it.

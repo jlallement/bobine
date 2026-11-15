@@ -731,8 +731,8 @@ packagée).
   depuis le centre de notifications, le toast disparaît mais la fenêtre réduite **ne revient pas**
   (suivi 15 s, après un témoin de 28 s sans clic) : limite d'Electron sans activateur COM (le
   raccourci de l'installeur n'a pas de `ToastActivatorCLSID`). Le clic sur le toast qui surgit à
-  l'écran n'a pas pu être saisi à temps : **non vérifié**. À traiter (lot 7) : activateur COM, ou
-  relancer l'app au clic (`second-instance` ramène déjà la fenêtre).
+  l'écran n'a pas pu être saisi à temps : **non vérifié**. Suite : activateur d'Electron avec un
+  CLSID fixe et raccourci mis à jour (journal, 2026-11-15) ; clic à revérifier au lot 7.
 - **DPAPI** : clé d'API d'un agent personnalisé enregistrée (« Enregistrée ») ; dans
   `api-keys.json`, valeur chiffrée (préfixe `v10` de Chromium), pas de texte clair ; **après
   redémarrage de l'app**, l'agent a reçu la clé (empreinte SHA-256 notée par un relais, identique
@@ -1077,3 +1077,62 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
 - 2026-11-15 — **D4 close** : Jérôme garde la barre de titre de Windows et le menu ☰ (« ça me va
   comme ça, juste avec le burger ») ; l'étape « cadre natif + ☰ » devient définitive, la barre
   intégrée (`titleBarOverlay`) est abandonnée, ses maquettes effacées.
+- 2026-11-15 — **Clic sur un toast et descripteurs hérités** (branche `claude/fds-et-toasts`).
+  Toasts : Electron 45 a son propre activateur COM (`app.setToastActivatorCLSID`), sans module
+  natif ; Bobine lui donne un **CLSID fixe** (`TOAST_ACTIVATOR_CLSID`, sinon tiré au hasard à
+  chaque lancement) et vérifie au lancement que le raccourci du menu Démarrer le porte
+  (`ensureToastShortcut`, `shell.writeShortcutLink(…, 'update')` ; l'installeur NSIS n'y met que
+  l'AUMID). Vu dans la VM (app installée) : au premier toast, Electron inscrit
+  `HKCU\Software\Classes\CLSID\{55D36188-…}\LocalServer32 = …\Bobine.exe`, et le raccourci porte
+  déjà le CLSID au lancement suivant (journal : « Raccourci des notifications : up-to-date »).
+  **Clic non revérifié** : le bureau de la VM était occupé par une autre activité (connexion à
+  Claude dans Edge) ; un Win+N d'essai y a ouvert le centre de notifications, puis plus aucun
+  geste n'y a été fait. À vérifier au lot 7 (cliquer un toast depuis le centre, fenêtre réduite).
+  Descripteurs (pendant Windows de la fiche 145) : l'app installée arrêtée de force
+  (`Stop-Process -Force`, sans objet de tâche : installeur construit sur le Mac, sans koffi),
+  l'agent (enfant direct) meurt avec elle (job de libuv) et le port DevTools est libéré ; les
+  sockets de Chromium sont créés non héritables (`WSA_FLAG_NO_HANDLE_INHERIT`). Handles de
+  l'agent non listés (pas d'outil installé) : héritage non prouvé absent, symptôme absent.
+  App désinstallée, inscription COM et dossiers d'essai effacés.
+- 2026-11-15 — **Essai réel avec IBM Bob et OpenCode sous Windows** (VM Windows 11 ARM64, app
+  installée depuis `claude/fds-et-toasts`, `pnpm package --win --arm64` construit sur le Mac, donc
+  **sans koffi** : arrêt des arbres par le repli `taskkill`). Captures dans les notes de session
+  (`229-bob-windows/`).
+  - **Bob** (2.1.0, commit `8afc0007b`, installé par npm dans un dossier du PATH utilisateur,
+    connecté en SSO par Jérôme) : profil temporaire, l'accueil dit « IBM Bob trouvé » sans
+    réglage ; Bob prêt en 5,1 s ; message d'essai « OK » en 3,8 s (0,0229 Bobcoin). Tâche : créer
+    `bonjour.txt` puis `cmd /c ver`. Deux cartes « Autoriser une fois » : création du fichier
+    (diff +1) puis la commande, avec l'avertissement Windows « Bobine ne sait pas lire ce que
+    cette commande modifie : relisez-la avant d'autoriser » et « Toujours » retiré (lot 3b) ;
+    dossier affiché `C:\Users\jerome\Bobine\essai`. Fichier écrit, « Windows version:
+    10.0.26300.9457 », terminé en 1 min 31 s, ≈ 0,106 Bobcoin pour la conversation. Bob lancé
+    par `cmd.exe /d /s /v:off /c "…\bob.cmd …"` puis `node` ; à la fermeture de Bobine, **aucun
+    processus restant** (ni `cmd` ni `node` de Bob, 12 s après).
+  - **OpenCode** (zip officiel `opencode-windows-arm64.zip` de la release v2.2.5
+    d'anomalyco/opencode, SHA-256 `4e426a39…f242d8` lu dans le `digest` de la release, vérifié
+    sur le Mac et dans la VM ; `opencode.exe` copié dans le dossier du PATH utilisateur où est
+    Bob) : « OpenCode trouvé », prêt en 1,4 s, essai « OK » en 3,4 s (opencode/Big Pickle,
+    0 $). Même tâche (`bonjour-opencode.txt`, `$PSVersionTable.PSVersion` → 5.1.26100.9457) en
+    6 s, **sans carte** : OpenCode écrit et lance sans demander (son réglage par défaut, déclaré
+    dans son profil). À la fermeture : `opencode acp` et `opencode serve` arrêtés, rien ne reste.
+  - Petit défaut vu : l'accueil propose « ~\Bobine/essai » (séparateurs mélangés).
+  - Rangé : app désinstallée, dossiers d'essai (`~\Bobine\essai`, `essai-2`), tâches planifiées et
+    inscription COM effacés. **Gardés** : Bob et sa connexion, OpenCode (`opencode.exe` dans
+    `C:\Users\jerome\bobine-229\node-v24.22.3-win-arm64`, pour le lot 7), MinGit.
+- 2026-11-15 — **Fermer un terminal sous Windows** : « Bobine a rencontré un problème interne »
+  dans l'app installée. Cause : sans `useConptyDll`, `kill()` de node-pty 1.1.0 lance
+  `child_process.fork(conpty_console_list_agent)`, qui passe par `ELECTRON_RUN_AS_NODE` ; le
+  fusible RunAsNode de l'app empaquetée l'interdit. Correctif : `useConptyDll: true` sous Windows
+  seulement (`windowsPtyOptions`, `terminal/node-pty.ts`) ; node-pty prend alors ses propres
+  `conpty.dll` et `OpenConsole.exe`, déjà livrés hors de l'asar (lot 6), sans `fork`. macOS et
+  Linux : aucune option de plus (essai). Rejoué dans la VM : `node e2e/packaged-installed.mjs`
+  dans la session de bureau, app installée depuis `claude/fds-et-toasts` (rebasée sur `main`
+  9f42391) : **tout est bon** (fenêtre, accueil, IBM Bob et OpenCode trouvés, aucun texte du Mac,
+  terminal qui exécute une commande, **aucune alerte**, quitte avec le code 0, aucun processus
+  restant, profil temporaire effacé). App désinstallée ensuite ; Bob, OpenCode et MinGit gardés.
+- 2026-11-15 — Branche `claude/fds-et-toasts` prête à relire (rebasée sur `main` 9f42391) :
+  `./scripts/verify` vert ; Mac `pnpm e2e pannes-visibles terminal session restart fresh-start
+  startup notifications` 13/13 ; Linux (Docker) `pannes-visibles`, `fresh-start`, `startup`,
+  `restart` verts, `terminal` avec le seul échec connu des icônes Nerd Font (fiche 145). Reste :
+  le clic sur un toast depuis le centre de notifications, à revérifier quand le bureau de la VM
+  est libre (il était en service).

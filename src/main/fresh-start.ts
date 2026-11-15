@@ -18,7 +18,7 @@ import {
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
-import { launchSystem, windowsPowerShell, type ProcessSystem } from './process-launch'
+import { launchSystem, relayed, windowsPowerShell, type ProcessSystem } from './process-launch'
 import { helperEnv } from './reset'
 import { detachedPowerShell, selfDeleting, windowsCleanupScript } from './reset-windows'
 
@@ -166,8 +166,14 @@ export function createFreshStart(app: FreshStartApp, io: FreshStartIo = defaultI
             return
           }
           io.spawn(
-            '/bin/sh',
-            ['-c', TEMPORARY_CLEANUP, 'bobine-cleanup', created, String(io.pid), '600'],
+            ...relayed('/bin/sh', [
+              '-c',
+              TEMPORARY_CLEANUP,
+              'bobine-cleanup',
+              created,
+              String(io.pid),
+              '600'
+            ]),
             { detached: true, stdio: 'ignore', env: helperEnv(io.env) }
           ).unref()
         })
@@ -192,7 +198,11 @@ export function createFreshStart(app: FreshStartApp, io: FreshStartIo = defaultI
         `--${TEMPORARY_SWITCH}`,
         ...(freshAgents ? [`--${FRESH_AGENTS_SWITCH}`] : [])
       ]
-      io.spawn(app.execPath, args, { detached: true, stdio: 'ignore', env }).unref()
+      io.spawn(...relayed(app.execPath, args, env), {
+        detached: true,
+        stdio: 'ignore',
+        env
+      }).unref()
     }
   }
 }

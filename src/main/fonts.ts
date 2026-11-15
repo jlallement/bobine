@@ -7,7 +7,7 @@
  * sans source, ou si la lecture échoue : listes vides (les choix « Système » restent).
  */
 import { execFile } from 'node:child_process'
-import { launchSystem, windowsPowerShell } from './process-launch'
+import { launchSystem, relayed, windowsPowerShell } from './process-launch'
 import type { InstalledFonts } from '@shared/ipc'
 import { isFontName } from '@shared/preferences'
 import { log } from './log'
@@ -100,8 +100,7 @@ export type RunCommand = (command: string, args: string[]) => Promise<string>
 const runCommand: RunCommand = (command, args) =>
   new Promise((resolve, reject) =>
     execFile(
-      command,
-      args,
+      ...relayed(command, args),
       {
         timeout: 15_000,
         maxBuffer: 4 * 1024 * 1024,

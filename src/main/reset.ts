@@ -18,7 +18,7 @@ import {
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { lstat, readdir } from 'node:fs/promises'
 import { join, sep } from 'node:path'
-import { launchSystem, windowsPowerShell, type ProcessSystem } from './process-launch'
+import { launchSystem, relayed, windowsPowerShell, type ProcessSystem } from './process-launch'
 import {
   detachedPowerShell,
   RESET_KEPT_NAME,
@@ -244,11 +244,14 @@ export function launchReset(job: ResetJob, io: ResetLaunchIo): string {
     relay(command, args, { stdio: 'ignore', windowsHide: true, env: helperEnv(process.env) })
     return header
   }
-  spawn('/bin/sh', ['-c', RESET_HELPER, 'bobine-reset', ...resetHelperArgs(job, header)], {
-    detached: true,
-    stdio: 'ignore',
-    env: helperEnv(process.env)
-  }).unref()
+  spawn(
+    ...relayed('/bin/sh', ['-c', RESET_HELPER, 'bobine-reset', ...resetHelperArgs(job, header)]),
+    {
+      detached: true,
+      stdio: 'ignore',
+      env: helperEnv(process.env)
+    }
+  ).unref()
   return header
 }
 

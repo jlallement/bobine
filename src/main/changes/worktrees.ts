@@ -15,7 +15,7 @@ import { gitError } from './git-errors'
 import { nativeGitPath } from '../git/git-platform'
 import { gitEnv } from '../git/git-queue'
 import { delay } from '../delay'
-import { launchSystem, type ProcessSystem } from '../process-launch'
+import { launchSystem, relayed, type ProcessSystem } from '../process-launch'
 import { t } from 'i18next'
 
 export const WORKTREES_DIR = '.worktrees'
@@ -262,13 +262,13 @@ export class Worktrees {
     try {
       // Windows (fiche 229) : environnement de git de l'app (chemins longs) ; Unix : comme avant.
       const env = this.system === 'windows' ? { env: gitEnv(process.env, 'windows') } : {}
-      execFileSync(this.git, ['worktree', 'remove', info.path], {
+      execFileSync(...relayed(this.git, ['worktree', 'remove', info.path]), {
         cwd: info.root,
         stdio: 'ignore',
         timeout: 10_000,
         ...env
       })
-      execFileSync(this.git, ['branch', '-D', info.branch], {
+      execFileSync(...relayed(this.git, ['branch', '-D', info.branch]), {
         cwd: info.root,
         stdio: 'ignore',
         timeout: 10_000,

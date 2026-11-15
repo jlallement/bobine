@@ -314,6 +314,71 @@ function isAppExecutionAlias(file: string, error: unknown): boolean {
   }
 }
 
+/**
+ * Descripteurs hérités (fiche 145, `pannes-visibles`) : sous Linux, libuv lance les enfants par
+ * `fork` puis `exec`, et tout descripteur du main sans `FD_CLOEXEC` passe à l'enfant ; Chromium en
+ * laisse ainsi une quarantaine (socket d'écoute du port DevTools, tubes, fichiers `.pak`). Un agent
+ * orphelin gardait le port, et toute commande lancée pouvait lire ou écrire ces tubes. Node n'a pas
+ * d'option `close_fds` ; le `sh` d'Ubuntu (dash) ne sait pas fermer un descripteur à deux
+ * chiffres. D'où ce relais, en `bash` : il ferme tout descripteur au-delà de 2 (liste lue dans
+ * `/proc`), puis `exec` la commande, qui garde le même pid (groupe, registre, arrêt inchangés).
+ * macOS n'en a pas besoin (libuv y lance par `posix_spawn` avec `POSIX_SPAWN_CLOEXEC_DEFAULT`) ;
+ * Windows non plus (voir `WINDOWS_HANDLES` dans la fiche 229).
+ */
+export const CLOSE_FDS_SCRIPT =
+  'for f in /proc/$$/fd/*; do n=${f##*/}; ' +
+  'if [ "$n" -gt 2 ]; then { exec {n}>&-; } 2>/dev/null; fi; done; exec -- "$@"'
+
+/** `bash` du relais, posé au démarrage sous Linux seulement ; absent : pas de relais. */
+let closeFdsShell: string | undefined
+
+/** Sous Linux, le `bash` du relais (`/bin/bash` ou `/usr/bin/bash`) ; ailleurs, rien. */
+export function configureFdRelay(
+  platform: string,
+  isProgram: (file: string) => boolean = isProgramFile('posix')
+): string | undefined {
+  closeFdsShell =
+    platform === 'linux' ? ['/bin/bash', '/usr/bin/bash'].find((f) => isProgram(f)) : undefined
+  return closeFdsShell
+}
+
+/**
+ * Le plan, lancé par le relais quand il est posé (Linux) : `bash -c CLOSE_FDS_SCRIPT bobine-fds
+ * <programme> <arguments>`. Le programme est d'abord cherché dans le PATH : introuvable, le plan
+ * reste tel quel, et `spawn` rend `ENOENT` comme avant (messages « commande introuvable », « git
+ * est introuvable »).
+ */
+export function withClosedFds(
+  plan: LaunchPlan,
+  ctx: LaunchContext,
+  shell: string | undefined = closeFdsShell
+): LaunchPlan {
+  if (!shell || ctx.system !== 'posix') return plan
+  const program = findProgram(plan.file, ctx)
+  if (!program) return plan
+  return {
+    ...plan,
+    file: shell,
+    args: ['-c', CLOSE_FDS_SCRIPT, 'bobine-fds', program, ...plan.args]
+  }
+}
+
+/**
+ * Programme et arguments d'un lancement direct (`spawn`, `execFile`, pty), par le relais qui ferme
+ * les descripteurs hérités quand il est posé (Linux) ; ailleurs, tels quels.
+ */
+export function relayed(
+  file: string,
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = process.env
+): [string, string[]] {
+  const plan = withClosedFds(
+    { file, args: [...args], verbatim: false, kind: 'direct' },
+    launchContext(env)
+  )
+  return [plan.file, plan.args]
+}
+
 let currentSystem: ProcessSystem = 'posix'
 
 /** Système des processus de cette machine, posé une fois par `index.ts` (et les sondes). */
@@ -343,6 +408,9 @@ export function launchProgram(
 ): { child: ChildProcess; plan: LaunchPlan } {
   const ctx = launchContext(options.env ?? process.env)
   const plan = shellCommand ? planShellCommand(command, ctx) : planLaunch(command, args, ctx)
-  const child = spawn(plan.file, plan.args, launchOptions(plan, ctx.system, options))
+  // Linux : par le relais qui ferme les descripteurs hérités ; le plan rendu reste celui de la
+  // commande (journal, registre).
+  const launched = withClosedFds(plan, ctx)
+  const child = spawn(launched.file, launched.args, launchOptions(plan, ctx.system, options))
   return { child, plan }
 }

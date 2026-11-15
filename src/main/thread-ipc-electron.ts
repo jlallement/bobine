@@ -16,6 +16,7 @@ import { cleanDraggedImages, writeDraggedImage } from './images/image-drag'
 import { cleanOutputFiles, toolOutputsDir, writeOutputFile } from './editors/output-file'
 import { log } from './log'
 import type { ThreadIpcDeps } from './thread-ipc'
+import { relayed } from './process-launch'
 
 /** Éditeurs imposés en essai : leur commande est leur nom, jamais lancée (journal d'ouvertures). */
 function imposedEditors(list: string): InstalledEditor[] {
@@ -30,7 +31,9 @@ function imposedEditors(list: string): InstalledEditor[] {
 
 const runDetached: RunEditor = (command, args) =>
   new Promise((resolve, reject) => {
-    const child = spawn(command, args, { detached: true, stdio: 'ignore', shell: false })
+    // Linux : sans les descripteurs hérités du main (fiche 145) ; ailleurs, tel quel.
+    const [file, argv] = relayed(command, args)
+    const child = spawn(file, argv, { detached: true, stdio: 'ignore', shell: false })
     child.once('error', reject)
     child.once('spawn', () => {
       child.unref()

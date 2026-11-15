@@ -3,7 +3,7 @@
  * pouvoir le tester sans Xcode.
  */
 import { execFile } from 'node:child_process'
-import { launchSystem } from '../process-launch'
+import { launchContext, launchSystem, withClosedFds } from '../process-launch'
 
 export interface RunResult {
   code: number
@@ -22,9 +22,14 @@ export type Run = (
 /** Exécution réelle ; ne lève jamais : le code de sortie et la sortie d'erreur sont rendus. */
 export const runCommand: Run = (file, args, options = {}) =>
   new Promise((resolve) => {
+    // Linux : par le relais qui ferme les descripteurs hérités du main (fiche 145) ; ailleurs, tel quel.
+    const plan = withClosedFds(
+      { file, args, verbatim: false, kind: 'direct' },
+      launchContext(options.env ?? process.env)
+    )
     const child = execFile(
-      file,
-      args,
+      plan.file,
+      plan.args,
       {
         encoding: 'buffer',
         maxBuffer: 64 * 1024 * 1024,

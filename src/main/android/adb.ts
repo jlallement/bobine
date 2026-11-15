@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process'
 import type { AndroidDevice } from '@shared/android'
 import type { Run } from '../simulator/run'
 import { t } from 'i18next'
+import { relayed } from '../process-launch'
 
 /** Longueur gardée d'un message d'erreur d'adb : entier, mais pas un journal. */
 const ADB_ERROR_MAX = 2000
@@ -122,7 +123,15 @@ export class Adb {
    * l'écran est montré dans le panneau.
    */
   startEmulator(avd: string): void {
-    const child = spawn(this.emulator, ['-avd', avd, '-no-window', '-no-audio', '-no-boot-anim'], {
+    // Linux : sans les descripteurs hérités du main (il survit à l'app) ; ailleurs, tel quel.
+    const [file, args] = relayed(this.emulator, [
+      '-avd',
+      avd,
+      '-no-window',
+      '-no-audio',
+      '-no-boot-anim'
+    ])
+    const child = spawn(file, args, {
       detached: true,
       stdio: 'ignore'
     })

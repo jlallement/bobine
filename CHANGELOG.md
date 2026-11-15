@@ -18,6 +18,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Linux : les agents et les commandes lancés par Bobine ne reçoivent plus ses fichiers et
+  connexions ouverts ; un agent resté seul après un arrêt brutal de Bobine ne l'empêche plus de
+  redémarrer.
 - Espace Discussion : un fichier qui porte aussi un autre nom ailleurs sur le Mac (lien physique)
   n'est plus modifié sans vous demander ; la demande d'autorisation dit pourquoi. Bobine ne le
   montre plus parmi les documents, et ne l'ouvre ni ne le copie.

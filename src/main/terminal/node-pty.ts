@@ -6,6 +6,7 @@ import { accessSync, chmodSync, constants, existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import type { SpawnPty } from './terminal-manager'
+import { launchSystem, relayed, type ProcessSystem } from '../process-launch'
 
 const require = createRequire(import.meta.url)
 
@@ -33,15 +34,29 @@ function ensureSpawnHelper(): void {
   }
 }
 
+/**
+ * Windows (fiche 229) : ConPTY de node-pty (`conpty.dll` et `OpenConsole.exe`, livrés). Sans
+ * cette option, fermer un terminal fait lancer par node-pty un agent par `child_process.fork`,
+ * qui passe par `ELECTRON_RUN_AS_NODE` ; le fusible RunAsNode de l'app empaquetée l'interdit :
+ * « Bobine a rencontré un problème interne » (vu dans l'app installée). Ailleurs : rien.
+ */
+export function windowsPtyOptions(system: ProcessSystem): { useConptyDll?: true } {
+  return system === 'windows' ? { useConptyDll: true } : {}
+}
+
 export const spawnNodePty: SpawnPty = (shell, args, options) => {
   ensureSpawnHelper()
   const pty = require('node-pty') as typeof import('node-pty')
-  const term = pty.spawn(shell, args, {
+  // Linux : le shell du terminal ne reçoit pas les descripteurs du main (fiche 145) ; même pid
+  // après `exec`, même nom de processus. Ailleurs, tel quel.
+  const [file, argv] = relayed(shell, args, options.env as NodeJS.ProcessEnv)
+  const term = pty.spawn(file, argv, {
     name: 'xterm-256color',
     cols: options.cols,
     rows: options.rows,
     cwd: options.cwd,
-    env: options.env as Record<string, string>
+    env: options.env as Record<string, string>,
+    ...windowsPtyOptions(launchSystem())
   })
   return {
     pid: term.pid,
