@@ -25,12 +25,28 @@ export async function platformSuite() {
             return {
               top: Menu.getApplicationMenu().items.length,
               window: Menu.getApplicationMenu().items.some((i) => String(i.role).toLowerCase() === 'windowmenu'),
-              bar: win.isMenuBarVisible()
+              bar: win.isMenuBarVisible(),
+              labels: Menu.getApplicationMenu().items.map((i) => i.label),
+              appRoles: Menu.getApplicationMenu().items[0].submenu.items.map((i) => i.role).filter(Boolean),
+              lights: win.getWindowButtonPosition?.() ?? null
             }
           })()`)
           check(
             mac
-              ? shape.top === 7 && shape.window
+              ? shape.top === 7 &&
+                  shape.window &&
+                  // Barre du système du Mac à l'identique : menu « Bobine » et ses rôles, feux.
+                  JSON.stringify(shape.labels) ===
+                    JSON.stringify([
+                      'Bobine',
+                      ...['file', 'edit', 'view', 'conversation', 'window', 'help'].map((m) =>
+                        L(`menu.${m}`)
+                      )
+                    ]) &&
+                  JSON.stringify(shape.appRoles.map((r) => r.toLowerCase())) ===
+                    JSON.stringify(['services', 'hide', 'hideothers', 'unhide', 'quit']) &&
+                  (process.platform !== 'darwin' ||
+                    JSON.stringify(shape.lights) === JSON.stringify({ x: 18, y: 19 }))
               : shape.top === 5 &&
                   !shape.window &&
                   // Barre d'Electron jamais montrée (fiche 145, variante D) : vue sous Linux ;

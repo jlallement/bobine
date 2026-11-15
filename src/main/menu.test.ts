@@ -305,3 +305,47 @@ describe('modèle du menu ☰ (fiche 145, maquette D)', () => {
     expect(appMenuIds(model).has('role:copy')).toBe(true)
   })
 })
+
+describe('menu du Mac figé (fiche 145 : « ne casse pas la barre système du Mac »)', () => {
+  it('menus, rôles, identifiants et raccourcis du Mac, à l’identique', () => {
+    const template = buildMenuTemplate({
+      appName: 'Bobine',
+      dev: false,
+      send: vi.fn(),
+      about: vi.fn(),
+      showLog: vi.fn(),
+      zoom: vi.fn(),
+      presentation: { active: false, toggle: vi.fn() },
+      quickEntry: { open: vi.fn(), accelerator: 'Alt+CommandOrControl+B' }
+    })
+    const shape = (items: MenuItemConstructorOptions[]): string[] =>
+      items
+        .filter((i) => i.visible !== false)
+        .map((i) =>
+          i.type === 'separator'
+            ? '—'
+            : (
+                [i.id ?? i.role, i.accelerator].filter(Boolean).join(' ') +
+                (Array.isArray(i.submenu) ? ` [${shape(i.submenu).join(', ')}]` : '')
+              ).trim()
+        )
+    expect(template.map((m) => m.label)).toEqual([
+      'Bobine',
+      'Fichier',
+      'Édition',
+      'Affichage',
+      'Conversation',
+      'Fenêtre',
+      'Aide'
+    ])
+    expect(shape(template)).toEqual([
+      '[about, —, settings CmdOrCtrl+,, —, services, —, hide, hideOthers, unhide, —, quit]',
+      '[new-conversation CmdOrCtrl+N, search CmdOrCtrl+K, resume-session CmdOrCtrl+Shift+O, quick-entry Alt+CommandOrControl+B, —, close]',
+      '[undo, redo, —, cut, copy, paste, pasteAndMatchStyle, delete, selectAll, —, find CmdOrCtrl+F, find-next CmdOrCtrl+G, find-previous CmdOrCtrl+Shift+G]',
+      '[space-code CmdOrCtrl+1, space-discussion CmdOrCtrl+2, toggle-sidebar CmdOrCtrl+B, toggle-panel CmdOrCtrl+J, maximize-panel CmdOrCtrl+Shift+J, toggle-terminal Ctrl+`, show-changes CmdOrCtrl+Shift+D, —, reset-zoom CommandOrControl+0, zoom-in CommandOrControl+Plus, zoom-out CommandOrControl+-, —, presentation, —, fullscreen Ctrl+Cmd+F]',
+      '[focus-composer CmdOrCtrl+L, stop CmdOrCtrl+., aside CmdOrCtrl+Shift+A, previous-conversation Alt+CmdOrCtrl+Up, next-conversation Alt+CmdOrCtrl+Down]',
+      'windowMenu [activity CmdOrCtrl+Shift+U, —, minimize, zoom, —, front]',
+      'help [help CmdOrCtrl+?, shortcuts CmdOrCtrl+/, diagnostics, —, show-log]'
+    ])
+  })
+})

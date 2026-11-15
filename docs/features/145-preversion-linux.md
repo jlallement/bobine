@@ -528,4 +528,11 @@ lancé, rien d'autre à installer sur le Mac.
   sans barre ne passent pas par le protocole DevTools : vérifiés avec de vraies touches (xdotool,
   Xvfb et openbox, dans le conteneur : Ctrl+B replie puis rouvre la barre latérale ; Alt ouvre ☰,
   aucune barre d'Electron). À revoir pour Windows (fiche à venir).
+- 2026-11-15 — **Mac inchangé, figé** (consigne de Jérôme : « ne casse pas la version mac de la
+  barre système qui est bien »). Vérifié : le menu du Mac construit par cette branche est
+  identique à celui de `main` (comparaison ponctuelle des deux modèles, libellés, rôles,
+  identifiants et raccourcis) ; `menu.test.ts` le fige désormais (menus, rôles du menu « Bobine »,
+  raccourcis) ; `platform` vérifie sur le Mac la barre du système (menu « Bobine », Services,
+  Masquer…, Fenêtre), les feux à leur place (18, 19), pas de ☰. Joués sur le Mac, clair et
+  sombre : `startup`, `platform`, `settings`, `about` verts, captures regardées.
 
