@@ -939,13 +939,24 @@ function tick(ctx: TurnContext, ticks: number): Promise<void> {
   return new Promise((resolve, reject) => {
     if (ctx.signal.aborted) return reject(new TurnCancelled())
     const onAbort = () => {
-      clearTimeout(timer)
+      cancel()
       reject(new TurnCancelled())
     }
-    const timer = setTimeout(() => {
+    const done = () => {
       ctx.signal.removeEventListener('abort', onAbort)
       resolve()
-    }, ms)
+    }
+    // Délai nul sous Windows : `setTimeout(0)` y attend la résolution de l'horloge (~15 ms), et une
+    // longue réponse en milliers de morceaux dépassait le délai des essais (fiche 229, lot 7a).
+    // Ailleurs, le même minuteur qu'avant.
+    let cancel: () => void
+    if (ms === 0 && process.platform === 'win32') {
+      const immediate = setImmediate(done)
+      cancel = () => clearImmediate(immediate)
+    } else {
+      const timer = setTimeout(done, ms)
+      cancel = () => clearTimeout(timer)
+    }
     ctx.signal.addEventListener('abort', onAbort, { once: true })
   })
 }
