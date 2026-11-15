@@ -1096,7 +1096,18 @@ la plateforme ou par la forme du chemin, et les règles Unix sont gardées à l'
 **Vérifié dans la VM** (Windows 11 ARM64, accord de Jérôme dans la session) : MinGit (installé par
 la session des lots 4-5), pnpm 12.11.2 par corepack (`COREPACK_HOME` dans `bobine-229`, PATH passé
 à la commande seulement), clone de `main` + branche par un bundle, `pnpm install
---frozen-lockfile`, `vitest run` complet. Après rebase sur les lots 4, 5 et 8 : **VM_RESULT**.
+--frozen-lockfile`, `vitest run` complet. Après rebase sur les lots 4, 5 et 8 : **un seul échec
+reproductible** (« connexion coupée », ci-dessous), 4 591 essais, 78 sautés par capacité. Mais la
+suite complète n'y est **pas stable** : trois passages complets ont donné 1, 4 puis 6 échecs, pas
+les mêmes (conformité « changement d'agent », « sous-agent… », filles « éviction », premier
+lancement « réponse trop lente », `worktree-cycle` « base non extraite »), et chacun passe seul. Le
+dernier passage montre deux processus de vitest morts en plein essai (« Worker exited
+unexpectedly with exit code 1 », sur `cost-cap.test.ts` et `turn-auth.test.ts`) et des agents
+factices sortis (« agent exited ») : une erreur non rattrapée fait sortir un processus sous la
+charge. La VM n'a qu'**un processeur logique** (8 Go). Cause non trouvée cette nuit ; pistes : une
+erreur de flux non écoutée (`EPIPE`/`EOF` sur l'entrée d'un agent qui vient de sortir), un `pid`
+réutilisé visé par un arrêt d'arbre, la lenteur extrême d'un seul cœur. À reproduire sur
+`windows-latest` (4 cœurs) avant de juger.
 
 Corrigé à la cause grâce à la VM (en plus du tableau) :
 
