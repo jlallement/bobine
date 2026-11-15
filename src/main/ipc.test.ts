@@ -12,7 +12,7 @@ import {
   type IpcMainLike,
   type IpcSenderEvent
 } from './ipc'
-import { abs } from './test-platform'
+import { abs, ON_WINDOWS } from './test-platform'
 
 const view = {
   summary: {
@@ -554,7 +554,9 @@ describe('IPC', () => {
     const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'ipc-ouvrir-')))
     mkdirSync(join(workspace, 'src'))
     writeFileSync(join(workspace, 'src', 'a.ts'), 'export {}\n')
-    writeFileSync(join(workspace, 'lancer.command'), 'echo non\n')
+    // Un fichier qui s'exécute : `.command` sous macOS, `.bat` sous Windows (fiche 229).
+    const runnable = ON_WINDOWS ? 'lancer.bat' : 'lancer.command'
+    writeFileSync(join(workspace, runnable), 'echo non\n')
     conversations.workspaceOf.mockReturnValue(workspace)
     expect(await call('changes:open', 'c1', 'src/a.ts')).toEqual({
       kind: 'opened',
@@ -562,12 +564,12 @@ describe('IPC', () => {
     })
     expect(openPath).toHaveBeenCalledWith(join(workspace, 'src', 'a.ts'))
     // Fiche 071 : un fichier qui peut s'exécuter est montré dans le Finder, jamais ouvert.
-    expect(await call('changes:open', 'c1', 'lancer.command')).toMatchObject({
+    expect(await call('changes:open', 'c1', runnable)).toMatchObject({
       kind: 'revealed',
       reason: 'executable'
     })
     expect(openPath).toHaveBeenCalledTimes(1)
-    expect(reveal).toHaveBeenCalledWith(join(workspace, 'lancer.command'))
+    expect(reveal).toHaveBeenCalledWith(join(workspace, runnable))
     call('changes:reveal', 'c1', join(workspace, 'README.md'))
     expect(reveal).toHaveBeenCalledWith(join(workspace, 'README.md'))
     await expect(call('changes:open', 'c1', '../../etc/passwd')).rejects.toThrow('hors du dossier')

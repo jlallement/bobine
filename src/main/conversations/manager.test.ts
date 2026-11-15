@@ -37,6 +37,14 @@ import { native, ON_WINDOWS, POSIX_MODES } from '../test-platform'
  * supprime pas (EPERM) : les agents s'arrêtent d'abord, comme quand l'utilisateur ferme le projet.
  * macOS et Linux : supprimé sous l'agent, comme avant.
  */
+/**
+ * Commande de préparation d'un worktree (fiche 175) : une seconde, un fichier écrit, code 4. Par
+ * `sh` sous Unix ; par `cmd.exe` sous Windows, le fichier écrit par node (UTF-8, comme `sh`).
+ */
+const SETUP_COMMAND = ON_WINDOWS
+  ? `"${process.execPath}" -e "setTimeout(() => require('fs').writeFileSync('prepared.txt', 'préparé'), 1000)"& exit 4`
+  : 'sleep 1; echo préparé > prepared.txt; exit 4'
+
 function vanish(dir: string, manager: { stopAll(): void }): void {
   if (ON_WINDOWS) {
     manager.stopAll()
@@ -1184,10 +1192,7 @@ describe('ConversationManager', () => {
     writeFileSync(join(repo, '.gitignore'), '.env\n')
     writeFileSync(join(repo, '.worktreeinclude'), '.env\n')
     mkdirSync(join(repo, '.bobine'))
-    writeFileSync(
-      join(repo, '.bobine', 'worktree.json'),
-      JSON.stringify({ setup: 'sleep 1; echo préparé > prepared.txt; exit 4' })
-    )
+    writeFileSync(join(repo, '.bobine', 'worktree.json'), JSON.stringify({ setup: SETUP_COMMAND }))
     git('init', '-q', '-b', 'main')
     git('add', '.')
     git('commit', '-q', '-m', 'init')
@@ -1218,7 +1223,7 @@ describe('ConversationManager', () => {
         kind: 'worktree-setup',
         state: 'failed',
         exitCode: 4,
-        command: 'sleep 1; echo préparé > prepared.txt; exit 4',
+        command: SETUP_COMMAND,
         copy: { count: 1, files: ['.env'], skipped: 0, truncated: 0 }
       })
     ])

@@ -15,6 +15,7 @@ import { childrenToolsModule } from '../mcp/children-tools'
 import { ChildConversations, childHandlers, type ChildOptions } from './children'
 import { ConversationManager } from './manager'
 import { until } from './manager-until'
+import { native } from '../test-platform'
 
 /** Gestionnaire de l'essai en cours (un seul par essai), suivi par `waitFor`. */
 let current: ConversationManager | undefined
@@ -244,7 +245,7 @@ describe('conversations filles (fiche 097)', () => {
     })
     expect(report?.kind === 'child-report' && report.files.map((f) => f.path)).toEqual([
       'README.md',
-      'src/app.js'
+      native('src/app.js')
     ])
     // La fille travaille dans son worktree : le dépôt principal n'a pas bougé.
     expect(readFileSync(join(env.repo, 'README.md'), 'utf8')).toContain('Version 1')

@@ -6,6 +6,7 @@
  */
 import { withSubagentWork, type TranscriptItem } from './transcript'
 import { diffStats } from './diff'
+import { isDriveAbsolute, windowsWithin } from './windows-paths.ts'
 
 /** Un diff à afficher : `oldText` nul = fichier créé. */
 export interface TextChange {
@@ -171,6 +172,13 @@ export function splitPath(path: string): { dir: string; name: string } {
 /** Chemin montré relatif au dossier de travail quand il y est. */
 export function relativeTo(workspace: string | undefined, path: string): string {
   if (!workspace) return path
+  // Dossier Windows (fiche 229) : sans casse, `\` ou `/` ; le reste garde son orthographe.
+  if (isDriveAbsolute(workspace)) {
+    const base = workspace.replace(/[\\/]+$/, '')
+    return isDriveAbsolute(path) && windowsWithin(path, base) && path.length > base.length
+      ? path.slice(base.length + 1)
+      : path
+  }
   const root = workspace.endsWith('/') ? workspace : `${workspace}/`
   return path.startsWith(root) ? path.slice(root.length) : path
 }

@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, posix, win32 } from 'node:path'
 import type { ForgeAdapter } from './forge'
 import { firstUrl, forgeFailure } from './forge'
 
@@ -95,6 +95,8 @@ export function glabConfigFile(
   platform: NodeJS.Platform = process.platform,
   exists: (path: string) => boolean = existsSync
 ): string {
+  // Chemins à la façon du système `platform` (fiche 229 : `darwin` essayé sous Windows aussi).
+  const { join } = platform === 'win32' ? win32 : posix
   if (env['GLAB_CONFIG_DIR']) return join(env['GLAB_CONFIG_DIR'], 'config.yml')
   const legacy = join(home, '.config', 'glab-cli', 'config.yml')
   if (exists(legacy)) return legacy

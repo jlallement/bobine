@@ -17,6 +17,7 @@ import type { Run } from '../simulator/run'
 import { gitCommand } from '../git/git-queue'
 import { WorktreeCycle, type CycleTarget } from './worktree-cycle'
 import { Worktrees } from './worktrees'
+import { ON_WINDOWS } from '../test-platform'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -540,11 +541,14 @@ describe('cycle d’un worktree (fiche 110)', () => {
   it('« Committer » prend les chemins tels quels, jamais comme motifs (relecture 0.9.1)', async () => {
     const { target, cycle } = await setup()
     const wt = target.worktree.path
-    for (const name of ['a[1].txt', 'a1.txt', '*.txt', 'b.txt']) write(target, name, `${name}\n`)
+    // Un nom qui est aussi un motif : `*` sous Unix ; Windows refuse `*` dans un nom, `[ab]` y est
+    // permis (et désignerait `b.txt` comme motif).
+    const star = ON_WINDOWS ? '[ab].txt' : '*.txt'
+    for (const name of ['a[1].txt', 'a1.txt', star, 'b.txt']) write(target, name, `${name}\n`)
     await cycle.commit(target, { message: 'feat: crochets', files: ['a[1].txt'] })
     expect(git(wt, 'show', '--name-only', '--format=', 'HEAD')).toBe('a[1].txt')
-    await cycle.commit(target, { message: 'feat: étoile', files: ['*.txt'] })
-    expect(git(wt, 'show', '--name-only', '--format=', 'HEAD')).toBe('*.txt')
+    await cycle.commit(target, { message: 'feat: étoile', files: [star] })
+    expect(git(wt, 'show', '--name-only', '--format=', 'HEAD')).toBe(star)
     expect(git(wt, 'status', '--porcelain', '-uall').split('\n').sort()).toEqual([
       '?? a1.txt',
       '?? b.txt'
@@ -628,7 +632,7 @@ describe('« Committer » hors worktree (fiche 123)', () => {
   it('dossier dans un sous-dossier du dépôt : chemins relatifs au dossier', async () => {
     const { root } = plain()
     const sub = join(root, 'app')
-    execFileSync('mkdir', [sub])
+    mkdirSync(sub)
     writeFileSync(join(sub, 'a.txt'), 'a\n')
     const cycle = new WorktreeCycle(gitCommand)
     await cycle.commitIn(

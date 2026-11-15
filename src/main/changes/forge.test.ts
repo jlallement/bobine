@@ -24,6 +24,7 @@ import {
   readGlabHosts
 } from './forge-gitlab'
 import { toolError } from './worktree-cycle'
+import { ON_WINDOWS } from '../test-platform'
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', 'glab', name), 'utf8')
 
@@ -326,15 +327,23 @@ describe('relecture du tech lead (fiche 189)', () => {
 
   it('faux glab qui dort : tué au bout du délai, timedOut, hôte injoignable', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bob-sleepy-'))
-    const glab = join(dir, 'glab')
-    writeFileSync(glab, '#!/bin/sh\nsleep 30\n')
+    // Faux glab : un script `sh` sous Unix ; sous Windows, un `.cmd` qui lance node (fiche 229).
+    const glab = join(dir, ON_WINDOWS ? 'glab.cmd' : 'glab')
+    writeFileSync(
+      glab,
+      ON_WINDOWS
+        ? `@"${process.execPath}" -e "setTimeout(() => {}, 30000)"\r\n`
+        : '#!/bin/sh\nsleep 30\n'
+    )
     chmodSync(glab, 0o755)
     try {
       const started = Date.now()
       const result = await runCommand(glab, ['auth', 'status'], { timeoutMs: 300 })
       expect(result.timedOut).toBe(true)
       expect(Date.now() - started).toBeLessThan(5_000)
-      const quick = await runCommand('/bin/sh', ['-c', 'exit 3'], { timeoutMs: 5_000 })
+      const quick = ON_WINDOWS
+        ? await runCommand(process.execPath, ['-e', 'process.exit(3)'], { timeoutMs: 5_000 })
+        : await runCommand('/bin/sh', ['-c', 'exit 3'], { timeoutMs: 5_000 })
       expect(quick).toMatchObject({ code: 3 })
       expect(quick.timedOut).toBeUndefined()
       const slow: Run = (file, args) => runCommand(file, args, { timeoutMs: 300 })
