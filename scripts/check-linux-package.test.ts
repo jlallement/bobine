@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { asarEntries, asarProblems, packageProblems } from './check-linux-package.mts'
-import { BUNDLED_FONT_FILES, FONT_LICENSES, MAC_FONTS_EXCLUSION } from './bundled-fonts.mjs'
+import { BUNDLED_FONT_FILES, FONT_LICENSES } from './bundled-fonts.mjs'
 import { HICOLOR_DIRS, LINUX_ICON_SIZES } from './linux-icons.mjs'
 
 const root = join(__dirname, '..')
@@ -99,11 +99,7 @@ describe('paquet Linux (fiche 145)', () => {
       files: string[]
       linux: { files: string[] }
     }
-    // Seule différence : les polices livrées, exclues de l'app Mac seulement.
-    const shared = config.files.filter((p) => p !== MAC_FONTS_EXCLUSION)
-    expect(shared).toHaveLength(config.files.length - 1)
-    expect(config.linux.files.slice(0, shared.length)).toEqual(shared)
-    expect(config.linux.files).not.toContain(MAC_FONTS_EXCLUSION)
+    expect(config.linux.files.slice(0, config.files.length)).toEqual(config.files)
     expect(config.linux.files.some((p) => !p.startsWith('!'))).toBe(true)
   })
 })

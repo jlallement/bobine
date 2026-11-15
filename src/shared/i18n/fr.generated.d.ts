@@ -1356,14 +1356,11 @@ export type FrResources = {
       }
       readonly conversationFont: {
         readonly label: 'Police des réponses'
-        readonly hint: 'Sans serif ou serif du système, ou une police installée sur le Mac.'
-        readonly sans: 'Système (sans serif)'
-        readonly serif: 'Serif (New York)'
-        readonly installed: 'Polices installées'
+        readonly hint: 'Inter (livrée avec Bobine), une police du système ou une police installée.'
         readonly inter: 'Inter'
         readonly systemSans: 'Système (sans serif)'
-        readonly systemSerif: 'Système (serif)'
-        readonly hintBundled: 'Inter (livrée avec Bobine), une police du système ou une police installée.'
+        readonly serif: 'Serif du système'
+        readonly installed: 'Polices installées'
       }
       readonly conversationSize: {
         readonly label: 'Taille des réponses'
@@ -1389,10 +1386,9 @@ export type FrResources = {
       readonly codeFont: {
         readonly label: 'Police du code'
         readonly hint: 'Blocs de code, diffs et sorties de commandes.'
-        readonly system: 'SF Mono (système)'
-        readonly installed: 'Polices à chasse fixe installées'
         readonly jetbrains: 'JetBrains Mono'
         readonly systemMono: 'Chasse fixe du système'
+        readonly installed: 'Polices à chasse fixe installées'
       }
       readonly codeSize: { readonly label: 'Taille du code' }
       readonly codeLigatures: {

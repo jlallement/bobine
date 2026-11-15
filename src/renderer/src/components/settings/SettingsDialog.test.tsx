@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSettingsView } from '@shared/agent'
-import { ALL_FEATURES } from '@shared/platform'
 import { DEFAULT_PREFERENCES } from '@shared/preferences'
 import { setLanguage } from '../../i18n'
 import {
@@ -357,13 +356,15 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     const options = (id: string) =>
       [...(screen.getByTestId(id) as HTMLSelectElement).options].map((o) => o.textContent)
     expect(options('settings-conversation-font')).toEqual([
+      'Inter',
       'Système (sans serif)',
-      'Serif (New York)',
+      'Serif du système',
       'Avenir Next',
       'Menlo'
     ])
     expect(options('settings-code-font')).toEqual([
-      'SF Mono (système)',
+      'JetBrains Mono',
+      'Chasse fixe du système',
       'JetBrains Mono (non installée)',
       'Menlo'
     ])
@@ -372,9 +373,7 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     expect(onPreferences).toHaveBeenCalledWith({ terminalFontFamily: 'Menlo' })
   })
 
-  it('polices livrées hors macOS (fiche 145) : Inter et JetBrains Mono, celles du système en plus', async () => {
-    const api = (window as unknown as { api: { app: Record<string, unknown> } }).api
-    api.app['features'] = { ...ALL_FEATURES, bundledFonts: true }
+  it('polices livrées (fiche 145, D9) : Inter et JetBrains Mono par défaut, celles du système au choix', async () => {
     render(<SettingsDialog {...dialogProps('appearance')} />)
     await act(async () => {})
     const options = (id: string) =>

@@ -1,13 +1,11 @@
 /*
- * Polices livrées hors macOS (fiche 145, capacité `bundledFonts`) : Inter pour l'interface
- * (rsms/inter v4.1, variable, graisses 100 à 900) et JetBrains Mono pour le code et les diffs
- * (JetBrains/JetBrainsMono v2.304 : 400, 500, 600, 700 et l'italique, les graisses du CSS). Fichiers
- * `woff2` publiés, non modifiés, licence OFL 1.1 à côté (`assets/fonts/*-LICENSE.txt`), chargés
- * depuis le disque (CSP `default-src 'self'`, aucun réseau). Noms propres à Bobine : ne masquent
- * pas une copie installée par l'utilisateur.
- *
- * Ces fichiers ne sont pas dans l'app Mac (exclus par `files` d'electron-builder.yml) : sur macOS,
- * la classe `bundled-fonts` n'est jamais posée et aucune de ces polices n'est demandée.
+ * Polices livrées avec l'app, sur macOS, Linux et Windows (fiche 145, D9 ; ADR-0051) : Inter pour
+ * l'interface (rsms/inter v4.1, variable, graisses 100 à 900) et JetBrains Mono pour le code et
+ * les diffs (JetBrains/JetBrainsMono v2.304 : 400, 500, 600, 700 et l'italique, les graisses du
+ * CSS). Fichiers `woff2` publiés, non modifiés, licence OFL 1.1 à côté
+ * (`assets/fonts/*-LICENSE.txt`), chargés depuis le disque (CSP `default-src 'self'`, aucun
+ * réseau). Noms propres à Bobine : ne masquent pas une copie installée par l'utilisateur. Les
+ * piles sont dans `:root` (styles.css). Le terminal garde sa police (terminal-symbols.css).
  */
 @font-face {
   font-family: 'Bobine Inter';
@@ -66,14 +64,9 @@
 }
 
 /*
- * Piles de polices hors macOS ; sur macOS, celles de `:root` (styles.css), inchangées. Le serif
- * reste celui de `:root` (Georgia, puis le serif du système).
- *
  * Inter redessine `=>` en flèche et `!=` en ≠ (alternances contextuelles) : coupées dans tout le
  * texte, les vrais caractères ; le code suit son propre réglage (`--code-ligatures`).
  */
-html.bundled-fonts {
-  --font-ui: 'Bobine Inter', system-ui, sans-serif;
-  --font-mono: 'Bobine JetBrains Mono', ui-monospace, monospace;
+:root {
   font-variant-ligatures: none;
 }

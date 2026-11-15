@@ -14,7 +14,7 @@ import {
   unpackedDir,
   windowsPackageProblems
 } from './package-win.mts'
-import { BUNDLED_FONT_FILES, MAC_FONTS_EXCLUSION } from './bundled-fonts.mjs'
+import { BUNDLED_FONT_FILES } from './bundled-fonts.mjs'
 
 /** Petit en-tête PE : « MZ », pointeur en 0x3c, « PE\0\0 » puis le champ Machine. */
 function fakeExe(machine: number): Buffer {
@@ -120,8 +120,6 @@ describe('paquet Windows (fiche 229)', () => {
       readFileSync(join(import.meta.dirname, '..', 'electron-builder.yml'), 'utf8')
     ) as { files: string[]; win: Record<string, unknown> }
     const files = windowsFiles(config.files)
-    // Polices livrées (fiche 145) : exclues du Mac seulement, donc remises pour Windows.
-    expect(files).not.toContain(MAC_FONTS_EXCLUSION)
     expect(files).toEqual([
       ...config.files.filter((p) => !ROOT_ONLY_EXCLUSIONS.includes(p)),
       ...WINDOWS_EXCLUSIONS

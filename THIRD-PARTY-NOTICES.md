@@ -264,10 +264,9 @@ does not modify them further. Pomicons (Reserved Font Name "Pomicons") and Weath
 licensed under the SIL Open Font License 1.1 ([T84](#t84)). The other icon sets are under
 the licenses listed in the table.
 
-## Inter and JetBrains Mono (Linux and Windows apps only)
+## Inter and JetBrains Mono
 
-Two font families are embedded in the Linux and Windows apps, as published, unmodified (WOFF2 web
-fonts); the macOS app does not include them and uses the system fonts.
+Two font families are embedded in the app, as published, unmodified (WOFF2 web fonts).
 
 - [Inter](https://github.com/rsms/inter) 4.1 (interface text; variable, upright and italic),
   Copyright (c) 2016 The Inter Project Authors, OFL-1.1: [T85](#t85).
@@ -277,8 +276,9 @@ fonts); the macOS app does not include them and uses the system fonts.
 
 ## Interface fonts, icons and artwork
 
-- **Fonts**: on macOS, the interface uses the system fonts (SF Pro, New York, SF Mono) through
-  generic CSS families; on Linux and Windows, the embedded fonts above. Nothing else is embedded.
+- **Fonts**: the interface uses the embedded fonts above; the system fonts (SF Pro, New York,
+  SF Mono on macOS) only through generic CSS families, as fallbacks or when chosen in the
+  settings. Nothing else is embedded.
 - **Icons**: [Lucide](https://lucide.dev) (`lucide-react`, listed above).
 - **App icon** (`build/icon.svg`) and **install background** (`build/background.svg`): the
   project's own work, under Bobine's license.

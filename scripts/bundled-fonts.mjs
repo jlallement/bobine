@@ -1,8 +1,8 @@
 /**
- * Polices livrées hors macOS (fiche 145, `src/renderer/src/bundled-fonts.css`) : Inter et
- * JetBrains Mono, copiées par Vite dans `out/renderer/assets/` (nom suivi d'une empreinte). Le Mac
- * garde SF Pro et SF Mono : ces fichiers sont exclus de son app par `files` (electron-builder.yml)
- * et remis dans les paquets Linux et Windows. Les contrôles des paquets vérifient l'un et l'autre.
+ * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0051,
+ * `src/renderer/src/bundled-fonts.css`) : Inter et JetBrains Mono, copiées par Vite dans
+ * `out/renderer/assets/` (nom suivi d'une empreinte). Les contrôles des paquets (.app, .deb,
+ * Windows) vérifient qu'elles y sont, avec leurs licences.
  */
 
 /** Fichiers livrés, tels que publiés (rsms/inter v4.1, JetBrains/JetBrainsMono v2.304). */
@@ -16,11 +16,8 @@ export const BUNDLED_FONT_FILES = [
   'JetBrainsMono-Bold.woff2'
 ]
 
-/** Licences de ces polices (OFL 1.1), livrées dans `licenses/fonts/` des apps Linux et Windows. */
+/** Licences de ces polices (OFL 1.1), livrées dans `licenses/fonts/` de chaque app. */
 export const FONT_LICENSES = ['Inter-LICENSE.txt', 'JetBrainsMono-LICENSE.txt']
-
-/** Exclusion de `files` à la racine (l'app Mac), retirée pour Linux et Windows. */
-export const MAC_FONTS_EXCLUSION = '!out/renderer/assets/{InterVariable,JetBrainsMono}*.woff2'
 
 /** Le fichier livré qu'est une entrée de l'archive (`out/renderer/assets/Inter…-<empreinte>.woff2`). */
 function fontOf(entry) {
@@ -35,7 +32,7 @@ export function bundledFontsIn(entries) {
   return BUNDLED_FONT_FILES.filter((file) => entries.some((e) => fontOf(e) === file))
 }
 
-/** Ce qui manque à un paquet Linux ou Windows : chaque police livrée, dans l'archive. */
+/** Ce qui manque à un paquet : chaque police livrée, dans l'archive. */
 export function missingFonts(entries) {
   const present = bundledFontsIn(entries)
   return BUNDLED_FONT_FILES.filter((f) => !present.includes(f)).map(

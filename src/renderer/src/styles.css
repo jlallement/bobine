@@ -6,12 +6,19 @@
 
 :root {
   /* Couleurs : jetons de thème générés (`themes.generated.css`, depuis `shared/themes.ts`). */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  /*
+   * Polices livrées avec l'app sur les trois systèmes (fiche 145, D9 ; ADR-0051) : Inter pour
+   * l'interface, JetBrains Mono pour le code (`bundled-fonts.css`) ; celles du système en repli,
+   * et au choix dans Réglages › Apparence (`--font-system-*`).
+   */
+  --font-system-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-system-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ui: 'Bobine Inter', var(--font-system-ui);
   --font-serif: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
   /* Fil de conversation : police et taille réglables (réglages › Conversation). */
   --conv-font: var(--font-ui);
   --conv-size: 15px;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-mono: 'Bobine JetBrains Mono', var(--font-system-mono);
   color-scheme: light;
   font-family: var(--font-ui);
   font-size: 14px;

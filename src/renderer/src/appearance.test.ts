@@ -61,9 +61,9 @@ describe('polices livrées hors macOS (fiche 145)', () => {
     const { codeFontCss, conversationFontCss, SYSTEM_MONO, SYSTEM_SANS } =
       await import('./appearance')
     expect(conversationFontCss('sans')).toBe('var(--font-ui)')
-    expect(conversationFontCss(SYSTEM_SANS)).toBe('system-ui, sans-serif')
+    expect(conversationFontCss(SYSTEM_SANS)).toBe('var(--font-system-ui)')
     expect(codeFontCss('system')).toBe('var(--font-mono)')
-    expect(codeFontCss(SYSTEM_MONO)).toBe('ui-monospace, monospace')
+    expect(codeFontCss(SYSTEM_MONO)).toBe('var(--font-system-mono)')
     expect(codeFontCss('Fira Code')).toBe("'Fira Code', var(--font-mono)")
   })
 })

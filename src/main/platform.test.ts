@@ -7,7 +7,7 @@ describe('capacités de la plateforme (fiche 145)', () => {
     expect(platformFeatures('darwin')).toEqual(ALL_FEATURES)
   })
 
-  it('sous Linux, rien de ce que seul macOS a ; polices livrées', () => {
+  it('sous Linux, rien de ce que seul macOS a', () => {
     expect(platformFeatures('linux')).toEqual({
       simulator: false,
       selfInstall: false,
@@ -21,8 +21,7 @@ describe('capacités de la plateforme (fiche 145)', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false,
-      bundledFonts: true
+      glass: false
     })
   })
 
@@ -82,8 +81,7 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false,
-      bundledFonts: false
+      glass: false
     })
   })
 
@@ -102,8 +100,7 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false,
-      bundledFonts: false
+      glass: false
     })
   })
 })

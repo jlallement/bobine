@@ -39,7 +39,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
-import { FONT_LICENSES, MAC_FONTS_EXCLUSION, missingFonts } from './bundled-fonts.mjs'
+import { FONT_LICENSES, missingFonts } from './bundled-fonts.mjs'
 
 export type WindowsArch = 'x64' | 'arm64'
 export const WINDOWS_ARCHS: readonly WindowsArch[] = ['x64', 'arm64']
@@ -70,15 +70,11 @@ export function parseWindowsArgs(argv: readonly string[]): WindowsPackageOptions
   return { archs: archs.length ? archs : [...WINDOWS_ARCHS], dirOnly, builderArgs }
 }
 
-/**
- * Exclusions de la racine faites pour le Mac et Linux, retirées pour Windows ; les polices livrées
- * (Inter, JetBrains Mono : fiche 145) ne sont exclues que du Mac.
- */
+/** Exclusions de la racine faites pour le Mac et Linux, retirées pour Windows. */
 export const ROOT_ONLY_EXCLUSIONS = [
   '!node_modules/node-pty/prebuilds/win32-*/**',
   '!node_modules/koffi/**',
-  '!node_modules/@koromix/**',
-  MAC_FONTS_EXCLUSION
+  '!node_modules/@koromix/**'
 ]
 
 /** Exclusions propres à Windows (`${arch}` : macro d'electron-builder, l'architecture construite). */

@@ -7,22 +7,19 @@ import { BUNDLED_FONT_FILES, bundledFontsIn, missingFonts } from './bundled-font
 const RENDERER = join(import.meta.dirname, '..', 'src', 'renderer', 'src')
 const css = (file: string) => readFileSync(join(RENDERER, file), 'utf8')
 
-describe('polices livrées hors macOS (fiche 145)', () => {
-  it('piles du Mac inchangées ; Inter et JetBrains Mono seulement sous `html.bundled-fonts`', () => {
+describe('polices livrées (fiche 145, D9)', () => {
+  it('Inter et JetBrains Mono en tête des piles, celles du système en repli', () => {
     const styles = css('styles.css')
+    expect(styles).toContain("--font-ui: 'Bobine Inter', var(--font-system-ui);")
+    expect(styles).toContain("--font-mono: 'Bobine JetBrains Mono', var(--font-system-mono);")
+    // Piles du système d'avant, gardées pour le repli et le choix « système » des Réglages.
     expect(styles).toContain(
-      "--font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;"
+      "--font-system-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;"
     )
-    expect(styles).toContain("--font-mono: ui-monospace, 'SF Mono', Menlo, monospace;")
+    expect(styles).toContain("--font-system-mono: ui-monospace, 'SF Mono', Menlo, monospace;")
     const bundled = css('bundled-fonts.css')
-    const rules = bundled.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@font-face\s*{[^}]*}/g, '')
-    expect(rules.match(/^[^\s{][^{]*(?={)/gm)?.map((s: string) => s.trim())).toEqual([
-      'html.bundled-fonts'
-    ])
-    expect(bundled).toContain("--font-ui: 'Bobine Inter'")
-    expect(bundled).toContain("--font-mono: 'Bobine JetBrains Mono'")
     // Flèches d'Inter (`=>`, `!=`) coupées dans le texte de l'interface.
-    expect(bundled).toMatch(/html\.bundled-fonts {[^}]*font-variant-ligatures: none;/)
+    expect(bundled).toMatch(/:root {[^}]*font-variant-ligatures: none;/)
     // Chaque fichier déclaré est livré (et seulement des woff2 locaux : aucun réseau).
     const urls = [...bundled.matchAll(/url\('([^']+)'\)/g)].map((m) => m[1] ?? '')
     expect(urls.map((u) => u.split('/').at(-1)).sort()).toEqual([...BUNDLED_FONT_FILES].sort())

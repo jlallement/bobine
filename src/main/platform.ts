@@ -39,10 +39,7 @@ export function platformFeatures(platform: string): PlatformFeatures {
     overlayScrollbars: mac,
     // Sous Linux, le flou d'arrière-plan et la fin des fondus dépendent du pilote graphique : un
     // menu y est resté à 88 % d'opacité, lisible à travers (VM VMware, fiche 145).
-    glass: mac,
-    // SF Pro et SF Mono sur macOS ; ailleurs, la police du système varie (DejaVu, plus large, sur
-    // beaucoup de Linux ; Segoe UI sous Windows) : Inter et JetBrains Mono livrées.
-    bundledFonts: !mac
+    glass: mac
   }
 }
 

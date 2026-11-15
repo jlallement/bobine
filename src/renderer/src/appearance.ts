@@ -15,29 +15,28 @@ export interface AppearanceSource {
 }
 
 /**
- * Police des réponses en CSS : celle de l'interface (SF Pro, ou Inter livrée hors macOS), le
- * serif, la sans serif du système (`system-sans`, proposée quand l'app livre ses polices) ou une
- * police installée.
+ * Police des réponses en CSS : celle de l'interface (Inter, livrée), la sans serif du système
+ * (`system-sans` : SF Pro sur macOS), le serif ou une police installée.
  */
 export function conversationFontCss(font: string): string {
   if (font === 'sans') return 'var(--font-ui)'
   if (font === 'serif') return 'var(--font-serif)'
-  if (font === SYSTEM_SANS) return 'system-ui, sans-serif'
+  if (font === SYSTEM_SANS) return 'var(--font-system-ui)'
   return `'${font}', var(--font-ui)`
 }
 
-/** Sans serif du système (fiche 145) : hors macOS, à la place d'Inter livrée. */
+/** Sans serif du système (fiche 145) : à la place d'Inter, livrée. */
 export const SYSTEM_SANS = 'system-sans'
-/** Police à chasse fixe du système (fiche 145) : hors macOS, à la place de JetBrains Mono. */
+/** Police à chasse fixe du système (fiche 145) : à la place de JetBrains Mono, livrée. */
 export const SYSTEM_MONO = 'system-mono'
 
 /**
- * Police du code en CSS ; `system` : celle de l'app (SF Mono, ou JetBrains Mono livrée hors
- * macOS) ; `system-mono` : la police à chasse fixe du système.
+ * Police du code en CSS ; `system` : celle de l'app (JetBrains Mono, livrée) ; `system-mono` : la
+ * police à chasse fixe du système (SF Mono sur macOS).
  */
 export function codeFontCss(font: string): string {
   if (font === 'system') return 'var(--font-mono)'
-  if (font === SYSTEM_MONO) return 'ui-monospace, monospace'
+  if (font === SYSTEM_MONO) return 'var(--font-system-mono)'
   return `'${font}', var(--font-mono)`
 }
 

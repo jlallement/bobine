@@ -1316,14 +1316,11 @@
       },
       "conversationFont": {
         "label": "Response font",
-        "hint": "The system’s sans serif or serif, or a font installed on the Mac.",
-        "sans": "System (sans serif)",
-        "serif": "Serif (New York)",
-        "installed": "Installed fonts",
+        "hint": "Inter (bundled with Bobine), a system font or an installed font.",
         "inter": "Inter",
         "systemSans": "System (sans serif)",
-        "systemSerif": "System (serif)",
-        "hintBundled": "Inter (bundled with Bobine), a system font or an installed font."
+        "serif": "System serif",
+        "installed": "Installed fonts"
       },
       "conversationSize": {
         "label": "Response size",
@@ -1349,10 +1346,9 @@
       "codeFont": {
         "label": "Code font",
         "hint": "Code blocks, diffs and command output.",
-        "system": "SF Mono (system)",
-        "installed": "Installed monospaced fonts",
         "jetbrains": "JetBrains Mono",
-        "systemMono": "System monospace"
+        "systemMono": "System monospace",
+        "installed": "Installed monospaced fonts"
       },
       "codeSize": {
         "label": "Code size"

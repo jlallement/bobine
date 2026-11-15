@@ -33,10 +33,6 @@ files:
   # Le paquet Windows (fiche 229, lot 6) devra l'y remettre.
   - '!node_modules/koffi/**'
   - '!node_modules/@koromix/**'
-  # Inter et JetBrains Mono (fiche 145) : livrées hors macOS seulement, le Mac garde SF Pro et SF
-  # Mono. Exclusion retirée de `linux.files` et des fichiers de Windows (`MAC_FONTS_EXCLUSION`,
-  # scripts/bundled-fonts.mjs) ; les contrôles des paquets vérifient l'un et l'autre.
-  - '!out/renderer/assets/{InterVariable,JetBrainsMono}*.woff2'
 # Textes de licence (fiche 217), dans Contents/Resources/licenses (macOS) et resources/licenses
 # (Linux) : ceux de Bobine, les avis des composants tiers (`pnpm third-party-notices`, vérifiés
 # avant la construction par scripts/package), ceux d'Electron et de Chromium, et ceux de la police
@@ -52,11 +48,10 @@ extraResources:
     to: licenses/electron/LICENSE
   - from: node_modules/electron/dist/LICENSES.chromium.html
     to: licenses/electron/LICENSES.chromium.html
-  # Police du terminal (toutes les apps) ; Inter et JetBrains Mono, livrées hors macOS, ont leurs
-  # licences dans les sections Linux et Windows (`FONT_LICENSES`, scripts/bundled-fonts.mjs).
+  # Polices livrées : MesloLGS Nerd Font (terminal), Inter et JetBrains Mono (fiche 145, D9).
   - from: src/renderer/src/assets/fonts
     to: licenses/fonts
-    filter: ['Meslo*.txt', 'NerdFonts*.txt']
+    filter: ['*.txt']
 # Langues de l'interface de Chromium (menus contextuels, boîtes de dialogue) : celles de l'app.
 electronLanguages: [fr, en]
 # node-pty est livré précompilé pour macOS (N-API, valable pour toute version d'Electron) : pas de
@@ -128,10 +123,6 @@ win:
       to: licenses/conpty/LICENSE.txt
     - from: node_modules/koffi/LICENSE.txt
       to: licenses/koffi/LICENSE.txt
-    # Inter et JetBrains Mono (fiche 145).
-    - from: src/renderer/src/assets/fonts
-      to: licenses/fonts
-      filter: ['Inter-LICENSE.txt', 'JetBrainsMono-LICENSE.txt']
 # NSIS 3.12 en un seul paquet (makensis pour macOS arm64, Linux et Windows), au lieu du 3.0.4 de
 # 2019 dont le makensis pour macOS n'existe qu'en x86_64 (Rosetta). Même outil sur le Mac et sur le
 # runner Windows de GitHub. Ne sert qu'à l'installeur Windows.
@@ -169,11 +160,10 @@ linux:
   # Champ exigé par le .deb (sinon lu dans `author` de package.json, qui n'a pas d'adresse).
   maintainer: Bobine <https://github.com/jlallement/bobine>
   artifactName: Bobine-${version}-${arch}.${ext}
-  # Les `files` de la racine, repris tels quels (sauf l'exclusion des polices livrées, propre au
-  # Mac), puis ce qui est propre à Linux. Une liste de seules exclusions ici fait ajouter `**/*` par
-  # electron-builder : le dépôt entier (src/, docs/, e2e/, fichiers locaux) entrait dans le .deb
-  # (constaté le 2026-11-15). Les deux listes doivent rester identiques :
-  # `scripts/check-linux-package.test.ts` le vérifie, et le contrôle du .deb
+  # Les `files` de la racine, repris tels quels, puis ce qui est propre à Linux. Une liste de
+  # seules exclusions ici fait ajouter `**/*` par electron-builder : le dépôt entier (src/, docs/,
+  # e2e/, fichiers locaux) entrait dans le .deb (constaté le 2026-11-15). Les deux listes doivent
+  # rester identiques : `scripts/check-linux-package.test.ts` le vérifie, et le contrôle du .deb
   # (`check-linux-package.mts`) refuse tout ce qui n'est pas `out/`, `package.json` ou
   # `node_modules/` dans `app.asar`.
   files:
@@ -189,12 +179,6 @@ linux:
     - '!node_modules/@koromix/**'
     # node-pty : le module compilé sous Linux (build/Release) ; ses binaires macOS ne servent pas.
     - '!node_modules/node-pty/prebuilds/**'
-  # Licences d'Inter et de JetBrains Mono, livrées hors macOS (fiche 145) ; s'ajoutent à celles de
-  # la racine.
-  extraResources:
-    - from: src/renderer/src/assets/fonts
-      to: licenses/fonts
-      filter: ['Inter-LICENSE.txt', 'JetBrainsMono-LICENSE.txt']
 # Icône vectorielle (hicolor/scalable) en plus des PNG : electron-builder ne prend qu'un dossier de
 # PNG ou une seule SVG, la SVG est donc ajoutée au .deb par fpm (chemin relatif à la racine).
 # Vérifié après la construction par `scripts/check-linux-package.mts` (fiche 145).
