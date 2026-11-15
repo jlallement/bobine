@@ -39,9 +39,10 @@ import { useDisplayPath } from '../../presentation'
 import { platformFeatures } from '../../platform-features'
 import i18next from 'i18next'
 import { SHORTCUTS, type MenuCommand } from '@shared/shortcuts'
+import { folderName } from '@shared/windows-paths'
 
 /** Dernier segment d'un chemin, pour un libellé court. */
-export const basename = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+export const basename = (path: string) => folderName(path)
 
 /** Dernier appui de la souris (ou du doigt), pour reconnaître le focus qu'un menu rend en se fermant. */
 let lastPointerDown = 0

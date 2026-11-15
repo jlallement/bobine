@@ -10,6 +10,7 @@ import type { ToolKind } from './acp-sdk.mts'
 import { visibleText } from './invisible-chars.ts'
 import { currentHomeFolder, shortenHomeIn, shortFolderPath } from './path-display.ts'
 import { abbreviateHome } from './presentation.ts'
+import { folderName, isDriveAbsolute, windowsKey, windowsWithin } from './windows-paths.ts'
 
 /** Ce que `rawInput` dit de la cible d'un outil, sous ses noms usuels. */
 export interface ToolInput {
@@ -168,10 +169,21 @@ export function relativePath(
   rootName?: string
 ): string {
   if (!workspace) return path
+  if (isDriveAbsolute(workspace)) return windowsRelativePath(path, workspace, rootName)
   const base = workspace.replace(/\/+$/, '')
   // Le dossier lui-même : son nom, ou `rootName` (« Documents » d'une discussion, fiche 224).
   if (path === base) return `${rootName ?? base.split('/').filter(Boolean).at(-1) ?? ''}/`
   return path.startsWith(`${base}/`) ? path.slice(base.length + 1) : path
+}
+
+/**
+ * `relativePath` sous Windows (fiche 229) : sans casse, `\` ou `/` ; le reste du chemin garde son
+ * orthographe et ses séparateurs.
+ */
+function windowsRelativePath(path: string, workspace: string, rootName?: string): string {
+  const base = workspace.replace(/[\\/]+$/, '')
+  if (windowsKey(path) === windowsKey(base)) return `${rootName ?? folderName(base)}\\`
+  return windowsWithin(path, base) && isDriveAbsolute(path) ? path.slice(base.length + 1) : path
 }
 
 /**
@@ -191,7 +203,10 @@ export function filePathParts(
     relative === path
       ? (shortFolderPath(path, { home: currentHomeFolder() }) ?? abbreviateHome(path))
       : relative
-  const cut = shown.endsWith('/') ? -1 : shown.lastIndexOf('/')
+  const windows = workspace !== undefined && isDriveAbsolute(workspace)
+  const lastSep = (text: string) =>
+    windows ? Math.max(text.lastIndexOf('/'), text.lastIndexOf('\\')) : text.lastIndexOf('/')
+  const cut = (windows ? /[\\/]$/.test(shown) : shown.endsWith('/')) ? -1 : lastSep(shown)
   return {
     dir: visibleText(shown.slice(0, cut + 1)),
     name: visibleText(shown.slice(cut + 1))
@@ -217,12 +232,23 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
  * voisin au nom qui commence pareil (« livres-copie ») n'est pas touché.
  */
 function relativeIn(text: string, workspace: string | undefined): string {
+  if (workspace && isDriveAbsolute(workspace)) return windowsRelativeIn(text, workspace)
   const base = workspace?.replace(/\/+$/, '')
   if (!base) return text
   const at = escapeRegExp(base)
   return text
     .replace(new RegExp(`${at}/(?=[^\\s/])`, 'g'), '')
     .replace(new RegExp(`${at}/?(?=$|[\\s"'\`;&|)])`, 'g'), '.')
+}
+
+/** `relativeIn` sous Windows (fiche 229) : sans casse, `\` ou `/` entre les segments. */
+function windowsRelativeIn(text: string, workspace: string): string {
+  const parts = workspace.split(/[\\/]+/).filter(Boolean)
+  if (parts.length < 2) return text
+  const at = parts.map(escapeRegExp).join('[\\\\/]')
+  return text
+    .replace(new RegExp(`${at}[\\\\/](?=[^\\s\\\\/])`, 'gi'), '')
+    .replace(new RegExp(`${at}[\\\\/]?(?=$|[\\s"'\`;&|)])`, 'gi'), '.')
 }
 
 /**

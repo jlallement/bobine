@@ -7,8 +7,9 @@ import { currentLocale } from '@shared/i18n/format'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
 import { ipcErrorText } from '../../ipc-errors'
+import { folderName } from '@shared/windows-paths'
 
-const basename = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const basename = (path: string) => folderName(path)
 const home = (path: string) => path.replace(/^\/Users\/[^/]+/, '~')
 
 /** Date courte : heure aujourd'hui, « hier », sinon jour et mois. */

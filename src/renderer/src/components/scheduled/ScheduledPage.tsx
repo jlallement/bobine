@@ -34,6 +34,7 @@ import { ipcErrorText } from '../../ipc-errors'
 import { useProfileStatus } from '../common/Profile'
 import { TaskForm } from './TaskForm'
 import './scheduled.css'
+import { folderName } from '@shared/windows-paths'
 
 /** Exécutions montrées par tâche (le fichier en garde davantage). */
 const SHOWN_RUNS = 5
@@ -145,7 +146,7 @@ function TaskCard({
     : task.nextRunAt
       ? t('scheduled.next', { date: dateTime(new Date(task.nextRunAt)) })
       : t('scheduled.noNext')
-  const folder = task.folder.split('/').filter(Boolean).at(-1) ?? task.folder
+  const folder = folderName(task.folder)
   return (
     <article
       className={`settings-card scheduled-task${task.paused ? ' paused' : ''}`}

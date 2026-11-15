@@ -23,6 +23,7 @@ import { useDisplayPath } from '../../presentation'
 import { ipcErrorText } from '../../ipc-errors'
 import { AppToolsTab, appToolCount } from './AppToolsTab'
 import { ConfirmRow, useConfirm } from './ConfirmRow'
+import { folderName } from '@shared/windows-paths'
 
 const seconds = (ms: number) => `${numberFormat({ maximumFractionDigits: 1 }).format(ms / 1000)} s`
 
@@ -109,7 +110,7 @@ export function TestLine({ result }: { result: McpStatus | undefined }) {
   )
 }
 
-const basename = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const basename = (path: string) => folderName(path)
 
 /** Formulaire d'un serveur : champs texte, convertis à l'enregistrement. */
 interface Draft {

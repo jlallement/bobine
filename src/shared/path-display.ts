@@ -8,7 +8,12 @@
  *
  * Au moindre doute, le chemin reste tel quel : relatif, `~`, variable, segment `..` (un lien
  * symbolique pourrait le faire sortir), dossier racine, voisin au nom qui commence pareil.
+ *
+ * Windows (fiche 229) : un dossier personnel `C:\Users\ada` (`%USERPROFILE%`) se lit de même,
+ * sans casse, `\` et `/` acceptés (`C:\Users\ada\notes` → `~\notes`). Seul un chemin de forme
+ * Windows (lettre de lecteur) prend ce chemin-là : un chemin POSIX ne change pas.
  */
+import { isDriveAbsolute, isWindowsPath, windowsSegments, windowsWithin } from './windows-paths.ts'
 
 /** Ce qui sert à raccourcir : le dossier de la conversation et le dossier personnel de l'utilisateur. */
 export interface PathContext {
@@ -16,8 +21,17 @@ export interface PathContext {
   home?: string | undefined
 }
 
+/** Chemin Windows normalisé (`C:\a\b`, casse gardée), ou `undefined` au moindre doute. */
+function cleanWindows(path: string): string | undefined {
+  if (!isDriveAbsolute(path) || /[$%]/.test(path)) return undefined
+  const [drive = '', ...parts] = windowsSegments(path).filter((part) => part !== '.')
+  if (parts.includes('..')) return undefined
+  return `${drive}\\${parts.join('\\')}`
+}
+
 /** Chemin absolu normalisé (sans barres en trop ni `.`), ou `undefined` au moindre doute. */
 function clean(path: string): string | undefined {
+  if (isWindowsPath(path)) return cleanWindows(path)
   if (!path.startsWith('/') || /\$/.test(path)) return undefined
   const parts = path.split('/').filter((part) => part !== '' && part !== '.')
   if (parts.includes('..')) return undefined
@@ -26,7 +40,15 @@ function clean(path: string): string | undefined {
 
 /** `path` est `base` ou dedans (déjà normalisés) ; `base` jamais la racine. */
 const inside = (path: string, base: string) =>
-  base !== '/' && (path === base || path.startsWith(`${base}/`))
+  isDriveAbsolute(base)
+    ? !/^[a-z]:\\$/i.test(base) && isDriveAbsolute(path) && windowsWithin(path, base)
+    : base !== '/' && (path === base || path.startsWith(`${base}/`))
+
+/** Dernier segment d'un dossier normalisé. */
+const lastName = (folder: string) =>
+  isDriveAbsolute(folder)
+    ? folder.slice(folder.lastIndexOf('\\') + 1)
+    : folder.slice(folder.lastIndexOf('/') + 1)
 
 /**
  * Chemin dit court, ou `undefined` s'il n'y a rien de plus court et sûr à en dire. Le dossier de la
@@ -38,8 +60,7 @@ export function shortFolderPath(path: string, context: PathContext): string | un
   if (!target) return undefined
   const workspace = context.workspace ? clean(context.workspace) : undefined
   if (workspace && inside(target, workspace)) {
-    const name = workspace.slice(workspace.lastIndexOf('/') + 1)
-    return `${name}${target.slice(workspace.length)}`
+    return `${lastName(workspace)}${target.slice(workspace.length)}`
   }
   const home = context.home ? clean(context.home) : undefined
   if (home && inside(target, home)) return `~${target.slice(home.length)}`
@@ -57,6 +78,13 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 export function shortenHomeIn(text: string, home: string | undefined): string {
   const base = home ? clean(home) : undefined
   if (!base || base === '/') return text
+  if (isDriveAbsolute(base)) {
+    // Sans casse, `\` ou `/` entre les segments ; s'arrête à un séparateur, un espace, un guillemet.
+    if (/^[a-z]:\\$/i.test(base)) return text
+    const at = base.split('\\').map(escapeRegExp).join('[\\\\/]')
+    const pattern = `(^|[\\s"'\`(=])${at}(?=[\\\\/]|[\\s"'\`)]|$)`
+    return text.replace(new RegExp(pattern, 'gi'), '$1~')
+  }
   const at = escapeRegExp(base)
   return text.replace(new RegExp(`(^|[\\s"'\`(=:])${at}(?=/|[\\s"'\`)]|$)`, 'g'), '$1~')
 }
@@ -65,7 +93,7 @@ export function shortenHomeIn(text: string, home: string | undefined): string {
 let homeFolder: string | undefined
 
 export function setHomeFolder(home: string | undefined): void {
-  homeFolder = home && home.startsWith('/') ? home : undefined
+  homeFolder = home && (home.startsWith('/') || isDriveAbsolute(home)) ? home : undefined
 }
 
 export const currentHomeFolder = (): string | undefined => homeFolder
@@ -80,5 +108,5 @@ export function homeArgument(home: string): string {
 /** Dossier personnel passé au renderer par le main ; vide si l'argument manque ou n'est pas absolu. */
 export function homeFromArgv(argv: readonly string[]): string {
   const value = argv.find((arg) => arg.startsWith(HOME_ARG))?.slice(HOME_ARG.length)
-  return value?.startsWith('/') ? value : ''
+  return value && (value.startsWith('/') || isDriveAbsolute(value)) ? value : ''
 }

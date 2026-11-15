@@ -4,6 +4,7 @@
  * son plan dans un fichier Markdown (contenu complet du diff), OpenCode le met dans sa réponse.
  */
 import type { TranscriptItem } from './transcript'
+import { folderName } from './windows-paths.ts'
 
 export interface ModeRef {
   id: string
@@ -155,4 +156,4 @@ export function executionMode(
   )?.value
 }
 
-const basenameOf = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const basenameOf = (path: string) => folderName(path)

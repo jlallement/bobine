@@ -26,6 +26,7 @@ import type { PermissionRisk } from '@shared/permissions'
 import { normalizePath, toolCommandOf } from '@shared/command-view'
 import { commandWrites } from './command-writes'
 import { hasOtherNames } from './hard-links'
+import { windowsPermissionRisks } from './permission-risk-windows'
 
 /** Ce qu'il faut d'un appel d'outil (forme ACP de `ToolCallUpdate`). */
 export interface RiskToolCall {
@@ -44,6 +45,13 @@ export interface RiskContext {
   realpath?: (path: string) => string
   /** Le fichier a d'autres noms (lien physique, fiche 230) ; par défaut, `lstat` et `nlink`. */
   otherNames?: (path: string) => boolean
+  /**
+   * Chemins et commandes de Windows (fiche 229, `permission-risk-windows.ts`) ; par défaut, le
+   * système de la machine. Jamais vrai sur macOS ni Linux, où rien ne change.
+   */
+  windows?: boolean
+  /** Variables d'environnement de Windows (`SystemRoot`, `TEMP`…) ; par défaut, `process.env`. */
+  env?: Readonly<Record<string, string | undefined>>
 }
 
 /** Genres d'outils qui modifient les fichiers qu'ils désignent. */
@@ -117,8 +125,8 @@ function absolute(value: string, base: string | undefined, home: string): string
   return base ? normalizePath(`${base}/${expanded}`) : undefined
 }
 
-/** Chemins que modifie un outil qui écrit : emplacements, `rawInput`, diffs. */
-function editedPaths(toolCall: RiskToolCall, workspace: string | undefined, home: string) {
+/** Textes de chemins que modifie un outil qui écrit : emplacements, `rawInput`, diffs. */
+function editedValues(toolCall: RiskToolCall): string[] {
   const raw =
     typeof toolCall.rawInput === 'object' && toolCall.rawInput !== null
       ? (toolCall.rawInput as Record<string, unknown>)
@@ -128,7 +136,12 @@ function editedPaths(toolCall: RiskToolCall, workspace: string | undefined, home
     ...PATH_KEYS.map((key) => raw[key]).filter((v): v is string => typeof v === 'string'),
     ...(toolCall.content ?? []).flatMap((c) => (c.type === 'diff' && c.path ? [c.path] : []))
   ]
-  return values.flatMap((v) => absolute(v, workspace, home) ?? [])
+  return values
+}
+
+/** Chemins que modifie un outil qui écrit : emplacements, `rawInput`, diffs. */
+function editedPaths(toolCall: RiskToolCall, workspace: string | undefined, home: string) {
+  return editedValues(toolCall).flatMap((v) => absolute(v, workspace, home) ?? [])
 }
 
 /** Ce qu'écrit la commande d'un outil `execute`, et les droits qu'elle demande. */
@@ -142,6 +155,13 @@ function commandRisks(toolCall: RiskToolCall, workspace: string | undefined, hom
 
 /** Risques de l'appel d'outil ; vide s'il n'y a rien à dire (ou au moindre doute). */
 export function permissionRisks(toolCall: RiskToolCall, context: RiskContext): PermissionRisk[] {
+  if (context.windows ?? process.platform === 'win32') {
+    const writing = WRITING_KINDS.has(toolCall.kind ?? '')
+    return windowsPermissionRisks(toolCall, {
+      edited: writing ? editedValues(toolCall) : [],
+      context
+    })
+  }
   const { workspace, home } = context
   const realpath = context.realpath ?? ((path: string) => realpathSync(path))
   const otherNames = context.otherNames ?? hasOtherNames

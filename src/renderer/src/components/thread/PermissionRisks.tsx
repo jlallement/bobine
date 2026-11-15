@@ -7,7 +7,8 @@ import type { PermissionRisk } from '@shared/permissions'
 /**
  * Bandeau d'une carte d'autorisation à risque (fiche 211, maquette validée) : une ligne par risque
  * repéré par le main (écriture hors du dossier, fichier caché du dossier personnel, dossier du
- * système, fichier à plusieurs noms, droits d'administrateur). Lu avant les boutons. Un avertissement : son absence ne dit
+ * système, fichier à plusieurs noms, registre et commande non lue sous Windows, droits
+ * d'administrateur). Lu avant les boutons. Un avertissement : son absence ne dit
  * jamais que l'appel est sûr, et aucune phrase ne le prétend.
  */
 export function PermissionRisks({ risks }: { risks: readonly PermissionRisk[] }) {
@@ -20,11 +21,17 @@ export function PermissionRisks({ risks }: { risks: readonly PermissionRisk[] })
         {risks.map((risk) => (
           <li
             key={
-              risk.kind === 'privilege' ? `${risk.kind}:${risk.via}` : `${risk.kind}:${risk.path}`
+              risk.kind === 'privilege'
+                ? `${risk.kind}:${risk.via}`
+                : risk.kind === 'unknown-writes'
+                  ? risk.kind
+                  : `${risk.kind}:${risk.path}`
             }
           >
             {risk.kind === 'privilege' ? (
               t('toolCall.permission.risk.privilege', { via: risk.via })
+            ) : risk.kind === 'unknown-writes' ? (
+              t('toolCall.permission.risk.unknownWrites')
             ) : (
               <>
                 {t(`toolCall.permission.risk.${riskKey(risk.kind)}`)}{' '}
@@ -42,10 +49,12 @@ const RISK_KEYS = {
   'outside-folder': 'outside',
   'home-dotfile': 'dotfile',
   'system-path': 'system',
-  'shared-file': 'sharedFile'
-} as const satisfies Record<Exclude<PermissionRisk['kind'], 'privilege'>, string>
+  'shared-file': 'sharedFile',
+  registry: 'registry'
+} as const satisfies Record<Exclude<PermissionRisk['kind'], 'privilege' | 'unknown-writes'>, string>
 
-const riskKey = (kind: Exclude<PermissionRisk['kind'], 'privilege'>) => RISK_KEYS[kind]
+const riskKey = (kind: Exclude<PermissionRisk['kind'], 'privilege' | 'unknown-writes'>) =>
+  RISK_KEYS[kind]
 
 /**
  * Sous les boutons d'une carte ordinaire où l'agent offre « Toujours autoriser » pour un outil que

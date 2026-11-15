@@ -141,6 +141,19 @@ describe('documents à plusieurs noms (lien physique, fiche 230)', () => {
     expect(documentsFingerprint(docs).has('Notes.md')).toBe(false)
   })
 
+  it('sans O_NOFOLLOW (Windows, fiche 229) : ni lien symbolique, ni lien physique ouvert', () => {
+    const { docs } = linked()
+    const outside = join(folder(), 'dehors.txt')
+    writeFileSync(outside, 'contenu extérieur')
+    symlinkSync(outside, join(docs, 'Lien.md'))
+    expect(() => openDocument(join(docs, 'Lien.md'), undefined)).toThrow()
+    expect(() => openDocument(join(docs, 'Notes.md'), undefined)).toThrow()
+    expect(() => openDocument(join(docs, 'Absent.md'), undefined)).toThrow()
+    const fd = openDocument(join(docs, 'Seul.md'), undefined)
+    expect(readFileSync(fd, 'utf8')).toBe('à moi')
+    closeSync(fd)
+  })
+
   it('jamais copié hors de la discussion (branche, continuer dans un projet, copie)', () => {
     const { docs } = linked()
     const target = folder()

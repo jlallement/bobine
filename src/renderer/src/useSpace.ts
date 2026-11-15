@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { AgentConfigureRequest, ConversationSpace, ConversationSummary } from '@shared/agent'
 import { readLocal, writeLocal } from './components/sidebar/SidebarSection'
+import { folderName } from '@shared/windows-paths'
 
 /** Dernier espace choisi sur ce poste (fiche 224). */
 const SPACE_KEY = 'bobine:espace'
@@ -18,7 +19,7 @@ export const projectName = (
 ): string | undefined => {
   if (!c || spaceOf(c) === 'discussion') return undefined
   const path = c.project ?? c.workspace
-  return path.split('/').filter(Boolean).at(-1) ?? path
+  return folderName(path)
 }
 
 /**

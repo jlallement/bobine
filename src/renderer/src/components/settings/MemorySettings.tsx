@@ -15,6 +15,7 @@ import { ConfirmRow } from './ConfirmRow'
 import { MemoryEntryRow } from './MemoryEntryRow'
 import { Row, SettingsCard, SettingsTitle } from './rows'
 import '../../memory.css'
+import { lastSegment } from '@shared/windows-paths'
 
 /** Mémoire d'une clé du sélecteur : `user`, ou l'identifiant du projet. */
 const placeOf = (key: string): MemoryPlace =>
@@ -22,7 +23,7 @@ const placeOf = (key: string): MemoryPlace =>
 
 /** Nom lisible d'un projet : le dernier dossier de son chemin, sinon son identifiant. */
 const projectName = (project: MemoryProjectView) =>
-  project.paths[0]?.split('/').filter(Boolean).at(-1) ?? project.id
+  (project.paths[0] === undefined ? undefined : lastSegment(project.paths[0])) ?? project.id
 
 /**
  * Réglages › Mémoire (fiche 182, ADR-0040) : le réglage, puis les souvenirs d'une mémoire (« Vous »

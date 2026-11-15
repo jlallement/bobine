@@ -20,6 +20,7 @@ import {
   rmSync,
   statSync,
   writeSync,
+  type BigIntStats,
   type Stats
 } from 'node:fs'
 import { basename, dirname, extname, join, relative } from 'node:path'
@@ -171,17 +172,32 @@ export function freeName(folder: string, name: string): string {
  * contrôle du nom et la lecture ne fait pas lire un fichier extérieur (fiches 224, 230).
  * `O_NONBLOCK` : un tube nommé posé à la place du document n'attend pas un écrivain. Rend le
  * descripteur (à fermer) ; lève une erreur sinon.
+ *
+ * Sous Windows, `O_NOFOLLOW` n'existe pas (relevé dans la VM, fiche 229 : l'ouverture suit un lien
+ * symbolique ou une jonction et lit le fichier visé) : le nom est d'abord lu par `lstat` (ni lien,
+ * ni plusieurs noms), puis le descripteur ouvert doit désigner ce même fichier (`dev`, `ino`) — un
+ * lien posé entre les deux mène à un autre fichier, refusé. `noFollow` : injecté par les essais.
  */
-export function openDocument(path: string): number {
-  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+export function openDocument(
+  path: string,
+  noFollow: number | undefined = constants.O_NOFOLLOW
+): number {
+  const named = noFollow === undefined ? lstatSync(path, { bigint: true }) : undefined
+  if (named && !(named.isFile() && named.nlink === 1n)) throw invalidDocument(path)
+  const fd = openSync(path, constants.O_RDONLY | (noFollow ?? 0) | (constants.O_NONBLOCK ?? 0))
   try {
-    if (isDocumentFile(fstatSync(fd))) return fd
+    const opened = isDocumentFile(fstatSync(fd))
+    if (opened && (!named || sameFile(named, fstatSync(fd, { bigint: true })))) return fd
   } catch {
     // Fermé ci-dessous.
   }
   closeSync(fd)
-  throw new Error(`Document invalide : ${basename(path)}`)
+  throw invalidDocument(path)
 }
+
+const invalidDocument = (path: string) => new Error(`Document invalide : ${basename(path)}`)
+
+const sameFile = (a: BigIntStats, b: BigIntStats) => a.dev === b.dev && a.ino === b.ino
 
 /**
  * Copie un document de la discussion vers `target` (qui ne doit pas exister), par le descripteur

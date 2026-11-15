@@ -1,6 +1,6 @@
 # 229 — Préversion Windows
 
-- **Statut** : en cours (2026-11-15 : lots 0 et 1 faits, lot 2 en grande partie — voir « Avancement »)
+- **Statut** : en cours (2026-11-15 : lots 0, 1 et 3 faits, lot 2 en grande partie — voir « Avancement »)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
   012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
   commandes), 224 (discussion, zone d'écriture)
@@ -42,12 +42,12 @@ absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plu
       lancés ; arguments avec espaces, guillemets, `&`, `%` passés intacts (essais unitaires).
 - [ ] Un agent arrêté, ou l'app qui plante puis redémarre, ne laisse aucun processus (arbre
       complet, `npx` → adaptateur → agent).
-- [ ] **Zone d'écriture d'une discussion** : chaque contournement de la section « Sécurité » est
+- [x] **Zone d'écriture d'une discussion** : chaque contournement de la section « Sécurité » est
       refusé ou posé à l'utilisateur, jamais accordé seul (essais unitaires en `path.win32`, qui
-      tournent aussi sur le Mac, et essais réels NTFS dans la VM).
-- [ ] Risques des permissions (hors du dossier, dossiers du système, fichiers de démarrage, droits
+      tournent aussi sur le Mac, et essais réels NTFS dans la VM). Lot 3, 2026-11-15.
+- [x] Risques des permissions (hors du dossier, dossiers du système, fichiers de démarrage, droits
       d'administrateur) signalés pour des chemins Windows ; ce qu'on ne sait pas lire est dit
-      « inconnu », jamais « sans risque ».
+      « inconnu », jamais « sans risque ». Lot 3, 2026-11-15 (« écritures inconnues »).
 - [ ] Rien de propre au Mac visible : ni ⌘, ni Finder, ni Dock, ni Trousseau ; Explorateur,
       Ctrl, barre des tâches.
 - [ ] Terminal intégré : PowerShell (D5) dans ConPTY, couleurs, Ctrl+C, redimensionnement.
@@ -551,6 +551,80 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
 4. Adoption : SmartScreen et Smart App Control sans signature (D3) ; Bob sous Windows non
    relevé (doc muette sur ARM64).
 
+## Lot 3 — chemins et sécurité (fait le 2026-11-15)
+
+Branche `claude/229-windows-lot-3-dff2a0`, partie de `main` (`193f9de`). Ne touche ni au lancement
+des processus, ni au terminal, ni au packaging (lots 0 à 2 et 6).
+
+**Principe** : les règles Windows ne s'appliquent qu'à un chemin de forme Windows (lettre de
+lecteur, `\\…`) ou quand le système l'est (`process.platform === 'win32'`, injecté) ; macOS et
+Linux suivent exactement le code d'avant (essais existants inchangés, et un essai « inchangé » par
+module).
+
+| Endroit | Ce qui a été fait |
+|---|---|
+| `shared/windows-paths.ts` (nouveau, renderer compris) | formes (`isDriveAbsolute`, `isWindowsPath`), noms spéciaux (`windowsNameProblem` : réservé, flux, point/espace final, nom court 8.3, caractère interdit), noms qui agissent dans l'Explorateur (`actsWhenShown`), comparaison sans casse (`windowsWithin`), nom du dossier (`folderName`, `lastSegment`) |
+| `agent/write-area.ts` | système injecté (`WriteAreaSystem` : `path`, `realpath`, `lstat`, `windows`) ; sous Windows, posé : tout chemin qui n'est pas `X:\…` (UNC, `\\?\`, `\\.\`, `\\wsl$\`, `\…`, `/c/…`), tout segment au nom spécial, `desktop.ini`/`*.lnk`/`*.url`…, `/` dans le nom relatif ; diffs et emplacements comparés sans casse |
+| `conversations/discussion-space.ts` (`openDocument`) | **trou réel corrigé** : sous Windows `O_NOFOLLOW` n'existe pas (`undefined`, donc 0) et l'ouverture suivait un lien symbolique vers un fichier extérieur à un seul nom (accepté par `fstat`). Désormais, sans `O_NOFOLLOW` : `lstat` du nom (fichier, `nlink` 1) puis même `dev`/`ino` sur le descripteur ouvert. macOS et Linux : drapeaux identiques à avant |
+| `agent/permission-risk-windows.ts` (nouveau) | appelé par `permissionRisks` sous Windows seulement : `~`, `%VAR%`, `$env:VAR`, `${env:VAR}`, `\…`, `/c/…`, `\\?\` ; dossiers du système (`%SystemRoot%`, `%ProgramFiles%` et `(x86)`/`(Arm)`, `%ProgramData%`, `\Recovery`, `\$Recycle.Bin`, `\System Volume Information`, `\Boot`, périphériques `\\.\`) ; configuration personnelle (`.ssh`, `.gitconfig`, `AppData` — dont Démarrage et `npm` —, profils PowerShell, OneDrive compris ; `%TEMP%` exclu) ; `realpath.native` (noms 8.3 et casse résolus) |
+| `agent/windows-command-writes.ts` (nouveau) | lecture étroite de PowerShell et `cmd` : redirections, cmdlets et commandes qui écrivent, `cd` absolu, registre (`reg add/delete/import…`, `regedit`, `*-ItemProperty HKCU:\…`), droits (`sudo`, `runas`, `gsudo`, `Start-Process -Verb RunAs`, même imbriqué) ; **échec fermé** : toute autre commande (`npm`, script, shell imbriqué, bloc `{}`, `` ` ``, `^`, `$(`) ou chemin non résolu donne « écritures inconnues » |
+| `shared/permissions.ts`, `PermissionRisks.tsx`, `fr.json`/`en.json` | deux genres : `registry` (« Modifie le registre de Windows : ») et `unknown-writes` (« Bobine ne sait pas lire ce que cette commande modifie : relisez-la avant d'autoriser. ») ; `via` élargi aux commandes Windows. Jamais produits sur macOS ni Linux |
+| Affichage : `path-display.ts`, `presentation.ts`, `tool-label.ts` | `~` pour `%USERPROFILE%` (sans casse, `\` et `/`), dossier personnel accepté par `setHomeFolder`/`homeFromArgv`, chemin relatif au dossier de la conversation, coupe dossier/nom, mode présentation (`C:\Users\<nom>`) |
+| Libellés de dossiers (13 fichiers du renderer, `plan-doc`, `app-tools`) | les `split('/').filter(Boolean).at(-1)` dupliqués remplacés par `folderName`/`lastSegment` : identiques pour un chemin POSIX, `livres` pour `C:\Users\ada\livres` |
+
+**Essais** : `write-area-windows.test.ts` (18, disque NTFS simulé d'après les constats ; 7 rouges
+si l'on retire la règle Windows), `permission-risk-windows.test.ts` (26), `windows-paths.test.ts`
+(affichage, noms, et cas POSIX inchangés), `discussion-space.test.ts` (`openDocument` sans
+`O_NOFOLLOW` : lien symbolique, lien physique, absent refusés). Le **vrai code** (`write-area`,
+`openDocument`, `listDocuments`, `permissionRisks`, empaqueté par esbuild) a aussi tourné sur NTFS
+dans la VM : tous les verdicts ci-dessous.
+
+### Constats dans la VM (Windows 11 ARM64, Node 24.22.3, 2026-11-15)
+
+Script node jetable, joué en session SSH **élevée** puis en session **non élevée** (tâche planifiée
+`/rl LIMITED /it` sur le bureau de Jérôme, supprimée aussitôt) ; tout effacé ensuite.
+
+| Primitive | Constat |
+|---|---|
+| Jonction `mklink /J` et `fs.symlinkSync(…, 'junction')` | créées **sans droit** (non élevé compris) ; `lstat` : `isSymbolicLink()` vrai, `isFile()` et `isDirectory()` faux ; `realpathSync` (JS et `.native`) suit vers la cible |
+| Lien symbolique de fichier et de dossier | `EPERM` en session non élevée (pas de mode développeur) ; en session élevée : comme une jonction (`lstat` lien, `realpath` suit) |
+| Lien physique (`fsutil hardlink create`, `fs.linkSync`) | sans droit ; `lstat().nlink` = 3 pour trois noms, `ino` commun : la règle de la fiche 230 vaut sous Windows |
+| `O_NOFOLLOW` | **absent** (`undefined`) : `openSync` suit le lien, `fstat` décrit la cible (corrigé, voir plus haut) |
+| Casse, 8.3, `\\?\` | `realpathSync` JS garde la casse et le nom court donnés (`BOBINE~1`), et le préfixe `\\?\` ; `.native` rend le nom long et la vraie casse, sans préfixe. Noms 8.3 créés même pour un dossier neuf (`LOT3-F~1`) |
+| UNC `\\localhost\C$\…` | `realpath` le garde tel quel : ne se compare pas au chemin `C:\…` (posé) |
+| Point ou espace final | Node crée `b.txt.` tel quel et `lstat('doc.txt.')` = `ENOENT` (Node ne retire rien) ; PowerShell (`Remove-Item`) **ne sait pas effacer** `b.txt.` : l'API Win32 retire le point. D'où la règle : posé |
+| `NUL`, `CON.txt` dans le dossier | `lstat` = `ENOENT` : sans règle, « à créer », donc accordé ; posé désormais |
+| Flux `doc.txt:flux` | écrit et relu ; `lstat` rend celui de `doc.txt` (même `ino`) ; `realpath` le garde ; `area:flux` (sur le dossier) aussi |
+| `rmSync(dossier, { recursive })` | ne traverse pas une jonction (cible intacte) ni ne touche l'autre nom d'un lien physique : l'effacement d'une discussion est sûr |
+| OneDrive | `%OneDrive%` existe (dossier ordinaire, 1 entrée) ; pas de fichiers à la demande à essayer : point 7 non relevé |
+| Environnement | `%USERPROFILE%` `C:\Users\jerome`, `%APPDATA%` `…\AppData\Roaming`, `%SystemRoot%` `C:\WINDOWS` (majuscules), `%ProgramFiles(x86)%` présent sur ARM64 |
+
+Verdicts du vrai code dans la VM : document existant ou neuf → accordé ; à travers une jonction ou
+un lien (fichier, dossier) → refusé ; lien physique, `hard.txt.`, `lien.txt.`, `NUL`, `CON.txt`,
+`doc.txt:flux`, `BOBINE~1`, `desktop.ini`, zone en nom court, `\\?\`, UNC → posé ; casse différente
+→ accordé ; `openDocument` : lien symbolique, lien physique, jonction refusés ; risques :
+`C:\Windows\x` et `C:\PROGRA~1\x` système, `~\.ssh\config` configuration, jonction du dossier hors
+du dossier, lien physique `shared-file`, `%TEMP%` hors du dossier, `reg add` registre, `npm test`
+inconnu, `dir` rien.
+
+### Écarts au plan et ce qui reste
+
+- **Fait en plus** : `openDocument` (fiche 230) n'était pas sûr sous Windows.
+- **Pas fait ici** : clés sans casse (`approvals.json`, historique, dossiers de conversation,
+  worktrees) — lot 3 du plan, à reprendre (aucun code des lots 0 à 2 touché) ; `command-writes.ts`
+  POSIX inchangé (un agent qui lance `bash` sous Windows est lu par la version Windows, donc souvent
+  « inconnu ») ; `file-links.ts` (chemins cliquables `C:\…` dans les réponses), `command-view.ts`
+  (`normalizePath`, `outsideWorkspace`) et `shortenPath` restent POSIX ; `listDocuments` montre un
+  fichier `b.txt.` créé par Node (lisible par Bobine, pas par l'Explorateur) ; longueur
+  (`MAX_PATH`) sans règle : une écriture trop longue échoue, sans risque ; OneDrive (point 7).
+- **Conséquence à trancher par le tech lead** : sous Windows, presque toute commande porte
+  « écritures inconnues », donc un bandeau et pas de « Toujours » (fiche 211 : une carte signalée
+  ne le propose pas ; fiche 042 : un accord retenu exige zéro risque). C'est l'échec fermé voulu
+  par cette fiche ; l'adoucir (liste de commandes sûres plus longue) est un choix d'UX.
+- **Seule différence possible sur macOS** : en mode présentation, un texte qui contient un chemin
+  de forme Windows `X:\Users\<nom>` le montre `~` (`abbreviateHome`/`abbreviateHomeIn` sans
+  dossier personnel) ; aucun chemin réel du Mac n'a cette forme.
+
 ## Journal
 
 - 2026-11-15 — Fiche de cadrage écrite (sans code) : relevé du code sur `main` (`bcca473`),
@@ -577,3 +651,8 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
   capacité `glass`, absente sous Windows comme sous Linux). `./scripts/verify` vert ; e2e
   `session`, `terminal`, `commands`, `command-output`, `filles`, `pannes-visibles`, `restart`,
   `platform`, `about` en clair et sombre : 16/16.
+- 2026-11-15 — **Lot 3 (chemins et sécurité)** fait, voir sa section : module `windows-paths`,
+  zone d'écriture et risques Windows, `openDocument` sans `O_NOFOLLOW` (trou réel corrigé),
+  affichage `~` et libellés. Essais réels NTFS dans la VM (élevée et non élevée), fichiers jetables
+  effacés, rien installé. `./scripts/verify` vert ; `pnpm e2e discussion autorisation-commande` :
+  4/4 verts (clair et sombre), captures regardées, identiques à avant (bandeaux de risque du Mac).

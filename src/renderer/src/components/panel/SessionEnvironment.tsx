@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { ControlValue, SessionControl } from '@shared/agent'
 import { ModeChip, Tip } from '../common/Menus'
 import { ModelChip } from '../common/ModelMenu'
+import { folderName } from '@shared/windows-paths'
 
 export interface SessionEnvironmentProps {
   agentLabel: string
@@ -29,7 +30,7 @@ export interface SessionEnvironmentProps {
   folders?: ReactNode
 }
 
-const baseName = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const baseName = (path: string) => folderName(path)
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (

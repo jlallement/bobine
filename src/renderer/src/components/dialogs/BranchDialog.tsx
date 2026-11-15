@@ -2,8 +2,9 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { useState } from 'react'
 import type { BranchPreview } from '@shared/agent'
 import { useTranslation } from 'react-i18next'
+import { folderName } from '@shared/windows-paths'
 
-const basename = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path
+const basename = (path: string) => folderName(path)
 
 /**
  * Repartir d'un message alors que l'agent a modifié des fichiers depuis (fiche 023) : on propose de
