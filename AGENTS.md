@@ -29,7 +29,7 @@ Lire avant toute tâche non triviale :
 |---|---|
 | Installer | `pnpm install` |
 | Lancer en dev | `pnpm dev` |
-| **Vérifier (obligatoire avant de dire « fini »)** | `./scripts/verify` |
+| **Vérifier (obligatoire avant de dire « fini »)** | `./scripts/verify` (sous Windows : `bash scripts/verify` depuis Git Bash, fiche 229) |
 | Tests seuls | `pnpm test` |
 | Build | `pnpm build` |
 | Formater | `pnpm format` |

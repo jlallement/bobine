@@ -1007,6 +1007,89 @@ PowerShell et `cmd`, pièges, registre et droits, risques nuls qui rendent « To
 essais du lot 3 mis à jour (`npm test` n'est plus inconnu ; `cd ..` se suit). macOS et Linux : la
 lecture bash (`command-writes.ts`) et ses essais sont inchangés.
 
+## Lot 7a — essais unitaires sous Windows (2026-11-15)
+
+Point de départ : job `verify (Windows, expérimental)` de l'exécution GitHub 43738864018 (`main`
+`0ba4163`) : **66 fichiers en échec, 283 essais sur 4 532**. Branche `claude/229-windows-lot-7a`.
+Classement : **(a)** essai écrit pour Unix, rendu portable ou conditionné par capacité (la même
+vérification sur macOS et Linux) ; **(b)** vrai défaut de l'app sous Windows, corrigé à la cause ;
+**(c)** relève des lots 4 (git) et 5 (bureau : éditeurs, Android…), seulement listé ; **(r)** reste
+à porter, hors de ce lot.
+
+Capacités des essais (`src/main/test-platform.ts`, un essai sauté l'est par l'une d'elles, avec la
+raison, et seulement quand la fonction n'existe pas sous Windows) : `POSIX_MODES` (droits `0600`,
+`chmod 000`), `POSIX_PATHS` (version Unix d'une fonction dont Windows a la sienne, essayée à part),
+`POSIX_PROCESSES` (groupes, signaux, `ps`), `LOGIN_SHELL`, `MACOS_FEATURES` (DMG, signature,
+installation par l'app, Xcode, AXe : essayés sous macOS et Linux avec de faux outils `sh`).
+Aides : `abs('/projet')` (= `resolve`, identique sous Unix), `native('~/x')` (`\` sous Windows),
+`tempDir()` (noms longs sous Windows).
+
+| Fichier | Cl. | Cause et suite |
+|---|---|---|
+| `agent/permission-risk.test.ts` (74) | a | essais POSIX : `windows: false` explicite ; disque réel : `POSIX_PATHS` |
+| `onboarding/agent-readiness.test.ts` (25) | b | `findExecutable` cherchait à la façon d'Unix hors de `index.ts` (sondes, essais) : système par défaut = celui de la machine (`process-launch.ts`) |
+| `agent/trace-replay.test.ts` (21) | a | noms des traces en `/` (instantanés) |
+| `conversations/manager.test.ts` (12) | a, b, c | `basename`, `native`, `vanish()` (un dossier courant d'agent ne se supprime pas sous Windows), `POSIX_MODES` ; worktrees : c |
+| `agent/agent-host.test.ts` (9) | a, r | `native`, lectures Windows des scénarios POSIX, `POSIX_PROCESSES` ; « connexion coupée, processus vivant » (délai) : r, à voir dans la VM |
+| `self-install.test.ts` (6) | a | `MACOS_FEATURES` |
+| `reset.test.ts` (6) | b, r | `resetPaths` comparait avec `/` ; l'assistant de réinitialisation est un script `sh` : r (relais à porter, lot 2) |
+| `launch-request.test.ts` (5) | a | `abs` |
+| `files/file-links.test.ts` (5) | b, a | **sécurité** : sous Windows, un lien vers un `.exe`, `.bat`, `.ps1`, `.vbs`, `.js`, `.msi`, `.lnk`… était ouvert (lancé) ; liste Windows ajoutée (`mayExecute`) ; `tempDir`, `SCRIPT` |
+| `editors/editors.test.ts` (5) | c | éditeurs (lot 5) |
+| `agent/write-area.test.ts` (5) | a | `realpathSync.native`, cibles en chemins Windows |
+| `agent-config/bob-approval-rules.test.ts` (5) | b, a | `~` des chemins montrés écrit avec `/` (`home-display.ts`) ; `POSIX_MODES` |
+| `conversations/manager-discussion.test.ts` (4) | b, a | `EPERM` en quittant un brouillon de discussion (« Nouvelle conversation » échouait) : suppression réessayée ; `tempDir` |
+| `changes/worktree-cycle.test.ts` (4) | c | lot 4 |
+| `agent/profiles.test.ts` (4) | b, a | système par défaut ; `.cmd` et `;` sous Windows |
+| `agent/opencode-diffs.test.ts` (4) | a | `abs` |
+| `agent-config/rules.test.ts` (4) | b | libellé `~/.bob\rules` mélangé : séparateur de la machine |
+| `terminal/terminal-manager.test.ts` (3) | r | shells POSIX (`/bin/sh`, `zsh`) : essai ConPTY/PowerShell à écrire dans la VM (lot 2) |
+| `roles/export/service.test.ts` (3) | b | `~` (`home-display.ts`) |
+| `conversations/additional-directories.test.ts` (3) | a | `abs` |
+| `command-line.test.ts` (3) | r | commande `bobine` : script `sh` dans `/usr/local/bin`, non portée sous Windows (ligne des Réglages encore montrée) |
+| `android/gradle.test.ts`, `android/android-tools.test.ts` (3 + 3) | c | Android (lot 5) |
+| `scripts/signing.test.ts` (3) | a | `MACOS_FEATURES` |
+| `scripts/pilote/pilote.test.mjs` (3) | a, b | `abs` ; `ours()` lit la ligne de commande par `Win32_Process` (pas de `ps`) |
+| `mock-agent/mock-agent.test.ts` (2) | a, r | séparateur ; « /scenario seul » (délai) : r, à voir dans la VM |
+| `usage/setup.test.ts`, `onboarding/onboarding.test.ts`, `conversations/handover.test.ts` (2 + 2 + 2) | b | système par défaut |
+| `thread-ipc.test.ts` (2) | a, c | `sep` ; ouvrir dans Zed : c (lot 5) |
+| `shell-env.test.ts` (2) | a | `LOGIN_SHELL` |
+| `roles/export/adapters.test.ts` (2) | b, a | `~` ; `abs` |
+| `profile-integrity.test.ts` (2) | a | `POSIX_MODES` |
+| `memory/project-key.test.ts`, `git/git-queue.test.ts`, `changes/git.test.ts`, `changes/forge.test.ts`, `conversations/children-merge.test.ts` (2 chacun) | c | git, forges (lot 4) |
+| `jobs/command-job.test.ts` (2) | a | node à la place de `sh` sous Windows (mêmes sorties, mêmes sous-processus) |
+| `fresh-start.test.ts` (2) | r | assistant de ménage en `sh` (relais à porter, lot 2) |
+| `editors/output-file.test.ts` (2) | a | `POSIX_MODES` |
+| `default-permissions.test.ts` (2) | a | `abs`, `pathToFileURL` |
+| `agent/quota.test.ts` (2) | b, a | `agent-status` sous `~\AppData\Local\Bobine` (et non `~/.cache`) ; motif |
+| `agent/acp-trace.test.ts` (2) | b, a | **vie privée** : le dossier personnel restait dans les traces ACP (`\` doublés du JSON) ; séparateur |
+| `agent-config/provider-files.test.ts` (2) | b | `~` |
+| `conformance/conformance-*.test.ts` (3 × 1) | b | système par défaut |
+| `simulator/xcode.test.ts`, `simulator/axe.test.ts` (1 + 1) | a | `MACOS_FEATURES` |
+| `preview/dev-servers.test.ts` (1) | a | commande en syntaxe `cmd` sous Windows |
+| `onboarding/trial-folder.test.ts` (1) | b | `~` |
+| `memory/store.test.ts`, `agent-config/api-keys.test.ts`, `conversations/backup.test.ts` (1 chacun) | a | `POSIX_MODES` |
+| `ipc.test.ts`, `conversations/restore-files.test.ts`, `discussion-space.test.ts`, `folder-fallback.test.ts` (1 chacun) | a | `abs` |
+| `changes/worktree-setup.test.ts`, `conversations/children.test.ts` (1 + 1) | c | worktrees (lot 4) |
+| `agent/custom-profiles.test.ts` (1) | b | `~\` accepté en tête de commande sous Windows |
+| `agent/permission-answers.test.ts` (1) | a | `tempDir`, `abs` |
+| `agent-config/providers-settings.test.ts` (1) | b | `~` |
+| `scripts/third-party-notices.test.ts` (1) | b | pnpm raccourcit les noms du magasin sous Windows : paquet cherché dans chaque entrée |
+
+**`scripts/verify` sous Windows** : gardé en bash, lancé par le bash de **Git for Windows** — déjà
+présent sur `windows-latest` (le job tourne en `shell: bash` et y passe documentation, lint et
+types), et prérequis de toute façon sous Windows (git, lot 4). Un portage en node doublerait un
+script de 30 lignes sans rien apporter. Poste Windows : `bash scripts/verify` depuis Git Bash.
+
+**Sur macOS et Linux** : `verify` vert (4 544 essais, dont 12 nouveaux ; aucun sauté de plus). Les
+corrections de l'app ne changent rien hors Windows : chaque branche Windows est conditionnée par
+la plateforme ou par la forme du chemin, et les règles Unix sont gardées à l'identique.
+
+**Non vérifié** : la VM. L'installation de Git for Windows (autorisée par la consigne) a été
+refusée par le garde-fou d'autorisation de la session ; rien n'a été installé ni lancé dans la VM
+pour ce lot. Le compte des essais encore rouges sous Windows reste donc une estimation : ≈ 19 (c,
+lot 4), ≈ 15 (c, lot 5), ≈ 13 (r), à confirmer par le job Windows ou la VM.
+
 ## Journal
 
 - 2026-11-15 — Fiche de cadrage écrite (sans code) : relevé du code sur `main` (`bcca473`),
@@ -1166,3 +1249,10 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   l'automatisation d'interface restait bloquée. Reste à vérifier, bureau allumé. Rangé : app
   désinstallée, dossiers d'essai, tâches planifiées et inscription COM effacés ; Bob, OpenCode,
   MinGit et le dossier de construction gardés.
+- 2026-11-15 — **Lot 7a** (essais unitaires sous Windows) : 66 fichiers classés (a/b/c/r), voir sa
+  section ; défauts réels corrigés (programme cherché à la façon d'Unix hors de l'app, `~` des
+  chemins montrés, liens vers des exécutables Windows ouverts, dossier personnel dans les traces,
+  `EPERM` en quittant un brouillon de discussion, `agent-status`, `resetPaths`, avis de licence,
+  pilote). `./scripts/verify` vert sur le Mac ; `pnpm e2e --changed` : 204/204 verts (clair et
+  sombre), captures regardées, inchangées. VM non utilisée (installation de Git refusée par le
+  garde-fou de la session ; accord de Jérôme attendu dans la session même).
