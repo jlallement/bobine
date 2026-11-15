@@ -1,0 +1,408 @@
+# 229 — Préversion Windows
+
+- **Statut** : à faire (fiche de cadrage, 2026-11-15 : inventaire, décisions, plan ; aucun code)
+- **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),
+  012 et 059 (packaging, publication), 034 (terminal), 138 et 195 (processus), 211 (écritures des
+  commandes), 224 (discussion, zone d'écriture)
+- **Agents** : les deux, sans code propre à un agent. OpenCode publie des binaires Windows ; la
+  documentation d'IBM cite Windows parmi les systèmes de Bob Shell (voir « Agents sous Windows »).
+
+## Pourquoi
+
+ADR-0032 a rendu Bobine multiplateforme (macOS, puis Linux en préversion) et renvoyé Windows à
+plus tard, avec un ADR à part. Une bonne part des développeurs visés travaille sous Windows, où
+OpenCode et Bob s'installent. Le travail Linux a posé les capacités de la plateforme, le menu ☰ et
+les e2e par capacités, mais Windows n'est pas « un Unix de plus » : pas de groupes de processus,
+pas de shell de connexion, des scripts `.cmd` qu'on ne lance pas comme un exécutable, des chemins
+à lettre de lecteur et insensibles à la casse, des jonctions NTFS. Le relevé ci-dessous dit où.
+
+## Périmètre
+
+**Dans la préversion** : comme Linux (fiche 145) — conversations, agents (Bob, OpenCode, agents
+personnalisés), permissions, discussion et sa zone d'écriture, diffs, git et worktrees, terminal
+intégré (ConPTY), navigateur intégré, notifications, réglages, journal.
+
+**Hors préversion** : simulateur iOS, installation par l'app (`selfInstall`), langue des
+dialogues par app, capture d'écran jointe (comme Linux), aperçu Word/RTF (`textutil`, déjà
+absent sous Linux), compteur sur l’icône (overlay de la barre des tâches plus tard, section 6), WSL (D6), mise à jour automatique.
+
+## Critères d'acceptation
+
+- [ ] Décisions D1 à D9 tranchées par Jérôme ; ADR « Bobine sous Windows en préversion » écrit
+      (ADR-0032 l'annonçait).
+- [ ] Un installeur (D1) x64 et arm64 (D2) s'installe sans droits d'administrateur sur Windows 11
+      et démarre ; désinstallation propre (données gardées, comme sur le Mac).
+- [ ] Même sécurité que sur macOS : `contextIsolation`, `sandbox`, CSP, `electronFuses`, agent
+      factice absent de l'app packagée.
+- [ ] Aucune fenêtre de console ne s'ouvre quand l'app lance un agent, une sonde, git ou un
+      serveur de développement.
+- [ ] Bob et OpenCode installés par npm (scripts `.cmd`) ou par leur binaire `.exe` sont trouvés et
+      lancés ; arguments avec espaces, guillemets, `&`, `%` passés intacts (essais unitaires).
+- [ ] Un agent arrêté, ou l'app qui plante puis redémarre, ne laisse aucun processus (arbre
+      complet, `npx` → adaptateur → agent).
+- [ ] **Zone d'écriture d'une discussion** : chaque contournement de la section « Sécurité » est
+      refusé ou posé à l'utilisateur, jamais accordé seul (essais unitaires en `path.win32`, qui
+      tournent aussi sur le Mac, et essais réels NTFS dans la VM).
+- [ ] Risques des permissions (hors du dossier, dossiers du système, fichiers de démarrage, droits
+      d'administrateur) signalés pour des chemins Windows ; ce qu'on ne sait pas lire est dit
+      « inconnu », jamais « sans risque ».
+- [ ] Rien de propre au Mac visible : ni ⌘, ni Finder, ni Dock, ni Trousseau ; Explorateur,
+      Ctrl, barre des tâches.
+- [ ] Terminal intégré : PowerShell (D5) dans ConPTY, couleurs, Ctrl+C, redimensionnement.
+- [ ] git : Git for Windows trouvé (sinon message clair), diffs justes avec `core.autocrlf=true`,
+      worktrees à chemins longs.
+- [ ] e2e sur `windows-latest` (job manuel), suites par capacités ; captures regardées.
+- [ ] Essai réel dans la VM Windows 11 ARM64 : installation, OpenCode avec un modèle gratuit,
+      discussion, terminal, notification ; Bob installé par le script d'IBM, `pnpm bob-probe`
+      (0 bobcoin) ; essai de Jérôme.
+- [ ] `./scripts/verify` passe ; aucune régression macOS ni Linux (e2e `--changed` sur le Mac,
+      `pnpm e2e:linux` des suites touchées) ; docs, `CHANGELOG.md`, `CHANGELOG.en.md` à jour.
+
+## Inventaire : ce qui dépend de macOS ou d'Unix
+
+Relevé du 2026-11-15 sur `main` (`bcca473`) : `grep` de `process.platform`, `/bin/`, `/usr/`,
+`kill(`, `detached`, `spawn`, `execFile`, `split('/')`, `startsWith('/')`, `SHELL`, `ps`. Les
+fonctions déjà masquées par une capacité (simulateur, installation par l'app, capture, compteur
+du Dock) ne sont citées que si elles cassent quand même.
+
+### 1. Lancer un programme : `.cmd`, consoles, PATH
+
+| Fichier | Aujourd'hui | Sous Windows |
+|---|---|---|
+| `agent/agent-process.ts` (`spawnAgent`) | `spawn(profile.command, args, { detached: true })` | `bob` et `opencode` installés par npm sont des **scripts `.cmd`** (`%APPDATA%\npm\bob.cmd`) : `spawn` sans shell échoue en `EINVAL` (Node ≥ 18.20.2/20.12.2, CVE-2024-27980) ou en `ENOENT` (pas de `PATHEXT`). `detached: true` **ouvre une console** par agent (doc de Node) sans `windowsHide`. |
+| `agent/profiles.ts` (`findExecutable`) | PATH coupé sur `:`, `accessSync(X_OK)`, chemin si `/` | `C:\…` coupé en deux par `:` ; ni `PATHEXT` (`.exe`, `.cmd`) ni `\` ; `X_OK` ne veut rien dire : « agent introuvable » partout. |
+| `shell-env.ts` | `$SHELL -ilc printf …`, défaut `/bin/zsh` ; `mergePath` sur `:` | Ni `SHELL` ni shell de connexion : lancé depuis le menu Démarrer, l'app a déjà le PATH de l'utilisateur (registre). À sauter ; mais un agent installé **après** le lancement n'est vu qu'en relisant `HKCU\Environment` et `HKLM\…\Session Manager\Environment`. Séparateur `;` (`path.delimiter`). |
+| partout où l'on copie `process.env` (`{ ...process.env, … }`) | clé `PATH` | Sous Windows la variable s'appelle `Path` ; `process.env` ignore la casse, **pas sa copie** : écrire `env['PATH']` crée une deuxième clé, et l'enfant reçoit l'une ou l'autre. À normaliser à un seul endroit. |
+| `preview/dev-servers.ts` | `/bin/sh -c <commande>` | `cmd.exe /d /s /c` (ou `shell: true`), `windowsHide`. |
+| `fresh-start.ts`, `reset.ts` | relance et nettoyage par un script `/bin/sh` (`security`, `defaults`, `/usr/bin/open`) | Rien de cela n'existe : relais à réécrire (Electron en mode node, ou PowerShell), sans trousseau à vider (DPAPI, voir 6). |
+| `thread-ipc-electron.ts`, `mcp-probe.ts`, `jobs/command-job.ts`, `android/*.ts`, `changes/worktree-setup.ts` | `spawn(…, { detached: true })` | Consoles ouvertes ; `worktree-setup.ts` évite déjà `detached` sous `win32` (seul endroit). |
+| `editors/editors.ts` | `/usr/bin/open -na <App>.app`, `/Applications` | `code.cmd`, `cursor.cmd`… dans le PATH ou `App Paths` du registre. |
+| `terminal/terminal-app.ts` | `open -a Terminal` | `wt.exe -d <dossier>` (présent sur Windows 11, vu dans la VM), sinon `powershell.exe` dans une console. |
+| `notifications/chime.ts`, `system-alerts.ts` | `afplay` | Pas de lecteur en ligne de commande ; sons de `C:\Windows\Media\*.wav` à jouer par l'app (élément audio d'une fenêtre, fichier lu par le main). |
+| `fonts.ts` | `osascript` (AppKit), `fc-list` (Linux) | Polices du registre (`HKLM` et `HKCU\…\Windows NT\CurrentVersion\Fonts`) ; chasse fixe à lire dans le fichier (table `post`/`OS/2`) ou liste connue. Nouvelle source pour `fontSource`. |
+| `documents/ipc.ts` | `/usr/bin/textutil` | Déjà sauté hors macOS : pas d'aperçu Word/RTF, comme Linux. |
+| `self-install*.ts`, `diagnostics.ts` (`xattr`, `xcrun`), `simulator/*` | macOS | Masqués par capacité ; à confirmer par la suite `platform`. |
+
+### 2. Arrêter des processus : groupes, `kill(-pid)`, registre
+
+| Fichier | Aujourd'hui | Sous Windows |
+|---|---|---|
+| `process-group.ts` | `process.kill(-pid, SIGTERM)` puis `SIGKILL` à 3 s ; repli sur le pid seul | **Pas de groupes** : `kill(-pid)` lève, le repli tue le **seul** chef (`TerminateProcess`, brutal, sans délai de grâce). `npx` → adaptateur → agent : les petits-enfants survivent. |
+| `agent/process-utils.ts` (`killTree`) | groupe | même chose |
+| `process-registry.ts` | `ps -A -ww -o pid=,ppid=,pgid=,lstart=,command=` au démarrage et en quittant | `ps` n'existe pas. Équivalent : `Win32_Process` (CIM : `ProcessId`, `ParentProcessId`, `CreationDate`, `CommandLine`), lent par PowerShell (≈ 1 s) ; pas de `pgid`, reconnaître l'arbre par les parents (et un parent mort ne rattache pas ses enfants à 1). |
+| `terminal/foreground.ts` | `ps -o tpgid=` puis `kill(-group)` | Sort déjà sous `win32` (`undefined`) : « Arrêter » s'en tient à Ctrl+C. |
+| `user-data-migration.ts` | `process.kill(pid, 0)` | Marche sous Windows. |
+| `index.ts:1009` | `window-all-closed` : quitte hors `darwin` | Bon comportement sous Windows. |
+
+Pistes, à trancher au lot 2 : **objets de tâche** (Job Object, `KILL_ON_JOB_CLOSE`) qui emportent
+tout l'arbre même si le main plante — le plus sûr, mais il faut du code natif (petit module, ou
+binaire relais) ; sinon `taskkill /T /F /PID` (arbre par les parents, brutal, rate un enfant dont
+le parent est déjà mort). Arrêt « poli » d'un agent ACP : fermer son entrée standard d'abord
+(`SIGTERM` n'existe pas). Sous Linux aussi, les enfants héritent de descripteurs (fiche 145, fd de
+Chromium) ; sous Windows, `spawn` ne transmet que les poignées marquées héritables : à vérifier.
+
+### 3. Terminal intégré (node-pty, ConPTY)
+
+- `terminal/node-pty.ts` : node-pty 1.1.0 livre `prebuilds/win32-x64` et `win32-arm64` (constat
+  dans `node_modules`) : **pas de compilation**, contrairement à Linux. `ensureSpawnHelper` ne
+  concerne que les Unix. `electron-builder.yml` exclut aujourd'hui `prebuilds/win32-*` (pour
+  macOS) : à garder pour la cible `win`.
+- `terminal/terminal-manager.ts` : `process.env.SHELL ?? '/bin/zsh'` et argument `-l` ; sous
+  Windows, shell de D5 sans `-l` (`powershell.exe -NoLogo`), `COLORTERM` et `TERM` sans effet
+  sur ConPTY mais inoffensifs. `SHELLS` (noms de shells reconnus) : ajouter `pwsh`,
+  `powershell`, `cmd`.
+- ConPTY : Ctrl+C, redimensionnement et couleurs à vérifier ; `term.process` donne le nom du
+  programme (pas de premier plan par groupe).
+
+### 4. Chemins
+
+Une soixantaine de fichiers manipulent des chemins en texte avec `/` (`split('/')`,
+`lastIndexOf('/')`, `startsWith('/')`, `join('/')`), dont `shared/path-display.ts` (`~`, nom du
+dossier), `shared/file-links.ts` (chemins cliquables dans les réponses), `shared/command-view.ts`
+(`normalizePath`, POSIX), `shared/attachments.ts`, `shared/changes.ts`, `workspace-files.ts`,
+`agent/permission-risk.ts`, `agent/command-writes.ts`, et une quinzaine de composants du renderer
+(Composer, FileMenu, ChangesTab, SessionFolders…). Le renderer n'a pas `node:path` : il faut un
+petit module partagé « chemin de la plateforme » (séparateur, racine, comparaison) choisi par
+capacité, plutôt que des `replace(/\\/g, '/')` éparpillés.
+
+| Sujet | Ce qui casse |
+|---|---|
+| Séparateurs | `C:\Users\…` affiché en entier, liens de fichiers non reconnus, nom du dossier faux ; un agent peut aussi écrire `C:/Users/…` (les deux sont valides). |
+| `~` | `homedir()` = `C:\Users\<nom>` ; `path-display` remplace un préfixe `/` ; `~` n'a pas de sens dans `cmd`. |
+| Lettres de lecteur | `C:\` et `c:\` sont le même chemin ; `relative('C:\a', 'D:\b')` rend un chemin absolu (bien géré par `isInside`). `C:foo` (relatif au lecteur) n'est pas absolu ; `\foo` l'est pour `path.win32` (racine du lecteur courant). |
+| UNC et préfixes | `\\serveur\partage\…`, `\\?\C:\…` (chemins longs), `\\.\…` (périphériques), `\\wsl$\…` : à refuser ou à poser à l'utilisateur, jamais à comparer comme un chemin ordinaire. |
+| Casse | NTFS ignore la casse (sauf dossiers marqués sensibles à la casse, WSL) : clés de l'historique, des autorisations retenues (`approvals.json`), des dossiers de conversation, des worktrees : comparer sans casse, garder l'orthographe affichée. |
+| Noms courts 8.3 | `C:\Users\JEROME~1\…` désigne le même dossier (création 8.3 **activée** sur `C:` dans la VM). |
+| Noms interdits | `CON`, `NUL`, `AUX`, `COM1`…, caractères `<>:"|?*`, points et espaces finaux retirés en silence (`a.txt.` = `a.txt`). |
+| Longueur | `MAX_PATH` 260 sauf `LongPathsEnabled` (à **0** dans la VM) et manifeste de l'app ; Electron le déclare, git non (`core.longpaths`), node_modules dans un worktree le dépasse vite. |
+| Données de l'app | `userData` = `%APPDATA%\Bobine` (Roaming : suit un profil itinérant en entreprise). Discussions sous `<données>\discussions\<id>`. |
+
+### 5. Sécurité de la zone d'écriture et des permissions (le point sensible)
+
+**Ce qui existe.** Dans une discussion (fiche 224), `agent/write-area.ts` décide seul d'une demande
+d'écrire (`edit`, `delete`, `move`, via `permission-answers.ts`) : refus si une cible sort du
+dossier (par son chemin, `isInside` sur `path.relative`, ou par un lien : `realpathSync` de
+l'ancêtre existant) ; accord une fois si chaque cible est un document visible du premier niveau,
+pas un lien (`lstat().isFile()`) ; tout le reste est posé. `agent/permission-risk.ts` et
+`agent/command-writes.ts` signalent ce qu'une permission risque (hors du dossier, dossiers du
+système, fichiers cachés du dossier personnel, `sudo`).
+
+**Ce qui tient sous Windows**, d'après le code (à prouver par des essais `path.win32`) :
+`path.relative` de `win32` compare sans casse et rend un chemin absolu entre deux lecteurs
+(rattrapé par `isAbsolute(rel)`) ; `\\?\C:\…` et `\\.\…` ont une autre racine, donc « hors du
+dossier » ; un flux de données alternatif sur le dossier lui-même (`C:\…\<id>:flux`) donne
+`..\<id>:flux`, hors du dossier.
+
+**Ce qui est à traiter :**
+
+1. **Jonctions NTFS** (`mklink /J`) : se créent **sans aucun droit** (contrairement aux liens
+   symboliques, qui demandent le mode développeur ou un compte administrateur — le privilège
+   `SeCreateSymbolicLinkPrivilege` est actif dans la session SSH de la VM, élevée, pas forcément
+   dans le bureau). Un agent peut poser `<discussion>\docs` → `C:\Users\<nom>\.ssh` puis écrire
+   `docs\x`. Le code s'en remet à `realpathSync` (version JS : `lstat` + `readlink`, que libuv
+   applique aux jonctions comme aux liens) et à `lstat().isFile()` (une jonction n'est pas un
+   fichier, donc posé) : **probablement bon, jamais vérifié**. Essai réel obligatoire, avec
+   jonction, lien symbolique de fichier, de dossier, et `realpathSync.native` en comparaison.
+2. **Liens physiques** (`mklink /H`, sans droit, même volume) : le fichier de la discussion **est**
+   le fichier d'ailleurs ; `lstat().isFile()` dit vrai, l'écriture est accordée et modifie l'autre
+   fichier. Même trou sous macOS et Linux (`ln`) : refuser l'accord automatique si
+   `lstat().nlink > 1` — correctif utile partout, à faire dès le lot 3.
+3. **Chemins « absolus » ambigus** : `\Windows\x` ou `/Users/x` sont absolus pour `path.win32`
+   (racine du lecteur courant de **l'app**, pas de l'agent) ; `C:x` ne l'est pas. Un agent sous Git
+   Bash peut envoyer `/c/Users/…`. Règle : n'accepter seul qu'un chemin à lettre de lecteur
+   complet (`X:\`), le reste posé.
+4. **Préfixes et noms spéciaux** : `\\?\`, `\\.\`, UNC, `\\wsl$\`, noms réservés (`NUL`, `CON`),
+   points ou espaces finaux, flux alternatifs (`doc.docx:Zone.Identifier`, `doc.docx::$DATA`) :
+   jamais d'accord automatique ; `isDocument` doit refuser tout `:` après la lettre de lecteur.
+5. **Noms 8.3 et casse** : un chemin court (`JEROME~1`) ne correspond pas lexicalement au long :
+   refus (sûr), mais refus à tort d'une écriture légitime ; normaliser par `realpathSync.native`
+   (`GetFinalPathNameByHandle`), qui rend aussi la vraie casse.
+6. **Fichiers « cachés »** : sous Windows, un attribut, pas un point. `.bob\` et `.opencode\`
+   restent des points (bien). S'y ajoutent des noms qui agissent : `desktop.ini`, `*.lnk`, `*.url`,
+   `*.library-ms`, `autorun.inf` — à poser, jamais accorder seuls.
+7. **Points de reprise du nuage** (OneDrive « fichiers à la demande ») : si `%APPDATA%` ou le dossier
+   choisi est synchronisé, `lstat` voit d'autres points d'analyse ; à relever dans la VM.
+8. **Course entre contrôle et écriture** : comme sous Unix (l'agent écrit lui-même après
+   l'accord) ; rien de nouveau, à garder dans l'ADR.
+
+**Risques des permissions** (`permission-risk.ts`, `command-writes.ts`) — **échec ouvert** sous
+Windows aujourd'hui : `absolute()` ne connaît que `/` et `~` ; un `C:\…` ne donne aucun chemin, donc
+**aucun signalement** (ni « hors du dossier », ni « système »), sans erreur. Il faut : dossiers du
+système Windows (`%SystemRoot%`, `%ProgramFiles%`, `%ProgramFiles(x86)%`, `%ProgramData%`),
+emplacements qui s'exécutent seuls (`…\Start Menu\Programs\Startup`, profils PowerShell
+`Documents\PowerShell\*.ps1` et `WindowsPowerShell\*.ps1`, `%APPDATA%\npm`), et l'équivalent de
+« fichiers cachés du dossier personnel » (`.ssh`, `.gitconfig`, `AppData`). `command-writes.ts` lit
+du shell POSIX ; un agent sous Windows lance du PowerShell (`Set-Content`, `Out-File`,
+`Remove-Item`, `>`) ou du `cmd` (`copy`, `del`). Ne pas tenter de tout lire : sous Windows, une
+commande non lue est dite « écritures inconnues » au lieu de « aucune écriture ». Droits
+d'administrateur : `sudo` (Windows 11 24H2 l'a), `runas`, `Start-Process -Verb RunAs`, `gsudo`.
+
+### 6. Trousseau, notifications, compteur, raccourcis
+
+- **Clés d'API** (`agent-config/keychain-cipher.ts`, `memory/approval-key.ts`, `memory/setup.ts`) :
+  `safeStorage` = **DPAPI**, toujours disponible sous Windows (lié au compte, pas de
+  « basic_text ») : plus simple que Linux (D4 de la fiche 145 sans objet). `memory/setup.ts` teste
+  `linux` pour `basic_text` : inchangé. `reset.ts` (`security delete-generic-password`) : rien à
+  vider sous Windows.
+- **Notifications** : toasts Windows ; il faut `app.setAppUserModelId` et un raccourci du menu
+  Démarrer portant le même identifiant (créé par l'installeur NSIS). Sans raccourci (zip portable,
+  `pnpm dev`), pas de toast.
+- **Compteur** : pas de badge chiffré ; `BrowserWindow.setOverlayIcon` (petite image sur le bouton
+  de la barre des tâches) en remplace l'idée. Capacité `dockBadge` absente d'abord, overlay plus
+  tard si demandé.
+- **Attirer l'attention** : `flashFrame` (comme prévu pour Linux).
+- **Raccourcis** : Ctrl, déjà converti hors macOS (`displayKeys`, lot 2 de la fiche 145). Fenêtre
+  rapide `Ctrl+Alt+B` : sous Windows, **AltGr = Ctrl+Alt** ; sur certains claviers (polonais,
+  tchèque…) AltGr+B tape un caractère. Alt seul ouvre ☰ (usage Windows : Alt donne le menu).
+- **Mise en veille** : `powerSaveBlocker`, sans changement.
+
+### 7. git, worktrees, fins de ligne
+
+- `git/git-queue.ts` : `GIT_MISSING` reconnaît `spawn git ENOENT` (bon) ; git n'est **pas** livré
+  avec Windows (absent de la VM) : message « installez Git for Windows ». `gitEnv` (`LANGUAGE=C`)
+  vaut aussi pour Git for Windows, traduit (VM en `fr-FR`).
+- **CRLF** : l'installeur de Git for Windows règle `core.autocrlf=true` ; les fichiers du dossier
+  sont en CRLF, l'index en LF. Diffs, compteurs de lignes et comparaisons « avant/après » d'un tour
+  (`writes-without-asking`) doivent ignorer `\r` en fin de ligne ; le visualiseur ne doit pas
+  montrer `^M`.
+- **Worktrees** dans `<dépôt>\.worktrees\` (`changes/worktrees.ts`) : chemins longs (`core.longpaths`),
+  fichiers verrouillés par un processus (un serveur de dev, un antivirus) qui empêchent `git
+  worktree remove` : réessayer, puis le dire.
+- Hooks : exécutés par le `sh` de Git for Windows ; `core.filemode=false`.
+- `changes/forge-gitlab.ts`, `agent/quota.ts` : dossiers de configuration selon la plateforme
+  (paramètre `platform` déjà injecté) : vérifier la branche `win32` (`%APPDATA%`).
+
+### 8. Navigateur intégré, Android, terminal externe
+
+- **Navigateur** (`browser/cdp-tab.ts`, `browser-manager.ts`, `page-view.ts`) : raccourcis déjà en
+  Ctrl hors `darwin` ; rien d'autre de propre au système relevé.
+- **Android** (`android/sdk.ts`, `adb.ts`, `android-manager.ts`) : SDK sous
+  `%LOCALAPPDATA%\Android\Sdk`, `adb.exe`, `emulator.exe`, Java d'Android Studio sous
+  `C:\Program Files\Android\Android Studio\jbr` ; l'émulateur demande l'hyperviseur Windows (WHPX)
+  ; sur un **hôte ARM64**, la prise en charge de l'émulateur est à vérifier (VM).
+- **Terminal externe** : voir 1 (`wt.exe`).
+
+### 9. Fenêtres, polices, textes
+
+- `window-chrome.ts` : feux et `hiddenInset` sur macOS, cadre natif ailleurs : voir D4.
+- `--font-ui` sans police Windows : ajouter `"Segoe UI Variable", "Segoe UI"` ; code : `Cascadia
+  Mono` n'est **pas** une police du système (absente de `C:\Windows\Fonts` dans la VM, livrée avec
+  Windows Terminal) ; `Consolas` l'est.
+- Barres de défilement : classiques sous Windows (`overlayScrollbars` absent, comme Linux).
+- Textes : Finder → Explorateur de fichiers, Corbeille, « Afficher dans l'Explorateur » ; le reste
+  du lot 2 de la fiche 145 (textes Mac) sert aux deux.
+
+### 10. Installeur et mise à jour
+
+`electron-builder.yml` n'a pas de section `win` ; `scripts/package` est en bash et ne connaît que
+macOS et `--linux`. Icône `.ico` à produire (`scripts/make-icon.mjs`). Pas de mise à jour
+automatique sur le Mac non plus : même chemin (nouvelle version téléchargée depuis GitHub).
+`third-party-notices` : node-pty `win32` ajoute `conpty.dll` / `OpenConsole.exe` (licence MIT de
+Microsoft) aux composants livrés.
+
+### 11. Outillage, e2e et lanceur
+
+- `scripts/verify`, `scripts/package`, `scripts/e2e-linux`, `predev`/`prepreview`
+  (`./scripts/check-electron`, `./scripts/fetch-axe`), `guide-shortcuts` (`VAR=1 cmd`) : **bash**.
+  Sous Windows, pnpm lance les scripts par `cmd` : rien de cela ne marche hors de Git Bash. CI :
+  `shell: bash` (Git Bash présent sur `windows-latest`) ; poste de développement : `script-shell`
+  de pnpm vers bash, ou portage en node au fil de l'eau.
+- `e2e/lib.mjs` : faux outils en `#!/bin/sh` (`xcrun`, `adb`, `emulator`, `gh`, `glab`,
+  `agentless-shell`), `chmodSync`, `SHELL` d'essai : à écrire en node (`.cmd` qui appelle node, ou
+  `.exe` relais), puisque Windows n'exécute pas un script sans extension.
+- `e2e/run.mjs` : capacités lues par `currentPlatformFeatures` (réutilisable tel quel), arrêt des
+  apps d'essai par groupe : même problème qu'au 2.
+- **Agent factice** : lancé par `ctx.execPath` (Electron en mode node) : portable. Mais des scénarios
+  lancent de vraies commandes (`sleep`, `touch`, `bash -lc`, `spawn` détaché de
+  `scenarios-pannes.mts`) : à remplacer par `process.execPath -e …` là où un essai Windows les joue.
+- 103 suites e2e ; un passage complet sous Windows coûte autant que sous Linux (≈ 16 min sur
+  GitHub au premier passage Linux).
+
+## Agents sous Windows
+
+- **OpenCode** (documentation publique, opencode.ai/docs, lue le 2026-11-15) : binaires CLI en
+  `.zip` pour **x64**, **x64 « baseline »** et **ARM64**, et application de bureau en `.exe` (x64,
+  ARM64). La page dit aussi « Windows package managers are not supported » et ne cite ni WSL, ni
+  Scoop, ni Chocolatey, ni winget. Le paquet npm (`opencode-ai`) est listé sans mention de Windows.
+  Conséquence pour Bobine : trouver `opencode.exe` (zip) **et** `opencode.cmd` (npm). Sonde
+  `pnpm opencode-probe --offline` à jouer sous Windows.
+- **Bob** (documentation publique d'IBM, bob.ibm.com/docs/shell, page « Install and setup », lue le
+  2026-11-15) : Windows figure dans la liste des systèmes pris en charge (« macOS, Linux, Windows,
+  z/OS UNIX System Services… ») ; installation par un script PowerShell
+  (`powershell -ep Bypass "iwr https://bob.ibm.com/download/bobshell.ps1 …"`) ou par npm
+  (`@ibm/bob`, Node.js 24 ou plus) ; clé d'API par `$env:BOB_API_KEY` ou variable d'utilisateur.
+  La page **ne dit rien** des versions de Windows, des architectures (x64, ARM64), de WSL, du
+  dossier d'installation, ni du shell qu'emploie Bob pour ses commandes. Rien n'est supposé
+  au-delà : à relever par `pnpm bob-probe` dans la VM, puis noté dans « Compatibilité Bob » de
+  `docs/acp.md`. Installé par npm, `bob` sera un `.cmd` (voir 1).
+- **Agent factice** : portable (Electron en mode node) ; scénarios à commandes réelles à adapter
+  (voir 11). Aucun scénario nouveau pour Bob : rien de propre à Bob sous Windows n'est documenté.
+
+## Décisions à trancher par Jérôme
+
+| N° | Question | Recommandation | Pourquoi |
+|---|---|---|---|
+| D1 | Format d'installeur : NSIS, MSI, Squirrel, zip portable | **NSIS, installation pour l'utilisateur seul** (`%LOCALAPPDATA%\Programs\Bobine`, sans droits d'administrateur), raccourci du menu Démarrer ; pas de zip portable dans la préversion | Cible par défaut d'electron-builder, la plus essayée ; le raccourci porte l'identifiant d'app sans lequel les notifications ne s'affichent pas. MSI vise le déploiement en entreprise (droits d'administrateur, plus rigide). Squirrel.Windows n'est plus maintenu par electron-builder. Un zip portable n'a ni raccourci (pas de toasts) ni désinstallation : plus tard si on le demande. |
+| D2 | Architectures | **x64 + arm64** | node-pty livre les deux binaires (pas de compilation) ; x64 pour la majorité, arm64 pour la VM du Mac et les PC Snapdragon. GitHub fournit `windows-latest` (x64) et `windows-11-arm` pour les dépôts publics. |
+| D3 | Signature de code | **Constat, pas de recommandation appuyée.** Sans signature : au premier lancement de l'installeur téléchargé, SmartScreen affiche « Windows a protégé votre ordinateur » ; il faut cliquer « Informations complémentaires », puis « Exécuter quand même ». La réputation se gagne au fil des téléchargements, par fichier : chaque version repart de zéro. Sur une installation neuve de Windows 11 où **Smart App Control** est actif, un programme non signé est bloqué sans bouton pour passer outre (il faut désactiver Smart App Control, sans retour possible). Les antivirus d'entreprise peuvent aussi bloquer. | Comme le Mac sans notarisation : un geste de plus pour l'utilisateur, dit dans la page d'installation. Existent si un jour on le veut : Azure Trusted Signing (abonnement mensuel, identité vérifiée), certificat OV ou EV. Somme SHA-256 publiée avec la version dans tous les cas, comme Linux. |
+| D4 | Barre de titre et menu | **Barre intégrée** (`titleBarStyle: 'hidden'` + `titleBarOverlay` aux couleurs du thème, boutons de Windows à droite, dispositions d'ancrage au survol du bouton Agrandir) **et menu ☰ de Linux** (variante D, Alt l'ouvre) ; barre de menu d'Electron jamais montrée. Étape intermédiaire possible : cadre natif + ☰, comme Linux, sans travail. | Les applications Windows récentes (VS Code, Windows Terminal, Teams) intègrent leur barre de titre ; la barre native de Windows 11 ne suit que clair/sombre du système, pas les thèmes de Bobine (Aurore). La barre de menu d'Electron ne se style pas (rejetée pour Linux, D8). Coût : zone de glisser, marge à droite pour les boutons (≈ 140 px, `navigator.windowControlsOverlay`), couleurs à remettre à chaque changement de thème. |
+| D5 | Shell du terminal intégré | **PowerShell** : `pwsh` (7) s'il est installé, sinon `powershell.exe` (5.1, toujours là) ; réglage pour choisir `cmd` ou Git Bash plus tard | `cmd` est l'ancien shell ; PowerShell est celui de Windows Terminal par défaut et celui que la doc de Bob emploie. La VM n'a que PowerShell 5.1. |
+| D6 | WSL | **Hors périmètre** de la préversion : Bobine sous Windows lance des agents Windows ; un dossier `\\wsl$\…` est refusé (ou posé) par la zone d'écriture | Un agent dans WSL parle en chemins Linux (`/home/…`) à une app qui pense en `C:\` : il faudrait traduire tous les chemins ACP. Possible plus tard par un agent personnalisé (`wsl.exe -- opencode acp`, fiche 141), sans promesse. |
+| D7 | Publication | **Même version que le Mac** (même tag), installeurs joints à la Release, « préversion Windows » dans les notes et l'À propos ; job GitHub conditionné par une variable `BOBINE_WINDOWS_RELEASE`, comme Linux | Un seul numéro (ADR-0032). |
+| D8 | Versions de Windows | **Windows 11** (x64, arm64) promis ; Windows 10 22H2 « devrait marcher », sans promesse | Windows 10 n'a plus de mises à jour grand public depuis octobre 2025 ; Electron 45 le prend encore. |
+| D9 | Arbre de processus | **Objet de tâche** (Job Object, arrêt de tout l'arbre quand l'app le ferme ou plante) si un module natif est acceptable ; sinon `taskkill /T /F` et registre par `Win32_Process` | Seul l'objet de tâche garantit « aucun orphelin » même si le main plante (critère de la fiche 138). Nouvelle dépendance native ou petit binaire : ADR. |
+
+## Plan
+
+Pas de code dans cette fiche. Lots dans l'ordre ; chaque lot garde le Mac et Linux inchangés
+(`./scripts/verify`, e2e `--changed`, `pnpm e2e:linux` des suites touchées).
+
+**Réutilisable du travail Linux** : capacités injectées (`platform.ts`, `BOBINE_PLATFORM`,
+`renderer/platform-features.ts`) ; suites e2e par capacités (`needs`, `FEATURES`) et lanceur ;
+menu ☰ (`serializeMenu`, `appMenuModel`, `app:menu`, `AppMenuButton`, Alt seul) ; menu Linux sans
+menu « Bobine » ; raccourcis Ctrl (`displayKeys`, `keyNotation`) ; barres de défilement classiques
+; classe `native-frame` ; `systemName` et `fontSource` (abstractions, une source de plus) ;
+`gitEnv` (`LANGUAGE=C`) ; textes Mac du lot 2 (une seule passe pour les deux) ; `flashFrame` ;
+capacité `dockBadge` ; `release.yml` conditionné par variable ; pas-à-pas de VM.
+
+| Lot | Contenu | Taille |
+|---|---|---|
+| 0 | ADR « Bobine sous Windows en préversion » (D1-D9), qui complète ADR-0032 | S (½ j) |
+| 1 | `platformFeatures('win32')`, `systemName` (« Windows 11 »), `BOBINE_PLATFORM=win32` ; suite `platform` avec les capacités de Windows simulées sur le Mac | S (½-1 j) |
+| 2 | **Lancer et arrêter** : un seul module `spawnProgram` (recherche `PATHEXT`, `.cmd` par `cmd.exe /d /s /c` avec échappement sûr, `windowsHide`, pas de `detached` qui ouvre une console), `findExecutable`, `Path`/`PATH` et `;`, environnement relu du registre au lieu du shell de connexion ; arbre de processus (D9), `process-registry` par `Win32_Process` ; serveurs de dev ; terminal (ConPTY, D5) ; relais de `fresh-start`/`reset` | L (4-6 j) |
+| 3 | **Chemins et sécurité** : module de chemins partagé (renderer compris) ; `write-area.ts` (points 1 à 7 de la section 5, `nlink > 1` partout) ; `permission-risk.ts` et `command-writes.ts` (dossiers Windows, échec fermé « inconnu ») ; clés sans casse (autorisations, conversations) ; essais `path.win32` sur le Mac, puis NTFS dans la VM ; relecture du tech lead | L (4-5 j) |
+| 4 | **git** : Git for Windows absent, CRLF dans les diffs et comparaisons, worktrees longs et verrouillés, dossiers des forges | M (2 j) |
+| 5 | **Bureau Windows** : D4 (barre intégrée + ☰), polices (registre), sons, `flashFrame`, notifications (AUMID), terminal externe (`wt.exe`), éditeurs, Explorateur dans les textes, Android (chemins, WHPX), raccourci de la fenêtre rapide | M-L (3-4 j) |
+| 6 | **Packaging** : section `win` (NSIS par utilisateur, x64/arm64, `.ico`, fuses, `asarUnpack` de node-pty `win32`), `pnpm package --windows` (portage en node de la branche Windows), avis de licence, À propos « préversion Windows ». Workflows (`release.yml`) à la fin, quand l'autre session a fini les siens | M (2-3 j) |
+| 7 | **Essais** : faux outils en node, scénarios factices sans commandes Unix, `e2e.yml` Système `windows` (`windows-latest`, puis `windows-11-arm`), suites rouges triées comme pour Linux ; VM : installation, OpenCode, discussion, jonctions, Bob | L (4-6 j, selon les rouges) |
+| 8 | **Clore** : `docs/installation.md` (Windows, SmartScreen), `docs/architecture.md`, `docs/agents.md`, « Compatibilité Bob », AGENTS.md (commandes), index, journaux des modifications | S (1 j) |
+
+Total : ≈ 4 semaines de travail d'agent, relecture comprise ; les lots 2 et 3 sont le cœur et
+peuvent avancer en parallèle (fichiers distincts), le 7 se fait au fil de l'eau.
+
+Nouvelles dépendances possibles (à dire dans l'ADR) : module natif ou binaire relais pour
+l'objet de tâche (D9) ; aucune autre prévue (échappement `cmd.exe` écrit dans l'app plutôt que
+`cross-spawn`, à rediscuter au lot 2).
+
+## Essais
+
+**GitHub** : `windows-latest` (x64) et `windows-11-arm` sont gratuits pour un dépôt public. Job
+manuel dans `e2e.yml` (Système : `windows`), comme Linux ; `ci.yml` (`verify`) pourrait aussi
+tourner sous Windows une fois le lot 2 fait. Pas de `xvfb` : la session du runner a un bureau.
+Captures en artefact, regardées.
+
+**Unitaires** : tout ce qui touche aux chemins se teste avec `path.win32` injecté, donc aussi sur
+le Mac et dans `ci.yml` ; idem pour la recherche `PATHEXT` et l'échappement `cmd.exe` (cas :
+espaces, `"`, `&`, `|`, `%VAR%`, `^`, `!`).
+
+### Machine virtuelle Windows (pas-à-pas d'accès)
+
+Faits relevés en lecture seule le 2026-11-15 : **Windows 11 Professionnel**, build 26300,
+**ARM64**, sous VMware Fusion (réseau NAT), langue `fr-FR` ; PowerShell **5.1** seul (ni `pwsh`,
+ni `bash`) ; **ni git, ni node, ni npm, ni OpenCode, ni Bob** ; `wt.exe`, `winget.exe` et
+`wsl.exe` présents ; `LongPathsEnabled` = 0 ; noms 8.3 actifs sur `C:` ; pas de mode développeur ;
+`Consolas` et `Segoe UI` présentes, `Cascadia` absente. Le serveur OpenSSH ouvre **PowerShell**
+(`DefaultShell`). La session SSH tourne **élevée** (compte administrateur, privilège de lien
+symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essais de liens.
+
+1. La VM démarrée dans VMware Fusion, sur le Mac.
+2. Depuis le Mac : `ssh -F <dossier>/config-win win`, où `config-win` contient l'hôte `win`
+   (`HostName 172.16.206.129`, `User jerome`, `IdentityFile <dossier>/id_ed25519`,
+   `IdentitiesOnly yes`, `UserKnownHostsFile <dossier>/known_hosts`). Le dossier d'origine est
+   un dossier temporaire de session (effacé au redémarrage) : à copier vers `~/.ssh/bobine-win/`
+   par Jérôme. L'adresse NAT peut changer : `ipconfig` dans la VM.
+3. Commandes en PowerShell : `Get-Command git`, `where.exe git`, `$PSVersionTable`.
+4. **À installer, avec l'accord de Jérôme** (rien n'est installé à ce jour) :
+   `winget install Git.Git OpenJS.NodeJS` (Node 24), `corepack enable`, puis le dépôt
+   (`git clone`), `pnpm install` (node-pty : binaires `win32-arm64` fournis, sans compilation).
+   OpenCode : zip ARM64 de la doc, ou `npm i -g opencode-ai`. Bob : script PowerShell d'IBM.
+   Essais de la zone d'écriture dans une session **non élevée** (utilisateur ordinaire créé pour
+   ça, ou `runas /trustlevel:0x20000`).
+5. **Fenêtres depuis SSH** : un programme lancé par SSH tourne hors du bureau (session de service),
+   sa fenêtre est invisible. Pour lancer Bobine sur le bureau de Jérôme : tâche planifiée
+   interactive (`schtasks /create /it …` puis `/run`), ou lancement à la main dans la VM ; ensuite
+   `pnpm pilote` s'attache par son port DevTools.
+6. Vérifier : `./scripts/verify` (Git Bash), `pnpm build && pnpm e2e platform`, `pnpm package
+   --windows`, installeur lancé (SmartScreen vu), `pnpm opencode-probe --offline`, `pnpm bob-probe`.
+
+## Risques
+
+1. **Sécurité des écritures** : la zone d'écriture et les risques des permissions sont écrits pour
+   des chemins POSIX. Aujourd'hui, `permission-risk.ts` **échoue ouvert** sur un chemin Windows
+   (aucun signalement), et la zone d'écriture repose sur un comportement de `realpathSync` face
+   aux jonctions jamais vérifié. Les jonctions se créent sans droit. Lot 3 relu par le tech lead,
+   essais réels NTFS dans une session non élevée.
+2. **Processus** : `.cmd` (Bob et OpenCode par npm) qui ne se lancent pas, consoles qui s'ouvrent,
+   orphelins faute de groupes. Touche tous les lancements de l'app ; le critère « aucun orphelin »
+   de la fiche 138 demande sans doute du code natif (D9).
+3. **Outillage et coût** : scripts en bash, faux outils en `sh`, scénarios factices à commandes
+   Unix, troisième système à vérifier à chaque fiche qui touche les processus, les chemins ou
+   l'interface. Le passage e2e Windows sera d'abord très rouge, comme Linux (90/125 au premier).
+4. Adoption : SmartScreen et Smart App Control sans signature (D3) ; Bob sous Windows non
+   relevé (doc muette sur ARM64).
+
+## Journal
+
+- 2026-11-15 — Fiche de cadrage écrite (sans code) : relevé du code sur `main` (`bcca473`),
+  documentation publique d'OpenCode et d'IBM Bob, constats en lecture seule dans la VM Windows 11
+  ARM64 (rien installé ni modifié). Décisions D1 à D9 en attente de Jérôme.
