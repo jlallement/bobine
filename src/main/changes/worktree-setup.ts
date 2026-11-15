@@ -56,8 +56,9 @@ export const shellRun: ShellRun = (command, { cwd, env, timeoutMs, onOutput, sig
   new Promise((resolve) => {
     let timedOut = false
     // `sh -c`, ou `cmd.exe` sous Windows, dans son propre groupe ou job (`process-launch.ts`).
-    const child = startProcess(command, [], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }, true)
-      .child as ChildProcessByStdio<null, Readable, Readable>
+    const child = startProcess(command, [], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }, true, [
+      command
+    ]).child as ChildProcessByStdio<null, Readable, Readable>
     const stop = () => stopTree(child)
     const timer = setTimeout(() => {
       timedOut = true

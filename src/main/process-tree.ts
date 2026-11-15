@@ -27,13 +27,15 @@ export function windowsTrees(): WindowsTrees | undefined {
 /**
  * Lance `command args` (`launchProgram` : `.cmd`, `PATHEXT`, pas de console) dans son propre
  * groupe ou son propre job, et le note au registre. `shellCommand` : ligne de shell de
- * l'utilisateur.
+ * l'utilisateur. `tracked` : commande notée au registre, si l'appelant en notait une autre
+ * (inchangée depuis la fiche 138).
  */
 export function startProcess(
   command: string,
   args: readonly string[],
   options: SpawnOptions,
-  shellCommand = false
+  shellCommand = false,
+  tracked?: string[]
 ): { child: ChildProcess; plan: LaunchPlan } {
   const launched = launchProgram(command, args, options, shellCommand)
   // Tout de suite après `spawn` : un petit-enfant lancé avant serait hors du job.
@@ -41,7 +43,7 @@ export function startProcess(
   // Noté pour être arrêté au prochain démarrage si le main plante (fiche 138).
   trackChild(
     launched.child,
-    shellCommand ? [launched.plan.file, ...launched.plan.args] : [command, ...args]
+    tracked ?? (shellCommand ? [launched.plan.file, ...launched.plan.args] : [command, ...args])
   )
   return launched
 }

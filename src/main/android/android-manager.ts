@@ -240,7 +240,9 @@ export class AndroidManager {
           '-'
         ],
         // Son propre groupe (ou job), noté au registre (fiche 195).
-        { stdio: ['ignore', 'pipe', 'pipe'] }
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+        false,
+        [this.options.adb, 'exec-out', 'screenrecord']
       )
       stream.child = child
       child.stdout?.on('data', (chunk: Buffer) => {
@@ -298,7 +300,9 @@ export class AndroidManager {
         `${dp.width}x${dp.height}`,
         '-'
       ],
-      { stdio: ['ignore', 'pipe', 'pipe'] }
+      { stdio: ['ignore', 'pipe', 'pipe'] },
+      false,
+      [this.options.adb, 'exec-out', 'screenrecord']
     )
     const splitter = new RawFrameSplitter()
     const received: { time: number; jpeg: Buffer }[] = []
