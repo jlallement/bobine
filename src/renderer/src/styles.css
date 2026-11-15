@@ -3052,6 +3052,31 @@ a.btn {
   }
 }
 
+/*
+ * Hors macOS (`no-glass`, fiche 145) : sous Linux, un menu est resté figé à 88 % de son fondu
+ * d'apparition (VM VMware, accélération 3D), lisible à travers, et le flou du verre dépend du
+ * pilote graphique. Les menus y apparaissent sans fondu, et le verre d'Aurore y est opaque, comme
+ * quand le système demande moins de transparence. Rien ne change sur macOS.
+ */
+:where(html.no-glass) .menu {
+  animation-name: menu-in-opaque;
+}
+@keyframes menu-in-opaque {
+  from {
+    transform: translateY(4px) scale(0.98);
+  }
+}
+:root.no-glass[data-palette] {
+  --glass-menu: var(--surface);
+  --glass-menu-line: var(--border);
+  --glass-menu-shadow: var(--shadow-menu);
+  --glass-sheet: var(--surface);
+  --glass-sheet-shadow: var(--shadow-menu);
+  --glass-nav: var(--sidebar);
+  --glass-blur: none;
+  --glass-blur-sheet: none;
+}
+
 .menu-label {
   padding: 6px 10px 4px;
   font-size: 11.5px;

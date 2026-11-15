@@ -29,7 +29,10 @@ export function platformFeatures(platform: string): PlatformFeatures {
     // Touche Commande ; ailleurs, Ctrl (les accélérateurs `CmdOrCtrl` suivent d'eux-mêmes).
     commandKey: mac,
     // Barres superposées de macOS ; sous Linux, Chromium dessine des barres épaisses à flèches.
-    overlayScrollbars: mac
+    overlayScrollbars: mac,
+    // Sous Linux, le flou d'arrière-plan et la fin des fondus dépendent du pilote graphique : un
+    // menu y est resté à 88 % d'opacité, lisible à travers (VM VMware, fiche 145).
+    glass: mac
   }
 }
 

@@ -544,6 +544,21 @@ async function auroraNight(ui, content) {
   await ui.waitFor(`!${ui.$('settings')}`)
   await ui.click(ui.$('app-menu'))
   await ui.waitFor(`!!${content}`)
+  // Hors macOS, menu opaque et sans fondu, même sur le verre d'Aurore (fiche 145).
+  const look = await ui.ev(`(() => {
+    const style = getComputedStyle(${content})
+    const channels = style.backgroundColor.match(/[\\d.]+/g) ?? []
+    return {
+      animation: style.animationName,
+      background: style.backgroundColor,
+      alpha: channels.length > 3 ? Number(channels[3]) : 1,
+      blur: style.backdropFilter
+    }
+  })()`)
+  check(
+    look.animation === 'menu-in-opaque' && look.alpha === 1 && look.blur === 'none',
+    `Aurore nuit : menu ☰ opaque, sans flou ni fondu (${JSON.stringify(look)})`
+  )
   await ui.shot('app-menu-aurore-nuit')
   await ui.key('Escape')
   await ui.waitFor(`!${content}`)

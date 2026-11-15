@@ -62,6 +62,7 @@ export async function platformSuite() {
           activity: document.querySelector('.sidebar-kbd')?.innerText,
           frame: document.documentElement.classList.contains('native-frame'),
           scrollbars: document.documentElement.classList.contains('classic-scrollbars'),
+          noGlass: document.documentElement.classList.contains('no-glass'),
           lights: getComputedStyle(document.querySelector('.sidebar-header')).paddingLeft
         })`)
         const names = { ctrl: L('keys.ctrl'), alt: L('keys.alt'), shift: L('keys.shift') }
@@ -70,6 +71,7 @@ export async function platformSuite() {
             page.appMenu === !mac &&
             page.frame === !mac &&
             page.scrollbars === !mac &&
+            page.noGlass === !mac &&
             page.lights === (mac ? '84px' : '10px'),
           `${platform} : raccourcis ${page.activity}, ${mac ? 'feux de macOS' : 'cadre du système, ☰, barres fines'} (${JSON.stringify(page)})`
         )
