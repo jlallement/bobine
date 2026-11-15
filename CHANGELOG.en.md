@@ -11,6 +11,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Chat space: a file that also has another name elsewhere on your Mac (hard link) is no longer
+  changed without asking you; the permission request says why. Bobine no longer lists it among
+  the documents, and neither opens nor copies it.
 - Archiving a parent conversation also archives its children; a child whose parent was deleted
   becomes an ordinary conversation instead of staying tied to one that no longer exists.
 

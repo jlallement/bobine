@@ -51,7 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
-import { askReadOnly, automaticAnswer, hostRules } from './permission-answers'
+import { askReadOnly, automaticAnswer, hostRules, withKnownLocations } from './permission-answers'
 import { permissionRisks } from './permission-risk'
 import { errorMessage, isDirectory, killTree, race, settleNotifications } from './process-utils'
 import { StopWatch } from './stop-watch'
@@ -836,16 +836,19 @@ export class AgentHost {
     const place = { workspace: this.options.workspace, home: homedir() }
     // Genre retenu des mises à jour de l'outil : une demande peut venir sans `kind` (relecture 223).
     const toolCall = this.updates.permission(params.toolCall)
+    const known = this.updates.knownLocations(toolCall.toolCallId)
     const automatic = automaticAnswer(
       { ...params, toolCall },
       {
-        ...hostRules(this.options, this.updates.knownLocations(toolCall.toolCallId)),
+        ...hostRules(this.options, known),
         autoAllowed: (call) => this.appTools.autoAllowed(call),
         place
       }
     )
     if (automatic) return automatic
-    const risks = permissionRisks(toolCall, place)
+    // Emplacements du `tool_call` aussi (Bob 2.1.0 n'en met pas dans la demande) : une écriture
+    // d'une discussion reposée pour un lien physique dit pourquoi (fiche 230).
+    const risks = permissionRisks(withKnownLocations(toolCall, known), place)
     const ask = (asked: RequestPermissionRequest) => this.requests.permission(asked, risks, signal)
     return askReadOnly({ ...params, toolCall }, this.options.readOnly, ask)
   }

@@ -8,15 +8,7 @@
  * nom de document ne sort pas de son dossier.
  */
 import { spawn } from 'node:child_process'
-import {
-  closeSync,
-  constants,
-  copyFileSync,
-  fstatSync,
-  openSync,
-  readFileSync,
-  statSync
-} from 'node:fs'
+import { closeSync, fstatSync, readFileSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import { t } from 'i18next'
 import type {
@@ -34,10 +26,12 @@ import type { IpcHandlers } from '@shared/ipc'
 import {
   addDocuments,
   changedDocuments,
+  copyDocument,
   documentPath,
   documentsFingerprint,
   freeName,
-  listDocuments
+  listDocuments,
+  openDocument
 } from '../conversations/discussion-space'
 import { isInside } from '../agent/permission-answers'
 import type { ConversationListeners } from '../conversations/conversation'
@@ -97,27 +91,18 @@ const TEXTUTIL_TIMEOUT_MS = 10_000
 /**
  * `textutil -convert txt -stdout` (macOS) : le texte d'un document Word ou RTF, sinon rien.
  *
- * Le document est ouvert ici sans suivre de lien symbolique (`O_NOFOLLOW`, comme `readNoFollow`),
- * et `textutil` le lit par ce même descripteur (`/dev/fd/3`) : un lien posé entre le contrôle de
- * `documentPath` et la lecture ne fait pas lire un fichier extérieur (relecture M1, fiche 224).
+ * Le document est ouvert ici par `openDocument` (sans suivre de lien symbolique, et ni lien
+ * physique ni autre chose qu'un fichier, vérifié sur le descripteur), et `textutil` le lit par ce
+ * même descripteur (`/dev/fd/3`) : un lien posé entre le contrôle de `documentPath` et la lecture
+ * ne fait pas lire un fichier extérieur (relecture M1, fiche 224 ; fiche 230).
  * `textutil` reconnaît le format au contenu, pas à l'extension (relevé du 2026-11-15).
  */
 export function textutilText(path: string): Promise<string | undefined> {
   if (process.platform !== 'darwin') return Promise.resolve(undefined)
   let fd: number
   try {
-    // `O_NONBLOCK` : un tube nommé posé à la place du document n'attend pas un écrivain.
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+    fd = openDocument(path)
   } catch {
-    return Promise.resolve(undefined)
-  }
-  try {
-    if (!fstatSync(fd).isFile()) {
-      closeSync(fd)
-      return Promise.resolve(undefined)
-    }
-  } catch {
-    closeSync(fd)
     return Promise.resolve(undefined)
   }
   return new Promise((resolve) => {
@@ -154,13 +139,14 @@ export function textutilText(path: string): Promise<string | undefined> {
 }
 
 /**
- * Lit un fichier sans suivre de lien symbolique (`O_NOFOLLOW`) : un lien posé entre le contrôle
- * de `documentPath` et la lecture ne fait pas lire un fichier extérieur.
+ * Lit un document par `openDocument` : un lien (symbolique ou physique) posé entre le contrôle de
+ * `documentPath` et la lecture ne fait pas lire un fichier extérieur. Au-delà de `limit` octets :
+ * `undefined`.
  */
-function readNoFollow(path: string): Buffer {
-  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW)
+function readDocument(path: string, limit = Infinity): Buffer | undefined {
+  const fd = openDocument(path)
   try {
-    return readFileSync(fd)
+    return fstatSync(fd).size <= limit ? readFileSync(fd) : undefined
   } finally {
     closeSync(fd)
   }
@@ -177,11 +163,10 @@ export async function previewOf(
     text: text.slice(0, TEXT_LIMIT),
     truncated: text.length > TEXT_LIMIT
   })
-  if (TEXT.has(ext)) return asText(readNoFollow(path).toString('utf8'))
+  if (TEXT.has(ext)) return asText((readDocument(path) ?? Buffer.alloc(0)).toString('utf8'))
   const mimeType = IMAGES[ext]
-  if (mimeType && statSync(path).size <= IMAGE_LIMIT) {
-    return { kind: 'image', mimeType, data: readNoFollow(path).toString('base64') }
-  }
+  const image = mimeType ? readDocument(path, IMAGE_LIMIT) : undefined
+  if (mimeType && image) return { kind: 'image', mimeType, data: image.toString('base64') }
   if (RICH.has(ext)) {
     const text = await toText(path)
     if (text) return asText(text)
@@ -289,8 +274,8 @@ export function documentsHandlers(
       })
       if (!target) return null
       const path = join(target, freeName(target, str(name, 'name')))
-      // Jamais par-dessus un fichier apparu entre-temps.
-      copyFileSync(source, path, constants.COPYFILE_EXCL)
+      // Jamais par-dessus un fichier apparu entre-temps, jamais le contenu d'un fichier extérieur.
+      copyDocument(source, path)
       return path
     },
     'documents:preview': (id, name) => previewOf(pathOf(id, name), deps.toText),
@@ -305,7 +290,8 @@ export function documentsHandlers(
       // La conversation d'abord : une copie qui échoue ne la perd pas.
       const view = await host.continueInProject(str(id, 'id'), target)
       const documents = listDocuments(folder).map((d) => join(folder, d.name))
-      if (copy && documents.length > 0) addDocuments(join(target, 'documents'), documents)
+      if (copy && documents.length > 0)
+        addDocuments(join(target, 'documents'), documents, { fromDocuments: true })
       return view
     }
   }

@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, check, withApp } from '../lib.mjs'
@@ -9,6 +17,8 @@ import { L, check, withApp } from '../lib.mjs'
  * document déposé (copié), écriture de l'agent accordée dans les documents et refusée ailleurs
  * (agent factice `discussion-document`, d'après Bob 2.1.0), carte du document et panneau
  * « Documents », « Continuer dans un projet… », retour à l'espace Code sans les discussions.
+ * Fiche 230 : une écriture dans un fichier à plusieurs noms (lien physique vers un fichier
+ * extérieur) n'est pas accordée d'office ; la carte dit pourquoi.
  */
 export async function discussionSuite(scheme) {
   console.log(`\n— Espace Discussion (${scheme})`)
@@ -123,6 +133,29 @@ export async function discussionSuite(scheme) {
         await ui.shot('discussion-5-autorisation')
         await ui.click(`${ui.$('permission')}.querySelector('.pc-actions .btn.ghost')`)
         await ui.waitFor(`!!${ui.$('permission-answer')}`)
+
+        // Fiche 230 : `Notes.md`, autre nom d'un fichier extérieur, n'est pas accordé d'office.
+        const shared = join(outside, 'Partagé.md')
+        writeFileSync(shared, 'à garder\n')
+        linkSync(shared, join(userData, 'discussions', id, 'Notes.md'))
+        await ui.send('/scenario discussion-lien-physique')
+        await ui.waitFor(`!!${ui.$('permission-risks')}`, 20000)
+        check(
+          (await ui.ev(`${ui.$('permission-risks')}.innerText`)).includes(
+            L('toolCall.permission.risk.sharedFile')
+          ),
+          'fichier à plusieurs noms : carte posée, avec la raison (lien physique)'
+        )
+        await ui.shot('discussion-6-lien-physique')
+        await ui.click(
+          `${ui.$('permission-risks')}.closest('[data-testid=permission]').querySelector('.pc-actions .btn.ghost')`
+        )
+        await ui.waitFor(`!${ui.$('permission-risks')}`)
+        await ui.ready()
+        check(
+          readFileSync(shared, 'utf8') === 'à garder\n',
+          'refusé : le fichier extérieur est intact'
+        )
 
         // E6 : « Continuer dans un projet… » depuis le menu du titre.
         await ui.click(ui.$('title-menu'))

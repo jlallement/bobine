@@ -311,6 +311,7 @@
         "outside": "Writes outside the conversation folder:",
         "dotfile": "Changes a personal configuration file:",
         "system": "Touches a system folder:",
+        "sharedFile": "Also changes another file, possibly outside the folder (hard link):",
         "privilege": "Asks for administrator rights ({{via}})"
       }
     },

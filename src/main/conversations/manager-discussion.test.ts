@@ -1,5 +1,6 @@
 import {
   existsSync,
+  linkSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -10,6 +11,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { ConversationEvent } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
 import { ConversationManager } from './manager'
@@ -20,6 +22,7 @@ import { ConversationTrash } from './trash'
 function launch(scenario = 'echo', root = mkdtempSync(join(tmpdir(), 'discussion-'))) {
   const workspace = mkdtempSync(join(tmpdir(), 'projet-'))
   const conversationsDir = join(root, 'conversations')
+  const events: ConversationEvent[] = []
   const profile: AgentProfile = {
     id: 'texte',
     label: 'Factice',
@@ -34,11 +37,11 @@ function launch(scenario = 'echo', root = mkdtempSync(join(tmpdir(), 'discussion
     defaultWorkspace: workspace,
     neutralFolder: workspace,
     pathEnv: () => process.env['PATH'],
-    emit: () => {},
+    emit: (event) => events.push(event),
     emitList: () => {},
     agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
   })
-  return { root, workspace, conversationsDir, manager }
+  return { root, workspace, conversationsDir, manager, events }
 }
 
 describe('espace Discussion (fiche 224)', () => {
@@ -131,6 +134,35 @@ describe('espace Discussion (fiche 224)', () => {
         i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []
       )
     expect(keys).toEqual(['discussion.notice.writeAllowed', 'discussion.notice.writeRefused'])
+    manager.stopAll()
+  })
+
+  it('agent factice `discussion-lien-physique` : un fichier à plusieurs noms n’est pas accordé d’office (fiche 230)', async () => {
+    const { manager, events } = launch('discussion-lien-physique')
+    const view = await manager.create({ space: 'discussion' })
+    const id = view.summary.id
+    const folder = view.summary.workspace
+    const secret = join(mkdtempSync(join(tmpdir(), 'ailleurs-')), 'secret.txt')
+    writeFileSync(secret, 'à garder\n')
+    linkSync(secret, join(folder, 'Notes.md'))
+    const turn = manager.prompt(id, 'Mets à jour les notes')
+    let request: ConversationEvent['event'] | undefined
+    for (let i = 0; i < 200 && !request; i++) {
+      await new Promise((r) => setTimeout(r, 10))
+      request = events.find((e) => e.event.type === 'permission-request')?.event
+    }
+    if (request?.type !== 'permission-request') throw new Error('pas de demande posée')
+    // La carte dit pourquoi : le fichier modifierait aussi un autre fichier.
+    expect(request.risks).toEqual([{ kind: 'shared-file', path: 'Notes.md' }])
+    manager.respondPermission(id, request.requestId, 'reject')
+    await turn
+    expect(readFileSync(secret, 'utf8')).toBe('à garder\n')
+    const keys = manager
+      .view(id)
+      .transcript.items.flatMap((i) =>
+        i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []
+      )
+    expect(keys).not.toContain('discussion.notice.writeAllowed')
     manager.stopAll()
   })
 

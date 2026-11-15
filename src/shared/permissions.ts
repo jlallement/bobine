@@ -51,6 +51,11 @@ export type PermissionRisk =
   | { kind: 'home-dotfile'; path: string }
   /** Écrit dans un dossier du système (`/etc`, `/usr`, `/var`, `/Library`…). */
   | { kind: 'system-path'; path: string }
+  /**
+   * Écrit dans un fichier qui a d'autres noms (lien physique, fiche 230) : l'autre nom, peut-être
+   * hors du dossier, change aussi.
+   */
+  | { kind: 'shared-file'; path: string }
   /** Demande les droits d'administrateur. */
   | { kind: 'privilege'; via: PrivilegeCommand }
 

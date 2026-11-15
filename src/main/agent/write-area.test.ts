@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { linkSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -72,5 +72,27 @@ describe('écritures d’une discussion (fiche 224, relecture)', () => {
     expect(writeAreaVerdict(a, call([join(a, 'a.md'), '/tmp/b.md'], [], 'move')).decision).toBe(
       'refuse'
     )
+  })
+
+  it('fiche 230 : un fichier à plusieurs noms (lien physique) n’est jamais accordé seul : posé', () => {
+    const a = area()
+    const ailleurs = realpathSync(mkdtempSync(join(tmpdir(), 'ailleurs-')))
+    const secret = join(ailleurs, 'secret.txt')
+    writeFileSync(secret, 'à garder')
+    linkSync(secret, join(a, 'Notes.md'))
+    // `realpath` ne voit rien : le chemin est bien dans le dossier.
+    expect(realpathSync(join(a, 'Notes.md'))).toBe(join(a, 'Notes.md'))
+    for (const kind of ['edit', 'delete'] as const) {
+      expect(writeAreaVerdict(a, call([join(a, 'Notes.md')], [], kind)).decision).toBe('ask')
+      expect(writeAreaVerdict(a, call([], [join(a, 'Notes.md')], kind)).decision).toBe('ask')
+    }
+    // Même quand l'autre nom est aussi dans le dossier : prudent, posé.
+    writeFileSync(join(a, 'a.md'), 'x')
+    linkSync(join(a, 'a.md'), join(a, 'b.md'))
+    expect(writeAreaVerdict(a, call([join(a, 'a.md')])).decision).toBe('ask')
+    // Un document ordinaire ou à créer reste accordé.
+    writeFileSync(join(a, 'Seul.md'), 'x')
+    expect(writeAreaVerdict(a, call([join(a, 'Seul.md')])).decision).toBe('allow')
+    expect(writeAreaVerdict(a, call([join(a, 'Neuf.md')])).decision).toBe('allow')
   })
 })

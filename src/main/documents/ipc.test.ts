@@ -1,5 +1,12 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -245,5 +252,21 @@ describe('documents d’une discussion (fiche 224)', () => {
     writeFileSync(join(project, 'a (2).txt'), 'à garder aussi')
     expect(await handlers['documents:saveCopy']('d', 'a.txt')).toBe(join(project, 'a (3).txt'))
     expect(readFileSync(join(project, 'a (2).txt'), 'utf8')).toBe('à garder aussi')
+  })
+
+  it('fiche 230 : un document à plusieurs noms (lien physique) n’est ni montré, ni ouvert, ni copié', async () => {
+    const { handlers, folder, project, deps } = setup()
+    const secret = join(mkdtempSync(join(tmpdir(), 'ailleurs-')), 'secret.txt')
+    writeFileSync(secret, 'contenu extérieur')
+    linkSync(secret, join(folder, 'Notes.txt'))
+    expect(await handlers['documents:list']('d')).toEqual([])
+    await expect(async () => handlers['documents:preview']('d', 'Notes.txt')).rejects.toThrow()
+    expect(() => handlers['documents:open']('d', 'Notes.txt')).toThrow()
+    await expect(handlers['documents:saveCopy']('d', 'Notes.txt')).rejects.toThrow()
+    expect(existsSync(join(project, 'Notes.txt'))).toBe(false)
+    expect(deps.openPath).not.toHaveBeenCalled()
+    // Lu directement (lien posé après le contrôle du nom) : refusé sur le descripteur.
+    await expect(previewOf(join(folder, 'Notes.txt'))).rejects.toThrow()
+    expect(await textutilText(join(folder, 'Notes.txt'))).toBeUndefined()
   })
 })

@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
+import {
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -202,5 +210,41 @@ describe('liens symboliques (vrai disque, dossier jetable)', () => {
         { workspace, home }
       )
     ).toEqual([])
+  })
+})
+
+describe('fichier à plusieurs noms (lien physique, fiche 230)', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'liens-physiques-')))
+  afterAll(() => rmSync(root, { recursive: true, force: true }))
+  const ws = join(root, 'projet')
+  const ailleurs = join(root, 'ailleurs')
+  mkdirSync(ws)
+  mkdirSync(ailleurs)
+  writeFileSync(join(ailleurs, 'secret.txt'), 'à garder')
+  linkSync(join(ailleurs, 'secret.txt'), join(ws, 'notes.md'))
+  writeFileSync(join(ws, 'seul.md'), 'x')
+  const risks = (toolCall: RiskToolCall) =>
+    permissionRisks(toolCall, { workspace: ws, home: join(root, 'maison') })
+  const shared = (path: string): PermissionRisk => ({ kind: 'shared-file', path })
+
+  it('écrire dans un fichier lié ailleurs : dit, par son chemin dans le dossier', () => {
+    const target = join(ws, 'notes.md')
+    expect(risks({ kind: 'edit', locations: [{ path: target }] })).toEqual([shared('notes.md')])
+    expect(risks({ kind: 'delete', rawInput: { path: target } })).toEqual([shared('notes.md')])
+    // Une commande qui y écrit aussi.
+    expect(
+      risks({
+        kind: 'execute',
+        title: 'echo x >> notes.md',
+        rawInput: { command: 'echo x >> notes.md' }
+      })
+    ).toEqual([shared('notes.md')])
+  })
+
+  it('un fichier seul, ou à créer : rien ; hors du dossier : la raison la plus précise', () => {
+    expect(risks({ kind: 'edit', locations: [{ path: join(ws, 'seul.md') }] })).toEqual([])
+    expect(risks({ kind: 'edit', locations: [{ path: join(ws, 'neuf.md') }] })).toEqual([])
+    const outside = join(ailleurs, 'secret.txt')
+    expect(risks({ kind: 'edit', locations: [{ path: outside }] })).toEqual([out(outside)])
   })
 })

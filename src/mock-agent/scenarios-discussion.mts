@@ -72,6 +72,14 @@ export const discussionScenarios: Record<string, Scenario> = {
       { kind: 'text', text: 'Voici la synthèse : **Synthèse.md**, dans vos documents.' }
     ]
   },
+  'discussion-lien-physique': {
+    description:
+      'Espace Discussion (fiche 230) : demande à modifier `Notes.md` du dossier de la discussion, comme Bob 2.1.0 ; quand ce fichier a d’autres noms (lien physique), Bobine pose la question au lieu de l’accorder d’office',
+    steps: [
+      ...bobEdit('disc_link', '{cwd}/Notes.md', 'réécrit par l’agent\n', 'Notes.md'),
+      { kind: 'text', text: 'Terminé.' }
+    ]
+  },
   'discussion-commande': {
     description:
       'Espace Discussion (fiche 224, maquette E4) : demande à lancer une commande (`kind: execute`) pour fabriquer un document ; la carte la dit en clair, le détail replié',
