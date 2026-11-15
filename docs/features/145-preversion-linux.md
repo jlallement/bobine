@@ -741,3 +741,12 @@ lancé, rien d'autre à installer sur le Mac.
     Docker) : `auth` et `providers` (clé « chiffrée » attendue, gardée en clair sans trousseau
     depuis D4 ; à voir avec la fiche 229), `browser` (menu « + » : page native masquée puis
     réaffichée), `pilote` (envoi : brouillon). Pas touchés ici.
+  - Bilan de la nuit (2026-11-16), suite complète dans Docker : **branche 193/206**, `main`
+    b137697 **185/204** (21 rouges, dont `plan`, `roles-travail`, `autorisation-commande`,
+    `filles-*` que les polices et ces corrections règlent). Mac, `pnpm e2e --changed` : **208/208**.
+    Rouges restants sur la branche : `terminal` (×2, flèche powerline, ci-dessus), `auth`,
+    `providers`, `browser` (×2 chacun) et `pilote` (aussi rouges sur `main`), et sous la charge de
+    la suite complète seulement, verts seuls sur la branche comme sur `main` : `perf` sombre,
+    `session` sombre (infobulle), `roles-gestion` sombre (infobulle), `finitions` (×2 au dernier
+    passage, ×1 au précédent ; rangée d'actions du survol jamais affichée : l'état de survol ne
+    suit pas sous charge, à suivre — vert sur `main` au même passage).
