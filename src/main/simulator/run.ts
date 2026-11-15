@@ -25,7 +25,9 @@ export const runCommand: Run = (file, args, options = {}) =>
     // Linux : par le relais qui ferme les descripteurs hérités du main (fiche 145) ; ailleurs, tel quel.
     const plan = withClosedFds(
       { file, args, verbatim: false, kind: 'direct' },
-      launchContext(options.env ?? process.env)
+      launchContext(options.env ?? process.env),
+      undefined,
+      { cwd: options.cwd }
     )
     const child = execFile(
       plan.file,
