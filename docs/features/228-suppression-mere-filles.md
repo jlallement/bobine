@@ -1,6 +1,6 @@
 # 228 — Supprimer ou archiver une mère : ses filles suivent
 
-- **Statut** : en cours (main process fait ; confirmation : maquettes en attente de validation)
+- **Statut** : fait
 - **Dépend de** : 097 (filles), 171, 177 (relecteurs), 196 (corbeille)
 - **Agents** : les deux — gestion des conversations côté main, rien de propre à un agent
 
@@ -45,10 +45,14 @@ restaient, sans que la confirmation les nomme.
       si l'une d'elles travaille. Sortir la mère des archives ressort celles marquées `archivedWith`
       à son nom, pas celles archivées avant (une fille fusionnée et nettoyée, fiche 110, reste aux
       archives).
-- [ ] Confirmation de suppression qui nomme les filles, case cochée par défaut (maquettes à valider).
+- [x] Confirmation de suppression qui nomme les filles, case cochée par défaut (maquettes validées
+      par Jérôme le 2026-11-15).
 - [x] Tests unitaires (`family.test.ts`, `ipc.test.ts`) et contre l'agent factice
       (`family-delete.test.ts` : scénarios `echo` et `attend-stop` pour une fille au travail).
-- [ ] e2e de la confirmation (après validation des maquettes), en clair et sombre.
+- [x] e2e de la confirmation (`filles` : filles nommées, case cochée, puis décochée), en clair et
+      sombre.
+- [x] « Supprimer aussi chez… » : chaque conversation supprimée l'est chez son propre agent, s'il
+      sait le faire ; le libellé nomme ces agents, et dit ceux qui ne le savent pas.
 
 ## Décisions
 
@@ -68,6 +72,16 @@ restaient, sans que la confirmation les nomme.
   rattraper (beaucoup ne le faisaient pas, dans des `catch` ou des promesses non attendues).
 - **Archiver refusé si une fille travaille**, comme pour la mère elle-même
   (`conversations.error.busyArchive`) ; le message nomme la fille.
+- **Réponses validées (2026-11-15)** : `keep` côté main sans précision, la case cochée dans
+  l'interface ; N compte toute la descendance ; archivage refusé si une fille travaille ; worktrees
+  des filles gardés sans case de plus (nettoyage : Réglages › Données › Worktrees orphelins).
+- **« Supprimer aussi chez… » par agent.** Une fille peut tourner sur un autre agent que sa mère.
+  La case apparaît si au moins une des conversations supprimées (la mère, et ses filles si la case
+  de la famille est cochée) a un agent qui sait supprimer une session ; le libellé nomme ces agents
+  (« chez Agent factice et OpenCode », « ces conversations » au pluriel), et une ligne dit ceux qui ne
+  le savent pas (« Bob ne sait pas supprimer une session : celles de ses conversations y restent »).
+  Côté main, chaque conversation n'est supprimée chez son agent que s'il l'annonce (`agentDeletes`),
+  la mère comprise : la case peut venir de l'agent d'une fille.
 - **Worktrees des filles gardés par défaut** à la suppression (option `childWorktrees`, fausse par
   défaut) : une fille peut avoir du travail non fusionné ; la corbeille ne rattrape pas un worktree.
 
@@ -128,3 +142,14 @@ la case décochée fait.
   `filles-tech-lead`, `filles-fusion`, `profil`, `parallel`, `restart`, `inbox`, `relecture`, en
   clair et sombre : 19/19 ; un échec isolé de `filles` dark (pointeur des propositions en rafale,
   trois suites en parallèle) ne s'est pas reproduit en la rejouant seule (2/2).
+- 2026-11-15 — interface. Maquettes validées par Jérôme (« Ok je valide les maquettes »).
+  `DeleteDialog` sort de `ConversationMenu.tsx` vers `sidebar/DeleteDialog.tsx` ; descendance lue par
+  `conversation:family` (titre, état au travail, agent), rangée par `familyRows`
+  (`sidebar/delete-family.ts`) ; case « Supprimer aussi ses N conversations filles » cochée,
+  « au travail, sera arrêtée » / « au travail », note sous la liste selon la case ; `agentsOf` pour
+  « Supprimer aussi chez… ». Styles `.family-list`, `.family-note` dans `styles.css`. Main :
+  `FamilyMember` porte `profileLabel` et `agentDeletes`, `deleteConversation` ne demande la
+  suppression chez l'agent qu'à ceux qui la savent — un test sur un hôte factice a trouvé que les
+  filles lisaient le `fromAgent` déjà retiré à la mère, corrigé. e2e `filles` : la confirmation
+  nomme les 2 filles, case cochée, puis décochée pour garder le scénario « mère supprimée, filles
+  ordinaires » ; captures `filles-4a-confirmation`, `filles-4b-confirmation-garder`.

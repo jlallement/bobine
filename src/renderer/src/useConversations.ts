@@ -472,6 +472,8 @@ export function useConversations() {
     createWorktree: () =>
       withActive((id) => window.api.conversations.createWorktree(id).then(showView)),
     worktreeStatus: (id: string) => window.api.conversations.worktreeStatus(id),
+    /** Descendance d'une conversation, pour la confirmation de suppression (fiche 228). */
+    family: (id: string) => window.api.conversations.family(id),
     /** Archive une conversation, ou la ressort (une nouvelle conversation remplace l'active). */
     archive: (id: string, archived: boolean) => {
       window.api.conversations

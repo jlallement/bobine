@@ -4,6 +4,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ## Prochaine version
 
+### Amélioré
+
+- Supprimer une conversation mère : la confirmation nomme ses conversations filles (petites-filles
+  comprises, celles au travail signalées) et propose « Supprimer aussi ses N conversations filles »,
+  coché d'office ; les filles au travail sont arrêtées avant. Décochée, elles continuent seules.
+  « Supprimer aussi chez… » vaut pour chaque conversation supprimée, chez son propre agent.
+
 ### Corrections
 
 - Conversations filles : supprimer leur mère ne les laisse plus reliées à une conversation qui

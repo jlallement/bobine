@@ -690,4 +690,8 @@ export interface FamilyMember {
   motherId: string
   /** Elle répond en ce moment : la supprimer l'arrêtera d'abord. */
   busy?: boolean
+  /** Son agent (une fille peut tourner sur un autre que sa mère). */
+  profileLabel?: string
+  /** Son agent sait supprimer une session (« Supprimer aussi chez… », fiche 196). */
+  agentDeletes?: boolean
 }

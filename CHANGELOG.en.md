@@ -4,6 +4,13 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## Next version
 
+### Improved
+
+- Deleting a parent conversation: the confirmation names its child conversations (grandchildren
+  included, those still working flagged) and offers “Also delete its N child conversations”,
+  checked by default; working children are stopped first. Unchecked, they carry on alone. “Also
+  delete in…” applies to each deleted conversation, in its own agent.
+
 ### Fixes
 
 - Child conversations: deleting their parent no longer leaves them linked to a conversation that

@@ -19,10 +19,16 @@ export type FamilyHost = Pick<
 
 /** Descendance de `id` pour la confirmation de suppression : qui répond en ce moment. */
 export function familyOf(host: FamilyHost, id: string): FamilyMember[] {
-  const status = new Map(host.state().conversations.map((c) => [c.id, c.status]))
-  return host
-    .family(id)
-    .map((m) => ({ ...m, ...(status.get(m.id) === 'busy' ? { busy: true } : {}) }))
+  const summaries = new Map(host.state().conversations.map((c) => [c.id, c]))
+  return host.family(id).map((m) => {
+    const summary = summaries.get(m.id)
+    return {
+      ...m,
+      ...(summary?.status === 'busy' ? { busy: true } : {}),
+      ...(summary ? { profileLabel: summary.profileLabel } : {}),
+      ...(summary?.agentDeletes ? { agentDeletes: true } : {})
+    }
+  })
 }
 
 /** Supprime `id` et décide du sort de ses filles. */
@@ -31,17 +37,28 @@ export async function deleteConversation(
   id: string,
   options: DeleteOptions = {}
 ): Promise<ConversationsState> {
-  const { children = 'keep', childWorktrees = false, ...own } = options
+  const { children = 'keep', childWorktrees = false, ...rest } = options
   const family = host.family(id)
+  const mother = host.state().conversations.find((c) => c.id === id)
+  // « Supprimer aussi chez… » peut venir de l'agent d'une fille : la mère n'est supprimée chez le
+  // sien que s'il sait le faire (sans résumé, l'appel décide, comme avant la fiche 228).
+  const own = mother && !mother.agentDeletes ? { ...rest, fromAgent: false } : rest
   if (children === 'delete') {
-    // Des plus profondes aux plus proches : aucune ne perd sa mère avant son tour.
+    // Des plus profondes aux plus proches : aucune ne perd sa mère avant son tour. Chacune chez son
+    // propre agent, seulement s'il sait supprimer une session (une fille peut avoir un autre agent).
+    const deletes = new Set(
+      familyOf(host, id)
+        .filter((m) => m.agentDeletes)
+        .map((m) => m.id)
+    )
     for (const member of family) {
       await stopWork(host, member.id)
-      await host.delete(member.id, { fromAgent: own.fromAgent, removeWorktree: childWorktrees })
+      const fromAgent = rest.fromAgent !== false && deletes.has(member.id)
+      await host.delete(member.id, { fromAgent, removeWorktree: childWorktrees })
     }
     return host.delete(id, own)
   }
-  const title = host.state().conversations.find((c) => c.id === id)?.title ?? ''
+  const title = mother?.title ?? ''
   const state = await host.delete(id, own)
   for (const member of family) if (member.motherId === id) detachChild(host, member.id, title)
   return family.length ? host.state() : state

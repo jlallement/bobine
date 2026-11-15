@@ -103,9 +103,14 @@ describe('supprimer une mère (fiche 228)', () => {
     // Une petite-fille, sous la première fille.
     const grandchild = (await env.manager.createChild(quiet, 'Sous-tâche')).id
     expect(familyOf(env.manager, mother)).toEqual([
-      { id: grandchild, title: 'Sous-tâche', motherId: quiet },
-      { id: quiet, title: 'Importer les données', motherId: mother },
-      { id: busy, title: 'Travail long', motherId: mother, busy: true }
+      expect.objectContaining({ id: grandchild, title: 'Sous-tâche', motherId: quiet }),
+      expect.objectContaining({ id: quiet, title: 'Importer les données', motherId: mother }),
+      expect.objectContaining({
+        id: busy,
+        motherId: mother,
+        busy: true,
+        profileLabel: 'Factice stop'
+      })
     ])
     const cancel = vi.spyOn(env.manager, 'cancel')
     await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
@@ -237,5 +242,41 @@ describe('archiver une mère (fiche 228)', () => {
     expect(env.listed(mother)?.archived).toBeFalsy()
     expect(env.listed(quiet)?.archived).toBeFalsy()
     env.manager.stopAll()
+  })
+})
+
+describe('« Supprimer aussi chez… » d’une famille (fiche 228)', () => {
+  it('chaque conversation chez son propre agent, seulement s’il sait supprimer une session', async () => {
+    const summary = (id: string, agentDeletes: boolean) => ({
+      id,
+      title: id,
+      profileLabel: id,
+      status: 'ready',
+      ...(agentDeletes ? { agentDeletes } : {})
+    })
+    const deleted: [string, unknown][] = []
+    const host = {
+      state: () => ({
+        activeId: 'm',
+        conversations: [summary('m', false), summary('f1', true), summary('f2', false)]
+      }),
+      family: () => [
+        { id: 'f1', title: 'f1', motherId: 'm' },
+        { id: 'f2', title: 'f2', motherId: 'm' }
+      ],
+      delete: vi.fn(async (id: string, options: unknown) => {
+        deleted.push([id, options])
+        return host.state()
+      }),
+      cancel: vi.fn(async () => {}),
+      post: vi.fn(() => true),
+      updateRecord: vi.fn()
+    }
+    await deleteConversation(host as never, 'm', { children: 'delete', fromAgent: true })
+    expect(deleted).toEqual([
+      ['f1', { fromAgent: true, removeWorktree: false }],
+      ['f2', { fromAgent: false, removeWorktree: false }],
+      ['m', { fromAgent: false }]
+    ])
   })
 })

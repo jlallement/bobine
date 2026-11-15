@@ -298,7 +298,21 @@ export async function fillesSuite(scheme) {
         await ui.click(`${row(mother)}.querySelector('[data-testid=history-more]')`)
         await ui.waitFor(`!!${ui.$('history-delete')}`)
         await ui.click(ui.$('history-delete'))
-        await ui.waitFor(`!!${ui.$('delete-confirm')}`)
+        await ui.waitFor(`!!${ui.$('delete-children')}`)
+        // Fiche 228 : les filles nommées, « Supprimer aussi ses 2 filles » coché d'office.
+        check(
+          (await ui.ev(`${ui.$('delete-children')}.checked`)) &&
+            (await ui.ev(`${ui.$('delete-children-list')}.querySelectorAll('li').length`)) === 2 &&
+            (await ui.ev(`${ui.$('delete-dialog')}.innerText`)).includes(
+              L('deleteDialog.children', { count: 2 })
+            ),
+          'mère supprimée : la confirmation nomme ses 2 filles, case cochée'
+        )
+        await ui.shot('filles-4a-confirmation')
+        // Case décochée : les filles restent, en conversations ordinaires.
+        await ui.click(ui.$('delete-children'))
+        await ui.waitFor(`!${ui.$('delete-children')}.checked`)
+        await ui.shot('filles-4b-confirmation-garder')
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${row(mother)}`)
         await sleep(300)

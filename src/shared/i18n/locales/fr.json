@@ -894,7 +894,22 @@
     "title": "Supprimer « {{title}} » ?",
     "fromAgent": "Supprimer aussi chez {{agent}} <muted>(définitif : la conversation ne pourra plus être reprise)</muted>",
     "worktree": "Supprimer aussi le worktree et la branche <code>{{branch}}</code>",
-    "losses": "— perdus : {{losses}}"
+    "losses": "— perdus : {{losses}}",
+    "children_one": "Supprimer aussi sa conversation fille",
+    "children_other": "Supprimer aussi ses {{count}} conversations filles",
+    "children_many": "Supprimer aussi ses {{count}} conversations filles",
+    "childBusy": "au travail",
+    "childBusyStop": "au travail, sera arrêtée",
+    "childrenDelete_one": "Elle va aussi à la corbeille. Son worktree est gardé.",
+    "childrenDelete_other": "Elles vont aussi à la corbeille. Leurs worktrees sont gardés.",
+    "childrenDelete_many": "Elles vont aussi à la corbeille. Leurs worktrees sont gardés.",
+    "childrenKeep_one": "Elle deviendra une conversation ordinaire ; son fil le dira.",
+    "childrenKeep_other": "Elles deviendront des conversations ordinaires ; leur fil le dira.",
+    "childrenKeep_many": "Elles deviendront des conversations ordinaires ; leur fil le dira.",
+    "fromAgents": "Supprimer aussi chez {{agent}} <muted>(définitif : ces conversations ne pourront plus être reprises)</muted>",
+    "fromAgentKeeping_one": "{{agents}} ne sait pas supprimer une session : celles de ses conversations y restent.",
+    "fromAgentKeeping_other": "{{agents}} ne savent pas supprimer une session : celles de leurs conversations y restent.",
+    "fromAgentKeeping_many": "{{agents}} ne savent pas supprimer une session : celles de leurs conversations y restent."
   },
   "modelMenu": {
     "search": "Rechercher un modèle…",
