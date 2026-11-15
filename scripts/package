@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Construit l'app macOS (fiches 012, 153) : dist/mac[-arm64]/Bobine.app et dist/*.dmg. Avec --linux
-# (préversion, fiche 145), sur une machine Linux : dist/*.AppImage et dist/*.deb.
+# (préversion, fiche 145), sur une machine Linux : dist/*.deb (ADR-0051 : pas d'AppImage).
 #
 #   pnpm package             .app + .dmg
 #   pnpm package --dir       .app seule (plus rapide)
 #   pnpm package --dry-run   essai à blanc : dit comment l'app serait signée, rien n'est construit
 #   pnpm package --strict    une configuration de signature incomplète est une erreur (release.yml)
-#   pnpm package --linux     AppImage + .deb, pour l'architecture de la machine (Linux seulement),
+#   pnpm package --linux     .deb, pour l'architecture de la machine (Linux seulement),
 #                            puis contrôle du .deb (scripts/check-linux-package.mts)
 #   pnpm package --win       installeurs NSIS x64 et arm64 (préversion, fiche 229), depuis le Mac
 #                            ou Windows : scripts/package-win.mts (--x64, --arm64, --dir)

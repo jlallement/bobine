@@ -5,7 +5,7 @@
  *   pnpm exec electron scripts/make-icon.mjs
  *
  * Avec `--linux` (fiche 145) : les tailles du thème d'icônes hicolor, de 16 à 512 px
- * (build/icons/<n>x<n>.png, lues par electron-builder pour le .deb et l'AppImage), réduites depuis
+ * (build/icons/<n>x<n>.png, lues par electron-builder pour le .deb), réduites depuis
  * build/icon.png, qui reste tel quel (l'icône du Mac ne change pas). À relancer après chaque
  * nouvelle build/icon.png ; `scripts/linux-icons.test.ts` vérifie qu'elles sont là et à leur taille.
  *

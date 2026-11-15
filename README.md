@@ -168,7 +168,7 @@ Bobine does not update itself: watch the repository's Releases on GitHub (« Wat
 Releases ») and install each new `.dmg` over the old one. Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
-**Linux (preview, experimental).** AppImage and `.deb` packages, built on Linux, without the iOS
+**Linux (preview, experimental).** `.deb` packages (x64, arm64), built on Linux, without the iOS
 Simulator tools ([sheet 145](docs/features/145-preversion-linux.md), French). They are not published
 with this beta: for now, build from source on Linux (below).
 
