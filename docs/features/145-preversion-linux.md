@@ -251,7 +251,19 @@ mot de passe d'administration) ; le reste peut se faire depuis un terminal de la
    (`chmod +x`).
 8. **Sessions** : Wayland par défaut ; X11 par la roue dentée de l'écran de connexion
    (« Ubuntu sur Xorg »). Essayer les deux.
-9. **Sans trousseau** (D4) : créer un autre utilisateur, ou arrêter `gnome-keyring-daemon`, puis
+9. **Bac à sable de Chromium pour l'Electron du dépôt** (`pnpm dev`, `pnpm pilote lancer` sans
+   `--app`) : Ubuntu refuse les espaces de noms aux programmes sans profil AppArmor, et Electron
+   s'arrête net (« SUID sandbox helper… chrome-sandbox must be owned by root and mode 4755 »). Une
+   fois par installation de `node_modules` :
+   ```bash
+   sudo chown root:root node_modules/electron/dist/chrome-sandbox
+   sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+   ```
+   (ou un profil AppArmor `userns` pour ce chemin, comme celui que pose le `.deb`). Jamais
+   `--no-sandbox`. L'app installée par le `.deb` n'en a pas besoin.
+10. **Piloter l'app installée** : `pnpm pilote lancer --app /opt/Bobine/bobine` (ou le dossier
+   `dist/linux-*-unpacked`).
+11. **Sans trousseau** (D4) : créer un autre utilisateur, ou arrêter `gnome-keyring-daemon`, puis
    lancer l'app depuis un terminal.
 
 ## Essais Linux en local (Docker)
@@ -454,4 +466,23 @@ lancé, rien d'autre à installer sur le Mac.
   `desktopName` présent dans `app.asar`. Pas vérifié : l'icône affichée par GNOME et le
   rattachement sous Wayland (VM à refaire) ; l'x64 (même configuration). Mac inchangé
   (`build/icon.png` non régénérée, `pnpm package --dry-run` identique).
+- 2026-11-15 — **Essai réel du tech lead** dans la VM Ubuntu 26.04 arm64 (GNOME sous Wayland,
+  `.deb` de la beta.5, piloté par `pnpm pilote` en SSH). Statut de chaque point :
+  - ✅ Marche : accueil complet, OpenCode 2.2.5 détecté, message d'essai sur un vrai modèle gratuit
+    (Big Pickle), conversation avec un fichier créé et une commande lancée, terminal intégré (bash,
+    node-pty), panneaux Session et Modifications, Réglages › Agents.
+  - ✅ Icône (roue dentée générique) : corrigée (PNG hicolor et SVG `scalable`, entrée précédente) ;
+    à revoir dans la VM avec le prochain `.deb`.
+  - 📝 Noté, à décider : l'app packagée tourne sous **XWayland** ; avec `WAYLAND_DISPLAY` seul
+    (sans `DISPLAY`), elle ne démarre pas (« Missing X server or $DISPLAY ») : Electron 45 n'utilise
+    pas Wayland en natif par défaut. Pas bloquant (GNOME fournit `DISPLAY`) ; piste :
+    `--ozone-platform-hint=auto`.
+  - ⏳ Lot 2, déjà prévu : raccourcis affichés en ⌘ (« ⌘1 », « ⇧⌘U ») ; barres de défilement
+    classiques avec flèches dans les blocs de code.
+  - ✅ Pilote : `--app` acceptait seulement une `.app` (fausse `.app` avec un lien symbolique dans
+    la VM). Accepte maintenant l'exécutable installé (`/opt/Bobine/bobine`) ou le dossier
+    `linux-*-unpacked` (`appCommand` de `scripts/pilote/instance.mjs`, testé ; `docs/pilote.md`).
+  - ✅ Documenté : `pnpm pilote lancer` de développement (Electron du dépôt) s'arrête sur le bac à
+    sable SUID de Chromium ; pas-à-pas de la VM, étape 9 (`chown root` et `chmod 4755` de
+    `chrome-sandbox` une fois, ou profil AppArmor). Jamais `--no-sandbox`.
 

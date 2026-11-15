@@ -26,7 +26,7 @@ détail) : `capture --demi` pour vérifier, taille réelle pour juger.
 ## Commandes
 
 ```bash
-pnpm pilote lancer [--app <Bobine.app | dossier buildé>] [--dossier <projet>]
+pnpm pilote lancer [--app <Bobine.app | exécutable ou dossier Linux | dossier buildé>] [--dossier <projet>]
                    [--profil <dossier> | (profil temporaire par défaut)] [--agents-neufs]
                    [--port N] [--lang fr|en] [--journal <dossier>] [--agent-factice <scénario>]
                    [--vrai-trousseau]
@@ -46,7 +46,9 @@ pnpm pilote arreter
 - **`lancer`** : Bobine avec `--remote-debugging-port` (sur 127.0.0.1) et
   `--force-renderer-accessibility` (boutons cliquables par leur nom avec computer use), attend la
   fenêtre, écrit `instance.json` : les autres commandes n'ont besoin d'aucun argument. Par défaut,
-  le build du dépôt (`out/`, lancé par l'Electron du dépôt) ; `--app` pour une `.app`. **Toujours
+  le build du dépôt (`out/`, lancé par l'Electron du dépôt) ; `--app` pour une `.app`, ou sous
+  Linux pour l'app packagée : son exécutable (`/opt/Bobine/bobine` du `.deb`) ou son dossier
+  (`/opt/Bobine`, `dist/linux-arm64-unpacked`), fiche 145. **Toujours
   un profil temporaire** (`--profil-temporaire` de Bobine, fiche 148 : vraie première
   installation, effacée à la fermeture), sauf `--profil <dossier>` donné explicitement. Trousseau
   simulé (`--use-mock-keychain`) sauf `--vrai-trousseau` : la boîte du trousseau bloquerait Bobine,
