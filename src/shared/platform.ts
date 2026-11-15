@@ -30,7 +30,12 @@ export const PLATFORM_FEATURES = [
   /** Raccourcis affichés avec ⌘ (⇧⌘U) ; ailleurs, avec Ctrl (Ctrl+Maj+U, fiche 145). */
   'commandKey',
   /** Barres de défilement superposées du système ; ailleurs, barres fines dessinées par l'app. */
-  'overlayScrollbars'
+  'overlayScrollbars',
+  /**
+   * Surfaces flottantes en verre dépoli (Aurore) et menus qui apparaissent en fondu : fiables sur
+   * le compositeur de macOS. Ailleurs, menus opaques, sans fondu (fiche 145).
+   */
+  'glass'
 ] as const
 
 export type PlatformFeature = (typeof PLATFORM_FEATURES)[number]
@@ -47,7 +52,8 @@ export const ALL_FEATURES: PlatformFeatures = {
   appMenu: true,
   insetTitleBar: true,
   commandKey: true,
-  overlayScrollbars: true
+  overlayScrollbars: true,
+  glass: true
 }
 
 export const FEATURES_ARG = '--bobine-features='

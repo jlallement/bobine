@@ -548,4 +548,19 @@ lancé, rien d'autre à installer sur le Mac.
   verte) ; x64 émulé (`node:24-bookworm`, `--platform linux/amd64`) : `pnpm install` sans
   `dist/`, puis `pree2e` le télécharge, `third-party-notices --check` vert. Le message de
   `check-electron` nomme l'archive du bon système (`linux` ou `darwin`).
+- 2026-11-15 — **Menu ☰ transparent dans une VM VMware Fusion** (Ubuntu 26.04 arm64, accélération
+  3D, `.deb` de bcca473, thème sombre par défaut). Cause mesurée sur la capture, pas le verre : le
+  thème Sombre a un fond de menu opaque (`--glass-menu: var(--surface)`, `#30302e`), mais **tout
+  le menu**, texte compris, était à environ 88 % d'opacité (texte `#d7d4cd` au lieu de
+  `#f0eee6`, fond `#2f2f2e` au lieu de `#30302e` sur la barre `#1f1e1d`) : le fondu
+  d'apparition `menu-in` (opacité 0 → 1, 0,12 s) est resté figé avant sa fin, alors que la
+  capture a été prise bien après. Ça touche **tous les menus** (`.menu`, Radix), quel que soit le
+  thème ; le flou du verre d'Aurore dépend lui aussi du pilote graphique. Correction : nouvelle
+  capacité `glass` (macOS seulement) ; ailleurs, classe `no-glass` : les menus apparaissent sans
+  fondu (glissement seul) et le verre d'Aurore prend ses valeurs opaques (celles de « moins de
+  transparence »). Rien ne change sur macOS. Pas reproductible sous Docker (le rendu logiciel
+  finit le fondu) : l'essai vérifie que le menu n'a plus de fondu et que son fond est opaque, sans
+  flou, même sur Aurore nuit (`settings` sous Linux) ; `platform` vérifie `no-glass` hors macOS
+  seulement. À revoir dans la VM avec le prochain `.deb`. Écart : le verre d'Aurore n'est gardé que
+  sur macOS, faute de savoir détecter sous Linux où le flou marche vraiment.
 
