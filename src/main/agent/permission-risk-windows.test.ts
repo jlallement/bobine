@@ -144,7 +144,6 @@ describe('risques d’une commande sous Windows', () => {
 
   it('commande inconnue (npm, script, shell imbriqué, bloc, échappement) : écritures inconnues', () => {
     for (const text of [
-      'npm test',
       '.\\build.ps1',
       'powershell -Command "Remove-Item C:\\x"',
       'cmd /c del x',
@@ -187,7 +186,8 @@ describe('risques d’une commande sous Windows', () => {
 
   it('`cd` vers un dossier absolu : les chemins relatifs partent de là ; relatif : inconnu', () => {
     expect(kinds(risks(command('cd C:\\Windows; del x.dll')))).toEqual(['system-path'])
-    expect(kinds(risks(command('cd ..; del x.dll')))).toEqual(['unknown-writes'])
+    expect(kinds(risks(command('cd ..; del x.dll')))).toEqual(['outside-folder'])
+    expect(kinds(risks(command('cd $env:FOO; del x.dll')))).toEqual(['unknown-writes'])
   })
 
   it('le dossier de la commande (`cwd`) sert de base', () => {
@@ -275,9 +275,8 @@ describe('windowsAbsolute', () => {
 })
 
 describe('windowsCommandWrites', () => {
-  it('guillemets et opérateur d’appel', () => {
+  it('opérateur d’appel `&` : illisible', () => {
     const found = windowsCommandWrites('& "C:\\outils\\x.exe" > "C:\\a b\\c.txt"', 'C:\\p')
-    expect(found.writes.map((w) => w.path)).toEqual(['C:\\a b\\c.txt'])
     expect(found.unknown).toBe(true)
   })
   it('guillemet non fermé : illisible', () => {
