@@ -35,13 +35,11 @@ const MAC_ONLY = new Set([
   'diagnostics.check.screenNotDetermined', // screenCapture
   'diagnostics.check.axeQuarantineFix', // simulator
   'install.scope.everyone.title', // selfInstall
-  'install.scope.everyone.denied', // selfInstall
-  // Réglages › Apparence : polices du système, repris par la fiche des polices (Inter,
-  // JetBrains Mono), en cours dans une autre branche.
-  'settings.appearance.theme.hint',
-  'settings.appearance.conversationFont.hint'
+  'install.scope.everyone.denied' // selfInstall
 ])
-const MAC_WORDS = /\bMac\b|macOS|Finder|\bDock\b|Keychain|trousseau macOS|\bApple\b/
+// Polices du Mac comprises (fiche 145, D9) : « sinon SF Mono » était faux sous Linux et Windows.
+const MAC_WORDS =
+  /\bMac\b|macOS|Finder|\bDock\b|Keychain|trousseau macOS|\bApple\b|\bSF (Pro|Mono)\b|New York/
 
 describe('textes propres au système (fiches 145, 229)', () => {
   it('groupes : aucun sur le Mac, générique ailleurs, Windows par-dessus', () => {
@@ -82,6 +80,19 @@ describe('textes propres au système (fiches 145, 229)', () => {
           .filter((key) => !MAC_ONLY.has(key))
         expect(left, `${lang} ${JSON.stringify(features)}`).toEqual([])
       }
+    }
+  })
+
+  it('police du terminal : SF Mono sur le Mac, la chasse fixe du système ailleurs (fiche 145)', () => {
+    const hint = (features: { finder: boolean; explorer: boolean }) =>
+      flatten(withSystemTexts(resources.fr.translation, features) as Tree).get(
+        'settings.appearance.terminalFont.hint'
+      )
+    expect(hint(ALL_FEATURES)).toBe('Automatique : une « Nerd Font » installée, sinon SF Mono.')
+    for (const features of [LINUX, WINDOWS]) {
+      expect(hint(features)).toBe(
+        'Automatique : une « Nerd Font » installée, sinon la police à chasse fixe du système.'
+      )
     }
   })
 

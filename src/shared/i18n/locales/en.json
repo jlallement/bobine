@@ -5264,6 +5264,14 @@
           "fresh": {
             "agentsLabel": "Agents as on a new computer"
           }
+        },
+        "appearance": {
+          "theme": {
+            "hint": "System: Light by day, Dark by night, like the system."
+          },
+          "terminalFont": {
+            "hint": "Automatic: an installed “Nerd Font”, otherwise the system’s monospaced font."
+          }
         }
       },
       "diagnostics": {
