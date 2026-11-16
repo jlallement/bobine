@@ -435,9 +435,12 @@ describe('textes et lancement', () => {
     )
   })
   it('arrêt : seulement le processus lancé par le pilote (pid réutilisé : jamais tué)', async () => {
+    // Vivant jusqu'à `kill` : sous Windows, la ligne de commande est lue par PowerShell, dont le
+    // premier lancement a pris plus de 50 s sur la machine arm64 de GitHub (release 1.0.0-beta.6) ;
+    // un enfant qui ne vivait que 10 s était déjà sorti, et `ours` répondait faux.
     const child = spawn(process.execPath, [
       '-e',
-      'setTimeout(() => {}, 10000)',
+      'setInterval(() => {}, 1000)',
       '--',
       '--remote-debugging-port=9399'
     ])
