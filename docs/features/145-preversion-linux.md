@@ -308,7 +308,10 @@ lancé, rien d'autre à installer sur le Mac.
   Mac ne sont jamais touchés. `--reset` repart d'un volume vide.
 - **Lancement** : `pnpm install`, binaire d'Electron posé par son script s'il manque (le premier
   `pnpm install` du volume ne l'avait pas fait), node-pty compilé s'il manque, `pnpm build`, puis
-  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai).
+  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai). En
+  parallèle, chaque tâche a en plus son propre écran X et son openbox (`e2e/pool.mjs`, écrans :100
+  et suivants), comme des machines séparées ; l'écran englobant (:99) sert aux suites jouées une à
+  une.
   `--init` : `xvfb-run` ne doit pas être le processus 1 (il attend un signal de Xvfb qui ne lui
   parvient pas).
 - **Captures** : `e2e/captures/linux/` du Mac.
@@ -871,3 +874,23 @@ lancé, rien d'autre à installer sur le Mac.
     `xvfb-run` + `scripts/with-wm`). Les apps ne partageraient plus d'écran, et deux campagnes
     complètes diraient si `finitions`, `settings` et `session` cessent de tomber. Coût estimé :
     une à deux secondes de démarrage par tâche.
+- 2026-11-16 — **Un écran X par tâche en parallèle (`e2e/pool.mjs`), Linux seulement.** Sous
+  Linux, quand `xvfb-run` est là, chaque tâche tourne sous son propre `xvfb-run -n <écran>` puis
+  `scripts/with-wm`, dans son propre groupe de processus, arrêté d'un bloc (serveur X et openbox
+  compris, même si la suite est figée). Numéros à partir de :100, ni pris par une tâche en cours
+  ni verrouillés (`/tmp/.X<n>-lock`) : Xvfb sort une seconde ou deux après sa tâche, son numéro est
+  alors sauté. Mac et Windows : rien ne change (même processus, même arrêt). Rien dans l'app.
+  - Deux campagnes complètes dans Docker, une à la fois, 3 jobs : `finitions`, `settings` et
+    `session` vertes, clair et sombre, dans les deux. Restent `terminal` clair et sombre (rouge
+    connu, critère gardé, voir plus haut) et, une fois, `filles-tech-lead` clair (« délai dépassé :
+    `title-origin` », déjà vu sur `main` dans des campagnes antérieures : instabilité connue,
+    sans lien avec l'écran).
+  - Coût : environ 130 ms de démarrage par tâche (Xvfb puis openbox prêt) ; campagnes de 14 min
+    54 s et 14 min 48 s, contre 15 à 16 min sur un écran partagé.
+  - Nettoyage : un relevé toutes les 20 s dans le conteneur ne montre jamais plus de 4 Xvfb ni
+    4 openbox (l'écran englobant et un par job), sur 206 tâches : rien ne s'accumule.
+  - Une première campagne ne compte pas : le Mac s'est endormi, couvercle fermé (`pmset` :
+    « Clamshell Sleep » de 07:07 à 07:57), et les tâches en cours ont dépassé leurs délais.
+    Rejouée sous `caffeinate -i`, sur secteur (qui n'empêche pas la mise en veille couvercle
+    fermé sans écran externe).
+  - Mac, suite complète après le changement : 208/208 vertes (15 min 47 s).
