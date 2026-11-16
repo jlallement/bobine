@@ -120,7 +120,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [highlight.js](https://github.com/highlightjs/highlight.js) | 11.11.2 | BSD-3-Clause | interface | [T43](#t43) |
 | [html-parse-stringify](https://github.com/i18next/html-parse-stringify) | 4.0.1 | MIT | interface | [T44](#t44) |
 | [html-url-attributes](https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes) | 3.0.1 | MIT | interface | [T45](#t45) |
-| [i18next](https://github.com/i18next/i18next) | 27.0.1 | MIT | main process, interface | [T46](#t46) |
+| [i18next](https://github.com/i18next/i18next) | 27.1.2 | MIT | main process, interface | [T46](#t46) |
 | [ignore](https://github.com/kaelzhang/node-ignore) | 7.0.14 | MIT | main process | [T47](#t47) |
 | [inline-style-parser](https://github.com/remarkablemark/inline-style-parser) | 0.2.7 | MIT | interface | [T48](#t48) |
 | [internmap](https://github.com/mbostock/internmap) | 2.0.3 | ISC | interface | [T49](#t49) |
@@ -133,7 +133,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [lodash-es](https://github.com/lodash/lodash) | 4.18.1 | MIT | interface | [T54](#t54) |
 | [longest-streak](https://github.com/wooorm/longest-streak) | 3.1.0 | MIT | interface | [T55](#t55) |
 | [lowlight](https://github.com/wooorm/lowlight) | 3.3.0 | MIT | interface | [T33](#t33) |
-| [lucide-react](https://github.com/lucide-icons/lucide) | 1.70.0 | ISC | interface | [T56](#t56) |
+| [lucide-react](https://github.com/lucide-icons/lucide) | 1.73.0 | ISC | interface | [T56](#t56) |
 | [markdown-table](https://github.com/wooorm/markdown-table) | 3.0.4 | MIT | interface | [T33](#t33) |
 | [marked](https://github.com/markedjs/marked) | 16.4.2 | MIT | interface | [T57](#t57) |
 | [mdast-util-find-and-replace](https://github.com/syntax-tree/mdast-util-find-and-replace) | 3.0.3 | MIT | interface | [T33](#t33) |
@@ -187,7 +187,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [remark-gfm](https://github.com/remarkjs/remark-gfm) | 4.0.1 | MIT | interface | [T33](#t33) |
 | [remark-parse](https://github.com/remarkjs/remark/tree/main/packages/remark-parse) | 11.0.0 | MIT | interface | [T67](#t67) |
 | [remark-rehype](https://github.com/remarkjs/remark-rehype) | 11.1.2 | MIT | interface | [T33](#t33) |
-| [rolldown](https://github.com/rolldown/rolldown) | 1.2.16 | MIT | main process, interface | [T68](#t68) |
+| [rolldown](https://github.com/rolldown/rolldown) | 1.2.19 | MIT | main process, interface | [T68](#t68) |
 | [roughjs](https://github.com/pshihn/rough) | 4.6.6 | MIT | interface | [T69](#t69) |
 | [scheduler](https://github.com/react/react) | 0.28.0 | MIT | interface | [T63](#t63) |
 | [space-separated-tokens](https://github.com/wooorm/space-separated-tokens) | 2.0.2 | MIT | interface | [T15](#t15) |
@@ -209,8 +209,8 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [use-sidecar](https://github.com/theKashey/use-sidecar) | 1.1.3 | MIT | interface | [T13](#t13) |
 | [vfile](https://github.com/vfile/vfile) | 6.0.3 | MIT | interface | [T76](#t76) |
 | [vfile-message](https://github.com/vfile/vfile-message) | 4.0.3 | MIT | interface | [T33](#t33) |
-| [vite](https://github.com/vitejs/vite) | 8.3.6 | MIT | interface | [T78](#t78) |
-| [yaml](https://github.com/eemeli/yaml) | 2.9.0 | ISC | app (production dependency) | [T79](#t79) |
+| [vite](https://github.com/vitejs/vite) | 8.3.8 | MIT | interface | [T78](#t78) |
+| [yaml](https://github.com/eemeli/yaml) | 2.9.1 | ISC | app (production dependency) | [T79](#t79) |
 | [zod](https://github.com/colinhacks/zod) | 4.6.7 | MIT | main process | [T80](#t80) |
 
 ## Dual-licensed packages: license chosen
@@ -2190,7 +2190,7 @@ THE SOFTWARE.
 
 ### T46
 
-Used by: i18next 27.0.1.
+Used by: i18next 27.1.2.
 
 ```text
 The MIT License (MIT)
@@ -2477,7 +2477,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T56
 
-Used by: lucide-react 1.70.0.
+Used by: lucide-react 1.73.0.
 
 ```text
 ISC License
@@ -2910,7 +2910,7 @@ THE SOFTWARE.
 
 ### T68
 
-Used by: rolldown 1.2.16.
+Used by: rolldown 1.2.19.
 
 ```text
 MIT License
@@ -3188,7 +3188,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T78
 
-Used by: vite 8.3.6.
+Used by: vite 8.3.8.
 
 ```text
 # Vite core license
@@ -5279,7 +5279,7 @@ Repository: https://github.com/sveltejs/zimmerframe
 
 ### T79
 
-Used by: yaml 2.9.0.
+Used by: yaml 2.9.1.
 
 ```text
 Copyright Eemeli Aro <eemeli@gmail.com>
