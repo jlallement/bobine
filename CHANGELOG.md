@@ -4,6 +4,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ## Prochaine version
 
+### Nouveau
+
+- Bobine pour Linux et Windows, en préversion, à télécharger avec chaque version : paquet `.deb`
+  pour Ubuntu 24.04 ou plus récent et Debian, installeur pour Windows 11, en x64 et arm64.
+  L'installeur Windows n'est pas signé : SmartScreen avertit au premier lancement
+  (« Informations complémentaires › Exécuter quand même »).
+
 ### Amélioré
 
 - Linux et Windows (préversions) : l'app ne parle plus du Mac, du Finder, du Dock ni du trousseau

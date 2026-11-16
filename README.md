@@ -5,8 +5,8 @@
 <h1 align="center">Bobine</h1>
 
 <p align="center">
-  <strong>A macOS desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks
-  the Agent Client Protocol.</strong><br>
+  <strong>A desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks the
+  Agent Client Protocol.</strong> macOS, with Linux and Windows in preview.<br>
   Chat with the agent, approve each change with its diff, hand work to specialists running in
   parallel, and watch the agent drive a built-in browser, the iOS Simulator or an Android
   emulator, all in one window.
@@ -168,9 +168,18 @@ Bobine does not update itself: watch the repository's Releases on GitHub (« Wat
 Releases ») and install each new `.dmg` over the old one. Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
-**Linux (preview, experimental).** `.deb` packages (x64, arm64), built on Linux, without the iOS
-Simulator tools ([sheet 145](docs/features/145-preversion-linux.md), French). They are not published
-with this beta: for now, build from source on Linux (below).
+**Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-x64.deb` or `Bobine-<version>-arm64.deb`
+on the [Releases page](https://github.com/jlallement/bobine/releases), for Ubuntu 24.04 or later and Debian:
+`sudo apt install ./Bobine-<version>-<arch>.deb`. Checksums in `SHA256SUMS-linux-<arch>.txt`. No
+iOS Simulator tools. Details, and building from source:
+[`docs/installation.md`](docs/installation.md#linux-préversion) (French).
+
+**Windows (preview).** From 1.0.0-beta.6, `Bobine-<version>-x64.exe` or
+`Bobine-<version>-arm64.exe` on the same page, for Windows 11: installed for the current user,
+without administrator rights. The installer is not signed: if SmartScreen warns, choose **More
+info › Run anyway**. Checksums in `SHA256SUMS-windows-<arch>.txt`. Details (Smart App Control,
+uninstalling, building from source): [`docs/installation.md`](docs/installation.md#windows-préversion)
+(French).
 
 Something does not work? Settings › Diagnostics checks everything at once (agents found, trial
 session, MCP servers, Xcode, simulators), with the fix for each problem, and « Report an issue »
@@ -190,8 +199,9 @@ any ACP agent can be declared in Settings › Agents.
 Open it once through **System Settings › Privacy & Security › Open Anyway** (see
 [Install](#install)); the source is here to read and build yourself.
 
-**Intel Mac, Windows?** Not for now: the `.dmg` is for Apple Silicon only. Linux packages exist
-as an experimental preview.
+**Intel Mac, Linux, Windows?** No Intel Mac for now: the `.dmg` is for Apple Silicon only. Linux
+(`.deb`) and Windows (installer), x64 and arm64, are in preview on the same Releases page (see
+[Install](#install)).
 
 **Is it a fork of another app?** No. It is inspired by desktop apps for coding agents, and built
 from scratch on Electron, React and the
@@ -241,8 +251,8 @@ agent, without any model or personal data: `pnpm build && pnpm vitrine`.
 
 ## Known limitations
 
-- Apple Silicon only for the `.dmg`: no Intel, no Windows build; the iOS Simulator tools need
-  Xcode.
+- Apple Silicon only for the `.dmg`: no Intel Mac build. Linux and Windows are previews; the
+  Windows installer is not signed (SmartScreen). The iOS Simulator tools need a Mac with Xcode.
 - Ad hoc signature, not notarized (see above); macOS 27 shows no notification banner for an ad
   hoc signed app (the Dock badge and bounce still work).
 - No automatic updates.

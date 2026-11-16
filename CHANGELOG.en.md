@@ -4,6 +4,12 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## Next version
 
+### New
+
+- Bobine for Linux and Windows, in preview, to download with each version: a `.deb` package for
+  Ubuntu 24.04 or later and Debian, an installer for Windows 11, for x64 and arm64. The Windows
+  installer is not signed: SmartScreen warns on first launch (“More info › Run anyway”).
+
 ### Improved
 
 - Linux and Windows (previews): the app no longer talks about the Mac, the Finder, the Dock or the

@@ -20,8 +20,8 @@ Here you can:
 Bobine is released for macOS (Apple Silicon), as a `.dmg`, on the releases page of the GitHub
 repository.
 <!-- si: !finder
-On Linux and Windows, Bobine is in preview: `.deb` package, Windows installer,
-described in [docs/installation.md](../../installation.md).
+On Linux and Windows, Bobine is in preview, on the same releases page: `.deb` package, Windows
+installer, described in [docs/installation.md](../../installation.md).
 -->
 
 <!-- si: finder -->
