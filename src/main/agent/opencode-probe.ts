@@ -67,7 +67,9 @@ export const TIMING_DEPENDENT: ReadonlySet<string> = new Set([
   'sous-agent.childMarker',
   'sous-agent.childToolIdsPrefixed',
   'sous-agent.childTitleIsDescription',
-  'sous-agents en parallèle.routed'
+  'sous-agents en parallèle.routed',
+  // Pendant ou après le tour du parent, selon le moment où le sous-agent la pose.
+  'question d’un sous-agent.afterTurn'
 ])
 
 /** Les observations sans les faits de `TIMING_DEPENDENT`, pour les comparer aux attentes. */
@@ -251,6 +253,7 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       sub['background'] === true || sub['resultTag'] === 'subagent' || sub['resultTag'] === 'task'
     ),
     ...parallelChecks(observations['sous-agents en parallèle']),
+    ...questionChecks(observations),
     byModel(
       'questions de l’agent affichées en questionnaire',
       question['asked'],
@@ -295,6 +298,45 @@ function parallelChecks(par: Observation | undefined): ContractCheck[] {
       'sous-agents en parallèle : chacun sa session, nommée par son outil avant son travail relayé (rangé sous sa carte)',
       par['called'] === true && par['routed'] !== null,
       par['distinctSessions'] === true && par['routed'] === true
+    )
+  ]
+}
+
+/**
+ * Questions répondues (fiche 232) : la réponse que Bobine construit revient à l'agent ; un refus ou
+ * une annulation finit le tour sans rien laisser en attente ; plusieurs questions d'un seul appel
+ * et celle d'un sous-agent s'affichent en questionnaire. Rien tant que ces sondages, plus récents
+ * que la sonde, n'ont pas tourné.
+ */
+function questionChecks(observations: Observations): ContractCheck[] {
+  if (observations['question (texte libre)'] === undefined) return []
+  const choice = get(observations, 'question')
+  const free = get(observations, 'question (texte libre)')
+  const many = get(observations, 'questions (plusieurs, choix multiple)')
+  const sub = get(observations, 'question d’un sous-agent')
+  const closed = (o: Observation) => o['pending'] === false && o['continues'] === true
+  return [
+    byModel(
+      'réponse à une question rendue à l’agent (choix, puis texte libre « Autre »)',
+      choice['asked'] === true && free['asked'] === true,
+      choice['used'] === true && free['used'] === true
+    ),
+    byModel(
+      'plusieurs questions d’un seul appel affichées en questionnaire, réponses rendues',
+      many['asked'],
+      many['recognized'] === true && Number(many['questions']) >= 2 && many['used'] === true
+    ),
+    ...(['question refusée', 'question annulée'] as const).map((name) =>
+      byModel(
+        `${name} : le tour finit, rien en attente, la conversation continue`,
+        get(observations, name)['asked'],
+        closed(get(observations, name))
+      )
+    ),
+    byModel(
+      'question d’un sous-agent en arrière-plan affichée en questionnaire',
+      sub['asked'],
+      sub['recognized']
     )
   ]
 }
