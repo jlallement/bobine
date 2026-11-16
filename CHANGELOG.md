@@ -2,7 +2,7 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## Prochaine version
+## 1.0.0-beta.6 — 16 novembre 2026
 
 ### Nouveau
 
