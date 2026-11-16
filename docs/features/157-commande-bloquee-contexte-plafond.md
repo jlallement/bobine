@@ -150,3 +150,19 @@ Aucune nouvelle dépendance.
   ensuite avant le tour suivant. Le même trou vaut pour Bob réel, dont l'heure d'écriture n'est
   pas documentée. Désormais : relu à la fin du tour, à 1,5 s, et encore à 5 s si rien n'a changé
   (`session-cost.ts`) ; l'essai attend jusqu'à 6 s, au-delà de la dernière relecture.
+- 2026-11-16 — **Essai oublié avec la relecture à 5 s.** `journal.test.ts` (« --cout-bob ») attendait
+  encore 3 s : rouge sous Windows sur `main` 3cf4052 (premier tour fini à 10:56:13.914, jamais de
+  second tour). Aligné sur la relecture de 5 s (attente de 6 s). Revus : les autres attentes d'un
+  coût relu après un tour (e2e `usage`, 8 s puis 15 s ; sous-agents, relus pendant leur travail)
+  dépassent déjà 5 s ; l'essai de l'accueil dépend de l'attente propre à l'app (`costWaitMs`,
+  3 s, `agent-readiness.ts`), laissée telle quelle.
+- 2026-11-16 — **Essai de l'accueil : coût attendu 5 s au lieu de 3** (`costWaitMs`,
+  `agent-readiness.ts`), comme la dernière relecture d'une conversation. Le résultat de l'essai
+  attendait déjà ce coût : il part dès que le coût est lu (relu toutes les 250 ms), et
+  n'attend la limite que si l'agent n'écrit rien. Rendre le résultat tout de suite et le coût
+  après n'est pas simple : la session d'essai est supprimée juste après, avec sa ligne de coût.
+  Mesuré avec l'agent factice sans coût (`--sans-cout`, source de coût déclarée) : essai rendu en
+  3,13 à 3,16 s avec 3 s, 5,17 à 5,18 s avec 5 s (0,10 s sans attente), soit 2 s de plus dans ce
+  cas seulement. Essais : coût écrit à 4 s trouvé, plus de relecture ensuite ; aucun coût : rien
+  avant 5 s, plus de relecture ensuite. Pas de ligne au CHANGELOG (rien de visible quand Bob écrit
+  son coût).
