@@ -156,7 +156,24 @@ Aucun défaut de Bobine trouvé sur ces formes. Agent factice : `questions-openc
 `agent-host-opencode-2-3.test.ts` (refus → `cancelled`, puis la suite ; question d'un sous-agent
 après le tour, répondue et rapportée).
 
+**Sous-agents en arrière-plan, essai réel** (même jour, `openai/gpt-6.1-sol`, captures `7-*` et
+journal `agents-2026-11-16-sous-agents.log`) : deux sous-agents `explore` en parallèle, tour du
+parent fini en 10 s ; les deux lignes « en cours » après le tour, puis « 2 finis » avec leur
+réponse ; « Terminé en 10 s » gardé. **Défaut observé** : le parent a répondu **deux fois** hors
+tour (un rapport après l'autre : « Premier mot reçu ; j'attends le rapport du second sous-agent. »,
+puis la liste des deux mots de code), et les deux réponses sont **collées** en un message, ce qui
+casse aussi le Markdown (« sous-agent.- `secret.txt` »). Rien dans ACP ne les sépare : entre elles,
+ni `usage_update`, ni fin de tour, ni réflexion ; seulement une pause.
+
 ## Reste à faire
+
+- **Deux réponses hors tour de suite collées** (défaut observé, non corrigé) : proposition à
+  trancher, car c'est une heuristique de temps : hors tour, un morceau de texte qui arrive après
+  une pause d'au moins ~1,5 s ouvre un nouveau message (l'hôte d'agent l'annonce au fil par un
+  évènement générique, la réponse précédente est close et datée ; la durée du tour ne compte que
+  la réponse du tour). La durée exacte de la pause entre deux réponses n'est pas relevée : le
+  journal Trace regroupe les morceaux ; à mesurer avant de fixer le seuil. Agent factice : deux
+  étapes `after-turn` à quelques secondes d'écart.
 
 - **Questions** : faire tourner `pnpm opencode-probe --only question` (modèle gratuit quand le quota
   revient, ou `gpt-6.1-sol` avec une connexion posée dans le profil jetable par le tech lead).
