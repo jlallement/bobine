@@ -1206,6 +1206,15 @@ le verrou (5 s, comme better-sqlite3 par défaut). L'app lit en lecture seule et
 (relecture suivante) ; si le vrai Bob écrivait sans délai d'attente, une lecture de l'app pourrait
 de même faire échouer une écriture de Bob : non observé, Bob étant indisponible ; à surveiller.
 
+**Grilles de conformité : deux parcours à la fois par fichier** (`CONCURRENT_JOURNEYS`,
+`vitest.config.ts`, `maxConcurrency` du projet « node », mêmes valeurs partout). Cause : avec le
+défaut de vitest (5), les trois grilles jouaient ensemble jusqu'à 15 parcours (45 agents node) sur
+4 cœurs ; sur un passage lent de `windows-latest` (43784163592 : suite en 450 s contre 285 s), les
+grilles prenaient 26 à 32 s contre 10 à 13 s (43783452672), 13 tours sur 62 dépassaient 2 s, et
+« reprise après redémarrage » sortait de ses 20 s (tout arrivait, en retard). File d'attente, pas
+délai : le délai d'un parcours court depuis son départ ; 20 s inchangé. Mesuré sur le Mac : grille
+Bob 9,3 s → 19,5 s, les autres +0,5 s, `pnpm test` inchangé (45,5 s → 45,1 s).
+
 ### Défauts connus (relevés pendant le lot 7a, non corrigés)
 
 - **Worktree effacé pendant que son agent y tourne, en quittant** (macOS, Linux et Windows ; pas

@@ -5,6 +5,18 @@ import { defineConfig } from 'vitest/config'
 const alias = { '@shared': resolve(__dirname, 'src/shared') }
 
 /**
+ * Parcours `concurrent` joués en même temps dans un fichier : les grilles de conformité (fiche 139)
+ * et `limits.test.ts`, seuls à s'en servir. Chacun lance de 1 à 3 agents node ; avec le défaut de
+ * vitest (5) et les trois grilles en même temps, une machine de 4 cœurs en avait jusqu'à 15
+ * parcours (45 agents) à la fois. Relevé sur `windows-latest` (fiche 229, lot 7a) : sur un passage
+ * lent (43784163592), les grilles prenaient 26 à 32 s contre 10 à 13 s (43783452672), 13 tours sur
+ * 62 dépassaient 2 s (jusqu'à 10,8 s), et « reprise après redémarrage » dépassait ses 20 s. Une
+ * file d'attente, pas un délai : un parcours ne compte son délai qu'à son départ. Mêmes valeurs
+ * sur les trois systèmes.
+ */
+const CONCURRENT_JOURNEYS = 2
+
+/**
  * Deux projets (fiche 043) : « node » pour le main, le preload, le partagé et l'agent factice ;
  * « renderer » (jsdom + Testing Library) pour les composants React. `pnpm coverage` ajoute le
  * rapport de couverture (texte, et `coverage/` en HTML, ignoré par git).
@@ -37,6 +49,7 @@ export default defineConfig({
           include: ['src/**/*.test.ts', 'scripts/**/*.test.ts', 'scripts/**/*.test.mjs'],
           exclude: ['src/renderer/**', '**/node_modules/**'],
           environment: 'node',
+          maxConcurrency: CONCURRENT_JOURNEYS,
           setupFiles: ['src/shared/i18n/test-setup.ts', 'src/main/test-setup.ts']
         }
       },
