@@ -129,7 +129,8 @@ jobs:
       - run: pnpm build
       # Deux tâches à la fois : la machine a 2 cœurs ; à 3, des essais liés au temps (infobulles,
       # durées) échouaient d'un passage à l'autre (fiche 145). Une option `--jobs` des suites
-      # demandées passe après et l'emporte.
+      # demandées passe après et l'emporte. Chaque tâche a son propre écran X et son openbox
+      # (`e2e/pool.mjs`) : l'écran englobant ne sert qu'aux suites jouées une à une.
       # Sans suites demandées : tout sauf `perf`, jouée à part juste après. Sur cette machine (2 cœurs
       # partagés, rendu logiciel, caches froids au premier lancement), ses durées varient du simple
       # au quadruple d'un passage à l'autre (diff de 5000 lignes : 434 puis 5369 ms) : ses seuils y

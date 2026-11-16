@@ -4887,16 +4887,20 @@ a.btn {
   color: var(--err);
 }
 
-/* Panneau étroit : le nom du fichier passe à la ligne plutôt que d'être coupé. */
+/* Panneau étroit : le nom du fichier passe à la ligne plutôt que d'être coupé. Le texte garde de
+   quoi se lire (fiche 145) : sous Linux et Windows, « Afficher dans le gestionnaire de fichiers »
+   (ou « l'Explorateur ») ne tient pas sur une ligne à côté ; c'est le bouton qui passe alors à la
+   ligne, au lieu de réduire le texte à une lettre par ligne. Sur le Mac, rien ne change. */
 .browser-download-text {
   flex: 1;
-  min-width: 0;
+  min-width: 6em;
   overflow-wrap: anywhere;
 }
 
 .browser-download .link-button {
-  flex-shrink: 0;
+  min-width: 0;
   font-size: 12.5px;
+  text-align: start;
 }
 
 .browser-page {

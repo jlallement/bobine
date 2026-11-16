@@ -22,6 +22,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Linux et Windows : le bandeau « Fichier enregistré » du navigateur ne réduit plus son texte
+  à une lettre par ligne ; le bouton « Afficher dans le gestionnaire de fichiers » (ou
+  l'Explorateur) passe à la ligne.
 - Linux : les agents et les commandes lancés par Bobine ne reçoivent plus ses fichiers et
   connexions ouverts ; un agent resté seul après un arrêt brutal de Bobine ne l'empêche plus de
   redémarrer.

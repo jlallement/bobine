@@ -3,7 +3,18 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync 
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { connect } from '../../scripts/pilote/cdp.mjs'
-import { L, LANG, M, NEUTRAL_AGENT_ENV, NEUTRAL_ENV, PORT, check, captures, root } from '../lib.mjs'
+import {
+  L,
+  LANG,
+  M,
+  NEUTRAL_AGENT_ENV,
+  NEUTRAL_ENV,
+  PORT,
+  check,
+  captures,
+  root,
+  sleep
+} from '../lib.mjs'
 
 /**
  * Pilote de Bobine (fiche 206) : la commande elle-même, telle que Claude s'en sert pendant une
@@ -101,10 +112,18 @@ export async function piloteSuite() {
     })()`)
     const sent = pilote('envoyer', '/scenario permission')
     check(sent.code === 0, `envoyer : message parti (${sent.err.trim() || sent.out.trim()})`)
+    // `envoyer` rend la main dès la zone vidée par l'envoi : le message arrive dans le fil un peu
+    // après (machine lente, Linux sous xvfb). On attend qu'il y soit, puis on compare son texte.
+    let lastUser
+    for (let i = 0; i < 50 && !lastUser; i++) {
+      lastUser = await inPage(
+        `[...document.querySelectorAll('.msg-user')].at(-1)?.innerText.trim()`
+      )
+      if (!lastUser) await sleep(100)
+    }
     check(
-      (await inPage(`[...document.querySelectorAll('.msg-user')].at(-1)?.innerText.trim()`)) ===
-        '/scenario permission',
-      'envoyer : zone vidée d’abord, le brouillon ne part pas avec le message'
+      lastUser === '/scenario permission',
+      `envoyer : zone vidée d’abord, le brouillon ne part pas avec le message (${JSON.stringify(lastUser)})`
     )
     wait = pilote('attendre', '--max', '60s')
     check(wait.code === 10 && wait.out.startsWith('carte'), `attendre → carte (${firstLine(wait)})`)

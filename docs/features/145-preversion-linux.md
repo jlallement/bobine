@@ -308,7 +308,10 @@ lancé, rien d'autre à installer sur le Mac.
   Mac ne sont jamais touchés. `--reset` repart d'un volume vide.
 - **Lancement** : `pnpm install`, binaire d'Electron posé par son script s'il manque (le premier
   `pnpm install` du volume ne l'avait pas fait), node-pty compilé s'il manque, `pnpm build`, puis
-  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai).
+  `xvfb-run … scripts/with-wm pnpm e2e <suites>` (openbox prêt avant le premier essai). En
+  parallèle, chaque tâche a en plus son propre écran X et son openbox (`e2e/pool.mjs`, écrans :100
+  et suivants), comme des machines séparées ; l'écran englobant (:99) sert aux suites jouées une à
+  une.
   `--init` : `xvfb-run` ne doit pas être le processus 1 (il attend un signal de Xvfb qui ne lui
   parvient pas).
 - **Captures** : `e2e/captures/linux/` du Mac.
@@ -803,3 +806,91 @@ lancé, rien d'autre à installer sur le Mac.
   l'environnement (l'app n'expose pas le moteur de `safeStorage`) : un bus de session sans démon de
   trousseau fait tomber l'essai en rouge, jamais en faux vert (dit dans `e2e/lib.mjs`).
   Verts dans Docker et sur le Mac.
+- 2026-11-16 — **Rouges Linux restants : verdicts.**
+  - `browser`, menu « + » : **défaut de l'app**, vu sur la capture d'échec. Le bandeau
+    « Fichier enregistré » réduisait son texte à une lettre par ligne : le bouton (« Afficher dans
+    le gestionnaire de fichiers », ou l'Explorateur sous Windows), plus long que « … le Finder »,
+    ne se réduisait pas. Le bandeau, haut de 500 px, poussait la page sous le menu « + », qui ne
+    passait donc plus dessus : rien à masquer, et l'essai tombait rouge. Corrigé dans la CSS : le
+    texte garde au moins 6em et le bouton passe à la ligne. Sur le Mac, le texte a déjà environ
+    95 px : rien ne change.
+  - `pilote`, envoi par-dessus un brouillon : **défaut de l'essai**. `envoyer` rend la main dès
+    que la zone est vidée par l'envoi, et l'essai lisait le fil avant que le message y soit. Le
+    journal du pilote montre la conversation nommée exactement « /scenario permission » : le
+    brouillon n'était pas parti. L'essai attend maintenant le message (5 s au plus), puis compare
+    son texte.
+  - `finitions`, rangée d'actions au survol : **défaut de l'environnement d'essai, probable,
+    pas encore prouvé**. Elle échoue dans les campagnes complètes (3 apps en parallèle sur un même
+    écran Xvfb), jamais sur le Mac. Hypothèse : le vrai pointeur X reste à un point de l'écran ;
+    quand une autre app lancée par un autre job ouvre ou ferme sa fenêtre sous lui, X envoie des
+    évènements d'entrée et de sortie (Enter/LeaveNotify) à notre fenêtre, et Chromium efface le
+    survol simulé par le protocole DevTools. Les autres attentes de survol (infobulle de
+    `session`) ont le même profil. À vérifier au prochain créneau Docker : `finitions` seule
+    (`--jobs 1`) puis en parallèle. Si l'hypothèse se confirme, correction propre : un écran X par
+    job (`pool.mjs`), comme des machines séparées, sans rien changer dans l'app.
+    Sur quoi s'appuie ce verdict : sur le profil des échecs seulement, pas encore sur une mesure.
+    Trois campagnes complètes dans Docker, 3 jobs sur un seul écran (`xvfb-run` puis
+    `scripts/with-wm` ; `pool.mjs` ne donne pas d'écran à part). Le 2026-11-15 : vert. Le
+    2026-11-16 : clair et sombre rouges, puis sombre seul rouge ; l'infobulle de `session` rouge
+    aussi. Rouge, la suite dure 16 s au lieu de 6 : c'est l'attente de 10 s qui expire, la rangée
+    n'est jamais affichée. Sur la capture d'échec, rien ne recouvre le message. Sur le Mac, la suite n'a jamais échoué. Le CSS est le même partout
+    (`.msg-agent-group:hover .msg-agent-actions`).
+  - `terminal`, flèche powerline : **pas de défaut visible**. Capture dans la VM (Ubuntu 26.04,
+    Wayland, police livrée, ×6) : flèches entières, pointe nette, et le pied recouvre la cellule
+    colorée d'avant sans jointure. L'essai refuse une encre qui dépasse à gauche de plus de 0,5 px ;
+    la police livrée mesure 0,59 px sous Linux. Ce débord est peint par-dessus la cellule
+    précédente, qu'xterm.js peint avant : il ne peut pas être coupé. Le seuil n'est pas relevé
+    (règle des essais). Décision laissée au tech lead : garder ce critère côté gauche, ou ne
+    vérifier que la droite, seule source de coupure. Capture : `145-vm-terminal-powerline-x6.png` dans les notes du tech
+    lead (agrandie ×6 par le protocole DevTools, `Page.captureScreenshot`).
+- 2026-11-16 — **Bandeau de téléchargement : avant / après, Mac et Docker.** « Avant » : la
+  branche, avec seulement le `styles.css` de `main`, donc le même essai et la CSS pour seule
+  différence.
+  - Linux : avant, texte de 0 px et bandeau de 501 px de haut, à 320 px comme à 280 px, et le
+    menu « + » rouge. Après : texte de 75 px, bandeau de 66 px, `browser` et `pilote` verts.
+  - Mac, largeur par défaut : bandeau identique au pixel près (texte 96 px, bandeau 51 px). Seuls
+    changent, ailleurs, le dossier temporaire au nom tiré au hasard et le port.
+  - Mac, panneau le plus étroit (280 px) : avant, texte de 56 px, coupé dans les mots
+    (« enregistr/é », « export.cs/v »). Après : texte de 75 px, coupé entre les mots, et
+    « Afficher dans le / Finder » sur deux lignes. Seul changement visible sur le Mac, voulu.
+  - Captures et comparaisons dans les notes du tech lead (`145-bandeau/`).
+- 2026-11-16 — **`settings`, clair seulement, passage GitHub 43790575253 : pas un défaut de l'app.**
+  Le délai dépassé porte sur l'entrée « Barre latérale » du sous-menu Affichage (ligne 519 de
+  `e2e/suites/settings.mjs`). Ce n'est pas une course à l'ouverture du ☰ : la ligne 517 avait vu
+  le sous-menu ouvert. Ce n'est pas non plus un clic à côté. La capture d'échec montre le menu ☰
+  ouvert et complet, avec sa barre latérale ; seul le sous-menu est refermé.
+  - Pourquoi le sous-menu se ferme : Radix (`@radix-ui/react-menu`) le ferme quand le pointeur
+    quitte le déclencheur « Affichage » ailleurs que vers le sous-menu. Le menu ☰ reprend alors
+    le focus et le sous-menu le voit sortir (`onFocusOutside`). Le clic de l'essai, lui, va droit
+    au sous-menu.
+  - D'où vient cette sortie : même profil que `finitions` et l'infobulle de `session`, c'est
+    l'état du pointeur qui se perd. C'est rare, propre à Linux, et seulement quand plusieurs apps
+    partagent un écran Xvfb. Le job GitHub joue `--jobs 2` sur un seul écran.
+  - Pour l'utilisateur : le menu ☰ ne peut pas s'ouvrir vide. `AppMenuButton` pose ses entrées et
+    l'ouvre dans le même rappel, après la réponse de `app:menu`, et le modèle existe toujours dans
+    l'app (`appMenu`, `main/index.ts`). Un sous-menu qui se ferme quand la souris sort de la
+    fenêtre est le comportement attendu, le même sur le Mac.
+  - Proposé, pas fait : un écran X par job (`pool.mjs` lance chaque tâche sous son propre
+    `xvfb-run` + `scripts/with-wm`). Les apps ne partageraient plus d'écran, et deux campagnes
+    complètes diraient si `finitions`, `settings` et `session` cessent de tomber. Coût estimé :
+    une à deux secondes de démarrage par tâche.
+- 2026-11-16 — **Un écran X par tâche en parallèle (`e2e/pool.mjs`), Linux seulement.** Sous
+  Linux, quand `xvfb-run` est là, chaque tâche tourne sous son propre `xvfb-run -n <écran>` puis
+  `scripts/with-wm`, dans son propre groupe de processus, arrêté d'un bloc (serveur X et openbox
+  compris, même si la suite est figée). Numéros à partir de :100, ni pris par une tâche en cours
+  ni verrouillés (`/tmp/.X<n>-lock`) : Xvfb sort une seconde ou deux après sa tâche, son numéro est
+  alors sauté. Mac et Windows : rien ne change (même processus, même arrêt). Rien dans l'app.
+  - Deux campagnes complètes dans Docker, une à la fois, 3 jobs : `finitions`, `settings` et
+    `session` vertes, clair et sombre, dans les deux. Restent `terminal` clair et sombre (rouge
+    connu, critère gardé, voir plus haut) et, une fois, `filles-tech-lead` clair (« délai dépassé :
+    `title-origin` », déjà vu sur `main` dans des campagnes antérieures : instabilité connue,
+    sans lien avec l'écran).
+  - Coût : environ 130 ms de démarrage par tâche (Xvfb puis openbox prêt) ; campagnes de 14 min
+    54 s et 14 min 48 s, contre 15 à 16 min sur un écran partagé.
+  - Nettoyage : un relevé toutes les 20 s dans le conteneur ne montre jamais plus de 4 Xvfb ni
+    4 openbox (l'écran englobant et un par job), sur 206 tâches : rien ne s'accumule.
+  - Une première campagne ne compte pas : le Mac s'est endormi, couvercle fermé (`pmset` :
+    « Clamshell Sleep » de 07:07 à 07:57), et les tâches en cours ont dépassé leurs délais.
+    Rejouée sous `caffeinate -i`, sur secteur (qui n'empêche pas la mise en veille couvercle
+    fermé sans écran externe).
+  - Mac, suite complète après le changement : 208/208 vertes (15 min 47 s).
