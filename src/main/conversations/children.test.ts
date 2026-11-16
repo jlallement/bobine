@@ -373,6 +373,8 @@ describe('conversations filles (fiche 097)', () => {
 describe('conversations filles, étape 2 : l’agent lance et suit ses filles (fiche 097)', () => {
   const settle = () => new Promise((resolve) => setTimeout(resolve, 150))
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 3 agents, 19 git ;
+  // 3,2 s sur x64, 7,6 s au pire.
   it('plafond réglé (ADR-0020) : seules les filles en cours comptent', async () => {
     const env = environment()
     const { manager, children } = env
@@ -391,8 +393,10 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     await expect(
       children.start(mother, { text: 'Encore', profileId: 'echo' })
     ).resolves.toMatchObject({ startedFrom: { id: mother } })
-  })
+  }, 30_000)
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 3 agents, 19 git ;
+  // 3,7 s sur x64, 7,6 s au pire.
   it('réveil groupé : une fois, avec les comptes rendus des filles lancées par l’agent', async () => {
     const env = environment()
     const { manager, children, items } = env
@@ -434,7 +438,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     expect(children.holds(mother)).toBe(false)
     await settle()
     expect(env.wakes(mother)).toBe(1)
-  })
+  }, 30_000)
 
   it('jamais de réveil pour une fille lancée à la main : son compte rendu attend le prochain message', async () => {
     const env = environment()
@@ -449,6 +453,8 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     expect(env.wakes(mother)).toBe(0)
   })
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 4 agents, 27 git ;
+  // 4,6 s sur x64, 12,6 s au pire (arm64).
   it('messages : file d’attente de la conversation visée, avec leur provenance', async () => {
     const env = environment()
     const { manager, children, items } = env
@@ -525,7 +531,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       from: { kind: 'child', id: idle.id, title: idle.title }
     })
     expect(env.lastReply(mother)).toContain(`comes from your child conversation "${idle.title}"`)
-  })
+  }, 30_000)
 
   it('mère qui répond : le compte rendu attend la fin de sa réponse, sans la couper', async () => {
     const env = environment()
@@ -551,6 +557,8 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     expect(kinds.filter((k) => k === 'child-report')).toHaveLength(1)
   })
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 5 agents, 19 git ;
+  // 4,1 s sur x64, 8,2 s au pire (arm64).
   it('éviction (fiche 043) : une fille qui démarre ou travaille n’est jamais arrêtée pour faire de la place', async () => {
     // Deux agents vivants au plus : la mère qui attend sa fille, la fille, puis une autre
     // conversation ouverte par l'utilisateur dépassent déjà la limite.
@@ -585,7 +593,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
     // La mère attend toujours sa fille, et sa fille travaille : ni l'une ni l'autre n'est arrêtée.
     expect(manager.view(mother).summary.status).not.toBe('stopped')
     expect(manager.view(waiting.id).summary.status).toBe('busy')
-  })
+  }, 30_000)
 
   it('agent de la fille qui ne démarre pas : le compte rendu dit pourquoi', async () => {
     const env = environment()

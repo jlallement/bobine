@@ -252,9 +252,12 @@ describe('catalogue des suites (e2e/catalog.mjs)', async () => {
 
   it('chaque motif couvre au moins un fichier du dépôt (carte à jour après un renommage)', () => {
     const patterns = [...GLOBAL_SOURCES, ...SUITES.flatMap((s) => s.sources ?? [])]
-    const orphans = [...new Set(patterns)].filter(
-      (p) => !files.some((f) => globToRegExp(p).test(f))
-    )
+    // Une expression par motif, pas une par fichier : sous Windows, la recompiler pour chaque
+    // fichier du dépôt prenait 7 à 10 s (fiche 229, revue des essais lents).
+    const orphans = [...new Set(patterns)].filter((p) => {
+      const re = globToRegExp(p)
+      return !files.some((f) => re.test(f))
+    })
     expect(orphans).toEqual([])
   })
 })
