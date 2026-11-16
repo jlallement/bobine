@@ -1506,7 +1506,12 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
     l'enfant de l'essai ne vivait que 10 s : déjà sorti, il n'avait plus de ligne de commande.
     Course de l'essai, corrigée : l'enfant vit jusqu'à `kill`.
   - `terminal-manager.test.ts`, « terminal réel sous Windows » : coupé à 15 s (délai global des
-    essais), alors que l'essai se donne lui-même 20 s pour lire « 42 ». Pas corrigé ici : un
-    délai à relever, décision du tech lead (voir le compte rendu).
+    essais), alors que l'essai se donne lui-même 20 s pour lire « 42 ». Décision du tech lead :
+    cet essai seul a 90 s, et 75 s pour lire « 42 », d'après les 53 s mesurées ; l'assertion ne
+    change pas.
+  - **Trou de la CI** : au passage à blanc, ce `verify` arm64 était déjà rouge, mais
+    `continue-on-error` (hors tag) le masquait, et le job paraissait vert. Correction proposée,
+    pas faite : que le passage à blanc montre cet échec (job ou annotation en rouge) tout en
+    construisant les artefacts.
   - Pour l'utilisateur : l'installeur arm64 construit dans la VM Windows 11 ARM64 (2026-11-15)
     ouvre le terminal, lance une commande et le ferme sans alerte.
