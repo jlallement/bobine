@@ -38,7 +38,7 @@ describe('bilan du dernier tour (fiche 185, P4)', () => {
     expect(facts?.cost?.amount).toBeCloseTo(0.12)
   })
 
-  it('réponse hors tour ensuite (fiche 231) : le bilan du tour reste', () => {
+  it('réponse hors tour ensuite (fiche 232) : le bilan du tour reste', () => {
     const later: TranscriptItem[] = [...items, { kind: 'agent', id: 8, text: 'hors tour' }]
     expect(lastTurnFacts(later, turnDurations(later), undefined)).toMatchObject({ ms: 42_000 })
   })

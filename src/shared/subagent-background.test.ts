@@ -123,7 +123,7 @@ describe('sous-agent lancé en arrière-plan (fiche 122)', () => {
   })
 })
 
-describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 231)', () => {
+describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 232)', () => {
   const text = (t: string) =>
     update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: t } })
   const agentTexts = (...events: AgentEvent[]) =>

@@ -689,7 +689,7 @@ async function probeSubagent(): Promise<Observation> {
         recognized: !!card && !!subagentOf(titles.get(card.toolCallId), card.rawInput),
         // 2.3.0 : le travail du sous-agent n'est relayé que pendant le tour du parent, relayé ou
         // non selon la course ; rien de relayé, ses formes ne sont pas observées (`null`, fiche
-        // 231). Après le tour, plus rien (`childAfterTurn`).
+        // 232). Après le tour, plus rien (`childAfterTurn`).
         childRelayed: children.length > 0,
         childAfterTurn: report.childAfterTurn,
         childMarker: relayed(!!childSession),
@@ -748,7 +748,7 @@ const ownText = (updates: SessionUpdate[]) =>
     .join('')
 
 /**
- * Rapport des sous-agents (fiche 231) : tous les `words` dans le texte de la conversation, dans le
+ * Rapport des sous-agents (fiche 232) : tous les `words` dans le texte de la conversation, dans le
  * tour ou, au plus tard `REPORT_MS` après, quand le parent répond de lui-même hors tour (OpenCode
  * 2.3.0). Dit aussi si du travail d'un sous-agent est encore relayé après le tour.
  */
@@ -771,7 +771,7 @@ async function awaitReport(seen: Seen, words: string[], started: number) {
 }
 
 /**
- * Deux sous-agents lancés ensemble (fiche 231) : chacun sa carte, sa session et son travail ; le
+ * Deux sous-agents lancés ensemble (fiche 232) : chacun sa carte, sa session et son travail ; le
  * travail relayé va à la carte dont l'outil nomme sa session (titre = description en secours).
  */
 async function probeParallelSubagents(): Promise<Observation> {
@@ -1269,7 +1269,7 @@ function writeFacts(
       calls.flatMap((u) => ((u.locations ?? []).some((l) => l.path === path) ? [u.toolCallId] : []))
     )
     // L'appel qui écrit : le modèle lit parfois le fichier avant (2.3.0, big-pickle : `read` sur
-    // les trois chemins, même celui à créer) ; ce `read` n'est pas l'écriture observée (fiche 231).
+    // les trois chemins, même celui à créer) ; ce `read` n'est pas l'écriture observée (fiche 232).
     const writing = new Set(
       calls.flatMap((u) => (touching.has(u.toolCallId) && u.kind === 'edit' ? [u.toolCallId] : []))
     )
@@ -1480,7 +1480,7 @@ async function main(): Promise<void> {
   const compared = expected
     ? Object.fromEntries(Object.entries(expected.observations).filter(([k]) => k in observations))
     : {}
-  // Faits qui dépendent d'une course (fiche 231) : vérifiés par le contrat, jamais comparés.
+  // Faits qui dépendent d'une course (fiche 232) : vérifiés par le contrat, jamais comparés.
   const changes = expected ? diffObservations(comparable(compared), comparable(observations)) : []
   console.log(
     `\nRéponses comparées à celles d’OpenCode ${expected?.opencodeVersion ?? '(aucune attente)'}` +

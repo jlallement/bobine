@@ -13,7 +13,7 @@ const bobcoins = (n) =>
  * (fiche 053), travail d'OpenCode 2 rangé en direct sous la carte (fiche 078), deux sous-agents
  * lancés ensemble sur une même carte (fiche 117), sous-agent en arrière-plan qui finit après un
  * autre message, puis après redémarrage (fiche 127), deux sous-agents d'OpenCode 2.3.0, toujours en
- * arrière-plan, dont le parent répond de lui-même hors tour (fiche 231).
+ * arrière-plan, dont le parent répond de lui-même hors tour (fiche 232).
  */
 export async function subagentsSuite(scheme) {
   console.log(`\n— Sous-agents (${scheme})`)
@@ -308,7 +308,7 @@ async function backgroundThenMessage(scheme) {
 }
 
 /**
- * OpenCode 2.3.0 (fiche 231) : deux sous-agents lancés ensemble, toujours en arrière-plan. Leur
+ * OpenCode 2.3.0 (fiche 232) : deux sous-agents lancés ensemble, toujours en arrière-plan. Leur
  * travail n'est relayé que pendant le tour ; ils finissent après, et le parent répond de lui-même,
  * hors tour. Chaque ligne garde son travail, complet à sa fin ; la réponse hors tour est un message
  * à part ; le tout tient après redémarrage.

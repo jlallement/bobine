@@ -434,7 +434,7 @@ describe('sous-agent lancé en arrière-plan (OpenCode 2, fiche 122)', () => {
   })
 })
 
-describe('OpenCode 2.3.0 : rapport hors tour et travail relu (fiche 231)', () => {
+describe('OpenCode 2.3.0 : rapport hors tour et travail relu (fiche 232)', () => {
   /** Relevé sur OpenCode 2.3.0 (2026-11-16) : toujours en arrière-plan. */
   const launch = (tracker: SubagentTracker, id: string, session: string) => {
     tracker.note({

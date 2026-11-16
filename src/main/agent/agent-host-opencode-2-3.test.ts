@@ -12,7 +12,7 @@ import type { AgentProfile } from './profiles'
 import { replaySession } from './session-replay'
 
 /**
- * Sous-agents d'OpenCode 2.3.0 de bout en bout dans l'hôte (fiche 231), contre l'agent factice : le
+ * Sous-agents d'OpenCode 2.3.0 de bout en bout dans l'hôte (fiche 232), contre l'agent factice : le
  * parent répond hors tour quand le sous-agent a fini ; la carte finit alors en quelques relectures,
  * pas après la longue attente, avec son travail relu.
  */
@@ -48,7 +48,7 @@ const waitFor = (predicate: () => boolean, timeoutMs: number) =>
     check()
   })
 
-describe('AgentHost et OpenCode 2.3.0 (fiche 231)', () => {
+describe('AgentHost et OpenCode 2.3.0 (fiche 232)', () => {
   it('réponse hors tour : la carte finit aussitôt, avec son travail relu ; la réponse est un message à part', async () => {
     const profile = profileOf('sous-agent-arriere-plan-2-3')
     const events: AgentEvent[] = []

@@ -52,7 +52,7 @@ describe('durationParts', () => {
   })
 })
 
-describe('réponse hors tour (OpenCode 2.3.0, fiche 231)', () => {
+describe('réponse hors tour (OpenCode 2.3.0, fiche 232)', () => {
   it('le tour finit avec sa réponse datée, pas avec celle donnée ensuite, sans heure', () => {
     const items: TranscriptItem[] = [
       { kind: 'user', id: 1, text: 'Lance un sous-agent', at: 1_000 },

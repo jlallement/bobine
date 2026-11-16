@@ -57,7 +57,7 @@ export function acceptedExpectations(
 }
 
 /**
- * Faits qui dépendent du moment où le tour du parent finit (OpenCode 2.3.0, fiche 231) : le travail
+ * Faits qui dépendent du moment où le tour du parent finit (OpenCode 2.3.0, fiche 232) : le travail
  * d'un sous-agent n'est relayé que pendant ce tour, donc relayé ou non selon la course. Vérifiés par
  * le contrat quand ils sont observés ; jamais comparés aux attentes (une course n'est pas un
  * changement d'OpenCode).
@@ -234,7 +234,7 @@ export function contractChecks(observations: Observations): ContractCheck[] {
     byModel('sous-agent reconnu (carte « Sous-agent »)', sub['called'], sub['recognized']),
     byModel(
       'travail du sous-agent rangé sous sa carte (_meta « opencode/child-session », titre = description)',
-      // 2.3.0 : rien de relayé si le tour du parent finit avant (course, fiche 231) : à relancer.
+      // 2.3.0 : rien de relayé si le tour du parent finit avant (course, fiche 232) : à relancer.
       sub['called'] === true && sub['childRelayed'] !== false,
       sub['childMarker'] === true && sub['childTitleIsDescription'] === true
     ),
@@ -243,7 +243,7 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       sub['called'],
       sub['sessionIdFound'] === true && sub['childLoadable'] === true
     ),
-    // Carte « en cours » jusqu'à sa vraie fin (fiches 122, 231) : l'outil le dit encore au travail
+    // Carte « en cours » jusqu'à sa vraie fin (fiches 122, 232) : l'outil le dit encore au travail
     // (`metadata.status: "running"`, suivi par sa session), ou sa réponse est dans le résultat.
     byModel(
       'sous-agent suivi jusqu’à sa fin (metadata.status « running », ou réponse dans le résultat)',
@@ -285,7 +285,7 @@ export function contractChecks(observations: Observations): ContractCheck[] {
 }
 
 /**
- * Deux sous-agents lancés ensemble (fiche 231) : chacun sa session, et son travail relayé à sa
+ * Deux sous-agents lancés ensemble (fiche 232) : chacun sa session, et son travail relayé à sa
  * carte. Rien tant que le sondage, plus récent que la sonde, n'a pas tourné.
  */
 function parallelChecks(par: Observation | undefined): ContractCheck[] {

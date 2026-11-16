@@ -29,7 +29,7 @@ export function lastTurnFacts(
   const turn = items.slice(start + 1)
   // Tour arrêté, refusé, coupé ou en erreur : son avis le dit déjà, pas de « Terminé ✓ ».
   if (turn.some(endedBadly)) return undefined
-  // Réponse qui a fini le tour : pas celle que l'agent a donnée ensuite, hors tour (fiche 231).
+  // Réponse qui a fini le tour : pas celle que l'agent a donnée ensuite, hors tour (fiche 232).
   const reply = turn.findLast((item) => item.kind === 'agent' && durations.has(item.id))
   const ms = reply && durations.get(reply.id)
   if (ms === undefined || !reply) return undefined

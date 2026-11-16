@@ -167,7 +167,7 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
     expect(acceptedExpectations(undefined, run, offline).offline).toBeUndefined()
   })
 
-  describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 231)', () => {
+  describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 232)', () => {
     const label = (start: string) => (c: { label: string }) => c.label.startsWith(start)
 
     it('suivi jusqu’à sa fin : en arrière-plan ou réponse dans le résultat ; sinon contrat rompu', () => {

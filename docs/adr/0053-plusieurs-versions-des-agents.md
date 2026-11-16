@@ -1,13 +1,13 @@
 # ADR-0053 — Plusieurs versions de Bob et d'OpenCode à la fois
 
-- **Statut** : proposé (à trancher par Jérôme ; rien n'est codé au-delà de la fiche 231)
+- **Statut** : proposé (à trancher par Jérôme ; rien n'est codé au-delà de la fiche 232)
 - **Date** : 2026-11-16
 
 ## Contexte
 
 Les utilisateurs ont souvent quelques versions de retard, ou d'avance, sur celles qu'on a essayées.
 Quand le contrat ACP change d'une version à l'autre, l'affichage peut casser chez eux sans qu'on le
-voie. OpenCode 2.3.0 en est l'exemple (fiche 231) : ses sous-agents tournent toujours en
+voie. OpenCode 2.3.0 en est l'exemple (fiche 232) : ses sous-agents tournent toujours en
 arrière-plan, son travail n'est plus relayé après le tour, et le parent répond hors tour. Le rythme
 est rapide pour OpenCode (2.0.31 le 16/10, 2.3.0 le 13/11) et plus lent pour Bob (2.0.6, 2.0.9,
 2.1.0).
@@ -99,7 +99,7 @@ Proposée en cinq points, sobres :
   un scénario factice. C'est le même prix qu'aujourd'hui, mais rien ne se perd plus.
 - `testedVersions` diminue parfois. Un utilisateur sur une mineure sortie de la fenêtre voit
   l'avis « non essayée » ; c'est voulu.
-- Il faudra surveiller les **comportements tributaires d'une course** (fiche 231 : le travail
+- Il faudra surveiller les **comportements tributaires d'une course** (fiche 232 : le travail
   relayé ou non selon la fin du tour). Ils sont vérifiés quand on les observe et jamais comparés
   aux références (`TIMING_DEPENDENT`), sans quoi la sonde serait rouge au hasard.
 - Ce qui reste invisible : une casse chez un utilisateur sur une version jamais publiée par npm ou

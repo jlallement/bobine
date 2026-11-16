@@ -1,4 +1,4 @@
-# 231 — OpenCode 2.3.0 : sous-agents toujours en arrière-plan
+# 232 — OpenCode 2.3.0 : sous-agents toujours en arrière-plan
 
 - **Statut** : fait (en relecture, rien de poussé ni fusionné)
 - **Dépend de** : 078 (OpenCode 2), 122 (sous-agent en arrière-plan), 127 (D25), 139 (traces),
@@ -108,7 +108,7 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
   pour `edit`.
 - **Avant / après** (e2e `subagents`, clair et sombre) : avant le correctif, les trois contrôles
   2.3.0 sont rouges (travail incomplet, réponse collée, redémarrage) ; captures dans
-  `side-session-notes/…/231-opencode-2-3/avant/`. Après : voir ci-dessous.
+  `side-session-notes/…/232-opencode-2-3/avant/`. Après : voir ci-dessous.
 - **Sonde « sous-agents en parallèle »** : un premier passage a dit `routed: false` parce que le
   contrôle exigeait titre de session = description ; ce n'est pas ce dont l'app dépend (elle range
   par la session nommée par l'outil, le titre n'est qu'un secours). Contrôle aligné sur le contrat

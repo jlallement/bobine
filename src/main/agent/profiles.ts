@@ -610,7 +610,7 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       roleExport: OPENCODE_AGENTS,
       // 1.19 et 2.0.31 : essais réels (fiches 056, 078) ; 2.0.32 : `scripts/opencode-probe.expected.json`.
       // 2.2.5 : `pnpm opencode-probe --offline` (fiche 198) ; 2.3.0 : sonde complète du 2026-11-16,
-      // contrat vert, sous-agents toujours en arrière-plan (fiche 231). Pas de `minVersion` : aucune
+      // contrat vert, sous-agents toujours en arrière-plan (fiche 232). Pas de `minVersion` : aucune
       // casse relevée avec une version plus ancienne (seulement un avertissement).
       testedVersions: ['1.19', '2.0.31', '2.0.32', '2.2.5', '2.3.0'],
       subagentFormat: OPENCODE_SUBAGENT_FORMAT,

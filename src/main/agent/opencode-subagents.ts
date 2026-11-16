@@ -7,7 +7,7 @@
  * - OpenCode 2.0.31 : outil `subagent`, titre « subagent », `rawInput: { agent, description,
  *   prompt }` ; résultat `<subagent sessionID="ses_…" state="completed">…</subagent>`, et
  *   `rawOutput.metadata.sessionID`. Son travail arrive en direct (voir `opencode-contract.ts`).
- * - OpenCode 2.3.0 (fiche 231) : même outil et même consigne ; le sous-agent tourne toujours en
+ * - OpenCode 2.3.0 (fiche 232) : même outil et même consigne ; le sous-agent tourne toujours en
  *   arrière-plan, le résultat n'est plus qu'un accusé de lancement (« The subagent is working in
  *   the background (sessionID: ses_…)… », `metadata.status: "running"`).
  */

@@ -79,7 +79,7 @@ function backgroundStatus(status: ToolItem['status'], run: SubagentRun): ToolIte
 
 /**
  * La carte d'un sous-agent avec ce que l'app a vu de lui (fiche 053). `work` : son travail relu à
- * sa fin (arrière-plan, fiche 231), qui remplace celui reçu en direct.
+ * sa fin (arrière-plan, fiche 232), qui remplace celui reçu en direct.
  */
 export function ranSubagent(tool: ToolItem, run: SubagentRun, work?: TranscriptItem[]): ToolItem {
   const subagentRun = { ...tool.subagentRun, ...run }
