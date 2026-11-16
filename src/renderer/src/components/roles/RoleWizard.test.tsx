@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProfileSummary } from '@shared/agent'
 import type { Role, RolesListing } from '@shared/roles'
@@ -44,6 +44,8 @@ beforeEach(() => {
   })
 })
 afterEach(() => {
+  // Démonter avant de remettre l'`api` d'origine (voir RolesSettings.test.tsx).
+  cleanup()
   Object.assign(window, { api })
 })
 

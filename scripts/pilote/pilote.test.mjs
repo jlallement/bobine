@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { JSDOM } from 'jsdom'
 import { describe, expect, it } from 'vitest'
 import { clickLabel } from './actions.mjs'
@@ -17,6 +17,9 @@ import { appCommand, launchArgs, launchEnv, ours } from './instance.mjs'
 import { appendEntry, formatSummary, readEntries, summarize } from './journal.mjs'
 import { EXIT_CODES, parseShownDuration, pendingReason, Watcher } from './raison.mjs'
 import { L, frenchTypography, panelTab } from './textes.mjs'
+
+/** Chemin absolu de la machine (le même sous Unix ; sous Windows, sur le lecteur courant). */
+const abs = (posixPath) => resolve(posixPath)
 
 /** Écran lu (forme de `lecture.mjs`) : une conversation au repos, tour fini. */
 const idle = (extra = {}) => ({
@@ -415,18 +418,18 @@ describe('textes et lancement', () => {
       base: [],
       port: 9333,
       options: {
-        profil: '/tmp/p',
-        dossier: '/tmp/projet',
+        profil: abs('/tmp/p'),
+        dossier: abs('/tmp/projet'),
         'vrai-trousseau': true,
         'agents-neufs': true
       }
     })
-    expect(own).toContain('--user-data-dir=/tmp/p')
+    expect(own).toContain(`--user-data-dir=${abs('/tmp/p')}`)
     expect(own).not.toContain('--profil-temporaire')
     // `--agents-neufs` ne vaut qu'avec le profil temporaire (fiche 148).
     expect(own).not.toContain('--agents-neufs')
     expect(own).not.toContain('--use-mock-keychain')
-    expect(own.slice(-2)).toEqual(['--', '/tmp/projet'])
+    expect(own.slice(-2)).toEqual(['--', abs('/tmp/projet')])
     expect(launchArgs({ base: [], port: 1, options: { 'agents-neufs': true } })).toContain(
       '--agents-neufs'
     )
@@ -456,10 +459,10 @@ describe('textes et lancement', () => {
       MOCK_AGENT_SCENARIO: 'permission'
     })
     // `--dossier` sur le profil temporaire : le premier « Choisir… » de l'accueil le rend.
-    expect(launchEnv({}, { dossier: '/tmp/projet' })).toEqual({
-      BOBINE_PRESET_FOLDER: '/tmp/projet'
+    expect(launchEnv({}, { dossier: abs('/tmp/projet') })).toEqual({
+      BOBINE_PRESET_FOLDER: abs('/tmp/projet')
     })
-    expect(launchEnv({}, { dossier: '/tmp/projet', profil: '/tmp/profil' })).toEqual({})
+    expect(launchEnv({}, { dossier: abs('/tmp/projet'), profil: abs('/tmp/profil') })).toEqual({})
   })
 })
 

@@ -39,6 +39,12 @@ import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePath } from '../git/git-platform'
 import { WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 
+/**
+ * Chemin relatif tel que git l'écrit (`docs/new.md`) : sous Windows, `relative` rend des `\`, que
+ * la sortie de git (`status`, `ls-files`) n'a jamais (fiche 229). Ailleurs, inchangé.
+ */
+const gitRelative = (from: string, to: string) => relative(from, to).split(sep).join('/')
+
 /** Ce que le cycle sait d'une conversation en worktree. */
 export interface CycleTarget {
   id: string
@@ -337,7 +343,7 @@ export class WorktreeCycle {
           .split('\0')
           .filter(Boolean)
       : []
-    const staged = new Set(missing.filter((path) => !indexed.includes(relative(cwd, path))))
+    const staged = new Set(missing.filter((path) => !indexed.includes(gitRelative(cwd, path))))
     const toAdd = paths.filter((path) => !staged.has(path))
     if (toAdd.length) await this.exec(cwd, [...LITERAL, 'add', '-A', '--', ...toAdd], id)
     await this.exec(
@@ -356,7 +362,7 @@ export class WorktreeCycle {
     if (status.code !== 0) return []
     // `git status` donne des chemins depuis la racine du dépôt ; `prefix` : où est `cwd` dedans.
     const prefix = (await this.exec(cwd, ['rev-parse', '--show-prefix'], id)).replace(/\/$/, '')
-    const fromRoot = new Set(chosen.map((path) => posix.join(prefix, relative(cwd, path))))
+    const fromRoot = new Set(chosen.map((path) => posix.join(prefix, gitRelative(cwd, path))))
     return parseStatus(status.stdout.toString('utf8'))
       .filter((entry) => entry.from && fromRoot.has(entry.path))
       .map((entry) => resolve(cwd, posix.relative(prefix, entry.from ?? '')))

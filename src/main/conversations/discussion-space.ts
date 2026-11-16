@@ -95,8 +95,50 @@ export function dropDraftFolder(
   if (record.space !== 'discussion') return
   const folder = removableFolder(conversationsDir, record.id)
   // Seulement le dossier de cette discussion, jamais un autre qu'elle désignerait.
-  if (folder && folder === record.workspace) rmSync(folder, { recursive: true, force: true })
+  if (folder && folder === record.workspace) removeDiscussionFolder(folder)
 }
+
+/** Délais des nouveaux essais (ms), puis le ménage du prochain démarrage (`sweepDiscussionFolders`). */
+const DRAFT_REMOVAL_RETRIES = [200, 500, 1000, 2000, 4000]
+
+/**
+ * Supprime le dossier d’une discussion (brouillon quitté, corbeille vidée). Sous Windows, le dossier courant d'un processus vivant ne se
+ * supprime pas (`EPERM`, relevé sur `windows-latest`, fiche 229) : l'agent du brouillon est à peine
+ * arrêté, et l'erreur faisait échouer « Nouvelle conversation ». Nouvel essai un peu plus tard,
+ * sans jamais lever ; à défaut, le prochain démarrage l'emporte (dossier d'aucune conversation).
+ * macOS et Linux : supprimé tout de suite, comme avant.
+ */
+function removeDiscussionFolder(
+  folder: string,
+  report: RemovalReport = {},
+  remove: (folder: string) => void = removeTree,
+  retries: readonly number[] = DRAFT_REMOVAL_RETRIES,
+  attempt = 1
+): void {
+  try {
+    remove(folder)
+    report.removed?.(attempt)
+  } catch (error) {
+    const [delay, ...rest] = retries
+    if (delay === undefined) {
+      log.warn(`Dossier d'une discussion laissé (supprimé au prochain démarrage) :`, error)
+      return
+    }
+    if (attempt === 1) report.postponed?.(error)
+    setTimeout(
+      () => removeDiscussionFolder(folder, report, remove, rest, attempt + 1),
+      delay
+    ).unref()
+  }
+}
+
+/** Ce que l'appelant veut savoir d'un effacement : fait (au combientième essai), ou reporté. */
+interface RemovalReport {
+  removed?: (attempt: number) => void
+  postponed?: (error: unknown) => void
+}
+
+const removeTree = (folder: string): void => rmSync(folder, { recursive: true, force: true })
 
 /**
  * Au lancement : dossiers de `discussions/` qu'aucune conversation (index ou corbeille) ne connaît
@@ -117,12 +159,29 @@ export function sweepDiscussionFolders(conversationsDir: string, known: Readonly
   }
 }
 
-/** Efface le dossier d'une discussion (corbeille vidée) ; rien hors de `discussions/`. */
-export function eraseDiscussionFolder(conversationsDir: string, id: string): void {
+/**
+ * Efface le dossier d'une discussion (corbeille vidée) ; rien hors de `discussions/`. Le journal dit
+ * ce qui s'est passé : effacé, ou reporté (sous Windows, un agent arrêté de peu y garde son dossier
+ * courant) puis effacé à un nouvel essai, ou laissé au prochain démarrage.
+ */
+export function eraseDiscussionFolder(
+  conversationsDir: string,
+  id: string,
+  remove?: (folder: string) => void
+): void {
   const folder = discussionFolder(conversationsDir, id)
   if (!existsSync(folder)) return
-  rmSync(folder, { recursive: true, force: true })
-  log.info(`Documents de la discussion effacés : ${id}`)
+  const report: RemovalReport = {
+    removed: (attempt) =>
+      log.info(
+        attempt === 1
+          ? `Documents de la discussion effacés : ${id}`
+          : `Documents de la discussion effacés au nouvel essai n° ${attempt - 1} : ${id}`
+      ),
+    postponed: (error) =>
+      log.info(`Effacement des documents de la discussion reporté, nouvel essai : ${id}`, error)
+  }
+  removeDiscussionFolder(folder, report, remove)
 }
 
 /**

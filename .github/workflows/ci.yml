@@ -1,7 +1,9 @@
-# Vérification (fiche 105) : `./scripts/verify` (lint, typecheck, tests unitaires) à chaque pull
-# request et à chaque poussée sur `main`, sur Linux : rapide, et gratuit sur un dépôt public.
-# Les essais de bout en bout (Electron, Mac requis) ne sont pas ici : `e2e.yml` à la main, et en
-# local avant chaque poussée (AGENTS.md).
+# Vérification (fiches 105, 229) : `./scripts/verify` (lint, typecheck, tests unitaires) à chaque
+# pull request et à chaque poussée sur `main`, **sur les trois systèmes** (macOS, Linux, Windows),
+# chacun bloquant : décision de Jérôme (2026-11-15), « rends la CI bloquante sur les trois ». Une
+# version ne se construit que si ces trois jobs sont verts pour son commit (`release.yml`).
+# Les essais de bout en bout ne sont pas ici : `e2e.yml` (Linux à chaque poussée sur `main`, non
+# bloquant ; macOS et Windows à la main), et en local avant chaque poussée (AGENTS.md).
 name: CI
 
 on:
@@ -57,15 +59,41 @@ jobs:
       # se sautent d'eux-mêmes hors macOS ; les autres injectent leurs commandes.
       - run: ./scripts/verify
 
-  # Windows, expérimental (fiche 229) : le même `verify` sur `windows-latest`, en Git Bash. Il
-  # échoue tant que les lots 0 à 3 (lancement des processus, chemins) ne sont pas dans `main` :
-  # `continue-on-error` le garde informatif, sans bloquer une pull request. À rendre obligatoire
-  # (retirer `continue-on-error`) quand il est vert.
-  verify-windows:
-    name: verify (Windows, expérimental)
-    runs-on: windows-latest
+  # macOS, la plateforme principale : le même `verify` sur un Mac de GitHub (node-pty y livre son
+  # binaire, rien à compiler ; les essais propres à macOS y tournent).
+  verify-macos:
+    name: verify (macOS)
+    runs-on: macos-latest
     timeout-minutes: 30
-    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Identité git pour les tests
+        run: |
+          git config --global user.name "Bobine CI"
+          git config --global user.email "ci@users.noreply.github.com"
+
+      - run: ./scripts/verify
+
+  # Windows (fiche 229) : le même `verify` sur `windows-latest`, par le bash de Git for Windows
+  # (présent sur le runner, et prérequis de Bobine sous Windows). Bloquant depuis le lot 7a :
+  # 0 échec relevé dans la VM Windows 11 ARM64 ; les essais sans objet sous Windows y sont sautés
+  # par capacité (`src/main/test-platform.ts`).
+  verify-windows:
+    name: verify (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash

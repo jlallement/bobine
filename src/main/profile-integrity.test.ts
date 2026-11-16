@@ -28,6 +28,7 @@ import {
   writeFileAtomic,
   writeFileAtomicAsync
 } from './storage'
+import { POSIX_MODES } from './test-platform'
 
 const temp = () => mkdtempSync(join(tmpdir(), 'profil-'))
 
@@ -59,7 +60,7 @@ describe('écritures (fiche 196)', () => {
     expect(existsSync(join(dir, 'sous', 'c.json.tmp'))).toBe(true)
   })
 
-  it('fichier illisible qui ne peut pas être déplacé : jamais écrasé', () => {
+  it.runIf(POSIX_MODES)('fichier illisible qui ne peut pas être déplacé : jamais écrasé', () => {
     const dir = temp()
     const file = join(dir, 'reglages.json')
     writeFileSync(file, '{"precieux":true}')
@@ -250,16 +251,19 @@ describe('avis du lancement (fiches 196, 197)', () => {
 })
 
 describe('relecture du lot G (fiches 196, 197)', () => {
-  it('lecture impossible (droits) : pas mis de côté, mais protégé ; JSON invalide : mis de côté', () => {
-    const dir = temp()
-    const file = join(dir, 'a.json')
-    writeFileSync(file, '{"garde":1}')
-    chmodSync(file, 0o000)
-    expect(readJson(file)).toEqual({ ok: false, reason: 'corrupt' })
-    chmodSync(file, 0o600)
-    expect(readdirSync(dir)).toEqual(['a.json'])
-    expect(() => writeFileAtomic(file, '{}')).toThrow(/gardé tel quel/)
-  })
+  it.runIf(POSIX_MODES)(
+    'lecture impossible (droits) : pas mis de côté, mais protégé ; JSON invalide : mis de côté',
+    () => {
+      const dir = temp()
+      const file = join(dir, 'a.json')
+      writeFileSync(file, '{"garde":1}')
+      chmodSync(file, 0o000)
+      expect(readJson(file)).toEqual({ ok: false, reason: 'corrupt' })
+      chmodSync(file, 0o600)
+      expect(readdirSync(dir)).toEqual(['a.json'])
+      expect(() => writeFileAtomic(file, '{}')).toThrow(/gardé tel quel/)
+    }
+  )
 
   it('mise de côté : jamais par-dessus une copie, rien supprimé ; au-delà de 10, protégé en place', () => {
     const dir = temp()

@@ -98,6 +98,14 @@ export function diffsFromPatch(path: string, file: OpenCodeFileDiff): Diff[] {
  * dossier de la session), pour retrouver celui de ses diffs. Sans contenu dans la mise à jour, rien :
  * l'ajouter remplacerait celui de la carte.
  */
+/**
+ * Clé de comparaison d'un chemin de diff : tel quel sous Unix ; sous Windows, résolu et sans casse
+ * (`C:/x/a.js`, `c:\x\A.js` et, au rejeu d'une trace, `/x/a.js` désignent le même fichier ;
+ * fiche 229).
+ */
+const pathKey = (path: string) =>
+  process.platform === 'win32' ? resolve(path).toLowerCase() : path
+
 export function withPatchDiffs(update: SessionUpdate, cwd: string): SessionUpdate {
   if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') {
     return update
@@ -105,10 +113,10 @@ export function withPatchDiffs(update: SessionUpdate, cwd: string): SessionUpdat
   if (update.status !== 'completed' || !Array.isArray(update.content)) return update
   const files = filesOf(update.rawOutput)
   if (files.length === 0) return update
-  const known = new Set(update.content.flatMap((c) => (c.type === 'diff' ? [c.path] : [])))
+  const known = new Set(update.content.flatMap((c) => (c.type === 'diff' ? [pathKey(c.path)] : [])))
   const added = files.flatMap((file) => {
     const path = isAbsolute(file.file) ? file.file : resolve(cwd, file.file)
-    return known.has(path) ? [] : diffsFromPatch(path, file)
+    return known.has(pathKey(path)) ? [] : diffsFromPatch(path, file)
   })
   return added.length === 0 ? update : { ...update, content: [...update.content, ...added] }
 }
@@ -149,7 +157,9 @@ export function withCreatedFile(
   )
   if (!said) return update
   const path = isAbsolute(file) ? file : resolve(cwd, file)
-  if (update.content.some((c) => c.type === 'diff' && c.path === path)) return update
+  if (update.content.some((c) => c.type === 'diff' && pathKey(c.path) === pathKey(path))) {
+    return update
+  }
   const diff: Diff = { type: 'diff', path, oldText: null, newText: text }
   return { ...update, content: [...update.content, diff] }
 }

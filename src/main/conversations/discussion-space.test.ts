@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyTranscript, type TranscriptState } from '@shared/transcript'
 import { handoverContext } from '@shared/handover'
 import {
@@ -21,12 +21,15 @@ import {
   discussionFolder,
   documentPath,
   documentsFingerprint,
+  eraseDiscussionFolder,
   folderPlan,
   listDocuments,
   openDocument,
   sameDraft,
   spaceOf
 } from './discussion-space'
+import { abs } from '../test-platform'
+import { log } from '../log'
 
 const folder = () => mkdtempSync(join(tmpdir(), 'documents-'))
 
@@ -53,8 +56,8 @@ describe('espace Discussion (fiche 224)', () => {
   })
 
   it('identifiant de discussion sûr exigé', () => {
-    expect(() => discussionFolder('/d/conversations', '../x')).toThrow()
-    expect(discussionFolder('/d/conversations', 'abc-1')).toBe('/d/discussions/abc-1')
+    expect(() => discussionFolder(abs('/d/conversations'), '../x')).toThrow()
+    expect(discussionFolder(abs('/d/conversations'), 'abc-1')).toBe(abs('/d/discussions/abc-1'))
   })
 
   it('documents : fichiers visibles du premier niveau ; copies numérotées, originaux intacts', () => {
@@ -176,5 +179,49 @@ describe('documents à plusieurs noms (lien physique, fiche 230)', () => {
     expect(addDocuments(target, [secret])).toEqual(['secret.txt'])
     writeFileSync(join(target, 'secret.txt'), 'changé')
     expect(readFileSync(secret, 'utf8')).toBe('contenu extérieur')
+  })
+})
+
+describe('corbeille vidée : le journal dit ce qui s’est passé (fiche 229)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  const discussion = () => {
+    const root = mkdtempSync(join(tmpdir(), 'efface-'))
+    const id = 'c1'
+    mkdirSync(discussionFolder(root, id), { recursive: true })
+    return { root, id }
+  }
+
+  it('effacé tout de suite : « effacés »', () => {
+    const info = vi.spyOn(log, 'info').mockImplementation(() => {})
+    const { root, id } = discussion()
+    eraseDiscussionFolder(root, id)
+    expect(existsSync(discussionFolder(root, id))).toBe(false)
+    expect(info.mock.calls.map((call) => call[0])).toEqual([
+      'Documents de la discussion effacés : c1'
+    ])
+  })
+
+  it('refusé (EPERM sous Windows) : « reporté », puis « effacés » au nouvel essai', async () => {
+    vi.useFakeTimers()
+    const info = vi.spyOn(log, 'info').mockImplementation(() => {})
+    const { root, id } = discussion()
+    let refusals = 1
+    const remove = vi.fn(() => {
+      if (refusals-- > 0) throw Object.assign(new Error('EPERM'), { code: 'EPERM' })
+    })
+    eraseDiscussionFolder(root, id, remove)
+    expect(info.mock.calls.map((call) => call[0])).toEqual([
+      'Effacement des documents de la discussion reporté, nouvel essai : c1'
+    ])
+    await vi.advanceTimersByTimeAsync(200)
+    expect(remove).toHaveBeenCalledTimes(2)
+    expect(info.mock.calls.map((call) => call[0])).toEqual([
+      'Effacement des documents de la discussion reporté, nouvel essai : c1',
+      'Documents de la discussion effacés au nouvel essai n° 1 : c1'
+    ])
   })
 })

@@ -4,7 +4,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runCommand, type Run, type RunResult } from '../simulator/run'
+import { abs, ON_WINDOWS } from '../test-platform'
+import { windowsGitConfig } from './git-platform'
 import { gitCall, gitEnv, GitQueue, queuedGit, repoKeyOf, withGitLanguage } from './git-queue'
+
+/**
+ * Environnement de git de la machine : tel quel sous Unix ; sous Windows, avec les chemins longs
+ * (`core.longpaths`, lot 4 de la fiche 229).
+ */
+const machineGit = (env: NodeJS.ProcessEnv) => (ON_WINDOWS ? windowsGitConfig(env) : env)
+/** Conseil d'installation de git : outils d'Apple sous Unix, Git for Windows sous Windows. */
+const INSTALL_HINT = ON_WINDOWS ? 'Git for Windows' : 'xcode-select --install'
 
 const ok = (stdout = ''): RunResult => ({ code: 0, stdout: Buffer.from(stdout), stderr: '' })
 const LOCK_ERROR = [
@@ -19,7 +29,10 @@ const LOCK_ERROR = [
 
 describe('langue des messages de git (fiche 145)', () => {
   it('LANGUAGE=C : messages en anglais, même sous LC_ALL français, jeu de caractères gardé', () => {
-    const env = gitEnv({ LANG: 'fr_FR.UTF-8', LC_ALL: 'fr_FR.UTF-8', LANGUAGE: 'fr', PATH: '/bin' })
+    const env = gitEnv(
+      { LANG: 'fr_FR.UTF-8', LC_ALL: 'fr_FR.UTF-8', LANGUAGE: 'fr', PATH: '/bin' },
+      'posix'
+    )
     expect(env).toEqual({
       LANG: 'fr_FR.UTF-8',
       LC_ALL: 'fr_FR.UTF-8',
@@ -42,10 +55,13 @@ describe('langue des messages de git (fiche 145)', () => {
     expect(seen).toEqual([
       {
         file: '/usr/bin/git',
-        env: { LANG: 'fr_FR.UTF-8', LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' }
+        env: machineGit({ LANG: 'fr_FR.UTF-8', LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' })
       },
       { file: 'gh' },
-      { file: 'git', env: { LANG: 'de_DE.UTF-8', LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' } }
+      {
+        file: 'git',
+        env: machineGit({ LANG: 'de_DE.UTF-8', LANGUAGE: 'C', GIT_TERMINAL_PROMPT: '0' })
+      }
     ])
   })
 
@@ -56,14 +72,14 @@ describe('langue des messages de git (fiche 145)', () => {
       stderr: `spawn ${file} ENOENT`
     }))
     const missing = await english('/nulle/part/git', ['status'])
-    expect(missing.stderr).toContain('xcode-select --install')
+    expect(missing.stderr).toContain(INSTALL_HINT)
     expect(missing.stderr).not.toContain('ENOENT')
     const xcrun = await withGitLanguage(async () => ({
       code: 1,
       stdout: Buffer.from(''),
       stderr: 'xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools)'
     }))('git', ['status'])
-    expect(xcrun.stderr).toContain('xcode-select --install')
+    expect(xcrun.stderr).toContain(INSTALL_HINT)
   })
 
   it('vrai git introuvable dans le PATH : le même message', async () => {
@@ -71,7 +87,7 @@ describe('langue des messages de git (fiche 145)', () => {
       env: { PATH: '/nulle/part' }
     })
     expect(result.code).not.toBe(0)
-    expect(result.stderr).toContain('xcode-select --install')
+    expect(result.stderr).toContain(INSTALL_HINT)
   })
 })
 
@@ -137,9 +153,9 @@ describe('lecture ou écriture', () => {
   })
 
   it('`-C` déplace le dossier, relatif au dossier courant', () => {
-    expect(gitCall(['-C', 'sous', 'status'], '/depot').dir).toBe('/depot/sous')
-    expect(gitCall(['-C', '/ailleurs', 'status'], '/depot').dir).toBe('/ailleurs')
-    expect(gitCall(['status'], '/depot').dir).toBe('/depot')
+    expect(gitCall(['-C', 'sous', 'status'], abs('/depot')).dir).toBe(abs('/depot/sous'))
+    expect(gitCall(['-C', abs('/ailleurs'), 'status'], abs('/depot')).dir).toBe(abs('/ailleurs'))
+    expect(gitCall(['status'], abs('/depot')).dir).toBe(abs('/depot'))
   })
 })
 

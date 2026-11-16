@@ -124,6 +124,14 @@ export function findPackageDir(root: string, pkg: BundledPackage): string {
     const file = join(dir, 'package.json')
     if (existsSync(file) && readJson(file).version === pkg.version) return dir
   }
+  // Sous Windows, pnpm raccourcit les noms longs du magasin (`virtual-store-dir-max-length`, 60) et
+  // y ajoute une empreinte : `<nom>@<version>_…` n'est plus reconnaissable. Chaque entrée est alors
+  // regardée (fiche 229) ; ailleurs, la recherche par nom suffit et ceci ne sert pas.
+  for (const entry of existsSync(store) ? readdirSync(store) : []) {
+    const dir = join(store, entry, 'node_modules', pkg.name)
+    const file = join(dir, 'package.json')
+    if (existsSync(file) && readJson(file).version === pkg.version) return dir
+  }
   throw new Error(`${pkg.name}@${pkg.version} introuvable dans node_modules (pnpm install ?)`)
 }
 

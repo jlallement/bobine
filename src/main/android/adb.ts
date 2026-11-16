@@ -133,7 +133,9 @@ export class Adb {
     ])
     const child = spawn(file, args, {
       detached: true,
-      stdio: 'ignore'
+      stdio: 'ignore',
+      // Sous Windows, `detached` ouvrirait une console pour l'émulateur (fiche 229).
+      ...(process.platform === 'win32' ? { windowsHide: true } : {})
     })
     child.unref()
   }

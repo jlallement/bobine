@@ -1,17 +1,21 @@
 import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { UNTRUSTED_WORKSPACE } from './bob-contract'
 import { OPENCODE_SUBAGENT_STREAM } from './opencode-contract'
 import { findExecutable, resolveProfiles, summarizeProfiles } from './profiles'
 import bobExpected from '../../../scripts/bob-probe.expected.json'
 import opencodeExpected from '../../../scripts/opencode-probe.expected.json'
+import { abs, ON_WINDOWS } from '../test-platform'
+
+/** Fichier d'un programme : tel quel sous Unix ; sous Windows, le `.cmd` que pose npm (`npx.cmd`). */
+const program = (name: string) => (ON_WINDOWS ? `${name}.cmd` : name)
 
 function fakeBin(...commands: string[]): string {
   const dir = mkdtempSync(join(tmpdir(), 'bob-bin-'))
   for (const command of commands) {
-    const file = join(dir, command)
+    const file = join(dir, program(command))
     writeFileSync(file, '#!/bin/sh\n')
     chmodSync(file, 0o755)
   }
@@ -95,11 +99,13 @@ describe('profils', () => {
 
   it('findExecutable : seulement les fichiers exécutables', () => {
     const dir = fakeBin('npx')
-    expect(findExecutable('npx', `/nexiste:${dir}`)).toBe(join(dir, 'npx'))
+    expect(findExecutable('npx', `${abs('/nexiste')}${delimiter}${dir}`)).toBe(
+      join(dir, program('npx'))
+    )
     expect(findExecutable('bob', dir)).toBeUndefined()
     expect(findExecutable('non-executable', dir)).toBeUndefined()
     expect(findExecutable('un-dossier', dir)).toBeUndefined()
-    expect(findExecutable(join(dir, 'npx'), undefined)).toBe(join(dir, 'npx'))
+    expect(findExecutable(join(dir, 'npx'), undefined)).toBe(join(dir, program('npx')))
   })
 
   it('résumé : profil indisponible avec la raison et le conseil d’installation', () => {
@@ -134,9 +140,12 @@ describe('profils : sous-agents (fiche 053)', () => {
     const mock = (env: Record<string, string>) =>
       resolveProfiles({ ...ctx, env }).find((p) => p.id === 'mock')
     expect(mock(withCosts)?.args).not.toContain('--bob-db')
-    const home = '/tmp/essai'
+    const home = abs('/tmp/essai')
     const args = mock({ ...withCosts, BOBINE_CONFIG_HOME: home })?.args ?? []
-    expect(args.slice(args.indexOf('--bob-db'))).toEqual(['--bob-db', '/tmp/essai/.bob/db/bob.db'])
+    expect(args.slice(args.indexOf('--bob-db'))).toEqual([
+      '--bob-db',
+      abs('/tmp/essai/.bob/db/bob.db')
+    ])
     expect(mock({ ...withCosts, BOBINE_CONFIG_HOME: home })?.costSource?.id).toBe('bob-db')
   })
 })
@@ -182,8 +191,10 @@ describe('profils : indépendance aux agents (fiche 140)', () => {
     expect(mock?.subagentFormat?.subagentOf(...openCodeCall)).toBeDefined()
     expect(bob?.rules?.summary()).toContain('.bob/rules')
     expect(opencode?.rules?.summary()).toContain('opencode')
-    expect(bob?.mcpConfig?.globalFile({ home: '/h' })).toBe('/h/.bob/settings/mcp.json')
-    expect(opencode?.providers?.file({ home: '/h' })).toBe('/h/.config/opencode/opencode.json')
+    expect(bob?.mcpConfig?.globalFile({ home: abs('/h') })).toBe(abs('/h/.bob/settings/mcp.json'))
+    expect(opencode?.providers?.file({ home: abs('/h') })).toBe(
+      abs('/h/.config/opencode/opencode.json')
+    )
     expect(bob?.providers).toBeUndefined()
   })
 })

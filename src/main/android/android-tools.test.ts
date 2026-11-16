@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ import type { Run } from '../simulator/run'
 import { AndroidManager } from './android-manager'
 import { androidToolsModule } from './android-tools'
 import { GradleBuilds } from './gradle'
+import { fakeProgram, ON_WINDOWS } from '../test-platform'
 
 const UI = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node text="" class="android.widget.LinearLayout" resource-id="" content-desc="" clickable="false" enabled="true" bounds="[0,0][1080,2400]"><node text="Ajouter un" class="android.widget.Button" resource-id="" content-desc="" clickable="true" enabled="true" bounds="[100,1000][500,1100]" /></node></hierarchy>UI hierchary dumped to: /dev/tty`
 
@@ -41,7 +42,8 @@ function setup(answer: string[] | null = ['Compiler'], adb = '/sdk/adb') {
   const env = fakeEnvironment()
   const workspace = mkdtempSync(join(tmpdir(), 'android-'))
   writeFileSync(join(workspace, 'settings.gradle'), '')
-  writeFileSync(join(workspace, 'gradlew'), '')
+  // Script de Gradle du projet : `gradlew` sous Unix, `gradlew.bat` sous Windows.
+  writeFileSync(join(workspace, ON_WINDOWS ? 'gradlew.bat' : 'gradlew'), '')
   const sdk = { root: '/sdk', adb, emulator: '/sdk/emulator', aapt2: '/sdk/aapt2' }
   const manager = new AndroidManager({
     run: env.run,
@@ -102,14 +104,27 @@ function rawFrame(width: number, height: number, blue: number): Buffer {
   return Buffer.concat([head, pixels])
 }
 
-/** Faux `adb` pour `screenrecord` : rejoue `script` (shell) et note ses arguments. */
-function fakeAdb(script: (dir: string) => string): { adb: string; args: string } {
+/**
+ * Faux `adb` pour `screenrecord` : note ses arguments, puis rejoue `script` — en `sh` sous Unix, en
+ * JavaScript (`js`) sous Windows (`fakeProgram`).
+ */
+function fakeAdb(script: (dir: string) => { sh: string; js: string }): {
+  adb: string
+  args: string
+} {
   const dir = mkdtempSync(join(tmpdir(), 'adb-'))
-  const adb = join(dir, 'adb')
-  writeFileSync(adb, `#!/bin/sh\necho "$*" > '${dir}/args'\n${script(dir)}\n`)
-  chmodSync(adb, 0o755)
-  return { adb, args: join(dir, 'args') }
+  const args = join(dir, 'args')
+  const { sh, js } = script(dir)
+  const adb = fakeProgram(dir, 'adb', {
+    sh: `echo "$*" > '${dir}/args'\n${sh}`,
+    js: `require('fs').writeFileSync(${JSON.stringify(args)}, process.argv.slice(2).join(' ') + '\\n')\n${js}`
+  })
+  return { adb, args }
 }
+
+/** Écrit un fichier sur la sortie standard, en JavaScript. */
+const catJs = (file: string) =>
+  `process.stdout.write(require('fs').readFileSync(${JSON.stringify(file)}))`
 
 describe('outils de l’émulateur Android', () => {
   it('proposés seulement pour un projet Android, autorisés d’office, onglet « Android »', () => {
@@ -183,8 +198,12 @@ describe('outils de l’émulateur Android', () => {
 
   it('Gradle réussi sans APK : « Build succeeded », sans erreur, avec les dossiers cherchés (fiche 122)', async () => {
     const t = setup()
-    writeFileSync(join(t.context.workspace, 'gradlew'), '#!/bin/sh\necho "BUILD SUCCESSFUL"\n')
-    chmodSync(join(t.context.workspace, 'gradlew'), 0o755)
+    fakeProgram(
+      t.context.workspace,
+      'gradlew',
+      { sh: 'echo "BUILD SUCCESSFUL"', js: "console.log('BUILD SUCCESSFUL')\n" },
+      '.bat'
+    )
     let built = await t.call('android_build')
     while (built.text.startsWith('Build still running')) built = await t.call('android_build')
     expect(built.result?.isError).toBeUndefined()
@@ -196,7 +215,11 @@ describe('outils de l’émulateur Android', () => {
     const t = setup(['Refuser'])
     expect((await t.call('android_build')).text).toContain('refused')
     expect(t.context.ask).toHaveBeenCalledWith(
-      expect.objectContaining({ question: expect.stringContaining('./gradlew assembleDebug') }),
+      expect.objectContaining({
+        question: expect.stringContaining(
+          ON_WINDOWS ? '.\\gradlew.bat assembleDebug' : './gradlew assembleDebug'
+        )
+      }),
       expect.any(Function)
     )
   })
@@ -240,7 +263,10 @@ describe('planche contact de l’émulateur Android (fiche 076)', () => {
     const fake = fakeAdb((dir) => {
       writeFileSync(join(dir, 'a'), rawFrame(4, 8, 10))
       writeFileSync(join(dir, 'b'), rawFrame(4, 8, 200))
-      return `cat '${dir}/a'; sleep 0.1; cat '${dir}/b'; sleep 5`
+      return {
+        sh: `cat '${dir}/a'; sleep 0.1; cat '${dir}/b'; sleep 5`,
+        js: `${catJs(join(dir, 'a'))}\nsetTimeout(() => ${catJs(join(dir, 'b'))}, 100)\nsetTimeout(() => {}, 5000)\n`
+      }
     })
     const t = setup(undefined, fake.adb)
     const run = vi.fn(async () => {})
@@ -261,7 +287,10 @@ describe('planche contact de l’émulateur Android (fiche 076)', () => {
   })
 
   it('sans image de l’appareil : rien n’est fait, l’agent sait quoi faire', async () => {
-    const fake = fakeAdb(() => `echo "Unknown format 'frames'" >&2; exit 1`)
+    const fake = fakeAdb(() => ({
+      sh: `echo "Unknown format 'frames'" >&2; exit 1`,
+      js: `console.error("Unknown format 'frames'")\nprocess.exit(1)\n`
+    }))
     const t = setup(undefined, fake.adb)
     const run = vi.fn(async () => {})
     await expect(t.manager.film('c1', run, 400)).rejects.toThrow(

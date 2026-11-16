@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Run } from '../simulator/run'
 import { GitRepo, parseStatusV2 } from './repo'
+import { abs } from '../test-platform'
 
 const STATUS = `# branch.oid 1234
 # branch.head feat
@@ -76,11 +77,12 @@ describe('GitRepo', () => {
 
   it('reads the branch, its upstream and the changed files', async () => {
     const { run, calls } = fakeRun({
-      'rev-parse --show-toplevel': { stdout: '/repo\n' },
+      // Comme git l'écrit : `/` sous Unix, `C:/repo` sous Windows (rendu en chemin natif).
+      'rev-parse --show-toplevel': { stdout: `${abs('/repo').replace(/\\/g, '/')}\n` },
       'status --porcelain=v2': { stdout: STATUS }
     })
-    expect(await new GitRepo(run).status('/repo/sub')).toEqual({
-      root: '/repo',
+    expect(await new GitRepo(run).status(abs('/repo/sub'))).toEqual({
+      root: abs('/repo'),
       branch: 'feat',
       upstream: 'origin/feat',
       ahead: 2,

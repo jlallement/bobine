@@ -29,6 +29,7 @@ import {
 } from './catalog'
 import { childrenToolsModule, type ChildTools } from './children-tools'
 import type { AppToolModule, ToolContext } from './tools'
+import { ON_WINDOWS } from '../test-platform'
 
 const codec: ImageCodec = {
   bitmap: (_jpeg, width, height) => ({ width, height, data: new Uint8Array() }),
@@ -175,7 +176,8 @@ describe('outils que reçoit une conversation (menu ⚙, fiche 099)', () => {
     expect(prefixes(swift)).toContain('ios')
     const android = conversationToolNames(
       appModules(),
-      folder(['settings.gradle', 'gradlew']),
+      // Script de Gradle du projet : `gradlew` sous Unix, `gradlew.bat` sous Windows (fiche 229).
+      folder(['settings.gradle', ON_WINDOWS ? 'gradlew.bat' : 'gradlew']),
       'autre'
     )
     expect(prefixes(android)).toContain('android')

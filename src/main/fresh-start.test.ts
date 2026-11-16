@@ -14,6 +14,7 @@ import {
   type FreshStartApp,
   type FreshStartIo
 } from './fresh-start'
+import { POSIX_SHELL } from './test-platform'
 
 function setup(switches: string[], packaged = false) {
   const quitListeners: (() => void)[] = []
@@ -29,7 +30,9 @@ function setup(switches: string[], packaged = false) {
     spawn: vi.fn(() => ({ unref })),
     tmp: mkdtempSync(join(tmpdir(), 'neuf-')),
     env: { PATH: '/usr/bin', ELECTRON_RUN_AS_NODE: '1' },
-    pid: 4242
+    pid: 4242,
+    // L'assistant d'Unix (`sh`) ; celui de Windows est essayé par `reset-windows.test.ts`.
+    system: 'posix'
   }
   return {
     fresh: createFreshStart(app, io),
@@ -89,22 +92,28 @@ describe('recommencer à neuf : options de lancement (fiche 148)', () => {
       String(tenths)
     ])
 
-  it('assistant de ménage, pour de vrai : il attend la fin de l’app, puis supprime le dossier', () => {
-    const folder = mkdtempSync(join(tmpdir(), TEMPORARY_PREFIX))
-    writeFileSync(join(folder, 'Local State'), '{}')
-    const done = spawnSync('/usr/bin/true')
-    expect(cleanup(folder, done.pid ?? 999_999).status).toBe(0)
-    expect(existsSync(folder)).toBe(false)
-  })
+  it.runIf(POSIX_SHELL)(
+    'assistant de ménage, pour de vrai : il attend la fin de l’app, puis supprime le dossier',
+    () => {
+      const folder = mkdtempSync(join(tmpdir(), TEMPORARY_PREFIX))
+      writeFileSync(join(folder, 'Local State'), '{}')
+      const done = spawnSync('/usr/bin/true')
+      expect(cleanup(folder, done.pid ?? 999_999).status).toBe(0)
+      expect(existsSync(folder)).toBe(false)
+    }
+  )
 
-  it('assistant de ménage : jamais un dossier qui n’est pas un profil temporaire, ni app ouverte', () => {
-    const other = mkdtempSync(join(tmpdir(), 'pas-un-profil-'))
-    expect(cleanup(other, spawnSync('/usr/bin/true').pid ?? 999_999).status).toBe(2)
-    expect(existsSync(other)).toBe(true)
-    const folder = mkdtempSync(join(tmpdir(), TEMPORARY_PREFIX))
-    expect(cleanup(folder, process.pid, 2).status).toBe(1)
-    expect(existsSync(folder)).toBe(true)
-  })
+  it.runIf(POSIX_SHELL)(
+    'assistant de ménage : jamais un dossier qui n’est pas un profil temporaire, ni app ouverte',
+    () => {
+      const other = mkdtempSync(join(tmpdir(), 'pas-un-profil-'))
+      expect(cleanup(other, spawnSync('/usr/bin/true').pid ?? 999_999).status).toBe(2)
+      expect(existsSync(other)).toBe(true)
+      const folder = mkdtempSync(join(tmpdir(), TEMPORARY_PREFIX))
+      expect(cleanup(folder, process.pid, 2).status).toBe(1)
+      expect(existsSync(folder)).toBe(true)
+    }
+  )
 
   it('agents comme sur un Mac neuf : HOME et XDG_* dans le profil, seulement s’ils sont demandés', () => {
     const plain = setup([TEMPORARY_SWITCH])

@@ -5,7 +5,7 @@
  * fichier du dossier de la conversation (chemin réel, comme la fiche 114).
  */
 import { stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { posix, resolve } from 'node:path'
 import {
   EDITORS,
   type EditorDefinition,
@@ -35,10 +35,16 @@ export interface EditorProbe {
 /** Éditeurs installés, dans l'ordre de la table : une app trouvée ou une commande dans le `PATH`. */
 export function detectEditors(probe: EditorProbe): InstalledEditor[] {
   return EDITORS.flatMap((editor) => {
+    // Apps de macOS (`/Applications`, `~/Applications`) : chemins POSIX partout, comme avant sur
+    // macOS et Linux ; sous Windows, sans objet (aucun `.app`), l'éditeur vient du PATH (fiche 229).
     const app = editor.apps
-      .flatMap((name) => [join('/Applications', name), join(probe.home, 'Applications', name)])
+      .flatMap((name) => [
+        posix.join('/Applications', name),
+        posix.join(probe.home, 'Applications', name)
+      ])
       .find((path) => probe.exists(path))
-    const bundled = app && editor.bundledCommand ? join(app, editor.bundledCommand) : undefined
+    const bundled =
+      app && editor.bundledCommand ? posix.join(app, editor.bundledCommand) : undefined
     const command = bundled && probe.exists(bundled) ? bundled : probe.onPath(editor.command)
     const launcher: EditorLauncher | undefined = command
       ? { kind: 'command', command }

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { activeRules } from './rules'
 import { BOB_RULES } from './bob-rules'
 import { OPENCODE_RULES } from './opencode-rules'
+import { native } from '../test-platform'
 
 function tree(files: Record<string, string>): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'regles-')))
@@ -39,12 +40,12 @@ describe('règles actives (fiche 056)', () => {
     const ctx = { workspace: join(root, 'projet'), home: join(root, 'maison') }
     expect(labels(await activeRules(BOB_RULES, { ...ctx, mode: 'plan' }))).toEqual([
       'project AGENTS.md',
-      'project:plan .bob/rules-plan/plan.md',
-      'project .bob/rules/details/tests.md',
-      'project .bob/rules/style.md',
-      'project .bob/plugins/outil/rules/outil.md',
-      'personal:plan ~/.bob/rules-plan/moi-plan.md',
-      'personal ~/.bob/rules/moi.md'
+      native('project:plan .bob/rules-plan/plan.md'),
+      native('project .bob/rules/details/tests.md'),
+      native('project .bob/rules/style.md'),
+      native('project .bob/plugins/outil/rules/outil.md'),
+      native('personal:plan ~/.bob/rules-plan/moi-plan.md'),
+      native('personal ~/.bob/rules/moi.md')
     ])
     // Sans mode connu : seulement les règles de tous les modes.
     expect(labels(await activeRules(BOB_RULES, ctx)).some((l) => l.includes('rules-'))).toBe(false)
@@ -72,7 +73,7 @@ describe('règles actives (fiche 056)', () => {
     expect(labels(rules)).toEqual([
       `project ${join(root, 'repo', 'AGENTS.md')}`,
       'project AGENTS.md',
-      'personal ~/.claude/CLAUDE.md',
+      native('personal ~/.claude/CLAUDE.md'),
       `project ${join(root, 'repo', 'docs', 'regles.md')}`,
       'project https://exemple.org/regles.md'
     ])
@@ -102,7 +103,7 @@ describe('règles actives (fiche 056)', () => {
       join(root, 'config', 'opencode', 'AGENTS.md')
     )
     const alone = await activeRules(OPENCODE_RULES, { workspace: join(root, 'seul'), home, ...v1 })
-    expect(labels(alone)).toEqual(['project CLAUDE.md', 'personal ~/.claude/CLAUDE.md'])
+    expect(labels(alone)).toEqual(['project CLAUDE.md', native('personal ~/.claude/CLAUDE.md')])
     const off = await activeRules(OPENCODE_RULES, {
       workspace: join(root, 'seul'),
       home,
@@ -137,13 +138,13 @@ describe('règles actives (fiche 056)', () => {
       version: '2.0.31'
     })
     expect(labels(rules)).toEqual([
-      'project ~/AGENTS.md',
-      'project ~/parent/AGENTS.md',
-      'project ~/parent/repo/AGENTS.md',
+      native('project ~/AGENTS.md'),
+      native('project ~/parent/AGENTS.md'),
+      native('project ~/parent/repo/AGENTS.md'),
       'project AGENTS.md',
-      'personal ~/.config/opencode/AGENTS.md',
-      'project ~/parent/repo/docs/regles.md',
-      'personal ~/perso/india.md'
+      native('personal ~/.config/opencode/AGENTS.md'),
+      native('project ~/parent/repo/docs/regles.md'),
+      native('personal ~/perso/india.md')
     ])
   })
 

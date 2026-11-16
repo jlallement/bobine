@@ -32,6 +32,8 @@ import { OPENCODE_DIFF_SOURCE } from './opencode-diffs'
 import { BOB_SUBAGENT_FORMAT } from './bob-subagents'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
 import type { AgentProfile } from './profiles'
+import { native, ON_WINDOWS, POSIX_PROCESSES } from '../test-platform'
+import { homeShown } from '../home-display'
 
 /** Texte affiché d'un avis du fil (traduit s'il est en code, fiche 074). */
 const noticeOf = (item: ReturnType<typeof reduceTranscript>['items'][number] | undefined) =>
@@ -638,7 +640,7 @@ describe('AgentHost', () => {
     live.host.stop()
     expect(live.changes()).toEqual([
       { path: 'notes.md', created: true, added: 16, removed: 0 },
-      { path: 'src/calc.js', created: true, added: 3, removed: 0 },
+      { path: native('src/calc.js'), created: true, added: 3, removed: 0 },
       { path: 'README.md', created: false, added: 1, removed: 1 }
     ])
 
@@ -653,7 +655,7 @@ describe('AgentHost', () => {
     generic.host.stop()
     expect(generic.changes().map((f) => [f.path, f.added])).toEqual([
       ['notes.md', 14],
-      ['src/calc.js', 3]
+      [native('src/calc.js'), 3]
     ])
   })
 
@@ -1038,7 +1040,8 @@ describe('AgentHost', () => {
         'commande-ecriture-hors-dossier'
       )
       const path = join(dirname(workspace), 'dehors', 'x.properties')
-      const tilde = path.startsWith(`${homedir()}/`) ? `~${path.slice(homedir().length)}` : path
+      // `~` pour le dossier personnel, à la façon du système (`~\\…` sous Windows).
+      const tilde = homeShown(path, homedir())
       expect(request.risks).toEqual([{ kind: 'outside-folder', path: tilde }])
       host.respondPermission(request.requestId, 'reject')
       await turn
@@ -1050,9 +1053,13 @@ describe('AgentHost', () => {
 
     it('sudo : droits d’administrateur et dossier système ; « Toujours » ne retient rien', async () => {
       const { host, turn, request, remembered } = await riskRequest('commande-sudo')
+      // Sous Windows, la ligne se lit à la façon de PowerShell et de cmd (fiche 229) : `sudo` est
+      // dit, et ce qu'il lance n'est pas lu.
       expect(request.risks).toEqual([
         { kind: 'privilege', via: 'sudo' },
-        { kind: 'system-path', path: '/var/run/docker.sock' }
+        ON_WINDOWS
+          ? { kind: 'unknown-writes' }
+          : { kind: 'system-path', path: '/var/run/docker.sock' }
       ])
       host.respondPermission(request.requestId, 'always')
       await turn
@@ -1061,8 +1068,13 @@ describe('AgentHost', () => {
     })
 
     it('lecture hors du dossier : aucun risque, la demande n’en porte pas', async () => {
-      const { host, turn, request } = await riskRequest('commande-lecture-hors-dossier')
-      expect(request.risks).toBeUndefined()
+      const { host, turn, request, workspace } = await riskRequest('commande-lecture-hors-dossier')
+      // Sous Windows, `2>/dev/null` écrit le fichier `\dev\null` du lecteur (PowerShell, cmd).
+      expect(request.risks).toEqual(
+        ON_WINDOWS
+          ? [{ kind: 'outside-folder', path: `${workspace.slice(0, 2)}\\dev\\null` }]
+          : undefined
+      )
       host.respondPermission(request.requestId, 'reject')
       await turn
       host.stop()
@@ -1071,7 +1083,8 @@ describe('AgentHost', () => {
     it('modification d’un fichier hors du dossier (outil edit) : signalée', async () => {
       const { host, turn, request, workspace } = await riskRequest('ecriture-hors-dossier')
       const path = join(dirname(workspace), 'dehors', 'outil.toml')
-      const tilde = path.startsWith(`${homedir()}/`) ? `~${path.slice(homedir().length)}` : path
+      // `~` pour le dossier personnel, à la façon du système (`~\\…` sous Windows).
+      const tilde = homeShown(path, homedir())
       expect(request.risks).toEqual([{ kind: 'outside-folder', path: tilde }])
       host.respondPermission(request.requestId, 'reject')
       await turn
@@ -1471,52 +1484,59 @@ describe('AgentHost', () => {
       }
     })
 
-    describe('commande mise en arrière-plan par l’agent (fiche 195, M3)', () => {
-      const running = (duration: string) =>
-        execFileSync('ps', ['-A', '-ww', '-o', 'pid=,pgid=,command='], { encoding: 'utf8' })
-          .split('\n')
-          .filter((line) => line.trim().endsWith(`sleep ${duration}`))
-          .map((line) => line.trim().split(/\s+/).map(Number))
+    // Groupes de processus et `ps` : Unix seulement (POSIX_PROCESSES).
+    describe.runIf(POSIX_PROCESSES)(
+      'commande mise en arrière-plan par l’agent (fiche 195, M3)',
+      () => {
+        const running = (duration: string) =>
+          execFileSync('ps', ['-A', '-ww', '-o', 'pid=,pgid=,command='], { encoding: 'utf8' })
+            .split('\n')
+            .filter((line) => line.trim().endsWith(`sleep ${duration}`))
+            .map((line) => line.trim().split(/\s+/).map(Number))
 
-      it('dans le groupe de l’agent : vit après le tour, arrêtée avec l’agent', async () => {
-        const { host } = failing('arriere-plan')
+        it('dans le groupe de l’agent : vit après le tour, arrêtée avec l’agent', async () => {
+          const { host } = failing('arriere-plan')
+          await host.start()
+          await host.prompt('Lance-la en arrière-plan')
+          expect(host.snapshot().status).toBe('ready')
+          const [sleep] = running(BACKGROUND_SLEEP)
+          expect(sleep).toBeDefined()
+          host.stop()
+          await waitFor(() => running(BACKGROUND_SLEEP).length === 0, 8000)
+        })
+
+        it('détachée par l’agent (autre groupe) : Bobine ne l’arrête pas, à l’aveugle', async () => {
+          const { host } = failing('arriere-plan-detache')
+          await host.start()
+          await host.prompt('Lance-la en arrière-plan')
+          const [sleep] = running(DETACHED_SLEEP)
+          expect(sleep).toBeDefined()
+          host.stop()
+          await new Promise((resolve) => setTimeout(resolve, 3500))
+          // Toujours là : hors de notre groupe, elle n'est pas à nous (comportement documenté).
+          expect(running(DETACHED_SLEEP)).toHaveLength(1)
+          process.kill(sleep?.[0] ?? 0, 'SIGKILL')
+        })
+      }
+    )
+
+    it.runIf(POSIX_PROCESSES)(
+      'agent tué par kill -9 en plein tour (fiche 195) : la commande qu’il avait lancée ne survit pas',
+      async () => {
+        const sleeping = () =>
+          execFileSync('ps', ['-A', '-ww', '-o', 'pid=,command='], { encoding: 'utf8' })
+            .split('\n')
+            .filter((line) => line.trim().endsWith(`sleep ${CHILD_SLEEP}`))
+        const { host } = failing('plantage-avec-enfant', {}, [])
         await host.start()
-        await host.prompt('Lance-la en arrière-plan')
-        expect(host.snapshot().status).toBe('ready')
-        const [sleep] = running(BACKGROUND_SLEEP)
-        expect(sleep).toBeDefined()
+        await host.prompt('Compile')
+        await waitFor(() => host.snapshot().status === 'exited', 10_000)
+        expect(host.snapshot().detail).toContain('SIGKILL')
+        await waitFor(() => sleeping().length === 0, 8000)
+        expect(sleeping()).toEqual([])
         host.stop()
-        await waitFor(() => running(BACKGROUND_SLEEP).length === 0, 8000)
-      })
-
-      it('détachée par l’agent (autre groupe) : Bobine ne l’arrête pas, à l’aveugle', async () => {
-        const { host } = failing('arriere-plan-detache')
-        await host.start()
-        await host.prompt('Lance-la en arrière-plan')
-        const [sleep] = running(DETACHED_SLEEP)
-        expect(sleep).toBeDefined()
-        host.stop()
-        await new Promise((resolve) => setTimeout(resolve, 3500))
-        // Toujours là : hors de notre groupe, elle n'est pas à nous (comportement documenté).
-        expect(running(DETACHED_SLEEP)).toHaveLength(1)
-        process.kill(sleep?.[0] ?? 0, 'SIGKILL')
-      })
-    })
-
-    it('agent tué par kill -9 en plein tour (fiche 195) : la commande qu’il avait lancée ne survit pas', async () => {
-      const sleeping = () =>
-        execFileSync('ps', ['-A', '-ww', '-o', 'pid=,command='], { encoding: 'utf8' })
-          .split('\n')
-          .filter((line) => line.trim().endsWith(`sleep ${CHILD_SLEEP}`))
-      const { host } = failing('plantage-avec-enfant', {}, [])
-      await host.start()
-      await host.prompt('Compile')
-      await waitFor(() => host.snapshot().status === 'exited', 10_000)
-      expect(host.snapshot().detail).toContain('SIGKILL')
-      await waitFor(() => sleeping().length === 0, 8000)
-      expect(sleeping()).toEqual([])
-      host.stop()
-    })
+      }
+    )
 
     it('protocole incompatible (fiches 194, 198) : un seul statut d’erreur, un seul avis', async () => {
       const { host, events, transcript } = failing('protocole-incompatible')
@@ -1562,7 +1582,8 @@ describe('AgentHost', () => {
       expect(host.snapshot().detail).toMatch(/n’a pas (rouvert|ouvert|répondu)/)
     })
 
-    it.each([
+    // Mort par un signal : Unix seulement (POSIX_PROCESSES).
+    it.runIf(POSIX_PROCESSES).each([
       ['plantage-signal', 'SIGKILL'],
       ['plantage-segfault', 'SIGSEGV']
     ])(

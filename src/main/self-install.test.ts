@@ -13,6 +13,7 @@ import {
   SelfInstaller,
   type InstallerIo
 } from './self-install'
+import { MACOS_FEATURES } from './test-platform'
 
 const HOME = '/Users/ada'
 const DIRS = installDirs(HOME)
@@ -47,7 +48,8 @@ function setup(
   return { installer, calls, dismiss }
 }
 
-describe('installation par l’app elle-même (fiche 073)', () => {
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)('installation par l’app elle-même (fiche 073)', () => {
   it('chemins : app, disque image, déjà installée', () => {
     expect(bundleOf('/Volumes/Bobine/Bobine.app/Contents/MacOS/Bobine')).toBe(
       '/Volumes/Bobine/Bobine.app'

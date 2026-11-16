@@ -4,8 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { computeDiff } from '@shared/diff'
 import { diffsFromPatch, filesOf, withCreatedFile, withPatchDiffs } from './opencode-diffs'
 import type { ToolCallSoFar } from './tool-call-memory'
+import { abs } from '../test-platform'
 
-const CWD = '/projet'
+const CWD = abs('/projet')
 const BEFORE = 'un\ndeux\ntrois\nquatre\ncinq\nsix\nsept\nhuit\nneuf\ndix\nonze\ndouze\n'
 const AFTER = 'un\nDEUX\ntrois\nquatre\ncinq\nsix\nsept\nhuit\nneuf\ndix\nonze\ndouze\ntreize\n'
 
@@ -41,7 +42,7 @@ describe('diffs d’OpenCode retrouvés au rejeu (fiche 096)', () => {
       [
         {
           file: 'src/a.js',
-          patch: patchOf('/projet/src/a.js', BEFORE, AFTER),
+          patch: patchOf(abs('/projet/src/a.js'), BEFORE, AFTER),
           additions: 2,
           deletions: 1,
           status: 'modified'
@@ -52,13 +53,13 @@ describe('diffs d’OpenCode retrouvés au rejeu (fiche 096)', () => {
     expect(diffs).toEqual([
       {
         type: 'diff',
-        path: '/projet/src/a.js',
+        path: abs('/projet/src/a.js'),
         oldText: 'un\ndeux\ntrois\nquatre\ncinq\nsix\n',
         newText: 'un\nDEUX\ntrois\nquatre\ncinq\nsix\n'
       },
       {
         type: 'diff',
-        path: '/projet/src/a.js',
+        path: abs('/projet/src/a.js'),
         oldText: 'neuf\ndix\nonze\ndouze\n',
         newText: 'neuf\ndix\nonze\ndouze\ntreize\n'
       }
@@ -77,31 +78,31 @@ describe('diffs d’OpenCode retrouvés au rejeu (fiche 096)', () => {
   })
 
   it('fichier créé : oldText nul, sans saut de ligne final s’il n’y en avait pas', () => {
-    const diffs = diffsFromPatch('/projet/notes.md', {
+    const diffs = diffsFromPatch(abs('/projet/notes.md'), {
       file: 'notes.md',
-      patch: patchOf('/projet/notes.md', '', 'a\nb'),
+      patch: patchOf(abs('/projet/notes.md'), '', 'a\nb'),
       status: 'added'
     })
     expect(diffs).toEqual([
-      { type: 'diff', path: '/projet/notes.md', oldText: null, newText: 'a\nb' }
+      { type: 'diff', path: abs('/projet/notes.md'), oldText: null, newText: 'a\nb' }
     ])
   })
 
   it('fichier supprimé : tout en retrait', () => {
-    const diffs = diffsFromPatch('/projet/vieux.txt', {
+    const diffs = diffsFromPatch(abs('/projet/vieux.txt'), {
       file: 'vieux.txt',
-      patch: patchOf('/projet/vieux.txt', 'x\ny\n', ''),
+      patch: patchOf(abs('/projet/vieux.txt'), 'x\ny\n', ''),
       status: 'deleted'
     })
     expect(diffs).toEqual([
-      { type: 'diff', path: '/projet/vieux.txt', oldText: 'x\ny\n', newText: '' }
+      { type: 'diff', path: abs('/projet/vieux.txt'), oldText: 'x\ny\n', newText: '' }
     ])
   })
 
   it('seuls les fichiers sans diff sont complétés (OpenCode garde celui d’un fichier créé)', () => {
     const kept: ToolCallContent = {
       type: 'diff',
-      path: '/projet/notes.md',
+      path: abs('/projet/notes.md'),
       oldText: null,
       newText: 'contenu actuel\n'
     }
@@ -110,20 +111,24 @@ describe('diffs d’OpenCode retrouvés au rejeu (fiche 096)', () => {
       [
         {
           file: 'notes.md',
-          patch: patchOf('/projet/notes.md', '', 'contenu\n'),
+          patch: patchOf(abs('/projet/notes.md'), '', 'contenu\n'),
           status: 'added'
         },
-        { file: '/projet/src/a.js', patch: patchOf('/projet/src/a.js', BEFORE, AFTER) }
+        { file: abs('/projet/src/a.js'), patch: patchOf(abs('/projet/src/a.js'), BEFORE, AFTER) }
       ]
     )
     const paths = diffsIn(withPatchDiffs(update, CWD)).map((d) => d.path)
-    expect(paths).toEqual(['/projet/notes.md', '/projet/src/a.js', '/projet/src/a.js'])
+    expect(paths).toEqual([
+      abs('/projet/notes.md'),
+      abs('/projet/src/a.js'),
+      abs('/projet/src/a.js')
+    ])
   })
 
   it('rien à faire : en direct (diffs joints), outil en cours, sans contenu, sortie inconnue', () => {
-    const files = [{ file: 'src/a.js', patch: patchOf('/projet/src/a.js', BEFORE, AFTER) }]
+    const files = [{ file: 'src/a.js', patch: patchOf(abs('/projet/src/a.js'), BEFORE, AFTER) }]
     const live = replayed(
-      [TEXT, { type: 'diff', path: '/projet/src/a.js', oldText: BEFORE, newText: AFTER }],
+      [TEXT, { type: 'diff', path: abs('/projet/src/a.js'), oldText: BEFORE, newText: AFTER }],
       files
     )
     expect(withPatchDiffs(live, CWD)).toBe(live)
@@ -156,7 +161,7 @@ describe('diffs d’OpenCode retrouvés au rejeu (fiche 096)', () => {
         metadata: { files: [null, { file: 'a' }, { file: 'b', patch: 'p', status: '?' }] }
       })
     ).toEqual([{ file: 'b', patch: 'p' }])
-    expect(diffsFromPatch('/projet/a', { file: 'a', patch: '@@ n’importe quoi' })).toEqual([])
+    expect(diffsFromPatch(abs('/projet/a'), { file: 'a', patch: '@@ n’importe quoi' })).toEqual([])
   })
 })
 
@@ -167,7 +172,7 @@ describe('fichier créé par write (fiche 202)', () => {
       sessionUpdate: 'tool_call_update',
       toolCallId: 'call_write',
       status: 'completed',
-      locations: [{ path: '/projet/nouveau.txt' }],
+      locations: [{ path: abs('/projet/nouveau.txt') }],
       content: [{ type: 'content', content: { type: 'text', text } }],
       rawOutput: { metadata: { truncated: false } },
       ...extra
@@ -175,7 +180,7 @@ describe('fichier créé par write (fiche 202)', () => {
   const soFar: ToolCallSoFar = {
     title: 'write',
     kind: 'edit',
-    rawInput: { path: '/projet/nouveau.txt', content: 'bonjour\n' },
+    rawInput: { path: abs('/projet/nouveau.txt'), content: 'bonjour\n' },
     permissionDiffs: [],
     checkedPaths: new Set(),
     absentPaths: new Set()
@@ -185,7 +190,7 @@ describe('fichier créé par write (fiche 202)', () => {
   it('« Created file successfully » : tout en ajout, depuis l’entrée de l’outil', () => {
     const diffs = diffsIn(withCreatedFile(done(CREATED), CWD, soFar))
     expect(diffs).toEqual([
-      { type: 'diff', path: '/projet/nouveau.txt', oldText: null, newText: 'bonjour\n' }
+      { type: 'diff', path: abs('/projet/nouveau.txt'), oldText: null, newText: 'bonjour\n' }
     ])
     // Rouvert (`session/load`) : chemin relatif dans l'entrée, résolu dans le dossier.
     const relative = { ...soFar, rawInput: { path: 'nouveau.txt', content: 'bonjour\n' } }
@@ -209,7 +214,7 @@ describe('fichier créé par write (fiche 202)', () => {
     const withDiff = done(CREATED, {
       content: [
         { type: 'content', content: { type: 'text', text: CREATED } },
-        { type: 'diff', path: '/projet/nouveau.txt', oldText: null, newText: 'bonjour\n' }
+        { type: 'diff', path: abs('/projet/nouveau.txt'), oldText: null, newText: 'bonjour\n' }
       ]
     })
     expect(withCreatedFile(withDiff, CWD, soFar)).toBe(withDiff)

@@ -15,6 +15,7 @@ import {
   type AxeElement
 } from './axe'
 import type { Run } from './run'
+import { MACOS_FEATURES } from '../test-platform'
 
 /** Extrait réel de `axe describe-ui` sur Réglages (iOS 26.5), allégé. */
 const SCREEN: AxeElement[] = [
@@ -87,7 +88,8 @@ describe('lecture de l’écran du simulateur', () => {
   })
 })
 
-describe('version d’AXe', () => {
+// Propre à macOS : sans objet sous Windows (MACOS_FEATURES).
+describe.runIf(MACOS_FEATURES)('version d’AXe', () => {
   const run =
     (reply: { code: number; stdout?: string; stderr?: string }): Run =>
     async () => ({

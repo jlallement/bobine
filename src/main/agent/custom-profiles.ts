@@ -9,13 +9,19 @@ import { CUSTOM_AGENT_PREFIX, type CustomAgent } from '@shared/custom-agents'
 import { t } from 'i18next'
 import type { AgentProfile } from './profiles'
 
+/**
+ * `~/` en tête : le dossier personnel ; sous Windows, `~\` aussi (fiche 229). Ailleurs, un `\` est
+ * un caractère du nom : `~\x` reste tel quel, comme avant.
+ */
+const HOME_PREFIX = process.platform === 'win32' ? /^~[\\/]/ : /^~\//
+
 /** Le profil d'un agent déclaré ; `~/` en tête de la commande désigne le dossier personnel. */
 export function customProfile(agent: CustomAgent, home: string = homedir()): AgentProfile {
   const { apiKeyEnv } = agent
   return {
     id: agent.id,
     label: agent.label,
-    command: agent.command.startsWith('~/') ? join(home, agent.command.slice(2)) : agent.command,
+    command: HOME_PREFIX.test(agent.command) ? join(home, agent.command.slice(2)) : agent.command,
     args: [...agent.args],
     env: { ...agent.env },
     ...(agent.compactCommand ? { compactCommand: agent.compactCommand } : {}),

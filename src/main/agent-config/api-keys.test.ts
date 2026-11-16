@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { KEYCHAIN_TIMEOUT_ERROR } from '@shared/agent'
 import { ApiKeyStore, KeychainTimeout, withEnvChanges, type Cipher } from './api-keys'
+import { POSIX_MODES } from '../test-platform'
 
 /** Faux chiffrement réversible (inversion des octets), et indisponible à la demande. */
 const fakeCipher = (available = true, reencrypt = false): Cipher => ({
@@ -40,7 +41,7 @@ describe('clés d’API (fiche 022)', () => {
     await new ApiKeyStore(path, fakeCipher()).set('bob', 'BOB_API_KEY', '  secret-123  ')
     const text = readFileSync(path, 'utf8')
     expect(text).not.toContain('secret-123')
-    expect(statSync(path).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(path).mode & 0o777).toBe(0o600)
     const store = new ApiKeyStore(path, fakeCipher())
     expect(store.has('bob', 'BOB_API_KEY')).toBe(true)
     expect(await store.credentials('bob', BOB)).toEqual({
@@ -254,7 +255,7 @@ describe('Linux sans trousseau de session (fiche 145, D4)', () => {
     await store.set('bob', 'BOB_API_KEY', 'secret-lin')
     expect(cipher.encrypt).not.toHaveBeenCalled()
     expect(JSON.parse(readFileSync(path, 'utf8')).keys.bob.BOB_API_KEY).toBe('plain:secret-lin')
-    expect(statSync(path).mode & 0o777).toBe(0o600)
+    if (POSIX_MODES) expect(statSync(path).mode & 0o777).toBe(0o600)
     expect(store.info('bob', BOB, {})[0]).toMatchObject({ stored: true, plaintext: true })
     const again = new ApiKeyStore(path, linuxCipher({ keychain: false }))
     expect(await again.credentials('bob', BOB)).toMatchObject({ BOB_API_KEY: 'secret-lin' })

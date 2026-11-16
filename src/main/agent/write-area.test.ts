@@ -3,10 +3,17 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { RequestPermissionRequest } from '../../shared/acp-sdk.mts'
+import { ON_WINDOWS } from '../test-platform'
 import { isInside, writeAreaVerdict } from './write-area'
 
 type ToolCall = RequestPermissionRequest['toolCall']
-const area = () => realpathSync(mkdtempSync(join(tmpdir(), 'discussion-')))
+// Sous Windows, le dossier temporaire peut s'écrire en noms courts 8.3 (`RUNNER~1`), que la zone
+// d'écriture pose toujours : le vrai nom long (`realpathSync.native`), comme le dossier de données.
+const real = (path: string) => (ON_WINDOWS ? realpathSync.native(path) : realpathSync(path))
+const area = () => real(mkdtempSync(join(tmpdir(), 'discussion-')))
+/** Un fichier hors du dossier, en chemin absolu de la machine. */
+const ELSEWHERE = ON_WINDOWS ? 'C:\\Users\\x\\.zshrc' : '/Users/x/.zshrc'
+const TMP_FILE = ON_WINDOWS ? 'C:\\Windows\\Temp\\b.md' : '/tmp/b.md'
 const call = (
   locations: string[],
   diffs: string[] = [],
@@ -35,7 +42,7 @@ describe('écritures d’une discussion (fiche 224, relecture)', () => {
   it('B2 : un diff qui vise un autre fichier compte ; dehors, refusé ; en désaccord, posé', () => {
     const a = area()
     const inside = join(a, 'a.md')
-    expect(writeAreaVerdict(a, call([inside], ['/Users/x/.zshrc'])).decision).toBe('refuse')
+    expect(writeAreaVerdict(a, call([inside], [ELSEWHERE])).decision).toBe('refuse')
     expect(writeAreaVerdict(a, call([], [join(a, 'b.md')])).decision).toBe('allow')
     expect(writeAreaVerdict(a, call([inside], [join(a, 'b.md')])).decision).toBe('ask')
     expect(writeAreaVerdict(a, call([inside], [inside])).decision).toBe('allow')
@@ -57,8 +64,9 @@ describe('écritures d’une discussion (fiche 224, relecture)', () => {
 
   it('I2 : un lien symbolique qui mène dehors rend la cible extérieure', () => {
     const a = area()
-    const ailleurs = realpathSync(mkdtempSync(join(tmpdir(), 'ailleurs-')))
-    symlinkSync(ailleurs, join(a, 'out'))
+    const ailleurs = real(mkdtempSync(join(tmpdir(), 'ailleurs-')))
+    // Sous Windows : une jonction (sans droit) ; ailleurs, le type est ignoré.
+    symlinkSync(ailleurs, join(a, 'out'), 'junction')
     writeFileSync(join(ailleurs, 'cible.txt'), 'x')
     symlinkSync(join(ailleurs, 'cible.txt'), join(a, 'lien.txt'))
     expect(writeAreaVerdict(a, call([join(a, 'out', 'authorized_keys')])).decision).toBe('refuse')
@@ -69,19 +77,19 @@ describe('écritures d’une discussion (fiche 224, relecture)', () => {
     const a = area()
     mkdirSync(join(a, 'x'), { recursive: true })
     expect(writeAreaVerdict(a, call([join(a, 'a.md')], [], 'move')).decision).toBe('ask')
-    expect(writeAreaVerdict(a, call([join(a, 'a.md'), '/tmp/b.md'], [], 'move')).decision).toBe(
+    expect(writeAreaVerdict(a, call([join(a, 'a.md'), TMP_FILE], [], 'move')).decision).toBe(
       'refuse'
     )
   })
 
   it('fiche 230 : un fichier à plusieurs noms (lien physique) n’est jamais accordé seul : posé', () => {
     const a = area()
-    const ailleurs = realpathSync(mkdtempSync(join(tmpdir(), 'ailleurs-')))
+    const ailleurs = real(mkdtempSync(join(tmpdir(), 'ailleurs-')))
     const secret = join(ailleurs, 'secret.txt')
     writeFileSync(secret, 'à garder')
     linkSync(secret, join(a, 'Notes.md'))
     // `realpath` ne voit rien : le chemin est bien dans le dossier.
-    expect(realpathSync(join(a, 'Notes.md'))).toBe(join(a, 'Notes.md'))
+    expect(real(join(a, 'Notes.md'))).toBe(join(a, 'Notes.md'))
     for (const kind of ['edit', 'delete'] as const) {
       expect(writeAreaVerdict(a, call([join(a, 'Notes.md')], [], kind)).decision).toBe('ask')
       expect(writeAreaVerdict(a, call([], [join(a, 'Notes.md')], kind)).decision).toBe('ask')

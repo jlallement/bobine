@@ -15,6 +15,7 @@ import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import { subagentMarkOf, type SubagentRun } from '@shared/subagent'
 import type { TranscriptItem } from '@shared/transcript'
 import type { ChildSession, SubagentCost } from './adapters'
+import type { AgentHostOptions } from './agent-host'
 
 export interface SubagentTrackerOptions {
   emit: (toolCallId: string, run: SubagentRun) => void
@@ -32,6 +33,24 @@ export interface SubagentTrackerOptions {
   background?: (update: SessionUpdate) => boolean
   /** Relit la session d'un sous-agent, comme « Voir son travail » : suit ceux en arrière-plan. */
   follow?: (sessionId: string) => Promise<TranscriptItem[]>
+  /** Attentes avant chaque relecture d'un sous-agent en arrière-plan ; voir `FOLLOW_MS`. */
+  followMs?: readonly number[]
+}
+
+/** Ce que le profil et les options d'une conversation disent au suivi de ses sous-agents. */
+export function subagentTrackerOptions(
+  options: Pick<AgentHostOptions, 'profile' | 'loadSubagentWork' | 'subagentFollowMs'>,
+  costs: Pick<SubagentTrackerOptions, 'costs' | 'onPoll'>,
+  emit: SubagentTrackerOptions['emit']
+): SubagentTrackerOptions {
+  return {
+    emit,
+    ...costs,
+    replay: options.profile.subagentReplay === true,
+    background: options.profile.subagentStream?.background,
+    follow: options.loadSubagentWork,
+    ...(options.subagentFollowMs ? { followMs: options.subagentFollowMs } : {})
+  }
 }
 
 /** Sous-agent en arrière-plan suivi par relecture de sa session (fiche 122). */
@@ -64,7 +83,7 @@ const SETTLE_MS = 1500
 /** Marge entre l'apparition de la carte et la création de la ligne chez l'agent. */
 const ROW_SLACK_MS = 2000
 /** Relectures d'un sous-agent en arrière-plan : vite au début, puis toutes les 30 s. */
-const FOLLOW_MS = [2000, 3000, 5000, 8000, 13_000, 20_000, 30_000]
+export const FOLLOW_MS: readonly number[] = [2000, 3000, 5000, 8000, 13_000, 20_000, 30_000]
 
 /**
  * Réponse finale d'une session de sous-agent relue, ou `undefined` s'il travaille encore : elle
@@ -193,7 +212,8 @@ export class SubagentTracker {
   }
 
   private followLater(item: Tracked, detached: Detached): void {
-    const delay = FOLLOW_MS[Math.min(detached.checks, FOLLOW_MS.length - 1)]
+    const delays = this.options.followMs ?? FOLLOW_MS
+    const delay = delays[Math.min(detached.checks, delays.length - 1)]
     detached.timer = setTimeout(() => void this.check(item, detached), delay)
     detached.timer.unref?.()
   }

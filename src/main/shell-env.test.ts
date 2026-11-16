@@ -10,6 +10,7 @@ import {
   parseWindowsEnv,
   WINDOWS_ENV_SCRIPT
 } from './shell-env'
+import { LOGIN_SHELL } from './test-platform'
 
 const M = '__BOBINE_ENV__'
 
@@ -45,7 +46,8 @@ describe('shell-env', () => {
     })
   })
 
-  it('récupère les variables depuis un vrai shell', async () => {
+  // Shell de connexion : Unix seulement ; sous Windows, `readUserEnv` lit les variables enregistrées.
+  it.runIf(LOGIN_SHELL)('récupère les variables depuis un vrai shell', async () => {
     const result = await loginShellEnv('/bin/sh')
     expect(result.values.PATH).toContain('/usr/bin')
     expect(result.problem).toBeUndefined()
@@ -58,7 +60,7 @@ describe('shell-env', () => {
     })
   })
 
-  it('shell trop lent (fiche 043) : arrêté au délai, problème dit', async () => {
+  it.runIf(LOGIN_SHELL)('shell trop lent (fiche 043) : arrêté au délai, problème dit', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'shell-'))
     const slow = join(dir, 'sh')
     writeFileSync(slow, '#!/bin/sh\nsleep 5\n')

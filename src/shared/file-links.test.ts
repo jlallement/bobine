@@ -4,6 +4,21 @@ import { parseFileLink, webLinkTarget } from './file-links'
 describe('parseFileLink (fiche 052)', () => {
   it('chemins relatifs, absolus, file://, lignes citées', () => {
     expect(parseFileLink('plan.md')).toEqual({ path: 'plan.md' })
+    // Chemins Windows (fiche 229) : sous Windows (capacité `windowsPaths`), la lettre de lecteur
+    // n'est pas un schéma ; sous macOS et Linux, comme avant (un schéma `c:`, pas un fichier).
+    const win = { windowsPaths: true }
+    expect(parseFileLink('C:\\Users\\ada\\a.ts:12', win)).toEqual({
+      path: 'C:\\Users\\ada\\a.ts',
+      line: 12
+    })
+    expect(parseFileLink('c:/x/plan.md', win)).toEqual({ path: 'c:/x/plan.md' })
+    expect(parseFileLink('file:///C:/Users/ada/a%20b.md#L3', win)).toEqual({
+      path: 'C:/Users/ada/a b.md',
+      line: 3
+    })
+    expect(parseFileLink('C:\\Users\\ada\\a.ts:12')).toBeUndefined()
+    expect(parseFileLink('c:/x/plan.md', { windowsPaths: false })).toBeUndefined()
+    expect(parseFileLink('file:///C:/Users/ada/a%20b.md')).toEqual({ path: '/C:/Users/ada/a b.md' })
     expect(parseFileLink('./docs/a%20b.md')).toEqual({ path: './docs/a b.md' })
     expect(parseFileLink('src/app.ts:12')).toEqual({ path: 'src/app.ts', line: 12 })
     expect(parseFileLink('README.md:3')).toEqual({ path: 'README.md', line: 3 })

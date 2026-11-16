@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { RequestPermissionRequest } from '../../shared/acp-sdk.mts'
 import { askReadOnly, automaticAnswer, type PermissionRules } from './permission-answers'
+import { abs, ON_WINDOWS, tempDir } from '../test-platform'
 
 const OPTIONS: RequestPermissionRequest['options'] = [
   { optionId: 'yes', name: 'Allow once', kind: 'allow_once' },
@@ -114,7 +115,7 @@ describe('demande posée à une fille en lecture seule (essais réels avant 1.0.
   })
 
   it('discussion (fiche 224) : réponse d’office dite dans le fil ; posée quand le dossier est inconnu', () => {
-    const area = realpathSync(mkdtempSync(join(tmpdir(), 'zone-')))
+    const area = ON_WINDOWS ? tempDir('zone-') : realpathSync(mkdtempSync(join(tmpdir(), 'zone-')))
     const notes: AgentEvent[] = []
     const discussion = {
       autoAllowed: () => false,
@@ -129,7 +130,7 @@ describe('demande posée à une fille en lecture seule (essais réels avant 1.0.
     const yes = { outcome: { outcome: 'selected', optionId: 'yes' } }
     const no = { outcome: { outcome: 'selected', optionId: 'no' } }
     expect(automaticAnswer(at('edit', join(area, 'Synthèse.docx')), discussion)).toEqual(yes)
-    expect(automaticAnswer(at('edit', '/tmp/ailleurs.md'), discussion)).toEqual(no)
+    expect(automaticAnswer(at('edit', abs('/tmp/ailleurs.md')), discussion)).toEqual(no)
     expect(automaticAnswer(at('execute', area), discussion)).toBeUndefined()
     expect(automaticAnswer(at('edit', '/absent/x'), { ...discussion, writeArea: '/absent' })).toBe(
       undefined

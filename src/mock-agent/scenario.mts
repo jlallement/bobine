@@ -23,6 +23,7 @@ import type {
   StopReason,
   ToolCallUpdate
 } from '../shared/acp-sdk.mts'
+import { closeStdout } from './close-stdout.mts'
 import { say, sayAll, type MockLanguage } from './langue.mts'
 
 /** Connexion faite dans un terminal (`touch .mock-agent-logged-in`, comme `opencode auth login`). */
@@ -519,7 +520,7 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
     }
     case 'close-stdout':
       await new Promise((resolve) => setTimeout(resolve, 20))
-      process.stdout.end()
+      closeStdout()
       // Garde le processus en vie : sans ce minuteur, Node sortirait faute de travail.
       setInterval(() => {}, 60_000)
       return new Promise<void>(() => {})
@@ -822,10 +823,16 @@ async function streamChunks(
   }
 }
 
-/** Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6. */
+/**
+ * Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6. L'app la lit
+ * pendant que l'agent y écrit : sans délai d'attente, l'écriture échoue (`database is locked`) dès
+ * qu'une lecture la croise, ce qui coupait le tour au hasard (relevé sur `windows-latest`, fiche
+ * 229 ; reproduit sur le Mac : 405 écritures sur 3 000 contre un lecteur en boucle). Un écrivain
+ * SQLite attend que le verrou se libère : 5 s, le défaut de better-sqlite3.
+ */
 function openBobDb(file: string): DatabaseSync {
   mkdirSync(dirname(file), { recursive: true })
-  const db = new DatabaseSync(file)
+  const db = new DatabaseSync(file, { timeout: 5_000 })
   db.exec(`CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY, parent_id TEXT, task_type TEXT NOT NULL DEFAULT 'normal',
     title TEXT NOT NULL DEFAULT '', status TEXT, costs TEXT,
@@ -939,13 +946,24 @@ function tick(ctx: TurnContext, ticks: number): Promise<void> {
   return new Promise((resolve, reject) => {
     if (ctx.signal.aborted) return reject(new TurnCancelled())
     const onAbort = () => {
-      clearTimeout(timer)
+      cancel()
       reject(new TurnCancelled())
     }
-    const timer = setTimeout(() => {
+    const done = () => {
       ctx.signal.removeEventListener('abort', onAbort)
       resolve()
-    }, ms)
+    }
+    // Délai nul sous Windows : `setTimeout(0)` y attend la résolution de l'horloge (~15 ms), et une
+    // longue réponse en milliers de morceaux dépassait le délai des essais (fiche 229, lot 7a).
+    // Ailleurs, le même minuteur qu'avant.
+    let cancel: () => void
+    if (ms === 0 && process.platform === 'win32') {
+      const immediate = setImmediate(done)
+      cancel = () => clearImmediate(immediate)
+    } else {
+      const timer = setTimeout(done, ms)
+      cancel = () => clearTimeout(timer)
+    }
     ctx.signal.addEventListener('abort', onAbort, { once: true })
   })
 }

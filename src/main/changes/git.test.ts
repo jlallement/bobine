@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { gitCommand } from '../git/git-queue'
 import { GitChangesReader, insideWorkspace, parseNumstat, parseStatus } from './git'
+import { abs } from '../test-platform'
 
 describe('analyse des sorties de git', () => {
   it('status : modifié, nouveau, renommé, supprimé', () => {
@@ -24,10 +25,10 @@ describe('analyse des sorties de git', () => {
   })
 
   it('refuse les chemins hors du dossier', () => {
-    expect(insideWorkspace('/p', 'src/a.ts')).toBe('/p/src/a.ts')
-    expect(insideWorkspace('/p', '/p/a.ts')).toBe('/p/a.ts')
-    expect(() => insideWorkspace('/p', '../etc/passwd')).toThrow('hors du dossier')
-    expect(() => insideWorkspace('/p', '/etc/passwd')).toThrow('hors du dossier')
+    expect(insideWorkspace(abs('/p'), 'src/a.ts')).toBe(abs('/p/src/a.ts'))
+    expect(insideWorkspace(abs('/p'), abs('/p/a.ts'))).toBe(abs('/p/a.ts'))
+    expect(() => insideWorkspace(abs('/p'), '../etc/passwd')).toThrow('hors du dossier')
+    expect(() => insideWorkspace(abs('/p'), abs('/etc/passwd'))).toThrow('hors du dossier')
     expect(() => insideWorkspace('/p', '/p')).toThrow('hors du dossier')
     expect(() => insideWorkspace('/p', '/pp/a')).toThrow('hors du dossier')
   })

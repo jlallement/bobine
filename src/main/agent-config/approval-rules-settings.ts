@@ -14,12 +14,10 @@ import {
 import type { AgentProfile } from '../agent/profiles'
 import type { ApprovalRulesHooks, ApprovalRulesStore } from './approval-rules'
 import type { McpLocations } from './mcp-files'
+import { homeShown } from '../home-display'
 
 /** Chemin affiché : `~` pour le dossier personnel. */
-function display(file: string, home: string): string {
-  const root = home.replace(/\/+$/, '')
-  return file.startsWith(`${root}/`) ? `~${file.slice(root.length)}` : file
-}
+const display = (file: string, home: string): string => homeShown(file, home)
 
 export class ApprovalRulesSettings {
   private readonly rules = new Map<string, ApprovalRulesStore>()

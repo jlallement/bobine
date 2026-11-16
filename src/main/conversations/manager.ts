@@ -178,6 +178,8 @@ export interface ConversationManagerOptions {
   networkWatch?: AgentHostOptions['network']
   /** Attentes entre les tentatives (raccourcies en test, sinon `RETRY_DELAYS_MS`). */
   retryDelaysMs?: AgentHostOptions['retryDelaysMs']
+  /** Relectures des sous-agents en arrière-plan (raccourcies en test, sinon `FOLLOW_MS`). */
+  subagentFollowMs?: AgentHostOptions['subagentFollowMs']
   /** Mémoire commune (fiche 182) : index joint au début de chaque session qui a reçu `remember`. */
   memory?: Pick<import('../memory/service').MemoryService, 'sessionContext'>
   /** Conversation supprimée (pour libérer ce qui lui est attaché : page du navigateur…). */

@@ -3,6 +3,7 @@ import { parse } from 'yaml'
 import { BOB_CUSTOM_MODES, bobModeEntry } from './bob-custom-modes'
 import { EXPORT_READ_ONLY_LINE, type ExportedRole } from './format'
 import { OPENCODE_AGENTS, openCodeAgentFile } from './opencode-agents'
+import { abs, native } from '../../test-platform'
 
 const role: ExportedRole = {
   id: 'code-reviewer',
@@ -115,13 +116,15 @@ describe('modes personnalisés de Bob', () => {
   })
 
   it('chemins : personnel sous ~/.bob/settings, projet sous .bob', () => {
-    const loc = { home: '/h' }
+    const loc = { home: abs('/h') }
     expect(BOB_CUSTOM_MODES.place('user', 'x', loc)).toEqual({
-      file: '/h/.bob/settings/custom_modes.yaml',
-      root: '/h',
-      shown: '~/.bob/settings/custom_modes.yaml'
+      file: abs('/h/.bob/settings/custom_modes.yaml'),
+      root: abs('/h'),
+      shown: native('~/.bob/settings/custom_modes.yaml')
     })
-    expect(BOB_CUSTOM_MODES.place('project', 'x', loc, '/p').shown).toBe('.bob/custom_modes.yaml')
+    expect(BOB_CUSTOM_MODES.place('project', 'x', loc, abs('/p')).shown).toBe(
+      native('.bob/custom_modes.yaml')
+    )
   })
 })
 
@@ -169,14 +172,14 @@ describe('agents d’OpenCode', () => {
   })
 
   it('chemins : XDG_CONFIG_HOME suivi, projet sous .opencode/agents', () => {
-    expect(OPENCODE_AGENTS.place('user', 'x', { home: '/h' }).shown).toBe(
-      '~/.config/opencode/agents/x.md'
+    expect(OPENCODE_AGENTS.place('user', 'x', { home: abs('/h') }).shown).toBe(
+      native('~/.config/opencode/agents/x.md')
     )
-    expect(OPENCODE_AGENTS.place('user', 'x', { home: '/h', xdgConfigHome: '/xdg' }).file).toBe(
-      '/xdg/opencode/agents/x.md'
-    )
-    expect(OPENCODE_AGENTS.place('project', 'x', { home: '/h' }, '/p').shown).toBe(
-      '.opencode/agents/x.md'
+    expect(
+      OPENCODE_AGENTS.place('user', 'x', { home: abs('/h'), xdgConfigHome: abs('/xdg') }).file
+    ).toBe(abs('/xdg/opencode/agents/x.md'))
+    expect(OPENCODE_AGENTS.place('project', 'x', { home: abs('/h') }, abs('/p')).shown).toBe(
+      native('.opencode/agents/x.md')
     )
   })
 })

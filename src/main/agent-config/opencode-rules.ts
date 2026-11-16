@@ -15,7 +15,7 @@
  * Extensions explicites, sans alias : la sonde d'OpenCode charge ce module sous Node (fiche 078).
  */
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, sep } from 'node:path'
+import { dirname, isAbsolute, join, parse as parsePath, relative, sep } from 'node:path'
 import { parse } from 'jsonc-parser'
 import type { RuleFileView } from '@shared/rules'
 import { t } from 'i18next'
@@ -95,9 +95,12 @@ async function openCodeRules(ctx: RulesContext): Promise<RuleFileView[]> {
       }
       const expanded = entry.startsWith('~/') ? join(ctx.home, entry.slice(2)) : entry
       // Chemin relatif : cherché du dossier jusqu'à la racine du dépôt, comme OpenCode.
-      const bases = isAbsolute(expanded) ? [sep] : dirs
+      const bases = isAbsolute(expanded) ? [parsePath(expanded).root] : dirs
       for (const base of bases) {
-        const matches = await globFiles(isAbsolute(expanded) ? expanded.slice(1) : expanded, base)
+        const matches = await globFiles(
+          isAbsolute(expanded) ? expanded.slice(base.length) : expanded,
+          base
+        )
         rules.push(...matches.map((f) => view(f, scope, ctx)))
         if (matches.length) break
       }
@@ -165,7 +168,9 @@ async function openCode2Rules(ctx: RulesContext): Promise<RuleFileView[]> {
       }
       const expanded = entry.startsWith('~/') ? join(ctx.home, entry.slice(2)) : entry
       if (isAbsolute(expanded)) {
-        const matches = await globFiles(expanded.slice(1), sep)
+        // Depuis la racine du chemin : `/` sous Unix, `C:\` sous Windows (fiche 229).
+        const root = parsePath(expanded).root
+        const matches = await globFiles(expanded.slice(root.length), root)
         rules.push(...matches.map((f) => view(f, scope, ctx)))
         continue
       }

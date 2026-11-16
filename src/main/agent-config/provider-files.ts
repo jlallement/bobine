@@ -12,6 +12,7 @@ import type { ModelProvider, ProviderKeySource } from '@shared/providers'
 import type { ProvidersSource } from '../agent/adapters'
 import { readConfig } from './mcp-files'
 import { pruneRemoved, writeOrRemove } from './config-prune'
+import { homeShown } from '../home-display'
 
 export interface ProvidersLocations {
   /** Dossier personnel (remplaçable pour les essais : jamais les vrais fichiers). */
@@ -49,9 +50,7 @@ export class AgentProvidersConfig {
 
   /** Chemin affiché : `~` pour le dossier personnel. */
   display(): string {
-    const file = this.file()
-    const home = this.loc.home.replace(/\/+$/, '')
-    return file.startsWith(`${home}/`) ? `~${file.slice(home.length)}` : file
+    return homeShown(this.file(), this.loc.home)
   }
 
   /** Fournisseurs déclarés, ou l'erreur d'un fichier illisible. */

@@ -12,6 +12,7 @@ import {
   type ShellRun
 } from './worktree-setup'
 import type { WorktreeInfo } from './worktrees'
+import { ON_WINDOWS } from '../test-platform'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -261,23 +262,32 @@ describe('préparation des worktrees (fiche 175)', () => {
     dirs.push(cwd)
     let output = ''
     const signal = new AbortController().signal
-    const result = await shellRun('echo bonjour; echo erreur >&2; exit 3', {
-      cwd,
-      env: process.env,
-      timeoutMs: 10_000,
-      signal,
-      onOutput: (chunk) => (output += chunk)
-    })
+    // Le shell de la machine : `sh` sous Unix, `cmd.exe` sous Windows (fiche 229).
+    const result = await shellRun(
+      ON_WINDOWS
+        ? 'echo bonjour& echo erreur 1>&2& exit 3'
+        : 'echo bonjour; echo erreur >&2; exit 3',
+      {
+        cwd,
+        env: process.env,
+        timeoutMs: 10_000,
+        signal,
+        onOutput: (chunk) => (output += chunk)
+      }
+    )
     expect(result).toEqual({ code: 3, timedOut: false })
     expect(output).toContain('bonjour')
     expect(output).toContain('erreur')
-    const slow = await shellRun('sleep 5', {
-      cwd,
-      env: process.env,
-      timeoutMs: 200,
-      signal,
-      onOutput: () => {}
-    })
+    const slow = await shellRun(
+      ON_WINDOWS ? `"${process.execPath}" -e "setTimeout(() => {}, 5000)"` : 'sleep 5',
+      {
+        cwd,
+        env: process.env,
+        timeoutMs: 200,
+        signal,
+        onOutput: () => {}
+      }
+    )
     expect(slow).toEqual({ code: null, timedOut: true })
   })
 })

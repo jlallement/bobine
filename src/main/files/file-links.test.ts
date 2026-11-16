@@ -7,20 +7,34 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { pathToFileURL } from 'node:url'
+import { native, ON_WINDOWS, tempDir } from '../test-platform'
 import { openFileLink, openWorkspaceFile, readMarkdown, type FileOpeners } from './file-links'
 
+/**
+ * Un script exécutable : un fichier au bit `x` sous Unix ; sous Windows, qui n'a pas ce bit, un
+ * `.bat` (fiche 229).
+ */
+const SCRIPT = ON_WINDOWS ? 'script.bat' : 'script'
+/** Fichiers qui agissent quand on les ouvre : ceux de macOS, et leurs pendants sous Windows. */
+const COMMAND = ON_WINDOWS ? 'outil.cmd' : 'outil.command'
+const TERMINAL = ON_WINDOWS ? 'reglages.ps1' : 'reglages.terminal'
+/** Dossier jetable, en noms longs sous Windows (`tempDir`), comme les chemins que rend l'app. */
+const folder = (prefix: string) =>
+  ON_WINDOWS ? tempDir(prefix) : realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+
 function setup() {
-  const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'liens-')))
-  const outside = realpathSync(mkdtempSync(join(tmpdir(), 'dehors-')))
+  const workspace = folder('liens-')
+  const outside = folder('dehors-')
   mkdirSync(join(workspace, 'docs'))
   writeFileSync(join(workspace, 'plan.md'), '# Plan\n\n- [suite](docs/suite.md)\n')
   writeFileSync(join(workspace, 'docs', 'suite.md'), '# Suite\n')
   writeFileSync(join(workspace, 'app.ts'), 'export {}\n')
-  writeFileSync(join(workspace, 'outil.command'), 'echo non\n')
-  writeFileSync(join(workspace, 'script'), '#!/bin/sh\necho non\n')
-  chmodSync(join(workspace, 'script'), 0o755)
+  writeFileSync(join(workspace, COMMAND), 'echo non\n')
+  writeFileSync(join(workspace, SCRIPT), '#!/bin/sh\necho non\n')
+  chmodSync(join(workspace, SCRIPT), 0o755)
   writeFileSync(join(outside, 'secret.txt'), 'dehors\n')
   symlinkSync(join(outside, 'secret.txt'), join(workspace, 'raccourci.txt'))
   const calls: string[] = []
@@ -46,7 +60,10 @@ describe('openFileLink (fiche 052)', () => {
     })
     // Lien relatif au document affiché (docs/), et ligne citée ignorée pour l'aperçu.
     const nested = await click('suite.md:3', { base: join(workspace, 'docs') })
-    expect(nested).toMatchObject({ kind: 'preview', document: { relative: 'docs/suite.md' } })
+    expect(nested).toMatchObject({
+      kind: 'preview',
+      document: { relative: native('docs/suite.md') }
+    })
     expect(calls).toEqual([])
   })
 
@@ -55,7 +72,7 @@ describe('openFileLink (fiche 052)', () => {
     expect(await click('app.ts#L12')).toEqual({ kind: 'opened', path: join(workspace, 'app.ts') })
     expect(await click('docs')).toMatchObject({ kind: 'revealed', reason: 'folder' })
     expect(
-      await click(`file://${encodeURI(join(workspace, 'plan.md'))}`, { reveal: true })
+      await click(pathToFileURL(join(workspace, 'plan.md')).href, { reveal: true })
     ).toMatchObject({ kind: 'revealed', reason: 'requested' })
     expect(calls).toEqual([
       `open ${join(workspace, 'app.ts')}`,
@@ -66,13 +83,13 @@ describe('openFileLink (fiche 052)', () => {
 
   it('jamais rien d’exécuté : exécutable, hors du dossier, lien symbolique vers dehors → Finder', async () => {
     const { workspace, outside, calls, click } = setup()
-    expect(await click('outil.command')).toMatchObject({ kind: 'revealed', reason: 'executable' })
-    expect(await click('script')).toMatchObject({ kind: 'revealed', reason: 'executable' })
+    expect(await click(COMMAND)).toMatchObject({ kind: 'revealed', reason: 'executable' })
+    expect(await click(SCRIPT)).toMatchObject({ kind: 'revealed', reason: 'executable' })
     expect(await click(join(outside, 'secret.txt'))).toMatchObject({
       kind: 'revealed',
       reason: 'outside'
     })
-    expect(await click('../' + outside.split('/').at(-1) + '/secret.txt')).toMatchObject({
+    expect(await click('../' + basename(outside) + '/secret.txt')).toMatchObject({
       reason: 'outside'
     })
     expect(await click('raccourci.txt')).toMatchObject({ kind: 'revealed', reason: 'outside' })
@@ -148,9 +165,9 @@ describe('openWorkspaceFile — « Ouvrir » de l’onglet Modifications (fiche 
 
   it('jamais rien d’exécuté : .command, .terminal sans bit x, script exécutable → Finder', async () => {
     const { workspace, calls } = setup()
-    writeFileSync(join(workspace, 'reglages.terminal'), '<plist/>')
+    writeFileSync(join(workspace, TERMINAL), '<plist/>')
     const open = (path: string) => openWorkspaceFile(workspace, path, openersOf(calls))
-    for (const file of ['outil.command', 'reglages.terminal', 'script']) {
+    for (const file of [COMMAND, TERMINAL, SCRIPT]) {
       expect(await open(file)).toEqual({
         kind: 'revealed',
         path: join(workspace, file),

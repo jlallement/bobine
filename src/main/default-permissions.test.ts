@@ -1,4 +1,6 @@
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
+import { abs } from './test-platform'
 
 vi.mock('electron', () => ({ app: { isPackaged: true }, session: {} }))
 vi.mock('./renderer-windows', () => ({
@@ -7,9 +9,10 @@ vi.mock('./renderer-windows', () => ({
 
 const { allowPermission, isAppPage } = await import('./default-permissions')
 
-const built = { file: '/Applications/Bobine Beta.app/out/renderer/index.html' }
+const built = { file: abs('/Applications/Bobine Beta.app/out/renderer/index.html') }
 const dev = { file: built.file, devUrl: 'http://localhost:5173' }
-const page = 'file:///Applications/Bobine%20Beta.app/out/renderer/index.html'
+// `file:///Applications/Bobine%20Beta.app/…` (sous Windows, sur le lecteur courant).
+const page = pathToFileURL(built.file).href
 
 describe('permissions de la session par défaut', () => {
   it('la page de l’app : fichier construit (vue `#quick` comprise) ou serveur de développement', () => {

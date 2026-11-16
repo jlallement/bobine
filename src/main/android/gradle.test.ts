@@ -1,22 +1,37 @@
-import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findAndroidProjects, gradleErrors, GradleBuilds, hasAndroidProject } from './gradle'
+import { fakeProgram, ON_WINDOWS } from '../test-platform'
 
 const dir = () => mkdtempSync(join(tmpdir(), 'gradle-'))
+
+/** Faux script de Gradle du projet : `gradlew` (sh) sous Unix, `gradlew.bat` (node) sous Windows. */
+const gradlew = (projectDir: string, behaviour: { sh: string; js: string }) =>
+  fakeProgram(projectDir, 'gradlew', behaviour, '.bat')
+
+/** Comportement en JavaScript : écrit un APK dans `apkDir` (relatif), puis « BUILD SUCCESSFUL ». */
+const apkWriter = (apkDir: string) =>
+  `const fs = require('fs')\nfs.mkdirSync(${JSON.stringify(apkDir)}, { recursive: true })\n` +
+  `fs.writeFileSync(${JSON.stringify(`${apkDir}/app-debug.apk`)}, 'apk\\n')\nconsole.log('BUILD SUCCESSFUL')\n`
 
 /** Projet Gradle avec un faux `gradlew` qui produit un APK, ou échoue. */
 function project(fail: boolean): string {
   const root = dir()
   writeFileSync(join(root, 'settings.gradle.kts'), 'include(":app")')
-  writeFileSync(
-    join(root, 'gradlew'),
+  gradlew(
+    root,
     fail
-      ? `#!/bin/sh\necho "e: file:///src/Main.kt:3:5 Unresolved reference 'foo'."\necho "FAILURE: Build failed with an exception."\nexit 1\n`
-      : `#!/bin/sh\nmkdir -p app/build/outputs/apk/debug && echo apk > app/build/outputs/apk/debug/app-debug.apk\necho "BUILD SUCCESSFUL"\n`
+      ? {
+          sh: `echo "e: file:///src/Main.kt:3:5 Unresolved reference 'foo'."\necho "FAILURE: Build failed with an exception."\nexit 1`,
+          js: `console.log("e: file:///src/Main.kt:3:5 Unresolved reference 'foo'.")\nconsole.log('FAILURE: Build failed with an exception.')\nprocess.exit(1)\n`
+        }
+      : {
+          sh: `mkdir -p app/build/outputs/apk/debug && echo apk > app/build/outputs/apk/debug/app-debug.apk\necho "BUILD SUCCESSFUL"`,
+          js: apkWriter('app/build/outputs/apk/debug')
+        }
   )
-  chmodSync(join(root, 'gradlew'), 0o755)
   return root
 }
 
@@ -27,7 +42,8 @@ describe('projets et compilation Gradle', () => {
     const root = dir()
     mkdirSync(join(root, 'android'))
     writeFileSync(join(root, 'android/settings.gradle'), '')
-    writeFileSync(join(root, 'android/gradlew'), '')
+    // Script de Gradle du projet : `gradlew` sous Unix, `gradlew.bat` sous Windows.
+    writeFileSync(join(root, 'android', ON_WINDOWS ? 'gradlew.bat' : 'gradlew'), '')
     expect(findAndroidProjects(root)).toEqual([join(root, 'android')])
     expect(hasAndroidProject(dir())).toBe(false)
   })
@@ -54,11 +70,10 @@ describe('projets et compilation Gradle', () => {
     const android = join(root, 'android')
     mkdirSync(android)
     writeFileSync(join(android, 'settings.gradle'), '')
-    writeFileSync(
-      join(android, 'gradlew'),
-      `#!/bin/sh\nmkdir -p ../build/app/outputs/flutter-apk && echo apk > ../build/app/outputs/flutter-apk/app-debug.apk\necho "BUILD SUCCESSFUL"\n`
-    )
-    chmodSync(join(android, 'gradlew'), 0o755)
+    gradlew(android, {
+      sh: `mkdir -p ../build/app/outputs/flutter-apk && echo apk > ../build/app/outputs/flutter-apk/app-debug.apk\necho "BUILD SUCCESSFUL"`,
+      js: apkWriter('../build/app/outputs/flutter-apk')
+    })
     const job = new GradleBuilds(sdk).start(android, 'assembleDebug')
     await job.done
     expect(job.status).toBe('succeeded')
@@ -68,8 +83,7 @@ describe('projets et compilation Gradle', () => {
   it('Gradle réussi sans APK : la compilation reste réussie, les dossiers cherchés sont dits', async () => {
     const root = dir()
     writeFileSync(join(root, 'settings.gradle'), '')
-    writeFileSync(join(root, 'gradlew'), `#!/bin/sh\necho "BUILD SUCCESSFUL"\n`)
-    chmodSync(join(root, 'gradlew'), 0o755)
+    gradlew(root, { sh: 'echo "BUILD SUCCESSFUL"', js: "console.log('BUILD SUCCESSFUL')\n" })
     const job = new GradleBuilds(sdk).start(root, 'assembleDebug')
     await job.done
     expect(job.status).toBe('succeeded')

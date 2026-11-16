@@ -9,6 +9,7 @@ import { SettingsStore } from '../settings-store'
 import { ApiKeyStore } from './api-keys'
 import { ProvidersSettings } from './providers-settings'
 import { OPENCODE_PROVIDERS } from './opencode-providers'
+import { native } from '../test-platform'
 
 const profile = (id: string, extra: Partial<AgentProfile> = {}): AgentProfile => ({
   id,
@@ -55,7 +56,7 @@ describe('fournisseurs de modèles dans les réglages (fiche 104)', () => {
       {
         profileId: 'opencode',
         label: 'Agent opencode',
-        file: '~/.config/opencode/opencode.json',
+        file: native('~/.config/opencode/opencode.json'),
         providers: [],
         only: false
       }

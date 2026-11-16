@@ -24,6 +24,7 @@ import {
   readGlabHosts
 } from './forge-gitlab'
 import { toolError } from './worktree-cycle'
+import { ON_WINDOWS } from '../test-platform'
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', 'glab', name), 'utf8')
 
@@ -326,18 +327,34 @@ describe('relecture du tech lead (fiche 189)', () => {
 
   it('faux glab qui dort : tué au bout du délai, timedOut, hôte injoignable', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bob-sleepy-'))
-    const glab = join(dir, 'glab')
-    writeFileSync(glab, '#!/bin/sh\nsleep 30\n')
-    chmodSync(glab, 0o755)
+    // Faux glab qui dort quels que soient ses arguments : un script `sh` sous Unix ; sous Windows,
+    // node lui-même (un vrai `.exe`, comme glab), endormi par `NODE_OPTIONS=--require` (fiche 229).
+    const glab = ON_WINDOWS ? process.execPath : join(dir, 'glab')
+    const sleeper = join(dir, 'dort.cjs')
+    // Attente bloquante : chargée avant le « script » (`auth`, absent), elle dort 30 s quoi qu'il suive.
+    writeFileSync(sleeper, 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30000)\n')
+    const env = ON_WINDOWS
+      ? { ...process.env, NODE_OPTIONS: `--require "${sleeper.replace(/\\/g, '/')}"` }
+      : undefined
+    if (!ON_WINDOWS) {
+      writeFileSync(glab, '#!/bin/sh\nsleep 30\n')
+      chmodSync(glab, 0o755)
+    }
     try {
       const started = Date.now()
-      const result = await runCommand(glab, ['auth', 'status'], { timeoutMs: 300 })
+      const result = await runCommand(glab, ['auth', 'status'], {
+        timeoutMs: 300,
+        ...(env ? { env } : {})
+      })
       expect(result.timedOut).toBe(true)
       expect(Date.now() - started).toBeLessThan(5_000)
-      const quick = await runCommand('/bin/sh', ['-c', 'exit 3'], { timeoutMs: 5_000 })
+      const quick = ON_WINDOWS
+        ? await runCommand(process.execPath, ['-e', 'process.exit(3)'], { timeoutMs: 5_000 })
+        : await runCommand('/bin/sh', ['-c', 'exit 3'], { timeoutMs: 5_000 })
       expect(quick).toMatchObject({ code: 3 })
       expect(quick.timedOut).toBeUndefined()
-      const slow: Run = (file, args) => runCommand(file, args, { timeoutMs: 300 })
+      const slow: Run = (file, args) =>
+        runCommand(file, args, { timeoutMs: 300, ...(env ? { env } : {}) })
       expect(await gitlabForge.auth(slow, glab, 'h')).toMatchObject({ reason: 'unreachable' })
     } finally {
       rmSync(dir, { recursive: true, force: true })

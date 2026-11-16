@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { LaunchConfig } from '@shared/launch'
 import { DevServers, portOpen, readLaunchConfigs } from './dev-servers'
+import { ON_WINDOWS } from '../test-platform'
 
 /** Port libre sur la machine. */
 async function freePort(): Promise<number> {
@@ -103,7 +104,11 @@ describe('serveurs de dev', () => {
       dir,
       {
         name: 'web',
-        command: `PORT=${port} "${process.execPath}" server.js`,
+        // Le shell de la machine : `sh` sous Unix, `cmd.exe` sous Windows (pas d'espace avant `&&`,
+        // sinon la valeur le garderait).
+        command: ON_WINDOWS
+          ? `set PORT=${port}&& "${process.execPath}" server.js`
+          : `PORT=${port} "${process.execPath}" server.js`,
         runtimeArgs: [],
         port,
         env: {}

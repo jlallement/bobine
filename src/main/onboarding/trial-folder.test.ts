@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createTrialFolder, displayPath, folderHints } from './trial-folder'
+import { abs, native } from '../test-platform'
 
 const root = () => mkdtempSync(join(tmpdir(), 'bobine-essai-test-'))
 
@@ -48,7 +49,7 @@ describe('dossier d’essai (fiche 188)', () => {
   })
 
   it('chemin montré : `~` pour le dossier personnel', () => {
-    expect(displayPath('/Users/ana/Bobine', '/Users/ana')).toBe('~/Bobine')
+    expect(displayPath(abs('/Users/ana/Bobine'), abs('/Users/ana'))).toBe(native('~/Bobine'))
     expect(displayPath('/tmp/essais', '/Users/ana')).toBe('/tmp/essais')
     expect(displayPath('/Users/anabelle/x', '/Users/ana')).toBe('/Users/anabelle/x')
   })

@@ -1,5 +1,8 @@
 import { t } from 'i18next'
-import { isLocalHost } from './browser' /**
+import { isLocalHost } from './browser'
+import { isDriveAbsolute } from './windows-paths.ts'
+
+/**
  * Liens vers des fichiers dans la conversation (fiche 052) : ce qu'un lien désigne, et ce que
  * l'app en a fait.
  */
@@ -66,16 +69,25 @@ export const isHtmlPath = (path: string) => HTML.test(path)
  * Fichier désigné par un lien, ou `undefined` pour un lien web, une ancre, un courriel… :
  * `plan.md`, `./docs/a.md`, `src/app.ts:12`, `src/app.ts#L12`, `/chemin/absolu`, `file:///…`.
  */
-export function parseFileLink(href: string | undefined): FileLink | undefined {
+export function parseFileLink(
+  href: string | undefined,
+  options: { windowsPaths?: boolean } = {}
+): FileLink | undefined {
   if (!href || href.startsWith('#')) return undefined
+  const windows = options.windowsPaths === true
   let raw = href
-  // `README.md:3` a l'air d'un schéma (`README.md:`) : c'est un chemin suivi d'une ligne.
-  const pathWithLine = /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(raw)
+  // `README.md:3` a l'air d'un schéma (`README.md:`) : c'est un chemin suivi d'une ligne. Sous
+  // Windows seulement (capacité `windowsPaths`, fiche 229), de même `C:\x` ou `C:/x` : un chemin,
+  // pas un schéma `c:`. Ailleurs, comme avant.
+  const pathWithLine =
+    /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(raw) || (windows && isDriveAbsolute(raw))
   if (!pathWithLine && /^[a-z][a-z0-9+.-]*:/i.test(raw)) {
     if (!/^file:/i.test(raw)) return undefined
     try {
       const url = new URL(raw)
-      raw = decodeURIComponent(url.pathname) + url.hash
+      // `file:///C:/x` sous Windows : le chemin est `C:/x`, sans la barre avant la lettre.
+      const path = decodeURIComponent(url.pathname)
+      raw = (windows && /^\/[a-z]:\//i.test(path) ? path.slice(1) : path) + url.hash
     } catch {
       return undefined
     }

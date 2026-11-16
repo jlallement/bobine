@@ -14,6 +14,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COMMAND_MARKER, CommandLine, commandScript, nodeCommandLineIo } from './command-line'
 import { parseLaunchArgs } from './launch-request'
+import { POSIX_SHELL } from './test-platform'
 
 function setup(options: { systemWritable: boolean; path?: string }) {
   const root = mkdtempSync(join(tmpdir(), 'bobine-cmd-'))
@@ -33,7 +34,8 @@ function setup(options: { systemWritable: boolean; path?: string }) {
 
 initI18n('fr')
 
-describe('commandScript', () => {
+// Commande `bobine` en `sh` : masquée sous Windows (POSIX_SHELL).
+describe.runIf(POSIX_SHELL)('commandScript', () => {
   it('macOS : relance par open -n -a avec le dossier résolu', () => {
     const script = commandScript({ bundle: "/Applications/L'app.app" })
     expect(script).toContain(COMMAND_MARKER)
@@ -67,7 +69,8 @@ describe('commandScript', () => {
   })
 })
 
-describe('CommandLine', () => {
+// Commande `bobine` en `sh` : masquée sous Windows (POSIX_SHELL).
+describe.runIf(POSIX_SHELL)('CommandLine', () => {
   it('installe dans le dossier système quand on peut y écrire', () => {
     const { system, line } = setup({ systemWritable: true, path: '/usr/bin' })
     const status = line.install()
