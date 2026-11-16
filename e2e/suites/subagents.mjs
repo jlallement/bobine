@@ -371,6 +371,10 @@ async function openCode23(scheme) {
           !before.includes('ZEBRE') && after.includes('ZEBRE') && !after.includes(before.trim()),
           '2.3.0 : la réponse du parent hors tour est un message à part, pas collée au précédent'
         )
+        check(
+          await ui.ev(`!!document.querySelector('[data-testid=turn-summary]')`),
+          '2.3.0 : le bilan « Terminé » du tour reste après la réponse hors tour'
+        )
         await ui.ev(`${block}.scrollIntoView({ block: 'start' }), true`)
         await ui.shot('g6b-2-3-fini')
       },

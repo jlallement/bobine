@@ -78,7 +78,9 @@ La détection d'arrière-plan de la fiche 122 (`metadata.status: "running"`) ten
    - `agent-host.ts` : un `agent_message_chunk`, `agent_thought_chunk` ou `tool_call` reçu hors
      tour (ni tour en cours, ni rejeu) appelle `nudge()` ;
    - `transcript.ts` / `subagent.ts` : `subagent-run.work` remplace `work` sous la carte, outils et
-     messages seulement, numérotés à la suite du fil (`renumberedWork`).
+     messages seulement, numérotés à la suite du fil (`renumberedWork`) ;
+   - `turn-duration.ts`, `TurnSummary.tsx` : le tour finit avec sa réponse datée, pas avec une
+     réponse hors tour sans heure qui la suit (sinon le bilan « Terminé » disparaissait).
 5. Sonde : rapport attendu jusqu'à 2 min après le tour, sondage « sous-agents en parallèle »,
    contrôles de contrat (suivi jusqu'à la fin ; sessions nommées avant le travail), appel
    d'écriture choisi par `kind: edit` ; `--traces --accept`.
@@ -111,6 +113,10 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
   contrôle exigeait titre de session = description ; ce n'est pas ce dont l'app dépend (elle range
   par la session nommée par l'outil, le titre n'est qu'un secours). Contrôle aligné sur le contrat
   de l'app : session de la carte nommée avant le travail relayé, identifiants préfixés.
+- **Bilan « Terminé » perdu** (vu sur la capture « après ») : une fois la réponse hors tour à part,
+  elle devenait « la dernière réponse du tour », sans heure : plus de durée, plus de bilan.
+  Corrigé à la cause dans `turnDurations` (une réponse sans heure ne remplace pas la réponse datée
+  du tour) et `lastTurnFacts` (réponse qui a une durée) ; contrôle e2e ajouté.
 - **Faits d'une course** : en 2.3.0, que le travail d'un sous-agent soit relayé dépend du moment où
   le tour du parent finit (un passage : rien de relayé, le tour avait fini en 3,4 s). Les formes
   de ce travail (`childMarker`, `childToolIdsPrefixed`, `childTitleIsDescription`, `routed`) valent

@@ -20,7 +20,9 @@ export function turnDurations(items: TranscriptItem[]): Map<number, number> {
       close()
       sentAt = item.at
       lastReply = undefined
-    } else if (item.kind === 'agent') {
+    } else if (item.kind === 'agent' && (item.at !== undefined || lastReply?.at === undefined)) {
+      // Une réponse sans heure après la réponse datée du tour : l'agent a reparlé de lui-même, hors
+      // tour (OpenCode 2.3.0, fiche 231) ; le tour, lui, a fini avec la réponse datée.
       lastReply = item
     }
   }
