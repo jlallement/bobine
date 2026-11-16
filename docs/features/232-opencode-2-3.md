@@ -128,7 +128,44 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
   limit reached ») pour les derniers sondages. Attentes et traces de ces passages jetées
   (`git checkout`, dossier supprimé) ; quota revenu, la sonde a été relancée seule.
 
+### 2026-11-16 (soir) — questions interactives (outil `question`)
+
+Demandé par Jérôme. Sonde élargie (`probeQuestions` : choix, texte libre, plusieurs questions et
+choix multiple, refus, annulation, question d'un sous-agent ; la réponse est construite par
+`answerContent`, comme dans l'app ; contrôles de contrat ajoutés). **Pas encore tournée avec un
+modèle** : quota gratuit épuisé, et le passage du tech lead avec `openai/gpt-6.1-sol` n'avait pas
+de connexion dans le profil jetable (« model not found »).
+
+**Essai réel de bout en bout** dans Bobine (`pnpm pilote`, profil temporaire, OpenCode 2.3.0,
+`openai/gpt-6.1-sol` du compte de l'utilisateur, journal ACP Trace ; captures claires et sombres
+dans `side-session-notes/…/232-opencode-2-3/questions/`, avec le journal) :
+
+| Forme | Observé (ACP) | Dans Bobine |
+|---|---|---|
+| (a) choix unique | `q0` `oneOf`, `q0_custom` ; réponse `{ q0: "Rust" }` ; `completed`, `metadata.answers` | carte, un clic envoie ; « → Rust » dans le fil ; « Tu préfères Rust. » ✓ |
+| (b) texte libre | réponse `{ q0_custom: "Zig, pour sa simplicité" }` | champ « Autre… » ; « Tu préfères Zig, pour sa simplicité. » ✓ |
+| (c) deux questions, choix multiple | un seul appel, `multiple: true` pour la seconde ; réponse `{ q0: "Go", q1: ["Vim","Emacs"] }` | questions pas à pas (« Suivant »), cases multiples ; réponse utilisée ✓ |
+| (d) refus (« Passer ») | `decline` → `failed` « The user dismissed this question », tour **`cancelled`** | « → Passé », « Réponse interrompue. » ; rien en attente ; le message suivant passe ✓ |
+| (d') Stop pendant la question | `session/cancel` + `cancel`, `$/cancel_request`, `failed`, `cancelled` | « → Annulé », rien en attente ✓ |
+| (e) sous-agent en arrière-plan | pas d'outil `question` pour lui (il le dit) ; il appelle `ask_user` de Bobine par `execute`, **après** la fin du tour du parent ; réponse rendue au sous-agent, rapport, réponse du parent hors tour | carte de question ouverte après le tour, dans la bonne conversation (serveur MCP de la conversation) ; « → vert » ; carte « Sous-agent · 1 fini » ; réponse hors tour à part, « Terminé » gardé ✓ |
+
+Aucun défaut de Bobine trouvé sur ces formes. Agent factice : `questions-opencode-2-3`,
+`question-ecartee-opencode-2-3` (nouvelle étape `stop-cancelled`), `sous-agent-question-2-3`
+(étape `ask-user` `silent` : appel MCP direct, sans carte ni autorisation relayées) ; tests :
+`questions-opencode-2-3.test.ts` (formes renvoyées exactement comme relevées),
+`agent-host-opencode-2-3.test.ts` (refus → `cancelled`, puis la suite ; question d'un sous-agent
+après le tour, répondue et rapportée).
+
 ## Reste à faire
+
+- **Questions** : faire tourner `pnpm opencode-probe --only question` (modèle gratuit quand le quota
+  revient, ou `gpt-6.1-sol` avec une connexion posée dans le profil jetable par le tech lead).
+  Schéma exact du choix multiple : tronqué au journal Trace (`items.anyOf` supposé d'après le
+  standard ACP, reconnu par Bobine pendant l'essai ; `q1_custom` non vu). Réponse d'un sous-agent
+  donnée après 45 s : `ask_user` rend « not answered yet » et Bobine envoie la réponse **au
+  parent** en message (fiche 028) — non essayé avec un sous-agent. Proposition à maquetter, non
+  faite : après « Passer », dire « OpenCode s'est arrêté après la question passée » plutôt que
+  « Réponse interrompue ».
 
 - **Sonde complète sur 2.3.0, seule, puis `--traces --accept`** quand le quota gratuit de Zen
   revient (« Free usage limit reached » depuis 21 h 30 le 2026-11-16). Ce qui est déjà vérifié sur

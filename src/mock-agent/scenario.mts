@@ -81,7 +81,16 @@ export type Step =
    * Appelle l'outil `ask_user` du serveur MCP fourni par le client, comme Bob 2.0.6 : carte d'outil
    * « Running Ask User (serveur) », demande d'autorisation, puis `tools/call` en HTTP.
    */
-  | { kind: 'ask-user'; args: Record<string, unknown>; onResult: (text: string) => Step[] }
+  | {
+      kind: 'ask-user'
+      args: Record<string, unknown>
+      onResult: (text: string) => Step[]
+      /**
+       * Appel MCP direct, sans carte ni autorisation dans le flux de la session : un sous-agent
+       * d'OpenCode 2.3.0 dont le travail n'est plus relayé après le tour du parent (fiche 232).
+       */
+      silent?: boolean
+    }
   /** Appelle un outil du serveur MCP du client avec la même mise en scène (images non relayées). */
   | {
       kind: 'mcp-tool'
@@ -173,6 +182,11 @@ export type Step =
    * (relevé le 2026-11-16). `--arriere-plan-ms` remplace ce délai, comme pour `child-session`.
    */
   | { kind: 'after-turn'; afterMs: number; steps: Step[] }
+  /**
+   * Le tour finit en `cancelled` sans que le client l'ait demandé, comme OpenCode 2.3.0 après une
+   * question écartée (`decline`), relevé le 2026-11-16 (fiche 232).
+   */
+  | { kind: 'stop-cancelled' }
   /** Suite différente selon le message reçu (contient `includes`, sans tenir compte de la casse). */
   | { kind: 'when-prompt'; includes: string; then: Step[]; else: Step[] }
   /** Suite différente selon le modèle de la session au moment du message (fiche 210). */
@@ -437,6 +451,8 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
         )
       return
     }
+    case 'stop-cancelled':
+      throw new TurnCancelled()
     case 'after-turn': {
       // Hors du tour : un `session/cancel` du tour fini ne les arrête pas.
       const late: TurnContext = { ...ctx, signal: new AbortController().signal }
@@ -451,7 +467,14 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
       if (ctx.bobDb) writeBobSubagent(ctx.bobDb, ctx.sessionId, step)
       return
     case 'ask-user':
-      return playSteps(step.onResult(await callMcpTool(ctx, 'ask_user', step.args)), ctx)
+      return playSteps(
+        step.onResult(
+          step.silent
+            ? await callMcpToolSilently(ctx, 'ask_user', step.args)
+            : await callMcpTool(ctx, 'ask_user', step.args)
+        ),
+        ctx
+      )
     case 'mcp-tool':
       return playSteps(step.onResult(await callMcpTool(ctx, step.tool, step.args)), ctx)
     case 'mcp-list':
@@ -1209,6 +1232,19 @@ async function runCodeMode(
 
 /** Appels MCP du processus : identifiants d'outil distincts même lancés dans la même milliseconde. */
 let mcpCalls = 0
+
+/** Appel MCP sans rien dire dans le flux de la session (étape `ask-user` `silent`). */
+async function callMcpToolSilently(
+  ctx: TurnContext,
+  tool: string,
+  args: Record<string, unknown>
+): Promise<string> {
+  const server = ctx.mcpServers?.find(
+    (s): s is Extract<McpServer, { type: 'http' }> => 'type' in s && s.type === 'http'
+  )
+  if (!server) return 'Aucun serveur MCP HTTP fourni par le client.'
+  return mcpCall(ctx, server.url, tool, args)
+}
 
 async function callMcpTool(
   ctx: TurnContext,
