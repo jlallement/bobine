@@ -1496,3 +1496,22 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
   (`subagentFollowMs`) et rapprochées dans le harnais de conformité ; relais Linux essayé sans
   dépendre de la machine (`mainCwd`). Défaut connu noté (worktree effacé avant l'arrêt de son
   agent, en quittant).
+- 2026-11-16 — **Release 1.0.0-beta.6, job arm64 : `verify` rouge, pas de défaut de l'app.** Les
+  deux mêmes essais échouent sur la machine `windows-11-arm` de GitHub, au passage à blanc
+  (43826818692, masqué par `continue-on-error` hors tag) comme au tag (43836197475) ; jamais sur
+  x64, où les deux fichiers durent 4 à 6 s. Point commun : les seuls essais qui lancent le vrai
+  PowerShell, très lent à démarrer sur cette machine.
+  - `pilote.test.mjs`, « arrêt : seulement le processus lancé par le pilote » : **53 s** pour
+    un seul appel de `ours` (une lecture `Win32_Process` par PowerShell, synchrone), alors que
+    l'enfant de l'essai ne vivait que 10 s : déjà sorti, il n'avait plus de ligne de commande.
+    Course de l'essai, corrigée : l'enfant vit jusqu'à `kill`.
+  - `terminal-manager.test.ts`, « terminal réel sous Windows » : coupé à 15 s (délai global des
+    essais), alors que l'essai se donne lui-même 20 s pour lire « 42 ». Décision du tech lead :
+    cet essai seul a 90 s, et 75 s pour lire « 42 », d'après les 53 s mesurées ; l'assertion ne
+    change pas.
+  - **Trou de la CI** : au passage à blanc, ce `verify` arm64 était déjà rouge, mais
+    `continue-on-error` (hors tag) le masquait, et le job paraissait vert. Correction proposée,
+    pas faite : que le passage à blanc montre cet échec (job ou annotation en rouge) tout en
+    construisant les artefacts.
+  - Pour l'utilisateur : l'installeur arm64 construit dans la VM Windows 11 ARM64 (2026-11-15)
+    ouvre le terminal, lance une commande et le ferme sans alerte.

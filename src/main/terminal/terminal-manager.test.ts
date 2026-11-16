@@ -362,8 +362,11 @@ describe.runIf(ON_WINDOWS)(
       const tab = manager.create('c1', tmpdir())
       expect(tab).toMatchObject({ id: '1', busy: false })
       manager.run('c1', tmpdir(), 'Write-Output (6*7)', '1')
-      // PowerShell démarre lentement : jusqu'à vingt secondes pour lire « 42 » seul sur sa ligne.
-      const deadline = Date.now() + 20_000
+      // PowerShell démarre lentement : jusqu'à 75 s pour lire « 42 » seul sur sa ligne. Mesuré sur
+      // la machine `windows-11-arm` de GitHub (release 1.0.0-beta.6) : 53 s pour un seul lancement
+      // de PowerShell, contre 4 à 6 s pour tout ce fichier sur x64. L'installeur arm64, essayé dans
+      // la VM Windows 11 ARM64, ouvre le terminal et y lance une commande sans alerte (fiche 229).
+      const deadline = Date.now() + 75_000
       let screen = ''
       while (Date.now() < deadline && !screen.split('\n').some((line) => line.trim() === '42')) {
         screen = await manager.read('c1', '1', 40, Math.max(0, deadline - Date.now()))
@@ -372,6 +375,6 @@ describe.runIf(ON_WINDOWS)(
       expect(screen).not.toContain('\u001b')
       manager.close('c1', '1')
       expect(manager.list('c1')).toEqual([])
-    })
+    }, 90_000)
   }
 )
