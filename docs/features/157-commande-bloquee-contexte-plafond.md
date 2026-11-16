@@ -141,3 +141,12 @@ Aucune nouvelle dépendance.
 - 29/10, intégration (tech lead) : suite e2e `turn-guards` verte (clair et sombre) avec toute la
   suite ; sondes réelles vertes : `pnpm bob-probe` (Bob 2.0.6, coûts lisibles dans sa base) et
   `pnpm opencode-probe` (OpenCode 2.1.4, `usage_update` en USD, `/compact`).
+- 2026-11-16 — **Relecture du coût après un tour : une seconde chance.** CI rouge sur `main`
+  (9cde4c6, Windows) : « agent factice comme Bob » attendait un coût qui n'est jamais venu. Sur
+  les passages verts (Linux, macOS, Windows), le tour suivant part 1,52 à 1,67 s après la fin du
+  premier : le coût n'est trouvé que par la relecture de 1,5 s, jamais par celle de la fin du tour.
+  L'agent factice l'écrit 300 ms après sa réponse (base créée au premier tour, trois transactions)
+  : 1,2 s de marge, dépassée une fois sur une machine Windows chargée, et rien ne relisait
+  ensuite avant le tour suivant. Le même trou vaut pour Bob réel, dont l'heure d'écriture n'est
+  pas documentée. Désormais : relu à la fin du tour, à 1,5 s, et encore à 5 s si rien n'a changé
+  (`session-cost.ts`) ; l'essai attend jusqu'à 6 s, au-delà de la dernière relecture.

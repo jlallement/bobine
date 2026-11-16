@@ -11,8 +11,12 @@ import type { SubagentTrackerOptions } from './subagent-tracker'
 
 /** Au plus une relecture toutes les 2 s à la fin d'un outil : la lecture est synchrone. */
 const TOOL_READ_EVERY_MS = 2000
-/** L'agent enregistre parfois son coût juste après sa réponse (Bob) : relu un peu plus tard. */
-const LATE_READ_MS = 1500
+/**
+ * L'agent enregistre parfois son coût juste après sa réponse (Bob) : relu un peu plus tard, puis
+ * encore une fois si rien n'a changé. Une seule relecture manquait une écriture tardive (machine
+ * chargée, base créée au premier tour), et le coût restait faux jusqu'au tour suivant.
+ */
+const LATE_READS_MS = [1500, 5000]
 
 const isToolEnd = (u: SessionUpdate) =>
   u.sessionUpdate === 'tool_call_update' && (u.status === 'completed' || u.status === 'failed')
@@ -57,10 +61,18 @@ export class SessionCost {
     this.emit({ type: 'usage-report', cost: { amount, currency: source.currency } })
   }
 
-  /** Fin d'un tour : relu tout de suite, puis un peu plus tard. */
+  /** Fin d'un tour : relu tout de suite, puis plus tard jusqu'à ce que le coût change. */
   turnEnded(): void {
     this.report()
-    setTimeout(() => this.report(), LATE_READ_MS).unref()
+    const atTurnEnd = this.last
+    const readLater = ([delay, ...rest]: readonly number[], since: number): void => {
+      if (delay === undefined) return
+      setTimeout(() => {
+        this.report()
+        if (this.last === atTurnEnd) readLater(rest, delay)
+      }, delay - since).unref()
+    }
+    readLater(LATE_READS_MS, 0)
   }
 
   /** Mise à jour du fil : relu à la fin d'un outil (fiche 157 ; Bob : à vérifier). */

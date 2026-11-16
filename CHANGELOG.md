@@ -22,6 +22,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Coût de Bob : un coût enregistré par Bob un peu tard après sa réponse s'affiche quand même,
+  sans attendre le tour suivant.
 - Linux et Windows : le bandeau « Fichier enregistré » du navigateur ne réduit plus son texte
   à une lettre par ligne ; le bouton « Afficher dans le gestionnaire de fichiers » (ou
   l'Explorateur) passe à la ligne.

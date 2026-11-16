@@ -486,8 +486,9 @@ describe('AgentHost', () => {
     for (const text of ['Un', 'Deux']) {
       events.push({ type: 'user-message', text })
       await host.prompt(text)
-      // Bob écrit son coût après sa réponse : relu 1,5 s après la fin du tour.
-      await waitFor(() => events.at(-1)?.type === 'usage-report', 3000)
+      // Bob écrit son coût après sa réponse : relu 1,5 s après la fin du tour, et encore à 5 s si
+      // l'écriture est en retard (fiche 157 : machine chargée, base créée au premier tour).
+      await waitFor(() => events.at(-1)?.type === 'usage-report', 6000)
     }
     host.stop()
     expect(
