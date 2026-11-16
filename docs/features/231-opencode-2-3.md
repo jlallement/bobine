@@ -129,6 +129,11 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
 
 ## Reste à faire
 
+- Prise en charge de plusieurs versions à la fois : proposition dans
+  [ADR-0053](../adr/0053-plusieurs-versions-des-agents.md) (proposé, à trancher). En attendant,
+  `--accept` remplace toujours la référence unique (la 2.0.32 serait perdue au passage complet sur
+  la 2.3.0).
+
 - Mettre à jour progressivement « son travail » pendant qu'un sous-agent tourne après le tour
   (aujourd'hui : le direct s'arrête avec le tour, le travail complet arrive à sa fin). Remplacer
   le direct par une relecture pendant le tour mélangerait deux numérotations d'outils
