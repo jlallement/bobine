@@ -434,10 +434,12 @@ describe('textes et lancement', () => {
       '--agents-neufs'
     )
   })
-  it('arrêt : seulement le processus lancé par le pilote (pid réutilisé : jamais tué)', async () => {
-    // Vivant jusqu'à `kill` : sous Windows, la ligne de commande est lue par PowerShell, dont le
-    // premier lancement a pris plus de 50 s sur la machine arm64 de GitHub (release 1.0.0-beta.6) ;
-    // un enfant qui ne vivait que 10 s était déjà sorti, et `ours` répondait faux.
+  // Une seule lecture réelle (le cas positif) : sous Windows, chacune lance PowerShell, environ
+  // 35 s par appel sur la machine `windows-11-arm` de GitHub (release 1.0.0-beta.6 : 104 s pour
+  // trois appels, contre moins de 5 s pour tout ce fichier sur x64). D'où 90 s pour cet essai seul.
+  it('arrêt : notre processus reconnu par sa vraie ligne de commande', async () => {
+    // Vivant jusqu'à `kill` : un enfant qui ne vivait que 10 s était déjà sorti quand PowerShell
+    // lisait sa ligne de commande, et `ours` répondait faux.
     const child = spawn(process.execPath, [
       '-e',
       'setInterval(() => {}, 1000)',
@@ -447,11 +449,24 @@ describe('textes et lancement', () => {
     try {
       await new Promise((r) => setTimeout(r, 200))
       expect(ours({ pid: child.pid, port: 9399 })).toBe(true)
-      expect(ours({ pid: child.pid, port: 9398 })).toBe(false)
-      expect(ours({ pid: process.pid, port: 9399 })).toBe(false)
     } finally {
       child.kill()
     }
+  }, 90_000)
+  it('arrêt : seulement le processus lancé par le pilote (pid réutilisé : jamais tué)', () => {
+    const lines = {
+      1: `node -e x -- --remote-debugging-port=9399`,
+      2: `C:\\Program Files\\Autre\\autre.exe --flag`
+    }
+    const read = (pid) => lines[pid] ?? ''
+    expect(ours({ pid: 1, port: 9399 }, read)).toBe(true)
+    expect(ours({ pid: 1, port: 9398 }, read)).toBe(false)
+    expect(ours({ pid: 2, port: 9399 }, read)).toBe(false)
+    expect(
+      ours({ pid: 3, port: 9399 }, () => {
+        throw new Error('processus introuvable')
+      })
+    ).toBe(false)
   })
   it('environnement : langue et agent factice sur demande seulement', () => {
     expect(launchEnv({ PATH: '/bin' }, {})).toEqual({ PATH: '/bin' })

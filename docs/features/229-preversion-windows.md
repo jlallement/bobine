@@ -1515,3 +1515,9 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
     construisant les artefacts.
   - Pour l'utilisateur : l'installeur arm64 construit dans la VM Windows 11 ARM64 (2026-11-15)
     ouvre le terminal, lance une commande et le ferme sans alerte.
+- 2026-11-16 — **Release cb11a0f, job arm64 : l'essai d'arrêt du pilote dépassait 15 s.** Trois
+  lectures réelles de la ligne de commande (PowerShell sous Windows) : 103,8 s en tout, environ
+  35 s chacune. Une seule lecture réelle reste (notre enfant, le bon port), avec 90 s pour cet
+  essai ; les deux cas négatifs (autre port, pid d'un autre programme) et une lecture qui échoue
+  passent par un lecteur donné à `ours` (`instance.mjs`, paramètre facultatif), sans processus.
+  Le pilote se comporte comme avant.
