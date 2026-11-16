@@ -5280,6 +5280,14 @@ export type FrResources = {
         readonly data: {
           readonly fresh: { readonly agentsLabel: 'Agents comme sur un ordinateur neuf' }
         }
+        readonly appearance: {
+          readonly theme: {
+            readonly hint: 'Système : Clair le jour, Sombre la nuit, comme le système.'
+          }
+          readonly terminalFont: {
+            readonly hint: 'Automatique : une « Nerd Font » installée, sinon la police à chasse fixe du système.'
+          }
+        }
       }
       readonly diagnostics: {
         readonly log: {

@@ -5471,6 +5471,14 @@
           "fresh": {
             "agentsLabel": "Agents comme sur un ordinateur neuf"
           }
+        },
+        "appearance": {
+          "theme": {
+            "hint": "Système : Clair le jour, Sombre la nuit, comme le système."
+          },
+          "terminalFont": {
+            "hint": "Automatique : une « Nerd Font » installée, sinon la police à chasse fixe du système."
+          }
         }
       },
       "diagnostics": {

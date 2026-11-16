@@ -769,3 +769,13 @@ lancé, rien d'autre à installer sur le Mac.
     `session` sombre (infobulle), `roles-gestion` sombre (infobulle), `finitions` (×2 au dernier
     passage, ×1 au précédent ; rangée d'actions du survol jamais affichée : l'état de survol ne
     suit pas sous charge, à suivre — vert sur `main` au même passage).
+- 2026-11-16 — **Garde-fou des ligatures, textes de l'apparence hors Mac.** Essai unitaire
+  (`scripts/bundled-fonts.test.ts`) : toute règle des feuilles du renderer, composants compris,
+  qui pose `var(--font-mono…)` ou `var(--font-code…)` (`font-family` ou `font`) pose aussi
+  `font-variant-ligatures: var(--code-ligatures…)` ; aucune n'y manque. Les éléments qui héritent
+  de la police d'un parent héritent aussi de son réglage : rien à poser. Hors CSS : le terminal
+  (xterm.js, police à part, D9) et Mermaid (police de l'interface) ne sont pas du code. Textes :
+  « Police du terminal — … sinon SF Mono » et « Thème — … comme le Mac » ont leur variante sans
+  la capacité `finder` (`systemTexts.withoutFinder` : « la police à chasse fixe du système »,
+  « comme le système »), Mac inchangé ; le détecteur des textes du Mac reconnaît aussi « SF Pro »,
+  « SF Mono » et « New York ».
