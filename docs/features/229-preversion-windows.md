@@ -1166,3 +1166,18 @@ lecture bash (`command-writes.ts`) et ses essais sont inchangés.
   l'automatisation d'interface restait bloquée. Reste à vérifier, bureau allumé. Rangé : app
   désinstallée, dossiers d'essai, tâches planifiées et inscription COM effacés ; Bob, OpenCode,
   MinGit et le dossier de construction gardés.
+- 2026-11-16 — **Polices sous Windows, installeur reconstruit dans la VM** (`main` 7f89c9b, mêmes
+  étapes que le 15 ; `Bobine-1.0.0-beta.5-arm64.exe`, contrôle du paquet passé). Polices
+  relevées par Chromium (`CSS.getPlatformFontsForNode`, polices réellement dessinées) : interface
+  en **Inter Variable (livrée)**, blocs de code en **JetBrains Mono (livrée)**, aucune police du
+  système en repli ; le grand titre de l'accueil prend Georgia (sa pile `ui-serif`, voulue).
+  **Ligatures** : coupées par défaut (`font-variant-ligatures: none`, `=>` et `!=` dessinés tels
+  quels) ; Réglages › Apparence › « Ligatures du code » les active (`⇒ ≠ ≥` dans le bloc), le
+  texte de l'interface restant sans. Écart vu : l'aide de « Police du terminal » dit « sinon SF
+  Mono » sous Windows aussi. **Fermeture** : Bob (`bob.cmd acp` → node) arrêté, Bobine fermée en
+  5,8 s ; OpenCode (`opencode acp` et son `serve`) arrêtés, fermée en 4 s (commande `cmd /c ver`
+  faite) ; aucun processus restant, profils temporaires effacés. **Clic sur un toast : toujours
+  non vérifié** : le Mac était verrouillé (`caffeinate -d` empêche la veille, pas le verrou) ; la
+  VM ne dessine plus son bureau tant que le Mac est verrouillé (une capture d'écran faite dans la
+  session Windows reste bloquée). `~/.bob` : 6 fichiers modifiés par Bob pendant l'essai, remis
+  depuis la sauvegarde (13 fichiers, identiques, rien lu) ; `bob --version` répond.
