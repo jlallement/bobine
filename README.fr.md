@@ -5,8 +5,8 @@
 <h1 align="center">Bobine</h1>
 
 <p align="center">
-  <strong>Une application de bureau macOS pour les agents de code ACP : IBM Bob, OpenCode, ou
-  tout agent qui parle l'Agent Client Protocol.</strong><br>
+  <strong>Une application de bureau pour les agents de code ACP : IBM Bob, OpenCode, ou tout
+  agent qui parle l'Agent Client Protocol.</strong> macOS, avec Linux et Windows en préversion.<br>
   Converser avec l'agent, approuver chaque modification avec son diff, confier du travail à des
   spécialistes qui avancent en parallèle, et regarder l'agent piloter un navigateur intégré, le
   simulateur iOS ou l'émulateur Android, dans une seule fenêtre.
@@ -173,9 +173,18 @@ Bobine ne se met pas à jour toute seule : suivre les Releases du dépôt sur Gi
 Custom › Releases ») et installer chaque nouveau `.dmg` à la place de l'ancien. Derrière un proxy,
 sans droits administrateur, ou sans réseau : [`docs/installation.md`](docs/installation.md).
 
-**Linux (préversion, expérimentale).** Paquets `.deb` (x64, arm64) construits sous Linux, sans les outils du
-simulateur iOS ([fiche 145](docs/features/145-preversion-linux.md)). Ils ne sont pas publiés avec
-cette bêta : pour l'instant, construire depuis les sources sous Linux (plus bas).
+**Linux (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-x64.deb` ou
+`Bobine-<version>-arm64.deb` sur la [page des versions](https://github.com/jlallement/bobine/releases), pour Ubuntu 24.04 ou plus récent et
+Debian : `sudo apt install ./Bobine-<version>-<arch>.deb`. Sommes dans
+`SHA256SUMS-linux-<arch>.txt`. Sans les outils du simulateur iOS. Le détail, et la construction
+depuis les sources : [`docs/installation.md`](docs/installation.md#linux-préversion).
+
+**Windows (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-x64.exe` ou
+`Bobine-<version>-arm64.exe` sur la même page, pour Windows 11 : installée pour l'utilisateur
+seul, sans droits d'administrateur. L'installeur n'est pas signé : si SmartScreen avertit,
+**Informations complémentaires › Exécuter quand même**. Sommes dans
+`SHA256SUMS-windows-<arch>.txt`. Le détail (Smart App Control, désinstallation, construction
+depuis les sources) : [`docs/installation.md`](docs/installation.md#windows-préversion).
 
 Quelque chose ne marche pas ? Réglages › Diagnostic vérifie tout d'un coup (agents trouvés,
 session d'essai, serveurs MCP, Xcode, simulateurs), avec la marche à suivre pour chaque problème,
@@ -196,8 +205,9 @@ notarisée par Apple. Ouvrez-la une fois par **Réglages Système › Confidenti
 Ouvrir quand même** (voir [Installer](#installer)) ; les sources sont ici, à lire et à construire
 vous-même.
 
-**Mac Intel, Windows ?** Pas pour l'instant : le `.dmg` est pour Apple Silicon seulement. Des
-paquets Linux existent en préversion expérimentale.
+**Mac Intel, Linux, Windows ?** Pas de Mac Intel pour l'instant : le `.dmg` est pour Apple
+Silicon seulement. Linux (`.deb`) et Windows (installeur), x64 et arm64, sont en préversion sur la
+même page des versions (voir [Installer](#installer)).
 
 **Est-ce un fork d'une autre app ?** Non. Elle s'inspire des apps de bureau pour agents de code,
 et elle est écrite de zéro avec Electron, React et le
@@ -247,8 +257,9 @@ scripté, sans modèle ni donnée personnelle : `pnpm build && pnpm vitrine --la
 
 ## Limites connues
 
-- `.dmg` pour Apple Silicon seulement : pas de version Intel ni Windows ; les outils du simulateur
-  iOS demandent Xcode.
+- `.dmg` pour Apple Silicon seulement : pas de version pour Mac Intel. Linux et Windows sont en
+  préversion ; l'installeur Windows n'est pas signé (SmartScreen). Les outils du simulateur iOS
+  demandent un Mac avec Xcode.
 - Signature ad hoc, pas notarisée (voir plus haut) ; macOS 27 n'affiche aucune bannière de
   notification pour une app signée ad hoc (le badge et le rebond du Dock marchent).
 - Pas de mise à jour automatique.

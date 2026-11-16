@@ -19,8 +19,8 @@ Ici, vous pouvez :
 <!-- si: finder -->
 Bobine est publiée pour macOS (Apple Silicon), en `.dmg`, sur la page des versions du dépôt GitHub.
 <!-- si: !finder
-Sous Linux et Windows, Bobine est en préversion : paquet `.deb`, installeur Windows,
-décrits dans [docs/installation.md](../../installation.md).
+Sous Linux et Windows, Bobine est en préversion, sur la même page des versions : paquet `.deb`,
+installeur Windows, décrits dans [docs/installation.md](../../installation.md).
 -->
 
 <!-- si: finder -->

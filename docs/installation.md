@@ -1,12 +1,13 @@
 # Installer Bobine
 
-Depuis l'app installable (le plus simple : `.dmg`, voir « L'app installable ») ou depuis les
+Depuis l'app installable (le plus simple : le `.dmg` sur le Mac, voir « L'app installable » ; en
+préversion, le `.deb` sous Linux et l'installeur sous Windows, voir leurs sections) ou depuis les
 sources, y compris derrière un proxy et sans droits administrateur.
 
-**Prérequis de l'app installable** : un Mac Apple Silicon et macOS 13 Ventura ou plus récent
+**Prérequis de l'app installable** : sur le Mac, Apple Silicon et macOS 13 Ventura ou plus récent
 (plancher d'Electron 45 ; Bobine ne déclare pas d'autre minimum, et n'est essayée que sur des
-macOS récents), et au moins un agent (`bob` ou `opencode` dans le `PATH`). Node et pnpm ne servent
-que pour les sources.
+macOS récents) ; sous Linux et Windows, voir leurs sections. Dans tous les cas, au moins un agent
+(`bob` ou `opencode` dans le `PATH`). Node et pnpm ne servent que pour les sources.
 
 **Quelque chose ne marche pas ?** Réglages › Diagnostic (aussi Aide › Diagnostic…) vérifie tout
 d'un coup : agents trouvés et leur version, session d'essai dans le dossier courant (dossier
@@ -221,9 +222,16 @@ commentaire de `.github/workflows/release.yml`.
 
 ## Linux (préversion)
 
-Préversion (fiche 145) : pas encore publiée avec les versions ; le `.deb` n'est joint à une
-Release que lorsque la variable du dépôt `BOBINE_LINUX_RELEASE` vaut `true`. D'ici là, le
-construire depuis les sources, **sous Linux** (node-pty s'y compile) :
+Préversion (fiche 145), publiée avec les versions à partir de la 1.0.0-beta.6 : page « Releases »
+du dépôt (version marquée « Pre-release »), `Bobine-<version>-x64.deb` ou
+`Bobine-<version>-arm64.deb`, avec leurs sommes (`SHA256SUMS-linux-x64.txt`,
+`SHA256SUMS-linux-arm64.txt`), ou
+
+```bash
+gh release download <version> -p 'Bobine-*.deb' -p 'SHA256SUMS-linux-*'   # ex. v1.0.0-beta.6
+```
+
+Ou le construire depuis les sources, **sous Linux** (node-pty s'y compile) :
 
 ```bash
 pnpm package --linux          # dist/Bobine-<version>-<arch>.deb (x64 ou arm64, celle de la machine)
@@ -261,9 +269,16 @@ sha256sum Bobine-<version>-<arch>.deb
 
 ## Windows (préversion)
 
-Préversion (fiche 229) : pas encore publiée avec les versions ; les installeurs ne sont joints à
-une Release que lorsque la variable du dépôt `BOBINE_WINDOWS_RELEASE` vaut `true`. D'ici là, les
-construire depuis les sources, sur un Mac ou sous Windows :
+Préversion (fiche 229), publiée avec les versions à partir de la 1.0.0-beta.6 : page « Releases »
+du dépôt (version marquée « Pre-release »), `Bobine-<version>-x64.exe` ou
+`Bobine-<version>-arm64.exe`, avec leurs sommes (`SHA256SUMS-windows-x64.txt`,
+`SHA256SUMS-windows-arm64.txt`), ou
+
+```bash
+gh release download <version> -p 'Bobine-*.exe' -p 'SHA256SUMS-windows-*'   # ex. v1.0.0-beta.6
+```
+
+Ou les construire depuis les sources, sur un Mac ou sous Windows :
 
 ```bash
 pnpm package --win            # dist/Bobine-<version>-x64.exe et -arm64.exe
