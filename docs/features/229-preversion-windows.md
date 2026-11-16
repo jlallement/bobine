@@ -1163,18 +1163,39 @@ chaque passage sur `windows-latest` (`EPERM`), et dans la VM la commande ne rend
 Cause relevée dans la VM : un `node server.js` lancé par `dev-servers.test.ts` (« ligne de commande
 lancée par le shell », donc `cmd.exe` puis node) survivait à vitest. Sans configuration (essais,
 sondes), `stopTree` n'arrêtait sous Windows que le processus lancé (`cmd.exe`), pas son
-petit-enfant. Il arrête désormais tout l'arbre (`taskkill /T /F`), tout de suite, seulement si le
-processus tourne encore et de façon synchrone (son numéro ne peut pas avoir été réattribué : node
-garde son handle tant que sa boucle n'a pas traité la sortie) ; repli par le handle. L'app, elle,
-passe par les objets de tâche (inchangé) ; macOS et Linux : rien de changé.
+petit-enfant. Les essais du main configurent désormais sous Windows les **objets de tâche de
+l'app** (`test-setup.ts`, `createWindowsTrees`, la même fonction que `index.ts`), avec une grâce de
+0 : arrêt immédiat de tout l'arbre, comme l'arrêt des essais d'avant. `process-start-posix.test.ts`
+recharge `process-tree` (`vi.resetModules`) pour essayer le chemin sans configuration. macOS et
+Linux : rien de changé (import dynamique, ni ce code ni `koffi` chargés).
 
-Essayé d'abord, puis **abandonné** : configurer dans les essais les objets de tâche de l'app. Neuf
-essais tombaient dans la VM, parce que l'arrêt de l'app est poli (entrée fermée, 3 s de grâce) et
-que les effacements synchrones qui suivent bloquent la boucle d'évènements. Ce qui révèle un
-**défaut probable de l'app sous Windows**, non corrigé ici (lot 4, worktrees) : en quittant,
-`stopAll` efface aussitôt, en synchrone, le worktree d'une conversation jamais commencée, alors que
-son agent tourne encore dedans ; sous Windows, un dossier courant ne s'efface pas : le worktree et
-sa branche resteraient. À confirmer dans l'app installée.
+Deux essais en route, **abandonnés** : (1) la grâce de l'app (3 s) dans les essais : neuf essais
+tombaient dans la VM, les effacements synchrones qui suivent l'arrêt bloquant la boucle
+d'évènements ; (2) `taskkill /T /F` synchrone sans configuration : 518 arrêts bloquaient chacun la
+boucle, la suite Windows passait de ~305 s à ~371 s et des parcours de conformité en parallèle
+dépassaient leur délai.
+
+**Défaut de l'app sous Windows, corrigé : un arbre arrêté deux fois** (`process-tree-windows.ts`).
+`finish` (terminer le job, fermer sa poignée) repassait quand le chef sortait après un arrêt sans
+entrée standard (serveur de développement, sonde) ou après le délai de grâce : il terminait et
+fermait une poignée **déjà fermée**, dont Windows peut avoir redonné la valeur au job d'un processus
+lancé depuis, tué alors sans raison. Relevé dans la VM : 147 essais en échec, des agents « arrêtés
+(code 1) » 3 ms après leur lancement. Dans l'app, un agent pouvait mourir juste après qu'un serveur
+de développement ou un agent lent à s'arrêter l'ait été. `finish` ne passe plus qu'une fois par
+arbre ; l'essai « un arbre arrêté ne l'est qu'une fois » (`process-tree-windows.test.ts`) fige les
+deux chemins (sans entrée standard ; délai écoulé) et échoue sans le correctif (8 appels au lieu de
+4). Même famille que l'arrêt par pid réutilisé : ne jamais viser un numéro ou une poignée après
+coup.
+
+Le passage par les objets de tâche dans les essais révèle aussi un **défaut probable de l'app sous
+Windows**, non corrigé ici (lot 4, worktrees) : en quittant, `stopAll` efface aussitôt, en
+synchrone, le worktree d'une conversation jamais commencée, alors que son agent tourne encore
+dedans (arrêt poli, 3 s) ; sous Windows, un dossier courant ne s'efface pas : le worktree et sa
+branche resteraient. À confirmer dans l'app installée.
+
+**Relais Linux (fiche 145) essayé sous Windows** : l'essai « chemin relatif » de
+`process-fds.test.ts` prenait le dossier de la machine (`process.cwd()`) ; le dossier du main est
+injectable (`mainCwd`), l'essai l'injecte, et la logique reste POSIX partout, sans saut.
 
 **Agent factice et base de Bob : verrou attendu.** Échec au hasard de « deux sous-agents de Bob
 en parallèle » sur `windows-latest` (cartes `cancelled`, sans coût) : l'agent factice écrivait dans
@@ -1211,13 +1232,21 @@ Essais les plus lents sous Windows (six passages) : **aucun n'approche 15 s**. L
 Ce qui ralentit Windows : le lancement d'un processus (2 à 3 fois celui du Mac, davantage par
 `cmd.exe`), et jsdom (155 s de création d'environnements contre 67 s sur macOS).
 
-**Reste, hors Windows : conformité OpenCode « sous-agent, message envoyé pendant qu'il
-travaille »**, vue en échec une fois sur Linux et une fois sur macOS en six passages (« fin du
-sous-agent en arrière-plan pas vue »), jamais sous Windows ; code inchangé par ce lot, essai
-inconnu en échec sur `main` (où le job macOS n'existait pas). Mesuré sur le Mac sans charge : fin
-vue 5,9 s après le détachement, à 5,7 s des 8 s qu'attend l'essai ; une relecture manquée (ou
-lente sous charge) la repousse à ~10 s. Non reproduit en six passages simultanés sur le Mac. Ni
-relever l'attente, ni raccourcir les relectures pour l'essai : à décider (tech lead).
+**Reste : conformité OpenCode « sous-agent, message envoyé pendant qu'il travaille »**, au hasard
+sur les trois systèmes (une fois sur Linux, une fois sur macOS, deux fois sous Windows, sur une
+douzaine de passages) : « fin du sous-agent en arrière-plan pas vue » dans les 8 s de l'essai.
+Code inchangé par ce lot. Mécanisme mesuré : l'app voit la fin d'un sous-agent en arrière-plan
+quand deux relectures de sa session donnent la même réponse, à 2 s puis 3 s plus tard
+(`FOLLOW_MS`), et **chaque relecture lance un agent de courte durée** qui rejoue la session
+(`loadSubagentWork`, `fresh: true`), pas un message sur la connexion de la conversation. Sur le Mac
+sans charge : relectures à +2,4 s et +5,9 s du détachement (≈ 0,4 s chacune), l'essai attendant
+depuis +0,2 s : 2,3 s de marge. Sous charge, chaque relecture (lancement d'un processus, rejeu à
+5 ms par morceau) s'allonge, et sous Windows un minuteur de 5 ms en dure ~15 : la fin glisse
+au-delà des 8 s. Aucune course dans l'ordre des messages n'a été vue (la réponse lue à la première
+relecture est déjà la finale). La durée des relectures sous Windows n'est pas mesurée par
+morceau. Pistes, à décider par le tech lead : injecter des relectures plus rapprochées dans le
+harnais de conformité (comme `retryDelaysMs` y est déjà raccourci), ou dériver l'attente de
+l'essai du calendrier de l'app ; pas de seuil relevé ici.
 
 **Défaut connu, non exigé par les essais** : un toast cliqué depuis le Centre de notifications ne
 ramène pas la fenêtre (limite d'Electron, lot 5). Aucun essai unitaire ne l'exige ; la suite e2e
