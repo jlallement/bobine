@@ -167,6 +167,12 @@ export type Step =
    * que fait l'outil d'un agent entre son autorisation et sa fin (fiche 203, scénarios Bob).
    */
   | { kind: 'write-file'; path: string; content: string }
+  /**
+   * Étapes jouées `afterMs` plus tard, hors du tour : le tour finit sans les attendre, comme OpenCode
+   * 2.3.0 qui répond de lui-même au rapport d'un sous-agent en arrière-plan, sans `session/prompt`
+   * (relevé le 2026-11-16). `--arriere-plan-ms` remplace ce délai, comme pour `child-session`.
+   */
+  | { kind: 'after-turn'; afterMs: number; steps: Step[] }
   /** Suite différente selon le message reçu (contient `includes`, sans tenir compte de la casse). */
   | { kind: 'when-prompt'; includes: string; then: Step[]; else: Step[] }
   /** Suite différente selon le modèle de la session au moment du message (fiche 210). */
@@ -310,6 +316,8 @@ export interface TurnContext {
   onUpdate?: (sessionId: string, update: SessionUpdate) => void
   /** Mémorise une session de sous-agent (étape `child-session`). */
   saveChildSession?: (sessionId: string, history: SessionUpdate[]) => void
+  /** Étapes `after-turn` jouées : l'échange, qu'elles ont allongé, est réenregistré. */
+  afterTurnPlayed?: () => void
   /** Base de Bob où écrire les sous-agents (étape `bob-subagent`), jamais celle de l'utilisateur. */
   bobDb?: string
   /** Agent sans plan (`--sans-plan`, fiche 139) : les mises à jour `plan` ne partent pas. */
@@ -427,6 +435,16 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
           () => ctx.saveChildSession?.(step.sessionId, later.history),
           ctx.backgroundMs ?? later.afterMs
         )
+      return
+    }
+    case 'after-turn': {
+      // Hors du tour : un `session/cancel` du tour fini ne les arrête pas.
+      const late: TurnContext = { ...ctx, signal: new AbortController().signal }
+      setTimeout(() => {
+        void playSteps(step.steps, late)
+          .catch(() => undefined)
+          .then(() => ctx.afterTurnPlayed?.())
+      }, ctx.backgroundMs ?? step.afterMs)
       return
     }
     case 'bob-subagent':
