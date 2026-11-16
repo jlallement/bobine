@@ -5263,9 +5263,9 @@ export type FrResources = {
           }
         }
         readonly providers: {
-          readonly hint: 'Points d’accès compatibles OpenAI (modèles internes…). Clé gardée par le trousseau de la session.'
+          readonly hint: 'Points d’accès compatibles OpenAI (modèles internes…). Clé chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600).'
           readonly key: {
-            readonly help: 'Chiffrée par le trousseau de la session, posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}.'
+            readonly help: 'Chiffrée par le trousseau de la session s’il y en a un (sinon gardée en clair), posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}.'
           }
         }
         readonly notifications: {
@@ -5350,9 +5350,11 @@ export type FrResources = {
         readonly browser: { readonly approval: 'Accord pour un site hors de cet ordinateur' }
       }
       readonly capabilities: {
-        readonly apiKey: { readonly detail: '`{{env}}`, chiffrée par le trousseau de la session.' }
+        readonly apiKey: {
+          readonly detail: '`{{env}}`, chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600).'
+        }
         readonly modelProviders: {
-          readonly detail: 'Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session, posée au lancement.'
+          readonly detail: 'Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600), posée au lancement.'
         }
       }
       readonly approvals: {

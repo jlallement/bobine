@@ -21,7 +21,11 @@ Le détail est dans les lots du plan et les critères ; ici, l'ordre.
    lancés (`pannes-visibles`), barres de défilement et molette de Linux, encre des icônes du
    terminal (`terminal`) ; les débordements dus à DejaVu sont réglés par les polices livrées (D9).
 3. **Lot 2** — fait le 2026-11-15 (textes Mac/Finder/Dock/Trousseau compris, avec la fiche 229 ;
-   restent les textes des polices de Réglages › Apparence, repris par la fiche des polices).
+   textes des polices de Réglages › Apparence faits le 2026-11-16, D9). **Reste ouvert** : les
+   raccourcis Ctrl du menu ☰ (Ctrl+, Ctrl+N, Ctrl+K, Ctrl+W, Ctrl+Q…) à taper une fois au vrai
+   clavier par Jérôme, dans la VM : l'essai du 2026-11-16 ne les a pas déclenchés (touches du
+   protocole DevTools, qui n'atteignent pas les accélérateurs d'Electron ; pas de xdotool sous
+   Wayland). Ctrl+` (géré par la page) et le menu ☰ par Alt, eux, sont vérifiés.
 4. **Lot 3** — intégration au bureau (git en langue fixe, clés d'API sans trousseau D4 : faits) ;
    la réinitialisation de la fiche 148 n'annonce plus la clé du trousseau sous Linux (rien ne
    l'effaçait) ; corbeille à vérifier.
@@ -779,3 +783,23 @@ lancé, rien d'autre à installer sur le Mac.
   la capacité `finder` (`systemTexts.withoutFinder` : « la police à chasse fixe du système »,
   « comme le système »), Mac inchangé ; le détecteur des textes du Mac reconnaît aussi « SF Pro »,
   « SF Mono » et « New York ».
+- 2026-11-16 — **Essai réel dans la VM** (Ubuntu 26.04.1 arm64, GNOME Wayland, `.deb` de
+  `7f89c9b`) : polices, ligatures, ☰ par Alt, terminal, OpenCode et Bob (fichier et commande,
+  cartes), sortie propre (aucun processus, port libéré, descripteurs des agents sans rien
+  d'hérité). Tableau et captures dans les notes du tech lead (`polices/vm-ubuntu-7f89c9b/`).
+  Ouvert : raccourcis Ctrl du menu, au vrai clavier (voir « Reste », point 3).
+- 2026-11-16 — **`auth` et `providers` sous Linux : l'essai, pas l'app.** Sans trousseau (D4),
+  l'app garde la clé en clair et le dit : « Enregistrée en clair » et l'avis (droits 600, comment la
+  chiffrer) sur la page de l'agent et sur la carte du fournisseur (vu dans Docker). Les essais
+  attendaient un chiffrement que D4 écarte. Ils vérifient maintenant le comportement réel selon
+  l'environnement (`KEYRING`, `e2e/lib.mjs`) : avec un trousseau (macOS, Windows, Linux avec bus
+  D-Bus de session), clé chiffrée et aucun avis ; sans (Docker, job Linux de GitHub : pas de bus,
+  `safeStorage` en `basic_text`), clé marquée `plain:` dans un fichier en droits 600, « Enregistrée
+  en clair » et l'avis à l'écran. Défaut de l'app corrigé au passage (textes seulement, variante
+  Linux) : trois textes affirmaient sans condition « Clé gardée / chiffrée par le trousseau de la
+  session » (aide des fournisseurs, aide de la clé d'un fournisseur, capacité « fournisseurs de
+  modèles ») ; ils disent maintenant « s'il y en a un, sinon gardée en clair (droits 600) », de même
+  que la capacité « clé d'API » (`capabilities.apiKey.detail`). `KEYRING` est déduit de
+  l'environnement (l'app n'expose pas le moteur de `safeStorage`) : un bus de session sans démon de
+  trousseau fait tomber l'essai en rouge, jamais en faux vert (dit dans `e2e/lib.mjs`).
+  Verts dans Docker et sur le Mac.
