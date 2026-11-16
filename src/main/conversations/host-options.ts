@@ -40,6 +40,7 @@ export interface HostOptionsInput {
     | 'contextText'
     | 'networkWatch'
     | 'retryDelaysMs'
+    | 'subagentFollowMs'
     | 'memory'
     | 'agentHome'
     | 'roles'
@@ -177,6 +178,7 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       : {}),
     ...(app.networkWatch ? { network: app.networkWatch } : {}),
     ...(app.retryDelaysMs ? { retryDelaysMs: app.retryDelaysMs } : {}),
+    ...(app.subagentFollowMs ? { subagentFollowMs: app.subagentFollowMs } : {}),
     reopen: input.reopen,
     emit
   }

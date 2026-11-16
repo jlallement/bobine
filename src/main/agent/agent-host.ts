@@ -64,7 +64,7 @@ import { buildControls, isValidValue, MODE_CONTROL_ID, sessionChoices } from './
 import { routeUpdate } from './session-updates'
 import { SessionCost } from './session-cost'
 import { ReplayBuffer } from './replay-buffer'
-import { SubagentTracker } from './subagent-tracker'
+import { SubagentTracker, subagentTrackerOptions } from './subagent-tracker'
 import { ProfileUpdates } from './profile-updates'
 import { compactCommandOf, isCompactionRequest } from './compaction'
 import { TurnRetry } from './turn-retry'
@@ -176,6 +176,8 @@ export interface AgentHostOptions {
   network?: NetworkWatch
   /** Attentes avant chaque nouvelle tentative (remplaçables en test) ; voir `RETRY_DELAYS_MS`. */
   retryDelaysMs?: readonly number[]
+  /** Attentes avant chaque relecture d'un sous-agent en arrière-plan (remplaçables en test) ; voir `FOLLOW_MS`. */
+  subagentFollowMs?: readonly number[]
 }
 
 /**
@@ -299,13 +301,11 @@ export class AgentHost {
     this.requests = new PendingRequests(options.emit, options.openExternal)
     this.cost = new SessionCost(options.profile.costSource, () => this.sessionId, options.emit)
     this.updates = new ProfileUpdates(options.profile, options.workspace)
-    this.subagents = new SubagentTracker({
-      emit: (toolCallId, run) => this.options.emit({ type: 'subagent-run', toolCallId, run }),
-      ...this.cost.subagentOptions(),
-      replay: options.profile.subagentReplay === true,
-      background: options.profile.subagentStream?.background,
-      follow: options.loadSubagentWork
-    })
+    this.subagents = new SubagentTracker(
+      subagentTrackerOptions(options, this.cost.subagentOptions(), (toolCallId, run) =>
+        this.options.emit({ type: 'subagent-run', toolCallId, run })
+      )
+    )
     this.appTools = new AppToolsBridge({
       workspace: options.workspace,
       conversationId: options.conversationId,

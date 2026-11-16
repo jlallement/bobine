@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SubagentRun } from '@shared/subagent'
 import type { TranscriptItem } from '@shared/transcript'
 import type { SubagentCost } from './adapters'
-import { SubagentTracker } from './subagent-tracker'
+import { FOLLOW_MS, SubagentTracker } from './subagent-tracker'
 import { SubagentMarker } from './subagent-marks'
 import { BOB_SUBAGENT_FORMAT } from './bob-subagents'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
@@ -324,6 +324,43 @@ describe('sous-agent lancé en arrière-plan (OpenCode 2, fiche 122)', () => {
     const calls = t.follow.mock.calls.length
     await vi.advanceTimersByTimeAsync(120_000)
     expect(t.follow.mock.calls.length).toBe(calls)
+  })
+
+  it('relectures de l’app : 2 s, 3 s, 5 s… ; remplaçables par le constructeur (harnais)', async () => {
+    expect(FOLLOW_MS).toEqual([2000, 3000, 5000, 8000, 13_000, 20_000, 30_000])
+    const t = setupBackground([[answer('Fini.')]])
+    t.tracker.note(call('s1'))
+    t.tracker.note(launched('s1'))
+    t.tracker.settle()
+    await vi.advanceTimersByTimeAsync(1_999)
+    expect(t.follow).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(t.follow).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(2_999)
+    expect(t.follow).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(t.follow).toHaveBeenCalledTimes(2)
+
+    const follow = vi.fn(async () => [answer('Fini.')])
+    const events: [string, SubagentRun][] = []
+    const fast = marked(
+      new SubagentTracker({
+        emit: (id, run) => events.push([id, run]),
+        replay: true,
+        background: (update) =>
+          update.sessionUpdate === 'tool_call_update' &&
+          (update.rawOutput as { metadata?: { status?: string } } | undefined)?.metadata?.status ===
+            'running',
+        follow,
+        followMs: [200, 300]
+      })
+    )
+    fast.note(call('s2'))
+    fast.note(launched('s2'))
+    fast.settle()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(follow).toHaveBeenCalledTimes(2)
+    expect(events.at(-1)).toEqual(['s2', { endedAt: expect.any(Number), answer: 'Fini.' }])
   })
 
   it('travail encore relayé en direct : pas encore fini', async () => {

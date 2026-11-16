@@ -99,7 +99,10 @@ export function environment(
       // Jamais le vrai dossier personnel : ses règles fausseraient les essais (fiche 056).
       agentHome: configHome,
       // Reconnexion après une panne réseau (fiche 142) : cinq tentatives, sans attendre une minute.
-      retryDelaysMs: [20, 20, 20, 20, 20]
+      retryDelaysMs: [20, 20, 20, 20, 20],
+      // Fin d'un sous-agent en arrière-plan (fiche 122) : deux relectures identiques, rapprochées
+      // (l'app attend 2 s puis 3 s) ; chacune lance un agent qui rejoue la session (fiche 229).
+      subagentFollowMs: [200, 300, 500, 800]
     })
     return new App(manager, events)
   }

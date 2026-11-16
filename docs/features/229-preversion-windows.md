@@ -1144,8 +1144,11 @@ processus qui désignent le même objet (`CompareObjectHandles`, koffi) : fin du
 lot est retiré, l'essai passe sur les trois systèmes. Pour un vrai agent lancé par un `.cmd`
 (`bob.cmd`, `opencode.cmd`) : `cmd.exe` hérite lui aussi du handle de sortie ; si l'agent ferme sa
 sortie sans sortir, l'app ne verrait la coupure qu'à la sortie de `cmd.exe`, c'est-à-dire de
-l'agent (déduit du fonctionnement des handles hérités, pas mesuré avec Bob, indisponible).
-Rien à corriger côté app (elle lit le tube qu'on lui donne) ; la détection reste celle de la sortie
+l'agent. **Déduit, non mesuré** : Bob est installé dans la VM, mais rien ne lui fait fermer sa
+sortie sur commande. Ce que l'utilisateur verrait : au lieu de « connexion coupée » tout de suite,
+la conversation reste « en cours » jusqu'à ce que l'agent sorte, ou jusqu'aux délais au-delà
+desquels l'app juge un agent bloqué (`agent-host.ts`), puis la panne est dite comme une sortie de
+l'agent. Rien à corriger côté app (elle lit le tube qu'on lui donne) ; la détection reste celle de la sortie
 du processus, déjà couverte.
 
 **Instabilité de la suite sous Windows : cause trouvée et corrigée.** Les « Worker exited
@@ -1187,11 +1190,8 @@ deux chemins (sans entrée standard ; délai écoulé) et échoue sans le correc
 4). Même famille que l'arrêt par pid réutilisé : ne jamais viser un numéro ou une poignée après
 coup.
 
-Le passage par les objets de tâche dans les essais révèle aussi un **défaut probable de l'app sous
-Windows**, non corrigé ici (lot 4, worktrees) : en quittant, `stopAll` efface aussitôt, en
-synchrone, le worktree d'une conversation jamais commencée, alors que son agent tourne encore
-dedans (arrêt poli, 3 s) ; sous Windows, un dossier courant ne s'efface pas : le worktree et sa
-branche resteraient. À confirmer dans l'app installée.
+Le passage par les objets de tâche dans les essais révèle aussi un défaut de l'app, **déjà là sur
+macOS**, non corrigé ici : voir « Défauts connus ».
 
 **Relais Linux (fiche 145) essayé sous Windows** : l'essai « chemin relatif » de
 `process-fds.test.ts` prenait le dossier de la machine (`process.cwd()`) ; le dossier du main est
@@ -1205,6 +1205,20 @@ contre un écrivain : 405 écritures sur 3 000 en échec sans délai, 0 avec. L'
 le verrou (5 s, comme better-sqlite3 par défaut). L'app lit en lecture seule et rattrape l'échec
 (relecture suivante) ; si le vrai Bob écrivait sans délai d'attente, une lecture de l'app pourrait
 de même faire échouer une écriture de Bob : non observé, Bob étant indisponible ; à surveiller.
+
+### Défauts connus (relevés pendant le lot 7a, non corrigés)
+
+- **Worktree effacé pendant que son agent y tourne, en quittant** (macOS, Linux et Windows ; pas
+  une régression de ce lot). `ConversationManager.stopAll` demande l'arrêt de chaque agent
+  (`host.stop()`, arrêt poli : entrée fermée, 3 s de grâce), puis efface aussitôt, en synchrone, le
+  worktree d'une conversation jamais commencée (`removeIfUntouchedSync`), alors que l'agent y a
+  encore son dossier courant. Sous macOS et Linux l'effacement passe quand même (le processus garde
+  un dossier supprimé) ; sous Windows un dossier courant ne s'efface pas : le worktree et sa branche
+  `bobine/…` resteraient après la fermeture. Ordre attendu : **arrêter l'agent (et attendre sa
+  sortie, dans la limite du délai de grâce), puis effacer**. Essai à écrire : conversation en
+  worktree jamais commencée, agent factice qui ignore la fin de son entrée (`attend-stop`), arrêt de
+  l'app ; le worktree et la branche sont partis, et l'agent est arrêté avant l'effacement (ordre
+  noté). Décision du tech lead : pas cette nuit, le chemin de fermeture du Mac est en jeu.
 
 ### Mesures (`windows-latest`, 4 cœurs ; macOS et Linux pour comparer)
 
@@ -1232,21 +1246,21 @@ Essais les plus lents sous Windows (six passages) : **aucun n'approche 15 s**. L
 Ce qui ralentit Windows : le lancement d'un processus (2 à 3 fois celui du Mac, davantage par
 `cmd.exe`), et jsdom (155 s de création d'environnements contre 67 s sur macOS).
 
-**Reste : conformité OpenCode « sous-agent, message envoyé pendant qu'il travaille »**, au hasard
-sur les trois systèmes (une fois sur Linux, une fois sur macOS, deux fois sous Windows, sur une
-douzaine de passages) : « fin du sous-agent en arrière-plan pas vue » dans les 8 s de l'essai.
-Code inchangé par ce lot. Mécanisme mesuré : l'app voit la fin d'un sous-agent en arrière-plan
+**Conformité OpenCode « sous-agent, message envoyé pendant qu'il travaille » : corrigé dans le
+harnais.** Échec au hasard sur les trois systèmes (une fois sur Linux, une fois sur macOS, deux
+fois sous Windows, sur une douzaine de passages) : « fin du sous-agent en arrière-plan pas vue »
+dans les 8 s de l'essai. Pas une course dans l'ordre des messages (la réponse lue à la première
+relecture est déjà la finale). Mécanisme mesuré : l'app voit la fin d'un sous-agent en arrière-plan
 quand deux relectures de sa session donnent la même réponse, à 2 s puis 3 s plus tard
 (`FOLLOW_MS`), et **chaque relecture lance un agent de courte durée** qui rejoue la session
-(`loadSubagentWork`, `fresh: true`), pas un message sur la connexion de la conversation. Sur le Mac
-sans charge : relectures à +2,4 s et +5,9 s du détachement (≈ 0,4 s chacune), l'essai attendant
-depuis +0,2 s : 2,3 s de marge. Sous charge, chaque relecture (lancement d'un processus, rejeu à
-5 ms par morceau) s'allonge, et sous Windows un minuteur de 5 ms en dure ~15 : la fin glisse
-au-delà des 8 s. Aucune course dans l'ordre des messages n'a été vue (la réponse lue à la première
-relecture est déjà la finale). La durée des relectures sous Windows n'est pas mesurée par
-morceau. Pistes, à décider par le tech lead : injecter des relectures plus rapprochées dans le
-harnais de conformité (comme `retryDelaysMs` y est déjà raccourci), ou dériver l'attente de
-l'essai du calendrier de l'app ; pas de seuil relevé ici.
+(`loadSubagentWork`, `fresh: true`). Sur le Mac sans charge : relectures à +2,4 s et +5,9 s du
+détachement, 2,3 s de marge ; sous charge (lancement d'un processus, rejeu à 5 ms par morceau, un
+minuteur de 5 ms en durant ~15 sous Windows), la fin glissait au-delà. Décision du tech lead :
+relectures rapprochées dans le harnais, par un paramètre injecté comme `retryDelaysMs`
+(`subagentFollowMs` : `AgentHost` → `SubagentTracker`, `followMs`), aucune branche propre aux
+essais dans l'app, délais réels inchangés. Le harnais de conformité relit à 200, 300, 500, 800 ms ;
+l'essai passe en 1,7 s au lieu de 6,2 s. Un essai unitaire (`subagent-tracker.test.ts`) fige les
+délais de l'app (2 s, 3 s, 5 s…) et le remplacement par le constructeur.
 
 **Défaut connu, non exigé par les essais** : un toast cliqué depuis le Centre de notifications ne
 ramène pas la fenêtre (limite d'Electron, lot 5). Aucun essai unitaire ne l'exige ; la suite e2e
@@ -1451,3 +1465,10 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
   Bob verrouillée par l'agent factice, arbres de processus des essais par objets de tâche. Six
   passages de `ci.yml` sur la branche ; un échec de conformité OpenCode au hasard, hors Windows,
   reste (cause mesurée, décision au tech lead).
+- 2026-11-16 — **Lot 7a, suite de la revue** : rebasé sur `main` (`7f89c9b`), poussé sous
+  `claude/229-windows-lot-7a-r2` (poussée forcée refusée par le garde-fou de la session, ancienne
+  branche laissée). Arbre arrêté une seule fois (défaut de l'app sous Windows, essai) ; objets de
+  tâche de l'app dans les essais (grâce 0) ; relectures de sous-agent injectables
+  (`subagentFollowMs`) et rapprochées dans le harnais de conformité ; relais Linux essayé sans
+  dépendre de la machine (`mainCwd`). Défaut connu noté (worktree effacé avant l'arrêt de son
+  agent, en quittant).
