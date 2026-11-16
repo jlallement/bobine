@@ -825,10 +825,18 @@ lancé, rien d'autre à installer sur le Mac.
     `session`) ont le même profil. À vérifier au prochain créneau Docker : `finitions` seule
     (`--jobs 1`) puis en parallèle. Si l'hypothèse se confirme, correction propre : un écran X par
     job (`pool.mjs`), comme des machines séparées, sans rien changer dans l'app.
+    Sur quoi s'appuie ce verdict : sur le profil des échecs seulement, pas encore sur une mesure.
+    Trois campagnes complètes dans Docker, 3 jobs sur un seul écran (`xvfb-run` puis
+    `scripts/with-wm` ; `pool.mjs` ne donne pas d'écran à part). Le 2026-11-15 : vert. Le
+    2026-11-16 : clair et sombre rouges, puis sombre seul rouge ; l'infobulle de `session` rouge
+    aussi. Rouge, la suite dure 16 s au lieu de 6 : c'est l'attente de 10 s qui expire, la rangée
+    n'est jamais affichée. Sur la capture d'échec, rien ne recouvre le message. Sur le Mac, la suite n'a jamais échoué. Le CSS est le même partout
+    (`.msg-agent-group:hover .msg-agent-actions`).
   - `terminal`, flèche powerline : **pas de défaut visible**. Capture dans la VM (Ubuntu 26.04,
     Wayland, police livrée, ×6) : flèches entières, pointe nette, et le pied recouvre la cellule
     colorée d'avant sans jointure. L'essai refuse une encre qui dépasse à gauche de plus de 0,5 px ;
     la police livrée mesure 0,59 px sous Linux. Ce débord est peint par-dessus la cellule
     précédente, qu'xterm.js peint avant : il ne peut pas être coupé. Le seuil n'est pas relevé
     (règle des essais). Décision laissée au tech lead : garder ce critère côté gauche, ou ne
-    vérifier que la droite, seule source de coupure.
+    vérifier que la droite, seule source de coupure. Capture : `145-vm-terminal-powerline-x6.png` dans les notes du tech
+    lead (agrandie ×6 par le protocole DevTools, `Page.captureScreenshot`).

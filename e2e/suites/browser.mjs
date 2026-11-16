@@ -394,6 +394,36 @@ export async function browserSuite(scheme) {
 }
 
 /**
+ * Bandeau de téléchargement lisible (fiche 145) : le texte garde au moins 6em, rien ne dépasse du
+ * bandeau, qui reste bas. Sous Linux et Windows, « Afficher dans le gestionnaire de fichiers » ne
+ * tient pas à côté : c'est le bouton qui passe à la ligne, pas le texte qui se réduit à une lettre.
+ */
+const downloadLayout = (ui) =>
+  ui.ev(`(() => {
+    const b = ${ui.$('browser-download')}
+    if (!b) return null
+    const box = b.getBoundingClientRect()
+    const text = b.querySelector('.browser-download-text')
+    const em = parseFloat(getComputedStyle(text).fontSize)
+    const inside = [...b.children].every((c) => {
+      const r = c.getBoundingClientRect()
+      return r.left >= box.left - 0.5 && r.right <= box.right + 0.5
+    })
+    return {
+      text: text.getBoundingClientRect().width,
+      min: 6 * em,
+      height: box.height,
+      inside,
+      panel: ${ui.$('side-panel')}.getBoundingClientRect().width
+    }
+  })()`)
+const layoutOk = (l) => !!l && l.text >= l.min - 0.5 && l.inside && l.height < 100
+const showLayout = (l) =>
+  l
+    ? `panneau ${Math.round(l.panel)} px, texte ${Math.round(l.text)} px (≥ ${Math.round(l.min)}), bandeau ${Math.round(l.height)} px de haut`
+    : 'pas de bandeau'
+
+/**
  * Téléchargements (fiche 094, ADR-0018) : « Enregistrer sous » à chaque fois. La fenêtre native ne
  * se pilote pas par le CDP : remplacée dans le main, elle note ce qui l'ouvre et ce qu'il y a sur
  * le disque à ce moment-là, puis répond comme l'utilisateur (enregistrer ou annuler).
@@ -474,6 +504,8 @@ async function downloads(ui, url, out) {
       `${ui.$('browser-download')}?.innerText.includes(${JSON.stringify(L('browser.download.saved', { name: 'mon-export.csv' }))})`
     )
     await ui.shot('28e-telechargement')
+    const wide = await downloadLayout(ui)
+    check(layoutOk(wide), `bandeau de téléchargement lisible (${showLayout(wide)})`)
     await ui.click(ui.$('browser-download-show'))
     check(
       (await main.evaluate(`globalThis.__downloads.revealed`)).includes(saved),
@@ -511,7 +543,13 @@ async function downloads(ui, url, out) {
     await main.evaluate(`(globalThis.__downloads.release(), true)`)
     await ui.waitFor(`!${waitingDot}`)
 
-    // Clic de l'utilisateur dans la page (après la fenêtre où ce qui arrive vient de l'agent).
+    // Clic de l'utilisateur dans la page (après la fenêtre où ce qui arrive vient de l'agent),
+    // panneau à sa largeur la plus étroite : le bandeau y reste lisible (fiche 145).
+    const handle = await ui.ev(
+      `(() => { const b = document.querySelector('.side-panel-resize').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + 200 } })()`
+    )
+    await ui.drag(handle, { x: handle.x + 400, y: handle.y })
+    await ui.waitFor(`${ui.$('side-panel')}.getBoundingClientRect().width < 290`)
     await main.evaluate(`globalThis.__downloads.answer = 'save'`)
     await new Promise((r) => setTimeout(r, 2000))
     await main.evaluate(`(() => {
@@ -525,6 +563,17 @@ async function downloads(ui, url, out) {
       last?.message === L('browser.download.byPage', { site }) && existsSync(saved),
       '« Exporter » cliqué par l’utilisateur : même fenêtre, sans mention de l’agent'
     )
+    const narrow = await downloadLayout(ui)
+    await ui.shot('28e2-telechargement-etroit')
+    check(
+      layoutOk(narrow),
+      `panneau le plus étroit : bandeau de téléchargement lisible (${showLayout(narrow)})`
+    )
+    // Largeur par défaut (double-clic sur la poignée) pour la suite.
+    await ui.ev(
+      `document.querySelector('.side-panel-resize').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`
+    )
+    await ui.waitFor(`${ui.$('side-panel')}.getBoundingClientRect().width > 300`)
   } finally {
     main.close()
   }
