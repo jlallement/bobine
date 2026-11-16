@@ -81,9 +81,9 @@ jobs:
           retention-days: 7
 
   # Lancé aussi à chaque poussée sur `main` (fiche 229). Non bloquant (`continue-on-error`) tant que
-  # des échecs connus restent sous Linux : police DejaVu (captures), `pannes-visibles`.
+  # des échecs connus restent sous Linux : `terminal` (flèche powerline, fiche 145).
   e2e-linux:
-    name: pnpm e2e (Linux x64, non bloquant — échecs connus DejaVu, pannes-visibles)
+    name: pnpm e2e (Linux x64, non bloquant — échec connu terminal/powerline)
     if: github.event_name == 'push' || inputs.systeme == 'linux' || inputs.systeme == 'les-deux'
     runs-on: ubuntu-24.04
     timeout-minutes: 60

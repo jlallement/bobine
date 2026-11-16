@@ -473,7 +473,7 @@ jobs:
               echo
               # Linux seulement s'il a été construit (BOBINE_LINUX_RELEASE) : .deb seul (ADR-0051).
               if compgen -G 'dist/Bobine-*.deb' > /dev/null; then
-                echo "**Linux (preview):** \`Bobine-$version-x64.deb\` or \`Bobine-$version-arm64.deb\`" \
+                echo "**Linux (preview):** \`Bobine-$version-amd64.deb\` (x64) or \`Bobine-$version-arm64.deb\`" \
                   "(Ubuntu 24.04+, Debian): \`sudo apt install ./Bobine-$version-<arch>.deb\`" \
                   "([how](https://github.com/$GH_REPO/blob/main/docs/installation.md#linux-préversion))."
                 echo

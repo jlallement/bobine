@@ -168,9 +168,9 @@ Bobine does not update itself: watch the repository's Releases on GitHub (« Wat
 Releases ») and install each new `.dmg` over the old one. Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
-**Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-x64.deb` or `Bobine-<version>-arm64.deb`
+**Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) or `Bobine-<version>-arm64.deb`
 on the [Releases page](https://github.com/jlallement/bobine/releases), for Ubuntu 24.04 or later and Debian:
-`sudo apt install ./Bobine-<version>-<arch>.deb`. Checksums in `SHA256SUMS-linux-<arch>.txt`. No
+`sudo apt install ./Bobine-<version>-<arch>.deb`. Checksums in `SHA256SUMS-linux-x64.txt` or `-arm64.txt`. No
 iOS Simulator tools. Details, and building from source:
 [`docs/installation.md`](docs/installation.md#linux-préversion) (French).
 
