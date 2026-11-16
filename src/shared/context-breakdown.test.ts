@@ -33,6 +33,25 @@ describe('messages du fil (fiche 166)', () => {
     expect(tokens).toBe(100 + 100 + Math.round((1 + 399 + 1 + 2 + 396 + 1 + 800) / 4))
   })
 
+  it('référence de session (ACP 1.31, fiche 233) : rien dans le contexte, le reste compte', () => {
+    const items: TranscriptItem[] = [
+      {
+        kind: 'tool',
+        id: 1,
+        toolCallId: 'delegue_1',
+        title: '',
+        status: 'completed',
+        locations: [],
+        content: [
+          { type: 'session', sessionId: 'enfant' },
+          { type: 'content', content: { type: 'text', text: x(399) } }
+        ]
+      }
+    ]
+    // Titre vide, référence vide, puis le texte : deux sauts de ligne.
+    expect(messagesTokens({ items })).toBe(Math.round((2 + 399) / 4))
+  })
+
   it('compaction : seuls les éléments depuis la dernière comptent', () => {
     const items = [
       user(1, x(4000)),

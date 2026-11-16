@@ -242,6 +242,20 @@ describe('agent factice', () => {
     expect(childUpdates.some((n) => n.update.sessionUpdate === 'tool_call')).toBe(true)
   })
 
+  it('reference-session : l’outil nomme la session enfant dans son contenu (ACP 1.31)', async () => {
+    const turn = await runScenario({ scenario: 'reference-session' })
+    const calls = [
+      ...ofType(turn.updates, 'tool_call'),
+      ...ofType(turn.updates, 'tool_call_update')
+    ]
+    const refs = calls.flatMap((c) => (c.content ?? []).filter((x) => x.type === 'session'))
+    expect(refs).toHaveLength(2)
+    expect(refs[0]).toEqual({ type: 'session', sessionId: 'sous-agent-exploration' })
+    expect(ofType(turn.updates, 'subagent_update')[0]).toMatchObject({
+      sessionId: 'sous-agent-exploration'
+    })
+  })
+
   it('echo : décrit le texte et l’image reçus', async () => {
     const turn = await runScenario({ scenario: 'echo' }, [
       { type: 'text', text: 'Regarde ça' },

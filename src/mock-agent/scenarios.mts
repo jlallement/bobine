@@ -649,6 +649,59 @@ export const scenarios: Record<string, Scenario> = {
       { kind: 'text', text: 'Le sous-agent a terminé : le projet est simple.' }
     ]
   },
+  'reference-session': {
+    description:
+      'ACP 1.31 (instable) : un outil délègue à la session enfant et la nomme dans son contenu (`type: "session"`)',
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'subagent_update',
+          sessionId: CHILD,
+          title: 'Exploration',
+          description: 'Explore la structure du projet',
+          state: { state: 'running' }
+        }
+      },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'delegue_1',
+          title: 'Déléguer l’exploration',
+          kind: 'other',
+          status: 'in_progress',
+          content: [{ type: 'session', sessionId: CHILD }]
+        }
+      },
+      {
+        kind: 'child',
+        sessionId: CHILD,
+        steps: [...readFile, { kind: 'text', text: 'Structure analysée.' }]
+      },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'subagent_update',
+          sessionId: CHILD,
+          state: { state: 'idle', stopReason: 'end_turn' }
+        }
+      },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'delegue_1',
+          status: 'completed',
+          content: [
+            { type: 'content', content: { type: 'text', text: 'Le projet est simple.' } },
+            { type: 'session', sessionId: CHILD }
+          ]
+        }
+      },
+      { kind: 'text', text: 'Exploration déléguée terminée.' }
+    ]
+  },
   'sous-agent-bob': {
     description:
       'Comme Bob 2.0.6 : spawn_subagent demande une autorisation, puis seul le résultat arrive',

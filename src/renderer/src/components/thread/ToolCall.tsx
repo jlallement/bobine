@@ -23,7 +23,7 @@ import {
   ListTodo,
   type LucideIcon
 } from 'lucide-react'
-import { useContext, useRef, type ReactNode } from 'react'
+import { useContext, useRef, type ReactElement, type ReactNode } from 'react'
 import type { ToolImage } from '@shared/agent'
 import type { ToolPermission, TranscriptItem } from '@shared/transcript'
 import { LazyDetails } from '../common/LazyDetails'
@@ -258,7 +258,8 @@ export function ToolCall({
       <ToolState item={item} waiting={waiting} />
     </>
   )
-  const hasDetails = item.content.length > 0 || item.locations.length > 0 || !!terminal || !!command
+  const hasDetails =
+    shownContent(item).length > 0 || item.locations.length > 0 || !!terminal || !!command
 
   return (
     // `data-kind` : genre ACP de l'outil, lu par le pilote de Bobine (fiche 206).
@@ -379,7 +380,7 @@ function ToolDetails({
           ))}
         </div>
       )}
-      {item.content.map((content, i) => (
+      {shownContent(item).map((content, i) => (
         <ToolContent key={i} content={content} execute={item.toolKind === 'execute'} />
       ))}
       {terminal && <TerminalView terminal={terminal} />}
@@ -528,7 +529,7 @@ export function PermissionView({
         <div className="pc-body">{body}</div>
       ) : (
         (command ||
-          item.content.length > 0 ||
+          shownContent(item).length > 0 ||
           item.locations.length > 0 ||
           item.todos ||
           item.args) && (
@@ -547,7 +548,7 @@ export function PermissionView({
                 />
               </PlainCommand>
             )}
-            {(item.content.length > 0 || item.locations.length > 0) && (
+            {(shownContent(item).length > 0 || item.locations.length > 0) && (
               <ToolDetails
                 item={item}
                 folder={command && commandFolder(item, command.cwd, workspace)}
@@ -620,7 +621,26 @@ export function PermissionView({
   )
 }
 
-function ToolContent({ content, execute }: { content: ToolCallContent; execute: boolean }) {
+/** Contenu affiché par la carte : une référence de session n'est pas montrée (voir plus bas). */
+type ShownContent = Exclude<ToolCallContent, { type: 'session' }>
+
+/**
+ * Référence à une autre session (ACP 1.31, instable, fiche 233) : « affichage seul », elle nomme une
+ * session déjà connue (sous-agent annoncé par `subagent_update`, que le fil ne montre pas). Gardée
+ * dans le fil et sa sauvegarde, elle n'a pas encore de présentation (maquettes à valider) : elle
+ * n'ouvre donc pas de détails vides.
+ */
+const shownContent = (item: { content: readonly ToolCallContent[] }): ShownContent[] =>
+  item.content.filter((c): c is ShownContent => c.type !== 'session')
+
+// Type de retour explicite : un nouveau genre de contenu ACP oublié ici est une erreur de type.
+function ToolContent({
+  content,
+  execute
+}: {
+  content: ShownContent
+  execute: boolean
+}): ReactElement | null {
   switch (content.type) {
     case 'content':
       // Sortie de commande en texte (Bob, OpenCode) : même affichage qu'un terminal.
