@@ -150,3 +150,9 @@ Aucune nouvelle dépendance.
   ensuite avant le tour suivant. Le même trou vaut pour Bob réel, dont l'heure d'écriture n'est
   pas documentée. Désormais : relu à la fin du tour, à 1,5 s, et encore à 5 s si rien n'a changé
   (`session-cost.ts`) ; l'essai attend jusqu'à 6 s, au-delà de la dernière relecture.
+- 2026-11-16 — **Essai oublié avec la relecture à 5 s.** `journal.test.ts` (« --cout-bob ») attendait
+  encore 3 s : rouge sous Windows sur `main` 3cf4052 (premier tour fini à 10:56:13.914, jamais de
+  second tour). Aligné sur la relecture de 5 s (attente de 6 s). Revus : les autres attentes d'un
+  coût relu après un tour (e2e `usage`, 8 s puis 15 s ; sous-agents, relus pendant leur travail)
+  dépassent déjà 5 s ; l'essai de l'accueil dépend de l'attente propre à l'app (`costWaitMs`,
+  3 s, `agent-readiness.ts`), laissée telle quelle.
