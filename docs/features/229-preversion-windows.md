@@ -1525,3 +1525,52 @@ s'affiche) et ne vérifie pas le premier plan de la fenêtre.
   essai ; les deux cas négatifs (autre port, pid d'un autre programme) et une lecture qui échoue
   passent par un lecteur donné à `ours` (`instance.mjs`, paramètre facultatif), sans processus.
   Le pilote se comporte comme avant.
+- 2026-11-16 — **Revue des essais lents sous Windows (CI).** Tous les `verify` Windows depuis la
+  fusion du lot 7a (880b7c9) : 8 passages de `ci.yml` (9 tentatives) et 6 de `release.yml` (x64 et
+  arm64), soit 20 journaux ; durées lues dans le rapport de vitest (il donne chaque essai de plus
+  de 300 ms).
+  - **Échecs** (9, sur 5 essais) :
+
+    | Essai | Machine | Type | Durée | Cause | Suite |
+    |---|---|---|---|---|---|
+    | `agent-host` « comme Bob » | x64 | attente | 3,9 s | coût écrit après la relecture de 1,5 s | relecture à 5 s (97fd7e2) |
+    | `journal` « --cout-bob » | x64 | attente | 6,8 s | idem, pendant un ralentissement général | attente de 6 s (9c3b6fb) |
+    | `pilote` arrêt | arm64 (×4) | assertion, puis délai | 48 à 104 s | PowerShell lent (≈ 35 s par appel) | un seul appel réel, 90 s (f92ddf4) |
+    | `terminal-manager` ConPTY | arm64 (×2) | délai | 15 s | PowerShell lent | 90 s (e0b4d59) |
+    | `provider-probe` certificat | x64 | délai | 15,9 s | ralentissement général (médiane 0,5 s) | rien à corriger dans l'essai |
+
+  - **Ralentissements généraux** : dans 3 journaux sur 20 (880b7c9 à 02:18:59, 43852489674 à
+    10:55:53–10:56:21, 43857348666 à 11:31:08–11:31:44), plusieurs fichiers sans rapport entre eux
+    tournent au même moment 5 à 44 fois plus lentement que leur médiane (`bob-costs` 29,7 s pour
+    0,7 s, `profile-fixtures` 19,2 s pour 0,6 s, `user-data-migration` 2,7 s pour 0,06 s), puis
+    tout redevient normal. Ce n'est pas un essai : ils tournent au même endroit dans les 20
+    passages, et ne ralentissent que dans ces trois-là. Deux des cinq échecs (`journal`,
+    `provider-probe`) tombent dans ces fenêtres. Cause non établie (piste : l'antivirus de la
+    machine de GitHub sur les fichiers temporaires et `node_modules`). Proposé, pas fait : relever
+    l'état de Defender dans le job, puis l'essayer avec le dépôt et `%TEMP%` exclus, deux passages
+    comparés.
+  - **Au-delà de la moitié de leur délai** dans les passages verts, hors de ces fenêtres :
+
+    | Essai | Processus | x64 (méd. / max) | arm64 (méd. / max) | Délai | Suite |
+    |---|---|---|---|---|---|
+    | `e2e-select` « chaque motif couvre… » | aucun | 7,4 / 10,0 s | 6,9 / 9,6 s | 15 s | expression compilée une fois par motif : 15 ms (1,9 s avant, Mac) |
+    | `worktree-cycle` « PR par gh simulé » | 138 git | 9,1 / 9,9 s | 10,7 / 12,9 s | 15 s | 30 s |
+    | `worktree-cycle-forge` « glab absent… » | 118 git | 7,1 / 7,9 s | 9,3 / 10,2 s | 15 s | 30 s |
+    | `worktree-cycle-forge` « branche poussée, MR… » | 74 git | 5,0 / 5,6 s | 7,3 / 8,2 s | 15 s | 30 s |
+    | `worktree-cycle-forge` « poussée refusée… » | 46 git | 4,3 / 4,9 s | 6,2 / 7,6 s | 15 s | 30 s |
+    | `children-merge` « conflit qui reste… » | 98 git | 6,7 / 7,4 s | 7,3 / 8,8 s | 15 s | 30 s |
+    | `children-merge` « deux filles sans recouvrement… » | 68 git | 4,5 / 4,9 s | 5,5 / 7,6 s | 15 s | 30 s |
+    | `children` « messages : file d'attente… » | 4 agents, 27 git | 4,6 / 4,9 s | 6,0 / 12,6 s | 15 s | 30 s |
+    | `children` « éviction (fiche 043)… » | 5 agents, 19 git | 4,1 / 5,4 s | 5,2 / 8,2 s | 15 s | 30 s |
+    | `children` « réveil groupé… » | 3 agents, 19 git | 3,7 / 7,6 s | 4,2 / 5,6 s | 15 s | 30 s |
+    | `children` « plafond réglé… » | 3 agents, 19 git | 3,2 / 7,6 s | 3,6 / 4,9 s | 15 s | 30 s |
+
+    Processus comptés sur le Mac (git par un relais dans le PATH, agents par le journal). Sous
+    Windows, un `git` coûte 60 à 70 ms (138 appels pour 9,1 s) et un agent factice environ une
+    demi-seconde : ces appels sont ceux de l'app (cycle d'un worktree, fusion), ce que l'essai
+    vérifie, pas de quoi en retirer sans changer l'essai. D'où 30 s pour ces essais seuls (plus de
+    deux fois le pire relevé), écrit à côté de chacun ; le délai global de vitest ne change pas.
+    Les essais de conformité (délai propre de 20 s) restent sous la moitié (9,4 s au pire).
+  - `provider-probe` : ne lance que `openssl` (certificat de l'essai, une fois par essai TLS) ;
+    `probeProvider` ne lance rien. 0,5 s de médiane sous Windows : son échec n'est que le
+    ralentissement général.

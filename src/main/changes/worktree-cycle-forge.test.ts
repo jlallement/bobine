@@ -109,6 +109,8 @@ const cycleWith = (run: Run, over: WorktreeCycleOptions = {}) =>
   })
 
 describe('ouvrir une MR sur GitLab (fiche 189)', () => {
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 74 git ;
+  // 5,0 s sur x64, 8,2 s au pire (arm64).
   it('branche poussée, MR vers la base (-R du dépôt poussé), lien, MR retrouvée, « Pousser vers la MR »', async () => {
     const { bare, target, commit } = await setup(`https://oauth2:${SECRET}@${HOST}/g/p.git`)
     const glab = fakeGlab()
@@ -162,7 +164,7 @@ describe('ouvrir une MR sur GitLab (fiche 189)', () => {
     expect(logged.join('\n')).not.toContain(SECRET)
     expect(JSON.stringify(glab.calls)).not.toContain(SECRET)
     expect(logged.some((l) => l.startsWith(`glab auth status --hostname ${HOST} → 0`))).toBe(true)
-  })
+  }, 30_000)
 
   it('fork : -R vise le dépôt distant de la base réellement poussé, pas upstream', async () => {
     const { root, target, commit } = await setup(`git@${HOST}:fork-owner/app.git`)
@@ -222,6 +224,8 @@ describe('ouvrir une MR sur GitLab (fiche 189)', () => {
     expect(ssh[0]?.env?.['PATH']).toBe(process.env['PATH'])
   })
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 118 git ;
+  // 7,1 s sur x64, 10,2 s au pire (arm64).
   it('glab absent, non connecté, révoqué, injoignable, certificat, sortie inattendue', async () => {
     const { target } = await setup(`git@${HOST}:g/p.git`)
     const absent = cycleWith(gitCommand, { glab: () => undefined })
@@ -263,8 +267,10 @@ describe('ouvrir une MR sur GitLab (fiche 189)', () => {
       reason: 'no-tool',
       noun: 'mr'
     })
-  })
+  }, 30_000)
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 46 git ;
+  // 4,3 s sur x64, 7,6 s au pire (arm64).
   it('poussée refusée (branche protégée, droits, clé SSH, identifiants, hôte), création impossible', async () => {
     const { target, commit, refuse, allow } = await setup(`https://${HOST}/g/p.git`)
     commit('a.txt')
@@ -320,7 +326,7 @@ describe('ouvrir une MR sur GitLab (fiche 189)', () => {
     await expect(odd.pullRequest(target, { title: 'x', body: '' })).rejects.toThrow(
       'POST …/merge_requests: 422 {message: [Title is too long]}.'
     )
-  })
+  }, 30_000)
 })
 
 describe('GitHub exactement comme avant tant que glab ne revendique pas l’hôte (relecture)', () => {

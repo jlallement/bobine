@@ -297,6 +297,8 @@ describe('cycle d’un worktree (fiche 110)', () => {
     await expect(cycle.commitMain(target, { message: 'x', files: ['../x'] })).rejects.toThrow()
   })
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 138 git ;
+  // 9,1 s sur x64, 12,9 s au pire (arm64).
   it('PR par gh simulé : poussée, création, PR déjà là, et ce qui manque', async () => {
     const { root, target } = await setup()
     const bare = mkdtempSync(join(tmpdir(), 'bob-cycle-remote-'))
@@ -397,7 +399,7 @@ describe('cycle d’un worktree (fiche 110)', () => {
     expect((await withGh.info(target)).pr).toEqual({ ok: false, reason: 'no-remote' })
     expect(await withGh.ghFor(target)).toBeUndefined()
     await expect(withGh.pullRequest(target, { title: 'x', body: '' })).rejects.toThrow('distant')
-  })
+  }, 30_000)
 
   it('gh non connecté : gardé quelques secondes seulement, oublié par « Actualiser » (0.9.1, D7)', async () => {
     const { target } = await setup()

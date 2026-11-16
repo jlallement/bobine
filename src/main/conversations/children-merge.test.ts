@@ -142,6 +142,8 @@ const last = (merges: ChildrenMerge[]) => merges.at(-1) as ChildrenMerge
 const states = (merge: ChildrenMerge) => merge.rows.map((r) => r.state)
 
 describe('fusion de toutes les filles (fiche 120)', () => {
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 68 git ;
+  // 4,5 s sur x64, 7,6 s au pire (arm64).
   it('deux filles sans recouvrement : fusionnées dans l’ordre de lancement, base avancée', async () => {
     // Lancées dans l'ordre f2 puis f1 : f2 passe en premier.
     const env = await setup(['Import CSV', 'Page d’aide'], [1, 0])
@@ -187,7 +189,7 @@ describe('fusion de toutes les filles (fiche 120)', () => {
       'merged',
       'merged'
     ])
-  })
+  }, 30_000)
 
   it('recouvrement détecté : deux filles modifient le même fichier', async () => {
     const env = await setup(['A', 'B', 'C'])
@@ -222,6 +224,8 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(existsSync(join(env.root, 'c.txt'))).toBe(true)
   })
 
+  // 30 s, processus lents à lancer sous Windows (fiche 229) : 98 git ;
+  // 6,7 s sur x64, 8,8 s au pire (arm64).
   it('conflit qui reste après le tour de la fille : la chaîne s’arrête et le dit', async () => {
     const env = await setup(['A', 'B', 'C'])
     const [a, b, c] = env.children as [Child, Child, Child]
@@ -249,7 +253,7 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     await env.merger.settled('mere')
     expect(states(last(env.merges))).toEqual(['merged', 'merged'])
     expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('A et B\n')
-  })
+  }, 30_000)
 
   it('« Arrêter » : la fusion en cours finit, les autres restent en attente', async () => {
     const env = await setup(['A', 'B', 'C'])
