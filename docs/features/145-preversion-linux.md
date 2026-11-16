@@ -851,3 +851,23 @@ lancé, rien d'autre à installer sur le Mac.
     (« enregistr/é », « export.cs/v »). Après : texte de 75 px, coupé entre les mots, et
     « Afficher dans le / Finder » sur deux lignes. Seul changement visible sur le Mac, voulu.
   - Captures et comparaisons dans les notes du tech lead (`145-bandeau/`).
+- 2026-11-16 — **`settings`, clair seulement, passage GitHub 43790575253 : pas un défaut de l'app.**
+  Le délai dépassé porte sur l'entrée « Barre latérale » du sous-menu Affichage (ligne 519 de
+  `e2e/suites/settings.mjs`). Ce n'est pas une course à l'ouverture du ☰ : la ligne 517 avait vu
+  le sous-menu ouvert. Ce n'est pas non plus un clic à côté. La capture d'échec montre le menu ☰
+  ouvert et complet, avec sa barre latérale ; seul le sous-menu est refermé.
+  - Pourquoi le sous-menu se ferme : Radix (`@radix-ui/react-menu`) le ferme quand le pointeur
+    quitte le déclencheur « Affichage » ailleurs que vers le sous-menu. Le menu ☰ reprend alors
+    le focus et le sous-menu le voit sortir (`onFocusOutside`). Le clic de l'essai, lui, va droit
+    au sous-menu.
+  - D'où vient cette sortie : même profil que `finitions` et l'infobulle de `session`, c'est
+    l'état du pointeur qui se perd. C'est rare, propre à Linux, et seulement quand plusieurs apps
+    partagent un écran Xvfb. Le job GitHub joue `--jobs 2` sur un seul écran.
+  - Pour l'utilisateur : le menu ☰ ne peut pas s'ouvrir vide. `AppMenuButton` pose ses entrées et
+    l'ouvre dans le même rappel, après la réponse de `app:menu`, et le modèle existe toujours dans
+    l'app (`appMenu`, `main/index.ts`). Un sous-menu qui se ferme quand la souris sort de la
+    fenêtre est le comportement attendu, le même sur le Mac.
+  - Proposé, pas fait : un écran X par job (`pool.mjs` lance chaque tâche sous son propre
+    `xvfb-run` + `scripts/with-wm`). Les apps ne partageraient plus d'écran, et deux campagnes
+    complètes diraient si `finitions`, `settings` et `session` cessent de tomber. Coût estimé :
+    une à deux secondes de démarrage par tâche.
