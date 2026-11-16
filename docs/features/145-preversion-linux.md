@@ -803,3 +803,32 @@ lancé, rien d'autre à installer sur le Mac.
   l'environnement (l'app n'expose pas le moteur de `safeStorage`) : un bus de session sans démon de
   trousseau fait tomber l'essai en rouge, jamais en faux vert (dit dans `e2e/lib.mjs`).
   Verts dans Docker et sur le Mac.
+- 2026-11-16 — **Rouges Linux restants : verdicts.**
+  - `browser`, menu « + » : **défaut de l'app**, vu sur la capture d'échec. Le bandeau
+    « Fichier enregistré » réduisait son texte à une lettre par ligne : le bouton (« Afficher dans
+    le gestionnaire de fichiers », ou l'Explorateur sous Windows), plus long que « … le Finder »,
+    ne se réduisait pas. Le bandeau, haut de 500 px, poussait la page sous le menu « + », qui ne
+    passait donc plus dessus : rien à masquer, et l'essai tombait rouge. Corrigé dans la CSS : le
+    texte garde au moins 6em et le bouton passe à la ligne. Sur le Mac, le texte a déjà environ
+    95 px : rien ne change.
+  - `pilote`, envoi par-dessus un brouillon : **défaut de l'essai**. `envoyer` rend la main dès
+    que la zone est vidée par l'envoi, et l'essai lisait le fil avant que le message y soit. Le
+    journal du pilote montre la conversation nommée exactement « /scenario permission » : le
+    brouillon n'était pas parti. L'essai attend maintenant le message (5 s au plus), puis compare
+    son texte.
+  - `finitions`, rangée d'actions au survol : **défaut de l'environnement d'essai, probable,
+    pas encore prouvé**. Elle échoue dans les campagnes complètes (3 apps en parallèle sur un même
+    écran Xvfb), jamais sur le Mac. Hypothèse : le vrai pointeur X reste à un point de l'écran ;
+    quand une autre app lancée par un autre job ouvre ou ferme sa fenêtre sous lui, X envoie des
+    évènements d'entrée et de sortie (Enter/LeaveNotify) à notre fenêtre, et Chromium efface le
+    survol simulé par le protocole DevTools. Les autres attentes de survol (infobulle de
+    `session`) ont le même profil. À vérifier au prochain créneau Docker : `finitions` seule
+    (`--jobs 1`) puis en parallèle. Si l'hypothèse se confirme, correction propre : un écran X par
+    job (`pool.mjs`), comme des machines séparées, sans rien changer dans l'app.
+  - `terminal`, flèche powerline : **pas de défaut visible**. Capture dans la VM (Ubuntu 26.04,
+    Wayland, police livrée, ×6) : flèches entières, pointe nette, et le pied recouvre la cellule
+    colorée d'avant sans jointure. L'essai refuse une encre qui dépasse à gauche de plus de 0,5 px ;
+    la police livrée mesure 0,59 px sous Linux. Ce débord est peint par-dessus la cellule
+    précédente, qu'xterm.js peint avant : il ne peut pas être coupé. Le seuil n'est pas relevé
+    (règle des essais). Décision laissée au tech lead : garder ce critère côté gauche, ou ne
+    vérifier que la droite, seule source de coupure.

@@ -22,6 +22,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Linux and Windows: the browser's “File saved” banner no longer squeezes its text to one
+  letter per line; the “Show in the file manager” (or “Show in File Explorer”) button wraps instead.
 - Linux: agents and commands started by Bobine no longer receive its open files and
   connections; an agent left behind after Bobine was force-quit no longer stops it from
   starting again.
