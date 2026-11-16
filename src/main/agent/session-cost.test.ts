@@ -69,6 +69,30 @@ describe('SessionCost', () => {
     })
   })
 
+  it('reads once more at 5 s when the cost written after the turn is late (fiche 157)', () => {
+    vi.useFakeTimers()
+    const { cost, events } = setup([1, 1, 4, 9])
+    cost.turnEnded()
+    vi.advanceTimersByTime(1500)
+    expect(events).toHaveLength(1)
+    vi.advanceTimersByTime(3500)
+    expect(events.at(-1)).toEqual({
+      type: 'usage-report',
+      cost: { amount: 4, currency: 'bobcoins' }
+    })
+    // Trouvé : plus de relecture pour ce tour.
+    vi.advanceTimersByTime(60_000)
+    expect(events).toHaveLength(2)
+  })
+
+  it('no extra read once the cost has changed at 1.5 s', () => {
+    vi.useFakeTimers()
+    const { cost, events } = setup([1, 4, 9])
+    cost.turnEnded()
+    vi.advanceTimersByTime(60_000)
+    expect(events.map((e) => (e.type === 'usage-report' ? e.cost.amount : 0))).toEqual([1, 4])
+  })
+
   it('reads at the end of a tool, at most every 2 s', () => {
     vi.useFakeTimers()
     const { cost, events } = setup([1, 2, 3])
