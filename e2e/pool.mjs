@@ -3,8 +3,14 @@
  * tourne dans son propre processus `node e2e/run.mjs <suite> --<thème> --jobs 1`, au plus N à la
  * fois. Chaque processus a sa tranche de ports (`BOBINE_E2E_JOB`), ses dossiers jetables et son
  * propre délai maximal ; sa sortie est montrée d'un bloc, entière si la suite échoue.
+ *
+ * Sous Linux, chaque tâche a en plus son propre écran X (`xvfb-run`) et son gestionnaire de
+ * fenêtres (`scripts/with-wm`), fiche 145 : sur un écran partagé, le pointeur et le focus d'une app
+ * étaient perturbés par celles des autres tâches (sous-menu refermé, infobulle disparue). Sur le
+ * Mac et sous Windows, rien ne change.
  */
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { countFailures, formatDuration, nextTask } from '../scripts/e2e-select.mts'
 import { root } from './state.mjs'
@@ -22,6 +28,19 @@ const indent = (text) =>
     .map((l) => `    │ ${l}`)
     .join('\n')
 
+/** Un écran X par tâche : sous Linux, si `xvfb-run` est là (conteneur, CI, poste équipé). */
+const ownScreen =
+  process.platform === 'linux' && spawnSync('sh', ['-c', 'command -v xvfb-run']).status === 0
+
+/** Numéros d'écran pris par les tâches en cours (à partir de 100, l'écran englobant étant :99). */
+const screensInUse = new Set()
+/** Premier numéro libre : ni pris par une tâche en cours, ni verrouillé par un autre serveur X. */
+function freeScreen() {
+  for (let n = 100; ; n++) {
+    if (!screensInUse.has(n) && !existsSync(`/tmp/.X${n}-lock`)) return n
+  }
+}
+
 /** Lance une tâche dans son processus ; résout avec sa sortie, son code et sa durée. */
 function runTask(task, slot, { jobs, lang }) {
   const args = [
@@ -34,11 +53,39 @@ function runTask(task, slot, { jobs, lang }) {
     '--lang',
     lang
   ]
-  const child = spawn(process.execPath, args, {
+  const screen = ownScreen ? freeScreen() : undefined
+  if (screen !== undefined) screensInUse.add(screen)
+  // Écran à soi : `xvfb-run` (serveur X) puis `with-wm` (openbox), dans leur propre groupe de
+  // processus, arrêté d'un bloc (le serveur X et openbox avec, même si la suite est figée).
+  const [command, commandArgs] =
+    screen === undefined
+      ? [process.execPath, args]
+      : [
+          'xvfb-run',
+          [
+            '-n',
+            String(screen),
+            '-s',
+            '-screen 0 1920x1200x24',
+            join(root, 'scripts', 'with-wm'),
+            process.execPath,
+            ...args
+          ]
+        ]
+  const child = spawn(command, commandArgs, {
     cwd: root,
     env: { ...process.env, BOBINE_E2E_JOB: String(slot), BOBINE_E2E_JOBS: String(jobs) },
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: screen !== undefined
   })
+  const kill = (signal) => {
+    try {
+      if (screen === undefined) child.kill(signal)
+      else process.kill(-child.pid, signal)
+    } catch {
+      // Déjà sorti.
+    }
+  }
   let output = ''
   child.stdout.on('data', (d) => (output += d))
   child.stderr.on('data', (d) => (output += d))
@@ -48,16 +95,21 @@ function runTask(task, slot, { jobs, lang }) {
   let blocked = false
   const guard = setTimeout(() => {
     blocked = true
-    child.kill('SIGTERM')
-    setTimeout(() => child.kill('SIGKILL'), 10_000).unref()
+    kill('SIGTERM')
+    setTimeout(() => kill('SIGKILL'), 10_000).unref()
   }, SUITE_TIMEOUT_MS + GUARD_MS)
   const done = new Promise((resolve) => {
     child.once('close', (code, signal) => {
       clearTimeout(guard)
+      // Ce qui resterait du groupe (serveur X, openbox) part avec la tâche.
+      if (screen !== undefined) {
+        kill('SIGTERM')
+        screensInUse.delete(screen)
+      }
       resolve({ output, code: code ?? 1, signal, blocked, ms: Date.now() - started })
     })
   })
-  return { child, done }
+  return { kill, done }
 }
 
 /**
@@ -74,7 +126,7 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
   const total = tasks.length
 
   const stop = () => {
-    for (const r of running) r.child.kill('SIGTERM')
+    for (const r of running) r.kill('SIGTERM')
     process.exit(130)
   }
   process.once('SIGINT', stop)
@@ -94,8 +146,8 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
       if (i < 0) return
       const [task] = queue.splice(i, 1)
       const slot = freeSlot()
-      const { child, done } = runTask(task, slot, { jobs, lang })
-      running.push({ task, slot, child, done: done.then((result) => ({ task, slot, result })) })
+      const { kill, done } = runTask(task, slot, { jobs, lang })
+      running.push({ task, slot, kill, done: done.then((result) => ({ task, slot, result })) })
     }
   }
 
