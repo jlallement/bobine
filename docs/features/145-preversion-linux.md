@@ -840,3 +840,14 @@ lancé, rien d'autre à installer sur le Mac.
     (règle des essais). Décision laissée au tech lead : garder ce critère côté gauche, ou ne
     vérifier que la droite, seule source de coupure. Capture : `145-vm-terminal-powerline-x6.png` dans les notes du tech
     lead (agrandie ×6 par le protocole DevTools, `Page.captureScreenshot`).
+- 2026-11-16 — **Bandeau de téléchargement : avant / après, Mac et Docker.** « Avant » : la
+  branche, avec seulement le `styles.css` de `main`, donc le même essai et la CSS pour seule
+  différence.
+  - Linux : avant, texte de 0 px et bandeau de 501 px de haut, à 320 px comme à 280 px, et le
+    menu « + » rouge. Après : texte de 75 px, bandeau de 66 px, `browser` et `pilote` verts.
+  - Mac, largeur par défaut : bandeau identique au pixel près (texte 96 px, bandeau 51 px). Seuls
+    changent, ailleurs, le dossier temporaire au nom tiré au hasard et le port.
+  - Mac, panneau le plus étroit (280 px) : avant, texte de 56 px, coupé dans les mots
+    (« enregistr/é », « export.cs/v »). Après : texte de 75 px, coupé entre les mots, et
+    « Afficher dans le / Finder » sur deux lignes. Seul changement visible sur le Mac, voulu.
+  - Captures et comparaisons dans les notes du tech lead (`145-bandeau/`).
