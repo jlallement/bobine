@@ -1,6 +1,6 @@
 # ADR-0053 — Plusieurs versions de Bob et d'OpenCode à la fois
 
-- **Statut** : proposé (à trancher par Jérôme ; rien n'est codé au-delà de la fiche 232)
+- **Statut** : accepté (par Jérôme, le 2026-11-16 ; mise en œuvre dans une fiche à part, rien de codé au-delà de la fiche 232)
 - **Date** : 2026-11-16
 
 ## Contexte

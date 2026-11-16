@@ -138,10 +138,13 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
   `opencode-probe.test.ts` (version enregistrée `2.0.32` → `2.3.0`) et la ligne 2.3.0 du suivi
   dans `docs/acp.md`, régénérer les instantanés de `trace-replay.test.ts` et les relire.
 
-- Prise en charge de plusieurs versions à la fois : proposition dans
-  [ADR-0053](../adr/0053-plusieurs-versions-des-agents.md) (proposé, à trancher). En attendant,
-  `--accept` remplace toujours la référence unique (la 2.0.32 serait perdue au passage complet sur
-  la 2.3.0).
+- Prise en charge de plusieurs versions à la fois :
+  [ADR-0053](../adr/0053-plusieurs-versions-des-agents.md), **accepté** le 2026-11-16. Sa mise en
+  œuvre fera l'objet d'une fiche à part : fenêtre de versions dans `testedVersions` (dernière
+  mineure et les deux précédentes), références de la sonde et traces par mineure, veille
+  hebdomadaire en CI des versions publiées (npm `@ibm/bob`, releases d'`anomalyco/opencode`). En
+  attendant, `--accept` remplace toujours la référence unique (la 2.0.32 serait perdue au passage
+  complet sur la 2.3.0).
 
 - Mettre à jour progressivement « son travail » pendant qu'un sous-agent tourne après le tour
   (aujourd'hui : le direct s'arrête avec le tour, le travail complet arrive à sa fin). Remplacer
