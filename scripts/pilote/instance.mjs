@@ -60,11 +60,12 @@ const canListen = (port) =>
 
 /**
  * Le processus de ce pid est bien la Bobine lancée par le pilote (sa ligne de commande porte notre
- * port de débogage) : un pid réutilisé par un autre programme n'est jamais tué.
+ * port de débogage) : un pid réutilisé par un autre programme n'est jamais tué. `readCommandLine`
+ * lit la ligne de commande d'un pid (par défaut : `ps`, ou PowerShell sous Windows).
  */
-export function ours(instance) {
+export function ours(instance, readCommandLine = commandLineOf) {
   try {
-    const command = commandLineOf(Number(instance.pid))
+    const command = readCommandLine(Number(instance.pid))
     return command.includes(`--remote-debugging-port=${instance.port}`)
   } catch {
     return false
