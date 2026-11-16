@@ -165,15 +165,21 @@ puis la liste des deux mots de code), et les deux réponses sont **collées** en
 casse aussi le Markdown (« sous-agent.- `secret.txt` »). Rien dans ACP ne les sépare : entre elles,
 ni `usage_update`, ni fin de tour, ni réflexion ; seulement une pause.
 
-## Reste à faire
+**Correctif des réponses collées** (même soir) : un vrai signal existe, pas besoin d'un délai.
+OpenCode 2.3.0 met `messageId` (ACP) sur **chaque** morceau : un identifiant par message
+(`msg_…`), y compris ses réponses hors tour, et `msg_…:reasoning:0` pour la réflexion (relevé dans
+les captures brutes `un`, `un-reprise`, `deux-reprise` ; 2.2.5 aussi, traces `__traces__/opencode-
+2.2.5`). Le champ est stable dans le schéma ACP, SDK 2.4 (`main`) comme 2.7 (`claude/deps-lot-2`) :
+« a change in `messageId` indicates a new message has started ». Rien d'autre ne sépare les deux
+réponses (ni `_meta`, ni `user_message_chunk`, ni outil, ni `usage_update`). Correctif générique
+(`reply-boundary.ts`) : un morceau dont le `messageId` diffère de celui du message en cours en
+commence un autre, pendant un tour comme hors tour ; sans `messageId` (Bob 2.0.9 n'en envoie pas,
+traces), rien ne change, et une pause ne coupe jamais un message. Agent factice :
+`sous-agents-deux-rapports-2-3` (deux réponses hors tour enchaînées, `messageId` différents) ;
+tests qui échouent sans le correctif (`subagent-background.test.ts`,
+`agent-host-opencode-2-3.test.ts`) ; la sonde vérifie que chaque morceau a son `messageId`.
 
-- **Deux réponses hors tour de suite collées** (défaut observé, non corrigé) : proposition à
-  trancher, car c'est une heuristique de temps : hors tour, un morceau de texte qui arrive après
-  une pause d'au moins ~1,5 s ouvre un nouveau message (l'hôte d'agent l'annonce au fil par un
-  évènement générique, la réponse précédente est close et datée ; la durée du tour ne compte que
-  la réponse du tour). La durée exacte de la pause entre deux réponses n'est pas relevée : le
-  journal Trace regroupe les morceaux ; à mesurer avant de fixer le seuil. Agent factice : deux
-  étapes `after-turn` à quelques secondes d'écart.
+## Reste à faire
 
 - **Questions** : faire tourner `pnpm opencode-probe --only question` (modèle gratuit quand le quota
   revient, ou `gpt-6.1-sol` avec une connexion posée dans le profil jetable par le tech lead).
@@ -205,8 +211,8 @@ ni `usage_update`, ni fin de tour, ni réflexion ; seulement une pause.
   le direct par une relecture pendant le tour mélangerait deux numérotations d'outils
   (`ses_…:<id>` en direct, `<id>` relu) : à concevoir à part.
 - Réponse hors tour : ni heure (pas de fin de tour), ni coût (OpenCode n'envoie pas de
-  `usage_update`), et deux réponses hors tour de suite feraient un seul message (rien ne sépare
-  deux reprises).
+  `usage_update`). Deux réponses hors tour de suite : séparées par `messageId` (voir Journal) ;
+  pour un agent sans `messageId`, elles resteraient un seul message.
 - Rapport « still running » (2.3.0) et rapports répétés d'un même sous-agent : non observés, rien
   n'en est lu.
 - Hors périmètre, fiches à part : l'extension `_session/steering` (réorienter un tour en cours,

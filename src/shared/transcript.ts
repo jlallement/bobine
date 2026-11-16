@@ -39,7 +39,7 @@ import {
   type Subagent,
   type SubagentRun
 } from './subagent'
-import { continuesText } from './reply-boundary'
+import { continuesText, messageMarkOf, type MessageMark } from './reply-boundary'
 import { markResent, replayTail } from './replay-tail'
 import { renewalPending } from './session-renewal'
 import type * as Children from './children'
@@ -80,14 +80,14 @@ export type TranscriptItem =
       /** Renvoyé après un refus de connexion (D10) : l'agent a pu le recevoir `1 + resent` fois. */
       resent?: number
     }
-  | {
+  | ({
       kind: 'agent'
       id: number
       text: string
       /** Heure de fin de la réponse (ms), affichée au survol. */
       at?: number
-    }
-  | { kind: 'thought'; id: number; text: string }
+    } & MessageMark)
+  | ({ kind: 'thought'; id: number; text: string } & MessageMark)
   | {
       kind: 'tool'
       id: number
@@ -728,10 +728,11 @@ function applyUpdateItems(state: TranscriptState, update: SessionUpdate): Transc
       const text =
         update.content.type === 'text' ? update.content.text : `\n[${update.content.type}]\n`
       const last = state.items.at(-1)
-      if (last && continuesText(last, kind)) {
+      const mark = messageMarkOf(update, kind)
+      if (last && continuesText(last, kind, mark.messageId)) {
         return replaceAt(state, state.items.length - 1, () => ({ ...last, text: last.text + text }))
       }
-      return push(state, { kind, text })
+      return push(state, { kind, text, ...mark } as NewItem)
     }
     case 'tool_call': {
       const index = findTool(state.items, update.toolCallId)

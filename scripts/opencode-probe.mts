@@ -658,7 +658,16 @@ async function probeSimple(): Promise<Observation> {
         usageUpdate: usage ? Object.keys(usage).sort() : [],
         usageCurrency:
           usage?.sessionUpdate === 'usage_update' ? (usage.cost?.currency ?? null) : null,
-        turnUsage: response.usage?.inputTokens != null && response.usage.outputTokens != null
+        turnUsage: response.usage?.inputTokens != null && response.usage.outputTokens != null,
+        // `messageId` d'ACP sur chaque morceau de la réponse : sépare deux réponses hors tour
+        // rapprochées (fiche 232).
+        messageId: seen.updates.some((u) => u.sessionUpdate === 'agent_message_chunk')
+          ? seen.updates.every(
+              (u) =>
+                u.sessionUpdate !== 'agent_message_chunk' ||
+                (typeof u.messageId === 'string' && u.messageId !== '')
+            )
+          : null
       }
     })
   } finally {

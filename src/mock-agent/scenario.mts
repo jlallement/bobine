@@ -31,7 +31,12 @@ export const LOGIN_MARKER = '.mock-agent-logged-in'
 
 export type Step =
   /** Texte de l'agent, envoyé en plusieurs morceaux (streaming). */
-  | { kind: 'text'; text: string }
+  | {
+      kind: 'text'
+      text: string
+      /** `messageId` d'ACP sur chaque morceau, comme OpenCode 2.3.0 (fiche 232). */
+      messageId?: string
+    }
   /** Réflexion de l'agent (agent_thought_chunk), en streaming. */
   | { kind: 'thought'; text: string }
   /** N'importe quel `session/update` brut. */
@@ -357,7 +362,7 @@ export async function playSteps(steps: Step[], ctx: TurnContext): Promise<void> 
 async function playStep(step: Step, ctx: TurnContext): Promise<void> {
   switch (step.kind) {
     case 'text':
-      return streamChunks(ctx, say(step.text, lang(ctx)), 'agent_message_chunk')
+      return streamChunks(ctx, say(step.text, lang(ctx)), 'agent_message_chunk', step.messageId)
     case 'thought':
       return streamChunks(ctx, say(step.text, lang(ctx)), 'agent_thought_chunk')
     case 'update':
@@ -856,10 +861,15 @@ async function openCodeWrite(
 async function streamChunks(
   ctx: TurnContext,
   text: string,
-  sessionUpdate: 'agent_message_chunk' | 'agent_thought_chunk'
+  sessionUpdate: 'agent_message_chunk' | 'agent_thought_chunk',
+  messageId?: string
 ): Promise<void> {
   for (const chunk of splitIntoChunks(text)) {
-    await send(ctx, { sessionUpdate, content: { type: 'text', text: chunk } })
+    await send(ctx, {
+      sessionUpdate,
+      content: { type: 'text', text: chunk },
+      ...(messageId ? { messageId } : {})
+    })
     await tick(ctx, 1)
   }
 }

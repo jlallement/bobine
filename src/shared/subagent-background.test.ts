@@ -209,3 +209,39 @@ describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 232)', (
     expect(Math.max(...ids)).toBeLessThan(state.nextId)
   })
 })
+
+describe('messageId d’ACP : un autre message commence (fiche 232)', () => {
+  const chunk = (text: string, messageId?: string, kind = 'agent_message_chunk' as const) =>
+    update({
+      sessionUpdate: kind,
+      content: { type: 'text', text },
+      ...(messageId ? { messageId } : {})
+    } as SessionUpdate)
+  const texts = (...events: AgentEvent[]) =>
+    reduce(...events).items.flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+  const start = { type: 'user-message', text: 'Lance deux sous-agents' } as AgentEvent
+
+  it('deux réponses hors tour rapprochées (OpenCode 2.3.0) : deux messages, Markdown intact', () => {
+    expect(
+      texts(
+        start,
+        chunk('Lancés.', 'msg_a'),
+        { ...turnEnd, at: 5_000 },
+        chunk('Premier mot reçu ; ', 'msg_b'),
+        chunk('j’attends le second.', 'msg_b'),
+        chunk('- `secret.txt` : **KANGOUROU**', 'msg_c')
+      )
+    ).toEqual([
+      'Lancés.',
+      'Premier mot reçu ; j’attends le second.',
+      '- `secret.txt` : **KANGOUROU**'
+    ])
+  })
+
+  it('même messageId, ou aucun (Bob) : un seul message, même avec une pause', () => {
+    expect(texts(start, chunk('Un ', 'msg_a'), chunk('seul.', 'msg_a'))).toEqual(['Un seul.'])
+    expect(texts(start, chunk('Un '), chunk('seul.'))).toEqual(['Un seul.'])
+    // Un morceau sans messageId après un morceau qui en a un : rien ne dit qu'un autre commence.
+    expect(texts(start, chunk('Un ', 'msg_a'), chunk('seul.'))).toEqual(['Un seul.'])
+  })
+})

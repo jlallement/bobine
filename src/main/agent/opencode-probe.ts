@@ -233,6 +233,16 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       label: 'consommation (usage_update avec coût en USD)',
       ok: simple['usageCurrency'] === 'USD'
     },
+    // Plus récent que la sonde (fiche 232) : rien tant qu'il n'a pas tourné.
+    ...(simple['messageId'] === undefined
+      ? []
+      : [
+          {
+            label:
+              'messageId sur chaque morceau de réponse (deux réponses hors tour rapprochées séparées, fiche 232)',
+            ok: simple['messageId'] === true
+          }
+        ]),
     byModel('sous-agent reconnu (carte « Sous-agent »)', sub['called'], sub['recognized']),
     byModel(
       'travail du sous-agent rangé sous sa carte (_meta « opencode/child-session », titre = description)',

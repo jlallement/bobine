@@ -208,5 +208,35 @@ export const openCode23Scenarios: Record<string, Scenario> = {
         ]
       }
     ]
+  },
+  'sous-agents-deux-rapports-2-3': {
+    description:
+      'Comme OpenCode 2.3.0 (essai réel du 2026-11-16) : deux sous-agents en arrière-plan ; le parent répond hors tour à chaque rapport, deux messages rapprochés (messageId différents, rien d’autre entre eux)',
+    steps: [
+      ...PAIR.flatMap(launch),
+      ...PAIR.map(childSession),
+      ...PAIR.map(returned),
+      {
+        kind: 'text',
+        messageId: 'msg_lancement',
+        text: 'Les deux sous-agents « explore » sont lancés en parallèle.'
+      },
+      {
+        kind: 'after-turn',
+        afterMs: PAIR[1].afterMs + 500,
+        steps: [
+          {
+            kind: 'text',
+            messageId: 'msg_premier_rapport',
+            text: 'Premier mot reçu ; j’attends le rapport du second sous-agent.'
+          },
+          {
+            kind: 'text',
+            messageId: 'msg_second_rapport',
+            text: '- `secret.txt` : **KANGOUROU**\n- `autre.txt` : **ZEBRE**'
+          }
+        ]
+      }
+    ]
   }
 }

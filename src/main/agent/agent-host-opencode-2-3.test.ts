@@ -168,4 +168,27 @@ describe('AgentHost et OpenCode 2.3.0 (fiche 232)', () => {
       toolServer.stop()
     }
   }, 30_000)
+
+  it('deux rapports, deux réponses hors tour rapprochées : deux messages à part (messageId)', async () => {
+    const profile = profileOf('sous-agents-deux-rapports-2-3')
+    profile.args.push('--arriere-plan-ms', '300')
+    const events: AgentEvent[] = []
+    const host = new AgentHost({ profile, workspace: process.cwd(), emit: (e) => events.push(e) })
+    try {
+      await host.start()
+      await host.prompt('Lance deux sous-agents')
+      const replies = () =>
+        events
+          .reduce(reduceTranscript, emptyTranscript)
+          .items.flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+      await waitFor(() => replies().some((t) => t.includes('ZEBRE')), 8_000)
+      expect(replies()).toEqual([
+        'Les deux sous-agents « explore » sont lancés en parallèle.',
+        'Premier mot reçu ; j’attends le rapport du second sous-agent.',
+        '- `secret.txt` : **KANGOUROU**\n- `autre.txt` : **ZEBRE**'
+      ])
+    } finally {
+      host.stop()
+    }
+  }, 20_000)
 })
