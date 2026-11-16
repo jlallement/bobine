@@ -5453,9 +5453,9 @@
           }
         },
         "providers": {
-          "hint": "Points d’accès compatibles OpenAI (modèles internes…). Clé gardée par le trousseau de la session.",
+          "hint": "Points d’accès compatibles OpenAI (modèles internes…). Clé chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600).",
           "key": {
-            "help": "Chiffrée par le trousseau de la session, posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}."
+            "help": "Chiffrée par le trousseau de la session s’il y en a un (sinon gardée en clair), posée dans {{env}} au lancement de l’agent ; une clé en clair du fichier est remplacée par {env:{{env}}}."
           }
         },
         "notifications": {
@@ -5554,7 +5554,7 @@
           "detail": "`{{env}}`, chiffrée par le trousseau de la session."
         },
         "modelProviders": {
-          "detail": "Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session, posée au lancement."
+          "detail": "Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600), posée au lancement."
         }
       },
       "approvals": {

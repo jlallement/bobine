@@ -35,6 +35,15 @@ mkdirSync(captures, { recursive: true })
 export const FEATURES = currentPlatformFeatures(process.env, process.platform)
 
 /**
+ * Un trousseau chiffre les clés d'API de l'app essayée (fiche 145, D4) : sur macOS (le trousseau
+ * simulé de `--use-mock-keychain`) et sous Windows (DPAPI), toujours. Sous Linux, Chromium ne joint
+ * GNOME Keyring ni KWallet qu'à travers le bus D-Bus de la session : sans lui (Docker, job Linux de
+ * GitHub), `safeStorage` n'a que `basic_text`, et Bobine garde la clé en clair, marquée `plain:` et
+ * dite à l'écran. C'est ce comportement que les essais vérifient alors, pas un chiffrement absent.
+ */
+export const KEYRING = process.platform !== 'linux' || !!process.env['DBUS_SESSION_BUS_ADDRESS']
+
+/**
  * Compteur sur l'icône de l'app (`main` : `mainProcess()`) : `expected` là où la plateforme a ce
  * compteur (capacité `dockBadge`) ; ailleurs, jamais posé.
  */

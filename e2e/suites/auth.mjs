@@ -1,7 +1,7 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { KEYRING, L, Lpart, check, sleep, withApp } from '../lib.mjs'
 
 const KEY = 'cle-e2e-0123456789' // gitleaks:allow — fake value for tests
 const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '')`
@@ -38,10 +38,20 @@ export async function authSuite(scheme) {
         await ui.waitFor(`document.body.innerText.includes('Authentifié, je peux travailler.')`)
         check(true, 'clé d’API : la conversation fonctionne')
         const file = join(userData, 'api-keys.json')
-        check(
-          existsSync(file) && !readFileSync(file, 'utf8').includes(KEY),
-          'clé enregistrée chiffrée (jamais en clair sur le disque)'
-        )
+        const saved = existsSync(file) ? readFileSync(file, 'utf8') : ''
+        if (KEYRING) {
+          check(
+            !!saved && !saved.includes(KEY),
+            'clé enregistrée chiffrée (jamais en clair sur le disque)'
+          )
+        } else {
+          // Sans trousseau (D4) : en clair, marquée, dans un fichier que l'utilisateur seul lit.
+          check(
+            saved.includes(JSON.stringify(`plain:${KEY}`)) &&
+              (statSync(file).mode & 0o777) === 0o600,
+            'sans trousseau (D4) : clé gardée en clair, marquée « plain: », fichier en droits 600'
+          )
+        }
         const settings = await ui.ev(`window.api.settings.get().then((s) => JSON.stringify(s))`)
         check(
           !settings.includes(KEY) && !(await ui.ev(`document.body.innerHTML.includes('${KEY}')`)),
@@ -53,9 +63,21 @@ export async function authSuite(scheme) {
         await ui.click(
           `document.querySelector('[data-testid="settings-agent"][data-agent="mock"]')`
         )
-        const state = `(${ui.$('api-key-MOCK_AGENT_API_KEY')}?.querySelector('[data-testid=api-key-state]')?.innerText ?? '')`
-        await ui.waitFor(`${state}.includes(${JSON.stringify(L('settings.apiKeys.state.stored'))})`)
-        check(true, 'Réglages › Agents › page de l’agent : clé enregistrée')
+        const row = ui.$('api-key-MOCK_AGENT_API_KEY')
+        const state = `(${row}?.querySelector('[data-testid=api-key-state]')?.innerText ?? '')`
+        // Avec un trousseau : « Enregistrée » ; sans (D4) : « Enregistrée en clair » et l'avis qui
+        // dit pourquoi et comment la chiffrer.
+        const stored = L(
+          KEYRING ? 'settings.apiKeys.state.stored' : 'settings.apiKeys.plaintextState'
+        )
+        await ui.waitFor(`${state} === ${JSON.stringify(stored)}`)
+        const notice = await ui.ev(
+          `${row}?.querySelector('[data-testid=api-key-plaintext]')?.innerText ?? ''`
+        )
+        check(
+          KEYRING ? notice === '' : notice.includes(Lpart('settings.apiKeys.plaintextNotice')),
+          `Réglages › Agents › page de l’agent : « ${stored} »${KEYRING ? '' : ', avec l’avis (pas de trousseau)'}`
+        )
         await ui.ev(`${ui.$('settings-api-keys')}.scrollIntoView({ block: 'center' })`)
         await ui.shot('f1-reglages-cles')
         await ui.click(

@@ -5246,9 +5246,9 @@
           }
         },
         "providers": {
-          "hint": "OpenAI-compatible endpoints (internal models…). The key is kept by the session keyring.",
+          "hint": "OpenAI-compatible endpoints (internal models…). The key is encrypted by the session keyring if there is one, otherwise kept in plain text (mode 600).",
           "key": {
-            "help": "Encrypted by the session keyring, set in {{env}} when the agent starts; a plain-text key in the file is replaced by {env:{{env}}}."
+            "help": "Encrypted by the session keyring if there is one (otherwise kept in plain text), set in {{env}} when the agent starts; a plain-text key in the file is replaced by {env:{{env}}}."
           }
         },
         "notifications": {
@@ -5347,7 +5347,7 @@
           "detail": "`{{env}}`, encrypted by the session keyring."
         },
         "modelProviders": {
-          "detail": "OpenAI-compatible endpoints (internal models) in `~/.config/opencode/opencode.json`; key encrypted by the session keyring, set at launch."
+          "detail": "OpenAI-compatible endpoints (internal models) in `~/.config/opencode/opencode.json`; key encrypted by the session keyring if there is one, otherwise kept in plain text (mode 600), set at launch."
         }
       },
       "approvals": {

@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, Lpart, check, withApp } from '../lib.mjs'
+import { KEYRING, L, Lpart, check, withApp } from '../lib.mjs'
 import { startOpenAiCompatible } from '../fixtures/openai-compatible.mts'
 
 const BASE_PATH = '/usr/bin:/bin:/usr/sbin:/sbin'
@@ -85,14 +85,25 @@ export async function providersSuite(scheme) {
         await ui.ev(`${ui.$('providers-list')}.scrollIntoView({ block: 'center' }); true`)
         await ui.shot('86-fournisseurs')
 
-        // Clé : remplacée par {env:EXISTANT_API_KEY} dans le fichier, chiffrée dans l'app.
+        // Clé : remplacée par {env:EXISTANT_API_KEY} dans le fichier, chiffrée dans l'app ; sans
+        // trousseau (D4), gardée en clair par l'app, et la carte le dit.
         await ui.click(within('existant', 'provider-key'))
         await ui.waitFor(`!!${within('existant', 'provider-key-value')}`)
         await ui.shot('86-fournisseurs-cle')
         await fill(within('existant', 'provider-key-value'), 'sk-nouvelle-cle')
         await ui.enter()
+        const stored = L(
+          KEYRING ? 'settings.providers.key.stored' : 'settings.apiKeys.plaintextState'
+        )
         await ui.waitFor(
-          `${within('existant', 'provider-key-state')}?.innerText === ${JSON.stringify(L('settings.providers.key.stored'))}`
+          `${within('existant', 'provider-key-state')}?.innerText === ${JSON.stringify(stored)}`
+        )
+        const notice = await ui.ev(
+          `${within('existant', 'provider-key-plaintext')}?.innerText ?? ''`
+        )
+        check(
+          KEYRING ? notice === '' : notice.includes(Lpart('settings.apiKeys.plaintextNotice')),
+          `clé du fournisseur : « ${stored} »${KEYRING ? '' : ', avec l’avis (pas de trousseau)'}`
         )
         const text = readFileSync(file, 'utf8')
         check(
