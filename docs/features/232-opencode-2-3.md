@@ -1,6 +1,6 @@
 # 232 — OpenCode 2.3.0 : sous-agents toujours en arrière-plan
 
-- **Statut** : fait (en relecture, rien de poussé ni fusionné)
+- **Statut** : en cours — app, agent factice, e2e et docs faits ; **référence de la sonde pas encore refaite** (quota gratuit de Zen épuisé), rien de poussé ni fusionné
 - **Dépend de** : 078 (OpenCode 2), 122 (sous-agent en arrière-plan), 127 (D25), 139 (traces),
   140 (marque générique), 198 (sonde hebdomadaire)
 - **Agents** : OpenCode pour le relevé et le profil (`testedVersions`) ; les corrections de l'app
@@ -60,8 +60,9 @@ La détection d'arrière-plan de la fiche 122 (`metadata.status: "running"`) ten
 - [x] Agent factice : `sous-agent-arriere-plan-2-3`, `sous-agents-arriere-plan-2-3`, étape
       `after-turn`
 - [x] Point « création » tranché (voir Journal)
-- [x] Référence de la sonde refaite sur 2.3.0, `2.3.0` dans `testedVersions`, `docs/agents.md` et
-      section OpenCode de `docs/acp.md`
+- [ ] Référence de la sonde refaite sur 2.3.0 (`--traces --accept`) : **pas faite**, quota gratuit
+      épuisé ; à relancer seule
+- [x] `2.3.0` dans `testedVersions`, `docs/agents.md` et section OpenCode de `docs/acp.md`
 
 ## Plan
 
@@ -128,6 +129,14 @@ Aucune nouvelle dépendance. Pas d'ADR : la décision de suivre un sous-agent pa
   (`git checkout`, dossier supprimé) ; quota revenu, la sonde a été relancée seule.
 
 ## Reste à faire
+
+- **Sonde complète sur 2.3.0, seule, puis `--traces --accept`** quand le quota gratuit de Zen
+  revient (« Free usage limit reached » depuis 21 h 30 le 2026-11-16). Ce qui est déjà vérifié sur
+  2.3.0 : un passage complet propre **avant** les changements (contrat vert, 25 points), puis, sur
+  le code final, `--only sous-agent`, `--only création`, `--only "en parallèle"` (contrôles
+  verts, rapport hors tour vu, création en `kind: edit`). Ensuite : mettre à jour
+  `opencode-probe.test.ts` (version enregistrée `2.0.32` → `2.3.0`) et la ligne 2.3.0 du suivi
+  dans `docs/acp.md`, régénérer les instantanés de `trace-replay.test.ts` et les relire.
 
 - Prise en charge de plusieurs versions à la fois : proposition dans
   [ADR-0053](../adr/0053-plusieurs-versions-des-agents.md) (proposé, à trancher). En attendant,
