@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Electron 45.3.3: Chromium and V8 security fixes; a cookie set by a site in the built-in
+  browser just before you quit Bobine is now kept.
+
 ## 1.0.0-beta.6 — November 16, 2026
 
 ### New

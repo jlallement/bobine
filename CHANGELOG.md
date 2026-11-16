@@ -2,6 +2,13 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Electron 45.3.3 : correctifs de sécurité de Chromium et de V8 ; un cookie posé par un site du
+  navigateur intégré juste avant de quitter Bobine est désormais bien gardé.
+
 ## 1.0.0-beta.6 — 16 novembre 2026
 
 ### Nouveau

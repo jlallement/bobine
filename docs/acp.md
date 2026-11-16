@@ -102,6 +102,14 @@ Règle : ne rien supposer de non vérifié ni documenté.
 aussi. Retour au SDK 1.9 : un `git revert` du commit de montée, `pnpm install` (procédure et essai
 dans la fiche 181).
 
+**SDK ACP 2.7** (fiche 233, 2026-11-16, schéma 1.30 → 1.32) : rien ne change sur le fil. L'app
+n'envoie aucun champ nouveau (ni `systemPrompt`, stabilisé en 1.30, ni options initiales, ni
+capacité de suggestions) ; elle accepte en plus, dans le contenu d'un outil, une référence à une
+autre session (`type: "session"`, instable, voir « Sous-agents »). `pnpm bob-probe` (0 bobcoin,
+Bob 2.1.0) : contrat 12/12, réponses identiques à la référence 2.1.0 ; `pnpm opencode-probe
+--offline` (OpenCode 2.3.0) : contrat 12/12, réponses identiques. Ni Bob ni OpenCode n'annoncent
+`sessionCapabilities.systemPrompt`.
+
 **Autres dossiers** (`additionalDirectories`, fiche 179) : Bob 2.0.9 ne l'annonce pas (sonde du
 2026-11-06) ; l'app ne lui envoie donc rien et ne propose pas d'en ajouter. Le jour où il
 l'annoncera, la fonction marchera sans rien changer au profil. Recevoir le champ ne suffit pas
@@ -458,6 +466,12 @@ Ce que l'app en tire quand même (fiche 053, relevé le 2026-10-14) :
   (même description que le titre de la session du sous-agent, sinon la plus ancienne carte en
   cours), évènement `subagent-update`. Ses outils et sa réponse s'affichent dans la carte dépliée,
   sans rejeu ; un outil du sous-agent qui demande une autorisation sort dans le fil.
+
+**Référence de session** (schéma 1.31, instable, fiche 233) : le contenu d'un appel d'outil peut
+nommer une autre session (`{ type: "session", sessionId }`), « d'affichage seul » (sous-agent
+créé, délégué ou attendu). L'app la garde dans la carte, n'en compte rien dans le contexte et ne
+la montre pas encore (présentation à maquetter) ; aucun agent ne l'envoie aujourd'hui. Scénario
+factice : `reference-session`.
 
 ## Références
 
