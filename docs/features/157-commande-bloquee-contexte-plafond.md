@@ -156,3 +156,13 @@ Aucune nouvelle dépendance.
   coût relu après un tour (e2e `usage`, 8 s puis 15 s ; sous-agents, relus pendant leur travail)
   dépassent déjà 5 s ; l'essai de l'accueil dépend de l'attente propre à l'app (`costWaitMs`,
   3 s, `agent-readiness.ts`), laissée telle quelle.
+- 2026-11-16 — **Essai de l'accueil : coût attendu 5 s au lieu de 3** (`costWaitMs`,
+  `agent-readiness.ts`), comme la dernière relecture d'une conversation. Le résultat de l'essai
+  attendait déjà ce coût : il part dès que le coût est lu (relu toutes les 250 ms), et
+  n'attend la limite que si l'agent n'écrit rien. Rendre le résultat tout de suite et le coût
+  après n'est pas simple : la session d'essai est supprimée juste après, avec sa ligne de coût.
+  Mesuré avec l'agent factice sans coût (`--sans-cout`, source de coût déclarée) : essai rendu en
+  3,13 à 3,16 s avec 3 s, 5,17 à 5,18 s avec 5 s (0,10 s sans attente), soit 2 s de plus dans ce
+  cas seulement. Essais : coût écrit à 4 s trouvé, plus de relecture ensuite ; aucun coût : rien
+  avant 5 s, plus de relecture ensuite. Pas de ligne au CHANGELOG (rien de visible quand Bob écrit
+  son coût).

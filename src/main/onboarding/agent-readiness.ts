@@ -66,7 +66,10 @@ export const DEFAULT_TIMEOUTS: ReadinessTimeouts = {
   sessionMs: 30_000,
   replyMs: REPLY_TIMEOUT_SECONDS * 1000,
   cleanupMs: 5_000,
-  costWaitMs: 3_000
+  // Comme la dernière relecture du coût dans une conversation (5 s, fiche 157) : un coût écrit en
+  // retard (machine chargée) n'est pas manqué. Le résultat de l'essai n'attend que si le coût
+  // manque : trouvé, il part aussitôt (relu toutes les COST_POLL_MS).
+  costWaitMs: 5_000
 }
 
 /** Relecture du coût écrit par l'agent hors protocole. */
@@ -440,7 +443,7 @@ async function sendTrial(
  * sa base locale) : attendu `waitMs` au plus, l'agent l'écrivant juste après sa réponse. Jamais
  * d'exception ; rien si le profil n'en déclare pas.
  */
-async function profileCost(
+export async function profileCost(
   options: Pick<ReadinessOptions, 'profile'>,
   sessionId: string,
   waitMs: number

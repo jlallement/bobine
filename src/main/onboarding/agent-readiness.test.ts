@@ -9,8 +9,10 @@ import { AUTH_REQUIRED_MESSAGE } from '../agent/opencode-contract'
 import { EXPIRED_LOGIN_MESSAGE, INTERNAL_ERROR, UNTRUSTED_WORKSPACE } from '../agent/bob-contract'
 import {
   checkAgent,
+  DEFAULT_TIMEOUTS,
   MAX_REPLY_CHARS,
   outcomeOf,
+  profileCost,
   type ReadinessOptions,
   type TrialTurn
 } from './agent-readiness'
@@ -340,6 +342,58 @@ describe('essai « répond ? » du premier lancement (fiche 188)', () => {
 })
 
 describe('coût de l’essai (recette 0.10, D10)', () => {
+  /** Source de coût qui n'a rien avant `writtenAtMs` (horloge simulée), puis 0,02 Bobcoin. */
+  const lateSource = (writtenAtMs: number) => {
+    const t0 = Date.now()
+    let reads = 0
+    const profile = {
+      costSource: {
+        id: 'bob-db',
+        currency: 'bobcoins',
+        session: () => {
+          reads++
+          return Date.now() - t0 >= writtenAtMs ? 0.02 : undefined
+        }
+      }
+    } as unknown as AgentProfile
+    return { profile, reads: () => reads }
+  }
+
+  it('coût écrit entre 3 et 5 s (fiche 157) : trouvé, et plus relu ensuite', async () => {
+    vi.useFakeTimers()
+    try {
+      const { profile, reads } = lateSource(4_000)
+      const cost = profileCost({ profile }, 's1', DEFAULT_TIMEOUTS.costWaitMs)
+      await vi.advanceTimersByTimeAsync(4_000)
+      await expect(cost).resolves.toEqual({ amount: 0.02, currency: 'bobcoins' })
+      const found = reads()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(reads()).toBe(found)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('aucun coût écrit : rien après 5 s, plus de relecture ensuite', async () => {
+    vi.useFakeTimers()
+    try {
+      const { profile, reads } = lateSource(Number.POSITIVE_INFINITY)
+      let settled = false
+      const cost = profileCost({ profile }, 's1', DEFAULT_TIMEOUTS.costWaitMs).finally(
+        () => (settled = true)
+      )
+      await vi.advanceTimersByTimeAsync(4_900)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(400)
+      await expect(cost).resolves.toBeUndefined()
+      const last = reads()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(reads()).toBe(last)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('agent « comme Bob » (coût dans sa base, rien par ACP) : lu avant la suppression, montré et rapporté', async () => {
     const dbPath = join(folder(), 'bob.db')
     const profile = {
