@@ -1,9 +1,9 @@
 {
-  "electron": "45.2.3",
+  "electron": "45.3.3",
   "bundled": [
     {
       "name": "@agentclientprotocol/sdk",
-      "version": "2.4.0",
+      "version": "2.7.0",
       "in": ["main"]
     },
     {
