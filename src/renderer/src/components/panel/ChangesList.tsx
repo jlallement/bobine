@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, FolderOpen, SquareArrowOutUpRight, Undo2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, FolderOpen, SquareArrowUpRightExit, Undo2 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import {
   splitPath,
@@ -128,7 +128,7 @@ export function ChangesFileList({
                     onClick={() => row.openable && onAct('open', row.openable)}
                     data-testid="changes-open"
                   >
-                    <SquareArrowOutUpRight size={13} />
+                    <SquareArrowUpRightExit size={13} />
                   </button>
                 </Tip>
                 <Tip label={t('changes.reveal')}>

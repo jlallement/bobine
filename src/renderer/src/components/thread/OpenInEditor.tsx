@@ -1,4 +1,4 @@
-import { SquareArrowOutUpRight } from 'lucide-react'
+import { SquareArrowUpRightExit } from 'lucide-react'
 import { createContext, useContext } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { EditorAction } from '../../useEditor'
@@ -42,7 +42,7 @@ export function OpenInEditorButton({
       }}
       data-testid="open-in-editor"
     >
-      <SquareArrowOutUpRight size={12} />
+      <SquareArrowUpRightExit size={12} />
     </button>
   )
 }
