@@ -5344,7 +5344,7 @@
       },
       "capabilities": {
         "apiKey": {
-          "detail": "`{{env}}`, encrypted by the session keyring."
+          "detail": "`{{env}}`, encrypted by the session keyring if there is one, otherwise kept in plain text (mode 600)."
         },
         "modelProviders": {
           "detail": "OpenAI-compatible endpoints (internal models) in `~/.config/opencode/opencode.json`; key encrypted by the session keyring if there is one, otherwise kept in plain text (mode 600), set at launch."

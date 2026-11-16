@@ -798,5 +798,8 @@ lancé, rien d'autre à installer sur le Mac.
   en clair » et l'avis à l'écran. Défaut de l'app corrigé au passage (textes seulement, variante
   Linux) : trois textes affirmaient sans condition « Clé gardée / chiffrée par le trousseau de la
   session » (aide des fournisseurs, aide de la clé d'un fournisseur, capacité « fournisseurs de
-  modèles ») ; ils disent maintenant « s'il y en a un, sinon gardée en clair (droits 600) ».
+  modèles ») ; ils disent maintenant « s'il y en a un, sinon gardée en clair (droits 600) », de même
+  que la capacité « clé d'API » (`capabilities.apiKey.detail`). `KEYRING` est déduit de
+  l'environnement (l'app n'expose pas le moteur de `safeStorage`) : un bus de session sans démon de
+  trousseau fait tomber l'essai en rouge, jamais en faux vert (dit dans `e2e/lib.mjs`).
   Verts dans Docker et sur le Mac.

@@ -5350,7 +5350,9 @@ export type FrResources = {
         readonly browser: { readonly approval: 'Accord pour un site hors de cet ordinateur' }
       }
       readonly capabilities: {
-        readonly apiKey: { readonly detail: '`{{env}}`, chiffrée par le trousseau de la session.' }
+        readonly apiKey: {
+          readonly detail: '`{{env}}`, chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600).'
+        }
         readonly modelProviders: {
           readonly detail: 'Points d’accès compatibles OpenAI (modèles internes) dans `~/.config/opencode/opencode.json` ; clé chiffrée par le trousseau de la session s’il y en a un, sinon gardée en clair (droits 600), posée au lancement.'
         }
