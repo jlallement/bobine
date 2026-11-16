@@ -874,6 +874,10 @@ symbolique actif) : pas représentative d'un utilisateur ordinaire pour les essa
    l'interface. Le passage e2e Windows sera d'abord très rouge, comme Linux (90/125 au premier).
 4. Adoption : SmartScreen et Smart App Control sans signature (D3) ; Bob sous Windows non
    relevé (doc muette sur ARM64).
+5. **Trou de la CI (release)** : hors tag, `verify` des installeurs Windows a `continue-on-error` ;
+   au passage à blanc de la 1.0.0-beta.6, le `verify` arm64 était rouge et le job paraissait vert
+   (vu seulement au tag). À corriger : un passage à blanc qui montre l'échec en rouge, sans
+   bloquer les artefacts.
 
 ## Lot 3 — chemins et sécurité (fait le 2026-11-15)
 

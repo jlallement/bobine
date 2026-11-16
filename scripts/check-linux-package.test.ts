@@ -102,4 +102,24 @@ describe('paquet Linux (fiche 145)', () => {
     expect(config.linux.files.slice(0, config.files.length)).toEqual(config.files)
     expect(config.linux.files.some((p) => !p.startsWith('!'))).toBe(true)
   })
+
+  // Nom réel du .deb x64 : `${arch}` vaut l'architecture de Debian, `amd64` (vu à la publication
+  // de la 1.0.0-beta.6), pas `x64` ; les sommes gardent l'architecture de la CI
+  // (`SHA256SUMS-linux-x64.txt`). Les notes de version et la doc doivent dire le même nom.
+  it('.deb x64 nommé `amd64`, partout où il est cité', () => {
+    const config = parse(readFileSync(join(root, 'electron-builder.yml'), 'utf8')) as {
+      linux: { artifactName: string }
+    }
+    expect(config.linux.artifactName).toBe('Bobine-${version}-${arch}.${ext}')
+    for (const file of [
+      '.github/workflows/release.yml',
+      'README.md',
+      'README.fr.md',
+      'docs/installation.md'
+    ]) {
+      const text = readFileSync(join(root, file), 'utf8')
+      expect(text, file).toMatch(/Bobine-[$<>\w.-]*-amd64\.deb/)
+      expect(text, file).not.toMatch(/x64\.deb/)
+    }
+  })
 })

@@ -223,7 +223,7 @@ commentaire de `.github/workflows/release.yml`.
 ## Linux (préversion)
 
 Préversion (fiche 145), publiée avec les versions à partir de la 1.0.0-beta.6 : page « Releases »
-du dépôt (version marquée « Pre-release »), `Bobine-<version>-x64.deb` ou
+du dépôt (version marquée « Pre-release »), `Bobine-<version>-amd64.deb` (x64, nom Debian) ou
 `Bobine-<version>-arm64.deb`, avec leurs sommes (`SHA256SUMS-linux-x64.txt`,
 `SHA256SUMS-linux-arm64.txt`), ou
 
@@ -234,7 +234,7 @@ gh release download <version> -p 'Bobine-*.deb' -p 'SHA256SUMS-linux-*'   # ex. 
 Ou le construire depuis les sources, **sous Linux** (node-pty s'y compile) :
 
 ```bash
-pnpm package --linux          # dist/Bobine-<version>-<arch>.deb (x64 ou arm64, celle de la machine)
+pnpm package --linux          # dist/Bobine-<version>-<arch>.deb (amd64 ou arm64, celle de la machine)
 ```
 
 **Prérequis** : Ubuntu 24.04 ou plus récent (GNOME, Wayland ou X11), ou Debian ; x64 ou arm64.
@@ -261,7 +261,8 @@ trousseau, Bobine les garde en clair dans un fichier que vous seul pouvez lire, 
 Agents le dit ; installez-en un (`sudo apt install gnome-keyring`) et rouvrez votre session :
 elles seront chiffrées à leur prochain usage.
 
-**Vérifier la somme** publiée avec la version (`SHA256SUMS-linux-<arch>.txt`) :
+**Vérifier la somme** publiée avec la version (`SHA256SUMS-linux-x64.txt` pour `amd64`, ou
+`SHA256SUMS-linux-arm64.txt`) :
 
 ```bash
 sha256sum Bobine-<version>-<arch>.deb

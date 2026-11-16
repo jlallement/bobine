@@ -173,10 +173,10 @@ Bobine ne se met pas à jour toute seule : suivre les Releases du dépôt sur Gi
 Custom › Releases ») et installer chaque nouveau `.dmg` à la place de l'ancien. Derrière un proxy,
 sans droits administrateur, ou sans réseau : [`docs/installation.md`](docs/installation.md).
 
-**Linux (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-x64.deb` ou
+**Linux (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) ou
 `Bobine-<version>-arm64.deb` sur la [page des versions](https://github.com/jlallement/bobine/releases), pour Ubuntu 24.04 ou plus récent et
 Debian : `sudo apt install ./Bobine-<version>-<arch>.deb`. Sommes dans
-`SHA256SUMS-linux-<arch>.txt`. Sans les outils du simulateur iOS. Le détail, et la construction
+`SHA256SUMS-linux-x64.txt` ou `-arm64.txt`. Sans les outils du simulateur iOS. Le détail, et la construction
 depuis les sources : [`docs/installation.md`](docs/installation.md#linux-préversion).
 
 **Windows (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-x64.exe` ou
