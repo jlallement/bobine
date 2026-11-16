@@ -56,6 +56,32 @@ export function acceptedExpectations(
   }
 }
 
+/**
+ * Faits qui dépendent du moment où le tour du parent finit (OpenCode 2.3.0, fiche 231) : le travail
+ * d'un sous-agent n'est relayé que pendant ce tour, donc relayé ou non selon la course. Vérifiés par
+ * le contrat quand ils sont observés ; jamais comparés aux attentes (une course n'est pas un
+ * changement d'OpenCode).
+ */
+export const TIMING_DEPENDENT: ReadonlySet<string> = new Set([
+  'sous-agent.childRelayed',
+  'sous-agent.childMarker',
+  'sous-agent.childToolIdsPrefixed',
+  'sous-agent.childTitleIsDescription',
+  'sous-agents en parallèle.routed'
+])
+
+/** Les observations sans les faits de `TIMING_DEPENDENT`, pour les comparer aux attentes. */
+export function comparable(observations: Observations): Observations {
+  return Object.fromEntries(
+    Object.entries(observations).map(([name, observation]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(observation).filter(([key]) => !TIMING_DEPENDENT.has(`${name}.${key}`))
+      )
+    ])
+  )
+}
+
 /** Mises à jour ACP que l'app sait afficher ou utiliser (`shared/transcript.ts`, hôte d'agent). */
 export const KNOWN_UPDATES = new Set([
   'agent_message_chunk',
@@ -208,7 +234,8 @@ export function contractChecks(observations: Observations): ContractCheck[] {
     byModel('sous-agent reconnu (carte « Sous-agent »)', sub['called'], sub['recognized']),
     byModel(
       'travail du sous-agent rangé sous sa carte (_meta « opencode/child-session », titre = description)',
-      sub['called'],
+      // 2.3.0 : rien de relayé si le tour du parent finit avant (course, fiche 231) : à relancer.
+      sub['called'] === true && sub['childRelayed'] !== false,
       sub['childMarker'] === true && sub['childTitleIsDescription'] === true
     ),
     byModel(
@@ -216,6 +243,14 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       sub['called'],
       sub['sessionIdFound'] === true && sub['childLoadable'] === true
     ),
+    // Carte « en cours » jusqu'à sa vraie fin (fiches 122, 231) : l'outil le dit encore au travail
+    // (`metadata.status: "running"`, suivi par sa session), ou sa réponse est dans le résultat.
+    byModel(
+      'sous-agent suivi jusqu’à sa fin (metadata.status « running », ou réponse dans le résultat)',
+      sub['called'],
+      sub['background'] === true || sub['resultTag'] === 'subagent' || sub['resultTag'] === 'task'
+    ),
+    ...parallelChecks(observations['sous-agents en parallèle']),
     byModel(
       'questions de l’agent affichées en questionnaire',
       question['asked'],
@@ -246,6 +281,21 @@ export function contractChecks(observations: Observations): ContractCheck[] {
             facts('live')['rebuilt'] === true && facts('replayed')['rebuilt'] === true
           )
         ])
+  ]
+}
+
+/**
+ * Deux sous-agents lancés ensemble (fiche 231) : chacun sa session, et son travail relayé à sa
+ * carte. Rien tant que le sondage, plus récent que la sonde, n'a pas tourné.
+ */
+function parallelChecks(par: Observation | undefined): ContractCheck[] {
+  if (par === undefined) return []
+  return [
+    byModel(
+      'sous-agents en parallèle : chacun sa session, nommée par son outil avant son travail relayé (rangé sous sa carte)',
+      par['called'] === true && par['routed'] !== null,
+      par['distinctSessions'] === true && par['routed'] === true
+    )
   ]
 }
 

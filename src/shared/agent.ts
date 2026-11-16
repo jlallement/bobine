@@ -556,8 +556,12 @@ export type AgentEvent =
    * Elle l'emporte sur la fin que l'agent annonce (OpenCode dit « completed » à un refus).
    */
   | { type: 'tool-outcome'; toolCallId: string; outcome: ToolOutcome }
-  /** Sous-agent suivi en direct (fiche 053) : début, fin, coût, session à rejouer. */
-  | { type: 'subagent-run'; toolCallId: string; run: SubagentRun }
+  /**
+   * Sous-agent suivi en direct (fiche 053) : début, fin, coût, session à rejouer. `work` : à la fin
+   * d'un sous-agent en arrière-plan, son travail relu dans sa session ; il remplace celui reçu en
+   * direct, incomplet (OpenCode 2.3.0 n'en relaie plus rien après le tour du parent).
+   */
+  | { type: 'subagent-run'; toolCallId: string; run: SubagentRun; work?: TranscriptItem[] }
   /**
    * Travail d'un sous-agent reçu en direct (OpenCode 2, fiche 078) : rangé sous sa carte, pas dans
    * le fil de la conversation.

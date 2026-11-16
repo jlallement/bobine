@@ -12,7 +12,8 @@ const bobcoins = (n) =>
  * coût de Bob en direct (base de Bob d'un dossier personnel jetable), travail rejoué d'OpenCode 1.19
  * (fiche 053), travail d'OpenCode 2 rangé en direct sous la carte (fiche 078), deux sous-agents
  * lancés ensemble sur une même carte (fiche 117), sous-agent en arrière-plan qui finit après un
- * autre message, puis après redémarrage (fiche 127).
+ * autre message, puis après redémarrage (fiche 127), deux sous-agents d'OpenCode 2.3.0, toujours en
+ * arrière-plan, dont le parent répond de lui-même hors tour (fiche 231).
  */
 export async function subagentsSuite(scheme) {
   console.log(`\n— Sous-agents (${scheme})`)
@@ -20,6 +21,7 @@ export async function subagentsSuite(scheme) {
   try {
     await subagents(scheme, home)
     await backgroundThenMessage(scheme)
+    await openCode23(scheme)
   } finally {
     rmSync(home, { recursive: true, force: true })
   }
@@ -295,6 +297,105 @@ async function backgroundThenMessage(scheme) {
         check(
           (await ui.ev(`${card}.dataset.status`)) === 'completed',
           'arrière-plan : toujours fini, avec sa réponse, après redémarrage'
+        )
+      },
+      userData,
+      'echo'
+    )
+  } finally {
+    rmSync(userData, { recursive: true, force: true })
+  }
+}
+
+/**
+ * OpenCode 2.3.0 (fiche 231) : deux sous-agents lancés ensemble, toujours en arrière-plan. Leur
+ * travail n'est relayé que pendant le tour ; ils finissent après, et le parent répond de lui-même,
+ * hors tour. Chaque ligne garde son travail, complet à sa fin ; la réponse hors tour est un message
+ * à part ; le tout tient après redémarrage.
+ */
+async function openCode23(scheme) {
+  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-2-3-'))
+  const block = `[...document.querySelectorAll('[data-testid=subagents]')].at(-1)`
+  const rows = `[...(${block}?.querySelectorAll('[data-testid=subagent]') ?? [])]`
+  const head = `(${block}?.querySelector('.subagents-head')?.innerText ?? '')`
+  const work = (i) =>
+    `(${rows}[${i}]?.querySelector('[data-testid=subagent-work]')?.textContent ?? '')`
+  const unfinished = (i) =>
+    `${rows}[${i}]?.querySelectorAll('[data-testid=subagent-work] [data-testid=tool]:is([data-status=pending], [data-status=in_progress])').length ?? -1`
+  const answer = (i) =>
+    `(${rows}[${i}]?.querySelector('[data-testid=subagent-answer]')?.textContent ?? '')`
+  const replies = `[...document.querySelectorAll('.msg-agent')].map((m) => m.innerText)`
+  // Ligne dépliée (`<details>`) : « Réponse » et travail visibles.
+  const open = async (ui, i) => {
+    if (!(await ui.ev(`${rows}[${i}].open`)))
+      await ui.click(`${rows}[${i}].querySelector('summary')`)
+  }
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.send('/scenario sous-agents-arriere-plan-2-3')
+        await ui.waitFor(`${rows}.length === 2`)
+        await ui.ready()
+        const running = await ui.ev(`${rows}.map((r) => r.dataset.status).join(' ')`)
+        check(
+          running === 'in_progress in_progress' &&
+            (await ui.ev(head)).includes(L('toolCall.subagents.running', { count: 2 })),
+          `2.3.0 : deux sous-agents « en cours » après la fin du tour (${running})`
+        )
+        await open(ui, 0)
+        await open(ui, 1)
+        const live = await ui.ev(`[${work(0)}, ${work(1)}]`)
+        check(
+          live[0].includes('secret.txt') &&
+            !live[0].includes('autre.txt') &&
+            live[1].includes('autre.txt') &&
+            !live[1].includes('secret.txt'),
+          '2.3.0 : chaque ligne montre le travail de son sous-agent, pas celui de l’autre'
+        )
+        await ui.shot('g6-2-3-deux-en-cours')
+
+        await ui.waitFor(`${rows}.every((r) => r.dataset.status === 'completed')`, 40_000)
+        await open(ui, 0)
+        await open(ui, 1)
+        await ui.waitFor(`${answer(0)}.includes('KANGOUROU') && ${answer(1)}.includes('ZEBRE')`)
+        check(
+          (await ui.ev(`[${unfinished(0)}, ${unfinished(1)}].join(' ')`)) === '0 0' &&
+            !(await ui.ev(answer(0))).includes('background'),
+          '2.3.0 : à leur fin, chacun sa réponse et son travail complet (plus de lecture « en cours »)'
+        )
+        await ui.waitFor(`${replies}.at(-1)?.includes('ZEBRE')`, 20_000)
+        const [before, after] = (await ui.ev(replies)).slice(-2)
+        check(
+          !before.includes('ZEBRE') && after.includes('ZEBRE') && !after.includes(before.trim()),
+          '2.3.0 : la réponse du parent hors tour est un message à part, pas collée au précédent'
+        )
+        await ui.ev(`${block}.scrollIntoView({ block: 'start' }), true`)
+        await ui.shot('g6b-2-3-fini')
+      },
+      userData,
+      'echo'
+    )
+    await withApp(
+      scheme,
+      async (ui) => {
+        const item = `[...document.querySelectorAll('[data-testid=history-item]')].find((r) => r.innerText.includes('sous-agents-arriere-plan-2-3'))`
+        await ui.waitFor(`${rows}.length === 2 || !!${item}`, 20_000)
+        if (!(await ui.ev(`${rows}.length === 2`)))
+          await ui.click(`${item}.querySelector('.history-open') ?? ${item}`)
+        await ui.waitFor(`${rows}.length === 2`, 20_000)
+        await open(ui, 0)
+        await open(ui, 1)
+        const [before, after] = (await ui.ev(replies)).slice(-2)
+        check(
+          (await ui.ev(`${rows}.map((r) => r.dataset.status).join(' ')`)) ===
+            'completed completed' &&
+            (await ui.ev(answer(1))).includes('ZEBRE') &&
+            (await ui.ev(work(1))).includes('autre.txt') &&
+            !before.includes('ZEBRE') &&
+            after.includes('ZEBRE'),
+          '2.3.0 : après redémarrage, mêmes lignes finies, même travail, mêmes deux messages'
         )
       },
       userData,

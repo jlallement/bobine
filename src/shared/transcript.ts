@@ -32,7 +32,14 @@ import { endTurn, nextSession, startTurn, withAsideCost, withContext, withCost }
 import type { ConversationUsage } from './usage'
 import { attachmentOf, type AttachmentView } from './attachments'
 import { applyTerminalPatch, terminalPatchOf, type TerminalState } from './terminal-output'
-import { withSubagent, type Subagent, type SubagentRun } from './subagent'
+import {
+  ranSubagent,
+  renumberedWork,
+  withSubagent,
+  type Subagent,
+  type SubagentRun
+} from './subagent'
+import { continuesText } from './reply-boundary'
 import { markResent, replayTail } from './replay-tail'
 import { renewalPending } from './session-renewal'
 import type * as Children from './children'
@@ -464,11 +471,9 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     case 'subagent-run': {
       const index = findSubagent(state.items, event.toolCallId)
       if (index === -1) return state
-      return replaceAt(state, index, (current) => {
-        const tool = current as Extract<TranscriptItem, { kind: 'tool' }>
-        const subagentRun = { ...tool.subagentRun, ...event.run }
-        return { ...tool, subagentRun, status: backgroundStatus(tool.status, subagentRun) }
-      })
+      const work = event.work ? renumberedWork(event.work, state.nextId) : undefined
+      const ran = replaceAt(state, index, (t) => ranSubagent(t as ToolItem, event.run, work?.items))
+      return work ? { ...ran, nextId: work.nextId } : ran
     }
     case 'subagent-update': {
       // Seuls ses outils et ses messages : sa réflexion alourdirait l'historique sans servir.
@@ -723,7 +728,7 @@ function applyUpdateItems(state: TranscriptState, update: SessionUpdate): Transc
       const text =
         update.content.type === 'text' ? update.content.text : `\n[${update.content.type}]\n`
       const last = state.items.at(-1)
-      if (last && last.kind === kind) {
+      if (last && continuesText(last, kind)) {
         return replaceAt(state, state.items.length - 1, () => ({ ...last, text: last.text + text }))
       }
       return push(state, { kind, text })
@@ -891,17 +896,6 @@ type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
 /** Sous-agent lancé en arrière-plan qui n'a pas encore fini (fiche 122). */
 const runsInBackground = (item: ToolItem) =>
   !!item.subagentRun?.background && item.subagentRun.endedAt === undefined && !item.subagentRun.lost
-
-/**
- * Statut d'une carte de sous-agent lancé en arrière-plan (fiche 122) : en cours tant que sa session
- * n'a pas fini, même si son outil a rendu la main ; fini avec elle ; interrompu si on le perd.
- */
-function backgroundStatus(status: ToolItem['status'], run: SubagentRun): ToolItem['status'] {
-  if (!run.background) return status
-  if (run.endedAt !== undefined) return status === 'in_progress' ? 'completed' : status
-  if (run.lost) return status === 'in_progress' ? 'cancelled' : status
-  return status === 'completed' ? 'in_progress' : status
-}
 
 /** Agent arrêté : les sous-agents en arrière-plan, de n'importe quel tour, n'ont plus de suivi. */
 function closeBackground(state: TranscriptState): TranscriptState {

@@ -49,6 +49,48 @@ export function withSubagentWork(items: readonly TranscriptItem[]): TranscriptIt
   )
 }
 
+/**
+ * Travail d'un sous-agent relu dans sa session à sa fin (arrière-plan, fiche 122), rangé sous sa
+ * carte : ses outils et ses messages seulement, comme en direct, numérotés à la suite du fil.
+ */
+export function renumberedWork(
+  items: readonly TranscriptItem[],
+  nextId: number
+): { items: TranscriptItem[]; nextId: number } {
+  const kept = items.filter((item) => item.kind === 'tool' || item.kind === 'agent')
+  return {
+    items: kept.map((item, i) => ({ ...item, id: nextId + i })),
+    nextId: nextId + kept.length
+  }
+}
+
+type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
+
+/**
+ * Statut d'une carte de sous-agent lancé en arrière-plan (fiche 122) : en cours tant que sa session
+ * n'a pas fini, même si son outil a rendu la main ; fini avec elle ; interrompu si on le perd.
+ */
+function backgroundStatus(status: ToolItem['status'], run: SubagentRun): ToolItem['status'] {
+  if (!run.background) return status
+  if (run.endedAt !== undefined) return status === 'in_progress' ? 'completed' : status
+  if (run.lost) return status === 'in_progress' ? 'cancelled' : status
+  return status === 'completed' ? 'in_progress' : status
+}
+
+/**
+ * La carte d'un sous-agent avec ce que l'app a vu de lui (fiche 053). `work` : son travail relu à
+ * sa fin (arrière-plan, fiche 231), qui remplace celui reçu en direct.
+ */
+export function ranSubagent(tool: ToolItem, run: SubagentRun, work?: TranscriptItem[]): ToolItem {
+  const subagentRun = { ...tool.subagentRun, ...run }
+  return {
+    ...tool,
+    subagentRun,
+    status: backgroundStatus(tool.status, subagentRun),
+    ...(work ? { work } : {})
+  }
+}
+
 /** Clé de la marque posée par le main sur une mise à jour (jamais envoyée par un agent). */
 export const SUBAGENT_META = 'bobine/subagent'
 

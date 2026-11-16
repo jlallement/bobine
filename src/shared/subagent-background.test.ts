@@ -122,3 +122,90 @@ describe('sous-agent lancé en arrière-plan (fiche 122)', () => {
     expect(tool).toMatchObject({ status: 'cancelled' })
   })
 })
+
+describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 231)', () => {
+  const text = (t: string) =>
+    update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: t } })
+  const agentTexts = (...events: AgentEvent[]) =>
+    reduce(...events).items.flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+
+  it('le parent répond hors tour : un autre message, pas la suite du précédent', () => {
+    const turn = [
+      { type: 'user-message', text: 'Lance un sous-agent' } as AgentEvent,
+      text('Je te transmettrai le mot de code.'),
+      { ...turnEnd, at: 5_000 }
+    ]
+    expect(agentTexts(...turn, text('Le mot de code '), text('est KANGOUROU.'))).toEqual([
+      'Je te transmettrai le mot de code.',
+      'Le mot de code est KANGOUROU.'
+    ])
+    // Pendant le tour, les morceaux font toujours un seul message.
+    expect(agentTexts(...turn.slice(0, 2), text(' Encore.'))).toEqual([
+      'Je te transmettrai le mot de code. Encore.'
+    ])
+  })
+
+  it('à sa fin, son travail relu dans sa session remplace celui reçu en direct (incomplet)', () => {
+    const subagent: AgentEvent = update({
+      sessionUpdate: 'tool_call',
+      toolCallId: 's1',
+      title: 'subagent',
+      kind: 'think',
+      status: 'completed',
+      rawInput: { agent: 'explore', description: 'Lire secret.txt', prompt: 'Lis secret.txt' }
+    })
+    const relayed: AgentEvent = {
+      type: 'subagent-update',
+      toolCallId: 's1',
+      update: {
+        sessionUpdate: 'tool_call',
+        toolCallId: 'ses_k:read',
+        title: 'read',
+        kind: 'read',
+        status: 'pending'
+      }
+    }
+    const reread: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'You are a subagent spawned by another session.' },
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 'read',
+        title: 'read',
+        status: 'completed',
+        content: [],
+        locations: []
+      },
+      { kind: 'thought', id: 3, text: '' },
+      { kind: 'agent', id: 4, text: 'KANGOUROU' }
+    ]
+    const state = reduce(
+      { type: 'user-message', text: 'Lance' } as AgentEvent,
+      subagent,
+      {
+        type: 'subagent-run',
+        toolCallId: 's1',
+        run: { startedAt: 1, sessionId: 'ses_k', background: true }
+      },
+      relayed,
+      turnEnd,
+      {
+        type: 'subagent-run',
+        toolCallId: 's1',
+        run: { endedAt: 9, answer: 'KANGOUROU' },
+        work: reread
+      }
+    )
+    const card = state.items.find((i) => i.kind === 'tool')
+    expect(card?.status).toBe('completed')
+    expect(card?.kind === 'tool' && card.work?.map((i) => i.kind)).toEqual(['tool', 'agent'])
+    expect(card?.kind === 'tool' && card.work?.[0]).toMatchObject({ status: 'completed' })
+    // Numérotés à la suite du fil : aucun identifiant en double.
+    const ids = [
+      ...state.items.map((i) => i.id),
+      ...(card?.kind === 'tool' ? (card.work ?? []).map((i) => i.id) : [])
+    ]
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(Math.max(...ids)).toBeLessThan(state.nextId)
+  })
+})

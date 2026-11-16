@@ -8,7 +8,8 @@
 import type {
   AvailableCommand,
   SessionConfigOption,
-  SessionNotification
+  SessionNotification,
+  SessionUpdate
 } from '../../shared/acp-sdk.mts'
 import type { AgentCommand } from '@shared/agent'
 import type { ChildSession, SubagentStream } from './adapters'
@@ -105,4 +106,16 @@ function commandsOf(available: readonly AvailableCommand[]): AgentCommand[] {
         ? { hint: c.input.hint }
         : {})
     }))
+}
+
+/**
+ * L'agent parle ou agit (message, réflexion, outil) : hors de nos tours, c'est lui qui reprend de
+ * lui-même — OpenCode 2.3.0 répond ainsi au rapport d'un sous-agent en arrière-plan.
+ */
+export function speaks(update: SessionUpdate): boolean {
+  return (
+    update.sessionUpdate === 'agent_message_chunk' ||
+    update.sessionUpdate === 'agent_thought_chunk' ||
+    update.sessionUpdate === 'tool_call'
+  )
 }

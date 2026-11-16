@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Expected } from './opencode-probe'
 import {
   acceptedExpectations,
+  comparable,
   contractChecks,
   diffObservations,
   watchNotes
@@ -164,5 +165,51 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
       observations: offline
     })
     expect(acceptedExpectations(undefined, run, offline).offline).toBeUndefined()
+  })
+
+  describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 231)', () => {
+    const label = (start: string) => (c: { label: string }) => c.label.startsWith(start)
+
+    it('suivi jusqu’à sa fin : en arrière-plan ou réponse dans le résultat ; sinon contrat rompu', () => {
+      const check = (sub: Record<string, unknown>) => {
+        const o = structuredClone(recorded.observations)
+        o['sous-agent'] = { ...o['sous-agent'], called: true, ...sub }
+        return contractChecks(o).find(label('sous-agent suivi jusqu’à sa fin'))
+      }
+      expect(check({ background: true, resultTag: null })?.ok).toBe(true)
+      expect(check({ background: false, resultTag: 'subagent' })?.ok).toBe(true)
+      expect(check({ background: false, resultTag: null })).toMatchObject({ ok: false })
+      expect(check({ background: false, resultTag: null })?.unverified).toBeUndefined()
+    })
+
+    it('rien de relayé pendant le tour (course) : à relancer, pas un contrat rompu', () => {
+      const o = structuredClone(recorded.observations)
+      o['sous-agent'] = {
+        ...o['sous-agent'],
+        called: true,
+        childRelayed: false,
+        childMarker: null,
+        childTitleIsDescription: null
+      }
+      expect(contractChecks(o).find(label('travail du sous-agent rangé'))).toMatchObject({
+        ok: false,
+        unverified: true
+      })
+      o['sous-agents en parallèle'] = { called: true, distinctSessions: true, routed: null }
+      expect(contractChecks(o).find(label('sous-agents en parallèle'))).toMatchObject({
+        unverified: true
+      })
+      o['sous-agents en parallèle'] = { called: true, distinctSessions: true, routed: false }
+      expect(contractChecks(o).find(label('sous-agents en parallèle'))).toMatchObject({ ok: false })
+      expect(contractChecks(o).find(label('sous-agents en parallèle'))?.unverified).toBeUndefined()
+    })
+
+    it('faits d’une course jamais comparés aux attentes ; les autres, si', () => {
+      const before = { 'sous-agent': { childRelayed: true, childMarker: true, background: true } }
+      const after = { 'sous-agent': { childRelayed: false, childMarker: null, background: false } }
+      expect(diffObservations(comparable(before), comparable(after))).toEqual([
+        'sous-agent.background : true → false'
+      ])
+    })
   })
 })

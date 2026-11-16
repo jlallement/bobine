@@ -69,9 +69,11 @@ const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined
 
 /**
- * Sous-agent lancé en arrière-plan (OpenCode 2.0.32, recette du 2026-10-22) : l'outil rend la main
- * tout de suite, `rawOutput.metadata: { sessionID, status: "running" }` et « The subagent is working
- * in the background… ». OpenCode ne met jamais cette carte à jour ensuite, même au rejeu.
+ * Sous-agent lancé en arrière-plan (OpenCode 2.0.32, recette du 2026-10-22 ; **toujours** depuis la
+ * 2.3.0, relevé du 2026-11-16, fiche 231) : l'outil rend la main tout de suite, `rawOutput.metadata:
+ * { sessionID, status: "running" }` et « The subagent is working in the background… ». OpenCode ne
+ * met jamais cette carte à jour ensuite, même au rejeu. En 2.3.0, son travail n'est plus relayé
+ * après le tour du parent, et le parent répond de lui-même, hors tour, à son rapport.
  */
 export function runsInBackground(update: SessionUpdate): boolean {
   if (update.sessionUpdate !== 'tool_call_update') return false

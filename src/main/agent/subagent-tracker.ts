@@ -9,7 +9,10 @@
  *
  * Un sous-agent lancé en arrière-plan (fiche 122 : son outil rend la main tout de suite) reste en
  * cours après le tour : sa session est relue (`follow`) jusqu'à ce qu'elle se termine par une
- * réponse, deux fois de suite sans travail relayé entre-temps ; cette réponse part avec la fin.
+ * réponse, deux fois de suite sans travail relayé entre-temps ; cette réponse part avec la fin,
+ * avec son travail relu : OpenCode 2.3.0 ne relaie plus rien de lui après le tour du parent.
+ * L'agent qui parle hors tour (OpenCode 2.3.0 répond de lui-même au rapport d'un sous-agent) fait
+ * relire ces sessions sans attendre (`nudge`).
  */
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import { subagentMarkOf, type SubagentRun } from '@shared/subagent'
@@ -18,7 +21,8 @@ import type { ChildSession, SubagentCost } from './adapters'
 import type { AgentHostOptions } from './agent-host'
 
 export interface SubagentTrackerOptions {
-  emit: (toolCallId: string, run: SubagentRun) => void
+  /** `work` : son travail relu dans sa session, à sa fin (arrière-plan). */
+  emit: (toolCallId: string, run: SubagentRun, work?: TranscriptItem[]) => void
   /** Sous-agents de la conversation chez l'agent, et la devise de leur coût (`costSource`). */
   costs?: { read: () => SubagentCost[] | undefined; currency: string }
   /** Appelé à chaque relecture des coûts (pour relire aussi celui de la conversation). */
@@ -63,6 +67,8 @@ interface Detached {
   activity: number
   seen: number
   timer?: ReturnType<typeof setTimeout>
+  /** Heure prévue de la prochaine relecture (`nudge` peut l'avancer). */
+  dueAt?: number
 }
 
 interface Tracked {
@@ -172,6 +178,25 @@ export class SubagentTracker {
     return item.toolCallId
   }
 
+  /**
+   * L'agent parle hors de tout tour : souvent le rapport d'un sous-agent en arrière-plan qui vient
+   * de finir (OpenCode 2.3.0). Leurs sessions sont relues bientôt (au premier délai de `followMs`),
+   * puis au rythme du début : sa fin se voit en quelques secondes, pas après la longue attente.
+   */
+  nudge(): void {
+    const delays = this.options.followMs ?? FOLLOW_MS
+    const soon = delays[0] ?? 0
+    for (const item of this.tracked.values()) {
+      const detached = item.detached
+      if (!detached || item.endedAt !== undefined) continue
+      detached.checks = 0
+      // Relecture en cours (pas de minuterie) : la suivante partira au premier délai.
+      if (!detached.timer || (detached.dueAt ?? 0) <= Date.now() + soon) continue
+      clearTimeout(detached.timer)
+      this.followLater(item, detached)
+    }
+  }
+
   /** Fin du tour (ou arrêt) : les sous-agents encore en cours sont terminés avec lui, sauf ceux en arrière-plan. */
   settle(): void {
     for (const item of this.tracked.values()) {
@@ -213,8 +238,12 @@ export class SubagentTracker {
 
   private followLater(item: Tracked, detached: Detached): void {
     const delays = this.options.followMs ?? FOLLOW_MS
-    const delay = delays[Math.min(detached.checks, delays.length - 1)]
-    detached.timer = setTimeout(() => void this.check(item, detached), delay)
+    const delay = delays[Math.min(detached.checks, delays.length - 1)] ?? 0
+    detached.dueAt = Date.now() + delay
+    detached.timer = setTimeout(() => {
+      detached.timer = undefined
+      void this.check(item, detached)
+    }, delay)
     detached.timer.unref?.()
   }
 
@@ -223,12 +252,13 @@ export class SubagentTracker {
     const follow = this.options.follow
     if (!follow) return
     const activity = detached.activity
-    const answer = await follow(detached.sessionId).then(finalAnswer, () => undefined)
+    const work = await follow(detached.sessionId).catch(() => undefined)
+    const answer = work && finalAnswer(work)
     // Suivi abandonné pendant la relecture (nouvelle session, agent arrêté).
     if (this.tracked.get(item.toolCallId) !== item || item.endedAt !== undefined) return
     const quiet = activity === detached.seen && detached.activity === activity
     if (answer !== undefined && answer === detached.answer && quiet) {
-      this.end(item, answer)
+      this.end(item, answer, work)
       return
     }
     detached.answer = answer
@@ -237,10 +267,14 @@ export class SubagentTracker {
     this.followLater(item, detached)
   }
 
-  private end(item: Tracked, answer?: string): void {
+  private end(item: Tracked, answer?: string, work?: TranscriptItem[]): void {
     item.endedAt = this.now()
     if (item.startedAt !== undefined) {
-      this.options.emit(item.toolCallId, { endedAt: item.endedAt, ...(answer ? { answer } : {}) })
+      this.options.emit(
+        item.toolCallId,
+        { endedAt: item.endedAt, ...(answer ? { answer } : {}) },
+        work
+      )
     }
     if (!this.options.costs) return
     this.poll()

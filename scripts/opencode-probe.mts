@@ -48,6 +48,7 @@ import type {
 } from '../src/shared/acp-sdk.mts'
 import {
   acceptedExpectations,
+  comparable,
   contractChecks,
   diffObservations,
   KNOWN_UPDATES,
@@ -79,6 +80,11 @@ import {
 const EXPECTED_FILE = join(dirname(fileURLToPath(import.meta.url)), 'opencode-probe.expected.json')
 const REQUEST_MS = 60_000
 const PROMPT_MS = 240_000
+/**
+ * Attente du rapport d'un sous-agent après le tour (OpenCode 2.3.0 : il tourne toujours en
+ * arrière-plan, et le parent répond de lui-même, hors tour, quand il a fini).
+ */
+const REPORT_MS = 120_000
 
 const { values } = parseArgs({
   options: {
@@ -267,7 +273,6 @@ const prompt = (ctx: ClientContext, sessionId: string, text: string) =>
   )
 
 const sorted = (values: Iterable<string>) => [...new Set(values)].sort()
-const kindsOf = (updates: SessionUpdate[]) => sorted(updates.map((u) => u.sessionUpdate))
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Tous les types de mise à jour vus pendant les sondages qui appellent le modèle. */
@@ -643,11 +648,13 @@ async function probeSubagent(): Promise<Observation> {
       await initialize(ctx)
       const { sessionId } = await newSession(ctx, box, true)
       seen.updates.length = 0
+      const started = Date.now()
       await prompt(
         ctx,
         sessionId,
         'Lance un sous-agent (outil subagent, agent « explore ») pour lire le fichier secret.txt et rapporter le mot de code. Ne lis pas le fichier toi-même. Puis donne-moi le mot de code.'
       )
+      const report = await awaitReport(seen, ['KANGOUROU'], started)
       note(seen)
       const own = seen.updates.filter((u) => !childSessionOf(u))
       const children = seen.updates.filter((u) => childSessionOf(u))
@@ -670,6 +677,7 @@ async function probeSubagent(): Promise<Observation> {
         .flatMap((c) => (c.type === 'content' && c.content.type === 'text' ? [c.content.text] : []))
         .join('\n')
       const childSession = children.map(childSessionOf).find(Boolean)
+      const relayed = (fact: boolean) => (children.length > 0 ? fact : null)
       const input = (card?.rawInput ?? {}) as Record<string, unknown>
       const childId = subagentSessionId(text, done?.rawOutput)
       const listed = await ctx.request(methods.agent.session.list, {})
@@ -679,14 +687,26 @@ async function probeSubagent(): Promise<Observation> {
         kind: card?.kind ?? null,
         inputKeys: Object.keys(input).sort(),
         recognized: !!card && !!subagentOf(titles.get(card.toolCallId), card.rawInput),
-        childMarker: !!childSession,
-        childKinds: kindsOf(children).filter((k) => k !== 'agent_thought_chunk'),
-        childToolIdsPrefixed: children
-          .filter((u) => u.sessionUpdate === 'tool_call')
-          .every((u) => 'toolCallId' in u && u.toolCallId.startsWith(`${childSession?.id}:`)),
-        childTitleIsDescription:
-          !!childSession && childSession.title === (input['description'] as string | undefined),
+        // 2.3.0 : le travail du sous-agent n'est relayé que pendant le tour du parent, relayé ou
+        // non selon la course ; rien de relayé, ses formes ne sont pas observées (`null`, fiche
+        // 231). Après le tour, plus rien (`childAfterTurn`).
+        childRelayed: children.length > 0,
+        childAfterTurn: report.childAfterTurn,
+        childMarker: relayed(!!childSession),
+        childToolIdsPrefixed: relayed(
+          children
+            .filter((u) => u.sessionUpdate === 'tool_call')
+            .every((u) => 'toolCallId' in u && u.toolCallId.startsWith(`${childSession?.id}:`))
+        ),
+        childTitleIsDescription: relayed(
+          !!childSession && childSession.title === (input['description'] as string | undefined)
+        ),
         resultTag: /^\s*<(\w+)/.exec(text)?.[1] ?? null,
+        // Outil rendu tout de suite, sous-agent encore au travail (2.0.32 : parfois ; 2.3.0 : toujours).
+        background:
+          (done?.rawOutput as { metadata?: { status?: unknown } } | undefined)?.metadata?.status ===
+          'running',
+        reported: report.reported,
         metadataSessionId:
           typeof (done?.rawOutput as { metadata?: { sessionID?: unknown } } | undefined)?.metadata
             ?.sessionID === 'string',
@@ -712,6 +732,113 @@ async function probeSubagent(): Promise<Observation> {
       }).catch(() => false)
     }
     return { ...observation, childLoadable }
+  } finally {
+    rmSync(box.home, { recursive: true, force: true })
+  }
+}
+
+/** Texte de la conversation elle-même (pas de ses sous-agents). */
+const ownText = (updates: SessionUpdate[]) =>
+  updates
+    .flatMap((u) =>
+      u.sessionUpdate === 'agent_message_chunk' && !childSessionOf(u) && u.content.type === 'text'
+        ? [u.content.text]
+        : []
+    )
+    .join('')
+
+/**
+ * Rapport des sous-agents (fiche 231) : tous les `words` dans le texte de la conversation, dans le
+ * tour ou, au plus tard `REPORT_MS` après, quand le parent répond de lui-même hors tour (OpenCode
+ * 2.3.0). Dit aussi si du travail d'un sous-agent est encore relayé après le tour.
+ */
+async function awaitReport(seen: Seen, words: string[], started: number) {
+  const endOfTurn = seen.updates.length
+  const done = () => words.every((w) => ownText(seen.updates).includes(w))
+  const deadline = Date.now() + REPORT_MS
+  while (!done() && Date.now() < deadline) await sleep(500)
+  // Le parent finit sa phrase.
+  if (seen.updates.length > endOfTurn) await sleep(2000)
+  const inTurn = words.every((w) => ownText(seen.updates.slice(0, endOfTurn)).includes(w))
+  const reported = done()
+  console.log(
+    `      rapport : ${reported ? (inTurn ? 'dans le tour' : 'après le tour, hors tour') : 'aucun'} (${Math.round((Date.now() - started) / 1000)} s)`
+  )
+  return {
+    reported,
+    childAfterTurn: seen.updates.slice(endOfTurn).some((u) => childSessionOf(u) !== undefined)
+  }
+}
+
+/**
+ * Deux sous-agents lancés ensemble (fiche 231) : chacun sa carte, sa session et son travail ; le
+ * travail relayé va à la carte dont l'outil nomme sa session (titre = description en secours).
+ */
+async function probeParallelSubagents(): Promise<Observation> {
+  const box = sandbox()
+  writeFileSync(join(box.workspace, 'secret.txt'), 'Le mot de code est KANGOUROU.\n')
+  writeFileSync(join(box.workspace, 'autre.txt'), 'Le second mot de code est ZEBRE.\n')
+  try {
+    return await withOpenCode(box, async (ctx, seen) => {
+      await initialize(ctx)
+      const { sessionId } = await newSession(ctx, box, true)
+      seen.updates.length = 0
+      const started = Date.now()
+      await prompt(
+        ctx,
+        sessionId,
+        'Lance DEUX sous-agents en parallèle, dans le même message (outil subagent, agent « explore ») : le premier lit secret.txt et rapporte le mot de code, le second lit autre.txt et rapporte le mot de code. Ne lis aucun fichier toi-même. Quand tu as leurs deux rapports, donne-moi les deux mots de code.'
+      )
+      const report = await awaitReport(seen, ['KANGOUROU', 'ZEBRE'], started)
+      note(seen)
+      // Chaque carte : sa consigne (description) et la session que son résultat nomme, avec la
+      // position de la mise à jour qui la nomme.
+      const cards = new Map<
+        string,
+        { description?: string; session?: string; namedAt?: number; running?: boolean }
+      >()
+      seen.updates.forEach((u, at) => {
+        if (u.sessionUpdate !== 'tool_call' && u.sessionUpdate !== 'tool_call_update') return
+        if (childSessionOf(u)) return
+        const input = (u.rawInput ?? {}) as Record<string, unknown>
+        const card = cards.get(u.toolCallId) ?? {}
+        if (subagentOf(u.title ?? 'subagent', u.rawInput)) {
+          card.description = typeof input['description'] === 'string' ? input['description'] : ''
+        }
+        const metadata = (u.rawOutput as { metadata?: { sessionID?: unknown; status?: unknown } })
+          ?.metadata
+        if (typeof metadata?.sessionID === 'string' && card.session === undefined) {
+          card.session = metadata.sessionID
+          card.namedAt = at
+        }
+        if (metadata?.status === 'running') card.running = true
+        if (card.description !== undefined || card.session) cards.set(u.toolCallId, card)
+      })
+      const launched = [...cards.values()].filter((c) => c.description !== undefined)
+      const sessions = new Set(launched.map((c) => c.session))
+      // Le travail relayé : sa session est celle d'une carte, qui l'a nommée avant lui (l'app le
+      // range alors sous elle sans deviner, fiche 127) ; identifiants préfixés par sa session.
+      const routed = seen.updates.every((u, at) => {
+        const child = childSessionOf(u)
+        if (!child) return true
+        const card = launched.find((c) => c.session === child.id)
+        return (
+          card?.namedAt !== undefined &&
+          card.namedAt < at &&
+          (!('toolCallId' in u) || u.toolCallId.startsWith(`${child.id}:`))
+        )
+      })
+      return {
+        called: launched.length >= 2,
+        cards: launched.length,
+        background: launched.length > 0 && launched.every((c) => c.running === true),
+        distinctSessions: sessions.size === launched.length && !sessions.has(undefined),
+        // Rien de relayé pendant le tour (course, 2.3.0) : pas observé.
+        routed: seen.updates.some((u) => childSessionOf(u) !== undefined) ? routed : null,
+        reported: report.reported,
+        childAfterTurn: report.childAfterTurn
+      }
+    })
   } finally {
     rmSync(box.home, { recursive: true, force: true })
   }
@@ -1138,9 +1265,15 @@ function writeFacts(
     u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update' ? [u] : []
   )
   const of = (path: string) => {
-    const ids = new Set(
+    const touching = new Set(
       calls.flatMap((u) => ((u.locations ?? []).some((l) => l.path === path) ? [u.toolCallId] : []))
     )
+    // L'appel qui écrit : le modèle lit parfois le fichier avant (2.3.0, big-pickle : `read` sur
+    // les trois chemins, même celui à créer) ; ce `read` n'est pas l'écriture observée (fiche 231).
+    const writing = new Set(
+      calls.flatMap((u) => (touching.has(u.toolCallId) && u.kind === 'edit' ? [u.toolCallId] : []))
+    )
+    const ids = writing.size > 0 ? writing : touching
     const mine = calls.filter((u) => ids.has(u.toolCallId))
     const done = mine.find((u) => u.status === 'completed')
     const texts = (done?.content ?? []).flatMap((c) =>
@@ -1297,6 +1430,7 @@ async function main(): Promise<void> {
     const probes: [string, () => Promise<Observation | Observations>, boolean?][] = [
       ['réponse simple', probeSimple],
       ['sous-agent', probeSubagent],
+      ['sous-agents en parallèle', probeParallelSubagents],
       ['question', probeQuestion],
       ['outils de l’app', probeAppTools],
       ['travail (édition, liste de tâches, compaction)', probeWork, true],
@@ -1346,7 +1480,8 @@ async function main(): Promise<void> {
   const compared = expected
     ? Object.fromEntries(Object.entries(expected.observations).filter(([k]) => k in observations))
     : {}
-  const changes = expected ? diffObservations(compared, observations) : []
+  // Faits qui dépendent d'une course (fiche 231) : vérifiés par le contrat, jamais comparés.
+  const changes = expected ? diffObservations(comparable(compared), comparable(observations)) : []
   console.log(
     `\nRéponses comparées à celles d’OpenCode ${expected?.opencodeVersion ?? '(aucune attente)'}` +
       (expected ? ` (${expected.recordedAt}, ${expected.model})` : '') +
@@ -1358,7 +1493,14 @@ async function main(): Promise<void> {
   else if (changes.length === 0) console.log('  ✓ identiques')
   else for (const change of changes) console.log(`  ≠ ${change}`)
 
-  if (values.accept) {
+  // Un sondage en échec (quota du modèle gratuit épuisé, délai…) ne devient jamais une attente.
+  const failedProbes = Object.entries(observations).filter(([, o]) => 'failed' in o)
+  if (values.accept && failedProbes.length > 0) {
+    console.log(
+      `\nAttentes NON enregistrées : sondage(s) en échec (${failedProbes.map(([name]) => name).join(', ')}) ; relancer quand ils passent.`
+    )
+  }
+  if (values.accept && failedProbes.length === 0) {
     const recorded = acceptedExpectations(
       expected,
       {
@@ -1374,7 +1516,7 @@ async function main(): Promise<void> {
   }
   const broken = checks.some((c) => !c.ok && !c.unverified)
   const unverified = checks.some((c) => c.unverified)
-  const changed = !values.accept && (!expected || changes.length > 0)
+  const changed = (!values.accept || failedProbes.length > 0) && (!expected || changes.length > 0)
   console.log(
     broken || changed || notes.length > 0
       ? '\n✗ à examiner (voir docs/acp.md, « Sonde d’OpenCode »)'
