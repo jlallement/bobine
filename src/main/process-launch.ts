@@ -350,6 +350,8 @@ export interface RelayOptions {
   stdio?: SpawnOptions['stdio']
   /** Début d'un fichier (essais : simulé). */
   readHead?: (file: string) => Buffer | undefined
+  /** Dossier du main, pour un lancement sans `cwd` (comme `spawn`) ; essais : injecté. */
+  mainCwd?: () => string
 }
 
 /** Plus haut descripteur que le lancement passe à l'enfant (2, ou au-delà par `stdio`). */
@@ -411,7 +413,7 @@ export function withClosedFds(
   const cwd = options.cwd instanceof URL ? options.cwd.pathname : options.cwd
   const file =
     isPathLike(plan.file, 'posix') && !posix.isAbsolute(plan.file)
-      ? posix.resolve(cwd ?? process.cwd(), plan.file)
+      ? posix.resolve(cwd ?? (options.mainCwd ?? process.cwd)(), plan.file)
       : plan.file
   const program = findProgram(file, ctx)
   if (!program || !kernelExecutes(program, options.readHead ?? fileHead, ctx.isProgram)) {

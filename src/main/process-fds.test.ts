@@ -77,10 +77,12 @@ describe('descripteurs hérités (fiche 145, pannes-visibles)', () => {
     expect(
       withClosedFds(plan('bin/agent'), ctx, '/bin/bash', { ...elf, cwd: '/projet' }).args[4]
     ).toBe('/projet/bin/agent')
-    // Sans cwd : celui du main, comme `spawn`.
-    const here = posix([join(process.cwd(), 'bin/agent')])
-    expect(withClosedFds(plan('bin/agent'), here, '/bin/bash', elf).args[4]).toBe(
-      join(process.cwd(), 'bin/agent')
+    // Sans cwd : celui du main, comme `spawn` (injecté : la logique est POSIX, quelle que soit la
+    // machine qui lance l'essai).
+    const here = posix(['/main/bin/agent'])
+    const mainCwd = () => '/main'
+    expect(withClosedFds(plan('bin/agent'), here, '/bin/bash', { ...elf, mainCwd }).args[4]).toBe(
+      '/main/bin/agent'
     )
   })
 
