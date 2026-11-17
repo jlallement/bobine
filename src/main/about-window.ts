@@ -26,7 +26,14 @@ export function centerOn(parent: Bounds, size: { width: number; height: number }
 /** Ce dont la fenêtre a besoin d'une `BrowserWindow` (remplaçable en test). */
 export type AboutBrowserWindow = Pick<
   BrowserWindow,
-  'isDestroyed' | 'isVisible' | 'isMinimized' | 'restore' | 'show' | 'showInactive' | 'focus'
+  | 'isDestroyed'
+  | 'isVisible'
+  | 'isMinimized'
+  | 'restore'
+  | 'show'
+  | 'showInactive'
+  | 'setIgnoreMouseEvents'
+  | 'focus'
 > & {
   close(): void
   once(event: 'ready-to-show', listener: () => void): unknown

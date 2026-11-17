@@ -12,6 +12,7 @@ function fakeWindow() {
     restore: vi.fn(),
     show: vi.fn(),
     showInactive: vi.fn(),
+    setIgnoreMouseEvents: vi.fn(),
     focus: vi.fn(),
     close: vi.fn(() => {
       destroyed = true
@@ -72,6 +73,7 @@ describe('fenêtre À propos (fiche 116)', () => {
     const win = create.mock.results[0]?.value as ReturnType<typeof fakeWindow>
     win.emit('ready-to-show')
     expect(win.showInactive).toHaveBeenCalledOnce()
+    expect(win.setIgnoreMouseEvents).toHaveBeenCalledWith(true)
     expect(win.show).not.toHaveBeenCalled()
     about.close()
     about.close()

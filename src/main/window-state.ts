@@ -144,24 +144,39 @@ export function trackWindowState(
   }
 }
 
+/** Ce qu'il faut d'une fenêtre pour la montrer sans la machine (essais de bout en bout). */
+type InactiveWindow = { showInactive(): void; setIgnoreMouseEvents(ignore: boolean): void }
+
+/**
+ * Fenêtre d'essai (`BOBINE_SHOW_INACTIVE=1`) : montrée sans prendre le focus de la machine
+ * (fiche 106), ni sa souris (fiche 236). Les essais la pilotent par le protocole DevTools, qui ne
+ * passe pas par le système ; le vrai pointeur, lui, y entrait quand une fenêtre d'un autre job
+ * s'ouvrait ou se fermait au-dessus de lui, et son `pointerleave` fermait une infobulle survolée
+ * par l'essai. Les clics de l'utilisateur passent à travers, vers ce qu'il y a dessous.
+ */
+function showForTests(win: InactiveWindow): void {
+  win.setIgnoreMouseEvents(true)
+  win.showInactive()
+}
+
 /**
  * Ramène une fenêtre devant l'utilisateur (notification cliquée, commande du menu, fenêtre rapide,
- * relance de l'app). `inactive` : montrée sans prendre le focus de la machine (`BOBINE_SHOW_INACTIVE=1`,
- * essais de bout en bout, fiche 106) — sinon chaque app d'essai passerait au premier plan.
+ * relance de l'app). `inactive` : montrée sans prendre le focus ni la souris de la machine
+ * (`BOBINE_SHOW_INACTIVE=1`, essais de bout en bout, fiches 106 et 236) — sinon chaque app d'essai
+ * passerait au premier plan.
  */
 export function revealWindow(
-  win: {
+  win: InactiveWindow & {
     isMinimized(): boolean
     restore(): void
     show(): void
-    showInactive(): void
     focus(): void
   },
   inactive = false
 ): void {
   if (win.isMinimized()) win.restore()
   if (inactive) {
-    win.showInactive()
+    showForTests(win)
     return
   }
   win.show()
@@ -170,22 +185,21 @@ export function revealWindow(
 
 /**
  * Affiche la fenêtre comme elle était : agrandie avant de se montrer, plein écran ensuite.
- * `inactive` : montrée sans prendre le focus de la machine (`BOBINE_SHOW_INACTIVE=1`, essais de
- * bout en bout, fiche 106) — sinon l'app d'essai devient l'application active et les frappes de
- * l'utilisateur tombent dans sa zone de saisie.
+ * `inactive` : montrée sans prendre le focus ni la souris de la machine (`BOBINE_SHOW_INACTIVE=1`,
+ * essais de bout en bout, fiches 106 et 236) — sinon l'app d'essai devient l'application active
+ * et les frappes de l'utilisateur tombent dans sa zone de saisie.
  */
 export function showRestored(
-  win: {
+  win: InactiveWindow & {
     maximize(): void
     show(): void
-    showInactive(): void
     setFullScreen(flag: boolean): void
   },
   saved: WindowState | undefined,
   inactive = false
 ): void {
   if (saved?.maximized) win.maximize()
-  if (inactive) win.showInactive()
+  if (inactive) showForTests(win)
   else win.show()
   // Le plein écran de macOS est une animation vers un autre espace : la fenêtre doit être visible.
   if (saved?.fullScreen) win.setFullScreen(true)

@@ -124,6 +124,7 @@ describe('suivi de la fenêtre (fiche 093)', () => {
       maximize: () => calls.push('maximize'),
       show: () => calls.push('show'),
       showInactive: () => calls.push('showInactive'),
+      setIgnoreMouseEvents: (ignore: boolean) => calls.push(`ignore mouse ${ignore}`),
       setFullScreen: (flag: boolean) => calls.push(`fullscreen ${flag}`)
     }
     showRestored(win, undefined)
@@ -131,10 +132,11 @@ describe('suivi de la fenêtre (fiche 093)', () => {
     calls.length = 0
     showRestored(win, { x: 0, y: 0, width: 1, height: 1, maximized: true, fullScreen: true })
     expect(calls).toEqual(['maximize', 'show', 'fullscreen true'])
-    // Essais de bout en bout (fiche 106) : montrée sans prendre le focus de la machine.
+    // Essais de bout en bout (fiche 106) : montrée sans prendre le focus de la machine, ni sa
+    // souris (fiche 236) : le vrai pointeur n'atteint pas la fenêtre pilotée par l'essai.
     calls.length = 0
     showRestored(win, { x: 0, y: 0, width: 1, height: 1, maximized: true }, true)
-    expect(calls).toEqual(['maximize', 'showInactive'])
+    expect(calls).toEqual(['maximize', 'ignore mouse true', 'showInactive'])
   })
 
   it('ramenée devant l’utilisateur ; sans prendre le focus pendant les essais (fiche 106)', () => {
@@ -148,12 +150,13 @@ describe('suivi de la fenêtre (fiche 093)', () => {
       },
       show: () => calls.push('show'),
       showInactive: () => calls.push('showInactive'),
+      setIgnoreMouseEvents: (ignore: boolean) => calls.push(`ignore mouse ${ignore}`),
       focus: () => calls.push('focus')
     }
     revealWindow(win)
     expect(calls).toEqual(['restore', 'show', 'focus'])
     calls.length = 0
     revealWindow(win, true)
-    expect(calls).toEqual(['showInactive'])
+    expect(calls).toEqual(['ignore mouse true', 'showInactive'])
   })
 })

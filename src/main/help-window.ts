@@ -49,7 +49,13 @@ export function helpBounds(main: Rect | undefined, workArea: Rect): Rect {
 /** Ce dont l'aide a besoin d'une `BrowserWindow` (remplaçable en test). */
 export type HelpBrowserWindow = Pick<
   BrowserWindow,
-  'isDestroyed' | 'isMinimized' | 'restore' | 'show' | 'showInactive' | 'focus'
+  | 'isDestroyed'
+  | 'isMinimized'
+  | 'restore'
+  | 'show'
+  | 'showInactive'
+  | 'setIgnoreMouseEvents'
+  | 'focus'
 > & {
   close(): void
   once(event: 'ready-to-show', listener: () => void): unknown
