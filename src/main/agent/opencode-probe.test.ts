@@ -10,14 +10,14 @@ import {
   watchNotes
 } from './opencode-probe'
 
-/** Réponses d'OpenCode 2.0.32 enregistrées par `pnpm opencode-probe --accept`. */
+/** Réponses d'OpenCode 2.3.0 enregistrées par `pnpm opencode-probe --accept`. */
 const recorded = JSON.parse(
   readFileSync(join(__dirname, '../../../scripts/opencode-probe.expected.json'), 'utf8')
 ) as Expected
 
 describe('sonde de suivi d’OpenCode (fiche 078)', () => {
-  it('OpenCode 2.0.32 enregistré : le contrat de l’app tient, rien à signaler', () => {
-    expect(recorded.opencodeVersion).toBe('2.0.32')
+  it('OpenCode 2.3.0 enregistré : le contrat de l’app tient, rien à signaler', () => {
+    expect(recorded.opencodeVersion).toBe('2.3.0')
     expect(contractChecks(recorded.observations).filter((c) => !c.ok)).toEqual([])
     expect(watchNotes(recorded.observations)).toEqual([])
   })
@@ -131,7 +131,11 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
   it('fichier créé par write (fiche 202) : compté en direct et rouvert ; sinon rompu ; pas sondé, rien', () => {
     const check = (observations: typeof recorded.observations) =>
       contractChecks(observations).find((c) => c.label.includes('fiche 202'))
-    expect(check(recorded.observations)).toBeUndefined()
+    // Sondé sur 2.3.0 : vert ; pas sondé (référence plus ancienne) : rien.
+    expect(check(recorded.observations)?.ok).toBe(true)
+    const unprobed = structuredClone(recorded.observations)
+    delete unprobed['création (autorisée d’office)']
+    expect(check(unprobed)).toBeUndefined()
     const with202 = (live: boolean, replayed: boolean, created = true) => {
       const o = structuredClone(recorded.observations)
       o['création (autorisée d’office)'] = {

@@ -1,6 +1,6 @@
 {
-  "opencodeVersion": "2.0.32",
-  "recordedAt": "2026-10-17",
+  "opencodeVersion": "2.3.0",
+  "recordedAt": "2026-11-17",
   "model": "opencode/big-pickle",
   "observations": {
     "initialize": {
@@ -50,11 +50,28 @@
       "proxy": true,
       "proxyConnect": true
     },
+    "rôles installés (agents)": {
+      "modeOption": "mode:mode",
+      "listed": {
+        "perso": true,
+        "projet": true
+      },
+      "legacyModes": [],
+      "selected": {
+        "perso": true,
+        "projet": true
+      },
+      "kept": {
+        "perso": true,
+        "projet": true
+      }
+    },
     "réponse simple": {
       "stopReason": "end_turn",
       "usageUpdate": ["cost", "sessionUpdate", "size", "used"],
       "usageCurrency": "USD",
-      "turnUsage": true
+      "turnUsage": true,
+      "messageId": true
     },
     "sous-agent": {
       "called": true,
@@ -62,11 +79,14 @@
       "kind": "think",
       "inputKeys": ["agent", "description", "prompt"],
       "recognized": true,
+      "childRelayed": true,
+      "childAfterTurn": false,
       "childMarker": true,
-      "childKinds": ["agent_message_chunk", "tool_call", "tool_call_update"],
       "childToolIdsPrefixed": true,
       "childTitleIsDescription": true,
-      "resultTag": "subagent",
+      "resultTag": null,
+      "background": true,
+      "reported": true,
       "metadataSessionId": true,
       "sessionIdFound": true,
       "childInList": true,
@@ -74,11 +94,88 @@
       "permissionAsked": false,
       "childLoadable": true
     },
+    "sous-agents en parallèle": {
+      "called": true,
+      "cards": 2,
+      "background": true,
+      "distinctSessions": true,
+      "routed": true,
+      "reported": true,
+      "childAfterTurn": false
+    },
     "question": {
       "asked": true,
+      "recognized": true,
       "keys": ["qN", "qN_custom"],
+      "questions": 1,
+      "multi": false,
       "toolCallId": true,
-      "recognized": true
+      "toolStatus": "completed",
+      "pending": false,
+      "stopReason": "end_turn",
+      "used": true,
+      "continues": true
+    },
+    "question (texte libre)": {
+      "asked": true,
+      "recognized": true,
+      "keys": ["qN", "qN_custom"],
+      "questions": 1,
+      "multi": false,
+      "toolCallId": true,
+      "toolStatus": "completed",
+      "pending": false,
+      "stopReason": "end_turn",
+      "used": true,
+      "continues": true
+    },
+    "questions (plusieurs, choix multiple)": {
+      "asked": true,
+      "recognized": true,
+      "keys": ["qN", "qN_custom"],
+      "questions": 2,
+      "multi": true,
+      "toolCallId": true,
+      "toolStatus": "completed",
+      "pending": false,
+      "stopReason": "end_turn",
+      "used": true,
+      "continues": true
+    },
+    "question refusée": {
+      "asked": true,
+      "recognized": true,
+      "keys": ["qN", "qN_custom"],
+      "questions": 1,
+      "multi": false,
+      "toolCallId": true,
+      "toolStatus": "failed",
+      "pending": false,
+      "stopReason": "cancelled",
+      "used": false,
+      "continues": true
+    },
+    "question annulée": {
+      "asked": true,
+      "recognized": true,
+      "keys": ["qN", "qN_custom"],
+      "questions": 1,
+      "multi": false,
+      "toolCallId": true,
+      "toolStatus": "failed",
+      "pending": false,
+      "stopReason": "cancelled",
+      "used": false,
+      "continues": true
+    },
+    "question d’un sous-agent": {
+      "called": true,
+      "asked": true,
+      "recognized": true,
+      "parentAsked": false,
+      "elicited": false,
+      "afterTurn": true,
+      "reported": true
     },
     "outils de l’app": {
       "called": true,
@@ -110,6 +207,134 @@
       "diffLost": true,
       "rebuilt": true
     },
+    "création (autorisée d’office)": {
+      "created": true,
+      "rewritten": true,
+      "edited": true,
+      "live": {
+        "create": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Created file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "rewrite": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Wrote file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "edit": {
+          "kind": "edit",
+          "inputKeys": ["newString", "oldString", "path"],
+          "completedText": ["Edited notes.md (1 replacement)"],
+          "completedDiff": true,
+          "files": true
+        },
+        "rebuilt": true
+      },
+      "permissionAsked": false,
+      "permissionDiff": false,
+      "replayed": {
+        "create": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Created file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "rewrite": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Wrote file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "edit": {
+          "kind": "edit",
+          "inputKeys": ["newString", "oldString", "path"],
+          "completedText": ["Edited notes.md (1 replacement)"],
+          "completedDiff": true,
+          "files": true
+        },
+        "rebuilt": true
+      }
+    },
+    "création (autorisation demandée)": {
+      "created": true,
+      "rewritten": true,
+      "edited": true,
+      "live": {
+        "create": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Created file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "rewrite": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Wrote file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "edit": {
+          "kind": "edit",
+          "inputKeys": ["newString", "oldString", "path"],
+          "completedText": ["Edited notes.md (1 replacement)"],
+          "completedDiff": true,
+          "files": true
+        },
+        "rebuilt": true
+      },
+      "permissionAsked": true,
+      "permissionDiff": true,
+      "replayed": {
+        "create": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Created file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "rewrite": {
+          "kind": "edit",
+          "inputKeys": ["content", "path"],
+          "completedText": ["Wrote file successfully: …"],
+          "completedDiff": false,
+          "files": false
+        },
+        "edit": {
+          "kind": "edit",
+          "inputKeys": ["newString", "oldString", "path"],
+          "completedText": ["Edited notes.md (1 replacement)"],
+          "completedDiff": true,
+          "files": true
+        },
+        "rebuilt": true
+      }
+    },
+    "commande dans un sous-dossier": {
+      "permissionAsked": true,
+      "permissionTitles": ["ls"],
+      "permissionKind": "execute",
+      "permissionWorkdir": "docs",
+      "permissionLocations": ["<dossier>/docs"],
+      "toolWorkdirs": ["docs"],
+      "toolLocations": ["<dossier>/docs"]
+    },
+    "commande hors du dossier (refusée)": {
+      "permissionAsked": true,
+      "permissionTitles": ["ls"],
+      "permissionKind": "execute",
+      "permissionWorkdir": "../autre",
+      "permissionLocations": ["<home>/autre"],
+      "toolWorkdirs": ["../autre"],
+      "toolLocations": ["<home>/autre"]
+    },
     "règles": {
       "answered": true,
       "expected": ["ALPHA", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "HOTEL", "INDIA"],
@@ -119,26 +344,6 @@
     "flux": {
       "plan": false,
       "unknown": []
-    },
-    "rôles installés (agents)": {
-      "modeOption": "mode:mode",
-      "listed": {
-        "perso": true,
-        "projet": true
-      },
-      "legacyModes": [],
-      "selected": {
-        "perso": true,
-        "projet": true
-      },
-      "kept": {
-        "perso": true,
-        "projet": true
-      }
     }
-  },
-  "offline": {
-    "opencodeVersion": "2.2.5",
-    "recordedAt": "2026-11-14"
   }
 }

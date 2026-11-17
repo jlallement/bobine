@@ -175,3 +175,260 @@ exports[`traces ACP rejouées (fiche 139) > opencode-2.2.5/creation-autorisee-d-
   "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
 ]
 `;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/commande-dans-un-sous-dossier.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/commande-dans-un-sous-dossier.ndjson 1`] = `
+[
+  "utilisateur : Lance exactement une seule commande avec ton outil bash : « ls », en r…",
+  "outil [completed] ls (execute) · autorisation once",
+  "agent : La commande \`ls\` exécutée dans \`docs\` affiche un seul élément : - \`gui…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/commande-hors-du-dossier-refusee.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/commande-hors-du-dossier-refusee.ndjson 1`] = `
+[
+  "utilisateur : Lance exactement une seule commande avec ton outil bash : « ls », en r…",
+  "réflexion : The user wants exactly one command with the bash tool: \`ls\`, with work…",
+  "outil [refused] ls (execute) · autorisation reject",
+  "avis (info) : Réponse interrompue.",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/creation-autorisation-demandee.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/creation-autorisation-demandee.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the existing files first? The user says do exactly thre…",
+  "outil [completed] write (edit) · autorisation once · 1 diff",
+  "outil [completed] edit (edit) · autorisation once · 1 diff",
+  "outil [completed] write (edit) · autorisation once · 1 diff",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/creation-autorisation-demandee-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/creation-autorisation-demandee-2.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the existing files first? The user says do exactly thre…",
+  "outil [completed] write (edit) · 1 diff",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/creation-autorisee-d-office.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/creation-autorisee-d-office.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user said do exactly these three t…",
+  "outil [completed] write (edit) · 1 diff",
+  "réflexion : Now step 2: edit notes.md replacing "ligne deux" with "ligne DEUX". Le…",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/creation-autorisee-d-office-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/creation-autorisee-d-office-2.ndjson 1`] = `
+[
+  "utilisateur : Fais exactement ces trois choses, dans l’ordre, sans rien d’autre : 1)…",
+  "réflexion : Let me look at the files first? The user said do exactly these three t…",
+  "outil [completed] write (edit) · 1 diff",
+  "réflexion : Now step 2: edit notes.md replacing "ligne deux" with "ligne DEUX". Le…",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit)",
+  "agent : Les trois opérations sont faites, dans l'ordre : 1. \`nouveau.txt\` créé…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/fournisseurs.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/fournisseurs.ndjson 1`] = `
+[
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/fournisseurs-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/fournisseurs-2.ndjson 1`] = `
+[
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/fournisseurs-3.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/fournisseurs-3.ndjson 1`] = `
+[
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/initialize.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/initialize.ndjson 1`] = `[]`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/modifications-rejouees.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/modifications-rejouees.ndjson 1`] = `
+[
+  "utilisateur : Dans liste.md, remplace « beta » par « BETA » avec ton outil d’édition…",
+  "outil [completed] glob (search)",
+  "outil [completed] read (read)",
+  "réflexion : Replace "beta" with "BETA". Note "beta" appears once (line 2). Use edi…",
+  "outil [completed] edit (edit) · 1 diff",
+  "agent : C’est fait : \`beta\` a été remplacé par \`BETA\` dans \`liste.md\`.",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/modifications-rejouees-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/modifications-rejouees-2.ndjson 1`] = `
+[
+  "utilisateur : Dans liste.md, remplace « beta » par « BETA » avec ton outil d’édition…",
+  "outil [completed] glob (search)",
+  "outil [completed] read (read)",
+  "réflexion : Replace "beta" with "BETA". Note "beta" appears once (line 2). Use edi…",
+  "outil [completed] edit (edit) · 1 diff",
+  "agent : C’est fait : \`beta\` a été remplacé par \`BETA\` dans \`liste.md\`.",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/outils-de-l-app.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/outils-de-l-app.ndjson 1`] = `
+[
+  "utilisateur : Call the tool browser_screenshot of the MCP server named bobine once, …",
+  "réflexion : The user wants me to call browser_screenshot once, then answer "done".",
+  "outil [completed] execute (other)",
+  "agent : I called \`bobine.browser_screenshot\` once. The screenshot came back as…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent.ndjson 1`] = `
+[
+  "utilisateur : Utilise ton outil question pour me demander quel langage je préfère (c…",
+  "réflexion : The user wants me to use the question tool to ask which language they …",
+  "outil [completed] question (other)",
+  "elicitation",
+  "agent : Tu as choisi Rust.",
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-2.ndjson 1`] = `
+[
+  "utilisateur : Utilise ton outil question pour me demander quel langage je préfère (c…",
+  "réflexion : The user wants me to use the question tool to ask which language they …",
+  "outil [completed] question (other)",
+  "elicitation",
+  "réflexion : The user answered "Zig" via free-form. Respond in one sentence naming …",
+  "agent : Tu préfères Zig.",
+  "utilisateur : Réponds seulement « OK ».",
+  "réflexion : The user asks to respond only "OK". But wait—there's a system reminder…",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-3.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-3.ndjson 1`] = `
+[
+  "utilisateur : Avec UN SEUL appel de ton outil question, pose-moi deux questions : 1)…",
+  "outil [completed] question (other)",
+  "elicitation",
+  "agent : Ton langage préféré est Go, et tu utilises à la fois Vim et Emacs comm…",
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-4.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-4.ndjson 1`] = `
+[
+  "utilisateur : Utilise ton outil question pour me demander quel langage je préfère (c…",
+  "agent : I'll ask you now.",
+  "outil [failed] question (other)",
+  "elicitation",
+  "avis (info) : Réponse interrompue.",
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-5.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-5.ndjson 1`] = `
+[
+  "utilisateur : Utilise ton outil question pour me demander quel langage je préfère (c…",
+  "outil [failed] question (other)",
+  "elicitation",
+  "avis (info) : Réponse interrompue.",
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-6.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-6.ndjson 1`] = `
+[
+  "utilisateur : Lance un sous-agent (outil subagent, agent « general ») chargé de me d…",
+  "réflexion : The user wants me to launch a subagent (agent "general") tasked with a…",
+  "outil [completed] subagent (think) · sous-agent general · 1 sous lui",
+  "agent : J'ai lancé le sous-agent « general » : c'est lui qui va te poser la qu…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/regles.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/regles.ndjson 1`] = `
+[
+  "utilisateur : Recopie exactement, sans rien inventer, la liste de tous les mots de c…",
+  "réflexion : The user wants the list of code words in uppercase from the loaded ins…",
+  "agent : ALPHA, FOXTROT, ECHO, DELTA, CHARLIE, INDIA, HOTEL",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/reponse-simple.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/reponse-simple.ndjson 1`] = `
+[
+  "utilisateur : Réponds seulement « OK ».",
+  "agent : OK",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/roles-installes-agents.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/roles-installes-agents.ndjson 1`] = `[]`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/sessions.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/sessions.ndjson 1`] = `[]`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/sessions-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/sessions-2.ndjson 1`] = `[]`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/sous-agent.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/sous-agent.ndjson 1`] = `
+[
+  "utilisateur : Lance un sous-agent (outil subagent, agent « explore ») pour lire le f…",
+  "agent : I'll launch an explore subagent to read the file.",
+  "outil [completed] subagent (think) · sous-agent explore · 2 sous lui",
+  "agent : J'ai lancé le sous-agent « explore » pour lire \`secret.txt\` et rapport…",
+  "agent : Le sous-agent « explore » a lu le fichier et rapporté le contenu. - **…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/sous-agent-2.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/sous-agent-2.ndjson 1`] = `
+[
+  "utilisateur : You are a subagent spawned by another session. Dans le répertoire de t…",
+  "outil [completed] glob (search)",
+  "outil [completed] find . -name "secret.txt" -type f 2>/dev/null (execute)",
+  "outil [completed] read (read)",
+  "agent : Recherche terminée. **1. Chemin exact du fichier :** \`/dossier/secret.…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/sous-agents-en-parallele.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/sous-agents-en-parallele.ndjson 1`] = `
+[
+  "utilisateur : Lance DEUX sous-agents en parallèle, dans le même message (outil subag…",
+  "réflexion : The user wants me to launch two subagents in parallel in the same mess…",
+  "agent : Je lance les deux sous-agents en parallèle.",
+  "outil [completed] subagent (think) · sous-agent explore",
+  "outil [completed] subagent (think) · sous-agent explore · 2 sous lui",
+  "agent : Les deux sous-agents sont lancés en parallèle. J'attends leurs rapport…",
+  "réflexion : One report came back: ZEBRE from autre.txt. The other (secret.txt) is …",
+  "agent : J'ai reçu le rapport d'\`autre.txt\` : **ZEBRE**. J'attends encore celui…",
+  "réflexion : Now I have both reports. secret.txt = KANGOUROU, autre.txt = ZEBRE.",
+  "agent : J'ai reçu les deux rapports. Voici les mots de code : - \`secret.txt\` :…",
+]
+`;
+
+exports[`traces ACP rejouées (fiche 139) > opencode-2.3.0/travail-edition-liste-de-taches-compaction.ndjson : le fil rejoué est celui de l’instantané, sans doublon > opencode-2.3.0/travail-edition-liste-de-taches-compaction.ndjson 1`] = `
+[
+  "utilisateur : Dans notes.md, remplace « ligne deux » par « ligne DEUX » avec ton out…",
+  "outil [completed] read (read)",
+  "outil [completed] edit (edit) · 1 diff",
+  "outil [completed] write (edit) · 1 diff",
+  "agent : C’est fait : - \`notes.md\` : « ligne deux » remplacé par « ligne DEUX »…",
+  "utilisateur : Établis une liste de tâches (todo list) de 3 étapes pour écrire un pet…",
+  "réflexion : The user asks to use a todo list tool if it exists. I don't have a tod…",
+  "agent : Je n’ai pas d’outil de liste de tâches dans mon environnement, donc vo…",
+  "utilisateur : /compact",
+  "compaction",
+]
+`;

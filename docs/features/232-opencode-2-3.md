@@ -1,6 +1,6 @@
 # 232 — OpenCode 2.3.0 : sous-agents toujours en arrière-plan
 
-- **Statut** : en cours — app, agent factice, e2e et docs faits ; **référence de la sonde pas encore refaite** (quota gratuit de Zen épuisé), rien de poussé ni fusionné
+- **Statut** : fait, en relecture — app, agent factice, e2e, docs et référence de la sonde sur 2.3.0 (2026-11-17) ; rien de poussé ni fusionné
 - **Dépend de** : 078 (OpenCode 2), 122 (sous-agent en arrière-plan), 127 (D25), 139 (traces),
   140 (marque générique), 198 (sonde hebdomadaire)
 - **Agents** : OpenCode pour le relevé et le profil (`testedVersions`) ; les corrections de l'app
@@ -60,8 +60,9 @@ La détection d'arrière-plan de la fiche 122 (`metadata.status: "running"`) ten
 - [x] Agent factice : `sous-agent-arriere-plan-2-3`, `sous-agents-arriere-plan-2-3`, étape
       `after-turn`
 - [x] Point « création » tranché (voir Journal)
-- [ ] Référence de la sonde refaite sur 2.3.0 (`--traces --accept`) : **pas faite**, quota gratuit
-      épuisé ; à relancer seule
+- [x] Référence de la sonde refaite sur 2.3.0 (`--traces --accept`), sur un passage complet où
+      tout est vert (2026-11-17, voir Journal ; le premier passage, avec une sous-sonde mal
+      conçue, n'a pas été retenu)
 - [x] `2.3.0` dans `testedVersions`, `docs/agents.md` et section OpenCode de `docs/acp.md`
 
 ## Plan
@@ -179,32 +180,68 @@ traces), rien ne change, et une pause ne coupe jamais un message. Agent factice 
 tests qui échouent sans le correctif (`subagent-background.test.ts`,
 `agent-host-opencode-2-3.test.ts`) ; la sonde vérifie que chaque morceau a son `messageId`.
 
+### 2026-11-17 — référence de la sonde sur 2.3.0
+
+Sonde complète, modèle gratuit `opencode/big-pickle`, aucune autre campagne en cours, rien de
+copié dans le bac à sable.
+
+**Premier passage** (`--traces --accept`, code de sortie 2, « à relancer ») : 30 points du contrat
+verts, un « ? » : « question d'un sous-agent en arrière-plan affichée en questionnaire (non
+vérifié : le modèle ne l'a pas fait) », avec `called: true, asked: false`. Ce n'était **pas un échec
+intermittent** : la sous-sonde était mal conçue. Elle demandait au sous-agent d'utiliser « SON outil
+question », alors qu'en 2.3.0 **un sous-agent (`general`) n'a pas l'outil `question`, seul l'agent
+principal l'a**. Et elle ne lui donnait aucun `ask_user`, contrairement à Bobine. Trace : le
+sous-agent répond deux fois (relance du parent comprise) que l'outil `question` n'existe pas chez
+lui, et le parent conclut sans couleur. `--accept` avait quand même écrit la référence (il ne
+refuse qu'un sondage **en échec**, pas un « ? »). Elle a été jetée, sans être retenue ni commitée.
+Un second passage, lancé avant le diagnostic, a été arrêté en cours (même défaut, référence
+inutilisable).
+
+**Correction de la sonde** : la sous-sonde « question d'un sous-agent », et elle seule, reçoit un
+serveur MCP `bobine` avec `ask_user` au contrat de l'app. Il reprend le code partagé :
+`ASK_USER_DEFINITION`, `parseAskUserArgs`, `askUserSchema`, `askUserResult` de
+`src/shared/ask-user.ts`. Seule différence : la réponse est donnée tout de suite. Les autres
+sous-sondes n'ont toujours aucun serveur MCP, sauf « outils de l'app » qui garde le sien : le
+serveur a été mis en commun (`serveMcp`) sans changer ce qu'il mesure. Le contrôle vérifie
+qu'`ask_user` est appelé par le sous-agent, et non par le parent lui-même (sinon c'est le modèle :
+« à relancer »), puis que la question est reconnue comme questionnaire. `elicited` (outil
+`question` reçu) est un fait comparé aux attentes, pas une condition du contrat : qu'un sous-agent
+l'ait un jour se verra en écart.
+
+**Passage retenu** (après la correction, `--traces --accept`, code de sortie 0, « OpenCode se
+comporte comme prévu ») : **31 points du contrat verts, aucun « ? »**. Le contrôle conditionnel
+« `messageId` sur chaque morceau » est vert. Question d'un sous-agent :
+`{ called, asked, recognized: true, parentAsked: false, elicited: false, afterTurn: true,
+reported: true }`, c'est-à-dire une question posée après le tour du parent, puis la réponse
+rapportée hors tour. Écarts avec la référence 2.0.32 : 157 lignes, dont 155 clés **nouvelles**
+(sondages ajoutés depuis : commandes dans et hors du dossier, créations, questions,
+sous-agents en parallèle, `messageId`, `background`, `reported`, `childAfterTurn`). Deux seulement
+changent de valeur, toutes deux attendues : `sous-agent.resultTag` `"subagent"` → `null`, et
+`sous-agent.childKinds` disparu (remplacé par `childRelayed` / `childAfterTurn`). Le bloc
+`offline` (2.2.5) est remplacé par ce passage complet (`acceptedExpectations`, fiche 172) ;
+`profiles.test.ts` l'accepte. 28 traces dans `__traces__/opencode-2.3.0/`, instantanés de
+`trace-replay.test.ts` ajoutés et relus. Limite : une trace s'arrête à la fin du tour du parent.
+Les rapports hors tour sont vus et vérifiés par la sonde, mais absents des traces.
+
 ## Reste à faire
 
-- **Questions** : faire tourner `pnpm opencode-probe --only question` (modèle gratuit quand le quota
-  revient, ou `gpt-6.1-sol` avec une connexion posée dans le profil jetable par le tech lead).
-  Schéma exact du choix multiple : tronqué au journal Trace (`items.anyOf` supposé d'après le
+- **Questions** : schéma exact du choix multiple : tronqué au journal Trace (`items.anyOf` supposé d'après le
   standard ACP, reconnu par Bobine pendant l'essai ; `q1_custom` non vu). Réponse d'un sous-agent
   donnée après 45 s : `ask_user` rend « not answered yet » et Bobine envoie la réponse **au
   parent** en message (fiche 028) — non essayé avec un sous-agent. Proposition à maquetter, non
   faite : après « Passer », dire « OpenCode s'est arrêté après la question passée » plutôt que
   « Réponse interrompue ».
 
-- **Sonde complète sur 2.3.0, seule, puis `--traces --accept`** quand le quota gratuit de Zen
-  revient (« Free usage limit reached » depuis 21 h 30 le 2026-11-16). Ce qui est déjà vérifié sur
-  2.3.0 : un passage complet propre **avant** les changements (contrat vert, 25 points), puis, sur
-  le code final, `--only sous-agent`, `--only création`, `--only "en parallèle"` (contrôles
-  verts, rapport hors tour vu, création en `kind: edit`). Ensuite : mettre à jour
-  `opencode-probe.test.ts` (version enregistrée `2.0.32` → `2.3.0`) et la ligne 2.3.0 du suivi
-  dans `docs/acp.md`, régénérer les instantanés de `trace-replay.test.ts` et les relire.
+- Traces de la sonde : les prolonger au-delà de la fin du tour, pour garder les rapports hors tour
+  (aujourd'hui vus par la sonde, absents des traces).
 
 - Prise en charge de plusieurs versions à la fois :
   [ADR-0053](../adr/0053-plusieurs-versions-des-agents.md), **accepté** le 2026-11-16. Sa mise en
   œuvre fera l'objet d'une fiche à part : fenêtre de versions dans `testedVersions` (dernière
   mineure et les deux précédentes), références de la sonde et traces par mineure, veille
   hebdomadaire en CI des versions publiées (npm `@ibm/bob`, releases d'`anomalyco/opencode`). En
-  attendant, `--accept` remplace toujours la référence unique (la 2.0.32 serait perdue au passage
-  complet sur la 2.3.0).
+  attendant, `--accept` remplace la référence unique : la 2.0.32 a été remplacée par la 2.3.0
+  (2026-11-17) ; elle reste dans l'historique git.
 
 - Mettre à jour progressivement « son travail » pendant qu'un sous-agent tourne après le tour
   (aujourd'hui : le direct s'arrête avec le tour, le travail complet arrive à sa fin). Remplacer

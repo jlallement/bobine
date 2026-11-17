@@ -7,6 +7,7 @@ import { OPENCODE_SUBAGENT_STREAM } from './opencode-contract'
 import { findExecutable, resolveProfiles, summarizeProfiles } from './profiles'
 import bobExpected from '../../../scripts/bob-probe.expected.json'
 import opencodeExpected from '../../../scripts/opencode-probe.expected.json'
+import type { Expected } from './opencode-probe'
 import { abs, ON_WINDOWS } from '../test-platform'
 
 /** Fichier d'un programme : tel quel sous Unix ; sous Windows, le `.cmd` que pose npm (`npx.cmd`). */
@@ -168,8 +169,12 @@ describe('profils : indépendance aux agents (fiche 140)', () => {
     const [bob, opencode] = resolveProfiles(ctx)
     expect(bob?.testedVersions).toContain(bobExpected.bobVersion)
     expect(opencode?.testedVersions).toContain(opencodeExpected.opencodeVersion)
-    // Dernier passage sans modèle (fiche 198) : sa version compte aussi comme essayée.
-    expect(opencode?.testedVersions).toContain(opencodeExpected.offline?.opencodeVersion)
+    // Dernier passage sans modèle (fiche 198) : sa version compte aussi comme essayée. Un passage
+    // complet plus récent le remplace (`acceptedExpectations`, fiche 172) : rien de plus à vérifier.
+    const offline = (opencodeExpected as Pick<Expected, 'offline'>).offline
+    expect(opencode?.testedVersions).toContain(
+      offline?.opencodeVersion ?? opencodeExpected.opencodeVersion
+    )
     // Aucun plancher bloquant sans incompatibilité documentée.
     expect(bob?.minVersion).toBeUndefined()
     expect(opencode?.minVersion).toBeUndefined()
