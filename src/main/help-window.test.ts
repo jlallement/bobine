@@ -16,6 +16,7 @@ function fakeWindow() {
     restore: vi.fn(),
     show: vi.fn(),
     showInactive: vi.fn(),
+    setIgnoreMouseEvents: vi.fn(),
     focus: vi.fn(),
     close: vi.fn(() => {
       destroyed = true

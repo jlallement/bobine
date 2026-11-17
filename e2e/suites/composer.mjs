@@ -473,9 +473,16 @@ async function planModeVisible(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
-        // Couleurs lues une fois les transitions finies (bouton d'envoi, fiche 185, P7).
+        // Couleurs lues une fois les transitions finies : bouton d'envoi (fiche 185, P7), zone de
+        // saisie, puce et ligne de rappel (150 ms). Une machine chargée ne produit parfois aucune
+        // image pendant plus de 400 ms : la transition est encore à son début, la couleur lue est
+        // celle d'avant (fiche 236). On attend la fin, pas une durée.
+        const settled = `!document.getAnimations().some((a) =>
+          a.playState === 'running' &&
+          a.effect?.target?.closest?.('.composer-dock') &&
+          a.effect.getComputedTiming().endTime !== Infinity)`
         const look = async () => {
-          await ui.waitFor(`!document.querySelector('.send-button')?.getAnimations().length`)
+          await ui.waitFor(settled)
           return ui.ev(planLook)
         }
         const planOn = `document.querySelector('.composer').dataset.plan === 'true'`
@@ -497,7 +504,6 @@ async function planModeVisible(scheme) {
         await ui.waitFor(`!!${ui.$('control-mode-plan')}`)
         await ui.click(ui.$('control-mode-plan'))
         await ui.waitFor(planOn)
-        await sleep(400)
         state = await look()
         check(
           state.border && state.tinted && state.halo,
@@ -550,7 +556,6 @@ async function planModeVisible(scheme) {
         await ui.click(ui.$('composer-input'))
         await ui.press('Tab', 8)
         await ui.waitFor(`!(${planOn})`)
-        await sleep(400)
         state = await look()
         check(
           !state.chip &&
@@ -571,7 +576,6 @@ async function planModeVisible(scheme) {
         await ui.click(`[...document.querySelectorAll('[data-testid=plan-execute]')].at(-1)`)
         await ui.waitFor(`!(${planOn})`)
         await ui.ready()
-        await sleep(400)
         state = await look()
         check(
           !state.chip && !state.hint && !state.tinted,
@@ -608,7 +612,6 @@ async function planModeVisible(scheme) {
           await ui.ev(
             `Object.assign(document.documentElement.dataset, { accent: '${theme.accent}', palette: '${theme.palette}' })`
           )
-          await sleep(400)
           state = await look()
           const [r, g] = state.plan
           const blue = g > r
