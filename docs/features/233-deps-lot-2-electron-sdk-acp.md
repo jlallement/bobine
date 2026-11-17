@@ -33,8 +33,8 @@ une raison.
 Un commit par montée, un par conséquence. Bloqués, non montés : `typescript` 7
 (typescript-eslint exige `<6.1`) et `@types/node` 26 (Electron 45 embarque Node 24).
 
-Aucune nouvelle dépendance directe. Un `overrides` pnpm (minimatch) et une exclusion du délai de
-publication (Electron) dans `pnpm-workspace.yaml`, commentés.
+Aucune nouvelle dépendance directe. Un `overrides` pnpm (minimatch) dans `pnpm-workspace.yaml`,
+commenté ; aucune exception au délai de publication de pnpm.
 
 ## Versions
 
@@ -61,11 +61,6 @@ Notes relues (GitHub, `electron/electron`) :
 - 45.3.3 : Node 24.22.3 ; DevTools.
 
 Rien sur `safeStorage`, `WebContentsView`, `utilityProcess` ni le preload sandboxé.
-
-**Délai de publication de pnpm** : 45.3.3 est sortie sur GitHub le 2026-11-14, mais publiée sur
-npm le 2026-11-16 à 05 h 55 UTC, sous le délai d'un jour de pnpm (`minimumReleaseAge`). pnpm a
-ajouté de lui-même `minimumReleaseAgeExclude: electron@45.3.3` ; gardé (version demandée
-exactement), avec un commentaire, comme à la fiche 169 : à retirer au prochain lot.
 
 ## SDK ACP 2.5 → 2.7 (schéma 1.30 → 1.32)
 
@@ -172,6 +167,8 @@ Journal pour les sondes).
     colonnes de `tasks` de `~/.bob/db/bob.db` et `licenseConsent` de `~/.bob/settings/settings.json`
     (fiche 048) ; Bob tourne dans un HOME jetable.
   - `docs/acp.md` : SDK 2.7 dans « Compatibilité Bob », référence de session dans « Sous-agents ».
-  - **Reste** : maquettes de la référence de session ; au prochain lot, retirer l'exclusion
-    d'Electron ; retirer l'override de minimatch quand electron-builder et typescript-eslint
-    passeront à minimatch 11.
+  - **Reste** : maquettes de la référence de session ; retirer l'override de minimatch quand
+    electron-builder et typescript-eslint passeront à minimatch 11.
+- 2026-11-17 : le délai d'un jour de pnpm écoulé pour Electron 45.3.3 (publiée sur npm le
+  2026-11-16), plus aucune exception à `minimumReleaseAge` dans `pnpm-workspace.yaml`.
+  `pnpm install --frozen-lockfile` : code 0, verrou inchangé ; `./scripts/verify` : code 0.

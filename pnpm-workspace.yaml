@@ -9,10 +9,6 @@ allowBuilds:
   # Objets de tâche de Windows (ADR-0050) : `cnoke` choisit le binaire précompilé de la
   # plateforme (@koromix/koffi-*), sans rien compiler.
   koffi: true
-# Electron 45.3.3 publiée sur npm le 2026-11-16 (sous le délai d'un jour de pnpm) et demandée
-# exactement par le lot 2 (fiche 233) : à retirer au prochain lot.
-minimumReleaseAgeExclude:
-  - electron@45.3.3
 # GHSA-g3hv-75wg-m249 (minimatch >=7 <11.0.1, outillage seulement : electron-builder,
 # typescript-eslint). minimatch 11 retire makeRe, regexp et AST, que ces paquets n'utilisent pas ;
 # l'app construite est identique octet pour octet (fiche 233). À retirer quand ils l'exigent d'eux-mêmes.
