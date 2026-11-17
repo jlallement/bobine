@@ -6,6 +6,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Plafond de coût (Bob) : quand le coût relu à la fin d'une réponse dépasse le plafond, la
+  carte ne dit plus la réponse interrompue, et « Continuer » ne relance plus l'agent pour rien.
 - Réglages de la session : le menu ne grandit plus sous le pointeur quand ses règles et ses
   outils arrivent tard : un clic sur « Modèle » ne tombe plus sur la ligne d'en dessous.
 - OpenCode 2.3.0 : ses sous-agents, désormais toujours en arrière-plan, restent « en cours »
