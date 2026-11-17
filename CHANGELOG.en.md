@@ -6,6 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Session settings: the menu no longer grows under the pointer when its rules and tools arrive
+  late: clicking “Model” no longer lands on the row below.
 - OpenCode 2.3.0: its subagents, which now always run in the background, stay “running” until
   they report, then show their answer and all of their work; the reply the agent then gives on its
   own appears as a separate message instead of being stuck to the previous one.

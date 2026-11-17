@@ -238,6 +238,7 @@ chaque création ou changement de statut.
 | [231](231-deps-lot-1-novembre.md) | Dépendances, lot 1 de novembre : yaml 2.9.1, i18next 27.1.2, lucide-react 1.73 (`SquareArrowUpRightExit`), Vite 8.3.8, ESLint 10.15, Prettier 3.10, typescript-eslint, plugin React, jsdom ; avis de licence régénérés | fait | P2 |
 | [232](232-opencode-2-3.md) | OpenCode 2.3.0 validé : sous-agents toujours en arrière-plan suivis jusqu'à leur rapport, travail relu complet sous la carte (deux en parallèle compris), réponse hors tour du parent en message à part ; sonde refaite sur 2.3.0 | fait | P1 |
 | [233](233-deps-lot-2-electron-sdk-acp.md) | Dépendances, lot 2 de novembre : Electron 45.3.3 (correctifs de Chromium et V8), SDK ACP 2.7 (schéma 1.32 ; référence de session dans le contenu d'un outil, gardée sans présentation en attendant des maquettes), minimatch 11 par un override ciblé (GHSA-g3hv-75wg-m249, app identique) | fait | P2 |
+| [234](234-menu-reglages-stable.md) | Menu « Réglages de la session » : affiché par le repli de 300 ms, il ne grandit plus sous le pointeur quand règles et outils arrivent (le clic sur « Modèle » cochait « Réponses détaillées » ou se perdait ; échec intermittent de l'e2e `base`) ; l'aide e2e attend la fin des animations d'ouverture | fait | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

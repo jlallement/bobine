@@ -487,6 +487,22 @@ export async function withApp(
         `(async () => {
           const el = ${selector}
           el.scrollIntoView({ block: 'nearest' })
+          // Animation d'ouverture (menu, fondu) d'un parent : sa fin d'abord. Sur une machine
+          // chargée, elle reste plusieurs centaines de ms sur sa première image, que les deux
+          // mesures égales ci-dessous prenaient pour la place finale (fiche 234 : 6 px plus bas).
+          const moving = () =>
+            document.getAnimations().filter((a) => {
+              const target = a.effect?.target
+              return (
+                a.playState === 'running' &&
+                target?.contains?.(el) &&
+                a.effect.getComputedTiming().endTime !== Infinity
+              )
+            })
+          await Promise.race([
+            Promise.all(moving().map((a) => a.finished.catch(() => {}))),
+            new Promise((r) => setTimeout(r, 2000))
+          ])
           const center = () => { const b = el.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 } }
           let last = center()
           for (let i = 0; i < 30; i++) {
