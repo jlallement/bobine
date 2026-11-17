@@ -139,6 +139,29 @@ interface Summarizable {
   host?: AgentHost
   snapshot?: AgentSnapshot
   draft: boolean
+  startingHeld?: boolean
+}
+
+/** Pose ou lève `startingHeld` ; vrai si la liste change. */
+export function setStartingHeld(
+  conversation: Pick<Summarizable, 'startingHeld'> | undefined,
+  held: boolean
+): boolean {
+  if (!conversation || !!conversation.startingHeld === held) return false
+  if (held) conversation.startingHeld = true
+  else delete conversation.startingHeld
+  return true
+}
+
+/**
+ * Statut d'une conversation dans la liste : celui de son agent, sauf une fille dont la consigne
+ * n'est pas encore partie, qui reste « démarre » avant que son agent ne soit lancé et quand il est
+ * prêt (fiche 223).
+ */
+function listedStatus(conversation: Summarizable): ConversationSummary['status'] {
+  if (!conversation.host) return conversation.startingHeld ? 'starting' : 'stopped'
+  const status = conversation.snapshot?.status ?? 'starting'
+  return conversation.startingHeld && status === 'ready' ? 'starting' : status
 }
 
 /** Conversation telle que la barre latérale la liste. */
@@ -183,7 +206,7 @@ export function summaryOf(
     project: record.worktree?.root ?? record.workspace,
     updatedAt: record.updatedAt,
     createdAt: record.createdAt,
-    status: conversation.host ? (conversation.snapshot?.status ?? 'starting') : 'stopped',
+    status: listedStatus(conversation),
     draft: conversation.draft,
     ...(record.pinned ? { pinned: true } : {}),
     ...(record.worktree ? { branch: record.worktree.branch } : {}),

@@ -6,6 +6,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Child conversations: a child that has just started stays “Running” (“working” for a role)
+  until it answers; it no longer shows “Finished” with a check mark for a moment before it has
+  even received its brief.
 - Cost cap (Bob): when the cost read at the end of a reply goes over the cap, the card no
   longer says the reply was interrupted, and “Continue” no longer restarts the agent for nothing.
 - Session settings: the menu no longer grows under the pointer when its rules and tools arrive

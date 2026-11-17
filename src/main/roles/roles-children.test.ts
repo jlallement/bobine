@@ -7,7 +7,8 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { childState, type ChildState } from '@shared/children'
 import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
@@ -22,6 +23,7 @@ import { AppToolServer } from '../mcp/tool-server'
 import { builtinRoles } from './builtin'
 import { startRoleChildren } from './invoke'
 import { RoleLibrary } from './library'
+import { ReadOnlyWatch } from './read-only-watch'
 
 const cleanups: (() => void)[] = []
 afterEach(() => {
@@ -172,6 +174,44 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(reply).toContain('expert en sécurité applicative')
     expect(reply).toContain('Bobine refuses your write requests.')
     expect(reply).toContain('Audite le module de connexion.')
+  })
+
+  it('fille lancée : « au travail » sans interruption jusqu’à son premier tour, même avec une empreinte lente', async () => {
+    const env = await environment()
+    // Empreinte du dossier lente (gros dépôt, machine chargée) : la fille est prête bien avant que
+    // sa consigne ne parte. Elle ne doit jamais passer par « a fini » entre-temps.
+    const prepare = ReadOnlyWatch.prototype.prepare
+    const slow = vi.spyOn(ReadOnlyWatch.prototype, 'prepare').mockImplementation(async function (
+      this: ReadOnlyWatch,
+      id: string
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      return prepare.call(this, id)
+    })
+    cleanups.push(() => slow.mockRestore())
+    const seen: { state: ChildState; status: string; sent: boolean }[] = []
+    env.manager.subscribe({
+      list: (state) => {
+        for (const c of state.conversations.filter((c) => c.startedFrom?.id === env.mother)) {
+          seen.push({
+            state: childState(c),
+            status: c.status,
+            sent: env.items(c.id).some((i) => i.kind === 'user')
+          })
+        }
+      }
+    })
+    const child = await env.children.start(env.mother, {
+      text: 'Relis le carnet.',
+      role: 'code-reviewer'
+    })
+    await env.settled(child.id)
+    expect(slow).toHaveBeenCalled()
+    const beforePrompt = seen.filter((s) => !s.sent)
+    // L'agent a bien été prêt avant l'envoi (la course a eu lieu), sans que la liste le montre.
+    expect(beforePrompt.length).toBeGreaterThan(0)
+    expect(beforePrompt.filter((s) => s.state !== 'running')).toEqual([])
+    expect(seen.at(-1)?.state).toBe('done')
   })
 
   it('`roles-inconnu` : refusé avec la liste des rôles connus, aucune fille', async () => {

@@ -1111,3 +1111,14 @@ dans **ADR-0046** (accepté).
   `verrou-fin-de-tour.test.ts`, `profiles.test.ts`. **Écart, hors périmètre** : le passage par
   « a fini » d'une fille de rôle avant sa consigne est visible de l'utilisateur (plus long avec un
   gros dépôt) ; non corrigé ici, à trancher dans une fiche.
+- **2026-11-17** (même branche, après relecture) : **ce faux « a fini » est corrigé dans l'app**, à
+  la source de l'état (main). Une fille lancée est marquée « démarre » (`startingHeld`, posé par
+  `children.ts` dès sa création, `ConversationManager.holdStarting`) : tant que sa consigne n'est
+  pas partie, la liste la donne `starting` (`listedStatus`, `helpers.ts`) si son agent n'est pas
+  encore lancé ou s'il est prêt. La marque est levée dès que son agent quitte « prêt » (il répond,
+  attend un accord, échoue, s'arrête : `ChildConversations.onEvent`), ou si la consigne ne part
+  pas (échec, envoi retenu par le plafond de coût). Rien dans le renderer. Vaut pour toutes les
+  filles lancées par `start` (rôle ou non) ; les relecteurs (fiche 177) ne passent pas par là.
+  Test : `roles-children.test.ts` (empreinte du dossier ralentie de 400 ms, aucune fille « finie »
+  avant sa consigne) ; il échoue sans le correctif (état `done`, statut `ready`). Le verrou de fin
+  de tour reste dans `roles-travail` : l'agent factice répond en 0,8 s.

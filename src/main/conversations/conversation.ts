@@ -31,6 +31,11 @@ export interface Conversation {
    * compris dans une vue arrivée avant lui (sinon un morceau de réponse s'affichait deux fois).
    */
   seq?: number
+  /**
+   * Fille lancée dont la consigne n'est pas encore partie (`holdStarting`) : son agent prêt, elle
+   * reste « démarre » dans la liste, jamais « a fini », jusqu'à ce que son agent travaille.
+   */
+  startingHeld?: boolean
 }
 
 /** Brouillon neuf : fil vide, pas encore dans l'historique. */

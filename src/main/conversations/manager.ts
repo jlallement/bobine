@@ -75,6 +75,7 @@ import {
   resumedRecord,
   sharesWorktree,
   draftRecord,
+  setStartingHeld,
   summaryOf,
   titleFrom,
   AGENT_DELETE_TIMEOUT_MS,
@@ -506,6 +507,15 @@ export class ConversationManager {
     this.ensureLive(conversation)
     this.emitList()
     return this.summary(conversation)
+  }
+
+  /**
+   * Fille lancée (fiche 223) : « démarre » dans la liste tant que sa consigne n'est pas partie
+   * (`held`), avant le lancement de son agent comme une fois prêt (`listedStatus`). Posé et levé
+   * par le module des filles (`children.ts`).
+   */
+  holdStarting(id: string, held: boolean): void {
+    if (setStartingHeld(this.conversations.get(id), held)) this.emitList()
   }
 
   /** Démarre l'agent d'une conversation s'il le faut, et attend qu'il soit prêt (filles). */
