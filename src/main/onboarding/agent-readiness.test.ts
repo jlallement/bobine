@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'node:child_process'
+import { once } from 'node:events'
 import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -38,7 +39,30 @@ vi.mock('../agent/agent-process', async (importOriginal) => {
 const noted: string[] = []
 const removed: string[] = []
 
-afterEach(() => {
+/**
+ * Attentes de la prochaine session notée : un évènement, pas une durée (fiche 239). L'ancien
+ * `vi.waitFor` (1 s par défaut) lâchait avant l'ouverture de la session sur un runner lent.
+ */
+const sessionWaiters: Array<() => void> = []
+function noteSession(id: string): void {
+  noted.push(id)
+  for (const wake of sessionWaiters.splice(0)) wake()
+}
+function sessionNoted(): Promise<void> {
+  if (noted.length > 0) return Promise.resolve()
+  return new Promise((resolve) => sessionWaiters.push(resolve))
+}
+
+/** Essais encore en cours et leur arrêt immédiat : rien ne survit au test qui les a lancés. */
+const running: Array<Promise<unknown>> = []
+const stops: Array<() => void> = []
+
+afterEach(async () => {
+  // Un test en échec laisse son essai tourner : sans cela, sa session arrivait dans `noted` du
+  // test suivant (fiche 239). On l'arrête par le même chemin que l'app, et on attend sa fin.
+  for (const stop of stops.splice(0)) stop()
+  await Promise.allSettled(running.splice(0))
+  sessionWaiters.length = 0
   spawned.length = 0
   noted.length = 0
   removed.length = 0
@@ -62,16 +86,23 @@ const mock = (scenario: string, ...args: string[]): AgentProfile => ({
 const folder = () => mkdtempSync(join(tmpdir(), 'bobine-essai-'))
 
 function check(profile: AgentProfile, extra: Partial<ReadinessOptions> = {}) {
-  return checkAgent({
+  const { onStop, ...rest } = extra
+  const pending = checkAgent({
     profile,
     level: 'reply',
     cwd: folder(),
     scratchParent: folder(),
     pathEnv: process.env['PATH'],
-    onSession: (id) => noted.push(id),
+    onSession: noteSession,
     onSessionRemoved: (id) => removed.push(id),
-    ...extra
+    onStop: (stop) => {
+      stops.push(stop)
+      onStop?.(stop)
+    },
+    ...rest
   })
+  running.push(pending)
+  return pending
 }
 
 /** Toute session d'essai ouverte a été supprimée chez l'agent (et le magasin du factice vide). */
@@ -83,14 +114,13 @@ function expectSessionsRemoved(store?: string): void {
 
 const store = () => mkdtempSync(join(tmpdir(), 'mock-store-'))
 
-/** Le dernier agent lancé est arrêté (ou s'arrête dans la seconde). */
+/** Tout agent lancé est arrêté : on attend sa fin (évènement `exit`), pas une durée. */
 async function expectStopped(): Promise<void> {
   expect(spawned.length).toBeGreaterThan(0)
-  await vi.waitFor(
-    () => {
-      for (const child of spawned) expect(child.exitCode ?? child.signalCode).not.toBeNull()
-    },
-    { timeout: 5000 }
+  await Promise.all(
+    spawned.map((child) =>
+      child.exitCode !== null || child.signalCode !== null ? undefined : once(child, 'exit')
+    )
   )
 }
 
@@ -216,7 +246,7 @@ describe('essai « répond ? » du premier lancement (fiche 188)', () => {
     const pending = check(mock('attend-stop', '--delay', '5', '--store', kept), {
       signal: controller.signal
     })
-    await vi.waitFor(() => expect(noted.length).toBe(1))
+    await sessionNoted()
     setTimeout(() => controller.abort(), 300)
     expect(await pending).toEqual({ state: 'cancelled' })
     expectSessionsRemoved(kept)
@@ -242,7 +272,7 @@ describe('essai « répond ? » du premier lancement (fiche 188)', () => {
   it('arrêt immédiat (fermeture de l’app) : l’agent est arrêté sans attendre', async () => {
     let stop: (() => void) | undefined
     const pending = check(mock('attend-stop', '--delay', '5'), { onStop: (s) => (stop = s) })
-    await vi.waitFor(() => expect(noted.length).toBe(1))
+    await sessionNoted()
     stop?.()
     await expectStopped()
     expect((await pending).state).not.toBe('ready')
@@ -438,7 +468,7 @@ describe('coût de l’essai (recette 0.10, D10)', () => {
       signal: controller.signal,
       onTrialTurn: (turn) => turns.push(turn)
     })
-    await vi.waitFor(() => expect(noted.length).toBe(1))
+    await sessionNoted()
     setTimeout(() => controller.abort(), 300)
     expect(await pending).toEqual({ state: 'cancelled' })
     expect(turns).toEqual([expect.objectContaining({ stopReason: 'cancelled' })])
