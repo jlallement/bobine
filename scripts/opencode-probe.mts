@@ -65,6 +65,12 @@ import { ProbeTraces } from '../src/main/agent/acp-trace.ts'
 import { activeRules } from '../src/main/agent-config/rules.ts'
 import { OPENCODE_RULES } from '../src/main/agent-config/opencode-rules.ts'
 import { answerContent, questionsOf, type QuestionAnswer } from '../src/shared/questions.ts'
+import {
+  ASK_USER_DEFINITION,
+  askUserResult,
+  askUserSchema,
+  parseAskUserArgs
+} from '../src/shared/ask-user.ts'
 import { OPENCODE_AGENTS, openCodeAgentFile } from '../src/main/roles/export/opencode-agents.ts'
 import {
   openCodeSubagentOf as subagentOf,
@@ -883,6 +889,55 @@ async function probeParallelSubagents(): Promise<Observation> {
 const PIXEL_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
+/** Outil d'un serveur MCP de la sonde : sa définition, telle que `tools/list` la rend. */
+interface McpTool {
+  name: string
+  title?: string
+  description: string
+  inputSchema: unknown
+}
+
+/**
+ * Petit serveur MCP HTTP (JSON-RPC sans flux) comme celui de l'app : `initialize`, `tools/list`,
+ * `tools/call` (réponse de `call`, nom et arguments de l'outil). Donné à une seule sous-sonde à la
+ * fois, pour ne rien changer à ce que mesurent les autres.
+ */
+async function serveMcp(
+  tools: McpTool[],
+  call: (name: string, args: unknown) => unknown
+): Promise<{ url: string; close: () => void }> {
+  const server = createServer((req, res) => {
+    let body = ''
+    req.on('data', (c: Buffer) => (body += c.toString()))
+    req.on('end', () => {
+      const m = JSON.parse(body || '{}') as {
+        id?: number
+        method?: string
+        params?: { protocolVersion?: string; name?: string; arguments?: unknown }
+      }
+      const reply = (result: unknown) => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: m.id, result }))
+      }
+      if (m.method === 'initialize') {
+        return reply({
+          protocolVersion: m.params?.protocolVersion,
+          capabilities: { tools: {} },
+          serverInfo: { name: 'bobine', version: '0' }
+        })
+      }
+      if (m.method === 'tools/list') return reply({ tools })
+      if (m.method === 'tools/call') return reply(call(m.params?.name ?? '', m.params?.arguments))
+      if (m.id === undefined) return void res.writeHead(202).end()
+      reply({})
+    })
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  const port = typeof address === 'object' && address ? address.port : 0
+  return { url: `http://127.0.0.1:${port}/mcp`, close: () => server.close() }
+}
+
 /**
  * Outils de l'app (fiche 079) : un serveur MCP « bobine » avec une fausse `browser_screenshot`.
  * Comment OpenCode l'appelle-t-il, et l'app peut-elle rattacher l'appel à sa carte ? Par le titre
@@ -909,57 +964,28 @@ async function probeAppTools(): Promise<Observation> {
       let called = false
       /** Cartes en cours quand l'appel MCP est arrivé (leur code peut arriver juste après). */
       const runningAtCall = new Set<string>()
-      const server = createServer((req, res) => {
-        let body = ''
-        req.on('data', (c: Buffer) => (body += c.toString()))
-        req.on('end', () => {
-          const m = JSON.parse(body || '{}') as {
-            id?: number
-            method?: string
-            params?: { protocolVersion?: string; name?: string }
+      const { url, close } = await serveMcp(
+        [
+          {
+            name: TOOL,
+            description: 'Screenshot of the browser panel page.',
+            inputSchema: { type: 'object', properties: {} }
           }
-          const reply = (result: unknown) => {
-            res.writeHead(200, { 'content-type': 'application/json' })
-            res.end(JSON.stringify({ jsonrpc: '2.0', id: m.id, result }))
+        ],
+        () => {
+          called = true
+          track()
+          for (const [id, s] of status) {
+            if (s.status !== 'completed' && s.status !== 'failed') runningAtCall.add(id)
           }
-          if (m.method === 'initialize') {
-            return reply({
-              protocolVersion: m.params?.protocolVersion,
-              capabilities: { tools: {} },
-              serverInfo: { name: 'bobine', version: '0' }
-            })
+          return {
+            content: [
+              { type: 'text', text: 'Screenshot 1×1 px.' },
+              { type: 'image', data: PIXEL_PNG, mimeType: 'image/png' }
+            ]
           }
-          if (m.method === 'tools/list') {
-            return reply({
-              tools: [
-                {
-                  name: TOOL,
-                  description: 'Screenshot of the browser panel page.',
-                  inputSchema: { type: 'object', properties: {} }
-                }
-              ]
-            })
-          }
-          if (m.method === 'tools/call') {
-            called = true
-            track()
-            for (const [id, s] of status) {
-              if (s.status !== 'completed' && s.status !== 'failed') runningAtCall.add(id)
-            }
-            return reply({
-              content: [
-                { type: 'text', text: 'Screenshot 1×1 px.' },
-                { type: 'image', data: PIXEL_PNG, mimeType: 'image/png' }
-              ]
-            })
-          }
-          if (m.id === undefined) return void res.writeHead(202).end()
-          reply({})
-        })
-      })
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-      const address = server.address()
-      const url = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/mcp`
+        }
+      )
       try {
         await initialize(ctx)
         const { sessionId } = await newSession(ctx, box, true, [
@@ -1001,7 +1027,7 @@ async function probeAppTools(): Promise<Observation> {
           )
         }
       } finally {
-        server.close()
+        close()
       }
     })
   } finally {
@@ -1089,60 +1115,87 @@ async function askAndAnswer(
 }
 
 /**
- * Question posée par un sous-agent en arrière-plan (2.3.0, fiche 232) : sur quelle session, liée à
- * quel appel d'outil, pendant ou après le tour du parent ; la réponse remonte-t-elle au rapport ?
+ * Question posée par un sous-agent en arrière-plan (2.3.0, fiche 232). Un sous-agent d'OpenCode
+ * 2.3.0 n'a pas l'outil `question` (seul l'agent principal l'a) : dans Bobine, il passe par l'outil
+ * `ask_user` de l'app (serveur MCP « bobine », essai réel du 2026-11-16). Cette sous-sonde, et elle
+ * seule, reçoit donc un serveur `ask_user` au contrat de l'app : même définition
+ * (`ASK_USER_DEFINITION`), mêmes arguments (`parseAskUserArgs`), même questionnaire
+ * (`askUserSchema`), même réponse rendue (`askUserResult`) ; seule la réponse est donnée tout de
+ * suite au lieu d'attendre l'utilisateur. Le sous-agent pose-t-il la question, et le parent
+ * rapporte-t-il la réponse ?
  */
 async function probeSubagentQuestion(): Promise<Observation> {
   const box = sandbox()
   try {
     return await withOpenCode(box, async (ctx, seen) => {
-      await initialize(ctx)
-      const { sessionId } = await newSession(ctx, box, true)
-      seen.updates.length = 0
-      seen.answer = answerWith(['vert', 'Vert', 'green'])
-      const started = Date.now()
-      await prompt(
-        ctx,
-        sessionId,
-        'Lance un sous-agent (outil subagent, agent « general ») chargé d’utiliser SON outil question pour me demander ma couleur préférée (choix : rouge, vert, bleu), puis de te rapporter ma réponse. Ne pose pas la question toi-même. Quand tu as son rapport, dis-moi ma couleur.'
-      )
-      const endOfTurn = seen.updates.length
-      // La question peut venir après le tour (sous-agent en arrière-plan) : on l'attend.
-      const deadline = Date.now() + REPORT_MS
-      while (seen.elicitations.length === 0 && Date.now() < deadline) await sleep(500)
-      const report = await awaitReport(seen, ['vert'], started)
-      note(seen)
-      const asked = seen.elicitations[0]
-      const card = seen.updates.find(
-        (u) =>
-          (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') &&
-          !childSessionOf(u) &&
-          subagentOf(u.title ?? 'subagent', u.rawInput)
-      )
-      const childIds = new Set(
-        seen.updates.flatMap((u) => {
-          const raw = 'rawOutput' in u ? u.rawOutput : undefined
-          const meta = (raw as { metadata?: { sessionID?: unknown } } | undefined)?.metadata
-          return typeof meta?.sessionID === 'string' ? [meta.sessionID] : []
-        })
-      )
-      const toolCallId = asked?.toolCallId ?? ''
-      return {
-        called: !!card,
-        asked: !!asked,
-        recognized: !!asked?.schema && !!questionsOf(asked.schema, asked.message),
-        // Session nommée par la question : celle de la conversation, ou celle du sous-agent.
-        session: !asked?.sessionId
-          ? null
-          : asked.sessionId === sessionId
-            ? 'conversation'
-            : childIds.has(asked.sessionId)
-              ? 'sous-agent'
-              : 'autre',
-        // Appel d'outil nommé : préfixé par la session du sous-agent (`ses_…:`), comme son travail relayé.
-        toolCallPrefixed: [...childIds].some((id) => toolCallId.startsWith(`${id}:`)),
-        afterTurn: asked !== undefined && asked.at >= endOfTurn,
-        reported: report.reported
+      const answer = answerWith(['vert', 'Vert', 'green'])
+      seen.answer = answer
+      /** Questions reçues par `ask_user`, et rang dans le flux à leur arrivée. */
+      const viaAskUser: { recognized: boolean; at: number }[] = []
+      const { url, close } = await serveMcp([ASK_USER_DEFINITION], (name, args) => {
+        if (name !== ASK_USER_DEFINITION.name) {
+          return { content: [{ type: 'text', text: `Unknown tool ${name}` }], isError: true }
+        }
+        try {
+          const parsed = parseAskUserArgs(args)
+          const schema = askUserSchema(parsed)
+          const asked: Elicited = { message: parsed.question, schema, at: seen.updates.length }
+          viaAskUser.push({ recognized: !!questionsOf(schema, asked.message), at: asked.at })
+          const replied = answer(asked)
+          const { text, isError } = askUserResult(
+            replied.action,
+            replied.action === 'accept' ? replied.content : undefined
+          )
+          return { content: [{ type: 'text', text }], ...(isError ? { isError } : {}) }
+        } catch (error) {
+          return { content: [{ type: 'text', text: (error as Error).message }], isError: true }
+        }
+      })
+      try {
+        await initialize(ctx)
+        const { sessionId } = await newSession(ctx, box, true, [
+          { type: 'http', name: 'bobine', url, headers: [] }
+        ])
+        seen.updates.length = 0
+        const started = Date.now()
+        await prompt(
+          ctx,
+          sessionId,
+          'Lance un sous-agent (outil subagent, agent « general ») chargé de me demander ma couleur préférée (choix : rouge, vert, bleu) avec l’outil ask_user du serveur MCP bobine, puis de te rapporter ma réponse. Ne pose pas la question toi-même. Quand tu as son rapport, dis-moi ma couleur.'
+        )
+        const endOfTurn = seen.updates.length
+        // La question peut venir après le tour (sous-agent en arrière-plan) : on l'attend.
+        const deadline = Date.now() + REPORT_MS
+        while (viaAskUser.length === 0 && Date.now() < deadline) await sleep(500)
+        const report = await awaitReport(seen, ['vert'], started)
+        note(seen)
+        const card = seen.updates.find(
+          (u) =>
+            (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') &&
+            !childSessionOf(u) &&
+            subagentOf(u.title ?? 'subagent', u.rawInput)
+        )
+        // Le parent l'a-t-il posée lui-même (carte de sa conversation qui cite `ask_user`) ?
+        const parentAsked = seen.updates.some(
+          (u) =>
+            (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') &&
+            !childSessionOf(u) &&
+            !subagentOf(u.title ?? '', u.rawInput) &&
+            JSON.stringify(u.rawInput ?? {}).includes(ASK_USER_DEFINITION.name)
+        )
+        const first = viaAskUser[0]
+        return {
+          called: !!card,
+          asked: !!first,
+          recognized: first?.recognized ?? false,
+          parentAsked,
+          // Outil `question` d'OpenCode (`elicitation/create`) : absent pour un sous-agent.
+          elicited: seen.elicitations.length > 0,
+          afterTurn: first !== undefined && first.at >= endOfTurn,
+          reported: report.reported
+        }
+      } finally {
+        close()
       }
     })
   } finally {

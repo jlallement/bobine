@@ -343,9 +343,11 @@ function questionChecks(observations: Observations): ContractCheck[] {
         closed(get(observations, name))
       )
     ),
+    // Un sous-agent d'OpenCode 2.3.0 n'a pas l'outil `question` : il passe par `ask_user` de l'app.
+    // Qu'il l'ait un jour (`elicited`) se verra en écart aux attentes, pas en contrat rompu.
     byModel(
-      'question d’un sous-agent en arrière-plan affichée en questionnaire',
-      sub['asked'],
+      'question d’un sous-agent en arrière-plan (ask_user de l’app) affichée en questionnaire',
+      sub['asked'] === true && sub['parentAsked'] === false,
       sub['recognized']
     )
   ]

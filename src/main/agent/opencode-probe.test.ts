@@ -211,5 +211,27 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
         'sous-agent.background : true → false'
       ])
     })
+
+    it('question d’un sous-agent : par ask_user de l’app (pas d’outil question) ; sinon à relancer ou rompu', () => {
+      const check = (sub: Record<string, unknown>) => {
+        const o = structuredClone(recorded.observations)
+        o['question (texte libre)'] ??= { asked: false }
+        o['question d’un sous-agent'] = { called: true, ...sub }
+        return contractChecks(o).find(label('question d’un sous-agent'))
+      }
+      const asked = { asked: true, parentAsked: false, recognized: true, elicited: false }
+      expect(check(asked)?.ok).toBe(true)
+      // Le sous-agent ne l'a pas posée, ou le parent l'a posée lui-même : le modèle, pas l'app.
+      expect(check({ ...asked, asked: false })).toMatchObject({ ok: false, unverified: true })
+      expect(check({ ...asked, parentAsked: true })).toMatchObject({ ok: false, unverified: true })
+      // Questionnaire non reconnu : contrat rompu.
+      expect(check({ ...asked, recognized: false })?.unverified).toBeUndefined()
+      expect(check({ ...asked, recognized: false })?.ok).toBe(false)
+      // Un jour l'outil `question` pour un sous-agent : écart aux attentes, pas contrat rompu.
+      expect(check({ ...asked, elicited: true })?.ok).toBe(true)
+      expect(diffObservations({ q: { elicited: false } }, { q: { elicited: true } })).toEqual([
+        'q.elicited : false → true'
+      ])
+    })
   })
 })
