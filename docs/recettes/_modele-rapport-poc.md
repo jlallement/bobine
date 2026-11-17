@@ -17,8 +17,9 @@ Scénario : [scenario-poc-complet.md](scenario-poc-complet.md). Joué par : <pil
 - **Interventions** : <N> (liste au § Interventions).
 - **Défauts** : <N> bloquants, <N> sérieux, <N> gênants, <N> cosmétiques. Les trois plus graves :
   1. …
-- **Coût** : agent <montant et unité> / plafond <montant> ; pilote <jetons> / plafond <jetons>.
-  Plafond atteint : <non | oui, à l'étape N>.
+- **Consommation** : agent <jetons> / plafond <jetons> (coût affiché <montant et unité> ; 0 $
+  avec l'abonnement ChatGPT) ; pilote <jetons> / plafond <jetons>. Plafond atteint : <non | oui, à
+  l'étape N>. Limite d'usage de l'abonnement atteinte : <non | oui, à l'étape N, message exact>.
 - **Durée** : <h min> de jeu (de <heure> à <heure>).
 - **Journaux** : <N> `ERROR`, <N> `WARN` sur tout le passage.
 - **Mémoire maximale** : Bobine <Mo>, agents <Mo> (à l'étape <N>).
@@ -35,7 +36,8 @@ Scénario : [scenario-poc-complet.md](scenario-poc-complet.md). Joué par : <pil
 | Modèle principal | <identifiant> |
 | Modèle de remplacement (4.2) | <identifiant | non applicable> |
 | Modèle des filles « autre modèle » | <identifiant | non applicable> |
-| Plafond de l'agent | <montant et unité> ; plafond par conversation <montant> |
+| Accès au modèle | <abonnement ChatGPT dans OpenCode | clé d'API | bobcoins> |
+| Plafond de l'agent | <jetons, ou montant et unité> ; plafond par conversation <montant | désactivé> |
 | Plafond du pilote | <jetons> |
 | Mac | <macOS>, <puce>, <mémoire> |
 | Xcode, simulateur | <version>, <appareil et iOS> |

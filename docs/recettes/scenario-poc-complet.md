@@ -32,9 +32,10 @@ dépend.
 | Modèle principal | modèle OpenAI de gamme intermédiaire : le palier « mini » proposé ce jour-là, de force comparable à un Qwen 27B | Bob : pas de choix du modèle par ACP |
 | Modèle de remplacement (étape 4, changement en cours de route) | un autre modèle OpenAI, de gamme au-dessus ou au-dessous | Bob : sans objet (voir 4.2) |
 | Modèle des filles « autre modèle » | un modèle d'une autre famille ou d'un autre fournisseur connecté (par exemple un modèle gratuit d'OpenCode) | Bob : sans objet |
-| Plafond de dépense de l'agent | en dollars (OpenCode) ou en bobcoins (Bob), total du passage | idem |
-| Plafond par conversation | Réglages › Conversations › Pendant la réponse › **Plafond par conversation** | idem |
-| Plafond de jetons du pilote | jetons du modèle qui joue l'utilisateur (Claude), total du passage | idem |
+| Accès au modèle | **abonnement ChatGPT** connecté dans OpenCode par l'utilisateur (pas de clé d'API) : coût affiché 0 $ | Bob : bobcoins |
+| Plafond de l'agent | **20 millions de jetons de l'agent** sur le passage (total affiché par Bobine, cache compris), valeur par défaut que l'utilisateur peut changer | Bob : en bobcoins, fixé par l'utilisateur |
+| Plafond par conversation | Réglages › Conversations › Pendant la réponse › **Plafond par conversation** (il compte un coût : sans effet à 0 $, à régler seulement avec Bob ou une clé d'API) | idem |
+| Plafond de jetons du pilote | **2 millions de jetons** du modèle qui joue l'utilisateur (Claude), total du passage, valeur par défaut que l'utilisateur peut changer | idem |
 | Dossier du passage | `~/Development/bobine-recette/poc-<version>-<agent>/` | idem |
 
 Les noms exacts des modèles retenus sont écrits dans le rapport (identifiant OpenCode, par exemple
@@ -47,9 +48,24 @@ fiche [091](../features/091-quota-bob.md)) et les jetons du pilote. Si l'un des 
 atteint, on s'arrête là, sans finir l'étape, et le rapport dit : étape atteinte, dépense, plafond.
 Les étapes non jouées sont marquées « non jouée (plafond) », jamais « échec ».
 
-Si OpenCode passe par un abonnement (ChatGPT) plutôt que par une clé d'API, le coût affiché est
-0 $ : le plafond se fixe alors en **jetons de l'agent** (somme des tours, détail de la puce de
-consommation), et le rapport le dit.
+**Relever les jetons de l'agent** (décidé le 2026-11-17 : OpenAI par abonnement ChatGPT, donc
+0 $ affiché ; le plafond se compte en jetons). Avant chaque étape :
+
+- **Toute mon activité…** (⇧⌘U), ou Réglages › Consommation : période « aujourd'hui » (ou celle du
+  passage), agent OpenCode ; relever le total des jetons, et le détail par modèle (fiches
+  [137](../features/137-tableau-consommation.md), [147](../features/147-activite-comparable.md)).
+  Le profil étant neuf, tout ce qu'il compte vient du passage. Ce tableau lit le journal de
+  consommation du profil (`usage.sqlite`, une ligne par tour, fiche
+  [130](../features/130-journal-consommation.md)) : filles, relectures et fenêtre rapide comprises.
+- Par conversation : détail de la puce de consommation (jetons, une ligne par échange).
+- **Jetons du pilote** : relevés dans l'outil qui fait tourner Claude (pour Claude Code, `/cost`
+  ou l'usage de la session), en fin d'étape.
+
+**Limite d'usage de l'abonnement.** Si ChatGPT refuse de répondre parce que la limite de
+l'abonnement est atteinte (message d'erreur de l'agent ou de Bobine, à recopier), on s'arrête comme
+au plafond : c'est un **résultat** du passage (étape atteinte, jetons consommés, heure), pas un
+défaut de Bobine. Seule la façon dont Bobine le montre (message clair ou non, carte figée…) peut
+être notée comme défaut.
 
 ## 1. Prérequis
 
@@ -75,8 +91,8 @@ consommation), et le rapport le dit.
 Bobine est lancée sur un **profil isolé**, vide au départ, comme une première installation. Le
 profil temporaire (`--profil-temporaire`, fiche [148](../features/148-recommencer-a-neuf.md))
 serait le choix naturel, mais **il est effacé à la fermeture** : l'étape 8.2 (quitter puis
-relancer et reprendre la conversation) le rend impossible. On utilise donc un dossier de profil
-dédié, créé vide, supprimé à la fin :
+relancer et reprendre la conversation) le rend impossible. **Décidé le 2026-11-17** : on utilise
+un dossier de profil jetable (`pnpm pilote lancer --profil …`), créé vide, supprimé à la fin :
 
 ```bash
 PASSAGE=~/Development/bobine-recette/poc-<version>-<agent>
@@ -142,8 +158,9 @@ git add README.md && git commit -m "chore: initial commit"
 ### Réglages faits avant l'étape 1 (dans Bobine, profil du passage)
 
 - Réglages › Diagnostic › Journal : **Détaillé** (fiche [080](../features/080-journal-reglable.md)).
-- Réglages › Conversations › Pendant la réponse › **Plafond par conversation** : la valeur du § 0
-  (fiches [157](../features/157-commande-bloquee-contexte-plafond.md),
+- Réglages › Conversations › Pendant la réponse › **Plafond par conversation** : avec Bob ou une
+  clé d'API seulement (il compte un coût ; avec l'abonnement ChatGPT, 0 $, le laisser désactivé et
+  suivre les jetons à la main) (fiches [157](../features/157-commande-bloquee-contexte-plafond.md),
   [164](../features/164-cout-conversation-toutes-sessions.md)).
 - Réglages › Mémoire › **Mémoire activée** (fiche [182](../features/182-memoire-commune.md)) :
   vérifier qu'elle l'est.
@@ -198,7 +215,7 @@ agents.
 | **Gênant** | ça marche, mais on hésite, on recommence, on cherche | noté ; fiche si récurrent |
 | **Cosmétique** | aspect, texte, alignement | noté |
 
-Le pilote n'a que quatre gravités (`bloquant`, `genant`, `mineur`, `idee`) : on note un défaut
+Gardé pour l'instant (décidé le 2026-11-17) : le pilote n'a que quatre gravités (`bloquant`, `genant`, `mineur`, `idee`) : on note un défaut
 **sérieux** avec `--gravite genant` et le texte commençant par `SÉRIEUX :`, un défaut
 **cosmétique** avec `--gravite mineur`. Le rapport, lui, utilise les quatre gravités ci-dessus.
 
@@ -451,8 +468,13 @@ pour une correction juste.
    > l'API (titre, case cochée). Compile-la avec l'outil de Bobine, lance-la dans le simulateur,
    > et fais une capture.
 
-   L'agent doit créer le projet Xcode lui-même. Pièges connus, à laisser à l'agent et à noter : un
-   projet Xcode écrit sans Xcode, l'accès en `http` à `localhost` (App Transport Security).
+   **Décidé le 2026-11-17** : l'agent écrit **lui-même** le projet Xcode SwiftUI, sans XcodeGen ni
+   autre générateur installé pour l'occasion, et sans aide du testeur. S'il n'y arrive pas
+   (projet illisible par `xcodebuild`, compilation qui échoue en boucle), c'est un **résultat** à
+   noter (nombre d'essais, dernière erreur, durée), pas une raison d'intervenir ; l'étape est alors
+   « ✗ (agent) », et les points 2 à 6 ci-dessous sont « non joués (pas d'app compilée) ».
+   Autre piège connu, à laisser à l'agent et à noter : l'accès en `http` à `localhost` (App
+   Transport Security).
 2. Carte **Compiler** : **Compiler**. L'onglet **iOS** montre le simulateur en direct.
 3. Toucher l'app soi-même (faire défiler), essayer **Ajuster au panneau** et **Taille réelle**.
 4. **Annoter sur une capture.** Il **n'existe pas** de mode « Annoter » sur le simulateur comme sur
