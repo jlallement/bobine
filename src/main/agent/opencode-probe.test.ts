@@ -2,11 +2,14 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { Expected } from './opencode-probe'
+import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import {
   acceptedExpectations,
+  asksUser,
   comparable,
   contractChecks,
   diffObservations,
+  parentCards,
   watchNotes
 } from './opencode-probe'
 
@@ -236,6 +239,89 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
       expect(diffObservations({ q: { elicited: false } }, { q: { elicited: true } })).toEqual([
         'q.elicited : false → true'
       ])
+    })
+
+    describe('qui a posé la question : le parent ou son sous-agent ?', () => {
+      const card = (u: Record<string, unknown>) =>
+        ({ sessionUpdate: 'tool_call', status: 'completed', ...u }) as SessionUpdate
+      const parentAsked = (updates: SessionUpdate[]) =>
+        [...parentCards(updates).values()].some(asksUser)
+      const spawn = card({
+        toolCallId: 'call_sub',
+        title: 'subagent',
+        kind: 'think',
+        rawInput: {
+          agent: 'general',
+          description: 'Couleur',
+          prompt: 'Utilise ask_user de bobine.'
+        }
+      })
+
+      it('appel MCP direct du parent (titre seul, sans le nom dans l’entrée) : vu, sondage à relancer', () => {
+        for (const title of [
+          'bobine_ask_user',
+          'mcp__bobine__ask_user',
+          'Running Ask User (bobine)'
+        ]) {
+          const direct = card({ toolCallId: 'call_q', title, rawInput: { question: 'Couleur ?' } })
+          expect(parentAsked([spawn, direct])).toBe(true)
+        }
+        const o = structuredClone(recorded.observations)
+        o['question d’un sous-agent'] = {
+          called: true,
+          asked: true,
+          recognized: true,
+          parentAsked: true,
+          elicited: false
+        }
+        expect(
+          contractChecks(o).find((c) => c.label.startsWith('question d’un sous-agent'))
+        ).toMatchObject({ ok: false, unverified: true })
+      })
+
+      it('code d’execute du parent qui cite ask_user : vu ; carte du sous-agent ou travail relayé : non', () => {
+        const viaCode = card({
+          toolCallId: 'call_x',
+          title: 'execute',
+          rawInput: { code: 'await tools.bobine.ask_user({ question: "?" })' }
+        })
+        expect(parentAsked([spawn, viaCode])).toBe(true)
+        const relayed = card({
+          toolCallId: 'ses_child:call_x',
+          title: 'execute',
+          rawInput: { code: 'await tools.bobine.ask_user({ question: "?" })' },
+          _meta: { 'opencode/child-session': { id: 'ses_child', parentID: 'ses_parent' } }
+        })
+        expect(parentAsked([spawn, relayed])).toBe(false)
+        // Un autre outil dont le nom contient ask_user n'est pas `ask_user`.
+        expect(asksUser({ title: 'execute', rawInput: { code: 'tools.x.ask_users()' } })).toBe(
+          false
+        )
+      })
+
+      it('trace enregistrée sur 2.3.0 : la question vient du sous-agent, pas du parent', () => {
+        const updates = readFileSync(
+          join(
+            __dirname,
+            '__traces__/opencode-2.3.0/questions-choix-texte-libre-plusieurs-refus-sous-agent-6.ndjson'
+          ),
+          'utf8'
+        )
+          .split('\n')
+          .filter(Boolean)
+          .map(
+            (line) =>
+              JSON.parse(line) as { msg?: { method?: string; params?: { update?: SessionUpdate } } }
+          )
+          .flatMap((l) =>
+            l.msg?.method === 'session/update' && l.msg.params?.update ? [l.msg.params.update] : []
+          )
+        expect(updates.some((u) => JSON.stringify(u).includes('ask_user'))).toBe(true)
+        expect(parentAsked(updates)).toBe(false)
+        expect(recorded.observations['question d’un sous-agent']).toMatchObject({
+          parentAsked: false
+        })
+      })
     })
   })
 })

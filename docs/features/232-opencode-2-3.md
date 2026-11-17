@@ -223,6 +223,25 @@ changent de valeur, toutes deux attendues : `sous-agent.resultTag` `"subagent"` 
 `trace-replay.test.ts` ajoutés et relus. Limite : une trace s'arrête à la fin du tour du parent.
 Les rapports hors tour sont vus et vérifiés par la sonde, mais absents des traces.
 
+**Relecture du tech lead : vert possible à tort.** `parentAsked` ne cherchait `ask_user` que
+dans l'entrée des cartes du parent. Il voyait le passage par `execute`, mais pas un appel MCP
+direct du parent, dont la carte a un titre (`bobine_ask_user`…) et une entrée `{ question, … }`
+sans le nom de l'outil. Dans les traces 2.3.0, tout appel MCP passe par `execute`
+(`tools.bobine.browser_screenshot()`, `outils-de-l-app`) ; aucun appel direct n'est relevé en
+2.3.0. Les formats de titre sont ceux de `matchAppTool` (fiche 071). Correction :
+- `asksUser` (`opencode-probe.ts`) reconnaît le titre (formats de `matchAppTool`, comparaison
+  large) **ou** l'entrée qui cite `ask_user` (mot entier) ;
+- `parentCards` ne garde que les cartes de la conversation, fusionnées par appel (ni travail
+  relayé, ni carte de sous-agent) ;
+- un appel reçu par le serveur pendant qu'une carte du parent qui cite `ask_user` est en cours
+  compte aussi (comme `runningAtCall` des outils de l'app). Ce n'est qu'un appoint : après le
+  tour, rien n'est relayé, et l'appel ne se rattache alors à aucune carte.
+
+Tests : appel MCP direct du parent sous trois titres → « à relancer » (vert à tort avec l'ancien
+contrôle) ; `execute` du parent → vu ; travail relayé du sous-agent → non. Sur la trace
+enregistrée, `parentAsked` reste `false` : la question vient du sous-agent, donc la référence n'a
+pas à être refaite.
+
 ## Reste à faire
 
 - **Questions** : schéma exact du choix multiple : tronqué au journal Trace (`items.anyOf` supposé d'après le

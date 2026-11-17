@@ -5,7 +5,9 @@
  *
  * N'importe aucun alias (`@shared`) : le script tourne sous Node sans bundler.
  */
-import { LOGIN_METHOD } from './opencode-contract.ts'
+import type { SessionUpdate } from '../../shared/acp-sdk.mts'
+import { childSessionOf, LOGIN_METHOD } from './opencode-contract.ts'
+import { openCodeSubagentOf as subagentOf } from './opencode-subagents.ts'
 import type { ContractCheck, Observation, Observations } from './probe-report.ts'
 
 export {
@@ -54,6 +56,47 @@ export function acceptedExpectations(
     observations: { ...previous.observations, ...observations },
     offline: { opencodeVersion: run.version, recordedAt: run.date }
   }
+}
+
+/**
+ * Carte d'outil qui pose une question par l'outil `ask_user` de l'app : appel MCP direct, titré
+ * `bobine_ask_user` (OpenCode 1), `mcp__bobine__ask_user` ou « Running Ask User (bobine) » (formats
+ * de `matchAppTool`, fiche 071), ou code d'`execute` qui le cite (OpenCode 2, Code Mode). Large à
+ * dessein : une question posée par le parent prise à tort pour la sienne rend le sondage « à
+ * relancer », jamais vert (fiche 232).
+ */
+export function asksUser(card: { title?: string | null; rawInput?: unknown }): boolean {
+  const title = (card.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (title.includes('askuser') || title.includes('asktheuser')) return true
+  const input =
+    typeof card.rawInput === 'string' ? card.rawInput : JSON.stringify(card.rawInput ?? '')
+  return /(^|[^A-Za-z0-9_])ask_user([^A-Za-z0-9_]|$)/.test(input)
+}
+
+/**
+ * Cartes d'outil de la conversation elle-même : ni travail relayé d'un sous-agent
+ * (`_meta["opencode/child-session"]`), ni carte de sous-agent. Titre, entrée et statut fusionnés
+ * par appel (le titre peut ne venir qu'avec `tool_call`, l'entrée qu'avec une mise à jour).
+ */
+export function parentCards(
+  updates: SessionUpdate[]
+): Map<string, { title: string; rawInput: unknown; status: string }> {
+  const cards = new Map<string, { title: string; rawInput: unknown; status: string }>()
+  const relayed = new Set<string>()
+  for (const u of updates) {
+    if (u.sessionUpdate !== 'tool_call' && u.sessionUpdate !== 'tool_call_update') continue
+    if (childSessionOf(u)) relayed.add(u.toolCallId)
+    const known = cards.get(u.toolCallId) ?? { title: '', rawInput: undefined, status: 'pending' }
+    cards.set(u.toolCallId, {
+      title: u.title ?? known.title,
+      rawInput: u.rawInput ?? known.rawInput,
+      status: u.status ?? known.status
+    })
+  }
+  for (const [id, card] of cards) {
+    if (relayed.has(id) || subagentOf(card.title || 'subagent', card.rawInput)) cards.delete(id)
+  }
+  return cards
 }
 
 /**

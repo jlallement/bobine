@@ -48,6 +48,8 @@ import type {
 } from '../src/shared/acp-sdk.mts'
 import {
   acceptedExpectations,
+  asksUser,
+  parentCards,
   comparable,
   contractChecks,
   diffObservations,
@@ -1132,6 +1134,8 @@ async function probeSubagentQuestion(): Promise<Observation> {
       seen.answer = answer
       /** Questions reçues par `ask_user`, et rang dans le flux à leur arrivée. */
       const viaAskUser: { recognized: boolean; at: number }[] = []
+      /** Une carte de la conversation (pas d'un sous-agent) en cours citait `ask_user` à un appel. */
+      let parentRunningAtCall = false
       const { url, close } = await serveMcp([ASK_USER_DEFINITION], (name, args) => {
         if (name !== ASK_USER_DEFINITION.name) {
           return { content: [{ type: 'text', text: `Unknown tool ${name}` }], isError: true }
@@ -1140,6 +1144,11 @@ async function probeSubagentQuestion(): Promise<Observation> {
           const parsed = parseAskUserArgs(args)
           const schema = askUserSchema(parsed)
           const asked: Elicited = { message: parsed.question, schema, at: seen.updates.length }
+          // Carte en cours au moment de l'appel (comme `runningAtCall` des outils de l'app) : sans
+          // effet après le tour, où rien n'est plus relayé, d'où aussi la recherche sur tout le flux.
+          parentRunningAtCall ||= [...parentCards(seen.updates).values()].some(
+            (c) => c.status !== 'completed' && c.status !== 'failed' && asksUser(c)
+          )
           viaAskUser.push({ recognized: !!questionsOf(schema, asked.message), at: asked.at })
           const replied = answer(asked)
           const { text, isError } = askUserResult(
@@ -1175,14 +1184,10 @@ async function probeSubagentQuestion(): Promise<Observation> {
             !childSessionOf(u) &&
             subagentOf(u.title ?? 'subagent', u.rawInput)
         )
-        // Le parent l'a-t-il posée lui-même (carte de sa conversation qui cite `ask_user`) ?
-        const parentAsked = seen.updates.some(
-          (u) =>
-            (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') &&
-            !childSessionOf(u) &&
-            !subagentOf(u.title ?? '', u.rawInput) &&
-            JSON.stringify(u.rawInput ?? {}).includes(ASK_USER_DEFINITION.name)
-        )
+        // Le parent l'a-t-il posée lui-même ? Une carte de sa conversation qui appelle `ask_user`
+        // (titre d'un appel MCP direct, ou code d'`execute` qui le cite), en cours à l'appel ou non.
+        const parentAsked =
+          parentRunningAtCall || [...parentCards(seen.updates).values()].some(asksUser)
         const first = viaAskUser[0]
         return {
           called: !!card,
