@@ -122,3 +122,126 @@ describe('sous-agent lancé en arrière-plan (fiche 122)', () => {
     expect(tool).toMatchObject({ status: 'cancelled' })
   })
 })
+
+describe('OpenCode 2.3.0 : sous-agents toujours en arrière-plan (fiche 232)', () => {
+  const text = (t: string) =>
+    update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: t } })
+  const agentTexts = (...events: AgentEvent[]) =>
+    reduce(...events).items.flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+
+  it('le parent répond hors tour : un autre message, pas la suite du précédent', () => {
+    const turn = [
+      { type: 'user-message', text: 'Lance un sous-agent' } as AgentEvent,
+      text('Je te transmettrai le mot de code.'),
+      { ...turnEnd, at: 5_000 }
+    ]
+    expect(agentTexts(...turn, text('Le mot de code '), text('est KANGOUROU.'))).toEqual([
+      'Je te transmettrai le mot de code.',
+      'Le mot de code est KANGOUROU.'
+    ])
+    // Pendant le tour, les morceaux font toujours un seul message.
+    expect(agentTexts(...turn.slice(0, 2), text(' Encore.'))).toEqual([
+      'Je te transmettrai le mot de code. Encore.'
+    ])
+  })
+
+  it('à sa fin, son travail relu dans sa session remplace celui reçu en direct (incomplet)', () => {
+    const subagent: AgentEvent = update({
+      sessionUpdate: 'tool_call',
+      toolCallId: 's1',
+      title: 'subagent',
+      kind: 'think',
+      status: 'completed',
+      rawInput: { agent: 'explore', description: 'Lire secret.txt', prompt: 'Lis secret.txt' }
+    })
+    const relayed: AgentEvent = {
+      type: 'subagent-update',
+      toolCallId: 's1',
+      update: {
+        sessionUpdate: 'tool_call',
+        toolCallId: 'ses_k:read',
+        title: 'read',
+        kind: 'read',
+        status: 'pending'
+      }
+    }
+    const reread: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'You are a subagent spawned by another session.' },
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 'read',
+        title: 'read',
+        status: 'completed',
+        content: [],
+        locations: []
+      },
+      { kind: 'thought', id: 3, text: '' },
+      { kind: 'agent', id: 4, text: 'KANGOUROU' }
+    ]
+    const state = reduce(
+      { type: 'user-message', text: 'Lance' } as AgentEvent,
+      subagent,
+      {
+        type: 'subagent-run',
+        toolCallId: 's1',
+        run: { startedAt: 1, sessionId: 'ses_k', background: true }
+      },
+      relayed,
+      turnEnd,
+      {
+        type: 'subagent-run',
+        toolCallId: 's1',
+        run: { endedAt: 9, answer: 'KANGOUROU' },
+        work: reread
+      }
+    )
+    const card = state.items.find((i) => i.kind === 'tool')
+    expect(card?.status).toBe('completed')
+    expect(card?.kind === 'tool' && card.work?.map((i) => i.kind)).toEqual(['tool', 'agent'])
+    expect(card?.kind === 'tool' && card.work?.[0]).toMatchObject({ status: 'completed' })
+    // Numérotés à la suite du fil : aucun identifiant en double.
+    const ids = [
+      ...state.items.map((i) => i.id),
+      ...(card?.kind === 'tool' ? (card.work ?? []).map((i) => i.id) : [])
+    ]
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(Math.max(...ids)).toBeLessThan(state.nextId)
+  })
+})
+
+describe('messageId d’ACP : un autre message commence (fiche 232)', () => {
+  const chunk = (text: string, messageId?: string, kind = 'agent_message_chunk' as const) =>
+    update({
+      sessionUpdate: kind,
+      content: { type: 'text', text },
+      ...(messageId ? { messageId } : {})
+    } as SessionUpdate)
+  const texts = (...events: AgentEvent[]) =>
+    reduce(...events).items.flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+  const start = { type: 'user-message', text: 'Lance deux sous-agents' } as AgentEvent
+
+  it('deux réponses hors tour rapprochées (OpenCode 2.3.0) : deux messages, Markdown intact', () => {
+    expect(
+      texts(
+        start,
+        chunk('Lancés.', 'msg_a'),
+        { ...turnEnd, at: 5_000 },
+        chunk('Premier mot reçu ; ', 'msg_b'),
+        chunk('j’attends le second.', 'msg_b'),
+        chunk('- `secret.txt` : **KANGOUROU**', 'msg_c')
+      )
+    ).toEqual([
+      'Lancés.',
+      'Premier mot reçu ; j’attends le second.',
+      '- `secret.txt` : **KANGOUROU**'
+    ])
+  })
+
+  it('même messageId, ou aucun (Bob) : un seul message, même avec une pause', () => {
+    expect(texts(start, chunk('Un ', 'msg_a'), chunk('seul.', 'msg_a'))).toEqual(['Un seul.'])
+    expect(texts(start, chunk('Un '), chunk('seul.'))).toEqual(['Un seul.'])
+    // Un morceau sans messageId après un morceau qui en a un : rien ne dit qu'un autre commence.
+    expect(texts(start, chunk('Un ', 'msg_a'), chunk('seul.'))).toEqual(['Un seul.'])
+  })
+})

@@ -5,7 +5,9 @@
  *
  * N'importe aucun alias (`@shared`) : le script tourne sous Node sans bundler.
  */
-import { LOGIN_METHOD } from './opencode-contract.ts'
+import type { SessionUpdate } from '../../shared/acp-sdk.mts'
+import { childSessionOf, LOGIN_METHOD } from './opencode-contract.ts'
+import { openCodeSubagentOf as subagentOf } from './opencode-subagents.ts'
 import type { ContractCheck, Observation, Observations } from './probe-report.ts'
 
 export {
@@ -54,6 +56,75 @@ export function acceptedExpectations(
     observations: { ...previous.observations, ...observations },
     offline: { opencodeVersion: run.version, recordedAt: run.date }
   }
+}
+
+/**
+ * Carte d'outil qui pose une question par l'outil `ask_user` de l'app : appel MCP direct, titré
+ * `bobine_ask_user` (OpenCode 1), `mcp__bobine__ask_user` ou « Running Ask User (bobine) » (formats
+ * de `matchAppTool`, fiche 071), ou code d'`execute` qui le cite (OpenCode 2, Code Mode). Large à
+ * dessein : une question posée par le parent prise à tort pour la sienne rend le sondage « à
+ * relancer », jamais vert (fiche 232).
+ */
+export function asksUser(card: { title?: string | null; rawInput?: unknown }): boolean {
+  const title = (card.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (title.includes('askuser') || title.includes('asktheuser')) return true
+  const input =
+    typeof card.rawInput === 'string' ? card.rawInput : JSON.stringify(card.rawInput ?? '')
+  return /(^|[^A-Za-z0-9_])ask_user([^A-Za-z0-9_]|$)/.test(input)
+}
+
+/**
+ * Cartes d'outil de la conversation elle-même : ni travail relayé d'un sous-agent
+ * (`_meta["opencode/child-session"]`), ni carte de sous-agent. Titre, entrée et statut fusionnés
+ * par appel (le titre peut ne venir qu'avec `tool_call`, l'entrée qu'avec une mise à jour).
+ */
+export function parentCards(
+  updates: SessionUpdate[]
+): Map<string, { title: string; rawInput: unknown; status: string }> {
+  const cards = new Map<string, { title: string; rawInput: unknown; status: string }>()
+  const relayed = new Set<string>()
+  for (const u of updates) {
+    if (u.sessionUpdate !== 'tool_call' && u.sessionUpdate !== 'tool_call_update') continue
+    if (childSessionOf(u)) relayed.add(u.toolCallId)
+    const known = cards.get(u.toolCallId) ?? { title: '', rawInput: undefined, status: 'pending' }
+    cards.set(u.toolCallId, {
+      title: u.title ?? known.title,
+      rawInput: u.rawInput ?? known.rawInput,
+      status: u.status ?? known.status
+    })
+  }
+  for (const [id, card] of cards) {
+    if (relayed.has(id) || subagentOf(card.title || 'subagent', card.rawInput)) cards.delete(id)
+  }
+  return cards
+}
+
+/**
+ * Faits qui dépendent du moment où le tour du parent finit (OpenCode 2.3.0, fiche 232) : le travail
+ * d'un sous-agent n'est relayé que pendant ce tour, donc relayé ou non selon la course. Vérifiés par
+ * le contrat quand ils sont observés ; jamais comparés aux attentes (une course n'est pas un
+ * changement d'OpenCode).
+ */
+export const TIMING_DEPENDENT: ReadonlySet<string> = new Set([
+  'sous-agent.childRelayed',
+  'sous-agent.childMarker',
+  'sous-agent.childToolIdsPrefixed',
+  'sous-agent.childTitleIsDescription',
+  'sous-agents en parallèle.routed',
+  // Pendant ou après le tour du parent, selon le moment où le sous-agent la pose.
+  'question d’un sous-agent.afterTurn'
+])
+
+/** Les observations sans les faits de `TIMING_DEPENDENT`, pour les comparer aux attentes. */
+export function comparable(observations: Observations): Observations {
+  return Object.fromEntries(
+    Object.entries(observations).map(([name, observation]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(observation).filter(([key]) => !TIMING_DEPENDENT.has(`${name}.${key}`))
+      )
+    ])
+  )
 }
 
 /** Mises à jour ACP que l'app sait afficher ou utiliser (`shared/transcript.ts`, hôte d'agent). */
@@ -205,10 +276,21 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       label: 'consommation (usage_update avec coût en USD)',
       ok: simple['usageCurrency'] === 'USD'
     },
+    // Plus récent que la sonde (fiche 232) : rien tant qu'il n'a pas tourné.
+    ...(simple['messageId'] === undefined
+      ? []
+      : [
+          {
+            label:
+              'messageId sur chaque morceau de réponse (deux réponses hors tour rapprochées séparées, fiche 232)',
+            ok: simple['messageId'] === true
+          }
+        ]),
     byModel('sous-agent reconnu (carte « Sous-agent »)', sub['called'], sub['recognized']),
     byModel(
       'travail du sous-agent rangé sous sa carte (_meta « opencode/child-session », titre = description)',
-      sub['called'],
+      // 2.3.0 : rien de relayé si le tour du parent finit avant (course, fiche 232) : à relancer.
+      sub['called'] === true && sub['childRelayed'] !== false,
       sub['childMarker'] === true && sub['childTitleIsDescription'] === true
     ),
     byModel(
@@ -216,6 +298,15 @@ export function contractChecks(observations: Observations): ContractCheck[] {
       sub['called'],
       sub['sessionIdFound'] === true && sub['childLoadable'] === true
     ),
+    // Carte « en cours » jusqu'à sa vraie fin (fiches 122, 232) : l'outil le dit encore au travail
+    // (`metadata.status: "running"`, suivi par sa session), ou sa réponse est dans le résultat.
+    byModel(
+      'sous-agent suivi jusqu’à sa fin (metadata.status « running », ou réponse dans le résultat)',
+      sub['called'],
+      sub['background'] === true || sub['resultTag'] === 'subagent' || sub['resultTag'] === 'task'
+    ),
+    ...parallelChecks(observations['sous-agents en parallèle']),
+    ...questionChecks(observations),
     byModel(
       'questions de l’agent affichées en questionnaire',
       question['asked'],
@@ -246,6 +337,62 @@ export function contractChecks(observations: Observations): ContractCheck[] {
             facts('live')['rebuilt'] === true && facts('replayed')['rebuilt'] === true
           )
         ])
+  ]
+}
+
+/**
+ * Deux sous-agents lancés ensemble (fiche 232) : chacun sa session, et son travail relayé à sa
+ * carte. Rien tant que le sondage, plus récent que la sonde, n'a pas tourné.
+ */
+function parallelChecks(par: Observation | undefined): ContractCheck[] {
+  if (par === undefined) return []
+  return [
+    byModel(
+      'sous-agents en parallèle : chacun sa session, nommée par son outil avant son travail relayé (rangé sous sa carte)',
+      par['called'] === true && par['routed'] !== null,
+      par['distinctSessions'] === true && par['routed'] === true
+    )
+  ]
+}
+
+/**
+ * Questions répondues (fiche 232) : la réponse que Bobine construit revient à l'agent ; un refus ou
+ * une annulation finit le tour sans rien laisser en attente ; plusieurs questions d'un seul appel
+ * et celle d'un sous-agent s'affichent en questionnaire. Rien tant que ces sondages, plus récents
+ * que la sonde, n'ont pas tourné.
+ */
+function questionChecks(observations: Observations): ContractCheck[] {
+  if (observations['question (texte libre)'] === undefined) return []
+  const choice = get(observations, 'question')
+  const free = get(observations, 'question (texte libre)')
+  const many = get(observations, 'questions (plusieurs, choix multiple)')
+  const sub = get(observations, 'question d’un sous-agent')
+  const closed = (o: Observation) => o['pending'] === false && o['continues'] === true
+  return [
+    byModel(
+      'réponse à une question rendue à l’agent (choix, puis texte libre « Autre »)',
+      choice['asked'] === true && free['asked'] === true,
+      choice['used'] === true && free['used'] === true
+    ),
+    byModel(
+      'plusieurs questions d’un seul appel affichées en questionnaire, réponses rendues',
+      many['asked'],
+      many['recognized'] === true && Number(many['questions']) >= 2 && many['used'] === true
+    ),
+    ...(['question refusée', 'question annulée'] as const).map((name) =>
+      byModel(
+        `${name} : le tour finit, rien en attente, la conversation continue`,
+        get(observations, name)['asked'],
+        closed(get(observations, name))
+      )
+    ),
+    // Un sous-agent d'OpenCode 2.3.0 n'a pas l'outil `question` : il passe par `ask_user` de l'app.
+    // Qu'il l'ait un jour (`elicited`) se verra en écart aux attentes, pas en contrat rompu.
+    byModel(
+      'question d’un sous-agent en arrière-plan (ask_user de l’app) affichée en questionnaire',
+      sub['asked'] === true && sub['parentAsked'] === false,
+      sub['recognized']
+    )
   ]
 }
 

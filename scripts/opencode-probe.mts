@@ -48,6 +48,9 @@ import type {
 } from '../src/shared/acp-sdk.mts'
 import {
   acceptedExpectations,
+  asksUser,
+  parentCards,
+  comparable,
   contractChecks,
   diffObservations,
   KNOWN_UPDATES,
@@ -63,7 +66,13 @@ import { ToolCallMemory } from '../src/main/agent/tool-call-memory.ts'
 import { ProbeTraces } from '../src/main/agent/acp-trace.ts'
 import { activeRules } from '../src/main/agent-config/rules.ts'
 import { OPENCODE_RULES } from '../src/main/agent-config/opencode-rules.ts'
-import { questionsOf } from '../src/shared/questions.ts'
+import { answerContent, questionsOf, type QuestionAnswer } from '../src/shared/questions.ts'
+import {
+  ASK_USER_DEFINITION,
+  askUserResult,
+  askUserSchema,
+  parseAskUserArgs
+} from '../src/shared/ask-user.ts'
 import { OPENCODE_AGENTS, openCodeAgentFile } from '../src/main/roles/export/opencode-agents.ts'
 import {
   openCodeSubagentOf as subagentOf,
@@ -79,6 +88,11 @@ import {
 const EXPECTED_FILE = join(dirname(fileURLToPath(import.meta.url)), 'opencode-probe.expected.json')
 const REQUEST_MS = 60_000
 const PROMPT_MS = 240_000
+/**
+ * Attente du rapport d'un sous-agent après le tour (OpenCode 2.3.0 : il tourne toujours en
+ * arrière-plan, et le parent répond de lui-même, hors tour, quand il a fini).
+ */
+const REPORT_MS = 120_000
 
 const { values } = parseArgs({
   options: {
@@ -133,8 +147,28 @@ function sandbox(): Sandbox {
 interface Seen {
   updates: SessionUpdate[]
   permissions: RequestPermissionRequest[]
-  elicitations: { message: string; schema?: ElicitationSchema; toolCallId?: string }[]
+  elicitations: Elicited[]
+  /**
+   * Réponse aux questions (`elicitation/create`) ; sans elle, la première option de chaque choix.
+   * Fiche 232 : choix, texte libre, refus, annulation.
+   */
+  answer?: (asked: Elicited) => ElicitAnswer
 }
+
+/** Question reçue : formulaire, session et appel d'outil nommés, rang dans le flux. */
+interface Elicited {
+  message: string
+  schema?: ElicitationSchema
+  toolCallId?: string
+  sessionId?: string
+  /** Mises à jour reçues avant elle (pour la situer par rapport à la fin du tour). */
+  at: number
+}
+
+type ElicitAnswer =
+  | { action: 'accept'; content: Record<string, string | string[]> }
+  | { action: 'decline' }
+  | { action: 'cancel' }
 
 /** Lance `opencode acp` dans le bac à sable, s'y connecte, exécute `op`, puis l'arrête. */
 async function withOpenCode<T>(
@@ -176,13 +210,19 @@ async function withOpenCode<T>(
       .onRequest(methods.client.elicitation.create, ({ params }) => {
         const schema =
           'requestedSchema' in params ? (params.requestedSchema as ElicitationSchema) : undefined
-        seen.elicitations.push({
+        const asked: Elicited = {
           message: params.message,
           ...(schema ? { schema } : {}),
           ...('toolCallId' in params && typeof params.toolCallId === 'string'
             ? { toolCallId: params.toolCallId }
-            : {})
-        })
+            : {}),
+          ...('sessionId' in params && typeof params.sessionId === 'string'
+            ? { sessionId: params.sessionId }
+            : {}),
+          at: seen.updates.length
+        }
+        seen.elicitations.push(asked)
+        if (seen.answer) return seen.answer(asked)
         if (!schema) return { action: 'decline' }
         const content: Record<string, string> = {}
         for (const [key, property] of Object.entries(schema.properties ?? {})) {
@@ -267,7 +307,6 @@ const prompt = (ctx: ClientContext, sessionId: string, text: string) =>
   )
 
 const sorted = (values: Iterable<string>) => [...new Set(values)].sort()
-const kindsOf = (updates: SessionUpdate[]) => sorted(updates.map((u) => u.sessionUpdate))
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Tous les types de mise à jour vus pendant les sondages qui appellent le modèle. */
@@ -627,7 +666,16 @@ async function probeSimple(): Promise<Observation> {
         usageUpdate: usage ? Object.keys(usage).sort() : [],
         usageCurrency:
           usage?.sessionUpdate === 'usage_update' ? (usage.cost?.currency ?? null) : null,
-        turnUsage: response.usage?.inputTokens != null && response.usage.outputTokens != null
+        turnUsage: response.usage?.inputTokens != null && response.usage.outputTokens != null,
+        // `messageId` d'ACP sur chaque morceau de la réponse : sépare deux réponses hors tour
+        // rapprochées (fiche 232).
+        messageId: seen.updates.some((u) => u.sessionUpdate === 'agent_message_chunk')
+          ? seen.updates.every(
+              (u) =>
+                u.sessionUpdate !== 'agent_message_chunk' ||
+                (typeof u.messageId === 'string' && u.messageId !== '')
+            )
+          : null
       }
     })
   } finally {
@@ -643,11 +691,13 @@ async function probeSubagent(): Promise<Observation> {
       await initialize(ctx)
       const { sessionId } = await newSession(ctx, box, true)
       seen.updates.length = 0
+      const started = Date.now()
       await prompt(
         ctx,
         sessionId,
         'Lance un sous-agent (outil subagent, agent « explore ») pour lire le fichier secret.txt et rapporter le mot de code. Ne lis pas le fichier toi-même. Puis donne-moi le mot de code.'
       )
+      const report = await awaitReport(seen, ['KANGOUROU'], started)
       note(seen)
       const own = seen.updates.filter((u) => !childSessionOf(u))
       const children = seen.updates.filter((u) => childSessionOf(u))
@@ -670,6 +720,7 @@ async function probeSubagent(): Promise<Observation> {
         .flatMap((c) => (c.type === 'content' && c.content.type === 'text' ? [c.content.text] : []))
         .join('\n')
       const childSession = children.map(childSessionOf).find(Boolean)
+      const relayed = (fact: boolean) => (children.length > 0 ? fact : null)
       const input = (card?.rawInput ?? {}) as Record<string, unknown>
       const childId = subagentSessionId(text, done?.rawOutput)
       const listed = await ctx.request(methods.agent.session.list, {})
@@ -679,14 +730,26 @@ async function probeSubagent(): Promise<Observation> {
         kind: card?.kind ?? null,
         inputKeys: Object.keys(input).sort(),
         recognized: !!card && !!subagentOf(titles.get(card.toolCallId), card.rawInput),
-        childMarker: !!childSession,
-        childKinds: kindsOf(children).filter((k) => k !== 'agent_thought_chunk'),
-        childToolIdsPrefixed: children
-          .filter((u) => u.sessionUpdate === 'tool_call')
-          .every((u) => 'toolCallId' in u && u.toolCallId.startsWith(`${childSession?.id}:`)),
-        childTitleIsDescription:
-          !!childSession && childSession.title === (input['description'] as string | undefined),
+        // 2.3.0 : le travail du sous-agent n'est relayé que pendant le tour du parent, relayé ou
+        // non selon la course ; rien de relayé, ses formes ne sont pas observées (`null`, fiche
+        // 232). Après le tour, plus rien (`childAfterTurn`).
+        childRelayed: children.length > 0,
+        childAfterTurn: report.childAfterTurn,
+        childMarker: relayed(!!childSession),
+        childToolIdsPrefixed: relayed(
+          children
+            .filter((u) => u.sessionUpdate === 'tool_call')
+            .every((u) => 'toolCallId' in u && u.toolCallId.startsWith(`${childSession?.id}:`))
+        ),
+        childTitleIsDescription: relayed(
+          !!childSession && childSession.title === (input['description'] as string | undefined)
+        ),
         resultTag: /^\s*<(\w+)/.exec(text)?.[1] ?? null,
+        // Outil rendu tout de suite, sous-agent encore au travail (2.0.32 : parfois ; 2.3.0 : toujours).
+        background:
+          (done?.rawOutput as { metadata?: { status?: unknown } } | undefined)?.metadata?.status ===
+          'running',
+        reported: report.reported,
         metadataSessionId:
           typeof (done?.rawOutput as { metadata?: { sessionID?: unknown } } | undefined)?.metadata
             ?.sessionID === 'string',
@@ -717,9 +780,165 @@ async function probeSubagent(): Promise<Observation> {
   }
 }
 
+/** Texte de la conversation elle-même (pas de ses sous-agents). */
+const ownText = (updates: SessionUpdate[]) =>
+  updates
+    .flatMap((u) =>
+      u.sessionUpdate === 'agent_message_chunk' && !childSessionOf(u) && u.content.type === 'text'
+        ? [u.content.text]
+        : []
+    )
+    .join('')
+
+/**
+ * Rapport des sous-agents (fiche 232) : tous les `words` dans le texte de la conversation, dans le
+ * tour ou, au plus tard `REPORT_MS` après, quand le parent répond de lui-même hors tour (OpenCode
+ * 2.3.0). Dit aussi si du travail d'un sous-agent est encore relayé après le tour.
+ */
+async function awaitReport(seen: Seen, words: string[], started: number) {
+  const endOfTurn = seen.updates.length
+  const done = () => words.every((w) => ownText(seen.updates).includes(w))
+  const deadline = Date.now() + REPORT_MS
+  while (!done() && Date.now() < deadline) await sleep(500)
+  // Le parent finit sa phrase.
+  if (seen.updates.length > endOfTurn) await sleep(2000)
+  const inTurn = words.every((w) => ownText(seen.updates.slice(0, endOfTurn)).includes(w))
+  const reported = done()
+  console.log(
+    `      rapport : ${reported ? (inTurn ? 'dans le tour' : 'après le tour, hors tour') : 'aucun'} (${Math.round((Date.now() - started) / 1000)} s)`
+  )
+  return {
+    reported,
+    childAfterTurn: seen.updates.slice(endOfTurn).some((u) => childSessionOf(u) !== undefined)
+  }
+}
+
+/**
+ * Deux sous-agents lancés ensemble (fiche 232) : chacun sa carte, sa session et son travail ; le
+ * travail relayé va à la carte dont l'outil nomme sa session (titre = description en secours).
+ */
+async function probeParallelSubagents(): Promise<Observation> {
+  const box = sandbox()
+  writeFileSync(join(box.workspace, 'secret.txt'), 'Le mot de code est KANGOUROU.\n')
+  writeFileSync(join(box.workspace, 'autre.txt'), 'Le second mot de code est ZEBRE.\n')
+  try {
+    return await withOpenCode(box, async (ctx, seen) => {
+      await initialize(ctx)
+      const { sessionId } = await newSession(ctx, box, true)
+      seen.updates.length = 0
+      const started = Date.now()
+      await prompt(
+        ctx,
+        sessionId,
+        'Lance DEUX sous-agents en parallèle, dans le même message (outil subagent, agent « explore ») : le premier lit secret.txt et rapporte le mot de code, le second lit autre.txt et rapporte le mot de code. Ne lis aucun fichier toi-même. Quand tu as leurs deux rapports, donne-moi les deux mots de code.'
+      )
+      const report = await awaitReport(seen, ['KANGOUROU', 'ZEBRE'], started)
+      note(seen)
+      // Chaque carte : sa consigne (description) et la session que son résultat nomme, avec la
+      // position de la mise à jour qui la nomme.
+      const cards = new Map<
+        string,
+        { description?: string; session?: string; namedAt?: number; running?: boolean }
+      >()
+      seen.updates.forEach((u, at) => {
+        if (u.sessionUpdate !== 'tool_call' && u.sessionUpdate !== 'tool_call_update') return
+        if (childSessionOf(u)) return
+        const input = (u.rawInput ?? {}) as Record<string, unknown>
+        const card = cards.get(u.toolCallId) ?? {}
+        if (subagentOf(u.title ?? 'subagent', u.rawInput)) {
+          card.description = typeof input['description'] === 'string' ? input['description'] : ''
+        }
+        const metadata = (u.rawOutput as { metadata?: { sessionID?: unknown; status?: unknown } })
+          ?.metadata
+        if (typeof metadata?.sessionID === 'string' && card.session === undefined) {
+          card.session = metadata.sessionID
+          card.namedAt = at
+        }
+        if (metadata?.status === 'running') card.running = true
+        if (card.description !== undefined || card.session) cards.set(u.toolCallId, card)
+      })
+      const launched = [...cards.values()].filter((c) => c.description !== undefined)
+      const sessions = new Set(launched.map((c) => c.session))
+      // Le travail relayé : sa session est celle d'une carte, qui l'a nommée avant lui (l'app le
+      // range alors sous elle sans deviner, fiche 127) ; identifiants préfixés par sa session.
+      const routed = seen.updates.every((u, at) => {
+        const child = childSessionOf(u)
+        if (!child) return true
+        const card = launched.find((c) => c.session === child.id)
+        return (
+          card?.namedAt !== undefined &&
+          card.namedAt < at &&
+          (!('toolCallId' in u) || u.toolCallId.startsWith(`${child.id}:`))
+        )
+      })
+      return {
+        called: launched.length >= 2,
+        cards: launched.length,
+        background: launched.length > 0 && launched.every((c) => c.running === true),
+        distinctSessions: sessions.size === launched.length && !sessions.has(undefined),
+        // Rien de relayé pendant le tour (course, 2.3.0) : pas observé.
+        routed: seen.updates.some((u) => childSessionOf(u) !== undefined) ? routed : null,
+        reported: report.reported,
+        childAfterTurn: report.childAfterTurn
+      }
+    })
+  } finally {
+    rmSync(box.home, { recursive: true, force: true })
+  }
+}
+
 /** Image PNG d'un pixel : ce que renvoie la fausse capture du serveur MCP de la sonde. */
 const PIXEL_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
+/** Outil d'un serveur MCP de la sonde : sa définition, telle que `tools/list` la rend. */
+interface McpTool {
+  name: string
+  title?: string
+  description: string
+  inputSchema: unknown
+}
+
+/**
+ * Petit serveur MCP HTTP (JSON-RPC sans flux) comme celui de l'app : `initialize`, `tools/list`,
+ * `tools/call` (réponse de `call`, nom et arguments de l'outil). Donné à une seule sous-sonde à la
+ * fois, pour ne rien changer à ce que mesurent les autres.
+ */
+async function serveMcp(
+  tools: McpTool[],
+  call: (name: string, args: unknown) => unknown
+): Promise<{ url: string; close: () => void }> {
+  const server = createServer((req, res) => {
+    let body = ''
+    req.on('data', (c: Buffer) => (body += c.toString()))
+    req.on('end', () => {
+      const m = JSON.parse(body || '{}') as {
+        id?: number
+        method?: string
+        params?: { protocolVersion?: string; name?: string; arguments?: unknown }
+      }
+      const reply = (result: unknown) => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: m.id, result }))
+      }
+      if (m.method === 'initialize') {
+        return reply({
+          protocolVersion: m.params?.protocolVersion,
+          capabilities: { tools: {} },
+          serverInfo: { name: 'bobine', version: '0' }
+        })
+      }
+      if (m.method === 'tools/list') return reply({ tools })
+      if (m.method === 'tools/call') return reply(call(m.params?.name ?? '', m.params?.arguments))
+      if (m.id === undefined) return void res.writeHead(202).end()
+      reply({})
+    })
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  const port = typeof address === 'object' && address ? address.port : 0
+  return { url: `http://127.0.0.1:${port}/mcp`, close: () => server.close() }
+}
 
 /**
  * Outils de l'app (fiche 079) : un serveur MCP « bobine » avec une fausse `browser_screenshot`.
@@ -747,57 +966,28 @@ async function probeAppTools(): Promise<Observation> {
       let called = false
       /** Cartes en cours quand l'appel MCP est arrivé (leur code peut arriver juste après). */
       const runningAtCall = new Set<string>()
-      const server = createServer((req, res) => {
-        let body = ''
-        req.on('data', (c: Buffer) => (body += c.toString()))
-        req.on('end', () => {
-          const m = JSON.parse(body || '{}') as {
-            id?: number
-            method?: string
-            params?: { protocolVersion?: string; name?: string }
+      const { url, close } = await serveMcp(
+        [
+          {
+            name: TOOL,
+            description: 'Screenshot of the browser panel page.',
+            inputSchema: { type: 'object', properties: {} }
           }
-          const reply = (result: unknown) => {
-            res.writeHead(200, { 'content-type': 'application/json' })
-            res.end(JSON.stringify({ jsonrpc: '2.0', id: m.id, result }))
+        ],
+        () => {
+          called = true
+          track()
+          for (const [id, s] of status) {
+            if (s.status !== 'completed' && s.status !== 'failed') runningAtCall.add(id)
           }
-          if (m.method === 'initialize') {
-            return reply({
-              protocolVersion: m.params?.protocolVersion,
-              capabilities: { tools: {} },
-              serverInfo: { name: 'bobine', version: '0' }
-            })
+          return {
+            content: [
+              { type: 'text', text: 'Screenshot 1×1 px.' },
+              { type: 'image', data: PIXEL_PNG, mimeType: 'image/png' }
+            ]
           }
-          if (m.method === 'tools/list') {
-            return reply({
-              tools: [
-                {
-                  name: TOOL,
-                  description: 'Screenshot of the browser panel page.',
-                  inputSchema: { type: 'object', properties: {} }
-                }
-              ]
-            })
-          }
-          if (m.method === 'tools/call') {
-            called = true
-            track()
-            for (const [id, s] of status) {
-              if (s.status !== 'completed' && s.status !== 'failed') runningAtCall.add(id)
-            }
-            return reply({
-              content: [
-                { type: 'text', text: 'Screenshot 1×1 px.' },
-                { type: 'image', data: PIXEL_PNG, mimeType: 'image/png' }
-              ]
-            })
-          }
-          if (m.id === undefined) return void res.writeHead(202).end()
-          reply({})
-        })
-      })
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-      const address = server.address()
-      const url = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/mcp`
+        }
+      )
       try {
         await initialize(ctx)
         const { sessionId } = await newSession(ctx, box, true, [
@@ -839,7 +1029,7 @@ async function probeAppTools(): Promise<Observation> {
           )
         }
       } finally {
-        server.close()
+        close()
       }
     })
   } finally {
@@ -847,32 +1037,205 @@ async function probeAppTools(): Promise<Observation> {
   }
 }
 
-async function probeQuestion(): Promise<Observation> {
+/**
+ * Réponse comme Bobine la construit (`answerContent`, fiche 016) : pour chaque question, les options
+ * dont le libellé est dans `picks` ; `custom` : texte libre (« Autre ») de la première question.
+ */
+function answerWith(picks: string[], custom?: string) {
+  return (asked: Elicited): ElicitAnswer => {
+    const questions = asked.schema ? questionsOf(asked.schema, asked.message) : undefined
+    if (!questions) return { action: 'decline' }
+    const answers: Record<string, QuestionAnswer> = {}
+    questions.forEach((q, i) => {
+      const chosen = q.options.filter((o) => picks.some((p) => o.label.includes(p)))
+      answers[q.key] = {
+        picks: (q.multi ? chosen : chosen.slice(0, 1)).map((o) => o.value),
+        custom: i === 0 && custom ? custom : ''
+      }
+    })
+    return { action: 'accept', content: answerContent(questions, answers) }
+  }
+}
+
+/** Dernier statut connu de chaque outil de la conversation (pas de ses sous-agents). */
+function lastStatuses(updates: SessionUpdate[]): Map<string, string> {
+  const statuses = new Map<string, string>()
+  for (const u of updates) {
+    if (u.sessionUpdate !== 'tool_call' && u.sessionUpdate !== 'tool_call_update') continue
+    if (childSessionOf(u)) continue
+    if (u.status) statuses.set(u.toolCallId, u.status)
+    else if (!statuses.has(u.toolCallId)) statuses.set(u.toolCallId, 'pending')
+  }
+  return statuses
+}
+
+/**
+ * Une question posée par l'agent, la réponse `answer`, puis ce qui en reste (fiche 232) : la
+ * question (forme, reconnue par l'app), l'outil qui l'a posée, rien en attente, la réponse utilisée
+ * (`words` dans le texte de la conversation qui suit), et un message suivant qui passe.
+ */
+async function askAndAnswer(
+  question: string,
+  answer: (asked: Elicited) => ElicitAnswer,
+  words: string[]
+): Promise<Observation> {
   const box = sandbox()
   try {
     return await withOpenCode(box, async (ctx, seen) => {
       await initialize(ctx)
       const { sessionId } = await newSession(ctx, box, true)
       seen.updates.length = 0
-      await prompt(
-        ctx,
-        sessionId,
-        'Utilise ton outil question pour me demander quel langage je préfère (choix : TypeScript, Rust, Go), puis réponds en une phrase selon ma réponse.'
-      )
+      seen.answer = answer
+      const response = await prompt(ctx, sessionId, question)
       note(seen)
       const asked = seen.elicitations[0]
-      const keys = Object.keys(asked?.schema?.properties ?? {})
+      const questions = asked?.schema ? questionsOf(asked.schema, asked.message) : undefined
+      const statuses = lastStatuses(seen.updates)
+      const after = asked ? ownText(seen.updates.slice(asked.at)) : ''
+      seen.answer = undefined
+      const next = await prompt(ctx, sessionId, 'Réponds seulement « OK ».')
       return {
         asked: !!asked,
+        recognized: !!questions,
         // Forme des clés (`q0`, `q0_custom`), sans dépendre du nombre de questions.
-        keys: sorted(keys.map((k) => k.replace(/\d+/g, 'N'))),
+        keys: sorted(
+          Object.keys(asked?.schema?.properties ?? {}).map((k) => k.replace(/\d+/g, 'N'))
+        ),
+        questions: questions?.length ?? 0,
+        multi: questions?.some((q) => q.multi) ?? false,
         toolCallId: !!asked?.toolCallId,
-        recognized: !!asked?.schema && !!questionsOf(asked.schema, asked.message)
+        toolStatus: (asked?.toolCallId && statuses.get(asked.toolCallId)) || null,
+        pending: [...statuses.values()].some((s) => s === 'pending' || s === 'in_progress'),
+        stopReason: response.stopReason,
+        used: words.length > 0 && words.every((w) => after.toLowerCase().includes(w.toLowerCase())),
+        continues: next.stopReason === 'end_turn'
       }
     })
   } finally {
     rmSync(box.home, { recursive: true, force: true })
   }
+}
+
+/**
+ * Question posée par un sous-agent en arrière-plan (2.3.0, fiche 232). Un sous-agent d'OpenCode
+ * 2.3.0 n'a pas l'outil `question` (seul l'agent principal l'a) : dans Bobine, il passe par l'outil
+ * `ask_user` de l'app (serveur MCP « bobine », essai réel du 2026-11-16). Cette sous-sonde, et elle
+ * seule, reçoit donc un serveur `ask_user` au contrat de l'app : même définition
+ * (`ASK_USER_DEFINITION`), mêmes arguments (`parseAskUserArgs`), même questionnaire
+ * (`askUserSchema`), même réponse rendue (`askUserResult`) ; seule la réponse est donnée tout de
+ * suite au lieu d'attendre l'utilisateur. Le sous-agent pose-t-il la question, et le parent
+ * rapporte-t-il la réponse ?
+ */
+async function probeSubagentQuestion(): Promise<Observation> {
+  const box = sandbox()
+  try {
+    return await withOpenCode(box, async (ctx, seen) => {
+      const answer = answerWith(['vert', 'Vert', 'green'])
+      seen.answer = answer
+      /** Questions reçues par `ask_user`, et rang dans le flux à leur arrivée. */
+      const viaAskUser: { recognized: boolean; at: number }[] = []
+      /** Une carte de la conversation (pas d'un sous-agent) en cours citait `ask_user` à un appel. */
+      let parentRunningAtCall = false
+      const { url, close } = await serveMcp([ASK_USER_DEFINITION], (name, args) => {
+        if (name !== ASK_USER_DEFINITION.name) {
+          return { content: [{ type: 'text', text: `Unknown tool ${name}` }], isError: true }
+        }
+        try {
+          const parsed = parseAskUserArgs(args)
+          const schema = askUserSchema(parsed)
+          const asked: Elicited = { message: parsed.question, schema, at: seen.updates.length }
+          // Carte en cours au moment de l'appel (comme `runningAtCall` des outils de l'app) : sans
+          // effet après le tour, où rien n'est plus relayé, d'où aussi la recherche sur tout le flux.
+          parentRunningAtCall ||= [...parentCards(seen.updates).values()].some(
+            (c) => c.status !== 'completed' && c.status !== 'failed' && asksUser(c)
+          )
+          viaAskUser.push({ recognized: !!questionsOf(schema, asked.message), at: asked.at })
+          const replied = answer(asked)
+          const { text, isError } = askUserResult(
+            replied.action,
+            replied.action === 'accept' ? replied.content : undefined
+          )
+          return { content: [{ type: 'text', text }], ...(isError ? { isError } : {}) }
+        } catch (error) {
+          return { content: [{ type: 'text', text: (error as Error).message }], isError: true }
+        }
+      })
+      try {
+        await initialize(ctx)
+        const { sessionId } = await newSession(ctx, box, true, [
+          { type: 'http', name: 'bobine', url, headers: [] }
+        ])
+        seen.updates.length = 0
+        const started = Date.now()
+        await prompt(
+          ctx,
+          sessionId,
+          'Lance un sous-agent (outil subagent, agent « general ») chargé de me demander ma couleur préférée (choix : rouge, vert, bleu) avec l’outil ask_user du serveur MCP bobine, puis de te rapporter ma réponse. Ne pose pas la question toi-même. Quand tu as son rapport, dis-moi ma couleur.'
+        )
+        const endOfTurn = seen.updates.length
+        // La question peut venir après le tour (sous-agent en arrière-plan) : on l'attend.
+        const deadline = Date.now() + REPORT_MS
+        while (viaAskUser.length === 0 && Date.now() < deadline) await sleep(500)
+        const report = await awaitReport(seen, ['vert'], started)
+        note(seen)
+        const card = seen.updates.find(
+          (u) =>
+            (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') &&
+            !childSessionOf(u) &&
+            subagentOf(u.title ?? 'subagent', u.rawInput)
+        )
+        // Le parent l'a-t-il posée lui-même ? Une carte de sa conversation qui appelle `ask_user`
+        // (titre d'un appel MCP direct, ou code d'`execute` qui le cite), en cours à l'appel ou non.
+        const parentAsked =
+          parentRunningAtCall || [...parentCards(seen.updates).values()].some(asksUser)
+        const first = viaAskUser[0]
+        return {
+          called: !!card,
+          asked: !!first,
+          recognized: first?.recognized ?? false,
+          parentAsked,
+          // Outil `question` d'OpenCode (`elicitation/create`) : absent pour un sous-agent.
+          elicited: seen.elicitations.length > 0,
+          afterTurn: first !== undefined && first.at >= endOfTurn,
+          reported: report.reported
+        }
+      } finally {
+        close()
+      }
+    })
+  } finally {
+    rmSync(box.home, { recursive: true, force: true })
+  }
+}
+
+/** Un sondage d'un groupe : son échec n'emporte pas les autres. */
+const settled = (run: Promise<Observation>): Promise<Observation> =>
+  run.catch((error: unknown) => ({ failed: (error as Error).message }))
+
+/** Questions de l'agent (fiches 016, 232) : choix, texte libre, plusieurs, refus, annulation. */
+async function probeQuestions(): Promise<Observations> {
+  const LANGUAGE =
+    'Utilise ton outil question pour me demander quel langage je préfère (choix : TypeScript, Rust, Go), puis réponds en une phrase qui nomme ma réponse.'
+  const observations: Observations = {}
+  observations['question'] = await settled(askAndAnswer(LANGUAGE, answerWith(['Rust']), ['Rust']))
+  observations['question (texte libre)'] = await settled(
+    askAndAnswer(LANGUAGE, answerWith([], 'Zig'), ['Zig'])
+  )
+  observations['questions (plusieurs, choix multiple)'] = await settled(
+    askAndAnswer(
+      'Avec UN SEUL appel de ton outil question, pose-moi deux questions : 1) mon langage préféré (TypeScript, Rust, Go) ; 2) les éditeurs que j’utilise, plusieurs réponses possibles (VS Code, Vim, Emacs). Puis résume mes réponses en une phrase qui les nomme toutes.',
+      answerWith(['Go', 'Vim', 'Emacs']),
+      ['Go', 'Vim', 'Emacs']
+    )
+  )
+  observations['question refusée'] = await settled(
+    askAndAnswer(LANGUAGE, () => ({ action: 'decline' }), [])
+  )
+  observations['question annulée'] = await settled(
+    askAndAnswer(LANGUAGE, () => ({ action: 'cancel' }), [])
+  )
+  observations['question d’un sous-agent'] = await settled(probeSubagentQuestion())
+  return observations
 }
 
 /** Édition, liste de tâches et compaction, dans la même session (la compaction a de quoi faire). */
@@ -1138,9 +1501,15 @@ function writeFacts(
     u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update' ? [u] : []
   )
   const of = (path: string) => {
-    const ids = new Set(
+    const touching = new Set(
       calls.flatMap((u) => ((u.locations ?? []).some((l) => l.path === path) ? [u.toolCallId] : []))
     )
+    // L'appel qui écrit : le modèle lit parfois le fichier avant (2.3.0, big-pickle : `read` sur
+    // les trois chemins, même celui à créer) ; ce `read` n'est pas l'écriture observée (fiche 232).
+    const writing = new Set(
+      calls.flatMap((u) => (touching.has(u.toolCallId) && u.kind === 'edit' ? [u.toolCallId] : []))
+    )
+    const ids = writing.size > 0 ? writing : touching
     const mine = calls.filter((u) => ids.has(u.toolCallId))
     const done = mine.find((u) => u.status === 'completed')
     const texts = (done?.content ?? []).flatMap((c) =>
@@ -1265,8 +1634,9 @@ async function record(
 ): Promise<void> {
   const started = Date.now()
   traces.current = name
+  let result: Observation | Observations | undefined
   try {
-    const result = await run()
+    result = await run()
     if (many) Object.assign(observations, result as Observations)
     else observations[name] = result as Observation
   } catch (error) {
@@ -1274,6 +1644,10 @@ async function record(
   }
   const shown = many ? name : `${name} : ${JSON.stringify(observations[name])}`
   console.log(`  · ${shown} (${Math.round((Date.now() - started) / 1000)} s)`)
+  if (!many || observations[name]) return
+  for (const key of Object.keys(result ?? {})) {
+    console.log(`      ${key} : ${JSON.stringify(observations[key])}`)
+  }
 }
 
 async function main(): Promise<void> {
@@ -1297,7 +1671,8 @@ async function main(): Promise<void> {
     const probes: [string, () => Promise<Observation | Observations>, boolean?][] = [
       ['réponse simple', probeSimple],
       ['sous-agent', probeSubagent],
-      ['question', probeQuestion],
+      ['sous-agents en parallèle', probeParallelSubagents],
+      ['questions (choix, texte libre, plusieurs, refus, sous-agent)', probeQuestions, true],
       ['outils de l’app', probeAppTools],
       ['travail (édition, liste de tâches, compaction)', probeWork, true],
       ['modifications rejouées', probeReplayDiffs],
@@ -1310,10 +1685,6 @@ async function main(): Promise<void> {
     for (const [name, run, many] of probes) {
       if (!wanted(name)) continue
       await record(observations, name, run, many)
-      if (!many) continue
-      for (const key of ['édition', 'liste de tâches', 'compaction']) {
-        if (observations[key]) console.log(`      ${key} : ${JSON.stringify(observations[key])}`)
-      }
     }
     // Types de mise à jour inconnus de l'app (la liste complète varie avec le modèle).
     observations['flux'] = {
@@ -1346,7 +1717,8 @@ async function main(): Promise<void> {
   const compared = expected
     ? Object.fromEntries(Object.entries(expected.observations).filter(([k]) => k in observations))
     : {}
-  const changes = expected ? diffObservations(compared, observations) : []
+  // Faits qui dépendent d'une course (fiche 232) : vérifiés par le contrat, jamais comparés.
+  const changes = expected ? diffObservations(comparable(compared), comparable(observations)) : []
   console.log(
     `\nRéponses comparées à celles d’OpenCode ${expected?.opencodeVersion ?? '(aucune attente)'}` +
       (expected ? ` (${expected.recordedAt}, ${expected.model})` : '') +
@@ -1358,7 +1730,14 @@ async function main(): Promise<void> {
   else if (changes.length === 0) console.log('  ✓ identiques')
   else for (const change of changes) console.log(`  ≠ ${change}`)
 
-  if (values.accept) {
+  // Un sondage en échec (quota du modèle gratuit épuisé, délai…) ne devient jamais une attente.
+  const failedProbes = Object.entries(observations).filter(([, o]) => 'failed' in o)
+  if (values.accept && failedProbes.length > 0) {
+    console.log(
+      `\nAttentes NON enregistrées : sondage(s) en échec (${failedProbes.map(([name]) => name).join(', ')}) ; relancer quand ils passent.`
+    )
+  }
+  if (values.accept && failedProbes.length === 0) {
     const recorded = acceptedExpectations(
       expected,
       {
@@ -1374,7 +1753,7 @@ async function main(): Promise<void> {
   }
   const broken = checks.some((c) => !c.ok && !c.unverified)
   const unverified = checks.some((c) => c.unverified)
-  const changed = !values.accept && (!expected || changes.length > 0)
+  const changed = (!values.accept || failedProbes.length > 0) && (!expected || changes.length > 0)
   console.log(
     broken || changed || notes.length > 0
       ? '\n✗ à examiner (voir docs/acp.md, « Sonde d’OpenCode »)'

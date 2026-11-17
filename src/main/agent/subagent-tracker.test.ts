@@ -433,3 +433,96 @@ describe('sous-agent lancé en arrière-plan (OpenCode 2, fiche 122)', () => {
     expect(events.at(-1)).toEqual(['s1', { sessionId: 'ses_fond' }])
   })
 })
+
+describe('OpenCode 2.3.0 : rapport hors tour et travail relu (fiche 232)', () => {
+  /** Relevé sur OpenCode 2.3.0 (2026-11-16) : toujours en arrière-plan. */
+  const launch = (tracker: SubagentTracker, id: string, session: string) => {
+    tracker.note({
+      sessionUpdate: 'tool_call_update',
+      toolCallId: id,
+      title: 'subagent',
+      status: 'in_progress',
+      rawInput: { agent: 'explore', description: `Lire ${id}`, prompt: `Lis ${id}` }
+    })
+    tracker.note({
+      sessionUpdate: 'tool_call_update',
+      toolCallId: id,
+      status: 'completed',
+      rawOutput: { metadata: { sessionID: session, status: 'running', truncated: false } }
+    })
+  }
+  const read = (status: 'in_progress' | 'completed'): TranscriptItem => ({
+    kind: 'tool',
+    id: 1,
+    toolCallId: 'read',
+    title: 'read',
+    status,
+    content: [],
+    locations: []
+  })
+  const word = (text: string): TranscriptItem => ({ kind: 'agent', id: 2, text })
+
+  function setup23(sessions: Record<string, TranscriptItem[]>) {
+    const events: [string, SubagentRun, TranscriptItem[] | undefined][] = []
+    const follow = vi.fn(async (id: string) => sessions[id] ?? [])
+    const tracker = marked(
+      new SubagentTracker({
+        emit: (id, run, work) => events.push([id, run, work]),
+        replay: true,
+        background: (update) =>
+          update.sessionUpdate === 'tool_call_update' &&
+          (update.rawOutput as { metadata?: { status?: string } } | undefined)?.metadata?.status ===
+            'running',
+        follow
+      })
+    )
+    const ended = (id: string) => events.find(([i, run]) => i === id && run.endedAt !== undefined)
+    return { tracker, events, follow, ended }
+  }
+
+  it('deux en parallèle : chacun fini avec sa réponse et son travail relu dans sa session', async () => {
+    const sessions = {
+      ses_a: [read('completed'), word('KANGOUROU')],
+      ses_b: [read('in_progress')]
+    }
+    const t = setup23(sessions)
+    launch(t.tracker, 'a', 'ses_a')
+    launch(t.tracker, 'b', 'ses_b')
+    t.tracker.settle()
+    await vi.advanceTimersByTimeAsync(6_000)
+    expect(t.ended('a')?.slice(1)).toEqual([
+      { endedAt: expect.any(Number), answer: 'KANGOUROU' },
+      [read('completed'), word('KANGOUROU')]
+    ])
+    expect(t.ended('b')).toBeUndefined()
+    sessions.ses_b = [read('completed'), word('ZEBRE')]
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(t.ended('b')?.[1].answer).toBe('ZEBRE')
+    expect(t.follow.mock.calls.every(([id]) => id === 'ses_a' || id === 'ses_b')).toBe(true)
+  })
+
+  it('l’agent parle hors tour : relecture avancée au premier délai, sans rafale', async () => {
+    const sessions: Record<string, TranscriptItem[]> = { ses_a: [read('in_progress')] }
+    const t = setup23(sessions)
+    launch(t.tracker, 'a', 'ses_a')
+    t.tracker.settle()
+    // Relectures à 2, 5, 10, 18 s : toujours au travail ; la suivante est prévue à 31 s.
+    await vi.advanceTimersByTimeAsync(18_000)
+    expect(t.follow).toHaveBeenCalledTimes(4)
+    sessions['ses_a'] = [read('completed'), word('KANGOUROU')]
+    // Le rapport arrive : le parent répond hors tour, morceau après morceau.
+    for (let i = 0; i < 10; i++) t.tracker.nudge()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(t.follow).toHaveBeenCalledTimes(5)
+    // Confirmée à la relecture suivante (3 s), bien avant les 31 s prévues.
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(t.ended('a')?.[1].answer).toBe('KANGOUROU')
+  })
+
+  it('rien en arrière-plan : nudge ne relit rien', async () => {
+    const t = setup23({})
+    t.tracker.nudge()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(t.follow).not.toHaveBeenCalled()
+  })
+})

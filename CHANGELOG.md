@@ -2,6 +2,14 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- OpenCode 2.3.0 : ses sous-agents, désormais toujours en arrière-plan, restent « en cours »
+  jusqu'à leur rapport, puis montrent leur réponse et tout leur travail ; la réponse que l'agent
+  donne ensuite de lui-même s'affiche en message à part, au lieu de se coller au précédent.
+
 ## 1.0.0-beta.6 — 16 novembre 2026
 
 ### Nouveau

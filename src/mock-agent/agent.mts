@@ -650,6 +650,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
               parentId: session.sessionId
             })
           },
+          afterTurnPlayed: () => persist(session),
           ...(options.bobDb ? { bobDb: options.bobDb } : {}),
           ...(options.withoutPlan ? { withoutPlan: true } : {}),
           ...(options.backgroundMs !== undefined ? { backgroundMs: options.backgroundMs } : {}),

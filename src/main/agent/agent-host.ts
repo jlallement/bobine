@@ -61,7 +61,7 @@ import { CHILDREN_REQUEST, originContext, type MessageOrigin } from '@shared/chi
 import type { AgentProfile } from './profiles'
 import { markRefused, noteAnswered, type RefusedModelsOfProfile } from './refused-models'
 import { buildControls, isValidValue, MODE_CONTROL_ID, sessionChoices } from './session-controls'
-import { routeUpdate } from './session-updates'
+import { routeUpdate, speaks } from './session-updates'
 import { SessionCost } from './session-cost'
 import { ReplayBuffer } from './replay-buffer'
 import { SubagentTracker, subagentTrackerOptions } from './subagent-tracker'
@@ -302,8 +302,8 @@ export class AgentHost {
     this.cost = new SessionCost(options.profile.costSource, () => this.sessionId, options.emit)
     this.updates = new ProfileUpdates(options.profile, options.workspace)
     this.subagents = new SubagentTracker(
-      subagentTrackerOptions(options, this.cost.subagentOptions(), (toolCallId, run) =>
-        this.options.emit({ type: 'subagent-run', toolCallId, run })
+      subagentTrackerOptions(options, this.cost.subagentOptions(), (toolCallId, run, work) =>
+        this.options.emit({ type: 'subagent-run', toolCallId, run, ...(work ? { work } : {}) })
       )
     )
     this.appTools = new AppToolsBridge({
@@ -913,6 +913,8 @@ export class AgentHost {
           this.emitSnapshot()
         }
         this.options.emit({ type: 'update', update })
+        // L'agent parle hors de tout tour : rapport d'un sous-agent en arrière-plan (OpenCode 2.3.0).
+        if (!this.is('busy') && !this.replaying && speaks(update)) this.subagents.nudge()
         // Compaction faite par l'agent (fiche 182) : le contexte de session repart au message suivant.
         if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = 'compacted'
         if (route.trackSubagents) this.subagents.note(update)

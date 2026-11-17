@@ -51,3 +51,14 @@ describe('durationParts', () => {
     expect(durationParts(-5)).toEqual({ hours: 0, minutes: 0, seconds: 0 })
   })
 })
+
+describe('réponse hors tour (OpenCode 2.3.0, fiche 232)', () => {
+  it('le tour finit avec sa réponse datée, pas avec celle donnée ensuite, sans heure', () => {
+    const items: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Lance un sous-agent', at: 1_000 },
+      { kind: 'agent', id: 2, text: 'Lancé.', at: 4_000 },
+      { kind: 'agent', id: 3, text: 'Le mot de code est KANGOUROU.' }
+    ]
+    expect([...turnDurations(items)]).toEqual([[2, 3_000]])
+  })
+})
