@@ -242,6 +242,17 @@ contrôle) ; `execute` du parent → vu ; travail relayé du sous-agent → non.
 enregistrée, `parentAsked` reste `false` : la question vient du sous-agent, donc la référence n'a
 pas à être refaite.
 
+### 2026-11-17 (soir) — essai hors tour rouge sur la CI macOS, cause dans l'essai
+
+`verify (macOS)` rouge sur `main` (309fc14) : « question d'un sous-agent après la fin du tour »
+lisait `Réponse rapportée par le sous-agent : ` sans la réponse. L'essai attendait le **début**
+du message (« rapportée par le sous-agent »), qui arrive en trois morceaux de l'agent factice ;
+sur une machine lente, il lisait entre le deuxième et le troisième. Preuve : avec les morceaux
+espacés (`--delay 50`), l'erreur de la CI revient à chaque fois, et une seconde plus tard le fil
+contient le message entier, à part, après celui du lancement : rien de perdu ni de mal rangé côté
+app. Correctif dans l'essai seul : attendre le message entier et comparer la liste des messages.
+Vert avec `--delay 50`, et 200 fois de suite sous charge (tous les cœurs occupés).
+
 ## Reste à faire
 
 - **Questions** : schéma exact du choix multiple : tronqué au journal Trace (`items.anyOf` supposé d'après le
