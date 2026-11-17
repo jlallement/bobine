@@ -1,6 +1,6 @@
 # 236 — Essais e2e : fenêtres sourdes au vrai pointeur, couleurs du mode Plan lues après transition
 
-- **Statut** : en cours
+- **Statut** : fait
 - **Dépend de** : 098 (mode Plan visible), 106 (fenêtres d'essai sans le focus), 115 (e2e en parallèle), 149 (enregistreur d'infobulle), 223 (section Équipe)
 - **Agents** : les deux (environnement d'essai et essai de l'app, rien de propre à un agent)
 
@@ -61,9 +61,9 @@ les transitions finies. L'app est correcte ; l'essai mesurait trop tôt.
       montrer la fenêtre
 - [x] Mode Plan : couleurs lues une fois les transitions de la zone de saisie finies (attente
       d'une condition, plus de durée fixe)
-- [ ] `roles-gestion` et `composer` verts 5 fois de suite sous `taskpolicy -c background`, clair
-      et sombre
-- [ ] `./scripts/verify` vert, puis `pnpm e2e --changed` vert
+- [x] `roles-gestion` et `composer` verts 5 fois de suite sous `taskpolicy -c background`, clair
+      et sombre (6 sur 6)
+- [x] `./scripts/verify` vert, puis `pnpm e2e --changed` vert
 
 ## Plan
 
@@ -81,3 +81,13 @@ les transitions finies. L'app est correcte ; l'essai mesurait trop tôt.
 - 2026-11-17 — Reproduit (avant correctif, `taskpolicy -c background`, 3 jobs) : 3 rouges sur 5
   passages, puis 3 sur 6 avec diagnostics. Sombre seul (2 tâches) : 5 verts sur 5, la charge des
   trois jobs compte. Causes ci-dessus, relevées par diagnostics temporaires (retirés).
+- 2026-11-17 — Après correctif, mêmes conditions (`taskpolicy -c background`, 3 jobs, clair et
+  sombre, vrai curseur toujours au-dessus de la zone des fenêtres d'essai, vérifié avant et après) :
+  6 campagnes vertes sur 6, soit 24 tâches (`roles-gestion` et `composer` × clair, sombre × 6),
+  aucune infobulle rouverte. `./scripts/verify` vert. `pnpm build && pnpm e2e --changed` :
+  `window-state.ts` touche toutes les suites, 208 sur 208 vertes (17 min 53 s) ; captures
+  `r1b-equipe-infobulle` et `composer-10…12` regardées.
+- Non vérifié : Linux et Windows. `setIgnoreMouseEvents` y existe (forme d'entrée vide sous X11,
+  `WS_EX_TRANSPARENT` sous Windows) ; l'hypothèse de la fiche 145 (vrai pointeur X sous Xvfb qui
+  efface le survol simulé, `finitions`) est de la même famille et pourrait tomber avec ce
+  correctif, à confirmer au prochain `pnpm e2e:linux`.
