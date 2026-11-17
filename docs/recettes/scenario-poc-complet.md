@@ -97,9 +97,12 @@ un dossier de profil jetable (`pnpm pilote lancer --profil …`), créé vide, s
 ```bash
 PASSAGE=~/Development/bobine-recette/poc-<version>-<agent>
 mkdir -p "$PASSAGE/profil"
-pnpm pilote lancer --app /Applications/Bobine.app --profil "$PASSAGE/profil" --journal "$PASSAGE/pilote"
+BOBINE_ONBOARDING=1 pnpm pilote lancer --app /Applications/Bobine.app --profil "$PASSAGE/profil" --journal "$PASSAGE/pilote"
 ```
 
+- `BOBINE_ONBOARDING=1` (constaté le 2026-11-17) : un `--user-data-dir` hors profil temporaire compte
+  comme un essai automatique, et l'accueil du premier lancement ne s'affiche pas sans cette variable
+  (`src/main/onboarding/onboarding-state.ts`). Inutile à la relance de l'étape 8.2 (marque posée).
 - Le pilote ajoute le trousseau simulé (`--use-mock-keychain`) : Bobine ne touche pas au vrai
   trousseau.
 - **Pas** de `--agents-neufs` : les agents doivent trouver la connexion faite par l'utilisateur.
@@ -383,6 +386,9 @@ changement de modèle ([090](../features/090-puce-modele.md),
 2. Sur la carte **Tâches proposées** : pour la ligne (b), icône **Agent et modèle**, choisir le
    **modèle des filles « autre modèle »** ; garder le modèle principal pour (a) ; **Faire ici**
    pour (c) (l'iOS se fait dans la mère, étape 6). **Lancer** (a) et (b).
+   Constaté le 2026-11-17 : **Faire ici** envoie la tâche (c) à la mère **tout de suite** ; l'iOS se
+   fait alors à l'étape 4. Pour garder l'ordre des étapes, préférer **Refuser** pour (c) ; sinon le
+   noter, et l'étape 6 commence avec un projet déjà écrit.
 3. Si l'agent ne propose rien : menu **…** › **Lancer en parallèle…**, une fille par chantier, et
    le noter (intervention).
 4. Suivre la carte **Sous-tâches** dans la mère, et la vue **Filles** de l'onglet Modifications.
@@ -422,8 +428,10 @@ Consigne à la mère :
 **4.4 Commandes.**
 
 - `/context`, puis `/cost` dans la mère : réponses titrées, chiffres cohérents avec la puce.
-- Créer une commande du projet dans Réglages › Commandes : `/verifier-api` = « Lance les tests de
-  l'API et résume les échecs en trois lignes ». L'utiliser une fois.
+- Créer une commande `/verifier-api` = « Lance les tests de l'API et résume les échecs en trois
+  lignes », et l'utiliser une fois. Réglages › Commandes ne crée que des commandes **personnelles** ;
+  une commande **du projet** est un fichier `.bobine/commands/verifier-api.md` (le réglage indique le
+  dossier). Noter laquelle a servi.
 - `/compact` une fois, si le contexte de la mère dépasse la moitié (sinon « non joué »).
 
 **4.5 Message envoyé pendant que l'agent travaille.**
@@ -449,6 +457,9 @@ sérieux) ; coût de chaque fille et de la mère avant et après le changement d
 
 1. Fusionner d'abord les filles (a) et (b) : carte **Sous-tâches** › **Fusionner les N dans
    main** (ou « … recommandées … ») ([120](../features/120-fusionner-toutes-les-filles.md)).
+   Tant que le dossier principal a des modifications non commitées, la carte refuse la fusion et
+   propose **Committer d'abord** / **Mettre de côté** : prendre **Committer d'abord** et relever le
+   message proposé (il devrait suivre le souvenir de l'étape 1).
 2. Consigne à la mère :
 
    > Lance l'API comme serveur de dev de Bobine et ouvre la page dans le navigateur intégré.
