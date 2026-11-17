@@ -75,6 +75,51 @@ describe('menu « Réglages de la session »', () => {
     }
   })
 
+  it('affiché par le repli de 300 ms : ce qui arrive ensuite attend sa fermeture (fiche 234)', async () => {
+    // Ouvert au-dessus de la zone de saisie, un menu qui grandit fait monter ses lignes sous le
+    // pointeur : le clic visé sur « Modèle » cochait « Réponses détaillées ».
+    vi.useFakeTimers()
+    try {
+      const late = deferred<RuleFileView[]>()
+      const onLoadRules = vi
+        .fn<() => Promise<RuleFileView[]>>()
+        .mockReturnValueOnce(late.promise)
+        .mockReturnValue(new Promise<RuleFileView[]>(() => {}))
+      render(
+        <Tooltip.Provider>
+          <SessionSettingsMenu
+            controls={[]}
+            agentLabel="Agent factice"
+            disabled={false}
+            onSetControl={vi.fn()}
+            onLoadRules={onLoadRules}
+          />
+        </Tooltip.Provider>
+      )
+      const trigger = screen.getByTestId('session-settings')
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      await act(async () => {
+        vi.advanceTimersByTime(300)
+      })
+      expect(screen.getByTestId('session-settings-content').textContent).toContain('…')
+      await act(async () => late.resolve([rule]))
+      expect(screen.getByTestId('session-settings-content').textContent).toContain('…')
+      expect(screen.queryByTestId('rule-item')).toBeNull()
+      // Refermé puis rouvert : les règles arrivées entre-temps sont là d'emblée.
+      fireEvent.keyDown(screen.getByTestId('session-settings-content'), { key: 'Escape' })
+      expect(screen.queryByTestId('session-settings-content')).toBeNull()
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      await act(async () => {
+        vi.advanceTimersByTime(300)
+      })
+      expect(screen.getAllByTestId('rule-item').map((item) => item.textContent)).toEqual([
+        expect.stringContaining('~/style.md')
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('Serveurs MCP : « bobine · intégré » et les outils reçus, puis les serveurs de l’agent (fiche 099)', async () => {
     const open = vi.fn()
     const mcp: McpAgentView = {

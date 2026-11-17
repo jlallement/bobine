@@ -6,6 +6,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Réglages de la session : le menu ne grandit plus sous le pointeur quand ses règles et ses
+  outils arrivent tard : un clic sur « Modèle » ne tombe plus sur la ligne d'en dessous.
 - OpenCode 2.3.0 : ses sous-agents, désormais toujours en arrière-plan, restent « en cours »
   jusqu'à leur rapport, puis montrent leur réponse et tout leur travail ; la réponse que l'agent
   donne ensuite de lui-même s'affiche en message à part, au lieu de se coller au précédent.

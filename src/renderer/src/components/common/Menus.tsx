@@ -474,6 +474,18 @@ export function SessionSettingsMenu({
   const [open, setOpen] = useState(false)
   /** Ouverture en cours : une plus récente (ou une fermeture) l'annule. */
   const opening = useRef(0)
+  /**
+   * Menu affiché (fiche 234) : ce qui arrive ensuite (règles, outils, serveurs lus après le repli
+   * de 300 ms) attend sa fermeture. Ouvert au-dessus de la zone de saisie, il grandirait vers le
+   * haut et ferait glisser ses lignes sous le pointeur : le clic visé sur « Modèle » cochait
+   * « Réponses détaillées », ou tombait entre deux lignes.
+   */
+  const shown = useRef(false)
+  const late = useRef<(() => void)[]>([])
+  const whenStill = (update: () => void) => {
+    if (shown.current) late.current.push(update)
+    else update()
+  }
   useMcpStatuses()
   return (
     // Non modal : ses éléments ouvrent les Réglages ou un document ; un menu modal laisserait la
@@ -483,24 +495,37 @@ export function SessionSettingsMenu({
       open={open}
       onOpenChange={(next) => {
         const ticket = ++opening.current
-        if (!next) return setOpen(false)
+        if (!next) {
+          shown.current = false
+          for (const update of late.current.splice(0)) update()
+          return setOpen(false)
+        }
         // Affiché une fois les règles et les serveurs MCP lus (au plus 300 ms), à sa taille : un
         // menu qui grandit après coup passe un instant sur le bouton puis saute de l'autre côté
         // de la zone de saisie, et le relâché du clic qui l'a ouvert choisissait alors la ligne
-        // qui se trouvait sous le pointeur.
+        // qui se trouvait sous le pointeur. Passé 300 ms, il s'affiche tel quel (« … ») et ne
+        // change plus de taille jusqu'à sa fermeture.
         const show = () => {
-          if (opening.current === ticket) setOpen(true)
+          if (opening.current !== ticket) return
+          shown.current = true
+          setOpen(true)
         }
         void Promise.allSettled([
-          onLoadRules?.().then(setRules, () => setRules('error')),
+          onLoadRules?.().then(
+            (rules) => whenStill(() => setRules(rules)),
+            () => whenStill(() => setRules('error'))
+          ),
           onLoadMcp?.().then(
             (view) => {
-              setMcp(view ?? null)
+              whenStill(() => setMcp(view ?? null))
               if (view) void testMcpServers(view.profileId, view.servers, true)
             },
-            () => setMcp(null)
+            () => whenStill(() => setMcp(null))
           ),
-          onLoadAppTools?.().then(setAppTools, () => setAppTools(null))
+          onLoadAppTools?.().then(
+            (tools) => whenStill(() => setAppTools(tools)),
+            () => whenStill(() => setAppTools(null))
+          )
         ]).then(show)
         setTimeout(show, 300)
       }}
