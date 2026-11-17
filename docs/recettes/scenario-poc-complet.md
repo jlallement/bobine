@@ -215,6 +215,19 @@ agents.
 | **Gênant** | ça marche, mais on hésite, on recommence, on cherche | noté ; fiche si récurrent |
 | **Cosmétique** | aspect, texte, alignement | noté |
 
+**Une capture pour chaque défaut, au moment où on le voit** (décidé le 2026-11-17), quelle que
+soit sa gravité, avant toute autre action (pas de clic, pas de nouvelle tentative) : l'écran tel
+qu'il est, c'est la preuve.
+
+- Fenêtre de Bobine : `pnpm pilote note --gravite … --capture "<texte>"` (taille réelle, pas
+  `--demi`).
+- Vues natives absentes des captures du pilote (navigateur intégré, simulateur, fenêtres de
+  macOS) : une capture computer use en plus, enregistrée sous
+  `<étape>-defaut-<n>-<quoi>.png`.
+- Si le défaut évolue (carte qui finit par répondre, agent qui repart), une seconde capture après.
+- Le rapport cite la ou les captures sur la ligne de chaque défaut ; un défaut sans capture est
+  signalé comme tel, avec la raison.
+
 Gardé pour l'instant (décidé le 2026-11-17) : le pilote n'a que quatre gravités (`bloquant`, `genant`, `mineur`, `idee`) : on note un défaut
 **sérieux** avec `--gravite genant` et le texte commençant par `SÉRIEUX :`, un défaut
 **cosmétique** avec `--gravite mineur`. Le rapport, lui, utilise les quatre gravités ci-dessus.
