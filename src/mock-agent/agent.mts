@@ -31,6 +31,7 @@ import { SessionStore, type StoredSession } from './store.mts'
 import { DEFAULT_MAX_STEPS, playWithinLimit, StepCounters } from './limite-etapes.mts'
 import { describeSettings, say, sayAll, type MockLanguage } from './langue.mts'
 import { installedModes, type InstalledModesOptions } from './modes-installes.mts'
+import { waitWhileLocked } from './verrou-fin-de-tour.mts'
 
 export interface MockAgentOptions {
   /** Scénario joué par défaut à chaque prompt. */
@@ -88,6 +89,11 @@ export interface MockAgentOptions {
   failure?: MockFailure
   /** `initialize` répond après ce délai (ms) : démarrage lent (`--demarrage-lent`, fiche 139). */
   slowStartMs?: number
+  /**
+   * Verrou de fin de tour (`--verrou-fin-de-tour`) : tant que ce fichier existe, un tour joué ne
+   * se termine pas (`verrou-fin-de-tour.mts`).
+   */
+  turnLock?: string
   /**
    * `--dossiers-en-plus` : annonce `sessionCapabilities.additionalDirectories`, comme OpenCode
    * (fiche 179). Sans, des dossiers reçus quand même sont refusés (`invalidParams`).
@@ -672,6 +678,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           if (played.turn === 'refused') return { stopReason: 'max_turn_requests' }
           if (played.turn === 'stopped') stopReason = 'max_turn_requests'
         } else await playSteps(chosen.steps, ctx)
+        if (options.turnLock)
+          await waitWhileLocked(options.turnLock, session.sessionId, turn.signal)
         if (options.bobCost && options.bobDb) {
           session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
           const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]

@@ -149,6 +149,16 @@ describe('profils : sous-agents (fiche 053)', () => {
     ])
     expect(mock({ ...withCosts, BOBINE_CONFIG_HOME: home })?.costSource?.id).toBe('bob-db')
   })
+
+  it('agent factice : verrou de fin de tour transmis seulement s’il est demandé (fiche 223)', () => {
+    const args = (env: Record<string, string>) =>
+      resolveProfiles({ ...ctx, env }).find((p) => p.id === 'mock')?.args ?? []
+    expect(args({ BOBINE_AGENT_PROFILE: 'mock' })).not.toContain('--verrou-fin-de-tour')
+    const lock = abs('/tmp/essai/verrou')
+    const locked = args({ BOBINE_AGENT_PROFILE: 'mock', MOCK_AGENT_TURN_LOCK: lock })
+    const at = locked.indexOf('--verrou-fin-de-tour')
+    expect(locked.slice(at, at + 2)).toEqual(['--verrou-fin-de-tour', lock])
+  })
 })
 
 describe('profils : libellés des méthodes de connexion (fiche 205)', () => {

@@ -114,6 +114,7 @@ export type ChildHost = Pick<
   | 'view'
   | 'createChild'
   | 'ready'
+  | 'holdStarting'
   | 'prompt'
   | 'setControl'
   | 'post'
@@ -289,6 +290,8 @@ export class ChildConversations {
         (child) => {
           this.preparing.set(id, { ...launch, conversationId: child.id })
           this.publishLaunches()
+          // « Démarre » jusqu'au départ de sa consigne : jamais « a fini » entre-temps (fiche 223).
+          this.conversations.holdStarting(child.id, true)
         },
         role ? { role: roleStamp(role) } : {}
       )
@@ -450,6 +453,10 @@ export class ChildConversations {
   onEvent(payload: ConversationEvent): void {
     const { conversationId, event } = payload
     if (event.type === 'user-message') this.sending.delete(conversationId)
+    // Son agent n'est plus « prêt » (il répond, attend, échoue) : la fille montre son vrai statut.
+    if (event.type === 'status' && !['starting', 'ready'].includes(event.snapshot.status)) {
+      this.conversations.holdStarting(conversationId, false)
+    }
     const conversations = this.conversations.state().conversations
     if (event.type === 'turn-end' || event.type === 'turn-error') {
       const child = conversations.find((c) => c.id === conversationId)
@@ -585,7 +592,10 @@ export class ChildConversations {
       const turn = this.conversations.prompt(childId, first)
       launched()
       await turn
+      // Envoi retenu sans tour (plafond de coût, fiche 157) : la fille n'est plus « démarre ».
+      this.conversations.holdStarting(childId, false)
     } catch (error) {
+      this.conversations.holdStarting(childId, false)
       launched()
       this.readOnly.unprepare(childId)
       // La consigne n'a pas pu partir (agent à connecter…) : rendue dans le fil de la fille, et

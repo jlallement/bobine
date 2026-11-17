@@ -6,6 +6,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Conversations filles : une fille qui vient de partir reste « En cours » (« au travail » pour un
+  rôle) jusqu'à sa réponse ; elle ne s'affiche plus un instant « Finie », avec une coche, avant
+  même d'avoir reçu sa consigne.
 - Plafond de coût (Bob) : quand le coût relu à la fin d'une réponse dépasse le plafond, la
   carte ne dit plus la réponse interrompue, et « Continuer » ne relance plus l'agent pour rien.
 - Réglages de la session : le menu ne grandit plus sous le pointeur quand ses règles et ses

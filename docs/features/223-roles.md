@@ -1094,3 +1094,31 @@ dans **ADR-0046** (accepté).
   `roles-travail` : à 1 280 px avec la pastille « Profil temporaire », puis à 800 px sans et avec
   (captures `roles-travail-7b`, `7c-entete-800`, `7d-entete-800-icone`). Hors périmètre : la
   pastille « Profil temporaire » ne se raccourcit pas, et à 800 px elle déborde à elle seule.
+- **2026-11-17** (`fix/e2e-roles-travail-running`) : essai `roles-travail` intermittent (suite
+  complète, 3 jobs, machine chargée : `TypeError … reading 'parentElement'` en sombre). L'essai
+  prenait au vol l'anneau « au travail » : un `waitFor` le voyait, puis `reveal` le cherchait de
+  nouveau et ne trouvait plus rien. Deux causes, relevées par échantillonnage de l'état des cartes :
+  la fille finit vite (réponse de l'agent factice en ≈ 0,8 s), et surtout une fille de rôle passe
+  de « démarre » (au travail) à « prête » pendant sa préparation (`ready`, consigne du rôle,
+  empreinte du dossier pour la lecture seule) avant que sa consigne ne parte : elle s'affiche alors
+  « a fini » (✓ dans la barre latérale) quelques dizaines de millisecondes, plus longtemps sur une
+  machine chargée. Correctif de l'essai, déterministe : **verrou de fin de tour** de l'agent factice
+  (`--verrou-fin-de-tour <fichier>`, `MOCK_AGENT_TURN_LOCK` par le profil factice ;
+  `src/mock-agent/verrou-fin-de-tour.mts`, `docs/mock-agent.md`) : tant que le fichier existe,
+  aucun tour ne finit, et chaque tour retenu s'inscrit dans `<fichier>.retenus`. L'essai pose le
+  verrou, envoie, attend les deux tours retenus, vérifie les deux cartes et leurs anneaux « au
+  travail » avant et après la capture `roles-travail-5b-au-travail`, puis enlève le verrou. Tests :
+  `verrou-fin-de-tour.test.ts`, `profiles.test.ts`. **Écart, hors périmètre** : le passage par
+  « a fini » d'une fille de rôle avant sa consigne est visible de l'utilisateur (plus long avec un
+  gros dépôt) ; non corrigé ici, à trancher dans une fiche.
+- **2026-11-17** (même branche, après relecture) : **ce faux « a fini » est corrigé dans l'app**, à
+  la source de l'état (main). Une fille lancée est marquée « démarre » (`startingHeld`, posé par
+  `children.ts` dès sa création, `ConversationManager.holdStarting`) : tant que sa consigne n'est
+  pas partie, la liste la donne `starting` (`listedStatus`, `helpers.ts`) si son agent n'est pas
+  encore lancé ou s'il est prêt. La marque est levée dès que son agent quitte « prêt » (il répond,
+  attend un accord, échoue, s'arrête : `ChildConversations.onEvent`), ou si la consigne ne part
+  pas (échec, envoi retenu par le plafond de coût). Rien dans le renderer. Vaut pour toutes les
+  filles lancées par `start` (rôle ou non) ; les relecteurs (fiche 177) ne passent pas par là.
+  Test : `roles-children.test.ts` (empreinte du dossier ralentie de 400 ms, aucune fille « finie »
+  avant sa consigne) ; il échoue sans le correctif (état `done`, statut `ready`). Le verrou de fin
+  de tour reste dans `roles-travail` : l'agent factice répond en 0,8 s.
