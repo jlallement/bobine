@@ -384,6 +384,10 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
         ...(ctx.env['MOCK_AGENT_DIRECTORIES'] === '1' ? ['--dossiers-en-plus'] : []),
         // Sans réglages de session (ni modèle), comme Bob (fiche 210 : carte sans modèle).
         ...(ctx.env['MOCK_AGENT_OPTIONS'] === 'none' ? ['--sans-options'] : []),
+        // Essais : aucun tour ne finit tant que ce fichier existe (« au travail » tenu, fiche 223).
+        ...(ctx.env['MOCK_AGENT_TURN_LOCK']
+          ? ['--verrou-fin-de-tour', ctx.env['MOCK_AGENT_TURN_LOCK']]
+          : []),
         ...mockRoleExportArgs(ctx.env),
         ...mockLanguageArgs(ctx.env)
       ],
