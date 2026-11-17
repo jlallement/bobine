@@ -9,6 +9,8 @@ What changes for you, version by version. Shown in Settings › About.
 - OpenCode 2.3.0: its subagents, which now always run in the background, stay “running” until
   they report, then show their answer and all of their work; the reply the agent then gives on its
   own appears as a separate message instead of being stuck to the previous one.
+- Electron 45.3.3: Chromium and V8 security fixes; a cookie set by a site in the built-in
+  browser just before you quit Bobine is now kept.
 
 ## 1.0.0-beta.6 — November 16, 2026
 

@@ -10,7 +10,7 @@ app, next to Bobine's `LICENSE` and `NOTICE`: `Bobine.app/Contents/Resources/lic
 
 ## Electron and Chromium
 
-Bobine runs on [Electron](https://www.electronjs.org) 45.2.3 (MIT, license text
+Bobine runs on [Electron](https://www.electronjs.org) 45.3.3 (MIT, license text
 [T1](#t1)), which embeds Chromium, Node.js and their components. Their licenses are in
 `LICENSES.chromium.html`, shipped with the app in `licenses/electron/` together with Electron's
 `LICENSE`.
@@ -24,7 +24,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 
 | Package | Version | License | Used by | License text |
 |---|---|---|---|---|
-| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.4.0 | Apache-2.0 | main process | [T2](#t2) |
+| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.7.0 | Apache-2.0 | main process | [T2](#t2) |
 | [@braintree/sanitize-url](https://github.com/braintree/sanitize-url) | 7.1.2 | MIT | interface | [T3](#t3) |
 | [@chevrotain/gast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
 | [@chevrotain/regexp-to-ast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
@@ -295,7 +295,7 @@ after a `---` line.
 
 ### T1
 
-Used by: electron 45.2.3.
+Used by: electron 45.3.3.
 
 ```text
 Copyright (c) Electron contributors
@@ -323,7 +323,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T2
 
-Used by: @agentclientprotocol/sdk 2.4.0.
+Used by: @agentclientprotocol/sdk 2.7.0.
 
 ```text
 

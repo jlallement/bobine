@@ -1,6 +1,6 @@
 # 232 — OpenCode 2.3.0 : sous-agents toujours en arrière-plan
 
-- **Statut** : fait, en relecture — app, agent factice, e2e, docs et référence de la sonde sur 2.3.0 (2026-11-17) ; rien de poussé ni fusionné
+- **Statut** : fait — app, agent factice, e2e, docs et référence de la sonde sur 2.3.0 (2026-11-17) ; fusionné dans `main` le 2026-11-17
 - **Dépend de** : 078 (OpenCode 2), 122 (sous-agent en arrière-plan), 127 (D25), 139 (traces),
   140 (marque générique), 198 (sonde hebdomadaire)
 - **Agents** : OpenCode pour le relevé et le profil (`testedVersions`) ; les corrections de l'app

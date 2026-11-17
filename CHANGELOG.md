@@ -9,6 +9,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - OpenCode 2.3.0 : ses sous-agents, désormais toujours en arrière-plan, restent « en cours »
   jusqu'à leur rapport, puis montrent leur réponse et tout leur travail ; la réponse que l'agent
   donne ensuite de lui-même s'affiche en message à part, au lieu de se coller au précédent.
+- Electron 45.3.3 : correctifs de sécurité de Chromium et de V8 ; un cookie posé par un site du
+  navigateur intégré juste avant de quitter Bobine est désormais bien gardé.
 
 ## 1.0.0-beta.6 — 16 novembre 2026
 

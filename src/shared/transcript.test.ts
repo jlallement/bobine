@@ -109,6 +109,42 @@ describe('reduceTranscript', () => {
     expect(items.map((i) => i.kind)).toEqual(['agent', 'tool', 'agent'])
   })
 
+  it('suggestions de réponse (ACP 1.32, instable, fiche 233) : non lues, le fil reste intact', () => {
+    const items = run(
+      text('Bonjour'),
+      update({
+        sessionUpdate: 'prompt_suggestions_update',
+        suggestions: [{ prompt: [{ type: 'text', text: 'Et ensuite ?' }] }]
+      }),
+      text(' !')
+    )
+    expect(items).toMatchObject([{ kind: 'agent', text: 'Bonjour !' }])
+  })
+
+  it('référence de session (ACP 1.31, fiche 233) : gardée dans le contenu de la carte', () => {
+    const session = { type: 'session', sessionId: 'enfant' } as const
+    const [tool] = run(
+      update({
+        sessionUpdate: 'tool_call',
+        toolCallId: 'd1',
+        title: 'Déléguer',
+        kind: 'other',
+        status: 'in_progress',
+        content: [session]
+      }),
+      update({
+        sessionUpdate: 'tool_call_update',
+        toolCallId: 'd1',
+        status: 'completed',
+        content: [{ type: 'content', content: { type: 'text', text: 'fini' } }, session]
+      })
+    )
+    expect(tool).toMatchObject({
+      status: 'completed',
+      content: [{ type: 'content', content: { type: 'text', text: 'fini' } }, session]
+    })
+  })
+
   it('sous-agent marqué au tool_call (fiche 140), gardé par les mises à jour sans rawInput', () => {
     const [tool] = run(
       update({

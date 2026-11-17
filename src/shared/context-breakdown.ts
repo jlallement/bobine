@@ -74,6 +74,9 @@ function contentText(content: ToolCallContent, terminals: ContextInputs['termina
   if (content.type === 'diff')
     return `${content.path}\n${content.oldText ?? ''}\n${content.newText}`
   if (content.type === 'terminal') return terminals?.[content.terminalId]?.output ?? ''
+  // Référence à une autre session (ACP 1.31, instable) : affichage seul, son travail reste dans
+  // le contexte de cette session-là.
+  if (content.type === 'session') return ''
   return content.content.type === 'text' ? content.content.text : ''
 }
 
