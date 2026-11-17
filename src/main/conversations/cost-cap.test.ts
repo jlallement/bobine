@@ -22,14 +22,20 @@ function waitFor(predicate: () => boolean, timeoutMs = 10_000): Promise<void> {
 }
 
 /** Un gestionnaire sur l'agent factice, le gardien du plafond branché avec ces réglages. */
-function environment(scenario: string, prefs: CapPreferences, extraArgs: string[] = []) {
+function environment(
+  scenario: string,
+  prefs: CapPreferences,
+  extraArgs: string[] = [],
+  more: Partial<AgentProfile> = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'plafond-'))
   const profile: AgentProfile = {
     id: 'mock',
     label: 'Factice',
     command: process.execPath,
     args: [MOCK_AGENT_ENTRY, '--scenario', scenario, '--delay', '20', ...extraArgs],
-    env: {}
+    env: {},
+    ...more
   }
   const manager = new ConversationManager({
     profiles: [profile],
@@ -135,6 +141,31 @@ describe('gardien du plafond de coût (fiche 157)', () => {
     // ≈ 1 375 jetons pour un tour de l'agent factice, au-delà de 1 000.
     expect(card()).toMatchObject({ unit: 'tokens', limit: 1000, step: 1000, interrupted: false })
     expect(card()?.spent).toBeGreaterThan(1000)
+    expect(
+      items().some((i) => i.kind === 'notice' && i.message?.key === 'transcript.notice.cancelled')
+    ).toBe(false)
+    manager.stopAll()
+  }, 30_000)
+
+  it('coût hors protocole déjà écrit à la fin du tour : carte sans interrompre le tour fini (fiche 235)', async () => {
+    // Bob écrit son coût dans sa base, hors protocole ; ici, l'écriture est faite pendant le tour
+    // (en avance, ou celle du tour d'avant en retard) : la relecture de fin de tour franchit le
+    // plafond. Le tour est fini, il n'y a rien à interrompre.
+    let written: number | undefined
+    const { manager, id, items, card } = environment('streaming-texte', PREFS, ['--sans-usage'], {
+      costSource: { id: 'bob-db', currency: 'bobcoins', session: () => written }
+    })
+    await manager.startActive()
+    manager.subscribe({
+      event: ({ event }) => {
+        if (event.type === 'user-message') written = 1.5
+      }
+    })
+    await manager.prompt(id, 'Réponds')
+    await waitFor(() => !!card())
+    await waitFor(() => manager.view(id).snapshot?.status === 'ready')
+    expect(card()).toMatchObject({ unit: 'bobcoins', spent: 1.5, interrupted: false })
+    expect(manager.view(id).transcript.cancelling).toBeUndefined()
     expect(
       items().some((i) => i.kind === 'notice' && i.message?.key === 'transcript.notice.cancelled')
     ).toBe(false)

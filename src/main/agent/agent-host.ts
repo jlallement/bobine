@@ -629,8 +629,6 @@ export class AgentHost {
         ...(response.usage ? { usage: response.usage } : {}),
         ...(limit ? { limit } : {})
       })
-      // Coût lu hors protocole : relu maintenant, puis un peu plus tard (fiche 157).
-      this.cost.turnEnded()
     } catch (error) {
       // Comme à la fin d'un tour : les mises à jour reçues avant l'erreur passent avant elle, sinon
       // un outil annoncé juste avant resterait « en cours » après l'avis d'échec (fiche 139).
@@ -643,7 +641,7 @@ export class AgentHost {
       log.info(
         `Tour fini ${scopeText(this.logScope())} : ${stopReason} en ${formatDuration(Date.now() - turnStarted)}`
       )
-      if (!retrying) this.afterTurn(connection, resumeQueue)
+      if (!retrying) this.afterTurn(connection, resumeQueue, stopReason !== 'erreur')
     }
   }
 
@@ -702,7 +700,7 @@ export class AgentHost {
    * Après un tour fini, arrêté ou en échec : l'agent redevient prêt, puis partent la réponse
    * tardive et, si `resumeQueue` ou « Envoyer maintenant », la file d'attente.
    */
-  private afterTurn(connection: ClientConnection, resumeQueue: boolean): void {
+  private afterTurn(connection: ClientConnection, resumeQueue: boolean, answered = false): void {
     this.stopWatch.clearCancel()
     // Tour fini, arrêté ou en échec : ses sous-agents aussi, et ses cartes en cours.
     this.subagents.settle()
@@ -710,6 +708,7 @@ export class AgentHost {
     if (this.connection === connection && this.is('busy') && !connection.signal.aborted) {
       this.setStatus('ready')
     }
+    if (answered) this.cost.turnEnded() // Une fois prêt : plafond franchi hors tour (fiches 157, 235).
     const sendQueue = resumeQueue || this.sendNowPending
     this.sendNowPending = false
     this.flushLateAnswer()

@@ -460,8 +460,14 @@ export const JOURNEYS: Journey[] = [
       try {
         await app.prompt(id, scenario(env.persona, 'cost-cap'))
         await app.idle(id, env.persona.settleMs)
-        // Plafond atteint : le message suivant est retenu (pas compté comme envoyé).
-        if (unit) await app.manager.prompt(id, scenario(env.persona, 'cost-cap'))
+        if (unit) {
+          // Coût connu de l'app : la carte de fin de tour. Celui de Bob est relu dans sa base à
+          // 1,5 s, puis à 5 s si l'écriture est en retard (machine chargée) ; avant, l'app ne sait
+          // pas encore le plafond franchi (fiche 235).
+          await waitFor(() => items(app, id).some((i) => i.kind === 'cost-cap'), 'carte de plafond')
+          // Plafond atteint : le message suivant est retenu (pas compté comme envoyé).
+          await app.manager.prompt(id, scenario(env.persona, 'cost-cap'))
+        }
         held = items(app, id).at(-1)?.kind === 'cost-cap'
       } finally {
         stop()
