@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, check, withApp } from '../lib.mjs'
@@ -80,6 +88,23 @@ function reveal(ui, element) {
   return ui.ev(
     `(() => { const el = ${element}; let p = el.parentElement; while (p && !/(auto|scroll)/.test(getComputedStyle(p).overflowY)) p = p.parentElement; if (!p) return; const r = el.getBoundingClientRect(); const pr = p.getBoundingClientRect(); p.scrollTop += r.top - pr.top - Math.max(0, (pr.height - r.height) / 2) })()`
   )
+}
+
+/**
+ * Attend que `count` tours soient retenus par le verrou de l'agent factice (une ligne chacun dans
+ * `<verrou>.retenus`, voir `docs/mock-agent.md`) : leur conversation est alors en plein tour.
+ */
+async function heldTurns(turnLock, count, timeoutMs = 30000) {
+  const file = `${turnLock}.retenus`
+  const read = () =>
+    existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0
+  const deadline = Date.now() + timeoutMs
+  while (read() < count) {
+    if (Date.now() > deadline) {
+      throw new Error(`tours retenus par le verrou : ${read()} sur ${count} après ${timeoutMs} ms`)
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  }
 }
 
 /** Tape dans la saisie (sans envoyer). */
@@ -208,19 +233,28 @@ async function mainRun(ui, turnLock) {
     'deux rôles : la ligne résume'
   )
   await ui.shot('roles-travail-5-deux-roles')
-  // Au travail : l'anneau de l'avatar (maquette 03-5). Le verrou retient la fin du tour des deux
-  // filles : l'état « au travail » dure jusqu'à ce que l'essai l'enlève, après la capture (il
-  // n'est plus pris au vol : une fille finie avant la capture faisait échouer l'essai).
+  // Au travail : l'anneau de l'avatar (maquette 03-5), sans le prendre au vol. Le verrou retient
+  // la fin du tour des deux filles jusqu'à ce que l'essai l'enlève, après la capture. On attend
+  // que leurs deux tours soient retenus (inscrits par l'agent factice) : avant, une fille qui
+  // démarre passe par « prête » (rôle : consigne et empreinte du dossier) et s'affiche « a fini ».
   writeFileSync(turnLock, '')
   await ui.enter()
   await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 3`, 30000)
-  const running = `document.querySelector('[data-testid=role-avatar][data-state=running]')`
-  await ui.waitFor(`!!${running}`, 15000)
-  await reveal(ui, running)
-  check(await ui.ev(`!!${running}`), 'deux rôles : une fille au travail, l’anneau sur l’avatar')
+  await heldTurns(turnLock, 2)
+  // Les deux nouvelles filles (la première carte est celle d'avant) : leur carte et l'anneau de
+  // leur avatar disent « au travail ».
+  const fresh = `[...document.querySelectorAll('[data-testid=role-launch]')].slice(1)`
+  const bothRunning = `${fresh}.length === 2 && ${fresh}.every((l) => l.dataset.state === 'running' && l.querySelector('[data-testid=role-avatar]')?.dataset.state === 'running')`
+  const states = `JSON.stringify(${fresh}.map((l) => [l.dataset.role, l.dataset.state]))`
+  await ui.waitFor(bothRunning, 15000)
+  await reveal(ui, `${fresh}[0]`)
+  check(await ui.ev(bothRunning), 'deux rôles : deux filles au travail, l’anneau sur leur avatar')
   await ui.shot('roles-travail-5b-au-travail')
-  // Toujours au travail après la capture : elle montre bien l'anneau.
-  check(await ui.ev(`!!${running}`), 'capture prise pendant le travail (verrou tenu)')
+  // Toujours au travail après la capture : elle montre bien les anneaux.
+  check(
+    await ui.ev(bothRunning),
+    `capture prise pendant le travail (verrou tenu) ${await ui.ev(states)}`
+  )
   rmSync(turnLock)
   await ui.waitFor(
     `[...document.querySelectorAll('[data-testid=subtask-row]')].length === 3 && !document.querySelector('[data-testid=role-launch][data-state=running]')`,

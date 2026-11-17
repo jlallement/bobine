@@ -678,7 +678,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           if (played.turn === 'refused') return { stopReason: 'max_turn_requests' }
           if (played.turn === 'stopped') stopReason = 'max_turn_requests'
         } else await playSteps(chosen.steps, ctx)
-        if (options.turnLock) await waitWhileLocked(options.turnLock, turn.signal)
+        if (options.turnLock)
+          await waitWhileLocked(options.turnLock, session.sessionId, turn.signal)
         if (options.bobCost && options.bobDb) {
           session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
           const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]

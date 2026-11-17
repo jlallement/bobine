@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -6,7 +6,7 @@ import { methods } from '../shared/acp-sdk.mts'
 import { agentText, initialize, playTurn, withMockAgent } from './testing.mts'
 import { scenarios } from './scenarios.mts'
 import { TurnCancelled } from './scenario.mts'
-import { waitWhileLocked } from './verrou-fin-de-tour.mts'
+import { heldTurnsFile, waitWhileLocked } from './verrou-fin-de-tour.mts'
 
 const CWD = '/tmp/projet'
 const dirs: string[] = []
@@ -26,18 +26,21 @@ function lockPath(present: boolean): string {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('verrou de fin de tour (fiche 223)', () => {
-  it('sans fichier : passe tout de suite', async () => {
+  it('sans fichier : passe tout de suite, sans s’inscrire comme retenu', async () => {
+    const lock = lockPath(false)
     await expect(
-      waitWhileLocked(lockPath(false), new AbortController().signal)
+      waitWhileLocked(lock, 'ses_1', new AbortController().signal)
     ).resolves.toBeUndefined()
+    expect(existsSync(heldTurnsFile(lock))).toBe(false)
   })
 
   it('fichier posé : attend sa disparition', async () => {
     const lock = lockPath(true)
     let released = false
-    const waiting = waitWhileLocked(lock, new AbortController().signal, 5).then(() => {
+    const waiting = waitWhileLocked(lock, 'ses_1', new AbortController().signal, 5).then(() => {
       released = true
     })
+    expect(readFileSync(heldTurnsFile(lock), 'utf8')).toBe('ses_1\n')
     await sleep(60)
     expect(released).toBe(false)
     rmSync(lock)
@@ -47,7 +50,7 @@ describe('verrou de fin de tour (fiche 223)', () => {
 
   it('annulation pendant l’attente : TurnCancelled', async () => {
     const abort = new AbortController()
-    const waiting = waitWhileLocked(lockPath(true), abort.signal, 5)
+    const waiting = waitWhileLocked(lockPath(true), 'ses_1', abort.signal, 5)
     abort.abort()
     await expect(waiting).rejects.toBeInstanceOf(TurnCancelled)
   })
@@ -56,6 +59,7 @@ describe('verrou de fin de tour (fiche 223)', () => {
     const lock = lockPath(true)
     let firstUpdateAt = 0
     let removedAt = 0
+    let heldBeforeRemoval = ''
     const turn = await withMockAgent(
       { scenario: 'streaming-texte', args: ['--verrou-fin-de-tour', lock] },
       async (ctx) => {
@@ -66,6 +70,7 @@ describe('verrou de fin de tour (fiche 223)', () => {
             firstUpdateAt = Date.now()
             // Le texte part pendant que le verrou tient ; on l'enlève un peu plus tard.
             setTimeout(() => {
+              heldBeforeRemoval = readFileSync(heldTurnsFile(lock), 'utf8')
               removedAt = Date.now()
               rmSync(lock)
             }, 300)
@@ -78,6 +83,8 @@ describe('verrou de fin de tour (fiche 223)', () => {
     expect(removedAt).toBeGreaterThan(0)
     expect(endedAt).toBeGreaterThanOrEqual(removedAt)
     expect(existsSync(lock)).toBe(false)
+    // Le tour s'est inscrit comme retenu, une ligne : son identifiant de session.
+    expect(heldBeforeRemoval).toMatch(/^\S+\n$/)
     expect(agentText(turn.updates)).toBe(
       (scenarios['streaming-texte']?.steps[0] as { text: string }).text
     )
