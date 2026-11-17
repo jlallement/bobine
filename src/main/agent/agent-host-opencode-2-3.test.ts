@@ -154,15 +154,17 @@ describe('AgentHost et OpenCode 2.3.0 (fiche 232)', () => {
         action: 'accept',
         content: { answer: 'vert' }
       })
-      await waitFor(
-        () =>
-          items().some((i) => i.kind === 'agent' && i.text.includes('rapportée par le sous-agent')),
-        8_000
-      )
-      const replies = items().flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
-      expect(replies.at(-1)).toContain('vert')
+      // La réponse hors tour arrive en morceaux (« Réponse rapportée par », « le sous-agent : »,
+      // « The user chose: vert.. ») : on attend le message entier, pas son début. Attendre son
+      // premier morceau lisait le texte entre deux morceaux sur une machine lente (CI macOS).
+      const reply = 'Réponse rapportée par le sous-agent : The user chose: vert..'
+      const replies = () => items().flatMap((i) => (i.kind === 'agent' ? [i.text] : []))
+      await waitFor(() => replies().includes(reply), 8_000)
       // Réponse hors tour : un message à part (fiche 232).
-      expect(replies.at(-2)).toContain('Le sous-agent est lancé')
+      expect(replies()).toEqual([
+        'Le sous-agent est lancé ; il te demandera ta couleur préférée et me rapportera ta réponse.',
+        reply
+      ])
     } finally {
       host.stop()
       toolServer.stop()
