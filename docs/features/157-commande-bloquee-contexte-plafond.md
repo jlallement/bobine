@@ -166,3 +166,13 @@ Aucune nouvelle dépendance.
   cas seulement. Essais : coût écrit à 4 s trouvé, plus de relecture ensuite ; aucun coût : rien
   avant 5 s, plus de relecture ensuite. Pas de ligne au CHANGELOG (rien de visible quand Bob écrit
   son coût).
+- 2026-11-18 — **Coût écrit après la relecture de 5 s** (CI Windows, `main` 3bdb20a, run
+  44413453495) : `journal.test.ts` (« --cout-bob ») rouge, premier tour fini à 22:46:46.970, aucun
+  coût relu en 6 s, jamais de second tour. Le coureur était très chargé à ce moment (tours de
+  l'agent factice `echo` de 1,6 et 2,1 s au lieu de ~0,1 s dans les mêmes secondes). Même course
+  que les deux fois précédentes, un cran plus loin : les relectures à heure fixe devinent quand
+  Bob écrit. Cause traitée : après un tour, la source du coût est **guettée** (`CostSource.watch`,
+  `watchBobDb` : veille du dossier de la base) jusqu'à ce que le coût change, une minute au plus ;
+  les relectures à 1,5 s et 5 s restent pour une source qui ne se guette pas. Aucun délai allongé.
+  Essais : `session-cost.test.ts` (écriture à 6 s, lue à la veille ; rouge sans le correctif),
+  `bob-costs.test.ts` (la veille voit l'écriture de la base, créée à cette écriture).

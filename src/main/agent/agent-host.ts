@@ -790,6 +790,7 @@ export class AgentHost {
     this.sessionId = undefined
     this.starting = undefined
     this.stopWatch.clearCancel()
+    this.cost.stopWatching()
     this.replay.clear()
     this.retry.clear()
     this.silentSince = undefined
