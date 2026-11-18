@@ -7,9 +7,10 @@ import type { AgentEvent, AgentSnapshot } from '@shared/agent'
 import { emptyTranscript, noticeText, reduceTranscript } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import { AgentHost, type AgentHostOptions } from './agent-host'
+import { eventLog } from './test-events'
 
 function createHost(scenario: string, options: Partial<AgentHostOptions> = {}) {
-  const events: AgentEvent[] = []
+  const { events, emit, until } = eventLog<AgentEvent>()
   const host = new AgentHost({
     profile: {
       id: 'mock',
@@ -19,7 +20,7 @@ function createHost(scenario: string, options: Partial<AgentHostOptions> = {}) {
       env: {}
     },
     workspace: process.cwd(),
-    emit: (e) => events.push(e),
+    emit,
     retryDelaysMs: [30, 30, 30, 30, 30],
     ...options
   })
@@ -32,7 +33,7 @@ function createHost(scenario: string, options: Partial<AgentHostOptions> = {}) {
       .filter((r, i, all) => JSON.stringify(r) !== JSON.stringify(all[i - 1]))
   const transcript = () => events.reduce(reduceTranscript, emptyTranscript).items
   const count = (type: AgentEvent['type']) => events.filter((e) => e.type === type).length
-  return { host, events, retries, transcript, count }
+  return { host, events, retries, transcript, count, until }
 }
 
 /** Faux réseau : `restore()` prévient comme `net.isOnline()` qui repasse à vrai. */
@@ -52,10 +53,10 @@ const agentTexts = (items: ReturnType<ReturnType<typeof createHost>['transcript'
 
 describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
   it('deux tentatives, puis le message part, sans nouvelle bulle ni erreur', async () => {
-    const { host, retries, transcript, count } = createHost('reseau-instable')
+    const { host, until, retries, transcript, count } = createHost('reseau-instable')
     await host.start()
     await host.prompt('Bonjour')
-    await expect.poll(() => host.snapshot().status).toBe('ready')
+    await until(() => host.snapshot().status === 'ready')
     expect(agentTexts(transcript())).toEqual(['Réseau revenu : voici la réponse complète.'])
     expect(count('user-message')).toBe(1)
     expect(count('turn-error')).toBe(0)
@@ -69,21 +70,22 @@ describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
   })
 
   it('une limite de débit est réessayée sous sa propre cause', async () => {
-    const { host, retries, transcript } = createHost('limite-debit')
+    const { host, until, retries, transcript } = createHost('limite-debit')
     await host.start()
     await host.prompt('Bonjour')
-    await expect.poll(() => host.snapshot().status).toBe('ready')
+    await until(() => host.snapshot().status === 'ready')
     expect(retries().map((r) => r.cause)).toEqual(['rate-limit'])
     expect(agentTexts(transcript())).toEqual(['Limite levée : voici la réponse.'])
     host.stop()
   })
 
   it('cinq échecs : « Connexion impossible », une seule erreur, puis « Réessayer » repart', async () => {
-    const { host, transcript, count } = createHost('reseau-coupe')
+    const { host, until, transcript, count } = createHost('reseau-coupe')
     await host.start()
     await host.prompt('Bonjour')
-    await expect.poll(() => count('turn-error')).toBe(1)
-    await expect.poll(() => host.snapshot().status).toBe('ready')
+    await until(() => count('turn-error') >= 1)
+    expect(count('turn-error')).toBe(1)
+    await until(() => host.snapshot().status === 'ready')
     // La cause n'était que sur la sortie d'erreur de l'agent (`getaddrinfo ENOTFOUND`).
     expect(host.snapshot().retry).toEqual({ cause: 'network', attempt: 5, max: 5 })
     const notices = transcript().filter((item) => item.kind === 'notice')
@@ -92,28 +94,32 @@ describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
     // « Réessayer » : un nouveau cycle de cinq tentatives, toujours sans nouvelle bulle.
     host.retryTurn()
     expect(host.snapshot().status).toBe('busy')
-    await expect.poll(() => count('turn-error')).toBe(2)
+    await until(() => count('turn-error') >= 2)
+    expect(count('turn-error')).toBe(2)
     expect(count('user-message')).toBe(1)
     expect(host.snapshot().retry).toEqual({ cause: 'network', attempt: 5, max: 5 })
     // Un nouveau message remplace celui qui attendait : le bandeau s'en va.
     void host.send('Autre chose')
-    await expect.poll(() => count('user-message')).toBe(2)
+    await until(() => count('user-message') >= 2)
+    expect(count('user-message')).toBe(2)
     expect(host.snapshot().retry).toBeUndefined()
     host.stop()
   })
 
   it('un message envoyé pendant l’attente rejoint la file et part après la réussite', async () => {
-    const { host, retries, count, events } = createHost('reseau-instable', {
+    const { host, until, retries, count, events } = createHost('reseau-instable', {
       retryDelaysMs: [300, 300, 300, 300, 300]
     })
     await host.start()
     const turn = host.prompt('Bonjour')
-    await expect.poll(() => retries().length).toBe(1)
+    await until(() => retries().length >= 1)
+    expect(retries()).toHaveLength(1)
     expect(host.snapshot().status).toBe('busy')
     await host.send('Suite')
     expect(host.snapshot().queued.map((m) => m.text)).toEqual(['Suite'])
     await turn
-    await expect.poll(() => count('turn-end')).toBe(2)
+    await until(() => count('turn-end') >= 2)
+    expect(count('turn-end')).toBe(2)
     const sent = events.flatMap((e) => (e.type === 'user-message' ? [e.text] : []))
     expect(sent).toEqual(['Bonjour', 'Suite'])
     expect(host.snapshot().queued).toEqual([])
@@ -121,12 +127,13 @@ describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
   })
 
   it('Stop pendant l’attente annule les tentatives, la file attend', async () => {
-    const { host, retries, count, events } = createHost('reseau-coupe', {
+    const { host, until, retries, count, events } = createHost('reseau-coupe', {
       retryDelaysMs: [200, 200, 200, 200, 200]
     })
     await host.start()
     await host.prompt('Bonjour')
-    await expect.poll(() => retries().length).toBe(1)
+    await until(() => retries().length >= 1)
+    expect(retries()).toHaveLength(1)
     await host.send('Suite')
     await host.cancel()
     expect(host.snapshot()).toMatchObject({ status: 'ready', queued: [{ text: 'Suite' }] })
@@ -142,17 +149,19 @@ describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
 
   it('le retour du réseau déclenche une tentative immédiate', async () => {
     const network = fakeNetwork()
-    const { host, retries, transcript } = createHost('reseau-instable', {
+    const { host, until, retries, transcript } = createHost('reseau-instable', {
       network,
       retryDelaysMs: [60_000, 60_000, 60_000, 60_000, 60_000]
     })
     await host.start()
     await host.prompt('Bonjour')
-    await expect.poll(() => retries().length).toBe(1)
+    await until(() => retries().length >= 1)
+    expect(retries()).toHaveLength(1)
     network.restore()
-    await expect.poll(() => retries().length).toBe(2)
+    await until(() => retries().length >= 2)
+    expect(retries()).toHaveLength(2)
     network.restore()
-    await expect.poll(() => host.snapshot().status).toBe('ready')
+    await until(() => host.snapshot().status === 'ready')
     expect(agentTexts(transcript())).toEqual(['Réseau revenu : voici la réponse complète.'])
     host.stop()
   })

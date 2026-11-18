@@ -24,6 +24,7 @@ import {
 import { AppToolServer } from '../mcp/tool-server'
 import { initLog, setVerbosity } from '../log'
 import type { AppToolModule } from '../mcp/tools'
+import { eventLog } from './test-events'
 import { AgentHost, type AgentHostOptions } from './agent-host'
 import { UNTRUSTED_WORKSPACE } from './bob-contract'
 import { bobDbCosts } from './bob-costs'
@@ -50,15 +51,15 @@ function mockProfile(scenario: string, delayMs = 0): AgentProfile {
 }
 
 function createHost(profile: AgentProfile) {
-  const events: AgentEvent[] = []
-  const host = new AgentHost({ profile, workspace: process.cwd(), emit: (e) => events.push(e) })
+  const { events, emit, until } = eventLog<AgentEvent>()
+  const host = new AgentHost({ profile, workspace: process.cwd(), emit })
   // Changements de statut (un instantané rafraîchi sans changement de statut ne compte pas).
   const statuses = () =>
     (
       events.flatMap((e) => (e.type === 'status' ? [e.snapshot.status] : [])) as AgentStatus[]
     ).filter((s, i, all) => s !== all[i - 1])
   const transcript = () => events.reduce(reduceTranscript, emptyTranscript).items
-  return { host, events, statuses, transcript }
+  return { host, events, statuses, transcript, until }
 }
 
 function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
@@ -80,12 +81,12 @@ async function withAppTools(
 ) {
   const toolServer = new AppToolServer()
   await toolServer.start()
-  const events: AgentEvent[] = []
+  const { events, emit, until } = eventLog<AgentEvent>()
   const { modules, ...options } = extra
   const host = new AgentHost({
     profile: mockProfile(scenario),
     workspace: process.cwd(),
-    emit: (e) => events.push(e),
+    emit,
     toolServer,
     toolModules: modules,
     ...options
@@ -102,6 +103,7 @@ async function withAppTools(
     events,
     question,
     transcript,
+    until,
     stop: () => (host.stop(), toolServer.stop())
   }
 }
@@ -131,17 +133,17 @@ describe('AgentHost', () => {
       keepTranscript = false,
       timeouts?: AgentHostOptions['timeouts']
     ) {
-      const events: AgentEvent[] = []
+      const { events, emit, until } = eventLog<AgentEvent>()
       const host = new AgentHost({
         profile,
         workspace: process.cwd(),
-        emit: (e) => events.push(e),
+        emit,
         ...(timeouts ? { timeouts } : {}),
         reopen: { sessionId, ...(keepTranscript ? { keepTranscript } : {}) }
       })
       const transcript = (initial: TranscriptState = emptyTranscript) =>
         events.reduce(reduceTranscript, initial).items
-      return { host, events, transcript }
+      return { host, events, transcript, until }
     }
 
     /** Fil de l'app après `firstExchange`, tel qu'il serait gardé (fiche 103). */
@@ -230,9 +232,12 @@ describe('AgentHost', () => {
       it('rejeu déjà calme (⌘Q puis réouverture) : le message part sans attendre', async () => {
         const profile = storeProfile('streaming-texte', '--rejeu-tardif-ms', '50')
         const sessionId = await firstExchange(profile)
-        const { host, events } = reopenHost(profile, sessionId, true, { replayWaitMs: 5000 })
+        const { host, events, until } = reopenHost(profile, sessionId, true, {
+          replayWaitMs: 5000
+        })
         await host.start()
-        await expect.poll(() => events.filter((e) => e.type === 'replayed')).toHaveLength(1)
+        await until(() => events.some((e) => e.type === 'replayed'))
+        expect(events.filter((e) => e.type === 'replayed')).toHaveLength(1)
         const sent = Date.now()
         await host.prompt('Suite')
         host.stop()
@@ -259,9 +264,10 @@ describe('AgentHost', () => {
         await other.host.prompt('Deuxième question, ailleurs')
         other.host.stop()
 
-        const { host, events, transcript } = reopenHost(profile, sessionId, true)
+        const { host, events, transcript, until } = reopenHost(profile, sessionId, true)
         await host.start()
-        await expect.poll(() => events.filter((e) => e.type === 'replayed')).toHaveLength(1)
+        await until(() => events.some((e) => e.type === 'replayed'))
+        expect(events.filter((e) => e.type === 'replayed')).toHaveLength(1)
         const items = transcript(firstTranscript())
         expect(items.map((i) => i.kind)).toEqual(['user', 'agent', 'notice', 'user', 'agent'])
         expect(items[3]).toMatchObject({ text: 'Deuxième question, ailleurs' })
@@ -317,9 +323,10 @@ describe('AgentHost', () => {
     it('rejeu APRÈS la réponse à session/load (Bob 2.0.6) : les messages de l’utilisateur restent', async () => {
       const profile = storeProfile('streaming-texte', '--rejeu-tardif')
       const sessionId = await firstExchange(profile)
-      const { host, transcript } = reopenHost(profile, sessionId)
+      const { host, transcript, until } = reopenHost(profile, sessionId)
       await host.start()
-      await expect.poll(() => transcript().map((i) => i.kind)).toEqual(['user', 'agent'])
+      await until(() => transcript().length >= 2)
+      expect(transcript().map((i) => i.kind)).toEqual(['user', 'agent'])
       expect(transcript()[0]).toMatchObject({ text: 'Première question' })
       host.stop()
     })
@@ -410,11 +417,10 @@ describe('AgentHost', () => {
   })
 
   it('commandes « / » annoncées après l’ouverture de session : dans l’instantané', async () => {
-    const { host, events } = createHost(mockProfile('streaming-texte'))
+    const { host, events, until } = createHost(mockProfile('streaming-texte'))
     await host.start()
-    await expect
-      .poll(() => host.snapshot().commands.map((c) => c.name))
-      .toEqual(['scenario', 'aide', 'demo'])
+    await until(() => host.snapshot().commands.length > 0)
+    expect(host.snapshot().commands.map((c) => c.name)).toEqual(['scenario', 'aide', 'demo'])
     expect(host.snapshot().commands[0]).toEqual({
       name: 'scenario',
       description: 'Joue un scénario de l’agent factice pour ce tour',
@@ -432,9 +438,8 @@ describe('AgentHost', () => {
       .slice(restart)
       .find((e) => e.type === 'status' && e.snapshot.status === 'starting')
     expect(starting?.type === 'status' && starting.snapshot.commands).toEqual([])
-    await expect
-      .poll(() => host.snapshot().commands.map((c) => c.name))
-      .toEqual(['scenario', 'aide', 'demo'])
+    await until(() => host.snapshot().commands.length > 0)
+    expect(host.snapshot().commands.map((c) => c.name)).toEqual(['scenario', 'aide', 'demo'])
     host.stop()
   })
 
@@ -752,7 +757,8 @@ describe('AgentHost', () => {
     it('question affichée, autorisation accordée seule, réponse renvoyée à l’agent', async () => {
       const t = await withQuestions()
       const turn = t.host.prompt('Fais un script')
-      await expect.poll(() => t.question()).toBeDefined()
+      // La question émise, pas un sondage d'une seconde (CI Windows du 2026-11-18).
+      await t.until(() => !!t.question())
       const asked = t.question()
       expect(asked?.prompt).toMatchObject({
         message: 'Quel shell veux-tu utiliser pour ton script hello ?'
@@ -781,16 +787,17 @@ describe('AgentHost', () => {
       expect(t.transcript().find((i) => i.kind === 'elicitation')).toMatchObject({
         state: 'pending'
       })
+      const messages = () => t.events.filter((e) => e.type === 'user-message')
+      const before = messages().length
       t.host.respondElicitation(t.question()?.requestId ?? '', {
         action: 'accept',
         content: { answer: 'bash', answer_custom: 'version 5' }
       })
-      await expect
-        .poll(() => t.events.filter((e) => e.type === 'user-message').at(-1))
-        .toMatchObject({
-          text: 'Réponse à ta question « Quel shell veux-tu utiliser pour ton script hello ? » : bash, version 5'
-        })
-      await expect.poll(() => t.host.snapshot().status).toBe('ready')
+      await t.until(() => messages().length > before)
+      expect(messages().at(-1)).toMatchObject({
+        text: 'Réponse à ta question « Quel shell veux-tu utiliser pour ton script hello ? » : bash, version 5'
+      })
+      await t.until(() => t.host.snapshot().status === 'ready')
       t.stop()
     })
   })
@@ -847,7 +854,7 @@ describe('AgentHost', () => {
       ]) {
         const t = await withAppTools('outil-app', extra)
         const turn = t.host.prompt('Capture')
-        await expect.poll(() => t.events.some((e) => e.type === 'permission-request')).toBe(true)
+        await t.until(() => t.events.some((e) => e.type === 'permission-request'))
         await t.host.cancel()
         await turn
         t.stop()
@@ -890,7 +897,7 @@ describe('AgentHost', () => {
         modules: [{ ...captureModule(true), enabled: () => false }]
       })
       const turn = t.host.prompt('Capture')
-      await expect.poll(() => t.events.some((e) => e.type === 'permission-request')).toBe(true)
+      await t.until(() => t.events.some((e) => e.type === 'permission-request'))
       const request = t.events.find((e) => e.type === 'permission-request')
       if (request?.type === 'permission-request')
         t.host.respondPermission(request.requestId, 'allow')
@@ -2180,7 +2187,7 @@ describe('AgentHost : contexte de session et /split (fiche 118)', () => {
     const slow = await withAppTools('streaming-texte', { modules: [childrenModule] })
     try {
       const first = slow.host.send('/scenario streaming-texte')
-      await expect.poll(() => slow.host.snapshot().status).toBe('busy')
+      await slow.until(() => slow.host.snapshot().status === 'busy')
       await slow.host.send('Deux chantiers', [], { askChildren: true })
       await slow.host.send('/scenario echo')
       expect(slow.host.snapshot().queued.map((m) => m.text)).toEqual([

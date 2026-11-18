@@ -96,3 +96,14 @@ Un seul fichier de test touché ; pas de nouvelle dépendance.
 - Reste incertain : vérifié sur Mac seulement. Sous Windows arm64, l'arrêt passe par `taskkill`
   (plus lent) : `afterEach` l'attend désormais, borné par son propre délai (10 s). L'échec de la
   beta.6 sur `scripts/pilote/pilote.test.mjs` est un autre fichier, non traité ici.
+- 2026-11-19 — **Même fragilité dans les essais de l'hôte d'agent** (CI Windows, `main` 8531b19,
+  run 44417738585) : `agent-host.test.ts` « question affichée, autorisation accordée seule… »
+  rouge, `expect.poll(() => t.question())` abandonné au bout de 1 s (essai fini en 1 316 ms, agent
+  lancé à 23:08:51.441) avant que la question de l'agent factice n'arrive par le serveur MCP de
+  l'app. Pas la veille du coût ajoutée juste avant (profil sans `costSource`, veille seulement
+  après un tour). Correction : `eventLog` (`src/main/agent/test-events.ts`), qui relit la condition
+  à chaque évènement de l'hôte, sans délai ; toutes les attentes sans délai explicite contre
+  l'agent factice réel de `agent-host.test.ts` (11) et `agent-host-retry.test.ts` (14) y passent.
+  Les autres `vi.waitFor` sans délai de `src/main` attendent des doublures, pas un agent réel :
+  laissés tels quels. Vérifié aussi sous charge (12 processus qui occupent les cœurs).
+
