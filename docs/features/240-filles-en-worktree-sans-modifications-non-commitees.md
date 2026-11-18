@@ -1,6 +1,6 @@
 # 240 — Filles en worktree : le travail non commité de la mère n'y est pas
 
-- **Statut** : à faire
+- **Statut** : en cours — maquettes à valider
 - **Dépend de** : 223 (rôles), 110 (cycle des worktrees), 097 (conversations filles), 099 (outils
   de l'app)
 - **Agents** : les deux (comportement de Bobine, indépendant de l'agent)
@@ -131,6 +131,57 @@ worktree).
 - [ ] Doc : fiche 110 (cycle des worktrees) et `docs/architecture.md` si le chemin des avis
       change.
 
+## Maquettes (à valider)
+
+`e2e/maquettes/screens-filles-worktree.mjs`, sur la vraie fenêtre (`pnpm build && node
+e2e/maquettes/run.mjs light f240`, puis `dark`) ; `@rôle` y est tapé pour de vrai. Cinq écrans :
+
+1. **Saisie `@rôle`, dossier modifié** : sous « Partira à… », un bloc de la famille « Fusion
+   refusée » (`MainDirtyCard`) : nombre et fichiers, commit de départ, « Committer d'abord »,
+   « Mettre de côté », « Partir quand même » ; en dessous, « Demander un avis en lecture seule ».
+   Visible dès que les rôles sont cités ; Entrée n'envoie rien tant qu'aucun choix n'est fait.
+2. **« Committer d'abord »** : le formulaire de commit de la carte de fusion (`CommitForm`),
+   « Committer puis lancer ».
+3. **Avis** : la ligne devient « Partira à 2 rôles, pour un avis… · dans ce dossier · lecture
+   seule (demandée) · ils voient les N modifications non commitées » ; « Plutôt les faire
+   travailler… » revient à l'avertissement.
+4. **Carte « Tâches proposées »** : un bloc pour la carte, « Lancer » attend le choix ; « Faire
+   ici », « Refuser » et les lignes d'un rôle en lecture seule ne sont pas concernés. `/split`
+   passe par cette carte ; « Lancer en parallèle… » (`ChildDialog`) reprend le même bloc.
+5. **Rappel dans la mère** : étiquette « Parti sans N modifications non commitées » sur la carte
+   de lancement d'un rôle, ligne sur chaque compte rendu (commit de départ, fichiers).
+
+**Règle proposée pour l'avis** : un envoi `@rôle` part en avis (sans worktree, dans le dossier de
+la mère, lecture seule imposée ou demandée selon l'agent, surveillée comme un rôle en lecture
+seule) **si tous les rôles cités sont en lecture seule, ou si l'utilisateur choisit « Demander un
+avis en lecture seule »** dans l'avertissement. Pas de devinette sur le texte (« avis », « relis »…) :
+fragile, dépendant de la langue. Côté agent, `start_child` ne change pas de règle : un rôle en
+lecture seule part dans le dossier de la mère, les autres en worktree avec l'avertissement.
+
+## Plan (à valider avec les maquettes)
+
+- **Main** : `src/main/changes/worktree-cycle.ts` (`mainDirty` réutilisé pour le dossier de la
+  mère avant lancement) ; `src/main/conversations/children.ts` (`start` : refus typé « dossier
+  modifié » sauf `dirtyChoice` : `commit` / `stash` / `anyway` / `readOnly` ; le choix « avis »
+  force la lecture seule de la fille ; `dirty` gardé sur la fille pour le rappel) ;
+  `src/main/roles/invoke.ts` et `src/shared/roles-ipc.ts` (le choix passe avec l'envoi) ;
+  `children-merge-ipc.ts` ou un IPC voisin (« Committer puis lancer », « Mettre de côté »).
+- **MCP** : `src/main/mcp/children-tools.ts` : description de `start_child` (« commit first ») et
+  avertissement dans le résultat quand le dossier a du non commité (nombre, exemples de fichiers,
+  ce qui manquera à la fille) ; texte du compte rendu qui réveille l'agent.
+- **Renderer** : bloc partagé tiré de `MainDirtyCard` (`components/panel/`) ; `RoleCompose.tsx`,
+  `useRoleCompose.tsx`, `Composer.tsx` (avertissement, Entrée retenue, mode avis) ;
+  `ChildProposals.tsx` (bloc de carte, « Lancer » retenu) ; `ChildDialog.tsx` ; `RoleWork.tsx` et
+  `Subtasks.tsx` (étiquette et ligne de rappel) ; CSS (`roles.css`, `styles.css`).
+- **Partagé** : types IPC (`src/shared/agent.ts` ou `children` : `dirty` du lancement) ; i18n
+  `fr.json` / `en.json`.
+- **Tests** : unitaires main (`children.test.ts`, `invoke.test.ts`, `children-tools` : refus
+  sans choix, avis dans le dossier de la mère, avertissement de l'outil), renderer (blocs,
+  Entrée retenue) ; e2e `roles-travail.mjs` et `filles.mjs` (ou suite `filles-non-commite.mjs`)
+  contre l'agent factice, un scénario qui propose des tâches.
+- **Docs** : ADR (worktree depuis le commit, pas de copie, avis sans worktree), fiche 110,
+  `docs/architecture.md`, CHANGELOG fr/en.
+
 ## Rejouer
 
 **Agent factice : oui.** Le défaut est dans Bobine (création du worktree, textes de la saisie, de
@@ -146,3 +197,5 @@ puis « Lancer ». Les traces réelles ci-dessus servent de référence.
   comptée côté agent dans le rapport) ; décision de l'utilisateur écrite (worktree depuis le
   commit maintenu, avertissement et choix avant lancement, avis en lecture seule sans worktree,
   consigne et avertissement côté outils de l'agent) ; critères revus.
+- 2026-11-18 — Maquettes (5 écrans, clair et sombre) et règle de l'avis proposées ; en attente de
+  validation avant le code de l'interface.
