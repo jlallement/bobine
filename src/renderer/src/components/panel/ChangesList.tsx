@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import {
   splitPath,
   type conversationChanges,
+  type GitFileChange,
   type GitFileDiff,
   type TextChange
 } from '@shared/changes'
@@ -20,6 +21,18 @@ export interface Row {
   badge?: { letter: string; label: string; tone: 'add' | 'mod' | 'del' }
   added: number | null
   removed: number | null
+}
+
+/** Pastille d'un fichier dans la vue git ; son libellé : clé `changes.badge.<statut>`. */
+export const GIT_BADGES: Record<
+  GitFileChange['status'],
+  Omit<NonNullable<Row['badge']>, 'label'>
+> = {
+  modified: { letter: 'M', tone: 'mod' },
+  added: { letter: 'A', tone: 'add' },
+  untracked: { letter: 'U', tone: 'add' },
+  deleted: { letter: 'D', tone: 'del' },
+  renamed: { letter: 'R', tone: 'mod' }
 }
 
 /**

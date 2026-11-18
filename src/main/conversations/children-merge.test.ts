@@ -438,6 +438,26 @@ describe('dossier principal non commité (fiche 123)', () => {
     expect(git(env.root, 'stash', 'list').split('\n')).toHaveLength(1)
   })
 
+  it('fiche 244 : cochés commités, .env décoché mis de côté ; fille non fusionnée, il revient quand même', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    // La fille a du non commité : elle n'est pas fusionnée (la chaîne s'arrête sur elle).
+    writeFileSync(join(a.worktree.path, 'en-cours.txt'), 'x\n')
+    writeFileSync(join(env.root, 'plan.md'), 'plan\n')
+    writeFileSync(join(env.root, '.env'), 'SECRET=1\n')
+    await env.merger.commitMain('mere', { message: 'feat: plan', files: ['plan.md'] })
+    expect(git(env.root, 'status', '--porcelain')).toBe('?? .env')
+    await env.merger.start('mere', ['f1'], false, true)
+    await env.merger.settled('mere')
+    const done = last(env.merges)
+    expect(states(done)).toEqual(['dirty'])
+    expect(done.stash).toEqual({ state: 'restored', count: 1 })
+    expect(readFileSync(join(env.root, '.env'), 'utf8')).toBe('SECRET=1\n')
+    expect(git(env.root, 'stash', 'list')).toBe('')
+    expect(git(env.root, 'log', '--all', '--name-only', '--format=')).not.toContain('.env')
+  })
+
   it('« Committer d’abord » : commit dans le dossier principal, puis la fusion part', async () => {
     const env = await setup(['A'])
     const [a] = env.children as [Child]

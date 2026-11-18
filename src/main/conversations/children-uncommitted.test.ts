@@ -202,6 +202,32 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     expect(env.started()[0]?.leftBehind).toBeUndefined()
   })
 
+  it('fiche 244 : commit des cochés seulement ; la fille part sans le .env décoché, rappelé', async () => {
+    const env = await environment()
+    writeFileSync(join(env.repo, '.env'), 'SECRET=1\n')
+    const commit = await env.children.commitFolder(env.mother, {
+      message: 'docs: plan',
+      files: ['plan.md']
+    })
+    expect(env.git('show', '--name-only', '--format=', 'HEAD')).toBe('plan.md')
+    expect(env.git('status', '--porcelain')).toBe('?? .env')
+    expect(await env.children.uncommitted(env.mother)).toMatchObject({
+      count: 1,
+      files: [{ path: '.env', status: 'untracked' }]
+    })
+    // Des décochés restent : la fille part « quand même », sans eux, et c'est rappelé.
+    const result = await startRoleChildren(env.host, env.mother, {
+      roles: ['ux-ui-expert'],
+      text: 'Construisez la page',
+      uncommitted: 'anyway'
+    })
+    expect(result.failed).toEqual([])
+    const child = env.childrenOf()[0]
+    expect(existsSync(join(child?.workspace ?? '', 'plan.md'))).toBe(true)
+    expect(existsSync(join(child?.workspace ?? '', '.env'))).toBe(false)
+    expect(env.started()[0]?.leftBehind).toEqual({ count: 1, commit: commit.short })
+  })
+
   it('un rôle en lecture seule part sans choix : il travaille dans le dossier de la mère', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.host, env.mother, {

@@ -329,6 +329,32 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
       '1 fusionnée dans main en 12 s. Vos modifications mises de côté n’ont pas pu revenir sans conflit (README.md)\u00a0: elles restent dans git stash (a1b2c3d).'
     )
   })
+
+  it('fiche 244 : un fichier décoché ne part pas ; la fusion le met de côté', async () => {
+    const actions = view(
+      [],
+      dirty([
+        { path: 'README.md', status: 'modified' },
+        { path: '.env', status: 'untracked' }
+      ])
+    )
+    await waitFor(() => screen.getByTestId('main-dirty'))
+    fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    fireEvent.click(
+      screen
+        .getAllByTestId('main-dirty-commit-file')
+        .find((li) => li.dataset.path === '.env')
+        ?.querySelector('input') as HTMLInputElement
+    )
+    const message = screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement
+    expect(message.value).toBe('docs: mère\n\n- README.md')
+    fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false, true))
+    expect(actions.commitMain).toHaveBeenCalledWith('mere', {
+      message: 'docs: mère\n\n- README.md',
+      files: ['README.md']
+    })
+  })
 })
 
 describe('Recommandations de la mère (fiche 160)', () => {

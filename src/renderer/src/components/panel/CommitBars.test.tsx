@@ -5,6 +5,13 @@ import { FolderCommitBar } from './FolderCommitBar'
 import { WorktreeBar } from './WorktreeBar'
 
 const text = (id: string) => screen.getByTestId(id).textContent
+const uncheck = (prefix: string, path: string) =>
+  fireEvent.click(
+    screen
+      .getAllByTestId(`${prefix}-file`)
+      .find((li) => li.dataset.path === path)
+      ?.querySelector('input') as HTMLInputElement
+  )
 
 describe('« Committer » hors worktree (fiche 123)', () => {
   const setup = (selected: CommitFile[] = [{ path: 'README.md', status: 'modified' }]) => {
@@ -172,6 +179,71 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     await waitFor(() => screen.getByTestId('worktree-error'))
     expect(text('worktree-error')).toContain('README.md\nPlease commit your changes')
     expect(screen.getByTestId('worktree-error').classList.contains('git-error')).toBe(true)
+  })
+
+  it('fiche 244 : liste complète à cocher ; le .env décoché ne part pas, il est mis de côté', async () => {
+    const files = [
+      { path: 'notes.md', status: 'modified' as const },
+      { path: '.env', status: 'untracked' as const },
+      { path: 'src/app.js', status: 'untracked' as const }
+    ]
+    const outcomes: MergeOutcome[] = [
+      { status: 'main-dirty', root: '/repo', base: 'main', files },
+      { status: 'merged', kind: 'merge', base: 'main', stash: { restored: true, count: 1 } }
+    ]
+    const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
+    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
+    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('worktree-merge'))
+    await waitFor(() => screen.getByTestId('main-dirty'))
+    fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    expect(screen.getAllByTestId('main-dirty-commit-file').map((li) => li.dataset.path)).toEqual(
+      files.map((f) => f.path)
+    )
+    uncheck('main-dirty-commit', '.env')
+    const message = (screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement).value
+    expect(message).not.toContain('.env')
+    expect(text('main-dirty-commit-left')).toBe(
+      '1 fichier décoché reste non commité\u00a0: mis de côté le temps de la fusion, puis remis.'
+    )
+    fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
+    await waitFor(() => screen.getByTestId('worktree-note'))
+    expect(commitMain).toHaveBeenCalledWith('c1', { message, files: ['notes.md', 'src/app.js'] })
+    expect(merge).toHaveBeenLastCalledWith('c1', { stash: true })
+    expect(text('worktree-note')).toBe(
+      'Fusionné dans main (commit de fusion). Votre modification mise de côté est revenue.'
+    )
+  })
+
+  it('fiche 244 : remise du .env en conflit, il reste dans git stash, et c’est dit', async () => {
+    const files = [
+      { path: 'notes.md', status: 'modified' as const },
+      { path: '.env', status: 'untracked' as const }
+    ]
+    const outcomes: MergeOutcome[] = [
+      { status: 'main-dirty', root: '/repo', base: 'main', files },
+      {
+        status: 'merged',
+        kind: 'merge',
+        base: 'main',
+        stash: { restored: false, count: 1, ref: 'abc1234', conflicts: ['.env'] }
+      }
+    ]
+    const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
+    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
+    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('worktree-merge'))
+    await waitFor(() => screen.getByTestId('main-dirty'))
+    fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    uncheck('main-dirty-commit', '.env')
+    fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
+    await waitFor(() => screen.getByTestId('worktree-note'))
+    expect(merge).toHaveBeenLastCalledWith('c1', { stash: true })
+    expect(text('worktree-note')).toBe(
+      'Fusionné dans main (commit de fusion). Vos modifications mises de côté n’ont pas pu revenir sans conflit (.env)\u00a0: elles restent dans git stash (abc1234).'
+    )
   })
 })
 

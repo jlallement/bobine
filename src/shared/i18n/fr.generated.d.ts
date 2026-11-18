@@ -3660,6 +3660,9 @@ export type FrResources = {
       readonly stashRestored_many: 'Vos {{count}} modifications mises de côté sont revenues.'
       readonly stashFailed: 'Vos modifications mises de côté n’ont pas pu revenir sans conflit ({{files}}) : elles restent dans git stash ({{ref}}).'
       readonly stashKept: 'Vos modifications mises de côté n’ont pas pu revenir : elles restent dans git stash ({{ref}}).'
+      readonly left_one: '{{count}} fichier décoché reste non commité : mis de côté le temps de la fusion, puis remis.'
+      readonly left_many: '{{count}} fichiers décochés restent non commités : mis de côté le temps de la fusion, puis remis.'
+      readonly left_other: '{{count}} fichiers décochés restent non commités : mis de côté le temps de la fusion, puis remis.'
     }
     readonly mr: {
       readonly error: {
@@ -3671,6 +3674,23 @@ export type FrResources = {
         readonly 'ssh-key': '{{host}} refuse la clé SSH : vérifiez-la (« ssh -T git@{{host}} ») ou ajoutez-la à votre compte, puis réessayez.'
         readonly 'not-found': '{{host}} ne trouve pas ce projet. Si GitLab est installé sous un sous-chemin (https://hôte/gitlab/…), déclarez-le : « glab config set subfolder <chemin> --host {{host}} », puis réessayez.'
       }
+    }
+    readonly choose: {
+      readonly files: 'Fichiers à committer'
+      readonly total_one: '{{count}} fichier'
+      readonly total_many: '{{count}} fichiers'
+      readonly total_other: '{{count}} fichiers'
+      readonly allChecked_one: 'coché'
+      readonly allChecked_many: 'tous cochés'
+      readonly allChecked_other: 'tous cochés'
+      readonly noneChecked: 'aucun coché'
+      readonly someChecked: '{{checked}} sur {{count}} cochés'
+      readonly toggleAll: 'Tout cocher ou tout décocher'
+      readonly expand: 'Tout afficher'
+      readonly collapse: 'Réduire'
+      readonly none: 'Cochez au moins un fichier à committer.'
+      readonly secret: 'secret ?'
+      readonly secretHint: 'Ce nom ressemble à un fichier de secrets (clé, mot de passe) : vérifiez qu’il doit partir dans le commit.'
     }
   }
   readonly childrenMerge: {
@@ -5560,5 +5580,11 @@ export type FrResources = {
     readonly opinion: 'Demander un avis en lecture seule'
     readonly committed: 'Commité : {{short}}. Les conversations filles partiront de ce commit.'
     readonly whyBare: 'Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.'
+    readonly left_one: '{{count}} fichier décoché reste dans ce dossier, non commité : les conversations filles ne l’auront pas.'
+    readonly left_many: '{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.'
+    readonly left_other: '{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.'
+    readonly leftOne_one: '{{count}} fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.'
+    readonly leftOne_many: '{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.'
+    readonly leftOne_other: '{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.'
   }
 }

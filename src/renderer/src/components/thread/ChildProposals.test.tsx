@@ -472,4 +472,30 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
     expect(screen.queryByTestId('launch-dirty')).toBeNull()
     expect(start('Relecture').disabled).toBe(false)
   })
+
+  it('fiche 244 : un fichier décoché ne part pas ; « Lancer » part sans lui', async () => {
+    commitForChildren.mockImplementation(async () => {
+      childFolderDirty.mockResolvedValue({ ...dirty, count: 1, files: [dirty.files[1]] })
+      return { hash: 'abc1234def', short: 'abc1234' }
+    })
+    const onRespond = await show([proposal(1, 'API')])
+    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    fireEvent.click(
+      screen
+        .getAllByTestId('launch-dirty-commit-file')
+        .find((li) => li.dataset.path === 'public/app.js')
+        ?.querySelector('input') as HTMLInputElement
+    )
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    expect(commitForChildren).toHaveBeenCalledWith('m', {
+      message: expect.not.stringContaining('public/app.js'),
+      files: ['server/index.js']
+    })
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    fireEvent.click(start('API'))
+    expect(onRespond).toHaveBeenCalledWith('r1', {
+      action: 'accept',
+      content: { decision: 'start', uncommitted: 'anyway' }
+    })
+  })
 })
