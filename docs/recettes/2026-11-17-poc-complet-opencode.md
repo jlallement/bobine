@@ -2,7 +2,7 @@
 
 Scénario : [scenario-poc-complet.md](scenario-poc-complet.md). Joué par : pilote (Claude, Opus 5.5),
 avec computer use. Fiche du passage : [238](../features/238-recette-poc-complet-premiere.md).
-Captures : [`2026-11-17-poc-complet-opencode/`](2026-11-17-poc-complet-opencode/) (32 images,
+Captures : [`2026-11-17-poc-complet-opencode/`](2026-11-17-poc-complet-opencode/) (31 images,
 2,2 Mo, recadrées et vérifiées : aucune donnée personnelle visible). Heures en UTC (heure de Paris
 moins une heure) sauf mention.
 
@@ -12,7 +12,7 @@ moins une heure) sauf mention.
   7, 8), 0 en échec, 0 non jouée ; l'étape 9 (clôture) n'a pas de verdict propre.
 - **Interventions** : 5 pendant le jeu (liste au § Interventions), plus 2 avant l'étape 1
   (reconnexion d'OpenAI par l'utilisateur, accueil réactivé par une variable).
-- **Défauts de Bobine** : 0 bloquant, **2 sérieux**, 9 gênants, 5 cosmétiques ou mineurs. Les trois
+- **Défauts de Bobine** : 0 bloquant, **2 sérieux**, 10 gênants, 5 cosmétiques ou mineurs. Les trois
   plus graves :
   1. D1 — Filles de rôle parties dans un worktree **sans le travail non commité** de la mère :
      comptes rendus vides ; l'avis n'est que dans le fil de la fille (fiche [240](../features/240-filles-de-role-sans-modifications-non-commitees.md)).
@@ -76,7 +76,7 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
 | 7. Relecture et git | ~ | 20:58–21:06 | 8 min | 0 | 0 | 0 / 0 | 549 / 515 | 794 784 | 0 $ (voir D8) | — | `7-*.jpg` |
 | 8. Accrocs volontaires | ~ | 21:06–21:33 | 27 min (dont ~12 min écran verrouillé) | 0 | 0 | 0 / 0 | 677 / 234 | 2 686 152 | 0 $ (voir D8) | — | `8-*.jpg` |
 | 9. Clôture | — | 21:33–21:34 | 1 min | 0 | 0 | 0 / 0 | 677 / 234 | 0 | 0 $ | — | `9-defaut-mon-activite-jetons.jpg` |
-| **Total** | 2 ✓, 6 ~ | 19:47–21:34 | 1 h 46 min | 5 (+2 avant jeu) | 0 | **0 / 6** | max 1 008 / 652 | **17 780 172** | 0,2403 $US | **636 134** (contexte final) | 32 images |
+| **Total** | 2 ✓, 6 ~ | 19:47–21:34 | 1 h 46 min | 5 (+2 avant jeu) | 0 | **0 / 6** | max 1 008 / 652 | **17 780 172** | 0,2403 $US | **636 134** (contexte final) | 31 images |
 
 ## Grille par outil
 
@@ -118,8 +118,9 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
   `--user-data-dir` donné hors profil temporaire compte comme un essai (`testRun`,
   `src/main/onboarding/onboarding-state.ts`), sauf `BOBINE_ONBOARDING=1`. Relancé sur un profil neuf
   avec cette variable (écart au scénario, corrigé dans celui-ci).
-- Au premier lancement, Bobine démarre IBM Bob (agent par défaut) et lit son quota (« Quota de IBM
-  Bob : 1 session(s) vide(s) supprimée(s) ») avant le choix d'OpenCode.
+- Au premier lancement, avant le choix d'OpenCode, Bobine démarre le vrai IBM Bob (agent par
+  défaut, essai de connexion) et lit son quota, qui supprime une session dans le vrai `~/.bob`
+  (D17) ; une deuxième lecture, avec suppression, suit la relance de l'étape 8.
 - Essai de l'accueil avec le modèle par défaut (GPT-6.2 Astra) : bandeau « Connexion expirée ». En
   ligne de commande, `opencode run` échouait aussi (« Request failed: 400 ») sur tous les modèles
   OpenAI : la connexion manquait. L'utilisateur s'est reconnecté par « Se connecter dans le
@@ -319,14 +320,28 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
 | D6 | gênant | 4, 9 | Bobine | « Jetons traités » : `/cost` compte le cache (4 051 903 pour la mère), « Mon activité » non (635,2k pour tout le passage). | vu une fois | `4-context-cost.jpg`, `9-defaut-mon-activite-jetons.jpg` | — |
 | D7 | gênant | 7 | Bobine | Remarque sur le diff : le « + » au survol du numéro de ligne n'est pas visible dans le panneau à sa largeur normale ; visible une fois le panneau agrandi. | vu une fois | — (pas de capture du panneau étroit ; constat par zoom) | — |
 | D8 | gênant | toutes | Bobine | Coût estimé en $US sur chaque tour de la mère (≈ 0,001 à 0,09 $) malgré l'abonnement ChatGPT ; les filles affichent 0,00 $US ; après le redémarrage de l'agent (20:34Z), plus aucun coût. | à chaque tour | `1-plan-propose.jpg` (« ≈ 0,001 $US »), `9-defaut-mon-activite-jetons.jpg` | — |
-| D9 | gênant | 5 | Bobine | La carte Sous-tâches (et son bouton de fusion) reste à la position de la dernière fille lancée, loin dans un long fil : il a fallu une quinzaine de défilements pour la retrouver. | vu une fois | — | — |
+| D9 | gênant | 5 | Bobine | La carte Sous-tâches (et son bouton de fusion) reste à la position de la dernière fille lancée, loin dans un long fil : il a fallu une quinzaine de défilements pour la retrouver. | vu une fois | — (pas de capture : non prise sur le moment, et une capture ne montre pas une distance de défilement ; constat du pilote seul, emplacement relevé au § 5) | — |
 | D10 | gênant | 8 | Bobine | Après ⌘Q puis relance, Bobine s'ouvre sur une nouvelle conversation et non sur celle qui travaillait. | vu une fois | `8-fil-apres-relance.jpg` (fil retrouvé par la barre latérale) | — |
-| D11 | gênant | 3 | Bobine | Comptes rendus de filles transmis tronqués à la mère (« (cut: 2531 characters in all) ») : la mère a redemandé le texte complet par `message_child`. | vu une fois | export JSON de la mère (non commité) | — |
+| D11 | gênant | 3 | Bobine | Comptes rendus de filles transmis tronqués à la mère (« (cut: 2531 characters in all) ») : la mère a redemandé le texte complet par `message_child`. | vu une fois | — (pas de capture : la troncature n'est lisible que dans l'export JSON de la mère, gardé hors du dépôt dans le dossier du passage, non commité) | — |
 | D12 | cosmétique | 4 | Bobine | File d'attente : un message modifié repasse en dernière position. | vu une fois | `4-defaut-file-ordre.jpg` | — |
 | D13 | mineur | 8 | Bobine | Après Arrêter, le groupe d'outils affiche « ✕ 1 échec » au lieu d'« interrompu » (l'échec peut venir d'une commande antérieure : non tranché). | vu une fois | `8-arret.jpg` | — |
 | D14 | cosmétique | 8 | Bobine | Export : un nom saisi avec « .md » donne « .md.md ». | vu une fois | ligne « Conversation exportée : …/recette-bobine-export-mere.md.md » | — |
 | D15 | cosmétique | 5 | Bobine | La fusion depuis la carte écrit « Merge branch 'main' into bobine/… » dans l'historique de `main`. | vu une fois | `git log` ci-dessus | — |
+| D17 | gênant | 0, 8 | Bobine | Profil jetable : avant tout choix d'agent, Bobine lance le vrai `bob acp` (essai de connexion de l'accueil) puis lit le quota de Bob, ce qui crée puis **supprime une session dans le vrai `~/.bob`** de l'utilisateur ; recommencé à la relance (8.2), alors qu'OpenCode était l'agent choisi. Gravité : gênant et non sérieux parce que, d'après le code, la suppression ne vise que des sessions vides du dossier réservé de Bobine (voir sous le tableau) et que rien n'a bloqué ; mais un profil jetable n'isole pas des données réelles de Bob, et l'agent par défaut démarre avant que l'utilisateur l'ait choisi. | 2 / 2 lancements | `main.log` 19:48:06.982Z « Agent lancé (bob, 9faf592c) : bob acp dans ~/…/profil/workspace », 19:48:12.028Z et 21:09:00.515Z « Quota de IBM Bob : 1 session(s) vide(s) supprimée(s) » ; pas de capture (rien à l'écran) | — |
 | D16 | mineur | 0 | Bobine | Essai de l'accueil : « Modèle : opencode/Hy4 flash Free » alors que la puce de la conversation montrait GPT-6.2 Astra. | vu une fois | — (pas de capture gardée : le terminal voisin montrait l'URL de connexion OAuth) | — |
+
+**D17, quelle session a été supprimée.** Bobine ne journalise pas son identifiant, et la vérifier
+demanderait de lire `~/.bob` (exclu de la recette). Le code le borne : la lecture du quota tourne
+dans le dossier réservé `~/Library/Caches/Bobine/agent-status/bob` (`quotaStatusDir`,
+`src/main/agent/quota.ts:48`), puis supprime la tâche créée par ce `/status` et les tâches **sans
+premier message** dont l'espace de travail est ce dossier (`emptyTasksIn`,
+`src/main/agent/bob-status.ts:74-75` et `:217-231`). Ce ne peut donc pas être une conversation de
+l'utilisateur dans un autre dossier ; c'est, selon toute vraisemblance, la session que la lecture
+venait de créer. L'essai de connexion de l'accueil ouvre lui aussi une session Bob dans
+`~/…/profil/workspace` et la supprime (`src/main/onboarding/agent-readiness.ts:249-269`), sans ligne
+de journal ; `onboarding-sessions.json` du profil est vide (`[]`), donc aucune suppression en
+attente. Non expliqué : « Agent lancé (bob) : bob acp dans ~/…/taches » (19:52:00Z, arrêté après
+904 ms) à l'ouverture du projet.
 
 **Côté agent (le modèle, pas Bobine)** : souvenir proposé en texte avant d'utiliser l'outil
 (étape 1) ; question à choix posée avant les liens (2) ; serveur maison dans le terminal au lieu de
@@ -402,12 +417,24 @@ Lignes `ERROR` et `WARN` de `main.log` et `agents.log`, tout le passage (aucune 
   `BOBINE_ONBOARDING=1`, « Faire ici » immédiat, commande du projet = fichier, fusion refusée avec
   des modifications non commitées).
 
+## Ce qui reste
+
+- **Non joué** : `/compact` (contexte à 8 %) ; « Voir sur le diff » de Faire relire (aucune
+  remarque) ; capture propre de la fenêtre rapide.
+- **Chemin d'installation réel non exercé** : la beta.7 a été installée par le pilote (DMG
+  récupéré de la Release en ligne de commande, copié par `ditto`), pas par un navigateur ; la
+  quarantaine de macOS et le premier lancement d'une app non signée n'ont donc pas été vus.
+- **Fiches à ouvrir** : D3 (message de commit qui ignore le souvenir, 2 / 2) ; défauts du pilote
+  (§ Outillage : cible CDP qui peut être une page du navigateur intégré, `attendre` qui manque des
+  cartes ou en prend une déjà traitée). D17 n'a pas de fiche (gênant).
+- Profil et projet du passage à mettre à la corbeille après relecture (§ État laissé).
+
 ## État laissé
 
 Bobine quittée (`pilote arreter`), aucun processus d'agent restant ; serveur de l'API arrêté ;
 simulateur iPhone 17 éteint ; profil et projet **gardés** dans
 `~/Development/bobine-recette/poc-1.0.0-beta.7-opencode/` jusqu'à la relecture du rapport, à
-mettre ensuite à la corbeille (avec `profil-essai-sans-accueil/`) ; `~/.bob` non concerné (Bob
-lancé seulement au démarrage, avant le choix d'OpenCode : lecture du quota) ; le presse-papiers de
+mettre ensuite à la corbeille (avec `profil-essai-sans-accueil/`) ; `~/.bob` **touché** (D17 : deux
+lectures du quota, chacune avec une session supprimée ; un essai de connexion) ; le presse-papiers de
 l'utilisateur contient le texte fictif de 45 lignes (étape 8.4) ; aucun fichier laissé dans
 `~/Documents` (exports déplacés).

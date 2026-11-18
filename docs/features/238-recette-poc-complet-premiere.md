@@ -86,10 +86,10 @@ le décrit une fois pour toutes ; cette fiche suit sa première exécution.
 - 2026-11-17 — **Première exécution jouée** sur la beta.7 (DMG publié, installé par le pilote à la
   demande de l'utilisateur), OpenCode 2.3.0, abonnement ChatGPT. Rapport :
   [`docs/recettes/2026-11-17-poc-complet-opencode.md`](../recettes/2026-11-17-poc-complet-opencode.md),
-  32 captures dans `docs/recettes/2026-11-17-poc-complet-opencode/`. Résultat : 9 étapes jouées,
+  31 captures dans `docs/recettes/2026-11-17-poc-complet-opencode/`. Résultat : 9 étapes jouées,
   2 réussies, 6 avec réserve ; 5 interventions ; 0 bloquant, 2 sérieux (fiches
   [240](240-filles-de-role-sans-modifications-non-commitees.md) et
-  [241](241-outils-ios-apres-creation-du-projet.md)), 9 gênants, 5 cosmétiques ou mineurs ;
+  [241](241-outils-ios-apres-creation-du-projet.md)), 10 gênants, 5 cosmétiques ou mineurs ;
   agent 17,78 M jetons cache compris (plafond 20 M), pilote 0,64 M ; 0 `ERROR`, 6 `WARN`.
 - 2026-11-17 — Écarts au scénario relevés en jouant, corrigés dans celui-ci : avec `--profil`,
   l'accueil n'apparaît qu'avec `BOBINE_ONBOARDING=1` ; « Faire ici » envoie la tâche à la mère
@@ -98,3 +98,8 @@ le décrit une fois pour toutes ; cette fiche suit sa première exécution.
   filles est refusée tant que le dossier principal a des modifications non commitées (« Committer
   d'abord »). Écarts d'outillage : le pilote s'attache parfois à une page du navigateur intégré
   (rapport, § Outillage) ; l'écran du Mac verrouillé bloque computer use.
+- 2026-11-18 — Relecture du rapport par le tech lead : nombre de captures corrigé (31), raisons
+  ajoutées pour D9 et D11 sans capture, **D17** ajouté (profil jetable : le vrai IBM Bob lancé
+  avant le choix d'agent, et la lecture de son quota supprime une session dans le vrai `~/.bob`,
+  bornée par le code au dossier réservé de Bobine), § « Ce qui reste » (chemin d'installation réel
+  non exercé ; fiches à ouvrir pour D3 et pour le pilote).
