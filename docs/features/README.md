@@ -248,6 +248,7 @@ chaque création ou changement de statut.
 | [242](242-aucun-agent-lance-sans-etre-choisi.md) | Aucun agent lancé ni quota lu sans être choisi : plus de lecture du quota au lancement (seulement pour l'agent qui sert ou sur demande, ADR-0054) ; accueil en essai sans dossier imposé ; profil jetable sur les vrais agents : ni quota ni session du diagnostic d'office dans `~/.bob` (recette POC du 2026-11-17, D17) | fait | P1 |
 | [243](243-reprise-de-la-conversation-affichee.md) | À la relance, Bobine rouvre la dernière conversation affichée (celle qui travaillait quand on a quitté en plein tour) au lieu d'une nouvelle conversation ; nouvelle conversation si c'était un brouillon, ou si elle a été supprimée ou archivée (recette POC du 2026-11-17, D10) | fait | P1 |
 | [244](244-committer-d-abord-fichiers-choisis.md) | « Committer d'abord » (carte de fusion, lancement de filles) : liste complète des fichiers à cocher, seuls les cochés partent ; un `.env` non ignoré ne part plus sans être vu (relecture de la 240) | fait | P1 |
+| [246](246-message-de-commit-redige-par-l-agent.md) | Message de commit rédigé par l'agent (session jetable, fichiers cochés, diff borné sans secret, mémoire du projet ; repli en anglais Conventional Commits) ; vue Git relue après un commit fait hors du panneau (recette POC du 2026-11-17, D3 et D4) | en cours | P1 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

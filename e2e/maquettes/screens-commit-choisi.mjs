@@ -398,3 +398,16 @@ export const COMMIT_CHOOSER_SCREENS = [
     }
   }
 ]
+
+/* ------------------------------------------- repris par la fiche 246 (commit rédigé) */
+
+/** Styles de la carte « Fusion refusée » ouverte (repris par `screens-commit-redige.mjs`). */
+export const MERGE_CARD_CSS = CSS
+
+/** Mère, carte Sous-tâches, « Fusion refusée » ouverte sur 5 fichiers (fiche 246, écrans 4 et 5). */
+export async function mergeCardScene(h, scheme) {
+  await scene(h, MOTHER + subtasks(scheme, mergeDirty(FIVE, {})), 'Page des tâches')
+}
+
+/** Fait défiler le fil jusqu'au bas de la carte. */
+export const scrollToCard = (h) => scrollTo(h)
