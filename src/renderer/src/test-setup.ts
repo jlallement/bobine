@@ -25,6 +25,19 @@ window.api = {
   pr: { status: async () => ({ status: 'unavailable' }), onChanged: () => () => {} },
   // Aucun éditeur installé (fiche 156) : pas de « Ouvrir dans… ».
   editors: { list: async () => [] },
+  // Message de commit (fiche 246) : réglage coupé par défaut, le repli déduit des fichiers ; un
+  // test qui essaie la rédaction par l'agent remplace `draft`.
+  commit: {
+    draft: async (_id: string, request: { files: { path: string; status: string }[] }) => {
+      const { fallbackCommitMessage } = await import('@shared/commit-draft')
+      return {
+        source: 'fallback',
+        reason: 'disabled',
+        message: fallbackCommitMessage(request.files as never)
+      }
+    },
+    stop: async () => undefined
+  },
   // Profil (fiche 196) : rien à dire, corbeille vide.
   profile: {
     status: async () => ({ readOnly: false, notices: [] }),

@@ -68,6 +68,7 @@ const INDEX: readonly IndexedSetting[] = [
   ['general', 'settings.general.quickEntry.label', 'settingsSearch.quickEntry'],
   ['general', 'settings.general.command.label', 'settingsSearch.command'],
   ['general', 'settings.general.editor.label', 'settingsSearch.editor'],
+  ['general', 'settings.general.commitDraft.label', 'settingsSearch.commitDraft'],
   ['appearance', 'settings.appearance.interface', 'settingsSearch.interface'],
   ['appearance', 'settings.appearance.theme.label', 'settingsSearch.theme'],
   ['appearance', 'settings.appearance.accent.label', 'settingsSearch.accent'],

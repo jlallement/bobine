@@ -17,7 +17,8 @@ export function childrenMerger(
   run: Run,
   conversations: ChildrenMergeHost,
   worktrees: Pick<Worktrees, 'remove'>,
-  attention: () => AttentionState
+  attention: () => AttentionState,
+  changed?: (motherId: string) => void
 ): ChildrenMerger {
   const log = (id: string | undefined, line: string) =>
     agentLog.line({ ...(id ? { conversation: id } : {}), agent: 'git' }, line)
@@ -26,7 +27,8 @@ export function childrenMerger(
     cycle: new WorktreeCycle(run, { log }),
     worktrees,
     attention,
-    log
+    log,
+    ...(changed ? { changed } : {})
   })
 }
 

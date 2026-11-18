@@ -18,6 +18,7 @@ const MAX_SHOWN = 6
  * le dossier, et la fille part sans eux (`onCommitted(left)`, la suite les compte « laissés »).
  */
 export function LaunchDirtyCard({
+  conversationId,
   dirty,
   who,
   many,
@@ -28,6 +29,8 @@ export function LaunchDirtyCard({
   commit,
   attention = 0
 }: {
+  /** La mère : son agent rédige le message de commit (fiche 246). */
+  conversationId: string
   dirty: FolderDirty
   /** Qui part, déjà traduit (« les 2 conversations filles »). */
   who: string
@@ -112,8 +115,8 @@ export function LaunchDirtyCard({
       </div>
       {committing ? (
         <CommitChooser
+          conversationId={conversationId}
           files={dirty.files}
-          title={dirty.title ?? ''}
           busy={busy}
           testid="launch-dirty-commit"
           confirmLabel={t('launchDirty.commitConfirm')}

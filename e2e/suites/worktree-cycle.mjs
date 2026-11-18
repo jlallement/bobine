@@ -115,13 +115,13 @@ export async function worktreeCycleSuite(scheme) {
         await ui.waitFor(`${ui.$('worktree-commit')}.innerText.includes('(1)')`)
         await ui.click(ui.$('worktree-commit'))
         await ui.waitFor(`!!${ui.$('worktree-commit-form')}`)
+        // Fiche 246 : rédigé par l'agent (factice) d'après le seul fichier coché.
+        await ui.waitFor(`${ui.$('worktree-commit-draft')}?.dataset.state === 'agent'`, 15000)
         const proposed = await ui.ev(`${ui.$('worktree-commit-message')}.value`)
         check(
-          // Seul README.md est coché : un commit de documentation.
-          proposed.startsWith('docs: fais les modifications') &&
-            proposed.includes('- README.md') &&
-            !proposed.includes('src/app.js'),
-          'message proposé : Conventional Commits depuis le titre et les fichiers cochés'
+          proposed.startsWith('feat: update README.md\n\nMock agent draft: 1 file(s)') &&
+            !proposed.includes('app.js'),
+          'message rédigé par l’agent : Conventional Commits, le seul fichier coché'
         )
         await ui.shot('112-worktree-commit')
         await ui.click(ui.$('worktree-commit-confirm'))
@@ -137,7 +137,7 @@ export async function worktreeCycleSuite(scheme) {
           status: inWorktree('status', '--porcelain', '-uall')
         }
         check(
-          committed.subject === 'docs: fais les modifications' &&
+          committed.subject === 'feat: update README.md' &&
             committed.files === 'README.md' &&
             committed.status.includes('?? src/app.js'),
           `commit fait dans le worktree : README seul, src/app.js reste à committer (${JSON.stringify(committed)})`
@@ -158,6 +158,7 @@ export async function worktreeCycleSuite(scheme) {
         await ui.waitFor(`${ui.$('worktree-commit')}.innerText.includes('(2)')`)
         await ui.click(ui.$('worktree-commit'))
         await ui.waitFor(`!!${ui.$('worktree-commit-form')}`)
+        await ui.waitFor(`!${ui.$('worktree-commit-confirm')}.disabled`, 15000)
         await ui.click(ui.$('worktree-commit-confirm'))
         await ui.waitFor(
           `${ui.$('worktree-note')}?.innerText.includes(${JSON.stringify(Lpart('worktreeCycle.commit.done'))})`

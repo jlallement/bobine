@@ -1,0 +1,44 @@
+/* Message de commit rédigé par l'agent (fiche 246) : ligne d'état sous le libellé (rédaction) ou
+   sous le message (reçu, repli), sur les jetons de l'app. */
+.commit-draft {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 20px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.commit-draft > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.commit-draft > span {
+  flex: 1;
+  min-width: 0;
+}
+.commit-draft .link-button {
+  flex-shrink: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.commit-draft-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.commit-draft.received > svg {
+  color: var(--accent);
+}
+.commit-draft.fallback > svg {
+  color: var(--warn);
+}
+.worktree-form textarea[data-drafting] {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: progress;
+}
+.worktree-form textarea[data-drafting]::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}

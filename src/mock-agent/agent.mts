@@ -37,6 +37,11 @@ import { followToolList } from './suit-outils.mts'
 export interface MockAgentOptions {
   /** Scénario joué par défaut à chaque prompt. */
   scenario: string
+  /**
+   * Scénario joué pour une demande de message de commit (`<bobine_commit_message>`, fiche 246) ;
+   * `message-commit` par défaut (`MOCK_AGENT_COMMIT`).
+   */
+  commitScenario?: string
   /** Délai de base entre deux morceaux (ms). */
   delayMs: number
   /** `false` : n'expose que des modes, sans options de configuration (comme certains agents). */
@@ -628,7 +633,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       // perd pas la session.
       persist(session)
 
-      const chosen = pickScenario(params.prompt, scenario, catalog)
+      const chosen = pickScenario(params.prompt, scenario, catalog, options.commitScenario)
       // Un scénario peut fixer lui-même le contexte (ex. après une compaction) et le coût cumulé
       // (coût qui monte en cours de tour, fiche 157).
       let reportedContext: number | undefined
@@ -743,7 +748,8 @@ export const REVIEW_BRIEF_LEAD = 'Code review request from Bobine.'
 function pickScenario(
   prompt: ContentBlock[],
   fallback: Scenario,
-  catalog: Record<string, Scenario>
+  catalog: Record<string, Scenario>,
+  commitScenario = 'message-commit'
 ): Scenario {
   // Le message de l'utilisateur est le premier bloc de texte : tout ce que l'app joint (contexte
   // d'une branche, d'une bascule, de session…) part après lui (fiche 125).
@@ -777,6 +783,9 @@ function pickScenario(
   // Aparté de Bobine (fiche 180) : sans `/scenario` en tête, il décrit ce qu'il a reçu.
   const aside = prompt.some((b) => b.type === 'text' && b.text.includes('<bobine_aside>'))
   if (!match && aside && catalog['aparte']) return catalog['aparte']
+  // Message de commit demandé par Bobine (fiche 246) : seul dans sa session jetable.
+  const commit = prompt.some((b) => b.type === 'text' && b.text.includes('<bobine_commit_message>'))
+  if (commit && catalog[commitScenario]) return catalog[commitScenario]
   if (!match) return fallback
   const requested = match[1] ? catalog[match[1]] : undefined
   if (requested && !requested.session) return requested

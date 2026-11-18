@@ -1,9 +1,9 @@
 # 246 — Message de commit rédigé par l'agent ; vue Git à jour après un commit fait ailleurs
 
-- **Statut** : en cours — temps 1 (conception, maquettes) fait, en attente de validation
+- **Statut** : fait — non poussé, en attente de relecture
 - **Dépend de** : 110 (cycle des worktrees, message proposé), 123 (« Committer d'abord »), 180
   (aparté : session jetable), 182 (mémoire commune, ADR-0040), 244 (fichiers cochés, « secret ? »)
-  — décision : ADR-0056 (proposé)
+  — décision : ADR-0056 (accepté)
 - **Agents** : les deux. Session ACP ordinaire (`session/new`, `session/prompt`, `session/delete`),
   rien de propre à un agent (ADR-0011), rien de non documenté sur Bob.
 - **Trouvé par** : recette POC du 2026-11-17 (`docs/recettes/2026-11-17-poc-complet-opencode.md`),
@@ -25,43 +25,43 @@ alors que `git status` est vide, jusqu'à « Actualiser ».
 
 ### D3 — message rédigé par l'agent
 
-- [ ] À l'ouverture du formulaire de commit (vue Git d'un worktree ou d'une conversation ordinaire,
+- [x] À l'ouverture du formulaire de commit (vue Git d'un worktree ou d'une conversation ordinaire,
       « Committer d'abord » de la carte « Fusion refusée » et de l'avertissement avant une fille),
       Bobine demande le message à l'agent de la conversation, dans une **session jetable** du même
       dossier (ADR-0056) : rien dans le fil, rien dans la session de la conversation.
-- [ ] Pendant la rédaction : « Rédaction par <agent>… N s » et « Arrêter » (l'utilisateur annule
+- [x] Pendant la rédaction : « Rédaction par <agent>… N s » et « Arrêter » (l'utilisateur annule
       la rédaction ; « Annuler » reste le bouton qui ferme le formulaire) ; champ en attente,
       « Committer » désactivé.
-- [ ] Réponse reçue : le message dans le champ, modifiable ; ligne « Rédigé par <agent> en N s,
+- [x] Réponse reçue : le message dans le champ, modifiable ; ligne « Rédigé par <agent> en N s,
       d'après N fichiers et la mémoire du projet », « Rédiger à nouveau ».
-- [ ] L'agent reçoit seulement les fichiers **cochés**, leur diff **borné** (4 000 caractères par
+- [x] L'agent reçoit seulement les fichiers **cochés**, leur diff **borné** (4 000 caractères par
       fichier, 24 000 en tout), la **mémoire** approuvée (« Vous » et projet, 4 000 caractères),
       le titre et le premier message de la conversation. Un fichier « secret ? » n'envoie que son
       chemin ; une ligne reconnue par la détection de secrets est remplacée par `[redacted]`.
-- [ ] **Repli** — délai de 45 s dépassé, agent qui ne peut pas démarrer (connexion, licence,
+- [x] **Repli** — délai de 45 s dépassé, agent qui ne peut pas démarrer (connexion, licence,
       confiance, commande introuvable), tour fini autrement que `end_turn` (refus, erreur),
       réponse vide ou démesurée, « Arrêter » : message **en anglais, Conventional Commits, déduit
       des fichiers seuls**, sans aucun mot coupé ; une ligne dit pourquoi, avec « Réessayer ».
-- [ ] Agent occupé dans la conversation : la rédaction se fait quand même (processus à part).
-- [ ] Cases changées après la réponse : « Les fichiers cochés ont changé » + « Rédiger à
+- [x] Agent occupé dans la conversation : la rédaction se fait quand même (processus à part).
+- [x] Cases changées après la réponse : « Les fichiers cochés ont changé » + « Rédiger à
       nouveau », sans relance automatique ; un message retouché n'est jamais remplacé sans clic.
-- [ ] Coût de la rédaction ajouté au coût de la conversation (comme l'aparté).
-- [ ] Réglages › Général › « Message de commit rédigé par l'agent » (activé par défaut) ;
+- [x] Coût de la rédaction ajouté au coût de la conversation (comme l'aparté).
+- [x] Réglages › Général › « Message de commit rédigé par l'agent » (activé par défaut) ;
       désactivé : le repli, aucun agent lancé.
-- [ ] Scénarios d'agent factice : réponse normale, réponse lente au-delà du délai, refus ou
+- [x] Scénarios d'agent factice : réponse normale, réponse lente au-delà du délai, refus ou
       erreur ; pour chacun un test unitaire qui échoue sans le correctif.
-- [ ] e2e « Committer » avec l'agent factice (rédaction, message reçu, repli).
+- [x] e2e « Committer » avec l'agent factice (rédaction, message reçu, repli).
 
 ### D4 — vue Git à jour
 
-- [ ] Après un commit, une fusion, un « Défaire » ou un nettoyage faits **hors du panneau** (carte
+- [x] Après un commit, une fusion, un « Défaire » ou un nettoyage faits **hors du panneau** (carte
       « Fusion refusée » du fil, carte Sous-tâches, avertissement avant une fille, barre d'une
       autre conversation du même dépôt), la vue Git de toute conversation du même dépôt se relit
       d'elle-même : plus de « Committer (23) » sur un dossier propre.
-- [ ] Test unitaire de la vue (évènement reçu → relecture) et du main (évènement émis après
+- [x] Test unitaire de la vue (évènement reçu → relecture) et du main (évènement émis après
       `commitMain`), qui échouent sans le correctif ; e2e : « Committer puis fusionner », puis la
       vue Git sans « Committer (N) ».
-- [ ] i18n fr/en ; CHANGELOG fr/en ; ADR-0056 accepté.
+- [x] i18n fr/en ; CHANGELOG fr/en ; ADR-0056 accepté.
 
 ## Conception (temps 1)
 
@@ -159,17 +159,65 @@ Le repli de l'écran 5 (`chore: update 5 files`) montre la forme sans dossier co
 
 Aucune nouvelle dépendance.
 
-## Questions pour la validation
+## Décisions (validation du 2026-11-18, tech lead par délégation de l'utilisateur)
 
-- **Q1 — Réglage** : activé par défaut, dans Réglages › Général ? (Proposé : oui, chaque rédaction
-  coûte un peu chez Bob.)
-- **Q2 — Délai** : 45 s ?
-- **Q3 — Contexte** : le premier message de la conversation (600 caractères) avec le titre, pour
-  l'intention ? (Proposé : oui.)
-- **Q4 — Type du repli** : `chore` quand ni `docs` ni `test` (au lieu de `feat`, que Bobine ne
-  peut pas savoir) ?
+- **Q1 — Réglage** : oui, « Message de commit rédigé par l'agent », activé par défaut, dans
+  Réglages › Général, à côté de l'éditeur ; son aide donne le coût approximatif.
+- **Q2 — Délai** : 45 s.
+- **Q3 — Contexte** : le premier message, borné à **1 000** caractères et passé par `findSecret`
+  comme le diff.
+- **Q4 — Type du repli** : `chore`.
+- « Arrêter » plutôt qu'« Annuler » : retenu.
+- Trois exigences : la session jetable ne peut **jamais** écrire (test : le scénario tente une
+  écriture et une commande, tout est refusé, le dépôt est intact) ; son processus est arrêté
+  **dans tous les cas**, un test par cas, sans orphelin ; D4 : l'évènement part aussi après un
+  commit ou une fusion faits par Bobine, avec un e2e « fusion depuis la carte → vue Git à jour
+  sans Actualiser ».
+
+## Ce qui a été fait
+
+- `shared/commit-draft.ts` : demande (`commitDraftPrompt`, bloc `<bobine_commit_message>` ajouté à
+  `APP_CONTEXT_OPENINGS`), lecture de la réponse (`draftFromReply`), repli
+  (`fallbackCommitMessage`), bornes et délai.
+- `main/changes/commit-diff.ts` : diff des cochés (`git diff HEAD`, contenu lu pour un non suivi),
+  borné, « secret ? » sans contenu, binaire, lignes à secret masquées (`findSecret`).
+- `main/conversations/commit-draft.ts` (`CommitDrafts`) : session jetable sur le modèle de
+  l'aparté (`asideHostOptions` + `readOnly`), refus d'office, délai, « Arrêter », coût compté
+  (`aside-cost`), session supprimée, processus arrêté dans tous les cas, sortie de l'app comprise.
+  `commit-draft-setup.ts` (branchement : dossier du commit, mémoire, réglage,
+  `BOBINE_COMMIT_DRAFT_TIMEOUT_MS` pour les e2e), `changes/commit-draft-ipc.ts` (canaux
+  `commit:draft`, `commit:draftStop`).
+- D4 : `main/changes/git-changed.ts` (`withGitChanged` autour des canaux qui changent un dépôt,
+  `GitChangedNotifier` : toutes les conversations du même dépôt), `ChildrenMerger.changed` en fin
+  de fusion des filles ; `ChangesTab` écoute `changes:gitChanged`.
+- Renderer : `panel/useCommitDraft.ts` et `CommitForm` (rédaction, reçu, repli et sa raison,
+  « Arrêter », « Rédiger à nouveau », « Réessayer », cases changées) ; `conversationId` jusqu'aux
+  quatre formulaires (`FolderCommitBar`, `WorktreeBar`, `MainDirtyCard`, `LaunchDirtyCard` via
+  `CommitChooser`) ; nom de l'agent tenu par `useConversations` ; `commit-draft.css`.
+- Réglage `commitDraftEnabled` (Réglages › Général, recherche des réglages).
+- Agent factice : `scenarios-commit.mts` (`message-commit`, `-lent`, `-refus`, `-erreur`,
+  `-ecriture`), `MOCK_AGENT_COMMIT`, `MOCK_AGENT_PID_FILE`.
+- Tests : `shared/commit-draft.test.ts`, `changes/commit-diff.test.ts`,
+  `conversations/commit-draft.test.ts` (normal, lent, refus, erreur, écriture refusée, « Arrêter »,
+  sortie de l'app, nouvelle demande, réglage coupé ; chaque fois aucun processus restant),
+  `changes/git-changed.test.ts`, `children-merge.test.ts` (évènement en fin de fusion),
+  `panel/CommitDraft.test.tsx`, `panel/ChangesTab.test.tsx` (D4) ; tests d'interface existants
+  adaptés (la proposition arrive du main, repli sans le titre).
+- e2e : `commit-redige` (nouveau) ; `git`, `worktree-cycle`, `commit-choisi`,
+  `filles-non-commite`, `filles-fusion`, `gitlab`, `pr-ci` attendent la rédaction.
+
+## Écarts au plan
+
+- Le nom de l'agent pendant la rédaction vient d'un petit registre tenu par `useConversations`
+  plutôt que d'un contexte React : un fournisseur autour de l'app réindentait tout `App.tsx`.
+- `proposeCommitMessage` reste dans `shared/worktree-cycle.ts` (et ses tests) mais ne sert plus
+  aux formulaires ; `ChangesTab` et `SidePanel` ne reçoivent plus le titre.
+- Cases changées après la réponse : le message rédigé ne suit plus les cases (règle 0.11, D4, de
+  la vue Git) ; une ligne le dit, « Rédiger à nouveau » le refait. Le repli, lui, les suit encore.
 
 ## Journal
 
 - 2026-11-18 : temps 1, depuis `main` (00d4ec9). Conception (ADR-0056 proposé), cause de D4,
   mesure réelle d'OpenCode, maquettes. Arrêt pour validation.
+- 2026-11-18 : validé (Q1 à Q4, trois exigences). Temps 2 : code, tests, i18n, CHANGELOG, ADR
+  accepté.

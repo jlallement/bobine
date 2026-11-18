@@ -85,6 +85,7 @@ import type {
   ProviderTestResult
 } from './providers'
 import type { AsideRequest, AsideView } from './aside'
+import type { CommitDraftRequest, CommitDraftResult } from './commit-draft'
 import type { AgentReadiness, CheckRequest, FolderHints, OnboardingState } from './onboarding'
 import type { QuickEntryInfo } from './quick-entry'
 import type { ProfileStatus } from './profile'
@@ -671,6 +672,12 @@ export interface IpcInvokeContract
   'aside:close': { args: [id: string]; result: undefined }
   'aside:view': { args: [id: string]; result: AsideView | null }
   /**
+   * Message de commit rédigé par l'agent (fiche 246, ADR-0056) : session jetable du même agent,
+   * hors du fil ; jamais d'erreur, le repli porte la raison. `commit:draftStop` : « Arrêter ».
+   */
+  'commit:draft': { args: [id: string, request: CommitDraftRequest]; result: CommitDraftResult }
+  'commit:draftStop': { args: [id: string]; result: undefined }
+  /**
    * Accueil du premier lancement (fiche 188) : le montrer ou non, avec quels agents ; essai d'un
    * agent (un seul à la fois, annulable) ; fin ou « Passer », jamais défaite.
    */
@@ -800,6 +807,11 @@ export interface IpcEventContract {
   'schedule:changed': ScheduledTask[]
   /** Aparté d'une conversation : question, réponse au fil de l'eau, coût ; `closed` à la fin. */
   'aside:changed': AsideView
+  /**
+   * Un dépôt a changé par une action de Bobine (commit, fusion, « Défaire », nettoyage…, fiche
+   * 246, D4) : la vue Git de ces conversations se relit d'elle-même.
+   */
+  'changes:gitChanged': { conversationIds: string[] }
   /** Page du navigateur d'une conversation (adresse, titre, chargement). */
   'browser:state': BrowserState
   /** Téléchargement de la page enregistré ou en échec (fiche 094). */
@@ -1046,6 +1058,8 @@ export const IPC_CHANNELS = [
   'aside:ask',
   'aside:close',
   'aside:view',
+  'commit:draft',
+  'commit:draftStop',
   'onboarding:state',
   'onboarding:check',
   'onboarding:cancel',

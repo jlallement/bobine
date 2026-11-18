@@ -1068,6 +1068,30 @@ export const SUITES = [
     ]
   },
   {
+    // Message de commit rédigé par l'agent (fiche 246) : rédaction, repli, « Arrêter », et la vue
+    // Git relue après « Committer puis fusionner » depuis la carte « Sous-tâches » (D4).
+    name: 'commit-redige',
+    file: 'commit-redige.mjs',
+    run: 'commitRedigeSuite',
+    themes: BOTH,
+    sources: [
+      `${C}panel/CommitForm.tsx`,
+      `${C}panel/useCommitDraft.ts`,
+      `${C}panel/ChangesTab.tsx`,
+      `${C}panel/FolderCommitBar.tsx`,
+      `${C}panel/MainDirtyCard.tsx`,
+      `${C}thread/SubtasksMerge.tsx`,
+      `${R}commit-draft.css`,
+      ...GIT,
+      'src/shared/commit-draft.ts',
+      'src/main/changes/commit-diff.ts',
+      'src/main/changes/git-changed.ts',
+      'src/main/conversations/commit-draft.ts',
+      'src/main/conversations/commit-draft-setup.ts',
+      'src/mock-agent/scenarios-commit.mts'
+    ]
+  },
+  {
     // Filles en worktree et non commité de la mère (fiche 240) : avertissement et choix avant le
     // lancement (rôle, Tâches proposées), avis en lecture seule, rappel dans la mère.
     name: 'filles-non-commite',

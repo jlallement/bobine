@@ -1,6 +1,6 @@
 # ADR-0056 — Message de commit rédigé par l'agent, dans une session jetable
 
-- **Statut** : proposé
+- **Statut** : accepté (validé par le tech lead le 2026-11-18, par délégation de l'utilisateur)
 - **Date** : 2026-11-18
 - **Fiche** : 246 (recette POC du 2026-11-17, D3)
 
@@ -38,7 +38,8 @@ restent intacts, seul le main parle ACP, ce qui va à l'agent est en anglais (AD
    - la **mémoire** : souvenirs approuvés de « Vous » et du projet (`MemoryService.memoriesFor`,
      texte entier), bornés à 4 000 caractères, présentés comme des notes de l'utilisateur ; rien si
      la mémoire est désactivée ;
-   - le **titre** de la conversation et son **premier message** (600 caractères au plus) : l'intention ;
+   - le **titre** de la conversation et son **premier message** (1 000 caractères au plus, lignes
+     à secret masquées comme le diff ; validation du 2026-11-18) : l'intention ;
    - les **fichiers cochés** (chemin, état) — seulement eux ;
    - leur **diff** (`git diff HEAD -- <cochés>` ; contenu d'un fichier non suivi lu par le main),
      borné à **4 000 caractères par fichier et 24 000 en tout** ; au-delà, le fichier est cité avec
@@ -77,7 +78,15 @@ restent intacts, seul le main parle ACP, ce qui va à l'agent est en anglais (AD
    (pas de relance automatique : chaque rédaction coûte). Message retouché par l'utilisateur :
    plus jamais remplacé sans un clic.
 7. **Réglage** : Réglages › Général › « Message de commit rédigé par l'agent » (activé par
-   défaut). Désactivé : le repli tout de suite, sans ligne d'explication, aucun agent lancé.
+   défaut ; son aide donne le coût approximatif). Désactivé : le repli tout de suite, sans ligne
+   d'explication, aucun agent lancé.
+8. **Jamais d'écriture, jamais d'orphelin** (exigences de la validation) : en plus du refus
+   d'office de toute autorisation, l'hôte de la session jetable est en `readOnly` ; son processus
+   est arrêté dans tous les cas (réponse, délai, « Arrêter », nouvelle demande, conversation
+   supprimée, sortie de l'app), y compris pendant l'attente du coût relu après la réponse.
+9. **Vue Git à jour (D4)** : après toute commande de Bobine qui change un dépôt (commit,
+   « Défaire », fusion, nettoyage, « Rétablir », fin d'une fusion des filles), l'évènement
+   `changes:gitChanged` part vers toutes les conversations du même dépôt ; leur vue Git se relit.
 
 ## Alternatives écartées
 
@@ -123,6 +132,8 @@ restent intacts, seul le main parle ACP, ce qui va à l'agent est en anglais (AD
   l'agent lit déjà dans ce dossier. Un fichier « secret ? » ne part pas.
 - L'agent factice gagne des scénarios (réponse normale, lente au-delà du délai, refus ou erreur)
   et la fonction se teste sans vrai modèle.
-- `proposeCommitMessage(titre, fichiers)` disparaît au profit du repli `fallbackCommitMessage
-  (fichiers)` ; `commitSubject` (coupe du titre) ne sert plus au commit (il reste pour la PR si
-  besoin).
+- `proposeCommitMessage(titre, fichiers)` ne sert plus aux formulaires de commit : le repli est
+  `fallbackCommitMessage(fichiers)` (`shared/commit-draft.ts`). Le titre ne sert plus qu'à la PR.
+- « Arrêter » pendant la rédaction (et non « Annuler », déjà le bouton qui ferme le formulaire) ;
+  `chore` comme type du repli quand les fichiers ne sont ni tous de la documentation ni tous des
+  tests (validation du 2026-11-18).

@@ -585,7 +585,9 @@ const FAILING_TURNS = new Set([
   'bob-licence-formulaire',
   'reseau-instable',
   'reseau-coupe',
-  'limite-debit'
+  'limite-debit',
+  // Demande de message de commit en erreur (fiche 246).
+  'message-commit-erreur'
 ])
 
 describe('catalogue', () => {
@@ -605,7 +607,9 @@ describe('catalogue', () => {
     'connexion-coupee',
     // Refuse le message tant que le SSO n'est pas refait (fiche 200) : essayé par l'hôte d'agent
     // et la grille de conformité.
-    'connexion-expiree-bob-tour'
+    'connexion-expiree-bob-tour',
+    // Ne répond jamais (au-delà du délai de Bobine) : essayé par la rédaction (fiche 246).
+    'message-commit-lent'
   ])
   it.each(Object.entries(scenarios).filter(([name, s]) => !s.session && !failing.has(name)))(
     '%s se joue sans erreur inattendue',

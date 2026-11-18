@@ -1,3 +1,6 @@
+import { commitDraftHandlers } from './changes/commit-draft-ipc'
+import { withGitChanged } from './changes/git-changed'
+import type { CommitDrafts } from './conversations/commit-draft'
 import {
   isHintId,
   isTipId,
@@ -342,6 +345,10 @@ export function createHandlers(
       childrenMerge?: Pick<ChildrenMerger, 'plan' | 'start' | 'stop' | 'commitMain'>
       /** Aparté (fiche 180) : ce qu'il demande aux conversations ; sa vue part par `send`. */
       asides?: AsideConversations
+      /** Message de commit rédigé par l'agent (fiche 246). */
+      commitDrafts?: Pick<CommitDrafts, 'draft' | 'stop'>
+      /** Un dépôt a changé par une action de Bobine : vues Git à relire (fiche 246, D4). */
+      gitChanged?: (conversationId: string) => void
       /** Accueil du premier lancement (fiche 188). */
       onboarding?: OnboardingIpc
       /** Plafond de coût des conversations (fiche 157). */
@@ -420,7 +427,7 @@ export function createHandlers(
     if (!deps.approvals) throw new Error(t('ipc.unavailable.approvals'))
     return deps.approvals
   }
-  return {
+  const handlers: IpcHandlers = {
     ...appHandlers(deps),
     ...acpExchangeHandlers(deps.acpExchanges ?? acpExchanges, deps.send),
     ...usageHandlers({
@@ -501,6 +508,7 @@ export function createHandlers(
           emit: (view) => deps.send?.('aside:changed', view)
         })
     ),
+    ...commitDraftHandlers(deps.commitDrafts),
     ...onboardingHandlers(deps.onboarding),
     ...costCapHandlers(deps.costCap),
     ...turnLimitHandlers(c),
@@ -859,6 +867,8 @@ export function createHandlers(
     'preview:logs': async (id, name) =>
       deps.devServers.logs(c.workspaceOf(str(id, 'id')), str(name, 'name'), { lines: 300 })
   }
+  // Fiche 246, D4 : après une commande qui change un dépôt, ses vues Git se relisent.
+  return withGitChanged(handlers, deps.gitChanged)
 }
 
 /**

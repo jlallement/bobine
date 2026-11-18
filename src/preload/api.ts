@@ -18,6 +18,7 @@ import type {
   PromptRequest
 } from '@shared/agent'
 import type { AsideRequest } from '@shared/aside'
+import type { CommitDraftRequest } from '@shared/commit-draft'
 import type { MemoryDecision, MemoryPlace } from '@shared/memory'
 import type { ApprovalRulesChange } from '@shared/approval-rules'
 import type { CheckRequest } from '@shared/onboarding'
@@ -428,7 +429,10 @@ export function createApi(
       /** « Committer » hors worktree (fiche 123), dans le dossier de la conversation. */
       commit: (id: string, request: { message: string; files: string[] }) =>
         invoke('changes:commit', id, request),
-      undoCommit: (id: string, hash: string) => invoke('changes:undoCommit', id, hash)
+      undoCommit: (id: string, hash: string) => invoke('changes:undoCommit', id, hash),
+      /** Un dépôt a changé par une action de Bobine (fiche 246, D4) : vues Git à relire. */
+      onGitChanged: (listener: (change: IpcEventContract['changes:gitChanged']) => void) =>
+        subscribe('changes:gitChanged', listener)
     },
     /** Cycle complet d'un worktree (fiche 110) : commit, PR, fusion, nettoyage, orphelins. */
     worktree: {
@@ -488,6 +492,11 @@ export function createApi(
         invoke('onboarding:runStep', id, profileId, stepId),
       trialFolder: () => invoke('onboarding:trialFolder'),
       hints: (id: string) => invoke('onboarding:hints', id)
+    },
+    /** Message de commit rédigé par l'agent (fiche 246). */
+    commit: {
+      draft: (id: string, request: CommitDraftRequest) => invoke('commit:draft', id, request),
+      stop: (id: string) => invoke('commit:draftStop', id)
     },
     aside: {
       ask: (id: string, request: AsideRequest) => invoke('aside:ask', id, request),

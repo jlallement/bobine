@@ -16,12 +16,15 @@ const MAX_SHOWN = 6
  * tous les fichiers, à cocher ; les décochés sont mis de côté le temps de la fusion, puis remis.
  */
 export function MainDirtyCard({
+  conversationId,
   dirty,
   busy,
   onCommit,
   onStash,
   children
 }: {
+  /** Conversation dont l'agent rédige le message de commit (fiche 246). */
+  conversationId: string
   dirty: MainDirty
   busy: boolean
   /**
@@ -66,8 +69,8 @@ export function MainDirtyCard({
       </div>
       {committing ? (
         <CommitChooser
+          conversationId={conversationId}
           files={dirty.files}
-          title={dirty.title ?? ''}
           busy={busy}
           testid="main-dirty-commit"
           confirmLabel={t('worktreeCycle.mainDirty.commitConfirm')}

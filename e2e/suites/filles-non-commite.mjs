@@ -144,6 +144,11 @@ async function proposalsRun(ui, git) {
   )
   await ui.click(`${rows}.find((li) => li.dataset.path === '.env').querySelector('input')`)
   await ui.waitFor(`!!${ui.$('launch-dirty-commit-left')}`)
+  // Fiche 246 : le message rédigé par l'agent ne suit pas les cases d'office ; refait sans le .env.
+  await ui.waitFor(`${ui.$('launch-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
+  await ui.click(ui.$('launch-dirty-commit-draft-again'))
+  await ui.waitFor(`${ui.$('launch-dirty-commit-draft')}?.dataset.state === 'drafting'`, 15000)
+  await ui.waitFor(`${ui.$('launch-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
   check(
     !(await ui.ev(`${ui.$('launch-dirty-commit-message')}.value`)).includes('.env') &&
       (await ui.ev(`${ui.$('launch-dirty-commit-left')}.innerText`)) ===

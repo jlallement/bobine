@@ -40,8 +40,6 @@ interface Props {
   conversationId: string | null
   /** Dossier de la conversation (chemins des modifications). */
   workspace?: string
-  /** Titre de la conversation : message de commit proposé hors worktree (fiche 123). */
-  title?: string
   tab: PanelTab
   /** Onglets affichés, dans l'ordre (fiche 082) ; les autres sont dans le menu « + ». */
   tabs: PanelTab[]
@@ -107,7 +105,6 @@ export function SidePanel({
   discussion,
   conversationId,
   workspace,
-  title,
   tab,
   tabs,
   counts,
@@ -341,7 +338,6 @@ export function SidePanel({
                 ? { initialView: changesRequest.view, initialViewSeq: changesRequest.seq }
                 : {})}
               {...(workspace ? { workspace } : {})}
-              title={title}
               {...(onSendDiffNotes ? { onSendNotes: onSendDiffNotes } : {})}
               childWorktrees={childWorktrees}
               onReview={onReview}

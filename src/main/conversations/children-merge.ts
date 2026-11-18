@@ -64,6 +64,8 @@ export interface ChildrenMergeDeps {
   attention?: () => AttentionState
   /** Une ligne du journal des commandes (`agents.log`, fiche 080). */
   log?: (motherId: string, line: string) => void
+  /** Le dépôt a changé (fusions faites) : vues Git à relire (fiche 246, D4). */
+  changed?: (motherId: string) => void
   now?: () => number
 }
 
@@ -324,6 +326,7 @@ export class ChildrenMerger {
     merge.endedAt = this.now()
     this.deps.log?.(motherId, `children merge: ${merge.status}`)
     this.emit(motherId, run)
+    this.deps.changed?.(motherId)
   }
 
   /** Fusionne une fille ; `false` : la chaîne s'arrête là (conflit qui reste, erreur). */

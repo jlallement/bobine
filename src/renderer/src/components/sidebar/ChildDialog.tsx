@@ -98,6 +98,7 @@ export function ChildDialog({
           />
           {folder.dirty && (
             <LaunchDirtyCard
+              conversationId={mother.id}
               dirty={folder.dirty}
               who={t('launchDirty.whoOne')}
               many={false}

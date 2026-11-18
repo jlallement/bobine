@@ -656,6 +656,7 @@ function ComposerBelow({
       />
       {roleView.dirty && !roleView.sending && (
         <LaunchDirtyCard
+          conversationId={props.draftKey ?? ''}
           dirty={roleView.dirty}
           who={
             roleView.targets.length > 1

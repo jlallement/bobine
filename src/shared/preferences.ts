@@ -204,6 +204,11 @@ export interface Preferences {
    * index au début de chaque session. Coupée : ni outils ni index, les souvenirs restent.
    */
   memoryEnabled: boolean
+  /**
+   * Message de commit rédigé par l'agent (fiche 246, ADR-0056), dans une session jetable ; coupé :
+   * message déduit des fichiers, aucun agent lancé.
+   */
+  commitDraftEnabled: boolean
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -239,7 +244,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   costCapAmount: 5,
   costCapTokens: 2_000_000,
   // Activée dès l'installation (décision de l'utilisateur, fiche 182).
-  memoryEnabled: true
+  memoryEnabled: true,
+  // Activé par défaut (validation de la fiche 246).
+  commitDraftEnabled: true
 }
 
 export const TERMINAL_FONT_SIZES = { min: 9, max: 24 }
@@ -310,6 +317,7 @@ const BOOLEAN_PREFERENCES = [
   'dockBadge',
   'costCapEnabled',
   'memoryEnabled',
+  'commitDraftEnabled',
   'tipsEnabled',
   'codeLigatures'
 ] as const

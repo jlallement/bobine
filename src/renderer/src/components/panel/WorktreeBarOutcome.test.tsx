@@ -109,6 +109,11 @@ describe('issue unique de la barre du worktree (fiche 189)', () => {
       <WorktreeBar conversationId="c1" info={view()} selected={files} onChanged={() => {}} />
     )
     fireEvent.click(screen.getByTestId('worktree-commit'))
+    await waitFor(() =>
+      expect((screen.getByTestId('worktree-commit-message') as HTMLTextAreaElement).disabled).toBe(
+        false
+      )
+    )
     fireEvent.click(screen.getByTestId('worktree-commit-confirm'))
     await screen.findByTestId('worktree-error')
     const down = view({ pr: { ok: false, reason: 'unreachable', noun: 'mr', host: 'gl.test' } })

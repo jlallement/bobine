@@ -104,27 +104,36 @@ export async function gitSuite(scheme) {
         )
         await ui.click(ui.$('changes-commit'))
         await ui.waitFor(`!!${ui.$('changes-commit-message')}`)
-        check(
-          (await ui.ev(`${ui.$('changes-commit-message')}.value`)) ===
-            'docs: modifs du README\n\n- README.md',
-          'message proposé : type deviné, titre de la conversation, fichier coché'
-        )
-        // 0.11, D4 : curseur à la fin ; le message suit les cases cochées tant qu'il n'est pas
-        // retouché (le commit a932731 annonçait un fichier décoché).
+        // Fiche 246 : le message est rédigé par l'agent (factice) d'après le fichier coché.
+        const draft = `${ui.$('changes-commit-draft')}?.dataset.state`
+        await ui.waitFor(`${draft} === 'agent'`, 15000)
         const message = `${ui.$('changes-commit-message')}.value`
+        check(
+          (await ui.ev(message)).startsWith(
+            'feat: update README.md\n\nMock agent draft: 1 file(s)'
+          ),
+          'message rédigé par l’agent : le seul fichier coché'
+        )
         check(
           (await ui.ev(
             `${ui.$('changes-commit-message')}.selectionStart === ${message}.length`
           )) === true,
-          'formulaire ouvert : curseur à la fin du message'
+          'message reçu : curseur à la fin du message'
         )
-        await ui.click(`${appRow}.querySelector('[data-testid=changes-check]')`)
-        await ui.waitFor(`${message}.includes('- src/app.js (new)')`)
+        // Cocher puis décocher src/app.js : « les fichiers cochés ont changé », puis plus rien.
+        const line = `${ui.$('changes-commit-draft')}.innerText`
         await ui.click(`${appRow}.querySelector('[data-testid=changes-check]')`)
         await ui.waitFor(
-          `${message} === ${JSON.stringify('docs: modifs du README\n\n- README.md')}`
+          `${line}.startsWith(${JSON.stringify(L('worktreeCycle.commit.draft.changed'))})`
         )
-        check(true, 'cocher puis décocher src/app.js : le message proposé suit les cases cochées')
+        await ui.click(`${appRow}.querySelector('[data-testid=changes-check]')`)
+        await ui.waitFor(
+          `!${line}.startsWith(${JSON.stringify(L('worktreeCycle.commit.draft.changed'))})`
+        )
+        check(
+          (await ui.ev(message)).startsWith('feat: update README.md'),
+          'cases changées puis remises : le message rédigé reste, sans relance'
+        )
         await ui.shot('123-committer-hors-worktree')
         await ui.click(ui.$('changes-commit-confirm'))
         await ui.waitFor(`!!${ui.$('changes-commit-undo')}`)

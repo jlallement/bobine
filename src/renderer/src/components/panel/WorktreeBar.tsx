@@ -14,7 +14,6 @@ import {
   mergeBlocker,
   prBlocker,
   requestRef,
-  proposeCommitMessage,
   proposePr,
   type CommitFile,
   type MainDirty,
@@ -349,8 +348,9 @@ export function WorktreeBar({
       {mode && (
         <WorktreeForm
           mode={mode}
-          // 0.11, D4 : le message proposé suit les cases cochées tant qu'il n'est pas retouché.
-          commitProposal={proposeCommitMessage(info.title, selected)}
+          // Fiche 246 : message rédigé par l'agent, d'après les fichiers cochés.
+          conversationId={conversationId}
+          selected={selected}
           busy={busy}
           branch={info.branch}
           remoteToo={prMerged}
@@ -359,6 +359,7 @@ export function WorktreeBar({
       )}
       {mainDirty && (
         <MainDirtyCard
+          conversationId={conversationId}
           dirty={mainDirty}
           busy={busy !== null}
           onCommit={async (message, files, left) => {
@@ -440,15 +441,17 @@ function WorktreeStart({ info }: { info: WorktreeCycleView }) {
 /** Le formulaire ouvert : message de commit, PR, conflits, ou la question du nettoyage. */
 function WorktreeForm({
   mode,
-  commitProposal,
+  conversationId,
+  selected,
   busy,
   branch,
   remoteToo,
   actions
 }: {
   mode: Mode
-  /** Message de commit proposé pour les fichiers cochés en ce moment. */
-  commitProposal: string
+  conversationId: string
+  /** Fichiers cochés en ce moment : d'eux part le message de commit. */
+  selected: CommitFile[]
   busy: Busy
   branch: string
   /** PR fusionnée : la branche part aussi sur GitHub (0.9.1, D19). */
@@ -467,7 +470,9 @@ function WorktreeForm({
     case 'commit':
       return (
         <CommitForm
-          proposed={commitProposal}
+          conversationId={conversationId}
+          files={selected}
+          place="conversation"
           busy={busy !== null}
           testid="worktree-commit"
           onCommit={actions.commit}

@@ -762,9 +762,7 @@ export function App() {
                 discussion={discussion}
                 opening={panel.opening}
                 conversationId={c.activeId}
-                {...(c.activeSummary
-                  ? { workspace: c.activeSummary.workspace, title: c.activeSummary.title }
-                  : {})}
+                {...(c.activeSummary ? { workspace: c.activeSummary.workspace } : {})}
                 tab={panel.tab}
                 tabs={panel.tabs}
                 counts={panelCounts}

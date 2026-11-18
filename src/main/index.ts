@@ -84,6 +84,7 @@ import type { ChildConversations } from './conversations/children'
 import { setupChildren } from './conversations/children-setup'
 import { appLaunchFolder } from './conversations/launch-folder'
 import { childrenToolsModule } from './mcp/children-tools'
+import { appCommitDrafts } from './conversations/commit-draft-setup'
 import { appMemory } from './memory/setup'
 import { appRoles } from './roles/setup'
 import { conversationRelease } from './conversation-release'
@@ -627,6 +628,14 @@ async function start(): Promise<void> {
     }
   })
   const refreshAttention = () => attention.refresh()
+  // Message de commit rédigé par l'agent ; vues Git relues après un commit de Bobine (fiche 246).
+  const { commitDrafts, gitChanged } = appCommitDrafts({
+    conversations,
+    settings,
+    memory: memory.service,
+    run: gitRun,
+    send
+  })
   const updateKeepAwake = () =>
     keepAwake.update(
       conversations.state().conversations.some((conv) => conv.status === 'busy'),
@@ -954,9 +963,18 @@ async function start(): Promise<void> {
         commands: { project: projectCommands },
         changes: { git: new GitChangesReader(gitRun), ...fileOpeners() },
         worktree: worktreeCycleDeps(gitRun, conversations, worktrees, settings, send),
-        childrenMerge: childrenMerger(gitRun, conversations, worktrees, () => attention.state()),
+        childrenMerge: childrenMerger(
+          gitRun,
+          conversations,
+          worktrees,
+          () => attention.state(),
+          (id) => void gitChanged.notify(id)
+        ),
         // Aparté (fiche 180) : une session à part du même agent, hors du fil.
         asides: conversations,
+        // Message de commit rédigé par l'agent (fiche 246) ; vues Git relues (D4).
+        commitDrafts,
+        gitChanged: (id) => void gitChanged.notify(id),
         costCap,
         memory: memory.service,
         memoryIpc: memory.ipc,

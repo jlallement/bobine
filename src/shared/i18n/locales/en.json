@@ -1066,6 +1066,10 @@
         "hidden_one": "{{count}} tip hidden",
         "hidden_other": "{{count}} tips hidden",
         "reset": "Show all again"
+      },
+      "commitDraft": {
+        "label": "Commit message written by the agent",
+        "hint": "Separate session, about 10,000 tokens per commit (≈ 0.03 bobcoin with IBM Bob)."
       }
     },
     "fontSize": {
@@ -1698,7 +1702,8 @@
     "memory": "memory memories remember forget agents index Claude",
     "restore": "restore backup revert replace undo",
     "trash": "trash deleted erase permanently recover restore",
-    "roles": "roles team expert specialist reviewer tech lead agents sub-agents modes @"
+    "roles": "roles team expert specialist reviewer tech lead agents sub-agents modes @",
+    "commitDraft": "commit message git agent writing drafting conventional commits memory"
   },
   "diagnostics": {
     "group": {
@@ -3042,7 +3047,8 @@
       "aside": "The aside is not available here.",
       "help": "Help unavailable",
       "onboarding": "First-launch welcome unavailable",
-      "roles": "Roles are not available here."
+      "roles": "Roles are not available here.",
+      "commitDraft": "Commit message drafting isn’t available here."
     },
     "emptyMessage": "Empty message",
     "emptyPrompt": "Empty prompt"
@@ -3638,7 +3644,31 @@
       "select": "Commit {{path}}",
       "done": "Commit {{hash}} made.",
       "undo": "Undo",
-      "undone": "Commit undone: its changes are back to be committed."
+      "undone": "Commit undone: its changes are back to be committed.",
+      "draft": {
+        "drafting": "{{agent}} is writing the message…",
+        "seconds": "{{count}} s",
+        "stop": "Stop",
+        "placeholder": "The agent writes the message from the checked files and the project memory.",
+        "received_one": "Written by {{agent}} in {{seconds}} s, from {{count}} file and the project memory",
+        "received_other": "Written by {{agent}} in {{seconds}} s, from {{count}} files and the project memory",
+        "receivedNoMemory_one": "Written by {{agent}} in {{seconds}} s, from {{count}} file",
+        "receivedNoMemory_other": "Written by {{agent}} in {{seconds}} s, from {{count}} files",
+        "again": "Write again",
+        "retry": "Try again",
+        "changed": "The checked files changed since the message was written.",
+        "theAgent": "The agent",
+        "reason": {
+          "timeout": "{{agent}} didn’t answer within {{seconds}} s: message based on the files.",
+          "stopped": "Stopped: message based on the files.",
+          "refused": "{{agent}} declined to write the message: message based on the files.",
+          "failed": "{{agent}} couldn’t write the message: message based on the files.",
+          "failedDetail": "{{agent}} couldn’t write the message ({{detail}}): message based on the files.",
+          "needsAction": "{{agent}} needs something from you (sign-in, license or trust): open the conversation, then try again. Message based on the files.",
+          "empty": "{{agent}} gave no answer: message based on the files.",
+          "tooLong": "{{agent}}’s answer isn’t a commit message: message based on the files."
+        }
+      }
     },
     "merge": {
       "action": "Merge into {{base}}",

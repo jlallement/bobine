@@ -315,6 +315,7 @@ export function SubtasksMergeFooter({
             {plan.blocked?.reason === 'main-dirty' ? (
               // Fiche 123 : le dossier principal a des modifications, la fusion ne part pas.
               <MainDirtyCard
+                conversationId={motherId}
                 dirty={{ ...plan.blocked, root: plan.blocked.path }}
                 busy={busy || plan.running}
                 onCommit={(message, files, left) =>

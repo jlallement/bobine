@@ -266,8 +266,15 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('main-dirty'))
     fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
     const message = screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement
-    expect(message.value).toBe('docs: mère\n\n- README.md\n- note.txt (new)')
+    expect(message.value).toBe(
+      'docs: update README.md and note.txt\n\n- README.md\n- note.txt (new)'
+    )
     fireEvent.change(message, { target: { value: 'docs: notes de la mère' } })
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false))
@@ -346,12 +353,17 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
         .find((li) => li.dataset.path === '.env')
         ?.querySelector('input') as HTMLInputElement
     )
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
     const message = screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement
-    expect(message.value).toBe('docs: mère\n\n- README.md')
+    expect(message.value).toBe('docs: update README.md\n\n- README.md')
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false, true))
     expect(actions.commitMain).toHaveBeenCalledWith('mere', {
-      message: 'docs: mère\n\n- README.md',
+      message: 'docs: update README.md\n\n- README.md',
       files: ['README.md']
     })
   })

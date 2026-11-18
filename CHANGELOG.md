@@ -2,6 +2,25 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveautés
+
+- Le message de commit proposé par « Committer » (vue Git, « Committer d'abord ») est rédigé par
+  l'agent de la conversation, d'après les fichiers cochés, leur diff et la mémoire du projet (par
+  exemple « Conventional Commits en anglais »), dans une session à part : rien n'arrive dans la
+  conversation, même si l'agent y travaille. « Arrêter » pendant la rédaction ; le message reste
+  modifiable. Sans réponse en 45 s, ou si l'agent ne peut pas répondre, le message proposé est en
+  anglais, déduit des fichiers, sans mot coupé, et une ligne dit pourquoi. Un fichier « secret ? »
+  n'envoie que son nom. Réglages › Général › « Message de commit rédigé par l'agent » pour s'en
+  passer.
+
+### Corrections
+
+- Après « Committer puis fusionner » ou un autre commit fait par Bobine hors du panneau
+  Modifications, la vue Git se met à jour d'elle-même ; elle gardait « Committer (23) » jusqu'à
+  « Actualiser ».
+
 ## 1.0.0-beta.8 — 18 novembre 2026
 
 ### Corrections
