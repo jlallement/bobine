@@ -353,7 +353,8 @@ export function createApi(
         attachments?: PromptAttachment[],
         options?: PromptRequest
       ) => invoke('agent:prompt', id, text, attachments, options),
-      unqueue: (id: string, messageId: string) => invoke('agent:unqueue', id, messageId),
+      unqueue: (id: string, messageId: string, edit?: boolean) =>
+        invoke('agent:unqueue', id, messageId, edit === true),
       sendNow: (id: string, messageId: string) => invoke('agent:sendNow', id, messageId),
       cancel: (id: string) => invoke('agent:cancel', id),
       retryTurn: (id: string) => invoke('agent:retryTurn', id),

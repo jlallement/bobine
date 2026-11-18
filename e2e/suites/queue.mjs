@@ -36,16 +36,27 @@ export async function queueSuite(scheme) {
         'Entrée pendant la réponse : messages mis en file, la réponse continue'
       )
       await ui.shot('21-file-attente')
-      await ui.click(`${items}[1].querySelector('[data-testid=queued-edit]')`)
-      await ui.waitFor(`${ui.$('composer-input')}.value === 'Deuxième' && ${items}.length === 1`)
+      // Le premier message, modifié, garde sa place devant le second (fiche 247, D12).
+      await ui.click(`${items}[0].querySelector('[data-testid=queued-edit]')`)
+      await ui.waitFor(
+        `${ui.$('composer-input')}.value === 'Message en attente' && ${items}.length === 1`
+      )
       check(true, '« Modifier » remet le message dans la zone de saisie')
+      await ui.type(' modifié')
       await ui.press('Enter')
       await ui.waitFor(`${items}.length === 2`)
+      const order = await ui.ev(
+        `[...${items}].map((i) => i.querySelector('.queued-text').innerText).join(' | ')`
+      )
+      check(
+        order === 'Message en attente modifié | Deuxième',
+        `message modifié : il garde sa place dans la file (${order})`
+      )
       await ui.click(`${items}[0].querySelector('[data-testid=queued-send-now]')`)
       await ui.waitFor(`${users}.length === 2`)
       await ui.ready()
       check(
-        (await ui.ev(`${users}[1].innerText`)) === 'Message en attente\n\nDeuxième' &&
+        (await ui.ev(`${users}[1].innerText`)) === 'Message en attente modifié\n\nDeuxième' &&
           (await ui.ev(
             `document.body.innerText.includes(${JSON.stringify(L('transcript.notice.cancelled'))})`
           )) &&

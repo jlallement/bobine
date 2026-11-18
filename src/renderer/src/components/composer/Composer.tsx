@@ -117,7 +117,8 @@ interface Props {
   onWarn: (message: string) => void
   onCancel: () => void
   /** Retire un message de la file d'attente et le rend (pour le modifier). */
-  onUnqueue: (messageId: string) => Promise<QueuedMessage | undefined>
+  /** `edit` : retiré pour être modifié, il reprendra sa place dans la file (fiche 247). */
+  onUnqueue: (messageId: string, edit?: boolean) => Promise<QueuedMessage | undefined>
   /** Interrompt la réponse et envoie la file d'attente, ce message en premier. */
   onSendNow: (messageId: string) => void
   /** Commande de l'app (`/clear`, `/context`…) : traitée par l'app, pas envoyée telle quelle. */
@@ -406,7 +407,7 @@ export function Composer(props: Props) {
 
   /** Message en attente remis dans la zone de saisie, à la suite du texte en cours. */
   const editQueued = async (id: string) => {
-    const message = await props.onUnqueue(id)
+    const message = await props.onUnqueue(id, true)
     if (!message) return
     const next = text.trim() ? `${text}\n${message.text}` : message.text
     changeText(next, next.length)

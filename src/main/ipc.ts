@@ -571,7 +571,8 @@ export function createHandlers(
       await c.prompt(str(id, 'id'), text, sent, parsePromptRequest(options))
       return undefined
     },
-    'agent:unqueue': (id, messageId) => c.unqueue(str(id, 'id'), str(messageId, 'messageId')),
+    'agent:unqueue': (id, messageId, edit) =>
+      c.unqueue(str(id, 'id'), str(messageId, 'messageId'), edit === true),
     'agent:sendNow': async (id, messageId) => {
       await c.sendNow(str(id, 'id'), str(messageId, 'messageId'))
       return undefined

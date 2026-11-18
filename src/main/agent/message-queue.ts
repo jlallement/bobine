@@ -16,6 +16,11 @@ type Queued = QueuedMessage & { id: string }
 export class MessageQueue {
   private items: Queued[] = []
   private nextId = 1
+  /**
+   * Place d'un message retiré pour être modifié (fiche 247, D12) : le prochain message de
+   * l'utilisateur la reprend, au lieu de passer en fin de file. Oubliée quand la file part.
+   */
+  private editSlot: number | undefined
 
   get length(): number {
     return this.items.length
@@ -34,20 +39,33 @@ export class MessageQueue {
     if (this.items.length >= MAX_QUEUED) {
       throw new Error(t('queue.tooMany', { max: MAX_QUEUED }))
     }
-    this.items.push({
+    const message: Queued = {
       id: `file-${this.nextId++}`,
       text,
       attachments,
       ...(from ? { from } : {}),
       ...(askChildren ? { askChildren } : {})
-    })
+    }
+    // Un message d'une autre conversation ne prend pas la place d'un message en cours de
+    // modification : seul l'utilisateur la reprend.
+    if (this.editSlot === undefined || from) {
+      this.items.push(message)
+      return
+    }
+    this.items.splice(Math.min(this.editSlot, this.items.length), 0, message)
+    this.editSlot = undefined
   }
 
-  /** Retire un message (pour le supprimer ou le modifier) et le rend. */
-  remove(id: string): QueuedMessage {
+  /**
+   * Retire un message et le rend. `edit` : retiré pour être modifié, sa place est gardée pour le
+   * prochain message de l'utilisateur (fiche 247, D12) ; sinon supprimé.
+   */
+  remove(id: string, edit = false): QueuedMessage {
     const index = this.items.findIndex((m) => m.id === id)
     const [message] = index === -1 ? [] : this.items.splice(index, 1)
     if (!message) throw new Error(t('conversations.error.queuedMissing'))
+    if (edit) this.editSlot = Math.min(this.editSlot ?? index, index)
+    else if (this.editSlot !== undefined && index < this.editSlot) this.editSlot--
     // Rendu à la zone de saisie tel qu'il a été tapé : `/split` compris (fiche 118).
     return { text: typed(message), attachments: message.attachments }
   }
@@ -57,6 +75,7 @@ export class MessageQueue {
     const index = this.items.findIndex((m) => m.id === id)
     if (index === -1) throw new Error(t('conversations.error.queuedMissing'))
     this.items.unshift(...this.items.splice(index, 1))
+    this.editSlot = undefined
   }
 
   /**
@@ -77,6 +96,7 @@ export class MessageQueue {
       count += next.attachments.length
     }
     this.items.splice(0, batch.length)
+    this.editSlot = undefined
     return {
       text: batch
         .map((m) => m.text.trim())
@@ -93,6 +113,7 @@ export class MessageQueue {
   drain(): QueuedMessage[] {
     const items = this.items.map(({ id: _id, ...message }) => message)
     this.items = []
+    this.editSlot = undefined
     return items
   }
 

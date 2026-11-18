@@ -36,6 +36,38 @@ describe('MessageQueue', () => {
     expect(queue.takeBatch()).toBeUndefined()
   })
 
+  it('un message modifié reprend sa place ; supprimé, non (fiche 247, D12)', () => {
+    const queue = new MessageQueue()
+    const texts = () => queue.views().map((v) => v.text)
+    const id = (text: string) => queue.views().find((v) => v.text === text)?.id ?? ''
+    queue.add('A', [])
+    queue.add('B', [])
+    queue.add('C', [])
+    // Recette du 2026-11-17 : A modifié repassait derrière C.
+    expect(queue.remove(id('A'), true)).toMatchObject({ text: 'A' })
+    queue.add('A modifié', [])
+    expect(texts()).toEqual(['A modifié', 'B', 'C'])
+    // Place prise une seule fois : le message suivant va en fin de file.
+    queue.add('D', [])
+    expect(texts()).toEqual(['A modifié', 'B', 'C', 'D'])
+    // Supprimé : rien de retenu.
+    queue.remove(id('B'))
+    queue.add('E', [])
+    expect(texts()).toEqual(['A modifié', 'C', 'D', 'E'])
+    // Modifié, puis un message avant lui supprimé : la place suit.
+    queue.remove(id('D'), true)
+    queue.remove(id('A modifié'))
+    // Un message d'une autre conversation ne prend pas la place.
+    queue.add('De la mère', [], { kind: 'parent', id: 'm', title: 'Mère' })
+    queue.add('D modifié', [])
+    expect(texts()).toEqual(['C', 'D modifié', 'E', 'De la mère'])
+    // La file part : la place est oubliée.
+    queue.remove(id('C'), true)
+    queue.takeBatch()
+    queue.add('F', [])
+    expect(texts().at(-1)).toBe('F')
+  })
+
   it('provenance (fiche 097) : gardée, et un envoi ne réunit qu’une seule provenance', () => {
     const queue = new MessageQueue()
     const parent = { kind: 'parent', id: 'm', title: 'Carnet' } as const

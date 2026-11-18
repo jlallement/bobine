@@ -191,7 +191,7 @@ describe('historique de la saisie (fiche 227)', () => {
     fireEvent.focus(screen.getByTestId('composer-input'))
     expect(screen.queryByTestId('history-hint')).toBeNull()
     key('ArrowUp')
-    expect(onUnqueue).toHaveBeenCalledWith('q1')
+    expect(onUnqueue).toHaveBeenCalledWith('q1', true)
   })
 
   it('jetons de rôle repris (ligne « Partira à… ») ; rôle supprimé : « @Libellé » en texte', () => {
