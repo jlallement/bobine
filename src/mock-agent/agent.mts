@@ -517,6 +517,11 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       if (scenario.session?.reopenNeedsLogin && !authenticated && !loggedInAt(params.cwd)) {
         throw RequestError.authRequired()
       }
+      // Bob déconnecté : la réouverture demande la connexion, comme session/new (fiche 243).
+      const withKey = !!process.env['MOCK_AGENT_API_KEY']
+      if (scenario.session?.reopenNeedsAuth && !authenticated && !withKey) {
+        throw RequestError.authRequired()
+      }
       const directories = receivedDirectories(params.additionalDirectories)
       const session = restore(params.sessionId, params.cwd)
       session.mcpServers = params.mcpServers

@@ -16,6 +16,10 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   le compiler et le lancer dans le simulateur ou l'émulateur dès la fin de sa réponse, s'il sait
   relire sa liste d'outils (OpenCode) ; sinon, un avis dans le fil le dit, avec « Redémarrer
   l'agent ».
+- Changement : Bobine ne s'ouvre plus sur une nouvelle conversation à chaque lancement ; elle
+  rouvre la conversation affichée quand on l'a quittée (quittée en plein tour, celle qui
+  travaillait, prête à reprendre). Une nouvelle conversation reste à un clic (⌘N) ; elle s'ouvre
+  aussi au lancement si la dernière affichée était vide, ou a été archivée ou supprimée depuis.
 
 ## 1.0.0-beta.7 — 17 novembre 2026
 

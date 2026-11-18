@@ -412,6 +412,22 @@ export class SettingsStore {
     this.save()
   }
 
+  /** Conversation affichée en dernier (fiche 243) : rouverte au lancement suivant. */
+  shownConversation(): string | undefined {
+    return this.settings.shownConversation
+  }
+
+  /**
+   * Retient la conversation affichée (`undefined` : un brouillon, rien à rouvrir). Écrite sans
+   * prévenir les abonnés, comme la fenêtre ; rien n'est écrit si elle n'a pas changé.
+   */
+  rememberShown(id: string | undefined): void {
+    if (this.settings.shownConversation === id) return
+    const { shownConversation: _previous, ...rest } = this.settings
+    this.settings = id ? { ...rest, shownConversation: id } : rest
+    this.save()
+  }
+
   /* ---------- Clés d'API (fiche 022) ---------- */
 
   /**

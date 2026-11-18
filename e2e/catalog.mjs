@@ -208,6 +208,14 @@ export const SUITES = [
     ]
   },
   {
+    // Relance après avoir quitté en plein tour : la conversation qui travaillait (fiche 243).
+    name: 'reprise',
+    file: 'reprise.mjs',
+    run: 'repriseSuite',
+    themes: BOTH,
+    sources: [...REPLAY, 'src/main/conversations/shown-at-launch.ts', 'src/main/quit-guard.ts']
+  },
+  {
     name: 'startup',
     file: 'startup.mjs',
     run: 'startupSuite',

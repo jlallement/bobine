@@ -44,7 +44,7 @@ import {
 } from '@shared/transcript'
 import { AgentHost, type AgentHostOptions, type PromptOptions } from '../agent/agent-host'
 import { isDirectory } from '../agent/process-utils'
-import { folderNeededSnapshot, hasFolder, NO_FOLDER, retiredSnapshot } from './agentless'
+import { folderNeededSnapshot, hasFolder, retiredSnapshot } from './agentless'
 import { folderGoneMessage, usableFolder } from './folder-fallback'
 import { settingsViewOf } from './settings-view'
 import { addAsideSession, agentSessions, checkAgentIn } from './agent-outside'
@@ -108,6 +108,7 @@ import type { AppToolFamily, ConversationAppTools } from '@shared/mcp'
 import { appToolsCatalog, conversationAppTools, switchedOff } from '../mcp/catalog'
 import type { AppToolModule } from '../mcp/tools'
 import type { RoleLibrary } from '../roles/library'
+import { conversationToReopen, launchDraftTarget, shownToRemember } from './shown-at-launch'
 
 export interface ConversationManagerOptions {
   profiles: AgentProfile[]
@@ -281,25 +282,22 @@ export class ConversationManager {
     for (const record of records) {
       this.conversations.set(record.id, { record, lastUsed: 0, readAt: 0, draft: false })
     }
-
-    // Au lancement, comme Claude Desktop : une nouvelle conversation, l'historique à côté.
-    const { profiles, overrides } = options
-    const settings = this.settings.current
-    const defaults = settings.newConversation
-    const profileId = this.profileOrDefault(
-      overrides?.profileId ?? defaults?.profileId ?? settings.profileId
-    ).id
-    // Rien de choisi (premier lancement) : pas de dossier, l'agent attend le choix (fiche 093).
-    const fallback = options.defaultWorkspace ?? NO_FOLDER
-    const wanted = overrides?.workspace ?? defaults?.workspace ?? settings.workspace ?? fallback
-    const { workspace, gone } = usableFolder(wanted, [fallback])
-    if (gone) this.pendingNotices.push(folderGoneMessage(gone, workspace))
     // Fichiers d'historique abîmés : dits par l'état du profil (fiche 196), pas dans le fil.
     if (this.store.damaged.length > 0) {
       log.warn('Fichiers d’historique illisibles mis de côté :', this.store.damaged)
     }
-    if (!profiles.length) throw new Error(t('conversations.error.noProfile'))
-    this.activeId = this.createDraft(profileId, workspace).record.id
+    if (!options.profiles.length) throw new Error(t('conversations.error.noProfile'))
+    // Au lancement : la dernière conversation affichée, sinon une nouvelle (fiche 243).
+    const saved = this.settings.shownConversation()
+    this.activeId = conversationToReopen(saved, records, options.overrides) ?? this.launchDraft()
+  }
+
+  /** Nouvelle conversation du lancement : agent et dossier imposés, réglés ou retenus. */
+  private launchDraft(): string {
+    const { profileId, wanted, fallback } = launchDraftTarget(this.settings.current, this.options)
+    const { workspace, gone } = usableFolder(wanted, [fallback])
+    if (gone) this.pendingNotices.push(folderGoneMessage(gone, workspace))
+    return this.createDraft(this.profileOrDefault(profileId).id, workspace).record.id
   }
 
   /** Suit les évènements, la liste et les suppressions (fiche 089) ; rend le désabonnement. */
@@ -1501,6 +1499,8 @@ export class ConversationManager {
   }
 
   private emitList(): void {
+    // Retenue pour le lancement suivant (fiche 243) : écrite si elle change.
+    this.settings.rememberShown(shownToRemember(this.conversations.get(this.activeId)))
     const state = this.state()
     this.options.emitList?.(state)
     for (const listener of [...this.listeners]) listener.list?.(state)
