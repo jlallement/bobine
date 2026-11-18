@@ -77,6 +77,6 @@ describe('draftFiles (fiche 246)', () => {
 
 describe('redactLines', () => {
   it('remplace la ligne entière où un secret est reconnu', () => {
-    expect(redactLines('a\napi_key = "abcdefgh1234"\nb')).toBe('a\n[redacted]\nb')
+    expect(redactLines('a\napi_key = "abcdefgh1234"\nb')).toBe('a\n[redacted]\nb') // gitleaks:allow — fake value for tests
   })
 })

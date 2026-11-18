@@ -15,3 +15,5 @@ c9c6e56dcc452bdd2e0a1eed2fdf64b242f8b430:src/main/memory/memory-ipc.test.ts:gcp-
 a0e19ab0f8960876215f3514a8eb27b9af052c24:src/main/changes/worktree-cycle-forge.test.ts:generic-api-key:29
 ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:generic-api-key:39
 ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:generic-api-key:49
+# Fiche 246 : valeur factice du test de masquage du diff envoyé à l'agent (marquée en ligne ensuite).
+fd92080b07ff72810a0ec81f3d05cf0acb5bf875:src/main/changes/commit-diff.test.ts:generic-api-key:80
