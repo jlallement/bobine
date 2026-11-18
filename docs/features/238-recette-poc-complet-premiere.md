@@ -88,7 +88,7 @@ le décrit une fois pour toutes ; cette fiche suit sa première exécution.
   [`docs/recettes/2026-11-17-poc-complet-opencode.md`](../recettes/2026-11-17-poc-complet-opencode.md),
   31 captures dans `docs/recettes/2026-11-17-poc-complet-opencode/`. Résultat : 9 étapes jouées,
   2 réussies, 6 avec réserve ; 5 interventions ; 0 bloquant, 2 sérieux (fiches
-  [240](240-filles-de-role-sans-modifications-non-commitees.md) et
+  [240](240-filles-en-worktree-sans-modifications-non-commitees.md) et
   [241](241-outils-ios-apres-creation-du-projet.md)), 10 gênants, 5 cosmétiques ou mineurs ;
   agent 17,78 M jetons cache compris (plafond 20 M), pilote 0,64 M ; 0 `ERROR`, 6 `WARN`.
 - 2026-11-17 — Écarts au scénario relevés en jouant, corrigés dans celui-ci : avec `--profil`,
@@ -103,3 +103,8 @@ le décrit une fois pour toutes ; cette fiche suit sa première exécution.
   avant le choix d'agent, et la lecture de son quota supprime une session dans le vrai `~/.bob`,
   bornée par le code au dossier réservé de Bobine), § « Ce qui reste » (chemin d'installation réel
   non exercé ; fiches à ouvrir pour D3 et pour le pilote).
+- 2026-11-18 — D1 élargi : seconde occurrence à l'étape 4 (filles API et web parties sans le
+  travail non commité, `server/` et `api/` en double après fusion), d'abord comptée côté agent ;
+  fiche 240 renommée et élargie à toutes les filles en worktree, avec la décision de
+  l'utilisateur (worktree depuis le commit maintenu ; avertissement et « Committer d'abord » avant
+  le lancement ; avis en lecture seule sans worktree).

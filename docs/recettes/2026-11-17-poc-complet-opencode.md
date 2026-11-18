@@ -14,8 +14,9 @@ moins une heure) sauf mention.
   (reconnexion d'OpenAI par l'utilisateur, accueil réactivé par une variable).
 - **Défauts de Bobine** : 0 bloquant, **2 sérieux**, 10 gênants, 5 cosmétiques ou mineurs. Les trois
   plus graves :
-  1. D1 — Filles de rôle parties dans un worktree **sans le travail non commité** de la mère :
-     comptes rendus vides ; l'avis n'est que dans le fil de la fille (fiche [240](../features/240-filles-de-role-sans-modifications-non-commitees.md)).
+  1. D1 — Filles parties en worktree **sans le travail non commité** de la mère : comptes rendus
+     vides des rôles (étape 3), travail refait en double par les filles API et web (étape 4) ;
+     l'avis n'est que dans le fil de la fille (fiche [240](../features/240-filles-en-worktree-sans-modifications-non-commitees.md)).
   2. D2 — **Outils iOS absents** d'une conversation ouverte avant la création du projet Xcode ; le
      remède (« Redémarrer l'agent ») n'est que dans le menu ⚙ (fiche [241](../features/241-outils-ios-apres-creation-du-projet.md)).
   3. D3 — Message de commit proposé par Bobine **ignorant le souvenir** « Conventional Commits en
@@ -88,7 +89,7 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
 | Mémoire commune | 1, 7 | ~ | Souvenir proposé en carte seulement après relance (agent) ; retenu et visible dans Réglages › Mémoire ; ignoré par le message de commit proposé (D3). |
 | Aperçu HTML dans le navigateur intégré | 2 | ✓ | Trois liens, trois onglets du Navigateur, pas Safari. |
 | Rôles, section Équipe, `@rôle`, création d'un rôle | 3, 6, 7 | ~ | Menu `@`, création d'« Expert SwiftUI » (lecture seule), `@expert-swiftui` tapé à la main reconnu ; D1. |
-| Conversations filles, `/split`, Tâches proposées, Sous-tâches, vue Filles, fusion | 3, 4.1, 5 | ~ | Carte « 3 tâches proposées », vue Filles, fusion refusée puis « Committer puis fusionner » ; D1, D9. |
+| Conversations filles, `/split`, Tâches proposées, Sous-tâches, vue Filles, fusion | 3, 4.1, 5 | ~ | Carte « 3 tâches proposées », vue Filles, fusion refusée puis « Committer puis fusionner » ; D1 (rôles et tâches proposées), D9. |
 | Modèle d'une fille, changement de modèle | 4.1, 4.2 | ✓ | Fille web sur gpt-5.6-terra (constaté dans `usage.sqlite`) ; `/model` refusé clairement pendant un tour, accepté ensuite. |
 | Cartes d'autorisation | 4.3, 5, 6 | ~ | 10 cartes (8 « Terminal » dont 2 refusées exprès, 1 « Lancer l’app », 1 « Compiler pour iOS »), toutes prises au premier clic ; D5 (libellé de « Toujours »). |
 | Panneau terminal, `@terminal` | 4.3, 7 | ✓ | Onglets de l'agent, terminal à soi, « Ajouter au message », `@terminal` lu juste. |
@@ -185,6 +186,11 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
   scénario). La mère a écrit un projet Xcode et l'a compilé avec `xcodebuild` (Debug et Release) en
   186 s. Elle a vérifié les deux branches (`npm test`, `node --check`) et les a recommandées
   (`recommend_merge`), sans fusionner.
+- **D1, seconde occurrence** : les filles (a) et (b) sont parties du commit initial `9970242`,
+  sans les 17 fichiers non commités (dont `server/`, `public/`, `test/` de l'étape 1 ; `"dirty":17`
+  dans leurs fils). Elles ont réécrit l'API dans `api/` (`1773f29`) et la page dans `web/`
+  (`0cd1279`) ; la carte « Tâches proposées » n'en disait rien. Pas de capture : la trace est
+  l'historique git du projet.
 - Changement de modèle de la mère : pendant un tour, la puce est désactivée et `/model` répond
   « Model : openai/GPT-6.1 Terra » puis « Réglage impossible maintenant (statut : busy) » (refus
   clair ; la première ligne peut faire croire au changement). Après le tour : `/model
@@ -298,8 +304,10 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
 
 - App produite vérifiée à la main : `node --test` dans `api/` → 14 tests, 14 réussis ; API démarrée
   hors de Bobine le temps d'un essai : `/` et `/about.html` en 200, 7 tâches servies ; app iOS
-  vérifiée à l'étape 6 (capture `simctl`). Travail de l'agent : deux serveurs coexistent (`server/`
-  de l'étape 1, `api/` de la fille) et le `start` racine pointe sur l'ancien.
+  vérifiée à l'étape 6 (capture `simctl`). Deux serveurs coexistent (`server/` de l'étape 1,
+  `api/` de la fille) et le `start` racine pointe sur l'ancien : **D1** (filles de l'étape 4
+  parties sans le travail non commité de la mère), et non une erreur de l'agent comme noté
+  d'abord.
 - Résumé du pilote (`journal --resume`) : « Session : 1 h 45 min · 16 attente(s), 6 min 13 s à
   attendre · Notes : 17 — Bloquant 0, Gênant 10, Mineur 4, Idée 3 · Interventions : 4 · Tours
   mesurés : 4 — médiane 38 s, max 2 min 24 s ». Le pilote n'a mesuré que 4 tours (voir
@@ -312,7 +320,7 @@ l'étape. Jetons pilote : non relevés par étape (voir § Consommation).
 
 | N° | Gravité | Étape | Côté | Ce qui se passe | Reproduction | Journal / capture | Fiche |
 |---|---|---|---|---|---|---|---|
-| D1 | sérieux | 3 | Bobine | Un `@rôle` non lecture seule part dans un worktree créé depuis le commit, sans les 17 fichiers non commités de la mère ; comptes rendus vides ; l'avis « 17 modifications non commitées… ne sont pas ici » n'est que dans le fil de la fille, rien avant l'envoi ni dans la mère. | 2 / 2 (deux filles du même envoi) | `main.log` 20:00:51 « opencode acp dans …/.worktrees/20261117-2100-d022 » ; `3-defaut-fille-sans-modifications.jpg`, `3-defaut-comptes-rendus-vides.jpg` | [240](../features/240-filles-de-role-sans-modifications-non-commitees.md), agent factice |
+| D1 | sérieux | 3, 4 | Bobine | Toute fille en worktree part du commit, sans les 17 fichiers non commités de la mère. Étape 3 (`@rôle` non lecture seule) : comptes rendus vides. Étape 4 (Tâches proposées) : les filles API et web réécrivent dans `api/` et `web/` ce que la mère avait écrit dans `server/` et `public/` ; après fusion les deux coexistent et `npm start` lance l'ancien serveur. Dans les deux cas l'avis « 17 modifications non commitées… ne sont pas ici » n'est que dans le fil de la fille, rien avant l'envoi ni dans la mère. | 4 / 4 (deux filles à l'étape 3, deux à l'étape 4) | `main.log` 20:00:51 « opencode acp dans …/.worktrees/20261117-2100-d022 », 20:09:51 « …/20261117-2109-9700 » ; `git log` du projet (premiers commits des filles `1773f29`, `0cd1279` sur le commit initial `9970242`) ; `3-defaut-fille-sans-modifications.jpg`, `3-defaut-comptes-rendus-vides.jpg` | [240](../features/240-filles-en-worktree-sans-modifications-non-commitees.md), agent factice |
 | D2 | sérieux | 6 | Bobine | Conversation ouverte sans projet Xcode : jamais d'outils `ios_*` ni d'onglet iOS, même après création du projet ; le remède n'est que dans le menu ⚙ (« Redémarrer l'agent ») ; rien dans le fil. | vu une fois ; cause lue dans le code (`simulator-tools.ts:57`) | `agents.log` 20:34:20 « session/load… tools/list : 47 outil(s) » ; `6-menu-outils-35-47.jpg` | [241](../features/241-outils-ios-apres-creation-du-projet.md), agent factice |
 | D3 | gênant | 5, 7 | Bobine | Message de commit proposé « feat: nous allons construire un petit gestionnaire de tâches en » : dérivé du titre, en français, coupé, sans le souvenir « Conventional Commits en anglais ». | 2 / 2 | `5-defaut-message-commit.jpg`, `7-defaut-message-commit-bis.jpg` | — (à décider) |
 | D4 | gênant | 5 | Bobine | Après « Committer puis fusionner », la vue Git garde « Committer (23) / 23 fichiers depuis le dernier commit » (git status vide) jusqu'à « Actualiser ». | vu une fois | `5-defaut-vue-git-perimee.jpg` | — |
