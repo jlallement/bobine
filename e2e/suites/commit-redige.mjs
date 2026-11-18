@@ -166,10 +166,10 @@ async function withMergeCard(scheme) {
         )
         await ui.click(ui.$('changes-commit-cancel'))
 
-        // D4 : « Committer puis fusionner » depuis la carte, la vue Git restant ouverte.
-        await ui.reveal(ui.$('subtasks-merge-start'))
-        await ui.click(ui.$('subtasks-merge-start'))
+        // D4 : « Committer puis fusionner » depuis la carte, la vue Git restant ouverte. Le dossier
+        // principal est modifié : la carte refuse la fusion d'avance (fiche 123).
         await ui.waitFor(`!!${ui.$('main-dirty')}`, 20000)
+        await ui.reveal(ui.$('main-dirty-commit'))
         await ui.click(ui.$('main-dirty-commit'))
         await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         await ui.click(ui.$('main-dirty-commit-confirm'))
@@ -179,13 +179,16 @@ async function withMergeCard(scheme) {
         )
         // Sans « Actualiser » : la vue Git se relit d'elle-même (évènement `changes:gitChanged`).
         await ui.waitFor(`!${ui.$('changes-commit')}`, 10000)
+        // La puce de branche sous la saisie aussi : plus de point « non commité ».
+        await ui.waitFor(`${ui.$('git-branch')}?.dataset.dirty !== 'true'`, 10000)
         check(
           git(workspace, 'status', '--porcelain') === '' &&
             git(workspace, 'log', '-2', '--format=%s').includes(
               'feat: update app.js and filters.js'
             ) &&
-            (await ui.ev(`!${ui.$('changes-commit')}`)),
-          'D4 : après « Committer puis fusionner », la vue Git est à jour sans « Actualiser »'
+            (await ui.ev(`!${ui.$('changes-commit')}`)) &&
+            (await ui.ev(`${ui.$('git-branch')}?.dataset.dirty !== 'true'`)),
+          'D4 : après « Committer puis fusionner », la vue Git et la puce de branche sont à jour sans « Actualiser »'
         )
         await ui.shot('246-vue-git-a-jour')
       },

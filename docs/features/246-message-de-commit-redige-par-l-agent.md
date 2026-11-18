@@ -203,8 +203,13 @@ Aucune nouvelle dépendance.
   `changes/git-changed.test.ts`, `children-merge.test.ts` (évènement en fin de fusion),
   `panel/CommitDraft.test.tsx`, `panel/ChangesTab.test.tsx` (D4) ; tests d'interface existants
   adaptés (la proposition arrive du main, repli sans le titre).
+- Puce de branche sous la saisie (`useGitStatus`) : relue aussi sur `changes:gitChanged` (le point
+  « non commité » restait après la fusion, vu sur les captures e2e) ; `useGitStatus.test.ts`.
+- `CommitForm` : la rédaction compte comme « en cours » dès le premier rendu (sinon « Committer »
+  était actif un instant avec le repli : vu par les e2e qui cliquaient aussitôt).
 - e2e : `commit-redige` (nouveau) ; `git`, `worktree-cycle`, `commit-choisi`,
-  `filles-non-commite`, `filles-fusion`, `gitlab`, `pr-ci` attendent la rédaction.
+  `filles-non-commite`, `filles-fusion`, `gitlab`, `pr-ci` (via `e2e/pr-repo.mjs`) attendent la
+  rédaction.
 
 ## Écarts au plan
 
@@ -221,3 +226,18 @@ Aucune nouvelle dépendance.
   mesure réelle d'OpenCode, maquettes. Arrêt pour validation.
 - 2026-11-18 : validé (Q1 à Q4, trois exigences). Temps 2 : code, tests, i18n, CHANGELOG, ADR
   accepté.
+- 2026-11-18 : `./scripts/verify` vert (code de sortie 0, 4864 tests). Un passage intermédiaire a
+  échoué sur `src/main/log.test.ts` (délai de 15 s dépassé, charge machine à 32 pendant la campagne
+  e2e d'une autre session ; le test passe seul en 0,4 s, puis dans le passage suivant).
+- 2026-11-18 : `pnpm build && pnpm e2e --changed` (toute la suite, 218 tâches, les locales sont
+  touchées) : 204 vertes, 14 échecs, tous dans les suites de commit. Causes : (1) « Committer »
+  actif un instant avant le départ de la rédaction (défaut réel, corrigé dans `CommitForm`) ;
+  (2) attente oubliée dans `e2e/pr-repo.mjs` (aide commune de `pr-ci`) et attente obsolète dans
+  `git.mjs` ; (3) erreur de `commit-redige` (la carte refuse d'avance la fusion). Après correction,
+  les sept suites rejouées (`git`, `worktree-cycle`, `pr-ci`, `pr-ci-sans-ci`, `gitlab`,
+  `commit-choisi`, `commit-redige`) : vertes en clair et en sombre. Captures `246-*` regardées
+  (rédaction en cours, message reçu, repli, vue Git à jour) ; elles ont montré le point « non
+  commité » resté sur la puce de branche, corrigé, `commit-redige` et `git` rejouées : vertes.
+  Contre-épreuve : `GitChangedNotifier.notify` neutralisé, `commit-redige` échoue sur l'attente D4
+  (clair et sombre) ; code restauré.
+

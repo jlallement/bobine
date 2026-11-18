@@ -139,7 +139,7 @@ export async function gitSuite(scheme) {
         await ui.waitFor(`!!${ui.$('changes-commit-undo')}`)
         await ui.waitFor(`document.querySelectorAll('[data-testid=changes-file]').length === 1`)
         check(
-          git('log', '--format=%s', '-1') === 'docs: modifs du README' &&
+          git('log', '--format=%s', '-1') === 'feat: update README.md' &&
             git('show', '--name-only', '--format=', 'HEAD') === 'README.md' &&
             git('status', '--porcelain', '-uall') === '?? src/app.js',
           'commit dans le dossier de la conversation : le fichier coché seulement'

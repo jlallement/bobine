@@ -57,11 +57,13 @@ export function CommitForm({
   const edited = retouched?.round === round ? retouched.text : null
   const setEdited = (text: string) => setRetouched({ round, text })
   // À l'ouverture, et dès qu'un fichier est coché si aucun ne l'était : la rédaction part.
-  const startable = !state && files.length > 0
+  const startable = !state && files.length > 0 && !!conversationId
   useEffect(() => {
     if (startable) start()
   }, [startable, start])
-  const drafting = state?.status === 'drafting'
+  // La rédaction part à l'effet qui suit le premier rendu : d'ici là, déjà « en cours » (sinon
+  // « Committer » serait actif un instant, avec le repli, avant d'attendre l'agent).
+  const drafting = state?.status === 'drafting' || startable
   const result = state?.status === 'done' ? state.result : undefined
   // Repli : déduit des fichiers cochés en ce moment (il suit les cases, comme avant).
   const proposed = drafting
