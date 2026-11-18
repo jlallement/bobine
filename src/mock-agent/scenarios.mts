@@ -2235,11 +2235,11 @@ export const scenarios: Record<string, Scenario> = {
   },
   'cree-projet-xcode': {
     description:
-      'Écrit `ios/Essai.xcodeproj` dans le dossier pendant le tour, comme un agent qui crée une app iOS (fiche 241)',
+      'Écrit `ios/Essai.xcodeproj` dans le dossier pendant le tour, avec sa carte d’écriture (`kind: edit`, outil `write` d’OpenCode), comme un agent qui crée une app iOS (fiche 241)',
     steps: [
       { kind: 'text', text: 'Je crée le projet iOS. ' },
       {
-        kind: 'write-file',
+        kind: 'opencode-write',
         path: 'ios/Essai.xcodeproj/project.pbxproj',
         content: '// !$*UTF8*$!\n{ archiveVersion = 1; objects = {}; }\n'
       },

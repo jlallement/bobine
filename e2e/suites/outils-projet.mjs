@@ -72,8 +72,9 @@ async function withoutFollowing(ui) {
   )
   await ui.shot('outils-projet-avis')
 
-  // L'agent répond sans l'outil : l'avis est redonné sous la nouvelle réponse, seul.
-  await exchange(ui, 'Compile et lance l’app avec ios_build de Bobine.')
+  // Tour suivant, en texte seul (comme l'agent qui répond qu'il n'a pas l'outil) : l'avis est
+  // redonné sous la nouvelle réponse, seul.
+  await exchange(ui, '/scenario echo')
   await ui.waitFor(
     `${notices}.length === 1 && (() => { const r = [...document.querySelectorAll('.msg-agent')].at(-1); return !!(r.compareDocumentPosition(${notices}[0]) & Node.DOCUMENT_POSITION_FOLLOWING) })()`
   )

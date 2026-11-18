@@ -1,6 +1,6 @@
 # 241 — Outils iOS absents d'une conversation ouverte avant le projet Xcode
 
-- **Statut** : en cours (e2e `outils-projet` et `--changed` à jouer)
+- **Statut** : fait
 - **Dépend de** : 008 (simulateur iOS), 109 (familles d'outils, menu ⚙), 099 (outils de l'app)
 - **Agents** : les deux (choix des outils proposés par Bobine, indépendant de l'agent)
 - **Trouvé par** : recette « POC complet » du 2026-11-17, étape 6
@@ -98,8 +98,17 @@ ne trouverait pas). Vu une fois ; la cause, lue dans le code, rend le défaut sy
 - **Essais** : serveur (flux, notification, relecture, `ignored`, `no-stream`, révocation),
   `AppToolsEndpoint` (rien, relue, sans flux puis relue plus tard, ignorée, session suivante, sans
   HTTP), réducteur, bouton dans le fil — tous échouent sans le correctif (rejoués sur `main`) ;
-  e2e `outils-projet` (macOS : `needs: ['simulator']`, famille iOS proposée là seulement) —
-  **pas encore joué** (machine partagée, en attente du feu vert).
+  e2e `outils-projet` (macOS : `needs: ['simulator']`, famille iOS proposée là seulement).
+- **E2e (2026-11-18)** : `outils-projet` vert, clair et sombre, après deux échecs expliqués et
+  corrigés : (1) `cree-projet-xcode` écrivait sans carte d'outil, alors que la fin de tour ne
+  cherche un projet qu'après un appel qui peut écrire — le scénario passe par l'outil `write`
+  d'OpenCode (`kind: edit`), comme un vrai agent ; (2) le message libre jouait `demo`, trop long
+  pour l'attente — remplacé par `/scenario echo` (tour en texte seul, qui vérifie aussi que l'avis
+  est redonné sans relire le dossier). Puis `pnpm e2e --changed` : toute la suite (210 tâches,
+  clair et sombre), verte du premier coup en 18 min. Captures regardées : avis, avis redonné sous
+  la réponse suivante (un seul), ligne « Agent redémarré » et `ios_build` déclaré, ligne « outils
+  ajoutés » sans redémarrage. Écart à la maquette : l'avis est au-dessus de « Terminé » (la ligne de
+  fin de tour clôt toujours le tour), pas en dessous.
 
 - **Relecture du tech lead (2026-11-18)** : la fin de tour ne lit plus le dossier de façon synchrone.
   Recherche asynchrone qui s'arrête au premier projet (`workspace-scan.ts`, `appleProjectAppears`,
