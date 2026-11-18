@@ -278,4 +278,9 @@ Dossier `e2e/maquettes`, sur la vraie fenêtre (app buildée, agent factice), en
     la forme des messages (noms des champs, liste plate des modèles) vient des traces réelles
     `__traces__/opencode-2.3.0/` (`reponse-simple.ndjson`). Le payload exact de l'essai de 19:51Z
     n'existe pas (journal encore Normal).
-  - Maquettes : les deux défauts relevés corrigés dans `run-245.mjs`.
+  - Maquettes : les deux défauts relevés corrigés. La table « Par modèle » était un défaut de la
+    maquette seule (`run-245.mjs`). Le bouton « Toute mon activité… », lui, n'avait **aucun style
+    dans l'app** depuis la 1.0.0-beta.1 (`.usage-all` défini nulle part) : stylé dans `styles.css`
+    (lien d'action sous un filet), vu dans la maquette refaite et la capture `14-consommation`.
+  - Plafond : « cache compris » dit une seule fois, sur la limite (`formatCap(…, short)` pour la
+    dépense et le pas de relève) ; la première version le répétait trois fois sur la carte.

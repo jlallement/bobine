@@ -17,6 +17,7 @@ What changes for you, version by version. Shown in Settings › About.
 - The welcome trial sends its message with the conversation's model (the one on its chip), not
   the model the agent picks for a new session. If the agent doesn't offer it, the result says
   which model answered.
+- “All my activity…”, at the bottom of the usage details, finally looks like a link.
 - A stopped tool group shows all its states: “✕ 1 failed · ⊘ 1 interrupted” instead of the
   failure alone.
 

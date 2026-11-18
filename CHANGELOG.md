@@ -18,6 +18,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - L'essai de l'accueil envoie son message avec le modèle de la conversation (celui de sa puce),
   et non avec le modèle que l'agent choisit pour une session neuve. Si l'agent ne le propose pas,
   le résultat dit avec quel modèle il a répondu.
+- « Toute mon activité… », au pied du détail de la consommation, ressemble enfin à un lien.
 - Un groupe d'outils arrêté montre tous ses états : « ✕ 1 échec · ⊘ 1 interrompu » au lieu du
   seul échec.
 
