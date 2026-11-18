@@ -72,6 +72,13 @@ export function useTurnGuards({
       },
       ...(conversationId
         ? {
+            restartAgent: () => {
+              window.api.agent
+                .restart(conversationId)
+                .catch((error: unknown) =>
+                  warn(error instanceof Error ? error.message : String(error))
+                )
+            },
             memory: {
               enabled: memoryEnabled,
               decide: (proposalId, accept, force) =>

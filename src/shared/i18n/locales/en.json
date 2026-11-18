@@ -145,7 +145,19 @@
       "exitedDetail": "The agent stopped. {{detail}}",
       "failed": "The agent couldn’t start.",
       "failedDetail": "The agent couldn’t start. {{detail}}",
-      "diagnosticsLink": "Diagnostics"
+      "diagnosticsLink": "Diagnostics",
+      "appTools": {
+        "iosPending": "Xcode project found in this folder. The agent only gets Bobine’s iOS tools (build, simulator) once it restarts.",
+        "iosLive": "Xcode project found: Bobine’s iOS tools added to the conversation.",
+        "iosSession": "Agent restarted: Bobine’s iOS tools added to the conversation.",
+        "androidPending": "Android project found in this folder. The agent only gets Bobine’s Android tools (build, emulator) once it restarts.",
+        "androidLive": "Android project found: Bobine’s Android tools added to the conversation.",
+        "androidSession": "Agent restarted: Bobine’s Android tools added to the conversation.",
+        "otherPending": "New Bobine tools apply to this folder. The agent only gets them once it restarts.",
+        "otherLive": "New Bobine tools added to the conversation.",
+        "otherSession": "Agent restarted: new Bobine tools added to the conversation.",
+        "restartAgent": "Restart the agent"
+      }
     },
     "copyMessage": "Copy message",
     "duration": {

@@ -64,6 +64,8 @@ export function androidToolsModule(options: AndroidToolsOptions): AppToolModule 
     },
     // Chaque outil coûte du contexte : proposés seulement pour un projet Android.
     enabled: (context) => hasAndroidProject(context.workspace),
+    // Projet créé pendant la conversation : outils ajoutés en cours de session (fiche 241).
+    followsWorkspace: true,
     tools: (context) => createTools(context, options, approved)
   }
 }

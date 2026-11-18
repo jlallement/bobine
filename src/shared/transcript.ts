@@ -10,7 +10,7 @@ import { withTodos, type TodoItem } from './todos'
 import type { ToolArg } from './tool-args'
 import { pendingWith, type ToolPermission } from './permissions'
 import { t, type ParseKeys } from 'i18next'
-import { isMessage, translate, type Message } from './i18n/message'
+import { isMessage } from './i18n/message'
 import type {
   PlanEntry,
   SessionUpdate,
@@ -24,7 +24,6 @@ import type {
   AgentEvent,
   ElicitationAction,
   ElicitationPrompt,
-  NoticeLevel,
   ToolImage,
   ToolOutcome
 } from './agent'
@@ -53,6 +52,8 @@ import {
 } from './turn-limit'
 import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
+import { reduceAppTools, type TranscriptNotice } from './transcript-notice'
+export { noticeText } from './transcript-notice'
 import type { Handover } from './handover'
 import type { WorktreeStart } from './worktree-cycle'
 import { reduceWorktreeSetup, type WorktreeSetup } from './worktree-setup'
@@ -142,19 +143,7 @@ export type TranscriptItem =
       permission?: ToolPermission
     }
   | { kind: 'plan'; id: number; entries: PlanEntry[] }
-  | {
-      kind: 'notice'
-      id: number
-      level: NoticeLevel
-      /** Ce que dit l'app, en code (ADR-0014) : traduit à l'affichage, voir `noticeText`. */
-      message?: Message
-      /** Texte tel quel : avis d'avant la fiche 074, ou texte venu de l'agent. */
-      text?: string
-      /** Titre de l'encadré (sortie de `/context`, `/cost`, fiche 126). */
-      title?: string
-      /** Lien à la suite du texte (fiche 198). */
-      link?: Extract<AgentEvent, { type: 'notice' }>['link']
-    }
+  | TranscriptNotice
   | {
       kind: 'elicitation'
       id: number
@@ -312,10 +301,6 @@ function toolStatus(
 const withEndedTurn = (state: TranscriptState): TranscriptState =>
   state.usage?.pending ? { ...state, usage: endTurn(state.usage) } : state
 
-/** Texte d'un avis du fil, dans la langue courante. */
-export const noticeText = (notice: { message?: Message; text?: string }): string =>
-  notice.message ? translate(notice.message) : (notice.text ?? '')
-
 function findCompaction(items: TranscriptItem[], compactionId: string): number {
   return items.findLastIndex(
     (item) => item.kind === 'compaction' && item.compactionId === compactionId
@@ -406,6 +391,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
         ...(event.title ? { title: event.title } : {}),
         ...(event.link ? { link: event.link } : {})
       })
+    case 'app-tools':
+      return reduceAppTools(state, event)
     case 'usage-report':
       return { ...state, usage: withCost(state.usage ?? {}, event.cost) }
     case 'aside-cost':

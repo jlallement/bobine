@@ -36,8 +36,7 @@ import type { ContextSource } from '@shared/context-mentions'
 import type { TranscriptItem } from '@shared/transcript'
 import type { Handover } from '@shared/handover'
 import { rememberableTool } from '@shared/permissions'
-import type { ToolEndpoint } from '../mcp/tool-server'
-import { APP_TOOLS_SERVER_NAME, type AppTool, type AppToolModule } from '../mcp/tools'
+import { APP_TOOLS_SERVER_NAME, type AppToolModule } from '../mcp/tools'
 import type { EnvChanges } from '../agent-config/api-keys'
 import type { NetworkWatch } from '../network-watch'
 import { log, type LogScope } from '../log'
@@ -46,6 +45,7 @@ import { watchSilence } from './silence-watch'
 import type { ChildSession, SubagentStream } from './adapters'
 import { launchAgent, type AgentProcess } from './agent-process'
 import { AppToolsBridge } from './app-tools-bridge'
+import { AppToolsEndpoint, type AppToolsEndpointOptions } from './app-tools-endpoint'
 import { announcementOf, type AgentAnnouncement } from './capabilities'
 import { AgentIncompatible, refuseIncompatible } from './version-check'
 import { applyInitialSettings, openWithStartMode } from './initial-controls'
@@ -109,9 +109,7 @@ export interface AgentHostOptions {
     keepTranscript?: boolean
   }
   /** Serveur MCP de l'app qui fournit ses outils à l'agent (fiches 028, 029). */
-  toolServer?: {
-    register: (tools: readonly AppTool[], scope?: LogScope) => ToolEndpoint | undefined
-  }
+  toolServer?: AppToolsEndpointOptions['server']
   /** Conversation servie par cet agent (outils de l'app : un navigateur par conversation…). */
   conversationId?: string
   /**
@@ -237,6 +235,7 @@ export class AgentHost {
   private readonly requests: PendingRequests
   /** Outils de l'app fournis à l'agent (fiches 028, 029). */
   private readonly appTools: AppToolsBridge
+  private readonly appEndpoint: AppToolsEndpoint
   /** Sous-agents suivis en direct : durée, coût (fiche 053). */
   private readonly subagents: SubagentTracker
   /** Mises à jour remises en forme générique d'après le profil (fiches 096, 122, 140). */
@@ -247,7 +246,6 @@ export class AgentHost {
   private commands: AgentCommand[] = []
   /** Coût de la session lu hors protocole (fiche 157). */
   private readonly cost: SessionCost
-  private toolEndpoint: ToolEndpoint | undefined
   /** Messages pour l'agent à envoyer dès qu'il est prêt (réponse tardive à une question…). */
   private readonly lateAnswers: string[] = []
   /** Messages écrits pendant une réponse (fiche 020) : envoyés ensemble à la fin du tour. */
@@ -322,6 +320,12 @@ export class AgentHost {
       ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {}),
       readOnly: options.readOnly
     })
+    this.appEndpoint = new AppToolsEndpoint({
+      bridge: this.appTools,
+      server: options.toolServer,
+      scope: () => this.logScope(),
+      emit: options.emit
+    })
   }
 
   snapshot(): AgentSnapshot {
@@ -370,7 +374,7 @@ export class AgentHost {
 
   /** Outils de l'app que la session ouverte a reçus (fiche 099) ; `undefined` sans session. */
   get appToolNames(): string[] | undefined {
-    return this.sessionId ? this.appTools.names(this.toolEndpoint !== undefined) : undefined
+    return this.sessionId ? this.appEndpoint.names() : undefined
   }
 
   /** Identifiant de la session ACP en cours (à mémoriser pour la rouvrir plus tard). */
@@ -705,6 +709,7 @@ export class AgentHost {
     // Tour fini, arrêté ou en échec : ses sous-agents aussi, et ses cartes en cours.
     this.subagents.settle()
     this.appTools.turnEnded()
+    void this.appEndpoint.turnEnded() // Projet apparu pendant le tour (fiche 241).
     if (this.connection === connection && this.is('busy') && !connection.signal.aborted) {
       this.setStatus('ready')
     }
@@ -789,8 +794,7 @@ export class AgentHost {
     this.silentSince = undefined
     this.turnAuth.clear()
     this.cancelPermissions()
-    this.toolEndpoint?.dispose()
-    this.toolEndpoint = undefined
+    this.appEndpoint.close()
     this.appTools.clear()
     this.subagents.reset()
     this.updates.clear()
@@ -1045,12 +1049,7 @@ export class AgentHost {
     refuseIncompatible(this.options.profile, init, scopeText(this.logScope()))
     this.options.onAnnounced?.(announcementOf(init, new Date().toISOString()))
     const caps = init.agentCapabilities
-    this.toolEndpoint?.dispose()
-    const appTools = this.appTools.sessionTools()
-    this.toolEndpoint =
-      caps?.mcpCapabilities?.http === true
-        ? this.options.toolServer?.register(appTools, this.logScope())
-        : undefined
+    this.appEndpoint.open(caps?.mcpCapabilities?.http === true)
     this.promptCaps = promptCapabilitiesOf(init)
     this.support = sessionSupportOf(init)
     this.authMethods = authMethodsOf(init)
@@ -1217,6 +1216,7 @@ export class AgentHost {
     this.cost.report()
     this.modes = session.modes ?? undefined
     this.configOptions = session.configOptions ?? undefined
+    this.appEndpoint.sessionOpened()
     await applyInitialSettings({
       controls: () => this.snapshot().controls,
       apply: (id, value) => this.applyControl(connection, session.sessionId, id, value),
@@ -1402,10 +1402,8 @@ export class AgentHost {
 
   /** Serveurs MCP fournis à l'agent : les outils de l'app, si l'agent accepte le HTTP. */
   private mcpServers(): McpServer[] {
-    const endpoint = this.toolEndpoint
-    return endpoint
-      ? [{ type: 'http', name: APP_TOOLS_SERVER_NAME, url: endpoint.url, headers: [] }]
-      : []
+    const url = this.appEndpoint.url
+    return url ? [{ type: 'http', name: APP_TOOLS_SERVER_NAME, url, headers: [] }] : []
   }
 
   private flushLateAnswer(): void {

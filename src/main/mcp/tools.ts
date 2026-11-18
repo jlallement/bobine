@@ -115,6 +115,11 @@ export interface AppToolModule {
   setting?: { section: 'memory'; enabled: () => boolean }
   /** Outils proposés seulement s'ils servent dans ce dossier (chaque outil coûte du contexte). */
   enabled?: (context: ToolContext) => boolean
+  /**
+   * `enabled` dépend de ce que contient le dossier (un projet Xcode, Android) : la famille peut
+   * devenir utile en cours de session, et lui est alors ajoutée (fiche 241).
+   */
+  followsWorkspace?: true
   tools: (context: ToolContext) => AppTool[]
   /**
    * Tous les outils que le module peut donner, quels que soient le dossier et la conversation

@@ -102,3 +102,14 @@
   margin-left: auto;
   flex-shrink: 0;
 }
+
+/* « Redémarrer l'agent » d'un avis d'outils apparus (fiche 241) : icône et texte sur une ligne. */
+.notice-restart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.notice-restart svg {
+  margin-top: 0;
+}

@@ -2,6 +2,15 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Projet iOS ou Android créé pendant une conversation : l'agent reçoit les outils de Bobine pour
+  le compiler et le lancer dans le simulateur ou l'émulateur dès la fin de sa réponse, s'il sait
+  relire sa liste d'outils (OpenCode) ; sinon, un avis dans le fil le dit, avec « Redémarrer
+  l'agent ».
+
 ## 1.0.0-beta.7 — 17 novembre 2026
 
 ### Corrections

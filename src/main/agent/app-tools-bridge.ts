@@ -61,6 +61,11 @@ export interface AppToolsBridgeOptions {
 export class AppToolsBridge {
   private readonly options: AppToolsBridgeOptions
   private tools: AppTool[] = []
+  /**
+   * Noms des outils que l'agent a (fiche 241) : ceux de la session à son ouverture, puis ceux de
+   * sa dernière relecture (`tools/list`). Peut différer de `tools`, la liste servie.
+   */
+  private given: string[] = []
   /** Appels annoncés par l'agent, en attente de l'appel MCP (par nom d'outil). */
   private readonly calls = new Map<string, string[]>()
   /**
@@ -100,13 +105,68 @@ export class AppToolsBridge {
     const tools = moduleTools(modules, this.toolContext())
     this.calls.clear()
     this.running.clear()
-    this.tools = tools.map((tool) => ({ ...tool, call: (args) => this.call(tool, args) }))
+    this.tools = tools.map((tool) => this.wrap(tool))
+    this.given = this.tools.map((tool) => tool.definition.name)
     return this.tools
   }
 
-  /** Noms des outils de la session, s'ils ont été donnés à l'agent (sinon il n'en a aucun). */
+  private wrap(tool: AppTool): AppTool {
+    return { ...tool, call: (args) => this.call(tool, args) }
+  }
+
+  /** Noms des outils que l'agent a, s'ils lui ont été donnés (sinon il n'en a aucun). */
   names(registered: boolean): string[] {
-    return registered ? this.tools.map((tool) => tool.definition.name) : []
+    return registered ? [...this.given] : []
+  }
+
+  /** L'agent a relu la liste (`tools/list`) : il a désormais ces outils. */
+  listed(names: readonly string[]): void {
+    this.given = [...names]
+  }
+
+  /**
+   * Familles qui suivent le dossier (`followsWorkspace`), utiles maintenant, dont l'agent n'a pas
+   * tous les outils (fiche 241) : un projet est apparu depuis l'ouverture de la session.
+   */
+  missingFamilies(): string[] {
+    const context = this.toolContext()
+    return this.workspaceModules()
+      .filter((module) => module.enabled?.(context) ?? true)
+      .filter((module) =>
+        module.tools(context).some((tool) => !this.given.includes(tool.definition.name))
+      )
+      .map((module) => module.id)
+  }
+
+  /**
+   * Ajoute à la liste servie les outils de ces familles qu'elle n'a pas encore ; rend la liste si
+   * elle a changé (à annoncer à l'agent), sinon `undefined`.
+   */
+  serveFamilies(ids: readonly string[]): AppTool[] | undefined {
+    const context = this.toolContext()
+    const served = new Set(this.tools.map((tool) => tool.definition.name))
+    const added = this.workspaceModules()
+      .filter((module) => ids.includes(module.id))
+      .flatMap((module) => module.tools(context))
+      .filter((tool) => !served.has(tool.definition.name))
+    if (added.length === 0) return undefined
+    this.tools = [...this.tools, ...added.map((tool) => this.wrap(tool))]
+    return this.tools
+  }
+
+  /** Familles qui suivent le dossier et que l'agent a toutes (session ouverte, liste relue). */
+  givenFamilies(): string[] {
+    const context = this.toolContext()
+    return this.workspaceModules()
+      .filter((module) => {
+        const names = module.tools(context).map((tool) => tool.definition.name)
+        return names.length > 0 && names.every((name) => this.given.includes(name))
+      })
+      .map((module) => module.id)
+  }
+
+  private workspaceModules(): AppToolModule[] {
+    return (this.options.toolModules ?? []).filter((module) => module.followsWorkspace)
   }
 
   /** Session terminée : plus d'appel en attente. */

@@ -173,6 +173,18 @@ export type FrResources = {
       readonly failed: 'L’agent n’a pas pu démarrer.'
       readonly failedDetail: 'L’agent n’a pas pu démarrer. {{detail}}'
       readonly diagnosticsLink: 'Diagnostic'
+      readonly appTools: {
+        readonly iosPending: 'Projet Xcode trouvé dans ce dossier. L’agent n’aura les outils iOS de Bobine (compiler, simulateur) qu’après son redémarrage.'
+        readonly iosLive: 'Projet Xcode trouvé : outils iOS de Bobine ajoutés à la conversation.'
+        readonly iosSession: 'Agent redémarré : outils iOS de Bobine ajoutés à la conversation.'
+        readonly androidPending: 'Projet Android trouvé dans ce dossier. L’agent n’aura les outils Android de Bobine (compiler, émulateur) qu’après son redémarrage.'
+        readonly androidLive: 'Projet Android trouvé : outils Android de Bobine ajoutés à la conversation.'
+        readonly androidSession: 'Agent redémarré : outils Android de Bobine ajoutés à la conversation.'
+        readonly otherPending: 'De nouveaux outils de Bobine servent dans ce dossier. L’agent ne les aura qu’après son redémarrage.'
+        readonly otherLive: 'Nouveaux outils de Bobine ajoutés à la conversation.'
+        readonly otherSession: 'Agent redémarré : nouveaux outils de Bobine ajoutés à la conversation.'
+        readonly restartAgent: 'Redémarrer l’agent'
+      }
     }
     readonly copyMessage: 'Copier le message'
     readonly duration: {

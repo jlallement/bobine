@@ -55,6 +55,8 @@ export function simulatorToolsModule(options: SimulatorToolsOptions): AppToolMod
     },
     // Chaque outil coûte du contexte : proposés seulement pour un projet Apple.
     enabled: (context) => hasAppleProject(context.workspace),
+    // Projet créé pendant la conversation : outils ajoutés en cours de session (fiche 241).
+    followsWorkspace: true,
     tools: (context) => createTools(context, options, approved)
   }
 }

@@ -2233,6 +2233,19 @@ export const scenarios: Record<string, Scenario> = {
       }
     ]
   },
+  'cree-projet-xcode': {
+    description:
+      'Écrit `ios/Essai.xcodeproj` dans le dossier pendant le tour, comme un agent qui crée une app iOS (fiche 241)',
+    steps: [
+      { kind: 'text', text: 'Je crée le projet iOS. ' },
+      {
+        kind: 'write-file',
+        path: 'ios/Essai.xcodeproj/project.pbxproj',
+        content: '// !$*UTF8*$!\n{ archiveVersion = 1; objects = {}; }\n'
+      },
+      { kind: 'text', text: 'Le projet `ios/Essai.xcodeproj` est prêt.' }
+    ]
+  },
   'outils-execute-erreur': {
     description:
       'Comme OpenCode 2.0.32 (relevé de la recette, fiche 122) : carte `execute` dite « completed » dont l’appel de preview_start est en erreur dans rawOutput.metadata.toolCalls[]',

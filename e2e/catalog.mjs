@@ -36,6 +36,7 @@ export const GLOBAL_SOURCES = [
   `${C}thread/Transcript.tsx`,
   `${C}thread/Markdown.tsx`,
   'src/shared/transcript.ts',
+  'src/shared/transcript-notice.ts',
   'src/shared/ipc.ts',
   'src/shared/agent.ts',
   'src/shared/preferences.ts',
@@ -92,7 +93,12 @@ const PR_SOURCES = [
   'src/main/conversations/folder-fallback.ts',
   'src/shared/pr-tracking.ts'
 ]
-const APP_TOOLS = ['src/main/mcp/', 'src/main/agent/app-tools-bridge.ts', 'src/shared/app-tools.ts']
+const APP_TOOLS = [
+  'src/main/mcp/',
+  'src/main/agent/app-tools-bridge.ts',
+  'src/main/agent/app-tools-endpoint.ts',
+  'src/shared/app-tools.ts'
+]
 /** Panneau latéral et ses onglets. */
 const PANEL = [
   `${C}panel/SidePanel.tsx`,
@@ -639,6 +645,24 @@ export const SUITES = [
       'src/main/simulator/',
       'src/shared/simulator.ts',
       'e2e/fixtures/simulateur.jpg'
+    ]
+  },
+  {
+    // Outils iOS apparus avec un projet créé pendant la conversation (fiche 241).
+    name: 'outils-projet',
+    file: 'outils-projet.mjs',
+    run: 'outilsProjetSuite',
+    themes: BOTH,
+    needs: ['simulator'],
+    sources: [
+      ...APP_TOOLS,
+      `${C}thread/NoticeRestart.tsx`,
+      `${R}useTurnGuards.ts`,
+      `${R}turn-controls.ts`,
+      'src/shared/transcript-notice.ts',
+      'src/main/simulator/simulator-tools.ts',
+      'src/main/simulator/xcode.ts',
+      'src/mock-agent/suit-outils.mts'
     ]
   },
   {
