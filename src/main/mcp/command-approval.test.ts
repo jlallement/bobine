@@ -43,7 +43,18 @@ function memory(): CommandMemory & { list: string[] } {
 }
 
 describe('approveCommand (fiche 072)', () => {
-  it('trois choix ; « Toujours dans ce projet » retenu pour ce dossier seulement', async () => {
+  it('le choix « toujours » dit qu’il ne vaut que pour cette commande (fiche 247, D5)', async () => {
+    const t = setup(null, memory())
+    await approveCommand(t.context, t.approval('pnpm dev'))
+    const option = vi
+      .mocked(t.context.ask)
+      .mock.calls[0]?.[0].options.find((o) => o.label === alwaysInProject())
+    // Recette du 2026-11-17 : « Toujours dans ce projet » laissait croire à tout le dossier.
+    expect(option?.label).toBe('Toujours cette commande ici')
+    expect(option?.description).toContain('cette commande exacte')
+  })
+
+  it('trois choix ; « Toujours cette commande ici » retenu pour ce dossier seulement', async () => {
     const always = memory()
     const t = setup([alwaysInProject()], always)
     expect(await approveCommand(t.context, t.approval('pnpm dev'))).toBeUndefined()

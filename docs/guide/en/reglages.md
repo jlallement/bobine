@@ -30,7 +30,7 @@ Settings › Privacy › **Allowed without asking** lists everything you’ve al
 
 - **Tools**: the agent’s tools you answered “always” for;
 - **Sites**: the ones the built-in browser opens without asking;
-- **Commands · folder**: commands and builds set to “Always in this project”;
+- **Commands · folder**: commands and builds set to “Always this command here”;
 - **Worktree setup · folder**: the `.bobine/worktree.json` commands you’ve allowed (see
   [Worktrees](worktrees.md#accord)).
 

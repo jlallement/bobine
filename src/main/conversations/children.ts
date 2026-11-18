@@ -28,6 +28,7 @@ import {
   childState,
   childWork,
   clip,
+  cutReplyChars,
   lastReply,
   RECOMMENDATION_NOTE_CHARS,
   replyRecap,
@@ -95,8 +96,9 @@ export interface ChildStatus extends ChildWork {
   title: string
   state: ChildState
   branch?: string
-  /** Début de sa dernière réponse (fiche 160). */
+  /** Début de sa dernière réponse (fiche 160) ; `replyChars` : coupée, sa taille (fiche 247). */
   excerpt: string
+  replyChars?: number
 }
 
 /**
@@ -164,6 +166,8 @@ export class ChildConversations {
   private readonly preparing = new Map<string, ChildLaunch>()
   private launchRevision = 0
   private readonly launchesChanged: (state: ChildLaunchState) => void
+  /** Dernier message entier de chaque fille à sa mère (`message_parent` le coupe, fiche 247). */
+  private readonly parentMessages = new Map<string, string>()
   /** Comptes rendus retenus pendant une réponse de la mère, par mère. */
   private readonly held = new Map<string, ChildReport[]>()
   /** Conversations à qui ce module a envoyé un message (consigne, message, réveil) pas encore parti. */
@@ -420,15 +424,24 @@ export class ChildConversations {
     const attention = this.attention()
     return this.children(motherId).map((child) => {
       const { items } = this.conversations.view(child.id).transcript
+      const replyChars = cutReplyChars(lastReply(items))
       return {
         id: child.id,
         title: child.title,
         state: childState(child, attention[child.id]),
         ...(child.branch ? { branch: child.branch } : {}),
         ...childWork(child, items),
-        excerpt: replyRecap(lastReply(items))
+        excerpt: replyRecap(lastReply(items)),
+        ...(replyChars === undefined ? {} : { replyChars })
       }
     })
+  }
+
+  /** `child_status` `full` (fiche 247) : dernière réponse et dernier message à la mère, entiers. */
+  fullText(childId: string): { reply: string; message?: string } {
+    const message = this.parentMessages.get(childId)
+    const reply = lastReply(this.conversations.view(childId).transcript.items).trim()
+    return { reply, ...(message === undefined ? {} : { message }) }
   }
 
   /**
@@ -499,8 +512,10 @@ export class ChildConversations {
   messageParent(
     child: ConversationSummary,
     mother: ConversationSummary,
-    text: string
+    text: string,
+    whole = text
   ): 'queued' | 'sent' {
+    this.parentMessages.set(child.id, whole)
     return this.deliver(mother, text, { kind: 'child', id: child.id, title: child.title })
   }
 
@@ -564,6 +579,7 @@ export class ChildConversations {
         `${held} compte(s) rendu(s) écarté(s) : conversation mère ${id.slice(0, 8)} supprimée`
       )
     this.held.delete(id)
+    this.parentMessages.delete(id)
     this.sending.delete(id)
     this.waking.forget(id)
     this.reviews.forget(id)

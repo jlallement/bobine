@@ -7,7 +7,10 @@ import type { Scenario, Step } from './scenario.mts'
 
 /** Fichiers modifiés par `fille-bavarde` : bien plus que ceux qu'un compte rendu cite. */
 export const CHATTY_FILES = 30
-/** Fin de la longue réponse de `fille-bavarde` : ne doit jamais atteindre la mère. */
+/**
+ * Fin de la longue réponse de `fille-bavarde` : n'atteint jamais la mère par le compte rendu, seulement
+ * quand elle la demande par `child_status` `full` (fiche 247).
+ */
 export const CHATTY_END = 'MARQUEUR-FIN-DE-REPONSE'
 
 const WAKE = 'have finished their turn'
@@ -184,7 +187,7 @@ export const childScenarios: Record<string, Scenario> = {
   },
   'filles-bavarde': {
     description:
-      'Mère d’une fille bavarde (fiche 160) : la lance (`start_child`) ; au réveil, dit si le compte rendu reçu est borné (fichiers comptés, pas la fin de la réponse)',
+      'Mère d’une fille bavarde (fiche 160) : la lance (`start_child`) ; au réveil, dit si le compte rendu reçu est borné (fichiers comptés, pas la fin de la réponse), puis lit la réponse entière par `child_status` `full` comme le compte rendu l’y invite (fiche 247)',
     steps: [
       {
         kind: 'when-prompt',
@@ -201,7 +204,28 @@ export const childScenarios: Record<string, Scenario> = {
                 then: [
                   {
                     kind: 'text',
-                    text: 'Compte rendu borné : 8 fichiers cités, les autres comptés, le début du récapitulatif seulement.'
+                    text: 'Compte rendu borné : 8 fichiers cités, les autres comptés, le début du récapitulatif seulement. '
+                  },
+                  // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite ; la mère la lit.
+                  {
+                    kind: 'when-prompt',
+                    includes: 'call child_status with {"child": ',
+                    then: [
+                      {
+                        kind: 'mcp-tool',
+                        tool: 'child_status',
+                        args: { child: 'Relevé bavard', full: true },
+                        onResult: (text) => [
+                          {
+                            kind: 'text',
+                            text: text.includes(CHATTY_END)
+                              ? `Suite lue par child_status : réponse entière, jusqu’à ${CHATTY_END}.`
+                              : 'Suite introuvable par child_status.'
+                          }
+                        ]
+                      }
+                    ],
+                    else: [{ kind: 'text', text: 'Rien ne dit comment lire la suite.' }]
                   }
                 ],
                 else: [{ kind: 'text', text: 'Compte rendu inattendu.' }]

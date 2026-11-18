@@ -52,6 +52,9 @@ const textOf = (result: ToolResult) =>
  * Faux module des filles : une mère `m`, ses filles `f1` (« Import CSV ») et `f2`, et ce que les
  * outils lui demandent. `answer` : décision sur la carte de propositions (`'late'` : tardive).
  */
+/** Longue dernière réponse d'une fille (fiche 247) : coupée dans les comptes rendus. */
+const LONG_REPLY = `Récapitulatif.\n${'Détail utile.\n'.repeat(200)}FIN`
+
 function setup(
   options: {
     role?: 'mother' | 'child' | 'reviewer' | undefined
@@ -67,9 +70,12 @@ function setup(
     dirty?: FolderDirty
     /** Lancement refusé par le module des filles. */
     startError?: Error
+    /** Dernière réponse de `f1` coupée dans `child_status` (fiche 247). */
+    cutReply?: boolean
   } = {}
 ) {
   const calls: unknown[][] = []
+  const wholeMessages: string[] = []
   const told: string[] = []
   const asked: ChildProposal[] = []
   let onLate: ((decision: ChildDecision) => void) | undefined
@@ -101,17 +107,23 @@ function setup(
         fileCount: 1,
         added: 40,
         removed: 2,
-        excerpt: 'Les tests passent.'
+        excerpt: 'Les tests passent.',
+        ...(options.cutReply ? { replyChars: LONG_REPLY.length } : {})
       }
     ],
     messageChild: (motherId, child, text) => {
       calls.push(['messageChild', motherId, child.id, text])
       return child.status === 'busy' ? 'queued' : 'sent'
     },
-    messageParent: (child, mother, text) => {
+    messageParent: (child, mother, text, whole) => {
       calls.push(['messageParent', child.id, mother.id, text])
+      if (whole !== undefined && whole !== text) wholeMessages.push(whole)
       return 'sent'
     },
+    fullText: (childId) => ({
+      reply: childId === 'f1' ? LONG_REPLY : '',
+      ...(childId === 'f1' ? { message: 'Message entier à la mère.' } : {})
+    }),
     choices: () => options.choices ?? CHOICES,
     recommend: (motherId, child, ready, note) => {
       calls.push(['recommend', motherId, child.id, ready, note])
@@ -143,7 +155,15 @@ function setup(
     if (!found) throw new Error(`outil absent : ${name}`)
     return found
   }
-  return { tools, tool, calls, told, asked, late: (decision: ChildDecision) => onLate?.(decision) }
+  return {
+    tools,
+    tool,
+    calls,
+    told,
+    asked,
+    wholeMessages,
+    late: (decision: ChildDecision) => onLate?.(decision)
+  }
 }
 
 describe('outils des conversations filles (fiche 097, étape 2)', () => {
@@ -410,15 +430,44 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     expect(s.calls).toEqual([['messageChild', 'm', 'f1', 'Regarde src/a.ts et /tmp']])
   })
 
-  it('message_parent borné : un long message (un diff collé) est coupé et le dit', async () => {
+  it('message_parent borné : un long message est coupé, et dit comment le lire en entier (247)', async () => {
     const s = setup({ role: 'child' })
     const long = `${'+ ligne ajoutée\n'.repeat(1000)}`
     await s.tool('message_parent').call({ message: long })
     const sent = String(s.calls[0]?.[3])
-    expect(sent.length).toBeLessThan(PARENT_MESSAGE_CHARS + 60)
-    expect(sent).toMatch(new RegExp(`… \\(cut: ${long.trim().length} characters in all\\)$`))
+    // La borne reste : le contexte de la mère est protégé.
+    expect(sent.length).toBeLessThan(PARENT_MESSAGE_CHARS + 160)
+    // Recette du 2026-11-17 : « (cut: 2531 characters in all) » seul, la mère a dû redemander.
+    expect(sent).not.toContain('(cut:')
+    expect(sent.split('\n').at(-1)).toBe(
+      `[Cut. To read the whole message (${long.trim().length} characters in all), call child_status with {"child": "f2", "full": true}.]`
+    )
+    // Le message entier est confié au module des filles, pour `child_status`.
+    expect(s.wholeMessages).toEqual([long.trim()])
     await s.tool('message_parent').call({ message: 'Court.' })
     expect(s.calls[1]?.[3]).toBe('Court.')
+  })
+
+  it('child_status `full` (fiche 247) : la réponse et le message entiers d’une fille', async () => {
+    const s = setup({ cutReply: true })
+    const list = textOf(await s.tool('child_status').call({}))
+    expect(list).toContain(
+      `[Cut. To read the whole reply (${LONG_REPLY.length} characters in all), call child_status with {"child": "f1", "full": true}.]`
+    )
+    const full = textOf(await s.tool('child_status').call({ child: 'Import CSV', full: true }))
+    expect(full).toContain(
+      `Its whole last reply (${LONG_REPLY.length} characters):\n<<<\n${LONG_REPLY}\n>>>`
+    )
+    expect(full).toContain(
+      'Its last message to you (25 characters):\n<<<\nMessage entier à la mère.\n>>>'
+    )
+    // Déjà entier : plus d'invitation à le lire.
+    expect(full).not.toContain('[Cut.')
+    const without = await s.tool('child_status').call({ full: true })
+    expect(without.isError).toBe(true)
+    expect(textOf(without)).toContain('`full` needs `child`')
+    const unknown = await s.tool('child_status').call({ child: 'x', full: true })
+    expect(unknown.isError).toBe(true)
   })
 
   it('start_child en positif (fiche 223) : quand déléguer d’abord, les exclusions ensuite', () => {

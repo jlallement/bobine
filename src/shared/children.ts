@@ -96,6 +96,11 @@ export interface ChildReport {
   removed: number
   /** Début de sa dernière réponse (son récapitulatif), ou l'erreur du tour (fiche 160). */
   excerpt: string
+  /**
+   * Taille de la dernière réponse entière, quand `excerpt` n'en garde que le début (fiche 247) :
+   * la mère est alors invitée à la lire par `child_status`.
+   */
+  replyChars?: number
   at: number
   /**
    * Consommation de la fille à ce moment-là (fiche 117) : coût, jetons, échanges. Absente des
@@ -166,12 +171,29 @@ export function recapLead(excerpt: string): string {
 
 /** Début d'une réponse, pour un compte rendu : lignes vides retirées, `RECAP_CHARS` au plus. */
 export function replyRecap(text: string): string {
-  const lines = text
+  return clip(recapSource(text), RECAP_CHARS)
+}
+
+/** Taille de la réponse entière quand `replyRecap` n'en garde que le début (fiche 247). */
+export function cutReplyChars(text: string): number | undefined {
+  return recapSource(text).length > RECAP_CHARS ? text.trim().length : undefined
+}
+
+const recapSource = (text: string) =>
+  text
     .trim()
     .split('\n')
     .map((line) => line.trimEnd())
     .filter((line) => line.trim())
-  return clip(lines.join('\n'), RECAP_CHARS)
+    .join('\n')
+
+/**
+ * Ligne qui suit un texte coupé pour la mère (fiche 247, D11) : la borne protège son contexte,
+ * cette ligne lui dit comment lire le texte entier au besoin, sans relancer un tour de la fille.
+ */
+export function readWholeLine(childId: string, what: 'reply' | 'message', chars?: number): string {
+  const size = chars === undefined ? '' : ` (${chars} characters in all)`
+  return `[Cut. To read the whole ${what}${size}, call child_status with {"child": "${childId}", "full": true}.]`
 }
 
 /** Travail d'une fille : fichiers modifiés depuis son début (comme le compteur de l'en-tête). */
@@ -206,13 +228,16 @@ export function childReport(
 ): ChildReport {
   const outcome: ChildOutcome =
     'error' in end ? 'error' : end.stopReason === 'cancelled' ? 'stopped' : 'done'
+  const reply = 'error' in end ? undefined : lastReply(items)
+  const replyChars = reply === undefined ? undefined : cutReplyChars(reply)
   return {
     childId: child.id,
     title: child.title,
     outcome,
     ...(child.branch ? { branch: child.branch } : {}),
     ...childWork(child, items),
-    excerpt: 'error' in end ? replyRecap(end.error) : replyRecap(lastReply(items)),
+    excerpt: 'error' in end ? replyRecap(end.error) : replyRecap(reply ?? ''),
+    ...(replyChars === undefined ? {} : { replyChars }),
     at
   }
 }
@@ -315,7 +340,10 @@ export function reportLine(item: ChildReport): string {
     : ''
   const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
   const line = `- The child conversation "${clip(item.title, TITLE_CHARS)}" (id: ${item.childId})${branch} ${OUTCOME_TEXT[item.outcome]}.${left} ${files}${excerpt}`
-  return clip(line, REPORT_CHARS)
+  // Réponse coupée (fiche 247, D11) : la ligne pour lire la suite, dans la borne.
+  if (item.replyChars === undefined && line.length <= REPORT_CHARS) return line
+  const more = `\n  ${readWholeLine(item.childId, 'reply', item.replyChars)}`
+  return `${clip(line, REPORT_CHARS - more.length)}${more}`
 }
 
 /** État d'une fille, pour la liste et la carte « Sous-tâches ». */

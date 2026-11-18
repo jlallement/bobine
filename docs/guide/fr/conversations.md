@@ -42,8 +42,8 @@ qui demande, et vous voyez toujours la commande exacte :
 - pour un site : **Autoriser** (pour cette conversation), **Toujours autoriser** (retenu sur cet
   ordinateur) ou **Refuser** ;
 -->
-- pour une commande ou une compilation : **Lancer** ou **Compiler**, **Toujours dans ce projet**
-  (sans redemander dans ce dossier) ou **Refuser**.
+- pour une commande ou une compilation : **Lancer** ou **Compiler**, **Toujours cette commande ici**
+  (sans redemander pour cette commande exacte dans ce dossier) ou **Refuser**.
 
 Un outil refusé est marqué « refusé » dans le fil.
 

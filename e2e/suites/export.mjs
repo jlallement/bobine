@@ -22,9 +22,12 @@ export async function exportSuite() {
           await main.evaluate(`(() => {
             const { dialog, shell } = require('electron')
             const path = require('path')
+            // Comme la fenêtre de macOS de la recette (fiche 247, D14) : elle ajoute l'extension
+            // du filtre à un nom qui la porte déjà (« ….md.md »).
             dialog.showSaveDialog = async (a, b) => {
               const options = b ?? a
-              return { canceled: false, filePath: path.join(${JSON.stringify(out)}, path.basename(options.defaultPath)) }
+              const doubled = path.basename(options.defaultPath) + '.' + options.filters[0].extensions[0]
+              return { canceled: false, filePath: path.join(${JSON.stringify(out)}, doubled) }
             }
             dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [${JSON.stringify(out)}] })
             shell.showItemInFolder = () => {}
@@ -53,6 +56,10 @@ export async function exportSuite() {
             !!md && text.startsWith('# ') && text.includes('/scenario streaming-texte'),
             `export Markdown : ${md ?? 'aucun fichier'}`
           )
+          check(
+            !!md && !md.endsWith('.md.md'),
+            `export Markdown : une seule extension malgré la fenêtre (${md ?? 'aucun fichier'})`
+          )
           await openMenu('history-export-json')
           await ui.click(ui.$('history-export-json'))
           await ui.waitFor(
@@ -63,6 +70,10 @@ export async function exportSuite() {
           check(
             parsed?.format === 'bobine-conversation' && parsed.transcript.items.length >= 2,
             `export JSON : ${json ?? 'aucun fichier'}`
+          )
+          check(
+            !!json && !json.endsWith('.json.json'),
+            `export JSON : une seule extension malgré la fenêtre (${json})`
           )
 
           // Sauvegarde depuis les réglages.

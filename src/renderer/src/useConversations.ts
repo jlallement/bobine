@@ -308,9 +308,9 @@ export function useConversations() {
     /** Message d'avertissement affiché dans le fil (ex. pièce jointe refusée). */
     warn: (message: string) => fail(new Error(message)),
     /** Retire un message de la file d'attente et le rend (pour le modifier). */
-    unqueue: async (messageId: string): Promise<QueuedMessage | undefined> => {
+    unqueue: async (messageId: string, edit?: boolean): Promise<QueuedMessage | undefined> => {
       if (!activeId) return undefined
-      return window.api.agent.unqueue(activeId, messageId).catch((error: unknown) => {
+      return window.api.agent.unqueue(activeId, messageId, edit).catch((error: unknown) => {
         fail(error)
         return undefined
       })
@@ -433,8 +433,8 @@ export function useConversations() {
         cancel: () => run(window.api.agent.cancel(id)),
         restart: () => run(window.api.agent.restart(id)),
         sendNow: (messageId: string) => run(window.api.agent.sendNow(id, messageId)),
-        unqueue: (messageId: string): Promise<QueuedMessage | undefined> =>
-          window.api.agent.unqueue(id, messageId).catch((error: unknown) => {
+        unqueue: (messageId: string, edit?: boolean): Promise<QueuedMessage | undefined> =>
+          window.api.agent.unqueue(id, messageId, edit).catch((error: unknown) => {
             fail(error)
             return undefined
           }),

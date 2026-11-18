@@ -3208,8 +3208,8 @@
     "reject_always": "Always reject"
   },
   "approvals": {
-    "alwaysInProject": "Always in this project",
-    "alwaysInProjectDescription": "Without asking again in this folder; can be revoked in Settings › Privacy.",
+    "alwaysInProject": "Always this command here",
+    "alwaysInProjectDescription": "Without asking again for this exact command in this folder; can be revoked in Settings › Privacy.",
     "refuse": "Deny",
     "site": {
       "allow": "Allow",

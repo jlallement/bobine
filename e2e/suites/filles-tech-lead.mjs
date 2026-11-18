@@ -153,6 +153,18 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.waitFor(`!!${pending}`, 30000)
         await ui.click(pending)
         await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
+        // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite ; la mère la lit.
+        // Phrase entière (le texte arrive en flux) : l'une des trois issues du scénario.
+        await ui.waitFor(
+          `/MARQUEUR-FIN-DE-REPONSE\\.|Suite introuvable par child_status\\.|Rien ne dit comment lire la suite\\./.test(document.body.innerText)`,
+          30000
+        )
+        check(
+          await ui.ev(
+            `document.body.innerText.includes('Suite lue par child_status : réponse entière, jusqu’à MARQUEUR-FIN-DE-REPONSE.')`
+          ),
+          'fille bavarde : la mère lit la réponse entière par child_status, comme le compte rendu l’y invite'
+        )
         // Tour fini (son pied « Terminé » arrive après le texte et fait défiler le fil) et bouton
         // à l'écran avant le clic : sinon le clic tombait là où le bouton n'était plus (fiche 145).
         await ui.ready()

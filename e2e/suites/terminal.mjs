@@ -114,9 +114,9 @@ export async function terminalPanelSuite(scheme) {
         )
         check(
           (await ui.ev(`${ui.$('questions')}.innerText`)).includes(L('approvals.alwaysInProject')),
-          'trois choix, comme Claude Code : Lancer, Toujours dans ce projet, Refuser (fiche 072)'
+          'trois choix, comme Claude Code : Lancer, Toujours cette commande ici, Refuser (fiche 072)'
         )
-        // « Toujours dans ce projet » : retenu pour ce dossier, listé dans les Réglages.
+        // « Toujours cette commande ici » : retenu pour ce dossier, listé dans les Réglages.
         await ui.press('2')
         await ui.ready()
         const reply = await ui.lastAgentText()

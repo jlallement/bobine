@@ -836,10 +836,10 @@ export class ConversationManager {
   }
 
   /** Retire un message de la file d'attente (fiche 020) et le rend à la zone de saisie. */
-  unqueue(id: string, messageId: string): QueuedMessage {
+  unqueue(id: string, messageId: string, edit = false): QueuedMessage {
     const host = this.get(id).host
     if (!host) throw new Error(t('conversations.error.queuedMissing'))
-    return host.unqueue(messageId)
+    return host.unqueue(messageId, edit)
   }
 
   /** Envoie la file d'attente tout de suite (interrompt la réponse en cours). */

@@ -504,9 +504,9 @@ export class AgentHost {
     this.emitSnapshot()
   }
 
-  /** Retire un message de la file (pour le supprimer ou le modifier) et le rend. */
-  unqueue(id: string): QueuedMessage {
-    const message = this.queue.remove(id)
+  /** Retire un message de la file et le rend ; `edit` : sa place est gardée (fiche 247, D12). */
+  unqueue(id: string, edit = false): QueuedMessage {
+    const message = this.queue.remove(id, edit)
     this.emitSnapshot()
     return message
   }

@@ -3314,8 +3314,8 @@
     "reject_always": "Toujours refuser"
   },
   "approvals": {
-    "alwaysInProject": "Toujours dans ce projet",
-    "alwaysInProjectDescription": "Sans redemander dans ce dossier ; révocable dans Réglages › Confidentialité.",
+    "alwaysInProject": "Toujours cette commande ici",
+    "alwaysInProjectDescription": "Sans redemander pour cette commande exacte dans ce dossier ; révocable dans Réglages › Confidentialité.",
     "refuse": "Refuser",
     "site": {
       "allow": "Autoriser",

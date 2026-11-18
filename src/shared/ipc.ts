@@ -423,7 +423,11 @@ export interface IpcInvokeContract
     result: undefined
   }
   /** Retire un message de la file d'attente et le rend (pour le modifier ou le supprimer). */
-  'agent:unqueue': { args: [id: string, messageId: string]; result: QueuedMessage }
+  /** `edit` : retiré pour être modifié, sa place dans la file est gardée (fiche 247). */
+  'agent:unqueue': {
+    args: [id: string, messageId: string, edit?: boolean]
+    result: QueuedMessage
+  }
   /** Interrompt la réponse en cours et envoie la file d'attente, ce message en premier. */
   'agent:sendNow': { args: [id: string, messageId: string]; result: undefined }
   'agent:cancel': { args: [id: string]; result: undefined }

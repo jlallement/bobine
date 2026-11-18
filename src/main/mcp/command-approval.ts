@@ -1,8 +1,8 @@
 /**
  * Question posée avant qu'un outil de l'app lance une commande (terminal, serveur de dev,
  * compilation iOS ou Android — fiches 030, 034, 008, 032), comme Claude Code (fiche 072) :
- * « Lancer » pour cette conversation, « Toujours dans ce projet » (retenu pour ce dossier,
- * révocable dans les Réglages), « Refuser ». L'utilisateur voit toujours la commande exacte.
+ * « Lancer » pour cette conversation, « Toujours cette commande ici » (la commande exacte, retenue
+ * pour ce dossier, révocable dans les Réglages ; fiche 247 : le libellé le dit), « Refuser ». L'utilisateur voit toujours la commande exacte.
  */
 import type { CommandMemory } from '../approvals'
 import { refusedResult, textResult, type ToolContext, type ToolResult } from './tools'
@@ -27,7 +27,7 @@ export interface CommandApproval {
   texts: { retry: string; refusedByUser: string; pending: string; refused: string }
 }
 
-/** Choix « Toujours dans ce projet », dans la langue courante. */
+/** Choix « Toujours cette commande ici » (fiche 247), dans la langue courante. */
 export const alwaysInProject = () => t('approvals.alwaysInProject')
 
 /** `undefined` : la commande peut partir ; sinon le résultat à rendre à l'agent. */

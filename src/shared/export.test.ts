@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ConversationSummary } from './agent'
-import { exportConversation, exportFileName } from './export'
+import { exportConversation, exportFileName, withExtension } from './export'
 import type { TranscriptState } from './transcript'
 
 const summary: ConversationSummary = {
@@ -135,5 +135,22 @@ describe('export d’une conversation (fiche 043)', () => {
     expect(json.conversation.id).toBe('c1')
     expect(json.transcript.items).toHaveLength(7)
     expect(json.transcript.terminals?.['term-1']?.output).toContain('OK')
+  })
+})
+
+describe('withExtension (fiche 247, D14)', () => {
+  it('une seule extension, casse ignorée', () => {
+    // Recette du 2026-11-17 : « recette-bobine-export-mere.md » saisi, « ….md.md » écrit.
+    expect(withExtension('/d/recette-bobine-export-mere.md.md', 'md')).toBe(
+      '/d/recette-bobine-export-mere.md'
+    )
+    expect(withExtension('/d/Notes.MD.md', 'md')).toBe('/d/Notes.MD')
+    expect(withExtension('/d/notes.md', 'md')).toBe('/d/notes.md')
+    expect(withExtension('/d/Notes.Md', 'md')).toBe('/d/Notes.Md')
+    expect(withExtension('/d/notes', 'md')).toBe('/d/notes.md')
+    expect(withExtension('/d/fil.json.JSON', 'json')).toBe('/d/fil.json')
+    expect(withExtension('/d/conso.csv', 'csv')).toBe('/d/conso.csv')
+    // Une autre extension n'est pas la sienne : ajoutée.
+    expect(withExtension('/d/notes.txt', 'md')).toBe('/d/notes.txt.md')
   })
 })

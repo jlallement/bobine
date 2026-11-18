@@ -7,6 +7,7 @@ import { app, BrowserWindow, dialog } from 'electron'
 import { t } from 'i18next'
 import { TEMPORARY_SWITCH } from './fresh-start'
 import { log } from './log'
+import { withExtension } from '@shared/export'
 
 export async function chooseFiles(defaultPath: string): Promise<string[]> {
   const options = {
@@ -80,7 +81,9 @@ export async function saveFile(
   const result = parent
     ? await dialog.showSaveDialog(parent, options)
     : await dialog.showSaveDialog(options)
-  return result.canceled || !result.filePath ? null : result.filePath
+  if (result.canceled || !result.filePath) return null
+  // Une seule extension, même si le nom saisi la portait déjà (fiche 247, D14).
+  return withExtension(result.filePath, format === 'json' ? 'json' : 'md')
 }
 
 /** « Enregistrer sous » de l'export de la consommation (fiche 137), dans Documents. */
@@ -95,5 +98,5 @@ export async function saveCsv(defaultName: string): Promise<string | null> {
   const result = parent
     ? await dialog.showSaveDialog(parent, options)
     : await dialog.showSaveDialog(options)
-  return result.canceled || !result.filePath ? null : result.filePath
+  return result.canceled || !result.filePath ? null : withExtension(result.filePath, 'csv')
 }

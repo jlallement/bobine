@@ -292,7 +292,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `memoire-sans-outil` | Mémoire (fiche 182) : dit si `remember` figure dans `tools/list` du serveur MCP de l'app (mémoire coupée : non) |
 | `fille-corrigee` | Fille corrigée (fiche 160) : crée `test/separateur.test.js`, puis répond « Correction faite : … » |
 | `fille-bavarde` | Fille bavarde (fiche 160) : 30 fichiers créés dans `releve/`, puis une très longue réponse terminée par `MARQUEUR-FIN-DE-REPONSE` |
-| `filles-bavarde` | Mère d'une fille bavarde (fiche 160) : la lance ; au réveil, dit « Compte rendu borné » si le contexte reçu cite 8 fichiers et compte les 22 autres sans la fin de la réponse |
+| `filles-bavarde` | Mère d'une fille bavarde (fiche 160) : la lance ; au réveil, dit « Compte rendu borné » si le contexte reçu cite 8 fichiers et compte les 22 autres sans la fin de la réponse, puis, comme le compte rendu coupé l'y invite, lit la réponse entière par `child_status` `full` (« Suite lue par child_status… », fiche 247) |
 | `chantiers` | Deux chantiers indépendants. Propose deux conversations filles (`start_child` : « Fenêtre À propos », « Essais plus courts », `/scenario streaming-texte`) **seulement** s'il a reçu le contexte de session `<bobine_capabilities>` (premier message d'une session, réglage autre que « Jamais ») ou la demande de `/split` (`<child_conversations_request>`) ; sa réponse dit lequel. Sinon, il dit faire les deux chantiers lui-même (fiche 118) |
 | `commande` | Commande dont la sortie arrive en morceaux, en couleurs, code 0 |
 | `commande-echec` | Commande en échec (code 2) |

@@ -2,6 +2,17 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- The “Always in this project” choice for commands is now called “Always this command here”: it
+  only ever remembered the exact command, in this folder, and now says so.
+- A child conversation whose report (or a message to its parent) is cut no longer forces the
+  parent to ask for it again: the cut line tells the agent how to read the whole text.
+- Queue: an edited message keeps its place instead of moving to the end.
+- Export: a name typed with its extension (“notes.md”) no longer gives “notes.md.md”.
+
 ## 1.0.0-beta.8 — November 18, 2026
 
 ### Fixes

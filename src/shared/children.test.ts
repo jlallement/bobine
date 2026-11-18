@@ -88,6 +88,17 @@ describe('conversations filles (fiche 097)', () => {
     // Rien écrit pendant le dernier tour : pas d'extrait d'un tour précédent.
     const silent = [...items, { kind: 'user', id: 4, text: 'Encore' } as const]
     expect(childReport(child, silent, { stopReason: 'end_turn' }).excerpt).toBe('')
+    // Longue réponse (fiche 247) : début gardé, taille entière notée, la ligne invite à la lire.
+    const long = `Récapitulatif.\n${'Détail.\n'.repeat(300)}FIN`
+    const cut = childReport(child, [...items, { kind: 'agent', id: 5, text: long }], {
+      stopReason: 'end_turn'
+    })
+    expect(cut.replyChars).toBe(long.length)
+    expect(cut.excerpt.length).toBeLessThanOrEqual(400)
+    expect(reportLine(cut)).toContain(
+      `[Cut. To read the whole reply (${long.length} characters in all), call child_status with {"child": "f1", "full": true}.]`
+    )
+    expect(childReport(child, items, { error: 'x'.repeat(2000) }).replyChars).toBeUndefined()
   })
 
   it('les nouvelles à transmettre sont celles d’après le dernier message de l’utilisateur', () => {
@@ -227,6 +238,10 @@ describe('mère tech lead (fiche 160)', () => {
     expect(line).toContain('250 file(s) changed so far')
     expect(line).not.toContain('fichier-8.ts')
     expect(line).toContain('Start of its last reply')
+    // Coupé (fiche 247, D11) : la dernière ligne dit comment lire la suite, dans la borne.
+    expect(line.split('\n').at(-1)).toBe(
+      '  [Cut. To read the whole reply, call child_status with {"child": "f1", "full": true}.]'
+    )
     // Un compte rendu ordinaire n'est pas coupé.
     expect(reportLine(report)).toBe(
       '- The child conversation "Import CSV" (id: f1) on branch bobine/x finished its turn. 1 file(s) changed so far (+40 −2): src/import.ts (+40 −2).\n  Start of its last reply:\n  > Les tests passent.'
