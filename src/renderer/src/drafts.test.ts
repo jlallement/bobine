@@ -46,6 +46,31 @@ describe('brouillons (fiches 026, 155)', () => {
     expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({})
   })
 
+  it('message envoyé puis app quittée aussitôt : le brouillon ne revient pas (fiche 243)', () => {
+    vi.useFakeTimers()
+    try {
+      saveDraft('c1', { text: '/scenario attend-stop', attachments: [] })
+      vi.advanceTimersByTime(300)
+      expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toHaveProperty('c1')
+      // Envoyé : vidé, et l'app quitte avant le délai d'écriture (aucun minuteur ne passe).
+      saveDraft('c1', { text: '', attachments: [] })
+      expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).not.toHaveProperty('c1')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('page qui s’en va (fenêtre fermée, app quittée) : la saisie en cours est écrite', () => {
+    vi.useFakeTimers()
+    try {
+      saveDraft('c1', { text: 'à finir', attachments: [] })
+      window.dispatchEvent(new Event('pagehide'))
+      expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toHaveProperty('c1')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('images trop lourdes pour le stockage : écrites sans elles, gardées en mémoire', () => {
     const big = image(MAX_STORED_DRAFTS_CHARS)
     saveDraft('c1', { text: 'voir', attachments: [file, big] })

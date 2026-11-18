@@ -19,6 +19,8 @@ What changes for you, version by version. Shown in Settings › About.
   conversation that was on screen when you quit (quit mid-turn, the one that was working, ready
   to carry on). A new conversation is still one click away (⌘N); it also opens at launch if the
   last one shown was empty, or has been archived or deleted since.
+- A message sent just before quitting Bobine no longer comes back in the input at the next
+  launch.
 - Child conversations: a child that would start in its worktree without this folder’s
   uncommitted work no longer starts silently. Bobine says so beforehand (`@role`, “Proposed
   tasks” card, “Run in parallel…”) with the number of changes, and offers “Commit first” or

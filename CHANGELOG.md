@@ -20,6 +20,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   rouvre la conversation affichée quand on l'a quittée (quittée en plein tour, celle qui
   travaillait, prête à reprendre). Une nouvelle conversation reste à un clic (⌘N) ; elle s'ouvre
   aussi au lancement si la dernière affichée était vide, ou a été archivée ou supprimée depuis.
+- Un message envoyé juste avant de quitter Bobine ne revient plus dans la zone de saisie au
+  lancement suivant.
 - Conversations filles : une fille qui partirait dans son worktree sans le travail non commité de
   ce dossier ne part plus en silence. Bobine le dit avant (`@rôle`, carte « Tâches proposées »,
   « Lancer en parallèle… ») avec le nombre de modifications, et propose « Committer d'abord » ou

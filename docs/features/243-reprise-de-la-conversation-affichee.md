@@ -160,3 +160,14 @@ ouverte à côté (vue côte à côte, fiche 036) n'est pas rouverte.
   rien d'imposé) ; les trois suites rejouées une fois : 6/6. Captures regardées :
   `f0b-rouverte-connexion` (carte « Connexion requise » dans la conversation rouverte, dès le
   lancement), `reprise-apres-quitter` (clair, sombre).
+- 2026-11-18 — `reprise` en échec sur `main` (96238a5, avec 240, 241, 242) : à la relance, la saisie
+  de la conversation rouverte contenait déjà le message envoyé juste avant de quitter
+  (`/scenario attend-stop`), et le message suivant partait collé à lui. Cause **dans l'app**,
+  antérieure à la fiche (fiche 026) mais rendue visible par elle : le brouillon vidé à l'envoi
+  n'était écrit dans le stockage local que 300 ms plus tard (`drafts.ts`) ; quitter dans ce délai
+  gardait le message envoyé comme brouillon de la conversation, que la relance rouvre désormais.
+  242 n'y est pour rien, sinon par le minutage (⌘Q arrive plus tôt après l'envoi). Correctif : un
+  brouillon vidé est écrit tout de suite ; une saisie en attente l'est aussi quand la page s'en va
+  (`pagehide`). Preuve : `drafts.test.ts`, deux essais qui échouent sans le correctif ; `reprise`
+  vérifie aussi la saisie vide à la relance, mais dépend du minutage (sans le correctif, échec
+  3 fois sur 3 puis une réussite) : la preuve qui ne dépend pas du minutage est l'essai unitaire.
