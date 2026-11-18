@@ -121,4 +121,61 @@ describe('SessionCost', () => {
     expect(options.costs?.currency).toBe('bobcoins')
     expect(options.costs?.read()).toEqual([{ id: 's1-a', title: 'a', createdAt: 0 }])
   })
+
+  it('a cost written after the last timed read is read as soon as the source changes', () => {
+    // CI Windows du 2026-11-18 : écriture de Bob (agent factice) après la relecture de 5 s.
+    vi.useFakeTimers()
+    const events: AgentEvent[] = []
+    const written: { amount?: number } = {}
+    let changed: (() => void) | undefined
+    const stopped = vi.fn()
+    const source: CostSource = {
+      id: 'bob-db',
+      currency: 'bobcoins',
+      session: () => written.amount,
+      watch: (onChange) => {
+        changed = onChange
+        return stopped
+      }
+    }
+    const cost = new SessionCost(
+      source,
+      () => 's1',
+      (e) => events.push(e)
+    )
+    cost.turnEnded()
+    vi.advanceTimersByTime(6000)
+    expect(events).toEqual([])
+    written.amount = 0.0125
+    changed?.()
+    changed?.()
+    vi.advanceTimersByTime(100)
+    expect(events).toEqual([
+      { type: 'usage-report', cost: { amount: 0.0125, currency: 'bobcoins' } }
+    ])
+    // Coût lu : la source n'est plus guettée.
+    expect(stopped).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops watching the source after a minute, or when the agent stops', () => {
+    vi.useFakeTimers()
+    const stopped = vi.fn()
+    const source: CostSource = {
+      id: 'bob-db',
+      currency: 'bobcoins',
+      session: () => undefined,
+      watch: () => stopped
+    }
+    const cost = new SessionCost(
+      source,
+      () => 's1',
+      () => {}
+    )
+    cost.turnEnded()
+    vi.advanceTimersByTime(60_000)
+    expect(stopped).toHaveBeenCalledTimes(1)
+    cost.turnEnded()
+    cost.stopWatching()
+    expect(stopped).toHaveBeenCalledTimes(2)
+  })
 })

@@ -7,9 +7,9 @@
  * l'identifiant de session ACP. Format non documenté : lecture seule, et la moindre surprise
  * (fichier absent, schéma changé, JSON inattendu) donne simplement « pas de coût ».
  */
-import { existsSync } from 'node:fs'
+import { existsSync, watch } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { AgentSpend } from '@shared/usage'
 import type { CostSource, SubagentCost } from './adapters'
@@ -29,7 +29,26 @@ export function bobDbCosts(dbPath = BOB_DB): CostSource {
     currency: 'bobcoins',
     session: (sessionId) => readBobTaskCost(sessionId, dbPath)?.amount,
     subagents: (sessionId) => readBobSubagents(sessionId, dbPath),
-    spend: (now) => readBobSpend(now, dbPath)
+    spend: (now) => readBobSpend(now, dbPath),
+    watch: (onChange) => watchBobDb(dbPath, onChange)
+  }
+}
+
+/**
+ * Écritures dans la base de Bob : son dossier est guetté (la base, son journal `-journal` ou
+ * `-wal` changent à chaque écriture). Dossier absent (Bob jamais lancé) ou veille refusée :
+ * rien, les relectures à heure fixe restent.
+ */
+export function watchBobDb(dbPath: string, onChange: () => void): () => void {
+  const name = basename(dbPath)
+  try {
+    const watcher = watch(dirname(dbPath), { persistent: false }, (_event, file) => {
+      if (!file || file.toString().startsWith(name)) onChange()
+    })
+    watcher.on('error', () => watcher.close())
+    return () => watcher.close()
+  } catch {
+    return () => {}
   }
 }
 

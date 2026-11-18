@@ -329,8 +329,8 @@ describe('journal de consommation avec l’agent factice (fiche 130)', () => {
     })
     for (const text of ['Un', 'Deux']) {
       await host.prompt(text)
-      // Bob écrit son coût après sa réponse : relu 1,5 s après la fin du tour, et encore à 5 s si
-      // l'écriture est en retard (fiche 157 : machine chargée, base créée au premier tour).
+      // Bob écrit son coût après sa réponse : relu dès que sa base change (veille), et à 1,5 s et
+      // 5 s (fiche 157). CI Windows du 2026-11-18 : écriture après la relecture de 5 s, jamais lue.
       await waitFor(() => events.at(-1)?.type === 'usage-report', 6000)
     }
     host.stop()

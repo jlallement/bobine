@@ -33,6 +33,12 @@ export interface CostSource {
   subagents?(sessionId: string): SubagentCost[] | undefined
   /** Dépense récente sur ce Mac (jour, 7 jours, mois), dans le détail de la consommation. */
   spend?(now: Date): AgentSpend | undefined
+  /**
+   * Prévient quand la source change (la base est écrite), pour relire le coût dès qu'il est écrit
+   * au lieu de deviner quand (CI Windows du 2026-11-18). Rend l'arrêt de la veille ; rien si la
+   * source ne peut pas être guettée (dossier absent).
+   */
+  watch?(onChange: () => void): () => void
 }
 
 /** Sous-agent d'une session tel que l'agent l'enregistre (fiche 053). */

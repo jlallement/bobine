@@ -3,7 +3,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { readBobSpend, readBobSubagents, readBobTaskCost } from './bob-costs'
+import { readBobSpend, readBobSubagents, readBobTaskCost, watchBobDb } from './bob-costs'
+import { writeBobTaskCost } from '../../mock-agent/scenario.mts'
 
 function bobDb(rows: [string, string][]): string {
   const file = join(mkdtempSync(join(tmpdir(), 'bob-db-')), 'bob.db')
@@ -106,5 +107,29 @@ describe('sous-agents Bob (fiche 053)', () => {
 
   it('schéma inattendu : rien', () => {
     expect(readBobSubagents('a', bobDb([['a', '{"cost":1}']]))).toBeUndefined()
+  })
+})
+
+describe('veille de la base de Bob (CI Windows du 2026-11-18)', () => {
+  it('prévient quand le coût est écrit, base créée à cette écriture comprise', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bob-veille-'))
+    const db = join(dir, 'bob.db')
+    let changes = 0
+    const written = new Promise<void>((resolve) => {
+      const stop = watchBobDb(db, () => {
+        changes++
+        stop()
+        resolve()
+      })
+    })
+    writeBobTaskCost(db, 'mock-1', 0.0125)
+    await written
+    expect(changes).toBe(1)
+    expect(readBobTaskCost('mock-1', db)?.amount).toBe(0.0125)
+  })
+
+  it('dossier absent : rien à guetter, sans erreur', () => {
+    const stop = watchBobDb(join(tmpdir(), 'bob-absent-x9', 'db', 'bob.db'), () => {})
+    expect(() => stop()).not.toThrow()
   })
 })
