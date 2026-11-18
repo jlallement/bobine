@@ -8,10 +8,11 @@ import {
   GitBranch,
   GitPullRequestArrow,
   Send,
-  Split
+  Split,
+  TriangleAlert
 } from 'lucide-react'
 import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
@@ -256,6 +257,7 @@ function RoleLaunchItem({
       activity={child ? activity.get(child.id) : undefined}
       profiles={info?.profiles ?? []}
       onOpen={child && info ? () => info.onOpen(child.id) : undefined}
+      leftBehind={item.leftBehind}
     />
   )
 }
@@ -480,6 +482,18 @@ export function ChildReportItem({
             </span>
           )}
         </div>
+        {item.leftBehind && (
+          <div className="child-report-left-behind" data-testid="child-report-left-behind">
+            <TriangleAlert size={13} aria-hidden />
+            <span>
+              <Trans
+                i18nKey="children.leftBehind.line"
+                values={{ ...item.leftBehind }}
+                components={{ code: <code /> }}
+              />
+            </span>
+          </div>
+        )}
         <button
           className="child-report-toggle"
           aria-expanded={open}

@@ -10,6 +10,7 @@ import {
   useMotherModel,
   type ChildChoice
 } from './child-options'
+import { LaunchDirtyCard, useFolderDirty } from '../thread/LaunchDirty'
 
 /**
  * « Lancer en parallèle… » (fiche 097) : la consigne d'une conversation fille, son agent et son
@@ -34,15 +35,22 @@ export function ChildDialog({
   const model = useMotherModel(mother.id, childModelAllowed(profiles, mother))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Fiche 240 : le dossier de la mère lu à l'ouverture ; avec du non commité, « Lancer » attend le
+  // choix (committer d'abord, ou partir quand même).
+  const folder = useFolderDirty(mother.id, true)
+  const held = !!folder.dirty
 
-  const launch = async () => {
-    if (!text.trim() || busy) return
+  /** `committed` : le commit vient d'être fait, le dossier lu au rendu précédent est périmé. */
+  const launch = async (after?: 'anyway' | 'committed') => {
+    if (!text.trim() || busy || (held && !after)) return
+    const uncommitted = after === 'anyway' ? after : undefined
     setBusy(true)
     setError(null)
     try {
       await window.api.conversations.startChild(mother.id, {
         text,
-        ...childChoiceRequest(mother, model, choice)
+        ...childChoiceRequest(mother, model, choice),
+        ...(uncommitted ? { uncommitted } : {})
       })
       onClose()
     } catch (e) {
@@ -87,6 +95,20 @@ export function ChildDialog({
             onChange={setChoice}
             testId="child"
           />
+          {folder.dirty && (
+            <LaunchDirtyCard
+              dirty={folder.dirty}
+              who={t('launchDirty.whoOne')}
+              many={false}
+              anywayLabel={t('launchDirty.anyway')}
+              commit={async (message, files) => {
+                await window.api.conversations.commitForChildren(mother.id, { message, files })
+                await folder.read()
+              }}
+              onCommitted={() => void launch('committed')}
+              onAnyway={() => void launch('anyway')}
+            />
+          )}
           {error && (
             <p className="field-error" role="alert" data-testid="child-error">
               {error}
@@ -98,7 +120,7 @@ export function ChildDialog({
             </Dialog.Close>
             <button
               className="btn primary"
-              disabled={!text.trim() || busy}
+              disabled={!text.trim() || busy || held}
               onClick={() => void launch()}
               data-testid="child-launch"
             >

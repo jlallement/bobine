@@ -344,7 +344,9 @@ describe('conversations filles (fiche 097)', () => {
         calls.push([id, request])
         return Promise.reject(new Error('non'))
       },
-      capacity: (id) => ({ inRepo: id === 'm', active: 1, max: 5 })
+      capacity: (id) => ({ inRepo: id === 'm', active: 1, max: 5 }),
+      uncommitted: () => Promise.resolve(undefined),
+      commitFolder: () => Promise.reject(new Error('non'))
     })
     expect(handlers['conversation:childCapacity']('m')).toEqual({ inRepo: true, active: 1, max: 5 })
     expect(() => handlers['conversation:childCapacity']('')).toThrow('id')

@@ -3,7 +3,7 @@
 // proposées »), avis en lecture seule dans le dossier de la mère, rappel dans la mère.
 // Sur la vraie fenêtre : `@rôle` est tapé pour de vrai (jetons et ligne « Partira à… » réels) ;
 // seuls les morceaux nouveaux sont injectés, avec les classes de l'app.
-// node e2e/maquettes/run.mjs light f240
+// node e2e/maquettes/run.mjs light f240 — validées le 2026-11-18, « Mettre de côté » retiré.
 import { i } from './icons.mjs'
 
 /* Teintes des rôles (`TINTS`, src/shared/themes.ts) : l'app les pose en `--role` depuis le JS. */
@@ -84,7 +84,7 @@ const dirtyBlock = ({ who, avis = false, commit = false, start = 'Partir quand m
   ${
     commit
       ? `<div class="worktree-form"><label class="muted">Message du commit</label><textarea>feat: plan, mockups and task server with tests</textarea><div class="worktree-form-actions"><button class="btn small ghost">Annuler</button><button class="btn small primary">Committer puis lancer</button></div></div>`
-      : `<div class="main-dirty-actions"><button class="btn small primary">Committer d’abord</button><button class="btn small" title="git stash : ce dossier revient au dernier commit, comme la fille ; vos modifications reviennent à sa fusion">Mettre de côté</button><span class="grow"></span><button class="btn small ghost">${start}</button></div>`
+      : `<div class="main-dirty-actions"><button class="btn small primary">Committer d’abord</button><span class="grow"></span><button class="btn small ghost">${start}</button></div>`
   }
   ${
     avis && !commit

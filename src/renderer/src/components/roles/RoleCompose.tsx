@@ -63,7 +63,8 @@ export function RoleDestination({
   agentLabel,
   readOnly,
   empty = false,
-  sending = false
+  sending = false,
+  opinion
 }: {
   roles: readonly RoleView[]
   /** Agent de la fille (un seul rôle). */
@@ -74,32 +75,57 @@ export function RoleDestination({
   empty?: boolean
   /** Filles en cours de lancement : un second envoi attend. */
   sending?: boolean
+  /**
+   * Avis en lecture seule (fiche 240) : dans le dossier de la mère, qui voit le non commité ;
+   * « Plutôt les faire travailler… » revient à l'avertissement.
+   */
+  opinion?: { sees: number; onWork: () => void }
 }) {
   const { t } = useTranslation()
   const single = roles.length === 1 ? roles[0] : undefined
   const style = useRoleStyle(single?.color ?? 'graphite')
   if (roles.length === 0) return null
-  const details = single
+  const details = opinion
     ? [
-        agentLabel,
-        readOnly === 'requested'
-          ? t('roleWork.readOnlyRequested')
-          : readOnly
-            ? t('roleWork.readOnly')
-            : undefined,
-        single.readOnly ? t('roleWork.destination.sameFolder') : t('roleWork.destination.worktree')
+        single ? agentLabel : undefined,
+        t('roleWork.destination.sameFolder'),
+        readOnly === 'requested' ? t('roleWork.readOnlyRequested') : t('roleWork.readOnly'),
+        opinion.sees > 0
+          ? t('roleWork.destination.opinionSees', { count: opinion.sees })
+          : undefined
       ].filter(Boolean)
-    : []
+    : single
+      ? [
+          agentLabel,
+          readOnly === 'requested'
+            ? t('roleWork.readOnlyRequested')
+            : readOnly
+              ? t('roleWork.readOnly')
+              : undefined,
+          single.readOnly
+            ? t('roleWork.destination.sameFolder')
+            : t('roleWork.destination.worktree')
+        ].filter(Boolean)
+      : []
   return (
     <div
       className={`role-destination${single ? ' single' : ''}`}
       style={single ? style : undefined}
       aria-live="polite"
       data-testid="role-destination"
+      data-opinion={opinion ? '' : undefined}
     >
       {single ? <Split size={13} /> : <RoleStack roles={roles} />}
       <span className="role-destination-lead">
-        {single ? (
+        {opinion ? (
+          <Trans
+            i18nKey={
+              single ? 'roleWork.destination.opinionOne' : 'roleWork.destination.opinionMany'
+            }
+            values={single ? { label: single.label } : { count: roles.length }}
+            components={{ strong: <strong /> }}
+          />
+        ) : single ? (
           <Trans
             i18nKey="roleWork.destination.one"
             values={{ label: single.label }}
@@ -115,6 +141,16 @@ export function RoleDestination({
       </span>
       {details.length > 0 && (
         <span className="role-destination-detail">· {details.join(' · ')}</span>
+      )}
+      {opinion && !sending && (
+        <button
+          type="button"
+          className="link-button role-destination-work"
+          onClick={opinion.onWork}
+          data-testid="role-destination-work"
+        >
+          {t('roleWork.destination.work')}
+        </button>
       )}
       {empty && !sending && (
         <span className="role-destination-warn" data-testid="role-destination-empty">

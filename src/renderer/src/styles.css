@@ -9718,6 +9718,74 @@ html.about-page body {
   background: var(--bg);
 }
 
+/* Avant de lancer une fille en worktree d'un dossier modifié (fiche 240) : même famille que
+   « Fusion refusée », sous la ligne « Partira à… », dans la carte de tâches ou le dialogue. */
+.launch-dirty {
+  margin-top: 8px;
+}
+.composer-dock > .launch-dirty {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+.permission-card.proposals > .launch-dirty {
+  margin: 0 0 6px;
+}
+.launch-dirty .main-dirty-files {
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.launch-dirty .main-dirty-why code {
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 11.5px;
+}
+.launch-dirty .main-dirty-actions {
+  justify-content: flex-start;
+  align-items: center;
+}
+.launch-dirty .main-dirty-actions .grow,
+.launch-dirty-opinion .grow {
+  flex: 1;
+}
+.launch-dirty-opinion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 0 19px;
+  border-top: 1px dashed var(--border);
+  color: var(--text-2);
+}
+.launch-dirty-opinion svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.launch-dirty .field-error {
+  margin: 0;
+}
+
+/* Fille partie sans le non commité de sa mère (fiche 240) : rappelé sur son compte rendu. */
+.child-report-left-behind {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.child-report-left-behind svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warn);
+}
+.child-report-left-behind code {
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 11.5px;
+}
+
 .worktree-note a {
   color: var(--accent);
 }

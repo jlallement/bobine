@@ -2,6 +2,17 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Child conversations: a child that would start in its worktree without this folder’s
+  uncommitted work no longer starts silently. Bobine says so beforehand (`@role`, “Proposed
+  tasks” card, “Run in parallel…”) with the number of changes, and offers “Commit first” or
+  “Start anyway”; for roles mentioned with `@`, “Ask for a read-only opinion”: they read this
+  folder as it is, uncommitted changes included. A child that started anyway is flagged on its
+  card and on each of its reports, and the agent that starts children is warned.
+
 ## 1.0.0-beta.7 — November 17, 2026
 
 ### Fixes

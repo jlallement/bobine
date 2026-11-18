@@ -332,7 +332,10 @@ export function createHandlers(
       saveCsv?: UsageIpcDeps['saveCsv']
       conversations: ConversationController
       /** Conversations filles (fiche 097). */
-      children?: Pick<ChildConversations, 'start' | 'capacity' | 'launchState' | 'reviews'>
+      children?: Pick<
+        ChildConversations,
+        'start' | 'capacity' | 'launchState' | 'reviews' | 'uncommitted' | 'commitFolder'
+      >
       /** Cycle complet d'un worktree (fiche 110). */
       worktree?: WorktreeCycleDeps
       /** Fusion de toutes les filles finies (fiche 120). */

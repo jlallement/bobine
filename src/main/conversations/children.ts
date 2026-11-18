@@ -57,6 +57,10 @@ import { gitRun } from '../git/git-queue'
 import { inGitRepo, titleFrom } from './helpers'
 import type { ConversationManager } from './manager'
 import { detachChild } from './family-delete'
+import type { LaunchFolder } from './launch-folder'
+import type { FolderDirty, LeftBehind, UncommittedChoice } from '@shared/launch-folder'
+import { parseUncommittedChoice } from '@shared/launch-folder'
+import type { CommitOutcome } from '@shared/worktree-cycle'
 
 /** Ce que demande « Lancer en parallèle… », ou `start_child`. */
 export interface ChildRequest {
@@ -77,6 +81,12 @@ export interface ChildRequest {
   roleSnapshot?: RoleSnapshot
   /** Lignes dites dans le fil de la fille dès son lancement (agent du rôle indisponible…). */
   notices?: Message[]
+  /**
+   * Choix de l'utilisateur devant un dossier modifié (fiche 240) : partir quand même, ou un avis
+   * en lecture seule dans le dossier de la mère (rôle seulement). Sans choix, une fille qui
+   * partirait en worktree d'un dossier modifié est refusée : rien ne part avant le choix.
+   */
+  uncommitted?: UncommittedChoice
 }
 
 /** Une fille vue par `child_status`. */
@@ -143,6 +153,8 @@ export interface ChildOptions {
     role: string,
     conversationId: string
   ) => InstalledMode | undefined
+  /** Dossier de la mère avant un lancement en worktree (fiche 240) ; absent : pas de vérification. */
+  folder?: LaunchFolder
 }
 
 export class ChildConversations {
@@ -167,12 +179,14 @@ export class ChildConversations {
   private readonly nativeRoleMode: ChildOptions['nativeRoleMode']
   /** Garde-fou des rôles en lecture seule (fiche 223). */
   private readonly readOnly: ReadOnlyWatch
+  private readonly folder: LaunchFolder | undefined
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
     this.reviews = new ChildReviews({ conversations, children: this, run: options.run ?? gitRun })
     this.roles = options.roles
     this.nativeRoleMode = options.nativeRoleMode
+    this.folder = options.folder
     this.readOnly = new ReadOnlyWatch({
       conversations,
       summary: (id) => this.summary(id),
@@ -207,8 +221,10 @@ export class ChildConversations {
     }
     const { active, max } = this.capacity(motherId)
     if (active >= max) throw new Error(t('children.limit', { count: max }))
-    const role =
+    const role = launchRole(
+      request,
       request.roleSnapshot ?? (request.role ? this.findRole(motherId, request.role) : undefined)
+    )
 
     const created = await this.prepare(motherId, text, request, role)
     const title = request.title?.trim()
@@ -226,6 +242,7 @@ export class ChildConversations {
         prompt: text,
         ...(by ? { by } : {}),
         ...(role ? { role: roleBadge(role) } : {}),
+        ...this.leftBehind(child.id),
         at: Date.now()
       }
     })
@@ -245,6 +262,47 @@ export class ChildConversations {
       this.launching.delete(child.id)
     })
     return child
+  }
+
+  /**
+   * Une fille en worktree part du dernier commit, sans le non commité (fiche 240, ADR-0055) : d'un
+   * dossier modifié, sans « partir quand même », elle est refusée — l'interface a montré le choix
+   * avant, et rien ne part sans lui. Lu après la réservation de la place (`prepare`).
+   */
+  private async refuseUncommitted(
+    motherId: string,
+    request: ChildRequest,
+    role: RoleSnapshot | undefined
+  ): Promise<void> {
+    if (role?.readOnly || request.uncommitted === 'anyway') return
+    const dirty = await this.uncommitted(motherId)
+    if (dirty) throw new Error(t('children.error.uncommitted', { count: dirty.count }))
+  }
+
+  /** Modifications non commitées du dossier d'une mère (fiche 240) ; `undefined` s'il est propre. */
+  async uncommitted(motherId: string): Promise<FolderDirty | undefined> {
+    const mother = this.summary(motherId)
+    if (!this.folder || !hasFolder(mother.workspace) || !inGitRepo(mother.workspace)) {
+      return undefined
+    }
+    const dirty = await this.folder.uncommitted(mother.workspace, motherId)
+    return dirty && { ...dirty, title: mother.title }
+  }
+
+  /** « Committer d'abord » avant un lancement (fiche 240) : dans le dépôt du dossier de la mère. */
+  commitFolder(
+    motherId: string,
+    request: { message: string; files: string[] }
+  ): Promise<CommitOutcome> {
+    if (!this.folder) throw new Error(t('ipc.unavailable.children'))
+    return this.folder.commit(this.summary(motherId).workspace, request, motherId)
+  }
+
+  /** Ce qu'une fille en worktree a laissé derrière elle en partant (fiche 240), pour la mère. */
+  private leftBehind(childId: string): { leftBehind?: LeftBehind } {
+    const worktree = this.conversations.worktreeOf(childId)?.worktree
+    if (!worktree?.dirtyAtStart) return {}
+    return { leftBehind: { count: worktree.dirtyAtStart, commit: worktree.base.slice(0, 7) } }
   }
 
   /** Filles en cours d'une conversation et plafond réglé (menu, `start_child`). */
@@ -283,6 +341,7 @@ export class ChildConversations {
     this.preparing.set(id, launch)
     this.publishLaunches()
     try {
+      await this.refuseUncommitted(motherId, request, role)
       return await this.conversations.createChild(
         motherId,
         text,
@@ -468,7 +527,11 @@ export class ChildConversations {
           event.type === 'turn-end' ? { stopReason: event.stopReason } : { error: event.message }
         // Ce qu'a coûté la fille jusque-là (fiche 117), tel que son fil le sait à la fin du tour.
         const digest = usageDigest(usage)
-        const report = { ...childReport(child, items, end), ...(digest ? { usage: digest } : {}) }
+        const report = {
+          ...childReport(child, items, end),
+          ...(digest ? { usage: digest } : {}),
+          ...this.leftBehind(child.id)
+        }
         const mother = conversations.find((c) => c.id === motherId)
         if (mother?.status === 'busy') {
           this.held.set(motherId, [...(this.held.get(motherId) ?? []), report])
@@ -631,12 +694,31 @@ export class ChildConversations {
   }
 }
 
+/**
+ * Avis demandé devant un dossier modifié (`readOnly`, fiche 240) : le rôle part en lecture seule
+ * dans le dossier de la mère, qui voit tout ; seulement pour un rôle.
+ */
+function launchRole<R extends RoleSnapshot>(request: ChildRequest, role: R | undefined) {
+  if (request.uncommitted !== 'readOnly') return role
+  if (!role) throw new Error('Paramètre invalide : uncommitted')
+  return { ...role, readOnly: true }
+}
+
 /** Canaux IPC des conversations filles, branchés par `ipc.ts` (fiche 097). */
 export function childHandlers(
-  children: Pick<ChildConversations, 'start' | 'capacity' | 'launchState'> | undefined
+  children:
+    | Pick<
+        ChildConversations,
+        'start' | 'capacity' | 'launchState' | 'uncommitted' | 'commitFolder'
+      >
+    | undefined
 ): Pick<
   IpcHandlers,
-  'conversation:startChild' | 'conversation:childCapacity' | 'conversation:childLaunches'
+  | 'conversation:startChild'
+  | 'conversation:childCapacity'
+  | 'conversation:childLaunches'
+  | 'conversation:childFolderDirty'
+  | 'conversation:commitForChildren'
 > {
   const available = () => {
     if (!children) throw new Error(t('ipc.unavailable.children'))
@@ -650,14 +732,28 @@ export function childHandlers(
     'conversation:childLaunches': () => available().launchState(),
     'conversation:startChild': (id, request) =>
       available().start(idOf(id), parseChildRequest(request)),
-    'conversation:childCapacity': (id) => available().capacity(idOf(id))
+    'conversation:childCapacity': (id) => available().capacity(idOf(id)),
+    'conversation:childFolderDirty': async (id) =>
+      (await available().uncommitted(idOf(id))) ?? null,
+    'conversation:commitForChildren': (id, request) =>
+      available().commitFolder(idOf(id), parseCommitRequest(request))
   }
+}
+
+function parseCommitRequest(value: unknown): { message: string; files: string[] } {
+  if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
+  const { message, files } = value as Record<string, unknown>
+  if (typeof message !== 'string') throw new Error('Paramètre invalide : message')
+  if (!Array.isArray(files) || !files.every((f) => typeof f === 'string' && f)) {
+    throw new Error('Paramètre invalide : files')
+  }
+  return { message, files: files as string[] }
 }
 
 /* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
 function parseChildRequest(value: unknown): ChildRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { text, title, profileId, model, role } = value as Record<string, unknown>
+  const { text, title, profileId, model, role, uncommitted } = value as Record<string, unknown>
   if (typeof text !== 'string') throw new Error('Paramètre invalide : text')
   if (title !== undefined && typeof title !== 'string')
     throw new Error('Paramètre invalide : title')
@@ -682,6 +778,7 @@ function parseChildRequest(value: unknown): ChildRequest {
     ...(model !== undefined
       ? { model: { controlId: String(choice.controlId), value: String(choice.value) } }
       : {}),
-    ...(typeof role === 'string' ? { role: role.trim() } : {})
+    ...(typeof role === 'string' ? { role: role.trim() } : {}),
+    ...(uncommitted !== undefined ? { uncommitted: parseUncommittedChoice(uncommitted) } : {})
   }
 }

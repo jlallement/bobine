@@ -71,6 +71,7 @@ import {
   useRoleFrame,
   type ComposerRoles
 } from '../roles/useRoleCompose'
+import { LaunchDirtyCard } from '../thread/LaunchDirty'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
 import { lastSegment } from '@shared/windows-paths'
@@ -311,7 +312,8 @@ export function Composer(props: Props) {
     menuOpen: mentions.open,
     onWarn: props.onWarn,
     focus: focusInput,
-    onSent: (sent) => recordSent(sent.text, sent.tokens)
+    onSent: (sent) => recordSent(sent.text, sent.tokens),
+    text
   })
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)
@@ -588,6 +590,8 @@ export function Composer(props: Props) {
       <ComposerBelow
         props={props}
         roleView={roleView}
+        roleCompose={roleCompose}
+        submit={submit}
         profileId={snapshot?.info.profileId ?? settings?.profileId}
         agentLabel={agentLabel}
         locked={locked}
@@ -605,6 +609,8 @@ export function Composer(props: Props) {
 function ComposerBelow({
   props,
   roleView,
+  roleCompose,
+  submit,
   profileId,
   agentLabel,
   locked,
@@ -613,6 +619,8 @@ function ComposerBelow({
 }: {
   props: Props
   roleView: ReturnType<ReturnType<typeof useRoleCompose>['view']>
+  roleCompose: ReturnType<typeof useRoleCompose>
+  submit: () => void
   profileId: string | undefined
   agentLabel: string
   locked: boolean
@@ -635,7 +643,33 @@ function ComposerBelow({
         roles={props.roles}
         profileId={profileId}
         agentLabel={agentLabel}
+        opinion={
+          roleView.opinion && {
+            sees: roleView.opinion.sees,
+            onWork: () => roleCompose.choose(undefined)
+          }
+        }
       />
+      {roleView.dirty && !roleView.sending && (
+        <LaunchDirtyCard
+          dirty={roleView.dirty}
+          who={
+            roleView.targets.length > 1
+              ? t('launchDirty.whoMany', { count: roleView.targets.length })
+              : t('launchDirty.whoOne')
+          }
+          many={roleView.targets.length > 1}
+          anywayLabel={t('launchDirty.anyway')}
+          attention={roleView.attention}
+          commit={roleCompose.commit}
+          onCommitted={submit}
+          onAnyway={() => {
+            roleCompose.choose('anyway')
+            submit()
+          }}
+          onOpinion={() => roleCompose.choose('readOnly')}
+        />
+      )}
       <ComposerContext
         hidden={props.discussion}
         settings={settings}

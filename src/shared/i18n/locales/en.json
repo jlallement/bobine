@@ -3455,7 +3455,9 @@
       "archived": "Unarchive this conversation first.",
       "needsAction": "Its agent needs you to act (sign-in, folder to approve): open the child conversation.",
       "agentFailed": "Its agent did not start: {{detail}}",
-      "noStartChild": "No child conversation possible here: it takes a folder in a git repository, a conversation that is not itself a child, and the “Child conversations” tool family turned on (Settings › MCP servers)."
+      "noStartChild": "No child conversation possible here: it takes a folder in a git repository, a conversation that is not itself a child, and the “Child conversations” tool family turned on (Settings › MCP servers).",
+      "uncommitted_one": "This folder has {{count}} uncommitted change: first choose to commit it, or to start anyway.",
+      "uncommitted_other": "This folder has {{count}} uncommitted changes: first choose to commit them, or to start anyway."
     },
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
@@ -3492,12 +3494,21 @@
         "here": "Done here",
         "refuse": "Refused",
         "expired": "Expired"
-      }
+      },
+      "uncommittedHint": "Choose above first"
     },
     "from": {
       "parent": "From the parent conversation “{{title}}”",
       "child": "From the child conversation “{{title}}”",
       "wake": "All the child conversations have finished: the agent resumes with their reports."
+    },
+    "leftBehind": {
+      "tag_one": "Without {{count}} uncommitted change",
+      "tag_other": "Without {{count}} uncommitted changes",
+      "line_one": "Started from commit <code>{{commit}}</code> without this folder’s uncommitted change: its work has not seen it.",
+      "line_other": "Started from commit <code>{{commit}}</code> without this folder’s {{count}} uncommitted changes: its work has not seen them.",
+      "tagHint_one": "Started from commit {{commit}}: this folder’s uncommitted change was not in its worktree.",
+      "tagHint_other": "Started from commit {{commit}}: this folder’s {{count}} uncommitted changes were not in its worktree."
     }
   },
   "providers": {
@@ -4275,7 +4286,13 @@
       "attachments": "Attachments don't go to roles: remove them, or send without a role.",
       "empty": "Write your request after the role: that is what is sent.",
       "sending": "Starting…",
-      "failed": "{{label}} did not start: {{error}}"
+      "failed": "{{label}} did not start: {{error}}",
+      "opinionOne": "Will go to <strong>{{label}}</strong>, for an <strong>opinion</strong>, in a child conversation",
+      "opinionMany_one": "Will go to <strong>{{count}} role</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
+      "opinionMany_other": "Will go to <strong>{{count}} roles</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
+      "opinionSees_one": "sees the uncommitted change",
+      "opinionSees_other": "see the {{count}} uncommitted changes",
+      "work": "Have them work instead…"
     },
     "state": {
       "running": "working",
@@ -5504,5 +5521,25 @@
         "keyLocked": "Bobine cannot decrypt its key (Windows DPAPI): nothing can be kept for now."
       }
     }
+  },
+  "launchDirty": {
+    "title_one": "This folder has {{count}} uncommitted change: {{who}} will not see it.",
+    "title_other": "This folder has {{count}} uncommitted changes: {{who}} will not see them.",
+    "titleMany_one": "This folder has {{count}} uncommitted change: {{who}} will not see it.",
+    "titleMany_other": "This folder has {{count}} uncommitted changes: {{who}} will not see them.",
+    "whoOne": "the child conversation",
+    "whoMany_one": "the child conversation",
+    "whoMany_other": "the {{count}} child conversations",
+    "whoCard": "the child conversations started from here",
+    "why": "A child conversation starts from the last commit (<code>{{commit}}</code> “{{subject}}”), in its own worktree. Commit first so that it has this work.",
+    "files": "Uncommitted files in this folder",
+    "commit": "Commit first",
+    "commitConfirm": "Commit, then start",
+    "anyway": "Start anyway",
+    "anywayCard": "Start anyway",
+    "opinionLead": "Just an opinion? The roles can read this folder as it is, uncommitted changes included, without changing anything.",
+    "opinion": "Ask for a read-only opinion",
+    "committed": "Committed: {{short}}. The child conversations will start from this commit.",
+    "whyBare": "A child conversation starts from the last commit (<code>{{commit}}</code>), in its own worktree. Commit first so that it has this work."
   }
 }

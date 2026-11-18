@@ -1017,6 +1017,30 @@ export const SUITES = [
     ]
   },
   {
+    // Filles en worktree et non commité de la mère (fiche 240) : avertissement et choix avant le
+    // lancement (rôle, Tâches proposées), avis en lecture seule, rappel dans la mère.
+    name: 'filles-non-commite',
+    file: 'filles-non-commite.mjs',
+    run: 'fillesNonCommiteSuite',
+    themes: BOTH,
+    sources: [
+      `${C}thread/LaunchDirty.tsx`,
+      `${C}thread/ChildProposals.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${C}roles/`,
+      `${C}sidebar/ChildDialog.tsx`,
+      `${C}composer/Composer.tsx`,
+      `${R}useComposerRoles.ts`,
+      'src/shared/launch-folder.ts',
+      'src/shared/children.ts',
+      'src/main/conversations/children.ts',
+      'src/main/conversations/launch-folder.ts',
+      'src/main/roles/invoke.ts',
+      'src/main/mcp/children-tools.ts',
+      'src/mock-agent/scenarios-filles.mts'
+    ]
+  },
+  {
     // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, filles des rôles, proposition.
     name: 'roles-travail',
     file: 'roles-travail.mjs',

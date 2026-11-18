@@ -82,6 +82,7 @@ import { HistoryWriter } from './conversations/history-writer'
 import { ConversationManager } from './conversations/manager'
 import type { ChildConversations } from './conversations/children'
 import { setupChildren } from './conversations/children-setup'
+import { appLaunchFolder } from './conversations/launch-folder'
 import { childrenToolsModule } from './mcp/children-tools'
 import { appMemory } from './memory/setup'
 import { appRoles } from './roles/setup'
@@ -686,7 +687,9 @@ async function start(): Promise<void> {
   const childConversations = (children = setupChildren(conversations, {
     ...roles.forChildren,
     attention: () => attention.state(),
-    launchesChanged: (state) => send('conversation:childLaunchesChanged', state)
+    launchesChanged: (state) => send('conversation:childLaunchesChanged', state),
+    // Dossier de la mère avant un lancement en worktree (fiche 240) : git de l'app, journalisé.
+    folder: appLaunchFolder(gitRun)
   }))
   // Agent prêt (session ouverte) : quota encore inconnu relu malgré un échec récent (fiche 205).
   conversations.subscribe(quotaOnReady(quotas, (id) => conversations.profileOf(id)))

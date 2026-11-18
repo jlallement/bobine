@@ -91,7 +91,45 @@ const chattyReply = [
   CHATTY_END
 ].join('\n')
 
+/**
+ * Fiche 240 : la fille dit si elle voit `plan.md`, le travail non commité de sa mère dans les
+ * essais. Dans son worktree, elle ne le voit que si la mère l'a commité ; en avis (lecture seule,
+ * dossier de la mère), toujours.
+ */
+const seesPlan: Step[] = [
+  {
+    kind: 'when-file',
+    path: 'plan.md',
+    then: [{ kind: 'text', text: 'Récapitulatif : je vois plan.md, le plan de la mère.' }],
+    else: [{ kind: 'text', text: 'Récapitulatif : je ne trouve pas plan.md dans mon dossier.' }]
+  }
+]
+
 export const childScenarios: Record<string, Scenario> = {
+  'voit-le-plan': {
+    description:
+      'Dit si `plan.md` est dans le dossier de la session : une fille partie d’un dossier modifié le voit-elle ? (fiche 240)',
+    steps: seesPlan
+  },
+  'tache-plan': {
+    description:
+      'Propose une conversation fille (`start_child`) qui dira si elle voit `plan.md`, puis finit son tour (fiche 240)',
+    steps: [
+      {
+        kind: 'when-prompt',
+        includes: WAKE,
+        then: [{ kind: 'text', text: 'La fille a rendu son compte rendu.' }],
+        else: [
+          {
+            kind: 'mcp-tool',
+            tool: 'start_child',
+            args: { title: 'API et tests', prompt: 'Écris l’API.\n/scenario voit-le-plan' },
+            onResult: said('Tâche proposée.')
+          }
+        ]
+      }
+    ]
+  },
   'filles-modele': {
     description:
       'Modèle de fille suggéré (fiche 160) : `start_child` avec `model: factice-precis` et une raison. Profil sans choix de modèle (`MOCK_CHILD_MODEL=none`, comme Bob) : ignoré, carte sans modèle ; sinon, carte où l’utilisateur confirme ou change le modèle',
