@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { HelpLink } from '../help/HelpLink'
 import { asideExcerpt, asideQuote, estimatedTokens, type AsideExchange } from '@shared/aside'
 import type { TranscriptItem } from '@shared/transcript'
-import { formatCost, formatTokens } from '@shared/usage'
+import { formatEstimate, formatTokens } from '@shared/usage'
 import type { AsideState } from '../../useAside'
 import type { ComposerInbox } from '../../useFileDrop'
 import { SpoolMark } from '../common/SpoolMark'
@@ -80,7 +80,7 @@ export function AsideCard({
         </span>
         {view?.cost && (
           <span className="aside-cost" data-testid="aside-cost" title={t('aside.costHint')}>
-            {formatCost(view.cost)}
+            {formatEstimate(view.cost)}
           </span>
         )}
         <button

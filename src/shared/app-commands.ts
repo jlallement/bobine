@@ -4,7 +4,14 @@
  */
 import { t } from 'i18next'
 import type { AgentCommand, SessionControl } from './agent'
-import { contextRatio, formatCost, formatTokens, type ConversationUsage } from './usage'
+import {
+  contextRatio,
+  formatEstimate,
+  formatTokens,
+  isEstimate,
+  processedTokens,
+  type ConversationUsage
+} from './usage'
 
 export type AppCommandName =
   | 'clear'
@@ -203,20 +210,39 @@ function contextLine(usage: ConversationUsage | undefined): string | undefined {
     : t('usage.summary.context', tokens)
 }
 
-/** Jetons traités et coût, ce que l'agent en a dit. */
-function costLines(usage: ConversationUsage | undefined): string[] {
+/**
+ * Jetons traités et coût, ce que l'agent en a dit. Jetons traités = entrée + sortie ; cache et
+ * réflexion en plus, jamais additionnés (fiche 245, D6). Coût en monnaie : une estimation (D8).
+ */
+function costLines(usage: ConversationUsage | undefined, agentLabel: string): string[] {
   const lines: string[] = []
-  if (usage?.tokens) {
+  const tokens = usage?.tokens
+  if (tokens) {
     lines.push(
       t('usage.summary.tokens', {
-        total: formatTokens(usage.tokens.total),
-        input: formatTokens(usage.tokens.input),
-        output: formatTokens(usage.tokens.output),
-        count: usage.tokens.turns
+        total: formatTokens(processedTokens(tokens)),
+        input: formatTokens(tokens.input),
+        output: formatTokens(tokens.output),
+        count: tokens.turns
       })
     )
+    const extra: string[] = [
+      tokens.cachedRead > 0 &&
+        t('usage.summary.cachedRead', { tokens: formatTokens(tokens.cachedRead) }),
+      tokens.cachedWrite > 0 &&
+        t('usage.summary.cachedWrite', { tokens: formatTokens(tokens.cachedWrite) }),
+      tokens.thought > 0 && t('usage.summary.thought', { tokens: formatTokens(tokens.thought) })
+    ].filter((part) => part !== false)
+    if (extra.length) lines.push(t('usage.summary.extra', { parts: extra.join(', ') }))
   }
-  if (usage?.cost) lines.push(t('usage.summary.cost', { cost: formatCost(usage.cost) }))
+  const cost = usage?.cost
+  if (cost) {
+    lines.push(
+      isEstimate(cost.currency)
+        ? t('usage.summary.costEstimate', { cost: formatEstimate(cost), agent: agentLabel })
+        : t('usage.summary.cost', { cost: formatEstimate(cost) })
+    )
+  }
   return lines
 }
 
@@ -239,13 +265,15 @@ export function contextReport(
 
 /** `/cost` (fiche 126) : jetons traités et coût. */
 export function costReport(usage: ConversationUsage | undefined, agentLabel: string): string {
-  const lines = costLines(usage)
+  const lines = costLines(usage, agentLabel)
   return lines.length ? lines.join('\n') : t('usage.summary.none', { agent: agentLabel })
 }
 
 /** Bilan complet (export Markdown) : contexte, jetons, coût. */
 export function usageSummary(usage: ConversationUsage | undefined, agentLabel: string): string {
-  const lines = [contextLine(usage), ...costLines(usage)].filter((l): l is string => !!l)
+  const lines = [contextLine(usage), ...costLines(usage, agentLabel)].filter(
+    (l): l is string => !!l
+  )
   return lines.length ? lines.join('\n') : t('usage.summary.none', { agent: agentLabel })
 }
 

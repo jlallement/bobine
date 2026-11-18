@@ -2,6 +2,24 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- “Tokens processed” counts the same thing everywhere: the input and output reported by the
+  agent, in `/cost`, the usage details and My activity. Before, `/cost` added the cache reads
+  (4,051,903 instead of 242,370 in a run with OpenCode). Cache and thinking show up separately
+  (“Also: … read from cache”). The token cap still counts everything, and now says so (“tokens,
+  cache included”).
+- A dollar cost reported by the agent is an estimate (its own prices, without your subscription or
+  discounts): it now shows with “≈” everywhere, and “estimate” in the usage details, `/cost` and
+  My activity (“Estimated cost”). Bob's bobcoins, its own count, keep no “≈”.
+- The welcome trial sends its message with the conversation's model (the one on its chip), not
+  the model the agent picks for a new session. If the agent doesn't offer it, the result says
+  which model answered.
+- A stopped tool group shows all its states: “✕ 1 failed · ⊘ 1 interrupted” instead of the
+  failure alone.
+
 ## 1.0.0-beta.8 — November 18, 2026
 
 ### Fixes

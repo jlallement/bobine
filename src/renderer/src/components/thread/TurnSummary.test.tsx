@@ -95,4 +95,14 @@ describe('bilan du dernier tour (fiche 185, P4)', () => {
     expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).not.toContain('≈')
     presentation.on = false
   })
+
+  it('coût en dollars annoncé par l’agent : « ≈ » ; bobcoins de Bob : sans (fiche 245)', () => {
+    const facts = { ms: 5_000, files: 0, added: 0, removed: 0 }
+    render(<TurnSummary facts={{ ...facts, cost: { amount: 0.12, currency: 'USD' } }} />)
+    expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).toContain('≈ 0,12')
+    render(<TurnSummary facts={{ ...facts, cost: { amount: 0.02, currency: 'bobcoins' } }} />)
+    const bob = screen.getAllByTestId('turn-summary').at(-1)?.textContent ?? ''
+    expect(bob).toContain('0,02')
+    expect(bob).not.toContain('≈')
+  })
 })

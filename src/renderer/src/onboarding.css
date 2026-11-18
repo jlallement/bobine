@@ -347,6 +347,12 @@
   color: var(--muted);
 }
 
+/* L'essai n'a pas parlé au modèle de la conversation (fiche 245, D16) : dit, sans alarmer. */
+.onboarding-model-missed {
+  margin: 6px 0 0;
+  color: var(--warn);
+}
+
 .onboarding-details {
   margin-top: 8px;
   font-size: 12px;

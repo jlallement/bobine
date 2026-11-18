@@ -29,7 +29,7 @@ import {
   type ScheduledTaskInput,
   type TaskRun
 } from '@shared/schedule'
-import { formatCost } from '@shared/usage'
+import { formatEstimate } from '@shared/usage'
 import { ipcErrorText } from '../../ipc-errors'
 import { useProfileStatus } from '../common/Profile'
 import { TaskForm } from './TaskForm'
@@ -98,7 +98,7 @@ function RunRow({ run, onOpen }: { run: TaskRun; onOpen: (id: string) => void })
     ...(run.missed && run.missed > 1 ? [t('scheduled.missedCount', { count: run.missed })] : [])
   ]
   const cost = run.cost
-    ? formatCost(run.cost)
+    ? formatEstimate(run.cost)
     : run.tokens !== undefined
       ? formatCap(run.tokens, TOKEN_UNIT)
       : undefined

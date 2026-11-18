@@ -2,6 +2,25 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- « Jetons traités » compte la même chose partout : l'entrée et la sortie annoncées par l'agent,
+  dans `/cost`, le détail de la consommation et Mon activité. Avant, `/cost` y ajoutait le cache
+  relu (4 051 903 au lieu de 242 370 dans un passage avec OpenCode). Le cache et la réflexion
+  s'affichent à part (« En plus : … relus en cache »). Le plafond en jetons, lui, compte toujours
+  tout : il le dit désormais (« jetons, cache compris »).
+- Un coût en dollars annoncé par l'agent est une estimation (ses tarifs, sans votre abonnement ni
+  vos remises) : il s'affiche partout avec « ≈ », et « estimation » dans le détail de la
+  consommation, `/cost` et Mon activité (« Coût estimé »). Les bobcoins de Bob, son propre
+  décompte, restent sans « ≈ ».
+- L'essai de l'accueil envoie son message avec le modèle de la conversation (celui de sa puce),
+  et non avec le modèle que l'agent choisit pour une session neuve. Si l'agent ne le propose pas,
+  le résultat dit avec quel modèle il a répondu.
+- Un groupe d'outils arrêté montre tous ses états : « ✕ 1 échec · ⊘ 1 interrompu » au lieu du
+  seul échec.
+
 ## 1.0.0-beta.8 — 18 novembre 2026
 
 ### Corrections

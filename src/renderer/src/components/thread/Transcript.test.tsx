@@ -72,6 +72,37 @@ describe('Transcript (fiche 047)', () => {
     expect(screen.getAllByTestId('tool-images')).toHaveLength(1)
   })
 
+  it('arrêt après une commande en échec : l’en-tête dit l’échec et l’interruption (fiche 245, D13)', () => {
+    // Recette du 2026-11-17 : `shell` en échec (arguments invalides) 28 s avant Arrêter, puis le
+    // `patch` en cours, interrompu par l'arrêt.
+    const { appTool: _ignored, ...base } = tool(1)
+    render(
+      view([
+        { kind: 'user', id: 1, text: 'Ajoute une page « À propos »' },
+        {
+          ...base,
+          id: 2,
+          toolCallId: 'shell',
+          title: 'shell',
+          toolKind: 'execute',
+          status: 'failed'
+        },
+        { ...base, id: 3, toolCallId: 'read', title: 'read', toolKind: 'read' },
+        {
+          ...base,
+          id: 4,
+          toolCallId: 'patch',
+          title: 'patch',
+          toolKind: 'edit',
+          status: 'cancelled'
+        }
+      ])
+    )
+    const states = screen.getByTestId('tool-group-states').textContent?.replace(/\s+/g, ' ')
+    expect(states).toContain('1 échec')
+    expect(states).toContain('1 interrompu')
+  })
+
   it('outil de l’agent : ce qu’il a fait et sur quoi, chemin relatif au dossier (fiche 107)', () => {
     const agentTool = (id: number, extra: Partial<ToolItem>): ToolItem => {
       const { appTool: _ignored, ...base } = tool(id)

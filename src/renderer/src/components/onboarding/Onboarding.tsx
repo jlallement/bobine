@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { AgentConfigureRequest, ProfileSummary } from '@shared/agent'
 import { PROBE_PROMPT, REPLY_TIMEOUT_SECONDS, type AgentReadiness } from '@shared/onboarding'
 import { numberFormat } from '@shared/i18n/format'
-import { formatCost } from '@shared/usage'
+import { formatEstimate } from '@shared/usage'
 import { ipcErrorText } from '../../ipc-errors'
 import { CodeText } from '../common/CodeText'
 import { SpoolMark } from '../common/SpoolMark'
@@ -520,14 +520,16 @@ function TrialStep(props: StepProps & { model: string | undefined }) {
     const { result } = check
     if (result.state === 'ready') {
       const facts = [
-        result.cost ? t('onboarding.trial.cost2', { amount: formatCost(result.cost) }) : null,
+        result.cost ? t('onboarding.trial.cost2', { amount: formatEstimate(result.cost) }) : null,
         result.tokens
           ? t('onboarding.trial.tokens', {
               input: numberFormat().format(result.tokens.input),
               output: numberFormat().format(result.tokens.output)
             })
           : null,
-        result.model ? t('onboarding.trial.model', { model: result.model }) : null
+        result.model && !result.modelRequested
+          ? t('onboarding.trial.model', { model: result.model })
+          : null
       ].filter(Boolean)
       return (
         <>
@@ -541,6 +543,18 @@ function TrialStep(props: StepProps & { model: string | undefined }) {
           >
             <div className="onboarding-reply">{result.reply}</div>
             {facts.length > 0 && <div className="onboarding-facts">{facts.join(' · ')}</div>}
+            {result.modelRequested && result.model && (
+              <p
+                className="onboarding-text small onboarding-model-missed"
+                data-testid="onboarding-model-missed"
+              >
+                {t('onboarding.trial.modelMissed', {
+                  model: result.model,
+                  requested: result.modelRequested,
+                  agent: label
+                })}
+              </p>
+            )}
             {result.toolRefused && (
               <p className="onboarding-text muted small">{t('onboarding.trial.toolRefused')}</p>
             )}

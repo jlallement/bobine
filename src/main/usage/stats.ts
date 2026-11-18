@@ -40,6 +40,7 @@ import {
   sameWeekdays,
   scopeRange
 } from '@shared/usage-periods'
+import { processedTokens } from '@shared/usage'
 import { localDay } from './report'
 import type { JournalSeries, TurnRow } from './usage-db'
 
@@ -178,7 +179,8 @@ export interface StatsContext {
 /** Clé de la ligne « Discussions » de « Par projet » (jamais un chemin : ne commence pas par `/`). */
 export const DISCUSSIONS_KEY = 'discussions'
 
-const tokensOf = (row: TurnRow) => (row.tokens.input ?? 0) + (row.tokens.output ?? 0)
+/** Jetons traités d'un tour : entrée + sortie, comme partout (fiche 245). */
+const tokensOf = (row: TurnRow) => processedTokens(row.tokens)
 const hasTokens = (row: TurnRow) => Object.keys(row.tokens).length > 0
 const modelKey = (profileId: string, modelId: string | undefined) => `${profileId}:${modelId ?? ''}`
 
@@ -257,6 +259,7 @@ const emptyTotals = (): UsageTotals => ({
   finishedTurns: 0,
   input: 0,
   output: 0,
+  cachedRead: 0,
   costs: {},
   turnsWithoutTokens: 0,
   turnsWithoutCost: 0
@@ -270,6 +273,7 @@ function addTotals(totals: UsageTotals, row: TurnRow): void {
   }
   totals.input += row.tokens.input ?? 0
   totals.output += row.tokens.output ?? 0
+  totals.cachedRead = (totals.cachedRead ?? 0) + (row.tokens.cachedRead ?? 0)
   if (!hasTokens(row)) totals.turnsWithoutTokens += 1
   if (row.cost) addCost(totals.costs, row)
   else totals.turnsWithoutCost += 1

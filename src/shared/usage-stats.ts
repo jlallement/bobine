@@ -71,6 +71,8 @@ export interface UsageTotals {
   finishedTurns: number
   input: number
   output: number
+  /** Jetons relus en cache : hors des jetons traités, montrés à part (fiche 245). */
+  cachedRead?: number
   costs: CostMap
   /** Tours sans aucun jeton rapporté (Bob), sans coût annoncé. */
   turnsWithoutTokens: number

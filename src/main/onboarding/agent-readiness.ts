@@ -15,7 +15,7 @@
 import { mkdtempSync, type rmSync } from 'node:fs'
 import { removeQuietly } from './scratch'
 import { join } from 'node:path'
-import type { AgentBlocker, ApiKeyInfo } from '@shared/agent'
+import type { AgentBlocker, ApiKeyInfo, SessionControl } from '@shared/agent'
 import {
   PROBE_PROMPT,
   REPLY_TIMEOUT_SECONDS,
@@ -34,6 +34,7 @@ import { AgentTimeout, errorMessage, race } from '../agent/process-utils'
 import { findExecutable, type AgentProfile } from '../agent/profiles'
 import { sessionBlocker } from '../agent/session-blocker'
 import { buildControls, currentModel } from '../agent/session-controls'
+import { modelControl } from '../agent/models-seen'
 import {
   AgentCancelled,
   AgentExited,
@@ -91,6 +92,11 @@ export interface ReadinessOptions {
    * l'essai ne tourne jamais dans un projet de l'utilisateur (relecture du tech lead, 2026-11-07).
    */
   scratchParent: string
+  /**
+   * Modèle de la conversation de l'accueil (sa puce, fiche 245, D16) : appliqué à la session
+   * d'essai avant le message s'il y est proposé, pour que l'essai parle au modèle affiché.
+   */
+  model?: RequestedModel
   /** Session d'essai ouverte (à noter avant le message), puis supprimée chez l'agent. */
   onSession?: (sessionId: string) => void
   onSessionRemoved?: (sessionId: string) => void
@@ -112,6 +118,20 @@ export interface ReadinessOptions {
   timeouts?: Partial<ReadinessTimeouts>
   /** Horloge (essais). */
   now?: () => number
+}
+
+/** Modèle demandé : réglage de catégorie `model` d'une conversation (identifiant, valeur, nom). */
+export interface RequestedModel {
+  controlId: string
+  value: string
+  name: string
+}
+
+/** Modèle choisi d'une conversation, d'après ses réglages ; `undefined` sans réglage de modèle. */
+export function requestedModel(controls: readonly SessionControl[]): RequestedModel | undefined {
+  const control = modelControl(controls)
+  const model = currentModel(controls)
+  return control && model ? { controlId: control.id, value: model.id, name: model.name } : undefined
 }
 
 /** Ce que l'agent a dit pendant l'essai. */
@@ -203,6 +223,10 @@ type Ready = Extract<AgentReadiness, { state: 'ready' }>
 interface TrialSession {
   sessionId: string
   model?: { id: string; name: string }
+  /** Réglages annoncés par la session d'essai (pour y appliquer le modèle demandé). */
+  controls: SessionControl[]
+  /** Modèle demandé que la session n'a pas pris (absent de ses choix, ou refusé) : son nom. */
+  missed?: string
 }
 
 /** Le tour d'essai fini, quelle qu'en soit l'issue : pour le journal de consommation. */
@@ -246,8 +270,9 @@ async function probeIn(
   scratch: string
 ): Promise<AgentReadiness> {
   const { init } = connected
-  const opened = await openSession(connected, options, timeouts, blockerOf, scratch)
-  if ('state' in opened) return opened
+  const session = await openSession(connected, options, timeouts, blockerOf, scratch)
+  if ('state' in session) return session
+  const opened = await useModel(connected, session, options.model, timeouts)
   const agentInfo = init.agentInfo
     ? {
         name: init.agentInfo.title ?? init.agentInfo.name,
@@ -260,6 +285,7 @@ async function probeIn(
     ms: elapsed(),
     ...(agentInfo ? { agentInfo } : {}),
     ...(opened.model ? { model: opened.model.name } : {}),
+    ...(opened.missed ? { modelRequested: opened.missed } : {}),
     ...extra
   })
   try {
@@ -267,6 +293,45 @@ async function probeIn(
     return await sendTrial(connected, options, timeouts, heard, opened, ready, blockerOf)
   } finally {
     await removeSession(connected, opened.sessionId, timeouts.cleanupMs, options)
+  }
+}
+
+/**
+ * Le modèle de la conversation, appliqué à la session d'essai (fiche 245, D16) par le même chemin
+ * qu'un choix dans la puce (`session/set_config_option`). Une session neuve annonce le modèle que
+ * l'agent choisit lui-même, qui peut différer de celui de la conversation (recette du 2026-11-17 :
+ * opencode/Hy4 flash Free au lieu de GPT-6.2 Astra). Absent des choix ou refusé : le message part
+ * avec le modèle de la session, et le résultat dit lequel a répondu (`missed`).
+ */
+async function useModel(
+  { connection, failed }: Connected,
+  opened: TrialSession,
+  wanted: RequestedModel | undefined,
+  timeouts: ReadinessTimeouts
+): Promise<TrialSession> {
+  if (!wanted || opened.model?.id === wanted.value) return opened
+  const control = opened.controls.find((c) => c.id === wanted.controlId)
+  const offered =
+    control?.type === 'select' && control.options.some((o) => o.value === wanted.value)
+  if (!offered) return { ...opened, missed: wanted.name }
+  try {
+    const response = await race(
+      failed,
+      timeouts.sessionMs,
+      t('agentHost.timeout.session'),
+      connection.agent.request(methods.agent.session.setConfigOption, {
+        sessionId: opened.sessionId,
+        configId: wanted.controlId,
+        value: wanted.value
+      })
+    )
+    const controls = buildControls(undefined, response.configOptions)
+    const model = currentModel(controls)
+    if (model?.id !== wanted.value) return { ...opened, missed: wanted.name }
+    return { ...opened, controls, model }
+  } catch (error) {
+    if (error instanceof AgentCancelled || error instanceof AgentExited) throw error
+    return { ...opened, missed: wanted.name }
   }
 }
 
@@ -324,8 +389,9 @@ async function openSession(
   try {
     const session = await race(failed, timeouts.sessionMs, t('agentHost.timeout.session'), request)
     note(session.sessionId)
-    const model = currentModel(buildControls(session.modes, session.configOptions))
-    return { sessionId: session.sessionId, ...(model ? { model } : {}) }
+    const controls = buildControls(session.modes, session.configOptions)
+    const model = currentModel(controls)
+    return { sessionId: session.sessionId, controls, ...(model ? { model } : {}) }
   } catch (error) {
     if (error instanceof AgentCancelled || error instanceof AgentTimeout) {
       const late = await within(request, timeouts.cleanupMs)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDuration } from '@shared/subagent'
-import { formatCost, formatTokens } from '@shared/usage'
+import { formatEstimate, formatTokens } from '@shared/usage'
 import type { DatedScope } from '@shared/usage-periods'
 import type { UsageBucket, UsageBucketKind, UsageSeries } from '@shared/usage-stats'
 import {
@@ -102,7 +102,7 @@ export function UsageChart({
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step)
   const format = (value: number) =>
     metric.kind === 'cost'
-      ? formatCost({ amount: value, currency: metric.unit })
+      ? formatEstimate({ amount: value, currency: metric.unit })
       : metric.kind === 'tokens'
         ? formatTokens(value, true)
         : time

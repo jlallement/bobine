@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { numberFormat } from '@shared/i18n/format'
-import { formatCost, quotaRatio, unitLabel, type AgentQuota } from '@shared/usage'
+import { formatEstimate, quotaRatio, unitLabel, type AgentQuota } from '@shared/usage'
 import type { AgentSpendView } from '@shared/usage-stats'
 import { Row, SettingsCard, SettingsTitle } from '../settings/rows'
 
@@ -84,7 +84,7 @@ export function AgentAccounts({ profileId: only }: { profileId?: string | undefi
               ).map(([key, value]) => (
                 <Row key={key} label={t(`usage.spend.${key}`)} sub>
                   <span className="usage-value" data-testid={`usage-spend-${key}`}>
-                    {formatCost({ amount: value, currency: spend.currency })}
+                    {formatEstimate({ amount: value, currency: spend.currency })}
                   </span>
                 </Row>
               ))}

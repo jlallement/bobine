@@ -49,10 +49,10 @@ const css = (ui, text) =>
     `(() => { let s = document.getElementById('maq-245'); if (!s) { s = document.createElement('style'); s.id = 'maq-245'; document.head.append(s) } s.textContent = ${JSON.stringify(text)} })()`
   )
 
-const legend = (ui, html) =>
-  stage(ui, 'body', `<div class="mq-legend">${html}</div>`, 'append')
+const legend = (ui, html) => stage(ui, 'body', `<div class="mq-legend">${html}</div>`, 'append')
 
-const clearLegend = (ui) => ui.ev(`document.querySelectorAll('.mq-legend').forEach((n) => n.remove())`)
+const clearLegend = (ui) =>
+  ui.ev(`document.querySelectorAll('.mq-legend').forEach((n) => n.remove())`)
 
 /** L'app habillée en OpenCode, conversation de la recette. */
 async function dress(ui, model = 'GPT-6 Luna') {
@@ -171,6 +171,8 @@ async function conversationScreens(scheme) {
         await sleep(300)
         await ui.ev(`(() => {
           const d = document.querySelector('[data-testid=usage-details]')
+          // Le vrai bouton « Toute mon activité… », gardé avec son style (relecture du 2026-11-18).
+          const all = d.querySelector('[data-testid=usage-open-board]')
           const row = (a, b, cls = 'usage-row sub') => '<div class="' + cls + '"><span>' + a + '</span><span>' + b + '</span></div>'
           d.innerHTML = '<div class="menu-label">Consommation · OpenCode</div>'
             + '<div class="usage-section"><div class="usage-row"><span>Contexte</span><strong>87,4k / 1,1M (8 %)</strong></div><div class="usage-bar"><span style="width:8%"></span></div></div>'
@@ -182,7 +184,7 @@ async function conversationScreens(scheme) {
             + '<div class="usage-section"><div class="usage-row"><span class="mq-new">Coût de la conversation (estimation)</span><strong class="mq-new">≈ 0,1556&nbsp;$US</strong></div>'
             + '<div class="usage-hint mq-hint mq-new">Montant annoncé par OpenCode d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).</div></div>'
             + '<div class="usage-section"><div class="usage-row" title=""><span>Moyenne par échange</span><span class="mq-new">14,3k · ≈ 0,0092&nbsp;$US</span></div></div>'
-            + '<button class="usage-all">Toute mon activité…</button>'
+          if (all) d.append(all)
         })()`)
         await ui.hover({ x: 300, y: 300 })
         await sleep(400)
@@ -201,7 +203,9 @@ async function conversationScreens(scheme) {
         await sleep(400)
         await ui.shot('maq-f245-4-fil')
         await clearLegend(ui)
-        await ui.ev(`document.querySelectorAll('[data-maq]').forEach((n) => n.remove()); document.querySelectorAll('[data-testid=thread]').forEach((n) => (n.style.display = ''))`)
+        await ui.ev(
+          `document.querySelectorAll('[data-maq]').forEach((n) => n.remove()); document.querySelectorAll('[data-testid=thread]').forEach((n) => (n.style.display = ''))`
+        )
       }
 
       if (wanted('f245-8')) {
@@ -214,12 +218,16 @@ async function conversationScreens(scheme) {
         await sleep(400)
         await ui.shot('maq-f245-8-groupe')
         await clearLegend(ui)
-        await ui.ev(`document.querySelectorAll('[data-maq]').forEach((n) => n.remove()); document.querySelectorAll('[data-testid=thread]').forEach((n) => (n.style.display = ''))`)
+        await ui.ev(
+          `document.querySelectorAll('[data-maq]').forEach((n) => n.remove()); document.querySelectorAll('[data-testid=thread]').forEach((n) => (n.style.display = ''))`
+        )
       }
 
       if (wanted('f245-3')) {
         await ui.viewport(1440, 1240)
-        await ui.ev(`[...document.querySelectorAll('.sidebar button, .sidebar a')].find((b) => /Mon activité/.test(b.textContent))?.click()`)
+        await ui.ev(
+          `[...document.querySelectorAll('.sidebar button, .sidebar a')].find((b) => /Mon activité/.test(b.textContent))?.click()`
+        )
         await ui.waitFor(`!!document.querySelector('[data-testid=usage-kpis]')`)
         await sleep(800)
         await ui.ev(`(() => {
@@ -245,10 +253,17 @@ async function conversationScreens(scheme) {
             else if (v.trim() === 'Factice rapide') x.textContent = 'openai/GPT-6 Luna'
             else if (/Agent factice/.test(v)) x.textContent = v.replace('Agent factice', 'OpenCode')
             else if (v.trim() === '2,4k · 250') x.textContent = '580,8k · 54,4k'
-            else if (/0,0125/.test(v)) x.textContent = v.replace(/0,0125/, /Par/.test(x.parentElement?.className ?? '') ? '0,0048' : '0,2403')
+            else if (/0,0125/.test(v)) x.textContent = v.replace(/0,0125/, '0,2403')
             else if (v.trim() === 'workspace') x.textContent = 'taches'
             else if (v.trim() === 'Bonjour') x.textContent = 'Nous allons construire un petit gestionnaire de tâches'
           })
+          // Table « Par modèle » : 50 échanges, coût par échange (relecture du 2026-11-18).
+          const model = document.querySelector('[data-testid=usage-model-row]')
+          if (model) {
+            const cells = model.querySelectorAll('td')
+            if (cells[1]) cells[1].textContent = '50'
+            if (cells[4]) cells[4].textContent = '≈ 0,0048 $US'
+          }
         })()`)
         await legend(
           ui,
@@ -327,7 +342,10 @@ async function onboardingScreens(scheme) {
         await replied(
           'Coût <span class="mq-new">≈ 0,0003&nbsp;$US</span> · 1 901 jetons envoyés · 3 reçus · <span class="mq-new">Modèle : openai/GPT-6.2 Astra</span>'
         )
-        await legend(ui, '<b>Essai répondu</b> — même modèle qu’annoncé et que la puce ; coût en « ≈ ».')
+        await legend(
+          ui,
+          '<b>Essai répondu</b> — même modèle qu’annoncé et que la puce ; coût en « ≈ ».'
+        )
         await ui.hover({ x: 1100, y: 700 })
         await sleep(400)
         await ui.shot('maq-f245-6-essai-repondu')

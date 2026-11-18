@@ -91,9 +91,10 @@ describe('Coût des conversations filles (fiche 117)', () => {
     )
     expect(
       screen.getAllByTestId('subtask-cost').map((e) => e.textContent?.replace(/\s/g, ' '))
-    ).toEqual(['0,025 $US', '0,0125 $US'])
-    expect(text('subtasks-total')).toBe('0,0375 $US')
-    expect(text('child-report-usage')).toBe('0,025 $US')
+    ).toEqual(['≈ 0,025 $US', '≈ 0,0125 $US'])
+    // Coûts en dollars annoncés par l'agent : des estimations (fiche 245, D8).
+    expect(text('subtasks-total')).toBe('≈ 0,0375 $US')
+    expect(text('child-report-usage')).toBe('≈ 0,025 $US')
     expect(screen.queryByTestId('child-report-turns')).toBeNull()
     fireEvent.click(screen.getByTestId('child-report-toggle'))
     expect(text('child-report-turns')).toBe('2 échanges')
@@ -159,7 +160,7 @@ describe('Compte rendu replié (fiche 171)', () => {
     expect(text('child-report-lead')).toBe('Voici le bilan.')
     expect(toggle.textContent).toContain('Afficher le détail')
     const reportEl = screen.getByTestId('child-report')
-    expect(text('child-report-usage')).toBe('0,0125 $US')
+    expect(text('child-report-usage')).toBe('≈ 0,0125 $US')
     expect(reportEl.textContent).not.toContain('bobine/a')
     expect(screen.queryByTestId('child-report-excerpt')).toBeNull()
 

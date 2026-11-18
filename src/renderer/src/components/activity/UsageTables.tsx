@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
-import { formatCost, formatTokens } from '@shared/usage'
+import { formatEstimate, formatTokens, isEstimate } from '@shared/usage'
 import type {
   CostMap,
   UsageConversationRow,
@@ -16,7 +16,7 @@ export function CostText({ costs, units }: { costs: CostMap; units: readonly str
   const { t } = useTranslation()
   const list = orderedCosts(costs, units)
   if (list.length === 0) return <small>{t('usage.board.unknown')}</small>
-  return <>{list.map(([currency, amount]) => formatCost({ amount, currency })).join(' · ')}</>
+  return <>{list.map(([currency, amount]) => formatEstimate({ amount, currency })).join(' · ')}</>
 }
 
 /**
@@ -46,7 +46,13 @@ export function ModelTable({
                 <th>{t('usage.board.columns.model')}</th>
                 <th>{t('usage.board.columns.turns')}</th>
                 <th>{t('usage.board.columns.tokens')}</th>
-                {!presenting && <th>{t('usage.board.columns.cost')}</th>}
+                {!presenting && (
+                  <th>
+                    {units.some(isEstimate)
+                      ? t('usage.board.columns.costEstimate')
+                      : t('usage.board.columns.cost')}
+                  </th>
+                )}
                 {!presenting && <th>{t('usage.board.columns.perTurn')}</th>}
               </tr>
             </thead>
@@ -54,7 +60,7 @@ export function ModelTable({
               {rows.map((row) => {
                 const perTurn = units.flatMap((unit) => {
                   const amount = costPerTurn(row, unit)
-                  return amount === undefined ? [] : [formatCost({ amount, currency: unit })]
+                  return amount === undefined ? [] : [formatEstimate({ amount, currency: unit })]
                 })
                 return (
                   <tr key={row.key} data-testid="usage-model-row">
@@ -145,7 +151,7 @@ export function ConversationTable({
           <tbody>
             {rows.map((row) => {
               const costs = orderedCosts(row.costs, units)
-                .map(([currency, amount]) => formatCost({ amount, currency }))
+                .map(([currency, amount]) => formatEstimate({ amount, currency }))
                 .join(' · ')
               const tip = [row.agentLabel, formatTokens(row.tokens, true), costs]
                 .filter(Boolean)

@@ -1,6 +1,6 @@
 # 245 — Données de consommation justes : jetons traités, coût estimé, modèle de l'essai
 
-- **Statut** : maquettes à valider (temps 1) — rien de codé
+- **Statut** : fait — maquettes validées (2026-11-18, par délégation de l'utilisateur au tech lead) ; non poussé, en attente de relecture
 - **Dépend de** : 019 (consommation), 109 (coût par échange), 126 (`/cost`), 130 (journal de
   consommation, Mon activité), 157 (plafond), 188 (accueil du premier lancement)
 - **Agents** : les deux (comportement de Bobine sur des données ACP génériques : `usage` du tour,
@@ -61,22 +61,28 @@ changer.
   (`processedTokens`, `src/shared/usage.ts`) utilisée par `/cost`, le détail de la consommation
   (total, dernier échange, puce, moyenne), la carte des filles et Mon activité (qui la reprend au
   lieu de son `tokensOf` local).
-- **Le cache s'affiche à part**, jamais additionné : « et 3 801 728 relus en cache » (voir Q1 sur
-  le mot). La réflexion aussi, quand l'agent la donne à part (Q2).
+- **Le cache s'affiche à part**, jamais additionné : « En plus : 3 801 728 relus en cache, 7 805 de
+  réflexion. » dans `/cost`, « et 17,1M relus en cache » dans Mon activité, une section « Hors
+  total » dans le détail de la consommation. La réflexion aussi (Q1, Q2).
+- **Le plafond en jetons garde `totalTokens`** (Q3) : un plafond déjà réglé ne change pas de sens.
+  Son libellé et son aide le disent : « jetons, cache compris » (carte du plafond, saisie, Réglages,
+  tâches planifiées).
 - Le journal (`usage.sqlite`) et l'export CSV gardent toutes les colonnes brutes, `total_tokens`
   compris : rien ne change dans les données enregistrées.
 
 ### Critères
 
-- [ ] `/cost` de la mère de la recette : « Jetons traités : 242 370 sur 17 échanges (216 288 en
-      entrée, 26 082 en sortie) », puis le cache à part.
-- [ ] Détail de la consommation : même total (242,4k), le cache et la réflexion sur des lignes à
+- [x] `/cost` sur un tour réel de la mère (19:54:43Z) : « Jetons traités : 35 055 sur 1 échange
+      (28 149 en entrée, 6 906 en sortie) », puis « En plus : 96 384 relus en cache, 447 de
+      réflexion. » (`jetons-traites.test.ts`). Sur les 17 tours de 20:17Z, la même règle donne
+      242 370 (maquette).
+- [x] Détail de la consommation : même total (242,4k), le cache et la réflexion sur des lignes à
       part, hors du total ; « Dernier échange » et « Moyenne par échange » en entrée + sortie.
-- [ ] Mon activité et `/cost` donnent le même nombre pour une même conversation (test unitaire
+- [x] Mon activité et `/cost` donnent le même nombre pour une même conversation (test unitaire
       sur les mêmes tours).
-- [ ] Scénario d'agent factice `jetons-opencode` : `usage` du tour à la forme réelle d'OpenCode
+- [x] Scénario d'agent factice `jetons-opencode` : `usage` du tour à la forme réelle d'OpenCode
       (entrée hors cache, `cachedReadTokens`, `thoughtTokens`, `totalTokens` = la somme).
-- [ ] Test unitaire qui échoue sans le correctif (`/cost` et `UsageMeter` sur ces tours).
+- [x] Test unitaire qui échoue sans le correctif (`/cost` et `UsageMeter` sur ces tours).
 
 ## D8 — Un coût en dollars alors que l'agent passe par un abonnement
 
@@ -115,14 +121,17 @@ montant est facturé ; Bobine ne peut pas le savoir.
   l'accueil, dépense du plafond : « ≈ » devant le montant.
 
 Les **plafonds** (montants choisis par l'utilisateur) ne prennent pas de « ≈ » : ce ne sont pas des
-coûts. Le pied du tour reste tel quel (il l'a déjà).
+coûts. **Les bobcoins de Bob non plus** (Q5) : c'est son propre décompte, pas une estimation de
+prix ; « ≈ » ne va que sur un coût en monnaie (code ISO) annoncé par l'agent. Le pied du tour,
+qui mettait « ≈ » sur tout coût, bobcoins compris, suit la même règle.
 
 ### Critères
 
-- [ ] Aucun montant de coût affiché sans « ≈ » (test qui parcourt les composants qui appellent
-      `formatCost` pour un coût ; règle : `formatCost` nu réservé aux plafonds).
-- [ ] « estimation » dans le détail de la consommation, `/cost` et Mon activité.
-- [ ] Scénario d'agent factice : coût annoncé par `usage_update` à la forme réelle d'OpenCode
+- [x] Aucun montant de coût affiché sans sa marque : les composants passent par `formatEstimate`,
+      jamais `formatCost` nu, réservé aux plafonds (test qui lit les composants,
+      `jetons-traites.test.ts`).
+- [x] « estimation » dans le détail de la consommation, `/cost` et Mon activité.
+- [x] Scénario d'agent factice : coût annoncé par `usage_update` à la forme réelle d'OpenCode
       (`cost.amount`, `USD`), y compris `0` (fille) ; test unitaire qui échoue sans le correctif.
 
 ## D13 — « ✕ 1 échec » après Arrêter : pas un défaut
@@ -156,8 +165,9 @@ corriger.
 Seule remarque : l'en-tête du groupe ne montre que l'état le plus grave (`GroupState`,
 `ToolGroup.tsx` : échec, sinon refusé, sinon interrompu), donc « ✕ 1 échec » cache
 « 1 interrompu ». Une maquette propose de montrer les deux (« ✕ 1 échec · ⊘ 1 interrompu ») :
-**option**, à retenir ou non par le tech lead (Q4). Non retenue, elle ne demande ni scénario ni
-test.
+**option**, retenue par le tech lead (Q4) : l'en-tête montre chacun des états, séparés d'un point.
+Défaut purement côté Bobine (affichage) : pas de scénario d'agent factice, un test du fil sur la
+forme du tour réel (`Transcript.test.tsx`).
 
 ## D16 — L'essai de l'accueil n'utilise pas le modèle de la conversation
 
@@ -197,12 +207,12 @@ réglage de catégorie `model` : rien ne change pour lui).
 
 ### Critères
 
-- [ ] Scénario d'agent factice `essai-autre-modele` : `session/new` annonce un modèle courant
+- [x] Scénario d'agent factice `essai-autre-modele` : `session/new` annonce un modèle courant
       différent de celui de la conversation (forme réelle des `configOptions` d'OpenCode 2.3.0, copiée
       d'une trace), le message d'essai part après `session/set_config_option` avec le modèle de la
       conversation ; variante où le modèle n'est pas proposé.
-- [ ] Test unitaire qui échoue sans le correctif (`checkAgent` niveau `reply` avec un modèle demandé).
-- [ ] Ligne du journal de consommation de l'essai au bon modèle.
+- [x] Test unitaire qui échoue sans le correctif (`checkAgent` niveau `reply` avec un modèle demandé).
+- [x] Ligne du journal de consommation de l'essai au bon modèle.
 
 ## Maquettes
 
@@ -218,22 +228,18 @@ Dossier `e2e/maquettes`, sur la vraie fenêtre (app buildée, agent factice), en
    `f245-7-essai-autre-modele` — cas où l'agent refuse le modèle.
 6. `f245-8-groupe` — option D13 : « ✕ 1 échec · ⊘ 1 interrompu ».
 
-## Questions pour le tech lead
+## Réponses du tech lead (2026-11-18)
 
-- **Q1 (D6)** : « dont X relus en cache » dit que le cache est compris dans le total, ce qui n'est
-  pas le cas avec entrée + sortie (chez OpenCode l'entrée exclut le cache). Les maquettes écrivent
-  « et X relus en cache » (« plus » dans `/cost`). D'accord ?
-- **Q2 (D6)** : la réflexion (`thoughtTokens`, comptée à part par OpenCode) reste hors du total,
-  affichée à part comme le cache ?
-- **Q3 (D6)** : le plafond en jetons (`spentIn`, `src/shared/cost-cap.ts`, et celui des tâches
-  planifiées) compte aujourd'hui `totalTokens`, cache compris. Le laisser (hors périmètre, mais le
-  plafond affiché ne correspondra plus aux « Jetons traités ») ou le passer en entrée + sortie (un
-  même plafond se déclenchera ~25 fois plus tard avec OpenCode) ?
-- **Q4 (D13)** : retenir l'option « ✕ 1 échec · ⊘ 1 interrompu » ?
-- **Q5 (D8)** : « ≈ » aussi sur les bobcoins de Bob (lus dans sa base : c'est son propre compte,
-  pas une estimation de tarif) ? Les maquettes le mettent partout, comme décidé.
+- **Q1** : « En plus : X relus en cache… » dans `/cost`, « et X relus en cache » ailleurs.
+- **Q2** : la réflexion reste à part, comme le cache ; le chiffre principal compte strictement
+  l'entrée et la sortie annoncées par l'agent.
+- **Q3** : ne pas changer le sens des plafonds en silence ; garder `totalTokens`, et l'écrire dans
+  leur libellé et leur aide (« jetons, cache compris »).
+- **Q4** : oui, « ✕ 1 échec · ⊘ 1 interrompu ».
+- **Q5** : pas de « ≈ » sur les bobcoins.
+- Maquettes : corriger le bouton « Toute mon activité… » (style perdu) et la table « Par modèle ».
 
-## Plan (temps 2, après validation)
+## Plan (temps 2, suivi)
 
 1. `src/shared/usage.ts` : `processedTokens`, `formatEstimate` ; D6 dans `app-commands.ts`,
    `UsageMeter.tsx`, `Subtasks.tsx`, `stats.ts` ; D8 dans les appelants de `formatCost` (liste
@@ -249,3 +255,27 @@ Dossier `e2e/maquettes`, sur la vraie fenêtre (app buildée, agent factice), en
 
 - 2026-11-18 — Enquête sur les traces de la recette ; D13 classé « pas un défaut » ; maquettes
   (temps 1). Rien de codé.
+- 2026-11-18 — Temps 2.
+  - D6 : `processedTokens` (`src/shared/usage.ts`) partout (`/cost`, `UsageMeter` : total, dernier
+    échange, puce, moyenne ; carte des filles ; `stats.ts` de Mon activité) ; cache et réflexion à
+    part (`ApartRows`, « En plus : … », tuile « et … relus en cache » avec `totals.cachedRead`).
+    Plafond : `formatCap` dit « jetons, cache compris » ; sens inchangé.
+  - D8 : `formatEstimate` / `isEstimate` (`src/shared/usage.ts`) : « ≈ » sur tout coût en monnaie
+    (code ISO), jamais sur les bobcoins ; « Coût de la conversation (estimation) » et son
+    explication, « Coût : ≈ … (estimation annoncée par {agent}) », « Coût estimé » (tuile, colonne).
+    La clé `turnSummary.cost` (« ≈ {{cost}} » sur tout coût) a disparu au profit de
+    `usage.estimate`.
+  - D13 (option retenue) : `GroupState` (`ToolGroup.tsx`) montre échec, refusé et interrompu ensemble.
+  - D16 : `requestedModel` et `useModel` (`agent-readiness.ts`) ; `OnboardingDeps.modelOf`, câblé dans
+    `index.ts` sur la puce de la conversation de l'accueil (même agent seulement) ; résultat
+    `modelRequested` quand le modèle n'a pas été pris, dit dans l'essai (`onboarding-model-missed`).
+    Appliqué aussi au niveau « connecté ? » (sans message au modèle).
+  - Agent factice : `scenarios-consommation.mts` (`jetons-opencode`, `jetons-opencode-fille`,
+    `essai-autre-modele`, `essai-modele-absent`) ; `Scenario.turnUsage` et `session.models`.
+  - **Écart** : le journal Détaillé de la recette (`agents.log`) ne garde des messages que leur
+    résumé (`usage_update 19711/1050000`, taille en octets), pas leur contenu. Les valeurs des
+    scénarios viennent donc de ces résumés et de `usage.sqlite` (jetons et coût de chaque tour) ;
+    la forme des messages (noms des champs, liste plate des modèles) vient des traces réelles
+    `__traces__/opencode-2.3.0/` (`reponse-simple.ndjson`). Le payload exact de l'essai de 19:51Z
+    n'existe pas (journal encore Normal).
+  - Maquettes : les deux défauts relevés corrigés dans `run-245.mjs`.
