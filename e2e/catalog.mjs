@@ -1050,6 +1050,24 @@ export const SUITES = [
     ]
   },
   {
+    // « Committer d'abord » : fichiers à cocher (fiche 244), carte « Fusion refusée » d'un worktree.
+    name: 'commit-choisi',
+    file: 'commit-choisi.mjs',
+    run: 'commitChoisiSuite',
+    themes: BOTH,
+    sources: [
+      `${C}panel/CommitChooser.tsx`,
+      `${C}panel/CommitForm.tsx`,
+      `${C}panel/MainDirtyCard.tsx`,
+      `${C}panel/WorktreeBar.tsx`,
+      `${C}panel/ChangesList.tsx`,
+      `${R}commit-chooser.css`,
+      `${R}useWorktreeCycle.ts`,
+      ...GIT,
+      'src/shared/worktree-cycle.ts'
+    ]
+  },
+  {
     // Filles en worktree et non commité de la mère (fiche 240) : avertissement et choix avant le
     // lancement (rôle, Tâches proposées), avis en lecture seule, rappel dans la mère.
     name: 'filles-non-commite',
@@ -1058,6 +1076,9 @@ export const SUITES = [
     themes: BOTH,
     sources: [
       `${C}thread/LaunchDirty.tsx`,
+      `${C}panel/CommitChooser.tsx`,
+      `${C}panel/CommitForm.tsx`,
+      `${R}commit-chooser.css`,
       `${C}thread/ChildProposals.tsx`,
       `${C}thread/Subtasks.tsx`,
       `${C}roles/`,

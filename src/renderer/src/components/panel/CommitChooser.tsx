@@ -5,6 +5,7 @@ import { splitPath } from '@shared/changes'
 import { looksSecret, proposeCommitMessage, type CommitFile } from '@shared/worktree-cycle'
 import { CommitForm } from './CommitForm'
 import { GIT_BADGES } from './ChangesList'
+import '../../commit-chooser.css'
 
 /** Au-delà, la liste défile dans un cadre de hauteur bornée (« Tout afficher » la déplie). */
 const SCROLL_FROM = 8
