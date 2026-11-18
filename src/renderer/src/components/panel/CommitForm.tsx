@@ -54,12 +54,12 @@ export function CommitForm({
         onChange={(e) => setEdited(e.target.value)}
         data-testid={`${testid}-message`}
       />
+      {blocked && (
+        <p className="commit-blocked" role="status" data-testid={`${testid}-blocked`}>
+          {blocked}
+        </p>
+      )}
       <div className="worktree-form-actions">
-        {blocked && (
-          <span className="commit-blocked" role="status" data-testid={`${testid}-blocked`}>
-            {blocked}
-          </span>
-        )}
         <button className="btn small ghost" onClick={onCancel} data-testid={`${testid}-cancel`}>
           {t('worktreeCycle.commit.cancel')}
         </button>

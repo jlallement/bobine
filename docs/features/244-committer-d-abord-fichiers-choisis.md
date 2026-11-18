@@ -1,6 +1,6 @@
 # 244 — « Committer d'abord » : voir et choisir chaque fichier
 
-- **Statut** : en cours — maquettes validées (2026-11-18), code et tests faits ; e2e à passer
+- **Statut** : fait — maquettes validées (2026-11-18) ; non poussé, en attente de relecture
 - **Dépend de** : 123 (fusion refusée, « Committer d'abord »), 240 (filles en worktree, même
   carte avant le lancement), 110 (cycle des worktrees : la vue Git et ses cases à cocher)
 - **Agents** : les deux (comportement de Bobine, `git` dans le main process, aucun code propre à un
@@ -51,7 +51,7 @@ reprend l'apparence et la règle.
 - [x] Test unitaire **côté interface** : décocher un fichier, valider ; `onCommit` / l'IPC reçoit
       la liste sans lui, et le message proposé ne le cite pas ; tout décoché : bouton désactivé,
       raison affichée. Rejoué sans le correctif : il échoue.
-- [ ] Essai e2e contre l'agent factice : carte de fusion avec 40 fichiers dont un `.env`, décoché ;
+- [x] Essai e2e contre l'agent factice : carte de fusion avec 40 fichiers dont un `.env`, décoché ;
       après « Committer puis fusionner », le `.env` est toujours non commité dans le dossier
       principal et absent de l'historique ; même chose pour le lancement d'une fille (suite de la
       fiche 240).
@@ -151,3 +151,11 @@ liste. Le test main verrouille ce contrat.
   de la 240. Arrêt pour validation.
 - 2026-11-18 : maquettes validées, Q1 et Q2 retenues. Rebasée sur `main` (9176910, 240
   fusionnée). Code, tests, i18n, CHANGELOG.
+- 2026-11-18 : `./scripts/verify` vert (code de sortie 0, 4827 tests). `pnpm build && pnpm e2e
+  --changed` : toute la suite (216 tâches ; `Composer.tsx` et les locales font tout jouer), 214
+  vertes, 2 échecs dans `filles` en clair seulement (contenu et coût du compte rendu d'une fille,
+  hors de ce lot) ; `filles` rejouée seule : verte en clair et en sombre. `commit-choisi`,
+  `filles-non-commite`, `filles-fusion` et `worktree-cycle` vertes en clair et en sombre.
+  Captures regardées. Retouche après les captures : dans le panneau étroit, « Cochez au moins un
+  fichier à committer. » passe sur sa propre ligne au-dessus des boutons (`commit-choisi`
+  rejouée, verte).

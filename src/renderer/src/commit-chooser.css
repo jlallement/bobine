@@ -97,6 +97,7 @@
 }
 
 .commit-blocked {
-  align-self: center;
+  margin: 0;
+  text-align: right;
   color: var(--warn);
 }
