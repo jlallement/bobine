@@ -159,7 +159,8 @@ export async function usageBoardSuite(scheme) {
             `semaine : 2 échanges dans 1 conversation (${turnsSub.replace(/\n/g, ' ')})`
           )
           check(
-            plain(await kpi(ui, 'cost')) === usd(0.025) &&
+            // Coût en dollars annoncé par l'agent : une estimation (« ≈ », fiche 245).
+            plain(await kpi(ui, 'cost')) === plain(L('usage.estimate', { cost: usd(0.025) })) &&
               (await kpi(ui, 'tokens')) !== L('usage.board.unknown'),
             `coût dans son unité (${plain(await kpi(ui, 'cost'))}), jetons traités communiqués`
           )

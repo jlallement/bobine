@@ -12,6 +12,8 @@ const LOCALE = LANG === 'en' ? 'en-US' : 'fr-FR'
 const nf = (options) => (n) => plain(new Intl.NumberFormat(LOCALE, options).format(n))
 const usd = nf({ style: 'currency', currency: 'USD', maximumFractionDigits: 4 })
 const amount = nf({ maximumFractionDigits: 4 })
+/** Coût en monnaie annoncé par l'agent : une estimation, « ≈ » (fiche 245) ; pas les bobcoins. */
+const est = (n) => plain(L('usage.estimate', { cost: usd(n) }))
 
 /**
  * Coût de la conversation (fiches 109, 113) : en un seul endroit, le détail de la puce de
@@ -79,8 +81,13 @@ export async function usageSuite(scheme) {
       'détail : jetons cumulés sur 2 échanges, coût annoncé par l’agent'
     )
     check(
-      plain(await ui.ev(`${ui.$('usage-cost')}.innerText`)) === usd(0.025),
-      'coût cumulé : 2 × 0,0125 $US'
+      plain(await ui.ev(`${ui.$('usage-cost')}.innerText`)) === est(0.025),
+      'coût cumulé : 2 × 0,0125 $US, en estimation (≈)'
+    )
+    check(
+      (await ui.ev(`${ui.$('usage-cost-hint')}?.innerText ?? ''`)) ===
+        L('usage.costHint', { agent: L('profiles.mock.label') }),
+      'coût en dollars : dit estimé, d’après les tarifs de l’agent (fiche 245)'
     )
     check(
       (await ui.ev(`${ui.$('usage-open-board')}?.innerText`)) === L('usage.board.openAll'),
@@ -90,7 +97,7 @@ export async function usageSuite(scheme) {
     await closePopover(ui, 'usage-details')
 
     // Comme OpenCode : coût en dollars annoncé par ACP, jetons du tour (fiche 109).
-    await checkCost(ui, { total: usd(0.025), perTurn: usd(0.0125), label: 'coût par ACP' })
+    await checkCost(ui, { total: est(0.025), perTurn: est(0.0125), label: 'coût par ACP' })
     await ui.shot('14b-cout-conversation')
     await closePopover(ui, 'usage-details')
 

@@ -11,6 +11,8 @@ const TURN_COST = new Intl.NumberFormat(LANG, {
   currency: 'USD',
   maximumFractionDigits: 4
 }).format(0.0125)
+/** Coût en dollars annoncé par l'agent : affiché en estimation (« ≈ », fiche 245). */
+const TURN_ESTIMATE = L('usage.estimate', { cost: TURN_COST })
 const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
 
 /**
@@ -117,9 +119,9 @@ export async function fillesSuite(scheme) {
           `({ row: ${ui.$('subtask-cost')}.innerText, total: ${ui.$('subtasks-total')}?.innerText, report: ${ui.$('child-report-usage')}?.innerText, turns: ${ui.$('child-report-turns')}?.innerText })`
         )
         check(
-          spaced(cost.row) === spaced(TURN_COST) &&
-            spaced(cost.total) === spaced(TURN_COST) &&
-            spaced(cost.report) === spaced(TURN_COST) &&
+          spaced(cost.row) === spaced(TURN_ESTIMATE) &&
+            spaced(cost.total) === spaced(TURN_ESTIMATE) &&
+            spaced(cost.report) === spaced(TURN_ESTIMATE) &&
             cost.turns === L('children.report.turns', { count: 1 }),
           `coût de la fille : sa ligne, le total de la carte, son compte rendu (${spaced(cost.report)})`
         )

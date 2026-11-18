@@ -15,7 +15,7 @@ export function CostCapCard({ item }: { item: Extract<TranscriptItem, { kind: 'c
   const { t } = useTranslation()
   const controls = useContext(TurnControlsContext)
   const values = {
-    spent: formatCap(item.spent, item.unit),
+    spent: formatCap(item.spent, item.unit, true),
     limit: formatCap(item.limit, item.unit)
   }
   return (
@@ -53,7 +53,7 @@ export function CostCapCard({ item }: { item: Extract<TranscriptItem, { kind: 'c
               onClick={() => controls.answerCostCap(item.id, 'continue')}
               data-testid="cost-cap-continue"
             >
-              {t('turnGuards.cap.continue', { step: formatCap(item.step, item.unit) })}
+              {t('turnGuards.cap.continue', { step: formatCap(item.step, item.unit, true) })}
             </button>
             <button
               type="button"

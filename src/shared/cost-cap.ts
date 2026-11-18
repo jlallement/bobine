@@ -60,10 +60,12 @@ const round6 = (n: number) => Math.round(n * 1e6) / 1e6
 
 /**
  * Montant d'un plafond dans son unité, pour l'affichage (« 5,00 $US », « 2 000 000 jetons, cache
- * compris »). Le plafond en jetons compte `totalTokens` de l'agent, cache compris, contrairement
+ * compris »). `short` : une quantité à côté du plafond (dépense, pas de relève), sans le redire.
+ * Le plafond en jetons compte `totalTokens` de l'agent, cache compris, contrairement
  * aux « Jetons traités » (fiche 245, Q3 : le sens d'un plafond déjà réglé ne change pas en silence).
  */
-export function formatCap(amount: number, unit: string): string {
+export function formatCap(amount: number, unit: string, short = false): string {
+  if (unit === TOKEN_UNIT && short) return t('usage.tokensValue', { tokens: formatTokens(amount) })
   return unit === TOKEN_UNIT
     ? t('usage.capTokensValue', { tokens: formatTokens(amount) })
     : formatCost({ amount, currency: unit })
