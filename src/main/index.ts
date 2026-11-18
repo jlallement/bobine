@@ -19,7 +19,7 @@ import { gitRun } from './git/git-queue'
 import { encodeBgra, resizeJpeg } from './simulator/images'
 import { setupSimulator } from './simulator/simulator-setup'
 import { previewToolsModule } from './preview/preview-tools'
-import { AttentionTracker } from './notifications/attention'
+import { appAttention } from './notifications/app-attention'
 import { GitChangesReader } from './changes/git'
 import { GitRepo } from './git/repo'
 import { threadIpcDeps } from './thread-ipc-electron'
@@ -110,10 +110,9 @@ import { appAboutWindow, appHelpWindow, helpIpc } from './secondary-windows'
 import { technicalInfo } from './technical-info'
 import { captureScreen, SCREEN_RECORDING_SETTINGS, screenAccessOf } from './screen-capture'
 import { HtmlPreviewServer } from './files/html-preview'
-import { systemAlerts } from './notifications/system-alerts'
-import { inboxCount } from '@shared/inbox'
 import { QUICK_SHORTCUTS } from '@shared/quick-entry'
-import { changeLanguage, initI18n, resolveLanguage, savedLanguage } from './i18n'
+import { initI18n, resolveLanguage, savedLanguage } from './i18n'
+import { applySettingsChanges } from './settings-effects'
 import { freshStart, freshStartIpc, reportResetFailure } from './fresh-start-app'
 import { touchesRealAgents } from './fresh-start'
 import { launchLanguage, syncNativeLanguage, systemAppLanguage } from './native-language'
@@ -614,46 +613,17 @@ async function start(): Promise<void> {
     quickEntryStatus: () => quickShortcut.state
   })
 
-  // Son quand un agent attend (fiche 068), rebond du Dock (fiche 101) : macOS, ou un journal en essai.
-  const alerts = systemAlerts(
-    () => settings.preferences(),
-    // Bannières et compteur coupés en mode présentation (fiche 159).
-    () => settings.notificationsEnabled() && !presentation.active,
-    features.dockBadge
-  )
-  // Compteur « À traiter » du Dock (fiche 119) : la règle de la barre latérale, comptée ici.
-  const updateBadge = () =>
-    alerts.badge.update(
-      inboxCount(conversations.state().conversations, attention.state(), attention.details())
-    )
-  presentation.onChange(() => updateBadge())
-  // Conversations qui attendent l'utilisateur : notifications, badge du Dock (fiche 024).
-  const attention = new AttentionTracker({
-    // Ce que la fenêtre principale montre (la fenêtre rapide n'affiche pas de conversation).
+  // Attente de l'utilisateur : notifications, son, Dock (fiches 024, 068, 101, 119, 159).
+  const { attention, alerts, updateBadge } = appAttention({
+    settings,
+    presentation,
+    conversations,
+    notifier,
     isFocused: () => !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused(),
-    shownIds: () => conversations.shownIds(),
-    describe: (id) => {
-      const summary = conversations.state().conversations.find((c) => c.id === id)
-      return (
-        summary && {
-          title: summary.title,
-          agent: summary.profileLabel,
-          child: !!summary.startedFrom,
-          workspace: summary.workspace
-        }
-      )
-    },
-    enabled: () => settings.notificationsEnabled() && !presentation.active,
-    notify: (notice) => notifier.notify(notice),
-    withdraw: (id) => notifier.withdraw(id),
-    ...alerts.attention,
-    // Ni son ni rebond du Dock en mode présentation (fiche 159).
-    chime: () => !presentation.active && alerts.attention.chime?.(),
-    bounce: (kind) => !presentation.active && alerts.attention.bounce?.(kind),
+    dockBadge: features.dockBadge,
     emit: (state, details) => {
       send('attention:changed', state)
       send('attention:detailsChanged', details)
-      updateBadge()
     }
   })
   const refreshAttention = () => attention.refresh()
@@ -720,38 +690,22 @@ async function start(): Promise<void> {
     discussionsRoot: discussionsRoot(join(app.getPath('userData'), 'conversations'))
   })
 
-  /** Dernière valeur de « Garder les cookies du navigateur » (fiche 072). */
-  let keptCookies = settings.preferences().browserKeepCookies
-  /** Dernière valeur du réglage « Langue » (fiche 074). */
-  let languagePreference = startLanguage
-  settings.onChange(() => {
-    attention.settingsChanged()
-    // Cookies du navigateur plus gardés (fiche 072) : ce qui est sur le disque part tout de suite.
-    const keepCookies = settings.preferences().browserKeepCookies
-    if (keptCookies && !keepCookies) {
-      void browser.clearData().catch((error: unknown) => log.warn('Navigateur :', error))
-    }
-    keptCookies = keepCookies
-    updateKeepAwake()
-    // Raccourci de la fenêtre rapide changé : réenregistré, et le menu l'affiche.
-    const before = quickShortcut.state.shortcut
-    quickShortcut.apply(settings.preferences().quickEntryShortcut)
-    if (quickShortcut.state.shortcut !== before) refreshMenu()
-    // Thème (fiche 027) : le CSS, xterm.js et les pages du navigateur suivent `nativeTheme`.
-    nativeTheme.themeSource = settings.preferences().theme
-    // Langue (fiche 074) : le main, le menu et chaque fenêtre suivent, sans relancer ; les
-    // fenêtres de macOS, au prochain lancement (retirée d'abord : « Système » relit macOS).
-    const preference = settings.preferences().language
-    if (preference !== languagePreference && managesNativeLanguage) {
-      syncNativeLanguage(appLanguage, preference, languagePreference)
-    }
-    languagePreference = preference
-    const language = resolveLanguage(preference, app.getPreferredSystemLanguages())
-    if (changeLanguage(language)) {
-      refreshMenu()
-      send('app:language', language)
-    }
-    send('settings:changed', conversations.settingsView())
+  // Réglage changé : navigateur, veille, raccourci, thème, langue (`settings-effects.ts`).
+  applySettingsChanges({
+    settings,
+    attentionChanged: () => attention.settingsChanged(),
+    clearBrowserData: () => browser.clearData(),
+    updateKeepAwake,
+    quickShortcut,
+    refreshMenu,
+    startLanguage,
+    ...(managesNativeLanguage
+      ? { syncNativeLanguage: (now, before) => syncNativeLanguage(appLanguage, now, before) }
+      : {}),
+    systemLanguages: () => app.getPreferredSystemLanguages(),
+    languageChanged: (language) => send('app:language', language),
+    settingsChanged: () => send('settings:changed', conversations.settingsView()),
+    onError: (error) => log.warn('Navigateur :', error)
   })
   // Quitter (fiche 089) : confirmation si un agent travaille (pas pour un arrêt du Mac ni un
   // signal), sessions des conversations vides supprimées chez leur agent, puis tout s'arrête.
