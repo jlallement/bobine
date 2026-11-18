@@ -159,6 +159,15 @@ const FIX_TITLE = /\b(fix|fixe|bug|corrig|répar|repar|crash|erreur|error|plant)
 const SUBJECT_MAX = 60
 const BODY_FILES_MAX = 20
 
+/**
+ * Nom qui ressemble à un fichier de secrets (fiche 244) : `.env*`, `*.pem`, `*.key`, `id_rsa*`,
+ * `*.p12`. Seulement une étiquette « secret ? » dans la liste à cocher : le fichier reste coché.
+ */
+export function looksSecret(path: string): boolean {
+  const name = path.slice(path.lastIndexOf('/') + 1)
+  return /^\.env/i.test(name) || /^id_rsa/i.test(name) || /\.(pem|key|p12)$/i.test(name)
+}
+
 /** Type Conventional Commits deviné : docs, test, fix, sinon feat. */
 export function commitType(title: string, files: readonly CommitFile[]): string {
   if (files.length > 0 && files.every((f) => DOC_FILE.test(f.path))) return 'docs'

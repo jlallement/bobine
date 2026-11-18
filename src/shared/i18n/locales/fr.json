@@ -3820,7 +3820,10 @@
       "stashRestored_other": "Vos {{count}} modifications mises de côté sont revenues.",
       "stashRestored_many": "Vos {{count}} modifications mises de côté sont revenues.",
       "stashFailed": "Vos modifications mises de côté n’ont pas pu revenir sans conflit ({{files}}) : elles restent dans git stash ({{ref}}).",
-      "stashKept": "Vos modifications mises de côté n’ont pas pu revenir : elles restent dans git stash ({{ref}})."
+      "stashKept": "Vos modifications mises de côté n’ont pas pu revenir : elles restent dans git stash ({{ref}}).",
+      "left_one": "{{count}} fichier décoché reste non commité : mis de côté le temps de la fusion, puis remis.",
+      "left_many": "{{count}} fichiers décochés restent non commités : mis de côté le temps de la fusion, puis remis.",
+      "left_other": "{{count}} fichiers décochés restent non commités : mis de côté le temps de la fusion, puis remis."
     },
     "mr": {
       "error": {
@@ -3832,6 +3835,23 @@
         "ssh-key": "{{host}} refuse la clé SSH : vérifiez-la (« ssh -T git@{{host}} ») ou ajoutez-la à votre compte, puis réessayez.",
         "not-found": "{{host}} ne trouve pas ce projet. Si GitLab est installé sous un sous-chemin (https://hôte/gitlab/…), déclarez-le : « glab config set subfolder <chemin> --host {{host}} », puis réessayez."
       }
+    },
+    "choose": {
+      "files": "Fichiers à committer",
+      "total_one": "{{count}} fichier",
+      "total_many": "{{count}} fichiers",
+      "total_other": "{{count}} fichiers",
+      "allChecked_one": "coché",
+      "allChecked_many": "tous cochés",
+      "allChecked_other": "tous cochés",
+      "noneChecked": "aucun coché",
+      "someChecked": "{{checked}} sur {{count}} cochés",
+      "toggleAll": "Tout cocher ou tout décocher",
+      "expand": "Tout afficher",
+      "collapse": "Réduire",
+      "none": "Cochez au moins un fichier à committer.",
+      "secret": "secret ?",
+      "secretHint": "Ce nom ressemble à un fichier de secrets (clé, mot de passe) : vérifiez qu’il doit partir dans le commit."
     }
   },
   "childrenMerge": {
@@ -5771,6 +5791,12 @@
     "opinionLead": "Juste un avis ? Les rôles peuvent lire ce dossier tel quel, non commité compris, sans rien y modifier.",
     "opinion": "Demander un avis en lecture seule",
     "committed": "Commité : {{short}}. Les conversations filles partiront de ce commit.",
-    "whyBare": "Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail."
+    "whyBare": "Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.",
+    "left_one": "{{count}} fichier décoché reste dans ce dossier, non commité : les conversations filles ne l’auront pas.",
+    "left_many": "{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.",
+    "left_other": "{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.",
+    "leftOne_one": "{{count}} fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.",
+    "leftOne_many": "{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.",
+    "leftOne_other": "{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas."
   }
 }

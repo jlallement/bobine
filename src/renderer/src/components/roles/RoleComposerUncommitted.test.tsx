@@ -237,4 +237,32 @@ describe('`@rôle` et non commité de la mère (fiche 240)', () => {
     await enter()
     expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
   })
+
+  it('fiche 244 : un fichier décoché ne part pas ; les filles partent sans lui (« anyway »)', async () => {
+    const { type, send, commitFolder } = setup()
+    // Après le commit, le fichier décoché reste : le dossier n'est pas propre.
+    commitFolder.mockImplementation(async () => {
+      childFolderDirty.mockResolvedValue({ ...DIRTY, count: 1, files: DIRTY.files.slice(0, 1) })
+    })
+    await type('@ux-ui-expert construisez la page')
+    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    expect(screen.getAllByTestId('launch-dirty-commit-file')).toHaveLength(DIRTY.files.length)
+    fireEvent.click(
+      screen
+        .getAllByTestId('launch-dirty-commit-file')
+        .find((li) => li.dataset.path === 'plan.md')
+        ?.querySelector('input') as HTMLInputElement
+    )
+    const message = screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement
+    expect(message.value).not.toContain('plan.md')
+    expect(plain(screen.getByTestId('launch-dirty-commit-left').textContent)).toBe(
+      '1 fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.'
+    )
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    expect(commitFolder).toHaveBeenCalledWith(
+      message.value,
+      DIRTY.files.slice(1).map((f) => f.path)
+    )
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+  })
 })

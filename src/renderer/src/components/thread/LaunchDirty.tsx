@@ -2,9 +2,8 @@ import { Eye, TriangleExclamationPoint } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { FolderDirty } from '@shared/launch-folder'
-import { proposeCommitMessage } from '@shared/worktree-cycle'
 import { ipcErrorText } from '../../ipc-errors'
-import { CommitForm } from '../panel/CommitForm'
+import { CommitChooser } from '../panel/CommitChooser'
 import { useArmedCard } from './useArmedCard'
 
 /** Fichiers montrés, au plus ; les autres sont comptés (comme « Fusion refusée »). */
@@ -15,6 +14,8 @@ const MAX_SHOWN = 6
  * la fille n'aura pas. Même famille que « Fusion refusée » (`MainDirtyCard`) : nombre, fichiers,
  * commit de départ, puis « Committer d'abord » (message proposé, puis le lancement part) ou
  * « Partir quand même » ; pour des rôles cités avec `@`, l'avis en lecture seule en plus.
+ * Fiche 244 : « Committer d'abord » montre tous les fichiers, à cocher ; les décochés restent dans
+ * le dossier, et la fille part sans eux (`onCommitted(left)`, la suite les compte « laissés »).
  */
 export function LaunchDirtyCard({
   dirty,
@@ -33,8 +34,11 @@ export function LaunchDirtyCard({
   /** Plusieurs filles : accord au pluriel. */
   many: boolean
   anywayLabel: string
-  /** Commit fait : le lancement part (la carte, la saisie ou le dialogue s'en chargent). */
-  onCommitted: () => void
+  /**
+   * Commit fait : le lancement part (la carte, la saisie ou le dialogue s'en chargent). `left` :
+   * fichiers décochés, restés non commités ; plus de zéro, la fille part sans eux (« anyway »).
+   */
+  onCommitted: (left: number) => void
   onAnyway: () => void
   /** Avis en lecture seule dans ce dossier (rôles cités avec `@` seulement). */
   onOpinion?: () => void
@@ -60,14 +64,13 @@ export function LaunchDirtyCard({
   }, [attention])
   const { count } = dirty
   const more = count - MAX_SHOWN
-  const files = dirty.files.map((f) => f.path)
-  const doCommit = async (message: string) => {
+  const doCommit = async (message: string, files: string[], left: number) => {
     setBusy(true)
     setError(null)
     try {
       await commit(message, files)
       setCommitting(false)
-      onCommitted()
+      onCommitted(left)
     } catch (e) {
       setError(ipcErrorText(e))
     } finally {
@@ -88,16 +91,18 @@ export function LaunchDirtyCard({
         <TriangleExclamationPoint size={13} />
         {t(many ? 'launchDirty.titleMany' : 'launchDirty.title', { count, who })}
       </div>
-      <ul className="main-dirty-files launch-dirty-files" aria-label={t('launchDirty.files')}>
-        {dirty.files.slice(0, MAX_SHOWN).map((file) => (
-          <li key={file.path} data-testid="launch-dirty-file">
-            {file.path}
-          </li>
-        ))}
-        {more > 0 && (
-          <li className="muted">{t('worktreeCycle.mainDirty.more', { count: more })}</li>
-        )}
-      </ul>
+      {!committing && (
+        <ul className="main-dirty-files launch-dirty-files" aria-label={t('launchDirty.files')}>
+          {dirty.files.slice(0, MAX_SHOWN).map((file) => (
+            <li key={file.path} data-testid="launch-dirty-file">
+              {file.path}
+            </li>
+          ))}
+          {more > 0 && (
+            <li className="muted">{t('worktreeCycle.mainDirty.more', { count: more })}</li>
+          )}
+        </ul>
+      )}
       <div className="main-dirty-why">
         <Trans
           i18nKey={dirty.subject ? 'launchDirty.why' : 'launchDirty.whyBare'}
@@ -106,12 +111,14 @@ export function LaunchDirtyCard({
         />
       </div>
       {committing ? (
-        <CommitForm
-          proposed={proposeCommitMessage(dirty.title ?? '', dirty.files)}
+        <CommitChooser
+          files={dirty.files}
+          title={dirty.title ?? ''}
           busy={busy}
           testid="launch-dirty-commit"
           confirmLabel={t('launchDirty.commitConfirm')}
-          onCommit={(message) => void doCommit(message)}
+          leftNote={(left) => t(many ? 'launchDirty.left' : 'launchDirty.leftOne', { count: left })}
+          onCommit={(message, files, left) => void doCommit(message, files, left)}
           onCancel={() => setCommitting(false)}
         />
       ) : (

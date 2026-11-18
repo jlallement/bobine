@@ -297,6 +297,71 @@ describe('cycle d’un worktree (fiche 110)', () => {
     await expect(cycle.commitMain(target, { message: 'x', files: ['../x'] })).rejects.toThrow()
   })
 
+  it('fiche 244 : « Committer d’abord » des cochés ; le .env décoché ne part pas, et revient après la fusion', async () => {
+    const { root, target, cycle } = await setup()
+    write(target, 'a.txt', 'a\n')
+    await cycle.commit(target, { message: 'feat: a', files: ['a.txt'] })
+    writeFileSync(join(root, 'README.md'), '# Démo\n\nmère\n')
+    writeFileSync(join(root, 'plan.md'), 'plan\n')
+    writeFileSync(join(root, '.env'), 'SECRET=1\n')
+    await cycle.commitMain(target, { message: 'feat: mère', files: ['README.md', 'plan.md'] })
+    expect(git(root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort()).toEqual([
+      'README.md',
+      'plan.md'
+    ])
+    expect(git(root, 'status', '--porcelain')).toBe('?? .env')
+    // Les décochés restent : la fusion les met de côté, puis les remet.
+    expect(await cycle.merge(target, { stash: true })).toMatchObject({
+      status: 'merged',
+      stash: { restored: true, count: 1 }
+    })
+    expect(readFileSync(join(root, '.env'), 'utf8')).toBe('SECRET=1\n')
+    expect(git(root, 'status', '--porcelain')).toBe('?? .env')
+    expect(git(root, 'log', '--all', '--name-only', '--format=')).not.toContain('.env')
+    expect(git(root, 'stash', 'list')).toBe('')
+  })
+
+  it('fiche 244 : la fusion échoue après la mise de côté ; le .env décoché revient quand même', async () => {
+    const { root, target } = await setup()
+    // Le fast-forward du dépôt principal échoue (git refuse) : la fusion lève une erreur.
+    const run: Run = async (command, args, options) => {
+      if (args.includes('--ff-only')) {
+        return { code: 1, stdout: Buffer.from(''), stderr: 'fatal: refusé (essai)' }
+      }
+      return gitCommand(command, args, options)
+    }
+    const cycle = new WorktreeCycle(run)
+    write(target, 'a.txt', 'a\n')
+    await cycle.commit(target, { message: 'feat: a', files: ['a.txt'] })
+    writeFileSync(join(root, '.env'), 'SECRET=1\n')
+    const error = await cycle.merge(target, { stash: true }).then(
+      () => new Error('fusion acceptée'),
+      (e: Error) => e
+    )
+    expect(error.message).toContain('refusé (essai)')
+    expect(readFileSync(join(root, '.env'), 'utf8')).toBe('SECRET=1\n')
+    expect(git(root, 'status', '--porcelain')).toBe('?? .env')
+    expect(git(root, 'stash', 'list')).toBe('')
+  })
+
+  it('fiche 244 : remise en conflit après la fusion ; rien n’est perdu, l’entrée reste et c’est dit', async () => {
+    const { root, target, cycle } = await setup()
+    write(target, 'notes.md', 'de la fille\n')
+    await cycle.commit(target, { message: 'feat: notes', files: ['notes.md'] })
+    writeFileSync(join(root, 'plan.md'), 'plan\n')
+    // Décoché, et la fille apporte le même chemin : la remise entre en conflit.
+    writeFileSync(join(root, 'notes.md'), 'de la mère\n')
+    await cycle.commitMain(target, { message: 'feat: plan', files: ['plan.md'] })
+    const outcome = await cycle.merge(target, { stash: true })
+    expect(outcome).toMatchObject({ status: 'merged', stash: { restored: false, count: 1 } })
+    const stash = outcome.status === 'merged' ? outcome.stash : undefined
+    const ref = stash && !stash.restored ? stash.ref : ''
+    expect(ref).toMatch(/^[0-9a-f]{7}$/)
+    expect(git(root, 'stash', 'list').split('\n')).toHaveLength(1)
+    // La version de la mère est intacte dans l'entrée gardée.
+    expect(git(root, 'show', `${ref}^3:notes.md`)).toBe('de la mère')
+  })
+
   // 30 s, processus lents à lancer sous Windows (fiche 229) : 138 git ;
   // 9,1 s sur x64, 12,9 s au pire (arm64).
   it('PR par gh simulé : poussée, création, PR déjà là, et ce qui manque', async () => {

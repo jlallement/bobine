@@ -6,6 +6,12 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- “Commit first” (merge refused, child conversation launch) shows the full list of files before
+  you confirm, one checkbox per file, all checked at first. Before, every modified or new file was
+  committed, even those not shown (an `.env` that is not ignored, for example). Only checked files
+  are committed, and the proposed message lists only them. A name that looks like a secrets file
+  gets a “secret?” tag. Unchecked files stay uncommitted: the merge sets them aside then puts them
+  back, and a child conversation leaves without them.
 - Bobine no longer calls on an agent you don't use: if Bob is not the agent you use, its quota no
   longer shows up at launch; it appears when a conversation with Bob is ready, then is read again
   with “Refresh”; each reading creates then deletes a session in Bob. A disposable profile (“Try

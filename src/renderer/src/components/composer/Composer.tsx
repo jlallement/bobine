@@ -666,7 +666,11 @@ function ComposerBelow({
           anywayLabel={t('launchDirty.anyway')}
           attention={roleView.attention}
           commit={roleCompose.commit}
-          onCommitted={submit}
+          onCommitted={(left) => {
+            // Fiche 244 : des fichiers décochés restent ; les filles partent sans eux.
+            if (left > 0) roleCompose.choose('anyway')
+            submit()
+          }}
           onAnyway={() => {
             roleCompose.choose('anyway')
             submit()

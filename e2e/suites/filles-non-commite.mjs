@@ -13,12 +13,13 @@ import { L, check, sleep, withApp } from '../lib.mjs'
  *     n'envoie rien ; « Partir quand même » : la fille ne voit pas le plan, la mère le rappelle ;
  *     avis en lecture seule : les filles voient le plan.
  * (b) Tâches proposées : la carte attend le choix ; « Committer d'abord », puis « Lancer » : la
- *     fille voit le plan.
+ *     fille voit le plan. Fiche 244 : un `.env` non suivi, non ignoré, est dans la liste à cocher ;
+ *     décoché, il ne part pas : il reste dans le dossier, et la fille part sans lui (rappelé).
  */
 export async function fillesNonCommiteSuite(scheme) {
   console.log(`\n— Filles et non commité de la mère (${scheme})`)
   for (const run of [roleRun, proposalsRun]) {
-    const { workspace, git } = repository()
+    const { workspace, git } = repository(run === proposalsRun)
     try {
       await withApp(scheme, (ui) => run(ui, git), undefined, 'echo', {
         BOBINE_WORKSPACE: workspace
@@ -29,8 +30,8 @@ export async function fillesNonCommiteSuite(scheme) {
   }
 }
 
-/** Dépôt jetable : un commit, puis `plan.md` écrit par « la mère », pas commité. */
-function repository() {
+/** Dépôt jetable : un commit, puis `plan.md` écrit par « la mère », pas commité (et un `.env`). */
+function repository(env = false) {
   const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-non-commite-')))
   const git = (...args) =>
     execFileSync('git', ['-c', 'user.name=e2e', '-c', 'user.email=e2e@example.invalid', ...args], {
@@ -42,6 +43,7 @@ function repository() {
   git('add', '.')
   git('commit', '-q', '-m', 'chore: initial commit')
   writeFileSync(join(workspace, 'plan.md'), '# Plan\n')
+  if (env) writeFileSync(join(workspace, '.env'), 'SECRET=1\n')
   return { workspace, git }
 }
 
@@ -132,16 +134,36 @@ async function proposalsRun(ui, git) {
   await ui.shot('filles-non-commite-4-taches-proposees')
   await ui.click(ui.$('launch-dirty-commit'))
   await ui.waitFor(`!!${ui.$('launch-dirty-commit-confirm')}`)
+  // Fiche 244 : la liste complète, cochée ; le `.env` décoché ne part pas.
+  const rows = `[...document.querySelectorAll('[data-testid=launch-dirty-commit-file]')]`
+  check(
+    JSON.stringify(await ui.ev(`${rows}.map((li) => li.dataset.path).sort()`)) ===
+      JSON.stringify(['.env', 'plan.md']) &&
+      (await ui.ev(`${rows}.every((li) => li.querySelector('input').checked)`)),
+    'Committer d’abord : la liste complète (.env compris), tout coché'
+  )
+  await ui.click(`${rows}.find((li) => li.dataset.path === '.env').querySelector('input')`)
+  await ui.waitFor(`!!${ui.$('launch-dirty-commit-left')}`)
+  check(
+    !(await ui.ev(`${ui.$('launch-dirty-commit-message')}.value`)).includes('.env') &&
+      (await ui.ev(`${ui.$('launch-dirty-commit-left')}.innerText`)) ===
+        L('launchDirty.left', { count: 1 }),
+    'le .env décoché : hors du message, la ligne dit que les filles ne l’auront pas'
+  )
   await ui.shot('filles-non-commite-5-committer')
   await ui.click(ui.$('launch-dirty-commit-confirm'))
   await ui.waitFor(`!${ui.$('launch-dirty')}`, 10000)
-  check(git('status', '--porcelain') === '', 'Committer d’abord : le dossier de la mère est propre')
+  check(
+    git('status', '--porcelain') === '?? .env' &&
+      git('show', '--name-only', '--format=', 'HEAD') === 'plan.md',
+    'Committer d’abord : plan.md commité seul, le .env reste non suivi dans le dossier'
+  )
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   await ui.waitFor(`${reports}.length === 1`, 30000)
   check(
     (await ui.ev(`${leads}[0]`)).includes('je vois plan.md') &&
-      !(await ui.ev(`!!${ui.$('child-report-left-behind')}`)),
-    'Committer d’abord puis Lancer : la fille voit le travail de la mère, aucun rappel'
+      !!(await ui.ev(`!!${ui.$('child-report-left-behind')}`)),
+    'Committer d’abord puis Lancer : la fille voit plan.md, et part sans le .env (rappelé)'
   )
   await ui.shot('filles-non-commite-6-fille-voit')
 }

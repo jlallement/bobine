@@ -2,8 +2,8 @@ import { TriangleExclamationPoint } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { translate } from '@shared/i18n/message'
-import { proposeCommitMessage, type MainDirty, type StashOutcome } from '@shared/worktree-cycle'
-import { CommitForm } from './CommitForm'
+import type { MainDirty, StashOutcome } from '@shared/worktree-cycle'
+import { CommitChooser } from './CommitChooser'
 
 /** Fichiers montrés, au plus ; les autres sont comptés. */
 const MAX_SHOWN = 6
@@ -12,7 +12,8 @@ const MAX_SHOWN = 6
  * « Fusion refusée » (fiche 123) : le dossier principal, où la base est extraite, a des
  * modifications non commitées. Dit lesquelles et pourquoi, puis « Committer d'abord » (message
  * proposé, puis la fusion part) ou « Mettre de côté » (`git stash` le temps de la fusion). Dans la
- * carte « Sous-tâches » comme dans la barre d'un worktree.
+ * carte « Sous-tâches » comme dans la barre d'un worktree. Fiche 244 : « Committer d'abord » montre
+ * tous les fichiers, à cocher ; les décochés sont mis de côté le temps de la fusion, puis remis.
  */
 export function MainDirtyCard({
   dirty,
@@ -23,8 +24,11 @@ export function MainDirtyCard({
 }: {
   dirty: MainDirty
   busy: boolean
-  /** « Committer puis fusionner » : ces fichiers, avec ce message, dans le dossier principal. */
-  onCommit: (message: string, files: string[]) => void
+  /**
+   * « Committer puis fusionner » : ces fichiers (les cochés), avec ce message, dans le dossier
+   * principal ; `left` décochés restent : la fusion les met de côté, puis les remet.
+   */
+  onCommit: (message: string, files: string[], left: number) => void
   onStash: () => void
   /** Boutons de plus, après les deux actions (« Puis nettoyer »). */
   children?: ReactNode
@@ -39,37 +43,36 @@ export function MainDirtyCard({
         <TriangleExclamationPoint size={13} />
         {t('worktreeCycle.mainDirty.title', { count })}
       </div>
-      <ul
-        className="main-dirty-files"
-        aria-label={t('worktreeCycle.mainDirty.files')}
-        title={dirty.root}
-      >
-        {dirty.files.slice(0, MAX_SHOWN).map((file) => (
-          <li key={file.path} data-testid="main-dirty-file">
-            {file.path}
-          </li>
-        ))}
-        {more > 0 && (
-          <li className="muted" data-testid="main-dirty-more">
-            {t('worktreeCycle.mainDirty.more', { count: more })}
-          </li>
-        )}
-      </ul>
+      {!committing && (
+        <ul
+          className="main-dirty-files"
+          aria-label={t('worktreeCycle.mainDirty.files')}
+          title={dirty.root}
+        >
+          {dirty.files.slice(0, MAX_SHOWN).map((file) => (
+            <li key={file.path} data-testid="main-dirty-file">
+              {file.path}
+            </li>
+          ))}
+          {more > 0 && (
+            <li className="muted" data-testid="main-dirty-more">
+              {t('worktreeCycle.mainDirty.more', { count: more })}
+            </li>
+          )}
+        </ul>
+      )}
       <div className="main-dirty-why" data-testid="main-dirty-why">
         {t('worktreeCycle.mainDirty.why', { count, base: dirty.base })}
       </div>
       {committing ? (
-        <CommitForm
-          proposed={proposeCommitMessage(dirty.title ?? '', dirty.files)}
+        <CommitChooser
+          files={dirty.files}
+          title={dirty.title ?? ''}
           busy={busy}
           testid="main-dirty-commit"
           confirmLabel={t('worktreeCycle.mainDirty.commitConfirm')}
-          onCommit={(message) =>
-            onCommit(
-              message,
-              dirty.files.map((f) => f.path)
-            )
-          }
+          leftNote={(left) => t('worktreeCycle.mainDirty.left', { count: left })}
+          onCommit={onCommit}
           onCancel={() => setCommitting(false)}
         />
       ) : (

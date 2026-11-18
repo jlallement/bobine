@@ -106,7 +106,7 @@ export function ChildDialog({
                 await window.api.conversations.commitForChildren(mother.id, { message, files })
                 await folder.read()
               }}
-              onCommitted={() => void launch('committed')}
+              onCommitted={(left) => void launch(left > 0 ? 'anyway' : 'committed')}
               onAnyway={() => void launch('anyway')}
             />
           )}

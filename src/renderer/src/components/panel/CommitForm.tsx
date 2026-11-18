@@ -14,6 +14,7 @@ export function CommitForm({
   busy,
   testid,
   confirmLabel,
+  blocked,
   onCommit,
   onCancel
 }: {
@@ -23,6 +24,8 @@ export function CommitForm({
   testid: string
   /** Libellé du bouton ; « Committer » par défaut. */
   confirmLabel?: string
+  /** Raison de ne pas committer (aucun fichier coché, fiche 244) : bouton désactivé, raison écrite. */
+  blocked?: string
   onCommit: (message: string) => void
   onCancel: () => void
 }) {
@@ -51,13 +54,18 @@ export function CommitForm({
         onChange={(e) => setEdited(e.target.value)}
         data-testid={`${testid}-message`}
       />
+      {blocked && (
+        <p className="commit-blocked" role="status" data-testid={`${testid}-blocked`}>
+          {blocked}
+        </p>
+      )}
       <div className="worktree-form-actions">
         <button className="btn small ghost" onClick={onCancel} data-testid={`${testid}-cancel`}>
           {t('worktreeCycle.commit.cancel')}
         </button>
         <button
           className="btn small primary"
-          disabled={!message.trim() || busy}
+          disabled={!message.trim() || busy || !!blocked}
           onClick={() => onCommit(message)}
           data-testid={`${testid}-confirm`}
         >

@@ -157,7 +157,8 @@ export function ChildProposals({
             await window.api.conversations.commitForChildren(info.mother.id, { message, files })
             await folder.read()
           }}
-          onCommitted={() => {}}
+          // Fiche 244 : des fichiers décochés restent ; « Lancer » part sans eux.
+          onCommitted={(left) => left > 0 && setAnyway(true)}
           onAnyway={() => setAnyway(true)}
         />
       )}

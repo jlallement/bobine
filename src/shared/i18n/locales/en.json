@@ -3683,7 +3683,9 @@
       "stashRestored_one": "Your set-aside change is back.",
       "stashRestored_other": "Your {{count}} set-aside changes are back.",
       "stashFailed": "Your set-aside changes could not come back without a conflict ({{files}}): they stay in git stash ({{ref}}).",
-      "stashKept": "Your set-aside changes could not come back: they stay in git stash ({{ref}})."
+      "stashKept": "Your set-aside changes could not come back: they stay in git stash ({{ref}}).",
+      "left_one": "{{count}} unchecked file stays uncommitted: set aside during the merge, then put back.",
+      "left_other": "{{count}} unchecked files stay uncommitted: set aside during the merge, then put back."
     },
     "mr": {
       "error": {
@@ -3695,6 +3697,21 @@
         "ssh-key": "{{host}} rejects the SSH key: check it (“ssh -T git@{{host}}”) or add it to your account, then try again.",
         "not-found": "{{host}} cannot find this project. If GitLab is installed under a subpath (https://host/gitlab/…), declare it: “glab config set subfolder <path> --host {{host}}”, then try again."
       }
+    },
+    "choose": {
+      "files": "Files to commit",
+      "total_one": "{{count}} file",
+      "total_other": "{{count}} files",
+      "allChecked_one": "checked",
+      "allChecked_other": "all checked",
+      "noneChecked": "none checked",
+      "someChecked": "{{checked}} of {{count}} checked",
+      "toggleAll": "Check or uncheck all",
+      "expand": "Show all",
+      "collapse": "Collapse",
+      "none": "Check at least one file to commit.",
+      "secret": "secret?",
+      "secretHint": "This name looks like a secrets file (key, password): make sure it belongs in the commit."
     }
   },
   "childrenMerge": {
@@ -5554,6 +5571,10 @@
     "opinionLead": "Just an opinion? The roles can read this folder as it is, uncommitted changes included, without changing anything.",
     "opinion": "Ask for a read-only opinion",
     "committed": "Committed: {{short}}. The child conversations will start from this commit.",
-    "whyBare": "A child conversation starts from the last commit (<code>{{commit}}</code>), in its own worktree. Commit first so that it has this work."
+    "whyBare": "A child conversation starts from the last commit (<code>{{commit}}</code>), in its own worktree. Commit first so that it has this work.",
+    "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the child conversations will not have it.",
+    "left_other": "{{count}} unchecked files stay in this folder, uncommitted: the child conversations will not have them.",
+    "leftOne_one": "{{count}} unchecked file stays in this folder, uncommitted: the child conversation will not have it.",
+    "leftOne_other": "{{count}} unchecked files stay in this folder, uncommitted: the child conversation will not have them."
   }
 }

@@ -6,6 +6,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- « Committer d'abord » (fusion refusée, lancement d'une conversation fille) montre la liste
+  complète des fichiers avant de valider, une case par fichier, toutes cochées au départ. Avant,
+  tous les fichiers modifiés ou nouveaux partaient, même ceux qui n'étaient pas affichés (un
+  `.env` non ignoré, par exemple). Seuls les fichiers cochés partent, et le message proposé ne
+  cite qu'eux. Un nom qui ressemble à un fichier de secrets porte l'étiquette « secret ? ». Les
+  fichiers décochés restent non commités : la fusion les met de côté puis les remet, et une
+  conversation fille part sans eux.
 - Bobine ne sollicite plus un agent que vous n'utilisez pas : si Bob n'est pas l'agent utilisé, son
   quota n'apparaît plus au lancement ; il s'affiche quand une conversation avec Bob est prête, puis
   se relit avec « Actualiser » ; chaque lecture crée puis supprime une session chez Bob. Un profil

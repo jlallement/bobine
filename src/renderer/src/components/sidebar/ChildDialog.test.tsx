@@ -74,4 +74,36 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiche 240)', () 
       vi.useRealTimers()
     }
   })
+
+  it('fiche 244 : un fichier décoché ne part pas ; la fille part sans lui', async () => {
+    const commitForChildren = vi.fn(async () => ({ hash: 'abc1234def', short: 'abc1234' }))
+    window.api.conversations = { ...window.api.conversations, commitForChildren }
+    const launch = open()
+    await act(async () =>
+      answer({
+        ...DIRTY,
+        count: 2,
+        files: [...DIRTY.files, { path: '.env', status: 'untracked' }]
+      })
+    )
+    expect(launch.disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    fireEvent.click(
+      screen
+        .getAllByTestId('launch-dirty-commit-file')
+        .find((li) => li.dataset.path === '.env')
+        ?.querySelector('input') as HTMLInputElement
+    )
+    const confirm = screen.getByTestId('launch-dirty-commit-confirm')
+    // La relecture du dossier après le commit : le .env reste.
+    await act(async () => void fireEvent.click(confirm))
+    await act(async () =>
+      answer({ ...DIRTY, count: 1, files: [{ path: '.env', status: 'untracked' }] })
+    )
+    expect(commitForChildren).toHaveBeenCalledWith('m', {
+      message: expect.not.stringContaining('.env'),
+      files: ['README.md']
+    })
+    expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API', uncommitted: 'anyway' })
+  })
 })

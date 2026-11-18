@@ -8,7 +8,6 @@ import {
   conversationChanges,
   relativeTo,
   type GitChanges,
-  type GitFileChange,
   type GitFileDiff,
   type RevertOutcome
 } from '@shared/changes'
@@ -22,7 +21,7 @@ import { useWorktreeCycle } from '../../useWorktreeCycle'
 import { FolderCommitBar } from './FolderCommitBar'
 import { WorktreeBar } from './WorktreeBar'
 import { WorktreeCleaned, rememberCleaned, useCleanedNote } from './WorktreeCleaned'
-import { ChangesFileList, type Row } from './ChangesList'
+import { ChangesFileList, GIT_BADGES, type Row } from './ChangesList'
 import { ChangesViews, DiffNotesBar } from './ChangesBars'
 import { ChildrenView } from './ChildrenView'
 import { ReviewNotes, useReviewImport } from './ReviewNotes'
@@ -46,15 +45,6 @@ export interface ChildWorktrees {
 const REVERT_FAILURES = ['conflict', 'outside', 'failed'] as const
 const isRevertFailure = (outcome: RevertOutcome): outcome is (typeof REVERT_FAILURES)[number] =>
   (REVERT_FAILURES as readonly RevertOutcome[]).includes(outcome)
-
-/** Pastille d'un fichier dans la vue git ; son libellé : clé `changes.badge.<statut>`. */
-const GIT_BADGES: Record<GitFileChange['status'], Omit<NonNullable<Row['badge']>, 'label'>> = {
-  modified: { letter: 'M', tone: 'mod' },
-  added: { letter: 'A', tone: 'add' },
-  untracked: { letter: 'U', tone: 'add' },
-  deleted: { letter: 'D', tone: 'del' },
-  renamed: { letter: 'R', tone: 'mod' }
-}
 
 /**
  * Onglet « Modifications » (fiche 021), comme le panneau de diff de Claude Code Desktop : ce que

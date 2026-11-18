@@ -317,10 +317,13 @@ export function SubtasksMergeFooter({
               <MainDirtyCard
                 dirty={{ ...plan.blocked, root: plan.blocked.path }}
                 busy={busy || plan.running}
-                onCommit={(message, files) =>
+                onCommit={(message, files, left) =>
                   void run(async () => {
                     await actions.commitMain(motherId, { message, files })
-                    await actions.start(motherId, ids, cleanup)
+                    // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion.
+                    await (left > 0
+                      ? actions.start(motherId, ids, cleanup, true)
+                      : actions.start(motherId, ids, cleanup))
                   })
                 }
                 onStash={() => void run(() => actions.start(motherId, ids, cleanup, true))}

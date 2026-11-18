@@ -1,0 +1,103 @@
+/*
+ * « Committer d'abord » avec les fichiers à cocher (fiche 244) : la liste complète, dans un cadre
+ * qui défile au-delà de 8 fichiers (« Tout afficher » le déplie), sous le titre de la carte.
+ */
+.commit-chooser {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: 19px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.commit-chooser-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 2px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+.commit-chooser-head strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.commit-chooser-head .grow {
+  flex: 1;
+}
+
+.commit-chooser-list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0;
+}
+
+/* 8 lignes et demie : la ligne coupée dit qu'il y en a d'autres. */
+.commit-chooser-list.scroll {
+  max-height: 214px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.commit-chooser-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 8px 2px 2px;
+  border-radius: var(--radius-xs);
+}
+
+.commit-chooser-list li:hover {
+  background: var(--surface-2);
+}
+
+.commit-chooser .changes-name {
+  font-size: 12.5px;
+}
+
+.commit-chooser-list li.off .changes-name,
+.commit-chooser-list li.off .changes-dir {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.commit-chooser-tag {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.commit-chooser-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-left: 19px;
+  color: var(--text-2);
+}
+
+.commit-chooser-left svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.main-dirty .commit-chooser ~ .worktree-form {
+  margin-left: 19px;
+}
+
+.commit-blocked {
+  margin: 0;
+  text-align: right;
+  color: var(--warn);
+}
