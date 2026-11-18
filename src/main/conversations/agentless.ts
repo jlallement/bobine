@@ -54,14 +54,17 @@ export function folderNeededSnapshot(profile: AgentProfile): AgentSnapshot {
  * Dossier d'une conversation tant qu'aucun n'est choisi : `BOBINE_DEFAULT_WORKSPACE` s'il est donné
  * (vide : aucun) ; sinon, pour les essais (dossier de données imposé), le dossier neutre, comme
  * avant la fiche 093, pour que l'agent factice démarre sans dialogue ; sinon aucun : l'app attend
- * le choix de l'utilisateur.
+ * le choix de l'utilisateur. Accueil du premier lancement dû (`BOBINE_ONBOARDING=1`) : aucun non
+ * plus, essai compris — comme un vrai premier lancement, aucun agent ne démarre avant que
+ * l'utilisateur l'ait choisi (fiche 242, D17).
  */
 export function defaultWorkspaceFor(
   env: NodeJS.ProcessEnv,
   testRun: boolean,
-  neutralFolder: string
+  neutralFolder: string,
+  welcomeDue = false
 ): string | undefined {
   const imposed = env['BOBINE_DEFAULT_WORKSPACE']
   if (imposed !== undefined) return imposed || undefined
-  return testRun ? neutralFolder : undefined
+  return testRun && !welcomeDue ? neutralFolder : undefined
 }

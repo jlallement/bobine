@@ -24,6 +24,7 @@ import {
 export async function onboardingSuite(scheme) {
   console.log(`\n— Accueil du premier lancement (${scheme})`)
   await fullJourney(scheme)
+  await noAgentBeforeChoice(scheme)
   await noAgent(scheme)
   await terminalLogin(scheme)
   await ssoStuck(scheme)
@@ -155,6 +156,69 @@ async function toTrial(ui, project) {
   await stubFolderDialog(project)
   await ui.click(ui.$('onboarding-choose-folder'))
   await ui.waitFor(`!!${ui.$('onboarding-send')}`)
+}
+
+/**
+ * Fiche 242 (recette du 2026-11-17, D17) : un essai qui montre l'accueil (dossier de données
+ * imposé, comme `pnpm pilote --profil`, **sans** `BOBINE_DEFAULT_WORKSPACE`) se comporte comme un
+ * vrai premier lancement. Avant tout choix : aucun agent de conversation lancé, aucun quota lu ;
+ * l'agent ne démarre que dans le dossier choisi. L'agent factice lit un quota, comme Bob.
+ */
+async function noAgentBeforeChoice(scheme) {
+  const { userData, trial } = fresh()
+  const home = mkdtempSync(join(tmpdir(), 'bob-e2e-accueil-home-'))
+  const project = mkdtempSync(join(tmpdir(), 'bob-e2e-accueil-projet-'))
+  const mainLog = () => {
+    const file = join(userData, 'logs', 'main.log')
+    return existsSync(file) ? readFileSync(file, 'utf8') : ''
+  }
+  // « Agent lancé (mock, <conversation>) » : un agent de conversation (l'essai n'en a pas).
+  const conversationAgents = () => mainLog().match(/Agent lancé \(mock, [^)]+\)[^\n]*/g) ?? []
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.waitFor(`!!${ui.$('onboarding')}`)
+      // Au-delà des 3 s de l'ancienne lecture du quota au lancement, et d'un démarrage d'agent.
+      await sleep(6000)
+      check(
+        conversationAgents().length === 0,
+        `accueil ouvert, rien choisi : aucun agent de conversation lancé (${conversationAgents()})`
+      )
+      check(!mainLog().includes('Quota de'), 'accueil ouvert, rien choisi : aucun quota lu')
+      await ui.shot('242-1-accueil-sans-agent')
+
+      await ui.click(ui.$('onboarding-continue'))
+      await ui.waitFor(`!!${ui.$('onboarding-ready')}`)
+      await ui.click(ui.$('onboarding-continue'))
+      await ui.waitFor(`!!${ui.$('onboarding-choose-folder')}`)
+      check(
+        conversationAgents().length === 0,
+        'agent choisi et essayé, pas encore de dossier : l’agent de la conversation attend'
+      )
+      await stubFolderDialog(project)
+      await ui.click(ui.$('onboarding-choose-folder'))
+      await ui.waitFor(`!!${ui.$('onboarding-send')}`)
+      for (let i = 0; i < 100 && conversationAgents().length === 0; i++) await sleep(100)
+      const launched = conversationAgents()
+      check(
+        launched.length === 1 && launched[0].includes(project),
+        `dossier choisi : l’agent de la conversation démarre, dans ce dossier (${launched})`
+      )
+      await ui.click(ui.$('onboarding-skip-all'))
+      await ui.waitFor(`!${ui.$('onboarding')}`)
+    },
+    userData,
+    'premier-essai',
+    {
+      BOBINE_ONBOARDING: '1',
+      BOBINE_TRIAL_DIR: trial,
+      ...NEUTRAL_AGENT_ENV,
+      BOBINE_CONFIG_HOME: home,
+      XDG_CACHE_HOME: join(home, '.cache'),
+      MOCK_AGENT_QUOTA: '1'
+    },
+    [`--inspect=${MAIN_PORT}`]
+  )
 }
 
 async function fullJourney(scheme) {

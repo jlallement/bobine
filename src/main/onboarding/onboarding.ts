@@ -285,18 +285,22 @@ type Wiring = Omit<
   'decision' | 'pathEnv' | 'scratchParent' | 'trialSessions' | 'trialParent' | 'trialRoot'
 > & { userData: string } & Partial<Pick<OnboardingDeps, 'pathEnv' | 'trialParent' | 'trialRoot'>>
 
+type InitialSettings = Pick<Settings, 'onboarding' | 'recentWorkspaces' | 'profileId'>
+
 /**
- * L'accueil, décidé d'après le relevé du démarrage et les réglages lus alors. Dossier d'essai :
- * `~/Bobine` ; `BOBINE_TRIAL_DIR` pour les essais automatiques (jamais le vrai dossier personnel).
+ * L'accueil est-il dû à ce lancement ? D'après le relevé du démarrage et les réglages lus alors ;
+ * lu aussi avant la création des conversations (fiche 242 : celle de l'accueil n'a pas de dossier
+ * imposé, son agent attend le choix de l'utilisateur).
  */
-export function createOnboarding(
+export function launchDecision(
   facts: FirstLaunchFacts,
-  initial: Pick<Settings, 'onboarding' | 'recentWorkspaces' | 'profileId'>,
+  initial: InitialSettings,
   testRun: boolean,
-  wiring: Wiring,
+  version: string,
+  now: Date = new Date(),
   env: NodeJS.ProcessEnv = process.env
-): Onboarding {
-  const decision = onboardingDecision(
+): OnboardingDecision {
+  return onboardingDecision(
     {
       mark: initial.onboarding,
       ...facts,
@@ -305,9 +309,24 @@ export function createOnboarding(
       testRun,
       env
     },
-    wiring.now?.() ?? new Date(),
-    wiring.version
+    now,
+    version
   )
+}
+
+/**
+ * L'accueil, décidé d'après le relevé du démarrage et les réglages lus alors. Dossier d'essai :
+ * `~/Bobine` ; `BOBINE_TRIAL_DIR` pour les essais automatiques (jamais le vrai dossier personnel).
+ */
+export function createOnboarding(
+  facts: FirstLaunchFacts,
+  initial: InitialSettings,
+  testRun: boolean,
+  wiring: Wiring,
+  env: NodeJS.ProcessEnv = process.env
+): Onboarding {
+  const now = wiring.now?.() ?? new Date()
+  const decision = launchDecision(facts, initial, testRun, wiring.version, now, env)
   const { userData, ...deps } = wiring
   const imposed = env['BOBINE_TRIAL_DIR']
   const onboarding = new Onboarding({

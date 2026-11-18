@@ -21,7 +21,7 @@ Statuts : `proposé` → `accepté` → éventuellement `remplacé par ADR-NNNN`
 | [0014](0014-langues-interface.md) | Langues de l'interface : i18next, ressources JSON, textes enregistrés en codes | accepté |
 | [0015](0015-adaptateurs-dans-le-profil.md) | Ce qu'un agent fait hors d'ACP : des adaptateurs portés par son profil | accepté |
 | [0016](0016-reglages-hors-gestionnaire-composition-par-abonnements.md) | Réglages hors du gestionnaire de conversations, démarrage du main par abonnements | accepté |
-| [0017](0017-quota-bob-par-status.md) | Quota de bobcoins lu par la commande `/status` de Bob Shell, tâche vide supprimée | accepté |
+| [0017](0017-quota-bob-par-status.md) | Quota de bobcoins lu par la commande `/status` de Bob Shell, tâche vide supprimée (moment de la lecture : voir ADR-0054) | accepté |
 | [0018](0018-telechargements-enregistrer-sous.md) | Téléchargements du navigateur intégré : « Enregistrer sous » à chaque fois | accepté |
 | [0019](0019-conversations-filles.md) | Conversations filles : lien mère-fille, compte rendu, outils de l'app pour l'agent (un niveau, worktree, accord) | accepté — plafond remplacé par ADR-0020 |
 | [0020](0020-plafond-filles-reglable.md) | Plafond des conversations filles : un réglage, 5 par défaut | accepté |
@@ -57,3 +57,4 @@ Statuts : `proposé` → `accepté` → éventuellement `remplacé par ADR-NNNN`
 | [0051](0051-linux-deb-seul.md) | Linux en préversion : `.deb` seul, sans AppImage (bac à sable de Chromium refusé par AppArmor hors du profil du `.deb`, FUSE absent) ; remplace le point « Formats » d'ADR-0032 | accepté |
 | [0052](0052-polices-livrees-inter-jetbrains-mono.md) | Polices livrées sur les trois systèmes, Mac compris (fiche 145, D9) : Inter pour l'interface, JetBrains Mono pour le code, `woff2` publiés et OFL 1.1 ; polices du système au choix ; ligatures coupées dans le texte, réglage pour le code ; terminal inchangé | accepté |
 | [0053](0053-plusieurs-versions-des-agents.md) | Plusieurs versions de Bob et d'OpenCode : fenêtre = dernière mineure + les deux précédentes (avis hors fenêtre, refus seulement sur casse documentée) ; comportement reconnu à ce que l'agent envoie, aiguillage par version en dernier recours ; référence de sonde et traces par mineure ; scénario factice par comportement ; veille CI hebdomadaire des versions publiées | accepté |
+| [0054](0054-quota-lu-pour-l-agent-utilise.md) | Quota lu pour l'agent qui sert (prêt, essai, diagnostic avec session) ou sur demande, plus au lancement ni pause après échec (remplace en partie ADR-0017) ; profil jetable sur les vrais agents (`touchesRealAgents`) : ni quota ni session du diagnostic d'office | accepté |

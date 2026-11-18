@@ -2,6 +2,17 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Bobine no longer calls on an agent you don't use: if Bob is not the agent you use, its quota no
+  longer shows up at launch; it appears when a conversation with Bob is ready, then is read again
+  with “Refresh”; each reading creates then deletes a session in Bob. A disposable profile (“Try
+  Bobine as new”, a test data folder) no longer reads this quota at all, and diagnostics no longer
+  opens a trial session there on its own: nothing is written to your real `~/.bob` unless you
+  asked for it.
+
 ## 1.0.0-beta.7 — November 17, 2026
 
 ### Fixes

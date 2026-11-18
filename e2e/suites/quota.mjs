@@ -1,12 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { check, L, LANG, processesUsing, sleep, withApp } from '../lib.mjs'
@@ -18,8 +10,9 @@ const plain = (expression) => `(${expression})?.innerText.replace(/[\\u00a0\\u20
 const spaces = (text) => text.replace(/[  ]/g, ' ')
 
 /**
- * Quota de l'agent (fiche 091) : lu au démarrage sur un faux `/status` (812,5 / 1000), affiché sous
- * le nom de l'agent, détail au clic, relu par « Actualiser » ; aucune session vide laissée.
+ * Quota de l'agent (fiche 091) : lu sur un faux `/status` (812,5 / 1000) dès que l'agent de la
+ * conversation est prêt (fiche 242), affiché sous le nom de l'agent, détail au clic, relu par
+ * « Actualiser » ; aucune session vide laissée. Agent installé mais pas utilisé : jamais lu.
  */
 export async function quotaSuite(scheme) {
   console.log(`\n— Quota de l’agent (${scheme})`)
@@ -30,7 +23,7 @@ export async function quotaSuite(scheme) {
       await ui.ready()
       const short = spaces(L('quota.short', { percent: 81 }))
       await ui.waitFor(`${plain(ui.$('agent-status'))}?.includes(${JSON.stringify(short)})`, 30000)
-      check(true, 'quota lu au démarrage : part consommée sous le nom de l’agent')
+      check(true, 'quota lu, l’agent de la conversation prêt : part sous le nom de l’agent')
       check(
         await ui.ev(`!!document.querySelector('.agent-quota .usage-bar.warn')`),
         'au-delà de 80 % : barre orange'
@@ -84,42 +77,58 @@ export async function quotaSuite(scheme) {
     { MOCK_AGENT_QUOTA: '1' }
   )
   rmSync(userData, { recursive: true, force: true })
-  await quotaAfterFailureSuite(scheme)
+  await notUsedSuite(scheme)
   await quitDuringReadSuite(scheme)
 }
 
 /**
- * Échec récent (recette 0.11.1, fiche 205) : une lecture ratée (agent pas encore connecté) a posé
- * la pause, la lecture du lancement est sautée ; l'agent de la conversation se montre prêt, le
- * quota encore inconnu est relu quand même. Dossier personnel des agents propre à ce cas : la pause
- * ne touche aucune autre suite.
+ * Agent installé mais pas utilisé (fiche 242, recette du 2026-11-17, D17) : la conversation n'a pas
+ * de dossier, son agent ne démarre pas ; son quota n'est pas lu, ni au lancement ni après (avant,
+ * une lecture de chaque agent installé partait 3 s après le démarrage : chez Bob, une session créée
+ * puis supprimée dans le vrai `~/.bob`). Dossier personnel des agents propre à ce cas.
  */
-async function quotaAfterFailureSuite(scheme) {
-  console.log(`\n— Quota relu quand l’agent est prêt, malgré un échec récent (${scheme})`)
+async function notUsedSuite(scheme) {
+  console.log(`\n— Quota d’un agent installé mais pas utilisé : pas lu (${scheme})`)
   const home = mkdtempSync(join(tmpdir(), 'bob-e2e-home-'))
+  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-quota-inutilise-'))
   // Comme `quotaStatusDir` (src/main/agent/quota.ts).
   const statusDir =
     process.platform === 'darwin'
       ? join(home, 'Library', 'Caches', 'Bobine', 'agent-status')
       : join(home, '.cache', 'bobine', 'agent-status')
-  mkdirSync(statusDir, { recursive: true })
-  const pause = join(statusDir, 'mock.pause.json')
-  writeFileSync(pause, JSON.stringify({ until: Date.now() + 3_600_000 }))
-  await withApp(
-    scheme,
-    async (ui) => {
-      await ui.ready()
-      const short = spaces(L('quota.short', { percent: 81 }))
-      await ui.waitFor(`${plain(ui.$('agent-status'))}?.includes(${JSON.stringify(short)})`, 30000)
-      check(true, 'pause d’un échec récent : quota relu dès que l’agent est prêt')
-      check(!existsSync(pause), 'lecture réussie : la pause est levée')
-      await ui.shot('quota-3-relu-agent-pret')
-    },
-    undefined,
-    'demo',
-    { MOCK_AGENT_QUOTA: '1', BOBINE_CONFIG_HOME: home, XDG_CACHE_HOME: join(home, '.cache') }
-  )
-  rmSync(home, { recursive: true, force: true })
+  const mainLog = () => {
+    const file = join(userData, 'logs', 'main.log')
+    return existsSync(file) ? readFileSync(file, 'utf8') : ''
+  }
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        // Pas de `ui.ready()` : sans dossier, l'agent ne démarre pas (c'est ce qu'on vérifie).
+        await ui.waitFor(`!!${ui.$('agent-status')}`)
+        // Bien au-delà des 3 s de l'ancienne lecture du lancement, et d'un démarrage d'agent.
+        await sleep(6000)
+        const lines = mainLog()
+        check(!lines.includes('Agent lancé (mock'), 'conversation sans dossier : aucun agent lancé')
+        check(!lines.includes('Quota de'), 'agent pas utilisé : aucune lecture du quota')
+        check(!existsSync(statusDir), 'rien écrit dans le dossier de lecture du quota')
+        const status = await ui.ev(plain(ui.$('agent-status')))
+        check(!/%/.test(status ?? ''), `pas de quota affiché (« ${status} »)`)
+        await ui.shot('quota-3-agent-pas-utilise')
+      },
+      userData,
+      'demo',
+      {
+        MOCK_AGENT_QUOTA: '1',
+        BOBINE_DEFAULT_WORKSPACE: '',
+        BOBINE_CONFIG_HOME: home,
+        XDG_CACHE_HOME: join(home, '.cache')
+      }
+    )
+  } finally {
+    rmSync(home, { recursive: true, force: true })
+    rmSync(userData, { recursive: true, force: true })
+  }
 }
 
 /**

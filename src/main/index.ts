@@ -92,7 +92,7 @@ import { setupScheduler } from './scheduler/scheduler-ipc'
 import { appAgents } from './agent/app-agents'
 import { setupQuotas } from './agent/quota-setup'
 import { quotaAfterCheck, quotaOnReady } from './agent/quota'
-import { createOnboarding, firstLaunchFacts } from './onboarding/onboarding'
+import { createOnboarding, firstLaunchFacts, launchDecision } from './onboarding/onboarding'
 import { quickEntryDeps } from './quick-entry-deps'
 import { createHandlers, registerIpcHandlers, type SendEvent } from './ipc'
 import { broadcast, trustedSender } from './app-windows'
@@ -114,6 +114,7 @@ import { inboxCount } from '@shared/inbox'
 import { QUICK_SHORTCUTS } from '@shared/quick-entry'
 import { changeLanguage, initI18n, resolveLanguage, savedLanguage } from './i18n'
 import { freshStart, freshStartIpc, reportResetFailure } from './fresh-start-app'
+import { touchesRealAgents } from './fresh-start'
 import { launchLanguage, syncNativeLanguage, systemAppLanguage } from './native-language'
 import { nativeCodec } from './filmstrip/native-codec'
 import { t } from 'i18next'
@@ -322,6 +323,8 @@ async function start(): Promise<void> {
   const neutralFolder = join(app.getPath('userData'), 'workspace')
   mkdirSync(neutralFolder, { recursive: true })
   const testRun = app.commandLine.hasSwitch('user-data-dir')
+  // Profil jetable sur les vrais agents : rien d'office dans leurs données (fiche 242, ADR-0054).
+  const disposable = touchesRealAgents(freshStart, process.env)
 
   // Serveur MCP local qui fournit les outils de l'app aux agents (fiches 028, 029).
   const toolServer = new AppToolServer({ version: app.getVersion() })
@@ -358,6 +361,7 @@ async function start(): Promise<void> {
   const historyStore = new ConversationStore(join(app.getPath('userData'), 'conversations'))
   const writer = new HistoryWriter({ store: historyStore, settingsFile })
   const initialSettings = profile.readSettings(settingsFile)
+  const welcome = launchDecision(firstLaunch, initialSettings, testRun, app.getVersion())
   const settings: SettingsStore = new SettingsStore({
     initial: initialSettings,
     save: (values) => writer.settings(values),
@@ -375,14 +379,15 @@ async function start(): Promise<void> {
     network: () => effectiveNetwork(settings.network(), process.env)
   })
 
-  // Quota des agents qui savent le lire (Bob : `/status`, fiche 091, ADR-0017), lu peu après.
+  // Quota des agents qui savent le lire (Bob : `/status`, fiche 091, ADR-0017), lu pour l'agent qui
+  // sert (ADR-0054).
   const quotas = setupQuotas(
     profiles,
     settings,
     (list) => {
       if (!quitting) broadcast('usage:quotasChanged', list)
     },
-    { freshAgents: freshStart.freshAgents }
+    { disposable }
   )
 
   // Sites et commandes « toujours autorisés » (fiche 072) ; les Réglages ouverts suivent (plus bas).
@@ -594,7 +599,8 @@ async function start(): Promise<void> {
     settingsFile,
     conversationsDir: join(app.getPath('userData'), 'conversations'),
     neutralFolder,
-    defaultWorkspace: defaultWorkspaceFor(process.env, testRun, neutralFolder),
+    // Accueil dû : aucun dossier imposé, aucun agent avant le choix de l'utilisateur (fiche 242).
+    defaultWorkspace: defaultWorkspaceFor(process.env, testRun, neutralFolder, welcome.due),
     overrides: {
       profileId: process.env['BOBINE_AGENT_PROFILE'],
       workspace: process.env['BOBINE_WORKSPACE']
@@ -960,7 +966,7 @@ async function start(): Promise<void> {
           agent: async (profileId, trySession) => {
             const profile = profiles.find((p) => p.id === profileId)
             if (!profile) throw new Error(`Agent inconnu : ${profileId}`)
-            const check = await conversations.checkAgent(profileId, { trySession })
+            const check = await conversations.checkAgent(profileId, { trySession, disposable })
             quotaAfterCheck(quotas, profileId, check)
             const installed = conversations.settingsView().profiles
             return agentGroup(profile, check, {

@@ -106,3 +106,8 @@ DOM injecté dans l'app buildée (aucun code produit), agent factice habillé en
   de lecture 20 s au lieu de 60 ; après un échec, pas de lecture au lancement pendant 12 h
   (`bob.pause.json`), une relecture demandée passe ; aucune avec `--agents-neufs`. Faux `bob chat`
   dans `quota.test.ts`. Le vrai `~/.bob` n'a pas été touché.
+
+- 2026-11-18 (fiche 242, ADR-0054) : plus de lecture du quota au lancement ni de pause après un
+  échec : le quota est lu quand l'agent sert (prêt, essai) ou sur « Actualiser » ; jamais en
+  profil jetable sur le vrai `~/.bob`. L'e2e `quota` ne pose plus de pause (cas « agent installé
+  mais pas utilisé » à la place).

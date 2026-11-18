@@ -18,6 +18,10 @@ import { listAgentSessions } from './session-list'
 /** Dossiers connus demandés un à un à l'agent pour « Tous les dossiers » (fiche 055). */
 const MAX_LISTED_FOLDERS = 30
 
+/** Session du diagnostic sans `trySession` : jamais en profil jetable (fiche 242). */
+const sessionlessCheck = (disposable?: boolean): 'never' | 'if-deletable' =>
+  disposable ? 'never' : 'if-deletable'
+
 export interface CheckAgentOptions {
   profile: AgentProfile
   /** Dossier de la session d'essai (celui de la conversation affichée). */
@@ -29,12 +33,18 @@ export interface CheckAgentOptions {
   onAnnounced: (announcement: AgentAnnouncement) => void
   /** Ouvrir une session même chez un agent qui ne saurait pas la supprimer (elle est fermée). */
   trySession?: boolean
+  /**
+   * Profil jetable sur les vrais agents (fiche 242) : sans `trySession`, aucune session ouverte,
+   * même chez un agent qui saurait la supprimer — rien d'office dans ses données réelles.
+   */
+  disposable?: boolean
 }
 
 /**
  * Essai d'un agent pour le diagnostic : démarré sans les outils de l'app. La session d'essai est
  * supprimée chez l'agent ; un agent qui ne sait pas la supprimer n'en ouvre pas, sauf `trySession`
- * (elle est alors fermée, et reste dans son historique). L'agent est toujours arrêté.
+ * (elle est alors fermée, et reste dans son historique). Profil jetable (`disposable`) : aucune
+ * session sans `trySession`. L'agent est toujours arrêté.
  */
 export async function checkAgent(options: CheckAgentOptions): Promise<AgentCheck> {
   const { profile, workspace } = options
@@ -51,7 +61,7 @@ export async function checkAgent(options: CheckAgentOptions): Promise<AgentCheck
       announcement = seen
       options.onAnnounced(seen)
     },
-    ...(options.trySession ? {} : { newSession: 'if-deletable' as const }),
+    ...(options.trySession ? {} : { newSession: sessionlessCheck(options.disposable) }),
     emit: () => {}
   })
   try {

@@ -6,7 +6,7 @@
 import type { AgentSessionView } from '@shared/agent'
 import { checkAgent, unknownSessions } from '../agent/agent-check'
 import type { AgentProfile } from '../agent/profiles'
-import type { AgentCheck } from '../diagnostics'
+import type { AgentCheck, AgentCheckRequest } from '../diagnostics'
 import type { SettingsStore } from '../settings-store'
 import type { ConversationRecord } from './store'
 
@@ -71,7 +71,7 @@ export function checkAgentIn(
     pathEnv: string | undefined
     clientVersion: string | undefined
   },
-  options: { trySession?: boolean }
+  options: AgentCheckRequest
 ): Promise<AgentCheck> {
   const { settings } = app
   return checkAgent({
@@ -82,6 +82,7 @@ export function checkAgentIn(
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],
     onAnnounced: (seen) => settings.agentSeen(profile.id, seen),
-    ...(options.trySession ? { trySession: true } : {})
+    ...(options.trySession ? { trySession: true } : {}),
+    ...(options.disposable ? { disposable: true } : {})
   })
 }

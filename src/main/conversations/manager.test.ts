@@ -1563,6 +1563,19 @@ describe('ConversationManager.checkAgent (diagnostic, fiche 061)', () => {
     expect(tried.session).toBe('kept')
   })
 
+  it('profil jetable sur les vrais agents : aucune session d’office, même supprimable (fiche 242)', async () => {
+    // Recette du 2026-11-17 (D17) : la page Diagnostic ouvrait puis supprimait une session dans le
+    // vrai `~/.bob`. L'agent factice sait supprimer ses sessions, comme Bob.
+    const env = environment()
+    const { manager } = env.launch({ only: ['texte'] })
+    const check = await manager.checkAgent('texte', { disposable: true })
+    expect(check.snapshot?.status).toBe('ready')
+    expect(check.session).toBe('skipped')
+    // « Essayer une session » reste un geste explicite.
+    const tried = await manager.checkAgent('texte', { disposable: true, trySession: true })
+    expect(tried.session).toBe('deleted')
+  })
+
   it('commande introuvable : rien n’est lancé', async () => {
     const env = environment()
     const absent: AgentProfile = {

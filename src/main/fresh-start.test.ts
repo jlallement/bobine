@@ -11,6 +11,7 @@ import {
   TEMPORARY_CLEANUP,
   TEMPORARY_PREFIX,
   TEMPORARY_SWITCH,
+  touchesRealAgents,
   type FreshStartApp,
   type FreshStartIo
 } from './fresh-start'
@@ -174,5 +175,17 @@ describe('relance après la réinitialisation (fiche 187, D24)', () => {
     expect(
       resetRelaunch({ opener: '/usr/bin/open', bundle, temporary: true, userDataDir: '/tmp/x' })
     ).toBeUndefined()
+  })
+})
+
+describe('profil jetable sur les vrais agents (fiche 242, D17)', () => {
+  it('temporaire ou dossier imposé, agents sur le vrai dossier personnel : oui', () => {
+    const launch = (isolated: boolean, freshAgents = false) => ({ isolated, freshAgents })
+    expect(touchesRealAgents(launch(true), {})).toBe(true)
+    // Profil ordinaire : les données réelles sont celles de l'utilisateur, pas un essai.
+    expect(touchesRealAgents(launch(false), {})).toBe(false)
+    // Agents neufs (dossier personnel vide) ou dossier personnel d'essai : rien de réel à protéger.
+    expect(touchesRealAgents(launch(true, true), {})).toBe(false)
+    expect(touchesRealAgents(launch(true), { BOBINE_CONFIG_HOME: '/essai' })).toBe(false)
   })
 })

@@ -17,6 +17,16 @@ import { Simctl } from './simulator/simctl'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 
+/**
+ * Essai demandé (`ConversationManager.checkAgent`) : `trySession`, ouvrir une session même chez un
+ * agent qui ne saurait pas la supprimer ; `disposable`, profil jetable sur les vrais agents (fiche
+ * 242) — sans `trySession`, aucune session ouverte.
+ */
+export interface AgentCheckRequest {
+  trySession?: boolean
+  disposable?: boolean
+}
+
 /** Essai d'un agent hors de toute conversation (`ConversationManager.checkAgent`). */
 export interface AgentCheck {
   /** Dossier où la session d'essai a été ouverte. */

@@ -2,6 +2,17 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Bobine ne sollicite plus un agent que vous n'utilisez pas : si Bob n'est pas l'agent utilisé, son
+  quota n'apparaît plus au lancement ; il s'affiche quand une conversation avec Bob est prête, puis
+  se relit avec « Actualiser » ; chaque lecture crée puis supprime une session chez Bob. Un profil
+  jetable (« Essayer Bobine comme neuve », dossier de données d'essai) ne lit plus du tout ce
+  quota, et le diagnostic n'y ouvre plus de session d'essai d'office : rien ne s'écrit dans votre
+  vrai `~/.bob` sans que vous l'ayez demandé.
+
 ## 1.0.0-beta.7 — 17 novembre 2026
 
 ### Corrections

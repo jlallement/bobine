@@ -10,6 +10,19 @@ import { log } from '../log'
 import { errorMessage } from './process-utils'
 import type { AgentProfile } from './profiles'
 
+/**
+ * Une session s'ouvre-t-elle au démarrage de l'hôte (`newSession`, essai du diagnostic) ? Toujours
+ * par défaut ; `if-deletable` seulement si l'agent sait la supprimer ensuite ; `never` jamais
+ * (profil jetable sur les vrais agents, fiche 242).
+ */
+export function opensSession(
+  newSession: 'always' | 'if-deletable' | 'never' | undefined,
+  canDelete: boolean
+): boolean {
+  if (newSession === 'never') return false
+  return newSession !== 'if-deletable' || canDelete
+}
+
 export interface InitialControlsInput {
   /** Réglages de la session, relus après chaque changement. */
   controls: () => SessionControl[]
