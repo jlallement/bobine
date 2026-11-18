@@ -149,7 +149,8 @@ export async function authSuite(scheme) {
       },
       userData,
       'bob-auth-requise-rouverture',
-      { BOBINE_WORKSPACE: '', BOBINE_AGENT_PROFILE: '' }
+      // Agent factice proposé, pas imposé (`BOBINE_MOCK_AGENT`, profiles.ts).
+      { BOBINE_WORKSPACE: '', BOBINE_AGENT_PROFILE: '', BOBINE_MOCK_AGENT: '1' }
     )
 
     // Clé chiffrée par une autre entrée du trousseau (ancien nom de l'app, fiche 069) : dite

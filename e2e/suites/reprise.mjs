@@ -88,8 +88,10 @@ export async function repriseSuite(scheme) {
       },
       userData,
       'demo',
-      // Rien d'imposé : un agent imposé ouvrirait une nouvelle conversation (fiche 243).
-      { BOBINE_AGENT_PROFILE: '' }
+      // Rien d'imposé : un agent imposé ouvrirait une nouvelle conversation (fiche 243). L'agent
+      // factice reste proposé (`BOBINE_MOCK_AGENT`, profiles.ts), sinon la rouverte serait en
+      // lecture seule (agent retiré).
+      { BOBINE_AGENT_PROFILE: '', BOBINE_MOCK_AGENT: '1' }
     )
   } finally {
     rmSync(userData, { recursive: true, force: true })

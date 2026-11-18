@@ -1,6 +1,6 @@
 # 243 — À la relance, rouvrir la conversation affichée
 
-- **Statut** : en cours (relecture : e2e à rejouer)
+- **Statut** : fait
 - **Dépend de** : 093 (démarrage), 158 (`bobine <dossier>`), 062 (fenêtre rapide), 148 (profil
   temporaire), 194 (quitter en plein tour)
 - **Agents** : les deux (choix de la conversation affichée par Bobine, indépendant de l'agent)
@@ -151,3 +151,12 @@ ouverte à côté (vue côte à côte, fiche 036) n'est pas rouverte.
   3. Changement assumé, écrit ci-dessus, dans la fiche 093 et le CHANGELOG ; essais du dossier
      disparu (avis « Dossier de travail introuvable », pas de plantage) et du profil neuf (rien de
      retenu).
+- 2026-11-18 — E2e après relecture (feu vert du tech lead, machine seule) : `pnpm build && pnpm e2e
+  --changed` → 204/210. Les 6 échecs (`auth`, `reprise`, `versions`, clair et sombre) avaient une
+  seule cause, dans les essais : leurs relances sans agent imposé (`BOBINE_AGENT_PROFILE` vide)
+  retiraient aussi l'agent factice, qui n'est proposé qu'avec `BOBINE_AGENT_PROFILE=mock` ou
+  `BOBINE_MOCK_AGENT=1` (`profiles.ts`) : la conversation rouverte était celle d'un agent retiré, en
+  lecture seule, et l'app n'atteignait jamais « prêt ». Relances corrigées (`BOBINE_MOCK_AGENT=1`,
+  rien d'imposé) ; les trois suites rejouées une fois : 6/6. Captures regardées :
+  `f0b-rouverte-connexion` (carte « Connexion requise » dans la conversation rouverte, dès le
+  lancement), `reprise-apres-quitter` (clair, sombre).

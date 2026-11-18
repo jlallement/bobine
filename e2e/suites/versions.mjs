@@ -99,7 +99,8 @@ export async function versionsSuite(scheme) {
       },
       userData,
       'version-plus-recente',
-      { BOBINE_AGENT_PROFILE: '' }
+      // Agent factice proposé, pas imposé (`BOBINE_MOCK_AGENT`, profiles.ts).
+      { BOBINE_AGENT_PROFILE: '', BOBINE_MOCK_AGENT: '1' }
     )
   } finally {
     rmSync(userData, { recursive: true, force: true })
