@@ -14,7 +14,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { answerCard, clickLabel, openPanel, sendMessage } from './actions.mjs'
+import { answerCard, CARD, clickLabel, openPanel, sendMessage } from './actions.mjs'
 import { formatDuration, GRAVITES, parseArgs, parseDuration, ZONES } from './args.mjs'
 import { connect, sleep } from './cdp.mjs'
 import { formatState } from './etat.mjs'
@@ -59,7 +59,7 @@ async function stateText(options = {}) {
 /** Zone à capturer, en pixels CSS de la fenêtre, ou rien pour la fenêtre entière. */
 const ZONE_RECT = {
   fil: `document.querySelector('[data-testid=thread]')?.parentElement`,
-  carte: `[...document.querySelectorAll('.permission-card')].at(-1)`,
+  carte: `[...document.querySelectorAll(${JSON.stringify(CARD)})].at(-1)`,
   panneau: `document.querySelector('[data-testid=side-panel]')`
 }
 

@@ -65,8 +65,13 @@ export async function clickLabel(page, label, scope) {
   return found.label
 }
 
-/** Cartes qui attendent une réponse : autorisation, question, plan, propositions. */
-const CARD = '.permission-card'
+/**
+ * Cartes qui attendent une réponse : autorisation, question, plan, propositions (sauf une carte
+ * « Tâches proposées » toute décidée), souvenir à retenir ou oublier (fiche 248). Dans une carte
+ * « Tâches proposées » à plusieurs lignes en attente, un libellé comme « Lancer » est ambigu :
+ * `clickLabel` le dit (cliquer la ligne voulue avec computer use, ou `cliquer` un libellé précis).
+ */
+export const CARD = '.permission-card:not(.proposals[data-pending="0"]), [data-testid=memory-card]'
 
 /**
  * Répond à la dernière carte en attente par le libellé d'un de ses boutons. Une carte
@@ -74,7 +79,7 @@ const CARD = '.permission-card'
  * attend, comme un humain.
  */
 export async function answerCard(page, label) {
-  const last = `[...document.querySelectorAll('${CARD}')].at(-1)`
+  const last = `[...document.querySelectorAll(${JSON.stringify(CARD)})].at(-1)`
   if (!(await page.ev(`!!${last}`))) throw new Error('aucune carte en attente')
   for (let i = 0; i < 50; i++) {
     const armed = await page.ev(

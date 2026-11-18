@@ -5,8 +5,8 @@ passe quelque chose pour un humain, agit en secours et tient le journal du teste
 session longue de la fiche 206 (Claude dans le rôle de l'utilisateur), et aux recettes
 habituelles.
 
-Code : `scripts/pilote/` (Node, ESM, sans dépendance). Essais : `scripts/pilote/pilote.test.mjs`
-(parties pures) et la suite e2e `pilote` (`pnpm build && pnpm e2e pilote`, aussi `--lang en`).
+Code : `scripts/pilote/` (Node, ESM, sans dépendance). Essais : voir § Essais (la suite e2e
+`pilote` aussi en anglais, `--lang en`).
 
 ## Pourquoi
 
@@ -154,6 +154,42 @@ pour les essais e2e, que ces essais protègent déjà.
 Les actions visent les libellés traduits de l'app (`L('clé')`, langue lue dans `<html lang>`) ou
 ceux que le testeur lit dans `etat`. Un repère qui disparaît fait manquer une ligne d'`etat`, sans
 casser le reste ; la suite e2e `pilote` le voit.
+
+## Quelle fenêtre (fiche 248)
+
+Chaque commande relit la liste des cibles DevTools et ne parle qu'à la **fenêtre principale** :
+une page dont l'URL est celle du renderer (`file://…/renderer/index.html`, sans `#quick`, `#help`
+ni `#about`), confirmée dans la page par l'IPC du preload (`window.api`) et la racine `#root`
+(`MAIN_MARKER`, `scripts/pilote/cdp.mjs`). Les pages du navigateur intégré sont aussi des cibles
+DevTools (une maquette `file://`, `http://localhost:3000`) : elles n'ont pas le preload, elles ne
+sont jamais choisies, ouvertes ou fermées. Une cible fermée pendant une commande la fait échouer
+tout de suite (« page fermée ») ; `attendre` se reconnecte. Aucune fenêtre confirmée, ou plusieurs :
+erreur qui liste les pages vues (`fenêtre principale de Bobine introuvable…` / `…ambiguë…`).
+
+Si la lecture ne permet pas de dire l'agent, la première ligne d'`etat` dit pourquoi (accueil,
+réglages ouverts, barre latérale sans nom d'agent, « État illisible » hors de la fenêtre
+principale) ; jamais « agent ? ».
+
+Cartes qui font sortir `attendre` en `carte` : autorisation, question, plan, « Tâches proposées »
+tant qu'une ligne est en attente (`data-pending`, une carte toute traitée garde « Lancer » mais
+n'attend plus), et souvenir (« Retenir ce souvenir ? », « Oublier ce souvenir ? », type
+`souvenir`). `repondre` et `capture --zone carte` visent la dernière de ces cartes.
+
+## Essais
+
+- `scripts/pilote/pilote.test.mjs` : parties pures (arguments, `etat`, raisons, journal, textes).
+- `scripts/pilote/cible.test.mjs` (fiche 248) : fausses cibles DevTools (`fetch` et `WebSocket`
+  simulés, une page jsdom par cible) — fenêtre de Bobine plus une page du navigateur ouverte, puis
+  fermée ; cartes souvenir et « Tâches proposées ». Pour les rejouer contre le pilote de `main`
+  (sans le correctif), depuis la racine du dépôt :
+
+  ```bash
+  D=scripts/pilote/sans-correctif-tmp; mkdir -p $D && for f in cdp lecture actions etat raison instance args journal textes; do git show main:scripts/pilote/$f.mjs > $D/$f.mjs; done && cp scripts/pilote/cible.test.mjs $D/ && pnpm vitest run --project node $D/cible.test.mjs; rm -r $D
+  ```
+
+- Suite e2e `pilote` (`pnpm build && pnpm e2e pilote`) : le pilote réel contre l'app buildée et
+  l'agent factice, navigateur intégré ouvert sur une maquette puis fermé, carte souvenir,
+  « Tâches proposées » traitée, `envoyer` dans une conversation fille.
 
 ## Limites
 

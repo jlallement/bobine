@@ -91,16 +91,29 @@ function sidebarLine(sidebar) {
   return `Conversations (${sidebar.length}) : ${shown.join(' · ')}${more}`
 }
 
+/**
+ * Première ligne : l'agent et son état. Quand l'écran ne permet pas de les lire, elle dit
+ * pourquoi (fiche 248) plutôt qu'« agent ? » : page qui n'est pas la fenêtre principale, accueil
+ * (aucun agent encore choisi), ou repère absent.
+ */
+export function agentLine(shot) {
+  const agent = shot.agent ?? {}
+  if (shot.main === false) {
+    return `État illisible : la page lue n'est pas la fenêtre principale de Bobine (${shot.url || 'URL inconnue'})`
+  }
+  if (agent.name) {
+    return `Bobine · ${agent.name} : ${agent.status || 'état non affiché'}${agent.dot ? ` (${agent.dot})` : ''}`
+  }
+  if (shot.onboarding) return 'Bobine · accueil du premier lancement (agent pas encore affiché)'
+  if (shot.settings) return 'Bobine · agent non affiché (réglages ouverts)'
+  return 'Bobine · agent non lu : nom de l’agent absent de la barre latérale (repliée ?)'
+}
+
 /** `etat` en lignes de texte ; `long` : message de l'agent en entier. */
 export function formatState(shot, { long = false } = {}) {
   const lines = []
-  const agent = shot.agent ?? {}
-  lines.push(
-    join([
-      `Bobine · ${agent.name || 'agent ?'} : ${agent.status || '?'}${agent.dot ? ` (${agent.dot})` : ''}`,
-      shot.temporary && 'profil temporaire'
-    ])
-  )
+  lines.push(join([agentLine(shot), shot.temporary && 'profil temporaire']))
+  if (shot.main === false) return lines.join('\n')
   if (shot.onboarding) {
     const o = shot.onboarding
     lines.push(`Accueil : étape « ${o.step || '?'} » — ${o.title}${o.waiting ? ' (attente…)' : ''}`)
