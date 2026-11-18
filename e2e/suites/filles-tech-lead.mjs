@@ -154,8 +154,9 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.click(pending)
         await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
         // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite ; la mère la lit.
+        // Phrase entière (le texte arrive en flux) : l'une des trois issues du scénario.
         await ui.waitFor(
-          `/Suite (lue|introuvable)|Rien ne dit/.test(document.body.innerText)`,
+          `/MARQUEUR-FIN-DE-REPONSE\\.|Suite introuvable par child_status\\.|Rien ne dit comment lire la suite\\./.test(document.body.innerText)`,
           30000
         )
         check(

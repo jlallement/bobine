@@ -1,6 +1,6 @@
 # 247 — Retouches de la recette POC : « Toujours » dit vrai, comptes rendus lisibles en entier, file d'attente stable, extension unique
 
-- **Statut** : en cours
+- **Statut** : fait
 - **Dépend de** : 020 (file d'attente), 043 (export), 072 (accord des commandes), 097 et 160 (filles)
 - **Agents** : les deux — rien de propre à un agent : libellé de l'app, outils de l'app (`child_status`,
   `message_parent`), file d'attente et export de Bobine.
@@ -23,9 +23,9 @@ cette commande exacte dans ce dossier ; révocable dans Réglages › Confidenti
 « Always this command here »). L'autorisation n'est **pas** élargie.
 
 **Critères.**
-- [ ] Le choix et sa description disent « cette commande », en français et en anglais.
-- [ ] Une autre commande du même dossier redemande toujours (test inchangé dans son principe).
-- [ ] Test : `command-approval.test.ts` vérifie le libellé et la description proposés.
+- [x] Le choix et sa description disent « cette commande », en français et en anglais.
+- [x] Une autre commande du même dossier redemande toujours (test inchangé dans son principe).
+- [x] Test : `command-approval.test.ts` vérifie le libellé et la description proposés.
 
 ## D11 — Comptes rendus des filles coupés, sans moyen de lire la suite
 
@@ -43,12 +43,12 @@ qu'un diff collé ne noie pas la mère. Le message entier de `message_parent` es
 par le module des filles (perdu à la relance de l'app : `child_status` le dit alors).
 
 **Critères.**
-- [ ] `message_parent` long : coupé comme avant, suivi d'une ligne qui nomme `child_status` et
+- [x] `message_parent` long : coupé comme avant, suivi d'une ligne qui nomme `child_status` et
       l'id de la fille ; `child_status` `full` rend le message entier.
-- [ ] Compte rendu de fin de tour dont le récapitulatif est coupé : même ligne, avec la taille de
+- [x] Compte rendu de fin de tour dont le récapitulatif est coupé : même ligne, avec la taille de
       la réponse entière ; rien de plus quand rien n'est coupé.
-- [ ] `child_status` sans paramètre : inchangé (toutes les filles, début de la réponse).
-- [ ] Scénario d'agent factice : `filles-bavarde` (la mère lit la suite par `child_status` et y
+- [x] `child_status` sans paramètre : inchangé (toutes les filles, début de la réponse).
+- [x] Scénario d'agent factice : `filles-bavarde` (la mère lit la suite par `child_status` et y
       trouve la fin de la réponse), testé dans `children.test.ts` et l'e2e `filles-tech-lead`.
 
 ## D12 — Un message modifié repasse en dernière position
@@ -62,9 +62,9 @@ message retiré, et le prochain message tapé par l'utilisateur pendant la même
 maintenant », « Relancer »). Aucun changement d'écran.
 
 **Critères.**
-- [ ] File A, B, C ; « Modifier » A ; renvoyé : A′, B, C.
-- [ ] « Supprimer » puis un nouveau message : en fin de file.
-- [ ] Test : `message-queue.test.ts` ; e2e `queue` (modifie le premier message, vérifie l'ordre).
+- [x] File A, B, C ; « Modifier » A ; renvoyé : A′, B, C.
+- [x] « Supprimer » puis un nouveau message : en fin de file.
+- [x] Test : `message-queue.test.ts` ; e2e `queue` (modifie le premier message, vérifie l'ordre).
 
 ## D14 — Export « nom.md.md »
 
@@ -78,9 +78,9 @@ a pas (Linux, où la fenêtre GTK n'ajoute rien), casse ignorée. Vaut pour l'ex
 conversation, l'export de la mémoire et l'export CSV de la consommation.
 
 **Critères.**
-- [ ] `notes.md.md` → `notes.md` ; `Notes.MD.md` → `Notes.MD` ; `notes` → `notes.md` ; `notes.md`
+- [x] `notes.md.md` → `notes.md` ; `Notes.MD.md` → `Notes.MD` ; `notes` → `notes.md` ; `notes.md`
       inchangé ; idem pour `json` et `csv`.
-- [ ] Test : `export.test.ts` ; e2e `export` (la fenêtre simulée rend `….md.md`, le fichier écrit
+- [x] Test : `export.test.ts` ; e2e `export` (la fenêtre simulée rend `….md.md`, le fichier écrit
       finit par un seul `.md`).
 
 ## Plan
@@ -97,3 +97,16 @@ conversation, l'export de la mémoire et l'export CSV de la consommation.
 ## Journal
 
 - 2026-11-18 : fiche ouverte (lot C de la recette POC).
+- 2026-11-18 : fait. Un commit par défaut. `./scripts/verify` vert (code de sortie 0). Rejoués sans
+  le correctif (code de l'app pris sur `main`, essais et scénario de cette branche) : les 9 essais
+  nouveaux ou modifiés échouent, chacun sur son défaut. E2e `pnpm e2e --changed` (suite complète :
+  i18n et `ipc.ts` touchés, 216 tâches) : 214 verts, `filles-tech-lead` clair et sombre en échec
+  sur le nouveau contrôle. Cause : l'attente reconnaissait « Suite lue » pendant que la phrase
+  arrivait encore en flux, et le contrôle strict lisait une phrase incomplète (le texte complet est
+  dans le relevé d'échec). L'attente demande désormais une des trois phrases entières ; le contrôle
+  reste le même. Rejouée : verte en clair et en sombre, captures `filles-tech-lead-5-bavarde`
+  regardées.
+- Écarts au plan : les clés i18n gardent leur nom (`approvals.alwaysInProject*`), seuls les textes
+  changent ; guides fr/en mis à jour. `withExtension` vaut aussi pour l'export CSV et l'export de la
+  mémoire (même fenêtre). Le message entier de `message_parent` n'est gardé qu'en mémoire : après
+  une relance de l'app, `child_status` dit qu'il n'en a plus.
