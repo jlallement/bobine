@@ -662,6 +662,7 @@ export const SUITES = [
       'src/shared/transcript-notice.ts',
       'src/main/simulator/simulator-tools.ts',
       'src/main/simulator/xcode.ts',
+      'src/main/workspace-scan.ts',
       'src/mock-agent/suit-outils.mts'
     ]
   },

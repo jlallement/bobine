@@ -36,6 +36,13 @@ const LATE_ANSWER_TEXT =
   'turn now with a short sentence saying you are waiting for their answer. The answer will arrive ' +
   'as their next message.'
 
+/**
+ * Appels qui n'écrivent rien dans le dossier (fiche 241) : un tour qui n'a fait qu'eux ne cherche pas
+ * de nouveau projet. Tout autre genre, ou un genre absent, peut écrire (commande, code d'OpenCode,
+ * outil MCP de Bob en `other`).
+ */
+const READ_ONLY_KINDS = new Set(['read', 'search', 'fetch', 'think', 'switch_mode'])
+
 /** Appels d'outils jamais autorisés d'office, même s'ils portent le nom d'un outil de l'app. */
 const SYSTEM_TOOL_KINDS = new Set(['edit', 'delete', 'move', 'execute'])
 
@@ -66,6 +73,10 @@ export class AppToolsBridge {
    * sa dernière relecture (`tools/list`). Peut différer de `tools`, la liste servie.
    */
   private given: string[] = []
+  /** Noms des outils de chaque famille qui suit le dossier : ils ne dépendent pas du dossier. */
+  private readonly familyNames = new Map<string, string[]>()
+  /** Un appel d'outil du tour a pu écrire (fiche 241) : la fin du tour cherche alors un projet. */
+  private wroteInTurn = false
   /** Appels annoncés par l'agent, en attente de l'appel MCP (par nom d'outil). */
   private readonly calls = new Map<string, string[]>()
   /**
@@ -124,17 +135,29 @@ export class AppToolsBridge {
     this.given = [...names]
   }
 
+  /** Le tour a pu écrire dans le dossier : un appel d'outil autre qu'une lecture (fiche 241). */
+  mayHaveWritten(): boolean {
+    return this.wroteInTurn
+  }
+
   /**
-   * Familles qui suivent le dossier (`followsWorkspace`), utiles maintenant, dont l'agent n'a pas
-   * tous les outils (fiche 241) : un projet est apparu depuis l'ouverture de la session.
+   * Familles qui suivent le dossier, dont l'agent n'a pas tous les outils, et dont le projet est
+   * maintenant dans le dossier (fiche 241). Une famille déjà donnée n'est pas recherchée ; la
+   * recherche ne bloque pas le main.
    */
-  missingFamilies(): string[] {
-    const context = this.toolContext()
+  async appearedFamilies(): Promise<string[]> {
+    const found: string[] = []
+    for (const module of this.workspaceModules()) {
+      if (this.hasAll(module)) continue
+      if (await module.followsWorkspace?.(this.options.workspace)) found.push(module.id)
+    }
+    return found
+  }
+
+  /** Parmi ces familles, celles dont l'agent n'a pas encore tous les outils (sans lire le dossier). */
+  stillMissing(ids: readonly string[]): string[] {
     return this.workspaceModules()
-      .filter((module) => module.enabled?.(context) ?? true)
-      .filter((module) =>
-        module.tools(context).some((tool) => !this.given.includes(tool.definition.name))
-      )
+      .filter((module) => ids.includes(module.id) && !this.hasAll(module))
       .map((module) => module.id)
   }
 
@@ -156,13 +179,19 @@ export class AppToolsBridge {
 
   /** Familles qui suivent le dossier et que l'agent a toutes (session ouverte, liste relue). */
   givenFamilies(): string[] {
-    const context = this.toolContext()
     return this.workspaceModules()
-      .filter((module) => {
-        const names = module.tools(context).map((tool) => tool.definition.name)
-        return names.length > 0 && names.every((name) => this.given.includes(name))
-      })
+      .filter((module) => this.hasAll(module))
       .map((module) => module.id)
+  }
+
+  /** L'agent a tous les outils de la famille (noms seulement : rien n'est lu du dossier). */
+  private hasAll(module: AppToolModule): boolean {
+    let names = this.familyNames.get(module.id)
+    if (!names) {
+      names = module.tools(this.toolContext()).map((tool) => tool.definition.name)
+      this.familyNames.set(module.id, names)
+    }
+    return names.length > 0 && names.every((name) => this.given.includes(name))
   }
 
   private workspaceModules(): AppToolModule[] {
@@ -182,6 +211,7 @@ export class AppToolsBridge {
   /** Début d'un tour : rien n'est encore lancé (le rejeu d'une session rouverte ne compte pas). */
   turnStarted(): void {
     this.toolCallsInTurn = 0
+    this.wroteInTurn = false
   }
 
   /** Tour fini : ses cartes ne tournent plus, même celles arrêtées sans mise à jour finale. */
@@ -194,6 +224,7 @@ export class AppToolsBridge {
   noteUpdate(update: SessionUpdate): void {
     if (update.sessionUpdate === 'tool_call') {
       this.toolCallsInTurn++
+      if (!READ_ONLY_KINDS.has(update.kind ?? 'other')) this.wroteInTurn = true
       this.noteToolCall(update)
     }
     if (update.sessionUpdate === 'tool_call_update') this.noteToolCallUpdate(update)

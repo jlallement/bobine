@@ -117,9 +117,10 @@ export interface AppToolModule {
   enabled?: (context: ToolContext) => boolean
   /**
    * `enabled` dépend de ce que contient le dossier (un projet Xcode, Android) : la famille peut
-   * devenir utile en cours de session, et lui est alors ajoutée (fiche 241).
+   * devenir utile en cours de session, et lui est alors ajoutée (fiche 241). La même question
+   * qu'`enabled`, sans bloquer le main : posée à la fin d'un tour.
    */
-  followsWorkspace?: true
+  followsWorkspace?: (workspace: string) => Promise<boolean>
   tools: (context: ToolContext) => AppTool[]
   /**
    * Tous les outils que le module peut donner, quels que soient le dossier et la conversation

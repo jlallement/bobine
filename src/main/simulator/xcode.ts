@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto'
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { startCommandJob, type CommandJob } from '../jobs/command-job'
+import { workspaceHas } from '../workspace-scan'
 
 const SKIP_DIRS = new Set(['node_modules', 'Pods', '.git', 'build', 'DerivedData', '.build'])
 
@@ -52,6 +53,19 @@ export function hasAppleProject(workspace: string): boolean {
     return false
   }
   return findXcodeProjects(workspace).length > 0
+}
+
+/**
+ * Même question que `hasAppleProject`, sans bloquer le main (fin de tour, fiche 241) : s'arrête au
+ * premier projet trouvé.
+ */
+export function appleProjectAppears(workspace: string): Promise<boolean> {
+  return workspaceHas(workspace, {
+    skip: SKIP_DIRS,
+    match: (dir, names) =>
+      (dir === workspace && names.includes('Package.swift')) ||
+      names.some((n) => n.endsWith('.xcodeproj') || n.endsWith('.xcworkspace'))
+  })
 }
 
 /** Erreurs de compilation lisibles (`fichier:ligne: error: …`), sans doublons, 20 au plus. */

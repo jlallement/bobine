@@ -40,6 +40,8 @@ export class AppToolsEndpoint {
   private ignored = false
   /** Familles annoncées « à redémarrer » dans cette session, que l'agent n'a pas encore. */
   private readonly warned = new Set<string>()
+  /** Familles dont le projet a été trouvé dans le dossier pendant cette session. */
+  private readonly detected = new Set<string>()
 
   private readonly options: AppToolsEndpointOptions
 
@@ -61,6 +63,7 @@ export class AppToolsEndpoint {
     this.endpoint = undefined
     this.ignored = false
     this.warned.clear()
+    this.detected.clear()
   }
 
   /** Adresse à donner à l'agent dans `mcpServers` ; `undefined` : pas d'outils de l'app. */
@@ -83,17 +86,23 @@ export class AppToolsEndpoint {
 
   /** Fin de tour : familles devenues utiles dans le dossier, ajoutées ou annoncées. */
   async turnEnded(): Promise<void> {
+    // Lu tout de suite : le tour suivant peut commencer pendant la recherche.
+    const wrote = this.options.bridge.mayHaveWritten()
     // Lancé sans attendre par l'hôte : une erreur (dossier illisible…) est notée, jamais relancée.
-    await this.offerWorkspaceTools().catch((error: unknown) =>
+    await this.offerWorkspaceTools(wrote).catch((error: unknown) =>
       log.warn(`Outils du dossier : ${messageOf(error)}`)
     )
   }
 
-  private async offerWorkspaceTools(): Promise<void> {
+  private async offerWorkspaceTools(wrote: boolean): Promise<void> {
     const endpoint = this.endpoint
     if (!endpoint) return
     const { bridge } = this.options
-    const missing = bridge.missingFamilies()
+    // Le dossier n'est lu qu'après un tour qui a pu y écrire, et seulement pour les familles que
+    // l'agent n'a pas ; un projet trouvé le reste pour la session.
+    if (wrote) for (const family of await bridge.appearedFamilies()) this.detected.add(family)
+    if (this.endpoint !== endpoint) return
+    const missing = bridge.stillMissing([...this.detected])
     if (missing.length === 0) return
     const tools = bridge.serveFamilies(missing)
     if (tools && endpoint.update && !this.ignored) {
@@ -102,7 +111,7 @@ export class AppToolsEndpoint {
       // Session refermée pendant l'attente : la suivante a ses propres outils.
       if (this.endpoint !== endpoint) return
     }
-    const still = bridge.missingFamilies()
+    const still = bridge.stillMissing(missing)
     for (const family of missing) {
       if (still.includes(family)) {
         this.warned.add(family)

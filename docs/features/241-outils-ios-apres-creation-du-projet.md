@@ -101,6 +101,17 @@ ne trouverait pas). Vu une fois ; la cause, lue dans le code, rend le défaut sy
   e2e `outils-projet` (macOS : `needs: ['simulator']`, famille iOS proposée là seulement) —
   **pas encore joué** (machine partagée, en attente du feu vert).
 
+- **Relecture du tech lead (2026-11-18)** : la fin de tour ne lit plus le dossier de façon synchrone.
+  Recherche asynchrone qui s'arrête au premier projet (`workspace-scan.ts`, `appleProjectAppears`,
+  `androidProjectAppears`, même parcours que la recherche de l'ouverture, testé à l'identique) ;
+  `followsWorkspace` est cette recherche. Elle ne tourne qu'après un tour qui a pu écrire (un appel
+  d'outil autre que `read`, `search`, `fetch`, `think`, `switch_mode` ; genre absent = peut
+  écrire), une fois par tour, jamais pour une famille que l'agent a déjà ; un projet trouvé le
+  reste pour la session (l'avis est redonné sans relire le dossier). Limite : un projet créé hors
+  de l'agent (Xcode, Finder) n'est vu qu'après un tour où l'agent a pu écrire. Lecture seule (rôle
+  d'avis) : les outils ajoutés en cours de route reçoivent le même contexte (`readOnly`) qu'à
+  l'ouverture, donc chaque compilation est demandée, sans « toujours » ; testé.
+
 ## Écarts au plan
 
 - `Transcript.tsx` n'est touché que pour le bouton et l'icône (recoupement minimal avec la 240) ;

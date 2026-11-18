@@ -41,14 +41,21 @@ export function switchedOff(
   modules: readonly AppToolModule[],
   off: () => ReadonlySet<string>
 ): AppToolModule[] {
-  return modules.map((module) =>
-    module.required || module.setting
-      ? module
-      : {
-          ...module,
-          enabled: (context) => !off().has(module.id) && (module.enabled?.(context) ?? true)
-        }
-  )
+  return modules.map((module) => {
+    if (module.required || module.setting) return module
+    const appears = module.followsWorkspace
+    return {
+      ...module,
+      enabled: (context) => !off().has(module.id) && (module.enabled?.(context) ?? true),
+      // Famille coupée : pas plus ajoutée en cours de session qu'à l'ouverture (fiche 241).
+      ...(appears
+        ? {
+            followsWorkspace: async (workspace) =>
+              !off().has(module.id) && (await appears(workspace))
+          }
+        : {})
+    }
+  })
 }
 
 /** Toutes les familles d'outils, dans l'ordre où l'agent les reçoit, coupées comprises. */
