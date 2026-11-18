@@ -1,6 +1,6 @@
 # 240 — Filles en worktree : le travail non commité de la mère n'y est pas
 
-- **Statut** : en cours — maquettes validées, code fait ; essais e2e à passer
+- **Statut** : fait — en relecture (tech lead), pas encore fusionné
 - **Dépend de** : 223 (rôles), 110 (cycle des worktrees), 097 (conversations filles), 099 (outils
   de l'app)
 - **Agents** : les deux (comportement de Bobine, indépendant de l'agent)
@@ -125,7 +125,7 @@ worktree).
 - [x] La description MCP de `start_child` dit de committer d'abord ; appelé avec un dossier
       modifié, l'outil renvoie l'avertissement à l'agent (nombre, fichiers, commit, ce qui
       manquera à la fille) quand la fille part quand même ou que la carte reste ouverte.
-- [ ] Essai e2e contre l'agent factice **par chemin** (`e2e/suites/filles-non-commite.mjs`) :
+- [x] Essai e2e contre l'agent factice **par chemin** (`e2e/suites/filles-non-commite.mjs`) :
       (a) rôle — avertissement avant l'envoi, Entrée retenue, « Partir quand même » (la fille ne
       voit pas `plan.md`, rappel dans la mère), avis en lecture seule (les filles le voient) ;
       (b) Tâches proposées — « Lancer » retenu, « Committer d'abord », puis la fille voit
@@ -218,3 +218,6 @@ puis « Lancer ». Les traces réelles ci-dessus servent de référence.
   « Plutôt les faire travailler… »), avec un essai unitaire qui clique puis tape Entrée sur
   l'élément qui a le focus (il échoue sans le correctif) ; ligne « Juste un avis ? » sur une ligne
   avec son bouton ; accord « voit » / « voient » selon le nombre de rôles.
+- 2026-11-18 — `pnpm e2e filles-non-commite` vert en clair et en sombre (les deux chemins : rôle,
+  avec « Partir quand même » et l'avis ; Tâches proposées, avec « Committer d'abord ») ; les six
+  captures regardées dans les deux thèmes.
