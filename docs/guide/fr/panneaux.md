@@ -142,7 +142,7 @@ livré avec Bobine. Réglages › Diagnostic vérifie le tout.
   **Zoomer**. Zoomé, la molette déplace la vue.
 - Sous l'appareil : **Accueil**, **Verrouiller** et **Joindre cet écran au message**.
 
-Avant de compiler, l'agent demande votre accord (**Compiler**, **Toujours dans ce projet** ou
+Avant de compiler, l'agent demande votre accord (**Compiler**, **Toujours cette commande ici** ou
 **Refuser**).
 
 <a id="android"></a>

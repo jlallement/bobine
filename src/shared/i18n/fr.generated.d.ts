@@ -3161,8 +3161,8 @@ export type FrResources = {
     readonly reject_always: 'Toujours refuser'
   }
   readonly approvals: {
-    readonly alwaysInProject: 'Toujours dans ce projet'
-    readonly alwaysInProjectDescription: 'Sans redemander dans ce dossier ; révocable dans Réglages › Confidentialité.'
+    readonly alwaysInProject: 'Toujours cette commande ici'
+    readonly alwaysInProjectDescription: 'Sans redemander pour cette commande exacte dans ce dossier ; révocable dans Réglages › Confidentialité.'
     readonly refuse: 'Refuser'
     readonly site: {
       readonly allow: 'Autoriser'

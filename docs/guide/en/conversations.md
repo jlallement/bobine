@@ -41,8 +41,8 @@ the exact command:
 - for a site: **Allow** (for this conversation), **Always allow** (remembered on this computer)
   or **Deny**;
 -->
-- for a command or a build: **Run** or **Build**, **Always in this project** (without asking
-  again in this folder) or **Deny**.
+- for a command or a build: **Run** or **Build**, **Always this command here** (without
+  asking again for this exact command in this folder) or **Deny**.
 
 A denied tool is marked “refused” in the conversation.
 

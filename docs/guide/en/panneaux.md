@@ -140,7 +140,7 @@ Bobine. Settings › Diagnostics checks all of this.
   When zoomed in, the scroll wheel moves the view.
 - Below the device: **Home**, **Lock** and **Attach this screen to the message**.
 
-Before building, the agent asks for your approval (**Build**, **Always in this project** or
+Before building, the agent asks for your approval (**Build**, **Always this command here** or
 **Deny**).
 
 <a id="android"></a>

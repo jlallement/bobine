@@ -31,7 +31,7 @@ fois pour toutes :
 
 - **Outils** : les outils de l'agent pour lesquels vous avez répondu « toujours » ;
 - **Sites** : ceux que le navigateur intégré ouvre sans demander ;
-- **Commandes · dossier** : les commandes et compilations « Toujours dans ce projet » ;
+- **Commandes · dossier** : les commandes et compilations « Toujours cette commande ici » ;
 - **Préparation des worktrees · dossier** : les commandes de `.bobine/worktree.json` que vous avez
   autorisées (voir [Worktrees](worktrees.md#accord)).
 
