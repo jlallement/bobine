@@ -2,6 +2,17 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Le choix « Toujours dans ce projet » des commandes s'appelle désormais « Toujours cette
+  commande ici » : il n'a jamais retenu que la commande exacte, dans ce dossier, et le dit.
+- Une conversation fille dont le compte rendu (ou un message à sa mère) est coupé ne force plus la
+  mère à le lui redemander : la ligne coupée dit à l'agent comment lire le texte entier.
+- File d'attente : un message modifié garde sa place au lieu de passer en dernier.
+- Export : un nom saisi avec son extension (« notes.md ») ne donne plus « notes.md.md ».
+
 ## 1.0.0-beta.8 — 18 novembre 2026
 
 ### Corrections
