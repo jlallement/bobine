@@ -12,10 +12,14 @@
  * langue.
  */
 
-/* global document, getComputedStyle, Node */
+/* global document, getComputedStyle, Node, location */
+import { MAIN_MARKER } from './cdp.mjs'
 
-/** Fonction exécutée dans la page (sérialisée par `toString`) : elle ne doit rien capturer. */
-function readScreen() {
+/**
+ * Fonction exécutée dans la page (sérialisée par `toString`) : elle ne doit rien capturer.
+ * `main` : la page est bien la fenêtre principale de Bobine (`MAIN_MARKER`, évalué dans la page).
+ */
+function readScreen(main) {
   const $ = (sel, root = document) => root.querySelector(sel)
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)]
   const clean = (s) => (s ?? '').replace(/[ \s]+/g, ' ').trim()
@@ -39,6 +43,8 @@ function readScreen() {
   const dot = $('.agent-avatar .status-dot')
   const shot = {
     at: Date.now(),
+    main,
+    url: location.href,
     lang: document.documentElement.lang || 'fr',
     agent: {
       name: text($('.sidebar-footer .name')),
@@ -132,8 +138,22 @@ function readScreen() {
   }
 
   // Cartes qui attendent une réponse : autorisation, question, plan, propositions.
+  // « Tâches proposées » (fiche 124) : ses boutons sont sur les lignes, pas dans son pied (qui ne
+  // porte que l'aide clavier, et seulement tant qu'une ligne attend) ; elle garde ses lignes
+  // décidées (« Lancer » d'une ligne refusée) : elle n'attend que si une ligne est encore en
+  // attente (`data-pending`), et ses boutons sont ceux de ces lignes (fiche 248).
+  const actions = (c) =>
+    c.classList.contains('proposals')
+      ? Number(c.dataset.pending || 0) > 0
+        ? [
+            ...new Set(
+              $$('[data-outcome=pending] .proposal-actions', c).flatMap((row) => buttons(row))
+            )
+          ]
+        : []
+      : buttons($('.pc-actions', c) ?? c)
   shot.cards = $$('.permission-card')
-    .filter((c) => visible(c) && buttons($('.pc-actions', c) ?? c).length)
+    .filter((c) => visible(c) && actions(c).length)
     .map((c) => {
       const type =
         c.dataset.testid === 'permission'
@@ -161,13 +181,27 @@ function readScreen() {
         question: text($('[data-testid=question-text]', c)),
         choices: $$('[data-testid=choice]', c).map(text).filter(Boolean),
         note: text($('.pc-note', c)),
-        buttons: buttons($('.pc-actions', c) ?? c)
+        buttons: actions(c)
       }
       if (!card.command && !card.file && !card.question) {
         card.body = text($('.pc-body', c)).slice(0, 300)
       }
       return card
     })
+  // Proposition de souvenir (fiche 182) : « Retenir ce souvenir ? » / « Oublier ce souvenir ? ».
+  // Décidée, elle devient une ligne (`memory-decided`) : seule la carte attend (fiche 248).
+  for (const c of $$('[data-testid=memory-card]').filter(visible)) {
+    shot.cards.push({
+      type: 'souvenir',
+      title: text($('.memory-card-title strong', c)),
+      sub: text($('.memory-card-who', c)),
+      body: [text($('.memory-card-description', c)), text($('.memory-body', c))]
+        .filter(Boolean)
+        .join(' — '),
+      warnings: $$('[data-testid=memory-banner]', c).map(text).filter(Boolean),
+      buttons: buttons($('.memory-card-actions', c) ?? c)
+    })
+  }
   shot.questions = visible($('[data-testid=elicitation]')) && !shot.cards.length
   shot.blockers = $$('[data-testid^=blocker-]')
     .filter(visible)
@@ -251,4 +285,4 @@ function readScreen() {
 }
 
 /** Expression à évaluer dans la page. */
-export const READ_SCREEN = `(${readScreen.toString()})()`
+export const READ_SCREEN = `(${readScreen.toString()})(${MAIN_MARKER})`

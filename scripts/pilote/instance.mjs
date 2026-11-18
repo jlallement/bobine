@@ -20,7 +20,7 @@ import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { listPages, mainPage, sleep } from './cdp.mjs'
+import { connect, sleep } from './cdp.mjs'
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 export const piloteDir = () => resolve(process.env.BOBINE_PILOTE_DIR ?? join(root, '.pilote'))
@@ -229,20 +229,17 @@ function killGroup(pid) {
 }
 
 async function waitWindow(instance, ms = 60_000) {
-  const { connect } = await import('./cdp.mjs')
   const start = Date.now()
   while (Date.now() - start < ms) {
     if (!alive(instance.pid)) {
       throw new Error(`Bobine s'est arrêtée au lancement (voir ${instance.journal}/bobine.log)`)
     }
-    if (mainPage(await listPages(instance.port))) {
-      try {
-        const page = await connect(instance.port)
-        const ready = await page.ev(READY).finally(() => page.close())
-        if (ready) return
-      } catch {
-        // Page encore en chargement : on réessaie.
-      }
+    try {
+      const page = await connect(instance.port)
+      const ready = await page.ev(READY).finally(() => page.close())
+      if (ready) return
+    } catch {
+      // Port pas encore ouvert, page encore en chargement : on réessaie.
     }
     await sleep(500)
   }

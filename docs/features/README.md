@@ -249,6 +249,7 @@ chaque création ou changement de statut.
 | [243](243-reprise-de-la-conversation-affichee.md) | À la relance, Bobine rouvre la dernière conversation affichée (celle qui travaillait quand on a quitté en plein tour) au lieu d'une nouvelle conversation ; nouvelle conversation si c'était un brouillon, ou si elle a été supprimée ou archivée (recette POC du 2026-11-17, D10) | fait | P1 |
 | [244](244-committer-d-abord-fichiers-choisis.md) | « Committer d'abord » (carte de fusion, lancement de filles) : liste complète des fichiers à cocher, seuls les cochés partent ; un `.env` non ignoré ne part plus sans être vu (relecture de la 240) | fait | P1 |
 | [247](247-retouches-recette-poc.md) | Retouches de la recette POC du 2026-11-17 : « Toujours cette commande ici » (D5), comptes rendus de filles lisibles en entier par `child_status` (D11), message modifié gardé à sa place dans la file (D12), export sans extension doublée (D14) | fait | P2 |
+| [248](248-pilote-cible-et-cartes.md) | Pilote : toujours la fenêtre principale de Bobine (URL et marqueur du preload), jamais une page du navigateur intégré, ouverte ou fermée ; cartes souvenir et « Tâches proposées » (traitée : plus en attente) ; état ambigu dit clairement (recette POC du 2026-11-17, § Outillage) | fait | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

@@ -64,6 +64,10 @@ const alertKeys = (shot) => new Set((shot.alerts ?? []).map((a) => `${a.kind}:${
  * Priorité : erreur, blocage, question, carte, accueil.
  */
 export function pendingReason(shot, start) {
+  // Page qui n'est pas la fenêtre principale (fiche 248) : jamais un « tour fini » par erreur.
+  if (shot.main === false) {
+    return { code: 'erreur', detail: `pas la fenêtre principale de Bobine : ${shot.url ?? '?'}` }
+  }
   const known = alertKeys(start ?? {})
   const fresh = (shot.alerts ?? []).filter((a) => !known.has(`${a.kind}:${a.text}`))
   if (shot.agent?.dot === 'error' || fresh.some((a) => !BLOCKING_ALERTS.has(a.kind))) {
