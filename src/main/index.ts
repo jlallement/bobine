@@ -94,6 +94,7 @@ import { appAgents } from './agent/app-agents'
 import { setupQuotas } from './agent/quota-setup'
 import { quotaAfterCheck, quotaOnReady } from './agent/quota'
 import { createOnboarding, firstLaunchFacts, launchDecision } from './onboarding/onboarding'
+import { requestedModel } from './onboarding/agent-readiness'
 import { quickEntryDeps } from './quick-entry-deps'
 import { createHandlers, registerIpcHandlers, type SendEvent } from './ipc'
 import { broadcast, trustedSender } from './app-windows'
@@ -780,6 +781,11 @@ async function start(): Promise<void> {
     cwd: neutralFolder,
     userData: app.getPath('userData'),
     workspaceOf: (id) => conversations.workspaceOf(id),
+    // Modèle de la puce de la conversation de l'accueil, pour l'essai (fiche 245, D16).
+    modelOf: (id, profileId) =>
+      conversations.profileOf(id)?.id === profileId
+        ? requestedModel(conversations.view(id).snapshot?.controls ?? [])
+        : undefined,
     runInTerminal: (id, cwd, command) => terminals.run(id, cwd, command).id,
     recordUsage: (row) => usageJournal.db.upsert(row),
     onReady: (profileId) => quotas.agentReady(profileId),

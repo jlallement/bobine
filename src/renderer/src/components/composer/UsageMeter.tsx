@@ -3,9 +3,11 @@ import { useState } from 'react'
 import {
   contextRatio,
   conversationCost,
-  formatCost,
+  formatEstimate,
   formatTokens,
   hasUsage,
+  isEstimate,
+  processedTokens,
   turnAverages,
   turnCost,
   usageLevel,
@@ -94,10 +96,12 @@ export function UsageMeter({
                 </span>
               </>
             ) : cost.total ? (
-              <span>{formatCost(cost.total)}</span>
+              <span>{formatEstimate(cost.total)}</span>
             ) : (
               <span>
-                {t('usage.tokensValue', { tokens: formatTokens(usage.tokens?.total ?? 0, true) })}
+                {t('usage.tokensValue', {
+                  tokens: formatTokens(usage.tokens ? processedTokens(usage.tokens) : 0, true)
+                })}
               </span>
             )}
           </Popover.Trigger>
@@ -133,27 +137,37 @@ export function UsageMeter({
               <div className="usage-section" title={t('usage.tokensHint')}>
                 <div className="usage-row">
                   <span>{t('usage.tokens.total', { count: usage.tokens.turns })}</span>
-                  <strong>{formatTokens(usage.tokens.total)}</strong>
+                  <strong data-testid="usage-tokens">
+                    {formatTokens(processedTokens(usage.tokens))}
+                  </strong>
                 </div>
                 <TokenRows counts={usage.tokens} />
                 {usage.lastTurn && (
                   <div className="usage-row sub">
                     <span>{t('usage.lastTurn')}</span>
-                    <span>{formatTokens(usage.lastTurn.total)}</span>
+                    <span>{formatTokens(processedTokens(usage.lastTurn))}</span>
                   </div>
                 )}
+                <ApartRows counts={usage.tokens} />
               </div>
             )}
             {cost.total && (
               <div className="usage-section">
                 <div className="usage-row">
-                  <span>{t('usage.cost')}</span>
-                  <strong data-testid="usage-cost">{formatCost(cost.total)}</strong>
+                  <span>
+                    {isEstimate(cost.total.currency) ? t('usage.costEstimate') : t('usage.cost')}
+                  </span>
+                  <strong data-testid="usage-cost">{formatEstimate(cost.total)}</strong>
                 </div>
+                {isEstimate(cost.total.currency) && (
+                  <div className="usage-hint" data-testid="usage-cost-hint">
+                    {t('usage.costHint', { agent: agentLabel })}
+                  </div>
+                )}
                 {cost.session && (
                   <div className="usage-row sub" data-testid="usage-session-cost">
                     <span>{t('usage.sessionCost')}</span>
-                    <span>{formatCost(cost.session)}</span>
+                    <span>{formatEstimate(cost.session)}</span>
                   </div>
                 )}
                 {cost.others.map((other) => (
@@ -163,7 +177,7 @@ export function UsageMeter({
                     data-testid="usage-other-cost"
                   >
                     <span>{t('usage.otherAgentCost')}</span>
-                    <span>{formatCost(other)}</span>
+                    <span>{formatEstimate(other)}</span>
                   </div>
                 ))}
               </div>
@@ -203,7 +217,7 @@ function TurnSections({ usage }: { usage: ConversationUsage }) {
   const withTokens = shown.some((turn) => turn.total !== undefined)
   const averageText = [
     ...(average.cost !== undefined && currency
-      ? [formatCost({ amount: average.cost, currency })]
+      ? [formatEstimate({ amount: average.cost, currency })]
       : []),
     ...(average.tokens !== undefined
       ? [t('usage.tokensValue', { tokens: formatTokens(average.tokens) })]
@@ -272,7 +286,7 @@ function TurnRow({
         </span>
       )}
       <span className="cost-turn-cost">
-        {cost !== undefined && currency ? formatCost({ amount: cost, currency }) : '—'}
+        {cost !== undefined && currency ? formatEstimate({ amount: cost, currency }) : '—'}
       </span>
     </li>
   )
@@ -282,11 +296,34 @@ function TokenRows({ counts }: { counts: NonNullable<ConversationUsage['tokens']
   const { t } = useTranslation()
   const rows: [string, number][] = [
     [t('usage.tokens.input'), counts.input],
-    [t('usage.tokens.output'), counts.output],
+    [t('usage.tokens.output'), counts.output]
+  ]
+  return <Rows rows={rows} />
+}
+
+/**
+ * Cache et réflexion : hors des jetons traités (fiche 245, D6), sous leur propre titre, jamais
+ * additionnés au total.
+ */
+function ApartRows({ counts }: { counts: NonNullable<ConversationUsage['tokens']> }) {
+  const { t } = useTranslation()
+  const rows: [string, number][] = [
     [t('usage.tokens.cachedRead'), counts.cachedRead],
     [t('usage.tokens.cachedWrite'), counts.cachedWrite],
     [t('usage.tokens.thought'), counts.thought]
   ]
+  if (!rows.some(([, n]) => n > 0)) return null
+  return (
+    <div className="usage-apart" data-testid="usage-apart">
+      <div className="usage-row sub usage-apart-title">
+        <span>{t('usage.tokens.apart')}</span>
+      </div>
+      <Rows rows={rows} />
+    </div>
+  )
+}
+
+function Rows({ rows }: { rows: [string, number][] }) {
   return (
     <>
       {rows

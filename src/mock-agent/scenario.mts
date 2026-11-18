@@ -21,7 +21,8 @@ import type {
   RequestPermissionResponse,
   SessionUpdate,
   StopReason,
-  ToolCallUpdate
+  ToolCallUpdate,
+  Usage
 } from '../shared/acp-sdk.mts'
 import { closeStdout } from './close-stdout.mts'
 import { say, sayAll, type MockLanguage } from './langue.mts'
@@ -259,6 +260,19 @@ export interface Scenario {
   /** Raison d'arrêt renvoyée en fin de tour (défaut : `end_turn`). */
   stopReason?: StopReason
   /**
+   * Consommation du tour telle que l'agent la rapporte (fiche 245), à la place de la consommation
+   * simulée : `usage` de la réponse à `session/prompt` et coût du tour ajouté au coût cumulé
+   * annoncé par `usage_update` (forme d'OpenCode 2.3.0 : `inputTokens` hors cache, `totalTokens` =
+   * entrée + sortie + cache + réflexion).
+   */
+  turnUsage?: {
+    usage: Usage
+    /** Coût du tour en dollars (0 : coût annoncé mais nul, comme les filles de la recette). */
+    cost: number
+    /** Remplissage du contexte annoncé par `usage_update` (`used` / `size`). */
+    context: { used: number; size: number }
+  }
+  /**
    * Ce que l'agent annonce à `initialize` à la place de ses valeurs (fiche 198) : version de
    * l'agent (défaut `0.1.0`), version du protocole ACP (défaut : celle du SDK ; `null` : absente).
    */
@@ -294,6 +308,12 @@ export interface Scenario {
      * `docs/acp.md`, fiche 200 ; fiche 243).
      */
     reopenNeedsAuth?: boolean
+    /**
+     * Modèles proposés, en liste plate « fournisseur/Nom » comme OpenCode 2.3.0, et modèle courant
+     * d'une session neuve (fiche 245, D16 : l'essai de l'accueil reçoit un autre modèle que celui
+     * de la conversation). Un modèle absent de la liste est refusé (`invalidParams`).
+     */
+    models?: { options: { value: string; name: string }[]; start: string }
     /** Licence à accepter (Bob) : `-32600` tant que `.mock-agent-license` n'est pas dans le dossier. */
     requireLicense?: boolean
     /**

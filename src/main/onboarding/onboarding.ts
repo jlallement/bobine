@@ -26,7 +26,12 @@ import { log } from '../log'
 import { findExecutable, type AgentProfile } from '../agent/profiles'
 import { deleteEachSession, type DeleteOptions, type DeleteOutcome } from '../agent/session-list'
 import type { Settings } from '../settings'
-import { checkAgent, type ReadinessOptions, type TrialTurn } from './agent-readiness'
+import {
+  checkAgent,
+  type ReadinessOptions,
+  type RequestedModel,
+  type TrialTurn
+} from './agent-readiness'
 import type { TurnRow } from '../usage/usage-db'
 import {
   closingMark,
@@ -55,6 +60,11 @@ export interface OnboardingDeps {
   scratchParent: string
   /** Sessions d'essai à supprimer, masquées de « Reprendre une session ». */
   trialSessions: TrialSessions
+  /**
+   * Modèle de la conversation de l'accueil, celui de sa puce, s'il est connu et pour cet agent :
+   * l'essai l'applique avant son message (fiche 245, D16).
+   */
+  modelOf?: (conversationId: string, profileId: string) => RequestedModel | undefined
   /** Dossier d'une conversation (pour ses suggestions) ; lève si aucun n'est choisi. */
   workspaceOf: (conversationId: string) => string
   /** Lance une commande dans le terminal de l'app de cette conversation ; rend l'onglet. */
@@ -124,6 +134,7 @@ export class Onboarding {
           if (this.running === controller) this.stopAgent = stop
         },
         credentials: await this.deps.settings.credentials(profile),
+        ...optional('model', this.modelOf(request.conversationId, profile.id)),
         ...optional('apiKey', this.deps.settings.keyInfo(profile)[0]),
         ...optional('authenticate', request.authenticate),
         clientVersion: this.deps.version,
@@ -249,6 +260,15 @@ export class Onboarding {
       })
     } catch (error) {
       log.warn('Accueil : tour d’essai pas écrit au journal de consommation', error)
+    }
+  }
+
+  /** Modèle de la conversation ; jamais d'erreur (conversation inconnue : aucun). */
+  private modelOf(conversationId: string, profileId: string): RequestedModel | undefined {
+    try {
+      return this.deps.modelOf?.(conversationId, profileId)
+    } catch {
+      return undefined
     }
   }
 

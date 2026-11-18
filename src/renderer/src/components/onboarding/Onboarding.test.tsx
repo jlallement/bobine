@@ -97,6 +97,35 @@ describe('accueil du premier lancement (fiche 188)', () => {
     expect(api['finish']).not.toHaveBeenCalled()
   })
 
+  it('essai répondu par un autre modèle que celui de la conversation : l’écart est dit (fiche 245, D16)', async () => {
+    const { rerender } = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+    rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-trial-folder')))
+    rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-send')))
+    await act(async () =>
+      resolveCheck({
+        state: 'ready',
+        level: 'reply',
+        ms: 2600,
+        reply: 'OK',
+        cost: { amount: 0, currency: 'USD' },
+        model: 'opencode/Hy4 flash Free',
+        modelRequested: 'openai/GPT-6.2 Astra'
+      })
+    )
+    rerender()
+    const replied = screen.getByTestId('onboarding-replied').textContent ?? ''
+    expect(replied.replace(/[\u00a0\u202f]/g, ' ')).toContain('≈ 0,00 $US')
+    expect(screen.getByTestId('onboarding-model-missed').textContent).toContain(
+      'Répondu avec opencode/Hy4 flash Free, pas openai/GPT-6.2 Astra'
+    )
+  })
+
   it('« Passer l’accueil » : marqué passé, l’accueil disparaît', async () => {
     const { hook } = await setup()
     await act(async () => fireEvent.click(screen.getByTestId('onboarding-skip-all')))

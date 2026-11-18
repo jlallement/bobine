@@ -318,6 +318,41 @@ describe('essai « répond ? » du premier lancement (fiche 188)', () => {
     expect(result).toMatchObject({ state: 'ready', model: expect.any(String) })
   })
 
+  // Recette du 2026-11-17 (D16) : la conversation sur GPT-6.2 Astra, l'essai répondu par
+  // opencode/Hy4 flash Free, le modèle qu'OpenCode a choisi pour la session neuve.
+  const ASTRA = { controlId: 'model', value: 'openai/gpt-6.2-astra', name: 'openai/GPT-6.2 Astra' }
+
+  it('essai avec le modèle de la conversation : appliqué avant le message (fiche 245, D16)', async () => {
+    const turns: TrialTurn[] = []
+    const result = await check(mock('essai-autre-modele'), {
+      model: ASTRA,
+      onTrialTurn: (turn) => turns.push(turn)
+    })
+    expect(result).toMatchObject({ state: 'ready', model: 'openai/GPT-6.2 Astra' })
+    expect(result).not.toHaveProperty('modelRequested')
+    expect(turns[0]?.model).toEqual({ id: 'openai/gpt-6.2-astra', name: 'openai/GPT-6.2 Astra' })
+  })
+
+  it('modèle de la conversation absent de la session d’essai : le message part, l’écart est dit', async () => {
+    const turns: TrialTurn[] = []
+    const result = await check(mock('essai-modele-absent'), {
+      model: ASTRA,
+      onTrialTurn: (turn) => turns.push(turn)
+    })
+    expect(result).toMatchObject({
+      state: 'ready',
+      reply: 'OK',
+      model: 'opencode/Hy4 flash Free',
+      modelRequested: 'openai/GPT-6.2 Astra'
+    })
+    expect(turns[0]?.model?.id).toBe('opencode/hy4-flash-free')
+  })
+
+  it('« connecté ? » : le modèle de la conversation est annoncé, sans message (fiche 245)', async () => {
+    const result = await check(mock('essai-autre-modele'), { level: 'connect', model: ASTRA })
+    expect(result).toMatchObject({ state: 'ready', model: 'openai/GPT-6.2 Astra' })
+  })
+
   it('session d’essai toujours dans un dossier jetable de l’app, supprimé ; jamais le dossier de lancement', async () => {
     const cwd = folder()
     const scratchParent = folder()

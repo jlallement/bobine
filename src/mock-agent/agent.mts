@@ -270,7 +270,11 @@ const MODELS = {
 } as const
 
 /** Options de configuration ACP exposées par l'agent factice (sauf avec --sans-options). */
-function configOptions(session: SessionState, showcase = false): SessionConfigOption[] {
+function configOptions(
+  session: SessionState,
+  showcase = false,
+  scenarioModels?: { value: string; name: string }[]
+): SessionConfigOption[] {
   return [
     {
       id: 'model',
@@ -278,8 +282,9 @@ function configOptions(session: SessionState, showcase = false): SessionConfigOp
       category: 'model',
       type: 'select',
       currentValue: session.model,
-      options:
-        LONG_MODELS.length > 0
+      options: scenarioModels
+        ? scenarioModels
+        : LONG_MODELS.length > 0
           ? [
               { value: MODELS.rapide, name: showcase ? 'Démo rapide' : 'factice/Factice rapide' },
               { value: MODELS.precis, name: showcase ? 'Démo précis' : 'factice/Factice précis' },
@@ -315,6 +320,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
   if (!scenario) throw new Error(`Scénario inconnu : ${options.scenario}`)
 
   const sessions = new Map<string, SessionState>()
+  const scenarioModels = scenario.session?.models?.options
   const language = options.language ?? 'fr'
   let authenticated = false
   const withHistory = options.withHistory !== false
@@ -353,7 +359,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
     configOptions:
       options.withConfigOptions === false
         ? undefined
-        : sayAll(configOptions(session, options.showcase), language)
+        : sayAll(configOptions(session, options.showcase, scenarioModels), language)
   })
   /**
    * Autres dossiers reçus à l'ouverture (fiche 179) : sans la capacité annoncée, un client qui en
@@ -498,7 +504,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         cwd: params.cwd,
         updatedAt: new Date().toISOString(),
         modeId: startMode(options.startModeKey, params._meta),
-        model: MODELS.rapide,
+        model: scenario.session?.models?.start ?? MODELS.rapide,
         verbose: false,
         history: [],
         turn: null,
@@ -570,7 +576,10 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       if (options.withConfigOptions === false)
         throw RequestError.methodNotFound(methods.agent.session.setConfigOption)
       const value: unknown = params.value
-      if (params.configId === 'model' && Object.values(MODELS).includes(value as never)) {
+      const known = scenarioModels
+        ? scenarioModels.some((m) => m.value === value)
+        : Object.values(MODELS).includes(value as never)
+      if (params.configId === 'model' && known) {
         session.model = value as string
       } else if (params.configId === 'verbose' && typeof value === 'boolean') {
         session.verbose = value
@@ -578,7 +587,9 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         throw RequestError.invalidParams({ configId: params.configId, value })
       }
       persist(session)
-      return { configOptions: sayAll(configOptions(session, options.showcase), language) }
+      return {
+        configOptions: sayAll(configOptions(session, options.showcase, scenarioModels), language)
+      }
     })
     .onRequest(methods.agent.session.setMode, async ({ params, client }) => {
       const session = getSession(sessions, params.sessionId)
@@ -696,16 +707,19 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           setTimeout(() => writeBobTaskCost(file, id, cost), 300)
         }
         if (options.withUsage === false || options.bobCost) return { stopReason }
-        const usage = mockTurnUsage(params.prompt)
+        const real = chosen.turnUsage
+        const usage = real?.usage ?? mockTurnUsage(params.prompt)
         session.contextUsed =
+          real?.context.used ??
           (reportedContext ?? session.contextUsed ?? 0) + usage.inputTokens + usage.outputTokens
-        session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
+        session.cost =
+          Math.round(((session.cost ?? 0) + (real ? real.cost : MOCK_TURN_COST)) * 1e6) / 1e6
         await client.notify(methods.client.session.update, {
           sessionId: session.sessionId,
           update: {
             sessionUpdate: 'usage_update',
             used: session.contextUsed,
-            size: MOCK_CONTEXT_SIZE,
+            size: real?.context.size ?? MOCK_CONTEXT_SIZE,
             ...(options.withoutCost
               ? {}
               : { cost: { amount: session.cost, currency: options.costCurrency ?? 'USD' } })

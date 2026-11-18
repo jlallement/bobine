@@ -220,7 +220,8 @@ describe('Mon activité (fiches 137 et 144)', () => {
       [...screen.getByTestId('usage-kpis').children].map((k) => k.getAttribute('data-testid'))
     ).toEqual(['usage-kpi-turns', 'usage-kpi-time', 'usage-kpi-tokens', 'usage-kpi-cost'])
     expect(text('usage-kpi-time')).toBe('Temps de travail5 min 30 s1 min 22 s par échangestable')
-    expect(text('usage-kpi-cost')).toBe('Coût0,75 Bobcoinset 0,02 $US (OpenCode)50 %')
+    // Le coût en dollars annoncé par l'agent est une estimation, pas les bobcoins (fiche 245).
+    expect(text('usage-kpi-cost')).toBe('Coût0,75 Bobcoinset ≈ 0,02 $US (OpenCode)50 %')
     const deltas = screen.getAllByTestId('activity-delta')
     expect(deltas.map((d) => d.dataset['direction'])).toEqual(['up', 'flat', 'up', 'up'])
     expect(deltas[0]?.getAttribute('title')?.replace(/[\u00a0\u202f]/g, ' ')).toBe('Avant : 4')

@@ -98,24 +98,38 @@ function GroupState({
       </span>
     )
   }
-  if (failed > 0) {
-    return (
-      <span className="tool-state failed">
+  // Tous les états du groupe, pas seulement le plus grave (fiche 245, D13) : une commande qui a
+  // vraiment échoué avant Arrêter, et l'outil interrompu par Arrêter.
+  const states = [
+    failed > 0 && (
+      <span className="tool-state failed" key="failed">
         <X size={14} /> {t('toolGroup.failed', { count: failed })}
       </span>
-    )
-  }
-  if (refused > 0) {
-    return (
-      <span className="tool-state refused">
+    ),
+    refused > 0 && (
+      <span className="tool-state refused" key="refused">
         <ShieldX size={14} /> {t('toolGroup.refused', { count: refused })}
       </span>
-    )
-  }
-  if (cancelled > 0) {
-    return (
-      <span className="tool-state cancelled">
+    ),
+    cancelled > 0 && (
+      <span className="tool-state cancelled" key="cancelled">
         <Ban size={13} /> {t('toolGroup.cancelled', { count: cancelled })}
+      </span>
+    )
+  ].filter((state) => !!state)
+  if (states.length > 0) {
+    return (
+      <span className="tool-group-states" data-testid="tool-group-states">
+        {states.flatMap((state, index) =>
+          index === 0
+            ? [state]
+            : [
+                <span className="tool-group-sep" key={`sep-${index}`} aria-hidden>
+                  {t('toolGroup.separator')}
+                </span>,
+                state
+              ]
+        )}
       </span>
     )
   }

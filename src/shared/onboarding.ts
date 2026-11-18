@@ -62,6 +62,11 @@ export type AgentReadiness =
       tokens?: { input: number; output: number }
       /** Modèle de la session d'essai, s'il est annoncé (réglage de catégorie `model`). */
       model?: string
+      /**
+       * Modèle de la conversation que la session d'essai n'a pas pris (absent de ses choix, ou
+       * refusé) : l'essai a répondu avec `model` à la place (fiche 245, D16).
+       */
+      modelRequested?: string
       /** L'agent a demandé un outil pendant l'essai : refusé, tour annulé. */
       toolRefused?: true
       /** Nom et version annoncés par l'agent à `initialize`. */

@@ -128,7 +128,8 @@
         "switch_mode_many": "{{count}} changements de mode",
         "other_many": "{{count}} outils"
       }
-    }
+    },
+    "separator": "·"
   },
   "transcript": {
     "branch": {
@@ -436,7 +437,7 @@
     "compactTip": "Contexte utilisé : {{percent}} % (détail au clic)",
     "context": "Contexte",
     "contextHint": "Le contexte se remplit : l’agent risque de résumer l’échange ou de s’arrêter. Pensez à démarrer une nouvelle conversation.",
-    "tokensHint": "Somme des jetons rapportés à chaque échange : le contexte relu (souvent en cache) est compté à chaque fois.",
+    "tokensHint": "Entrée et sortie annoncées par l’agent. Le cache et la réflexion sont comptés à part, hors de ce total.",
     "lastTurn": "Dernier échange",
     "cost": "Coût de la conversation",
     "sessionCost": "Cette session",
@@ -454,7 +455,8 @@
       "thought": "Réflexion",
       "total_one": "Jetons traités ({{count}} échange)",
       "total_other": "Jetons traités ({{count}} échanges)",
-      "total_many": "Jetons traités ({{count}} échanges)"
+      "total_many": "Jetons traités ({{count}} échanges)",
+      "apart": "Hors total"
     },
     "title": "Consommation · {{agent}}",
     "contextValue": "{{used}} / {{size}} ({{percent}} %)",
@@ -467,7 +469,12 @@
       "none": "{{agent}} n’a encore rien indiqué sur sa consommation dans cette conversation.",
       "tokens_many": "Jetons traités : {{total}} sur {{count}} échanges ({{input}} en entrée, {{output}} en sortie)",
       "contextUnknown": "{{agent}} ne transmet pas le remplissage de son contexte : Bobine ne peut pas dire quelle place il reste.",
-      "compactHint": "{{command}} le résume si la conversation devient longue."
+      "compactHint": "{{command}} le résume si la conversation devient longue.",
+      "cachedRead": "{{tokens}} relus en cache",
+      "cachedWrite": "{{tokens}} écrits en cache",
+      "thought": "{{tokens}} de réflexion",
+      "extra": "En plus : {{parts}}.",
+      "costEstimate": "Coût : {{cost}} (estimation annoncée par {{agent}})"
     },
     "tokensValue": "{{tokens}} jetons",
     "percent": "{{percent}} %",
@@ -498,7 +505,8 @@
         "turns": "Échanges",
         "tokens": "Jetons entrée · sortie",
         "cost": "Coût",
-        "perTurn": "Par échange"
+        "perTurn": "Par échange",
+        "costEstimate": "Coût estimé"
       },
       "agent": {
         "label": "Agent",
@@ -526,7 +534,9 @@
         "costPerTurn": "{{cost}} par échange",
         "withoutCost_one": "{{count}} échange sans coût communiqué",
         "withoutCost_many": "{{count}} échanges sans coût communiqué",
-        "withoutCost_other": "{{count}} échanges sans coût communiqué"
+        "withoutCost_other": "{{count}} échanges sans coût communiqué",
+        "costEstimate": "Coût estimé",
+        "cached": "et {{tokens}} relus en cache"
       },
       "chart": {
         "empty": "Aucun échange sur cette période"
@@ -568,7 +578,11 @@
         "done": "Consommation remise à zéro. Les prochains échanges seront comptés."
       },
       "discussions": "Discussions"
-    }
+    },
+    "estimate": "≈ {{cost}}",
+    "costEstimate": "Coût de la conversation (estimation)",
+    "costHint": "Montant annoncé par {{agent}} d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).",
+    "capTokensValue": "{{tokens}} jetons, cache compris"
   },
   "elicitation": {
     "decline": "Refuser",
@@ -4162,7 +4176,7 @@
       "default": "Par défaut",
       "defaultTip": "Les montants des réglages",
       "input": "Plafond de cette conversation",
-      "tokensUnit": "jetons",
+      "tokensUnit": "jetons, cache compris",
       "fromSettings": "{{limit}} (réglages)",
       "export": "Plafond atteint : {{limit}}",
       "held": "Votre message attend votre accord :",
@@ -4187,7 +4201,7 @@
       },
       "capTokens": {
         "label": "Agent sans montant connu",
-        "hint": "Pour un agent qui ne donne pas son coût, le plafond porte sur les jetons, comptés à la fin de chaque échange."
+        "hint": "Pour un agent qui ne donne pas son coût, le plafond porte sur tous les jetons qu’il compte, cache compris, relevés à la fin de chaque échange."
       }
     },
     "search": {
@@ -4681,9 +4695,9 @@
       "worktreeHint": "Le dossier doit être un dépôt git ; les modifications restent sur une branche à part.",
       "catchUp": "Rattraper une échéance manquée (une seule exécution)",
       "capTitle": "Plafond par exécution",
-      "capHint": "Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons quand l’agent ne donne pas de coût. Vide : le plafond des réglages.",
+      "capHint": "Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.",
       "capAmount": "Montant",
-      "capTokens": "Jetons",
+      "capTokens": "Jetons, cache compris",
       "permissions": "Une exécution planifiée n’accorde rien de plus qu’une conversation ordinaire : une demande d’autorisation attend votre réponse et vous prévient.",
       "save": "Enregistrer",
       "cancel": "Annuler",
@@ -4703,8 +4717,7 @@
     "files_one": "{{count}} fichier +{{added}} −{{removed}}",
     "files_many": "{{count}} fichiers +{{added}} −{{removed}}",
     "files_other": "{{count}} fichiers +{{added}} −{{removed}}",
-    "doneQuick": "Terminé",
-    "cost": "≈ {{cost}}"
+    "doneQuick": "Terminé"
   },
   "cap": {
     "more_one": "⋯ {{n}} ligne de plus",
@@ -4827,7 +4840,8 @@
       "cost2": "Coût {{amount}}",
       "tokens": "{{input}} jetons envoyés · {{output}} reçus",
       "toolRefused": "Il a voulu utiliser un outil : refusé pendant l’essai.",
-      "cancelled": "Essai annulé. L’agent a été arrêté."
+      "cancelled": "Essai annulé. L’agent a été arrêté.",
+      "modelMissed": "Répondu avec {{model}}, pas {{requested}} (celui de vos conversations) : {{agent}} ne l’a pas pris pour cet essai."
     },
     "error": {
       "missing": "{{agent}} est introuvable",

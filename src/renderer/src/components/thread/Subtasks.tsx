@@ -25,7 +25,13 @@ import {
 } from '@shared/children'
 import { childRows } from '@shared/children-rows'
 import type { TranscriptItem } from '@shared/transcript'
-import { digestsTotal, formatCost, formatTokens, type UsageDigest } from '@shared/usage'
+import {
+  digestsTotal,
+  formatEstimate,
+  formatTokens,
+  processedTokens,
+  type UsageDigest
+} from '@shared/usage'
 import { Markdown } from './Markdown'
 import { useProfileStatus } from '../common/Profile'
 import { ConversationStateIcon } from '../common/ConversationState'
@@ -178,8 +184,9 @@ export function useUsageText(): (usage: UsageDigest | undefined) => string | und
   // Mode présentation (fiche 159) : jetons seulement, aucun montant.
   const presenting = usePresentation()
   return (usage) => {
-    if (usage?.cost && !presenting) return formatCost(usage.cost)
-    if (usage?.total) return t('children.cost.tokens', { tokens: formatTokens(usage.total, true) })
+    if (usage?.cost && !presenting) return formatEstimate(usage.cost)
+    const tokens = usage && (usage.input !== undefined ? processedTokens(usage) : usage.total)
+    if (tokens) return t('children.cost.tokens', { tokens: formatTokens(tokens, true) })
     return undefined
   }
 }
@@ -291,7 +298,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
             title={t('children.cost.total')}
             data-testid="subtasks-total"
           >
-            {formatCost(total)}
+            {formatEstimate(total)}
           </span>
         )}
       </div>

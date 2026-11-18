@@ -106,7 +106,8 @@
         "other_one": "{{count}} tool",
         "other_other": "{{count}} tools"
       }
-    }
+    },
+    "separator": "·"
   },
   "transcript": {
     "branch": {
@@ -394,7 +395,7 @@
     "compactTip": "Context used: {{percent}}% (click for details)",
     "context": "Context",
     "contextHint": "The context is filling up: the agent may summarize the exchange or stop. Consider starting a new conversation.",
-    "tokensHint": "Sum of the tokens reported for each exchange: the context read again (often from cache) counts every time.",
+    "tokensHint": "Input and output reported by the agent. Cache and thinking are counted separately, outside this total.",
     "lastTurn": "Last exchange",
     "cost": "Conversation cost",
     "sessionCost": "This session",
@@ -411,7 +412,8 @@
       "cachedWrite": "Cache writes",
       "thought": "Thinking",
       "total_one": "Tokens processed ({{count}} exchange)",
-      "total_other": "Tokens processed ({{count}} exchanges)"
+      "total_other": "Tokens processed ({{count}} exchanges)",
+      "apart": "Outside the total"
     },
     "title": "Usage · {{agent}}",
     "contextValue": "{{used}} / {{size}} ({{percent}}%)",
@@ -423,7 +425,12 @@
       "cost": "Cost: {{cost}}",
       "none": "{{agent}} hasn’t reported any usage in this conversation yet.",
       "contextUnknown": "{{agent}} doesn’t report how full its context is: Bobine can’t tell how much room is left.",
-      "compactHint": "{{command}} summarizes it when the conversation gets long."
+      "compactHint": "{{command}} summarizes it when the conversation gets long.",
+      "cachedRead": "{{tokens}} read from cache",
+      "cachedWrite": "{{tokens}} written to cache",
+      "thought": "{{tokens}} of thinking",
+      "extra": "Also: {{parts}}.",
+      "costEstimate": "Cost: {{cost}} (estimate reported by {{agent}})"
     },
     "tokensValue": "{{tokens}} tokens",
     "percent": "{{percent}}%",
@@ -453,7 +460,8 @@
         "turns": "Exchanges",
         "tokens": "Tokens in · out",
         "cost": "Cost",
-        "perTurn": "Per exchange"
+        "perTurn": "Per exchange",
+        "costEstimate": "Estimated cost"
       },
       "agent": {
         "label": "Agent",
@@ -479,7 +487,9 @@
         "andCost": "and {{cost}} ({{agents}})",
         "costPerTurn": "{{cost}} per exchange",
         "withoutCost_one": "{{count}} exchange without a reported cost",
-        "withoutCost_other": "{{count}} exchanges without a reported cost"
+        "withoutCost_other": "{{count}} exchanges without a reported cost",
+        "costEstimate": "Estimated cost",
+        "cached": "plus {{tokens}} read from cache"
       },
       "chart": {
         "empty": "No exchanges in this period"
@@ -520,7 +530,11 @@
         "done": "Usage reset. The next exchanges will be counted."
       },
       "discussions": "Chats"
-    }
+    },
+    "estimate": "≈ {{cost}}",
+    "costEstimate": "Conversation cost (estimate)",
+    "costHint": "Amount reported by {{agent}} from its own prices: what you are billed may differ (subscription, discounts).",
+    "capTokensValue": "{{tokens}} tokens, cache included"
   },
   "elicitation": {
     "decline": "Decline",
@@ -3995,7 +4009,7 @@
       "default": "Default",
       "defaultTip": "The amounts from Settings",
       "input": "Cap for this conversation",
-      "tokensUnit": "tokens",
+      "tokensUnit": "tokens, cache included",
       "fromSettings": "{{limit}} (Settings)",
       "export": "Cap reached: {{limit}}",
       "held": "Your message is waiting for your approval:",
@@ -4020,7 +4034,7 @@
       },
       "capTokens": {
         "label": "Agent with no known amount",
-        "hint": "For an agent that doesn’t report its cost, the cap counts tokens, tallied at the end of each turn."
+        "hint": "For an agent that doesn’t report its cost, the cap counts every token it reports, cache included, tallied at the end of each turn."
       }
     },
     "search": {
@@ -4485,9 +4499,9 @@
       "worktreeHint": "The folder must be a git repository; changes stay on a separate branch.",
       "catchUp": "Catch up a missed run (a single run)",
       "capTitle": "Cap per run",
-      "capHint": "The turn stops at the cap and the conversation waits for your go-ahead. Amount in the agent’s currency (bobcoins for Bob); tokens when the agent gives no cost. Empty: the cap from settings.",
+      "capHint": "The turn stops at the cap and the conversation waits for your go-ahead. Amount in the agent’s currency (bobcoins for Bob); tokens, cache included, when the agent gives no cost. Empty: the cap from settings.",
       "capAmount": "Amount",
-      "capTokens": "Tokens",
+      "capTokens": "Tokens, cache included",
       "permissions": "A scheduled run grants nothing more than an ordinary conversation: a permission request waits for your answer and notifies you.",
       "save": "Save",
       "cancel": "Cancel",
@@ -4506,8 +4520,7 @@
     "done": "Done in {{duration}}",
     "files_one": "{{count}} file +{{added}} −{{removed}}",
     "files_other": "{{count}} files +{{added}} −{{removed}}",
-    "doneQuick": "Done",
-    "cost": "≈ {{cost}}"
+    "doneQuick": "Done"
   },
   "cap": {
     "more_one": "⋯ {{n}} more line",
@@ -4625,7 +4638,8 @@
       "cost2": "Cost {{amount}}",
       "tokens": "{{input}} tokens sent · {{output}} received",
       "toolRefused": "It tried to use a tool: refused during the test.",
-      "cancelled": "Test cancelled. The agent was stopped."
+      "cancelled": "Test cancelled. The agent was stopped.",
+      "modelMissed": "Answered with {{model}}, not {{requested}} (the one your conversations use): {{agent}} did not take it for this trial."
     },
     "error": {
       "missing": "{{agent}} not found",

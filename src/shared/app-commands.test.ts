@@ -103,8 +103,10 @@ describe('commandes de l’app', () => {
       'Bob'
     ).split('\n')
     expect(report).toEqual([
-      expect.stringMatching(/^Jetons traités\u00a0: 15.* sur 2 échanges/),
-      expect.stringMatching(/^Coût\u00a0: .*0,0632.*Bobcoins/)
+      // Entrée + sortie (fiche 245, D6), pas le total de l'agent (15 000).
+      expect.stringMatching(/^Jetons traités\u00a0: 12.000 sur 2 échanges/),
+      // Bobcoins : le décompte de Bob, sans « ≈ » ni « estimation » (fiche 245, Q5).
+      expect.stringMatching(/^Coût\u00a0: 0,0632.*Bobcoins$/)
     ])
     expect(costReport(undefined, 'Bob')).toContain('Bob n’a encore rien indiqué')
   })

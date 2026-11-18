@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
 import { numberFormat } from '@shared/i18n/format'
 import { formatDuration } from '@shared/subagent'
-import { formatCost, formatTokens } from '@shared/usage'
+import { formatEstimate, formatTokens, isEstimate, processedTokens } from '@shared/usage'
 import type { UsageStats } from '@shared/usage-stats'
 import {
   agentsWithUnit,
@@ -98,7 +98,7 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
             ? '—'
             : noTokens
               ? t('usage.board.unknown')
-              : formatTokens(totals.input + totals.output, true)
+              : formatTokens(processedTokens(totals), true)
         }
         sub={
           totals.turns === 0
@@ -110,30 +110,37 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
                   output: formatTokens(totals.output, true)
                 })
         }
+        sub2={
+          totals.turns > 0 && !noTokens && (totals.cachedRead ?? 0) > 0
+            ? t('usage.board.kpi.cached', { tokens: formatTokens(totals.cachedRead ?? 0, true) })
+            : ''
+        }
         delta={
           !noTokens &&
-          other(totals.input + totals.output, before?.tokens, (n) =>
-            formatTokens(Math.round(n), true)
-          )
+          other(processedTokens(totals), before?.tokens, (n) => formatTokens(Math.round(n), true))
         }
         testId="usage-kpi-tokens"
       />
       {!presenting && (
         <Kpi
-          label={t('usage.board.kpi.cost')}
+          label={
+            main !== undefined && isEstimate(main)
+              ? t('usage.board.kpi.costEstimate')
+              : t('usage.board.kpi.cost')
+          }
           value={
             totals.turns === 0
               ? '—'
               : main === undefined || mainCost === undefined
                 ? t('usage.board.unknown')
-                : formatCost({ amount: mainCost, currency: main })
+                : formatEstimate({ amount: mainCost, currency: main })
           }
           sub={
             others.length > 0
               ? others
                   .map((unit) =>
                     t('usage.board.kpi.andCost', {
-                      cost: formatCost({ amount: totals.costs[unit] ?? 0, currency: unit }),
+                      cost: formatEstimate({ amount: totals.costs[unit] ?? 0, currency: unit }),
                       agents: agentsWithUnit(stats.byModel, unit).join(', ')
                     })
                   )
@@ -142,14 +149,16 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
                 ? t('usage.board.kpi.withoutCost', { count: totals.turnsWithoutCost })
                 : main !== undefined && mainCost !== undefined && totals.turns > 0
                   ? t('usage.board.kpi.costPerTurn', {
-                      cost: formatCost({ amount: mainCost / totals.turns, currency: main })
+                      cost: formatEstimate({ amount: mainCost / totals.turns, currency: main })
                     })
                   : ''
           }
           delta={
             main !== undefined &&
             mainCost !== undefined &&
-            other(mainCost, before?.costs[main], (n) => formatCost({ amount: n, currency: main }))
+            other(mainCost, before?.costs[main], (n) =>
+              formatEstimate({ amount: n, currency: main })
+            )
           }
           testId="usage-kpi-cost"
         />
@@ -190,12 +199,15 @@ function Kpi({
   label,
   value,
   sub,
+  sub2,
   delta,
   testId
 }: {
   label: string
   value: string
   sub: string
+  /** Seconde ligne (cache à part des jetons traités, fiche 245). */
+  sub2?: string
   delta?: ReactNode
   testId: string
 }) {
@@ -204,6 +216,7 @@ function Kpi({
       <div className="usage-kpi-label">{label}</div>
       <div className="usage-kpi-value">{value}</div>
       {sub && <div className="usage-kpi-sub">{sub}</div>}
+      {sub2 && <div className="usage-kpi-sub">{sub2}</div>}
       {delta}
     </div>
   )

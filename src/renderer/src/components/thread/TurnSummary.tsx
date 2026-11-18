@@ -2,7 +2,7 @@ import { CircleCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { conversationChanges } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
-import { formatCost, turnCost, type ConversationUsage } from '@shared/usage'
+import { formatEstimate, turnCost, type ConversationUsage } from '@shared/usage'
 import { usePresentation } from '../../presentation'
 import { turnDuration } from '../../time'
 import { countText } from '@shared/i18n/format'
@@ -86,7 +86,7 @@ export function TurnSummary({ facts }: { facts: TurnFacts }) {
       })
     )
   }
-  if (facts.cost && !presenting) parts.push(t('turnSummary.cost', { cost: formatCost(facts.cost) }))
+  if (facts.cost && !presenting) parts.push(formatEstimate(facts.cost))
   return (
     <div className="turn-summary" data-testid="turn-summary">
       <CircleCheck size={13} />

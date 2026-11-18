@@ -6,6 +6,7 @@
  * Chaque tour garde ses jetons et son coût (fiche 109).
  */
 import type { Usage, UsageUpdate } from './acp-sdk.mts'
+import { t } from 'i18next'
 import { numberFormat } from './i18n/format'
 
 export interface TokenCounts {
@@ -237,11 +238,22 @@ export function turnCost(turn: TurnUsage): number | undefined {
   return cost >= 0 ? round6(cost) : undefined
 }
 
-/** Moyennes par tour (jetons, coût) sur les tours qui les donnent. */
+/**
+ * Jetons traités (fiche 245, D6) : l'entrée et la sortie annoncées par l'agent, partout le même
+ * nombre (`/cost`, détail de la consommation, Mon activité, cartes des filles). Ni le cache ni la
+ * réflexion n'y sont : affichés à part. Chez OpenCode l'entrée exclut le cache, et `totalTokens`
+ * additionne tout (cache lu : 95 % du total dans la recette du 2026-11-17).
+ */
+export const processedTokens = (counts: { input?: number; output?: number }): number =>
+  (counts.input ?? 0) + (counts.output ?? 0)
+
+/** Moyennes par tour (jetons traités, coût) sur les tours qui les donnent. */
 export function turnAverages(turns: readonly TurnUsage[]): { tokens?: number; cost?: number } {
   const mean = (values: number[]) =>
     values.length ? values.reduce((a, b) => a + b, 0) / values.length : undefined
-  const tokens = mean(turns.flatMap((t) => (t.total ? [t.total] : [])))
+  const tokens = mean(
+    turns.flatMap((turn) => (turn.total !== undefined ? [processedTokens(turn)] : []))
+  )
   const cost = mean(turns.flatMap((t) => (turnCost(t) === undefined ? [] : [turnCost(t) ?? 0])))
   return {
     ...(tokens !== undefined ? { tokens: Math.round(tokens) } : {}),
@@ -402,6 +414,20 @@ export const unitLabel = (currency: string): string =>
   isCurrencyCode(currency) ? currency : currency.charAt(0).toUpperCase() + currency.slice(1)
 
 /** Coût dans sa devise : ISO 4217 via `Intl` (« 0,13 $US »), sinon « 12,5 Bobcoins ». */
+/**
+ * Coût affiché (fiche 245, D8) : un montant en monnaie annoncé par l'agent est une estimation
+ * (tarifs de l'agent ; abonnement, remises inconnus de Bobine), d'où « ≈ ». Une unité propre à
+ * l'agent (bobcoins de Bob) est son propre décompte : sans « ≈ ». Les plafonds, montants choisis
+ * par l'utilisateur, gardent `formatCost`.
+ */
+export function formatEstimate(cost: { amount: number; currency: string }): string {
+  const text = formatCost(cost)
+  return isEstimate(cost.currency) ? t('usage.estimate', { cost: text }) : text
+}
+
+/** Un coût en monnaie (code ISO) : une estimation de l'agent. */
+export const isEstimate = (currency: string): boolean => isCurrencyCode(currency)
+
 export function formatCost(cost: { amount: number; currency: string }): string {
   if (isCurrencyCode(cost.currency)) {
     try {

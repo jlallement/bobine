@@ -1,7 +1,7 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { ConversationUsage } from '@shared/usage'
+import { endTurn, type ConversationUsage } from '@shared/usage'
 import { UsageMeter } from './UsageMeter'
 
 beforeAll(() => {
@@ -45,15 +45,16 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
       })
     )
     fireEvent.click(screen.getByTestId('usage-meter'))
-    expect(plain(screen.getByTestId('usage-cost').textContent)).toBe('0,025 $US')
+    // Coût en dollars annoncé par l'agent : une estimation (fiche 245, D8).
+    expect(plain(screen.getByTestId('usage-cost').textContent)).toBe('≈ 0,025 $US')
     expect(plain(screen.getByTestId('usage-average').textContent)).toContain(
-      '0,0125 $US · 1 275 jetons'
+      '≈ 0,0125 $US · 1 275 jetons'
     )
     const turns = screen.getAllByTestId('usage-turn').map((li) => plain(li.textContent))
     expect(turns).toHaveLength(2)
-    expect(turns[0]).toContain('0,015 $US')
+    expect(turns[0]).toContain('≈ 0,015 $US')
     expect(turns[0]).toContain('1,1k → 300')
-    expect(turns[1]).toContain('0,01 $US')
+    expect(turns[1]).toContain('≈ 0,01 $US')
   })
 
   it('agent qui ne donne que son coût (comme Bob) : la puce montre le coût, lignes sans jetons', () => {
@@ -94,5 +95,36 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     fireEvent.click(screen.getByTestId('usage-meter'))
     expect(screen.queryByTestId('usage-average')).toBeNull()
     expect(screen.queryByTestId('usage-turns')).toBeNull()
+  })
+
+  it('tour réel d’OpenCode : jetons traités = entrée + sortie, cache et réflexion à part, coût estimé (fiche 245)', () => {
+    // Tour de la mère de la recette du 2026-11-17 (scénario factice `jetons-opencode`).
+    const usage = endTurn(
+      { context: { used: 19_711, size: 1_050_000 }, cost: { amount: 0.007455, currency: 'USD' } },
+      {
+        inputTokens: 28_149,
+        outputTokens: 6_906,
+        cachedReadTokens: 96_384,
+        thoughtTokens: 447,
+        totalTokens: 131_886
+      }
+    )
+    render(meter(usage))
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    expect(plain(screen.getByTestId('usage-tokens').textContent)).toBe('35 055')
+    const apart = plain(screen.getByTestId('usage-apart').textContent)
+    expect(apart).toContain('96 384')
+    expect(apart).toContain('447')
+    expect(plain(screen.getByTestId('usage-details').textContent)).not.toContain('131 886')
+    expect(plain(screen.getByTestId('usage-cost').textContent)).toBe('≈ 0,0075 $US')
+    expect(screen.getByTestId('usage-cost-hint').textContent).toContain('Agent factice')
+    expect(plain(screen.getByTestId('usage-average').textContent)).toContain('35 055 jetons')
+  })
+
+  it('bobcoins de Bob : ni « ≈ » ni explication d’estimation (fiche 245)', () => {
+    render(meter({ cost: { amount: 0.0632, currency: 'bobcoins' } }))
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    expect(screen.getByTestId('usage-cost').textContent).not.toContain('≈')
+    expect(screen.queryByTestId('usage-cost-hint')).toBeNull()
   })
 })

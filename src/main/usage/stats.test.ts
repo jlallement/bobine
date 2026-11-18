@@ -227,6 +227,8 @@ describe('statistiques sur un journal fixe (fiche 137)', () => {
       finishedTurns: 4,
       input: 1410,
       output: 145,
+      // Relus en cache : montrés à part des jetons traités (fiche 245).
+      cachedRead: 500,
       costs: { bobcoins: 0.75, USD: 0.02 },
       turnsWithoutTokens: 2,
       turnsWithoutCost: 2

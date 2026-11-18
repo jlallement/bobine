@@ -131,6 +131,7 @@ export type FrResources = {
         readonly other_many: '{{count}} outils'
       }
     }
+    readonly separator: '·'
   }
   readonly transcript: {
     readonly branch: {
@@ -436,7 +437,7 @@ export type FrResources = {
     readonly compactTip: 'Contexte utilisé : {{percent}} % (détail au clic)'
     readonly context: 'Contexte'
     readonly contextHint: 'Le contexte se remplit : l’agent risque de résumer l’échange ou de s’arrêter. Pensez à démarrer une nouvelle conversation.'
-    readonly tokensHint: 'Somme des jetons rapportés à chaque échange : le contexte relu (souvent en cache) est compté à chaque fois.'
+    readonly tokensHint: 'Entrée et sortie annoncées par l’agent. Le cache et la réflexion sont comptés à part, hors de ce total.'
     readonly lastTurn: 'Dernier échange'
     readonly cost: 'Coût de la conversation'
     readonly sessionCost: 'Cette session'
@@ -455,6 +456,7 @@ export type FrResources = {
       readonly total_one: 'Jetons traités ({{count}} échange)'
       readonly total_other: 'Jetons traités ({{count}} échanges)'
       readonly total_many: 'Jetons traités ({{count}} échanges)'
+      readonly apart: 'Hors total'
     }
     readonly title: 'Consommation · {{agent}}'
     readonly contextValue: '{{used}} / {{size}} ({{percent}} %)'
@@ -468,6 +470,11 @@ export type FrResources = {
       readonly tokens_many: 'Jetons traités : {{total}} sur {{count}} échanges ({{input}} en entrée, {{output}} en sortie)'
       readonly contextUnknown: '{{agent}} ne transmet pas le remplissage de son contexte : Bobine ne peut pas dire quelle place il reste.'
       readonly compactHint: '{{command}} le résume si la conversation devient longue.'
+      readonly cachedRead: '{{tokens}} relus en cache'
+      readonly cachedWrite: '{{tokens}} écrits en cache'
+      readonly thought: '{{tokens}} de réflexion'
+      readonly extra: 'En plus : {{parts}}.'
+      readonly costEstimate: 'Coût : {{cost}} (estimation annoncée par {{agent}})'
     }
     readonly tokensValue: '{{tokens}} jetons'
     readonly percent: '{{percent}} %'
@@ -499,6 +506,7 @@ export type FrResources = {
         readonly tokens: 'Jetons entrée · sortie'
         readonly cost: 'Coût'
         readonly perTurn: 'Par échange'
+        readonly costEstimate: 'Coût estimé'
       }
       readonly agent: { readonly label: 'Agent'; readonly all: 'Tous les agents' }
       readonly export: {
@@ -524,6 +532,8 @@ export type FrResources = {
         readonly withoutCost_one: '{{count}} échange sans coût communiqué'
         readonly withoutCost_many: '{{count}} échanges sans coût communiqué'
         readonly withoutCost_other: '{{count}} échanges sans coût communiqué'
+        readonly costEstimate: 'Coût estimé'
+        readonly cached: 'et {{tokens}} relus en cache'
       }
       readonly chart: { readonly empty: 'Aucun échange sur cette période' }
       readonly grouping: {
@@ -564,6 +574,10 @@ export type FrResources = {
       }
       readonly discussions: 'Discussions'
     }
+    readonly estimate: '≈ {{cost}}'
+    readonly costEstimate: 'Coût de la conversation (estimation)'
+    readonly costHint: 'Montant annoncé par {{agent}} d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).'
+    readonly capTokensValue: '{{tokens}} jetons, cache compris'
   }
   readonly elicitation: {
     readonly decline: 'Refuser'
@@ -3999,7 +4013,7 @@ export type FrResources = {
       readonly default: 'Par défaut'
       readonly defaultTip: 'Les montants des réglages'
       readonly input: 'Plafond de cette conversation'
-      readonly tokensUnit: 'jetons'
+      readonly tokensUnit: 'jetons, cache compris'
       readonly fromSettings: '{{limit}} (réglages)'
       readonly export: 'Plafond atteint : {{limit}}'
       readonly held: 'Votre message attend votre accord :'
@@ -4024,7 +4038,7 @@ export type FrResources = {
       }
       readonly capTokens: {
         readonly label: 'Agent sans montant connu'
-        readonly hint: 'Pour un agent qui ne donne pas son coût, le plafond porte sur les jetons, comptés à la fin de chaque échange.'
+        readonly hint: 'Pour un agent qui ne donne pas son coût, le plafond porte sur tous les jetons qu’il compte, cache compris, relevés à la fin de chaque échange.'
       }
     }
     readonly search: {
@@ -4509,9 +4523,9 @@ export type FrResources = {
       readonly worktreeHint: 'Le dossier doit être un dépôt git ; les modifications restent sur une branche à part.'
       readonly catchUp: 'Rattraper une échéance manquée (une seule exécution)'
       readonly capTitle: 'Plafond par exécution'
-      readonly capHint: 'Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons quand l’agent ne donne pas de coût. Vide : le plafond des réglages.'
+      readonly capHint: 'Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.'
       readonly capAmount: 'Montant'
-      readonly capTokens: 'Jetons'
+      readonly capTokens: 'Jetons, cache compris'
       readonly permissions: 'Une exécution planifiée n’accorde rien de plus qu’une conversation ordinaire : une demande d’autorisation attend votre réponse et vous prévient.'
       readonly save: 'Enregistrer'
       readonly cancel: 'Annuler'
@@ -4532,7 +4546,6 @@ export type FrResources = {
     readonly files_many: '{{count}} fichiers +{{added}} −{{removed}}'
     readonly files_other: '{{count}} fichiers +{{added}} −{{removed}}'
     readonly doneQuick: 'Terminé'
-    readonly cost: '≈ {{cost}}'
   }
   readonly cap: {
     readonly more_one: '⋯ {{n}} ligne de plus'
@@ -4656,6 +4669,7 @@ export type FrResources = {
       readonly tokens: '{{input}} jetons envoyés · {{output}} reçus'
       readonly toolRefused: 'Il a voulu utiliser un outil : refusé pendant l’essai.'
       readonly cancelled: 'Essai annulé. L’agent a été arrêté.'
+      readonly modelMissed: 'Répondu avec {{model}}, pas {{requested}} (celui de vos conversations) : {{agent}} ne l’a pas pris pour cet essai.'
     }
     readonly error: {
       readonly missing: '{{agent}} est introuvable'

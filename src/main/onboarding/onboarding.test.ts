@@ -89,6 +89,27 @@ describe('accueil du premier lancement, côté main (fiche 188)', () => {
     expect(onboarding.state().due).toBe(false)
   })
 
+  it('essai : le modèle de la conversation de l’accueil lui est donné (fiche 245, D16)', async () => {
+    const model = {
+      controlId: 'model',
+      value: 'openai/gpt-6.2-astra',
+      name: 'openai/GPT-6.2 Astra'
+    }
+    const modelOf = vi.fn(() => model)
+    const { onboarding, calls } = setup({ modelOf })
+    await onboarding.check({ conversationId: 'c1', profileId: 'mock', level: 'reply' })
+    expect(modelOf).toHaveBeenCalledWith('c1', 'mock')
+    expect(calls[0]?.model).toEqual(model)
+    // Conversation introuvable : l'essai part sans modèle demandé, sans erreur.
+    const failing = setup({
+      modelOf: () => {
+        throw new Error('inconnue')
+      }
+    })
+    await failing.onboarding.check({ conversationId: 'c9', profileId: 'mock', level: 'reply' })
+    expect(failing.calls[0]).not.toHaveProperty('model')
+  })
+
   it('essai : clés de l’app, clé proposée, dossier neutre, PATH du shell', async () => {
     const { onboarding, calls } = setup()
     await onboarding.check({ conversationId: 'c1', profileId: 'mock', level: 'reply' })
