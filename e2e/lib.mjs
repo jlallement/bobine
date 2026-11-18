@@ -634,10 +634,11 @@ export async function withApp(
       },
       // Vrai clic souris (les menus Radix réagissent au pointeur, pas à element.click()).
       click: async (selector) => {
-        // Bouton d'une carte d'autorisation : un clic réel n'y compte qu'une fois la carte armée
-        // (400 ms sans défilement, anti-clic accidentel, 0.11 M1). On attend, comme un humain.
+        // Bouton d'une carte d'autorisation, ou du bloc « non commité » d'un lancement (fiche
+        // 240) : un clic réel n'y compte qu'une fois armé (400 ms sans défilement, anti-clic
+        // accidentel, 0.11 M1). On attend, comme un humain.
         await waitFor(
-          `!(${selector})?.closest?.('[data-testid=permission]:not([data-armed])')`,
+          `!(${selector})?.closest?.('[data-testid=permission]:not([data-armed]), [data-testid=launch-dirty]:not([data-armed])')`,
           5000
         )
         const box = await center(selector)

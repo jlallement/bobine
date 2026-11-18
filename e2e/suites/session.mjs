@@ -295,7 +295,10 @@ export async function sessionSuite(scheme) {
         await ui.waitFor(`!!${ui.$('child-dialog')}`)
         await ui.ev(`${ui.$('child-prompt')}.focus()`)
         await ui.type('/scenario attend-stop')
-        await ui.click(ui.$('child-launch'))
+        // README.md modifié depuis le dernier commit (voir plus haut) : le lancement en worktree
+        // demande le choix (fiche 240) ; la fille part quand même, sans lui.
+        await ui.waitFor(`!!${ui.$('launch-dirty')}`, 10000)
+        await ui.click(ui.$('launch-dirty-anyway'))
         await ui.waitFor(`!${ui.$('child-dialog')}`, 30000)
         await ui.waitFor(`!!${ui.$('session-running')}.querySelector('[data-kind=child]')`, 30000)
         const durations = await ui.ev(

@@ -5,6 +5,7 @@ import type { FolderDirty } from '@shared/launch-folder'
 import { proposeCommitMessage } from '@shared/worktree-cycle'
 import { ipcErrorText } from '../../ipc-errors'
 import { CommitForm } from '../panel/CommitForm'
+import { useArmedCard } from './useArmedCard'
 
 /** Fichiers montrés, au plus ; les autres sont comptés (comme « Fusion refusée »). */
 const MAX_SHOWN = 6
@@ -47,6 +48,10 @@ export function LaunchDirtyCard({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const box = useRef<HTMLDivElement>(null)
+  // Le bloc arrive après la lecture du dossier et pousse les boutons d'en dessous : un clic de
+  // souris visé juste avant (« Lancer ») tomberait sur « Partir quand même ». Ses boutons ne
+  // comptent un clic réel que 400 ms après son apparition, comme une carte d'autorisation.
+  const { armed, accepts } = useArmedCard(box)
   useEffect(() => {
     if (attention > 0) {
       box.current?.scrollIntoView({ block: 'nearest' })
@@ -77,6 +82,7 @@ export function LaunchDirtyCard({
       aria-live="polite"
       data-testid="launch-dirty"
       data-count={count}
+      data-armed={armed ? '' : undefined}
     >
       <div className="main-dirty-title" data-testid="launch-dirty-title">
         <TriangleExclamationPoint size={13} />
@@ -113,7 +119,7 @@ export function LaunchDirtyCard({
           <button
             type="button"
             className="btn small primary"
-            onClick={() => setCommitting(true)}
+            onClick={(event) => accepts(event) && setCommitting(true)}
             data-testid="launch-dirty-commit"
           >
             {t('launchDirty.commit')}
@@ -122,7 +128,7 @@ export function LaunchDirtyCard({
           <button
             type="button"
             className="btn small ghost"
-            onClick={onAnyway}
+            onClick={(event) => accepts(event) && onAnyway()}
             data-testid="launch-dirty-anyway"
           >
             {anywayLabel}
@@ -141,7 +147,7 @@ export function LaunchDirtyCard({
           <button
             type="button"
             className="btn small"
-            onClick={onOpinion}
+            onClick={(event) => accepts(event) && onOpinion()}
             data-testid="launch-dirty-opinion"
           >
             {t('launchDirty.opinion')}

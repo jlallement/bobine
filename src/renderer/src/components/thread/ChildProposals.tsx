@@ -76,7 +76,8 @@ export function ChildProposals({
   })
   const folder = useFolderDirty(info?.mother.id, !!info && toWorktree)
   const [anyway, setAnyway] = useState(false)
-  const held = !!folder.dirty && !anyway
+  // Dossier pas encore lu : « Lancer » attend aussi (un clic rapide partirait sans choix).
+  const held = (folder.dirty === undefined && !!info) || (!!folder.dirty && !anyway)
   const [focus, setFocus] = useState(0)
   // La carte prend le focus à l'apparition si elle attend une réponse : on répond sans la souris.
   const askedAtMount = useRef(pending.length > 0)

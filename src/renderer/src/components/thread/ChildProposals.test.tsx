@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import { childProposalSchema, type ChildProposalItem } from '@shared/children'
 import { ChildProposals } from './ChildProposals'
+import { ARM_MS } from './useArmedCard'
 
 const mother: ConversationSummary = {
   id: 'm',
@@ -387,6 +388,34 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
     expect(start('Page web').disabled).toBe(true)
     fireEvent.click(start('API'))
     expect(onRespond).not.toHaveBeenCalled()
+  })
+
+  it('dossier pas encore lu : « Lancer » attend (un clic rapide partirait sans choix)', async () => {
+    childFolderDirty.mockReturnValue(new Promise(() => {}))
+    const onRespond = await show([proposal(1, 'API')])
+    expect(start('API').disabled).toBe(true)
+    fireEvent.click(start('API'))
+    expect(onRespond).not.toHaveBeenCalled()
+  })
+
+  it('le bloc s’arme avant de compter un clic de souris (il arrive sous le pointeur)', async () => {
+    vi.useFakeTimers()
+    try {
+      render(
+        <ChildProposals
+          items={[proposal(1, 'API')]}
+          info={{ mother, profiles }}
+          onRespond={vi.fn()}
+        />
+      )
+      await act(async () => {})
+      const block = screen.getByTestId('launch-dirty')
+      expect(block.hasAttribute('data-armed')).toBe(false)
+      act(() => vi.advanceTimersByTime(ARM_MS))
+      expect(block.hasAttribute('data-armed')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('« Lancer quand même » : les lignes se lancent, avec ce choix dans la réponse', async () => {

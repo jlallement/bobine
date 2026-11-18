@@ -221,3 +221,12 @@ puis « Lancer ». Les traces réelles ci-dessus servent de référence.
 - 2026-11-18 — `pnpm e2e filles-non-commite` vert en clair et en sombre (les deux chemins : rôle,
   avec « Partir quand même » et l'avis ; Tâches proposées, avec « Committer d'abord ») ; les six
   captures regardées dans les deux thèmes.
+- 2026-11-18 — Suite e2e complète sur `main` (après les fiches 241 à 243) : `session` (sombre) et
+  `roles-gestion` (clair) restent sur « Lancer en parallèle… ». Leurs dépôts sont modifiés : le
+  bloc « non commité » arrive après la lecture du dossier et pousse les boutons ; un clic de
+  souris visé sur « Lancer » juste avant tombait sur « Partir quand même » (essais verts par
+  accident) ou sur « Lancer », grisé (essais rouges). Corrigé : « Lancer » attend que le dossier
+  soit lu (dialogue et carte de tâches), et les boutons du bloc ne comptent un clic réel que
+  400 ms après son apparition (`useArmedCard`, comme une carte d'autorisation). Essais unitaires
+  qui échouent sans le correctif ; `ui.click` des essais attend aussi l'armement du bloc ;
+  `session` et `roles-gestion` choisissent « Partir quand même » explicitement.

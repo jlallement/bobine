@@ -36,9 +36,10 @@ export function ChildDialog({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Fiche 240 : le dossier de la mère lu à l'ouverture ; avec du non commité, « Lancer » attend le
-  // choix (committer d'abord, ou partir quand même).
+  // choix (committer d'abord, ou partir quand même). Pas encore lu : « Lancer » attend aussi, sans
+  // quoi un clic rapide part sans choix (refusé par le main) ou tombe sous le bloc qui arrive.
   const folder = useFolderDirty(mother.id, true)
-  const held = !!folder.dirty
+  const held = folder.dirty !== null
 
   /** `committed` : le commit vient d'être fait, le dossier lu au rendu précédent est périmé. */
   const launch = async (after?: 'anyway' | 'committed') => {
