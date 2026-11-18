@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { ChildState } from '@shared/children'
+import type { LeftBehind } from '@shared/launch-folder'
 import type { RoleBadge, RoleScope, RoleSnapshot } from '@shared/roles'
 import { Tip } from '../common/Menus'
 import { RoleAvatar, roleAvatarState, useRoleStyle } from './RoleAvatar'
@@ -124,12 +125,15 @@ export function RoleLaunch({
   state,
   activity,
   profiles,
-  onOpen
+  onOpen,
+  leftBehind
 }: {
   role: RoleBadge
   title: string
   prompt: string
   byAgent: boolean
+  /** Partie sans le non commité de la mère (fiche 240). */
+  leftBehind?: LeftBehind | undefined
   child: ConversationSummary | undefined
   state: ChildState | undefined
   activity: string | undefined
@@ -165,6 +169,16 @@ export function RoleLaunch({
         </div>
         <div className="role-launch-meta">
           <RoleReadOnlyTag level={level} />
+          {leftBehind && (
+            <span
+              className="role-tag warn"
+              title={t('children.leftBehind.tagHint', { ...leftBehind })}
+              data-testid="role-launch-left-behind"
+            >
+              <TriangleAlert size={12} aria-hidden />
+              {t('children.leftBehind.tag', { count: leftBehind.count })}
+            </span>
+          )}
           {byAgent && <span>{t('roleWork.byAgent')}</span>}
           <button
             type="button"

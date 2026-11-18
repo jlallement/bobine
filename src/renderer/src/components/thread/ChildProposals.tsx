@@ -27,6 +27,7 @@ import {
 import type { RespondElicitation } from './ElicitationCard'
 import { RoleAvatar } from '../roles/RoleAvatar'
 import { ProposalRoleMeta } from '../roles/RoleWork'
+import { LaunchDirtyCard, useFolderDirty } from './LaunchDirty'
 
 /**
  * Carte « Tâches proposées » (fiche 112) : les propositions de conversations filles d'un même tour
@@ -67,6 +68,15 @@ export function ChildProposals({
   )
   const card = useRef<HTMLDivElement>(null)
   const pending = items.filter((item) => item.state === 'pending')
+  // Fiche 240 : une ligne à lancer en worktree (pas un rôle en lecture seule) fait lire le dossier
+  // de la mère ; avec du non commité, « Lancer » attend le choix (une fois pour la carte).
+  const toWorktree = items.some((item) => {
+    const outcome = outcomeOf(item)
+    return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
+  })
+  const folder = useFolderDirty(info?.mother.id, !!info && toWorktree)
+  const [anyway, setAnyway] = useState(false)
+  const held = !!folder.dirty && !anyway
   const [focus, setFocus] = useState(0)
   // La carte prend le focus à l'apparition si elle attend une réponse : on répond sans la souris.
   const askedAtMount = useRef(pending.length > 0)
@@ -135,11 +145,28 @@ export function ChildProposals({
           </div>
         </div>
       </div>
+      {held && folder.dirty && pending.length + count('expired') > 0 && (
+        <LaunchDirtyCard
+          dirty={folder.dirty}
+          who={t('launchDirty.whoCard')}
+          many
+          anywayLabel={t('launchDirty.anywayCard')}
+          commit={async (message, files) => {
+            if (!info) return
+            await window.api.conversations.commitForChildren(info.mother.id, { message, files })
+            await folder.read()
+          }}
+          onCommitted={() => {}}
+          onAnyway={() => setAnyway(true)}
+        />
+      )}
       <div className="proposal-rows">
         {items.map((item) => (
           <ProposalRow
             key={item.requestId}
             item={item}
+            held={held && !item.prompt.child.role?.readOnly}
+            {...(anyway && folder.dirty ? { uncommitted: 'anyway' as const } : {})}
             {...(info ? { info } : {})}
             model={model}
             focused={pending.length > 0 && pending[Math.min(focus, pending.length - 1)] === item}
@@ -163,8 +190,14 @@ function ProposalRow({
   model,
   focused,
   onFocus,
-  onRespond
+  onRespond,
+  held,
+  uncommitted
 }: {
+  /** Dossier de la mère modifié, sans choix encore (fiche 240) : « Lancer » attend. */
+  held: boolean
+  /** « Lancer quand même » choisi pour la carte : passé au lancement. */
+  uncommitted?: 'anyway'
   item: ChildProposalItem
   info?: ProposalsInfo
   model: SessionControl | null
@@ -192,7 +225,11 @@ function ProposalRow({
     const extra = action === 'start' && info ? childChoiceRequest(info.mother, model, choice) : {}
     onRespond(item.requestId, {
       action: 'accept',
-      content: childDecisionContent({ action, ...extra })
+      content: childDecisionContent({
+        action,
+        ...extra,
+        ...(action === 'start' && uncommitted ? { uncommitted } : {})
+      })
     })
   }
   /** Proposition expirée : la fille part comme avec « Lancer en parallèle… ». */
@@ -204,7 +241,8 @@ function ProposalRow({
       await window.api.conversations.startChild(info.mother.id, {
         text: prompt,
         title,
-        ...childChoiceRequest(info.mother, model, choice)
+        ...childChoiceRequest(info.mother, model, choice),
+        ...(uncommitted ? { uncommitted } : {})
       })
     } catch (e) {
       setError(ipcErrorText(e))
@@ -281,8 +319,14 @@ function ProposalRow({
               type="button"
               className="btn small primary"
               onClick={() => (outcome === undefined ? decide('start') : void startLater())}
-              disabled={busy || loading}
-              title={loading ? t('children.proposals.loadingChoice') : undefined}
+              disabled={busy || loading || held}
+              title={
+                held
+                  ? t('children.proposals.uncommittedHint')
+                  : loading
+                    ? t('children.proposals.loadingChoice')
+                    : undefined
+              }
               data-testid="proposal-start"
             >
               {t('children.proposals.start')}

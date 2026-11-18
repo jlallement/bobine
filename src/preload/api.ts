@@ -282,6 +282,9 @@ export function createApi(
       startChild: (id: string, request: IpcArgs<'conversation:startChild'>[1]) =>
         invoke('conversation:startChild', id, request),
       childCapacity: (id: string) => invoke('conversation:childCapacity', id),
+      childFolderDirty: (id: string) => invoke('conversation:childFolderDirty', id),
+      commitForChildren: (id: string, request: IpcArgs<'conversation:commitForChildren'>[1]) =>
+        invoke('conversation:commitForChildren', id, request),
       startReview: (id: string, request: IpcArgs<'conversation:startReview'>[1]) =>
         invoke('conversation:startReview', id, request),
       childLaunches: () => invoke('conversation:childLaunches'),

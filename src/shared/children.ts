@@ -15,6 +15,7 @@ import {
   type RoleDefinition,
   type RoleSnapshot
 } from './roles'
+import { leftBehindText, type LeftBehind, type UncommittedChoice } from './launch-folder'
 import type { TranscriptItem } from './transcript'
 import type { UsageDigest } from './usage'
 
@@ -30,6 +31,8 @@ export interface ChildStart {
   by?: 'agent'
   /** Rôle de la fille (fiche 223), pour son icône et sa couleur. */
   role?: RoleBadge
+  /** Partie sans le non commité de la mère (fiche 240) : rappelé sur sa carte. */
+  leftBehind?: LeftBehind
   at: number
 }
 
@@ -42,6 +45,8 @@ export interface ChildStartRequest {
   model?: { controlId: string; value: string }
   /** Rôle de la fille, par son nom (fiche 223, `@rôle`). */
   role?: string
+  /** Choix devant un dossier modifié (fiche 240) ; sans, un dossier modifié est refusé. */
+  uncommitted?: UncommittedChoice
 }
 
 /** Consigne acceptée pour une fille existante, conservée dans le fil de sa mère (fiche 150). */
@@ -97,6 +102,8 @@ export interface ChildReport {
    * comptes rendus d'avant, ou si l'agent ne rapporte rien.
    */
   usage?: UsageDigest
+  /** Partie sans le non commité de la mère (fiche 240) : rappelé sur chaque compte rendu. */
+  leftBehind?: LeftBehind
 }
 
 /** Fichiers gardés dans un compte rendu : au-delà, seuls les totaux comptent. */
@@ -259,7 +266,8 @@ export function childContext(news: readonly ChildNews[]): string | undefined {
     const branch = item.branch ? ` on branch ${item.branch}` : ''
     if (item.kind === 'child-started') {
       const who = item.by === 'agent' ? 'You started (start_child)' : 'I started'
-      return `- ${who} the child conversation "${item.title}"${branch}, with this instruction:\n${quoted(item.prompt)}`
+      const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
+      return `- ${who} the child conversation "${item.title}"${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
     }
     return reportLine(item)
   })
@@ -305,7 +313,8 @@ export function reportLine(item: ChildReport): string {
   const excerpt = recap
     ? `\n  ${item.outcome === 'error' ? 'Error' : 'Start of its last reply'}:\n${quoted(recap)}`
     : ''
-  const line = `- The child conversation "${clip(item.title, TITLE_CHARS)}" (id: ${item.childId})${branch} ${OUTCOME_TEXT[item.outcome]}. ${files}${excerpt}`
+  const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
+  const line = `- The child conversation "${clip(item.title, TITLE_CHARS)}" (id: ${item.childId})${branch} ${OUTCOME_TEXT[item.outcome]}.${left} ${files}${excerpt}`
   return clip(line, REPORT_CHARS)
 }
 
@@ -441,6 +450,8 @@ export interface ChildDecision {
   profileId?: string
   /** Modèle choisi pour la fille (réglage de catégorie `model`). */
   model?: { controlId: string; value: string }
+  /** « Lancer quand même » devant un dossier modifié (fiche 240). */
+  uncommitted?: 'anyway'
 }
 
 /**
@@ -454,7 +465,8 @@ export function childProposalSchema(): ElicitationSchema {
       decision: { type: 'string', enum: [...CHILD_DECISIONS] },
       profileId: { type: 'string' },
       modelControl: { type: 'string' },
-      modelValue: { type: 'string' }
+      modelValue: { type: 'string' },
+      uncommitted: { type: 'string', enum: ['anyway'] }
     },
     required: ['decision']
   } as unknown as ElicitationSchema
@@ -467,7 +479,8 @@ export function childDecisionContent(decision: ChildDecision): Record<string, st
     ...(decision.profileId ? { profileId: decision.profileId } : {}),
     ...(decision.model
       ? { modelControl: decision.model.controlId, modelValue: decision.model.value }
-      : {})
+      : {}),
+    ...(decision.uncommitted ? { uncommitted: decision.uncommitted } : {})
   }
 }
 
@@ -516,7 +529,10 @@ export function childProposalGroups(items: readonly TranscriptItem[]): ChildProp
 /** Décision lue dans la réponse (passée ou illisible : `undefined`, qui vaut refus). */
 export function parseChildDecision(content: unknown): ChildDecision | undefined {
   if (typeof content !== 'object' || content === null) return undefined
-  const { decision, profileId, modelControl, modelValue } = content as Record<string, unknown>
+  const { decision, profileId, modelControl, modelValue, uncommitted } = content as Record<
+    string,
+    unknown
+  >
   if (!CHILD_DECISIONS.includes(decision as ChildDecisionAction)) return undefined
   const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined)
   const control = text(modelControl)
@@ -525,7 +541,8 @@ export function parseChildDecision(content: unknown): ChildDecision | undefined 
   return {
     action: decision as ChildDecisionAction,
     ...(profile ? { profileId: profile } : {}),
-    ...(control && value ? { model: { controlId: control, value } } : {})
+    ...(control && value ? { model: { controlId: control, value } } : {}),
+    ...(uncommitted === 'anyway' ? { uncommitted } : {})
   }
 }
 

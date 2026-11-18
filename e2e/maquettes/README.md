@@ -19,6 +19,7 @@ sombre, avec les vrais composants autour.
 | `screens.mjs` | La liste des écrans (`SCREENS`) : ce que chacun remplace |
 | `screens-annoter.mjs` | Annoter une page vivante (fiche 146), planche « Annoter une page vivante » |
 | `screens-discussion.mjs` | Discussion, conversation sans projet (fiche 224) : `node e2e/maquettes/run.mjs light disc` |
+| `screens-filles-worktree.mjs` | Filles en worktree et non commité de la mère (fiche 240) : `node e2e/maquettes/run.mjs light f240` |
 | `parts.mjs` | Morceaux communs : barre latérale cible, messages du fil, faux site « Carnet de lecture » |
 | `styles.mjs` | Seulement ce qui n'existe pas encore dans l'app, sur ses jetons |
 | `icons.mjs` | Icônes Lucide de l'app, en SVG brut |

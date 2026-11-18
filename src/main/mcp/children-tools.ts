@@ -34,6 +34,7 @@ import {
   type RoleView
 } from '@shared/roles'
 import { roleDefaults, type RoleDefaults } from '../roles/choice'
+import { uncommittedWarning, type FolderDirty } from '@shared/launch-folder'
 import { reportFindingsTool, type ReviewTools } from './review-tools'
 import { argsOf, textResult, type AppTool, type AppToolModule, type ToolArgs } from './tools'
 import type { ToolContext, ToolResult } from './tools'
@@ -53,11 +54,14 @@ export type ChildTools = Pick<
   | 'recommend'
   | 'rolesFor'
   | 'findRole'
+  | 'uncommitted'
 > & { reviews: ReviewTools }
 
 const START_CHILD =
   'Start a child conversation: another agent that works in parallel, in its own git worktree ' +
-  "(a new branch from this folder's last commit), on an instruction you write. The user sees it " +
+  "(a new branch from this folder's last commit), on an instruction you write. Uncommitted " +
+  'changes of this folder are NOT in its worktree: commit your work first when the child needs ' +
+  'it (the user is warned before it starts without them). The user sees it ' +
   'under this conversation, can open it, talk to it and stop it. Proposing one is cheap: nothing ' +
   'starts until the user decides on a card (start it, do it here, or refuse), so propose rather ' +
   'than guess. Use it, one call per piece of work, when the user asks for several independent ' +
@@ -498,18 +502,24 @@ async function startChild(
   const blocked = cannotStart(host, id, title, asking.get(id) ?? 0)
   if (blocked) return blocked
   asking.set(id, (asking.get(id) ?? 0) + 1)
+  // Non commité de la mère (fiche 240), lu pendant que la carte est posée (sans la retarder) : dit
+  // à l'agent avec la réponse, sauf pour un rôle en lecture seule, qui voit tout.
+  const dirtyRead: Promise<FolderDirty | undefined> = proposal.role?.readOnly
+    ? Promise.resolve(undefined)
+    : host.uncommitted(id).catch(() => undefined)
   let answered = false
   const release = () => {
     if (answered) return
     answered = true
     asking.set(id, Math.max(0, (asking.get(id) ?? 1) - 1))
   }
-  const start = (decision: ChildDecision) =>
+  const start = async (decision: ChildDecision) =>
     launch(
       host,
       id,
       { title, prompt, ...decision, ...(proposal.role ? { role: proposal.role } : {}) },
-      asking.get(id) ?? 0
+      asking.get(id) ?? 0,
+      await dirtyRead
     )
   const decision = await context.proposeChild(proposal, (late) => {
     release()
@@ -528,7 +538,10 @@ async function startChild(
         )
     }
   })
-  if (decision === 'late') return textResult(PENDING)
+  if (decision === 'late') {
+    const dirty = await dirtyRead
+    return textResult(dirty ? `${PENDING}\n\n${uncommittedWarning(dirty)}` : PENDING)
+  }
   release()
   switch (decision.action) {
     case 'start':
@@ -575,9 +588,12 @@ async function launch(
     prompt,
     profileId,
     model,
-    role
+    role,
+    uncommitted
   }: { title: string; prompt: string; role?: RoleSnapshot } & ChildDecision,
-  asking: number
+  asking: number,
+  /** Non commité de la mère quand la carte a été posée (fiche 240). */
+  dirty?: FolderDirty
 ): Promise<ToolResult> {
   // Le temps de répondre à la carte, d'autres filles ont pu partir.
   const blocked = cannotStart(host, id, title, asking)
@@ -590,18 +606,28 @@ async function launch(
         title,
         ...(profileId ? { profileId } : {}),
         ...(model ? { model } : {}),
-        ...(role ? { roleSnapshot: role } : {})
+        ...(role ? { roleSnapshot: role } : {}),
+        ...(uncommitted ? { uncommitted } : {})
       },
       'agent'
     )
     const where = role?.readOnly
       ? `It works in parallel as the read-only role "${role.name}", in this folder (no worktree, no branch).`
       : `It works in parallel${role ? ` as the role "${role.name}"` : ''} in its own worktree.`
+    // Partie quand même : la fille n'a pas le non commité, l'agent le sait (critère de la fiche 240).
+    const missing = uncommitted && dirty ? `\n\n${uncommittedWarning(dirty)}` : ''
     return textResult(
-      `Child conversation "${child.title}" started (id: ${child.id}${child.branch ? `, branch: ${child.branch}` : ''}). ${where} End your turn when you have nothing else to do: you will be woken up with the reports when all the child conversations you started have finished their turn.`
+      `Child conversation "${child.title}" started (id: ${child.id}${child.branch ? `, branch: ${child.branch}` : ''}). ${where} End your turn when you have nothing else to do: you will be woken up with the reports when all the child conversations you started have finished their turn.${missing}`
     )
   } catch (error) {
     log.warn('Conversation fille non lancée :', error)
+    // Dossier modifié sans choix de l'utilisateur (carte expirée, dossier modifié entre-temps).
+    if (dirty && !uncommitted && !role?.readOnly) {
+      return textResult(
+        `Could not start the child conversation "${title}": ${uncommittedWarning(dirty)} The user has to choose first; ask them to commit, or to start it anyway.`,
+        true
+      )
+    }
     return textResult(
       `Could not start the child conversation "${title}": ${messageOf(error)}`,
       true

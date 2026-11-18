@@ -2,6 +2,7 @@ import type { RoleView } from '@shared/roles'
 import { describe, expect, it } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import type { ChildDecision, ChildProposal } from '@shared/children'
+import type { FolderDirty } from '@shared/launch-folder'
 import type { ChildChoices, ChildStatus } from '../conversations/children'
 import {
   childrenToolsModule,
@@ -62,6 +63,10 @@ function setup(
     /** Rôles actifs de la mère (fiche 223). */
     roles?: RoleView[]
     choices?: ChildChoices
+    /** Non commité du dossier de la mère (fiche 240). */
+    dirty?: FolderDirty
+    /** Lancement refusé par le module des filles. */
+    startError?: Error
   } = {}
 ) {
   const calls: unknown[][] = []
@@ -82,6 +87,7 @@ function setup(
     capacity: () => options.capacity ?? { inRepo: true, active: 0, max: 5 },
     start: async (id, request, by) => {
       calls.push(['start', id, request, by])
+      if (options.startError) throw options.startError
       return summary('f3', { title: request.title ?? '', branch: 'bobine/x' })
     },
     children: () => children,
@@ -115,7 +121,8 @@ function setup(
       const role = (options.roles ?? []).find((r) => r.name === name)
       if (!role) throw new Error(`unknown ${name}`)
       return role
-    }
+    },
+    uncommitted: async () => options.dirty
   }
   const context: ToolContext = {
     workspace: '/depot/m',
@@ -548,5 +555,56 @@ describe('start_child avec un rôle (fiche 223)', () => {
     expect(result.isError).toBeFalsy()
     expect(unavailable.asked[0]?.profileId).toBeUndefined()
     expect(textOf(result)).toContain('The role\'s agent "bob" is not available here')
+  })
+})
+
+describe('start_child et le non commité de la mère (fiche 240)', () => {
+  const DIRTY: FolderDirty = {
+    count: 3,
+    files: [
+      { path: 'plan.md', status: 'untracked' },
+      { path: 'maquettes/b.html', status: 'untracked' },
+      { path: 'server/index.js', status: 'modified' }
+    ],
+    commit: '9970242'
+  }
+
+  it('la description dit que le non commité n’est pas dans le worktree, et de committer d’abord', () => {
+    const description = setup().tool('start_child').definition.description
+    expect(description).toContain('Uncommitted changes of this folder are NOT in its worktree')
+    expect(description).toContain('commit your work first')
+  })
+
+  it('« Lancer quand même » : le choix passe à la fille, l’agent reçoit l’avertissement', async () => {
+    const s = setup({ dirty: DIRTY, answer: { action: 'start', uncommitted: 'anyway' } })
+    const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
+    expect(s.calls).toEqual([
+      ['start', 'm', { text: 'Écris l’API', title: 'API', uncommitted: 'anyway' }, 'agent']
+    ])
+    const text = textOf(result)
+    expect(text).toContain('this folder has 3 uncommitted change(s) (plan.md, maquettes/b.html')
+    expect(text).toContain('starts from the last commit (9970242)')
+    expect(text).toContain('the child will not see them')
+  })
+
+  it('dossier propre (ou commité d’abord) : aucun avertissement', async () => {
+    const s = setup()
+    const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
+    expect(textOf(result)).not.toContain('uncommitted')
+  })
+
+  it('carte encore ouverte : l’agent apprend tout de suite ce qui manquera à la fille', async () => {
+    const s = setup({ dirty: DIRTY, answer: 'late' })
+    const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
+    expect(textOf(result)).toContain('waiting for approval')
+    expect(textOf(result)).toContain('this folder has 3 uncommitted change(s)')
+  })
+
+  it('refus du main faute de choix (dossier modifié entre-temps) : l’erreur dit pourquoi, en anglais', async () => {
+    const s = setup({ dirty: DIRTY, startError: new Error('Ce dossier a 3 modifications') })
+    const result = await s.tool('start_child').call({ title: 'API', prompt: 'P' })
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('Could not start the child conversation "API": Warning:')
+    expect(textOf(result)).toContain('The user has to choose first')
   })
 })

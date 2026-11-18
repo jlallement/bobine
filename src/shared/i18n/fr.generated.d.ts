@@ -3422,6 +3422,9 @@ export type FrResources = {
       readonly needsAction: 'Son agent attend une action de votre part (connexion, dossier à approuver) : ouvrez la conversation fille.'
       readonly agentFailed: 'Son agent n’a pas démarré : {{detail}}'
       readonly noStartChild: 'Pas de conversation fille possible ici : il faut un dossier dans un dépôt git, une conversation qui n’est pas elle-même une fille, et la famille d’outils « Conversations filles » active (Réglages › Serveurs MCP).'
+      readonly uncommitted_one: 'Ce dossier a {{count}} modification non commitée : choisissez d’abord de la committer, ou de partir quand même.'
+      readonly uncommitted_many: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même.'
+      readonly uncommitted_other: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même.'
     }
     readonly notice: {
       readonly promptFailed: 'La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}'
@@ -3466,11 +3469,23 @@ export type FrResources = {
         readonly refuse: 'Refusée'
         readonly expired: 'Expirée'
       }
+      readonly uncommittedHint: 'Choisissez d’abord ci-dessus'
     }
     readonly from: {
       readonly parent: 'De la conversation mère « {{title}} »'
       readonly child: 'De la conversation fille « {{title}} »'
       readonly wake: 'Les conversations filles ont toutes fini : l’agent reprend avec leurs comptes rendus.'
+    }
+    readonly leftBehind: {
+      readonly tag_one: 'Sans {{count}} modification non commitée'
+      readonly tag_many: 'Sans {{count}} modifications non commitées'
+      readonly tag_other: 'Sans {{count}} modifications non commitées'
+      readonly line_one: 'Partie du commit <code>{{commit}}</code> sans la modification non commitée de ce dossier : son travail ne l’a pas vue.'
+      readonly line_many: 'Partie du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.'
+      readonly line_other: 'Partie du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.'
+      readonly tagHint_one: 'Partie du commit {{commit}} : la modification non commitée de ce dossier n’était pas dans son worktree.'
+      readonly tagHint_many: 'Partie du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree.'
+      readonly tagHint_other: 'Partie du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree.'
     }
   }
   readonly providers: {
@@ -4302,6 +4317,17 @@ export type FrResources = {
       readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
       readonly sending: 'Lancement…'
       readonly failed: '{{label}} n’est pas parti : {{error}}'
+      readonly opinionOne: 'Partira à <strong>{{label}}</strong>, pour un <strong>avis</strong>, dans une conversation fille'
+      readonly opinionMany_one: 'Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
+      readonly opinionMany_many: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
+      readonly opinionMany_other: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
+      readonly work: 'Plutôt les faire travailler…'
+      readonly opinionSeesOne_one: 'voit la modification non commitée'
+      readonly opinionSeesOne_many: 'voit les {{count}} modifications non commitées'
+      readonly opinionSeesOne_other: 'voit les {{count}} modifications non commitées'
+      readonly opinionSeesMany_one: 'voient la modification non commitée'
+      readonly opinionSeesMany_many: 'voient les {{count}} modifications non commitées'
+      readonly opinionSeesMany_other: 'voient les {{count}} modifications non commitées'
     }
     readonly state: {
       readonly running: 'au travail'
@@ -5511,5 +5537,28 @@ export type FrResources = {
         readonly keyLocked: 'Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : rien ne peut être retenu pour l’instant.'
       }
     }
+  }
+  readonly launchDirty: {
+    readonly title_one: 'Ce dossier a {{count}} modification non commitée : {{who}} ne la verra pas.'
+    readonly title_many: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.'
+    readonly title_other: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.'
+    readonly titleMany_one: 'Ce dossier a {{count}} modification non commitée : {{who}} ne la verront pas.'
+    readonly titleMany_many: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.'
+    readonly titleMany_other: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.'
+    readonly whoOne: 'la conversation fille'
+    readonly whoMany_one: 'la conversation fille'
+    readonly whoMany_many: 'les {{count}} conversations filles'
+    readonly whoMany_other: 'les {{count}} conversations filles'
+    readonly whoCard: 'les conversations filles lancées d’ici'
+    readonly why: 'Une conversation fille part du dernier commit (<code>{{commit}}</code> « {{subject}} »), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.'
+    readonly files: 'Fichiers non commités de ce dossier'
+    readonly commit: 'Committer d’abord'
+    readonly commitConfirm: 'Committer puis lancer'
+    readonly anyway: 'Partir quand même'
+    readonly anywayCard: 'Lancer quand même'
+    readonly opinionLead: 'Juste un avis ? Les rôles peuvent lire ce dossier tel quel, non commité compris, sans rien y modifier.'
+    readonly opinion: 'Demander un avis en lecture seule'
+    readonly committed: 'Commité : {{short}}. Les conversations filles partiront de ce commit.'
+    readonly whyBare: 'Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.'
   }
 }

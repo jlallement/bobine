@@ -43,6 +43,9 @@ l'audit du 2026-10-21 (section 9) : **le travail de l'agent revient dans `main` 
       quelle branche et de quel commit il part (hash court, date, sujet). Si le dossier d'origine
       a des modifications non commitées, un avis le dit : elles ne sont pas dans le worktree.
       La même information est rappelée en tête de la vue « Git » du worktree.
+      Pour une **fille**, c'est dit aussi avant son lancement, avec le choix « Committer
+      d'abord » / « Partir quand même » (et l'avis en lecture seule pour un `@rôle`), puis rappelé
+      dans la mère : fiche 240, ADR-0055.
 - [x] **Commit** depuis la vue « Git » du worktree : les fichiers ont une case (toutes cochées au
       départ) ; « Committer » propose un message dérivé du titre de la conversation et des
       fichiers (Conventional Commits, sans appel à l'agent), modifiable ; seuls les fichiers cochés

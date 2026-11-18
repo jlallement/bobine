@@ -23,6 +23,7 @@ import type {
   RoleExportStatus,
   RoleExportTarget
 } from './role-export'
+import type { UncommittedChoice } from './launch-folder'
 
 /** `@rôle …` envoyé depuis la saisie : une fille par rôle cité, avec le même texte (phase 3B). */
 export interface RolesStartRequest {
@@ -30,6 +31,8 @@ export interface RolesStartRequest {
   roles: string[]
   /** La demande, sans les `@rôle`. */
   text: string
+  /** Choix devant un dossier modifié (fiche 240) : partir quand même, ou un avis en lecture seule. */
+  uncommitted?: UncommittedChoice
 }
 
 /** Ce qui est parti : une fille par rôle lancé, et pourquoi un rôle n'a pas pu partir. */

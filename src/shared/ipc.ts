@@ -34,6 +34,7 @@ import type { CommandLineStatus, LaunchPrefill } from './command-line'
 import type { TerminalsChange, TerminalTabInfo } from './terminal'
 import type { AttentionDetails, AttentionState, NotificationStatus } from './attention'
 import type { ChildCapacity, ChildLaunchState, ChildStartRequest, FamilyMember } from './children'
+import type { FolderDirty } from './launch-folder'
 import type { ChildrenMerge, ChildrenMergePlan } from './children-merge'
 import type { CustomAgentDraft } from './custom-agents'
 import type { ConversationCap } from './cost-cap'
@@ -332,6 +333,16 @@ export interface IpcInvokeContract
    * ADR-0020), lus à l'ouverture du menu.
    */
   'conversation:childCapacity': { args: [id: string]; result: ChildCapacity }
+  /**
+   * Modifications non commitées du dossier de `id` avant de lancer une fille en worktree (fiche
+   * 240) : montrées avec le choix ; `null` : dossier propre (ou pas dans un dépôt).
+   */
+  'conversation:childFolderDirty': { args: [id: string]; result: FolderDirty | null }
+  /** « Committer d'abord » avant de lancer des filles (fiche 240) : dans le dépôt du dossier de `id`. */
+  'conversation:commitForChildren': {
+    args: [id: string, request: { message: string; files: string[] }]
+    result: CommitOutcome
+  }
   /**
    * « Faire relire… » (fiche 177) : relecteur du travail de `id`, une fille dans son dossier ;
    * agent et modèle confirmés par l'utilisateur. La conversation affichée ne change pas.
@@ -950,6 +961,8 @@ export const IPC_CHANNELS = [
   'conversation:stopWorktreeSetup',
   'conversation:childLaunches',
   'conversation:childCapacity',
+  'conversation:childFolderDirty',
+  'conversation:commitForChildren',
   'conversation:startReview',
   'conversation:worktreeStatus',
   'conversation:open',

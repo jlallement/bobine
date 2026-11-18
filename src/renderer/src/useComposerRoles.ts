@@ -5,6 +5,7 @@ import i18next from 'i18next'
 import type { ComposerRoles } from './components/roles/useRoleCompose'
 import { ipcErrorText } from './ipc-errors'
 import { useRolesUi } from './roles/roles-store'
+import type { UncommittedChoice } from '@shared/launch-folder'
 
 const NO_ROLES: RoleView[] = []
 
@@ -62,10 +63,14 @@ export function useComposerRoles(
   const known = read && read.id === id ? read.list : NO_ROLES
   const list = eligible ? known : NO_ROLES
   const send = useCallback(
-    async (names: string[], text: string) => {
+    async (names: string[], text: string, uncommitted?: UncommittedChoice) => {
       if (!id) return { started: [], failed: names }
       try {
-        const result = await window.api.roles.startChildren(id, { roles: names, text })
+        const result = await window.api.roles.startChildren(id, {
+          roles: names,
+          text,
+          ...(uncommitted ? { uncommitted } : {})
+        })
         for (const failed of result.failed) {
           const label = list.find((r) => r.name === failed.role)?.label ?? failed.role
           warn(i18next.t('roleWork.destination.failed', { label, error: failed.error }))
@@ -81,6 +86,14 @@ export function useComposerRoles(
     },
     [id, list, warn]
   )
+  // « Committer d'abord » avant un lancement en worktree (fiche 240) : dans le dépôt de la mère.
+  const commitFolder = useCallback(
+    (message: string, files: string[]) =>
+      id
+        ? window.api.conversations.commitForChildren(id, { message, files })
+        : Promise.reject(new Error('no conversation')),
+    [id]
+  )
   return {
     list,
     invokable: eligible,
@@ -88,6 +101,7 @@ export function useComposerRoles(
     refresh,
     reload: load,
     send,
+    ...(eligible && id ? { motherId: id, commitFolder } : {}),
     profiles,
     ...extra
   }

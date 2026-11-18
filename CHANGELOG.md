@@ -20,6 +20,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   rouvre la conversation affichée quand on l'a quittée (quittée en plein tour, celle qui
   travaillait, prête à reprendre). Une nouvelle conversation reste à un clic (⌘N) ; elle s'ouvre
   aussi au lancement si la dernière affichée était vide, ou a été archivée ou supprimée depuis.
+- Conversations filles : une fille qui partirait dans son worktree sans le travail non commité de
+  ce dossier ne part plus en silence. Bobine le dit avant (`@rôle`, carte « Tâches proposées »,
+  « Lancer en parallèle… ») avec le nombre de modifications, et propose « Committer d'abord » ou
+  « Partir quand même » ; pour des rôles cités avec `@`, « Demander un avis en lecture seule » :
+  ils lisent ce dossier tel quel, non commité compris. Une fille partie quand même le rappelle
+  sur sa carte et sur chacun de ses comptes rendus, et l'agent qui lance des filles en est averti.
 
 ## 1.0.0-beta.7 — 17 novembre 2026
 

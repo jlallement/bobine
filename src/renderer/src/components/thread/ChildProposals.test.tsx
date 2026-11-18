@@ -53,10 +53,20 @@ const model = {
 describe('carte « Tâches proposées » (fiche 112)', () => {
   const view = vi.fn()
   const startChild = vi.fn()
+  const childFolderDirty = vi.fn()
+  const commitForChildren = vi.fn()
   beforeEach(() => {
     view.mockReset().mockResolvedValue({ snapshot: { controls: [model] } })
     startChild.mockReset().mockResolvedValue({ id: 'f' })
-    window.api.conversations = { view, startChild } as unknown as Window['api']['conversations']
+    // Dossier de la mère propre (fiche 240), sauf dans les essais qui le modifient.
+    childFolderDirty.mockReset().mockResolvedValue(null)
+    commitForChildren.mockReset().mockResolvedValue({ hash: 'abc1234def', short: 'abc1234' })
+    window.api.conversations = {
+      view,
+      startChild,
+      childFolderDirty,
+      commitForChildren
+    } as unknown as Window['api']['conversations']
   })
   const show = async (items: ChildProposalItem[], onRespond = vi.fn()) => {
     render(<ChildProposals items={items} info={{ mother, profiles }} onRespond={onRespond} />)
@@ -330,5 +340,107 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
     )
     fireEvent.click(start as HTMLElement)
     expect(onRespond).toHaveBeenLastCalledWith('r1', expect.objectContaining({ action: 'accept' }))
+  })
+})
+
+describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () => {
+  const dirty = {
+    count: 2,
+    files: [
+      { path: 'server/index.js', status: 'untracked' as const },
+      { path: 'public/app.js', status: 'untracked' as const }
+    ],
+    commit: '9970242',
+    title: 'Carnet'
+  }
+  const childFolderDirty = vi.fn()
+  const commitForChildren = vi.fn()
+  beforeEach(() => {
+    childFolderDirty.mockReset().mockResolvedValue(dirty)
+    commitForChildren.mockReset().mockImplementation(async () => {
+      childFolderDirty.mockResolvedValue(null)
+      return { hash: 'abc1234def', short: 'abc1234' }
+    })
+    window.api.conversations = {
+      view: vi.fn().mockResolvedValue({ snapshot: { controls: [] } }),
+      startChild: vi.fn(),
+      childFolderDirty,
+      commitForChildren
+    } as unknown as Window['api']['conversations']
+  })
+  const show = async (items: ChildProposalItem[]) => {
+    const onRespond = vi.fn()
+    render(<ChildProposals items={items} info={{ mother, profiles }} onRespond={onRespond} />)
+    await act(async () => {})
+    return onRespond
+  }
+  const start = (title: string) =>
+    screen
+      .getByTestId('proposals')
+      .querySelector(`[data-title="${title}"] [data-testid=proposal-start]`) as HTMLButtonElement
+
+  it('un avertissement pour la carte ; « Lancer » attend le choix', async () => {
+    const onRespond = await show([proposal(1, 'API'), proposal(2, 'Page web')])
+    expect(childFolderDirty).toHaveBeenCalledWith('m')
+    expect(screen.getAllByTestId('launch-dirty')).toHaveLength(1)
+    expect(start('API').disabled).toBe(true)
+    expect(start('Page web').disabled).toBe(true)
+    fireEvent.click(start('API'))
+    expect(onRespond).not.toHaveBeenCalled()
+  })
+
+  it('« Lancer quand même » : les lignes se lancent, avec ce choix dans la réponse', async () => {
+    const onRespond = await show([proposal(1, 'API')])
+    fireEvent.click(screen.getByTestId('launch-dirty-anyway'))
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    fireEvent.click(start('API'))
+    expect(onRespond).toHaveBeenCalledWith('r1', {
+      action: 'accept',
+      content: { decision: 'start', uncommitted: 'anyway' }
+    })
+  })
+
+  it('« Committer d’abord » : commit dans le dossier de la mère, puis « Lancer » sans choix', async () => {
+    const onRespond = await show([proposal(1, 'API')])
+    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    expect(commitForChildren).toHaveBeenCalledWith('m', {
+      message: expect.any(String),
+      files: ['server/index.js', 'public/app.js']
+    })
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    fireEvent.click(start('API'))
+    expect(onRespond).toHaveBeenCalledWith('r1', {
+      action: 'accept',
+      content: { decision: 'start' }
+    })
+  })
+
+  it('une ligne d’un rôle en lecture seule n’attend pas : elle travaille dans ce dossier', async () => {
+    const readOnly = proposal(1, 'Relecture', {
+      prompt: {
+        mode: 'form',
+        message: 'Relecture',
+        schema: childProposalSchema(),
+        child: {
+          title: 'Relecture',
+          prompt: 'Relis',
+          role: {
+            name: 'security-expert',
+            label: 'Expert sécu',
+            icon: 'shield-check',
+            color: 'orange',
+            description: 'd',
+            readOnly: true,
+            prompt: 'p',
+            scope: 'builtin'
+          }
+        }
+      }
+    } as Partial<ChildProposalItem>)
+    await show([readOnly])
+    expect(childFolderDirty).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(start('Relecture').disabled).toBe(false)
   })
 })

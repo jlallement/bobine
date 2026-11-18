@@ -1,6 +1,6 @@
 # 240 — Filles en worktree : le travail non commité de la mère n'y est pas
 
-- **Statut** : à faire
+- **Statut** : fait — en relecture (tech lead), pas encore fusionné
 - **Dépend de** : 223 (rôles), 110 (cycle des worktrees), 097 (conversations filles), 099 (outils
   de l'app)
 - **Agents** : les deux (comportement de Bobine, indépendant de l'agent)
@@ -110,26 +110,86 @@ worktree).
 
 ## Critères d'acceptation
 
-- [ ] ADR écrit : worktree depuis le commit, pas de copie du non commité ; avis en lecture seule
-      dans le dossier de la mère.
-- [ ] Lancement d'une fille en worktree avec un dossier modifié, par chacun des chemins (`@rôle`,
+- [x] ADR écrit : worktree depuis le commit, pas de copie du non commité ; avis en lecture seule
+      dans le dossier de la mère — [ADR-0055](../adr/0055-filles-en-worktree-depuis-le-commit.md).
+- [x] Lancement d'une fille en worktree avec un dossier modifié, par chacun des chemins (`@rôle`,
       `/split`, Tâches proposées, Lancer en parallèle) : Bobine affiche le nombre de
-      modifications et propose « Committer d'abord », « Mettre de côté », « Partir quand même ».
-      Rien ne part avant le choix ; « Committer d'abord » ouvre le même chemin que la carte de
-      fusion.
-- [ ] Une fille partie quand même avec du non commité laissé de côté : son compte rendu le
-      rappelle dans la mère.
-- [ ] Un `@rôle` d'avis (qui ne modifie rien) part sans worktree, dans le dossier de la mère en
-      lecture seule, et voit les fichiers non commités.
-- [ ] La description MCP de `start_child` dit de committer d'abord ; appelé avec un dossier
-      modifié, l'outil renvoie l'avertissement à l'agent
-      (nombre de modifications, ce qui manquera à la fille).
-- [ ] Essai e2e contre l'agent factice **par chemin** : (a) rôle — dépôt avec un fichier non
-      commité, envoi `@rôle` : le choix apparaît avant l'envoi ; un rôle d'avis voit le fichier ;
-      (b) Tâches proposées — même dépôt, carte de tâches, « Lancer » : le choix apparaît, «
-      Committer d'abord » puis lancement, la fille voit le fichier.
-- [ ] Doc : fiche 110 (cycle des worktrees) et `docs/architecture.md` si le chemin des avis
-      change.
+      modifications et propose « Committer d'abord », « Partir quand même » (« Mettre de côté »
+      retiré, voir les écarts). Rien ne part avant le choix (le main refuse aussi) ; « Committer
+      d'abord » ouvre le même formulaire que la carte de fusion. `/split` passe par la carte
+      « Tâches proposées ».
+- [x] Une fille partie quand même avec du non commité laissé de côté : sa carte de lancement (rôle)
+      et chacun de ses comptes rendus le rappellent dans la mère, et l'agent de la mère le lit.
+- [x] Un `@rôle` d'avis part sans worktree, dans le dossier de la mère en lecture seule, et voit
+      les fichiers non commités (rôle en lecture seule, ou « Demander un avis en lecture seule »).
+- [x] La description MCP de `start_child` dit de committer d'abord ; appelé avec un dossier
+      modifié, l'outil renvoie l'avertissement à l'agent (nombre, fichiers, commit, ce qui
+      manquera à la fille) quand la fille part quand même ou que la carte reste ouverte.
+- [x] Essai e2e contre l'agent factice **par chemin** (`e2e/suites/filles-non-commite.mjs`) :
+      (a) rôle — avertissement avant l'envoi, Entrée retenue, « Partir quand même » (la fille ne
+      voit pas `plan.md`, rappel dans la mère), avis en lecture seule (les filles le voient) ;
+      (b) Tâches proposées — « Lancer » retenu, « Committer d'abord », puis la fille voit
+      `plan.md`.
+- [x] Doc : fiche 110 (cycle des worktrees) et `docs/architecture.md`.
+
+## Maquettes (validées le 2026-11-18)
+
+`e2e/maquettes/screens-filles-worktree.mjs`, sur la vraie fenêtre (`pnpm build && node
+e2e/maquettes/run.mjs light f240`, puis `dark`) ; captures hors du dépôt. Cinq écrans :
+avertissement sous « Partira à… » de la saisie `@rôle` ; « Committer d'abord » (formulaire de la
+carte de fusion, « Committer puis lancer ») ; avis (« Partira à 2 rôles, pour un avis… · dans ce
+dossier · lecture seule · ils voient les N modifications non commitées », « Plutôt les faire
+travailler… ») ; carte « Tâches proposées » (un bloc pour la carte, « Lancer » retenu) ; rappel
+dans la mère.
+
+**Règle de l'avis (validée)** : un envoi `@rôle` part en avis (sans worktree, dans le dossier de
+la mère, lecture seule imposée ou demandée selon l'agent, surveillée comme un rôle en lecture
+seule) si tous les rôles cités sont en lecture seule, ou si l'utilisateur choisit « Demander un
+avis en lecture seule » dans l'avertissement. Pas de devinette sur le texte. Côté agent,
+`start_child` garde sa règle : un rôle en lecture seule part dans le dossier de la mère, les
+autres en worktree, avec l'avertissement.
+
+## Ce qui a été fait
+
+- **Main** : `main/conversations/launch-folder.ts` (`git status --porcelain=v1 -uall` du dossier
+  de la mère, commit de départ ; « Committer d'abord » à la racine du dépôt par
+  `WorktreeCycle.commitIn`), branché par `ChildOptions.folder`. `ChildConversations.start`
+  (`launchRole`) : une fille qui partirait en worktree d'un dossier modifié est refusée sans
+  `uncommitted` ; `anyway` la laisse partir ; `readOnly` (rôle seulement) la fait partir en
+  lecture seule dans le dossier de la mère. `leftBehind` (lu de `dirtyAtStart` et `base` du
+  worktree de la fille) sur `child-started` et chaque `child-report`, et dans ce qui part à
+  l'agent de la mère. Canaux `conversation:childFolderDirty`, `conversation:commitForChildren`
+  (refusé en profil en lecture seule) ; `uncommitted` sur `roles:startChildren`,
+  `conversation:startChild` et la décision de la carte (élicitation).
+- **MCP** : description de `start_child` (« Uncommitted changes of this folder are NOT in its
+  worktree: commit your work first ») ; dossier lu pendant que la carte est posée (sans la
+  retarder ni prendre la place d'une autre) ; avertissement dans le résultat (fille partie quand
+  même, carte encore ouverte, refus faute de choix).
+- **Renderer** : `thread/LaunchDirty.tsx` (`LaunchDirtyCard`, `useFolderDirty`, relu au retour du
+  focus) dans la saisie `@rôle` (`useRoleCompose` retient l'envoi et met le focus sur le bloc ;
+  ligne « Partira à… » en avis), la carte « Tâches proposées » (« Lancer » retenu, « Lancer quand
+  même » pour la carte) et « Lancer en parallèle… » ; étiquette sur la carte de lancement d'un
+  rôle (`RoleWork.tsx`) et ligne sur chaque compte rendu (`Subtasks.tsx`).
+- **Agent factice** : étape `when-file` ; scénarios `voit-le-plan` (la fille dit si elle voit
+  `plan.md`) et `tache-plan` (la mère propose une tâche qui le dira).
+- **Tests** : `main/conversations/children-uncommitted.test.ts` (vrai dépôt git, agent factice :
+  refus sans choix, partir quand même et rappel, avis dans le dossier de la mère, committer
+  d'abord, rôle en lecture seule, « Lancer en parallèle… ») — trois échouent sans le refus du main ;
+  `children-tools.test.ts` (description, avertissement, choix transmis, refus) ;
+  `RoleComposerUncommitted.test.tsx`, `ChildProposals.test.tsx`, `ChildReportLeftBehind.test.tsx`.
+  E2e : suite `filles-non-commite`.
+
+## Écarts au plan et aux maquettes
+
+- **« Mettre de côté » retiré** avant un lancement (choix de l'utilisateur, 2026-11-18) : il ne
+  donne rien à la fille et ne fait que vider le dossier de la mère. Restent « Committer d'abord »
+  et « Partir quand même » (« Lancer quand même » sur la carte de tâches).
+- **Rappel sur le compte rendu** sans liste de fichiers : le nombre et le commit de départ
+  seulement (lus du worktree de la fille, rien de plus à garder).
+- **Étiquette** « Sans N modifications non commitées » (au lieu de « Parti sans… ») : neutre en
+  genre devant le nom d'un rôle.
+- `worktree-cycle.ts` n'est pas modifié : `mainDirty` exige la base extraite dans le dossier
+  principal (fusion) ; la lecture avant lancement vit dans `launch-folder.ts`.
 
 ## Rejouer
 
@@ -146,3 +206,18 @@ puis « Lancer ». Les traces réelles ci-dessus servent de référence.
   comptée côté agent dans le rapport) ; décision de l'utilisateur écrite (worktree depuis le
   commit maintenu, avertissement et choix avant lancement, avis en lecture seule sans worktree,
   consigne et avertissement côté outils de l'agent) ; critères revus.
+- 2026-11-18 — Maquettes (5 écrans, clair et sombre) et règle de l'avis proposées ; en attente de
+  validation avant le code de l'interface.
+- 2026-11-18 — Maquettes validées par l'utilisateur ; « Mettre de côté » retiré avant un lancement
+  (son choix). ADR-0055, refus du main sans choix, avertissement et choix sur les trois chemins,
+  avis en lecture seule, rappel dans la mère, avertissement de `start_child` ; tests unitaires et
+  suite e2e `filles-non-commite`.
+- 2026-11-18 — Campagne `e2e --changed` sur c671feb : 208 sur 210 ; `filles-non-commite` échoue
+  (clair et sombre) sur un vrai défaut : après « Demander un avis en lecture seule », le bouton
+  disparaît avec le focus, et Entrée n'envoie rien. Corrigé (focus rendu à la saisie, aussi pour
+  « Plutôt les faire travailler… »), avec un essai unitaire qui clique puis tape Entrée sur
+  l'élément qui a le focus (il échoue sans le correctif) ; ligne « Juste un avis ? » sur une ligne
+  avec son bouton ; accord « voit » / « voient » selon le nombre de rôles.
+- 2026-11-18 — `pnpm e2e filles-non-commite` vert en clair et en sombre (les deux chemins : rôle,
+  avec « Partir quand même » et l'avis ; Tâches proposées, avec « Committer d'abord ») ; les six
+  captures regardées dans les deux thèmes.

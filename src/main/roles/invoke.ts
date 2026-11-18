@@ -10,6 +10,7 @@
  */
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
+import { parseUncommittedChoice } from '@shared/launch-folder'
 import type { Message } from '@shared/i18n/message'
 import {
   MAX_ROLES_PER_MESSAGE,
@@ -25,7 +26,7 @@ export type RoleInvokeHost = Pick<ChildConversations, 'start' | 'choices' | 'fin
 /* Les arguments viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
 export function parseRolesStartRequest(value: unknown): RolesStartRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { roles, text } = value as Record<string, unknown>
+  const { roles, text, uncommitted } = value as Record<string, unknown>
   if (typeof text !== 'string' || !text.trim()) throw new Error(t('children.error.emptyPrompt'))
   if (
     !Array.isArray(roles) ||
@@ -36,7 +37,8 @@ export function parseRolesStartRequest(value: unknown): RolesStartRequest {
     throw new Error('Paramètre invalide : roles')
   }
   const names = [...new Set((roles as string[]).map((r) => r.trim().replace(/^@/, '')))]
-  return { roles: names, text: text.trim() }
+  const choice = parseUncommittedChoice(uncommitted)
+  return { roles: names, text: text.trim(), ...(choice ? { uncommitted: choice } : {}) }
 }
 
 /** Lance les filles, une par rôle ; rend celles parties et les refus. */
@@ -88,6 +90,7 @@ export async function startRoleChildren(
         text: request.text,
         role: role.name,
         ...(notices.length ? { notices } : {}),
+        ...(request.uncommitted ? { uncommitted: request.uncommitted } : {}),
         // Agent ou modèle du rôle introuvables ici : la fille prend ceux de la mère.
         ...(typeof choice === 'string' ? {} : choice)
       })

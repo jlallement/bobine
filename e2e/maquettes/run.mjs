@@ -13,6 +13,7 @@ import { ACTIVITY_SCREENS, DASHBOARD_SCREENS } from './screens-tableau-de-bord.m
 import { ANNOTATE_SCREENS } from './screens-annoter.mjs'
 import { RESET_SCREENS } from './screens-reinitialiser.mjs'
 import { DISCUSSION_SCREENS } from './screens-discussion.mjs'
+import { WORKTREE_CHILD_SCREENS } from './screens-filles-worktree.mjs'
 import { MAQ_CSS, SITE_CSS } from './styles.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -178,7 +179,8 @@ for (const scheme of schemes) {
         ...ACTIVITY_SCREENS,
         ...RESET_SCREENS,
         ...ANNOTATE_SCREENS,
-        ...DISCUSSION_SCREENS
+        ...DISCUSSION_SCREENS,
+        ...WORKTREE_CHILD_SCREENS
       ]) {
         if (only.length && !only.some((o) => screen.id.startsWith(o))) continue
         await reset()
