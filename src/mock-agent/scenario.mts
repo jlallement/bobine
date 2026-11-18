@@ -286,6 +286,12 @@ export interface Scenario {
     expiredLogin?: 'terminal' | 'sso'
     /** `session/load` refusé lui aussi (`authRequired`) tant que la connexion n'est pas refaite. */
     reopenNeedsLogin?: boolean
+    /**
+     * Avec `requireAuth` : `session/load` refusé lui aussi (`authRequired`) sans clé d'API ni
+     * `authenticate`, comme Bob déconnecté (« session/new (et la réouverture) répond -32000 »,
+     * `docs/acp.md`, fiche 200 ; fiche 243).
+     */
+    reopenNeedsAuth?: boolean
     /** Licence à accepter (Bob) : `-32600` tant que `.mock-agent-license` n'est pas dans le dossier. */
     requireLicense?: boolean
     /**

@@ -5,7 +5,8 @@ describe('conversation affichée au lancement (fiche 243)', () => {
   const records = [{ id: 'a' }, { id: 'b', archived: true }, { id: 'c' }]
 
   it('la dernière affichée, si elle est encore dans l’historique', () => {
-    expect(conversationToReopen('c', records)).toEqual({ id: 'c' })
+    expect(conversationToReopen('c', records)).toBe('c')
+    expect(conversationToReopen('c', records, { profileId: '', workspace: '' })).toBe('c')
   })
 
   it('rien de retenu, supprimée ou archivée : aucune (nouvelle conversation)', () => {
@@ -13,6 +14,11 @@ describe('conversation affichée au lancement (fiche 243)', () => {
     expect(conversationToReopen('', records)).toBeUndefined()
     expect(conversationToReopen('disparue', records)).toBeUndefined()
     expect(conversationToReopen('b', records)).toBeUndefined()
+  })
+
+  it('agent ou dossier imposé : il gagne, aucune', () => {
+    expect(conversationToReopen('c', records, { profileId: 'mock' })).toBeUndefined()
+    expect(conversationToReopen('c', records, { workspace: '/projet' })).toBeUndefined()
   })
 
   it('un brouillon n’est jamais retenu', () => {

@@ -120,6 +120,8 @@ function environment(extraArgs: string[] = []) {
       env?: NodeJS.ProcessEnv
       /** Dossier des conversations sans choix (essais) ; `null` : aucun, comme l'app (fiche 093). */
       defaultWorkspace?: string | null
+      /** Agent et dossier imposés (`BOBINE_AGENT_PROFILE`, `BOBINE_WORKSPACE`). */
+      overrides?: { profileId?: string; workspace?: string }
     } = {}
   ) {
     const events: ConversationEvent[] = []
@@ -148,6 +150,7 @@ function environment(extraArgs: string[] = []) {
       ...(options.onSettingsChanged ? { onSettingsChanged: options.onSettingsChanged } : {}),
       ...(options.apiKeys ? { apiKeys: options.apiKeys } : {}),
       ...(options.env ? { env: options.env } : {}),
+      ...(options.overrides ? { overrides: options.overrides } : {}),
       // Jamais le vrai dossier personnel : ses règles fausseraient les essais (fiche 056).
       agentHome: options.agentHome ?? mkdtempSync(join(tmpdir(), 'maison-vide-'))
     })
@@ -2105,6 +2108,98 @@ describe('relance : la conversation affichée est rouverte (fiche 243, recette D
     expect(app2.manager.state().activeId).toBe(working)
     expect(app2.manager.view(working).transcript.items.map((i) => i.kind)).toContain('user')
     await app2.manager.startActive()
+    app2.manager.stopAll()
+  })
+
+  it('agent ou dossier imposé : il gagne, nouvelle conversation avec ; vide : rien d’imposé', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    const id = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(id, 'Retenue')
+    app1.manager.stopAll()
+
+    const byFolder = env.launch({ overrides: { workspace: env.workspaceB } })
+    const draft = byFolder.manager.state().activeId
+    expect(draft).not.toBe(id)
+    expect(byFolder.manager.view(draft).summary).toMatchObject({
+      draft: true,
+      workspace: env.workspaceB
+    })
+    byFolder.manager.stopAll()
+
+    const byAgent = env.launch({ overrides: { profileId: 'refus' } })
+    const other = byAgent.manager.state().activeId
+    expect(other).not.toBe(id)
+    expect(byAgent.manager.view(other).summary).toMatchObject({ draft: true, profileId: 'refus' })
+    // Ce brouillon affiché efface ce qui était retenu, comme toute nouvelle conversation affichée.
+    byAgent.manager.select(id)
+    byAgent.manager.stopAll()
+
+    const empty = env.launch({ overrides: { profileId: '', workspace: '' } })
+    expect(empty.manager.state().activeId).toBe(id)
+    empty.manager.stopAll()
+  })
+
+  it('`bobine <dossier>` au lancement (fiche 158) : le dossier demandé gagne sur la rouverte', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    const id = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(id, 'Retenue')
+    app1.manager.stopAll()
+
+    // Ce que fait `attachLaunch` (launch-app.ts) une fois l'app montée : `create({ workspace })`.
+    const app2 = env.launch()
+    expect(app2.manager.state().activeId).toBe(id)
+    const asked = await app2.manager.create({ workspace: env.workspaceB })
+    expect(app2.manager.state().activeId).toBe(asked.summary.id)
+    expect(asked.summary).toMatchObject({ draft: true, workspace: env.workspaceB })
+    // La rouverte reste dans l'historique, intacte.
+    expect(kinds(app2.manager.view(id))).toEqual(['user', 'agent'])
+    app2.manager.stopAll()
+  })
+
+  it('dossier de la rouverte disparu : affichée, sans plantage, avec un avis ; profil neuf : rien', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    await app1.manager.startActive()
+    const id = (await app1.manager.create({ workspace: env.workspaceB })).summary.id
+    await app1.manager.prompt(id, 'Dans B')
+    vanish(env.workspaceB, app1.manager)
+    app1.manager.stopAll()
+
+    const app2 = env.launch()
+    expect(app2.manager.state().activeId).toBe(id)
+    const view = await app2.manager.startActive()
+    expect(view.summary.id).toBe(id)
+    // Même avis que si on la choisit dans la barre latérale : le dossier introuvable, nommé.
+    const notices = view.transcript.items.filter((i) => i.kind === 'notice')
+    expect(JSON.stringify(notices)).toContain(basename(env.workspaceB))
+    app2.manager.stopAll()
+
+    // Profil temporaire ou « Recommencer à neuf » : dossier de données vide, rien de retenu.
+    const fresh = environment().launch()
+    expect(fresh.manager.state().conversations).toMatchObject([{ draft: true }])
+    fresh.manager.stopAll()
+  })
+
+  it('rouverte sans connexion (Bob déconnecté) : la connexion est demandée dès la réouverture', async () => {
+    const env = environment()
+    const bob = env.mock('auth', 'bob-auth-requise-rouverture')
+    // Premier lancement avec une clé d'API : la conversation s'ouvre et répond.
+    const app1 = env.launch({ before: [{ ...bob, env: { MOCK_AGENT_API_KEY: 'cle' } }] })
+    const id = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(id, 'Bonjour')
+    app1.manager.stopAll()
+
+    // Relance sans clé (clé illisible) : session/load refusé, carte de connexion, pas d'échec muet.
+    const app2 = env.launch({ before: [bob] })
+    expect(app2.manager.state().activeId).toBe(id)
+    await app2.manager.startActive()
+    await waitFor(() => app2.manager.view(id).snapshot?.blocker?.kind === 'auth')
+    expect(kinds(app2.manager.view(id))).toEqual(['user', 'agent'])
     app2.manager.stopAll()
   })
 

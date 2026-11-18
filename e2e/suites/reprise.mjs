@@ -86,7 +86,10 @@ export async function repriseSuite(scheme) {
           'relance : la conversation reprend dans le même fil'
         )
       },
-      userData
+      userData,
+      'demo',
+      // Rien d'imposé : un agent imposé ouvrirait une nouvelle conversation (fiche 243).
+      { BOBINE_AGENT_PROFILE: '' }
     )
   } finally {
     rmSync(userData, { recursive: true, force: true })

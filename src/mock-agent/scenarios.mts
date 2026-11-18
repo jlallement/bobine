@@ -1542,6 +1542,12 @@ export const scenarios: Record<string, Scenario> = {
     session: { requireAuth: true },
     steps: [{ kind: 'text', text: 'Authentifié, je peux travailler.' }]
   },
+  'bob-auth-requise-rouverture': {
+    description:
+      'Comme bob-auth-requise, et la réouverture (session/load) refusée aussi sans clé ni SSO, comme Bob déconnecté (fiche 243)',
+    session: { requireAuth: true, reopenNeedsAuth: true },
+    steps: [{ kind: 'text', text: 'Authentifié, je peux travailler.' }]
+  },
   'sso-sans-retour': {
     description:
       'Comme bob-auth-requise, mais authenticate ne répond jamais (SSO fini dans le navigateur, rien ne revient) ; un agent relancé est connecté (fiche 207)',

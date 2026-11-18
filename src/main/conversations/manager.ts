@@ -282,16 +282,14 @@ export class ConversationManager {
     for (const record of records) {
       this.conversations.set(record.id, { record, lastUsed: 0, readAt: 0, draft: false })
     }
-
     // Fichiers d'historique abîmés : dits par l'état du profil (fiche 196), pas dans le fil.
     if (this.store.damaged.length > 0) {
       log.warn('Fichiers d’historique illisibles mis de côté :', this.store.damaged)
     }
     if (!options.profiles.length) throw new Error(t('conversations.error.noProfile'))
-    // Au lancement : la conversation affichée à la fermeture précédente (fiche 243), même quittée
-    // en plein tour ; sinon une nouvelle conversation, l'historique à côté.
-    const reopened = conversationToReopen(this.settings.shownConversation(), records)
-    this.activeId = reopened?.id ?? this.launchDraft()
+    // Au lancement : la dernière conversation affichée, sinon une nouvelle (fiche 243).
+    const saved = this.settings.shownConversation()
+    this.activeId = conversationToReopen(saved, records, options.overrides) ?? this.launchDraft()
   }
 
   /** Nouvelle conversation du lancement : agent et dossier imposés, réglés ou retenus. */
@@ -1501,7 +1499,7 @@ export class ConversationManager {
   }
 
   private emitList(): void {
-    // Conversation affichée retenue pour le lancement suivant (fiche 243) : écrite si elle change.
+    // Retenue pour le lancement suivant (fiche 243) : écrite si elle change.
     this.settings.rememberShown(shownToRemember(this.conversations.get(this.activeId)))
     const state = this.state()
     this.options.emitList?.(state)

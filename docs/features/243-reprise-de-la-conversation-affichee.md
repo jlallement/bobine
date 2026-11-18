@@ -1,6 +1,6 @@
 # 243 — À la relance, rouvrir la conversation affichée
 
-- **Statut** : fait
+- **Statut** : en cours (relecture : e2e à rejouer)
 - **Dépend de** : 093 (démarrage), 158 (`bobine <dossier>`), 062 (fenêtre rapide), 148 (profil
   temporaire), 194 (quitter en plein tour)
 - **Agents** : les deux (choix de la conversation affichée par Bobine, indépendant de l'agent)
@@ -33,6 +33,18 @@ mémoire : rien ne l'écrit sur le disque, ni en cours de route, ni en quittant.
 n'y change rien : le défaut est le même après une fermeture ordinaire. Aucune fiche ni ADR ne
 décidait ce comportement (seul ce commentaire du code).
 
+## Changement de comportement assumé (écart à la fiche 093)
+
+Jusqu'ici, **chaque lancement** ouvrait une nouvelle conversation vide, l'historique à côté
+(« comme Claude Desktop », fiche 093, seulement dans un commentaire du code). Désormais, **chaque
+lancement** rouvre la dernière conversation affichée — pas seulement après ⌘Q en plein tour.
+Pourquoi : la conversation qu'on regardait en quittant est presque toujours celle qu'on veut
+retrouver (travail en cours, réponse à lire, agent à relancer) ; en commencer une autre coûte un
+clic (« Nouvelle conversation », ⌘N), retrouver la sienne demande de la chercher dans la barre
+latérale. Le défaut D10 n'en est que le cas le plus gênant. Ce qui ne change pas : le choix de
+l'agent et du dossier d'une nouvelle conversation (fiche 093), qui ne sert plus au lancement que
+lorsque rien n'est rouvert.
+
 ## Comportement retenu
 
 Au lancement, Bobine affiche la **dernière conversation affichée** à la fermeture précédente (celle
@@ -42,7 +54,10 @@ conversation :
 
 - la dernière affichée était une conversation vide (brouillon, jamais enregistré) ;
 - elle n'existe plus (supprimée, à la corbeille, index abîmé) ou elle est archivée ;
-- profil neuf ou temporaire (`--profil-temporaire`, Recommencer à neuf) : aucune conversation.
+- profil neuf ou temporaire (`--profil-temporaire`, Recommencer à neuf) : aucune conversation ;
+- un agent ou un dossier est imposé au lancement (`BOBINE_AGENT_PROFILE`, `BOBINE_WORKSPACE` :
+  essais, pilote) : la valeur imposée gagne, une nouvelle conversation s'ouvre avec (une valeur
+  vide n'impose rien).
 
 Cas prévus ailleurs, inchangés :
 
@@ -52,6 +67,15 @@ Cas prévus ailleurs, inchangés :
 - Fenêtre rapide (fiche 062) : crée sa propre conversation, à la demande, sans regarder le lancement.
 - Agent retiré (profil plus proposé) : la conversation rouverte s'affiche en lecture seule, sans
   agent, comme quand on la choisit.
+- Dossier de la conversation rouverte disparu : elle s'affiche, avec l'avis « Dossier de travail
+  introuvable : … » dans le fil, comme quand on la choisit ; pas de plantage.
+- Connexion perdue (clé illisible, Bob déconnecté) : Bob refuse aussi la réouverture
+  (`session/load` → `-32000`, `docs/acp.md`, fiche 200) ; la carte « Connexion requise » s'affiche
+  dans la conversation rouverte **dès le lancement**, sans attendre de message ; la clé ressaisie,
+  la même conversation continue. Une clé refusée seulement au message (`-32603`) donne la carte
+  « Connexion expirée » de la fiche 200, comme avant.
+- Avis de version déjà vu (fiche 198) : il est dans le fil enregistré de la conversation où il a
+  été montré ; rouverte, elle le montre une fois, comme avant de quitter, et il n'est pas rajouté.
 - Avis du lancement (serveur des outils arrêté, réinitialisation échouée) : montrés dans la
   conversation affichée, donc dans la conversation rouverte.
 
@@ -66,7 +90,10 @@ ouverte à côté (vue côte à côte, fiche 036) n'est pas rouverte.
       travaillait est affichée.
 - [x] Relance après avoir affiché une nouvelle conversation vide : nouvelle conversation, comme
       avant ; idem si la dernière affichée a été supprimée ou archivée.
-- [x] `bobine <dossier>`, fenêtre rapide, profil temporaire : inchangés.
+- [x] `bobine <dossier>`, fenêtre rapide, profil temporaire : inchangés ; agent ou dossier imposé :
+      nouvelle conversation avec.
+- [x] Dossier de la rouverte disparu : avis, pas de plantage. Connexion perdue : carte de connexion
+      dans la rouverte dès le lancement.
 - [x] Test unitaire qui échoue sans le correctif ; e2e contre l'agent factice (quitter en plein
       tour, relancer).
 
@@ -106,3 +133,21 @@ ouverte à côté (vue côte à côte, fiche 036) n'est pas rouverte.
     `restart`.
   - Hors périmètre, constaté : la conversation rouverte montre la réponse partielle sans mention
     « interrompue » à la fin du message (comportement du rejeu, inchangé).
+- 2026-11-18 — Relecture du tech lead, trois points :
+  1. Valeur imposée ignorée : `BOBINE_AGENT_PROFILE` / `BOBINE_WORKSPACE` (non vides) gagnent
+     désormais sur la conversation retenue (`imposed`, `shown-at-launch.ts`). Essais : « agent ou
+     dossier imposé » (échoue sans le correctif) et « `bobine <dossier>` au lancement » (le dossier
+     demandé gagne : `create({ workspace })` après le lancement, la rouverte reste dans
+     l'historique).
+  2. `auth` et `versions` remis comme avant (l'agent imposé par les essais ouvre de nouveau une
+     nouvelle conversation à la relance) ; ajouté dans chacune une relance sans rien d'imposé, sur
+     la conversation rouverte : `auth` — clé illisible, carte de connexion dès la réouverture, clé
+     ressaisie, la conversation continue ; `versions` — l'avis vu une fois dans le fil rouvert, pas
+     rajouté après un message. Pour `auth`, l'agent factice ne refusait que `session/new` : nouveau
+     scénario `bob-auth-requise-rouverture` (`reopenNeedsAuth`), qui refuse aussi `session/load`
+     comme Bob déconnecté (relevé, `docs/acp.md`) ; essai unitaire « rouverte sans connexion »
+     (échoue avec l'ancien scénario : aucune carte). Avec l'ancien scénario, un message dans la
+     rouverte reçoit sa réponse : l'agent factice n'y demande rien, ce n'est pas un échec muet.
+  3. Changement assumé, écrit ci-dessus, dans la fiche 093 et le CHANGELOG ; essais du dossier
+     disparu (avis « Dossier de travail introuvable », pas de plantage) et du profil neuf (rien de
+     retenu).

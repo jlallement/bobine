@@ -115,6 +115,43 @@ export async function authSuite(scheme) {
       { BOBINE_WORKSPACE: workspace }
     )
 
+    // Relance sans agent ni dossier imposés : la conversation « Bonjour » est rouverte (fiche
+    // 243). Clé illisible : comme Bob déconnecté (docs/acp.md, fiche 200), la réouverture
+    // (session/load) demande la connexion ; la carte s'affiche dans le fil rouvert, sans attendre
+    // de message, puis la clé ressaisie fait continuer la même conversation.
+    writeFileSync(
+      join(userData, 'api-keys.json'),
+      JSON.stringify({ version: 1, keys: { mock: { MOCK_AGENT_API_KEY: 'aWxsaXNpYmxl' } } })
+    )
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.waitFor(`!!${ui.$('blocker-auth')}`)
+        check(
+          (await ui.ev(`document.querySelector('.history-item.active')?.innerText ?? ''`)).includes(
+            'Bonjour'
+          ) && (await ui.ev(`document.querySelectorAll('.msg-user').length`)) === 1,
+          'rouverte, clé illisible : la conversation d’avant, connexion demandée dès la réouverture'
+        )
+        await ui.shot('f0b-rouverte-connexion')
+        await ui.click(ui.$('auth-api-key'))
+        await ui.waitFor(`document.activeElement === ${ui.$('api-key-input')}`)
+        await ui.type(KEY)
+        await ui.click(ui.$('api-key-save'))
+        await ui.waitFor(`!${ui.$('blocker-auth')}`)
+        await ui.ready()
+        await ui.send('Encore')
+        await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 2`)
+        check(
+          (await ui.ev(`document.querySelectorAll('.msg-user').length`)) === 2,
+          'rouverte : clé ressaisie, la même conversation continue'
+        )
+      },
+      userData,
+      'bob-auth-requise-rouverture',
+      { BOBINE_WORKSPACE: '', BOBINE_AGENT_PROFILE: '' }
+    )
+
     // Clé chiffrée par une autre entrée du trousseau (ancien nom de l'app, fiche 069) : dite
     // illisible, pas « Enregistrée », et ressaisie.
     writeFileSync(
@@ -124,10 +161,6 @@ export async function authSuite(scheme) {
     await withApp(
       scheme,
       async (ui) => {
-        // La relance rouvre la conversation d'avant (fiche 243), reprise sans nouvelle connexion
-        // (`session/load`, comme Bob) : une nouvelle conversation ouvre une session, qui la demande.
-        await ui.ready()
-        await ui.click(ui.$('new-conversation'))
         await ui.waitFor(`!!${ui.$('blocker-auth')}`)
         check(true, 'clé illisible : l’agent démarre sans, connexion demandée')
         await ui.click(ui.$('open-settings'))

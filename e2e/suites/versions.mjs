@@ -61,17 +61,45 @@ export async function versionsSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
-        // La relance rouvre la conversation d'avant (fiche 243) : l'avis vu s'y trouve déjà.
-        await ui.click(ui.$('new-conversation'))
-        await ui.waitFor(`!document.querySelector('.history-item.active')`)
-        await ui.ready()
         await ui.send('Après redémarrage')
         await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 1`)
         await ui.ready()
         check(!(await notices(ui)).includes(newer), 'après un redémarrage : pas d’avis à nouveau')
+        // La première conversation, celle de l'avis, affichée en quittant : rouverte ensuite.
+        const first = `[...document.querySelectorAll('[data-testid=history-item]')].find((i) => i.innerText.includes('Bonjour'))?.querySelector('.history-open')`
+        await ui.click(first)
+        await ui.waitFor(
+          `${ui.$('history-item')} && document.querySelector('.history-item.active')?.innerText.includes('Bonjour')`
+        )
+        await ui.ready()
       },
       userData,
       'version-plus-recente'
+    )
+    // Relance sans agent imposé : la conversation de l'avis est rouverte (fiche 243). L'avis vu
+    // est dans son fil enregistré : montré une fois, comme avant de quitter, jamais rajouté.
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.waitFor(
+          `document.querySelector('.history-item.active')?.innerText.includes('Bonjour')`
+        )
+        await ui.ready()
+        check(
+          (await notices(ui)).split(newer).length === 2,
+          'conversation rouverte : l’avis vu reste dans son fil, une fois'
+        )
+        await ui.send('Toujours là')
+        await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 2`)
+        await ui.ready()
+        check(
+          (await notices(ui)).split(newer).length === 2,
+          'conversation rouverte, nouveau message : pas d’avis à nouveau'
+        )
+      },
+      userData,
+      'version-plus-recente',
+      { BOBINE_AGENT_PROFILE: '' }
     )
   } finally {
     rmSync(userData, { recursive: true, force: true })
