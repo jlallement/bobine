@@ -76,6 +76,12 @@ export async function repriseSuite(scheme) {
             (await ui.ev(`document.querySelectorAll('[data-testid=history-item]').length`)) === 2,
           'relance : la conversation qui travaillait est affichée, pas une nouvelle'
         )
+        // Le message envoyé juste avant de quitter ne revient pas dans la saisie (brouillon vidé
+        // écrit tout de suite, drafts.ts).
+        check(
+          (await ui.ev(`document.querySelector('textarea')?.value`)) === '',
+          'relance : saisie vide, le message envoyé avant de quitter n’y revient pas'
+        )
         await ui.ready()
         await ui.shot('reprise-apres-quitter')
         await ui.send('/scenario streaming-texte')

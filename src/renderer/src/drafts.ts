@@ -121,12 +121,25 @@ export function saveDraft(conversationId: string, draft: Draft): void {
     current.delete(id)
   }
   clearTimeout(timer)
-  timer = setTimeout(() => persist(current), 300)
+  // Vidé (message envoyé) : écrit tout de suite. Sinon, l'app quittée dans le délai garderait le
+  // message envoyé, remis dans la saisie de la conversation rouverte au lancement (fiche 243).
+  if (isEmpty(draft)) persist(current)
+  else timer = setTimeout(() => persist(current), 300)
 }
+
+/** Page qui s'en va (fenêtre fermée, app quittée) : la saisie en attente d'écriture est écrite. */
+function flushPending(): void {
+  if (timer === undefined || !drafts) return
+  clearTimeout(timer)
+  timer = undefined
+  persist(drafts)
+}
+if (typeof window !== 'undefined') window.addEventListener('pagehide', flushPending)
 
 /** Essais : écrit tout de suite, puis oublie le cache (comme après un redémarrage). */
 export function flushDraftsForTests(): void {
   clearTimeout(timer)
+  timer = undefined
   if (drafts) persist(drafts)
   drafts = null
 }
