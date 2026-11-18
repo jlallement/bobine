@@ -21,6 +21,7 @@ sombre, avec les vrais composants autour.
 | `screens-discussion.mjs` | Discussion, conversation sans projet (fiche 224) : `node e2e/maquettes/run.mjs light disc` |
 | `screens-filles-worktree.mjs` | Filles en worktree et non commité de la mère (fiche 240) : `node e2e/maquettes/run.mjs light f240` |
 | `screens-commit-choisi.mjs` | « Committer d'abord » avec fichiers à cocher (fiche 244) : `node e2e/maquettes/run.mjs light f244` |
+| `run-245.mjs` | Jetons traités, coût estimé, modèle de l'essai de l'accueil (fiche 245), runner à part (agent factice `premier-essai`) : `node e2e/maquettes/run-245.mjs light f245` |
 | `parts.mjs` | Morceaux communs : barre latérale cible, messages du fil, faux site « Carnet de lecture » |
 | `styles.mjs` | Seulement ce qui n'existe pas encore dans l'app, sur ses jetons |
 | `icons.mjs` | Icônes Lucide de l'app, en SVG brut |
