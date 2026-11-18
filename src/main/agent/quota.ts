@@ -9,13 +9,14 @@
  * (`~/.bob/trustedFolders.json`, docs/acp.md) ; un dossier par profil de Bobine (temporaires
  * compris) y laissait une entrée de plus à chaque profil.
  *
- * Après un échec (agent pas connecté, interface jamais prête…), la lecture automatique du
- * lancement est suspendue quelques heures (D11) : pas une attente à chaque lancement. Mais l'agent
- * qui se montre prêt ensuite (session ouverte, essai de connexion réussi — après une connexion par
- * SSO, par exemple) fait relire un quota encore inconnu, sans tenir compte de cette pause : au plus
- * une fois par `RETRY_WHEN_READY_MS` (fiche 205).
+ * Quand lire (fiche 242, ADR-0054) : seulement pour l'agent qui sert. Celui qui se montre prêt
+ * (session ouverte dans une conversation, essai de connexion réussi — après une connexion par SSO,
+ * par exemple) fait lire son quota encore inconnu, au plus une fois par `RETRY_WHEN_READY_MS`
+ * (fiche 205) ; « Actualiser » le relit. Jamais au lancement pour un agent seulement installé : un
+ * agent qu'on n'utilise pas n'est pas lancé, et un agent pas connecté ne se montre jamais prêt (ce
+ * qui rend sans objet la pause de 12 h après un échec, D11).
  */
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { join, posix, win32 } from 'node:path'
 import type { AgentQuota } from '@shared/usage'
 import { withEnvChanges, type EnvChanges } from '../agent-config/api-keys'
@@ -32,8 +33,6 @@ import type { AgentCheck } from '../diagnostics'
  * 4,9 s le 2026-10-20, docs/acp.md). Un agent pas connecté n'arrive jamais aux chiffres.
  */
 export const READ_TIMEOUT_MS = 20_000
-/** Après un échec, pas de lecture automatique pendant ce temps (une relecture demandée passe). */
-export const PAUSE_AFTER_FAILURE_MS = 12 * 3_600_000
 /** Agent prêt et quota encore inconnu : nouvel essai, mais pas plus souvent que cela (fiche 205). */
 export const RETRY_WHEN_READY_MS = 15 * 60_000
 
@@ -64,7 +63,6 @@ export interface QuotaReaderOptions {
   /** Supprime ces sessions de l'historique de l'agent, lancé dans ce dossier. */
   deleteSessions: (profile: AgentProfile, cwd: string, sessionIds: string[]) => Promise<unknown>
   timeoutMs?: number
-  pauseMs?: number
   retryWhenReadyMs?: number
   now?: () => number
 }
@@ -98,32 +96,26 @@ export class QuotaReader {
 
   /**
    * L'app quitte (fiche 208) : la lecture en cours s'arrête (son pseudo-terminal est fermé), rien
-   * n'est plus écrit ni lancé après (ni suppression de sessions, ni pause), plus de lecture ensuite.
+   * n'est plus écrit ni lancé après (ni suppression de sessions), plus de lecture ensuite.
    */
   stop(): void {
     this.stopped.abort()
   }
 
-  /**
-   * Relit le quota des agents installés qui savent le lire (ou de celui-là seulement).
-   * `automatic` (lecture du lancement) : sautée tant qu'un échec récent la suspend.
-   */
-  async refresh(profileId?: string, { automatic = false } = {}): Promise<void> {
+  /** Relit, sur demande, le quota des agents installés qui savent le lire (ou de celui-là). */
+  async refresh(profileId?: string): Promise<void> {
     if (this.stopped.signal.aborted) return
     const profiles = this.options.profiles.filter(
       (p): p is QuotaProfile =>
-        !!p.quotaSource &&
-        (!profileId || p.id === profileId) &&
-        this.options.isAvailable(p) &&
-        !(automatic && this.paused(p))
+        !!p.quotaSource && (!profileId || p.id === profileId) && this.options.isAvailable(p)
     )
     await Promise.all(profiles.map((profile) => this.readOnce(profile)))
   }
 
   /**
    * L'agent vient de se montrer prêt (session ouverte, essai de connexion réussi) : son quota, s'il
-   * est encore inconnu dans ce lancement, est relu malgré la pause d'un échec précédent — la
-   * connexion a pu changer entre-temps (fiche 205). Au plus une lecture par `RETRY_WHEN_READY_MS`.
+   * est encore inconnu dans ce lancement, est lu (fiche 205) — seule lecture qui ne soit pas
+   * demandée (fiche 242). Au plus une lecture par `RETRY_WHEN_READY_MS`.
    */
   async agentReady(profileId: string): Promise<void> {
     const profile = this.options.profiles.find((p) => p.id === profileId)
@@ -137,33 +129,6 @@ export class QuotaReader {
     }
     log.info(`Quota de ${profile.label} : agent prêt, quota encore inconnu, nouvelle lecture`)
     await this.readOnce(profile as QuotaProfile)
-  }
-
-  /** Fichier de suspension d'un agent : `{ "until": <ms> }`. */
-  private pauseFile(profile: AgentProfile): string {
-    return join(this.options.statusDir, `${profile.id}.pause.json`)
-  }
-
-  private paused(profile: AgentProfile): boolean {
-    const now = (this.options.now ?? Date.now)()
-    try {
-      const raw = JSON.parse(readFileSync(this.pauseFile(profile), 'utf8')) as unknown
-      const until = (raw as { until?: unknown } | null)?.until
-      if (typeof until !== 'number' || !Number.isFinite(until) || until <= now) return false
-      log.info(`Quota de ${profile.label} : lecture du lancement suspendue après un échec récent`)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  private setPause(profile: AgentProfile, until: number | undefined): void {
-    try {
-      if (until === undefined) rmSync(this.pauseFile(profile), { force: true })
-      else writeFileSync(this.pauseFile(profile), JSON.stringify({ until }))
-    } catch (error) {
-      log.warn(`Quota de ${profile.label} : suspension non enregistrée :`, error)
-    }
   }
 
   private readOnce(profile: QuotaProfile): Promise<void> {
@@ -196,7 +161,7 @@ export class QuotaReader {
     } catch (error) {
       reading = { leftovers: [], problem: errorMessage(error) }
     }
-    // L'app quitte : plus rien (sessions laissées, pause) — ni agent lancé, ni écriture.
+    // L'app quitte : plus rien (sessions laissées) — ni agent lancé, ni écriture.
     if (this.stopped.signal.aborted) {
       log.info(`Quota de ${profile.label} : lecture abandonnée, l'app quitte`)
       return
@@ -216,10 +181,8 @@ export class QuotaReader {
       log.warn(
         `Quota de ${profile.label} non lu (${ms} ms) : ${reading.problem ?? 'raison inconnue'}`
       )
-      this.setPause(profile, now() + (options.pauseMs ?? PAUSE_AFTER_FAILURE_MS))
       return
     }
-    this.setPause(profile, undefined)
     const { limit, used } = reading.quota
     const currency = profile.quotaSource.currency
     log.info(`Quota de ${profile.label} : ${used} / ${limit ?? 'illimité'} ${currency} (${ms} ms)`)

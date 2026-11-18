@@ -1479,6 +1479,7 @@ export const SUITES = [
       `${C}composer/BlockerPanel.tsx`,
       'src/shared/onboarding.ts',
       'src/main/onboarding/',
+      'src/main/conversations/agentless.ts',
       'src/main/agent/short-lived-agent.ts',
       'src/main/agent/session-blocker.ts',
       'src/main/agent/turn-auth.ts'

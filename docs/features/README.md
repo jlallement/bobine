@@ -245,6 +245,7 @@ chaque création ou changement de statut.
 | [239](239-essai-premier-lancement-windows-arm64.md) | Essai du premier lancement : tests fragiles sur le runner Windows arm64 (beta.7) — ouverture de la session attendue sur un évènement, plus 1 s de `vi.waitFor` ; un essai laissé par un test en échec est arrêté et attendu avant le test suivant (sa session tombait dans le suivant) ; test seul, pas l'app | fait | P2 |
 | [240](240-filles-en-worktree-sans-modifications-non-commitees.md) | Filles en worktree (rôles, `/split`, Tâches proposées, Lancer en parallèle) : le travail non commité de la mère n'y est pas ; avertir et proposer « Committer d'abord » avant le lancement, avis en lecture seule sans worktree (recette POC du 2026-11-17, D1) | à faire | P1 |
 | [241](241-outils-ios-apres-creation-du-projet.md) | Outils iOS absents d'une conversation ouverte avant le projet Xcode ; le remède « Redémarrer l'agent » n'est que dans le menu ⚙ (recette POC du 2026-11-17, D2) | à faire | P1 |
+| [242](242-aucun-agent-lance-sans-etre-choisi.md) | Aucun agent lancé ni quota lu sans être choisi : plus de lecture du quota au lancement (seulement pour l'agent qui sert ou sur demande, ADR-0054) ; accueil en essai sans dossier imposé ; profil jetable sur les vrais agents : ni quota ni session du diagnostic d'office dans `~/.bob` (recette POC du 2026-11-17, D17) | fait | P1 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

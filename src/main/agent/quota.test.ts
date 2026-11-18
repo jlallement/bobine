@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,7 +9,6 @@ import type { AgentProfile } from './profiles'
 import type { Pty, SpawnPty } from '../terminal/terminal-manager'
 import { bobStatusQuota } from './bob-status'
 import {
-  PAUSE_AFTER_FAILURE_MS,
   QuotaReader,
   quotaAfterCheck,
   quotaOnReady,
@@ -184,7 +183,7 @@ function bobReader(statusDir: string, spawnPty: SpawnPty, clock: { now: number }
   return new QuotaReader(options)
 }
 
-describe('quota : un seul dossier, pas d’attente à chaque lancement (D6, D11)', () => {
+describe('quota : un seul dossier, pas d’attente au lancement (D6, D11)', () => {
   it('dossier stable, propre à Bobine, hors des données de l’app', () => {
     expect(quotaStatusDir('/Users/moi', {}, 'darwin')).toBe(
       '/Users/moi/Library/Caches/Bobine/agent-status'
@@ -204,65 +203,66 @@ describe('quota : un seul dossier, pas d’attente à chaque lancement (D6, D11)
     const fake = fakeBob({ connected: true })
     const clock = { now: 1000 }
     // Deux lancements, deux profils (données de l'app différentes) : un seul dossier de lecture.
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
+    await bobReader(statusDir, fake.spawnPty, clock).agentReady('bob')
+    await bobReader(statusDir, fake.spawnPty, clock).agentReady('bob')
     expect(fake.runs).toHaveLength(2)
     expect(new Set(fake.runs.map((r) => r.cwd))).toEqual(new Set([join(statusDir, 'bob')]))
     expect(fake.runs[0]?.args).toContain('--trust')
   })
 
-  it('Bob pas connecté : un essai court, puis plus de lecture au lancement pendant la pause', async () => {
-    const statusDir = mkdtempSync(join(tmpdir(), 'quota-pause-'))
+  it('Bob pas connecté : un essai court, quota inconnu, rien d’autre écrit (fiche 242)', async () => {
+    const statusDir = mkdtempSync(join(tmpdir(), 'quota-echec-'))
     const state = { connected: false }
     const fake = fakeBob(state)
     const clock = { now: 1000 }
     const first = bobReader(statusDir, fake.spawnPty, clock)
     const started = Date.now()
-    await first.refresh(undefined, { automatic: true })
+    await first.refresh('bob')
     expect(Date.now() - started).toBeLessThan(5000)
     expect(first.list()).toEqual([])
     expect(fake.runs).toHaveLength(1)
-    expect(existsSync(join(statusDir, 'bob.pause.json'))).toBe(true)
+    // Plus de pause de 12 h (D11) : aucune lecture ne se fait d'office au lancement.
+    expect(readdirSync(statusDir)).toEqual(['bob'])
 
-    // Lancements suivants (nouvel objet, même machine) : rien de lancé pendant la pause.
-    clock.now += 60_000
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    expect(fake.runs).toHaveLength(1)
-
-    // Relecture demandée : elle passe ; connecté, la pause est levée.
+    // Relecture demandée : elle passe ; connecté, le quota est lu.
     state.connected = true
-    const asked = bobReader(statusDir, fake.spawnPty, clock)
-    await asked.refresh('bob')
+    await first.refresh('bob')
     expect(fake.runs).toHaveLength(2)
-    expect(asked.list()).toMatchObject([{ limit: 300, used: 12.34 }])
-    expect(existsSync(join(statusDir, 'bob.pause.json'))).toBe(false)
+    expect(first.list()).toMatchObject([{ limit: 300, used: 12.34 }])
+  })
+})
+
+describe('quota : lu pour l’agent qui sert, jamais d’office (fiche 242, D17)', () => {
+  it('rien n’est lu tant qu’aucun agent ne s’est montré prêt ni qu’on ne l’a demandé', async () => {
+    const read = vi.fn(async () => ({ leftovers: [], quota: { limit: 50, used: 1 } }))
+    const { quota } = reader([profile('bob', source(read)), profile('opencode')])
+    // OpenCode est l'agent utilisé : prêt, il n'a pas de quota ; Bob, seulement installé, n'est
+    // pas lu (recette du 2026-11-17 : session créée puis supprimée dans le vrai `~/.bob`).
+    await quota.agentReady('opencode')
+    expect(read).not.toHaveBeenCalled()
+    await quota.agentReady('bob')
+    expect(read).toHaveBeenCalledTimes(1)
   })
 
-  it('pause finie : nouvel essai au lancement ; fichier de pause abîmé : ignoré', async () => {
+  it('fichier de pause d’une version précédente : ignoré, l’agent prêt est lu', async () => {
     const statusDir = mkdtempSync(join(tmpdir(), 'quota-pause-'))
-    const fake = fakeBob({ connected: false })
-    const clock = { now: 1000 }
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    clock.now += PAUSE_AFTER_FAILURE_MS + 1
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    expect(fake.runs).toHaveLength(2)
-
-    for (const bad of ['{ abîmé', '{"until":"demain"}', 'null', '[]']) {
-      writeFileSync(join(statusDir, 'bob.pause.json'), bad)
-      await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    }
-    expect(fake.runs).toHaveLength(6)
+    writeFileSync(join(statusDir, 'bob.pause.json'), JSON.stringify({ until: 9e15 }))
+    const fake = fakeBob({ connected: true })
+    const quota = bobReader(statusDir, fake.spawnPty, { now: 1000 })
+    await quota.agentReady('bob')
+    expect(fake.runs).toHaveLength(1)
+    expect(quota.list()).toMatchObject([{ limit: 300 }])
   })
 })
 
 describe('quota : relu quand l’agent se montre prêt (fiche 205, recette 0.11.1)', () => {
-  it('lancé déconnecté, connecté ensuite par SSO : le plafond est lu à la session suivante', async () => {
+  it('prêt mais pas encore connecté, connecté ensuite par SSO : lu à la session suivante', async () => {
     const statusDir = mkdtempSync(join(tmpdir(), 'quota-pret-'))
     const state = { connected: false }
     const fake = fakeBob(state)
     const clock = { now: 1000 }
     const quota = bobReader(statusDir, fake.spawnPty, clock)
-    await quota.refresh(undefined, { automatic: true })
+    await quota.agentReady('bob')
     expect(fake.runs).toHaveLength(1)
     expect(quota.list()).toEqual([])
 
@@ -271,13 +271,12 @@ describe('quota : relu quand l’agent se montre prêt (fiche 205, recette 0.11.
     await quota.agentReady('bob')
     expect(fake.runs).toHaveLength(1)
 
-    // Connexion par SSO, puis une session s'ouvre : relu malgré la pause du lancement.
+    // Connexion par SSO, puis une session s'ouvre : relu.
     state.connected = true
     clock.now += RETRY_WHEN_READY_MS
     await quota.agentReady('bob')
     expect(fake.runs).toHaveLength(2)
     expect(quota.list()).toMatchObject([{ limit: 300, used: 12.34 }])
-    expect(existsSync(join(statusDir, 'bob.pause.json'))).toBe(false)
 
     // Quota connu : les sessions suivantes ne relancent rien.
     clock.now += 2 * RETRY_WHEN_READY_MS
@@ -285,22 +284,12 @@ describe('quota : relu quand l’agent se montre prêt (fiche 205, recette 0.11.
     expect(fake.runs).toHaveLength(2)
   })
 
-  it('pause d’un lancement précédent : l’agent prêt la lève ; agent inconnu ou absent : rien', async () => {
-    const statusDir = mkdtempSync(join(tmpdir(), 'quota-pret-'))
-    const state = { connected: false }
-    const fake = fakeBob(state)
-    const clock = { now: 1000 }
-    await bobReader(statusDir, fake.spawnPty, clock).refresh(undefined, { automatic: true })
-    state.connected = true
-    clock.now += 60_000
-    const next = bobReader(statusDir, fake.spawnPty, clock)
-    await next.refresh(undefined, { automatic: true })
-    expect(fake.runs).toHaveLength(1)
+  it('agent inconnu, sans quota ou absent : rien', async () => {
+    const fake = fakeBob({ connected: true })
+    const next = bobReader(mkdtempSync(join(tmpdir(), 'quota-pret-')), fake.spawnPty, { now: 1 })
     await next.agentReady('opencode')
-    expect(fake.runs).toHaveLength(1)
-    await next.agentReady('bob')
-    expect(fake.runs).toHaveLength(2)
-    expect(next.list()).toMatchObject([{ limit: 300 }])
+    await next.agentReady('inconnu')
+    expect(fake.runs).toHaveLength(0)
 
     const { quota } = reader(
       [
@@ -392,8 +381,6 @@ describe('quota : l’app quitte pendant une lecture (fiche 208)', () => {
     expect(killed).toBe(1)
     expect(deleteSessions).not.toHaveBeenCalled()
     expect(listener).not.toHaveBeenCalled()
-    // Pas de pause posée : la lecture n'a pas échoué, elle a été arrêtée.
-    expect(existsSync(join(statusDir, 'bob.pause.json'))).toBe(false)
     // Plus de lecture ensuite, ni demandée ni « agent prêt ».
     await quota.refresh('bob')
     await quota.agentReady('bob')

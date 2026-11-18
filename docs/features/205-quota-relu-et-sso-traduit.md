@@ -67,3 +67,8 @@ Recette réelle de la 0.11.1 avec IBM Bob 2.0.9, deux défauts :
     le coût est un test en mémoire tant que le quota est connu ; inconnu, au plus une lecture par
     15 min. Une lecture ratée sur ce chemin repose la pause de 12 h pour les lancements suivants,
     sans bloquer ce chemin.
+
+- 2026-11-18 (fiche 242, ADR-0054) : plus de lecture du quota au lancement ni de pause après un
+  échec : le quota est lu quand l'agent sert (prêt, essai) ou sur « Actualiser » ; jamais en
+  profil jetable sur le vrai `~/.bob`. L'e2e `quota` ne pose plus de pause (cas « agent installé
+  mais pas utilisé » à la place).

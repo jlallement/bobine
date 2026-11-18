@@ -114,6 +114,19 @@ export interface FreshStart {
   openTemporary: (freshAgents: boolean) => void
 }
 
+/**
+ * Profil jetable dont les agents voient pourtant le vrai dossier personnel (fiche 242) : profil
+ * temporaire ou dossier de données imposé (`pnpm pilote`), sans `--agents-neufs` ni dossier
+ * personnel d'essai (`BOBINE_CONFIG_HOME`). Bobine n'y fait rien d'office dans les données réelles
+ * des agents (quota, session du diagnostic) : seulement ce que l'utilisateur demande.
+ */
+export function touchesRealAgents(
+  launch: Pick<FreshStart, 'isolated' | 'freshAgents'>,
+  env: NodeJS.ProcessEnv
+): boolean {
+  return launch.isolated && !launch.freshAgents && env['BOBINE_CONFIG_HOME'] === undefined
+}
+
 const defaultIo = (): FreshStartIo => ({
   spawn: (command, args, options) => nodeSpawn(command, args, options),
   spawnSync: (command, args, options) => nodeSpawnSync(command, args, options),

@@ -98,7 +98,7 @@ import * as ds from './discussion-space'
 import { answerTurnLimit, type TurnLimitAnswer } from './turn-limit'
 import { agentsToStop, releaseAgent } from './live-agents'
 import type { ApiKeyStore } from '../agent-config/api-keys'
-import type { AgentCheck } from '../diagnostics'
+import type { AgentCheck, AgentCheckRequest } from '../diagnostics'
 import type { QuickEntryStatus } from '@shared/quick-entry'
 import { t } from 'i18next'
 import type { Message } from '@shared/i18n/message'
@@ -702,7 +702,7 @@ export class ConversationManager {
    * Essai d'un agent pour le diagnostic (fiche 061), hors de toute conversation, dans le dossier de
    * la conversation affichée (`agent-check.ts`).
    */
-  async checkAgent(profileId: string, options: { trySession?: boolean } = {}): Promise<AgentCheck> {
+  async checkAgent(profileId: string, options: AgentCheckRequest = {}): Promise<AgentCheck> {
     const workspace = this.get(this.activeId).record.workspace || this.options.neutralFolder
     const { settings, options: app } = this
     const env = { settings, pathEnv: app.pathEnv(), clientVersion: app.clientVersion }

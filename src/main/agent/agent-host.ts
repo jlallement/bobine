@@ -48,7 +48,7 @@ import { launchAgent, type AgentProcess } from './agent-process'
 import { AppToolsBridge } from './app-tools-bridge'
 import { announcementOf, type AgentAnnouncement } from './capabilities'
 import { AgentIncompatible, refuseIncompatible } from './version-check'
-import { applyInitialSettings, openWithStartMode } from './initial-controls'
+import { applyInitialSettings, openWithStartMode, opensSession } from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
 import { askReadOnly, automaticAnswer, hostRules, withKnownLocations } from './permission-answers'
@@ -167,9 +167,10 @@ export interface AgentHostOptions {
   onAnnounced?: (announcement: AgentAnnouncement) => void
   /**
    * Session d'essai du diagnostic (fiche 061) : `if-deletable`, pas de session si l'agent ne sait
-   * pas la supprimer ensuite (elle resterait dans son historique) — prêt, sans session.
+   * pas la supprimer ensuite (elle resterait dans son historique) — prêt, sans session ; `never`
+   * (profil jetable sur les vrais agents, fiche 242) : jamais de session, l'agent est initialisé.
    */
-  newSession?: 'always' | 'if-deletable'
+  newSession?: 'always' | 'if-deletable' | 'never'
   /** Relit la session d'un sous-agent (profil `subagentReplay`) : suit ceux en arrière-plan (fiche 122). */
   loadSubagentWork?: (sessionId: string) => Promise<TranscriptItem[]>
   /** Retour du réseau et sortie de veille : un tour en attente réessaie tout de suite (fiche 142). */
@@ -969,11 +970,7 @@ export class AgentHost {
     try {
       const init = await this.initializeRequest(connection, failed)
       this.readAnnouncement(init)
-      if (
-        this.options.newSession === 'if-deletable' &&
-        !this.options.reopen &&
-        !this.support.delete
-      ) {
+      if (!this.options.reopen && !opensSession(this.options.newSession, this.support.delete)) {
         this.setStatus('ready')
         return
       }
