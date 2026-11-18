@@ -4309,10 +4309,13 @@ export type FrResources = {
       readonly opinionMany_one: 'Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
       readonly opinionMany_many: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
       readonly opinionMany_other: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
-      readonly opinionSees_one: 'voit la modification non commitée'
-      readonly opinionSees_many: 'voient les {{count}} modifications non commitées'
-      readonly opinionSees_other: 'voient les {{count}} modifications non commitées'
       readonly work: 'Plutôt les faire travailler…'
+      readonly opinionSeesOne_one: 'voit la modification non commitée'
+      readonly opinionSeesOne_many: 'voit les {{count}} modifications non commitées'
+      readonly opinionSeesOne_other: 'voit les {{count}} modifications non commitées'
+      readonly opinionSeesMany_one: 'voient la modification non commitée'
+      readonly opinionSeesMany_many: 'voient les {{count}} modifications non commitées'
+      readonly opinionSeesMany_other: 'voient les {{count}} modifications non commitées'
     }
     readonly state: {
       readonly running: 'au travail'

@@ -4290,9 +4290,11 @@
       "opinionOne": "Will go to <strong>{{label}}</strong>, for an <strong>opinion</strong>, in a child conversation",
       "opinionMany_one": "Will go to <strong>{{count}} role</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
       "opinionMany_other": "Will go to <strong>{{count}} roles</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
-      "opinionSees_one": "sees the uncommitted change",
-      "opinionSees_other": "see the {{count}} uncommitted changes",
-      "work": "Have them work instead…"
+      "work": "Have them work instead…",
+      "opinionSeesOne_one": "sees the uncommitted change",
+      "opinionSeesOne_other": "sees the {{count}} uncommitted changes",
+      "opinionSeesMany_one": "see the uncommitted change",
+      "opinionSeesMany_other": "see the {{count}} uncommitted changes"
     },
     "state": {
       "running": "working",

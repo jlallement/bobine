@@ -646,7 +646,11 @@ function ComposerBelow({
         opinion={
           roleView.opinion && {
             sees: roleView.opinion.sees,
-            onWork: () => roleCompose.choose(undefined)
+            onWork: () => {
+              roleCompose.choose(undefined)
+              // Le bouton disparaît avec la ligne : la saisie reprend le focus (Entrée envoie).
+              focusInput()
+            }
           }
         }
       />
@@ -667,7 +671,11 @@ function ComposerBelow({
             roleCompose.choose('anyway')
             submit()
           }}
-          onOpinion={() => roleCompose.choose('readOnly')}
+          onOpinion={() => {
+            roleCompose.choose('readOnly')
+            // Le bouton disparaît avec le bloc : sans cela, Entrée n'atteint plus la saisie.
+            focusInput()
+          }}
         />
       )}
       <ComposerContext

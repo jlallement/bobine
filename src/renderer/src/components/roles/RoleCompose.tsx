@@ -91,7 +91,12 @@ export function RoleDestination({
         t('roleWork.destination.sameFolder'),
         readOnly === 'requested' ? t('roleWork.readOnlyRequested') : t('roleWork.readOnly'),
         opinion.sees > 0
-          ? t('roleWork.destination.opinionSees', { count: opinion.sees })
+          ? t(
+              single
+                ? 'roleWork.destination.opinionSeesOne'
+                : 'roleWork.destination.opinionSeesMany',
+              { count: opinion.sees }
+            )
           : undefined
       ].filter(Boolean)
     : single

@@ -138,7 +138,6 @@ export function LaunchDirtyCard({
         <div className="launch-dirty-opinion">
           <Eye size={13} aria-hidden />
           <span>{t('launchDirty.opinionLead')}</span>
-          <span className="grow" />
           <button
             type="button"
             className="btn small"

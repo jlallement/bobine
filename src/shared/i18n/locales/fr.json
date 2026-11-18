@@ -4474,10 +4474,13 @@
       "opinionMany_one": "Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
       "opinionMany_many": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
       "opinionMany_other": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
-      "opinionSees_one": "voit la modification non commitée",
-      "opinionSees_many": "voient les {{count}} modifications non commitées",
-      "opinionSees_other": "voient les {{count}} modifications non commitées",
-      "work": "Plutôt les faire travailler…"
+      "work": "Plutôt les faire travailler…",
+      "opinionSeesOne_one": "voit la modification non commitée",
+      "opinionSeesOne_many": "voit les {{count}} modifications non commitées",
+      "opinionSeesOne_other": "voit les {{count}} modifications non commitées",
+      "opinionSeesMany_one": "voient la modification non commitée",
+      "opinionSeesMany_many": "voient les {{count}} modifications non commitées",
+      "opinionSeesMany_other": "voient les {{count}} modifications non commitées"
     },
     "state": {
       "running": "au travail",

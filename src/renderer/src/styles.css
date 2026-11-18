@@ -9745,13 +9745,11 @@ html.about-page body {
   justify-content: flex-start;
   align-items: center;
 }
-.launch-dirty .main-dirty-actions .grow,
-.launch-dirty-opinion .grow {
+.launch-dirty .main-dirty-actions .grow {
   flex: 1;
 }
 .launch-dirty-opinion {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 6px 0 0 19px;
@@ -9761,6 +9759,15 @@ html.about-page body {
 .launch-dirty-opinion svg {
   flex-shrink: 0;
   color: var(--muted);
+}
+/* Le texte prend la place et passe à la ligne ; l'œil et le bouton restent sur la même ligne. */
+.launch-dirty-opinion > span {
+  flex: 1;
+  min-width: 0;
+}
+.launch-dirty-opinion .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .launch-dirty .field-error {
   margin: 0;

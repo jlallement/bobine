@@ -212,3 +212,9 @@ puis « Lancer ». Les traces réelles ci-dessus servent de référence.
   (son choix). ADR-0055, refus du main sans choix, avertissement et choix sur les trois chemins,
   avis en lecture seule, rappel dans la mère, avertissement de `start_child` ; tests unitaires et
   suite e2e `filles-non-commite`.
+- 2026-11-18 — Campagne `e2e --changed` sur c671feb : 208 sur 210 ; `filles-non-commite` échoue
+  (clair et sombre) sur un vrai défaut : après « Demander un avis en lecture seule », le bouton
+  disparaît avec le focus, et Entrée n'envoie rien. Corrigé (focus rendu à la saisie, aussi pour
+  « Plutôt les faire travailler… »), avec un essai unitaire qui clique puis tape Entrée sur
+  l'élément qui a le focus (il échoue sans le correctif) ; ligne « Juste un avis ? » sur une ligne
+  avec son bouton ; accord « voit » / « voient » selon le nombre de rôles.

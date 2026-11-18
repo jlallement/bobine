@@ -183,6 +183,43 @@ describe('`@rôle` et non commité de la mère (fiche 240)', () => {
     )
   })
 
+  it('choix au clic : la saisie reprend le focus, Entrée envoie (e2e de la fiche 240)', async () => {
+    const { type, send, input } = setup()
+    await type('@ux-ui-expert @back-architect votre avis sur le plan')
+    // Vrai geste : le bouton a le focus quand on le clique, puis disparaît avec le bloc.
+    const opinion = screen.getByTestId('launch-dirty-opinion')
+    opinion.focus()
+    fireEvent.click(opinion)
+    expect(document.activeElement).toBe(input)
+    await act(
+      async () => void fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Enter' })
+    )
+    expect(send).toHaveBeenCalledWith(
+      ['ux-ui-expert', 'back-architect'],
+      'votre avis sur le plan',
+      'readOnly'
+    )
+  })
+
+  it('« Plutôt les faire travailler… » rend aussi le focus à la saisie', async () => {
+    const { type, input } = setup()
+    await type('@ux-ui-expert votre avis sur le plan')
+    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
+    const work = screen.getByTestId('role-destination-work')
+    work.focus()
+    fireEvent.click(work)
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('l’avis : l’accord suit le nombre de rôles, et celui des fichiers', async () => {
+    const { type } = setup()
+    await type('@ux-ui-expert votre avis')
+    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
+    expect(plain(screen.getByTestId('role-destination').textContent)).toContain(
+      'voit les 17 modifications non commitées'
+    )
+  })
+
   it('un rôle en lecture seule : ni lecture du dossier, ni avertissement, il part', async () => {
     const { type, enter, send } = setup()
     await type('@security-expert relis le diff')
