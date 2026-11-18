@@ -307,6 +307,9 @@ export interface QueuedMessage {
 
 /** `success` : action réussie (fiche 194, variante `.notice-success` du composant partagé). */
 export type NoticeLevel = 'info' | 'warning' | 'error' | 'success'
+
+/** Où en est une famille d'outils de l'app apparue en cours de conversation (fiche 241). */
+export type AppToolsState = 'pending' | 'live' | 'session'
 /** Lien à la suite d'un avis (fiche 198) : ouvre une section des Réglages. */
 export type NoticeLink = 'diagnostics'
 
@@ -519,6 +522,12 @@ export type AgentEvent =
       title?: string
       link?: NoticeLink
     }
+  /**
+   * Famille d'outils de l'app qui suit le dossier (projet Xcode, Android — fiche 241) : devenue
+   * utile, l'agent ne l'a pas (`pending` : à redémarrer), l'a relue en cours de session (`live`),
+   * ou l'a reçue à l'ouverture de sa session (`session`).
+   */
+  | { type: 'app-tools'; family: string; state: AppToolsState }
   /** L'agent demande l'autorisation d'exécuter un outil ; on attend `agent:respondPermission`. */
   | {
       type: 'permission-request'

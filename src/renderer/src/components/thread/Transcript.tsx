@@ -9,6 +9,7 @@ import {
   Pencil,
   RefreshCw,
   RotateCcw,
+  Smartphone,
   CircleExclamationPoint,
   CircleCheck,
   Info,
@@ -67,6 +68,7 @@ import { FindQueryContext } from './CappedText'
 import type { ConversationSummary, NoticeLink as NoticeLinkTarget } from '@shared/agent'
 import { requestSettings } from '../../open-settings'
 import { MemoryProposalCard } from './MemoryProposalCard'
+import { NoticeRestart } from './NoticeRestart'
 import { saveAsRoleAction } from '../../roles/save-as-role'
 
 const NOTICE_ICONS = {
@@ -686,13 +688,17 @@ const Item = memo(function Item({
         </div>
       )
     case 'notice': {
-      const Icon = NOTICE_ICONS[item.level]
+      // Outils apparus avec un projet (fiche 241) : l'icône d'un appareil.
+      const Icon = item.appTools ? Smartphone : NOTICE_ICONS[item.level]
       const text = noticeText(item)
       const block = !!item.title || text.includes('\n')
       return (
         <div
           className={`notice notice-${item.level}${block ? ' notice-block' : ''}${item.link ? ' notice-linked' : ''}`}
-          data-testid={item.title ? 'notice-report' : undefined}
+          data-testid={
+            item.title ? 'notice-report' : item.appTools ? 'notice-app-tools' : undefined
+          }
+          data-family={item.appTools}
         >
           {item.level !== 'info' && <Icon size={15} />}
           {item.title ? (
@@ -714,6 +720,7 @@ const Item = memo(function Item({
               {t('errorBoundary.showLog')}
             </button>
           )}
+          {item.action === 'restart-agent' && <NoticeRestart />}
         </div>
       )
     }

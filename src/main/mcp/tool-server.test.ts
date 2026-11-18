@@ -287,3 +287,114 @@ describe('serveur MCP : appels qui ne rendent pas la main (fiche 195)', () => {
     expect(response.status).toBe(500)
   })
 })
+
+describe('serveur MCP : liste d’outils qui change (fiche 241)', () => {
+  const tool = (name: string) => ({
+    definition: { name, description: name, inputSchema: { type: 'object' } },
+    autoAllow: true,
+    call: async () => ({ content: [] })
+  })
+
+  /** Flux SSE ouvert comme OpenCode 2.3.0 (`GET`, `accept: text/event-stream`) : texte reçu. */
+  async function openStream(url: string) {
+    const stop = new AbortController()
+    const response = await fetch(url, {
+      headers: { accept: 'text/event-stream' },
+      signal: stop.signal
+    })
+    const body = response.body
+    if (!body) throw new Error('flux attendu')
+    const reader = body.getReader()
+    let received = ''
+    const reading = (async () => {
+      try {
+        for (;;) {
+          const { value, done } = await reader.read()
+          if (done) return
+          received += new TextDecoder().decode(value)
+        }
+      } catch {
+        // Flux coupé par l'essai.
+      }
+    })()
+    return {
+      response,
+      received: () => received,
+      close: async () => {
+        stop.abort()
+        await reading
+      }
+    }
+  }
+
+  async function start(onListed?: (names: string[]) => void) {
+    const server = new AppToolServer()
+    servers.push(server)
+    await server.start()
+    const endpoint = server.register([tool('ask_user')], {}, onListed)
+    if (!endpoint?.update) throw new Error('point d’accès attendu')
+    const post = (body: unknown) =>
+      fetch(endpoint.url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    return { endpoint, update: endpoint.update, post }
+  }
+
+  it('annonce `listChanged` ; un GET sans `text/event-stream`, ou venu d’une page, est refusé', async () => {
+    const { endpoint, post } = await start()
+    const init = (await (
+      await post({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
+    ).json()) as { result: { capabilities: unknown } }
+    expect(init.result.capabilities).toEqual({ tools: { listChanged: true } })
+    expect((await fetch(endpoint.url)).status).toBe(405)
+    const fromPage = await fetch(endpoint.url, {
+      headers: { accept: 'text/event-stream', origin: 'https://exemple.com' }
+    })
+    expect(fromPage.status).toBe(404)
+  })
+
+  it('agent qui suit le flux : notification envoyée, liste relue, nouveaux outils rendus', async () => {
+    const listed = vi.fn()
+    const { endpoint, update, post } = await start(listed)
+    const stream = await openStream(endpoint.url)
+    expect(stream.response.headers.get('content-type')).toBe('text/event-stream')
+    const updating = update([tool('ask_user'), tool('ios_build')], 5_000)
+    await vi.waitFor(() => expect(stream.received()).toContain('notifications/tools/list_changed'))
+    const list = (await (await post({ jsonrpc: '2.0', id: 2, method: 'tools/list' })).json()) as {
+      result: { tools: { name: string }[] }
+    }
+    expect(list.result.tools.map((t) => t.name)).toEqual(['ask_user', 'ios_build'])
+    expect(await updating).toBe('listed')
+    expect(listed).toHaveBeenLastCalledWith(['ask_user', 'ios_build'])
+    await stream.close()
+  })
+
+  it('flux ouvert mais liste pas relue : `ignored` au bout de l’attente', async () => {
+    const { endpoint, update } = await start()
+    const stream = await openStream(endpoint.url)
+    await vi.waitFor(() => expect(stream.received()).toContain(': bobine'))
+    expect(await update([tool('ask_user'), tool('ios_build')], 50)).toBe('ignored')
+    await stream.close()
+  })
+
+  it('aucun flux ouvert : `no-stream` aussitôt, la liste servie change quand même', async () => {
+    const { update, post } = await start()
+    expect(await update([tool('ask_user'), tool('ios_build')], 60_000)).toBe('no-stream')
+    const list = (await (await post({ jsonrpc: '2.0', id: 2, method: 'tools/list' })).json()) as {
+      result: { tools: { name: string }[] }
+    }
+    expect(list.result.tools.map((t) => t.name)).toEqual(['ask_user', 'ios_build'])
+  })
+
+  it('session révoquée pendant l’attente : `ignored`, flux fermé', async () => {
+    const { endpoint, update } = await start()
+    const stream = await openStream(endpoint.url)
+    await vi.waitFor(() => expect(stream.received()).toContain(': bobine'))
+    const updating = update([tool('ios_build')], 60_000)
+    endpoint.dispose()
+    expect(await updating).toBe('ignored')
+    await stream.close()
+  })
+})

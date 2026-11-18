@@ -32,6 +32,7 @@ import { DEFAULT_MAX_STEPS, playWithinLimit, StepCounters } from './limite-etape
 import { describeSettings, say, sayAll, type MockLanguage } from './langue.mts'
 import { installedModes, type InstalledModesOptions } from './modes-installes.mts'
 import { waitWhileLocked } from './verrou-fin-de-tour.mts'
+import { followToolList } from './suit-outils.mts'
 
 export interface MockAgentOptions {
   /** Scénario joué par défaut à chaque prompt. */
@@ -72,6 +73,8 @@ export interface MockAgentOptions {
   lateReplayMs?: number
   /** N'accepte que du texte et des liens (ni images, ni fichiers embarqués). */
   textOnly?: boolean
+  /** Suit la liste d'outils du serveur MCP du client (`--suit-outils`, fiche 241). */
+  followTools?: boolean
   /**
    * Annonce toujours la méthode SSO, comme Bob (`authMethods: ["sso"]`), quel que soit le
    * scénario de départ (grille de conformité, fiche 200).
@@ -502,6 +505,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         mcpServers: params.mcpServers
       }
       sessions.set(session.sessionId, session)
+      if (options.followTools) followToolList(params.mcpServers)
       announceCommands(client, session.sessionId)
       return { sessionId: session.sessionId, ...controls(session) }
     })

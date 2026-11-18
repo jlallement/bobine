@@ -6,6 +6,11 @@
  * 127.0.0.1 seulement ; chaque session d'agent a son propre chemin secret (`/mcp/<jeton>`), qui
  * désigne la session d'agent et ses outils. Les requêtes venant d'une page web (en-tête
  * `Origin`) sont refusées.
+ *
+ * Liste d'outils qui change (fiche 241) : un `GET` qui accepte `text/event-stream` ouvre le flux
+ * SSE du serveur, par lequel part `notifications/tools/list_changed` quand la liste de la session
+ * est remplacée (`update`). L'agent qui le suit relit la liste (`tools/list`) : vu sur OpenCode
+ * 2.3.0 ; un agent qui n'ouvre pas le flux, ou n'en tient pas compte, garde la sienne.
  */
 import { randomBytes } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
@@ -20,6 +25,24 @@ import { messageOf } from '@shared/errors'
 export interface ToolEndpoint {
   url: string
   dispose: () => void
+  /**
+   * Remplace la liste de la session et le dit à l'agent (fiche 241) : `listed` s'il l'a relue dans
+   * `waitMs`, `ignored` sinon, `no-stream` s'il n'a ouvert aucun flux (rien n'a pu lui être dit).
+   */
+  update?: (tools: readonly AppTool[], waitMs: number) => Promise<ToolListUpdate>
+}
+
+export type ToolListUpdate = 'listed' | 'ignored' | 'no-stream'
+
+/** Session d'agent servie : ses outils, ses flux SSE ouverts, l'attente d'une relecture. */
+interface ToolSession {
+  tools: readonly AppTool[]
+  scope: LogScope
+  streams: Set<ServerResponse>
+  /** Appelé à chaque `tools/list` : noms rendus à l'agent. */
+  onListed: ((names: string[]) => void) | undefined
+  /** Relectures attendues après une notification : `true` relue, `false` session révoquée. */
+  waiting: Set<(listed: boolean) => void>
 }
 
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05']
@@ -41,7 +64,7 @@ interface JsonRpcRequest {
 export class AppToolServer {
   private server: Server | undefined
   private port: number | undefined
-  private readonly sessions = new Map<string, { tools: readonly AppTool[]; scope: LogScope }>()
+  private readonly sessions = new Map<string, ToolSession>()
   /** Version annoncée à l'agent (`serverInfo`) : celle de l'app. */
   private readonly version: string
 
@@ -73,15 +96,33 @@ export class AppToolServer {
 
   /**
    * Nouveau point d'accès pour une session et ses outils ; `dispose` le révoque. `scope` : la
-   * conversation et l'agent, pour le journal (fiche 080).
+   * conversation et l'agent, pour le journal (fiche 080). `onListed` : à chaque `tools/list`, les
+   * noms rendus (ce que l'agent a désormais).
    */
-  register(tools: readonly AppTool[], scope: LogScope = {}): ToolEndpoint | undefined {
+  register(
+    tools: readonly AppTool[],
+    scope: LogScope = {},
+    onListed?: (names: string[]) => void
+  ): ToolEndpoint | undefined {
     if (this.port === undefined) return undefined
     const token = randomBytes(24).toString('hex')
-    this.sessions.set(token, { tools, scope })
+    const session: ToolSession = {
+      tools,
+      scope,
+      streams: new Set(),
+      onListed,
+      waiting: new Set()
+    }
+    this.sessions.set(token, session)
     return {
       url: `http://127.0.0.1:${this.port}/mcp/${token}`,
-      dispose: () => this.sessions.delete(token)
+      dispose: () => {
+        this.sessions.delete(token)
+        for (const stream of session.streams) stream.end()
+        session.streams.clear()
+        for (const done of session.waiting) done(false)
+      },
+      update: (next, waitMs) => updateTools(session, next, waitMs)
     }
   }
 
@@ -91,6 +132,7 @@ export class AppToolServer {
   }
 
   stop(): void {
+    for (const session of this.sessions.values()) for (const done of session.waiting) done(false)
     this.sessions.clear()
     this.server?.close()
     this.server?.closeAllConnections()
@@ -105,9 +147,12 @@ export class AppToolServer {
       res.writeHead(404).end()
       return
     }
+    if (req.method === 'GET' && acceptsEvents(req)) {
+      openStream(session, res)
+      return
+    }
     if (req.method !== 'POST') {
-      // Pas de flux SSE côté serveur : autorisé par le transport Streamable HTTP.
-      res.writeHead(405, { allow: 'POST' }).end()
+      res.writeHead(405, { allow: 'GET, POST' }).end()
       return
     }
     let body: unknown
@@ -128,9 +173,7 @@ export class AppToolServer {
       if (!res.writableFinished) gone.abort()
     })
     const replies = (
-      await Promise.all(
-        messages.map((m) => this.answer(m, session.tools, session.scope, gone.signal))
-      )
+      await Promise.all(messages.map((m) => this.answer(m, session, gone.signal)))
     ).filter((r): r is object => r !== undefined)
     if (gone.signal.aborted) {
       agentLog.line(session.scope, 'MCP : l’agent a raccroché avant la réponse, réponse abandonnée')
@@ -143,10 +186,10 @@ export class AppToolServer {
   /** Réponse à un message JSON-RPC ; `undefined` pour une notification. */
   private async answer(
     message: JsonRpcRequest,
-    tools: readonly AppTool[],
-    scope: LogScope,
+    session: ToolSession,
     gone: AbortSignal = new AbortController().signal
   ): Promise<object | undefined> {
+    const { tools, scope } = session
     if (typeof message !== 'object' || message === null || message.id === undefined)
       return undefined
     const reply = (result: unknown) => ({ jsonrpc: '2.0', id: message.id, result })
@@ -163,15 +206,18 @@ export class AppToolServer {
             typeof asked === 'string' && SUPPORTED_VERSIONS.includes(asked)
               ? asked
               : SUPPORTED_VERSIONS[0],
-          capabilities: { tools: { listChanged: false } },
+          capabilities: { tools: { listChanged: true } },
           serverInfo: { name: APP_TOOLS_SERVER_NAME, title: 'Bobine', version: this.version }
         })
       }
       case 'ping':
         return reply({})
-      case 'tools/list':
+      case 'tools/list': {
         agentLog.line(scope, `MCP tools/list : ${tools.length} outil(s)`)
+        session.onListed?.(tools.map((t) => t.definition.name))
+        for (const done of session.waiting) done(true)
         return reply({ tools: tools.map((t) => withHints(t.definition)) })
+      }
       case 'tools/call': {
         const name = message.params?.['name']
         const tool = tools.find((t) => t.definition.name === name)
@@ -255,6 +301,54 @@ function resultText(result: {
   ]
   const tail = logs('trace') && texts.length ? ` : ${excerpt(texts.join('\n'))}` : ''
   return `${parts.join(', ')}${tail}`
+}
+
+const acceptsEvents = (req: IncomingMessage) =>
+  (req.headers.accept ?? '').toLowerCase().includes('text/event-stream')
+
+/** Flux SSE du serveur (fiche 241) : gardé ouvert, seulement pour les notifications. */
+function openStream(session: ToolSession, res: ServerResponse): void {
+  res.writeHead(200, {
+    'content-type': 'text/event-stream',
+    'cache-control': 'no-cache',
+    connection: 'keep-alive'
+  })
+  res.write(': bobine\n\n')
+  session.streams.add(res)
+  agentLog.line(session.scope, 'MCP : flux de notifications ouvert par l’agent')
+  res.on('close', () => session.streams.delete(res))
+}
+
+/**
+ * Nouvelle liste de la session ; `notifications/tools/list_changed` sur chaque flux ouvert, puis
+ * attente d'un `tools/list` (au plus `waitMs`).
+ */
+async function updateTools(
+  session: ToolSession,
+  tools: readonly AppTool[],
+  waitMs: number
+): Promise<ToolListUpdate> {
+  session.tools = tools
+  if (session.streams.size === 0) {
+    agentLog.line(session.scope, 'MCP : liste d’outils changée, aucun flux ouvert pour le dire')
+    return 'no-stream'
+  }
+  const listed = new Promise<boolean>((resolve) => {
+    const finish = (value: boolean) => {
+      clearTimeout(timer)
+      session.waiting.delete(finish)
+      resolve(value)
+    }
+    const timer = setTimeout(() => finish(false), waitMs)
+    timer.unref?.()
+    session.waiting.add(finish)
+  })
+  const event = JSON.stringify({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' })
+  for (const stream of session.streams) stream.write(`event: message\ndata: ${event}\n\n`)
+  agentLog.line(session.scope, `MCP → tools/list_changed : ${tools.length} outil(s)`)
+  const relisted = await listed
+  if (!relisted) agentLog.line(session.scope, 'MCP : l’agent n’a pas relu la liste d’outils')
+  return relisted ? 'listed' : 'ignored'
 }
 
 function readBody(req: IncomingMessage): Promise<string> {

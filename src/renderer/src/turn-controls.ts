@@ -21,6 +21,8 @@ export interface TurnControls {
   answerTurnLimit: (itemId: number, answer: TurnLimitAnswer) => void
   /** Cartes « Retenir ce souvenir ? » (fiche 182). */
   memory?: MemoryControls
+  /** Redémarre l'agent de la conversation, comme le menu ⚙ (avis d'outils apparus, fiche 241). */
+  restartAgent?: () => void
 }
 
 export interface MemoryControls {

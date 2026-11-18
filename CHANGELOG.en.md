@@ -12,6 +12,9 @@ What changes for you, version by version. Shown in Settings › About.
   Bobine as new”, a test data folder) no longer reads this quota at all, and diagnostics no longer
   opens a trial session there on its own: nothing is written to your real `~/.bob` unless you
   asked for it.
+- iOS or Android project created during a conversation: the agent gets Bobine’s tools to build
+  it and run it in the simulator or emulator as soon as its reply ends, if it can reload its tool
+  list (OpenCode); otherwise, a notice in the thread says so, with “Restart the agent”.
 
 ## 1.0.0-beta.7 — November 17, 2026
 

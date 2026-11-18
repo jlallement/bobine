@@ -5,6 +5,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { startCommandJob, type CommandJob } from '../jobs/command-job'
+import { workspaceHas } from '../workspace-scan'
 import type { AndroidSdk } from './sdk'
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'build', '.gradle', 'Pods', 'ios'])
@@ -42,6 +43,15 @@ export function findAndroidProjects(workspace: string): string[] {
 /** Le dossier contient-il un projet Android (outils `android_*` utiles) ? */
 export function hasAndroidProject(workspace: string): boolean {
   return findAndroidProjects(workspace).length > 0
+}
+
+/** Même question, sans bloquer le main (fin de tour, fiche 241) : arrêt au premier trouvé. */
+export function androidProjectAppears(workspace: string): Promise<boolean> {
+  return workspaceHas(workspace, {
+    skip: SKIP_DIRS,
+    match: (_dir, names) =>
+      names.includes(GRADLE_WRAPPER) && names.some((n) => /^settings\.gradle(\.kts)?$/.test(n))
+  })
 }
 
 /**

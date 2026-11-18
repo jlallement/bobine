@@ -170,7 +170,19 @@
       "exitedDetail": "L’agent s’est arrêté. {{detail}}",
       "failed": "L’agent n’a pas pu démarrer.",
       "failedDetail": "L’agent n’a pas pu démarrer. {{detail}}",
-      "diagnosticsLink": "Diagnostic"
+      "diagnosticsLink": "Diagnostic",
+      "appTools": {
+        "iosPending": "Projet Xcode trouvé dans ce dossier. L’agent n’aura les outils iOS de Bobine (compiler, simulateur) qu’après son redémarrage.",
+        "iosLive": "Projet Xcode trouvé : outils iOS de Bobine ajoutés à la conversation.",
+        "iosSession": "Agent redémarré : outils iOS de Bobine ajoutés à la conversation.",
+        "androidPending": "Projet Android trouvé dans ce dossier. L’agent n’aura les outils Android de Bobine (compiler, émulateur) qu’après son redémarrage.",
+        "androidLive": "Projet Android trouvé : outils Android de Bobine ajoutés à la conversation.",
+        "androidSession": "Agent redémarré : outils Android de Bobine ajoutés à la conversation.",
+        "otherPending": "De nouveaux outils de Bobine servent dans ce dossier. L’agent ne les aura qu’après son redémarrage.",
+        "otherLive": "Nouveaux outils de Bobine ajoutés à la conversation.",
+        "otherSession": "Agent redémarré : nouveaux outils de Bobine ajoutés à la conversation.",
+        "restartAgent": "Redémarrer l’agent"
+      }
     },
     "copyMessage": "Copier le message",
     "duration": {

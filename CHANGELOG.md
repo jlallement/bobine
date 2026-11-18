@@ -12,6 +12,10 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   jetable (« Essayer Bobine comme neuve », dossier de données d'essai) ne lit plus du tout ce
   quota, et le diagnostic n'y ouvre plus de session d'essai d'office : rien ne s'écrit dans votre
   vrai `~/.bob` sans que vous l'ayez demandé.
+- Projet iOS ou Android créé pendant une conversation : l'agent reçoit les outils de Bobine pour
+  le compiler et le lancer dans le simulateur ou l'émulateur dès la fin de sa réponse, s'il sait
+  relire sa liste d'outils (OpenCode) ; sinon, un avis dans le fil le dit, avec « Redémarrer
+  l'agent ».
 
 ## 1.0.0-beta.7 — 17 novembre 2026
 
