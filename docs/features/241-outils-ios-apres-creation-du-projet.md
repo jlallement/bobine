@@ -117,6 +117,9 @@ ne trouverait pas). Vu une fois ; la cause, lue dans le code, rend le défaut sy
 - `Transcript.tsx` n'est touché que pour le bouton et l'icône (recoupement minimal avec la 240) ;
   la forme des avis a quitté `transcript.ts` pour tenir son plafond de 800 lignes.
 - Bob réel : à relever (ouvre-t-il le `GET` ? relit-il la liste ?) — `docs/acp.md`, matrice.
+- **Limite connue** : un projet créé hors de l'agent (dans Xcode, le Finder, un autre terminal) n'est
+  vu qu'à la fin d'un tour où l'agent a pu écrire (un appel d'outil autre qu'une lecture) ; d'ici
+  là, ni avis ni outils ajoutés. Le menu ⚙ l'annonce déjà (« au prochain démarrage »).
 
 ## Rejouer
 
