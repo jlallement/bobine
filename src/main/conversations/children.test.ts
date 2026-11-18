@@ -901,7 +901,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       60_000
     )
 
-    it('`filles-bavarde` (fiche 160) : la mère reçoit un compte rendu borné, sans la fin', async () => {
+    it('`filles-bavarde` (fiches 160, 247) : compte rendu borné, sans la fin ; la mère lit la suite par `child_status`', async () => {
       const env = await withLead('bavarde')
       const turn = env.manager.prompt(env.mother, 'Fais le relevé')
       await env.start()
@@ -909,10 +909,16 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       await waitFor(() => env.wakes(env.mother) === 1, 30_000)
       await waitFor(() => env.replies().includes('Compte rendu'), 20_000)
       expect(env.replies()).toContain('Compte rendu borné')
+      // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite, et la mère la lit.
+      await waitFor(() => /(REPONSE|child_status|la suite)\.$/.test(env.replies()), 20_000)
+      expect(env.replies()).toContain(
+        'Suite lue par child_status : réponse entière, jusqu’à MARQUEUR-FIN-DE-REPONSE.'
+      )
       const report = env.items(env.mother).find((i) => i.kind === 'child-report')
       expect(report?.kind === 'child-report' && report.fileCount).toBe(30)
       expect(report?.kind === 'child-report' && report.excerpt.length).toBeLessThanOrEqual(400)
       expect(report?.kind === 'child-report' && report.excerpt).toMatch(/^Récapitulatif/)
+      expect(report?.kind === 'child-report' && report.replyChars).toBeGreaterThan(400)
       env.stop()
     }, 60_000)
 

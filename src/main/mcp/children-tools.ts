@@ -18,6 +18,7 @@
 import type { ConversationSummary } from '@shared/agent'
 import {
   clip,
+  readWholeLine,
   REPORT_CHARS,
   type ChildDecision,
   type ChildProposal,
@@ -55,6 +56,7 @@ export type ChildTools = Pick<
   | 'rolesFor'
   | 'findRole'
   | 'uncommitted'
+  | 'fullText'
 > & { reviews: ReviewTools }
 
 const START_CHILD =
@@ -94,9 +96,11 @@ const RECOMMEND_MERGE =
 
 const CHILD_STATUS =
   'List the child conversations started from this conversation: id, title, state (working, ' +
-  'waiting for the user, finished, error), branch, files changed and the end of their last ' +
+  'waiting for the user, finished, error), branch, files changed and the start of their last ' +
   'reply. Use it when the user asks how they are doing. No need to poll: you are woken up when ' +
-  'the children you started have all finished.'
+  'the children you started have all finished. A report or a message from a child that was cut ' +
+  'says so: then pass `child` and `full: true` to read its whole last reply and its last ' +
+  'message to you, rather than asking the child again with message_child.'
 
 const MESSAGE_PARENT =
   'Send a message to your parent conversation, the one that started you (you are a child ' +
@@ -287,11 +291,23 @@ function motherTools(
         )
       }
     ),
-    tool('child_status', CHILD_STATUS, {}, [], async () => {
-      const list = host.status(id)
-      if (list.length === 0) return textResult('This conversation has no child conversation.')
-      return textResult(list.map(statusLine).join('\n'))
-    }),
+    tool(
+      'child_status',
+      CHILD_STATUS,
+      {
+        child: {
+          type: 'string',
+          description: 'Optional: id (or exact title) of one child conversation, to see only it.'
+        },
+        full: {
+          type: 'boolean',
+          description:
+            'With `child`: also return its whole last reply and its last message to you (both are cut in reports).'
+        }
+      },
+      [],
+      async (args) => childStatus(host, id, args)
+    ),
     tool(
       'recommend_merge',
       RECOMMEND_MERGE,
@@ -383,10 +399,41 @@ export function leadingCommand(text: string, key: string): string | undefined {
 /** Message d'une fille à sa mère gardé (fiche 160) : au-delà, coupé, comme un compte rendu. */
 export const PARENT_MESSAGE_CHARS = 2 * REPORT_CHARS
 
-/** Message de la fille borné, pour ne pas remplir le contexte de la mère (un diff collé…). */
-export function bounded(text: string): string {
+/**
+ * Message de la fille borné, pour ne pas remplir le contexte de la mère (un diff collé…) ; coupé,
+ * suivi de la façon de le lire en entier (fiche 247, D11).
+ */
+export function bounded(text: string, childId: string): string {
   if (text.length <= PARENT_MESSAGE_CHARS) return text
-  return `${clip(text, PARENT_MESSAGE_CHARS)} (cut: ${text.length} characters in all)`
+  return `${clip(text, PARENT_MESSAGE_CHARS)}\n${readWholeLine(childId, 'message', text.length)}`
+}
+
+/** Texte entier rendu par `child_status` `full` : au-delà, coupé (un diff géant collé…). */
+export const FULL_TEXT_CHARS = 40_000
+
+/** `child_status` : toutes les filles, ou une seule ; `full` : ses textes entiers (fiche 247). */
+function childStatus(host: ChildTools, motherId: string, args: ToolArgs): ToolResult {
+  const ref = optional(args, 'child')
+  const full = args['full'] === true
+  if (full && !ref)
+    return textResult('`full` needs `child`: the id of one child conversation.', true)
+  const found = ref === undefined ? undefined : findChild(host, motherId, ref)
+  if (typeof found === 'string') return textResult(found, true)
+  const list = host.status(motherId).filter((c) => !found || c.id === found.id)
+  if (list.length === 0) return textResult('This conversation has no child conversation.')
+  if (!found || !full) return textResult(list.map((c) => statusLine(c)).join('\n'))
+  const whole = host.fullText(found.id)
+  const block = (label: string, text: string) =>
+    `${label} (${text.length} characters):\n<<<\n${text.length > FULL_TEXT_CHARS ? `${text.slice(0, FULL_TEXT_CHARS)}\n[Cut at ${FULL_TEXT_CHARS} characters: ask the child for the part you need with message_child.]` : text}\n>>>`
+  return textResult(
+    [
+      list.map((c) => statusLine(c, true)).join('\n'),
+      whole.reply ? block('Its whole last reply', whole.reply) : 'It has not replied yet.',
+      whole.message === undefined
+        ? 'No message from it to you since the app started.'
+        : block('Its last message to you', whole.message)
+    ].join('\n\n')
+  )
 }
 
 /** Fille d'une mère par son id ou son titre exact ; sinon le message d'erreur pour l'agent. */
@@ -656,7 +703,8 @@ function messageParent(context: ToolContext, host: ChildTools): AppTool {
           true
         )
       }
-      const delivery = host.messageParent(child, mother, bounded(text(args, 'message')))
+      const message = text(args, 'message')
+      const delivery = host.messageParent(child, mother, bounded(message, child.id), message)
       return textResult(
         `Message ${delivery === 'queued' ? 'queued for' : 'sent to'} your parent conversation "${mother.title}". If you asked a question, end your turn now: the answer will arrive as a message.`
       )
@@ -672,8 +720,8 @@ const STATE_TEXT: Record<ChildState, string> = {
   error: 'ended with an error'
 }
 
-/** Une ligne de `child_status`, en anglais pour l'agent. */
-function statusLine(child: ChildStatus): string {
+/** Une ligne de `child_status`, en anglais pour l'agent ; `whole` : les textes entiers suivent. */
+function statusLine(child: ChildStatus, whole = false): string {
   const files =
     child.fileCount === 0
       ? 'no files changed'
@@ -687,7 +735,11 @@ function statusLine(child: ChildStatus): string {
         .map((line) => `  > ${line}`)
         .join('\n')}`
     : ''
-  return `- "${child.title}" (id: ${child.id}): ${STATE_TEXT[child.state]}${branch}; ${files}.${excerpt}`
+  const cut =
+    child.replyChars === undefined || whole
+      ? ''
+      : `\n  ${readWholeLine(child.id, 'reply', child.replyChars)}`
+  return `- "${child.title}" (id: ${child.id}): ${STATE_TEXT[child.state]}${branch}; ${files}.${excerpt}${cut}`
 }
 
 const resultText = (result: ToolResult) =>
