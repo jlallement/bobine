@@ -148,6 +148,7 @@ export function ChildProposals({
       </div>
       {held && folder.dirty && pending.length + count('expired') > 0 && (
         <LaunchDirtyCard
+          conversationId={info?.mother.id ?? ''}
           dirty={folder.dirty}
           who={t('launchDirty.whoCard')}
           many

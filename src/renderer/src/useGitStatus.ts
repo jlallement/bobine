@@ -4,7 +4,8 @@ import type { GitStatus } from '@shared/git'
 /**
  * État git du dossier de la conversation active (puce de branche, fiches 037 et 049) : relu au
  * changement de conversation, au début et à la fin de chaque tour de l'agent, et au retour dans
- * l'app (une branche changée dans un autre terminal).
+ * l'app (une branche changée dans un autre terminal), et après un commit ou une fusion faits par
+ * Bobine dans ce dépôt (fiche 246, D4 : le point « non commité » restait après la fusion).
  */
 export function useGitStatus(conversationId: string | null, agentBusy: boolean): GitStatus | null {
   const [loaded, setLoaded] = useState<{ id: string; status: GitStatus | null } | null>(null)
@@ -22,6 +23,13 @@ export function useGitStatus(conversationId: string | null, agentBusy: boolean):
     window.addEventListener('focus', refresh)
     return () => window.removeEventListener('focus', refresh)
   }, [refresh])
+  useEffect(
+    () =>
+      window.api.changes?.onGitChanged?.(({ conversationIds }) => {
+        if (conversationId && conversationIds.includes(conversationId)) refresh()
+      }),
+    [conversationId, refresh]
+  )
   // État d'une autre conversation : pas montré le temps que la bonne arrive.
   return loaded && loaded.id === conversationId ? loaded.status : null
 }

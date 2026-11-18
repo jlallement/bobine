@@ -4,7 +4,7 @@
  * en lecture seule ; un rôle en lecture seule part sans rien demander.
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSnapshot, ProfileSummary } from '@shared/agent'
 import type { FolderDirty } from '@shared/launch-folder'
@@ -152,6 +152,11 @@ describe('`@rôle` et non commité de la mère (fiche 240)', () => {
     const { type, send, commitFolder } = setup()
     await type('@ux-ui-expert construisez la page')
     fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
     const message = screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement
     expect(message.value).not.toBe('')
     await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
@@ -252,6 +257,11 @@ describe('`@rôle` et non commité de la mère (fiche 240)', () => {
         .getAllByTestId('launch-dirty-commit-file')
         .find((li) => li.dataset.path === 'plan.md')
         ?.querySelector('input') as HTMLInputElement
+    )
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
     )
     const message = screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement
     expect(message.value).not.toContain('plan.md')

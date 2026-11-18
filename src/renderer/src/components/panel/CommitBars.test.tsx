@@ -5,6 +5,11 @@ import { FolderCommitBar } from './FolderCommitBar'
 import { WorktreeBar } from './WorktreeBar'
 
 const text = (id: string) => screen.getByTestId(id).textContent
+/** Fiche 246 : la proposition arrive du main (ici le repli, réglage coupé) ; le champ s'ouvre. */
+const settled = (testid: string) =>
+  waitFor(() =>
+    expect((screen.getByTestId(`${testid}-message`) as HTMLTextAreaElement).disabled).toBe(false)
+  )
 const uncheck = (prefix: string, path: string) =>
   fireEvent.click(
     screen
@@ -20,7 +25,7 @@ describe('« Committer » hors worktree (fiche 123)', () => {
     const onChanged = vi.fn()
     render(
       <FolderCommitBar
-        title="Modifs du README"
+        conversationId="c1"
         selected={selected}
         commit={commit}
         undo={undo}
@@ -39,8 +44,11 @@ describe('« Committer » hors worktree (fiche 123)', () => {
     expect(screen.queryByTestId('worktree-pr')).toBeNull()
     expect(screen.queryByTestId('worktree-merge')).toBeNull()
     fireEvent.click(screen.getByTestId('changes-commit'))
+    await settled('changes-commit')
     const message = screen.getByTestId('changes-commit-message') as HTMLTextAreaElement
-    expect(message.value).toBe('feat: modifs du README\n\n- README.md\n- src/app.js (new)')
+    expect(message.value).toBe(
+      'chore: update README.md and app.js\n\n- README.md\n- src/app.js (new)'
+    )
     fireEvent.change(message, { target: { value: 'docs: README' } })
     fireEvent.click(screen.getByTestId('changes-commit-confirm'))
     await waitFor(() => screen.getByTestId('changes-commit-note'))
@@ -155,6 +163,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
     fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    await settled('main-dirty-commit')
     expect((screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement).value).toBe(
       'docs: update notes.md\n\n- notes.md'
     )
@@ -201,6 +210,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     expect(screen.getAllByTestId('main-dirty-commit-file').map((li) => li.dataset.path)).toEqual(
       files.map((f) => f.path)
     )
+    await settled('main-dirty-commit')
     uncheck('main-dirty-commit', '.env')
     const message = (screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement).value
     expect(message).not.toContain('.env')
@@ -237,6 +247,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
     fireEvent.click(screen.getByTestId('main-dirty-commit'))
+    await settled('main-dirty-commit')
     uncheck('main-dirty-commit', '.env')
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => screen.getByTestId('worktree-note'))
@@ -250,7 +261,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
 describe('message de commit qui suit les cases cochées (0.11, D4)', () => {
   const Bar = ({ selected }: { selected: CommitFile[] }) => (
     <FolderCommitBar
-      title="Un titre de conversation beaucoup trop long pour servir de sujet de commit"
+      conversationId="c1"
       selected={selected}
       commit={async () => ({ hash: 'a1', short: 'a1' })}
       undo={async () => undefined}
@@ -263,21 +274,23 @@ describe('message de commit qui suit les cases cochées (0.11, D4)', () => {
   ]
   const message = () => screen.getByTestId('changes-commit-message') as HTMLTextAreaElement
 
-  it('décocher met le message à jour ; curseur à la fin', () => {
+  it('décocher met le message à jour ; curseur à la fin', async () => {
     const { rerender } = render(<Bar selected={both} />)
     fireEvent.click(screen.getByTestId('changes-commit'))
+    await settled('changes-commit')
     expect(message().value).toBe(
-      'feat: update README.md and app.js\n\n- README.md\n- src/app.js (new)'
+      'chore: update README.md and app.js\n\n- README.md\n- src/app.js (new)'
     )
     expect(message().selectionStart).toBe(message().value.length)
     rerender(<Bar selected={[both[1] as CommitFile]} />)
-    expect(message().value).toBe('feat: add app.js\n\n- src/app.js (new)')
+    expect(message().value).toBe('chore: add app.js\n\n- src/app.js (new)')
     expect(message().value).not.toContain('README')
   })
 
-  it('retouché à la main : le texte de l’utilisateur reste quand on coche ou décoche', () => {
+  it('retouché à la main : le texte de l’utilisateur reste quand on coche ou décoche', async () => {
     const { rerender } = render(<Bar selected={both} />)
     fireEvent.click(screen.getByTestId('changes-commit'))
+    await settled('changes-commit')
     fireEvent.change(message(), { target: { value: 'docs: mon message' } })
     rerender(<Bar selected={[both[1] as CommitFile]} />)
     expect(message().value).toBe('docs: mon message')

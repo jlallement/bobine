@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import { childProposalSchema, type ChildProposalItem } from '@shared/children'
@@ -432,6 +432,11 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
   it('« Committer d’abord » : commit dans le dossier de la mère, puis « Lancer » sans choix', async () => {
     const onRespond = await show([proposal(1, 'API')])
     fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
     await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
     expect(commitForChildren).toHaveBeenCalledWith('m', {
       message: expect.any(String),
@@ -485,6 +490,11 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
         .getAllByTestId('launch-dirty-commit-file')
         .find((li) => li.dataset.path === 'public/app.js')
         ?.querySelector('input') as HTMLInputElement
+    )
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
     )
     await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
     expect(commitForChildren).toHaveBeenCalledWith('m', {

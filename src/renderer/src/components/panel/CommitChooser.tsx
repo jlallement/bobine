@@ -2,7 +2,8 @@ import { Info } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { splitPath } from '@shared/changes'
-import { looksSecret, proposeCommitMessage, type CommitFile } from '@shared/worktree-cycle'
+import type { CommitDraftPlace } from '@shared/commit-draft'
+import { looksSecret, type CommitFile } from '@shared/worktree-cycle'
 import { CommitForm } from './CommitForm'
 import { GIT_BADGES } from './ChangesList'
 import '../../commit-chooser.css'
@@ -18,8 +19,9 @@ const SCROLL_FROM = 8
  * deviennent les décochés, propre à chaque carte ; `onCommit` reçoit leur nombre.
  */
 export function CommitChooser({
+  conversationId,
+  place = 'root',
   files,
-  title,
   busy,
   testid,
   confirmLabel,
@@ -27,9 +29,11 @@ export function CommitChooser({
   onCommit,
   onCancel
 }: {
+  /** Conversation dont l'agent rédige le message (fiche 246). */
+  conversationId: string
+  /** Chemins relatifs à la racine du dépôt (« Committer d'abord »), par défaut. */
+  place?: CommitDraftPlace
   files: readonly CommitFile[]
-  /** Titre d'où proposer le message (la mère) ; neutre sans. */
-  title: string
   busy: boolean
   testid: string
   confirmLabel: string
@@ -145,7 +149,9 @@ export function CommitChooser({
         </div>
       )}
       <CommitForm
-        proposed={none ? '' : proposeCommitMessage(title, chosen)}
+        conversationId={conversationId}
+        files={chosen}
+        place={place}
         busy={busy}
         testid={testid}
         confirmLabel={confirmLabel}

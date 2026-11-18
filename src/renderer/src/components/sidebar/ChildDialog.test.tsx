@@ -3,7 +3,7 @@
  * soit lu ; modifié, il attend le choix. Trouvé par la suite e2e complète sur `main` : un clic
  * rapide partait avant la lecture, ou tombait sur « Partir quand même » arrivé sous le pointeur.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { FolderDirty } from '@shared/launch-folder'
@@ -93,6 +93,11 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiche 240)', () 
         .getAllByTestId('launch-dirty-commit-file')
         .find((li) => li.dataset.path === '.env')
         ?.querySelector('input') as HTMLInputElement
+    )
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
     )
     const confirm = screen.getByTestId('launch-dirty-commit-confirm')
     // La relecture du dossier après le commit : le .env reste.

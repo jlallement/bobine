@@ -54,7 +54,6 @@ const isRevertFailure = (outcome: RevertOutcome): outcome is (typeof REVERT_FAIL
 export function ChangesTab({
   conversationId,
   workspace,
-  title,
   items,
   initialView,
   initialViewSeq,
@@ -64,8 +63,6 @@ export function ChangesTab({
 }: {
   conversationId: string
   workspace?: string
-  /** Titre de la conversation : message de commit proposé hors worktree (fiche 123). */
-  title?: string | undefined
   items: TranscriptItem[]
   /** Vue demandée à l'ouverture (puce de branche : `git`, fiche 049). */
   initialView?: ChangesView
@@ -164,6 +161,18 @@ export function ChangesTab({
       })
   }, [conversationId])
   useEffect(() => refresh(), [refresh, finished])
+  // Fiche 246, D4 : un commit ou une fusion faits par Bobine hors de ce panneau (carte du fil,
+  // barre d'une autre conversation du même dépôt) : l'état du dépôt est relu, sans « Actualiser ».
+  const cycleRefresh = cycle.refresh
+  useEffect(
+    () =>
+      window.api.changes.onGitChanged?.(({ conversationIds }) => {
+        if (!conversationIds.includes(conversationId)) return
+        refresh()
+        cycleRefresh()
+      }),
+    [conversationId, refresh, cycleRefresh]
+  )
 
   const rows: Row[] =
     view !== 'git'
@@ -334,7 +343,7 @@ export function ChangesTab({
           {cleaned.cleaned && <WorktreeCleaned {...cleaned.cleaned} onDismiss={cleaned.dismiss} />}
           {view === 'git' && git && cycle.known && !cycle.info && (
             <FolderCommitBar
-              title={title ?? ''}
+              conversationId={conversationId}
               selected={checked.map((f) => ({ path: f.path, status: f.status }))}
               commit={(message, files) =>
                 window.api.changes.commit(conversationId, { message, files })

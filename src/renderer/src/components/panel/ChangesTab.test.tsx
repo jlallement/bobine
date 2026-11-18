@@ -73,3 +73,57 @@ describe('vue Git de l’onglet Modifications : diff déplié et dépôt relu (0
     await waitFor(() => expect(screen.getByTestId('changes-diff').textContent).toContain('encore'))
   })
 })
+
+describe('vue Git relue après un commit fait hors du panneau (fiche 246, D4)', () => {
+  const api = window.api
+  afterEach(() => {
+    window.api = api
+  })
+
+  it('« Committer puis fusionner » depuis la carte du fil : la vue se relit, sans « Actualiser »', async () => {
+    let repo: GitChanges = {
+      root: '/depot',
+      branch: 'main',
+      files: [
+        { path: 'a.txt', status: 'modified', added: 1, removed: 0 },
+        { path: 'b.txt', status: 'untracked', added: 1, removed: 0 }
+      ]
+    }
+    const git = vi.fn(async () => repo)
+    let changed: ((change: { conversationIds: string[] }) => void) | undefined
+    window.api = {
+      ...api,
+      changes: {
+        git,
+        gitFile: vi.fn(),
+        onGitChanged: (listener: typeof changed) => {
+          changed = listener
+          return () => (changed = undefined)
+        }
+      },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+        />
+      </Tooltip.Provider>
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('changes-commit').textContent).toBe('Committer (2)')
+    )
+    // Le commit et la fusion se font ailleurs (carte « Sous-tâches ») : le dépôt est propre.
+    repo = { ...repo, files: [] }
+    // Une autre conversation, d'un autre dépôt : rien n'est relu.
+    act(() => changed?.({ conversationIds: ['autre'] }))
+    expect(git).toHaveBeenCalledTimes(1)
+    act(() => changed?.({ conversationIds: ['autre', 'c'] }))
+    await waitFor(() => expect(screen.queryByTestId('changes-commit')).toBeNull())
+    expect(git).toHaveBeenCalledTimes(2)
+  })
+})

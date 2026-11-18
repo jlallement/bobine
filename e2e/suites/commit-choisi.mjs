@@ -50,6 +50,8 @@ export async function commitChoisiSuite(scheme) {
         await ui.waitFor(`document.querySelectorAll('[data-testid=changes-file]').length === 2`)
         await ui.click(ui.$('worktree-commit'))
         await ui.waitFor(`!!${ui.$('worktree-commit-form')}`)
+        // Fiche 246 : le message est rédigé par l'agent (factice) ; le bouton attend sa réponse.
+        await ui.waitFor(`!${ui.$('worktree-commit-confirm')}.disabled`, 15000)
         await ui.click(ui.$('worktree-commit-confirm'))
         await ui.waitFor(
           `${ui.$('worktree-note')}?.innerText.includes(${JSON.stringify(Lpart('worktreeCycle.commit.done'))})`
@@ -68,6 +70,8 @@ export async function commitChoisiSuite(scheme) {
         await ui.waitFor(`!!${ui.$('main-dirty')}`, 20000)
         await ui.click(ui.$('main-dirty-commit'))
         await ui.waitFor(`!!${ui.$('main-dirty-commit-chooser')}`)
+        // Fiche 246 : l'agent factice rédige le message d'après les 40 fichiers cochés.
+        await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         const rows = `[...document.querySelectorAll('[data-testid=main-dirty-commit-file]')]`
         const shown = await ui.ev(`({
           paths: ${rows}.map((li) => li.dataset.path),
@@ -105,12 +109,24 @@ export async function commitChoisiSuite(scheme) {
         await ui.click(ui.$('main-dirty-commit-check-all'))
         await ui.waitFor(`!${ui.$('main-dirty-commit-confirm')}.disabled`)
 
-        // Le `.env` décoché : le message ne le cite pas, la ligne dit ce qu'il devient.
+        // Le `.env` décoché : la ligne dit ce qu'il devient. Fiche 246 : le message rédigé ne suit
+        // plus les cases d'office (chaque rédaction coûte) ; « Rédiger à nouveau » le refait pour
+        // les 39 cochés, sans le `.env` (l'agent le recevait sans son contenu, « secret ? »).
         await ui.click(`${rows}.find((li) => li.dataset.path === '.env').querySelector('input')`)
         await ui.waitFor(`!!${ui.$('main-dirty-commit-left')}`)
+        check(
+          (await ui.ev(`${ui.$('main-dirty-commit-draft')}.innerText`)).startsWith(
+            L('worktreeCycle.commit.draft.changed')
+          ),
+          'cases changées après la rédaction : dit, sans relance automatique'
+        )
+        await ui.click(ui.$('main-dirty-commit-draft-again'))
+        await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'drafting'`, 15000)
+        await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         const message = await ui.ev(`${ui.$('main-dirty-commit-message')}.value`)
         check(
-          !message.includes('.env') &&
+          message.includes('39 file(s)') &&
+            message.includes('0 withheld') &&
             (await ui.ev(`${ui.$('main-dirty-commit-left')}.innerText`)) ===
               L('worktreeCycle.mainDirty.left', { count: 1 }) &&
             (await ui.ev(`${ui.$('main-dirty-commit-check-all')}.indeterminate`)),

@@ -4,11 +4,12 @@
  *   node src/mock-agent/main.mts [--scenario <nom>] [--delay <ms>]
  *
  * Variables d'environnement équivalentes : MOCK_AGENT_SCENARIO, MOCK_AGENT_DELAY_MS, MOCK_AGENT_LANG,
- * MOCK_AGENT_PANNE (`--panne`, fiche 195), MOCK_AGENT_MAX_ETAPES (`--max-etapes`, fiche 209), MOCK_AGENT_SLOW_START_MS (`--demarrage-lent`), `--verrou-fin-de-tour <fichier>` (aucun tour ne finit tant que le fichier existe), MOCK_AGENT_TENACE=1 (ignore SIGTERM et la fin de la connexion, fiche 195)
+ * MOCK_AGENT_PANNE (`--panne`, fiche 195), MOCK_AGENT_MAX_ETAPES (`--max-etapes`, fiche 209), MOCK_AGENT_SLOW_START_MS (`--demarrage-lent`), `--verrou-fin-de-tour <fichier>` (aucun tour ne finit tant que le fichier existe), MOCK_AGENT_TENACE=1 (ignore SIGTERM et la fin de la connexion, fiche 195), MOCK_AGENT_COMMIT (scénario d'une demande de message de commit, fiche 246), MOCK_AGENT_PID_FILE (pid inscrit au lancement, essais)
  * (`--langue en` : l'agent parle anglais, fiche 167). `--modes-installes bob|opencode --perso <dossier>` :
  * modes installés comme Bob ou OpenCode, listés après les siens (fiche 223).
  * stdout est réservé au protocole : les journaux vont sur stderr.
  */
+import { appendFileSync } from 'node:fs'
 import { Readable, Writable } from 'node:stream'
 import { parseArgs } from 'node:util'
 import { ndJsonStream } from '../shared/acp-sdk.mts'
@@ -65,6 +66,16 @@ if (values.list) {
 const scenario = values.scenario ?? process.env['MOCK_AGENT_SCENARIO'] ?? DEFAULT_SCENARIO
 const delayMs = Number(values.delay ?? process.env['MOCK_AGENT_DELAY_MS'] ?? 40)
 
+// Demande de message de commit (fiche 246) : `MOCK_AGENT_COMMIT` choisit le scénario joué.
+const commitScenario = process.env['MOCK_AGENT_COMMIT'] ?? 'message-commit'
+if (!scenarios[commitScenario]) {
+  console.error(`[mock-agent] scénario de commit inconnu : ${commitScenario} (voir --list)`)
+  process.exit(2)
+}
+// Essais (fiche 246) : chaque processus inscrit son pid, pour vérifier qu'aucun ne survit.
+const pidFile = process.env['MOCK_AGENT_PID_FILE']
+if (pidFile) appendFileSync(pidFile, `${process.pid}\n`)
+
 if (!scenarios[scenario]) {
   console.error(`[mock-agent] scénario inconnu : ${scenario} (voir --list)`)
   process.exit(2)
@@ -98,6 +109,7 @@ const stream = ndJsonStream(
 )
 const connection = connectMockAgent(stream, {
   scenario,
+  commitScenario,
   delayMs,
   withConfigOptions: !values['sans-options'],
   withHistory: !values['sans-historique'],

@@ -1149,6 +1149,10 @@
         "hidden_other": "{{count}} astuces masquées",
         "reset": "Tout réafficher",
         "hidden_many": "{{count}} astuces masquées"
+      },
+      "commitDraft": {
+        "label": "Message de commit rédigé par l’agent",
+        "hint": "Session à part, environ 10 000 jetons par commit (≈ 0,03 bobcoin chez IBM Bob)."
       }
     },
     "fontSize": {
@@ -1789,7 +1793,8 @@
     "memory": "mémoire souvenirs retenir oublier agents index Claude",
     "restore": "restaurer sauvegarde revenir remplacer annuler",
     "trash": "corbeille supprimées effacer définitivement récupérer restaurer",
-    "roles": "rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @"
+    "roles": "rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @",
+    "commitDraft": "commit message git agent rédaction conventional commits mémoire"
   },
   "diagnostics": {
     "group": {
@@ -3162,7 +3167,8 @@
       "aside": "L’aparté n’est pas disponible ici.",
       "help": "Aide indisponible",
       "onboarding": "Accueil du premier lancement indisponible",
-      "roles": "Les rôles ne sont pas disponibles ici."
+      "roles": "Les rôles ne sont pas disponibles ici.",
+      "commitDraft": "La rédaction du message de commit n’est pas disponible ici."
     },
     "emptyMessage": "Message vide",
     "emptyPrompt": "Prompt vide"
@@ -3783,7 +3789,33 @@
       "select": "Committer {{path}}",
       "done": "Commit {{hash}} fait.",
       "undo": "Défaire",
-      "undone": "Commit défait : ses modifications sont de nouveau à committer."
+      "undone": "Commit défait : ses modifications sont de nouveau à committer.",
+      "draft": {
+        "drafting": "Rédaction par {{agent}}…",
+        "seconds": "{{count}} s",
+        "stop": "Arrêter",
+        "placeholder": "L’agent rédige le message d’après les fichiers cochés et la mémoire du projet.",
+        "received_one": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichier et la mémoire du projet",
+        "received_many": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers et la mémoire du projet",
+        "received_other": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers et la mémoire du projet",
+        "receivedNoMemory_one": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichier",
+        "receivedNoMemory_many": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers",
+        "receivedNoMemory_other": "Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers",
+        "again": "Rédiger à nouveau",
+        "retry": "Réessayer",
+        "changed": "Les fichiers cochés ont changé depuis la rédaction.",
+        "theAgent": "L’agent",
+        "reason": {
+          "timeout": "{{agent}} n’a pas répondu en {{seconds}} s : message déduit des fichiers.",
+          "stopped": "Rédaction arrêtée : message déduit des fichiers.",
+          "refused": "{{agent}} a refusé de rédiger le message : message déduit des fichiers.",
+          "failed": "{{agent}} n’a pas pu rédiger le message : message déduit des fichiers.",
+          "failedDetail": "{{agent}} n’a pas pu rédiger le message ({{detail}}) : message déduit des fichiers.",
+          "needsAction": "{{agent}} demande une action (connexion, licence ou confiance) : ouvrez la conversation, puis réessayez. Message déduit des fichiers.",
+          "empty": "{{agent}} n’a rien répondu : message déduit des fichiers.",
+          "tooLong": "La réponse de {{agent}} n’est pas un message de commit : message déduit des fichiers."
+        }
+      }
     },
     "merge": {
       "action": "Fusionner dans {{base}}",

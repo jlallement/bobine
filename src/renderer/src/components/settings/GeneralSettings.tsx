@@ -146,6 +146,20 @@ export function GeneralSettings({
           preference={preferences.editor}
           onChange={(editor) => onPreferences({ editor })}
         />
+        <Row
+          label={t('settings.general.commitDraft.label')}
+          hint={t('settings.general.commitDraft.hint')}
+        >
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={preferences.commitDraftEnabled}
+              onChange={(e) => onPreferences({ commitDraftEnabled: e.target.checked })}
+              data-testid="settings-commit-draft"
+            />
+            <span />
+          </label>
+        </Row>
         <CommandLineRow />
       </SettingsCard>
     </section>

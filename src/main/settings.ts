@@ -78,6 +78,8 @@ export interface Settings {
   costCapTokens?: number
   /** Mémoire commune aux agents (fiche 182) ; oui si absent. */
   memoryEnabled?: boolean
+  /** Message de commit rédigé par l'agent (fiche 246) ; oui si absent. */
+  commitDraftEnabled?: boolean
   /** Réglages d'une nouvelle conversation. */
   newConversation?: NewConversationDefaults
   /** Outils « toujours autorisés », par profil d'agent (fiche 042). */
@@ -163,6 +165,7 @@ const KNOWN: Record<keyof Settings, true> = {
   tipsState: true,
   onboarding: true,
   memoryEnabled: true,
+  commitDraftEnabled: true,
   versionNotices: true,
   extra: true
 }

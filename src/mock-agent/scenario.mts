@@ -83,6 +83,8 @@ export type Step =
   | { kind: 'folders' }
   /** Décrit l'aparté reçu (fiche 180) : consigne de lecture seule, fil joint ou non, réglages. */
   | { kind: 'aside' }
+  /** Message de commit tiré de la demande reçue (fiche 246) : fichiers, notes, contenus retenus. */
+  | { kind: 'commit-message' }
   /**
    * Appelle l'outil `ask_user` du serveur MCP fourni par le client, comme Bob 2.0.6 : carte d'outil
    * « Running Ask User (serveur) », demande d'autorisation, puis `tools/call` en HTTP.
@@ -464,6 +466,8 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
       return streamChunks(ctx, describeContext(ctx.prompt), 'agent_message_chunk')
     case 'folders':
       return streamChunks(ctx, describeFolders(ctx), 'agent_message_chunk')
+    case 'commit-message':
+      return streamChunks(ctx, describeCommitRequest(ctx.prompt), 'agent_message_chunk')
     case 'aside':
       return streamChunks(
         ctx,
@@ -1130,6 +1134,34 @@ export function describeContext(prompt: ContentBlock[]): string {
     `Contexte reçu${from ? ` de « ${from} »` : ''} : ${users.length} message(s) de l'utilisateur,`,
     `${replies} réponse(s). Première demande : « ${first} ».`
   ].join(' ')
+}
+
+/**
+ * Demande de message de commit reçue (fiche 246) : un message Conventional Commits en anglais tiré
+ * des fichiers listés, et une ligne qui dit ce qui est arrivé (notes de l'utilisateur, demande
+ * de départ, contenus retenus, lignes masquées), que les essais vérifient.
+ */
+export function describeCommitRequest(prompt: ContentBlock[]): string {
+  const text = prompt.map((b) => (b.type === 'text' ? b.text : '')).join('\n')
+  const files = [...text.matchAll(/^- (\S+) \((?:modified|new|deleted|renamed)[^)]*\)/gm)].map(
+    (m) => m[1] ?? ''
+  )
+  const names = files.map((f) => f.split('/').pop() ?? f)
+  const listed =
+    names.length === 0
+      ? 'files'
+      : names.length <= 2
+        ? names.join(' and ')
+        : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
+  const withheld = (text.match(/content withheld/g) ?? []).length
+  const facts = [
+    `${files.length} file(s)`,
+    text.includes('<user_notes>') ? 'user notes received' : 'no user notes',
+    text.includes('<first_request>') ? 'first request received' : 'no first request',
+    `${withheld} withheld`,
+    `${(text.match(/^\[redacted\]$/gm) ?? []).length} redacted`
+  ]
+  return `feat: update ${listed}\n\nMock agent draft: ${facts.join(', ')}.`
 }
 
 /** Aparté reçu (fiche 180) : consigne de Bobine, fin du fil jointe ou non, réglages de session. */

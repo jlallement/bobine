@@ -15,6 +15,7 @@ import { RESET_SCREENS } from './screens-reinitialiser.mjs'
 import { DISCUSSION_SCREENS } from './screens-discussion.mjs'
 import { WORKTREE_CHILD_SCREENS } from './screens-filles-worktree.mjs'
 import { COMMIT_CHOOSER_SCREENS } from './screens-commit-choisi.mjs'
+import { COMMIT_DRAFT_SCREENS } from './screens-commit-redige.mjs'
 import { MAQ_CSS, SITE_CSS } from './styles.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -173,6 +174,7 @@ for (const scheme of schemes) {
         }
       }
       h.ui = ui
+      h.workspace = workspace
       for (const screen of [
         ...SCREENS,
         ...AGENT_ACP_SCREENS,
@@ -182,7 +184,8 @@ for (const scheme of schemes) {
         ...ANNOTATE_SCREENS,
         ...DISCUSSION_SCREENS,
         ...WORKTREE_CHILD_SCREENS,
-        ...COMMIT_CHOOSER_SCREENS
+        ...COMMIT_CHOOSER_SCREENS,
+        ...COMMIT_DRAFT_SCREENS
       ]) {
         if (only.length && !only.some((o) => screen.id.startsWith(o))) continue
         await reset()

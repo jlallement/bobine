@@ -3,7 +3,7 @@
  * cases cochées au départ ; un fichier décoché ne part pas et le message ne le cite pas ; rien de
  * coché, rien ne part, et la raison est écrite.
  */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { CommitFile } from '@shared/worktree-cycle'
 import { looksSecret } from '@shared/worktree-cycle'
@@ -24,7 +24,7 @@ function setup(files: readonly CommitFile[]) {
   render(
     <CommitChooser
       files={files}
-      title="Page des tâches"
+      conversationId="c1"
       busy={false}
       testid="t"
       confirmLabel="Committer puis fusionner"
@@ -40,7 +40,12 @@ function setup(files: readonly CommitFile[]) {
       ?.querySelector('input') as HTMLInputElement
   const message = () => (screen.getByTestId('t-message') as HTMLTextAreaElement).value
   const confirm = () => screen.getByTestId('t-confirm') as HTMLButtonElement
-  return { onCommit, box, message, confirm }
+  /** Fiche 246 : la proposition arrive du main (ici le repli) ; le champ s'ouvre. */
+  const settled = () =>
+    waitFor(() =>
+      expect((screen.getByTestId('t-message') as HTMLTextAreaElement).disabled).toBe(false)
+    )
+  return { onCommit, box, message, confirm, settled }
 }
 
 describe('« Committer d’abord » : fichiers à cocher (fiche 244)', () => {
@@ -61,13 +66,14 @@ describe('« Committer d’abord » : fichiers à cocher (fiche 244)', () => {
     expect(screen.getByTestId('t-secret').closest('li')?.dataset.path).toBe('.env')
   })
 
-  it('un fichier décoché ne part pas, et le message ne le cite pas', () => {
+  it('un fichier décoché ne part pas, et le message ne le cite pas', async () => {
     const files: CommitFile[] = [
       { path: 'plan.md', status: 'modified' },
       { path: '.env', status: 'untracked' },
       { path: 'server/index.js', status: 'untracked' }
     ]
-    const { onCommit, box, message, confirm } = setup(files)
+    const { onCommit, box, message, confirm, settled } = setup(files)
+    await settled()
     expect(message()).toContain('- .env (new)')
     fireEvent.click(box('.env'))
     expect(box('.env').checked).toBe(false)
@@ -80,8 +86,9 @@ describe('« Committer d’abord » : fichiers à cocher (fiche 244)', () => {
     expect(onCommit).toHaveBeenCalledWith(message(), ['plan.md', 'server/index.js'], 1)
   })
 
-  it('tout décoché : bouton désactivé, la raison est écrite ; la case de tête recoche tout', () => {
-    const { onCommit, confirm, message } = setup(FORTY)
+  it('tout décoché : bouton désactivé, la raison est écrite ; la case de tête recoche tout', async () => {
+    const { onCommit, confirm, message, settled } = setup(FORTY)
+    await settled()
     fireEvent.click(screen.getByTestId('t-check-all'))
     expect(screen.getAllByTestId('t-check').some((c) => (c as HTMLInputElement).checked)).toBe(
       false

@@ -2,7 +2,7 @@ import { CircleCheck } from 'lucide-react'
 import { CommandText } from '../common/CommandText'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { proposeCommitMessage, type CommitFile, type CommitOutcome } from '@shared/worktree-cycle'
+import type { CommitFile, CommitOutcome } from '@shared/worktree-cycle'
 import { ipcErrorText } from '../../ipc-errors'
 import { CommitForm } from './CommitForm'
 
@@ -15,14 +15,14 @@ type Note = { kind: 'committed'; hash: string } | { kind: 'undone' }
  * fichier coché ni note.
  */
 export function FolderCommitBar({
-  title,
+  conversationId,
   selected,
   commit,
   undo,
   onChanged
 }: {
-  /** Titre de la conversation : d'où proposer le message. */
-  title: string
+  /** Conversation dont l'agent rédige le message (fiche 246). */
+  conversationId: string
   selected: CommitFile[]
   commit: (message: string, files: string[]) => Promise<CommitOutcome>
   undo: (hash: string) => Promise<unknown>
@@ -64,7 +64,9 @@ export function FolderCommitBar({
       </div>
       {open && (
         <CommitForm
-          proposed={proposeCommitMessage(title, selected)}
+          conversationId={conversationId}
+          files={selected}
+          place="conversation"
           busy={busy}
           testid="changes-commit"
           onCommit={(message) =>

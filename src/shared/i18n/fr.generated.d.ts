@@ -1131,6 +1131,10 @@ export type FrResources = {
         readonly reset: 'Tout réafficher'
         readonly hidden_many: '{{count}} astuces masquées'
       }
+      readonly commitDraft: {
+        readonly label: 'Message de commit rédigé par l’agent'
+        readonly hint: 'Session à part, environ 10 000 jetons par commit (≈ 0,03 bobcoin chez IBM Bob).'
+      }
     }
     readonly fontSize: { readonly smaller: 'Plus petit'; readonly larger: 'Plus grand' }
     readonly conversation: {
@@ -1752,6 +1756,7 @@ export type FrResources = {
     readonly restore: 'restaurer sauvegarde revenir remplacer annuler'
     readonly trash: 'corbeille supprimées effacer définitivement récupérer restaurer'
     readonly roles: 'rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @'
+    readonly commitDraft: 'commit message git agent rédaction conventional commits mémoire'
   }
   readonly diagnostics: {
     readonly group: {
@@ -3012,6 +3017,7 @@ export type FrResources = {
       readonly help: 'Aide indisponible'
       readonly onboarding: 'Accueil du premier lancement indisponible'
       readonly roles: 'Les rôles ne sont pas disponibles ici.'
+      readonly commitDraft: 'La rédaction du message de commit n’est pas disponible ici.'
     }
     readonly emptyMessage: 'Message vide'
     readonly emptyPrompt: 'Prompt vide'
@@ -3623,6 +3629,32 @@ export type FrResources = {
       readonly done: 'Commit {{hash}} fait.'
       readonly undo: 'Défaire'
       readonly undone: 'Commit défait : ses modifications sont de nouveau à committer.'
+      readonly draft: {
+        readonly drafting: 'Rédaction par {{agent}}…'
+        readonly seconds: '{{count}} s'
+        readonly stop: 'Arrêter'
+        readonly placeholder: 'L’agent rédige le message d’après les fichiers cochés et la mémoire du projet.'
+        readonly received_one: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichier et la mémoire du projet'
+        readonly received_many: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers et la mémoire du projet'
+        readonly received_other: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers et la mémoire du projet'
+        readonly receivedNoMemory_one: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichier'
+        readonly receivedNoMemory_many: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers'
+        readonly receivedNoMemory_other: 'Rédigé par {{agent}} en {{seconds}} s, d’après {{count}} fichiers'
+        readonly again: 'Rédiger à nouveau'
+        readonly retry: 'Réessayer'
+        readonly changed: 'Les fichiers cochés ont changé depuis la rédaction.'
+        readonly theAgent: 'L’agent'
+        readonly reason: {
+          readonly timeout: '{{agent}} n’a pas répondu en {{seconds}} s : message déduit des fichiers.'
+          readonly stopped: 'Rédaction arrêtée : message déduit des fichiers.'
+          readonly refused: '{{agent}} a refusé de rédiger le message : message déduit des fichiers.'
+          readonly failed: '{{agent}} n’a pas pu rédiger le message : message déduit des fichiers.'
+          readonly failedDetail: '{{agent}} n’a pas pu rédiger le message ({{detail}}) : message déduit des fichiers.'
+          readonly needsAction: '{{agent}} demande une action (connexion, licence ou confiance) : ouvrez la conversation, puis réessayez. Message déduit des fichiers.'
+          readonly empty: '{{agent}} n’a rien répondu : message déduit des fichiers.'
+          readonly tooLong: 'La réponse de {{agent}} n’est pas un message de commit : message déduit des fichiers.'
+        }
+      }
     }
     readonly merge: {
       readonly action: 'Fusionner dans {{base}}'

@@ -165,10 +165,13 @@ export async function fillesFusionSuite(scheme) {
         await ui.shot('123-fusion-refusee')
         await ui.click(ui.$('main-dirty-commit'))
         await ui.waitFor(`!!${ui.$('main-dirty-commit-message')}`)
+        // Fiche 246 : rédigé par l'agent de la mère (factice), d'après les fichiers cochés.
+        await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         check(
-          (await ui.ev(`${ui.$('main-dirty-commit-message')}.value`)) ===
-            'docs: organise le carnet\n\n- TODO.md\n- brouillon.txt (new)',
-          '« Committer d’abord » : message proposé d’après le titre de la mère, modifiable'
+          (await ui.ev(`${ui.$('main-dirty-commit-message')}.value`)).startsWith(
+            'feat: update TODO.md and brouillon.txt\n\nMock agent draft: 2 file(s)'
+          ),
+          '« Committer d’abord » : message rédigé par l’agent de la mère, modifiable'
         )
         await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('123-fusion-committer-d-abord')

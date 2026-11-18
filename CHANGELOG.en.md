@@ -26,6 +26,20 @@ What changes for you, version by version. Shown in Settings › About.
 - “All my activity…”, at the bottom of the usage details, finally looks like a link.
 - A stopped tool group shows all its states: “✕ 1 failed · ⊘ 1 interrupted” instead of the
   failure alone.
+### New
+
+- The commit message proposed by “Commit” (Git view, “Commit first”) is written by the
+  conversation's agent, from the checked files, their diff and the project memory (for example
+  “Conventional Commits in English”), in a separate session: nothing shows up in the
+  conversation, even while the agent works there. “Stop” while it writes; the message stays
+  editable. With no answer within 45 s, or if the agent can't answer, the proposed message is in
+  English, based on the files, with no word cut, and a line says why. A “secret?” file only sends
+  its name. Settings › General › “Commit message written by the agent” to do without it.
+
+### Fixes
+
+- After “Commit, then merge” or another commit made by Bobine outside the Changes panel, the Git
+  view updates on its own; it kept showing “Commit (23)” until “Refresh”.
 
 ## 1.0.0-beta.8 — November 18, 2026
 

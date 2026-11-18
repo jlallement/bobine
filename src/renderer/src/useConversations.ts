@@ -1,3 +1,4 @@
+import { rememberAgentLabels } from './components/panel/useCommitDraft'
 import type { ForgottenApproval } from '@shared/approvals'
 import type { ChildLaunchState } from '@shared/children'
 import type { PromptAttachment, WorkspaceFile } from '@shared/attachments'
@@ -197,6 +198,8 @@ export function useConversations() {
     []
   )
   const showView = useCallback((view: ConversationView) => dispatch({ type: 'view', view }), [])
+  // Nom de l'agent de chaque conversation, pour le message de commit rédigé (fiche 246).
+  useEffect(() => rememberAgentLabels(state.list), [state.list])
 
   useEffect(() => {
     const offEvent = window.api.agent.onEvent((payload) => dispatch({ type: 'event', payload }))

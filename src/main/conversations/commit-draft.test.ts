@@ -1,0 +1,229 @@
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { AgentEvent } from '@shared/agent'
+import type { CommitDraftResult } from '@shared/commit-draft'
+import type { TranscriptItem } from '@shared/transcript'
+import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import type { AgentProfile } from '../agent/profiles'
+import { runCommand } from '../simulator/run'
+import { CommitDrafts, type CommitDraftConversations } from './commit-draft'
+
+const ITEMS: TranscriptItem[] = [
+  { kind: 'user', id: 1, text: 'Ajoute le filtre par statut\napi_key = "sk-abcdefghijklmnop"' },
+  { kind: 'agent', id: 2, text: 'C’est fait.' }
+]
+
+/** Dépôt jetable : un commit, puis deux fichiers modifiés, un nouveau et un `.env`. */
+function repo(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'draft-'))
+  const git = (...a: string[]) =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x.invalid', ...a], { cwd: dir })
+  git('init', '-q', '-b', 'main')
+  writeFileSync(join(dir, 'README.md'), '# Carnet\n')
+  writeFileSync(join(dir, 'app.js'), 'const a = 1\n')
+  git('add', '.')
+  git('commit', '-q', '-m', 'init')
+  writeFileSync(
+    join(dir, 'app.js'),
+    'const a = 2\nconst token = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"\n'
+  )
+  writeFileSync(join(dir, 'filters.js'), 'export const f = 1\n')
+  writeFileSync(join(dir, '.env'), 'SECRET_VALUE=do-not-send\n')
+  return dir
+}
+
+const FILES = [
+  { path: 'app.js', status: 'modified' as const },
+  { path: 'filters.js', status: 'untracked' as const },
+  { path: '.env', status: 'untracked' as const }
+]
+
+const hosts: CommitDrafts[] = []
+afterEach(() => {
+  for (const drafts of hosts.splice(0)) drafts.stopAll()
+})
+
+function setup(
+  commit: string | undefined,
+  options: { timeoutMs?: number; enabled?: boolean } = {}
+) {
+  const dir = repo()
+  const pids = join(mkdtempSync(join(tmpdir(), 'draft-pids-')), 'pids')
+  writeFileSync(pids, '')
+  const profile: AgentProfile = {
+    id: 'mock',
+    label: 'Agent factice',
+    command: process.execPath,
+    args: [MOCK_AGENT_ENTRY, '--scenario', 'echo', '--delay', '0', '--trust'],
+    env: {
+      MOCK_AGENT_PID_FILE: pids,
+      ...(commit ? { MOCK_AGENT_COMMIT: commit } : {})
+    }
+  }
+  const posted: AgentEvent[] = []
+  const noted: string[][] = []
+  const listeners: Parameters<CommitDraftConversations['subscribe']>[0][] = []
+  const conversations: CommitDraftConversations = {
+    asideHost: (_id, emit) => ({ profile, workspace: '/nulle-part', emit, conversationId: 'c1' }),
+    view: () => ({ transcript: { items: ITEMS } }),
+    title: () => 'Ajoute le filtre par statut',
+    post: (_id, event) => posted.push(event),
+    noteAsideSession: (...note) => noted.push(note),
+    subscribe: (l) => {
+      listeners.push(l)
+      return () => {}
+    }
+  }
+  const drafts = new CommitDrafts({
+    conversations,
+    cwdFor: () => Promise.resolve(dir),
+    memories: () =>
+      Promise.resolve([
+        {
+          name: 'commit-style',
+          description: 'Commit messages',
+          body: 'Conventional Commits in English.'
+        }
+      ]),
+    enabled: () => options.enabled ?? true,
+    run: runCommand,
+    timeoutMs: options.timeoutMs ?? 20_000,
+    lateCostMs: 0
+  })
+  hosts.push(drafts)
+  return { dir, drafts, pids, posted, noted, listeners }
+}
+
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Les processus lancés (pids inscrits par l'agent factice) ; tous doivent finir. */
+async function noAgentLeft(pids: string, drafts: CommitDrafts): Promise<number> {
+  const list = readFileSync(pids, 'utf8').split('\n').filter(Boolean).map(Number)
+  const started = Date.now()
+  while (Date.now() - started < 8_000) {
+    if (drafts.active === 0 && list.every((pid) => !alive(pid))) return list.length
+    await new Promise((r) => setTimeout(r, 50))
+  }
+  throw new Error(
+    `agent encore vivant : ${list.filter(alive).join(', ')} (actives ${drafts.active})`
+  )
+}
+
+async function waitStarted(pids: string): Promise<void> {
+  const started = Date.now()
+  while (!readFileSync(pids, 'utf8').trim()) {
+    if (Date.now() - started > 8_000) throw new Error('agent jamais lancé')
+    await new Promise((r) => setTimeout(r, 20))
+  }
+  // Le temps que la session s'ouvre et que la demande parte.
+  await new Promise((r) => setTimeout(r, 600))
+}
+
+const isAgent = (r: CommitDraftResult): r is Extract<CommitDraftResult, { source: 'agent' }> =>
+  r.source === 'agent'
+
+describe('CommitDrafts (fiche 246)', () => {
+  it('réponse normale : message de l’agent, fichiers cochés, notes, secret retenu, lignes masquées ; agent arrêté, session supprimée', async () => {
+    const { drafts, pids, posted, noted } = setup(undefined)
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(isAgent(result)).toBe(true)
+    if (!isAgent(result)) return
+    expect(result.message.split('\n')[0]).toBe('feat: update app.js, filters.js and 1 more')
+    // Ce que l'agent a reçu, d'après ce qu'il en dit.
+    expect(result.message).toContain('3 file(s)')
+    expect(result.message).toContain('user notes received')
+    expect(result.message).toContain('first request received')
+    expect(result.message).toContain('1 withheld')
+    // Le jeton de app.js et la clé du premier message : lignes masquées.
+    expect(result.message).toContain('2 redacted')
+    expect(result.withMemory).toBe(true)
+    expect(result.agentLabel).toBeTruthy()
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+    // L'agent factice sait supprimer sa session : rien à retenir.
+    expect(noted).toEqual([])
+    expect(posted.filter((e) => e.type === 'aside-cost').length).toBeLessThanOrEqual(1)
+  })
+
+  it('réponse lente au-delà du délai : repli `timeout` en anglais, agent arrêté', async () => {
+    const { drafts, pids } = setup('message-commit-lent', { timeoutMs: 2_500 })
+    const started = Date.now()
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(result).toMatchObject({ source: 'fallback', reason: 'timeout', timeoutMs: 2_500 })
+    expect(Date.now() - started).toBeLessThan(6_000)
+    expect(result.message.split('\n')[0]).toBe('chore: update app.js, filters.js and .env')
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('refus (`stopReason: refusal`) : repli `refused`, agent arrêté', async () => {
+    const { drafts, pids } = setup('message-commit-refus')
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(result).toMatchObject({ source: 'fallback', reason: 'refused' })
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('erreur de l’agent : repli `failed` avec la raison, agent arrêté', async () => {
+    const { drafts, pids } = setup('message-commit-erreur')
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(result).toMatchObject({ source: 'fallback', reason: 'failed' })
+    expect(result.source === 'fallback' && result.detail).toContain('model overloaded')
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('jamais d’écriture : l’agent tente de modifier README.md et de lancer une commande, tout est refusé, le dépôt est intact', async () => {
+    const { dir, drafts, pids } = setup('message-commit-ecriture')
+    const status = () =>
+      execFileSync('git', ['status', '--porcelain', '-uall'], { cwd: dir }).toString()
+    const before = status()
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(isAgent(result)).toBe(true)
+    expect(readFileSync(join(dir, 'README.md'), 'utf8')).toBe('# Carnet\n')
+    expect(existsSync(join(dir, 'pwned.txt'))).toBe(false)
+    expect(status()).toBe(before)
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('« Arrêter » pendant la rédaction : repli `stopped`, agent arrêté', async () => {
+    const { drafts, pids } = setup('message-commit-lent')
+    const pending = drafts.draft('c1', { files: FILES, place: 'conversation' })
+    await waitStarted(pids)
+    drafts.stop('c1')
+    expect(await pending).toMatchObject({ source: 'fallback', reason: 'stopped' })
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('sortie de l’app pendant la rédaction : agent arrêté', async () => {
+    const { drafts, pids, listeners } = setup('message-commit-lent')
+    const pending = drafts.draft('c1', { files: FILES, place: 'conversation' })
+    await waitStarted(pids)
+    for (const l of listeners) l.stopped?.()
+    expect(await pending).toMatchObject({ source: 'fallback', reason: 'stopped' })
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+  })
+
+  it('nouvelle demande : la précédente s’arrête, son agent aussi', async () => {
+    const { drafts, pids } = setup('message-commit-lent', { timeoutMs: 3_000 })
+    const first = drafts.draft('c1', { files: FILES, place: 'conversation' })
+    await waitStarted(pids)
+    const second = drafts.draft('c1', { files: FILES.slice(0, 1), place: 'conversation' })
+    expect(await first).toMatchObject({ reason: 'stopped' })
+    expect(await second).toMatchObject({ reason: 'timeout' })
+    expect(await noAgentLeft(pids, drafts)).toBe(2)
+  })
+
+  it('réglage désactivé : le repli tout de suite, aucun agent lancé', async () => {
+    const { drafts, pids } = setup(undefined, { enabled: false })
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(result).toMatchObject({ source: 'fallback', reason: 'disabled' })
+    expect(await noAgentLeft(pids, drafts)).toBe(0)
+  })
+})

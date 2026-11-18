@@ -18,6 +18,8 @@ export const APP_CONTEXT_OPENINGS = {
   branch: 'This conversation continues an earlier one',
   origin: 'The message above comes from your',
   aside: '<bobine_aside>',
+  /** Demande du message de commit, seule dans une session jetable (fiche 246). */
+  commitMessage: '<bobine_commit_message>',
   memory: '<bobine_memory>',
   memoryOutcomes: '<bobine_memory_outcomes>',
   /** Consigne d'un rôle, après la demande du premier message d'une fille (fiche 223). */

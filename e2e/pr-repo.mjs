@@ -129,6 +129,8 @@ export async function openWorktreeAndCommit(ui) {
   await ui.waitFor(`${FILES}.length === 2`)
   await ui.click(ui.$('worktree-commit'))
   await ui.waitFor(`!!${ui.$('worktree-commit-form')}`)
+  // Fiche 246 : le message est rédigé par l'agent (factice) ; le bouton attend sa réponse.
+  await ui.waitFor(`!${ui.$('worktree-commit-confirm')}.disabled`, 15000)
   await ui.click(ui.$('worktree-commit-confirm'))
   await ui.waitFor(`${FILES}.length === 0`)
   await ui.waitFor(`!${ui.$('worktree-pr')}.disabled`)

@@ -171,6 +171,17 @@ vérifier sur le vrai Bob** (recette) : dans quel groupe est son processus d'arr
 (`ps -o pid,pgid,command`). Un relevé dans le groupe de `bob acp` confirme qu'il est arrêté en
 quittant ; dans un autre groupe, il continue après Bobine.
 
+**Message de commit rédigé par l'agent (fiche 246, ADR-0056)** : même mécanisme que l'aparté
+ci-dessous — une session neuve (`session/new`) du même agent dans le dossier du commit, dans un
+second processus, mode plan si le profil en a un (`initialModeMeta`, `bob/mode` = `plan` chez
+Bob), un seul `session/prompt` (`<bobine_commit_message>`), toute demande d'autorisation refusée,
+toute élicitation déclinée (une licence à accepter chez Bob donne le repli, jamais un formulaire),
+puis `session/delete` (annoncé par Bob) et l'arrêt du processus. Rien d'autre ni de non documenté.
+Fin du tour autre que `end_turn` (`refusal`, `cancelled`, erreur), connexion expirée
+(`needs-action`) ou 45 s sans réponse : message déduit des fichiers. Coût relevé : OpenCode 2.3.0,
+modèle gratuit, 3,6 à 4,4 s et ≈ 5 700 jetons pour un petit diff ; Bob **non mesuré** (estimé à
+0,02–0,035 bobcoin d'après l'échange court ci-dessus), à vérifier en recette.
+
 **Aparté (fiche 180)** : une question à côté ouvre une **deuxième** session chez Bob (`session/new`,
 même dossier, `bob/mode` = `plan` par `initialModeMeta`), dans un second processus `bob acp`. Rien de
 non documenté n'est supposé : la session est supprimée à la fermeture si Bob annonce

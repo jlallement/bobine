@@ -120,12 +120,15 @@ async function setup(titles: string[], launchOrder?: number[]) {
     }
   } as unknown as ChildrenMergeHost
   const logged: string[] = []
+  /** Fiche 246, D4 : dépôts changés signalés (vues Git à relire). */
+  const changed: string[] = []
   const cycle = new WorktreeCycle(gitCommand, { log: (_id, line) => logged.push(line) })
   const merger = new ChildrenMerger({
     conversations: host,
     cycle,
     worktrees,
-    log: (_id, line) => logged.push(line)
+    log: (_id, line) => logged.push(line),
+    changed: (id) => changed.push(id)
   })
   /** Committe ce fichier dans le worktree de la fille. */
   const commit = (child: Child, file: string, content: string) => {
@@ -134,7 +137,19 @@ async function setup(titles: string[], launchOrder?: number[]) {
     git(child.worktree.path, 'commit', '-q', '-m', `feat: ${file}`)
   }
   const transcript = () => mother
-  return { root, children, merger, merges, prompts, logged, options, commit, transcript, left }
+  return {
+    root,
+    children,
+    merger,
+    merges,
+    prompts,
+    logged,
+    changed,
+    options,
+    commit,
+    transcript,
+    left
+  }
 }
 
 const ids = (children: Child[]) => children.map((c) => c.id)
@@ -184,6 +199,8 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(env.logged.some((l) => l.startsWith('git merge --ff-only'))).toBe(true)
     expect(env.logged).toContain('children merge: 2 into main')
     expect(env.logged).toContain('children merge: done')
+    // Fiche 246, D4 : la fusion finie, les vues Git du dépôt de la mère se relisent.
+    expect(env.changed).toEqual(['mere'])
     // Après coup : les deux filles sont fusionnées, plus rien à proposer.
     expect((await env.merger.plan('mere')).children.map((c) => c.state)).toEqual([
       'merged',

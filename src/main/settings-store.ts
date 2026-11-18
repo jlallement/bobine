@@ -131,7 +131,8 @@ export class SettingsStore {
       costCapEnabled: s.costCapEnabled ?? DEFAULT_PREFERENCES.costCapEnabled,
       costCapAmount: s.costCapAmount ?? DEFAULT_PREFERENCES.costCapAmount,
       costCapTokens: s.costCapTokens ?? DEFAULT_PREFERENCES.costCapTokens,
-      memoryEnabled: s.memoryEnabled ?? DEFAULT_PREFERENCES.memoryEnabled
+      memoryEnabled: s.memoryEnabled ?? DEFAULT_PREFERENCES.memoryEnabled,
+      commitDraftEnabled: s.commitDraftEnabled ?? DEFAULT_PREFERENCES.commitDraftEnabled
     }
   }
 
