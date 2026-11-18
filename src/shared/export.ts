@@ -23,6 +23,19 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const dateOf = (now: Date) =>
   `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 
+/**
+ * Chemin rendu par la fenêtre d'enregistrement, avec une seule extension (fiche 247, D14) : la
+ * fenêtre de macOS, filtrée sur l'extension, l'ajoute parfois à un nom saisi qui la porte déjà
+ * (« notes.md.md ») ; celle de Linux ne l'ajoute jamais. Extension doublée ramenée à une, ajoutée si
+ * le nom n'en a pas ; casse ignorée (« Notes.MD » reste tel quel).
+ */
+export function withExtension(path: string, extension: 'md' | 'json' | 'csv'): string {
+  const suffix = `.${extension}`
+  const lower = path.toLowerCase()
+  if (lower.endsWith(suffix + suffix)) return path.slice(0, -suffix.length)
+  return lower.endsWith(suffix) ? path : path + suffix
+}
+
 /** Nom de fichier proposé : titre sans accents ni ponctuation, date du jour, extension. */
 export function exportFileName(
   summary: Pick<ConversationSummary, 'title'>,
