@@ -92,6 +92,8 @@ export interface Settings {
   models?: Record<string, ModelsSeen>
   /** Fenêtre principale à sa dernière position (fiche 093). */
   window?: WindowState
+  /** Conversation affichée en dernier, rouverte au lancement suivant (fiche 243). */
+  shownConversation?: string
   /** Réseau d'entreprise : proxy, certificats, posés dans l'environnement des agents (fiche 104). */
   network?: NetworkSettings
   /** Familles d'outils de Bobine coupées (fiche 109) : plus déclarées aux prochaines sessions. */
@@ -152,6 +154,7 @@ const KNOWN: Record<keyof Settings, true> = {
   agentsSeen: true,
   models: true,
   window: true,
+  shownConversation: true,
   network: true,
   appToolsOff: true,
   rolesOff: true,
@@ -230,6 +233,7 @@ function parseSettings(obj: Record<string, unknown>): Settings {
     ...nonEmpty('models', parseModelsSeen(obj['models'])),
     ...(typeof obj['notifications'] === 'boolean' ? { notifications: obj['notifications'] } : {}),
     ...(window ? { window } : {}),
+    ...(str(obj['shownConversation']) ? { shownConversation: str(obj['shownConversation']) } : {}),
     ...(onboarding ? { onboarding } : {}),
     ...nonEmpty('network', parseNetworkSettings(obj['network'])),
     ...parseAppToolsOff(obj['appToolsOff']),

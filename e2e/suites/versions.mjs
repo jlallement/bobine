@@ -61,6 +61,10 @@ export async function versionsSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
+        // La relance rouvre la conversation d'avant (fiche 243) : l'avis vu s'y trouve déjà.
+        await ui.click(ui.$('new-conversation'))
+        await ui.waitFor(`!document.querySelector('.history-item.active')`)
+        await ui.ready()
         await ui.send('Après redémarrage')
         await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 1`)
         await ui.ready()

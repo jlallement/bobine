@@ -2065,3 +2065,73 @@ describe('ConversationManager — réglages', () => {
     manager.stopAll()
   })
 })
+
+describe('relance : la conversation affichée est rouverte (fiche 243, recette D10)', () => {
+  it('dernière conversation affichée : rouverte, fil chargé, agent repris', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    const id = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(id, 'À reprendre')
+    app1.manager.stopAll()
+
+    const app2 = env.launch()
+    const { activeId, conversations } = app2.manager.state()
+    expect(activeId).toBe(id)
+    // Pas de brouillon ouvert à côté : la liste ne montre que l'historique.
+    expect(conversations.map((c) => [c.id, c.draft])).toEqual([[id, false]])
+    await app2.manager.startActive()
+    await app2.ready(id)
+    expect(kinds(app2.manager.view(id))).toEqual(['user', 'agent'])
+    app2.manager.stopAll()
+  })
+
+  it('quitter en plein tour : la conversation qui travaillait est rouverte', async () => {
+    const env = environment()
+    // Agent qui demande une autorisation : son tour reste en cours tant qu'on n'a pas répondu.
+    const options = { before: [env.mock('attente', 'permission')] }
+    const app1 = env.launch(options)
+    await app1.manager.startActive()
+    const other = (await app1.manager.create({ profileId: 'texte' })).summary.id
+    await app1.manager.prompt(other, 'Une autre conversation')
+    const working = (await app1.manager.create({ profileId: 'attente' })).summary.id
+    const turn = app1.manager.prompt(working, 'Travaille longtemps')
+    await waitFor(() => app1.manager.view(working).summary.status === 'busy')
+    // ⌘Q → « Quitter » : les agents sont arrêtés en plein tour.
+    app1.manager.stopAll()
+    await turn.catch(() => {})
+
+    const app2 = env.launch(options)
+    expect(app2.manager.state().activeId).toBe(working)
+    expect(app2.manager.view(working).transcript.items.map((i) => i.kind)).toContain('user')
+    await app2.manager.startActive()
+    app2.manager.stopAll()
+  })
+
+  it('brouillon affiché, conversation archivée ou supprimée : nouvelle conversation', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    const first = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(first, 'Première')
+    // Nouvelle conversation affichée (brouillon) en quittant.
+    await app1.manager.create()
+    app1.manager.stopAll()
+    const app2 = env.launch()
+    expect(app2.manager.state().activeId).not.toBe(first)
+    expect(
+      app2.manager.state().conversations.find((c) => c.id === app2.manager.state().activeId)
+    ).toMatchObject({ draft: true })
+
+    // Rouverte, puis archivée : la suivante s'ouvre sur une nouvelle conversation.
+    app2.manager.select(first)
+    app2.manager.stopAll()
+    const app3 = env.launch()
+    expect(app3.manager.state().activeId).toBe(first)
+    app3.manager.setArchived(first, true)
+    app3.manager.stopAll()
+    const app4 = env.launch()
+    expect(app4.manager.state().activeId).not.toBe(first)
+    app4.manager.stopAll()
+  })
+})

@@ -64,6 +64,8 @@ dans l'historique).
     active n'a pas de dossier.
   - Au lancement : dossier imposé, réglage « Nouvelle conversation », dernier dossier, sinon
     `defaultWorkspace`, sinon aucun. Dossier disparu : aucun (avis gardé), plus de repli silencieux.
+    Depuis la fiche 243 (2026-11-18), ce brouillon n'est ouvert que si aucune conversation
+    affichée à la fermeture précédente n'est à rouvrir.
   - Un brouillon sans dossier n'a pas d'hôte : son instantané est celui de `no-folder.ts` ;
     `ensureLive` refuse (message « choisissez d'abord un dossier »), `select`, `open`, `create`,
     `startActive` et les brouillons qui suivent une suppression ou un archivage ne démarrent rien.

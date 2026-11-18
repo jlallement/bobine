@@ -2,6 +2,14 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- When relaunched, Bobine reopens the conversation that was on screen when you quit, instead of
+  a new conversation; quit mid-turn, it is the one that was working, ready to carry on. A new
+  empty conversation, or one archived or deleted since, gives a new conversation, as before.
+
 ## 1.0.0-beta.7 — November 17, 2026
 
 ### Fixes

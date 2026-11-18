@@ -2,6 +2,15 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- À la relance, Bobine rouvre la conversation affichée quand on l'a quittée, au lieu d'une
+  nouvelle conversation ; quittée en plein tour, c'est celle qui travaillait, prête à reprendre.
+  Une nouvelle conversation vide, ou une conversation archivée ou supprimée depuis, donne une
+  nouvelle conversation, comme avant.
+
 ## 1.0.0-beta.7 — 17 novembre 2026
 
 ### Corrections

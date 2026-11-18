@@ -124,6 +124,10 @@ export async function authSuite(scheme) {
     await withApp(
       scheme,
       async (ui) => {
+        // La relance rouvre la conversation d'avant (fiche 243), reprise sans nouvelle connexion
+        // (`session/load`, comme Bob) : une nouvelle conversation ouvre une session, qui la demande.
+        await ui.ready()
+        await ui.click(ui.$('new-conversation'))
         await ui.waitFor(`!!${ui.$('blocker-auth')}`)
         check(true, 'clé illisible : l’agent démarre sans, connexion demandée')
         await ui.click(ui.$('open-settings'))
