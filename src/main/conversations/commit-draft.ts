@@ -6,6 +6,11 @@
  * dépassé, « Arrêter », nouvelle demande, conversation supprimée, sortie de l'app. Rien n'arrive
  * dans le fil ; le coût est ajouté à celui de la conversation.
  *
+ * Coût (fiche 254, D1) : lu **avant** la suppression de la session. Un agent qui l'écrit après sa
+ * réponse hors protocole (Bob : sa base, où `session/delete` efface la ligne de la tâche) est
+ * attendu jusqu'à ce que la relecture de l'hôte (`SessionCost` : fin du tour, veille de la source,
+ * relectures tardives) l'annonce, dans une borne ; puis le coût est posé, puis la session supprimée.
+ *
  * N'importe pas `electron` : testable sous Vitest contre l'agent factice.
  */
 import type { AgentEvent, AgentStatus } from '@shared/agent'
@@ -28,8 +33,15 @@ import { AgentHost, type AgentHostOptions } from '../agent/agent-host'
 import { draftFiles, redactLines } from '../changes/commit-diff'
 import { log } from '../log'
 import type { Run } from '../simulator/run'
-import { delay } from '../delay'
 import { asideHostOptions, LATE_COST_MS, type AsideConversations, type AsideHost } from './aside'
+
+/**
+ * Attente au plus du coût écrit par l'agent après sa réponse (`costSource` du profil, Bob), avant
+ * de supprimer la session. Finie dès que le coût arrive : la borne ne sert qu'à un agent qui n'écrit
+ * rien. Au-delà de la dernière relecture à heure fixe de `SessionCost` (5 s), sa veille de la source
+ * prend le relais.
+ */
+export const DRAFT_COST_WAIT_MS = 15_000
 
 /** Ce que la rédaction demande aux conversations : celles de l'aparté, plus le titre. */
 export interface CommitDraftConversations extends AsideConversations {
@@ -47,7 +59,10 @@ export interface CommitDraftsOptions {
   run: Run
   createHost?: (options: AgentHostOptions) => AsideHost
   timeoutMs?: number
-  /** Attente du coût relu après la réponse (Bob l'écrit après, `LATE_COST_MS`). */
+  /**
+   * Attente au plus du coût après la réponse, finie dès qu'il arrive : `DRAFT_COST_WAIT_MS` pour un
+   * agent dont le profil lit le coût hors protocole, `LATE_COST_MS` sinon.
+   */
   lateCostMs?: number
   now?: () => number
 }
@@ -62,6 +77,12 @@ interface Draft {
   state: TranscriptState
   /** Le tour est allé au bout : le coût peut encore arriver un instant après. */
   turnEnded: boolean
+  /** Le profil lit le coût hors protocole (`costSource`) : il arrive après la réponse. */
+  lateCost: boolean
+  /** Un coût est arrivé après la fin du tour : l'attente de `end` s'arrête. */
+  costAfterTurn: boolean
+  /** Réveil de l'attente du coût (`end`). */
+  onCost?: () => void
   finish: (outcome: Outcome) => void
   done: boolean
 }
@@ -81,7 +102,7 @@ function firstRequest(items: readonly TranscriptItem[]): string | undefined {
 export class CommitDrafts {
   private readonly drafts = new Map<string, Draft>()
   /** Agents des rédactions finies, en train de fermer leur session (coût relu, suppression). */
-  private readonly ending = new Set<AsideHost>()
+  private readonly ending = new Map<AsideHost, Draft>()
   private readonly options: CommitDraftsOptions
 
   constructor(options: CommitDraftsOptions) {
@@ -158,8 +179,12 @@ export class CommitDrafts {
   /** Sortie de l'app : toutes les rédactions s'arrêtent, leurs agents aussi. */
   stopAll(): void {
     for (const draft of [...this.drafts.values()]) draft.finish({ reason: 'stopped' })
-    // Pas d'attente possible en quittant : les agents qui ferment leur session s'arrêtent net.
-    for (const host of this.ending) host.stop()
+    // Pas d'attente possible en quittant : le coût déjà connu est compté tout de suite, et les
+    // agents qui ferment leur session s'arrêtent net.
+    for (const [host, draft] of this.ending) {
+      draft.onCost?.()
+      host.stop()
+    }
     this.ending.clear()
   }
 
@@ -186,6 +211,8 @@ export class CommitDrafts {
         text: '',
         state: { items: [], nextId: 1 },
         turnEnded: false,
+        lateCost: !!base.profile.costSource,
+        costAfterTurn: false,
         done: false,
         finish: (outcome) => {
           if (draft.done) return
@@ -225,6 +252,14 @@ export class CommitDrafts {
     if (draft.done) {
       // Arrêtée : plus rien n'est accordé, même après coup.
       if (event.type === 'permission-request') draft.host.respondPermission(event.requestId, null)
+      // Mais le coût, lui, arrive souvent après la fin du tour (Bob : relu dans sa base, D1).
+      else if (isCost(event)) {
+        draft.state = reduceTranscript(draft.state, event)
+        if (draft.turnEnded) {
+          draft.costAfterTurn = true
+          draft.onCost?.()
+        }
+      }
       return
     }
     draft.state = reduceTranscript(draft.state, event)
@@ -272,9 +307,9 @@ export class CommitDrafts {
   private async end(draft: Draft): Promise<void> {
     const { host } = draft
     const sessionId = host.currentSessionId
-    this.ending.add(host)
+    this.ending.set(host, draft)
     try {
-      if (draft.turnEnded) await delay(this.options.lateCostMs ?? LATE_COST_MS, { unref: true })
+      if (draft.turnEnded) await this.costAfterTurn(draft)
       this.postCost(draft)
       if (sessionId) {
         if (host.sessionSupport.delete) {
@@ -293,6 +328,25 @@ export class CommitDrafts {
     }
   }
 
+  /**
+   * Attend le coût annoncé après la fin du tour (relecture de l'hôte), au plus la borne. Sans source
+   * hors protocole, le coût par ACP est déjà là : la courte attente d'un `usage_update` tardif.
+   */
+  private async costAfterTurn(draft: Draft): Promise<void> {
+    if (draft.costAfterTurn) return
+    const bound = this.options.lateCostMs ?? (draft.lateCost ? DRAFT_COST_WAIT_MS : LATE_COST_MS)
+    if (bound <= 0) return
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, bound)
+      timer.unref()
+      draft.onCost = () => {
+        clearTimeout(timer)
+        resolve()
+      }
+    })
+    delete draft.onCost
+  }
+
   private postCost(draft: Draft): void {
     const cost = draft.state.usage?.cost
     if (!cost || cost.amount <= 0) return
@@ -309,6 +363,14 @@ export class CommitDrafts {
   private now(): number {
     return (this.options.now ?? Date.now)()
   }
+}
+
+/** Évènement qui porte le coût de la session (hors protocole ou par ACP). */
+function isCost(event: AgentEvent): boolean {
+  return (
+    event.type === 'usage-report' ||
+    (event.type === 'update' && event.update.sessionUpdate === 'usage_update')
+  )
 }
 
 /** Promesse abandonnée au bout de `ms` (session à supprimer chez un agent qui ne répond plus). */

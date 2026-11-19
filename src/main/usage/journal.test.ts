@@ -211,6 +211,42 @@ describe('journal de consommation : un tour, une ligne (fiche 130)', () => {
     })
   })
 
+  it('session à part (aparté, message de commit rédigé, fiche 254 D1) : une ligne de plus, sans toucher au tour', () => {
+    const { send, rows } = setup()
+    send(user(1000))
+    send(usageUpdate(1000, 0.5))
+    send(end(2000))
+    send({ type: 'aside-cost', cost: { amount: 0.0125, currency: 'bobcoins' } })
+    expect(rows().map((r) => [r.stopReason, r.cost])).toEqual([
+      ['end_turn', { amount: 0.5, currency: 'USD' }],
+      ['aside', { amount: 0.0125, currency: 'bobcoins' }]
+    ])
+    expect(rows()[1]).toMatchObject({
+      conversationId: 'c1',
+      parentId: 'mere',
+      profileId: 'mock',
+      workspace: '/projets/app/.worktrees/fille',
+      repoRoot: '/projets/app',
+      tokens: {},
+      tools: {},
+      subagents: 0
+    })
+    // Le coût cumulé de la session de la conversation n'a pas bougé : le tour suivant part de 0,5.
+    send(user(5000))
+    send(usageUpdate(1000, 0.75))
+    send(end(6000))
+    expect(rows().find((r) => r.id === 'c1:5000')?.cost).toEqual({ amount: 0.25, currency: 'USD' })
+  })
+
+  it('session à part sans coût, ou conversation inconnue : aucune ligne', () => {
+    const { send, rows } = setup({ describe: false })
+    send({ type: 'aside-cost', cost: { amount: 0.02, currency: 'USD' } })
+    expect(rows()).toEqual([])
+    const other = setup()
+    other.send({ type: 'aside-cost', cost: { amount: 0, currency: 'USD' } })
+    expect(other.rows()).toEqual([])
+  })
+
   it('conversation inconnue : aucune ligne', () => {
     const { send, rows } = setup({ describe: false })
     send(user(1000))

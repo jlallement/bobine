@@ -92,7 +92,10 @@ export interface TurnRow {
   workspace?: string
   /** Racine du dépôt git ; celle du dépôt principal pour un worktree. */
   repoRoot?: string
-  /** `stopReason` ACP, `error` (tour en échec) ou `interrupted` (agent ou app arrêtés). */
+  /**
+   * `stopReason` ACP, `error` (tour en échec), `interrupted` (agent ou app arrêtés) ou `aside`
+   * (session à part de la conversation : aparté, message de commit rédigé, fiche 254).
+   */
   stopReason?: string
   tokens: TurnTokens
   /** Coût du tour, dans l'unité de l'agent ; jamais estimé. */

@@ -7,6 +7,7 @@ import type { AgentEvent } from '@shared/agent'
 import type { CommitDraftResult } from '@shared/commit-draft'
 import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { bobDbCosts, readBobSpend } from '../agent/bob-costs'
 import type { AgentProfile } from '../agent/profiles'
 import { eventLog } from '../agent/test-events'
 import { runCommand } from '../simulator/run'
@@ -49,7 +50,7 @@ afterEach(() => {
 
 function setup(
   commit: string | undefined,
-  options: { timeoutMs?: number; enabled?: boolean } = {}
+  options: { timeoutMs?: number; enabled?: boolean; bobDb?: string; lateCostMs?: number } = {}
 ) {
   const dir = repo()
   const pids = join(mkdtempSync(join(tmpdir(), 'draft-pids-')), 'pids')
@@ -58,13 +59,25 @@ function setup(
     id: 'mock',
     label: 'Agent factice',
     command: process.execPath,
-    args: [MOCK_AGENT_ENTRY, '--scenario', 'echo', '--delay', '0', '--trust'],
+    args: [
+      MOCK_AGENT_ENTRY,
+      '--scenario',
+      'echo',
+      '--delay',
+      '0',
+      '--trust',
+      // Comme Bob (fiche 254) : coût hors protocole, écrit dans sa base après la réponse.
+      ...(options.bobDb ? ['--cout-bob', '--bob-db', options.bobDb] : [])
+    ],
     env: {
       MOCK_AGENT_PID_FILE: pids,
       ...(commit ? { MOCK_AGENT_COMMIT: commit } : {})
-    }
+    },
+    ...(options.bobDb ? { costSource: bobDbCosts(options.bobDb) } : {})
   }
-  const posted: AgentEvent[] = []
+  // Ce que la rédaction pose dans la conversation (son coût), attendable.
+  const postedLog = eventLog<AgentEvent>()
+  const posted = postedLog.events
   const noted: string[][] = []
   const listeners: Parameters<CommitDraftConversations['subscribe']>[0][] = []
   // Évènements des hôtes de rédaction, vus par l'essai aussi (fiche 250) : de quoi attendre que la
@@ -82,7 +95,7 @@ function setup(
     }),
     view: () => ({ transcript: { items: ITEMS } }),
     title: () => 'Ajoute le filtre par statut',
-    post: (_id, event) => posted.push(event),
+    post: (_id, event) => postedLog.emit(event),
     noteAsideSession: (...note) => noted.push(note),
     subscribe: (l) => {
       listeners.push(l)
@@ -103,10 +116,10 @@ function setup(
     enabled: () => options.enabled ?? true,
     run: runCommand,
     timeoutMs: options.timeoutMs ?? 20_000,
-    lateCostMs: 0
+    lateCostMs: options.lateCostMs ?? 0
   })
   hosts.push(drafts)
-  return { dir, drafts, pids, posted, noted, listeners, host }
+  return { dir, drafts, pids, posted, postedLog, noted, listeners, host }
 }
 
 const alive = (pid: number) => {
@@ -227,6 +240,36 @@ describe('CommitDrafts (fiche 246)', () => {
     expect(await first).toMatchObject({ reason: 'stopped' })
     expect(await second).toMatchObject({ reason: 'timeout' })
     expect(await noAgentLeft(pids, drafts)).toBe(2)
+  })
+
+  it('coût écrit par l’agent après sa réponse (Bob, fiche 254 D1) : lu avant la suppression de la session, ajouté à la conversation', async () => {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'draft-bob-db-')), 'bob.db')
+    // Borne large : l'attente finit dès que le coût arrive (300 ms après la réponse chez l'agent
+    // factice), jamais au bout de la borne.
+    const { drafts, pids, posted, postedLog } = setup(undefined, {
+      bobDb,
+      lateCostMs: 15_000
+    })
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(isAgent(result)).toBe(true)
+    await postedLog.until(() => posted.some((e) => e.type === 'aside-cost'))
+    expect(posted.filter((e) => e.type === 'aside-cost')).toEqual([
+      { type: 'aside-cost', cost: { amount: 0.0125, currency: 'bobcoins' } }
+    ])
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+    // Session supprimée ensuite : comme chez Bob, sa ligne de coût part avec elle (la dépense
+    // n'est plus dans sa base) ; seul le coût lu avant la suppression pouvait être compté.
+    expect(readBobSpend(new Date(), bobDb)?.today).toBe(0)
+  })
+
+  it('coût donné par ACP (OpenCode, fiche 254 D1) : ajouté à la conversation, une seule fois', async () => {
+    const { drafts, pids, posted } = setup(undefined)
+    const result = await drafts.draft('c1', { files: FILES, place: 'conversation' })
+    expect(isAgent(result)).toBe(true)
+    expect(await noAgentLeft(pids, drafts)).toBe(1)
+    const costs = posted.filter((e) => e.type === 'aside-cost')
+    expect(costs).toHaveLength(1)
+    expect(costs[0]?.type === 'aside-cost' && costs[0].cost.amount).toBeGreaterThan(0)
   })
 
   it('réglage désactivé : le repli tout de suite, aucun agent lancé', async () => {
