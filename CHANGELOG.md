@@ -2,6 +2,23 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Modèle que l'agent dit indisponible (OpenCode : « Model unavailable ») : la carte « Le modèle …
+  n'a pas répondu » s'affiche, avec « Choisir un autre modèle », au lieu d'une erreur brute en
+  rouge. L'avis « … n'est pas connecté à son fournisseur » disparaît dès que l'agent répond
+  autrement, par exemple après la connexion.
+- Premier lancement avec un dossier (`bobine <dossier>`) : aucun agent ne démarre avant votre
+  choix dans l'accueil ; la conversation de ce dossier s'ouvre ensuite, avec l'agent choisi.
+- Accueil, étape « Où travailler ? » : pour un agent qui modifie les fichiers sans demander, le
+  texte ne promet plus « avec votre accord ».
+- Réglages › Diagnostic : une session pas essayée l'est pour la vraie raison (profil d'essai, ou
+  agent qui ne sait pas la supprimer), sans contredire le pied de page.
+- Journal : l'avertissement bénin « ResizeObserver loop … » du redimensionnement n'est plus noté
+  comme une erreur.
+
 ## 1.0.0-rc.1 — 19 novembre 2026
 
 ### Corrections

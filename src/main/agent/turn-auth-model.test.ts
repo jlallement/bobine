@@ -79,7 +79,8 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
       message: {
         key: 'agentHost.modelAuthRefused',
         params: { agent: 'Agent factice', model: 'Factice rapide' }
-      }
+      },
+      refusal: true
     })
     expect(refused.has('mock', 'factice-rapide')).toBe(true)
     expect(marked()).toEqual(['factice-rapide'])

@@ -93,6 +93,8 @@ export class Onboarding {
   private stopAgent: (() => void) | undefined
   /** Méthodes de connexion annoncées par chaque agent, d'après son dernier refus. */
   private readonly methods = new Map<string, Set<string>>()
+  /** Ce qui attend la fin de l'accueil (`whenClosed`). */
+  private readonly afterClose: (() => void)[] = []
   private readonly deps: OnboardingDeps
 
   constructor(deps: OnboardingDeps) {
@@ -100,9 +102,13 @@ export class Onboarding {
     if (deps.decision.write) deps.settings.setOnboarding(deps.decision.write)
   }
 
-  state(): OnboardingState {
+  private due(): boolean {
     const mark = this.deps.settings.onboarding()
-    const due = this.deps.decision.due && (!mark || mark.outcome === 'pending')
+    return this.deps.decision.due && (!mark || mark.outcome === 'pending')
+  }
+
+  state(): OnboardingState {
+    const due = this.due()
     return {
       due,
       agents: due ? this.deps.summaries() : [],
@@ -207,6 +213,23 @@ export class Onboarding {
     const current = this.deps.settings.onboarding()
     const next = closingMark(current, outcome, now, this.deps.version)
     if (next !== current) this.deps.settings.setOnboarding(next)
+    for (const run of this.afterClose.splice(0)) {
+      try {
+        run()
+      } catch (error) {
+        log.warn('Accueil : suite de la fermeture en échec', error)
+      }
+    }
+  }
+
+  /**
+   * `run` une fois l'accueil fermé (fini ou passé), tout de suite s'il n'est pas dû. Fiche 259
+   * (D36) : ce qui lancerait un agent hors de l'accueil — une demande `bobine <dossier>` — attend
+   * que l'utilisateur en ait choisi un (fiche 242 : aucun agent lancé sans être choisi).
+   */
+  whenClosed(run: () => void): void {
+    if (this.due()) this.afterClose.push(run)
+    else run()
   }
 
   /**

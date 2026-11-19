@@ -13,6 +13,7 @@ import { TrialSessions } from './trial-sessions'
 import type { DeleteOutcome } from '../agent/session-list'
 import { agentSessions } from '../conversations/agent-outside'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { LaunchController } from '../launch-request'
 
 const profile: AgentProfile = {
   id: 'mock',
@@ -508,3 +509,70 @@ function setupSettings(): OnboardingDeps['settings'] {
     keyInfo: () => []
   }
 }
+
+describe('demandes `bobine <dossier>` pendant l’accueil (fiche 259, D36)', () => {
+  /**
+   * Exploration du 2026-11-19 : profil temporaire lancé avec un dossier en argument ; la
+   * conversation de ce dossier s'ouvrait aussitôt avec l'agent par défaut (IBM Bob lancé), l'accueil
+   * affiché et aucun agent choisi. La demande attend maintenant la fin de l'accueil.
+   */
+  function launchDuring(due: boolean) {
+    const { onboarding } = setup(due ? {} : { decision: { due: false } })
+    const opened: string[] = []
+    const launch = new LaunchController()
+    launch.request({ folder: '/projets/explo' })
+    onboarding.whenClosed(() =>
+      launch.attach({
+        isFolder: () => true,
+        openConversation: async (folder) => {
+          opened.push(folder)
+          return 'c1'
+        },
+        focus: () => {},
+        show: () => {},
+        fail: () => {}
+      })
+    )
+    return { onboarding, opened, launch }
+  }
+
+  it('accueil dû : aucune conversation (donc aucun agent) avant sa fin', async () => {
+    const { onboarding, opened, launch } = launchDuring(true)
+    await Promise.resolve()
+    expect(opened).toEqual([])
+    // Une seconde instance pendant l'accueil attend aussi.
+    launch.request({ folder: '/projets/autre' })
+    await Promise.resolve()
+    expect(opened).toEqual([])
+    onboarding.finish('finished')
+    await vi.waitFor(() => expect(opened).toEqual(['/projets/explo', '/projets/autre']))
+    // Fini une seconde fois : rien n'est rejoué.
+    onboarding.finish('skipped')
+    await Promise.resolve()
+    expect(opened).toHaveLength(2)
+  })
+
+  it('accueil passé : la demande part aussi', async () => {
+    const { onboarding, opened } = launchDuring(true)
+    onboarding.finish('skipped')
+    await vi.waitFor(() => expect(opened).toEqual(['/projets/explo']))
+  })
+
+  it('accueil pas dû : tout de suite, comme avant', async () => {
+    const { opened } = launchDuring(false)
+    await vi.waitFor(() => expect(opened).toEqual(['/projets/explo']))
+  })
+
+  it('une suite en échec n’empêche pas les autres', () => {
+    const { onboarding } = setup()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const second = vi.fn()
+    onboarding.whenClosed(() => {
+      throw new Error('boum')
+    })
+    onboarding.whenClosed(second)
+    onboarding.finish('finished')
+    expect(second).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+})

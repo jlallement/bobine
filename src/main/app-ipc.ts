@@ -118,9 +118,12 @@ export function appHandlers(
         unknown
       >
       const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
-      log.error(
-        `Interface (${text(r['source'], 40) || '?'}) : ${text(r['message'], 2000) || '(sans message)'}`,
-        ...(text(r['stack'], 8000) ? [text(r['stack'], 8000)] : [])
+      const source = text(r['source'], 40)
+      const message = text(r['message'], 2000)
+      const stack = text(r['stack'], 8000)
+      log[uiErrorLevel(source, message, stack)](
+        `Interface (${source || '?'}) : ${message || '(sans message)'}`,
+        ...(stack ? [stack] : [])
       )
       return undefined
     },
@@ -189,4 +192,21 @@ export function appHandlers(
       return undefined
     }
   }
+}
+
+/**
+ * Avertissement de Chromium quand un `ResizeObserver` n'a pas pu livrer toutes ses notifications
+ * dans la même image (redimensionnement) : bénin, connu des navigateurs, sans objet `Error` ni pile.
+ * Les deux formes connues, texte exact (fiche 259, D37).
+ */
+const RESIZE_OBSERVER_NOISE =
+  /^ResizeObserver loop (completed with undelivered notifications|limit exceeded)\.?$/
+
+/**
+ * Niveau d'une erreur de l'interface dans le journal : `debug` pour le seul bruit de
+ * `ResizeObserver` (évènement `error` de la fenêtre, message exact, sans pile) ; tout le reste en
+ * ERROR, pour ne masquer aucune vraie erreur.
+ */
+export function uiErrorLevel(source: string, message: string, stack: string): 'debug' | 'error' {
+  return source === 'error' && !stack && RESIZE_OBSERVER_NOISE.test(message) ? 'debug' : 'error'
 }

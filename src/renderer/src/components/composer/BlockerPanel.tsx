@@ -224,17 +224,23 @@ function AuthPanel(props: Props & { blocker: Blocker<'auth'> }) {
           )}
         </div>
       )}
-      {/* Modèle refusé : « Réessayer » une fois la connexion lancée (ou des outils déjà passés). */}
-      {atTurn && (!model || stepLaunched || waiting || blocker.toolsRan) && (
-        <ExpiredAuthBody
-          blocker={blocker}
-          retryFirst={retryFirst || !blocker.methods.length}
-          confirming={confirming}
-          onConfirming={setConfirming}
-          onRetry={props.onRetry}
-          waiting={waiting}
-        />
-      )}
+      {/* Modèle refusé : « Réessayer » une fois la connexion lancée (ou des outils déjà passés), ou
+          tout de suite si la carte n'a rien d'autre à proposer (fiche 259). */}
+      {atTurn &&
+        (!model ||
+          stepLaunched ||
+          waiting ||
+          blocker.toolsRan ||
+          (!otherModel && !blocker.methods.length && !apiKey)) && (
+          <ExpiredAuthBody
+            blocker={blocker}
+            retryFirst={retryFirst || !blocker.methods.length}
+            confirming={confirming}
+            onConfirming={setConfirming}
+            onRetry={props.onRetry}
+            waiting={waiting}
+          />
+        )}
       {waiting && !atTurn && <StuckSignIn onRetry={props.onRetry} />}
       {stepLaunched && !atTurn && !waiting && (
         <>
@@ -371,7 +377,8 @@ function withOtherModel(control: SessionControl | undefined): SessionControl | u
 
 /**
  * Titre de la carte de connexion : à l'ouverture de la session, refusée à un message, ou refusée
- * pour un modèle nommé (fiche 210 : souvent un fournisseur non connecté, pas toute la connexion).
+ * pour un modèle nommé (fiche 210 : souvent un fournisseur non connecté, pas toute la connexion ;
+ * fiche 259 : ou un modèle que l'agent dit indisponible).
  */
 function AuthHead({
   atTurn,
@@ -379,12 +386,17 @@ function AuthHead({
   agentLabel
 }: {
   atTurn: boolean
-  model: { name: string } | undefined
+  model: { name: string; unavailable?: true } | undefined
   agentLabel: string
 }) {
   const { t } = useTranslation()
   const [title, subtitle] = model
-    ? [t('blocker.auth.modelTitle', { model: model.name }), t('blocker.auth.modelSubtitle')]
+    ? [
+        t('blocker.auth.modelTitle', { model: model.name }),
+        t(
+          model.unavailable ? 'blocker.auth.modelUnavailableSubtitle' : 'blocker.auth.modelSubtitle'
+        )
+      ]
     : atTurn
       ? [t('blocker.auth.expiredTitle'), t('blocker.auth.expiredSubtitle', { agent: agentLabel })]
       : [t('blocker.auth.title'), t('blocker.auth.subtitle', { agent: agentLabel })]

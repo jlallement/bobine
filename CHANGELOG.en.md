@@ -2,6 +2,22 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- A model the agent says is unavailable (OpenCode: “Model unavailable”): the “The … model didn’t
+  answer” card shows, with “Choose another model”, instead of a raw red error. The “… isn’t
+  signed in to its provider” notice goes away as soon as the agent answers otherwise, for example
+  after signing in.
+- First launch with a folder (`bobine <folder>`): no agent starts before you choose one in the
+  welcome; the conversation for that folder opens afterwards, with the chosen agent.
+- Welcome, “Where to work?” step: for an agent that edits files without asking, the text no
+  longer promises “with your approval”.
+- Settings › Diagnostics: a session that wasn’t tried says the real reason (test profile, or an
+  agent that can’t delete it), without contradicting the footer.
+- Log: the harmless “ResizeObserver loop …” warning on resize is no longer recorded as an error.
+
 ## 1.0.0-rc.1 — November 19, 2026
 
 ### Fixes

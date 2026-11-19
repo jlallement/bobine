@@ -720,6 +720,7 @@
       "expiredRetry": "Une fois connecté, « Réessayer » renvoie votre dernier message, une seule fois.",
       "modelTitle": "Le modèle {{model}} n’a pas répondu",
       "modelSubtitle": "L’agent n’est pas connecté au fournisseur de ce modèle.",
+      "modelUnavailableSubtitle": "L’agent dit que ce modèle n’est pas disponible.",
       "chooseModel": "Choisir un autre modèle",
       "toolsRan": "L’agent avait déjà lancé des outils pour ce message : « Réessayer » le reprend depuis le début.",
       "confirmToolsRan": "Des outils ont déjà tourné pour ce message ; les relancer ?",
@@ -1817,7 +1818,7 @@
     "reportIssue": "Signaler un problème",
     "reportIssueHint": "Ouvre une issue GitHub dans le navigateur, préremplie avec la version et ce rapport. Rien n’est envoyé avant que vous ne la validiez sur GitHub.",
     "reportIssueTruncated": "[Rapport coupé pour tenir dans l’adresse : coller le reste depuis « Copier le rapport ».]",
-    "privacy": "Rien n’est envoyé à un modèle. Chaque agent est lancé hors conversation, dans le dossier courant ; sa session d’essai est supprimée ensuite.",
+    "privacy": "Rien n’est envoyé à un modèle. Chaque agent est lancé hors conversation, dans le dossier courant. Bobine n’ouvre d’office une session d’essai que chez un agent qui sait la supprimer, et la supprime ensuite.",
     "log": {
       "label": "Journal",
       "level": "Niveau du journal",
@@ -1947,6 +1948,7 @@
       "untestedVersionFix": "Les fonctions propres à {{agent}} peuvent ne pas marcher avec cette version. Si quelque chose cloche, signalez-le avec le journal.",
       "session": "Session",
       "sessionSkipped": "pas essayée : {{agent}} ne sait pas supprimer une session, celle d’essai resterait dans son historique",
+      "sessionSkippedTrial": "pas essayée d’office sur ce profil d’essai, pour ne rien laisser chez {{agent}}",
       "models": "Modèles",
       "noModels": "aucun modèle proposé",
       "noModelsFix": "Configurez un fournisseur de modèles pour {{agent}}.",
@@ -3114,6 +3116,7 @@
     "notReady": "Agent non prêt (statut : {{status}})",
     "authExpired": "{{agent}} n’a pas répondu : connexion expirée.",
     "modelAuthRefused": "Le modèle {{model}} n’a pas répondu : {{agent}} n’est pas connecté à son fournisseur.",
+    "modelUnavailable": "Le modèle {{model}} n’a pas répondu : {{agent}} le dit indisponible.",
     "licenseAtPrompt": "{{name}} demande d’accepter sa licence : renvoyez votre message, puis acceptez-la dans le formulaire qui s’affiche.",
     "workspaceMissing": "Dossier de travail introuvable : {{folder}}",
     "exit": {
@@ -4854,6 +4857,7 @@
     "folder": {
       "title": "Où travailler ?",
       "subtitle": "L’agent lit et modifie les fichiers de ce dossier, avec votre accord.",
+      "subtitleWithoutAsking": "L’agent lit et modifie les fichiers de ce dossier sans demander d’autorisation : c’est son réglage par défaut.",
       "projectTitle": "Un projet existant",
       "projectHelp": "De préférence un dépôt git.",
       "choose": "Choisir…",

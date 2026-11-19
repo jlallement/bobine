@@ -255,6 +255,8 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `connexion-expiree-rouverture` | Comme `connexion-expiree`, mais la réouverture de la session (`session/load`) est refusée elle aussi tant que la connexion n'est pas refaite |
 | `connexion-expiree-modele` | Modèle d'un fournisseur non connecté (fiche 210) : avec `factice-rapide` (modèle par défaut), le message est refusé (`-32000` « provider authentication required », étape `when-model` puis `login-required`) tant que `.mock-agent-logged-in` n'est pas là ; avec `factice-precis`, « Ce modèle est connecté, je peux répondre. » |
 | `connexion-expiree-modele-aucun` | Comme `connexion-expiree-modele`, mais aucun modèle ne répond avant la connexion : changer de modèle ramène la carte, avec le nouveau modèle |
+| `modele-indisponible` | Modèle que le fournisseur ne sert pas (fiche 259, comme OpenCode 2.3.0) : avec `factice-rapide`, le message est refusé par l'erreur exacte relevée, `-32603` « Internal error: Model unavailable: factice-rapide » ; avec `factice-precis`, « Ce modèle est disponible, je peux répondre. » |
+| `modele-indisponible-apres-connexion` | Le parcours D6 du 2026-11-19 : `factice-rapide` refusé faute de connexion (`-32000`), puis, une fois `.mock-agent-logged-in` posé (« Réessayer »), refusé comme indisponible (`-32603` « Model unavailable ») ; `factice-precis` répond |
 | `connexion-expiree-autre` | Refus `-32000` au message sans indice de connexion dans le texte : erreur de tour ordinaire, pas de carte de connexion |
 | `bob-elicitation` | Formulaire riche (`elicitation/create`, mode `form`) ; la réponse oriente la suite |
 | `elicitation-url` | Demande d'ouvrir une page web (`elicitation/create`, mode `url`) |

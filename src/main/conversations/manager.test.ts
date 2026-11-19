@@ -1572,7 +1572,10 @@ describe('ConversationManager.checkAgent (diagnostic, fiche 061)', () => {
   it('n’ouvre pas de session chez un agent qui ne saurait pas la supprimer, sauf sur demande', async () => {
     const env = environment(['--sans-historique'])
     const { manager } = env.launch({ only: ['texte'] })
-    expect((await manager.checkAgent('texte')).session).toBe('skipped')
+    const skipped = await manager.checkAgent('texte')
+    expect(skipped.session).toBe('skipped')
+    // La raison vient de la capacité annoncée à `initialize` (fiche 259, D29).
+    expect(skipped.skipped).toBe('no-delete')
     const tried = await manager.checkAgent('texte', { trySession: true })
     expect(tried.snapshot?.status).toBe('ready')
     expect(tried.session).toBe('kept')
@@ -1586,6 +1589,8 @@ describe('ConversationManager.checkAgent (diagnostic, fiche 061)', () => {
     const check = await manager.checkAgent('texte', { disposable: true })
     expect(check.snapshot?.status).toBe('ready')
     expect(check.session).toBe('skipped')
+    // Fiche 259 (D29) : l'agent sait supprimer, la raison est le profil jetable, pas lui.
+    expect(check.skipped).toBe('disposable')
     // « Essayer une session » reste un geste explicite.
     const tried = await manager.checkAgent('texte', { disposable: true, trySession: true })
     expect(tried.session).toBe('deleted')

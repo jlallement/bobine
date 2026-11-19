@@ -292,6 +292,15 @@ describe('diagnostic — un agent (fiche 061)', () => {
     })
   })
 
+  it('session pas essayée : la vraie raison, jamais « ne sait pas supprimer » à tort (fiche 259, D29)', () => {
+    const detail = (skipped: 'disposable' | 'no-delete') =>
+      run({ session: 'skipped', skipped, snapshot: snapshot({}) }).find((c) => c.id === 'session')
+        ?.detail
+    expect(detail('disposable')).toMatch(/profil d’essai/)
+    expect(detail('disposable')).not.toMatch(/ne sait pas supprimer/)
+    expect(detail('no-delete')).toMatch(/ne sait pas supprimer une session/)
+  })
+
   it('ne démarre pas', () => {
     expect(
       run({

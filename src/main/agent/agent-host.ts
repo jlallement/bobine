@@ -679,7 +679,8 @@ export class AgentHost {
       const auth = turnAuthBlocker(error, (e) => this.blockerFor(e), this.options.profile, controls)
       if (auth) {
         this.blocker = this.turnAuth.block(auth, turn, this.appTools.toolCallsInTurn)
-        if (auth.model) this.options.refusedModels?.add(auth.model.id)
+        // « Connexion à faire » dans le sélecteur : pas pour un modèle indisponible (fiche 259).
+        if (auth.model && !auth.model.unavailable) this.options.refusedModels?.add(auth.model.id)
         this.options.emit(authExpiredNotice(this.options.profile.label, auth.model))
         this.setStatus('needs-action')
         return false

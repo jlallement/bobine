@@ -104,6 +104,7 @@ export function Onboarding(props: Props) {
         return (
           <FolderStep
             trialFolder={onboarding.trialFolder}
+            writesWithoutAsking={agent?.writesWithoutAsking === true}
             onChoose={() => void window.api.workspace.choose().then(useFolder, () => {})}
             onTrial={() =>
               void window.api.onboarding
@@ -428,11 +429,23 @@ function Actions(props: { onOtherAgent: () => void; onSkip: () => void; onRetry?
   )
 }
 
-function FolderStep(props: { trialFolder: string; onChoose: () => void; onTrial: () => void }) {
+/**
+ * « Où travailler ? ». `writesWithoutAsking` : l'agent choisi écrit sans demander (profil, fiche
+ * 259, D30) ; « avec votre accord » serait faux. Aucun nom d'agent ici.
+ */
+function FolderStep(props: {
+  trialFolder: string
+  writesWithoutAsking: boolean
+  onChoose: () => void
+  onTrial: () => void
+}) {
   const { t } = useTranslation()
+  const subtitle = props.writesWithoutAsking
+    ? t('onboarding.folder.subtitleWithoutAsking')
+    : t('onboarding.folder.subtitle')
   return (
     <>
-      <Title title={t('onboarding.folder.title')} subtitle={t('onboarding.folder.subtitle')} />
+      <Title title={t('onboarding.folder.title')} subtitle={subtitle} />
       <div className="onboarding-card">
         <ActionLine
           icon={<FolderOpen size={16} />}

@@ -34,39 +34,85 @@ export type AuthBlocker = Extract<AgentBlocker, { kind: 'auth' }>
  * d'API n'est proposée que si le profil dit qu'elle y répond, ou si c'est le seul moyen.
  * `controls` : réglages de la session ; avec un réglage de catégorie `model`, la carte nomme le
  * modèle refusé (fiche 210 : souvent un fournisseur non connecté, pas toute la connexion).
+ * Modèle indisponible (`modelRefusedAtTurn`, fiche 259) : la même carte, `model.unavailable`.
  */
 export function turnAuthBlocker(
   error: unknown,
   blockerOf: (error: unknown) => AgentBlocker | undefined,
-  profile: Pick<AgentProfile, 'authAtTurn'>,
+  profile: Pick<AgentProfile, 'authAtTurn' | 'modelRefusedAtTurn'>,
   controls: readonly SessionControl[] = []
 ): AuthBlocker | undefined {
   const rule = profile.authAtTurn
-  if (!rule) return undefined
   const message = errorMessage(error)
   const code = typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : 0
-  const other = rule.otherCodes?.some((o) => o.code === code && o.pattern.test(message)) === true
-  // Autre code déclaré : lu comme un `authRequired` (mêmes méthodes, même clé d'API).
-  const blocker = other
-    ? blockerOf(RequestError.authRequired(undefined, message))
-    : rule.pattern?.test(message) === true
-      ? blockerOf(error)
-      : undefined
+  const unavailable = unavailableModel(profile, code, rawMessage(error), controls)
+  const other = rule?.otherCodes?.some((o) => o.code === code && o.pattern.test(message)) === true
+  // Autre code déclaré, ou modèle indisponible : lu comme un `authRequired` (mêmes méthodes, même
+  // clé d'API), pour la carte de tour et ses gestes (autre modèle, connexion, « Réessayer »).
+  const found =
+    unavailable || other
+      ? blockerOf(RequestError.authRequired(undefined, message))
+      : rule?.pattern?.test(message) === true
+        ? blockerOf(error)
+        : undefined
+  // Modèle indisponible chez un agent sans moyen de connexion annoncé : la carte quand même, pour
+  // choisir un autre modèle ou réessayer ; ce n'est pas une connexion qui manque.
+  const blocker = found ?? (unavailable ? NO_SIGN_IN : undefined)
   if (blocker?.kind !== 'auth') return undefined
   const { apiKey, ...rest } = blocker
-  const keepKey = apiKey && (rule.apiKey === true || rest.methods.length === 0)
-  const model = currentModel(controls)
+  const keepKey = apiKey && (rule?.apiKey === true || rest.methods.length === 0)
+  const model = unavailable
+    ? { ...unavailable, unavailable: true as const }
+    : currentModel(controls)
   return { ...rest, ...(keepKey ? { apiKey } : {}), atTurn: true, ...(model ? { model } : {}) }
 }
 
+const NO_SIGN_IN: AuthBlocker = { kind: 'auth', methods: [], authenticating: false }
+
+/** Le message de l'erreur, sans le détail de `data` qu'`errorMessage` y ajoute. */
+function rawMessage(error: unknown): string {
+  const message =
+    typeof error === 'object' && error !== null
+      ? (error as { message?: unknown }).message
+      : undefined
+  return typeof message === 'string' ? message : errorMessage(error)
+}
+
+/**
+ * Le modèle de la session, si l'agent vient de le dire indisponible (`modelRefusedAtTurn` du
+ * profil) : code et motif ensemble, et l'identifiant du message égal, entier, à celui du modèle
+ * de la session. Sans réglage de modèle, ou pour un autre modèle (celui d'un sous-agent…) : rien,
+ * l'erreur reste une erreur de tour ordinaire.
+ */
+function unavailableModel(
+  profile: Pick<AgentProfile, 'modelRefusedAtTurn'>,
+  code: unknown,
+  message: string,
+  controls: readonly SessionControl[]
+): { id: string; name: string } | undefined {
+  const rule = profile.modelRefusedAtTurn
+  if (!rule || rule.code !== code) return undefined
+  const named = rule.pattern.exec(message)?.[1]
+  const model = currentModel(controls)
+  return named && model?.id === named ? model : undefined
+}
+
 /** Avis du fil à la place de l'erreur brute (traduit à l'affichage, ADR-0014). */
-export function authExpiredNotice(agent: string, model?: { name: string }): AgentEvent {
+export function authExpiredNotice(
+  agent: string,
+  model?: { name: string; unavailable?: true }
+): AgentEvent {
   return {
     type: 'notice',
     level: 'warning',
     message: model
-      ? { key: 'agentHost.modelAuthRefused', params: { agent, model: model.name } }
-      : { key: 'agentHost.authExpired', params: { agent } }
+      ? {
+          key: model.unavailable ? 'agentHost.modelUnavailable' : 'agentHost.modelAuthRefused',
+          params: { agent, model: model.name }
+        }
+      : { key: 'agentHost.authExpired', params: { agent } },
+    // Vrai jusqu'à la réponse suivante de l'agent : retiré par elle (fiche 259, D6).
+    refusal: true
   }
 }
 
