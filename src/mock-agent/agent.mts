@@ -21,7 +21,7 @@ import {
   LOGIN_MARKER,
   playSteps,
   TurnCancelled,
-  writeBobTaskCost,
+  writeBobTaskCostLogged,
   deleteBobTask,
   type Scenario,
   type TurnContext
@@ -708,8 +708,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         if (options.bobCost && options.bobDb) {
           session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
           const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]
-          // Bob écrit son coût après sa réponse : l'app le relit ensuite (fin de tour + 1,5 s).
-          setTimeout(() => writeBobTaskCost(file, id, cost), 300)
+          // Bob écrit son coût après sa réponse : l'app le relit ensuite (veille, fin de tour + 1,5 s).
+          setTimeout(() => writeBobTaskCostLogged(file, id, cost), 300)
         }
         if (options.withUsage === false || options.bobCost) return { stopReason }
         const real = chosen.turnUsage

@@ -176,3 +176,34 @@ Aucune nouvelle dépendance.
   les relectures à 1,5 s et 5 s restent pour une source qui ne se guette pas. Aucun délai allongé.
   Essais : `session-cost.test.ts` (écriture à 6 s, lue à la veille ; rouge sans le correctif),
   `bob-costs.test.ts` (la veille voit l'écriture de la base, créée à cette écriture).
+- 2026-11-19 — **Coût toujours pas vu malgré la veille** (CI Windows, `main` eb71bdd, run
+  44439977234 ; vert sur 7c658f2 juste avant) : même test, premier tour fini en 77 ms, aucun coût
+  en 6 s. Relevé dans les journaux des trois échecs (3cf4052 le 2026-11-16, 3bdb20a, eb71bdd) :
+  toujours au premier tour (base créée par cette écriture), et l'agent factice **ne s'arrête
+  pas** pendant l'attente (aucun « Agent arrêté »), alors qu'une exception de son écriture,
+  lancée hors du tour dans un `setTimeout`, l'aurait arrêté. Hypothèse de départ (la veille fait
+  lire Bobine pendant l'écriture, ce qui la ferait échouer) **écartée comme cause unique** : deux
+  échecs sur trois précèdent la veille (0ef1caf). **Pas reproduit sur le Mac** : 5 000 écritures
+  de l'agent factice (bases neuves ou non) contre un lecteur en boucle comme celui de l'app,
+  0 échec ; le test répété 12 fois sous 16 fils de charge, toujours vert. Cause retenue,
+  **probable, pas prouvée** : la base d'essai était en mode journal (le défaut de SQLite), alors
+  que celle de Bob est en **WAL** (fiche 048 : `bob.db-wal`, `bob.db-shm`). En mode journal, une
+  lecture qui croise l'écriture bloque l'écrivain (jusqu'à son délai de 5 s, puis
+  `database is locked`), et chaque transaction (deux par écriture) crée puis supprime
+  `bob.db-journal`, ce que Windows refuse tant qu'un autre processus (lecteur qui vérifie un
+  journal « chaud », antivirus) tient le fichier ; un journal qui traîne fait aussi échouer toute
+  lecture en lecture seule. Rien de cela n'existe en WAL. Correctif, côté agent factice seulement
+  (Bob est déjà en WAL : rien à changer côté produit) : base d'essai en **WAL comme celle de
+  Bob**, ligne écrite en **une seule transaction** (`BEGIN IMMEDIATE`, aussi pour les
+  sous-agents), et l'écriture tardive du coût **dite sur stderr** (réussie ou non, avec l'heure)
+  sans arrêter l'agent. Pour trancher au prochain échec : le test du journal passe en journal
+  détaillé et, s'il échoue, dit les fichiers de la base, ses lignes lues directement, la sortie
+  de l'agent factice et les relectures ratées de l'app (`readBobTaskCost` & co. disent leur
+  erreur au journal détaillé au lieu de la taire). Pistes écartées : relire après accalmie (la
+  veille réarmée à chaque évènement repousserait la lecture tant qu'un autre `bob` écrit) ; ne
+  pas ouvrir la base tant qu'un `-journal` existe (Bob en WAL n'en a pas, et un journal gardé en
+  mode `PERSIST` bloquerait toute lecture). Aucun délai allongé, aucun test assoupli. Essai rouge
+  sans le correctif : `bob-costs.test.ts`, « une lecture en cours ne bloque pas l'écriture »
+  (lecture ouverte pendant l'écriture du tour suivant : en mode journal, l'écriture attend 5 s
+  puis échoue, `database is locked` ; en WAL, immédiate). Pas de ligne au CHANGELOG (rien de
+  visible).
