@@ -20,26 +20,17 @@ import {
   LoaderCircle,
   Split
 } from 'lucide-react'
-import {
-  Fragment,
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { planVersions } from '@shared/plan-doc'
 import { groupTools, type ThreadEntry } from '@shared/tool-groups'
 import { noticeText, type TranscriptItem } from '@shared/transcript'
 import { handoverName } from '@shared/handover'
 import { childProposalGroups, type MessageOrigin as MessageOriginType } from '@shared/children'
 import type { TerminalState } from '@shared/terminal-output'
-import { fullTime, messageTime, turnDuration } from '../../time'
 import { turnTimes } from '@shared/turn-duration'
 import type { ConversationUsage } from '@shared/usage'
-import { turnFacts, TurnSummary, type TurnFacts } from './TurnSummary'
+import { ReplyFoot, replyFeet, sameFoot, type ReplyFootState } from './TurnSummary'
+import { MessageDuration, MessageTime } from './MessageTime'
 import { CopyButton } from '../common/CopyButton'
 import { ContextIcon } from '../composer/ContextIcon'
 import { PastedTextDialog, PastedTextLabel } from '../composer/PastedText'
@@ -86,8 +77,8 @@ const NOTICE_ICONS = {
   error: CircleExclamationPoint,
   success: CircleCheck
 } as const
-/** Aucun bilan (fil en lecture seule). */
-const NO_SUMMARIES: ReadonlyMap<number, TurnFacts> = new Map()
+/** Aucun pied (fil en lecture seule). */
+const NO_FEET: ReadonlyMap<number, ReplyFootState> = new Map()
 /** Même objet d'un rendu à l'autre quand il n'y a aucun terminal (éléments mémoïsés). */
 const NO_TERMINALS: Record<string, TerminalState> = {}
 /** Premier élément du fil d'une entrée (fiche 193). */
@@ -193,12 +184,12 @@ export function Transcript({
   const plans = useMemo(() => planVersions(items), [items])
   // Durée de chaque tour, sous sa dernière réponse (fiche 156) : temps de travail (fiche 255).
   const times = useMemo(() => turnTimes(items), [items])
-  // Bilan de chaque tour fini, sous la réponse qui le finit (fiches 185, 255) ; le dernier une fois
-  // que l'agent ne travaille plus du tout. Fil en lecture seule (côte à côte) : aucun.
+  // Pied de chaque tour, sous la réponse qui le finit (fiche 261) : son bilan une fois le tour fini
+  // (fiches 185, 255), « Travaille encore… » avant. Fil en lecture seule (côte à côte) : aucun.
   const editable = !!messageActions
   const open = !messageActions || messageActions.busy || messageActions.background === true
-  const summaries = useMemo(
-    () => (editable ? turnFacts(items, times, usage, open) : NO_SUMMARIES),
+  const feet = useMemo(
+    () => (editable ? replyFeet(items, times, usage, open) : NO_FEET),
     [editable, open, items, times, usage]
   )
   const planAt = new Map(plans.map((p) => [p.anchorId, p]))
@@ -353,6 +344,7 @@ export function Transcript({
         item={item}
         terminal={item.kind === 'tool' && item.terminalId ? terminals[item.terminalId] : undefined}
         duration={times.get(item.id)?.ms}
+        foot={feet.get(item.id)}
         streaming={item.id === writing}
         onRespondPermission={respondPermission}
         onRespondElicitation={respondElicitation}
@@ -366,15 +358,11 @@ export function Transcript({
         <FindQueryContext.Provider value={findQuery}>
           <div className="thread" data-testid="thread" ref={thread}>
             {start > 0 && <div ref={sentinel} className="thread-older" aria-hidden />}
-            {entries.slice(start).map((entry) => {
-              const summary = entry.kind === 'item' ? summaries.get(entry.item.id) : undefined
-              return (
-                <Fragment key={entryKey(entry)}>
-                  <ItemBoundary kind={entryKind(entry)}>{renderEntry(entry)}</ItemBoundary>
-                  {summary && <TurnSummary facts={summary} />}
-                </Fragment>
-              )
-            })}
+            {entries.slice(start).map((entry) => (
+              <ItemBoundary key={entryKey(entry)} kind={entryKind(entry)}>
+                {renderEntry(entry)}
+              </ItemBoundary>
+            ))}
           </div>
         </FindQueryContext.Provider>
       </AgentCardContext.Provider>
@@ -568,30 +556,6 @@ function copiedText(item: Extract<TranscriptItem, { kind: 'user' }>): string | u
   return parts.length > 0 ? parts.join('\n\n') : undefined
 }
 
-/** Durée du tour, à côté de l'heure de sa dernière réponse (fiche 156). */
-function MessageDuration({ ms }: { ms: number }) {
-  const { t } = useTranslation()
-  const text = turnDuration(ms)
-  return (
-    <span
-      className="msg-duration"
-      title={t('transcript.duration.title', { duration: text })}
-      data-testid="turn-duration"
-    >
-      {text}
-    </span>
-  )
-}
-
-/** Heure d'un message, au survol (date complète dans l'infobulle). */
-function MessageTime({ at }: { at: number }) {
-  return (
-    <time className="msg-time" dateTime={new Date(at).toISOString()} title={fullTime(at)}>
-      {messageTime(at)}
-    </time>
-  )
-}
-
 function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }> }) {
   // Texte collé ouvert en aperçu (fiche 155).
   const [reading, setReading] = useState<number | null>(null)
@@ -637,11 +601,23 @@ function UserMessage({ item }: { item: Extract<TranscriptItem, { kind: 'user' }>
   )
 }
 
+/**
+ * Mêmes props d'un élément du fil (fiche 047) ; le pied d'une réponse, recalculé à chaque morceau
+ * de réponse, est comparé par sa valeur (fiche 261).
+ */
+function sameItemProps<P extends { foot?: ReplyFootState | undefined }>(a: P, b: P): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)] as (keyof P)[])
+  return [...keys].every((key) =>
+    key === 'foot' ? sameFoot(a.foot, b.foot) : Object.is(a[key], b[key])
+  )
+}
+
 /** Un élément du fil : refait son rendu seulement s'il change (fiche 047). */
 const Item = memo(function Item({
   item,
   terminal,
   duration,
+  foot,
   streaming,
   onRespondPermission,
   onRespondElicitation
@@ -650,6 +626,8 @@ const Item = memo(function Item({
   terminal?: TerminalState
   /** Dernière réponse d'un tour : sa durée (fiche 156). */
   duration?: number | undefined
+  /** Réponse qui finit un tour : son pied, bilan ou « Travaille encore… » (fiche 261). */
+  foot?: ReplyFootState | undefined
   /** Réponse en cours d'écriture (fiche 192). */
   streaming: boolean
   onRespondPermission: RespondPermission
@@ -669,15 +647,20 @@ const Item = memo(function Item({
           <div className="msg-agent">
             <Markdown text={item.text} streaming={streaming} />
           </div>
-          <div className="msg-agent-actions">
-            <CopyButton
-              text={() => item.text}
-              label={t('transcript.copyReply')}
-              testId="copy-reply"
-            />
-            {item.at && <MessageTime at={item.at} />}
-            {duration !== undefined && <MessageDuration ms={duration} />}
-          </div>
+          {foot ? (
+            <ReplyFoot foot={foot} text={() => item.text} at={item.at} />
+          ) : (
+            // Autres réponses, tour arrêté ou en erreur : au survol, l'heure et la durée (fiche 156).
+            <div className="msg-agent-actions">
+              <CopyButton
+                text={() => item.text}
+                label={t('transcript.copyReply')}
+                testId="copy-reply"
+              />
+              {item.at && <MessageTime at={item.at} />}
+              {duration !== undefined && <MessageDuration ms={duration} />}
+            </div>
+          )}
         </div>
       )
     case 'thought':
@@ -760,7 +743,7 @@ const Item = memo(function Item({
     case 'memory-proposal':
       return <MemoryProposalCard item={item} />
   }
-})
+}, sameItemProps)
 
 /**
  * La conversation continue avec un autre agent (fiche 108), ou dans une session neuve du même agent

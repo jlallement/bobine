@@ -32,11 +32,10 @@ import { TipsContext, useAppTips } from './useTips'
 import { AsideCard } from './components/thread/AsideCard'
 import { useMenuCommands } from './useMenuCommands'
 import { Tip } from './components/common/Menus'
-import { PinnedPlan } from './components/thread/PinnedPlan'
 import { planActionsFor, planBadges } from './plan-badges'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { SidePanel } from './components/panel/SidePanel'
-import { ScrollDownButton } from './components/thread/ScrollDownButton'
+import { ThreadDock } from './components/thread/ThreadDock'
 import { Transcript } from './components/thread/Transcript'
 import { useConversations } from './useConversations'
 import { useActivityPage } from './useActivityPage'
@@ -726,19 +725,19 @@ export function App() {
                         />
                       </div>
                     </div>
-                    <div className="column thread-dock" style={{ width: '100%' }}>
-                      <ScrollDownButton
-                        atBottom={atBottom}
-                        items={transcript.items}
-                        conversation={c.activeId}
-                        onClick={scrollToBottom}
-                      />
-                      {pinnedPlan && (
-                        <PinnedPlan key={`tasks-${c.activeId}`} entries={pinnedPlan.entries} />
-                      )}
-                      {asideCard}
-                      {composer}
-                    </div>
+                    <ThreadDock
+                      conversationId={c.activeId}
+                      items={transcript.items}
+                      atBottom={atBottom}
+                      onScrollDown={scrollToBottom}
+                      pinnedPlan={pinnedPlan}
+                      aside={asideCard}
+                      composer={composer}
+                      conversations={childrenOf(c.activeId, c.list)}
+                      attention={c.attention}
+                      scroller={scroller}
+                      onReveal={reveal.go}
+                    />
                   </>
                 )}
               </main>

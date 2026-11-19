@@ -4566,11 +4566,18 @@
     "emptyHint": "An instruction that runs on its own: once, every day or every N hours."
   },
   "turnSummary": {
-    "done": "Done in {{duration}}",
-    "files_one": "{{count}} file +{{added}} −{{removed}}",
-    "files_other": "{{count}} files +{{added}} −{{removed}}",
-    "doneQuick": "Done",
-    "waited": "{{duration}} waiting for you"
+    "fileCount_one": "{{count}} file",
+    "fileCount_other": "{{count}} files",
+    "waited": "{{duration}} waiting for you",
+    "working": "Still working…"
+  },
+  "workCue": {
+    "replied": "{{name}} replied",
+    "finished": "{{name}} finished",
+    "several_one": "{{count}} task replied",
+    "several_other": "{{count}} tasks replied",
+    "show": "Show",
+    "showTip": "Scroll to the card"
   },
   "cap": {
     "more_one": "⋯ {{n}} more line",

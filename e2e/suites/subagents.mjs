@@ -353,6 +353,15 @@ async function openCode23(scheme) {
             !(await ui.ev(`!!${summary}`)),
           '2.3.0 (fiche 255) : sous-agents au travail après le tour : indicateur et pied « en cours », pas de « Terminé »'
         )
+        // Fiche 261 (écran F) : le pied de la réponse dit « Travaille encore… », dans son groupe.
+        check(
+          (await ui.ev(`(() => {
+            const foot = [...document.querySelectorAll('[data-testid=turn-working]')].at(-1)
+            const group = [...document.querySelectorAll('.msg-agent-group')].at(-1)
+            return !!foot && !!group?.contains(foot) && foot.innerText.includes(${JSON.stringify(L('turnSummary.working'))})
+          })()`)) === true,
+          '2.3.0 (fiche 261) : pied de la réponse « Travaille encore… » tant que les sous-agents travaillent'
+        )
         await ui.shot('255-en-cours-apres-le-tour')
         await open(ui, 0)
         await open(ui, 1)
@@ -391,7 +400,14 @@ async function openCode23(scheme) {
           })()`)) &&
             !(await ui.ev(`!!document.querySelector('[data-testid=working]')`)) &&
             (await ui.ev(status)) === L('sidebar.status.ready'),
-          '2.3.0 (fiche 255) : le bilan « Terminé » vient à la fin du travail, sous la réponse hors tour ; « Prêt » ensuite'
+          '2.3.0 (fiche 255) : le bilan vient à la fin du travail, sous la réponse hors tour ; « Prêt » ensuite'
+        )
+        // Fiche 261 : un seul pied, celui du bilan ; plus de « Travaille encore… ».
+        check(
+          !(await ui.ev(`!!document.querySelector('[data-testid=turn-working]')`)) &&
+            (await ui.ev(`${summary}.querySelectorAll('[data-testid=turn-duration]').length`)) ===
+              1,
+          '2.3.0 (fiche 261) : à la fin, le pied devient le bilan (heure · durée), une seule durée'
         )
         await ui.ev(`${block}.scrollIntoView({ block: 'start' }), true`)
         await ui.shot('g6b-2-3-fini')

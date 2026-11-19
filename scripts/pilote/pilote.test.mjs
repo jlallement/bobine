@@ -34,7 +34,7 @@ const idle = (extra = {}) => ({
   composer: { present: true, draft: 0, disabled: false },
   queued: 0,
   messages: 2,
-  turnSummary: 'Terminé en 44 s · 1 fichier +1 −1',
+  turnSummary: '21:17 · 44 s · 1 fichier +1 −1',
   turnDuration: '44 s',
   lastAgent: 'Configuration mise à jour.',
   tools: {
@@ -115,7 +115,7 @@ describe('état en texte', () => {
     expect(text.split('\n')).toEqual([
       'Bobine · Agent factice : Prêt (ready) · profil temporaire',
       'Conversation : « Carnet de bord » · Agent factice · Factice rapide · Code',
-      'Tour : fini — Terminé en 44 s · 1 fichier +1 −1',
+      'Tour : fini — 21:17 · 44 s · 1 fichier +1 −1',
       'Agent (4 mots) : Configuration mise à jour.',
       'Outils du tour : 1 (edit 1) · dernier : Modification de config.json (completed)',
       'Conversations (1) : ▸ Carnet de bord'
@@ -276,7 +276,7 @@ describe('raisons de fin d’attente', () => {
     expect(w.observe(idle(), 6000)).toBeUndefined()
     expect(w.observe(idle(), 7500)).toEqual({
       code: 'tour-fini',
-      detail: 'Terminé en 44 s · 1 fichier +1 −1'
+      detail: '21:17 · 44 s · 1 fichier +1 −1'
     })
   })
   it('calme : un tour qui ne bouge plus ; l’horloge du tour ne compte pas', () => {

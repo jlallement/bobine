@@ -282,6 +282,7 @@ export const SUITES = [
       'src/main/agent/bob-*.ts',
       'src/main/usage/*.ts',
       `${C}thread/TurnSummary.tsx`,
+      `${C}thread/MessageTime.tsx`,
       'src/shared/turn-duration.ts',
       'src/main/agent/replay-buffer.ts'
     ]
@@ -519,6 +520,8 @@ export const SUITES = [
     sources: [
       `${C}thread/TurnSummary.tsx`,
       `${C}thread/ScrollDownButton.tsx`,
+      `${C}thread/MessageTime.tsx`,
+      `${C}thread/ThreadDock.tsx`,
       `${R}useNewSinceScroll.ts`,
       `${R}useThreadScroll.ts`,
       `${R}motion.css`
@@ -545,6 +548,7 @@ export const SUITES = [
     themes: BOTH,
     sources: [
       `${C}thread/PinnedPlan.tsx`,
+      `${C}thread/ThreadDock.tsx`,
       `${C}thread/PlanList.tsx`,
       `${C}thread/BesidePane.tsx`,
       `${R}useBeside.ts`
@@ -955,6 +959,8 @@ export const SUITES = [
       'e2e/sidebar-tooltip.mjs',
       `${C}thread/ChildProposals.tsx`,
       `${C}thread/Subtasks.tsx`,
+      `${C}thread/WorkCue.tsx`,
+      `${C}thread/work-cue*.ts`,
       `${C}panel/ChildrenView.tsx`,
       'src/shared/children-rows.ts',
       `${R}useThreadScroll.ts`,
@@ -1135,6 +1141,8 @@ export const SUITES = [
       `${C}composer/FileMenu.tsx`,
       `${C}thread/ChildProposals.tsx`,
       `${C}thread/Subtasks.tsx`,
+      `${C}thread/WorkCue.tsx`,
+      `${C}thread/work-cue*.ts`,
       `${R}useMentions.ts`,
       `${R}useComposerRoles.ts`,
       `${R}roles.css`,
@@ -1615,6 +1623,8 @@ export const SUITES = [
     sources: [
       ...TOOLS,
       `${C}thread/WorkingIndicator.tsx`,
+      `${C}thread/TurnSummary.tsx`,
+      `${C}thread/MessageTime.tsx`,
       `${R}subagent-work.ts`,
       'src/main/agent/subagent-*.ts',
       'src/main/agent/*-subagents.ts',
@@ -1753,6 +1763,7 @@ export const SUITES = [
     locks: ['presse-papiers'],
     sources: [
       `${C}common/CopyButton.tsx`,
+      `${C}thread/MessageTime.tsx`,
       `${C}thread/ImageZoom.tsx`,
       `${C}thread/OpenInEditor.tsx`,
       `${C}thread/ResumeCard.tsx`,

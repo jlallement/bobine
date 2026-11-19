@@ -162,15 +162,23 @@ function InstructionDetails({
   childId,
   prompt,
   testId,
+  anchor,
   children
 }: {
   childId: string
   prompt: string
   testId: string
+  /** Carte d'un travail pour le repère du bas du fil (fiche 261) : l'id de l'élément du fil. */
+  anchor?: number
   children: ReactNode
 }) {
   return (
-    <details className="child-instruction" data-testid={testId} data-child-id={childId}>
+    <details
+      className="child-instruction"
+      data-testid={testId}
+      data-child-id={childId}
+      data-work-anchor={anchor}
+    >
       <summary className="subtask-launch">
         {children}
         <ChevronRight size={14} className="chevron" />
@@ -260,7 +268,12 @@ export function ChildStarted({
   }
   return (
     <>
-      <InstructionDetails childId={item.childId} prompt={item.prompt} testId="child-started">
+      <InstructionDetails
+        childId={item.childId}
+        prompt={item.prompt}
+        testId="child-started"
+        anchor={item.id}
+      >
         <Split size={14} />
         <span>
           {t(item.by === 'agent' ? 'children.startedByAgent' : 'children.started', {
@@ -296,6 +309,7 @@ function RoleLaunchItem({
       profiles={info?.profiles ?? []}
       onOpen={child && info ? () => info.onOpen(child.id) : undefined}
       leftBehind={item.leftBehind}
+      anchor={item.id}
     />
   )
 }
@@ -484,6 +498,7 @@ export function ChildReportItem({
     <div
       className={`child-report ${item.outcome}${role ? ' role-report' : ''}`}
       data-testid="child-report"
+      data-work-anchor={item.id}
       data-outcome={item.outcome}
       data-role={role?.name}
       data-open={open || undefined}

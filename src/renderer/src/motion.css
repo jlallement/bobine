@@ -97,19 +97,19 @@
   }
 }
 
-/* P4 : le bilan du tour arrive en fondu. */
+/* Le pied de la réponse qui finit un tour (fiche 261) arrive en fondu. */
 @keyframes summary-in {
   from {
     opacity: 0;
   }
 }
 
-.turn-summary {
+.reply-foot {
   animation: summary-in 200ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .turn-summary {
+  .reply-foot {
     animation: none;
   }
 }

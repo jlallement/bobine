@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { TranscriptItem } from '@shared/transcript'
 import type { ConversationUsage } from '@shared/usage'
 import { turnTimes } from '@shared/turn-duration'
-import { turnFacts, TurnSummary } from './TurnSummary'
+import { replyFeet, ReplyFoot, sameFoot, turnFacts, type TurnFacts } from './TurnSummary'
 
 // Mode présentation (fiche 159), réglé par chaque essai.
 const presentation = vi.hoisted(() => ({ on: false }))
@@ -18,6 +18,11 @@ const edit = (id: number, oldText: string, newText: string): TranscriptItem => (
   content: [{ type: 'diff', path: `/p/f${id}.ts`, oldText, newText }],
   locations: []
 })
+
+/** Pied d'une réponse qui finit un tour bien fini (fiche 261). */
+const renderFoot = (facts: TurnFacts, at?: number) =>
+  render(<ReplyFoot foot={{ kind: 'done', facts }} text={() => 'r'} at={at} />)
+const footText = () => screen.getAllByTestId('turn-summary').at(-1)?.textContent ?? ''
 
 /** Bilan du dernier tour, fini (fiche 185, P4). */
 const lastTurnFacts = (items: TranscriptItem[], usage: ConversationUsage | undefined) => {
@@ -65,16 +70,27 @@ describe('bilan du dernier tour (fiche 185, P4)', () => {
     expect(facts?.cost).toBeUndefined()
   })
 
-  it('une ligne : « Terminé en … · 2 fichiers +2 −1 »', () => {
-    render(<TurnSummary facts={{ ms: 42_000, files: 2, added: 2, removed: 1 }} />)
-    expect(screen.getByTestId('turn-summary').textContent).toMatch(
-      /Terminé en .+ · 2 fichiers \+2 −1/
-    )
+  it('un seul pied : « heure · durée · 2 fichiers +2 −1 », sans « Terminé » (fiche 261)', () => {
+    const at = new Date(2026, 10, 19, 21, 17).getTime()
+    renderFoot({ ms: 149_000, files: 2, added: 2, removed: 1 }, at)
+    expect(footText()).toBe('21:17 · 2 min 29 s · 2 fichiers +2 −1')
+    expect(screen.getAllByTestId('turn-duration')).toHaveLength(1)
+    expect(screen.getByTestId('copy-reply')).toBeTruthy()
+    expect(footText()).not.toContain('Terminé')
   })
 
-  it('sous la seconde : « Terminé » seul, sans « en 0 s »', () => {
-    render(<TurnSummary facts={{ ms: 300, files: 0, added: 0, removed: 0 }} />)
-    expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).toBe('Terminé')
+  it('aucun fichier : ni « 0 fichier » ni montant inventé', () => {
+    renderFoot({ ms: 300, files: 0, added: 0, removed: 0 })
+    expect(footText()).toBe('0 s')
+  })
+
+  it('« Travaille encore… » avec un petit indicateur, sans bilan', () => {
+    render(<ReplyFoot foot={{ kind: 'working' }} text={() => 'r'} at={undefined} />)
+    const foot = screen.getByTestId('turn-working')
+    expect(foot.textContent).toBe('Travaille encore…')
+    expect(foot.querySelector('.spin')).toBeTruthy()
+    expect(screen.queryByTestId('turn-summary')).toBeNull()
+    expect(screen.queryByTestId('turn-duration')).toBeNull()
   })
 
   it('tour arrêté, refusé, coupé ou en erreur : pas de « Terminé » sous son avis', () => {
@@ -90,27 +106,23 @@ describe('bilan du dernier tour (fiche 185, P4)', () => {
 
   it('mode présentation : pas de montant', () => {
     presentation.on = true
-    render(
-      <TurnSummary
-        facts={{
-          ms: 5_000,
-          files: 0,
-          added: 0,
-          removed: 0,
-          cost: { amount: 0.12, currency: 'USD' }
-        }}
-      />
-    )
-    expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).not.toContain('≈')
+    renderFoot({
+      ms: 5_000,
+      files: 0,
+      added: 0,
+      removed: 0,
+      cost: { amount: 0.12, currency: 'USD' }
+    })
+    expect(footText()).not.toContain('≈')
     presentation.on = false
   })
 
   it('coût en dollars annoncé par l’agent : « ≈ » ; bobcoins de Bob : sans (fiche 245)', () => {
     const facts = { ms: 5_000, files: 0, added: 0, removed: 0 }
-    render(<TurnSummary facts={{ ...facts, cost: { amount: 0.12, currency: 'USD' } }} />)
-    expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).toContain('≈ 0,12')
-    render(<TurnSummary facts={{ ...facts, cost: { amount: 0.02, currency: 'bobcoins' } }} />)
-    const bob = screen.getAllByTestId('turn-summary').at(-1)?.textContent ?? ''
+    renderFoot({ ...facts, cost: { amount: 0.12, currency: 'USD' } })
+    expect(footText()).toContain('≈ 0,12')
+    renderFoot({ ...facts, cost: { amount: 0.02, currency: 'bobcoins' } })
+    const bob = footText()
     expect(bob).toContain('0,02')
     expect(bob).not.toContain('≈')
   })
@@ -177,10 +189,8 @@ describe('un bilan par tour, à la vraie fin (fiche 255)', () => {
       ms: 31_000,
       waitedMs: 40_000
     })
-    render(<TurnSummary facts={{ ms: 31_000, waitedMs: 40_000, files: 0, added: 0, removed: 0 }} />)
-    expect(screen.getAllByTestId('turn-summary').at(-1)?.textContent).toMatch(
-      /Terminé en 31 s · 40 s à vous attendre/
-    )
+    renderFoot({ ms: 31_000, waitedMs: 40_000, files: 0, added: 0, removed: 0 })
+    expect(footText()).toBe('31 s · 40 s à vous attendre')
   })
 
   it('coût de chaque tour : celui de la consommation fini entre son message et le suivant', () => {
@@ -195,5 +205,74 @@ describe('un bilan par tour, à la vraie fin (fiche 255)', () => {
     const facts = turnFacts(items, turnTimes(items), usage, false)
     expect(facts.get(2)?.cost?.amount).toBeCloseTo(0.3)
     expect(facts.get(4)?.cost?.amount).toBeCloseTo(0.2)
+  })
+})
+
+describe('pied de la réponse qui finit le tour (fiche 261)', () => {
+  const user = (id: number, at: number): TranscriptItem => ({ kind: 'user', id, text: 'm', at })
+  const agent = (id: number, at?: number): TranscriptItem => ({
+    kind: 'agent',
+    id,
+    text: 'r',
+    ...(at !== undefined ? { at } : {})
+  })
+  const feet = (items: TranscriptItem[], open: boolean) =>
+    replyFeet(items, turnTimes(items), undefined, open)
+
+  it('tour fini : le bilan sous sa réponse ; tour en cours : « Travaille encore… » sous la dernière', () => {
+    const items = [user(1, 0), agent(2, 10_000), user(3, 20_000), agent(4), agent(5)]
+    const result = feet(items, true)
+    expect(result.get(2)).toMatchObject({ kind: 'done', facts: { ms: 10_000 } })
+    expect(result.get(4)).toBeUndefined()
+    expect(result.get(5)).toEqual({ kind: 'working' })
+  })
+
+  it('tour en cours sans réponse encore : aucun pied (l’indicateur du bas suffit)', () => {
+    const items = [user(1, 0), agent(2, 10_000), user(3, 20_000)]
+    expect([...feet(items, true).keys()]).toEqual([2])
+  })
+
+  it('sous-agent en arrière-plan d’un tour plus ancien : ce tour « travaille encore »', () => {
+    const items: TranscriptItem[] = [
+      user(1, 0),
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 's2',
+        title: 'subagent',
+        status: 'in_progress',
+        content: [],
+        locations: [],
+        subagent: { task: 'explore' },
+        subagentRun: { startedAt: 1, sessionId: 'ses_x', background: true }
+      },
+      agent(3, 10_000),
+      user(4, 20_000),
+      agent(5, 24_000)
+    ]
+    const result = feet(items, false)
+    expect(result.get(3)).toEqual({ kind: 'working' })
+    expect(result.get(5)).toMatchObject({ kind: 'done' })
+  })
+
+  it('tour arrêté ou en erreur : aucun pied, même en cours (rien ne change pour ces cas)', () => {
+    const stopped: TranscriptItem[] = [
+      user(1, 0),
+      agent(2, 5_000),
+      { kind: 'notice', id: 3, level: 'info', message: { key: 'transcript.notice.cancelled' } }
+    ]
+    expect(feet(stopped, false).size).toBe(0)
+    expect(feet(stopped, true).size).toBe(0)
+  })
+
+  it('même pied recalculé à l’identique : comparé par sa valeur', () => {
+    const facts = { ms: 1_000, files: 1, added: 2, removed: 0 }
+    expect(sameFoot({ kind: 'done', facts }, { kind: 'done', facts: { ...facts } })).toBe(true)
+    expect(
+      sameFoot({ kind: 'done', facts }, { kind: 'done', facts: { ...facts, ms: 2_000 } })
+    ).toBe(false)
+    expect(sameFoot({ kind: 'working' }, { kind: 'working' })).toBe(true)
+    expect(sameFoot({ kind: 'working' }, undefined)).toBe(false)
+    expect(sameFoot(undefined, undefined)).toBe(true)
   })
 })

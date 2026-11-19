@@ -4765,12 +4765,20 @@
     "emptyHint": "Une consigne qui part toute seule : une fois, chaque jour ou toutes les N heures."
   },
   "turnSummary": {
-    "done": "Terminé en {{duration}}",
-    "files_one": "{{count}} fichier +{{added}} −{{removed}}",
-    "files_many": "{{count}} fichiers +{{added}} −{{removed}}",
-    "files_other": "{{count}} fichiers +{{added}} −{{removed}}",
-    "doneQuick": "Terminé",
-    "waited": "{{duration}} à vous attendre"
+    "fileCount_one": "{{count}} fichier",
+    "fileCount_many": "{{count}} fichiers",
+    "fileCount_other": "{{count}} fichiers",
+    "waited": "{{duration}} à vous attendre",
+    "working": "Travaille encore…"
+  },
+  "workCue": {
+    "replied": "{{name}} a répondu",
+    "finished": "{{name}} a fini",
+    "several_one": "{{count}} travail a répondu",
+    "several_many": "{{count}} travaux ont répondu",
+    "several_other": "{{count}} travaux ont répondu",
+    "show": "Voir",
+    "showTip": "Faire défiler jusqu’à la carte"
   },
   "cap": {
     "more_one": "⋯ {{n}} ligne de plus",

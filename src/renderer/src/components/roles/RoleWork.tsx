@@ -126,7 +126,8 @@ export function RoleLaunch({
   activity,
   profiles,
   onOpen,
-  leftBehind
+  leftBehind,
+  anchor
 }: {
   role: RoleBadge
   title: string
@@ -139,6 +140,8 @@ export function RoleLaunch({
   activity: string | undefined
   profiles: readonly Pick<ProfileSummary, 'id' | 'writesWithoutAsking'>[]
   onOpen: (() => void) | undefined
+  /** Carte d'un travail pour le repère du bas du fil (fiche 261) : l'id de l'élément du fil. */
+  anchor?: number
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -149,6 +152,7 @@ export function RoleLaunch({
       className="role-launch"
       style={style}
       data-testid="role-launch"
+      data-work-anchor={anchor}
       data-role={role.name}
       data-state={state ?? 'gone'}
     >

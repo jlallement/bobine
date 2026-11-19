@@ -10838,23 +10838,6 @@ html.about-page body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bilan du dernier tour (fiche 185, P4) : une ligne discrète sous la réponse, sous la rangée des
-   actions qui apparaît au survol (24 px sous la réponse, sans prendre de place). */
-.turn-summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.turn-summary svg {
-  flex-shrink: 0;
-  color: var(--ok);
-}
-
 /* « ↓ 3 nouveaux » (fiche 185, P8) : la flèche devient une pastille qui dit combien. */
 .scroll-to-bottom.with-count {
   width: auto;

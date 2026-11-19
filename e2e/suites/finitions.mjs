@@ -1,8 +1,8 @@
 import { L, check, withApp } from '../lib.mjs'
 
 /**
- * Finitions de la 0.9.1 (fiche 185) : la ligne de bilan sous la dernière réponse (P4), jamais sous
- * un tour arrêté, jamais sous la rangée d'actions du survol ; « ↓ N nouveaux » quand on relit plus
+ * Finitions de la 0.9.1 (fiche 185) : le bilan sous la dernière réponse (P4), devenu son pied
+ * (fiche 261), jamais sous un tour arrêté ; « ↓ N nouveaux » quand on relit plus
  * haut pendant que l'agent écrit (P8) ; à 900 px, onglets et puce de l'agent jamais coupés (D25,
  * D26).
  */
@@ -11,7 +11,7 @@ export async function finitionsSuite(scheme) {
   await withApp(scheme, async (ui) => {
     await ui.ready()
     await ui.closePanel()
-    const summary = `document.querySelector('[data-testid=turn-summary]')`
+    const summary = `[...document.querySelectorAll('[data-testid=turn-summary]')].at(-1)`
 
     // Tour arrêté : son avis le dit, pas de « Terminé ✓ » dessous.
     await ui.send('/scenario attend-stop')
@@ -23,28 +23,28 @@ export async function finitionsSuite(scheme) {
     )
     check(!(await ui.ev(`!!${summary}`)), 'tour arrêté : pas de ligne de bilan sous « Interrompu »')
 
-    // Tour fini qui modifie un fichier : la ligne de bilan, sous la rangée d'actions du survol.
+    // Tour fini qui modifie un fichier : le bilan est le pied de la réponse (fiche 261), un seul,
+    // toujours visible, sans « Terminé » ; la durée n'y est qu'une fois.
     await ui.send('/scenario diff')
     await ui.ready()
     await ui.waitFor(`!!${summary}`)
     const text = await ui.ev(`${summary}.innerText`)
-    check(
-      text.startsWith(L('turnSummary.doneQuick')) &&
-        text.includes(L('turnSummary.files', { count: 1, added: 1, removed: 1 })),
-      `bilan du tour : « ${text} »`
-    )
     const group = `[...document.querySelectorAll('.msg-agent-group')].at(-1)`
-    await ui.hover(await ui.center(group))
-    // La rangée d'actions apparaît au survol (fondu) : on l'attend affichée.
-    await ui.waitFor(
-      `getComputedStyle(${group}.querySelector('.msg-agent-actions')).opacity === '1'`
+    check(
+      text.includes(`${L('turnSummary.fileCount', { count: 1 })} +1 −1`) &&
+        !text.includes(L('turnSummary.working')) &&
+        (await ui.ev(`${group}.contains(${summary})`)) &&
+        (await ui.ev(`${group}.querySelectorAll('[data-testid=turn-duration]').length`)) === 1 &&
+        (await ui.ev(`!!${summary}.querySelector('[data-testid=copy-reply]')`)),
+      `bilan du tour dans le pied de la réponse : « ${text} »`
     )
-    const overlap = await ui.ev(`(() => {
-      const a = ${group}.querySelector('.msg-agent-actions')?.getBoundingClientRect()
-      const b = ${summary}.getBoundingClientRect()
-      return !!a && a.bottom > b.top + 1
-    })()`)
-    check(!overlap, 'la rangée d’actions du survol ne chevauche pas le bilan')
+    // Toujours visible, sans survol (plus de rangée qui apparaît au survol pour cette réponse).
+    await ui.hover({ x: 5, y: 400 })
+    check(
+      (await ui.ev(`getComputedStyle(${summary}).opacity`)) === '1' &&
+        (await ui.ev(`${group}.querySelectorAll('.msg-agent-actions').length`)) === 1,
+      'pied de la réponse visible sans survol, une seule rangée sous la réponse'
+    )
     await ui.shot('185-bilan-du-tour')
 
     // Relire plus haut pendant que l'agent écrit : le bouton dit combien de réponses sont arrivées.

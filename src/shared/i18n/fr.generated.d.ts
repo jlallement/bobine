@@ -4595,12 +4595,20 @@ export type FrResources = {
     readonly emptyHint: 'Une consigne qui part toute seule : une fois, chaque jour ou toutes les N heures.'
   }
   readonly turnSummary: {
-    readonly done: 'Terminé en {{duration}}'
-    readonly files_one: '{{count}} fichier +{{added}} −{{removed}}'
-    readonly files_many: '{{count}} fichiers +{{added}} −{{removed}}'
-    readonly files_other: '{{count}} fichiers +{{added}} −{{removed}}'
-    readonly doneQuick: 'Terminé'
+    readonly fileCount_one: '{{count}} fichier'
+    readonly fileCount_many: '{{count}} fichiers'
+    readonly fileCount_other: '{{count}} fichiers'
     readonly waited: '{{duration}} à vous attendre'
+    readonly working: 'Travaille encore…'
+  }
+  readonly workCue: {
+    readonly replied: '{{name}} a répondu'
+    readonly finished: '{{name}} a fini'
+    readonly several_one: '{{count}} travail a répondu'
+    readonly several_many: '{{count}} travaux ont répondu'
+    readonly several_other: '{{count}} travaux ont répondu'
+    readonly show: 'Voir'
+    readonly showTip: 'Faire défiler jusqu’à la carte'
   }
   readonly cap: {
     readonly more_one: '⋯ {{n}} ligne de plus'

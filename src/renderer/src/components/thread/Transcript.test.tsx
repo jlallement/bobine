@@ -13,7 +13,18 @@ function render(ui: ReactNode) {
 }
 
 // Rendus de cartes d'outils comptés (fiche 047) : la vraie carte, appelée à travers un compteur.
-const renders = vi.hoisted(() => ({ tools: 0 }))
+const renders = vi.hoisted(() => ({ tools: 0, markdown: [] as string[] }))
+// Rendus des réponses comptés (fiche 261) : le pied recalculé ne refait pas le rendu d'une réponse.
+vi.mock('./Markdown', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./Markdown')>()
+  return {
+    ...actual,
+    Markdown: (props: Parameters<typeof actual.Markdown>[0]) => {
+      renders.markdown.push(props.text)
+      return createElement(actual.Markdown, props)
+    }
+  }
+})
 vi.mock('./ToolCall', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./ToolCall')>()
   return {
@@ -431,7 +442,7 @@ describe('« Réessayer » un message en branche (fiches 023, 210)', () => {
   })
 })
 
-describe('bilan de chaque tour, sous sa réponse (fiche 255)', () => {
+describe('bilan de chaque tour dans le pied de sa réponse (fiches 255, 261)', () => {
   const noop = () => {}
   const items: TranscriptItem[] = [
     { kind: 'user', id: 1, text: 'Implémente', at: 0 },
@@ -441,18 +452,21 @@ describe('bilan de chaque tour, sous sa réponse (fiche 255)', () => {
     // Carte arrivée après le tour (D34) : le bilan ne la suit pas.
     { kind: 'notice', id: 5, level: 'info', text: 'Code reviewer a été arrêté.' }
   ]
-  /** Ce que le fil montre, dans l'ordre : réponses, bilans, avis. */
-  const shown = (actions: { busy: boolean; background?: boolean }) => {
+  const show = (actions: { busy: boolean; background?: boolean }, shownItems = items) =>
     render(
       <Transcript
-        items={items}
+        items={shownItems}
         onRespondPermission={noop}
         onRespondElicitation={noop}
         messageActions={{ ...actions, onEdit: noop, onOpenConversation: noop }}
       />
     )
+  /** Le groupe de la réponse qui contient ce texte. */
+  const group = (text: string) => screen.getByText(text).closest('.msg-agent-group')
+  /** Ce que le fil montre, dans l'ordre : réponses, pieds, avis. */
+  const order = () => {
     const text = screen.getByTestId('thread').textContent ?? ''
-    const marks = ['Fait.', 'Terminé en 1 min 30 s', 'Aussi.', 'Terminé en 4 s', 'Code reviewer']
+    const marks = ['Fait.', '1 min 30 s', 'Aussi.', '4 s', 'Travaille encore…', 'Code reviewer']
     return marks
       .map((mark) => ({ mark, at: text.indexOf(mark) }))
       .filter(({ at }) => at >= 0)
@@ -460,22 +474,83 @@ describe('bilan de chaque tour, sous sa réponse (fiche 255)', () => {
       .map(({ mark }) => mark)
   }
 
-  it('message en file (D5) : chacun son bilan, juste sous sa réponse, pas sous les cartes d’après', () => {
-    expect(shown({ busy: false })).toEqual([
-      'Fait.',
-      'Terminé en 1 min 30 s',
-      'Aussi.',
-      'Terminé en 4 s',
-      'Code reviewer'
-    ])
+  it('message en file (D5) : chacun son pied, dans le groupe de sa réponse, avant les cartes d’après', () => {
+    show({ busy: false })
+    expect(order()).toEqual(['Fait.', '1 min 30 s', 'Aussi.', '4 s', 'Code reviewer'])
+    for (const reply of ['Fait.', 'Aussi.']) {
+      const foot = group(reply)?.querySelectorAll('[data-testid=turn-summary]')
+      expect(foot).toHaveLength(1)
+    }
+    // Un seul pied : la durée n'est plus deux fois, ni « Terminé ».
+    expect(screen.getAllByTestId('turn-duration')).toHaveLength(2)
+    expect(screen.getByTestId('thread').textContent).not.toContain('Terminé')
+    // La carte d'après est hors du groupe de la réponse : elle s'affiche dessous.
+    expect(group('Aussi.')?.textContent).not.toContain('Code reviewer')
   })
 
-  it('l’agent travaille encore après le tour (D1) : pas encore de bilan pour ce tour', () => {
-    expect(shown({ busy: false, background: true })).toEqual([
-      'Fait.',
-      'Terminé en 1 min 30 s',
-      'Aussi.',
-      'Code reviewer'
-    ])
+  it('l’agent travaille encore après le tour (D1) : « Travaille encore… » dans le pied, pas de bilan', () => {
+    show({ busy: false, background: true })
+    expect(order()).toEqual(['Fait.', '1 min 30 s', 'Aussi.', 'Travaille encore…', 'Code reviewer'])
+    expect(group('Aussi.')?.querySelector('[data-testid=turn-working]')).toBeTruthy()
+    expect(group('Aussi.')?.querySelector('[data-testid=turn-summary]')).toBeNull()
+    expect(screen.getAllByTestId('turn-summary')).toHaveLength(1)
+  })
+
+  it('le pied ne bouge plus : ce qui arrive après le tour se met dessous, le pied reste sous sa réponse', () => {
+    const later: TranscriptItem[] = [
+      ...items,
+      { kind: 'notice', id: 6, level: 'info', text: 'Autre carte arrivée ensuite.' }
+    ]
+    show({ busy: false }, later)
+    const foot = group('Aussi.')?.querySelector('[data-testid=turn-summary]')
+    const card = screen.getByText('Autre carte arrivée ensuite.')
+    expect(foot).toBeTruthy()
+    expect(foot?.compareDocumentPosition(card)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('tour arrêté : comme avant, l’heure et la durée au survol, sans bilan', () => {
+    const stopped: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Implémente', at: 0 },
+      { kind: 'agent', id: 2, text: 'Je commence.', at: 5_000 },
+      { kind: 'notice', id: 3, level: 'info', message: { key: 'transcript.notice.cancelled' } }
+    ]
+    show({ busy: false }, stopped)
+    expect(screen.queryByTestId('turn-summary')).toBeNull()
+    expect(screen.queryByTestId('turn-working')).toBeNull()
+    const row = group('Je commence.')?.querySelector('.msg-agent-actions')
+    expect(row?.classList.contains('reply-foot')).toBe(false)
+    expect(row?.querySelector('[data-testid=turn-duration]')?.textContent).toBe('5 s')
+  })
+
+  it('un morceau de réponse de plus : la réponse au pied inchangé ne refait pas son rendu', () => {
+    const streaming: TranscriptItem[] = [...items.slice(0, 3), { kind: 'agent', id: 4, text: 'Au' }]
+    const actions = { busy: true, onEdit: noop, onOpenConversation: noop }
+    const view = render(
+      <Transcript
+        items={streaming}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={actions}
+      />
+    )
+    renders.markdown = []
+    view.rerender(
+      <Transcript
+        items={[...streaming.slice(0, 3), { kind: 'agent', id: 4, text: 'Aussi' }]}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={actions}
+      />
+    )
+    expect(renders.markdown).toEqual(['Aussi'])
+    expect(group('Fait.')?.querySelector('[data-testid=turn-summary]')).toBeTruthy()
+    expect(group('Aussi')?.querySelector('[data-testid=turn-working]')).toBeTruthy()
+  })
+
+  it('fil en lecture seule (côte à côte) : aucun pied, comme avant', () => {
+    render(<Transcript items={items} onRespondPermission={noop} onRespondElicitation={noop} />)
+    expect(screen.queryByTestId('turn-summary')).toBeNull()
+    expect(screen.queryByTestId('turn-working')).toBeNull()
+    expect(screen.getAllByTestId('turn-duration')).toHaveLength(2)
   })
 })
