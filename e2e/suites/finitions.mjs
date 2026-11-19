@@ -1,4 +1,4 @@
-import { L, check, withApp } from '../lib.mjs'
+import { L, check, sleep, withApp } from '../lib.mjs'
 
 /**
  * Finitions de la 0.9.1 (fiche 185) : le bilan sous la dernière réponse (P4), devenu son pied
@@ -38,12 +38,20 @@ export async function finitionsSuite(scheme) {
         (await ui.ev(`!!${summary}.querySelector('[data-testid=copy-reply]')`)),
       `bilan du tour dans le pied de la réponse : « ${text} »`
     )
-    // Toujours visible, sans survol (plus de rangée qui apparaît au survol pour cette réponse).
+    // Toujours visible, sans survol (plus de rangée qui apparaît au survol pour cette réponse). Le
+    // pied arrive en fondu (200 ms, `motion.css`) : on attend sa fin, puis il doit rester visible
+    // sans survol ; une rangée qui n'apparaîtrait qu'au survol resterait à 0 et ferait échouer.
     await ui.hover({ x: 5, y: 400 })
+    await ui.waitFor(`getComputedStyle(${summary}).opacity === '1'`, 2000).catch(() => {})
+    await sleep(300)
+    const shown = await ui.ev(`({
+      opacity: getComputedStyle(${summary}).opacity,
+      rows: ${group}.querySelectorAll('.msg-agent-actions').length,
+      hovered: ${group}.matches(':hover')
+    })`)
     check(
-      (await ui.ev(`getComputedStyle(${summary}).opacity`)) === '1' &&
-        (await ui.ev(`${group}.querySelectorAll('.msg-agent-actions').length`)) === 1,
-      'pied de la réponse visible sans survol, une seule rangée sous la réponse'
+      shown.opacity === '1' && shown.rows === 1 && !shown.hovered,
+      `pied de la réponse visible sans survol, une seule rangée sous la réponse (${JSON.stringify(shown)})`
     )
     await ui.shot('185-bilan-du-tour')
 

@@ -140,6 +140,12 @@ Aucune nouvelle dépendance, pas d'ADR (rendu dérivé de l'état existant).
 - **Maquette 260** : `main` la contient déjà formatée (0b2e5a2) ; mon commit de formatage a été
   retiré, la branche est rebasée sur `main`.
 
+- **e2e `finitions`** (campagne du tech lead) : l'étape « pied visible sans survol » lisait
+  l'opacité du pied pendant son fondu d'arrivée (200 ms, `motion.css`, 0,199 relevé). Essai mal
+  écrit, pas une régression : il attend maintenant la fin du fondu, puis vérifie 300 ms plus tard que
+  le pied est toujours à 1, sans survol, avec une seule rangée ; il dit les valeurs lues. `finitions`
+  verte en clair et en sombre.
+
 ### Limites connues
 
 - **Repère** : rebranché par la fiche 263 (carte-réponse à place fixe), par `work-cue-targets.ts`
