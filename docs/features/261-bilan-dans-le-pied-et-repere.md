@@ -146,13 +146,66 @@ Aucune nouvelle dépendance, pas d'ADR (rendu dérivé de l'état existant).
   le pied est toujours à 1, sans survol, avec une seule rangée ; il dit les valeurs lues. `finitions`
   verte en clair et en sombre.
 
+### Revue QA (2026-11-19)
+
+Chaque défaut a un essai qui échoue sans son correctif.
+
+1. **« Travaille encore… » pour toujours après une panne** : `closeBackground` (`transcript.ts`)
+   marque aussi le sous-agent `lost` ; et `replyFeet` ne dit « Travaille encore… » que si l'agent
+   est actif (`busy` ou `background`). Essai du réducteur (`status: exited`, puis `replyFeet`).
+2. **Deux « Travaille encore… »** : le pied va au seul tour qui a lancé le sous-agent encore au
+   travail ; le dernier tour garde son bilan. Le pied « réponse hors tour attendue » (dernier tour,
+   `background`) seulement quand aucun sous-agent ne tourne.
+3. **Essai complaisant** rejoué avec `{ busy: false, background: true }`, le dernier tour exige
+   `done`.
+4. **Le repère clignotait** quand une fille finit sous les yeux (l'état « fini » arrive avant le
+   compte rendu, la cible visait la carte de lancement plus haut) : une cible qui vient de répondre
+   attend `SETTLE_MS` (600 ms, file `settling`) avant d'entrer au repère, et n'y entre pas si sa
+   carte est alors à l'écran.
+5. **Pilote** : `lecture.mjs` lit `turn-working` (`shot.turnWorking`), « Tour : travaille encore —
+   … », et l'attente continue (`busy`) : l'indicateur du bas ne le dit plus.
+6. `turnFacts` retiré (les essais passent par `replyFeet`).
+7. **Le nombre de fichiers ouvre l'onglet Modifications** (vue de la conversation), bouton
+   accessible ; texte simple dans le fil côte à côte.
+8. `e2e/maquettes/run-245.mjs` mis au nouveau pied.
+9. `finitions` attend l'opacité (`waitFor`) puis la revérifie.
+10. **« Réessayer » réussi** (fiche 142) : un avis d'erreur suivi d'une réponse datée ne fait plus
+    perdre le bilan.
+11. `WorkCue` : un seul anneau et une seule attente d'image à la fois, tout annulé au démontage.
+
+### Revue UX (2026-11-19)
+
+1. Nouvelle suite e2e `repere` (dépôt jetable, deux rôles du projet, verrou de fin de tour de
+   l'agent factice) : un rôle, deux rôles, 900 px avec un nom long, avec « ↓ N nouveaux » ;
+   captures `261-repere-un-role`, `-deux`, `-anneau`, `-900`, `-et-nouveaux`.
+2. Seul le nom se coupe (28ch, titre complet en infobulle), jamais le verbe : deux éléments, deux
+   clés (`workCue.replied` / `finished` ne portent plus que le verbe).
+3. Travail après le tour dit une seule fois : avec un pied « Travaille encore… · 32 s »,
+   l'indicateur du bas se tait (`TurnFooter`, `hasWorkingFoot`).
+4. « < 1 s » sous la seconde (`transcript.duration.underSecond`).
+5. Anneau à la couleur du rôle sur le compte rendu d'un rôle (`useRoleStyle`), coins de la ligne de
+   lancement.
+6. Focus sur la carte après « Voir » (`tabindex=-1`, `preventScroll`).
+7. Pastille ↓ à droite quand le repère est là (`:has`).
+8. `g6b-2-3-fini` : défilé jusqu'au pied.
+9. Séparateurs `reply-foot-sep` (0,6, 2 px), texte lu inchangé.
+10. Fenêtre étroite : chaque élément du pied insécable, espace insécable avant « · » ; capture
+    `261-pied-900` (finitions).
+11. Pied « Travaille encore… » sans Copier, indicateur en `--muted`.
+12. Repère : fondu de 150 ms (aucun si les animations sont réduites), région `aria-live` toujours
+    présente, anneau de 1,4 s.
+14. Fichiers : soulignement pointillé au survol, infobulle « Voir dans Modifications (toute la
+    conversation) ».
+
 ### Limites connues
 
+- **Pied pendant « Travaille encore… »** : rien à copier tant que le travail n'est pas fini (le
+  texte reste sélectionnable).
 - **Repère** : rebranché par la fiche 263 (carte-réponse à place fixe), par `work-cue-targets.ts`
   seulement. Il ne couvre ni les erreurs, ni les arrêts d'un travail, ni les réponses arrivées
   pendant qu'on regardait une autre conversation (on ne sait pas quand elles sont arrivées ; la
   barre latérale dit déjà « à lire »).
 - **Aujourd'hui, le compte rendu s'ajoute en bas du fil** : il est en général à l'écran quand la
-  fille finit, et le repère ne paraît que si l'on a remonté le fil (ou un instant si l'état de la
-  fille arrive avant le compte rendu). Pas d'essai e2e du repère pour l'instant.
+  fille finit, et le repère ne paraît que si l'on a remonté le fil (l'état de la fille, arrivé
+  avant son compte rendu, ne le fait plus clignoter : délai de revue de 600 ms).
 - Anglais « tasks » pour « travaux » en attendant le vocabulaire unique (fiche 266).
