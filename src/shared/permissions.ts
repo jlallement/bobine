@@ -22,7 +22,9 @@ export function rememberableTool(toolCall: {
 }): string | undefined {
   const title = toolCall.title?.trim()
   if (!title || title.length > 200) return undefined
-  if (toolCall.kind && UNSAFE_KINDS.has(toolCall.kind)) return undefined
+  // Sans genre déclaré, rien ne dit que l'outil ne touche ni aux fichiers ni aux commandes : le
+  // seul titre ne suffit pas à l'autoriser d'office ailleurs (fiche 249, audit SEC-8).
+  if (!toolCall.kind || UNSAFE_KINDS.has(toolCall.kind)) return undefined
   if (PATH_IN_TITLE.test(title)) return undefined
   return title
 }

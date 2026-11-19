@@ -6,9 +6,14 @@ describe('autorisations retenues (fiche 042)', () => {
     expect(rememberableTool({ title: 'Updating todo list', kind: 'other' })).toBe(
       'Updating todo list'
     )
-    expect(rememberableTool({ title: 'Running Mot Secret (essai-app)' })).toBe(
+    expect(rememberableTool({ title: 'Running Mot Secret (essai-app)', kind: 'fetch' })).toBe(
       'Running Mot Secret (essai-app)'
     )
+  })
+
+  it('genre absent : jamais retenu sur le seul titre (fiche 249, SEC-8)', () => {
+    expect(rememberableTool({ title: 'Running Mot Secret (essai-app)' })).toBeUndefined()
+    expect(rememberableTool({ title: 'Updating todo list', kind: null })).toBeUndefined()
   })
 
   it('Réglages : « Updating todo list » dit dans la langue, un titre inconnu tel quel (fiche 214)', () => {

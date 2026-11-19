@@ -47,14 +47,17 @@ export async function historyStep(contents: WebContents, action: 'back' | 'forwa
 export function createDriver(manager: BrowserManager, conversationId: string): BrowserDriver {
   const tab = () => manager.activeTab(conversationId)
   const cdp = () => tab().cdp
-  /** Action de l'agent dans la page : ce qu'elle ouvre (popup) vient de lui (fiche 072). */
+  /**
+   * Action de l'agent dans la page : ce qu'elle ouvre (popup, fiche 072) vient de lui, et elle
+   * ne mène pas la page vers un site non accordé (fiche 249), jusqu'à sa fin et le délai qui suit.
+   */
   const asAgent = async <T>(action: () => Promise<T>): Promise<T> => {
     tab()
-    manager.markAgentInput(conversationId)
+    const end = manager.beginAgentAction(conversationId)
     try {
       return await action()
     } finally {
-      manager.markAgentInput(conversationId)
+      end()
     }
   }
   // Laisse la page traiter l'événement (rendu, gestionnaires) avant l'action suivante.
@@ -73,7 +76,7 @@ export function createDriver(manager: BrowserManager, conversationId: string): B
 
   return {
     navigate: (url) => asAgent(() => loadWithin(tab(), url)),
-    go: (action) => historyStep(tab().view.webContents, action),
+    go: (action) => asAgent(() => historyStep(tab().view.webContents, action)),
     current: () => {
       const contents = tab().view.webContents
       return { url: contents.getURL(), title: contents.getTitle() }
@@ -145,6 +148,7 @@ export function createDriver(manager: BrowserManager, conversationId: string): B
     responseBody: (id) => cdp().responseBody(id),
     evaluatePage: (code) => asAgent(() => cdp().evaluatePage(code)),
     blockedPopups: () => manager.takeBlockedPopups(conversationId),
+    blockedNavigations: () => manager.takeBlockedNavigations(conversationId),
     downloads: () => manager.takeDownloads(conversationId),
     dialog: () => manager.currentTab(conversationId)?.cdp.dialogs.current,
     dialogAnswers: () => manager.currentTab(conversationId)?.cdp.dialogs.takeAnswers() ?? [],

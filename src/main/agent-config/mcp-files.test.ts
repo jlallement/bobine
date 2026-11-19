@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -280,4 +288,30 @@ describe('serveurs MCP d’OpenCode (fiche 025)', () => {
       ['natif2', true]
     ])
   })
+})
+
+describe('droits des fichiers MCP (fiche 249)', () => {
+  const server = {
+    name: 'recherche',
+    transport: 'stdio' as const,
+    command: 'npx',
+    args: [],
+    env: { API_KEY: 'secret' },
+    enabled: true
+  }
+  it.skipIf(process.platform === 'win32')(
+    'créé en 0600 ; un fichier en 0600 le reste, un fichier en 0644 aussi',
+    () => {
+      const { home, workspace } = setup()
+      const bob = new AgentMcpConfig(BOB_MCP, { home })
+      const file = join(home, '.bob', 'settings', 'mcp.json')
+      bob.save('global', workspace, server)
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+      bob.setEnabled('global', workspace, 'recherche', false)
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+      chmodSync(file, 0o644)
+      bob.setEnabled('global', workspace, 'recherche', true)
+      expect(statSync(file).mode & 0o777).toBe(0o644)
+    }
+  )
 })

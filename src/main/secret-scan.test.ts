@@ -42,3 +42,21 @@ describe('formes ajoutées à la relecture (fiche 182)', () => {
     expect(findSecret(text)).toBeDefined()
   })
 })
+
+describe('options de ligne de commande (fiche 249)', () => {
+  it.each([
+    'mon-agent --api-key abcd1234efgh --model x',
+    'agent --token jeton-de-test-42',
+    '--password motdepasse',
+    '["acp","--api-key","abcd1234efgh"]'
+  ])('reconnaît %s', (text) => {
+    expect(findSecret(text)).toBeDefined()
+  })
+
+  it.each(['opencode --max-tokens 4096', 'agent --token --verbose', 'bob --model gpt'])(
+    'pas de faux positif : %s',
+    (text) => {
+      expect(findSecret(text)).toBeUndefined()
+    }
+  )
+})

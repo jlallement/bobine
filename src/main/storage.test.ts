@@ -1,4 +1,12 @@
-import { mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -45,4 +53,40 @@ describe('écriture atomique et liens symboliques (relecture fiche 223)', () => 
     expect(await writeFileAtomicAsync(file, 'encore', { backup: true })).toBe(true)
     expect(readFileSync(victim, 'utf8')).toBe('intact')
   })
+})
+
+describe('écriture atomique et droits du fichier (fiche 249)', () => {
+  const modeOf = (file: string) => statSync(file).mode & 0o777
+  it.skipIf(process.platform === 'win32')(
+    'fichier remplacé : ses droits sont gardés, en synchrone comme en asynchrone',
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'bob-mode-'))
+      const file = join(dir, 'mcp.json')
+      writeFileSync(file, '{}')
+      chmodSync(file, 0o600)
+      writeFileAtomic(file, '{"a":1}')
+      expect(modeOf(file)).toBe(0o600)
+      await writeFileAtomicAsync(file, '{"a":2}')
+      expect(modeOf(file)).toBe(0o600)
+      // Plus ouvert que l'umask : gardé tel quel aussi.
+      chmodSync(file, 0o664)
+      writeFileAtomic(file, '{"a":3}')
+      expect(modeOf(file)).toBe(0o664)
+    }
+  )
+
+  it.skipIf(process.platform === 'win32')(
+    'nouveau fichier : `createMode` ; `mode` imposé l’emporte sur l’existant',
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), 'bob-mode-'))
+      const created = join(dir, 'neuf.json')
+      writeFileAtomic(created, '{}', { createMode: 0o600 })
+      expect(modeOf(created)).toBe(0o600)
+      const forced = join(dir, 'cles.json')
+      writeFileSync(forced, '{}')
+      chmodSync(forced, 0o644)
+      writeFileAtomic(forced, '{}', { mode: 0o600 })
+      expect(modeOf(forced)).toBe(0o600)
+    }
+  )
 })

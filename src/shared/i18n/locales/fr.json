@@ -3341,6 +3341,7 @@
       "allow": "Autoriser",
       "always": "Toujours autoriser",
       "question": "L’agent veut ouvrir {{site}} dans le navigateur intégré. L’autoriser ?",
+      "questionShown": "La page affichée est sur {{site}}. L’agent veut la lire et y agir. L’autoriser ?",
       "header": "Site web",
       "allowDescription": "Pour cette conversation : l’agent pourra lire et utiliser {{site}}.",
       "alwaysDescription": "Retenu sur ce Mac ; révocable dans Réglages › Confidentialité."

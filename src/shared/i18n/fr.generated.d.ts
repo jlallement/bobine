@@ -3188,6 +3188,7 @@ export type FrResources = {
       readonly allow: 'Autoriser'
       readonly always: 'Toujours autoriser'
       readonly question: 'L’agent veut ouvrir {{site}} dans le navigateur intégré. L’autoriser ?'
+      readonly questionShown: 'La page affichée est sur {{site}}. L’agent veut la lire et y agir. L’autoriser ?'
       readonly header: 'Site web'
       readonly allowDescription: 'Pour cette conversation : l’agent pourra lire et utiliser {{site}}.'
       readonly alwaysDescription: 'Retenu sur ce Mac ; révocable dans Réglages › Confidentialité.'

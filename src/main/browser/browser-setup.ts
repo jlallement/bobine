@@ -39,7 +39,9 @@ export function setupBrowser(options: BrowserSetupOptions): BrowserSetup {
     emitAnnotate: (event) => options.send('browser:annotate', event),
     keepCookies: options.keepCookies,
     ...(options.onWaiting ? { onWaiting: options.onWaiting } : {}),
-    ...(options.titleOf ? { titleOf: options.titleOf } : {})
+    ...(options.titleOf ? { titleOf: options.titleOf } : {}),
+    // Pendant une action de l'agent, la page ne va que vers un site accordé (fiche 249).
+    siteAllowed: (id, url) => tools.allows(id, url)
   })
   const tools = browserToolsModule({
     driverFor: (id) => manager.driverFor(id),

@@ -5,6 +5,9 @@ import { join } from 'node:path'
 import { L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 import { DEBUG_PAGE, TEST_PAGE } from '../pages.mjs'
 
+/** Nom d'un site hors du poste, servi par le serveur de l'essai (fiche 249). */
+const FOREIGN_HOST = 'bobine-e2e.example'
+
 /** Bouton qui ouvre une fenêtre de connexion, en haut à gauche (fiche 072). */
 const POPUP_PAGE =
   '<title>Popup</title><button style="position:fixed;left:0;top:0;width:400px;height:300px" ' +
@@ -60,6 +63,9 @@ export async function browserSuite(scheme) {
   })
   await new Promise((r) => server.listen(0, '127.0.0.1', r))
   const url = `http://127.0.0.1:${server.address().port}/`
+  // Site « extérieur » servi par le même serveur (fiche 249) : un nom hors du poste, résolu vers
+  // 127.0.0.1 par Chromium seulement (`--host-resolver-rules`), sans réseau.
+  const foreign = `http://${FOREIGN_HOST}:${server.address().port}/`
   const out = mkdtempSync(join(tmpdir(), 'bob-e2e-telechargement-'))
   try {
     await withApp(
@@ -280,6 +286,7 @@ export async function browserSuite(scheme) {
           popupMain.close()
         }
 
+        await siteGuard(ui, foreign)
         await downloads(ui, url, out)
         // En dernier : la boîte native d'Electron reste affichée sur la fenêtre.
         await pageDialog(ui)
@@ -384,13 +391,78 @@ export async function browserSuite(scheme) {
       },
       undefined,
       'navigateur',
-      { MOCK_BROWSER_URL: url },
-      [`--inspect=${MAIN_PORT}`]
+      { MOCK_BROWSER_URL: url, MOCK_FOREIGN_URL: `${foreign}deux` },
+      [`--inspect=${MAIN_PORT}`, `--host-resolver-rules=MAP ${FOREIGN_HOST} 127.0.0.1`]
     )
   } finally {
     server.close()
     rmSync(out, { recursive: true, force: true })
   }
+}
+
+/**
+ * Accord par site de bout en bout (fiche 249, audit SEC-1) : un `location = …` de l'agent vers un
+ * site non accordé est arrêté et l'agent prévenu ; une page partie ailleurs hors d'une action de
+ * l'agent ne lui est lisible qu'après la carte d'accord (refus : rien de lu ; accord : lu).
+ */
+async function siteGuard(ui, foreign) {
+  await ui.send('/scenario changement-de-site')
+  await ui.ready()
+  const reply = await ui.lastAgentText()
+  check(
+    // La page dite par le dernier outil (les cartes des outils, elles, citent le code).
+    reply.includes('Navigation arrêtée par Bobine') &&
+      /Page : http:\/\/127\.0\.0\.1:\d+\//.test(reply),
+    `location = … vers un site non accordé pendant l’action de l’agent : arrêté, l’agent prévenu (${reply.slice(0, 160)})`
+  )
+  const main = await mainProcess()
+  try {
+    const onForeign = () =>
+      main.evaluate(
+        `require('electron').webContents.getAllWebContents().filter((w) => w.getURL().includes(${JSON.stringify(FOREIGN_HOST)})).length`
+      )
+    // Au-delà du délai où ce qui arrive vient encore de l'agent (1,5 s) : toujours pas parti.
+    await new Promise((r) => setTimeout(r, 2000))
+    check((await onForeign()) === 0, 'la page n’est jamais allée sur le site non accordé')
+    // Hors d'une action de l'agent, la page part ailleurs (comme un lien suivi par l'utilisateur) :
+    // rien ne l'en empêche.
+    const shown = await ui.ev(`${ui.$('browser-address')}.value`)
+    await main.evaluate(`(() => {
+      for (const w of require('electron').webContents.getAllWebContents()) {
+        if (w.getURL() === ${JSON.stringify(shown)}) void w.loadURL(${JSON.stringify(`${foreign}deux`)}).catch(() => {})
+      }
+      return true
+    })()`)
+    await ui.waitFor(`${ui.$('browser-address')}.value.includes(${JSON.stringify(FOREIGN_HOST)})`)
+    check(true, 'navigation hors d’une action de l’agent : la page part sur l’autre site')
+  } finally {
+    main.close()
+  }
+  const site = foreign.replace(/^http:\/\/|\/$/g, '')
+  await ui.send('/scenario page-affichee')
+  await ui.waitFor(`!!${ui.$('questions')}`)
+  check(
+    (await ui.ev(`${ui.$('questions')}.innerText`)).includes(
+      L('approvals.site.questionShown', { site })
+    ),
+    'page affichée sur un site non accordé : carte d’accord avant que l’agent la lise'
+  )
+  await ui.shot('28h-site-affiche-accord')
+  await ui.press('3')
+  await ui.ready()
+  const refused = await ui.lastAgentText()
+  check(
+    refused.includes('Page refusée') && !refused.includes('Page deux'),
+    `refusé : l’agent n’a rien lu de la page (${refused.slice(0, 120)})`
+  )
+  await ui.send('/scenario page-affichee')
+  await ui.waitFor(`!!${ui.$('questions')}`)
+  await ui.press('1')
+  await ui.ready()
+  check(
+    (await ui.lastAgentText()).includes('Page deux'),
+    'autorisé : l’agent lit la page, sans redemander ensuite'
+  )
 }
 
 /**

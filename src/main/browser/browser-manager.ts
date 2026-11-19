@@ -43,6 +43,7 @@ import { createDriver, historyStep, loadWithin } from './browser-driver'
 import { CdpTab } from './cdp-tab'
 import { saveDownload } from './downloads'
 import { PageLayer, pageSnapshot } from './page-layer'
+import { agentActive, guardNavigations, stopsAgentNavigation } from './navigation-guard'
 import {
   emulationFrame,
   nextZoom,
@@ -69,8 +70,11 @@ interface Tab {
   id: string
   view: WebContentsView
   cdp: CdpTab
-  /** Jusqu'à quand ce qui arrive dans la page vient de l'agent. */
+  /** Jusqu'à quand ce qui arrive dans la page vient de l'agent (voir `navigation-guard.ts`). */
   agentUntil: number
+  agentBusy: number
+  /** Navigations arrêtées pendant une action de l'agent (fiche 249), à lui dire. */
+  blockedNavigations: string[]
   /** Dernier geste de l'utilisateur dans la page. */
   userInputAt: number
   /** Popups demandées par une action de l'agent et bloquées, à lui dire. */
@@ -112,6 +116,8 @@ export interface BrowserManagerOptions {
   emitCommand?: (command: BrowserCommand) => void
   /** Clic ou épingle dans la page en mode Annoter (fiche 146). */
   emitAnnotate?: (event: PageLayerEvent) => void
+  /** Site accordé à l'agent dans cette conversation (fiche 249) ; sans lui, tout l'est. */
+  siteAllowed?: (conversationId: string, url: string) => boolean
 }
 
 export class BrowserManager {
@@ -407,6 +413,8 @@ export class BrowserManager {
       view,
       cdp,
       agentUntil: 0,
+      agentBusy: 0,
+      blockedNavigations: [],
       userInputAt: 0,
       blockedPopups: [],
       layer: new PageLayer(
@@ -487,10 +495,28 @@ export class BrowserManager {
     for (const tab of browser.tabs) this.destroy(tab)
   }
 
-  /** Une action de l'agent arrive dans l'onglet actif : ce qu'elle ouvre vient de lui. */
-  markAgentInput(conversationId: string): void {
+  /**
+   * Une action de l'agent commence dans l'onglet actif : ce qu'elle ouvre vient de lui, jusqu'à
+   * la fin rendue (appelée une fois) et le délai qui la suit.
+   */
+  beginAgentAction(conversationId: string): () => void {
     const tab = this.currentTab(conversationId)
-    if (tab) tab.agentUntil = Date.now() + AGENT_INPUT_GRACE_MS
+    if (!tab) return () => {}
+    tab.agentBusy++
+    tab.agentUntil = Date.now() + AGENT_INPUT_GRACE_MS
+    let ended = false
+    return () => {
+      if (ended) return
+      ended = true
+      tab.agentBusy--
+      tab.agentUntil = Date.now() + AGENT_INPUT_GRACE_MS
+    }
+  }
+
+  /** Navigations arrêtées pendant les actions de l'agent, depuis la dernière fois (fiche 249). */
+  takeBlockedNavigations(conversationId: string): string[] {
+    const tabs = this.browsers.get(conversationId)?.tabs ?? []
+    return tabs.flatMap((tab) => tab.blockedNavigations.splice(0))
   }
 
   /** Popups bloquées depuis la dernière fois (actions de l'agent), à lui dire. */
@@ -581,6 +607,7 @@ export class BrowserManager {
 
   private watch(conversationId: string, tab: Tab): void {
     const contents = tab.view.webContents
+    const allowed = (url: string) => this.options.siteAllowed?.(conversationId, url) ?? true
     const emit = () => {
       if (!contents.isDestroyed()) this.emit(conversationId)
     }
@@ -614,7 +641,7 @@ export class BrowserManager {
     })
     // Gestes de l'utilisateur (pas ceux que l'agent envoie par le CDP) : une popup peut suivre.
     contents.on('input-event', (_event, input) => {
-      if (USER_GESTURES.has(input.type) && Date.now() >= tab.agentUntil) {
+      if (USER_GESTURES.has(input.type) && !agentActive(tab)) {
         tab.userInputAt = Date.now()
       }
     })
@@ -622,7 +649,7 @@ export class BrowserManager {
       if (!/^https?:/i.test(url)) return { action: 'deny' }
       if (disposition === 'new-window') {
         const now = Date.now()
-        if (now < tab.agentUntil) {
+        if (agentActive(tab, now)) {
           tab.blockedPopups.push(url)
           return { action: 'deny' }
         }
@@ -641,7 +668,9 @@ export class BrowserManager {
           }
         }
       }
-      // Les liens « nouvel onglet » s'ouvrent dans un nouvel onglet, qui que ce soit.
+      // Les liens « nouvel onglet » s'ouvrent dans un nouvel onglet, qui que ce soit, sauf vers un
+      // site non accordé pendant une action de l'agent (fiche 249).
+      if (stopsAgentNavigation(tab, url, allowed)) return { action: 'deny' }
       try {
         void loadWithin(this.newTab(conversationId), url).catch(() => {})
       } catch {
@@ -650,9 +679,7 @@ export class BrowserManager {
       return { action: 'deny' }
     })
     contents.on('did-create-window', (popup) => this.guardPopup(conversationId, popup))
-    contents.on('will-navigate', (event, url) => {
-      if (!/^https?:/i.test(url)) event.preventDefault()
-    })
+    guardNavigations(contents, tab, allowed)
   }
 
   /**
@@ -710,7 +737,7 @@ export class BrowserManager {
    */
   private download(item: DownloadItem, contents: WebContents): void {
     const owner = this.ownerOf(contents)
-    const byAgent = !!owner?.tab && Date.now() < owner.tab.agentUntil
+    const byAgent = !!owner?.tab && agentActive(owner.tab)
     const name = item.getFilename()
     const note = (entry: DownloadNote) => {
       if (!byAgent || !owner) return

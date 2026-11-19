@@ -121,4 +121,24 @@ describe('« Committer d’abord » : fichiers à cocher (fiche 244)', () => {
       expect(looksSecret(path)).toBe(false)
     }
   })
+
+  it('« secret ? » élargi (fiche 249) : jetons de paquets, clés SSH, magasins de certificats', () => {
+    for (const path of [
+      '.npmrc',
+      'home/.netrc',
+      '.pypirc',
+      '.ssh/id_ed25519',
+      'id_ecdsa',
+      'certs/client.pfx',
+      'android/release.jks',
+      'app/upload.keystore',
+      'config/credentials.json',
+      'gcp/service-account-prod.json'
+    ]) {
+      expect(looksSecret(path), path).toBe(true)
+    }
+    for (const path of ['npmrc.md', 'src/credentials.ts', 'service.json', 'docs/keystore.md']) {
+      expect(looksSecret(path), path).toBe(false)
+    }
+  })
 })

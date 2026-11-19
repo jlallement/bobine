@@ -159,13 +159,26 @@ const FIX_TITLE = /\b(fix|fixe|bug|corrig|répar|repar|crash|erreur|error|plant)
 const SUBJECT_MAX = 60
 const BODY_FILES_MAX = 20
 
+/** Fichiers de secrets connus, par leur nom entier (fiche 249, audit SEC-6). */
+const SECRET_NAMES =
+  /^(\.env.*|\.npmrc|\.netrc|_netrc|\.pypirc|credentials\.json|service-account.*\.json)$/i
 /**
- * Nom qui ressemble à un fichier de secrets (fiche 244) : `.env*`, `*.pem`, `*.key`, `id_rsa*`,
- * `*.p12`. Seulement une étiquette « secret ? » dans la liste à cocher : le fichier reste coché.
+ * Clés SSH (`id_rsa`, `id_ed25519`, `id_ecdsa`…, sans extension pour la clé privée). Le `.pub`
+ * reste signalé, comme `id_rsa*` avant : une étiquette de trop vaut mieux qu'une clé manquée.
+ */
+const SSH_PRIVATE_KEY = /^id_(rsa|dsa|ecdsa|ed25519)/i
+/** Extensions de clés et de magasins de certificats. */
+const SECRET_EXTENSIONS = /\.(pem|key|p12|pfx|jks|keystore)$/i
+
+/**
+ * Nom qui ressemble à un fichier de secrets (fiches 244, 249) : `.env*`, `.npmrc`, `.netrc`,
+ * `.pypirc`, `credentials.json`, `service-account*.json`, clés SSH privées, `*.pem`, `*.key`,
+ * `*.p12`, `*.pfx`, `*.jks`, `*.keystore`. Seulement une étiquette « secret ? » dans la liste à
+ * cocher : le fichier reste coché (décision Q2 de la fiche 244).
  */
 export function looksSecret(path: string): boolean {
   const name = path.slice(path.lastIndexOf('/') + 1)
-  return /^\.env/i.test(name) || /^id_rsa/i.test(name) || /\.(pem|key|p12)$/i.test(name)
+  return SECRET_NAMES.test(name) || SSH_PRIVATE_KEY.test(name) || SECRET_EXTENSIONS.test(name)
 }
 
 /** Type Conventional Commits deviné : docs, test, fix, sinon feat. */

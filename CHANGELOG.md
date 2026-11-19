@@ -8,6 +8,23 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 - Electron 45.3.4 (Chromium 156.0.8078.100) : un élément cliqué du bouton droit n'est plus gardé
   en mémoire après sa disparition.
+- Navigateur intégré : l'accord par site ne se contourne plus. Avant de lire une page ou d'y agir
+  (capture, clic, saisie, JavaScript…), l'agent doit avoir l'accord pour le site affiché ; sinon la
+  carte « Site web » le demande. Pendant une action de l'agent, la page ne peut plus partir vers
+  un site non autorisé (lien, `location = …`, redirection) : la navigation est arrêtée et l'agent
+  prévenu. Votre propre navigation n'est pas gênée.
+- `main.log` masque désormais les secrets, comme `agents.log` : une clé passée en argument d'un
+  agent personnalisé (`--api-key …`) ou une clé enregistrée n'y apparaît plus en clair.
+- Un fichier de configuration écrit par Bobine (`mcp.json`, `opencode.json`…) garde ses droits :
+  un fichier réservé à vous (0600) ne redevient plus lisible par les autres comptes, et un fichier
+  créé par Bobine l'est en 0600.
+- « Committer d'abord » signale aussi comme « secret ? » `.npmrc`, `.netrc`, `.pypirc`, les clés
+  SSH (`id_ed25519`, `id_ecdsa`…), `*.pfx`, `*.jks`, `*.keystore`, `credentials.json` et
+  `service-account*.json`.
+- Les cookies du navigateur intégré sont chiffrés sur le disque (clé du trousseau). Vos sessions
+  restent ouvertes.
+- « Toujours autoriser » n'est plus retenu pour les prochaines conversations quand l'agent ne dit
+  pas de quel genre d'outil il s'agit.
 
 ## 1.0.0-beta.9 — 19 novembre 2026
 

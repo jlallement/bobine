@@ -188,6 +188,7 @@ export class AgentMcpConfig {
     if ('error' in config) throw new Error(config.error)
     const next = change(config.text || '{}', config.data)
     mkdirSync(dirname(file), { recursive: true })
-    writeFileAtomic(file, next.endsWith('\n') ? next : `${next}\n`)
+    // Peut porter des en-têtes ou des variables secrètes : créé en 0600, droits gardés (249).
+    writeFileAtomic(file, next.endsWith('\n') ? next : `${next}\n`, { createMode: 0o600 })
   }
 }

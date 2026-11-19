@@ -70,6 +70,11 @@ electronFuses:
   enableNodeCliInspectArguments: false
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
+  # Cookies du navigateur intégré chiffrés sur le disque (fiche 249, audit SEC-4) : clé du système
+  # (trousseau « Bobine Safe Storage » sur Mac, celle de `safeStorage`). Sens unique : les cookies
+  # en clair restent lisibles et sont chiffrés à la réécriture ; retirer le fusible les rendrait
+  # illisibles.
+  enableCookieEncryption: true
 mac:
   category: public.app-category.developer-tools
   icon: build/icon.png

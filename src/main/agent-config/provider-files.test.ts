@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse } from 'jsonc-parser'
@@ -179,4 +187,18 @@ describe('fournisseurs de modèles d’OpenCode (fiche 104)', () => {
     expect(config.file()).toBe(join(xdg, 'opencode', 'opencode.jsonc'))
     expect(config.display()).toBe(native('~/cfg/opencode/opencode.jsonc'))
   })
+})
+
+describe('droits d’opencode.json (fiche 249)', () => {
+  it.skipIf(process.platform === 'win32')(
+    'créé en 0600 ; un fichier existant en 0600 ne repasse pas en 0644',
+    () => {
+      const { config, file } = setup()
+      config.save(llmaas)
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+      chmodSync(file, 0o600)
+      config.save({ ...llmaas, name: 'Autre nom' })
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+    }
+  )
 })
