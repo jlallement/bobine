@@ -109,9 +109,10 @@ export type AgentBlocker =
       toolsRan?: true
       /**
        * Modèle de la session refusé au tour (réglage de catégorie `model`, fiche 210) : la carte le
-       * nomme et propose d'en choisir un autre.
+       * nomme et propose d'en choisir un autre. `unavailable` : l'agent dit ce modèle indisponible
+       * (fiche 259), ce n'est pas une connexion à faire.
        */
-      model?: { id: string; name: string }
+      model?: { id: string; name: string; unavailable?: true }
     }
   | {
       kind: 'license'
@@ -513,7 +514,8 @@ export type AgentEvent =
   | { type: 'cancel-requested' }
   /**
    * `message` : texte tel quel, ou code traduit à l'affichage (ADR-0014). `title` : titre de
-   * l'encadré (sortie d'une commande de l'app, fiche 126).
+   * l'encadré (sortie d'une commande de l'app, fiche 126). `refusal` : avis d'un message refusé
+   * (connexion, modèle), vrai jusqu'à la réponse suivante de l'agent, qui le retire (fiche 259).
    */
   | {
       type: 'notice'
@@ -521,6 +523,7 @@ export type AgentEvent =
       message: string | Message
       title?: string
       link?: NoticeLink
+      refusal?: true
     }
   /**
    * Famille d'outils de l'app qui suit le dossier (projet Xcode, Android — fiche 241) : devenue

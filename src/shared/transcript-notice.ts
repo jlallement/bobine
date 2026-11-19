@@ -28,7 +28,24 @@ export interface TranscriptNotice {
   appTools?: string
   /** Bouton de l'avis : redémarrer l'agent (fiche 241). */
   action?: NoticeAction
+  /**
+   * Avis d'un message refusé (connexion, modèle — fiches 210, 259) : vrai jusqu'à la réponse
+   * suivante de l'agent. Retiré par elle (`withoutRefusal`), ou remplacé par l'avis d'un nouveau
+   * refus.
+   */
+  refusal?: true
 }
+
+/**
+ * Le fil sans l'avis d'un refus précédent (fiche 259, D6) : l'agent a répondu autrement (tour fini,
+ * autre erreur, autre refus), ce que disait l'avis n'est plus établi. Même état si rien à retirer.
+ */
+export function withoutRefusal(state: TranscriptState): TranscriptState {
+  if (!state.items.some(isRefusal)) return state
+  return { ...state, items: state.items.filter((item) => !isRefusal(item)) }
+}
+
+const isRefusal = (item: TranscriptItem): boolean => item.kind === 'notice' && item.refusal === true
 
 /** Texte d'un avis du fil, dans la langue courante. */
 export const noticeText = (notice: { message?: Message; text?: string }): string =>

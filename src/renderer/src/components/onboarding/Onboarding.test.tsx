@@ -1,4 +1,12 @@
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ProfileSummary } from '@shared/agent'
 import type { AgentReadiness, CheckRequest } from '@shared/onboarding'
@@ -124,6 +132,27 @@ describe('accueil du premier lancement (fiche 188)', () => {
     expect(screen.getByTestId('onboarding-model-missed').textContent).toContain(
       'Répondu avec opencode/Hy4 flash Free, pas openai/GPT-6.2 Astra'
     )
+  })
+
+  it('étape Dossier : « avec votre accord » seulement pour un agent qui demande (fiche 259, D30)', async () => {
+    const folderText = async (agent: ProfileSummary) => {
+      const { rerender } = await setup([agent])
+      await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+      await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+      rerender()
+      await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+      rerender()
+      const text = screen.getByTestId('onboarding').textContent ?? ''
+      cleanup()
+      return text
+    }
+    const asks = await folderText(MOCK)
+    expect(asks).toContain('L’agent lit et modifie les fichiers de ce dossier, avec votre accord.')
+    const silent = await folderText({ ...MOCK, writesWithoutAsking: true })
+    expect(silent).toContain('sans demander d’autorisation')
+    expect(silent).not.toContain('avec votre accord')
+    // Aucun nom d'agent dans ce texte : il vient de la capacité du profil.
+    expect(silent).not.toContain('Agent factice')
   })
 
   it('« Passer l’accueil » : marqué passé, l’accueil disparaît', async () => {

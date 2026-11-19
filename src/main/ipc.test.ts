@@ -417,6 +417,25 @@ describe('IPC', () => {
     error.mockRestore()
   })
 
+  it('app:reportError : le bruit de ResizeObserver en debug, rien d’autre (fiche 259, D37)', async () => {
+    const { call } = setup()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const noise = 'ResizeObserver loop completed with undelivered notifications.'
+    await call('app:reportError', { source: 'error', message: noise })
+    await call('app:reportError', {
+      source: 'error',
+      message: 'ResizeObserver loop limit exceeded'
+    })
+    expect(error).not.toHaveBeenCalled()
+    // Même texte avec une pile, d'une autre source, ou autre chose : toujours en ERROR.
+    await call('app:reportError', { source: 'error', message: noise, stack: 'at App' })
+    await call('app:reportError', { source: 'unhandledrejection', message: noise })
+    await call('app:reportError', { source: 'error', message: `${noise} TypeError: x` })
+    await call('app:reportError', { source: 'error', message: 'TypeError: x is undefined' })
+    expect(error).toHaveBeenCalledTimes(4)
+    error.mockRestore()
+  })
+
   it('erreur d’un gestionnaire : renvoyée à l’interface et journalisée', async () => {
     const { call } = setup()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

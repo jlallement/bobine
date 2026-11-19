@@ -720,6 +720,7 @@ export type FrResources = {
       readonly expiredRetry: 'Une fois connecté, « Réessayer » renvoie votre dernier message, une seule fois.'
       readonly modelTitle: 'Le modèle {{model}} n’a pas répondu'
       readonly modelSubtitle: 'L’agent n’est pas connecté au fournisseur de ce modèle.'
+      readonly modelUnavailableSubtitle: 'L’agent dit que ce modèle n’est pas disponible.'
       readonly chooseModel: 'Choisir un autre modèle'
       readonly toolsRan: 'L’agent avait déjà lancé des outils pour ce message : « Réessayer » le reprend depuis le début.'
       readonly confirmToolsRan: 'Des outils ont déjà tourné pour ce message ; les relancer ?'
@@ -1784,7 +1785,7 @@ export type FrResources = {
     readonly reportIssue: 'Signaler un problème'
     readonly reportIssueHint: 'Ouvre une issue GitHub dans le navigateur, préremplie avec la version et ce rapport. Rien n’est envoyé avant que vous ne la validiez sur GitHub.'
     readonly reportIssueTruncated: '[Rapport coupé pour tenir dans l’adresse : coller le reste depuis « Copier le rapport ».]'
-    readonly privacy: 'Rien n’est envoyé à un modèle. Chaque agent est lancé hors conversation, dans le dossier courant ; sa session d’essai est supprimée ensuite.'
+    readonly privacy: 'Rien n’est envoyé à un modèle. Chaque agent est lancé hors conversation, dans le dossier courant. Bobine n’ouvre d’office une session d’essai que chez un agent qui sait la supprimer, et la supprime ensuite.'
     readonly log: {
       readonly label: 'Journal'
       readonly level: 'Niveau du journal'
@@ -1914,6 +1915,7 @@ export type FrResources = {
       readonly untestedVersionFix: 'Les fonctions propres à {{agent}} peuvent ne pas marcher avec cette version. Si quelque chose cloche, signalez-le avec le journal.'
       readonly session: 'Session'
       readonly sessionSkipped: 'pas essayée : {{agent}} ne sait pas supprimer une session, celle d’essai resterait dans son historique'
+      readonly sessionSkippedTrial: 'pas essayée d’office sur ce profil d’essai, pour ne rien laisser chez {{agent}}'
       readonly models: 'Modèles'
       readonly noModels: 'aucun modèle proposé'
       readonly noModelsFix: 'Configurez un fournisseur de modèles pour {{agent}}.'
@@ -2968,6 +2970,7 @@ export type FrResources = {
     readonly notReady: 'Agent non prêt (statut : {{status}})'
     readonly authExpired: '{{agent}} n’a pas répondu : connexion expirée.'
     readonly modelAuthRefused: 'Le modèle {{model}} n’a pas répondu : {{agent}} n’est pas connecté à son fournisseur.'
+    readonly modelUnavailable: 'Le modèle {{model}} n’a pas répondu : {{agent}} le dit indisponible.'
     readonly licenseAtPrompt: '{{name}} demande d’accepter sa licence : renvoyez votre message, puis acceptez-la dans le formulaire qui s’affiche.'
     readonly workspaceMissing: 'Dossier de travail introuvable : {{folder}}'
     readonly exit: {
@@ -4688,6 +4691,7 @@ export type FrResources = {
     readonly folder: {
       readonly title: 'Où travailler ?'
       readonly subtitle: 'L’agent lit et modifie les fichiers de ce dossier, avec votre accord.'
+      readonly subtitleWithoutAsking: 'L’agent lit et modifie les fichiers de ce dossier sans demander d’autorisation : c’est son réglage par défaut.'
       readonly projectTitle: 'Un projet existant'
       readonly projectHelp: 'De préférence un dépôt git.'
       readonly choose: 'Choisir…'

@@ -41,6 +41,11 @@ export interface AgentCheck {
    * pas ouverte (`skipped`, pour ne rien laisser dans son historique).
    */
   session?: 'deleted' | 'closed' | 'kept' | 'skipped'
+  /**
+   * Pourquoi la session n'a pas été ouverte (fiche 259, D29) : profil jetable (fiche 242, rien
+   * d'office chez l'agent), ou agent qui n'annonce pas `session/delete` à `initialize`.
+   */
+  skipped?: 'disposable' | 'no-delete'
 }
 
 export interface SystemFacts {
@@ -389,7 +394,12 @@ function sessionChecks(profile: AgentProfile, check: AgentCheck, home: string): 
         id: 'session',
         label: t('diagnostics.agent.session'),
         level: 'optional',
-        detail: t('diagnostics.agent.sessionSkipped', { agent: profile.label }),
+        detail: t(
+          check.skipped === 'disposable'
+            ? 'diagnostics.agent.sessionSkippedTrial'
+            : 'diagnostics.agent.sessionSkipped',
+          { agent: profile.label }
+        ),
         action: 'try-session'
       }
     ]

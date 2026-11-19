@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest'
+import type { AgentEvent } from './agent'
+import { emptyTranscript, reduceTranscript } from './transcript'
+
+/**
+ * Avis d'un message refusé (fiches 210, 259) : vrai jusqu'à la réponse suivante de l'agent. D6 de
+ * l'exploration du 2026-11-19 : « … pas connecté à son fournisseur » restait affiché après la
+ * connexion, quand le tour suivant était refusé pour une autre raison.
+ */
+const refused = (key: 'agentHost.modelAuthRefused' | 'agentHost.modelUnavailable'): AgentEvent => ({
+  type: 'notice',
+  level: 'warning',
+  message: { key, params: { agent: 'OpenCode', model: 'GPT' } },
+  refusal: true
+})
+
+const notices = (events: AgentEvent[]) =>
+  events
+    .reduce(reduceTranscript, emptyTranscript)
+    .items.flatMap((i) => (i.kind === 'notice' ? [i.message?.key ?? i.text] : []))
+
+const user: AgentEvent = { type: 'user-message', text: 'Ajoute un test' }
+
+describe('avis d’un refus au tour (fiche 259)', () => {
+  it('remplacé par l’avis d’un nouveau refus : un seul à la fois', () => {
+    expect(
+      notices([user, refused('agentHost.modelAuthRefused'), refused('agentHost.modelUnavailable')])
+    ).toEqual(['agentHost.modelUnavailable'])
+  })
+
+  it('retiré quand l’agent répond (tour fini)', () => {
+    expect(
+      notices([
+        user,
+        refused('agentHost.modelAuthRefused'),
+        { type: 'turn-end', stopReason: 'end_turn' }
+      ])
+    ).toEqual([])
+  })
+
+  it('retiré par une autre erreur du tour, qui dit la sienne', () => {
+    expect(
+      notices([
+        user,
+        refused('agentHost.modelAuthRefused'),
+        { type: 'turn-error', message: 'boum' }
+      ])
+    ).toEqual(['transcript.notice.error'])
+  })
+
+  it('les autres avis ne bougent pas', () => {
+    const other: AgentEvent = { type: 'notice', level: 'info', message: 'Contexte compacté' }
+    expect(
+      notices([
+        other,
+        user,
+        refused('agentHost.modelAuthRefused'),
+        { type: 'turn-end', stopReason: 'end_turn' },
+        { type: 'notice', level: 'warning', message: 'Sans marque' },
+        { type: 'turn-end', stopReason: 'end_turn' }
+      ])
+    ).toEqual(['Contexte compacté', 'Sans marque'])
+  })
+
+  it('l’élément du fil garde la marque (fil relu après un redémarrage)', () => {
+    const state = [user, refused('agentHost.modelUnavailable')].reduce(
+      reduceTranscript,
+      emptyTranscript
+    )
+    expect(state.items.at(-1)).toMatchObject({ kind: 'notice', refusal: true })
+  })
+})

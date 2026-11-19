@@ -86,7 +86,8 @@ describe('connexion expirée pendant la conversation (recette 0.9, D10)', () => 
     expect(events).toContainEqual({
       type: 'notice',
       level: 'warning',
-      message: { key: 'agentHost.authExpired', params: { agent: 'Agent factice' } }
+      message: { key: 'agentHost.authExpired', params: { agent: 'Agent factice' } },
+      refusal: true
     })
 
     login()

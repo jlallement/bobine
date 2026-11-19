@@ -997,13 +997,16 @@ async function start(): Promise<void> {
     { trusted: trustedSender }
   )
 
-  attachLaunch(conversations, {
-    focus: focusMainWindow,
-    show: ({ id, text }) => {
-      send('app:openConversation', id)
-      if (text) send('app:prefill', { id, text, attachments: [] })
-    }
-  })
+  // `bobine <dossier>` pendant l'accueil : après lui, avec l'agent choisi (fiche 259, D36).
+  onboarding.whenClosed(() =>
+    attachLaunch(conversations, {
+      focus: focusMainWindow,
+      show: ({ id, text }) => {
+        send('app:openConversation', id)
+        if (text) send('app:prefill', { id, text, attachments: [] })
+      }
+    })
+  )
   reopenMainWindow = () => void createMainWindow(browser, refreshAttention, settings)
   reopenMainWindow()
 

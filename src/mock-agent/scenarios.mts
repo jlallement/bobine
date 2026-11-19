@@ -8,6 +8,7 @@ import {
   BOB_EXPIRED_LOGIN,
   BOB_LICENSE_FORM_MESSAGE,
   LICENSE_MESSAGE,
+  modelUnavailable,
   type Scenario,
   type Step
 } from './scenario.mts'
@@ -1683,6 +1684,31 @@ export const scenarios: Record<string, Scenario> = {
       'Comme connexion-expiree-modele, mais aucun modèle ne répond tant que la connexion n’est pas refaite : changer de modèle ramène la carte, avec le nouveau modèle',
     session: { expiredLogin: 'terminal' },
     steps: [{ kind: 'login-required' }, { kind: 'text', text: 'Reconnecté, je peux répondre.' }]
+  },
+  'modele-indisponible': {
+    description:
+      'Modèle que le fournisseur ne sert pas (fiche 259, comme OpenCode 2.3.0) : avec factice-rapide (modèle par défaut), le message est refusé par l’erreur exacte relevée (-32603 « Internal error: Model unavailable: <modèle> ») ; factice-precis répond',
+    steps: [
+      {
+        kind: 'when-model',
+        model: 'factice-rapide',
+        then: [modelUnavailable('factice-rapide')],
+        else: [{ kind: 'text', text: 'Ce modèle est disponible, je peux répondre.' }]
+      }
+    ]
+  },
+  'modele-indisponible-apres-connexion': {
+    description:
+      'Le parcours D6 du 2026-11-19 (fiche 259) : factice-rapide refusé faute de connexion (-32000) ; une fois connecté (« Réessayer »), refusé comme indisponible (-32603 « Model unavailable ») ; factice-precis répond',
+    session: { expiredLogin: 'terminal' },
+    steps: [
+      {
+        kind: 'when-model',
+        model: 'factice-rapide',
+        then: [{ kind: 'login-required' }, modelUnavailable('factice-rapide')],
+        else: [{ kind: 'text', text: 'Ce modèle est disponible, je peux répondre.' }]
+      }
+    ]
   },
   'connexion-expiree-autre': {
     description:

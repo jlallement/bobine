@@ -17,6 +17,16 @@ export const LOGIN_METHOD = 'opencode-login'
  */
 export const AUTH_REQUIRED_MESSAGE = /authentication required/i
 
+/**
+ * Modèle refusé au message (2.3.0, exploration du 2026-11-19, D6) : `-32603` « Internal error:
+ * Model unavailable: openai/gpt-6.2-sol », après une connexion à un fournisseur qui ne sert pas ce
+ * modèle. Groupe 1 : l'identifiant du modèle, entier, comparé à celui de la session.
+ */
+export const MODEL_UNAVAILABLE = {
+  code: -32603,
+  pattern: /\bmodel unavailable: (\S+)\s*$/i
+}
+
 /** Titre des sessions jamais écrites (1.19 et 2.0.31) : « New session - <date ISO> ». */
 export const EMPTY_SESSION_TITLE = /^New session - \d{4}-\d{2}-\d{2}T/
 

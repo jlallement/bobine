@@ -68,6 +68,7 @@ export async function checkAgent(options: CheckAgentOptions): Promise<AgentCheck
     await host.start()
     const snapshot = host.snapshot()
     let session: AgentCheck['session']
+    let skipped: AgentCheck['skipped']
     if (host.currentSessionId) {
       const { delete: canDelete, close: canClose } = host.sessionSupport
       const end = canDelete
@@ -78,13 +79,16 @@ export async function checkAgent(options: CheckAgentOptions): Promise<AgentCheck
       session = await end.catch(() => 'kept' as const)
     } else if (snapshot.status === 'ready') {
       session = 'skipped'
+      // La vraie raison (fiche 259, D29) : la capacité lue à `initialize`, pas un libellé figé.
+      skipped = host.sessionSupport.delete ? 'disposable' : 'no-delete'
     }
     return {
       workspace,
       executable,
       ...(announcement ? { announcement } : {}),
       snapshot,
-      ...(session ? { session } : {})
+      ...(session ? { session } : {}),
+      ...(skipped ? { skipped } : {})
     }
   } finally {
     host.stop()

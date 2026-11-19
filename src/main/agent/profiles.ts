@@ -43,6 +43,7 @@ import {
   AUTH_REQUIRED_MESSAGE,
   EMPTY_SESSION_TITLE,
   LOGIN_METHOD,
+  MODEL_UNAVAILABLE,
   OPENCODE_SUBAGENT_STREAM,
   OPENCODE_TOOL_STATUS
 } from './opencode-contract'
@@ -223,6 +224,13 @@ export interface AgentProfile {
     otherCodes?: { code: number; pattern: RegExp }[]
     apiKey?: boolean
   }
+  /**
+   * Modèle refusé au message (fiche 259 ; OpenCode 2.3.0 : `-32603` « Model unavailable: <id> »).
+   * Reconnu au code ET au motif ensemble, et seulement si le groupe 1 du motif est exactement le
+   * modèle de la session : la carte « Modèle refusé » de la fiche 210, sans « connexion à faire ».
+   * Absent : une erreur de tour ordinaire.
+   */
+  modelRefusedAtTurn?: { code: number; pattern: RegExp }
   /**
    * Mode de départ passé dans `_meta` de `session/new` (fiche 163 ; Bob 2.0.6+ lit `bob/mode`), au
    * lieu d'un `session/set_mode` après l'ouverture. `ids` : identifiants de ses modes. Mode refusé
@@ -448,6 +456,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
         pattern: AUTH_REQUIRED_MESSAGE,
         otherCodes: [{ code: INTERNAL_ERROR, pattern: EXPIRED_LOGIN_MESSAGE }]
       },
+      // Comme OpenCode 2.3.0 (scénarios `modele-indisponible*`, fiche 259).
+      modelRefusedAtTurn: MODEL_UNAVAILABLE,
       // Essais : coûts lus dans une base de Bob, comme le profil Bob.
       ...(ctx.env['MOCK_AGENT_COST_SOURCE'] === 'bob-db'
         ? { costSource: bobDbCosts(bobDbIn(home)) }
@@ -629,6 +639,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // required », recette 0.9 D10). Pas de clé d'API dans ce profil : `OPENCODE_API_KEY` (Zen) ne
       // renouvellerait pas la connexion d'un autre fournisseur.
       authAtTurn: { pattern: AUTH_REQUIRED_MESSAGE },
+      // Modèle que le fournisseur connecté ne sert pas (2.3.0, D6 du 2026-11-19, fiche 259).
+      modelRefusedAtTurn: MODEL_UNAVAILABLE,
       // `opencode-login` : `authenticate` ne fait rien (1.19, 2.0.31), la connexion se fait dans un
       // terminal.
       terminalSteps: {

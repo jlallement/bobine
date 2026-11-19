@@ -675,6 +675,7 @@
       "expiredRetry": "Once you’re signed in, “Try again” resends your last message, once.",
       "modelTitle": "The {{model}} model didn’t answer",
       "modelSubtitle": "The agent isn’t signed in to this model’s provider.",
+      "modelUnavailableSubtitle": "The agent says this model isn’t available.",
       "chooseModel": "Choose another model",
       "toolsRan": "The agent had already started tools for this message: “Try again” runs it from the start.",
       "confirmToolsRan": "Tools already ran for this message; run them again?",
@@ -1745,7 +1746,7 @@
     "reportIssue": "Report an issue",
     "reportIssueHint": "Opens a GitHub issue in the browser, prefilled with the version and this report. Nothing is sent until you submit it on GitHub.",
     "reportIssueTruncated": "[Report cut to fit in the address: paste the rest from « Copy report ».]",
-    "privacy": "Nothing is sent to a model. Each agent is started outside any conversation, in the current folder; its trial session is deleted afterwards.",
+    "privacy": "Nothing is sent to a model. Each agent is started outside any conversation, in the current folder. Bobine only opens a trial session on its own with an agent that can delete it, and deletes it afterwards.",
     "log": {
       "label": "Log",
       "level": "Log level",
@@ -1868,6 +1869,7 @@
       "untestedVersionFix": "Features specific to {{agent}} may not work with this version. If something is off, report it with the log.",
       "session": "Session",
       "sessionSkipped": "not tried: {{agent}} can’t delete a session, so the trial session would stay in its history",
+      "sessionSkippedTrial": "not tried automatically on this test profile, so nothing is left in {{agent}}",
       "models": "Models",
       "noModels": "no model offered",
       "noModelsFix": "Set up a model provider for {{agent}}.",
@@ -3013,6 +3015,7 @@
     "notReady": "Agent not ready (status: {{status}})",
     "authExpired": "{{agent}} didn’t answer: sign-in expired.",
     "modelAuthRefused": "The {{model}} model didn’t answer: {{agent}} isn’t signed in to its provider.",
+    "modelUnavailable": "The {{model}} model didn’t answer: {{agent}} says it isn’t available.",
     "licenseAtPrompt": "{{name}} asks you to accept its license: send your message again, then accept it in the form that appears.",
     "workspaceMissing": "Working folder not found: {{folder}}",
     "exit": {
@@ -4656,6 +4659,7 @@
     "folder": {
       "title": "Where to work?",
       "subtitle": "The agent reads and edits files in this folder, with your approval.",
+      "subtitleWithoutAsking": "The agent reads and edits files in this folder without asking for permission: that’s its default setting.",
       "projectTitle": "An existing project",
       "projectHelp": "Preferably a git repository.",
       "choose": "Choose…",

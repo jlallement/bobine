@@ -636,6 +636,14 @@ export const BOB_EXPIRED_LOGIN = {
   }
 }
 
+/**
+ * Modèle refusé par OpenCode 2.3.0 (exploration du 2026-11-19, D6, fiche 259) : l'erreur telle que
+ * reçue dans `agents.log`, `-32603` « Internal error: Model unavailable: openai/gpt-6.2-sol ».
+ */
+export function modelUnavailable(model: string): Step {
+  return { kind: 'fail', code: -32603, message: `Internal error: Model unavailable: ${model}` }
+}
+
 /** Formulaire de licence de Bob 2.0.9 au premier message (élicitation `form`, relevé le 05/11). */
 export const BOB_LICENSE_FORM_MESSAGE = [
   'Bob Shell requires the IBM license agreement. Review the license files:',

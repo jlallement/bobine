@@ -386,3 +386,77 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
     expect(screen.queryByTestId('auth-choose-model')).toBeNull()
   })
 })
+
+describe('modèle indisponible (fiche 259, D6)', () => {
+  const unavailable = (
+    methods: Extract<AgentBlocker, { kind: 'auth' }>['methods']
+  ): AgentBlocker => ({
+    kind: 'auth',
+    methods,
+    authenticating: false,
+    atTurn: true,
+    model: { id: 'openai/gpt-6.2-sol', name: 'OpenAI/GPT-6.2 Sol', unavailable: true }
+  })
+  const login = [
+    {
+      id: 'opencode-login',
+      name: 'Login',
+      step: { id: 'opencode-login', label: 'Se connecter', command: 'opencode auth login' }
+    }
+  ]
+  const models = (values: string[]): SessionControl => ({
+    id: 'model',
+    name: 'Modèle',
+    category: 'model',
+    type: 'select',
+    currentValue: 'openai/gpt-6.2-sol',
+    options: values.map((value) => ({ value, name: value }))
+  })
+  function show(blocker: AgentBlocker, control: SessionControl) {
+    const noop = () => {}
+    render(
+      <BlockerPanel
+        blocker={blocker}
+        agentLabel="OpenCode"
+        workspace="/tmp/projet"
+        onAuthenticate={noop}
+        onRetry={noop}
+        onUseApiKey={async () => {}}
+        onRunStep={noop}
+        onTrustForSession={noop}
+        onOpenTerminal={noop}
+        onChooseWorkspace={noop}
+        modelControl={control}
+        onSetControl={vi.fn()}
+      />
+    )
+  }
+  const buttons = () =>
+    [...screen.getByTestId('blocker-auth').querySelectorAll('button')].map((b) => ({
+      text: b.textContent?.trim(),
+      primary: b.classList.contains('primary')
+    }))
+
+  it('la même carte que le modèle refusé, avec la raison de l’agent', () => {
+    show(unavailable(login), models(['openai/gpt-6.1-sol', 'openai/gpt-6.2-sol']))
+    expect(screen.getByText('Le modèle OpenAI/GPT-6.2 Sol n’a pas répondu')).toBeTruthy()
+    expect(screen.getByText('L’agent dit que ce modèle n’est pas disponible.')).toBeTruthy()
+    expect(screen.queryByText('L’agent n’est pas connecté au fournisseur de ce modèle.')).toBeNull()
+    expect(buttons()).toEqual([
+      { text: 'Choisir un autre modèle', primary: true },
+      { text: 'Se connecter', primary: false }
+    ])
+  })
+
+  it('ni autre modèle ni connexion : « Réessayer » reste, jamais une carte sans issue', () => {
+    show(unavailable([]), models(['openai/gpt-6.2-sol']))
+    expect(screen.queryByTestId('auth-choose-model')).toBeNull()
+    expect(screen.getByTestId('retry')).toBeTruthy()
+  })
+
+  it('un autre modèle proposé : pas de « Réessayer » d’office (comme la fiche 210)', () => {
+    show(unavailable([]), models(['openai/gpt-6.1-sol', 'openai/gpt-6.2-sol']))
+    expect(screen.queryByTestId('retry')).toBeNull()
+    expect(buttons()).toEqual([{ text: 'Choisir un autre modèle', primary: true }])
+  })
+})

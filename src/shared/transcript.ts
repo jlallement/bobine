@@ -52,7 +52,7 @@ import {
 } from './turn-limit'
 import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
-import { reduceAppTools, type TranscriptNotice } from './transcript-notice'
+import { reduceAppTools, withoutRefusal, type TranscriptNotice } from './transcript-notice'
 export { noticeText } from './transcript-notice'
 import type { Handover } from './handover'
 import type { WorktreeStart } from './worktree-cycle'
@@ -359,7 +359,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     case 'turn-end': {
       // Chaque tour est compté (fiche 109), même sans jetons : son coût peut venir d'ailleurs.
       const counted = {
-        ...withoutCancelling(state),
+        ...withoutCancelling(withoutRefusal(state)),
         usage: endTurn(state.usage ?? {}, event.usage, event.at)
       }
       const ended = compactionReply(
@@ -379,18 +379,22 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       // La nouvelle tentative repart de zéro : ce que l'agent avait commencé ne finira pas.
       return closeUnfinishedTools(state, true)
     case 'turn-error':
-      return push(closeUnfinishedTools(withEndedTurn(withoutCancelling(state)), true), {
-        kind: 'notice',
-        level: 'error',
-        message: { key: 'transcript.notice.error', params: { message: event.message } }
-      })
+      return push(
+        closeUnfinishedTools(withEndedTurn(withoutCancelling(withoutRefusal(state))), true),
+        {
+          kind: 'notice',
+          level: 'error',
+          message: { key: 'transcript.notice.error', params: { message: event.message } }
+        }
+      )
     case 'notice':
-      return push(state, {
+      return push(event.refusal ? withoutRefusal(state) : state, {
         kind: 'notice',
         level: event.level,
         ...(isMessage(event.message) ? { message: event.message } : { text: event.message }),
         ...(event.title ? { title: event.title } : {}),
-        ...(event.link ? { link: event.link } : {})
+        ...(event.link ? { link: event.link } : {}),
+        ...(event.refusal ? { refusal: true as const } : {})
       })
     case 'app-tools':
       return reduceAppTools(state, event)
