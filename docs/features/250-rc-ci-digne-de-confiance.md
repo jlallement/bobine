@@ -108,6 +108,13 @@ Dependabot comme les autres.
   runner GitHub. Les minutes des runners standard (macOS compris) sont gratuites pour un dépôt
   public.
 
+- 2026-11-19 — Vérifié sur le Mac : `./scripts/verify` vert (523 fichiers, 4914 essais, 3
+  sautés). Suites touchées vertes en clair et sombre (`quick`, `browser-view`, `commit-redige`,
+  `filles-tech-lead`, `fil`, `terminal` : 12/12). Comme `ui.click` sert à toutes les suites, la
+  suite complète a été jouée une fois : verte (19 min, machine partagée). Sous Linux, rien n'a été
+  joué en local : Docker n'était pas lancé, et une seule campagne tourne à la fois sur la machine.
+  La preuve viendra du job Linux après la poussée.
+
 ## Reste à vérifier sur GitHub (après la poussée)
 
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
