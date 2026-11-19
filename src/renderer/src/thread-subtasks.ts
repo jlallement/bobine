@@ -1,4 +1,4 @@
-import type { AgentSnapshot } from '@shared/agent'
+import type { AgentSnapshot, PromptRequest } from '@shared/agent'
 import { childrenOf } from '@shared/children-rows'
 import type { SubtasksInfo } from './components/thread/Subtasks'
 import type { ChildrenMergeActions } from './components/thread/SubtasksMerge'
@@ -17,7 +17,7 @@ type Conversations = Pick<
 export function threadSubtasks(
   c: Conversations,
   merge: ChildrenMergeActions,
-  send: (text: string) => unknown,
+  send: (text: string, attachments?: [], options?: PromptRequest) => unknown,
   snapshot?: Pick<AgentSnapshot, 'status' | 'queued'> | null
 ): SubtasksInfo {
   const profiles = c.settings?.profiles ?? []
@@ -29,7 +29,8 @@ export function threadSubtasks(
     profiles,
     ...(c.activeId ? { motherId: c.activeId } : {}),
     merge,
-    onAsk: send,
+    // Le travail visé part avec le message, marqué dans le contexte joint (fiche 263).
+    onAsk: (text, about) => send(text, [], about ? { about } : {}),
     ...(snapshot?.status === 'busy' ? { motherBusy: true } : {}),
     ...(snapshot?.queued.length ? { motherQueued: true } : {}),
     ...(agentLabel ? { agentLabel } : {}),

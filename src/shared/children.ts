@@ -314,6 +314,12 @@ const OUTCOME_TEXT: Record<ChildOutcome, string> = {
   error: 'ended its turn with an error'
 }
 
+/**
+ * Marque de la réponse visée par le message de l'utilisateur (« Appliquer », fiche 263) : le
+ * message ne nomme que le rôle ; deux travaux du même rôle se distinguent ici.
+ */
+export const ABOUT_LINE = "[The user's message is about this response.]"
+
 /** Rôle d'un travail, nommé à l'agent de la mère (fiche 263) : « , role: Expert UX/UI ». */
 const roleOf = (role: Pick<RoleBadge, 'label'> | undefined) =>
   role ? `, role: ${clip(role.label, TITLE_CHARS)}` : ''
@@ -331,9 +337,15 @@ const quoted = (text: string) =>
  */
 export function childContext(
   news: readonly ChildNews[],
-  items: readonly TranscriptItem[] = news
+  items: readonly TranscriptItem[] = news,
+  /** Travail visé par le message (« Appliquer », fiche 263) : sa dernière réponse est marquée. */
+  about?: string
 ): string | undefined {
   if (news.length === 0) return undefined
+  // Le travail visé : sa dernière réponse parmi ces nouvelles (une seule marque).
+  const aboutReport = about
+    ? news.findLast((i) => i.kind === 'child-report' && i.childId === about)?.id
+    : undefined
   // Le rôle de chaque travail, lu sur son lancement (même plus ancien que ces nouvelles).
   const roles = new Map(
     items.flatMap((i) => (i.kind === 'child-started' && i.role ? [[i.childId, i.role]] : []))
@@ -345,7 +357,8 @@ export function childContext(
       const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
       return `- ${who} the child conversation "${item.title}" (id: ${item.childId}${roleOf(item.role)})${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
     }
-    return reportLine(item, roles.get(item.childId))
+    const line = reportLine(item, roles.get(item.childId))
+    return item.id === aboutReport ? `${line}\n  ${ABOUT_LINE}` : line
   })
   const reports = news.some((item) => item.kind === 'child-report')
   return [

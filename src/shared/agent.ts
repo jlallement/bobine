@@ -289,12 +289,21 @@ export interface QueuedMessageView {
 export interface PromptRequest {
   /** `/split` (fiche 118) : demander à l'agent de découper le message en conversations filles. */
   askChildren?: boolean
+  /**
+   * « Demander à <agent> d'appliquer cette réponse » (fiche 263) : le travail visé (id de sa
+   * conversation), marqué dans le contexte joint ; jamais montré à l'utilisateur.
+   */
+  about?: string
 }
 
 /** Options venues du renderer : seules les valeurs vérifiées sont gardées. */
 export function parsePromptRequest(value: unknown): PromptRequest {
-  const askChildren = typeof value === 'object' && value !== null && 'askChildren' in value
-  return askChildren && value.askChildren === true ? { askChildren: true } : {}
+  if (typeof value !== 'object' || value === null) return {}
+  const { askChildren, about } = value as Record<string, unknown>
+  return {
+    ...(askChildren === true ? { askChildren: true } : {}),
+    ...(typeof about === 'string' && /^[\w-]{1,100}$/.test(about) ? { about } : {})
+  }
 }
 
 /** Message en file d'attente rendu à la zone de saisie (« Modifier »). */
@@ -304,6 +313,8 @@ export interface QueuedMessage {
   from?: MessageOrigin
   /** Écrit avec `/split` (fiche 118) : la demande de découpage part avec lui. */
   askChildren?: boolean
+  /** Travail visé par ce message (fiche 263, `PromptRequest.about`). */
+  about?: string
 }
 
 /** `success` : action réussie (fiche 194, variante `.notice-success` du composant partagé). */

@@ -3,8 +3,15 @@
  * ne change pas (tours, nouvelles des filles, rejeu d'une session, anciennes conversations).
  */
 import { describe, expect, it } from 'vitest'
-import type { AgentEvent } from './agent'
-import { childContext, childNews, keptReply, REPLY_KEEP_CHARS, type ChildReport } from './children'
+import { parsePromptRequest, type AgentEvent } from './agent'
+import {
+  ABOUT_LINE,
+  childContext,
+  childNews,
+  keptReply,
+  REPLY_KEEP_CHARS,
+  type ChildReport
+} from './children'
 import { replayTail } from './replay-tail'
 import { workCards, type RoleRequest } from './role-request'
 import type { RoleBadge } from './roles'
@@ -262,5 +269,43 @@ describe('fil abîmé et agent de la mère (revue QA, fiche 263)', () => {
     const context = childContext(childNews(items), items) ?? ''
     expect(context).toContain('the child conversation "Avis" (id: f1, role: Expert UX/UI)')
     expect(context).toContain('The child conversation "Avis" (id: f1, role: Expert UX/UI)')
+  })
+})
+
+describe('« Appliquer » : le travail visé, dans le contexte joint seulement (fiche 263)', () => {
+  it('deux travaux du même rôle en attente : seule la réponse visée est marquée', () => {
+    const items = fold([
+      { type: 'user-message', text: 'Bonjour', at: 1 },
+      {
+        type: 'role-request',
+        request: ask({
+          works: [
+            { childId: 'f1', role: ux },
+            { childId: 'f2', role: ux }
+          ]
+        })
+      },
+      started('f1', 'd1'),
+      started('f2', 'd1'),
+      { type: 'child-report', report: report('f1') },
+      { type: 'child-report', report: report('f2') }
+    ]).items
+    const context = childContext(childNews(items), items, 'f2') ?? ''
+    expect(context.split(ABOUT_LINE)).toHaveLength(2)
+    const marked = context.indexOf(ABOUT_LINE)
+    // La marque suit la réponse de f2, pas celle de f1.
+    expect(context.lastIndexOf('(id: f2', marked)).toBeGreaterThan(
+      context.lastIndexOf('(id: f1', marked)
+    )
+    expect(childContext(childNews(items), items) ?? '').not.toContain(ABOUT_LINE)
+  })
+
+  it('l’option du renderer est vérifiée : un id seulement', () => {
+    expect(parsePromptRequest({ about: 'f-1_2' })).toEqual({ about: 'f-1_2' })
+    expect(parsePromptRequest({ about: 'a b' })).toEqual({})
+    expect(parsePromptRequest({ about: 42 })).toEqual({})
+    expect(parsePromptRequest({ askChildren: true, about: 'x'.repeat(101) })).toEqual({
+      askChildren: true
+    })
   })
 })

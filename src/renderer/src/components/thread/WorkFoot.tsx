@@ -101,19 +101,16 @@ export function WorkFoot({
 const SETTLED: readonly WorkState[] = ['replied', 'stopped', 'error', 'silent', 'pending']
 
 /**
- * Message préparé pour l'agent de la conversation (revue UX, 12) : la proposition, nommée par le
- * titre de la réponse s'il y en a un (entre guillemets, sauf s'il en porte déjà).
+ * Message préparé pour l'agent de la conversation, lisible dans la bulle (décision du tech lead) :
+ * « Applique la proposition d'Expert UX/UI : « Le carnet de courses calme ». », le titre de la
+ * réponse sans préfixe ni guillemets ; sans titre, le rôle seul. Le travail visé part à part
+ * (`about`, marqué dans le contexte joint), jamais dans le texte.
  */
-export function applyMessage(role: string, workId: string, text: string): string {
+export function applyMessage(role: string, text: string): string {
   const title = answerTitle(text)
-  const work = workId
-  if (!title) return i18next.t('workCard.applyMessage', { role, work })
-  const quoted = /[«»"“”]/.test(title)
-  return i18next.t(quoted ? 'workCard.applyMessageNamed' : 'workCard.applyMessageTitled', {
-    role,
-    title,
-    work
-  })
+  return title
+    ? i18next.t('workCard.applyMessageTitled', { role, title })
+    : i18next.t('workCard.applyMessage', { role })
 }
 
 /**
@@ -170,7 +167,7 @@ function SettledActions({
           type="button"
           className="btn primary small"
           disabled={acting}
-          onClick={() => act(() => onAsk(applyMessage(card.role.label, card.childId, answer)))}
+          onClick={() => act(() => onAsk(applyMessage(card.role.label, answer), card.childId))}
           data-testid="work-apply"
         >
           <Send size={13} aria-hidden />

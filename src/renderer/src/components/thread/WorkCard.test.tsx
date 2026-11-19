@@ -310,7 +310,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     )
   })
 
-  it('« Appliquer » : message préparé avec le rôle, le titre et le travail ; un clic à la fois', async () => {
+  it('« Appliquer » : message lisible (rôle, titre), le travail visé à part ; un clic à la fois', async () => {
     fakeAgent()
     const sending = deferred()
     const onAsk = vi.fn(() => sending.promise)
@@ -322,11 +322,12 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     fireEvent.click(screen.getByTestId('work-apply'))
     await act(async () => {})
     expect(onAsk).toHaveBeenCalledTimes(1)
-    const message = plain((onAsk.mock.calls[0] as unknown[] | undefined)?.[0])
-    // Le titre porte déjà ses guillemets : il est cité tel quel ; le travail, par son id.
-    expect(message).toBe(
-      'Applique la proposition Direction : « Le carnet de courses calme » d’Expert UX/UI (travail a : sa réponse t’est transmise avec ce message).'
+    const [message, about] = (onAsk.mock.calls[0] as unknown[] | undefined) ?? []
+    // Lisible : le rôle et le titre, sans son préfixe ; le travail part à part, jamais dans le texte.
+    expect(plain(message)).toBe(
+      'Applique la proposition d’Expert UX/UI : « Le carnet de courses calme ».'
     )
+    expect(about).toBe('a')
     expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(true)
     await act(async () => sending.resolve())
     expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(false)
@@ -342,7 +343,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     fireEvent.click(screen.getByTestId('work-apply'))
     await act(async () => {})
     expect(plain((onAsk.mock.calls[0] as unknown[] | undefined)?.[0])).toBe(
-      'Applique la proposition d’Expert UX/UI (travail a : sa réponse t’est transmise avec ce message).'
+      'Applique la proposition d’Expert UX/UI.'
     )
     unmount()
     view(answered(), info([child('a', ux)], { onAsk, motherQueued: true }))

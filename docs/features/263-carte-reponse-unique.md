@@ -274,3 +274,15 @@ Pas de nouvelle dépendance.
 - Vu une fois pendant `verify` : `agent-host-opencode-2-3.test.ts` (`ENOTEMPTY` au nettoyage d'un
   dossier temporaire) ; vert seul et au `verify` suivant. Sans lien avec ce lot.
 
+### Retouche du tech lead (2026-11-20) : message préparé lisible
+
+- Texte visible : « Applique la proposition d'Expert UX/UI : « Le carnet de courses calme ». »
+  (titre Markdown de la réponse, sans préfixe « Direction : » ni guillemets d'origine) ; sans
+  titre : « Applique la proposition d'Expert UX/UI. » Plus d'id dans le texte (remplace le point
+  12 de la revue UX et la partie « message » du point 2 de la revue QA).
+- Le travail visé part à part : `PromptRequest.about` (vérifié par `parsePromptRequest`), gardé
+  par la file d'attente (jamais réuni à un message d'un autre travail), passé à `extraContext` ;
+  `childContext` marque la réponse visée (`ABOUT_LINE`). Deux travaux du même rôle en attente :
+  seul le visé est marqué. Essais : `role-request.test.ts`, `message-queue.test.ts`,
+  `WorkCard.test.tsx`.
+

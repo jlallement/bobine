@@ -162,7 +162,8 @@ export interface AgentHostOptions {
    * Texte joint avant le prochain message envoyé, lu à l'envoi (file d'attente comprise) :
    * nouvelles des conversations filles (fiche 097).
    */
-  extraContext?: (text: string, appTools: readonly string[]) => string | undefined
+  /** `about` : travail visé par ce message (fiche 263). */
+  extraContext?: (text: string, tools: readonly string[], about?: string) => string | undefined
   /**
    * Texte joint au premier message de chaque session ouverte (nouvelle, rouverte, après un
    * redémarrage) et après une compaction, d'après les outils de l'app qu'elle a reçus et le moment
@@ -223,6 +224,8 @@ export interface PromptOptions {
   from?: MessageOrigin
   /** `/split` (fiche 118) : demander de découper le message en conversations filles. */
   askChildren?: boolean
+  /** Travail visé par ce message (fiche 263) : marqué dans le contexte joint (`extraContext`). */
+  about?: string
 }
 
 /** Session à rouvrir (option `reopen`). */
@@ -504,7 +507,7 @@ export class AgentHost {
     // Un message en préparation compte comme une réponse (messages d'autres conversations).
     if (this.status !== 'busy' && !this.preparing) return this.prompt(text, attachments, options)
     if (options.context) throw new Error(t('agentHost.busy'))
-    this.queue.add(text, attachments, options.from, options.askChildren)
+    this.queue.add(text, attachments, options.from, options.askChildren, options.about)
     this.emitSnapshot()
   }
 
@@ -580,7 +583,7 @@ export class AgentHost {
     this.sessionContextDue = compaction ? 'compacted' : undefined
     const blocks = withContext(built.blocks, [
       options.askChildren && CHILDREN_REQUEST,
-      this.options.extraContext?.(text, this.appToolNames ?? []),
+      this.options.extraContext?.(text, this.appToolNames ?? [], options.about),
       this.options.directories?.context(sessionId),
       options.from && originContext(options.from),
       options.context,
@@ -745,9 +748,9 @@ export class AgentHost {
     if (!this.is('ready') || this.preparing) return
     const batch = this.queue.takeBatch()
     if (!batch) return
-    const { from, askChildren } = batch
-    const options = { ...(from ? { from } : {}), ...(askChildren ? { askChildren } : {}) }
-    this.prompt(batch.text, batch.attachments, options).catch((error: unknown) => {
+    // Provenance, `/split`, travail visé (fiche 263) : ceux du premier message, tels quels.
+    const { text, attachments, restore: _restore, ...options } = batch
+    this.prompt(text, attachments, options).catch((error: unknown) => {
       // Rien n'est parti (pièce jointe refusée…) : les messages restent en attente.
       batch.restore()
       this.emitSnapshot()

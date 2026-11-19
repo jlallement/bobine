@@ -182,6 +182,11 @@ export function exchangeUsage(
  */
 export function answerTitle(text: string): string | undefined {
   const first = text.trim().split('\n')[0] ?? ''
-  const match = /^#{1,6}\s+(.+?)\s*#*$/.exec(first)
-  return match?.[1]?.trim() || undefined
+  const heading = /^#{1,6}\s+(.+?)\s*#*$/.exec(first)?.[1]?.trim()
+  if (!heading) return undefined
+  // « Direction : « Le carnet… » » → « Le carnet… » : le préfixe avant les deux-points, puis les
+  // guillemets qui entourent le titre, sans rien couper d'autre.
+  const named = /^[^:«»"“”]{1,40}?\s*:\s+(.+)$/.exec(heading)?.[1] ?? heading
+  const bare = /^[«"“]\s*(.+?)\s*[»"”]$/.exec(named)?.[1] ?? named
+  return bare.trim() || undefined
 }

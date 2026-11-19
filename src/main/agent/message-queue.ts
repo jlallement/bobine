@@ -34,7 +34,9 @@ export class MessageQueue {
     text: string,
     attachments: PromptAttachment[],
     from?: MessageOrigin,
-    askChildren?: boolean
+    askChildren?: boolean,
+    /** Travail visé (fiche 263) : marqué dans le contexte joint. */
+    about?: string
   ): void {
     if (this.items.length >= MAX_QUEUED) {
       throw new Error(t('queue.tooMany', { max: MAX_QUEUED }))
@@ -44,7 +46,8 @@ export class MessageQueue {
       text,
       attachments,
       ...(from ? { from } : {}),
-      ...(askChildren ? { askChildren } : {})
+      ...(askChildren ? { askChildren } : {}),
+      ...(about ? { about } : {})
     }
     // Un message d'une autre conversation ne prend pas la place d'un message en cours de
     // modification : seul l'utilisateur la reprend.
@@ -92,6 +95,8 @@ export class MessageQueue {
       if (batch.length > 0 && count + next.attachments.length > MAX_ATTACHMENTS) break
       if (!sameOrigin(next.from, first.from)) break
       if (!next.askChildren !== !first.askChildren) break
+      // Deux travaux visés différents ne partent pas dans le même message (fiche 263).
+      if (next.about !== first.about) break
       batch.push(next)
       count += next.attachments.length
     }
@@ -105,6 +110,7 @@ export class MessageQueue {
       attachments: batch.flatMap((m) => m.attachments),
       ...(first.from ? { from: first.from } : {}),
       ...(first.askChildren ? { askChildren: true } : {}),
+      ...(first.about ? { about: first.about } : {}),
       restore: () => this.items.unshift(...batch)
     }
   }

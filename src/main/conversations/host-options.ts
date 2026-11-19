@@ -130,11 +130,11 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // prochain message.
     // Issue des propositions de mémoire décidées depuis (fiche 182).
     // Rappel des rôles quand le message en nomme un (`@nom`, fiche 223), à une mère possible.
-    extraContext: (text, tools) => {
+    extraContext: (text, tools, about) => {
       const items = input.items()
       return joinContext(
         handoverContext(items),
-        childContext(childNews(items), items),
+        childContext(childNews(items), items, about),
         memoryOutcomeContext(memoryOutcomes(items)),
         tools.includes('start_child') ? mentionReminder(text) : undefined
       )

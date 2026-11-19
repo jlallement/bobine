@@ -86,6 +86,14 @@ describe('MessageQueue', () => {
     ])
   })
 
+  it('travail visé (fiche 263) : gardé avec son message, jamais mêlé à un autre travail', () => {
+    const queue = new MessageQueue()
+    queue.add('Applique la proposition d’Expert UX/UI.', [], undefined, undefined, 'f1')
+    queue.add('Applique la proposition d’Expert UX/UI.', [], undefined, undefined, 'f2')
+    expect(queue.takeBatch()).toMatchObject({ about: 'f1' })
+    expect(queue.takeBatch()).toMatchObject({ about: 'f2' })
+  })
+
   it('/split (fiche 118) : la demande reste attachée au message, tapé avec la commande', () => {
     const queue = new MessageQueue()
     queue.add('Trois chantiers', [], undefined, true)
