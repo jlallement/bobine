@@ -25,6 +25,7 @@ import type { RuleFileView } from '@shared/rules'
 import type { RoleStamp } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
 import { hasFolder } from './agentless'
+import { noteSessionControls } from './conversation-controls'
 import type { ConversationRecord } from './store'
 import { memoryProposals } from '@shared/memory'
 import type { Conversation } from './conversation'
@@ -460,6 +461,23 @@ export function reopenOf(
 ): { sessionId: string; keepTranscript?: true } | undefined {
   if (!sessionId || draft) return undefined
   return { sessionId, ...(keepTranscript ? { keepTranscript: true as const } : {}) }
+}
+
+/**
+ * Session d'une conversation relevée dans sa fiche à chaque statut de son agent : son identifiant
+ * une fois ouverte, et ses réglages (fiche 256). Rend vrai s'il faut réécrire l'index ; jamais
+ * pour un brouillon, gardé en mémoire (ses réglages relevés partent avec sa première écriture).
+ */
+export function noteSession(
+  conversation: Pick<Conversation, 'record' | 'draft'>,
+  sessionId: string | undefined,
+  snapshot: Pick<AgentSnapshot, 'status' | 'controls'>
+): boolean {
+  const { record, draft } = conversation
+  const opened = !!sessionId && sessionId !== record.sessionId && !draft
+  if (opened) record.sessionId = sessionId
+  const controls = noteSessionControls(record, snapshot)
+  return (opened || controls) && !draft
 }
 
 /** Cartes de mémoire en attente (fiche 182), gardées dans la fiche pour la pastille ; vrai si changé. */

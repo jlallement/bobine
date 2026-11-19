@@ -18,6 +18,7 @@ import type { TranscriptState } from '@shared/transcript'
 import type { WorktreeInfo } from '../changes/worktrees'
 import { parseUsageDigest, type UsageDigest } from '@shared/usage'
 import { parseRoleStamp, type RoleStamp } from '@shared/roles'
+import { parseConversationControls, type ConversationControls } from './conversation-controls'
 import { quarantine, readJson, writeFileAtomic, writeFileAtomicAsync } from '../storage'
 
 export interface ConversationRecord {
@@ -74,6 +75,11 @@ export interface ConversationRecord {
   asideSessions?: { profileId: string; sessionId: string }[]
   /** Discussion (fiche 224) : `workspace` est son dossier de documents, tenu par Bobine. */
   space?: 'discussion'
+  /**
+   * Réglages de sa session (mode, modèle, options), relevés quand elle est stable et réappliqués à
+   * la réouverture (fiche 256) ; pour l'agent qui les a annoncés.
+   */
+  controls?: ConversationControls
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -95,7 +101,7 @@ export function isRecord(value: unknown): value is ConversationRecord {
 
 /** Résumé de consommation vérifié : un résumé mal formé est retiré, pas la conversation. */
 function withUsage(record: ConversationRecord): ConversationRecord {
-  const checked = withSpace(withRole(record))
+  const checked = withControls(withSpace(withRole(record)))
   if (checked.usage === undefined) return checked
   const { usage, ...rest } = checked
   const digest = parseUsageDigest(usage)
@@ -108,6 +114,14 @@ function withRole(record: ConversationRecord): ConversationRecord {
   const { role, ...rest } = record
   const stamp = parseRoleStamp(role)
   return stamp ? { ...rest, role: stamp } : rest
+}
+
+/** Réglages de la session (fiche 256) vérifiés : mal formés, ils sont retirés, pas la conversation. */
+function withControls(record: ConversationRecord): ConversationRecord {
+  if (record.controls === undefined) return record
+  const { controls, ...rest } = record
+  const checked = parseConversationControls(controls)
+  return checked ? { ...rest, controls: checked } : rest
 }
 
 /** Espace (fiche 224) : seule valeur retenue, `discussion` ; toute autre est retirée (espace Code). */

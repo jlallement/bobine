@@ -142,6 +142,8 @@ describe('Asides (fiche 180)', () => {
 describe('asideHostOptions', () => {
   it('garde agent, dossier, clés et réglages ; retire outils de l’app, contexte joint, session à rouvrir', () => {
     const emit = () => {}
+    // Réglages de la conversation (fiche 256) : l'aparté prend les mêmes, relus à son ouverture.
+    const controls = () => ({ model: 'factice-rapide' })
     const base: AgentHostOptions = {
       profile: mockProfile(),
       workspace: '/projet',
@@ -152,13 +154,13 @@ describe('asideHostOptions', () => {
       sessionContext: () => 'capacités',
       rememberedTools: { has: () => true, add: () => {} },
       reopen: { sessionId: 's1' },
-      initialControls: { model: 'factice-rapide' },
+      initialControls: controls,
       initialMode: 'execute'
     }
     const options = asideHostOptions(base, emit)
     expect(options).toMatchObject({
       workspace: '/projet',
-      initialControls: { model: 'factice-rapide' },
+      initialControls: controls,
       initialMode: 'plan'
     })
     for (const key of [

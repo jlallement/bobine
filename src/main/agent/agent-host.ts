@@ -97,8 +97,11 @@ export interface AgentHostOptions {
   clientVersion?: string
   /** Ouvre un lien dans le navigateur système (élicitation en mode URL). */
   openExternal?: (url: string) => void
-  /** Réglages à appliquer à l'ouverture de session (préférences, sinon défauts du profil). */
-  initialControls?: Record<string, ControlValue>
+  /**
+   * Réglages à appliquer à l'ouverture d'une session, relus à chaque ouverture (fiche 256) :
+   * `reopened` quand c'est la session rouverte elle-même, `new` pour une session neuve.
+   */
+  initialControls?: (session: 'new' | 'reopened') => Record<string, ControlValue> | undefined
   /**
    * Session existante à rouvrir (conversation de l'historique) : `session/load` si l'agent sait la
    * rejouer, sinon `session/resume`, sinon une session neuve qui reçoit l'échange d'avant au
@@ -1222,7 +1225,8 @@ export class AgentHost {
     this.blocker = undefined
     this.sessionId = session.sessionId
     // Session rouverte (même identifiant) : son historique a déjà le contexte complet (fiche 223).
-    this.sessionContextDue = session.sessionId === reopen?.sessionId ? 'resumed' : 'opened'
+    const reopened = session.sessionId === reopen?.sessionId
+    this.sessionContextDue = reopened ? 'resumed' : 'opened'
     this.cost.report()
     this.modes = session.modes ?? undefined
     this.configOptions = session.configOptions ?? undefined
@@ -1232,7 +1236,7 @@ export class AgentHost {
       apply: (id, value) => this.applyControl(connection, session.sessionId, id, value),
       failed,
       emit: this.options.emit,
-      initialControls: this.options.initialControls,
+      initialControls: this.options.initialControls?.(reopened ? 'reopened' : 'new'),
       initialMode: reopen ? undefined : this.options.initialMode
     })
     if (this.child !== child) return

@@ -1,6 +1,6 @@
 /**
  * Options de l'hôte d'agent d'une conversation (sorties de `ConversationManager.ensureLive`, fiche
- * 108) : profil et dossier, réglages retenus pour ce profil, clés, contexte joint au prochain
+ * 108) : profil et dossier, réglages de la conversation (sinon du profil, fiche 256), clés, contexte joint au prochain
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
@@ -24,6 +24,7 @@ import type { AgentProfile } from '../agent/profiles'
 import { versionNotice as noticeFor } from '../agent/version-check'
 import type { SubagentWorks } from '../agent/subagent-works'
 import type { SettingsStore } from '../settings-store'
+import { openingControls } from './conversation-controls'
 import { joinContext } from './helpers'
 import type { ConversationManagerOptions } from './manager'
 import type { ConversationRecord } from './store'
@@ -110,7 +111,10 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     toolModules: record.space === 'discussion' ? [] : roleToolModules(app.toolModules, record.role),
     ...(record.role?.readOnly ? { readOnly: true } : {}),
     ...(record.space === 'discussion' ? { writeArea: record.workspace } : {}),
-    initialControls: { ...profile.defaultControls, ...settings.current.controls?.[profile.id] },
+    // Ceux de la conversation, sinon (nouvelle conversation) le dernier choix fait avec ce profil ;
+    // lus à chaque ouverture de session, jamais figés à la création de l'hôte (fiche 256).
+    initialControls: (session) =>
+      openingControls(record, profile, settings.current.controls?.[profile.id], session),
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],
     onAnnounced: (announcement) => {

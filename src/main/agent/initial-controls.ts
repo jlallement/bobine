@@ -1,7 +1,7 @@
 /**
- * Réglages appliqués à l'ouverture d'une session (sortis de `agent-host.ts`, fiche 142) : ceux
- * retenus pour le profil (préférences, sinon défauts du profil), puis le mode de départ choisi
- * dans les réglages. Un réglage inapplicable est signalé dans le fil sans bloquer la session.
+ * Réglages appliqués à l'ouverture d'une session (sortis de `agent-host.ts`, fiche 142) : ceux de
+ * la conversation, sinon ceux retenus pour le profil (préférences, sinon défauts du profil ;
+ * fiche 256), puis le mode de départ choisi dans les réglages. Un réglage inapplicable est signalé dans le fil sans bloquer la session.
  */
 import { methods, RequestError } from '../../shared/acp-sdk.mts'
 import type { ClientConnection, SessionConfigOption } from '../../shared/acp-sdk.mts'
@@ -32,7 +32,10 @@ export interface InitialControlsInput {
   /** Rejetée si l'agent meurt pendant l'ouverture. */
   failed: Promise<never>
   emit: (event: AgentEvent) => void
-  /** Réglages retenus pour le profil (préférences, sinon défauts du profil). */
+  /**
+   * Réglages de la conversation, sinon (nouvelle conversation) ceux retenus pour le profil
+   * (préférences, sinon défauts du profil) ; fiche 256.
+   */
   initialControls?: Record<string, ControlValue> | undefined
   /** Mode de départ (réglage « Nouvelle conversation ») ; absent à la réouverture d'une session. */
   initialMode?: 'plan' | 'execute' | undefined
