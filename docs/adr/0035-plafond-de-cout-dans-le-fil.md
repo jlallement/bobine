@@ -1,6 +1,6 @@
 # ADR-0035 — Plafond de coût : état dans le fil, décision dans le main
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 157)
 - **Date** : 2026-10-28
 
 ## Contexte
@@ -59,3 +59,8 @@ Bob » hors des adaptateurs (ADR-0011, ADR-0028).
   réponse ; un redémarrage l'oublie (son début reste lisible sur la carte).
 - Activer le réglage ne pose pas de plafond aux conversations existantes : on le leur donne dans
   le détail de leur consommation (« Par défaut »).
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 157), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/conversations/cost-cap.ts:69-100,202-231`, `src/shared/cost-cap.ts:100-109`.

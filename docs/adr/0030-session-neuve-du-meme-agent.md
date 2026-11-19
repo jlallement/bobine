@@ -1,6 +1,6 @@
 # ADR-0030 — Agent qui ne sait pas reprendre : session neuve dans la même conversation, échange en texte
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 141)
 - **Date** : 2026-10-24
 - **Précise** : ADR-0024 (continuer avec un autre agent), ADR-0021 (le fil de Bobine fait foi)
 
@@ -61,3 +61,8 @@ savent reprendre, ne sont concernés que par une session perdue.
 - L'avis « session perdue » disparaît du fil (le repère le remplace) ; l'erreur va au journal.
 - La grille de conformité (fiche 139) vérifie ce comportement : persona « ACP minimal », cases
   « panne » et « reprise ».
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 141), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/agent/agent-host.ts:1102,1183` (marque `renewed`), `src/shared/handover.ts:93-121` ; deux raisons se sont ajoutées depuis (`turn-limit`, fiche 209 ; `discussion`, fiche 224).

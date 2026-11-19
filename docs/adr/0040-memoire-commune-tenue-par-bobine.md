@@ -133,3 +133,18 @@ par un expert UX, corrections appliquées) suit les décisions 1 à 5, 7 et 8. �
 décision 6 : le prompt système fourni par le client n'est pas implémenté (aucun agent ne
 l'annonce) ; l'index part au premier message de chaque session et après une compaction, pour tous
 les agents. Détail dans la fiche 182 (« Écarts au plan »).
+
+## Question ouverte (2026-11-19, préparation de la rc, fiche 251)
+
+Toujours **proposé**. L'écart à la décision 6 demeure : le code n'a pas de branche « prompt
+système » — `sessionCapabilities.systemPrompt` n'est jamais lu (`src/main/agent/capabilities.ts:41-47`),
+`session/new` et `session/load` n'envoient aucun prompt système (`src/main/agent/agent-host.ts:1120-1143`) ;
+l'index part en bloc `<bobine_memory>` joint au premier message de chaque session, pour tous les
+agents (`src/main/conversations/host-options.ts:143-155`), et de nouveau après une compaction
+(`agent-host.ts:563-565`). L'option `--prompt-systeme` de l'agent factice n'existe pas.
+
+À trancher : **(a)** amender la décision 6 par un nouvel ADR (« index au premier message de chaque
+session et après compaction, pour tous les agents ; prompt système fourni par le client reporté
+jusqu'à ce qu'un agent l'annonce ») puis accepter, ou **(b)** garder « proposé » jusqu'à l'étape 5
+de la fiche 182 (prompt système `append` à `new` / `load` / `resume`).
+

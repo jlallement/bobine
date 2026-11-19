@@ -43,7 +43,8 @@ error », cause dans `data.details`.
       grille de conformité (parcours « connexion expirée au message », les trois personas), e2e
       `connexion-expiree`.
 - [ ] Essai réel de la reconnexion SSO depuis la carte (à faire par l'utilisateur : la sonde ne
-      lance jamais le navigateur).
+      lance jamais le navigateur). Reporté (2026-11-19) : demande une vraie connexion SSO à Bob,
+      non faite ; seule la reconnaissance du refus est couverte (e2e `connexion-expiree`).
 
 ## Plan
 

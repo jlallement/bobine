@@ -28,7 +28,9 @@ bien après le rejeu : le fil est fidèle. Il faut que la relance se comporte co
 - [x] Testé contre l'agent factice : option `--rejeu-tardif-ms <ms>` (rejeu commencé N ms après la
       réponse à `session/load`, comme Bob 2.0.6), test de l'hôte « fil gardé, rejeu tardif, message
       envoyé immédiatement ».
-- [ ] Rejoué avec le vrai Bob : scène 2.7 du PV (`kill -9` en plein tour, message aussitôt).
+- [x] Rejoué avec le vrai Bob : scène 2.7 du PV (`kill -9` en plein tour, message aussitôt).
+      Coché le 2026-11-19 : scène 2.7 ✓ dans
+      [le rejeu du 2026-10-23](../recettes/2026-10-23-rejeu-apres-corrections.md) (D21 corrigé).
 
 ## Plan
 

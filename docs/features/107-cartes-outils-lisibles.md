@@ -38,6 +38,9 @@ lisible, pas une refonte des cartes.
 - [ ] À vérifier avec un vrai OpenCode 2 et un vrai Bob (journal Trace, fiche 080) : les
       champs de `rawInput` pour `read`, `edit`, `grep`, `glob`, `list`, `webfetch`, `bash`
       (`filePath` / `path`, `pattern`, `url`, `command`) et la présence de `locations`.
+      Reporté (2026-11-19) : traces réelles rejouées par les tests pour `read`, `glob`, `bash`
+      (OpenCode 2.2.5 et 2.3.0) et `edit`, `execute` (Bob 2.0.9) ; manquent `grep`, `list`,
+      `webfetch` et les lectures et recherches de Bob.
 
 ## Plan
 

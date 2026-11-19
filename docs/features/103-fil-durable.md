@@ -39,7 +39,8 @@ Bobine fait foi pour l'affichage ; l'agent fait foi pour son contexte.**
       continuée ailleurs, fil illisible) ; suites e2e `resume`, `restart`, `replay-changes`,
       `filles` vertes, captures regardées.
 - [ ] Essai réel : Bob et OpenCode, conversation mise en veille puis rouverte (0 ou presque
-      0 bobcoin : `session/resume` ne rejoue rien).
+      0 bobcoin : `session/resume` ne rejoue rien). Reporté (2026-11-19) : fait avec OpenCode
+      (recette du 2026-10-23, scène 3.6) ; pas joué avec Bob.
 
 ## Plan
 

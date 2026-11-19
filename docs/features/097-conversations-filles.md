@@ -78,7 +78,8 @@ réservé aux sous-agents des agents.
   - scénario `filles-plafond` : fille au-delà du plafond refusée (plafond réglé bas) ;
   - scénario `fille-message` : message de la mère à la fille, puis de la fille à la mère.
 - [ ] Essais réels avec OpenCode (GPT-6.1 Sol) et avec Bob : les prompts ci-dessous, résultats
-      notés dans le journal.
+      notés dans le journal. Reporté (2026-11-19) : prompts joués le 2026-10-21 (OpenCode 3 à 12,
+      Bob 13 seulement) mais pas rejoués après la fiche 118, comme le note le journal.
 
 ## Plan
 

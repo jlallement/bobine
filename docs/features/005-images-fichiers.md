@@ -17,6 +17,8 @@ fichier du projet avec `@`. L'agent reçoit le contenu sans qu'on ait à le déc
 - [x] Images et mentions visibles dans le fil, y compris après rechargement de la conversation.
 - [x] Testé : agent factice (qui décrit ce qu'il reçoit) ; e2e ; Codex et Bob réels.
 - [ ] Claude Code et OpenCode réels ; glisser-déposer réel depuis le Finder (non automatisable en e2e).
+      Reporté (2026-11-19) : OpenCode réel et glisser depuis le Finder faits (recette OpenCode du
+      2026-10-23, scène 2.4) ; Claude Code n'est plus un agent cible.
 
 ## Notes
 

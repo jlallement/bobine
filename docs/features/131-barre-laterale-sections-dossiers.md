@@ -79,6 +79,7 @@ ligne à ligne. HTML et CSS exacts : `e2e/maquettes/parts.mjs` (`sidebar`) et
       `worktree-cycle`, `parallel`, `notifications`, `base`, `restart` (repli des sections et des
       dossiers gardé après ⌘Q).
 - [ ] Essai à la vraie souris : fait par la session de coordination (voir « À vérifier à la souris »).
+      Reporté (2026-11-19) : non fait (cases vides dans la recette du 2026-10-24, fin des vagues).
 
 ### Acceptations de la fiche 125 qui changent
 

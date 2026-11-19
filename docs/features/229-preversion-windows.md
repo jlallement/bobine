@@ -1,6 +1,8 @@
 # 229 — Préversion Windows
 
-- **Statut** : en cours (2026-11-15 : lots 0, 1, 3, 3b, 4 et 5 faits, lot 2 en grande partie — voir « Avancement » ;
+- **Statut** : **préversion publiée** — installeurs NSIS x64 et arm64 joints à chaque version
+  depuis la 1.0.0-beta.6 (16 novembre 2026) ; Windows reste en préversion à la 1.0 (décision du
+  2026-11-19, fiche 251). Avancement détaillé (2026-11-15 : lots 0, 1, 3, 3b, 4 et 5 faits, lot 2 en grande partie — voir « Avancement » ;
   lot 6, packaging, fait : installeurs NSIS x64 et arm64, installés et lancés dans la VM ; CI Windows
   expérimentale ; lot 8 en partie : textes de Linux et Windows, `e2e:packaged` de l'app installée)
 - **Dépend de** : 145 (préversion Linux : capacités de la plateforme, menu ☰, e2e par capacités),

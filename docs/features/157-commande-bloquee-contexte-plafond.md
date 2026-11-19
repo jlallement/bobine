@@ -42,6 +42,8 @@ double pas les garde-fous de l'agent : elle informe et donne la commande à port
   puce, carte, avis de commande bloquée) ; parcours « plafond de coût » dans la grille de
   conformité (fiche 139) ; e2e écrits (suite `turn-guards`).
 - [ ] Suite e2e `turn-guards` jouée et captures regardées (clair et sombre) : à la fusion.
+      Reporté (2026-11-19) : suite verte à l'intégration du 29/10 (journal), mais le regard des captures
+      n'y est pas attesté.
 - [x] `docs/acp.md` : sortie des commandes et coût en cours de tour à vérifier avec Bob.
 
 ## Plan

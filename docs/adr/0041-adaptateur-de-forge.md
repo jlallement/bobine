@@ -1,6 +1,6 @@
 # ADR-0041 — Un adaptateur de forge entre le cycle du worktree et `gh` / `glab`
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 189)
 - **Date** : 2026-11-07
 
 ## Contexte
@@ -86,3 +86,8 @@ les outils en ligne de commande de chaque forge :
 - À surveiller : les messages d'erreur de `glab` et de GitLab, lus par des motifs (non connecté,
   hôte injoignable, certificat, droits, branche protégée) ; les sorties enregistrées
   (`fixtures/glab/`) servent de référence, à relever à chaque montée de `glab`.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 189), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/changes/forge.ts:27,75-97`, `src/main/changes/forge-resolver.ts:72-73,137,239`, adaptateurs `forge-github.ts`, `forge-gitlab.ts`.

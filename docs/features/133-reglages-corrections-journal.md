@@ -49,7 +49,8 @@ pas la colonne de gauche à trois groupes : elle appartient à la fiche 136.
 - [x] e2e : suites `settings`, `diagnostic`, `notifications`, `about`, en clair et en sombre, et
       `settings` en anglais (voir le journal).
 - [ ] Essai à la vraie souris (fait à la fin des vagues, par la session de coordination) : voir
-      « À vérifier à la souris » ci-dessous.
+      « À vérifier à la souris » ci-dessous. Reporté (2026-11-19) : non fait (cases vides dans la
+      recette du 2026-10-24, fin des vagues).
 
 ## Plan
 
