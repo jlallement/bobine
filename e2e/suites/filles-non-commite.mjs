@@ -236,8 +236,8 @@ async function noCommitRun(ui, git) {
   await ui.waitFor(`!!${pending}`, 30000)
   await ui.waitFor(`!!${ui.$('proposals')}?.querySelector('[data-testid=launch-line]')`, 10000)
   check(
-    (await ui.ev(`${ui.$('proposals')}.innerText`)).includes(L('launchLine.noCommit.works')),
-    'Tâches proposées, dépôt sans commit : les travaux se feront dans ce dossier'
+    (await ui.ev(`${ui.$('proposals')}.innerText`)).includes(L('launchLine.noCommit.work')),
+    'Tâches proposées, dépôt sans commit : ce travail se fera dans ce dossier'
   )
   await ui.shot('filles-non-commite-8-sans-commit-proposition')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
