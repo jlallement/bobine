@@ -252,6 +252,7 @@ chaque création ou changement de statut.
 | [246](246-message-de-commit-redige-par-l-agent.md) | Message de commit rédigé par l'agent (session jetable, fichiers cochés, diff borné sans secret, mémoire du projet ; repli en anglais Conventional Commits) ; vue Git relue après un commit fait hors du panneau (recette POC du 2026-11-17, D3 et D4) | fait | P1 |
 | [247](247-retouches-recette-poc.md) | Retouches de la recette POC du 2026-11-17 : « Toujours cette commande ici » (D5), comptes rendus de filles lisibles en entier par `child_status` (D11), message modifié gardé à sa place dans la file (D12), export sans extension doublée (D14) | fait | P2 |
 | [248](248-pilote-cible-et-cartes.md) | Pilote : toujours la fenêtre principale de Bobine (URL et marqueur du preload), jamais une page du navigateur intégré, ouverte ou fermée ; cartes souvenir et « Tâches proposées » (traitée : plus en attente) ; état ambigu dit clairement (recette POC du 2026-11-17, § Outillage) | fait | P2 |
+| [250](250-rc-ci-digne-de-confiance.md) | CI digne de confiance avant la rc (audit B4, B5, QUA-1 à 5, SEC-5, R13) : `terminal` en quarantaine sous Linux, clics visés, attentes d'évènement dans les tests et règle ESLint contre les pauses fixes, e2e macOS de nuit, somme et provenance du `.dmg`, macOS 13 minimum essayé sur 14 | en cours | P1 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception
