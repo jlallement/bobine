@@ -78,6 +78,11 @@ interface Entry {
 
 export class AttentionTracker {
   private readonly entries = new Map<string, Entry>()
+  /**
+   * Comptes rendus posés dans le fil d'une mère pas encore affichée (fiche 258, D35) : par mère,
+   * les filles dont la réponse finie sera vue quand la mère le sera.
+   */
+  private readonly reports = new Map<string, Set<string>>()
   private readonly options: AttentionOptions
   private readonly groups: NoticeGroups | undefined
   private readonly now: () => number
@@ -114,6 +119,14 @@ export class AttentionTracker {
   }
 
   onEvent(conversationId: string, event: AgentEvent): void {
+    if (event.type === 'child-report') {
+      this.reportPosted(conversationId, event.report.childId)
+      return
+    }
+    // Nouveau tour (ou sa fin) : le compte rendu déjà posé chez la mère n'est plus le dernier.
+    if (event.type === 'user-message' || event.type === 'turn-end' || event.type === 'turn-error') {
+      this.dropReport(conversationId)
+    }
     const entry = this.entry(conversationId)
     const before = signature(entry)
     switch (event.type) {
@@ -224,6 +237,10 @@ export class AttentionTracker {
         entry.unseen = undefined
         changed = true
       }
+      // Mère affichée : les comptes rendus de son fil sont lus (fiche 258, D35).
+      for (const childId of this.reports.get(id) ?? [])
+        changed = this.reportSeen(childId) || changed
+      this.reports.delete(id)
     }
     if (changed) this.changed()
   }
@@ -235,6 +252,8 @@ export class AttentionTracker {
 
   /** Conversation supprimée. */
   forget(conversationId: string): void {
+    this.reports.delete(conversationId)
+    this.dropReport(conversationId)
     this.groups?.withdraw(conversationId)
     this.options.withdraw(conversationId)
     if (this.entries.delete(conversationId)) this.changed()
@@ -243,6 +262,40 @@ export class AttentionTracker {
   /** Arrêt de l'app : plus de bannière en attente. */
   dispose(): void {
     this.groups?.dispose()
+  }
+
+  /**
+   * Compte rendu d'une fille posé dans le fil de sa mère (fiche 258, D35) : la mère affichée, il est
+   * lu tout de suite ; sinon il le sera quand elle le sera (`refresh`).
+   */
+  private reportPosted(motherId: string, childId: string): void {
+    if (this.inView(motherId)) {
+      if (this.reportSeen(childId)) this.changed()
+      return
+    }
+    const pending = this.reports.get(motherId) ?? new Set<string>()
+    pending.add(childId)
+    this.reports.set(motherId, pending)
+  }
+
+  /**
+   * Compte rendu lu dans le fil de la mère : la réponse finie de la fille est vue. Une erreur ne
+   * l'est pas : la fille reste « en erreur » jusqu'à ce qu'on l'ouvre. Vrai si changé.
+   */
+  private reportSeen(childId: string): boolean {
+    const entry = this.entries.get(childId)
+    if (entry?.unseen?.reason !== 'done') return false
+    entry.unseen = undefined
+    this.groups?.withdraw(childId)
+    this.options.withdraw(childId)
+    return true
+  }
+
+  private dropReport(childId: string): void {
+    for (const [motherId, pending] of this.reports) {
+      pending.delete(childId)
+      if (pending.size === 0) this.reports.delete(motherId)
+    }
   }
 
   private wait(reason: AttentionReason, detail?: string): Wait {

@@ -2600,14 +2600,16 @@
     },
     "message_child": {
       "value": "Writes to a child conversation: {{value}}",
+      "to": "Writes to “{{title}}”: {{value}}",
       "default": "Writes to a child conversation"
     },
     "child_status": {
+      "one": "Checks on “{{value}}”",
       "default": "Checks on the child conversations"
     },
     "recommend_merge": {
-      "ready": "Recommends merging {{value}}",
-      "notReady": "Does not recommend {{value}} yet",
+      "ready": "Recommends merging “{{value}}”",
+      "notReady": "Does not recommend merging “{{value}}” yet",
       "default": "Gives a merge verdict"
     },
     "message_parent": {
@@ -3449,6 +3451,8 @@
       "waiting_other": "{{count}} waiting for approval",
       "done_one": "{{count}} finished",
       "done_other": "{{count}} finished",
+      "stopped_one": "{{count}} stopped",
+      "stopped_other": "{{count}} stopped",
       "error_one": "{{count}} failed",
       "error_other": "{{count}} failed"
     },
@@ -3461,6 +3465,7 @@
       "running": "Running",
       "waiting": "Waiting for approval",
       "unread": "Finished, unread",
+      "stopped": "Stopped",
       "error": "Error",
       "done": "Finished"
     },
@@ -4375,6 +4380,7 @@
       "running": "working",
       "waiting": "waiting for you",
       "unread": "sent its report",
+      "stopped": "was stopped",
       "done": "finished",
       "error": "failed"
     },

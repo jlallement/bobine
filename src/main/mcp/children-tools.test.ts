@@ -413,6 +413,21 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     await expect(tool.call({ child: 'f1', ready: 'oui', note: 'ok' })).rejects.toThrow('ready')
   })
 
+  it('la carte de l’outil cite la fille par son titre, pas son identifiant (fiche 258, D18)', () => {
+    const s = setup()
+    for (const name of ['message_child', 'child_status', 'recommend_merge']) {
+      const tool = s.tool(name)
+      expect(tool.labelContext?.({ child: 'f1' })).toEqual({ childTitle: 'Import CSV' })
+      // Par son titre exact aussi, comme l'outil lui-même.
+      expect(tool.labelContext?.({ child: ' import csv ' })).toEqual({ childTitle: 'Import CSV' })
+      // Fille inconnue, argument absent ou mal formé : rien à ajouter (l'appel dira l'erreur).
+      expect(tool.labelContext?.({ child: 'x' })).toEqual({})
+      expect(tool.labelContext?.({})).toEqual({})
+      expect(tool.labelContext?.({ child: 3 })).toEqual({})
+    }
+    expect(s.tool('start_child').labelContext).toBeUndefined()
+  })
+
   it('commande « / » en tête d’une consigne ou d’un message : refusée (fiche 160)', async () => {
     const s = setup()
     const start = await s

@@ -23,7 +23,7 @@ import { WorktreeBar } from './WorktreeBar'
 import { WorktreeCleaned, rememberCleaned, useCleanedNote } from './WorktreeCleaned'
 import { ChangesFileList, GIT_BADGES, type Row } from './ChangesList'
 import { ChangesViews, DiffNotesBar } from './ChangesBars'
-import { ChildrenView } from './ChildrenView'
+import { ChildrenView, type ChildWorktreesMerge } from './ChildrenView'
 import { ReviewNotes, useReviewImport } from './ReviewNotes'
 import type { ChildRow } from '@shared/children-rows'
 import { countText } from '@shared/i18n/format'
@@ -36,6 +36,8 @@ type View = ChangesView | 'children'
 /** Filles directes de la conversation (fiche 161) : la vue « Filles », seulement s'il y en a. */
 export interface ChildWorktrees {
   rows: ChildRow[]
+  /** Fusion des filles (fiche 120) : la vue dit « Fusionnée » comme la carte (fiche 258, D11). */
+  merge?: ChildWorktreesMerge
   onOpen: (id: string) => void
   /** « Faire relire… » une fille (fiche 177). */
   onReview?: (id: string) => void
@@ -294,11 +296,7 @@ export function ChangesTab({
         onReview={onReview}
       />
       {view === 'children' && childWorktrees ? (
-        <ChildrenView
-          rows={childWorktrees.rows}
-          onOpen={childWorktrees.onOpen}
-          onReview={childWorktrees.onReview}
-        />
+        <ChildrenView {...childWorktrees} />
       ) : (
         <>
           {onSendNotes && diffNotes.notes.length > 0 && (

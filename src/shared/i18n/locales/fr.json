@@ -2695,14 +2695,16 @@
     },
     "message_child": {
       "value": "Écrit à une conversation fille : {{value}}",
+      "to": "Écrit à « {{title}} » : {{value}}",
       "default": "Écrit à une conversation fille"
     },
     "child_status": {
+      "one": "Regarde où en est « {{value}} »",
       "default": "Regarde où en sont les conversations filles"
     },
     "recommend_merge": {
-      "ready": "Recommande de fusionner {{value}}",
-      "notReady": "Ne recommande pas encore {{value}}",
+      "ready": "Recommande de fusionner « {{value}} »",
+      "notReady": "Ne recommande pas encore de fusionner « {{value}} »",
       "default": "Donne son avis sur une fusion"
     },
     "message_parent": {
@@ -3561,6 +3563,9 @@
       "done_one": "{{count}} terminée",
       "done_many": "{{count}} terminées",
       "done_other": "{{count}} terminées",
+      "stopped_one": "{{count}} arrêtée",
+      "stopped_many": "{{count}} arrêtées",
+      "stopped_other": "{{count}} arrêtées",
       "error_one": "{{count}} en erreur",
       "error_many": "{{count}} en erreur",
       "error_other": "{{count}} en erreur"
@@ -3574,6 +3579,7 @@
       "running": "En cours",
       "waiting": "Attend un accord",
       "unread": "Finie, à lire",
+      "stopped": "Arrêtée",
       "error": "Erreur",
       "done": "Finie"
     },
@@ -4566,6 +4572,7 @@
       "running": "au travail",
       "waiting": "attend votre accord",
       "unread": "a rendu son compte rendu",
+      "stopped": "a été arrêté",
       "done": "a fini",
       "error": "en échec"
     },

@@ -2,6 +2,16 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Conversations filles : une fille arrêtée par ■ est dite « Arrêtée » (barre latérale, carte
+  « Sous-tâches », carte d'un rôle, Modifications › Filles), et non plus « a fini » avec une coche
+  verte. Modifications › Filles dit « Fusionnée » comme la carte « Sous-tâches ». Le compte rendu
+  d'une fille compte comme lu dès que vous le voyez dans le fil de la mère. Les outils de la mère
+  citent la fille par son titre, plus par son identifiant.
+
 ## 1.0.0-rc.1 — 19 novembre 2026
 
 ### Corrections

@@ -240,6 +240,21 @@ describe('titres au bord (fiche 131)', () => {
     expect(trunk('f3')).toMatch(/^M8 0 L8 10 Q/)
   })
 
+  it('fille arrêtée par ■ : « Arrêtée », pas de coche ; une conversation ordinaire arrêtée, rien (fiche 258)', async () => {
+    render(
+      sidebar([
+        conversation('m'),
+        conversation('f', { startedFrom: { id: 'm', title: 'Mère' }, turnStopped: true }),
+        conversation('o', { turnStopped: true })
+      ])
+    )
+    const stopped = document.querySelector('[data-id=f] .child-state')
+    expect(stopped?.getAttribute('data-state')).toBe('stopped')
+    expect(stopped?.getAttribute('aria-label')).toBe('Arrêtée')
+    expect(await rowTip('f')).toContain(': Arrêtée')
+    expect(document.querySelector('[data-id=o] .child-state')).toBeNull()
+  })
+
   it('à droite : roue, coche verte d’une fille finie (le mot pour les lecteurs), sinon le jour', async () => {
     const old = new Date(Date.now() - 3 * 86_400_000).toISOString()
     render(

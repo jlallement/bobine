@@ -123,6 +123,35 @@ describe('filles des rôles dans le fil de la mère', () => {
     expect(launches[0]?.textContent).toContain('Lit token_store.dart')
   })
 
+  it('rôle arrêté par ■ : « a été arrêté », jamais « a fini » (fiche 258, D4)', () => {
+    watchEvents()
+    render(
+      <Transcript
+        items={[started(1, 'a', secu)]}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={{
+          children: [{ ...child('a', secu), turnStopped: true }],
+          attention: {},
+          onOpen: vi.fn(),
+          profiles
+        }}
+      />
+    )
+    const launch = screen.getByTestId('role-launch')
+    expect(launch.dataset['state']).toBe('stopped')
+    expect(launch.textContent).toContain('a été arrêté')
+    expect(launch.textContent).not.toContain('a fini')
+    // L'avatar : la pastille d'échec ou d'arrêt (maquette 03-5), comme son compte rendu.
+    expect(launch.querySelector('[data-testid=role-avatar]')?.getAttribute('data-state')).toBe(
+      'error'
+    )
+    const row = screen.getByTestId('subtask-row')
+    expect(row.dataset['state']).toBe('stopped')
+    expect(row.querySelector('[data-testid=role-state]')?.textContent).toBe('a été arrêté')
+    expect(screen.getByTestId('subtasks').textContent).toContain('1 arrêtée')
+  })
+
   it('compte rendu : titré du rôle, avec son avatar', () => {
     render(
       <Transcript

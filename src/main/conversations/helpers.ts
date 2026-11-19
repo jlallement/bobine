@@ -218,6 +218,7 @@ export function summaryOf(
     ...(record.scheduled ? { scheduled: record.scheduled } : {}),
     ...(record.usage ? { usage: record.usage } : {}),
     ...(record.memoryPending ? { memoryPending: record.memoryPending } : {}),
+    ...(record.turnStopped ? { turnStopped: true } : {}),
     ...(record.space ? { space: record.space } : {})
   }
 }
@@ -460,6 +461,33 @@ export function reopenOf(
 ): { sessionId: string; keepTranscript?: true } | undefined {
   if (!sessionId || draft) return undefined
   return { sessionId, ...(keepTranscript ? { keepTranscript: true as const } : {}) }
+}
+
+/**
+ * Dernier tour arrêté avant la fin (fiche 258, D4) : posé par une fin de tour `cancelled`, retiré
+ * au tour suivant (son message), à une fin ordinaire ou à une erreur. Vrai si changé.
+ */
+export function noteTurnStopped(record: ConversationRecord, event: AgentEvent): boolean {
+  let stopped: boolean
+  if (event.type === 'turn-end') stopped = event.stopReason === 'cancelled'
+  else if (event.type === 'user-message' || event.type === 'turn-error') stopped = false
+  else return false
+  if (!!record.turnStopped === stopped) return false
+  if (stopped) record.turnStopped = true
+  else delete record.turnStopped
+  return true
+}
+
+/**
+ * Ce qu'un évènement change dans l'enregistrement, pour la liste et l'index : cartes de mémoire en
+ * attente (fiche 182), tour arrêté (fiche 258). Vrai si changé.
+ */
+export function noteRecordChanges(
+  conversation: Pick<Conversation, 'record' | 'transcript'>,
+  event: AgentEvent
+): boolean {
+  const memory = event.type === 'memory-proposal' && notePendingMemory(conversation)
+  return noteTurnStopped(conversation.record, event) || memory
 }
 
 /** Cartes de mémoire en attente (fiche 182), gardées dans la fiche pour la pastille ; vrai si changé. */

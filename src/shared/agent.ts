@@ -674,6 +674,11 @@ export interface ConversationSummary {
   createdAt?: string
   /** Statut de son agent ; `stopped` si aucun processus ne tourne pour elle. */
   status: AgentStatus | 'stopped'
+  /**
+   * Son dernier tour a été arrêté avant la fin (`stopReason: "cancelled"`), jusqu'au tour suivant
+   * (fiche 258) : une fille est alors « arrêtée », pas « finie ».
+   */
+  turnStopped?: true
   /** Conversation encore vide (pas dans l'historique). */
   draft: boolean
   /** Épinglée en tête de la barre latérale (fiche 026). */

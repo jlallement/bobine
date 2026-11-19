@@ -85,7 +85,7 @@ import {
   rulesOf,
   childDetachedRequest,
   reopenOf,
-  notePendingMemory,
+  noteRecordChanges,
   draftSessionsOpen,
   dropAllDraftSessions,
   type ChildLink,
@@ -1385,7 +1385,8 @@ export class ConversationManager {
     if (event.type === 'turn-error') {
       log.warn(`Tour en échec (${conversation.record.id}) :`, event.message)
     }
-    if (event.type === 'memory-proposal' && notePendingMemory(conversation)) {
+    // Cartes de mémoire en attente ; tour arrêté par ■, gardé au redémarrage (fiches 182, 258).
+    if (noteRecordChanges(conversation, event)) {
       listChanged = true
       if (!conversation.draft) this.saveIndex()
     }

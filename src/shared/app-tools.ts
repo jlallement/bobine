@@ -78,7 +78,19 @@ const oneOf = <T extends string>(list: readonly T[], value: unknown): T | undefi
   list.find((item) => item === value)
 
 /** Ce que fait chaque outil, d'après ses arguments. */
-const LABELS: Record<string, [AppToolGroup, (args: Args) => Message]> = {
+/**
+ * Ce que l'app sait en plus des arguments, au moment de l'appel (fiche 258, D18) : le titre de la
+ * conversation fille que l'argument `child` désigne (par son identifiant ou son titre), pour la
+ * citer par son nom. Absent (fille inconnue, outil sans fille) : le libellé s'en passe.
+ */
+export interface AppToolLabelContext {
+  childTitle?: string
+}
+
+const LABELS: Record<
+  string,
+  [AppToolGroup, (args: Args, context: AppToolLabelContext) => Message]
+> = {
   browser_navigate: [
     'browser',
     (a) =>
@@ -286,14 +298,18 @@ const LABELS: Record<string, [AppToolGroup, (args: Args) => Message]> = {
   ],
   message_child: [
     'children',
-    (a) =>
-      withValue(
-        'appTools.message_child.value',
-        quote(a['message']),
-        'appTools.message_child.default'
-      )
+    (a, { childTitle }) => {
+      const title = quote(childTitle)
+      const value = quote(a['message'])
+      if (title && value) return { key: 'appTools.message_child.to', params: { title, value } }
+      return withValue('appTools.message_child.value', value, 'appTools.message_child.default')
+    }
   ],
-  child_status: ['children', () => ({ key: 'appTools.child_status.default' })],
+  child_status: [
+    'children',
+    (_a, { childTitle }) =>
+      withValue('appTools.child_status.one', quote(childTitle), 'appTools.child_status.default')
+  ],
   message_parent: [
     'children',
     (a) =>
@@ -305,12 +321,13 @@ const LABELS: Record<string, [AppToolGroup, (args: Args) => Message]> = {
   ],
   recommend_merge: [
     'children',
-    (a) =>
+    (a, { childTitle }) =>
       withValue(
         a['ready'] === true
           ? 'appTools.recommend_merge.ready'
           : 'appTools.recommend_merge.notReady',
-        quote(a['child']),
+        // Le titre de la fille ; sinon ce que l'agent a donné (fille inconnue : l'outil échoue).
+        quote(childTitle ?? a['child']),
         'appTools.recommend_merge.default'
       )
   ],
@@ -353,10 +370,14 @@ export function appToolFallback(name: string): AppToolLabel {
 }
 
 /** Libellé d'un appel à un outil de l'app ; `undefined` pour un outil inconnu. */
-export function appToolLabel(name: string, args: unknown): AppToolLabel | undefined {
+export function appToolLabel(
+  name: string,
+  args: unknown,
+  context: AppToolLabelContext = {}
+): AppToolLabel | undefined {
   const entry = LABELS[name]
   if (!entry) return undefined
   const [group, describe] = entry
   const record = typeof args === 'object' && args !== null ? (args as Args) : {}
-  return { message: describe(record), group }
+  return { message: describe(record, context), group }
 }

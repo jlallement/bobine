@@ -195,7 +195,7 @@ function motherTools(
   asking: Map<string, number>
 ): AppTool[] {
   const id = context.conversationId
-  return [
+  return named(host, id, [
     tool(
       'start_child',
       startChildDescription(host, id),
@@ -336,7 +336,30 @@ function motherTools(
         )
       }
     )
-  ]
+  ])
+}
+
+/** Outils dont l'argument `child` désigne une fille (par son identifiant ou son titre). */
+const NAMES_CHILD = new Set(['message_child', 'child_status', 'recommend_merge'])
+
+/**
+ * Leur carte cite la fille par son titre, jamais par son identifiant (fiche 258, D18) : le titre
+ * est lu au moment de l'appel ; fille inconnue, rien n'est ajouté (l'appel dira l'erreur).
+ */
+function named(host: ChildTools, motherId: string, tools: AppTool[]): AppTool[] {
+  return tools.map((appTool) =>
+    NAMES_CHILD.has(appTool.definition.name)
+      ? {
+          ...appTool,
+          labelContext: (raw) => {
+            const ref = argsOf(raw)['child']
+            if (typeof ref !== 'string' || !ref.trim()) return {}
+            const found = findChild(host, motherId, ref.trim())
+            return typeof found === 'string' ? {} : { childTitle: found.title }
+          }
+        }
+      : appTool
+  )
 }
 
 /** Rôles actifs de la mère ; aucun si la conversation est inconnue. */
@@ -717,6 +740,7 @@ const STATE_TEXT: Record<ChildState, string> = {
   waiting: 'waiting for the user (approval or answer)',
   unread: 'finished its turn',
   done: 'finished its turn',
+  stopped: 'was stopped before the end of its turn',
   error: 'ended with an error'
 }
 

@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Child conversations: a child stopped with ■ is shown as “Stopped” (sidebar, “Subtasks” card,
+  role card, Changes › Children), no longer “finished” with a green check. Changes › Children shows
+  “Merged” like the “Subtasks” card. A child’s report counts as read as soon as you see it in the
+  parent’s thread. The parent’s tools name the child by its title, no longer by its id.
+
 ## 1.0.0-rc.1 — November 19, 2026
 
 ### Fixes

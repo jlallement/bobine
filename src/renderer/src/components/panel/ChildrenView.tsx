@@ -2,11 +2,27 @@ import { Code, FolderOpen, ScanSearch } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChildRow } from '@shared/children-rows'
+import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
 import { useEditorAction } from '../../useEditor'
 import { ConversationStateIcon } from '../common/ConversationState'
 import { Tip } from '../common/Menus'
-import { Branch, FileStats, VerdictBadge } from '../thread/Subtasks'
+import { Branch, FileStats, MergeOrVerdict, rowMerge } from '../thread/Subtasks'
+import {
+  useChildrenMerge,
+  type ChildrenMergeActions,
+  type ChildrenMergeState
+} from '../thread/SubtasksMerge'
+
+/** Ce qu'il faut pour lire la fusion des filles comme la carte « Sous-tâches » (fiche 258). */
+export interface ChildWorktreesMerge {
+  motherId: string
+  /** Fil de la mère : la dernière fusion y est posée (élément `children-merge`). */
+  items: readonly TranscriptItem[]
+  actions: ChildrenMergeActions
+}
+
+const NO_ITEMS: readonly TranscriptItem[] = []
 
 /**
  * Vue « Filles » de l'onglet Modifications (fiche 161) : les worktrees des filles directes de la
@@ -14,15 +30,20 @@ import { Branch, FileStats, VerdictBadge } from '../thread/Subtasks'
  */
 export function ChildrenView({
   rows,
+  merge,
   onOpen,
   onReview
 }: {
   rows: ChildRow[]
+  /** Absent : pas d'état de fusion (la recommandation seule, comme avant). */
+  merge?: ChildWorktreesMerge | undefined
   onOpen: (id: string) => void
   /** « Faire relire… » une fille (fiche 177). */
   onReview?: ((id: string) => void) | undefined
 }) {
   const [error, setError] = useState<string | null>(null)
+  // Même lecture que la carte (fiche 258, D11) : « fusionnée » vient de là, pas d'une copie.
+  const merging = useChildrenMerge(merge?.motherId, merge?.actions, rows, merge?.items ?? NO_ITEMS)
   return (
     <div className="children-view" data-testid="children-view">
       {error && <div className="browser-error">{error}</div>}
@@ -30,6 +51,7 @@ export function ChildrenView({
         <ChildWorktree
           key={row.child.id}
           row={row}
+          merging={merging}
           onOpen={onOpen}
           onError={setError}
           // Une relecture ne se fait pas relire ; une fille qui travaille non plus (fiche 177).
@@ -42,11 +64,13 @@ export function ChildrenView({
 
 function ChildWorktree({
   row: { child, state, report, verdict },
+  merging,
   onOpen,
   onError,
   onReview
 }: {
   row: ChildRow
+  merging: ChildrenMergeState
   onOpen: (id: string) => void
   onError: (message: string | null) => void
   onReview?: (id: string) => void
@@ -72,7 +96,7 @@ function ChildWorktree({
         <span className="subtask-meta">
           {child.branch && <Branch name={child.branch} />}
           {report && <FileStats report={report} />}
-          {verdict && <VerdictBadge verdict={verdict} />}
+          <MergeOrVerdict {...rowMerge(merging, child.id)} verdict={verdict} />
         </span>
       </span>
       <Tip label={t(`children.state.${state}`)}>

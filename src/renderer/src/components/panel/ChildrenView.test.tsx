@@ -2,8 +2,10 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
+import type { ChildrenMergePlan } from '@shared/children-merge'
 import { childRows, childrenOf } from '@shared/children-rows'
 import type { TranscriptItem } from '@shared/transcript'
+import type { ChildrenMergeActions } from '../thread/SubtasksMerge'
 import { ChangesTab } from './ChangesTab'
 
 const summary = (
@@ -139,6 +141,110 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
     expect(onOpen).toHaveBeenCalledWith('b')
     // Aucun éditeur installé (préparation des tests) : pas de bouton.
     expect(screen.queryByTestId('child-worktree-editor')).toBeNull()
+  })
+
+  it('fusionnée : « Fusionnée » comme la carte « Sous-tâches », la recommandation s’efface (fiche 258, D11)', async () => {
+    // Ce que le main lit des branches : tout le travail de `b` est dans `main`.
+    const plan: ChildrenMergePlan = {
+      base: 'main',
+      children: [
+        {
+          id: 'b',
+          title: 'Fille b',
+          branch: 'bobine/b',
+          base: 'main',
+          state: 'merged',
+          files: [],
+          dirty: 0
+        },
+        {
+          id: 'a',
+          title: 'Fille a',
+          branch: 'bobine/a',
+          base: 'main',
+          state: 'ready',
+          files: ['x.ts'],
+          dirty: 0
+        }
+      ],
+      overlaps: [],
+      running: false
+    }
+    const actions = {
+      plan: vi.fn(async () => plan),
+      start: vi.fn(),
+      stop: vi.fn(),
+      commitMain: vi.fn(),
+      abort: vi.fn(),
+      openGit: vi.fn()
+    } satisfies ChildrenMergeActions
+    const items: TranscriptItem[] = [
+      ...MOTHER,
+      // La mère avait recommandé `a` aussi ; elle est encore à fusionner.
+      {
+        kind: 'child-recommendation',
+        id: 6,
+        childId: 'a',
+        title: 'Fille a',
+        ready: true,
+        note: 'OK',
+        at: 4
+      },
+      {
+        kind: 'children-merge',
+        id: 7,
+        runId: 'run',
+        base: 'main',
+        cleanup: false,
+        status: 'done',
+        startedAt: 5,
+        endedAt: 6,
+        rows: [{ childId: 'b', title: 'Fille b', branch: 'bobine/b', state: 'merged' }]
+      }
+    ]
+    const children = [summary('a', 'ready'), summary('b', 'ready')]
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="m"
+          workspace="/depot"
+          items={items}
+          childWorktrees={{
+            rows: childRows(children, {}, items),
+            merge: { motherId: 'm', items, actions },
+            onOpen: vi.fn()
+          }}
+        />
+      </Tooltip.Provider>
+    )
+    fireEvent.click(screen.getByTestId('changes-view-children'))
+    const row = (id: string) =>
+      screen.getAllByTestId('child-worktree').find((r) => r.dataset.id === id)
+    await waitFor(() =>
+      expect(
+        row('b')?.querySelector('[data-testid=subtask-merge-state]')?.getAttribute('data-state')
+      ).toBe('merged')
+    )
+    expect(actions.plan).toHaveBeenCalledWith('m')
+    expect(row('b')?.textContent).toContain('fusionnée')
+    expect(row('b')?.querySelector('[data-testid=subtask-recommendation]')).toBeNull()
+    // `a` n'est pas fusionnée : sa recommandation reste.
+    expect(row('a')?.querySelector('[data-testid=subtask-merge-state]')).toBeNull()
+    expect(
+      row('a')?.querySelector('[data-testid=subtask-recommendation]')?.getAttribute('data-state')
+    ).toBe('ready')
+  })
+
+  it('fille arrêtée par ■ : « Arrêtée » dans la vue aussi (fiche 258, D4)', () => {
+    render(tab([{ ...summary('a', 'ready'), turnStopped: true }]))
+    fireEvent.click(screen.getByTestId('changes-view-children'))
+    expect(screen.getByTestId('child-worktree').dataset.state).toBe('stopped')
+    expect(
+      screen
+        .getByTestId('child-worktree-state')
+        .querySelector('.child-state')
+        ?.getAttribute('data-state')
+    ).toBe('stopped')
   })
 
   it('cycle de vie : une fille en plus, son état suivi, puis plus aucune : la vue se ferme', async () => {

@@ -43,6 +43,20 @@ describe('ConversationStore', () => {
     expect(b && ('additionalDirectories' in b || 'toldDirectories' in b)).toBe(false)
   })
 
+  it('tour arrêté (fiche 258) : gardé ; toute autre valeur, retirée', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'conv-store-'))
+    const records = [
+      { ...record('a'), turnStopped: true },
+      { ...record('b'), turnStopped: 'oui' },
+      { ...record('c'), turnStopped: false }
+    ]
+    writeFileSync(join(dir, 'index.json'), JSON.stringify(records))
+    const [a, b, c] = new ConversationStore(dir).loadIndex()
+    expect(a?.turnStopped).toBe(true)
+    expect(b && 'turnStopped' in b).toBe(false)
+    expect(c && 'turnStopped' in c).toBe(false)
+  })
+
   it('version du format écrite avec le fil, retirée à la lecture (fiche 103)', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'conv-store-'))
     const store = new ConversationStore(dir)

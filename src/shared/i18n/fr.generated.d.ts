@@ -2574,12 +2574,16 @@ export type FrResources = {
     }
     readonly message_child: {
       readonly value: 'Écrit à une conversation fille : {{value}}'
+      readonly to: 'Écrit à « {{title}} » : {{value}}'
       readonly default: 'Écrit à une conversation fille'
     }
-    readonly child_status: { readonly default: 'Regarde où en sont les conversations filles' }
+    readonly child_status: {
+      readonly one: 'Regarde où en est « {{value}} »'
+      readonly default: 'Regarde où en sont les conversations filles'
+    }
     readonly recommend_merge: {
-      readonly ready: 'Recommande de fusionner {{value}}'
-      readonly notReady: 'Ne recommande pas encore {{value}}'
+      readonly ready: 'Recommande de fusionner « {{value}} »'
+      readonly notReady: 'Ne recommande pas encore de fusionner « {{value}} »'
       readonly default: 'Donne son avis sur une fusion'
     }
     readonly message_parent: {
@@ -3400,6 +3404,9 @@ export type FrResources = {
       readonly done_one: '{{count}} terminée'
       readonly done_many: '{{count}} terminées'
       readonly done_other: '{{count}} terminées'
+      readonly stopped_one: '{{count}} arrêtée'
+      readonly stopped_many: '{{count}} arrêtées'
+      readonly stopped_other: '{{count}} arrêtées'
       readonly error_one: '{{count}} en erreur'
       readonly error_many: '{{count}} en erreur'
       readonly error_other: '{{count}} en erreur'
@@ -3413,6 +3420,7 @@ export type FrResources = {
       readonly running: 'En cours'
       readonly waiting: 'Attend un accord'
       readonly unread: 'Finie, à lire'
+      readonly stopped: 'Arrêtée'
       readonly error: 'Erreur'
       readonly done: 'Finie'
     }
@@ -4401,6 +4409,7 @@ export type FrResources = {
       readonly running: 'au travail'
       readonly waiting: 'attend votre accord'
       readonly unread: 'a rendu son compte rendu'
+      readonly stopped: 'a été arrêté'
       readonly done: 'a fini'
       readonly error: 'en échec'
     }

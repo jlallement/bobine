@@ -346,8 +346,11 @@ export function reportLine(item: ChildReport): string {
   return `${clip(line, REPORT_CHARS - more.length)}${more}`
 }
 
-/** État d'une fille, pour la liste et la carte « Sous-tâches ». */
-export type ChildState = 'running' | 'waiting' | 'unread' | 'error' | 'done'
+/**
+ * État d'une fille, pour la liste et la carte « Sous-tâches ». `stopped` : son dernier tour a été
+ * arrêté avant la fin (■, `stopReason: "cancelled"`) — pas « finie » (fiche 258, D4).
+ */
+export type ChildState = 'running' | 'waiting' | 'unread' | 'error' | 'stopped' | 'done'
 
 /** Préparation d'une fille acceptée, avant la publication de sa vraie conversation (fiche 149). */
 export interface ChildLaunch {
@@ -364,14 +367,21 @@ export interface ChildLaunchState {
   entries: ChildLaunch[]
 }
 
+/**
+ * Ce qui se passe maintenant d'abord (une demande, un tour en cours, une erreur), puis la fin du
+ * dernier tour : pas encore lue, arrêtée avant la fin (fiche 258), ou finie. « À lire » et
+ * « arrêtée » ne se croisent pas : le message qui ouvre un tour retire « à lire », et un tour
+ * arrêté n'en pose pas (`AttentionTracker`).
+ */
 export function childState(
-  child: Pick<ConversationSummary, 'status'>,
+  child: Pick<ConversationSummary, 'status' | 'turnStopped'>,
   attention?: AttentionKind
 ): ChildState {
   if (attention === 'request' || child.status === 'needs-action') return 'waiting'
   if (child.status === 'busy' || child.status === 'starting') return 'running'
   if (attention === 'error' || child.status === 'error' || child.status === 'exited') return 'error'
-  return attention === 'done' ? 'unread' : 'done'
+  if (attention === 'done') return 'unread'
+  return child.turnStopped ? 'stopped' : 'done'
 }
 
 /**
@@ -380,7 +390,10 @@ export function childState(
  */
 export function activeChildren(
   motherId: string,
-  conversations: readonly Pick<ConversationSummary, 'id' | 'status' | 'startedFrom'>[],
+  conversations: readonly Pick<
+    ConversationSummary,
+    'id' | 'status' | 'startedFrom' | 'turnStopped'
+  >[],
   attention: AttentionState
 ): number {
   return conversations.filter((c) => {

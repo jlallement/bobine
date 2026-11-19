@@ -31,7 +31,9 @@ export function roleAvatarState(state: ChildState): RoleAvatarState {
       return 'waiting'
     case 'unread':
       return 'done'
+    // Échec ou arrêt (maquette 03-5) : la pastille du compte rendu d'un rôle arrêté (fiche 258).
     case 'error':
+    case 'stopped':
       return 'error'
     case 'done':
       return 'idle'

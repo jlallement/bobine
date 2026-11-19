@@ -455,4 +455,92 @@ describe('AttentionTracker — rebond du Dock (fiche 101)', () => {
     tracker.onEvent('b', permission('p2'))
     expect(bounces).toEqual(['critical', 'stop', 'critical'])
   })
+
+  describe('compte rendu d’une fille lu dans le fil de sa mère (fiche 258, D35)', () => {
+    const report = (childId: string): AgentEvent => ({
+      type: 'child-report',
+      report: {
+        childId,
+        title: childId,
+        outcome: 'done',
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: '',
+        at: 0
+      }
+    })
+    const turn = (tracker: AttentionTracker, id: string, end: AgentEvent = turnEnd) => {
+      tracker.onEvent(id, { type: 'user-message', text: 'go' })
+      tracker.onEvent(id, end)
+    }
+
+    it('mère affichée quand le compte rendu y arrive : la fille n’a plus rien à lire', () => {
+      const { world, tracker, withdrawn, states } = setup()
+      world.focused = true
+      world.active = 'm'
+      turn(tracker, 'f1')
+      expect(states.at(-1)).toEqual({ f1: 'done' })
+      tracker.onEvent('m', report('f1'))
+      expect(states.at(-1)).toEqual({})
+      // Sa notification (s'il y en a une) est retirée comme pour une conversation vue.
+      expect(withdrawn).toContain('f1')
+    })
+
+    it('mère ouverte plus tard : tous les comptes rendus de son fil sont lus, pas les autres', () => {
+      const { world, tracker, states } = setup()
+      world.active = 'ailleurs'
+      turn(tracker, 'f1')
+      turn(tracker, 'f2')
+      tracker.onEvent('m', report('f1'))
+      tracker.onEvent('m', report('f2'))
+      // f3 a fini, mais son compte rendu est retenu (la mère répondait) : pas encore dans le fil.
+      turn(tracker, 'f3')
+      expect(tracker.state()).toEqual({ f1: 'done', f2: 'done', f3: 'done' })
+      world.focused = true
+      tracker.refresh()
+      expect(tracker.state()).toEqual({ f1: 'done', f2: 'done', f3: 'done' })
+      world.active = 'm'
+      tracker.refresh()
+      expect(states.at(-1)).toEqual({ f3: 'done' })
+      // Posé ensuite, mère toujours affichée : lu à son arrivée.
+      tracker.onEvent('m', report('f3'))
+      expect(tracker.state()).toEqual({})
+    })
+
+    it('un nouveau tour de la fille : l’ancien compte rendu ne vaut plus pour le suivant', () => {
+      const { world, tracker } = setup()
+      world.active = 'ailleurs'
+      turn(tracker, 'f1')
+      tracker.onEvent('m', report('f1'))
+      // Nouveau tour fini, dont le compte rendu n'est pas encore posé.
+      turn(tracker, 'f1')
+      world.focused = true
+      world.active = 'm'
+      tracker.refresh()
+      expect(tracker.state()).toEqual({ f1: 'done' })
+    })
+
+    it('une erreur reste à voir dans la fille, même son compte rendu lu chez la mère', () => {
+      const { world, tracker } = setup()
+      world.focused = true
+      world.active = 'm'
+      turn(tracker, 'f1', { type: 'turn-error', message: 'boom' })
+      tracker.onEvent('m', report('f1'))
+      expect(tracker.state()).toEqual({ f1: 'error' })
+    })
+
+    it('mère supprimée : plus rien n’est retenu pour elle', () => {
+      const { world, tracker } = setup()
+      world.active = 'ailleurs'
+      turn(tracker, 'f1')
+      tracker.onEvent('m', report('f1'))
+      tracker.forget('m')
+      world.focused = true
+      world.active = 'm'
+      tracker.refresh()
+      expect(tracker.state()).toEqual({ f1: 'done' })
+    })
+  })
 })

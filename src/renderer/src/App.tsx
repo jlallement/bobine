@@ -432,6 +432,11 @@ export function App() {
     />
   ) // Profil en lecture seule (fiche 196) : la saisie est inerte, la raison dessous.
   const composer = <ReadOnlyGate>{editor}</ReadOnlyGate>
+  // Fusion des filles (fiche 120) : la carte « Sous-tâches » et Modifications › Filles (fiche 258).
+  const childrenMerge = childrenMergeActions((id) => {
+    c.select(id)
+    panel.openChanges('git')
+  })
 
   return (
     <TipsContext.Provider value={tips}>
@@ -688,10 +693,7 @@ export function App() {
                                 onOpen: c.select,
                                 profiles: c.settings?.profiles ?? [],
                                 ...(c.activeId ? { motherId: c.activeId } : {}),
-                                merge: childrenMergeActions((id) => {
-                                  c.select(id)
-                                  panel.openChanges('git')
-                                })
+                                merge: childrenMerge
                               }}
                               {...(c.activeSummary
                                 ? {
@@ -772,6 +774,16 @@ export function App() {
                 // Worktrees des filles directes (fiche 161), tenus à jour comme la carte du fil.
                 childWorktrees={{
                   rows: childRows(childrenOf(c.activeId, c.list), c.attention, transcript.items),
+                  // Même état de fusion que la carte « Sous-tâches » (fiche 258, D11).
+                  ...(c.activeId
+                    ? {
+                        merge: {
+                          motherId: c.activeId,
+                          items: transcript.items,
+                          actions: childrenMerge
+                        }
+                      }
+                    : {}),
                   onOpen: c.select,
                   onReview: (id) => reviewOf(c.list.find((s) => s.id === id))
                 }}

@@ -4,6 +4,7 @@
  * d'une session.
  */
 import type { ParseKeysWithoutVariables } from 'i18next'
+import type { AppToolLabelContext } from '@shared/app-tools'
 import type { AskUserArgs } from '@shared/ask-user'
 import type { ChildDecision, ChildProposal } from '@shared/children'
 import { APP_TOOLS_SERVER_NAME } from '@shared/mcp'
@@ -54,6 +55,11 @@ export interface AppTool {
   call: (args: unknown, context?: { signal: AbortSignal }) => Promise<ToolResult>
   /** Budget de l'appel, s'il diffère de `DEFAULT_TOOL_BUDGET_MS` (serveur MCP). */
   budgetMs?: number
+  /**
+   * Ce que le libellé de la carte peut dire en plus des arguments (fiche 258, D18) : le titre de
+   * la fille désignée par un identifiant. Lu avant l'appel ; ne lève pas.
+   */
+  labelContext?: (args: unknown) => AppToolLabelContext
 }
 
 /** Ce qu'un module sait de la conversation pour proposer ses outils. */
