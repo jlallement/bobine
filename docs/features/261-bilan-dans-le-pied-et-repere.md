@@ -24,9 +24,12 @@ des maquettes validées (`docs/maquettes/260-travail-delegue.html`).
       (« 40 s à vous attendre », fiche 255) ; plus de « Terminé en ».
 - [x] Ce pied est dans le groupe de la réponse : ce qui arrive après s'affiche dessous, il ne bouge
       plus.
-- [x] Tant que le tour dure ou que l'agent travaille après le tour (fiche 255, sous-agent en
-      arrière-plan, y compris d'un tour plus ancien), le pied de sa dernière réponse dit
-      « Travaille encore… » avec un petit indicateur.
+- [x] Tant que l'agent travaille **après** le tour (fiche 255 : sous-agent en arrière-plan, y
+      compris d'un tour plus ancien, ou réponse hors tour attendue), le pied de sa dernière réponse
+      dit « Travaille encore… » avec un petit indicateur. Pendant un tour ordinaire, aucun pied :
+      l'indicateur du bas suffit (règle 5 de la fiche 260).
+- [x] Le statut « occupé » d'un nouveau message, arrivé avant ce message, ne change pas le pied du
+      tour fini.
 - [x] Tour arrêté, refusé, coupé, en erreur ou à la limite d'étapes : comme aujourd'hui (heure et
       durée au survol, pas de bilan). Fil en lecture seule (côte à côte) : comme aujourd'hui.
 - [x] `data-testid` gardés : `turn-summary` (le pied d'un tour fini), `turn-duration` (sa durée) ;
@@ -114,9 +117,6 @@ Aucune nouvelle dépendance, pas d'ADR (rendu dérivé de l'état existant).
 - **`App.tsx`** était à 800 lignes comptées sur 800 : le bas de la conversation (flèche « Aller en
   bas », plan épinglé, aparté, repère, saisie) est sorti dans `ThreadDock.tsx` ; `App.tsx` perd une
   ligne.
-- **Prettier** : `docs/maquettes/260-travail-delegue.html` (commit de la fiche 260) n'était pas
-  formatée, et `prettier --check .` (dans `verify`) échouait déjà sur la branche de départ. Formatée
-  par `prettier --write`, dans un commit à part (`style:`), sans autre changement.
 - Tests : `TurnSummary.test.tsx` (pied fini, « Travaille encore… », attente, coût, présentation,
   pieds par tour, tour plus ancien au travail, tour arrêté, `sameFoot`), `Transcript.test.tsx` (un
   seul pied dans le groupe de la réponse, avant les cartes d'après ; « Travaille encore… » ; le pied
@@ -127,22 +127,26 @@ Aucune nouvelle dépendance, pas d'ADR (rendu dérivé de l'état existant).
   `finitions` (texte et place du pied) et `subagents` (« Travaille encore… » puis bilan) mises à
   jour, **non lancées** ; fixtures du pilote mises au nouveau texte.
 
-### Écarts et doutes
+### Décisions du tech lead (relecture, 2026-11-19)
 
-- **« Travaille encore… » pendant un tour normal** : la consigne le demande « tant que le tour ou
-  un travail en arrière-plan n'est pas fini » ; il s'affiche donc aussi sous la réponse en cours
-  d'écriture d'un tour ordinaire, au-dessus de l'indicateur du bas (« Écrit… 3 s »). Les deux
-  disent la même chose ; si c'est trop, la règle 5 de la fiche 260 (« tant qu'un sous-agent
-  tourne ») permettrait de le réserver au travail après le tour. Pendant un tour, le pied
-  « Travaille encore… » suit la dernière réponse (il ne se fixe qu'une fois le tour fini).
-- **Statut « occupé » avant le message** (fiche 095) : un instant, le tour précédent peut passer de
-  son bilan à « Travaille encore… » puis revenir ; c'était déjà le cas du bilan (`open`).
-- **Repère et conversation ouverte ensuite** : un travail qui répond pendant qu'on regarde une autre
-  conversation ne fait pas de repère en revenant (on ne sait pas quand il a répondu) ; la barre
-  latérale le dit déjà (« à lire »).
-- **Erreur, arrêt** d'un travail : pas de repère (seuls « a répondu » et « a fini » sont demandés).
+- **« Travaille encore… »** réservé au travail après le tour (règle 5 de la fiche 260) : pendant un
+  tour ordinaire, aucun pied sous la dernière réponse. `replyFeet` prend l'état de l'agent
+  (`{ busy, background }`) au lieu d'un seul drapeau `open`.
+- **Saut à l'envoi corrigé** : le statut « occupé » arrive avant le message de l'utilisateur
+  (fiche 095). Un tour dont une réponse est datée est fini (les réponses ne sont datées qu'à la fin
+  du tour, `turn-end`, ou à la fin du travail après le tour, `background-work`) : il garde son
+  bilan, ou « Travaille encore… », tant qu'aucun nouveau message n'est arrivé. Essai dédié dans
+  `TurnSummary.test.tsx`.
+- **Maquette 260** : `main` la contient déjà formatée (0b2e5a2) ; mon commit de formatage a été
+  retiré, la branche est rebasée sur `main`.
+
+### Limites connues
+
+- **Repère** : rebranché par la fiche 263 (carte-réponse à place fixe), par `work-cue-targets.ts`
+  seulement. Il ne couvre ni les erreurs, ni les arrêts d'un travail, ni les réponses arrivées
+  pendant qu'on regardait une autre conversation (on ne sait pas quand elles sont arrivées ; la
+  barre latérale dit déjà « à lire »).
 - **Aujourd'hui, le compte rendu s'ajoute en bas du fil** : il est en général à l'écran quand la
   fille finit, et le repère ne paraît que si l'on a remonté le fil (ou un instant si l'état de la
-  fille arrive avant le compte rendu). Le repère prendra tout son sens avec la carte-réponse à place
-  fixe (fiche 263).
+  fille arrive avant le compte rendu). Pas d'essai e2e du repère pour l'instant.
 - Anglais « tasks » pour « travaux » en attendant le vocabulaire unique (fiche 266).

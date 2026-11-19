@@ -8,8 +8,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 - A turn's summary is now the footer of the reply that ends it: “21:17 · 2m 29s · 9 files +346
   −0”, with the cost, without repeating the duration. It stays under its reply, and whatever
-  arrives later shows below it. While the agent is still working (a background subagent, for
-  example), this footer says “Still working…”.
+  arrives later shows below it. When the agent is still working after the turn ends (a
+  background subagent, for example), this footer says “Still working…”.
 - When work handed to a role replies while its card is off screen, a thin line above the message
   box says so (“↑ UX/UI expert replied · Show”); “Show” scrolls to the card and briefly outlines
   it. The line goes away once the card has been seen.
