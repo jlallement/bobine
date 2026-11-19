@@ -4,6 +4,16 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ## Prochaine version
 
+### Nouveautés
+
+- Le bilan d'un tour est maintenant le pied de la réponse qui le finit : « 21:17 · 2 min 29 s ·
+  9 fichiers +346 −0 », avec le coût, sans répéter la durée. Il reste sous sa réponse, et ce qui
+  arrive ensuite s'affiche dessous. Tant que l'agent travaille encore (un sous-agent en
+  arrière-plan, par exemple), ce pied dit « Travaille encore… ».
+- Quand un travail confié à un rôle répond pendant que sa carte est hors de l'écran, une ligne fine
+  au-dessus de la saisie le dit (« ↑ Expert UX/UI a répondu · Voir ») ; « Voir » fait défiler
+  jusqu'à la carte et l'entoure un instant. La ligne disparaît dès que la carte a été vue.
+
 ### Corrections
 
 - Chaque conversation garde son mode et son modèle : changer de mode ou de modèle dans une

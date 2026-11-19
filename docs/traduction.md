@@ -139,6 +139,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | consigne (d'un rôle) | instructions | Le corps du fichier de rôle. |
 | équipe (section de la barre latérale) | team | Les rôles actifs. |
 | confier (un travail) à un rôle | hand (work) to a role | « Confier un travail à Expert sécurité » → « Hand work to Security expert ». |
+| travaux (repère du bas du fil) | tasks | Fiche 261 : « 2 travaux ont répondu » → « 2 tasks replied » ; « Voir » → « Show ». À revoir avec le vocabulaire unique (fiche 266). |
 | fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
 | installer (un rôle) dans un agent ; retirer | install (a role) in an agent; remove | Fiche 223, phase 4 : mode de Bob, agent d'OpenCode. |
 | règles actives | active rules | |
