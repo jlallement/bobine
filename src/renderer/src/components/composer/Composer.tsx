@@ -647,7 +647,6 @@ function ComposerBelow({
         opinion={roleView.opinion}
         launch={
           roleView.launch && {
-            here: roleView.launch.state.place === 'here',
             // Un choix de « Changer… » rend le focus à la saisie : Entrée envoie ensuite.
             node: (
               <ComposerFocus.Provider value={focusInput}>

@@ -7,7 +7,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 ### Corrections
 
 - Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
-  ligne discrète sous la saisie dit où il travaillera (« Partira du dernier commit, sans vos N
+  ligne discrète sous la saisie dit d'où il partira (« depuis le dernier commit, sans vos N
   modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de
   demander juste un avis en lecture seule (pour ce message) ou de voir les modifications. Sur un
   dépôt sans aucun commit, le rôle travaille directement dans le dossier : plus de « dernier

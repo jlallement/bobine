@@ -165,8 +165,11 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     const segment = screen.getByTestId('launch-line')
     expect(segment.className).toContain('warn')
     expect(segment.dataset.choice).toBe('without')
-    expect(line()).toContain('son worktree')
-    expect(line()).toContain('Partira du dernier commit, sans vos 17 modifications')
+    // Ligne raccourcie (revue UX, 3) : le segment dit d'où il partira, sans « son worktree ».
+    expect(line()).not.toContain('son worktree')
+    expect(line()).toContain('· depuis le dernier commit, sans vos 17 modifications')
+    // Le « · » s'accroche au segment d'avant par une espace insécable (revue UX, 2).
+    expect(screen.getByTestId('launch-line').textContent?.startsWith('\u00a0· ')).toBe(true)
     expect(screen.getByTestId('launch-line-change').textContent).toContain('Changer…')
     await type('@front-architect construisez la page')
     input.focus()
@@ -272,6 +275,43 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })
 
+  it('« Committer d’abord » ouvert : la ligne dit ce qui partira, sans orange ; coché dans le menu', async () => {
+    const { type, change, line } = setup()
+    await type('@front-architect construisez la page')
+    await change('launch-line-commit')
+    const segment = screen.getByTestId('launch-line')
+    expect(segment.className).not.toContain('warn')
+    expect(segment.dataset.choice).toBe('commit')
+    expect(line()).toContain('Partira de votre commit, avec les fichiers cochés ci-dessous')
+    // Annulé : le choix revient à « Partir sans elles », en orange.
+    fireEvent.click(screen.getByTestId('launch-line-commit-cancel'))
+    expect(screen.getByTestId('launch-line').className).toContain('warn')
+  })
+
+  it('l’envoi referme la liste des modifications (revue UX, 4)', async () => {
+    const { type, change, enter } = setup()
+    await type('@front-architect construisez la page')
+    await change('launch-line-show')
+    expect(screen.getByTestId('launch-line-files')).toBeTruthy()
+    await enter()
+    expect(screen.queryByTestId('launch-line-files')).toBeNull()
+  })
+
+  it('menu : aperçu des fichiers sous « Voir les N modifications », pluriel des rôles', async () => {
+    const { type } = setup()
+    await type('@front-architect @back-architect construisez la page')
+    expect(screen.getByTestId('launch-line-change').getAttribute('aria-label')).toBe(
+      'Changer où partiront les rôles'
+    )
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    expect(plain((await screen.findByTestId('launch-line-show')).textContent)).toContain(
+      'plan.md, maquettes/b.html, server/index.js…'
+    )
+    expect(plain(screen.getByTestId('launch-line-opinion').textContent)).toContain(
+      'ils verront vos modifications'
+    )
+  })
+
   it('« Committer d’abord » ouvert : Entrée mène au bouton du commit, rien ne part avant', async () => {
     const { type, change, enter, send } = setup()
     await type('@front-architect construisez la page')
@@ -325,13 +365,12 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(send).toHaveBeenCalledWith(['security-expert'], 'relis le diff')
   })
 
-  it('dossier propre : « partira du dernier commit », discret ; l’envoi part sans choix', async () => {
+  it('dossier propre : « depuis le dernier commit », discret ; l’envoi part sans choix', async () => {
     childFolder.mockResolvedValue(folderOf())
     const { type, enter, send, line } = setup()
     await type('@front-architect construisez la page')
     expect(screen.getByTestId('launch-line').className).not.toContain('warn')
-    expect(line()).toContain('son worktree')
-    expect(line()).toContain('partira du dernier commit (9970242)')
+    expect(line()).toContain('depuis le dernier commit (9970242)')
     await enter()
     expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })

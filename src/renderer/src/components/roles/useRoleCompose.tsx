@@ -179,6 +179,9 @@ export function useRoleCompose(options: {
     }
     options.onSent?.({ text: at.text, tokens: tokensNow.current })
     setBusy(true, to.names)
+    // Parti : la liste des modifications et le choix de commit se referment (revue UX, 4).
+    setShowFiles(false)
+    setCommitting(false)
     // Saisie vidée tout de suite, remise en cas d'échec : une conversation neuve entre dans
     // l'historique pendant l'envoi et la saisie est remontée (accueil → fil) ; elle ne doit pas
     // reprendre le texte parti (essai réel de la phase 4).
@@ -441,7 +444,7 @@ export function RoleDestinationFor({
   /** « Juste un avis » choisi pour un rôle qui écrit (fiche 262). */
   opinion?: { sees: number } | undefined
   /** Où partira un rôle qui écrit, et « Changer… » (fiche 262). */
-  launch?: { node: ReactNode; here: boolean } | undefined
+  launch?: { node: ReactNode } | undefined
 }): ReactNode {
   const single = targets.length === 1 ? targets[0] : undefined
   const profile = single ? roleProfile(single, roles?.profiles ?? [], profileId) : undefined

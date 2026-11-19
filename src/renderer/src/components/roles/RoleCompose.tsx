@@ -82,11 +82,8 @@ export function RoleDestination({
    * « Changer… » (dans `launch`) revient au travail dans un worktree.
    */
   opinion?: { sees: number }
-  /**
-   * Où partira un rôle qui écrit (fiche 262) : le segment de la ligne (`LaunchLine`) et s'il
-   * travaillera dans ce dossier (dépôt sans commit) plutôt que dans son worktree.
-   */
-  launch?: { node: ReactNode; here: boolean }
+  /** Où partira un rôle qui écrit (fiche 262) : le segment de la ligne (`LaunchLine`). */
+  launch?: { node: ReactNode }
 }) {
   const { t } = useTranslation()
   const single = roles.length === 1 ? roles[0] : undefined
@@ -114,9 +111,10 @@ export function RoleDestination({
             : readOnly
               ? t('roleWork.readOnly')
               : undefined,
+          // Rôle qui écrit : le segment `launch` dit d'où il partira (fiche 262, revue UX).
           single.readOnly
             ? t('roleWork.destination.sameFolder')
-            : launch?.here
+            : launch
               ? undefined
               : t('roleWork.destination.worktree')
         ].filter(Boolean)
@@ -154,7 +152,11 @@ export function RoleDestination({
         )}
       </span>
       {details.length > 0 && (
-        <span className="role-destination-detail">· {details.join(' · ')}</span>
+        // « · » accroché au segment d'avant (espace insécable) : jamais en tête de ligne.
+        <span className="role-destination-detail">
+          {'\u00a0· '}
+          {details.join('\u00a0· ')}
+        </span>
       )}
       {launch && !sending && launch.node}
       {empty && !sending && (
@@ -164,6 +166,7 @@ export function RoleDestination({
       )}
       {sending && (
         <span className="role-destination-detail" data-testid="role-destination-sending">
+          {'\u00a0· '}
           {t('roleWork.destination.sending')}
         </span>
       )}

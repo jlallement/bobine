@@ -3505,8 +3505,8 @@
       "needsAction": "Its agent needs you to act (sign-in, folder to approve): open the child conversation.",
       "agentFailed": "Its agent did not start: {{detail}}",
       "noStartChild": "No child conversation possible here: it takes a folder in a git repository, a conversation that is not itself a child, and the “Child conversations” tool family turned on (Settings › MCP servers).",
-      "uncommitted_one": "This folder has {{count}} uncommitted change: first choose “Commit first” or “Start without them” (Change…).",
-      "uncommitted_other": "This folder has {{count}} uncommitted changes: first choose “Commit first” or “Start without them” (Change…)."
+      "uncommitted_one": "This folder has {{count}} uncommitted change: choose “Commit first” or “Start without them” in “Choose…”.",
+      "uncommitted_other": "This folder has {{count}} uncommitted changes: choose “Commit first” or “Start without them” in “Choose…”."
     },
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
@@ -5621,11 +5621,14 @@
     }
   },
   "launchLine": {
-    "change": "Change…",
-    "changeLabel": "Change where the role will start",
-    "fromCommit": "will start from the last commit ({{commit}})",
-    "without_one": "Will start from the last commit, without your change",
-    "without_other": "Will start from the last commit, without your {{count}} changes",
+    "change": "Choose…",
+    "changeLabel": {
+      "role": "Choose where the role will start",
+      "roles": "Choose where the roles will start",
+      "work": "Choose where this work will start",
+      "works": "Choose where this work will start"
+    },
+    "fromCommit": "from the last commit ({{commit}})",
     "noCommit": {
       "role": "This repository has no commit yet: the role will work in this folder, at the same time as the agent, with no branch and nothing to merge",
       "roles": "This repository has no commit yet: the roles will work in this folder, at the same time as the agent, with no branch and nothing to merge",
@@ -5640,17 +5643,23 @@
     },
     "menu": {
       "commit": "Commit first",
-      "commitDesc": "Choose the files and the message; the work then starts from this commit, with your changes.",
+      "commitDesc": "You will choose the files and the message; the work will start from this commit, with the checked files.",
       "without": "Start without them",
-      "withoutDesc_one": "The work starts from the last commit ({{commit}}). Your changed file stays here, untouched.",
-      "withoutDesc_other": "The work starts from the last commit ({{commit}}). Your {{count}} changed files stay here, untouched.",
+      "withoutDesc_one": "The work will start from the last commit ({{commit}}). Your changed file will stay here, untouched.",
+      "withoutDesc_other": "The work will start from the last commit ({{commit}}). Your {{count}} changed files will stay here, untouched.",
       "worktree": "Work in its own worktree",
-      "worktreeDesc": "A separate branch, from the last commit ({{commit}}).",
+      "worktreeDesc": "A separate branch, which will start from the last commit ({{commit}}).",
       "opinion": "Just an opinion, read-only",
-      "opinionDesc": "In this folder, without changing anything; sees your uncommitted changes.",
       "show_one": "See the change",
       "show_other": "See the {{count}} changes",
-      "hide": "Hide the changes"
+      "opinionDesc": {
+        "role": "In this folder, without changing anything; it will see your uncommitted changes.",
+        "roles": "In this folder, without changing anything; they will see your uncommitted changes."
+      },
+      "hide_one": "Hide the change",
+      "hide_other": "Hide the changes",
+      "preview": "{{names}}",
+      "previewMore": "{{names}}…"
     },
     "files": "Uncommitted changes in this folder",
     "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the work will start without it.",
@@ -5658,7 +5667,17 @@
     "commitThenSend": "Commit, then send",
     "commitThenStart": "Commit, then start",
     "commitOnly": "Commit",
-    "held": "One moment: the folder is being read, or a commit is open above",
-    "proposalsHere": "The agent offers to hand this work off. You can also ask it to do it here."
+    "proposalsHere": "The agent offers to hand this work off. You can also ask it to do it here.",
+    "without_one": "from the last commit, without your uncommitted change",
+    "without_other": "from the last commit, without your {{count}} uncommitted changes",
+    "withoutAlone": {
+      "work_one": "Will start from the last commit, without your uncommitted change",
+      "work_other": "Will start from the last commit, without your {{count}} uncommitted changes",
+      "works_one": "Will start from the last commit, without your uncommitted change",
+      "works_other": "Will start from the last commit, without your {{count}} uncommitted changes"
+    },
+    "committing": "Will start from your commit, with the files checked below",
+    "heldReading": "One moment: reading the folder",
+    "heldCommitting": "Finish or cancel the commit above"
   }
 }

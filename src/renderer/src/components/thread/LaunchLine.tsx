@@ -10,6 +10,8 @@ import { CommitChooser } from '../panel/CommitChooser'
 
 /** Fichiers montrés par « Voir les N modifications », au plus ; les autres sont comptés. */
 const MAX_SHOWN = 8
+/** Fichiers nommés en aperçu sous « Voir les N modifications », dans le menu. */
+const PREVIEW = 3
 
 /** Qui partira : un rôle, plusieurs rôles, un travail, des travaux (accord des textes). */
 export type LaunchWho = 'role' | 'roles' | 'work' | 'works'
@@ -61,7 +63,8 @@ export function LaunchLine({
   disabled?: boolean
 }) {
   const { t } = useTranslation()
-  const lead = standalone ? '' : '· '
+  // Le « · » s'accroche à la fin du segment d'avant (espace insécable) : jamais en tête de ligne.
+  const lead = standalone ? '' : ' · '
   if (state.place === 'here') {
     return (
       <span
@@ -78,52 +81,68 @@ export function LaunchLine({
   const dirty = state.dirty
   const count = dirty?.count ?? 0
   const commitShort = short(state.head)
+  const plural = who === 'roles' || who === 'works'
+  const text = committing
+    ? t('launchLine.committing')
+    : dirty
+      ? standalone
+        ? t(`launchLine.withoutAlone.${plural ? 'works' : 'work'}`, { count })
+        : t('launchLine.without', { count })
+      : t('launchLine.fromCommit', { commit: commitShort })
+  const names =
+    dirty?.files
+      .slice(0, PREVIEW)
+      .map((f) => f.path)
+      .join(', ') ?? ''
   return (
     <>
       {!hideText && (
         <span
-          className={`launch-line-text${dirty && choice === 'without' ? ' warn' : ''}`}
+          className={`launch-line-text${dirty && choice === 'without' && !committing ? ' warn' : ''}`}
           data-testid="launch-line"
           data-place="worktree"
-          data-choice={choice}
+          data-choice={committing ? 'commit' : choice}
           data-count={count}
         >
           {lead}
-          {dirty
-            ? t('launchLine.without', { count, commit: commitShort })
-            : t('launchLine.fromCommit', { commit: commitShort })}
+          {text}
         </span>
-      )}
+      )}{' '}
       <Dropdown.Root modal={false}>
         <Dropdown.Trigger
           className="link-button launch-line-change"
           disabled={disabled || committing}
-          aria-label={t('launchLine.changeLabel')}
+          aria-label={t(`launchLine.changeLabel.${who}`)}
           data-testid="launch-line-change"
         >
           {t('launchLine.change')}
           <ChevronDown size={12} aria-hidden />
         </Dropdown.Trigger>
         <MenuContent testId="launch-line-menu">
-          {dirty && (
-            <Dropdown.Item
-              className="menu-item"
-              onSelect={() => {
+          <Dropdown.RadioGroup
+            value={committing ? 'commit' : choice}
+            onValueChange={(value) => {
+              if (value === 'commit') {
                 onShowFiles(false)
                 onCommitting(true)
-              }}
-              data-testid="launch-line-commit"
-            >
-              <ItemText
-                title={t('launchLine.menu.commit')}
-                description={t('launchLine.menu.commitDesc')}
-              />
-            </Dropdown.Item>
-          )}
-          <Dropdown.RadioGroup
-            value={choice}
-            onValueChange={(value) => onChoose(value === 'readOnly' ? 'readOnly' : 'without')}
+              } else onChoose(value === 'readOnly' ? 'readOnly' : 'without')
+            }}
           >
+            {dirty && (
+              <Dropdown.RadioItem
+                value="commit"
+                className="menu-item"
+                data-testid="launch-line-commit"
+              >
+                <ItemText
+                  title={t('launchLine.menu.commit')}
+                  description={t('launchLine.menu.commitDesc')}
+                />
+                <Dropdown.ItemIndicator>
+                  <Check size={16} className="menu-check" />
+                </Dropdown.ItemIndicator>
+              </Dropdown.RadioItem>
+            )}
             <Dropdown.RadioItem
               value="without"
               className="menu-item"
@@ -141,6 +160,7 @@ export function LaunchLine({
                 <Check size={16} className="menu-check" />
               </Dropdown.ItemIndicator>
             </Dropdown.RadioItem>
+            {opinion && <Dropdown.Separator className="menu-separator" />}
             {opinion && (
               <Dropdown.RadioItem
                 value="readOnly"
@@ -149,7 +169,7 @@ export function LaunchLine({
               >
                 <ItemText
                   title={t('launchLine.menu.opinion')}
-                  description={t('launchLine.menu.opinionDesc')}
+                  description={t(`launchLine.menu.opinionDesc.${plural ? 'roles' : 'role'}`)}
                 />
                 <Dropdown.ItemIndicator>
                   <Check size={16} className="menu-check" />
@@ -167,8 +187,20 @@ export function LaunchLine({
               >
                 <ItemText
                   title={
-                    showFiles ? t('launchLine.menu.hide') : t('launchLine.menu.show', { count })
+                    showFiles
+                      ? t('launchLine.menu.hide', { count })
+                      : t('launchLine.menu.show', { count })
                   }
+                  {...(showFiles
+                    ? {}
+                    : {
+                        description: t(
+                          count > PREVIEW
+                            ? 'launchLine.menu.previewMore'
+                            : 'launchLine.menu.preview',
+                          { names }
+                        )
+                      })}
                 />
               </Dropdown.Item>
             </>

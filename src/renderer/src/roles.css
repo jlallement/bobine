@@ -1128,16 +1128,26 @@
 .composer.to-roles:focus-within {
   border-color: var(--border-strong);
 }
+/* Flux de texte (fiche 262, revue UX) : la ligne passe à la ligne comme une phrase, la suite
+   alignée sous le texte (retrait suspendu de 19 px : icône de 13 px et son écart de 6 px). */
 .role-destination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin: 6px 0 0 12px;
+  display: block;
+  padding-left: 19px;
+  text-indent: -19px;
+  margin: 6px 12px 0 12px;
   font-size: 12px;
   line-height: 1.4;
   color: var(--text-2);
   animation: composer-plan-hint-in 0.15s ease;
+}
+.role-destination > svg,
+.role-destination > .role-stack {
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+/* Le retrait ne vaut que pour la première ligne du bloc, pas pour ses boutons. */
+.role-destination * {
+  text-indent: 0;
 }
 .role-destination.single {
   color: var(--role);
@@ -1146,7 +1156,7 @@
   color: var(--muted);
 }
 .role-destination-warn {
-  flex-basis: 100%;
+  display: block;
   color: var(--warn);
 }
 

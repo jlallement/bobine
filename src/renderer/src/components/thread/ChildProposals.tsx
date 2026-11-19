@@ -82,8 +82,14 @@ export function ChildProposals({
   const [showFiles, setShowFiles] = useState(false)
   // Dossier pas encore lu : « Lancer » attend un instant (un clic rapide partirait sans le choix
   // affiché) ; de même pendant « Committer d'abord ».
-  const held = (state === undefined && !!info && toWorktree) || committing
+  const reading = state === undefined && !!info && toWorktree
+  const held = reading || committing
   const anyway = state?.place === 'worktree' && !!state.dirty
+  // Accord de la ligne : les travaux qui écrivent encore à lancer (revue UX).
+  const writers = items.filter((item) => {
+    const outcome = outcomeOf(item)
+    return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
+  }).length
   const [focus, setFocus] = useState(0)
   // La carte prend le focus à l'apparition si elle attend une réponse : on répond sans la souris.
   const askedAtMount = useRef(pending.length > 0)
@@ -165,7 +171,7 @@ export function ChildProposals({
               state={state}
               choice="without"
               onChoose={() => {}}
-              who="works"
+              who={writers > 1 ? 'works' : 'work'}
               opinion={false}
               standalone
               committing={committing}
@@ -201,6 +207,7 @@ export function ChildProposals({
             key={item.requestId}
             item={item}
             held={held && !item.prompt.child.role?.readOnly}
+            heldWhy={reading ? 'heldReading' : 'heldCommitting'}
             {...(anyway ? { uncommitted: 'anyway' as const } : {})}
             inFolder={state?.place === 'here'}
             {...(info ? { info } : {})}
@@ -228,11 +235,14 @@ function ProposalRow({
   onFocus,
   onRespond,
   held,
+  heldWhy,
   uncommitted,
   inFolder
 }: {
   /** Dossier de la mère pas encore lu, ou commit en cours (fiche 262) : « Lancer » attend. */
   held: boolean
+  /** Pourquoi « Lancer » attend, dit en infobulle. */
+  heldWhy: 'heldReading' | 'heldCommitting'
   /** Non commité laissé derrière, affiché par la ligne du dossier : passé au lancement. */
   uncommitted?: 'anyway'
   /** Dépôt sans commit (fiche 262) : la fille travaillera dans ce dossier, pas dans un worktree. */
@@ -361,7 +371,7 @@ function ProposalRow({
               disabled={busy || loading || held}
               title={
                 held
-                  ? t('launchLine.held')
+                  ? t(`launchLine.${heldWhy}`)
                   : loading
                     ? t('children.proposals.loadingChoice')
                     : undefined

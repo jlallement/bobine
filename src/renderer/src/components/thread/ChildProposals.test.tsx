@@ -400,7 +400,7 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
       'launch-line-change'
     ])
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
-      'Partira du dernier commit, sans vos 2 modifications'
+      'Partiront du dernier commit, sans vos 2 modifications'
     )
     expect(start('API').disabled).toBe(false)
     fireEvent.click(start('API'))
@@ -483,7 +483,7 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
     childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
     const onRespond = await show([proposal(1, 'API')])
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
-      'Ce dépôt n’a pas encore de commit : ces travaux se feront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
+      'Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     )
     expect(plain(screen.getByTestId('proposals').textContent)).not.toContain('worktree')
     expect(screen.queryByTestId('launch-line-change')).toBeNull()

@@ -80,6 +80,9 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiches 240, 262)
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
       'Partira du dernier commit, sans votre modification'
     )
+    expect(screen.getByTestId('launch-line-change').getAttribute('aria-label')).toBe(
+      'Changer où partira ce travail'
+    )
     expect(launch.disabled).toBe(false)
     await act(async () => void fireEvent.click(launch))
     expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API', uncommitted: 'anyway' })

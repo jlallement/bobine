@@ -150,7 +150,7 @@ async function proposalsRun(ui, git) {
   await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
   check(
     (await ui.ev(`${ui.$('launch-line')}.innerText`)).includes(
-      L('launchLine.without', { count: 2 })
+      L('launchLine.withoutAlone.work', { count: 2 })
     ) && !(await ui.ev(`${pending}.querySelector('[data-testid=proposal-start]').disabled`)),
     'Tâches proposées : une ligne discrète ; « Lancer » n’attend pas (sans elles par défaut)'
   )

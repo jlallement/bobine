@@ -188,3 +188,23 @@ Pas de nouvelle dépendance.
     hors dépôt refusé / conseil permis, « Juste un avis » (lecture seule, sans branche), commit en
     échec, double Entrée, dossier modifié entre lecture et envoi ; les essais vides
     (`launch-dirty` absent) remplacés par de vraies vérifications.
+- 2026-11-19 : revue UX indépendante, tout accepté et appliqué.
+  - Pendant « Committer d'abord », la ligne est neutre : « Partira de votre commit, avec les
+    fichiers cochés ci-dessous » ; « Committer d'abord » est une entrée cochable du menu
+    (`RadioGroup`, valeur `commit`).
+  - Ligne en flux de texte, retrait suspendu de 19 px ; le « · » s'accroche au segment d'avant par
+    une espace insécable.
+  - Dans la saisie, « son worktree » disparaît quand le segment est là ; le segment dit « depuis le
+    dernier commit, sans votre modification / vos N modifications ». « Partira / Partiront… »
+    seulement sur la carte et le dialogue (`withoutAlone`, accordé au nombre de travaux).
+  - L'envoi referme la liste des modifications et le choix de commit.
+  - Textes au futur, pluriels (« voient », « ils verront »), `without_one` / `hide_one`, nouvelle
+    description de « Committer d'abord » ; EN : « Choose… », « uncommitted change(s) ».
+  - `aria-label` selon qui part (« Changer où partira ce travail » sur la carte et le dialogue).
+  - Erreur `children.error.uncommitted` : « … choisissez « Committer d'abord » ou « Partir sans
+    elles » dans « Changer… ». »
+  - Menu : coche de la convention des menus (`ItemIndicator` + `Check`, comme `SelectOptions`),
+    séparateur avant « Juste un avis », aperçu des noms de fichiers sous « Voir les N
+    modifications » ; `MenuContent` a déjà `collisionPadding` 12. « Changer… » : cible de 24 px,
+    contour au focus clavier. Infobulle de « Lancer » en attente séparée (`heldReading`,
+    `heldCommitting`).

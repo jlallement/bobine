@@ -7,8 +7,8 @@ What changes for you, version by version. Shown in Settings › About.
 ### Fixes
 
 - Handing work to a role that writes no longer shows a warning before you even type: a discreet
-  line under the input says where it will work ("Will start from the last commit, without your N
-  changes"), Enter always sends, and "Change…" lets you commit first, ask for just a read-only
+  line under the input says where it will work ("from the last commit, without your N uncommitted
+  changes"), Enter always sends, and "Choose…" lets you commit first, ask for just a read-only
   opinion (for this message), or see the changes. In a repository with no commit yet, the role
   works directly in the folder: no more "last commit ()", and no empty commit.
 - The UX/UI expert role now proposes a direction without changing anything (read-only), like the
