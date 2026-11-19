@@ -1,8 +1,10 @@
 /**
  * Dossier de la mère avant le lancement d'une fille en worktree (fiche 240, ADR-0055). Une fille
  * part du dernier commit : le non commité de la mère n'est pas dans son worktree. Bobine le dit
- * avant, et l'utilisateur choisit : committer d'abord, partir quand même, ou (rôle cité avec `@`)
- * demander un avis en lecture seule, dans le dossier de la mère, non commité compris.
+ * sur une ligne discrète sous la saisie (fiche 262) : partir sans elles (le défaut), committer
+ * d'abord, ou (rôle cité avec `@`) juste un avis en lecture seule, dans le dossier de la mère, non
+ * commité compris. Un dépôt sans commit, ou un dossier hors dépôt : pas de worktree possible, la
+ * fille travaille directement dans le dossier (fiche 262, ADR-0059).
  */
 import type { CommitFile } from './worktree-cycle'
 
@@ -23,12 +25,36 @@ export interface FolderDirty {
 }
 
 /**
- * Choix de l'utilisateur devant un dossier modifié : partir quand même (sans le non commité), ou
+ * Où partirait une fille qui écrit (fiche 262) : en worktree depuis HEAD, avec le non commité
+ * qu'elle n'aura pas (`dirty`), ou directement dans le dossier (`here`) quand aucun worktree n'est
+ * possible — dépôt sans commit (`noCommit`), dossier hors dépôt git (`notRepo`).
+ */
+export type LaunchFolderState =
+  | {
+      place: 'worktree'
+      /** Racine du dépôt et commit complet de HEAD (le commit de départ affiché, fiche 262). */
+      root: string
+      head: string
+      dirty?: FolderDirty
+    }
+  | { place: 'here'; reason: 'noCommit' | 'notRepo' }
+
+/**
+ * Choix de l'utilisateur devant un dossier modifié : partir sans elles (sans le non commité), ou
  * un avis en lecture seule dans le dossier de la mère (rôles cités avec `@` seulement). Committer
  * d'abord ne se transmet pas : le dossier est propre ensuite.
  */
 export type UncommittedChoice = 'anyway' | 'readOnly'
 export const UNCOMMITTED_CHOICES: readonly UncommittedChoice[] = ['anyway', 'readOnly']
+
+/**
+ * Ligne ajoutée au premier message d'une fille qui travaille dans le dossier de sa mère faute de
+ * commit (fiche 262), pour l'agent (en anglais, ADR-0014) : pas de branche, donc pas de commit.
+ */
+export const IN_PLACE_LINE =
+  'No branch: this repository has no commit yet, so you work directly in the same folder as the ' +
+  'conversation that started you, at the same time. Do not commit, and do not create a branch or ' +
+  'a worktree: leave your changes uncommitted for the user to review.'
 
 /** Ce qu'une fille a laissé derrière elle en partant : rappelé dans la mère. */
 export interface LeftBehind {

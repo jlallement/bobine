@@ -1104,14 +1104,15 @@ export const SUITES = [
     ]
   },
   {
-    // Filles en worktree et non commité de la mère (fiche 240) : avertissement et choix avant le
-    // lancement (rôle, Tâches proposées), avis en lecture seule, rappel dans la mère.
+    // Filles en worktree et non commité de la mère (fiches 240, 262) : ligne discrète et
+    // « Changer… » (rôle, Tâches proposées), Entrée envoie sans elles, juste un avis, rappel.
     name: 'filles-non-commite',
     file: 'filles-non-commite.mjs',
     run: 'fillesNonCommiteSuite',
     themes: BOTH,
     sources: [
-      `${C}thread/LaunchDirty.tsx`,
+      `${C}thread/LaunchLine.tsx`,
+      `${R}launch-choice.ts`,
       `${C}panel/CommitChooser.tsx`,
       `${C}panel/CommitForm.tsx`,
       `${R}commit-chooser.css`,

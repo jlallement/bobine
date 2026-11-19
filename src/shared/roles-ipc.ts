@@ -31,7 +31,7 @@ export interface RolesStartRequest {
   roles: string[]
   /** La demande, sans les `@rôle`. */
   text: string
-  /** Choix devant un dossier modifié (fiche 240) : partir quand même, ou un avis en lecture seule. */
+  /** Choix devant un dossier modifié (fiche 240) : « Partir sans elles », ou un avis en lecture seule. */
   uncommitted?: UncommittedChoice
 }
 

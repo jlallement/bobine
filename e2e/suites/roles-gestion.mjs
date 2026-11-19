@@ -218,10 +218,10 @@ export async function rolesGestionSuite(scheme) {
         await ui.waitFor(`!!${ui.$('child-dialog')}`)
         await ui.ev(`${ui.$('child-prompt')}.focus()`)
         await ui.type('Relis le diff de l’authentification. Ne modifie rien.')
-        // Le rôle du projet créé plus haut n'est pas commité : le lancement en worktree demande le
-        // choix (fiche 240) ; la fille part quand même.
-        await ui.waitFor(`!!${ui.$('launch-dirty')}`, 10000)
-        await ui.click(ui.$('launch-dirty-anyway'))
+        // Le rôle du projet créé plus haut n'est pas commité : une ligne le dit (fiches 240, 262) ;
+        // « Lancer » part sans lui.
+        await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
+        await ui.click(ui.$('child-launch'))
         await ui.waitFor(`!${ui.$('child-dialog')}`, 30_000)
         const save = `document.querySelector('[data-testid=child-report]:not([data-role]) [data-testid=child-report-save-role]')`
         await ui.waitFor(`!!${save}`, 30_000)

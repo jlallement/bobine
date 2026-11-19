@@ -337,7 +337,7 @@ export function createHandlers(
       /** Conversations filles (fiche 097). */
       children?: Pick<
         ChildConversations,
-        'start' | 'capacity' | 'launchState' | 'reviews' | 'uncommitted' | 'commitFolder'
+        'start' | 'capacity' | 'launchState' | 'reviews' | 'folderState' | 'commitFolder'
       >
       /** Cycle complet d'un worktree (fiche 110). */
       worktree?: WorktreeCycleDeps

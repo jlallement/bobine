@@ -241,11 +241,14 @@ const HIDDEN_SCOPES: readonly RoleScope[] = ['user', 'builtin']
 export function ProposalRoleMeta({
   role,
   profile,
-  agentLabel
+  agentLabel,
+  inFolder = false
 }: {
   role: RoleSnapshot
   profile: Pick<ProfileSummary, 'writesWithoutAsking'> | undefined
   agentLabel: string | undefined
+  /** Dépôt sans commit (fiche 262) : un rôle qui écrit travaille aussi dans ce dossier. */
+  inFolder?: boolean
 }) {
   const { t } = useTranslation()
   const hidden = HIDDEN_SCOPES.filter((s) => role.hides?.includes(s))
@@ -258,7 +261,7 @@ export function ProposalRoleMeta({
         </span>
       )}
       <span className="role-tag" data-testid="proposal-role-where">
-        {t(role.readOnly ? 'roleWork.where.sameFolder' : 'roleWork.where.worktree')}
+        {t(role.readOnly || inFolder ? 'roleWork.where.sameFolder' : 'roleWork.where.worktree')}
       </span>
       {agentLabel && <span className="role-tag plain">{agentLabel}</span>}
       {role.scope === 'project' && (

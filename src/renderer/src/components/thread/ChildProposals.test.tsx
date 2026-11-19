@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import { childProposalSchema, type ChildProposalItem } from '@shared/children'
 import { ChildProposals } from './ChildProposals'
-import { ARM_MS } from './useArmedCard'
 
 const mother: ConversationSummary = {
   id: 'm',
@@ -54,18 +53,18 @@ const model = {
 describe('carte « Tâches proposées » (fiche 112)', () => {
   const view = vi.fn()
   const startChild = vi.fn()
-  const childFolderDirty = vi.fn()
+  const childFolder = vi.fn()
   const commitForChildren = vi.fn()
   beforeEach(() => {
     view.mockReset().mockResolvedValue({ snapshot: { controls: [model] } })
     startChild.mockReset().mockResolvedValue({ id: 'f' })
     // Dossier de la mère propre (fiche 240), sauf dans les essais qui le modifient.
-    childFolderDirty.mockReset().mockResolvedValue(null)
+    childFolder.mockReset().mockResolvedValue({ place: 'worktree', root: '/d', head: 'h1' })
     commitForChildren.mockReset().mockResolvedValue({ hash: 'abc1234def', short: 'abc1234' })
     window.api.conversations = {
       view,
       startChild,
-      childFolderDirty,
+      childFolder,
       commitForChildren
     } as unknown as Window['api']['conversations']
   })
@@ -344,7 +343,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
   })
 })
 
-describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () => {
+describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)', () => {
   const dirty = {
     count: 2,
     files: [
@@ -354,18 +353,24 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
     commit: '9970242',
     title: 'Carnet'
   }
-  const childFolderDirty = vi.fn()
+  const folder = (d?: typeof dirty, head = '9970242aa') => ({
+    place: 'worktree' as const,
+    root: '/depot',
+    head,
+    ...(d ? { dirty: d } : {})
+  })
+  const childFolder = vi.fn()
   const commitForChildren = vi.fn()
   beforeEach(() => {
-    childFolderDirty.mockReset().mockResolvedValue(dirty)
+    childFolder.mockReset().mockResolvedValue(folder(dirty))
     commitForChildren.mockReset().mockImplementation(async () => {
-      childFolderDirty.mockResolvedValue(null)
+      childFolder.mockResolvedValue(folder(undefined, 'abc1234def'))
       return { hash: 'abc1234def', short: 'abc1234' }
     })
     window.api.conversations = {
       view: vi.fn().mockResolvedValue({ snapshot: { controls: [] } }),
       startChild: vi.fn(),
-      childFolderDirty,
+      childFolder,
       commitForChildren
     } as unknown as Window['api']['conversations']
   })
@@ -379,49 +384,25 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
     screen
       .getByTestId('proposals')
       .querySelector(`[data-title="${title}"] [data-testid=proposal-start]`) as HTMLButtonElement
+  const plain = (text: string | null | undefined) => (text ?? '').replace(/[  ]/g, ' ')
+  const openCommit = async () => {
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    await act(async () => void fireEvent.click(await screen.findByTestId('launch-line-commit')))
+  }
 
-  it('un avertissement pour la carte ; « Lancer » attend le choix', async () => {
+  it('une ligne discrète pour la carte, sans encadré ; « Lancer » part sans elles, dit', async () => {
     const onRespond = await show([proposal(1, 'API'), proposal(2, 'Page web')])
-    expect(childFolderDirty).toHaveBeenCalledWith('m')
-    expect(screen.getAllByTestId('launch-dirty')).toHaveLength(1)
-    expect(start('API').disabled).toBe(true)
-    expect(start('Page web').disabled).toBe(true)
-    fireEvent.click(start('API'))
-    expect(onRespond).not.toHaveBeenCalled()
-  })
-
-  it('dossier pas encore lu : « Lancer » attend (un clic rapide partirait sans choix)', async () => {
-    childFolderDirty.mockReturnValue(new Promise(() => {}))
-    const onRespond = await show([proposal(1, 'API')])
-    expect(start('API').disabled).toBe(true)
-    fireEvent.click(start('API'))
-    expect(onRespond).not.toHaveBeenCalled()
-  })
-
-  it('le bloc s’arme avant de compter un clic de souris (il arrive sous le pointeur)', async () => {
-    vi.useFakeTimers()
-    try {
-      render(
-        <ChildProposals
-          items={[proposal(1, 'API')]}
-          info={{ mother, profiles }}
-          onRespond={vi.fn()}
-        />
-      )
-      await act(async () => {})
-      const block = screen.getByTestId('launch-dirty')
-      expect(block.hasAttribute('data-armed')).toBe(false)
-      act(() => vi.advanceTimersByTime(ARM_MS))
-      expect(block.hasAttribute('data-armed')).toBe(true)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('« Lancer quand même » : les lignes se lancent, avec ce choix dans la réponse', async () => {
-    const onRespond = await show([proposal(1, 'API')])
-    fireEvent.click(screen.getByTestId('launch-dirty-anyway'))
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(childFolder).toHaveBeenCalledWith('m')
+    // Une ligne pour la carte, son seul bouton « Changer… » : pas d'encadré à boutons.
+    expect(screen.getAllByTestId('launch-line')).toHaveLength(1)
+    const place = screen.getByTestId('proposals-launch-place')
+    expect([...place.querySelectorAll('button')].map((b) => b.dataset.testid)).toEqual([
+      'launch-line-change'
+    ])
+    expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
+      'Partiront du dernier commit, sans vos 2 modifications'
+    )
+    expect(start('API').disabled).toBe(false)
     fireEvent.click(start('API'))
     expect(onRespond).toHaveBeenCalledWith('r1', {
       action: 'accept',
@@ -429,20 +410,40 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
     })
   })
 
+  it('pas de « Juste un avis » sur la carte : committer d’abord, partir sans elles, voir', async () => {
+    await show([proposal(1, 'API')])
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    await screen.findByTestId('launch-line-menu')
+    expect(screen.getByTestId('launch-line-commit')).toBeTruthy()
+    expect(screen.getByTestId('launch-line-without')).toBeTruthy()
+    expect(screen.getByTestId('launch-line-show')).toBeTruthy()
+    expect(screen.queryByTestId('launch-line-opinion')).toBeNull()
+  })
+
+  it('dossier pas encore lu : « Lancer » attend un instant (le choix affiché n’est pas connu)', async () => {
+    childFolder.mockReturnValue(new Promise(() => {}))
+    const onRespond = await show([proposal(1, 'API')])
+    expect(start('API').disabled).toBe(true)
+    fireEvent.click(start('API'))
+    expect(onRespond).not.toHaveBeenCalled()
+  })
+
   it('« Committer d’abord » : commit dans le dossier de la mère, puis « Lancer » sans choix', async () => {
     const onRespond = await show([proposal(1, 'API')])
-    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    await openCommit()
+    // Commit ouvert : « Lancer » attend.
+    expect(start('API').disabled).toBe(true)
     await waitFor(() =>
       expect(
-        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
       ).toBe(false)
     )
-    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-line-commit-confirm')))
     expect(commitForChildren).toHaveBeenCalledWith('m', {
       message: expect.any(String),
       files: ['server/index.js', 'public/app.js']
     })
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(screen.queryByTestId('launch-line')).toBeNull()
     fireEvent.click(start('API'))
     expect(onRespond).toHaveBeenCalledWith('r1', {
       action: 'accept',
@@ -473,35 +474,81 @@ describe('carte « Tâches proposées » et dossier modifié (fiche 240)', () =>
       }
     } as Partial<ChildProposalItem>)
     await show([readOnly])
-    expect(childFolderDirty).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(childFolder).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('launch-line')).toBeNull()
     expect(start('Relecture').disabled).toBe(false)
+  })
+
+  it('dépôt sans commit : dans ce dossier, ni worktree ni choix ; « Lancer » part sans rien', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
+    const onRespond = await show([proposal(1, 'API')])
+    expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
+      'Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
+    )
+    expect(plain(screen.getByTestId('proposals').textContent)).not.toContain('worktree')
+    expect(screen.queryByTestId('launch-line-change')).toBeNull()
+    fireEvent.click(start('API'))
+    expect(onRespond).toHaveBeenCalledWith('r1', {
+      action: 'accept',
+      content: { decision: 'start' }
+    })
+  })
+
+  it('dépôt sans commit : un rôle qui écrit est dit « dans ce dossier », pas « dans son worktree »', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
+    const writer = proposal(1, 'Page', {
+      prompt: {
+        mode: 'form',
+        message: 'Page',
+        schema: childProposalSchema(),
+        child: {
+          title: 'Page',
+          prompt: 'Écris la page',
+          role: {
+            name: 'front-architect',
+            label: 'Architecte front',
+            icon: 'layout-dashboard',
+            color: 'violet',
+            description: 'd',
+            readOnly: false,
+            prompt: 'p',
+            scope: 'builtin'
+          }
+        }
+      }
+    } as Partial<ChildProposalItem>)
+    await show([writer])
+    expect(plain(screen.getByTestId('proposal-role-where').textContent)).toBe('dans ce dossier')
   })
 
   it('fiche 244 : un fichier décoché ne part pas ; « Lancer » part sans lui', async () => {
     commitForChildren.mockImplementation(async () => {
-      childFolderDirty.mockResolvedValue({ ...dirty, count: 1, files: [dirty.files[1]] })
+      childFolder.mockResolvedValue(
+        folder({ ...dirty, count: 1, files: dirty.files.slice(1) }, 'abc1234def')
+      )
       return { hash: 'abc1234def', short: 'abc1234' }
     })
     const onRespond = await show([proposal(1, 'API')])
-    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
+    await openCommit()
     fireEvent.click(
       screen
-        .getAllByTestId('launch-dirty-commit-file')
+        .getAllByTestId('launch-line-commit-file')
         .find((li) => li.dataset.path === 'public/app.js')
         ?.querySelector('input') as HTMLInputElement
     )
     await waitFor(() =>
       expect(
-        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
       ).toBe(false)
     )
-    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-line-commit-confirm')))
     expect(commitForChildren).toHaveBeenCalledWith('m', {
       message: expect.not.stringContaining('public/app.js'),
       files: ['server/index.js']
     })
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
+      'Partira du dernier commit, sans votre modification'
+    )
     fireEvent.click(start('API'))
     expect(onRespond).toHaveBeenCalledWith('r1', {
       action: 'accept',

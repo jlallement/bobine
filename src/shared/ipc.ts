@@ -34,7 +34,7 @@ import type { CommandLineStatus, LaunchPrefill } from './command-line'
 import type { TerminalsChange, TerminalTabInfo } from './terminal'
 import type { AttentionDetails, AttentionState, NotificationStatus } from './attention'
 import type { ChildCapacity, ChildLaunchState, ChildStartRequest, FamilyMember } from './children'
-import type { FolderDirty } from './launch-folder'
+import type { LaunchFolderState } from './launch-folder'
 import type { ChildrenMerge, ChildrenMergePlan } from './children-merge'
 import type { CustomAgentDraft } from './custom-agents'
 import type { ConversationCap } from './cost-cap'
@@ -335,10 +335,11 @@ export interface IpcInvokeContract
    */
   'conversation:childCapacity': { args: [id: string]; result: ChildCapacity }
   /**
-   * Modifications non commitées du dossier de `id` avant de lancer une fille en worktree (fiche
-   * 240) : montrées avec le choix ; `null` : dossier propre (ou pas dans un dépôt).
+   * Où partirait une fille qui écrit, depuis le dossier de `id` (fiches 240, 262) : en worktree
+   * (non commité qu'elle n'aurait pas) ou dans le dossier (dépôt sans commit, hors dépôt) ;
+   * `null` : pas de dossier.
    */
-  'conversation:childFolderDirty': { args: [id: string]; result: FolderDirty | null }
+  'conversation:childFolder': { args: [id: string]; result: LaunchFolderState | null }
   /** « Committer d'abord » avant de lancer des filles (fiche 240) : dans le dépôt du dossier de `id`. */
   'conversation:commitForChildren': {
     args: [id: string, request: { message: string; files: string[] }]
@@ -977,7 +978,7 @@ export const IPC_CHANNELS = [
   'conversation:stopWorktreeSetup',
   'conversation:childLaunches',
   'conversation:childCapacity',
-  'conversation:childFolderDirty',
+  'conversation:childFolder',
   'conversation:commitForChildren',
   'conversation:startReview',
   'conversation:worktreeStatus',

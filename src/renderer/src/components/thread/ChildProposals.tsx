@@ -27,7 +27,7 @@ import {
 import type { RespondElicitation } from './ElicitationCard'
 import { RoleAvatar } from '../roles/RoleAvatar'
 import { ProposalRoleMeta } from '../roles/RoleWork'
-import { LaunchDirtyCard, useFolderDirty } from './LaunchDirty'
+import { LaunchDetails, LaunchLine, useLaunchFolder } from './LaunchLine'
 
 /**
  * Carte « Tâches proposées » (fiche 112) : les propositions de conversations filles d'un même tour
@@ -68,16 +68,28 @@ export function ChildProposals({
   )
   const card = useRef<HTMLDivElement>(null)
   const pending = items.filter((item) => item.state === 'pending')
-  // Fiche 240 : une ligne à lancer en worktree (pas un rôle en lecture seule) fait lire le dossier
-  // de la mère ; avec du non commité, « Lancer » attend le choix (une fois pour la carte).
+  // Fiches 240 et 262 : une ligne à lancer qui écrit (pas un rôle en lecture seule) fait lire le
+  // dossier de la mère. Avec du non commité, une ligne discrète le dit et « Lancer » part sans
+  // elles (choix porté par la décision) ; « Changer… » propose de committer d'abord. Sans commit
+  // (ou hors dépôt), les travaux se feront dans ce dossier : rien à choisir.
   const toWorktree = items.some((item) => {
     const outcome = outcomeOf(item)
     return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
   })
-  const folder = useFolderDirty(info?.mother.id, !!info && toWorktree)
-  const [anyway, setAnyway] = useState(false)
-  // Dossier pas encore lu : « Lancer » attend aussi (un clic rapide partirait sans choix).
-  const held = (folder.dirty === undefined && !!info) || (!!folder.dirty && !anyway)
+  const folder = useLaunchFolder(info?.mother.id, !!info && toWorktree)
+  const state = folder.state
+  const [committing, setCommitting] = useState(false)
+  const [showFiles, setShowFiles] = useState(false)
+  // Dossier pas encore lu : « Lancer » attend un instant (un clic rapide partirait sans le choix
+  // affiché) ; de même pendant « Committer d'abord ».
+  const reading = state === undefined && !!info && toWorktree
+  const held = reading || committing
+  const anyway = state?.place === 'worktree' && !!state.dirty
+  // Accord de la ligne : les travaux qui écrivent encore à lancer (revue UX).
+  const writers = items.filter((item) => {
+    const outcome = outcomeOf(item)
+    return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
+  }).length
   const [focus, setFocus] = useState(0)
   // La carte prend le focus à l'apparition si elle attend une réponse : on répond sans la souris.
   const askedAtMount = useRef(pending.length > 0)
@@ -136,40 +148,68 @@ export function ChildProposals({
               <span className="proposals-summary"> · {summary.join(', ')}</span>
             )}
           </div>
-          {/* Un rôle en lecture seule travaille dans le dossier de la mère (fiche 223). */}
+          {/* Un rôle en lecture seule travaille dans le dossier de la mère (fiche 223) ; sans
+              commit, tous (fiche 262, dit par la ligne du dossier). */}
           <div className="pc-sub">
             {t(
-              items.some((item) => item.prompt.child.role?.readOnly)
-                ? 'roleWork.proposalsWhere'
-                : 'children.proposals.worktree'
+              state?.place === 'here'
+                ? 'launchLine.proposalsHere'
+                : items.some((item) => item.prompt.child.role?.readOnly)
+                  ? 'roleWork.proposalsWhere'
+                  : 'children.proposals.worktree'
             )}
           </div>
         </div>
       </div>
-      {held && folder.dirty && pending.length + count('expired') > 0 && (
-        <LaunchDirtyCard
-          conversationId={info?.mother.id ?? ''}
-          dirty={folder.dirty}
-          who={t('launchDirty.whoCard')}
-          many
-          anywayLabel={t('launchDirty.anywayCard')}
-          commit={async (message, files) => {
-            if (!info) return
-            await window.api.conversations.commitForChildren(info.mother.id, { message, files })
-            await folder.read()
-          }}
-          // Fiche 244 : des fichiers décochés restent ; « Lancer » part sans eux.
-          onCommitted={(left) => left > 0 && setAnyway(true)}
-          onAnyway={() => setAnyway(true)}
-        />
-      )}
+      {state &&
+        info &&
+        toWorktree &&
+        (state.place === 'here' || state.dirty) &&
+        pending.length + count('expired') > 0 && (
+          <div className="launch-place" data-testid="proposals-launch-place">
+            <LaunchLine
+              state={state}
+              choice="without"
+              onChoose={() => {}}
+              who={writers > 1 ? 'works' : 'work'}
+              opinion={false}
+              standalone
+              committing={committing}
+              onCommitting={setCommitting}
+              showFiles={showFiles}
+              onShowFiles={setShowFiles}
+            />
+            <LaunchDetails
+              state={state}
+              committing={committing}
+              onCommitting={setCommitting}
+              showFiles={showFiles}
+              onShowFiles={setShowFiles}
+              commit={{
+                conversationId: info.mother.id,
+                confirmLabel: t('launchLine.commitOnly'),
+                run: async (message, files) => {
+                  await window.api.conversations.commitForChildren(info.mother.id, {
+                    message,
+                    files
+                  })
+                  await folder.read()
+                },
+                // Fiche 244 : des fichiers décochés restent ; « Lancer » part sans eux (dit).
+                onCommitted: () => {}
+              }}
+            />
+          </div>
+        )}
       <div className="proposal-rows">
         {items.map((item) => (
           <ProposalRow
             key={item.requestId}
             item={item}
             held={held && !item.prompt.child.role?.readOnly}
-            {...(anyway && folder.dirty ? { uncommitted: 'anyway' as const } : {})}
+            heldWhy={reading ? 'heldReading' : 'heldCommitting'}
+            {...(anyway ? { uncommitted: 'anyway' as const } : {})}
+            inFolder={state?.place === 'here'}
             {...(info ? { info } : {})}
             model={model}
             focused={pending.length > 0 && pending[Math.min(focus, pending.length - 1)] === item}
@@ -195,12 +235,18 @@ function ProposalRow({
   onFocus,
   onRespond,
   held,
-  uncommitted
+  heldWhy,
+  uncommitted,
+  inFolder
 }: {
-  /** Dossier de la mère modifié, sans choix encore (fiche 240) : « Lancer » attend. */
+  /** Dossier de la mère pas encore lu, ou commit en cours (fiche 262) : « Lancer » attend. */
   held: boolean
-  /** « Lancer quand même » choisi pour la carte : passé au lancement. */
+  /** Pourquoi « Lancer » attend, dit en infobulle. */
+  heldWhy: 'heldReading' | 'heldCommitting'
+  /** Non commité laissé derrière, affiché par la ligne du dossier : passé au lancement. */
   uncommitted?: 'anyway'
+  /** Dépôt sans commit (fiche 262) : la fille travaillera dans ce dossier, pas dans un worktree. */
+  inFolder: boolean
   item: ChildProposalItem
   info?: ProposalsInfo
   model: SessionControl | null
@@ -325,7 +371,7 @@ function ProposalRow({
               disabled={busy || loading || held}
               title={
                 held
-                  ? t('children.proposals.uncommittedHint')
+                  ? t(`launchLine.${heldWhy}`)
                   : loading
                     ? t('children.proposals.loadingChoice')
                     : undefined
@@ -343,6 +389,7 @@ function ProposalRow({
           profile={chosenProfile}
           // Agent proposé par la mère : déjà dit par la ligne de suggestion.
           agentLabel={suggestion.shown ? undefined : chosenProfile?.label}
+          inFolder={inFolder}
         />
       )}
       {suggestion.shown && outcome === undefined && (

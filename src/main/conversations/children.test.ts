@@ -345,9 +345,17 @@ describe('conversations filles (fiche 097)', () => {
         return Promise.reject(new Error('non'))
       },
       capacity: (id) => ({ inRepo: id === 'm', active: 1, max: 5 }),
-      uncommitted: () => Promise.resolve(undefined),
+      folderState: (id) =>
+        Promise.resolve(
+          id === 'm' ? { place: 'here' as const, reason: 'noCommit' as const } : undefined
+        ),
       commitFolder: () => Promise.reject(new Error('non'))
     })
+    await expect(handlers['conversation:childFolder']('m')).resolves.toEqual({
+      place: 'here',
+      reason: 'noCommit'
+    })
+    await expect(handlers['conversation:childFolder']('autre')).resolves.toBeNull()
     expect(handlers['conversation:childCapacity']('m')).toEqual({ inRepo: true, active: 1, max: 5 })
     expect(() => handlers['conversation:childCapacity']('')).toThrow('id')
     await expect(

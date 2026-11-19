@@ -72,7 +72,13 @@ export function appRoles(
     forChildren: {
       roles: library,
       nativeRoleMode: (profileId, role, conversationId) =>
-        exports.nativeMode(profileId, role, folderOf(conversationId))
+        exports.nativeMode(profileId, role.name, folderOf(conversationId), {
+          id: role.name,
+          label: role.label,
+          description: role.description,
+          prompt: role.prompt,
+          readOnly: role.readOnly
+        })
     }
   }
 }

@@ -3506,8 +3506,8 @@
       "needsAction": "Its agent needs you to act (sign-in, folder to approve): open the child conversation.",
       "agentFailed": "Its agent did not start: {{detail}}",
       "noStartChild": "No child conversation possible here: it takes a folder in a git repository, a conversation that is not itself a child, and the “Child conversations” tool family turned on (Settings › MCP servers).",
-      "uncommitted_one": "This folder has {{count}} uncommitted change: first choose to commit it, or to start anyway.",
-      "uncommitted_other": "This folder has {{count}} uncommitted changes: first choose to commit them, or to start anyway."
+      "uncommitted_one": "This folder has {{count}} uncommitted change: choose “Commit first” or “Start without them” in “Choose…”.",
+      "uncommitted_other": "This folder has {{count}} uncommitted changes: choose “Commit first” or “Start without them” in “Choose…”."
     },
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
@@ -3544,8 +3544,7 @@
         "here": "Done here",
         "refuse": "Refused",
         "expired": "Expired"
-      },
-      "uncommittedHint": "Choose above first"
+      }
     },
     "from": {
       "parent": "From the parent conversation “{{title}}”",
@@ -4382,7 +4381,6 @@
       "opinionOne": "Will go to <strong>{{label}}</strong>, for an <strong>opinion</strong>, in a child conversation",
       "opinionMany_one": "Will go to <strong>{{count}} role</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
       "opinionMany_other": "Will go to <strong>{{count}} roles</strong>, for an <strong>opinion</strong>: one child conversation each, in parallel",
-      "work": "Have them work instead…",
       "opinionSeesOne_one": "sees the uncommitted change",
       "opinionSeesOne_other": "sees the {{count}} uncommitted changes",
       "opinionSeesMany_one": "see the uncommitted change",
@@ -5253,7 +5251,11 @@
       "modelMissing": "The role’s model “{{model}}” can’t be chosen here: the agent takes its own model.",
       "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions.",
       "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
-      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
+      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status).",
+      "installedStale": {
+        "readOnly": "The “{{mode}}” mode installed in this agent no longer has the same read-only setting as the role: it is not used. Update it in Settings › Roles.",
+        "roleChanged": "The role has changed since it was installed in this agent: the “{{mode}}” mode is not used. Update it in Settings › Roles."
+      }
     }
   },
   "discussion": {
@@ -5627,28 +5629,64 @@
       }
     }
   },
-  "launchDirty": {
-    "title_one": "This folder has {{count}} uncommitted change: {{who}} will not see it.",
-    "title_other": "This folder has {{count}} uncommitted changes: {{who}} will not see them.",
-    "titleMany_one": "This folder has {{count}} uncommitted change: {{who}} will not see it.",
-    "titleMany_other": "This folder has {{count}} uncommitted changes: {{who}} will not see them.",
-    "whoOne": "the child conversation",
-    "whoMany_one": "the child conversation",
-    "whoMany_other": "the {{count}} child conversations",
-    "whoCard": "the child conversations started from here",
-    "why": "A child conversation starts from the last commit (<code>{{commit}}</code> “{{subject}}”), in its own worktree. Commit first so that it has this work.",
-    "files": "Uncommitted files in this folder",
-    "commit": "Commit first",
-    "commitConfirm": "Commit, then start",
-    "anyway": "Start anyway",
-    "anywayCard": "Start anyway",
-    "opinionLead": "Just an opinion? The roles can read this folder as it is, uncommitted changes included, without changing anything.",
-    "opinion": "Ask for a read-only opinion",
-    "committed": "Committed: {{short}}. The child conversations will start from this commit.",
-    "whyBare": "A child conversation starts from the last commit (<code>{{commit}}</code>), in its own worktree. Commit first so that it has this work.",
-    "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the child conversations will not have it.",
-    "left_other": "{{count}} unchecked files stay in this folder, uncommitted: the child conversations will not have them.",
-    "leftOne_one": "{{count}} unchecked file stays in this folder, uncommitted: the child conversation will not have it.",
-    "leftOne_other": "{{count}} unchecked files stay in this folder, uncommitted: the child conversation will not have them."
+  "launchLine": {
+    "change": "Choose…",
+    "changeLabel": {
+      "role": "Choose where the role will start",
+      "roles": "Choose where the roles will start",
+      "work": "Choose where this work will start",
+      "works": "Choose where this work will start"
+    },
+    "fromCommit": "from the last commit ({{commit}})",
+    "noCommit": {
+      "role": "This repository has no commit yet: the role will work in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "roles": "This repository has no commit yet: the roles will work in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "work": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "works": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge"
+    },
+    "notRepo": {
+      "role": "This folder is not a git repository: a role that writes cannot start from here (it needs a worktree)",
+      "roles": "This folder is not a git repository: roles that write cannot start from here (they need a worktree)",
+      "work": "This folder is not a git repository: this work cannot start from here (it needs a worktree)",
+      "works": "This folder is not a git repository: this work cannot start from here (it needs a worktree)"
+    },
+    "menu": {
+      "commit": "Commit first",
+      "commitDesc": "You will choose the files and the message; the work will start from this commit, with the checked files.",
+      "without": "Start without them",
+      "withoutDesc_one": "The work will start from the last commit ({{commit}}). Your changed file will stay here, untouched.",
+      "withoutDesc_other": "The work will start from the last commit ({{commit}}). Your {{count}} changed files will stay here, untouched.",
+      "worktree": "Work in its own worktree",
+      "worktreeDesc": "A separate branch, which will start from the last commit ({{commit}}).",
+      "opinion": "Just an opinion, read-only",
+      "show_one": "See the change",
+      "show_other": "See the {{count}} changes",
+      "opinionDesc": {
+        "role": "In this folder, without changing anything; it will see your uncommitted changes.",
+        "roles": "In this folder, without changing anything; they will see your uncommitted changes."
+      },
+      "hide_one": "Hide the change",
+      "hide_other": "Hide the changes",
+      "preview": "{{names}}",
+      "previewMore": "{{names}}…"
+    },
+    "files": "Uncommitted changes in this folder",
+    "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the work will start without it.",
+    "left_other": "{{count}} unchecked files stay in this folder, uncommitted: the work will start without them.",
+    "commitThenSend": "Commit, then send",
+    "commitThenStart": "Commit, then start",
+    "commitOnly": "Commit",
+    "proposalsHere": "The agent offers to hand this work off. You can also ask it to do it here.",
+    "without_one": "from the last commit, without your uncommitted change",
+    "without_other": "from the last commit, without your {{count}} uncommitted changes",
+    "withoutAlone": {
+      "work_one": "Will start from the last commit, without your uncommitted change",
+      "work_other": "Will start from the last commit, without your {{count}} uncommitted changes",
+      "works_one": "Will start from the last commit, without your uncommitted change",
+      "works_other": "Will start from the last commit, without your {{count}} uncommitted changes"
+    },
+    "committing": "Will start from your commit, with the files checked below",
+    "heldReading": "One moment: reading the folder",
+    "heldCommitting": "Finish or cancel the commit above"
   }
 }

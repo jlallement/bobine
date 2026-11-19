@@ -9777,58 +9777,76 @@ html.about-page body {
   background: var(--bg);
 }
 
-/* Avant de lancer une fille en worktree d'un dossier modifié (fiche 240) : même famille que
-   « Fusion refusée », sous la ligne « Partira à… », dans la carte de tâches ou le dialogue. */
-.launch-dirty {
-  margin-top: 8px;
-}
-.composer-dock > .launch-dirty {
-  margin-left: 12px;
-  margin-right: 12px;
-}
-.permission-card.proposals > .launch-dirty {
-  margin: 0 0 6px;
-}
-.launch-dirty .main-dirty-files {
-  font-family: var(--font-mono);
-  font-variant-ligatures: var(--code-ligatures, none);
-  font-size: 11.5px;
-  color: var(--text-2);
-}
-.launch-dirty .main-dirty-why code {
-  font-family: var(--font-mono);
-  font-variant-ligatures: var(--code-ligatures, none);
-  font-size: 11.5px;
-}
-.launch-dirty .main-dirty-actions {
-  justify-content: flex-start;
-  align-items: center;
-}
-.launch-dirty .main-dirty-actions .grow {
-  flex: 1;
-}
-.launch-dirty-opinion {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 0 0 19px;
-  border-top: 1px dashed var(--border);
-  color: var(--text-2);
-}
-.launch-dirty-opinion svg {
-  flex-shrink: 0;
+/* Où partira un travail qui écrit (fiche 262, maquette 260 écran B) : un segment discret de la
+   ligne « Partira à… », de la carte de tâches ou du dialogue ; jamais un encadré. En orange quand
+   du non commité reste derrière. La liste des modifications et le choix de commit passent dessous,
+   sur toute la largeur. */
+.launch-line-text {
   color: var(--muted);
 }
-/* Le texte prend la place et passe à la ligne ; l'œil et le bouton restent sur la même ligne. */
-.launch-dirty-opinion > span {
-  flex: 1;
-  min-width: 0;
+.launch-line-text.warn {
+  color: var(--warn);
 }
-.launch-dirty-opinion .btn {
-  flex-shrink: 0;
-  white-space: nowrap;
+.launch-line-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  /* Cible d'au moins 24 px (WCAG 2.5.8), sans grandir la ligne. */
+  min-height: 24px;
+  margin: -4px 0;
+  padding: 0 4px;
+  vertical-align: middle;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
 }
-.launch-dirty .field-error {
+.launch-line-change:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.launch-line-change:disabled {
+  opacity: 0.5;
+}
+.launch-line-files {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding: 0 0 0 18px;
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.launch-line-commit {
+  flex-basis: 100%;
+  margin: 4px 12px 0 0;
+  color: var(--text);
+}
+/* Sous la ligne de la saisie : hors de sa région annoncée (aria-live). */
+.launch-details {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0 0 30px;
+  font-size: 12px;
+}
+.launch-details:empty {
+  display: none;
+}
+.launch-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.permission-card.proposals > .launch-place {
+  /* Aligné sur le sous-titre de la carte : marge de .pc-head (16) + icône (18) + écart (10). */
+  margin: -4px 16px 10px 44px;
+}
+.launch-line-commit .field-error {
   margin: 0;
 }
 

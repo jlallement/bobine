@@ -350,10 +350,16 @@ export interface ChildLink {
   of?: string
   /** Rôle de la fille ; en lecture seule, elle travaille dans le dossier de sa mère. */
   role?: RoleStamp
+  /**
+   * Pas de worktree possible (dépôt sans commit, dossier hors dépôt, fiche 262) : la fille
+   * travaille dans le dossier de sa mère, comme elle.
+   */
+  inPlace?: boolean
 }
 
 /**
- * Création d'une fille de `mother` (fiche 097) : dans un nouveau worktree du dossier de la mère ;
+ * Création d'une fille de `mother` (fiche 097) : dans un nouveau worktree du dossier de la mère,
+ * ou dans ce dossier quand aucun worktree n'est possible (`inPlace`, fiche 262) ;
  * relecteur (fiche 177) dans le dossier de la conversation relue, sans worktree à lui (le supprimer
  * ne supprime rien d'autre), avec l'agent demandé, sinon celui de l'auteur.
  */
@@ -365,11 +371,13 @@ export function childDetachedRequest(
     profileId?: string
     onCreated?: DetachedRequest['onCreated']
     role?: RoleStamp
+    inPlace?: boolean
   }
 ): DetachedRequest {
   const { profileId, onCreated, role } = request
-  // Rôle en lecture seule (fiche 223) : dans le dossier de la mère, sans worktree, comme un relecteur.
-  const here = author ?? (role?.readOnly ? mother : undefined)
+  // Rôle en lecture seule (fiche 223) : dans le dossier de la mère, sans worktree, comme un
+  // relecteur ; de même sans worktree possible (fiche 262).
+  const here = author ?? (role?.readOnly || request.inPlace ? mother : undefined)
   return {
     from: here ? { workspace: here.workspace, profileId: profileId ?? here.profileId } : mother,
     ...(profileId ? { profileId } : {}),

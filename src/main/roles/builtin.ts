@@ -17,7 +17,7 @@ import { BUILTIN_FR } from './builtin-fr'
 
 /** Ce qui ne dépend pas de la langue. */
 const LOOKS: Record<BuiltinName, Pick<RoleDefinition, 'icon' | 'color' | 'readOnly'>> = {
-  'ux-ui-expert': { icon: 'palette', color: 'pink', readOnly: false },
+  'ux-ui-expert': { icon: 'palette', color: 'pink', readOnly: true },
   'flutter-expert': { icon: 'smartphone', color: 'blue', readOnly: false },
   'front-architect': { icon: 'layout-dashboard', color: 'violet', readOnly: false },
   'back-architect': { icon: 'server', color: 'green', readOnly: false },
