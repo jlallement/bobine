@@ -414,6 +414,9 @@ describe('simulations de Bob', () => {
     const answered = await withMockAgent(run, async (ctx) => {
       await initialize(ctx)
       const waiting = ctx.request(methods.agent.authenticate, { methodId: SSO_AUTH_METHOD })
+      // Absence vérifiée : `authenticate` reste sans réponse pendant 300 ms ; aucun évènement ne
+      // dit « jamais ».
+      // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
       const timeout = new Promise((resolve) => setTimeout(() => resolve('sans réponse'), 300))
       return Promise.race([waiting.then(() => 'répondu'), timeout])
     })

@@ -32,6 +32,14 @@ What changes for you, version by version. Shown in Settings › About.
 - Conversation opened side by side: the file search after `@` completes even while that
   conversation is writing its answer.
 - Quitting Bobine is faster: only the conversations that changed are written to disk again.
+### New
+
+- The `.dmg` now ships with its SHA-256 checksum (`SHA256SUMS-macos-arm64.txt`), like the Linux
+  and Windows packages, and every file of a release with a GitHub provenance attestation:
+  `gh attestation verify <file> --repo jlallement/bobine` tells you it was built by this
+  repository, from that tag. Details in `docs/installation.md` (French).
+- Bobine declares macOS 13 as its minimum, as the README says: an older Mac tells you so when
+  opening it, instead of running a version never tried on it.
 
 ## 1.0.0-beta.9 — November 19, 2026
 

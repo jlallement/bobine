@@ -5,6 +5,14 @@ import { terminateForeground } from './foreground'
 import { TerminalManager, type Pty } from './terminal-manager'
 import { ON_WINDOWS, POSIX_PROCESSES, POSIX_SHELL } from '../test-platform'
 
+/**
+ * Attentes du vrai shell : relues jusqu'à 5 s (au lieu d'une seconde par défaut), l'essai n'en
+ * prend qu'une fraction sur une machine libre.
+ */
+const UNTIL = { timeout: 5000, interval: 50 }
+/** Délai de grâce de « Arrêter » avant SIGTERM (`STOP_GRACE_MS` du gestionnaire). */
+const STOP_GRACE_MS = 2000
+
 const managers: TerminalManager[] = []
 afterEach(() => managers.splice(0).forEach((m) => m.closeAll()))
 
@@ -49,22 +57,29 @@ describe.runIf(POSIX_SHELL)('terminaux (vrai shell)', () => {
     const { manager } = setup()
     manager.create('c1', tmpdir())
     manager.run('c1', tmpdir(), 'sleep 30', '1')
-    // Au-delà de la seconde de démarrage du shell.
-    await new Promise((r) => setTimeout(r, 1300))
-    expect(manager.list('c1')[0]).toMatchObject({
-      busy: true,
-      title: 'sleep',
-      command: { name: 'sleep' }
-    })
+    // Au-delà de la seconde de démarrage du shell : attendu tel quel, sans durée devinée (fiche 250).
+    await vi.waitFor(
+      () =>
+        expect(manager.list('c1')[0]).toMatchObject({
+          busy: true,
+          title: 'sleep',
+          command: { name: 'sleep' }
+        }),
+      UNTIL
+    )
     manager.interrupt('c1', '1')
-    await new Promise((r) => setTimeout(r, 600))
-    expect(manager.list('c1')[0]?.busy).toBe(false)
-    expect(manager.list('c1')[0]?.command).toBeUndefined()
+    await vi.waitFor(() => {
+      expect(manager.list('c1')[0]?.busy).toBe(false)
+      expect(manager.list('c1')[0]?.command).toBeUndefined()
+    }, UNTIL)
     expect(await manager.snapshot('c1', '1')).toContain('sleep 30')
     // Onglet ouvert par l'utilisateur : l'agent ne le prend pas, il ouvre le sien (fiche 126) ;
-    // libre, le sien est ensuite réutilisé.
+    // libre (sa commande finie, le shell revenu à l'invite), le sien est ensuite réutilisé.
     expect(manager.run('c1', tmpdir(), 'true').id).toBe('2')
-    await new Promise((r) => setTimeout(r, 600))
+    await vi.waitFor(
+      () => expect(manager.list('c1').find((tab) => tab.id === '2')?.busy).toBe(false),
+      UNTIL
+    )
     expect(manager.run('c1', tmpdir(), 'true').id).toBe('2')
     manager.close('c1', '1')
     manager.close('c1', '2')
@@ -79,23 +94,25 @@ describe.runIf(POSIX_PROCESSES)('« Arrêter » une commande (fiche 166, vrai sh
     manager.create('c1', tmpdir())
     // Une commande qui ignore Ctrl+C (comme `vim` ou `tmux`).
     manager.run('c1', tmpdir(), `perl -e '$SIG{INT}="IGNORE"; sleep 30'`, '1')
-    await new Promise((r) => setTimeout(r, 1300))
-    expect(manager.list('c1')[0]?.command?.name).toBe('perl')
+    await vi.waitFor(() => expect(manager.list('c1')[0]?.command?.name).toBe('perl'), UNTIL)
     onChange.mockClear()
+    const stopped = Date.now()
     manager.stop('c1', '1')
-    await new Promise((r) => setTimeout(r, 800))
-    expect(manager.list('c1')[0]?.command?.name).toBe('perl')
-    await new Promise((r) => setTimeout(r, 2000))
-    expect(manager.list('c1')[0]).toMatchObject({ busy: false, title: expect.any(String) })
+    // Ctrl+C ignoré : la commande ne finit qu'au SIGTERM, envoyé après le délai de grâce (2 s).
+    // Mesuré sur la fin elle-même (fiche 250), plutôt que relu à des instants devinés.
+    await vi.waitFor(() => {
+      expect(manager.list('c1')[0]).toMatchObject({ busy: false, title: expect.any(String) })
+      // La fin a été annoncée à l'UI (l'invite revenue).
+      expect(onChange.mock.calls.at(-1)?.[0].tabs[0].command).toBeUndefined()
+    }, UNTIL)
+    expect(Date.now() - stopped).toBeGreaterThanOrEqual(STOP_GRACE_MS)
     expect(manager.list('c1')[0]?.exitCode).toBeUndefined()
-    // La fin a été annoncée à l'UI (l'invite revenue).
-    expect(onChange.mock.calls.at(-1)?.[0].tabs[0].command).toBeUndefined()
     // Le shell répond encore.
     manager.run('c1', tmpdir(), 'echo encore-$((40+2))', '1')
     expect(await manager.read('c1', '1', 5, 1500)).toContain('encore-42')
     // À l'invite, « Arrêter » n'envoie rien.
     manager.stop('c1', '1')
-  }, 10_000)
+  }, 15_000)
 })
 
 describe('commande au premier plan (fiche 166)', () => {

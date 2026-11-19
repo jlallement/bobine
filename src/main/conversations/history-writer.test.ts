@@ -309,12 +309,22 @@ describe('HistoryWriter', () => {
       settingsFile: join(dir, 'settings.json')
     })
     const fil = { ...emptyTranscript, nextId: 2 }
-    writer.transcript('c1', () => fil, false)
-    writer.transcript('c2', () => fil, true)
-    await writer.forget('c2')
-    await writer.forget('c1')
-    expect(writer.idle('c1')).toBe(true)
-    await new Promise((r) => setTimeout(r, 1100))
+    // Horloge simulée pour l'écriture différée d'une seconde (fiche 250) : plus de pause réelle
+    // qui devinait qu'elle avait eu le temps de partir. Les écritures (fs) restent réelles.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      writer.transcript('c1', () => fil, false)
+      writer.transcript('c2', () => fil, true)
+      await writer.forget('c2')
+      await writer.forget('c1')
+      expect(writer.idle('c1')).toBe(true)
+      // L'écriture différée de c1 est annulée, pas seulement retardée : plus aucun minuteur.
+      expect(vi.getTimerCount()).toBe(0)
+      vi.runAllTimers()
+      await writer.settled()
+    } finally {
+      vi.useRealTimers()
+    }
     expect(readdirSync(dir)).toEqual(['c2.json'])
   })
 

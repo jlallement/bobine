@@ -373,6 +373,9 @@ describe('conversations filles (fiche 097)', () => {
 })
 
 describe('conversations filles, étape 2 : l’agent lance et suit ses filles (fiche 097)', () => {
+  // Absence vérifiée après coup (pas de second réveil de la mère) : aucun évènement ne dit
+  // « jamais », 150 ms de calme le montrent.
+  // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
   const settle = () => new Promise((resolve) => setTimeout(resolve, 150))
 
   // 30 s, processus lents à lancer sous Windows (fiche 229) : 3 agents, 19 git ;

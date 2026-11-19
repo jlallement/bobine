@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GitStatus } from '@shared/git'
 import { useGitStatus } from './useGitStatus'
@@ -6,6 +6,9 @@ import { useGitStatus } from './useGitStatus'
 describe('puce de branche relue après un commit de Bobine (fiche 246, D4)', () => {
   const api = window.api
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = api
   })
 

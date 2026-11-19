@@ -1,10 +1,13 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CappedText, FindQueryContext } from './CappedText'
 import { EditorContext } from './OpenInEditor'
 
 const lines = (n: number) =>
   Array.from({ length: n }, (_, i) => `test ${i + 1} ok`).join('\n') + '\n'
+
+/** Résultat d'une recherche (posée après la saisie) : relu jusqu'à 5 s, sur une machine chargée. */
+const UNTIL = { timeout: 5000 }
 
 async function frames(n: number) {
   for (let i = 0; i < n; i++) {
@@ -71,9 +74,11 @@ describe('CappedText (fiche 192)', () => {
         <CappedText text={text} className="tool-output" testId="out" />
       </FindQueryContext.Provider>
     )
-    await act(() => new Promise((resolve) => setTimeout(resolve, 200)))
-    await frames(10)
-    expect(screen.getByTestId('out').textContent).toContain('test 7 JETON-UNIQUE\n')
+    // La recherche attend que la saisie se pose : son résultat attendu tel quel (fiche 250).
+    await waitFor(
+      () => expect(screen.getByTestId('out').textContent).toContain('test 7 JETON-UNIQUE\n'),
+      UNTIL
+    )
   })
 
   it('« Afficher tout » montre la sortie entière, lignes longues comme courtes', async () => {
@@ -96,9 +101,13 @@ describe('CappedText (fiche 192)', () => {
         <CappedText text={text} className="tool-output" testId="out" />
       </FindQueryContext.Provider>
     )
-    await act(() => new Promise((resolve) => setTimeout(resolve, 200)))
-    await frames(5)
-    expect(screen.getByTestId('output-cap').textContent).toMatch(/^Trouvé dans le contenu masqué/)
+    await waitFor(
+      () =>
+        expect(screen.getByTestId('output-cap').textContent).toMatch(
+          /^Trouvé dans le contenu masqué/
+        ),
+      UNTIL
+    )
     expect(screen.getByTestId('out').textContent).not.toContain('JETON-UNIQUE')
   })
 })

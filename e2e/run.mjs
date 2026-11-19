@@ -12,6 +12,8 @@
  *   pnpm e2e --changed --dry-run        ce qui serait joué, sans rien lancer
  *   pnpm e2e --list                     liste des suites
  *   pnpm e2e --skip perf                tout sauf ces suites (dites, et la suite n'est plus complète)
+ *                                       (une suite en quarantaine sur ce système, `quarantine` du
+ *                                       catalogue, est écartée et dite de même ; nommée, elle joue)
  *   pnpm e2e base --lang en             interface en anglais (captures `en-…`, fiche 074)
  *
  * En parallèle (`--jobs N`, 3 par défaut), chaque suite et chaque thème tournent dans leur propre
@@ -38,6 +40,7 @@ import {
   isFullRun,
   orderTasks,
   parseArgs,
+  quarantinedOn,
   selectSuites,
   supported,
   tasksFor
@@ -127,13 +130,27 @@ if (options.skip.length) {
   for (const n of options.skip) console.log(`↷ ${n} écartée (--skip)`)
 }
 
+// Quarantaine (fiche 250) : un échec connu et compris sur ce système, écarté pour ne pas masquer
+// les autres ; dit à chaque passage (annotation sur GitHub), et joué quand on nomme la suite.
+const quarantined = quarantinedOn(SUITES, names, options.suites, process.platform)
+if (quarantined.length) {
+  const out = quarantined.map((q) => q.name)
+  names = (names ?? SUITES.map(({ name }) => name)).filter((n) => !out.includes(n))
+  for (const { name, reason } of quarantined) {
+    console.log(`⚠ ${name} en quarantaine sous ${process.platform} : ${reason}`)
+    if (process.env.GITHUB_ACTIONS === 'true' && !isChild) {
+      console.log(`::warning title=e2e ${name} en quarantaine (${process.platform})::${reason}`)
+    }
+  }
+}
+
 // Capacités de la plateforme (fiche 145) : celles de l'app lancée par les essais, `BOBINE_PLATFORM`
 // compris. Une suite qui demande une capacité absente est sautée, et dite.
 const features = currentPlatformFeatures(process.env, process.platform)
 const skipped = SUITES.filter((s) => (!names || names.includes(s.name)) && !supported(s, features))
 for (const s of skipped) console.log(`↷ ${s.name} sautée : demande ${s.needs.join(', ')}`)
 // Une suite sautée : ce n'est plus une suite complète (rien n'est noté vert).
-const fullRun = isFullRun(options) && !skipped.length
+const fullRun = isFullRun(options) && !skipped.length && !quarantined.length
 const tasks = tasksFor(SUITES, names, options.schemes, features)
 const parallel = options.jobs > 1 && tasks.length > 1
 const ordered = parallel ? orderTasks(tasks, readDurations()) : tasks

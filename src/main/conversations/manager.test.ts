@@ -1025,12 +1025,24 @@ describe('ConversationManager', () => {
     if (POSIX_MODES) {
       manager.select(first)
       await ready(first)
+      // Écritures du fil de la première ratées : l'évènement attendu (fiche 250), plutôt qu'une
+      // pause qui devinait la fin de l'écriture différée (1 s) du fil.
+      const failedWrites: string[] = []
+      const saveAsync = ConversationStore.prototype.saveTranscriptAsync
+      vi.spyOn(ConversationStore.prototype, 'saveTranscriptAsync').mockImplementation(function (
+        this: ConversationStore,
+        ...args
+      ) {
+        const saving = saveAsync.apply(this, args)
+        saving.catch(() => failedWrites.push(args[0]))
+        return saving
+      })
       chmodSync(dir, 0o500)
       try {
         await manager.prompt(first, 'Deuxième sujet')
         const third = (await manager.create({ profileId: 'titres' })).summary.id
         await ready(third)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await vi.waitFor(() => expect(failedWrites).toContain(first), { timeout: 10_000 })
         await manager.settled()
         expect(manager.loadedTranscripts()).toContain(first)
       } finally {

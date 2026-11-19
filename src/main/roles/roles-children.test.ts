@@ -185,6 +185,8 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
       this: ReadOnlyWatch,
       id: string
     ) {
+      // La lenteur est le scénario essayé (empreinte lente), pas une attente de l'essai.
+      // eslint-disable-next-line no-restricted-syntax -- lenteur simulée, voir au-dessus
       await new Promise((resolve) => setTimeout(resolve, 400))
       return prepare.call(this, id)
     })

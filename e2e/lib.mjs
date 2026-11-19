@@ -556,6 +556,37 @@ export async function withApp(
         return btoa(text)
       })()`)
     }
+    /**
+     * Amène un élément à l'écran avant un clic, comme un utilisateur : rien s'il y est déjà (à
+     * l'arrondi de la mise en page près) ; sinon au milieu de ce qui le fait défiler, et l'on
+     * attend qu'il y soit. Au milieu, pas au plus près : remonté de moins de 60 px, le fil se
+     * croit encore en bas et y revient à la prochaine nouveauté (`useThreadScroll`) ; le clic
+     * tombait alors à côté (fiche 145).
+     */
+    const reveal = (selector) =>
+      waitFor(`(() => {
+        const el = ${selector}
+        if (!el) return false
+        const box = () => el.closest('.scroll')?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight }
+        const shown = () => {
+          const r = el.getBoundingClientRect()
+          return r.top >= box().top - 1 && r.bottom <= box().bottom + 1
+        }
+        if (shown()) return true
+        el.scrollIntoView({ block: 'center' })
+        return shown()
+      })()`)
+    /**
+     * L'élément (ou l'un de ses descendants) est-il ce que le pointeur touche en `box` ? Un parent
+     * compte aussi pour une cible en `pointer-events: none`, qui laisse passer à son conteneur.
+     */
+    const underPointer = (selector, box) =>
+      ev(`(() => {
+        const el = ${selector}
+        const hit = document.elementFromPoint(${box.x}, ${box.y})
+        if (!el || !hit || el.contains(hit)) return true
+        return getComputedStyle(el).pointerEvents === 'none' && hit.contains(el)
+      })()`).catch(() => true)
     const ui = {
       ev,
       waitFor,
@@ -565,26 +596,7 @@ export async function withApp(
       dialogs,
       // Le point d'état de l'agent dans la barre latérale (pas ceux de Réglages › Agents).
       ready: () => waitFor(`!!document.querySelector('${AGENT_DOT}.ready')`),
-      /**
-       * Amène un élément à l'écran avant un clic, comme un utilisateur : rien s'il y est déjà (à
-       * l'arrondi de la mise en page près) ; sinon au milieu de ce qui le fait défiler, et l'on
-       * attend qu'il y soit. Au milieu, pas au plus près : remonté de moins de 60 px, le fil se
-       * croit encore en bas et y revient à la prochaine nouveauté (`useThreadScroll`) ; le clic
-       * tombait alors à côté (fiche 145).
-       */
-      reveal: (selector) =>
-        waitFor(`(() => {
-          const el = ${selector}
-          if (!el) return false
-          const box = () => el.closest('.scroll')?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight }
-          const shown = () => {
-            const r = el.getBoundingClientRect()
-            return r.top >= box().top - 1 && r.bottom <= box().bottom + 1
-          }
-          if (shown()) return true
-          el.scrollIntoView({ block: 'center' })
-          return shown()
-        })()`),
+      reveal,
       shot: async (name) => {
         await sleep(250)
         const r = await cdp('Page.captureScreenshot', { format: 'png' })
@@ -641,12 +653,22 @@ export async function withApp(
           `!(${selector})?.closest?.('[data-testid=permission]:not([data-armed]), [data-testid=launch-dirty]:not([data-armed])')`,
           5000
         )
-        const box = await center(selector)
+        let box = await center(selector)
         // Comme une vraie souris : amenée sur la cible avant d'appuyer. Sans ce mouvement, sous
         // charge (suites en parallèle, fiche 115), un appui isolé sur un élément de menu Radix ou
         // une poignée est parfois perdu.
         await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: box.x, y: box.y })
         await frame()
+        // Et l'on regarde, comme un humain, ce qui est sous le pointeur avant d'appuyer (fiche 250) :
+        // une nouveauté du fil (compte rendu, pied « Terminé ») arrivée après la mesure le fait
+        // défiler, et l'appui tombait à côté (Linux, `filles-tech-lead`, `fil`). Visé de nouveau,
+        // au plus deux fois ; une cible vraiment recouverte reçoit l'appui comme avant.
+        for (let aim = 0; aim < 2 && !(await underPointer(selector, box)); aim++) {
+          await reveal(selector).catch(() => {})
+          box = await center(selector)
+          await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: box.x, y: box.y })
+          await frame()
+        }
         for (const type of ['mousePressed', 'mouseReleased']) {
           await cdp('Input.dispatchMouseEvent', {
             type,

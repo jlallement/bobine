@@ -15,6 +15,7 @@ import {
   nextTask,
   orderTasks,
   parseArgs,
+  quarantinedOn,
   selectSuites,
   suiteSources,
   supported,
@@ -232,6 +233,33 @@ describe('empreinte, durées, échecs', () => {
   })
 })
 
+describe('quarantaine par système (fiche 250)', () => {
+  const catalog: CatalogEntry[] = [
+    { name: 'a', file: 'a.mjs', themes: [null] },
+    { name: 't', file: 't.mjs', themes: [null], quarantine: { linux: 'raison, fiche 145' } }
+  ]
+
+  it('écartée sur son système, avec sa raison ; jouée ailleurs', () => {
+    expect(quarantinedOn(catalog, null, [], 'linux')).toEqual([
+      { name: 't', reason: 'raison, fiche 145' }
+    ])
+    expect(quarantinedOn(catalog, null, [], 'darwin')).toEqual([])
+    expect(quarantinedOn(catalog, null, [], 'win32')).toEqual([])
+  })
+
+  it('nommée explicitement : jouée quand même (pour la corriger)', () => {
+    expect(quarantinedOn(catalog, ['t'], ['t'], 'linux')).toEqual([])
+  })
+
+  it('choisie par --changed, sans être nommée : reste en quarantaine', () => {
+    expect(quarantinedOn(catalog, ['t'], [], 'linux')).toHaveLength(1)
+  })
+
+  it('non demandée : rien à dire', () => {
+    expect(quarantinedOn(catalog, ['a'], ['a'], 'linux')).toEqual([])
+  })
+})
+
 describe('catalogue des suites (e2e/catalog.mjs)', async () => {
   const path = join(ROOT, 'e2e', 'catalog.mjs')
   const { SUITES, GLOBAL_SOURCES } = (await import(path)) as {
@@ -244,6 +272,15 @@ describe('catalogue des suites (e2e/catalog.mjs)', async () => {
   })
     .split('\n')
     .filter(Boolean)
+
+  it('une quarantaine dit sa raison et sa fiche, sur un vrai système', () => {
+    for (const s of SUITES) {
+      for (const [platform, reason] of Object.entries(s.quarantine ?? {})) {
+        expect(['darwin', 'linux', 'win32'], s.name).toContain(platform)
+        expect(reason, s.name).toMatch(/fiche \d{3}/)
+      }
+    }
+  })
 
   it('chaque suite a son fichier', () => {
     for (const s of SUITES)

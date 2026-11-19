@@ -34,6 +34,14 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Conversation ouverte à côté : la recherche de fichiers après `@` aboutit même pendant que cette
   conversation écrit sa réponse.
 - Fermer Bobine est plus rapide : seules les conversations modifiées sont réécrites sur le disque.
+### Nouveautés
+
+- Le `.dmg` est publié avec sa somme SHA-256 (`SHA256SUMS-macos-arm64.txt`), comme les paquets
+  Linux et Windows, et chaque fichier d'une version avec une attestation de provenance de GitHub :
+  `gh attestation verify <fichier> --repo jlallement/bobine` dit qu'il a été construit par ce
+  dépôt, depuis ce tag. Le détail dans `docs/installation.md`.
+- Bobine déclare macOS 13 comme version minimale, celle qu'annonce le README : un Mac plus ancien
+  le dit à l'ouverture, au lieu de lancer une version jamais essayée sur lui.
 
 ## 1.0.0-beta.9 — 19 novembre 2026
 

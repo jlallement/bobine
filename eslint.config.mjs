@@ -40,6 +40,21 @@ const NO_AGENT_LITERAL = {
     'Nom d’agent en dur : le déclarer dans son profil ou dans ses modules (bob-*.ts, opencode-*.ts), ADR-0015.'
 }
 
+/**
+ * Pas de pause fixe d'au moins 100 ms dans un test (fiche 250, audit QUA-5) : sur un coureur
+ * chargé (Windows), une durée devinée devient fausse ; c'était la cause de 6 des 9 derniers échecs
+ * de `main`. Attendre l'évènement (`eventLog().until`, une promesse résolue par `emit`),
+ * `vi.waitFor`/`expect.poll`, ou des horloges simulées (`vi.useFakeTimers`). Une pause qui vérifie
+ * qu'il ne se passe RIEN pendant un délai, ou qui fait vieillir un fichier, se justifie à côté :
+ * `// eslint-disable-next-line no-restricted-syntax -- raison`.
+ */
+const NO_FIXED_TEST_PAUSE = {
+  selector:
+    "CallExpression[callee.name='setTimeout'][arguments.length>=2][arguments.1.type='Literal'][arguments.1.value>=100]",
+  message:
+    'Pause fixe ≥ 100 ms dans un test : attendre l’évènement (eventLog().until, promesse résolue par emit), vi.waitFor ou horloges simulées ; sinon justifier par « // eslint-disable-next-line no-restricted-syntax -- raison » (fiche 250).'
+}
+
 export default tseslint.config(
   // `.claude/worktrees/` : worktrees des sessions parallèles, chacun vérifié chez lui ;
   // `.worktrees/` : worktrees de conversations créés ici (essai réel, fuite d'un test).
@@ -147,6 +162,12 @@ export default tseslint.config(
     files: ['src/renderer/**/*.ts'],
     ignores: ['**/*.test.ts'],
     rules: { 'no-restricted-syntax': ['error', NO_PROFILE_ID_TEST, NO_AGENT_LITERAL] }
+  },
+  {
+    // Tests : pas de pause fixe sans raison (fiche 250). Aucun autre bloc ne pose
+    // `no-restricted-syntax` sur les tests (ils en sont tous exclus), rien n'est donc écrasé.
+    files: ['**/*.test.{ts,tsx,mts,mjs}'],
+    rules: { 'no-restricted-syntax': ['error', NO_FIXED_TEST_PAUSE] }
   },
   {
     // Garde-fous contre les objets-dieux (fiche 089) : seuils posés sur la mesure de fin du

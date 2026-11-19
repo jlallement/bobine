@@ -1,5 +1,13 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contextBreakdown } from '@shared/context-breakdown'
 import type { TranscriptItem } from '@shared/transcript'
@@ -86,6 +94,9 @@ describe('onglet « Session » : contexte (fiche 166)', () => {
 describe('onglet « Session » : mesure MCP sur demande (fiche 166)', () => {
   const originalApi = window.api
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = originalApi
   })
 

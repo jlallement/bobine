@@ -1,6 +1,6 @@
 import type { ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -113,6 +113,22 @@ function expectSessionsRemoved(store?: string): void {
 }
 
 const store = () => mkdtempSync(join(tmpdir(), 'mock-store-'))
+
+/**
+ * Le message d'essai est arrivé chez l'agent factice : il enregistre sa session dès le message
+ * reçu, message compris. De quoi annuler « pendant la réponse » sans deviner une durée (fiche 250).
+ */
+function promptReceived(dir: string): Promise<void> {
+  return vi.waitFor(
+    () =>
+      expect(
+        readdirSync(dir).some(
+          (f) => f.endsWith('.json') && readFileSync(join(dir, f), 'utf8').includes('user_message')
+        )
+      ).toBe(true),
+    { timeout: 10_000, interval: 20 }
+  )
+}
 
 /** Tout agent lancé est arrêté : on attend sa fin (évènement `exit`), pas une durée. */
 async function expectStopped(): Promise<void> {
@@ -247,7 +263,8 @@ describe('essai « répond ? » du premier lancement (fiche 188)', () => {
       signal: controller.signal
     })
     await sessionNoted()
-    setTimeout(() => controller.abort(), 300)
+    await promptReceived(kept)
+    controller.abort()
     expect(await pending).toEqual({ state: 'cancelled' })
     expectSessionsRemoved(kept)
     await expectStopped()
@@ -499,12 +516,14 @@ describe('coût de l’essai (recette 0.10, D10)', () => {
   it('essai annulé : le tour est rapporté quand même (coût éventuel jamais perdu)', async () => {
     const controller = new AbortController()
     const turns: TrialTurn[] = []
-    const pending = check(mock('attend-stop', '--delay', '5'), {
+    const kept = store()
+    const pending = check(mock('attend-stop', '--delay', '5', '--store', kept), {
       signal: controller.signal,
       onTrialTurn: (turn) => turns.push(turn)
     })
     await sessionNoted()
-    setTimeout(() => controller.abort(), 300)
+    await promptReceived(kept)
+    controller.abort()
     expect(await pending).toEqual({ state: 'cancelled' })
     expect(turns).toEqual([expect.objectContaining({ stopReason: 'cancelled' })])
   })

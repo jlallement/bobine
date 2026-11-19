@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import { localDay, type TipAction, type TipId, type TipsView } from '@shared/tips'
@@ -54,6 +54,9 @@ describe('règles de fréquence des astuces (fiche 191)', () => {
     } as unknown as Window['api']
   })
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = original
   })
 
@@ -136,6 +139,9 @@ describe('règles de fréquence des astuces (fiche 191)', () => {
 describe('message répété : en fin de tour seulement (fiche 191)', () => {
   const original = window.api
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = original
   })
 
@@ -182,6 +188,9 @@ describe('message répété : en fin de tour seulement (fiche 191)', () => {
 describe('astuces : relecture (fiche 191)', () => {
   const original = window.api
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = original
     vi.useRealTimers()
   })
@@ -248,6 +257,9 @@ describe('astuces : relecture (fiche 191)', () => {
 describe('astuces : seconde relecture (fiche 191)', () => {
   const original = window.api
   afterEach(() => {
+    // Démontés avant de rendre l'API d'origine : leurs effets de fin appellent encore celle de
+    // l'essai (QUA-1/2, fiche 250).
+    cleanup()
     window.api = original
   })
 

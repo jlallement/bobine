@@ -304,13 +304,26 @@ async function agentResize(ui, { inPage, input, until, geometry, settled, follow
       (await ui.ev(emulationChip)) === L('browser.emulation.chip', { width: 375, height: 812 }),
     `taille imposée : l’écran 375 × 812 tient entier dans la zone, puce affichée (${show(g)})`
   )
-  // Défilement doux de l'agent fini avant de repartir du haut (machine chargée, fiche 115).
-  await sleep(800)
-  await inPage('scrollTo(0, 0)')
-  await input([{ type: 'mouseWheel', x: 60, y: 200, deltaX: 0, deltaY: -240, canScroll: true }])
+  // Défilement doux de l'agent fini avant de repartir du haut : attendu tel quel (immobile sur
+  // deux relevés), pas deviné (fiche 250). Sous Linux (rendu logiciel), il durait parfois plus que
+  // les 800 ms d'autrefois et ramenait la page en haut après la molette (scrollY 0).
+  const still = () =>
+    inPage(`new Promise((r) => {
+      const y = scrollY
+      requestAnimationFrame(() => setTimeout(() => r(scrollY === y), 150))
+    })`)
+  await until(still, 6000)
+  // Instantané : un `scroll-behavior: smooth` de la page ne doit pas remonter pendant la molette.
+  await inPage(`scrollTo({ top: 0, behavior: 'instant' })`)
+  await until(async () => (await inPage('scrollY')) === 0 && (await still()), 6000)
+  // Comme une souris : sur la page, puis la molette.
+  await input([
+    { type: 'mouseMove', x: 60, y: 200 },
+    { type: 'mouseWheel', x: 60, y: 200, deltaX: 0, deltaY: -240, canScroll: true }
+  ])
   const scrolled = await until(async () => (await inPage('scrollY')) > 0, 6000)
   const wheelY = await inPage('scrollY')
-  await sleep(800)
+  await until(still, 6000)
   const bottom = await until(() =>
     inPage(
       `(scrollTo(0, 1e6), Math.abs(scrollY - (document.documentElement.scrollHeight - innerHeight)) < 2)`
@@ -320,9 +333,9 @@ async function agentResize(ui, { inPage, input, until, geometry, settled, follow
     scrolled && bottom,
     `taille imposée : la page défile à la molette (scrollY ${wheelY}), et jusqu’en bas`
   )
-  // Défilement doux de la molette fini, puis deux images : `capturePage` rend la dernière dessinée.
-  await sleep(800)
-  await inPage('scrollTo(0, 0)')
+  // Défilement fini, puis deux images : `capturePage` rend la dernière dessinée.
+  await until(still, 6000)
+  await inPage(`scrollTo({ top: 0, behavior: 'instant' })`)
   await inPage('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))')
   await ui.shot('28z-navigateur-mobile')
   await ui.click(`${card}.querySelector('button[data-kind=allow_once]')`)

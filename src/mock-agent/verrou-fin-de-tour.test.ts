@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { methods } from '../shared/acp-sdk.mts'
 import { agentText, initialize, playTurn, withMockAgent } from './testing.mts'
 import { scenarios } from './scenarios.mts'
@@ -24,6 +24,22 @@ function lockPath(present: boolean): string {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Le tour de l'agent est retenu par le verrou : il s'est inscrit dans le fichier des tours retenus
+ * (une ligne, son identifiant de session). L'évènement attendu, plutôt qu'une durée (fiche 250).
+ */
+async function held(lock: string): Promise<string> {
+  let content = ''
+  await vi.waitFor(
+    () => {
+      content = existsSync(heldTurnsFile(lock)) ? readFileSync(heldTurnsFile(lock), 'utf8') : ''
+      expect(content).toMatch(/\n$/)
+    },
+    { timeout: 10_000, interval: 20 }
+  )
+  return content
+}
 
 describe('verrou de fin de tour (fiche 223)', () => {
   it('sans fichier : passe tout de suite, sans s’inscrire comme retenu', async () => {
@@ -68,12 +84,12 @@ describe('verrou de fin de tour (fiche 223)', () => {
           playTurn(session, 'Bonjour', () => {
             if (firstUpdateAt) return
             firstUpdateAt = Date.now()
-            // Le texte part pendant que le verrou tient ; on l'enlève un peu plus tard.
-            setTimeout(() => {
-              heldBeforeRemoval = readFileSync(heldTurnsFile(lock), 'utf8')
+            // Le texte part pendant que le verrou tient ; on l'enlève une fois le tour retenu.
+            void held(lock).then((content) => {
+              heldBeforeRemoval = content
               removedAt = Date.now()
               rmSync(lock)
-            }, 300)
+            })
           })
         )
       }
@@ -101,9 +117,9 @@ describe('verrou de fin de tour (fiche 223)', () => {
           return playTurn(session, 'Bonjour', () => {
             if (sent) return
             sent = true
-            setTimeout(
-              () => void ctx.notify(methods.agent.session.cancel, { sessionId: session.sessionId }),
-              200
+            // Annulé pendant que le verrou retient le tour (pas pendant le texte).
+            void held(lock).then(
+              () => void ctx.notify(methods.agent.session.cancel, { sessionId: session.sessionId })
             )
           })
         })

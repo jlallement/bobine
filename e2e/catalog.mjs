@@ -716,6 +716,12 @@ export const SUITES = [
     file: 'terminal.mjs',
     run: 'terminalPanelSuite',
     themes: BOTH,
+    // Fiche 250 (audit B4) : échec connu sous Linux seulement, sans défaut visible (fiche 145,
+    // 2026-11-16). Elle masquait tous les autres échecs du job Linux.
+    quarantine: {
+      linux:
+        'flèche powerline U+E0B0 de MesloLGS encrée 0,59 px à gauche de sa cellule par FreeType (0,446 px sur le Mac, tolérance 0,5 px) ; aucune coupure visible à l’écran — critère à trancher, fiche 145 (journal du 2026-11-16) et fiche 250'
+    },
     sources: [
       `${C}panel/TerminalTab.tsx`,
       `${R}theme.ts`,
