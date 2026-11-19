@@ -34,7 +34,7 @@
 
 <p align="center"><a href="docs/images/readme/fr/demo.mp4">▶ Voir la démo de 20 secondes</a></p>
 
-> **Bêta publique.** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
+> **Version candidate (1.0.0-rc.1).** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
 > attendez-vous à des aspérités et [signalez-les](https://github.com/jlallement/bobine/issues/new/choose).
 > L'app n'est **pas notarisée par Apple** : macOS demande une étape de plus à la première
 > ouverture ([voir Installer](#installer)).
@@ -216,7 +216,7 @@ et elle est écrite de zéro avec Electron, React et le
 
 ## Feuille de route
 
-- **Maintenant : bêta publique.** Corrections venues de l'usage réel, compatibilité avec les
+- **Maintenant : version candidate de la 1.0.** Corrections venues de l’usage réel et des essayeurs, [problèmes connus](https://github.com/jlallement/bobine/milestone/1), compatibilité avec les
   nouvelles versions de Bob et d'OpenCode.
 - **1.0 :** la barre de qualité de la première version stable, une recette complète par un rôle
   QA, un second passage de l'audit d'interface.

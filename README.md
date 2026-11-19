@@ -34,7 +34,7 @@
 
 <p align="center"><a href="docs/images/readme/en/demo.mp4">▶ Watch the 20-second demo</a></p>
 
-> **Public beta.** Bobine is used every day by its author, but by few people so far: expect rough
+> **Release candidate (1.0.0-rc.1).** Bobine is used every day by its author, but by few people so far: expect rough
 > edges and please [report them](https://github.com/jlallement/bobine/issues/new/choose). The app
 > is **not notarized by Apple**, so macOS asks for one extra step the first time you open it
 > ([see Install](#install)).
@@ -211,7 +211,7 @@ from scratch on Electron, React and the
 
 ## Roadmap
 
-- **Now: public beta.** Fixes from real use, compatibility with new versions of Bob and OpenCode.
+- **Now: release candidate for 1.0.** Fixes from real use and testers, [known issues](https://github.com/jlallement/bobine/milestone/1), compatibility with new versions of Bob and OpenCode.
 - **1.0:** the quality bar of the first stable version, a full test pass by a QA role, a second
   pass of the interface audit.
 - **Ideas, not scheduled:** rewind a conversation to before a turn; give the same task to two
