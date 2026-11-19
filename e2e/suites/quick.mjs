@@ -93,6 +93,20 @@ export async function quickSuite(scheme) {
             ),
             'raccourci global ⌥⌘B enregistré'
           )
+          // Ce qui arrive à la fenêtre rapide (montrée, masquée, focus), dit si elle n'est pas vue
+          // ouverte (fiche 250 : intermittent sous Linux, au tout premier lancement du job).
+          await main.evaluate(`(() => {
+            const { app } = require('electron')
+            globalThis.__quickEvents = []
+            const t0 = Date.now()
+            app.once('browser-window-created', (_, w) => {
+              for (const e of ['ready-to-show', 'show', 'hide', 'focus', 'blur'])
+                w.on(e, () => globalThis.__quickEvents.push(e + ' +' + (Date.now() - t0) + ' ms'))
+            })
+            return true
+          })()`)
+          const quickEvents = () =>
+            main.evaluate(`(globalThis.__quickEvents ?? []).join(', ')`).catch(() => '?')
           await menuItem(main, 'quick-entry')
           const quick = await attachPage('#quick', scheme)
           try {
@@ -100,9 +114,10 @@ export async function quickSuite(scheme) {
               `${quick.$('quick-target')}?.innerText.startsWith(${JSON.stringify(Lpart('quick.target', { agent: M('Agent factice') }))})`
             )
             // Montrée une fois sa page prête : sous charge, un peu après le texte.
+            const opened = await waitQuick(main, true, 5000)
             check(
-              await waitQuick(main, true, 5000),
-              'Fichier › Fenêtre rapide : ouverte, rappelle où part le message'
+              opened,
+              `Fichier › Fenêtre rapide : ouverte, rappelle où part le message${opened ? '' : ` (évènements : ${await quickEvents()})`}`
             )
 
             // Capture d'écran (capacité `screenCapture`, fiche 145) : sans elle, pas de bouton.

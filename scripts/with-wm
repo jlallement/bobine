@@ -10,15 +10,30 @@ set -euo pipefail
 [[ -n "${DISPLAY:-}" ]] || { echo "with-wm : pas d'écran X (DISPLAY), à lancer sous xvfb-run" >&2; exit 2; }
 command -v openbox >/dev/null || { echo "with-wm : openbox introuvable" >&2; exit 2; }
 
-openbox --sm-disable >/dev/null 2>&1 &
-wm=$!
-trap 'kill "$wm" 2>/dev/null || true' EXIT
+# Sortie d'openbox gardée : s'il s'arrête au démarrage, elle dit pourquoi (fiche 250).
+log=$(mktemp "${TMPDIR:-/tmp}/with-wm.XXXXXX")
+wm=
+trap 'kill "$wm" 2>/dev/null || true; rm -f "$log"' EXIT
 
-# Prêt quand il s'annonce sur la fenêtre racine (norme EWMH), 10 s au plus.
-for _ in $(seq 100); do
-  xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q 'window id' && break
-  kill -0 "$wm" 2>/dev/null || { echo "with-wm : openbox s'est arrêté au démarrage" >&2; exit 2; }
-  sleep 0.1
+# Prêt quand il s'annonce sur la fenêtre racine (norme EWMH), 10 s au plus. Arrêté au démarrage :
+# relancé deux fois au plus, sa sortie dite à chaque fois. Sur le job Linux de GitHub, 3 passages
+# sur 14 perdaient ainsi une suite entière (« 0 s ») sans rien en dire ; c'est l'écran de l'essai
+# qui manquait, pas l'app (fiche 250).
+start_wm() {
+  openbox --sm-disable >"$log" 2>&1 &
+  wm=$!
+  for _ in $(seq 100); do
+    xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q 'window id' && return 0
+    kill -0 "$wm" 2>/dev/null || return 1
+    sleep 0.1
+  done
+  return 0
+}
+for attempt in 1 2 3; do
+  start_wm && break
+  echo "with-wm : openbox s'est arrêté au démarrage (essai $attempt/3) : $(tr '\n' ' ' <"$log")" >&2
+  [[ $attempt -eq 3 ]] && exit 2
+  sleep 0.5
 done
 
 "$@"

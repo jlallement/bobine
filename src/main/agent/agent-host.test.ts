@@ -1501,37 +1501,64 @@ describe('AgentHost', () => {
     describe.runIf(POSIX_PROCESSES)(
       'commande mise en arrière-plan par l’agent (fiche 195, M3)',
       () => {
-        const running = (duration: string) =>
-          execFileSync('ps', ['-A', '-ww', '-o', 'pid=,pgid=,command='], { encoding: 'utf8' })
+        // Isolés (fiche 250) : seulement les `sleep` lancés par CET essai (descendants de ce
+        // processus de test, relevés tant que l'agent vit), puis suivis par leur pid. Compter les
+        // `sleep` de toute la machine voyait ceux d'un autre vitest (3 au lieu de 1).
+        const table = () =>
+          execFileSync('ps', ['-A', '-ww', '-o', 'pid=,ppid=,command='], { encoding: 'utf8' })
             .split('\n')
-            .filter((line) => line.trim().endsWith(`sleep ${duration}`))
-            .map((line) => line.trim().split(/\s+/).map(Number))
+            .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/))
+            .filter((m): m is RegExpMatchArray => m !== null)
+            .map(([, pid, ppid, command]) => ({ pid: Number(pid), ppid: Number(ppid), command }))
+        const isSleep = (command: string | undefined, duration: string) =>
+          !!command?.endsWith(`sleep ${duration}`)
+        /** Pids des `sleep <duration>` descendants de ce processus de test. */
+        const ours = (duration: string): number[] => {
+          const all = table()
+          const mine = new Set([process.pid])
+          for (let grew = true; grew;) {
+            grew = false
+            for (const p of all) {
+              if (!mine.has(p.pid) && mine.has(p.ppid)) {
+                mine.add(p.pid)
+                grew = true
+              }
+            }
+          }
+          return all
+            .filter((p) => mine.has(p.pid) && isSleep(p.command, duration))
+            .map((p) => p.pid)
+        }
+        /** Ce pid est-il encore ce `sleep` (et pas un pid réutilisé) ? */
+        const stillSleeping = (pid: number, duration: string) =>
+          table().some((p) => p.pid === pid && isSleep(p.command, duration))
 
         it('dans le groupe de l’agent : vit après le tour, arrêtée avec l’agent', async () => {
           const { host } = failing('arriere-plan')
           await host.start()
           await host.prompt('Lance-la en arrière-plan')
           expect(host.snapshot().status).toBe('ready')
-          const [sleep] = running(BACKGROUND_SLEEP)
-          expect(sleep).toBeDefined()
+          const sleeps = ours(BACKGROUND_SLEEP)
+          expect(sleeps).toHaveLength(1)
           host.stop()
-          await waitFor(() => running(BACKGROUND_SLEEP).length === 0, 8000)
+          await waitFor(() => sleeps.every((pid) => !stillSleeping(pid, BACKGROUND_SLEEP)), 8000)
         })
 
         it('détachée par l’agent (autre groupe) : Bobine ne l’arrête pas, à l’aveugle', async () => {
           const { host } = failing('arriere-plan-detache')
           await host.start()
           await host.prompt('Lance-la en arrière-plan')
-          const [sleep] = running(DETACHED_SLEEP)
-          expect(sleep).toBeDefined()
+          const sleeps = ours(DETACHED_SLEEP)
+          expect(sleeps).toHaveLength(1)
+          const [sleep = 0] = sleeps
           host.stop()
           // Absence vérifiée : la commande détachée survit au-delà de l'arrêt complet de l'agent
           // (SIGTERM puis SIGKILL après sa grâce) ; rien à attendre d'autre qu'une durée.
           // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
           await new Promise((resolve) => setTimeout(resolve, 3500))
           // Toujours là : hors de notre groupe, elle n'est pas à nous (comportement documenté).
-          expect(running(DETACHED_SLEEP)).toHaveLength(1)
-          process.kill(sleep?.[0] ?? 0, 'SIGKILL')
+          expect(stillSleeping(sleep, DETACHED_SLEEP)).toBe(true)
+          process.kill(sleep, 'SIGKILL')
         })
       }
     )

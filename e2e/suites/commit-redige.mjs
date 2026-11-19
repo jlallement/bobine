@@ -61,6 +61,16 @@ const alive = (pid) => {
 }
 const pidsIn = (file) => readFileSync(file, 'utf8').split('\n').filter(Boolean).map(Number)
 
+/** Attend qu'une condition du côté de l'essai soit vraie (15 s au plus). */
+async function until(test, ms = 15_000) {
+  const started = Date.now()
+  while (Date.now() - started < ms) {
+    if (test()) return true
+    await sleep(50)
+  }
+  return test()
+}
+
 /** Processus lancés depuis `before` (agents des rédactions) : tous finissent, sans orphelin. */
 async function draftAgentsGone(file, before) {
   const started = Date.now()
@@ -245,7 +255,14 @@ async function withSlowAgent(scheme) {
         // « Réessayer », puis « Arrêter » : la rédaction s'arrête, le repli revient.
         await ui.click(ui.$('changes-commit-draft-again'))
         await ui.waitFor(`${state} === 'drafting'`, 10000)
-        await sleep(500)
+        // « Arrêter » une fois l'agent de la nouvelle rédaction lancé (son pid inscrit), plutôt
+        // qu'après 500 ms devinées (fiche 250) : sous charge (3 jobs), l'arrêt partait avant que
+        // l'agent ait démarré, l'app ne le lançait donc jamais (arrêt pendant le démarrage, sans
+        // processus), et l'essai ne relevait qu'un pid sur les deux attendus.
+        check(
+          await until(() => pidsIn(pids).filter((pid) => !before.includes(pid)).length === 2),
+          '« Réessayer » : un nouvel agent de rédaction est lancé'
+        )
         await ui.click(ui.$('changes-commit-draft-stop'))
         await ui.waitFor(`${state} === 'fallback'`, 10000)
         check(
