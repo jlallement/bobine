@@ -48,7 +48,12 @@ import { AppToolsBridge } from './app-tools-bridge'
 import { AppToolsEndpoint, type AppToolsEndpointOptions } from './app-tools-endpoint'
 import { announcementOf, type AgentAnnouncement } from './capabilities'
 import { AgentIncompatible, refuseIncompatible } from './version-check'
-import { applyInitialSettings, openWithStartMode, opensSession } from './initial-controls'
+import {
+  applyInitialSettings,
+  openWithStartMode,
+  opensSession,
+  sendControl
+} from './initial-controls'
 import { MessageQueue } from './message-queue'
 import { PendingRequests } from './pending-requests'
 import { askReadOnly, automaticAnswer, hostRules, withKnownLocations } from './permission-answers'
@@ -183,11 +188,20 @@ export interface AgentHostOptions {
  * Délais au-delà desquels l'agent est considéré comme bloqué. Larges : Bob met quelques secondes à
  * démarrer, et rejouer une longue conversation (`session/load`) peut prendre du temps.
  */
+/** Aucun agent lancé : rien ne peut le faire tomber. */
+const NEVER = new Promise<never>(() => {})
+
 export const TIMEOUTS = {
   /** Réponse à `initialize`. */
   initializeMs: 60_000,
   /** Réponse à `session/new`, `session/load` ou `session/resume`. */
   sessionMs: 120_000,
+  /**
+   * Réponse à `session/set_mode` ou `session/set_config_option` (fiche 253) : sans elle, un agent
+   * vivant mais muet bloquait le démarrage et le sélecteur sans fin. Changer un réglage est
+   * immédiat chez les agents connus ; 30 s laissent de la marge à un agent chargé.
+   */
+  controlMs: 30_000,
   /** Après « Stop », le tour doit se terminer dans ce délai ; sinon le processus est arrêté. */
   cancelGraceMs: 8_000,
   /**
@@ -437,19 +451,17 @@ export class AgentHost {
       throw new Error(t('agentHost.control.badValue', { name: control.name, value: String(value) }))
     }
     const fromModes = id === MODE_CONTROL_ID && !this.configOptions?.some((o) => o.id === id)
-    if (fromModes && typeof value === 'string') {
-      await connection.agent.request(methods.agent.session.setMode, { sessionId, modeId: value })
-      if (this.modes) this.modes = { ...this.modes, currentModeId: value }
-    } else {
-      const response = await connection.agent.request(
-        methods.agent.session.setConfigOption,
-        typeof value === 'boolean'
-          ? { sessionId, configId: id, type: 'boolean', value }
-          : { sessionId, configId: id, value }
-      )
-      this.configOptions = response.configOptions
-    }
-    this.emitSnapshot()
+    // État mis à jour par la réponse, même arrivée après le délai (même agent, même session).
+    const current = () => this.connection === connection && this.sessionId === sessionId
+    const call = sendControl(connection, { sessionId, id, value, fromModes }).then((options) => {
+      if (!current()) return
+      if (options) this.configOptions = options
+      else if (this.modes) this.modes = { ...this.modes, currentModeId: String(value) }
+      this.emitSnapshot()
+    })
+    call.catch(() => {}) // Erreur après l'abandon (délai) : déjà dit.
+    const what = t('agentHost.timeout.control', { name: control.name })
+    await race(this.failed ?? NEVER, this.timeout('controlMs'), what, call)
   }
 
   /** Démarre l'agent si besoin. Idempotent : des appels concurrents partagent le même démarrage. */

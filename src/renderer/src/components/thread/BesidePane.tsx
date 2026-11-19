@@ -2,7 +2,7 @@ import { X } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { AgentSnapshot, ConversationSummary } from '@shared/agent'
 import type { TranscriptState } from '@shared/transcript'
-import type { useConversations } from '../../useConversations'
+import type { BesideActions } from '../../beside-actions'
 import { ComposerInbox, useFileDrop } from '../../useFileDrop'
 import { excludedIn } from '../../useAttachments'
 import { DropOverlay } from '../composer/DropOverlay'
@@ -14,7 +14,7 @@ import { Tip } from '../common/Menus'
 import { Transcript } from './Transcript'
 import { useTranslation } from 'react-i18next'
 
-type Actions = ReturnType<ReturnType<typeof useConversations>['actionsFor']>
+type Actions = BesideActions
 
 /**
  * Conversation ouverte à côté de l'active (fiche 036), comme la vue côte à côte de Claude Code

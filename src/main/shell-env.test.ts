@@ -1,10 +1,11 @@
-import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   applyShellEnv,
   extractEnv,
+  fallbackShell,
   loginShellEnv,
   mergePath,
   parseWindowsEnv,
@@ -53,22 +54,87 @@ describe('shell-env', () => {
     expect(result.problem).toBeUndefined()
   })
 
-  it('shell introuvable : rien, sans exception, problème dit', async () => {
-    expect(await loginShellEnv('/nexiste/pas')).toMatchObject({
-      values: {},
-      problem: expect.stringContaining('/nexiste/pas')
-    })
+  it.runIf(LOGIN_SHELL)('shell introuvable : repli (fiche 253)', async () => {
+    const missing = await loginShellEnv('/nexiste/pas', 5000, 'linux')
+    expect(missing.values.PATH).toContain('/usr/bin')
+    expect(missing.fallbackFrom).toContain('/nexiste/pas')
   })
 
   it.runIf(LOGIN_SHELL)('shell trop lent (fiche 043) : arrêté au délai, problème dit', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'shell-'))
     const slow = join(dir, 'sh')
-    writeFileSync(slow, '#!/bin/sh\nsleep 5\n')
+    // Comme un shell interactif, il ignore SIGTERM : arrêté quand même, et sans repli (fiche 253).
+    writeFileSync(slow, "#!/bin/sh\ntrap '' TERM\nsleep 5\n")
     chmodSync(slow, 0o755)
     const result = await loginShellEnv(slow, 200)
     expect(result.values).toEqual({})
     expect(result.problem).toContain('n’a pas répondu')
+    expect(result.fallbackFrom).toBeUndefined()
     expect(result.ms).toBeLessThan(2000)
+  })
+
+  describe('shells qui ne s’y prêtent pas (fiche 253)', () => {
+    /** Shell factice `name` dans un dossier jetable : `body` reçoit `-ilc` et la commande. */
+    function fakeShell(name: string, body: string): string {
+      const file = join(mkdtempSync(join(tmpdir(), 'shell-')), name)
+      writeFileSync(file, `#!/bin/sh\n${body}\n`)
+      chmodSync(file, 0o755)
+      return file
+    }
+
+    it.runIf(LOGIN_SHELL)(
+      'un fichier rc qui lit l’entrée ne fait pas attendre le délai',
+      async () => {
+        // `read` bloque tant que l'entrée reste ouverte : avec stdin sur /dev/null, il finit aussitôt.
+        const reader = fakeShell('sh', 'read answer\nexec /bin/sh -c "$2"')
+        const result = await loginShellEnv(reader, 3000)
+        expect(result.problem).toBeUndefined()
+        expect(result.values.PATH).toContain('/usr/bin')
+        expect(result.ms).toBeLessThan(2000)
+      }
+    )
+
+    it.runIf(LOGIN_SHELL)(
+      'shell qui refuse `-ilc` (comme tcsh) : repli, et le journal le dit',
+      async () => {
+        const refusing = fakeShell('mysh', 'echo "Unknown option: \\`-lc\'" >&2\nexit 1')
+        const result = await loginShellEnv(refusing, 5000, 'linux')
+        expect(result.problem).toBeUndefined()
+        expect(result.values.PATH).toContain('/usr/bin')
+        expect(result.fallbackFrom).toBe(`${refusing} (${refusing} : Unknown option: \`-lc')`)
+      }
+    )
+
+    it.runIf(LOGIN_SHELL)(
+      'PATH rendu sans être développé (`$PATH`, comme nushell) : rejeté, repli',
+      async () => {
+        const literal = fakeShell('mysh', `printf '%s' '${M}$PATH${M.repeat(6)}${M}END'`)
+        const result = await loginShellEnv(literal, 5000, 'linux')
+        expect(result.values.PATH).toContain('/usr/bin')
+        expect(result.values.PATH).not.toContain('$')
+        expect(result.fallbackFrom).toContain('PATH')
+      }
+    )
+
+    it.runIf(LOGIN_SHELL)(
+      'shell non POSIX connu (tcsh, nu…) : jamais lancé, repli direct',
+      async () => {
+        const dir = mkdtempSync(join(tmpdir(), 'shell-'))
+        const witness = join(dir, 'lance')
+        const tcsh = join(dir, 'tcsh')
+        writeFileSync(tcsh, `#!/bin/sh\ntouch '${witness}'\nexit 1\n`)
+        chmodSync(tcsh, 0o755)
+        const result = await loginShellEnv(tcsh, 5000, 'linux')
+        expect(result.values.PATH).toContain('/usr/bin')
+        expect(result.fallbackFrom).toBe(`${tcsh} (non POSIX)`)
+        expect(existsSync(witness)).toBe(false)
+      }
+    )
+
+    it('repli : zsh de connexion interactif sous macOS, sh de connexion ailleurs', () => {
+      expect(fallbackShell('darwin')).toEqual({ file: '/bin/zsh', flags: '-ilc' })
+      expect(fallbackShell('linux')).toEqual({ file: '/bin/sh', flags: '-lc' })
+    })
   })
 })
 

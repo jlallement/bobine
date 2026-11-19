@@ -1590,6 +1590,34 @@ describe('AgentHost', () => {
       expect(host.snapshot().detail).toMatch(/n’a pas (rouvert|ouvert|répondu)/)
     })
 
+    it('réglages sans réponse (fiche 253) : démarrage prêt sans eux, avis clair ; sélecteur en erreur', async () => {
+      const { host, transcript } = failing(
+        'echo',
+        {
+          timeouts: { controlMs: 300 },
+          initialControls: { mode: 'ask', model: 'factice-precis' }
+        },
+        ['--panne', 'bloque-reglages']
+      )
+      await host.start()
+      expect(host.snapshot().status).toBe('ready')
+      // Rien d'appliqué : l'app ne prétend pas que l'agent a changé de réglage.
+      expect(host.snapshot().controls.map((c) => c.currentValue)).toEqual([
+        'code',
+        'factice-rapide',
+        false
+      ])
+      const notices = transcript().flatMap((i) => (i.kind === 'notice' ? [noticeOf(i)] : []))
+      expect(notices).toHaveLength(2)
+      expect(notices[0]).toMatch(
+        /Réglage.«.Mode.».non appliqué.\(ask\).*n’a pas appliqué.«.Mode.».en 0.s/
+      )
+      expect(notices[1]).toMatch(/non appliqué \(factice-precis\)/)
+      await expect(host.setControl('mode', 'ask')).rejects.toThrow(/n’a pas appliqué.«.Mode.»/)
+      expect(host.snapshot().status).toBe('ready')
+      host.stop()
+    })
+
     // Mort par un signal : Unix seulement (POSIX_PROCESSES).
     it.runIf(POSIX_PROCESSES).each([
       ['plantage-signal', 'SIGKILL'],

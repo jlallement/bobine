@@ -11,9 +11,12 @@ export function ipcErrorText(error: unknown): string {
   const text = messageOf(error)
   // Refus de la lecture seule (fiche 196) : dit dans la langue de l'interface.
   if (text.includes(READ_ONLY_ERROR)) return i18next.t('profile.readOnly.refusedShort')
-  return text
-    .replace(/^Error invoking remote method '[^']+': (\w*Error: )?/, '')
-    .replace(`${KEYCHAIN_TIMEOUT_ERROR}: `, '')
+  return (
+    text
+      // Nom de l'erreur, quel qu'il soit (`TypeError`, `AgentTimeout`… fiche 253).
+      .replace(/^Error invoking remote method '[^']+': ([A-Z]\w*: )?/, '')
+      .replace(`${KEYCHAIN_TIMEOUT_ERROR}: `, '')
+  )
 }
 
 /** Le trousseau macOS n'a pas répondu à temps (fiche 207) : la clé saisie est gardée, à réessayer. */

@@ -9,6 +9,14 @@ describe('ipcErrorText', () => {
     expect(
       ipcErrorText(new Error("Error invoking remote method 'mcp:test': TypeError: fetch failed"))
     ).toBe('fetch failed')
+    // Erreur nommée sans « Error » (délai d'un réglage, fiche 253).
+    expect(
+      ipcErrorText(
+        new Error(
+          "Error invoking remote method 'agent:setControl': AgentTimeout: L’agent n’a pas appliqué « Mode » en 30 s."
+        )
+      )
+    ).toBe('L’agent n’a pas appliqué « Mode » en 30 s.')
     expect(ipcErrorText(new Error("Error invoking remote method 'git:diff': pas de dépôt"))).toBe(
       'pas de dépôt'
     )

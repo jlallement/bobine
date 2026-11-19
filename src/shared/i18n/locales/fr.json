@@ -3126,7 +3126,8 @@
     "timeout": {
       "initialize": "L’agent n’a pas répondu au démarrage",
       "resume": "L’agent n’a pas rouvert la conversation",
-      "session": "L’agent n’a pas ouvert la session"
+      "session": "L’agent n’a pas ouvert la session",
+      "control": "L’agent n’a pas appliqué « {{name}} »"
     },
     "resumeFailed": "La conversation n’a pas pu être reprise : {{error}}",
     "auth": {
