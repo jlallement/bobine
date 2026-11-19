@@ -1,6 +1,7 @@
-import { mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import type { AgentEvent, AgentSnapshot } from '@shared/agent'
@@ -8,6 +9,7 @@ import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import { AgentHost } from '../agent/agent-host'
 import { bobDbCosts } from '../agent/bob-costs'
 import type { AgentProfile } from '../agent/profiles'
+import { agentsLogFile, initLog, logFile, setVerbosity } from '../log'
 import { costBetween, UsageJournal, type TurnContext } from './journal'
 import { aggregateTurns } from './report'
 import { openUsageDb, type TurnRow, type UsageDb } from './usage-db'
@@ -265,16 +267,64 @@ async function liveJournal(profile: AgentProfile) {
   return { db, host, events, rows: (): TurnRow[] => db.select() }
 }
 
-function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
+function waitFor(
+  predicate: () => boolean,
+  timeoutMs = 5000,
+  explain?: () => string
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const started = Date.now()
     const check = () => {
       if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
+      if (Date.now() - started > timeoutMs) {
+        return reject(new Error(`waitFor : délai dépassé${explain ? `\n${explain()}` : ''}`))
+      }
       setTimeout(check, 10)
     }
     check()
   })
+}
+
+/** Dernières lignes d'un journal qui contiennent `marker`. */
+function tail(file: string | undefined, marker: string): string[] {
+  if (!file || !existsSync(file)) return []
+  return readFileSync(file, 'utf8')
+    .split('\n')
+    .filter((line) => line.includes(marker))
+    .slice(-20)
+}
+
+/**
+ * Coût de Bob jamais vu (CI Windows, fiche 157) : de quoi trancher entre une écriture ratée et des
+ * lectures ratées — fichiers de la base, lignes lues directement, sortie de l'agent factice (son
+ * écriture, réussie ou non, avec l'heure) et relectures ratées de l'app (journal détaillé).
+ */
+function bobCostState(bobDb: string, events: AgentEvent[]): string {
+  const dir = dirname(bobDb)
+  const files = readdirSync(dir).map((f) => `${f} (${statSync(join(dir, f)).size} o)`)
+  let rows: string
+  try {
+    const db = new DatabaseSync(bobDb, { readOnly: true })
+    try {
+      rows = JSON.stringify(db.prepare('SELECT id, costs, updated_at FROM tasks').all())
+    } finally {
+      db.close()
+    }
+  } catch (error) {
+    rows = `illisible : ${error instanceof Error ? error.message : String(error)}`
+  }
+  return [
+    `${new Date().toISOString()} base de Bob : ${files.join(', ') || 'vide'}`,
+    `lignes : ${rows}`,
+    `derniers évènements : ${events
+      .slice(-5)
+      .map((e) => e.type)
+      .join(', ')}`,
+    'stderr de l’agent factice :',
+    ...tail(agentsLogFile(), 'stderr'),
+    'relectures ratées :',
+    ...tail(logFile(), 'Base de Bob')
+  ].join('\n')
 }
 
 describe('journal de consommation avec l’agent factice (fiche 130)', () => {
@@ -322,23 +372,34 @@ describe('journal de consommation avec l’agent factice (fiche 130)', () => {
 
   it('--cout-bob : rien par ACP, coût relu après la fin du tour sur la ligne du même tour', async () => {
     const bobDb = join(tempDir('bob-db-'), 'bob.db')
-    const profile = mockProfile('streaming-texte', ['--bob-db', bobDb, '--cout-bob'])
-    const { host, rows, events, db } = await liveJournal({
-      ...profile,
-      costSource: bobDbCosts(bobDb)
-    })
-    for (const text of ['Un', 'Deux']) {
-      await host.prompt(text)
-      // Bob écrit son coût après sa réponse : relu dès que sa base change (veille), et à 1,5 s et
-      // 5 s (fiche 157). CI Windows du 2026-11-18 : écriture après la relecture de 5 s, jamais lue.
-      await waitFor(() => events.at(-1)?.type === 'usage-report', 6000)
+    // Journal détaillé : la sortie de l'agent factice et les relectures ratées, dites en cas d'échec.
+    initLog(tempDir('journal-log-'))
+    setVerbosity('detailed')
+    try {
+      const profile = mockProfile('streaming-texte', ['--bob-db', bobDb, '--cout-bob'])
+      const { host, rows, events, db } = await liveJournal({
+        ...profile,
+        costSource: bobDbCosts(bobDb)
+      })
+      for (const text of ['Un', 'Deux']) {
+        await host.prompt(text)
+        // Bob écrit son coût après sa réponse : relu dès que sa base change (veille), et à 1,5 s
+        // et 5 s (fiche 157). CI Windows du 2026-11-18 : écriture après la relecture de 5 s.
+        await waitFor(
+          () => events.at(-1)?.type === 'usage-report',
+          6000,
+          () => bobCostState(bobDb, events)
+        )
+      }
+      host.stop()
+      expect(rows().map((r) => r.cost)).toEqual([
+        { amount: 0.0125, currency: 'bobcoins' },
+        { amount: 0.0125, currency: 'bobcoins' }
+      ])
+      expect(rows().every((r) => Object.keys(r.tokens).length === 0)).toBe(true)
+      db.close()
+    } finally {
+      setVerbosity('normal')
     }
-    host.stop()
-    expect(rows().map((r) => r.cost)).toEqual([
-      { amount: 0.0125, currency: 'bobcoins' },
-      { amount: 0.0125, currency: 'bobcoins' }
-    ])
-    expect(rows().every((r) => Object.keys(r.tokens).length === 0)).toBe(true)
-    db.close()
   }, 15_000)
 })

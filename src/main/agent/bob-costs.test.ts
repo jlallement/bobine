@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { readBobSpend, readBobSubagents, readBobTaskCost, watchBobDb } from './bob-costs'
-import { writeBobTaskCost } from '../../mock-agent/scenario.mts'
+import { writeBobTaskCost, writeBobTaskCostLogged } from '../../mock-agent/scenario.mts'
 
 function bobDb(rows: [string, string][]): string {
   const file = join(mkdtempSync(join(tmpdir(), 'bob-db-')), 'bob.db')
@@ -131,5 +131,41 @@ describe('veille de la base de Bob (CI Windows du 2026-11-18)', () => {
   it('dossier absent : rien à guetter, sans erreur', () => {
     const stop = watchBobDb(join(tmpdir(), 'bob-absent-x9', 'db', 'bob.db'), () => {})
     expect(() => stop()).not.toThrow()
+  })
+})
+
+describe('coût écrit par l’agent factice pendant une lecture (CI Windows du 2026-11-19)', () => {
+  it('une lecture en cours ne bloque pas l’écriture : base en WAL, comme celle de Bob', () => {
+    const db = join(mkdtempSync(join(tmpdir(), 'bob-wal-')), 'bob.db')
+    writeBobTaskCost(db, 'mock-1', 0.0125)
+    // Lecture de l'app qui croise l'écriture du tour suivant (veille, relecture à heure fixe).
+    const reader = new DatabaseSync(db, { readOnly: true })
+    try {
+      reader.exec('BEGIN')
+      reader.prepare('SELECT costs FROM tasks').all()
+      const started = Date.now()
+      // En mode journal, l'écrivain attendait la fin de la lecture (5 s), puis échouait.
+      expect(() => writeBobTaskCost(db, 'mock-1', 0.025)).not.toThrow()
+      expect(Date.now() - started).toBeLessThan(1000)
+      reader.exec('COMMIT')
+      expect(reader.prepare('PRAGMA journal_mode').get()).toEqual({ journal_mode: 'wal' })
+    } finally {
+      reader.close()
+    }
+    expect(readBobTaskCost('mock-1', db)?.amount).toBe(0.025)
+  }, 10_000)
+
+  it('écriture impossible : dite sur stderr, l’agent continue', () => {
+    const notADir = join(mkdtempSync(join(tmpdir(), 'bob-ko-')), 'fichier')
+    writeFileSync(notADir, '')
+    const lines: string[] = []
+    const ok = writeBobTaskCostLogged(join(notADir, 'db', 'bob.db'), 'mock-1', 0.0125, (l) =>
+      lines.push(l)
+    )
+    expect(ok).toBe(false)
+    expect(lines).toEqual([expect.stringMatching(/coût de Bob PAS écrit \(mock-1\) : .+/)])
+    const db = join(mkdtempSync(join(tmpdir(), 'bob-ok-')), 'bob.db')
+    expect(writeBobTaskCostLogged(db, 'mock-1', 0.0125, (l) => lines.push(l))).toBe(true)
+    expect(lines.at(-1)).toMatch(/coût de Bob écrit : 0\.0125 \(mock-1\)/)
   })
 })

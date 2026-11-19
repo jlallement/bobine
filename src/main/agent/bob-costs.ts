@@ -12,6 +12,7 @@ import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { AgentSpend } from '@shared/usage'
+import { log } from '../log'
 import type { CostSource, SubagentCost } from './adapters'
 
 /** Base de Bob sous un dossier personnel (`BOBINE_CONFIG_HOME` pour les essais). */
@@ -52,6 +53,12 @@ export function watchBobDb(dbPath: string, onChange: () => void): () => void {
   }
 }
 
+/** Lecture impossible (verrou, schéma, fichier) : « pas de coût », dit au journal détaillé. */
+function unreadable(error: unknown): undefined {
+  log.debug('Base de Bob illisible :', error instanceof Error ? error.message : String(error))
+  return undefined
+}
+
 export interface BobTaskCost {
   /** Coût cumulé de la tâche, en bobcoins. */
   amount: number
@@ -75,8 +82,8 @@ export function readBobTaskCost(sessionId: string, dbPath = BOB_DB): BobTaskCost
       amount: round(amount + descendantsCost(db, sessionId)),
       ...(typeof tokens === 'number' && Number.isFinite(tokens) ? { contextTokens: tokens } : {})
     }
-  } catch {
-    return undefined
+  } catch (error) {
+    return unreadable(error)
   } finally {
     try {
       db?.close()
@@ -117,8 +124,8 @@ export function readBobSubagents(parentId: string, dbPath = BOB_DB): SubagentCos
         }
       ]
     })
-  } catch {
-    return undefined
+  } catch (error) {
+    return unreadable(error)
   } finally {
     try {
       db?.close()
@@ -160,8 +167,8 @@ export function readBobSpend(now = new Date(), dbPath = BOB_DB): AgentSpend | un
       if (row.updated_at >= midnight.getTime()) today += amount
     }
     return { currency: 'bobcoins', today: round(today), week: round(week), month: round(month) }
-  } catch {
-    return undefined
+  } catch (error) {
+    return unreadable(error)
   } finally {
     try {
       db?.close()

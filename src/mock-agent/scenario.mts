@@ -909,20 +909,41 @@ async function streamChunks(
 }
 
 /**
- * Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6. L'app la lit
- * pendant que l'agent y écrit : sans délai d'attente, l'écriture échoue (`database is locked`) dès
- * qu'une lecture la croise, ce qui coupait le tour au hasard (relevé sur `windows-latest`, fiche
- * 229 ; reproduit sur le Mac : 405 écritures sur 3 000 contre un lecteur en boucle). Un écrivain
- * SQLite attend que le verrou se libère : 5 s, le défaut de better-sqlite3.
+ * Base de Bob d'essai, créée au besoin avec la table `tasks` relevée sur Bob 2.0.6, en mode WAL
+ * comme la sienne (`bob.db-wal`, `bob.db-shm` : fiche 048). L'app la lit pendant que l'agent y
+ * écrit. En mode journal (le défaut de SQLite, que le mock gardait à tort), une lecture qui croise
+ * l'écriture la fait attendre ou échouer (`database is locked`, relevé sur `windows-latest`, fiche
+ * 229 ; reproduit sur le Mac : 405 écritures sur 3 000 contre un lecteur en boucle), et chaque
+ * transaction crée puis supprime `bob.db-journal`, ce que Windows refuse tant qu'un autre
+ * processus tient le fichier. En WAL, les lectures ne bloquent pas l'écrivain (fiche 157, CI
+ * Windows du 2026-11-19). Le délai d'attente (5 s, le défaut de better-sqlite3) reste pour deux
+ * écrivains.
  */
 function openBobDb(file: string): DatabaseSync {
   mkdirSync(dirname(file), { recursive: true })
   const db = new DatabaseSync(file, { timeout: 5_000 })
+  db.exec('PRAGMA journal_mode = WAL')
   db.exec(`CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY, parent_id TEXT, task_type TEXT NOT NULL DEFAULT 'normal',
     title TEXT NOT NULL DEFAULT '', status TEXT, costs TEXT,
     created_at INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0)`)
   return db
+}
+
+/** Écritures d'une même ligne en une seule transaction : jamais lue à moitié écrite. */
+function inTransaction(db: DatabaseSync, write: () => void): void {
+  db.exec('BEGIN IMMEDIATE')
+  try {
+    write()
+    db.exec('COMMIT')
+  } catch (error) {
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      // Transaction déjà annulée par SQLite : l'erreur d'origine suffit.
+    }
+    throw error
+  }
 }
 
 /**
@@ -933,17 +954,42 @@ export function writeBobTaskCost(file: string, sessionId: string, cost: number):
   const db = openBobDb(file)
   try {
     const now = Date.now()
-    db.prepare(
-      `INSERT OR IGNORE INTO tasks (id, task_type, status, created_at, updated_at)
+    inTransaction(db, () => {
+      db.prepare(
+        `INSERT OR IGNORE INTO tasks (id, task_type, status, created_at, updated_at)
        VALUES (?, 'normal', 'running', ?, ?)`
-    ).run(sessionId, now, now)
-    db.prepare('UPDATE tasks SET costs = ?, updated_at = ? WHERE id = ?').run(
-      JSON.stringify({ cost, contextTokens: 10_000 }),
-      now,
-      sessionId
-    )
+      ).run(sessionId, now, now)
+      db.prepare('UPDATE tasks SET costs = ?, updated_at = ? WHERE id = ?').run(
+        JSON.stringify({ cost, contextTokens: 10_000 }),
+        now,
+        sessionId
+      )
+    })
   } finally {
     db.close()
+  }
+}
+
+/**
+ * Coût écrit après la réponse (`--cout-bob`), hors de tout tour : une erreur ne doit ni passer
+ * inaperçue ni arrêter l'agent (Bob ne s'arrête pas pour ça). L'issue va sur stderr, que l'app
+ * recopie dans `agents.log` au niveau Détaillé.
+ */
+export function writeBobTaskCostLogged(
+  file: string,
+  sessionId: string,
+  cost: number,
+  report: (line: string) => void = (line) => process.stderr.write(`${line}\n`)
+): boolean {
+  const at = new Date().toISOString()
+  try {
+    writeBobTaskCost(file, sessionId, cost)
+    report(`[mock-agent] ${at} coût de Bob écrit : ${cost} (${sessionId})`)
+    return true
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    report(`[mock-agent] ${at} coût de Bob PAS écrit (${sessionId}) : ${reason}`)
+    return false
   }
 }
 
@@ -970,18 +1016,20 @@ function writeBobSubagent(
   const db = openBobDb(file)
   try {
     const now = Date.now()
-    db.prepare(
-      `INSERT OR IGNORE INTO tasks (id, parent_id, task_type, title, status, created_at, updated_at)
-       VALUES (?, ?, 'subagent', ?, 'running', ?, ?)`
-    ).run(step.id, parentId, step.title ?? '', now, now)
-    if (step.cost !== undefined) {
-      db.prepare('UPDATE tasks SET costs = ?, updated_at = ? WHERE id = ?').run(
-        JSON.stringify({ cost: step.cost, contextTokens: 1200 }),
-        now,
-        step.id
-      )
-    }
-    if (step.done) db.prepare(`UPDATE tasks SET status = 'completed' WHERE id = ?`).run(step.id)
+    inTransaction(db, () => {
+      db.prepare(
+        `INSERT OR IGNORE INTO tasks (id, parent_id, task_type, title, status, created_at, updated_at)
+         VALUES (?, ?, 'subagent', ?, 'running', ?, ?)`
+      ).run(step.id, parentId, step.title ?? '', now, now)
+      if (step.cost !== undefined) {
+        db.prepare('UPDATE tasks SET costs = ?, updated_at = ? WHERE id = ?').run(
+          JSON.stringify({ cost: step.cost, contextTokens: 1200 }),
+          now,
+          step.id
+        )
+      }
+      if (step.done) db.prepare(`UPDATE tasks SET status = 'completed' WHERE id = ?`).run(step.id)
+    })
   } finally {
     db.close()
   }
