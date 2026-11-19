@@ -45,7 +45,7 @@ import {
   type ChildrenMergeActions,
   type ChildrenMergeState
 } from './SubtasksMerge'
-import type { MergeRowState } from '@shared/children-merge'
+import { planWithout, type MergeRowState } from '@shared/children-merge'
 import { countText } from '@shared/i18n/format'
 import type { RoleBadge } from '@shared/roles'
 import { RoleAvatar, RoleStack, useRoleStyle } from '../roles/RoleAvatar'
@@ -78,6 +78,11 @@ export interface SubtasksInfo {
   agentLabel?: string
   /** Échec d'une action d'une carte-réponse (arrêter, relancer), dit à l'utilisateur. */
   onWarn?: (message: string) => void
+  /**
+   * Travaux d'une bulle « @Rôle … » (fiche 263), retirés de `children` : le pied de fusion ne les
+   * compte ni ne les fusionne.
+   */
+  carded?: ReadonlySet<string>
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
@@ -338,6 +343,12 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
   const total = digestsTotal(rows.map((r) => r.child.usage))
   const presenting = usePresentation()
   const merging = useChildrenMerge(info.motherId, info.merge, rows, items)
+  // Le pied ne compte ni ne fusionne que les lignes de la carte (fiche 263).
+  const carded = info.carded
+  const shownMerge = useMemo(
+    () => (merging.plan ? { ...merging, plan: planWithout(merging.plan, carded) } : merging),
+    [merging, carded]
+  )
   const verdicts = useMemo(() => childRecommendations(items), [items])
   const activity = useChildActivity(rows.map((r) => r.child.id))
   const roles = rows.flatMap((r) => (r.child.role ? [r.child.role] : []))
@@ -421,7 +432,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
       {info.motherId && info.merge && (
         <SubtasksMergeFooter
           motherId={info.motherId}
-          state={merging}
+          state={shownMerge}
           actions={info.merge}
           verdicts={verdicts}
         />
@@ -635,5 +646,5 @@ export function withLateCost(
  */
 export function withoutCards(info: SubtasksInfo, carded: ReadonlySet<string>): SubtasksInfo {
   if (carded.size === 0) return info
-  return { ...info, children: info.children.filter((c) => !carded.has(c.id)) }
+  return { ...info, children: info.children.filter((c) => !carded.has(c.id)), carded }
 }

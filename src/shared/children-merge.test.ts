@@ -3,6 +3,7 @@ import {
   lastChildrenMerge,
   mergeOverlaps,
   mergeSummary,
+  planWithout,
   settledMerge,
   type ChildrenMerge,
   type ChildrenMergePlan,
@@ -136,5 +137,32 @@ describe('fusion des filles : ce qui se calcule sans processus (fiche 120)', () 
     expect(state.items).toHaveLength(3)
     expect(lastChildrenMerge(state.items)?.runId).toBe('r2')
     expect(lastChildrenMerge(emptyTranscript.items)).toBeUndefined()
+  })
+})
+
+describe('plan sans les travaux d’une bulle (fiche 263)', () => {
+  const plan: ChildrenMergePlan = {
+    base: 'main',
+    children: ['a', 'b', 'c'].map((id) => ({
+      id,
+      title: id,
+      branch: `bobine/${id}`,
+      base: 'main',
+      state: 'ready' as const,
+      files: [],
+      dirty: 0
+    })) as MergeCandidate[],
+    overlaps: [
+      { first: 'a', second: 'b', files: ['y.ts'] },
+      { first: 'a', second: 'c', files: ['x.ts'] }
+    ],
+    running: false
+  }
+  it('retire ces filles et leurs recouvrements ; rien à retirer : le même plan', () => {
+    const kept = planWithout(plan, new Set(['c']))
+    expect(kept.children.map((c) => c.id)).toEqual(['a', 'b'])
+    expect(kept.overlaps).toEqual([{ first: 'a', second: 'b', files: ['y.ts'] }])
+    expect(planWithout(plan, new Set())).toBe(plan)
+    expect(planWithout(plan, undefined)).toBe(plan)
   })
 })

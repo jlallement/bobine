@@ -445,3 +445,61 @@ describe('Recommandations de la mère (fiche 160)', () => {
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b', 'c'], false))
   })
 })
+
+describe('travaux d’une bulle « @Rôle … » (fiche 263)', () => {
+  it('le pied ne compte ni ne fusionne que les lignes de la carte, pas les travaux d’une bulle', async () => {
+    const role = {
+      name: 'front',
+      label: 'Architecte front',
+      icon: 'layout',
+      color: 'blue' as const
+    }
+    const actions = {
+      plan: vi.fn(async () =>
+        plan([
+          candidate('a', 'ready', ['x.ts']),
+          candidate('b', 'ready', ['y.ts']),
+          candidate('c', 'ready', ['x.ts'])
+        ])
+      ),
+      start: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined),
+      abort: vi.fn(async () => undefined),
+      commitMain: vi.fn(async () => undefined),
+      openGit: vi.fn()
+    } satisfies ChildrenMergeActions
+    render(
+      <Transcript
+        items={[
+          started(1, 'a'),
+          started(2, 'b'),
+          {
+            kind: 'role-request',
+            id: 3,
+            requestId: 'd3',
+            text: 'Ajoute les rayons',
+            works: [{ childId: 'c', role }],
+            at: 3
+          },
+          { ...started(4, 'c'), role, request: 'd3' } as TranscriptItem
+        ]}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={{
+          children: [child('a'), child('b'), { ...child('c'), role }],
+          attention: {},
+          onOpen: vi.fn(),
+          motherId: 'mere',
+          merge: actions
+        }}
+      />
+    )
+    await waitFor(() => screen.getByTestId('subtasks-merge'))
+    expect(screen.getAllByTestId('subtask-row').map((r) => r.dataset['id'])).toEqual(['a', 'b'])
+    expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
+    // Le recouvrement avec le travail de la bulle (x.ts) n'est pas dit non plus.
+    expect(text('subtasks-merge-summary')).not.toContain('Fille c')
+    fireEvent.click(screen.getByTestId('subtasks-merge-start'))
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false))
+  })
+})

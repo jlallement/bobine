@@ -163,10 +163,11 @@ Pas de nouvelle dépendance.
 
 ## Limites connues
 
-- **Fusion groupée** : les travaux d'une bulle n'ont plus de ligne dans « Sous-tâches », mais le
-  pied « Fusionner les N dans main » (quand une carte « Sous-tâches » existe pour un travail de
-  l'agent) lit les branches de toutes les filles, celles des bulles comprises. Un rôle qui écrit se
-  fusionne depuis sa conversation (« Voir les modifications ») en attendant la fiche 264.
+- **Fusion groupée** (décision du tech lead) : le pied « Fusionner les N dans main » de
+  « Sous-tâches » ne compte et ne fusionne que les lignes de la carte (`planWithout` : sans les
+  travaux d'une bulle, ni leurs recouvrements). Un rôle qui écrit lancé par une bulle se fusionne
+  depuis sa conversation (« Voir les modifications ») en attendant sa carte (fiche 264).
+  Modifications › Filles garde toutes les filles.
 - **Activité en direct** : seulement ce qui arrive pendant que la carte est affichée (comme
   `useChildActivity`) ; rouvrir la conversation pendant un travail repart de « rien encore ».
 - **Bulle de suite** : l'agent de la mère ne la reçoit pas ; il reçoit la réponse suivante, avec
@@ -175,3 +176,17 @@ Pas de nouvelle dépendance.
   faisait déjà.
 - Le nom de l'agent dit sur la carte est le libellé de son profil (« OpenCode », « Agent
   factice »).
+- « Répondre à <rôle> » remplace les autres jetons de la saisie par celui du rôle ; ajouter un autre
+  rôle ensuite en fait de nouveaux lancements (accepté, tech lead).
+- Vu une fois pendant un `vitest` complet sous charge : `ipc.test.ts` (« Electron failed to install
+  correctly ») et `bob-costs.test.ts` (délai) ; verts seuls et dans `verify`. Sans lien avec ce lot.
+- L'export Markdown donne la bulle et la réponse entière (ajout hors demande, accepté).
+- Écarts à la maquette (« Lire la suite » sans nombre de lignes, boutons du pied à la ligne en
+  fenêtre étroite) : acceptés par le tech lead.
+
+### Décision du tech lead (2026-11-19)
+
+- Doute 1 corrigé : pied de fusion de « Sous-tâches » limité aux lignes de la carte
+  (`planWithout`, `SubtasksInfo.carded` posé par `withoutCards`). Essai qui échoue sans le
+  correctif (`SubtasksMerge.test.tsx` : « Fusionner les 3 » au lieu de 2) et essai de
+  `planWithout`. Doutes 2 à 7 acceptés tels quels.

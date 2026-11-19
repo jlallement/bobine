@@ -120,6 +120,24 @@ export interface ChildrenMergePlan {
   running: boolean
 }
 
+/**
+ * Plan sans ces filles (fiche 263) : les travaux d'une bulle « @Rôle … » n'ont pas de ligne dans
+ * « Sous-tâches » ; son pied ne les compte ni ne les fusionne (leur carte le fera, fiche 264).
+ */
+export function planWithout(
+  plan: ChildrenMergePlan,
+  excluded: ReadonlySet<string> | undefined
+): ChildrenMergePlan {
+  if (!excluded?.size) return plan
+  const children = plan.children.filter((c) => !excluded.has(c.id))
+  const kept = new Set(children.map((c) => c.id))
+  return {
+    ...plan,
+    children,
+    overlaps: plan.overlaps.filter((o) => kept.has(o.first) && kept.has(o.second))
+  }
+}
+
 /** Filles que « Fusionner les N » prend : prêtes, ou arrêtées sur un conflit. */
 export const mergeable = (plan: Pick<ChildrenMergePlan, 'children'>): MergeCandidate[] =>
   plan.children.filter((c) => c.state === 'ready' || c.state === 'conflict')
