@@ -19,18 +19,26 @@ interface Props {
 /**
  * Questions à choix posées par l'agent, présentées comme dans Claude Code : options numérotées,
  * clavier (1–9, ↑/↓, Entrée), « Autre… » en texte libre, un onglet par question.
+ *
+ * Fiche 254 (D2) : rien n'est en surbrillance avant un geste (↑/↓, survol), pour qu'aucune option
+ * ne paraisse choisie sans l'être ; et rien ne part sans au moins une réponse — « Envoyer » reste
+ * inactif, Entrée aussi : une réponse vide vaudrait refus (accord par site, commande). Pour ne
+ * pas répondre, il y a « Passer ».
  */
 export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
   const { t } = useTranslation()
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({})
-  const [focus, setFocus] = useState(0)
+  /** Ligne en surbrillance ; -1 : aucune, tant que l'utilisateur n'a rien désigné. */
+  const [focus, setFocus] = useState(-1)
   const card = useRef<HTMLDivElement>(null)
   const other = useRef<HTMLInputElement>(null)
   const question = questions[step] as Question
   const answer = answers[question.key] ?? emptyAnswer()
   const rows = question.options.length + (question.customKey ? 1 : 0)
   const last = step === questions.length - 1
+  /** Le bouton envoie (dernière question, ou toutes les autres répondues) plutôt qu'il n'avance. */
+  const sends = last || questions.every((q, i) => i === step || isAnswered(q, answers[q.key]))
 
   // La carte prend le focus à l'apparition et à chaque question : on répond sans la souris.
   useEffect(() => {
@@ -39,10 +47,12 @@ export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
 
   const update = (key: string, next: QuestionAnswer) => setAnswers((a) => ({ ...a, [key]: next }))
 
+  /** Obligatoires toutes répondues, et au moins une réponse en tout (jamais d'envoi vide). */
   const complete = (current: Record<string, QuestionAnswer>) =>
-    questions.every((q) => !q.required || isAnswered(q, current[q.key]))
+    questions.every((q) => !q.required || isAnswered(q, current[q.key])) &&
+    questions.some((q) => isAnswered(q, current[q.key]))
 
-  /** Envoi, si les questions obligatoires ont une réponse. */
+  /** Envoi, si les questions obligatoires ont une réponse (et qu'il y a une réponse). */
   const submit = (current: Record<string, QuestionAnswer>) => {
     if (complete(current)) onSubmit(answerContent(questions, current))
   }
@@ -53,7 +63,7 @@ export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
     if (next === -1) submit(current)
     else {
       setStep(next)
-      setFocus(0)
+      setFocus(-1)
     }
   }
 
@@ -85,21 +95,28 @@ export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
       activate(digit - 1)
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
-      setFocus((f) => (f + (event.key === 'ArrowDown' ? 1 : rows - 1)) % rows)
+      // Depuis « aucune » : ↓ mène à la première ligne, ↑ à la dernière.
+      setFocus((f) =>
+        f < 0
+          ? event.key === 'ArrowDown'
+            ? 0
+            : rows - 1
+          : (f + (event.key === 'ArrowDown' ? 1 : rows - 1)) % rows
+      )
     } else if (event.key === ' ') {
       event.preventDefault()
-      activate(focus)
+      if (focus >= 0) activate(focus)
     } else if (event.key === 'Enter') {
       event.preventDefault()
       // Choix multiple : Entrée valide la question ; choix unique : choisit l'option en surbrillance.
       if (question.multi) advance(answers)
-      else activate(focus)
+      else if (focus >= 0) activate(focus)
     } else if (event.key === 'ArrowRight' && step < questions.length - 1) {
       setStep(step + 1)
-      setFocus(0)
+      setFocus(-1)
     } else if (event.key === 'ArrowLeft' && step > 0) {
       setStep(step - 1)
-      setFocus(0)
+      setFocus(-1)
     }
   }
 
@@ -136,7 +153,7 @@ export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
               className={`question-tab${i === step ? ' active' : ''}`}
               onClick={() => {
                 setStep(i)
-                setFocus(0)
+                setFocus(-1)
               }}
             >
               {isAnswered(q, answers[q.key]) ? <Check size={13} /> : <span className="dot" />}
@@ -219,12 +236,10 @@ export function QuestionCard({ message, questions, onSubmit, onSkip }: Props) {
         <button
           className="btn primary"
           onClick={() => (last ? submit(answers) : advance(answers))}
-          disabled={last && !complete(answers)}
+          disabled={sends && !complete(answers)}
           data-testid="questions-next"
         >
-          {last || questions.every((q, i) => i === step || isAnswered(q, answers[q.key]))
-            ? t('question.send')
-            : t('question.next')}
+          {sends ? t('question.send') : t('question.next')}
         </button>
       </div>
     </div>
