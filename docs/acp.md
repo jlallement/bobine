@@ -180,6 +180,11 @@ second processus, mode plan si le profil en a un (`initialModeMeta`, `bob/mode` 
 Bob), un seul `session/prompt` (`<bobine_commit_message>`), toute demande d'autorisation refusée,
 toute élicitation déclinée (une licence à accepter chez Bob donne le repli, jamais un formulaire),
 puis `session/delete` (annoncé par Bob) et l'arrêt du processus. Rien d'autre ni de non documenté.
+Le coût de la session est lu **avant** `session/delete` (qui efface la ligne de la tâche chez Bob,
+voir « Suppression d'une session ») : chez Bob, écrit dans sa base après la réponse, il est attendu
+jusqu'à ce que la relecture de la conversation (fin du tour, veille de la base, relectures
+tardives) l'annonce, 15 s au plus ; puis ajouté à la conversation (total, plafond) et au journal
+de consommation (fiche 254, D1 de la recette du 2026-11-19).
 Fin du tour autre que `end_turn` (`refusal`, `cancelled`, erreur), connexion expirée
 (`needs-action`) ou 45 s sans réponse : message déduit des fichiers. Coût relevé : OpenCode 2.3.0,
 modèle gratuit, 3,6 à 4,4 s et ≈ 5 700 jetons pour un petit diff ; Bob **non mesuré** (estimé à

@@ -7,8 +7,11 @@
  * ses sous-agents, retient le contexte et le coût cumulé annoncés (`usage_update`,
  * `usage-report`), et finit au `turn-end`, au `turn-error`, ou quand l'agent s'arrête en plein tour.
  * Le coût d'un tour est la différence du coût cumulé de la session entre son début et sa fin, comme
- * dans le fil (fiche 109) ; annoncé après la fin (Bob), il réécrit la ligne du même tour. Rien n'est
- * jamais supprimé : ni la suppression d'une conversation, ni le passage à un autre agent n'effacent
+ * dans le fil (fiche 109) ; annoncé après la fin (Bob), il réécrit la ligne du même tour. Le coût
+ * d'une session à part de la conversation (aparté, message de commit rédigé : `aside-cost`) fait
+ * sa propre ligne (`stopReason: aside`, fiche 254), sans toucher au coût cumulé de la session de la
+ * conversation : sa session est souvent supprimée ensuite, et sa dépense avec elle chez l'agent
+ * (Bob). Rien n'est jamais supprimé : ni la suppression d'une conversation, ni le passage à un autre agent n'effacent
  * ses lignes.
  */
 import type { Usage } from '../../shared/acp-sdk.mts'
@@ -123,6 +126,8 @@ export class UsageJournal {
       case 'status':
         if (track.open && STOPPED.has(event.snapshot.status)) this.finish(track, 'interrupted')
         return
+      case 'aside-cost':
+        return this.aside(conversationId, event.cost)
       case 'handover':
         // Nouvelle session chez l'autre agent : son coût cumulé part de zéro (ADR-0024).
         this.finish(track, 'interrupted')
@@ -192,6 +197,33 @@ export class UsageJournal {
       toolIds: new Set(),
       subagents: new Map()
     }
+  }
+
+  /** Session à part (aparté, message de commit rédigé) : une ligne à elle, rattachée à la conversation. */
+  private aside(conversationId: string, cost: Cost): void {
+    if (!(cost.amount > 0)) return
+    const context = this.options.describe(conversationId)
+    if (!context) return
+    const at = this.now()
+    const workspace = context.workspace || undefined
+    const repoRoot = workspace ? this.options.repoRoot?.(workspace) : undefined
+    this.options.db.upsert({
+      // Suffixe : jamais la même clé qu'un tour de la conversation commencé à la même milliseconde.
+      id: `${conversationId}:${at}:aside`,
+      conversationId,
+      ...(context.parentId ? { parentId: context.parentId } : {}),
+      startedAt: at,
+      endedAt: at,
+      profileId: context.profileId,
+      ...(context.profileLabel ? { profileLabel: context.profileLabel } : {}),
+      ...(workspace ? { workspace } : {}),
+      ...(repoRoot ? { repoRoot } : {}),
+      stopReason: 'aside',
+      tokens: {},
+      cost: { amount: round6(cost.amount), currency: cost.currency },
+      tools: {},
+      subagents: 0
+    })
   }
 
   private onUpdate(track: Track, update: Extract<AgentEvent, { type: 'update' }>['update']): void {

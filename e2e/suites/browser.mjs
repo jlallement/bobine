@@ -447,6 +447,17 @@ async function siteGuard(ui, foreign) {
     ),
     'page affichée sur un site non accordé : carte d’accord avant que l’agent la lise'
   )
+  // Fiche 254 (D2, recette Bob du 2026-11-19) : rien ne paraît choisi (seule une option sous la
+  // souris se distingue), « Envoyer » attend un choix (une réponse vide vaudrait refus).
+  check(
+    (await ui.ev(`[...document.querySelectorAll('[data-testid=choice]')].every(
+      (c) =>
+        c.getAttribute('aria-checked') === 'false' &&
+        !c.classList.contains('selected') &&
+        (!c.classList.contains('focused') || c.matches(':hover'))
+    )`)) && (await ui.ev(`${ui.$('questions-next')}.disabled`)),
+    'carte « Site web » : aucune option ne paraît choisie, « Envoyer » inactif sans choix'
+  )
   await ui.shot('28h-site-affiche-accord')
   await ui.press('3')
   await ui.ready()

@@ -51,6 +51,8 @@ describe('QuestionCard', () => {
     cleanupAnd(() => {
       const second = setup([couleur])
       const card = screen.getByTestId('questions')
+      // Rien en surbrillance à l'ouverture : ↓ mène à la première option, ↓ encore à la deuxième.
+      fireEvent.keyDown(card, { key: 'ArrowDown' })
       fireEvent.keyDown(card, { key: 'ArrowDown' })
       fireEvent.keyDown(card, { key: 'Enter' })
       expect(second.onSubmit).toHaveBeenCalledWith({ couleur: 'bleu' })
@@ -79,6 +81,50 @@ describe('QuestionCard', () => {
   it('question obligatoire sans réponse : « Envoyer » reste inactif', () => {
     setup([couleur])
     expect((screen.getByTestId('questions-next') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('carte « Site web » (fiche 254, D2) : rien ne paraît choisi, « Envoyer » inactif, aucune réponse vide', () => {
+    // Comme la carte d'accord par site : choix unique, question facultative, sans « Autre ».
+    const site: Question = {
+      key: 'answer',
+      header: 'Site web',
+      text: 'L’agent veut ouvrir example.com. L’autoriser ?',
+      multi: false,
+      options: [
+        { value: 'Autoriser', label: 'Autoriser' },
+        { value: 'Toujours autoriser', label: 'Toujours autoriser' },
+        { value: 'Refuser', label: 'Refuser' }
+      ]
+    }
+    const { onSubmit } = setup([site])
+    const choices = screen.getAllByTestId('choice')
+    expect(choices.map((c) => c.getAttribute('aria-checked'))).toEqual(['false', 'false', 'false'])
+    expect(choices.filter((c) => /\b(focused|selected)\b/.test(c.className))).toEqual([])
+    const send = screen.getByTestId('questions-next') as HTMLButtonElement
+    expect(send.disabled).toBe(true)
+    fireEvent.click(send)
+    // Entrée ou espace sans option en surbrillance : rien non plus.
+    fireEvent.keyDown(screen.getByTestId('questions'), { key: 'Enter' })
+    fireEvent.keyDown(screen.getByTestId('questions'), { key: ' ' })
+    expect(onSubmit).not.toHaveBeenCalled()
+    // Une option survolée se distingue, sans paraître choisie ; un clic l'envoie.
+    fireEvent.mouseEnter(choices[0] as HTMLElement)
+    expect(choices[0]?.className).toContain('focused')
+    expect(choices[0]?.getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(choices[0] as HTMLElement)
+    expect(onSubmit).toHaveBeenCalledWith({ answer: 'Autoriser' })
+  })
+
+  it('choix multiple facultatif : « Envoyer » inactif tant que rien n’est coché, Entrée aussi', () => {
+    const { onSubmit } = setup([garnitures])
+    const send = screen.getByTestId('questions-next') as HTMLButtonElement
+    expect(send.disabled).toBe(true)
+    fireEvent.keyDown(screen.getByTestId('questions'), { key: 'Enter' })
+    expect(onSubmit).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText('Olives'))
+    expect(send.disabled).toBe(false)
+    fireEvent.click(screen.getByText('Olives'))
+    expect(send.disabled).toBe(true)
   })
 
   it('plusieurs questions : onglets, passage à la suivante, envoi groupé', () => {

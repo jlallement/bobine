@@ -17,3 +17,7 @@ ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:ge
 ae9fe66e72fc4b3bf0493fa81e772bffffbc55ff:src/main/agent/acp-exchanges.test.ts:generic-api-key:49
 # Fiche 246 : valeur factice du test de masquage du diff envoyé à l'agent (marquée en ligne ensuite).
 fd92080b07ff72810a0ec81f3d05cf0acb5bf875:src/main/changes/commit-diff.test.ts:generic-api-key:80
+# Lots rc (fiche 254) : argument --api-key factice des tests de masquage du journal et du détecteur
+# (marqué en ligne ensuite).
+4b91b86574060ae9200298e16bc09e3335920422:src/main/log.test.ts:generic-api-key:93
+4b91b86574060ae9200298e16bc09e3335920422:src/main/secret-scan.test.ts:generic-api-key:51

@@ -113,6 +113,7 @@ export function GeneralSettings({
               type="checkbox"
               checked={preferences.keepAwake}
               onChange={(e) => onPreferences({ keepAwake: e.target.checked })}
+              aria-label={t('settings.general.keepAwake.label')}
               data-testid="settings-keep-awake"
             />
             <span />
@@ -155,6 +156,7 @@ export function GeneralSettings({
               type="checkbox"
               checked={preferences.commitDraftEnabled}
               onChange={(e) => onPreferences({ commitDraftEnabled: e.target.checked })}
+              aria-label={t('settings.general.commitDraft.label')}
               data-testid="settings-commit-draft"
             />
             <span />

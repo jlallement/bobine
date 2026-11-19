@@ -90,7 +90,7 @@ describe('journal', () => {
     log.info(
       'Agent lancé perso : mon-agent acp --api-key abcd1234efgh5678 --model m dans /tmp (pid 1)'
     )
-    log.info('Profil', { args: ['acp', '--api-key', 'abcd1234efgh5678'] })
+    log.info('Profil', { args: ['acp', '--api-key', 'abcd1234efgh5678'] }) // gitleaks:allow — fake value for tests
     log.info('Clé reçue', 'cle-enregistree-0123456')
     log.error('Échec', new Error('refusé : token=zzzz9999yyyy'))
     const text = readFileSync(file, 'utf8')

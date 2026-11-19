@@ -8,6 +8,14 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 - Electron 45.4.1 : correctifs de sécurité de Chromium et de V8 ; un élément cliqué du bouton
   droit n'est plus gardé en mémoire après sa disparition.
+- Message de commit rédigé par l'agent : son coût est maintenant compté dans la conversation, son
+  plafond et Mon activité, même avec IBM Bob qui l'écrit après sa réponse. Le coût des apartés
+  apparaît aussi dans Mon activité.
+- Cartes de questions (dont « Site web » et les commandes à autoriser) : aucune option ne paraît
+  choisie tant que vous n'en avez pas désigné une, et « Envoyer » reste grisé sans choix ; une
+  réponse vide ne part plus (elle valait un refus). Pour ne pas répondre : « Passer ».
+- Réglages : chaque interrupteur (plafond par conversation, notifications, mémoire…) porte son nom
+  pour les lecteurs d'écran.
 - Navigateur intégré : l'accord par site ne se contourne plus. Avant de lire une page ou d'y agir
   (capture, clic, saisie, JavaScript…), l'agent doit avoir l'accord pour le site affiché ; sinon la
   carte « Site web » le demande. Pendant une action de l'agent, la page ne peut plus partir vers

@@ -41,6 +41,7 @@ export function PrivacySettings({
               type="checkbox"
               checked={settings.preferences.browserKeepCookies}
               onChange={(e) => onPreferences({ browserKeepCookies: e.target.checked })}
+              aria-label={t('settings.privacy.keepCookies.label')}
               data-testid="settings-browser-keep-cookies"
             />
             <span />

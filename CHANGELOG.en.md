@@ -8,6 +8,14 @@ What changes for you, version by version. Shown in Settings › About.
 
 - Electron 45.4.1: Chromium and V8 security fixes; a right-clicked element is no longer kept in
   memory after it is removed.
+- Commit message drafted by the agent: its cost now counts in the conversation, its cap and My
+  activity, even with IBM Bob, which writes it after its reply. Aside costs also show in My
+  activity.
+- Question cards (including “Website” and commands to approve): no option looks chosen until you
+  point at one, and “Send” stays greyed out with no choice; an empty answer is no longer sent (it
+  counted as a refusal). To not answer: “Skip”.
+- Settings: every switch (per-conversation cap, notifications, memory…) has its name for screen
+  readers.
 - Built-in browser: site approval can no longer be bypassed. Before reading or acting on a page
   (screenshot, click, typing, JavaScript…), the agent needs approval for the site shown; otherwise
   the “Website” card asks for it. During an agent action, the page can no longer go to an
