@@ -64,5 +64,9 @@ export function writeOrRemove(
     }
     return
   }
-  writeFileAtomic(file, text.endsWith('\n') ? text : `${text}\n`, options)
+  // Configuration d'agent : peut porter des clés ; créée en 0600, droits existants gardés (249).
+  writeFileAtomic(file, text.endsWith('\n') ? text : `${text}\n`, {
+    ...options,
+    createMode: 0o600
+  })
 }

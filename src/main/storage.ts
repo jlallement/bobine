@@ -16,12 +16,14 @@ import {
   constants,
   copyFileSync,
   existsSync,
+  fchmodSync,
   fsyncSync,
   openSync,
   readdirSync,
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeSync
 } from 'node:fs'
 import { copyFile, open, rename, rm } from 'node:fs/promises'
@@ -99,6 +101,28 @@ export function sweepTempFiles(dirs: readonly string[]): number {
   return removed
 }
 
+/** Options communes des écritures atomiques. */
+export interface AtomicWriteOptions {
+  backup?: boolean
+  /** Droits imposés au fichier, quels qu'aient été ceux du fichier remplacé. */
+  mode?: number
+  /**
+   * Droits d'un fichier qui n'existait pas (0666 moins l'umask par défaut) ; un fichier remplacé
+   * garde les siens (fiche 249 : un fichier de configuration en 0600 ne repasse pas en 0644).
+   */
+  createMode?: number
+}
+
+/** Droits à poser exactement (sans l'umask) : imposés, ou ceux du fichier remplacé. */
+function keptMode(file: string, mode: number | undefined): number | undefined {
+  if (mode !== undefined) return mode
+  try {
+    return statSync(file).mode & 0o777
+  } catch {
+    return undefined // Nouveau fichier : `createMode`.
+  }
+}
+
 /**
  * Écriture atomique asynchrone (fiche 043) : la synchronisation sur le disque se fait hors du fil
  * principal, et plusieurs écritures du même fichier peuvent se chevaucher (fichier temporaire
@@ -109,7 +133,7 @@ export function sweepTempFiles(dirs: readonly string[]): number {
 export async function writeFileAtomicAsync(
   file: string,
   text: string,
-  options: { backup?: boolean; mode?: number; commit?: () => boolean } = {}
+  options: AtomicWriteOptions & { commit?: () => boolean } = {}
 ): Promise<boolean> {
   if (isReadOnly(file)) return false
   refuseProtected(file)
@@ -117,9 +141,11 @@ export async function writeFileAtomicAsync(
   // Jamais à travers un lien : un temporaire laissé là (ou posé par un dépôt) est retiré, puis
   // créé exclusivement (`wx` ne suit pas un lien qui serait apparu entre-temps).
   await rm(tmp, { force: true })
-  const handle = await open(tmp, 'wx', options.mode ?? 0o666)
+  const mode = keptMode(file, options.mode)
+  const handle = await open(tmp, 'wx', mode ?? options.createMode ?? 0o666)
   try {
     try {
+      if (mode !== undefined) await handle.chmod(mode)
       await handle.writeFile(text)
       await handle.sync()
     } finally {
@@ -180,7 +206,7 @@ async function fsyncDirAsync(dir: string): Promise<void> {
 export function writeFileAtomic(
   file: string,
   text: string,
-  options: { backup?: boolean; mode?: number } = {}
+  options: AtomicWriteOptions = {}
 ): boolean {
   if (isReadOnly(file)) return false
   refuseProtected(file)
@@ -188,8 +214,10 @@ export function writeFileAtomic(
   try {
     // Jamais à travers un lien (relecture de la fiche 223) : voir `writeFileAtomicAsync`.
     rmSync(tmp, { force: true })
-    const fd = openSync(tmp, 'wx', options.mode ?? 0o666)
+    const mode = keptMode(file, options.mode)
+    const fd = openSync(tmp, 'wx', mode ?? options.createMode ?? 0o666)
     try {
+      if (mode !== undefined) fchmodSync(fd, mode)
       writeSync(fd, text)
       fsyncSync(fd)
     } finally {
