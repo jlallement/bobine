@@ -158,8 +158,30 @@ signature Developer ID et la notarisation, si configurées, restent appliquées 
 Construite par GitHub à chaque version (fiche 059) : page « Releases » du dépôt, ou
 
 ```bash
-gh release download <version> -p '*.dmg'   # ex. v1.0.0-beta.1
+gh release download <version> -p '*.dmg' -p 'SHA256SUMS-macos-*'   # ex. v1.0.0-rc.1
 ```
+
+**Vérifier le téléchargement** (à partir de la 1.0.0-rc.1, fiche 250). Deux preuves, publiées
+avec chaque version, qui ne remplacent pas la notarisation (il n'y en a pas) mais disent que le
+fichier est bien celui que GitHub a construit :
+
+- **La somme SHA-256**, dans `SHA256SUMS-macos-arm64.txt` (comme `SHA256SUMS-linux-*.txt` et
+  `SHA256SUMS-windows-*.txt` pour les autres systèmes). Dans le dossier du téléchargement :
+
+  ```bash
+  shasum -a 256 -c SHA256SUMS-macos-arm64.txt   # « Bobine-<version>-arm64.dmg: OK »
+  ```
+
+- **L'attestation de provenance** : signée par GitHub (Sigstore) au moment de la publication, elle
+  relie le fichier au workflow `release.yml` de ce dépôt, au tag et au commit dont il est parti.
+  Avec la [CLI GitHub](https://cli.github.com) (2.49 ou plus récente) :
+
+  ```bash
+  gh attestation verify Bobine-<version>-arm64.dmg --repo jlallement/bobine
+  ```
+
+  « Verification succeeded! » et la ligne `Build repo: jlallement/bobine` disent que le fichier n'a
+  pas été modifié depuis sa construction. Même commande pour un `.deb` ou un `.exe`.
 
 Le `.dmg` contient Bobine et le lien Applications. Deux façons d’installer restent possibles
 (fiche 073 ; fenêtre simplifiée à partir de la fiche 153, après la version 0.6.0) :
@@ -267,6 +289,9 @@ elles seront chiffrées à leur prochain usage.
 ```bash
 sha256sum Bobine-<version>-<arch>.deb
 ```
+
+Et sa provenance : `gh attestation verify Bobine-<version>-<arch>.deb --repo jlallement/bobine`
+(voir « Vérifier le téléchargement », plus haut).
 
 ## Windows (préversion)
 

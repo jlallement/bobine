@@ -208,9 +208,12 @@ jobs:
           plist=dist/mac-arm64/Bobine.app/Contents/Info.plist
           short="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
           bundle="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
-          echo "CFBundleShortVersionString=$short CFBundleVersion=$bundle"
+          minimum="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")"
+          echo "CFBundleShortVersionString=$short CFBundleVersion=$bundle LSMinimumSystemVersion=$minimum"
           test "$short" = "${version%%[-+]*}"
           test "$bundle" = "$version"
+          # macOS 13+ annoncé par le README (fiche 250, audit R13).
+          test "$minimum" = 13.0
 
       - name: Essai natif du DMG (agent factice)
         run: |
@@ -245,13 +248,80 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8"
 
+      # Comme Linux et Windows (fiche 250, audit SEC-5) : la somme du .dmg, à comparer après le
+      # téléchargement (`shasum -a 256 -c`, docs/installation.md).
+      - name: Somme SHA-256
+        run: |
+          cd dist
+          version="$(node -p "require('../package.json').version")"
+          shasum -a 256 "Bobine-$version-arm64.dmg" > SHA256SUMS-macos-arm64.txt
+          cat SHA256SUMS-macos-arm64.txt
+
       # Pour le job `publish` (tag) ou à télécharger (lancement à la main).
       - name: Artefact .dmg
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bobine-dmg
-          path: dist/*.dmg
+          path: |
+            dist/*.dmg
+            dist/SHA256SUMS-macos-*.txt
           if-no-files-found: error
+          retention-days: 7
+
+  # Le .dmg construit, ouvert sur le plus ancien macOS Apple Silicon de GitHub (fiche 250, audit
+  # R13 / REL-4) : le minimum annoncé est 13, aucun runner arm64 ne l'a ; 14 est le plus proche.
+  # Même essai natif que le job `dmg` (agent factice, aucun secret, jeton en lecture).
+  dmg-macos-14:
+    name: .dmg essayé sur macOS 14
+    needs: dmg
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # L'agent factice et l'essai natif viennent du dépôt ; l'app, du .dmg du job `dmg`.
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: bobine-dmg
+          path: dist
+
+      - name: Essai natif du DMG sur macOS 14 (agent factice)
+        run: |
+          sw_vers
+          test "$(node -p 'process.arch')" = arm64
+          version="$(node -p "require('./package.json').version")"
+          (cd dist && shasum -a 256 -c SHA256SUMS-macos-arm64.txt)
+          smoke_mount="$(mktemp -d "$RUNNER_TEMP/bobine-dmg-smoke.XXXXXX")"
+          cleanup() {
+            for _ in 1 2 3 4 5; do
+              hdiutil detach "$smoke_mount" && break
+              sleep 3
+            done
+            if mount | grep -q " on $smoke_mount "; then hdiutil detach -force "$smoke_mount"; fi
+            if [[ -d "$smoke_mount" ]]; then rmdir "$smoke_mount"; fi
+          }
+          trap cleanup EXIT
+          hdiutil attach -readonly -nobrowse -mountpoint "$smoke_mount" "dist/Bobine-$version-arm64.dmg"
+          BOBINE_PACKAGED_APP="$smoke_mount/Bobine.app" node e2e/packaged-ci.mjs
+
+      - name: Capture de l’essai natif (macOS 14)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bobine-dmg-smoke-macos-14
+          path: e2e/captures/packaged.png
+          if-no-files-found: ignore
           retention-days: 7
 
   linux:
@@ -390,18 +460,23 @@ jobs:
 
   publish:
     name: Release GitHub
-    needs: [dmg, linux, windows]
-    # Au tag seulement, .dmg construit et essayé ; Linux et Windows construits, ou sautés faute de
-    # BOBINE_LINUX_RELEASE / BOBINE_WINDOWS_RELEASE. Un échec de l'un d'eux (activé) ne publie
-    # rien : pas de Release à moitié.
+    needs: [dmg, dmg-macos-14, linux, windows]
+    # Au tag seulement, .dmg construit et essayé (macOS 15, puis 14) ; Linux et Windows construits,
+    # ou sautés faute de BOBINE_LINUX_RELEASE / BOBINE_WINDOWS_RELEASE. Un échec de l'un d'eux
+    # (activé) ne publie rien : pas de Release à moitié.
     if: >-
       !cancelled() && github.ref_type == 'tag' && needs.dmg.result == 'success' &&
+      needs.dmg-macos-14.result == 'success' &&
       (needs.linux.result == 'success' || needs.linux.result == 'skipped') &&
       (needs.windows.result == 'success' || needs.windows.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # `id-token` et `attestations` : l'attestation de provenance (fiche 250, audit SEC-5 / REL-2),
+    # sur ce seul job, qui ne lance rien du dépôt (pas d'installation, pas de script du projet).
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       # Seulement les deux changelogs (notes) : rien du dépôt n'est installé ni lancé ici.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -432,6 +507,18 @@ jobs:
           pattern: bobine-windows-*
           merge-multiple: true
           path: dist
+
+      # Provenance signée (Sigstore) de chaque fichier publié : construit par ce workflow, depuis
+      # ce tag et ce commit. Vérifiable par `gh attestation verify <fichier> --repo <dépôt>`
+      # (docs/installation.md). Faite ici, sur les fichiers des jobs de construction de ce même
+      # passage, pour ne pas donner le jeton OIDC aux jobs qui installent et lancent le projet.
+      - name: Attestation de provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.dmg
+            dist/*.deb
+            dist/*.exe
 
       - name: Release
         env:
@@ -496,9 +583,12 @@ jobs:
           # Linux et Windows seulement s'ils ont été construits (BOBINE_LINUX_RELEASE,
           # BOBINE_WINDOWS_RELEASE) ; le .dmg toujours.
           shopt -s nullglob
-          files=(dist/*.dmg dist/*.deb dist/SHA256SUMS-linux-*.txt dist/*.exe dist/SHA256SUMS-windows-*.txt)
+          files=(dist/*.dmg dist/SHA256SUMS-macos-*.txt dist/*.deb dist/SHA256SUMS-linux-*.txt dist/*.exe dist/SHA256SUMS-windows-*.txt)
           ls -l "${files[@]}"
           test -f "dist/Bobine-$version-arm64.dmg"
+          test -f dist/SHA256SUMS-macos-arm64.txt
+          # La somme dit bien le .dmg publié (rien n'a changé entre les deux jobs).
+          (cd dist && sha256sum -c SHA256SUMS-macos-arm64.txt)
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --verify-tag \
             --title "Bobine $version" \
