@@ -134,7 +134,7 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       const items = input.items()
       return joinContext(
         handoverContext(items),
-        childContext(childNews(items)),
+        childContext(childNews(items), items),
         memoryOutcomeContext(memoryOutcomes(items)),
         tools.includes('start_child') ? mentionReminder(text) : undefined
       )

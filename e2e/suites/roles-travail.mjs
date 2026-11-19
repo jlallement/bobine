@@ -471,6 +471,17 @@ async function cardRun(ui, turnLock) {
   )
   await reveal(ui, card)
   await ui.shot('263-carte-repondu')
+  // Fenêtre étroite (revue UX, 9) : la carte réduit son retrait, rien ne déborde.
+  await ui.viewport(900, 820)
+  await reveal(ui, card)
+  const narrow = await ui.ev(`(() => {
+    const card = ${card}
+    const box = card.getBoundingClientRect()
+    return [...card.querySelectorAll('*')].every((el) => el.getBoundingClientRect().right <= box.right + 1)
+  })()`)
+  check(narrow, '900 px : rien ne déborde de la carte')
+  await ui.shot('263-carte-repondu-900')
+  await ui.viewport()
   await ui.click(`${card}.querySelector('[data-testid=work-more]')`)
   await ui.waitFor(`!${card}.querySelector('[data-testid=work-body]').dataset.folded`)
   check(
@@ -527,6 +538,45 @@ async function cardRun(ui, turnLock) {
   )
   await reveal(ui, `${card}.querySelector('[data-testid=work-ask]')`)
   await ui.shot('263-carte-repondre')
+
+  // Arrêté : « Arrêter » n'arrête que ce travail ; la carte le dit, « Relancer » est proposé.
+  writeFileSync(turnLock, '')
+  const held = existsSync(`${turnLock}.retenus`)
+    ? readFileSync(`${turnLock}.retenus`, 'utf8').split('\n').filter(Boolean).length
+    : 0
+  await typeIn(ui, '@ux-ui-expert Compare deux variantes de palette.')
+  await ui.press('Escape')
+  await ui.waitFor(`!!${ui.$('role-destination')}`)
+  await ui.enter()
+  const second = `${cards}[1]`
+  await ui.waitFor(`${second}?.dataset.state === 'running'`, 30000)
+  await heldTurns(turnLock, held + 1)
+  await ui.click(`${second}.querySelector('[data-testid=work-stop]')`)
+  await ui.waitFor(`${second}?.dataset.state === 'stopped'`, 30000)
+  rmSync(turnLock, { force: true })
+  check(
+    (await ui.ev(`!!${second}.querySelector('[data-testid=work-retry]')`)) &&
+      (await ui.ev(`${cards}[0].dataset.state`)) === 'replied',
+    'arrêté : ce travail seulement, « Relancer » proposé'
+  )
+  await reveal(ui, second)
+  await ui.shot('263-carte-arrete')
+
+  // En erreur : le tour du travail échoue, la carte dit l'erreur.
+  await typeIn(ui, '@ux-ui-expert Vérifie la base de données.')
+  await ui.press('Escape')
+  await ui.waitFor(`!!${ui.$('role-destination')}`)
+  await ui.enter()
+  const third = `${cards}[2]`
+  await ui.waitFor(`${third}?.dataset.state === 'error'`, 30000)
+  check(
+    (await ui.ev(`${third}.querySelector('[data-testid=work-error]')?.innerText ?? ''`)).includes(
+      'Base injoignable'
+    ) && (await ui.ev(`!!${third}.querySelector('[data-testid=work-retry]')`)),
+    'en erreur : l’erreur dite dans la carte, « Relancer » proposé'
+  )
+  await reveal(ui, third)
+  await ui.shot('263-carte-erreur')
 }
 
 async function requestedRun(ui) {

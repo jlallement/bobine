@@ -298,6 +298,24 @@ describe('cartes en attente (fiche 248)', () => {
     expect(pendingReason(done, read(''))).toBeUndefined()
   })
 
+  it('carte-réponse d’un rôle (fiche 263) : lue ; sa suite n’est pas un message du fil', () => {
+    const shot = read(`<div data-testid="thread">
+      <div class="msg-user">Bonjour</div>
+      <div class="role-request-group">
+        <div class="msg-user role-request-bubble">Expert UX/UI Propose une direction.</div>
+        <div data-testid="work-card" data-role="ux-ui-expert" data-state="replied">
+          <div data-testid="work-body">Direction calme.</div>
+          <div class="work-follow-up"><div class="msg-user">Et les contrastes ?</div></div>
+          <div data-testid="work-body">Contrastes AA.</div>
+        </div>
+      </div></div>`)
+    expect(shot.messages).toBe(2)
+    expect(shot.lastUser).toBe('Expert UX/UI Propose une direction.')
+    expect(shot.works).toEqual([
+      { role: 'ux-ui-expert', state: 'replied', answer: 'Contrastes AA.' }
+    ])
+  })
+
   it('« Tâches proposées » en attente : une carte, avec les boutons de la ligne en attente', () => {
     // Le pied de la carte ne porte que l'aide clavier : les boutons sont sur les lignes.
     const waiting = read(proposals(1, decidedRow + pendingRow))

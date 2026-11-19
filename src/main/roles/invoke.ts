@@ -11,6 +11,7 @@
 import { t } from 'i18next'
 import { randomUUID } from 'node:crypto'
 import { messageOf } from '@shared/errors'
+import { MAX_PASTED_TEXT_CHARS } from '@shared/attachments'
 import { parseUncommittedChoice } from '@shared/launch-folder'
 import type { Message } from '@shared/i18n/message'
 import {
@@ -32,6 +33,8 @@ export function parseRolesReplyRequest(value: unknown): RolesReplyRequest {
   const { childId, text } = value as Record<string, unknown>
   if (typeof childId !== 'string' || !childId) throw new Error('Paramètre invalide : childId')
   if (typeof text !== 'string' || !text.trim()) throw new Error(t('children.error.emptyPrompt'))
+  // Même borne qu'un texte collé dans la saisie (`MAX_PASTED_TEXT_CHARS`).
+  if (text.length > MAX_PASTED_TEXT_CHARS) throw new Error(t('workCard.error.tooLong'))
   return { childId, text: text.trim() }
 }
 

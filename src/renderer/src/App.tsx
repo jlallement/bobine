@@ -690,7 +690,7 @@ export function App() {
                               {...(c.activeId
                                 ? { worktreeSetup: worktreeSetupActions(c.activeId, c.warn) }
                                 : {})}
-                              subtasks={threadSubtasks(c, childrenMerge, (text) => void send(text))}
+                              subtasks={threadSubtasks(c, childrenMerge, send, snapshot)}
                               {...(c.activeSummary
                                 ? {
                                     proposals: {

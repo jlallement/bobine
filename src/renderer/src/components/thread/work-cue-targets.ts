@@ -28,7 +28,9 @@ export function delegatedWorkTargets(
   }
   const carded = workCards(items)
   const anchors = new Map(
-    [...carded.byRequest.values()].flat().map((card) => [card.childId, card.anchor])
+    [...carded.byRequest.values()]
+      .flat()
+      .flatMap((card) => (card.anchor === undefined ? [] : [[card.childId, card.anchor] as const]))
   )
   return children.flatMap((child) => {
     const launch = launches.get(child.id)

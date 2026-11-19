@@ -257,7 +257,7 @@ describe('conversations filles (fiche 097)', () => {
     const told = env.lastReply(mother)
     expect(told).toContain('<child_conversations>')
     expect(told).toContain(
-      `I started the child conversation "Ajoute un import CSV" on branch ${child.branch}`
+      `I started the child conversation "Ajoute un import CSV" (id: ${child.id}) on branch ${child.branch}`
     )
     expect(told).toContain('finished its turn. 2 file(s) changed so far')
     expect(told).toContain('README.md')

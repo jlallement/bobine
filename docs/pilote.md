@@ -78,7 +78,7 @@ pnpm pilote arreter
 
   | Raison | Sortie | Quand |
   |---|---|---|
-  | `tour-fini` | 0 | plus rien ne tourne depuis 3 s (tour fini, ou rien n'a démarré) |
+  | `tour-fini` | 0 | plus rien ne tourne depuis 3 s (tour fini, ou rien n'a démarré ; un travail confié à un rôle, carte « en cours », tourne encore : fiche 263) |
   | `carte` | 10 | une carte attend une décision (autorisation, plan, propositions), ici ou dans une autre conversation |
   | `question` | 11 | l'agent pose une question (choix, formulaire) |
   | `blocage` | 12 | connexion, dossier, licence, agent qui demande une action, commande sans sortie, agent silencieux, plafond de coût, limite d'étapes de l'agent (fiche 209) |

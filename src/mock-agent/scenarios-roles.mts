@@ -67,7 +67,7 @@ const LONG_ADVICE = [
 export const roleScenarios: Record<string, Scenario> = {
   'avis-long': {
     description:
-      'Avis long d’un rôle (fiche 263) : deux lectures, puis une réponse en Markdown de plus de dix lignes, qui finit par `FIN-DE-L-AVIS` ; une suite « Et les contrastes ? » : une lecture et une réponse courte ; la mère qui reçoit la réponse (`<child_conversations>`) : « C’est appliqué… »',
+      'Avis long d’un rôle (fiche 263) : deux lectures, puis une réponse en Markdown de plus de dix lignes, qui finit par `FIN-DE-L-AVIS` ; une suite « Et les contrastes ? » : une lecture et une réponse courte ; « Vérifie la base » : le tour échoue ; la mère qui reçoit la réponse (`<child_conversations>`) : « C’est appliqué… »',
     steps: [
       {
         kind: 'when-prompt',
@@ -81,19 +81,27 @@ export const roleScenarios: Record<string, Scenario> = {
         ],
         else: [
           {
+            // Une demande qui échoue (carte « en erreur », fiche 263) : le tour finit en erreur.
             kind: 'when-prompt',
-            includes: 'Et les contrastes',
-            then: [
-              ...read('avis_contraste', 'src/style.css'),
-              {
-                kind: 'text',
-                text: 'Contrastes vérifiés : l’encre sur le papier passe AA (9,8:1), la sauge sur le papier aussi pour les grands textes (3,4:1). Pour la coche seule, foncer la sauge en `#5f7f52`.'
-              }
-            ],
+            includes: 'Vérifie la base',
+            then: [{ kind: 'fail', message: 'Base injoignable : connexion refusée (simulée).' }],
             else: [
-              ...read('avis_lecture_1', 'src/style.css'),
-              ...read('avis_lecture_2', 'src/main.ts'),
-              { kind: 'text', text: LONG_ADVICE }
+              {
+                kind: 'when-prompt',
+                includes: 'Et les contrastes',
+                then: [
+                  ...read('avis_contraste', 'src/style.css'),
+                  {
+                    kind: 'text',
+                    text: 'Contrastes vérifiés : l’encre sur le papier passe AA (9,8:1), la sauge sur le papier aussi pour les grands textes (3,4:1). Pour la coche seule, foncer la sauge en `#5f7f52`.'
+                  }
+                ],
+                else: [
+                  ...read('avis_lecture_1', 'src/style.css'),
+                  ...read('avis_lecture_2', 'src/main.ts'),
+                  { kind: 'text', text: LONG_ADVICE }
+                ]
+              }
             ]
           }
         ]

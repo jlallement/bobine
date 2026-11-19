@@ -69,9 +69,9 @@ export interface WorkCardData {
   started?: Started
   /**
    * Ancre de la carte pour le repère du bas du fil (fiche 261, `data-work-anchor`) : l'id de son
-   * lancement, unique par travail, à défaut celui de la bulle.
+   * lancement, unique par travail ; sans lancement (fil abîmé), aucune.
    */
-  anchor: number
+  anchor?: number
   /** Réponses et bulles de suite, dans l'ordre du fil. */
   steps: WorkStep[]
 }
@@ -87,26 +87,36 @@ export interface WorkCards {
 
 const NO_CARDS: WorkCards = { byRequest: new Map(), hidden: new Set(), childIds: new Set() }
 
+/** Travaux d'une bulle, même d'un fil abîmé (champ absent ou mal formé : aucun). */
+const worksOf = (item: RoleRequestItem): RoleRequestWork[] =>
+  Array.isArray(item.works) ? item.works.filter((w) => !!w?.childId && !!w.role) : []
+
 /**
  * Range le fil en cartes-réponses. Un lancement qui nomme une bulle absente du fil (fil abîmé)
- * reste affiché comme avant ; les anciennes conversations, sans bulle, aussi.
+ * reste affiché comme avant ; les anciennes conversations, sans bulle, aussi. Une bulle répétée
+ * (même `requestId`, fil abîmé) : la première seule, la suivante cachée.
  */
 export function workCards(items: readonly TranscriptItem[]): WorkCards {
   const openings = new Map<string, RoleRequestItem>()
+  const hidden = new Set<number>()
   for (const item of items) {
-    if (item.kind === 'role-request' && !item.followUp) openings.set(item.requestId, item)
+    if (item.kind !== 'role-request' || item.followUp) continue
+    if (openings.has(item.requestId)) hidden.add(item.id)
+    else openings.set(item.requestId, item)
   }
   if (openings.size === 0) return NO_CARDS
   const starts = new Map<string, Started>()
   for (const item of items) {
-    if (item.kind !== 'child-started' || !item.request) continue
+    if (item.kind !== 'child-started' || !item.request || starts.has(item.childId)) continue
     const opening = openings.get(item.request)
-    if (opening?.works.some((w) => w.childId === item.childId)) starts.set(item.childId, item)
+    if (opening && worksOf(opening).some((w) => w.childId === item.childId)) {
+      starts.set(item.childId, item)
+    }
   }
   const cards = new Map<string, WorkCardData>()
   const byRequest = new Map<number, WorkCardData[]>()
   for (const request of openings.values()) {
-    const list = request.works.flatMap((work) => {
+    const list = worksOf(request).flatMap((work) => {
       // Un même travail dans deux bulles (fil abîmé) : la première seulement.
       if (cards.has(work.childId)) return []
       const started = starts.get(work.childId)
@@ -114,8 +124,8 @@ export function workCards(items: readonly TranscriptItem[]): WorkCards {
         childId: work.childId,
         role: work.role,
         request,
-        ...(started ? { started } : {}),
-        anchor: started?.id ?? request.id,
+        // Ancre unique : le lancement de ce travail ; sans lancement, pas de repère.
+        ...(started ? { started, anchor: started.id } : {}),
         steps: []
       }
       cards.set(work.childId, card)
@@ -123,15 +133,31 @@ export function workCards(items: readonly TranscriptItem[]): WorkCards {
     })
     byRequest.set(request.id, list)
   }
-  const hidden = new Set<number>()
   for (const item of items) {
     const card = workOf(item, cards)
     if (!card) continue
     hidden.add(item.id)
-    if (item.kind === 'child-report') card.steps.push({ kind: 'report', item })
+    if (item.kind === 'child-report') placeReport(card, item)
     else if (item.kind === 'role-request') card.steps.push({ kind: 'ask', item })
   }
   return { byRequest, hidden, childIds: new Set(cards.keys()) }
+}
+
+/**
+ * Une réponse dans sa carte. Une suite envoyée pendant que le travail répondait encore ne reçoit
+ * pas la réponse du tour déjà ouvert : une réponse dont le tour a commencé (`askedAt`) avant la
+ * dernière suite se range avant elle.
+ */
+function placeReport(card: WorkCardData, item: Report): void {
+  let at = card.steps.length
+  while (at > 0) {
+    const before = card.steps[at - 1]
+    if (before?.kind !== 'ask' || item.askedAt === undefined || item.askedAt >= before.item.at) {
+      break
+    }
+    at--
+  }
+  card.steps.splice(at, 0, { kind: 'report', item })
 }
 
 /** La carte qui rend cet élément ; `undefined` s'il s'affiche à sa place. */
@@ -145,8 +171,9 @@ function workOf(
   }
   if (item.kind === 'child-report') return cards.get(item.childId)
   if (item.kind === 'role-request' && item.followUp) {
-    const work = item.works[0]
-    return item.works.length === 1 && work ? cards.get(work.childId) : undefined
+    const works = worksOf(item)
+    const work = works[0]
+    return works.length === 1 && work ? cards.get(work.childId) : undefined
   }
   return undefined
 }

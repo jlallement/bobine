@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { AgentEvent } from './agent'
-import { childNews, keptReply, REPLY_KEEP_CHARS, type ChildReport } from './children'
+import { childContext, childNews, keptReply, REPLY_KEEP_CHARS, type ChildReport } from './children'
 import { replayTail } from './replay-tail'
 import { workCards, type RoleRequest } from './role-request'
 import type { RoleBadge } from './roles'
@@ -213,5 +213,54 @@ describe('réponse entière gardée pour la carte (fiche 263)', () => {
     expect(kept.replyChars).toBe(long.trim().length)
     expect(kept.reply?.length).toBeLessThanOrEqual(REPLY_KEEP_CHARS)
     expect(kept.reply?.endsWith('…')).toBe(true)
+  })
+})
+
+describe('fil abîmé et agent de la mère (revue QA, fiche 263)', () => {
+  it('bulle sans `works` : le fil ne tombe pas ; `requestId` répété : la première bulle seule', () => {
+    const broken = {
+      kind: 'role-request',
+      id: 1,
+      requestId: 'd1',
+      text: 'x',
+      at: 1
+    } as unknown as TranscriptItem
+    expect(() => workCards([broken])).not.toThrow()
+    const state = fold([{ type: 'role-request', request: ask() }, started('f1', 'd1')])
+    const twice: TranscriptItem = { ...(state.items[0] as TranscriptItem), id: 9 }
+    const cards = workCards([...state.items, twice])
+    expect(cards.byRequest.get(1)?.map((c) => c.childId)).toEqual(['f1'])
+    expect(cards.hidden.has(9)).toBe(true)
+    expect(cards.byRequest.has(9)).toBe(false)
+  })
+
+  it('chaque travail a une ancre unique (son lancement) ; sans lancement, aucune', () => {
+    const state = fold([
+      {
+        type: 'role-request',
+        request: ask({
+          works: [
+            { childId: 'f1', role: ux },
+            { childId: 'f2', role: sec }
+          ]
+        })
+      },
+      started('f1', 'd1')
+    ])
+    const [first, second] = workCards(state.items).byRequest.get(1) ?? []
+    expect(first?.anchor).toBe(2)
+    expect(second?.anchor).toBeUndefined()
+  })
+
+  it('l’agent de la mère sait quel rôle a fait chaque travail (lancement et réponse)', () => {
+    const items = fold([
+      { type: 'user-message', text: 'Bonjour', at: 1 },
+      { type: 'role-request', request: ask() },
+      started('f1', 'd1'),
+      { type: 'child-report', report: report('f1') }
+    ]).items
+    const context = childContext(childNews(items), items) ?? ''
+    expect(context).toContain('the child conversation "Avis" (id: f1, role: Expert UX/UI)')
+    expect(context).toContain('The child conversation "Avis" (id: f1, role: Expert UX/UI)')
   })
 })

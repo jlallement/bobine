@@ -140,7 +140,7 @@ describe('conversations filles (fiche 097)', () => {
     ])
     expect(text).toContain('<child_conversations>')
     expect(text).toContain(
-      'I started the child conversation "Import CSV" on branch bobine/x, with this instruction:\n  > Ajoute un import.\n  > Avec des tests.'
+      'I started the child conversation "Import CSV" (id: f1) on branch bobine/x, with this instruction:\n  > Ajoute un import.\n  > Avec des tests.'
     )
     expect(text).toContain(
       'finished its turn. 1 file(s) changed so far (+40 −2): src/import.ts (+40 −2).'

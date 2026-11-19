@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import type { ProfileSummary } from '@shared/agent'
 import { matchContextMentions } from '@shared/context-mentions'
 import { roleRecipients, splitRoleMentions } from '@shared/role-mentions'
-import type { RoleView } from '@shared/roles'
+import type { RoleBadge, RoleView } from '@shared/roles'
 import i18next from 'i18next'
 import type { RoleMenuOptions } from '../composer/FileMenu'
 import type { RoleMenuEntry } from './RoleMenu'
@@ -106,7 +106,9 @@ export function useRoleCompose(options: {
   // Jetons et texte à jour, lus à la fin d'un envoi (la saisie a pu changer entre-temps).
   const tokensNow = useRef(tokens)
   const textNow = useRef('')
-  const list = roles?.list ?? []
+  const { replying, forget, setReplyTo, badge } = useWorkReply(draftKey)
+  // Le rôle d'une suite, même désactivé ou supprimé depuis : la suite va à son travail.
+  const list = withReplyRole(roles?.list ?? [], badge)
   const update = (next: string[]) => {
     tokensNow.current = next
     setTokens(next)
@@ -163,7 +165,6 @@ export function useRoleCompose(options: {
     setCommittingState(on)
   }
   const add = (name: string) => update(tokens.includes(name) ? tokens : [...tokens, name])
-  const { replying, forget, setReplyTo } = useWorkReply(draftKey)
   /** La suite part au travail visé ; même retour qu'un lancement (jetons, saisie remise si échec). */
   const dispatchReply = (
     target: { name: string; childId: string },
@@ -173,14 +174,17 @@ export function useRoleCompose(options: {
     const reply = roles?.reply
     if (!reply || !text.trim()) return
     if (at.attachmentCount > 0) return options.onWarn(i18next.t('roleWork.destination.attachments'))
-    options.onSent?.({ text: at.text, tokens: tokensNow.current })
     setBusy(true, [target.name])
     const before = tokensNow.current
     update(before.filter((t) => t !== target.name))
     at.changeText('', 0)
     void reply(target.childId, text)
       .then((sent) => {
-        if (sent) return setReplyTo(undefined)
+        if (sent) {
+          // Historique de la saisie : seulement ce qui est vraiment parti (revue QA).
+          options.onSent?.({ text: at.text, tokens: before })
+          return setReplyTo(undefined)
+        }
         update(before)
         if (textNow.current === '') at.changeText(at.text, at.text.length)
       })
@@ -259,7 +263,11 @@ export function useRoleCompose(options: {
     if (invoked.replyTo && roles.reply) {
       // La suite d'un travail va à lui seul : les autres jetons partent.
       update([name])
-      setReplyTo({ name, childId: invoked.replyTo })
+      setReplyTo({
+        name,
+        childId: invoked.replyTo,
+        ...(invoked.role ? { role: invoked.role } : {})
+      })
     } else add(name)
     // Un rôle tout juste créé n'est pas encore dans la liste : son jeton paraît à la relecture.
     roles.refresh()
@@ -451,8 +459,10 @@ function useWorkReply(draftKey: string | undefined) {
     key: string | undefined
     name: string
     childId: string
+    role?: RoleBadge
   }>()
   return {
+    badge: replyTo && replyTo.key === draftKey ? replyTo.role : undefined,
     replying: (names: readonly string[]) =>
       replyTo && replyTo.key === draftKey && names.length === 1 && names[0] === replyTo.name
         ? replyTo
@@ -460,9 +470,31 @@ function useWorkReply(draftKey: string | undefined) {
     forget: (name: string) => {
       if (replyTo?.name === name) setReplyTo(undefined)
     },
-    setReplyTo: (target: { name: string; childId: string } | undefined) =>
+    setReplyTo: (target: { name: string; childId: string; role?: RoleBadge } | undefined) =>
       setReplyTo(target && { key: draftKey, ...target })
   }
+}
+
+/**
+ * Rôles de la saisie, avec celui d'une suite s'il n'y est plus (désactivé, supprimé) : vu depuis
+ * le badge de son travail, il garde son jeton et sa ligne.
+ */
+function withReplyRole(
+  list: readonly RoleView[],
+  badge: RoleBadge | undefined
+): readonly RoleView[] {
+  if (!badge || list.some((r) => r.name === badge.name)) return list
+  return [
+    ...list,
+    {
+      ...badge,
+      readOnly: badge.readOnly === true,
+      description: badge.label,
+      prompt: '',
+      scope: 'user',
+      enabled: true
+    }
+  ]
 }
 
 /** Rôle invoqué d'ailleurs (`invokeRole`) : reçu par la saisie qui a des rôles, la plus récente. */

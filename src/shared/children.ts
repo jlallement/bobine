@@ -121,6 +121,11 @@ export interface ChildReport {
    */
   reply?: string
   replyCut?: true
+  /**
+   * Heure du message qui a ouvert ce tour, dans la conversation du travail (fiche 263) : une
+   * réponse ne va pas à une suite envoyée après le début de son tour.
+   */
+  askedAt?: number
 }
 
 /**
@@ -132,11 +137,18 @@ export const REPLY_KEEP_CHARS = 20_000
 /** Dernière réponse d'un travail, telle que la carte la garde (`reply`, `replyCut`, `replyChars`). */
 export function keptReply(
   items: readonly TranscriptItem[]
-): Pick<ChildReport, 'reply' | 'replyCut' | 'replyChars'> {
+): Pick<ChildReport, 'reply' | 'replyCut' | 'replyChars' | 'askedAt'> {
+  const asked = items.findLast((i) => i.kind === 'user')
+  const askedAt = asked?.kind === 'user' && asked.at !== undefined ? { askedAt: asked.at } : {}
   const text = lastReply(items).trim()
-  if (!text) return {}
-  if (text.length <= REPLY_KEEP_CHARS) return { reply: text }
-  return { reply: clip(text, REPLY_KEEP_CHARS), replyCut: true, replyChars: text.length }
+  if (!text) return askedAt
+  if (text.length <= REPLY_KEEP_CHARS) return { reply: text, ...askedAt }
+  return {
+    reply: clip(text, REPLY_KEEP_CHARS),
+    replyCut: true,
+    replyChars: text.length,
+    ...askedAt
+  }
 }
 
 /** Fichiers gardés dans un compte rendu : au-delà, seuls les totaux comptent. */
@@ -302,6 +314,10 @@ const OUTCOME_TEXT: Record<ChildOutcome, string> = {
   error: 'ended its turn with an error'
 }
 
+/** Rôle d'un travail, nommé à l'agent de la mère (fiche 263) : « , role: Expert UX/UI ». */
+const roleOf = (role: Pick<RoleBadge, 'label'> | undefined) =>
+  role ? `, role: ${clip(role.label, TITLE_CHARS)}` : ''
+
 const quoted = (text: string) =>
   text
     .split('\n')
@@ -313,16 +329,23 @@ const quoted = (text: string) =>
  * comptes rendus de ses filles, en anglais comme tout ce qui va à l'agent (ADR-0014). `undefined`
  * s'il n'y a rien de neuf.
  */
-export function childContext(news: readonly ChildNews[]): string | undefined {
+export function childContext(
+  news: readonly ChildNews[],
+  items: readonly TranscriptItem[] = news
+): string | undefined {
   if (news.length === 0) return undefined
+  // Le rôle de chaque travail, lu sur son lancement (même plus ancien que ces nouvelles).
+  const roles = new Map(
+    items.flatMap((i) => (i.kind === 'child-started' && i.role ? [[i.childId, i.role]] : []))
+  )
   const lines = news.map((item) => {
     const branch = item.branch ? ` on branch ${item.branch}` : ''
     if (item.kind === 'child-started') {
       const who = item.by === 'agent' ? 'You started (start_child)' : 'I started'
       const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
-      return `- ${who} the child conversation "${item.title}"${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
+      return `- ${who} the child conversation "${item.title}" (id: ${item.childId}${roleOf(item.role)})${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
     }
-    return reportLine(item)
+    return reportLine(item, roles.get(item.childId))
   })
   const reports = news.some((item) => item.kind === 'child-report')
   return [
@@ -351,7 +374,7 @@ const REPORT_IS_NOT_PROOF = [
  * Un compte rendu tel qu'il part à l'agent de la mère (fiche 160) : état, branche, fichiers avec
  * +/− (les premiers), début du récapitulatif ; jamais de diff, `REPORT_CHARS` au plus.
  */
-export function reportLine(item: ChildReport): string {
+export function reportLine(item: ChildReport, role?: Pick<RoleBadge, 'label'>): string {
   const branch = item.branch ? ` on branch ${clip(item.branch, TITLE_CHARS)}` : ''
   const cited = item.files.slice(0, CONTEXT_FILES)
   const files =
@@ -367,7 +390,7 @@ export function reportLine(item: ChildReport): string {
     ? `\n  ${item.outcome === 'error' ? 'Error' : 'Start of its last reply'}:\n${quoted(recap)}`
     : ''
   const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
-  const line = `- The child conversation "${clip(item.title, TITLE_CHARS)}" (id: ${item.childId})${branch} ${OUTCOME_TEXT[item.outcome]}.${left} ${files}${excerpt}`
+  const line = `- The child conversation "${clip(item.title, TITLE_CHARS)}" (id: ${item.childId}${roleOf(role)})${branch} ${OUTCOME_TEXT[item.outcome]}.${left} ${files}${excerpt}`
   // Réponse coupée (fiche 247, D11) : la ligne pour lire la suite, dans la borne.
   if (item.replyChars === undefined && line.length <= REPORT_CHARS) return line
   const more = `\n  ${readWholeLine(item.childId, 'reply', item.replyChars)}`

@@ -36,7 +36,9 @@ export const busy = (shot) =>
   !!shot.turnWorking ||
   ['busy', 'starting'].includes(shot.agent?.dot) ||
   (shot.queued ?? 0) > 0 ||
-  !!shot.onboarding?.waiting
+  !!shot.onboarding?.waiting ||
+  // Un travail confié à un rôle tourne encore (fiche 263) : `attendre` attend sa réponse.
+  (shot.works ?? []).some((w) => w.state === 'running')
 
 /**
  * Ce qui bouge à l'écran pendant un tour, sans l'horloge du tour (elle avance toute seule) : texte
@@ -54,6 +56,7 @@ export function progressKey(shot) {
     shot.panel?.running ?? '',
     (shot.sidebar ?? []).map((c) => c.code),
     shot.onboarding?.title ?? '',
+    (shot.works ?? []).map((w) => `${w.role}:${w.state}`),
     shot.onboarding?.text?.length ?? 0
   ])
 }

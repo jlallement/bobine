@@ -26,11 +26,11 @@ juste dessous, **une seule carte-réponse**, à cette place pour toujours.
       travail seulement), « Ouvrir sa conversation ».
 - [x] A répondu : la réponse complète en Markdown (20 000 caractères au plus, mention si elle est
       tronquée), repliée après environ 10 lignes, « Lire la suite » / « Replier » ; pied « durée ·
-      coût » (« gratuit » pour un coût nul) ; « Demander à <agent> de l'appliquer » (rôle de
+      coût » (« gratuit » pour un coût nul) ; « Demander à <agent> d'appliquer cette réponse » (rôle de
       conseil), « Répondre à <Rôle> », « Ouvrir sa conversation ».
 - [x] Ligne de transmission : « Pas encore transmise à <agent> — elle le sera avec votre prochain
       message », puis « Transmise à <agent> · heure » (mécanisme actuel, `childContext`).
-- [x] « Demander à <agent> de l'appliquer » envoie à l'agent principal un message préparé, visible
+- [x] « Demander à <agent> d'appliquer cette réponse » envoie à l'agent principal un message préparé, visible
       dans le fil ; la réponse part avec lui comme aujourd'hui.
 - [x] « Répondre à <Rôle> » pose la puce du rôle dans la saisie ; le message suivant va à la même
       conversation ; sa bulle et la réponse s'ajoutent dans la même carte.
@@ -126,7 +126,7 @@ Pas de nouvelle dépendance.
     pendant que la carte est affichée) ; réponses et suites dans l'ordre ; réponse repliée à 16em
     (≈ 10 lignes, mesurée : le bouton n'est là que si elle dépasse), 5em une fois transmise
     (maquette, état 3) ; pied « durée de l'échange · coût » (« gratuit » si le coût est nul, rien
-    en présentation) ; actions : « Demander à <agent> de l'appliquer » (rôle de conseil, réponse
+    en présentation) ; actions : « Demander à <agent> d'appliquer cette réponse » (rôle de conseil, réponse
     pas encore transmise), « Voir les modifications » (rôle qui écrit, vue Git de sa conversation),
     « Relancer » (arrêté, en erreur : la même demande au même travail, par `roles:reply`),
     « Répondre à <rôle> », « Arrêter » (en cours : `agent.cancel` de ce travail), « Ouvrir sa
@@ -190,3 +190,79 @@ Pas de nouvelle dépendance.
   (`planWithout`, `SubtasksInfo.carded` posé par `withoutCards`). Essai qui échoue sans le
   correctif (`SubtasksMerge.test.tsx` : « Fusionner les 3 » au lieu de 2) et essai de
   `planWithout`. Doutes 2 à 7 acceptés tels quels.
+
+### Revue UX (2026-11-20), tout accepté
+
+1. Pied : une seule rangée d'actions alignée à gauche (« Demander… », « Voir les modifications »,
+   « Relancer », « Répondre à… »), « Ouvrir sa conversation » au bout (`margin-left: auto`) ;
+   « Arrêter » dans la même rangée en cours (`WorkFoot.tsx`).
+2. Transmission sur plusieurs échanges : « Dernière réponse pas encore transmise à … », « ✓
+   Transmise · heure » sous chaque réponse déjà transmise ; bouton « Demander à <agent>
+   d'appliquer cette réponse ».
+3. Un pied par réponse : heure · durée de cet échange · coût de cet échange (`exchangeUsage` : le
+   cumul de la conversation à cette réponse moins celui de la réponse d'avant ; même unité
+   seulement).
+4. « Lire la suite » / « Replier » : chevron de 13 px, `--muted`, 12,5 px, sans nombre de lignes.
+5. Repli : 16em (dix lignes à 1,6), dernier bloc sans marge basse, bouton remonté dans le fondu ;
+   transmise : 3,2em (deux lignes), fondu de 1,4em.
+6. Échanges : filet pointillé avant chaque suite, puce du rôle (18) dans la bulle de suite, heure
+   de chaque réponse dans son pied.
+7. Bulle et cartes dans un même groupe (`role-request-group`, écart de 10 px).
+8. « Ouvrir sa conversation » en `--muted`.
+9. Carte étroite : `container-type: inline-size`, `@container (max-width: 520px)` ; capture
+   `263-carte-repondu-900`.
+10. Captures `263-carte-arrete`, `263-carte-erreur` (scénario `avis-long` : « Vérifie la base »
+    échoue).
+11. En cours : icône devant l'activité, faits au passé d'après le genre ACP de l'outil (« A lu
+    src/style.css », « Lit … », « Lance … »), « Travaille… » avant toute activité, moins de vide.
+12. Message préparé : « Applique la proposition « titre » de <rôle> (travail <id> : sa réponse
+    t'est transmise avec ce message). » ; le titre cité tel quel s'il porte déjà ses guillemets.
+13. Ligne sous la saisie : « dans sa propre conversation », « un travail chacun, en parallèle ».
+14. L'anneau de l'avatar pulse en cours (déjà `role-ring`, sans animation si réduites).
+
+### Revue QA (2026-11-20), tout corrigé ; chaque défaut a un essai qui échoue sans son correctif
+
+1. « Relancer » après un démarrage raté (aucun message dans la conversation du travail) repasse par
+   `launch` : consigne du rôle, lecture seule (celle du lancement), `IN_PLACE_LINE`
+   (`ChildConversations.relaunch`). Essai contre l'agent factice (`roles-children.test.ts`).
+2. `childContext` nomme le rôle et l'id de chaque travail (lancement et réponse) ; message
+   préparé avec le rôle et l'id du travail, plus « ci-dessus ».
+3. Fil côte à côte (`BesidePane`, sans la liste des conversations) : état `unknown`, ni
+   « conversation supprimée » ni lecture seule supposée ; sans conversation connue, pas de
+   « lecture seule » par défaut.
+4. Fini sans réponse posée : `pending` (la mère répond, « Sa réponse s'affichera à la fin de la
+   réponse de … ») ou `silent` (« sans réponse », « Relancer ») ; un échec d'envoi d'une suite est
+   dit dans le fil de la mère (`workCard.notice.replyFailed`).
+5. « Appliquer » et « Relancer » désactivés jusqu'à l'acquittement ; « Appliquer » masqué quand
+   un message attend dans la file de la mère (`motherQueued`, `threadSubtasks(…, snapshot)`).
+6. `askedByBubble` : la mère cherchée d'abord, aucune exception si elle a disparu ; les abonnés
+   du gestionnaire isolés (`notifyAll`, `notify-safely.ts`) : un abonné qui lève ne prive plus les
+   suivants (essai dans `manager.test.ts`).
+7. Plan de fusion filtré sur les mêmes ids que la liste (`planWithout(plan, carded)`).
+8. « Transmise » : pas si le tour du message suivant a fini en erreur sans réponse (`relayOf`).
+9. « Répondre » à un rôle désactivé ou supprimé : le jeton vient du badge du travail
+   (`invokeRole(nom, { replyTo, role })`, `withReplyRole`) ; la suite va au travail, jamais à
+   l'agent principal.
+10. Essais ajoutés : export Markdown, deux réponses et leur transmission, Markdown hostile.
+- `reply()` refuse une mère archivée, un travail lancé sans bulle ; texte borné
+  (`MAX_PASTED_TEXT_CHARS`).
+- Fil abîmé : bulle sans `works`, `requestId` répété (la première seule), ancre seulement avec un
+  lancement (unique par travail).
+- « Ouvrir sa conversation » reste pour un travail archivé.
+- `dispatchReply` : historique de la saisie seulement après un envoi réussi.
+- Pilote : `.msg-user` des suites exclus (lecture, envoi), cartes-réponses lues (`shot.works` :
+  rôle, état, début de la réponse), `attendre` attend un travail en cours ; essais
+  (`pilote.test.mjs`, `cible.test.mjs`).
+- Suite envoyée pendant que le travail répondait : une réponse dont le tour a commencé avant la
+  suite (`ChildReport.askedAt`) se range avant elle (`placeReport`).
+- Coût d'un échange : `exchangeUsage` (essai à deux échanges, 0,25 − 0,10).
+- Essai de `TurnSummary.test.tsx` daté du 19 novembre (fiche 261) : il échouait passé ce jour ;
+  la date est maintenant celle du jour.
+
+### Limites (revues)
+
+- Un compte rendu retenu pendant une réponse de la mère est en mémoire : perdu si l'app se ferme
+  avant la fin de cette réponse. La carte dit alors « sans réponse » et propose « Relancer ».
+- Après un tour de la mère en erreur, `childNews` ne renvoie pas les nouvelles déjà parties avec
+  ce message (comportement d'avant) ; la carte, elle, ne les dit plus « transmises ».
+

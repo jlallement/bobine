@@ -9,7 +9,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Une demande à un rôle (`@Expert UX/UI …`) reste dans le fil, comme un message, avec la puce du
   rôle. Juste dessous, une seule carte, qui ne bouge plus : ce que fait le rôle et depuis combien de
   temps, puis **sa réponse entière** (repliée après une dizaine de lignes, « Lire la suite »), sa
-  durée et son coût. « Demander à <agent> de l'appliquer » envoie la réponse à l'agent de la
+  durée et son coût. « Demander à <agent> d'appliquer cette réponse » envoie la réponse à l'agent de la
   conversation ; « Répondre à <rôle> » poursuit le même travail, dans la même carte. Une ligne dit
   si l'agent de la conversation connaît déjà cette réponse. Plus de carte de lancement, de ligne
   « Sous-tâches » ni de compte rendu séparés pour ces travaux.

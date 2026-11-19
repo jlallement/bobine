@@ -1,8 +1,9 @@
 /**
- * Bulle « @Rôle … » et carte-réponse unique (fiche 263, écran A de la fiche 260) : rendu dans le
- * fil de la mère, états (en cours, a répondu, transmise, arrêté, en erreur), actions (arrêter,
- * appliquer, répondre, relancer, voir les modifications), et ce qui ne change pas (« Sous-tâches »
- * pour les travaux de l'agent, anciennes conversations).
+ * Bulle « @Rôle … » et carte-réponse unique (fiche 263, écran A de la fiche 260, revues UX et QA) :
+ * rendu dans le fil de la mère, états (en cours, a répondu, en attente, sans réponse, transmise,
+ * arrêté, en erreur, inconnu), actions (arrêter, appliquer, répondre, relancer, voir les
+ * modifications), échanges à plusieurs tours, et ce qui ne change pas (« Sous-tâches » pour les
+ * travaux de l'agent, anciennes conversations).
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
 import type { ReactNode } from 'react'
@@ -33,6 +34,14 @@ const front: RoleBadge = {
   icon: 'layout',
   color: 'blue'
 }
+
+/** Il y a dix minutes : passé (délai d'un envoi écoulé), et l'heure s'affiche sans le jour. */
+const T0 = Date.now() - 600_000
+/** Espaces insécables de la typographie française (« : », « ; ») ramenées à des espaces. */
+const plain = (text: unknown) => String(text).replace(/[\u00a0\u202f]/g, ' ')
+const at = (seconds: number) => T0 + seconds * 1000
+/** Heure d'une réponse (avec le jour, si l'essai passe minuit). */
+const HH_MM = /^[^·]*\d\d:\d\d · /
 
 const ANSWER = [
   '### Direction : « Le carnet de courses calme »',
@@ -69,7 +78,17 @@ const bubble = (id: number, works: { childId: string; role: RoleBadge }[]): Tran
   requestId: `d${id}`,
   text: 'À quoi ça pourrait ressembler ? Propose une direction.',
   works,
-  at: Date.parse('2026-11-19T21:13:00Z')
+  at: at(0)
+})
+
+const followUp = (id: number, childId: string, text: string, seconds: number): TranscriptItem => ({
+  kind: 'role-request',
+  id,
+  requestId: `d${id}`,
+  text,
+  works: [{ childId, role: ux }],
+  followUp: true,
+  at: at(seconds)
 })
 
 const started = (
@@ -86,7 +105,7 @@ const started = (
   prompt: 'Propose une direction.',
   role,
   request,
-  at: Date.parse('2026-11-19T21:13:00Z'),
+  at: at(0),
   ...extra
 })
 
@@ -107,11 +126,11 @@ const report = (
   excerpt: 'Direction : « Le carnet de courses calme »',
   reply: ANSWER,
   // 1 min 38 s après la demande.
-  at: Date.parse('2026-11-19T21:14:38Z'),
+  at: at(98),
   ...extra
 })
 
-const free: UsageDigest = { cost: { amount: 0, currency: 'USD' } }
+const usd = (amount: number): UsageDigest => ({ cost: { amount, currency: 'USD' } })
 
 const info = (
   children: ConversationSummary[],
@@ -127,15 +146,22 @@ const info = (
   ...extra
 })
 
-const view = (items: TranscriptItem[], subtasks: SubtasksInfo) =>
+const view = (items: TranscriptItem[], subtasks?: SubtasksInfo) =>
   render(
     <Transcript
       items={items}
       onRespondPermission={vi.fn()}
       onRespondElicitation={vi.fn()}
-      subtasks={subtasks}
+      {...(subtasks ? { subtasks } : {})}
     />
   )
+
+/** La carte qui a répondu à une demande, avec sa réponse. */
+const answered = (extra: Partial<Extract<TranscriptItem, { kind: 'child-report' }>> = {}) => [
+  bubble(1, [{ childId: 'a', role: ux }]),
+  started(2, 'a', ux, 'd1'),
+  report(3, 'a', extra)
+]
 
 type Listener = (payload: IpcEventContract['agent:event']) => void
 const listeners = new Set<Listener>()
@@ -146,7 +172,7 @@ afterEach(() => {
   ;(window.api as { roles?: Window['api']['roles'] }).roles = originalRoles
   listeners.clear()
   resetRolesUi()
-  vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 function fakeAgent() {
   const cancel = vi.fn(async () => undefined)
@@ -160,22 +186,30 @@ function fakeAgent() {
   return { cancel }
 }
 function emit(conversationId: string, event: IpcEventContract['agent:event']['event']) {
-  for (const listener of listeners)
+  for (const listener of listeners) {
     listener({ conversationId, event } as IpcEventContract['agent:event'])
+  }
+}
+function fakeReply(reply: (...args: unknown[]) => Promise<unknown>) {
+  const fn = vi.fn(reply)
+  ;(window.api as unknown as { roles: unknown }).roles = { reply: fn }
+  return fn
+}
+/** Une promesse que l'essai tient en main. */
+function deferred() {
+  let resolve: () => void = () => {}
+  const promise = new Promise<void>((r) => (resolve = r))
+  return { promise, resolve }
 }
 
 /** Le repli ne se mesure pas dans jsdom : on dit à la carte que la réponse dépasse. */
 function overflowing() {
-  const height = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(900)
-  const client = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(250)
-  return () => {
-    height.mockRestore()
-    client.mockRestore()
-  }
+  vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(900)
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(250)
 }
 
 describe('bulle et carte-réponse (fiche 263)', () => {
-  it('en cours : la bulle avec la puce du rôle, une carte juste dessous, rien d’autre', async () => {
+  it('en cours : la bulle et sa carte dans un même groupe ; « Travaille… », puis les faits au passé', async () => {
     const { cancel } = fakeAgent()
     const subtasks = info([child('a', ux, { status: 'busy' })])
     view(
@@ -187,23 +221,24 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       ],
       subtasks
     )
-    const request = screen.getByTestId('role-request')
+    const group = screen.getByTestId('role-request-group')
+    const request = within(group).getByTestId('role-request')
     expect(within(request).getByTestId('role-mention').textContent).toBe('Expert UX/UI')
-    expect(request.textContent).toContain('Propose une direction.')
-    const card = screen.getByTestId('work-card')
-    // Juste sous la bulle, dans l'ordre du fil.
+    const card = within(group).getByTestId('work-card')
     expect(request.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(card.dataset['state']).toBe('running')
     expect(card.dataset['workAnchor']).toBe('4')
+    expect(card.querySelector('[data-testid=role-avatar]')?.getAttribute('data-state')).toBe(
+      'running'
+    )
     expect(within(card).getByTestId('work-place').textContent).toBe(
       'lecture seule · dans ce dossier'
     )
     expect(within(card).getByTestId('work-state').textContent).toMatch(/^(\d+:)?\d+:\d\d$/)
-    // Plus de lancement, de ligne « Sous-tâches » ni de compte rendu séparés.
+    expect(within(card).getByTestId('work-live-current').textContent).toBe('Travaille…')
     expect(screen.queryByTestId('role-launch')).toBeNull()
     expect(screen.queryByTestId('subtasks')).toBeNull()
     expect(screen.queryByTestId('child-report')).toBeNull()
-    // Activité en direct : l'outil en cours, puis les derniers faits.
     await act(async () => {
       emit('a', {
         type: 'update',
@@ -211,13 +246,13 @@ describe('bulle et carte-réponse (fiche 263)', () => {
           sessionUpdate: 'tool_call',
           toolCallId: 't1',
           title: 'Lecture de src/style.css',
-          status: 'in_progress'
+          kind: 'read',
+          status: 'in_progress',
+          locations: [{ path: 'src/style.css' }]
         }
       })
     })
-    expect(within(card).getByTestId('work-live-current').textContent).toBe(
-      'Lecture de src/style.css…'
-    )
+    expect(within(card).getByTestId('work-live-current').textContent).toBe('Lit src/style.css…')
     await act(async () => {
       emit('a', {
         type: 'update',
@@ -228,104 +263,182 @@ describe('bulle et carte-réponse (fiche 263)', () => {
         update: {
           sessionUpdate: 'tool_call',
           toolCallId: 't2',
-          title: 'Lecture de src/main.ts',
+          title: 'npm test',
+          kind: 'execute',
           status: 'in_progress'
         }
       })
     })
-    expect(within(card).getByTestId('work-live-done').textContent).toBe('Lecture de src/style.css')
-    expect(within(card).getByTestId('work-live-current').textContent).toBe(
-      'Lecture de src/main.ts…'
-    )
-    // « Arrêter » n'arrête que ce travail ; « Ouvrir sa conversation ».
-    fireEvent.click(within(card).getByTestId('work-stop'))
+    expect(within(card).getByTestId('work-live-done').textContent).toBe('A lu src/style.css')
+    expect(within(card).getByTestId('work-live-current').textContent).toBe('Lance npm test…')
+    // Une seule rangée : « Arrêter », puis « Ouvrir sa conversation » au bout.
+    const actions = within(card).getByTestId('work-actions')
+    fireEvent.click(within(actions).getByTestId('work-stop'))
     expect(cancel).toHaveBeenCalledWith('a')
-    fireEvent.click(within(card).getByTestId('work-open'))
+    fireEvent.click(within(actions).getByTestId('work-open'))
     expect(subtasks.onOpen).toHaveBeenCalledWith('a')
     expect(screen.queryByTestId('work-apply')).toBeNull()
     expect(screen.queryByTestId('work-relay')).toBeNull()
   })
 
-  it('a répondu : la réponse entière en Markdown, repliée, « Lire la suite » ; durée · gratuit', () => {
+  it('a répondu : la réponse entière, repliée, « Lire la suite » ; pied « heure · durée · gratuit »', () => {
     fakeAgent()
-    const restore = overflowing()
-    try {
-      view(
-        [
-          bubble(1, [{ childId: 'a', role: ux }]),
-          started(2, 'a', ux, 'd1'),
-          report(3, 'a', { usage: free })
-        ],
-        info([child('a', ux)])
-      )
-      const card = screen.getByTestId('work-card')
-      expect(card.dataset['state']).toBe('replied')
-      expect(within(card).getByTestId('work-state').textContent).toMatch(/^a répondu · /)
-      const body = within(card).getByTestId('work-body')
-      // Entière, en Markdown (titre, liste, code), jusqu'à sa dernière ligne.
-      expect(body.querySelector('h3')?.textContent).toContain('Le carnet de courses calme')
-      expect(body.querySelectorAll('li')).toHaveLength(2)
-      expect(body.textContent).toContain('FIN-DE-L-AVIS')
-      expect(body.dataset['folded']).toBe('true')
-      const more = within(card).getByTestId('work-more')
-      expect(more.textContent).toBe('Lire la suite')
-      fireEvent.click(more)
-      expect(within(card).getByTestId('work-body').dataset['folded']).toBeUndefined()
-      expect(within(card).getByTestId('work-more').textContent).toBe('Replier')
-      expect(within(card).getByTestId('work-more').getAttribute('aria-expanded')).toBe('true')
-      expect(within(card).getByTestId('work-facts').textContent).toBe('1 min 38 s · gratuit')
-      expect(within(card).getByTestId('work-relay').textContent).toBe(
-        'Pas encore transmise à OpenCode — elle le sera avec votre prochain message'
-      )
-    } finally {
-      restore()
-    }
+    overflowing()
+    view(answered({ usage: usd(0) }), info([child('a', ux)]))
+    const card = screen.getByTestId('work-card')
+    expect(card.dataset['state']).toBe('replied')
+    expect(within(card).getByTestId('work-state').textContent).toMatch(
+      /^a répondu · [^·]*\d\d:\d\d$/
+    )
+    const body = within(card).getByTestId('work-body')
+    expect(body.querySelector('h3')?.textContent).toContain('Le carnet de courses calme')
+    expect(body.querySelectorAll('li')).toHaveLength(2)
+    expect(body.textContent).toContain('FIN-DE-L-AVIS')
+    expect(body.dataset['folded']).toBe('true')
+    const more = within(card).getByTestId('work-more')
+    expect(more.textContent).toBe('Lire la suite')
+    expect(more.querySelector('svg')).toBeTruthy()
+    fireEvent.click(more)
+    expect(within(card).getByTestId('work-body').dataset['folded']).toBeUndefined()
+    expect(within(card).getByTestId('work-more').textContent).toBe('Replier')
+    expect(within(card).getByTestId('work-more').getAttribute('aria-expanded')).toBe('true')
+    const facts = within(card).getByTestId('work-facts').textContent ?? ''
+    expect(facts).toMatch(HH_MM)
+    expect(facts.replace(HH_MM, '')).toBe('1 min 38 s · gratuit')
+    expect(within(card).getByTestId('work-relay').textContent).toBe(
+      'Pas encore transmise à OpenCode — elle le sera avec votre prochain message'
+    )
   })
 
-  it('« Demander à <agent> de l’appliquer » envoie le message préparé à l’agent de la conversation', () => {
+  it('« Appliquer » : message préparé avec le rôle, le titre et le travail ; un clic à la fois', async () => {
     fakeAgent()
-    const subtasks = info([child('a', ux)])
-    view(
-      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1'), report(3, 'a')],
-      subtasks
-    )
+    const sending = deferred()
+    const onAsk = vi.fn(() => sending.promise)
+    view(answered(), info([child('a', ux)], { onAsk }))
     const apply = screen.getByTestId('work-apply')
-    expect(apply.textContent).toBe('Demander à OpenCode de l’appliquer')
+    expect(apply.textContent).toBe('Demander à OpenCode d’appliquer cette réponse')
     fireEvent.click(apply)
-    expect(subtasks.onAsk).toHaveBeenCalledWith('Applique la proposition d’Expert UX/UI ci-dessus.')
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('work-apply'))
+    await act(async () => {})
+    expect(onAsk).toHaveBeenCalledTimes(1)
+    const message = plain((onAsk.mock.calls[0] as unknown[] | undefined)?.[0])
+    // Le titre porte déjà ses guillemets : il est cité tel quel ; le travail, par son id.
+    expect(message).toBe(
+      'Applique la proposition Direction : « Le carnet de courses calme » d’Expert UX/UI (travail a : sa réponse t’est transmise avec ce message).'
+    )
+    expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(true)
+    await act(async () => sending.resolve())
+    expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('transmise : la carte reste à sa place, l’action principale disparaît, réponse plus discrète', () => {
+  it('« Appliquer » sans titre : le rôle seul ; masqué quand un message attend dans la file', async () => {
     fakeAgent()
-    view(
-      [
-        bubble(1, [{ childId: 'a', role: ux }]),
-        started(2, 'a', ux, 'd1'),
-        report(3, 'a'),
-        { kind: 'user', id: 4, text: 'Applique.', at: Date.parse('2026-11-19T21:16:00Z') }
-      ],
-      info([child('a', ux)])
+    const onAsk = vi.fn()
+    const { unmount } = view(
+      answered({ reply: 'Fond papier, coche sauge.' }),
+      info([child('a', ux)], { onAsk })
     )
+    fireEvent.click(screen.getByTestId('work-apply'))
+    await act(async () => {})
+    expect(plain((onAsk.mock.calls[0] as unknown[] | undefined)?.[0])).toBe(
+      'Applique la proposition d’Expert UX/UI (travail a : sa réponse t’est transmise avec ce message).'
+    )
+    unmount()
+    view(answered(), info([child('a', ux)], { onAsk, motherQueued: true }))
+    expect(screen.queryByTestId('work-apply')).toBeNull()
+  })
+
+  it('transmise : action principale retirée, réponse discrète ; pas « transmise » si le tour a échoué', () => {
+    fakeAgent()
+    const sent: TranscriptItem = { kind: 'user', id: 4, text: 'Applique.', at: at(120) }
+    const { unmount } = view([...answered(), sent], info([child('a', ux)]))
     const card = screen.getByTestId('work-card')
     expect(within(card).getByTestId('work-relay').dataset['sent']).toBe('true')
     expect(within(card).getByTestId('work-relay').textContent).toMatch(/^Transmise à OpenCode · /)
     expect(within(card).getByTestId('work-body').className).toContain('relayed')
     expect(screen.queryByTestId('work-apply')).toBeNull()
-    // La carte précède le message qui l'a transmise.
-    const message = screen.getByTestId('user-message')
-    expect(card.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    unmount()
+    // Le message est parti, mais son tour a fini en erreur sans réponse : rien ne dit que l'agent
+    // l'a reçu.
+    view(
+      [
+        ...answered(),
+        sent,
+        {
+          kind: 'notice',
+          id: 5,
+          level: 'error',
+          message: { key: 'transcript.notice.error', params: { message: 'Server Error' } }
+        }
+      ],
+      info([child('a', ux)])
+    )
+    expect(screen.getByTestId('work-relay').dataset['sent']).toBe('false')
+    expect(screen.getByTestId('work-apply')).toBeTruthy()
   })
 
-  it('arrêté : état clair, « Relancer » renvoie la même demande au même travail', async () => {
+  it('deux échanges : chacun son pied et son coût ; la première transmise, la dernière pas encore', () => {
     fakeAgent()
-    const reply = vi.fn(async () => 'sent' as const)
-    ;(window.api as unknown as { roles: unknown }).roles = { reply }
+    view(
+      [
+        ...answered({ usage: usd(0.1) }),
+        { kind: 'user', id: 4, text: 'Applique.', at: at(120) },
+        followUp(5, 'a', 'Et les contrastes ?', 200),
+        report(6, 'a', { reply: 'Contrastes AA.', at: at(260), askedAt: at(201), usage: usd(0.25) })
+      ],
+      // Conversation au repos, son coût à jour : celui de la dernière réponse.
+      info([child('a', ux, { usage: usd(0.25) })])
+    )
+    const card = screen.getByTestId('work-card')
+    const answers = within(card).getAllByTestId('work-answer')
+    expect(answers).toHaveLength(2)
+    const facts = within(card)
+      .getAllByTestId('work-facts')
+      .map((f) => (f.textContent ?? '').replace(HH_MM, ''))
+    expect(facts[0]).toMatch(/^1 min 38 s · ≈ 0,10\s\$US$/)
+    // Le second échange : sa durée (depuis la suite) et son coût seul (0,25 − 0,10).
+    expect(facts[1]).toMatch(/^1 min 0 s · ≈ 0,15\s\$US$/)
+    expect(within(answers[0] as HTMLElement).getByTestId('work-relayed').textContent).toMatch(
+      /^Transmise · [^·]*\d\d:\d\d$/
+    )
+    expect(within(answers[1] as HTMLElement).queryByTestId('work-relayed')).toBeNull()
+    expect(within(card).getByTestId('work-relay').textContent).toBe(
+      'Dernière réponse pas encore transmise à OpenCode — elle le sera avec votre prochain message'
+    )
+    const ask = within(card).getByTestId('work-ask')
+    expect(within(ask).getByTestId('role-mention').textContent).toBe('Expert UX/UI')
+    expect(ask.textContent).toContain('Et les contrastes ?')
+  })
+
+  it('suite envoyée pendant que le travail répondait : la réponse du tour en cours reste avant elle', () => {
+    fakeAgent()
     view(
       [
         bubble(1, [{ childId: 'a', role: ux }]),
         started(2, 'a', ux, 'd1'),
-        report(3, 'a', { outcome: 'stopped', reply: 'Début de réponse' })
+        followUp(3, 'a', 'Et les contrastes ?', 30),
+        // Le tour ouvert par la demande (à 0 s) finit après la suite : sa réponse est la première.
+        report(4, 'a', { askedAt: at(0), at: at(60) }),
+        report(5, 'a', { reply: 'Contrastes AA.', askedAt: at(61), at: at(90) })
       ],
+      info([child('a', ux)])
+    )
+    const card = screen.getByTestId('work-card')
+    const order = [...card.querySelectorAll('[data-testid=work-answer], [data-testid=work-ask]')]
+    expect(order.map((el) => el.getAttribute('data-testid'))).toEqual([
+      'work-answer',
+      'work-ask',
+      'work-answer'
+    ])
+  })
+
+  it('arrêté : état clair, « Relancer » renvoie la même demande, un clic à la fois', async () => {
+    fakeAgent()
+    const sending = deferred()
+    const reply = fakeReply(() => sending.promise)
+    view(
+      answered({ outcome: 'stopped', reply: 'Début de réponse' }),
       info([child('a', ux, { turnStopped: true })])
     )
     const card = screen.getByTestId('work-card')
@@ -333,28 +446,26 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(within(card).getByTestId('work-state').textContent).toBe('arrêté')
     expect(card.textContent).toContain('Arrêté avant la fin de sa réponse.')
     expect(screen.queryByTestId('work-apply')).toBeNull()
-    await act(async () => fireEvent.click(within(card).getByTestId('work-retry')))
+    fireEvent.click(within(card).getByTestId('work-retry'))
+    await act(async () => {})
+    fireEvent.click(within(card).getByTestId('work-retry'))
+    await act(async () => {})
+    expect(reply).toHaveBeenCalledTimes(1)
     expect(reply).toHaveBeenCalledWith('mere', {
       childId: 'a',
       text: 'À quoi ça pourrait ressembler ? Propose une direction.'
     })
+    await act(async () => sending.resolve())
+    expect((within(card).getByTestId('work-retry') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('en erreur : l’erreur dite, « Relancer » ; un échec de l’envoi est dit', async () => {
     fakeAgent()
-    const reply = vi.fn(async () => {
+    fakeReply(async () => {
       throw new Error('agent absent')
     })
-    ;(window.api as unknown as { roles: unknown }).roles = { reply }
     const subtasks = info([child('a', ux, { status: 'error' })])
-    view(
-      [
-        bubble(1, [{ childId: 'a', role: ux }]),
-        started(2, 'a', ux, 'd1'),
-        report(3, 'a', { outcome: 'error', excerpt: 'Agent à connecter', reply: undefined })
-      ],
-      subtasks
-    )
+    view(answered({ outcome: 'error', excerpt: 'Agent à connecter', reply: undefined }), subtasks)
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('error')
     expect(within(card).getByTestId('work-error').textContent).toBe('Agent à connecter')
@@ -362,57 +473,35 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(subtasks.onWarn).toHaveBeenCalledWith(expect.stringContaining('agent absent'))
   })
 
-  it('« Répondre à <rôle> » pose la puce dans la saisie ; la suite et sa réponse vont dans la même carte', () => {
+  it('fini sans réponse posée : « en attente » pendant la réponse de la mère, sinon « sans réponse » et Relancer', () => {
+    fakeAgent()
+    const items = [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')]
+    const { unmount } = view(items, info([child('a', ux)], { motherBusy: true }))
+    expect(screen.getByTestId('work-card').dataset['state']).toBe('pending')
+    expect(screen.getByTestId('work-no-answer').textContent).toBe(
+      'Sa réponse s’affichera à la fin de la réponse d’OpenCode.'
+    )
+    unmount()
+    // Mère au repos, réponse jamais posée (plafond de coût, compte rendu perdu) : dit, relançable.
+    view(items, info([child('a', ux)]))
+    expect(screen.getByTestId('work-card').dataset['state']).toBe('silent')
+    expect(screen.getByTestId('work-state').textContent).toBe('sans réponse')
+    expect(screen.getByTestId('work-retry')).toBeTruthy()
+  })
+
+  it('« Répondre » : la puce et le rôle du travail vont à la saisie ; une seule carte', () => {
     fakeAgent()
     const received = vi.fn()
     const stop = onRoleInvoked(received)
-    const items = [
-      bubble(1, [{ childId: 'a', role: ux }]),
-      started(2, 'a', ux, 'd1'),
-      report(3, 'a')
-    ]
-    const { rerender } = view(items, info([child('a', ux)]))
+    view(answered(), info([child('a', ux)]))
     fireEvent.click(screen.getByTestId('work-reply'))
-    expect(received).toHaveBeenCalledWith('ux-ui-expert', { replyTo: 'a' })
+    expect(received).toHaveBeenCalledWith('ux-ui-expert', { replyTo: 'a', role: ux })
     stop()
-    const followUp: TranscriptItem = {
-      kind: 'role-request',
-      id: 4,
-      requestId: 'd4',
-      text: 'Et les contrastes ?',
-      works: [{ childId: 'a', role: ux }],
-      followUp: true,
-      at: Date.parse('2026-11-19T21:20:00Z')
-    }
-    rerender(
-      <Tooltip.Provider>
-        <Transcript
-          items={[
-            ...items,
-            followUp,
-            report(5, 'a', {
-              reply: 'Contrastes AA partout.',
-              at: Date.parse('2026-11-19T21:21:00Z')
-            })
-          ]}
-          onRespondPermission={vi.fn()}
-          onRespondElicitation={vi.fn()}
-          subtasks={info([child('a', ux)])}
-        />
-      </Tooltip.Provider>
-    )
     expect(screen.getAllByTestId('work-card')).toHaveLength(1)
     expect(screen.getAllByTestId('role-request')).toHaveLength(1)
-    const card = screen.getByTestId('work-card')
-    expect(within(card).getByTestId('work-ask').textContent).toBe('Et les contrastes ?')
-    const answers = within(card).getAllByTestId('work-answer')
-    expect(answers).toHaveLength(2)
-    expect(answers[1]?.textContent).toContain('Contrastes AA partout.')
-    // Durée de l'échange en cours : depuis la suite (1 min).
-    expect(within(card).getByTestId('work-facts').textContent).toBe('1 min 0 s')
   })
 
-  it('rôle qui écrit : « écrit dans sa branche », branche et fichiers, « Voir les modifications »', () => {
+  it('rôle qui écrit : branche, fichiers, non commité laissé, « Voir les modifications »', () => {
     fakeAgent()
     const openGit = vi.fn()
     const merge = { openGit } as unknown as NonNullable<SubtasksInfo['merge']>
@@ -440,13 +529,12 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(changes.textContent).toContain('bobine/rayons')
     expect(changes.textContent).toContain('4 fichiers')
     expect(screen.queryByTestId('work-apply')).toBeNull()
-    // Parti sans le non commité de la mère (fiche 240) : rappelé sur la carte.
     expect(within(card).getByTestId('work-left-behind').textContent).toContain('a3f2c1e')
     fireEvent.click(within(card).getByTestId('work-changes-open'))
     expect(openGit).toHaveBeenCalledWith('b')
   })
 
-  it('plusieurs rôles : une bulle, deux puces, une carte par rôle dessous', () => {
+  it('plusieurs rôles : une bulle, deux puces, une carte par rôle dessous, chacune son ancre', () => {
     fakeAgent()
     view(
       [
@@ -466,13 +554,12 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       'ux-ui-expert',
       'front-architect'
     ])
-    expect(screen.getAllByTestId('work-card').map((c) => c.dataset['role'])).toEqual([
-      'ux-ui-expert',
-      'front-architect'
-    ])
+    const cards = screen.getAllByTestId('work-card')
+    expect(cards.map((c) => c.dataset['role'])).toEqual(['ux-ui-expert', 'front-architect'])
+    expect(cards.map((c) => c.dataset['workAnchor'])).toEqual(['2', '3'])
   })
 
-  it('un travail lancé par l’agent garde sa carte « Sous-tâches » et son compte rendu, sans ceux des bulles', () => {
+  it('un travail lancé par l’agent garde « Sous-tâches » et son compte rendu, sans ceux des bulles', () => {
     fakeAgent()
     view(
       [
@@ -492,8 +579,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       ],
       info([child('a', ux), { ...child('g', ux), role: undefined }])
     )
-    const rows = screen.getAllByTestId('subtask-row')
-    expect(rows.map((r) => r.dataset['id'])).toEqual(['g'])
+    expect(screen.getAllByTestId('subtask-row').map((r) => r.dataset['id'])).toEqual(['g'])
     expect(screen.getAllByTestId('child-report').map((r) => r.dataset['outcome'])).toEqual(['done'])
     expect(screen.getAllByTestId('work-card')).toHaveLength(1)
   })
@@ -511,13 +597,53 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.queryByTestId('work-card')).toBeNull()
   })
 
-  it('conversation du travail supprimée, sans réponse : la carte le dit, sans action', () => {
+  it('conversation supprimée sans réponse : dit, sans action ; archivée : on peut encore l’ouvrir', () => {
     fakeAgent()
-    view([bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')], info([]))
+    const items = [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')]
+    const { unmount } = view(items, info([]))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('gone')
     expect(within(card).getByTestId('work-state').textContent).toBe('conversation supprimée')
     expect(within(card).queryAllByRole('button')).toHaveLength(0)
+    unmount()
+    const subtasks = info([child('a', ux, { archived: true })])
+    view([...items, report(3, 'a')], subtasks)
+    fireEvent.click(screen.getByTestId('work-open'))
+    expect(subtasks.onOpen).toHaveBeenCalledWith('a')
+    expect(screen.queryByTestId('work-reply')).toBeNull()
+    expect(screen.queryByTestId('work-apply')).toBeNull()
+  })
+
+  it('fil lu côte à côte (sans la liste des conversations) : ni « supprimée », ni lecture seule supposée', () => {
+    fakeAgent()
+    view([bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')])
+    const card = screen.getByTestId('work-card')
+    expect(card.dataset['state']).toBe('unknown')
+    expect(within(card).getByTestId('work-state').textContent).toBe('')
+    expect(within(card).queryByTestId('work-place')).toBeNull()
+    expect(within(card).queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('Markdown hostile dans une réponse : ni script, ni image, ni lien `javascript:`', () => {
+    fakeAgent()
+    view(
+      answered({
+        reply: [
+          '<script>window.pwned = true</script>',
+          '<img src="x" onerror="window.pwned = true">',
+          '[clic](javascript:window.pwned=true)',
+          'FIN'
+        ].join('\n\n')
+      }),
+      info([child('a', ux)])
+    )
+    const body = screen.getByTestId('work-body')
+    expect(body.querySelector('script, img, iframe')).toBeNull()
+    expect(
+      [...body.querySelectorAll('a')].some((a) => a.getAttribute('href')?.startsWith('javascript'))
+    ).toBe(false)
+    expect((window as { pwned?: boolean }).pwned).toBeUndefined()
+    expect(body.textContent).toContain('FIN')
   })
 })
 

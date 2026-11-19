@@ -208,6 +208,16 @@ describe('état en texte', () => {
     expect(busy(after)).toBe(true)
     expect(busy(idle())).toBe(false)
   })
+  it('travail confié à un rôle (fiche 263) : dit, et l’attente continue tant qu’il tourne', () => {
+    const working = idle({ works: [{ role: 'ux-ui-expert', state: 'running', answer: '' }] })
+    expect(formatState(working)).toContain('Travail (ux-ui-expert) : running')
+    expect(busy(working)).toBe(true)
+    const replied = idle({
+      works: [{ role: 'ux-ui-expert', state: 'replied', answer: 'Direction calme.' }]
+    })
+    expect(formatState(replied)).toContain('Travail (ux-ui-expert) : replied · Direction calme.')
+    expect(busy(replied)).toBe(false)
+  })
   it('outils : par genre, groupés compris', () => {
     expect(
       toolsLine({

@@ -474,7 +474,61 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const childId = result.started[0]?.childId ?? ''
     expect(() => env.children.reply('autre-mere', childId, 'Bonjour')).toThrow()
     expect(() => env.children.reply(env.mother, childId, '   ')).toThrow()
+    // Un travail lancé sans bulle (outil de l'agent, dialogue), même avec un rôle : refusé.
+    const byAgent = await env.children.start(env.mother, { text: 'Relis.', role: 'code-reviewer' })
+    expect(() => env.children.reply(env.mother, byAgent.id, 'Bonjour')).toThrow()
     expect(env.items(env.mother).filter((i) => i.kind === 'role-request')).toHaveLength(1)
+  })
+
+  it('fiche 263, revue QA : « Relancer » après un démarrage raté repart avec la consigne du rôle', async () => {
+    const env = await environment()
+    // Le premier message du travail ne part pas (agent à connecter, par exemple).
+    const prompt = env.manager.prompt.bind(env.manager)
+    const failing = vi.spyOn(env.manager, 'prompt').mockImplementation(async (id, ...rest) => {
+      if (id !== env.mother) throw new Error('agent à connecter')
+      return prompt(id, ...rest)
+    })
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis le carnet.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    await env.waitFor(
+      () => env.items(env.mother).some((i) => i.kind === 'child-report' && i.outcome === 'error'),
+      'démarrage raté dit à la mère'
+    )
+    expect(env.items(childId).some((i) => i.kind === 'user')).toBe(false)
+    failing.mockRestore()
+    expect(env.children.reply(env.mother, childId, 'Relis le carnet.')).toBe('sent')
+    await env.settled(childId)
+    const first = env.firstMessage(childId)
+    // Comme au lancement : la demande, puis la consigne du rôle et sa lecture seule.
+    expect(first?.kind === 'user' && first.text).toMatch(/^Relis le carnet\./)
+    expect(first?.kind === 'user' && first.text).toContain('<bobine_role name="security-expert">')
+    expect(first?.kind === 'user' && first.text).toContain('You are read-only')
+  })
+
+  it('fiche 263, revue QA : « Répondre » refusé pour une mère archivée ; un échec d’envoi est dit à la mère', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    await env.settled(childId)
+    const prompt = env.manager.prompt.bind(env.manager)
+    const failing = vi.spyOn(env.manager, 'prompt').mockImplementation(async (id, ...rest) => {
+      if (id === childId) throw new Error('panne')
+      return prompt(id, ...rest)
+    })
+    env.children.reply(env.mother, childId, 'Et ensuite ?')
+    await env.waitFor(
+      () => env.notices(env.mother).includes('workCard.notice.replyFailed'),
+      'échec dit à la mère'
+    )
+    failing.mockRestore()
+    env.manager.setArchived(env.mother, true)
+    expect(() => env.children.reply(env.mother, childId, 'Encore ?')).toThrow()
   })
 
   it('`@rôle` en premier message d’une conversation neuve : elle entre dans l’historique, la fille s’y rattache', async () => {

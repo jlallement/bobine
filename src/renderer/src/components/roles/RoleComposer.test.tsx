@@ -237,7 +237,7 @@ describe('jeton et envoi', () => {
     const token = screen.getByTestId('role-token')
     expect(token.dataset['role']).toBe('security-expert')
     const line = screen.getByTestId('role-destination')
-    expect(line.textContent).toContain('Partira à Expert sécu, dans une conversation fille')
+    expect(line.textContent).toContain('Partira à Expert sécu, dans sa propre conversation')
     expect(line.textContent).toContain('lecture seule')
     expect(line.textContent).toContain('dans ce dossier')
     expect(input.closest('form')?.className).toContain('to-role')
@@ -285,7 +285,7 @@ describe('jeton et envoi', () => {
     const { type, key, send } = setup()
     type('@security-expert @code-reviewer relisez avant la fusion')
     expect(screen.getByTestId('role-destination').textContent).toContain(
-      'Partira à 2 rôles, une conversation fille chacun, en parallèle'
+      'Partira à 2 rôles, un travail chacun, en parallèle'
     )
     key('Escape')
     await act(async () => key('Enter'))
@@ -398,6 +398,47 @@ describe('« Répondre à <rôle> » : la suite va au même travail (fiche 263)'
     await act(async () => key('Enter'))
     expect(reply).not.toHaveBeenCalled()
     expect(send).toHaveBeenCalledWith(['ux-ui-expert', 'security-expert'], 'Relisez')
+  })
+
+  it('rôle désactivé ou supprimé depuis : son jeton vient du travail, la suite part au travail', async () => {
+    const reply = vi.fn(async () => true)
+    const { type, key, send, onSend } = setup({ reply })
+    const gone = { name: 'ancien-role', label: 'Ancien rôle', icon: 'bot', color: 'blue' as const }
+    act(() => {
+      invokeRole('ancien-role', { replyTo: 'f9', role: gone })
+    })
+    expect(screen.getByTestId('role-token').dataset['role']).toBe('ancien-role')
+    type('Et ensuite ?')
+    expect(screen.getByTestId('role-destination').textContent).toContain('Répondra à Ancien rôle')
+    await act(async () => key('Enter'))
+    expect(reply).toHaveBeenCalledWith('f9', 'Et ensuite ?')
+    // Jamais en silence à l'agent principal, ni à un nouveau travail.
+    expect(onSend).not.toHaveBeenCalled()
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('historique de la saisie : seulement une suite vraiment partie', async () => {
+    const recordSent = vi.fn(async () => undefined)
+    const original = window.api.conversations
+    window.api.conversations = { recordSent } as unknown as Window['api']['conversations']
+    try {
+      let ok = false
+      const reply = vi.fn(async () => ok)
+      const { type, key } = setup({ reply })
+      act(() => {
+        invokeRole('ux-ui-expert', { replyTo: 'f1' })
+      })
+      type('Première')
+      await act(async () => key('Enter'))
+      expect(reply).toHaveBeenCalledTimes(1)
+      expect(recordSent).not.toHaveBeenCalled()
+      ok = true
+      await act(async () => key('Enter'))
+      expect(reply).toHaveBeenCalledTimes(2)
+      expect(recordSent).toHaveBeenCalledTimes(1)
+    } finally {
+      window.api.conversations = original
+    }
   })
 
   it('jeton retiré : la suite est oubliée ; envoi refusé : jeton et texte remis', async () => {

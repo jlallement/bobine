@@ -141,6 +141,9 @@ export function formatState(shot, { long = false } = {}) {
   }
   const turn = turnLine(shot)
   if (turn) lines.push(turn)
+  for (const w of shot.works ?? []) {
+    lines.push(`Travail (${w.role}) : ${join([w.state, w.answer && excerpt(w.answer, 160)])}`)
+  }
   for (const card of shot.cards ?? []) lines.push(...cardLines(card))
   if (shot.questions) lines.push('Question de l’agent à l’écran (formulaire)')
   for (const b of shot.blockers ?? []) {

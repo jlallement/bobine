@@ -36,7 +36,8 @@ function readScreen(main) {
       .map(label)
   const after = (a, b) => !b || !!(b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING)
 
-  const users = $$('.msg-user')
+  // Les suites d'un travail (« Répondre à … ») sont dans sa carte, pas des messages du fil (263).
+  const users = $$('.msg-user').filter((e) => !e.closest('.work-follow-up'))
   const lastUser = users.at(-1)
   const sinceUser = (list) => list.filter((e) => after(e, lastUser))
 
@@ -115,6 +116,13 @@ function readScreen(main) {
   const duration = $$('[data-testid=turn-duration]').at(-1)
   if (duration && after(duration, lastUser)) shot.turnDuration = text(duration)
   shot.messages = users.length
+  // Cartes-réponses des travaux confiés à des rôles (fiche 263) : rôle, état, début de la réponse.
+  const works = $$('[data-testid=work-card]').map((card) => ({
+    role: card.dataset.role ?? '',
+    state: card.dataset.state ?? '',
+    answer: clean($$('[data-testid=work-body]', card).at(-1)?.innerText).slice(0, 300)
+  }))
+  if (works.length) shot.works = works
   if (lastUser) shot.lastUser = text(lastUser).slice(0, 120)
 
   const agentMessages = sinceUser($$('.msg-agent'))

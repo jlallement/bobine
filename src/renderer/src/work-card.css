@@ -1,9 +1,15 @@
 /*
  * Bulle « @Rôle … » et carte-réponse d'un travail (fiche 263, écran A des maquettes de la fiche
- * 260). La carte prend la couleur de son rôle (`--role`, posée par `useRoleStyle`).
+ * 260, revue UX). La carte prend la couleur de son rôle (`--role`, posée par `useRoleStyle`).
  */
 
-/* La bulle : puces des rôles, puis le texte demandé. */
+/* La bulle et ses cartes vont ensemble : un groupe, un écart plus serré que le fil. */
+.role-request-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
 .role-request-bubble {
   white-space: pre-wrap;
 }
@@ -26,14 +32,10 @@
   border: 0;
   background: transparent;
 }
-/* La carte suit sa bulle de près : elles vont ensemble. */
-.role-request + .work-card,
-.work-card + .work-card {
-  margin-top: -6px;
-}
 
 /* La carte. */
 .work-card {
+  container-type: inline-size;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -60,8 +62,7 @@
   color: var(--muted);
   font-size: 12.5px;
 }
-.work-head .grow,
-.work-foot .grow {
+.work-head .grow {
   flex: 1;
 }
 .work-state {
@@ -92,7 +93,7 @@
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  padding: 0 14px 10px 48px;
+  padding: 0 14px 8px 48px;
   color: var(--warn);
   font-size: 12.5px;
 }
@@ -101,20 +102,33 @@
   margin-top: 2px;
 }
 
-/* En cours : l'outil en cours, puis les derniers faits. */
+/* En cours : les derniers faits, au passé, puis ce qu'il fait maintenant. */
+.work-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 14px 4px 48px;
+}
 .work-live {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px 10px 48px;
+  gap: 7px;
   color: var(--text-2);
   font-size: 13.5px;
   overflow-wrap: anywhere;
 }
+.work-live > svg {
+  flex-shrink: 0;
+  color: var(--role, var(--muted));
+}
+/* Hors du bloc d'activité (attend votre accord) : le même retrait. */
+.work-card > .work-live {
+  padding: 0 14px 4px 48px;
+}
 .work-facts-done {
   list-style: none;
   margin: 0;
-  padding: 0 14px 10px 48px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -128,7 +142,7 @@
   overflow-wrap: anywhere;
 }
 
-/* La réponse, en Markdown, repliée après une dizaine de lignes. */
+/* La réponse, en Markdown, repliée après dix lignes (16em à un interligne de 1,6). */
 .work-answer {
   padding: 2px 16px 0 48px;
 }
@@ -138,13 +152,16 @@
   font-size: 14.5px;
   overflow-wrap: anywhere;
 }
+.work-body > :last-child {
+  margin-bottom: 0;
+}
 .work-body.folded {
   max-height: 16em;
   overflow: hidden;
 }
-/* Une fois transmise, la réponse se fait discrète (maquette A, état 3) ; « Lire la suite » reste. */
+/* Une fois transmise, la réponse se fait discrète (maquette A, état 3) : deux lignes. */
 .work-body.folded.relayed {
-  max-height: 5em;
+  max-height: 3.2em;
   color: var(--text-2);
 }
 .work-body[data-folded]::after {
@@ -153,12 +170,32 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 4em;
+  height: 2.4em;
   background: linear-gradient(transparent, var(--surface));
   pointer-events: none;
 }
+.work-body.relayed[data-folded]::after {
+  height: 1.4em;
+}
 .work-more {
-  margin: 4px 0 0 -10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.work-more:hover {
+  color: var(--text);
+}
+/* Replié : le bouton remonte dans le fondu. */
+.work-more.in-fade {
+  position: relative;
+  margin-top: -0.9em;
 }
 .work-note {
   margin-top: 6px;
@@ -184,37 +221,46 @@
   font-size: 13px;
   color: var(--text-2);
 }
-
-/* La bulle d'une suite (« Répondre à … »), dans la carte. */
-.role-request.in-card {
-  padding: 8px 14px 4px 48px;
-  box-sizing: border-box;
-}
-.role-request.in-card .msg-user {
-  font-size: 13.5px;
-}
-
-/* Pied : durée et coût, actions ; puis les liens ; puis la transmission. */
-.work-foot {
-  display: flex;
-  align-items: center;
-  /* Fenêtre étroite : les boutons qui passent à la ligne restent à droite, sous l'action principale. */
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 14px 4px 48px;
-}
-.work-foot.work-links {
-  padding-top: 4px;
-  padding-bottom: 10px;
-}
+/* Pied de chaque réponse : heure · durée de l'échange · coût de l'échange. */
 .work-facts {
+  margin-top: 6px;
   font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
-.work-open {
+.work-relayed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Une suite (« Répondre à … ») : un filet pointillé, puis la bulle à droite. */
+.work-follow-up {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 14px 0 48px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.work-follow-up .msg-user {
+  font-size: 13.5px;
+}
+
+/* Une seule rangée d'actions, à gauche ; « Ouvrir sa conversation » au bout. */
+.work-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px 10px 48px;
+}
+.work-actions .work-open {
+  margin-left: auto;
+}
+.link-button.work-open {
   color: var(--muted);
   font-size: 12.5px;
   text-decoration: underline;
@@ -241,15 +287,17 @@
   flex-shrink: 0;
 }
 
-/* Fenêtre étroite : moins de retrait à gauche. */
-@media (max-width: 640px) {
-  .work-live,
+/* Carte étroite : moins de retrait à gauche. */
+@container (max-width: 520px) {
   .work-left-behind,
-  .work-facts-done,
+  .work-activity,
+  .work-card > .work-live,
   .work-answer,
-  .work-foot,
-  .work-relay,
-  .role-request.in-card {
+  .work-actions,
+  .work-relay {
     padding-left: 14px;
+  }
+  .work-follow-up {
+    margin-left: 14px;
   }
 }

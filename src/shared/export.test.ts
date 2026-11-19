@@ -62,6 +62,40 @@ const transcript: TranscriptState = {
 }
 
 describe('export d’une conversation (fiche 043)', () => {
+  it('bulle « @Rôle … » et réponse entière d’un travail (fiche 263)', () => {
+    const role = { name: 'ux', label: 'Expert UX/UI', icon: 'palette', color: 'pink' as const }
+    const value: TranscriptState = {
+      items: [
+        {
+          kind: 'role-request',
+          id: 1,
+          requestId: 'd1',
+          text: 'Propose une direction.',
+          works: [{ childId: 'f', role }],
+          at: 1
+        },
+        {
+          kind: 'child-report',
+          id: 2,
+          childId: 'f',
+          title: 'Avis',
+          outcome: 'done',
+          files: [],
+          fileCount: 0,
+          added: 0,
+          removed: 0,
+          excerpt: 'Direction calme.',
+          reply: 'Direction calme.\n\nPalette papier.\n\nFIN',
+          at: 2
+        }
+      ],
+      nextId: 3
+    }
+    const md = exportConversation(summary, value, 'markdown')
+    expect(md).toContain('## Vous, à Expert UX/UI\n\nPropose une direction.')
+    expect(md).toContain('> > FIN')
+  })
+
   it('exporte le texte entier des consignes de reprise (150)', () => {
     const value: TranscriptState = {
       items: [

@@ -3,10 +3,17 @@ import { useEffect, useState } from 'react'
 /** Derniers faits gardés par travail (maquette A : « les trois derniers faits »). */
 export const RECENT_FACTS = 3
 
+/** Un outil du travail : son titre (de l'agent), son genre ACP et le chemin qu'il vise. */
+export interface WorkTool {
+  title: string
+  kind?: string
+  path?: string
+}
+
 /** Ce que fait un travail en ce moment : l'outil en cours, puis ses derniers outils finis. */
 export interface WorkActivity {
-  current?: string
-  done: string[]
+  current?: WorkTool
+  done: WorkTool[]
 }
 
 const IDLE: WorkActivity = { done: [] }
@@ -24,8 +31,8 @@ export function useWorkActivity(id: string | undefined): WorkActivity {
   })
   useEffect(() => {
     if (!id) return
-    // Titre de chaque outil, par identifiant : une mise à jour ne le répète pas toujours.
-    const titles = new Map<string, string>()
+    // Chaque outil, par identifiant : une mise à jour ne répète pas toujours titre et genre.
+    const tools = new Map<string, WorkTool>()
     const set = (update: (value: WorkActivity) => WorkActivity) =>
       setActivity((current) => ({
         id,
@@ -34,7 +41,7 @@ export function useWorkActivity(id: string | undefined): WorkActivity {
     return window.api.agent.onEvent(({ conversationId, event }) => {
       if (conversationId !== id) return
       if (event.type === 'user-message') {
-        titles.clear()
+        tools.clear()
         set(() => IDLE)
         return
       }
@@ -47,17 +54,21 @@ export function useWorkActivity(id: string | undefined): WorkActivity {
       if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') {
         return
       }
-      if (update.title) titles.set(update.toolCallId, update.title)
-      const title = titles.get(update.toolCallId)
+      const known = tools.get(update.toolCallId)
+      const title = update.title ?? known?.title
       if (!title) return
+      const kind = update.kind ?? known?.kind
+      const path = update.locations?.[0]?.path ?? known?.path
+      const tool: WorkTool = { title, ...(kind ? { kind } : {}), ...(path ? { path } : {}) }
+      tools.set(update.toolCallId, tool)
       const finished = update.status === 'completed' || update.status === 'failed'
       set((value) =>
         finished
           ? {
-              done: [...value.done.filter((t) => t !== title), title].slice(-RECENT_FACTS),
-              ...(value.current && value.current !== title ? { current: value.current } : {})
+              done: [...value.done.filter((t) => t.title !== title), tool].slice(-RECENT_FACTS),
+              ...(value.current && value.current.title !== title ? { current: value.current } : {})
             }
-          : { ...value, current: title }
+          : { ...value, current: tool }
       )
     })
   }, [id])

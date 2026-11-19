@@ -91,7 +91,8 @@ describe('bilan du dernier tour (fiche 185, P4)', () => {
   })
 
   it('un seul pied : « heure · durée · 2 fichiers +2 −1 », sans « Terminé » (fiche 261)', () => {
-    const at = new Date(2026, 10, 19, 21, 17).getTime()
+    // Aujourd'hui à 21:17 : une autre date ajouterait le jour (« 19 nov., 21:17 »).
+    const at = new Date().setHours(21, 17, 0, 0)
     renderFoot({ ms: 149_000, files: 2, added: 2, removed: 1 }, at)
     expect(footText()).toBe('21:17 · 2 min 29 s · 2 fichiers +2 −1')
     expect(screen.getAllByTestId('turn-duration')).toHaveLength(1)

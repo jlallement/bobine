@@ -612,29 +612,53 @@ export class ChildConversations {
     this.readOnly.onEvent(payload)
   }
 
-  /** Travail lancé par une bulle « @Rôle … » (fiche 263) : son lancement le dit, dans le fil de la mère. */
+  /**
+   * Travail lancé par une bulle « @Rôle … » (fiche 263) : son lancement le dit, dans le fil de la
+   * mère. Mère disparue entre-temps : non, sans lever (revue QA).
+   */
   private askedByBubble(motherId: string, childId: string): boolean {
-    return this.conversations
-      .view(motherId)
-      .transcript.items.some(
-        (i) => i.kind === 'child-started' && i.childId === childId && !!i.request
-      )
+    if (!this.conversations.state().conversations.some((c) => c.id === motherId)) return false
+    try {
+      return this.conversations
+        .view(motherId)
+        .transcript.items.some(
+          (i) => i.kind === 'child-started' && i.childId === childId && !!i.request
+        )
+    } catch {
+      return false
+    }
   }
 
   /**
-   * « Répondre à <rôle> » (fiche 263, décision 2 de la fiche 260) : la bulle de suite dans le fil de
-   * la mère (elle s'affiche dans la carte du travail), puis le message à la même conversation,
-   * comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la mère).
+   * « Répondre à <rôle> » et « Relancer » (fiche 263, décision 2 de la fiche 260) : la bulle de
+   * suite dans le fil de la mère (elle s'affiche dans la carte du travail), puis le message à la
+   * même conversation, comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la
+   * mère). Seulement un travail lancé par une bulle, d'une mère et d'un travail non archivés. Un
+   * travail qui n'a jamais reçu son premier message (démarrage raté) repart comme au lancement :
+   * consigne du rôle, lecture seule, travail dans le dossier.
    */
   reply(motherId: string, childId: string, text: string): 'queued' | 'sent' {
     const body = text.trim()
     if (!body) throw new Error(t('children.error.emptyPrompt'))
+    const mother = this.conversations.state().conversations.find((c) => c.id === motherId)
     const child = this.conversations.state().conversations.find((c) => c.id === childId)
-    if (!child || child.startedFrom?.id !== motherId || child.reviewOf || !child.role) {
+    if (
+      !mother ||
+      !child ||
+      child.startedFrom?.id !== motherId ||
+      child.reviewOf ||
+      !child.role ||
+      !this.askedByBubble(motherId, childId)
+    ) {
       throw new Error(t('workCard.error.gone'))
     }
-    if (child.archived) throw new Error(t('children.error.archived'))
+    if (mother.archived || child.archived) throw new Error(t('children.error.archived'))
     const { mcp: _mcp, ...role } = child.role
+    const fresh = !this.conversations.view(childId).transcript.items.some((i) => i.kind === 'user')
+    // Le rôle d'aujourd'hui, avec la lecture seule du lancement (« Juste un avis », fiche 262).
+    const snapshot = fresh
+      ? { ...this.findRole(motherId, role.name), ...(role.readOnly ? { readOnly: true } : {}) }
+      : undefined
     this.conversations.post(motherId, {
       type: 'role-request',
       request: {
@@ -645,7 +669,32 @@ export class ChildConversations {
         at: Date.now()
       }
     })
-    return this.deliver(child, body)
+    if (snapshot) return this.relaunch(child, body, snapshot)
+    const fail = () =>
+      this.conversations.post(motherId, {
+        type: 'notice',
+        level: 'error',
+        message: { key: 'workCard.notice.replyFailed', params: { role: role.label } }
+      })
+    return this.deliver(child, body, undefined, fail)
+  }
+
+  /** Premier message d'un travail qui n'a pas démarré, refait comme au lancement (`launch`). */
+  private relaunch(
+    child: ConversationSummary,
+    text: string,
+    role: RoleSnapshot
+  ): 'queued' | 'sent' {
+    this.sending.add(child.id)
+    this.conversations.holdStarting(child.id, true)
+    let launched = () => {}
+    this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
+    const inPlace = !role.readOnly && !child.branch
+    void this.launch(child, text, { model: undefined, role, inPlace }, () => {
+      launched()
+      this.launching.delete(child.id)
+    })
+    return 'sent'
   }
 
   /** Liste changée (fille archivée…) : le réveil groupé revoit les mères qui attendent. */
@@ -690,7 +739,9 @@ export class ChildConversations {
   private deliver(
     target: ConversationSummary,
     text: string,
-    from?: MessageOrigin
+    from?: MessageOrigin,
+    /** Échec de l'envoi, dit aussi ailleurs (« Répondre », dans le fil de la mère, fiche 263). */
+    failed?: () => void
   ): 'queued' | 'sent' {
     // Prête ou arrêtée (relancée pour l'occasion) : le message part tout de suite ; sinon il attend
     // la fin de la réponse, ou la consigne d'une fille qui démarre.
@@ -712,6 +763,7 @@ export class ChildConversations {
         level: 'error',
         message: { key: 'children.notice.messageFailed', params: { error: messageOf(error) } }
       })
+      failed?.()
     })
     return queued ? 'queued' : 'sent'
   }

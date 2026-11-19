@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { RolesListing } from '@shared/roles'
+import type { RoleBadge, RolesListing } from '@shared/roles'
 import type { RoleDraft } from './role-draft'
 
 export interface RolesUiState {
@@ -69,6 +69,11 @@ export function closeRoleWizard(): void {
  */
 export interface RoleInvokeOptions {
   replyTo?: string
+  /**
+   * Le rôle du travail tel que sa carte le connaît : son jeton s'affiche même si le rôle a été
+   * désactivé ou supprimé depuis (la suite va au travail, jamais à l'agent principal).
+   */
+  role?: RoleBadge
 }
 
 type RoleInvoked = (name: string, options: RoleInvokeOptions) => void

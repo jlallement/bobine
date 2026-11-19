@@ -9,7 +9,7 @@ What changes for you, version by version. Shown in Settings › About.
 - A request to a role (`@UX/UI expert …`) stays in the thread, like a message, with the role's
   chip. Right below it, a single card that no longer moves: what the role is doing and for how
   long, then **its whole response** (collapsed after about ten lines, “Read more”), its duration
-  and cost. “Ask <agent> to apply it” sends the response to the conversation's agent; “Reply to
+  and cost. “Ask <agent> to apply this response” sends the response to the conversation's agent; “Reply to
   <role>” continues the same task, in the same card. A line says whether the conversation's agent
   already knows this response. No more separate launch card, “Subtasks” row or report for these
   tasks.

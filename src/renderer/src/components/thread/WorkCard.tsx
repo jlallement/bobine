@@ -1,41 +1,31 @@
 import {
+  Activity,
   Check,
   Eye,
+  Hand,
   EyeOff,
   GitBranch,
   LoaderCircle,
   Pencil,
-  Reply,
-  Send,
   TriangleAlert
 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
-import type { RoleBadge } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
-import { usePresentation } from '../../presentation'
-import { ipcErrorText } from '../../ipc-errors'
-import { invokeRole } from '../../roles/roles-store'
-import { messageTime, turnDuration } from '../../time'
+import { messageTime } from '../../time'
 import { CopyButton } from '../common/CopyButton'
 import { Tip } from '../common/Menus'
 import { RoleAvatar, useRoleStyle, type RoleAvatarState } from '../roles/RoleAvatar'
 import { childReadOnly } from '../roles/RoleWork'
-import { useWorkActivity } from '../roles/useWorkActivity'
-import { Markdown } from './Markdown'
+import { useWorkActivity, type WorkTool } from '../roles/useWorkActivity'
+import { RoleMention, WorkSteps } from './WorkAnswer'
+import { WorkFoot } from './WorkFoot'
+import i18next from 'i18next'
 import { MessageTime } from './MessageTime'
-import { Branch, FileStats, useUsageText, type SubtasksInfo } from './Subtasks'
-import {
-  answerText,
-  currentReport,
-  exchangeStart,
-  relayOf,
-  workState,
-  workUsage,
-  type WorkState
-} from './work-card'
+import type { SubtasksInfo } from './Subtasks'
+import { currentReport, exchangeStart, workState, type WorkState } from './work-card'
 import '../../work-card.css'
 
 /**
@@ -58,13 +48,14 @@ export function RoleRequestEntry({
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
 }) {
+  // La bulle et ses cartes forment une paire : un même groupe, un écart plus serré que le fil.
   return (
-    <>
+    <div className="role-request-group" data-testid="role-request-group">
       <RoleRequestBubble item={item} />
       {cards?.map((card) => (
         <WorkCard key={card.childId} card={card} items={items} info={info} />
       ))}
-    </>
+    </div>
   )
 }
 
@@ -84,7 +75,9 @@ export function RoleRequestBubble({
       data-item-id={item.id}
     >
       <div className="msg-user role-request-bubble">
-        {!inCard && item.works.map((work) => <RoleMention key={work.childId} role={work.role} />)}
+        {item.works.map((work) => (
+          <RoleMention key={work.childId} role={work.role} />
+        ))}
         <span className="role-request-text">{item.text}</span>
       </div>
       {!inCard && (
@@ -101,20 +94,13 @@ export function RoleRequestBubble({
   )
 }
 
-function RoleMention({ role }: { role: RoleBadge }) {
-  const style = useRoleStyle(role.color)
-  return (
-    <span className="role-mention" style={style} data-testid="role-mention" data-role={role.name}>
-      <RoleAvatar role={role} size={18} />
-      {role.label}
-    </span>
-  )
-}
-
 const AVATAR: Record<WorkState, RoleAvatarState> = {
   running: 'running',
   waiting: 'waiting',
   replied: 'done',
+  pending: 'done',
+  silent: 'idle',
+  unknown: 'idle',
   stopped: 'error',
   error: 'error',
   gone: 'idle'
@@ -152,12 +138,16 @@ export function WorkCard({
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
 }) {
+  const { t } = useTranslation()
   const child = info?.children.find((c) => c.id === card.childId)
   const attention = child ? info?.attention[child.id] : undefined
   // L'heure n'avance que pendant le travail : un état figé n'en a pas besoin.
   const [busy, setBusy] = useState(true)
   const now = useNow(busy)
-  const state = workState(card, child, attention, now)
+  const state = workState(card, child, attention, now, {
+    known: !!info,
+    ...(info?.motherBusy ? { motherBusy: true } : {})
+  })
   if (busy !== (state === 'running')) setBusy(state === 'running')
   const style = useRoleStyle(card.role.color)
   const report = currentReport(card)
@@ -173,9 +163,20 @@ export function WorkCard({
     >
       <WorkHead card={card} child={child} info={info} state={state} now={now} report={report} />
       <LeftBehindLine card={card} />
-      <WorkSteps card={card} items={items} state={state} />
+      <WorkSteps card={card} child={child} items={items} state={state} />
       {(state === 'running' || state === 'waiting') && card.steps.at(-1)?.kind !== 'report' && (
         <WorkLive childId={child?.id} state={state} />
+      )}
+      {(state === 'pending' || state === 'silent') && (
+        <div
+          className="work-live work-waiting-answer"
+          data-testid="work-no-answer"
+          data-state={state}
+        >
+          {state === 'pending'
+            ? t('workCard.pendingLine', { agent: info?.agentLabel ?? t('workCard.mainAgent') })
+            : t('workCard.silentLine')}
+        </div>
       )}
       <WorkFoot card={card} child={child} info={info} state={state} report={report} items={items} />
     </div>
@@ -217,9 +218,9 @@ function WorkHead({
           </>
         ) : state === 'replied' && report ? (
           t('workCard.state.replied', { time: messageTime(report.at) })
-        ) : state === 'replied' ? (
+        ) : state === 'replied' || state === 'pending' ? (
           t('workCard.state.answered')
-        ) : (
+        ) : state === 'unknown' ? null : (
           t(`workCard.state.${state}`)
         )}
       </span>
@@ -238,8 +239,10 @@ function WorkPlace({
   info: SubtasksInfo | undefined
 }) {
   const { t } = useTranslation()
+  // Sans sa conversation (fil côte à côte, travail supprimé) : rien plutôt qu'une supposition.
+  if (!child) return null
   if (card.role.readOnly) {
-    const level = child ? childReadOnly(child, info?.profiles ?? []) : 'enforced'
+    const level = childReadOnly(child, info?.profiles ?? [])
     const requested = level === 'requested'
     const tag = (
       <span
@@ -254,7 +257,7 @@ function WorkPlace({
     )
     return requested ? <Tip label={t('workCard.readOnlyRequestedHint')}>{tag}</Tip> : tag
   }
-  const branch = child?.branch ?? card.started?.branch
+  const branch = child.branch ?? card.started?.branch
   return (
     <span
       className="work-place"
@@ -285,351 +288,61 @@ function LeftBehindLine({ card }: { card: WorkCardData }) {
   )
 }
 
-/** Réponses et suites du travail, dans l'ordre ; la dernière réponse seule est dépliable en grand. */
-function WorkSteps({
-  card,
-  items,
-  state
-}: {
-  card: WorkCardData
-  items: readonly TranscriptItem[]
-  state: WorkState
-}) {
-  return (
-    <>
-      {card.steps.map((step) =>
-        step.kind === 'ask' ? (
-          <RoleRequestBubble key={step.item.id} item={step.item} inCard />
-        ) : (
-          <WorkAnswer
-            key={step.item.id}
-            report={step.item}
-            relayed={relayOf(step.item, items)?.sent === true}
-            writes={!card.role.readOnly}
-            state={state}
-          />
-        )
-      )}
-    </>
-  )
-}
-
-/** Ce que fait le travail en ce moment : l'outil en cours et les derniers faits. */
+/** Ce que fait le travail en ce moment : l'outil en cours et les derniers faits, au passé. */
 function WorkLive({ childId, state }: { childId: string | undefined; state: WorkState }) {
   const { t } = useTranslation()
   const activity = useWorkActivity(state === 'running' ? childId : undefined)
   if (state === 'waiting') {
     return (
       <div className="work-live" data-testid="work-live">
+        <Hand size={13} aria-hidden />
         {t('workCard.waitingLine')}
       </div>
     )
   }
-  if (!activity.current && activity.done.length === 0) return null
   return (
     <div className="work-activity" data-testid="work-live">
-      {activity.current && (
-        <div className="work-live" data-testid="work-live-current">
-          <span>{activity.current}…</span>
-        </div>
-      )}
       {activity.done.length > 0 && (
         <ul className="work-facts-done" data-testid="work-live-done">
           {activity.done.map((fact) => (
-            <li key={fact}>
+            <li key={fact.title}>
               <Check size={12} aria-hidden />
-              {fact}
+              {factText(fact, true)}
             </li>
           ))}
         </ul>
       )}
-    </div>
-  )
-}
-
-/**
- * Une réponse du travail : entière, en Markdown, repliée après une dizaine de lignes (« Lire la
- * suite ») ; plus courte une fois transmise à l'agent de la mère (maquette A, état 3).
- */
-function WorkAnswer({
-  report,
-  relayed,
-  writes,
-  state
-}: {
-  report: Report
-  relayed: boolean
-  writes: boolean
-  state: WorkState
-}) {
-  const { t } = useTranslation()
-  const text = answerText(report)
-  return (
-    <div className="work-answer" data-testid="work-answer" data-outcome={report.outcome}>
-      {report.outcome === 'error' ? (
-        <div className="work-error" data-testid="work-error">
-          {text}
-        </div>
-      ) : text ? (
-        <FoldedAnswer text={text} relayed={relayed} />
-      ) : (
-        <div className="work-note">{t('workCard.noReply')}</div>
-      )}
-      {report.replyCut && (
-        <div className="work-note" data-testid="work-cut">
-          {t('workCard.cut', {
-            shown: (report.reply?.length ?? 0).toLocaleString(),
-            total: (report.replyChars ?? 0).toLocaleString()
-          })}
-        </div>
-      )}
-      {report.outcome === 'stopped' && <div className="work-note">{t('workCard.stoppedLine')}</div>}
-      {writes && state !== 'running' && (report.branch || report.fileCount > 0) && (
-        <div className="work-changes" data-testid="work-changes">
-          {report.branch && <Branch name={report.branch} />}
-          <FileStats report={report} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-function FoldedAnswer({ text, relayed }: { text: string; relayed: boolean }) {
-  const { t } = useTranslation()
-  const ref = useRef<HTMLDivElement>(null)
-  const [open, setOpen] = useState(false)
-  const [overflows, setOverflows] = useState(false)
-  // Replié : le bouton n'est là que si la hauteur bornée coupe vraiment quelque chose.
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el || open) return
-    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [text, relayed, open])
-  return (
-    <>
-      <div
-        ref={ref}
-        className={`work-body${open ? '' : ' folded'}${relayed ? ' relayed' : ''}`}
-        data-testid="work-body"
-        data-folded={(!open && overflows) || undefined}
-      >
-        <Markdown text={text} />
+      <div className="work-live" data-testid="work-live-current">
+        <Activity size={13} aria-hidden />
+        <span>{activity.current ? factText(activity.current, false) : t('workCard.working')}</span>
       </div>
-      {(overflows || open) && (
-        <button
-          type="button"
-          className="btn ghost small work-more"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-          data-testid="work-more"
-        >
-          {t(open ? 'workCard.collapse' : 'workCard.readMore')}
-        </button>
-      )}
-    </>
+    </div>
   )
 }
 
-/** Pied : durée et coût, actions, puis la ligne de transmission à l'agent de la mère. */
-function WorkFoot({
-  card,
-  child,
-  info,
-  state,
-  report,
-  items
-}: {
-  card: WorkCardData
-  child: ConversationSummary | undefined
-  info: SubtasksInfo | undefined
-  state: WorkState
-  report: Report | undefined
-  items: readonly TranscriptItem[]
-}) {
-  const { t } = useTranslation()
-  const relay = relayOf(report, items)
-  const agent = info?.agentLabel ?? t('workCard.mainAgent')
-  // Agir sur le travail : sa conversation existe encore, rattachée à celle-ci.
-  const live = !!info && !!child && !child.archived
-  const warn = (error: unknown) => info?.onWarn?.(ipcErrorText(error))
-  return (
-    <>
-      {(state === 'replied' || state === 'stopped' || state === 'error') && (
-        <div className="work-foot">
-          <WorkFacts card={card} child={child} report={report} />
-          <span className="grow" />
-          <WorkActions
-            card={card}
-            child={child}
-            info={info}
-            state={state}
-            report={report}
-            pending={relay?.sent === false}
-            agent={agent}
-            live={live}
-            warn={warn}
-          />
-        </div>
-      )}
-      {live && (
-        <div className="work-foot work-links">
-          <span className="grow" />
-          {state === 'running' && (
-            <button
-              type="button"
-              className="btn ghost small"
-              title={t('workCard.stopLabel')}
-              onClick={() => window.api.agent.cancel(card.childId).catch(warn)}
-              data-testid="work-stop"
-            >
-              {t('workCard.stop')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="link-button work-open"
-            onClick={() => info?.onOpen(card.childId)}
-            data-testid="work-open"
-          >
-            {t('workCard.open')}
-          </button>
-        </div>
-      )}
-      {relay && (
-        <div
-          className={`work-relay${relay.sent ? ' sent' : ''}`}
-          data-testid="work-relay"
-          data-sent={relay.sent}
-        >
-          {relay.sent ? <Check size={13} aria-hidden /> : <span className="work-dot" aria-hidden />}
-          {relay.sent
-            ? relay.at
-              ? t('workCard.relayDoneAt', { agent, time: messageTime(relay.at) })
-              : t('workCard.relayDone', { agent })
-            : t('workCard.relayPending', { agent })}
-        </div>
-      )}
-    </>
-  )
-}
-
-/** « 1 min 38 s · gratuit » : durée de l'échange en cours et ce qu'a coûté le travail. */
-function WorkFacts({
-  card,
-  child,
-  report
-}: {
-  card: WorkCardData
-  child: ConversationSummary | undefined
-  report: Report | undefined
-}) {
-  const { t } = useTranslation()
-  const usageText = useUsageText()
-  // Mode présentation (fiche 159) : aucun montant, pas même « gratuit ».
-  const presenting = usePresentation()
-  if (!report) return null
-  const usage = workUsage(report, child)
-  const facts = [
-    turnDuration(Math.max(0, report.at - exchangeStart(card))),
-    usage?.cost?.amount === 0 && !presenting ? t('workCard.free') : usageText(usage)
-  ].filter(Boolean)
-  return (
-    <span className="work-facts" data-testid="work-facts">
-      {facts.join(' · ')}
-    </span>
-  )
-}
+const FACT_KINDS = ['read', 'edit', 'search', 'execute', 'fetch'] as const
+type FactKind = (typeof FACT_KINDS)[number]
 
 /**
- * Actions d'un travail qui a répondu, s'est arrêté ou a échoué : l'appliquer (rôle de conseil,
- * réponse pas encore transmise), voir ses modifications (rôle qui écrit), relancer, répondre.
+ * Un outil en mots, au passé une fois fini (« A lu src/style.css »), au présent en cours (« Lit
+ * src/style.css… ») : d'après son genre ACP et ce qu'il vise ; sinon son titre, tel que l'agent
+ * le donne.
  */
-function WorkActions({
-  card,
-  child,
-  info,
-  state,
-  report,
-  pending,
-  agent,
-  live,
-  warn
-}: {
-  card: WorkCardData
-  child: ConversationSummary | undefined
-  info: SubtasksInfo | undefined
-  state: WorkState
-  report: Report | undefined
-  pending: boolean
-  agent: string
-  live: boolean
-  warn: (error: unknown) => void
-}) {
-  const { t } = useTranslation()
-  const onAsk = info?.onAsk
-  const applies =
-    state === 'replied' &&
-    report?.outcome === 'done' &&
-    card.role.readOnly &&
-    pending &&
-    !!answerText(report).trim()
-  const lastAsk = card.steps.findLast((s) => s.kind === 'ask')
-  const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.request.text
-  const motherId = info?.motherId
-  const openGit = info?.merge?.openGit
-  return (
-    <>
-      {applies && onAsk && (
-        <button
-          type="button"
-          className="btn primary small"
-          onClick={() => onAsk(t('workCard.applyMessage', { role: card.role.label }))}
-          data-testid="work-apply"
-        >
-          <Send size={13} aria-hidden />
-          {t('workCard.apply', { agent })}
-        </button>
-      )}
-      {/* Rôle qui écrit : « Faire relire » et « Fusionner dans main » viendront ici (fiche 264). */}
-      {live && !card.role.readOnly && child?.branch && openGit && (
-        <button
-          type="button"
-          className="btn small"
-          onClick={() => openGit(card.childId)}
-          data-testid="work-changes-open"
-        >
-          {t('workCard.changes')}
-        </button>
-      )}
-      {live && motherId && (state === 'stopped' || state === 'error') && (
-        <button
-          type="button"
-          className="btn small"
-          title={t('workCard.retryLabel', { role: card.role.label })}
-          onClick={() =>
-            window.api.roles.reply(motherId, { childId: card.childId, text: askText }).catch(warn)
-          }
-          data-testid="work-retry"
-        >
-          {t('workCard.retry')}
-        </button>
-      )}
-      {live && (
-        <button
-          type="button"
-          className="btn small"
-          onClick={() => invokeRole(card.role.name, { replyTo: card.childId })}
-          data-testid="work-reply"
-        >
-          <Reply size={13} aria-hidden />
-          {t('workCard.reply', { role: card.role.label })}
-        </button>
-      )}
-    </>
-  )
+function factText(tool: WorkTool, done: boolean): string {
+  const kind = FACT_KINDS.find((k) => k === tool.kind)
+  const target = kind === 'read' || kind === 'edit' ? shortPath(tool.path) : undefined
+  if (!kind || ((kind === 'read' || kind === 'edit') && !target)) {
+    return done ? tool.title : i18next.t('workCard.nowOther', { target: tool.title })
+  }
+  const name = `${kind.charAt(0).toUpperCase()}${kind.slice(1)}` as Capitalize<FactKind>
+  return i18next.t(done ? `workCard.fact${name}` : `workCard.now${name}`, {
+    target: target ?? tool.title
+  })
+}
+
+/** Chemin court : relatif tel quel, absolu réduit à ses deux derniers éléments. */
+function shortPath(path: string | undefined): string | undefined {
+  if (!path) return undefined
+  if (!path.startsWith('/')) return path
+  return path.split('/').filter(Boolean).slice(-2).join('/')
 }

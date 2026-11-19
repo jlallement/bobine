@@ -62,6 +62,7 @@ import type { RevertOutcome } from '@shared/changes'
 import type { WorktreeInfo, Worktrees } from '../changes/worktrees'
 import type { CycleTarget } from '../changes/worktree-cycle'
 import { log } from '../log'
+import { notifyAll } from './notify-safely'
 import { ContentSearch } from './content-search'
 import { HistoryWriter } from './history-writer'
 import { prepareBranch, previewBranch, revertChange } from './branching'
@@ -1414,8 +1415,8 @@ export class ConversationManager {
 
     conversation.seq = (conversation.seq ?? 0) + 1
     const payload = { conversationId: conversation.record.id, event, seq: conversation.seq }
-    this.options.emit?.(payload)
-    for (const listener of [...this.listeners]) listener.event?.(payload)
+    // Le renderer puis chaque abonné ; un abonné qui lève ne prive pas les suivants (fiche 263).
+    notifyAll(this.options.emit, this.listeners, payload)
     if (listChanged) this.emitList()
   }
 

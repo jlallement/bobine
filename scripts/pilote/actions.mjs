@@ -107,7 +107,8 @@ export async function sendMessage(page, text) {
   if (!(await page.ev(`!!document.querySelector('${COMPOSER}')`))) {
     throw new Error('pas de zone de saisie à l’écran (accueil, réglages ouverts ?)')
   }
-  const users = `document.querySelectorAll('.msg-user').length`
+  // Sans les suites d'un travail, rangées dans sa carte (fiche 263).
+  const users = `[...document.querySelectorAll('.msg-user')].filter((e) => !e.closest('.work-follow-up')).length`
   const value = `(document.querySelector('${COMPOSER}')?.value ?? '')`
   const before = await page.ev(users)
   const box = await page.ev(

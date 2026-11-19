@@ -73,7 +73,11 @@ export interface SubtasksInfo {
    * Message de l'utilisateur à l'agent de la conversation (« Demander à <agent> de l'appliquer »,
    * fiche 263) ; absent : pas de bouton.
    */
-  onAsk?: (text: string) => void
+  onAsk?: (text: string) => unknown
+  /** La mère répond : la réponse d'un travail attend la fin de la sienne (fiche 263). */
+  motherBusy?: boolean
+  /** Un message attend déjà dans la file de la mère : « Appliquer » ne se propose pas. */
+  motherQueued?: boolean
   /** Nom de l'agent de la conversation, dit sur les cartes-réponses (fiche 263). */
   agentLabel?: string
   /** Échec d'une action d'une carte-réponse (arrêter, relancer), dit à l'utilisateur. */

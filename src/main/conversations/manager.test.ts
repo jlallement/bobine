@@ -165,6 +165,24 @@ const kinds = (view: { transcript: { items: { kind: string }[] } }) =>
   view.transcript.items.map((i) => i.kind)
 
 describe('ConversationManager', () => {
+  it('un abonné qui lève ne prive pas les suivants de l’évènement (revue QA, fiche 263)', () => {
+    const { launch } = environment()
+    const { manager } = launch()
+    const seen: string[] = []
+    manager.subscribe({
+      event: () => {
+        throw new Error('abonné en panne')
+      }
+    })
+    manager.subscribe({ event: ({ event }) => seen.push(event.type) })
+    const { activeId } = manager.state()
+    expect(() =>
+      manager.post(activeId, { type: 'notice', level: 'info', message: 'bonjour' })
+    ).not.toThrow()
+    expect(seen).toEqual(['notice'])
+    manager.stopAll()
+  })
+
   it('au lancement : une conversation vide active, hors historique', async () => {
     const { launch } = environment()
     const { manager } = launch()
