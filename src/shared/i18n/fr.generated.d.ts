@@ -435,6 +435,7 @@ export type FrResources = {
   readonly usage: {
     readonly label: 'Consommation de la conversation'
     readonly compactTip: 'Contexte utilisé : {{percent}} % (détail au clic)'
+    readonly compactTipEstimated: 'Contexte utilisé : ≈ {{percent}} %, estimé après le résumé (détail au clic)'
     readonly context: 'Contexte'
     readonly contextHint: 'Le contexte se remplit : l’agent risque de résumer l’échange ou de s’arrêter. Pensez à démarrer une nouvelle conversation.'
     readonly tokensHint: 'Entrée et sortie annoncées par l’agent. Le cache et la réflexion sont comptés à part, hors de ce total.'
@@ -460,9 +461,12 @@ export type FrResources = {
     }
     readonly title: 'Consommation · {{agent}}'
     readonly contextValue: '{{used}} / {{size}} ({{percent}} %)'
+    readonly contextValueEstimated: '≈ {{used}} / {{size}} (≈ {{percent}} %)'
+    readonly contextEstimatedHint: 'Estimé après le résumé de la conversation : {{agent}} donnera le chiffre exact au prochain échange.'
     readonly summary: {
       readonly context: 'Contexte : {{used}} / {{size}} jetons'
       readonly contextPercent: 'Contexte : {{used}} / {{size}} jetons ({{percent}} %)'
+      readonly contextPercentEstimated: 'Contexte : ≈ {{used}} / {{size}} jetons (≈ {{percent}} %), estimé après le résumé de la conversation'
       readonly tokens_one: 'Jetons traités : {{total}} sur {{count}} échange ({{input}} en entrée, {{output}} en sortie)'
       readonly tokens_other: 'Jetons traités : {{total}} sur {{count}} échanges ({{input}} en entrée, {{output}} en sortie)'
       readonly cost: 'Coût : {{cost}}'
@@ -478,6 +482,7 @@ export type FrResources = {
     }
     readonly tokensValue: '{{tokens}} jetons'
     readonly percent: '{{percent}} %'
+    readonly percentEstimated: '≈ {{percent}} %'
     readonly average: 'Moyenne par échange'
     readonly averageHint: 'Ce que coûte en moyenne un échange de cette conversation : à peu près ce que coûtera le prochain.'
     readonly turns: {
@@ -4105,6 +4110,7 @@ export type FrResources = {
     readonly branchTip: 'Voir l’état git dans l’onglet Modifications'
     readonly context: 'Contexte'
     readonly contextTotal: '{{used}} sur {{size}} ({{percent}})'
+    readonly contextTotalEstimated: '≈ {{used}} sur {{size}} (≈ {{percent}})'
     readonly contextUsed: '≈ {{used}} utilisés'
     readonly noTotal: '{{agent}} ne donne pas le remplissage de son contexte : seul ce qui est connu est compté, sans le prompt système ni les outils intégrés.'
     readonly estimateHint: '≈ : estimé'

@@ -44,7 +44,92 @@ const ASTRA = { value: 'openai/gpt-6.2-astra', name: 'openai/GPT-6.2 Astra' }
 const HY4 = { value: 'opencode/hy4-flash-free', name: 'opencode/Hy4 flash Free' }
 const LUNA = { value: 'openai/gpt-6-luna', name: 'openai/GPT-6 Luna' }
 
+/**
+ * Deuxième `/compact` de l'exploration OpenCode 2.3.0 du 2026-11-19 (fiche 257, `agents.log`,
+ * session `…geVZPiMc`) : `usage_update 38271/628000` à la fin du tour d'avant ; puis
+ * `compaction_update` `in_progress`, le résumé en morceaux, `compaction_update` `completed` avec le
+ * résumé, et une réponse `end_turn` **sans `usage` ni `usage_update`** ; au tour suivant,
+ * `usage_update 11965/628000`. Les jetons des tours ne sont pas dans le journal (résumé) : ceux du
+ * tour de la mère de la fiche 245, seul le contexte compte ici.
+ */
+const COMPACTION_SIZE = 628_000
+/**
+ * Dans la recette, le fil faisait l'essentiel du contexte avant chaque `/compact` (rapport, D2 :
+ * « Messages » 20,5k pour 26,1k au premier, « Agent » 4,7k pour 38,3k au second). Une réponse de
+ * ≈ 28 000 jetons (≈ 4 caractères par jeton) redonne cette proportion sans rejouer les outils.
+ */
+const BEFORE_COMPACTION_REPLY =
+  'Les deux branches sont prêtes à fusionner.\n\n' +
+  '- Fichier relu : tests verts, aucune modification en attente.\n'.repeat(1_800)
+const COMPACTION_SUMMARY =
+  '## Objective\n- Ajouter un endpoint de rappels à l’API et documenter le projet.\n\n' +
+  '## Work State\n### Completed\n- Endpoint `/reminders` et ses tests, README.\n' +
+  '### Active\n- Relecture des deux branches avant fusion.\n\n' +
+  '## Next Move\n1. Fusionner les deux branches dans main.\n'
+
 export const consumptionScenarios: Record<string, Scenario> = {
+  'contexte-opencode': {
+    description:
+      'Tour d’OpenCode 2.3.0 avant un /compact (fiche 257) : usage_update 38271/628000 ; /compact joue ensuite compaction-opencode',
+    // Un seul morceau : un texte de cette taille découpé en mots ralentirait les essais.
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { type: 'text', text: BEFORE_COMPACTION_REPLY }
+        }
+      }
+    ],
+    turnUsage: {
+      usage: MOTHER_TURN.usage,
+      cost: 0,
+      context: { used: 38_271, size: COMPACTION_SIZE }
+    },
+    compactWith: 'compaction-opencode'
+  },
+  'compaction-opencode': {
+    description:
+      '/compact comme OpenCode 2.3.0 (fiche 257) : compaction_update et résumé, puis fin de tour sans usage ni usage_update',
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'compaction_update',
+          compactionId: 'msg_compact',
+          status: 'in_progress'
+        }
+      },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'compaction_summary_chunk',
+          compactionId: 'msg_compact',
+          content: { type: 'text', text: COMPACTION_SUMMARY }
+        }
+      },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'compaction_update',
+          compactionId: 'msg_compact',
+          status: 'completed',
+          summary: [{ type: 'text', text: COMPACTION_SUMMARY }]
+        }
+      }
+    ],
+    withoutUsage: true
+  },
+  'apres-compaction-opencode': {
+    description:
+      'Tour d’OpenCode 2.3.0 qui suit un /compact (fiche 257) : le contexte est enfin chiffré, usage_update 11965/628000',
+    steps: [{ kind: 'text', text: 'Le dernier commit de main est la fusion des deux branches.' }],
+    turnUsage: {
+      usage: MOTHER_TURN.usage,
+      cost: 0,
+      context: { used: 11_965, size: COMPACTION_SIZE }
+    }
+  },
   'jetons-opencode': {
     description:
       'Consommation d’un tour comme OpenCode 2.3.0 (fiche 245) : entrée hors cache, cache et réflexion à part, total = leur somme ; coût en dollars annoncé par usage_update',

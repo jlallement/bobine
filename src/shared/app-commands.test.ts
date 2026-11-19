@@ -79,6 +79,10 @@ describe('commandes de l’app', () => {
     expect(contextReport({ context: { used: 12_000, size: 200_000 } }, 'Bob')).toMatch(
       /^Contexte\u00a0: 12.* \/ 200.* jetons \(6\u00a0%\)$/
     )
+    // Total estimé après une compaction (fiche 257) : dit comme tel.
+    expect(
+      contextReport({ context: { used: 9_871, size: 628_000, estimated: true } }, 'OpenCode')
+    ).toMatch(/^Contexte\u00a0: ≈ 9.* \/ 628.* jetons \(≈ 2\u00a0%\), estimé après le résumé/)
     const unknown = contextReport({ cost: { amount: 2, currency: 'bobcoins' } }, 'Bob', '/compress')
     expect(unknown).toContain('Bob ne transmet pas le remplissage de son contexte')
     expect(unknown).toContain('/compress')

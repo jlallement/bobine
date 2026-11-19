@@ -59,6 +59,8 @@ export function UsageMeter({
   const gauge = ratio === undefined ? undefined : usageLevel(ratio)
   const level = gauge ? ` ${gauge}` : ''
   const percent = ratio === undefined ? undefined : Math.round(ratio * 100)
+  // Total estimé après une compaction que l'agent n'a pas encore chiffrée (fiche 257).
+  const estimated = usage.context?.estimated === true
   // Toute la conversation, sessions précédentes comprises (fiche 164).
   const cost = conversationCost(usage)
   const r = 7
@@ -70,13 +72,16 @@ export function UsageMeter({
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Tip
           label={
-            compact && percent !== undefined ? t('usage.compactTip', { percent }) : t('usage.label')
+            compact && percent !== undefined
+              ? t(estimated ? 'usage.compactTipEstimated' : 'usage.compactTip', { percent })
+              : t('usage.label')
           }
         >
           <Popover.Trigger
             className={`chip usage-chip${level}`}
             aria-label={t('usage.label')}
             data-testid="usage-meter"
+            {...(estimated ? { 'data-estimated': '' } : {})}
           >
             {ratio !== undefined ? (
               <>
@@ -92,7 +97,9 @@ export function UsageMeter({
                   />
                 </svg>
                 <span className="usage-percent">
-                  {t('usage.percent', { percent: percent ?? '' })}
+                  {t(estimated ? 'usage.percentEstimated' : 'usage.percent', {
+                    percent: percent ?? ''
+                  })}
                 </span>
               </>
             ) : cost.total ? (
@@ -119,8 +126,8 @@ export function UsageMeter({
               <div className="usage-section">
                 <div className="usage-row">
                   <span>{t('usage.context')}</span>
-                  <strong>
-                    {t('usage.contextValue', {
+                  <strong data-testid="usage-context-value">
+                    {t(estimated ? 'usage.contextValueEstimated' : 'usage.contextValue', {
                       used: formatTokens(usage.context.used),
                       size: formatTokens(usage.context.size),
                       percent: percent ?? ''
@@ -130,6 +137,11 @@ export function UsageMeter({
                 <div className={`usage-bar${level}`}>
                   <span style={{ width: `${(ratio ?? 0) * 100}%` }} />
                 </div>
+                {estimated && (
+                  <div className="usage-hint" data-testid="usage-context-estimated">
+                    {t('usage.contextEstimatedHint', { agent: agentLabel })}
+                  </div>
+                )}
                 {gauge && <div className="usage-hint">{t('usage.contextHint')}</div>}
               </div>
             )}

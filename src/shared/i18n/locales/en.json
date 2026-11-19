@@ -393,6 +393,7 @@
   "usage": {
     "label": "Conversation usage",
     "compactTip": "Context used: {{percent}}% (click for details)",
+    "compactTipEstimated": "Context used: ≈ {{percent}}%, estimated after the summary (click for details)",
     "context": "Context",
     "contextHint": "The context is filling up: the agent may summarize the exchange or stop. Consider starting a new conversation.",
     "tokensHint": "Input and output reported by the agent. Cache and thinking are counted separately, outside this total.",
@@ -417,9 +418,12 @@
     },
     "title": "Usage · {{agent}}",
     "contextValue": "{{used}} / {{size}} ({{percent}}%)",
+    "contextValueEstimated": "≈ {{used}} / {{size}} (≈ {{percent}}%)",
+    "contextEstimatedHint": "Estimated after the conversation was summarized: {{agent}} will give the exact figure at the next exchange.",
     "summary": {
       "context": "Context: {{used}} / {{size}} tokens",
       "contextPercent": "Context: {{used}} / {{size}} tokens ({{percent}}%)",
+      "contextPercentEstimated": "Context: ≈ {{used}} / {{size}} tokens (≈ {{percent}}%), estimated after the conversation was summarized",
       "tokens_one": "Tokens processed: {{total}} over {{count}} exchange ({{input}} input, {{output}} output)",
       "tokens_other": "Tokens processed: {{total}} over {{count}} exchanges ({{input}} input, {{output}} output)",
       "cost": "Cost: {{cost}}",
@@ -434,6 +438,7 @@
     },
     "tokensValue": "{{tokens}} tokens",
     "percent": "{{percent}}%",
+    "percentEstimated": "≈ {{percent}}%",
     "average": "Average per exchange",
     "averageHint": "What an exchange costs on average in this conversation: roughly what the next one will cost.",
     "turns": {
@@ -4099,6 +4104,7 @@
     "branchTip": "See the git status in the Changes tab",
     "context": "Context",
     "contextTotal": "{{used}} of {{size}} ({{percent}})",
+    "contextTotalEstimated": "≈ {{used}} of {{size}} (≈ {{percent}})",
     "contextUsed": "≈ {{used}} used",
     "noTotal": "{{agent}} does not report how full its context is: only what is known is counted, without the system prompt or built-in tools.",
     "estimateHint": "≈: estimated",

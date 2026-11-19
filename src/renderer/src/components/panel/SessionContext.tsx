@@ -37,6 +37,8 @@ export function SessionContext({
   const { total, lines } = breakdown
   const tokens = (n: number) => formatTokens(n, true)
   const level = total ? usageLevel(total.ratio) : undefined
+  // Total estimé après une compaction que l'agent n'a pas encore chiffrée (fiche 257).
+  const totalKey = total?.estimated ? 'sessionTab.contextTotalEstimated' : 'sessionTab.contextTotal'
   return (
     <section className="session-section" data-testid="session-context">
       <h3 className="session-title">
@@ -45,9 +47,10 @@ export function SessionContext({
           className="session-title-value"
           data-testid="session-context-total"
           {...(total ? { 'data-used': total.used, 'data-size': total.size } : {})}
+          {...(total?.estimated ? { 'data-estimated': '' } : {})}
         >
           {total
-            ? t('sessionTab.contextTotal', {
+            ? t(totalKey, {
                 used: tokens(total.used),
                 size: tokens(total.size),
                 percent: numberFormat({ style: 'percent' }).format(total.ratio)
@@ -59,7 +62,7 @@ export function SessionContext({
         <div
           className={`session-bar${level ? ` ${level}` : ''}`}
           role="img"
-          aria-label={t('sessionTab.contextTotal', {
+          aria-label={t(totalKey, {
             used: tokens(total.used),
             size: tokens(total.size),
             percent: numberFormat({ style: 'percent' }).format(total.ratio)
@@ -107,6 +110,11 @@ export function SessionContext({
           </li>
         ))}
       </ul>
+      {total?.estimated && (
+        <p className="session-hint" data-testid="session-context-estimated">
+          {t('usage.contextEstimatedHint', { agent: agentLabel })}
+        </p>
+      )}
       <p className="session-hint" data-testid="session-context-hint">
         {total ? (
           <Tip label={t('sessionTab.estimateTip')}>

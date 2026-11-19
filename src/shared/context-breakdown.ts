@@ -30,8 +30,12 @@ export interface McpMeasure {
 }
 
 export interface ContextBreakdown {
-  /** Total donné par l'agent (`usage_update`) ; absent : Bob, ou pas encore de mise à jour. */
-  total?: { used: number; size: number; ratio: number }
+  /**
+   * Total donné par l'agent (`usage_update`) ; absent : Bob, ou pas encore de mise à jour.
+   * `estimated` : estimé par l'app après une compaction, en attendant le chiffre de l'agent
+   * (fiche 257).
+   */
+  total?: { used: number; size: number; ratio: number; estimated?: true }
   /** Somme des estimations (« ≈ N utilisés » sans total). */
   estimated: number
   /** Lignes dans l'ordre affiché ; leur somme vaut `total.size` quand il y a un total. */
@@ -54,19 +58,21 @@ export interface ContextInputs {
 }
 
 /**
- * Premier élément du fil encore dans le contexte : après la dernière compaction (commande
- * `/compact` de l'app, `compaction_update`, baisse nette de `used`) ou passation à une nouvelle
- * session. Ces éléments comptent (la commande, le résumé, le message de passation).
+ * Repère d'un nouveau départ du contexte : compaction terminée, passation. Une compaction en cours,
+ * échouée ou annulée n'a rien libéré (fiche 257) ; la commande de compaction non plus, tant que sa
+ * réponse n'est pas devenue une carte « Conversation résumée » (`compactionReply`).
+ */
+const isContextMarker = (item: TranscriptItem): boolean =>
+  (item.kind === 'compaction' && item.status === 'completed') || item.kind === 'handover'
+
+/**
+ * Premier élément du fil encore dans le contexte : après la dernière compaction terminée
+ * (`compaction_update`, réponse à la commande de compaction, baisse nette de `used`) ou passation
+ * à une nouvelle session. Ces éléments comptent (le résumé, le message de passation).
  */
 export function contextStart(items: readonly TranscriptItem[], usage?: ConversationUsage): number {
   let start = usage?.contextSince ?? 0
-  for (const item of items) {
-    const marker =
-      (item.kind === 'user' && item.compaction) ||
-      item.kind === 'compaction' ||
-      item.kind === 'handover'
-    if (marker && item.id > start) start = item.id
-  }
+  for (const item of items) if (isContextMarker(item) && item.id > start) start = item.id
   return start
 }
 
@@ -162,12 +168,13 @@ export function contextBreakdown(input: ContextInputs): ContextBreakdown {
   const agent = Math.max(0, used - sum)
   const free = size - used
   return {
-    total: { used, size, ratio: used / size },
+    total: { used, size, ratio: used / size, ...(context.estimated ? { estimated: true } : {}) },
     estimated,
     lines: [
       ...lines,
       { id: 'agent', tokens: agent, estimated: true },
-      { id: 'free', tokens: free, estimated: false }
+      // « Libre » se déduit du total : estimé avec lui (fiche 257).
+      { id: 'free', tokens: free, estimated: context.estimated === true }
     ]
   }
 }

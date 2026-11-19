@@ -435,6 +435,7 @@
   "usage": {
     "label": "Consommation de la conversation",
     "compactTip": "Contexte utilisé : {{percent}} % (détail au clic)",
+    "compactTipEstimated": "Contexte utilisé : ≈ {{percent}} %, estimé après le résumé (détail au clic)",
     "context": "Contexte",
     "contextHint": "Le contexte se remplit : l’agent risque de résumer l’échange ou de s’arrêter. Pensez à démarrer une nouvelle conversation.",
     "tokensHint": "Entrée et sortie annoncées par l’agent. Le cache et la réflexion sont comptés à part, hors de ce total.",
@@ -460,9 +461,12 @@
     },
     "title": "Consommation · {{agent}}",
     "contextValue": "{{used}} / {{size}} ({{percent}} %)",
+    "contextValueEstimated": "≈ {{used}} / {{size}} (≈ {{percent}} %)",
+    "contextEstimatedHint": "Estimé après le résumé de la conversation : {{agent}} donnera le chiffre exact au prochain échange.",
     "summary": {
       "context": "Contexte : {{used}} / {{size}} jetons",
       "contextPercent": "Contexte : {{used}} / {{size}} jetons ({{percent}} %)",
+      "contextPercentEstimated": "Contexte : ≈ {{used}} / {{size}} jetons (≈ {{percent}} %), estimé après le résumé de la conversation",
       "tokens_one": "Jetons traités : {{total}} sur {{count}} échange ({{input}} en entrée, {{output}} en sortie)",
       "tokens_other": "Jetons traités : {{total}} sur {{count}} échanges ({{input}} en entrée, {{output}} en sortie)",
       "cost": "Coût : {{cost}}",
@@ -478,6 +482,7 @@
     },
     "tokensValue": "{{tokens}} jetons",
     "percent": "{{percent}} %",
+    "percentEstimated": "≈ {{percent}} %",
     "average": "Moyenne par échange",
     "averageHint": "Ce que coûte en moyenne un échange de cette conversation : à peu près ce que coûtera le prochain.",
     "turns": {
@@ -4268,6 +4273,7 @@
     "branchTip": "Voir l’état git dans l’onglet Modifications",
     "context": "Contexte",
     "contextTotal": "{{used}} sur {{size}} ({{percent}})",
+    "contextTotalEstimated": "≈ {{used}} sur {{size}} (≈ {{percent}})",
     "contextUsed": "≈ {{used}} utilisés",
     "noTotal": "{{agent}} ne donne pas le remplissage de son contexte : seul ce qui est connu est compté, sans le prompt système ni les outils intégrés.",
     "estimateHint": "≈ : estimé",

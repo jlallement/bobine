@@ -205,9 +205,12 @@ function contextLine(usage: ConversationUsage | undefined): string | undefined {
   if (!usage?.context) return undefined
   const tokens = { used: formatTokens(usage.context.used), size: formatTokens(usage.context.size) }
   const ratio = contextRatio(usage)
-  return ratio !== undefined
-    ? t('usage.summary.contextPercent', { ...tokens, percent: Math.round(ratio * 100) })
-    : t('usage.summary.context', tokens)
+  if (ratio === undefined) return t('usage.summary.context', tokens)
+  // Total estimé après une compaction que l'agent n'a pas encore chiffrée (fiche 257).
+  const key = usage.context.estimated
+    ? 'usage.summary.contextPercentEstimated'
+    : 'usage.summary.contextPercent'
+  return t(key, { ...tokens, percent: Math.round(ratio * 100) })
 }
 
 /**

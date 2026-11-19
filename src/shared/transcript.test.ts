@@ -518,7 +518,8 @@ describe('reduceTranscript', () => {
       { type: 'usage-report', cost: { amount: 0.02, currency: 'bobcoins' } } as AgentEvent
     ].reduce(reduceTranscript, emptyTranscript)
     expect(state.usage).toEqual({
-      context: { used: 10, size: 100 },
+      // `nextItem` : prochain élément du fil à la lecture (fiche 257).
+      context: { used: 10, size: 100, nextItem: 1 },
       cost: { amount: 0.02, currency: 'bobcoins' }
     })
   })

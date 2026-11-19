@@ -27,7 +27,7 @@ import type {
   ToolImage,
   ToolOutcome
 } from './agent'
-import { endTurn, nextSession, startTurn, withAsideCost, withContext, withCost } from './usage'
+import { endTurn, nextSession, startTurn, withAsideCost, withCost } from './usage'
 import type { ConversationUsage } from './usage'
 import { attachmentOf, type AttachmentView } from './attachments'
 import { applyTerminalPatch, terminalPatchOf, type TerminalState } from './terminal-output'
@@ -59,6 +59,7 @@ import type { WorktreeStart } from './worktree-cycle'
 import { reduceWorktreeSetup, type WorktreeSetup } from './worktree-setup'
 import { contentOrKept } from './tool-call-kept'
 import { compactionReply } from './compaction-reply'
+import { withCompactionDone, withUsageUpdate } from './context-estimate'
 import { keptOnReset, withSentEntry } from './transcript-kept'
 export { withSubagentWork } from './subagent'
 
@@ -647,32 +648,39 @@ function withTerminal(
   return { ...state, items, terminals }
 }
 
+function compactionUpdated(
+  state: TranscriptState,
+  update: Extract<SessionUpdate, { sessionUpdate: 'compaction_update' }>
+): TranscriptState {
+  const index = findCompaction(state.items, update.compactionId)
+  const summary = update.summary ? blocksText(update.summary) : undefined
+  if (index === -1) {
+    return push(state, {
+      kind: 'compaction',
+      compactionId: update.compactionId,
+      status: update.status,
+      summary: summary ?? '',
+      ...(update.error ? { error: update.error } : {})
+    })
+  }
+  return replaceAt(state, index, (current) => {
+    const c = current as Extract<TranscriptItem, { kind: 'compaction' }>
+    return {
+      ...c,
+      status: update.status,
+      summary: summary ?? c.summary,
+      ...(update.error ? { error: update.error } : {})
+    }
+  })
+}
+
 function applyUpdateItems(state: TranscriptState, update: SessionUpdate): TranscriptState {
   switch (update.sessionUpdate) {
     case 'usage_update':
-      return { ...state, usage: withContext(state.usage ?? {}, update, state.nextId) }
-    case 'compaction_update': {
-      const index = findCompaction(state.items, update.compactionId)
-      const summary = update.summary ? blocksText(update.summary) : undefined
-      if (index === -1) {
-        return push(state, {
-          kind: 'compaction',
-          compactionId: update.compactionId,
-          status: update.status,
-          summary: summary ?? '',
-          ...(update.error ? { error: update.error } : {})
-        })
-      }
-      return replaceAt(state, index, (current) => {
-        const c = current as Extract<TranscriptItem, { kind: 'compaction' }>
-        return {
-          ...c,
-          status: update.status,
-          summary: summary ?? c.summary,
-          ...(update.error ? { error: update.error } : {})
-        }
-      })
-    }
+      return withUsageUpdate(state, update)
+    case 'compaction_update':
+      // Compaction finie : total estimé tant que l'agent ne l'a pas chiffré (fiche 257).
+      return withCompactionDone(state, compactionUpdated(state, update), update.compactionId)
     case 'compaction_summary_chunk': {
       const index = findCompaction(state.items, update.compactionId)
       const text = blocksText([update.content])
