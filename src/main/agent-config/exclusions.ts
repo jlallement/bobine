@@ -1,9 +1,10 @@
 /**
  * Fichiers d'exclusion d'un agent (fiche 155) : quels fichiers du dossier de travail il refuse
  * d'ouvrir, d'après ce que son profil déclare (`ExclusionSource`). Lecture façon gitignore, avec la
- * bibliothèque `ignore` (celle de Bob 2.0.6) : dans chaque dossier, de la racine du dossier de
- * travail à celui du fichier, les fichiers déclarés, et les motifs toujours exclus ; un motif vaut
- * à partir du dossier de son fichier. Hors du dossier de travail : rien n'est exclu.
+ * bibliothèque `ignore` (choix de Bobine, rien de supposé sur l'agent) : dans chaque dossier, de
+ * la racine du dossier de travail à celui du fichier, les fichiers déclarés, et les motifs
+ * toujours exclus ; un motif vaut à partir du dossier de son fichier. Hors du dossier de travail :
+ * rien n'est exclu.
  */
 import { readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
