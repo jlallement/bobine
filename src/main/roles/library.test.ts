@@ -49,13 +49,30 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       'ux-ui-expert'
     ])
     expect(roles.every((r) => r.scope === 'builtin' && r.enabled)).toBe(true)
+    // Fiche 262 : Expert UX/UI est un rôle de conseil (il propose, un autre applique).
     expect(roles.filter((r) => r.readOnly).map((r) => r.name)).toEqual([
       'code-reviewer',
       'security-expert',
-      'tech-lead'
+      'tech-lead',
+      'ux-ui-expert'
     ])
     // Aucun agent, mode ni modèle imposé (ADR-0011).
     expect(roles.some((r) => r.agent || r.mode || r.model)).toBe(false)
+  })
+
+  it('fiche 262 : Expert UX/UI fourni suit la lecture seule ; une copie modifiée par l’utilisateur garde la sienne', () => {
+    const { library, userDir } = setup()
+    // Sans copie : la valeur fournie, relue à chaque lecture (rien n'est copié sur le disque).
+    expect(library.find(undefined, 'ux-ui-expert')).toMatchObject({
+      scope: 'builtin',
+      readOnly: true
+    })
+    // Copie enregistrée depuis Réglages › Rôles (seulement après une modification) : elle reste.
+    writeFileSync(join(userDir, 'ux-ui-expert.md'), file('Mon designer, qui code'))
+    expect(library.find(undefined, 'ux-ui-expert')).toMatchObject({
+      scope: 'user',
+      readOnly: false
+    })
   })
 
   it('projet > personnel > fourni à nom égal ; un fichier invalide est signalé sans bloquer les autres', () => {

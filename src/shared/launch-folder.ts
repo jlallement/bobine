@@ -32,7 +32,7 @@ export interface FolderDirty {
 export type LaunchFolderState =
   | {
       place: 'worktree'
-      /** Racine du dépôt et commit complet de HEAD : la clé du choix retenu (fiche 262). */
+      /** Racine du dépôt et commit complet de HEAD (le commit de départ affiché, fiche 262). */
       root: string
       head: string
       dirty?: FolderDirty

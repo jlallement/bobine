@@ -9,9 +9,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
   ligne discrète sous la saisie dit où il travaillera (« Partira du dernier commit, sans vos N
   modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de
-  demander juste un avis en lecture seule ou de voir les modifications ; le choix est retenu pour
-  ce dossier jusqu'au prochain commit. Sur un dépôt sans aucun commit, le rôle travaille
-  directement dans le dossier : plus de « dernier commit () », ni de commit vide.
+  demander juste un avis en lecture seule (pour ce message) ou de voir les modifications. Sur un
+  dépôt sans aucun commit, le rôle travaille directement dans le dossier : plus de « dernier
+  commit () », ni de commit vide.
+- Le rôle Expert UX/UI propose une direction sans rien modifier (lecture seule), comme Expert
+  sécu ou Tech lead : l'agent principal ou un architecte l'applique. Une copie que vous avez
+  modifiée dans Réglages › Rôles garde son réglage.
 - Chaque conversation garde son mode et son modèle : changer de mode ou de modèle dans une
   conversation ne change plus ceux d'une autre conversation rouverte ensuite (après une relance ou
   une mise en veille). Une conversation laissée en Plan est rouverte en Plan. Le dernier choix

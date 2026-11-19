@@ -143,11 +143,11 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
   it('`@rôle` sans choix, dossier modifié : refusé, aucune fille, aucun worktree', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert', 'back-architect'],
+      roles: ['front-architect', 'back-architect'],
       text: 'Construisez la page d’après plan.md'
     })
     expect(result.started).toEqual([])
-    expect(result.failed.map((f) => f.role)).toEqual(['ux-ui-expert', 'back-architect'])
+    expect(result.failed.map((f) => f.role)).toEqual(['front-architect', 'back-architect'])
     expect(result.failed[0]?.error).toContain('1 modification non commitée')
     expect(env.childrenOf()).toEqual([])
     expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
@@ -156,7 +156,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
   it('« Partir quand même » : la fille part du commit sans le fichier, la mère le rappelle', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Construisez la page',
       uncommitted: 'anyway'
     })
@@ -173,7 +173,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
   it('avis en lecture seule : dans le dossier de la mère, sans worktree, il voit le non commité', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Votre avis sur plan.md',
       uncommitted: 'readOnly'
     })
@@ -198,7 +198,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     expect(env.git('log', '-1', '--format=%s')).toBe('docs: plan')
     expect(commit.short).toBe(env.git('rev-parse', '--short', 'HEAD'))
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Construisez la page'
     })
     expect(result.failed).toEqual([])
@@ -222,7 +222,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     })
     // Des décochés restent : la fille part « quand même », sans eux, et c'est rappelé.
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Construisez la page',
       uncommitted: 'anyway'
     })
@@ -292,7 +292,7 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
   it('rôle qui écrit, sans choix : il part dans le dossier, sans worktree ni commit', async () => {
     const env = await environment('echo', 'noCommit')
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Construisez la page d’après plan.md'
     })
     expect(result.failed).toEqual([])
@@ -301,7 +301,7 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
     expect(child?.branch).toBeUndefined()
     // Il écrit : ce n'est pas un avis en lecture seule.
     expect(child?.role?.readOnly).toBeFalsy()
-    expect(child?.role?.name).toBe('ux-ui-expert')
+    expect(child?.role?.name).toBe('front-architect')
     expect(existsSync(join(child?.workspace ?? '', 'plan.md'))).toBe(true)
     expect(env.started()[0]?.leftBehind).toBeUndefined()
     expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
@@ -326,7 +326,7 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
       reason: 'notRepo'
     })
     const result = await startRoleChildren(env.host, env.mother, {
-      roles: ['ux-ui-expert'],
+      roles: ['front-architect'],
       text: 'Construisez la page'
     })
     expect(result.failed).toEqual([])

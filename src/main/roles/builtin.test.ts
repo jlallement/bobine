@@ -56,6 +56,12 @@ describe('rôles fournis (fiche 223, ADR-0046)', () => {
     })
   })
 
+  it('fiche 262 : Expert UX/UI est un rôle de conseil, sa consigne le dit dans chaque langue', () => {
+    expect(named('ux-ui-expert', builtinRoles('fr'))).toMatchObject({ readOnly: true })
+    expect(named('ux-ui-expert', builtinRoles('fr')).prompt).toContain('tu ne modifies rien')
+    expect(named('ux-ui-expert', builtinRoles('en')).prompt).toContain('you change nothing')
+  })
+
   it('français : insécables avant les deux-points, le reste tel qu’écrit', () => {
     const tech = named('tech-lead', builtinRoles('fr'))
     expect(tech.description).toContain('exigeant : découpe')

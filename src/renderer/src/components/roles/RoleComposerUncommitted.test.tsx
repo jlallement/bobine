@@ -6,12 +6,11 @@
  * dans ce dossier. Un rôle de conseil part en lecture seule sans rien lire ni demander.
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSnapshot, ProfileSummary } from '@shared/agent'
 import type { FolderDirty, LaunchFolderState } from '@shared/launch-folder'
 import type { RoleView } from '@shared/roles'
-import { forgetLaunchChoices } from '../../launch-choice'
 import { Composer } from '../composer/Composer'
 import type { ComposerRoles } from './useRoleCompose'
 
@@ -38,7 +37,7 @@ const role = (name: string, label: string, readOnly: boolean): RoleView => ({
   enabled: true
 })
 const ROLES = [
-  role('ux-ui-expert', 'Expert UX/UI', false),
+  role('front-architect', 'Architecte front', false),
   role('back-architect', 'Architecte back-end', false),
   role('security-expert', 'Expert sécu', true)
 ]
@@ -74,7 +73,6 @@ const folderOf = (dirty?: FolderDirty, head = HEAD): LaunchFolderState => ({
 
 const childFolder = vi.fn()
 beforeEach(() => {
-  forgetLaunchChoices()
   childFolder.mockReset().mockResolvedValue(folderOf(DIRTY))
   window.api.conversations = { childFolder } as unknown as Window['api']['conversations']
 })
@@ -148,7 +146,7 @@ function setup() {
 describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262)', () => {
   it('rôle qui écrit, dossier modifié : ni encadré ni bouton, la ligne en orange ; Entrée envoie', async () => {
     const { type, enter, send, input, line } = setup()
-    await type('@ux-ui-expert ')
+    await type('@front-architect ')
     // Avant même la demande : la ligne, rien d'autre (R1).
     expect(childFolder).toHaveBeenCalledWith('m')
     expect(screen.queryByTestId('launch-dirty')).toBeNull()
@@ -159,17 +157,17 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(line()).toContain('son worktree')
     expect(line()).toContain('Partira du dernier commit, sans vos 17 modifications')
     expect(screen.getByTestId('launch-line-change').textContent).toContain('Changer…')
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     input.focus()
     await enter()
     // Le choix affiché part, explicite (R2) ; la saisie garde le focus.
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page', 'anyway')
     expect(document.activeElement).toBe(input)
   })
 
   it('« Changer… » : committer d’abord, partir sans elles (coché), juste un avis, voir', async () => {
     const { type } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
     const menu = await screen.findByTestId('launch-line-menu')
     expect(plain(menu.textContent)).toContain('Committer d’abord')
@@ -182,7 +180,7 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
 
   it('« Voir les N modifications » : la liste sous la ligne, les autres comptées', async () => {
     const { type, change } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     await change('launch-line-show')
     expect(screen.getAllByTestId('launch-line-file').map((li) => li.textContent)).toEqual(
       DIRTY.files.map((f) => f.path)
@@ -192,7 +190,7 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
 
   it('« Juste un avis » : appliqué tout de suite, la ligne le dit, Entrée l’envoie ainsi', async () => {
     const { type, enter, send, change, line } = setup()
-    await type('@ux-ui-expert @back-architect donnez votre avis sur plan.md')
+    await type('@front-architect @back-architect donnez votre avis sur plan.md')
     await change('launch-line-opinion')
     expect(line()).toContain('pour un avis')
     expect(line()).toContain('dans ce dossier')
@@ -200,7 +198,7 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(screen.queryByTestId('launch-line')).toBeNull()
     await enter()
     expect(send).toHaveBeenCalledWith(
-      ['ux-ui-expert', 'back-architect'],
+      ['front-architect', 'back-architect'],
       'donnez votre avis sur plan.md',
       'readOnly'
     )
@@ -208,42 +206,43 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
 
   it('un choix de « Changer… » rend le focus à la saisie : Entrée envoie ensuite (R2)', async () => {
     const { type, change, send, input } = setup()
-    await type('@ux-ui-expert votre avis sur le plan')
+    await type('@front-architect votre avis sur le plan')
     input.focus()
     await change('launch-line-opinion')
     expect(document.activeElement).toBe(input)
     await act(
       async () => void fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Enter' })
     )
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'votre avis sur le plan', 'readOnly')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'votre avis sur le plan', 'readOnly')
   })
 
-  it('le choix est retenu pour ce dossier jusqu’au prochain commit, et toujours affiché (R6)', async () => {
-    const first = setup()
-    await first.type('@ux-ui-expert votre avis')
-    await first.change('launch-line-opinion')
-    await first.enter()
-    expect(first.send).toHaveBeenLastCalledWith(['ux-ui-expert'], 'votre avis', 'readOnly')
-    cleanup()
-    // Même dossier, même HEAD : le rôle suivant part aussi en avis, et la ligne le dit.
-    const second = setup()
-    await second.type('@back-architect écrivez l’API')
-    expect(second.line()).toContain('pour un avis')
-    await second.enter()
-    expect(second.send).toHaveBeenLastCalledWith(['back-architect'], 'écrivez l’API', 'readOnly')
-    cleanup()
-    // Un commit plus tard (HEAD changé) : retour au défaut.
-    childFolder.mockResolvedValue(folderOf(DIRTY, AFTER))
-    const third = setup()
-    await third.type('@back-architect écrivez l’API')
+  it('« Juste un avis » ne vaut que pour l’envoi en cours ; ensuite, « Partir sans elles »', async () => {
+    const { type, change, enter, send, line } = setup()
+    await type('@front-architect votre avis')
+    await change('launch-line-opinion')
+    await enter()
+    expect(send).toHaveBeenLastCalledWith(['front-architect'], 'votre avis', 'readOnly')
+    // Même dossier, même HEAD : le message suivant revient au défaut, et la ligne le dit (R6).
+    await type('@back-architect écrivez l’API')
+    expect(line()).not.toContain('pour un avis')
     expect(screen.getByTestId('launch-line').dataset.choice).toBe('without')
-    await third.enter()
-    expect(third.send).toHaveBeenLastCalledWith(['back-architect'], 'écrivez l’API', 'anyway')
+    await enter()
+    expect(send).toHaveBeenLastCalledWith(['back-architect'], 'écrivez l’API', 'anyway')
+  })
+
+  it('« Juste un avis » oublié quand plus aucun rôle qui écrit n’est cité', async () => {
+    const { type, change, line } = setup()
+    await type('@front-architect votre avis')
+    await change('launch-line-opinion')
+    expect(line()).toContain('pour un avis')
+    await type('votre avis')
+    await type('@front-architect votre avis')
+    expect(line()).not.toContain('pour un avis')
   })
 
   it('« Committer d’abord » : le choix de commit, puis le message part de ce commit', async () => {
     const { type, change, send, commitFolder } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     await change('launch-line-commit')
     await waitFor(() =>
       expect(
@@ -259,12 +258,12 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
       DIRTY.files.map((f) => f.path)
     )
     // Dossier propre après le commit : rien à laisser, aucun choix à porter.
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })
 
   it('« Committer d’abord » ouvert : Entrée mène au bouton du commit, rien ne part avant', async () => {
     const { type, change, enter, send } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     await change('launch-line-commit')
     await enter()
     expect(send).not.toHaveBeenCalled()
@@ -279,7 +278,7 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
         folderOf({ ...DIRTY, count: 1, files: DIRTY.files.slice(0, 1) }, AFTER)
       )
     })
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     await change('launch-line-commit')
     fireEvent.click(
       screen
@@ -301,7 +300,7 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
       message.value,
       DIRTY.files.slice(1).map((f) => f.path)
     )
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page', 'anyway')
   })
 
   it('rôle de conseil : ni lecture du dossier ni ligne orange, il part en lecture seule', async () => {
@@ -318,18 +317,18 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
   it('dossier propre : « partira du dernier commit », discret ; l’envoi part sans choix', async () => {
     childFolder.mockResolvedValue(folderOf())
     const { type, enter, send, line } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     expect(screen.getByTestId('launch-line').className).not.toContain('warn')
     expect(line()).toContain('son worktree')
     expect(line()).toContain('partira du dernier commit (9970242)')
     await enter()
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })
 
   it('dépôt sans commit : dans ce dossier, sans « Changer… » ni « () » ; l’envoi part', async () => {
     childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
     const { type, enter, send, line } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     expect(line()).toContain(
       'Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier'
     )
@@ -337,13 +336,13 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(line()).not.toContain('()')
     expect(screen.queryByTestId('launch-line-change')).toBeNull()
     await enter()
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })
 
   it('dossier hors dépôt git : dit tel quel, plusieurs rôles accordés', async () => {
     childFolder.mockResolvedValue({ place: 'here', reason: 'notRepo' })
     const { type, line } = setup()
-    await type('@ux-ui-expert @back-architect construisez la page')
+    await type('@front-architect @back-architect construisez la page')
     expect(line()).toContain(
       'Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier'
     )
@@ -353,10 +352,10 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     let answer: (state: LaunchFolderState) => void = () => {}
     childFolder.mockReturnValue(new Promise<LaunchFolderState>((resolve) => (answer = resolve)))
     const { type, enter, send } = setup()
-    await type('@ux-ui-expert construisez la page')
+    await type('@front-architect construisez la page')
     await enter()
     expect(send).not.toHaveBeenCalled()
     await act(async () => answer(folderOf(DIRTY)))
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+    expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page', 'anyway')
   })
 })

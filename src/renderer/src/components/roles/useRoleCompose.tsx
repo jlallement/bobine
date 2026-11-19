@@ -12,12 +12,7 @@ import { readOnlyShown, roleProfile } from './role-view'
 import { onRoleInvoked } from '../../roles/roles-store'
 import type { UncommittedChoice } from '@shared/launch-folder'
 import { useLaunchFolder } from '../thread/LaunchLine'
-import {
-  rememberChoice,
-  rememberedChoice,
-  uncommittedOf,
-  type LaunchChoice
-} from '../../launch-choice'
+import { uncommittedOf, type LaunchChoice } from '../../launch-choice'
 
 /**
  * Ce que la saisie sait des rôles (fiche 223, phase 3B), fourni par l'app : rôles actifs de la
@@ -125,7 +120,7 @@ export function useRoleCompose(options: {
   const shownTokens = tokens.flatMap((name) => list.find((r) => r.name === name) ?? [])
   // Fiche 262 : un rôle qui écrit (pas en lecture seule) fait lire le dossier de la mère, pour la
   // ligne sous la saisie. Jamais d'avertissement ni de blocage : Entrée envoie avec le choix
-  // affiché, retenu pour ce dossier jusqu'au prochain commit (`launch-choice.ts`).
+  // affiché (`launch-choice.ts`).
   const writes = (names: readonly string[]) =>
     names.some((name) => list.find((r) => r.name === name)?.readOnly === false)
   const writing = writes(roleRecipients(tokens, options.text ?? '', list).names)
@@ -135,13 +130,22 @@ export function useRoleCompose(options: {
   useEffect(() => {
     stateNow.current = folder.state
   }, [folder.state])
-  // Le choix vit dans la mémoire de la fenêtre ; ce compteur fait relire la ligne après un choix.
-  const [, setChosen] = useState(0)
-  const choice = rememberedChoice(folder.state)
+  // « Juste un avis » ne vaut que pour l'envoi en cours : oublié une fois parti, ou quand plus
+  // aucun rôle qui écrit n'est cité. Sinon, toujours « Partir sans elles » (décision du tech lead).
+  const [choice, setChoiceState] = useState<LaunchChoice>('without')
+  const choiceNow = useRef<LaunchChoice>('without')
   const choose = (next: LaunchChoice) => {
-    rememberChoice(stateNow.current, next)
-    setChosen((n) => n + 1)
+    choiceNow.current = next
+    setChoiceState(next)
   }
+  const [wroteBefore, setWroteBefore] = useState(writing)
+  if (wroteBefore !== writing) {
+    setWroteBefore(writing)
+    if (!writing) setChoiceState('without')
+  }
+  useEffect(() => {
+    choiceNow.current = choice
+  }, [choice])
   // « Committer d'abord » : le choix de commit est ouvert sous la ligne ; Entrée y mène.
   const [committing, setCommittingState] = useState(false)
   const committingNow = useRef(false)
@@ -182,6 +186,8 @@ export function useRoleCompose(options: {
     at.changeText('', 0)
     void (uncommitted ? roles.send(to.names, to.text, uncommitted) : roles.send(to.names, to.text))
       .then(({ started, failed }) => {
+        // Parti : « Juste un avis » ne vaut pas pour le message suivant.
+        if (started.length > 0) choose('without')
         if (started.length === 0) {
           update(before)
           if (textNow.current === '') at.changeText(at.text, at.text.length)
@@ -205,12 +211,12 @@ export function useRoleCompose(options: {
     if (!writes(to.names) || !roles?.motherId) return dispatch(to, at, undefined)
     if (committingNow.current) return setFocusCommit((n) => n + 1)
     const known = stateNow.current
-    if (known !== undefined) return dispatch(to, at, uncommittedOf(known, rememberedChoice(known)))
+    if (known !== undefined) return dispatch(to, at, uncommittedOf(known, choiceNow.current))
     setBusy(true)
     void folder.read().then((state) => {
       stateNow.current = state
       setBusy(false)
-      dispatch(to, at, uncommittedOf(state, rememberedChoice(state)))
+      dispatch(to, at, uncommittedOf(state, choiceNow.current))
     })
   }
   useRoleInvoked(roles, (name) => {
@@ -354,7 +360,7 @@ export function useRoleCompose(options: {
             : undefined
       }
     },
-    /** Choix de la ligne (fiche 262), retenu pour ce dossier jusqu'au prochain commit. */
+    /** Choix de la ligne (fiche 262) : « Juste un avis » pour l'envoi en cours seulement. */
     choose,
     /** « Committer d'abord » ouvert ou fermé. */
     setCommitting,

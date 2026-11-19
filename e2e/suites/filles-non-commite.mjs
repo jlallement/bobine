@@ -9,7 +9,7 @@ import { L, check, withApp } from '../lib.mjs'
  * dépôt jetable où `plan.md` n'est pas commité. Chaque fille joue `voit-le-plan` : elle dit si
  * elle voit `plan.md`.
  *
- * (a) Rôle : `@ux-ui-expert` sur un dossier modifié, aucun encadré : une ligne discrète, en orange,
+ * (a) Rôle : `@front-architect` sur un dossier modifié, aucun encadré : une ligne discrète, en orange,
  *     « Partira du dernier commit, sans votre modification » ; « Changer… › Voir » liste le
  *     fichier ; Entrée envoie : la fille ne voit pas le plan, la mère le rappelle. « Changer… ›
  *     Juste un avis » : les filles partent en lecture seule et voient le plan.
@@ -82,7 +82,7 @@ async function roleRun(ui) {
   await ui.ready()
 
   // Une ligne discrète dès le rôle cité ; ni encadré ni bouton (fiche 262, R1).
-  await typeRoles(ui, '@ux-ui-expert construisez la page\n/scenario voit-le-plan')
+  await typeRoles(ui, '@front-architect construisez la page\n/scenario voit-le-plan')
   await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
   check(
     (await ui.ev(`${ui.$('launch-line')}.dataset.count`)) === '1' &&
@@ -118,7 +118,7 @@ async function roleRun(ui) {
   // « Juste un avis » : appliqué sans renvoyer ; dans le dossier de la mère, ils voient le plan.
   await typeRoles(
     ui,
-    '@ux-ui-expert @back-architect votre avis sur le plan\n/scenario voit-le-plan'
+    '@front-architect @back-architect votre avis sur le plan\n/scenario voit-le-plan'
   )
   await ui.waitFor(`!!${ui.$('launch-line-change')}`, 10000)
   await change(ui, 'launch-line-opinion')
@@ -209,7 +209,7 @@ async function noCommitRun(ui, git) {
   await ui.ready()
 
   // Rôle qui écrit : la ligne dit « dans ce dossier », sans « dernier commit () » ni « Changer… ».
-  await typeRoles(ui, '@ux-ui-expert construisez la page\n/scenario voit-le-plan')
+  await typeRoles(ui, '@front-architect construisez la page\n/scenario voit-le-plan')
   await ui.waitFor(`${ui.$('launch-line')}?.dataset.place === 'here'`, 10000)
   const line = await ui.ev(`${ui.$('role-destination')}.innerText`)
   check(

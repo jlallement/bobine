@@ -25,8 +25,8 @@ lecture seule sans que la saisie le dise.
    « Partir sans elles », « Juste un avis, en lecture seule », « Voir les N modifications ».
    - Défaut : « Partir sans elles » ; **Entrée envoie toujours**, avec le choix affiché, porté
      explicitement par la requête (`uncommitted: 'anyway'` ou `'readOnly'`).
-   - Le choix est retenu pour ce dossier jusqu'au prochain commit : mémoire de la fenêtre, clé
-     racine du dépôt + HEAD, rien sur le disque.
+   - « Juste un avis » ne vaut que pour l'envoi en cours (décision du tech lead) ; ensuite, de
+     nouveau « Partir sans elles ». Rien n'est gardé, ni en mémoire ni sur le disque.
    - « Committer d'abord » ouvre le choix de commit existant (`CommitChooser`) ; le commit fait,
      le message part (Entrée pendant ce temps : le bouton du commit prend le focus, c'est l'étape
      choisie).
@@ -46,7 +46,8 @@ lecture seule sans que la saisie le dise.
 - [x] Choisir un rôle qui écrit, dossier modifié : aucun encadré, la ligne orange et « Changer… » ;
       Entrée envoie avec `anyway`.
 - [x] « Juste un avis » : la ligne le dit, Entrée envoie `readOnly`, sans renvoyer.
-- [x] Choix retenu pour le dossier jusqu'au prochain commit (HEAD changé : défaut).
+- [x] « Juste un avis » pour l'envoi en cours seulement ; le suivant revient à « sans elles ».
+- [x] Expert UX/UI devient un rôle de conseil (`readOnly: true`), consigne en accord.
 - [x] « Committer d'abord » : `CommitChooser`, puis le message part.
 - [x] Rôle de conseil : ni lecture du dossier ni avertissement.
 - [x] Dépôt sans commit : ligne dédiée, la fille part dans le dossier de la mère, sans worktree ni
@@ -81,6 +82,18 @@ Fichiers touchés :
 
 Pas de nouvelle dépendance.
 
+## Limites connues
+
+- **Dépôt sans commit** : la fille (rôle qui écrit, fille sans rôle, proposition de l'agent)
+  travaille dans le même dossier que la mère. Pas de branche, pas de diff de branche, pas de
+  fusion ni de relecture de branche ; deux agents peuvent écrire le même fichier en même temps.
+  L'agent de la mère en est averti par le résultat de `start_child`. Accepté (tech lead).
+- **Dossier hors dépôt git** : comportement gardé tel quel. Un `@rôle` qui écrit part dans le
+  dossier (même règle que sans commit) ; `start_child` et « Lancer en parallèle… » restent
+  indisponibles, la mère n'ayant ces outils que dans un dépôt.
+- Les textes déjà existants de la ligne du rôle (« dans une conversation fille ») attendent la
+  fiche 266.
+
 ## Journal
 
 - 2026-11-19 : fiche et plan.
@@ -105,7 +118,7 @@ Pas de nouvelle dépendance.
     `start_child` dit à l'agent qu'une fille sans branche écrit dans son dossier.
   - **Renderer** : `LaunchLine` (segment de ligne, menu « Changer… » Radix, liste des
     modifications, `CommitChooser`), `useLaunchFolder`, `launch-choice.ts` (mémoire par racine +
-    HEAD). `useRoleCompose` envoie toujours (dossier pas encore lu : lu d'abord, un instant) ;
+    HEAD, retirée ensuite : voir plus bas). `useRoleCompose` envoie toujours (dossier pas encore lu : lu d'abord, un instant) ;
     « Committer d'abord » ouvert : Entrée mène au bouton du commit, puis le message part. Un choix
     du menu rend le focus à la saisie (`ComposerFocus`). Carte « Tâches proposées » et
     « Lancer en parallèle… » : même ligne, sans « Juste un avis » ; « Lancer » n'attend plus que
@@ -113,7 +126,8 @@ Pas de nouvelle dépendance.
     bloc armé (`useArmedCard`) inutile pour une ligne : les choix sont dans un menu ouvert par
     l'utilisateur.
   - **Écarts au plan / à la maquette** : « Juste un avis, en lecture seule » est une entrée du
-    menu (consigne du tech lead) alors que la légende de la maquette B le refusait comme option.
+    menu (consigne du tech lead, confirmée) alors que la légende de la maquette B le refusait
+    comme option.
     Dossier propre : « Changer… » est là aussi (travailler dans son worktree / juste un avis).
     `ADR-0059` (proposé) remplace en partie l'ADR-0055 (décisions 2 et 3). La maquette de la 260
     est reformatée par Prettier (sinon `verify` échouait sur `prettier --check`).
@@ -125,3 +139,20 @@ Pas de nouvelle dépendance.
     `children-tools.test.ts`, `children.test.ts` (canal). e2e mises à jour :
     `filles-non-commite` (ligne, Entrée, « Changer… », partie (c) sans commit), `session`,
     `roles-gestion` ; non lancées (tech lead).
+- 2026-11-19 : décisions du tech lead sur les doutes.
+  - « Juste un avis » ne vaut que pour l'envoi en cours : la mémoire par racine + HEAD est
+    retirée. « Partir sans elles » est le défaut de chaque envoi, et « Committer d'abord » n'a
+    rien à garder (le commit change HEAD, le dossier relu dit ce qui reste) : une mémoire qui ne
+    garderait que le défaut serait du code mort. `launch-choice.ts` ne garde que `uncommittedOf`.
+    Test : l'envoi suivant, même dossier, même HEAD, part avec `anyway`.
+  - **Expert UX/UI** passe en rôle de conseil (`readOnly: true`) ; sa consigne (fr, en) dit qu'il
+    propose une direction sans rien modifier, que l'agent principal ou un architecte applique.
+    Effet sur l'existant : les rôles fournis sont relus du code à chaque lecture, jamais copiés ;
+    ils suivent donc la nouvelle valeur. Une copie personnelle de même nom n'existe que si
+    l'utilisateur l'a enregistrée depuis Réglages › Rôles, ce qui n'est possible qu'après une
+    modification (bouton désactivé sinon) : elle garde sa valeur. Un rôle déjà installé dans un
+    agent (Bob, OpenCode) apparaît « à mettre à jour » (empreinte différente). Tests :
+    `library.test.ts`, `builtin.test.ts`, `export/adapters.test.ts`. Les essais qui voulaient un
+    rôle qui écrit prennent Architecte front.
+  - Rebasé sur `main` (`fe49ace`) ; le commit de formatage de la maquette, déjà dans `main`, a
+    disparu au rebasage.

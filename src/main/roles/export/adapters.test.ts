@@ -183,3 +183,13 @@ describe('agents d’OpenCode', () => {
     )
   })
 })
+
+describe('rôle fourni passé en lecture seule (fiche 262, Expert UX/UI)', () => {
+  it('une installation déjà faite devient « à mettre à jour » dans chaque agent', () => {
+    const before = { ...role, readOnly: false }
+    const after = { ...role, readOnly: true }
+    for (const adapter of [BOB_CUSTOM_MODES, OPENCODE_AGENTS]) {
+      expect(adapter.fingerprintOf(after)).not.toBe(adapter.fingerprintOf(before))
+    }
+  })
+})

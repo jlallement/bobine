@@ -9,9 +9,11 @@ What changes for you, version by version. Shown in Settings › About.
 - Handing work to a role that writes no longer shows a warning before you even type: a discreet
   line under the input says where it will work ("Will start from the last commit, without your N
   changes"), Enter always sends, and "Change…" lets you commit first, ask for just a read-only
-  opinion, or see the changes; the choice is kept for this folder until the next commit. In a
-  repository with no commit yet, the role works directly in the folder: no more "last commit ()",
-  and no empty commit.
+  opinion (for this message), or see the changes. In a repository with no commit yet, the role
+  works directly in the folder: no more "last commit ()", and no empty commit.
+- The UX/UI expert role now proposes a direction without changing anything (read-only), like the
+  security expert or the tech lead: the main agent or an architect applies it. A copy you changed
+  in Settings › Roles keeps its own setting.
 - Each conversation keeps its own mode and model: changing the mode or model in one conversation
   no longer changes those of another conversation reopened later (after a restart or after it was
   put to sleep). A conversation left in Plan reopens in Plan. Your last choice is still the

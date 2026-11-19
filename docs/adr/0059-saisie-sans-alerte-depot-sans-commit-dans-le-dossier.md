@@ -25,9 +25,9 @@ d'essai le 2026-11-19 à 21:08, pendant un tour de la mère, 18 s avant le premi
    modifications ». Le défaut est « Partir sans elles ». **Entrée envoie toujours**, et la requête
    porte explicitement ce choix (`uncommitted: 'anyway'`). « Changer… » propose : Committer
    d'abord (le `CommitChooser`, puis le message part), Partir sans elles, Juste un avis en lecture
-   seule (`readOnly`, appliqué sans renvoyer), Voir les modifications. Le choix est retenu pour ce
-   dossier jusqu'au prochain commit (clé racine du dépôt + HEAD, mémoire de la fenêtre, rien sur le
-   disque), et la ligne le dit toujours. Même ligne, sans « Juste un avis », dans la carte « Tâches
+   seule (`readOnly`, appliqué sans renvoyer, pour cet envoi seulement), Voir les modifications.
+   Rien n'est gardé d'un envoi à l'autre : chaque envoi repart de « Partir sans elles », et la
+   ligne dit toujours le choix en cours. Même ligne, sans « Juste un avis », dans la carte « Tâches
    proposées » et « Lancer en parallèle… ».
 2. **Le main reste la garde finale, sans défaut caché.** Un lancement en worktree d'un dossier
    modifié sans `uncommitted` explicite est toujours refusé (outil de l'agent, propositions sans
@@ -58,6 +58,7 @@ d'essai le 2026-11-19 à 21:08, pendant un tour de la mère, 18 s avant le premi
 - Une fille dans le dossier de sa mère écrit dans les mêmes fichiers qu'elle : pas de diff de
   branche, pas de fusion, pas de relecture de branche ; l'agent de la mère en est averti par le
   résultat de `start_child`. À surveiller à la recette : deux agents qui écrivent le même fichier.
-- « Juste un avis » retenu pour un dossier vaut pour le rôle suivant qui écrit, dans ce dossier,
-  jusqu'au prochain commit ; la ligne le dit (R6).
+- « Juste un avis » ne passe jamais d'un envoi au suivant (R6).
+- Expert UX/UI devient un rôle de conseil (`readOnly: true`) : il propose une direction, un autre
+  rôle ou l'agent principal l'applique.
 - Les e2e cliquent « Changer… » au lieu des anciens boutons ; le bloc `launch-dirty` disparaît.

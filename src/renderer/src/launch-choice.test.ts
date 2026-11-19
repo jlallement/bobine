@@ -1,11 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { FolderDirty, LaunchFolderState } from '@shared/launch-folder'
-import {
-  forgetLaunchChoices,
-  rememberChoice,
-  rememberedChoice,
-  uncommittedOf
-} from './launch-choice'
+import { uncommittedOf } from './launch-choice'
 
 const DIRTY: FolderDirty = {
   count: 2,
@@ -22,32 +17,7 @@ const at = (head: string, dirty?: FolderDirty, root = '/depot'): LaunchFolderSta
   ...(dirty ? { dirty } : {})
 })
 
-beforeEach(() => forgetLaunchChoices())
-
 describe('choix devant le dossier (fiche 262)', () => {
-  it('défaut : « Partir sans elles »', () => {
-    expect(rememberedChoice(at('h1', DIRTY))).toBe('without')
-    expect(rememberedChoice(undefined)).toBe('without')
-  })
-
-  it('retenu pour ce dossier jusqu’au prochain commit (racine + HEAD)', () => {
-    rememberChoice(at('h1', DIRTY), 'readOnly')
-    // Même dossier, même HEAD, modifications différentes : retenu.
-    expect(rememberedChoice(at('h1'))).toBe('readOnly')
-    // Un commit plus tard : le défaut revient.
-    expect(rememberedChoice(at('h2', DIRTY))).toBe('without')
-    // Un autre dépôt au même commit : rien de retenu.
-    expect(rememberedChoice(at('h1', DIRTY, '/autre'))).toBe('without')
-    rememberChoice(at('h1'), 'without')
-    expect(rememberedChoice(at('h1'))).toBe('without')
-  })
-
-  it('rien de retenu pour un travail qui part dans le dossier (dépôt sans commit)', () => {
-    const here: LaunchFolderState = { place: 'here', reason: 'noCommit' }
-    rememberChoice(here, 'readOnly')
-    expect(rememberedChoice(here)).toBe('without')
-  })
-
   it('la requête porte toujours le choix affiché, jamais un défaut caché', () => {
     expect(uncommittedOf(at('h1', DIRTY), 'without')).toBe('anyway')
     expect(uncommittedOf(at('h1', DIRTY), 'readOnly')).toBe('readOnly')

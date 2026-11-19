@@ -347,10 +347,10 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
   it('`@rôle` de la saisie (phase 3B) : une fille par rôle, même texte, rôle inconnu rendu à part', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.children, env.mother, {
-      roles: ['security-expert', 'ux-ui-expert', 'astronaute'],
+      roles: ['security-expert', 'front-architect', 'astronaute'],
       text: 'Relis le carnet.'
     })
-    expect(result.started.map((s) => s.role)).toEqual(['security-expert', 'ux-ui-expert'])
+    expect(result.started.map((s) => s.role)).toEqual(['security-expert', 'front-architect'])
     expect(result.failed).toEqual([
       { role: 'astronaute', error: expect.stringMatching(/astronaute/) }
     ])
@@ -358,7 +358,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const byRole = Object.fromEntries(env.childrenOf().map((c) => [c.role?.name, c]))
     // Lecture seule : le dossier de la mère ; l'autre : son worktree.
     expect(byRole['security-expert']?.workspace).toBe(env.repo)
-    expect(byRole['ux-ui-expert']?.branch).toBeTruthy()
+    expect(byRole['front-architect']?.branch).toBeTruthy()
     for (const child of env.childrenOf()) {
       await env.settled(child.id)
       const first = env.firstMessage(child.id)
@@ -368,7 +368,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const started = env.items(env.mother).filter((i) => i.kind === 'child-started')
     expect(started.map((i) => i.kind === 'child-started' && i.role?.name)).toEqual([
       'security-expert',
-      'ux-ui-expert'
+      'front-architect'
     ])
   })
 
