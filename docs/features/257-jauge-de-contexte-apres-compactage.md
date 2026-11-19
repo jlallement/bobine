@@ -149,3 +149,9 @@ Aucune nouvelle dépendance.
   enregistrée du 2026-11-17. Implémentation, tests, docs (`acp.md`, `mock-agent.md`, renvoi dans
   la fiche 166), CHANGELOG fr/en. `./scripts/verify` vert (code de sortie 0). Fait sans lancer d'e2e
   (consigne) : à lancer avant fusion.
+- 2026-11-19 : e2e après fusion du lot 1 (fiches 255 à 259). `session` échouait sur « après
+  /compact, Messages baisse (14 → 29) ». Pas une régression : l'aide `tokens` de l'essai lisait le
+  texte affiché et n'en gardait que les chiffres, « ≈ 1,4k » devenait 14. Avant la fiche, la ligne
+  tombait à ≈ 0 après `/compact` (le défaut corrigé ici) et masquait l'erreur ; elle vaut maintenant
+  le résumé et la réponse qui suit (≈ 29), bien moins que ≈ 1,4k. L'aide lit `data-tokens` (valeur
+  exacte) ; l'assertion est inchangée.

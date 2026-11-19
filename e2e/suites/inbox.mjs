@@ -248,11 +248,14 @@ async function inbox(ui, main) {
   await ui.key('Escape')
   await ui.waitFor(`!${ui.$('settings')}`)
 
-  // Tout traiter, fenêtre au premier plan : la section se vide, le compteur s'efface.
-  await focus(true)
+  // Tout traiter, fenêtre au premier plan : la section se vide, le compteur s'efface. On quitte la
+  // mère avant de revenir dans la fenêtre : affichée sous les yeux, elle ferait lire les comptes
+  // rendus de ses filles (fiche 258, D35), essayé plus bas. La demande d'accord affichée, le main
+  // a changé de conversation.
   await ui.click(`${inboxRow(access)}.querySelector('.history-open')`)
   const allow = `document.querySelector('[data-testid=permission] button[data-kind=allow_once]')`
   await ui.waitFor(`!!${allow}`, 30000)
+  await focus(true)
   await ui.click(allow)
   await ui.ready()
   await away()
@@ -276,14 +279,30 @@ async function inbox(ui, main) {
   await ui.ready()
   await away()
   await ui.waitFor(`!${inboxRow(auth)}?.classList.contains('unread')`)
-  for (const id of children) {
-    await ui.click(`${inboxRow(id)}.querySelector('.history-open')`)
-    await ui.waitFor(
-      `document.querySelector('.history-item.active')?.dataset.id === ${JSON.stringify(id)}`
-    )
-    await away()
-    await ui.waitFor(`!${inboxRow(id)}?.classList.contains('unread')`)
-  }
+  // Une fille ouverte : lue (fiche 024).
+  await ui.click(`${inboxRow(children[0])}.querySelector('.history-open')`)
+  await ui.waitFor(
+    `document.querySelector('.history-item.active')?.dataset.id === ${JSON.stringify(children[0])}`
+  )
+  await away()
+  await ui.waitFor(`!${inboxRow(children[0])}?.classList.contains('unread')`)
+  check(
+    (await ui.ev(`${inboxRow(children[1])}.classList.contains('unread')`)) &&
+      (await count()) === '1',
+    'fille ouverte : lue ; l’autre reste à lire'
+  )
+  // La mère ouverte : le compte rendu de l'autre fille, posé dans son fil, est lu (fiche 258, D35).
+  await ui.click(`${inboxRow(mother)}.querySelector('.history-open')`)
+  await ui.waitFor(
+    `document.querySelector('.history-item.active')?.dataset.id === ${JSON.stringify(mother)}`
+  )
+  await away()
+  await ui.waitFor(`!${inboxRow(children[1])}?.classList.contains('unread')`)
+  check(
+    (await ui.ev(`${inboxRow(children[1])}.querySelector('.child-state')?.dataset.state`)) ===
+      'done',
+    'mère ouverte : le compte rendu de la fille dans son fil est lu (fiche 258, D35)'
+  )
   await ui.waitFor(`document.querySelectorAll('.history-item.unread').length === 0`)
   for (let i = 0; i < 30 && !(await badgeIs('')); i++) await sleep(100)
   check(

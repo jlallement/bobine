@@ -81,8 +81,12 @@ function helpers(ui) {
     ui.ev(
       `${tab}.querySelector('[data-line=${line}] [data-testid=session-line-value]')?.innerText ?? ''`
     )
-  /** Jetons d'une valeur affichée (« ≈ 1 234 », « ≈ 12 k ») : les chiffres seulement. */
-  const tokens = async (line) => Number((await value(line)).replace(/\D/g, ''))
+  /**
+   * Jetons exacts d'une ligne (`data-tokens`), pas le texte affiché : « ≈ 1,4k » réduit à ses
+   * chiffres donnait 14, plus petit que « ≈ 29 ».
+   */
+  const tokens = (line) =>
+    ui.ev(`Number(${tab}.querySelector('[data-line=${line}]')?.dataset.tokens ?? NaN)`)
   const entries = (kind) =>
     ui.ev(
       `[...${ui.$('session-running')}.querySelectorAll('ul:not(.finished) [data-testid=session-entry]')].filter((e) => e.dataset.kind === '${kind}').length`

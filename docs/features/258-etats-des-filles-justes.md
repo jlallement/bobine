@@ -109,3 +109,14 @@ Aucune nouvelle dépendance.
     l'agent factice (arrêt, compte rendu « arrêtée », redémarrage, tour suivant).
   - Suites e2e à lancer (pas lancées ici) : `filles`, `filles-tech-lead`, `filles-fusion`,
     `filles-visibilite`, `roles-travail`, `changes`, `inbox`, `notifications`.
+- 2026-11-19 : e2e après fusion du lot 1. `filles`, `roles-travail` et `inbox` attendaient une fille
+  « à lire » alors que son compte rendu arrivait dans le fil de la mère affichée, fenêtre au premier
+  plan : c'est le changement voulu de D35 (lu aussitôt). Essais mis à jour, sans rien relâcher :
+  - `filles` : la fille finie est « Finie » (`done`, libellé `children.state.done`), pas en gras ;
+    branche, emplacement et infobulle vérifiés comme avant ;
+  - `roles-travail` : on attend le compte rendu, puis la carte du rôle à `done` ;
+  - `inbox` : la fenêtre revenait au premier plan sur la mère, ce qui lisait les deux comptes rendus
+    (D35) et laissait le compteur à 1 au lieu de 3. On ouvre d'abord la conversation qui attend
+    l'accord, puis on rend le focus : compteur à 3 comme avant. La fin essaie maintenant les deux
+    voies : une fille ouverte est lue, l'autre reste à lire ; la mère ouverte, le compte rendu de
+    l'autre fille est lu (D35).

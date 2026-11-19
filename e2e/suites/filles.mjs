@@ -125,21 +125,23 @@ export async function fillesSuite(scheme) {
             cost.turns === L('children.report.turns', { count: 1 }),
           `coût de la fille : sa ligne, le total de la carte, son compte rendu (${spaced(cost.report)})`
         )
-        // Finie, à lire : sous sa mère, en gras, état et origine dans l'infobulle (fiche 149).
+        // Finie, compte rendu vu : la mère est affichée quand il y arrive, il est lu (fiche 258,
+        // D35). Sous sa mère, état et origine dans l'infobulle (fiche 149). La fille à lire (mère
+        // pas affichée) : suite `inbox`.
         await ui.waitFor(
-          `${row(first)}?.classList.contains('nested') && ${row(first)}.querySelector('.child-state')?.dataset.state === 'unread'`
+          `${row(first)}?.classList.contains('nested') && ${row(first)}.querySelector('.child-state')?.dataset.state === 'done'`
         )
         check(
-          (await ui.ev(`${row(first)}.classList.contains('unread')`)) &&
+          !(await ui.ev(`${row(first)}.classList.contains('unread')`)) &&
             (await ui.ev(`${row(first)}.dataset.branch`)) === branch &&
             (await ui.ev(`!!${row(first)}.querySelector('.row-slot')`)) &&
             (await ui.ev(
               `${row(first)}.querySelector('.child-state').getAttribute('aria-label')`
-            )) === L('inbox.reason.report') &&
+            )) === L('children.state.done') &&
             (
               await conversationTooltip(ui, `${row(first)}.querySelector('.history-open')`)
             ).includes('Organise le carnet'),
-          'liste : fille finie, à lire, sous sa mère avec son icône de non-lu (fiche 149)'
+          'liste : fille finie, compte rendu lu chez sa mère affichée, sous sa mère (fiches 149, 258)'
         )
         check(git('status', '--porcelain') === '', 'la fille travaille dans son worktree')
 

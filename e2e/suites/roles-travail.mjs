@@ -214,11 +214,13 @@ async function mainRun(ui, turnLock) {
     30000
   )
   check((await ui.ev(`${input}.value`)) === '', 'envoi : la saisie se vide, rien à la mère')
+  // Compte rendu posé dans le fil de la mère affichée : lu aussitôt (fiche 258, D35), la carte
+  // dit « finie », pas « à lire ».
+  await ui.waitFor(`!!${ui.$('child-report')}`, 30000)
   await ui.waitFor(
-    `document.querySelector('[data-testid=role-launch]')?.dataset.state === 'unread'`,
+    `document.querySelector('[data-testid=role-launch]')?.dataset.state === 'done'`,
     30000
   )
-  await ui.waitFor(`!!${ui.$('child-report')}`, 30000)
   check(
     (await ui.ev(`${ui.$('child-report')}.dataset.role`)) === 'security-expert',
     'compte rendu titré du rôle'
