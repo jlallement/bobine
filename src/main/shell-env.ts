@@ -12,8 +12,9 @@
  * enregistrées (machine puis utilisateur, comme Windows les assemble), pour voir un agent installé
  * après le lancement. Le PATH y est coupé sur `;`, sans casse, sous la clé `Path`.
  */
-import { execFile } from 'node:child_process'
+import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { t } from 'i18next'
+import { messageOf } from '@shared/errors'
 import { pathKey, relayed, windowsPowerShell, type ProcessSystem } from './process-launch'
 
 const MARKER = '__BOBINE_ENV__'
@@ -42,6 +43,8 @@ export interface ShellEnvResult {
   problem?: string
   /** Durée de la lecture. */
   ms: number
+  /** Shell de l'utilisateur écarté pour le repli, et pourquoi (journal, fiche 253). */
+  fallbackFrom?: string
 }
 
 /** Extrait les valeurs entre les marqueurs, en ignorant le bruit des fichiers rc ; vides omises. */
@@ -84,30 +87,142 @@ export function mergePath(
   return kept.join(delimiter)
 }
 
-export function loginShellEnv(
+/**
+ * Shells qui ne comprennent pas `-ilc` ou la commande POSIX (`printf '…' "$PATH"`) : tcsh refuse
+ * `-ilc`, nushell ne développe pas `"$PATH"`… Lus directement par le repli (fiche 253). fish
+ * accepte `-i -l -c`, a `printf` et rend `"$PATH"` joint par `:` (variables de chemin, fish 3) :
+ * essayé comme les autres, avec le même repli s'il échoue.
+ */
+const NON_POSIX_SHELLS = new Set([
+  'csh',
+  'tcsh',
+  'nu',
+  'elvish',
+  'xonsh',
+  'pwsh',
+  'powershell',
+  'ion',
+  'rc',
+  'es'
+])
+
+/** Repli : le shell par défaut de macOS (lit `.zprofile` et `.zshrc`), sinon `sh` de connexion. */
+export function fallbackShell(platform: NodeJS.Platform = process.platform): {
+  file: string
+  flags: string
+} {
+  return platform === 'darwin'
+    ? { file: '/bin/zsh', flags: '-ilc' }
+    : { file: '/bin/sh', flags: '-lc' }
+}
+
+/** Valeur restée littérale (`$PATH`, `${PATH}`) : le shell n'a pas développé la variable. */
+function unresolved(value: string | undefined): boolean {
+  return value !== undefined && /\$\{?[A-Za-z_]/.test(value)
+}
+
+/**
+ * Variables du shell de connexion : le shell de l'utilisateur d'abord (`-ilc`), sauf s'il n'est
+ * pas POSIX ; en échec ou sans PATH utilisable, le repli (`fallbackShell`). Trop lent : pas de
+ * repli, qui ajouterait encore le même délai.
+ */
+export async function loginShellEnv(
   shell = process.env['SHELL'] || '/bin/zsh',
-  timeoutMs = SHELL_TIMEOUT_MS
+  timeoutMs = SHELL_TIMEOUT_MS,
+  platform: NodeJS.Platform = process.platform
 ): Promise<ShellEnvResult> {
+  const started = Date.now()
+  const elapsed = () => Date.now() - started
+  const fallback = fallbackShell(platform)
+  const name = shell.split('/').pop() ?? shell
+  if (NON_POSIX_SHELLS.has(name) && shell !== fallback.file) {
+    const read = await readShell(fallback.file, fallback.flags, timeoutMs)
+    return { ...withoutTimedOut(read), ms: elapsed(), fallbackFrom: `${shell} (non POSIX)` }
+  }
+  const first = await readShell(shell, '-ilc', timeoutMs)
+  if (!first.problem || first.timedOut || shell === fallback.file) {
+    return { ...withoutTimedOut(first), ms: elapsed() }
+  }
+  const second = await readShell(fallback.file, fallback.flags, timeoutMs)
+  // Le repli échoue aussi : le problème du shell de l'utilisateur, celui qu'il peut corriger.
+  if (second.problem) return { ...withoutTimedOut(first), ms: elapsed() }
+  return { values: second.values, ms: elapsed(), fallbackFrom: `${shell} (${first.problem})` }
+}
+
+interface ShellRead {
+  values: ShellEnvResult['values']
+  problem?: string
+  timedOut?: boolean
+}
+
+function withoutTimedOut(read: ShellRead): Omit<ShellEnvResult, 'ms'> {
+  return { values: read.values, ...(read.problem ? { problem: read.problem } : {}) }
+}
+
+/** Sortie gardée au plus (bruit des fichiers rc compris), comme le `maxBuffer` d'`execFile`. */
+const MAX_OUTPUT = 1024 * 1024
+
+/**
+ * Lance `shell flags 'printf …'` et lit les variables. Entrée sur `/dev/null` : un fichier rc qui
+ * lit l'entrée (question, `read`) reçoit aussitôt la fin de fichier au lieu d'attendre le délai.
+ * Au délai, `SIGKILL` : un shell interactif ignore `SIGTERM`.
+ */
+function readShell(shell: string, flags: string, timeoutMs: number): Promise<ShellRead> {
   const format = SHELL_VARIABLES.map(() => `${MARKER}%s`).join('') + `${MARKER}END`
   const args = SHELL_VARIABLES.map((name) => `"$${name}"`).join(' ')
-  const started = Date.now()
+  // Linux : sans les descripteurs hérités du main (un `ssh-agent` lancé par le profil les
+  // garderait) ; ailleurs, tel quel.
+  const [file, argv] = relayed(shell, [flags, `printf '${format}' ${args}`])
   return new Promise((resolve) => {
-    // Linux : sans les descripteurs hérités du main (un `ssh-agent` lancé par le profil les
-    // garderait) ; ailleurs, tel quel.
-    const [file, argv] = relayed(shell, ['-ilc', `printf '${format}' ${args}`])
-    execFile(file, argv, { timeout: timeoutMs, encoding: 'utf8' }, (error, stdout) => {
-      const values = extractEnv(stdout ?? '')
-      const ms = Date.now() - started
+    let stdout = ''
+    let stderr = ''
+    let done = false
+    const timer: { id?: ReturnType<typeof setTimeout> } = {}
+    const finish = (failure: string | undefined, timedOut = false) => {
+      if (done) return
+      done = true
+      clearTimeout(timer.id)
+      const values = extractEnv(stdout)
+      if (unresolved(values.PATH)) delete values.PATH
       let problem: string | undefined
-      if (error && (error as { killed?: boolean }).killed) {
+      if (timedOut) {
         problem = t('shellEnv.timeout', { shell, seconds: Math.round(timeoutMs / 1000) })
-      } else if (error && Object.keys(values).length === 0) {
-        problem = `${shell} : ${error.message.split('\n')[0] ?? t('shellEnv.failed')}`
+      } else if (failure && Object.keys(values).length === 0) {
+        problem = `${shell} : ${failure}`
       } else if (!values.PATH) {
         problem = t('shellEnv.noPath', { shell })
       }
-      resolve({ values, ms, ...(problem ? { problem } : {}) })
+      resolve({ values, ...(problem ? { problem } : {}), ...(timedOut ? { timedOut } : {}) })
+    }
+    let child: ChildProcess
+    try {
+      child = spawn(file, argv, { stdio: ['ignore', 'pipe', 'pipe'] })
+    } catch (error) {
+      finish(messageOf(error))
+      return
+    }
+    child.stdout?.setEncoding('utf8')
+    child.stdout?.on('data', (chunk: string) => {
+      if (stdout.length < MAX_OUTPUT) stdout += chunk
     })
+    child.stderr?.setEncoding('utf8')
+    child.stderr?.on('data', (chunk: string) => {
+      if (stderr.length < MAX_OUTPUT) stderr += chunk
+    })
+    child.on('error', (error) => finish(error.message.split('\n')[0] || t('shellEnv.failed')))
+    // Un programme lancé par un fichier rc peut garder la sortie ouverte : la fin du shell suffit
+    // une fois les variables lues.
+    child.on('exit', () => {
+      if (stdout.includes(`${MARKER}END`)) finish(undefined)
+    })
+    child.on('close', (code, signal) => {
+      const line = stderr.trim().split('\n')[0]
+      finish(code === 0 ? undefined : line || `${signal ?? code ?? ''} (${t('shellEnv.failed')})`)
+    })
+    timer.id = setTimeout(() => {
+      child.kill('SIGKILL')
+      finish(undefined, true)
+    }, timeoutMs)
   })
 }
 
@@ -201,9 +316,13 @@ export async function readUserEnv(
     return { ...result, source: 'Variables de Windows', read: 'Variables de Windows relues' }
   }
   const result = await loginShellEnv()
+  // Repli (fiche 253) : dit au journal, le shell de l'utilisateur n'a pas servi.
+  const fallback = result.fallbackFrom
+    ? ` par ${fallbackShell().file}, au lieu de ${result.fallbackFrom}`
+    : ''
   return {
     ...result,
     source: 'Shell de connexion',
-    read: 'Environnement du shell de connexion lu'
+    read: `Environnement du shell de connexion lu${fallback}`
   }
 }
