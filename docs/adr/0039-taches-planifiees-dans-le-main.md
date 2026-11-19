@@ -1,6 +1,6 @@
 # ADR-0039 — Tâches planifiées : une conversation ordinaire, lancée par le main, app ouverte
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 178)
 - **Date** : 2026-11-06
 
 ## Contexte
@@ -51,3 +51,8 @@ Il faut décider où vit le planificateur, ce qu'est une exécution, et quand el
   premier message.
 - `ConversationManager.createDetached` est le chemin de toute conversation créée hors de l'active ;
   une nouvelle origine (autre que mère ou tâche) passe par lui.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 178), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/scheduler/scheduler.ts:37,164,212-242`, `src/shared/schedule.ts:90,178-198`, reprise au réveil `src/main/scheduler/scheduler-ipc.ts:73`.

@@ -14,6 +14,7 @@ human review, and that shapes how contributions work.
 - **Languages**: code, identifiers and commit messages in English; documentation and comments
   that explain the product in French. Interface texts are never hard-coded: a key in
   `src/shared/i18n/locales/fr.json` and `en.json`, displayed with `t()`.
+- **Be kind**: everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 - **Check an existing decision** before proposing to change it: `docs/adr/`. An accepted ADR is
   never edited; a new one replaces it.
 

@@ -1,6 +1,6 @@
 # ADR-0042 — Format du profil versionné, champs inconnus gardés, lecture seule si plus récent
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 196)
 - **Date** : 2026-11-07
 
 ## Contexte
@@ -43,3 +43,8 @@ Il faut décider où vit la version, et ce que fait une app devant un profil plu
 - Écarté : une version par fichier (`settings.json`, `approvals.json`…). Plus fin, mais une app
   qui en accepte un et refuse l'autre laisse un profil à moitié écrit ; et `index.json` aurait dû
   devenir un objet, illisible pour les versions d'avant.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 196), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/profile-format.ts:20-83`, point de contrôle unique `src/main/storage.ts:36-52`, `src/main/read-only-guard.ts` ; en plus du texte, une marque illisible met aussi le profil en lecture seule par prudence (`src/main/profile-startup.ts:49-56`).

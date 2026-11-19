@@ -78,6 +78,8 @@ sombre et clair), validé par Jérôme le 2026-10-23.
       début du message envoyé, préambule compris (comme Bob) ; clair et sombre, captures
       regardées.
 - [ ] Essai à la vraie souris de la barre latérale (alignements, survol, menu « … »).
+      Reporté (2026-11-19) : alignements vus à la vraie souris au rejeu du 2026-10-23 ; survol et
+      menu « … » couverts par l'e2e `history` seulement.
 
 ## Plan
 

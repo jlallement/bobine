@@ -16,7 +16,7 @@ bobcoins), et quand l'agent résume la conversation (compaction).
 - [x] Rien d'affiché si l'agent ne fournit rien (pas d'estimation inventée).
 - [x] Testé : agent factice ; Codex, OpenCode réels.
 - [x] Bob réel (bobcoins, lus dans sa base locale).
-- [ ] Claude Code réel (après connexion).
+- [ ] Claude Code réel (après connexion). Reporté (2026-11-19) : Claude Code n'est plus un agent cible ni un profil intégré (AGENTS.md).
 - [x] Dépense récente avec Bob (aujourd'hui, 7 jours, ce mois) dans le détail de la consommation.
 - [x] Budget épuisé : le message de Bob, pas « Internal error ».
 

@@ -1,6 +1,6 @@
 # ADR-0028 — Indépendance aux agents : marques génériques, sources dans le profil, noms interdits
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 140)
 - **Date** : 2026-10-24
 
 ## Contexte
@@ -50,3 +50,8 @@ sans code.
   par une lecture dans `shared`.
 - Brancher un agent ACP : son profil (commande, arguments, environnement), et seulement les
   sources ou formats qu'il a en propre. Le cahier des charges est dans la fiche 140.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 140), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/agent/subagent-marks.ts`, `src/main/agent/adapters.ts:159,194,220`, `testedVersions` vérifiées par `src/main/diagnostics.ts:372` ; la règle ESLint exempte aussi `src/main/conformance/**` (grille de conformité).

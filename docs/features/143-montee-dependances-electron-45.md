@@ -21,7 +21,9 @@ contrat.
 - [x] Outils externes (OpenCode, AXe, Bob Shell, binaires des scripts) : version installée ou
       épinglée comparée à la dernière publiée ; sonde jouée ou à jouer.
 - [ ] `./scripts/verify`, `pnpm build && pnpm e2e --if-needed` (suite complète, clair et sombre) et
-      `pnpm package --dry-run` passent.
+      `pnpm package --dry-run` passent. Reporté (2026-11-19) : le journal ne note pas la suite
+      complète sur l'état final ni `pnpm package --dry-run` ; les versions suivantes ont été
+      publiées avec la suite complète, mais rien ne la rattache à cette fiche.
 - [x] Testé contre l'agent factice : un arrêt pendant la lecture des clés (trousseau asynchrone)
       n'en lance aucun (`agent-host.test.ts`) ; lancements simultanés, un seul déchiffrement ; clé
       renouvelée par le trousseau, rechiffrée (`api-keys.test.ts`).

@@ -178,12 +178,14 @@ Le `.dmg` contient Bobine et le lien Applications. Deux façons d’installer re
   corbeille. « Plus tard » : la question revient au prochain lancement hors d'Applications ;
   « Ne plus proposer » est retenu.
 
-Signée ad hoc seulement (ADR-0008) : macOS ne connaît pas son auteur. La signature Developer ID et
-la notarisation d'Apple sont prêtes, mais attendent un compte développeur Apple (fiche 111). La
-**première ouverture est donc bloquée** (« Apple n'a pas pu vérifier… »). La marche à suivre
+Signée ad hoc seulement (ADR-0008) : macOS ne connaît pas son auteur. **Choix assumé : l'app
+n'est pas notarisée** (pas de compte développeur Apple ; la chaîne Developer ID de la fiche 111
+reste dans `scripts/package` pour les mainteneurs). La **première ouverture est donc bloquée**
+(« Apple n'a pas pu vérifier… ») : c'est le premier double-clic sur Bobine, dans la fenêtre du
+`.dmg` ou dans Applications. La marche à suivre
 d'Apple ([support.apple.com/fr-fr/102445](https://support.apple.com/fr-fr/102445)) :
 
-1. Essayer d'ouvrir l'app une fois, puis cliquer sur « Terminé » (pas « Placer dans la corbeille »).
+1. Ouvrir l'app une fois (ce premier double-clic), puis cliquer sur « Terminé » (pas « Placer dans la corbeille »).
 2. Réglages Système › Confidentialité et sécurité, descendre jusqu'à la section Sécurité, et
    cliquer sur « Ouvrir quand même » à côté du message sur Bobine.
 3. Confirmer avec « Ouvrir » (mot de passe ou Touch ID demandé).
@@ -216,7 +218,7 @@ récente. Sur GitHub, « Watch › Custom › Releases » prévient de chaque ve
 comme la première (double-clic dans le `.dmg` : l'ancienne, au même endroit, va à la corbeille). Les nouveautés de chaque
 version sont dans Réglages › Nouveautés (`CHANGELOG.md`), la version installée en tête.
 
-**Signer et notariser** (mainteneurs) : `pnpm package --dry-run` dit comment l'app serait signée
+**Signer et notariser** (mainteneurs, non utilisé pour les versions publiées) : `pnpm package --dry-run` dit comment l'app serait signée
 avec les variables présentes, sans rien construire. Variables et secrets GitHub : fiche 111 et
 commentaire de `.github/workflows/release.yml`.
 

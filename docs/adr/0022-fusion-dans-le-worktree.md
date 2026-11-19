@@ -1,6 +1,6 @@
 # ADR-0022 — La fusion d'un worktree se fait dans le worktree, puis la base avance en fast-forward
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 110)
 - **Date** : 2026-10-21
 - **Précise** : la fiche 036 (worktrees) et la fiche 110 (cycle complet)
 
@@ -52,3 +52,8 @@ Le refus est net quand le worktree a des modifications non commitées : on commi
   l'agent, sans outil ni mode particulier.
 - À surveiller : un agent qui committe de lui-même pendant la résolution (la fusion est alors
   terminée par lui ; l'app le constate et avance la base).
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 110), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Mise en œuvre plus stricte que le texte (fiche 123) : toute fusion est refusée tant que le dossier principal a des modifications, sauf « Mettre de côté » (`git stash -u`) ; preuve `src/main/changes/worktree-cycle.ts:520-611`.

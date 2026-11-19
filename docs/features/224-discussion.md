@@ -1,8 +1,8 @@
 # 224 — Espace Discussion : parler à l'agent et travailler sur des documents, à côté du code
 
-- **Statut** : en cours — maquettes E1–E6 validées et relevés réels faits le 2026-11-14 ; cœur,
-  interface, agent factice, essais et doc faits sur `feat/224-discussion` ; relecture du tech lead
-  à faire (voir « Écarts »)
+- **Statut** : fait — fusionnée dans `main` (« Merge feature 224: Discussion space ») et livrée
+  depuis la 1.0.0-beta.6 ; maquettes E1–E6 validées et relevés réels faits le 2026-11-14 (statut
+  remis au vrai le 2026-11-19, fiche 251)
 - **Dépend de** : 093 (démarrage : pas de conversation sans dossier), 203 et 214 (cartes
   d'autorisation lisibles), 223 (rôles : familles d'outils de Bobine choisies, surveillance du
   dossier), 024 et ADR-0024 (l'échange d'avant part en texte), 052 (aperçu en lecture seule),

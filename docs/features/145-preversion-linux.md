@@ -1,10 +1,11 @@
 # 145 — Préversion Linux (sans simulateur iOS)
 
-- **Statut** : en cours, **expérimental dans `main`** (2026-10-25), pas encore publié. Le code
-  Linux est masqué par les capacités de la plateforme (rien ne change sur le Mac) ; un tag ne
-  construit Linux que si la variable du dépôt `BOBINE_LINUX_RELEASE` vaut `true`
-  (`release.yml`) ; e2e Linux à la main (`e2e.yml`, Système : `linux`). Première publication
-  reportée après la 0.6.0 macOS, sans numéro ni date fixés.
+- **Statut** : **préversion publiée** — `.deb` x64 et arm64 joints à chaque version depuis la
+  1.0.0-beta.6 (16 novembre 2026) ; Linux reste en préversion à la 1.0 (décision du 2026-11-19).
+  Le code Linux est masqué par les capacités de la plateforme (rien ne change sur le Mac) ; un tag
+  ne construit Linux que si la variable du dépôt `BOBINE_LINUX_RELEASE` vaut `true`
+  (`release.yml`) ; e2e Linux à la main (`e2e.yml`, Système : `linux`). Statut remis au vrai le
+  2026-11-19 (fiche 251) ; l'historique plus bas garde l'ancien « pas encore publié ».
 - **Dépend de** : 012 (packaging), 034 (terminal), 041 et 080 (journal), 059 (publication), 115
   (lanceur e2e), 138 (processus), 143 (Electron 45)
 - **Agents** : les deux, sans code propre à un agent. OpenCode tourne sous Linux ; Bob aussi,

@@ -43,6 +43,7 @@ des choix explicites. L'app les affichait comme un formulaire générique et une
       des formes réelles), tests unitaires de l'adaptateur, `pnpm e2e` clair / sombre ; Codex et
       OpenCode réels.
 - [ ] Essai réel Claude Code (après connexion de l'utilisateur en ligne de commande).
+      Reporté (2026-11-19) : Claude Code n'est plus un agent cible ni un profil intégré (AGENTS.md).
 
 ## Comment Codex les envoie (relevé réel, codex-acp 2.2.2)
 

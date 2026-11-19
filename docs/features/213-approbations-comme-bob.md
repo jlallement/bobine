@@ -1,6 +1,8 @@
 # 213 — Approbations au niveau de Bob IDE et Bob Shell
 
-- **Statut** : à faire (étape 0 faite le 2026-11-09 ; ADR et maquettes ensuite)
+- **Statut** : **reporté après la 1.0** (décision de Jérôme du 2026-11-19 : la 1.0.0-rc.1 part sans
+  « Tout approuver » ; ADR-0043 reste proposé). Étape 0 faite le 2026-11-09 ; la fiche 215, qui en
+  dépendait, est livrée sans elle.
 - **Dépend de** : 042 (autorisations retenues), 203 (cartes lisibles), 211 (cartes à risque)
 - **Agents** : les deux pour le sélecteur, « Tout approuver », la trace et les corrections de
   cartes (générique ACP : `kind`, options `allow_once` / `allow_always`) ; **Bob seul** pour les
@@ -266,3 +268,6 @@ Réglages › Agents › Bob › Approbations.
   commande entière par défaut, libellés par segment, liste de tâches reconnue par
   `rawInput.todos`, vérification de sécurité absente en ACP (à demander à IBM). Reste à vérifier :
   survie d'une règle écrite à côté de Bob IDE ouvert.
+- 2026-11-19 — **Reportée après la 1.0** (décision de Jérôme, préparation de la 1.0.0-rc.1, fiche
+  251) : la rc part sans le sélecteur « Autorisations » ni « Tout approuver » ; ADR-0043 reste
+  proposé. La fiche 215 (règles globales de Bob) est livrée sans attendre celle-ci.

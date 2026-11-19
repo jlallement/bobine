@@ -1,6 +1,6 @@
 # ADR-0048 — Espace Discussion : même moteur, dossier tenu par Bobine, interface à part
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiches 224, 230)
 - **Date** : 2026-11-14
 - **Précise** : ADR-0011 (générique d'abord), fiche 093 (pas de conversation sans dossier)
 
@@ -59,3 +59,8 @@ elle, fait tourner l'agent sur le Mac de l'utilisateur.
   peut écrire ailleurs (relevé : OpenCode extrait un `.xlsx` dans le dossier temporaire du
   système).
 - Une branche de discussion partage le dossier de l'originale ; l'effacer n'efface que le sien.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiches 224, 230), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Mise en œuvre plus stricte que le point 3 (relecture de la fiche 224) : un déplacement est toujours demandé ; seul un fichier visible du premier niveau est accordé sans carte (sous-dossiers et fichiers cachés comme `.bob/` demandés), chemins relatifs ou en `~` demandés ; preuve `src/main/agent/write-area.ts:6-12,123-136`, `src/main/conversations/host-options.ts:110-112`.

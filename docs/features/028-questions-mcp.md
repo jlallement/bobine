@@ -22,8 +22,8 @@ réponse comme résultat de l'outil. Rien à configurer côté Bob : il découvr
 - Bob abandonne un appel d'outil MCP au bout d'environ **60 s** (« Request timed out ») et n'envoie
   pas de `progressToken` : impossible de prolonger l'attente.
 - La doc de Bob Shell liste un outil `ask_followup_question` (catégorie « Question »), celui de Bob
-  IDE ; il n'est pas proposé par `bob acp` 2.0.6 (absent des outils enregistrés, crochet
-  `askFollowUp` vide dans le code ; Bob dit lui-même n'avoir aucun outil de question).
+  IDE ; il n'est pas proposé par `bob acp` 2.0.6 (interrogé, Bob dit
+  lui-même n'avoir aucun outil de question).
 
 ## Critères d'acceptation
 

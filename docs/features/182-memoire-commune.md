@@ -1,6 +1,6 @@
 # 182 — Mémoire commune aux agents
 
-- **Statut** : fait (branche `claude/memoire-182-663212`, à relire avant fusion) — sauf l'étape
+- **Statut** : fait (fusionnée dans `main` ; statut remis au vrai le 2026-11-19, fiche 251) — sauf l'étape
   5 (prompt système, aucun agent ne l'annonce) ; ADR-0040 reste proposé (écart à sa décision 6) ;
   pour la 0.10
 - **Dépend de** : 056 (règles actives), 165 (outils MCP de l'app), 181 (SDK ACP 2 : prompt système

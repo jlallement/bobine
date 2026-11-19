@@ -1,6 +1,6 @@
 # ADR-0037 — Préparation des worktrees : fichiers du dépôt, accord dans l'app
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 175)
 - **Date** : 2026-11-06
 
 ## Contexte
@@ -56,3 +56,8 @@ et qui décide de lancer une commande.
 - La sortie de la commande est gardée dans le fil (fin seulement), jamais dans les journaux.
 - La commande `archive` n'est pas lancée par la fermeture de l'app (suppression synchrone des
   worktrees jamais commencés).
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 175), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `src/main/changes/worktree-include.ts:31-37,88`, empreinte des commandes `src/main/changes/worktree-setup.ts:105-106,274-278`, `src/main/changes/worktree-setup-wiring.ts:85,137-150`.

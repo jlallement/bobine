@@ -41,6 +41,8 @@ D3, D10, D13, vus avec OpenCode et avec Bob) a trouvé trois pièges :
 - [x] Testé contre l'agent factice : suites e2e `quick` (accès refusé, capture en échec), `plan`
       (position des boutons), `filles` (propositions en rafale, scénario `filles-rafale`).
 - [ ] Essai à la vraie souris pour D10 et D13 : pas fait (accès à l'app d'essai refusé).
+      Reporté (2026-11-19) : D13 ✓ à la vraie souris au rejeu du 2026-10-23 ; D10 corrigé ensuite
+      (fiche 127) sans nouvel essai à la souris.
 
 ## Plan
 

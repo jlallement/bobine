@@ -17,6 +17,8 @@ agents demandent au client d'exécuter les commandes (`terminal/create`).
       `terminal`), annoncée par `clientCapabilities._meta` : sortie reçue en direct, par morceaux.
 - [ ] Capacité client `terminal` (`terminal/create`…) : **non annoncée** — aucun des agents essayés ne
       s'en sert (Bob, OpenCode et Codex exécutent eux-mêmes). À reconsidérer si Bob l'utilise un jour.
+      Non-objectif, laissé décoché (2026-11-19) : la capacité n'est volontairement pas annoncée
+      (`src/main/agent/announced.ts`).
 - [x] Testé : agent factice (scénarios `commande`, `commande-echec`) ; e2e ; Bob réel.
 
 ## Notes

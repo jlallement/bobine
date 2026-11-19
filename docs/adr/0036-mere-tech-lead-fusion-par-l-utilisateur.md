@@ -1,6 +1,6 @@
 # ADR-0036 — La mère pilote ses filles en tech lead ; l'utilisateur fusionne
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-19 : acceptée au vu de la livraison, fiche 160)
 - **Date** : 2026-10-28
 
 ## Contexte
@@ -69,3 +69,8 @@ vraiment relue.
   filles finies).
 - À surveiller : qu'un vrai agent (Bob, OpenCode) appelle bien `recommend_merge` après avoir
   vérifié, et pas d'emblée ; ajuster les descriptions sinon.
+
+## Acceptation (2026-11-19)
+
+Acceptée au vu de la livraison (fiche 160), vérifiée dans le code lors de la préparation de la
+1.0.0-rc.1 (fiche 251). Preuves : `childModelChoice` (`src/main/agent/profiles.ts:153`), `src/main/conversations/children.ts:223,474-481,704-727`, plafonds `src/shared/children.ts:120-129` ; complétée par les fiches 177 et 223.

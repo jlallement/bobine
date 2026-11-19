@@ -127,7 +127,7 @@ présentation pour les démonstrations.
 | Agent | Statut | Versions essayées |
 |---|---|---|
 | IBM Bob (`bob acp`) | cible principale | 2.0.6, 2.0.9, 2.1.0 |
-| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5 |
+| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0 |
 
 D'autres agents ACP se déclarent dans Réglages › Agents, sans garantie. Un agent factice sert au
 développement et aux essais seulement. Le détail, agent par agent : [`docs/agents.md`](docs/agents.md).
@@ -141,31 +141,32 @@ minimum et n'est essayée que sur des macOS récents), et au moins un agent inst
 `opencode` dans le `PATH`).
 
 1. Télécharger `Bobine-<version>-arm64.dmg` sur la page des
-   [Releases](https://github.com/jlallement/bobine/releases) (la bêta est marquée
-   « pre-release »).
-2. Ouvrir le `.dmg`, puis double-cliquer sur Bobine dans sa fenêtre : elle propose de s'installer
-   dans `/Applications` ou dans `~/Applications` (sans droits d'administrateur). On peut aussi la
-   glisser sur Applications.
-3. Ouvrir Bobine. **Le premier lancement est bloqué** (« Apple n'a pas pu vérifier… ») car l'app
-   est signée ad hoc, pas notarisée. Pour passer, selon les [instructions
-   d'Apple](https://support.apple.com/fr-fr/102445) :
-   1. Essayer d'ouvrir l'app une fois, puis cliquer sur **Terminé** (pas « Placer dans la
-      corbeille »).
+   [Releases](https://github.com/jlallement/bobine/releases) (bêtas et versions candidates sont
+   marquées « pre-release »).
+2. Ouvrir le `.dmg` et double-cliquer sur Bobine dans sa fenêtre. C'est le premier lancement, et
+   **macOS le bloque** (« Apple n'a pas pu vérifier… ») car l'app est signée ad hoc, pas notarisée
+   (choix assumé). Pour passer, selon les [instructions d'Apple](https://support.apple.com/fr-fr/102445) :
+   1. Cliquer sur **Terminé** (pas « Placer dans la corbeille »).
    2. Ouvrir **Réglages Système › Confidentialité et sécurité**, descendre jusqu'à la section
       Sécurité et cliquer sur **Ouvrir quand même** à côté du message sur Bobine.
    3. Confirmer avec **Ouvrir** (macOS peut demander le mot de passe ou Touch ID).
 
-   Ensuite, Bobine s'ouvre normalement. Depuis macOS 15 (Sequoia), Ctrl-clic › Ouvrir ne
-   contourne plus la vérification : « Ouvrir quand même » est la voie. Sur un Mac géré par une
-   organisation, ce bouton peut être désactivé par sa politique.
+   Depuis macOS 15 (Sequoia), Ctrl-clic › Ouvrir ne contourne plus la vérification : « Ouvrir
+   quand même » est la voie. Sur un Mac géré par une organisation, ce bouton peut être désactivé
+   par sa politique.
 
    Autre voie en ligne de commande, si vous faites confiance au téléchargement : retirer la marque
-   de quarantaine que macOS pose sur un fichier téléchargé par un navigateur.
+   de quarantaine que macOS pose sur un fichier téléchargé par un navigateur, avant d'ouvrir le
+   `.dmg`.
 
    ```bash
-   xattr -dr com.apple.quarantine /Applications/Bobine.app
+   xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
    ```
 
+3. Bobine s'ouvre et propose de s'installer dans `/Applications` ou dans `~/Applications` (sans
+   droits d'administrateur) ; la copie installée s'ouvre ensuite normalement. On peut aussi la
+   glisser sur Applications : le blocage de l'étape 2 vient alors à sa première ouverture depuis
+   là (`xattr -dr com.apple.quarantine /Applications/Bobine.app` en ligne de commande).
 4. macOS peut redemander « Enregistrement de l'écran » ou l'accès au trousseau à chaque nouvelle
    version (pour lui, chaque version est une autre app) : choisir « Toujours autoriser ».
 
