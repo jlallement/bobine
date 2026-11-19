@@ -15,7 +15,7 @@ ouvre une liste filtrable ; l'app les ignore aujourd'hui.
 - [x] Indication du paramètre attendu (`input.hint`).
 - [x] Testé : agent factice qui annonce des commandes ; e2e ; Codex et OpenCode réels.
 - [x] Bob réel.
-- [ ] Claude Code réel (après connexion).
+- [ ] Claude Code réel (après connexion). Reporté (2026-11-19) : Claude Code n'est plus un agent cible ni un profil intégré (AGENTS.md).
 
 ## Notes
 
@@ -63,7 +63,8 @@ L'agent factice a déjà `/scenario` : il devra l'annoncer comme commande.
     sur ce Mac : non vérifié (Bob Shell lit les mêmes dossiers `.bob`).
 - 2026-10-13 — **Skills globales** (demande de l'utilisateur) : chargées par les agents eux-mêmes.
   - Bob 2.0.6 : `~/.bob/skills` et `~/.agents/skills` annoncés (essai réel, skills d'essai créées puis
-    supprimées) ; `~/.claude/skills` et `~/.bob/plugins/*/skills` d'après son code.
+    supprimées) ; `~/.claude/skills` et `~/.bob/plugins/*/skills` : non vérifiés (ni essayés ni relevés
+    dans la documentation publique ; mention retirée le 2026-11-19, fiche 216).
   - OpenCode 1.19 (`HOME` jetable) : `~/.agents/skills`, `~/.claude/skills`,
     `~/.config/opencode/skill(s)` et ses commandes globales ; il suit `XDG_CONFIG_HOME`.
   - Seul changement : l'app reprend `XDG_CONFIG_HOME` et `XDG_DATA_HOME` du shell de connexion

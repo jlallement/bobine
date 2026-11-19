@@ -35,9 +35,11 @@ mais répond de ce qu'elle envoie elle-même).
       « Ne pas joindre ».
 - [x] « Propre à <agent> » (Réglages › Agents) : ligne `ignore-files` ; matrice de
       `docs/agents.md` ; « Compatibilité Bob » de `docs/acp.md`.
-- [ ] Testé contre l'agent factice : suites e2e `mentions` (exclusions, `@git-changes`),
+- [x] Testé contre l'agent factice : suites e2e `mentions` (exclusions, `@git-changes`),
       `attachments` (texte collé, confirmation) et `history` (brouillon d'une conversation à
-      l'autre) — écrites, à lancer à la fusion.
+      l'autre) — écrites, à lancer à la fusion. Coché le 2026-11-19 : suites présentes
+      (`e2e/suites/mentions.mjs`, `attachments.mjs`, `history.mjs`), suite complète verte à
+      l'intégration du 29/10 (journal).
 
 ## Plan
 
@@ -80,11 +82,10 @@ exclusions, `gitChangesText`, `specificItems`) ; e2e `mentions` et `attachments`
 
 ## Journal
 
-- 2026-10-28 — Fiche et plan (lot B). Ce qu'on suppose de Bob 2.0.6 (non vérifié en réel) : pour
-  un fichier du dossier de travail, Bob lit `.gitignore` (si `respectGitIgnore`, vrai par défaut) puis
-  `.bobignore` dans chaque dossier, de la racine au dossier du fichier, avec la bibliothèque
-  `ignore`, plus `.env` toujours ; lecture et écriture refusées (« Access denied … matches an ignore
-  pattern »). Rien de connu sur le texte du message : Bob ne le filtre pas, à notre connaissance.
+- 2026-10-28 — Fiche et plan (lot B). Ce qu'on suppose de Bob 2.0.6 (non vérifié en réel) : `.bobignore`
+  (documenté par IBM : lecture, écriture et suppression refusées aux outils de fichiers, commandes non
+  filtrées) ; `.gitignore` et `.env` traités de même par prudence (réécrit le 2026-11-19 : seuls le
+  comportement observé et la documentation publique sont décrits, fiche 216). Rien de connu sur le texte du message : Bob ne le filtre pas, à notre connaissance.
 - 2026-10-28 — Implémenté (branche `claude/lot-b-saisie-41fd35`, sans push).
   - Texte collé : genre `text` de pièce jointe (`shared/attachments.ts`), bloc `text`
     « Texte collé (N lignes) : … » (`prompt-content.ts`), puce et aperçu (`PastedText.tsx`) dans
@@ -100,8 +101,8 @@ exclusions, `gitChangesText`, `specificItems`) ; e2e `mentions` et `attachments`
     fichier exclu, `@git-changes` qui le saute), `history` (brouillon avec sa puce de texte collé).
   - Écarts : la puce part en bloc `text` et non en `resource` (pas d'URI à inventer, et un agent
     sans `embeddedContext` le reçoit aussi) ; Bob n'a pas de fichier d'exclusion seulement : sa
-    déclaration suit son code (`.gitignore`, `.bobignore`, `.env`), sans lire son réglage
-    `respectGitIgnore` ; la fenêtre rapide (fiche 027) ne transforme pas le texte collé ; le
+    déclaration (`.gitignore`, `.bobignore`, `.env`) est prudente — seul `.bobignore` est documenté
+    par IBM, le reste n'est pas vérifié en réel (précision du 2026-11-19, fiche 216) ; la fenêtre rapide (fiche 027) ne transforme pas le texte collé ; le
     glisser d'un fichier exclu dans la fenêtre rapide n'est pas vérifié ; le texte d'un message
     rejoué par l'agent (`session/load`) remet le texte collé dans le message, comme `@git-changes`.
   - Reste à faire : essai avec Bob réel (mentionner à la main `@secret` d'un `.bobignore` et voir

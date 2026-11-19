@@ -109,3 +109,10 @@ aussi, dans l'app, une phrase qui dise que Bobine n'est pas un produit d'IBM.
   regardées en clair et en sombre. Écarts au plan : la sonde perd aussi le contrôle des libellés de `/status` (tiré du paquet
   installé de Bob, comme les défauts d'approbation) ; ajout dans `AGENTS.md` d'une règle
   courte : ne décrire que le comportement observé de Bob et sa documentation publique.
+- 2026-11-19 — Reprise après l'audit avant rc (B3 / DOC-1, fiche 251) : quatre passages disaient
+  encore s'appuyer sur le code de Bob ou en tiraient des détails internes. Réécrits en comportement
+  observé ou documentation publique d'IBM, ou retirés : `docs/acp.md` (intro « Compatibilité Bob » ;
+  ligne « Fichiers d'exclusion », réécrite d'après la page publique *Ignoring files*), `docs/agents.md`
+  (`ignore-files`), fiches 017 (skills globaux de Bob, désormais « non vérifiés »), 028 (outil de
+  question) et 155 (déclaration des exclusions). Aucun ADR accepté ne contenait une telle phrase.
+  Restent, hors documentation, des commentaires de code au même contenu (voir fiche 251).
