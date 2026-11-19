@@ -75,6 +75,15 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
     what: 'a URL with a password'
   },
   {
+    // Option de ligne de commande suivie de sa valeur (`--api-key valeur`, `--token valeur`, ou en
+    // JSON `"--api-key","valeur"`), dans les arguments d'un profil d'agent personnalisé (fiche
+    // 249) ; `--api-key=valeur` relève du motif suivant.
+    pattern:
+      /((?:^|[\s"'[,])--?[A-Za-z0-9_-]*(?:api[_-]?key|token|secret|password|passwd)["']?(?:\s+|\s*,\s*["']))(?!«)([^\s"',\]-][^\s"',\]]{3,})/gi,
+    replacement: (mask) => `$1${mask}`,
+    what: 'a command-line option named like a secret'
+  },
+  {
     // Champs nommés comme des secrets, en JSON ou en variable d'environnement.
     pattern:
       /(["']?[A-Za-z0-9_]*(?:api[_-]?key|token|secret|password|passwd|authorization)["']?\s*[:=]\s*["']?)(?!(?:Bearer|Basic)\b|«)([^"',\s}]{4,})/gi,

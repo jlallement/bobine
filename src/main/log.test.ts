@@ -15,6 +15,7 @@ import {
   logSizes,
   setVerbosity
 } from './log'
+import { addSecret } from './log-redact'
 
 describe('journal', () => {
   it('ligne datée, niveau, message et pile des erreurs', () => {
@@ -78,6 +79,36 @@ describe('journal', () => {
     expect(logs('trace')).toBe(true)
     expect(logSizes().agents).toBeGreaterThan(0)
     setVerbosity('normal')
+  })
+
+  it('main.log masqué (fiche 249) : argument --api-key d’un profil, secret enregistré, erreur', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bob-log-'))
+    const file = initLog(dir)
+    const info = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    addSecret('cle-enregistree-0123456')
+    log.info(
+      'Agent lancé perso : mon-agent acp --api-key abcd1234efgh5678 --model m dans /tmp (pid 1)'
+    )
+    log.info('Profil', { args: ['acp', '--api-key', 'abcd1234efgh5678'] })
+    log.info('Clé reçue', 'cle-enregistree-0123456')
+    log.error('Échec', new Error('refusé : token=zzzz9999yyyy'))
+    const text = readFileSync(file, 'utf8')
+    expect(text).not.toMatch(/abcd1234efgh5678|cle-enregistree-0123456|zzzz9999yyyy/)
+    expect(text).toContain('--api-key «masqué» --model m')
+    const echoed = [...info.mock.calls, ...error.mock.calls].map((c) => String(c[0])).join('\n')
+    expect(echoed).not.toMatch(/abcd1234efgh5678|cle-enregistree-0123456|zzzz9999yyyy/)
+    info.mockRestore()
+    error.mockRestore()
+  })
+
+  it('agents.log : la ligne entière est masquée', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bob-log-'))
+    initLog(dir)
+    setVerbosity('detailed')
+    agentLog.line({ agent: 'perso' }, 'lancé : mon-agent --api-key abcd1234efgh5678')
+    setVerbosity('normal')
+    expect(readFileSync(agentsLogFile() ?? '', 'utf8')).not.toContain('abcd1234efgh5678')
   })
 
   it('agents.log borné à part : deux fichiers au plus, main.log intact', () => {

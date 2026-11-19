@@ -16,6 +16,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
+import { redact } from './log-redact'
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -119,7 +120,10 @@ export function logs(level: 'detailed' | 'trace'): boolean {
   return level === 'detailed' ? verbosity !== 'normal' : verbosity === 'trace'
 }
 
-/** Message et détails sur une ligne ; les erreurs gardent leur pile. */
+/**
+ * Message et détails sur une ligne ; les erreurs gardent leur pile. Secrets masqués (fiche 249) :
+ * `main.log` est joint aux signalements de bugs, comme `agents.log`.
+ */
 export function formatLine(level: LogLevel, message: string, details: unknown[], now = new Date()) {
   const parts = details.map((d) =>
     d instanceof Error
@@ -128,7 +132,7 @@ export function formatLine(level: LogLevel, message: string, details: unknown[],
         ? d
         : safeJson(d)
   )
-  return `${now.toISOString()} ${level.toUpperCase().padEnd(5)} ${[message, ...parts].join(' ')}\n`
+  return `${now.toISOString()} ${level.toUpperCase().padEnd(5)} ${redact([message, ...parts].join(' '))}\n`
 }
 
 /** Erreur d'écriture sur une sortie fermée : sans conséquence, à ne pas journaliser en boucle. */
@@ -185,7 +189,7 @@ export function scopeText(scope: LogScope): string {
 export const agentLog = {
   line(scope: LogScope, message: string): void {
     if (verbosity === 'normal' || !agents) return
-    agents.append(`${new Date().toISOString()} ${scopeText(scope)} ${message}\n`)
+    agents.append(`${new Date().toISOString()} ${scopeText(scope)} ${redact(message)}\n`)
   }
 }
 
