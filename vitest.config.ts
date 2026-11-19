@@ -63,7 +63,13 @@ export default defineConfig({
           // La feuille de style de l'app, lisible par `?raw` (cascade des règles d'une carte,
           // fiche 124) ; les autres CSS restent vides, comme par défaut.
           css: { include: [/src\/renderer\/src\/styles\.css/] },
-          setupFiles: ['src/renderer/src/test-setup.ts']
+          setupFiles: ['src/renderer/src/test-setup.ts'],
+          // Crochets « après » dans l'ordre où ils sont écrits (QUA-1/2, fiche 250) : le
+          // `cleanup()` de Testing Library (test-setup.ts, posé en premier) démonte les composants
+          // AVANT que l'`afterEach` d'un fichier ne rende `window.api` d'origine. Avec l'ordre par
+          // défaut (« stack », le plus récent d'abord), 120 essais de 20 fichiers démontaient
+          // leurs composants avec l'API déjà restaurée : leurs effets de fin appelaient la mauvaise.
+          sequence: { hooks: 'list' }
         }
       }
     ]

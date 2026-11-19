@@ -7,6 +7,7 @@ import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import type { AgentEvent, AgentSnapshot } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import { AgentHost } from '../agent/agent-host'
+import { eventLog } from '../agent/test-events'
 import { bobDbCosts } from '../agent/bob-costs'
 import type { AgentProfile } from '../agent/profiles'
 import { agentsLogFile, initLog, logFile, setVerbosity } from '../log'
@@ -250,12 +251,12 @@ async function liveJournal(profile: AgentProfile) {
     db,
     describe: () => ({ profileId: profile.id, profileLabel: profile.label })
   })
-  const events: AgentEvent[] = []
+  const { events, emit, until } = eventLog<AgentEvent>()
   const host: AgentHost = new AgentHost({
     profile,
     workspace: process.cwd(),
     emit: (event) => {
-      events.push(event)
+      emit(event)
       journal.onEvent({ conversationId: 'conv', event })
       if (event.type === 'permission-request') {
         const allow = event.options.find((o) => o.kind.startsWith('allow'))
@@ -264,25 +265,7 @@ async function liveJournal(profile: AgentProfile) {
     }
   })
   await host.start()
-  return { db, host, events, rows: (): TurnRow[] => db.select() }
-}
-
-function waitFor(
-  predicate: () => boolean,
-  timeoutMs = 5000,
-  explain?: () => string
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const started = Date.now()
-    const check = () => {
-      if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) {
-        return reject(new Error(`waitFor : délai dépassé${explain ? `\n${explain()}` : ''}`))
-      }
-      setTimeout(check, 10)
-    }
-    check()
-  })
+  return { db, host, events, until, rows: (): TurnRow[] => db.select() }
 }
 
 /** Dernières lignes d'un journal qui contiennent `marker`. */
@@ -370,26 +353,31 @@ describe('journal de consommation avec l’agent factice (fiche 130)', () => {
     db.close()
   }, 15_000)
 
-  it('--cout-bob : rien par ACP, coût relu après la fin du tour sur la ligne du même tour', async () => {
+  // Jusqu'à une minute : l'app guette la base de Bob une minute après chaque tour (fiche 157,
+  // `WATCH_MAX_MS`) ; c'est cette promesse que l'essai vérifie, pas une durée devinée.
+  it('--cout-bob : rien par ACP, coût relu après la fin du tour sur la ligne du même tour', async ({
+    onTestFailed
+  }) => {
     const bobDb = join(tempDir('bob-db-'), 'bob.db')
     // Journal détaillé : la sortie de l'agent factice et les relectures ratées, dites en cas d'échec.
     initLog(tempDir('journal-log-'))
     setVerbosity('detailed')
     try {
       const profile = mockProfile('streaming-texte', ['--bob-db', bobDb, '--cout-bob'])
-      const { host, rows, events, db } = await liveJournal({
+      const { host, rows, events, until, db } = await liveJournal({
         ...profile,
         costSource: bobDbCosts(bobDb)
       })
-      for (const text of ['Un', 'Deux']) {
+      // Coût de Bob jamais vu (CI Windows, fiche 157) : l'état de sa base et des relectures, dit
+      // à l'échec (délai de l'essai compris).
+      onTestFailed(() => console.error(bobCostState(bobDb, events)))
+      const reports = () => events.filter((e) => e.type === 'usage-report').length
+      for (const [turn, text] of ['Un', 'Deux'].entries()) {
         await host.prompt(text)
         // Bob écrit son coût après sa réponse : relu dès que sa base change (veille), et à 1,5 s
-        // et 5 s (fiche 157). CI Windows du 2026-11-18 : écriture après la relecture de 5 s.
-        await waitFor(
-          () => events.at(-1)?.type === 'usage-report',
-          6000,
-          () => bobCostState(bobDb, events)
-        )
+        // et 5 s (fiche 157). Attendu sur l'évènement lui-même, sans délai fixe (fiche 250) :
+        // CI Windows du 2026-11-19 (run 44439977234), écriture plus tardive que les 6 s d'attente.
+        await until(() => reports() === turn + 1)
       }
       host.stop()
       expect(rows().map((r) => r.cost)).toEqual([
@@ -401,5 +389,5 @@ describe('journal de consommation avec l’agent factice (fiche 130)', () => {
     } finally {
       setVerbosity('normal')
     }
-  }, 15_000)
+  }, 60_000)
 })

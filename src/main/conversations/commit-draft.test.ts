@@ -8,6 +8,7 @@ import type { CommitDraftResult } from '@shared/commit-draft'
 import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
+import { eventLog } from '../agent/test-events'
 import { runCommand } from '../simulator/run'
 import { CommitDrafts, type CommitDraftConversations } from './commit-draft'
 
@@ -66,8 +67,19 @@ function setup(
   const posted: AgentEvent[] = []
   const noted: string[][] = []
   const listeners: Parameters<CommitDraftConversations['subscribe']>[0][] = []
+  // Évènements des hôtes de rédaction, vus par l'essai aussi (fiche 250) : de quoi attendre que la
+  // demande soit partie plutôt que deviner le temps d'ouverture de la session.
+  const host = eventLog<AgentEvent>()
   const conversations: CommitDraftConversations = {
-    asideHost: (_id, emit) => ({ profile, workspace: '/nulle-part', emit, conversationId: 'c1' }),
+    asideHost: (_id, emit) => ({
+      profile,
+      workspace: '/nulle-part',
+      emit: (event) => {
+        emit(event)
+        host.emit(event)
+      },
+      conversationId: 'c1'
+    }),
     view: () => ({ transcript: { items: ITEMS } }),
     title: () => 'Ajoute le filtre par statut',
     post: (_id, event) => posted.push(event),
@@ -94,7 +106,7 @@ function setup(
     lateCostMs: 0
   })
   hosts.push(drafts)
-  return { dir, drafts, pids, posted, noted, listeners }
+  return { dir, drafts, pids, posted, noted, listeners, host }
 }
 
 const alive = (pid: number) => {
@@ -119,14 +131,11 @@ async function noAgentLeft(pids: string, drafts: CommitDrafts): Promise<number> 
   )
 }
 
-async function waitStarted(pids: string): Promise<void> {
-  const started = Date.now()
-  while (!readFileSync(pids, 'utf8').trim()) {
-    if (Date.now() - started > 8_000) throw new Error('agent jamais lancé')
-    await new Promise((r) => setTimeout(r, 20))
-  }
-  // Le temps que la session s'ouvre et que la demande parte.
-  await new Promise((r) => setTimeout(r, 600))
+/** La demande de rédaction est partie : un hôte est au travail (statut `busy`). */
+function waitStarted(host: ReturnType<typeof eventLog<AgentEvent>>): Promise<void> {
+  return host.until(() =>
+    host.events.some((e) => e.type === 'status' && e.snapshot.status === 'busy')
+  )
 }
 
 const isAgent = (r: CommitDraftResult): r is Extract<CommitDraftResult, { source: 'agent' }> =>
@@ -193,27 +202,27 @@ describe('CommitDrafts (fiche 246)', () => {
   })
 
   it('« Arrêter » pendant la rédaction : repli `stopped`, agent arrêté', async () => {
-    const { drafts, pids } = setup('message-commit-lent')
+    const { drafts, pids, host } = setup('message-commit-lent')
     const pending = drafts.draft('c1', { files: FILES, place: 'conversation' })
-    await waitStarted(pids)
+    await waitStarted(host)
     drafts.stop('c1')
     expect(await pending).toMatchObject({ source: 'fallback', reason: 'stopped' })
     expect(await noAgentLeft(pids, drafts)).toBe(1)
   })
 
   it('sortie de l’app pendant la rédaction : agent arrêté', async () => {
-    const { drafts, pids, listeners } = setup('message-commit-lent')
+    const { drafts, pids, listeners, host } = setup('message-commit-lent')
     const pending = drafts.draft('c1', { files: FILES, place: 'conversation' })
-    await waitStarted(pids)
+    await waitStarted(host)
     for (const l of listeners) l.stopped?.()
     expect(await pending).toMatchObject({ source: 'fallback', reason: 'stopped' })
     expect(await noAgentLeft(pids, drafts)).toBe(1)
   })
 
   it('nouvelle demande : la précédente s’arrête, son agent aussi', async () => {
-    const { drafts, pids } = setup('message-commit-lent', { timeoutMs: 3_000 })
+    const { drafts, pids, host } = setup('message-commit-lent', { timeoutMs: 3_000 })
     const first = drafts.draft('c1', { files: FILES, place: 'conversation' })
-    await waitStarted(pids)
+    await waitStarted(host)
     const second = drafts.draft('c1', { files: FILES.slice(0, 1), place: 'conversation' })
     expect(await first).toMatchObject({ reason: 'stopped' })
     expect(await second).toMatchObject({ reason: 'timeout' })

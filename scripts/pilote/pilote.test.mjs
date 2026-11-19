@@ -4,6 +4,7 @@
  * protocole DevTools) est essayé par la suite e2e `pilote`.
  */
 import { spawn } from 'node:child_process'
+import { once } from 'node:events'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -447,7 +448,8 @@ describe('textes et lancement', () => {
       '--remote-debugging-port=9399'
     ])
     try {
-      await new Promise((r) => setTimeout(r, 200))
+      // Processus lancé (sa ligne de commande lisible) : l'évènement, pas 200 ms (fiche 250).
+      await once(child, 'spawn')
       expect(ours({ pid: child.pid, port: 9399 })).toBe(true)
     } finally {
       child.kill()

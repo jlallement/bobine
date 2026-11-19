@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { EventEmitter } from 'node:events'
+import { EventEmitter, once } from 'node:events'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -326,15 +326,22 @@ describe.skipIf(process.platform === 'win32')('en quittant : rien ne survit (fic
   it('agent lancé hors conversation (essai du diagnostic) et que rien n’a arrêté : arrêté', async () => {
     openProcessRegistry(join(dir, 'agents.pids'))
     // Un agent qui ignore SIGTERM, comme MOCK_AGENT_TENACE : seul le SIGKILL l'emporte.
-    const script = `process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)`
-    const agent = spawn(process.execPath, ['-e', script], { stdio: 'ignore', detached: true })
-    spawned.push(agent)
-    trackChild(agent, [process.execPath, '-e', script])
+    // Il dit « ready » une fois SIGTERM ignoré : attendu sur sa sortie, pas au bout de 200 ms
+    // (fiche 250). En ASCII : `ps` rend sa ligne de commande en `LC_ALL=C`.
+    const script = `process.on('SIGTERM', () => {}); console.log('ready'); setInterval(() => {}, 1000)`
+    const launch = () => {
+      const child = spawn(process.execPath, ['-e', script], {
+        stdio: ['ignore', 'pipe', 'ignore'],
+        detached: true
+      })
+      spawned.push(child)
+      trackChild(child, [process.execPath, '-e', script])
+      return child
+    }
+    const agent = launch()
     // Un autre, déjà arrêté par son propriétaire (conversation) : pas visé une seconde fois.
-    const stopped = spawn(process.execPath, ['-e', script], { stdio: 'ignore', detached: true })
-    spawned.push(stopped)
-    trackChild(stopped, [process.execPath, '-e', script])
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    const stopped = launch()
+    await Promise.all([once(agent.stdout, 'data'), once(stopped.stdout, 'data')])
     terminateGroup(stopped.pid ?? 0, 60_000)
     const kill = vi.spyOn(process, 'kill')
     try {

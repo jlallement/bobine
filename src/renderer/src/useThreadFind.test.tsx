@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useRef, useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import { useThreadFind } from './useThreadFind'
@@ -32,19 +32,18 @@ function Thread({ query }: { query: string }) {
   )
 }
 
-const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 400)))
+/** Compte affiché, relu jusqu'à ce qu'il vaille `expected` (fiche 250 : pas de pause devinée). */
+const countIs = (expected: string) =>
+  waitFor(() => expect(screen.getByTestId('count').textContent).toBe(expected), {
+    timeout: 5000
+  })
 
 describe('useThreadFind (relecture fiche 192)', () => {
   it('le contenu d’une carte change pendant la recherche : le compte suit', async () => {
     render(<Thread query="jeton" />)
-    await settle()
-    expect(screen.getByTestId('count').textContent).toBe('1')
-    // Le fil n'a pas changé (`content` identique) : seule la page a bougé.
+    await countIs('1')
+    // Le fil n'a pas changé (`content` identique) : seule la page a bougé, le compte suit.
     fireEvent.click(screen.getByTestId('reveal'))
-    // Deux pauses : le changement de la page est rendu à la fin de la première (`act`), le
-    // recalcul arrive après la pause de la recherche.
-    await settle()
-    await settle()
-    expect(screen.getByTestId('count').textContent).toBe('3')
+    await countIs('3')
   })
 })

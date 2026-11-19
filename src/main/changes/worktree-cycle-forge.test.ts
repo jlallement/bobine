@@ -9,9 +9,10 @@ import { chmodSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { t } from 'i18next'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Run, RunResult } from '../simulator/run'
 import { gitCommand } from '../git/git-queue'
+import { ForgeResolver } from './forge-resolver'
 import { WorktreeCycle, type CycleTarget, type WorktreeCycleOptions } from './worktree-cycle'
 import { Worktrees } from './worktrees'
 
@@ -426,13 +427,24 @@ describe('vérifications de la forge (relecture)', () => {
       }
       return fakeGlab().run(file, args, opts)
     }
-    const cycle = cycleWith(run)
-    const both = Promise.all([cycle.info(target), cycle.info(target)])
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    release?.()
-    const [a, b] = await both
-    expect(auths).toBe(1)
-    expect(a.pr).toEqual(b.pr)
+    // Les deux demandes arrivées à la vérification de l'outil (la seconde partage celle en vol) :
+    // attendu sur les appels eux-mêmes, plutôt que 200 ms (fiche 250).
+    const asked = vi.spyOn(ForgeResolver.prototype, 'toolStatus')
+    try {
+      const cycle = cycleWith(run)
+      const both = Promise.all([cycle.info(target), cycle.info(target)])
+      await vi.waitFor(
+        () =>
+          expect(asked.mock.calls.filter(([adapter]) => adapter.tool === 'glab')).toHaveLength(2),
+        { timeout: 10_000 }
+      )
+      release?.()
+      const [a, b] = await both
+      expect(auths).toBe(1)
+      expect(a.pr).toEqual(b.pr)
+    } finally {
+      asked.mockRestore()
+    }
   })
 
   it('hôte qui ne répond pas : info() rend la vue git tout de suite, puis dit de relire', async () => {

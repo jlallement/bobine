@@ -139,6 +139,9 @@ describe('AgentHost : reconnexion après une panne réseau (fiche 142)', () => {
     expect(host.snapshot()).toMatchObject({ status: 'ready', queued: [{ text: 'Suite' }] })
     expect(host.snapshot().retry).toBeUndefined()
     expect(events.at(-2)).toMatchObject({ type: 'turn-end', stopReason: 'cancelled' })
+    // Absence vérifiée : deux délais de tentative (2 × 200 ms) passent sans nouvelle demande ;
+    // aucun évènement ne dit qu'une tentative annulée ne partira plus.
+    // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
     await new Promise((resolve) => setTimeout(resolve, 400))
     // Plus aucune tentative : une seule demande (la première), aucune erreur de tour.
     expect(retries()).toHaveLength(1)

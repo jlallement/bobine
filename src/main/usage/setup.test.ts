@@ -148,15 +148,26 @@ describe('journal qui prévient (fiche 144)', () => {
       tools: {},
       subagents: 0
     }
-    db.upsert(row)
-    db.upsert({ ...row, endedAt: 2000 })
-    db.select()
-    await new Promise((r) => setTimeout(r, 300))
-    expect(changed).toHaveBeenCalledTimes(1)
-    expect(db.insertMissing([row])).toBe(0)
-    db.clear()
-    await new Promise((r) => setTimeout(r, 300))
-    expect(changed).toHaveBeenCalledTimes(2)
-    db.close()
+    // Horloge simulée pour le regroupement des signaux (fiche 250), sans attente réelle. La base,
+    // elle, est réelle (SQLite synchrone).
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      db.upsert(row)
+      db.upsert({ ...row, endedAt: 2000 })
+      db.select()
+      // Regroupé : rien tant que le délai court, un seul signal ensuite.
+      expect(changed).not.toHaveBeenCalled()
+      vi.runAllTimers()
+      expect(changed).toHaveBeenCalledTimes(1)
+      expect(db.insertMissing([row])).toBe(0)
+      vi.runAllTimers()
+      expect(changed).toHaveBeenCalledTimes(1)
+      db.clear()
+      vi.runAllTimers()
+      expect(changed).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+      db.close()
+    }
   })
 })

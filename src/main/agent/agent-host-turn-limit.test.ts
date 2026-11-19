@@ -90,7 +90,9 @@ describe('AgentHost : limite d’étapes de l’agent (fiche 209)', () => {
     await host.send('Et les dépôts ?')
     await turn
     await waitFor(() => ends().length === 1 && host.snapshot().status === 'ready')
-    // Laisse le temps à un envoi automatique de partir, s'il devait partir.
+    // Laisse le temps à un envoi automatique de partir, s'il devait partir : absence vérifiée,
+    // aucun évènement ne dit qu'il ne partira pas.
+    // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
     await new Promise((r) => setTimeout(r, 200))
     expect(host.snapshot().queued.map((m) => m.text)).toEqual(['Et les dépôts ?'])
     expect(users(items())).toHaveLength(1)

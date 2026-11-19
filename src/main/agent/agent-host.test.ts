@@ -162,9 +162,10 @@ describe('AgentHost', () => {
       it('agent qui sait rejouer : ni remise à zéro ni rejeu dans le fil, rien de plus à ajouter', async () => {
         const profile = storeProfile('streaming-texte')
         const sessionId = await firstExchange(profile)
-        const { host, events, transcript } = reopenHost(profile, sessionId, true)
+        const { host, events, transcript, until } = reopenHost(profile, sessionId, true)
         await host.start()
-        await new Promise((r) => setTimeout(r, 400))
+        // Le rejeu réconcilié, attendu sur son évènement plutôt qu'au bout de 400 ms (fiche 250).
+        await until(() => events.some((e) => e.type === 'replayed'))
         expect(host.currentSessionId).toBe(sessionId)
         expect(replayed(events)).toEqual([])
         // Le rejeu arrive au gestionnaire (fiche 103), mais n'a rien que le fil n'ait déjà.
@@ -176,9 +177,10 @@ describe('AgentHost', () => {
       it('session/load seulement : le rejeu (même tardif) ne touche pas le fil, puis on continue', async () => {
         const profile = storeProfile('streaming-texte', '--sans-reprise', '--rejeu-tardif')
         const sessionId = await firstExchange(profile)
-        const { host, events, transcript } = reopenHost(profile, sessionId, true)
+        const { host, events, transcript, until } = reopenHost(profile, sessionId, true)
         await host.start()
-        await new Promise((r) => setTimeout(r, 100))
+        // Le rejeu tardif arrivé et réconcilié (son évènement), plutôt qu'au bout de 100 ms.
+        await until(() => events.some((e) => e.type === 'replayed'))
         expect(replayed(events)).toEqual([])
         await host.prompt('Suite')
         host.stop()
@@ -1480,6 +1482,9 @@ describe('AgentHost', () => {
         await host.cancel()
         await turn
         await waitFor(() => host.snapshot().status === 'exited', 5000)
+        // Absence vérifiée : pas de second `exited` ni de second avis dans le temps du délai de
+        // grâce (300 ms) qui a suivi ; aucun évènement ne dit « plus rien ne viendra ».
+        // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
         await new Promise((resolve) => setTimeout(resolve, 300))
         const exits = events.filter((e) => e.type === 'status' && e.snapshot.status === 'exited')
         expect(exits).toHaveLength(1)
@@ -1520,6 +1525,9 @@ describe('AgentHost', () => {
           const [sleep] = running(DETACHED_SLEEP)
           expect(sleep).toBeDefined()
           host.stop()
+          // Absence vérifiée : la commande détachée survit au-delà de l'arrêt complet de l'agent
+          // (SIGTERM puis SIGKILL après sa grâce) ; rien à attendre d'autre qu'une durée.
+          // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
           await new Promise((resolve) => setTimeout(resolve, 3500))
           // Toujours là : hors de notre groupe, elle n'est pas à nous (comportement documenté).
           expect(running(DETACHED_SLEEP)).toHaveLength(1)
@@ -1549,8 +1557,10 @@ describe('AgentHost', () => {
     it('protocole incompatible (fiches 194, 198) : un seul statut d’erreur, un seul avis', async () => {
       const { host, events, transcript } = failing('protocole-incompatible')
       await host.start()
-      await new Promise((resolve) => setTimeout(resolve, 300))
       expect(host.snapshot().status).toBe('error')
+      // Absence vérifiée : la sortie de l'agent qui suit l'erreur n'ajoute ni statut ni avis.
+      // eslint-disable-next-line no-restricted-syntax -- absence vérifiée, voir au-dessus
+      await new Promise((resolve) => setTimeout(resolve, 300))
       const errors = events.filter((e) => e.type === 'status' && e.snapshot.status === 'error')
       expect(errors).toHaveLength(1)
       expect(transcript().filter((i) => i.kind === 'notice')).toHaveLength(1)

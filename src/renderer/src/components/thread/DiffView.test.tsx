@@ -1,4 +1,4 @@
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { DiffView } from './DiffView'
 import { EditorContext } from './OpenInEditor'
@@ -9,6 +9,9 @@ const text = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => `${prefix} ${i}`).join('\n') + '\n'
 
 /** Laisse passer les images d'animation (rendu par paquets). */
+/** Résultat d'une recherche (posée après la saisie) : relu jusqu'à 5 s, sur une machine chargée. */
+const UNTIL = { timeout: 5000 }
+
 async function frames(n: number) {
   for (let i = 0; i < n; i++) {
     await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))))
@@ -102,9 +105,8 @@ describe('DiffView plafonné (fiche 192)', () => {
     )
     // Rien à la frappe : la recherche attend que la saisie se pose.
     expect(container.textContent).not.toContain('ancienne 3000')
-    await act(() => new Promise((resolve) => setTimeout(resolve, 200)))
-    await frames(3)
-    expect(container.textContent).toContain('ancienne 3000')
+    // Puis, la saisie posée : le résultat attendu tel quel (fiche 250).
+    await waitFor(() => expect(container.textContent).toContain('ancienne 3000'), UNTIL)
     expect(container.querySelectorAll('tr.diff-add')).toHaveLength(200)
   })
 
@@ -116,11 +118,13 @@ describe('DiffView plafonné (fiche 192)', () => {
         <DiffView path="/p/enorme.txt" oldText={before} newText={after} />
       </FindQueryContext.Provider>
     )
-    await act(() => new Promise((resolve) => setTimeout(resolve, 200)))
-    await frames(5)
-    expect(container.querySelectorAll('tr.diff-del')).toHaveLength(200)
-    expect(screen.getAllByTestId('diff-cap')[0]?.textContent).toMatch(
-      /^Trouvé dans le contenu masqué · ⋯ 59\u202f800 lignes retirées de plus/
+    await waitFor(
+      () =>
+        expect(screen.getAllByTestId('diff-cap')[0]?.textContent).toMatch(
+          /^Trouvé dans le contenu masqué · ⋯ 59\u202f800 lignes retirées de plus/
+        ),
+      UNTIL
     )
+    expect(container.querySelectorAll('tr.diff-del')).toHaveLength(200)
   })
 })
