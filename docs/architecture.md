@@ -18,6 +18,7 @@
 | Dossier de données de l'ancien nom repris au premier lancement (`user-data-migration.ts` : renommé, même si Electron a déjà créé le nouveau, vide ; sinon conversations copiées une fois) | ✅ fiches 069, 071 |
 | Permissions (attente côté `AgentHost`, carte d'outil) et diffs (`src/shared/diff.ts`) | ✅ fiche 006 |
 | Réglages de session : modes et options ACP (`session-controls.ts`) | ✅ fiche 013 |
+| Réglages propres à chaque conversation (`conversations/conversation-controls.ts`, ADR-0058) : relevés dans la fiche (`ConversationRecord.controls`, par `noteSession` à chaque statut stable), choisis à chaque ouverture de session par `openingControls` (les siens, sinon rien à une réouverture, sinon le dernier choix du profil) ; `AgentHostOptions.initialControls(session)` relu à chaque ouverture | ✅ fiche 256 |
 | Interface : barre latérale, accueil, zone de saisie à menus (Radix + Lucide, fiche 014) | ✅ |
 | Historique : `ConversationManager` (un agent par conversation), `ConversationStore` | ✅ fiche 015 |
 | Fil gardé à la réouverture (ADR-0021) : une conversation dont le fil contient quelque chose est rouverte avec ce fil (`ensureLive` → `keepTranscript`) ; le rejeu de `session/load` est tenu à part par `AgentHost` (`replayed`, calme après 300 ms) et seuls les tours inconnus sont ajoutés (`shared/replay-tail.ts`, avis « continuée ailleurs ») ; `version: 1` dans le fichier du fil | ✅ fiche 103 |

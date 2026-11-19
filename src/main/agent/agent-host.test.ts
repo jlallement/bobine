@@ -1382,12 +1382,12 @@ describe('AgentHost', () => {
       profile: mockProfile('echo'),
       workspace: process.cwd(),
       emit: (e) => events.push(e),
-      initialControls: {
+      initialControls: () => ({
         mode: 'ask',
         model: 'factice-precis',
         inconnu: 'x',
         verbose: 'pas-un-booleen'
-      }
+      })
     })
     await host.start()
     expect(host.snapshot().status).toBe('ready')
@@ -1632,7 +1632,7 @@ describe('AgentHost', () => {
         'echo',
         {
           timeouts: { controlMs: 300 },
-          initialControls: { mode: 'ask', model: 'factice-precis' }
+          initialControls: () => ({ mode: 'ask', model: 'factice-precis' })
         },
         ['--panne', 'bloque-reglages']
       )

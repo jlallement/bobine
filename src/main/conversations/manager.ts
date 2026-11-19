@@ -86,6 +86,7 @@ import {
   childDetachedRequest,
   reopenOf,
   notePendingMemory,
+  noteSession,
   draftSessionsOpen,
   dropAllDraftSessions,
   type ChildLink,
@@ -533,6 +534,8 @@ export class ConversationManager {
     // Le titre que l'utilisateur reconnaît reste : le nouvel agent ne le remplace pas (fiche 125).
     if (conversation.record.titleSource !== 'user') conversation.record.titleSource = 'app'
     conversation.record.profileId = this.profileById(profileId).id
+    // Réglages de l'ancien agent (`record.controls`) : relevés pour lui, jamais appliqués au
+    // nouveau (fiche 256), remplacés à la première session prête de celui-ci.
     delete conversation.record.sessionId
     this.onEvent(conversation, handover)
     this.touch(conversation)
@@ -814,6 +817,8 @@ export class ConversationManager {
     const conversation = this.openNew(profileId, workspace, prepared.transcript, {
       title: prepared.title,
       branchedFrom: { id: source.record.id, title: source.record.title },
+      // Une branche continue l'originale : mêmes réglages (une conversation en Plan le reste).
+      ...(source.record.controls ? { controls: structuredClone(source.record.controls) } : {}),
       ...(worktree ? { worktree } : {}),
       ...(space ? { space } : {})
     })
@@ -958,7 +963,10 @@ export class ConversationManager {
     return conversationAppTools(this.toolModules, record.workspace, id, host?.appToolNames)
   }
 
-  /** Change un réglage et le mémorise pour ce profil (réappliqué aux prochaines sessions). */
+  /**
+   * Change un réglage et le mémorise pour ce profil (appliqué aux nouvelles conversations) ; la
+   * conversation garde le sien, relevé avec sa session (fiche 256).
+   */
   async setControl(
     id: string,
     controlId: string,
@@ -1373,10 +1381,9 @@ export class ConversationManager {
       const before = conversation.snapshot?.status
       conversation.snapshot = event.snapshot
       this.settings.noteModels(conversation.record.profileId, event.snapshot.controls)
-      // L'identifiant de session est connu une fois la session ouverte.
-      const sessionId = conversation.host?.currentSessionId
-      if (sessionId && sessionId !== conversation.record.sessionId && !conversation.draft) {
-        conversation.record.sessionId = sessionId
+      // L'identifiant de session est connu une fois la session ouverte ; ses réglages, relevés à
+      // chaque état stable, sont réappliqués à la réouverture de la conversation (fiche 256).
+      if (noteSession(conversation, conversation.host?.currentSessionId, event.snapshot)) {
         this.saveIndex()
       }
       listChanged = before !== event.snapshot.status

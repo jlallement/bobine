@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Each conversation keeps its own mode and model: changing the mode or model in one conversation
+  no longer changes those of another conversation reopened later (after a restart or after it was
+  put to sleep). A conversation left in Plan reopens in Plan. Your last choice is still the
+  starting point for new conversations.
+
 ## 1.0.0-rc.1 — November 19, 2026
 
 ### Fixes

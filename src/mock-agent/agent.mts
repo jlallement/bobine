@@ -87,6 +87,12 @@ export interface MockAgentOptions {
   announceSso?: boolean
   /** Sait rejouer (`session/load`) mais pas reprendre sans rejeu (`session/resume`). */
   withoutResume?: boolean
+  /**
+   * Session rouverte (`session/load`, `session/resume`) dans ses réglages par défaut : mode `code`,
+   * premier modèle, `verbose` faux, quels qu'aient été ceux de la session (fiche 256). Pour vérifier
+   * que l'app réapplique ceux de la conversation à un agent qui ne les garde pas.
+   */
+  forgetControls?: boolean
   /** `initialize` ne répond jamais (agent bloqué au démarrage). */
   stallInitialize?: boolean
   /**
@@ -393,6 +399,11 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
     const stored = store.load(sessionId)
     if (!stored) throw RequestError.resourceNotFound(sessionId)
     const session: SessionState = { ...stored, cwd, turn: null }
+    if (options.forgetControls) {
+      session.modeId = 'code'
+      session.model = scenario.session?.models?.start ?? MODELS.rapide
+      session.verbose = false
+    }
     sessions.set(sessionId, session)
     return session
   }

@@ -2,6 +2,15 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Chaque conversation garde son mode et son modèle : changer de mode ou de modèle dans une
+  conversation ne change plus ceux d'une autre conversation rouverte ensuite (après une relance ou
+  une mise en veille). Une conversation laissée en Plan est rouverte en Plan. Le dernier choix
+  sert toujours de départ aux nouvelles conversations.
+
 ## 1.0.0-rc.1 — 19 novembre 2026
 
 ### Corrections
