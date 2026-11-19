@@ -212,8 +212,8 @@ jobs:
           echo "CFBundleShortVersionString=$short CFBundleVersion=$bundle LSMinimumSystemVersion=$minimum"
           test "$short" = "${version%%[-+]*}"
           test "$bundle" = "$version"
-          # macOS 13+ annoncé par le README (fiche 250, audit R13).
-          test "$minimum" = 13.0
+          # macOS 15+ annoncé par le README (fiche 250, audit R13 ; macOS 15 = runner le plus ancien).
+          test "$minimum" = 15.0
 
       - name: Essai natif du DMG (agent factice)
         run: |
@@ -501,7 +501,7 @@ jobs:
                 echo "![Bobine]($raw/docs/images/readme/en/hero-light.png)"
               fi
               echo
-              echo "**Install:** download \`Bobine-$version-arm64.dmg\` below (Apple Silicon, macOS 13+)." \
+              echo "**Install:** download \`Bobine-$version-arm64.dmg\` below (Apple Silicon, macOS 15+)." \
                 "The app is not notarized: the first launch needs" \
                 "**System Settings › Privacy & Security › Open Anyway** ([how](https://github.com/$GH_REPO#install))."
               echo

@@ -4,9 +4,9 @@ Depuis l'app installable (le plus simple : le `.dmg` sur le Mac, voir « L'app i
 préversion, le `.deb` sous Linux et l'installeur sous Windows, voir leurs sections) ou depuis les
 sources, y compris derrière un proxy et sans droits administrateur.
 
-**Prérequis de l'app installable** : sur le Mac, Apple Silicon et macOS 13 Ventura ou plus récent
-(plancher d'Electron 45 ; Bobine ne déclare pas d'autre minimum, et n'est essayée que sur des
-macOS récents) ; sous Linux et Windows, voir leurs sections. Dans tous les cas, au moins un agent
+**Prérequis de l'app installable** : sur le Mac, Apple Silicon et macOS 15 Sequoia ou plus récent
+(le plus ancien macOS sur lequel chaque version est essayée avant publication, runner `macos-15`
+de GitHub ; les versions antérieures refusent de l'ouvrir) ; sous Linux et Windows, voir leurs sections. Dans tous les cas, au moins un agent
 (`bob` ou `opencode` dans le `PATH`). Node et pnpm ne servent que pour les sources.
 
 **Quelque chose ne marche pas ?** Réglages › Diagnostic (aussi Aide › Diagnostic…) vérifie tout

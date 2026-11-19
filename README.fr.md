@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/jlallement/bobine/releases"><img alt="Dernière version" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=version"></a>
-  <img alt="macOS 13+ sur Apple Silicon" src="https://img.shields.io/badge/macOS-13%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
+  <img alt="macOS 15+ sur Apple Silicon" src="https://img.shields.io/badge/macOS-15%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
   <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
   <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -135,9 +135,9 @@ Réglages › Diagnostic prévient quand un agent annonce une version non essay�
 
 ## Installer
 
-**Prérequis :** un Mac Apple Silicon (M1 ou plus récent), **macOS 13 Ventura ou plus récent**
-(le plancher d'Electron 45, sur lequel l'app est construite ; Bobine ne déclare pas d'autre
-minimum et n'est essayée que sur des macOS récents), et au moins un agent installé (`bob` ou
+**Prérequis :** un Mac Apple Silicon (M1 ou plus récent), **macOS 15 Sequoia ou plus récent**
+(le plus ancien macOS sur lequel chaque version est essayée avant publication ; les versions
+antérieures refusent de l'ouvrir), et au moins un agent installé (`bob` ou
 `opencode` dans le `PATH`).
 
 1. Télécharger `Bobine-<version>-arm64.dmg` sur la page des

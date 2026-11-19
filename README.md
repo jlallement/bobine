@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/jlallement/bobine/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=release"></a>
-  <img alt="macOS 13+ on Apple Silicon" src="https://img.shields.io/badge/macOS-13%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
+  <img alt="macOS 15+ on Apple Silicon" src="https://img.shields.io/badge/macOS-15%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
   <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
   <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -132,9 +132,8 @@ reports a version that has not been tested.
 
 ## Install
 
-**Requirements:** a Mac with Apple Silicon (M1 or later), **macOS 13 Ventura or later** (the floor
-of Electron 45, on which the app is built; Bobine declares no other minimum and is only tested on
-recent macOS), and at least one agent installed (`bob` or `opencode` in your `PATH`).
+**Requirements:** a Mac with Apple Silicon (M1 or later), **macOS 15 Sequoia or later** (the
+oldest macOS each release is tried on before it is published; earlier versions refuse to open it), and at least one agent installed (`bob` or `opencode` in your `PATH`).
 
 1. Download `Bobine-<version>-arm64.dmg` from the
    [Releases page](https://github.com/jlallement/bobine/releases) (betas and release candidates

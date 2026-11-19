@@ -79,9 +79,10 @@ mac:
   category: public.app-category.developer-tools
   icon: build/icon.png
   # LSMinimumSystemVersion d'Info.plist (fiche 250, audit R13) : ce qu'annoncent le README et
-  # docs/installation.md (« macOS 13 Ventura ou plus récent ») ; macOS plus ancien refuse de
-  # l'ouvrir au lieu d'un plantage. Vérifié par scripts/signing.test.ts et par release.yml.
-  minimumSystemVersion: '13.0'
+  # docs/installation.md (« macOS 15 Sequoia ou plus récent ») : le plus ancien macOS où le .dmg est
+  # essayé (GitHub n'a plus de runner macOS 14) ; macOS plus ancien refuse de l'ouvrir au lieu d'un
+  # plantage. Vérifié par scripts/signing.test.ts et par release.yml.
+  minimumSystemVersion: '15.0'
   # Electron local : architecture de la machine, arm64 sur le runner de publication.
   target: dir
   # Signature : scripts/package choisit (scripts/signing.mts, fiche 111) : ad hoc par défaut,

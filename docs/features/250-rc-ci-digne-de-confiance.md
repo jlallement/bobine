@@ -131,3 +131,7 @@ Dependabot comme les autres.
   le runner macOS 14). Il bloquait `publish`, donc rien n'a été publié. Job retiré ; le `.dmg` reste
   essayé sur macOS 15 (job `dmg`). Le minimum déclaré (macOS 13, `LSMinimumSystemVersion`) n'est
   donc essayé sur aucun système plus ancien que 15 : écart connu, à couvrir par un essayeur.
+- 2026-11-19 — Décision de Jérôme : minimum relevé à **macOS 15 Sequoia** (`minimumSystemVersion:
+  '15.0'`), le plus ancien macOS que GitHub permet d'essayer ; README fr/en, `installation.md`,
+  notes de version, contrôle d'Info.plist de `release.yml` et `scripts/signing.test.ts` alignés ;
+  ligne dans les deux changelogs (rc.1). R13 : la promesse est désormais celle qui est essayée.

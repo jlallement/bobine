@@ -296,11 +296,11 @@ describe('version minimale de macOS', () => {
   const root = join(import.meta.dirname, '..')
   const read = (file: string) => readFileSync(join(root, file), 'utf8')
 
-  it('electron-builder déclare macOS 13.0, comme le README, la doc et les notes de version', () => {
-    expect(read('electron-builder.yml')).toMatch(/^ {2}minimumSystemVersion: '13\.0'$/m)
-    expect(read('README.md')).toContain('macOS 13 Ventura or later')
-    expect(read('README.fr.md')).toContain('macOS 13 Ventura ou plus récent')
-    expect(read('docs/installation.md')).toContain('macOS 13 Ventura ou plus récent')
-    expect(read('.github/workflows/release.yml')).toContain('macOS 13+')
+  it('electron-builder déclare macOS 15.0, comme le README, la doc et les notes de version', () => {
+    expect(read('electron-builder.yml')).toMatch(/^ {2}minimumSystemVersion: '15\.0'$/m)
+    expect(read('README.md')).toContain('macOS 15 Sequoia or later')
+    expect(read('README.fr.md')).toContain('macOS 15 Sequoia ou plus récent')
+    expect(read('docs/installation.md')).toContain('macOS 15 Sequoia ou plus récent')
+    expect(read('.github/workflows/release.yml')).toContain('macOS 15+')
   })
 })

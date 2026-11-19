@@ -42,6 +42,8 @@ What changes for you, version by version. Shown in Settings › About.
 - Quitting Bobine is faster: only the conversations that changed are written to disk again.
 ### New
 
+- macOS 15 Sequoia or later is now required: it is the oldest macOS each release is tried on
+  before it is published. On macOS 13 or 14, Bobine refuses to open.
 - The `.dmg` now ships with its SHA-256 checksum (`SHA256SUMS-macos-arm64.txt`), like the Linux
   and Windows packages, and every file of a release with a GitHub provenance attestation:
   `gh attestation verify <file> --repo jlallement/bobine` tells you it was built by this

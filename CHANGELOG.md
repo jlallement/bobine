@@ -44,6 +44,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Fermer Bobine est plus rapide : seules les conversations modifiées sont réécrites sur le disque.
 ### Nouveautés
 
+- macOS 15 Sequoia ou plus récent est désormais requis : c'est le plus ancien macOS sur lequel
+  chaque version est essayée avant publication. Sous macOS 13 ou 14, Bobine refuse de s'ouvrir.
 - Le `.dmg` est publié avec sa somme SHA-256 (`SHA256SUMS-macos-arm64.txt`), comme les paquets
   Linux et Windows, et chaque fichier d'une version avec une attestation de provenance de GitHub :
   `gh attestation verify <fichier> --repo jlallement/bobine` dit qu'il a été construit par ce
