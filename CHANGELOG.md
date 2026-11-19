@@ -2,6 +2,13 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Electron 45.3.4 (Chromium 156.0.8078.100) : un élément cliqué du bouton droit n'est plus gardé
+  en mémoire après sa disparition.
+
 ## 1.0.0-beta.9 — 19 novembre 2026
 
 ### Corrections

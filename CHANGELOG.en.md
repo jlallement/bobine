@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Electron 45.3.4 (Chromium 156.0.8078.100): a right-clicked element is no longer kept in memory
+  after it is removed.
+
 ## 1.0.0-beta.9 — November 19, 2026
 
 ### Fixes

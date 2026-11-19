@@ -10,7 +10,7 @@ app, next to Bobine's `LICENSE` and `NOTICE`: `Bobine.app/Contents/Resources/lic
 
 ## Electron and Chromium
 
-Bobine runs on [Electron](https://www.electronjs.org) 45.3.3 (MIT, license text
+Bobine runs on [Electron](https://www.electronjs.org) 45.3.4 (MIT, license text
 [T1](#t1)), which embeds Chromium, Node.js and their components. Their licenses are in
 `LICENSES.chromium.html`, shipped with the app in `licenses/electron/` together with Electron's
 `LICENSE`.
@@ -295,7 +295,7 @@ after a `---` line.
 
 ### T1
 
-Used by: electron 45.3.3.
+Used by: electron 45.3.4.
 
 ```text
 Copyright (c) Electron contributors
