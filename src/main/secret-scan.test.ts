@@ -48,7 +48,7 @@ describe('options de ligne de commande (fiche 249)', () => {
     'mon-agent --api-key abcd1234efgh --model x',
     'agent --token jeton-de-test-42',
     '--password motdepasse',
-    '["acp","--api-key","abcd1234efgh"]'
+    '["acp","--api-key","abcd1234efgh"]' // gitleaks:allow — fake value for tests
   ])('reconnaît %s', (text) => {
     expect(findSecret(text)).toBeDefined()
   })
