@@ -125,3 +125,9 @@ Dependabot comme les autres.
 4. Au premier tag (rc.1) : `SHA256SUMS-macos-arm64.txt` et les attestations dans la Release.
    Vérifier ensuite `gh attestation verify Bobine-<version>-arm64.dmg --repo jlallement/bobine`
    et le job `dmg-macos-14` (label `macos-14` encore servi par GitHub).
+
+- 2026-11-19 — Publication de 1.0.0-rc.1 : le job `dmg-macos-14` de `release.yml` n'a pas pu
+  démarrer (« The configuration 'macos-14-arm64-us-default' is not supported » : GitHub a retiré
+  le runner macOS 14). Il bloquait `publish`, donc rien n'a été publié. Job retiré ; le `.dmg` reste
+  essayé sur macOS 15 (job `dmg`). Le minimum déclaré (macOS 13, `LSMinimumSystemVersion`) n'est
+  donc essayé sur aucun système plus ancien que 15 : écart connu, à couvrir par un essayeur.
