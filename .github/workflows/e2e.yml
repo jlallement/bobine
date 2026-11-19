@@ -1,14 +1,15 @@
 # Essais de bout en bout (fiche 105) : la suite complète (`pnpm e2e`, clair et sombre, puis en
-# anglais) sur un Mac de GitHub, lancée à la main depuis l'onglet Actions. Le job Linux part aussi
-# de lui-même à chaque poussée sur `main` (fiche 229), sans bloquer. Pas rattachée au tag ni
-# aux pull requests : Electron doit encore faire ses preuves sur un runner GitHub (fenêtres,
-# presse-papiers, menus), et un échec ne doit pas bloquer une version. Les captures sont gardées
-# en artefact pour être regardées.
+# anglais) sur un Mac de GitHub, lancée à la main depuis l'onglet Actions, et chaque nuit (fiche
+# 250 : dépôt public, minutes des runners standard gratuites, macOS compris). Le job Linux part
+# aussi de lui-même à chaque poussée sur `main` (fiche 229). Pas rattachée au tag ni aux pull
+# requests : la suite Mac complète tourne en local avant chaque tag. Les captures sont gardées en
+# artefact pour être regardées.
 #
-# Linux, expérimental (fiche 145) : la même suite sous Ubuntu, dans un écran virtuel (`xvfb`) avec
+# Linux, préversion (fiche 145) : la même suite sous Ubuntu, dans un écran virtuel (`xvfb`) avec
 # un gestionnaire de fenêtres (openbox), en français seulement ; en local : `pnpm e2e:linux`. Les
-# suites qui demandent une capacité absente de Linux (simulateur iOS) sont
-# sautées et nommées par le lanceur ; un échec dit ce qui reste à faire pour la préversion.
+# suites qui demandent une capacité absente de Linux (simulateur iOS) sont sautées et nommées par
+# le lanceur ; celles en quarantaine sous Linux (`quarantine` de `e2e/catalog.mjs` : `terminal`,
+# flèche powerline) sont écartées et dites, avec une annotation à chaque passage (fiche 250).
 #
 # Windows, expérimental (fiche 229) : la même suite sur `windows-latest` (bureau réel, pas d'écran
 # virtuel), en français, en Git Bash ; pnpm lance aussi ses scripts par bash (`script-shell`),
@@ -17,9 +18,12 @@
 name: End-to-end
 
 on:
-  # Linux à chaque poussée sur `main` (fiche 229), non bloquant ; le reste à la main.
+  # Linux à chaque poussée sur `main` (fiche 229) ; macOS chaque nuit (fiche 250) ; le reste à la main.
   push:
     branches: [main]
+  # 03:17 UTC, hors de l'heure pile (moins de files d'attente). Sur la branche par défaut seulement.
+  schedule:
+    - cron: '17 3 * * *'
   workflow_dispatch:
     inputs:
       suites:
@@ -43,9 +47,10 @@ env:
 jobs:
   e2e:
     name: pnpm e2e (macOS arm64)
-    if: inputs.systeme == 'macos' || inputs.systeme == 'les-deux'
+    if: github.event_name == 'schedule' || inputs.systeme == 'macos' || inputs.systeme == 'les-deux'
     runs-on: macos-15
-    timeout-minutes: 45
+    # Français puis anglais, 3 suites à la fois sur un runner à 3 cœurs : large, jamais mesuré ici.
+    timeout-minutes: 90
     steps:
       - name: Suites demandées
         run: |
@@ -80,10 +85,10 @@ jobs:
           path: e2e/captures/
           retention-days: 7
 
-  # Lancé aussi à chaque poussée sur `main` (fiche 229). Non bloquant (`continue-on-error`) tant que
-  # des échecs connus restent sous Linux : `terminal` (flèche powerline, fiche 145).
+  # Lancé aussi à chaque poussée sur `main` (fiche 229). Non bloquant (`continue-on-error`) tant
+  # qu'il n'a pas été vert plusieurs fois de suite après la quarantaine de `terminal` (fiche 250).
   e2e-linux:
-    name: pnpm e2e (Linux x64, non bloquant — échec connu terminal/powerline)
+    name: pnpm e2e (Linux x64)
     if: github.event_name == 'push' || inputs.systeme == 'linux' || inputs.systeme == 'les-deux'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
