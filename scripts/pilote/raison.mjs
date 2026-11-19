@@ -33,6 +33,7 @@ const BLOCKING_ALERTS = new Set(['silence', 'bloque', 'plafond', 'relance', 'lim
 /** Quelque chose tourne : tour en cours, agent qui démarre, message en file, accueil qui attend. */
 export const busy = (shot) =>
   !!shot.working ||
+  !!shot.turnWorking ||
   ['busy', 'starting'].includes(shot.agent?.dot) ||
   (shot.queued ?? 0) > 0 ||
   !!shot.onboarding?.waiting

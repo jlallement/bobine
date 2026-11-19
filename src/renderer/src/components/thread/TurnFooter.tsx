@@ -3,11 +3,14 @@ import type { TranscriptItem } from '@shared/transcript'
 import { SilenceBanner } from './SilenceBanner'
 import { TurnRetryBanner } from './TurnRetryBanner'
 import { WorkingIndicator } from './WorkingIndicator'
+import { hasWorkingFoot } from './TurnSummary'
+import { useMemo } from 'react'
 
 /**
  * Fin du fil pendant un tour (sorti d'`App.tsx`, fiche 194) : le bandeau de reprise (fiche 142) à
  * la place de l'indicateur d'activité, et le bandeau de silence sous lui quand l'agent se tait.
- * Tour fini mais travail encore en cours (fiche 255) : l'indicateur reste, sans bandeau de silence.
+ * Tour fini mais travail encore en cours (fiche 255) : le pied de la réponse le dit (« Travaille
+ * encore… · 32 s », fiche 261) ; l'indicateur ne le répète pas. Sans pied (aucune réponse), il reste.
  */
 export function TurnFooter({
   snapshot,
@@ -29,12 +32,17 @@ export function TurnFooter({
 }) {
   const busy = snapshot?.status === 'busy'
   const background = !busy && afterTurn
+  // Travail après le tour déjà dit par le pied de la réponse : une seule fois (revue UX, fiche 261).
+  const saidByFoot = useMemo(
+    () => background && hasWorkingFoot(items, { busy: false, background: true }),
+    [background, items]
+  )
   return (
     <>
       {snapshot?.retry ? (
         <TurnRetryBanner retry={snapshot.retry} onRetry={onRetry} />
       ) : (
-        (busy || background) &&
+        (busy || (background && !saidByFoot)) &&
         conversationId && (
           <WorkingIndicator
             key={conversationId}

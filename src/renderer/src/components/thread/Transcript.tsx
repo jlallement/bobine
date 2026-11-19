@@ -117,6 +117,7 @@ export function Transcript({
   workspace,
   agent,
   onOpenGitView,
+  onOpenChanges,
   worktreeSetup,
   usage,
   streaming = false,
@@ -144,6 +145,8 @@ export function Transcript({
   agent?: AgentCardInfo
   /** « Vue Git » de la carte de départ d'un worktree (fiche 117) : l'onglet Modifications. */
   onOpenGitView?: () => void
+  /** Onglet Modifications, vue de la conversation : le nombre de fichiers du pied (fiche 261). */
+  onOpenChanges?: () => void
   /** « Autoriser et lancer », « Continuer sans préparer » (préparation du worktree, fiche 175). */
   worktreeSetup?: WorktreeSetupActions
   /** Consommation de la conversation : coût du dernier tour dans son bilan (fiche 185, P4). */
@@ -160,9 +163,14 @@ export function Transcript({
 }) {
   // Fonctions stables pour les éléments du fil (fiche 047) : les parents les recréent à chaque
   // rendu, et un élément inchangé ne doit pas refaire son rendu à chaque morceau de réponse.
-  const latest = useRef({ onRespondPermission, onRespondElicitation, messageActions })
+  const latest = useRef({
+    onRespondPermission,
+    onRespondElicitation,
+    messageActions,
+    onOpenChanges
+  })
   useLayoutEffect(() => {
-    latest.current = { onRespondPermission, onRespondElicitation, messageActions }
+    latest.current = { onRespondPermission, onRespondElicitation, messageActions, onOpenChanges }
   })
   const respondPermission = useCallback<RespondPermission>(
     (requestId, optionId) => latest.current.onRespondPermission(requestId, optionId),
@@ -176,6 +184,7 @@ export function Transcript({
     (itemId: number, text: string) => latest.current.messageActions?.onEdit(itemId, text),
     []
   )
+  const openChanges = useCallback(() => latest.current.onOpenChanges?.(), [])
   const openConversation = useCallback(
     (id: string) => latest.current.messageActions?.onOpenConversation(id),
     []
@@ -346,6 +355,7 @@ export function Transcript({
         terminal={item.kind === 'tool' && item.terminalId ? terminals[item.terminalId] : undefined}
         duration={times.get(item.id)?.ms}
         foot={feet.get(item.id)}
+        onOpenChanges={onOpenChanges ? openChanges : undefined}
         streaming={item.id === writing}
         onRespondPermission={respondPermission}
         onRespondElicitation={respondElicitation}
@@ -619,6 +629,7 @@ const Item = memo(function Item({
   terminal,
   duration,
   foot,
+  onOpenChanges,
   streaming,
   onRespondPermission,
   onRespondElicitation
@@ -629,6 +640,7 @@ const Item = memo(function Item({
   duration?: number | undefined
   /** Réponse qui finit un tour : son pied, bilan ou « Travaille encore… » (fiche 261). */
   foot?: ReplyFootState | undefined
+  onOpenChanges?: (() => void) | undefined
   /** Réponse en cours d'écriture (fiche 192). */
   streaming: boolean
   onRespondPermission: RespondPermission
@@ -649,7 +661,12 @@ const Item = memo(function Item({
             <Markdown text={item.text} streaming={streaming} />
           </div>
           {foot ? (
-            <ReplyFoot foot={foot} text={() => item.text} at={item.at} />
+            <ReplyFoot
+              foot={foot}
+              text={() => item.text}
+              at={item.at}
+              onOpenChanges={onOpenChanges}
+            />
           ) : (
             // Autres réponses, tour arrêté ou en erreur : au survol, l'heure et la durée (fiche 156).
             <div className="msg-agent-actions">

@@ -28,6 +28,8 @@ export function turnLine(shot) {
       shot.queued ? ` · ${shot.queued} message(s) en file` : ''
     }`
   }
+  // Tour fini, l'agent travaille encore après lui (fiche 261) : pas encore de bilan.
+  if (shot.turnWorking) return `Tour : travaille encore — ${shot.turnWorking}`
   if (shot.turnSummary) return `Tour : fini — ${shot.turnSummary}`
   if (shot.turnLimit) return `Tour : arrêté — ${shot.turnLimit}`
   if (shot.turnDuration) return `Tour : fini en ${shot.turnDuration}`

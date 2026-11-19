@@ -48,7 +48,7 @@ import {
 import type { MergeRowState } from '@shared/children-merge'
 import { countText } from '@shared/i18n/format'
 import type { RoleBadge } from '@shared/roles'
-import { RoleAvatar, RoleStack } from '../roles/RoleAvatar'
+import { RoleAvatar, RoleStack, useRoleStyle } from '../roles/RoleAvatar'
 import { RoleLaunch, RoleSubtaskHead, useChildActivity } from '../roles/RoleWork'
 
 /**
@@ -494,9 +494,12 @@ export function ChildReportItem({
     ? t(`roleWork.report.${item.outcome}`, { role: role.label, title: item.title })
     : t(`children.report.${item.outcome}`, { title: item.title })
   const lead = recapLead(item.excerpt ?? '')
+  // Couleur du rôle (`--role`) : l'anneau du repère du bas du fil la prend (fiche 261).
+  const roleStyle = useRoleStyle(role?.color ?? '')
   return (
     <div
       className={`child-report ${item.outcome}${role ? ' role-report' : ''}`}
+      style={role ? roleStyle : undefined}
       data-testid="child-report"
       data-work-anchor={item.id}
       data-outcome={item.outcome}

@@ -681,6 +681,7 @@ export function App() {
                                   }
                                 : {})}
                               onOpenGitView={() => panel.openChanges('git')}
+                              onOpenChanges={() => panel.openChanges('conversation')}
                               usage={transcript.usage}
                               streaming={snapshot?.status === 'busy'}
                               findQuery={find.open ? find.query : undefined}

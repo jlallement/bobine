@@ -6,7 +6,9 @@ import {
   EMPTY_CUE,
   isOnScreen,
   noteTargets,
+  settle,
   targetsSignature,
+  type CueMemory,
   type CueState,
   type CueTarget
 } from './work-cue'
@@ -19,6 +21,9 @@ const target = (key: string, state: CueState, itemId = 1): CueTarget => ({
 })
 const never = () => false
 const always = () => true
+/** Nouvel état, puis la revue après le délai (`settle`) : ce que le repère montre. */
+const step = (memory: CueMemory, targets: CueTarget[], seen = never) =>
+  settle(noteTargets(memory, targets, seen), targets, seen)
 
 describe('repère en bas du fil : logique (fiche 261)', () => {
   it('un travail ouvert pour la première fois déjà fini : rien (on ne sait pas quand)', () => {
@@ -26,32 +31,48 @@ describe('repère en bas du fil : logique (fiche 261)', () => {
     expect(memory.pending).toEqual([])
   })
 
-  it('un travail qui travaillait répond hors de l’écran : il entre dans la file', () => {
+  it('un travail qui travaillait répond hors de l’écran : revu après le délai, puis dans la file', () => {
     const working = noteTargets(EMPTY_CUE, [target('ux', 'working')], never)
     expect(working.pending).toEqual([])
     const replied = noteTargets(working, [target('ux', 'replied')], never)
-    expect(replied.pending).toEqual(['ux'])
-    expect(cueSummary(replied, [target('ux', 'replied')])).toMatchObject({
+    // Pas tout de suite : sa carte peut encore arriver sous les yeux.
+    expect(replied.settling).toEqual(['ux'])
+    expect(cueSummary(replied, [target('ux', 'replied')])).toBeUndefined()
+    const settled = settle(replied, [target('ux', 'replied')], never)
+    expect(settled.pending).toEqual(['ux'])
+    expect(settled.settling).toEqual([])
+    expect(cueSummary(settled, [target('ux', 'replied')])).toMatchObject({
       first: { key: 'ux' },
       count: 1
     })
   })
 
+  it('sa carte arrive sous les yeux pendant le délai (compte rendu en bas) : jamais de repère', () => {
+    const working = noteTargets(EMPTY_CUE, [target('ux', 'working', 1)], never)
+    const replied = noteTargets(working, [target('ux', 'replied', 1)], never)
+    // Le compte rendu (élément 9) est arrivé en bas, à l'écran.
+    const report = [target('ux', 'replied', 9)]
+    const seen9 = (t: CueTarget) => t.itemId === 9
+    expect(settle(noteTargets(replied, report, seen9), report, seen9).pending).toEqual([])
+  })
+
   it('carte à l’écran quand il répond : pas de repère', () => {
     const working = noteTargets(EMPTY_CUE, [target('ux', 'working')], never)
-    expect(noteTargets(working, [target('ux', 'replied')], always).pending).toEqual([])
+    const next = noteTargets(working, [target('ux', 'replied')], always)
+    expect(next.settling).toEqual([])
+    expect(next.pending).toEqual([])
   })
 
   it('« a fini » compte aussi ; arrêté ou en erreur, rien', () => {
     const working = noteTargets(EMPTY_CUE, [target('a', 'working'), target('b', 'working')], never)
-    const next = noteTargets(working, [target('a', 'finished'), target('b', 'idle')], never)
+    const next = step(working, [target('a', 'finished'), target('b', 'idle')])
     expect(next.pending).toEqual(['a'])
   })
 
   it('plusieurs : dans l’ordre des réponses, le plus ancien d’abord, et le compte', () => {
     let memory = noteTargets(EMPTY_CUE, [target('a', 'working'), target('b', 'working')], never)
-    memory = noteTargets(memory, [target('a', 'working'), target('b', 'replied')], never)
-    memory = noteTargets(memory, [target('a', 'replied'), target('b', 'replied')], never)
+    memory = step(memory, [target('a', 'working'), target('b', 'replied')])
+    memory = step(memory, [target('a', 'replied'), target('b', 'replied')])
     expect(memory.pending).toEqual(['b', 'a'])
     expect(cueSummary(memory, [target('a', 'replied'), target('b', 'replied')])).toMatchObject({
       first: { key: 'b' },
@@ -66,7 +87,7 @@ describe('repère en bas du fil : logique (fiche 261)', () => {
       never
     )
     const done = [target('a', 'replied', 1), target('b', 'replied', 2)]
-    memory = noteTargets(memory, done, never)
+    memory = step(memory, done)
     const seenA = (t: CueTarget) => t.key === 'a'
     expect(dropSeen(memory, done, seenA).pending).toEqual(['b'])
     // Rien de vu : le même objet (pas de nouveau rendu).
@@ -75,7 +96,7 @@ describe('repère en bas du fil : logique (fiche 261)', () => {
 
   it('« Voir » retire le travail ; reparti au travail ou disparu : retiré aussi', () => {
     let memory = noteTargets(EMPTY_CUE, [target('a', 'working')], never)
-    memory = noteTargets(memory, [target('a', 'replied')], never)
+    memory = step(memory, [target('a', 'replied')])
     expect(dropKey(memory, 'a').pending).toEqual([])
     expect(noteTargets(memory, [target('a', 'working')], never).pending).toEqual([])
     expect(noteTargets(memory, [], never).pending).toEqual([])
@@ -84,7 +105,7 @@ describe('repère en bas du fil : logique (fiche 261)', () => {
 
   it('file inchangée : le même tableau (pas de nouveau rendu)', () => {
     let memory = noteTargets(EMPTY_CUE, [target('a', 'working')], never)
-    memory = noteTargets(memory, [target('a', 'replied')], never)
+    memory = step(memory, [target('a', 'replied')])
     expect(noteTargets(memory, [target('a', 'replied')], never).pending).toBe(memory.pending)
   })
 

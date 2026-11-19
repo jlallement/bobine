@@ -28,19 +28,28 @@ export interface CueTarget {
 export interface CueMemory {
   /** Dernier état connu de chaque cible. */
   states: ReadonlyMap<string, CueState>
+  /**
+   * Travaux qui viennent de répondre hors de l'écran, pas encore montrés : leur carte peut encore
+   * arriver sous les yeux (l'état d'une fille arrive avant son compte rendu, ajouté en bas du fil).
+   * Ils sont revus après `SETTLE_MS` (`settle`).
+   */
+  settling: readonly string[]
   /** Travaux qui ont répondu hors de l'écran, pas encore vus : le plus ancien d'abord. */
   pending: readonly string[]
 }
 
-export const EMPTY_CUE: CueMemory = { states: new Map(), pending: [] }
+export const EMPTY_CUE: CueMemory = { states: new Map(), settling: [], pending: [] }
+
+/** Délai avant de dire qu'un travail a répondu hors de l'écran (sa carte a pu arriver entre-temps). */
+export const SETTLE_MS = 600
 
 const answered = (state: CueState | undefined) => state === 'replied' || state === 'finished'
 
 /**
  * Nouvel état des cibles : un travail qui travaillait et qui a répondu ou fini pendant que sa carte
- * n'est pas à l'écran entre dans la file ; un travail disparu, ou reparti au travail, en sort. Un
- * travail vu pour la première fois (ouverture de la conversation) n'y entre jamais : on ne sait pas
- * quand il a répondu.
+ * n'est pas à l'écran attend d'être revu (`settling`) ; un travail disparu, ou reparti au travail,
+ * sort des deux files. Un travail vu pour la première fois (ouverture de la conversation) n'y
+ * entre jamais : on ne sait pas quand il a répondu.
  */
 export function noteTargets(
   memory: CueMemory,
@@ -48,34 +57,64 @@ export function noteTargets(
   seen: (target: CueTarget) => boolean
 ): CueMemory {
   const states = new Map(targets.map((target) => [target.key, target.state]))
-  const pending = memory.pending.filter((key) => answered(states.get(key)))
+  const keep = (key: string) => answered(states.get(key))
+  const pending = memory.pending.filter(keep)
+  const settling = memory.settling.filter(keep)
   for (const target of targets) {
     if (memory.states.get(target.key) !== 'working' || !answered(target.state)) continue
-    if (!pending.includes(target.key) && !seen(target)) pending.push(target.key)
+    const known = pending.includes(target.key) || settling.includes(target.key)
+    if (!known && !seen(target)) settling.push(target.key)
   }
-  return { states, pending: samePending(memory.pending, pending) ? memory.pending : pending }
+  return {
+    states,
+    settling: sameKeys(memory.settling, settling) ? memory.settling : settling,
+    pending: sameKeys(memory.pending, pending) ? memory.pending : pending
+  }
 }
 
-/** Les travaux dont la carte est maintenant à l'écran sortent de la file (même objet sinon). */
+/** Revue après le délai : les travaux toujours hors de l'écran passent au repère. */
+export function settle(
+  memory: CueMemory,
+  targets: readonly CueTarget[],
+  seen: (target: CueTarget) => boolean
+): CueMemory {
+  if (memory.settling.length === 0) return memory
+  const byKey = new Map(targets.map((target) => [target.key, target]))
+  const shown = memory.settling.filter((key) => {
+    const target = byKey.get(key)
+    return !!target && !seen(target)
+  })
+  return { ...memory, settling: [], pending: [...memory.pending, ...shown] }
+}
+
+/** Les travaux dont la carte est maintenant à l'écran sortent des files (même objet sinon). */
 export function dropSeen(
   memory: CueMemory,
   targets: readonly CueTarget[],
   seen: (target: CueTarget) => boolean
 ): CueMemory {
-  if (memory.pending.length === 0) return memory
+  if (memory.pending.length === 0 && memory.settling.length === 0) return memory
   const byKey = new Map(targets.map((target) => [target.key, target]))
-  const pending = memory.pending.filter((key) => {
+  const unseen = (key: string) => {
     const target = byKey.get(key)
     return !!target && !seen(target)
-  })
-  return pending.length === memory.pending.length ? memory : { ...memory, pending }
+  }
+  const pending = memory.pending.filter(unseen)
+  const settling = memory.settling.filter(unseen)
+  if (pending.length === memory.pending.length && settling.length === memory.settling.length) {
+    return memory
+  }
+  return { ...memory, pending, settling }
 }
 
-/** Un travail retiré de la file (« Voir » : la carte est montrée). */
+/** Un travail retiré des files (« Voir » : la carte est montrée). */
 export function dropKey(memory: CueMemory, key: string): CueMemory {
-  return memory.pending.includes(key)
-    ? { ...memory, pending: memory.pending.filter((k) => k !== key) }
-    : memory
+  if (!memory.pending.includes(key) && !memory.settling.includes(key)) return memory
+  return {
+    ...memory,
+    pending: memory.pending.filter((k) => k !== key),
+    settling: memory.settling.filter((k) => k !== key)
+  }
 }
 
 /** Ce que dit le repère : le plus ancien travail non vu, et combien attendent. */
@@ -104,7 +143,7 @@ export function isOnScreen(card: Element | null, scroller: Element | null): bool
   return overlap > 0 && overlap >= Math.min(SEEN_PX, box.height)
 }
 
-function samePending(a: readonly string[], b: readonly string[]): boolean {
+function sameKeys(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((key, i) => key === b[i])
 }
 

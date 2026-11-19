@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CueState, CueTarget } from './work-cue'
+import { SETTLE_MS, type CueState, type CueTarget } from './work-cue'
 import { FLASH_MS, WorkCue } from './WorkCue'
 
 /** Position des cartes dans la fenêtre (haut, bas) ; la zone qui défile va de 0 à 600. */
@@ -46,6 +46,7 @@ function Harness({
 describe('repère en bas du fil (fiche 261, écran E)', () => {
   const scrolled: number[] = []
   beforeEach(() => {
+    vi.useFakeTimers()
     positions.clear()
     scrolled.length = 0
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
@@ -69,10 +70,18 @@ describe('repère en bas du fil (fiche 261, écran E)', () => {
 
   const show = (targets: CueTarget[], cards = [2, 3], onReveal = vi.fn()) => {
     const view = render(<Harness targets={targets} cards={cards} onReveal={onReveal} />)
+    const rerender = (next: CueTarget[], nextCards: number[]) =>
+      view.rerender(<Harness targets={next} cards={nextCards} onReveal={onReveal} />)
     return {
       onReveal,
-      update: (next: CueTarget[], nextCards = cards) =>
-        view.rerender(<Harness targets={next} cards={nextCards} onReveal={onReveal} />)
+      view,
+      /** Nouvel état, puis le délai de revue passé. */
+      update: (next: CueTarget[], nextCards = cards) => {
+        rerender(next, nextCards)
+        act(() => vi.advanceTimersByTime(SETTLE_MS))
+      },
+      /** Nouvel état, sans attendre. */
+      change: rerender
     }
   }
 
@@ -92,15 +101,17 @@ describe('repère en bas du fil (fiche 261, écran E)', () => {
     expect(screen.queryByTestId('work-cue')).toBeNull()
   })
 
-  it('« Voir » : défile jusqu’à la carte, l’entoure une seconde, et le repère s’en va', () => {
-    vi.useFakeTimers()
+  it('« Voir » : défile jusqu’à la carte, l’entoure un instant, lui donne le focus, et le repère s’en va', () => {
     const { update } = show([target('ux', 2, 'working')])
     update([target('ux', 2, 'replied')])
     fireEvent.click(screen.getByTestId('work-cue-show'))
     expect(scrolled).toEqual([2])
     const card = screen.getByTestId('card-2')
     expect(card.hasAttribute('data-cue-flash')).toBe(true)
+    expect(document.activeElement).toBe(card)
+    expect(card.getAttribute('tabindex')).toBe('-1')
     expect(screen.queryByTestId('work-cue')).toBeNull()
+    expect(screen.getByTestId('work-cue-live').getAttribute('aria-live')).toBe('polite')
     act(() => vi.advanceTimersByTime(FLASH_MS))
     expect(card.hasAttribute('data-cue-flash')).toBe(false)
   })
@@ -127,7 +138,6 @@ describe('repère en bas du fil (fiche 261, écran E)', () => {
   })
 
   it('carte pas encore rendue (long fil) : rendue d’abord, puis montrée', () => {
-    vi.useFakeTimers()
     const { update, onReveal } = show([target('ux', 2, 'working')], [])
     update([target('ux', 2, 'replied')], [])
     fireEvent.click(screen.getByTestId('work-cue-show'))
@@ -144,5 +154,49 @@ describe('repère en bas du fil (fiche 261, écran E)', () => {
     update([target('ux', 2, 'replied')])
     update([target('ux', 2, 'working')])
     expect(screen.queryByTestId('work-cue')).toBeNull()
+  })
+
+  it('une fille finit sous les yeux (état avant compte rendu) : aucun clignotement du repère', () => {
+    const { change, update } = show([target('ux', 2, 'working')], [2])
+    // L'état « a répondu » arrive d'abord : la cible vise encore la carte de lancement, plus haut.
+    change([target('ux', 2, 'replied')], [2])
+    expect(screen.queryByTestId('work-cue')).toBeNull()
+    // Le compte rendu arrive en bas, à l'écran, avant la fin du délai.
+    positions.set(9, [400, 560])
+    update([target('ux', 9, 'replied')], [2, 9])
+    expect(screen.queryByTestId('work-cue')).toBeNull()
+  })
+
+  it('le nom long seul se coupe, jamais le verbe : deux éléments', () => {
+    const name = 'Expert en accessibilité des applications mobiles et web'
+    const { update } = show([target('ux', 2, 'working', name)])
+    update([target('ux', 2, 'replied', name)])
+    const text = screen.getByTestId('work-cue-text')
+    expect(text.querySelector('.work-cue-name')?.textContent).toBe(name)
+    expect(text.querySelector('.work-cue-name')?.getAttribute('title')).toBe(name)
+    expect(text.querySelector('.work-cue-verb')?.textContent).toBe('a répondu')
+  })
+
+  it('un seul « attendre la carte » à la fois ; au démontage, l’anneau et l’attente sont annulés', () => {
+    const cancel = vi.spyOn(window, 'cancelAnimationFrame')
+    const clear = vi.spyOn(window, 'clearTimeout')
+    const { update, view } = show([target('ux', 2, 'working'), target('fr', 3, 'working')], [3])
+    update([target('ux', 2, 'replied'), target('fr', 3, 'replied')], [3])
+    // Le plus ancien (ux) n'est pas rendu : on attend qu'il le soit…
+    fireEvent.click(screen.getByTestId('work-cue-show'))
+    const before = cancel.mock.calls.length
+    // … puis « Voir » sur l'autre : la première attente est annulée, pas doublée.
+    fireEvent.click(screen.getByTestId('work-cue-show'))
+    expect(cancel.mock.calls.length).toBe(before + 1)
+    expect(scrolled).toEqual([3])
+    const card = screen.getByTestId('card-3')
+    expect(card.hasAttribute('data-cue-flash')).toBe(true)
+    const cleared = clear.mock.calls.length
+    view.unmount()
+    expect(card.hasAttribute('data-cue-flash')).toBe(false)
+    expect(clear.mock.calls.length).toBeGreaterThan(cleared)
+    // La carte d'ux, rendue après le démontage, n'est jamais montrée.
+    act(() => vi.advanceTimersByTime(FLASH_MS * 2))
+    expect(scrolled).toEqual([3])
   })
 })

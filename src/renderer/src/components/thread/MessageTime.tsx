@@ -10,10 +10,13 @@ export function MessageTime({ at }: { at: number }) {
   )
 }
 
-/** Durée du tour, à côté de l'heure de sa dernière réponse (fiche 156). */
+/**
+ * Durée du tour, à côté de l'heure de sa dernière réponse (fiche 156) ; sous la seconde, « < 1 s »,
+ * comme les sous-agents (fiche 261).
+ */
 export function MessageDuration({ ms }: { ms: number }) {
   const { t } = useTranslation()
-  const text = turnDuration(ms)
+  const text = ms < 1000 ? t('transcript.duration.underSecond') : turnDuration(ms)
   return (
     <span
       className="msg-duration"

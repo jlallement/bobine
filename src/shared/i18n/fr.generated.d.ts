@@ -190,6 +190,7 @@ export type FrResources = {
     }
     readonly copyMessage: 'Copier le message'
     readonly duration: {
+      readonly underSecond: '< 1 s'
       readonly seconds: '{{seconds}} s'
       readonly minutes: '{{minutes}} min {{seconds}} s'
       readonly hours: '{{hours}} h {{minutes}} min'
@@ -4600,10 +4601,11 @@ export type FrResources = {
     readonly fileCount_other: '{{count}} fichiers'
     readonly waited: '{{duration}} à vous attendre'
     readonly working: 'Travaille encore…'
+    readonly openChanges: 'Voir dans Modifications (toute la conversation)'
   }
   readonly workCue: {
-    readonly replied: '{{name}} a répondu'
-    readonly finished: '{{name}} a fini'
+    readonly replied: 'a répondu'
+    readonly finished: 'a fini'
     readonly several_one: '{{count}} travail a répondu'
     readonly several_many: '{{count}} travaux ont répondu'
     readonly several_other: '{{count}} travaux ont répondu'

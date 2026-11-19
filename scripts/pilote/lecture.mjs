@@ -104,6 +104,9 @@ function readScreen(main) {
       activity: working.dataset.activity ?? ''
     }
   }
+  // Travail après le tour (fiche 261) : dit par le pied de la réponse, plus par l'indicateur du bas.
+  const stillWorking = $$('[data-testid=turn-working]').at(-1)
+  if (stillWorking) shot.turnWorking = text(stillWorking)
   const summary = $$('[data-testid=turn-summary]').at(-1)
   if (summary && after(summary, lastUser)) shot.turnSummary = text(summary)
   // Tour arrêté par la limite d'étapes de l'agent (fiche 209) : le titre de sa carte.

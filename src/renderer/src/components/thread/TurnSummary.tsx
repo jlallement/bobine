@@ -1,9 +1,10 @@
 import { LoaderCircle } from 'lucide-react'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { elapsedLabel } from '@shared/activity'
 import { useTranslation } from 'react-i18next'
 import { conversationChanges } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
-import type { TurnTime } from '@shared/turn-duration'
+import { turnTimes, type TurnTime } from '@shared/turn-duration'
 import { formatEstimate, turnCost, type ConversationUsage } from '@shared/usage'
 import { usePresentation } from '../../presentation'
 import { turnDuration } from '../../time'
@@ -26,9 +27,10 @@ export interface TurnFacts {
  * Pied de la réponse qui finit un tour (fiche 261, écran F) : le bilan du tour fini (`done`), ou
  * « Travaille encore… » tant que l'agent y travaille (`working`).
  */
-export type ReplyFootState = { kind: 'done'; facts: TurnFacts } | { kind: 'working' }
-
-const WORKING: ReplyFootState = { kind: 'working' }
+export type ReplyFootState =
+  | { kind: 'done'; facts: TurnFacts }
+  /** `since` : envoi du message du tour, pour le temps écoulé. */
+  | { kind: 'working'; since?: number }
 
 type TurnVisit = (
   turn: readonly TranscriptItem[],
@@ -55,35 +57,20 @@ export interface AgentLive {
 }
 
 /**
- * Bilan de chaque tour fini (fiche 185, idée P4 ; un par tour, fiche 255) : sa durée, les fichiers
- * qu'il a modifiés et son coût, quand l'agent le donne ; rangé sous la réponse qui finit le tour
- * (id de cette réponse → bilan). Rien pour un tour sans réponse finie, ni pour un tour où l'agent
- * travaille encore (voir `replyFeet`).
- */
-export function turnFacts(
-  items: readonly TranscriptItem[],
-  times: ReadonlyMap<number, TurnTime>,
-  usage: ConversationUsage | undefined,
-  live: AgentLive
-): Map<number, TurnFacts> {
-  const facts = new Map<number, TurnFacts>()
-  for (const [id, foot] of replyFeet(items, times, usage, live)) {
-    if (foot.kind === 'done') facts.set(id, foot.facts)
-  }
-  return facts
-}
-
-/**
- * Pied de chaque tour (fiche 261), rangé sous sa réponse (id de la réponse → pied) :
+ * Pied de chaque tour (fiches 185, 255, 261), rangé sous sa réponse (id de la réponse → pied) :
  * - tour en cours (le dernier, l'agent répond et rien n'est encore daté) : aucun pied,
  *   l'indicateur du bas suffit (règle 5 de la fiche 260) ;
- * - travail après le tour (le dernier quand `background`, ou un tour dont un sous-agent en
- *   arrière-plan n'a pas fini, fiche 255) : « Travaille encore… » sous sa dernière réponse ;
- * - tour fini : le bilan, sous la réponse qui l'a fini. Un tour dont la réponse est datée est fini
- *   (les réponses sont datées à la fin du tour) : le statut « occupé » d'un nouveau message, qui
- *   arrive avant ce message (fiche 095), ne lui retire pas son bilan ;
+ * - travail après le tour, seulement tant que l'agent est actif (`busy` ou `background`) :
+ *   « Travaille encore… » sous la dernière réponse du tour qui a lancé un sous-agent en arrière-plan
+ *   pas encore fini (fiche 122), ou, sans sous-agent, du dernier tour (réponse hors tour attendue,
+ *   fiche 255). Un seul tour à la fois : les autres gardent leur bilan. Agent arrêté ou planté :
+ *   jamais (un suivi perdu ne laisse pas le pied tourner pour toujours) ;
+ * - tour fini : le bilan (durée, fichiers, coût), sous la réponse qui l'a fini. Un tour dont une
+ *   réponse est datée est fini (les réponses sont datées à la fin du tour) : le statut « occupé »
+ *   d'un nouveau message, qui arrive avant ce message (fiche 095), ne lui retire pas son bilan ;
  * - tour arrêté, refusé, coupé, en erreur, ou sans réponse finie : aucun pied (l'heure et la
- *   durée restent au survol, comme avant).
+ *   durée restent au survol, comme avant). Un tour en erreur repris par « Réessayer » (fiche 142)
+ *   et fini ensuite a son bilan : une réponse datée suit l'erreur.
  */
 export function replyFeet(
   items: readonly TranscriptItem[],
@@ -92,14 +79,17 @@ export function replyFeet(
   live: AgentLive
 ): Map<number, ReplyFootState> {
   const feet = new Map<number, ReplyFootState>()
+  const active = live.busy || live.background
+  const running = active && items.some(stillInBackground)
   eachTurn(items, (turn, { sentAt, nextAt, last }) => {
     // Tour arrêté, refusé, coupé ou en erreur : son avis le dit déjà, pas de bilan.
-    if (turn.some(endedBadly)) return
+    if (endedBadly(turn)) return
     const ended = turn.some((item) => item.kind === 'agent' && item.at !== undefined)
     if (last && live.busy && !ended) return
-    if ((last && live.background) || turn.some(stillInBackground)) {
+    const working = running ? turn.some(stillInBackground) : last && live.background
+    if (working) {
       const reply = turn.findLast((item) => item.kind === 'agent')
-      if (reply) feet.set(reply.id, WORKING)
+      if (reply) feet.set(reply.id, { kind: 'working', ...(sentAt ? { since: sentAt } : {}) })
       return
     }
     const fact = factsOf(turn, times, usage, sentAt, nextAt)
@@ -108,13 +98,22 @@ export function replyFeet(
   return feet
 }
 
+/** Un pied « Travaille encore… » est rendu dans le fil (l'indicateur du bas se tait alors). */
+export function hasWorkingFoot(items: readonly TranscriptItem[], live: AgentLive): boolean {
+  return [...replyFeet(items, turnTimes(items), undefined, live).values()].some(
+    (foot) => foot.kind === 'working'
+  )
+}
+
 /**
  * Même pied (les réponses mémoïsées, fiche 047, ne refont pas leur rendu à chaque morceau de
  * réponse pour un bilan recalculé à l'identique).
  */
 export function sameFoot(a: ReplyFootState | undefined, b: ReplyFootState | undefined): boolean {
   if (!a || !b) return a === b
-  if (a.kind === 'working' || b.kind === 'working') return a.kind === b.kind
+  if (a.kind === 'working' || b.kind === 'working') {
+    return a.kind === 'working' && b.kind === 'working' && a.since === b.since
+  }
   const x = a.facts
   const y = b.facts
   return (
@@ -177,13 +176,19 @@ const BAD_ENDS = new Set<string>([
   'transcript.notice.error'
 ])
 
-function endedBadly(item: TranscriptItem): boolean {
+function badEnd(item: TranscriptItem): boolean {
   // Limite d'étapes (fiche 209) : la carte le dit (l'avis `maxTurnRequests` des fils d'avant aussi).
   if (item.kind === 'turn-limit') return true
   return (
     item.kind === 'notice' &&
     (item.level === 'error' || (!!item.message && BAD_ENDS.has(item.message.key)))
   )
+}
+
+/** Le tour a fini mal : un avis de fin anormale, sans réponse datée après lui (« Réessayer »). */
+function endedBadly(turn: readonly TranscriptItem[]): boolean {
+  const bad = turn.findLastIndex(badEnd)
+  return bad >= 0 && !turn.slice(bad + 1).some((item) => item.kind === 'agent' && item.at)
 }
 
 /**
@@ -195,27 +200,22 @@ function endedBadly(item: TranscriptItem): boolean {
 export function ReplyFoot({
   foot,
   text,
-  at
+  at,
+  onOpenChanges
 }: {
   foot: ReplyFootState
   /** Texte de la réponse, pour « Copier ». */
   text: () => string
   /** Heure de la réponse. */
   at: number | undefined
+  /** Ouvrir l'onglet Modifications (maquette 260, écran F) ; absent, les fichiers sont un texte. */
+  onOpenChanges?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   // Mode présentation (fiche 159) : aucun montant à l'écran.
   const presenting = usePresentation()
+  if (foot.kind === 'working') return <WorkingFoot since={foot.since} />
   const copy = <CopyButton text={text} label={t('transcript.copyReply')} testId="copy-reply" />
-  if (foot.kind === 'working') {
-    return (
-      <div className="msg-agent-actions reply-foot" data-testid="turn-working">
-        {copy}
-        <LoaderCircle size={12} className="spin reply-foot-spin" aria-hidden />
-        <span>{t('turnSummary.working')}</span>
-      </div>
-    )
-  }
   const { facts } = foot
   const parts: { key: string; node: ReactNode }[] = []
   if (at !== undefined) parts.push({ key: 'at', node: <MessageTime at={at} /> })
@@ -232,13 +232,28 @@ export function ReplyFoot({
     })
   }
   if (facts.files > 0) {
+    const files = (
+      <>
+        {t('turnSummary.fileCount', { count: facts.files })}{' '}
+        <span className="diff-added">+{countText(facts.added)}</span>{' '}
+        <span className="diff-removed">−{countText(facts.removed)}</span>
+      </>
+    )
     parts.push({
       key: 'files',
-      node: (
-        <span className="reply-foot-files">
-          {t('turnSummary.fileCount', { count: facts.files })}{' '}
-          <span className="diff-added">+{countText(facts.added)}</span>{' '}
-          <span className="diff-removed">−{countText(facts.removed)}</span>
+      node: onOpenChanges ? (
+        <button
+          type="button"
+          className="link-button reply-foot-files"
+          title={t('turnSummary.openChanges')}
+          onClick={onOpenChanges}
+          data-testid="turn-files"
+        >
+          {files}
+        </button>
+      ) : (
+        <span className="reply-foot-files" data-testid="turn-files">
+          {files}
         </span>
       )
     })
@@ -253,11 +268,50 @@ export function ReplyFoot({
       <span className="reply-foot-facts">
         {parts.map((part, i) => (
           <Fragment key={part.key}>
-            {i > 0 && ' · '}
+            {i > 0 && <Separator />}
             {part.node}
           </Fragment>
         ))}
       </span>
     </div>
+  )
+}
+
+/**
+ * « Travaille encore… · 32 s » (fiche 261) : le travail après le tour, dit une seule fois (l'indicateur
+ * du bas est masqué), avec le temps depuis l'envoi du message. Rien à copier encore.
+ */
+function WorkingFoot({ since }: { since: number | undefined }) {
+  const { t } = useTranslation()
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+  return (
+    <div className="msg-agent-actions reply-foot working" data-testid="turn-working">
+      <LoaderCircle size={12} className="spin reply-foot-spin" aria-hidden />
+      <span className="reply-foot-facts">
+        {t('turnSummary.working')}
+        {since !== undefined && (
+          <>
+            <Separator />
+            <span className="reply-foot-elapsed">{elapsedLabel(now - since)}</span>
+          </>
+        )}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * « · » entre deux éléments du pied : collé au précédent (espace insécable), la ligne ne se coupe
+ * qu'après lui. Le texte lu reste « a · b » (pilote, fiche 206).
+ */
+function Separator() {
+  return (
+    <>
+      <span className="reply-foot-sep">{'\u00a0·'}</span>{' '}
+    </>
   )
 }

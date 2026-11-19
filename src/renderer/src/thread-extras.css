@@ -203,14 +203,34 @@
 .reply-foot-facts {
   min-width: 0;
 }
+/* Fenêtre étroite : le pied passe à la ligne entre ses éléments, jamais au milieu d'un. */
+.reply-foot-facts > * {
+  white-space: nowrap;
+}
+.reply-foot-sep {
+  opacity: 0.6;
+  margin: 0 2px;
+}
 .reply-foot-spin {
   flex-shrink: 0;
-  color: var(--text-2);
+  color: var(--muted);
+}
+.reply-foot.working {
+  margin-left: 0;
+}
+/* Le nombre de fichiers ouvre l'onglet Modifications : discret comme le reste du pied. */
+.reply-foot .link-button.reply-foot-files {
+  color: inherit;
+  font: inherit;
+}
+.reply-foot .link-button.reply-foot-files:hover {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
 }
 
 /*
  * Repère en bas du fil (fiche 261, écran E) : une ligne fine et centrée au-dessus de la saisie,
- * entre deux traits ; « Voir » mène à la carte du travail.
+ * entre deux traits ; « Voir » mène à la carte du travail. Seul le nom se coupe, jamais le verbe.
  */
 .work-cue {
   display: flex;
@@ -219,11 +239,18 @@
   margin: 0 0 8px;
   font-size: 12.5px;
   color: var(--text-2);
+  animation: cue-in 150ms ease-out;
+}
+@keyframes cue-in {
+  from {
+    opacity: 0;
+  }
 }
 .work-cue::before,
 .work-cue::after {
   content: '';
   flex: 1;
+  min-width: 16px;
   height: 1px;
   background: var(--border);
 }
@@ -232,21 +259,45 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+  white-space: nowrap;
 }
-.work-cue-in > span:not(.role-avatar) {
+.work-cue-text {
+  display: inline-flex;
+  gap: 0.3em;
+  min-width: 0;
+}
+.work-cue-name {
+  max-width: 28ch;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.work-cue-verb {
+  flex-shrink: 0;
 }
 .work-cue-show {
   color: var(--accent);
   font-weight: 500;
 }
+/* Repère et « ↓ N nouveaux » ensemble : la pastille passe à droite, la ligne reste lisible. */
+.thread-dock:has(.work-cue) .scroll-to-bottom {
+  left: auto;
+  /* Aligné sur le bord droit de la saisie (marge de `.column`). */
+  right: 24px;
+  margin-left: 0;
+  transform: none;
+}
 
 /* Carte montrée par « Voir » : entourée un instant de la couleur du rôle. */
-[data-cue-flash] {
+[data-work-anchor][data-cue-flash] {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--role, var(--accent)) 35%, transparent);
-  animation: cue-flash 1s ease-out forwards;
+  animation: cue-flash 1.4s ease-out forwards;
+}
+[data-work-anchor]:focus:not(:focus-visible) {
+  outline: none;
+}
+/* La ligne de lancement n'a pas de coins à elle : l'anneau prend ceux des petites cartes. */
+.child-instruction[data-work-anchor][data-cue-flash] {
+  border-radius: var(--radius-sm);
 }
 @keyframes cue-flash {
   70% {
@@ -257,7 +308,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-cue-flash] {
+  .work-cue,
+  [data-work-anchor][data-cue-flash] {
     animation: none;
   }
 }

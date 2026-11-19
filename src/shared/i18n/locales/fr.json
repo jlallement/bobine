@@ -188,6 +188,7 @@
     },
     "copyMessage": "Copier le message",
     "duration": {
+      "underSecond": "< 1 s",
       "seconds": "{{seconds}} s",
       "minutes": "{{minutes}} min {{seconds}} s",
       "hours": "{{hours}} h {{minutes}} min",
@@ -4769,11 +4770,12 @@
     "fileCount_many": "{{count}} fichiers",
     "fileCount_other": "{{count}} fichiers",
     "waited": "{{duration}} à vous attendre",
-    "working": "Travaille encore…"
+    "working": "Travaille encore…",
+    "openChanges": "Voir dans Modifications (toute la conversation)"
   },
   "workCue": {
-    "replied": "{{name}} a répondu",
-    "finished": "{{name}} a fini",
+    "replied": "a répondu",
+    "finished": "a fini",
     "several_one": "{{count}} travail a répondu",
     "several_many": "{{count}} travaux ont répondu",
     "several_other": "{{count}} travaux ont répondu",

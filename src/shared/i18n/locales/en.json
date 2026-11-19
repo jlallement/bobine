@@ -163,6 +163,7 @@
     },
     "copyMessage": "Copy message",
     "duration": {
+      "underSecond": "< 1s",
       "seconds": "{{seconds}}s",
       "minutes": "{{minutes}}m {{seconds}}s",
       "hours": "{{hours}}h {{minutes}}m",
@@ -4569,11 +4570,12 @@
     "fileCount_one": "{{count}} file",
     "fileCount_other": "{{count}} files",
     "waited": "{{duration}} waiting for you",
-    "working": "Still working…"
+    "working": "Still working…",
+    "openChanges": "Show in Changes (whole conversation)"
   },
   "workCue": {
-    "replied": "{{name}} replied",
-    "finished": "{{name}} finished",
+    "replied": "replied",
+    "finished": "finished",
     "several_one": "{{count}} task replied",
     "several_other": "{{count}} tasks replied",
     "show": "Show",

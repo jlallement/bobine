@@ -16,7 +16,7 @@ import { formatDuration, parseArgs, parseDuration } from './args.mjs'
 import { excerpt, formatState, toolsLine, turnLine } from './etat.mjs'
 import { appCommand, launchArgs, launchEnv, ours } from './instance.mjs'
 import { appendEntry, formatSummary, readEntries, summarize } from './journal.mjs'
-import { EXIT_CODES, parseShownDuration, pendingReason, Watcher } from './raison.mjs'
+import { busy, EXIT_CODES, parseShownDuration, pendingReason, Watcher } from './raison.mjs'
 import { L, frenchTypography, panelTab } from './textes.mjs'
 
 /** Chemin absolu de la machine (le même sous Unix ; sous Windows, sur le lecteur courant). */
@@ -197,6 +197,16 @@ describe('état en texte', () => {
         idle({ turnSummary: undefined, turnDuration: undefined, turnLimit: 'Arrêt avant la fin' })
       )
     ).toBe('Tour : arrêté — Arrêt avant la fin')
+  })
+  it('travail après le tour (fiche 261) : « travaille encore », et l’attente continue', () => {
+    const after = idle({
+      agent: { name: 'Agent factice', status: 'Travaille encore…', dot: 'ready' },
+      turnSummary: undefined,
+      turnWorking: 'Travaille encore… · 32 s'
+    })
+    expect(turnLine(after)).toBe('Tour : travaille encore — Travaille encore… · 32 s')
+    expect(busy(after)).toBe(true)
+    expect(busy(idle())).toBe(false)
   })
   it('outils : par genre, groupés compris', () => {
     expect(

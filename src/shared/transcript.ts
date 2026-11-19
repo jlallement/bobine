@@ -893,14 +893,15 @@ type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
 const runsInBackground = (item: ToolItem) =>
   !!item.subagentRun?.background && item.subagentRun.endedAt === undefined && !item.subagentRun.lost
 
-/** Agent arrêté : les sous-agents en arrière-plan, de n'importe quel tour, n'ont plus de suivi. */
+/**
+ * Agent arrêté : les sous-agents en arrière-plan, de n'importe quel tour, n'ont plus de suivi
+ * (`lost`) ; leur tour ne « travaille » plus (pied de la fiche 261), même rouvert après une relance.
+ */
 function closeBackground(state: TranscriptState): TranscriptState {
   if (!state.items.some((item) => item.kind === 'tool' && runsInBackground(item))) return state
-  const items = state.items.map((item) =>
-    item.kind === 'tool' && runsInBackground(item)
-      ? closeWork({ ...item, status: 'cancelled' as const })
-      : item
-  )
+  const lost = (item: ToolItem): ToolItem =>
+    closeWork({ ...item, status: 'cancelled', subagentRun: { ...item.subagentRun, lost: true } })
+  const items = state.items.map((i) => (i.kind === 'tool' && runsInBackground(i) ? lost(i) : i))
   return { ...state, items }
 }
 
