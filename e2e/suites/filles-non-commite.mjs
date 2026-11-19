@@ -69,9 +69,11 @@ async function typeRoles(ui, text) {
 }
 
 /** « Changer… » de la ligne du dossier, puis cette entrée du menu (vrais clics, menu Radix). */
-async function change(ui, entry) {
+async function change(ui, entry, shot) {
   await ui.click(ui.$('launch-line-change'))
   await ui.waitFor(`!!${ui.$(entry)}`, 5000)
+  // Menu ouvert : capture pour la relecture UX (fiche 262).
+  if (shot) await ui.shot(shot)
   await ui.click(ui.$(entry))
   await ui.waitFor(`!${ui.$('launch-line-menu')}`, 5000)
 }
@@ -93,7 +95,7 @@ async function roleRun(ui) {
       !(await ui.ev(`!!document.querySelector('.main-dirty')`)),
     'rôle : une ligne en orange sous la saisie, aucun encadré'
   )
-  await change(ui, 'launch-line-show')
+  await change(ui, 'launch-line-show', 'filles-non-commite-1b-menu')
   check(
     (await ui.ev(`${ui.$('launch-line-file')}.innerText`)) === 'plan.md',
     'rôle : « Changer… › Voir la modification » liste le fichier non commité'
@@ -232,11 +234,12 @@ async function noCommitRun(ui, git) {
   await ui.send('Découpe la suite\n/scenario tache-plan')
   const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
   await ui.waitFor(`!!${pending}`, 30000)
-  await ui.waitFor(`${ui.$('proposals')}?.querySelector('[data-testid=launch-line]')`, 10000)
+  await ui.waitFor(`!!${ui.$('proposals')}?.querySelector('[data-testid=launch-line]')`, 10000)
   check(
     (await ui.ev(`${ui.$('proposals')}.innerText`)).includes(L('launchLine.noCommit.works')),
     'Tâches proposées, dépôt sans commit : les travaux se feront dans ce dossier'
   )
+  await ui.shot('filles-non-commite-8-sans-commit-proposition')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   await ui.waitFor(`${reports}.length === 2`, 30000)
   check(
@@ -245,5 +248,4 @@ async function noCommitRun(ui, git) {
       git('worktree', 'list').split('\n').length === 1,
     'proposition lancée : dans le dossier, toujours aucun commit (jamais de commit vide)'
   )
-  await ui.shot('filles-non-commite-8-sans-commit-proposition')
 }

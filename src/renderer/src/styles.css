@@ -9823,7 +9823,8 @@ html.about-page body {
   line-height: 1.4;
 }
 .permission-card.proposals > .launch-place {
-  margin: 0 0 6px;
+  /* Aligné sur le sous-titre de la carte : marge de .pc-head (16) + icône (18) + écart (10). */
+  margin: -4px 16px 10px 44px;
 }
 .launch-line-commit .field-error {
   margin: 0;
