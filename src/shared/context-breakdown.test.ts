@@ -52,23 +52,28 @@ describe('messages du fil (fiche 166)', () => {
     expect(messagesTokens({ items })).toBe(Math.round((2 + 399) / 4))
   })
 
-  it('compaction : seuls les éléments depuis la dernière comptent', () => {
+  it('compaction terminée : seuls les éléments depuis la dernière comptent', () => {
     const items = [
       user(1, x(4000)),
       agent(2, x(4000)),
       user(3, '/compact', { compaction: true }),
       agent(4, x(400))
     ]
-    expect(contextStart(items)).toBe(3)
-    expect(messagesTokens({ items })).toBe(2 + 100)
-    const update: TranscriptItem = {
+    // La commande seule n'a encore rien libéré (fiche 257) : tout compte, comme dans le total.
+    expect(contextStart(items)).toBe(0)
+    expect(messagesTokens({ items })).toBe(1000 + 1000 + 2 + 100)
+    const card = (status: string): TranscriptItem => ({
       kind: 'compaction',
       id: 5,
       compactionId: 'c',
-      status: 'completed',
+      status,
       summary: x(40)
-    }
-    expect(contextStart([...items, update])).toBe(5)
+    })
+    // En cours, échouée, annulée : rien de libéré.
+    for (const status of ['in_progress', 'failed', 'cancelled'])
+      expect(contextStart([...items, card(status)])).toBe(0)
+    expect(contextStart([...items, card('completed')])).toBe(5)
+    expect(messagesTokens({ items: [...items, card('completed')] })).toBe(10)
     // Baisse nette de `used` vue par l'app : le repère vient de la consommation.
     expect(contextStart(items, { contextSince: 4 })).toBe(4)
   })

@@ -10,6 +10,11 @@ What changes for you, version by version. Shown in Settings › About.
   no longer changes those of another conversation reopened later (after a restart or after it was
   put to sleep). A conversation left in Plan reopens in Plan. Your last choice is still the
   starting point for new conversations.
+- Context gauge after the conversation is summarized (`/compact`): it no longer stays at the old
+  level until the next message. When the agent does not give the new figure (OpenCode), Bobine
+  estimates it, marked with “≈” and explained, until the agent gives it. In Session › Context,
+  “Agent (not itemized)” no longer swells with the freed space, and messages exchanged after the
+  summary still count.
 
 ## 1.0.0-rc.1 — November 19, 2026
 

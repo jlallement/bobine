@@ -3,6 +3,7 @@
  * (taille bornée, fiche 089).
  */
 import type { StopReason } from './acp-sdk.mts'
+import { withCompactionEstimate } from './context-estimate'
 import type { TranscriptItem, TranscriptState } from './transcript'
 
 /**
@@ -33,10 +34,13 @@ export function compactionReply(state: TranscriptState, stopReason: StopReason):
     status: stopReason === 'cancelled' ? 'cancelled' : 'completed',
     summary
   }
-  return {
+  const replaced: TranscriptState = {
     ...state,
     items: state.items.flatMap((item) =>
       item === first ? [card] : item.kind === 'agent' && replies.includes(item) ? [] : [item]
     )
   }
+  // Total estimé si l'agent ne l'a pas chiffré depuis la commande (fiche 257) ; un tour annulé
+  // n'a rien résumé.
+  return card.status === 'completed' ? withCompactionEstimate(replaced, user.id) : replaced
 }

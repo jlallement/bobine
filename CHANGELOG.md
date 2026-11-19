@@ -10,6 +10,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   conversation ne change plus ceux d'une autre conversation rouverte ensuite (après une relance ou
   une mise en veille). Une conversation laissée en Plan est rouverte en Plan. Le dernier choix
   sert toujours de départ aux nouvelles conversations.
+- Jauge de contexte après un résumé de la conversation (`/compact`) : elle ne reste plus à l'ancien
+  remplissage jusqu'au message suivant. Quand l'agent ne donne pas le nouveau chiffre (OpenCode),
+  Bobine l'estime, précédé de « ≈ » et expliqué, jusqu'à ce que l'agent le donne. Dans Session ›
+  Contexte, « Agent (non détaillé) » ne gonfle plus de la place libérée, et les messages échangés
+  après le résumé restent comptés.
 
 ## 1.0.0-rc.1 — 19 novembre 2026
 

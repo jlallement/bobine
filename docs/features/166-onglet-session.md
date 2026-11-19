@@ -41,6 +41,10 @@ onglets, dans les réglages). Un onglet « Session » les rassemble, lisibles d'
     « ≈ N utilisés » avec le détail connu, sans pourcentage, sans « Libre » ni « Agent ».
   - Après une compaction (`/compact` envoyé par Bobine, ou baisse nette de `used` entre deux
     `usage_update`), seuls les messages postérieurs comptent ; l'écart va dans « Agent ».
+    **Remplacé en partie par la fiche 257** : seule une compaction **terminée** fait commencer le
+    contexte ; sans chiffre de l'agent depuis, le total est estimé (« ≈ ») au lieu de garder
+    l'ancien, et « Agent » garde sa part ; une baisse déjà expliquée par une compaction ne déplace
+    plus le début du contexte.
 - **Modifications** (fiche 207, remplace la ligne unique) : deux lignes. « Conversation » : ce que
   la conversation a modifié (« Aucune » ou « N fichiers +a −b », comme Modifications ›
   Conversation, qu'elle ouvre) ; « Dossier » : ce qui n'est pas commité (« Aucune » ou « N

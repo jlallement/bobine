@@ -728,6 +728,9 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           setTimeout(() => writeBobTaskCostLogged(file, id, cost), 300)
         }
         if (options.withUsage === false || options.bobCost) return { stopReason }
+        // Tour qui ne chiffre rien (OpenCode 2.3.0 après `/compact`, fiche 257) : ni `usage_update`
+        // ni `usage`.
+        if (chosen.withoutUsage) return { stopReason }
         const real = chosen.turnUsage
         const usage = real?.usage ?? mockTurnUsage(params.prompt)
         session.contextUsed =
@@ -788,7 +791,11 @@ function pickScenario(
   // `/demo` et `/aide` : raccourcis de `/scenario demo` et `/scenario`.
   if (/^\/demo\b/.test(text) && catalog['demo']) return catalog['demo']
   // `/compact` : la conversation est résumée (comme `/compress` de Bob, `/compact` d'OpenCode).
-  if (/^\/compact\b/.test(text) && catalog['compaction']) return catalog['compaction']
+  // Une session lancée avec un scénario qui nomme sa compaction (`compactWith`) joue celle-là.
+  if (/^\/compact\b/.test(text)) {
+    const compaction = catalog[fallback.compactWith ?? 'compaction']
+    if (compaction) return compaction
+  }
   // `/compress` : comme Bob 2.0.6, le résumé arrive en texte, sans `compaction_update` (fiche 126).
   if (/^\/compress\b/.test(text) && catalog['compaction-texte']) return catalog['compaction-texte']
   // Consigne de relecture de l'app (fiche 177, `REVIEW_BRIEF_LEAD`) : `/scenario` peut venir des

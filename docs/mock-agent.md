@@ -312,6 +312,9 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `commande-echec` | Commande en échec (code 2) |
 | `compaction` | L'agent résume la conversation (`compaction_update`, résumé en morceaux) puis libère le contexte |
 | `compaction-texte` | Résumé envoyé en texte, sans `compaction_update`, comme Bob ; aussi en réponse à `/compress` (fiche 126) |
+| `contexte-opencode` | Fiche 257 : tour d'OpenCode 2.3.0 avant un `/compact` (exploration du 2026-11-19), `usage_update` 38 271 / 628 000, le fil faisant l'essentiel du contexte ; dans une session lancée avec ce scénario, `/compact` joue `compaction-opencode` (champ `compactWith`) |
+| `compaction-opencode` | Fiche 257 : `/compact` comme OpenCode 2.3.0 — `compaction_update` `in_progress`, résumé en morceau, `completed` avec le résumé, puis fin de tour **sans `usage` ni `usage_update`** (champ `withoutUsage`) |
+| `apres-compaction-opencode` | Fiche 257 : le tour qui suit, enfin chiffré : `usage_update` 11 965 / 628 000 |
 | `contexte-plein` | Contexte à 95 % : jauge en alerte |
 | `commande-silencieuse` | Commande dont la sortie s'arrête une minute (extension de terminal) : « Aucune sortie depuis N min » et « Interrompre » (fiche 157) |
 | `cout-qui-monte` | Quatre lectures, coût cumulé annoncé pendant chacune (0,4 → 1,6 $) : plafond franchi en plein outil, tour interrompu à sa fin (fiche 157) |

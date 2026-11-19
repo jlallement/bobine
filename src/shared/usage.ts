@@ -20,7 +20,7 @@ export interface TokenCounts {
 
 export interface ConversationUsage {
   /** Jetons actuellement dans le contexte, et taille de la fenêtre. */
-  context?: { used: number; size: number }
+  context?: ContextFill
   /** Coût cumulé de la session, tel qu'annoncé par l'agent. */
   cost?: { amount: number; currency: string }
   /** Jetons cumulés sur les tours de la conversation. */
@@ -42,6 +42,27 @@ export interface ConversationUsage {
    * d'avant ne comptent plus dans l'estimation des messages.
    */
   contextSince?: number
+}
+
+/** Remplissage du contexte : chiffre de l'agent (`usage_update`), ou estimation de l'app. */
+export interface ContextFill {
+  used: number
+  size: number
+  /**
+   * Total estimé par l'app après une compaction que l'agent n'a pas encore chiffrée (fiche 257) ;
+   * le prochain `usage_update` le remplace. Absent : chiffre de l'agent.
+   */
+  estimated?: true
+  /**
+   * Une compaction a fini depuis ce chiffre (fiche 257) : la prochaine baisse de `used` vient
+   * d'elle, pas d'une compaction que l'app n'a pas vue.
+   */
+  compactedSince?: true
+  /**
+   * Prochain identifiant du fil quand ce chiffre a été lu (fiche 257) : un repère de compaction à
+   * partir de cet identifiant est postérieur au chiffre. Absent : chiffre lu avant la fiche 257.
+   */
+  nextItem?: number
 }
 
 /** Coût d'une conversation, toutes sessions confondues (fiche 164). */
@@ -147,18 +168,28 @@ export function contextDropped(before: number, after: number): boolean {
 
 /**
  * `usage_update` reçu. `nextItemId` : identifiant du prochain élément du fil, retenu comme début
- * du contexte si `used` a nettement baissé (`contextSince`, fiche 166).
+ * du contexte si `used` a nettement baissé (`contextSince`, fiche 166), sauf si une compaction
+ * déjà repérée explique cette baisse (`dropExplained`, fiche 257) : son repère suffit, et les
+ * messages échangés depuis restent comptés. Un chiffre de l'agent remplace toute estimation.
  */
 export function withContext(
   usage: ConversationUsage,
   update: UsageUpdate,
-  nextItemId?: number
+  nextItemId?: number,
+  dropExplained = false
 ): ConversationUsage {
   const next: ConversationUsage = { ...usage }
-  if (finite(update.size) > 0) next.context = { used: finite(update.used), size: update.size }
+  if (finite(update.size) > 0) {
+    next.context = {
+      used: finite(update.used),
+      size: update.size,
+      ...(nextItemId !== undefined ? { nextItem: nextItemId } : {})
+    }
+  }
   const before = usage.context?.used
   if (
     nextItemId !== undefined &&
+    !dropExplained &&
     before !== undefined &&
     next.context &&
     contextDropped(before, next.context.used)

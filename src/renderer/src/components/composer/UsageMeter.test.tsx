@@ -127,4 +127,23 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     expect(screen.getByTestId('usage-cost').textContent).not.toContain('≈')
     expect(screen.queryByTestId('usage-cost-hint')).toBeNull()
   })
+
+  it('total estimé après une compaction (fiche 257) : « ≈ » sur la puce et le détail, expliqué', () => {
+    render(meter({ context: { used: 9_871, size: 628_000, estimated: true } }))
+    const chip = screen.getByTestId('usage-meter')
+    expect(plain(chip.textContent)).toBe('≈ 2 %')
+    expect(chip.hasAttribute('data-estimated')).toBe(true)
+    fireEvent.click(chip)
+    expect(plain(screen.getByTestId('usage-context-value').textContent)).toMatch(/^≈ .+\(≈ 2 %\)$/)
+    expect(screen.getByTestId('usage-context-estimated').textContent).toContain('Agent factice')
+  })
+
+  it('chiffre de l’agent : ni « ≈ » ni explication', () => {
+    render(meter({ context: { used: 11_965, size: 628_000 } }))
+    const chip = screen.getByTestId('usage-meter')
+    expect(plain(chip.textContent)).toBe('2 %')
+    fireEvent.click(chip)
+    expect(screen.getByTestId('usage-context-value').textContent).not.toContain('≈')
+    expect(screen.queryByTestId('usage-context-estimated')).toBeNull()
+  })
 })

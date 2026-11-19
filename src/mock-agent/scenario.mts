@@ -275,6 +275,15 @@ export interface Scenario {
     context: { used: number; size: number }
   }
   /**
+   * Le tour ne chiffre rien (fiche 257) : ni `usage_update` ni `usage` dans la réponse, comme
+   * OpenCode 2.3.0 après `/compact`.
+   */
+  withoutUsage?: true
+  /**
+   * Scénario joué par `/compact` dans une session lancée avec celui-ci (défaut : `compaction`).
+   */
+  compactWith?: string
+  /**
    * Ce que l'agent annonce à `initialize` à la place de ses valeurs (fiche 198) : version de
    * l'agent (défaut `0.1.0`), version du protocole ACP (défaut : celle du SDK ; `null` : absente).
    */

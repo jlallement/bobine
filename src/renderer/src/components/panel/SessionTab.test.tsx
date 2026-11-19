@@ -46,6 +46,30 @@ describe('onglet « Session » : contexte (fiche 166)', () => {
     expect(screen.getByTestId('session-context-hint').textContent).toContain('Bob')
   })
 
+  it('total estimé après une compaction (fiche 257) : « ≈ » au total, « Libre » estimé, expliqué', () => {
+    const breakdown = contextBreakdown({
+      items,
+      usage: { context: { used: 9_871, size: 628_000, estimated: true } }
+    })
+    wrap(<SessionContext breakdown={breakdown} agentLabel="OpenCode" />)
+    const total = screen.getByTestId('session-context-total')
+    expect(total.textContent).toMatch(/^≈ /)
+    expect(total.hasAttribute('data-estimated')).toBe(true)
+    const free = screen.getAllByTestId('session-line').find((l) => l.dataset['line'] === 'free')
+    expect(free?.textContent).toContain('≈')
+    expect(screen.getByTestId('session-context-estimated').textContent).toContain('OpenCode')
+  })
+
+  it('total de l’agent : pas d’explication d’estimation, « Libre » exact', () => {
+    const breakdown = contextBreakdown({
+      items,
+      usage: { context: { used: 11_965, size: 628_000 } }
+    })
+    wrap(<SessionContext breakdown={breakdown} agentLabel="OpenCode" />)
+    expect(screen.getByTestId('session-context-total').textContent).not.toMatch(/^≈ /)
+    expect(screen.queryByTestId('session-context-estimated')).toBeNull()
+  })
+
   const mcpLine = () =>
     screen.getAllByTestId('session-line').find((l) => l.dataset['line'] === 'mcp')
   const withMcp = (mcp: { tokens: number; servers: number; measured: number; testing: boolean }) =>
