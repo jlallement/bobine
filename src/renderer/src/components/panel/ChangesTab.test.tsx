@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GitChanges, GitFileDiff } from '@shared/changes'
 import { ChangesTab } from './ChangesTab'
@@ -34,6 +34,9 @@ describe('vue Git de l’onglet Modifications : diff déplié et dépôt relu (0
     } as unknown as Window['api']
   })
   afterEach(() => {
+    // Démonter avant de rendre `window.api` d'origine : un rendu tardif relancerait sinon les
+    // effets contre une API sans `changes` (le `cleanup` global passe après ce hook).
+    cleanup()
     window.api = api
     gitFile.mockClear()
   })
@@ -77,6 +80,9 @@ describe('vue Git de l’onglet Modifications : diff déplié et dépôt relu (0
 describe('vue Git relue après un commit fait hors du panneau (fiche 246, D4)', () => {
   const api = window.api
   afterEach(() => {
+    // Démonter avant de rendre `window.api` d'origine : un rendu tardif relancerait sinon les
+    // effets contre une API sans `changes` (le `cleanup` global passe après ce hook).
+    cleanup()
     window.api = api
   })
 
@@ -125,5 +131,46 @@ describe('vue Git relue après un commit fait hors du panneau (fiche 246, D4)', 
     act(() => changed?.({ conversationIds: ['autre', 'c'] }))
     await waitFor(() => expect(screen.queryByTestId('changes-commit')).toBeNull())
     expect(git).toHaveBeenCalledTimes(2)
+  })
+
+  it('un seul abonnement à « dépôt changé » : un nouveau rendu ne le défait ni ne le refait', async () => {
+    // Relecture du 2026-11-19 : `cycle.refresh` changeait à chaque rendu, et l'abonnement IPC
+    // était défait et refait à chaque rendu de l'onglet.
+    const subscribed = vi.fn()
+    const unsubscribed = vi.fn()
+    window.api = {
+      ...api,
+      changes: {
+        git: vi.fn(async () => REPO),
+        gitFile: vi.fn(async () => ({ oldText: 'avant\n', newText: 'après\n' })),
+        onGitChanged: () => {
+          subscribed()
+          return unsubscribed
+        }
+      },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+    const tab = (items: Parameters<typeof ChangesTab>[0]['items']) => (
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c"
+          workspace="/depot"
+          items={items}
+          initialView="git"
+          initialViewSeq={1}
+        />
+      </Tooltip.Provider>
+    )
+    const { rerender, unmount } = render(tab([]))
+    await waitFor(() => expect(screen.getByTitle('gros.txt')).toBeTruthy())
+    rerender(tab([]))
+    // Un rendu de l'onglet né d'un changement d'état (diff déplié) : même abonnement.
+    fireEvent.click(screen.getByTitle('gros.txt'))
+    await waitFor(() => expect(screen.getByTestId('changes-diff').textContent).toContain('après'))
+    rerender(tab([]))
+    expect(subscribed).toHaveBeenCalledTimes(1)
+    expect(unsubscribed).not.toHaveBeenCalled()
+    unmount()
+    expect(unsubscribed).toHaveBeenCalledTimes(1)
   })
 })
