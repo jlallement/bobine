@@ -157,6 +157,9 @@ Pas de nouvelle dépendance.
   - **Écarts à la maquette** : « Lire la suite » sans le nombre de lignes (la hauteur est mesurée,
     pas les lignes) ; à fenêtre étroite, les boutons du pied passent à la ligne, alignés à droite ;
     « Faire relire » et « Fusionner dans main » attendent la fiche 264 (place prévue).
+- 2026-11-19 : `./scripts/verify` vert (5 199 essais) ; `pnpm build && pnpm e2e --changed` (les
+  fichiers touchés couvrent toutes les suites) : 220 tâches vertes en 19 min 32 s, clair et sombre ;
+  captures `263-carte-*` regardées.
 
 ## Limites connues
 
