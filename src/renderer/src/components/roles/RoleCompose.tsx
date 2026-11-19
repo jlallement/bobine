@@ -1,4 +1,4 @@
-import { Split, X } from 'lucide-react'
+import { Reply, Split, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { RoleView } from '@shared/roles'
@@ -12,22 +12,38 @@ import { RoleAvatar, RoleStack, useRoleStyle } from './RoleAvatar'
 /** Jetons des rôles choisis ; chacun se retire (×, ou retour arrière en tête de la saisie). */
 export function RoleTokens({
   roles,
-  onRemove
+  onRemove,
+  replying
 }: {
   roles: readonly RoleView[]
   onRemove: (name: string) => void
+  /** Jeton d'un rôle dont on poursuit le travail (« Répondre à … », fiche 263). */
+  replying?: string | undefined
 }) {
   if (roles.length === 0) return null
   return (
     <div className="role-tokens" data-testid="role-tokens">
       {roles.map((role) => (
-        <RoleToken key={role.name} role={role} onRemove={() => onRemove(role.name)} />
+        <RoleToken
+          key={role.name}
+          role={role}
+          reply={role.name === replying}
+          onRemove={() => onRemove(role.name)}
+        />
       ))}
     </div>
   )
 }
 
-function RoleToken({ role, onRemove }: { role: RoleView; onRemove: () => void }) {
+function RoleToken({
+  role,
+  reply,
+  onRemove
+}: {
+  role: RoleView
+  reply: boolean
+  onRemove: () => void
+}) {
   const { t } = useTranslation()
   const style = useRoleStyle(role.color)
   return (
@@ -37,9 +53,16 @@ function RoleToken({ role, onRemove }: { role: RoleView; onRemove: () => void })
       title={role.description}
       data-testid="role-token"
       data-role={role.name}
+      data-reply={reply || undefined}
     >
       <RoleAvatar role={role} size={18} />
       <span>{role.label}</span>
+      {reply && (
+        <span className="role-token-reply">
+          <Reply size={11} aria-hidden />
+          {t('roleWork.destination.replyToken')}
+        </span>
+      )}
       <button
         type="button"
         className="role-token-remove"
@@ -66,7 +89,8 @@ export function RoleDestination({
   empty = false,
   sending = false,
   opinion,
-  launch
+  launch,
+  reply = false
 }: {
   roles: readonly RoleView[]
   /** Agent de la fille (un seul rôle). */
@@ -84,41 +108,45 @@ export function RoleDestination({
   opinion?: { sees: number }
   /** Où partira un rôle qui écrit (fiche 262) : le segment de la ligne (`LaunchLine`). */
   launch?: { node: ReactNode }
+  /** Suite d'un travail déjà lancé (« Répondre à … », fiche 263) : il va à ce travail. */
+  reply?: boolean
 }) {
   const { t } = useTranslation()
   const single = roles.length === 1 ? roles[0] : undefined
   const style = useRoleStyle(single?.color ?? 'graphite')
   if (roles.length === 0) return null
-  const details = opinion
-    ? [
-        single ? agentLabel : undefined,
-        t('roleWork.destination.sameFolder'),
-        readOnly === 'requested' ? t('roleWork.readOnlyRequested') : t('roleWork.readOnly'),
-        opinion.sees > 0
-          ? t(
-              single
-                ? 'roleWork.destination.opinionSeesOne'
-                : 'roleWork.destination.opinionSeesMany',
-              { count: opinion.sees }
-            )
-          : undefined
-      ].filter(Boolean)
-    : single
+  const details = reply
+    ? []
+    : opinion
       ? [
-          agentLabel,
-          readOnly === 'requested'
-            ? t('roleWork.readOnlyRequested')
-            : readOnly
-              ? t('roleWork.readOnly')
-              : undefined,
-          // Rôle qui écrit : le segment `launch` dit d'où il partira (fiche 262, revue UX).
-          single.readOnly
-            ? t('roleWork.destination.sameFolder')
-            : launch
-              ? undefined
-              : t('roleWork.destination.worktree')
+          single ? agentLabel : undefined,
+          t('roleWork.destination.sameFolder'),
+          readOnly === 'requested' ? t('roleWork.readOnlyRequested') : t('roleWork.readOnly'),
+          opinion.sees > 0
+            ? t(
+                single
+                  ? 'roleWork.destination.opinionSeesOne'
+                  : 'roleWork.destination.opinionSeesMany',
+                { count: opinion.sees }
+              )
+            : undefined
         ].filter(Boolean)
-      : []
+      : single
+        ? [
+            agentLabel,
+            readOnly === 'requested'
+              ? t('roleWork.readOnlyRequested')
+              : readOnly
+                ? t('roleWork.readOnly')
+                : undefined,
+            // Rôle qui écrit : le segment `launch` dit d'où il partira (fiche 262, revue UX).
+            single.readOnly
+              ? t('roleWork.destination.sameFolder')
+              : launch
+                ? undefined
+                : t('roleWork.destination.worktree')
+          ].filter(Boolean)
+        : []
   return (
     <div
       className={`role-destination${single ? ' single' : ''}`}
@@ -126,10 +154,17 @@ export function RoleDestination({
       aria-live="polite"
       data-testid="role-destination"
       data-opinion={opinion ? '' : undefined}
+      data-reply={reply || undefined}
     >
       {single ? <Split size={13} /> : <RoleStack roles={roles} />}
       <span className="role-destination-lead">
-        {opinion ? (
+        {reply && single ? (
+          <Trans
+            i18nKey="roleWork.destination.reply"
+            values={{ label: single.label }}
+            components={{ strong: <strong /> }}
+          />
+        ) : opinion ? (
           <Trans
             i18nKey={
               single ? 'roleWork.destination.opinionOne' : 'roleWork.destination.opinionMany'

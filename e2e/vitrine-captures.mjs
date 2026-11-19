@@ -512,8 +512,11 @@ async function reviewWithRoles(ui) {
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   await sleep(WITH_VIDEO ? 900 : 300)
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 2`, 30_000)
-  await ui.waitFor(`document.querySelectorAll('[data-testid=child-report]').length === 2`, 60_000)
+  await ui.waitFor(`document.querySelectorAll('[data-testid=work-card]').length === 2`, 30_000)
+  await ui.waitFor(
+    `document.querySelectorAll('[data-testid=work-card][data-state=replied]').length === 2`,
+    60_000
+  )
   await sleep(1500)
   await shot(ui, 'roles')
 }

@@ -306,6 +306,7 @@ export const PROFILE_CHANGING = [
   'roles:setEnabled',
   'roles:remove',
   'roles:startChildren',
+  'roles:reply',
   // Écrit dans les fichiers d'un agent ET dans le registre du profil : jamais l'un sans l'autre.
   'roles:export',
   'roles:exportRemove',

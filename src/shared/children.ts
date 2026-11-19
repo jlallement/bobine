@@ -33,6 +33,11 @@ export interface ChildStart {
   role?: RoleBadge
   /** Partie sans le non commité de la mère (fiche 240) : rappelé sur sa carte. */
   leftBehind?: LeftBehind
+  /**
+   * Lancée par une bulle « @Rôle … » de la saisie (fiche 263) : le `requestId` de la bulle. Sa
+   * carte-réponse est sous la bulle ; elle n'a ni ligne dans « Sous-tâches » ni compte rendu séparé.
+   */
+  request?: string
   at: number
 }
 
@@ -109,6 +114,29 @@ export interface ChildReport {
   usage?: UsageDigest
   /** Partie sans le non commité de la mère (fiche 240) : rappelé sur chaque compte rendu. */
   leftBehind?: LeftBehind
+  /**
+   * Dernière réponse entière, pour la carte-réponse d'un travail lancé par une bulle (fiche 263) :
+   * affichée seulement, jamais envoyée à l'agent de la mère (il reçoit `excerpt`, fiche 160).
+   * `REPLY_KEEP_CHARS` au plus ; `replyCut` : coupée (sa taille entière dans `replyChars`).
+   */
+  reply?: string
+  replyCut?: true
+}
+
+/**
+ * Réponse gardée pour la carte-réponse (fiche 263) : de quoi lire un long avis en entier, sans
+ * qu'un tour bavard n'alourdisse sans fin le fil enregistré de la mère.
+ */
+export const REPLY_KEEP_CHARS = 20_000
+
+/** Dernière réponse d'un travail, telle que la carte la garde (`reply`, `replyCut`, `replyChars`). */
+export function keptReply(
+  items: readonly TranscriptItem[]
+): Pick<ChildReport, 'reply' | 'replyCut' | 'replyChars'> {
+  const text = lastReply(items).trim()
+  if (!text) return {}
+  if (text.length <= REPLY_KEEP_CHARS) return { reply: text }
+  return { reply: clip(text, REPLY_KEEP_CHARS), replyCut: true, replyChars: text.length }
 }
 
 /** Fichiers gardés dans un compte rendu : au-delà, seuls les totaux comptent. */

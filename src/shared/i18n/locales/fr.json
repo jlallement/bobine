@@ -2944,6 +2944,7 @@
     "exportedAt": "Exporté le {{date}} par Bobine",
     "omitted": "[… {{count}} caractères omis]",
     "you": "Vous",
+    "roleRequest": "Vous, à {{roles}}",
     "attachments": "Pièces jointes : {{files}}",
     "thought": "Réflexion",
     "tool": "Outil",
@@ -4557,6 +4558,8 @@
       "remove": "Retirer {{label}}"
     },
     "destination": {
+      "reply": "Répondra à <strong>{{label}}</strong>, dans le même travail",
+      "replyToken": "suite du travail",
       "one": "Partira à <strong>{{label}}</strong>, dans une conversation fille",
       "many_one": "Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle",
       "many_many": "Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle",
@@ -4770,6 +4773,47 @@
     "waited": "{{duration}} à vous attendre",
     "working": "Travaille encore…",
     "openChanges": "Voir dans Modifications (toute la conversation)"
+  },
+  "workCard": {
+    "readOnly": "lecture seule · dans ce dossier",
+    "readOnlyRequested": "lecture seule demandée · dans ce dossier",
+    "readOnlyRequestedHint": "L’agent de ce travail écrit sans demander : la lecture seule lui est demandée, Bobine vérifie à la fin de chaque réponse.",
+    "inBranch": "écrit dans sa branche",
+    "inFolder": "écrit dans ce dossier",
+    "state": {
+      "running": "en cours",
+      "starting": "démarre",
+      "waiting": "attend votre accord",
+      "replied": "a répondu · {{time}}",
+      "answered": "a répondu",
+      "stopped": "arrêté",
+      "error": "en erreur",
+      "gone": "conversation supprimée"
+    },
+    "elapsed": "Temps écoulé : {{time}}",
+    "waitingLine": "Attend votre réponse dans sa conversation.",
+    "stop": "Arrêter",
+    "stopLabel": "Arrêter ce travail (l’agent principal continue)",
+    "open": "Ouvrir sa conversation",
+    "readMore": "Lire la suite",
+    "collapse": "Replier",
+    "cut": "Réponse coupée à {{shown}} caractères sur {{total}} : la suite est dans sa conversation.",
+    "noReply": "Pas de réponse écrite.",
+    "stoppedLine": "Arrêté avant la fin de sa réponse.",
+    "free": "gratuit",
+    "apply": "Demander à {{agent}} de l’appliquer",
+    "applyMessage": "Applique la proposition de {{role}} ci-dessus.",
+    "reply": "Répondre à {{role}}",
+    "retry": "Relancer",
+    "retryLabel": "Relancer la même demande à {{role}}",
+    "changes": "Voir les modifications",
+    "mainAgent": "l’agent principal",
+    "relayPending": "Pas encore transmise à {{agent}} — elle le sera avec votre prochain message",
+    "relayDone": "Transmise à {{agent}}",
+    "relayDoneAt": "Transmise à {{agent}} · {{time}}",
+    "error": {
+      "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation."
+    }
   },
   "workCue": {
     "replied": "a répondu",

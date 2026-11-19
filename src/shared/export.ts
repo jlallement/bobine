@@ -139,6 +139,13 @@ function itemLines(item: TranscriptItem, transcript: TranscriptState, agent: str
     }
     case 'agent':
       return [`## ${agent}`, '', item.text]
+    case 'role-request':
+      // Bulle « @Rôle … » (fiche 263) : la demande, à qui elle est allée.
+      return [
+        `## ${t('export.roleRequest', { roles: item.works.map((w) => w.role.label).join(', ') })}`,
+        '',
+        item.text
+      ]
     case 'thought':
       return [`> **${t('export.thought')}**`, ...quoted(item.text)]
     case 'tool': {
@@ -276,9 +283,11 @@ function childLines(item: ChildItem): string[] {
       ]
     case 'child-report': {
       const files = t('children.files', { count: item.fileCount })
+      // Réponse entière d'un travail lancé par une bulle (fiche 263), sinon son début.
+      const text = item.reply ?? item.excerpt
       return [
         `> ${t('export.childReport', { title: item.title, files })}`,
-        ...(item.excerpt ? ['>', ...quoted(item.excerpt).map((l) => `> ${l}`)] : [])
+        ...(text ? ['>', ...quoted(text).map((l) => `> ${l}`)] : [])
       ]
     }
   }

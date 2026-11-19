@@ -50,9 +50,13 @@ import {
   ChildRecommendationItem,
   ChildReportItem,
   ChildStarted,
+  withLateCost,
+  withoutCards,
   type SubtasksInfo
 } from './Subtasks'
 import { ChildProposals, type ProposalsInfo } from './ChildProposals'
+import { RoleRequestEntry } from './WorkCard'
+import { workCards } from '@shared/role-request'
 import { useTranslation } from 'react-i18next'
 import { stripAppContext } from '@shared/app-context'
 import { splitRoleBrief } from '@shared/roles'
@@ -65,7 +69,7 @@ import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
 const SHOW_LOG_NOTICES: ReadonlySet<string> = new Set(['appTools.serverDown'])
 import { useEntryWindow } from './useEntryWindow'
 import { FindQueryContext } from './CappedText'
-import type { ConversationSummary, NoticeLink as NoticeLinkTarget } from '@shared/agent'
+import type { NoticeLink as NoticeLinkTarget } from '@shared/agent'
 import { requestSettings } from '../../open-settings'
 import { MemoryProposalCard } from './MemoryProposalCard'
 import { NoticeRestart } from './NoticeRestart'
@@ -217,6 +221,13 @@ export function Transcript({
   )
   // Propositions de filles d'un même tour : une carte à la place de la première (fiche 112).
   const proposed = useMemo(() => childProposalGroups(items), [items])
+  // Cartes-réponses des bulles « @Rôle … » (fiche 263) : ce qu'elles rendent est caché à sa place,
+  // et leurs travaux ne sont pas dans « Sous-tâches ».
+  const cards = useMemo(() => workCards(items), [items])
+  const listed = useMemo(
+    () => subtasks && withoutCards(subtasks, cards.childIds),
+    [subtasks, cards.childIds]
+  )
   const shown = items.filter(
     (item) =>
       !(
@@ -226,7 +237,8 @@ export function Transcript({
       !(item.kind === 'plan' && item.id === hiddenPlanId) &&
       // Fusion des filles (fiche 120) : montrée par la carte « Sous-tâches », pas à sa place.
       item.kind !== 'children-merge' &&
-      !proposed.hidden.has(item.id)
+      !proposed.hidden.has(item.id) &&
+      !cards.hidden.has(item.id)
   )
   // Outils consécutifs regroupés (fiche 047), sauf ceux auxquels une carte de plan est rattachée.
   const entries = groupTools(shown, (item) => planAt.has(item.id) || replaced.has(item.id))
@@ -242,7 +254,9 @@ export function Transcript({
   }, [reveal])
   // Carte « Sous-tâches » au dernier lancement d'une fille (fiche 097) ; filles lancées par l'agent,
   // dont les comptes rendus partiront à son réveil.
-  const lastLaunch = items.findLast((i) => i.kind === 'child-started')?.id
+  const lastLaunch = items.findLast(
+    (i) => i.kind === 'child-started' && !cards.childIds.has(i.childId)
+  )?.id
   const launches = new Map(
     items.flatMap((i) => (i.kind === 'child-started' ? [[i.childId, i] as const] : []))
   )
@@ -301,13 +315,19 @@ export function Transcript({
     if (item.kind === 'child-recommendation') {
       return <ChildRecommendationItem key={item.id} item={item} />
     }
+    if (item.kind === 'role-request') {
+      const own = cards.byRequest.get(item.id)
+      return (
+        <RoleRequestEntry key={item.id} item={item} cards={own} items={items} info={subtasks} />
+      )
+    }
     if (item.kind === 'child-started') {
       return (
         <ChildStarted
           key={item.id}
           item={item}
           items={items}
-          {...(subtasks ? { info: subtasks, last: item.id === lastLaunch } : {})}
+          {...(listed ? { info: listed, last: item.id === lastLaunch } : {})}
         />
       )
     }
@@ -840,21 +860,4 @@ function Compaction({ item }: { item: Extract<TranscriptItem, { kind: 'compactio
       {item.error && <div className="compaction-summary error">{item.error}</div>}
     </details>
   )
-}
-
-/**
- * Coût d'un compte rendu (fiche 117) : celui de la fille à la fin de son tour. Un agent qui
- * enregistre son coût juste après sa réponse (Bob, lu hors protocole, fiche 157) le donne après le
- * compte rendu : le **dernier** compte rendu d'une fille au repos prend donc son coût actuel, le
- * même que la ligne de « Sous-tâches » ; un compte rendu plus ancien garde le sien.
- */
-function withLateCost(
-  item: Extract<TranscriptItem, { kind: 'child-report' }>,
-  lastReports: ReadonlyMap<string, number>,
-  children: readonly ConversationSummary[] | undefined
-): Extract<TranscriptItem, { kind: 'child-report' }> {
-  if (lastReports.get(item.childId) !== item.id) return item
-  const child = children?.find((c) => c.id === item.childId)
-  if (!child?.usage || child.status === 'busy') return item
-  return { ...item, usage: child.usage }
 }

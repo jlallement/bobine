@@ -52,6 +52,7 @@ import {
 } from './turn-limit'
 import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
+import { reduceRoleRequest, type RoleRequest } from './role-request'
 import { reduceAppTools, withoutRefusal, type TranscriptNotice } from './transcript-notice'
 export { noticeText } from './transcript-notice'
 import type { Handover } from './handover'
@@ -176,6 +177,11 @@ export type TranscriptItem =
   | ({ kind: 'child-report'; id: number } & Children.ChildReport)
   /** Recommandation de fusion d'une fille par l'agent de la mère (fiche 160). */
   | ({ kind: 'child-recommendation'; id: number } & Children.ChildRecommendation)
+  /**
+   * Demande de l'utilisateur à des rôles (fiche 263, ADR-0060) : la bulle « @Rôle … », jamais
+   * envoyée à l'agent de cette conversation ; ses cartes-réponses se rangent dessous.
+   */
+  | ({ kind: 'role-request'; id: number } & RoleRequest)
   /** La conversation continue avec un autre agent, dans une nouvelle session (fiche 108). */
   /**
    * `resent` : le message d'avant la bascule, refusé faute de connexion, renvoyé à la session neuve
@@ -427,6 +433,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return push(state, { kind: 'child-report', ...event.report })
     case 'child-recommendation':
       return push(state, { kind: 'child-recommendation', ...event.recommendation })
+    case 'role-request':
+      return reduceRoleRequest(state, event.request)
     case 'worktree-start':
       return push(state, { kind: 'worktree-start', ...event.start })
     case 'worktree-setup':

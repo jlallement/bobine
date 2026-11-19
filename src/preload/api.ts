@@ -533,6 +533,8 @@ export function createApi(
       /** `@rôle …` de la saisie : une fille par rôle cité (phase 3B). */
       startChildren: (conversationId: string, request: IpcArgs<'roles:startChildren'>[1]) =>
         invoke('roles:startChildren', conversationId, request),
+      reply: (conversationId: string, request: IpcArgs<'roles:reply'>[1]) =>
+        invoke('roles:reply', conversationId, request),
       /** « Installer dans… » un agent (phase 4, ADR-0047). */
       exportPreview: (role: IpcArgs<'roles:exportPreview'>[0], profileId: string) =>
         invoke('roles:exportPreview', role, profileId),

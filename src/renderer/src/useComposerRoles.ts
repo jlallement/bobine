@@ -86,6 +86,20 @@ export function useComposerRoles(
     },
     [id, list, warn]
   )
+  // « Répondre à <rôle> » (fiche 263) : le message va au travail déjà lancé, dans sa carte.
+  const reply = useCallback(
+    async (childId: string, text: string) => {
+      if (!id) return false
+      try {
+        await window.api.roles.reply(id, { childId, text })
+        return true
+      } catch (error) {
+        warn(ipcErrorText(error))
+        return false
+      }
+    },
+    [id, warn]
+  )
   // « Committer d'abord » avant un lancement en worktree (fiche 240) : dans le dépôt de la mère.
   const commitFolder = useCallback(
     (message: string, files: string[]) =>
@@ -101,7 +115,7 @@ export function useComposerRoles(
     refresh,
     reload: load,
     send,
-    ...(eligible && id ? { motherId: id, commitFolder } : {}),
+    ...(eligible && id ? { motherId: id, commitFolder, reply } : {}),
     profiles,
     ...extra
   }

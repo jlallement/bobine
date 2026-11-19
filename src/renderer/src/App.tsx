@@ -38,6 +38,7 @@ import { SidePanel } from './components/panel/SidePanel'
 import { ThreadDock } from './components/thread/ThreadDock'
 import { Transcript } from './components/thread/Transcript'
 import { useConversations } from './useConversations'
+import { threadSubtasks } from './thread-subtasks'
 import { useActivityPage } from './useActivityPage'
 import { ActivityPage } from './components/activity/ActivityPage'
 import { ScheduledPage } from './components/scheduled/ScheduledPage'
@@ -689,14 +690,7 @@ export function App() {
                               {...(c.activeId
                                 ? { worktreeSetup: worktreeSetupActions(c.activeId, c.warn) }
                                 : {})}
-                              subtasks={{
-                                children: childrenOf(c.activeId, c.list),
-                                attention: c.attention,
-                                onOpen: c.select,
-                                profiles: c.settings?.profiles ?? [],
-                                ...(c.activeId ? { motherId: c.activeId } : {}),
-                                merge: childrenMerge
-                              }}
+                              subtasks={threadSubtasks(c, childrenMerge, (text) => void send(text))}
                               {...(c.activeSummary
                                 ? {
                                     proposals: {

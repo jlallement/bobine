@@ -16,7 +16,9 @@ import { L, check, withApp } from '../lib.mjs'
  * Rôles au travail (fiche 223, phase 3B), contre l'agent factice, dans un dépôt git jetable qui a
  * un rôle du projet (`security-expert`, il remplace le rôle fourni du même nom) :
  * - menu `@` (rôles en tête, filtre, clavier), jeton, ligne « Partira à… », une fille ;
- * - deux `@rôle` dans un message : deux filles, carte « Sous-tâches » à l'identité des rôles ;
+ * - deux `@rôle` dans un message : une bulle, deux cartes-réponses (fiche 263) ;
+ * - carte-réponse (fiche 263, scénario `avis-long`) : en cours, a répondu (repliée, « Lire la
+ *   suite »), transmise (« Demander à … de l'appliquer »), « Répondre à … » dans la même carte ;
  * - en-tête de la fille ; proposition de l'agent (`roles-delegue`) : badge, mode, lecture seule,
  *   rôle du projet qui en remplace un autre ;
  * - un agent qui écrit sans demander (`MOCK_AGENT_WRITES=silent`) : lecture seule seulement
@@ -63,6 +65,12 @@ export async function rolesTravailSuite(scheme) {
       ...env,
       MOCK_AGENT_TURN_LOCK: turnLock
     })
+    // Carte-réponse (fiche 263) : le scénario de tout l'essai donne un long avis au rôle, une
+    // réponse courte à une suite sur le contraste, « C'est appliqué » à la mère qui le reçoit.
+    await withApp(scheme, (ui) => cardRun(ui, turnLock), undefined, 'avis-long', {
+      ...env,
+      MOCK_AGENT_TURN_LOCK: turnLock
+    })
     await withApp(
       scheme,
       (ui) => requestedRun(ui),
@@ -78,6 +86,7 @@ export async function rolesTravailSuite(scheme) {
 }
 
 const input = `document.querySelector('[data-testid="composer-input"]')`
+const cards = `[...document.querySelectorAll('[data-testid=work-card]')]`
 const roleItems = `[...document.querySelectorAll('[data-testid=role-item]')].map((i) => i.dataset.role)`
 
 /**
@@ -128,10 +137,11 @@ async function freshRun(ui) {
   await ui.press('Escape')
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 2`, 30000)
+  await ui.waitFor(`document.querySelectorAll('[data-testid=work-card]').length === 2`, 30000)
   check(
-    (await ui.ev(`${input}.value`)) === '',
-    'premier message `@rôle` : parti, saisie vidée, aucun refus'
+    (await ui.ev(`${input}.value`)) === '' &&
+      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1,
+    'premier message `@rôle` : parti, saisie vidée, aucun refus ; une bulle, deux cartes'
   )
   await ui.waitFor(
     `[...document.querySelectorAll('[data-testid=history-item]')].some((i) => i.innerText.includes('relisez calc.js'))`
@@ -144,7 +154,7 @@ async function freshRun(ui) {
     true,
     'la conversation est dans l’historique, titrée d’après la demande ; deux filles dessous'
   )
-  await ui.waitFor(`document.querySelectorAll('[data-testid=child-report]').length === 2`, 30000)
+  await ui.waitFor(`${cards}.filter((c) => c.dataset.state === 'replied').length === 2`, 30000)
   await ui.shot('roles-travail-0-premier-message')
 }
 
@@ -208,22 +218,22 @@ async function mainRun(ui, turnLock) {
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   await ui.enter()
 
-  // Une fille du rôle, dans le fil de la mère, à son identité.
+  // Une bulle « @Expert sécu … » et sa carte-réponse, à l'identité du rôle (fiche 263).
   await ui.waitFor(
-    `!!document.querySelector('[data-testid=role-launch][data-role=security-expert]')`,
+    `!!document.querySelector('[data-testid=work-card][data-role=security-expert]')`,
     30000
   )
   check((await ui.ev(`${input}.value`)) === '', 'envoi : la saisie se vide, rien à la mère')
-  // Compte rendu posé dans le fil de la mère affichée : lu aussitôt (fiche 258, D35), la carte
-  // dit « finie », pas « à lire ».
-  await ui.waitFor(`!!${ui.$('child-report')}`, 30000)
-  await ui.waitFor(
-    `document.querySelector('[data-testid=role-launch]')?.dataset.state === 'done'`,
-    30000
-  )
+  // La réponse arrive dans la carte : ni lancement, ni « Sous-tâches », ni compte rendu séparés.
+  await ui.waitFor(`${cards}[0]?.dataset.state === 'replied'`, 30000)
   check(
-    (await ui.ev(`${ui.$('child-report')}.dataset.role`)) === 'security-expert',
-    'compte rendu titré du rôle'
+    (await ui.ev(
+      `!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')`
+    )) &&
+      (await ui.ev(
+        `document.querySelector('[data-testid=role-request] [data-testid=role-mention]')?.dataset.role`
+      )) === 'security-expert',
+    'une bulle avec la puce du rôle et une carte-réponse, rien d’autre'
   )
   await ui.shot('roles-travail-4-fille')
 
@@ -241,11 +251,11 @@ async function mainRun(ui, turnLock) {
   // démarre passe par « prête » (rôle : consigne et empreinte du dossier) et s'affiche « a fini ».
   writeFileSync(turnLock, '')
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 3`, 30000)
+  await ui.waitFor(`${cards}.length === 3`, 30000)
   await heldTurns(turnLock, 2)
-  // Les deux nouvelles filles (la première carte est celle d'avant) : leur carte et l'anneau de
-  // leur avatar disent « au travail ».
-  const fresh = `[...document.querySelectorAll('[data-testid=role-launch]')].slice(1)`
+  // Les deux nouveaux travaux (la première carte est celle d'avant) : leur carte et l'anneau de
+  // leur avatar disent « en cours ».
+  const fresh = `${cards}.slice(1)`
   const bothRunning = `${fresh}.length === 2 && ${fresh}.every((l) => l.dataset.state === 'running' && l.querySelector('[data-testid=role-avatar]')?.dataset.state === 'running')`
   const states = `JSON.stringify(${fresh}.map((l) => [l.dataset.role, l.dataset.state]))`
   await ui.waitFor(bothRunning, 15000)
@@ -258,27 +268,25 @@ async function mainRun(ui, turnLock) {
     `capture prise pendant le travail (verrou tenu) ${await ui.ev(states)}`
   )
   rmSync(turnLock)
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=subtask-row]')].length === 3 && !document.querySelector('[data-testid=role-launch][data-state=running]')`,
-    60000
+  await ui.waitFor(`${cards}.every((c) => c.dataset.state === 'replied')`, 60000)
+  check(
+    (await ui.ev(`${cards}.map((l) => l.dataset.role).join()`)) ===
+      'security-expert,security-expert,code-reviewer' &&
+      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 2 &&
+      (await ui.ev(
+        `[...document.querySelectorAll('[data-testid=role-request]')][1].querySelectorAll('[data-testid=role-mention]').length`
+      )) === 2,
+    'deux rôles : une bulle à deux puces, une carte par rôle, dans l’ordre du message'
   )
   check(
-    (await ui.ev(
-      `[...document.querySelectorAll('[data-testid=role-launch]')].map((l) => l.dataset.role).join()`
-    )) === 'security-expert,security-expert,code-reviewer',
-    'deux filles, une par rôle, dans l’ordre du message'
+    !(await ui.ev(`!!document.querySelector('[data-testid=subtasks]')`)),
+    'pas de carte « Sous-tâches » pour les travaux d’une bulle'
   )
-  check(
-    (await ui.ev(
-      `document.querySelectorAll('[data-testid=subtask-row] .role-subtask-head').length`
-    )) === 3,
-    'Sous-tâches : chaque ligne à l’identité de son rôle'
-  )
-  await reveal(ui, `${ui.$('subtasks')}`)
+  await reveal(ui, `${cards}[1]`)
   await ui.shot('roles-travail-6-sous-taches')
 
   // L'en-tête de la fille dit son rôle et sa lecture seule.
-  await ui.ev(`${ui.$('role-launch-open')}.click()`)
+  await ui.ev(`${ui.$('work-open')}.click()`)
   await ui.waitFor(`!!${ui.$('role-title-badge')}`)
   check(
     (await ui.ev(
@@ -374,7 +382,151 @@ async function mainRun(ui, turnLock) {
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-8-proposition')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 4`, 30000)
+  // Travail lancé par l'agent : sa carte de lancement et « Sous-tâches », comme avant (lot 264).
+  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 1`, 30000)
+  await ui.waitFor(`document.querySelectorAll('[data-testid=subtask-row]').length === 1`, 30000)
+  check(
+    (await ui.ev(`${cards}.length`)) === 3,
+    'proposition de l’agent : sa carte et « Sous-tâches » à part, les cartes-réponses inchangées'
+  )
+}
+
+/**
+ * Carte-réponse unique (fiche 263, écran A des maquettes de la fiche 260), scénario `avis-long` :
+ * en cours (activité, temps), a répondu (réponse entière repliée, « Lire la suite »), transmise
+ * (« Demander à … de l'appliquer » : le message part à la mère), « Répondre à … » (la suite et sa
+ * réponse dans la même carte). Captures `263-carte-*`.
+ */
+async function cardRun(ui, turnLock) {
+  await ui.ready()
+  await ui.closePanel()
+  // Le travail est retenu par le verrou : on le voit au travail sans le prendre au vol.
+  writeFileSync(turnLock, '')
+  await typeIn(
+    ui,
+    '@ux-ui-expert À quoi ça pourrait ressembler visuellement ? Propose une direction.'
+  )
+  await ui.press('Escape')
+  await ui.waitFor(`!!${ui.$('role-destination')}`)
+  await ui.enter()
+  const card = `document.querySelector('[data-testid=work-card][data-role=ux-ui-expert]')`
+  await ui.waitFor(`${card}?.dataset.state === 'running'`, 30000)
+  await heldTurns(turnLock, 1)
+  // Les deux lectures du scénario sont passées : les derniers faits de la carte.
+  await ui.waitFor(
+    `${card}.querySelectorAll('[data-testid=work-live-done] li').length === 2`,
+    15000
+  )
+  const running = await ui.ev(`(() => {
+    const card = ${card}
+    const bubble = document.querySelector('[data-testid=role-request]')
+    return {
+      before: !!(bubble.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING),
+      mention: bubble.querySelector('[data-testid=role-mention]')?.dataset.role,
+      elapsed: card.querySelector('[data-testid=work-state]').innerText,
+      stop: !!card.querySelector('[data-testid=work-stop]'),
+      open: !!card.querySelector('[data-testid=work-open]'),
+      others: !!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')
+    }
+  })()`)
+  check(
+    running.before &&
+      running.mention === 'ux-ui-expert' &&
+      /^\d+:\d\d$/.test(running.elapsed) &&
+      running.stop &&
+      running.open &&
+      !running.others,
+    `en cours : la bulle, la carte juste dessous, temps écoulé, Arrêter, Ouvrir (${JSON.stringify(running)})`
+  )
+  await ui.shot('263-carte-en-cours')
+  check(
+    (await ui.ev(`${card}?.dataset.state`)) === 'running',
+    'capture prise pendant le travail (verrou tenu)'
+  )
+
+  // A répondu : la réponse entière, repliée ; « Lire la suite » la déplie.
+  rmSync(turnLock)
+  await ui.waitFor(`${card}?.dataset.state === 'replied'`, 30000)
+  await ui.waitFor(`!!${card}.querySelector('[data-testid=work-more]')`, 10000)
+  const replied = await ui.ev(`(() => {
+    const card = ${card}
+    const body = card.querySelector('[data-testid=work-body]')
+    return {
+      folded: body.dataset.folded === 'true' && body.clientHeight < body.scrollHeight,
+      whole: body.textContent.includes('FIN-DE-L-AVIS'),
+      heading: !!body.querySelector('h3'),
+      relay: card.querySelector('[data-testid=work-relay]')?.dataset.sent,
+      apply: !!card.querySelector('[data-testid=work-apply]'),
+      reply: !!card.querySelector('[data-testid=work-reply]')
+    }
+  })()`)
+  check(
+    replied.folded &&
+      replied.whole &&
+      replied.heading &&
+      replied.relay === 'false' &&
+      replied.apply &&
+      replied.reply,
+    `a répondu : réponse entière en Markdown, repliée ; pas encore transmise ; Appliquer, Répondre (${JSON.stringify(replied)})`
+  )
+  await reveal(ui, card)
+  await ui.shot('263-carte-repondu')
+  await ui.click(`${card}.querySelector('[data-testid=work-more]')`)
+  await ui.waitFor(`!${card}.querySelector('[data-testid=work-body]').dataset.folded`)
+  check(
+    (await ui.ev(`${card}.querySelector('[data-testid=work-more]').innerText`)) ===
+      L('workCard.collapse'),
+    '« Lire la suite » déplie sur place, « Replier » la referme'
+  )
+  await ui.click(`${card}.querySelector('[data-testid=work-more]')`)
+
+  // « Demander à … de l'appliquer » : le message préparé part à la mère, la carte reste en place.
+  await ui.click(`${card}.querySelector('[data-testid=work-apply]')`)
+  await ui.waitFor(
+    `${card}.querySelector('[data-testid=work-relay]')?.dataset.sent === 'true'`,
+    30000
+  )
+  await ui.ready()
+  const sent = await ui.ev(`(() => {
+    const card = ${card}
+    const message = [...document.querySelectorAll('[data-testid=user-message]')].at(-1)
+    return {
+      text: message?.innerText ?? '',
+      after: !!message && !!(card.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING),
+      apply: !!card.querySelector('[data-testid=work-apply]'),
+      replied: document.querySelector('.msg-agent')?.innerText.includes('appliqué') ?? false
+    }
+  })()`)
+  check(
+    sent.text.includes(L('workCard.applyMessage', { role: 'Expert UX/UI' }).slice(0, 12)) &&
+      sent.after &&
+      !sent.apply,
+    `transmise : le message préparé sous la carte, l’action principale disparue (${JSON.stringify(sent)})`
+  )
+  await reveal(ui, card)
+  await ui.shot('263-carte-transmise')
+
+  // « Répondre à … » : la puce du rôle dans la saisie ; la suite va dans la même carte.
+  await ui.click(`${card}.querySelector('[data-testid=work-reply]')`)
+  await ui.waitFor(`${ui.$('role-token')}?.dataset.reply === 'true'`)
+  await typeIn(ui, 'Et les contrastes ?')
+  await ui.waitFor(`${ui.$('role-destination')}?.dataset.reply === 'true'`)
+  await ui.enter()
+  await ui.waitFor(`!!${card}.querySelector('[data-testid=work-ask]')`, 30000)
+  await ui.waitFor(
+    `${card}.querySelectorAll('[data-testid=work-answer]').length === 2 && ${card}.dataset.state === 'replied'`,
+    30000
+  )
+  check(
+    (await ui.ev(`${cards}.length`)) === 1 &&
+      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1 &&
+      (await ui.ev(
+        `${card}.querySelectorAll('[data-testid=work-answer]')[1].innerText.includes('Contrastes')`
+      )),
+    'Répondre : la suite et sa réponse dans la même carte, aucun nouveau travail'
+  )
+  await reveal(ui, `${card}.querySelector('[data-testid=work-ask]')`)
+  await ui.shot('263-carte-repondre')
 }
 
 async function requestedRun(ui) {
@@ -408,6 +560,7 @@ async function requestedRun(ui) {
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-10-proposition-demandee')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
+  // Travail lancé par l'agent : sa carte de lancement, comme avant (lot 264).
   await ui.waitFor(`!!${ui.$('role-launch-open')}`, 30000)
   // Bouton ordinaire : cliqué sans viser, le fil peut défiler (réveil de la mère).
   await ui.ev(`${ui.$('role-launch-open')}.click()`)

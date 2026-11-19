@@ -603,6 +603,11 @@ export type AgentEvent =
   /** Recommandation de fusion d'une fille par l'agent de la mère (`recommend_merge`, fiche 160). */
   | { type: 'child-recommendation'; recommendation: ChildRecommendation }
   /**
+   * Demande de l'utilisateur à des rôles (fiche 263) : la bulle « @Rôle … », posée par l'app dans
+   * le fil de la mère, puis complétée à chaque travail parti (même `requestId`).
+   */
+  | { type: 'role-request'; request: import('./role-request').RoleRequest }
+  /**
    * Relecture du travail de cette conversation (fiche 177), posée par l'app dans son fil, puis
    * remplacée à chaque étape (même `reviewId`).
    */

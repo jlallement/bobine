@@ -72,7 +72,7 @@ async function run(ui) {
   await ui.waitFor(`!!${ui.$('role-token')}`)
   await ui.enter()
   await ui.waitFor(
-    `!!document.querySelector('[data-testid=role-launch][data-role=security-expert]')`,
+    `!!document.querySelector('[data-testid=work-card][data-role=security-expert]')`,
     30000
   )
   await ui.waitFor(`${input}.value === '' && !${ui.$('role-token')}`)
@@ -204,7 +204,7 @@ async function run(ui) {
   check(!(await hint()), 'après trois utilisations, plus de rappel')
 
   // La fille : son historique commence par sa consigne, sans rien de la mère.
-  await ui.ev(`${ui.$('role-launch-open')}.click()`)
+  await ui.ev(`${ui.$('work-open')}.click()`)
   await ui.waitFor(`!!${ui.$('role-title-badge')}`)
   await ui.waitFor(`${input} && !${input}.disabled`)
   await focus()

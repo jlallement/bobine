@@ -2806,6 +2806,7 @@ export type FrResources = {
     readonly exportedAt: 'Exporté le {{date}} par Bobine'
     readonly omitted: '[… {{count}} caractères omis]'
     readonly you: 'Vous'
+    readonly roleRequest: 'Vous, à {{roles}}'
     readonly attachments: 'Pièces jointes : {{files}}'
     readonly thought: 'Réflexion'
     readonly tool: 'Outil'
@@ -4394,6 +4395,8 @@ export type FrResources = {
     }
     readonly token: { readonly remove: 'Retirer {{label}}' }
     readonly destination: {
+      readonly reply: 'Répondra à <strong>{{label}}</strong>, dans le même travail'
+      readonly replyToken: 'suite du travail'
       readonly one: 'Partira à <strong>{{label}}</strong>, dans une conversation fille'
       readonly many_one: 'Partira à <strong>{{count}} rôle</strong>, une conversation fille chacun, en parallèle'
       readonly many_many: 'Partira à <strong>{{count}} rôles</strong>, une conversation fille chacun, en parallèle'
@@ -4600,6 +4603,47 @@ export type FrResources = {
     readonly waited: '{{duration}} à vous attendre'
     readonly working: 'Travaille encore…'
     readonly openChanges: 'Voir dans Modifications (toute la conversation)'
+  }
+  readonly workCard: {
+    readonly readOnly: 'lecture seule · dans ce dossier'
+    readonly readOnlyRequested: 'lecture seule demandée · dans ce dossier'
+    readonly readOnlyRequestedHint: 'L’agent de ce travail écrit sans demander : la lecture seule lui est demandée, Bobine vérifie à la fin de chaque réponse.'
+    readonly inBranch: 'écrit dans sa branche'
+    readonly inFolder: 'écrit dans ce dossier'
+    readonly state: {
+      readonly running: 'en cours'
+      readonly starting: 'démarre'
+      readonly waiting: 'attend votre accord'
+      readonly replied: 'a répondu · {{time}}'
+      readonly answered: 'a répondu'
+      readonly stopped: 'arrêté'
+      readonly error: 'en erreur'
+      readonly gone: 'conversation supprimée'
+    }
+    readonly elapsed: 'Temps écoulé : {{time}}'
+    readonly waitingLine: 'Attend votre réponse dans sa conversation.'
+    readonly stop: 'Arrêter'
+    readonly stopLabel: 'Arrêter ce travail (l’agent principal continue)'
+    readonly open: 'Ouvrir sa conversation'
+    readonly readMore: 'Lire la suite'
+    readonly collapse: 'Replier'
+    readonly cut: 'Réponse coupée à {{shown}} caractères sur {{total}} : la suite est dans sa conversation.'
+    readonly noReply: 'Pas de réponse écrite.'
+    readonly stoppedLine: 'Arrêté avant la fin de sa réponse.'
+    readonly free: 'gratuit'
+    readonly apply: 'Demander à {{agent}} de l’appliquer'
+    readonly applyMessage: 'Applique la proposition de {{role}} ci-dessus.'
+    readonly reply: 'Répondre à {{role}}'
+    readonly retry: 'Relancer'
+    readonly retryLabel: 'Relancer la même demande à {{role}}'
+    readonly changes: 'Voir les modifications'
+    readonly mainAgent: 'l’agent principal'
+    readonly relayPending: 'Pas encore transmise à {{agent}} — elle le sera avec votre prochain message'
+    readonly relayDone: 'Transmise à {{agent}}'
+    readonly relayDoneAt: 'Transmise à {{agent}} · {{time}}'
+    readonly error: {
+      readonly gone: 'Ce travail n’existe plus, ou n’est plus rattaché à cette conversation.'
+    }
   }
   readonly workCue: {
     readonly replied: 'a répondu'

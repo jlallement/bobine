@@ -7,7 +7,12 @@ import type { IpcHandlers } from '@shared/ipc'
 import type { RoleFileScope, RoleScope } from '@shared/roles'
 import type { RolesChannel } from '@shared/roles-ipc'
 import type { RoleLibrary } from './library'
-import { parseRolesStartRequest, startRoleChildren, type RoleInvokeHost } from './invoke'
+import {
+  parseRolesReplyRequest,
+  parseRolesStartRequest,
+  startRoleChildren,
+  type RoleInvokeHost
+} from './invoke'
 import { roleExportHandlers } from './export/ipc'
 import type { RoleExports } from './export/service'
 
@@ -103,6 +108,14 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       const parsed = parseRolesStartRequest(request)
       const keep = available().keepDraft
       return startRoleChildren(children, id, parsed, keep ? () => keep(id, parsed.text) : undefined)
+    },
+    'roles:reply': (conversationId, request) => {
+      const children = available().children?.()
+      if (!children) throw new Error(t('ipc.unavailable.children'))
+      const id = optionalId(conversationId)
+      if (!id) throw new Error('Paramètre invalide : conversationId')
+      const { childId, text } = parseRolesReplyRequest(request)
+      return children.reply(id, childId, text)
     }
   }
 }

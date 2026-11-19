@@ -534,7 +534,7 @@ export function Composer(props: Props) {
           agentLabel={agentLabel}
           onPutBack={putBack}
         />
-        <RoleTokens roles={roleView.tokens} onRemove={roleView.remove} />
+        <RoleTokens roles={roleView.tokens} onRemove={roleView.remove} {...roleView.reply} />
         <LostAttachments count={history.lost} />
         {commandMenu.pendingHint && (
           <div className="command-pending" data-testid="command-hint">
@@ -645,6 +645,7 @@ function ComposerBelow({
         profileId={profileId}
         agentLabel={agentLabel}
         opinion={roleView.opinion}
+        reply={!!roleView.reply.replying}
         launch={
           roleView.launch && {
             // Un choix de « Changer… » rend le focus à la saisie : Entrée envoie ensuite.

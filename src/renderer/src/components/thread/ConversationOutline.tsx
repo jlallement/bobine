@@ -23,7 +23,11 @@ export function ConversationOutline({
   onGo?: (id: number) => void
 }) {
   const { t } = useTranslation()
-  const messages = items.flatMap((i) => (i.kind === 'user' && i.text.trim() ? [i] : []))
+  // Une demande à des rôles (bulle « @Rôle … », fiche 263) est un message de l'utilisateur ; sa
+  // suite dans une carte-réponse n'est pas à sa place dans le fil.
+  const messages = items.flatMap((i) =>
+    (i.kind === 'user' || (i.kind === 'role-request' && !i.followUp)) && i.text.trim() ? [i] : []
+  )
   const [current, setCurrent] = useState<number | undefined>(undefined)
   const [room, setRoom] = useState(false)
   const [height, setHeight] = useState(0)
@@ -45,7 +49,9 @@ export function ConversationOutline({
       // Le message lu : le dernier dont le haut a passé le premier tiers de la zone visible.
       const line = el.getBoundingClientRect().top + el.clientHeight / 3
       let id: number | undefined
-      const nodes = el.querySelectorAll<HTMLElement>('[data-testid=user-message]')
+      const nodes = el.querySelectorAll<HTMLElement>(
+        '[data-testid=user-message], [data-testid=role-request]'
+      )
       for (const node of nodes) {
         if (node.getBoundingClientRect().top <= line) id = Number(node.dataset['itemId'])
       }

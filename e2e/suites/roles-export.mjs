@@ -211,12 +211,9 @@ async function bobRun(ui, { home, workspace }) {
   await ui.ev(`document.querySelector('[data-testid="composer-input"]').focus()`)
   await ui.type('/scenario echo')
   await ui.enter()
-  await ui.waitFor(`!!${ui.$('child-report')}`, 30_000)
+  await ui.waitFor(`!!${ui.$('work-answer')}`, 30_000)
   const expected = LANG === 'en' ? 'Mode: code-reviewer' : 'Mode : code-reviewer'
-  await ui.waitFor(
-    `${ui.$('child-report')}.innerText.includes(${JSON.stringify(expected)})`,
-    30_000
-  )
+  await ui.waitFor(`${ui.$('work-answer')}.innerText.includes(${JSON.stringify(expected)})`, 30_000)
   check(true, 'lancer dans ce mode : la fille du rôle travaille dans le mode installé de Bob')
   await ui.shot('rx5-fille-mode-installe')
 

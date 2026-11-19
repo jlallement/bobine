@@ -69,6 +69,15 @@ export interface SubtasksInfo {
   merge?: ChildrenMergeActions
   /** Profils (fiche 223) : lecture seule seulement demandée d'un rôle, selon l'agent de la fille. */
   profiles?: readonly ProfileSummary[]
+  /**
+   * Message de l'utilisateur à l'agent de la conversation (« Demander à <agent> de l'appliquer »,
+   * fiche 263) ; absent : pas de bouton.
+   */
+  onAsk?: (text: string) => void
+  /** Nom de l'agent de la conversation, dit sur les cartes-réponses (fiche 263). */
+  agentLabel?: string
+  /** Échec d'une action d'une carte-réponse (arrêter, relancer), dit à l'utilisateur. */
+  onWarn?: (message: string) => void
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
@@ -600,4 +609,31 @@ export function ChildReportItem({
       </div>
     </div>
   )
+}
+
+/**
+ * Coût d'un compte rendu (fiche 117) : celui de la fille à la fin de son tour. Un agent qui
+ * enregistre son coût juste après sa réponse (Bob, lu hors protocole, fiche 157) le donne après le
+ * compte rendu : le **dernier** compte rendu d'une fille au repos prend donc son coût actuel, le
+ * même que la ligne de « Sous-tâches » ; un compte rendu plus ancien garde le sien.
+ */
+export function withLateCost(
+  item: Report,
+  lastReports: ReadonlyMap<string, number>,
+  children: readonly ConversationSummary[] | undefined
+): Report {
+  if (lastReports.get(item.childId) !== item.id) return item
+  const child = children?.find((c) => c.id === item.childId)
+  if (!child?.usage || child.status === 'busy') return item
+  return { ...item, usage: child.usage }
+}
+
+/**
+ * Ce que montrent « Sous-tâches » et les lancements (fiche 263) : sans les travaux d'une bulle
+ * « @Rôle … », qui ont leur carte-réponse. Mêmes données sinon (`subtasks` passe tel quel aux
+ * cartes-réponses, qui ont besoin de toutes les filles).
+ */
+export function withoutCards(info: SubtasksInfo, carded: ReadonlySet<string>): SubtasksInfo {
+  if (carded.size === 0) return info
+  return { ...info, children: info.children.filter((c) => !carded.has(c.id)) }
 }

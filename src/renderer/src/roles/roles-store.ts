@@ -63,33 +63,43 @@ export function closeRoleWizard(): void {
   update({ wizard: null })
 }
 
-const invoked = new Set<(name: string) => void>()
+/**
+ * Suite d'un travail (« Répondre à <rôle> », fiche 263) : le message suivant va à la même
+ * conversation `replyTo`, sa bulle s'ajoute dans la carte-réponse du travail.
+ */
+export interface RoleInvokeOptions {
+  replyTo?: string
+}
+
+type RoleInvoked = (name: string, options: RoleInvokeOptions) => void
+
+const invoked = new Set<RoleInvoked>()
 /** Rôle invoqué sans saisie montée (page « Mon activité »…) : remis à la prochaine, peu après. */
-let waiting: { name: string; at: number } | null = null
+let waiting: { name: string; options: RoleInvokeOptions; at: number } | null = null
 const WAITING_MS = 10_000
 
 /**
  * Confie un travail à un rôle : son jeton `@rôle` est posé dans la saisie de la conversation
  * affichée, qui prend le focus ; l'utilisateur écrit sa demande et envoie (une fille avec ce rôle,
- * fiche 223 phase 3B). `false` si aucune saisie ne l'a reçu : il attend alors (10 s) la prochaine
- * qui s'abonne — l'appelant ramène la conversation à l'écran.
+ * fiche 223 phase 3B ; ou la suite d'un travail, `replyTo`). `false` si aucune saisie ne l'a reçu :
+ * il attend alors (10 s) la prochaine qui s'abonne — l'appelant ramène la conversation à l'écran.
  */
-export function invokeRole(name: string): boolean {
+export function invokeRole(name: string, options: RoleInvokeOptions = {}): boolean {
   if (invoked.size === 0) {
-    waiting = { name, at: Date.now() }
+    waiting = { name, options, at: Date.now() }
     return false
   }
   waiting = null
-  for (const listener of invoked) listener(name)
+  for (const listener of invoked) listener(name, options)
   return true
 }
 
 /** La saisie qui reçoit les jetons (celle de la conversation affichée) ; rend le désabonnement. */
-export function onRoleInvoked(listener: (name: string) => void): () => void {
+export function onRoleInvoked(listener: RoleInvoked): () => void {
   invoked.add(listener)
   const pending = waiting
   waiting = null
-  if (pending && Date.now() - pending.at < WAITING_MS) listener(pending.name)
+  if (pending && Date.now() - pending.at < WAITING_MS) listener(pending.name, pending.options)
   return () => invoked.delete(listener)
 }
 

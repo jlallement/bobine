@@ -9,7 +9,7 @@ import type { RoleMenuEntry } from './RoleMenu'
 import { RoleDestination, RoleTokens } from './RoleCompose'
 import { useRoleStyle } from './RoleAvatar'
 import { readOnlyShown, roleProfile } from './role-view'
-import { onRoleInvoked } from '../../roles/roles-store'
+import { onRoleInvoked, type RoleInvokeOptions } from '../../roles/roles-store'
 import type { UncommittedChoice } from '@shared/launch-folder'
 import { useLaunchFolder } from '../thread/LaunchLine'
 import { uncommittedOf, type LaunchChoice } from '../../launch-choice'
@@ -46,6 +46,11 @@ export interface ComposerRoles {
   ) => Promise<{ started: string[]; failed: string[] }>
   /** La conversation (la mère) : son dossier est lu quand un rôle qui écrit est cité (fiche 262). */
   motherId?: string
+  /**
+   * « Répondre à <rôle> » (fiche 263) : le message va au travail `childId` déjà lancé ; `false` si
+   * l'envoi a échoué (raison déjà dite).
+   */
+  reply?: (childId: string, text: string) => Promise<boolean>
   /** « Committer d'abord » (fiches 240, 262) : ces fichiers, dans le dépôt de la mère. */
   commitFolder?: (message: string, files: string[]) => Promise<unknown>
   /** Relit les rôles et les rend (un `@nom` inconnu à l'envoi : rôle tout juste créé ?). */
@@ -158,6 +163,29 @@ export function useRoleCompose(options: {
     setCommittingState(on)
   }
   const add = (name: string) => update(tokens.includes(name) ? tokens : [...tokens, name])
+  const { replying, forget, setReplyTo } = useWorkReply(draftKey)
+  /** La suite part au travail visé ; même retour qu'un lancement (jetons, saisie remise si échec). */
+  const dispatchReply = (
+    target: { name: string; childId: string },
+    text: string,
+    at: Parameters<typeof dispatch>[1]
+  ) => {
+    const reply = roles?.reply
+    if (!reply || !text.trim()) return
+    if (at.attachmentCount > 0) return options.onWarn(i18next.t('roleWork.destination.attachments'))
+    options.onSent?.({ text: at.text, tokens: tokensNow.current })
+    setBusy(true, [target.name])
+    const before = tokensNow.current
+    update(before.filter((t) => t !== target.name))
+    at.changeText('', 0)
+    void reply(target.childId, text)
+      .then((sent) => {
+        if (sent) return setReplyTo(undefined)
+        update(before)
+        if (textNow.current === '') at.changeText(at.text, at.text.length)
+      })
+      .finally(() => setBusy(false))
+  }
   /**
    * Une fille par rôle. Toutes parties : jetons retirés, saisie vidée si elle n'a pas changé.
    * Certaines refusées : leurs jetons restent (les `@nom` tapés deviennent des jetons) avec la
@@ -213,6 +241,8 @@ export function useRoleCompose(options: {
    * « Committer d'abord », Entrée mène au bouton du commit : le message part une fois commité.
    */
   const guarded = (to: { names: string[]; text: string }, at: Parameters<typeof dispatch>[1]) => {
+    const target = replying(to.names)
+    if (target) return dispatchReply(target, to.text, at)
     if (!writes(to.names) || !roles?.motherId) return dispatch(to, at, undefined)
     if (committingNow.current) return setFocusCommit((n) => n + 1)
     const known = stateNow.current
@@ -224,9 +254,13 @@ export function useRoleCompose(options: {
       dispatch(to, at, uncommittedOf(state, choiceNow.current))
     })
   }
-  useRoleInvoked(roles, (name) => {
+  useRoleInvoked(roles, (name, invoked) => {
     if (!roles?.invokable) return options.onWarn(i18next.t('team.notHere'))
-    add(name)
+    if (invoked.replyTo && roles.reply) {
+      // La suite d'un travail va à lui seul : les autres jetons partent.
+      update([name])
+      setReplyTo({ name, childId: invoked.replyTo })
+    } else add(name)
     // Un rôle tout juste créé n'est pas encore dans la liste : son jeton paraît à la relecture.
     roles.refresh()
     // Focus à la saisie tout de suite (section Équipe), et encore après la fermeture d'un dialogue
@@ -306,6 +340,7 @@ export function useRoleCompose(options: {
       const last = shownTokens.at(-1)
       if (!last) return false
       update(tokens.filter((t) => t !== last.name))
+      forget(last.name)
       return true
     },
     menu: (query: string | undefined): RoleMenuOptions | undefined =>
@@ -339,8 +374,12 @@ export function useRoleCompose(options: {
           : sendingTo.flatMap((name) => list.find((r) => r.name === name) ?? [])
       // Rien à demander une fois les `@nom` retirés : l'envoi attend, la ligne le dit.
       const empty = typed.length > 0 && !roleRecipients(tokens, text, list).text.trim()
+      // Suite d'un travail : ni dossier à lire, ni « Changer… » (le travail existe déjà).
+      const reply = replying(typed.map((r) => r.name))
       return {
         tokens: shownTokens,
+        /** Le jeton du rôle dont on poursuit le travail (« Répondre à … », fiche 263). */
+        reply: { replying: reply?.name },
         targets,
         empty,
         /** `@rôle` tapé là où il ne lance pas de fille : il part en texte, c'est dit. */
@@ -349,13 +388,16 @@ export function useRoleCompose(options: {
         sending,
         /** L'envoi aux rôles est possible (bouton). */
         ready: typed.length > 0 && !empty && !sending,
-        remove: (name: string) => update(tokens.filter((t) => t !== name)),
+        remove: (name: string) => {
+          update(tokens.filter((t) => t !== name))
+          forget(name)
+        },
         /**
          * Où partira un rôle qui écrit (fiche 262) : état du dossier une fois lu, choix affiché,
          * « Committer d'abord » ouvert.
          */
         launch:
-          writing && folder.state
+          writing && folder.state && !reply
             ? {
                 state: folder.state,
                 choice,
@@ -368,7 +410,7 @@ export function useRoleCompose(options: {
             : undefined,
         /** « Juste un avis » choisi pour un rôle qui écrit : la ligne le dit (lecture seule). */
         opinion:
-          writing && folder.state?.place === 'worktree' && choice === 'readOnly'
+          !reply && writing && folder.state?.place === 'worktree' && choice === 'readOnly'
             ? { sees: folder.state.dirty?.count ?? 0 }
             : undefined
       }
@@ -400,15 +442,41 @@ function unknownMention(text: string, list: readonly Pick<RoleView, 'name'>[]): 
   })
 }
 
+/**
+ * Suite d'un travail (« Répondre à … », fiche 263) : le rôle et le travail visé, pour ce brouillon.
+ * Elle ne vaut que si ce rôle est le seul cité ; retirer son jeton l'oublie.
+ */
+function useWorkReply(draftKey: string | undefined) {
+  const [replyTo, setReplyTo] = useState<{
+    key: string | undefined
+    name: string
+    childId: string
+  }>()
+  return {
+    replying: (names: readonly string[]) =>
+      replyTo && replyTo.key === draftKey && names.length === 1 && names[0] === replyTo.name
+        ? replyTo
+        : undefined,
+    forget: (name: string) => {
+      if (replyTo?.name === name) setReplyTo(undefined)
+    },
+    setReplyTo: (target: { name: string; childId: string } | undefined) =>
+      setReplyTo(target && { key: draftKey, ...target })
+  }
+}
+
 /** Rôle invoqué d'ailleurs (`invokeRole`) : reçu par la saisie qui a des rôles, la plus récente. */
-function useRoleInvoked(roles: ComposerRoles | undefined, receive: (name: string) => void): void {
+function useRoleInvoked(
+  roles: ComposerRoles | undefined,
+  receive: (name: string, options: RoleInvokeOptions) => void
+): void {
   const latest = useRef(receive)
   useEffect(() => {
     latest.current = receive
   })
   const listening = !!roles
   useEffect(
-    () => (listening ? onRoleInvoked((name) => latest.current(name)) : undefined),
+    () => (listening ? onRoleInvoked((name, invoked) => latest.current(name, invoked)) : undefined),
     [listening]
   )
 }
@@ -433,7 +501,8 @@ export function RoleDestinationFor({
   profileId,
   agentLabel,
   opinion,
-  launch
+  launch,
+  reply = false
 }: {
   targets: readonly RoleView[]
   empty: boolean
@@ -441,6 +510,8 @@ export function RoleDestinationFor({
   roles: ComposerRoles | undefined
   profileId: string | undefined
   agentLabel: string
+  /** Suite d'un travail déjà lancé (« Répondre à … », fiche 263). */
+  reply?: boolean
   /** « Juste un avis » choisi pour un rôle qui écrit (fiche 262). */
   opinion?: { sees: number } | undefined
   /** Où partira un rôle qui écrit, et « Changer… » (fiche 262). */
@@ -465,6 +536,7 @@ export function RoleDestinationFor({
       sending={sending}
       {...(opinion ? { opinion } : {})}
       {...(launch ? { launch } : {})}
+      {...(reply ? { reply } : {})}
     />
   )
 }

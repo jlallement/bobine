@@ -74,7 +74,8 @@ const LONG_LABEL = 'Experte en accessibilité des écrans web'
 const input = `document.querySelector('[data-testid="composer-input"]')`
 const scroller = `document.querySelector('.thread').closest('.scroll')`
 const cue = `document.querySelector('[data-testid=work-cue]')`
-const reports = `[...document.querySelectorAll('[data-testid=child-report]')]`
+// Cartes-réponses qui ont répondu (fiche 263) : à place fixe, sous leur bulle.
+const reports = `[...document.querySelectorAll('[data-testid=work-card][data-state=replied]')]`
 
 /** Tours retenus par le verrou de l'agent factice (une ligne chacun, `docs/mock-agent.md`). */
 const held = (turnLock) => {
@@ -94,14 +95,14 @@ async function heldTurns(turnLock, count, timeoutMs = 30000) {
 async function delegate(ui, turnLock, text, roles) {
   writeFileSync(turnLock, '')
   const before = held(turnLock)
-  const launches = await ui.ev(`document.querySelectorAll('[data-testid=role-launch]').length`)
+  const launches = await ui.ev(`document.querySelectorAll('[data-testid=work-card]').length`)
   await ui.ev(`${input}.focus()`)
   await ui.type(text)
   await ui.press('Escape')
   await ui.waitFor(`!!document.querySelector('[data-testid=role-destination]')`)
   await ui.enter()
   await ui.waitFor(
-    `document.querySelectorAll('[data-testid=role-launch]').length === ${launches + roles}`,
+    `document.querySelectorAll('[data-testid=work-card]').length === ${launches + roles}`,
     30000
   )
   await heldTurns(turnLock, before + roles)

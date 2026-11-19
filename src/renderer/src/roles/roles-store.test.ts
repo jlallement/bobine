@@ -11,7 +11,7 @@ describe('gestes des rôles (fiche 223)', () => {
     const received = vi.fn()
     const stop = onRoleInvoked(received)
     expect(invokeRole('tech-lead')).toBe(true)
-    expect(received).toHaveBeenCalledWith('tech-lead')
+    expect(received).toHaveBeenCalledWith('tech-lead', {})
     stop()
   })
 
@@ -19,11 +19,21 @@ describe('gestes des rôles (fiche 223)', () => {
     expect(invokeRole('tech-lead')).toBe(false)
     const received = vi.fn()
     const stop = onRoleInvoked(received)
-    expect(received).toHaveBeenCalledWith('tech-lead')
+    expect(received).toHaveBeenCalledWith('tech-lead', {})
     stop()
     const again = vi.fn()
     onRoleInvoked(again)()
     expect(again).not.toHaveBeenCalled()
+  })
+
+  it('« Répondre à … » (fiche 263) : le travail visé suit le rôle, même remis plus tard', () => {
+    expect(invokeRole('ux', { replyTo: 'f1' })).toBe(false)
+    const received = vi.fn()
+    const stop = onRoleInvoked(received)
+    expect(received).toHaveBeenCalledWith('ux', { replyTo: 'f1' })
+    expect(invokeRole('ux', { replyTo: 'f2' })).toBe(true)
+    expect(received).toHaveBeenLastCalledWith('ux', { replyTo: 'f2' })
+    stop()
   })
 
   it('sans saisie pendant plus de 10 s : oublié', () => {

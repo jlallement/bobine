@@ -1,13 +1,14 @@
 /**
- * Adaptateur du repère (fiche 261) pour les cartes d'aujourd'hui : un travail délégué est une
- * conversation fille lancée depuis ce fil (`child-started`, fiche 097 ; rôle, fiche 223). Sa carte
- * est son dernier compte rendu, ou à défaut sa carte de lancement ; son état vient de la liste des
- * conversations (`childState`). La fiche 263 remplacera ces cartes par une carte-réponse unique :
- * seul ce fichier changera.
+ * Adaptateur du repère (fiche 261) : un travail délégué est une conversation fille lancée depuis ce
+ * fil (`child-started`, fiche 097 ; rôle, fiche 223). Lancé par une bulle « @Rôle … » (fiche 263),
+ * sa carte est sa carte-réponse, à place fixe (ancre : son lancement, `workCards`). Sinon (lancé par
+ * l'agent, ancienne conversation), sa carte est son dernier compte rendu, ou à défaut sa carte de
+ * lancement. Son état vient de la liste des conversations (`childState`).
  */
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import { childState, type ChildState } from '@shared/children'
+import { workCards } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import type { CueState, CueTarget } from './work-cue'
 
@@ -25,13 +26,17 @@ export function delegatedWorkTargets(
     if (item.kind === 'child-started') launches.set(item.childId, item)
     else if (item.kind === 'child-report') reports.set(item.childId, item.id)
   }
+  const carded = workCards(items)
+  const anchors = new Map(
+    [...carded.byRequest.values()].flat().map((card) => [card.childId, card.anchor])
+  )
   return children.flatMap((child) => {
     const launch = launches.get(child.id)
     if (!launch) return []
     return [
       {
         key: child.id,
-        itemId: reports.get(child.id) ?? launch.id,
+        itemId: anchors.get(child.id) ?? reports.get(child.id) ?? launch.id,
         label: launch.role?.label ?? launch.title,
         ...(launch.role ? { role: launch.role } : {}),
         state: cueState(childState(child, attention[child.id]), !!launch.role)

@@ -60,6 +60,7 @@ function setup(
     send?: ComposerRoles['send']
     reload?: ComposerRoles['reload']
     elsewhere?: RoleView[]
+    reply?: ComposerRoles['reply']
   } = {}
 ) {
   const send = vi.fn(
@@ -73,6 +74,7 @@ function setup(
     refresh: vi.fn(),
     ...(options.reload ? { reload: options.reload } : {}),
     ...(options.elsewhere ? { elsewhere: options.elsewhere } : {}),
+    ...(options.reply ? { reply: options.reply } : {}),
     send,
     profiles: (options.profiles ?? [
       { id: 'mock', label: 'Agent factice', available: true }
@@ -357,6 +359,64 @@ describe('rôle invoqué d’ailleurs (section Équipe, Réglages, assistant) : 
     })
     expect(screen.queryByTestId('role-token')).toBeNull()
     expect(onWarn).toHaveBeenCalledWith(expect.stringContaining('conversation mère'))
+  })
+})
+
+describe('« Répondre à <rôle> » : la suite va au même travail (fiche 263)', () => {
+  it('jeton marqué, ligne « Répondra à … dans le même travail », Entrée part au travail visé', async () => {
+    const reply = vi.fn(async () => true)
+    const { type, key, send, onSend, input } = setup({ reply })
+    act(() => {
+      invokeRole('ux-ui-expert', { replyTo: 'f1' })
+    })
+    const token = screen.getByTestId('role-token')
+    expect(token.dataset['role']).toBe('ux-ui-expert')
+    expect(token.dataset['reply']).toBe('true')
+    type('Et les contrastes ?')
+    const line = screen.getByTestId('role-destination')
+    expect(line.dataset['reply']).toBe('true')
+    expect(line.textContent).toContain('Répondra à Expert UX/UI, dans le même travail')
+    await act(async () => key('Enter'))
+    expect(reply).toHaveBeenCalledWith('f1', 'Et les contrastes ?')
+    expect(send).not.toHaveBeenCalled()
+    expect(onSend).not.toHaveBeenCalled()
+    expect(input.value).toBe('')
+    expect(screen.queryByTestId('role-token')).toBeNull()
+  })
+
+  it('un autre rôle ajouté : ce n’est plus une suite, un nouveau travail part pour chacun', async () => {
+    const reply = vi.fn(async () => true)
+    const { type, key, send } = setup({ reply })
+    act(() => {
+      invokeRole('ux-ui-expert', { replyTo: 'f1' })
+    })
+    act(() => {
+      invokeRole('security-expert')
+    })
+    type('Relisez')
+    expect(screen.getByTestId('role-destination').dataset['reply']).toBeUndefined()
+    await act(async () => key('Enter'))
+    expect(reply).not.toHaveBeenCalled()
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert', 'security-expert'], 'Relisez')
+  })
+
+  it('jeton retiré : la suite est oubliée ; envoi refusé : jeton et texte remis', async () => {
+    const reply = vi.fn(async () => false)
+    const { type, key, input } = setup({ reply })
+    act(() => {
+      invokeRole('ux-ui-expert', { replyTo: 'f1' })
+    })
+    type('Et ensuite ?')
+    await act(async () => key('Enter'))
+    expect(reply).toHaveBeenCalledTimes(1)
+    expect(input.value).toBe('Et ensuite ?')
+    expect(screen.getByTestId('role-token').dataset['reply']).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: /Retirer/ }))
+    expect(screen.queryByTestId('role-token')).toBeNull()
+    act(() => {
+      invokeRole('ux-ui-expert')
+    })
+    expect(screen.getByTestId('role-token').dataset['reply']).toBeUndefined()
   })
 })
 

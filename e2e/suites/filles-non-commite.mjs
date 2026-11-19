@@ -58,8 +58,10 @@ function repository(env = false, commit = true) {
 }
 
 const input = `document.querySelector('[data-testid="composer-input"]')`
-const reports = `[...document.querySelectorAll('[data-testid=child-report]')]`
-const leads = `${reports}.map((r) => r.querySelector('[data-testid=child-report-lead]')?.innerText ?? '')`
+// Réponses dans l'ordre du fil : comptes rendus (travaux de l'agent) et cartes-réponses (bulles
+// « @Rôle … », fiche 263).
+const reports = `[...document.querySelectorAll('[data-testid=child-report], [data-testid=work-answer]')]`
+const leads = `${reports}.map((r) => (r.querySelector('[data-testid=child-report-lead]') ?? r).innerText ?? '')`
 
 async function typeRoles(ui, text) {
   await ui.ev(`${input}.focus()`)
@@ -104,16 +106,15 @@ async function roleRun(ui) {
 
   // Entrée envoie, avec le choix affiché : la fille part du commit, sans le plan (R2).
   await ui.enter()
-  await ui.waitFor(`!!${ui.$('role-launch')}`, 30000)
+  await ui.waitFor(`!!${ui.$('work-card')}`, 30000)
   await ui.waitFor(`${reports}.length === 1`, 30000)
   check(
     (await ui.ev(`${leads}[0]`)).includes('je ne trouve pas plan.md'),
     'Entrée : partie sans elles, la fille ne voit pas le travail non commité'
   )
   check(
-    !!(await ui.ev(`!!${ui.$('child-report-left-behind')}`)) &&
-      !!(await ui.ev(`!!${ui.$('role-launch-left-behind')}`)),
-    'partie sans elles : rappel sur sa carte et sur son compte rendu, dans la mère'
+    !!(await ui.ev(`!!${ui.$('work-left-behind')}`)),
+    'partie sans elles : rappel sur sa carte-réponse, dans la mère'
   )
   await ui.shot('filles-non-commite-2-rappel')
 
@@ -133,7 +134,7 @@ async function roleRun(ui) {
   )
   await ui.shot('filles-non-commite-3-avis')
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 3`, 30000)
+  await ui.waitFor(`document.querySelectorAll('[data-testid=work-card]').length === 3`, 30000)
   await ui.waitFor(`${reports}.length === 3`, 30000)
   const opinions = (await ui.ev(`JSON.stringify(${leads}.slice(1))`)) ?? '[]'
   check(

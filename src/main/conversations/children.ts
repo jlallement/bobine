@@ -29,6 +29,7 @@ import {
   childWork,
   clip,
   cutReplyChars,
+  keptReply,
   lastReply,
   RECOMMENDATION_NOTE_CHARS,
   replyRecap,
@@ -67,6 +68,7 @@ import type {
 } from '@shared/launch-folder'
 import { IN_PLACE_LINE, parseUncommittedChoice } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
+import type { RoleRequest } from '@shared/role-request'
 
 /** Ce que demande « Lancer en parallèle… », ou `start_child`. */
 export interface ChildRequest {
@@ -95,6 +97,12 @@ export interface ChildRequest {
    * suppose aucun.
    */
   uncommitted?: UncommittedChoice
+  /**
+   * Bulle « @Rôle … » de la saisie (fiche 263) : posée, ou complétée de ce travail, juste avant son
+   * lancement dans le fil de la mère ; `works` : les travaux déjà partis pour la même demande,
+   * complété en place par `start` (l'appelant passe le même objet au rôle suivant).
+   */
+  ask?: RoleRequest
 }
 
 /** Une fille vue par `child_status`. */
@@ -243,6 +251,13 @@ export class ChildConversations {
     const child = title ? { ...created, title: this.summary(created.id).title } : created
     if (by) this.waking.await(motherId, child.id)
     this.sending.add(child.id)
+    // Bulle de la demande (fiche 263), avant le lancement : seulement pour un travail parti.
+    const ask = request.ask && role ? request.ask : undefined
+    if (ask && role) {
+      // La demande est complétée en place : le travail suivant du même message s'y ajoute.
+      ask.works = [...ask.works, { childId: child.id, role: roleBadge(role) }]
+      this.conversations.post(motherId, { type: 'role-request', request: { ...ask } })
+    }
     // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
     const posted = this.conversations.post(motherId, {
       type: 'child-started',
@@ -254,6 +269,7 @@ export class ChildConversations {
         ...(by ? { by } : {}),
         ...(role ? { role: roleBadge(role) } : {}),
         ...this.leftBehind(child.id),
+        ...(ask ? { request: ask.requestId } : {}),
         at: Date.now()
       }
     })
@@ -573,7 +589,9 @@ export class ChildConversations {
         const report = {
           ...childReport(child, items, end),
           ...(digest ? { usage: digest } : {}),
-          ...this.leftBehind(child.id)
+          ...this.leftBehind(child.id),
+          // Carte-réponse (fiche 263) : la réponse entière, pour un travail lancé par une bulle.
+          ...(!('error' in end) && this.askedByBubble(motherId, child.id) ? keptReply(items) : {})
         }
         const mother = conversations.find((c) => c.id === motherId)
         if (mother?.status === 'busy') {
@@ -592,6 +610,42 @@ export class ChildConversations {
     this.waking.onEvent(payload)
     this.reviews.onEvent(payload)
     this.readOnly.onEvent(payload)
+  }
+
+  /** Travail lancé par une bulle « @Rôle … » (fiche 263) : son lancement le dit, dans le fil de la mère. */
+  private askedByBubble(motherId: string, childId: string): boolean {
+    return this.conversations
+      .view(motherId)
+      .transcript.items.some(
+        (i) => i.kind === 'child-started' && i.childId === childId && !!i.request
+      )
+  }
+
+  /**
+   * « Répondre à <rôle> » (fiche 263, décision 2 de la fiche 260) : la bulle de suite dans le fil de
+   * la mère (elle s'affiche dans la carte du travail), puis le message à la même conversation,
+   * comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la mère).
+   */
+  reply(motherId: string, childId: string, text: string): 'queued' | 'sent' {
+    const body = text.trim()
+    if (!body) throw new Error(t('children.error.emptyPrompt'))
+    const child = this.conversations.state().conversations.find((c) => c.id === childId)
+    if (!child || child.startedFrom?.id !== motherId || child.reviewOf || !child.role) {
+      throw new Error(t('workCard.error.gone'))
+    }
+    if (child.archived) throw new Error(t('children.error.archived'))
+    const { mcp: _mcp, ...role } = child.role
+    this.conversations.post(motherId, {
+      type: 'role-request',
+      request: {
+        requestId: randomUUID(),
+        text: body,
+        works: [{ childId, role }],
+        followUp: true,
+        at: Date.now()
+      }
+    })
+    return this.deliver(child, body)
   }
 
   /** Liste changée (fille archivée…) : le réveil groupé revoit les mères qui attendent. */
@@ -636,7 +690,7 @@ export class ChildConversations {
   private deliver(
     target: ConversationSummary,
     text: string,
-    from: MessageOrigin
+    from?: MessageOrigin
   ): 'queued' | 'sent' {
     // Prête ou arrêtée (relancée pour l'occasion) : le message part tout de suite ; sinon il attend
     // la fin de la réponse, ou la consigne d'une fille qui démarre.
@@ -647,7 +701,7 @@ export class ChildConversations {
     // se prend au départ du tour).
     const send = () =>
       (queued ? Promise.resolve() : this.readOnly.prepare(target.id)).then(() =>
-        this.conversations.prompt(target.id, text, [], { from })
+        this.conversations.prompt(target.id, text, [], from ? { from } : {})
       )
     // `prompt` se résout à la fin du tour : rien à attendre ici. Un échec est dit dans le fil visé.
     void (launching ? launching.then(send) : send()).catch((error: unknown) => {

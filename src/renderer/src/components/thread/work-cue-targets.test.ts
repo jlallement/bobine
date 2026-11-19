@@ -77,4 +77,46 @@ describe('cibles du repère : le travail délégué d’aujourd’hui (fiche 261
   it('fille sans carte dans ce fil : pas de cible', () => {
     expect(delegatedWorkTargets(items, [child('autre', 'busy')], {})).toEqual([])
   })
+
+  it('travail d’une bulle « @Rôle … » (fiche 263) : sa carte-réponse, à place fixe, même après réponse', () => {
+    const asked: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Demande' },
+      {
+        kind: 'role-request',
+        id: 2,
+        requestId: 'd1',
+        text: 'Propose une direction',
+        works: [{ childId: 'c-ux', role }],
+        at: 1
+      },
+      {
+        kind: 'child-started',
+        id: 3,
+        childId: 'c-ux',
+        title: 'Direction visuelle',
+        prompt: 'Propose une direction',
+        request: 'd1',
+        at: 1,
+        role
+      },
+      {
+        kind: 'child-report',
+        id: 4,
+        childId: 'c-ux',
+        title: 't',
+        outcome: 'done',
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: 'Direction',
+        at: 2
+      }
+    ]
+    const targets = delegatedWorkTargets(asked, [child('c-ux', 'ready')], {})
+    // L'ancre de la carte-réponse (son lancement), pas le compte rendu caché.
+    expect(targets).toEqual([
+      { key: 'c-ux', itemId: 3, label: 'Expert UX/UI', role, state: 'replied' }
+    ])
+  })
 })

@@ -2845,6 +2845,7 @@
     "exportedAt": "Exported on {{date}} by Bobine",
     "omitted": "[… {{count}} characters omitted]",
     "you": "You",
+    "roleRequest": "You, to {{roles}}",
     "attachments": "Attachments: {{files}}",
     "thought": "Thinking",
     "tool": "Tool",
@@ -4369,6 +4370,8 @@
       "remove": "Remove {{label}}"
     },
     "destination": {
+      "reply": "Will go to <strong>{{label}}</strong>, in the same task",
+      "replyToken": "same task",
       "one": "Will go to <strong>{{label}}</strong>, in a child conversation",
       "many_one": "Will go to <strong>{{count}} role</strong>, one child conversation each, in parallel",
       "many_other": "Will go to <strong>{{count}} roles</strong>, one child conversation each, in parallel",
@@ -4570,6 +4573,47 @@
     "waited": "{{duration}} waiting for you",
     "working": "Still working…",
     "openChanges": "Show in Changes (whole conversation)"
+  },
+  "workCard": {
+    "readOnly": "read-only · in this folder",
+    "readOnlyRequested": "read-only requested · in this folder",
+    "readOnlyRequestedHint": "This task’s agent writes without asking: read-only is requested, and Bobine checks after each response.",
+    "inBranch": "writes in its branch",
+    "inFolder": "writes in this folder",
+    "state": {
+      "running": "working",
+      "starting": "starting",
+      "waiting": "waiting for your approval",
+      "replied": "replied · {{time}}",
+      "answered": "replied",
+      "stopped": "stopped",
+      "error": "failed",
+      "gone": "conversation deleted"
+    },
+    "elapsed": "Elapsed: {{time}}",
+    "waitingLine": "Waiting for your answer in its conversation.",
+    "stop": "Stop",
+    "stopLabel": "Stop this task (the main agent keeps going)",
+    "open": "Open its conversation",
+    "readMore": "Read more",
+    "collapse": "Collapse",
+    "cut": "Response cut at {{shown}} characters out of {{total}}: the rest is in its conversation.",
+    "noReply": "No written response.",
+    "stoppedLine": "Stopped before the end of its response.",
+    "free": "free",
+    "apply": "Ask {{agent}} to apply it",
+    "applyMessage": "Apply the proposal from {{role}} above.",
+    "reply": "Reply to {{role}}",
+    "retry": "Retry",
+    "retryLabel": "Send the same request to {{role}} again",
+    "changes": "View changes",
+    "mainAgent": "the main agent",
+    "relayPending": "Not yet passed to {{agent}} — it will be with your next message",
+    "relayDone": "Passed to {{agent}}",
+    "relayDoneAt": "Passed to {{agent}} · {{time}}",
+    "error": {
+      "gone": "This task no longer exists, or is no longer linked to this conversation."
+    }
   },
   "workCue": {
     "replied": "replied",

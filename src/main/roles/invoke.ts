@@ -9,19 +9,31 @@
  * des filles atteint) n'empêche pas les autres : il est rendu avec sa raison.
  */
 import { t } from 'i18next'
+import { randomUUID } from 'node:crypto'
 import { messageOf } from '@shared/errors'
 import { parseUncommittedChoice } from '@shared/launch-folder'
 import type { Message } from '@shared/i18n/message'
 import {
   MAX_ROLES_PER_MESSAGE,
+  type RolesReplyRequest,
   type RolesStartRequest,
   type RolesStartResult
 } from '@shared/roles-ipc'
 import type { ChildConversations } from '../conversations/children'
 import { resolveChoice } from '../mcp/children-tools'
 import { roleDefaults } from './choice'
+import type { RoleRequest } from '@shared/role-request'
 
-export type RoleInvokeHost = Pick<ChildConversations, 'start' | 'choices' | 'findRole'>
+export type RoleInvokeHost = Pick<ChildConversations, 'start' | 'choices' | 'findRole' | 'reply'>
+
+/* « Répondre à <rôle> » (fiche 263) : arguments du renderer, vérifiés. */
+export function parseRolesReplyRequest(value: unknown): RolesReplyRequest {
+  if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
+  const { childId, text } = value as Record<string, unknown>
+  if (typeof childId !== 'string' || !childId) throw new Error('Paramètre invalide : childId')
+  if (typeof text !== 'string' || !text.trim()) throw new Error(t('children.error.emptyPrompt'))
+  return { childId, text: text.trim() }
+}
 
 /* Les arguments viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
 export function parseRolesStartRequest(value: unknown): RolesStartRequest {
@@ -43,7 +55,7 @@ export function parseRolesStartRequest(value: unknown): RolesStartRequest {
 
 /** Lance les filles, une par rôle ; rend celles parties et les refus. */
 export async function startRoleChildren(
-  host: RoleInvokeHost,
+  host: Omit<RoleInvokeHost, 'reply'>,
   motherId: string,
   request: RolesStartRequest,
   /**
@@ -54,6 +66,14 @@ export async function startRoleChildren(
   beforeFirst?: () => void
 ): Promise<RolesStartResult> {
   const result: RolesStartResult = { started: [], failed: [] }
+  // Une bulle « @Rôle … » pour tout le message (fiche 263) : posée au premier travail parti,
+  // complétée des suivants (`start` y ajoute chaque travail parti) ; un rôle refusé n'y paraît pas.
+  const ask: RoleRequest = {
+    requestId: randomUUID(),
+    text: request.text,
+    works: [],
+    at: Date.now()
+  }
   let ready = false
   // L'une après l'autre : deux `git worktree add` à la fois dans le même dépôt peuvent se gêner,
   // et le plafond des filles se compte juste. Chaque lancement rend la main dès la fille créée.
@@ -89,6 +109,7 @@ export async function startRoleChildren(
       const child = await host.start(motherId, {
         text: request.text,
         role: role.name,
+        ask,
         ...(notices.length ? { notices } : {}),
         ...(request.uncommitted ? { uncommitted: request.uncommitted } : {}),
         // Agent ou modèle du rôle introuvables ici : la fille prend ceux de la mère.

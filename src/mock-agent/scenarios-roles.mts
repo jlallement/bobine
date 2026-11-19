@@ -4,14 +4,102 @@
  * OpenCode réglé par défaut (le garde-fou de Bobine le voit). Le mode natif se vérifie avec `echo`
  * (mode de la session et message reçu).
  */
-import type { Scenario } from './scenario.mts'
+import type { Scenario, Step } from './scenario.mts'
 
 /** Résultat d'un outil de l'app, cité dans le fil. */
 const said = (lead: string) => (text: string) => [
   { kind: 'text', text: `${lead}\n\n> ${text.split('\n').join('\n> ')}` } as const
 ]
 
+/** Une lecture annoncée puis finie (`tool_call` puis `completed`) : l'activité de la carte. */
+const read = (id: string, path: string): Step[] => [
+  {
+    kind: 'update',
+    update: {
+      sessionUpdate: 'tool_call',
+      toolCallId: id,
+      title: `Lecture de ${path}`,
+      kind: 'read',
+      status: 'in_progress',
+      locations: [{ path }],
+      rawInput: { path }
+    }
+  },
+  { kind: 'pause', ticks: 3 },
+  {
+    kind: 'update',
+    update: { sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed' }
+  }
+]
+
+/**
+ * Avis long d'un rôle de conseil (fiche 263) : deux lectures, puis une réponse en Markdown de plus
+ * de dix lignes (titres, listes, code) — la carte-réponse la replie, « Lire la suite » la déplie.
+ */
+const LONG_ADVICE = [
+  '### Direction : « Le carnet de courses calme »',
+  '',
+  'L’appli fonctionne, mais elle ressemble à un formulaire. Je propose un carnet : une seule colonne, beaucoup d’air, et la coche comme geste principal.',
+  '',
+  '#### Palette',
+  '',
+  '- Papier `#f6f1e7` en fond, encre `#2f3a2f` pour le texte.',
+  '- Sauge `#7a9a6b` pour la coche et l’ajout, rien d’autre en couleur.',
+  '',
+  '#### Mise en page',
+  '',
+  '- Champ d’ajout en haut, collé, toujours visible ; Entrée ajoute.',
+  '- Articles cochés barrés et descendus en bas, sous « Dans le panier ».',
+  '- Compteur discret « 4 sur 11 » sous le titre, au lieu du badge actuel.',
+  '',
+  '#### Typographie et détails',
+  '',
+  '- Une seule police, 17 px, interligne large ; cibles de 44 px sur mobile.',
+  '- Transitions de 150 ms au plus, aucune si les animations sont réduites.',
+  '',
+  '```css',
+  ':root { --paper: #f6f1e7; --ink: #2f3a2f; --sage: #7a9a6b; }',
+  '```',
+  '',
+  'FIN-DE-L-AVIS'
+].join('\n')
+
 export const roleScenarios: Record<string, Scenario> = {
+  'avis-long': {
+    description:
+      'Avis long d’un rôle (fiche 263) : deux lectures, puis une réponse en Markdown de plus de dix lignes, qui finit par `FIN-DE-L-AVIS` ; une suite « Et les contrastes ? » : une lecture et une réponse courte ; la mère qui reçoit la réponse (`<child_conversations>`) : « C’est appliqué… »',
+    steps: [
+      {
+        kind: 'when-prompt',
+        includes: '<child_conversations>',
+        then: [
+          ...read('applique_lecture', 'src/style.css'),
+          {
+            kind: 'text',
+            text: 'C’est appliqué : fond papier, coche sauge, champ d’ajout collé en haut, articles cochés regroupés sous « Dans le panier ».'
+          }
+        ],
+        else: [
+          {
+            kind: 'when-prompt',
+            includes: 'Et les contrastes',
+            then: [
+              ...read('avis_contraste', 'src/style.css'),
+              {
+                kind: 'text',
+                text: 'Contrastes vérifiés : l’encre sur le papier passe AA (9,8:1), la sauge sur le papier aussi pour les grands textes (3,4:1). Pour la coche seule, foncer la sauge en `#5f7f52`.'
+              }
+            ],
+            else: [
+              ...read('avis_lecture_1', 'src/style.css'),
+              ...read('avis_lecture_2', 'src/main.ts'),
+              { kind: 'text', text: LONG_ADVICE }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   'roles-delegue': {
     description:
       'Délègue à un rôle (fiche 223) : `start_child` avec `role: security-expert` ; la fille joue `echo` (elle dit ce qu’elle a reçu)',

@@ -6,7 +6,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import type { RoleView } from '@shared/roles'
 import type { ChildChoices } from '../conversations/children'
-import { parseRolesStartRequest, startRoleChildren, type RoleInvokeHost } from './invoke'
+import {
+  parseRolesReplyRequest,
+  parseRolesStartRequest,
+  startRoleChildren,
+  type RoleInvokeHost
+} from './invoke'
 
 const role = (name: string, extra: Partial<RoleView> = {}): RoleView => ({
   name,
@@ -37,7 +42,7 @@ function host(roles: RoleView[], limit = 10) {
     count++
     return { id: `fille-${count}` } as ConversationSummary
   })
-  const fake: RoleInvokeHost = {
+  const fake: Omit<RoleInvokeHost, 'reply'> = {
     start,
     choices: () => choices,
     findRole: (_mother, name) => {
@@ -48,6 +53,26 @@ function host(roles: RoleView[], limit = 10) {
   }
   return { fake, start }
 }
+
+/** La requête de lancement sans la bulle de la demande (vérifiée à part, fiche 263). */
+function withoutAsk(request: unknown): unknown {
+  const { ask: _ask, ...rest } = request as Record<string, unknown>
+  return rest
+}
+
+describe('parseRolesReplyRequest (fiche 263)', () => {
+  it('garde le travail visé et le texte nettoyé', () => {
+    expect(parseRolesReplyRequest({ childId: 'f1', text: '  Et le contraste ?  ' })).toEqual({
+      childId: 'f1',
+      text: 'Et le contraste ?'
+    })
+  })
+  it('refuse une requête mal formée', () => {
+    expect(() => parseRolesReplyRequest(null)).toThrow()
+    expect(() => parseRolesReplyRequest({ childId: '', text: 'x' })).toThrow(/childId/)
+    expect(() => parseRolesReplyRequest({ childId: 'f1', text: '  ' })).toThrow()
+  })
+})
 
 describe('parseRolesStartRequest', () => {
   it('garde les noms sans `@`, sans doublon, et le texte nettoyé', () => {
@@ -78,18 +103,30 @@ describe('startRoleChildren', () => {
       ],
       failed: []
     })
-    expect(start.mock.calls.map((c) => c.slice(0, 2))).toEqual([
+    expect(start.mock.calls.map(([mother, request]) => [mother, withoutAsk(request)])).toEqual([
       ['mere', { text: 'Relis.', role: 'a' }],
       ['mere', { text: 'Relis.', role: 'b' }]
     ])
   })
 
+  it('une seule bulle pour le message : la même demande passée à chaque rôle (fiche 263)', async () => {
+    const { fake, start } = host([role('a'), role('b')])
+    await startRoleChildren(fake, 'mere', { roles: ['a', 'b'], text: 'Relis.' })
+    const asks = start.mock.calls.map(([, request]) => (request as { ask: unknown }).ask)
+    expect(asks[0]).toBe(asks[1])
+    expect(asks[0]).toMatchObject({ text: 'Relis.', requestId: expect.any(String) })
+  })
+
   it('agent du rôle repris s’il est disponible ; sinon celui de la mère', async () => {
     const { fake, start } = host([role('a', { agent: 'autre' }), role('b', { agent: 'absent' })])
     await startRoleChildren(fake, 'mere', { roles: ['a', 'b'], text: 'x' })
-    expect(start.mock.calls[0]?.[1]).toEqual({ text: 'x', role: 'a', profileId: 'autre' })
+    expect(withoutAsk(start.mock.calls[0]?.[1])).toEqual({
+      text: 'x',
+      role: 'a',
+      profileId: 'autre'
+    })
     // Agent indisponible : la fille prend celui de la mère, et son fil le dit (une ligne).
-    expect(start.mock.calls[1]?.[1]).toEqual({
+    expect(withoutAsk(start.mock.calls[1]?.[1])).toEqual({
       text: 'x',
       role: 'b',
       notices: [{ key: 'roles.notice.agentMissing', params: { agent: 'absent' } }]

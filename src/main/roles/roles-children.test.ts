@@ -372,6 +372,111 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     ])
   })
 
+  it('fiche 263 : une bulle pour le message, avant les lancements ; rôle refusé absent ; réponse entière gardée', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert', 'astronaute', 'code-reviewer'],
+      text: 'Propose une direction.\n/scenario avis-long'
+    })
+    expect(result.failed.map((f) => f.role)).toEqual(['astronaute'])
+    const fresh = env.items(env.mother).filter((i) => i.kind !== 'user' && i.kind !== 'agent')
+    const bubbles = fresh.filter((i) => i.kind === 'role-request')
+    // Une seule bulle (remplacée à chaque travail parti), posée avant le premier lancement.
+    expect(bubbles).toHaveLength(1)
+    const bubble = bubbles[0]
+    if (bubble?.kind !== 'role-request') throw new Error('pas de bulle')
+    expect(bubble.text).toBe('Propose une direction.\n/scenario avis-long')
+    expect(bubble.followUp).toBeUndefined()
+    expect(bubble.works.map((w) => w.role.name)).toEqual(['security-expert', 'code-reviewer'])
+    expect(bubble.works.map((w) => w.childId)).toEqual(result.started.map((s) => s.childId))
+    const kinds = fresh.map((i) => i.kind)
+    expect(kinds.indexOf('role-request')).toBeLessThan(kinds.indexOf('child-started'))
+    for (const item of fresh) {
+      if (item.kind === 'child-started') expect(item.request).toBe(bubble.requestId)
+    }
+    // La bulle n'est pas un message : aucun tour de la mère, rien à son agent.
+    expect(env.items(env.mother).filter((i) => i.kind === 'user')).toHaveLength(1)
+    for (const { childId } of result.started) await env.settled(childId)
+    await env.waitFor(
+      () => env.items(env.mother).filter((i) => i.kind === 'child-report').length === 2,
+      'deux réponses'
+    )
+    for (const report of env.items(env.mother)) {
+      if (report.kind !== 'child-report') continue
+      // La réponse entière (plus de 400 caractères) pour la carte ; l'extrait pour l'agent.
+      expect(report.reply).toBe(env.lastReply(report.childId).trim())
+      expect(report.reply).toContain('FIN-DE-L-AVIS')
+      expect(report.excerpt.length).toBeLessThan(report.reply?.length ?? 0)
+      expect(report.replyCut).toBeUndefined()
+    }
+  })
+
+  it('fiche 263 : un travail lancé sans bulle (outil de l’agent, dialogue) ne garde pas sa réponse entière', async () => {
+    const env = await environment()
+    const child = await env.children.start(env.mother, {
+      text: 'Relis.\n/scenario avis-long',
+      role: 'code-reviewer'
+    })
+    await env.settled(child.id)
+    await env.waitFor(
+      () => env.items(env.mother).some((i) => i.kind === 'child-report'),
+      'compte rendu'
+    )
+    const report = env.items(env.mother).find((i) => i.kind === 'child-report')
+    expect(report?.kind === 'child-report' && report.reply).toBe(undefined)
+    expect(env.items(env.mother).some((i) => i.kind === 'role-request')).toBe(false)
+  })
+
+  it('fiche 263 : « Répondre à <rôle> » — bulle de suite, message à la même conversation, nouvelle réponse', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis le carnet.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    await env.settled(childId)
+    await env.waitFor(
+      () => env.items(env.mother).some((i) => i.kind === 'child-report'),
+      'première réponse'
+    )
+    const before = env.childrenOf().length
+    expect(env.children.reply(env.mother, childId, '  Et les contrastes ?  ')).toBe('sent')
+    const follow = env.items(env.mother).findLast((i) => i.kind === 'role-request')
+    expect(follow).toMatchObject({
+      followUp: true,
+      text: 'Et les contrastes ?',
+      works: [{ childId, role: { name: 'security-expert' } }]
+    })
+    // La même conversation, sans nouveau travail ; le message arrive tel quel, sans provenance.
+    await env.waitFor(
+      () => env.items(env.mother).filter((i) => i.kind === 'child-report').length === 2,
+      'deuxième réponse'
+    )
+    expect(env.childrenOf()).toHaveLength(before)
+    const asked = env.items(childId).findLast((i) => i.kind === 'user')
+    expect(asked?.kind === 'user' && asked.text).toBe('Et les contrastes ?')
+    expect(asked?.kind === 'user' && asked.from).toBeUndefined()
+    const last = env.items(env.mother).findLast((i) => i.kind === 'child-report')
+    expect(last?.kind === 'child-report' && last.reply).toContain('Et les contrastes ?')
+    // Rien à l'agent de la mère : toujours son seul message.
+    expect(env.items(env.mother).filter((i) => i.kind === 'user')).toHaveLength(1)
+  })
+
+  it('fiche 263 : « Répondre » refusé pour un travail inconnu, d’une autre conversation, ou sans rôle', async () => {
+    const env = await environment()
+    expect(() => env.children.reply(env.mother, 'inconnu', 'Bonjour')).toThrow()
+    const plain = await env.children.start(env.mother, { text: 'Sans rôle.' })
+    expect(() => env.children.reply(env.mother, plain.id, 'Bonjour')).toThrow()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    expect(() => env.children.reply('autre-mere', childId, 'Bonjour')).toThrow()
+    expect(() => env.children.reply(env.mother, childId, '   ')).toThrow()
+    expect(env.items(env.mother).filter((i) => i.kind === 'role-request')).toHaveLength(1)
+  })
+
   it('`@rôle` en premier message d’une conversation neuve : elle entre dans l’historique, la fille s’y rattache', async () => {
     const env = await environment()
     const fresh = (await env.manager.create({ workspace: env.repo })).summary.id
@@ -387,8 +492,8 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const mother = env.manager.state().conversations.find((c) => c.id === fresh)
     expect(mother?.draft).toBe(false)
     expect(mother?.title).toBe(text)
-    // Aucun message à l'agent de la mère : seulement la carte de la fille dans son fil.
-    expect(env.items(fresh).map((i) => i.kind)).toEqual(['child-started'])
+    // Aucun message à l'agent de la mère : la bulle de la demande et le lancement (fiche 263).
+    expect(env.items(fresh).map((i) => i.kind)).toEqual(['role-request', 'child-started'])
     const child = env.manager.state().conversations.find((c) => c.startedFrom?.id === fresh)
     expect(child?.role?.name).toBe('security-expert')
     await env.settled(child?.id ?? '')

@@ -77,6 +77,21 @@ export interface RolesIpcContract extends RoleExportIpcContract {
     args: [conversationId: string, request: RolesStartRequest]
     result: RolesStartResult
   }
+  /**
+   * « Répondre à <rôle> » (fiche 263) : le message va au travail `childId` de la conversation
+   * `conversationId` (sa mère), sa bulle s'ajoute dans la carte-réponse du travail. `queued` : le
+   * travail répondait, le message attend la fin de sa réponse.
+   */
+  'roles:reply': {
+    args: [conversationId: string, request: RolesReplyRequest]
+    result: 'queued' | 'sent'
+  }
+}
+
+/** « Répondre à <rôle> » : le travail visé et le message. */
+export interface RolesReplyRequest {
+  childId: string
+  text: string
 }
 
 /**
@@ -109,6 +124,7 @@ export const ROLES_CHANNELS = [
   'roles:setEnabled',
   'roles:remove',
   'roles:startChildren',
+  'roles:reply',
   'roles:exportPreview',
   'roles:export',
   'roles:exportStatus',
