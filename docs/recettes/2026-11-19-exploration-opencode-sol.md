@@ -142,3 +142,23 @@ après relance (fil intact, session rechargée), thème clair et sombre sans con
 5. **Modèle refusé ou indisponible et coût d'abonnement lisibles** (D6, D31, D32, D12) : reconnaître
    `Model unavailable` comme un modèle refusé (carte et choix d'un autre modèle), retirer l'avis
    « pas connecté » une fois connecté, et ne plus afficher « 0,00 $ » pour un abonnement.
+
+## Complément — parcours « rôles » rejoué sur la RC1 installée (2026-11-19, 21:14–21:23)
+
+Bobine 1.0.0-rc.1 packagée (`/Applications`), profil réel de Jérôme, OpenCode + GPT-6.1 Sol, projet
+vide `~/Development/bobine-recette/usecase-rc1` (git sans commit). Parcours : créer l'appli →
+Expert UX/UI « À quoi ça pourrait ressembler ? » → la mère applique → Code reviewer « Relis le code ».
+Journal : `.pilote/sessions/2026-11-19-211439/`.
+
+| N° | Grav. | Constat |
+|---|---|---|
+| R1 | G | Clic sur un rôle, avant toute saisie : gros avertissement jaune « 10 modifications non commitées », « part du dernier commit () » (parenthèses vides : aucun commit), trois choix. Pour une question à un expert, le défaut devrait être la lecture seule dans le dossier, sans worktree. C'est ce chemin qui a conduit Jérôme à un commit vide (« Committer d'abord » sur un dépôt vide). |
+| R2 | G | Entrée n'envoie pas : le focus saute sur « Committer d'abord ». « Demander un avis en lecture seule » ne fait que changer l'option : il faut renvoyer. |
+| R3 | G | Un avis = trois cartes (carte du rôle, Sous-tâches, compte rendu), trois « ≈ 0,00 $US ». |
+| R4 | G | Le compte rendu n'affiche que la première phrase (« J'ai examiné l'interface… », « J'ai relu toute l'application… ») : l'avis et les défauts trouvés ne se lisent qu'en ouvrant la fille ; déplié, il reste tronqué en fondu avec du Markdown brut. |
+| R5 | G | « Partira à l'agent avec votre prochain message » : la mère ne réagit pas à l'avis demandé. |
+| R6 | m | 2e rôle parti en lecture seule sans avertissement : choix retenu en silence. |
+| R7 | m | Fille toujours « Compte rendu à lire » après que la mère l'a repris (D35) ; bilan « Terminé en … » collé sous les cartes des rôles (D34). |
+| R8 | m | Panneau Navigateur ouvert tout seul sur `127.0.0.1:5173`, page blanche (serveur de l'agent arrêté). Icône « ☰ » sans libellé en haut du fil. |
+| R9 | m | D36 reproduit sur l'app packagée (Bob « Démarrage… » à l'accueil avant tout choix). |
+| R10 | i | Deux chemins de relecture (rôle Code reviewer et « Faire relire… ») sans dire lequel prendre. |
