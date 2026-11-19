@@ -6,8 +6,8 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
-- Electron 45.3.4 (Chromium 156.0.8078.100) : un élément cliqué du bouton droit n'est plus gardé
-  en mémoire après sa disparition.
+- Electron 45.4.1 : correctifs de sécurité de Chromium et de V8 ; un élément cliqué du bouton
+  droit n'est plus gardé en mémoire après sa disparition.
 - Navigateur intégré : l'accord par site ne se contourne plus. Avant de lire une page ou d'y agir
   (capture, clic, saisie, JavaScript…), l'agent doit avoir l'accord pour le site affiché ; sinon la
   carte « Site web » le demande. Pendant une action de l'agent, la page ne peut plus partir vers

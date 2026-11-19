@@ -1,5 +1,5 @@
 {
-  "electron": "45.3.4",
+  "electron": "45.4.1",
   "bundled": [
     {
       "name": "@agentclientprotocol/sdk",

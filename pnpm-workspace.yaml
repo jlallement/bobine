@@ -14,3 +14,8 @@ allowBuilds:
 # l'app construite est identique octet pour octet (fiche 233). À retirer quand ils l'exigent d'eux-mêmes.
 overrides:
   'minimatch@>=7.0.0 <11.0.1': 11.0.8
+# Exception au délai de publication (ADR-0057, point 2) : correctif de sécurité Chromium/V8
+# d'Electron, version exacte, décision du 2026-11-19 (fiche 252). À retirer après le
+# 2026-11-20 02:04 UTC, quand electron@45.4.1 a passé le délai de pnpm.
+minimumReleaseAgeExclude:
+  - electron@45.4.1
