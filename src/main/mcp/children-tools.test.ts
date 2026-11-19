@@ -644,7 +644,7 @@ describe('start_child et le non commité de la mère (fiche 240)', () => {
     expect(description).toContain('commit your work first')
   })
 
-  it('« Lancer quand même » : le choix passe à la fille, l’agent reçoit l’avertissement', async () => {
+  it('« Partir sans elles » : le choix passe à la fille, l’agent reçoit l’avertissement', async () => {
     const s = setup({ dirty: DIRTY, answer: { action: 'start', uncommitted: 'anyway' } })
     const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
     expect(s.calls).toEqual([
@@ -679,13 +679,19 @@ describe('start_child et le non commité de la mère (fiche 240)', () => {
 
   it('fiche 262 : dépôt sans commit, la fille écrit dans le dossier ; jamais de commit vide', async () => {
     const description = setup().tool('start_child').definition.description
-    expect(description).toContain('In a repository with no commit yet')
-    expect(description).toContain('never create a commit, least of all an empty one')
+    expect(description).toContain('in a repository with no commit yet, no worktree is possible')
+    expect(description).toContain('Do not commit (least of all an empty commit) to get a worktree')
+    expect(description).not.toContain('outside git')
+    const prompt = setup().tool('start_child').definition.inputSchema as {
+      properties: { prompt: { description: string } }
+    }
+    expect(prompt.properties.prompt.description).toContain('then it must not commit')
     const s = setup({ inPlace: true })
     const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
     const text = textOf(result)
     expect(text).toContain('started (id: f3)')
     expect(text).toContain('directly in this folder, alongside you')
+    expect(text).toContain('Do not ask it to commit')
     expect(text).not.toContain('own worktree')
   })
 })

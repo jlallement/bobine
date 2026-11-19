@@ -151,6 +151,8 @@ export function useRoleCompose(options: {
   const committingNow = useRef(false)
   // Entrée pendant « Committer d'abord » : le bouton du commit prend le focus (`LaunchLine`).
   const [focusCommit, setFocusCommit] = useState(0)
+  // « Voir les N modifications » : la liste sous la ligne.
+  const [showFiles, setShowFiles] = useState(false)
   const setCommitting = (on: boolean) => {
     committingNow.current = on
     setCommittingState(on)
@@ -351,7 +353,15 @@ export function useRoleCompose(options: {
          */
         launch:
           writing && folder.state
-            ? { state: folder.state, choice, committing, focusCommit, many: typed.length > 1 }
+            ? {
+                state: folder.state,
+                choice,
+                committing,
+                focusCommit,
+                showFiles,
+                // Accord : les rôles qui partent vraiment en worktree (ceux qui écrivent).
+                many: typed.filter((role) => !role.readOnly).length > 1
+              }
             : undefined,
         /** « Juste un avis » choisi pour un rôle qui écrit : la ligne le dit (lecture seule). */
         opinion:
@@ -364,6 +374,8 @@ export function useRoleCompose(options: {
     choose,
     /** « Committer d'abord » ouvert ou fermé. */
     setCommitting,
+    /** Liste des modifications ouverte ou fermée. */
+    setShowFiles,
     /** « Committer d'abord » : dans le dépôt de la mère, puis le dossier est relu. */
     commit: async (message: string, files: string[]) => {
       await roles?.commitFolder?.(message, files)

@@ -491,7 +491,7 @@ export interface ChildDecision {
   profileId?: string
   /** Modèle choisi pour la fille (réglage de catégorie `model`). */
   model?: { controlId: string; value: string }
-  /** « Lancer quand même » devant un dossier modifié (fiche 240). */
+  /** « Partir sans elles » devant un dossier modifié (fiche 240). */
   uncommitted?: 'anyway'
 }
 

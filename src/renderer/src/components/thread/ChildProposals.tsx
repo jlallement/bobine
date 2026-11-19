@@ -27,7 +27,7 @@ import {
 import type { RespondElicitation } from './ElicitationCard'
 import { RoleAvatar } from '../roles/RoleAvatar'
 import { ProposalRoleMeta } from '../roles/RoleWork'
-import { LaunchLine, useLaunchFolder } from './LaunchLine'
+import { LaunchDetails, LaunchLine, useLaunchFolder } from './LaunchLine'
 
 /**
  * Carte « Tâches proposées » (fiche 112) : les propositions de conversations filles d'un même tour
@@ -79,6 +79,7 @@ export function ChildProposals({
   const folder = useLaunchFolder(info?.mother.id, !!info && toWorktree)
   const state = folder.state
   const [committing, setCommitting] = useState(false)
+  const [showFiles, setShowFiles] = useState(false)
   // Dossier pas encore lu : « Lancer » attend un instant (un clic rapide partirait sans le choix
   // affiché) ; de même pendant « Committer d'abord ».
   const held = (state === undefined && !!info && toWorktree) || committing
@@ -169,6 +170,15 @@ export function ChildProposals({
               standalone
               committing={committing}
               onCommitting={setCommitting}
+              showFiles={showFiles}
+              onShowFiles={setShowFiles}
+            />
+            <LaunchDetails
+              state={state}
+              committing={committing}
+              onCommitting={setCommitting}
+              showFiles={showFiles}
+              onShowFiles={setShowFiles}
               commit={{
                 conversationId: info.mother.id,
                 confirmLabel: t('launchLine.commitOnly'),
@@ -192,6 +202,7 @@ export function ChildProposals({
             item={item}
             held={held && !item.prompt.child.role?.readOnly}
             {...(anyway ? { uncommitted: 'anyway' as const } : {})}
+            inFolder={state?.place === 'here'}
             {...(info ? { info } : {})}
             model={model}
             focused={pending.length > 0 && pending[Math.min(focus, pending.length - 1)] === item}
@@ -217,12 +228,15 @@ function ProposalRow({
   onFocus,
   onRespond,
   held,
-  uncommitted
+  uncommitted,
+  inFolder
 }: {
   /** Dossier de la mère pas encore lu, ou commit en cours (fiche 262) : « Lancer » attend. */
   held: boolean
   /** Non commité laissé derrière, affiché par la ligne du dossier : passé au lancement. */
   uncommitted?: 'anyway'
+  /** Dépôt sans commit (fiche 262) : la fille travaillera dans ce dossier, pas dans un worktree. */
+  inFolder: boolean
   item: ChildProposalItem
   info?: ProposalsInfo
   model: SessionControl | null
@@ -365,6 +379,7 @@ function ProposalRow({
           profile={chosenProfile}
           // Agent proposé par la mère : déjà dit par la ligne de suggestion.
           agentLabel={suggestion.shown ? undefined : chosenProfile?.label}
+          inFolder={inFolder}
         />
       )}
       {suggestion.shown && outcome === undefined && (

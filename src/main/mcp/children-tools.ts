@@ -63,10 +63,11 @@ const START_CHILD =
   'Start a child conversation: another agent that works in parallel, in its own git worktree ' +
   "(a new branch from this folder's last commit), on an instruction you write. Uncommitted " +
   'changes of this folder are NOT in its worktree: commit your work first when the child needs ' +
-  'it (the user is warned before it starts without them). In a repository with no commit yet ' +
-  '(or a folder outside git), no worktree is possible: the child works directly in this folder, ' +
-  'alongside you; never create a commit, least of all an empty one, just to get a worktree. ' +
-  'The user sees it ' +
+  'it (the user is warned before it starts without them). Exception: in a repository with no ' +
+  'commit yet, no worktree is possible, and that is fine: the child works directly in this ' +
+  'folder, alongside you, with no branch, and does not commit. Do not commit (least of all an ' +
+  'empty commit) to get a worktree; "commit your work first" only applies once the repository ' +
+  'has a commit. The user sees it ' +
   'under this conversation, can open it, talk to it and stop it. Proposing one is cheap: nothing ' +
   'starts until the user decides on a card (start it, do it here, or refuse), so propose rather ' +
   'than guess. Use it, one call per piece of work, when the user asks for several independent ' +
@@ -210,7 +211,7 @@ function motherTools(
         prompt: {
           type: 'string',
           description:
-            "Complete instructions for the child, which knows nothing of this conversation and starts from the folder's last commit (uncommitted changes are not in its worktree): what to do, what not to touch, how to check the work, to commit on its branch when done, and to start its final reply with a short summary (what was done, what is left)."
+            "Complete instructions for the child, which knows nothing of this conversation and starts from the folder's last commit (uncommitted changes are not in its worktree): what to do, what not to touch, how to check the work, to commit on its branch when done (in a repository with no commit yet it has no branch: then it must not commit), and to start its final reply with a short summary (what was done, what is left)."
         },
         agent: { type: 'string', description: agentHelp(host, id) },
         // Profil sans choix de modèle (Bob) : pas d'argument `model`, que l'agent essaierait
@@ -689,7 +690,7 @@ async function launch(
       : child.branch
         ? `It works in parallel${role ? ` as the role "${role.name}"` : ''} in its own worktree.`
         : // Dépôt sans commit (fiche 262) : la fille écrit dans le même dossier que la mère.
-          `It works in parallel${role ? ` as the role "${role.name}"` : ''} directly in this folder, alongside you (no commit yet, so no worktree and no branch): avoid editing the same files meanwhile.`
+          `It works in parallel${role ? ` as the role "${role.name}"` : ''} directly in this folder, alongside you (no commit yet, so no worktree and no branch): avoid editing the same files meanwhile. Do not ask it to commit: its changes stay uncommitted in this folder, with yours, for the user to review.`
     // Partie quand même : la fille n'a pas le non commité, l'agent le sait (critère de la fiche 240).
     const missing = uncommitted && dirty ? `\n\n${uncommittedWarning(dirty)}` : ''
     return textResult(
@@ -700,7 +701,7 @@ async function launch(
     // Dossier modifié sans choix de l'utilisateur (carte expirée, dossier modifié entre-temps).
     if (dirty && !uncommitted && !role?.readOnly) {
       return textResult(
-        `Could not start the child conversation "${title}": ${uncommittedWarning(dirty)} The user has to choose first; ask them to commit, or to start it anyway.`,
+        `Could not start the child conversation "${title}": ${uncommittedWarning(dirty)} The user has to choose first; ask them to commit first, or to start it without them.`,
         true
       )
     }

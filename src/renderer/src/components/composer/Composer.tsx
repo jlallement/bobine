@@ -71,7 +71,7 @@ import {
   useRoleFrame,
   type ComposerRoles
 } from '../roles/useRoleCompose'
-import { LaunchLine } from '../thread/LaunchLine'
+import { LaunchDetails, LaunchLine } from '../thread/LaunchLine'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
 import { lastSegment } from '@shared/windows-paths'
@@ -659,21 +659,34 @@ function ComposerBelow({
                   opinion
                   hideText={!!roleView.opinion}
                   committing={roleView.launch.committing}
-                  focusCommit={roleView.launch.focusCommit}
                   onCommitting={roleCompose.setCommitting}
-                  commit={{
-                    conversationId: props.draftKey ?? '',
-                    confirmLabel: t('launchLine.commitThenSend'),
-                    run: roleCompose.commit,
-                    // Commit fait : le message part (les décochés restent, il part sans eux).
-                    onCommitted: () => submit()
-                  }}
+                  showFiles={roleView.launch.showFiles}
+                  onShowFiles={roleCompose.setShowFiles}
                 />
               </ComposerFocus.Provider>
             )
           }
         }
       />
+      {roleView.launch && !roleView.sending && (
+        <div className="launch-details">
+          <LaunchDetails
+            state={roleView.launch.state}
+            committing={roleView.launch.committing}
+            onCommitting={roleCompose.setCommitting}
+            showFiles={roleView.launch.showFiles}
+            onShowFiles={roleCompose.setShowFiles}
+            focusCommit={roleView.launch.focusCommit}
+            commit={{
+              conversationId: props.draftKey ?? '',
+              confirmLabel: t('launchLine.commitThenSend'),
+              run: roleCompose.commit,
+              // Commit fait : le message part (les décochés restent, il part sans eux).
+              onCommitted: () => submit()
+            }}
+          />
+        </div>
+      )}
       <ComposerContext
         hidden={props.discussion}
         settings={settings}

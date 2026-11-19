@@ -31,10 +31,12 @@ lecture seule sans que la saisie le dise.
      le message part (Entrée pendant ce temps : le bouton du commit prend le focus, c'est l'étape
      choisie).
    - « Juste un avis » s'applique sans renvoyer le message.
-4. **Dépôt sans aucun commit, ou dossier hors dépôt git** : « Ce dépôt n'a pas encore de commit :
-   le rôle travaillera directement dans ce dossier » (ou « Ce dossier n'est pas un dépôt git : … ») ;
-   pas de worktree, jamais de commit. Le main en décide lui-même (garde finale), pour un rôle, une
-   fille sans rôle et les propositions de l'agent.
+4. **Dépôt sans aucun commit** : en orange, « Ce dépôt n'a pas encore de commit : le rôle
+   travaillera dans ce dossier, en même temps que l'agent, sans branche ni rien à fusionner » ;
+   pas de worktree, jamais de commit (la consigne de la fille le lui dit, le résultat de
+   `start_child` le dit à la mère). Le main en décide lui-même (garde finale), pour un rôle, une
+   fille sans rôle et les propositions de l'agent. **Dossier hors dépôt git** : un rôle qui écrit
+   est refusé, comme avant (revue QA) ; la ligne le dit ; un rôle de conseil part.
 5. Le main reste la garde finale : `refuseUncommitted` refuse toujours un lancement en worktree d'un
    dossier modifié **sans** choix (outil de l'agent, propositions sans réponse) ; il laisse partir
    une requête qui porte `anyway` ou `readOnly`. Aucun défaut silencieux côté main.
@@ -88,9 +90,17 @@ Pas de nouvelle dépendance.
   travaille dans le même dossier que la mère. Pas de branche, pas de diff de branche, pas de
   fusion ni de relecture de branche ; deux agents peuvent écrire le même fichier en même temps.
   L'agent de la mère en est averti par le résultat de `start_child`. Accepté (tech lead).
-- **Dossier hors dépôt git** : comportement gardé tel quel. Un `@rôle` qui écrit part dans le
-  dossier (même règle que sans commit) ; `start_child` et « Lancer en parallèle… » restent
+- **Dossier hors dépôt git** : comportement d'avant. Un `@rôle` qui écrit est refusé (il lui
+  faut un worktree), un rôle de conseil part ; `start_child` et « Lancer en parallèle… » restent
   indisponibles, la mère n'ayant ces outils que dans un dépôt.
+- **`anyway` n'est pas lié au compte affiché** : la requête dit « sans elles », pas « sans ces N
+  modifications ». Si le dossier change entre la lecture et l'envoi (un fichier de plus), la
+  fille part sans le non commité du moment ; le rappel dans la mère (`leftBehind`, lu du
+  worktree) donne le vrai compte. Accepté (revue QA).
+- **Menu au clavier** : celui de Radix (Entrée ou Espace sur « Changer… », flèches, Échap).
+  Pendant « Committer d'abord », Entrée dans la saisie mène au bouton du commit ; s'il est
+  désactivé (message en cours de rédaction, aucun fichier coché), au message, sinon au bloc
+  lui-même, qui défile pour être vu.
 - Les textes déjà existants de la ligne du rôle (« dans une conversation fille ») attendent la
   fiche 266.
 
@@ -98,17 +108,19 @@ Pas de nouvelle dépendance.
 
 - 2026-11-19 : fiche et plan.
 - 2026-11-19 : fait.
-  - **Cause du commit vide.** Ni Bobine ni « Committer d'abord » ne peuvent en faire un
+  - **Cause du commit vide (hypothèse).** Ni Bobine ni « Committer d'abord » ne peuvent en faire un
     (`commitIn` refuse une liste vide et committe `--only` des chemins). Le seul commit vide
     relevé est `3e66fdc « Initial commit »` du dépôt d'essai `~/Dev/test-bobine` (aucun fichier
     suivi), à 21:08:30, pendant un tour d'OpenCode de la mère (21:08:18–21:08:34, `main.log`) et
     18 s avant le premier worktree de fille (21:08:48). Sur un dépôt sans commit, le main refusait
     le worktree avec `worktrees.noCommit` (« un worktree part d'un commit ») ; `start_child` rendait
     ce texte à l'agent, et sa description lui dit de committer d'abord : l'agent a fabriqué le
-    commit qui manquait, vide puisqu'il n'y avait rien à committer (`git commit --allow-empty`,
-    déduit des horaires et du contenu : ni `agents.log` ni la session d'OpenCode n'ont été lus). Cause supprimée : sans
-    commit (ou hors dépôt), le main ne demande plus de worktree, la fille travaille dans le
-    dossier ; la description de `start_child` interdit de committer pour obtenir un worktree.
+    commit qui manquait, vide puisqu'il n'y avait rien à committer. **C'est une hypothèse,
+    déduite des horaires** : la trace réelle n'existe pas (journal détaillé non activé chez
+    l'utilisateur). Le correctif supprime le mécanisme quelle que soit la cause exacte : sans
+    commit, le main ne demande plus de worktree, la fille travaille dans le dossier et sa
+    consigne lui interdit de committer ; la description de `start_child` interdit de committer
+    pour obtenir un worktree ; aucun refus « un worktree part d'un commit » ne revient à l'agent.
   - **Main** : `LaunchFolder.state` (racine, HEAD vérifié par `rev-parse --verify --quiet`, une
     autre erreur de git est levée, jamais prise pour un dépôt vide) ;
     `ChildConversations.folderState` / `inPlace` remplacent `refuseUncommitted` : rôle en lecture
@@ -156,3 +168,23 @@ Pas de nouvelle dépendance.
     rôle qui écrit prennent Architecte front.
   - Rebasé sur `main` (`fe49ace`) ; le commit de formatage de la maquette, déjà dans `main`, a
     disparu au rebasage.
+- 2026-11-19 : revue QA indépendante, décisions du tech lead appliquées.
+  - Fille dans le dossier (sans commit) : `IN_PLACE_LINE` à la fin de son premier message (« No
+    branch… Do not commit ») ; le résultat de `start_child` dit à la mère de ne pas lui demander
+    de commit ; la description du paramètre `prompt` ne lui impose plus de committer sans
+    branche ; la description de `start_child` ne parle plus du hors-dépôt et dit quoi faire sans
+    commit, sans contredire « commit your work first ».
+  - Mode installé (Réglages › Rôles, « lancer dans ce mode ») : jamais posé si sa lecture seule
+    diffère du rôle ou si le rôle a changé depuis (`RoleExports.nativeMode(…, role)` →
+    `stale`) ; le fil de la fille le dit (`roles.notice.installedStale.*`).
+  - Hors dépôt : refus d'un rôle qui écrit, comme avant ; sans commit : ligne en orange.
+  - `children.error.uncommitted` : « Partir sans elles » / « Start without them ».
+  - Accessibilité : la liste des modifications et le choix de commit (`LaunchDetails`) sortent de
+    la région `aria-live` de la ligne ; « Changer… » a l'`aria-label` « Changer où partira le
+    rôle ».
+  - Carte des propositions sans commit : « dans ce dossier » pour un rôle qui écrit.
+  - Accord de la ligne sur les seuls rôles qui écrivent.
+  - Tests : textes de la fille dans le dossier, mode installé périmé (service et lancement),
+    hors dépôt refusé / conseil permis, « Juste un avis » (lecture seule, sans branche), commit en
+    échec, double Entrée, dossier modifié entre lecture et envoi ; les essais vides
+    (`launch-dirty` absent) remplacés par de vraies vérifications.

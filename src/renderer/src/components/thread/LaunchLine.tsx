@@ -22,9 +22,10 @@ const short = (head: string) => head.slice(0, 7)
  * ligne sous la saisie (ou de la carte, du dialogue), jamais un encadré ni un blocage. En
  * worktree : « partira du dernier commit », en orange « sans vos N modifications » s'il en reste,
  * et le menu « Changer… » (committer d'abord, partir sans elles, juste un avis, voir les
- * modifications). Sans worktree possible (dépôt sans commit, hors dépôt) : le travail se fera dans
- * ce dossier, sans menu. Sous la ligne, sur demande : la liste des modifications, ou le choix de
- * commit (`CommitChooser`).
+ * modifications). Dépôt sans commit : en orange, le travail se fera dans ce dossier, en même temps
+ * que l'agent ; hors dépôt : il ne peut pas partir. Pas de menu dans ces deux cas. La liste des
+ * modifications et le choix de commit sont à part (`LaunchDetails`), hors de la région annoncée
+ * aux lecteurs d'écran.
  */
 export function LaunchLine({
   state,
@@ -36,8 +37,8 @@ export function LaunchLine({
   standalone = false,
   committing,
   onCommitting,
-  focusCommit = 0,
-  commit,
+  showFiles,
+  onShowFiles,
   disabled = false
 }: {
   state: LaunchFolderState
@@ -50,44 +51,26 @@ export function LaunchLine({
   hideText?: boolean
   /** Seule sur sa ligne (carte, dialogue) : sans le « · » qui la relie à la ligne du rôle. */
   standalone?: boolean
-  /** Choix de commit ouvert (« Committer d'abord »). */
+  /** Choix de commit ouvert (« Committer d'abord ») : le menu attend. */
   committing: boolean
   onCommitting: (on: boolean) => void
-  /** Change à chaque Entrée pendant le choix de commit : son bouton prend le focus. */
-  focusCommit?: number
-  commit: {
-    /** Conversation dont l'agent rédige le message (fiche 246). */
-    conversationId: string
-    confirmLabel: string
-    /** Committe ces fichiers dans le dépôt de la mère. */
-    run: (message: string, files: string[]) => Promise<unknown>
-    /** Commit fait ; `left` : fichiers décochés, restés non commités. */
-    onCommitted: (left: number) => void
-  }
+  /** Liste des modifications ouverte (« Voir les N modifications »). */
+  showFiles: boolean
+  onShowFiles: (on: boolean) => void
   /** Envoi en cours : le menu ne s'ouvre pas. */
   disabled?: boolean
 }) {
   const { t } = useTranslation()
-  const [showFiles, setShowFiles] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const commitBox = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (focusCommit > 0) {
-      commitBox.current
-        ?.querySelector<HTMLButtonElement>('[data-testid=launch-line-commit-confirm]')
-        ?.focus()
-    }
-  }, [focusCommit])
+  const lead = standalone ? '' : '· '
   if (state.place === 'here') {
     return (
       <span
-        className="launch-line-text"
+        className="launch-line-text warn"
         data-testid="launch-line"
         data-place="here"
         data-reason={state.reason}
       >
-        {standalone ? '' : '· '}
+        {lead}
         {t(`launchLine.${state.reason}.${who}`)}
       </span>
     )
@@ -95,21 +78,6 @@ export function LaunchLine({
   const dirty = state.dirty
   const count = dirty?.count ?? 0
   const commitShort = short(state.head)
-  const doCommit = async (message: string, files: string[], left: number) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await commit.run(message, files)
-      onCommitting(false)
-      setShowFiles(false)
-      commit.onCommitted(left)
-    } catch (e) {
-      setError(ipcErrorText(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-  const shown = dirty?.files.slice(0, MAX_SHOWN) ?? []
   return (
     <>
       {!hideText && (
@@ -120,7 +88,7 @@ export function LaunchLine({
           data-choice={choice}
           data-count={count}
         >
-          {standalone ? '' : '· '}
+          {lead}
           {dirty
             ? t('launchLine.without', { count, commit: commitShort })
             : t('launchLine.fromCommit', { commit: commitShort })}
@@ -130,6 +98,7 @@ export function LaunchLine({
         <Dropdown.Trigger
           className="link-button launch-line-change"
           disabled={disabled || committing}
+          aria-label={t('launchLine.changeLabel')}
           data-testid="launch-line-change"
         >
           {t('launchLine.change')}
@@ -139,7 +108,10 @@ export function LaunchLine({
           {dirty && (
             <Dropdown.Item
               className="menu-item"
-              onSelect={() => onCommitting(true)}
+              onSelect={() => {
+                onShowFiles(false)
+                onCommitting(true)
+              }}
               data-testid="launch-line-commit"
             >
               <ItemText
@@ -190,7 +162,7 @@ export function LaunchLine({
               <Dropdown.Separator className="menu-separator" />
               <Dropdown.Item
                 className="menu-item"
-                onSelect={() => setShowFiles((on) => !on)}
+                onSelect={() => onShowFiles(!showFiles)}
                 data-testid="launch-line-show"
               >
                 <ItemText
@@ -203,44 +175,122 @@ export function LaunchLine({
           )}
         </MenuContent>
       </Dropdown.Root>
-      {dirty && showFiles && !committing && (
-        <ul
-          className="launch-line-files"
-          aria-label={t('launchLine.files')}
-          data-testid="launch-line-files"
-        >
-          {shown.map((file) => (
-            <li key={file.path} data-testid="launch-line-file">
-              {file.path}
-            </li>
-          ))}
-          {count > shown.length && (
-            <li className="muted">
-              {t('worktreeCycle.mainDirty.more', { count: count - shown.length })}
-            </li>
-          )}
-        </ul>
-      )}
-      {dirty && committing && (
-        <div className="launch-line-commit" ref={commitBox} data-testid="launch-line-commit-box">
-          <CommitChooser
-            conversationId={commit.conversationId}
-            files={dirty.files}
-            busy={busy}
-            testid="launch-line-commit"
-            confirmLabel={commit.confirmLabel}
-            leftNote={(left) => t('launchLine.left', { count: left })}
-            onCommit={(message, files, left) => void doCommit(message, files, left)}
-            onCancel={() => onCommitting(false)}
-          />
-          {error && (
-            <p className="field-error" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
-      )}
     </>
+  )
+}
+
+/**
+ * Sous la ligne, sur demande (fiche 262) : la liste des modifications, ou le choix de commit
+ * (`CommitChooser`). Hors de la région `aria-live` de la ligne : un formulaire n'y est pas relu à
+ * chaque frappe. `focusCommit` change à chaque Entrée pendant le choix de commit : son bouton prend
+ * le focus ; désactivé (message en cours de rédaction, aucun fichier coché), le message, sinon le
+ * bloc lui-même — Entrée a toujours un effet visible.
+ */
+export function LaunchDetails({
+  state,
+  committing,
+  onCommitting,
+  showFiles,
+  onShowFiles,
+  focusCommit = 0,
+  commit
+}: {
+  state: LaunchFolderState | null | undefined
+  committing: boolean
+  onCommitting: (on: boolean) => void
+  showFiles: boolean
+  onShowFiles: (on: boolean) => void
+  focusCommit?: number
+  commit: {
+    /** Conversation dont l'agent rédige le message (fiche 246). */
+    conversationId: string
+    confirmLabel: string
+    /** Committe ces fichiers dans le dépôt de la mère. */
+    run: (message: string, files: string[]) => Promise<unknown>
+    /** Commit fait ; `left` : fichiers décochés, restés non commités. */
+    onCommitted: (left: number) => void
+  }
+}) {
+  const { t } = useTranslation()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const commitBox = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (focusCommit === 0) return
+    const box = commitBox.current
+    if (!box) return
+    const usable = (testid: string) => {
+      const found = box.querySelector<HTMLButtonElement | HTMLTextAreaElement>(
+        `[data-testid=${testid}]`
+      )
+      return found && !found.disabled ? found : null
+    }
+    const target = usable('launch-line-commit-confirm') ?? usable('launch-line-commit-message')
+    box.scrollIntoView?.({ block: 'nearest' })
+    ;(target ?? box).focus()
+  }, [focusCommit])
+  const dirty = state?.place === 'worktree' ? state.dirty : undefined
+  if (!dirty) return null
+  const count = dirty.count
+  const shown = dirty.files.slice(0, MAX_SHOWN)
+  const doCommit = async (message: string, files: string[], left: number) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await commit.run(message, files)
+      onCommitting(false)
+      onShowFiles(false)
+      commit.onCommitted(left)
+    } catch (e) {
+      setError(ipcErrorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  if (committing) {
+    return (
+      <div
+        className="launch-line-commit"
+        ref={commitBox}
+        tabIndex={-1}
+        data-testid="launch-line-commit-box"
+      >
+        <CommitChooser
+          conversationId={commit.conversationId}
+          files={dirty.files}
+          busy={busy}
+          testid="launch-line-commit"
+          confirmLabel={commit.confirmLabel}
+          leftNote={(left) => t('launchLine.left', { count: left })}
+          onCommit={(message, files, left) => void doCommit(message, files, left)}
+          onCancel={() => onCommitting(false)}
+        />
+        {error && (
+          <p className="field-error" role="alert" data-testid="launch-line-commit-error">
+            {error}
+          </p>
+        )}
+      </div>
+    )
+  }
+  if (!showFiles) return null
+  return (
+    <ul
+      className="launch-line-files"
+      aria-label={t('launchLine.files')}
+      data-testid="launch-line-files"
+    >
+      {shown.map((file) => (
+        <li key={file.path} data-testid="launch-line-file">
+          {file.path}
+        </li>
+      ))}
+      {count > shown.length && (
+        <li className="muted">
+          {t('worktreeCycle.mainDirty.more', { count: count - shown.length })}
+        </li>
+      )}
+    </ul>
   )
 }
 

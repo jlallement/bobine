@@ -393,8 +393,12 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
   it('une ligne discrète pour la carte, sans encadré ; « Lancer » part sans elles, dit', async () => {
     const onRespond = await show([proposal(1, 'API'), proposal(2, 'Page web')])
     expect(childFolder).toHaveBeenCalledWith('m')
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    // Une ligne pour la carte, son seul bouton « Changer… » : pas d'encadré à boutons.
     expect(screen.getAllByTestId('launch-line')).toHaveLength(1)
+    const place = screen.getByTestId('proposals-launch-place')
+    expect([...place.querySelectorAll('button')].map((b) => b.dataset.testid)).toEqual([
+      'launch-line-change'
+    ])
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
       'Partira du dernier commit, sans vos 2 modifications'
     )
@@ -479,7 +483,7 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
     childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
     const onRespond = await show([proposal(1, 'API')])
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
-      'Ce dépôt n’a pas encore de commit : ces travaux se feront directement dans ce dossier'
+      'Ce dépôt n’a pas encore de commit : ces travaux se feront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     )
     expect(plain(screen.getByTestId('proposals').textContent)).not.toContain('worktree')
     expect(screen.queryByTestId('launch-line-change')).toBeNull()
@@ -488,6 +492,33 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
       action: 'accept',
       content: { decision: 'start' }
     })
+  })
+
+  it('dépôt sans commit : un rôle qui écrit est dit « dans ce dossier », pas « dans son worktree »', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
+    const writer = proposal(1, 'Page', {
+      prompt: {
+        mode: 'form',
+        message: 'Page',
+        schema: childProposalSchema(),
+        child: {
+          title: 'Page',
+          prompt: 'Écris la page',
+          role: {
+            name: 'front-architect',
+            label: 'Architecte front',
+            icon: 'layout-dashboard',
+            color: 'violet',
+            description: 'd',
+            readOnly: false,
+            prompt: 'p',
+            scope: 'builtin'
+          }
+        }
+      }
+    } as Partial<ChildProposalItem>)
+    await show([writer])
+    expect(plain(screen.getByTestId('proposal-role-where').textContent)).toBe('dans ce dossier')
   })
 
   it('fiche 244 : un fichier décoché ne part pas ; « Lancer » part sans lui', async () => {

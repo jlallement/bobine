@@ -303,6 +303,33 @@ describe('mode natif pour Bobine (useInBobine)', () => {
     })
     expect(exports.nativeMode('bob', 'code-reviewer', join(root, 'autre'))?.readOnly).toBe(true)
   })
+
+  it('fiche 262 : lecture seule différente ou rôle changé depuis l’installation, rendu `stale`', () => {
+    const exports = service()
+    exports.install(role(), userTarget(), undefined, { useInBobine: true })
+    const as = (changes: Partial<RoleDefinition>) => {
+      const r = role(changes)
+      return {
+        id: r.id,
+        label: r.label,
+        description: r.description,
+        prompt: r.prompt,
+        readOnly: r.readOnly
+      }
+    }
+    expect(exports.nativeMode('bob', 'code-reviewer', undefined, as({}))).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+    expect(exports.nativeMode('bob', 'code-reviewer', undefined, as({ readOnly: false }))).toEqual({
+      id: 'code-reviewer',
+      readOnly: true,
+      stale: 'readOnly'
+    })
+    expect(
+      exports.nativeMode('bob', 'code-reviewer', undefined, as({ prompt: 'Autre consigne.' }))
+    ).toMatchObject({ stale: 'roleChanged' })
+  })
 })
 
 describe('installations sans rôle (renommé, supprimé)', () => {

@@ -40,12 +40,21 @@ export type LaunchFolderState =
   | { place: 'here'; reason: 'noCommit' | 'notRepo' }
 
 /**
- * Choix de l'utilisateur devant un dossier modifié : partir quand même (sans le non commité), ou
+ * Choix de l'utilisateur devant un dossier modifié : partir sans elles (sans le non commité), ou
  * un avis en lecture seule dans le dossier de la mère (rôles cités avec `@` seulement). Committer
  * d'abord ne se transmet pas : le dossier est propre ensuite.
  */
 export type UncommittedChoice = 'anyway' | 'readOnly'
 export const UNCOMMITTED_CHOICES: readonly UncommittedChoice[] = ['anyway', 'readOnly']
+
+/**
+ * Ligne ajoutée au premier message d'une fille qui travaille dans le dossier de sa mère faute de
+ * commit (fiche 262), pour l'agent (en anglais, ADR-0014) : pas de branche, donc pas de commit.
+ */
+export const IN_PLACE_LINE =
+  'No branch: this repository has no commit yet, so you work directly in the same folder as the ' +
+  'conversation that started you, at the same time. Do not commit, and do not create a branch or ' +
+  'a worktree: leave your changes uncommitted for the user to review.'
 
 /** Ce qu'une fille a laissé derrière elle en partant : rappelé dans la mère. */
 export interface LeftBehind {

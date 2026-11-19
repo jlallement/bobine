@@ -9814,6 +9814,16 @@ html.about-page body {
   margin: 4px 12px 0 0;
   color: var(--text);
 }
+/* Sous la ligne de la saisie : hors de sa région annoncée (aria-live). */
+.launch-details {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0 0 30px;
+  font-size: 12px;
+}
+.launch-details:empty {
+  display: none;
+}
 .launch-place {
   display: flex;
   flex-wrap: wrap;

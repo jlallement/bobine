@@ -51,6 +51,11 @@ export interface InstalledMode {
   id: string
   /** Installé en lecture seule : les droits du mode interdisent d'écrire. */
   readOnly: boolean
+  /**
+   * Installation qui ne correspond plus au rôle (fiche 262) : lecture seule différente, ou rôle
+   * changé depuis. Jamais posée ; le fil de la fille le dit.
+   */
+  stale?: 'readOnly' | 'roleChanged'
 }
 
 /**

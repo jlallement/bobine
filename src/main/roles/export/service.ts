@@ -242,15 +242,29 @@ export class RoleExports {
   nativeMode(
     profileId: string,
     roleName: string,
-    workspace?: string
-  ): { id: string; readOnly: boolean } | undefined {
+    workspace?: string,
+    /**
+     * Rôle tel qu'il part (fiche 262) : un mode installé dont la lecture seule diffère, ou qui
+     * n'est plus ce que Bobine écrirait aujourd'hui (`roleChanged`), est rendu `stale` et ne doit
+     * pas être posé.
+     */
+    role?: ExportedRole
+  ): { id: string; readOnly: boolean; stale?: 'readOnly' | 'roleChanged' } | undefined {
     const mine = this.options.registry
       .all()
       .filter((r) => r.profileId === profileId && r.id === roleName && r.useInBobine)
     const found =
       mine.find((r) => r.scope === 'project' && workspace && r.workspace === workspace) ??
       mine.find((r) => r.scope === 'user')
-    return found ? { id: found.id, readOnly: found.readOnly } : undefined
+    if (!found) return undefined
+    const mode = { id: found.id, readOnly: found.readOnly }
+    if (!role) return mode
+    if (role.readOnly !== found.readOnly) return { ...mode, stale: 'readOnly' }
+    const adapter = this.adapterFor(found.format)
+    if (adapter && adapter.fingerprintOf({ ...role, id: found.id }) !== found.written) {
+      return { ...mode, stale: 'roleChanged' }
+    }
+    return mode
   }
 
   private statusOf(record: RoleExportRecord, role?: RoleToExport): RoleExportStatus | undefined {

@@ -3462,9 +3462,9 @@ export type FrResources = {
       readonly needsAction: 'Son agent attend une action de votre part (connexion, dossier à approuver) : ouvrez la conversation fille.'
       readonly agentFailed: 'Son agent n’a pas démarré : {{detail}}'
       readonly noStartChild: 'Pas de conversation fille possible ici : il faut un dossier dans un dépôt git, une conversation qui n’est pas elle-même une fille, et la famille d’outils « Conversations filles » active (Réglages › Serveurs MCP).'
-      readonly uncommitted_one: 'Ce dossier a {{count}} modification non commitée : choisissez d’abord de la committer, ou de partir quand même.'
-      readonly uncommitted_many: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même.'
-      readonly uncommitted_other: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même.'
+      readonly uncommitted_one: 'Ce dossier a {{count}} modification non commitée : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…).'
+      readonly uncommitted_many: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…).'
+      readonly uncommitted_other: 'Ce dossier a {{count}} modifications non commitées : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…).'
     }
     readonly notice: {
       readonly promptFailed: 'La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}'
@@ -5279,6 +5279,10 @@ export type FrResources = {
       readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.'
       readonly projectOverrides: 'Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.'
       readonly watchFailed: 'La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).'
+      readonly installedStale: {
+        readonly readOnly: 'Le mode « {{mode}} » installé dans cet agent n’a plus la même lecture seule que le rôle : il n’est pas utilisé. Mettez-le à jour dans Réglages › Rôles.'
+        readonly roleChanged: 'Le rôle a changé depuis son installation dans cet agent : le mode « {{mode}} » n’est pas utilisé. Mettez-le à jour dans Réglages › Rôles.'
+      }
     }
   }
   readonly discussion: {
@@ -5628,21 +5632,22 @@ export type FrResources = {
   }
   readonly launchLine: {
     readonly change: 'Changer…'
+    readonly changeLabel: 'Changer où partira le rôle'
     readonly fromCommit: 'partira du dernier commit ({{commit}})'
     readonly without_one: 'Partira du dernier commit, sans votre modification'
     readonly without_many: 'Partira du dernier commit, sans vos {{count}} modifications'
     readonly without_other: 'Partira du dernier commit, sans vos {{count}} modifications'
     readonly noCommit: {
-      readonly role: 'Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier'
-      readonly roles: 'Ce dépôt n’a pas encore de commit : les rôles travailleront directement dans ce dossier'
-      readonly work: 'Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier'
-      readonly works: 'Ce dépôt n’a pas encore de commit : ces travaux se feront directement dans ce dossier'
+      readonly role: 'Ce dépôt n’a pas encore de commit : le rôle travaillera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
+      readonly roles: 'Ce dépôt n’a pas encore de commit : les rôles travailleront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
+      readonly work: 'Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
+      readonly works: 'Ce dépôt n’a pas encore de commit : ces travaux se feront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     }
     readonly notRepo: {
-      readonly role: 'Ce dossier n’est pas un dépôt git : le rôle travaillera directement dans ce dossier'
-      readonly roles: 'Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier'
-      readonly work: 'Ce dossier n’est pas un dépôt git : ce travail se fera directement dans ce dossier'
-      readonly works: 'Ce dossier n’est pas un dépôt git : ces travaux se feront directement dans ce dossier'
+      readonly role: 'Ce dossier n’est pas un dépôt git : un rôle qui écrit ne peut pas partir d’ici (il lui faut un worktree)'
+      readonly roles: 'Ce dossier n’est pas un dépôt git : les rôles qui écrivent ne peuvent pas partir d’ici (il leur faut un worktree)'
+      readonly work: 'Ce dossier n’est pas un dépôt git : ce travail ne peut pas partir d’ici (il lui faut un worktree)'
+      readonly works: 'Ce dossier n’est pas un dépôt git : ces travaux ne peuvent pas partir d’ici (il leur faut un worktree)'
     }
     readonly menu: {
       readonly commit: 'Committer d’abord'

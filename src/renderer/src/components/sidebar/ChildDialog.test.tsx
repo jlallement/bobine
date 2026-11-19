@@ -72,7 +72,11 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiches 240, 262)
   it('dossier modifié : une ligne, pas d’encadré ; « Lancer » part sans elles, dit', async () => {
     const launch = open()
     await act(async () => answer(at(DIRTY)))
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    // Une ligne, et son seul bouton « Changer… » : pas d'encadré à boutons.
+    const place = screen.getByTestId('child-launch-place')
+    expect([...place.querySelectorAll('button')].map((b) => b.dataset.testid)).toEqual([
+      'launch-line-change'
+    ])
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
       'Partira du dernier commit, sans votre modification'
     )
@@ -85,7 +89,7 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiches 240, 262)
     const launch = open()
     await act(async () => answer({ place: 'here', reason: 'noCommit' }))
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
-      'Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier'
+      'Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     )
     await act(async () => void fireEvent.click(launch))
     expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API' })

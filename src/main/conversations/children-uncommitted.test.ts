@@ -1,6 +1,6 @@
 /**
  * Filles en worktree et non commité de la mère (fiche 240), contre l'agent factice et un vrai
- * dépôt git : rien ne part en worktree d'un dossier modifié sans choix ; « partir quand même »
+ * dépôt git : rien ne part en worktree d'un dossier modifié sans choix ; « partir sans elles »
  * le rappelle dans la mère ; l'avis en lecture seule part dans le dossier de la mère et voit le non
  * commité ; « Committer d'abord » donne le travail à la fille. Aucun vrai modèle.
  */
@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parseChildDecision } from '@shared/children'
+import { IN_PLACE_LINE } from '@shared/launch-folder'
 import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
@@ -95,6 +96,11 @@ async function environment(scenario = 'echo', kind: Repo = 'commit') {
   writeFileSync(join(repo, 'plan.md'), '# Plan\n')
   const waitFor = (predicate: () => boolean, what: string) => until(manager, predicate, what)
   const items = (id: string) => manager.view(id).transcript.items
+  /** Premier message parti à l'agent d'une fille (consigne comprise). */
+  const firstSent = (id: string) => {
+    const first = items(id).find((i) => i.kind === 'user')
+    return first?.kind === 'user' ? first.text : undefined
+  }
   const childrenOf = () => manager.state().conversations.filter((c) => c.startedFrom?.id === mother)
   const started = () =>
     items(mother).filter(
@@ -120,7 +126,8 @@ async function environment(scenario = 'echo', kind: Repo = 'commit') {
     childrenOf,
     started,
     reports,
-    items
+    items,
+    firstSent
   }
 }
 
@@ -153,7 +160,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
   })
 
-  it('« Partir quand même » : la fille part du commit sans le fichier, la mère le rappelle', async () => {
+  it('« Partir sans elles » : la fille part du commit sans le fichier, la mère le rappelle', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.host, env.mother, {
       roles: ['front-architect'],
@@ -259,7 +266,7 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     expect(child.branch).toMatch(/^bobine\//)
   })
 
-  it('carte « Tâches proposées » : « Lancer quand même » passe par l’élicitation', () => {
+  it('carte « Tâches proposées » : « Partir sans elles » passe par l’élicitation', () => {
     expect(parseChildDecision({ decision: 'start', uncommitted: 'anyway' })).toEqual({
       action: 'start',
       uncommitted: 'anyway'
@@ -308,6 +315,8 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
     noCommitYet(env.git)
     await env.waitFor(() => env.reports().length > 0, 'compte rendu de la fille')
     noCommitYet(env.git)
+    // Sans branche, elle ne committe pas : c'est dans sa consigne (revue QA, 1).
+    expect(env.firstSent(child?.id ?? '')).toContain(IN_PLACE_LINE)
   })
 
   it('fille sans rôle (« Lancer en parallèle… », `start_child`) : dans le dossier aussi', async () => {
@@ -317,19 +326,38 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
     expect(child.branch).toBeUndefined()
     expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
     noCommitYet(env.git)
+    await env.waitFor(() => !!env.firstSent(child.id), 'consigne de la fille')
+    expect(env.firstSent(child.id)).toBe(`Écris l’API\n\n${IN_PLACE_LINE}`)
   })
 
-  it('dossier hors dépôt git : le rôle qui écrit part dans le dossier, sans erreur', async () => {
+  it('dépôt avec commit : la consigne d’une fille en worktree n’a pas la ligne « sans branche »', async () => {
+    const env = await environment()
+    const child = await env.children.start(env.mother, {
+      text: 'Écris l’API',
+      uncommitted: 'anyway'
+    })
+    await env.waitFor(() => !!env.firstSent(child.id), 'consigne de la fille')
+    expect(env.firstSent(child.id)).toBe('Écris l’API')
+  })
+
+  it('dossier hors dépôt git : un rôle qui écrit est refusé (comme avant), un rôle de conseil part', async () => {
     const env = await environment('echo', 'notRepo')
     expect(await env.children.folderState(env.mother)).toEqual({
       place: 'here',
       reason: 'notRepo'
     })
-    const result = await startRoleChildren(env.host, env.mother, {
+    const refused = await startRoleChildren(env.host, env.mother, {
       roles: ['front-architect'],
       text: 'Construisez la page'
     })
-    expect(result.failed).toEqual([])
+    expect(refused.started).toEqual([])
+    expect(refused.failed[0]?.error).toContain('dépôt git')
+    expect(env.childrenOf()).toEqual([])
+    const advice = await startRoleChildren(env.host, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis'
+    })
+    expect(advice.failed).toEqual([])
     expect(env.childrenOf()[0]?.workspace).toBe(env.repo)
     expect(existsSync(join(env.repo, '.git'))).toBe(false)
   })
@@ -347,12 +375,14 @@ describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
 
   it('« Juste un avis » sur un rôle qui écrit : explicite, accepté sans autre choix', async () => {
     const env = await environment()
-    await expect(
-      env.children.start(env.mother, {
-        text: 'Votre avis',
-        role: 'back-architect',
-        uncommitted: 'readOnly'
-      })
-    ).resolves.toMatchObject({ workspace: env.repo })
+    const child = await env.children.start(env.mother, {
+      text: 'Votre avis',
+      role: 'back-architect',
+      uncommitted: 'readOnly'
+    })
+    expect(child.workspace).toBe(env.repo)
+    expect(child.branch).toBeUndefined()
+    expect(child.role?.readOnly).toBe(true)
+    expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
   })
 })

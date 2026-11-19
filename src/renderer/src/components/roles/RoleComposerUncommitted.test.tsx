@@ -78,7 +78,10 @@ beforeEach(() => {
 })
 
 function setup() {
-  const send = vi.fn(async (names: string[]) => ({ started: names, failed: [] }))
+  const send = vi.fn(async (names: string[]): Promise<{ started: string[]; failed: string[] }> => ({
+    started: names,
+    failed: []
+  }))
   const commitFolder = vi.fn(async () => {
     // Commité : le dossier est propre à la relecture, HEAD a changé.
     childFolder.mockResolvedValue(folderOf(undefined, AFTER))
@@ -149,8 +152,16 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     await type('@front-architect ')
     // Avant même la demande : la ligne, rien d'autre (R1).
     expect(childFolder).toHaveBeenCalledWith('m')
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    // Rien d'autre qu'une ligne : aucun bouton sous la saisie hormis « Changer… », aucune alerte.
     expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      [...screen.getByTestId('role-destination').querySelectorAll('button')].map(
+        (b) => b.dataset.testid
+      )
+    ).toEqual(['launch-line-change'])
+    expect(screen.getByTestId('launch-line-change').getAttribute('aria-label')).toBe(
+      'Changer où partira le rôle'
+    )
     const segment = screen.getByTestId('launch-line')
     expect(segment.className).toContain('warn')
     expect(segment.dataset.choice).toBe('without')
@@ -330,8 +341,10 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     const { type, enter, send, line } = setup()
     await type('@front-architect construisez la page')
     expect(line()).toContain(
-      'Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier'
+      'Ce dépôt n’a pas encore de commit : le rôle travaillera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     )
+    // En orange : il écrit dans les mêmes fichiers que l'agent (revue QA, 3).
+    expect(screen.getByTestId('launch-line').className).toContain('warn')
     expect(line()).not.toContain('worktree')
     expect(line()).not.toContain('()')
     expect(screen.queryByTestId('launch-line-change')).toBeNull()
@@ -339,13 +352,75 @@ describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262
     expect(send).toHaveBeenCalledWith(['front-architect'], 'construisez la page')
   })
 
-  it('dossier hors dépôt git : dit tel quel, plusieurs rôles accordés', async () => {
+  it('dossier hors dépôt git : les rôles qui écrivent ne peuvent pas partir, c’est dit (accordé)', async () => {
     childFolder.mockResolvedValue({ place: 'here', reason: 'notRepo' })
     const { type, line } = setup()
     await type('@front-architect @back-architect construisez la page')
     expect(line()).toContain(
-      'Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier'
+      'Ce dossier n’est pas un dépôt git : les rôles qui écrivent ne peuvent pas partir d’ici'
     )
+  })
+
+  it('accord : un rôle qui écrit et un rôle de conseil, la ligne parle du rôle qui écrit', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
+    const { type, line } = setup()
+    await type('@front-architect @security-expert construisez la page')
+    expect(line()).toContain('le rôle travaillera dans ce dossier')
+  })
+
+  it('commit en échec : l’erreur est dite, rien ne part', async () => {
+    const { type, change, send, commitFolder } = setup()
+    commitFolder.mockRejectedValue(new Error('pre-commit refusé'))
+    await type('@front-architect construisez la page')
+    await change('launch-line-commit')
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-line-commit-confirm')))
+    expect(screen.getByTestId('launch-line-commit-error').textContent).toContain(
+      'pre-commit refusé'
+    )
+    expect(send).not.toHaveBeenCalled()
+    // Le choix de commit reste ouvert, hors de la région annoncée de la ligne (revue QA, 6).
+    expect(
+      screen.getByTestId('role-destination').contains(screen.getByTestId('launch-line-commit-box'))
+    ).toBe(false)
+  })
+
+  it('double Entrée : un seul envoi', async () => {
+    const { type, send, input } = setup()
+    let release: () => void = () => {}
+    send.mockImplementation(
+      (names: string[]) =>
+        new Promise((resolve) => (release = () => resolve({ started: names, failed: [] })))
+    )
+    await type('@front-architect construisez la page')
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' })
+      fireEvent.keyDown(input, { key: 'Enter' })
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+    await act(async () => release())
+  })
+
+  it('dossier modifié entre la lecture et l’envoi : refusé, la ligne se met à jour, le renvoi part', async () => {
+    childFolder.mockResolvedValue(folderOf())
+    const { type, enter, send, input, line } = setup()
+    // Le main refuse (non commité apparu depuis la lecture) : rien n'est parti.
+    send.mockImplementationOnce(async (names: string[]) => {
+      childFolder.mockResolvedValue(folderOf(DIRTY))
+      return { started: [], failed: names }
+    })
+    await type('@front-architect construisez la page')
+    await enter()
+    expect(send).toHaveBeenLastCalledWith(['front-architect'], 'construisez la page')
+    // Le message revient dans la saisie, le dossier est relu : la ligne dit ce qui reste.
+    await waitFor(() => expect(line()).toContain('sans vos 17 modifications'))
+    expect(input.value).toContain('construisez la page')
+    await enter()
+    expect(send).toHaveBeenLastCalledWith(['front-architect'], 'construisez la page', 'anyway')
   })
 
   it('dossier pas encore lu à l’Entrée : lu d’abord, puis l’envoi part avec le bon choix', async () => {

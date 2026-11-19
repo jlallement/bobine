@@ -3621,9 +3621,9 @@
       "needsAction": "Son agent attend une action de votre part (connexion, dossier à approuver) : ouvrez la conversation fille.",
       "agentFailed": "Son agent n’a pas démarré : {{detail}}",
       "noStartChild": "Pas de conversation fille possible ici : il faut un dossier dans un dépôt git, une conversation qui n’est pas elle-même une fille, et la famille d’outils « Conversations filles » active (Réglages › Serveurs MCP).",
-      "uncommitted_one": "Ce dossier a {{count}} modification non commitée : choisissez d’abord de la committer, ou de partir quand même.",
-      "uncommitted_many": "Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même.",
-      "uncommitted_other": "Ce dossier a {{count}} modifications non commitées : choisissez d’abord de les committer, ou de partir quand même."
+      "uncommitted_one": "Ce dossier a {{count}} modification non commitée : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…).",
+      "uncommitted_many": "Ce dossier a {{count}} modifications non commitées : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…).",
+      "uncommitted_other": "Ce dossier a {{count}} modifications non commitées : choisissez d’abord « Committer d’abord » ou « Partir sans elles » (Changer…)."
     },
     "notice": {
       "promptFailed": "La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}",
@@ -5461,7 +5461,11 @@
       "modelMissing": "Modèle du rôle « {{model}} » impossible à choisir ici : l’agent prend son propre modèle.",
       "modeMissing": "L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.",
       "projectOverrides": "Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.",
-      "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status)."
+      "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).",
+      "installedStale": {
+        "readOnly": "Le mode « {{mode}} » installé dans cet agent n’a plus la même lecture seule que le rôle : il n’est pas utilisé. Mettez-le à jour dans Réglages › Rôles.",
+        "roleChanged": "Le rôle a changé depuis son installation dans cet agent : le mode « {{mode}} » n’est pas utilisé. Mettez-le à jour dans Réglages › Rôles."
+      }
     }
   },
   "discussion": {
@@ -5838,21 +5842,22 @@
   },
   "launchLine": {
     "change": "Changer…",
+    "changeLabel": "Changer où partira le rôle",
     "fromCommit": "partira du dernier commit ({{commit}})",
     "without_one": "Partira du dernier commit, sans votre modification",
     "without_many": "Partira du dernier commit, sans vos {{count}} modifications",
     "without_other": "Partira du dernier commit, sans vos {{count}} modifications",
     "noCommit": {
-      "role": "Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier",
-      "roles": "Ce dépôt n’a pas encore de commit : les rôles travailleront directement dans ce dossier",
-      "work": "Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier",
-      "works": "Ce dépôt n’a pas encore de commit : ces travaux se feront directement dans ce dossier"
+      "role": "Ce dépôt n’a pas encore de commit : le rôle travaillera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner",
+      "roles": "Ce dépôt n’a pas encore de commit : les rôles travailleront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner",
+      "work": "Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner",
+      "works": "Ce dépôt n’a pas encore de commit : ces travaux se feront dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner"
     },
     "notRepo": {
-      "role": "Ce dossier n’est pas un dépôt git : le rôle travaillera directement dans ce dossier",
-      "roles": "Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier",
-      "work": "Ce dossier n’est pas un dépôt git : ce travail se fera directement dans ce dossier",
-      "works": "Ce dossier n’est pas un dépôt git : ces travaux se feront directement dans ce dossier"
+      "role": "Ce dossier n’est pas un dépôt git : un rôle qui écrit ne peut pas partir d’ici (il lui faut un worktree)",
+      "roles": "Ce dossier n’est pas un dépôt git : les rôles qui écrivent ne peuvent pas partir d’ici (il leur faut un worktree)",
+      "work": "Ce dossier n’est pas un dépôt git : ce travail ne peut pas partir d’ici (il lui faut un worktree)",
+      "works": "Ce dossier n’est pas un dépôt git : ces travaux ne peuvent pas partir d’ici (il leur faut un worktree)"
     },
     "menu": {
       "commit": "Committer d’abord",

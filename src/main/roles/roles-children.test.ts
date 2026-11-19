@@ -13,7 +13,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
 import { Worktrees } from '../changes/worktrees'
-import type { ChildConversations } from '../conversations/children'
+import type { ChildConversations, ChildOptions } from '../conversations/children'
 import { setupChildren } from '../conversations/children-setup'
 import { ConversationManager } from '../conversations/manager'
 import { gitCommand, queuedGit } from '../git/git-queue'
@@ -30,7 +30,7 @@ afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup()
 })
 
-async function environment() {
+async function environment(extra: Pick<ChildOptions, 'nativeRoleMode'> = {}) {
   const root = mkdtempSync(join(tmpdir(), 'roles-filles-'))
   const repo = realpathSync(mkdtempSync(join(tmpdir(), 'roles-depot-')))
   const git = (...args: string[]) =>
@@ -87,7 +87,7 @@ async function environment() {
     worktrees: new Worktrees(queuedGit(gitCommand)),
     agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
   })
-  const children = setupChildren(manager, { roles: library })
+  const children = setupChildren(manager, { roles: library, ...extra })
   late.children = children
   cleanups.push(() => {
     manager.stopAll()
@@ -396,5 +396,27 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(first?.kind === 'user' && first.text).toContain(
       "Reply in French, the language of the user's request."
     )
+  })
+
+  it('fiche 262 : mode installé qui ne correspond plus au rôle, jamais posé et dit dans le fil', async () => {
+    const asked: string[] = []
+    const env = await environment({
+      nativeRoleMode: (_profile, role) => {
+        asked.push(`${role.name}:${role.readOnly}`)
+        return { id: role.name, readOnly: false, stale: 'readOnly' }
+      }
+    })
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis le carnet.'
+    })
+    expect(result.failed).toEqual([])
+    const child = env.childrenOf()[0]
+    await env.settled(child?.id ?? '')
+    expect(asked).toEqual(['security-expert:true'])
+    expect(env.notices(child?.id ?? '')).toContain('roles.notice.installedStale.readOnly')
+    // Mode non posé : la consigne du rôle et sa lecture seule partent dans le message.
+    const first = env.firstMessage(child?.id ?? '')
+    expect(first?.kind === 'user' && first.text).toContain('You are read-only')
   })
 })

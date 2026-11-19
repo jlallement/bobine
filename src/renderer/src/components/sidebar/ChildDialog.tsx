@@ -10,7 +10,7 @@ import {
   useMotherModel,
   type ChildChoice
 } from './child-options'
-import { LaunchLine, useLaunchFolder } from '../thread/LaunchLine'
+import { LaunchDetails, LaunchLine, useLaunchFolder } from '../thread/LaunchLine'
 import { uncommittedOf } from '../../launch-choice'
 
 /**
@@ -43,6 +43,7 @@ export function ChildDialog({
   const folder = useLaunchFolder(mother.id, true)
   const held = folder.state === undefined
   const [committing, setCommitting] = useState(false)
+  const [showFiles, setShowFiles] = useState(false)
 
   /** `committed` : le commit vient d'être fait, `state` relu après lui. */
   const launch = async (state = folder.state, committed = false) => {
@@ -110,7 +111,16 @@ export function ChildDialog({
                 standalone
                 committing={committing}
                 onCommitting={setCommitting}
+                showFiles={showFiles}
+                onShowFiles={setShowFiles}
                 disabled={busy}
+              />
+              <LaunchDetails
+                state={folder.state}
+                committing={committing}
+                onCommitting={setCommitting}
+                showFiles={showFiles}
+                onShowFiles={setShowFiles}
                 commit={{
                   conversationId: mother.id,
                   confirmLabel: t('launchLine.commitThenStart'),

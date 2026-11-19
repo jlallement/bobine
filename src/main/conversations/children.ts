@@ -65,7 +65,7 @@ import type {
   LeftBehind,
   UncommittedChoice
 } from '@shared/launch-folder'
-import { parseUncommittedChoice } from '@shared/launch-folder'
+import { IN_PLACE_LINE, parseUncommittedChoice } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
 
 /** Ce que demande « Lancer en parallèle… », ou `start_child`. */
@@ -159,7 +159,7 @@ export interface ChildOptions {
    */
   nativeRoleMode?: (
     profileId: string,
-    role: string,
+    role: RoleSnapshot,
     conversationId: string
   ) => InstalledMode | undefined
   /** Dossier de la mère avant un lancement en worktree (fiche 240) ; absent : pas de vérification. */
@@ -237,7 +237,7 @@ export class ChildConversations {
       request.roleSnapshot ?? (request.role ? this.findRole(motherId, request.role) : undefined)
     )
 
-    const created = await this.prepare(motherId, text, request, role)
+    const { created, inPlace } = await this.prepare(motherId, text, request, role)
     const title = request.title?.trim()
     if (title) this.conversations.rename(created.id, title)
     const child = title ? { ...created, title: this.summary(created.id).title } : created
@@ -268,7 +268,7 @@ export class ChildConversations {
     }
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
-    void this.launch(child, text, { model: request.model, role }, () => {
+    void this.launch(child, text, { model: request.model, role, inPlace }, () => {
       launched()
       this.launching.delete(child.id)
     })
@@ -277,8 +277,8 @@ export class ChildConversations {
 
   /**
    * Où part une fille (fiche 262, garde finale du main) : un rôle en lecture seule, dans le
-   * dossier de la mère (`childDetachedRequest`) ; sans worktree possible (dépôt sans commit,
-   * dossier hors dépôt), dans le dossier aussi — jamais de commit pour en fabriquer un ; sinon en
+   * dossier de la mère (`childDetachedRequest`) ; dépôt sans commit, dans le dossier aussi —
+   * jamais de commit pour en fabriquer un ; hors dépôt, refusée (pas de worktree) ; sinon en
    * worktree depuis le dernier commit, sans le non commité (fiche 240, ADR-0055) : d'un dossier
    * modifié, sans choix explicite (`anyway`), elle est refusée. Lu après la réservation de la place
    * (`prepare`). Rend `true` : dans le dossier de la mère.
@@ -290,7 +290,9 @@ export class ChildConversations {
   ): Promise<boolean> {
     if (role?.readOnly) return false
     const state = await this.folderState(motherId)
-    if (state?.place === 'here') return true
+    // Dépôt sans commit : dans le dossier. Hors dépôt : refusé comme avant (pas de worktree
+    // possible, `worktrees.notRepo` à la création) — décision du tech lead.
+    if (state?.place === 'here') return state.reason === 'noCommit'
     if (request.uncommitted === 'anyway' || !state?.dirty) return false
     throw new Error(t('children.error.uncommitted', { count: state.dirty.count }))
   }
@@ -364,14 +366,14 @@ export class ChildConversations {
     text: string,
     request: ChildRequest,
     role: RoleSnapshot | undefined
-  ): Promise<ConversationSummary> {
+  ): Promise<{ created: ConversationSummary; inPlace: boolean }> {
     const id = randomUUID()
     const launch: ChildLaunch = { id, motherId, title: request.title?.trim() || titleFrom(text) }
     this.preparing.set(id, launch)
     this.publishLaunches()
     try {
       const inPlace = await this.inPlace(motherId, request, role)
-      return await this.conversations.createChild(
+      const created = await this.conversations.createChild(
         motherId,
         text,
         request.profileId,
@@ -383,6 +385,7 @@ export class ChildConversations {
         },
         { ...(role ? { role: roleStamp(role) } : {}), ...(inPlace ? { inPlace } : {}) }
       )
+      return { created, inPlace }
     } finally {
       this.preparing.delete(id)
       this.publishLaunches()
@@ -678,7 +681,11 @@ export class ChildConversations {
   private async launch(
     child: ConversationSummary,
     text: string,
-    { model, role }: { model: ChildRequest['model']; role: RoleSnapshot | undefined },
+    {
+      model,
+      role,
+      inPlace
+    }: { model: ChildRequest['model']; role: RoleSnapshot | undefined; inPlace: boolean },
     launched: () => void
   ): Promise<void> {
     const childId = child.id
@@ -686,10 +693,21 @@ export class ChildConversations {
       if (model || role) await this.conversations.ready(childId)
       if (model) await applyModel(this.conversations, childId, model)
       // Rôle (fiche 223) : mode natif si l'agent l'a, sinon sa consigne en tête du message.
-      const installed = role && this.nativeRoleMode?.(child.profileId, role.name, childId)
-      const first = role
-        ? await roleFirstMessage(this.conversations, child, role, text, installed || undefined)
+      const found = role && this.nativeRoleMode?.(child.profileId, role, childId)
+      // Mode installé qui ne correspond plus au rôle (fiche 262) : jamais posé, et dit.
+      if (found?.stale) {
+        this.conversations.post(childId, {
+          type: 'notice',
+          level: 'warning',
+          message: { key: `roles.notice.installedStale.${found.stale}`, params: { mode: found.id } }
+        })
+      }
+      const installed = found && !found.stale ? found : undefined
+      const opening = role
+        ? await roleFirstMessage(this.conversations, child, role, text, installed)
         : text
+      // Sans branche (dépôt sans commit, fiche 262) : la fille ne committe pas.
+      const first = inPlace ? `${opening}\n\n${IN_PLACE_LINE}` : opening
       // Lecture seule : l'empreinte du dossier avant que la consigne ne parte (garde-fou).
       if (role?.readOnly) await this.readOnly.prepare(childId)
       // Le tour de la fille ne se termine pas avant longtemps : `launch` n'est pas attendu.

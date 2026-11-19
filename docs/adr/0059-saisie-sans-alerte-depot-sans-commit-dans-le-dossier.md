@@ -15,8 +15,11 @@ renvoyer. Sur un dépôt sans commit, l'encadré disait « part du dernier commi
 
 Un dépôt sans commit n'a pas de worktree possible (`git worktree add` part d'un commit). Le main le
 refusait (`worktrees.noCommit` : « un worktree part d'un commit »), et ce texte, rendu à l'agent par
-`start_child`, l'a conduit à fabriquer un commit vide (`Initial commit` vide relevé dans le dépôt
-d'essai le 2026-11-19 à 21:08, pendant un tour de la mère, 18 s avant le premier worktree de fille).
+`start_child`, l'a vraisemblablement conduit à fabriquer un commit vide (`Initial commit` vide
+relevé dans le dépôt d'essai le 2026-11-19 à 21:08, pendant un tour de la mère, 18 s avant le
+premier worktree de fille). **C'est une hypothèse déduite des horaires** : le journal détaillé
+n'était pas activé, aucune trace ne le prouve. La décision 3 supprime le mécanisme quelle que soit
+la cause exacte.
 
 ## Décision
 
@@ -33,11 +36,14 @@ d'essai le 2026-11-19 à 21:08, pendant un tour de la mère, 18 s avant le premi
    modifié sans `uncommitted` explicite est toujours refusé (outil de l'agent, propositions sans
    réponse, appel IPC sans choix). Un rôle de conseil (`readOnly`) part toujours en lecture seule
    dans le dossier de la mère, sans lecture ni choix (inchangé).
-3. **Sans worktree possible, le travail se fait dans le dossier.** Dépôt sans aucun commit, ou
-   dossier hors dépôt git : la fille (rôle qui écrit, fille sans rôle, proposition de l'agent)
-   travaille directement dans le dossier de sa mère, sans worktree ni branche ; le main le décide
-   lui-même (`ChildConversations.folderState`, `ChildLink.inPlace`). Bobine ne crée jamais de
-   commit pour en obtenir un, et la description de `start_child` dit à l'agent de ne pas le faire.
+3. **Dépôt sans commit : le travail se fait dans le dossier.** La fille (rôle qui écrit, fille
+   sans rôle, proposition de l'agent) travaille directement dans le dossier de sa mère, sans
+   worktree ni branche, et ne committe pas (ligne ajoutée à sa consigne) ; le main le décide
+   lui-même (`ChildConversations.folderState`, `ChildLink.inPlace`). La ligne le dit en orange
+   (« en même temps que l'agent, sans branche ni rien à fusionner »). Bobine ne crée jamais de
+   commit pour obtenir un worktree, et la description de `start_child` dit à l'agent de ne pas le
+   faire. **Dossier hors dépôt git** : inchangé, un rôle qui écrit est refusé (pas de worktree) ;
+   un rôle de conseil part.
 
 ## Alternatives écartées
 

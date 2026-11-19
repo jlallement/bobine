@@ -3505,8 +3505,8 @@
       "needsAction": "Its agent needs you to act (sign-in, folder to approve): open the child conversation.",
       "agentFailed": "Its agent did not start: {{detail}}",
       "noStartChild": "No child conversation possible here: it takes a folder in a git repository, a conversation that is not itself a child, and the “Child conversations” tool family turned on (Settings › MCP servers).",
-      "uncommitted_one": "This folder has {{count}} uncommitted change: first choose to commit it, or to start anyway.",
-      "uncommitted_other": "This folder has {{count}} uncommitted changes: first choose to commit them, or to start anyway."
+      "uncommitted_one": "This folder has {{count}} uncommitted change: first choose “Commit first” or “Start without them” (Change…).",
+      "uncommitted_other": "This folder has {{count}} uncommitted changes: first choose “Commit first” or “Start without them” (Change…)."
     },
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
@@ -5242,7 +5242,11 @@
       "modelMissing": "The role’s model “{{model}}” can’t be chosen here: the agent takes its own model.",
       "modeMissing": "The agent has no “{{mode}}” mode for this role: the child works in the current mode, with the role’s instructions.",
       "projectOverrides": "The “{{name}}” role comes from the project and replaces a built-in or personal role with the same name.",
-      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status)."
+      "watchFailed": "The folder could not be checked for this turn (git failed or was too slow): check yourself that no file changed (git status).",
+      "installedStale": {
+        "readOnly": "The “{{mode}}” mode installed in this agent no longer has the same read-only setting as the role: it is not used. Update it in Settings › Roles.",
+        "roleChanged": "The role has changed since it was installed in this agent: the “{{mode}}” mode is not used. Update it in Settings › Roles."
+      }
     }
   },
   "discussion": {
@@ -5618,20 +5622,21 @@
   },
   "launchLine": {
     "change": "Change…",
+    "changeLabel": "Change where the role will start",
     "fromCommit": "will start from the last commit ({{commit}})",
     "without_one": "Will start from the last commit, without your change",
     "without_other": "Will start from the last commit, without your {{count}} changes",
     "noCommit": {
-      "role": "This repository has no commit yet: the role will work directly in this folder",
-      "roles": "This repository has no commit yet: the roles will work directly in this folder",
-      "work": "This repository has no commit yet: this work will be done directly in this folder",
-      "works": "This repository has no commit yet: this work will be done directly in this folder"
+      "role": "This repository has no commit yet: the role will work in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "roles": "This repository has no commit yet: the roles will work in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "work": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "works": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge"
     },
     "notRepo": {
-      "role": "This folder is not a git repository: the role will work directly in this folder",
-      "roles": "This folder is not a git repository: the roles will work directly in this folder",
-      "work": "This folder is not a git repository: this work will be done directly in this folder",
-      "works": "This folder is not a git repository: this work will be done directly in this folder"
+      "role": "This folder is not a git repository: a role that writes cannot start from here (it needs a worktree)",
+      "roles": "This folder is not a git repository: roles that write cannot start from here (they need a worktree)",
+      "work": "This folder is not a git repository: this work cannot start from here (it needs a worktree)",
+      "works": "This folder is not a git repository: this work cannot start from here (it needs a worktree)"
     },
     "menu": {
       "commit": "Commit first",
