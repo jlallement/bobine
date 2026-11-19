@@ -46,21 +46,28 @@ function eachTurn(items: readonly TranscriptItem[], visit: TurnVisit) {
   })
 }
 
+/** Ce que fait l'agent maintenant (statut de l'hôte, travail après le tour de la fiche 255). */
+export interface AgentLive {
+  /** Un tour est en cours (`busy`). */
+  busy: boolean
+  /** Tour fini, l'agent travaille encore : sous-agent en arrière-plan, réponse hors tour. */
+  background: boolean
+}
+
 /**
  * Bilan de chaque tour fini (fiche 185, idée P4 ; un par tour, fiche 255) : sa durée, les fichiers
  * qu'il a modifiés et son coût, quand l'agent le donne ; rangé sous la réponse qui finit le tour
- * (id de cette réponse → bilan). Rien pour un tour sans réponse finie, ni pour le dernier tant que
- * l'agent y travaille (`open` : il répond, ou travaille encore après la fin du tour), ni pour un
- * tour dont un sous-agent en arrière-plan travaille encore.
+ * (id de cette réponse → bilan). Rien pour un tour sans réponse finie, ni pour un tour où l'agent
+ * travaille encore (voir `replyFeet`).
  */
 export function turnFacts(
   items: readonly TranscriptItem[],
   times: ReadonlyMap<number, TurnTime>,
   usage: ConversationUsage | undefined,
-  open: boolean
+  live: AgentLive
 ): Map<number, TurnFacts> {
   const facts = new Map<number, TurnFacts>()
-  for (const [id, foot] of replyFeet(items, times, usage, open)) {
+  for (const [id, foot] of replyFeet(items, times, usage, live)) {
     if (foot.kind === 'done') facts.set(id, foot.facts)
   }
   return facts
@@ -68,9 +75,13 @@ export function turnFacts(
 
 /**
  * Pied de chaque tour (fiche 261), rangé sous sa réponse (id de la réponse → pied) :
- * - tour fini : le bilan, sous la réponse qui l'a fini ;
- * - tour où l'agent travaille encore (le dernier quand `open`, ou un tour dont un sous-agent en
+ * - tour en cours (le dernier, l'agent répond et rien n'est encore daté) : aucun pied,
+ *   l'indicateur du bas suffit (règle 5 de la fiche 260) ;
+ * - travail après le tour (le dernier quand `background`, ou un tour dont un sous-agent en
  *   arrière-plan n'a pas fini, fiche 255) : « Travaille encore… » sous sa dernière réponse ;
+ * - tour fini : le bilan, sous la réponse qui l'a fini. Un tour dont la réponse est datée est fini
+ *   (les réponses sont datées à la fin du tour) : le statut « occupé » d'un nouveau message, qui
+ *   arrive avant ce message (fiche 095), ne lui retire pas son bilan ;
  * - tour arrêté, refusé, coupé, en erreur, ou sans réponse finie : aucun pied (l'heure et la
  *   durée restent au survol, comme avant).
  */
@@ -78,13 +89,15 @@ export function replyFeet(
   items: readonly TranscriptItem[],
   times: ReadonlyMap<number, TurnTime>,
   usage: ConversationUsage | undefined,
-  open: boolean
+  live: AgentLive
 ): Map<number, ReplyFootState> {
   const feet = new Map<number, ReplyFootState>()
   eachTurn(items, (turn, { sentAt, nextAt, last }) => {
     // Tour arrêté, refusé, coupé ou en erreur : son avis le dit déjà, pas de bilan.
     if (turn.some(endedBadly)) return
-    if ((last && open) || turn.some(stillInBackground)) {
+    const ended = turn.some((item) => item.kind === 'agent' && item.at !== undefined)
+    if (last && live.busy && !ended) return
+    if ((last && live.background) || turn.some(stillInBackground)) {
       const reply = turn.findLast((item) => item.kind === 'agent')
       if (reply) feet.set(reply.id, WORKING)
       return

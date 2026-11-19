@@ -544,7 +544,8 @@ describe('bilan de chaque tour dans le pied de sa réponse (fiches 255, 261)', (
     )
     expect(renders.markdown).toEqual(['Aussi'])
     expect(group('Fait.')?.querySelector('[data-testid=turn-summary]')).toBeTruthy()
-    expect(group('Aussi')?.querySelector('[data-testid=turn-working]')).toBeTruthy()
+    // Tour en cours (fiche 260, règle 5) : aucun pied sous sa réponse, l'indicateur du bas suffit.
+    expect(group('Aussi')?.querySelector('.reply-foot')).toBeNull()
   })
 
   it('fil en lecture seule (côte à côte) : aucun pied, comme avant', () => {

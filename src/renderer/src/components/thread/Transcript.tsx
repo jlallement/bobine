@@ -187,10 +187,11 @@ export function Transcript({
   // Pied de chaque tour, sous la réponse qui le finit (fiche 261) : son bilan une fois le tour fini
   // (fiches 185, 255), « Travaille encore… » avant. Fil en lecture seule (côte à côte) : aucun.
   const editable = !!messageActions
-  const open = !messageActions || messageActions.busy || messageActions.background === true
+  const busy = messageActions?.busy === true
+  const background = messageActions?.background === true
   const feet = useMemo(
-    () => (editable ? replyFeet(items, times, usage, open) : NO_FEET),
-    [editable, open, items, times, usage]
+    () => (editable ? replyFeet(items, times, usage, { busy, background }) : NO_FEET),
+    [editable, busy, background, items, times, usage]
   )
   const planAt = new Map(plans.map((p) => [p.anchorId, p]))
   const replaced = new Set(plans.flatMap((p) => p.replyIds))

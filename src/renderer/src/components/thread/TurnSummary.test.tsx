@@ -19,6 +19,9 @@ const edit = (id: number, oldText: string, newText: string): TranscriptItem => (
   locations: []
 })
 
+/** Agent au repos. */
+const IDLE = { busy: false, background: false }
+
 /** Pied d'une réponse qui finit un tour bien fini (fiche 261). */
 const renderFoot = (facts: TurnFacts, at?: number) =>
   render(<ReplyFoot foot={{ kind: 'done', facts }} text={() => 'r'} at={at} />)
@@ -29,7 +32,7 @@ const lastTurnFacts = (items: TranscriptItem[], usage: ConversationUsage | undef
   const reply = items.findLast((i) => i.kind === 'agent' && turnTimes(items).has(i.id))
   const start = items.findLastIndex((i) => i.kind === 'user')
   if (!reply || items.indexOf(reply) < start) return undefined
-  return turnFacts(items, turnTimes(items), usage, false).get(reply.id)
+  return turnFacts(items, turnTimes(items), usage, IDLE).get(reply.id)
 }
 
 describe('bilan du dernier tour (fiche 185, P4)', () => {
@@ -151,22 +154,23 @@ describe('un bilan par tour, à la vraie fin (fiche 255)', () => {
   it('message en file (D5) : chaque tour garde son bilan, sous sa propre réponse', () => {
     // Tour de 1 min 30, puis le message en file, parti à sa fin, répondu en 4 s.
     const items = [user(1, 0), agent(2, 90_000), user(3, 90_100), agent(4, 94_100)]
-    const facts = turnFacts(items, turnTimes(items), undefined, false)
+    const facts = turnFacts(items, turnTimes(items), undefined, IDLE)
     expect(facts.get(2)).toMatchObject({ ms: 90_000 })
     expect(facts.get(4)).toMatchObject({ ms: 4_000 })
   })
 
-  it('le dernier tour en cours ou qui travaille encore après le tour : seuls les précédents', () => {
+  it('le dernier tour qui travaille encore après le tour : seuls les précédents', () => {
     const items = [user(1, 0), agent(2, 10_000), user(3, 20_000), agent(4, 25_000)]
-    expect([...turnFacts(items, turnTimes(items), undefined, true).keys()]).toEqual([2])
+    const live = { busy: false, background: true }
+    expect([...turnFacts(items, turnTimes(items), undefined, live).keys()]).toEqual([2])
   })
 
   it('sous-agent en arrière-plan encore au travail (D1) : pas de « Terminé » pour ce tour', () => {
     const items = [user(1, 0), subagent(2, {}), agent(3, 10_000)]
-    expect(turnFacts(items, turnTimes(items), undefined, false).size).toBe(0)
+    expect(turnFacts(items, turnTimes(items), undefined, IDLE).size).toBe(0)
     // Fini, et la réponse hors tour datée à la fin du travail : le bilan va jusqu'à elle.
     const done = [user(1, 0), subagent(2, { endedAt: 77_000 }), agent(3, 10_000), agent(4, 80_000)]
-    const facts = turnFacts(done, turnTimes(done), undefined, false)
+    const facts = turnFacts(done, turnTimes(done), undefined, IDLE)
     expect([...facts.keys()]).toEqual([4])
     expect(facts.get(4)).toMatchObject({ ms: 80_000 })
   })
@@ -185,7 +189,7 @@ describe('un bilan par tour, à la vraie fin (fiche 255)', () => {
       },
       agent(3, 71_000)
     ]
-    expect(turnFacts(items, turnTimes(items), undefined, false).get(3)).toMatchObject({
+    expect(turnFacts(items, turnTimes(items), undefined, IDLE).get(3)).toMatchObject({
       ms: 31_000,
       waitedMs: 40_000
     })
@@ -202,7 +206,7 @@ describe('un bilan par tour, à la vraie fin (fiche 255)', () => {
         { at: 25_000, costStart: 0.3, costEnd: 0.5 }
       ]
     }
-    const facts = turnFacts(items, turnTimes(items), usage, false)
+    const facts = turnFacts(items, turnTimes(items), usage, IDLE)
     expect(facts.get(2)?.cost?.amount).toBeCloseTo(0.3)
     expect(facts.get(4)?.cost?.amount).toBeCloseTo(0.2)
   })
@@ -216,20 +220,46 @@ describe('pied de la réponse qui finit le tour (fiche 261)', () => {
     text: 'r',
     ...(at !== undefined ? { at } : {})
   })
-  const feet = (items: TranscriptItem[], open: boolean) =>
-    replyFeet(items, turnTimes(items), undefined, open)
+  const BUSY = { busy: true, background: false }
+  const AFTER = { busy: false, background: true }
+  const feet = (items: TranscriptItem[], live: { busy: boolean; background: boolean }) =>
+    replyFeet(items, turnTimes(items), undefined, live)
 
-  it('tour fini : le bilan sous sa réponse ; tour en cours : « Travaille encore… » sous la dernière', () => {
+  it('tour en cours (fiche 260, règle 5) : aucun pied sous ses réponses, l’indicateur du bas suffit', () => {
     const items = [user(1, 0), agent(2, 10_000), user(3, 20_000), agent(4), agent(5)]
-    const result = feet(items, true)
+    const result = feet(items, BUSY)
     expect(result.get(2)).toMatchObject({ kind: 'done', facts: { ms: 10_000 } })
-    expect(result.get(4)).toBeUndefined()
+    expect(result.has(4)).toBe(false)
+    expect(result.has(5)).toBe(false)
+  })
+
+  it('travail après le tour : « Travaille encore… » sous la dernière réponse', () => {
+    const items = [user(1, 0), agent(2, 10_000), user(3, 20_000), agent(4, 25_000), agent(5)]
+    const result = feet(items, AFTER)
+    expect(result.get(2)).toMatchObject({ kind: 'done' })
+    expect(result.has(4)).toBe(false)
     expect(result.get(5)).toEqual({ kind: 'working' })
   })
 
-  it('tour en cours sans réponse encore : aucun pied (l’indicateur du bas suffit)', () => {
+  it('« occupé » avant le nouveau message (fiche 095) : le tour fini garde son bilan, sans saut', () => {
+    const items = [user(1, 0), agent(2, 10_000), user(3, 20_000), agent(4, 25_000)]
+    const before = feet(items, { busy: false, background: false }).get(4)
+    expect(before).toMatchObject({ kind: 'done', facts: { ms: 5_000 } })
+    // Le statut « occupé » du message suivant arrive, ce message pas encore : rien ne bouge.
+    expect(feet(items, BUSY).get(4)).toEqual(before)
+    // Ni s'il travaillait encore après son tour : il reste « Travaille encore… ».
+    const working = [...items, agent(5)]
+    expect(feet(working, AFTER).get(5)).toEqual({ kind: 'working' })
+    expect(feet(working, { busy: true, background: true }).get(5)).toEqual({ kind: 'working' })
+    // Le message arrive : le nouveau tour n'a pas encore de pied, l'ancien garde le sien.
+    const sent = [...items, user(6, 30_000)]
+    expect(feet(sent, BUSY).get(4)).toEqual(before)
+    expect(feet(sent, BUSY).size).toBe(2)
+  })
+
+  it('tour en cours sans réponse encore : aucun pied', () => {
     const items = [user(1, 0), agent(2, 10_000), user(3, 20_000)]
-    expect([...feet(items, true).keys()]).toEqual([2])
+    expect([...feet(items, BUSY).keys()]).toEqual([2])
   })
 
   it('sous-agent en arrière-plan d’un tour plus ancien : ce tour « travaille encore »', () => {
@@ -250,7 +280,7 @@ describe('pied de la réponse qui finit le tour (fiche 261)', () => {
       user(4, 20_000),
       agent(5, 24_000)
     ]
-    const result = feet(items, false)
+    const result = feet(items, { busy: false, background: false })
     expect(result.get(3)).toEqual({ kind: 'working' })
     expect(result.get(5)).toMatchObject({ kind: 'done' })
   })
@@ -261,8 +291,9 @@ describe('pied de la réponse qui finit le tour (fiche 261)', () => {
       agent(2, 5_000),
       { kind: 'notice', id: 3, level: 'info', message: { key: 'transcript.notice.cancelled' } }
     ]
-    expect(feet(stopped, false).size).toBe(0)
-    expect(feet(stopped, true).size).toBe(0)
+    expect(feet(stopped, { busy: false, background: false }).size).toBe(0)
+    expect(feet(stopped, BUSY).size).toBe(0)
+    expect(feet(stopped, AFTER).size).toBe(0)
   })
 
   it('même pied recalculé à l’identique : comparé par sa valeur', () => {
