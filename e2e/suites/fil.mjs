@@ -54,7 +54,9 @@ export async function filSuite(scheme) {
           L(key, params)
             .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             .replace(/NUM/g, '\\d+')
+        // Sous la seconde : « < 1 s » (fiche 261), comme les sous-agents.
         const shapes = [
+          durationPattern('transcript.duration.underSecond'),
           durationPattern('transcript.duration.seconds', { seconds: 'NUM' }),
           durationPattern('transcript.duration.minutes', { minutes: 'NUM', seconds: 'NUM' })
         ].map((pattern) => new RegExp(`^${pattern}$`))

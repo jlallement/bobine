@@ -348,19 +348,28 @@ async function openCode23(scheme) {
         const status = `document.querySelector('[data-testid=agent-status]')?.textContent`
         const summary = `document.querySelector('[data-testid=turn-summary]')`
         check(
-          (await ui.ev(`!!document.querySelector('[data-testid=working][data-activity=tool]')`)) &&
-            (await ui.ev(status)) === L('sidebar.status.background') &&
+          (await ui.ev(status)) === L('sidebar.status.background') &&
             !(await ui.ev(`!!${summary}`)),
-          '2.3.0 (fiche 255) : sous-agents au travail après le tour : indicateur et pied « en cours », pas de « Terminé »'
+          '2.3.0 (fiche 255) : sous-agents au travail après le tour : pied de la barre « en cours », pas de bilan'
         )
-        // Fiche 261 (écran F) : le pied de la réponse dit « Travaille encore… », dans son groupe.
+        // Fiche 261 (écran F, revue UX) : le pied de la réponse dit « Travaille encore… · N s », dans
+        // son groupe ; le travail après le tour n'est dit qu'une fois (pas d'indicateur en bas).
+        const workingFoot = await ui.ev(`(() => {
+          const foot = [...document.querySelectorAll('[data-testid=turn-working]')].at(-1)
+          const group = [...document.querySelectorAll('.msg-agent-group')].at(-1)
+          return {
+            inGroup: !!foot && !!group?.contains(foot),
+            text: foot?.innerText.replace(/\u00a0/g, ' ') ?? '',
+            indicator: !!document.querySelector('[data-testid=working]')
+          }
+        })()`)
         check(
-          (await ui.ev(`(() => {
-            const foot = [...document.querySelectorAll('[data-testid=turn-working]')].at(-1)
-            const group = [...document.querySelectorAll('.msg-agent-group')].at(-1)
-            return !!foot && !!group?.contains(foot) && foot.innerText.includes(${JSON.stringify(L('turnSummary.working'))})
-          })()`)) === true,
-          '2.3.0 (fiche 261) : pied de la réponse « Travaille encore… » tant que les sous-agents travaillent'
+          workingFoot.inGroup &&
+            new RegExp(`^${L('turnSummary.working')} · (\\d+ s|\\d+ min \\d+)$`).test(
+              workingFoot.text
+            ) &&
+            !workingFoot.indicator,
+          `2.3.0 (fiche 261) : « Travaille encore… · N s » sous la réponse, sans indicateur en bas (${JSON.stringify(workingFoot)})`
         )
         await ui.shot('255-en-cours-apres-le-tour')
         await open(ui, 0)
@@ -409,7 +418,8 @@ async function openCode23(scheme) {
               1,
           '2.3.0 (fiche 261) : à la fin, le pied devient le bilan (heure · durée), une seule durée'
         )
-        await ui.ev(`${block}.scrollIntoView({ block: 'start' }), true`)
+        // Le pied de la réponse en vue (revue UX) : le bilan qui a remplacé « Travaille encore… ».
+        await ui.ev(`${summary}.scrollIntoView({ block: 'end' }), true`)
         await ui.shot('g6b-2-3-fini')
       },
       userData,

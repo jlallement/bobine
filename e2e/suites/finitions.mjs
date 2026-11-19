@@ -42,7 +42,10 @@ export async function finitionsSuite(scheme) {
     // pied arrive en fondu (200 ms, `motion.css`) : on attend sa fin, puis il doit rester visible
     // sans survol ; une rangée qui n'apparaîtrait qu'au survol resterait à 0 et ferait échouer.
     await ui.hover({ x: 5, y: 400 })
-    await ui.waitFor(`getComputedStyle(${summary}).opacity === '1'`, 2000).catch(() => {})
+    const faded = await ui.waitFor(`getComputedStyle(${summary}).opacity === '1'`, 2000).then(
+      () => true,
+      () => false
+    )
     await sleep(300)
     const shown = await ui.ev(`({
       opacity: getComputedStyle(${summary}).opacity,
@@ -50,7 +53,7 @@ export async function finitionsSuite(scheme) {
       hovered: ${group}.matches(':hover')
     })`)
     check(
-      shown.opacity === '1' && shown.rows === 1 && !shown.hovered,
+      faded && shown.opacity === '1' && shown.rows === 1 && !shown.hovered,
       `pied de la réponse visible sans survol, une seule rangée sous la réponse (${JSON.stringify(shown)})`
     )
     await ui.shot('185-bilan-du-tour')
@@ -146,6 +149,24 @@ export async function finitionsSuite(scheme) {
       chip.whole !== chip.icon,
       `900 px : la puce de l’agent a son nom entier ou son icône, jamais un bout ni un chevron seul (${JSON.stringify(chip)})`
     )
+
+    // Pied du tour à 900 px, panneau ouvert (revue UX, fiche 261) : il passe à la ligne entre ses
+    // éléments, jamais au milieu d'un, et ne déborde pas du fil.
+    await ui.ev(`${summary}.scrollIntoView({ block: 'center' }), true`)
+    const narrow = await ui.ev(`(() => {
+      const foot = ${summary}
+      const column = foot.closest('.thread').getBoundingClientRect()
+      const box = foot.getBoundingClientRect()
+      const cut = [...foot.querySelectorAll('.reply-foot-facts > *')].filter(
+        (e) => e.getClientRects().length > 1
+      ).length
+      return { inside: box.right <= column.right + 1, cut }
+    })()`)
+    check(
+      narrow.inside && narrow.cut === 0,
+      `900 px : pied du tour dans le fil, aucun élément coupé (${JSON.stringify(narrow)})`
+    )
+    await ui.shot('261-pied-900')
     await ui.viewport()
   })
 }

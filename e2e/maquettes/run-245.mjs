@@ -87,8 +87,9 @@ const user = (text) =>
   `<div class="msg-user-group"><div class="msg-user">${text}</div><div class="msg-user-actions"><time class="msg-time">22:05</time></div></div>`
 const agent = (html) =>
   `<div class="msg-agent-group"><div class="msg-agent"><div class="markdown">${html}</div></div></div>`
+// Pied de la réponse qui finit le tour (fiche 261) : le bilan, sans « Terminé ».
 const summary = (text) =>
-  `<div class="turn-summary">${i('circle-check', 13)}<span>${text}</span></div>`
+  `<div class="msg-agent-actions reply-foot"><span class="reply-foot-facts">${text}</span></div>`
 const report = (icon, title, usage, meta, body, tone = '') => `
 <div class="child-report ${tone}">${i(icon, 14, 'child-report-icon')}<div class="child-report-body">
   <div class="child-report-head"><strong class="child-report-title">${title}</strong><span class="child-report-usage mq-new">${usage}</span></div>
@@ -99,7 +100,7 @@ const report = (icon, title, usage, meta, body, tone = '') => `
 const FIL = `<div class="thread">
 ${user('Exécute ce plan.')}
 ${agent('<p>Le gestionnaire est en place : API Node.js sans framework, page web, sources SwiftUI. <code>npm test</code> réussit (3 tests).</p>')}
-${summary('Terminé en 2 min 24 s · 14 fichiers +625 −2 · ≈ 0,0075&nbsp;$US')}
+${summary('22:07 · 2 min 24 s · 14 fichiers +625 −2 · ≈ 0,0075&nbsp;$US')}
 ${report('circle-check', 'Code reviewer a rendu son compte rendu — Relis l’ensemble des modifications non commitées', '≈ 0,00&nbsp;$US', '', 'Compte rendu : j’ai relu les modifications non commitées, y compris les fichiers ajoutés…')}
 ${report('circle-check', 'Relecture par OpenCode : rien à signaler', '≈ 0,00&nbsp;$US', '<span>Modifications non commitées</span><span>12 fichiers</span>', 'Aucun problème de correction ou de gestion des erreurs réseau suffisamment certain n’a été trouvé.', 'review-card clean')}
 <div class="subtasks"><div class="subtasks-head"><strong>Sous-tâches</strong><span class="muted"> · 2 finies</span><span class="subtasks-total mq-new">≈ 0,00&nbsp;$US</span></div>
@@ -152,7 +153,7 @@ async function conversationScreens(scheme) {
         await ui.ev(`(() => {
           const n = document.querySelector('[data-testid=notice-report] .notice-body span')
           n.innerHTML = 'Jetons traités&nbsp;: 242&nbsp;370 sur 17 échanges (216&nbsp;288 en entrée, 26&nbsp;082 en sortie)\\n<span class="mq-new">En plus&nbsp;: 3&nbsp;801&nbsp;728 relus en cache, 7&nbsp;805 de réflexion.</span>\\nCoût&nbsp;: <span class="mq-new">≈ 0,1556&nbsp;$US (estimation annoncée par OpenCode)</span>'
-          document.querySelectorAll('.turn-summary span').forEach((s) => (s.textContent = 'Terminé en 2 s · ≈ 0,0009 $US'))
+          document.querySelectorAll('[data-testid=turn-summary] .reply-foot-facts').forEach((s) => (s.textContent = '22:05 · 2 s · ≈ 0,0009 $US'))
           document.activeElement?.blur()
         })()`)
         await legend(

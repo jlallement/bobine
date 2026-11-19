@@ -1131,6 +1131,25 @@ export const SUITES = [
     ]
   },
   {
+    // Repère en bas du fil (fiche 261, écran E) : un rôle répond hors de l'écran, « Voir ».
+    name: 'repere',
+    file: 'repere.mjs',
+    run: 'repereSuite',
+    themes: BOTH,
+    sources: [
+      `${C}thread/WorkCue.tsx`,
+      `${C}thread/work-cue*.ts`,
+      `${C}thread/ThreadDock.tsx`,
+      `${C}thread/ScrollDownButton.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${C}roles/RoleWork.tsx`,
+      `${R}thread-extras.css`,
+      `${R}useThreadScroll.ts`,
+      'src/shared/children.ts',
+      'src/mock-agent/scenarios-roles.mts'
+    ]
+  },
+  {
     // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, filles des rôles, proposition.
     name: 'roles-travail',
     file: 'roles-travail.mjs',
