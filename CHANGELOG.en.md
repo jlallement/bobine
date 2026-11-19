@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## Next version
+## 1.0.0-beta.9 — November 19, 2026
 
 ### Fixes
 
