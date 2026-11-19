@@ -106,12 +106,13 @@ export function BesidePane({
               : {})}
             streaming={snapshot?.status === 'busy'}
           />
-          {snapshot?.status === 'busy' && (
+          {(snapshot?.status === 'busy' || summary.backgroundWork) && (
             <WorkingIndicator
               key={summary.id}
               conversationId={summary.id}
               workspace={summary.workspace}
               items={transcript.items}
+              background={snapshot?.status !== 'busy'}
             />
           )}
         </div>

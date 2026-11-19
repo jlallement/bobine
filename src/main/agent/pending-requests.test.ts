@@ -57,7 +57,8 @@ describe('PendingRequests', () => {
         type: 'permission-resolved',
         requestId: 'permission-1',
         optionId: null,
-        cancelledBy: 'agent'
+        cancelledBy: 'agent',
+        at: expect.any(Number)
       })
     })
 
@@ -111,8 +112,33 @@ describe('PendingRequests', () => {
       expect(events.at(-1)).toEqual({
         type: 'permission-resolved',
         requestId: 'permission-1',
-        optionId: null
+        optionId: null,
+        at: expect.any(Number)
       })
+    })
+
+    it('demande et réponse datées : l’attente de l’utilisateur sort de la durée du tour (fiche 255)', async () => {
+      const events: AgentEvent[] = []
+      const requests = new PendingRequests((e) => events.push(e))
+      const before = Date.now()
+      const permission = ask(requests, new AbortController().signal)
+      requests.respondPermission('permission-1', 'ok')
+      await permission
+      const question = requests.elicitation({
+        mode: 'form',
+        message: 'Lancer ?',
+        schema: { type: 'object', properties: {} }
+      })
+      requests.respondElicitation('elicitation-1', { action: 'decline' })
+      await question
+      const times = events.map((e) => ('at' in e ? e.at : undefined))
+      expect(events.map((e) => e.type)).toEqual([
+        'permission-request',
+        'permission-resolved',
+        'elicitation-request',
+        'elicitation-resolved'
+      ])
+      for (const at of times) expect(at).toBeGreaterThanOrEqual(before)
     })
 
     it('un identifiant inconnu lève toujours l’erreur (pas retiré par l’agent)', () => {

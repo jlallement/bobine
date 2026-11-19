@@ -344,6 +344,16 @@ async function openCode23(scheme) {
             (await ui.ev(head)).includes(L('toolCall.subagents.running', { count: 2 })),
           `2.3.0 : deux sous-agents « en cours » après la fin du tour (${running})`
         )
+        // Fiche 255 (D1) : le tour ACP est fini, mais le travail continue : « en cours » partout.
+        const status = `document.querySelector('[data-testid=agent-status]')?.textContent`
+        const summary = `document.querySelector('[data-testid=turn-summary]')`
+        check(
+          (await ui.ev(`!!document.querySelector('[data-testid=working][data-activity=tool]')`)) &&
+            (await ui.ev(status)) === L('sidebar.status.background') &&
+            !(await ui.ev(`!!${summary}`)),
+          '2.3.0 (fiche 255) : sous-agents au travail après le tour : indicateur et pied « en cours », pas de « Terminé »'
+        )
+        await ui.shot('255-en-cours-apres-le-tour')
         await open(ui, 0)
         await open(ui, 1)
         const live = await ui.ev(`[${work(0)}, ${work(1)}]`)
@@ -371,9 +381,17 @@ async function openCode23(scheme) {
           !before.includes('ZEBRE') && after.includes('ZEBRE') && !after.includes(before.trim()),
           '2.3.0 : la réponse du parent hors tour est un message à part, pas collée au précédent'
         )
+        // Fiche 255 : le bilan vient à la fin du travail (quelques secondes de silence après la
+        // réponse hors tour), sous cette réponse, et l'agent redit « Prêt ».
+        await ui.waitFor(`!!${summary}`, 20_000)
         check(
-          await ui.ev(`!!document.querySelector('[data-testid=turn-summary]')`),
-          '2.3.0 : le bilan « Terminé » du tour reste après la réponse hors tour'
+          (await ui.ev(`(() => {
+            const last = [...document.querySelectorAll('.msg-agent')].at(-1)
+            return !!last && !!(last.compareDocumentPosition(${summary}) & Node.DOCUMENT_POSITION_FOLLOWING)
+          })()`)) &&
+            !(await ui.ev(`!!document.querySelector('[data-testid=working]')`)) &&
+            (await ui.ev(status)) === L('sidebar.status.ready'),
+          '2.3.0 (fiche 255) : le bilan « Terminé » vient à la fin du travail, sous la réponse hors tour ; « Prêt » ensuite'
         )
         await ui.ev(`${block}.scrollIntoView({ block: 'start' }), true`)
         await ui.shot('g6b-2-3-fini')

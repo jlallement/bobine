@@ -36,6 +36,9 @@ export interface ToolPermission {
   state: 'pending' | 'cancelled' | { optionId: string; name: string; kind: PermissionOptionKind }
   /** Repérés par le main (fiche 211) ; absent dans les conversations enregistrées avant. */
   risks?: PermissionRisk[]
+  /** Heures de la demande et de la réponse (ms) : attente hors de la durée du tour (fiche 255). */
+  askedAt?: number
+  answeredAt?: number
 }
 
 /**
@@ -86,9 +89,18 @@ export type WindowsPrivilegeCommand = (typeof WINDOWS_PRIVILEGE_COMMANDS)[number
  * la clé (le fil reste celui d'avant la fiche 211).
  */
 export const pendingWith = (
-  risks: PermissionRisk[] | undefined
-): { state: 'pending'; risks?: PermissionRisk[] } =>
-  risks?.length ? { state: 'pending', risks } : { state: 'pending' }
+  risks: PermissionRisk[] | undefined,
+  /** Heure de la demande (fiche 255). */
+  at?: number
+): { state: 'pending'; risks?: PermissionRisk[]; askedAt?: number } => ({
+  state: 'pending',
+  ...(risks?.length ? { risks } : {}),
+  ...(at ? { askedAt: at } : {})
+})
+
+/** Heure de la réponse à une autorisation (fiche 255), si elle est connue. */
+export const answeredAt = (at: number | undefined): { answeredAt?: number } =>
+  at ? { answeredAt: at } : {}
 
 /** Genres d'option d'autorisation d'ACP, traduits par l'app (recette 0.11, C5). */
 const OPTION_KINDS = ['allow_once', 'allow_always', 'reject_once', 'reject_always'] as const

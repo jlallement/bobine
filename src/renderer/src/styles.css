@@ -422,7 +422,8 @@ html.native-frame .side-panel-head.with-lights {
 
 .status-dot.busy,
 .status-dot.starting,
-.status-dot.needs-action {
+.status-dot.needs-action,
+.status-dot.ready.background {
   background: var(--warn);
 }
 

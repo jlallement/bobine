@@ -5,6 +5,7 @@
       "starting": "Starting…",
       "ready": "Ready",
       "busy": "Responding…",
+      "background": "Still working…",
       "error": "Error",
       "exited": "Stopped (crashed)",
       "needs-action": "Action required",
@@ -2740,6 +2741,7 @@
     "writing": "Writing…",
     "permission": "Waiting for your approval",
     "question": "Waiting for your answer",
+    "background": "Working after the turn…",
     "turnStarted": "Turn started {{elapsed}} ago",
     "title": "My activity",
     "scope": {
@@ -4552,7 +4554,8 @@
     "done": "Done in {{duration}}",
     "files_one": "{{count}} file +{{added}} −{{removed}}",
     "files_other": "{{count}} files +{{added}} −{{removed}}",
-    "doneQuick": "Done"
+    "doneQuick": "Done",
+    "waited": "{{duration}} waiting for you"
   },
   "cap": {
     "more_one": "⋯ {{n}} more line",

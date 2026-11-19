@@ -182,6 +182,8 @@ export interface AgentHostOptions {
   retryDelaysMs?: readonly number[]
   /** Attentes avant chaque relecture d'un sous-agent en arrière-plan (remplaçables en test) ; voir `FOLLOW_MS`. */
   subagentFollowMs?: readonly number[]
+  /** Silence qui clôt le travail après le tour (remplaçable en test) ; voir `BACKGROUND_QUIET_MS`. */
+  backgroundQuietMs?: number
 }
 
 /**
@@ -315,9 +317,7 @@ export class AgentHost {
     this.cost = new SessionCost(options.profile.costSource, () => this.sessionId, options.emit)
     this.updates = new ProfileUpdates(options.profile, options.workspace)
     this.subagents = new SubagentTracker(
-      subagentTrackerOptions(options, this.cost.subagentOptions(), (toolCallId, run, work) =>
-        this.options.emit({ type: 'subagent-run', toolCallId, run, ...(work ? { work } : {}) })
-      )
+      subagentTrackerOptions(options, this.cost.subagentOptions(), () => this.is('busy'))
     )
     this.appTools = new AppToolsBridge({
       workspace: options.workspace,
@@ -930,7 +930,8 @@ export class AgentHost {
           this.emitSnapshot()
         }
         this.options.emit({ type: 'update', update })
-        // L'agent parle hors de tout tour : rapport d'un sous-agent en arrière-plan (OpenCode 2.3.0).
+        // L'agent parle hors de tout tour : rapport d'un sous-agent en arrière-plan (OpenCode 2.3.0) ;
+        // il travaille encore, la conversation reste « en cours » (fiche 255).
         if (!this.is('busy') && !this.replaying && speaks(update)) this.subagents.nudge()
         // Compaction faite par l'agent (fiche 182) : le contexte de session repart au message suivant.
         if (update.sessionUpdate === 'compaction_update') this.sessionContextDue = 'compacted'

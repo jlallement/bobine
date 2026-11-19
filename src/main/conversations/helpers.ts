@@ -23,7 +23,7 @@ import { MODE_CONTROL_ID } from '../agent/session-controls'
 import { activeRules } from '../agent-config/rules'
 import type { RuleFileView } from '@shared/rules'
 import type { RoleStamp } from '@shared/roles'
-import type { TranscriptItem } from '@shared/transcript'
+import type { TranscriptItem, TranscriptState } from '@shared/transcript'
 import { hasFolder } from './agentless'
 import type { ConversationRecord } from './store'
 import { memoryProposals } from '@shared/memory'
@@ -138,6 +138,8 @@ interface Summarizable {
   record: ConversationRecord
   host?: AgentHost
   snapshot?: AgentSnapshot
+  /** Fil chargé : travail après le tour (fiche 255). */
+  transcript?: TranscriptState | undefined
   draft: boolean
   startingHeld?: boolean
 }
@@ -207,6 +209,10 @@ export function summaryOf(
     updatedAt: record.updatedAt,
     createdAt: record.createdAt,
     status: listedStatus(conversation),
+    // Tour fini, travail encore en cours (fiche 255) : « en cours » dans la liste.
+    ...(conversation.transcript?.backgroundWork && listedStatus(conversation) === 'ready'
+      ? { backgroundWork: true }
+      : {}),
     draft: conversation.draft,
     ...(record.pinned ? { pinned: true } : {}),
     ...(record.worktree ? { branch: record.worktree.branch } : {}),

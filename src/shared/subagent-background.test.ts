@@ -245,3 +245,107 @@ describe('messageId d’ACP : un autre message commence (fiche 232)', () => {
     expect(texts(start, chunk('Un ', 'msg_a'), chunk('seul.'))).toEqual(['Un seul.'])
   })
 })
+
+describe('travail après le tour (`background-work`, fiche 255)', () => {
+  const say = (text: string): AgentEvent =>
+    update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } })
+  const launch: AgentEvent[] = [
+    { type: 'user-message', text: 'Lance un sous-agent', at: 1_000 },
+    update({
+      sessionUpdate: 'tool_call',
+      toolCallId: 's1',
+      title: 'subagent',
+      kind: 'think',
+      status: 'in_progress',
+      rawInput: { agent: 'explore', description: 'Inventaire', prompt: 'Liste' }
+    }),
+    { type: 'subagent-run', toolCallId: 's1', run: { startedAt: 1, background: true } },
+    say('Lancé.'),
+    { type: 'turn-end', stopReason: 'end_turn', at: 11_000 }
+  ]
+  const ended: AgentEvent = { type: 'subagent-run', toolCallId: 's1', run: { endedAt: 85_000 } }
+  const replies = (...events: AgentEvent[]) =>
+    events
+      .reduce(reduceTranscript, emptyTranscript)
+      .items.flatMap((i) => (i.kind === 'agent' ? [{ text: i.text, at: i.at }] : []))
+
+  it('la réponse hors tour d’un tour qui a lancé un sous-agent en arrière-plan reçoit son heure', () => {
+    expect(
+      replies(...launch, say('Résumé.'), ended, {
+        type: 'background-work',
+        active: false,
+        at: 84_000
+      })
+    ).toEqual([
+      { text: 'Lancé.', at: 11_000 },
+      { text: 'Résumé.', at: 84_000 }
+    ])
+  })
+
+  it('drapeau posé au début, retiré à la fin ou quand l’agent n’est plus prêt ni occupé', () => {
+    const state = (...events: AgentEvent[]) =>
+      [...launch, ...events].reduce(reduceTranscript, emptyTranscript).backgroundWork
+    const on: AgentEvent = { type: 'background-work', active: true }
+    const status = (s: string): AgentEvent => ({
+      type: 'status',
+      snapshot: { status: s } as Extract<AgentEvent, { type: 'status' }>['snapshot']
+    })
+    expect(state(on)).toBe(true)
+    expect(state(on, status('ready'), status('busy'))).toBe(true)
+    expect(state(on, { type: 'background-work', active: false })).toBeUndefined()
+    expect(state(on, status('idle'))).toBeUndefined()
+    expect(state(on, status('exited'))).toBeUndefined()
+    expect(state(on, status('starting'))).toBeUndefined()
+  })
+
+  it('après un autre message, rien n’est daté : ce tour-là n’a rien lancé (fiche 232)', () => {
+    const next: AgentEvent[] = [
+      { type: 'user-message', text: 'Alors ?', at: 20_000 },
+      say('Il travaille encore.'),
+      { type: 'turn-end', stopReason: 'end_turn', at: 24_000 }
+    ]
+    expect(
+      replies(...launch, ...next, say('Résumé.'), ended, {
+        type: 'background-work',
+        active: false,
+        at: 84_000
+      })
+    ).toEqual([
+      { text: 'Lancé.', at: 11_000 },
+      { text: 'Il travaille encore.', at: 24_000 },
+      { text: 'Résumé.', at: undefined }
+    ])
+  })
+})
+
+describe('demandes datées (fiche 255)', () => {
+  it('autorisation et question : heure de la demande et de la réponse gardées', () => {
+    const items = [
+      { type: 'user-message', text: 'Écris', at: 0 } as AgentEvent,
+      {
+        type: 'permission-request',
+        requestId: 'p1',
+        toolCall: { toolCallId: 't1', title: 'Écrire' },
+        options: [{ optionId: 'ok', name: 'Autoriser', kind: 'allow_once' }],
+        at: 1_000
+      } as AgentEvent,
+      { type: 'permission-resolved', requestId: 'p1', optionId: 'ok', at: 4_000 } as AgentEvent,
+      {
+        type: 'elicitation-request',
+        requestId: 'e1',
+        prompt: { mode: 'form', message: 'Lancer ?', schema: { type: 'object', properties: {} } },
+        at: 5_000
+      } as AgentEvent,
+      { type: 'elicitation-resolved', requestId: 'e1', action: 'decline', at: 9_000 } as AgentEvent
+    ].reduce(reduceTranscript, emptyTranscript).items
+    const tool = items.find((i) => i.kind === 'tool')
+    expect(tool?.kind === 'tool' && tool.permission).toMatchObject({
+      askedAt: 1_000,
+      answeredAt: 4_000
+    })
+    expect(items.find((i) => i.kind === 'elicitation')).toMatchObject({
+      askedAt: 5_000,
+      answeredAt: 9_000
+    })
+  })
+})

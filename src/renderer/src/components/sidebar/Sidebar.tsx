@@ -154,8 +154,12 @@ export function Sidebar(props: Props) {
   }
   const { snapshot } = props
   const status = snapshot?.status ?? 'idle'
+  // Tour fini, l'agent de la conversation active travaille encore (fiche 255).
+  const afterTurn =
+    status === 'ready' &&
+    props.conversations.some((c) => c.id === props.activeId && c.backgroundWork)
   const agentLabel = snapshot?.info.agentName ?? snapshot?.info.profileLabel ?? t('sidebar.agent')
-  const statusText = agentStatusText(snapshot)
+  const statusText = afterTurn ? t('sidebar.status.background') : agentStatusText(snapshot)
   const launches = props.childLaunches ?? NO_LAUNCHES
   const listed = withChildLaunches(
     props.conversations.filter((c) => !c.draft && spaceOf(c) === props.space),
@@ -360,7 +364,8 @@ export function Sidebar(props: Props) {
       <div className="sidebar-footer">
         <div className="agent-avatar">
           {agentLabel.charAt(0).toUpperCase()}
-          <span className={`status-dot ${status}`} />
+          {/* Travail après le tour (fiche 255) : « prêt » à recevoir un message, mais en cours. */}
+          <span className={`status-dot ${status}${afterTurn ? ' background' : ''}`} />
         </div>
         {props.quota && props.onRefreshQuota && !presenting ? (
           <AgentQuotaStatus

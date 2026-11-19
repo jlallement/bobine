@@ -500,6 +500,13 @@ export type AgentEvent =
     }
   /** Coût cumulé de la session, obtenu hors protocole (ex. base locale de Bob). */
   | { type: 'usage-report'; cost: { amount: number; currency: string } }
+  /**
+   * L'agent travaille encore après la fin du tour (fiche 255) : sous-agent en arrière-plan en
+   * cours, ou réponse donnée hors tour à son rapport, jusqu'à quelques secondes de silence. À la
+   * fin (`active: false`), `at` : heure de la dernière réponse hors tour ; celles du dernier tour la
+   * reçoivent si ce tour a lancé un sous-agent en arrière-plan : elles le finissent.
+   */
+  | { type: 'background-work'; active: boolean; at?: number }
   | { type: 'turn-error'; message: string }
   /**
    * Une tentative du tour a échoué et une autre est prévue (fiche 142) : ses outils en cours sont
@@ -536,6 +543,8 @@ export type AgentEvent =
       options: PermissionOption[]
       /** Ce que l'appel a de risqué (fiche 211) ; absent : rien de repéré. */
       risks?: PermissionRisk[]
+      /** Heure de la demande (ms) : l'attente de l'utilisateur sort de la durée du tour (fiche 255). */
+      at?: number
     }
   /**
    * Demande traitée : `optionId` choisi, ou `null` si annulée (Stop, arrêt de l'agent…).
@@ -547,14 +556,18 @@ export type AgentEvent =
       requestId: string
       optionId: string | null
       cancelledBy?: 'agent'
+      /** Heure de la réponse (ms), fiche 255. */
+      at?: number
     }
   /** L'agent demande une information ; on attend `agent:respondElicitation`. */
-  | { type: 'elicitation-request'; requestId: string; prompt: ElicitationPrompt }
+  | { type: 'elicitation-request'; requestId: string; prompt: ElicitationPrompt; at?: number }
   | {
       type: 'elicitation-resolved'
       requestId: string
       action: ElicitationAction
       content?: Record<string, unknown>
+      /** Heure de la réponse (ms), fiche 255. */
+      at?: number
     }
   /** Images renvoyées par un outil de l'app, à montrer dans la carte de l'appel (fiche 029). */
   | { type: 'tool-media'; toolCallId: string; images: ToolImage[] }
@@ -674,6 +687,8 @@ export interface ConversationSummary {
   createdAt?: string
   /** Statut de son agent ; `stopped` si aucun processus ne tourne pour elle. */
   status: AgentStatus | 'stopped'
+  /** Prête, mais son agent travaille encore après le tour (fiche 255) : « en cours » dans la liste. */
+  backgroundWork?: true
   /** Conversation encore vide (pas dans l'historique). */
   draft: boolean
   /** Épinglée en tête de la barre latérale (fiche 026). */

@@ -1,6 +1,12 @@
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { activityLabel, currentActivity, currentStepId, elapsedLabel } from '@shared/activity'
+import {
+  activityLabel,
+  backgroundActivity,
+  currentActivity,
+  currentStepId,
+  elapsedLabel
+} from '@shared/activity'
 import type { TranscriptItem } from '@shared/transcript'
 import { SpoolMark } from '../common/SpoolMark'
 import { DiscussionContext } from '../discussion/DocumentCards'
@@ -31,23 +37,33 @@ function stepStart(conversationId: string, userId: number, stepId: number): numb
  * Indicateur d'activité à la fin du fil pendant que l'agent travaille, comme Claude Desktop :
  * bobine dont le fil s'enroule (fiche 069), ce qu'il fait (réfléchit, écrit, outil, attend votre accord)
  * et depuis quand : le temps est celui de l'étape en cours, la durée du tour est en infobulle
- * (fiche 128).
+ * (fiche 128). Après la fin du tour, quand l'agent travaille encore (`background`, fiche 255) : le
+ * sous-agent en cours ou « travaille après le tour », et le temps depuis l'envoi du message.
  */
 export function WorkingIndicator({
   conversationId,
   items,
-  workspace
+  workspace,
+  background = false
 }: {
   conversationId: string
   items: readonly TranscriptItem[]
   /** Dossier de la conversation : chemins relatifs dans le libellé de l'outil (fiche 107). */
   workspace?: string
+  /** Tour fini, l'agent travaille encore (sous-agent en arrière-plan, réponse hors tour). */
+  background?: boolean
 }) {
   // Recalculé quand le message de l'utilisateur change : le statut « occupé » arrive parfois avant
   // le message du nouveau tour, qui donnerait sinon le début du tour précédent (fiche 095).
-  const userId = items.findLast((i) => i.kind === 'user')?.id ?? -1
+  const user = items.findLast((i) => i.kind === 'user')
+  const userId = user?.id ?? -1
   const stepId = currentStepId(items)
-  const start = useMemo(() => turnStart(conversationId, userId), [conversationId, userId])
+  // Après le tour, l'indicateur peut apparaître bien après l'envoi : l'heure du message fait foi.
+  const sentAt = background ? user?.at : undefined
+  const start = useMemo(
+    () => sentAt ?? turnStart(conversationId, userId),
+    [conversationId, userId, sentAt]
+  )
   const stepAt = useMemo(
     () => stepStart(conversationId, userId, stepId),
     [conversationId, userId, stepId]
@@ -60,8 +76,12 @@ export function WorkingIndicator({
   }, [])
   // Discussion (fiche 224) : son dossier se dit « Documents ».
   const documents = useContext(DiscussionContext) ? t('discussion.documents.tab') : undefined
-  const activity = currentActivity(items, workspace, documents)
+  const activity = background
+    ? backgroundActivity(items)
+    : currentActivity(items, workspace, documents)
   const waiting = activity.kind === 'permission' || activity.kind === 'question'
+  // Après le tour, le temps depuis l'envoi : celui de l'étape ne dirait rien (fiche 255).
+  const shownFrom = background ? start : stepAt
   return (
     <div
       className={`working${waiting ? ' waiting' : ''}`}
@@ -76,7 +96,7 @@ export function WorkingIndicator({
         className="working-time"
         title={t('activity.turnStarted', { elapsed: elapsedLabel(now - start) })}
       >
-        {elapsedLabel(now - stepAt)}
+        {elapsedLabel(now - shownFrom)}
       </span>
     </div>
   )
