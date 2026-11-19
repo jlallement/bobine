@@ -29,6 +29,15 @@ import { reduceTranscript, type TranscriptState } from '@shared/transcript'
 import { t } from 'i18next'
 import { ipcErrorText } from './ipc-errors'
 import { forgetView } from './changes-view-memory'
+import { useBesideActions } from './beside-actions'
+
+/**
+ * Lectures passées au dialogue de suppression, dépendances de ses effets : stables d'un rendu à
+ * l'autre (fiche 253). Neuves à chaque rendu, chaque morceau reçu relançait la lecture et
+ * abandonnait la précédente : l'état du worktree pouvait ne jamais s'afficher.
+ */
+const worktreeStatus = (id: string) => window.api.conversations.worktreeStatus(id)
+const family = (id: string) => window.api.conversations.family(id)
 
 export interface Conversation {
   snapshot: AgentSnapshot | null
@@ -265,6 +274,8 @@ export function useConversations() {
     [activeId, fail]
   )
 
+  const actionsFor = useBesideActions(fail)
+
   /** Fichiers du dossier de la conversation (mentions `@`) ; stable tant que la conversation l'est. */
   const searchFiles = useCallback(
     async (query: string): Promise<WorkspaceFile[]> =>
@@ -427,42 +438,11 @@ export function useConversations() {
     releaseBeside: (id: string) => {
       window.api.conversations.release(id).catch(() => {})
     },
-    /** Actions d'une conversation donnée (celle d'à côté), sur le modèle de celles de l'active. */
-    actionsFor: (id: string) => {
-      const run = (action: Promise<unknown>) => void action.catch(fail)
-      return {
-        send: (text: string, attachments: PromptAttachment[] = []) =>
-          run(window.api.agent.prompt(id, text, attachments)),
-        cancel: () => run(window.api.agent.cancel(id)),
-        restart: () => run(window.api.agent.restart(id)),
-        sendNow: (messageId: string) => run(window.api.agent.sendNow(id, messageId)),
-        unqueue: (messageId: string, edit?: boolean): Promise<QueuedMessage | undefined> =>
-          window.api.agent.unqueue(id, messageId, edit).catch((error: unknown) => {
-            fail(error)
-            return undefined
-          }),
-        respondPermission: (requestId: string, optionId: string | null) =>
-          run(window.api.agent.respondPermission(id, requestId, optionId)),
-        respondElicitation: (requestId: string, answer: ElicitationAnswer) =>
-          run(window.api.agent.respondElicitation(id, requestId, answer)),
-        setControl: (controlId: string, value: ControlValue) =>
-          run(window.api.agent.setControl(id, controlId, value)),
-        authenticate: (methodId: string) => run(window.api.agent.authenticate(id, methodId)),
-        retrySession: () => window.api.agent.retrySession(id).catch(fail),
-        useApiKey: (env: string, value: string): Promise<void> =>
-          window.api.agent.useApiKey(id, env, value),
-        runStep: (stepId: string) => run(window.api.agent.runStep(id, stepId)),
-        trustForSession: () => run(window.api.agent.trustForSession(id)),
-        openTerminal: () => run(window.api.workspace.openTerminal(id)),
-        searchFiles: (query: string): Promise<WorkspaceFile[]> =>
-          window.api.workspace.searchFiles(id, query).catch(() => []),
-        pickFiles: (): Promise<string[]> =>
-          window.api.workspace.pickFiles(id).catch((error: unknown) => {
-            fail(error)
-            return []
-          })
-      }
-    },
+    /**
+     * Actions d'une conversation donnée (celle d'à côté), sur le modèle de celles de l'active ;
+     * même objet d'un rendu à l'autre pour un même id (fiche 253).
+     */
+    actionsFor,
     /** Fichiers modifiés depuis un message de la conversation active, avant d'en repartir. */
     branchPreview: (itemId: number) =>
       activeId
@@ -474,9 +454,9 @@ export function useConversations() {
     /** Nouvelle conversation dans un worktree git, depuis le dossier de la conversation active. */
     createWorktree: () =>
       withActive((id) => window.api.conversations.createWorktree(id).then(showView)),
-    worktreeStatus: (id: string) => window.api.conversations.worktreeStatus(id),
+    worktreeStatus,
     /** Descendance d'une conversation, pour la confirmation de suppression (fiche 228). */
-    family: (id: string) => window.api.conversations.family(id),
+    family,
     /** Archive une conversation, ou la ressort (une nouvelle conversation remplace l'active). */
     archive: (id: string, archived: boolean) => {
       window.api.conversations
