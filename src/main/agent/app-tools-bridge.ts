@@ -5,7 +5,7 @@
  */
 import type { CreateElicitationResponse, SessionUpdate } from '../../shared/acp-sdk.mts'
 import type { AgentEvent, ElicitationPrompt, ToolOutcome } from '@shared/agent'
-import { appToolFallback, appToolLabel } from '@shared/app-tools'
+import { appToolFallback, appToolLabel, type AppToolLabelContext } from '@shared/app-tools'
 import { askUserResult, askUserSchema, type AskUserArgs } from '@shared/ask-user'
 import {
   childProposalSchema,
@@ -320,7 +320,7 @@ export class AppToolsBridge {
     // Cartes en cours au moment de l'appel : l'une d'elles peut le citer un peu plus tard.
     const candidates = toolCallId ? undefined : new Set(this.running.keys())
     // Outil sans libellé propre : son nom (recette 0.11, C1), jamais le titre de l'agent.
-    const appTool = appToolLabel(name, args) ?? appToolFallback(name)
+    const appTool = appToolLabel(name, args, labelContext(tool, args)) ?? appToolFallback(name)
     if (toolCallId && appTool) this.options.emit({ type: 'tool-app', toolCallId, appTool })
     if (tool.panel) this.options.emit({ type: 'panel-open', tab: tool.panel })
     // Refusé ou en erreur : la carte le dit, même si l'agent la dit finie (fiche 122).
@@ -506,4 +506,13 @@ function questionOf(rawInput: unknown): string | undefined {
   if (typeof rawInput !== 'object' || rawInput === null) return undefined
   const { question, options } = rawInput as Record<string, unknown>
   return typeof question === 'string' && Array.isArray(options) ? question : undefined
+}
+
+/** Ce que l'outil ajoute au libellé (fiche 258) ; un échec ne coûte que ce supplément. */
+function labelContext(tool: AppTool, args: unknown): AppToolLabelContext {
+  try {
+    return tool.labelContext?.(args) ?? {}
+  } catch {
+    return {}
+  }
 }

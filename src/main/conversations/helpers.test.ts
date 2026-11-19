@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AgentEvent } from '@shared/agent'
 import { commitSubject } from '@shared/worktree-cycle'
-import { agentTitle, proposedTitle, summaryOf, titleFrom } from './helpers'
+import { agentTitle, noteTurnStopped, proposedTitle, summaryOf, titleFrom } from './helpers'
 import type { ConversationRecord } from './store'
 
 describe('titre tiré du premier message', () => {
@@ -91,5 +91,45 @@ describe('summaryOf : le projet de la conversation (fiche 131)', () => {
       workspace: '/depots/.bobine-worktrees/carnet/20261023-1747-ef93',
       branch: 'bobine/20261023-1747-ef93'
     })
+  })
+})
+
+describe('noteTurnStopped : tour arrêté avant la fin (fiche 258, D4)', () => {
+  const record = (): ConversationRecord => ({
+    id: 'f',
+    title: 'Relecture',
+    titleSource: 'message',
+    profileId: 'mock',
+    workspace: '/depots/carnet',
+    createdAt: '2026-11-19T10:00:00.000Z',
+    updatedAt: '2026-11-19T10:00:00.000Z'
+  })
+  const summary = (r: ConversationRecord) =>
+    summaryOf(
+      { record: r, draft: false },
+      [{ id: 'mock', label: 'Agent factice' }],
+      () => undefined
+    )
+
+  it('posé par une fin de tour annulée, retiré au tour suivant, à une fin ordinaire ou à une erreur', () => {
+    const r = record()
+    const cancelled: AgentEvent = { type: 'turn-end', stopReason: 'cancelled' }
+    expect(noteTurnStopped(r, cancelled)).toBe(true)
+    expect(r.turnStopped).toBe(true)
+    expect(summary(r).turnStopped).toBe(true)
+    // Rien d'autre ne le change ; le redire ne change rien.
+    expect(noteTurnStopped(r, { type: 'status', snapshot: {} } as AgentEvent)).toBe(false)
+    expect(noteTurnStopped(r, cancelled)).toBe(false)
+    expect(noteTurnStopped(r, { type: 'user-message', text: 'reprends' })).toBe(true)
+    expect(r).not.toHaveProperty('turnStopped')
+    expect(summary(r)).not.toHaveProperty('turnStopped')
+    noteTurnStopped(r, cancelled)
+    expect(noteTurnStopped(r, { type: 'turn-end', stopReason: 'end_turn' })).toBe(true)
+    expect(r).not.toHaveProperty('turnStopped')
+    noteTurnStopped(r, cancelled)
+    expect(noteTurnStopped(r, { type: 'turn-error', message: 'boom' })).toBe(true)
+    expect(r).not.toHaveProperty('turnStopped')
+    // Limite d'étapes, refus du modèle : le tour a fini, il n'a pas été arrêté.
+    expect(noteTurnStopped(r, { type: 'turn-end', stopReason: 'max_turn_requests' })).toBe(false)
   })
 })

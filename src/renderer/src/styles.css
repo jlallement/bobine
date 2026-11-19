@@ -3448,6 +3448,9 @@ a.btn {
 .child-state.error {
   color: var(--err);
 }
+.child-state.stopped {
+  color: var(--muted);
+}
 
 .rename-input {
   width: 100%;

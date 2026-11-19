@@ -80,6 +80,8 @@ export interface ConversationRecord {
    * la réouverture (fiche 256) ; pour l'agent qui les a annoncés.
    */
   controls?: ConversationControls
+  /** Dernier tour arrêté avant la fin (`cancelled`), jusqu'au tour suivant (fiche 258). */
+  turnStopped?: true
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -101,7 +103,7 @@ export function isRecord(value: unknown): value is ConversationRecord {
 
 /** Résumé de consommation vérifié : un résumé mal formé est retiré, pas la conversation. */
 function withUsage(record: ConversationRecord): ConversationRecord {
-  const checked = withControls(withSpace(withRole(record)))
+  const checked = withControls(withTurnStopped(withSpace(withRole(record))))
   if (checked.usage === undefined) return checked
   const { usage, ...rest } = checked
   const digest = parseUsageDigest(usage)
@@ -128,6 +130,13 @@ function withControls(record: ConversationRecord): ConversationRecord {
 function withSpace(record: ConversationRecord): ConversationRecord {
   if (record.space === undefined || record.space === 'discussion') return record
   const { space: _ignored, ...rest } = record
+  return rest
+}
+
+/** Tour arrêté (fiche 258) : seule valeur retenue, `true` ; toute autre est retirée. */
+function withTurnStopped(record: ConversationRecord): ConversationRecord {
+  if (record.turnStopped === undefined || record.turnStopped === true) return record
+  const { turnStopped: _ignored, ...rest } = record
   return rest
 }
 

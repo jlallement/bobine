@@ -42,8 +42,10 @@ import {
   rowMergeState,
   SubtasksMergeFooter,
   useChildrenMerge,
-  type ChildrenMergeActions
+  type ChildrenMergeActions,
+  type ChildrenMergeState
 } from './SubtasksMerge'
+import type { MergeRowState } from '@shared/children-merge'
 import { countText } from '@shared/i18n/format'
 import type { RoleBadge } from '@shared/roles'
 import { RoleAvatar, RoleStack } from '../roles/RoleAvatar'
@@ -124,6 +126,35 @@ export function VerdictBadge({ verdict }: { verdict: ChildVerdict }) {
       </span>
     </Tip>
   )
+}
+
+/** Ce que la fusion dit d'une ligne de fille : son état, et si elle a été nettoyée. */
+export function rowMerge(
+  merging: ChildrenMergeState,
+  childId: string
+): { mergeState: MergeRowState | undefined; cleaned: boolean } {
+  return {
+    mergeState: rowMergeState(merging, childId),
+    cleaned: merging.merge?.rows.find((r) => r.childId === childId)?.cleaned === true
+  }
+}
+
+/**
+ * Pastille de la ligne d'une fille, la même sur la carte « Sous-tâches » et dans Modifications ›
+ * Filles (fiche 258, D11) : la fusion (« fusionnée »…) l'emporte sur la recommandation de la mère,
+ * devenue sans objet.
+ */
+export function MergeOrVerdict({
+  mergeState,
+  cleaned,
+  verdict
+}: {
+  mergeState: MergeRowState | undefined
+  cleaned: boolean
+  verdict: ChildVerdict | undefined
+}) {
+  if (mergeState) return <MergeRowBadge state={mergeState} {...(cleaned ? { cleaned } : {})} />
+  return verdict ? <VerdictBadge verdict={verdict} /> : null
 }
 
 /** Texte exact, sans interprétation Markdown ni troncature, replié par défaut (fiche 150). */
@@ -278,6 +309,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
     count(['running']) && t('children.card.running', { count: count(['running']) }),
     count(['waiting']) && t('children.card.waiting', { count: count(['waiting']) }),
     count(['done', 'unread']) && t('children.card.done', { count: count(['done', 'unread']) }),
+    count(['stopped']) && t('children.card.stopped', { count: count(['stopped']) }),
     count(['error']) && t('children.card.error', { count: count(['error']) })
   ].filter(Boolean)
   const total = digestsTotal(rows.map((r) => r.child.usage))
@@ -304,8 +336,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
       </div>
       {rows.map(({ child, state, report }) => {
         const usage = usageText(child.usage)
-        const mergeState = rowMergeState(merging, child.id)
-        const cleaned = merging.merge?.rows.find((r) => r.childId === child.id)?.cleaned
+        const { mergeState, cleaned } = rowMerge(merging, child.id)
         const verdict = verdicts.get(child.id)
         return (
           <div
@@ -338,10 +369,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
                     {usage}
                   </span>
                 )}
-                {mergeState && (
-                  <MergeRowBadge state={mergeState} {...(cleaned ? { cleaned } : {})} />
-                )}
-                {!mergeState && verdict && <VerdictBadge verdict={verdict} />}
+                <MergeOrVerdict mergeState={mergeState} cleaned={cleaned} verdict={verdict} />
               </span>
             </span>
             <Tip label={t(`children.state.${state}`)}>

@@ -73,6 +73,51 @@ describe('appToolLabel (fiche 047)', () => {
   })
 })
 
+describe('outils des filles : la fille par son titre (fiche 258, D18)', () => {
+  afterEach(() => i18next.changeLanguage('fr'))
+  const id = 'ddb49019-d530-4dc7-aae5-83d4301eb6b3'
+  const named = (name: string, args: unknown, childTitle?: string) => {
+    const label = appToolLabel(name, args, childTitle ? { childTitle } : {})
+    // Espaces insécables de la typographie française : comparés comme des espaces.
+    return label && appToolText(label).replace(/[\u00a0\u202f]/g, ' ')
+  }
+
+  it('recommend_merge : le titre de la fille, sinon ce que l’agent a donné', () => {
+    expect(named('recommend_merge', { child: id, ready: true }, 'README')).toBe(
+      'Recommande de fusionner « README »'
+    )
+    expect(named('recommend_merge', { child: id, ready: false }, 'README')).toBe(
+      'Ne recommande pas encore de fusionner « README »'
+    )
+    expect(named('recommend_merge', { child: 'README', ready: true })).toBe(
+      'Recommande de fusionner « README »'
+    )
+    expect(named('recommend_merge', {})).toBe('Donne son avis sur une fusion')
+  })
+
+  it('message_child et child_status : la fille quand elle est connue, jamais son identifiant', () => {
+    expect(named('message_child', { child: id, message: 'Corrige le test' }, 'Endpoint')).toBe(
+      'Écrit à « Endpoint » : Corrige le test'
+    )
+    expect(named('message_child', { child: id, message: 'Corrige le test' })).toBe(
+      'Écrit à une conversation fille : Corrige le test'
+    )
+    expect(named('child_status', { child: id }, 'Endpoint')).toBe('Regarde où en est « Endpoint »')
+    expect(named('child_status', { child: id })).toBe('Regarde où en sont les conversations filles')
+  })
+
+  it('en anglais', async () => {
+    await i18next.changeLanguage('en')
+    expect(named('recommend_merge', { child: id, ready: true }, 'README')).toBe(
+      'Recommends merging “README”'
+    )
+    expect(named('message_child', { child: id, message: 'Fix it' }, 'Endpoint')).toBe(
+      'Writes to “Endpoint”: Fix it'
+    )
+    expect(named('child_status', { child: id }, 'Endpoint')).toBe('Checks on “Endpoint”')
+  })
+})
+
 describe('appToolsText (fiche 079)', () => {
   it('un libellé, plusieurs à la suite, ou rien', () => {
     const shot = { label: 'Capture la page', group: 'browser' as const }

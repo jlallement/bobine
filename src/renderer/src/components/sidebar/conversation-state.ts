@@ -13,7 +13,9 @@ export function conversationState(
 ): { state: ChildState; label: string; reason?: string } | undefined {
   if (preparing) return { state: 'running', label: t('children.preparing') }
   const state = childState(conversation, attention)
-  if (!conversation.startedFrom && !attention && state === 'done') return undefined
+  // Conversation ordinaire finie ou arrêtée : rien à signaler (l'arrêt ne vaut que pour une fille).
+  if (!conversation.startedFrom && !attention && (state === 'done' || state === 'stopped'))
+    return undefined
   const entry = attention
     ? inboxEntries(
         [conversation],

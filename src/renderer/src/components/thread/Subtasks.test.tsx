@@ -205,3 +205,25 @@ describe('Compte rendu replié (fiche 171)', () => {
     vi.restoreAllMocks()
   })
 })
+
+describe('Fille arrêtée par ■ (fiche 258, D4)', () => {
+  it('ligne « Arrêtée » (icône d’arrêt, pas de coche) et compte à part des terminées', async () => {
+    const items = [started(1, 'a'), started(2, 'b'), started(3, 'c')]
+    view(items, [
+      { ...child('a'), turnStopped: true },
+      { ...child('b'), turnStopped: true },
+      child('c')
+    ])
+    expect(screen.getByTestId('subtasks').querySelector('.subtasks-head')?.textContent).toMatch(
+      /1 terminée, 2 arrêtées/
+    )
+    const rows = screen.getAllByTestId('subtask-row')
+    expect(rows.map((r) => r.dataset['state'])).toEqual(['stopped', 'stopped', 'done'])
+    const icon = rows[0]?.querySelector('.child-state')
+    expect(icon?.getAttribute('data-state')).toBe('stopped')
+    expect(icon?.classList.contains('lucide-circle-stop')).toBe(true)
+    const state = screen.getByRole('button', { name: /Ouvrir.*Fille a.*Arrêtée/ })
+    fireEvent.focus(state)
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Arrêtée')
+  })
+})

@@ -3,6 +3,7 @@ import {
   CircleExclamationPoint,
   CircleDot,
   CircleHelp,
+  CircleStop,
   Hand,
   LoaderCircle
 } from 'lucide-react'
@@ -30,5 +31,7 @@ export function ConversationStateIcon({
     return reason === 'question' ? <CircleHelp {...props} /> : <Hand {...props} />
   if (state === 'error') return <CircleExclamationPoint {...props} />
   if (state === 'unread') return <CircleDot {...props} />
+  // Arrêtée (fiche 258) : l'icône et le gris du compte rendu « a été arrêtée ».
+  if (state === 'stopped') return <CircleStop {...props} />
   return <Check {...props} />
 }

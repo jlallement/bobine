@@ -166,6 +166,26 @@ describe('conversations filles (fiche 097)', () => {
     expect(childState({ status: 'stopped' })).toBe('done')
   })
 
+  it('fille arrêtée par ■ : « arrêtée », jamais « finie » (fiche 258, D4)', () => {
+    expect(childState({ status: 'ready', turnStopped: true })).toBe('stopped')
+    // Agent mis en veille ou app relancée : l'arrêt reste dit.
+    expect(childState({ status: 'stopped', turnStopped: true })).toBe('stopped')
+    // Ce qui se passe maintenant passe avant : un nouveau tour, une demande, un agent en erreur.
+    expect(childState({ status: 'busy', turnStopped: true })).toBe('running')
+    expect(childState({ status: 'ready', turnStopped: true }, 'request')).toBe('waiting')
+    expect(childState({ status: 'exited', turnStopped: true })).toBe('error')
+    // Une fille arrêtée ne compte pas parmi les filles en cours (ADR-0020).
+    const list = [
+      {
+        id: 'f',
+        status: 'ready' as const,
+        turnStopped: true as const,
+        startedFrom: { id: 'm', title: 'm' }
+      }
+    ]
+    expect(activeChildren('m', list, {})).toBe(0)
+  })
+
   it('filles en cours d’une mère (ADR-0020) : celles qui travaillent ou attendent', () => {
     const of = (id: string, status: 'busy' | 'ready' | 'starting', mother = 'm') => ({
       id,

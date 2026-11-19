@@ -52,6 +52,44 @@ describe('AppToolsBridge (fiche 047)', () => {
     expect(events.some((e) => e.type === 'tool-app')).toBe(false)
   })
 
+  it('le libellé prend ce que l’outil ajoute : la fille par son titre (fiche 258, D18)', async () => {
+    const events: AgentEvent[] = []
+    let throws = false
+    const children: AppToolModule = {
+      id: 'children',
+      about,
+      tools: () => [
+        {
+          definition: { name: 'recommend_merge', description: 'Recommend', inputSchema: {} },
+          autoAllow: true,
+          labelContext: () => {
+            if (throws) throw new Error('liste illisible')
+            return { childTitle: 'README' }
+          },
+          call: async () => textResult('ok')
+        }
+      ]
+    }
+    const bridge = new AppToolsBridge({
+      workspace: '/tmp',
+      toolModules: [children],
+      emit: (event) => events.push(event),
+      requests: {} as PendingRequests,
+      connected: () => true,
+      tellAgent: () => {}
+    })
+    const tool = bridge.sessionTools().find((t) => t.definition.name === 'recommend_merge')
+    const labels = () =>
+      events.flatMap((e) => (e.type === 'tool-app' ? [e.appTool.message?.params] : []))
+    bridge.noteToolCall({ toolCallId: 'call_1', title: 'Running Recommend Merge (bobine)' })
+    await tool?.call({ child: 'ddb49019', ready: true })
+    // Un supplément qui lève ne coûte que lui : le libellé garde ce que l'agent a donné.
+    throws = true
+    bridge.noteToolCall({ toolCallId: 'call_2', title: 'Running Recommend Merge (bobine)' })
+    await tool?.call({ child: 'ddb49019', ready: true })
+    expect(labels()).toEqual([{ value: 'README' }, { value: 'ddb49019' }])
+  })
+
   it('autorisé d’office seulement pour un titre au format connu ; un titre forgé est signalé (fiche 071)', () => {
     const warn = vi.spyOn(log, 'warn').mockImplementation(() => {})
     const browser: AppToolModule = {
