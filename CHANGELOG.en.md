@@ -2,6 +2,20 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Background subagents (OpenCode): while a subagent keeps working after the turn ends, then while
+  the agent answers its report, the conversation stays “in progress” (indicator under the thread,
+  “Still working…” at the bottom of the sidebar, the conversation’s row). “Done in …” only shows
+  at the real end, including the time spent answering the report.
+- Each turn keeps its own “Done in …” summary, under its own reply: with a queued message, the
+  previous turn no longer loses its summary, and the summary no longer sticks under cards that
+  arrived later.
+- The summary’s duration no longer counts the time spent waiting for your answer (approval,
+  question, proposals): it is shown separately, “40 s waiting for you”.
+
 ## 1.0.0-rc.1 — November 19, 2026
 
 ### Fixes
