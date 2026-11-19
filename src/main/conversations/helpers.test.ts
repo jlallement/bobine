@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { AgentEvent } from '@shared/agent'
+import type { AgentEvent, AgentSnapshot } from '@shared/agent'
+import type { AgentHost } from '../agent/agent-host'
 import { commitSubject } from '@shared/worktree-cycle'
 import { agentTitle, noteTurnStopped, proposedTitle, summaryOf, titleFrom } from './helpers'
 import type { ConversationRecord } from './store'
@@ -131,5 +132,38 @@ describe('noteTurnStopped : tour arrêté avant la fin (fiche 258, D4)', () => {
     expect(r).not.toHaveProperty('turnStopped')
     // Limite d'étapes, refus du modèle : le tour a fini, il n'a pas été arrêté.
     expect(noteTurnStopped(r, { type: 'turn-end', stopReason: 'max_turn_requests' })).toBe(false)
+  })
+})
+
+describe('summaryOf : travail après le tour (fiche 255)', () => {
+  const record: ConversationRecord = {
+    id: 'c',
+    title: 'Carnet',
+    titleSource: 'message',
+    profileId: 'mock',
+    workspace: '/depots/carnet',
+    createdAt: '2026-11-19T19:00:00.000Z',
+    updatedAt: '2026-11-19T19:00:00.000Z'
+  }
+  const listed = (status: string, backgroundWork: boolean, startingHeld = false) =>
+    summaryOf(
+      {
+        record,
+        draft: false,
+        host: {} as AgentHost,
+        snapshot: { status } as AgentSnapshot,
+        transcript: { items: [], nextId: 1, ...(backgroundWork ? { backgroundWork: true } : {}) },
+        ...(startingHeld ? { startingHeld } : {})
+      },
+      [{ id: 'mock', label: 'Agent factice' }],
+      () => undefined
+    )
+
+  it('prête mais encore au travail : « en cours » dans la liste', () => {
+    expect(listed('ready', true)).toMatchObject({ status: 'ready', backgroundWork: true })
+    expect(listed('ready', false).backgroundWork).toBeUndefined()
+    // Occupée (un autre tour), ou fille dont la consigne n'est pas partie : rien de plus.
+    expect(listed('busy', true).backgroundWork).toBeUndefined()
+    expect(listed('ready', true, true).backgroundWork).toBeUndefined()
   })
 })

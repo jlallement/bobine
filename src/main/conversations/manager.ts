@@ -1404,7 +1404,8 @@ export class ConversationManager {
       listChanged = true
     }
     if (!conversation.draft) {
-      if (event.type === 'user-message' || event.type === 'turn-end') {
+      // Travail après le tour (fiche 255) : la ligne passe « en cours », puis revient.
+      if (['user-message', 'turn-end', 'background-work'].includes(event.type)) {
         this.touch(conversation)
         listChanged = true
       }

@@ -200,6 +200,8 @@ export function App() {
   const messageActions = c.activeId
     ? {
         busy: snapshot?.status === 'busy' || snapshot?.status === 'starting',
+        // Tour fini, travail encore en cours (fiche 255) : pas encore de bilan.
+        background: c.activeSummary?.backgroundWork === true,
         // Message refusé, carte en attente (fiche 210) : pas de « Réessayer » en branche.
         refused:
           snapshot?.status === 'needs-action' &&
@@ -715,6 +717,7 @@ export function App() {
                         )}
                         <TurnFooter
                           snapshot={snapshot}
+                          background={c.activeSummary?.backgroundWork === true}
                           conversationId={c.activeId}
                           items={transcript.items}
                           workspace={c.activeSummary?.workspace}

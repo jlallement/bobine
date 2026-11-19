@@ -2,7 +2,8 @@
  * Demandes de l'agent en attente de l'utilisateur : autorisations (`session/request_permission`)
  * et formulaires ou pages (élicitations, y compris les questions des outils de l'app). Chaque
  * demande est émise vers l'interface, puis résolue une seule fois par la réponse de l'utilisateur
- * ou par une annulation (Stop, arrêt de l'agent).
+ * ou par une annulation (Stop, arrêt de l'agent). Demande et réponse sont datées : le temps passé
+ * à attendre l'utilisateur ne compte pas dans la durée du tour (fiche 255).
  */
 import type {
   CreateElicitationResponse,
@@ -75,7 +76,8 @@ export class PendingRequests {
         requestId,
         toolCall: params.toolCall,
         options: params.options,
-        ...(risks.length > 0 ? { risks } : {})
+        ...(risks.length > 0 ? { risks } : {}),
+        at: Date.now()
       })
       if (!signal) return
       // Seule l'annulation de CETTE requête compte (code -32800, `$/cancel_request`) : la
@@ -102,7 +104,13 @@ export class PendingRequests {
     if (this.withdrawn.size > MAX_WITHDRAWN) {
       this.withdrawn.delete(this.withdrawn.values().next().value as string)
     }
-    this.emit({ type: 'permission-resolved', requestId, optionId: null, cancelledBy: 'agent' })
+    this.emit({
+      type: 'permission-resolved',
+      requestId,
+      optionId: null,
+      cancelledBy: 'agent',
+      at: Date.now()
+    })
     pending.resolve({ outcome: { outcome: 'cancelled' } })
   }
 
@@ -111,7 +119,7 @@ export class PendingRequests {
     const requestId = `elicitation-${this.nextElicitation++}`
     return new Promise((resolve) => {
       this.elicitations.set(requestId, { prompt, resolve })
-      this.emit({ type: 'elicitation-request', requestId, prompt })
+      this.emit({ type: 'elicitation-request', requestId, prompt, at: Date.now() })
     })
   }
 
@@ -142,7 +150,7 @@ export class PendingRequests {
       throw new Error(t('requests.unknownOption', { option: optionId }))
     }
     this.permissions.delete(requestId)
-    this.emit({ type: 'permission-resolved', requestId, optionId })
+    this.emit({ type: 'permission-resolved', requestId, optionId, at: Date.now() })
     pending.resolve(
       optionId === null
         ? { outcome: { outcome: 'cancelled' } }
@@ -182,7 +190,8 @@ export class PendingRequests {
       type: 'elicitation-resolved',
       requestId,
       action: answer.action,
-      ...(accepted ? { content: accepted } : {})
+      ...(accepted ? { content: accepted } : {}),
+      at: Date.now()
     })
     pending.resolve(response)
   }

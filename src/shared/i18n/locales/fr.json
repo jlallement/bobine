@@ -5,6 +5,7 @@
       "starting": "Démarrage…",
       "ready": "Prêt",
       "busy": "Répond…",
+      "background": "Travaille encore…",
       "error": "Erreur",
       "exited": "Arrêté (planté)",
       "needs-action": "Action requise",
@@ -2846,6 +2847,7 @@
     "writing": "Écrit…",
     "permission": "Attend votre accord",
     "question": "Attend votre réponse",
+    "background": "Travaille après le tour…",
     "turnStarted": "Tour commencé il y a {{elapsed}}",
     "title": "Mon activité",
     "scope": {
@@ -4767,7 +4769,8 @@
     "files_one": "{{count}} fichier +{{added}} −{{removed}}",
     "files_many": "{{count}} fichiers +{{added}} −{{removed}}",
     "files_other": "{{count}} fichiers +{{added}} −{{removed}}",
-    "doneQuick": "Terminé"
+    "doneQuick": "Terminé",
+    "waited": "{{duration}} à vous attendre"
   },
   "cap": {
     "more_one": "⋯ {{n}} ligne de plus",

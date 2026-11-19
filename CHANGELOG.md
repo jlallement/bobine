@@ -32,6 +32,15 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   verte. Modifications › Filles dit « Fusionnée » comme la carte « Sous-tâches ». Le compte rendu
   d'une fille compte comme lu dès que vous le voyez dans le fil de la mère. Les outils de la mère
   citent la fille par son titre, plus par son identifiant.
+- Sous-agents en arrière-plan (OpenCode) : tant qu'un sous-agent travaille après la fin du tour,
+  puis le temps que l'agent réponde à son rapport, la conversation reste « en cours » (indicateur
+  sous le fil, « Travaille encore… » en bas de la barre latérale, ligne de la conversation).
+  « Terminé en … » ne s'affiche qu'à la vraie fin, durée de la réponse au rapport comprise.
+- Chaque tour garde son bilan « Terminé en … », sous sa propre réponse : avec un message en file,
+  le tour précédent ne perd plus le sien, et le bilan ne reste plus collé sous les cartes arrivées
+  après.
+- La durée du bilan ne compte plus le temps passé à attendre votre réponse (autorisation,
+  question, propositions) : il est affiché à part, « 40 s à vous attendre ».
 
 ## 1.0.0-rc.1 — 19 novembre 2026
 

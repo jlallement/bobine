@@ -82,3 +82,40 @@ describe('chronomètre de l’étape (fiche 128)', () => {
     expect(time()?.getAttribute('title')).toBe('Tour commencé il y a 1 min 10')
   })
 })
+
+describe('après la fin du tour, l’agent travaille encore (fiche 255)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 19, 20, 37, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const sent: TranscriptItem = { kind: 'user', id: 1, text: 'Lance un sous-agent', at: Date.now() }
+  const card = (run: Record<string, unknown>): TranscriptItem => ({
+    kind: 'tool',
+    id: 2,
+    toolCallId: 's',
+    title: 'subagent',
+    status: 'in_progress',
+    content: [],
+    locations: [],
+    subagent: { task: 'Inventaire des endpoints REST' },
+    subagentRun: { startedAt: 1, background: true, ...run }
+  })
+  const label = () => screen.getByTestId('working').querySelector('.working-label')?.textContent
+
+  it('le sous-agent en cours, et le temps depuis l’envoi du message', () => {
+    const items = [{ ...sent, at: Date.now() - 40_000 }, card({}), agent(3)]
+    render(<WorkingIndicator conversationId="c-arriere-plan" items={items} background />)
+    expect(label()).toMatch(/^Sous-agent\s:\sInventaire des endpoints REST…$/)
+    expect(elapsed()).toBe('40 s')
+    expect(screen.getByTestId('working').dataset.activity).toBe('tool')
+  })
+
+  it('sous-agent fini, réponse hors tour qui s’écrit : « Travaille après le tour… »', () => {
+    const items = [sent, card({ endedAt: 2 }), agent(3), agent(4)]
+    render(<WorkingIndicator conversationId="c-hors-tour" items={items} background />)
+    expect(label()).toBe('Travaille après le tour…')
+    expect(screen.getByTestId('working').dataset.activity).toBe('background')
+  })
+})

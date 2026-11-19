@@ -12,13 +12,15 @@
  * réponse, deux fois de suite sans travail relayé entre-temps ; cette réponse part avec la fin,
  * avec son travail relu : OpenCode 2.3.0 ne relaie plus rien de lui après le tour du parent.
  * L'agent qui parle hors tour (OpenCode 2.3.0 répond de lui-même au rapport d'un sous-agent) fait
- * relire ces sessions sans attendre (`nudge`).
+ * relire ces sessions sans attendre (`nudge`). Les deux disent aussi que l'agent travaille encore
+ * après la fin du tour (`afterTurn`, fiche 255).
  */
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import { subagentMarkOf, type SubagentRun } from '@shared/subagent'
 import type { TranscriptItem } from '@shared/transcript'
 import type { ChildSession, SubagentCost } from './adapters'
 import type { AgentHostOptions } from './agent-host'
+import { BackgroundWork } from './background-work'
 
 export interface SubagentTrackerOptions {
   /** `work` : son travail relu dans sa session, à sa fin (arrière-plan). */
@@ -39,16 +41,34 @@ export interface SubagentTrackerOptions {
   follow?: (sessionId: string) => Promise<TranscriptItem[]>
   /** Attentes avant chaque relecture d'un sous-agent en arrière-plan ; voir `FOLLOW_MS`. */
   followMs?: readonly number[]
+  /** Travail après la fin du tour (fiche 255) : sous-agents en arrière-plan, parole hors tour. */
+  afterTurn?: BackgroundWork
 }
 
-/** Ce que le profil et les options d'une conversation disent au suivi de ses sous-agents. */
+/**
+ * Ce que le profil et les options d'une conversation disent au suivi de ses sous-agents : ce qu'il
+ * voit part dans le fil (`subagent-run`) et dit le travail après le tour (`busy` : un tour est en
+ * cours).
+ */
 export function subagentTrackerOptions(
-  options: Pick<AgentHostOptions, 'profile' | 'loadSubagentWork' | 'subagentFollowMs'>,
+  options: Pick<
+    AgentHostOptions,
+    'profile' | 'loadSubagentWork' | 'subagentFollowMs' | 'emit' | 'backgroundQuietMs'
+  >,
   costs: Pick<SubagentTrackerOptions, 'costs' | 'onPoll'>,
-  emit: SubagentTrackerOptions['emit']
+  busy: () => boolean
 ): SubagentTrackerOptions {
+  const afterTurn = new BackgroundWork({
+    emit: options.emit,
+    busy,
+    quietMs: options.backgroundQuietMs
+  })
   return {
-    emit,
+    emit: (toolCallId, run, work) => {
+      options.emit({ type: 'subagent-run', toolCallId, run, ...(work ? { work } : {}) })
+      afterTurn.run(toolCallId, run)
+    },
+    afterTurn,
     ...costs,
     replay: options.profile.subagentReplay === true,
     background: options.profile.subagentStream?.background,
@@ -184,6 +204,7 @@ export class SubagentTracker {
    * puis au rythme du début : sa fin se voit en quelques secondes, pas après la longue attente.
    */
   nudge(): void {
+    this.options.afterTurn?.spoke()
     const delays = this.options.followMs ?? FOLLOW_MS
     const soon = delays[0] ?? 0
     for (const item of this.tracked.values()) {
@@ -207,6 +228,7 @@ export class SubagentTracker {
 
   /** Nouvelle session ou agent arrêté : plus rien n'est suivi. */
   reset(): void {
+    this.options.afterTurn?.reset()
     // Sous-agents en arrière-plan pas encore finis : plus personne ne les suit.
     for (const item of this.tracked.values()) {
       if (!item.detached || item.endedAt !== undefined) continue

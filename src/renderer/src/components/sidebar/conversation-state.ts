@@ -12,6 +12,11 @@ export function conversationState(
   preparing = false
 ): { state: ChildState; label: string; reason?: string } | undefined {
   if (preparing) return { state: 'running', label: t('children.preparing') }
+  // Tour fini, l'agent travaille encore (sous-agent en arrière-plan, fiche 255) : « En cours »,
+  // pas « Réponse à lire » ; ce qui attend l'utilisateur ou une erreur passe avant.
+  if (conversation.backgroundWork && (attention === undefined || attention === 'done')) {
+    return { state: 'running', label: t('children.state.running') }
+  }
   const state = childState(conversation, attention)
   // Conversation ordinaire finie ou arrêtée : rien à signaler (l'arrêt ne vaut que pour une fille).
   if (!conversation.startedFrom && !attention && (state === 'done' || state === 'stopped'))

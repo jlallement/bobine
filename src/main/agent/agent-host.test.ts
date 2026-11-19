@@ -977,7 +977,8 @@ describe('AgentHost', () => {
     expect(events).toContainEqual({
       type: 'permission-resolved',
       requestId: request.requestId,
-      optionId: 'allow'
+      optionId: 'allow',
+      at: expect.any(Number)
     })
     // La consommation du tour (`PromptResponse.usage`) accompagne la fin de tour.
     expect(events).toContainEqual({
@@ -1013,7 +1014,8 @@ describe('AgentHost', () => {
     expect(events).toContainEqual({
       type: 'permission-resolved',
       requestId: request.requestId,
-      optionId: null
+      optionId: null,
+      at: expect.any(Number)
     })
     expect(events).toContainEqual({
       type: 'turn-end',
@@ -1122,7 +1124,8 @@ describe('AgentHost', () => {
       type: 'permission-resolved',
       requestId: request.requestId,
       optionId: null,
-      cancelledBy: 'agent'
+      cancelledBy: 'agent',
+      at: expect.any(Number)
     })
     await turn
     // Réponse tardive de l'utilisateur : ni erreur, ni rien d'envoyé à l'agent.
@@ -1146,7 +1149,8 @@ describe('AgentHost', () => {
     expect(events).toContainEqual({
       type: 'permission-resolved',
       requestId: request.requestId,
-      optionId: null
+      optionId: null,
+      at: expect.any(Number)
     })
   })
 

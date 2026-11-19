@@ -7,6 +7,7 @@ export type FrResources = {
       readonly starting: 'Démarrage…'
       readonly ready: 'Prêt'
       readonly busy: 'Répond…'
+      readonly background: 'Travaille encore…'
       readonly error: 'Erreur'
       readonly exited: 'Arrêté (planté)'
       readonly 'needs-action': 'Action requise'
@@ -2715,6 +2716,7 @@ export type FrResources = {
     readonly writing: 'Écrit…'
     readonly permission: 'Attend votre accord'
     readonly question: 'Attend votre réponse'
+    readonly background: 'Travaille après le tour…'
     readonly turnStarted: 'Tour commencé il y a {{elapsed}}'
     readonly title: 'Mon activité'
     readonly scope: {
@@ -4598,6 +4600,7 @@ export type FrResources = {
     readonly files_many: '{{count}} fichiers +{{added}} −{{removed}}'
     readonly files_other: '{{count}} fichiers +{{added}} −{{removed}}'
     readonly doneQuick: 'Terminé'
+    readonly waited: '{{duration}} à vous attendre'
   }
   readonly cap: {
     readonly more_one: '⋯ {{n}} ligne de plus'

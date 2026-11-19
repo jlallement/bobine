@@ -1,7 +1,7 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ConversationSummary } from '@shared/agent'
+import type { AgentSnapshot, ConversationSummary } from '@shared/agent'
 import type { AttentionDetails, AttentionState } from '@shared/attention'
 import type { ChildLaunch } from '@shared/children'
 import { Sidebar } from './Sidebar'
@@ -37,6 +37,7 @@ function sidebar(
     onLaunchChild?: (c: ConversationSummary) => void
     space?: 'code' | 'discussion'
     onSpace?: (space: 'code' | 'discussion') => void
+    snapshot?: AgentSnapshot
   } = {}
 ) {
   return (
@@ -61,7 +62,7 @@ function sidebar(
         onNotificationsChange={vi.fn()}
         onOpenNotificationSettings={vi.fn()}
         onOpenSettings={vi.fn()}
-        snapshot={null}
+        snapshot={extra.snapshot ?? null}
         onNew={vi.fn()}
         onSelect={extra.onSelect ?? vi.fn()}
         onRename={vi.fn()}
@@ -718,5 +719,44 @@ describe('largeur de la barre latérale (fiche 113)', () => {
     const tip = await rowTip('d1')
     expect(tip).toContain('E-mail')
     expect(tip).not.toContain('3973c57d')
+  })
+})
+
+describe('travail après le tour (fiche 255)', () => {
+  it('ligne « En cours » tant que l’agent travaille après le tour, même avec une réponse à lire', () => {
+    render(
+      sidebar(
+        [
+          conversation('b', { status: 'ready', backgroundWork: true }),
+          conversation('d', { status: 'ready', backgroundWork: true }),
+          conversation('q', { status: 'ready', backgroundWork: true }),
+          conversation('r', { status: 'ready' })
+        ],
+        { attention: { d: 'done', q: 'request' } }
+      )
+    )
+    expect(document.querySelector('[data-id=b] .row-meta .spin')).toBeTruthy()
+    expect(document.querySelector('[data-id=d] .row-meta .spin')).toBeTruthy()
+    // Ce qui attend l'utilisateur passe avant.
+    expect(document.querySelector('[data-id=q] .row-meta .spin')).toBeNull()
+    expect(document.querySelector('[data-id=r] .row-meta .spin')).toBeNull()
+  })
+
+  it('pied de la barre : « Travaille encore… », point d’activité, plus « Prêt »', () => {
+    const snapshot = {
+      status: 'ready',
+      info: { profileId: 'mock', profileLabel: 'Agent factice', agentName: 'Agent factice' },
+      controls: [],
+      commands: [],
+      promptCapabilities: { image: false, embeddedContext: false },
+      queued: []
+    } as unknown as AgentSnapshot
+    const working = conversation('b', { status: 'ready', backgroundWork: true })
+    const view = render(sidebar([working], { snapshot, activeId: 'b' }))
+    expect(screen.getByTestId('agent-status').textContent).toBe('Travaille encore…')
+    expect(document.querySelector('.status-dot.ready.background')).toBeTruthy()
+    view.rerender(sidebar([conversation('b', { status: 'ready' })], { snapshot, activeId: 'b' }))
+    expect(screen.getByTestId('agent-status').textContent).toBe('Prêt')
+    expect(document.querySelector('.status-dot.background')).toBeNull()
   })
 })

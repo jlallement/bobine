@@ -165,7 +165,147 @@ const PAIR: [Background, Background] = [
   { id: 'autre', description: 'Lire autre.txt', file: 'autre.txt', word: 'ZEBRE', afterMs: 5000 }
 ]
 
+/**
+ * Séquence réelle de l'exploration du 2026-11-19 (fiche 255, `agents.log`, OpenCode 2.3.0 et
+ * GPT-6.1 Sol, 19:37:02 → 19:38:26 UTC) : le sous-agent `explore` est lancé, son premier outil
+ * relayé (« shell », jamais fini dans le tour), trois morceaux de réponse, `end_turn` en 10 s ; il
+ * travaille encore 1 min 17 (ici `EXPLORE.afterMs`), puis le parent répond hors tour (446 car., en
+ * deux morceaux), sans mise à jour de la carte, sans `usage_update`, sans fin de tour.
+ */
+const EXPLORE = {
+  card: 'call_explore',
+  session: 'ses_mock_explore',
+  description: 'Inventaire des endpoints REST',
+  prompt: 'Liste les endpoints REST du projet (méthode, chemin, classe).',
+  afterMs: 4000
+}
+
+const exploreShell = (status: 'pending' | 'completed'): SessionUpdate =>
+  status === 'pending'
+    ? {
+        sessionUpdate: 'tool_call',
+        toolCallId: 'shell_explore',
+        title: 'shell',
+        kind: 'execute',
+        status: 'pending',
+        rawInput: {}
+      }
+    : {
+        sessionUpdate: 'tool_call_update',
+        toolCallId: 'shell_explore',
+        status: 'completed',
+        content: [
+          {
+            type: 'content',
+            content: { type: 'text', text: 'src/main/java/fr/carnetmaison/resource/…' }
+          }
+        ]
+      }
+
+const exploreSteps: Step[] = [
+  {
+    kind: 'update',
+    update: {
+      sessionUpdate: 'tool_call',
+      toolCallId: EXPLORE.card,
+      title: 'subagent',
+      kind: 'think',
+      status: 'pending',
+      rawInput: {}
+    }
+  },
+  // `in_progress` deux fois, comme dans le journal (19:37:05,633 et ,648).
+  ...[1, 2].map((): Step => ({
+    kind: 'update',
+    update: {
+      sessionUpdate: 'tool_call_update',
+      toolCallId: EXPLORE.card,
+      title: 'subagent',
+      kind: 'think',
+      status: 'in_progress',
+      rawInput: { agent: 'explore', description: EXPLORE.description, prompt: EXPLORE.prompt }
+    }
+  })),
+  {
+    kind: 'child-session',
+    sessionId: EXPLORE.session,
+    history: [
+      { sessionUpdate: 'user_message_chunk', content: { type: 'text', text: EXPLORE.prompt } },
+      exploreShell('pending')
+    ],
+    later: {
+      afterMs: EXPLORE.afterMs,
+      history: [
+        { sessionUpdate: 'user_message_chunk', content: { type: 'text', text: EXPLORE.prompt } },
+        exploreShell('pending'),
+        exploreShell('completed'),
+        {
+          sessionUpdate: 'agent_message_chunk',
+          content: {
+            type: 'text',
+            text: '7 endpoints REST : 4 dans EntretienResource, 3 dans AppareilResource.'
+          }
+        }
+      ]
+    }
+  },
+  {
+    kind: 'update',
+    update: {
+      sessionUpdate: 'tool_call_update',
+      toolCallId: EXPLORE.card,
+      status: 'completed',
+      content: [
+        {
+          type: 'content',
+          content: {
+            type: 'text',
+            text: `The subagent is working in the background (sessionID: ${EXPLORE.session}). You will receive a <subagent> message when it goes idle, and again after each later round of work.\nDO NOT sleep, poll, proactively check on its progress, or duplicate this subagent's work.`
+          }
+        }
+      ],
+      rawOutput: { metadata: { sessionID: EXPLORE.session, status: 'running', truncated: false } }
+    }
+  },
+  {
+    kind: 'opencode-child',
+    child: { id: EXPLORE.session, parentId: PARENT, title: EXPLORE.description },
+    steps: [{ kind: 'update', update: exploreShell('pending') }]
+  },
+  {
+    kind: 'text',
+    text: 'J’ai lancé un sous-agent **explore** pour inventorier les endpoints REST. Je te fais le résumé dès qu’il a fini.'
+  },
+  {
+    kind: 'after-turn',
+    afterMs: EXPLORE.afterMs + 500,
+    steps: [
+      { kind: 'text', text: 'Résumé en 5 lignes :\n\n- 7 endpoints REST' },
+      {
+        kind: 'text',
+        text: ', 4 pour les entretiens et 3 pour les appareils.\n- Validation par Bean Validation.\n- Erreurs en 400 avec le détail des champs.\n- Pas d’authentification.\n- Tests REST par Testcontainers.'
+      }
+    ]
+  }
+]
+
 export const openCode23Scenarios: Record<string, Scenario> = {
+  'sous-agent-hors-tour-explo-2-3': {
+    description:
+      'Séquence réelle d’OpenCode 2.3.0 (exploration du 2026-11-19, fiche 255) : sous-agent explore en arrière-plan, tour fini en quelques secondes, puis sa fin et la réponse du parent hors tour, en deux morceaux',
+    // Un autre message pendant que le sous-agent travaille (19:41:36 dans le journal) : réponse
+    // courte, dans son propre tour.
+    steps: [
+      {
+        kind: 'when-prompt',
+        includes: 'où en est',
+        then: [
+          { kind: 'text', text: 'Le sous-agent travaille encore ; je te résume dès qu’il a fini.' }
+        ],
+        else: exploreSteps
+      }
+    ]
+  },
   'sous-agent-arriere-plan-2-3': {
     description:
       'Comme OpenCode 2.3.0 : sous-agent toujours en arrière-plan, son travail relayé pendant le tour seulement ; 4 s après, sa session finit et le parent répond de lui-même, hors tour',

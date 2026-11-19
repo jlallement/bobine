@@ -20,7 +20,16 @@ import {
   LoaderCircle,
   Split
 } from 'lucide-react'
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { planVersions } from '@shared/plan-doc'
 import { groupTools, type ThreadEntry } from '@shared/tool-groups'
 import { noticeText, type TranscriptItem } from '@shared/transcript'
@@ -28,9 +37,9 @@ import { handoverName } from '@shared/handover'
 import { childProposalGroups, type MessageOrigin as MessageOriginType } from '@shared/children'
 import type { TerminalState } from '@shared/terminal-output'
 import { fullTime, messageTime, turnDuration } from '../../time'
-import { turnDurations } from '@shared/turn-duration'
+import { turnTimes } from '@shared/turn-duration'
 import type { ConversationUsage } from '@shared/usage'
-import { lastTurnFacts, TurnSummary } from './TurnSummary'
+import { turnFacts, TurnSummary, type TurnFacts } from './TurnSummary'
 import { CopyButton } from '../common/CopyButton'
 import { ContextIcon } from '../composer/ContextIcon'
 import { PastedTextDialog, PastedTextLabel } from '../composer/PastedText'
@@ -77,6 +86,8 @@ const NOTICE_ICONS = {
   error: CircleExclamationPoint,
   success: CircleCheck
 } as const
+/** Aucun bilan (fil en lecture seule). */
+const NO_SUMMARIES: ReadonlyMap<number, TurnFacts> = new Map()
 /** Même objet d'un rendu à l'autre quand il n'y a aucun terminal (éléments mémoïsés). */
 const NO_TERMINALS: Record<string, TerminalState> = {}
 /** Premier élément du fil d'une entrée (fiche 193). */
@@ -86,6 +97,11 @@ const entryId = (entry: ThreadEntry) => (entry.kind === 'item' ? entry.item.id :
 export interface MessageActions {
   /** L'agent travaille : pas de modification pour l'instant. */
   busy: boolean
+  /**
+   * Tour fini, l'agent travaille encore (sous-agent en arrière-plan, réponse hors tour, fiche
+   * 255) : pas encore de bilan pour le dernier tour.
+   */
+  background?: boolean
   /**
    * Le dernier message a été refusé et sa carte attend (connexion, fiche 210) : pas de « Réessayer »
    * en branche, qui repartirait avec le même refus ; la carte renvoie le message en place.
@@ -175,13 +191,15 @@ export function Transcript({
   )
   // Plans des tours en mode plan : une carte à la fin du tour, ou à la place de la réponse.
   const plans = useMemo(() => planVersions(items), [items])
-  // Durée de chaque tour, sous sa dernière réponse (fiche 156).
-  const durations = useMemo(() => turnDurations(items), [items])
-  // Bilan du tour fini, sous sa dernière réponse ; parti dès le message suivant (fiche 185, P4).
-  const finished = !!messageActions && !messageActions.busy
-  const summary = useMemo(
-    () => (finished ? lastTurnFacts(items, durations, usage) : undefined),
-    [finished, items, durations, usage]
+  // Durée de chaque tour, sous sa dernière réponse (fiche 156) : temps de travail (fiche 255).
+  const times = useMemo(() => turnTimes(items), [items])
+  // Bilan de chaque tour fini, sous la réponse qui le finit (fiches 185, 255) ; le dernier une fois
+  // que l'agent ne travaille plus du tout. Fil en lecture seule (côte à côte) : aucun.
+  const editable = !!messageActions
+  const open = !messageActions || messageActions.busy || messageActions.background === true
+  const summaries = useMemo(
+    () => (editable ? turnFacts(items, times, usage, open) : NO_SUMMARIES),
+    [editable, open, items, times, usage]
   )
   const planAt = new Map(plans.map((p) => [p.anchorId, p]))
   const replaced = new Set(plans.flatMap((p) => p.replyIds))
@@ -334,7 +352,7 @@ export function Transcript({
         key={item.id}
         item={item}
         terminal={item.kind === 'tool' && item.terminalId ? terminals[item.terminalId] : undefined}
-        duration={durations.get(item.id)}
+        duration={times.get(item.id)?.ms}
         streaming={item.id === writing}
         onRespondPermission={respondPermission}
         onRespondElicitation={respondElicitation}
@@ -348,12 +366,15 @@ export function Transcript({
         <FindQueryContext.Provider value={findQuery}>
           <div className="thread" data-testid="thread" ref={thread}>
             {start > 0 && <div ref={sentinel} className="thread-older" aria-hidden />}
-            {entries.slice(start).map((entry) => (
-              <ItemBoundary key={entryKey(entry)} kind={entryKind(entry)}>
-                {renderEntry(entry)}
-              </ItemBoundary>
-            ))}
-            {summary && <TurnSummary facts={summary} />}
+            {entries.slice(start).map((entry) => {
+              const summary = entry.kind === 'item' ? summaries.get(entry.item.id) : undefined
+              return (
+                <Fragment key={entryKey(entry)}>
+                  <ItemBoundary kind={entryKind(entry)}>{renderEntry(entry)}</ItemBoundary>
+                  {summary && <TurnSummary facts={summary} />}
+                </Fragment>
+              )
+            })}
           </div>
         </FindQueryContext.Provider>
       </AgentCardContext.Provider>

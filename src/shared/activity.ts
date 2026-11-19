@@ -13,6 +13,8 @@ export type Activity =
   | { kind: 'tool'; title: string }
   | { kind: 'permission' }
   | { kind: 'question' }
+  /** Tour fini, l'agent travaille encore (fiche 255). */
+  | { kind: 'background' }
 
 /**
  * L'étape en cours du tour (fiche 128) : le dernier élément d'activité (texte, réflexion, outil),
@@ -60,6 +62,27 @@ export function currentActivity(
   return { kind: 'thinking' }
 }
 
+/**
+ * Après la fin du tour, l'agent travaille encore (fiche 255) : ce qui attend l'utilisateur d'abord,
+ * puis le sous-agent en arrière-plan en cours (le dernier lancé), sinon « travaille après le tour »
+ * (la réponse qu'il donne de lui-même au rapport d'un sous-agent).
+ */
+export function backgroundActivity(items: readonly TranscriptItem[]): Activity {
+  const activity = currentActivity(items)
+  if (activity.kind === 'permission' || activity.kind === 'question') return activity
+  const running = items.findLast(
+    (i) =>
+      i.kind === 'tool' &&
+      !!i.subagent &&
+      !!i.subagentRun?.background &&
+      i.subagentRun.endedAt === undefined &&
+      !i.subagentRun.lost
+  )
+  return running?.kind === 'tool' && running.subagent
+    ? { kind: 'tool', title: t('activity.subagent', { task: running.subagent.task }) }
+    : { kind: 'background' }
+}
+
 export function activityLabel(activity: Activity): string {
   switch (activity.kind) {
     case 'thinking':
@@ -73,6 +96,8 @@ export function activityLabel(activity: Activity): string {
       return t('activity.permission')
     case 'question':
       return t('activity.question')
+    case 'background':
+      return t('activity.background')
   }
 }
 

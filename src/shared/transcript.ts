@@ -8,7 +8,7 @@ import { planOf, toolInputOf, type ToolInput } from './tool-label'
 import { withCommand, type ToolCommand } from './command-view'
 import { withTodos, type TodoItem } from './todos'
 import type { ToolArg } from './tool-args'
-import { pendingWith, type ToolPermission } from './permissions'
+import { answeredAt, pendingWith, type ToolPermission } from './permissions'
 import { t, type ParseKeys } from 'i18next'
 import { isMessage } from './i18n/message'
 import type {
@@ -61,6 +61,7 @@ import { contentOrKept } from './tool-call-kept'
 import { compactionReply } from './compaction-reply'
 import { withCompactionDone, withUsageUpdate } from './context-estimate'
 import { keptOnReset, withSentEntry } from './transcript-kept'
+import { backgroundWork, stampReplies, turnStart, withoutBackground } from './turn-stamps'
 export { withSubagentWork } from './subagent'
 
 export type TranscriptItem =
@@ -153,6 +154,9 @@ export type TranscriptItem =
       state: 'pending' | ElicitationAction
       /** Contenu envoyé à l'agent (formulaire accepté), pour le résumé dans le fil. */
       content?: Record<string, unknown>
+      /** Heures de la demande et de la réponse (ms) : attente hors de la durée du tour (fiche 255). */
+      askedAt?: number
+      answeredAt?: number
     }
   | {
       /** Début d'une branche (fiche 023) : ce qui précède est repris de la conversation d'origine. */
@@ -221,6 +225,11 @@ export interface TranscriptState {
   terminals?: Record<string, TerminalState>
   /** L'utilisateur a arrêté le tour en cours (`cancel-requested`), jusqu'à sa fin. */
   cancelling?: true
+  /**
+   * Tour fini, l'agent travaille encore (`background-work`, fiche 255) : sous-agent en
+   * arrière-plan, réponse hors tour. Effacé à sa fin, et dès que l'agent n'est plus prêt ni occupé.
+   */
+  backgroundWork?: true
   /** Plafond de coût de la conversation (fiche 157, ADR-0035) ; absent : aucun. */
   costCap?: ConversationCap
   /**
@@ -263,12 +272,6 @@ function replaceAt(
   const items = state.items.slice()
   items[index] = update(current)
   return { ...state, items }
-}
-
-/** Index du dernier message utilisateur (début du tour courant), -1 s'il n'y en a pas. */
-function turnStart(items: TranscriptItem[]): number {
-  for (let i = items.length - 1; i >= 0; i--) if (items[i]?.kind === 'user') return i
-  return -1
 }
 
 const STOP_MESSAGES: Partial<Record<StopReason, ParseKeys>> = {
@@ -400,6 +403,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return reduceAppTools(state, event)
     case 'usage-report':
       return { ...state, usage: withCost(state.usage ?? {}, event.cost) }
+    case 'background-work':
+      return backgroundWork(state, event)
     case 'aside-cost':
       return { ...state, usage: withAsideCost(state.usage, event.cost) }
     case 'memory-context':
@@ -508,7 +513,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return state
     case 'permission-request': {
       const { toolCall, requestId, options, risks } = event
-      const permission: ToolPermission = { requestId, options, ...pendingWith(risks) }
+      const permission: ToolPermission = { requestId, options, ...pendingWith(risks, event.at) }
       const index = findTool(state.items, toolCall.toolCallId)
       const nested = index === -1 ? takeFromWork(state, toolCall.toolCallId) : undefined
       if (nested) {
@@ -555,7 +560,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
         kind: 'elicitation',
         requestId: event.requestId,
         prompt: event.prompt,
-        state: 'pending'
+        state: 'pending',
+        ...(event.at ? { askedAt: event.at } : {})
       })
     case 'elicitation-resolved': {
       const index = state.items.findLastIndex(
@@ -568,7 +574,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
           ({
             ...current,
             state: event.action,
-            ...(event.content ? { content: event.content } : {})
+            ...(event.content ? { content: event.content } : {}),
+            ...(event.at ? { answeredAt: event.at } : {})
           }) as TranscriptItem
       )
     }
@@ -591,7 +598,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
                 name: option?.name ?? event.optionId,
                 kind: option?.kind ?? 'allow_once'
               }
-        const permission = { ...tool.permission, state: resolved }
+        const permission = { ...tool.permission, state: resolved, ...answeredAt(event.at) }
         // Refuser une autorisation : la carte dit « refusé », quoi que l'agent en dise (fiche 122).
         const refused = typeof resolved === 'object' && resolved.kind.startsWith('reject')
         return refused ? withOutcome({ ...tool, permission }, 'refused') : { ...tool, permission }
@@ -599,19 +606,21 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     }
     case 'status': {
       const { status, detail } = event.snapshot
+      // Agent ni prêt ni occupé (arrêté, relancé) : plus de travail après le tour (fiche 255).
+      const kept = status === 'ready' || status === 'busy' ? state : withoutBackground(state)
       if (status === 'exited' || status === 'error') {
         // Un avis au passage vers l'arrêt seulement : le même arrêt réannoncé n'en ajoute pas.
-        if (state.halted?.status === status && state.halted.detail === detail) return state
+        if (kept.halted?.status === status && kept.halted.detail === detail) return kept
         // Les outils du tour interrompu n'aboutiront plus, ni les sous-agents en arrière-plan ; le
         // tour est compté, comme un tour en échec (fiche 139, comme le journal de la fiche 130).
-        const closed = closeUnfinishedTools(closeBackground(withEndedTurn(state)))
+        const closed = closeUnfinishedTools(closeBackground(withEndedTurn(kept)))
         const message = haltMessage(status, detail)
         return push(
           { ...closed, halted: { status, detail } },
           { kind: 'notice', level: 'error', message }
         )
       }
-      return state.halted ? { ...state, halted: undefined } : state
+      return kept.halted ? { ...kept, halted: undefined } : kept
     }
   }
 }
@@ -807,19 +816,6 @@ function applyUpdateItems(state: TranscriptState, update: SessionUpdate): Transc
       // Modes, commandes, sous-agents… : gérés par d'autres fiches.
       return state
   }
-}
-
-/** Heure de fin de la réponse sur les messages de l'agent du tour qui n'en ont pas encore. */
-function stampReplies(state: TranscriptState, at: number | undefined): TranscriptState {
-  if (!at) return state
-  const start = turnStart(state.items)
-  let changed = false
-  const items = state.items.map((item, i) => {
-    if (i <= start || item.kind !== 'agent' || item.at) return item
-    changed = true
-    return { ...item, at }
-  })
-  return changed ? { ...state, items } : state
 }
 
 /**

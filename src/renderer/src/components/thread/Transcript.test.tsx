@@ -430,3 +430,52 @@ describe('« Réessayer » un message en branche (fiches 023, 210)', () => {
     expect(screen.getAllByTestId('message-edit')).toHaveLength(2)
   })
 })
+
+describe('bilan de chaque tour, sous sa réponse (fiche 255)', () => {
+  const noop = () => {}
+  const items: TranscriptItem[] = [
+    { kind: 'user', id: 1, text: 'Implémente', at: 0 },
+    { kind: 'agent', id: 2, text: 'Fait.', at: 90_000 },
+    { kind: 'user', id: 3, text: 'Et le README ?', at: 90_100 },
+    { kind: 'agent', id: 4, text: 'Aussi.', at: 94_100 },
+    // Carte arrivée après le tour (D34) : le bilan ne la suit pas.
+    { kind: 'notice', id: 5, level: 'info', text: 'Code reviewer a été arrêté.' }
+  ]
+  /** Ce que le fil montre, dans l'ordre : réponses, bilans, avis. */
+  const shown = (actions: { busy: boolean; background?: boolean }) => {
+    render(
+      <Transcript
+        items={items}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={{ ...actions, onEdit: noop, onOpenConversation: noop }}
+      />
+    )
+    const text = screen.getByTestId('thread').textContent ?? ''
+    const marks = ['Fait.', 'Terminé en 1 min 30 s', 'Aussi.', 'Terminé en 4 s', 'Code reviewer']
+    return marks
+      .map((mark) => ({ mark, at: text.indexOf(mark) }))
+      .filter(({ at }) => at >= 0)
+      .sort((a, b) => a.at - b.at)
+      .map(({ mark }) => mark)
+  }
+
+  it('message en file (D5) : chacun son bilan, juste sous sa réponse, pas sous les cartes d’après', () => {
+    expect(shown({ busy: false })).toEqual([
+      'Fait.',
+      'Terminé en 1 min 30 s',
+      'Aussi.',
+      'Terminé en 4 s',
+      'Code reviewer'
+    ])
+  })
+
+  it('l’agent travaille encore après le tour (D1) : pas encore de bilan pour ce tour', () => {
+    expect(shown({ busy: false, background: true })).toEqual([
+      'Fait.',
+      'Terminé en 1 min 30 s',
+      'Aussi.',
+      'Code reviewer'
+    ])
+  })
+})
