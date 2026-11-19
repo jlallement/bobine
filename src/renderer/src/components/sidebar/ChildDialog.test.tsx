@@ -1,13 +1,13 @@
 /**
- * « Lancer en parallèle… » et dossier de la mère (fiche 240) : « Lancer » attend que le dossier
- * soit lu ; modifié, il attend le choix. Trouvé par la suite e2e complète sur `main` : un clic
- * rapide partait avant la lecture, ou tombait sur « Partir quand même » arrivé sous le pointeur.
+ * « Lancer en parallèle… » et dossier de la mère (fiches 240, 262) : « Lancer » attend que le
+ * dossier soit lu (un clic rapide partirait sans le choix affiché) ; modifié, une ligne discrète
+ * le dit et « Lancer » part sans elles, choix porté par la requête ; « Changer… » propose de
+ * committer d'abord. Dépôt sans commit : la fille travaillera dans le dossier.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
-import type { FolderDirty } from '@shared/launch-folder'
-import { ARM_MS } from '../thread/useArmedCard'
+import type { FolderDirty, LaunchFolderState } from '@shared/launch-folder'
 import { ChildDialog } from './ChildDialog'
 
 const mother: ConversationSummary = {
@@ -27,15 +27,22 @@ const DIRTY: FolderDirty = {
   commit: '68a62b5'
 }
 
+const at = (dirty?: FolderDirty, head = '68a62b5aa'): LaunchFolderState => ({
+  place: 'worktree',
+  root: '/depot',
+  head,
+  ...(dirty ? { dirty } : {})
+})
+
 const startChild = vi.fn()
-let answer: (dirty: FolderDirty | null) => void = () => {}
+let answer: (state: LaunchFolderState | null) => void = () => {}
 beforeEach(() => {
   startChild.mockReset().mockResolvedValue({ id: 'f' })
   window.api.conversations = {
     view: vi.fn().mockResolvedValue({ snapshot: { controls: [] } }),
     startChild,
     // Lecture du dossier tenue par l'essai : il dit quand elle répond.
-    childFolderDirty: vi.fn(() => new Promise<FolderDirty | null>((resolve) => (answer = resolve)))
+    childFolder: vi.fn(() => new Promise<LaunchFolderState | null>((resolve) => (answer = resolve)))
   } as unknown as Window['api']['conversations']
 })
 
@@ -45,34 +52,43 @@ function open() {
   return screen.getByTestId('child-launch') as HTMLButtonElement
 }
 
-describe('« Lancer en parallèle… » et dossier de la mère (fiche 240)', () => {
+const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
+
+describe('« Lancer en parallèle… » et dossier de la mère (fiches 240, 262)', () => {
   it('dossier pas encore lu : « Lancer » attend, rien ne part', async () => {
     const launch = open()
     expect(launch.disabled).toBe(true)
     fireEvent.click(launch)
     expect(startChild).not.toHaveBeenCalled()
     // Lu, propre : « Lancer » part.
-    await act(async () => answer(null))
+    await act(async () => answer(at()))
     expect(launch.disabled).toBe(false)
+    // Propre : rien à dire.
+    expect(screen.queryByTestId('launch-line')).toBeNull()
     await act(async () => void fireEvent.click(launch))
     expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API' })
   })
 
-  it('dossier modifié : « Lancer » attend le choix ; le bloc s’arme avant de compter un clic', async () => {
-    vi.useFakeTimers()
-    try {
-      const launch = open()
-      await act(async () => answer(DIRTY))
-      expect(launch.disabled).toBe(true)
-      const block = screen.getByTestId('launch-dirty')
-      expect(block.hasAttribute('data-armed')).toBe(false)
-      act(() => vi.advanceTimersByTime(ARM_MS))
-      expect(block.hasAttribute('data-armed')).toBe(true)
-      await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-anyway')))
-      expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API', uncommitted: 'anyway' })
-    } finally {
-      vi.useRealTimers()
-    }
+  it('dossier modifié : une ligne, pas d’encadré ; « Lancer » part sans elles, dit', async () => {
+    const launch = open()
+    await act(async () => answer(at(DIRTY)))
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
+      'Partira du dernier commit, sans votre modification'
+    )
+    expect(launch.disabled).toBe(false)
+    await act(async () => void fireEvent.click(launch))
+    expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API', uncommitted: 'anyway' })
+  })
+
+  it('dépôt sans commit : la fille travaillera dans ce dossier ; rien à choisir', async () => {
+    const launch = open()
+    await act(async () => answer({ place: 'here', reason: 'noCommit' }))
+    expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
+      'Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier'
+    )
+    await act(async () => void fireEvent.click(launch))
+    expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API' })
   })
 
   it('fiche 244 : un fichier décoché ne part pas ; la fille part sans lui', async () => {
@@ -80,30 +96,34 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiche 240)', () 
     window.api.conversations = { ...window.api.conversations, commitForChildren }
     const launch = open()
     await act(async () =>
-      answer({
-        ...DIRTY,
-        count: 2,
-        files: [...DIRTY.files, { path: '.env', status: 'untracked' }]
-      })
+      answer(
+        at({
+          ...DIRTY,
+          count: 2,
+          files: [...DIRTY.files, { path: '.env', status: 'untracked' }]
+        })
+      )
     )
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    await act(async () => void fireEvent.click(await screen.findByTestId('launch-line-commit')))
+    // Commit ouvert : « Lancer » attend.
     expect(launch.disabled).toBe(true)
-    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
     fireEvent.click(
       screen
-        .getAllByTestId('launch-dirty-commit-file')
+        .getAllByTestId('launch-line-commit-file')
         .find((li) => li.dataset.path === '.env')
         ?.querySelector('input') as HTMLInputElement
     )
     await waitFor(() =>
       expect(
-        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
       ).toBe(false)
     )
-    const confirm = screen.getByTestId('launch-dirty-commit-confirm')
+    const confirm = screen.getByTestId('launch-line-commit-confirm')
     // La relecture du dossier après le commit : le .env reste.
     await act(async () => void fireEvent.click(confirm))
     await act(async () =>
-      answer({ ...DIRTY, count: 1, files: [{ path: '.env', status: 'untracked' }] })
+      answer(at({ ...DIRTY, count: 1, files: [{ path: '.env', status: 'untracked' }] }, 'abc1234'))
     )
     expect(commitForChildren).toHaveBeenCalledWith('m', {
       message: expect.not.stringContaining('.env'),

@@ -3509,7 +3509,6 @@ export type FrResources = {
         readonly refuse: 'Refusée'
         readonly expired: 'Expirée'
       }
-      readonly uncommittedHint: 'Choisissez d’abord ci-dessus'
     }
     readonly from: {
       readonly parent: 'De la conversation mère « {{title}} »'
@@ -4408,7 +4407,6 @@ export type FrResources = {
       readonly opinionMany_one: 'Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
       readonly opinionMany_many: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
       readonly opinionMany_other: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle'
-      readonly work: 'Plutôt les faire travailler…'
       readonly opinionSeesOne_one: 'voit la modification non commitée'
       readonly opinionSeesOne_many: 'voit les {{count}} modifications non commitées'
       readonly opinionSeesOne_other: 'voit les {{count}} modifications non commitées'
@@ -5628,33 +5626,48 @@ export type FrResources = {
       }
     }
   }
-  readonly launchDirty: {
-    readonly title_one: 'Ce dossier a {{count}} modification non commitée : {{who}} ne la verra pas.'
-    readonly title_many: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.'
-    readonly title_other: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.'
-    readonly titleMany_one: 'Ce dossier a {{count}} modification non commitée : {{who}} ne la verront pas.'
-    readonly titleMany_many: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.'
-    readonly titleMany_other: 'Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.'
-    readonly whoOne: 'la conversation fille'
-    readonly whoMany_one: 'la conversation fille'
-    readonly whoMany_many: 'les {{count}} conversations filles'
-    readonly whoMany_other: 'les {{count}} conversations filles'
-    readonly whoCard: 'les conversations filles lancées d’ici'
-    readonly why: 'Une conversation fille part du dernier commit (<code>{{commit}}</code> « {{subject}} »), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.'
-    readonly files: 'Fichiers non commités de ce dossier'
-    readonly commit: 'Committer d’abord'
-    readonly commitConfirm: 'Committer puis lancer'
-    readonly anyway: 'Partir quand même'
-    readonly anywayCard: 'Lancer quand même'
-    readonly opinionLead: 'Juste un avis ? Les rôles peuvent lire ce dossier tel quel, non commité compris, sans rien y modifier.'
-    readonly opinion: 'Demander un avis en lecture seule'
-    readonly committed: 'Commité : {{short}}. Les conversations filles partiront de ce commit.'
-    readonly whyBare: 'Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.'
-    readonly left_one: '{{count}} fichier décoché reste dans ce dossier, non commité : les conversations filles ne l’auront pas.'
-    readonly left_many: '{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.'
-    readonly left_other: '{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.'
-    readonly leftOne_one: '{{count}} fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.'
-    readonly leftOne_many: '{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.'
-    readonly leftOne_other: '{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.'
+  readonly launchLine: {
+    readonly change: 'Changer…'
+    readonly fromCommit: 'partira du dernier commit ({{commit}})'
+    readonly without_one: 'Partira du dernier commit, sans votre modification'
+    readonly without_many: 'Partira du dernier commit, sans vos {{count}} modifications'
+    readonly without_other: 'Partira du dernier commit, sans vos {{count}} modifications'
+    readonly noCommit: {
+      readonly role: 'Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier'
+      readonly roles: 'Ce dépôt n’a pas encore de commit : les rôles travailleront directement dans ce dossier'
+      readonly work: 'Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier'
+      readonly works: 'Ce dépôt n’a pas encore de commit : ces travaux se feront directement dans ce dossier'
+    }
+    readonly notRepo: {
+      readonly role: 'Ce dossier n’est pas un dépôt git : le rôle travaillera directement dans ce dossier'
+      readonly roles: 'Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier'
+      readonly work: 'Ce dossier n’est pas un dépôt git : ce travail se fera directement dans ce dossier'
+      readonly works: 'Ce dossier n’est pas un dépôt git : ces travaux se feront directement dans ce dossier'
+    }
+    readonly menu: {
+      readonly commit: 'Committer d’abord'
+      readonly commitDesc: 'Choisissez les fichiers et le message ; le travail part ensuite de ce commit, avec vos modifications.'
+      readonly without: 'Partir sans elles'
+      readonly withoutDesc_one: 'Le travail part du dernier commit ({{commit}}). Votre fichier modifié reste ici, intact.'
+      readonly withoutDesc_many: 'Le travail part du dernier commit ({{commit}}). Vos {{count}} fichiers modifiés restent ici, intacts.'
+      readonly withoutDesc_other: 'Le travail part du dernier commit ({{commit}}). Vos {{count}} fichiers modifiés restent ici, intacts.'
+      readonly worktree: 'Travailler dans son worktree'
+      readonly worktreeDesc: 'Une branche à part, depuis le dernier commit ({{commit}}).'
+      readonly opinion: 'Juste un avis, en lecture seule'
+      readonly opinionDesc: 'Dans ce dossier, sans rien y modifier ; voit vos modifications non commitées.'
+      readonly show_one: 'Voir la modification'
+      readonly show_many: 'Voir les {{count}} modifications'
+      readonly show_other: 'Voir les {{count}} modifications'
+      readonly hide: 'Masquer les modifications'
+    }
+    readonly files: 'Modifications non commitées de ce dossier'
+    readonly left_one: '{{count}} fichier décoché reste dans ce dossier, non commité : le travail partira sans lui.'
+    readonly left_many: '{{count}} fichiers décochés restent dans ce dossier, non commités : le travail partira sans eux.'
+    readonly left_other: '{{count}} fichiers décochés restent dans ce dossier, non commités : le travail partira sans eux.'
+    readonly commitThenSend: 'Committer puis envoyer'
+    readonly commitThenStart: 'Committer puis lancer'
+    readonly commitOnly: 'Committer'
+    readonly held: 'Un instant : le dossier est en cours de lecture, ou un commit est ouvert ci-dessus'
+    readonly proposalsHere: 'L’agent propose de confier ce travail. Vous pouvez aussi lui demander de le faire ici.'
   }
 }

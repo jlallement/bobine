@@ -11,7 +11,13 @@ import { useRoleStyle } from './RoleAvatar'
 import { readOnlyShown, roleProfile } from './role-view'
 import { onRoleInvoked } from '../../roles/roles-store'
 import type { UncommittedChoice } from '@shared/launch-folder'
-import { useFolderDirty } from '../thread/LaunchDirty'
+import { useLaunchFolder } from '../thread/LaunchLine'
+import {
+  rememberChoice,
+  rememberedChoice,
+  uncommittedOf,
+  type LaunchChoice
+} from '../../launch-choice'
 
 /**
  * Ce que la saisie sait des rôles (fiche 223, phase 3B), fourni par l'app : rôles actifs de la
@@ -36,16 +42,16 @@ export interface ComposerRoles {
   refresh: () => void
   /**
    * Lance une fille par rôle ; les rôles lancés et ceux refusés (raison déjà dite). `uncommitted` :
-   * choix devant un dossier modifié (fiche 240).
+   * choix affiché par la ligne sous la saisie (fiches 240, 262), porté explicitement.
    */
   send: (
     names: string[],
     text: string,
     uncommitted?: UncommittedChoice
   ) => Promise<{ started: string[]; failed: string[] }>
-  /** La conversation (la mère) : son dossier est lu avant un lancement en worktree (fiche 240). */
+  /** La conversation (la mère) : son dossier est lu quand un rôle qui écrit est cité (fiche 262). */
   motherId?: string
-  /** « Committer d'abord » (fiche 240) : ces fichiers, dans le dépôt de la mère. */
+  /** « Committer d'abord » (fiches 240, 262) : ces fichiers, dans le dépôt de la mère. */
   commitFolder?: (message: string, files: string[]) => Promise<unknown>
   /** Relit les rôles et les rend (un `@nom` inconnu à l'envoi : rôle tout juste créé ?). */
   reload?: () => Promise<readonly RoleView[]>
@@ -81,7 +87,7 @@ export function useRoleCompose(options: {
   focus?: () => void
   /** Message parti aux rôles, tel que tapé, avec ses jetons : historique de la saisie (fiche 227). */
   onSent?: (sent: { text: string; tokens: string[] }) => void
-  /** Texte de la saisie : un rôle qui partira en worktree fait lire le dossier (fiche 240). */
+  /** Texte de la saisie : un rôle qui écrit fait lire le dossier (fiche 262). */
   text?: string
 }) {
   const { roles, draftKey, menuOpen } = options
@@ -117,34 +123,34 @@ export function useRoleCompose(options: {
     return names.flatMap((name) => list.find((r) => r.name === name) ?? [])
   }
   const shownTokens = tokens.flatMap((name) => list.find((r) => r.name === name) ?? [])
-  // Fiche 240 : un rôle qui partira en worktree (pas en lecture seule) fait lire le dossier de la
-  // mère ; s'il a du non commité, l'envoi attend le choix de l'utilisateur.
-  const toWorktree = (names: readonly string[]) =>
+  // Fiche 262 : un rôle qui écrit (pas en lecture seule) fait lire le dossier de la mère, pour la
+  // ligne sous la saisie. Jamais d'avertissement ni de blocage : Entrée envoie avec le choix
+  // affiché, retenu pour ce dossier jusqu'au prochain commit (`launch-choice.ts`).
+  const writes = (names: readonly string[]) =>
     names.some((name) => list.find((r) => r.name === name)?.readOnly === false)
-  const worktreeBound = toWorktree(roleRecipients(tokens, options.text ?? '', list).names)
-  const folder = useFolderDirty(roles?.motherId, worktreeBound)
-  // Dernier état lu, à jour même entre deux rendus (« Committer puis lancer » envoie tout de suite).
-  const dirtyNow = useRef(folder.dirty)
+  const writing = writes(roleRecipients(tokens, options.text ?? '', list).names)
+  const folder = useLaunchFolder(roles?.motherId, writing)
+  // Dernier état lu, à jour même entre deux rendus (le commit fait, l'envoi part tout de suite).
+  const stateNow = useRef(folder.state)
   useEffect(() => {
-    dirtyNow.current = folder.dirty
-  }, [folder.dirty])
-  const [choice, setChoiceState] = useState<UncommittedChoice>()
-  const choiceNow = useRef<UncommittedChoice | undefined>(undefined)
-  const setChoice = (next: UncommittedChoice | undefined) => {
-    choiceNow.current = next
-    setChoiceState(next)
+    stateNow.current = folder.state
+  }, [folder.state])
+  // Le choix vit dans la mémoire de la fenêtre ; ce compteur fait relire la ligne après un choix.
+  const [, setChosen] = useState(0)
+  const choice = rememberedChoice(folder.state)
+  const choose = (next: LaunchChoice) => {
+    rememberChoice(stateNow.current, next)
+    setChosen((n) => n + 1)
   }
-  // Envoi retenu faute de choix : le bloc d'avertissement prend le focus.
-  const [attention, setAttention] = useState(0)
-  // Plus de rôle en worktree : le choix est oublié (un prochain envoi redemande).
-  const [boundBefore, setBoundBefore] = useState(worktreeBound)
-  if (boundBefore !== worktreeBound) {
-    setBoundBefore(worktreeBound)
-    if (!worktreeBound) setChoiceState(undefined)
+  // « Committer d'abord » : le choix de commit est ouvert sous la ligne ; Entrée y mène.
+  const [committing, setCommittingState] = useState(false)
+  const committingNow = useRef(false)
+  // Entrée pendant « Committer d'abord » : le bouton du commit prend le focus (`LaunchLine`).
+  const [focusCommit, setFocusCommit] = useState(0)
+  const setCommitting = (on: boolean) => {
+    committingNow.current = on
+    setCommittingState(on)
   }
-  useEffect(() => {
-    choiceNow.current = choice
-  }, [choice])
   const add = (name: string) => update(tokens.includes(name) ? tokens : [...tokens, name])
   /**
    * Une fille par rôle. Toutes parties : jetons retirés, saisie vidée si elle n'a pas changé.
@@ -157,7 +163,8 @@ export function useRoleCompose(options: {
       text: string
       attachmentCount: number
       changeText: (value: string, caret?: number) => void
-    }
+    },
+    uncommitted: UncommittedChoice | undefined
   ) => {
     if (!roles || !to.text.trim()) return
     if (at.attachmentCount > 0) {
@@ -166,8 +173,6 @@ export function useRoleCompose(options: {
     }
     options.onSent?.({ text: at.text, tokens: tokensNow.current })
     setBusy(true, to.names)
-    const uncommitted = choiceNow.current
-    setChoice(undefined)
     // Saisie vidée tout de suite, remise en cas d'échec : une conversation neuve entre dans
     // l'historique pendant l'envoi et la saisie est remontée (accueil → fil) ; elle ne doit pas
     // reprendre le texte parti (essai réel de la phase 4).
@@ -192,19 +197,20 @@ export function useRoleCompose(options: {
       })
   }
   /**
-   * Envoi à des rôles, ou retenu (fiche 240) : un rôle partirait en worktree d'un dossier modifié
-   * sans choix ; le dossier pas encore lu est lu d'abord.
+   * Envoi à des rôles (fiche 262) : toujours, avec le choix affiché par la ligne. Un rôle qui
+   * écrit, dossier pas encore lu : lu d'abord (un instant), pour porter le bon choix. Pendant
+   * « Committer d'abord », Entrée mène au bouton du commit : le message part une fois commité.
    */
   const guarded = (to: { names: string[]; text: string }, at: Parameters<typeof dispatch>[1]) => {
-    if (!toWorktree(to.names) || choiceNow.current || !roles?.motherId) return dispatch(to, at)
-    if (dirtyNow.current === null) return dispatch(to, at)
-    if (dirtyNow.current) return setAttention((n) => n + 1)
+    if (!writes(to.names) || !roles?.motherId) return dispatch(to, at, undefined)
+    if (committingNow.current) return setFocusCommit((n) => n + 1)
+    const known = stateNow.current
+    if (known !== undefined) return dispatch(to, at, uncommittedOf(known, rememberedChoice(known)))
     setBusy(true)
-    void folder.read().then((dirty) => {
-      dirtyNow.current = dirty
+    void folder.read().then((state) => {
+      stateNow.current = state
       setBusy(false)
-      if (dirty && !choiceNow.current) setAttention((n) => n + 1)
-      else dispatch(to, at)
+      dispatch(to, at, uncommittedOf(state, rememberedChoice(state)))
     })
   }
   useRoleInvoked(roles, (name) => {
@@ -333,20 +339,29 @@ export function useRoleCompose(options: {
         /** L'envoi aux rôles est possible (bouton). */
         ready: typed.length > 0 && !empty && !sending,
         remove: (name: string) => update(tokens.filter((t) => t !== name)),
-        /** Non commité à montrer avant l'envoi (fiche 240), tant qu'aucun choix n'est fait. */
-        dirty: worktreeBound && folder.dirty && !choice ? folder.dirty : undefined,
-        /** Avis en lecture seule choisi : la ligne « Partira à… » le dit. */
+        /**
+         * Où partira un rôle qui écrit (fiche 262) : état du dossier une fois lu, choix affiché,
+         * « Committer d'abord » ouvert.
+         */
+        launch:
+          writing && folder.state
+            ? { state: folder.state, choice, committing, focusCommit, many: typed.length > 1 }
+            : undefined,
+        /** « Juste un avis » choisi pour un rôle qui écrit : la ligne le dit (lecture seule). */
         opinion:
-          worktreeBound && choice === 'readOnly' ? { sees: folder.dirty?.count ?? 0 } : undefined,
-        attention
+          writing && folder.state?.place === 'worktree' && choice === 'readOnly'
+            ? { sees: folder.state.dirty?.count ?? 0 }
+            : undefined
       }
     },
-    /** Choix devant un dossier modifié (fiche 240) ; `undefined` : revenir à l'avertissement. */
-    choose: setChoice,
-    /** « Committer d'abord » : dans le dépôt de la mère, puis le dossier est relu (propre). */
+    /** Choix de la ligne (fiche 262), retenu pour ce dossier jusqu'au prochain commit. */
+    choose,
+    /** « Committer d'abord » ouvert ou fermé. */
+    setCommitting,
+    /** « Committer d'abord » : dans le dépôt de la mère, puis le dossier est relu. */
     commit: async (message: string, files: string[]) => {
       await roles?.commitFolder?.(message, files)
-      dirtyNow.current = await folder.read()
+      stateNow.current = await folder.read()
     }
   }
 }
@@ -396,7 +411,8 @@ export function RoleDestinationFor({
   roles,
   profileId,
   agentLabel,
-  opinion
+  opinion,
+  launch
 }: {
   targets: readonly RoleView[]
   empty: boolean
@@ -404,8 +420,10 @@ export function RoleDestinationFor({
   roles: ComposerRoles | undefined
   profileId: string | undefined
   agentLabel: string
-  /** Avis en lecture seule choisi devant un dossier modifié (fiche 240). */
-  opinion?: { sees: number; onWork: () => void } | undefined
+  /** « Juste un avis » choisi pour un rôle qui écrit (fiche 262). */
+  opinion?: { sees: number } | undefined
+  /** Où partira un rôle qui écrit, et « Changer… » (fiche 262). */
+  launch?: { node: ReactNode; here: boolean } | undefined
 }): ReactNode {
   const single = targets.length === 1 ? targets[0] : undefined
   const profile = single ? roleProfile(single, roles?.profiles ?? [], profileId) : undefined
@@ -425,6 +443,7 @@ export function RoleDestinationFor({
       empty={empty}
       sending={sending}
       {...(opinion ? { opinion } : {})}
+      {...(launch ? { launch } : {})}
     />
   )
 }

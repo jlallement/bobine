@@ -59,7 +59,12 @@ import { inGitRepo, titleFrom } from './helpers'
 import type { ConversationManager } from './manager'
 import { detachChild } from './family-delete'
 import type { LaunchFolder } from './launch-folder'
-import type { FolderDirty, LeftBehind, UncommittedChoice } from '@shared/launch-folder'
+import type {
+  FolderDirty,
+  LaunchFolderState,
+  LeftBehind,
+  UncommittedChoice
+} from '@shared/launch-folder'
 import { parseUncommittedChoice } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
 
@@ -83,9 +88,11 @@ export interface ChildRequest {
   /** Lignes dites dans le fil de la fille dès son lancement (agent du rôle indisponible…). */
   notices?: Message[]
   /**
-   * Choix de l'utilisateur devant un dossier modifié (fiche 240) : partir quand même, ou un avis
-   * en lecture seule dans le dossier de la mère (rôle seulement). Sans choix, une fille qui
-   * partirait en worktree d'un dossier modifié est refusée : rien ne part avant le choix.
+   * Choix de l'utilisateur devant un dossier modifié (fiche 240, fiche 262) : partir sans elles
+   * (`anyway`, le choix affiché par défaut sous la saisie), ou un avis en lecture seule dans le
+   * dossier de la mère (rôle seulement). Sans choix explicite, une fille qui partirait en worktree
+   * d'un dossier modifié est refusée (outil de l'agent, carte sans réponse) : le main n'en
+   * suppose aucun.
    */
   uncommitted?: UncommittedChoice
 }
@@ -269,28 +276,46 @@ export class ChildConversations {
   }
 
   /**
-   * Une fille en worktree part du dernier commit, sans le non commité (fiche 240, ADR-0055) : d'un
-   * dossier modifié, sans « partir quand même », elle est refusée — l'interface a montré le choix
-   * avant, et rien ne part sans lui. Lu après la réservation de la place (`prepare`).
+   * Où part une fille (fiche 262, garde finale du main) : un rôle en lecture seule, dans le
+   * dossier de la mère (`childDetachedRequest`) ; sans worktree possible (dépôt sans commit,
+   * dossier hors dépôt), dans le dossier aussi — jamais de commit pour en fabriquer un ; sinon en
+   * worktree depuis le dernier commit, sans le non commité (fiche 240, ADR-0055) : d'un dossier
+   * modifié, sans choix explicite (`anyway`), elle est refusée. Lu après la réservation de la place
+   * (`prepare`). Rend `true` : dans le dossier de la mère.
    */
-  private async refuseUncommitted(
+  private async inPlace(
     motherId: string,
     request: ChildRequest,
     role: RoleSnapshot | undefined
-  ): Promise<void> {
-    if (role?.readOnly || request.uncommitted === 'anyway') return
-    const dirty = await this.uncommitted(motherId)
-    if (dirty) throw new Error(t('children.error.uncommitted', { count: dirty.count }))
+  ): Promise<boolean> {
+    if (role?.readOnly) return false
+    const state = await this.folderState(motherId)
+    if (state?.place === 'here') return true
+    if (request.uncommitted === 'anyway' || !state?.dirty) return false
+    throw new Error(t('children.error.uncommitted', { count: state.dirty.count }))
   }
 
-  /** Modifications non commitées du dossier d'une mère (fiche 240) ; `undefined` s'il est propre. */
-  async uncommitted(motherId: string): Promise<FolderDirty | undefined> {
+  /**
+   * Où partirait une fille qui écrit, depuis le dossier d'une mère (fiche 262) ; `undefined` :
+   * sans dossier, ou sans lecture du dossier (essais).
+   */
+  async folderState(motherId: string): Promise<LaunchFolderState | undefined> {
     const mother = this.summary(motherId)
-    if (!this.folder || !hasFolder(mother.workspace) || !inGitRepo(mother.workspace)) {
-      return undefined
-    }
-    const dirty = await this.folder.uncommitted(mother.workspace, motherId)
-    return dirty && { ...dirty, title: mother.title }
+    if (!this.folder || !hasFolder(mother.workspace)) return undefined
+    if (!inGitRepo(mother.workspace)) return { place: 'here', reason: 'notRepo' }
+    const state = await this.folder.state(mother.workspace, motherId)
+    return state.place === 'worktree' && state.dirty
+      ? { ...state, dirty: { ...state.dirty, title: mother.title } }
+      : state
+  }
+
+  /**
+   * Modifications non commitées du dossier d'une mère qu'une fille en worktree n'aurait pas (fiche
+   * 240) ; `undefined` s'il est propre, ou si la fille travaillerait dans le dossier (fiche 262).
+   */
+  async uncommitted(motherId: string): Promise<FolderDirty | undefined> {
+    const state = await this.folderState(motherId)
+    return state?.place === 'worktree' ? state.dirty : undefined
   }
 
   /** « Committer d'abord » avant un lancement (fiche 240) : dans le dépôt du dossier de la mère. */
@@ -345,7 +370,7 @@ export class ChildConversations {
     this.preparing.set(id, launch)
     this.publishLaunches()
     try {
-      await this.refuseUncommitted(motherId, request, role)
+      const inPlace = await this.inPlace(motherId, request, role)
       return await this.conversations.createChild(
         motherId,
         text,
@@ -356,7 +381,7 @@ export class ChildConversations {
           // « Démarre » jusqu'au départ de sa consigne : jamais « a fini » entre-temps (fiche 223).
           this.conversations.holdStarting(child.id, true)
         },
-        role ? { role: roleStamp(role) } : {}
+        { ...(role ? { role: roleStamp(role) } : {}), ...(inPlace ? { inPlace } : {}) }
       )
     } finally {
       this.preparing.delete(id)
@@ -725,7 +750,7 @@ export function childHandlers(
   children:
     | Pick<
         ChildConversations,
-        'start' | 'capacity' | 'launchState' | 'uncommitted' | 'commitFolder'
+        'start' | 'capacity' | 'launchState' | 'folderState' | 'commitFolder'
       >
     | undefined
 ): Pick<
@@ -733,7 +758,7 @@ export function childHandlers(
   | 'conversation:startChild'
   | 'conversation:childCapacity'
   | 'conversation:childLaunches'
-  | 'conversation:childFolderDirty'
+  | 'conversation:childFolder'
   | 'conversation:commitForChildren'
 > {
   const available = () => {
@@ -749,8 +774,7 @@ export function childHandlers(
     'conversation:startChild': (id, request) =>
       available().start(idOf(id), parseChildRequest(request)),
     'conversation:childCapacity': (id) => available().capacity(idOf(id)),
-    'conversation:childFolderDirty': async (id) =>
-      (await available().uncommitted(idOf(id))) ?? null,
+    'conversation:childFolder': async (id) => (await available().folderState(idOf(id))) ?? null,
     'conversation:commitForChildren': (id, request) =>
       available().commitFolder(idOf(id), parseCommitRequest(request))
   }

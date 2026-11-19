@@ -1,4 +1,5 @@
 import { Split, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { RoleView } from '@shared/roles'
 import { RoleAvatar, RoleStack, useRoleStyle } from './RoleAvatar'
@@ -64,7 +65,8 @@ export function RoleDestination({
   readOnly,
   empty = false,
   sending = false,
-  opinion
+  opinion,
+  launch
 }: {
   roles: readonly RoleView[]
   /** Agent de la fille (un seul rôle). */
@@ -76,10 +78,15 @@ export function RoleDestination({
   /** Filles en cours de lancement : un second envoi attend. */
   sending?: boolean
   /**
-   * Avis en lecture seule (fiche 240) : dans le dossier de la mère, qui voit le non commité ;
-   * « Plutôt les faire travailler… » revient à l'avertissement.
+   * « Juste un avis » (fiche 262) : dans le dossier de la mère, en lecture seule, non commité vu ;
+   * « Changer… » (dans `launch`) revient au travail dans un worktree.
    */
-  opinion?: { sees: number; onWork: () => void }
+  opinion?: { sees: number }
+  /**
+   * Où partira un rôle qui écrit (fiche 262) : le segment de la ligne (`LaunchLine`) et s'il
+   * travaillera dans ce dossier (dépôt sans commit) plutôt que dans son worktree.
+   */
+  launch?: { node: ReactNode; here: boolean }
 }) {
   const { t } = useTranslation()
   const single = roles.length === 1 ? roles[0] : undefined
@@ -109,7 +116,9 @@ export function RoleDestination({
               : undefined,
           single.readOnly
             ? t('roleWork.destination.sameFolder')
-            : t('roleWork.destination.worktree')
+            : launch?.here
+              ? undefined
+              : t('roleWork.destination.worktree')
         ].filter(Boolean)
       : []
   return (
@@ -147,16 +156,7 @@ export function RoleDestination({
       {details.length > 0 && (
         <span className="role-destination-detail">· {details.join(' · ')}</span>
       )}
-      {opinion && !sending && (
-        <button
-          type="button"
-          className="link-button role-destination-work"
-          onClick={opinion.onWork}
-          data-testid="role-destination-work"
-        >
-          {t('roleWork.destination.work')}
-        </button>
-      )}
+      {launch && !sending && launch.node}
       {empty && !sending && (
         <span className="role-destination-warn" data-testid="role-destination-empty">
           {t('roleWork.destination.empty')}

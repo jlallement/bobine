@@ -1,14 +1,17 @@
 /**
- * `@rôle` et dossier modifié (fiche 240) : un rôle qui partirait en worktree d'un dossier avec du
- * non commité ne part pas avant le choix ; « Partir quand même », « Committer d'abord » et l'avis
- * en lecture seule ; un rôle en lecture seule part sans rien demander.
+ * `@rôle` et dossier de la mère (fiches 240, 262) : jamais d'avertissement, une ligne discrète sous
+ * la saisie dit où partira un rôle qui écrit ; Entrée envoie toujours, avec le choix affiché
+ * (« Partir sans elles » par défaut, retenu pour le dossier jusqu'au prochain commit) ;
+ * « Changer… » : committer d'abord, juste un avis, voir les modifications ; dépôt sans commit :
+ * dans ce dossier. Un rôle de conseil part en lecture seule sans rien lire ni demander.
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSnapshot, ProfileSummary } from '@shared/agent'
-import type { FolderDirty } from '@shared/launch-folder'
+import type { FolderDirty, LaunchFolderState } from '@shared/launch-folder'
 import type { RoleView } from '@shared/roles'
+import { forgetLaunchChoices } from '../../launch-choice'
 import { Composer } from '../composer/Composer'
 import type { ComposerRoles } from './useRoleCompose'
 
@@ -60,17 +63,27 @@ const DIRTY: FolderDirty = {
 /** Texte affiché, espaces insécables (typographie française de l'app) rendues ordinaires. */
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 
-const childFolderDirty = vi.fn()
+const HEAD = '9970242aa11bb22cc33dd44ee55ff66778899aab'
+const AFTER = '1234567aa11bb22cc33dd44ee55ff66778899aab'
+const folderOf = (dirty?: FolderDirty, head = HEAD): LaunchFolderState => ({
+  place: 'worktree',
+  root: '/tmp/taches',
+  head,
+  ...(dirty ? { dirty } : {})
+})
+
+const childFolder = vi.fn()
 beforeEach(() => {
-  childFolderDirty.mockReset().mockResolvedValue(DIRTY)
-  window.api.conversations = { childFolderDirty } as unknown as Window['api']['conversations']
+  forgetLaunchChoices()
+  childFolder.mockReset().mockResolvedValue(folderOf(DIRTY))
+  window.api.conversations = { childFolder } as unknown as Window['api']['conversations']
 })
 
 function setup() {
   const send = vi.fn(async (names: string[]) => ({ started: names, failed: [] }))
   const commitFolder = vi.fn(async () => {
-    // Commité : le dossier est propre à la relecture.
-    childFolderDirty.mockResolvedValue(null)
+    // Commité : le dossier est propre à la relecture, HEAD a changé.
+    childFolder.mockResolvedValue(folderOf(undefined, AFTER))
   })
   const roles: ComposerRoles = {
     list: ROLES,
@@ -117,69 +130,74 @@ function setup() {
     fireEvent.change(input, { target: { value, selectionStart: value.length } })
     fireEvent.keyUp(input, { key: 'x' })
     fireEvent.keyDown(input, { key: 'Escape' })
-    // Le dossier est lu dès qu'un rôle partirait en worktree.
+    // Le dossier est lu dès qu'un rôle qui écrit est cité.
     await act(async () => {})
   }
   const enter = () => act(async () => void fireEvent.keyDown(input, { key: 'Enter' }))
-  return { input, type, enter, send, commitFolder }
+  /** « Changer… » puis une entrée du menu. */
+  const change = async (entry: string) => {
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    await act(async () => void fireEvent.click(await screen.findByTestId(entry)))
+    // Radix rend le focus à la fermeture du menu, dans une minuterie à 0 ms.
+    await act(async () => void (await new Promise((resolve) => setTimeout(resolve, 0))))
+  }
+  const line = () => plain(screen.getByTestId('role-destination').textContent)
+  return { input, type, enter, change, line, send, commitFolder }
 }
 
-describe('`@rôle` et non commité de la mère (fiche 240)', () => {
-  it('l’avertissement paraît dès les rôles cités ; Entrée n’envoie rien sans choix', async () => {
-    const { type, enter, send, input } = setup()
-    await type('@ux-ui-expert @back-architect construisez la page')
-    expect(childFolderDirty).toHaveBeenCalledWith('m')
-    expect(plain(screen.getByTestId('launch-dirty-title').textContent)).toBe(
-      'Ce dossier a 17 modifications non commitées : les 2 conversations filles ne les verront pas.'
-    )
-    expect(screen.getAllByTestId('launch-dirty-file')).toHaveLength(6)
-    expect(screen.getByTestId('launch-dirty').textContent).toContain('9970242')
+describe('`@rôle` et dossier de la mère : une ligne, Entrée envoie (fiche 262)', () => {
+  it('rôle qui écrit, dossier modifié : ni encadré ni bouton, la ligne en orange ; Entrée envoie', async () => {
+    const { type, enter, send, input, line } = setup()
+    await type('@ux-ui-expert ')
+    // Avant même la demande : la ligne, rien d'autre (R1).
+    expect(childFolder).toHaveBeenCalledWith('m')
+    expect(screen.queryByTestId('launch-dirty')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    const segment = screen.getByTestId('launch-line')
+    expect(segment.className).toContain('warn')
+    expect(segment.dataset.choice).toBe('without')
+    expect(line()).toContain('son worktree')
+    expect(line()).toContain('Partira du dernier commit, sans vos 17 modifications')
+    expect(screen.getByTestId('launch-line-change').textContent).toContain('Changer…')
+    await type('@ux-ui-expert construisez la page')
+    input.focus()
     await enter()
-    expect(send).not.toHaveBeenCalled()
-    expect(input.value).toBe('@ux-ui-expert @back-architect construisez la page')
-    // Le bloc prend le focus : on voit pourquoi rien n'est parti.
-    expect(document.activeElement).toBe(screen.getByTestId('launch-dirty-commit'))
-  })
-
-  it('« Partir quand même » : les filles partent, avec ce choix', async () => {
-    const { type, send } = setup()
-    await type('@ux-ui-expert construisez la page')
-    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-anyway')))
+    // Le choix affiché part, explicite (R2) ; la saisie garde le focus.
     expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+    expect(document.activeElement).toBe(input)
   })
 
-  it('« Committer d’abord » : message proposé, commit de tous les fichiers, puis l’envoi part', async () => {
-    const { type, send, commitFolder } = setup()
+  it('« Changer… » : committer d’abord, partir sans elles (coché), juste un avis, voir', async () => {
+    const { type } = setup()
     await type('@ux-ui-expert construisez la page')
-    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
-    await waitFor(() =>
-      expect(
-        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
-      ).toBe(false)
-    )
-    const message = screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement
-    expect(message.value).not.toBe('')
-    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
-    expect(commitFolder).toHaveBeenCalledWith(
-      message.value,
+    fireEvent.pointerDown(screen.getByTestId('launch-line-change'), { button: 0, ctrlKey: false })
+    const menu = await screen.findByTestId('launch-line-menu')
+    expect(plain(menu.textContent)).toContain('Committer d’abord')
+    expect(plain(menu.textContent)).toContain('Juste un avis, en lecture seule')
+    expect(plain(menu.textContent)).toContain('Voir les 17 modifications')
+    expect(plain(menu.textContent)).toContain('9970242')
+    expect(screen.getByTestId('launch-line-without').getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByTestId('launch-line-opinion').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('« Voir les N modifications » : la liste sous la ligne, les autres comptées', async () => {
+    const { type, change } = setup()
+    await type('@ux-ui-expert construisez la page')
+    await change('launch-line-show')
+    expect(screen.getAllByTestId('launch-line-file').map((li) => li.textContent)).toEqual(
       DIRTY.files.map((f) => f.path)
     )
-    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+    expect(plain(screen.getByTestId('launch-line-files').textContent)).toContain('10')
   })
 
-  it('avis en lecture seule : la ligne le dit, Entrée l’envoie ainsi ; retour possible', async () => {
-    const { type, enter, send } = setup()
+  it('« Juste un avis » : appliqué tout de suite, la ligne le dit, Entrée l’envoie ainsi', async () => {
+    const { type, enter, send, change, line } = setup()
     await type('@ux-ui-expert @back-architect donnez votre avis sur plan.md')
-    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
-    const line = plain(screen.getByTestId('role-destination').textContent)
-    expect(line).toContain('pour un avis')
-    expect(line).toContain('dans ce dossier')
-    expect(line).toContain('voient les 17 modifications non commitées')
-    // « Plutôt les faire travailler… » : l'avertissement revient.
-    fireEvent.click(screen.getByTestId('role-destination-work'))
-    expect(screen.getByTestId('launch-dirty')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
+    await change('launch-line-opinion')
+    expect(line()).toContain('pour un avis')
+    expect(line()).toContain('dans ce dossier')
+    expect(line()).toContain('voient les 17 modifications non commitées')
+    expect(screen.queryByTestId('launch-line')).toBeNull()
     await enter()
     expect(send).toHaveBeenCalledWith(
       ['ux-ui-expert', 'back-architect'],
@@ -188,91 +206,157 @@ describe('`@rôle` et non commité de la mère (fiche 240)', () => {
     )
   })
 
-  it('choix au clic : la saisie reprend le focus, Entrée envoie (e2e de la fiche 240)', async () => {
-    const { type, send, input } = setup()
-    await type('@ux-ui-expert @back-architect votre avis sur le plan')
-    // Vrai geste : le bouton a le focus quand on le clique, puis disparaît avec le bloc.
-    const opinion = screen.getByTestId('launch-dirty-opinion')
-    opinion.focus()
-    fireEvent.click(opinion)
+  it('un choix de « Changer… » rend le focus à la saisie : Entrée envoie ensuite (R2)', async () => {
+    const { type, change, send, input } = setup()
+    await type('@ux-ui-expert votre avis sur le plan')
+    input.focus()
+    await change('launch-line-opinion')
     expect(document.activeElement).toBe(input)
     await act(
       async () => void fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Enter' })
     )
-    expect(send).toHaveBeenCalledWith(
-      ['ux-ui-expert', 'back-architect'],
-      'votre avis sur le plan',
-      'readOnly'
-    )
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'votre avis sur le plan', 'readOnly')
   })
 
-  it('« Plutôt les faire travailler… » rend aussi le focus à la saisie', async () => {
-    const { type, input } = setup()
-    await type('@ux-ui-expert votre avis sur le plan')
-    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
-    const work = screen.getByTestId('role-destination-work')
-    work.focus()
-    fireEvent.click(work)
-    expect(document.activeElement).toBe(input)
+  it('le choix est retenu pour ce dossier jusqu’au prochain commit, et toujours affiché (R6)', async () => {
+    const first = setup()
+    await first.type('@ux-ui-expert votre avis')
+    await first.change('launch-line-opinion')
+    await first.enter()
+    expect(first.send).toHaveBeenLastCalledWith(['ux-ui-expert'], 'votre avis', 'readOnly')
+    cleanup()
+    // Même dossier, même HEAD : le rôle suivant part aussi en avis, et la ligne le dit.
+    const second = setup()
+    await second.type('@back-architect écrivez l’API')
+    expect(second.line()).toContain('pour un avis')
+    await second.enter()
+    expect(second.send).toHaveBeenLastCalledWith(['back-architect'], 'écrivez l’API', 'readOnly')
+    cleanup()
+    // Un commit plus tard (HEAD changé) : retour au défaut.
+    childFolder.mockResolvedValue(folderOf(DIRTY, AFTER))
+    const third = setup()
+    await third.type('@back-architect écrivez l’API')
+    expect(screen.getByTestId('launch-line').dataset.choice).toBe('without')
+    await third.enter()
+    expect(third.send).toHaveBeenLastCalledWith(['back-architect'], 'écrivez l’API', 'anyway')
   })
 
-  it('l’avis : l’accord suit le nombre de rôles, et celui des fichiers', async () => {
-    const { type } = setup()
-    await type('@ux-ui-expert votre avis')
-    fireEvent.click(screen.getByTestId('launch-dirty-opinion'))
-    expect(plain(screen.getByTestId('role-destination').textContent)).toContain(
-      'voit les 17 modifications non commitées'
-    )
-  })
-
-  it('un rôle en lecture seule : ni lecture du dossier, ni avertissement, il part', async () => {
-    const { type, enter, send } = setup()
-    await type('@security-expert relis le diff')
-    expect(childFolderDirty).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
-    await enter()
-    expect(send).toHaveBeenCalledWith(['security-expert'], 'relis le diff')
-  })
-
-  it('dossier propre : rien à choisir, l’envoi part', async () => {
-    childFolderDirty.mockResolvedValue(null)
-    const { type, enter, send } = setup()
+  it('« Committer d’abord » : le choix de commit, puis le message part de ce commit', async () => {
+    const { type, change, send, commitFolder } = setup()
     await type('@ux-ui-expert construisez la page')
-    expect(screen.queryByTestId('launch-dirty')).toBeNull()
-    await enter()
+    await change('launch-line-commit')
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
+      ).toBe(false)
+    )
+    const message = screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement
+    expect(message.value).not.toBe('')
+    expect(send).not.toHaveBeenCalled()
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-line-commit-confirm')))
+    expect(commitFolder).toHaveBeenCalledWith(
+      message.value,
+      DIRTY.files.map((f) => f.path)
+    )
+    // Dossier propre après le commit : rien à laisser, aucun choix à porter.
     expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
   })
 
-  it('fiche 244 : un fichier décoché ne part pas ; les filles partent sans lui (« anyway »)', async () => {
-    const { type, send, commitFolder } = setup()
+  it('« Committer d’abord » ouvert : Entrée mène au bouton du commit, rien ne part avant', async () => {
+    const { type, change, enter, send } = setup()
+    await type('@ux-ui-expert construisez la page')
+    await change('launch-line-commit')
+    await enter()
+    expect(send).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByTestId('launch-line-commit-confirm'))
+  })
+
+  it('fiche 244 : un fichier décoché reste ; le message part sans lui (« anyway »)', async () => {
+    const { type, change, send, commitFolder } = setup()
     // Après le commit, le fichier décoché reste : le dossier n'est pas propre.
     commitFolder.mockImplementation(async () => {
-      childFolderDirty.mockResolvedValue({ ...DIRTY, count: 1, files: DIRTY.files.slice(0, 1) })
+      childFolder.mockResolvedValue(
+        folderOf({ ...DIRTY, count: 1, files: DIRTY.files.slice(0, 1) }, AFTER)
+      )
     })
     await type('@ux-ui-expert construisez la page')
-    fireEvent.click(screen.getByTestId('launch-dirty-commit'))
-    expect(screen.getAllByTestId('launch-dirty-commit-file')).toHaveLength(DIRTY.files.length)
+    await change('launch-line-commit')
     fireEvent.click(
       screen
-        .getAllByTestId('launch-dirty-commit-file')
+        .getAllByTestId('launch-line-commit-file')
         .find((li) => li.dataset.path === 'plan.md')
         ?.querySelector('input') as HTMLInputElement
     )
     await waitFor(() =>
       expect(
-        (screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement).disabled
+        (screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement).disabled
       ).toBe(false)
     )
-    const message = screen.getByTestId('launch-dirty-commit-message') as HTMLTextAreaElement
-    expect(message.value).not.toContain('plan.md')
-    expect(plain(screen.getByTestId('launch-dirty-commit-left').textContent)).toBe(
-      '1 fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.'
+    const message = screen.getByTestId('launch-line-commit-message') as HTMLTextAreaElement
+    expect(plain(screen.getByTestId('launch-line-commit-left').textContent)).toBe(
+      '1 fichier décoché reste dans ce dossier, non commité : le travail partira sans lui.'
     )
-    await act(async () => void fireEvent.click(screen.getByTestId('launch-dirty-commit-confirm')))
+    await act(async () => void fireEvent.click(screen.getByTestId('launch-line-commit-confirm')))
     expect(commitFolder).toHaveBeenCalledWith(
       message.value,
       DIRTY.files.slice(1).map((f) => f.path)
     )
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
+  })
+
+  it('rôle de conseil : ni lecture du dossier ni ligne orange, il part en lecture seule', async () => {
+    const { type, enter, send, line } = setup()
+    await type('@security-expert relis le diff')
+    expect(childFolder).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('launch-line')).toBeNull()
+    expect(line()).toContain('lecture seule')
+    expect(line()).toContain('dans ce dossier')
+    await enter()
+    expect(send).toHaveBeenCalledWith(['security-expert'], 'relis le diff')
+  })
+
+  it('dossier propre : « partira du dernier commit », discret ; l’envoi part sans choix', async () => {
+    childFolder.mockResolvedValue(folderOf())
+    const { type, enter, send, line } = setup()
+    await type('@ux-ui-expert construisez la page')
+    expect(screen.getByTestId('launch-line').className).not.toContain('warn')
+    expect(line()).toContain('son worktree')
+    expect(line()).toContain('partira du dernier commit (9970242)')
+    await enter()
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+  })
+
+  it('dépôt sans commit : dans ce dossier, sans « Changer… » ni « () » ; l’envoi part', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'noCommit' })
+    const { type, enter, send, line } = setup()
+    await type('@ux-ui-expert construisez la page')
+    expect(line()).toContain(
+      'Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier'
+    )
+    expect(line()).not.toContain('worktree')
+    expect(line()).not.toContain('()')
+    expect(screen.queryByTestId('launch-line-change')).toBeNull()
+    await enter()
+    expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page')
+  })
+
+  it('dossier hors dépôt git : dit tel quel, plusieurs rôles accordés', async () => {
+    childFolder.mockResolvedValue({ place: 'here', reason: 'notRepo' })
+    const { type, line } = setup()
+    await type('@ux-ui-expert @back-architect construisez la page')
+    expect(line()).toContain(
+      'Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier'
+    )
+  })
+
+  it('dossier pas encore lu à l’Entrée : lu d’abord, puis l’envoi part avec le bon choix', async () => {
+    let answer: (state: LaunchFolderState) => void = () => {}
+    childFolder.mockReturnValue(new Promise<LaunchFolderState>((resolve) => (answer = resolve)))
+    const { type, enter, send } = setup()
+    await type('@ux-ui-expert construisez la page')
+    await enter()
+    expect(send).not.toHaveBeenCalled()
+    await act(async () => answer(folderOf(DIRTY)))
     expect(send).toHaveBeenCalledWith(['ux-ui-expert'], 'construisez la page', 'anyway')
   })
 })

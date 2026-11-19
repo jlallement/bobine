@@ -3667,8 +3667,7 @@
         "here": "Faite ici",
         "refuse": "Refusée",
         "expired": "Expirée"
-      },
-      "uncommittedHint": "Choisissez d’abord ci-dessus"
+      }
     },
     "from": {
       "parent": "De la conversation mère « {{title}} »",
@@ -4571,7 +4570,6 @@
       "opinionMany_one": "Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
       "opinionMany_many": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
       "opinionMany_other": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : une conversation fille chacun, en parallèle",
-      "work": "Plutôt les faire travailler…",
       "opinionSeesOne_one": "voit la modification non commitée",
       "opinionSeesOne_many": "voit les {{count}} modifications non commitées",
       "opinionSeesOne_other": "voit les {{count}} modifications non commitées",
@@ -5838,33 +5836,48 @@
       }
     }
   },
-  "launchDirty": {
-    "title_one": "Ce dossier a {{count}} modification non commitée : {{who}} ne la verra pas.",
-    "title_many": "Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.",
-    "title_other": "Ce dossier a {{count}} modifications non commitées : {{who}} ne les verra pas.",
-    "titleMany_one": "Ce dossier a {{count}} modification non commitée : {{who}} ne la verront pas.",
-    "titleMany_many": "Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.",
-    "titleMany_other": "Ce dossier a {{count}} modifications non commitées : {{who}} ne les verront pas.",
-    "whoOne": "la conversation fille",
-    "whoMany_one": "la conversation fille",
-    "whoMany_many": "les {{count}} conversations filles",
-    "whoMany_other": "les {{count}} conversations filles",
-    "whoCard": "les conversations filles lancées d’ici",
-    "why": "Une conversation fille part du dernier commit (<code>{{commit}}</code> « {{subject}} »), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.",
-    "files": "Fichiers non commités de ce dossier",
-    "commit": "Committer d’abord",
-    "commitConfirm": "Committer puis lancer",
-    "anyway": "Partir quand même",
-    "anywayCard": "Lancer quand même",
-    "opinionLead": "Juste un avis ? Les rôles peuvent lire ce dossier tel quel, non commité compris, sans rien y modifier.",
-    "opinion": "Demander un avis en lecture seule",
-    "committed": "Commité : {{short}}. Les conversations filles partiront de ce commit.",
-    "whyBare": "Une conversation fille part du dernier commit (<code>{{commit}}</code>), dans son propre worktree. Committez d’abord pour qu’elle ait ce travail.",
-    "left_one": "{{count}} fichier décoché reste dans ce dossier, non commité : les conversations filles ne l’auront pas.",
-    "left_many": "{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.",
-    "left_other": "{{count}} fichiers décochés restent dans ce dossier, non commités : les conversations filles ne les auront pas.",
-    "leftOne_one": "{{count}} fichier décoché reste dans ce dossier, non commité : la conversation fille ne l’aura pas.",
-    "leftOne_many": "{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas.",
-    "leftOne_other": "{{count}} fichiers décochés restent dans ce dossier, non commités : la conversation fille ne les aura pas."
+  "launchLine": {
+    "change": "Changer…",
+    "fromCommit": "partira du dernier commit ({{commit}})",
+    "without_one": "Partira du dernier commit, sans votre modification",
+    "without_many": "Partira du dernier commit, sans vos {{count}} modifications",
+    "without_other": "Partira du dernier commit, sans vos {{count}} modifications",
+    "noCommit": {
+      "role": "Ce dépôt n’a pas encore de commit : le rôle travaillera directement dans ce dossier",
+      "roles": "Ce dépôt n’a pas encore de commit : les rôles travailleront directement dans ce dossier",
+      "work": "Ce dépôt n’a pas encore de commit : ce travail se fera directement dans ce dossier",
+      "works": "Ce dépôt n’a pas encore de commit : ces travaux se feront directement dans ce dossier"
+    },
+    "notRepo": {
+      "role": "Ce dossier n’est pas un dépôt git : le rôle travaillera directement dans ce dossier",
+      "roles": "Ce dossier n’est pas un dépôt git : les rôles travailleront directement dans ce dossier",
+      "work": "Ce dossier n’est pas un dépôt git : ce travail se fera directement dans ce dossier",
+      "works": "Ce dossier n’est pas un dépôt git : ces travaux se feront directement dans ce dossier"
+    },
+    "menu": {
+      "commit": "Committer d’abord",
+      "commitDesc": "Choisissez les fichiers et le message ; le travail part ensuite de ce commit, avec vos modifications.",
+      "without": "Partir sans elles",
+      "withoutDesc_one": "Le travail part du dernier commit ({{commit}}). Votre fichier modifié reste ici, intact.",
+      "withoutDesc_many": "Le travail part du dernier commit ({{commit}}). Vos {{count}} fichiers modifiés restent ici, intacts.",
+      "withoutDesc_other": "Le travail part du dernier commit ({{commit}}). Vos {{count}} fichiers modifiés restent ici, intacts.",
+      "worktree": "Travailler dans son worktree",
+      "worktreeDesc": "Une branche à part, depuis le dernier commit ({{commit}}).",
+      "opinion": "Juste un avis, en lecture seule",
+      "opinionDesc": "Dans ce dossier, sans rien y modifier ; voit vos modifications non commitées.",
+      "show_one": "Voir la modification",
+      "show_many": "Voir les {{count}} modifications",
+      "show_other": "Voir les {{count}} modifications",
+      "hide": "Masquer les modifications"
+    },
+    "files": "Modifications non commitées de ce dossier",
+    "left_one": "{{count}} fichier décoché reste dans ce dossier, non commité : le travail partira sans lui.",
+    "left_many": "{{count}} fichiers décochés restent dans ce dossier, non commités : le travail partira sans eux.",
+    "left_other": "{{count}} fichiers décochés restent dans ce dossier, non commités : le travail partira sans eux.",
+    "commitThenSend": "Committer puis envoyer",
+    "commitThenStart": "Committer puis lancer",
+    "commitOnly": "Committer",
+    "held": "Un instant : le dossier est en cours de lecture, ou un commit est ouvert ci-dessus",
+    "proposalsHere": "L’agent propose de confier ce travail. Vous pouvez aussi lui demander de le faire ici."
   }
 }

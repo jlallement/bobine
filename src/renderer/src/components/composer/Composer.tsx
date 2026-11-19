@@ -45,7 +45,7 @@ import { BlockerPanel } from './BlockerPanel'
 import { refusedTurnText } from '../../turn-auth-text'
 import type { ConversationUsage } from '@shared/usage'
 import type { UsageActions } from '../../useTurnGuards'
-import type { GitBranchInfo } from '../common/Menus'
+import { ComposerFocus, type GitBranchInfo } from '../common/Menus'
 import { ComposerContext } from './ComposerContext'
 import { CommandMenu } from './CommandMenu'
 import { QueuedMessages } from './QueuedMessages'
@@ -71,7 +71,7 @@ import {
   useRoleFrame,
   type ComposerRoles
 } from '../roles/useRoleCompose'
-import { LaunchDirtyCard } from '../thread/LaunchDirty'
+import { LaunchLine } from '../thread/LaunchLine'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
 import { lastSegment } from '@shared/windows-paths'
@@ -644,46 +644,36 @@ function ComposerBelow({
         roles={props.roles}
         profileId={profileId}
         agentLabel={agentLabel}
-        opinion={
-          roleView.opinion && {
-            sees: roleView.opinion.sees,
-            onWork: () => {
-              roleCompose.choose(undefined)
-              // Le bouton disparaît avec la ligne : la saisie reprend le focus (Entrée envoie).
-              focusInput()
-            }
+        opinion={roleView.opinion}
+        launch={
+          roleView.launch && {
+            here: roleView.launch.state.place === 'here',
+            // Un choix de « Changer… » rend le focus à la saisie : Entrée envoie ensuite.
+            node: (
+              <ComposerFocus.Provider value={focusInput}>
+                <LaunchLine
+                  state={roleView.launch.state}
+                  choice={roleView.launch.choice}
+                  onChoose={roleCompose.choose}
+                  who={roleView.launch.many ? 'roles' : 'role'}
+                  opinion
+                  hideText={!!roleView.opinion}
+                  committing={roleView.launch.committing}
+                  focusCommit={roleView.launch.focusCommit}
+                  onCommitting={roleCompose.setCommitting}
+                  commit={{
+                    conversationId: props.draftKey ?? '',
+                    confirmLabel: t('launchLine.commitThenSend'),
+                    run: roleCompose.commit,
+                    // Commit fait : le message part (les décochés restent, il part sans eux).
+                    onCommitted: () => submit()
+                  }}
+                />
+              </ComposerFocus.Provider>
+            )
           }
         }
       />
-      {roleView.dirty && !roleView.sending && (
-        <LaunchDirtyCard
-          conversationId={props.draftKey ?? ''}
-          dirty={roleView.dirty}
-          who={
-            roleView.targets.length > 1
-              ? t('launchDirty.whoMany', { count: roleView.targets.length })
-              : t('launchDirty.whoOne')
-          }
-          many={roleView.targets.length > 1}
-          anywayLabel={t('launchDirty.anyway')}
-          attention={roleView.attention}
-          commit={roleCompose.commit}
-          onCommitted={(left) => {
-            // Fiche 244 : des fichiers décochés restent ; les filles partent sans eux.
-            if (left > 0) roleCompose.choose('anyway')
-            submit()
-          }}
-          onAnyway={() => {
-            roleCompose.choose('anyway')
-            submit()
-          }}
-          onOpinion={() => {
-            roleCompose.choose('readOnly')
-            // Le bouton disparaît avec le bloc : sans cela, Entrée n'atteint plus la saisie.
-            focusInput()
-          }}
-        />
-      )}
       <ComposerContext
         hidden={props.discussion}
         settings={settings}

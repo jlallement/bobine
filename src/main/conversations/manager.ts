@@ -468,9 +468,8 @@ export class ConversationManager {
   }
 
   /**
-   * Conversation fille (fiche 097) : dans un nouveau worktree depuis le dossier de la mère. Son
-   * agent démarre ; la consigne est envoyée par l'appelant (`children.ts`), qui attend son
-   * démarrage s'il le faut (`ready`).
+   * Conversation fille (fiche 097) : dans un nouveau worktree depuis le dossier de la mère (ou ce
+   * dossier, fiche 262). Son agent démarre ; la consigne est envoyée par `children.ts`.
    */
   async createChild(
     motherId: string,
@@ -481,11 +480,12 @@ export class ConversationManager {
   ): Promise<ConversationSummary> {
     const author = link.of ? this.get(link.of).record : undefined
     return this.createDetached(
+      // Rôle et place (dossier sans worktree possible, fiche 262) passent tels quels.
       childDetachedRequest(this.get(motherId).record, author, {
+        ...link,
         text,
         ...(profileId ? { profileId } : {}),
-        ...(onCreated ? { onCreated } : {}),
-        ...(link.role ? { role: link.role } : {})
+        ...(onCreated ? { onCreated } : {})
       })
     )
   }

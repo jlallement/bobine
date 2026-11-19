@@ -1,8 +1,10 @@
 /**
  * Dossier de la mère avant le lancement d'une fille en worktree (fiche 240, ADR-0055). Une fille
  * part du dernier commit : le non commité de la mère n'est pas dans son worktree. Bobine le dit
- * avant, et l'utilisateur choisit : committer d'abord, partir quand même, ou (rôle cité avec `@`)
- * demander un avis en lecture seule, dans le dossier de la mère, non commité compris.
+ * sur une ligne discrète sous la saisie (fiche 262) : partir sans elles (le défaut), committer
+ * d'abord, ou (rôle cité avec `@`) juste un avis en lecture seule, dans le dossier de la mère, non
+ * commité compris. Un dépôt sans commit, ou un dossier hors dépôt : pas de worktree possible, la
+ * fille travaille directement dans le dossier (fiche 262, ADR-0059).
  */
 import type { CommitFile } from './worktree-cycle'
 
@@ -21,6 +23,21 @@ export interface FolderDirty {
   /** Titre de la mère, d'où proposer le message de commit. */
   title?: string
 }
+
+/**
+ * Où partirait une fille qui écrit (fiche 262) : en worktree depuis HEAD, avec le non commité
+ * qu'elle n'aura pas (`dirty`), ou directement dans le dossier (`here`) quand aucun worktree n'est
+ * possible — dépôt sans commit (`noCommit`), dossier hors dépôt git (`notRepo`).
+ */
+export type LaunchFolderState =
+  | {
+      place: 'worktree'
+      /** Racine du dépôt et commit complet de HEAD : la clé du choix retenu (fiche 262). */
+      root: string
+      head: string
+      dirty?: FolderDirty
+    }
+  | { place: 'here'; reason: 'noCommit' | 'notRepo' }
 
 /**
  * Choix de l'utilisateur devant un dossier modifié : partir quand même (sans le non commité), ou

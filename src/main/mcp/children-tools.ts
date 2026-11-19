@@ -63,7 +63,10 @@ const START_CHILD =
   'Start a child conversation: another agent that works in parallel, in its own git worktree ' +
   "(a new branch from this folder's last commit), on an instruction you write. Uncommitted " +
   'changes of this folder are NOT in its worktree: commit your work first when the child needs ' +
-  'it (the user is warned before it starts without them). The user sees it ' +
+  'it (the user is warned before it starts without them). In a repository with no commit yet ' +
+  '(or a folder outside git), no worktree is possible: the child works directly in this folder, ' +
+  'alongside you; never create a commit, least of all an empty one, just to get a worktree. ' +
+  'The user sees it ' +
   'under this conversation, can open it, talk to it and stop it. Proposing one is cheap: nothing ' +
   'starts until the user decides on a card (start it, do it here, or refuse), so propose rather ' +
   'than guess. Use it, one call per piece of work, when the user asks for several independent ' +
@@ -683,7 +686,10 @@ async function launch(
     )
     const where = role?.readOnly
       ? `It works in parallel as the read-only role "${role.name}", in this folder (no worktree, no branch).`
-      : `It works in parallel${role ? ` as the role "${role.name}"` : ''} in its own worktree.`
+      : child.branch
+        ? `It works in parallel${role ? ` as the role "${role.name}"` : ''} in its own worktree.`
+        : // Dépôt sans commit (fiche 262) : la fille écrit dans le même dossier que la mère.
+          `It works in parallel${role ? ` as the role "${role.name}"` : ''} directly in this folder, alongside you (no commit yet, so no worktree and no branch): avoid editing the same files meanwhile.`
     // Partie quand même : la fille n'a pas le non commité, l'agent le sait (critère de la fiche 240).
     const missing = uncommitted && dirty ? `\n\n${uncommittedWarning(dirty)}` : ''
     return textResult(

@@ -212,7 +212,7 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
   const show = async (role: RoleSnapshot, motherProfile = 'mock') => {
     window.api.conversations = {
       view: vi.fn().mockResolvedValue({ snapshot: { controls: [] } }),
-      childFolderDirty: vi.fn().mockResolvedValue(null)
+      childFolder: vi.fn().mockResolvedValue({ place: 'worktree', root: '/d', head: 'h' })
     } as unknown as Window['api']['conversations']
     render(
       <ChildProposals

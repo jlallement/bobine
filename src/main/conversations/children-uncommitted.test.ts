@@ -31,7 +31,10 @@ afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup()
 })
 
-async function environment(scenario = 'echo') {
+/** Dépôt de la mère : avec un commit (par défaut), sans aucun commit, ou pas de dépôt du tout. */
+type Repo = 'commit' | 'noCommit' | 'notRepo'
+
+async function environment(scenario = 'echo', kind: Repo = 'commit') {
   const root = mkdtempSync(join(tmpdir(), 'filles-non-commite-'))
   const repo = realpathSync(mkdtempSync(join(tmpdir(), 'filles-non-commite-depot-')))
   const git = (...args: string[]) =>
@@ -40,9 +43,11 @@ async function environment(scenario = 'echo') {
       encoding: 'utf8'
     }).trim()
   writeFileSync(join(repo, 'README.md'), '# Tâches\n')
-  git('init', '-q', '-b', 'main')
-  git('add', '.')
-  git('commit', '-q', '-m', 'chore: initial commit')
+  if (kind !== 'notRepo') git('init', '-q', '-b', 'main')
+  if (kind === 'commit') {
+    git('add', '.')
+    git('commit', '-q', '-m', 'chore: initial commit')
+  }
   const profile: AgentProfile = {
     id: 'mock',
     label: 'Factice',
@@ -262,5 +267,92 @@ describe('filles en worktree et non commité de la mère (fiche 240)', () => {
     expect(parseChildDecision({ decision: 'start', uncommitted: 'autre' })).toEqual({
       action: 'start'
     })
+  })
+})
+
+/**
+ * Fiche 262 : sans commit (ou sans dépôt), aucun worktree n'est possible. La fille qui écrit
+ * travaille dans le dossier de la mère, sans choix à faire ; aucun worktree, aucun commit (la
+ * recette du 2026-11-19 a fini sur un commit vide).
+ */
+describe('dépôt sans commit, ou dossier hors dépôt (fiche 262)', () => {
+  /** Le dépôt n'a toujours aucun commit : `rev-parse` échoue. */
+  const noCommitYet = (git: (...args: string[]) => string) =>
+    expect(() => git('rev-parse', '--verify', '--quiet', 'HEAD')).toThrow()
+
+  it('dépôt sans commit : la ligne le sait, rien de « non commité » à laisser', async () => {
+    const env = await environment('echo', 'noCommit')
+    expect(await env.children.folderState(env.mother)).toEqual({
+      place: 'here',
+      reason: 'noCommit'
+    })
+    expect(await env.children.uncommitted(env.mother)).toBeUndefined()
+  })
+
+  it('rôle qui écrit, sans choix : il part dans le dossier, sans worktree ni commit', async () => {
+    const env = await environment('echo', 'noCommit')
+    const result = await startRoleChildren(env.host, env.mother, {
+      roles: ['ux-ui-expert'],
+      text: 'Construisez la page d’après plan.md'
+    })
+    expect(result.failed).toEqual([])
+    const child = env.childrenOf()[0]
+    expect(child?.workspace).toBe(env.repo)
+    expect(child?.branch).toBeUndefined()
+    // Il écrit : ce n'est pas un avis en lecture seule.
+    expect(child?.role?.readOnly).toBeFalsy()
+    expect(child?.role?.name).toBe('ux-ui-expert')
+    expect(existsSync(join(child?.workspace ?? '', 'plan.md'))).toBe(true)
+    expect(env.started()[0]?.leftBehind).toBeUndefined()
+    expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
+    noCommitYet(env.git)
+    await env.waitFor(() => env.reports().length > 0, 'compte rendu de la fille')
+    noCommitYet(env.git)
+  })
+
+  it('fille sans rôle (« Lancer en parallèle… », `start_child`) : dans le dossier aussi', async () => {
+    const env = await environment('echo', 'noCommit')
+    const child = await env.children.start(env.mother, { text: 'Écris l’API' }, 'agent')
+    expect(child.workspace).toBe(env.repo)
+    expect(child.branch).toBeUndefined()
+    expect(env.git('worktree', 'list').split('\n')).toHaveLength(1)
+    noCommitYet(env.git)
+  })
+
+  it('dossier hors dépôt git : le rôle qui écrit part dans le dossier, sans erreur', async () => {
+    const env = await environment('echo', 'notRepo')
+    expect(await env.children.folderState(env.mother)).toEqual({
+      place: 'here',
+      reason: 'notRepo'
+    })
+    const result = await startRoleChildren(env.host, env.mother, {
+      roles: ['ux-ui-expert'],
+      text: 'Construisez la page'
+    })
+    expect(result.failed).toEqual([])
+    expect(env.childrenOf()[0]?.workspace).toBe(env.repo)
+    expect(existsSync(join(env.repo, '.git'))).toBe(false)
+  })
+
+  it('dépôt avec commit : la ligne a la racine, HEAD et le non commité (clé du choix retenu)', async () => {
+    const env = await environment()
+    const state = await env.children.folderState(env.mother)
+    expect(state).toMatchObject({
+      place: 'worktree',
+      root: env.repo,
+      head: env.git('rev-parse', 'HEAD'),
+      dirty: { count: 1, files: [{ path: 'plan.md', status: 'untracked' }] }
+    })
+  })
+
+  it('« Juste un avis » sur un rôle qui écrit : explicite, accepté sans autre choix', async () => {
+    const env = await environment()
+    await expect(
+      env.children.start(env.mother, {
+        text: 'Votre avis',
+        role: 'back-architect',
+        uncommitted: 'readOnly'
+      })
+    ).resolves.toMatchObject({ workspace: env.repo })
   })
 })

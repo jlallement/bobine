@@ -72,6 +72,8 @@ function setup(
     startError?: Error
     /** Dernière réponse de `f1` coupée dans `child_status` (fiche 247). */
     cutReply?: boolean
+    /** Fille partie dans le dossier de la mère, sans branche (dépôt sans commit, fiche 262). */
+    inPlace?: boolean
   } = {}
 ) {
   const calls: unknown[][] = []
@@ -94,7 +96,10 @@ function setup(
     start: async (id, request, by) => {
       calls.push(['start', id, request, by])
       if (options.startError) throw options.startError
-      return summary('f3', { title: request.title ?? '', branch: 'bobine/x' })
+      return summary('f3', {
+        title: request.title ?? '',
+        ...(options.inPlace ? {} : { branch: 'bobine/x' })
+      })
     },
     children: () => children,
     status: (): ChildStatus[] => [
@@ -670,5 +675,17 @@ describe('start_child et le non commité de la mère (fiche 240)', () => {
     expect(result.isError).toBe(true)
     expect(textOf(result)).toContain('Could not start the child conversation "API": Warning:')
     expect(textOf(result)).toContain('The user has to choose first')
+  })
+
+  it('fiche 262 : dépôt sans commit, la fille écrit dans le dossier ; jamais de commit vide', async () => {
+    const description = setup().tool('start_child').definition.description
+    expect(description).toContain('In a repository with no commit yet')
+    expect(description).toContain('never create a commit, least of all an empty one')
+    const s = setup({ inPlace: true })
+    const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
+    const text = textOf(result)
+    expect(text).toContain('started (id: f3)')
+    expect(text).toContain('directly in this folder, alongside you')
+    expect(text).not.toContain('own worktree')
   })
 })

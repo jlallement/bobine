@@ -1,6 +1,6 @@
 # 262 — Saisie avec un rôle : une ligne discrète, Entrée envoie, jamais de commit vide
 
-- **Statut** : en cours
+- **Statut** : fait (relecture du tech lead)
 - **Dépend de** : 260 (lot 1, écran B des maquettes `docs/maquettes/260-travail-delegue.html`)
 - **Agents** : les deux — tout est générique (rôles, travaux, worktree, git)
 
@@ -43,17 +43,18 @@ lecture seule sans que la saisie le dise.
 
 ## Critères d'acceptation
 
-- [ ] Choisir un rôle qui écrit, dossier modifié : aucun encadré, la ligne orange et « Changer… » ;
+- [x] Choisir un rôle qui écrit, dossier modifié : aucun encadré, la ligne orange et « Changer… » ;
       Entrée envoie avec `anyway`.
-- [ ] « Juste un avis » : la ligne le dit, Entrée envoie `readOnly`, sans renvoyer.
-- [ ] Choix retenu pour le dossier jusqu'au prochain commit (HEAD changé : défaut).
-- [ ] « Committer d'abord » : `CommitChooser`, puis le message part.
-- [ ] Rôle de conseil : ni lecture du dossier ni avertissement.
-- [ ] Dépôt sans commit : ligne dédiée, la fille part dans le dossier de la mère, sans worktree ni
+- [x] « Juste un avis » : la ligne le dit, Entrée envoie `readOnly`, sans renvoyer.
+- [x] Choix retenu pour le dossier jusqu'au prochain commit (HEAD changé : défaut).
+- [x] « Committer d'abord » : `CommitChooser`, puis le message part.
+- [x] Rôle de conseil : ni lecture du dossier ni avertissement.
+- [x] Dépôt sans commit : ligne dédiée, la fille part dans le dossier de la mère, sans worktree ni
       commit, par la saisie, la carte « Tâches proposées » et « Lancer en parallèle… ».
-- [ ] Main : `refuseUncommitted` avec `anyway`, sans choix, dépôt sans commit (pas de worktree, pas
+- [x] Main : `refuseUncommitted` avec `anyway`, sans choix, dépôt sans commit (pas de worktree, pas
       de commit), dossier hors dépôt.
-- [ ] Testé contre l'agent factice (main : `children` avec un vrai dépôt git temporaire).
+- [x] Testé contre l'agent factice (main : `children-uncommitted.test.ts`, vrai dépôt git
+      temporaire, avec et sans commit, et hors dépôt ; e2e `filles-non-commite`, partie (c)).
 
 ## Plan
 
@@ -83,3 +84,44 @@ Pas de nouvelle dépendance.
 ## Journal
 
 - 2026-11-19 : fiche et plan.
+- 2026-11-19 : fait.
+  - **Cause du commit vide.** Ni Bobine ni « Committer d'abord » ne peuvent en faire un
+    (`commitIn` refuse une liste vide et committe `--only` des chemins). Le seul commit vide
+    relevé est `3e66fdc « Initial commit »` du dépôt d'essai `~/Dev/test-bobine` (aucun fichier
+    suivi), à 21:08:30, pendant un tour d'OpenCode de la mère (21:08:18–21:08:34, `main.log`) et
+    18 s avant le premier worktree de fille (21:08:48). Sur un dépôt sans commit, le main refusait
+    le worktree avec `worktrees.noCommit` (« un worktree part d'un commit ») ; `start_child` rendait
+    ce texte à l'agent, et sa description lui dit de committer d'abord : l'agent a fabriqué le
+    commit qui manquait, vide puisqu'il n'y avait rien à committer (`git commit --allow-empty`,
+    déduit des horaires et du contenu : ni `agents.log` ni la session d'OpenCode n'ont été lus). Cause supprimée : sans
+    commit (ou hors dépôt), le main ne demande plus de worktree, la fille travaille dans le
+    dossier ; la description de `start_child` interdit de committer pour obtenir un worktree.
+  - **Main** : `LaunchFolder.state` (racine, HEAD vérifié par `rev-parse --verify --quiet`, une
+    autre erreur de git est levée, jamais prise pour un dépôt vide) ;
+    `ChildConversations.folderState` / `inPlace` remplacent `refuseUncommitted` : rôle en lecture
+    seule → dossier de la mère (inchangé) ; sans commit ou hors dépôt → dossier de la mère
+    (`ChildLink.inPlace`), sans choix ni refus ; sinon worktree, refusé d'un dossier modifié sans
+    `uncommitted` explicite. Canal `conversation:childFolder` (remplace `childFolderDirty`).
+    `start_child` dit à l'agent qu'une fille sans branche écrit dans son dossier.
+  - **Renderer** : `LaunchLine` (segment de ligne, menu « Changer… » Radix, liste des
+    modifications, `CommitChooser`), `useLaunchFolder`, `launch-choice.ts` (mémoire par racine +
+    HEAD). `useRoleCompose` envoie toujours (dossier pas encore lu : lu d'abord, un instant) ;
+    « Committer d'abord » ouvert : Entrée mène au bouton du commit, puis le message part. Un choix
+    du menu rend le focus à la saisie (`ComposerFocus`). Carte « Tâches proposées » et
+    « Lancer en parallèle… » : même ligne, sans « Juste un avis » ; « Lancer » n'attend plus que
+    la lecture du dossier (ou un commit ouvert). `LaunchDirty.tsx` supprimé (plus d'utilisateur),
+    bloc armé (`useArmedCard`) inutile pour une ligne : les choix sont dans un menu ouvert par
+    l'utilisateur.
+  - **Écarts au plan / à la maquette** : « Juste un avis, en lecture seule » est une entrée du
+    menu (consigne du tech lead) alors que la légende de la maquette B le refusait comme option.
+    Dossier propre : « Changer… » est là aussi (travailler dans son worktree / juste un avis).
+    `ADR-0059` (proposé) remplace en partie l'ADR-0055 (décisions 2 et 3). La maquette de la 260
+    est reformatée par Prettier (sinon `verify` échouait sur `prettier --check`).
+  - **Tests** : `launch-choice.test.ts` ; `RoleComposerUncommitted.test.tsx` réécrit (ligne,
+    Entrée, menu, avis, mémoire par dossier + HEAD, commit, fichiers décochés, dépôt sans commit,
+    hors dépôt, dossier lu à l'Entrée, focus rendu) ; `ChildProposals.test.tsx`,
+    `ChildDialog.test.tsx` ; main : `children-uncommitted.test.ts` (dépôt sans commit : rôle,
+    fille sans rôle, `start_child` ; hors dépôt ; état avec HEAD ; avis explicite),
+    `children-tools.test.ts`, `children.test.ts` (canal). e2e mises à jour :
+    `filles-non-commite` (ligne, Entrée, « Changer… », partie (c) sans commit), `session`,
+    `roles-gestion` ; non lancées (tech lead).
