@@ -128,13 +128,15 @@ describe('HistoryWriter', () => {
     expect(idle).toEqual(['c1'])
 
     store.failing = true
-    writer.transcript('c1', () => fil, true)
+    // Un fil changé (le même objet, déjà sur le disque, n'est plus réécrit : fiche 253).
+    const suite = { ...fil, nextId: 3 }
+    writer.transcript('c1', () => suite, true)
     await writer.settled()
     expect(writer.idle('c1')).toBe(false) // en échec : la mémoire est plus fraîche que le disque
     expect(idle).toEqual(['c1'])
 
     store.failing = false
-    writer.transcript('c1', () => fil, true)
+    writer.transcript('c1', () => suite, true)
     await writer.settled()
     expect(writer.idle('c1')).toBe(true)
     expect(idle).toEqual(['c1', 'c1'])
@@ -345,5 +347,61 @@ describe('HistoryWriter', () => {
     await flushing
     expect(onDisk).toEqual([1, 2])
     vi.restoreAllMocks()
+  })
+
+  describe('en quittant, seuls les fils modifiés sont réécrits (fiche 253)', () => {
+    function counting() {
+      const dir = mkdtempSync(join(tmpdir(), 'writer-'))
+      const store = new ConversationStore(dir)
+      const written: string[] = []
+      const save = store.saveTranscript.bind(store)
+      vi.spyOn(store, 'saveTranscript').mockImplementation((id, transcript) => {
+        written.push(id)
+        save(id, transcript)
+      })
+      const writer = new HistoryWriter({ store, settingsFile: join(dir, 'settings.json') })
+      return { writer, written }
+    }
+
+    it('fil écrit puis inchangé : `flushAll` ne le réécrit pas ; modifié : réécrit', async () => {
+      const { writer, written } = counting()
+      const lu = { ...emptyTranscript, nextId: 2 }
+      let modifie = { ...emptyTranscript, nextId: 3 }
+      writer.transcript('lu', () => lu, true)
+      writer.transcript('modifie', () => modifie, true)
+      await writer.settled()
+      modifie = { ...modifie, nextId: 4 }
+      await writer.flushAll()
+      expect(written).toEqual(['modifie'])
+      vi.restoreAllMocks()
+    })
+
+    it('fil lu du disque, inchangé : pas réécrit à la fermeture (écriture synchrone)', () => {
+      const { writer, written } = counting()
+      const lu = { ...emptyTranscript, nextId: 2 }
+      writer.loaded('c1', lu)
+      writer.transcript('c1', () => lu, true, { sync: true })
+      // Même objet, autre conversation (fil copié) : écrit pour elle.
+      writer.transcript('c2', () => lu, true, { sync: true })
+      expect(written).toEqual(['c2'])
+      vi.restoreAllMocks()
+    })
+
+    it('dernière écriture en échec : réécrit même inchangé', async () => {
+      const { writer, written } = counting()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const fil = { ...emptyTranscript, nextId: 2 }
+      writer.loaded('c1', fil)
+      const store = (writer as unknown as { options: { store: ConversationStore } }).options.store
+      vi.spyOn(store, 'saveTranscriptAsync').mockRejectedValueOnce(new Error('disque plein'))
+      const suivant = { ...fil, nextId: 3 }
+      writer.transcript('c1', () => suivant, true)
+      await writer.settled()
+      expect(writer.unsavedIds()).toEqual(['c1'])
+      await writer.flushAll()
+      expect(written).toEqual(['c1'])
+      expect(writer.unsavedIds()).toEqual([])
+      vi.restoreAllMocks()
+    })
   })
 })

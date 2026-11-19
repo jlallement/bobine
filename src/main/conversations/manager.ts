@@ -1461,6 +1461,8 @@ export class ConversationManager {
     if (conversation.transcript) return conversation.transcript
     const before = this.store.damaged.length
     const loaded = this.store.loadTranscript(conversation.record.id)
+    // Tel que sur le disque : pas réécrit en quittant s'il ne change pas (fiche 253).
+    if (loaded) this.writer.loaded(conversation.record.id, loaded)
     conversation.transcript = settleTranscript(loaded ?? emptyTranscript)
     // Conversation d'avant la fiche 109 : son résumé vient du fil, à sa première lecture.
     if (this.syncUsage(conversation)) this.emitList()

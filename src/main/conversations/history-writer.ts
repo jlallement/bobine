@@ -49,6 +49,13 @@ export class HistoryWriter {
   private readonly queued = new Map<string, () => TranscriptState | undefined>()
   /** Fils dont la dernière écriture a échoué : la mémoire est plus fraîche que le disque. */
   private readonly unsaved = new Set<string>()
+  /**
+   * Fils tels qu'ils sont sur le disque (lus, ou écrits avec succès) : un fil est immuable, le même
+   * objet n'a rien de neuf à écrire (fiche 253 : avant, chaque fil lu était réécrit en quittant,
+   * en synchrone avec `fsync`). Par fil : un même objet (fil vide, fil copié) peut servir à deux
+   * conversations. Faible : un fil retiré de la mémoire (fiche 046) n'est pas retenu.
+   */
+  private readonly onDisk = new WeakMap<TranscriptState, string>()
   /** Dernière façon de lire chaque fil (avant de quitter : tous écrits, `flushAll`). */
   private readonly readers = new Map<string, () => TranscriptState | undefined>()
   /** Dernière erreur d'écriture d'un fil (disque plein…), pour le dire en quittant. */
@@ -114,6 +121,11 @@ export class HistoryWriter {
     )
   }
 
+  /** Fil lu du disque, tel quel : pas de réécriture tant qu'il ne change pas. */
+  loaded(id: string, transcript: TranscriptState): void {
+    this.onDisk.set(transcript, id)
+  }
+
   /**
    * Conversation supprimée (fiche 196) : plus d'écriture prévue, et la promesse rend la main quand
    * celles déjà en vol sont finies (le fil peut alors partir à la corbeille sans revenir).
@@ -128,8 +140,8 @@ export class HistoryWriter {
   }
 
   /**
-   * Avant de quitter (fiche 197) : chaque fil écrit tout de suite, de façon synchrone ; ceux en
-   * échec restent dans `unsavedIds`.
+   * Avant de quitter (fiche 197) : chaque fil modifié écrit tout de suite, de façon synchrone ;
+   * ceux en échec restent dans `unsavedIds`.
    */
   async flushAll(): Promise<void> {
     this.cancelPending()
@@ -187,14 +199,22 @@ export class HistoryWriter {
     this.queued.delete(id)
     const transcript = read()
     if (!transcript) return
+    // Déjà sur le disque tel quel (et pas en échec depuis) : rien à écrire.
+    if (this.onDisk.get(transcript) === id && !this.unsaved.has(id)) {
+      // Écriture prévue devenue inutile : le fil est à jour, il peut quitter la mémoire (fiche 046).
+      if (this.idle(id)) this.notifyIdle(id)
+      return
+    }
     const generation = (this.generations.get(id) ?? 0) + 1
     this.generations.set(id, generation)
     if (sync) {
       const saved = this.write('transcript', () =>
         this.options.store.saveTranscript(id, transcript)
       )
-      if (saved) this.unsaved.delete(id)
-      else this.unsaved.add(id)
+      if (saved) {
+        this.unsaved.delete(id)
+        this.onDisk.set(transcript, id)
+      } else this.unsaved.add(id)
       return
     }
     this.inFlightById.set(id, (this.inFlightById.get(id) ?? 0) + 1)
@@ -204,7 +224,10 @@ export class HistoryWriter {
         () => {
           this.failing.delete('transcript')
           // Écriture abandonnée (dépassée) : la plus récente dira si le fil est enregistré.
-          if (this.generations.get(id) === generation) this.unsaved.delete(id)
+          if (this.generations.get(id) === generation) {
+            this.unsaved.delete(id)
+            this.onDisk.set(transcript, id)
+          }
         },
         (error: unknown) => {
           this.unsaved.add(id)
@@ -221,9 +244,13 @@ export class HistoryWriter {
           this.queued.delete(id)
           this.writeTranscript(id, next, false)
         }
-        if (this.idle(id)) for (const listener of [...this.idleListeners]) listener(id)
+        if (this.idle(id)) this.notifyIdle(id)
       })
     this.inFlight.add(task)
+  }
+
+  private notifyIdle(id: string): void {
+    for (const listener of [...this.idleListeners]) listener(id)
   }
 
   /** Rend `false` si l'écriture a échoué (déjà journalisé et signalé). */
