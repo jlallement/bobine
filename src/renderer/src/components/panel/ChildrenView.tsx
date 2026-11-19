@@ -52,6 +52,7 @@ export function ChildrenView({
           key={row.child.id}
           row={row}
           merging={merging}
+          items={merge?.items}
           onOpen={onOpen}
           onError={setError}
           // Une relecture ne se fait pas relire ; une fille qui travaille non plus (fiche 177).
@@ -65,12 +66,15 @@ export function ChildrenView({
 function ChildWorktree({
   row: { child, state, report, verdict },
   merging,
+  items,
   onOpen,
   onError,
   onReview
 }: {
   row: ChildRow
   merging: ChildrenMergeState
+  /** Fil de la mère : chaque ligne y lit la dernière fusion qui la touche (fiche 264). */
+  items: readonly TranscriptItem[] | undefined
   onOpen: (id: string) => void
   onError: (message: string | null) => void
   onReview?: (id: string) => void
@@ -96,7 +100,7 @@ function ChildWorktree({
         <span className="subtask-meta">
           {child.branch && <Branch name={child.branch} />}
           {report && <FileStats report={report} />}
-          <MergeOrVerdict {...rowMerge(merging, child.id)} verdict={verdict} />
+          <MergeOrVerdict {...rowMerge(merging, child.id, items)} verdict={verdict} />
         </span>
       </span>
       <Tip label={t(`children.state.${state}`)}>

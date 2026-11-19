@@ -1,4 +1,4 @@
-import { Check, Reply, Send } from 'lucide-react'
+import { Check, Reply, ScanSearch, Send } from 'lucide-react'
 import i18next from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,7 @@ import { invokeRole } from '../../roles/roles-store'
 import { messageTime } from '../../time'
 import type { SubtasksInfo } from './Subtasks'
 import { answerText, answerTitle, relayOf, type WorkState } from './work-card'
+import { WorkMergeButton, type WorkMergeControl } from './WorkMerge'
 
 /**
  * Pied d'une carte-réponse (fiche 263, revue UX) : une seule rangée d'actions alignée à gauche,
@@ -24,7 +25,8 @@ export function WorkFoot({
   info,
   state,
   report,
-  items
+  items,
+  merge
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -32,6 +34,8 @@ export function WorkFoot({
   state: WorkState
   report: Report | undefined
   items: readonly TranscriptItem[]
+  /** Fusion du travail dans sa carte (fiche 264) : « Fusionner dans main ». */
+  merge?: WorkMergeControl
 }) {
   const { t } = useTranslation()
   const relay = relayOf(report, items)
@@ -67,6 +71,7 @@ export function WorkFoot({
               pending={relay?.sent === false}
               agent={agent}
               warn={warn}
+              {...(merge ? { merge } : {})}
             />
           )}
           <button
@@ -90,7 +95,10 @@ export function WorkFoot({
             ? relay.at
               ? t('workCard.relayDoneAt', { agent, time: messageTime(relay.at) })
               : t('workCard.relayDone', { agent })
-            : t(several ? 'workCard.relayPendingLast' : 'workCard.relayPending', { agent })}
+            : card.byAgent
+              ? // Lancé par l'agent : sa réponse lui part à son réveil (fiche 097).
+                t('workCard.relayPendingWake', { agent })
+              : t(several ? 'workCard.relayPendingLast' : 'workCard.relayPending', { agent })}
         </div>
       )}
     </>
@@ -125,7 +133,8 @@ function SettledActions({
   report,
   pending,
   agent,
-  warn
+  warn,
+  merge
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -135,6 +144,7 @@ function SettledActions({
   pending: boolean
   agent: string
   warn: (error: unknown) => void
+  merge?: WorkMergeControl
 }) {
   const { t } = useTranslation()
   // Un geste à la fois : « Appliquer » et « Relancer » attendent l'acquittement (revue QA).
@@ -149,33 +159,41 @@ function SettledActions({
   const onAsk = info?.onAsk
   const answer = report ? answerText(report).trim() : ''
   // Un message attend déjà dans la file de la mère : il emportera la réponse, rien à proposer.
+  // Lancé par l'agent : il la recevra à son réveil (fiche 097).
+  const role = card.role
   const applies =
     state === 'replied' &&
     report?.outcome === 'done' &&
-    card.role.readOnly &&
+    !!role?.readOnly &&
+    !card.byAgent &&
     pending &&
     !!answer &&
     !info?.motherQueued
   const lastAsk = card.steps.findLast((s) => s.kind === 'ask')
-  const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.request.text
+  const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
   const openGit = info?.merge?.openGit
+  const writes = !role?.readOnly && !!child?.branch
+  // « Faire relire » (fiche 177) : un seul point d'entrée, la relecture actuelle (fiche 265 : le
+  // rôle Code reviewer) ; pas pour un relecteur, ni pendant une fusion.
+  const review = info?.onReview
+  const reviewable = writes && state === 'replied' && !child?.reviewOf && !merge?.active
   return (
     <>
-      {applies && onAsk && (
+      {applies && onAsk && role && (
         <button
           type="button"
           className="btn primary small"
           disabled={acting}
-          onClick={() => act(() => onAsk(applyMessage(card.role.label, answer), card.childId))}
+          onClick={() => act(() => onAsk(applyMessage(role.label, answer), card.childId))}
           data-testid="work-apply"
         >
           <Send size={13} aria-hidden />
           {t('workCard.apply', { agent })}
         </button>
       )}
-      {/* Rôle qui écrit : « Faire relire » et « Fusionner dans main » viendront ici (fiche 264). */}
-      {!card.role.readOnly && child?.branch && openGit && (
+      {merge && <WorkMergeButton control={merge} />}
+      {writes && openGit && (
         <button
           type="button"
           className="btn small"
@@ -185,11 +203,23 @@ function SettledActions({
           {t('workCard.changes')}
         </button>
       )}
-      {motherId && (state === 'stopped' || state === 'error' || state === 'silent') && (
+      {reviewable && review && (
         <button
           type="button"
           className="btn small"
-          title={t('workCard.retryLabel', { role: card.role.label })}
+          title={t('workCard.reviewLabel')}
+          onClick={() => review(card.childId)}
+          data-testid="work-review"
+        >
+          <ScanSearch size={13} aria-hidden />
+          {t('workCard.review')}
+        </button>
+      )}
+      {motherId && role && (state === 'stopped' || state === 'error' || state === 'silent') && (
+        <button
+          type="button"
+          className="btn small"
+          title={t('workCard.retryLabel', { role: role.label })}
           disabled={acting}
           onClick={() =>
             act(() => window.api.roles.reply(motherId, { childId: card.childId, text: askText }))
@@ -199,15 +229,18 @@ function SettledActions({
           {t('workCard.retry')}
         </button>
       )}
-      <button
-        type="button"
-        className="btn small"
-        onClick={() => invokeRole(card.role.name, { replyTo: card.childId, role: card.role })}
-        data-testid="work-reply"
-      >
-        <Reply size={13} aria-hidden />
-        {t('workCard.reply', { role: card.role.label })}
-      </button>
+      {/* Sans rôle, pas de jeton pour lui répondre : sa conversation s'ouvre. */}
+      {role && (
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+          data-testid="work-reply"
+        >
+          <Reply size={13} aria-hidden />
+          {t('workCard.reply', { role: role.label })}
+        </button>
+      )}
     </>
   )
 }

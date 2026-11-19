@@ -305,6 +305,31 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
     expect(screen.queryByText('All the child conversations…')).toBeNull()
   })
 
+  it('consigne de conflit d’une fusion : sa provenance, sans « Modifier » (fiche 264)', () => {
+    const onOpenConversation = vi.fn()
+    render(
+      <Transcript
+        items={[
+          {
+            kind: 'user',
+            id: 1,
+            text: 'Resolve the merge conflict…',
+            from: { kind: 'merge', id: 'mere', title: 'Carnet' }
+          }
+        ]}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={{ busy: false, onEdit: noop, onOpenConversation }}
+      />
+    )
+    const origin = screen.getByTestId('message-origin')
+    expect(origin.dataset['origin']).toBe('merge')
+    expect(origin.textContent).toBe('Consigne de la fusion lancée depuis «\u00a0Carnet\u00a0»')
+    fireEvent.click(origin.querySelector('button') ?? document.body)
+    expect(onOpenConversation).toHaveBeenCalledWith('mere')
+    expect(screen.queryByTestId('message-edit')).toBeNull()
+  })
+
   it('compte rendu : la fin de la réponse rendue en Markdown, comme le fil', () => {
     render(
       view([
@@ -372,10 +397,10 @@ describe('propositions de conversations filles (fiche 112)', () => {
     ]
     const before = renders.tools
     render(view(items))
-    const cards = screen.getAllByTestId('proposals')
+    const cards = screen.getAllByTestId('work-group')
     expect(cards).toHaveLength(2)
     expect(cards[0]?.querySelectorAll('[data-testid=proposal-row]')).toHaveLength(2)
-    expect(cards[0]?.textContent).toContain('2 tâches proposées')
+    expect(cards[0]?.textContent).toContain('2 travaux proposés')
     expect(cards[1]?.querySelectorAll('[data-testid=proposal-row]')).toHaveLength(1)
     // Les appels `start_child` reliés sont derrière la carte, pas affichés.
     expect(renders.tools).toBe(before)

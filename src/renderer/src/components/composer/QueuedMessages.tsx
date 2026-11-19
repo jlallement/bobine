@@ -1,5 +1,6 @@
 import { Clock, CornerDownLeft, Paperclip, Pencil, Split, X } from 'lucide-react'
 import type { QueuedMessageView } from '@shared/agent'
+import { originKey } from '@shared/children'
 import { Tip } from '../common/Menus'
 import { useTranslation } from 'react-i18next'
 
@@ -27,7 +28,7 @@ export function QueuedMessages({ items, busy, onSendNow, onEdit, onRemove }: Pro
           {item.from && item.from.kind !== 'wake' && (
             <span className="queued-origin" data-testid="queued-origin">
               <Split size={11} />
-              {t(item.from.kind === 'parent' ? 'children.from.parent' : 'children.from.child', {
+              {t(originKey(item.from), {
                 title: item.from.title
               })}
             </span>

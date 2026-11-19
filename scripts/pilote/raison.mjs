@@ -37,8 +37,10 @@ export const busy = (shot) =>
   ['busy', 'starting'].includes(shot.agent?.dot) ||
   (shot.queued ?? 0) > 0 ||
   !!shot.onboarding?.waiting ||
-  // Un travail confié à un rôle tourne encore (fiche 263) : `attendre` attend sa réponse.
-  (shot.works ?? []).some((w) => w.state === 'running')
+  // Un travail confié à un rôle tourne encore (fiche 263), ou une ligne d'une carte de groupe
+  // (fiche 264) : `attendre` attend sa réponse.
+  (shot.works ?? []).some((w) => w.state === 'running') ||
+  (shot.groups ?? []).some((g) => g.rows.some((r) => r.state === 'running'))
 
 /**
  * Ce qui bouge à l'écran pendant un tour, sans l'horloge du tour (elle avance toute seule) : texte
@@ -57,6 +59,7 @@ export function progressKey(shot) {
     (shot.sidebar ?? []).map((c) => c.code),
     shot.onboarding?.title ?? '',
     (shot.works ?? []).map((w) => `${w.role}:${w.state}`),
+    (shot.groups ?? []).map((g) => [g.counts, g.merge, g.rows.map((r) => r.state + r.merge)]),
     shot.onboarding?.text?.length ?? 0
   ])
 }

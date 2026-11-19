@@ -138,12 +138,18 @@ export class ChildrenMerger {
       .sort((a, b) => rank(a.id) - rank(b.id))
   }
 
-  /** Ce que montre le pied de la carte « Sous-tâches ». */
-  async plan(motherId: string): Promise<ChildrenMergePlan> {
+  /**
+   * Ce que montre le pied d'une carte : « Sous-tâches » (toutes les filles), ou une carte de
+   * groupe ou de travail (fiche 264, `ids`) : seulement ses travaux, leurs recouvrements entre eux,
+   * et le refus d'avance lu depuis le premier d'entre eux. Seules ces branches sont lues.
+   */
+  async plan(motherId: string, ids?: readonly string[]): Promise<ChildrenMergePlan> {
     const attention = this.deps.attention?.() ?? {}
     const candidates: MergeCandidate[] = []
     const targets = new Map<string, CycleTarget>()
+    const wanted = ids && new Set(ids)
     for (const child of this.children(motherId)) {
+      if (wanted && !wanted.has(child.id)) continue
       const target = this.target(child.id)
       if (!target) continue
       targets.set(child.id, target)
@@ -348,9 +354,12 @@ export class ChildrenMerger {
         const base = await this.deps.cycle.baseBranch(target)
         try {
           // La fille résout ; `prompt` rend la main à la fin de son tour (fiche 110).
+          // Sa provenance dite dans le fil du travail (fiche 264) : pas un message de l'utilisateur.
           await this.deps.conversations.prompt(
             row.childId,
-            conflictPrompt(base, target.worktree.branch, outcome.files)
+            conflictPrompt(base, target.worktree.branch, outcome.files),
+            [],
+            { from: { kind: 'merge', id: motherId, title: this.motherTitle(motherId) ?? '' } }
           )
         } catch (error) {
           set({

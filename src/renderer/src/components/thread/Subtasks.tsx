@@ -45,7 +45,8 @@ import {
   type ChildrenMergeActions,
   type ChildrenMergeState
 } from './SubtasksMerge'
-import { planWithout, type MergeRowState } from '@shared/children-merge'
+import { settledMerge, type MergeRowState } from '@shared/children-merge'
+import { lastMergeFor } from '@shared/work-groups'
 import { countText } from '@shared/i18n/format'
 import type { RoleBadge } from '@shared/roles'
 import { RoleAvatar, RoleStack, useRoleStyle } from '../roles/RoleAvatar'
@@ -87,6 +88,8 @@ export interface SubtasksInfo {
    * compte ni ne les fusionne.
    */
   carded?: ReadonlySet<string>
+  /** « Faire relire » d'un travail qui écrit (fiche 264) : la relecture actuelle (fiche 177). */
+  onReview?: (childId: string) => void
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
@@ -146,14 +149,25 @@ export function VerdictBadge({ verdict }: { verdict: ChildVerdict }) {
   )
 }
 
-/** Ce que la fusion dit d'une ligne de fille : son état, et si elle a été nettoyée. */
+/**
+ * Ce que la fusion dit d'une ligne de fille : son état, et si elle a été nettoyée. `items` (vue
+ * « Filles », fiche 264) : chaque carte fusionne ses travaux à part ; la ligne lit la dernière fusion
+ * qui la touche, pas seulement la dernière du fil.
+ */
 export function rowMerge(
   merging: ChildrenMergeState,
-  childId: string
+  childId: string,
+  items?: readonly TranscriptItem[]
 ): { mergeState: MergeRowState | undefined; cleaned: boolean } {
+  const own = items && lastMergeFor(items, [childId])
+  const settled = own && merging.plan ? settledMerge(own, merging.plan.running) : own
+  const { merge: _last, ...rest } = merging
+  const state: ChildrenMergeState = items
+    ? { ...rest, ...(settled ? { merge: settled } : {}) }
+    : merging
   return {
-    mergeState: rowMergeState(merging, childId),
-    cleaned: merging.merge?.rows.find((r) => r.childId === childId)?.cleaned === true
+    mergeState: rowMergeState(state, childId),
+    cleaned: state.merge?.rows.find((r) => r.childId === childId)?.cleaned === true
   }
 }
 
@@ -165,13 +179,18 @@ export function rowMerge(
 export function MergeOrVerdict({
   mergeState,
   cleaned,
-  verdict
+  verdict,
+  works = false
 }: {
   mergeState: MergeRowState | undefined
   cleaned: boolean
   verdict: ChildVerdict | undefined
+  /** Ligne d'une carte de groupe (fiche 264) : textes en « travaux ». */
+  works?: boolean
 }) {
-  if (mergeState) return <MergeRowBadge state={mergeState} {...(cleaned ? { cleaned } : {})} />
+  if (mergeState) {
+    return <MergeRowBadge state={mergeState} works={works} {...(cleaned ? { cleaned } : {})} />
+  }
   return verdict ? <VerdictBadge verdict={verdict} /> : null
 }
 
@@ -346,13 +365,10 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
   ].filter(Boolean)
   const total = digestsTotal(rows.map((r) => r.child.usage))
   const presenting = usePresentation()
-  const merging = useChildrenMerge(info.motherId, info.merge, rows, items)
-  // Le pied ne compte ni ne fusionne que les lignes de la carte (fiche 263).
-  const carded = info.carded
-  const shownMerge = useMemo(
-    () => (merging.plan ? { ...merging, plan: planWithout(merging.plan, carded) } : merging),
-    [merging, carded]
-  )
+  // Le pied ne compte ni ne fusionne que les lignes de la carte (fiches 263, 264) : sans les
+  // travaux rangés dans leur propre carte, le plan est lu pour ces lignes seulement.
+  const ids = info.carded?.size ? rows.map((r) => r.child.id) : undefined
+  const merging = useChildrenMerge(info.motherId, info.merge, rows, items, ids)
   const verdicts = useMemo(() => childRecommendations(items), [items])
   const activity = useChildActivity(rows.map((r) => r.child.id))
   const roles = rows.flatMap((r) => (r.child.role ? [r.child.role] : []))
@@ -436,7 +452,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
       {info.motherId && info.merge && (
         <SubtasksMergeFooter
           motherId={info.motherId}
-          state={shownMerge}
+          state={merging}
           actions={info.merge}
           verdicts={verdicts}
         />

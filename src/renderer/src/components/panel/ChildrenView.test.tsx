@@ -235,6 +235,79 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
     ).toBe('ready')
   })
 
+  it('deux cartes, deux fusions : chaque ligne lit la dernière qui la touche (fiche 264)', async () => {
+    // `b` fusionnée et nettoyée depuis sa carte (plus lue par le main) ; `a` ensuite, depuis une autre.
+    const plan: ChildrenMergePlan = {
+      base: 'main',
+      children: [
+        {
+          id: 'a',
+          title: 'Fille a',
+          branch: 'bobine/a',
+          base: 'main',
+          state: 'merged',
+          files: [],
+          dirty: 0
+        }
+      ],
+      overlaps: [],
+      running: false
+    }
+    const actions = {
+      plan: vi.fn(async () => plan),
+      start: vi.fn(),
+      stop: vi.fn(),
+      commitMain: vi.fn(),
+      abort: vi.fn(),
+      openGit: vi.fn()
+    } satisfies ChildrenMergeActions
+    const merge = (id: number, childId: string, cleaned: boolean): TranscriptItem => ({
+      kind: 'children-merge',
+      id,
+      runId: `run-${childId}`,
+      base: 'main',
+      cleanup: cleaned,
+      status: 'done',
+      startedAt: id,
+      endedAt: id,
+      rows: [
+        {
+          childId,
+          title: `Fille ${childId}`,
+          branch: `bobine/${childId}`,
+          state: 'merged',
+          ...(cleaned ? { cleaned } : {})
+        }
+      ]
+    })
+    const items: TranscriptItem[] = [...MOTHER, merge(7, 'b', true), merge(8, 'a', false)]
+    const children = [summary('a', 'ready'), { ...summary('b', 'ready'), archived: true }]
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="m"
+          workspace="/depot"
+          items={items}
+          childWorktrees={{
+            rows: childRows(children, {}, items),
+            merge: { motherId: 'm', items, actions },
+            onOpen: vi.fn()
+          }}
+        />
+      </Tooltip.Provider>
+    )
+    fireEvent.click(screen.getByTestId('changes-view-children'))
+    const badge = (id: string) =>
+      screen
+        .getAllByTestId('child-worktree')
+        .find((r) => r.dataset.id === id)
+        ?.querySelector('[data-testid=subtask-merge-state]')
+    await waitFor(() => expect(badge('a')?.getAttribute('data-state')).toBe('merged'))
+    // Avant : seule la dernière fusion du fil comptait, `b` restait sans rien.
+    expect(badge('b')?.getAttribute('data-state')).toBe('merged')
+    expect(badge('b')?.textContent).toBe('fusionnée · nettoyée')
+  })
+
   it('fille arrêtée par ■ : « Arrêtée » dans la vue aussi (fiche 258, D4)', () => {
     render(tab([{ ...summary('a', 'ready'), turnStopped: true }]))
     fireEvent.click(screen.getByTestId('changes-view-children'))

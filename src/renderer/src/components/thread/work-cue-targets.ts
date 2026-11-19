@@ -1,9 +1,9 @@
 /**
  * Adaptateur du repère (fiche 261) : un travail délégué est une conversation fille lancée depuis ce
  * fil (`child-started`, fiche 097 ; rôle, fiche 223). Lancé par une bulle « @Rôle … » (fiche 263),
- * sa carte est sa carte-réponse, à place fixe (ancre : son lancement, `workCards`). Sinon (lancé par
- * l'agent, ancienne conversation), sa carte est son dernier compte rendu, ou à défaut sa carte de
- * lancement. Son état vient de la liste des conversations (`childState`).
+ * ou avec une clé de carte (proposition, « Lancer en parallèle… », fiche 264), sa carte est à place
+ * fixe : carte-réponse, ligne de sa carte de groupe, ou carte seule (ancre : son lancement,
+ * `workCards`). Sinon (ancienne conversation), son dernier compte rendu, ou à défaut son lancement. Son état vient de la liste des conversations (`childState`).
  */
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
@@ -27,10 +27,12 @@ export function delegatedWorkTargets(
     else if (item.kind === 'child-report') reports.set(item.childId, item.id)
   }
   const carded = workCards(items)
+  // Ancre de chaque travail rangé : sa carte-réponse, sa ligne de carte de groupe, ou sa carte
+  // seule (fiche 264) ; toujours l'id de son lancement.
   const anchors = new Map(
-    [...carded.byRequest.values()]
-      .flat()
-      .flatMap((card) => (card.anchor === undefined ? [] : [[card.childId, card.anchor] as const]))
+    [...[...carded.byRequest.values()].flat(), ...carded.byCard.values()].flatMap((card) =>
+      card.anchor === undefined ? [] : [[card.childId, card.anchor] as const]
+    )
   )
   return children.flatMap((child) => {
     const launch = launches.get(child.id)

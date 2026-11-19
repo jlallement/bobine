@@ -653,7 +653,7 @@ export interface IpcInvokeContract
    * Fusion de toutes les filles finies depuis la carte « Sous-tâches » (fiche 120) : ce que le pied
    * de carte montre (filles dans l'ordre de lancement, état git, recouvrements, refus).
    */
-  'children:mergePlan': { args: [motherId: string]; result: ChildrenMergePlan }
+  'children:mergePlan': { args: [motherId: string, ids?: string[]]; result: ChildrenMergePlan }
   /**
    * Lance la fusion enchaînée de ces filles dans la base, l'une après l'autre ; son état suit
    * dans le fil de la mère (élément `children-merge`). `cleanup` : « Puis nettoyer ».

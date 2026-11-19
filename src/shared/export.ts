@@ -8,7 +8,7 @@ import type { ConversationSummary } from './agent'
 import { usageSummary } from './app-commands'
 import { noticeText, type TranscriptItem, type TranscriptState } from './transcript'
 import { hasUsage } from './usage'
-import type { MessageOrigin } from './children'
+import { originKey, type MessageOrigin } from './children'
 import { handoverName } from './handover'
 import { shortHash } from './worktree-cycle'
 import { formatCap } from './cost-cap'
@@ -116,7 +116,7 @@ function longFenced(text: string): string[] {
 /** Message d'une autre conversation, ou réveil de la mère (fiche 097) : à la place de « Vous ». */
 function originHeading(from: MessageOrigin): string {
   if (from.kind === 'wake') return t('children.from.wake')
-  const key = from.kind === 'parent' ? 'children.from.parent' : 'children.from.child'
+  const key = originKey(from)
   return t(key, { title: from.title })
 }
 

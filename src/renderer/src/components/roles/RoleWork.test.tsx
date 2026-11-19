@@ -13,10 +13,33 @@ import type { IpcEventContract } from '@shared/ipc'
 import { childProposalSchema, type ChildProposalItem } from '@shared/children'
 import type { RoleSnapshot } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
-import { ChildProposals } from '../thread/ChildProposals'
+import type { ProposalsInfo } from '../thread/ChildProposals'
+import type { RespondElicitation } from '../thread/ElicitationCard'
+import { WorkGroup } from '../thread/WorkGroup'
 import { Transcript } from '../thread/Transcript'
 import { RoleReadOnlyTag, RoleTitleBadge } from './RoleWork'
 import { badgeCompact } from './useCompactBadge'
+
+/** La carte de groupe d'un tour de propositions (fiche 264), telle que le fil la pose. */
+function ProposedWorks({
+  items,
+  info,
+  onRespond
+}: {
+  items: ChildProposalItem[]
+  info: ProposalsInfo
+  onRespond: RespondElicitation
+}) {
+  return (
+    <WorkGroup
+      group={{ at: items[0]?.id ?? 0, rows: items.map((p) => ({ key: p.requestId, proposal: p })) }}
+      items={items}
+      info={undefined}
+      proposals={info}
+      onRespond={onRespond}
+    />
+  )
+}
 
 const render = (ui: ReactNode) => testingRender(ui, { wrapper: Tooltip.Provider })
 
@@ -215,7 +238,7 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
       childFolder: vi.fn().mockResolvedValue({ place: 'worktree', root: '/d', head: 'h' })
     } as unknown as Window['api']['conversations']
     render(
-      <ChildProposals
+      <ProposedWorks
         items={[item(role)]}
         info={{ mother: { ...mother, profileId: motherProfile }, profiles }}
         onRespond={vi.fn()}
@@ -234,8 +257,8 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
     expect(screen.getByTestId('proposal-role-hides').textContent).toContain('fourni')
     // Lecture seule : dans le dossier de la mère, pas un worktree ; l'en-tête le dit aussi.
     expect(screen.getByTestId('proposal-role-where').textContent).toBe('dans ce dossier')
-    expect(screen.getByTestId('proposals').querySelector('.pc-sub')?.textContent).toContain(
-      'lecture seule travaille dans ce dossier'
+    expect(screen.getByTestId('work-group-where').textContent).toBe(
+      'Chaque rôle de conseil lit ce dossier sans rien modifier.'
     )
   })
 
@@ -251,8 +274,8 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
     await show(snapshot({ readOnly: false, hides: undefined }))
     expect(screen.getByTestId('role-writes').textContent).toBe('écrit du code')
     expect(screen.getByTestId('proposal-role-where').textContent).toBe('son worktree')
-    expect(screen.getByTestId('proposals').querySelector('.pc-sub')?.textContent).toContain(
-      'chacune dans son propre worktree'
+    expect(screen.getByTestId('work-group-where').textContent).toContain(
+      'Chaque travail part du dernier commit'
     )
   })
 })

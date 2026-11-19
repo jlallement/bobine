@@ -2,7 +2,30 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import { childProposalSchema, type ChildProposalItem } from '@shared/children'
-import { ChildProposals } from './ChildProposals'
+import type { ProposalsInfo } from './ChildProposals'
+import type { RespondElicitation } from './ElicitationCard'
+import { WorkGroup } from './WorkGroup'
+
+/** La carte de groupe d'un tour de propositions (fiche 264), telle que le fil la pose. */
+function ProposedWorks({
+  items,
+  info,
+  onRespond
+}: {
+  items: ChildProposalItem[]
+  info: ProposalsInfo
+  onRespond: RespondElicitation
+}) {
+  return (
+    <WorkGroup
+      group={{ at: items[0]?.id ?? 0, rows: items.map((p) => ({ key: p.requestId, proposal: p })) }}
+      items={items}
+      info={undefined}
+      proposals={info}
+      onRespond={onRespond}
+    />
+  )
+}
 
 const mother: ConversationSummary = {
   id: 'm',
@@ -69,13 +92,13 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
     } as unknown as Window['api']['conversations']
   })
   const show = async (items: ChildProposalItem[], onRespond = vi.fn()) => {
-    render(<ChildProposals items={items} info={{ mother, profiles }} onRespond={onRespond} />)
+    render(<ProposedWorks items={items} info={{ mother, profiles }} onRespond={onRespond} />)
     // Le modèle de la mère arrive après le premier rendu.
     await act(async () => {})
     return onRespond
   }
   const row = (title: string) =>
-    screen.getByTestId('proposals').querySelector(`[data-title="${title}"]`) as HTMLElement
+    screen.getByTestId('work-group').querySelector(`[data-title="${title}"]`) as HTMLElement
   const click = (title: string, action: string) =>
     fireEvent.click(row(title).querySelector(`[data-testid=proposal-${action}]`) as HTMLElement)
 
@@ -110,7 +133,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
     view.mockReset().mockReturnValue(new Promise((resolve) => (ready = resolve)))
     const onRespond = vi.fn()
     render(
-      <ChildProposals
+      <ProposedWorks
         items={[
           proposal(1, 'Relecture', {
             prompt: {
@@ -194,7 +217,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
   it('profil sans choix de modèle (comme Bob) : aucun champ modèle, rien n’est envoyé', async () => {
     const onRespond = vi.fn()
     render(
-      <ChildProposals
+      <ProposedWorks
         items={[proposal(1, 'Relecture')]}
         info={{ mother, profiles: profiles.map((p) => ({ ...p, childModel: false })) }}
         onRespond={onRespond}
@@ -204,7 +227,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
     expect(view).not.toHaveBeenCalled()
     click('Relecture', 'options')
     expect(screen.queryByTestId('proposal-model')).toBeNull()
-    expect(screen.getByTestId('proposals').textContent).toContain('L’agent choisit son modèle.')
+    expect(screen.getByTestId('work-group').textContent).toContain('L’agent choisit son modèle.')
     click('Relecture', 'start')
     expect(onRespond).toHaveBeenLastCalledWith('r1', {
       action: 'accept',
@@ -214,9 +237,12 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
 
   it('une ligne par proposition, le compte, la consigne dépliable', async () => {
     await show([proposal(1, 'Import CSV'), proposal(2, 'Page d’aide')])
-    const card = screen.getByTestId('proposals')
-    expect(card.textContent).toContain('2 tâches proposées')
-    expect(card.textContent).toContain('2 en attente')
+    const card = screen.getByTestId('work-group')
+    expect(screen.getByTestId('work-group-title').textContent).toBe('2 travaux proposés')
+    expect(card.dataset['stage']).toBe('proposed')
+    expect(screen.getByTestId('work-group-where').textContent).toContain(
+      'Chaque travail part du dernier commit, dans sa branche'
+    )
     expect(screen.getAllByTestId('proposal-row')).toHaveLength(2)
     expect(screen.queryByTestId('proposal-prompt')).toBeNull()
     fireEvent.click(row('Import CSV').querySelector('[data-testid=proposal-title]') as HTMLElement)
@@ -278,10 +304,13 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
       proposal(4, 'Vieille', { state: 'cancel' })
     ])
     const states = screen.getAllByTestId('proposal-state').map((s) => s.textContent)
-    expect(states).toEqual(['Lancée', 'Faite ici', 'Refusée', 'Expirée'])
-    expect(screen.getByTestId('proposals').textContent).toContain(
-      '1 lancée, 1 faite ici, 1 refusée, 1 expirée'
+    expect(states).toEqual(['Lancé', 'Fait ici', 'Refusé', 'Expiré'])
+    // Plus rien à décider : « 4 travaux », et les décisions prises.
+    expect(screen.getByTestId('work-group-title').textContent).toBe('4 travaux')
+    expect(screen.getByTestId('work-group-counts').textContent).toBe(
+      '· 1 lancé, 1 fait ici, 1 refusé, 1 expiré'
     )
+    expect(screen.queryByTestId('work-group-start-all')).toBeNull()
     expect(screen.getAllByTestId('proposal-start')).toHaveLength(1)
     expect(screen.queryByTestId('proposal-here')).toBeNull()
     click('Vieille', 'start')
@@ -294,7 +323,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
 
   it('clavier : ↓ puis Entrée lance la deuxième ligne', async () => {
     const onRespond = await show([proposal(1, 'Un'), proposal(2, 'Deux')])
-    const card = screen.getByTestId('proposals')
+    const card = screen.getByTestId('work-group')
     expect(document.activeElement).toBe(card)
     fireEvent.keyDown(card, { key: 'ArrowDown' })
     fireEvent.keyDown(card, { key: 'Enter' })
@@ -304,7 +333,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
   it('arrivée pendant le tour : sous les lignes affichées, la ligne dépliée ne bouge pas (fiche 124)', async () => {
     const onRespond = vi.fn()
     const { rerender } = render(
-      <ChildProposals
+      <ProposedWorks
         items={[proposal(1, 'Un'), proposal(2, 'Deux')]}
         info={{ mother, profiles }}
         onRespond={onRespond}
@@ -315,10 +344,10 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
     const opened = row('Un')
     const start = opened.querySelector('[data-testid=proposal-start]')
     // Le fil ne défile pas tout seul tant que le pointeur est sur la carte (`useThreadScroll`).
-    expect(screen.getByTestId('proposals').hasAttribute('data-scroll-hold')).toBe(true)
+    expect(screen.getByTestId('work-group').hasAttribute('data-scroll-hold')).toBe(true)
 
     rerender(
-      <ChildProposals
+      <ProposedWorks
         items={[proposal(1, 'Un'), proposal(2, 'Deux'), proposal(3, 'Trois')]}
         info={{ mother, profiles }}
         onRespond={onRespond}
@@ -335,9 +364,9 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
       'Consigne de Un'
     )
     expect(opened.querySelector('[data-testid=proposal-start]')).toBe(start)
-    expect(screen.getByTestId('proposals').querySelector('.proposal-rows')?.firstElementChild).toBe(
-      opened
-    )
+    expect(
+      screen.getByTestId('work-group').querySelector('.work-group-rows')?.firstElementChild
+    ).toBe(opened)
     fireEvent.click(start as HTMLElement)
     expect(onRespond).toHaveBeenLastCalledWith('r1', expect.objectContaining({ action: 'accept' }))
   })
@@ -376,13 +405,13 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
   })
   const show = async (items: ChildProposalItem[]) => {
     const onRespond = vi.fn()
-    render(<ChildProposals items={items} info={{ mother, profiles }} onRespond={onRespond} />)
+    render(<ProposedWorks items={items} info={{ mother, profiles }} onRespond={onRespond} />)
     await act(async () => {})
     return onRespond
   }
   const start = (title: string) =>
     screen
-      .getByTestId('proposals')
+      .getByTestId('work-group')
       .querySelector(`[data-title="${title}"] [data-testid=proposal-start]`) as HTMLButtonElement
   const plain = (text: string | null | undefined) => (text ?? '').replace(/[  ]/g, ' ')
   const openCommit = async () => {
@@ -485,7 +514,7 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
     expect(plain(screen.getByTestId('launch-line').textContent)).toBe(
       'Ce dépôt n’a pas encore de commit : ce travail se fera dans ce dossier, en même temps que l’agent, sans branche ni rien à fusionner'
     )
-    expect(plain(screen.getByTestId('proposals').textContent)).not.toContain('worktree')
+    expect(plain(screen.getByTestId('work-group').textContent)).not.toContain('worktree')
     expect(screen.queryByTestId('launch-line-change')).toBeNull()
     fireEvent.click(start('API'))
     expect(onRespond).toHaveBeenCalledWith('r1', {

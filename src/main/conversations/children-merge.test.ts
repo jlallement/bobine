@@ -60,7 +60,7 @@ async function setup(titles: string[], launchOrder?: number[]) {
     })
   }
   const merges: ChildrenMerge[] = []
-  const prompts: { id: string; text: string }[] = []
+  const prompts: { id: string; text: string; from?: unknown }[] = []
   const left: string[] = []
   const options = {
     /** Ce que fait l'agent de la fille d'une consigne de conflit : réécrit les fichiers. */
@@ -106,8 +106,8 @@ async function setup(titles: string[], launchOrder?: number[]) {
       }
       return true
     },
-    prompt: async (id: string, text: string) => {
-      prompts.push({ id, text })
+    prompt: async (id: string, text: string, _attachments?: unknown, opts?: { from?: unknown }) => {
+      prompts.push({ id, text, ...(opts?.from ? { from: opts.from } : {}) })
       const child = children.find((c) => c.id === id) as Child
       const files = [...text.matchAll(/^- (.+)$/gm)].map((m) => m[1] as string)
       options.resolve(child, files)
@@ -217,6 +217,14 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     env.commit(c, 'c.txt', 'c\n')
     const plan = await env.merger.plan('mere')
     expect(plan.overlaps).toEqual([{ first: 'A', second: 'B', files: ['README.md'] }])
+    // Une carte (fiche 264) : seulement ses travaux, et leurs recouvrements entre eux.
+    const card = await env.merger.plan('mere', ['f1', 'f3'])
+    expect(card.children.map((c) => [c.id, c.state])).toEqual([
+      ['f1', 'ready'],
+      ['f3', 'ready']
+    ])
+    expect(card.overlaps).toEqual([])
+    expect((await env.merger.plan('mere', [])).children).toEqual([])
   })
 
   it('conflit sur la deuxième : la fille le résout, la fusion reprend, la troisième suit', async () => {
@@ -232,6 +240,8 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(env.prompts[0]?.id).toBe('f2')
     expect(env.prompts[0]?.text).toContain(`\`main\` into \`${b.worktree.branch}\``)
     expect(env.prompts[0]?.text).toContain('- README.md')
+    // Sa provenance dite dans le fil du travail (fiche 264) : la fusion lancée depuis la mère.
+    expect(env.prompts[0]?.from).toEqual({ kind: 'merge', id: 'mere', title: 'Mère' })
     const resolving = env.merges.find((m) => m.rows[1]?.state === 'resolving')
     expect(resolving?.rows[1]?.files).toEqual(['README.md'])
     const done = last(env.merges)
@@ -498,8 +508,12 @@ describe('dossier principal non commité (fiche 123)', () => {
 describe('canaux IPC de la fusion des filles (fiche 120)', () => {
   it('arguments vérifiés, indisponible sans le module', async () => {
     const calls: unknown[][] = []
+    const planned: (readonly string[] | undefined)[] = []
     const handlers = childrenMergeHandlers({
-      plan: async (id) => ({ base: id, children: [], overlaps: [], running: false }),
+      plan: async (id, list) => {
+        planned.push(list)
+        return { base: id, children: [], overlaps: [], running: false }
+      },
       start: async (...args) => {
         calls.push(args)
         return {
@@ -519,6 +533,10 @@ describe('canaux IPC de la fusion des filles (fiche 120)', () => {
     })
     expect(await handlers['children:mergePlan']('mere')).toMatchObject({ base: 'mere' })
     expect(() => handlers['children:mergePlan']('')).toThrow('motherId')
+    // Une carte ne lit que ses travaux (fiche 264) : la liste est vérifiée, puis passée.
+    expect(await handlers['children:mergePlan']('mere', ['f1'])).toMatchObject({ base: 'mere' })
+    expect(planned).toEqual([undefined, ['f1']])
+    expect(() => handlers['children:mergePlan']('mere', [3] as unknown as string[])).toThrow('ids')
     expect(() =>
       handlers['children:merge']('mere', [1] as unknown as string[], { cleanup: false })
     ).toThrow('ids')

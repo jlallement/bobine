@@ -475,7 +475,8 @@ export function createApi(
     },
     /** Fusion de toutes les filles finies depuis la carte « Sous-tâches » (fiche 120). */
     children: {
-      mergePlan: (motherId: string) => invoke('children:mergePlan', motherId),
+      mergePlan: (motherId: string, ids?: string[]) =>
+        invoke('children:mergePlan', motherId, ...(ids ? [ids] : [])),
       merge: (motherId: string, ids: string[], options: { cleanup: boolean; stash?: boolean }) =>
         invoke('children:merge', motherId, ids, options),
       mergeStop: (motherId: string) => invoke('children:mergeStop', motherId),

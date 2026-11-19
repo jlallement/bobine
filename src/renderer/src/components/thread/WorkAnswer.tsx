@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronUp, Send } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
@@ -29,18 +29,22 @@ import {
 
 type Report = Extract<TranscriptItem, { kind: 'child-report' }>
 type Ask = Extract<TranscriptItem, { kind: 'role-request' }>
+type Note = Extract<TranscriptItem, { kind: 'child-instruction' }>
 
 /** Réponses et suites du travail, dans l'ordre du fil. */
 export function WorkSteps({
   card,
   child,
   items,
-  state
+  state,
+  agent
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
   items: readonly TranscriptItem[]
   state: WorkState
+  /** Nom de l'agent de la conversation : l'auteur des messages au travail (`message_child`). */
+  agent: string
 }) {
   const current = currentReport(card)
   return (
@@ -48,6 +52,8 @@ export function WorkSteps({
       {card.steps.map((step) =>
         step.kind === 'ask' ? (
           <FollowUp key={step.item.id} item={step.item} />
+        ) : step.kind === 'note' ? (
+          <AgentNote key={step.item.id} item={step.item} agent={agent} />
         ) : (
           <WorkAnswer
             key={step.item.id}
@@ -75,6 +81,26 @@ function FollowUp({ item }: { item: Ask }) {
         <span className="role-request-text">{item.text}</span>
       </div>
     </div>
+  )
+}
+
+/**
+ * Message de l'agent de la conversation à ce travail (`message_child`, fiche 264) : sa seule
+ * mention dans le fil, replié, son texte exact une fois déplié.
+ */
+function AgentNote({ item, agent }: { item: Note; agent: string }) {
+  const { t } = useTranslation()
+  return (
+    <details className="work-agent-note" data-testid="work-note" data-item-id={item.id}>
+      <summary>
+        <Send size={12} aria-hidden />
+        <span>{t('workCard.agentNote', { agent, time: messageTime(item.at) })}</span>
+        <ChevronRight size={13} className="chevron" aria-hidden />
+      </summary>
+      <div className="work-agent-note-text" data-testid="work-note-text">
+        {item.prompt}
+      </div>
+    </details>
   )
 }
 
@@ -128,7 +154,7 @@ function WorkAnswer({
         </div>
       )}
       {report.outcome === 'stopped' && <div className="work-note">{t('workCard.stoppedLine')}</div>}
-      {!card.role.readOnly &&
+      {!card.role?.readOnly &&
         !(current && state === 'running') &&
         (report.branch || report.fileCount > 0) && (
           <div className="work-changes" data-testid="work-changes">

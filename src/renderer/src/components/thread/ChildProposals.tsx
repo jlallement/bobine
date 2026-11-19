@@ -4,10 +4,9 @@ import {
   ChevronRight,
   CornerDownLeft,
   SlidersHorizontal,
-  Split,
   X
 } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
 import {
@@ -17,65 +16,51 @@ import {
   type ChildProposalItem
 } from '@shared/children'
 import { ipcErrorText } from '../../ipc-errors'
-import {
-  ChildOptions,
-  childChoiceRequest,
-  childModelAllowed,
-  useMotherModel,
-  type ChildChoice
-} from '../sidebar/child-options'
+import { ChildOptions, childChoiceRequest, type ChildChoice } from '../sidebar/child-options'
 import type { RespondElicitation } from './ElicitationCard'
 import { RoleAvatar } from '../roles/RoleAvatar'
 import { ProposalRoleMeta } from '../roles/RoleWork'
 import { LaunchDetails, LaunchLine, useLaunchFolder } from './LaunchLine'
 
 /**
- * Carte « Tâches proposées » (fiche 112) : les propositions de conversations filles d'un même tour
- * (`start_child`), une ligne chacune. Lancer (agent et modèle au choix, présélectionnés d'après la
- * proposition de la mère et sa raison, fiche 160), Faire ici, Refuser ; une
- * ligne répondue garde son issue ; une ligne annulée par un redémarrage de l'agent garde
- * « Lancer », qui passe alors par « Lancer en parallèle… ».
+ * Lignes proposées d'une carte de groupe (fiches 112, 264) : les propositions de travaux d'un tour
+ * (`start_child`). Lancer (agent et modèle au choix, présélectionnés d'après la proposition de
+ * l'agent et sa raison, fiche 160), Faire ici, Refuser ; une ligne répondue garde son issue ; une
+ * ligne annulée par un redémarrage de l'agent garde « Lancer », qui passe alors par « Lancer en
+ * parallèle… » (sa clé suit : le travail reste sur sa ligne). La carte elle-même est `WorkGroup`.
  */
 
-/** Ce que la carte sait de la conversation affichée : la mère des filles proposées. */
+/** Ce que la carte sait de la conversation affichée : la mère des travaux proposés. */
 export interface ProposalsInfo {
   mother: ConversationSummary
   profiles: ProfileSummary[]
 }
 
 /** Issue d'une ligne : la décision, ou l'annulation. */
-type Outcome = ChildDecisionAction | 'expired'
+export type Outcome = ChildDecisionAction | 'expired'
 
-function outcomeOf(item: ChildProposalItem): Outcome | undefined {
+export function outcomeOf(item: ChildProposalItem): Outcome | undefined {
   if (item.state === 'pending') return undefined
   if (item.state === 'accept') return parseChildDecision(item.content)?.action ?? 'refuse'
   return item.state === 'cancel' ? 'expired' : 'refuse'
 }
 
-export function ChildProposals({
-  items,
-  info,
-  onRespond
-}: {
-  items: ChildProposalItem[]
-  info?: ProposalsInfo
-  onRespond: RespondElicitation
-}) {
+/** Ligne encore à lancer (en attente, ou expirée) d'un travail qui écrit. */
+const writes = (item: ChildProposalItem) => {
+  const outcome = outcomeOf(item)
+  return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
+}
+
+/**
+ * Où partiront les travaux qui écrivent (fiches 240, 262) : une ligne à lancer qui écrit (pas un
+ * rôle en lecture seule) fait lire le dossier de la mère. Avec du non commité, une ligne discrète
+ * le dit et « Lancer » part sans elles (choix porté par la décision) ; « Changer… » propose de
+ * committer d'abord. Sans commit (ou hors dépôt), les travaux se feront dans ce dossier : rien à
+ * choisir. Rend aussi ce que « Lancer » attend (lecture du dossier, commit en cours).
+ */
+export function useProposalsLaunch(items: readonly ChildProposalItem[], info?: ProposalsInfo) {
   const { t } = useTranslation()
-  const model = useMotherModel(
-    info?.mother.id ?? '',
-    !!info && childModelAllowed(info.profiles, info.mother)
-  )
-  const card = useRef<HTMLDivElement>(null)
-  const pending = items.filter((item) => item.state === 'pending')
-  // Fiches 240 et 262 : une ligne à lancer qui écrit (pas un rôle en lecture seule) fait lire le
-  // dossier de la mère. Avec du non commité, une ligne discrète le dit et « Lancer » part sans
-  // elles (choix porté par la décision) ; « Changer… » propose de committer d'abord. Sans commit
-  // (ou hors dépôt), les travaux se feront dans ce dossier : rien à choisir.
-  const toWorktree = items.some((item) => {
-    const outcome = outcomeOf(item)
-    return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
-  })
+  const toWorktree = items.some(writes)
   const folder = useLaunchFolder(info?.mother.id, !!info && toWorktree)
   const state = folder.state
   const [committing, setCommitting] = useState(false)
@@ -83,151 +68,68 @@ export function ChildProposals({
   // Dossier pas encore lu : « Lancer » attend un instant (un clic rapide partirait sans le choix
   // affiché) ; de même pendant « Committer d'abord ».
   const reading = state === undefined && !!info && toWorktree
-  const held = reading || committing
   const anyway = state?.place === 'worktree' && !!state.dirty
   // Accord de la ligne : les travaux qui écrivent encore à lancer (revue UX).
-  const writers = items.filter((item) => {
-    const outcome = outcomeOf(item)
-    return (!outcome || outcome === 'expired') && !item.prompt.child.role?.readOnly
-  }).length
-  const [focus, setFocus] = useState(0)
-  // La carte prend le focus à l'apparition si elle attend une réponse : on répond sans la souris.
-  const askedAtMount = useRef(pending.length > 0)
-  useEffect(() => {
-    if (askedAtMount.current) card.current?.focus({ preventScroll: true })
-  }, [])
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement
-    if (target.tagName === 'SELECT' || target.tagName === 'INPUT') return
-    if (pending.length === 0) return
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault()
-      setFocus((f) => (f + (event.key === 'ArrowDown' ? 1 : pending.length - 1)) % pending.length)
-    } else if (event.key === 'Enter' && target.tagName !== 'BUTTON') {
-      event.preventDefault()
-      const row = pending[Math.min(focus, pending.length - 1)]
-      if (row) {
-        card.current
-          ?.querySelector<HTMLButtonElement>(
-            `[data-request="${CSS.escape(row.requestId)}"] [data-testid=proposal-start]`
-          )
-          ?.click()
-      }
-    }
+  const writers = items.filter(writes).length
+  const shown =
+    !!state &&
+    !!info &&
+    toWorktree &&
+    (state.place === 'here' || !!state.dirty) &&
+    items.some((item) => {
+      const outcome = outcomeOf(item)
+      return !outcome || outcome === 'expired'
+    })
+  const place =
+    shown && state && info ? (
+      <div className="launch-place" data-testid="proposals-launch-place">
+        <LaunchLine
+          state={state}
+          choice="without"
+          onChoose={() => {}}
+          who={writers > 1 ? 'works' : 'work'}
+          opinion={false}
+          standalone
+          committing={committing}
+          onCommitting={setCommitting}
+          showFiles={showFiles}
+          onShowFiles={setShowFiles}
+        />
+        <LaunchDetails
+          state={state}
+          committing={committing}
+          onCommitting={setCommitting}
+          showFiles={showFiles}
+          onShowFiles={setShowFiles}
+          commit={{
+            conversationId: info.mother.id,
+            confirmLabel: t('launchLine.commitOnly'),
+            run: async (message, files) => {
+              await window.api.conversations.commitForChildren(info.mother.id, {
+                message,
+                files
+              })
+              await folder.read()
+            },
+            // Fiche 244 : des fichiers décochés restent ; « Lancer » part sans eux (dit).
+            onCommitted: () => {}
+          }}
+        />
+      </div>
+    ) : null
+  return {
+    held: reading || committing,
+    heldWhy: (reading ? 'heldReading' : 'heldCommitting') as 'heldReading' | 'heldCommitting',
+    anyway,
+    inFolder: state?.place === 'here',
+    place
   }
-
-  const outcomes = items.map(outcomeOf)
-  const count = (outcome: Outcome | undefined) => outcomes.filter((o) => o === outcome).length
-  const summary = [
-    count('start') && t('children.proposals.started', { count: count('start') }),
-    count('here') && t('children.proposals.here', { count: count('here') }),
-    count('refuse') && t('children.proposals.refused', { count: count('refuse') }),
-    count('expired') && t('children.proposals.expired', { count: count('expired') }),
-    count(undefined) && t('children.proposals.pending', { count: count(undefined) })
-  ].filter(Boolean)
-
-  return (
-    <div
-      className="permission-card proposals"
-      ref={card}
-      tabIndex={-1}
-      onKeyDown={onKeyDown}
-      data-testid="proposals"
-      data-pending={pending.length}
-      // Lignes à lancer : le fil ne défile pas tout seul sous le pointeur (fiche 124) ; les
-      // propositions qui arrivent s'ajoutent en dessous (ordre d'arrivée, clé stable).
-      data-scroll-hold={pending.length > 0 ? '' : undefined}
-    >
-      <div className="pc-head">
-        <Split size={18} className="pc-icon" />
-        <div>
-          <div className="pc-title">
-            {t('children.proposals.title', { count: items.length })}
-            {summary.length > 0 && (
-              <span className="proposals-summary"> · {summary.join(', ')}</span>
-            )}
-          </div>
-          {/* Un rôle en lecture seule travaille dans le dossier de la mère (fiche 223) ; sans
-              commit, tous (fiche 262, dit par la ligne du dossier). */}
-          <div className="pc-sub">
-            {t(
-              state?.place === 'here'
-                ? 'launchLine.proposalsHere'
-                : items.some((item) => item.prompt.child.role?.readOnly)
-                  ? 'roleWork.proposalsWhere'
-                  : 'children.proposals.worktree'
-            )}
-          </div>
-        </div>
-      </div>
-      {state &&
-        info &&
-        toWorktree &&
-        (state.place === 'here' || state.dirty) &&
-        pending.length + count('expired') > 0 && (
-          <div className="launch-place" data-testid="proposals-launch-place">
-            <LaunchLine
-              state={state}
-              choice="without"
-              onChoose={() => {}}
-              who={writers > 1 ? 'works' : 'work'}
-              opinion={false}
-              standalone
-              committing={committing}
-              onCommitting={setCommitting}
-              showFiles={showFiles}
-              onShowFiles={setShowFiles}
-            />
-            <LaunchDetails
-              state={state}
-              committing={committing}
-              onCommitting={setCommitting}
-              showFiles={showFiles}
-              onShowFiles={setShowFiles}
-              commit={{
-                conversationId: info.mother.id,
-                confirmLabel: t('launchLine.commitOnly'),
-                run: async (message, files) => {
-                  await window.api.conversations.commitForChildren(info.mother.id, {
-                    message,
-                    files
-                  })
-                  await folder.read()
-                },
-                // Fiche 244 : des fichiers décochés restent ; « Lancer » part sans eux (dit).
-                onCommitted: () => {}
-              }}
-            />
-          </div>
-        )}
-      <div className="proposal-rows">
-        {items.map((item) => (
-          <ProposalRow
-            key={item.requestId}
-            item={item}
-            held={held && !item.prompt.child.role?.readOnly}
-            heldWhy={reading ? 'heldReading' : 'heldCommitting'}
-            {...(anyway ? { uncommitted: 'anyway' as const } : {})}
-            inFolder={state?.place === 'here'}
-            {...(info ? { info } : {})}
-            model={model}
-            focused={pending.length > 0 && pending[Math.min(focus, pending.length - 1)] === item}
-            onFocus={() => setFocus(Math.max(0, pending.indexOf(item)))}
-            onRespond={onRespond}
-          />
-        ))}
-      </div>
-      {pending.length > 0 && (
-        <div className="pc-actions proposals-foot">
-          <span className="question-hint">{t('children.proposals.hint')}</span>
-        </div>
-      )}
-    </div>
-  )
 }
 
-function ProposalRow({
+/** Ce que « Tout lancer » demande à chaque ligne encore proposée : la lancer, avec son choix. */
+export type StartRegistry = Map<string, () => void>
+
+export function ProposalRow({
   item,
   info,
   model,
@@ -237,8 +139,14 @@ function ProposalRow({
   held,
   heldWhy,
   uncommitted,
-  inFolder
+  inFolder,
+  starts,
+  children
 }: {
+  /** « Tout lancer » (fiche 264) : la ligne y inscrit son lancement tant qu'elle attend. */
+  starts?: StartRegistry
+  /** Travail lancé depuis cette ligne (fiche 264) : remplace l'issue « Lancée ». */
+  children?: ReactNode
   /** Dossier de la mère pas encore lu, ou commit en cours (fiche 262) : « Lancer » attend. */
   held: boolean
   /** Pourquoi « Lancer » attend, dit en infobulle. */
@@ -291,7 +199,8 @@ function ProposalRow({
         text: prompt,
         title,
         ...childChoiceRequest(info.mother, model, choice),
-        ...(uncommitted ? { uncommitted } : {})
+        ...(uncommitted ? { uncommitted } : {}),
+        ...cardOf(item)
       })
     } catch (e) {
       setError(ipcErrorText(e))
@@ -300,6 +209,9 @@ function ProposalRow({
   }
   const canStart = outcome === undefined || (outcome === 'expired' && !!info && !busy)
   const loading = outcome === undefined && suggestion.loading
+  // « Tout lancer » : la même chose que « Lancer » sur cette ligne, avec le choix affiché.
+  const start = () => (outcome === undefined ? decide('start') : void startLater())
+  useStartAll(starts, canStart && !held && !loading ? item.requestId : undefined, start)
   return (
     <div
       className={`proposal-row${focused ? ' focused' : ''}${outcome ? ` ${outcome}` : ''}`}
@@ -329,7 +241,7 @@ function ProposalRow({
             )}
           </span>
         </button>
-        {outcome && <OutcomeBadge outcome={outcome} />}
+        <RowOutcome outcome={outcome}>{children}</RowOutcome>
         <span className="grow" />
         {canStart && (
           <span className="proposal-actions">
@@ -367,7 +279,7 @@ function ProposalRow({
             <button
               type="button"
               className="btn small primary"
-              onClick={() => (outcome === undefined ? decide('start') : void startLater())}
+              onClick={start}
               disabled={busy || loading || held}
               title={
                 held
@@ -392,6 +304,12 @@ function ProposalRow({
           inFolder={inFolder}
         />
       )}
+      {!role && outcome === undefined && (
+        <AgentMeta
+          agent={suggestion.shown ? undefined : chosenProfile?.label}
+          inFolder={inFolder}
+        />
+      )}
       {suggestion.shown && outcome === undefined && (
         <ProposedChoice agent={suggestion.agent} model={suggestion.model} why={suggestion.why} />
       )}
@@ -401,7 +319,7 @@ function ProposalRow({
         </pre>
       )}
       {outcome === 'expired' && info && (
-        <div className="proposal-note">{t('children.proposals.expiredHint')}</div>
+        <div className="proposal-note">{t('workGroup.expiredHint')}</div>
       )}
       {options && outcome === undefined && info && (
         <div className="proposal-options" data-testid="proposal-options-panel">
@@ -420,6 +338,40 @@ function ProposalRow({
           {error}
         </p>
       )}
+    </div>
+  )
+}
+
+/**
+ * « Tout lancer » (fiche 264) : la ligne y inscrit son lancement tant qu'elle peut partir (`key`) ;
+ * réinscrit à chaque rendu, il part avec le choix affiché (agent, modèle).
+ */
+function useStartAll(
+  starts: StartRegistry | undefined,
+  key: string | undefined,
+  start: () => void
+) {
+  useEffect(() => {
+    if (!starts || !key) return
+    starts.set(key, start)
+    return () => {
+      starts.delete(key)
+    }
+  })
+}
+
+/** Sa clé suit une proposition expirée relancée : le travail reste sur sa ligne (fiche 264). */
+const cardOf = (item: ChildProposalItem): { card?: string } =>
+  item.prompt.child.key ? { card: item.prompt.child.key } : {}
+
+/** Ligne sans rôle (fiche 264, maquette D) : « un autre OpenCode · écrit dans sa branche ». */
+function AgentMeta({ agent, inFolder }: { agent: string | undefined; inFolder: boolean }) {
+  const { t } = useTranslation()
+  if (!agent) return null
+  return (
+    <div className="proposal-note" data-testid="proposal-meta">
+      {t('workCard.otherAgent', { agent })} ·{' '}
+      {t(inFolder ? 'workGroup.place.folder' : 'workGroup.place.branch')}
     </div>
   )
 }
@@ -471,6 +423,12 @@ function ProposedChoice({
   )
 }
 
+/** L'issue d'une ligne ; ce que la carte met à sa place (un travail qui démarre) l'emporte. */
+function RowOutcome({ outcome, children }: { outcome: Outcome | undefined; children?: ReactNode }) {
+  if (children) return <>{children}</>
+  return outcome ? <OutcomeBadge outcome={outcome} /> : null
+}
+
 function OutcomeBadge({ outcome }: { outcome: Outcome }) {
   const { t } = useTranslation()
   const icon =
@@ -484,7 +442,7 @@ function OutcomeBadge({ outcome }: { outcome: Outcome }) {
   return (
     <span className={`proposal-state ${outcome}`} data-testid="proposal-state">
       {icon}
-      {t(`children.proposals.state.${outcome}`)}
+      {t(`workGroup.outcome.${outcome}`)}
     </span>
   )
 }

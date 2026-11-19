@@ -39,6 +39,14 @@ const str = (value: unknown, name: string): string => {
   return value
 }
 
+/** Liste d'identifiants de travaux reçue du renderer. */
+const idList = (ids: unknown): string[] => {
+  if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string' && id)) {
+    throw new Error('Paramètre invalide : ids')
+  }
+  return ids as string[]
+}
+
 export function childrenMergeHandlers(
   merger: Pick<ChildrenMerger, 'plan' | 'start' | 'stop' | 'commitMain'> | undefined
 ): Pick<IpcHandlers, ChildrenMergeChannel> {
@@ -47,11 +55,10 @@ export function childrenMergeHandlers(
     return merger
   }
   return {
-    'children:mergePlan': (motherId) => available().plan(str(motherId, 'motherId')),
+    'children:mergePlan': (motherId, ids) =>
+      available().plan(str(motherId, 'motherId'), ids === undefined ? undefined : idList(ids)),
     'children:merge': (motherId, ids, options) => {
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string' && id)) {
-        throw new Error('Paramètre invalide : ids')
-      }
+      idList(ids)
       const set = typeof options === 'object' && options !== null ? options : undefined
       return available().start(
         str(motherId, 'motherId'),

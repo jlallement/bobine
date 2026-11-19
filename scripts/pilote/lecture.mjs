@@ -123,6 +123,25 @@ function readScreen(main) {
     answer: clean($$('[data-testid=work-body]', card).at(-1)?.innerText).slice(0, 300)
   }))
   if (works.length) shot.works = works
+  // Cartes de groupe (fiche 264) : titre, étape, comptes, une ligne par travail (proposé ou lancé,
+  // dans l'ordre), et la fusion (progression, résultat) quand elle est dans la carte.
+  const workGroups = $$('[data-testid=work-group]').map((g) => ({
+    title: text($('[data-testid=work-group-title]', g)),
+    stage: g.dataset.stage ?? '',
+    counts: text($('[data-testid=work-group-counts]', g)).replace(/^·\s*/, ''),
+    rows: $$('[data-testid=work-row], [data-testid=proposal-row]', g).map((r) =>
+      r.dataset.testid === 'work-row'
+        ? {
+            name: text($('[data-testid=work-row-name]', r)),
+            state: r.dataset.state ?? '',
+            merge: text($('[data-testid=subtask-merge-state]', r))
+          }
+        : { name: r.dataset.title ?? '', state: `proposé:${r.dataset.outcome ?? ''}`, merge: '' }
+    ),
+    merge: text($('[data-testid=subtasks-merge-progress], [data-testid=subtasks-merge-result]', g)),
+    buttons: buttons($('.work-group-foot, .work-group-merge', g) ?? document.createElement('i'))
+  }))
+  if (workGroups.length) shot.groups = workGroups
   if (lastUser) shot.lastUser = text(lastUser).slice(0, 120)
 
   const agentMessages = sinceUser($$('.msg-agent'))
@@ -153,17 +172,20 @@ function readScreen(main) {
   // porte que l'aide clavier, et seulement tant qu'une ligne attend) ; elle garde ses lignes
   // décidées (« Lancer » d'une ligne refusée) : elle n'attend que si une ligne est encore en
   // attente (`data-pending`), et ses boutons sont ceux de ces lignes (fiche 248).
+  // Carte de groupe (fiche 264) : ses lignes en attente, puis « Tout lancer » de son pied.
   const actions = (c) =>
-    c.classList.contains('proposals')
+    c.dataset.testid === 'work-group'
       ? Number(c.dataset.pending || 0) > 0
         ? [
-            ...new Set(
-              $$('[data-outcome=pending] .proposal-actions', c).flatMap((row) => buttons(row))
-            )
+            ...new Set([
+              ...$$('[data-outcome=pending] .proposal-actions', c).flatMap((row) => buttons(row)),
+              ...buttons($('.work-group-foot', c) ?? document.createElement('i'))
+            ])
           ]
         : []
       : buttons($('.pc-actions', c) ?? c)
-  shot.cards = $$('.permission-card')
+  shot.cards = $$('.permission-card, [data-testid=work-group]')
+    .filter((c) => !c.matches('[data-testid=work-group][data-pending="0"]'))
     .filter((c) => visible(c) && actions(c).length)
     .map((c) => {
       const type =
@@ -173,13 +195,13 @@ function readScreen(main) {
             ? 'question'
             : c.classList.contains('plan-card')
               ? 'plan'
-              : c.classList.contains('proposals')
+              : c.dataset.testid === 'work-group'
                 ? 'propositions'
                 : 'carte'
       const diff = $('[data-testid=diff-path]', c)
       const card = {
         type,
-        title: text($('.pc-title', c)),
+        title: text($('.pc-title, [data-testid=work-group-title]', c)),
         sub: text($('.pc-sub', c)),
         command: text($('[data-testid=command-text]', c)),
         cwd: clean(

@@ -103,6 +103,11 @@ export interface ChildRequest {
    * complété en place par `start` (l'appelant passe le même objet au rôle suivant).
    */
   ask?: RoleRequest
+  /**
+   * Clé de la carte du travail (fiche 264, `ChildStart.card`) : sa ligne de proposition, ou sa
+   * carte seule (« Lancer en parallèle… »). Absente : pas de carte (bulle, relecture).
+   */
+  card?: string
 }
 
 /** Une fille vue par `child_status`. */
@@ -269,7 +274,7 @@ export class ChildConversations {
         ...(by ? { by } : {}),
         ...(role ? { role: roleBadge(role) } : {}),
         ...this.leftBehind(child.id),
-        ...(ask ? { request: ask.requestId } : {}),
+        ...(ask ? { request: ask.requestId } : request.card ? { card: request.card } : {}),
         at: Date.now()
       }
     })
@@ -590,8 +595,8 @@ export class ChildConversations {
           ...childReport(child, items, end),
           ...(digest ? { usage: digest } : {}),
           ...this.leftBehind(child.id),
-          // Carte-réponse (fiche 263) : la réponse entière, pour un travail lancé par une bulle.
-          ...(!('error' in end) && this.askedByBubble(motherId, child.id) ? keptReply(items) : {})
+          // Carte-réponse (fiches 263, 264) : la réponse entière, pour un travail qui a sa carte.
+          ...(!('error' in end) && this.hasCard(motherId, child.id) ? keptReply(items) : {})
         }
         const mother = conversations.find((c) => c.id === motherId)
         if (mother?.status === 'busy') {
@@ -613,16 +618,17 @@ export class ChildConversations {
   }
 
   /**
-   * Travail lancé par une bulle « @Rôle … » (fiche 263) : son lancement le dit, dans le fil de la
-   * mère. Mère disparue entre-temps : non, sans lever (revue QA).
+   * Travail qui a sa carte-réponse : lancé par une bulle « @Rôle … » (fiche 263) ou avec une clé de
+   * carte (proposition, « Lancer en parallèle… », fiche 264) ; son lancement le dit, dans le fil de
+   * la mère. Mère disparue entre-temps : non, sans lever (revue QA).
    */
-  private askedByBubble(motherId: string, childId: string): boolean {
+  private hasCard(motherId: string, childId: string): boolean {
     if (!this.conversations.state().conversations.some((c) => c.id === motherId)) return false
     try {
       return this.conversations
         .view(motherId)
         .transcript.items.some(
-          (i) => i.kind === 'child-started' && i.childId === childId && !!i.request
+          (i) => i.kind === 'child-started' && i.childId === childId && !!(i.request || i.card)
         )
     } catch {
       return false
@@ -633,7 +639,7 @@ export class ChildConversations {
    * « Répondre à <rôle> » et « Relancer » (fiche 263, décision 2 de la fiche 260) : la bulle de
    * suite dans le fil de la mère (elle s'affiche dans la carte du travail), puis le message à la
    * même conversation, comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la
-   * mère). Seulement un travail lancé par une bulle, d'une mère et d'un travail non archivés. Un
+   * mère). Seulement un travail qui a sa carte (bulle, proposition, fiche 264) et un rôle, d'une mère et d'un travail non archivés. Un
    * travail qui n'a jamais reçu son premier message (démarrage raté) repart comme au lancement :
    * consigne du rôle, lecture seule, travail dans le dossier.
    */
@@ -648,7 +654,7 @@ export class ChildConversations {
       child.startedFrom?.id !== motherId ||
       child.reviewOf ||
       !child.role ||
-      !this.askedByBubble(motherId, childId)
+      !this.hasCard(motherId, childId)
     ) {
       throw new Error(t('workCard.error.gone'))
     }
@@ -895,8 +901,11 @@ export function childHandlers(
   }
   return {
     'conversation:childLaunches': () => available().launchState(),
-    'conversation:startChild': (id, request) =>
-      available().start(idOf(id), parseChildRequest(request)),
+    // Carte du travail (fiche 264) : celle de sa proposition expirée, sinon une carte seule.
+    'conversation:startChild': (id, request) => {
+      const parsed = parseChildRequest(request)
+      return available().start(idOf(id), { ...parsed, card: parsed.card ?? randomUUID() })
+    },
     'conversation:childCapacity': (id) => available().capacity(idOf(id)),
     'conversation:childFolder': async (id) => (await available().folderState(idOf(id))) ?? null,
     'conversation:commitForChildren': (id, request) =>
@@ -917,8 +926,14 @@ function parseCommitRequest(value: unknown): { message: string; files: string[] 
 /* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
 function parseChildRequest(value: unknown): ChildRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { text, title, profileId, model, role, uncommitted } = value as Record<string, unknown>
+  const { text, title, profileId, model, role, uncommitted, card } = value as Record<
+    string,
+    unknown
+  >
   if (typeof text !== 'string') throw new Error('Paramètre invalide : text')
+  if (card !== undefined && (typeof card !== 'string' || !card || card.length > MAX_CARD_KEY)) {
+    throw new Error('Paramètre invalide : card')
+  }
   if (title !== undefined && typeof title !== 'string')
     throw new Error('Paramètre invalide : title')
   if (profileId !== undefined && (typeof profileId !== 'string' || !profileId)) {
@@ -943,6 +958,10 @@ function parseChildRequest(value: unknown): ChildRequest {
       ? { model: { controlId: String(choice.controlId), value: String(choice.value) } }
       : {}),
     ...(typeof role === 'string' ? { role: role.trim() } : {}),
-    ...(uncommitted !== undefined ? { uncommitted: parseUncommittedChoice(uncommitted) } : {})
+    ...(uncommitted !== undefined ? { uncommitted: parseUncommittedChoice(uncommitted) } : {}),
+    ...(typeof card === 'string' ? { card } : {})
   }
 }
+
+/** Clé de carte reçue du renderer : un identifiant, jamais un texte (fiche 264). */
+const MAX_CARD_KEY = 100

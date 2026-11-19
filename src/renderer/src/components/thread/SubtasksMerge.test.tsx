@@ -385,13 +385,12 @@ describe('Recommandations de la mère (fiche 160)', () => {
     candidate('c', 'ready', ['c'])
   ])
 
-  it('dans le fil et sur la ligne ; seule la recommandée part, les autres après confirmation', async () => {
+  it('sur la ligne seulement ; seule la recommandée part, les autres après confirmation', async () => {
     const actions = view([recommend(20, 'a', true), recommend(21, 'b', false)], ready)
     await waitFor(() => screen.getByTestId('subtasks-merge-start'))
-    expect(screen.getAllByTestId('child-recommendation').map((r) => r.textContent)).toEqual([
-      'La mère recommande de fusionner « Fille a » — Relue, tests verts.',
-      'La mère ne recommande pas encore de fusionner « Fille b » — Tests manquants.'
-    ])
+    // Une seule mention (fiche 264) : la pastille de la ligne, sa note en infobulle ; plus de
+    // ligne dans le fil pour une fille qui a sa ligne dans la carte.
+    expect(screen.queryByTestId('child-recommendation')).toBeNull()
     expect(screen.getAllByTestId('subtask-recommendation').map((b) => b.dataset['state'])).toEqual([
       'ready',
       'not-ready'
@@ -454,13 +453,15 @@ describe('travaux d’une bulle « @Rôle … » (fiche 263)', () => {
       icon: 'layout',
       color: 'blue' as const
     }
+    // Le main ne lit que les branches demandées (fiche 264, `plan(motherId, ids)`).
+    const all = [
+      candidate('a', 'ready', ['x.ts']),
+      candidate('b', 'ready', ['y.ts']),
+      candidate('c', 'ready', ['x.ts'])
+    ]
     const actions = {
-      plan: vi.fn(async () =>
-        plan([
-          candidate('a', 'ready', ['x.ts']),
-          candidate('b', 'ready', ['y.ts']),
-          candidate('c', 'ready', ['x.ts'])
-        ])
+      plan: vi.fn(async (_mother: string, ids?: string[]) =>
+        plan(all.filter((c) => !ids || ids.includes(c.id)))
       ),
       start: vi.fn(async () => undefined),
       stop: vi.fn(async () => undefined),
@@ -496,6 +497,7 @@ describe('travaux d’une bulle « @Rôle … » (fiche 263)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge'))
     expect(screen.getAllByTestId('subtask-row').map((r) => r.dataset['id'])).toEqual(['a', 'b'])
+    expect(actions.plan).toHaveBeenCalledWith('mere', ['a', 'b'])
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
     // Le recouvrement avec le travail de la bulle (x.ts) n'est pas dit non plus.
     expect(text('subtasks-merge-summary')).not.toContain('Fille c')

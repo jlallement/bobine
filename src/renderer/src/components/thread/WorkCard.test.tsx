@@ -505,7 +505,11 @@ describe('bulle et carte-réponse (fiche 263)', () => {
   it('rôle qui écrit : branche, fichiers, non commité laissé, « Voir les modifications »', () => {
     fakeAgent()
     const openGit = vi.fn()
-    const merge = { openGit } as unknown as NonNullable<SubtasksInfo['merge']>
+    // Branche lue sans rien de prêt (fiche 264) : pas de « Fusionner dans main ».
+    const plan = vi
+      .fn()
+      .mockResolvedValue({ base: 'main', children: [], overlaps: [], running: false })
+    const merge = { openGit, plan } as unknown as NonNullable<SubtasksInfo['merge']>
     view(
       [
         bubble(1, [{ childId: 'b', role: front }]),
@@ -535,7 +539,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(openGit).toHaveBeenCalledWith('b')
   })
 
-  it('plusieurs rôles : une bulle, deux puces, une carte par rôle dessous, chacune son ancre', () => {
+  it('plusieurs rôles : une bulle, deux puces, puis une carte de groupe sans « proposés » (fiche 264)', () => {
     fakeAgent()
     view(
       [
@@ -555,9 +559,22 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       'ux-ui-expert',
       'front-architect'
     ])
-    const cards = screen.getAllByTestId('work-card')
-    expect(cards.map((c) => c.dataset['role'])).toEqual(['ux-ui-expert', 'front-architect'])
-    expect(cards.map((c) => c.dataset['workAnchor'])).toEqual(['2', '3'])
+    // Décision 5 de la fiche 260 : la même carte de groupe, une ligne par rôle, chacune son ancre.
+    const group = screen.getByTestId('work-group')
+    expect(group.dataset['stage']).toBe('working')
+    expect(within(group).getByTestId('work-group-title').textContent).toBe('2 travaux')
+    expect(within(group).getByTestId('work-group-counts').textContent).toBe('· 2 en cours')
+    expect(within(group).queryByTestId('work-group-start-all')).toBeNull()
+    const rows = within(group).getAllByTestId('work-row')
+    expect(rows.map((r) => r.dataset['role'])).toEqual(['ux-ui-expert', 'front-architect'])
+    expect(rows.map((r) => r.dataset['workAnchor'])).toEqual(['2', '3'])
+    // Repliée, pas de carte-réponse ; dépliée, celle du travail, sans en-tête ni ancre à elle.
+    expect(screen.queryByTestId('work-card')).toBeNull()
+    fireEvent.click(within(rows[1] as HTMLElement).getByTestId('work-row-toggle'))
+    const card = screen.getByTestId('work-card')
+    expect(card.dataset['role']).toBe('front-architect')
+    expect(card.dataset['workAnchor']).toBeUndefined()
+    expect(within(card).queryByTestId('work-state')).toBeNull()
   })
 
   it('un travail lancé par l’agent garde « Sous-tâches » et son compte rendu, sans ceux des bulles', () => {

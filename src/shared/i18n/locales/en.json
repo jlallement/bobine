@@ -3550,7 +3550,8 @@
     "from": {
       "parent": "From the parent conversation “{{title}}”",
       "child": "From the child conversation “{{title}}”",
-      "wake": "All the child conversations have finished: the agent resumes with their reports."
+      "wake": "All the child conversations have finished: the agent resumes with their reports.",
+      "merge": "Instruction from the merge started in “{{title}}”"
     },
     "leftBehind": {
       "tag_one": "Without {{count}} uncommitted change",
@@ -4636,7 +4637,12 @@
     "error": {
       "tooLong": "Message too long (one million characters at most).",
       "gone": "This task no longer exists, or is no longer linked to this conversation."
-    }
+    },
+    "agentNote": "Message from {{agent}} · {{time}}",
+    "relayPendingWake": "Not yet passed to {{agent}} — it will be once all its tasks have finished, or with your next message",
+    "otherAgent": "another {{agent}}",
+    "review": "Get a review",
+    "reviewLabel": "Get a review of this task’s branch"
   },
   "workCue": {
     "replied": "replied",
@@ -5755,5 +5761,132 @@
     "committing": "Will start from your commit, with the files checked below",
     "heldReading": "One moment: reading the folder",
     "heldCommitting": "Finish or cancel the commit above"
+  },
+  "workGroup": {
+    "titleProposed_one": "{{count}} task proposed",
+    "titleProposed_other": "{{count}} tasks proposed",
+    "title_one": "{{count}} task",
+    "title_other": "{{count}} tasks",
+    "by": "by {{agent}}",
+    "count": {
+      "running_one": "{{count}} working",
+      "running_other": "{{count}} working",
+      "waiting_one": "{{count}} waiting for your approval",
+      "waiting_other": "{{count}} waiting for your approval",
+      "done_one": "{{count}} finished",
+      "done_other": "{{count}} finished",
+      "stopped_one": "{{count}} stopped",
+      "stopped_other": "{{count}} stopped",
+      "error_one": "{{count}} failed",
+      "error_other": "{{count}} failed",
+      "starting_one": "{{count}} starting",
+      "starting_other": "{{count}} starting",
+      "here_one": "{{count}} done here",
+      "here_other": "{{count}} done here",
+      "refused_one": "{{count}} declined",
+      "refused_other": "{{count}} declined",
+      "expired_one": "{{count}} expired",
+      "expired_other": "{{count}} expired",
+      "pending_one": "{{count}} pending",
+      "pending_other": "{{count}} pending",
+      "started_one": "{{count}} started",
+      "started_other": "{{count}} started"
+    },
+    "startAll": "Start all",
+    "startAllLabel": "Start every task still proposed, with the agent and model chosen on its row",
+    "whereWorktree": "Each task starts from the last commit, in its own branch; your uncommitted changes stay here.",
+    "whereMixed": "An advisory role reads this folder without changing anything; the other tasks start from the last commit, in their own branch.",
+    "whereReadOnly": "Each advisory role reads this folder without changing anything.",
+    "whereHere": "No commit yet: each task will work in this folder.",
+    "keys": "↑ ↓ to pick a row, Enter to start it",
+    "place": {
+      "readOnly": "read-only",
+      "branch": "writes in its branch",
+      "folder": "writes in this folder"
+    },
+    "row": {
+      "starting": "starting…",
+      "toggle": "Show or hide the response of “{{title}}”",
+      "nothing": "nothing to merge"
+    },
+    "state": {
+      "running": "working",
+      "waiting": "waiting for your approval",
+      "replied": "replied",
+      "silent": "no response",
+      "stopped": "stopped",
+      "error": "failed",
+      "gone": "conversation deleted"
+    },
+    "ready_one": "{{count}} task ready to merge",
+    "ready_other": "{{count}} tasks ready to merge",
+    "merge": {
+      "action_one": "Merge the ready task into {{base}}",
+      "action_other": "Merge the {{count}} ready into {{base}}",
+      "recommended": {
+        "action_one": "Merge the recommended one into {{base}}",
+        "action_other": "Merge the {{count}} recommended into {{base}}",
+        "others_one": "Include the other one…",
+        "others_other": "Include the {{count}} others…",
+        "confirm_one": "The agent does not recommend {{titles}}. Merge anyway?",
+        "confirm_other": "The agent does not recommend {{titles}}. Merge anyway?",
+        "confirmAction_one": "Merge the {{count}} anyway",
+        "confirmAction_other": "Merge the {{count}} anyway",
+        "only_one": "The agent recommends {{titles}}; the other one awaits its opinion.",
+        "only_other": "The agent recommends {{titles}}; the {{count}} others await its opinion.",
+        "none": "The agent does not recommend any task yet."
+      },
+      "progress_one": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
+      "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
+      "result": {
+        "done_one": "{{count}} merged into {{base}} in {{duration}}.",
+        "done_other": "{{count}} merged into {{base}} in {{duration}}.",
+        "stopped_one": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
+        "stopped_other": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
+        "interrupted_one": "Merge interrupted when the app closed: {{count}} merged into {{base}}.",
+        "interrupted_other": "Merge interrupted when the app closed: {{count}} merged into {{base}}."
+      },
+      "row": {
+        "pending": "waiting",
+        "merging": "merging",
+        "resolving": "resolving the conflict",
+        "merged": "merged",
+        "upToDate": "already up to date",
+        "conflict": "conflict",
+        "dirty": "uncommitted",
+        "failed": "failed",
+        "cleaned": "branch deleted"
+      }
+    },
+    "outcome": {
+      "start": "Started",
+      "here": "Done here",
+      "refuse": "Declined",
+      "expired": "Expired"
+    },
+    "expiredHint": "The agent restarted in the meantime: “Start” starts this task like “Start in parallel…”, without waking the agent."
+  },
+  "workMerge": {
+    "action": "Merge into {{base}}",
+    "step": {
+      "merging": "Merging {{branch}} into {{base}}…",
+      "merged": "Merge {{branch}} into {{base}}",
+      "conflict": "Conflict in {{files}}",
+      "resolving": "{{name}} is resolving the conflict…",
+      "pending": "Waiting: another merge goes first."
+    },
+    "state": "merging…",
+    "done": "Merged into {{base}}",
+    "doneCleaned": "Merged into {{base}} · branch deleted",
+    "upToDate": "Already in {{base}}: nothing to merge.",
+    "archived": "Its conversation is archived; “Open its conversation” still shows it.",
+    "cleanupFailed": "The branch could not be deleted: {{error}}",
+    "conflict": "Conflicts remain in {{files}}: the merge stopped.",
+    "failed": "The merge did not go through: {{error}}",
+    "dirty": "Uncommitted changes appeared in its branch: it was not merged.",
+    "stopped": "Merge stopped before this task.",
+    "interrupted": "Merge interrupted when the app closed.",
+    "busy": "Another merge is running here: this task can be merged afterwards.",
+    "stateMerged": "merged · {{time}}"
   }
 }

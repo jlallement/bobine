@@ -3674,7 +3674,8 @@
     "from": {
       "parent": "De la conversation mère « {{title}} »",
       "child": "De la conversation fille « {{title}} »",
-      "wake": "Les conversations filles ont toutes fini : l’agent reprend avec leurs comptes rendus."
+      "wake": "Les conversations filles ont toutes fini : l’agent reprend avec leurs comptes rendus.",
+      "merge": "Consigne de la fusion lancée depuis « {{title}} »"
     },
     "leftBehind": {
       "tag_one": "Sans {{count}} modification non commitée",
@@ -4836,7 +4837,12 @@
     "error": {
       "tooLong": "Message trop long (un million de caractères au plus).",
       "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation."
-    }
+    },
+    "agentNote": "Message de {{agent}} · {{time}}",
+    "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous fini, ou avec votre prochain message",
+    "otherAgent": "un autre {{agent}}",
+    "review": "Faire relire",
+    "reviewLabel": "Faire relire la branche de ce travail"
   },
   "workCue": {
     "replied": "a répondu",
@@ -5983,5 +5989,156 @@
     "committing": "Partira de votre commit, avec les fichiers cochés ci-dessous",
     "heldReading": "Un instant : lecture du dossier",
     "heldCommitting": "Terminez ou annulez le commit ci-dessus"
+  },
+  "workGroup": {
+    "titleProposed_one": "{{count}} travail proposé",
+    "titleProposed_other": "{{count}} travaux proposés",
+    "titleProposed_many": "{{count}} travaux proposés",
+    "title_one": "{{count}} travail",
+    "title_other": "{{count}} travaux",
+    "title_many": "{{count}} travaux",
+    "by": "par {{agent}}",
+    "count": {
+      "running_one": "{{count}} en cours",
+      "running_other": "{{count}} en cours",
+      "running_many": "{{count}} en cours",
+      "waiting_one": "{{count}} attend votre accord",
+      "waiting_other": "{{count}} attendent votre accord",
+      "waiting_many": "{{count}} attendent votre accord",
+      "done_one": "{{count}} fini",
+      "done_other": "{{count}} finis",
+      "done_many": "{{count}} finis",
+      "stopped_one": "{{count}} arrêté",
+      "stopped_other": "{{count}} arrêtés",
+      "stopped_many": "{{count}} arrêtés",
+      "error_one": "{{count}} en erreur",
+      "error_other": "{{count}} en erreur",
+      "error_many": "{{count}} en erreur",
+      "starting_one": "{{count}} démarre",
+      "starting_other": "{{count}} démarrent",
+      "starting_many": "{{count}} démarrent",
+      "here_one": "{{count}} fait ici",
+      "here_other": "{{count}} faits ici",
+      "here_many": "{{count}} faits ici",
+      "refused_one": "{{count}} refusé",
+      "refused_other": "{{count}} refusés",
+      "refused_many": "{{count}} refusés",
+      "expired_one": "{{count}} expiré",
+      "expired_other": "{{count}} expirés",
+      "expired_many": "{{count}} expirés",
+      "pending_one": "{{count}} en attente",
+      "pending_other": "{{count}} en attente",
+      "pending_many": "{{count}} en attente",
+      "started_one": "{{count}} lancé",
+      "started_other": "{{count}} lancés",
+      "started_many": "{{count}} lancés"
+    },
+    "startAll": "Tout lancer",
+    "startAllLabel": "Lancer chaque travail encore proposé, avec l’agent et le modèle choisis sur sa ligne",
+    "whereWorktree": "Chaque travail part du dernier commit, dans sa branche ; vos modifications non commitées restent ici.",
+    "whereMixed": "Un rôle de conseil lit ce dossier sans rien modifier ; les autres travaux partent du dernier commit, dans leur branche.",
+    "whereReadOnly": "Chaque rôle de conseil lit ce dossier sans rien modifier.",
+    "whereHere": "Pas encore de commit : chaque travail se fera dans ce dossier.",
+    "keys": "↑ ↓ pour choisir une ligne, Entrée pour la lancer",
+    "place": {
+      "readOnly": "lecture seule",
+      "branch": "écrit dans sa branche",
+      "folder": "écrit dans ce dossier"
+    },
+    "row": {
+      "starting": "démarre…",
+      "toggle": "Montrer ou cacher la réponse de « {{title}} »",
+      "nothing": "rien à fusionner"
+    },
+    "state": {
+      "running": "en cours",
+      "waiting": "attend votre accord",
+      "replied": "a répondu",
+      "silent": "sans réponse",
+      "stopped": "arrêté",
+      "error": "en erreur",
+      "gone": "conversation supprimée"
+    },
+    "ready_one": "{{count}} travail prêt à fusionner",
+    "ready_other": "{{count}} travaux prêts à fusionner",
+    "ready_many": "{{count}} travaux prêts à fusionner",
+    "merge": {
+      "action_one": "Fusionner le travail prêt dans {{base}}",
+      "action_other": "Fusionner les {{count}} prêts dans {{base}}",
+      "action_many": "Fusionner les {{count}} prêts dans {{base}}",
+      "recommended": {
+        "action_one": "Fusionner le recommandé dans {{base}}",
+        "action_other": "Fusionner les {{count}} recommandés dans {{base}}",
+        "action_many": "Fusionner les {{count}} recommandés dans {{base}}",
+        "others_one": "Inclure l’autre…",
+        "others_other": "Inclure les {{count}} autres…",
+        "others_many": "Inclure les {{count}} autres…",
+        "confirm_one": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
+        "confirm_other": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
+        "confirm_many": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
+        "confirmAction_one": "Fusionner les {{count}} quand même",
+        "confirmAction_other": "Fusionner les {{count}} quand même",
+        "confirmAction_many": "Fusionner les {{count}} quand même",
+        "only_one": "L’agent recommande {{titles}} ; l’autre attend son avis.",
+        "only_other": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
+        "only_many": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
+        "none": "L’agent ne recommande encore aucun travail."
+      },
+      "progress_one": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+      "progress_other": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+      "progress_many": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+      "result": {
+        "done_one": "{{count}} fusionné dans {{base}} en {{duration}}.",
+        "done_other": "{{count}} fusionnés dans {{base}} en {{duration}}.",
+        "done_many": "{{count}} fusionnés dans {{base}} en {{duration}}.",
+        "stopped_one": "Fusion arrêtée : {{count}} fusionné dans {{base}}, les autres restent en attente.",
+        "stopped_other": "Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.",
+        "stopped_many": "Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.",
+        "interrupted_one": "Fusion interrompue par la fermeture de l’app : {{count}} fusionné dans {{base}}.",
+        "interrupted_other": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.",
+        "interrupted_many": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}."
+      },
+      "row": {
+        "pending": "en attente",
+        "merging": "fusion en cours",
+        "resolving": "résout le conflit",
+        "merged": "fusionné",
+        "upToDate": "déjà à jour",
+        "conflict": "conflit",
+        "dirty": "non commité",
+        "failed": "échec",
+        "cleaned": "branche supprimée"
+      }
+    },
+    "outcome": {
+      "start": "Lancé",
+      "here": "Fait ici",
+      "refuse": "Refusé",
+      "expired": "Expiré"
+    },
+    "expiredHint": "L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent."
+  },
+  "workMerge": {
+    "action": "Fusionner dans {{base}}",
+    "step": {
+      "merging": "Fusion de {{branch}} dans {{base}}…",
+      "merged": "Fusion de {{branch}} dans {{base}}",
+      "conflict": "Conflit dans {{files}}",
+      "resolving": "{{name}} résout le conflit…",
+      "pending": "En attente : une autre fusion passe avant."
+    },
+    "state": "fusion…",
+    "done": "Fusionné dans {{base}}",
+    "doneCleaned": "Fusionné dans {{base}} · branche supprimée",
+    "upToDate": "Déjà dans {{base}} : rien à fusionner.",
+    "archived": "Sa conversation est archivée ; « Ouvrir sa conversation » la montre toujours.",
+    "cleanupFailed": "La branche n’a pas pu être supprimée : {{error}}",
+    "conflict": "Il reste des conflits dans {{files}} : la fusion s’est arrêtée.",
+    "failed": "La fusion n’a pas abouti : {{error}}",
+    "dirty": "Des modifications non commitées sont apparues dans sa branche : elle n’a pas été fusionnée.",
+    "stopped": "Fusion arrêtée avant ce travail.",
+    "interrupted": "Fusion interrompue par la fermeture de l’app.",
+    "busy": "Une autre fusion est en cours ici : ce travail pourra être fusionné ensuite.",
+    "stateMerged": "fusionné · {{time}}"
   }
 }

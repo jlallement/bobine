@@ -15,6 +15,7 @@
  * - Les descriptions sont en anglais (ADR-0014) : un modèle ne s'en sert bien que si elles disent
  *   quand s'en servir, et quand ne pas s'en servir.
  */
+import { randomUUID } from 'node:crypto'
 import type { ConversationSummary } from '@shared/agent'
 import {
   clip,
@@ -569,9 +570,11 @@ async function startChild(
   context: ToolContext,
   host: ChildTools,
   asking: Map<string, number>,
-  proposal: ChildProposal
+  proposed: ChildProposal
 ): Promise<ToolResult> {
-  const { title, prompt } = proposal
+  // Clé de la ligne (fiche 264) : le lancement la reprend, la carte de groupe y range le travail.
+  const proposal: ChildProposal = { ...proposed, key: randomUUID() }
+  const { title, prompt, key } = proposal
   const id = context.conversationId
   const blocked = cannotStart(host, id, title, asking.get(id) ?? 0)
   if (blocked) return blocked
@@ -591,7 +594,13 @@ async function startChild(
     launch(
       host,
       id,
-      { title, prompt, ...decision, ...(proposal.role ? { role: proposal.role } : {}) },
+      {
+        title,
+        prompt,
+        ...decision,
+        ...(proposal.role ? { role: proposal.role } : {}),
+        ...(key ? { card: key } : {})
+      },
       asking.get(id) ?? 0,
       await dirtyRead
     )
@@ -663,8 +672,9 @@ async function launch(
     profileId,
     model,
     role,
-    uncommitted
-  }: { title: string; prompt: string; role?: RoleSnapshot } & ChildDecision,
+    uncommitted,
+    card
+  }: { title: string; prompt: string; role?: RoleSnapshot; card?: string } & ChildDecision,
   asking: number,
   /** Non commité de la mère quand la carte a été posée (fiche 240). */
   dirty?: FolderDirty
@@ -681,7 +691,8 @@ async function launch(
         ...(profileId ? { profileId } : {}),
         ...(model ? { model } : {}),
         ...(role ? { roleSnapshot: role } : {}),
-        ...(uncommitted ? { uncommitted } : {})
+        ...(uncommitted ? { uncommitted } : {}),
+        ...(card ? { card } : {})
       },
       'agent'
     )

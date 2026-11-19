@@ -66,12 +66,13 @@ export async function clickLabel(page, label, scope) {
 }
 
 /**
- * Cartes qui attendent une réponse : autorisation, question, plan, propositions (sauf une carte
- * « Tâches proposées » toute décidée), souvenir à retenir ou oublier (fiche 248). Dans une carte
- * « Tâches proposées » à plusieurs lignes en attente, un libellé comme « Lancer » est ambigu :
- * `clickLabel` le dit (cliquer la ligne voulue avec computer use, ou `cliquer` un libellé précis).
+ * Cartes qui attendent une réponse : autorisation, question, plan, propositions (carte de groupe
+ * avec des lignes encore proposées, fiche 264), souvenir à retenir ou oublier (fiche 248). Dans
+ * une carte de groupe à plusieurs lignes en attente, un libellé comme « Lancer » est ambigu :
+ * `clickLabel` le dit (« Tout lancer », computer use, ou `cliquer` un libellé précis).
  */
-export const CARD = '.permission-card:not(.proposals[data-pending="0"]), [data-testid=memory-card]'
+export const CARD =
+  '.permission-card, [data-testid=work-group]:not([data-pending="0"]), [data-testid=memory-card]'
 
 /**
  * Répond à la dernière carte en attente par le libellé d'un de ses boutons. Une carte

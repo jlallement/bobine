@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import { recommendedIds, type ChildVerdict } from '@shared/children'
 import {
-  lastChildrenMerge,
   mergeActive,
   mergeable,
   mergedRows,
@@ -20,6 +19,7 @@ import { currentLocale } from '@shared/i18n/format'
 import { translate } from '@shared/i18n/message'
 import type { TranscriptItem } from '@shared/transcript'
 import type { StashOutcome } from '@shared/worktree-cycle'
+import { lastMergeFor } from '@shared/work-groups'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard, stashSentence } from '../panel/MainDirtyCard'
 
@@ -32,7 +32,8 @@ import { MainDirtyCard, stashSentence } from '../panel/MainDirtyCard'
 
 /** Ce que le pied de carte demande à l'app (main par l'IPC, vue Git d'une fille). */
 export interface ChildrenMergeActions {
-  plan: (motherId: string) => Promise<ChildrenMergePlan>
+  /** `ids` : seulement ces travaux (une carte de groupe ou de travail, fiche 264). */
+  plan: (motherId: string, ids?: string[]) => Promise<ChildrenMergePlan>
   /** `stash` : « Mettre de côté » le dossier principal le temps de la fusion (fiche 123). */
   start: (motherId: string, ids: string[], cleanup: boolean, stash?: true) => Promise<unknown>
   stop: (motherId: string) => Promise<unknown>
@@ -68,14 +69,19 @@ export interface ChildrenMergeState {
 /**
  * Lit les branches des filles quand leur état change, ou celui de la fusion : une fille qui
  * finit, une fusion qui avance. Pas à chaque évènement du fil (la mère qui écrit ne compte pas).
+ * `ids` (fiche 264) : une carte de groupe ou de travail ne lit que ses branches, et ne montre que
+ * la dernière fusion qui touche ses travaux ; absent : toutes (« Sous-tâches »).
  */
 export function useChildrenMerge(
   motherId: string | undefined,
   actions: ChildrenMergeActions | undefined,
   children: readonly { child: ConversationSummary; state: string }[],
-  items: readonly TranscriptItem[]
+  items: readonly TranscriptItem[],
+  ids?: readonly string[]
 ): ChildrenMergeState {
-  const last = useMemo(() => lastChildrenMerge(items), [items])
+  const idsKey = ids?.join(',')
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `idsKey` résume `ids`, recréé à chaque rendu
+  const last = useMemo(() => lastMergeFor(items, ids), [items, idsKey])
   const [read, setRead] = useState<{
     motherId: string
     key: string
@@ -86,12 +92,15 @@ export function useChildrenMerge(
   const key = [
     ...children.map(({ child, state }) => `${child.id}:${state}:${child.branch ?? ''}`),
     last ? `${last.runId}:${last.status}:${last.rows.map((r) => r.state).join(',')}` : '',
+    idsKey ?? '*',
     round
   ].join('|')
   useEffect(() => {
     if (!motherId || !actions) return
+    // Carte sans travail lancé : rien à lire.
+    if (ids && ids.length === 0) return
     let current = true
-    actions.plan(motherId).then(
+    ;(ids ? actions.plan(motherId, [...ids]) : actions.plan(motherId)).then(
       (plan) => current && setRead({ motherId, key, plan }),
       // Branches illisibles : pas de pied de carte.
       () => current && setRead(undefined)
@@ -136,9 +145,66 @@ const ROW_KEYS = {
   failed: 'childrenMerge.row.failed'
 } as const satisfies Record<MergeRowState, string>
 
-/** Pastille de la fusion sur la ligne d'une fille. */
-export function MergeRowBadge({ state, cleaned }: { state: MergeRowState; cleaned?: boolean }) {
+/** Les mêmes, en « travaux » (carte de groupe, fiche 264). */
+const WORK_ROW_KEYS = {
+  pending: 'workGroup.merge.row.pending',
+  merging: 'workGroup.merge.row.merging',
+  resolving: 'workGroup.merge.row.resolving',
+  merged: 'workGroup.merge.row.merged',
+  'up-to-date': 'workGroup.merge.row.upToDate',
+  conflict: 'workGroup.merge.row.conflict',
+  dirty: 'workGroup.merge.row.dirty',
+  failed: 'workGroup.merge.row.failed'
+} as const satisfies Record<MergeRowState, string>
+
+/**
+ * Textes du pied de fusion : ceux de « Sous-tâches » (fiche 120), ou ceux d'une carte de groupe,
+ * en « travaux » (fiche 264). Mêmes variables d'un jeu à l'autre.
+ */
+const TEXTS = {
+  children: {
+    action: 'childrenMerge.action',
+    recommendedAction: 'childrenMerge.recommended.action',
+    others: 'childrenMerge.recommended.others',
+    confirm: 'childrenMerge.recommended.confirm',
+    confirmAction: 'childrenMerge.recommended.confirmAction',
+    only: 'childrenMerge.recommended.only',
+    none: 'childrenMerge.recommended.none',
+    progress: 'childrenMerge.progress',
+    done: 'childrenMerge.result.done',
+    stopped: 'childrenMerge.result.stopped',
+    interrupted: 'childrenMerge.result.interrupted',
+    cleaned: 'childrenMerge.row.cleaned'
+  },
+  works: {
+    action: 'workGroup.merge.action',
+    recommendedAction: 'workGroup.merge.recommended.action',
+    others: 'workGroup.merge.recommended.others',
+    confirm: 'workGroup.merge.recommended.confirm',
+    confirmAction: 'workGroup.merge.recommended.confirmAction',
+    only: 'workGroup.merge.recommended.only',
+    none: 'workGroup.merge.recommended.none',
+    progress: 'workGroup.merge.progress',
+    done: 'workGroup.merge.result.done',
+    stopped: 'workGroup.merge.result.stopped',
+    interrupted: 'workGroup.merge.result.interrupted',
+    cleaned: 'workGroup.merge.row.cleaned'
+  }
+} as const
+type Vocabulary = keyof typeof TEXTS
+
+/** Pastille de la fusion sur la ligne d'une fille (ou d'un travail d'une carte de groupe). */
+export function MergeRowBadge({
+  state,
+  cleaned,
+  works = false
+}: {
+  state: MergeRowState
+  cleaned?: boolean
+  works?: boolean
+}) {
   const { t } = useTranslation()
+  const keys = works ? WORK_ROW_KEYS : ROW_KEYS
   const busy = state === 'merging' || state === 'resolving'
   const Icon = busy ? LoaderCircle : state === 'merged' || state === 'up-to-date' ? Check : null
   const failed = state === 'conflict' || state === 'failed'
@@ -150,8 +216,8 @@ export function MergeRowBadge({ state, cleaned }: { state: MergeRowState; cleane
     >
       {Icon && <Icon size={12} className={busy ? 'spin' : undefined} />}
       {failed && <CircleExclamationPoint size={12} />}
-      {t(ROW_KEYS[state])}
-      {cleaned && ` · ${t('childrenMerge.row.cleaned')}`}
+      {t(keys[state])}
+      {cleaned && ` · ${t(TEXTS[works ? 'works' : 'children'].cleaned)}`}
     </span>
   )
 }
@@ -202,16 +268,21 @@ export function SubtasksMergeFooter({
   motherId,
   state,
   actions,
-  verdicts
+  verdicts,
+  works = false
 }: {
   motherId: string
   state: ChildrenMergeState
   actions: ChildrenMergeActions
   /** Recommandations de la mère (fiche 160). */
   verdicts?: ReadonlyMap<string, ChildVerdict>
+  /** Pied d'une carte de groupe (fiche 264) : ses textes, en « travaux ». */
+  works?: boolean
 }) {
   const { t } = useTranslation()
   const titles = useTitles()
+  const vocabulary: Vocabulary = works ? 'works' : 'children'
+  const texts = TEXTS[vocabulary]
   const [cleanup, setCleanup] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -236,7 +307,11 @@ export function SubtasksMergeFooter({
 
   if (merge && mergeActive(merge)) {
     return (
-      <MergeProgress merge={merge} onStop={() => void run(() => actions.stop(motherId))}>
+      <MergeProgress
+        merge={merge}
+        vocabulary={vocabulary}
+        onStop={() => void run(() => actions.stop(motherId))}
+      >
         {errorLine}
       </MergeProgress>
     )
@@ -266,7 +341,12 @@ export function SubtasksMergeFooter({
   return (
     <div className="subtasks-merge" data-testid="subtasks-merge">
       {merge && (
-        <MergeResult merge={merge} conflict={live ? conflictRow : undefined} titles={titles} />
+        <MergeResult
+          merge={merge}
+          conflict={live ? conflictRow : undefined}
+          titles={titles}
+          vocabulary={vocabulary}
+        />
       )}
       {live && conflictRow ? (
         <div className="subtasks-merge-actions">
@@ -304,9 +384,9 @@ export function SubtasksMergeFooter({
             {advised && (
               <div className="subtasks-merge-text" data-testid="subtasks-merge-advice">
                 {ids.length === 0
-                  ? t('childrenMerge.recommended.none')
+                  ? t(texts.none)
                   : others.length > 0 &&
-                    t('childrenMerge.recommended.only', {
+                    t(texts.only, {
                       count: others.length,
                       titles: titles(ready.filter((c) => ids.includes(c.id)).map((c) => c.title))
                     })}
@@ -334,6 +414,7 @@ export function SubtasksMergeFooter({
             ) : (
               <MergeButtons
                 base={plan.base}
+                vocabulary={vocabulary}
                 ids={ids}
                 others={others}
                 advised={advised}
@@ -358,6 +439,7 @@ export function SubtasksMergeFooter({
  */
 function MergeButtons({
   base,
+  vocabulary,
   ids,
   others,
   advised,
@@ -367,6 +449,7 @@ function MergeButtons({
   children
 }: {
   base: string
+  vocabulary: Vocabulary
   ids: string[]
   others: MergeCandidate[]
   advised: boolean
@@ -376,13 +459,14 @@ function MergeButtons({
   children: React.ReactNode
 }) {
   const { t } = useTranslation()
+  const texts = TEXTS[vocabulary]
   const [confirming, setConfirming] = useState(false)
   if (confirming && others.length > 0) {
     const all = [...ids, ...others.map((c) => c.id)]
     return (
       <div className="subtasks-merge-confirm" data-testid="subtasks-merge-confirm">
         <span className="subtasks-merge-text">
-          {t('childrenMerge.recommended.confirm', {
+          {t(texts.confirm, {
             count: others.length,
             titles: titles(others.map((c) => c.title))
           })}
@@ -405,7 +489,7 @@ function MergeButtons({
             data-testid="subtasks-merge-confirm-go"
           >
             <GitMerge size={13} />
-            {t('childrenMerge.recommended.confirmAction', { count: all.length })}
+            {t(texts.confirmAction, { count: all.length })}
           </button>
           {children}
         </div>
@@ -421,7 +505,7 @@ function MergeButtons({
           onClick={() => setConfirming(true)}
           data-testid="subtasks-merge-others"
         >
-          {t('childrenMerge.recommended.others', { count: others.length })}
+          {t(texts.others, { count: others.length })}
         </button>
       )}
       {(!advised || ids.length > 0) && (
@@ -433,8 +517,8 @@ function MergeButtons({
         >
           <GitMerge size={13} />
           {advised
-            ? t('childrenMerge.recommended.action', { count: ids.length, base })
-            : t('childrenMerge.action', { count: ids.length, base })}
+            ? t(texts.recommendedAction, { count: ids.length, base })
+            : t(texts.action, { count: ids.length, base })}
         </button>
       )}
       {children}
@@ -444,10 +528,12 @@ function MergeButtons({
 
 function MergeProgress({
   merge,
+  vocabulary,
   onStop,
   children
 }: {
   merge: ChildrenMerge
+  vocabulary: Vocabulary
   onStop: () => void
   children?: React.ReactNode
 }) {
@@ -461,7 +547,7 @@ function MergeProgress({
       <div className="subtasks-merge-text" data-testid="subtasks-merge-progress">
         {stopping
           ? t('childrenMerge.stopping')
-          : t('childrenMerge.progress', {
+          : t(TEXTS[vocabulary].progress, {
               count: done,
               total: merge.rows.length,
               base: merge.base
@@ -491,13 +577,16 @@ function MergeProgress({
 function MergeResult({
   merge,
   conflict,
-  titles
+  titles,
+  vocabulary
 }: {
   merge: ChildrenMerge & { interrupted?: true }
   conflict: ChildrenMergeRow | undefined
   titles: (list: readonly string[]) => string
+  vocabulary: Vocabulary
 }) {
   const { t } = useTranslation()
+  const texts = TEXTS[vocabulary]
   const duration = useDuration()
   const merged = merge.rows.filter((r) => r.state === 'merged').length
   const upToDate = merge.rows.filter((r) => r.state === 'up-to-date').length
@@ -517,7 +606,7 @@ function MergeResult({
     )
   } else if (merge.status === 'done') {
     sentences.push(
-      t('childrenMerge.result.done', {
+      t(texts.done, {
         count: merged,
         base: merge.base,
         duration: duration((merge.endedAt ?? merge.startedAt) - merge.startedAt)
@@ -525,7 +614,7 @@ function MergeResult({
     )
   } else {
     sentences.push(
-      t(merge.interrupted ? 'childrenMerge.result.interrupted' : 'childrenMerge.result.stopped', {
+      t(merge.interrupted ? texts.interrupted : texts.stopped, {
         count: merged,
         base: merge.base
       })

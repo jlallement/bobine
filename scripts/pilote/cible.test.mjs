@@ -13,7 +13,7 @@ import { answerCard, sendMessage } from './actions.mjs'
 import { connect } from './cdp.mjs'
 import { formatState } from './etat.mjs'
 import { READ_SCREEN } from './lecture.mjs'
-import { pendingReason, Watcher } from './raison.mjs'
+import { busy, pendingReason, Watcher } from './raison.mjs'
 
 const PORT = 9399
 const MAIN_URL =
@@ -259,13 +259,14 @@ describe('cartes en attente (fiche 248)', () => {
     <div class="memory-body">Conventional Commits, en anglais.</div>
     <div class="memory-card-actions"><button data-testid="memory-accept">Retenir</button><button data-testid="memory-decline">Non</button></div>
   </div>`
+  // Carte de groupe (fiche 264) : ses lignes proposées, « Tout lancer » au pied tant qu'une attend.
   const proposals = (
     pending,
     rows
-  ) => `<div class="permission-card proposals" data-testid="proposals" data-pending="${pending}">
-    <div class="pc-head"><div class="pc-title">3 tâches proposées<span class="proposals-summary"> · ${pending ? `${pending} en attente` : '2 lancées, 1 faite ici'}</span></div></div>
-    <div class="proposal-rows">${rows}</div>
-    ${pending ? '<div class="pc-actions proposals-foot"><span class="question-hint">↑ ↓ pour choisir une ligne, Entrée pour la lancer</span></div>' : ''}</div>`
+  ) => `<div class="work-group" data-testid="work-group" data-pending="${pending}" data-stage="${pending ? 'proposed' : 'decided'}">
+    <div class="work-group-head"><strong data-testid="work-group-title">${pending ? '3 travaux proposés' : '3 travaux'}</strong>${pending ? '' : '<span data-testid="work-group-counts">· 2 lancés, 1 fait ici</span>'}</div>
+    <div class="work-group-rows">${rows}</div>
+    ${pending ? '<div class="work-group-foot"><span class="work-group-note">Chaque travail part du dernier commit.</span><button data-testid="work-group-start-all">Tout lancer</button></div>' : ''}</div>`
   const decidedRow = `<div class="proposal-row started" data-testid="proposal-row" data-outcome="start"><button class="proposal-title">API</button><span class="proposal-actions"><button data-testid="proposal-start">Lancer</button></span></div>`
   const pendingRow = `<div class="proposal-row" data-testid="proposal-row" data-outcome="pending"><button class="proposal-title">Web</button><span class="proposal-actions"><button data-testid="proposal-refuse">Refuser</button><button data-testid="proposal-here">Faire ici</button><button data-testid="proposal-start">Lancer</button></span></div>`
 
@@ -292,7 +293,7 @@ describe('cartes en attente (fiche 248)', () => {
     expect(decided.cards).toEqual([])
   })
 
-  it('« Tâches proposées » toute traitée : pas en attente, même avec son bouton « Lancer »', () => {
+  it('carte de groupe toute décidée : pas en attente, même avec son bouton « Lancer »', () => {
     const done = read(proposals(0, decidedRow + decidedRow))
     expect(done.cards).toEqual([])
     expect(pendingReason(done, read(''))).toBeUndefined()
@@ -316,19 +317,48 @@ describe('cartes en attente (fiche 248)', () => {
     ])
   })
 
-  it('« Tâches proposées » en attente : une carte, avec les boutons de la ligne en attente', () => {
-    // Le pied de la carte ne porte que l'aide clavier : les boutons sont sur les lignes.
+  it('carte de groupe en attente : une carte, les boutons de la ligne en attente et « Tout lancer »', () => {
     const waiting = read(proposals(1, decidedRow + pendingRow))
     expect(waiting.cards).toEqual([
       expect.objectContaining({
         type: 'propositions',
-        buttons: ['Refuser', 'Faire ici', 'Lancer']
+        title: '3 travaux proposés',
+        buttons: ['Refuser', 'Faire ici', 'Lancer', 'Tout lancer']
       })
     ])
     expect(pendingReason(waiting, read(''))?.code).toBe('carte')
   })
 
-  it('repondre vise la carte en attente, pas une carte « Tâches proposées » traitée plus bas', async () => {
+  it('carte de groupe (fiche 264) : lignes, état, fusion ; une ligne en cours fait attendre', () => {
+    const shot =
+      read(`<div data-testid="thread"><div class="work-group" data-testid="work-group" data-pending="0" data-stage="working">
+      <div class="work-group-head"><strong data-testid="work-group-title">2 travaux</strong><span data-testid="work-group-counts">· 1 en cours, 1 fini</span></div>
+      <div class="work-group-rows">
+        <div data-testid="work-row" data-state="running"><span data-testid="work-row-name">Expert UX/UI — Relire</span></div>
+        <div data-testid="work-row" data-state="replied"><span data-testid="work-row-name">API</span><span data-testid="subtask-merge-state">fusionné</span></div>
+      </div>
+      <div class="work-group-merge"><div data-testid="subtasks-merge-result">1 fusionné dans main en 3 s.</div></div>
+    </div></div>`)
+    expect(shot.groups).toEqual([
+      {
+        title: '2 travaux',
+        stage: 'working',
+        counts: '1 en cours, 1 fini',
+        rows: [
+          { name: 'Expert UX/UI — Relire', state: 'running', merge: '' },
+          { name: 'API', state: 'replied', merge: 'fusionné' }
+        ],
+        merge: '1 fusionné dans main en 3 s.',
+        buttons: []
+      }
+    ])
+    expect(shot.cards).toEqual([])
+    expect(busy(shot)).toBe(true)
+    expect(formatState(shot)).toContain('Carte de groupe : 2 travaux · 1 en cours, 1 fini')
+    expect(formatState(shot)).toContain('  Fusion : 1 fusionné dans main en 3 s.')
+  })
+
+  it('repondre vise la carte en attente, pas une carte de groupe décidée plus bas', async () => {
     const dom = makeDom(`<div id="root">${memoryCard}${proposals(0, decidedRow)}</div>`, MAIN_URL, {
       api: true
     })

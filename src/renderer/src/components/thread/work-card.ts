@@ -61,7 +61,7 @@ export function workState(
     if (report) return outcomeState(report)
     if (state === 'error' || state === 'stopped') return state
     const last = card.steps.at(-1)
-    const asked = last?.kind === 'ask' ? last.item.at : card.request.at
+    const asked = last?.kind === 'ask' ? last.item.at : card.askedAt
     if (now - asked < SENDING_GRACE_MS) return 'running'
     // Au repos sans réponse posée : retenue pendant que la mère répond, ou jamais venue.
     return context.motherBusy ? 'pending' : 'silent'
@@ -77,7 +77,7 @@ function outcomeState(report: Report): WorkState {
 /** Heure de la demande en cours : la dernière bulle de suite, sinon celle qui a lancé le travail. */
 export function exchangeStart(card: WorkCardData): number {
   const ask = card.steps.findLast((s) => s.kind === 'ask')
-  return ask?.kind === 'ask' ? ask.item.at : card.request.at
+  return ask?.kind === 'ask' ? ask.item.at : card.askedAt
 }
 
 /**
@@ -139,7 +139,7 @@ export function answerText(report: Report): string {
 export function stepStart(card: WorkCardData, report: Report): number {
   const index = card.steps.findIndex((s) => s.kind === 'report' && s.item.id === report.id)
   const ask = card.steps.slice(0, Math.max(0, index)).findLast((s) => s.kind === 'ask')
-  return ask?.kind === 'ask' ? ask.item.at : card.request.at
+  return ask?.kind === 'ask' ? ask.item.at : card.askedAt
 }
 
 /** La réponse d'avant celle-ci, dans la carte (son coût cumulé se retranche). */

@@ -196,8 +196,13 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
   it('start_child : carte de propositions, puis la fille, lancée par l’agent', async () => {
     const s = setup()
     const result = await s.tool('start_child').call({ title: 'Page d’aide', prompt: 'Écris-la' })
-    expect(s.asked).toEqual([{ title: 'Page d’aide', prompt: 'Écris-la' }])
-    expect(s.calls).toEqual([['start', 'm', { text: 'Écris-la', title: 'Page d’aide' }, 'agent']])
+    // La proposition porte une clé (fiche 264), reprise par le lancement : sa ligne de carte.
+    const key = s.asked[0]?.key
+    expect(key).toMatch(/^[0-9a-f-]{36}$/)
+    expect(s.asked).toEqual([{ title: 'Page d’aide', prompt: 'Écris-la', key }])
+    expect(s.calls).toEqual([
+      ['start', 'm', { text: 'Écris-la', title: 'Page d’aide', card: key }, 'agent']
+    ])
     expect(textOf(result)).toContain('started (id: f3, branch: bobine/x)')
     expect(textOf(result)).toContain('you will be woken up')
   })
@@ -215,7 +220,8 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
           text: 'Relis',
           title: 'Relecture',
           profileId: 'opencode',
-          model: { controlId: 'model', value: 'q' }
+          model: { controlId: 'model', value: 'q' },
+          card: s.asked[0]?.key
         },
         'agent'
       ]
@@ -288,7 +294,10 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
     expect(textOf(result)).toContain('End your turn now')
     s.late({ action: 'start' })
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(s.calls).toEqual([['start', 'm', { text: 'Écris', title: 'Aide' }, 'agent']])
+    // Tardive, la même clé : le travail va sur la ligne de sa carte (fiche 264).
+    expect(s.calls).toEqual([
+      ['start', 'm', { text: 'Écris', title: 'Aide', card: s.asked[0]?.key }, 'agent']
+    ])
     expect(s.told).toEqual([])
 
     const here = setup({ answer: 'late' })
@@ -342,11 +351,14 @@ describe('outils des conversations filles (fiche 097, étape 2)', () => {
         title: 'Relecture',
         prompt: 'Relis',
         model: { controlId: 'model', value: 'factice-precis' },
-        why: 'relecture fine'
+        why: 'relecture fine',
+        key: s.asked[0]?.key
       }
     ])
     // Le choix de l'utilisateur sur la carte l'emporte (ici, « Lancer » sans changer : rien).
-    expect(s.calls).toEqual([['start', 'm', { text: 'Relis', title: 'Relecture' }, 'agent']])
+    expect(s.calls).toEqual([
+      ['start', 'm', { text: 'Relis', title: 'Relecture', card: s.asked[0]?.key }, 'agent']
+    ])
     const other = setup()
     await other.tool('start_child').call({ title: 'A', prompt: 'B', agent: 'opencode' })
     expect(other.asked[0]).toMatchObject({ profileId: 'opencode' })
@@ -585,9 +597,10 @@ describe('start_child avec un rôle (fiche 223)', () => {
       prompt: 'p',
       scope: 'builtin'
     }
-    expect(s.asked).toEqual([{ title: 'Audit', prompt: 'Audite', role: frozen }])
+    const key = s.asked[0]?.key
+    expect(s.asked).toEqual([{ title: 'Audit', prompt: 'Audite', role: frozen, key }])
     expect(s.calls).toEqual([
-      ['start', 'm', { text: 'Audite', title: 'Audit', roleSnapshot: frozen }, 'agent']
+      ['start', 'm', { text: 'Audite', title: 'Audit', roleSnapshot: frozen, card: key }, 'agent']
     ])
     expect(textOf(result)).toContain('read-only role "security-expert", in this folder')
   })
@@ -648,7 +661,12 @@ describe('start_child et le non commité de la mère (fiche 240)', () => {
     const s = setup({ dirty: DIRTY, answer: { action: 'start', uncommitted: 'anyway' } })
     const result = await s.tool('start_child').call({ title: 'API', prompt: 'Écris l’API' })
     expect(s.calls).toEqual([
-      ['start', 'm', { text: 'Écris l’API', title: 'API', uncommitted: 'anyway' }, 'agent']
+      [
+        'start',
+        'm',
+        { text: 'Écris l’API', title: 'API', uncommitted: 'anyway', card: s.asked[0]?.key },
+        'agent'
+      ]
     ])
     const text = textOf(result)
     expect(text).toContain('this folder has 3 uncommitted change(s) (plan.md, maquettes/b.html')

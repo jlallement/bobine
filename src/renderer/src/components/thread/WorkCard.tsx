@@ -9,9 +9,10 @@ import {
   Pencil,
   TriangleAlert
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
+import { childRecommendations, type ChildVerdict } from '@shared/children'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { messageTime } from '../../time'
@@ -24,8 +25,9 @@ import { RoleMention, WorkSteps } from './WorkAnswer'
 import { WorkFoot } from './WorkFoot'
 import i18next from 'i18next'
 import { MessageTime } from './MessageTime'
-import type { SubtasksInfo } from './Subtasks'
+import { VerdictBadge, type SubtasksInfo } from './Subtasks'
 import { currentReport, exchangeStart, workState, type WorkState } from './work-card'
+import { useWorkMerge, WorkMergeBox, type WorkMergeControl } from './WorkMerge'
 import '../../work-card.css'
 
 /**
@@ -94,7 +96,21 @@ export function RoleRequestBubble({
   )
 }
 
-const AVATAR: Record<WorkState, RoleAvatarState> = {
+/** Avatar d'un travail sans rôle (un autre agent, fiche 264) : l'icône d'un agent, en gris. */
+export const AGENT_BADGE = { icon: 'bot', color: 'graphite' } as const
+
+/** Agent d'un travail sans rôle : celui de sa conversation, sinon celui de la conversation affichée. */
+export function workAgent(
+  child: Pick<ConversationSummary, 'profileId'> | undefined,
+  info: Pick<SubtasksInfo, 'profiles' | 'agentLabel'> | undefined
+): string | undefined {
+  return info?.profiles?.find((p) => p.id === child?.profileId)?.label ?? info?.agentLabel
+}
+
+/** Nom d'un travail : son rôle, sinon son titre. */
+export const workName = (card: WorkCardData): string => card.role?.label ?? card.title
+
+export const AVATAR: Record<WorkState, RoleAvatarState> = {
   running: 'running',
   waiting: 'waiting',
   replied: 'done',
@@ -107,7 +123,7 @@ const AVATAR: Record<WorkState, RoleAvatarState> = {
 }
 
 /** L'heure qui avance pendant qu'un travail travaille (temps écoulé, délai d'un envoi). */
-function useNow(ticking: boolean): number {
+export function useNow(ticking: boolean): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!ticking) return
@@ -128,15 +144,20 @@ export function elapsedText(ms: number): string {
     : `${minutes}:${seconds}`
 }
 
-/** La carte-réponse d'un travail. */
+/**
+ * La carte-réponse d'un travail. `inGroup` : dépliée sur sa ligne d'une carte de groupe (fiche
+ * 264) ; la ligne porte déjà l'en-tête, et le pied du groupe la fusion.
+ */
 export function WorkCard({
   card,
   items,
-  info
+  info,
+  inGroup = false
 }: {
   card: WorkCardData
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
+  inGroup?: boolean
 }) {
   const { t } = useTranslation()
   const child = info?.children.find((c) => c.id === card.childId)
@@ -149,21 +170,37 @@ export function WorkCard({
     ...(info?.motherBusy ? { motherBusy: true } : {})
   })
   if (busy !== (state === 'running')) setBusy(state === 'running')
-  const style = useRoleStyle(card.role.color)
+  const style = useRoleStyle(card.role?.color ?? AGENT_BADGE.color)
   const report = currentReport(card)
+  // Recommandation de fusion de l'agent (fiche 160) : sa seule mention, la pastille (fiche 264).
+  const verdict = useMemo(() => childRecommendations(items).get(card.childId), [items, card])
+  const merge = useWorkMerge(card, child, info, items, !inGroup && state !== 'running')
+  const agent = info?.agentLabel ?? t('workCard.mainAgent')
   return (
     <div
-      className={`work-card${state === 'running' ? ' running' : ''}`}
+      className={`work-card${state === 'running' ? ' running' : ''}${inGroup ? ' in-group' : ''}`}
       style={style}
       data-testid="work-card"
-      data-work-anchor={card.anchor}
+      // Dans un groupe, l'ancre du repère est sur la ligne (fiche 261).
+      data-work-anchor={inGroup ? undefined : card.anchor}
       data-child-id={card.childId}
-      data-role={card.role.name}
+      data-role={card.role?.name}
       data-state={state}
     >
-      <WorkHead card={card} child={child} info={info} state={state} now={now} report={report} />
+      {!inGroup && (
+        <WorkHead
+          card={card}
+          child={child}
+          info={info}
+          state={state}
+          now={now}
+          report={report}
+          verdict={verdict}
+          merge={merge}
+        />
+      )}
       <LeftBehindLine card={card} />
-      <WorkSteps card={card} child={child} items={items} state={state} />
+      <WorkSteps card={card} child={child} items={items} state={state} agent={agent} />
       {(state === 'running' || state === 'waiting') && card.steps.at(-1)?.kind !== 'report' && (
         <WorkLive childId={child?.id} state={state} />
       )}
@@ -178,7 +215,16 @@ export function WorkCard({
             : t('workCard.silentLine')}
         </div>
       )}
-      <WorkFoot card={card} child={child} info={info} state={state} report={report} items={items} />
+      {merge && <WorkMergeBox control={merge} card={card} name={workName(card)} />}
+      <WorkFoot
+        card={card}
+        child={child}
+        info={info}
+        state={state}
+        report={report}
+        items={items}
+        {...(merge ? { merge } : {})}
+      />
     </div>
   )
 }
@@ -189,7 +235,9 @@ function WorkHead({
   info,
   state,
   now,
-  report
+  report,
+  verdict,
+  merge
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -197,16 +245,33 @@ function WorkHead({
   state: WorkState
   now: number
   report: Report | undefined
+  verdict: ChildVerdict | undefined
+  merge: WorkMergeControl | undefined
 }) {
   const { t } = useTranslation()
+  const merged = merge?.row?.state === 'merged' && merge.candidate?.state !== 'ready'
+  const agent = card.role ? undefined : workAgent(child, info)
   return (
     <div className="work-head">
-      <RoleAvatar role={card.role} size={24} state={AVATAR[state]} />
-      <strong className="work-name">{card.role.label}</strong>
+      <RoleAvatar role={card.role ?? AGENT_BADGE} size={24} state={AVATAR[state]} />
+      <strong className="work-name">{workName(card)}</strong>
+      {!card.role && agent && (
+        <span className="work-place" data-testid="work-agent">
+          {t('workCard.otherAgent', { agent })}
+        </span>
+      )}
       <WorkPlace card={card} child={child} info={info} />
+      {verdict && !merge?.row && <VerdictBadge verdict={verdict} />}
       <span className="grow" />
       <span className="work-state" data-testid="work-state" data-state={state}>
-        {state === 'running' ? (
+        {merge?.active ? (
+          <>
+            <LoaderCircle size={13} className="spin" aria-hidden />
+            {t('workMerge.state')}
+          </>
+        ) : merged && merge.state.merge?.endedAt ? (
+          t('workMerge.stateMerged', { time: messageTime(merge.state.merge.endedAt) })
+        ) : state === 'running' ? (
           <>
             <LoaderCircle size={13} className="spin" aria-hidden />
             <span
@@ -241,7 +306,7 @@ function WorkPlace({
   const { t } = useTranslation()
   // Sans sa conversation (fil côte à côte, travail supprimé) : rien plutôt qu'une supposition.
   if (!child) return null
-  if (card.role.readOnly) {
+  if (card.role?.readOnly) {
     const level = childReadOnly(child, info?.profiles ?? [])
     const requested = level === 'requested'
     const tag = (

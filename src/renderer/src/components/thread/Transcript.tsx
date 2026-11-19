@@ -25,7 +25,7 @@ import { planVersions } from '@shared/plan-doc'
 import { groupTools, type ThreadEntry } from '@shared/tool-groups'
 import { noticeText, type TranscriptItem } from '@shared/transcript'
 import { handoverName } from '@shared/handover'
-import { childProposalGroups, type MessageOrigin as MessageOriginType } from '@shared/children'
+import { originKey, type MessageOrigin as MessageOriginType } from '@shared/children'
 import type { TerminalState } from '@shared/terminal-output'
 import { turnTimes } from '@shared/turn-duration'
 import type { ConversationUsage } from '@shared/usage'
@@ -54,9 +54,10 @@ import {
   withoutCards,
   type SubtasksInfo
 } from './Subtasks'
-import { ChildProposals, type ProposalsInfo } from './ChildProposals'
-import { RoleRequestEntry } from './WorkCard'
-import { workCards } from '@shared/role-request'
+import type { ProposalsInfo } from './ChildProposals'
+import { RoleRequestEntry, WorkCard } from './WorkCard'
+import { WorkGroupEntry } from './WorkGroup'
+import { workLayout } from '@shared/work-groups'
 import { useTranslation } from 'react-i18next'
 import { stripAppContext } from '@shared/app-context'
 import { splitRoleBrief } from '@shared/roles'
@@ -219,26 +220,28 @@ export function Transcript({
         : []
     )
   )
-  // Propositions de filles d'un même tour : une carte à la place de la première (fiche 112).
-  const proposed = useMemo(() => childProposalGroups(items), [items])
-  // Cartes-réponses des bulles « @Rôle … » (fiche 263) : ce qu'elles rendent est caché à sa place,
-  // et leurs travaux ne sont pas dans « Sous-tâches ».
-  const cards = useMemo(() => workCards(items), [items])
+  // Travaux confiés (fiches 263, 264) : cartes-réponses des bulles « @Rôle … », cartes de groupe
+  // (propositions d'un tour, bulle à plusieurs rôles), cartes seules ; ce qu'elles rendent est caché
+  // à sa place, et leurs travaux ne sont pas dans « Sous-tâches » (anciennes conversations).
+  const layout = useMemo(() => workLayout(items), [items])
   const listed = useMemo(
-    () => subtasks && withoutCards(subtasks, cards.childIds),
-    [subtasks, cards.childIds]
+    () => subtasks && withoutCards(subtasks, layout.childIds),
+    [subtasks, layout.childIds]
   )
   const shown = items.filter(
     (item) =>
       !(
         item.kind === 'tool' &&
-        (asking.has(item.toolCallId) || proposed.toolCallIds.has(item.toolCallId))
+        (asking.has(item.toolCallId) || layout.toolCallIds.has(item.toolCallId))
       ) &&
       !(item.kind === 'plan' && item.id === hiddenPlanId) &&
-      // Fusion des filles (fiche 120) : montrée par la carte « Sous-tâches », pas à sa place.
+      // Fusion (fiches 120, 264) : montrée par sa carte, pas à sa place.
       item.kind !== 'children-merge' &&
-      !proposed.hidden.has(item.id) &&
-      !cards.hidden.has(item.id)
+      // Recommandation de fusion : la pastille de sa ligne suffit (fiche 264).
+      !(
+        item.kind === 'child-recommendation' && listed?.children.some((c) => c.id === item.childId)
+      ) &&
+      !layout.hidden.has(item.id)
   )
   // Outils consécutifs regroupés (fiche 047), sauf ceux auxquels une carte de plan est rattachée.
   const entries = groupTools(shown, (item) => planAt.has(item.id) || replaced.has(item.id))
@@ -255,7 +258,7 @@ export function Transcript({
   // Carte « Sous-tâches » au dernier lancement d'une fille (fiche 097) ; filles lancées par l'agent,
   // dont les comptes rendus partiront à son réveil.
   const lastLaunch = items.findLast(
-    (i) => i.kind === 'child-started' && !cards.childIds.has(i.childId)
+    (i) => i.kind === 'child-started' && !layout.childIds.has(i.childId)
   )?.id
   const launches = new Map(
     items.flatMap((i) => (i.kind === 'child-started' ? [[i.childId, i] as const] : []))
@@ -288,17 +291,21 @@ export function Transcript({
       />
     )
     if (replaced.has(item.id)) return card ?? null
-    const proposalGroup = proposed.groups.get(item.id)
-    if (proposalGroup) {
+    const group = layout.groups.get(item.id)
+    if (group) {
       return (
-        <ChildProposals
+        <WorkGroupEntry
           key={item.id}
-          items={proposalGroup}
-          {...(proposals ? { info: proposals } : {})}
+          group={group}
+          items={items}
+          info={subtasks}
+          proposals={proposals}
           onRespond={respondElicitation}
         />
       )
     }
+    const solo = layout.solos.get(item.id)
+    if (solo) return <WorkCard key={item.id} card={solo} items={items} info={subtasks} />
     if (item.kind === 'child-instruction') {
       return <ChildInstructionItem key={item.id} item={item} />
     }
@@ -316,7 +323,7 @@ export function Transcript({
       return <ChildRecommendationItem key={item.id} item={item} />
     }
     if (item.kind === 'role-request') {
-      const own = cards.byRequest.get(item.id)
+      const own = layout.cards.byRequest.get(item.id)
       return (
         <RoleRequestEntry key={item.id} item={item} cards={own} items={items} info={subtasks} />
       )
@@ -547,9 +554,7 @@ function MessageOrigin({
   onOpen?: ((id: string) => void) | undefined
 }) {
   const { t } = useTranslation()
-  const label = t(from.kind === 'parent' ? 'children.from.parent' : 'children.from.child', {
-    title: from.title
-  })
+  const label = t(originKey(from), { title: from.title })
   return (
     <div className="msg-origin" data-testid="message-origin" data-origin={from.kind}>
       <Split size={12} />

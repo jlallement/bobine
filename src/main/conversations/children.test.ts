@@ -364,7 +364,19 @@ describe('conversations filles (fiche 097)', () => {
         model: { controlId: 'model', value: 'x' }
       })
     ).rejects.toThrow('non')
-    expect(calls).toEqual([['m', { text: 'Fais', model: { controlId: 'model', value: 'x' } }]])
+    // « Lancer en parallèle… » : une clé de carte neuve (carte seule, fiche 264).
+    expect(calls).toEqual([
+      ['m', { text: 'Fais', model: { controlId: 'model', value: 'x' }, card: expect.any(String) }]
+    ])
+    // Proposition expirée relancée : sa clé suit ; une clé qui n'en est pas une est refusée.
+    await expect(
+      handlers['conversation:startChild']('m', { text: 'Fais', card: 'cle-1' })
+    ).rejects.toThrow('non')
+    expect(calls.at(-1)).toEqual(['m', { text: 'Fais', card: 'cle-1' }])
+    expect(() => handlers['conversation:startChild']('m', { text: 'x', card: '' })).toThrow('card')
+    expect(() =>
+      handlers['conversation:startChild']('m', { text: 'x', card: 'k'.repeat(101) })
+    ).toThrow('card')
     expect(() =>
       handlers['conversation:startChild']('m', { text: 1 } as unknown as { text: string })
     ).toThrow('text')
@@ -846,7 +858,15 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
         title: 'Import CSV',
         prompt: 'Consigne de test.\n/scenario modifications',
         model: { controlId: 'model', value: 'factice-precis' },
-        why: 'import délicat, modèle précis'
+        why: 'import délicat, modèle précis',
+        key: expect.any(String)
+      })
+      // Le lancement reprend la clé de sa proposition : sa ligne de la carte (fiche 264).
+      const key = card?.prompt.mode === 'form' ? card.prompt.child?.key : undefined
+      await waitFor(() => env.items(env.mother).some((i) => i.kind === 'child-started'))
+      expect(env.items(env.mother).find((i) => i.kind === 'child-started')).toMatchObject({
+        by: 'agent',
+        card: key
       })
       // Premier réveil : correction envoyée, « pas prête » ; second réveil : « prête ».
       await waitFor(() => env.wakes(env.mother) === 2, 30_000)

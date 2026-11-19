@@ -18,7 +18,9 @@ export function threadSubtasks(
   c: Conversations,
   merge: ChildrenMergeActions,
   send: (text: string, attachments?: [], options?: PromptRequest) => unknown,
-  snapshot?: Pick<AgentSnapshot, 'status' | 'queued'> | null
+  snapshot?: Pick<AgentSnapshot, 'status' | 'queued'> | null,
+  /** « Faire relire » d'un travail (fiche 264) : le dialogue de la relecture (fiche 177). */
+  onReview?: (childId: string) => void
 ): SubtasksInfo {
   const profiles = c.settings?.profiles ?? []
   const agentLabel = profiles.find((p) => p.id === c.activeSummary?.profileId)?.label
@@ -34,6 +36,7 @@ export function threadSubtasks(
     ...(snapshot?.status === 'busy' ? { motherBusy: true } : {}),
     ...(snapshot?.queued.length ? { motherQueued: true } : {}),
     ...(agentLabel ? { agentLabel } : {}),
-    onWarn: c.warn
+    onWarn: c.warn,
+    ...(onReview ? { onReview } : {})
   }
 }

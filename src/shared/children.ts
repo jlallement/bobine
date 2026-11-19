@@ -38,6 +38,12 @@ export interface ChildStart {
    * carte-réponse est sous la bulle ; elle n'a ni ligne dans « Sous-tâches » ni compte rendu séparé.
    */
   request?: string
+  /**
+   * Carte du travail (fiche 264) : la clé de sa proposition (`ChildProposal.key`), dont la carte de
+   * groupe le range sur sa ligne ; sans proposition (« Lancer en parallèle… »), une clé propre, et
+   * une carte seule à la place de ce lancement. Absente d'un lancement d'avant : affiché comme avant.
+   */
+  card?: string
   at: number
 }
 
@@ -52,6 +58,8 @@ export interface ChildStartRequest {
   role?: string
   /** Choix devant un dossier modifié (fiche 240) ; sans, un dossier modifié est refusé. */
   uncommitted?: UncommittedChoice
+  /** Proposition expirée relancée (fiche 264) : la clé de sa ligne, pour rester dans sa carte. */
+  card?: string
 }
 
 /** Consigne acceptée pour une fille existante, conservée dans le fil de sa mère (fiche 150). */
@@ -484,7 +492,16 @@ export interface ChildCapacity {
 export type MessageOrigin =
   | { kind: 'parent'; id: string; title: string }
   | { kind: 'child'; id: string; title: string }
+  /** Consigne de conflit d'une fusion lancée depuis la conversation `id` (fiches 110, 264). */
+  | { kind: 'merge'; id: string; title: string }
   | { kind: 'wake' }
+
+/** Ce que l'interface dit de la provenance d'un message (hors réveil, qui a sa propre ligne). */
+export function originKey(
+  from: Exclude<MessageOrigin, { kind: 'wake' }>
+): 'children.from.parent' | 'children.from.child' | 'children.from.merge' {
+  return `children.from.${from.kind}`
+}
 
 /** Les provenances sont-elles les mêmes (messages de la file envoyés ensemble) ? */
 export function sameOrigin(a?: MessageOrigin, b?: MessageOrigin): boolean {
@@ -520,6 +537,8 @@ export function originContext(from: MessageOrigin): string | undefined {
         `${APP_CONTEXT_OPENINGS.origin} child conversation "${from.title}" (id: ${from.id}), ` +
         'sent with message_parent, not from the user. To answer it, use the message_child tool.'
       )
+    // La consigne de conflit dit déjà tout (fiche 110) : rien de plus qu'avant à l'agent.
+    case 'merge':
     case 'wake':
       return undefined
   }
@@ -543,6 +562,11 @@ export interface ChildProposal {
    * lecture seule, outils, portée) et le lancement l'utilise tel quel, sans relire le fichier.
    */
   role?: RoleSnapshot
+  /**
+   * Clé de la proposition (fiche 264), donnée par le main : le lancement la reprend
+   * (`ChildStart.card`), et la carte de groupe range le travail sur cette ligne.
+   */
+  key?: string
 }
 
 /** Ce que l'utilisateur décide d'une proposition : la fille, le travail ici, ou rien. */
