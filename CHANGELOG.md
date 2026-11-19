@@ -6,6 +6,13 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- Une demande à un rôle (`@Expert UX/UI …`) reste dans le fil, comme un message, avec la puce du
+  rôle. Juste dessous, une seule carte, qui ne bouge plus : ce que fait le rôle et depuis combien de
+  temps, puis **sa réponse entière** (repliée après une dizaine de lignes, « Lire la suite »), sa
+  durée et son coût. « Demander à <agent> de l'appliquer » envoie la réponse à l'agent de la
+  conversation ; « Répondre à <rôle> » poursuit le même travail, dans la même carte. Une ligne dit
+  si l'agent de la conversation connaît déjà cette réponse. Plus de carte de lancement, de ligne
+  « Sous-tâches » ni de compte rendu séparés pour ces travaux.
 - Le bilan d'un tour est maintenant le pied de la réponse qui le finit : « 21:17 · 2 min 29 s ·
   9 fichiers +346 −0 », avec le coût, sans répéter la durée. Il reste sous sa réponse, et ce qui
   arrive ensuite s'affiche dessous. Quand l'agent travaille encore après la fin du tour (un
