@@ -2,6 +2,26 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Built-in browser: site approval can no longer be bypassed. Before reading or acting on a page
+  (screenshot, click, typing, JavaScript…), the agent needs approval for the site shown; otherwise
+  the “Website” card asks for it. During an agent action, the page can no longer go to an
+  unapproved site (link, `location = …`, redirect): the navigation is stopped and the agent told.
+  Your own browsing is not affected.
+- `main.log` now masks secrets, like `agents.log`: a key passed as an argument to a custom agent
+  (`--api-key …`) or a saved key no longer appears in clear.
+- A configuration file written by Bobine (`mcp.json`, `opencode.json`…) keeps its permissions: a
+  file only you can read (0600) no longer becomes readable by other accounts, and a file Bobine
+  creates is 0600.
+- “Commit first” also flags as “secret?” `.npmrc`, `.netrc`, `.pypirc`, SSH keys (`id_ed25519`,
+  `id_ecdsa`…), `*.pfx`, `*.jks`, `*.keystore`, `credentials.json` and `service-account*.json`.
+- Built-in browser cookies are encrypted on disk (keychain key). You stay signed in.
+- “Always allow” is no longer remembered for future conversations when the agent does not say what
+  kind of tool it is.
+
 ## 1.0.0-beta.9 — November 19, 2026
 
 ### Fixes
