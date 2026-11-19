@@ -3,7 +3,8 @@
  * retenus pour le profil (préférences, sinon défauts du profil), puis le mode de départ choisi
  * dans les réglages. Un réglage inapplicable est signalé dans le fil sans bloquer la session.
  */
-import { RequestError } from '../../shared/acp-sdk.mts'
+import { methods, RequestError } from '../../shared/acp-sdk.mts'
+import type { ClientConnection, SessionConfigOption } from '../../shared/acp-sdk.mts'
 import type { AgentEvent, ControlValue, SessionControl } from '@shared/agent'
 import { executionMode, isPlanMode } from '@shared/plan-doc'
 import { log } from '../log'
@@ -35,6 +36,28 @@ export interface InitialControlsInput {
   initialControls?: Record<string, ControlValue> | undefined
   /** Mode de départ (réglage « Nouvelle conversation ») ; absent à la réouverture d'une session. */
   initialMode?: 'plan' | 'execute' | undefined
+}
+
+/**
+ * Envoie un réglage à l'agent : `session/set_mode` (agent à modes seuls), sinon
+ * `session/set_config_option`. Rend les options annoncées en réponse, ou `undefined` pour un mode.
+ */
+export async function sendControl(
+  connection: ClientConnection,
+  request: { sessionId: string; id: string; value: ControlValue; fromModes: boolean }
+): Promise<SessionConfigOption[] | undefined> {
+  const { sessionId, id: configId, value } = request
+  if (request.fromModes && typeof value === 'string') {
+    await connection.agent.request(methods.agent.session.setMode, { sessionId, modeId: value })
+    return undefined
+  }
+  const response = await connection.agent.request(
+    methods.agent.session.setConfigOption,
+    typeof value === 'boolean'
+      ? { sessionId, configId, type: 'boolean', value }
+      : { sessionId, configId, value }
+  )
+  return response.configOptions
 }
 
 /** Réglages retenus, puis mode de départ. */

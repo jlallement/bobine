@@ -15,7 +15,7 @@ sur stdin/stdout : le client (notre app) lance l'agent en sous-processus.
 | `session/prompt` | Envoyer texte, images (`image`), fichiers (`resource`, `resource_link`) |
 | `session/update` | Streaming texte, appels d'outil, plan, diffs |
 | `session/request_permission` | Boutons dans la carte de l'outil ; `cancelled` sur Stop / arrêt (fiche 006) |
-| Modes / `session/set_mode` et options / `session/set_config_option` | Réglages dans la barre d'outils, mémorisés par profil (fiche 013) |
+| Modes / `session/set_mode` et options / `session/set_config_option` | Réglages dans la barre d'outils, mémorisés par profil (fiche 013). Sans réponse en 30 s (`TIMEOUTS.controlMs`, fiche 253) : au démarrage, la conversation est prête sans ce réglage et l'avis « Réglage … non appliqué » le dit ; au sélecteur, erreur. Rien de supposé sur la durée chez Bob : délai générique, réponse tardive prise en compte |
 | Tous les messages, dans les deux sens | Montrés bruts (secrets masqués) dans l'onglet « Échanges ACP » du panneau, en mémoire, quel que soit le niveau du journal ; rien de lu ni de supposé d'un agent en particulier (fiche 135) ; `agents.log` en garde le résumé aux niveaux Détaillé et Trace (fiche 080) |
 
 ## Profils d'agent

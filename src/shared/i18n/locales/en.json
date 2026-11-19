@@ -3020,7 +3020,8 @@
     "timeout": {
       "initialize": "The agent didn’t respond at startup",
       "resume": "The agent didn’t reopen the conversation",
-      "session": "The agent didn’t open the session"
+      "session": "The agent didn’t open the session",
+      "control": "The agent didn’t apply “{{name}}”"
     },
     "resumeFailed": "The conversation couldn’t be resumed: {{error}}",
     "auth": {

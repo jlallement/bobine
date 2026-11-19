@@ -92,7 +92,9 @@ export interface MockAgentOptions {
   /**
    * Panne au démarrage (`--panne`, fiche 195) : le processus s'arrête net à `initialize`
    * (`plantage-initialize`), `session/new` ne répond jamais (`bloque-session-new`), ou rouvrir une
-   * session (`session/load` et `session/resume`) ne répond jamais (`bloque-session-load`).
+   * session (`session/load` et `session/resume`) ne répond jamais (`bloque-session-load`), ou
+   * changer un réglage (`session/set_mode` et `session/set_config_option`) ne répond jamais
+   * (`bloque-reglages`, fiche 253).
    */
   failure?: MockFailure
   /** `initialize` répond après ce délai (ms) : démarrage lent (`--demarrage-lent`, fiche 139). */
@@ -147,7 +149,8 @@ export interface MockAgentOptions {
 export const MOCK_FAILURES = [
   'plantage-initialize',
   'bloque-session-new',
-  'bloque-session-load'
+  'bloque-session-load',
+  'bloque-reglages'
 ] as const
 export type MockFailure = (typeof MOCK_FAILURES)[number]
 
@@ -576,7 +579,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       if (options.bobDb) deleteBobTask(options.bobDb, params.sessionId)
       return {}
     })
-    .onRequest(methods.agent.session.setConfigOption, ({ params }) => {
+    .onRequest(methods.agent.session.setConfigOption, async ({ params }) => {
+      await stallIf('bloque-reglages')
       const session = getSession(sessions, params.sessionId)
       if (options.withConfigOptions === false)
         throw RequestError.methodNotFound(methods.agent.session.setConfigOption)
@@ -597,6 +601,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       }
     })
     .onRequest(methods.agent.session.setMode, async ({ params, client }) => {
+      await stallIf('bloque-reglages')
       const session = getSession(sessions, params.sessionId)
       if (!modesOf(session.cwd).some((m) => m.id === params.modeId)) {
         throw RequestError.invalidParams({ modeId: params.modeId })
