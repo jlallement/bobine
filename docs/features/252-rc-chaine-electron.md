@@ -1,7 +1,7 @@
 # 252 — rc-D, chaîne d'approvisionnement : Electron, SDK ACP figé, politique de montée de version
 
-- **Statut** : fait, sauf B7 : Electron 45.4.1 à reprendre dès le 2026-11-20 02 h 04 UTC (délai
-  de pnpm)
+- **Statut** : fait (B7 levé le 2026-11-19 : Electron 45.4.1 par l'exception de l'ADR-0057,
+  à retirer après le 2026-11-20 02 h 04 UTC)
 - **Dépend de** : 233 (lot 2, Electron 45.3.3, SDK 2.7), 231 (lot 1), 169 (précédente exception au
   délai de pnpm), 217 (avis de licence), 218 (Dependabot) ; audit du 2026-11-19 (B7, LCM-1, 3, 6,
   10, 11)
@@ -20,7 +20,7 @@ Docker des essais Linux (LCM-10/11).
 - [x] Electron monté à la plus récente 45.x autorisée par le délai `minimumReleaseAge` de pnpm
       (45.3.4) ; `pnpm build`, `./scripts/verify`, `pnpm package`, `pnpm e2e:packaged` et
       `pnpm third-party-notices --check` verts.
-- [ ] B7 levé : Electron 45.4.1 (correctifs Chromium/V8). Pas avant le 2026-11-20 02 h 04 UTC.
+- [x] B7 levé : Electron 45.4.1 (correctifs Chromium/V8), par l'exception de l'ADR-0057.
 - [x] `@agentclientprotocol/sdk` en version exacte `2.7.0` (pas de montée en 2.8).
 - [x] ADR-0057 « politique de montée de version », statut proposé, dans l'index.
 - [x] `.nvmrc` à 24 ; `ubuntu:24.04` épinglée par digest ; Dependabot suit l'écosystème `docker`.
@@ -58,7 +58,7 @@ L'ADR-0057 propose la règle qui manquait.
 
 | Paquet | Avant | Après | Note |
 |---|---|---|---|
-| `electron` | 45.3.3 | **45.3.4** | voir ci-dessous ; 45.4.1 refusée par le délai de pnpm jusqu'au 2026-11-20 02 h 04 UTC |
+| `electron` | 45.3.3 | **45.3.4** puis **45.4.1** | voir ci-dessous ; 45.4.1 prise avant la fin du délai de pnpm par l'exception de l'ADR-0057 |
 | `@agentclientprotocol/sdk` | `^2.7.0` (2.7.0) | **`2.7.0` exact** | même version installée ; 2.8.0 non prise |
 
 `pnpm add` écrit la version exacte : `electron` passe aussi de `^45.3.3` à `45.3.4`, ce qui va
@@ -72,7 +72,10 @@ Notes relues (GitHub, `electron/electron`) :
   retrait (fuite). Binaire relu : **Chromium 156.0.8078.100, Node 24.22.3**, comme 45.3.3 ; **aucun
   correctif de sécurité**.
 - **45.4.1** (npm, 2026-11-19 02 h 04 UTC ; pas de 45.4.0) : correctifs rétroportés d'ANGLE,
-  Chromium, Dawn, FFmpeg, PDFium et V8. C'est elle que B7 demande.
+  Chromium, Dawn, FFmpeg, PDFium et V8. C'est elle que B7 demande. Binaire relu
+  (`ELECTRON_RUN_AS_NODE` sur le binaire d'origine de `node_modules`, pas sur l'app) :
+  **Chromium 156.0.8078.100, Node 24.22.3, V8 15.6.75.57-electron** : numéros inchangés, les
+  correctifs sont des rétroportages.
 
 ## SDK ACP 2.8.0 (non prise)
 
@@ -89,6 +92,12 @@ schéma 1.33 comme à la fiche 233.
   Image non reconstruite ici (`pnpm e2e:linux` non lancé).
 - `.github/dependabot.yml` : écosystème `docker` sur `/docker/e2e-linux`, hebdomadaire ; une autre
   version d'Ubuntu (mineure ou majeure) ignorée : seule la mise à jour du digest est proposée.
+
+## Suites à faire
+
+- [ ] **Retirer l'exception** `minimumReleaseAgeExclude: [electron@45.4.1]` de
+      `pnpm-workspace.yaml` après le 2026-11-20 02 h 04 UTC (ADR-0057, point 2), puis
+      `pnpm install` : verrou inchangé.
 
 ## Journal
 
@@ -116,3 +125,19 @@ schéma 1.33 comme à la fiche 233.
     `pnpm third-party-notices` + `prettier --write scripts/third-party/inventory.json`, `verify`,
     `pnpm package`, `pnpm e2e:packaged`, suite complète ; remplacer la ligne des nouveautés par
     « correctifs de sécurité de Chromium et de V8 ».
+- 2026-11-19 : **B7 levé** sur décision de Jérôme : Electron 45.4.1 tout de suite, sans attendre
+  la fin du délai de pnpm, par l'exception de l'ADR-0057 (point 2 : correctif de sécurité
+  Chromium/V8, version exacte, commentée, retirée dès le délai écoulé). Branche
+  `rc/g-electron-45-4-1` (worktree `bobine-oss-rc-g`), départ de `2a2301d`.
+  - `pnpm-workspace.yaml` : `minimumReleaseAgeExclude: [electron@45.4.1]` (forme `nom@version`
+    acceptée par pnpm 12 : l'exception ne couvre que cette version), commentée, **à retirer après
+    le 2026-11-20 02 h 04 UTC** (voir Suites à faire).
+  - `pnpm add -D electron@45.4.1` : seules les lignes d'Electron changent dans le verrou ;
+    `./scripts/check-electron` télécharge le binaire ; Chromium 156.0.8078.100, Node 24.22.3.
+  - Avis de licence régénérés, `inventory.json` repassé par Prettier (seule la ligne d'Electron
+    change), `--check` : code 0. Nouveautés : la ligne d'Electron dit 45.4.1 et les correctifs de
+    sécurité de Chromium et de V8.
+  - `./scripts/verify` : code 0 (526 fichiers, 4957 essais). `pnpm build` : code 0.
+    `pnpm package` : code 0 (avis vérifiés contre le build, DMG vérifié ; `Info.plist` du
+    framework : 45.4.1). `pnpm e2e:packaged` : code 0.
+  - Suite e2e complète non lancée ici : à la charge du tech lead.

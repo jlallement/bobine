@@ -6,8 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
-- Electron 45.3.4 (Chromium 156.0.8078.100): a right-clicked element is no longer kept in memory
-  after it is removed.
+- Electron 45.4.1: Chromium and V8 security fixes; a right-clicked element is no longer kept in
+  memory after it is removed.
 - Built-in browser: site approval can no longer be bypassed. Before reading or acting on a page
   (screenshot, click, typing, JavaScript…), the agent needs approval for the site shown; otherwise
   the “Website” card asks for it. During an agent action, the page can no longer go to an
