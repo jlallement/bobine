@@ -6,6 +6,14 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Commit message drafted by the agent: its cost now counts in the conversation, its cap and My
+  activity, even with IBM Bob, which writes it after its reply. Aside costs also show in My
+  activity.
+- Question cards (including “Website” and commands to approve): no option looks chosen until you
+  point at one, and “Send” stays greyed out with no choice; an empty answer is no longer sent (it
+  counted as a refusal). To not answer: “Skip”.
+- Settings: every switch (per-conversation cap, notifications, memory…) has its name for screen
+  readers.
 - Electron 45.3.4 (Chromium 156.0.8078.100): a right-clicked element is no longer kept in memory
   after it is removed.
 - Built-in browser: site approval can no longer be bypassed. Before reading or acting on a page
