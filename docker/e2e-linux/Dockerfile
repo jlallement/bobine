@@ -2,7 +2,9 @@
 # Ubuntu 24.04 (cible D6), node 24, pnpm par corepack, outils de compilation de node-pty, écran
 # virtuel (xvfb) avec un gestionnaire de fenêtres léger (openbox), bibliothèques d'Electron.
 # Rien du dépôt n'est copié dans l'image : les sources arrivent au lancement (`entrypoint.sh`).
-FROM ubuntu:24.04
+# Image épinglée par digest (index multi-architecture, relevé le 2026-11-19, fiche 252) ; Dependabot
+# (écosystème `docker`) propose la mise à jour du digest.
+FROM ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8
 
 ARG NODE_MAJOR=24
 ARG PNPM_VERSION

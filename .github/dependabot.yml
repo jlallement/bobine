@@ -39,3 +39,20 @@ updates:
     groups:
       actions-mineures:
         update-types: [minor, patch]
+
+  # Image des essais Linux en local (fiche 145), épinglée par digest (fiche 252) : Dependabot
+  # propose le nouveau digest d'`ubuntu:24.04` ; une autre version d'Ubuntu reste une décision.
+  - package-ecosystem: docker
+    directory: /docker/e2e-linux
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      - dependency-name: ubuntu
+        update-types: [version-update:semver-major, version-update:semver-minor]
