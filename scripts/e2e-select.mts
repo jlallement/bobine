@@ -44,6 +44,38 @@ export interface CatalogEntry {
    * machine qui ne les a pas. Absent : jouée partout.
    */
   readonly needs?: readonly PlatformFeature[]
+  /**
+   * Quarantaine par vrai système (`process.platform` ; `BOBINE_PLATFORM` n'y change rien : c'est la
+   * machine qui rend l'échec, pas les capacités imposées) : un échec connu, compris,
+   * qui n'est pas un défaut visible de l'app, et qui masquerait les autres échecs (fiche 250). La
+   * valeur est la raison, avec sa fiche : le lanceur l'affiche à chaque passage (annotation sur
+   * GitHub), la suite n'est plus complète, et nommer la suite la joue quand même.
+   */
+  readonly quarantine?: Readonly<Partial<Record<NodeJS.Platform, string>>>
+}
+
+/** Une suite mise en quarantaine sur ce système, et pourquoi. */
+export interface Quarantined {
+  readonly name: string
+  readonly reason: string
+}
+
+/**
+ * Suites demandées (`names`, `null` : toutes) en quarantaine sur `platform`, sauf celles nommées
+ * explicitement (`explicit`, les suites passées à `pnpm e2e`) : on peut toujours la jouer pour la
+ * corriger, jamais l'oublier.
+ */
+export function quarantinedOn(
+  catalog: readonly CatalogEntry[],
+  names: readonly string[] | null,
+  explicit: readonly string[],
+  platform: string
+): Quarantined[] {
+  return catalog.flatMap((e) => {
+    const reason = e.quarantine?.[platform as NodeJS.Platform]
+    if (!reason || explicit.includes(e.name) || (names && !names.includes(e.name))) return []
+    return [{ name: e.name, reason }]
+  })
 }
 
 /** La plateforme a-t-elle tout ce dont la suite a besoin ? */
