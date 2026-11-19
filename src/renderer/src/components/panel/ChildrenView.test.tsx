@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import { childRows, childrenOf } from '@shared/children-rows'
@@ -73,6 +73,9 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
     } as unknown as Window['api']
   })
   afterEach(() => {
+    // Démonter avant de rendre `window.api` d'origine : un rendu tardif relancerait sinon les
+    // effets contre une API sans `changes` (le `cleanup` global passe après ce hook).
+    cleanup()
     window.api = api
     reveal.mockClear()
   })

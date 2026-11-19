@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ConversationEvent } from '@shared/agent'
 import type { WorktreeCycleView } from '@shared/worktree-cycle'
@@ -33,10 +33,20 @@ beforeEach(() => {
   } as unknown as Window['api']
 })
 afterEach(() => {
+  // Démonter avant de rendre `window.api` d'origine (le `cleanup` global passe après ce hook).
+  cleanup()
   window.api = originalApi
 })
 
 describe('useWorktreeCycle (fiche 176, D15 : commit fait hors de la barre)', () => {
+  it('`refresh` garde la même identité d’un rendu à l’autre (dépendance d’effet, fiche 246)', async () => {
+    const { result, rerender } = renderHook(() => useWorktreeCycle('c1', 0))
+    const first = result.current.refresh
+    await waitFor(() => expect(result.current.info?.ahead).toBe(1))
+    rerender()
+    expect(result.current.refresh).toBe(first)
+  })
+
   it('relit l’état à la fin d’un tour de l’agent de cette conversation, pas des autres', async () => {
     const { result } = renderHook(() => useWorktreeCycle('c1', 0))
     await waitFor(() => expect(result.current.info?.ahead).toBe(1))

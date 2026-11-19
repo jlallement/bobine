@@ -71,5 +71,8 @@ export function useWorktreeCycle(
       cancel?.()
     }
   }, [refresh, conversationId])
-  return { info, known, error, refresh: (fresh) => void refresh(fresh) }
+  // Identité stable : `refresh` sert de dépendance d'effet (abonnement « dépôt changé » de
+  // l'onglet Modifications, fiche 246) ; une fonction neuve à chaque rendu le refaisait à chaque fois.
+  const refreshNow = useCallback((fresh?: boolean) => void refresh(fresh), [refresh])
+  return { info, known, error, refresh: refreshNow }
 }

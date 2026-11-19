@@ -241,3 +241,15 @@ Aucune nouvelle dépendance.
   Contre-épreuve : `GitChangedNotifier.notify` neutralisé, `commit-redige` échoue sur l'attente D4
   (clair et sombre) ; code restauré.
 
+- 2026-11-19 : Release v1.0.0-beta.9 en échec sur Linux arm64 (run 44446082711) :
+  `ChildrenView.test.tsx` › « sans fille : ni bouton ni vue », `TypeError` sur
+  `window.api.changes.onGitChanged` (`ChangesTab.tsx`). Cause produit : `useWorktreeCycle`
+  renvoyait `refresh` sous une fonction neuve à chaque rendu ; dépendance de l'effet D4, elle
+  faisait défaire et refaire l'abonnement `onGitChanged` à chaque rendu de l'onglet (6
+  abonnements au lieu d’un dans le test ajouté). Cause du test : son `afterEach` rendait le
+  `window.api` d'origine (sans `changes`) avant le `cleanup` global (les `afterEach` passent en
+  ordre inverse), et un rendu tardif sur une machine lente relançait l'effet. Correctif :
+  `refresh` stable (`useCallback`) ; `cleanup()` en tête des `afterEach` qui restaurent
+  `window.api` dans `ChildrenView.test.tsx`, `ChangesTab.test.tsx` et `useWorktreeCycle.test.ts`.
+  Tests ajoutés, rouges sans le correctif : identité de `refresh` entre deux rendus ; un seul
+  abonnement à « dépôt changé » malgré plusieurs rendus, défait au démontage.
