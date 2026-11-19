@@ -16,6 +16,18 @@ body:
       placeholder: 0.3.0 (packaged) · Electron 45.0.0 · macOS 27.0
     validations:
       required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      description: Linux and Windows builds are previews.
+      options:
+        - macOS (Apple Silicon)
+        - Linux (preview)
+        - Windows (preview)
+        - Built from source
+    validations:
+      required: true
   - type: textarea
     id: description
     attributes:
@@ -47,6 +59,7 @@ body:
     attributes:
       label: Log excerpt (optional)
       description: |
-        Help › Show log (`~/Library/Logs/Bobine/main.log`), or `agents.log` at the Detailed level.
+        Help › Show log: `main.log` in `~/Library/Logs/Bobine/` (macOS), `~/.config/bobine/logs/`
+        (Linux) or `%APPDATA%\bobine\logs\` (Windows); or `agents.log` at the Detailed level.
         Check for anything private before pasting.
       render: text

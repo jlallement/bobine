@@ -124,7 +124,7 @@ accents, the system font or your own, a compact density and a presentation mode 
 | Agent | Status | Versions tested |
 |---|---|---|
 | IBM Bob (`bob acp`) | main target | 2.0.6, 2.0.9, 2.1.0 |
-| OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5 |
+| OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0 |
 
 Other ACP agents can be declared in Settings › Agents, without any guarantee. Details, agent by
 agent: [`docs/agents.md`](docs/agents.md) (French). Settings › Diagnostics warns when an agent
@@ -137,30 +137,32 @@ of Electron 45, on which the app is built; Bobine declares no other minimum and 
 recent macOS), and at least one agent installed (`bob` or `opencode` in your `PATH`).
 
 1. Download `Bobine-<version>-arm64.dmg` from the
-   [Releases page](https://github.com/jlallement/bobine/releases) (the beta is marked as a
-   pre-release).
-2. Open the `.dmg`, then double-click Bobine in its window: it offers to install itself in
-   `/Applications` or in `~/Applications` (no administrator rights needed). You can also drag it
-   onto Applications.
-3. Open Bobine. **The first launch is blocked** (« Apple could not verify… ») because the app is
-   signed ad hoc, not notarized. The way through, following
+   [Releases page](https://github.com/jlallement/bobine/releases) (betas and release candidates
+   are marked as pre-releases).
+2. Open the `.dmg` and double-click Bobine in its window. This is the first launch, and **macOS
+   blocks it** (« Apple could not verify… ») because the app is signed ad hoc, not notarized
+   (a deliberate choice). The way through, following
    [Apple's instructions](https://support.apple.com/en-us/102445):
-   1. Try to open the app once, then click **Done** (not « Move to Trash »).
+   1. Click **Done** (not « Move to Trash »).
    2. Open **System Settings › Privacy & Security**, scroll down to the Security section and
       click **Open Anyway** next to the Bobine message.
    3. Confirm with **Open** (macOS may ask for your password or Touch ID).
 
-   From then on, Bobine opens normally. On macOS 15 (Sequoia) and later, Control-click › Open no
-   longer bypasses the check; Open Anyway above is the way. If a Mac is managed by an
-   organization, the button may be disabled by its policy.
+   On macOS 15 (Sequoia) and later, Control-click › Open no longer bypasses the check; Open
+   Anyway above is the way. If a Mac is managed by an organization, the button may be disabled
+   by its policy.
 
    Command-line alternative, if you trust the download: remove the quarantine mark that macOS puts
-   on files downloaded by a browser.
+   on files downloaded by a browser, before opening the `.dmg`.
 
    ```bash
-   xattr -dr com.apple.quarantine /Applications/Bobine.app
+   xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
    ```
 
+3. Bobine opens and offers to install itself in `/Applications` or in `~/Applications` (no
+   administrator rights needed); the installed copy then opens normally. You can also drag
+   Bobine onto Applications instead: the block of step 2 then comes when you first open it from
+   there (`xattr -dr com.apple.quarantine /Applications/Bobine.app` on the command line).
 4. macOS may ask again for Screen Recording or keychain access after each new version (each
    build is a different app for it): choose « Always Allow ».
 
