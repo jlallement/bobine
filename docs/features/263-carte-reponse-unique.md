@@ -266,3 +266,11 @@ Pas de nouvelle dépendance.
 - Après un tour de la mère en erreur, `childNews` ne renvoie pas les nouvelles déjà parties avec
   ce message (comportement d'avant) ; la carte, elle, ne les dit plus « transmises ».
 
+### Vérification après les revues (2026-11-20)
+
+- `./scripts/verify` vert ; `pnpm build && pnpm e2e roles-travail repere filles-non-commite
+  filles-fusion` : 8 tâches vertes (clair et sombre), une seule campagne ; captures regardées,
+  dont les nouvelles `263-carte-repondu-900`, `263-carte-arrete`, `263-carte-erreur`.
+- Vu une fois pendant `verify` : `agent-host-opencode-2-3.test.ts` (`ENOTEMPTY` au nettoyage d'un
+  dossier temporaire) ; vert seul et au `verify` suivant. Sans lien avec ce lot.
+
