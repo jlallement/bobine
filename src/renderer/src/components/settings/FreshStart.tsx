@@ -57,6 +57,7 @@ export function FreshStartCard() {
               type="checkbox"
               checked={freshAgents}
               onChange={(e) => setFreshAgents(e.target.checked)}
+              aria-label={t('settings.data.fresh.agentsLabel')}
               data-testid="fresh-start-agents"
             />
             <span />

@@ -48,6 +48,7 @@ export function NotificationsSettings({
               type="checkbox"
               checked={notifications}
               onChange={(e) => onNotifications(e.target.checked)}
+              aria-label={t('settings.notifications.notifications.label')}
               data-testid="settings-notifications-enabled"
             />
             <span />
@@ -65,6 +66,7 @@ export function NotificationsSettings({
               checked={preferences.dockBounce}
               disabled={!notifications}
               onChange={(e) => onPreferences({ dockBounce: e.target.checked })}
+              aria-label={t('settings.notifications.dockBounce.label')}
               data-testid="settings-dock-bounce"
             />
             <span />
@@ -84,6 +86,7 @@ export function NotificationsSettings({
                 checked={preferences.dockBadge}
                 disabled={!notifications}
                 onChange={(e) => onPreferences({ dockBadge: e.target.checked })}
+                aria-label={t('settings.notifications.dockBadge.label')}
                 data-testid="settings-dock-badge"
               />
               <span />

@@ -51,6 +51,7 @@ export function TipsRow({
             type="checkbox"
             checked={enabled}
             onChange={(e) => onChange(e.target.checked)}
+            aria-label={t('settings.general.tips.label')}
             data-testid="settings-tips"
           />
           <span />

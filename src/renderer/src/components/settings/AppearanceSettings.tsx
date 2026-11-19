@@ -239,6 +239,7 @@ function CodeCard({
               type="checkbox"
               checked={preferences.codeLigatures}
               onChange={(e) => onPreferences({ codeLigatures: e.target.checked })}
+              aria-label={t('settings.appearance.codeLigatures.label')}
               data-testid="settings-code-ligatures"
             />
             <span />
@@ -287,6 +288,7 @@ function PresentationCard() {
               type="checkbox"
               checked={presenting}
               onChange={(e) => requestPresentation(e.target.checked)}
+              aria-label={t('settings.appearance.presentation.label')}
               data-testid="settings-presentation"
             />
             <span />

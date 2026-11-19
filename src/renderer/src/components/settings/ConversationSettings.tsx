@@ -238,6 +238,7 @@ function TurnGuardsCard({
               type="checkbox"
               checked={preferences.costCapEnabled}
               onChange={(e) => onPreferences({ costCapEnabled: e.target.checked })}
+              aria-label={t('turnGuards.settings.cap.label')}
               data-testid="settings-cost-cap"
             />
             <span />

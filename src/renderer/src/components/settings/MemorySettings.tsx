@@ -101,6 +101,7 @@ export function MemorySettings({
               type="checkbox"
               checked={enabled}
               onChange={(e) => onPreferences({ memoryEnabled: e.target.checked })}
+              aria-label={t('settings.memory.enabled.label')}
               data-testid="settings-memory-enabled"
             />
             <span />

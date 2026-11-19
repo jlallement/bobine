@@ -403,6 +403,45 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
   })
 })
 
+describe('SettingsDialog — interrupteurs nommés (fiche 254, D3)', () => {
+  it('chaque case à cocher de chaque section a un nom accessible', async () => {
+    // Sections à interrupteurs (MCP : chaque serveur et outil nommé, essayé dans McpSettings.test).
+    const sections: SettingsSection[] = [
+      'general',
+      'appearance',
+      'notifications',
+      'conversation',
+      'agents',
+      'roles',
+      'memory',
+      'privacy',
+      'data'
+    ]
+    const api = (window as unknown as { api: Record<string, unknown> }).api
+    api['memory'] = {
+      projects: async () => ({ projects: [] }),
+      list: async () => ({ entries: [], broken: [] })
+    }
+    for (const section of sections) {
+      const { unmount } = render(<Harness initial={section} />)
+      await act(async () => {})
+      const unnamed = screen
+        .queryAllByRole('checkbox', { name: (name) => name.trim() === '' })
+        .map((c) => c.getAttribute('data-testid') ?? c.outerHTML.slice(0, 80))
+      expect([section, unnamed]).toEqual([section, []])
+      unmount()
+    }
+  })
+
+  it('« Plafond par conversation » se trouve par son nom (lecteur d’écran, `pnpm pilote cliquer`)', async () => {
+    render(<Harness initial="conversation" />)
+    await act(async () => {})
+    expect(screen.getByRole('checkbox', { name: 'Plafond par conversation' })).toBe(
+      screen.getByTestId('settings-cost-cap')
+    )
+  })
+})
+
 describe('SettingsDialog — langue (fiche 074)', () => {
   afterEach(() => setLanguage('fr'))
 
