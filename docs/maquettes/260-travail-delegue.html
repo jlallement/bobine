@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travail délégué — maquettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Jetons : thème sombre réel de Bobine (themes.generated.css), accent par défaut. */
+:root {
+  --bg: #262624; --sidebar: #1f1e1d; --surface: #30302e; --surface-2: #383835; --surface-3: #42413d;
+  --border: #3e3d39; --border-strong: #7d7b74; --text: #f0eee6; --text-2: #d4d1c7; --muted: #a6a39a;
+  --accent: #db8062; --accent-hover: #e3937a; --on-accent: #1a1918; --plan: #c3a6f6;
+  --ok: #7fcb93; --ok-soft: #233a2a; --warn: #e0a84f; --warn-soft: #3d3222; --err: #f08a7a; --err-soft: #432a27;
+  --shadow: 0 1px 3px rgb(0 0 0 / .3), 0 4px 16px rgb(0 0 0 / .2);
+  --shadow-menu: 0 4px 24px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .3);
+  --code-bg: #1f1e1d;
+  --radius-xs: 4px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-pill: 999px;
+  --font-ui: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  /* Couleurs de rôle : couleurs d'accent de l'app (rose, bleu, vert). */
+  --r-ux: #e27aa9; --r-rev: #6b9bf2; --r-front: #5cb87f; --r-oc: #a9a8a2;
+  /* Page de maquettes (hors app) */
+  --doc-bg: #191918; --pin: #f5d98a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--doc-bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; -webkit-font-smoothing: antialiased; }
+code, .mono { font-family: var(--font-mono); font-size: 12.5px; }
+a { color: var(--accent); }
+
+/* ===== Page ===== */
+.page { max-width: 1260px; margin: 0 auto; padding: 40px 24px 120px; }
+.page > header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -.01em; }
+.page > header p { color: var(--text-2); margin: 0 0 4px; max-width: 900px; line-height: 1.55; }
+h2.screen { font-size: 20px; margin: 72px 0 6px; padding-top: 24px; border-top: 1px solid var(--border); }
+h2.screen small { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+.lede { color: var(--text-2); margin: 0 0 20px; max-width: 920px; line-height: 1.55; }
+h3.tag { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 28px 0 12px; padding: 4px 10px; border-radius: var(--radius-pill); }
+h3.tag.today { background: var(--err-soft); color: var(--err); }
+h3.tag.new { background: var(--ok-soft); color: var(--ok); }
+h4.state { font-size: 13px; color: var(--muted); font-weight: 500; margin: 26px 0 10px; }
+h4.state b { color: var(--text); }
+
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 28px 0; }
+.rule { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; line-height: 1.5; }
+.rule b.n { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent); font-size: 12px; margin-right: 6px; }
+.rule h3 { margin: 0 0 6px; font-size: 14.5px; }
+.rule p { margin: 0; color: var(--text-2); font-size: 13px; }
+.boxtitle { font-size: 16px; margin: 32px 0 0; }
+
+table.doc { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 13px; line-height: 1.45; }
+table.doc th, table.doc td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+table.doc th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+table.doc td:first-child { color: var(--text); font-weight: 500; }
+table.doc td { color: var(--text-2); }
+table.doc s { color: var(--err); text-decoration-color: color-mix(in srgb, var(--err) 60%, transparent); }
+table.doc .after { color: var(--ok); font-weight: 500; }
+
+.today-shots { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.today-shots figure { margin: 0; width: 596px; max-width: 100%; }
+.today-shots figure.wide { width: 760px; }
+.today-shots img { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); display: block; }
+.today-shots figcaption { color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.45; }
+.today-shots figcaption b { color: var(--err); font-weight: 500; }
+
+/* Scène : maquette 760 + légende */
+.stage { display: grid; grid-template-columns: 812px minmax(0, 1fr); gap: 28px; align-items: start; margin-bottom: 18px; }
+.stage.full { grid-template-columns: minmax(0,1fr); }
+.frame { position: relative; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px 26px 24px 26px; overflow: visible; }
+.frame.withside { display: grid; grid-template-columns: 240px 1fr; padding: 0; overflow: hidden; }
+.legend { font-size: 13px; line-height: 1.5; color: var(--text-2); }
+.legend ol { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.legend li { display: grid; grid-template-columns: 26px 1fr; gap: 6px; }
+.legend li .pin { position: static; }
+.legend li b { color: var(--text); font-weight: 600; }
+.legend .not { color: var(--muted); display: block; margin-top: 2px; }
+.legend .not::before { content: 'Ne fait pas : '; color: var(--err); }
+.pin { position: absolute; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--radius-pill); background: var(--pin); color: #1a1918; font-size: 11px; font-weight: 700; font-family: var(--font-ui); box-shadow: 0 0 0 2px var(--doc-bg); z-index: 5; line-height: 1; }
+.a { position: relative; }
+/* pastille à gauche de l'élément annoté, dans la marge de la maquette */
+.a > .pin { left: -24px; top: 2px; }
+.a > .pin.r { left: auto; right: -12px; top: -10px; }
+.a > .pin.in { left: auto; right: 6px; top: 6px; }
+
+/* ===== Fil (reprise des styles de l'app) ===== */
+.thread { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 18px; font-size: 15px; }
+.msg-user { align-self: flex-end; max-width: 85%; padding: 10px 16px; border-radius: var(--radius-lg); background: var(--surface-2); line-height: 1.5; font-size: 14px; }
+.msg-agent { line-height: 1.65; font-size: 15px; }
+.msg-agent p { margin: 0 0 .7em; } .msg-agent p:last-child { margin-bottom: 0; }
+.msg-agent ul { margin: 0 0 .7em; padding-left: 1.3em; }
+.muted { color: var(--muted); }
+.mention { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px 1px 3px; margin-right: 4px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 500; color: var(--role); background: color-mix(in srgb, var(--role) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--role) 30%, transparent); vertical-align: 1px; }
+.mention .role-avatar { --role-size: 16px; border: 0; background: transparent; }
+.ux { --role: var(--r-ux); } .rev { --role: var(--r-rev); } .front { --role: var(--r-front); } .oc { --role: var(--r-oc); }
+
+.role-avatar { --role-size: 24px; position: relative; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: var(--role-size); height: var(--role-size); border-radius: var(--radius-sm); border: 1px solid color-mix(in srgb, var(--role) 30%, transparent); background: color-mix(in srgb, var(--role) 14%, var(--surface)); color: var(--role); }
+.role-avatar.s18 { --role-size: 18px; border-radius: var(--radius-xs); }
+.role-avatar[data-state='running'] { box-shadow: inset 0 0 0 2px var(--role); }
+.role-avatar[data-state='done']::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 8px; height: 8px; border-radius: var(--radius-pill); border: 2px solid var(--surface); background: var(--ok); }
+svg.i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+svg.i.s12 { width: 12px; height: 12px; }
+svg.i.s16 { width: 16px; height: 16px; }
+
+.tool-row { display: flex; align-items: center; gap: 8px; padding: 4px 10px; margin: 0 -10px; border-radius: var(--radius-sm); color: var(--text-2); font-size: 14px; }
+.tool-row .i { color: var(--muted); }
+.tool-row .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tool-row.sub { border-left: 2px solid var(--plan); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: color-mix(in srgb, var(--plan) 6%, transparent); padding-left: 10px; margin-left: -10px; }
+.tool-row.sub .i { color: var(--plan); }
+.badge-sub { font-size: 11px; color: var(--plan); border: 1px solid color-mix(in srgb, var(--plan) 40%, transparent); border-radius: var(--radius-pill); padding: 0 6px; }
+
+/* Pied de la réponse de l'agent, bilan du tour fondu dedans */
+.reply-foot { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.reply-foot .ok { color: var(--ok); }
+.reply-foot .add { color: var(--ok); } .reply-foot .del { color: var(--err); }
+.reply-foot .sep { opacity: .6; }
+.spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--muted) 35%, transparent); border-top-color: var(--text-2); display: inline-block; }
+.spin.accent { border-top-color: var(--accent); }
+
+/* Boutons */
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 5px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-family: inherit; white-space: nowrap; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn.small { min-height: 26px; padding: 3px 10px; font-size: 12.5px; }
+.link { color: var(--muted); font-size: 12.5px; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 40%, transparent); text-underline-offset: 3px; white-space: nowrap; }
+
+/* ===== Carte-réponse d'un travail ===== */
+.work { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-size: 14px; }
+.work.running { border-color: color-mix(in srgb, var(--role) 45%, var(--border)); }
+.work.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--role) 30%, transparent); border-color: var(--role); }
+.work-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+.work-head .name { font-weight: 600; }
+.work-head .meta { color: var(--muted); font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; }
+.work-head .grow { flex: 1; }
+.work-head .state { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; }
+.work-head .state.ok { color: var(--ok); }
+.work-live { display: flex; align-items: center; gap: 8px; padding: 0 14px 12px 48px; color: var(--text-2); font-size: 13.5px; }
+.work-live .mono { color: var(--text); }
+.work-steps { padding: 0 14px 12px 48px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+.work-steps div { display: flex; gap: 7px; align-items: center; }
+.work-body { padding: 2px 16px 0 48px; line-height: 1.6; font-size: 14.5px; position: relative; }
+.work-body h3 { font-size: 15px; margin: 4px 0 6px; }
+.work-body h4 { font-size: 14px; margin: 12px 0 4px; color: var(--text); }
+.work-body p { margin: 0 0 .6em; color: var(--text); }
+.work-body ul { margin: 0 0 .6em; padding-left: 1.2em; }
+.work-body li { margin: 2px 0; }
+.work-body.folded { max-height: 252px; overflow: hidden; }
+.work-body.folded::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(transparent, var(--surface)); }
+.more { padding: 4px 16px 0 48px; }
+.more .btn { font-size: 12.5px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; border: 1px solid rgb(255 255 255 / .15); }
+.work-changes { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 10px 14px 0 48px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-size: 13px; color: var(--text-2); }
+.work-changes .mono { color: var(--text); font-size: 12px; }
+.add { color: var(--ok); } .del { color: var(--err); }
+.work-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 14px 10px 48px; }
+.work-foot .grow { flex: 1; }
+.work-facts { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.work-relay { display: flex; align-items: center; gap: 7px; padding: 8px 14px 9px 48px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+.work-relay.sent { color: var(--ok); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); display: inline-block; flex-shrink: 0; }
+.merge-box { margin: 10px 14px 0 48px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--border); font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
+.merge-box .row { display: flex; gap: 8px; align-items: center; color: var(--text-2); }
+.merge-box .row.done { color: var(--muted); }
+.merge-box .row.done .i { color: var(--ok); }
+.merge-box.ok { border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); background: var(--ok-soft); }
+.merge-box.ok .row { color: var(--text); }
+.merge-box.ok .i { color: var(--ok); }
+.bar { height: 4px; border-radius: 4px; background: var(--surface-3); overflow: hidden; margin-top: 2px; }
+.bar > i { display: block; height: 100%; width: 62%; background: var(--accent); }
+
+/* Remarques du relecteur */
+.findings { list-style: none; padding: 0; margin: 6px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+.findings li { display: grid; grid-template-columns: 82px 1fr; gap: 10px; align-items: baseline; }
+.sev { font-size: 11px; font-weight: 600; text-align: center; padding: 1px 0; border-radius: var(--radius-pill); }
+.sev.hi { background: var(--err-soft); color: var(--err); }
+.sev.mid { background: var(--warn-soft); color: var(--warn); }
+.sev.lo { background: var(--surface-3); color: var(--text-2); }
+.findings .where { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); display: block; }
+
+/* Carte de groupe */
+.group { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-size: 14px; overflow: hidden; }
+.group-head { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+.group-head .title { font-weight: 600; }
+.group-head .sub { color: var(--muted); font-size: 13px; }
+.group-head .grow { flex: 1; }
+.group-row { display: grid; grid-template-columns: 16px 24px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.group-row:last-of-type { border-bottom: 0; }
+.group-row .chev { color: var(--muted); }
+.group-row .txt { min-width: 0; }
+.group-row .txt b { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-row .txt span { color: var(--muted); font-size: 12.5px; }
+.group-row .acts { display: flex; gap: 4px; align-items: center; }
+.group-row .st { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.group-row .st.ok { color: var(--ok); }
+.group-open { border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 45%, var(--surface)); padding: 2px 0 12px; }
+.group-open .work-body { padding-left: 64px; font-size: 14px; }
+.group-open .work-foot { padding-left: 64px; padding-bottom: 0; }
+.group-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 35%, var(--surface)); }
+.group-foot .grow { flex: 1; }
+.group-foot .note { font-size: 12.5px; color: var(--muted); }
+
+/* Repère en bas du fil */
+.marker { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); }
+.marker::before, .marker::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.marker .in { display: inline-flex; align-items: center; gap: 6px; }
+.marker a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+/* Saisie */
+.composer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 12px 10px 8px 16px; }
+.composer.to-role { border-color: var(--role); box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--role) 16%, transparent); }
+.composer .text { font-size: 15px; line-height: 1.5; min-height: 26px; padding: 2px 6px 8px 0; color: var(--text); }
+.composer .text .ph { color: var(--muted); }
+.composer .caret { display: inline-block; width: 1.5px; height: 17px; background: var(--text); vertical-align: -3px; margin-left: 1px; }
+.composer-bar { display: flex; align-items: center; gap: 4px; margin-left: -6px; color: var(--text-2); font-size: 13.5px; }
+.composer-bar .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: var(--radius-sm); }
+.composer-bar .grow { flex: 1; }
+.send { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--surface-3); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+.send.on { background: var(--accent); color: var(--on-accent); }
+.dest { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 7px 0 0 14px; font-size: 12px; color: var(--muted); position: relative; }
+.dest .who { color: var(--role); font-weight: 500; }
+.dest .warn { color: var(--warn); }
+.dest .change { color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border-strong); display: inline-flex; gap: 2px; align-items: center; }
+.ctx { display: flex; gap: 14px; margin: 8px 0 0 14px; font-size: 12px; color: var(--muted); }
+.ctx span { display: inline-flex; gap: 5px; align-items: center; }
+.menu { position: absolute; left: 250px; top: 22px; width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-menu); padding: 6px; font-size: 13px; z-index: 4; }
+.menu .opt { display: grid; grid-template-columns: 18px 1fr; gap: 8px; padding: 7px 8px; border-radius: var(--radius-sm); color: var(--text); }
+.menu .opt.on { background: var(--surface-2); }
+.menu .opt small { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; line-height: 1.4; }
+.menu .opt .ck { color: var(--accent); }
+.menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 2px; }
+
+/* Barre latérale (écran E) */
+.side { background: var(--sidebar); border-right: 1px solid var(--border); padding: 14px 10px; font-size: 13.5px; color: var(--text-2); display: flex; flex-direction: column; gap: 2px; }
+.side .h { font-size: 11px; letter-spacing: .08em; color: var(--muted); margin: 14px 8px 6px; }
+.side .it { padding: 6px 8px; border-radius: var(--radius-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px; }
+.side .it.on { background: var(--surface-2); color: var(--text); }
+.side .it.child { padding-left: 22px; }
+.side .it .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.main { padding: 20px 26px 22px 40px; display: flex; flex-direction: column; gap: 14px; position: relative; min-width: 0; }
+.scrolled { color: var(--muted); font-size: 12px; text-align: center; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 6px; }
+.offscreen { position: relative; }
+.offscreen::after { content: ''; position: absolute; inset: 0; background: linear-gradient(var(--bg) 0%, transparent 40%); pointer-events: none; }
+
+.diffpanel { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--sidebar); font-size: 13px; }
+.diffpanel .ph { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-2); }
+.diffpanel .ph .grow { flex: 1; }
+.diffpanel .f { display: flex; gap: 8px; padding: 5px 12px; color: var(--text-2); }
+.diffpanel .f .grow { flex: 1; }
+
+.callout { border-left: 3px solid var(--accent); background: var(--surface); padding: 10px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-2); font-size: 13px; line-height: 1.5; margin: 14px 0; max-width: 980px; }
+.callout b { color: var(--text); }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1240px) { .stage { grid-template-columns: minmax(0,1fr); } .rules { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .rules { grid-template-columns: 1fr; } .frame { padding: 18px 12px 18px 30px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="palette" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 3-4 3h-2a2 2 0 0 0-1.5 3.3A2 2 0 0 1 12 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></symbol>
+  <symbol id="scan" viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></symbol>
+  <symbol id="layout" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M8 14h.01M16 14h.01"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="pencil" viewBox="0 0 24 24"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></symbol>
+  <symbol id="branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3.5-11 6"/></symbol>
+  <symbol id="merge" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+  <symbol id="arrowup" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></symbol>
+  <symbol id="file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="term" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6M12 19h8"/></symbol>
+  <symbol id="edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="chevd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="clip" viewBox="0 0 24 24"><path d="m21.4 11-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="sub" viewBox="0 0 24 24"><path d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9"/></symbol>
+  <symbol id="reply" viewBox="0 0 24 24"><path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></symbol>
+  <symbol id="ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="diff" viewBox="0 0 24 24"><path d="M12 3v14M5 10h14M5 21h14"/></symbol>
+</svg>
+
+<div class="page">
+<header>
+  <h1>Travail délégué : une demande, une réponse, une place</h1>
+  <p>Maquettes de la fiche 260. Pour chaque écran : <b>Aujourd'hui</b> (captures réelles du 19 novembre), puis <b>Proposé</b> (thème sombre de l'app, colonne du fil de 760 px). Les pastilles jaunes renvoient à la légende de droite, qui dit ce que chaque élément fait et ce qu'il ne fait pas.</p>
+  <p class="muted">Projet d'exemple : « liste de courses » (TypeScript + Vite), agent OpenCode, modèle GPT-6.1 Sol.</p>
+</header>
+
+<h2 class="boxtitle">Le modèle en 6 règles</h2>
+<div class="rules">
+  <div class="rule"><h3><b class="n">1</b>Un seul mot : « travail »</h3><p>Ce qu'on confie est un <b>travail</b>, fait par un <b>rôle</b> de l'Équipe ou par « un autre OpenCode ». « Fille », « sous-tâche » et « compte rendu » disparaissent. Les <b>sous-agents</b> restent des outils internes de l'agent, dans le flux de ses outils.</p></div>
+  <div class="rule"><h3><b class="n">2</b>Une mention, une réponse</h3><p>« @Expert UX/UI … » est une bulle de l'utilisateur dans le fil. Juste dessous : <b>une seule carte-réponse</b>, qui ne bouge plus. Elle montre l'activité en direct, puis la réponse entière en Markdown.</p></div>
+  <div class="rule"><h3><b class="n">3</b>Tout se passe dans la carte</h3><p>Diff, relecture, fusion : la carte-réponse d'un travail qui écrit déroule sur place « Fusion… » puis « Fusionné dans main ». Plusieurs travaux lancés ensemble forment <b>une carte de groupe</b>, à sa place.</p></div>
+  <div class="rule"><h3><b class="n">4</b>En bas, un repère, pas une copie</h3><p>Quand un travail finit loin au-dessus, une ligne fine « ↑ Expert UX/UI a répondu · Voir » apparaît en bas. Un clic fait défiler jusqu'à la carte. Elle disparaît une fois la carte vue.</p></div>
+  <div class="rule"><h3><b class="n">5</b>Le bilan colle à la réponse</h3><p>« 21:17 · 2 min 29 s · 9 fichiers +346 −0 » est le pied de la réponse qui finit le tour. Il ne flotte plus en bas du fil. Pendant un sous-agent : « Travaille encore… ».</p></div>
+  <div class="rule"><h3><b class="n">6</b>Jamais d'alerte avant la frappe</h3><p>Un rôle de conseil part en lecture seule, dans le dossier : il voit le non-commité, aucun avertissement. Un rôle qui écrit affiche une ligne discrète, avec un choix modifiable. Entrée envoie toujours.</p></div>
+</div>
+
+<h2 class="boxtitle">Vocabulaire : avant → après</h2>
+<table class="doc">
+  <tr><th style="width:26%">Concept</th><th style="width:40%">Aujourd'hui (dans l'interface)</th><th>Proposé</th></tr>
+  <tr><td>Ce qu'on confie</td><td><s>conversation fille</s>, <s>fille</s>, <s>sous-tâche</s>, <s>Sous-tâches</s>, <s>tâche proposée</s></td><td><span class="after">travail</span> (« 3 travaux proposés », « Lancer ce travail »)</td></tr>
+  <tr><td>Qui le fait</td><td>rôle, <s>conversation fille</s>, <s>sous-agent</s> (parfois)</td><td><span class="after">rôle</span> (Expert UX/UI, Code reviewer…) ou <span class="after">un autre OpenCode</span></td></tr>
+  <tr><td>Ce qu'il rend</td><td><s>compte rendu</s>, <s>relecture</s>, première phrase seulement</td><td><span class="after">réponse</span> (complète, en Markdown)</td></tr>
+  <tr><td>La fin</td><td><s>a fini son tour</s>, <s>a rendu son compte rendu</s>, <s>a fini</s>, <s>Finie, à lire</s>, <s>terminée</s>, <s>Terminé</s></td><td>rôle : <span class="after">a répondu</span> · travail qui écrit : <span class="after">a répondu · 4 fichiers</span> · tour de l'agent : pas de mot, le pied donne l'heure et la durée</td></tr>
+  <tr><td>Transmission à l'agent</td><td><s>Partira à l'agent avec votre prochain message</s> (en italique, dans une 3ᵉ carte)</td><td><span class="after">Pas encore transmise à OpenCode — elle le sera avec votre prochain message</span> → <span class="after">Transmise à OpenCode</span></td></tr>
+  <tr><td>Ouvrir le travail</td><td>Ouvrir (×2), chevron de la carte, ligne de la barre latérale</td><td><span class="after">Ouvrir sa conversation</span> (lien discret, pied de carte) + la ligne de la barre latérale</td></tr>
+  <tr><td>Outils internes de l'agent</td><td>sous-agent, carte « Sous-agents »</td><td><span class="after">sous-agent</span>, inchangé, mais seulement dans le flux des outils de l'agent</td></tr>
+  <tr><td>Relire du code</td><td><s>Faire relire…</s> (onglet Modifications) et rôle Code reviewer : deux chemins</td><td><span class="after">Faire relire</span> lance toujours le rôle <b>Code reviewer</b></td></tr>
+</table>
+
+<h2 class="boxtitle">Qui affiche quoi, où</h2>
+<table class="doc">
+  <tr><th style="width:18%">Élément</th><th style="width:22%">Place dans le fil</th><th style="width:30%">Quand il change</th><th>Actions</th></tr>
+  <tr><td>Bulle « @Rôle … »</td><td>À la place du message envoyé, côté utilisateur</td><td>Jamais (c'est un message)</td><td>Celles d'un message : copier, reprendre</td></tr>
+  <tr><td>Carte-réponse d'un travail</td><td>Juste sous la bulle qui l'a demandé, <b>pour toujours</b></td><td>Sur place : en cours (activité, temps) → a répondu (Markdown) → transmise → (si écrit) fusion en cours → fusionné</td><td>Demander à OpenCode de l'appliquer · Répondre à &lt;rôle&gt; · Ouvrir sa conversation ; si écrit : Voir les modifications · Faire relire · Fusionner dans main ; si relecture : Demander à OpenCode de corriger · Voir sur le diff</td></tr>
+  <tr><td>Carte de groupe</td><td>À la place où les travaux ont été proposés (réponse de l'agent, ou bulle avec plusieurs @)</td><td>Sur place : proposés → x en cours, y finis → tous finis → fusionnés</td><td>Par ligne : Lancer · Faire ici · Refuser, puis déplier ; pied : Tout lancer, puis Fusionner les N prêts dans main</td></tr>
+  <tr><td>Ligne d'état de transmission</td><td>Dernière ligne de la carte-réponse</td><td>« Pas encore transmise » → « Transmise à OpenCode » quand le message suivant part</td><td>Aucune (information)</td></tr>
+  <tr><td>Repère « ↑ … a répondu · Voir »</td><td>Tout en bas du fil, au-dessus de la saisie</td><td>Apparaît quand un travail répond hors de vue ; disparaît quand sa carte a été vue</td><td>Voir : fait défiler jusqu'à la carte et la fait briller</td></tr>
+  <tr><td>Pied de la réponse de l'agent</td><td>Sous la réponse qui finit le tour</td><td>« Travaille encore… » tant qu'un sous-agent tourne → « 21:17 · 2 min 29 s · 9 fichiers +346 −0 »</td><td>Copier ; le nombre de fichiers ouvre Modifications</td></tr>
+  <tr><td>Ligne sous la saisie</td><td>Sous la saisie, quand un rôle est choisi</td><td>Selon le rôle et l'état du dépôt (propre, non-commité, sans commit)</td><td>Changer… (rôle qui écrit seulement)</td></tr>
+  <tr><td>Barre latérale</td><td>Sous la conversation, un travail par ligne</td><td>Pastille : en cours, a répondu, à fusionner</td><td>Ouvrir la conversation du travail</td></tr>
+  <tr><td>Sous-agents de l'agent</td><td>Dans le flux des outils du tour, jamais en carte</td><td>En cours → fini, comme un outil</td><td>Déplier le détail</td></tr>
+</table>
+
+<!-- ====================== A ====================== -->
+<h2 class="screen">A. Question à un rôle en lecture seule</h2>
+<p class="lede">L'utilisateur demande un avis visuel à l'Expert UX/UI. Aujourd'hui : un avertissement avant de taper, puis trois cartes qui disent la même chose, et l'avis caché derrière sa première phrase.</p>
+
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots">
+  <figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-211439/captures/211740-capture-fenetre.png" alt="Avertissement avant de taper"><figcaption>211740 — rôle choisi, rien tapé : <b>avertissement jaune, trois boutons, « dernier commit () »</b> vide. Entrée n'envoie pas.</figcaption></figure>
+  <figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-211439/captures/211902-capture-fenetre.png" alt="Trois cartes"><figcaption>211902 — <b>trois cartes</b> : lancement, ligne de « Sous-tâches », « a rendu son compte rendu — … ». Trois « ≈ 0,00 $US ». La question elle-même n'est pas dans le fil. « Terminé en 2 min 29 s » est passé sous les cartes.</figcaption></figure>
+  <figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-211439/captures/211912-capture-fenetre.png" alt="Détail tronqué"><figcaption>211912 — l'avis se résume à <b>une phrase tronquée</b> ; pour le lire, il faut ouvrir la conversation du rôle.</figcaption></figure>
+</div>
+
+<h3 class="tag new">Proposé</h3>
+<h4 class="state">État 1 · <b>en cours</b></h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="msg-agent">
+      <p>L'application est créée en <b>TypeScript + Vite, sans backend</b> : ajout, coche et suppression des articles, sauvegarde locale. 11 tests réussis.</p>
+      <div class="reply-foot"><svg class="i s12"><use href="#copy"/></svg><span>21:12</span><span class="sep">·</span><span>2 min 29 s</span><span class="sep">·</span><span>9 fichiers <span class="add">+346</span> <span class="del">−0</span></span></div>
+    </div>
+    <div class="msg-user a ux"><b class="pin">1</b><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#palette"/></svg></span>Expert UX/UI</span>À quoi ça pourrait ressembler visuellement ? Propose une direction.</div>
+    <div class="work running ux a"><b class="pin">2</b>
+      <div class="work-head"><span class="role-avatar" data-state="running"><svg class="i"><use href="#palette"/></svg></span><span class="name">Expert UX/UI</span><span class="meta"><svg class="i s12"><use href="#eye"/></svg>lecture seule · dans ce dossier</span><span class="grow"></span><span class="state a"><b class="pin r">3</b><span class="spin accent"></span>0:42</span></div>
+      <div class="work-live a"><b class="pin" style="left:-48px">4</b><svg class="i s12" style="color:var(--muted)"><use href="#file"/></svg>Lit <span class="mono">src/style.css</span>…</div>
+      <div class="work-steps"><div><svg class="i s12"><use href="#check"/></svg>A lu index.html, src/main.ts, src/list.ts</div><div><svg class="i s12"><use href="#check"/></svg>A cherché « color » dans src/</div></div>
+      <div class="work-foot" style="padding-top:2px"><span class="grow"></span><button class="btn ghost small a"><b class="pin" style="left:-26px">5</b>Arrêter</button><a class="link">Ouvrir sa conversation</a></div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Bulle « @Expert UX/UI … »</b> : la question reste dans le fil de la conversation, comme un message adressé.<span class="not">partir à l'agent principal : OpenCode ne la reçoit pas.</span></div></li>
+    <li><span class="pin">2</span><div><b>La carte-réponse</b>, unique, juste sous la bulle. Elle ne bougera plus : tout ce qui arrive au travail s'y affiche.<span class="not">sauter en bas du fil, ni se dupliquer dans un récapitulatif.</span></div></li>
+    <li><span class="pin">3</span><div><b>Temps écoulé</b>, avec l'anneau de l'avatar qui pulse.</div></li>
+    <li><span class="pin">4</span><div><b>Activité en direct</b> : l'outil en cours, puis les trois derniers faits. Sobre, comme le flux des outils de l'agent.</div></li>
+    <li><span class="pin">5</span><div><b>Arrêter</b> interrompt ce travail seulement. <b>Ouvrir sa conversation</b> : lien discret, pour suivre le détail.<span class="not">arrêter l'agent principal.</span></div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">État 2 · <b>a répondu</b>, réponse lisible</h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="msg-user ux"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#palette"/></svg></span>Expert UX/UI</span>À quoi ça pourrait ressembler visuellement ? Propose une direction.</div>
+    <div class="work ux">
+      <div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#palette"/></svg></span><span class="name">Expert UX/UI</span><span class="meta"><svg class="i s12"><use href="#eye"/></svg>lecture seule · dans ce dossier</span><span class="grow"></span><span class="state ok">a répondu · 21:15</span></div>
+      <div class="work-body folded a"><b class="pin" style="left:-2px;top:6px">1</b>
+        <h3>Direction : « Le carnet de courses calme »</h3>
+        <p>L'appli fonctionne, mais elle ressemble à un formulaire. Je propose un carnet : une seule colonne, beaucoup d'air, et la coche comme geste principal.</p>
+        <h4>Palette</h4>
+        <ul>
+          <li><span class="swatch" style="background:#f6f1e7"></span>Papier <code>#f6f1e7</code> en fond, <span class="swatch" style="background:#2f3a2f"></span>encre <code>#2f3a2f</code> pour le texte.</li>
+          <li><span class="swatch" style="background:#7a9a6b"></span>Sauge <code>#7a9a6b</code> pour la coche et l'ajout, rien d'autre en couleur.</li>
+        </ul>
+        <h4>Mise en page</h4>
+        <ul>
+          <li>Champ d'ajout en haut, collé, toujours visible ; Entrée ajoute.</li>
+          <li>Articles cochés barrés et descendus en bas, regroupés sous « Dans le panier ».</li>
+          <li>Compteur discret « 4 sur 11 » sous le titre, au lieu du badge actuel.</li>
+        </ul>
+        <h4>Typographie et détails</h4>
+        <ul><li>Une seule police, 17 px, interligne large ; cibles de 44 px sur mobile.</li></ul>
+      </div>
+      <div class="more a"><b class="pin" style="left:-2px">2</b><button class="btn ghost small"><svg class="i s12"><use href="#chevd"/></svg>Lire la suite · 14 lignes</button></div>
+      <div class="work-foot">
+        <span class="work-facts a"><b class="pin" style="left:-26px">3</b>1 min 38 s · gratuit</span><span class="grow"></span>
+        <button class="btn primary a"><b class="pin r">4</b><svg class="i"><use href="#send"/></svg>Demander à OpenCode de l'appliquer</button>
+        <button class="btn a"><b class="pin r">5</b><svg class="i"><use href="#reply"/></svg>Répondre à Expert UX/UI</button>
+      </div>
+      <div class="work-foot" style="padding-top:0;padding-bottom:10px"><span class="grow"></span><a class="link a"><b class="pin" style="left:-26px;top:-1px">6</b>Ouvrir sa conversation</a></div>
+      <div class="work-relay a"><b class="pin" style="left:20px;top:7px">7</b><span class="dot"></span>Pas encore transmise à OpenCode — elle le sera avec votre prochain message</div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>La réponse complète, en Markdown</b> : titres, listes, code, couleurs. Repliée après une dizaine de lignes.<span class="not">la résumer à sa première phrase.</span></div></li>
+    <li><span class="pin">2</span><div><b>Lire la suite</b> déplie sur place ; « Replier » la referme.<span class="not">ouvrir une autre conversation.</span></div></li>
+    <li><span class="pin">3</span><div><b>Durée et coût</b>, une seule fois. « gratuit » pour un modèle gratuit, « inclus dans l'abonnement » pour Bob, sinon « ≈ 0,04 $US ».</div></li>
+    <li><span class="pin">4</span><div><b>Demander à OpenCode de l'appliquer</b> (action principale) : envoie à l'agent principal un message préparé qui cite cette réponse. Visible dans le fil comme un message de l'utilisateur.<span class="not">modifier des fichiers lui-même ; le rôle reste en lecture seule.</span></div></li>
+    <li><span class="pin">5</span><div><b>Répondre à Expert UX/UI</b> : pose la puce @Expert UX/UI dans la saisie. La réponse du rôle arrivera dans <i>cette même carte</i>, à la suite.<span class="not">créer un nouveau travail ni une nouvelle carte.</span></div></li>
+    <li><span class="pin">6</span><div><b>Ouvrir sa conversation</b> : le seul chemin vers le détail (outils, raisonnement), en plus de la barre latérale.</div></li>
+    <li><span class="pin">7</span><div><b>Ligne de transmission</b> : dit honnêtement si l'agent principal connaît cette réponse. Point ambre tant qu'elle ne l'est pas.<span class="not">transmettre d'elle-même ; aucun bouton.</span></div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">État 3 · après <b>« Demander à OpenCode de l'appliquer »</b></h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="work ux">
+      <div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#palette"/></svg></span><span class="name">Expert UX/UI</span><span class="meta"><svg class="i s12"><use href="#eye"/></svg>lecture seule · dans ce dossier</span><span class="grow"></span><span class="state ok">a répondu · 21:15</span></div>
+      <div class="work-body" style="padding-bottom:4px"><h3>Direction : « Le carnet de courses calme »</h3><p class="muted" style="color:var(--muted)">L'appli fonctionne, mais elle ressemble à un formulaire. Je propose un carnet : une seule colonne…</p></div>
+      <div class="more"><button class="btn ghost small"><svg class="i s12"><use href="#chevd"/></svg>Lire la suite · 14 lignes</button></div>
+      <div class="work-foot"><span class="work-facts">1 min 38 s · gratuit</span><span class="grow"></span><button class="btn"><svg class="i"><use href="#reply"/></svg>Répondre à Expert UX/UI</button><a class="link">Ouvrir sa conversation</a></div>
+      <div class="work-relay sent a"><b class="pin" style="left:20px;top:7px">1</b><svg class="i s12"><use href="#check"/></svg>Transmise à OpenCode · 21:16</div>
+    </div>
+    <div class="msg-user a"><b class="pin" style="left:-30px">2</b>Applique la direction « Le carnet de courses calme » proposée par Expert UX/UI (réponse ci-dessus) : palette, mise en page et typographie.</div>
+    <div class="msg-agent a"><b class="pin" style="left:-24px">3</b>
+      <div class="tool-row"><svg class="i"><use href="#file"/></svg><span class="t">A lu src/style.css, src/main.ts</span></div>
+      <div class="tool-row"><svg class="i"><use href="#edit"/></svg><span class="t">Modifié src/style.css <span class="add">+88</span> <span class="del">−41</span></span></div>
+      <div class="tool-row"><svg class="i"><use href="#edit"/></svg><span class="t">Modifié src/main.ts <span class="add">+22</span> <span class="del">−9</span></span></div>
+      <div class="tool-row"><svg class="i"><use href="#term"/></svg><span class="t">npm test — 11 réussis</span></div>
+      <p style="margin-top:8px">C'est appliqué : fond papier, coche sauge, champ d'ajout collé en haut, articles cochés regroupés sous « Dans le panier ». Les tests passent.</p>
+      <div class="reply-foot"><svg class="i s12"><use href="#copy"/></svg><span>21:18</span><span class="sep">·</span><span>1 min 52 s</span><span class="sep">·</span><span>2 fichiers <span class="add">+110</span> <span class="del">−50</span></span></div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Transmise à OpenCode</b> : la carte reste où elle est ; l'action principale disparaît puisqu'elle est faite.<span class="not">se déplacer ni se recopier sous le nouveau message.</span></div></li>
+    <li><span class="pin">2</span><div><b>Le message préparé</b>, envoyé tel quel, visible : l'utilisateur sait ce que l'agent a reçu. La réponse du rôle part avec lui en pièce jointe de contexte.</div></li>
+    <li><span class="pin">3</span><div><b>La mère réagit</b> : un tour normal d'OpenCode, avec ses outils et son pied (heure, durée, fichiers).</div></li>
+  </ol></div>
+</div>
+
+<!-- ====================== B ====================== -->
+<h2 class="screen">B. Composer : choisir un rôle</h2>
+<p class="lede">Choisir un rôle ne déclenche jamais d'alerte. Une ligne discrète sous la saisie dit où et comment le rôle travaillera. Entrée envoie toujours, avec ce qui est affiché.</p>
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots"><figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-211439/captures/211740-capture-fenetre.png" alt="Avertissement"><figcaption>211740 — avant toute frappe : avertissement, trois boutons, « dernier commit () » sur un dépôt sans commit. « Demander un avis en lecture seule » oblige à renvoyer le message.</figcaption></figure></div>
+
+<h3 class="tag new">Proposé</h3>
+<h4 class="state">1 · <b>Rôle de conseil</b> (Expert UX/UI), dossier avec 10 modifications non commitées</h4>
+<div class="stage">
+  <div class="frame">
+    <div class="composer to-role ux a"><b class="pin">1</b>
+      <div class="text"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#palette"/></svg></span>Expert UX/UI</span><span class="ph">Demander à Expert UX/UI…</span></div>
+      <div class="composer-bar"><span class="chip"><svg class="i s16"><use href="#clip"/></svg></span><span class="chip"><svg class="i s16"><use href="#shield"/></svg>Build</span><span class="grow"></span><span class="chip">GPT-6.1 Sol <svg class="i s12"><use href="#chevd"/></svg></span><span class="chip">OpenCode <svg class="i s12"><use href="#chevd"/></svg></span><span class="send"><svg class="i s16"><use href="#arrowup"/></svg></span></div>
+    </div>
+    <div class="dest ux a"><b class="pin">2</b><svg class="i s12"><use href="#eye"/></svg><span class="who">Expert UX/UI</span> · lecture seule · dans ce dossier</div>
+    <div class="ctx"><span><svg class="i s12"><use href="#folder"/></svg>liste-courses</span><span><svg class="i s12"><use href="#branch"/></svg>main ●</span></div>
+  </div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>La puce</b> : la saisie prend la couleur du rôle ; le texte d'invite dit à qui l'on écrit.</div></li>
+    <li><span class="pin">2</span><div><b>Ligne discrète</b> : un rôle de conseil (UX, sécurité, reviewer) part <b>toujours</b> en lecture seule, dans le dossier ; il voit les modifications non commitées.<span class="not">avertir, proposer de committer, ni créer de worktree.</span></div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">2 · <b>Rôle qui écrit</b> (Développeur front), 10 modifications non commitées, menu « Changer… » ouvert</h4>
+<div class="stage">
+  <div class="frame" style="padding-bottom:250px">
+    <div class="composer to-role front">
+      <div class="text"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#layout"/></svg></span>Développeur front</span>Ajoute un tri des articles par rayon<span class="caret"></span></div>
+      <div class="composer-bar"><span class="chip"><svg class="i s16"><use href="#clip"/></svg></span><span class="chip"><svg class="i s16"><use href="#shield"/></svg>Build</span><span class="grow"></span><span class="chip">GPT-6.1 Sol <svg class="i s12"><use href="#chevd"/></svg></span><span class="chip">OpenCode <svg class="i s12"><use href="#chevd"/></svg></span><span class="send on a"><b class="pin r">3</b><svg class="i s16"><use href="#arrowup"/></svg></span></div>
+    </div>
+    <div class="dest front a"><b class="pin">1</b><svg class="i s12"><use href="#pencil"/></svg><span class="who">Développeur front</span> · écrit dans sa branche · <span class="warn">Partira du dernier commit, sans vos 10 modifications</span> · <span class="change a"><b class="pin r">2</b>Changer… <svg class="i s12"><use href="#chevd"/></svg></span>
+      <div class="menu">
+        <div class="opt"><span></span><div>Committer d'abord<small>Ouvre la fenêtre de commit (message proposé) ; le travail part ensuite de ce commit, avec vos modifications.</small></div></div>
+        <div class="opt on"><span class="ck"><svg class="i"><use href="#check"/></svg></span><div>Partir sans elles<small>Le rôle part du dernier commit (a3f2c1e). Vos 10 fichiers restent ici, intacts.</small></div></div>
+        <hr>
+        <div class="opt"><span></span><div style="color:var(--text-2)">Voir les 10 modifications<small>.gitignore, README.md, index.html, src/list.ts… </small></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>La ligne dit le choix en cours</b>, en orange : ce qui partira et ce qui ne partira pas. Elle n'apparaît qu'avec un rôle qui écrit et du non-commité.<span class="not">bloquer l'envoi ni s'afficher en encadré jaune.</span></div></li>
+    <li><span class="pin">2</span><div><b>Changer…</b> : menu discret, deux choix exclusifs (coche). Le choix est retenu pour ce dossier jusqu'au prochain commit.<span class="not">« Demander un avis en lecture seule » : c'est un autre rôle, pas une option.</span></div></li>
+    <li><span class="pin">3</span><div><b>Entrée envoie</b>, avec le choix affiché. Avec « Committer d'abord », Entrée ouvre la fenêtre de commit, puis le message part seul après le commit.<span class="not">obliger à retaper le message.</span></div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">3 · <b>Dépôt sans aucun commit</b></h4>
+<div class="stage">
+  <div class="frame">
+    <div class="composer to-role front">
+      <div class="text"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#layout"/></svg></span>Développeur front</span>Ajoute un tri des articles par rayon<span class="caret"></span></div>
+      <div class="composer-bar"><span class="chip"><svg class="i s16"><use href="#clip"/></svg></span><span class="chip"><svg class="i s16"><use href="#shield"/></svg>Build</span><span class="grow"></span><span class="chip">GPT-6.1 Sol <svg class="i s12"><use href="#chevd"/></svg></span><span class="chip">OpenCode <svg class="i s12"><use href="#chevd"/></svg></span><span class="send on"><svg class="i s16"><use href="#arrowup"/></svg></span></div>
+    </div>
+    <div class="dest front a"><b class="pin">1</b><svg class="i s12"><use href="#pencil"/></svg><span class="who">Développeur front</span> · Ce dépôt n'a pas encore de commit : le rôle travaillera directement dans ce dossier</div>
+    <div class="ctx"><span><svg class="i s12"><use href="#folder"/></svg>liste-courses</span><span><svg class="i s12"><use href="#branch"/></svg>main · aucun commit</span></div>
+  </div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Sans commit, pas de worktree</b> : le rôle écrit dans le dossier, comme l'agent principal. La carte-réponse n'aura ni branche ni « Fusionner ».<span class="not">créer un commit vide, ni un worktree, ni afficher « dernier commit () ».</span></div></li>
+  </ol></div>
+</div>
+
+<!-- ====================== C ====================== -->
+<h2 class="screen">C. Travail qui modifie du code, puis fusion</h2>
+<p class="lede">Même carte-réponse que pour un avis ; à la fin, elle montre en plus la branche, le bilan des fichiers et les actions de fusion. La fusion se déroule dans la carte.</p>
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots">
+  <figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-201025/captures/203008-capture-fenetre.png" alt="Sous-tâches et fusion"><figcaption>203008 — la fusion s'affiche dans la carte « Sous-tâches », <b>loin au-dessus</b> du bas du fil ; rien en bas.</figcaption></figure>
+  <figure><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-201025/captures/203119-capture-fenetre.png" alt="Résultat de fusion"><figcaption>203119 — résultat de la fusion : il faut remonter pour le voir.</figcaption></figure>
+</div>
+<h3 class="tag new">Proposé</h3>
+<h4 class="state">1 · <b>a répondu</b>, prêt à fusionner</h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="msg-user front"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#layout"/></svg></span>Développeur front</span>Ajoute un tri des articles par rayon, avec des tests.</div>
+    <div class="work front">
+      <div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#layout"/></svg></span><span class="name">Développeur front</span><span class="meta a"><b class="pin r">1</b><svg class="i s12"><use href="#branch"/></svg>écrit dans sa branche</span><span class="grow"></span><span class="state ok">a répondu · 21:31</span></div>
+      <div class="work-body"><p>Les articles ont maintenant un rayon (Frais, Épicerie, Maison, Autre) choisi à l'ajout ; la liste est groupée par rayon, dans cet ordre. Le rayon est gardé dans la sauvegarde locale (anciens articles : « Autre »). 6 tests ajoutés, 17 réussis.</p></div>
+      <div class="work-changes a"><b class="pin" style="left:-36px;top:8px">2</b><svg class="i s12"><use href="#branch"/></svg><span class="mono">bobine/rayons-a3f2</span><span class="muted">·</span><span>4 fichiers <span class="add">+115</span> <span class="del">−64</span></span><span class="muted">· part de main a3f2c1e</span></div>
+      <div class="work-foot">
+        <span class="work-facts">4 min 12 s · gratuit</span><span class="grow"></span>
+        <button class="btn a"><b class="pin r">3</b><svg class="i"><use href="#diff"/></svg>Voir les modifications</button>
+        <button class="btn a"><b class="pin r">4</b><svg class="i"><use href="#scan"/></svg>Faire relire</button>
+        <button class="btn primary a"><b class="pin r">5</b><svg class="i"><use href="#merge"/></svg>Fusionner dans main</button>
+      </div>
+      <div class="work-foot" style="padding-top:0;padding-bottom:10px"><span class="grow"></span><button class="btn ghost small">Répondre à Développeur front</button><a class="link">Ouvrir sa conversation</a></div>
+      <div class="work-relay"><span class="dot"></span>Pas encore transmise à OpenCode — elle le sera avec votre prochain message</div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>« écrit dans sa branche »</b> remplace « lecture seule » : on sait d'un coup d'œil que ce travail touche au code.</div></li>
+    <li><span class="pin">2</span><div><b>Branche et bilan</b> : nom de la branche, fichiers et lignes, commit de départ.</div></li>
+    <li><span class="pin">3</span><div><b>Voir les modifications</b> ouvre le diff de la branche dans le panneau Modifications.<span class="not">ouvrir la conversation du rôle.</span></div></li>
+    <li><span class="pin">4</span><div><b>Faire relire</b> lance le rôle Code reviewer sur cette branche ; sa carte-réponse se pose sous celle-ci (écran G).</div></li>
+    <li><span class="pin">5</span><div><b>Fusionner dans main</b> (action principale) : la progression s'affiche ici même.<span class="not">pousser, ni fusionner sans voir le bilan.</span></div></li>
+  </ol></div>
+</div>
+
+<div class="cols2">
+<div>
+<h4 class="state">2 · <b>fusion en cours</b> (pied de la carte seulement)</h4>
+<div class="frame" style="padding:0">
+  <div class="work front" style="border:0">
+    <div class="work-head"><span class="role-avatar" data-state="running"><svg class="i"><use href="#layout"/></svg></span><span class="name">Développeur front</span><span class="grow"></span><span class="state"><span class="spin accent"></span>fusion…</span></div>
+    <div class="merge-box" style="margin-left:48px">
+      <div class="row done"><svg class="i s12"><use href="#check"/></svg>main n'a pas bougé depuis le départ</div>
+      <div class="row done"><svg class="i s12"><use href="#check"/></svg>Tests de la branche : 17 réussis</div>
+      <div class="row"><span class="spin accent"></span>Fusion de bobine/rayons-a3f2 dans main…</div>
+      <div class="bar"><i></i></div>
+    </div>
+    <div class="work-foot"><span class="work-facts">4 fichiers +115 −64</span><span class="grow"></span><button class="btn ghost small" disabled>Annuler</button></div>
+  </div>
+</div>
+</div>
+<div>
+<h4 class="state">3 · <b>fusionné</b></h4>
+<div class="frame" style="padding:0">
+  <div class="work front" style="border:0">
+    <div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#layout"/></svg></span><span class="name">Développeur front</span><span class="grow"></span><span class="state ok">fusionné · 21:34</span></div>
+    <div class="merge-box ok" style="margin-left:48px">
+      <div class="row"><svg class="i"><use href="#merge"/></svg><b>Fusionné dans main</b> · branche supprimée</div>
+      <div class="row" style="color:var(--text-2);font-size:12.5px">commit 7c41e9b · 4 fichiers +115 −64</div>
+    </div>
+    <div class="work-foot"><span class="work-facts">4 min 12 s · gratuit</span><span class="grow"></span><button class="btn"><svg class="i"><use href="#diff"/></svg>Voir les modifications</button><a class="link">Ouvrir sa conversation</a></div>
+    <div class="work-relay sent"><svg class="i s12"><use href="#check"/></svg>Transmise à OpenCode, avec le résultat de la fusion</div>
+  </div>
+</div>
+</div>
+</div>
+<div class="callout">La fusion ne se produit qu'ici, dans la carte du travail. Si elle est loin au-dessus quand elle finit, le repère du bas (écran E) dit « ↑ Développeur front : fusionné dans main · Voir ». En cas de conflit, la boîte passe en rouge avec « Demander à OpenCode de résoudre » et « Ouvrir dans le terminal ».</div>
+
+<!-- ====================== D ====================== -->
+<h2 class="screen">D. Plusieurs travaux proposés par l'agent</h2>
+<p class="lede">Une seule carte de groupe, à la place où l'agent l'a proposée. Elle change d'état sur place. Pas de « Sous-tâches » en plus, pas de lignes « L'agent a lancé la conversation fille… ».</p>
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots"><figure class="wide"><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-201025/captures/201957-capture-fenetre.png" alt="Tâches proposées et Sous-tâches"><figcaption>201957 — « 2 tâches proposées », puis deux lignes « L'agent a lancé la conversation fille… », puis <b>une deuxième carte « Sous-tâches »</b> pour les mêmes travaux.</figcaption></figure></div>
+<h3 class="tag new">Proposé</h3>
+<h4 class="state">1 · <b>proposés</b></h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="msg-agent"><p>Je peux découper la suite en trois travaux indépendants :</p></div>
+    <div class="group a"><b class="pin">1</b>
+      <div class="group-head"><svg class="i s16" style="color:var(--accent)"><use href="#sub"/></svg><span class="title">3 travaux proposés</span><span class="sub">· par OpenCode</span></div>
+      <div class="group-row front"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar"><svg class="i"><use href="#layout"/></svg></span><span class="txt"><b>Tri des articles par rayon</b><span>Développeur front · écrit dans sa branche</span></span><span class="acts a"><b class="pin" style="left:-28px">2</b><button class="btn small">Lancer</button><button class="btn ghost small">Faire ici</button><button class="btn ghost small">Refuser</button></span></div>
+      <div class="group-row oc"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar"><svg class="i"><use href="#bot"/></svg></span><span class="txt"><b>Tests de la sauvegarde locale</b><span>un autre OpenCode · écrit dans sa branche</span></span><span class="acts"><button class="btn small">Lancer</button><button class="btn ghost small">Faire ici</button><button class="btn ghost small">Refuser</button></span></div>
+      <div class="group-row ux"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar"><svg class="i"><use href="#palette"/></svg></span><span class="txt"><b>Relire l'accessibilité de l'écran</b><span>Expert UX/UI · lecture seule · dans ce dossier</span></span><span class="acts"><button class="btn small">Lancer</button><button class="btn ghost small">Faire ici</button><button class="btn ghost small">Refuser</button></span></div>
+      <div class="group-foot"><span class="note">Chaque travail part du dernier commit ; vos modifications non commitées restent ici.</span><span class="grow"></span><button class="btn primary a"><b class="pin r">3</b>Tout lancer</button></div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Carte de groupe</b>, à place fixe : là où l'agent l'a proposée. Le chevron de chaque ligne montre la consigne.</div></li>
+    <li><span class="pin">2</span><div><b>Lancer</b> ce travail · <b>Faire ici</b> : l'agent principal le fait lui-même dans ce tour · <b>Refuser</b> : la ligne se grise, l'agent en est informé.<span class="not">ouvrir de nouvelle carte : la ligne change d'état sur place.</span></div></li>
+    <li><span class="pin">3</span><div><b>Tout lancer</b> : lance les lignes non refusées.</div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">2 · <b>en cours</b>, une ligne dépliée sur sa réponse</h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="group">
+      <div class="group-head"><svg class="i s16" style="color:var(--accent)"><use href="#sub"/></svg><span class="title">3 travaux</span><span class="sub a"><b class="pin r" style="right:-26px">1</b>· 1 en cours, 2 finis</span><span class="grow"></span><span class="work-facts">gratuit</span></div>
+      <div class="group-row front"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar" data-state="running"><svg class="i"><use href="#layout"/></svg></span><span class="txt"><b>Tri des articles par rayon</b><span>Modifie src/list.ts… · 2:10</span></span><span class="st"><span class="spin accent"></span>en cours</span></div>
+      <div class="group-row oc"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar" data-state="done"><svg class="i"><use href="#bot"/></svg></span><span class="txt"><b>Tests de la sauvegarde locale</b><span>bobine/tests-stockage-118a · 2 fichiers <span class="add">+64</span> <span class="del">−0</span></span></span><span class="st ok">a répondu</span></div>
+      <div class="group-row ux a" style="background:var(--surface-2)"><b class="pin" style="left:1px;top:12px">2</b><span class="chev"><svg class="i s12"><use href="#chevd"/></svg></span><span class="role-avatar" data-state="done"><svg class="i"><use href="#palette"/></svg></span><span class="txt"><b>Relire l'accessibilité de l'écran</b><span>Expert UX/UI · lecture seule</span></span><span class="st ok">a répondu</span></div>
+      <div class="group-open">
+        <div class="work-body"><p>Trois points, dont un bloquant : la case à cocher n'a pas de libellé lisible par un lecteur d'écran (<code>src/main.ts:42</code>). Les contrastes du compteur sont à 3,1:1 (minimum 4,5:1). Le focus n'est pas visible sur le bouton Supprimer.</p></div>
+        <div class="work-foot"><button class="btn primary small">Demander à OpenCode de l'appliquer</button><button class="btn small">Répondre à Expert UX/UI</button><span class="grow"></span><a class="link">Ouvrir sa conversation</a></div>
+      </div>
+      <div class="group-foot"><span class="note">1 travail prêt à fusionner</span><span class="grow"></span><button class="btn small">Fusionner le travail prêt dans main</button></div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>L'en-tête compte</b> sur place : « 3 travaux · 1 en cours, 2 finis ». Coût total, une seule fois.</div></li>
+    <li><span class="pin">2</span><div><b>Une ligne se déplie</b> sur la carte-réponse complète du travail (mêmes actions qu'à l'écran A), dans le groupe.<span class="not">créer une carte-réponse séparée sous le groupe.</span></div></li>
+  </ol></div>
+</div>
+
+<h4 class="state">3 · <b>finis</b>, pied de fusion</h4>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="group">
+      <div class="group-head"><svg class="i s16" style="color:var(--accent)"><use href="#sub"/></svg><span class="title">3 travaux</span><span class="sub">· 3 finis</span><span class="grow"></span><span class="work-facts">7 min 40 s · gratuit</span></div>
+      <div class="group-row front"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar" data-state="done"><svg class="i"><use href="#layout"/></svg></span><span class="txt"><b>Tri des articles par rayon</b><span>bobine/rayons-a3f2 · 4 fichiers <span class="add">+115</span> <span class="del">−64</span></span></span><span class="st ok">a répondu</span></div>
+      <div class="group-row oc"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar" data-state="done"><svg class="i"><use href="#bot"/></svg></span><span class="txt"><b>Tests de la sauvegarde locale</b><span>bobine/tests-stockage-118a · 2 fichiers <span class="add">+64</span> <span class="del">−0</span></span></span><span class="st ok">a répondu</span></div>
+      <div class="group-row ux"><span class="chev"><svg class="i s12"><use href="#chev"/></svg></span><span class="role-avatar" data-state="done"><svg class="i"><use href="#palette"/></svg></span><span class="txt"><b>Relire l'accessibilité de l'écran</b><span>Expert UX/UI · lecture seule · rien à fusionner</span></span><span class="st ok">a répondu</span></div>
+      <div class="group-foot a"><b class="pin" style="left:1px;top:14px">1</b><span class="note">Réponses transmises à OpenCode avec votre prochain message</span><span class="grow"></span><button class="btn">Voir les modifications</button><button class="btn primary"><svg class="i"><use href="#merge"/></svg>Fusionner les 2 prêts dans main</button></div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Fusionner les 2 prêts dans main</b> : fusionne l'une après l'autre les branches finies ; chaque ligne montre sa progression, puis « fusionné ». Les travaux en lecture seule n'entrent pas dans le compte.<span class="not">fusionner un travail encore en cours ou en conflit : il reste avec son bouton.</span></div></li>
+  </ol></div>
+</div>
+
+<!-- ====================== E ====================== -->
+<h2 class="screen">E. Repère en bas du fil</h2>
+<p class="lede">L'Expert UX/UI répond pendant que la conversation a continué. Sa carte est loin au-dessus. En bas, une ligne fine, pas une carte.</p>
+<h3 class="tag new">Proposé</h3>
+<div class="stage">
+  <div class="frame withside">
+    <div class="side">
+      <div class="it"><svg class="i"><use href="#edit"/></svg>Nouvelle conversation</div>
+      <div class="h">RÉCENTS</div>
+      <div class="it on"><span class="grow">Je veux créer une petite appli web de liste…</span></div>
+      <div class="it child a ux"><b class="pin" style="left:1px;top:6px">3</b><span class="role-avatar s18" data-state="done"><svg class="i s12"><use href="#palette"/></svg></span><span class="grow">À quoi ça pourrait ressembler…</span><span class="dot" style="background:var(--ok)"></span></div>
+      <div class="it">Je veux créer un petit jeu unity…</div>
+      <div class="it">Montre un exemple de code dart</div>
+    </div>
+    <div class="main">
+      <div class="scrolled a"><b class="pin">1</b>↑ plus haut dans le fil : la carte-réponse d'Expert UX/UI (a répondu à 21:15)</div>
+      <div class="msg-user">En attendant, ajoute un bouton pour vider la liste, avec une confirmation.</div>
+      <div class="msg-agent">
+        <div class="tool-row"><svg class="i"><use href="#edit"/></svg><span class="t">Modifié src/main.ts <span class="add">+31</span> <span class="del">−2</span></span></div>
+        <div class="tool-row"><svg class="i"><use href="#term"/></svg><span class="t">npm test — 12 réussis</span></div>
+        <p style="margin-top:6px">Ajouté : « Vider la liste » en bas, avec une confirmation qui dit combien d'articles partiront.</p>
+        <div class="reply-foot"><svg class="i s12"><use href="#copy"/></svg><span>21:16</span><span class="sep">·</span><span>48 s</span><span class="sep">·</span><span>1 fichier <span class="add">+31</span> <span class="del">−2</span></span></div>
+      </div>
+      <div class="marker ux a"><b class="pin" style="left:-24px">2</b><span class="in"><svg class="i s12"><use href="#up"/></svg><span class="role-avatar s18"><svg class="i s12"><use href="#palette"/></svg></span>Expert UX/UI a répondu · <a>Voir</a></span></div>
+      <div class="composer"><div class="text"><span class="ph">Répondre à OpenCode…</span></div><div class="composer-bar"><span class="chip"><svg class="i s16"><use href="#clip"/></svg></span><span class="grow"></span><span class="chip">GPT-6.1 Sol</span><span class="chip">OpenCode</span><span class="send"><svg class="i s16"><use href="#arrowup"/></svg></span></div></div>
+    </div>
+  </div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div>La carte-réponse est <b>restée à sa place</b>, sous la question, hors de vue.</div></li>
+    <li><span class="pin">2</span><div><b>Repère</b> : une ligne fine, centrée, au-dessus de la saisie. <b>Voir</b> fait défiler jusqu'à la carte et l'entoure un instant de la couleur du rôle. Il disparaît dès que la carte a été vue (défilement ou clic). Plusieurs réponses : « ↑ 2 travaux ont répondu · Voir » (va à la plus ancienne).<span class="not">recopier la réponse, ni rester une fois vu, ni prendre la place d'un message.</span></div></li>
+    <li><span class="pin">3</span><div><b>Barre latérale</b> : point vert « a répondu » sur la ligne du travail, jusqu'à ce qu'on l'ait vu.</div></li>
+  </ol></div>
+</div>
+<h4 class="state">Après « Voir » : la carte au centre, brièvement entourée</h4>
+<div class="stage"><div class="frame"><div class="thread">
+  <div class="msg-user ux"><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#palette"/></svg></span>Expert UX/UI</span>À quoi ça pourrait ressembler visuellement ? Propose une direction.</div>
+  <div class="work ux flash"><div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#palette"/></svg></span><span class="name">Expert UX/UI</span><span class="meta"><svg class="i s12"><use href="#eye"/></svg>lecture seule · dans ce dossier</span><span class="grow"></span><span class="state ok">a répondu · 21:15</span></div><div class="work-body" style="padding-bottom:12px"><h3>Direction : « Le carnet de courses calme »</h3><p>L'appli fonctionne, mais elle ressemble à un formulaire…</p></div></div>
+</div></div><div class="legend"><p>L'anneau s'efface après une seconde (aucun mouvement si les animations sont réduites).</p></div></div>
+
+<!-- ====================== F ====================== -->
+<h2 class="screen">F. Bilan du tour dans le pied de la réponse</h2>
+<p class="lede">Le bilan n'est plus un élément du fil : il devient le pied de la réponse qui finit le tour, et ne bouge plus.</p>
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots"><figure class="wide"><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-201025/captures/203918-capture-fenetre.png" alt="Bilan en bas"><figcaption>203918 — <b>deux pieds</b> (« 20:19 · 1 min 11 s » puis « Terminé en … ») ; le second est rendu tout en bas, sous des cartes arrivées après lui.</figcaption></figure></div>
+<h3 class="tag new">Proposé</h3>
+<div class="cols2">
+<div>
+<h4 class="state">1 · <b>Travaille encore…</b> (un sous-agent tourne)</h4>
+<div class="frame" style="padding-left:40px"><div class="thread">
+  <div class="msg-user">Vérifie que l'appli marche bien sur mobile.</div>
+  <div class="msg-agent">
+    <div class="tool-row"><svg class="i"><use href="#file"/></svg><span class="t">A lu index.html, src/style.css</span></div>
+    <div class="tool-row sub a"><b class="pin" style="left:-28px">1</b><span class="spin" style="border-top-color:var(--plan)"></span><span class="t">explore — cherche les tailles fixes en px</span><span class="badge-sub">sous-agent</span></div>
+    <p style="margin-top:6px">Rien de bloquant : la mise en page tient à 360 px. J'attends la fin de la recherche des tailles fixes.</p>
+    <div class="reply-foot a"><b class="pin" style="left:-28px;top:-2px">2</b><span class="spin"></span><span>Travaille encore…</span></div>
+  </div>
+</div></div>
+</div>
+<div>
+<h4 class="state">2 · <b>tour fini</b></h4>
+<div class="frame" style="padding-left:40px"><div class="thread">
+  <div class="msg-user">Vérifie que l'appli marche bien sur mobile.</div>
+  <div class="msg-agent">
+    <div class="tool-row"><svg class="i"><use href="#file"/></svg><span class="t">A lu index.html, src/style.css</span></div>
+    <div class="tool-row"><svg class="i"><use href="#sub"/></svg><span class="t">explore — 2 tailles fixes trouvées</span><span class="badge-sub">sous-agent</span></div>
+    <div class="tool-row"><svg class="i"><use href="#edit"/></svg><span class="t">Modifié src/style.css <span class="add">+6</span> <span class="del">−4</span></span></div>
+    <p style="margin-top:6px">Corrigé : les deux largeurs fixes passent en <code>max-width</code>. La mise en page tient de 320 à 1440 px.</p>
+    <div class="reply-foot a"><b class="pin" style="left:-28px;top:-2px">3</b><svg class="i s12"><use href="#copy"/></svg><span>21:17</span><span class="sep">·</span><span>2 min 29 s</span><span class="sep">·</span><span>9 fichiers <span class="add">+346</span> <span class="del">−0</span></span></div>
+  </div>
+</div></div>
+</div>
+</div>
+<div class="legend" style="margin-top:16px;max-width:980px"><ol>
+  <li><span class="pin">1</span><div><b>Sous-agent</b> : un outil interne de l'agent, dans le flux de ses outils, avec un liseré et le mot « sous-agent ».<span class="not">devenir un « travail », ni avoir sa carte, ni apparaître dans la barre latérale.</span></div></li>
+  <li><span class="pin">2</span><div><b>« Travaille encore… »</b> : le pied attend la fin réelle du tour (sous-agents compris), avec un petit indicateur.<span class="not">annoncer « Terminé » trop tôt.</span></div></li>
+  <li><span class="pin">3</span><div><b>Le bilan fondu dans le pied</b> : heure · durée · fichiers. Un seul pied par tour, sous la réponse qui le finit. Ce qui arrive après (une carte-réponse, un repère) se met dessous, sans le déplacer.<span class="not">flotter en bas du fil, ni dire « Terminé en ».</span></div></li>
+</ol></div>
+
+<!-- ====================== G ====================== -->
+<h2 class="screen">G. Relecture par le Code reviewer</h2>
+<p class="lede">« Faire relire » (carte d'un travail ou onglet Modifications) et « @Code reviewer » sont le même chemin : le rôle Code reviewer, avec la même carte-réponse. Ses remarques sont visibles dans la carte.</p>
+<h3 class="tag today">Aujourd'hui</h3>
+<div class="today-shots"><figure class="wide"><img src="file:///Users/jerome/Dev/bobine-oss/.pilote/sessions/2026-11-19-211439/captures/212235-capture-fenetre.png" alt="Relecture aujourd'hui"><figcaption>212235 — relecture : les remarques ne sont pas lisibles dans le fil ; « Faire relire… » et le rôle Code reviewer sont deux chemins distincts.</figcaption></figure></div>
+<h3 class="tag new">Proposé</h3>
+<div class="stage">
+  <div class="frame"><div class="thread">
+    <div class="diffpanel a"><b class="pin">1</b>
+      <div class="ph"><svg class="i"><use href="#diff"/></svg>Modifications · 2 fichiers <span class="add">+110</span> <span class="del">−50</span><span class="grow"></span><button class="btn small"><svg class="i s12"><use href="#scan"/></svg>Faire relire</button></div>
+      <div class="f"><span class="grow mono">src/style.css</span><span class="add">+88</span><span class="del">−41</span></div>
+      <div class="f"><span class="grow mono">src/main.ts</span><span class="add">+22</span><span class="del">−9</span></div>
+    </div>
+    <div class="msg-user rev a"><b class="pin">2</b><span class="mention"><span class="role-avatar s18"><svg class="i s12"><use href="#scan"/></svg></span>Code reviewer</span>Relis les modifications non commitées (2 fichiers).</div>
+    <div class="work rev">
+      <div class="work-head"><span class="role-avatar" data-state="done"><svg class="i"><use href="#scan"/></svg></span><span class="name">Code reviewer</span><span class="meta"><svg class="i s12"><use href="#eye"/></svg>lecture seule · dans ce dossier</span><span class="grow"></span><span class="state ok">a répondu · 21:22</span></div>
+      <div class="work-body"><p>Le changement est propre et lisible. 3 remarques, dont une à corriger avant de committer.</p>
+        <ul class="findings a"><b class="pin" style="left:-34px">3</b>
+          <li><span class="sev hi">Important</span><span><span class="where">src/main.ts:42</span>La case à cocher n'a pas de libellé : un lecteur d'écran annonce « case à cocher » sans l'article.</span></li>
+          <li><span class="sev mid">À voir</span><span><span class="where">src/main.ts:77</span>« Vider la liste » supprime la sauvegarde avant la confirmation : une annulation perd les articles.</span></li>
+          <li><span class="sev lo">Détail</span><span><span class="where">src/style.css:118</span>Le gris du compteur (#9a9a8f sur #f6f1e7) est à 2,9:1 ; il faut 4,5:1.</span></li>
+        </ul>
+      </div>
+      <div class="work-foot">
+        <span class="work-facts">52 s · gratuit</span><span class="grow"></span>
+        <button class="btn primary a"><b class="pin r">4</b><svg class="i"><use href="#send"/></svg>Demander à OpenCode de corriger</button>
+        <button class="btn a"><b class="pin r">5</b><svg class="i"><use href="#diff"/></svg>Voir sur le diff</button>
+      </div>
+      <div class="work-foot" style="padding-top:0;padding-bottom:10px"><span class="grow"></span><button class="btn ghost small">Répondre à Code reviewer</button><a class="link">Ouvrir sa conversation</a></div>
+      <div class="work-relay"><span class="dot"></span>Pas encore transmise à OpenCode — elle le sera avec votre prochain message</div>
+    </div>
+  </div></div>
+  <div class="legend"><ol>
+    <li><span class="pin">1</span><div><b>Faire relire</b> dans Modifications : un seul bouton, il lance le rôle Code reviewer.<span class="not">ouvrir un autre type de relecture, distinct du rôle.</span></div></li>
+    <li><span class="pin">2</span><div><b>La demande apparaît dans le fil</b>, comme si l'utilisateur avait tapé « @Code reviewer … » : même modèle que l'écran A. Depuis une carte de travail (écran C), la bulle dit « Relis la branche bobine/rayons-a3f2 ».</div></li>
+    <li><span class="pin">3</span><div><b>Les remarques, visibles</b> : gravité, fichier:ligne (cliquable, ouvre le diff à la ligne), une phrase chacune. Le reste de la réponse est replié comme à l'écran A.</div></li>
+    <li><span class="pin">4</span><div><b>Demander à OpenCode de corriger</b> : message préparé qui reprend les 3 remarques.<span class="not">corriger lui-même : le relecteur reste en lecture seule.</span></div></li>
+    <li><span class="pin">5</span><div><b>Voir sur le diff</b> : ouvre Modifications avec les remarques posées en notes sur les lignes.</div></li>
+  </ol></div>
+</div>
+
+<h2 class="screen">Doutes à trancher</h2>
+<table class="doc">
+  <tr><th style="width:30%">Question</th><th>Proposition de la maquette</th></tr>
+  <tr><td>Coût nul : « gratuit », « ≈ 0,00 $US » ou rien ?</td><td>« gratuit » pour un modèle gratuit, « inclus dans l'abonnement » pour Bob, sinon le montant. Une seule fois par carte.</td></tr>
+  <tr><td>« Répondre à &lt;rôle&gt; » : la suite dans la même carte, ou une nouvelle bulle + carte ?</td><td>Nouvelle bulle « @Rôle » et la réponse s'ajoute dans la même carte, sous la précédente (fil de discussion du rôle). À valider : la carte peut grandir.</td></tr>
+  <tr><td>Transmission automatique de la réponse au prochain message</td><td>Gardée (comportement actuel), mais dite clairement. Faut-il un moyen de ne pas la transmettre ?</td></tr>
+  <tr><td>Choix « Committer d'abord / Partir sans elles » retenu</td><td>Retenu pour le dossier jusqu'au prochain commit. Défaut : « Partir sans elles ».</td></tr>
+  <tr><td>Groupe de travaux depuis plusieurs @rôles dans un message</td><td>Même carte de groupe sous la bulle, sans l'étape « proposés » : les travaux partent directement.</td></tr>
+</table>
+</div>
+</body>
+</html>
