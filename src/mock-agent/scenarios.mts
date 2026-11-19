@@ -2124,6 +2124,51 @@ export const scenarios: Record<string, Scenario> = {
       )
     ]
   },
+  'changement-de-site': {
+    description:
+      'Ouvre MOCK_BROWSER_URL, puis `browser_javascript` `location.href = MOCK_FOREIGN_URL` (site non accordé) : l’app arrête la navigation et le dit à l’agent (fiche 249)',
+    steps: [
+      { kind: 'text', text: 'J’essaie de changer de site. ' },
+      ...toolChain(
+        [
+          {
+            tool: 'browser_navigate',
+            args: () => ({ url: process.env['MOCK_BROWSER_URL'] ?? 'http://127.0.0.1:9/' })
+          },
+          {
+            tool: 'browser_javascript',
+            args: () => ({
+              code: `location.href = ${JSON.stringify(process.env['MOCK_FOREIGN_URL'] ?? 'https://exemple.invalid/')}; 'parti'`
+            })
+          },
+          { tool: 'browser_javascript', args: () => ({ code: 'location.href' }) }
+        ],
+        (results) => [
+          {
+            kind: 'text',
+            text: results.slice(1).some((r) => r?.includes('Bobine stopped it'))
+              ? `Navigation arrêtée par Bobine. Page : ${results[2] ?? ''}`
+              : `Aucune navigation arrêtée : ${results.slice(1).join(' | ')}`
+          }
+        ]
+      )
+    ]
+  },
+  'page-affichee': {
+    description:
+      'Lit le texte de la page affichée (`browser_get_page_text`) : sur un site non accordé, l’app demande l’accord d’abord (fiche 249)',
+    steps: [
+      { kind: 'text', text: 'Je lis la page. ' },
+      ...toolChain([{ tool: 'browser_get_page_text', args: () => ({}) }], (results) => [
+        {
+          kind: 'text',
+          text: results[0]?.includes('not approved')
+            ? 'Page refusée : rien lu.'
+            : `Texte lu : ${results[0] ?? ''}`
+        }
+      ])
+    ]
+  },
   telechargement: {
     description:
       'Clique sur « Exporter » de MOCK_BROWSER_URL + "export" (téléchargement d’un CSV), puis dit ce que l’utilisateur a décidé (fiche 094)',

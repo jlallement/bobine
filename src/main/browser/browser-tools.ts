@@ -4,13 +4,14 @@
  *
  * Écrits contre `BrowserDriver` (une page par conversation) : testables sans Electron.
  */
-import { normalizeUrl, siteToApprove } from '@shared/browser'
+import { normalizeUrl, pageSiteToApprove, siteToApprove } from '@shared/browser'
 import {
   dialogAnswerText,
   dialogOpenText,
   type DialogAnswer,
   type PageDialog
 } from './page-dialogs'
+import { blockedNavigationNote } from './navigation-guard'
 import type { SiteMemory } from '../approvals'
 import type { AppTool, AppToolModule, ToolArgs, ToolContent, ToolContext } from '../mcp/tools'
 import { argsOf, pointArg } from '../mcp/tools'
@@ -92,6 +93,8 @@ export interface BrowserDriver {
   colorScheme: (scheme: 'light' | 'dark' | undefined) => Promise<void>
   /** Popups demandées par les actions de l'agent et bloquées depuis la dernière fois (fiche 072). */
   blockedPopups?: () => string[]
+  /** Navigations vers un site non accordé, arrêtées pendant ses actions (fiche 249). */
+  blockedNavigations?: () => string[]
   /** Téléchargements lancés par les actions de l'agent, depuis la dernière fois (fiche 094). */
   downloads?: () => DownloadNote[]
   /**
@@ -180,7 +183,34 @@ class SiteApprovals {
   forget(conversationId: string): void {
     this.approved.delete(conversationId)
   }
+
+  /** La page à cette adresse est-elle permise à l'agent (local, accordé ici ou « toujours ») ? */
+  allows(conversationId: string, url: string, always?: SiteMemory): boolean {
+    const site = pageSiteToApprove(url)
+    return !site || this.has(conversationId, site) || (always?.has(site) ?? false)
+  }
 }
+
+/**
+ * Outils qui lisent la page affichée ou y agissent : ils vérifient d'abord son site (fiche 249).
+ * Pas `browser_navigate` (son propre accord), `browser_tabs`, `browser_resize` (rien de la page).
+ */
+const PAGE_TOOLS = new Set([
+  'browser_screenshot',
+  'browser_read_page',
+  'browser_get_page_text',
+  'browser_find',
+  'browser_click',
+  'browser_hover',
+  'browser_type',
+  'browser_key',
+  'browser_scroll',
+  'browser_drag',
+  'browser_form_input',
+  'browser_console',
+  'browser_network',
+  'browser_javascript'
+])
 
 export interface BrowserToolsOptions {
   /** Page de la conversation (créée à la demande). */
@@ -195,6 +225,8 @@ export interface BrowserToolsOptions {
 export function browserToolsModule(options: BrowserToolsOptions): AppToolModule & {
   /** L'utilisateur a ouvert ce site lui-même (barre d'adresse) : l'agent peut y revenir. */
   approveSite: (conversationId: string, url: string) => void
+  /** Site permis à l'agent dans cette conversation : la page peut y aller pendant ses actions. */
+  allows: (conversationId: string, url: string) => boolean
   forget: (conversationId: string) => void
 } {
   const sites = new SiteApprovals()
@@ -211,6 +243,7 @@ export function browserToolsModule(options: BrowserToolsOptions): AppToolModule 
       const site = siteToApprove(url)
       if (site) sites.add(conversationId, site)
     },
+    allows: (conversationId, url) => sites.allows(conversationId, url, options.alwaysSites),
     forget: (conversationId) => sites.forget(conversationId),
     tools: (context) =>
       createTools(
@@ -230,9 +263,12 @@ function createTools(
   alwaysSites?: SiteMemory,
   imageCodec?: ImageCodec
 ): AppTool[] {
-  /** Demande l'accord pour un site extérieur ; `undefined` si on peut y aller. */
-  const approve = async (url: string): Promise<string | undefined> => {
-    const site = siteToApprove(url)
+  /**
+   * Demande l'accord pour un site extérieur ; `undefined` si on peut y aller. `shown` : la page y
+   * est déjà (l'agent veut la lire ou y agir, fiche 249), la question le dit.
+   */
+  const approve = async (url: string, shown = false): Promise<string | undefined> => {
+    const site = shown ? pageSiteToApprove(url) : siteToApprove(url)
     if (!site || sites.has(context.conversationId, site) || alwaysSites?.has(site)) {
       return undefined
     }
@@ -247,7 +283,7 @@ function createTools(
     }
     const answer = await context.ask(
       {
-        question: t('approvals.site.question', { site }),
+        question: t(shown ? 'approvals.site.questionShown' : 'approvals.site.question', { site }),
         header: t('approvals.site.header'),
         options: [
           {
@@ -276,7 +312,15 @@ function createTools(
       return `The user has not approved ${site} yet. End your turn now; their decision will arrive as their next message.`
     }
     if (accept(answer)) return undefined
-    return `The user refused to open ${site}. Do not try again.`
+    return shown
+      ? `The page shown is on ${site}, which the user has not approved for you: nothing was read or done there. Do not try again; use browser_navigate to go back to an approved page.`
+      : `The user refused to open ${site}. Do not try again.`
+  }
+
+  /** Page affichée sur un site non accordé : l'outil échoue (un lot s'arrête), rien n'est fait. */
+  const checkShownSite = async (): Promise<void> => {
+    const refused = await approve(page.current().url, true)
+    if (refused) throw new Error(refused)
   }
 
   const pageInfo = () => {
@@ -315,6 +359,8 @@ function createTools(
       const target = str(args, 'url')
       if (target === 'back' || target === 'forward' || target === 'reload') {
         await page.go(target)
+        // L'historique peut mener à un site non accordé : rien n'en est dit avant l'accord.
+        await checkShownSite()
         return [{ type: 'text', text: pageInfo() }]
       }
       const url = normalizeUrl(target)
@@ -487,10 +533,27 @@ function createTools(
       } else if (action === 'select') page.selectTab(str(args, 'tab_id'))
       else if (action === 'close') page.closeTab(str(args, 'tab_id'))
       else if (action !== 'list') throw new Error('`action` : list, new, select ou close')
-      const lines = page
-        .tabs()
-        .map((t) => `${t.active ? '*' : ' '} ${t.id}  ${t.title || '(sans titre)'} — ${t.url}`)
+      // Onglet sur un site non accordé : ni son titre ni son adresse entière (fiche 249).
+      const lines = page.tabs().map((t) => {
+        const site = pageSiteToApprove(t.url)
+        const shown =
+          site && !sites.allows(context.conversationId, t.url, alwaysSites)
+            ? `(site not approved) — ${site}`
+            : `${t.title || '(sans titre)'} — ${t.url}`
+        return `${t.active ? '*' : ' '} ${t.id}  ${shown}`
+      })
       return [{ type: 'text', text: lines.length ? lines.join('\n') : 'Aucun onglet.' }]
+    }
+  }
+
+  // Site de la page vérifié avant chaque outil qui la lit ou y agit, en lot et en film compris.
+  for (const name of PAGE_TOOLS) {
+    const run = actions[name]
+    if (run) {
+      actions[name] = async (args) => {
+        await checkShownSite()
+        return run(args)
+      }
     }
   }
 
@@ -655,7 +718,9 @@ function createTools(
    */
   const withPageNotes = (content: ToolContent[]): ToolContent[] => {
     const blocked = page.blockedPopups?.() ?? []
+    const stopped = page.blockedNavigations?.() ?? []
     const notes = [
+      ...(stopped.length > 0 ? [blockedNavigationNote(stopped)] : []),
       ...(page.dialogAnswers?.() ?? []).map(dialogAnswerText),
       ...(page.downloads?.() ?? []).map(downloadNote)
     ]

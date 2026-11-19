@@ -3235,6 +3235,7 @@
       "allow": "Allow",
       "always": "Always allow",
       "question": "The agent wants to open {{site}} in the built-in browser. Allow it?",
+      "questionShown": "The page shown is on {{site}}. The agent wants to read it and act on it. Allow it?",
       "header": "Website",
       "allowDescription": "For this conversation: the agent can read and use {{site}}.",
       "alwaysDescription": "Remembered on this Mac; can be revoked in Settings › Privacy."

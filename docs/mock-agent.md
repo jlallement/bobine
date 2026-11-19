@@ -267,6 +267,8 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `navigateur-clic` | Clique au centre de `#cible` par coordonnées CSS (lues dans la page), capture, puis dit les clics reçus et la fenêtre CSS : juste même page zoomée (fiche 129) |
 | `navigateur-mobile` | `browser_resize` mobile, clic sur `#cible`, défilement, puis une demande d'autorisation qui garde le tour ouvert ; la taille s'annule à la fin du tour (fiche 129) |
 | `popup` | Clique sur un bouton de la page `MOCK_BROWSER_URL` + `popup` qui ouvre une fenêtre de connexion : l'app la bloque et le dit à l'agent (fiche 072) |
+| `changement-de-site` | Ouvre `MOCK_BROWSER_URL`, puis `browser_javascript` `location.href = MOCK_FOREIGN_URL` : l'app arrête la navigation vers ce site non accordé et le dit à l'agent (fiche 249) |
+| `page-affichee` | Lit le texte de la page affichée : sur un site non accordé, la carte d'accord vient d'abord ; refusé, rien n'est lu (fiche 249) |
 | `telechargement` | Clique sur « Exporter » de la page `MOCK_BROWSER_URL` + `export` (un CSV) : l'app demande « Enregistrer sous » à l'utilisateur et le dit à l'agent ; après une pause, une autre action lui apprend la décision (enregistré et où, ou annulé) (fiche 094) |
 | `boite-page` | Clique sur « Supprimer » de la page `MOCK_BROWSER_URL` + `confirm`, qui ouvre une boîte `confirm()` : l'outil rend la main, l'outil suivant échoue tout de suite ; après une pause, une autre action lui apprend la réponse de l'utilisateur (fiches 094, 097) |
 | `planche-contact` | Filme la page `MOCK_BROWSER_URL` + `anime` pendant un clic qui fait glisser un carré (`browser_filmstrip`, planche contact, fiche 075) |

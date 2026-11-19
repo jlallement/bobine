@@ -401,3 +401,107 @@ describe('planche contact du navigateur (fiche 075)', () => {
     expect(t.page.wheel).not.toHaveBeenCalled()
   })
 })
+
+describe('site de la page vérifié avant chaque outil (fiche 249)', () => {
+  /** Page partie ailleurs sans `browser_navigate` (clic, `location = …`, redirection tardive). */
+  const awayPage = (overrides: Partial<BrowserDriver> = {}) =>
+    fakePage({
+      current: () => ({ url: 'https://exemple.com/settings/tokens', title: 'Jetons' }),
+      ...overrides
+    })
+
+  it('site non accordé, refus : rien n’est lu ni fait, l’outil échoue', async () => {
+    const t = setup(['Refuser'], awayPage())
+    await expect(t.call('browser_javascript', { code: 'document.body.innerText' })).rejects.toThrow(
+      'not approved'
+    )
+    expect(t.page.evaluatePage).not.toHaveBeenCalled()
+    const question = vi.mocked(t.context.ask).mock.calls[0]?.[0].question
+    expect(question).toContain('La page affichée est sur exemple.com')
+  })
+
+  it('chaque outil qui lit la page ou y agit passe par l’accord', async () => {
+    for (const [name, args] of [
+      ['browser_screenshot', {}],
+      ['browser_read_page', {}],
+      ['browser_get_page_text', {}],
+      ['browser_find', { query: 'x' }],
+      ['browser_click', { coordinate: [1, 1] }],
+      ['browser_hover', { coordinate: [1, 1] }],
+      ['browser_type', { text: 'x' }],
+      ['browser_key', { key: 'Enter' }],
+      ['browser_scroll', { direction: 'down' }],
+      ['browser_drag', { from: [1, 1], to: [2, 2] }],
+      ['browser_form_input', { ref: 'ref_1', value: 'x' }],
+      ['browser_console', {}],
+      ['browser_network', {}],
+      ['browser_javascript', { code: '1' }]
+    ] as const) {
+      const t = setup(['Refuser'], awayPage())
+      await expect(t.call(name, args), name).rejects.toThrow('not approved')
+      expect(t.context.ask, name).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('accordé une fois : l’outil s’exécute, sans redemander ensuite', async () => {
+    const t = setup(['Autoriser'], awayPage())
+    await t.call('browser_javascript', { code: '1' })
+    await t.call('browser_get_page_text', {})
+    expect(t.context.ask).toHaveBeenCalledTimes(1)
+    expect(t.page.evaluatePage).toHaveBeenCalled()
+    expect(t.module.allows('c1', 'https://exemple.com/autre')).toBe(true)
+    expect(t.module.allows('c2', 'https://exemple.com/autre')).toBe(false)
+  })
+
+  it('page locale ou vide : rien à demander', async () => {
+    for (const url of ['http://localhost:3000/', 'about:blank', '']) {
+      const t = setup(null, fakePage({ current: () => ({ url, title: '' }) }))
+      await t.call('browser_get_page_text', {})
+      expect(t.context.ask).not.toHaveBeenCalled()
+    }
+  })
+
+  it('lot : la première action sur la page refusée arrête le lot, une seule question', async () => {
+    const t = setup(['Refuser'], awayPage())
+    const result = await t.call('browser_batch', {
+      actions: [
+        { tool: 'browser_click', args: { coordinate: [1, 1] } },
+        { tool: 'browser_get_page_text', args: {} }
+      ]
+    })
+    expect(result.isError).toBe(true)
+    expect(t.page.click).not.toHaveBeenCalled()
+    expect(t.page.pageText).not.toHaveBeenCalled()
+    expect(t.context.ask).toHaveBeenCalledTimes(1)
+  })
+
+  it('historique vers un site non accordé : ni titre ni adresse avant l’accord', async () => {
+    const t = setup(['Refuser'], awayPage())
+    await expect(t.call('browser_navigate', { url: 'back' })).rejects.toThrow('not approved')
+    expect(t.page.go).toHaveBeenCalledWith('back')
+  })
+
+  it('navigation arrêtée pendant l’action : l’agent est prévenu', async () => {
+    const page = fakePage({ blockedNavigations: () => ['https://exemple.com/'] })
+    const t = setup(null, page)
+    const result = await t.call('browser_javascript', { code: "location = 'https://exemple.com/'" })
+    const texts = result.content.map((c) => (c.type === 'text' ? c.text : ''))
+    expect(
+      texts.some((x) => x.includes('Bobine stopped it') && x.includes('browser_navigate'))
+    ).toBe(true)
+  })
+
+  it('liste des onglets : ni titre ni adresse entière d’un site non accordé', async () => {
+    const page = fakePage({
+      tabs: () => [
+        { id: 'onglet-1', title: 'Local', url: 'http://localhost/', active: true },
+        { id: 'onglet-2', title: 'Jetons', url: 'https://exemple.com/t?code=abc', active: false }
+      ]
+    })
+    const text = await setup(null, page).firstText('browser_tabs', { action: 'list' })
+    expect(text).toContain('Local — http://localhost/')
+    expect(text).toContain('(site not approved) — exemple.com')
+    expect(text).not.toContain('Jetons')
+    expect(text).not.toContain('code=abc')
+  })
+})

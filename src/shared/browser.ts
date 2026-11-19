@@ -110,3 +110,16 @@ export function siteToApprove(url: string): string | undefined {
   const { hostname, host } = new URL(url)
   return isLocalHost(hostname) ? undefined : host
 }
+
+/**
+ * Site à faire approuver pour la page affichée (fiche 249) : comme `siteToApprove`, mais
+ * `undefined` pour ce qui n'est pas une page web (`about:blank`, page d'erreur, adresse vide).
+ */
+export function pageSiteToApprove(url: string): string | undefined {
+  if (!/^https?:\/\//i.test(url)) return undefined
+  try {
+    return siteToApprove(url)
+  } catch {
+    return undefined
+  }
+}
