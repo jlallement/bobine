@@ -2976,6 +2976,7 @@ export type FrResources = {
       readonly initialize: 'L’agent n’a pas répondu au démarrage'
       readonly resume: 'L’agent n’a pas rouvert la conversation'
       readonly session: 'L’agent n’a pas ouvert la session'
+      readonly control: 'L’agent n’a pas appliqué « {{name}} »'
     }
     readonly resumeFailed: 'La conversation n’a pas pu être reprise : {{error}}'
     readonly auth: {

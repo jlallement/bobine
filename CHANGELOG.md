@@ -2,6 +2,20 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Un agent qui ne répond pas à un changement de mode ou de modèle ne bloque plus la conversation
+  au démarrage ni le sélecteur : au bout de 30 s, la conversation démarre sans ce réglage et le
+  dit (« Réglage … non appliqué »), et le sélecteur affiche l'erreur.
+- Lecture du PATH au lancement : un fichier de démarrage du shell qui attend une saisie ne fait plus
+  patienter 10 s, et un shell qui ne s'y prête pas (tcsh, nushell…) n'empêche plus de trouver les
+  agents : Bobine lit alors le PATH avec zsh (macOS) ou sh.
+- Conversation ouverte à côté : la recherche de fichiers après `@` aboutit même pendant que cette
+  conversation écrit sa réponse.
+- Fermer Bobine est plus rapide : seules les conversations modifiées sont réécrites sur le disque.
+
 ## 1.0.0-beta.9 — 19 novembre 2026
 
 ### Corrections

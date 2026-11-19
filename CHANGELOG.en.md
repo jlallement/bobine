@@ -2,6 +2,20 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- An agent that doesn’t answer a mode or model change no longer blocks the conversation at
+  startup or the picker: after 30 s, the conversation starts without that setting and says so
+  (“Setting … not applied”), and the picker shows the error.
+- Reading the PATH at launch: a shell startup file that waits for input no longer causes a 10 s
+  wait, and a shell that doesn’t lend itself to it (tcsh, nushell…) no longer prevents finding the
+  agents: Bobine then reads the PATH with zsh (macOS) or sh.
+- Conversation opened side by side: the file search after `@` completes even while that
+  conversation is writing its answer.
+- Quitting Bobine is faster: only the conversations that changed are written to disk again.
+
 ## 1.0.0-beta.9 — November 19, 2026
 
 ### Fixes
