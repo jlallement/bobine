@@ -4,18 +4,20 @@
  * d'ancres (`conversations-filles.md`, `#taches-proposees`) restent, pour ne casser aucun lien.
  */
 import { describe, expect, it } from 'vitest'
-import { RETIRED_EN, RETIRED_FR, visibleText } from '@shared/i18n/retired-words'
+import { RETIRED_EN, RETIRED_FR } from '@shared/i18n/retired-words'
 import { GUIDE_LANGS } from './guide'
 import { loadGuidePages } from './guide-content'
 
+/** Texte lu : sans commentaires, ancres ni cibles de liens ; un paragraphe par entrée (mots coupés en fin de ligne compris). */
 function guideText(markdown: string): string {
-  return visibleText(
-    markdown
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<a id="[^"]*"><\/a>/g, '')
-      .replace(/\]\([^)]*\)/g, ']')
-  )
+  return markdown
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<a id="[^"]*"><\/a>/g, '')
+    .replace(/\]\([^)]*\)/g, ']')
 }
+
+const paragraphs = (text: string): string[] =>
+  text.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
 
 describe('guide : vocabulaire du travail délégué (fiche 266)', () => {
   for (const lang of GUIDE_LANGS) {
@@ -23,14 +25,17 @@ describe('guide : vocabulaire du travail délégué (fiche 266)', () => {
       const retired = lang === 'fr' ? RETIRED_FR : RETIRED_EN
       const pages = await loadGuidePages(lang)
       const hits = Object.entries(pages).flatMap(([name, text]) =>
-        guideText(text)
-          .split('\n')
-          .filter((line) => retired.some((re) => re.test(line)))
-          .map((line) => `${name}: ${line.trim()}`)
+        paragraphs(guideText(text))
+          .filter((p) => retired.some((re) => re.test(p)))
+          .map((p) => `${name}: ${p}`)
       )
       expect(hits).toEqual([])
     })
   }
+
+  it('un mot coupé en fin de ligne est vu (paragraphe entier)', () => {
+    expect(paragraphs('la conversation\nmère part.')).toEqual(['la conversation mère part.'])
+  })
 
   it('les commentaires, liens et ancres ne comptent pas', () => {
     expect(

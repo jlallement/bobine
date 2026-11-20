@@ -71,7 +71,7 @@ describe('puce de consommation, pendant le tour (fiche 157)', () => {
   })
 })
 
-describe('plafond et coût non communiqué (fiche 266, D12)', () => {
+describe('plafond et coût inconnu (fiche 266, D12)', () => {
   const actions = (): UsageActions => ({
     preferences: prefs,
     onSetCostCap: vi.fn(),

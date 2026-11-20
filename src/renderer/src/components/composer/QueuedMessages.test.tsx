@@ -27,7 +27,7 @@ describe('QueuedMessages', () => {
       </Tooltip.Provider>
     )
     expect(screen.getAllByTestId('queued-origin').map((o) => o.textContent)).toEqual([
-      'De la conversation qui l’a lancé, «\u00a0Carnet\u00a0»'
+      'De la conversation d’origine «\u00a0Carnet\u00a0»'
     ])
     expect(screen.getAllByTestId('queued-item')[0]?.textContent).toContain(
       'Accepte le point-virgule.'

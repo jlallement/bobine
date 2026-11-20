@@ -119,7 +119,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => screen.getByTestId('subtasks-merge'))
     expect(actions.plan).toHaveBeenCalledWith('mere')
     expect(text('subtasks-merge-summary')).toBe(
-      '2 travaux ont répondu\u00a0; «\u00a0Fille c\u00a0» travaille encore.'
+      '2 travaux à fusionner ont répondu\u00a0; «\u00a0Fille c\u00a0» travaille encore.'
     )
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
     const cleanup = screen.getByTestId('subtasks-merge-cleanup')
@@ -164,7 +164,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     expect(badges()).toEqual(['resolving', 'pending', 'pending'])
   })
 
-  it('finie : « 2 fusionnés dans main en 12 s », déjà à jour, nettoyées', async () => {
+  it('finie : « 2 travaux fusionnés dans main en 12 s », déjà à jour, nettoyées', async () => {
     const done = merge('done', ['merged', 'merged', 'up-to-date'], {
       cleanup: true,
       endedAt: 13_000
@@ -173,7 +173,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     view([done], plan([]))
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '2 fusionnés dans main en 12 s. 1 déjà à jour. Conversations archivées, dossiers de travail et branches supprimés.'
+      '2 travaux fusionnés dans main en 12 s. 1 déjà à jour. Conversations archivées, dossiers de travail et branches supprimés.'
     )
     expect(badges()).toEqual(['merged', 'merged', 'up-to-date'])
     expect(screen.queryByTestId('subtasks-merge-start')).toBeNull()
@@ -216,7 +216,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      'Fusion interrompue par la fermeture de l’app\u00a0: 1 fusionné dans main.'
+      'Fusion interrompue par la fermeture de l’app\u00a0: 1 travail fusionné dans main.'
     )
     expect(badges()).toEqual(['merged', 'pending', 'pending'])
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
@@ -239,7 +239,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('main-dirty'))
     expect(text('subtasks-merge-summary')).toBe(
-      'Les 2 travaux ont répondu et ne touchent pas les mêmes fichiers.'
+      'Les 2 travaux à fusionner ont répondu et ne touchent pas les mêmes fichiers.'
     )
     expect(text('main-dirty-title')).toBe(
       'Fusion refusée\u00a0: le dossier principal a 2 modifications non commitées.'
@@ -318,7 +318,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '2 fusionnés dans main en 12 s. Vos 2 modifications mises de côté sont revenues.'
+      '2 travaux fusionnés dans main en 12 s. Vos 2 modifications mises de côté sont revenues.'
     )
   })
 
@@ -334,7 +334,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '1 fusionné dans main en 12 s. Vos modifications mises de côté n’ont pas pu revenir sans conflit (README.md)\u00a0: elles restent dans git stash (a1b2c3d).'
+      '1 travail fusionné dans main en 12 s. Vos modifications mises de côté n’ont pas pu revenir sans conflit (README.md)\u00a0: elles restent dans git stash (a1b2c3d).'
     )
   })
 
@@ -400,7 +400,7 @@ describe('Recommandations de la mère (fiche 160)', () => {
       'ready',
       'not-ready'
     ])
-    expect(text('subtasks-merge-start')).toBe('Fusionner le recommandé dans main')
+    expect(text('subtasks-merge-start')).toBe('Fusionner le travail recommandé dans main')
     expect(text('subtasks-merge-advice')).toBe(
       'L’agent recommande « Fille a » ; les 2 autres attendent son avis.'
     )

@@ -350,7 +350,8 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
   it('même fournisseur qu’un modèle refusé : « connexion sans doute à faire », jamais d’autres (fiche 266, D31)', () => {
     const control = models()
     control.options.push(
-      { value: 'openai/gpt-6.1-sol', name: 'OpenAI/GPT-6.1 Sol' },
+      // Marqué par le main (`markRefused`, fiche 266) ; le sélecteur le dit.
+      { value: 'openai/gpt-6.1-sol', name: 'OpenAI/GPT-6.1 Sol', authLikely: true },
       { value: 'solo', name: 'Sans fournisseur' }
     )
     modelPanel(refused(), control)

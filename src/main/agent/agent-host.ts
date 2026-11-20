@@ -51,6 +51,7 @@ import { AgentIncompatible, refuseIncompatible } from './version-check'
 import {
   applyInitialSettings,
   settingsOf,
+  raceControl,
   openWithStartMode,
   opensSession,
   sendControl
@@ -103,8 +104,11 @@ export interface AgentHostOptions {
    * `reopened` quand c'est la session rouverte elle-même, `new` pour une session neuve.
    */
   initialControls?: (session: 'new' | 'reopened') => Record<string, ControlValue> | undefined
-  /** Nom retenu d'une valeur de réglage que l'agent ne propose plus (fiche 266, D32). */
-  knownOptionName?: (controlId: string, value: string) => string | undefined
+  /**
+   * Réglage que l'agent ne propose plus (fiche 266, D32) : nom retenu de la valeur, et valeur à ne
+   * plus renvoyer une fois l'avis donné (un seul avis par conversation).
+   */
+  controlNotices?: import('./initial-controls').ControlNotices
   /**
    * Session existante à rouvrir (conversation de l'historique) : `session/load` si l'agent sait la
    * rejouer, sinon `session/resume`, sinon une session neuve qui reçoit l'échange d'avant au
@@ -468,9 +472,9 @@ export class AgentHost {
       else if (this.modes) this.modes = { ...this.modes, currentModeId: String(value) }
       this.emitSnapshot()
     })
-    call.catch(() => {}) // Erreur après l'abandon (délai) : déjà dit.
-    const what = t('agentHost.timeout.control', { name: control.name })
-    await race(this.failed ?? NEVER, this.timeout('controlMs'), what, call)
+    // Délai dépassé : erreur dite ; réglage appliqué après le délai : l'avis le corrige.
+    const sent = { control, value }
+    await raceControl(call, this.failed ?? NEVER, this.timeout('controlMs'), this.options, sent)
   }
 
   /** Démarre l'agent si besoin. Idempotent : des appels concurrents partagent le même démarrage. */

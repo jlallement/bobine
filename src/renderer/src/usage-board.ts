@@ -5,6 +5,7 @@
  */
 import { currentLocale, numberFormat } from '@shared/i18n/format'
 import { addDays, dateOfDay, mondayOf, type DatedScope } from '@shared/usage-periods'
+import { isFreeModel } from '@shared/usage'
 import {
   OTHER_SERIES,
   type CostMap,
@@ -85,6 +86,15 @@ export function metricCoverage(
 /** Agents qui ont un coût dans cette unité (« et 0,00 $ (OpenCode) »). */
 export function agentsWithUnit(rows: readonly UsageModelRow[], unit: string): string[] {
   return [...new Set(rows.filter((r) => r.costTurns[unit]).map((r) => r.agentLabel))]
+}
+
+/**
+ * Modèle d'une ligne ou d'une série du tableau de bord (`profil:modèle`) qui se dit gratuit (fiche
+ * 266) : l'identifiant seul (sans le profil) et le nom affiché ; sans modèle, faux.
+ */
+export function boardModelFree(key: string, name: string | undefined): boolean {
+  const cut = key.indexOf(':')
+  return name !== undefined && cut > 0 && isFreeModel({ value: key.slice(cut + 1), name })
 }
 
 /** Coût par échange d'une ligne, dans une unité ; `undefined` s'il est nul ou inconnu. */

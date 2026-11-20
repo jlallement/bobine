@@ -121,7 +121,7 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     expect(plain(screen.getByTestId('usage-average').textContent)).toContain('35 055 jetons')
   })
 
-  it('coût nul d’un modèle payant : « coût non communiqué », dit pourquoi (fiche 266, D12)', () => {
+  it('coût nul d’un modèle payant : « coût inconnu », dit pourquoi (fiche 266, D12)', () => {
     const usage: ConversationUsage = {
       cost: { amount: 0, currency: 'USD' },
       turns: [
@@ -129,10 +129,35 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
       ]
     }
     render(meter(usage))
-    expect(screen.getByTestId('usage-meter').textContent).toBe('coût non communiqué')
+    expect(screen.getByTestId('usage-meter').textContent).toBe('coût inconnu')
     fireEvent.click(screen.getByTestId('usage-meter'))
-    expect(screen.getByTestId('usage-cost').textContent).toBe('coût non communiqué')
+    expect(screen.getByTestId('usage-cost').textContent).toBe('coût inconnu')
     expect(screen.getByTestId('usage-cost-hint').textContent).toContain('ne se dit pas gratuit')
+  })
+
+  it('avant tout tour, le coût nul se lit d’après le modèle choisi (revue QA, fiche 266)', () => {
+    const zero: ConversationUsage = { cost: { amount: 0, currency: 'USD' } }
+    const { unmount } = render(
+      <Tooltip.Provider>
+        <UsageMeter
+          usage={zero}
+          agentLabel="OpenCode"
+          model={{ value: 'opencode/x-free', name: 'X Free' }}
+        />
+      </Tooltip.Provider>
+    )
+    expect(screen.getByTestId('usage-meter').textContent).toBe('gratuit')
+    unmount()
+    render(
+      <Tooltip.Provider>
+        <UsageMeter
+          usage={zero}
+          agentLabel="OpenCode"
+          model={{ value: 'openai/gpt', name: 'GPT' }}
+        />
+      </Tooltip.Provider>
+    )
+    expect(screen.getByTestId('usage-meter').textContent).toBe('coût inconnu')
   })
 
   it('bobcoins de Bob : ni « ≈ » ni explication d’estimation (fiche 245)', () => {

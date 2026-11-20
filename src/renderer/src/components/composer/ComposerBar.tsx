@@ -119,6 +119,7 @@ export function ComposerBar(props: Props) {
             usage={props.usage}
             agentLabel={agentLabel}
             compact={fold >= 2}
+            {...(chosenModel(props.modelControl) ? { model: chosenModel(props.modelControl) } : {})}
             {...(props.usageActions ? { actions: props.usageActions } : {})}
             {...(props.onOpenUsage ? { onOpenUsage: props.onOpenUsage } : {})}
           />
@@ -172,4 +173,12 @@ export function ComposerBar(props: Props) {
       </div>
     </ComposerFocus.Provider>
   )
+}
+
+/** Modèle choisi dans le réglage de modèle (avant le premier envoi, fiche 266). */
+function chosenModel(
+  control: SessionControl | undefined
+): { value: string; name: string } | undefined {
+  if (control?.type !== 'select') return undefined
+  return control.options.find((o) => o.value === control.currentValue)
 }

@@ -172,17 +172,6 @@ function ModelList({
   const searchable = control.options.length > MODEL_SEARCH_THRESHOLD
   const [query, setQuery] = useState('')
   const visible = useMemo(() => modelOptions(control, query), [control, query])
-  // Fournisseurs (préfixe du nom, `modelProvider`) d'un modèle refusé faute de connexion.
-  const refusedProviders = useMemo(
-    () =>
-      new Set(
-        control.options.flatMap((o) => {
-          const provider = o.authRequired ? modelProvider(o.name) : undefined
-          return provider ? [provider] : []
-        })
-      ),
-    [control.options]
-  )
   const current = String(control.currentValue)
   /** Place du modèle en cours dans une liste (la première option s'il n'y est pas). */
   const currentIn = (options: SessionControl['options']) =>
@@ -273,10 +262,8 @@ function ModelList({
         {visible.map((option, index) => {
           const group = option.group !== visible[index - 1]?.group ? option.group : undefined
           const provider = modelProvider(option.name)
-          // Même fournisseur qu'un modèle refusé faute de connexion (D31, fiche 266) : dit, sans
-          // l'affirmer — seul le nom donné par l'agent le dit, aucun modèle n'est sondé.
-          const sibling =
-            !option.authRequired && provider !== undefined && refusedProviders.has(provider)
+          // Même fournisseur qu'un modèle refusé (D31, fiche 266) : marqué par le main.
+          const sibling = option.authLikely === true
           const selected = option.value === current
           return (
             <Fragment key={option.value}>

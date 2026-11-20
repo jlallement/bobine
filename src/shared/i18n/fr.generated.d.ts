@@ -49,8 +49,8 @@ export type FrResources = {
       readonly folder: 'Dossiers'
     }
     readonly resumeSession: 'Reprendre une session…'
-    readonly childOf: 'Travail lancé par « {{title}} » : {{state}}'
-    readonly childTip: 'Travail lancé par « {{title}} »'
+    readonly childOf: 'Travail de « {{title}} » : {{state}}'
+    readonly childTip: 'Travail de « {{title}} »'
     readonly resize: 'Redimensionner la barre latérale'
     readonly yesterday: 'hier'
     readonly activity: 'Mon activité'
@@ -583,11 +583,15 @@ export type FrResources = {
     }
     readonly estimate: '≈ {{cost}}'
     readonly free: 'gratuit'
-    readonly costNotReported: 'coût non communiqué'
-    readonly costNotReportedHint: '{{agent}} annonce un coût nul, mais le modèle ne se dit pas gratuit (abonnement, tarif inconnu de l’agent) : Bobine ne sait pas ce qui est facturé. Le plafond de coût ne peut pas se déclencher sur ce montant.'
+    readonly costNotReported: 'coût inconnu'
+    readonly costNotReportedHint: '{{agent}} annonce un coût nul, mais le modèle ne se dit pas gratuit (abonnement, tarif inconnu de l’agent) : le coût réel est inconnu. Le plafond de coût ne peut pas se déclencher sur ce montant.'
     readonly costEstimate: 'Coût de la conversation (estimation)'
     readonly costHint: 'Montant annoncé par {{agent}} d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).'
     readonly capTokensValue: '{{tokens}} jetons, cache compris'
+    readonly costPartial: '{{cost}} + coût inconnu'
+    readonly costPartialTip_one: 'Sans le coût de {{count}} travail'
+    readonly costPartialTip_other: 'Sans le coût de {{count}} travaux'
+    readonly costPartialTip_many: 'Sans le coût de {{count}} travaux'
   }
   readonly elicitation: {
     readonly decline: 'Refuser'
@@ -833,7 +837,7 @@ export type FrResources = {
       readonly noLiveAgent: 'Aucun agent actif pour cette conversation'
       readonly emptyTitle: 'Titre vide'
       readonly busyArchive: 'L’agent répond encore : arrêtez-le avant d’archiver la conversation'
-      readonly busyArchiveChild: '« {{title}} », un de ses travaux, est encore en cours : arrêtez-le avant d’archiver la conversation qui l’a lancé'
+      readonly busyArchiveChild: '« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine'
       readonly unknown: 'Conversation inconnue : {{id}}'
       readonly busyFolders: 'L’agent répond encore : changez les dossiers de la conversation après sa réponse'
     }
@@ -891,7 +895,7 @@ export type FrResources = {
   readonly conversationTitle: {
     readonly label: 'Titre de la conversation'
     readonly from: '↳ depuis « {{title}} »'
-    readonly fromTitle: 'Afficher la conversation qui l’a lancé'
+    readonly fromTitle: 'Afficher la conversation d’origine'
     readonly branchFrom: '↳ branche de « {{title}} »'
     readonly branchFromTitle: 'Afficher la conversation d’origine'
   }
@@ -925,8 +929,8 @@ export type FrResources = {
     readonly children_one: 'Supprimer aussi son travail'
     readonly children_other: 'Supprimer aussi ses {{count}} travaux'
     readonly children_many: 'Supprimer aussi ses {{count}} travaux'
-    readonly childBusy: 'au travail'
-    readonly childBusyStop: 'au travail, sera arrêté'
+    readonly childBusy: 'en cours'
+    readonly childBusyStop: 'en cours, sera arrêté'
     readonly childrenDelete_one: 'Il va aussi à la corbeille. Son worktree est gardé.'
     readonly childrenDelete_other: 'Ils vont aussi à la corbeille. Leurs worktrees sont gardés.'
     readonly childrenDelete_many: 'Ils vont aussi à la corbeille. Leurs worktrees sont gardés.'
@@ -1172,7 +1176,7 @@ export type FrResources = {
         readonly more: 'Garder plus de conversations actives'
       }
       readonly maxChildren: {
-        readonly label: 'Travaux en cours'
+        readonly label: 'Travaux en même temps, au plus'
         readonly hint: 'Par conversation. Au-delà, « Lancer en parallèle… » est grisé.'
         readonly less: 'Moins'
         readonly more: 'Plus'
@@ -2601,8 +2605,8 @@ export type FrResources = {
       readonly default: 'Donne son avis sur une fusion'
     }
     readonly message_parent: {
-      readonly value: 'Écrit à la conversation qui l’a lancé : {{value}}'
-      readonly default: 'Écrit à la conversation qui l’a lancé'
+      readonly value: 'Écrit à sa conversation d’origine : {{value}}'
+      readonly default: 'Écrit à sa conversation d’origine'
     }
     readonly report_findings: {
       readonly count_one: 'Rend {{count}} remarque de relecture'
@@ -2661,7 +2665,7 @@ export type FrResources = {
     }
     readonly children: {
       readonly title: 'Travaux délégués'
-      readonly summary: 'Confier des travaux à d’autres agents en parallèle, chacun dans son worktree git, leur écrire et suivre leur état ; un travail écrit à la conversation qui l’a lancé. Une relecture rend ses remarques.'
+      readonly summary: 'Confier des travaux à d’autres agents en parallèle, chacun dans son worktree git, leur écrire et suivre leur état ; un travail écrit à sa conversation d’origine. Une relecture rend ses remarques.'
       readonly condition: 'Dossier dans un dépôt git'
       readonly approval: 'Accord pour chaque travail'
     }
@@ -3009,13 +3013,15 @@ export type FrResources = {
     readonly noSessionTrust: 'Pas de confiance ponctuelle possible ici'
     readonly notice: {
       readonly controlFailed: 'Réglage « {{name}} » non appliqué ({{value}}) : {{error}}'
-      readonly controlFailedKept: 'Réglage « {{name}} » non appliqué ({{value}}) : {{error}} Cette conversation garde {{current}}.'
-      readonly modelNotOffered: 'Le modèle {{wanted}} n’est plus proposé par {{agent}} : cette conversation utilise {{current}}.'
-      readonly modelNotOfferedNone: 'Le modèle {{wanted}} n’est plus proposé par {{agent}} : cette conversation utilise le modèle par défaut de l’agent.'
-      readonly controlNotOffered: '« {{name}} » : {{wanted}} n’est plus proposé par {{agent}} ; cette conversation utilise {{current}}.'
-      readonly controlNotOfferedNone: '« {{name}} » : {{wanted}} n’est plus proposé par {{agent}} ; cette conversation garde le réglage de l’agent.'
+      readonly controlFailedKept: 'Réglage « {{name}} » non appliqué (« {{value}} ») : cette conversation garde « {{current}} ».'
+      readonly modelNotOffered: 'Le modèle « {{wanted}} » n’est plus proposé par {{agent}} : cette conversation utilise « {{current}} ». Changez le modèle par défaut dans Réglages › Agents.'
+      readonly modelNotOfferedNone: 'Le modèle « {{wanted}} » n’est plus proposé par {{agent}} : cette conversation utilise le modèle par défaut de l’agent. Changez le modèle par défaut dans Réglages › Agents.'
+      readonly controlNotOffered: '« {{name}} » : « {{wanted}} » n’est plus proposé par {{agent}} ; cette conversation utilise « {{current}} ».'
+      readonly controlNotOfferedNone: '« {{name}} » : « {{wanted}} » n’est plus proposé par {{agent}} ; cette conversation garde le réglage de l’agent.'
       readonly modeFailed: 'Mode de départ non appliqué : {{error}}'
       readonly elicitationUnsupported: 'Demande d’information de l’agent non prise en charge (« {{message}} ») : déclinée.'
+      readonly modelFailedKept: '{{agent}} n’a pas pu passer au modèle « {{wanted}} » : cette conversation garde « {{current}} ».'
+      readonly controlLate: '{{agent}} a finalement appliqué « {{name}} » : « {{value}} ».'
     }
     readonly turnLimit: {
       readonly noReload: 'L’agent ne sait pas recharger sa session : ouvrez une nouvelle session avec le résumé.'
@@ -3330,7 +3336,7 @@ export type FrResources = {
   readonly process: {
     readonly commandMissing: 'Commande introuvable : {{command}}. Est-elle installée et dans le PATH ?'
     readonly notExecutable: 'Commande non exécutable : {{command}}'
-    readonly timeout: '{{what}} en {{seconds}} s.'
+    readonly timeout: '{{what}} en {{duration}}.'
   }
   readonly subagentWork: {
     readonly timeout: 'L’agent n’a pas rouvert la session à temps.'
@@ -3393,7 +3399,7 @@ export type FrResources = {
   readonly children: {
     readonly recommendation: {
       readonly ready: 'Recommandé'
-      readonly notReady: 'Pas encore prêt'
+      readonly notReady: 'Pas encore recommandé'
       readonly stale: 'À revoir'
       readonly staleHint: 'Le travail a refait un tour depuis cette recommandation.'
       readonly itemReady: 'L’agent recommande de fusionner « {{title}} »'
@@ -3482,7 +3488,7 @@ export type FrResources = {
     readonly notice: {
       readonly promptFailed: 'La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}'
       readonly messageFailed: 'Le message d’une autre conversation n’a pas pu partir ({{error}}).'
-      readonly motherDeleted: 'La conversation qui l’a lancé, « {{title}} », a été supprimée : cette conversation continue seule, ses réponses restent ici.'
+      readonly motherDeleted: 'Conversation d’origine « {{title}} » supprimée : cette conversation continue seule, ses réponses restent ici.'
     }
     readonly startedByAgent: 'L’agent a lancé le travail « {{title}} »'
     readonly limit_one: '{{count}} travail est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.'
@@ -3492,7 +3498,7 @@ export type FrResources = {
       readonly title_one: '{{count}} travail proposé'
       readonly title_many: '{{count}} travaux proposés'
       readonly title_other: '{{count}} travaux proposés'
-      readonly worktree: 'L’agent propose de confier ce travail, chaque part dans son propre worktree. Vous pouvez aussi lui demander de le faire ici.'
+      readonly worktree: 'L’agent propose de confier ces travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de les faire ici.'
       readonly started_one: '{{count}} lancé'
       readonly started_many: '{{count}} lancés'
       readonly started_other: '{{count}} lancés'
@@ -3524,7 +3530,7 @@ export type FrResources = {
       }
     }
     readonly from: {
-      readonly parent: 'De la conversation qui l’a lancé, « {{title}} »'
+      readonly parent: 'De la conversation d’origine « {{title}} »'
       readonly child: 'Du travail « {{title}} »'
       readonly wake: 'Tous les travaux ont répondu : l’agent reprend avec leurs réponses.'
       readonly merge: 'Consigne de la fusion lancée depuis « {{title}} »'
@@ -3774,9 +3780,9 @@ export type FrResources = {
   }
   readonly childrenMerge: {
     readonly recommended: {
-      readonly action_one: 'Fusionner le recommandé dans {{base}}'
-      readonly action_other: 'Fusionner les {{count}} recommandés dans {{base}}'
-      readonly action_many: 'Fusionner les {{count}} recommandés dans {{base}}'
+      readonly action_one: 'Fusionner le travail recommandé dans {{base}}'
+      readonly action_other: 'Fusionner les {{count}} travaux recommandés dans {{base}}'
+      readonly action_many: 'Fusionner les {{count}} travaux recommandés dans {{base}}'
       readonly others_one: 'Inclure l’autre…'
       readonly others_other: 'Inclure les {{count}} autres…'
       readonly others_many: 'Inclure les {{count}} autres…'
@@ -3793,18 +3799,18 @@ export type FrResources = {
       readonly none: 'L’agent ne recommande encore aucun travail.'
     }
     readonly summary: {
-      readonly all_one: 'Le travail a répondu.'
-      readonly all_other: 'Les {{count}} travaux ont répondu.'
-      readonly all_many: 'Les {{count}} travaux ont répondu.'
-      readonly disjoint_one: 'Le travail a répondu.'
-      readonly disjoint_other: 'Les {{count}} travaux ont répondu et ne touchent pas les mêmes fichiers.'
-      readonly disjoint_many: 'Les {{count}} travaux ont répondu et ne touchent pas les mêmes fichiers.'
-      readonly some_one: '{{count}} travail a répondu ; {{first}}.'
-      readonly some_other: '{{count}} travaux ont répondu ; {{first}}.'
-      readonly some_many: '{{count}} travaux ont répondu ; {{first}}.'
-      readonly someTwo_one: '{{count}} travail a répondu ; {{first}}, {{second}}.'
-      readonly someTwo_other: '{{count}} travaux ont répondu ; {{first}}, {{second}}.'
-      readonly someTwo_many: '{{count}} travaux ont répondu ; {{first}}, {{second}}.'
+      readonly all_one: 'Le travail à fusionner a répondu.'
+      readonly all_other: 'Les {{count}} travaux à fusionner ont répondu.'
+      readonly all_many: 'Les {{count}} travaux à fusionner ont répondu.'
+      readonly disjoint_one: 'Le travail à fusionner a répondu.'
+      readonly disjoint_other: 'Les {{count}} travaux à fusionner ont répondu et ne touchent pas les mêmes fichiers.'
+      readonly disjoint_many: 'Les {{count}} travaux à fusionner ont répondu et ne touchent pas les mêmes fichiers.'
+      readonly some_one: '{{count}} travail à fusionner a répondu ; {{first}}.'
+      readonly some_other: '{{count}} travaux à fusionner ont répondu ; {{first}}.'
+      readonly some_many: '{{count}} travaux à fusionner ont répondu ; {{first}}.'
+      readonly someTwo_one: '{{count}} travail à fusionner a répondu ; {{first}}, {{second}}.'
+      readonly someTwo_other: '{{count}} travaux à fusionner ont répondu ; {{first}}, {{second}}.'
+      readonly someTwo_many: '{{count}} travaux à fusionner ont répondu ; {{first}}, {{second}}.'
       readonly working_one: '{{titles}} travaille encore'
       readonly working_other: '{{titles}} travaillent encore'
       readonly working_many: '{{titles}} travaillent encore'
@@ -3829,21 +3835,21 @@ export type FrResources = {
     readonly progress_many: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
     readonly stopping: 'Arrêt après la fusion en cours…'
     readonly result: {
-      readonly done_one: '{{count}} fusionné dans {{base}} en {{duration}}.'
-      readonly done_other: '{{count}} fusionnés dans {{base}} en {{duration}}.'
-      readonly done_many: '{{count}} fusionnés dans {{base}} en {{duration}}.'
+      readonly done_one: '{{count}} travail fusionné dans {{base}} en {{duration}}.'
+      readonly done_other: '{{count}} travaux fusionnés dans {{base}} en {{duration}}.'
+      readonly done_many: '{{count}} travaux fusionnés dans {{base}} en {{duration}}.'
       readonly upToDate_one: '{{count}} déjà à jour.'
       readonly upToDate_other: '{{count}} déjà à jour.'
       readonly upToDate_many: '{{count}} déjà à jour.'
       readonly cleaned_one: 'Conversation archivée, dossier de travail et branche supprimés.'
       readonly cleaned_other: 'Conversations archivées, dossiers de travail et branches supprimés.'
       readonly cleaned_many: 'Conversations archivées, dossiers de travail et branches supprimés.'
-      readonly stopped_one: 'Fusion arrêtée : {{count}} fusionné dans {{base}}, les autres restent en attente.'
-      readonly stopped_other: 'Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.'
-      readonly stopped_many: 'Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.'
-      readonly interrupted_one: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionné dans {{base}}.'
-      readonly interrupted_other: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.'
-      readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.'
+      readonly stopped_one: 'Fusion arrêtée : {{count}} travail fusionné dans {{base}}, les autres restent en attente.'
+      readonly stopped_other: 'Fusion arrêtée : {{count}} travaux fusionnés dans {{base}}, les autres restent en attente.'
+      readonly stopped_many: 'Fusion arrêtée : {{count}} travaux fusionnés dans {{base}}, les autres restent en attente.'
+      readonly interrupted_one: 'Fusion interrompue par la fermeture de l’app : {{count}} travail fusionné dans {{base}}.'
+      readonly interrupted_other: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
+      readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
       readonly conflict: 'Fusion arrêtée sur {{title}} : il reste des conflits dans {{files}}.'
       readonly failed: 'Fusion arrêtée sur {{title}} : {{error}}'
     }
@@ -3958,7 +3964,7 @@ export type FrResources = {
       readonly report: 'Réponse d’un travail à lire'
       readonly errorPlain: 'Erreur de l’agent'
     }
-    readonly childOf: 'lancé par « {{title}} »'
+    readonly childOf: 'travail de « {{title}} »'
     readonly ago: {
       readonly now: 'à l’instant'
       readonly minutes_one: '{{count}} min'
@@ -4083,7 +4089,7 @@ export type FrResources = {
       readonly input: 'Plafond de cette conversation'
       readonly tokensUnit: 'jetons, cache compris'
       readonly fromSettings: '{{limit}} (réglages)'
-      readonly notReported: 'Coût non communiqué par l’agent : ce plafond ne peut pas se déclencher.'
+      readonly notReported: 'Coût inconnu : l’agent annonce un coût nul pour un modèle qui n’est pas gratuit. Ce plafond ne peut donc pas se déclencher.'
       readonly export: 'Plafond atteint : {{limit}}'
       readonly held: 'Votre message attend votre accord :'
       readonly heldSent: 'Votre message est parti :'
@@ -4100,11 +4106,11 @@ export type FrResources = {
       readonly cap: {
         readonly label: 'Plafond par conversation'
         readonly hint: 'Pour les nouvelles conversations : au-delà, Bobine interrompt la réponse à la fin de l’outil en cours et demande s’il faut continuer ; un nouveau message attend votre accord. Modifiable dans le détail de la consommation de chaque conversation.'
-        readonly notReported: 'Un agent qui annonce un coût nul pour un modèle payant (connexion par abonnement, par exemple) ne fait jamais monter la dépense : le plafond ne se déclenche pas. Sa consommation l’indique « coût non communiqué ».'
+        readonly notReported: 'Avec un modèle payant dont l’agent annonce un coût nul (connexion par abonnement, par exemple), la dépense ne monte jamais : le plafond ne se déclenche pas, et la consommation affiche « coût inconnu ».'
       }
       readonly capAmount: {
         readonly label: 'Montant'
-        readonly hint: 'Un seul montant, compté dans l’unité de l’agent : bobcoins pour Bob, dollars pour les autres.'
+        readonly hint: 'Un seul montant, compté dans l’unité de l’agent : Bobcoins pour Bob, dollars pour les autres.'
       }
       readonly capTokens: {
         readonly label: 'Agent sans montant connu'
@@ -4191,7 +4197,7 @@ export type FrResources = {
     }
     readonly stop: 'Arrêter « {{label}} »'
     readonly openChild: 'Ouvrir « {{label}} »'
-    readonly finished: 'Terminés : {{count}}'
+    readonly finished: 'Finis : {{count}}'
     readonly noStop: 'Bobine ne sait pas arrêter un sous-agent seul : l’arrêt du tour l’arrête.'
     readonly pr: 'Pull request'
     readonly prTip: 'Voir la PR dans la vue Git'
@@ -4485,7 +4491,7 @@ export type FrResources = {
       readonly reported_many: 'Relecture par {{agent}} : {{count}} remarques'
       readonly reported_other: 'Relecture par {{agent}} : {{count}} remarques'
       readonly none: 'Relecture par {{agent}} : rien à signaler'
-      readonly silent: 'Relecture par {{agent}} : a répondu sans remarques structurées, sa réponse est dans sa conversation'
+      readonly silent: '{{agent}} a relu sans rendre de remarques structurées : sa réponse est dans sa conversation.'
       readonly failed: 'Relecture impossible : {{error}}'
       readonly changed: 'Le dossier a changé pendant la relecture (relecteur, cette conversation ou vous) : vérifiez la vue Git ; les lignes citées ont pu bouger.'
       readonly scopeBranch: 'Branche depuis {{base}}'
@@ -5179,7 +5185,7 @@ export type FrResources = {
     readonly tools: {
       readonly label: 'Outils de Bobine'
       readonly all: 'Tous ceux de la conversation'
-      readonly hint: 'Les questions et le lien avec la conversation qui l’a lancé restent toujours.'
+      readonly hint: 'Les questions et le lien avec la conversation d’origine restent toujours.'
     }
     readonly agent: {
       readonly label: 'Agent'
@@ -5365,7 +5371,7 @@ export type FrResources = {
     readonly empty: 'Aucun rôle actif'
     readonly assign: 'Confier un travail à {{label}}'
     readonly roleTip: 'Rôle : {{label}}'
-    readonly notHere: 'Un travail ne confie pas de travail à un rôle : ouvrez la conversation qui l’a lancé.'
+    readonly notHere: 'Un travail ne confie pas de travail à un rôle : faites-le depuis sa conversation d’origine.'
   }
   readonly roles: {
     readonly none: 'aucun'
@@ -5908,9 +5914,9 @@ export type FrResources = {
       readonly action_other: 'Fusionner les {{count}} prêts dans {{base}}'
       readonly action_many: 'Fusionner les {{count}} prêts dans {{base}}'
       readonly recommended: {
-        readonly action_one: 'Fusionner le recommandé dans {{base}}'
-        readonly action_other: 'Fusionner les {{count}} recommandés dans {{base}}'
-        readonly action_many: 'Fusionner les {{count}} recommandés dans {{base}}'
+        readonly action_one: 'Fusionner le travail recommandé dans {{base}}'
+        readonly action_other: 'Fusionner les {{count}} travaux recommandés dans {{base}}'
+        readonly action_many: 'Fusionner les {{count}} travaux recommandés dans {{base}}'
         readonly others_one: 'Inclure l’autre…'
         readonly others_other: 'Inclure les {{count}} autres…'
         readonly others_many: 'Inclure les {{count}} autres…'
@@ -5926,15 +5932,15 @@ export type FrResources = {
       readonly progress_other: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
       readonly progress_many: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
       readonly result: {
-        readonly done_one: '{{count}} fusionné dans {{base}} en {{duration}}.'
-        readonly done_other: '{{count}} fusionnés dans {{base}} en {{duration}}.'
-        readonly done_many: '{{count}} fusionnés dans {{base}} en {{duration}}.'
-        readonly stopped_one: 'Fusion arrêtée : {{count}} fusionné dans {{base}}, les autres restent en attente.'
-        readonly stopped_other: 'Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.'
-        readonly stopped_many: 'Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.'
-        readonly interrupted_one: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionné dans {{base}}.'
-        readonly interrupted_other: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.'
-        readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.'
+        readonly done_one: '{{count}} travail fusionné dans {{base}} en {{duration}}.'
+        readonly done_other: '{{count}} travaux fusionnés dans {{base}} en {{duration}}.'
+        readonly done_many: '{{count}} travaux fusionnés dans {{base}} en {{duration}}.'
+        readonly stopped_one: 'Fusion arrêtée : {{count}} travail fusionné dans {{base}}, les autres restent en attente.'
+        readonly stopped_other: 'Fusion arrêtée : {{count}} travaux fusionnés dans {{base}}, les autres restent en attente.'
+        readonly stopped_many: 'Fusion arrêtée : {{count}} travaux fusionnés dans {{base}}, les autres restent en attente.'
+        readonly interrupted_one: 'Fusion interrompue par la fermeture de l’app : {{count}} travail fusionné dans {{base}}.'
+        readonly interrupted_other: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
+        readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
       }
       readonly row: {
         readonly pending: 'en attente'
@@ -5951,11 +5957,11 @@ export type FrResources = {
       readonly resolving: 'Conflit : le travail concerné le résout, puis la fusion reprend.'
       readonly advice: {
         readonly recommended: 'L’agent recommande {{titles}}'
-        readonly notReady_one: '{{titles}} n’est pas encore prêt selon lui'
-        readonly notReady_other: '{{titles}} ne sont pas encore prêts selon lui'
+        readonly notReady_one: '{{titles}} n’est pas encore recommandé'
+        readonly notReady_other: '{{titles}} ne sont pas encore recommandés'
         readonly unadvised_one: '{{titles}} n’a pas encore d’avis de l’agent'
         readonly unadvised_other: '{{titles}} n’ont pas encore d’avis de l’agent'
-        readonly notReady_many: '{{titles}} ne sont pas encore prêts selon lui'
+        readonly notReady_many: '{{titles}} ne sont pas encore recommandés'
         readonly unadvised_many: '{{titles}} n’ont pas encore d’avis de l’agent'
         readonly separator: ' ; '
         readonly end: '.'
@@ -5970,7 +5976,7 @@ export type FrResources = {
     readonly expiredHint: 'L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.'
     readonly verdict: {
       readonly ready: 'Recommandé'
-      readonly notReady: 'Pas encore prêt'
+      readonly notReady: 'Pas encore recommandé'
       readonly stale: 'À revoir'
       readonly staleHint: 'Le travail a refait un tour depuis cette recommandation.'
     }

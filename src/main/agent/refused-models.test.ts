@@ -50,4 +50,45 @@ describe('modèles refusés faute de connexion (fiche 210)', () => {
     refused.add('p', 'a')
     expect(markRefused([mode], refused.of('p'))).toEqual([mode])
   })
+
+  describe('même fournisseur qu’un modèle refusé (fiche 266, D31)', () => {
+    const models: SessionControl = {
+      id: 'model',
+      name: 'Modèle',
+      category: 'model',
+      type: 'select',
+      currentValue: 'openai/gpt-6.1',
+      options: [
+        { value: 'openai/gpt-6.2', name: 'OpenAI/GPT-6.2' },
+        { value: 'openai/gpt-6.1', name: 'OpenAI/GPT-6.1' },
+        { value: 'openai/gpt-mini-free', name: 'OpenAI/GPT mini Free' },
+        { value: 'openai/gpt-6.0', name: 'OpenAI/GPT-6.0' },
+        { value: 'openai/gpt-5', name: 'OpenAI/GPT-5' },
+        { value: 'opencode/big-pickle', name: 'OpenCode Zen/Big Pickle' },
+        { value: 'solo', name: 'Sans fournisseur' }
+      ]
+    }
+    it('marqués, sauf le modèle choisi, un modèle gratuit, un modèle qui a répondu, un autre fournisseur', () => {
+      const refused = new RefusedModels()
+      refused.add('p', 'openai/gpt-6.2')
+      // A répondu une fois : sa connexion est faite.
+      refused.remove('p', 'openai/gpt-6.0')
+      const [marked] = markRefused([models], refused.of('p'))
+      const tags = Object.fromEntries(
+        (marked?.options ?? []).map((o) => [
+          o.value,
+          o.authRequired ? 'refusé' : o.authLikely ? 'sans doute' : '—'
+        ])
+      )
+      expect(tags).toEqual({
+        'openai/gpt-6.2': 'refusé',
+        'openai/gpt-6.1': '—',
+        'openai/gpt-mini-free': '—',
+        'openai/gpt-6.0': '—',
+        'openai/gpt-5': 'sans doute',
+        'opencode/big-pickle': '—',
+        solo: '—'
+      })
+    })
+  })
 })

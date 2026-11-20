@@ -6,7 +6,9 @@ import { t } from 'i18next'
 import type { AgentCommand, SessionControl } from './agent'
 import {
   contextRatio,
+  costText,
   formatEstimate,
+  freeModels,
   formatTokens,
   isEstimate,
   processedTokens,
@@ -242,7 +244,10 @@ function costLines(usage: ConversationUsage | undefined, agentLabel: string): st
   if (cost) {
     lines.push(
       isEstimate(cost.currency)
-        ? t('usage.summary.costEstimate', { cost: formatEstimate(cost), agent: agentLabel })
+        ? t('usage.summary.costEstimate', {
+            cost: costText(cost, freeModels(usage)),
+            agent: agentLabel
+          })
         : t('usage.summary.cost', { cost: formatEstimate(cost) })
     )
   }

@@ -67,7 +67,37 @@ const COMPACTION_SUMMARY =
   '### Active\n- Relecture des deux branches avant fusion.\n\n' +
   '## Next Move\n1. Fusionner les deux branches dans main.\n'
 
+/** Modèles nommés avec leur fournisseur, comme OpenCode (fiche 266, D12 et D31). */
+const SOL = { value: 'openai/gpt-6.1-sol', name: 'openai/GPT-6.1 Sol' }
+const SOL_NEXT = { value: 'openai/gpt-6.2-sol', name: 'openai/GPT-6.2 Sol' }
+const SOL_MINI = { value: 'openai/gpt-6-mini', name: 'openai/GPT-6 mini' }
+const TIDEPOOL = { value: 'opencode/tidepool-alpha-free', name: 'opencode/Tidepool Alpha Free' }
+const PROVIDER_MODELS = [SOL, SOL_NEXT, SOL_MINI, TIDEPOOL]
+
 export const consumptionScenarios: Record<string, Scenario> = {
+  'cout-nul-payant': {
+    description:
+      'Modèle payant connecté par abonnement, comme OpenCode et GPT-6.1 Sol (recette du 19 novembre, D12) : usage_update annonce un coût nul ; l’app dit « coût inconnu », jamais « gratuit » (fiche 266)',
+    steps: [{ kind: 'text', text: 'C’est fait : le carnet est rangé par rayon.' }],
+    session: { models: { options: PROVIDER_MODELS, start: SOL.value } },
+    turnUsage: { usage: MOTHER_TURN.usage, cost: 0, context: { used: 18_400, size: 400_000 } }
+  },
+  'connexion-a-faire-fournisseur': {
+    description:
+      'Modèle d’un fournisseur non connecté (D31, fiche 266) : avec openai/GPT-6.2 Sol, le message est refusé (authRequired) ; les autres modèles openai sont marqués « connexion sans doute à faire », pas Tidepool Alpha Free ni le modèle choisi',
+    session: {
+      expiredLogin: 'terminal',
+      models: { options: PROVIDER_MODELS, start: SOL_NEXT.value }
+    },
+    steps: [
+      {
+        kind: 'when-model',
+        model: SOL_NEXT.value,
+        then: [{ kind: 'login-required' }, { kind: 'text', text: 'Reconnecté, je peux répondre.' }],
+        else: [{ kind: 'text', text: 'Ce modèle est connecté, je peux répondre.' }]
+      }
+    ]
+  },
   'contexte-opencode': {
     description:
       'Tour d’OpenCode 2.3.0 avant un /compact (fiche 257) : usage_update 38271/628000 ; /compact joue ensuite compaction-opencode',

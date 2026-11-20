@@ -1,6 +1,6 @@
 import { RequestError } from '../../shared/acp-sdk.mts'
 import { describe, expect, it } from 'vitest'
-import { errorMessage } from './process-utils'
+import { errorMessage, race, timeoutText } from './process-utils'
 
 describe('errorMessage', () => {
   it('message simple', () => {
@@ -35,5 +35,14 @@ describe('errorMessage', () => {
     expect(errorMessage(RequestError.internalError({ details: 'FooError: {pas du json' }))).toBe(
       'FooError: {pas du json'
     )
+  })
+})
+
+describe('délai dépassé : jamais « 0 s » (fiche 266, revue du tech lead)', () => {
+  it('« < 1 s » sous la seconde, les secondes au-delà', async () => {
+    expect(timeoutText(300)).toBe('< 1 s')
+    expect(timeoutText(15_000)).toBe('15 s')
+    const never = new Promise<never>(() => {})
+    await expect(race(never, 300, 'Réponse', never)).rejects.toThrow('Réponse en < 1 s.')
   })
 })

@@ -304,9 +304,11 @@ export interface UsageDigest {
   cost?: { amount: number; currency: string }
   /**
    * Tous les modèles connus de la conversation se disent gratuits (fiche 266, `freeModels`) : un
-   * coût nul y vaut « gratuit ». Absent : payant ou inconnu, un coût nul est « non communiqué ».
+   * coût nul y vaut « gratuit » ; `false` : un coût nul est « non communiqué ». Absent : résumé
+   * d'avant la fiche 266, relu une fois du fil (`settleFreeDigests`) ou repris d'un autre résumé
+   * de la même conversation (`withFree`).
    */
-  free?: true
+  free?: boolean
 }
 
 export function usageDigest(usage: ConversationUsage | undefined): UsageDigest | undefined {
@@ -319,8 +321,7 @@ export function usageDigest(usage: ConversationUsage | undefined): UsageDigest |
       : {}),
     ...(turns ? { turns } : {}),
     // Toute la conversation (fiche 164), pas seulement sa session actuelle.
-    ...(cost ? { cost } : {}),
-    ...(freeModels(usage) ? { free: true as const } : {})
+    ...(cost ? { cost, free: freeModels(usage) } : {})
   }
 }
 
@@ -329,16 +330,23 @@ export function usageDigest(usage: ConversationUsage | undefined): UsageDigest |
  * fiche 265). Heuristique : aucun agent ne dit par ACP qu'un modèle est gratuit (fiche 266).
  */
 export function isFreeModel(option: { value: string; name: string }): boolean {
-  return /(^|[\s:/(_-])free\b/i.test(`${option.value} ${option.name}`)
+  // « free » en fin de nom ou d'identifiant seulement : « free-tier-pro », « not-free » n'en sont pas.
+  const free = (text: string) =>
+    /(?:^|[\s:/_-])free\s*$/i.test(text) && !/(?:^|[\s:/_-])(?:not|non)[\s_-]free\s*$/i.test(text)
+  return free(option.value) || free(option.name) || /\(free\)\s*$/i.test(option.name)
 }
 
 /**
- * Tous les modèles connus de la conversation (ceux de ses tours, celui du tour en cours) se disent
- * gratuits ; faux sans aucun modèle connu (fiche 266).
+ * Tous les modèles de la conversation (ceux de ses tours, celui du tour en cours) se disent gratuits ;
+ * faux sans aucun modèle connu, ou dès qu'un tour n'a pas de modèle (fiche 266). Seuls les tours
+ * gardés (`MAX_TURNS`) sont vus.
  */
 export function freeModels(usage: ConversationUsage | undefined): boolean {
+  const turns = usage?.turns ?? []
+  // Un tour sans modèle connu : rien ne dit qu'il était gratuit.
+  if (turns.some((turn) => !turn.model)) return false
   const models = [
-    ...(usage?.turns ?? []).flatMap((turn) => (turn.model ? [turn.model] : [])),
+    ...turns.flatMap((turn) => (turn.model ? [turn.model] : [])),
     ...(usage?.pending?.model ? [usage.pending.model] : [])
   ]
   return models.length > 0 && models.every((m) => isFreeModel({ value: m.id, name: m.name }))
@@ -380,6 +388,36 @@ export function digestsTotal(
   return { amount: round6(used.reduce((n, d) => n + (d.cost?.amount ?? 0), 0)), currency }
 }
 
+/**
+ * Résumé d'avant la fiche 266 (sans `free`) : la gratuité reprise d'un autre résumé de la même
+ * conversation (celui de l'index, relu du fil), sinon inchangé.
+ */
+export function withFree(
+  digest: UsageDigest | undefined,
+  other: UsageDigest | undefined
+): UsageDigest | undefined {
+  if (!digest || digest.free !== undefined || other?.free === undefined) return digest
+  return { ...digest, free: other.free }
+}
+
+/**
+ * Total partiel d'une carte (revue UX, fiche 266) : la somme des coûts connus, dans une même unité,
+ * et le nombre de résumés sans coût dans cette unité. `undefined` sans aucun coût connu.
+ */
+export function digestsPartial(
+  digests: readonly (UsageDigest | undefined)[]
+): { total: { amount: number; currency: string }; missing: number; free: boolean } | undefined {
+  const currency = digests.find((d) => d?.cost)?.cost?.currency
+  if (currency === undefined) return undefined
+  const known = digests.filter((d): d is UsageDigest => d?.cost?.currency === currency)
+  const amount = round6(known.reduce((n, d) => n + (d.cost?.amount ?? 0), 0))
+  return {
+    total: { amount, currency },
+    missing: digests.length - known.length,
+    free: known.every((d) => d.free === true)
+  }
+}
+
 /** Tous les résumés viennent de modèles gratuits (total d'une carte de groupe, fiche 266). */
 export const digestsFree = (digests: readonly (UsageDigest | undefined)[]): boolean => {
   const used = digests.filter((d): d is UsageDigest => !!d)
@@ -408,7 +446,7 @@ export function parseUsageDigest(raw: unknown): UsageDigest | undefined {
     typeof cost.currency === 'string'
       ? { cost: { amount: cost.amount, currency: cost.currency } }
       : {}),
-    ...(r['free'] === true ? { free: true as const } : {})
+    ...(typeof r['free'] === 'boolean' ? { free: r['free'] } : {})
   }
   return Object.keys(digest).length ? digest : undefined
 }

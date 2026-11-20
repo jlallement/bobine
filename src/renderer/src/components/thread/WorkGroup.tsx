@@ -3,7 +3,7 @@ import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } 
 import { useTranslation } from 'react-i18next'
 import { childState, type ChildProposalItem, type ChildVerdict } from '@shared/children'
 import type { TranscriptItem } from '@shared/transcript'
-import { costText, digestsFree, digestsTotal } from '@shared/usage'
+import { costText, digestsPartial } from '@shared/usage'
 import { groupWorkIds, type WorkGroupData, type WorkGroupRow } from '@shared/work-groups'
 import { usePresentation } from '../../presentation'
 import { useChildActivity } from '../roles/RoleWork'
@@ -114,10 +114,19 @@ export function WorkGroup({
       if (row) starts.get(row.proposal.requestId)?.()
     }
   }
-  const digests = works.map((w) => workUsage(currentReport(w.card), w.child))
-  const total = digestsTotal(digests)
-  // Un coût par carte (fiche 266) : « gratuit » seulement si chaque travail l'est.
-  const cost = total && !presenting ? costText(total, digestsFree(digests)) : undefined
+  // Un coût par carte (fiche 266) : « gratuit » seulement si chaque travail l'est ; des travaux
+  // qui ont répondu sans coût connu : la somme connue, « + coût inconnu » (revue UX).
+  const digests = works
+    .filter((w) => !['running', 'waiting', 'pending'].includes(w.state))
+    .map((w) => workUsage(currentReport(w.card), w.child))
+  const partial = presenting ? undefined : digestsPartial(digests)
+  const cost = partial && costText(partial.total, partial.free)
+  const costLabel =
+    partial && partial.missing > 0 ? t('usage.costPartial', { cost: cost ?? '' }) : cost
+  const costTip =
+    partial && partial.missing > 0
+      ? t('usage.costPartialTip', { count: partial.missing })
+      : undefined
   const head = groupCounts(group, works, pending.length)
   return (
     <div
@@ -149,9 +158,9 @@ export function WorkGroup({
           </span>
         )}
         <span className="grow" />
-        {cost && (
-          <span className="work-group-cost" data-testid="work-group-cost">
-            {cost}
+        {costLabel && (
+          <span className="work-group-cost" data-testid="work-group-cost" title={costTip}>
+            {costLabel}
           </span>
         )}
       </div>
@@ -276,9 +285,16 @@ function GroupMergeFoot({
   if (!info.merge) return null
   const agent = info.agentLabel ?? t('workCard.mainAgent')
   // Transmission des réponses, en tête du pied (revue UX) : une phrase pour toute la carte.
+  // Travaux lancés par l'agent : son réveil (« Tous les travaux ont répondu ») porte leurs
+  // réponses ; il compte comme une transmission, même posé avant la dernière (revue UX, fiche 266).
+  const woken = (w: RowWork) =>
+    !!w.card.byAgent &&
+    items.some(
+      (x) => x.kind === 'user' && x.from?.kind === 'wake' && x.id > (w.card.anchor ?? Infinity)
+    )
   const relays = works.flatMap((w) => {
     const relay = relayOf(currentReport(w.card), items)
-    return relay ? [{ sent: relay.sent, byAgent: !!w.card.byAgent }] : []
+    return relay ? [{ sent: relay.sent || woken(w), byAgent: !!w.card.byAgent }] : []
   })
   const pending = relays.filter((r) => !r.sent)
   const relay =

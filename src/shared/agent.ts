@@ -216,6 +216,11 @@ export interface SessionControl {
     description?: string
     group?: string
     authRequired?: true
+    /**
+     * Même fournisseur qu'un modèle refusé faute de connexion (fiche 266, D31) : sans doute à
+     * connecter aussi ; jamais le modèle choisi, un modèle gratuit ni un modèle qui a répondu.
+     */
+    authLikely?: true
   }[]
 }
 

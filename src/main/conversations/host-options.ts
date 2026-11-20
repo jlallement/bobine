@@ -4,6 +4,7 @@
  * message (échange d'avant une bascule, nouvelles des filles), contexte de session (ce que l'app
  * offre, fiche 118), session à rouvrir.
  */
+import type { ControlValue } from '@shared/agent'
 import { DISCUSSION_CONTEXT, ensureDiscussionFolder } from './discussion-space'
 import {
   capabilitiesReminder,
@@ -67,6 +68,28 @@ function deniedCommandOption(
   return denied ? { deniedCommand: (command) => denied(command, workspace) } : {}
 }
 
+/**
+ * Valeurs de réglage plus proposées par l'agent, déjà dites à chaque conversation (fiche 266, D32) :
+ * en mémoire, par fiche de conversation ; un seul avis, puis la valeur n'est plus renvoyée.
+ */
+const warned = new WeakMap<object, Set<string>>()
+const warnedOf = (record: object): Set<string> => {
+  const set = warned.get(record) ?? new Set<string>()
+  warned.set(record, set)
+  return set
+}
+
+/** Réglages de départ, sans les valeurs déjà dites plus proposées. */
+export function withoutWarned(
+  controls: Record<string, ControlValue> | undefined,
+  told: ReadonlySet<string> | undefined
+): Record<string, ControlValue> | undefined {
+  if (!controls || !told?.size) return controls
+  return Object.fromEntries(
+    Object.entries(controls).filter(([id, value]) => !told.has(`${id}=${String(value)}`))
+  )
+}
+
 export function hostOptions(input: HostOptionsInput): AgentHostOptions {
   const { profile, record, app, settings, works } = input
   // Discussion dont le dossier a disparu (Finder) : recréé avant que l'agent y démarre (fiche 224).
@@ -114,13 +137,20 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Ceux de la conversation, sinon (nouvelle conversation) le dernier choix fait avec ce profil ;
     // lus à chaque ouverture de session, jamais figés à la création de l'hôte (fiche 256).
     initialControls: (session) =>
-      openingControls(record, profile, settings.current.controls?.[profile.id], session),
-    // Modèles retenus (fiche 108) : l'avis d'un modèle plus proposé le nomme (fiche 266, D32).
-    knownOptionName: (controlId, value) => {
-      const seen = settings.current.models?.[profile.id]
-      return seen?.controlId === controlId
-        ? seen.options.find((o) => o.value === value)?.name
-        : undefined
+      withoutWarned(
+        openingControls(record, profile, settings.current.controls?.[profile.id], session),
+        warned.get(record)
+      ),
+    // Modèles retenus (fiche 108) : l'avis d'un modèle plus proposé le nomme ; une fois prévenu, la
+    // valeur n'est plus renvoyée à cette conversation (fiche 266, D32).
+    controlNotices: {
+      knownName: (controlId, value) => {
+        const seen = settings.current.models?.[profile.id]
+        return seen?.controlId === controlId
+          ? seen.options.find((o) => o.value === value)?.name
+          : undefined
+      },
+      warned: (controlId, value) => warnedOf(record).add(`${controlId}=${value}`)
     },
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],

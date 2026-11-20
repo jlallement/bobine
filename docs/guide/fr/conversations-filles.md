@@ -35,7 +35,7 @@ latérale), choisissez **Lancer en parallèle…**, écrivez la **Consigne**, ch
 quand l'agent le permet, le **Modèle**, puis **Lancer** (ou ⌘↩). Avec IBM Bob, l'agent choisit son
 modèle.
 
-Le travail apparaît sous la conversation qui l'a lancé, dans la barre latérale ; la conversation
+Le travail apparaît sous sa conversation d'origine, dans la barre latérale ; la conversation
 affichée ne change pas. Son en-tête dit d'où il vient et y ramène d'un clic.
 
 « Lancer en parallèle… » est grisé hors d'un dépôt git, ou quand le nombre de travaux en cours
@@ -83,21 +83,23 @@ La fin d'un travail se lit sur sa carte : **a répondu** (avec le nombre de fich
 qui écrit), **arrêté** ou **en erreur**. Quand un travail répond hors de vue, un repère en bas du
 fil le dit (« ↑ 2 travaux ont répondu · Voir ») ; **Voir** fait défiler jusqu'à sa carte.
 
-**Le coût**, une seule fois par carte : un montant ; **gratuit** pour un modèle qui se dit gratuit ;
-**coût non communiqué** quand l'agent annonce un coût nul pour un modèle payant (connexion par
-abonnement, par exemple). Bobine ne présente jamais un modèle payant comme gratuit.
+**Le coût**, une seule fois par carte : un montant ; **gratuit** quand l'agent annonce un coût nul
+pour un modèle qui se dit gratuit (« free » à la fin de son nom) ; **coût inconnu** quand il annonce
+un coût nul pour un autre modèle (connexion par abonnement, par exemple), ou quand une partie des
+travaux n'a pas de coût (« ≈ 0,05 $US + coût inconnu »). Bobine ne présente jamais un modèle payant
+comme gratuit. Avec un coût inconnu, le plafond de coût ne peut pas se déclencher.
 
-**Dans la barre latérale**, chaque travail est sous la conversation qui l'a lancé, avec son état :
+**Dans la barre latérale**, chaque travail est sous sa conversation d'origine, avec son état :
 **En cours**, **Attend un accord**, **A répondu, à lire**, **A répondu**, **Arrêté**, **En
-erreur**. Il apparaît dès la création de son worktree.
+erreur**. Il apparaît dès son lancement.
 
 **Ce que reçoit l'agent.** La carte le dit : « Pas encore transmise à <agent> — elle le sera avec
 votre prochain message », puis « Transmise ». Des travaux lancés par l'agent : il est réveillé une
 seule fois, quand tous ont répondu.
 
 **Les messages entre conversations.** L'agent peut écrire à ses travaux, et un travail peut écrire
-à la conversation qui l'a lancé. Ces messages passent par la file d'attente et disent leur
-provenance (« De la conversation qui l'a lancé… », « Du travail… ») ; un clic ouvre l'autre
+à sa conversation d'origine. Ces messages passent par la file d'attente et disent leur
+provenance (« De la conversation d'origine… », « Du travail… ») ; un clic ouvre l'autre
 conversation.
 
 **La vue Travaux.** Dans l'onglet **Modifications**, la vue **Travaux** liste les worktrees des
@@ -124,7 +126,7 @@ L'agent lit les réponses, vérifie le travail, renvoie ses corrections, puis di
 prête. Sur la ligne du travail :
 
 - **Recommandé** : prêt à fusionner ;
-- **Pas encore prêt** ;
+- **Pas encore recommandé** ;
 - **À revoir** : le travail a refait un tour depuis cet avis.
 
 Le survol donne la raison. C'est toujours vous qui fusionnez.
@@ -155,7 +157,7 @@ worktree : **Committer d'abord** ou **Mettre de côté**. Voir
 Rien n'est poussé, et aucune PR n'est ouverte : pour une PR, passez par la
 [vue Git du travail](worktrees.md#pr).
 
-**Archiver ou supprimer la conversation qui les a lancés** : ses travaux deviennent des
+**Archiver ou supprimer leur conversation d'origine** : ses travaux deviennent des
 conversations ordinaires. Désarchivée, elle les retrouve.
 
 <a id="reglages"></a>
@@ -167,7 +169,7 @@ Réglages › Conversations, rubrique **Travaux délégués** :
 - **Proposer des travaux** : **Jamais**, **Quand ça s'y prête** (par défaut) ou **Toujours
   demander**. Ce réglage dit à l'agent s'il doit proposer des travaux ; dans tous les cas, chaque
   proposition passe par la carte des travaux proposés et attend votre accord.
-- **Travaux en cours** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer en
+- **Travaux en même temps, au plus** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer en
   parallèle… » est grisé. Les relectures comptent dans ce nombre.
 
 Les outils des travaux se coupent dans Réglages › Serveurs MCP › Outils de Bobine, famille

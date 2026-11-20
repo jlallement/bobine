@@ -1651,10 +1651,12 @@ describe('AgentHost', () => {
       const notices = transcript().flatMap((i) => (i.kind === 'notice' ? [noticeOf(i)] : []))
       expect(notices).toHaveLength(2)
       expect(notices[0]).toMatch(
-        /Réglage.«.Mode.».non appliqué.\(Question\).*n’a pas appliqué.«.Mode.».*garde Code\./
+        /^Réglage.«.Mode.».non appliqué.\(«.Question.»\).: cette conversation garde.«.Code.»\.$/
       )
-      expect(notices[1]).toMatch(/non appliqué \(.*\).*Cette conversation garde/)
-      expect(notices[1]).not.toContain('factice-precis')
+      // Un modèle : « n'a pas pu passer au modèle … », l'erreur brute au journal seulement.
+      expect(notices[1]).toMatch(
+        /^Agent factice n’a pas pu passer au modèle «.Factice précis.».: cette conversation garde «.Factice rapide.»\.$/
+      )
       await expect(host.setControl('mode', 'ask')).rejects.toThrow(/n’a pas appliqué.«.Mode.»/)
       expect(host.snapshot().status).toBe('ready')
       host.stop()

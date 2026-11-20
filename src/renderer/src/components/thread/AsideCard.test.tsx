@@ -30,6 +30,17 @@ const answered: AsideView = {
 }
 
 describe('carte « Aparté » (fiche 180)', () => {
+  it('coût nul en monnaie : « coût inconnu », jamais « ≈ 0,00 $US » (fiche 266)', () => {
+    render(
+      <AsideCard
+        aside={state({ ...answered, cost: { amount: 0, currency: 'USD' } })}
+        items={[]}
+        inbox={new ComposerInbox()}
+      />
+    )
+    expect(screen.getByTestId('aside-cost').textContent).toBe('coût inconnu')
+  })
+
   it('vide : champ prêt, estimation du fil joint, « Demander » quand la question est tapée', () => {
     const aside = state()
     render(

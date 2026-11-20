@@ -105,7 +105,7 @@ import type { QuickEntryStatus } from '@shared/quick-entry'
 import { t } from 'i18next'
 import type { Message } from '@shared/i18n/message'
 import { messageOf } from '@shared/errors'
-import { sameDigest, usageDigest } from '@shared/usage'
+import { settleFreeDigests, syncDigest } from './free-digests'
 import type { AppToolFamily, ConversationAppTools } from '@shared/mcp'
 import { appToolsCatalog, conversationAppTools, switchedOff } from '../mcp/catalog'
 import type { AppToolModule } from '../mcp/tools'
@@ -626,8 +626,7 @@ export class ConversationManager {
     conversation.record.workspace = join(worktree.root, relative(worktree.path, workspace))
     delete conversation.record.worktree
     if (!conversation.record.archived) this.setArchived(id, true)
-    this.saveIndex()
-    this.emitList()
+    this.indexChanged()
     return worktree
   }
 
@@ -668,8 +667,7 @@ export class ConversationManager {
       // Écrire dans une conversation archivée la ressort.
       delete conversation.record.archived
       delete conversation.record.archivedWith
-      this.saveIndex()
-      this.emitList()
+      this.indexChanged()
     }
     // Premier message : la conversation entre dans l'historique.
     if (conversation.draft) this.enterHistory(conversation, text, attachments)
@@ -1090,8 +1088,7 @@ export class ConversationManager {
     const busy = archived && members.find((c) => c.snapshot?.status === 'busy')
     if (busy) throw new Error(busyArchiveError(busy.record, id))
     for (const member of members) this.archiveOne(member, archived, id)
-    this.saveIndex()
-    this.emitList()
+    this.indexChanged()
     this.releaseTranscripts()
     return this.state()
   }
@@ -1129,8 +1126,7 @@ export class ConversationManager {
     const conversation: Conversation = { record, lastUsed: 0, readAt: 0, draft: false }
     this.conversations.set(id, conversation)
     if (notice) this.onEvent(conversation, notice)
-    this.saveIndex()
-    this.emitList()
+    this.indexChanged()
     return this.state()
   }
 
@@ -1425,12 +1421,14 @@ export class ConversationManager {
    * Vrai si la liste est à renvoyer.
    */
   private syncUsage(conversation: Conversation): boolean {
-    const digest = usageDigest(conversation.transcript?.usage)
-    if (sameDigest(digest, conversation.record.usage)) return false
-    if (digest) conversation.record.usage = digest
-    else delete conversation.record.usage
+    if (!syncDigest(conversation.record, conversation.transcript?.usage)) return false
     if (!conversation.draft) this.saveIndex()
     return true
+  }
+
+  /** Résumés d'avant la fiche 266 complétés depuis leur fil (`free-digests.ts`) ; rend leur nombre. */
+  settleFreeDigests(): Promise<number> {
+    return settleFreeDigests(this.conversations.values(), this.store, () => this.indexChanged())
   }
 
   private touch(conversation: Conversation): void {
@@ -1485,6 +1483,11 @@ export class ConversationManager {
     const transcript = conversation.transcript
     this.releaseTranscripts()
     return transcript
+  }
+
+  private indexChanged(): void {
+    this.saveIndex()
+    this.emitList()
   }
 
   private saveIndex(): void {

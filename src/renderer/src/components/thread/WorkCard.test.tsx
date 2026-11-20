@@ -283,12 +283,12 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.queryByTestId('work-relay')).toBeNull()
   })
 
-  it('coût nul d’un modèle payant (abonnement, D12) : « coût non communiqué » dans le pied (fiche 266)', () => {
+  it('coût nul d’un modèle payant (abonnement, D12) : « coût inconnu » dans le pied (fiche 266)', () => {
     fakeAgent()
     view(answered({ usage: usd(0) }), info([child('a', ux)]))
     const facts =
       within(screen.getByTestId('work-card')).getByTestId('work-facts').textContent ?? ''
-    expect(facts).toContain('coût non communiqué')
+    expect(facts).toContain('coût inconnu')
     expect(facts).not.toContain('gratuit')
     expect(facts).not.toContain('$')
   })

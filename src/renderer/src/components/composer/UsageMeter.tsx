@@ -5,8 +5,8 @@ import {
   conversationCost,
   costNotReported,
   costText,
-  formatEstimate,
   freeModels,
+  isFreeModel,
   formatTokens,
   hasUsage,
   isEstimate,
@@ -41,7 +41,8 @@ export function UsageMeter({
   agentLabel,
   compact = false,
   actions,
-  onOpenUsage
+  onOpenUsage,
+  model
 }: {
   usage?: ConversationUsage
   agentLabel: string
@@ -51,6 +52,11 @@ export function UsageMeter({
   actions?: UsageActions
   /** « Toute la consommation… » : Réglages › Consommation (fiche 137). */
   onOpenUsage?: () => void
+  /**
+   * Modèle choisi : avant tout tour, un coût nul se lit d'après lui (gratuit ou coût inconnu ;
+   * fiche 266, revue QA).
+   */
+  model?: { value: string; name: string }
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -67,7 +73,7 @@ export function UsageMeter({
   // Toute la conversation, sessions précédentes comprises (fiche 164).
   const cost = conversationCost(usage)
   // Coût nul d'un modèle qui ne se dit pas gratuit : « coût non communiqué » (fiche 266, D12).
-  const free = freeModels(usage)
+  const free = usage?.turns?.length ? freeModels(usage) : !!model && isFreeModel(model)
   const r = 7
   const circumference = 2 * Math.PI * r
 
@@ -186,7 +192,7 @@ export function UsageMeter({
                 {cost.session && (
                   <div className="usage-row sub" data-testid="usage-session-cost">
                     <span>{t('usage.sessionCost')}</span>
-                    <span>{formatEstimate(cost.session)}</span>
+                    <span>{costText(cost.session, free)}</span>
                   </div>
                 )}
                 {cost.others.map((other) => (
@@ -196,7 +202,7 @@ export function UsageMeter({
                     data-testid="usage-other-cost"
                   >
                     <span>{t('usage.otherAgentCost')}</span>
-                    <span>{formatEstimate(other)}</span>
+                    <span>{costText(other, false)}</span>
                   </div>
                 ))}
               </div>
@@ -236,7 +242,7 @@ function TurnSections({ usage }: { usage: ConversationUsage }) {
   const withTokens = shown.some((turn) => turn.total !== undefined)
   const averageText = [
     ...(average.cost !== undefined && currency
-      ? [formatEstimate({ amount: average.cost, currency })]
+      ? [costText({ amount: average.cost, currency }, freeModels(usage))]
       : []),
     ...(average.tokens !== undefined
       ? [t('usage.tokensValue', { tokens: formatTokens(average.tokens) })]
@@ -305,7 +311,12 @@ function TurnRow({
         </span>
       )}
       <span className="cost-turn-cost">
-        {cost !== undefined && currency ? formatEstimate({ amount: cost, currency }) : '—'}
+        {cost !== undefined && currency
+          ? costText(
+              { amount: cost, currency },
+              !!turn.model && isFreeModel({ value: turn.model.id, name: turn.model.name })
+            )
+          : '—'}
       </span>
     </li>
   )

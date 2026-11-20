@@ -20,7 +20,7 @@ Ici, vous pouvez :
 
 1. Ouvrez l'onglet **Modifications** (⇧⌘D).
 2. Cliquez sur l'icône **Faire relire…** (une loupe sur un cadre, dans la barre des vues).
-   Pour relire un travail depuis la conversation qui l'a lancé : vue **Travaux**, la même icône sur sa ligne.
+   Pour relire un travail depuis sa conversation d'origine : vue **Travaux**, la même icône sur sa ligne.
 3. Le dialogue dit ce qui sera relu :
    - dans un worktree, tout le travail de la branche (commits et modifications non commitées) ;
    - sinon, les modifications non commitées du dossier.

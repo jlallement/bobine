@@ -192,3 +192,32 @@ describe('suivi du bas du fil (fiche 050)', () => {
     el.remove()
   })
 })
+
+describe('détail déplié en bas du fil (fiche 266)', () => {
+  it('la ligne dépliée reste sous le pointeur : le fil ne court pas vers le bas', () => {
+    const { el, box } = setup()
+    document.body.appendChild(el)
+    const toggle = document.createElement('button')
+    toggle.setAttribute('aria-expanded', 'false')
+    el.appendChild(toggle)
+    expect(box.scrollTop).toBe(1000)
+    act(() => toggle.click())
+    // La ligne s'ouvre : le fil grandit, mais rien ne défile.
+    box.scrollHeight = 1300
+    act(() => resize?.())
+    expect(box.scrollTop).toBe(1000)
+    el.remove()
+  })
+
+  it('un clic ailleurs (sans `aria-expanded`) garde le suivi du bas', () => {
+    const { el, box } = setup()
+    document.body.appendChild(el)
+    const button = document.createElement('button')
+    el.appendChild(button)
+    act(() => button.click())
+    box.scrollHeight = 1300
+    act(() => resize?.())
+    expect(box.scrollTop).toBe(1300)
+    el.remove()
+  })
+})

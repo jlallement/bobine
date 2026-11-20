@@ -149,3 +149,48 @@ restent en synonymes, avec les nouveaux.
   (carte d'un rôle), `157-reglages` (plafond et sa note), `265-relecture-remarques`. Pas de capture
   e2e de « coût non communiqué » ni de « connexion sans doute à faire » : l'agent factice ne joue ni
   coût nul payant ni modèles à fournisseur ; couverts par les essais unitaires.
+
+### Décisions du tech lead, revues UX et QA (2026-11-20), appliquées
+
+- **Saut de la ligne dépliée** : la cause mesurée (relevé image par image dans `filles-fusion`)
+  n'est pas la relecture du plan de fusion (le magasin `merge-plan-store` garde déjà l'ancien plan,
+  hauteurs constantes au relevé) mais le **suivi du bas du fil** : une ligne dépliée en bas du fil
+  agrandit le fil, qui défilait aussitôt vers le bas, et la ligne remontait sous le pointeur
+  (jusqu'à sortir de l'écran). Corrigé dans l'app (`useThreadScroll` : un clic sur un
+  `[aria-expanded]` du fil lâche le suivi du bas) ; essais `useThreadScroll.test.ts` ; l'e2e
+  `filles-fusion` clique juste après le retour, sans attente de stabilité (ligne désignée par son
+  travail).
+- **Coût** : « coût inconnu » remplace « coût non communiqué » ; partout (`/cost`, tâches
+  planifiées, aparté, sous-agents, Mon activité : chiffre, tableau par modèle, conversations,
+  infobulle du graphique ; moyenne et lignes du détail de la consommation) ; total partiel d'une
+  carte de groupe « ≈ … + coût inconnu », bulle « Sans le coût de N travaux ». Puce avant le premier
+  envoi : d'après le modèle choisi.
+- `isFreeModel` : « free » en fin de nom ou d'identifiant seulement (`free-tier-pro`, `not-free`,
+  `non-free` refusés) ; `freeModels` faux dès qu'un tour n'a pas de modèle ; seuls les tours gardés
+  (`MAX_TURNS`) sont vus (l'historique tronqué ne l'est pas). Au tableau de bord, l'identifiant sans
+  le profil (`boardModelFree`).
+- **Anciens résumés** (sans `free`) : complétés une fois au lancement depuis leur fil
+  (`free-digests.ts`, `settleFreeDigests`, sans garder les fils) ; les réponses d'un travail
+  reprennent la gratuité de sa conversation (`withFree`). `free` est maintenant toujours posé
+  (`true` ou `false`) quand un coût existe.
+- **D31** : marquage fait dans le main (`markRefused`, `authLikely`) : jamais sur le modèle choisi,
+  un modèle gratuit, ni un modèle qui a répondu avec ce profil.
+- **D32** : avis avec guillemets, « Changez le modèle par défaut dans Réglages › Agents. » ; un seul
+  avis par conversation, la valeur n'est plus renvoyée (`withoutWarned`) ; échec d'un modèle :
+  `modelFailedKept`, l'erreur brute au journal ; autre réglage : `controlFailedKept` ; réglage
+  appliqué après le délai : avis `controlLate`. `process.timeout` dit « < 1 s ».
+- **Carte de groupe** : après le réveil de l'agent, « Réponses transmises » (le réveil porte les
+  réponses des travaux lancés par l'agent, même posé avant la dernière).
+- **Vocabulaire** : « conversation d'origine » / « source conversation » ; « Recommandé » / « Pas
+  encore recommandé » ; « Fusionner le travail recommandé » ; « N travaux à fusionner ont
+  répondu » ; « N travaux fusionnés dans main en … » ; « Travaux en même temps, au plus » ; « en
+  cours, sera arrêté » ; « Finis : N » ; en anglais, la liste de l'agent devient « To-dos » (onglet,
+  épinglée, export, outils), « Tasks » est réservé aux travaux ; « 3 proposed tasks ».
+- **Essai des mots retirés** : expressions Unicode, équivalent anglais de « terminée »
+  (« finished »), guide lu par paragraphe, exclusions seulement nommées.
+- **Agent factice** : scénarios `cout-nul-payant` et `connexion-a-faire-fournisseur` (modèles nommés
+  par fournisseur) ; suite e2e `cout-connexion`, captures `266-cout-non-communique` et
+  `266-connexion-a-faire` (clair, sombre).
+- Non fait faute du texte : le point 23 de la revue UX (« les trois détails en anglais ») et les
+  « textes proposés » (14, 15, 20) n'étaient pas joints : textes écrits par moi, à relire.
+

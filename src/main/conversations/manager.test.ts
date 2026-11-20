@@ -934,6 +934,41 @@ describe('ConversationManager', () => {
     app3.manager.stopAll()
   })
 
+  it('résumé d’avant la fiche 266 (coût sans gratuité) : relu une fois du fil, sans le garder', async () => {
+    const env = environment()
+    const app1 = env.launch()
+    const id = app1.manager.state().activeId
+    await app1.manager.startActive()
+    await app1.manager.prompt(id, 'Un')
+    const usage = app1.manager.state().conversations.find((c) => c.id === id)?.usage
+    // « Factice rapide » ne se dit pas gratuit.
+    expect(usage?.free).toBe(false)
+    app1.manager.stopAll()
+    await app1.manager.settled()
+
+    const file = join(env.root, 'conversations', 'index.json')
+    const index = JSON.parse(readFileSync(file, 'utf8')) as { id: string; usage?: object }[]
+    writeFileSync(
+      file,
+      JSON.stringify(
+        index.map((r) => {
+          const { free: _f, ...rest } = (r.usage ?? {}) as { free?: boolean }
+          return r.usage ? { ...r, usage: rest } : r
+        })
+      )
+    )
+    const app2 = env.launch()
+    const before = app2.manager.state().conversations.find((c) => c.id === id)?.usage
+    // Le relevé d'arrière-plan peut déjà être passé : on l'appelle, il ne refait rien de trop.
+    await app2.manager.settleFreeDigests()
+    expect(app2.manager.state().conversations.find((c) => c.id === id)?.usage).toEqual({
+      ...before,
+      free: false
+    })
+    expect(await app2.manager.settleFreeDigests()).toBe(0)
+    app2.manager.stopAll()
+  })
+
   it('recherche dans le contenu, épinglage mémorisé après redémarrage', async () => {
     const env = environment()
     const app1 = env.launch()

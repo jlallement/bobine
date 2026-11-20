@@ -8,20 +8,25 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 - **Un seul vocabulaire** pour le travail délégué, partout (fil, barre latérale, Session › En
   cours, Modifications, Réglages, notifications, export, guide) : ce qu'on confie à un rôle ou à un
-  autre agent est un **travail**, qui rend une **réponse** ; il « a répondu », est « arrêté » ou
-  « en erreur ». Plus de « conversation fille », « sous-tâches », « compte rendu » ni « tâches
-  proposées » ; Modifications › Filles devient **Travaux**, la rubrique des Réglages **Travaux
+  autre agent est un **travail**, qui rend une **réponse** et vient de sa **conversation
+  d'origine** ; il « a répondu », est « arrêté » ou « en erreur ». Plus de « conversation fille »,
+  « sous-tâches », « compte rendu » ni « tâches proposées » ; Modifications › Filles devient **Travaux**, la rubrique des Réglages **Travaux
   délégués**. Les sous-agents de l'agent gardent leur nom.
-- **Coût honnête** : un coût nul s'affiche « gratuit » seulement pour un modèle qui se dit gratuit ;
-  sinon (OpenCode connecté par abonnement, par exemple) « coût non communiqué », jamais
-  « ≈ 0,00 $US ». Le plafond de coût dit alors qu'il ne peut pas se déclencher (Réglages et détail
-  de la consommation). Un seul coût par carte.
+- **Coût honnête**, partout (cartes, détail de la consommation, `/cost`, Mon activité, tâches
+  planifiées, aparté, sous-agents) : un coût nul s'affiche « gratuit » seulement pour un modèle qui
+  se dit gratuit ; sinon (OpenCode connecté par abonnement, par exemple) « coût inconnu », jamais
+  « ≈ 0,00 $US ». Le plafond de coût dit alors qu'il ne peut pas se déclencher. Un seul coût par
+  carte ; une carte dont une partie des travaux n'a pas de coût dit « ≈ 0,05 $US + coût inconnu ».
 - Menu des modèles : après un refus faute de connexion, les autres modèles du même fournisseur sont
   marqués « connexion sans doute à faire ».
 - Un modèle retenu que l'agent ne propose plus : l'avis le dit en une phrase claire (« Le modèle
-  GPT-6.2 Sol n'est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
-  brut.
-- Durées : « < 1 s » sous la seconde, jamais « 0 s ».
+  « GPT-6.2 Sol » n'est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
+  brut, une seule fois par conversation, et dit où changer le modèle par défaut. Un réglage que
+  l'agent applique après le délai le dit aussi.
+- Déplier une ligne en bas du fil (carte des travaux, « Lire la suite ») ne fait plus défiler le
+  fil : la ligne reste sous le pointeur.
+- Après le réveil de l'agent, la carte des travaux dit « Réponses transmises ».
+- Durées : « < 1 s » sous la seconde, jamais « 0 s », délais dépassés compris.
 - « Faire relire » lance le rôle **Code reviewer** : un seul chemin de relecture, depuis
   Modifications, la vue « Travaux » ou la carte d'un travail. La demande s'affiche dans le fil
   (« @Code reviewer Relis la branche … ») avec sa carte, qui montre **chaque remarque** : sa gravité,

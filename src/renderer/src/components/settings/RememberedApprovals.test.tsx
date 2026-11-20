@@ -15,7 +15,7 @@ afterEach(() => setLanguage('fr'))
 describe('RememberedApprovals : titres d’outils (fiche 214)', () => {
   it.each([
     ['fr', 'Mise à jour de la liste de tâches'],
-    ['en', 'Task list update']
+    ['en', 'To-do list update']
   ] as const)(
     '« Updating todo list » est dit en %s, le titre de l’agent reste en infobulle',
     (language, text) => {

@@ -154,7 +154,7 @@ describe('consommation par tour (fiche 109)', () => {
     usage = endTurn(usage, undefined, 2000)
     expect(usage.turns?.map(turnCost)).toEqual([0.0212, 0.0088])
     expect(usage.tokens).toBeUndefined()
-    expect(usageDigest(usage)).toEqual({ turns: 2, cost: bob(0.08) })
+    expect(usageDigest(usage)).toEqual({ turns: 2, cost: bob(0.08), free: false })
   })
 
   it('agent sans coût : jetons par tour, pas de coût ; tour en échec compté sans jetons', () => {
@@ -180,7 +180,14 @@ describe('consommation par tour (fiche 109)', () => {
   it('résumé pour l’index : jetons, échanges, coût ; vérifié à la relecture', () => {
     const usage = withCost(addTurn({}, tokens(100, 20)), usd(0.2))
     const digest = usageDigest(usage)
-    expect(digest).toEqual({ input: 100, output: 20, total: 120, turns: 1, cost: usd(0.2) })
+    expect(digest).toEqual({
+      input: 100,
+      output: 20,
+      total: 120,
+      turns: 1,
+      cost: usd(0.2),
+      free: false
+    })
     expect(usageDigest({ context: { used: 1, size: 2 } })).toBeUndefined()
     expect(parseUsageDigest(JSON.parse(JSON.stringify(digest)))).toEqual(digest)
     expect(parseUsageDigest({ input: -1, total: 'x', cost: { amount: 1 } })).toBeUndefined()
@@ -257,7 +264,7 @@ describe('coût de toute la conversation (fiche 164)', () => {
     const usage = nextSession({ cost: bob(1.5) })
     expect(conversationCost(usage)).toEqual({ total: bob(1.5), others: [] })
     expect(hasUsage(usage)).toBe(true)
-    expect(usageDigest(usage)).toEqual({ cost: bob(1.5) })
+    expect(usageDigest(usage)).toEqual({ cost: bob(1.5), free: false })
   })
 
   it('autre agent, autre devise : montrée à part, jamais additionnée', () => {

@@ -11,6 +11,7 @@ import { messageTime, turnDuration } from '../../time'
 import { Markdown } from './Markdown'
 import { ReviewFindings } from './WorkReview'
 import { FileStats, useUsageText } from './Subtasks'
+import { withFree } from '@shared/usage'
 import {
   answerText,
   currentReport,
@@ -314,8 +315,8 @@ export function AnswerFacts({
   // Mode présentation (fiche 159) : aucun montant, pas même « gratuit » (`useUsageText`).
   const usageText = useUsageText()
   const usage = exchangeUsage(
-    current ? workUsage(report, child) : report.usage,
-    previousReport(card, report)?.usage
+    current ? workUsage(report, child) : withFree(report.usage, child?.usage),
+    withFree(previousReport(card, report)?.usage, child?.usage)
   )
   const facts = [
     messageTime(report.at),

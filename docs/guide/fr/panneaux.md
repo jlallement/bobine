@@ -54,7 +54,7 @@ L'onglet **Modifications** (⇧⌘D) a deux ou trois vues :
   leur diff. Chaque modification s'annule fichier par fichier.
 - **Git** : l'état du dépôt, pour [committer](worktrees.md#committer) et, dans un worktree,
   [ouvrir une PR ou fusionner](worktrees.md#vue-git) ;
-- **Travaux**, dans une conversation qui en a lancé : voir
+- **Travaux**, dans la conversation d'origine de travaux : voir
   [Travaux délégués](conversations-filles.md#suivre).
 
 **Remarques sur le diff.** Au survol d'une ligne du diff, **+** ajoute une remarque (⇧-clic pour

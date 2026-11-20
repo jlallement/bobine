@@ -47,8 +47,8 @@
       "folder": "Folders"
     },
     "resumeSession": "Resume a session…",
-    "childOf": "Task started by “{{title}}”: {{state}}",
-    "childTip": "Task started by “{{title}}”",
+    "childOf": "Task from “{{title}}”: {{state}}",
+    "childTip": "Task from “{{title}}”",
     "resize": "Resize sidebar",
     "yesterday": "yesterday",
     "activity": "My activity",
@@ -308,11 +308,11 @@
         "move": "Allow this move?",
         "execute": "Allow this command?",
         "fetch": "Allow this network access?",
-        "todos": "Allow this task list update?"
+        "todos": "Allow this to-do list update?"
       },
       "waiting": "The agent is waiting for your approval to continue.",
       "rememberNote": "“Always” applies to {{name}}, in this conversation and future ones with {{agent}} (can be revoked in Settings › Privacy).",
-      "rememberTodos": "the task list",
+      "rememberTodos": "the to-do list",
       "theAgent": "the agent",
       "agentAlwaysNote": "The agent decides what “always” covers.",
       "alwaysConversation": "Always in this conversation",
@@ -342,8 +342,8 @@
       "searchIn": "Search in {{target}}",
       "list": "List {{target}}",
       "fetch": "Page {{target}}",
-      "todos_one": "Update the task list ({{count}})",
-      "todos_other": "Update the task list ({{count}})",
+      "todos_one": "Update the to-do list ({{count}})",
+      "todos_other": "Update the to-do list ({{count}})",
       "others_one": "{{target}} and {{count}} other",
       "others_other": "{{target}} and {{count}} others",
       "preparing": {
@@ -540,11 +540,14 @@
     },
     "estimate": "≈ {{cost}}",
     "free": "free",
-    "costNotReported": "cost not reported",
-    "costNotReportedHint": "{{agent}} reports a zero cost, but the model doesn’t say it is free (subscription, price unknown to the agent): Bobine can’t tell what is billed. The cost cap can’t trigger on this amount.",
+    "costNotReported": "cost unknown",
+    "costNotReportedHint": "{{agent}} reports a zero cost, but the model doesn’t say it is free (subscription, price unknown to the agent): the real cost is unknown. The cost cap can’t trigger on this amount.",
     "costEstimate": "Conversation cost (estimate)",
     "costHint": "Amount reported by {{agent}} from its own prices: what you are billed may differ (subscription, discounts).",
-    "capTokensValue": "{{tokens}} tokens, cache included"
+    "capTokensValue": "{{tokens}} tokens, cache included",
+    "costPartial": "{{cost}} + cost unknown",
+    "costPartialTip_one": "Without the cost of {{count}} task",
+    "costPartialTip_other": "Without the cost of {{count}} tasks"
   },
   "elicitation": {
     "decline": "Decline",
@@ -796,7 +799,7 @@
       "noLiveAgent": "No active agent for this conversation",
       "emptyTitle": "Empty title",
       "busyArchive": "The agent is still responding: stop it before archiving the conversation",
-      "busyArchiveChild": "“{{title}}”, one of its tasks, is still running: stop it before archiving the conversation that started it",
+      "busyArchiveChild": "“{{title}}”, a task started here, is still running: stop it before archiving its source conversation",
       "unknown": "Unknown conversation: {{id}}",
       "busyFolders": "The agent is still responding: change the conversation’s folders after its reply"
     },
@@ -853,7 +856,7 @@
   "conversationTitle": {
     "label": "Conversation title",
     "from": "↳ from “{{title}}”",
-    "fromTitle": "Show the conversation that started it",
+    "fromTitle": "Show the source conversation",
     "branchFrom": "↳ branch of “{{title}}”",
     "branchFromTitle": "Show the original conversation"
   },
@@ -884,8 +887,8 @@
     "losses": "— lost: {{losses}}",
     "children_one": "Also delete its task",
     "children_other": "Also delete its {{count}} tasks",
-    "childBusy": "working",
-    "childBusyStop": "working, will be stopped",
+    "childBusy": "running",
+    "childBusyStop": "running, will be stopped",
     "childrenDelete_one": "It goes to the trash too. Its worktree is kept.",
     "childrenDelete_other": "They go to the trash too. Their worktrees are kept.",
     "childrenKeep_one": "It will become an ordinary conversation; its thread will say so.",
@@ -1131,7 +1134,7 @@
         "more": "Keep more conversations active"
       },
       "maxChildren": {
-        "label": "Running tasks",
+        "label": "Max running tasks",
         "hint": "Per conversation. Beyond that, “Run in parallel…” is greyed out.",
         "less": "Fewer",
         "more": "More"
@@ -1452,7 +1455,7 @@
         "revokeLabel": "Stop always allowing {{tool}}",
         "revokeAsk": "Stop allowing {{tool}} automatically? The agent will ask again.",
         "known": {
-          "todoList": "Task list update"
+          "todoList": "To-do list update"
         }
       },
       "sites": {
@@ -2022,7 +2025,7 @@
     "newConversation": "New conversation",
     "hideChanges": "Hide changes",
     "showChanges": "Agent’s changes",
-    "tasks": "Agent’s tasks",
+    "tasks": "Agent’s to-dos",
     "hidePanel": "Hide panel",
     "showPanel": "Show panel",
     "scrollDown": "Scroll to bottom",
@@ -2132,7 +2135,7 @@
       "simulator": "iOS",
       "android": "Android",
       "terminal": "Terminal",
-      "tasks": "Tasks",
+      "tasks": "To-dos",
       "changes": "Changes",
       "document": "Preview",
       "acp": "ACP messages",
@@ -2295,13 +2298,13 @@
       "page": "Page attached to the message",
       "screen": "Screen attached to the message"
     },
-    "noTasks": "The agent has no task list in this conversation yet.",
+    "noTasks": "The agent has no to-do list in this conversation yet.",
     "progress_one": "{{done}} / {{count}} task done",
     "progress_other": "{{done}} / {{count}} tasks done"
   },
   "pinnedPlan": {
-    "title": "Tasks",
-    "label": "Agent’s tasks"
+    "title": "To-dos",
+    "label": "Agent’s to-dos"
   },
   "terminal": {
     "busy": "busy",
@@ -2627,8 +2630,8 @@
       "default": "Gives a merge verdict"
     },
     "message_parent": {
-      "value": "Writes to the conversation that started it: {{value}}",
-      "default": "Writes to the conversation that started it"
+      "value": "Writes to its source conversation: {{value}}",
+      "default": "Writes to its source conversation"
     },
     "report_findings": {
       "count_one": "Reports {{count}} review finding",
@@ -2685,7 +2688,7 @@
     },
     "children": {
       "title": "Delegated tasks",
-      "summary": "Hand tasks to other agents in parallel, each in its own git worktree, write to them and follow their state; a task writes to the conversation that started it. A review reports its findings.",
+      "summary": "Hand tasks to other agents in parallel, each in its own git worktree, write to them and follow their state; a task writes to its source conversation. A review reports its findings.",
       "condition": "Folder in a git repository",
       "approval": "Approval for each task"
     },
@@ -2855,7 +2858,7 @@
     "thought": "Thinking",
     "tool": "Tool",
     "changedFile": "Changed file: {{path}}",
-    "tasks": "Tasks",
+    "tasks": "To-dos",
     "notice": "{{level}}: {{text}}",
     "answer": "answer: {{answer}}",
     "question": "Question from the agent",
@@ -3052,13 +3055,15 @@
     "noSessionTrust": "Trusting for this session isn’t possible here",
     "notice": {
       "controlFailed": "Setting “{{name}}” not applied ({{value}}): {{error}}",
-      "controlFailedKept": "Setting “{{name}}” not applied ({{value}}): {{error}} This conversation keeps {{current}}.",
-      "modelNotOffered": "{{agent}} no longer offers the model {{wanted}}: this conversation uses {{current}}.",
-      "modelNotOfferedNone": "{{agent}} no longer offers the model {{wanted}}: this conversation uses the agent’s default model.",
-      "controlNotOffered": "“{{name}}”: {{agent}} no longer offers {{wanted}}; this conversation uses {{current}}.",
-      "controlNotOfferedNone": "“{{name}}”: {{agent}} no longer offers {{wanted}}; this conversation keeps the agent’s setting.",
+      "controlFailedKept": "Setting “{{name}}” not applied (“{{value}}”): this conversation keeps “{{current}}”.",
+      "modelNotOffered": "{{agent}} no longer offers the model “{{wanted}}”: this conversation uses “{{current}}”. Change the default model in Settings › Agents.",
+      "modelNotOfferedNone": "{{agent}} no longer offers the model “{{wanted}}”: this conversation uses the agent’s default model. Change the default model in Settings › Agents.",
+      "controlNotOffered": "“{{name}}”: {{agent}} no longer offers “{{wanted}}”; this conversation uses “{{current}}”.",
+      "controlNotOfferedNone": "“{{name}}”: {{agent}} no longer offers “{{wanted}}”; this conversation keeps the agent’s setting.",
       "modeFailed": "Starting mode not applied: {{error}}",
-      "elicitationUnsupported": "Unsupported information request from the agent (“{{message}}”): declined."
+      "elicitationUnsupported": "Unsupported information request from the agent (“{{message}}”): declined.",
+      "modelFailedKept": "{{agent}} couldn’t switch to the model “{{wanted}}”: this conversation keeps “{{current}}”.",
+      "controlLate": "{{agent}} applied “{{name}}” after all: “{{value}}”."
     },
     "turnLimit": {
       "noReload": "The agent cannot reload its session: open a new session with the summary instead."
@@ -3379,7 +3384,7 @@
   "process": {
     "commandMissing": "Command not found: {{command}}. Is it installed and in the PATH?",
     "notExecutable": "Command not executable: {{command}}",
-    "timeout": "{{what}} within {{seconds}} s."
+    "timeout": "{{what}} within {{duration}}."
   },
   "subagentWork": {
     "timeout": "The agent didn’t reopen the session in time.",
@@ -3443,7 +3448,7 @@
   "children": {
     "recommendation": {
       "ready": "Recommended",
-      "notReady": "Not ready yet",
+      "notReady": "Not recommended yet",
       "stale": "To review",
       "staleHint": "The task worked again since this recommendation.",
       "itemReady": "The agent recommends merging “{{title}}”",
@@ -3524,7 +3529,7 @@
     "notice": {
       "promptFailed": "The instruction could not be sent ({{error}}). Here it is, to send again: {{prompt}}",
       "messageFailed": "A message from another conversation could not be sent ({{error}}).",
-      "motherDeleted": "“{{title}}”, the conversation that started it, was deleted: this conversation carries on alone, and its responses stay here."
+      "motherDeleted": "Source conversation “{{title}}” deleted: this conversation carries on alone, and its responses stay here."
     },
     "startedByAgent": "The agent started the task “{{title}}”",
     "limit_one": "{{count}} task is already running: that is the limit set in Settings › Conversations.",
@@ -3532,7 +3537,7 @@
     "proposals": {
       "title_one": "{{count}} proposed task",
       "title_other": "{{count}} proposed tasks",
-      "worktree": "The agent proposes handing out this work as tasks, each in its own worktree. You can also ask it to do it here.",
+      "worktree": "The agent proposes handing out these tasks, each in its own worktree. You can also ask it to do them here.",
       "started_one": "{{count}} started",
       "started_other": "{{count}} started",
       "here_one": "{{count}} done here",
@@ -3559,7 +3564,7 @@
       }
     },
     "from": {
-      "parent": "From the conversation that started it, “{{title}}”",
+      "parent": "From the source conversation “{{title}}”",
       "child": "From the task “{{title}}”",
       "wake": "All tasks have replied: the agent resumes with their responses.",
       "merge": "Instruction from the merge started in “{{title}}”"
@@ -3790,8 +3795,8 @@
   },
   "childrenMerge": {
     "recommended": {
-      "action_one": "Merge the recommended one into {{base}}",
-      "action_other": "Merge the {{count}} recommended into {{base}}",
+      "action_one": "Merge the recommended task into {{base}}",
+      "action_other": "Merge the {{count}} recommended tasks into {{base}}",
       "others_one": "Include the other one…",
       "others_other": "Include the {{count}} others…",
       "confirm_one": "The agent does not recommend {{titles}}. Merge anyway?",
@@ -3804,14 +3809,14 @@
       "none": "The agent recommends no task yet."
     },
     "summary": {
-      "all_one": "The task replied.",
-      "all_other": "The {{count}} tasks replied.",
-      "disjoint_one": "The task replied.",
-      "disjoint_other": "The {{count}} tasks replied and don’t touch the same files.",
-      "some_one": "{{count}} task replied; {{first}}.",
-      "some_other": "{{count}} tasks replied; {{first}}.",
-      "someTwo_one": "{{count}} task replied; {{first}}, {{second}}.",
-      "someTwo_other": "{{count}} tasks replied; {{first}}, {{second}}.",
+      "all_one": "The task to merge replied.",
+      "all_other": "The {{count}} tasks to merge replied.",
+      "disjoint_one": "The task to merge replied.",
+      "disjoint_other": "The {{count}} tasks to merge replied and don’t touch the same files.",
+      "some_one": "{{count}} task to merge replied; {{first}}.",
+      "some_other": "{{count}} tasks to merge replied; {{first}}.",
+      "someTwo_one": "{{count}} task to merge replied; {{first}}, {{second}}.",
+      "someTwo_other": "{{count}} tasks to merge replied; {{first}}, {{second}}.",
       "working_one": "{{titles}} is still working",
       "working_other": "{{titles}} are still working",
       "waiting_one": "{{titles}} is waiting for approval",
@@ -3831,16 +3836,16 @@
     "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
     "stopping": "Stopping after the current merge…",
     "result": {
-      "done_one": "{{count}} merged into {{base}} in {{duration}}.",
-      "done_other": "{{count}} merged into {{base}} in {{duration}}.",
+      "done_one": "{{count}} task merged into {{base}} in {{duration}}.",
+      "done_other": "{{count}} tasks merged into {{base}} in {{duration}}.",
       "upToDate_one": "{{count}} already up to date.",
       "upToDate_other": "{{count}} already up to date.",
       "cleaned_one": "Conversation archived, working folder and branch deleted.",
       "cleaned_other": "Conversations archived, working folders and branches deleted.",
-      "stopped_one": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
-      "stopped_other": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
-      "interrupted_one": "Merge interrupted when the app was closed: {{count}} merged into {{base}}.",
-      "interrupted_other": "Merge interrupted when the app was closed: {{count}} merged into {{base}}.",
+      "stopped_one": "Merge stopped: {{count}} task merged into {{base}}, the others are still waiting.",
+      "stopped_other": "Merge stopped: {{count}} tasks merged into {{base}}, the others are still waiting.",
+      "interrupted_one": "Merge interrupted when the app was closed: {{count}} task merged into {{base}}.",
+      "interrupted_other": "Merge interrupted when the app was closed: {{count}} tasks merged into {{base}}.",
       "conflict": "Merge stopped on {{title}}: conflicts remain in {{files}}.",
       "failed": "Merge stopped on {{title}}: {{error}}"
     },
@@ -3951,7 +3956,7 @@
       "report": "Unread task response",
       "errorPlain": "Agent error"
     },
-    "childOf": "started by “{{title}}”",
+    "childOf": "task from “{{title}}”",
     "ago": {
       "now": "just now",
       "minutes_one": "{{count}} min",
@@ -4074,7 +4079,7 @@
       "input": "Cap for this conversation",
       "tokensUnit": "tokens, cache included",
       "fromSettings": "{{limit}} (Settings)",
-      "notReported": "Cost not reported by the agent: this cap can’t trigger.",
+      "notReported": "Cost unknown: the agent reports a zero cost for a model that isn’t free. This cap can’t trigger.",
       "export": "Cap reached: {{limit}}",
       "held": "Your message is waiting for your approval:",
       "heldSent": "Your message was sent:",
@@ -4091,11 +4096,11 @@
       "cap": {
         "label": "Cap per conversation",
         "hint": "For new conversations: past it, Bobine stops the response once the current tool finishes and asks whether to continue; a new message waits for your approval. Can be changed in each conversation’s usage details.",
-        "notReported": "An agent that reports a zero cost for a paid model (a subscription sign-in, for example) never raises the spend: the cap doesn’t trigger. Its usage then says “cost not reported”."
+        "notReported": "With a paid model whose agent reports a zero cost (a subscription sign-in, for example), the spend never rises: the cap doesn’t trigger, and usage shows “cost unknown”."
       },
       "capAmount": {
         "label": "Amount",
-        "hint": "One amount, counted in the agent’s unit: bobcoins for Bob, dollars for the others."
+        "hint": "One amount, counted in the agent’s unit: Bobcoins for Bob, dollars for the others."
       },
       "capTokens": {
         "label": "Agent with no known amount",
@@ -4458,7 +4463,7 @@
       "reported_one": "Review by {{agent}}: {{count}} comment",
       "reported_other": "Review by {{agent}}: {{count}} comments",
       "none": "Review by {{agent}}: nothing to report",
-      "silent": "Review by {{agent}}: replied without structured findings, its response is in its conversation",
+      "silent": "{{agent}} reviewed without structured findings: its response is in its conversation.",
       "failed": "Review failed: {{error}}",
       "changed": "The folder changed during the review (reviewer, this conversation or you): check the Git view; the quoted lines may have moved.",
       "scopeBranch": "Branch since {{base}}",
@@ -5083,7 +5088,7 @@
         "subtask": "Subtasks",
         "subagent": "Subagents",
         "skill": "Skills",
-        "todo": "Task list"
+        "todo": "To-do list"
       },
       "outsideEffect": "Turning it on also lets Bob work outside the project folder: the other groups will ask for your explicit approval there.",
       "outsideStillOn": "Bob is still allowed to work outside the project folder: each tool asks for your explicit approval there.",
@@ -5125,7 +5130,7 @@
     "tools": {
       "label": "Bobine tools",
       "all": "All of the conversation’s",
-      "hint": "Questions and the link with the conversation that started it always stay."
+      "hint": "Questions and the link with the source conversation always stay."
     },
     "agent": {
       "label": "Agent",
@@ -5324,7 +5329,7 @@
     "empty": "No active role",
     "assign": "Hand work to {{label}}",
     "roleTip": "Role: {{label}}",
-    "notHere": "A task can’t hand work to a role: open the conversation that started it."
+    "notHere": "A task can’t hand work to a role: do it from its source conversation."
   },
   "roles": {
     "none": "none",
@@ -5809,8 +5814,8 @@
     "heldCommitting": "Finish or cancel the commit above"
   },
   "workGroup": {
-    "titleProposed_one": "{{count}} task proposed",
-    "titleProposed_other": "{{count}} tasks proposed",
+    "titleProposed_one": "{{count}} proposed task",
+    "titleProposed_other": "{{count}} proposed tasks",
     "title_one": "{{count}} task",
     "title_other": "{{count}} tasks",
     "by": "by {{agent}}",
@@ -5872,8 +5877,8 @@
       "action_one": "Merge the ready task into {{base}}",
       "action_other": "Merge the {{count}} ready into {{base}}",
       "recommended": {
-        "action_one": "Merge the recommended one into {{base}}",
-        "action_other": "Merge the {{count}} recommended into {{base}}",
+        "action_one": "Merge the recommended task into {{base}}",
+        "action_other": "Merge the {{count}} recommended tasks into {{base}}",
         "others_one": "Include the other one…",
         "others_other": "Include the {{count}} others…",
         "confirm_one": "The agent does not recommend {{titles}}. Merge anyway?",
@@ -5885,12 +5890,12 @@
       "progress_one": "Merging into {{base}}: {{count}} of {{total}}…",
       "progress_other": "Merging into {{base}}: {{count}} of {{total}}…",
       "result": {
-        "done_one": "{{count}} merged into {{base}} in {{duration}}.",
-        "done_other": "{{count}} merged into {{base}} in {{duration}}.",
-        "stopped_one": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
-        "stopped_other": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
-        "interrupted_one": "Merge interrupted when the app closed: {{count}} merged into {{base}}.",
-        "interrupted_other": "Merge interrupted when the app closed: {{count}} merged into {{base}}."
+        "done_one": "{{count}} task merged into {{base}} in {{duration}}.",
+        "done_other": "{{count}} tasks merged into {{base}} in {{duration}}.",
+        "stopped_one": "Merge stopped: {{count}} task merged into {{base}}, the others are still waiting.",
+        "stopped_other": "Merge stopped: {{count}} tasks merged into {{base}}, the others are still waiting.",
+        "interrupted_one": "Merge interrupted when the app was closed: {{count}} task merged into {{base}}.",
+        "interrupted_other": "Merge interrupted when the app was closed: {{count}} tasks merged into {{base}}."
       },
       "row": {
         "pending": "waiting",
@@ -5907,8 +5912,8 @@
       "resolving": "Conflict: that task resolves it, then the merge resumes.",
       "advice": {
         "recommended": "The agent recommends {{titles}}",
-        "notReady_one": "{{titles}} is not ready yet according to it",
-        "notReady_other": "{{titles}} are not ready yet according to it",
+        "notReady_one": "{{titles}} isn’t recommended yet",
+        "notReady_other": "{{titles}} aren’t recommended yet",
         "unadvised_one": "{{titles}} has no opinion from the agent yet",
         "unadvised_other": "{{titles}} have no opinion from the agent yet",
         "separator": "; ",
@@ -5924,7 +5929,7 @@
     "expiredHint": "The agent restarted in the meantime: “Start” starts this task like “Start in parallel…”, without waking the agent.",
     "verdict": {
       "ready": "Recommended",
-      "notReady": "Not ready yet",
+      "notReady": "Not recommended yet",
       "stale": "To review",
       "staleHint": "The task worked again since this recommendation."
     },

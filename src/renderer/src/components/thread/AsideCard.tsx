@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { HelpLink } from '../help/HelpLink'
 import { asideExcerpt, asideQuote, estimatedTokens, type AsideExchange } from '@shared/aside'
 import type { TranscriptItem } from '@shared/transcript'
-import { formatEstimate, formatTokens } from '@shared/usage'
+import { costText, formatTokens } from '@shared/usage'
 import type { AsideState } from '../../useAside'
 import type { ComposerInbox } from '../../useFileDrop'
 import { SpoolMark } from '../common/SpoolMark'
@@ -80,7 +80,8 @@ export function AsideCard({
         </span>
         {view?.cost && (
           <span className="aside-cost" data-testid="aside-cost" title={t('aside.costHint')}>
-            {formatEstimate(view.cost)}
+            {/* Modèle de l'aparté non gardé : un coût nul est « coût inconnu » (fiche 266). */}
+            {costText(view.cost, false)}
           </span>
         )}
         <button

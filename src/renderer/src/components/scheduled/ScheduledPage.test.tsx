@@ -66,6 +66,17 @@ describe('ScheduledPage (fiche 178)', () => {
     expect(onOpen).toHaveBeenCalledWith('c1')
   })
 
+  it('coût nul en monnaie : « coût inconnu » pour l’exécution et l’estimation (fiche 266)', async () => {
+    api['list']?.mockResolvedValue([
+      { ...task, runs: [{ ...task.runs[0], cost: { amount: 0, currency: 'USD' } }] }
+    ])
+    render(<ScheduledPage onOpenConversation={vi.fn()} profiles={profiles} />)
+    await screen.findByText('Revue du matin')
+    expect(screen.getByTestId('scheduled-run-cost').textContent).toBe('coût inconnu')
+    expect(screen.getByTestId('scheduled-cost').textContent).toContain('coût inconnu')
+    expect(screen.getByTestId('scheduled-cost').textContent).not.toContain('0,00')
+  })
+
   it('actions : lancer maintenant, pause, suppression confirmée', async () => {
     render(<ScheduledPage onOpenConversation={vi.fn()} profiles={profiles} />)
     await screen.findByText('Revue du matin')

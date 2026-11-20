@@ -8,17 +8,26 @@ What changes for you, version by version. Shown in Settings › About.
 
 - **One vocabulary** for delegated work, everywhere (thread, sidebar, Session › Running, Changes,
   Settings, notifications, export, guide): what you hand to a role or another agent is a **task**,
-  which sends back a **response**; it has “replied”, is “stopped” or “failed”. No more “child
+  which sends back a **response** and comes from its **source conversation**; it has “replied”, is
+  “stopped” or “failed”. No more “child
   conversation”, “subtasks” or “report”; Changes › Children becomes **Tasks**, the Settings section
   **Delegated tasks**. The agent’s own subagents keep their name.
-- **Honest cost**: a zero cost shows as “free” only for a model that says it is free; otherwise
-  (OpenCode signed in with a subscription, for example) “cost not reported”, never “≈ $0.00”. The
-  cost cap then says it can’t trigger (Settings and usage details). One cost per card.
+- **Honest cost**, everywhere (cards, usage details, `/cost`, My activity, scheduled tasks, asides,
+  subagents): a zero cost shows as “free” only for a model that says it is free; otherwise (OpenCode
+  signed in with a subscription, for example) “cost unknown”, never “≈ $0.00”. The cost cap then
+  says it can’t trigger. One cost per card; a card where some tasks have no cost says “≈ $0.05 + cost
+  unknown”.
+- The agent’s task list is now called **To-dos**; “Tasks” is kept for delegated tasks.
 - Model menu: after a refusal for lack of sign-in, the other models from the same provider are
   marked “sign-in likely needed”.
 - A saved model the agent no longer offers: the notice says so in one plain sentence (“OpenCode no
-  longer offers the model GPT-6.2 Sol: this conversation uses …”), without a raw identifier.
-- Durations: “< 1 s” under a second, never “0 s”.
+  longer offers the model “GPT-6.2 Sol”: this conversation uses …”), without a raw identifier, once
+  per conversation, and says where to change the default model. A setting the agent applies after
+  the timeout says so too.
+- Unfolding a row at the bottom of the conversation (tasks card, “Read more”) no longer scrolls the
+  conversation: the row stays under the pointer.
+- After the agent is woken up, the tasks card says “Responses passed to …”.
+- Durations: “< 1 s” under a second, never “0 s”, timeouts included.
 - “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the
   “Tasks” view or a task's card. The request shows in the thread (“@Code reviewer Review the
   branch …”) with its card, which shows **every comment**: its severity, `file:line` (a click opens

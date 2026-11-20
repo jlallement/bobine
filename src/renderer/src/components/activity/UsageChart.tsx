@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDuration } from '@shared/subagent'
-import { formatEstimate, formatTokens } from '@shared/usage'
+import { costText, formatEstimate, formatTokens } from '@shared/usage'
 import type { DatedScope } from '@shared/usage-periods'
 import type { UsageBucket, UsageBucketKind, UsageSeries } from '@shared/usage-stats'
 import {
   axisBuckets,
   bucketLabel,
+  boardModelFree,
   cellValue,
   durationScale,
   durationTick,
@@ -193,11 +194,19 @@ export function UsageChart({
         >
           <strong>{bucketLabel(kind, hovered.key, scope, true)}</strong>
           {series.map((s) => {
-            const value = cellValue(cellsOf(hovered)[s.key], metric)
+            const cell = cellsOf(hovered)[s.key]
+            const value = cellValue(cell, metric)
+            // Coût nul d'échanges faits : « gratuit » seulement pour un modèle gratuit (fiche 266).
+            const shown =
+              metric.kind !== 'cost' || value !== 0
+                ? format(value)
+                : (cell?.turns ?? 0) > 0
+                  ? costText({ amount: 0, currency: metric.unit }, boardModelFree(s.key, s.label))
+                  : '—'
             return (
               <span key={s.key} className={value ? '' : 'none'}>
                 <i style={{ background: seriesColor(s.slot) }} />
-                {isOther(s) ? t('usage.board.other') : s.label} · {format(value)}
+                {isOther(s) ? t('usage.board.other') : s.label} · {shown}
               </span>
             )
           })}

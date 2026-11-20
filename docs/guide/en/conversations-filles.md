@@ -32,7 +32,7 @@ folder without changing anything; a role that writes starts from the last commit
 choose **Run in parallel…**, write the **Instruction**, choose the **Agent** and, when the agent
 allows it, the **Model**, then **Start** (or ⌘↩). With IBM Bob, the agent picks its own model.
 
-The task appears under the conversation that started it, in the sidebar; the conversation on screen
+The task appears under its source conversation, in the sidebar; the conversation on screen
 doesn’t change. Its header says where it comes from and takes you back there in one click.
 
 “Run in parallel…” is greyed out outside a git repository, or when the number of running tasks
@@ -79,21 +79,23 @@ How a task ended shows on its card: **replied** (with the number of files for a 
 **stopped** or **failed**. When a task replies out of view, a marker at the bottom of the
 conversation says so (“↑ 2 tasks replied · Show”); **Show** scrolls to its card.
 
-**The cost**, once per card: an amount; **free** for a model that says it is free; **cost not
-reported** when the agent reports a zero cost for a paid model (a subscription sign-in, for
-example). Bobine never presents a paid model as free.
+**The cost**, once per card: an amount; **free** when the agent reports a zero cost for a model that
+says it is free (“free” at the end of its name); **cost unknown** when it reports a zero cost for
+another model (a subscription sign-in, for example), or when some tasks have no cost (“≈ $0.05 + cost
+unknown”). Bobine never presents a paid model as free. With an unknown cost, the cost cap can’t
+trigger.
 
-**In the sidebar**, each task sits under the conversation that started it, with its state:
+**In the sidebar**, each task sits under its source conversation, with its state:
 **Running**, **Waiting for approval**, **Replied, unread**, **Replied**, **Stopped**, **Failed**.
-It appears as soon as its worktree is created.
+It appears as soon as it starts.
 
 **What the agent receives.** The card says so: “Not yet passed to <agent> — it will be with your
 next message”, then “Passed”. Tasks the agent started: it is woken once, when all of them have
 replied.
 
 **Messages between conversations.** The agent can write to its tasks, and a task can write to the
-conversation that started it. These messages go through the queue and say where they come from
-(“From the conversation that started it…”, “From the task…”); one click opens the other
+source conversation. These messages go through the queue and say where they come from
+(“From the source conversation…”, “From the task…”); one click opens the other
 conversation.
 
 **The Tasks view.** In the **Changes** tab, the **Tasks** view lists the tasks’ worktrees: state,
@@ -119,7 +121,7 @@ The agent reads the responses, checks the work, sends its fixes back, then says 
 is ready. On the task’s row:
 
 - **Recommended**: ready to merge;
-- **Not ready yet**;
+- **Not recommended yet**;
 - **To review**: the task worked again since this recommendation.
 
 Hover to see the reason. You always do the merging.
@@ -147,7 +149,7 @@ remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 
 Nothing is pushed, and no PR is opened: for a PR, use the [task’s Git view](worktrees.md#pr).
 
-**Archive or delete the conversation that started them**: its tasks become ordinary conversations.
+**Archive or delete their source conversation**: its tasks become ordinary conversations.
 Unarchived, it gets them back.
 
 <a id="reglages"></a>
@@ -159,7 +161,7 @@ Settings › Conversations, **Delegated tasks** section:
 - **Propose tasks**: **Never**, **When it fits** (default) or **Always ask**. This setting tells the
   agent whether to propose tasks; in every case, each proposal goes through the proposed tasks card
   and waits for your approval.
-- **Running tasks**: 1 to 10 per conversation (5 by default). Beyond that, “Run in parallel…” is
+- **Max running tasks**: 1 to 10 per conversation (5 by default). Beyond that, “Run in parallel…” is
   greyed out. Reviews count toward this number.
 
 Turn off the tasks’ tools in Settings › MCP servers › Bobine tools, **Delegated tasks** family.

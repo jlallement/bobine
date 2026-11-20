@@ -6,9 +6,11 @@
 import { methods, RequestError } from '../../shared/acp-sdk.mts'
 import type { ClientConnection, SessionConfigOption } from '../../shared/acp-sdk.mts'
 import type { AgentEvent, ControlValue, SessionControl } from '@shared/agent'
+import type { Message } from '@shared/i18n/message'
 import { executionMode, isPlanMode } from '@shared/plan-doc'
+import { t } from 'i18next'
 import { log } from '../log'
-import { errorMessage } from './process-utils'
+import { AgentTimeout, errorMessage, race } from './process-utils'
 import { isValidValue } from './session-controls'
 import type { AgentProfile } from './profiles'
 import type { AgentHostOptions } from './agent-host'
@@ -41,6 +43,8 @@ export interface InitialControlsInput {
   labels?: {
     agent: string
     known?: ((controlId: string, value: string) => string | undefined) | undefined
+    /** L'avis d'une valeur plus proposée est donné : ne plus la renvoyer à cette conversation. */
+    warned?: ((controlId: string, value: string) => void) | undefined
   }
   /**
    * Réglages de la conversation, sinon (nouvelle conversation) ceux retenus pour le profil
@@ -80,14 +84,18 @@ export async function sendControl(
 export function settingsOf(
   host: Pick<
     AgentHostOptions,
-    'emit' | 'profile' | 'knownOptionName' | 'initialControls' | 'initialMode'
+    'emit' | 'profile' | 'controlNotices' | 'initialControls' | 'initialMode'
   >,
   reopened: boolean,
   reopening: boolean
 ): Pick<InitialControlsInput, 'emit' | 'labels' | 'initialControls' | 'initialMode'> {
   return {
     emit: host.emit,
-    labels: { agent: host.profile.label, known: host.knownOptionName },
+    labels: {
+      agent: host.profile.label,
+      known: host.controlNotices?.knownName,
+      warned: host.controlNotices?.warned
+    },
     initialControls: host.initialControls?.(reopened ? 'reopened' : 'new'),
     initialMode: reopening ? undefined : host.initialMode
   }
@@ -112,28 +120,94 @@ async function applyInitialControls(
     if (control && !isValidValue(control, value)) {
       log.warn(`Réglage ${id} non proposé par l'agent : ${String(value)}`)
       input.emit(notOffered(input, control, value))
+      if (typeof value === 'string') input.labels?.warned?.(id, value)
       continue
     }
     try {
       await Promise.race([input.apply(id, value), input.failed])
     } catch (error) {
+      // L'erreur brute va au journal ; l'avis dit ce que la conversation garde (revue UX).
       log.warn(`Réglage ${id} non appliqué (${String(value)}) : ${errorMessage(error)}`)
-      const current = control ? currentName(input.controls(), control.id) : undefined
-      input.emit({
-        type: 'notice',
-        level: 'warning',
-        message: {
-          key: current ? 'agentHost.notice.controlFailedKept' : 'agentHost.notice.controlFailed',
-          params: {
-            name: control?.name ?? id,
-            value: control ? valueName(input, control, value) : String(value),
-            error: errorMessage(error),
-            ...(current ? { current } : {})
-          }
-        }
-      })
+      input.emit(failedNotice(input, control, id, value, error))
     }
   }
+}
+
+/** Ce que l'hôte d'agent fournit pour les avis d'un réglage plus proposé (fiche 266, D32). */
+export interface ControlNotices {
+  knownName?: (controlId: string, value: string) => string | undefined
+  warned?: (controlId: string, value: string) => void
+}
+
+/**
+ * Réglage non appliqué : un modèle, « n'a pas pu passer au modèle … : cette conversation garde … » ;
+ * un autre réglage, ce qui est gardé ; sans valeur courante connue, l'erreur de l'agent.
+ */
+function failedNotice(
+  input: InitialControlsInput,
+  control: SessionControl | undefined,
+  id: string,
+  value: ControlValue,
+  error: unknown
+): AgentEvent {
+  const current = control ? currentName(input.controls(), control.id) : undefined
+  const wanted = control ? valueName(input, control, value) : String(value)
+  const name = control?.name ?? id
+  const agent = input.labels?.agent ?? ''
+  const message: Message =
+    current && control?.category === 'model'
+      ? { key: 'agentHost.notice.modelFailedKept', params: { agent, wanted, current } }
+      : current
+        ? { key: 'agentHost.notice.controlFailedKept', params: { name, value: wanted, current } }
+        : {
+            key: 'agentHost.notice.controlFailed',
+            params: { name, value: wanted, error: errorMessage(error) }
+          }
+  return { type: 'notice', level: 'warning', message }
+}
+
+/** Réglage appliqué par l'agent après le délai : l'avis d'échec est corrigé (revue QA). */
+export function lateNotice(
+  profile: Pick<AgentProfile, 'label'>,
+  control: SessionControl,
+  value: ControlValue
+): AgentEvent {
+  const option =
+    control.type === 'select' ? control.options.find((o) => o.value === value)?.name : undefined
+  return {
+    type: 'notice',
+    level: 'info',
+    message: {
+      key: 'agentHost.notice.controlLate',
+      params: { agent: profile.label, name: control.name, value: option ?? String(value) }
+    }
+  }
+}
+
+/** Appel au-delà du délai (`raced` rejeté par `AgentTimeout`) qui aboutit quand même : `onLate`. */
+export function watchLate(call: Promise<unknown>, raced: Promise<unknown>, onLate: () => void) {
+  call.catch(() => {})
+  raced.catch((error: unknown) => {
+    if (error instanceof AgentTimeout) call.then(onLate, () => {})
+  })
+}
+
+/**
+ * Envoi d'un réglage borné par le délai (`race`) ; s'il aboutit quand même après le délai, un avis
+ * le dit (`lateNotice`, revue QA).
+ */
+export async function raceControl(
+  call: Promise<unknown>,
+  failed: Promise<never>,
+  ms: number,
+  host: Pick<AgentHostOptions, 'emit' | 'profile'>,
+  sent: { control: SessionControl; value: ControlValue }
+): Promise<void> {
+  const { control, value } = sent
+  const what = t('agentHost.timeout.control', { name: control.name })
+  const raced = race(failed, ms, what, call)
+  watchLate(call, raced, () => host.emit(lateNotice(host.profile, control, value)))
+  await raced
 }
 
 /** Nom affiché d'une valeur : celui de l'option, sinon un nom retenu, sinon la valeur. */

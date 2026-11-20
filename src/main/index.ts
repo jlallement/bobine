@@ -614,6 +614,8 @@ async function start(): Promise<void> {
     approvals: () => approvals.view(),
     quickEntryStatus: () => quickShortcut.state
   })
+  // Résumés d'avant la fiche 266 : leur gratuité relue du fil, en arrière-plan.
+  void conversations.settleFreeDigests()
 
   // Attente de l'utilisateur : notifications, son, Dock (fiches 024, 068, 101, 119, 159).
   const { attention, alerts, updateBadge } = appAttention({

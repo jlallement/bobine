@@ -85,7 +85,7 @@ describe('supprimer une mère : ses filles (fiche 228)', () => {
     expect(box.parentElement?.textContent).toContain('Supprimer aussi ses 3 travaux')
     const rows = [...screen.getByTestId('delete-children-list').querySelectorAll('li')]
     expect(rows.map((r) => r.textContent)).toEqual([
-      'Importer les donnéesau travail, sera arrêté',
+      'Importer les donnéesen cours, sera arrêté',
       'Corriger les tests',
       '↳Relire les tests'
     ])
@@ -104,7 +104,7 @@ describe('supprimer une mère : ses filles (fiche 228)', () => {
     expect(screen.getByTestId('delete-children-note').textContent).toContain(
       'conversations ordinaires'
     )
-    expect(screen.getByTestId('delete-child-busy').textContent).toBe('au travail')
+    expect(screen.getByTestId('delete-child-busy').textContent).toBe('en cours')
     fireEvent.click(screen.getByTestId('delete-confirm'))
     expect(onConfirm).toHaveBeenCalledWith({
       fromAgent: false,

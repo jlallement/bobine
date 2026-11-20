@@ -111,19 +111,6 @@ export async function fillesFusionSuite(scheme) {
           }
           await ui.waitFor(`!!${open}`)
           await ui.reveal(open)
-          // La carte relit les branches au retour (plan de fusion) : la ligne gagne sa méta et peut
-          // descendre d'une ligne. Comme un humain, on attend qu'elle ne bouge plus (fiche 266 :
-          // l'appui tombait sur la ligne de transmission, juste au-dessus).
-          await ui.waitFor(
-            `(() => { const y = ${open}?.getBoundingClientRect().y; const s = window.__openY; window.__openY = y; return y !== undefined && s === y })()`,
-            10000
-          )
-          await new Promise((resolve) => setTimeout(resolve, 300))
-          await ui.waitFor(
-            `(() => { const y = ${open}?.getBoundingClientRect().y; const s = window.__openY; window.__openY = y; return s === y })()`,
-            10000
-          )
-          await ui.reveal(open)
           await ui.click(open)
           await ui.waitFor(`!!${ui.$('title-origin')}`)
           await ui.click(ui.$('title-origin'))

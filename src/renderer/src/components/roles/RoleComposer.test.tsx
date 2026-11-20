@@ -358,7 +358,7 @@ describe('rôle invoqué d’ailleurs (section Équipe, Réglages, assistant) : 
       invokeRole('code-reviewer')
     })
     expect(screen.queryByTestId('role-token')).toBeNull()
-    expect(onWarn).toHaveBeenCalledWith(expect.stringContaining('la conversation qui l’a lancé'))
+    expect(onWarn).toHaveBeenCalledWith(expect.stringContaining('conversation d’origine'))
   })
 })
 
@@ -555,9 +555,7 @@ describe('`@rôle` tapé dans une fille (essais réels avant 1.0.0-beta.2)', () 
       reload
     })
     type('@security-expert relis auth.js')
-    expect(screen.getByTestId('role-not-here').textContent).toContain(
-      'la conversation qui l’a lancé'
-    )
+    expect(screen.getByTestId('role-not-here').textContent).toContain('conversation d’origine')
     expect(screen.queryByTestId('role-item')).toBeNull()
     expect(screen.queryByTestId('roles-invite')).toBeNull()
     key('Escape')

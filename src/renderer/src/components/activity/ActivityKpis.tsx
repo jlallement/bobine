@@ -5,17 +5,11 @@ import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
 import { numberFormat } from '@shared/i18n/format'
 import { formatDuration } from '@shared/subagent'
-import {
-  costText,
-  formatEstimate,
-  formatTokens,
-  isEstimate,
-  isFreeModel,
-  processedTokens
-} from '@shared/usage'
+import { costText, formatEstimate, formatTokens, isEstimate, processedTokens } from '@shared/usage'
 import type { UsageModelRow, UsageStats } from '@shared/usage-stats'
 import {
   agentsWithUnit,
+  boardModelFree,
   deltaOf,
   metricCoverage,
   previousMonthName,
@@ -185,10 +179,7 @@ function costValue(
 /** Chaque modèle qui a un coût dans cette unité se dit gratuit (fiche 266). */
 function rowsFree(rows: readonly UsageModelRow[], unit: string): boolean {
   const used = rows.filter((r) => r.costTurns[unit])
-  return (
-    used.length > 0 &&
-    used.every((r) => r.model !== undefined && isFreeModel({ value: r.key, name: r.model }))
-  )
+  return used.length > 0 && used.every((r) => boardModelFree(r.key, r.model))
 }
 
 /** « 18 % », ou « stable ». */

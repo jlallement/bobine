@@ -280,6 +280,14 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(text('usage-coverage')).toBe('Coût (Bobcoins) : IBM Bob seulement.')
   })
 
+  it('graphique : un coût nul d’échanges faits se dit « coût inconnu », jamais « ≈ 0,00 $US » (fiche 266)', async () => {
+    await shown()
+    fireEvent.click(screen.getByTestId('usage-metric-cost:USD'))
+    fireEvent.mouseEnter(screen.getAllByTestId('usage-day')[5] as Element)
+    expect(text('usage-chart-tip')).toContain('OpenCode · coût inconnu')
+    expect(text('usage-chart-tip')).not.toContain('0,00')
+  })
+
   it('mesures comparables et partielles (fiche 147) : temps empilé, note de couverture', async () => {
     await shown()
     expect(
@@ -437,7 +445,7 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(screen.getByTestId('activity-empty').textContent).toContain('Nouvelle conversation')
   })
 
-  it('coût nul en dollars : « coût non communiqué » pour un modèle payant, « gratuit » sinon (fiche 266, D12)', async () => {
+  it('coût nul en dollars : « coût inconnu » pour un modèle payant, « gratuit » sinon (fiche 266, D12)', async () => {
     const zero = (model: string, key: string): UsageStats => ({
       ...STATS,
       totals: { ...STATS.totals, costs: { USD: 0 }, turnsWithoutCost: 0 },
@@ -462,8 +470,10 @@ describe('Mon activité (fiches 137 et 144)', () => {
       query
     }))
     await shown()
-    expect(text('usage-kpi-cost')).toContain('coût non communiqué')
+    expect(text('usage-kpi-cost')).toContain('coût inconnu')
     expect(text('usage-kpi-cost')).not.toContain('$')
+    // Le tableau par modèle suit la même règle (revue du tech lead).
+    expect(screen.getAllByTestId('usage-model-row')[0]?.textContent).toContain('coût inconnu')
     cleanup()
     api['stats']?.mockImplementation(async (query: UsageQuery) => ({
       ...zero('Tidepool Alpha Free', 'opencode:opencode/tidepool-alpha-free'),
@@ -472,6 +482,7 @@ describe('Mon activité (fiches 137 et 144)', () => {
     await shown()
     expect(text('usage-kpi-cost')).toContain('gratuit')
     expect(text('usage-kpi-cost')).not.toContain('$')
+    expect(screen.getAllByTestId('usage-model-row')[0]?.textContent).toContain('gratuit')
   })
 
   it('période vide, journal non vide : chiffres à zéro, « — » plutôt que « non communiqué »', async () => {

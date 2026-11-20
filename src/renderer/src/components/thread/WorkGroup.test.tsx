@@ -261,7 +261,24 @@ describe('carte de groupe : proposés (fiche 264, écran D, état 1)', () => {
 })
 
 describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 3)', () => {
-  it('coût nul d’un modèle payant (abonnement, D12) : « coût non communiqué », jamais « gratuit » (fiche 266)', async () => {
+  it('total partiel : « ≈ … + coût inconnu », et combien manquent en bulle (revue UX, fiche 266)', async () => {
+    const items = working().map((item) =>
+      item.kind === 'child-report' ? { ...item, usage: { total: 1200 } } : item
+    )
+    view(
+      [
+        ...items,
+        report(9, 'a', { usage: { cost: { amount: 0.05, currency: 'USD' }, free: false } })
+      ],
+      info([child('a'), child('b', { role: front })])
+    )
+    await act(async () => {})
+    const cost = screen.getByTestId('work-group-cost')
+    expect(cost.textContent).toMatch(/^≈\s0,05\s\$US \+ coût inconnu$/)
+    expect(cost.getAttribute('title')).toBe('Sans le coût de 1 travail')
+  })
+
+  it('coût nul d’un modèle payant (abonnement, D12) : « coût inconnu », jamais « gratuit » (fiche 266)', async () => {
     const items = working().map((item) =>
       item.kind === 'child-report'
         ? { ...item, usage: { cost: { amount: 0, currency: 'USD' } } }
@@ -269,7 +286,7 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     )
     view(items, info([child('a', { status: 'busy' }), child('b', { role: front })]))
     await act(async () => {})
-    expect(screen.getByTestId('work-group-cost').textContent).toBe('coût non communiqué')
+    expect(screen.getByTestId('work-group-cost').textContent).toBe('coût inconnu')
   })
 
   it('« 3 travaux · 1 en cours, 1 a répondu », à la place des propositions ; rien de séparé', async () => {
@@ -421,7 +438,7 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ]
     view(items, info([child('a'), child('b', { role: front })], { merge: actions }))
     const result = await screen.findByTestId('subtasks-merge-result')
-    expect(result.textContent).toBe('2 fusionnés dans main en 3 s.')
+    expect(result.textContent).toBe('2 travaux fusionnés dans main en 3 s.')
     expect(screen.getAllByTestId('subtask-merge-state').map((s) => s.textContent)).toEqual([
       'fusionné',
       'fusionné'
@@ -714,6 +731,53 @@ describe('revues UX et QA (fiche 264)', () => {
     expect(within(row).queryByTestId('work-retry')).toBeNull()
   })
 
+  it('réveil posé avant la dernière réponse : il la porte, « Réponses transmises » (revue UX, fiche 266)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    const byAgent = working().map((item) =>
+      item.kind === 'child-started' ? { ...item, by: 'agent' as const } : item
+    )
+    view(
+      [
+        ...byAgent.filter((item) => item.kind !== 'child-report'),
+        {
+          kind: 'user',
+          id: 8,
+          text: 'All tasks replied…',
+          from: { kind: 'wake' },
+          at: T0 + 70_000
+        },
+        report(9, 'a'),
+        report(10, 'b')
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    await screen.findByTestId('subtasks-merge-start')
+    const relay = within(screen.getByTestId('work-group-merge')).getByTestId('work-group-relay')
+    expect(plain(relay.textContent)).toBe('Réponses transmises à OpenCode')
+  })
+
+  it('après le réveil de l’agent : « Réponses transmises » (revue UX, fiche 266)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    view(
+      [
+        ...working(),
+        report(9, 'a'),
+        {
+          kind: 'user',
+          id: 10,
+          text: 'All tasks replied…',
+          from: { kind: 'wake' },
+          at: T0 + 70_000
+        },
+        { kind: 'agent', id: 11, text: 'Je reprends.' }
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    await screen.findByTestId('subtasks-merge-start')
+    const relay = within(screen.getByTestId('work-group-merge')).getByTestId('work-group-relay')
+    expect(plain(relay.textContent)).toBe('Réponses transmises à OpenCode')
+  })
+
   it('pied : « Puis nettoyer » sur sa ligne, puis [Voir les modifications] [Inclure…] [Fusionner…]', async () => {
     const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
     const onShowChanges = vi.fn()
@@ -764,7 +828,7 @@ describe('revues UX et QA (fiche 264)', () => {
     )
     const advice = await screen.findByTestId('subtasks-merge-advice')
     expect(plain(advice.textContent)).toBe(
-      'L’agent recommande « Travail a » ; « Travail b » n’est pas encore prêt selon lui.'
+      'L’agent recommande « Travail a » ; « Travail b » n’est pas encore recommandé.'
     )
     const row = screen.getByTestId('work-group-merge').querySelector('.subtasks-merge-actions')
     expect([...(row?.children ?? [])].map((b) => (b as HTMLElement).dataset['testid'])).toEqual([
@@ -1012,7 +1076,7 @@ describe('anciennes conversations : comme avant (fiche 264)', () => {
     expect(screen.queryByTestId('work-card')).toBeNull()
     // « Sous-tâches » lit toutes les branches, comme avant, et montre la fusion enregistrée.
     expect((await screen.findByTestId('subtasks-merge-result')).textContent).toContain(
-      '1 fusionné dans main'
+      '1 travail fusionné dans main'
     )
     expect(actions.plan).toHaveBeenCalledWith('mere')
   })

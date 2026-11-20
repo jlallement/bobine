@@ -7,7 +7,7 @@ import type { AttentionKind } from '@shared/attention'
 import { childState } from '@shared/children'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
-import type { UsageDigest } from '@shared/usage'
+import { withFree, type UsageDigest } from '@shared/usage'
 import type { ChildrenMergePlan } from '@shared/children-merge'
 
 type Report = Extract<TranscriptItem, { kind: 'child-report' }>
@@ -152,7 +152,8 @@ export function workUsage(
   child: Pick<ConversationSummary, 'status' | 'usage'> | undefined
 ): UsageDigest | undefined {
   if (child?.usage && child.status !== 'busy') return child.usage
-  return report?.usage
+  // Réponse d'avant la fiche 266 : sa gratuité, celle de la conversation (fiche 266).
+  return withFree(report?.usage, child?.usage)
 }
 
 /** Texte de la réponse pour la carte : entier (`reply`), sinon l'extrait d'une ancienne réponse. */
@@ -198,7 +199,7 @@ export function exchangeUsage(
     ...(output === undefined ? {} : { output }),
     ...(total === undefined ? {} : { total }),
     ...(cost ? { cost } : {}),
-    ...(usage.free ? { free: usage.free } : {})
+    ...(usage.free !== undefined ? { free: usage.free } : {})
   }
 }
 

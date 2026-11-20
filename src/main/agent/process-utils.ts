@@ -42,6 +42,12 @@ export function killIfConnectionLost(
 }
 
 /** Délai dépassé (`race`) : distinct d'une erreur de l'agent. */
+/** Délai dit dans un message : « < 1 s » sous la seconde, jamais « 0 s » (fiche 266). */
+export const timeoutText = (ms: number): string =>
+  ms < 1000
+    ? t('transcript.duration.underSecond')
+    : t('transcript.duration.seconds', { seconds: Math.round(ms / 1000) })
+
 export class AgentTimeout extends Error {
   constructor(message: string) {
     super(message)
@@ -59,8 +65,7 @@ export function race<T>(
   let timer: ReturnType<typeof setTimeout> | undefined
   const late = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () =>
-        reject(new AgentTimeout(t('process.timeout', { what, seconds: Math.round(ms / 1000) }))),
+      () => reject(new AgentTimeout(t('process.timeout', { what, duration: timeoutText(ms) }))),
       ms
     )
   })

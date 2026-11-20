@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
-import { formatEstimate, formatTokens, isEstimate } from '@shared/usage'
+import { costText, formatEstimate, formatTokens, isEstimate } from '@shared/usage'
 import type {
   CostMap,
   UsageConversationRow,
@@ -8,15 +8,27 @@ import type {
   UsageProjectRow,
   UsageSeries
 } from '@shared/usage-stats'
-import { costPerTurn, orderedCosts, seriesColor } from '../../usage-board'
+import { boardModelFree, costPerTurn, orderedCosts, seriesColor } from '../../usage-board'
 import { SettingsCard, SettingsTitle } from '../settings/rows'
 
-/** Coûts d'une ligne, par unité, jamais additionnés ; « non communiqué » sans aucun. */
-export function CostText({ costs, units }: { costs: CostMap; units: readonly string[] }) {
+/**
+ * Coûts d'une ligne, par unité, jamais additionnés ; « non communiqué » sans aucun. Un coût nul en
+ * monnaie : « gratuit » seulement pour un modèle qui se dit gratuit (`free`), sinon « coût
+ * inconnu » (fiche 266).
+ */
+export function CostText({
+  costs,
+  units,
+  free = false
+}: {
+  costs: CostMap
+  units: readonly string[]
+  free?: boolean
+}) {
   const { t } = useTranslation()
   const list = orderedCosts(costs, units)
   if (list.length === 0) return <small>{t('usage.board.unknown')}</small>
-  return <>{list.map(([currency, amount]) => formatEstimate({ amount, currency })).join(' · ')}</>
+  return <>{list.map(([currency, amount]) => costText({ amount, currency }, free)).join(' · ')}</>
 }
 
 /**
@@ -85,7 +97,11 @@ export function ModelTable({
                     </td>
                     {!presenting && (
                       <td>
-                        <CostText costs={row.costs} units={units} />
+                        <CostText
+                          costs={row.costs}
+                          units={units}
+                          free={boardModelFree(row.key, row.model)}
+                        />
                       </td>
                     )}
                     {!presenting && <td>{perTurn.length ? perTurn.join(' · ') : '—'}</td>}
@@ -150,8 +166,9 @@ export function ConversationTable({
         <table className="usage-table">
           <tbody>
             {rows.map((row) => {
+              // Pas de modèle connu par conversation ici : un coût nul est « coût inconnu ».
               const costs = orderedCosts(row.costs, units)
-                .map(([currency, amount]) => formatEstimate({ amount, currency }))
+                .map(([currency, amount]) => costText({ amount, currency }, false))
                 .join(' · ')
               const tip = [row.agentLabel, formatTokens(row.tokens, true), costs]
                 .filter(Boolean)

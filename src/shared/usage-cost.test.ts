@@ -29,6 +29,13 @@ describe('modèle gratuit (heuristique de la fiche 265, partagée)', () => {
     expect(isFreeModel({ value: 'x:free', name: 'X' })).toBe(true)
     expect(isFreeModel({ value: PAID.id, name: PAID.name })).toBe(false)
     expect(isFreeModel({ value: 'freestyle', name: 'Freestyle' })).toBe(false)
+    // Revue QA : « free » en fin de nom ou d'identifiant seulement.
+    expect(isFreeModel({ value: 'x', name: 'Tidepool Alpha Free' })).toBe(true)
+    expect(isFreeModel({ value: 'x', name: 'Modèle (free)' })).toBe(true)
+    expect(isFreeModel({ value: 'free-tier-pro', name: 'Free tier pro' })).toBe(false)
+    expect(isFreeModel({ value: 'not-free', name: 'X' })).toBe(false)
+    expect(isFreeModel({ value: 'non-free', name: 'X' })).toBe(false)
+    expect(isFreeModel({ value: 'p/m', name: 'Not free' })).toBe(false)
   })
 
   it('tous les modèles connus de la conversation, tour en cours compris ; aucun modèle : faux', () => {
@@ -37,6 +44,8 @@ describe('modèle gratuit (heuristique de la fiche 265, partagée)', () => {
     expect(freeModels({ cost: usd(0) })).toBe(false)
     expect(freeModels({ turns: [{ model: FREE }], pending: { model: PAID } })).toBe(false)
     expect(freeModels(undefined)).toBe(false)
+    // Un tour sans modèle connu : pas gratuit (revue QA).
+    expect(freeModels({ turns: [{ model: FREE }, { costEnd: 0 }] })).toBe(false)
   })
 })
 
@@ -46,8 +55,8 @@ describe('coût affiché (fiche 266)', () => {
     expect(costNotReported(usd(0), true)).toBe(false)
   })
 
-  it('abonnement (OpenCode connecté par abonnement, D12) : coût nul d’un modèle payant → non communiqué', () => {
-    expect(costText(usd(0), false)).toBe('coût non communiqué')
+  it('abonnement (OpenCode connecté par abonnement, D12) : coût nul d’un modèle payant → coût inconnu', () => {
+    expect(costText(usd(0), false)).toBe('coût inconnu')
     expect(costNotReported(usd(0), false)).toBe(true)
   })
 
@@ -74,9 +83,10 @@ describe('résumé des conversations : gratuité retenue (fiche 266)', () => {
   it('posée par usageDigest, relue du disque, absente sinon', () => {
     const free = usageDigest(withTurns(0, FREE))
     expect(free?.free).toBe(true)
-    expect(usageDigest(withTurns(0, PAID))?.free).toBeUndefined()
+    expect(usageDigest(withTurns(0, PAID))?.free).toBe(false)
     expect(parseUsageDigest(JSON.parse(JSON.stringify(free)))?.free).toBe(true)
     expect(parseUsageDigest({ cost: usd(0), free: 'yes' })?.free).toBeUndefined()
+    expect(parseUsageDigest({ cost: usd(0), free: false })?.free).toBe(false)
   })
 
   it('total d’une carte : gratuit seulement si chaque travail l’est', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { UsageModelRow } from '@shared/usage-stats'
 import {
   agentsWithUnit,
+  boardModelFree,
   axisBuckets,
   axisDays,
   bucketLabel,
@@ -169,5 +170,18 @@ describe('affichage du tableau de consommation (fiche 137)', () => {
     expect(deltaOf(100, 100)?.direction).toBe('flat')
     expect(deltaOf(5, 0)).toBeUndefined()
     expect(deltaOf(5, undefined)).toBeUndefined()
+  })
+})
+
+describe('modèle gratuit du tableau de bord (fiche 266, revue QA)', () => {
+  it('l’identifiant seul, sans le profil ; une série d’agent n’est jamais gratuite', () => {
+    expect(boardModelFree('opencode:opencode/tidepool-alpha-free', 'Tidepool Alpha Free')).toBe(
+      true
+    )
+    expect(boardModelFree('opencode:openai/gpt-6.1-sol', 'GPT-6.1 Sol')).toBe(false)
+    // « free » dans le profil seul ne compte pas.
+    expect(boardModelFree('free:openai/gpt', 'GPT')).toBe(false)
+    expect(boardModelFree('opencode', 'OpenCode')).toBe(false)
+    expect(boardModelFree('bob:', undefined)).toBe(false)
   })
 })

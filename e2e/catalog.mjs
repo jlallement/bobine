@@ -272,6 +272,21 @@ export const SUITES = [
     sources: [`${C}composer/UsageMeter.tsx`, 'src/shared/usage.ts']
   },
   {
+    name: 'cout-connexion',
+    file: 'cout-connexion.mjs',
+    run: 'coutConnexionSuite',
+    themes: BOTH,
+    sources: [
+      `${C}composer/UsageMeter.tsx`,
+      `${C}composer/UsageGuards.tsx`,
+      `${C}composer/BlockerPanel.tsx`,
+      `${C}common/ModelMenu.tsx`,
+      'src/shared/usage.ts',
+      'src/main/agent/refused-models.ts',
+      'src/mock-agent/scenarios-consommation.mts'
+    ]
+  },
+  {
     name: 'usage-bob',
     file: 'usage.mjs',
     run: 'usageBobSuite',

@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { formatDuration, subagentResult, type Subagent, type SubagentRun } from '@shared/subagent'
 import { subagentsState, type ToolItem } from '@shared/tool-groups'
 import type { TranscriptItem } from '@shared/transcript'
-import { formatEstimate } from '@shared/usage'
+import { costText } from '@shared/usage'
 import { ipcErrorText } from '../../ipc-errors'
 import { usePresentation } from '../../presentation'
 import { SubagentWorkContext } from '../../subagent-work'
@@ -65,7 +65,7 @@ export const SubagentsCard = memo(
                 title={t('toolCall.subagents.cost')}
                 data-testid="subagents-cost"
               >
-                {formatEstimate(state.cost)}
+                {costText(state.cost, false)}
               </span>
             )}
           </div>
@@ -202,7 +202,7 @@ function SubagentMeta({ run, running }: { run: SubagentRun; running: boolean }) 
   return (
     <span className="subagent-meta" data-testid="subagent-meta">
       {duration && <span title={t('toolCall.subagent.duration')}>{duration}</span>}
-      {cost && <span title={t('toolCall.subagent.cost')}>{formatEstimate(cost)}</span>}
+      {cost && <span title={t('toolCall.subagent.cost')}>{costText(cost, false)}</span>}
     </span>
   )
 }

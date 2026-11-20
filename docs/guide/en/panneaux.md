@@ -1,7 +1,7 @@
 # Panels
 
 The side panel shows what the agent is doing, and lets you take over: the session, changes, the
-built-in browser, the terminal, the iOS Simulator, the Android Emulator, the task list.
+built-in browser, the terminal, the iOS Simulator, the Android Emulator, the to-do list.
 
 Here you can:
 
@@ -11,7 +11,7 @@ Here you can:
 - use the [built-in browser](#navigateur), and [annotate a page](#annoter);
 - use the [terminal](#terminal);
 - see the [iOS Simulator](#simulateur-ios) and the [Android Emulator](#android);
-- follow the [task list](#taches) and the [ACP messages](#echanges-acp).
+- follow the [to-do list](#taches) and the [ACP messages](#echanges-acp).
 
 <a id="panneau"></a>
 
@@ -53,7 +53,7 @@ The **Changes** tab (⇧⌘D) has two or three views:
   Each change can be reverted file by file.
 - **Git**: the repository status, to [commit](worktrees.md#committer) and, in a worktree,
   [open a PR or merge](worktrees.md#vue-git);
-- **Tasks**, in a conversation that started some: see
+- **Tasks**, in the source conversation of tasks: see
   [Delegated tasks](conversations-filles.md#suivre).
 
 **Comments on the diff.** Hover over a line of the diff and click **+** to add a comment
@@ -152,9 +152,9 @@ device, gestures, Back, Home and Recent apps buttons, and **Attach this screen t
 
 <a id="taches"></a>
 
-## The task list
+## The to-do list
 
-When the agent keeps a task list, the **Tasks** tab shows it, with “done / total” in its name.
+When the agent keeps a to-do list, the **To-dos** tab shows it, with “done / total” in its name.
 While the agent works, the list also sits just above the message box; a click collapses it to one
 line.
 

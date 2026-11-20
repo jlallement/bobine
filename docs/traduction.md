@@ -139,10 +139,10 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | consigne (d'un rôle) | instructions | Le corps du fichier de rôle. |
 | équipe (section de la barre latérale) | team | Les rôles actifs. |
 | confier (un travail) à un rôle | hand (work) to a role | « Confier un travail à Expert sécurité » → « Hand work to Security expert ». |
-| travail, travaux (délégués) | task, tasks | Fiche 266 : ce qu'on confie à un rôle ou à « un autre <agent> » ; jamais « conversation fille », « sous-tâche » ni « tâche proposée ». « 3 travaux proposés » → « 3 tasks proposed ». Attention : « tâches » (liste de tâches de l'agent) se dit aussi « tasks » ; le contexte les sépare. |
+| travail, travaux (délégués) | task, tasks | Fiche 266 : ce qu'on confie à un rôle ou à « un autre <agent> » ; jamais « conversation fille », « sous-tâche » ni « tâche proposée ». « 3 travaux proposés » → « 3 proposed tasks ». « Tasks » est réservé aux travaux délégués : la liste de l'agent se dit « To-dos » en anglais (revue du tech lead). |
 | réponse (d'un travail) | response | Fiche 266 : ce que rend un travail ; jamais « compte rendu » (« report »). |
 | a répondu, arrêté, en erreur (fin d'un travail) | replied, stopped, failed | Fiche 266 : « a répondu · 4 fichiers » ; « arrêté » s'accorde avec le nom (« Arrêté » pour un travail, « Fusion arrêtée »). Jamais « a fini son tour », « Finie, à lire », « terminée ». |
-| la conversation qui l'a lancé | the conversation that started it | Fiche 266 : remplace « conversation mère » (« parent conversation »). |
+| conversation d'origine | source conversation | Fiche 266 (revue UX) : la conversation d'où part un travail ; remplace « conversation mère » (« parent conversation »). « Travail de « X » » → « Task from “X” ». |
 | Travaux délégués (réglages, famille d'outils) | Delegated tasks | Fiche 266 : titre de rubrique et de famille d'outils. |
 | fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
 | installer (un rôle) dans un agent ; retirer | install (a role) in an agent; remove | Fiche 223, phase 4 : mode de Bob, agent d'OpenCode. |
@@ -229,7 +229,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | simulateur iOS | iOS Simulator | Nom d'Apple, avec majuscule. |
 | émulateur Android | Android Emulator | |
 | terminal | terminal | |
-| tâches, liste de tâches | tasks, task list | « Tâches » (onglet) → « Tasks ». |
+| tâches, liste de tâches (de l'agent) | to-dos, to-do list | « Tâches » (onglet) → « To-dos » ; « Tâches de l'agent » → « Agent's to-dos ». Fiche 266 : « Tasks » est réservé aux travaux délégués. |
 | serveur de dev | dev server | |
 | lancer (une commande, l'app) | run | « Lancer l'app » → « Run the app ». |
 | compiler | build | |
@@ -267,7 +267,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | échange (un tour) | exchange | Tableau de consommation : « Échanges », « Par échange » → « Exchanges », « Per exchange ». |
 | temps de travail | working time | Fiche 137. |
 | non communiqué | not reported | Valeur que l'agent ne donne pas (jetons, coût, modèle). |
-| gratuit ; coût non communiqué | free; cost not reported | Fiche 266 : coût nul d'un modèle qui se dit gratuit → « gratuit » ; d'un autre modèle (abonnement, tarif inconnu) → « coût non communiqué ». Jamais « ≈ 0,00 $US », jamais un modèle payant présenté comme gratuit. |
+| gratuit ; coût inconnu | free; cost unknown | Fiche 266 : coût nul d'un modèle qui se dit gratuit → « gratuit » ; d'un autre modèle (abonnement, tarif inconnu), ou en cas de doute → « coût inconnu ». Total partiel : « ≈ 0,05 $US + coût inconnu ». Jamais « ≈ 0,00 $US », jamais un modèle payant présenté comme gratuit. |
 | remettre à zéro | reset | « Remettre à zéro… » → « Reset… ». |
 | Bobcoins | Bobcoins | Unité de Bob : majuscule à l'affichage (fiche 144) ; `bobcoins` dans les données, le journal et le CSV. |
 | Mon activité | My activity | Page de la fenêtre principale (fiche 144) : la consommation de toutes les conversations. |

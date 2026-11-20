@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
  * en bas » (fiche 050) se montre quand on l'a remonté. `scroller` va sur l'élément qui défile.
  * Pointeur sur une carte marquée `data-scroll-hold` (propositions de filles) : le fil attend
  * qu'il en sorte pour suivre, sans quoi la ligne visée remonte sous le pointeur (fiche 124).
+ * Un détail déplié (`aria-expanded`) reste sous le pointeur : le suivi du bas est lâché (fiche 266).
  * Un message envoyé ramène toujours en bas (`followSent`, fiche 127) : sinon on croit qu'il n'est
  * pas parti. `reveal.go` : aller à un message pas encore rendu d'un long fil (sommaire, fiche 193) ; le
  * fil le rend (`reveal`) et l'amène à l'écran, le suivi du bas est lâché.
@@ -66,11 +67,21 @@ export function useThreadScroll(options: {
     const out = (event: PointerEvent) => {
       if (!event.relatedTarget) release()
     }
+    // Déplier ou replier un détail du fil (ligne d'une carte de groupe, « Lire la suite »…) : ce
+    // que l'on vient de cliquer reste sous le pointeur ; le fil ne court pas vers le bas, sinon la
+    // ligne dépliée remontait hors de l'écran sous le pointeur (fiche 266).
+    const unfold = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null
+      const toggle = target?.closest('[aria-expanded]')
+      if (toggle && scroller.current?.contains(toggle)) stickToBottom.current = false
+    }
     document.addEventListener('pointerover', over)
     document.addEventListener('pointerout', out)
+    document.addEventListener('click', unfold, true)
     return () => {
       document.removeEventListener('pointerover', over)
       document.removeEventListener('pointerout', out)
+      document.removeEventListener('click', unfold, true)
     }
   }, [measureBottom])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :

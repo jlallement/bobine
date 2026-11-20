@@ -20,7 +20,7 @@ Here you can:
 
 1. Open the **Changes** tab (⇧⌘D).
 2. Click the **Request review…** icon (a magnifying glass over a frame, in the view bar).
-   To review a task from the conversation that started it: **Tasks** view, the same icon on its row.
+   To review a task from its source conversation: **Tasks** view, the same icon on its row.
 3. The dialog says what will be reviewed:
    - in a worktree, all the work of the branch (commits and uncommitted changes);
    - otherwise, the folder’s uncommitted changes.

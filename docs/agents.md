@@ -100,10 +100,17 @@ Règle générique, sans nom d'agent dans l'interface (`costText`, `costNotRepor
 | Ce que l'agent annonce | Affiché |
 |---|---|
 | un coût en monnaie > 0 (`usage_update`, `cost.amount`) | le montant, en estimation (« ≈ ») |
-| un coût en monnaie nul, et chaque modèle connu de la conversation se dit gratuit (« free » dans son nom ou son identifiant, heuristique de la fiche 265) | **gratuit** |
-| un coût en monnaie nul pour un autre modèle (abonnement, tarif inconnu de l'agent) | **coût non communiqué** ; le plafond de coût le dit (« ne peut pas se déclencher »), dans Réglages et dans le détail de la consommation |
-| aucun coût (Codex, tours sans `usage_update`) | les jetons, s'il en donne ; rien sinon |
+| un coût en monnaie nul, et chaque modèle de la conversation se dit gratuit | **gratuit** |
+| un coût en monnaie nul pour un autre modèle (abonnement, tarif inconnu de l'agent), un tour sans modèle connu, ou un doute | **coût inconnu** ; le plafond de coût le dit (« ne peut pas se déclencher »), dans Réglages et dans le détail de la consommation |
+| aucun coût (tours sans `usage_update`) | les jetons, s'il en donne ; rien sinon |
 | un coût dans l'unité propre de l'agent (bobcoins de Bob, lus dans sa base) | son décompte tel quel, même à zéro : ce n'est pas une estimation |
+
+**Heuristique de gratuité (acceptée, revue du tech lead)** : un modèle se dit gratuit quand son nom
+ou son identifiant **finit** par « free » (« Tidepool Alpha Free », « x:free », « … (free) ») ;
+« free-tier-pro », « not-free », « non-free » ne le sont pas (`isFreeModel`, `shared/usage.ts`). Au
+tableau de bord, l'identifiant est lu sans le profil. Un modèle gratuit sans ce mot est dit « coût
+inconnu » : jamais l'inverse. Seuls les tours gardés par l'app (`MAX_TURNS`) sont vus. Les résumés
+enregistrés avant la fiche 266 sont complétés une fois depuis leur fil (`settleFreeDigests`).
 
 Aucun agent ne dit par ACP qu'un modèle est gratuit ni qu'il passe par un abonnement : « inclus dans
 l'abonnement » n'est donc jamais affiché (on ne peut pas le savoir). OpenCode 2.3.0 a aussi été vu

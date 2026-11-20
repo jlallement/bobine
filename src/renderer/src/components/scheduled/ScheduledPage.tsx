@@ -29,7 +29,7 @@ import {
   type ScheduledTaskInput,
   type TaskRun
 } from '@shared/schedule'
-import { formatEstimate } from '@shared/usage'
+import { costText, isEstimate } from '@shared/usage'
 import { ipcErrorText } from '../../ipc-errors'
 import { useProfileStatus } from '../common/Profile'
 import { TaskForm } from './TaskForm'
@@ -80,6 +80,9 @@ function capText(task: ScheduledTask, t: TFunction): string {
 function estimateTexts(task: ScheduledTask, t: TFunction): string[] {
   const estimate = estimateCost(task.runs)
   if (!estimate) return [t('scheduled.noEstimate')]
+  // Coût nul en monnaie : modèle non gardé, jamais « 0,00 $US » (fiche 266).
+  if ('currency' in estimate && estimate.amount === 0 && isEstimate(estimate.currency))
+    return [t('usage.costNotReported')]
   const [amount, unit] =
     'currency' in estimate ? [estimate.amount, estimate.currency] : [estimate.tokens, TOKEN_UNIT]
   const perRun = t('scheduled.estimate', { cost: formatCap(amount, unit), count: estimate.runs })
@@ -97,8 +100,9 @@ function RunRow({ run, onOpen }: { run: TaskRun; onOpen: (id: string) => void })
     ...(run.setupNotApproved ? [t('scheduled.setupNotApproved')] : []),
     ...(run.missed && run.missed > 1 ? [t('scheduled.missedCount', { count: run.missed })] : [])
   ]
+  // Le modèle d'une exécution n'est pas gardé : un coût nul en monnaie est « coût inconnu ».
   const cost = run.cost
-    ? formatEstimate(run.cost)
+    ? costText(run.cost, false)
     : run.tokens !== undefined
       ? formatCap(run.tokens, TOKEN_UNIT)
       : undefined
@@ -110,7 +114,11 @@ function RunRow({ run, onOpen }: { run: TaskRun; onOpen: (id: string) => void })
       </span>
       {tags.length > 0 && <span className="scheduled-run-tags">{tags.join(' · ')}</span>}
       <span className="grow" />
-      {cost && <span className="scheduled-run-cost">{cost}</span>}
+      {cost && (
+        <span className="scheduled-run-cost" data-testid="scheduled-run-cost">
+          {cost}
+        </span>
+      )}
       {run.conversationId && (
         <button
           className="btn small ghost"

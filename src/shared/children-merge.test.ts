@@ -63,11 +63,11 @@ describe('fusion des filles : ce qui se calcule sans processus (fiche 120)', () 
   it('phrase d’état : toutes prêtes, certaines au travail, recouvrement, non commitées, refus', () => {
     expect(
       text(plan([child('A', 'ready', ['a']), child('B', 'ready', ['b']), child('C', 'ready')]))
-    ).toBe('Les 3 travaux ont répondu et ne touchent pas les mêmes fichiers.')
-    expect(text(plan([child('A', 'ready')]))).toBe('Le travail a répondu.')
+    ).toBe('Les 3 travaux à fusionner ont répondu et ne touchent pas les mêmes fichiers.')
+    expect(text(plan([child('A', 'ready')]))).toBe('Le travail à fusionner a répondu.')
     expect(
       text(plan([child('A', 'ready'), child('B', 'merged'), child('E2E plus courts', 'running')]))
-    ).toBe('1 travail a répondu\u00a0; «\u00a0E2E plus courts\u00a0» travaille encore.')
+    ).toBe('1 travail à fusionner a répondu\u00a0; «\u00a0E2E plus courts\u00a0» travaille encore.')
     expect(
       text(
         plan([
@@ -78,13 +78,13 @@ describe('fusion des filles : ce qui se calcule sans processus (fiche 120)', () 
         ])
       )
     ).toBe(
-      '2 travaux ont répondu\u00a0; «\u00a0C\u00a0» travaille encore, «\u00a0D\u00a0» attend un accord.'
+      '2 travaux à fusionner ont répondu\u00a0; «\u00a0C\u00a0» travaille encore, «\u00a0D\u00a0» attend un accord.'
     )
     expect(text(plan([child('A', 'ready', ['src/x.ts']), child('B', 'ready', ['src/x.ts'])]))).toBe(
-      'Les 2 travaux ont répondu. Les branches «\u00a0A\u00a0» et «\u00a0B\u00a0» touchent src/x.ts toutes les deux\u00a0: la seconde pourra entrer en conflit.'
+      'Les 2 travaux à fusionner ont répondu. Les branches «\u00a0A\u00a0» et «\u00a0B\u00a0» touchent src/x.ts toutes les deux\u00a0: la seconde pourra entrer en conflit.'
     )
     expect(text(plan([child('A', 'ready'), child('B', 'dirty')]))).toBe(
-      'Le travail a répondu. «\u00a0B\u00a0» a des modifications non commitées\u00a0: à committer depuis sa vue Git.'
+      'Le travail à fusionner a répondu. «\u00a0B\u00a0» a des modifications non commitées\u00a0: à committer depuis sa vue Git.'
     )
     expect(text(plan([child('A', 'dirty'), child('B', 'dirty')]))).toBe(
       '«\u00a0A\u00a0» et «\u00a0B\u00a0» ont des modifications non commitées\u00a0: à committer depuis leur vue Git.'
@@ -92,12 +92,12 @@ describe('fusion des filles : ce qui se calcule sans processus (fiche 120)', () 
     expect(
       text(plan([child('A', 'ready')], { blocked: { reason: 'base-elsewhere', path: '/x' } }))
     ).toBe(
-      'Le travail a répondu. La branche main est extraite dans un autre worktree (/x)\u00a0: fusionnez-la de là.'
+      'Le travail à fusionner a répondu. La branche main est extraite dans un autre worktree (/x)\u00a0: fusionnez-la de là.'
     )
     // Rien de fini à fusionner : pas de pied.
     expect(mergeSummary(plan([child('A', 'running'), child('B', 'merged')]), titles)).toEqual([])
     // Une fille arrêtée sur un conflit compte avec les prêtes.
-    expect(text(plan([child('A', 'conflict')]))).toBe('Le travail a répondu.')
+    expect(text(plan([child('A', 'conflict')]))).toBe('Le travail à fusionner a répondu.')
     // Au-delà de trois fichiers en commun, la liste s'arrête.
     const many = ['a', 'b', 'c', 'd']
     expect(text(plan([child('A', 'ready', many), child('B', 'ready', many)]))).toContain(

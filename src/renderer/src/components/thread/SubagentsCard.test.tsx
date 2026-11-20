@@ -23,6 +23,17 @@ const view = (items: TranscriptItem[], onRespond = vi.fn()) =>
   )
 
 describe('Carte « Sous-agents » (fiche 117)', () => {
+  it('coût nul en monnaie : « coût inconnu », jamais « ≈ 0,00 $US » (fiche 266)', () => {
+    const run = { startedAt: 1000, endedAt: 9000, cost: { amount: 0, currency: 'USD' } }
+    view([
+      { kind: 'user', id: 1, text: 'Explore' },
+      subagent(2, { subagentRun: run }),
+      subagent(3, { subagentRun: run })
+    ])
+    expect(screen.getByTestId('subagents-cost').textContent).toBe('coût inconnu')
+    expect(screen.getAllByTestId('subagent-meta')[0]?.textContent).toContain('coût inconnu')
+  })
+
   it('sous-agents consécutifs : une carte, une ligne chacun, comptes et coût total', () => {
     view([
       { kind: 'user', id: 1, text: 'Explore' },

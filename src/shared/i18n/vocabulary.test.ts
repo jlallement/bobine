@@ -9,7 +9,6 @@
  *   les anciens mots en synonymes pour qui les tape encore ;
  * - `approvalRules.page.group.subtask` : le groupe d'approbation `subtask` d'IBM Bob, nommé
  *   « Subtasks » par Bob lui-même (un concept de Bob, comme ses sous-agents) ;
- * - le texte entre accents graves (identifiants, `_meta["opencode/child-session"]`) ;
  * - « sous-agent » / « subagent » : un autre concept (les sous-agents de l'agent), qui reste ;
  * - ce qui va à l'agent : jamais dans les fichiers de langue (ADR-0014), donc hors de ce test.
  *
@@ -21,7 +20,8 @@ import en from './locales/en.json'
 import {
   RETIRED_EN as FORBIDDEN_EN,
   RETIRED_FR as FORBIDDEN_FR,
-  visibleText
+  WORK_END_EN,
+  WORK_END_FR
 } from './retired-words'
 
 type Tree = { readonly [key: string]: string | Tree }
@@ -33,13 +33,22 @@ function flatten(tree: Tree, prefix = ''): [string, string][] {
   })
 }
 
-const EXCLUDED_KEYS = [/^settingsSearch\./, /^approvalRules\.page\.group\.subtask$/]
+/**
+ * Exclusions nommées (revue QA : aucune exclusion générale) :
+ * - `settingsSearch.*` : mots-clés jamais affichés, anciens mots gardés en synonymes ;
+ * - `approvalRules.page.group.subtask` : le groupe d'approbation `subtask` d'IBM Bob, son nom ;
+ * - `capabilities.subagentLive.detail` : cite le champ `_meta["opencode/child-session"]` d'OpenCode.
+ */
+const EXCLUDED_KEYS = [
+  /^settingsSearch\./,
+  /^approvalRules\.page\.group\.subtask$/,
+  /^capabilities\.subagentLive\.detail$/
+]
 
 /** « terminée(s) » et « Finie » ne disent plus la fin d'un travail (fiche 266). */
 const WORK_KEYS = /^(children|childrenMerge|roleWork|workCard|workGroup|workCue|workMerge)\./
-const WORK_END_FR = /\btermin[ée]e?s?\b|\bfinie?s?\b/i
 
-const visible = visibleText
+const visible = (text: string) => text
 
 function offending(
   tree: Tree,
@@ -69,6 +78,13 @@ describe('vocabulaire du travail délégué (fiche 266)', () => {
     expect(hits).toEqual([])
   })
 
+  it('en anglais aussi : « replied », jamais « finished »', () => {
+    const hits = flatten(en as Tree).filter(
+      ([key, text]) => WORK_KEYS.test(key) && WORK_END_EN.test(visible(text))
+    )
+    expect(hits).toEqual([])
+  })
+
   it('le test reconnaît bien les mots retirés (garde-fou)', () => {
     const sample: Tree = {
       a: 'Conversation fille de « x »',
@@ -76,14 +92,18 @@ describe('vocabulaire du travail délégué (fiche 266)', () => {
       c: 'a rendu son compte rendu',
       d: 'Sous-tâches',
       e: 'un sous-agent travaille',
-      f: 'lit `opencode/child-session`',
+      f: 'Mères et filles',
+      h: 'Terminées : 2',
       settingsSearch: { g: 'conversations filles' }
     }
-    expect(offending(sample, FORBIDDEN_FR).map((o) => o.key)).toEqual(['a', 'b', 'c', 'd'])
+    expect(offending(sample, FORBIDDEN_FR).map((o) => o.key)).toEqual(['a', 'b', 'c', 'd', 'f'])
+    expect(WORK_END_FR.test('Terminées : 2')).toBe(true)
+    expect(WORK_END_FR.test('déterminée')).toBe(false)
+    expect(WORK_END_EN.test('3 finished')).toBe(true)
     expect(
       offending({ a: 'Child conversation', b: 'subagent', c: 'reads `child`' }, FORBIDDEN_EN).map(
         (o) => o.key
       )
-    ).toEqual(['a'])
+    ).toEqual(['a', 'c'])
   })
 })
