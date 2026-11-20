@@ -5,7 +5,12 @@ import { PaneBoundary } from '../common/SafeBoundary'
 import { Check, ListChecks, Maximize2, Minimize2, PanelLeft, X } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { PANEL_TABS, type PanelTab } from '@shared/panel'
-import { hiddenPanelTabs, PANEL_MIN_WIDTH, unavailablePanelTabs } from '../../panel-tabs'
+import {
+  hiddenPanelTabs,
+  PANEL_MIN_WIDTH,
+  shownPanelTab,
+  unavailablePanelTabs
+} from '../../panel-tabs'
 import { platformFeatures } from '../../platform-features'
 import type { Preferences } from '@shared/preferences'
 import type { TranscriptItem } from '@shared/transcript'
@@ -116,7 +121,7 @@ export function SidePanel({
   discussion,
   conversationId,
   workspace,
-  tab,
+  tab: wantedTab,
   tabs,
   counts,
   width,
@@ -145,6 +150,9 @@ export function SidePanel({
   onResetWidth,
   opening = 0
 }: Props) {
+  // Onglet qui n'existe pas dans cet espace (le Navigateur, en Discussion) : le panneau montre le
+  // premier onglet affiché, jamais un contenu sans onglet (fiche 272, recette).
+  const tab = shownPanelTab(wantedTab, tabs, unavailablePanelTabs(platformFeatures(), discussion))
   const { t } = useTranslation()
   // Pas de glissé pour un panneau ouvert agrandi (pas d'animation, donc pas de fin pour la retirer).
   const [entering, setEntering] = useState(() => opening > animatedOpening && !maximized)
