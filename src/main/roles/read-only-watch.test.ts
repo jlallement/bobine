@@ -21,6 +21,19 @@ const CHILD = summary('f', {
   role: { name: 'r', label: 'R', icon: 'bot', color: 'blue', readOnly: true }
 })
 
+const REVIEWER = summary('r', {
+  title: 'Relecture',
+  startedFrom: { id: 'm', title: 'm' },
+  reviewOf: { id: 'm', title: 'm' },
+  role: {
+    name: 'code-reviewer',
+    label: 'Code reviewer',
+    icon: 'bot',
+    color: 'blue',
+    readOnly: true
+  }
+})
+
 /** git factice : `git status` rend l'état courant du dossier. */
 function setup() {
   let folder = 'propre'
@@ -31,16 +44,19 @@ function setup() {
     stderr: ''
   })
   const posted: [string, AgentEvent][] = []
+  const changed: string[] = []
   const watch = new ReadOnlyWatch({
     conversations: { post: (id, event) => posted.push([id, event]) > 0 },
-    summary: (id) => (id === 'f' ? CHILD : summary(id)),
-    run
+    summary: (id) => (id === 'f' ? CHILD : id === 'r' ? REVIEWER : summary(id)),
+    run,
+    changed: (id) => changed.push(id)
   })
   const send = (id: string, event: AgentEvent) => watch.onEvent({ conversationId: id, event })
   const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
   return {
     watch,
     posted,
+    changed,
     send,
     settle,
     write: () => {
@@ -121,5 +137,48 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     s.send('f', turnEnd)
     await s.settle()
     expect(s.posted.map(([id]) => id)).toEqual(['f', 'm'])
+  })
+
+  it('Code reviewer (fiche 265) : suivi comme un rôle en lecture seule, l’écart dit à sa carte', async () => {
+    const s = setup()
+    await s.watch.prepare('r')
+    s.send('r', userMessage)
+    s.write()
+    s.send('r', turnEnd)
+    await s.watch.settled('r')
+    expect(s.changed).toEqual(['r'])
+    // Texte neutre dans son fil : le dossier a changé, sans accuser la relecture.
+    expect(s.posted[0]).toEqual([
+      'r',
+      expect.objectContaining({ message: { key: 'roles.notice.folderChanged' } })
+    ])
+  })
+
+  it('Code reviewer : la mère écrit pendant la relecture, ni avis ni carte « dossier changé »', async () => {
+    const s = setup()
+    await s.watch.prepare('r')
+    s.send('r', userMessage)
+    s.send('m', {
+      type: 'update',
+      update: { sessionUpdate: 'tool_call', toolCallId: 'x', title: 'Edit', kind: 'edit' }
+    })
+    s.write()
+    s.send('r', turnEnd)
+    await s.watch.settled('r')
+    expect(s.posted).toEqual([])
+    expect(s.changed).toEqual([])
+  })
+
+  it('Code reviewer : git en échec n’est pas « inchangé », l’avis de surveillance est donné', async () => {
+    const s = setup()
+    await s.watch.prepare('r')
+    s.send('r', userMessage)
+    s.fail()
+    s.send('r', turnEnd)
+    await s.watch.settled('r')
+    expect(s.posted.map(([id, e]) => [id, e.type === 'notice' && e.message])).toEqual([
+      ['r', { key: 'roles.notice.watchFailed' }]
+    ])
+    expect(s.changed).toEqual([])
   })
 })

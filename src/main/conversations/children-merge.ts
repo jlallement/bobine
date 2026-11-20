@@ -120,6 +120,13 @@ export class ChildrenMerger {
     return state === 'running' || state === 'waiting'
   }
 
+  /** Un Code reviewer de ce travail (`reviewOf`) travaille encore ou attend un accord. */
+  private reviewing(childId: string): boolean {
+    return this.deps.conversations
+      .state()
+      .conversations.some((c) => c.reviewOf?.id === childId && !c.archived && this.busy(c))
+  }
+
   /** Une fusion de cette mère tourne. */
   running(motherId: string): boolean {
     return this.runs.has(motherId)
@@ -296,6 +303,9 @@ export class ChildrenMerger {
     // Un travail qui travaille encore (ou attend un accord) ne se fusionne pas : sa branche bouge.
     const busy = chosen.find((c) => this.busy(c))
     if (busy) throw new Error(t('childrenMerge.error.busy', { title: busy.title }))
+    // Sa relecture tourne encore (fiche 265) : elle lit son dossier, que le nettoyage supprimerait.
+    const reviewed = chosen.find((c) => this.reviewing(c.id))
+    if (reviewed) throw new Error(t('childrenMerge.error.reviewing', { title: reviewed.title }))
     const first = targets[0] as CycleTarget
     this.starting.add(motherId)
     let base: string
@@ -506,7 +516,15 @@ export class ChildrenMerger {
         const child = this.children(motherId).find((c) => c.id === row.childId)
         const now = target ? await this.deps.cycle.worktreeHead(target) : undefined
         const merged = run.heads.get(row.childId)
-        if (!target || !child || this.busy(child) || !merged || now?.head !== merged || now.dirty) {
+        if (
+          !target ||
+          !child ||
+          this.busy(child) ||
+          this.reviewing(child.id) ||
+          !merged ||
+          now?.head !== merged ||
+          now.dirty
+        ) {
           row.error = t('childrenMerge.error.cleanupSkipped', { title: row.title })
           this.deps.log?.(motherId, `children merge: cleanup skipped (${row.childId})`)
           continue

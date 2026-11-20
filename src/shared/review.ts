@@ -16,6 +16,8 @@ export type ReviewCategory = (typeof REVIEW_CATEGORIES)[number]
 
 /** Bornes des arguments de `report_findings` : une remarque reste une remarque. */
 export const MAX_FINDINGS = 40
+/** Remarques d'une relecture en tout, tous appels confondus (revue QA de la fiche 265). */
+export const MAX_REVIEW_FINDINGS = 100
 export const FINDING_TITLE_CHARS = 160
 export const FINDING_WHY_CHARS = 1_200
 export const REVIEW_SUMMARY_CHARS = 600

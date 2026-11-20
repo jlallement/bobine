@@ -150,7 +150,7 @@ async function reviewRun(ui, { workspace, turnLock }) {
       JSON.stringify([L('review.severity.high'), L('review.severity.low')]) &&
       JSON.stringify(shown.places) === JSON.stringify(['src/app.js:2', 'src/app.js:1-3']) &&
       shown.titles[0] === 'Le message est écrit en dur' &&
-      shown.summary === 'Une erreur à corriger avant de fusionner.' &&
+      shown.summary === 'Une remarque haute à corriger.' &&
       shown.fix === L('workCard.fix', { agent }) &&
       shown.diff === L('workCard.showDiff') &&
       shown.reply === L('workCard.reply', { role: L('roles.builtin.codeReviewer') }) &&

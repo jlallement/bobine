@@ -28,6 +28,8 @@ export interface ReadOnlyWatchDeps {
   /** Résumé d'une conversation ; lève si elle n'existe plus. */
   summary: (id: string) => ConversationSummary
   run: Run
+  /** Un écart constaté (fiche 265 : la carte du Code reviewer le dit aussi). */
+  changed?: (id: string) => void
 }
 
 interface Turn {
@@ -38,12 +40,9 @@ interface Turn {
   shared: boolean
 }
 
-/**
- * Fille en lecture seule suivie ici : un rôle de conseil. Le Code reviewer de « Faire relire »
- * (fiche 265) a sa propre empreinte, dite sur sa carte (`children-review.ts`) : pas deux avis.
- */
+/** Fille en lecture seule suivie ici : un rôle de conseil, ou le Code reviewer (fiche 265). */
 function watched(child: ConversationSummary | undefined): child is ConversationSummary {
-  return !!child?.role?.readOnly && !!child.startedFrom && !child.reviewOf
+  return !!child?.role?.readOnly && !!child.startedFrom
 }
 
 /** Genres d'outils ACP qui peuvent changer le dossier. */
@@ -54,6 +53,8 @@ export class ReadOnlyWatch {
   private readonly turns = new Map<string, Turn>()
   /** Empreintes prises avant l'envoi d'un message de Bobine, en attente de son tour. */
   private readonly prepared = new Map<string, { workspace: string; fingerprint?: string }>()
+  /** Vérifications de fin de tour en cours, par conversation. */
+  private readonly checking = new Map<string, Promise<void>>()
 
   constructor(deps: ReadOnlyWatchDeps) {
     this.deps = deps
@@ -67,9 +68,13 @@ export class ReadOnlyWatch {
       const turn = this.turns.get(id)
       this.turns.delete(id)
       if (turn) {
-        void this.check(id, turn).catch((error: unknown) =>
+        const done = this.check(id, turn).catch((error: unknown) =>
           log.warn('Lecture seule : fin de tour non vérifiée :', messageOf(error))
         )
+        this.checking.set(id, done)
+        void done.finally(() => {
+          if (this.checking.get(id) === done) this.checking.delete(id)
+        })
       }
     }
   }
@@ -99,6 +104,11 @@ export class ReadOnlyWatch {
       }
     )
     this.prepared.set(id, { workspace, ...(fingerprint ? { fingerprint } : {}) })
+  }
+
+  /** Vérification de fin de tour de cette conversation finie (essais). */
+  settled(id: string): Promise<void> {
+    return this.checking.get(id) ?? Promise.resolve()
   }
 
   /** Tours suivis (essais). */
@@ -172,6 +182,7 @@ export class ReadOnlyWatch {
     }
     if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
+    this.deps.changed?.(id)
     this.deps.conversations.post(id, {
       type: 'notice',
       level: 'warning',

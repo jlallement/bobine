@@ -69,22 +69,27 @@ async function setup(titles: string[], launchOrder?: number[]) {
     },
     onPost: (_merge: ChildrenMerge) => {}
   }
+  /** Autres conversations de la mère (Code reviewer d'un travail, fiche 265). */
+  const others: ConversationSummary[] = []
   const host = {
     state: () => ({
       activeId: 'mere',
-      conversations: children.map((c) => ({
-        id: c.id,
-        title: c.title,
-        profileId: 'mock',
-        profileLabel: 'Factice',
-        workspace: c.workspace,
-        updatedAt: '2026-10-22T10:00:00.000Z',
-        status: c.status,
-        draft: false,
-        branch: c.worktree.branch,
-        startedFrom: { id: 'mere', title: 'Mère' },
-        ...(c.archived ? { archived: true } : {})
-      }))
+      conversations: [
+        ...others,
+        ...children.map((c) => ({
+          id: c.id,
+          title: c.title,
+          profileId: 'mock',
+          profileLabel: 'Factice',
+          workspace: c.workspace,
+          updatedAt: '2026-10-22T10:00:00.000Z',
+          status: c.status,
+          draft: false,
+          branch: c.worktree.branch,
+          startedFrom: { id: 'mere', title: 'Mère' },
+          ...(c.archived ? { archived: true } : {})
+        }))
+      ]
     }),
     view: (id: string) => {
       if (id !== 'mere') throw new Error('inconnue')
@@ -148,7 +153,8 @@ async function setup(titles: string[], launchOrder?: number[]) {
     options,
     commit,
     transcript,
-    left
+    left,
+    others
   }
 }
 
@@ -362,6 +368,41 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     a.status = 'busy'
     await expect(env.merger.start('mere', ['f1'], true)).rejects.toThrow('travaille encore')
     expect(env.merges).toEqual([])
+  })
+
+  it('travail en cours de relecture : fusion refusée, et jamais nettoyé sous son relecteur (fiche 265)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'a.txt', 'a\n')
+    env.commit(b, 'b.txt', 'b\n')
+    const reviewer: ConversationSummary = {
+      id: 'relecteur',
+      title: 'Relecture : A',
+      profileId: 'mock',
+      profileLabel: 'Factice',
+      workspace: a.workspace,
+      updatedAt: '2026-10-22T10:00:00.000Z',
+      status: 'busy',
+      draft: false,
+      startedFrom: { id: 'mere', title: 'Mère' },
+      reviewOf: { id: 'f1', title: 'A' }
+    }
+    env.others.push(reviewer)
+    await expect(env.merger.start('mere', ['f1'], true)).rejects.toThrow('en cours de relecture')
+    expect(env.merges).toEqual([])
+    // Relecture lancée pendant la chaîne (après la fusion de A) : A n'est pas nettoyé.
+    env.others.splice(0)
+    env.options.onPost = (merge) => {
+      if (merge.rows[0]?.state === 'merged' && env.others.length === 0) {
+        env.others.push({ ...reviewer, status: 'busy' })
+      }
+    }
+    await env.merger.start('mere', ['f1', 'f2'], true)
+    await env.merger.settled('mere')
+    const done = last(env.merges)
+    expect(states(done)).toEqual(['merged', 'merged'])
+    expect(done.rows.map((r) => r.cleaned ?? false)).toEqual([false, true])
+    expect(existsSync(a.worktree.path)).toBe(true)
   })
 
   it('« Arrêter » d’une autre carte : sans effet ; le plan dit quelle fusion tourne (fiche 264)', async () => {

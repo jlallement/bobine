@@ -600,7 +600,8 @@ export class AgentHost {
       ...sessionChoices(this.snapshot().controls),
       at: Date.now(),
       ...(options.from ? { from: options.from } : {}),
-      ...(compaction ? { compaction: true } : {})
+      ...(compaction ? { compaction: true } : {}),
+      ...(options.about ? { about: options.about } : {})
     })
     await this.runTurn(connection, sessionId, blocks)
   }

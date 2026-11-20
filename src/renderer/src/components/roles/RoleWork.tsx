@@ -1,3 +1,4 @@
+import { appToolText } from '@shared/app-tools'
 import { ChevronRight, Eye, EyeOff, Pencil, TriangleAlert } from 'lucide-react'
 import { forwardRef, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -30,11 +31,14 @@ export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, st
       if (!watched.has(conversationId)) return
       const ended = event.type === 'turn-end' || event.type === 'turn-error'
       const update = event.type === 'update' ? event.update : undefined
+      // Outil du serveur `bobine` (fiche 265) : son libellé traduit, pas le titre brut de l'agent.
       const title =
-        update &&
-        (update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update')
-          ? update.title
-          : undefined
+        event.type === 'tool-app'
+          ? appToolText(event.appTool)
+          : update &&
+              (update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update')
+            ? update.title
+            : undefined
       if (!ended && !title) return
       setActivity((current) => {
         const next = new Map(current)

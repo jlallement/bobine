@@ -134,6 +134,11 @@ export interface ChildReport {
    * réponse ne va pas à une suite envoyée après le début de son tour.
    */
   askedAt?: number
+  /**
+   * Code reviewer (fiche 265) : nombre de remarques de sa relecture à cette réponse ; l'agent de la
+   * mère ne reçoit, avec elle, que celles venues depuis la réponse d'avant.
+   */
+  findingsSeen?: number
 }
 
 /**
@@ -365,7 +370,7 @@ export function childContext(
       const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
       return `- ${who} the child conversation "${item.title}" (id: ${item.childId}${roleOf(item.role)})${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
     }
-    const line = `${reportLine(item, roles.get(item.childId))}${findingsLines(items, item.childId)}`
+    const line = `${reportLine(item, roles.get(item.childId))}${findingsLines(items, item)}`
     return item.id === aboutReport ? `${line}\n  ${ABOUT_LINE}` : line
   })
   const reports = news.some((item) => item.kind === 'child-report')
@@ -390,17 +395,35 @@ const FINDING_WHY_CONTEXT = 300
  * son compte rendu : la carte « Demander à <agent> de corriger » les nomme, le contexte les porte.
  * Lues sur sa carte de relecture dans le fil de la mère ; rien pour un autre travail.
  */
-function findingsLines(items: readonly TranscriptItem[], childId: string): string {
-  const review = items.findLast((i) => i.kind === 'review' && i.reviewId === childId)
+function findingsLines(items: readonly TranscriptItem[], report: ChildReport): string {
+  const review = items.findLast((i) => i.kind === 'review' && i.reviewId === report.childId)
   if (review?.kind !== 'review' || review.status !== 'reported') return ''
-  const { findings } = review
-  if (findings.length === 0) return '\n  Structured review findings: none (nothing to report).'
-  const shown = findings.slice(0, CONTEXT_FINDINGS).map((f) => {
-    const place = `${clip(f.file, TITLE_CHARS)}:${f.line}${f.endLine ? `-${f.endLine}` : ''}`
-    return `  - [${f.severity}] ${place} — ${clip(f.title, TITLE_CHARS)}: ${clip(f.why, FINDING_WHY_CONTEXT)}`
+  // Seulement les remarques venues depuis la réponse d'avant : jamais répétées à chaque réponse.
+  const index = items.indexOf(report as TranscriptItem)
+  const before = items
+    .slice(0, index === -1 ? items.length : index)
+    .findLast((i) => i.kind === 'child-report' && i.childId === report.childId)
+  const from = before?.kind === 'child-report' ? (before.findingsSeen ?? 0) : 0
+  const to = report.findingsSeen ?? review.findings.length
+  const findings = review.findings.slice(from, to)
+  if (review.findings.length === 0)
+    return '\n  Structured review findings: none (nothing to report).'
+  if (findings.length === 0)
+    return '\n  Structured review findings: no new ones since its last reply.'
+  // Les plus graves d'abord, puis l'ordre du relecteur, avant de couper ; une ligne chacune.
+  const rank = { high: 0, medium: 1, low: 2 } as const
+  const sorted = findings
+    .map((finding, at) => ({ finding, at }))
+    .sort((a, b) => rank[a.finding.severity] - rank[b.finding.severity] || a.at - b.at)
+    .map((entry) => entry.finding)
+  const oneLine = (text: string, max: number) => clip(text.replace(/\s+/g, ' ').trim(), max)
+  const shown = sorted.slice(0, CONTEXT_FINDINGS).map((f) => {
+    const place = `${oneLine(f.file, TITLE_CHARS)}:${f.line}${f.endLine ? `-${f.endLine}` : ''}`
+    return quoted(
+      `[${f.severity}] ${place} — ${oneLine(f.title, TITLE_CHARS)}: ${oneLine(f.why, FINDING_WHY_CONTEXT)}`
+    )
   })
-  const more =
-    findings.length > shown.length ? [`  - … and ${findings.length - shown.length} more`] : []
+  const more = sorted.length > shown.length ? [`  … and ${sorted.length - shown.length} more`] : []
   const where =
     review.scope === 'commit' && review.base
       ? `the last commit ${review.base}`
@@ -408,7 +431,7 @@ function findingsLines(items: readonly TranscriptItem[], childId: string): strin
         ? `everything changed since commit ${review.base}`
         : 'the uncommitted changes'
   return [
-    `\n  Structured review findings on ${where} (${findings.length}, paths relative to the reviewed folder):`,
+    `\n  Structured review findings on ${where} (${findings.length}${from > 0 ? ' new' : ''}, paths relative to the reviewed folder):`,
     ...shown,
     ...more
   ].join('\n')

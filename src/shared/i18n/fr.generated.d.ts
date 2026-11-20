@@ -3864,6 +3864,7 @@ export type FrResources = {
       readonly mainDirty_many: 'Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.'
       readonly busy: '« {{title}} » travaille encore ou attend un accord : attendez qu’il ait fini pour le fusionner.'
       readonly cleanupSkipped: 'Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.'
+      readonly reviewing: '« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner.'
     }
     readonly stashKept_one: 'Votre modification est mise de côté le temps de la fusion.'
     readonly stashKept_other: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'
@@ -4448,6 +4449,7 @@ export type FrResources = {
       readonly nothing: 'Rien à relire : aucune modification dans ce dossier.'
       readonly notReviewer: 'Cette conversation n’est pas une relecture.'
       readonly noRole: 'Le rôle Code reviewer est introuvable.'
+      readonly reviewing: 'Une relecture de « {{title}} » est déjà en cours : attendez sa fin.'
     }
     readonly title: 'Relecture : {{title}}'
     readonly dialog: {
@@ -4494,9 +4496,6 @@ export type FrResources = {
       readonly remove: 'Retirer la remarque'
       readonly line: '{{file}}, ligne {{line}}'
       readonly lines: '{{file}}, lignes {{from}} à {{to}}'
-    }
-    readonly notice: {
-      readonly changed: 'Le dossier relu a changé pendant ce tour : une relecture ne doit rien modifier. Vérifiez la vue Git de la conversation relue.'
     }
     readonly export_one: 'Relecture « {{title}} » : {{count}} remarque'
     readonly export_many: 'Relecture « {{title}} » : {{count}} remarques'
@@ -5987,5 +5986,6 @@ export type FrResources = {
     readonly busy: 'Une autre fusion est en cours ici : ce travail pourra être fusionné ensuite.'
     readonly stateMerged: 'fusionné · {{time}}'
     readonly commit: 'commit {{commit}}'
+    readonly reviewing: 'En relecture : la fusion attend la fin du Code reviewer.'
   }
 }

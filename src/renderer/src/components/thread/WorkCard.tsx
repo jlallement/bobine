@@ -533,6 +533,8 @@ type FactKind = (typeof FACT_KINDS)[number]
  * le donne.
  */
 function factText(tool: WorkTool, done: boolean): string {
+  // Outil de l'app (fiche 265) : son libellé traduit, tel quel.
+  if (tool.label) return done ? tool.label : `${tool.label}…`
   const kind = FACT_KINDS.find((k) => k === tool.kind)
   const target = kind === 'read' || kind === 'edit' ? shortPath(tool.path) : undefined
   if (!kind || ((kind === 'read' || kind === 'edit') && !target)) {

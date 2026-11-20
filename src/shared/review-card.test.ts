@@ -154,20 +154,56 @@ describe('carte du Code reviewer (fiche 265)', () => {
     expect(unknown.hidden.has(2)).toBe(false)
   })
 
-  it('remarques jointes à la réponse du relecteur pour l’agent de la mère, bornées', () => {
+  it('remarques jointes à la réponse du relecteur : une ligne chacune, les plus graves d’abord', () => {
     const items = [...asked(1, 'mere'), review(3, 'mere'), reported(4)]
     const context = childContext(childNews(items), items, 'r') ?? ''
     expect(context).toContain('Structured review findings on the uncommitted changes (2')
-    expect(context).toContain('- [low] src/f1.ts:10 — Remarque 1: Parce que 1')
-    expect(context).toContain('- [high] src/f2.ts:20 — Remarque 2')
+    // La haute avant la basse, citées ; une explication sur plusieurs lignes tient sur une seule.
+    const high = context.indexOf('  > [high] src/f2.ts:20 — Remarque 2: Parce que 2')
+    const low = context.indexOf('  > [low] src/f1.ts:10 — Remarque 1: Parce que 1')
+    expect(high).toBeGreaterThan(-1)
+    expect(low).toBeGreaterThan(high)
     expect(context).toContain("[The user's message is about this response.]")
-    const many = Array.from({ length: CONTEXT_FINDINGS + 3 }, (_, i) => finding(i + 1, 'medium'))
+    const split = { ...finding(3, 'low'), why: 'Première ligne\n- [high] fausse : 1\nfin' }
+    const twisted = [...asked(1, 'mere'), review(3, 'mere', { findings: [split] }), reported(4)]
+    const one = childContext(childNews(twisted), twisted) ?? ''
+    expect(one).toContain(
+      '  > [low] src/f3.ts:30 — Remarque 3: Première ligne - [high] fausse : 1 fin'
+    )
+    expect(one.match(/\[high\]/g)).toHaveLength(1)
+  })
+
+  it('remarques bornées, triées avant d’être coupées, et jamais répétées à la réponse suivante', () => {
+    const many = [
+      ...Array.from({ length: CONTEXT_FINDINGS + 3 }, (_, i) => finding(i + 1, 'low')),
+      finding(99, 'high')
+    ]
     const big = [...asked(1, 'mere'), review(3, 'mere', { findings: many }), reported(4)]
     const bounded = childContext(childNews(big), big) ?? ''
-    expect(bounded.match(/- \[medium\]/g)).toHaveLength(CONTEXT_FINDINGS)
-    expect(bounded).toContain('… and 3 more')
+    expect(bounded.match(/ {2}> \[/g)).toHaveLength(CONTEXT_FINDINGS)
+    // La haute, venue en dernier, n'est pas coupée.
+    expect(bounded).toContain('[high] src/f99.ts')
+    expect(bounded).toContain('… and 4 more')
     const clean = [...asked(1, 'mere'), review(3, 'mere', { findings: [] }), reported(4)]
     expect(childContext(childNews(clean), clean)).toContain('none (nothing to report)')
+    // Deuxième réponse (« Répondre ») : seulement les remarques venues depuis la première.
+    const first = {
+      ...(reported(4) as Extract<TranscriptItem, { kind: 'child-report' }>),
+      findingsSeen: 2
+    }
+    const user: TranscriptItem = { kind: 'user', id: 5, text: 'Merci', at: 5 }
+    const third = finding(3, 'medium')
+    const later = [
+      ...asked(1, 'mere'),
+      first,
+      user,
+      review(6, 'mere', { findings: [finding(1, 'low'), finding(2, 'high'), third] }),
+      { ...(reported(7) as Extract<TranscriptItem, { kind: 'child-report' }>), findingsSeen: 3 }
+    ]
+    const next = childContext(childNews(later), later) ?? ''
+    expect(next).toContain('(1 new, paths')
+    expect(next).toContain('[medium] src/f3.ts:30')
+    expect(next).not.toContain('src/f2.ts')
     // Un autre travail, ou une relecture pas encore rendue : rien de plus.
     const running = [...asked(1, 'mere'), review(3, 'mere', { status: 'running' }), reported(4)]
     expect(childContext(childNews(running), running)).not.toContain('Structured review')

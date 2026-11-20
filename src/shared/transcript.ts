@@ -52,6 +52,7 @@ import {
 } from './turn-limit'
 import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
+import { userMessageFields } from './user-message'
 import { reduceRoleRequest, type RoleRequest } from './role-request'
 import { reduceAppTools, withoutRefusal, type TranscriptNotice } from './transcript-notice'
 export { noticeText } from './transcript-notice'
@@ -81,6 +82,8 @@ export type TranscriptItem =
       from?: Children.MessageOrigin
       /** Commande de compaction de la session (fiches 126, 140). */
       compaction?: true
+      /** Travail visé par ce message (fiches 263, 265). */
+      about?: string
       /** Renvoyé après un refus de connexion (D10) : l'agent a pu le recevoir `1 + resent` fois. */
       resent?: number
     }
@@ -339,12 +342,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
         {
           kind: 'user',
           text: event.text,
-          ...(event.attachments?.length ? { attachments: event.attachments } : {}),
-          ...(event.mode ? { mode: event.mode } : {}),
-          ...(event.model ? { model: event.model } : {}),
-          ...(event.at ? { at: event.at } : {}),
-          ...(event.from ? { from: event.from } : {}),
-          ...(event.compaction ? { compaction: true as const } : {})
+          ...userMessageFields(event)
         }
       )
     case 'update':

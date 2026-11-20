@@ -48,7 +48,7 @@ import type { IpcHandlers } from '@shared/ipc'
 import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
-import { applyModel, ChildReviews } from './children-review'
+import { applyModel, ChildReviews, REVIEWER_ROLE } from './children-review'
 import type { Message } from '@shared/i18n/message'
 import { roleBadge, roleStamp, type RoleSnapshot, type RoleView } from '@shared/roles'
 import type { RoleLibrary } from '../roles/library'
@@ -207,14 +207,23 @@ export class ChildConversations {
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
-    this.reviews = new ChildReviews({ conversations, children: this, run: options.run ?? gitRun })
     this.roles = options.roles
     this.nativeRoleMode = options.nativeRoleMode
     this.folder = options.folder
+    // Le Code reviewer (fiche 265) a le même garde-fou que tout rôle en lecture seule ; un écart
+    // est aussi dit sur sa carte de relecture.
     this.readOnly = new ReadOnlyWatch({
       conversations,
       summary: (id) => this.summary(id),
-      run: options.run ?? gitRun
+      run: options.run ?? gitRun,
+      changed: (id) => this.reviews.changed(id)
+    })
+    this.reviews = new ChildReviews({
+      conversations,
+      children: this,
+      run: options.run ?? gitRun,
+      watch: this.readOnly,
+      ...(options.nativeRoleMode ? { nativeRoleMode: options.nativeRoleMode } : {})
     })
     this.attention = options.attention ?? (() => ({}))
     this.launchesChanged = options.launchesChanged ?? (() => {})
@@ -249,6 +258,10 @@ export class ChildConversations {
       request,
       request.roleSnapshot ?? (request.role ? this.findRole(motherId, request.role) : undefined)
     )
+    // Code reviewer (fiche 265, un seul chemin) : `@code-reviewer` de la saisie, `start_child` de
+    // l'agent, « Lancer en parallèle… » — la relecture de cette conversation, portée d'office, la
+    // consigne en points à surveiller.
+    if (role?.name === REVIEWER_ROLE) return this.startReview(motherId, request, text, by)
 
     const { created, inPlace } = await this.prepare(motherId, text, request, role)
     const title = request.title?.trim()
@@ -294,6 +307,26 @@ export class ChildConversations {
       this.launching.delete(child.id)
     })
     return child
+  }
+
+  /** Le Code reviewer lancé comme un rôle : par `ChildReviews.start`, sur cette conversation. */
+  private async startReview(
+    motherId: string,
+    request: ChildRequest,
+    text: string,
+    by: 'agent' | undefined
+  ): Promise<ConversationSummary> {
+    const reviewer = await this.reviews.start(motherId, {
+      focus: text,
+      auto: true,
+      ...(request.ask ? { ask: request.ask } : {}),
+      ...(request.card ? { card: request.card } : {}),
+      ...(by ? { by } : {}),
+      ...(request.profileId ? { profileId: request.profileId } : {}),
+      ...(request.model ? { model: request.model } : {})
+    })
+    if (by) this.waking.await(motherId, reviewer.id)
+    return reviewer
   }
 
   /**
@@ -594,8 +627,10 @@ export class ChildConversations {
           event.type === 'turn-end' ? { stopReason: event.stopReason } : { error: event.message }
         // Ce qu'a coûté la fille jusque-là (fiche 117), tel que son fil le sait à la fin du tour.
         const digest = usageDigest(usage)
+        const seen = child.reviewOf ? this.reviews.findingCount(child.id) : undefined
         const report = {
           ...childReport(child, items, end),
+          ...(seen === undefined ? {} : { findingsSeen: seen }),
           ...(digest ? { usage: digest } : {}),
           ...this.leftBehind(child.id),
           // Carte-réponse (fiches 263, 264) : la réponse entière, pour un travail qui a sa carte.

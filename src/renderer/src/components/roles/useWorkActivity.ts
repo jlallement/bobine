@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { appToolText } from '@shared/app-tools'
 
 /** Derniers faits gardés par travail (maquette A : « les trois derniers faits »). */
 export const RECENT_FACTS = 3
@@ -8,6 +9,11 @@ export interface WorkTool {
   title: string
   kind?: string
   path?: string
+  /**
+   * Outil du serveur `bobine` (fiche 265) : son libellé traduit (« Rend 2 remarques de
+   * relecture »), jamais le titre brut que l'agent lui donne.
+   */
+  label?: string
 }
 
 /** Ce que fait un travail en ce moment : l'outil en cours, puis ses derniers outils finis. */
@@ -49,6 +55,18 @@ export function useWorkActivity(id: string | undefined): WorkActivity {
         set(({ current: _current, ...rest }) => rest)
         return
       }
+      if (event.type === 'tool-app') {
+        const known = tools.get(event.toolCallId)
+        if (!known) return
+        const labelled = { ...known, label: appToolText(event.appTool) }
+        tools.set(event.toolCallId, labelled)
+        const swap = (t: WorkTool) => (t.title === known.title ? labelled : t)
+        set((value) => ({
+          done: value.done.map(swap),
+          ...(value.current ? { current: swap(value.current) } : {})
+        }))
+        return
+      }
       if (event.type !== 'update') return
       const update = event.update
       if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') {
@@ -59,7 +77,12 @@ export function useWorkActivity(id: string | undefined): WorkActivity {
       if (!title) return
       const kind = update.kind ?? known?.kind
       const path = update.locations?.[0]?.path ?? known?.path
-      const tool: WorkTool = { title, ...(kind ? { kind } : {}), ...(path ? { path } : {}) }
+      const tool: WorkTool = {
+        title,
+        ...(kind ? { kind } : {}),
+        ...(path ? { path } : {}),
+        ...(known?.label ? { label: known.label } : {})
+      }
       tools.set(update.toolCallId, tool)
       const finished = update.status === 'completed' || update.status === 'failed'
       set((value) =>

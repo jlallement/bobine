@@ -488,6 +488,11 @@ export type AgentEvent =
       from?: MessageOrigin
       /** Commande de compaction de la session, reconnue par l'hôte d'agent (fiches 126, 140). */
       compaction?: true
+      /**
+       * Travail visé par ce message (« Appliquer », « Demander de corriger », fiches 263, 265) :
+       * la carte du Code reviewer dit « Correction demandée ».
+       */
+      about?: string
     }
   | { type: 'update'; update: SessionUpdate }
   /**

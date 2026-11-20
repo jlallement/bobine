@@ -3859,7 +3859,8 @@
       "mainDirty_one": "The main folder has an uncommitted change ({{files}}): commit it or set it aside before merging.",
       "mainDirty_other": "The main folder has {{count}} uncommitted changes ({{files}}): commit them or set them aside before merging.",
       "busy": "“{{title}}” is still working or waiting for approval: wait until it has finished to merge it.",
-      "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay."
+      "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay.",
+      "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
     "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge."
@@ -4421,7 +4422,8 @@
       "reviewer": "A review cannot be reviewed.",
       "nothing": "Nothing to review: no changes in this folder.",
       "notReviewer": "This conversation is not a review.",
-      "noRole": "The Code reviewer role cannot be found."
+      "noRole": "The Code reviewer role cannot be found.",
+      "reviewing": "A review of “{{title}}” is already running: wait until it ends."
     },
     "title": "Review: {{title}}",
     "dialog": {
@@ -4469,9 +4471,6 @@
       "remove": "Remove comment",
       "line": "{{file}}, line {{line}}",
       "lines": "{{file}}, lines {{from}} to {{to}}"
-    },
-    "notice": {
-      "changed": "The reviewed folder changed during this turn: a review must not modify anything. Check the Git view of the reviewed conversation."
     },
     "export_one": "Review “{{title}}”: {{count}} comment",
     "export_other": "Review “{{title}}”: {{count}} comments",
@@ -5940,6 +5939,7 @@
     "interrupted": "Merge interrupted when the app closed.",
     "busy": "Another merge is running here: this task can be merged afterwards.",
     "stateMerged": "merged · {{time}}",
-    "commit": "commit {{commit}}"
+    "commit": "commit {{commit}}",
+    "reviewing": "Under review: merging waits for the Code reviewer to finish."
   }
 }

@@ -172,7 +172,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     })
     expect(review?.findings[1]).toMatchObject({ line: 1, endLine: 3, severity: 'low' })
     expect(review?.findings[1]?.code.split('\n')).toHaveLength(3)
-    expect(review?.summary).toBe('Une erreur à corriger avant de fusionner.')
+    expect(review?.summary).toBe('Une remarque haute à corriger.')
     // Dossier inchangé : rien de signalé ; une seule carte de relecture dans ce fil.
     expect(review?.changed).toBeUndefined()
     expect(env.items(author).filter((i) => i.kind === 'review')).toHaveLength(1)
@@ -187,9 +187,13 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(context).toContain('Structured review findings')
     expect(context).toContain('[high] src/app.js:2 — Le message est écrit en dur')
     expect(context).toContain('[low] src/app.js:1-3')
-    // La réponse de l'outil arrive dans le fil du relecteur.
+    // L'outil a répondu à l'agent (son résultat, dans la carte de l'outil) ; sa réponse est son avis.
+    const tool = env.items(reviewer.id).find((i) => i.kind === 'tool')
+    expect(JSON.stringify(tool)).toContain('2 finding(s) delivered')
     const reply = env.items(reviewer.id).findLast((i) => i.kind === 'agent')
-    expect(reply?.kind === 'agent' && reply.text).toContain('2 finding(s) delivered')
+    expect(reply?.kind === 'agent' && reply.text).toBe(
+      'Deux remarques rendues : une remarque haute à corriger.'
+    )
     // Pas d'avis en double du garde-fou des rôles en lecture seule : la relecture a le sien.
     expect(
       env
@@ -240,7 +244,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(
       env
         .items(writer.id)
-        .some((i) => i.kind === 'notice' && i.message?.key === 'review.notice.changed')
+        .some((i) => i.kind === 'notice' && i.message?.key === 'roles.notice.folderChanged')
     ).toBe(true)
     await env.idle(writer.id)
     // Une relecture de plus : le fichier écrit compte désormais parmi les modifications.
@@ -376,6 +380,76 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(bubble?.kind === 'role-request' && bubble.text).toBe('Et la branche ?')
   })
 
+  it('`start_child` de l’agent avec le rôle Code reviewer : la même relecture, sur sa ligne de carte', async () => {
+    const env = await environment()
+    const author = await env.author()
+    // Comme `start_child` le fait (`children-tools.ts`) : la clé de sa proposition, par l'agent.
+    const reviewer = await env.children.start(
+      author,
+      {
+        text: 'Relis la gestion des erreurs',
+        title: 'Relecture',
+        role: 'code-reviewer',
+        card: 'k1'
+      },
+      'agent'
+    )
+    expect(reviewer.reviewOf?.id).toBe(author)
+    expect(env.children.role(reviewer.id)).toBe('reviewer')
+    // Pas de bulle : le lancement porte la clé de la proposition, et l'agent attend ce travail.
+    expect(env.items(author).some((i) => i.kind === 'role-request')).toBe(false)
+    expect(env.items(author).find((i) => i.kind === 'child-started')).toMatchObject({
+      childId: reviewer.id,
+      card: 'k1',
+      by: 'agent'
+    })
+    expect(env.children.holds(author)).toBe(true)
+    expect(env.card(author)).toMatchObject({
+      scope: 'uncommitted',
+      focus: 'Relis la gestion des erreurs'
+    })
+    await waitFor(() => env.card(author)?.status === 'reported')
+    expect(env.card(author)?.findings).toHaveLength(2)
+  })
+
+  it('une seule relecture à la fois par conversation relue (revue QA)', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const first = await env.reviews.start(author)
+    await expect(env.reviews.start(author)).rejects.toThrow(
+      t('review.error.reviewing', { title: env.children.summary(author).title })
+    )
+    await waitFor(() => env.card(author)?.status === 'reported')
+    await env.idle(first.id)
+    await env.reviews.settled(first.id)
+    // Finie : une autre peut partir.
+    const second = await env.reviews.start(author)
+    expect(second.id).not.toBe(first.id)
+  })
+
+  it('départ raté, puis une suite tapée : le premier message part, puis la suite (revue QA)', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const sent = new Map<string, string[]>()
+    const prompt = env.manager.prompt.bind(env.manager)
+    let refuse = true
+    env.manager.prompt = ((id: string, text: string, ...rest: unknown[]) => {
+      sent.set(id, [...(sent.get(id) ?? []), text])
+      if (id !== author && refuse) return Promise.reject(new Error('agent indisponible'))
+      return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
+    }) as typeof env.manager.prompt
+    const reviewer = await env.reviews.start(author)
+    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    refuse = false
+    const asked = 'Regarde aussi les tests\n/scenario relecture-vide'
+    expect(env.children.reply(author, reviewer.id, asked)).toBe('sent')
+    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 3, 20_000)
+    const [first, again, extra] = sent.get(reviewer.id) ?? []
+    expect(again).toBe(first)
+    expect(splitRoleBrief(again ?? '').brief).toContain(REVIEW_BRIEF_LEAD)
+    expect(extra).toBe(asked)
+  })
+
   it('« Relancer » après un redémarrage : la même portée et les points à surveiller', async () => {
     const env = await environment()
     const author = await env.author()
@@ -388,6 +462,15 @@ describe('relecture avant fusion (fiche 177)', () => {
       if (id !== author && refuse) return Promise.reject(new Error('agent indisponible'))
       return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
     }) as typeof env.manager.prompt
+    // Chaque étape de la carte, telle qu'elle est posée.
+    const steps: string[] = []
+    env.manager.subscribe({
+      event: ({ conversationId, event }) => {
+        if (conversationId === author && event.type === 'review') {
+          steps.push(`${event.review.status}${event.review.error ? ':erreur' : ''}`)
+        }
+      }
+    })
     const reviewer = await env.reviews.start(author, { focus: 'Les erreurs réseau' })
     await waitFor(() => env.card(author)?.status === 'failed', 20_000)
     expect(env.card(author)?.focus).toBe('Les erreurs réseau')
@@ -402,6 +485,12 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(again.brief).toContain('look in particular at:\nLes erreurs réseau')
     expect(again.brief).toContain('git diff HEAD')
     await waitFor(() => env.card(author)?.status === 'reported', 20_000)
+    // Au départ du tour relancé, la carte repasse « en cours », l'erreur effacée (revue QA).
+    const failedAt = steps.indexOf('failed:erreur')
+    expect(failedAt).toBeGreaterThan(-1)
+    expect(steps.slice(failedAt + 1)).toContain('running')
+    expect(steps.slice(failedAt + 1).every((step) => !step.endsWith(':erreur'))).toBe(true)
+    expect(env.card(author)?.error).toBeUndefined()
   })
 
   it('relecture d’avant (sans lancement chez la mère) : ni compte rendu ni « Répondre »', async () => {
@@ -460,6 +549,20 @@ describe('relecture avant fusion (fiche 177)', () => {
     )
     await waitFor(() => env.card(author)?.status === 'reported')
     expect(env.card(author)?.findings).toEqual([])
+    // Plafond total d'une relecture, tous appels confondus (revue QA).
+    const forty = Array.from({ length: 40 }, (_, i) => ({
+      file: 'nouveau.txt',
+      line: 1,
+      severity: 'low',
+      title: `Remarque ${i}`,
+      why: 'Parce que.'
+    }))
+    await env.reviews.report(reviewer.id, { findings: forty })
+    await env.reviews.report(reviewer.id, { findings: forty })
+    await expect(env.reviews.report(reviewer.id, { findings: forty })).rejects.toThrow(
+      '100 findings at most'
+    )
+    expect(env.card(author)?.findings).toHaveLength(80)
   })
 
   it('IPC : arguments vérifiés, module absent refusé', async () => {

@@ -205,7 +205,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     })
     const child = await env.children.start(env.mother, {
       text: 'Relis le carnet.',
-      role: 'code-reviewer'
+      role: 'security-expert'
     })
     await env.settled(child.id)
     expect(slow).toHaveBeenCalled()
@@ -230,7 +230,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const env = await environment()
     const child = await env.children.start(env.mother, {
       text: 'Relis.\n/scenario role-ecrit-avec-demande',
-      role: 'code-reviewer'
+      role: 'security-expert'
     })
     await env.settled(child.id)
     expect(env.lastReply(child.id)).toContain('Écriture refusée : je reste en lecture seule.')
@@ -246,7 +246,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const env = await environment()
     const child = await env.children.start(env.mother, {
       text: 'Relis.\n/scenario role-ecrit-sans-genre',
-      role: 'code-reviewer'
+      role: 'security-expert'
     })
     await env.settled(child.id)
     expect(env.lastReply(child.id)).toContain('Écriture refusée')
@@ -258,7 +258,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const env = await environment()
     const child = await env.children.start(env.mother, {
       text: 'Relis.\n/scenario role-ecrit-sans-demander',
-      role: 'code-reviewer',
+      role: 'security-expert',
       profileId: 'sans-demande'
     })
     await env.settled(child.id)
@@ -415,7 +415,7 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     const env = await environment()
     const child = await env.children.start(env.mother, {
       text: 'Relis.\n/scenario avis-long',
-      role: 'code-reviewer'
+      role: 'security-expert'
     })
     await env.settled(child.id)
     await env.waitFor(
@@ -475,7 +475,10 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(() => env.children.reply('autre-mere', childId, 'Bonjour')).toThrow()
     expect(() => env.children.reply(env.mother, childId, '   ')).toThrow()
     // Un travail lancé sans bulle (outil de l'agent, dialogue), même avec un rôle : refusé.
-    const byAgent = await env.children.start(env.mother, { text: 'Relis.', role: 'code-reviewer' })
+    const byAgent = await env.children.start(env.mother, {
+      text: 'Relis.',
+      role: 'security-expert'
+    })
     expect(() => env.children.reply(env.mother, byAgent.id, 'Bonjour')).toThrow()
     expect(env.items(env.mother).filter((i) => i.kind === 'role-request')).toHaveLength(1)
   })
@@ -577,5 +580,24 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     // Mode non posé : la consigne du rôle et sa lecture seule partent dans le message.
     const first = env.firstMessage(child?.id ?? '')
     expect(first?.kind === 'user' && first.text).toContain('You are read-only')
+  })
+
+  it('fiche 265 : Code reviewer, mode installé en lecture seule posé ; lecture seule « enforced »', async () => {
+    const asked: string[] = []
+    const env = await environment({
+      nativeRoleMode: (_profile, role) => {
+        asked.push(`${role.name}:${role.readOnly}`)
+        return role.name === 'code-reviewer' ? { id: 'ask', readOnly: true } : undefined
+      }
+    })
+    // Quelque chose à relire, puis l'agent qui écrit sans demander : sans le mode installé, la
+    // lecture seule ne serait que demandée.
+    writeFileSync(join(env.repo, 'README.md'), '# Carnet relu\n')
+    const reviewer = await env.children.reviews.start(env.mother, { profileId: 'sans-demande' })
+    await env.waitFor(() => !!env.firstMessage(reviewer.id), 'premier message du relecteur')
+    expect(asked).toEqual(['code-reviewer:true'])
+    const first = env.firstMessage(reviewer.id)
+    expect(first?.kind === 'user' && first.text).toContain('Bobine refuses your write requests')
+    expect(env.notices(reviewer.id)).not.toContain('roles.notice.readOnlyRequested')
   })
 })

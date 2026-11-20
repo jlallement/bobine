@@ -5,10 +5,11 @@
  */
 import type { Scenario, Step } from './scenario.mts'
 
-/** Ce que l'outil a répondu, cité dans le fil du relecteur. */
-const said = (lead: string) => (text: string) => [
-  { kind: 'text', text: `${lead}\n\n> ${text.split('\n').join('\n> ')}` } as const
-]
+/**
+ * Après l'outil, l'avis du relecteur en une phrase, comme un vrai modèle (fiche 265) : jamais la
+ * réponse de l'outil recopiée.
+ */
+const said = (lead: string) => () => [{ kind: 'text', text: lead } as const]
 
 /**
  * Remarques sur ce que laisse le scénario `modifications` (src/app.js créé, README.md modifié) :
@@ -76,8 +77,8 @@ export const reviewScenarios: Record<string, Scenario> = {
         then: [
           report(
             FINDINGS,
-            'Une erreur à corriger avant de fusionner.',
-            'Deux remarques rendues : une à corriger avant de fusionner.'
+            'Une remarque haute à corriger.',
+            'Deux remarques rendues : une remarque haute à corriger.'
           )
         ],
         else: [
