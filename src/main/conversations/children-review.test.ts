@@ -343,30 +343,59 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(env.card(author)?.findings).toHaveLength(2)
   })
 
-  it('`@code-reviewer` sans rien de non commité : la branche courante, sinon le dernier commit', async () => {
+  it('`@code-reviewer` sans rien de non commité : la branche courante, sinon les commits de la conversation (fiche 267)', async () => {
     const env = await environment()
     const author = await env.author()
+    const init = env.git('rev-parse', 'HEAD')
     env.git('add', '.')
-    env.git('commit', '-q', '-m', 'travail')
+    // Un commit fait pendant la conversation (dates de git à la seconde : une minute plus tard).
+    const later = `@${Math.floor(Date.now() / 1000) + 60} +0000`
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'travail'],
+      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
+    )
     const head = env.git('rev-parse', 'HEAD')
     const first = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Relis'
     })
     expect(first.failed).toEqual([])
-    expect(env.card(author)).toMatchObject({ scope: 'commit', base: head.slice(0, 7), files: 2 })
+    // Le commit de la conversation, pas celui d'avant ; la fin relue gardée pour le diff.
+    expect(env.card(author)).toMatchObject({
+      scope: 'commits',
+      commits: 1,
+      since: init,
+      head,
+      files: 2
+    })
+    expect(env.card(author)?.withUncommitted).toBeUndefined()
     const reviewer = first.started[0]?.childId ?? ''
     await waitFor(() => env.items(reviewer).some((i) => i.kind === 'user'))
     const sent = env.items(reviewer).find((i) => i.kind === 'user')
     const opening = splitRoleBrief(sent?.kind === 'user' ? sent.text : '')
-    expect(
-      opening.request.startsWith(
-        t('review.ask.commit', { commit: head.slice(0, 7), count: 2, lng: 'en' })
-      )
-    ).toBe(true)
-    // Contre son premier parent (un commit de fusion compris).
-    expect(opening.brief).toContain(`git diff ${env.git('rev-parse', 'HEAD^1')} ${head}`)
+    expect(opening.request).toContain(`(2 files, ${init.slice(0, 7)}..${head.slice(0, 7)})`)
+    expect(opening.brief).toContain(`git diff ${init} ${head}`)
+    await waitFor(() => env.card(author)?.status === 'reported')
     await env.idle(reviewer)
+    await env.reviews.settled(reviewer)
+    // Un autre commit de la conversation : la relecture suivante part du dernier commit relu.
+    writeFileSync(join(env.repo, 'suite.js'), 'export const suite = 1\n')
+    env.git('add', '.')
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'suite'],
+      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
+    )
+    const next = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Et la suite ?'
+    })
+    expect(next.failed).toEqual([])
+    expect(env.card(author)).toMatchObject({ scope: 'commits', commits: 1, since: head, files: 1 })
+    await waitFor(() => env.card(author)?.status === 'reported')
+    await env.idle(next.started[0]?.childId ?? '')
+    await env.reviews.settled(next.started[0]?.childId ?? '')
     // Une branche de travail (pas main), sans rien de non commité : la branche contre main.
     env.git('checkout', '-q', '-b', 'tri')
     writeFileSync(join(env.repo, 'tri.js'), 'export const tri = 1\n')
@@ -379,7 +408,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(second.failed).toEqual([])
     const review = env.card(author)
     expect(review).toMatchObject({ scope: 'branch', baseBranch: 'main', files: 1 })
-    expect(review?.base).toBe(head.slice(0, 7))
+    expect(review?.base).toBe(env.git('rev-parse', '--short=7', 'main'))
     const bubble = env.items(author).findLast((i) => i.kind === 'role-request')
     expect(bubble?.kind === 'role-request' && bubble.text).toBe('Et la branche ?')
   })

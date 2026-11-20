@@ -4501,9 +4501,26 @@
       "uncommittedOf_other": "Review the uncommitted changes of “{{title}}” ({{count}} files).",
       "focus": "What to look at: {{focus}}",
       "commit_one": "Review the last commit {{commit}} ({{count}} file).",
-      "commit_other": "Review the last commit {{commit}} ({{count}} files)."
+      "commit_other": "Review the last commit {{commit}} ({{count}} files).",
+      "commits": "Review the {{commits}} of this conversation ({{files}}, {{range}}).",
+      "commitsDirty": "Review the uncommitted changes and the {{commits}} of this conversation ({{files}}, {{range}})."
     },
-    "fileDiff": "{{path}} since {{since}}"
+    "fileDiff": "{{path}} since {{since}}",
+    "scope": {
+      "commits_one": "{{count}} commit",
+      "commits_other": "{{count}} commits",
+      "range": "{{from}}..{{to}}",
+      "rangeFromStart": "first commit to {{to}}",
+      "since": "since {{from}}",
+      "sinceStart": "since the first commit"
+    },
+    "read": {
+      "commits": "Reviewed: {{commits}}, {{files}} ({{range}})",
+      "commitsDirty": "Reviewed: {{commits}} and the uncommitted changes, {{files}} ({{range}})",
+      "commit": "Reviewed: commit {{commit}}, {{files}}",
+      "branch": "Reviewed: the branch since {{base}}, {{files}}",
+      "uncommitted": "Reviewed: the uncommitted changes, {{files}}"
+    }
   },
   "scheduled": {
     "title": "Scheduled tasks",

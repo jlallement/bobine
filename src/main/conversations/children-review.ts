@@ -29,6 +29,7 @@ import { messageOf } from '@shared/errors'
 import type { TranscriptItem } from '@shared/transcript'
 import { usageDigest } from '@shared/usage'
 import {
+  EMPTY_TREE,
   FINDING_CODE_LINES,
   MAX_REVIEW_FINDINGS,
   REVIEW_REPLY_CHARS,
@@ -40,6 +41,7 @@ import {
   type ReviewTarget
 } from '@shared/review'
 import type { IpcHandlers } from '@shared/ipc'
+import { reviewRange } from '@shared/review-scope'
 import { roleBadge, roleStamp, type RoleSnapshot } from '@shared/roles'
 import type { RoleRequest } from '@shared/role-request'
 import { builtinRoles } from '../roles/builtin'
@@ -592,11 +594,41 @@ export class ChildReviews {
   /** Ce qui est relu (`review-target.ts`) ; `auto` : portée d'office de `@code-reviewer`. */
   private target(author: ConversationSummary, auto: boolean): Promise<ReviewTarget> {
     const worktree = this.deps.conversations.worktreeOf(author.id)?.worktree
+    const startedAt = author.createdAt ? Date.parse(author.createdAt) : NaN
+    const lastReviewed = this.lastReviewed(author.id)
     return reviewTarget(
       this.deps.run,
-      { workspace: author.workspace, title: author.title, worktree },
+      {
+        workspace: author.workspace,
+        title: author.title,
+        worktree,
+        ...(Number.isFinite(startedAt) ? { startedAt } : {}),
+        ...(lastReviewed ? { lastReviewed } : {})
+      },
       auto
     )
+  }
+
+  /**
+   * Fin de la dernière relecture finie de cette conversation sur sa branche principale (fiche 267) :
+   * la suivante part de là. Une relecture en échec, en cours ou arrêtée ne compte pas.
+   */
+  private lastReviewed(authorId: string): string | undefined {
+    let items: readonly TranscriptItem[]
+    try {
+      items = this.deps.conversations.view(authorId).transcript.items
+    } catch {
+      return undefined
+    }
+    const done = items.findLast(
+      (i) =>
+        i.kind === 'review' &&
+        (i.authorId === undefined || i.authorId === authorId) &&
+        (i.scope === 'commits' || i.scope === 'commit') &&
+        i.status === 'reported' &&
+        !!i.head
+    )
+    return done?.kind === 'review' ? done.head : undefined
   }
 
   /** Chemin vérifié (dans le dossier, rendu relatif) et code cité, lu dans le fichier. */
@@ -629,7 +661,10 @@ export class ChildReviews {
  */
 export function askText(
   author: Pick<ConversationSummary, 'title' | 'branch' | 'startedFrom'>,
-  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch' | 'branch' | 'commit'>,
+  target: Pick<
+    ReviewTarget,
+    'scope' | 'files' | 'baseBranch' | 'branch' | 'commit' | 'base' | 'commits' | 'withUncommitted'
+  >,
   focus?: string,
   /** `en` : la demande telle que l'agent la reçoit (ADR-0014) ; absent : langue de l'interface. */
   lng?: 'en'
@@ -638,34 +673,49 @@ export function askText(
   const branch = author.branch ?? target.branch
   const o = lng ? { lng } : {}
   const what =
-    target.scope === 'commit' && target.commit
-      ? t('review.ask.commit', { commit: target.commit.slice(0, 7), count, ...o })
-      : target.scope === 'branch' && branch
-        ? t('review.ask.branch', { branch, count, ...o })
-        : author.startedFrom
-          ? t('review.ask.uncommittedOf', { title: author.title, count, ...o })
-          : t('review.ask.uncommitted', { count, ...o })
+    target.scope === 'commits' && target.commit
+      ? t(target.withUncommitted ? 'review.ask.commitsDirty' : 'review.ask.commits', {
+          commits: t('review.scope.commits', { count: target.commits ?? 1, ...o }),
+          files: t('review.card.files', { count, ...o }),
+          range: reviewRange(target.base, target.commit, !!target.withUncommitted, o),
+          ...o
+        })
+      : target.scope === 'commit' && target.commit
+        ? t('review.ask.commit', { commit: target.commit.slice(0, 7), count, ...o })
+        : target.scope === 'branch' && branch
+          ? t('review.ask.branch', { branch, count, ...o })
+          : author.startedFrom
+            ? t('review.ask.uncommittedOf', { title: author.title, count, ...o })
+            : t('review.ask.uncommitted', { count, ...o })
   const points = focus?.trim()
   return points ? `${what}\n\n${t('review.ask.focus', { focus: points, ...o })}` : what
 }
 
 /**
  * Point affiché et relu par la carte (fiche 265) : le commit relu (portée `commit`), sinon le point
- * de départ de la branche ; abrégé.
+ * de départ de la branche ou de la plage ; abrégé. Portée commitée sans non commité (fiche 267) :
+ * `head`, la fin relue, pour que le diff d'une remarque soit celui de la portée relue.
  */
-function reviewBase(target: ReviewTarget): Pick<Review, 'base' | 'since'> {
+function reviewBase(
+  target: ReviewTarget
+): Pick<Review, 'base' | 'since' | 'head' | 'commits' | 'withUncommitted'> {
   const base = target.scope === 'commit' ? target.commit : target.base
   const since =
     target.scope === 'commit'
       ? (target.base ?? EMPTY_TREE)
-      : target.scope === 'branch'
+      : target.scope === 'branch' || target.scope === 'commits'
         ? target.base
         : undefined
-  return { ...(base ? { base: base.slice(0, 7) } : {}), ...(since ? { since } : {}) }
+  const committed =
+    target.scope === 'commit' || (target.scope === 'commits' && !target.withUncommitted)
+  return {
+    ...(base && base !== EMPTY_TREE ? { base: base.slice(0, 7) } : {}),
+    ...(since ? { since } : {}),
+    ...(committed && target.commit ? { head: target.commit } : {}),
+    ...(target.scope === 'commits' ? { commits: target.commits ?? 1 } : {}),
+    ...(target.withUncommitted ? { withUncommitted: true as const } : {})
+  }
 }
-
-/** L'arbre vide de git : point de comparaison du premier commit d'un dépôt. */
-const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 /** Texte de l'agent depuis le dernier message reçu (tout le tour, coupé par ses outils). */
 export function turnReply(items: readonly TranscriptItem[]): string {

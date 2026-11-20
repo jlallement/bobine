@@ -4701,9 +4701,27 @@
       "focus": "Points à surveiller : {{focus}}",
       "commit_one": "Relis le dernier commit {{commit}} ({{count}} fichier).",
       "commit_many": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
-      "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers)."
+      "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
+      "commits": "Relis {{commits}} de cette conversation ({{files}}, {{range}}).",
+      "commitsDirty": "Relis le non commité et {{commits}} de cette conversation ({{files}}, {{range}})."
     },
-    "fileDiff": "{{path}} depuis {{since}}"
+    "fileDiff": "{{path}} depuis {{since}}",
+    "scope": {
+      "commits_one": "{{count}} commit",
+      "commits_many": "{{count}} commits",
+      "commits_other": "{{count}} commits",
+      "range": "{{from}}..{{to}}",
+      "rangeFromStart": "du premier commit à {{to}}",
+      "since": "depuis {{from}}",
+      "sinceStart": "depuis le premier commit"
+    },
+    "read": {
+      "commits": "Relu : {{commits}}, {{files}} ({{range}})",
+      "commitsDirty": "Relu : {{commits}} et le non commité, {{files}} ({{range}})",
+      "commit": "Relu : le commit {{commit}}, {{files}}",
+      "branch": "Relu : la branche depuis {{base}}, {{files}}",
+      "uncommitted": "Relu : les modifications non commitées, {{files}}"
+    }
   },
   "scheduled": {
     "title": "Tâches planifiées",

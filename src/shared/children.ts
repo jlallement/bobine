@@ -425,11 +425,13 @@ function findingsLines(items: readonly TranscriptItem[], report: ChildReport): s
   })
   const more = sorted.length > shown.length ? [`  … and ${sorted.length - shown.length} more`] : []
   const where =
-    review.scope === 'commit' && review.base
-      ? `the last commit ${review.base}`
-      : review.scope === 'branch' && review.base
-        ? `everything changed since commit ${review.base}`
-        : 'the uncommitted changes'
+    review.scope === 'commits'
+      ? `${review.commits ?? 1} commit(s) of this conversation${review.base ? ` since ${review.base}` : ' since the first commit'}${review.withUncommitted ? ' and the uncommitted changes' : ''}`
+      : review.scope === 'commit' && review.base
+        ? `the last commit ${review.base}`
+        : review.scope === 'branch' && review.base
+          ? `everything changed since commit ${review.base}`
+          : 'the uncommitted changes'
   return [
     `\n  Structured review findings on ${where} (${findings.length}${from > 0 ? ' new' : ''}, paths relative to the reviewed folder):`,
     ...shown,

@@ -4532,8 +4532,26 @@ export type FrResources = {
       readonly commit_one: 'Relis le dernier commit {{commit}} ({{count}} fichier).'
       readonly commit_many: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
       readonly commit_other: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
+      readonly commits: 'Relis {{commits}} de cette conversation ({{files}}, {{range}}).'
+      readonly commitsDirty: 'Relis le non commité et {{commits}} de cette conversation ({{files}}, {{range}}).'
     }
     readonly fileDiff: '{{path}} depuis {{since}}'
+    readonly scope: {
+      readonly commits_one: '{{count}} commit'
+      readonly commits_many: '{{count}} commits'
+      readonly commits_other: '{{count}} commits'
+      readonly range: '{{from}}..{{to}}'
+      readonly rangeFromStart: 'du premier commit à {{to}}'
+      readonly since: 'depuis {{from}}'
+      readonly sinceStart: 'depuis le premier commit'
+    }
+    readonly read: {
+      readonly commits: 'Relu : {{commits}}, {{files}} ({{range}})'
+      readonly commitsDirty: 'Relu : {{commits}} et le non commité, {{files}} ({{range}})'
+      readonly commit: 'Relu : le commit {{commit}}, {{files}}'
+      readonly branch: 'Relu : la branche depuis {{base}}, {{files}}'
+      readonly uncommitted: 'Relu : les modifications non commitées, {{files}}'
+    }
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'

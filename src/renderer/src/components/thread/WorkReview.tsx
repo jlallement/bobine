@@ -1,14 +1,17 @@
-import { CircleCheck, TriangleAlert } from 'lucide-react'
+import { CircleCheck, ScanSearch, TriangleAlert } from 'lucide-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewItem } from '@shared/role-request'
 import { findingPlace, findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
+import { reviewedText } from '@shared/review-scope'
 
 /**
  * Ce que le Code reviewer a trouvé, dans sa carte-réponse (fiche 265, écran G des maquettes de la
  * fiche 260, revue UX) : son avis d'ensemble d'abord, puis chaque remarque visible — gravité,
  * `fichier:ligne` qui ouvre le diff sur ces lignes, une phrase — ; « Rien à signaler » sans
- * remarque. Une fois la correction demandée, les pastilles s'effacent un peu.
+ * remarque. Une fois la correction demandée, les pastilles s'effacent un peu. Toujours, ce qui a été
+ * relu (« Relu : 4 commits, 12 fichiers (ffa5062..db4a5e1) », fiche 267) : « rien à signaler »
+ * ne vaut que pour cette portée.
  */
 export function ReviewFindings({
   review,
@@ -86,6 +89,10 @@ export function ReviewFindings({
           })}
         </ul>
       )}
+      <p className="work-review-scope" data-testid="work-review-scope" data-scope={review.scope}>
+        <ScanSearch size={12} aria-hidden />
+        {reviewedText(review)}
+      </p>
     </div>
   )
 }

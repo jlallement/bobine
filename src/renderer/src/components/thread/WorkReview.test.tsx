@@ -337,6 +337,66 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     expect(screen.queryByTestId('work-show-diff')).toBeNull()
   })
 
+  it('fiche 267 (recette N1) : la carte dit ce qui a été relu, surtout quand rien n’est à signaler', () => {
+    fakeAgent()
+    const since = 'ffa5062' + '0'.repeat(33)
+    const head = 'db4a5e1' + '0'.repeat(33)
+    const { unmount } = view(
+      reviewedHere({
+        findings: [],
+        scope: 'commits',
+        commits: 4,
+        files: 12,
+        since,
+        head,
+        base: since.slice(0, 7)
+      }),
+      info([conversation('r', reviewer)])
+    )
+    const card = screen.getByTestId('work-card')
+    expect(within(card).getByTestId('work-findings-clean')).toBeTruthy()
+    expect(plain(within(card).getByTestId('work-review-scope').textContent)).toBe(
+      'Relu : 4 commits, 12 fichiers (ffa5062..db4a5e1)'
+    )
+    unmount()
+    // Depuis le premier commit, avec le non commité ; et avec des remarques.
+    view(
+      reviewedHere({
+        scope: 'commits',
+        commits: 1,
+        files: 3,
+        since: '4b825dc642cb6eb9a060e54bf8d69288fbee4904',
+        withUncommitted: true
+      }),
+      info([conversation('r', reviewer)])
+    )
+    expect(screen.getAllByTestId('work-finding')).toHaveLength(3)
+    expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
+      'Relu : 1 commit et le non commité, 3 fichiers (depuis le premier commit)'
+    )
+  })
+
+  it('fiche 267 : le non commité seul et une branche, dits aussi', () => {
+    fakeAgent()
+    const { unmount } = view(reviewedHere({ findings: [] }), info([conversation('r', reviewer)]))
+    expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
+      'Relu : les modifications non commitées, 2 fichiers'
+    )
+    unmount()
+    view(
+      reviewedHere({
+        findings: [],
+        scope: 'branch',
+        base: 'a3f2c1e',
+        since: 'a3f2c1e' + '0'.repeat(33)
+      }),
+      info([conversation('r', reviewer)])
+    )
+    expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
+      'Relu : la branche depuis a3f2c1e, 2 fichiers'
+    )
+  })
+
   it('transmise : plus de « corriger » ; « Voir sur le diff » reste', () => {
     fakeAgent()
     view(
