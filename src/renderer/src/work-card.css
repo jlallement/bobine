@@ -132,6 +132,23 @@
 .work-live.work-refused .grow {
   flex: 1 1 220px;
 }
+.work-refused-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.work-refused-error {
+  flex-basis: 100%;
+  color: var(--danger, var(--warn));
+  font-size: 12.5px;
+}
+/* En-tête d'un travail bloqué par un modèle refusé (fiche 267). */
+.work-state-blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--warn);
+}
 /* Hors du bloc d'activité (attend votre accord) : le même retrait. */
 .work-card > .work-live {
   padding: 0 14px 4px 48px;

@@ -75,7 +75,7 @@ function EntryRow({
         </span>
       )}
       <span className="session-entry-duration" data-testid="session-entry-duration">
-        {duration}
+        {entry.blocked && !entry.endedAt ? t('sessionTab.blocked') : duration}
       </span>
       {onStop && entry.stop && (
         <Tip label={t('sessionTab.stop', { label: entry.label })}>

@@ -214,6 +214,7 @@ export function summaryOf(
     ...(conversation.transcript?.backgroundWork && listedStatus(conversation) === 'ready'
       ? { backgroundWork: true }
       : {}),
+    ...modelRefusedOf(conversation.snapshot),
     draft: conversation.draft,
     ...(record.pinned ? { pinned: true } : {}),
     ...(record.worktree ? { branch: record.worktree.branch } : {}),
@@ -228,6 +229,16 @@ export function summaryOf(
     ...(record.turnStopped ? { turnStopped: true } : {}),
     ...(record.space ? { space: record.space } : {})
   }
+}
+
+/** Modèle refusé au dernier message (fiche 267) : la carte « Modèle refusé » de son agent. */
+function modelRefusedOf(
+  snapshot: AgentSnapshot | undefined
+): Pick<ConversationSummary, 'modelRefused'> {
+  const blocker = snapshot?.status === 'needs-action' ? snapshot.blocker : undefined
+  if (blocker?.kind !== 'auth' || !blocker.atTurn || !blocker.model) return {}
+  const { name, quota } = blocker.model
+  return { modelRefused: { name, ...(quota ? { quota } : {}) } }
 }
 
 /** Lien vers la mère d'une fille (fiche 097), tant que la mère existe et n'est pas archivée. */

@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronRight, LoaderCircle } from 'lucide-react'
+import { ChevronDown, ChevronRight, LoaderCircle, TriangleAlert } from 'lucide-react'
+import { refusedCue, refusedModel } from '@shared/model-refused'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
@@ -117,12 +118,19 @@ export function LaunchedRow({
             // La fusion (« fusionné »), sinon la recommandation, remplacent « a répondu ».
             <MergeOrVerdict mergeState={mergeState} cleaned={false} verdict={verdict} works />
           ) : (
-            stateKey && (
+            stateKey &&
+            (state === 'waiting' && refusedModel(child) ? (
+              // Bloqué par un modèle refusé (fiche 267) : l'alerte, pas « attend votre accord ».
+              <>
+                <TriangleAlert size={13} aria-hidden />
+                {refusedCue(refusedModel(child) ?? { name: '' })}
+              </>
+            ) : (
               <>
                 {state === 'running' && <LoaderCircle size={13} className="spin" aria-hidden />}
                 {t(stateKey)}
               </>
-            )
+            ))
           )}
         </span>
       </div>

@@ -455,16 +455,30 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     try {
       view(
         [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
-        info([child('a', ux, { status: 'needs-action' })])
+        info([
+          child('a', ux, {
+            status: 'needs-action',
+            modelRefused: { name: 'Factice rapide', quota: true }
+          })
+        ])
       )
       const text = await screen.findByTestId('work-refused-text')
       expect(views).toHaveBeenCalledWith('a')
       expect(plain(text.textContent)).toBe(
-        'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.'
+        'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.Le message repartira avec le modèle choisi.'
       )
+      // L'en-tête dit « quota épuisé » (alerte), pas « attend votre accord ».
+      expect(screen.getByTestId('work-state-blocked').textContent).toBe('quota épuisé')
       fireEvent.click(screen.getByTestId('work-choose-model'))
       fireEvent.click(screen.getByTestId('control-model-factice-precis'))
       expect(setControl).toHaveBeenCalledWith('a', 'model', 'factice-precis')
+      // Un échec du changement de modèle est dit dans la carte (revue UX, 13).
+      setControl.mockRejectedValueOnce(new Error('agent arrêté'))
+      fireEvent.click(screen.getByTestId('work-choose-model'))
+      fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+      expect((await screen.findByTestId('work-refused-error')).textContent).toContain(
+        'agent arrêté'
+      )
       // Le travail repart : la carte suit son instantané, plus de refus.
       act(() =>
         emit('a', {

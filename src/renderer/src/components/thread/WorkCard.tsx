@@ -1,4 +1,5 @@
 import { findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
+import { refusedCue, refusedModel } from '@shared/model-refused'
 import {
   Activity,
   Check,
@@ -448,6 +449,12 @@ function WorkHead({
               {elapsedText(now - exchangeStart(card))}
             </span>
           </>
+        ) : state === 'waiting' && refusedModel(child) ? (
+          // Bloqué par un modèle refusé (fiche 267) : « quota épuisé », « modèle refusé ».
+          <span className="work-state-blocked" data-testid="work-state-blocked">
+            <TriangleAlert size={13} aria-hidden />
+            {refusedCue(refusedModel(child) ?? { name: '' })}
+          </span>
         ) : state === 'replied' && report ? (
           // Code reviewer sans remarque (fiche 265) : « rien à signaler » dès l'en-tête.
           t(

@@ -12,6 +12,26 @@ import {
 const SINCE = 1_000
 
 describe('en cours et terminées (fiche 166)', () => {
+  it('fiche 267 : un travail bloqué par un modèle refusé : « bloqué », sans « Arrêter »', () => {
+    const [entry] = childObservations(
+      [
+        {
+          id: 'f',
+          title: 'Fille',
+          status: 'needs-action',
+          modelRefused: { name: 'Factice rapide', quota: true }
+        }
+      ],
+      {}
+    )
+    expect(entry).toMatchObject({ key: 'child:f', blocked: true })
+    expect(entry?.stop).toBeUndefined()
+    // Un accord à donner (sans refus de modèle) : toujours arrêtable.
+    expect(
+      childObservations([{ id: 'g', title: 'G', status: 'needs-action' }], {})[0]?.stop
+    ).toEqual({ kind: 'child', childId: 'g' })
+  })
+
   it('ce qui n’est plus observé a fini maintenant ; la durée part du premier coup d’œil', () => {
     const child = childObservations([{ id: 'f', title: 'Fille', status: 'busy' }], {})
     let state = trackRunning(EMPTY_RUNNING, child, 2_000, SINCE)

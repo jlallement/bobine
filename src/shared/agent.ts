@@ -724,6 +724,11 @@ export interface ConversationSummary {
   turnStopped?: true
   /** Prête, mais son agent travaille encore après le tour (fiche 255) : « en cours » dans la liste. */
   backgroundWork?: true
+  /**
+   * Son modèle a été refusé au dernier message (indisponible, quota gratuit épuisé : fiches 259,
+   * 267) : elle est bloquée, pas « en attente d'un accord » ; partout où son état se dit.
+   */
+  modelRefused?: { name: string; quota?: true }
   /** Conversation encore vide (pas dans l'historique). */
   draft: boolean
   /** Épinglée en tête de la barre latérale (fiche 026). */

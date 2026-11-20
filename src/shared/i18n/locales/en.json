@@ -4200,7 +4200,8 @@
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
     "documents": "Documents",
     "discussionDocuments": "Chat documents",
-    "thisDiscussion": "This chat"
+    "thisDiscussion": "This chat",
+    "blocked": "blocked"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",
@@ -4719,7 +4720,13 @@
     "fixRequestedAt": "Fix requested · {{time}}",
     "fixWork": "Have “{{work}}” fix it",
     "modelQuota": "The {{model}} model didn’t answer: its free quota is used up.",
-    "modelRefused": "The {{model}} model didn’t answer."
+    "modelRefused": "The {{model}} model didn’t answer.",
+    "cue": {
+      "modelRefused": "model refused",
+      "quota": "quota used up"
+    },
+    "modelRetry": "The message will be sent again with the model you choose.",
+    "modelChangeFailed": "The model could not be changed: {{error}}"
   },
   "workCue": {
     "replied": "replied",

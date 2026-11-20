@@ -2,6 +2,7 @@ import { Hand, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AgentSnapshot, SessionControl } from '@shared/agent'
+import { ipcErrorText } from '../../ipc-errors'
 import { ModelPickButton } from '../common/ModelMenu'
 
 /** Le modèle refusé au tour d'un travail (fiches 259, 267) et le réglage de modèle de ce travail. */
@@ -64,6 +65,8 @@ export function useWorkRefusedModel(childId: string | undefined): Refused | unde
 export function WorkWaiting({ childId }: { childId: string | undefined }) {
   const { t } = useTranslation()
   const refused = useWorkRefusedModel(childId)
+  // Le changement de modèle refusé par l'app (agent arrêté…) : dit dans la carte (revue UX).
+  const [failed, setFailed] = useState<string | undefined>(undefined)
   if (!refused || !childId) {
     return (
       <div className="work-live" data-testid="work-live">
@@ -78,16 +81,27 @@ export function WorkWaiting({ childId }: { childId: string | undefined }) {
       <TriangleAlert size={13} aria-hidden />
       <span className="grow" data-testid="work-refused-text">
         {t(model.quota ? 'workCard.modelQuota' : 'workCard.modelRefused', { model: model.name })}
+        {control && <span className="work-refused-hint">{t('workCard.modelRetry')}</span>}
       </span>
       {control && (
         <ModelPickButton
           control={control}
-          className="btn small"
+          className="btn small primary"
           testId="work-choose-model"
-          onPick={(value) => void window.api.agent.setControl(childId, control.id, value)}
+          onPick={(value) => {
+            setFailed(undefined)
+            window.api.agent
+              .setControl(childId, control.id, value)
+              .catch((error: unknown) => setFailed(ipcErrorText(error)))
+          }}
         >
           {t('blocker.auth.chooseModel')}
         </ModelPickButton>
+      )}
+      {failed && (
+        <span className="work-refused-error" role="alert" data-testid="work-refused-error">
+          {t('workCard.modelChangeFailed', { error: failed })}
+        </span>
       )}
     </div>
   )

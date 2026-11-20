@@ -4214,6 +4214,7 @@ export type FrResources = {
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'
     readonly thisDiscussion: 'Cette discussion'
+    readonly blocked: 'bloqué'
   }
   readonly prTrack: {
     readonly title: '#{{number}} {{title}}'
@@ -4756,6 +4757,9 @@ export type FrResources = {
     readonly fixWork: 'Faire corriger « {{work}} »'
     readonly modelQuota: 'Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.'
     readonly modelRefused: 'Le modèle {{model}} n’a pas répondu.'
+    readonly cue: { readonly modelRefused: 'modèle refusé'; readonly quota: 'quota épuisé' }
+    readonly modelRetry: 'Le message repartira avec le modèle choisi.'
+    readonly modelChangeFailed: 'Le modèle n’a pas pu être changé : {{error}}'
   }
   readonly workCue: {
     readonly replied: 'a répondu'

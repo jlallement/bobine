@@ -4374,7 +4374,8 @@
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",
-    "thisDiscussion": "Cette discussion"
+    "thisDiscussion": "Cette discussion",
+    "blocked": "bloqué"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",
@@ -4925,7 +4926,13 @@
     "fixRequestedAt": "Correction demandée · {{time}}",
     "fixWork": "Faire corriger « {{work}} »",
     "modelQuota": "Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.",
-    "modelRefused": "Le modèle {{model}} n’a pas répondu."
+    "modelRefused": "Le modèle {{model}} n’a pas répondu.",
+    "cue": {
+      "modelRefused": "modèle refusé",
+      "quota": "quota épuisé"
+    },
+    "modelRetry": "Le message repartira avec le modèle choisi.",
+    "modelChangeFailed": "Le modèle n’a pas pu être changé : {{error}}"
   },
   "workCue": {
     "replied": "a répondu",
