@@ -176,6 +176,17 @@ async function reviewRun(ui, { workspace, turnLock }) {
     ),
     'clic sur `fichier:ligne` : vue Git, le fichier ouvert, la remarque sous sa ligne, sa gravité'
   )
+  // Sa ligne (src/app.js:2) mise en avant et à l'écran.
+  await ui.waitFor(`!!document.querySelector('tr.diff-focus')`)
+  const focused = await ui.ev(`(() => {
+    const row = document.querySelector('tr.diff-focus')
+    const r = row.getBoundingClientRect()
+    return { line: row.dataset.line, side: row.dataset.side, shown: r.top >= 0 && r.bottom <= innerHeight }
+  })()`)
+  check(
+    focused.line === '2' && focused.side === 'new' && focused.shown,
+    `clic sur \`fichier:ligne\` : la ligne mise en avant, à l’écran (${JSON.stringify(focused)})`
+  )
   await ui.shot('177-4-remarque-sur-le-diff')
   await ui.closePanel()
 

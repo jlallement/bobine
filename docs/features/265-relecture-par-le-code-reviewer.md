@@ -192,6 +192,12 @@ Pas de nouvelle dépendance.
     `--long` : les trois premières. Essai `cible.test.mjs` ; `docs/pilote.md`.
   - `ChangesTab` : props sorties en `ChangesTabProps` (fonction à 300 lignes).
 
+- 2026-11-20 : après ces décisions, `./scripts/verify` vert (5 311 essais) ; `pnpm build && pnpm
+  e2e relecture travaux-groupe changes` vertes (6 tâches, clair et sombre ; `relecture` vérifie
+  la ligne mise en avant et à l'écran), puis `pnpm e2e roles-travail` verte (deux
+  `@code-reviewer` tapés dans la saisie y passent désormais par la relecture), une campagne à la
+  fois.
+
 ## Limites connues
 
 - `@code-reviewer` refusé pendant que l'agent de la conversation répond (comme « Faire relire » :
