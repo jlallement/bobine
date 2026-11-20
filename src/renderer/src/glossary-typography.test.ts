@@ -35,3 +35,11 @@ describe('typographie du glossaire (fiche 272)', () => {
     expect(texts.filter(([key, text]) => !keywords(key) && /\bbobcoins?\b/.test(text))).toEqual([])
   })
 })
+
+describe('textes courts des champs étroits (fiche 272)', () => {
+  it('l’invite de l’adresse du navigateur n’est jamais coupée : 16 caractères au plus', async () => {
+    const en = (await import('@shared/i18n/locales/en.json')).default
+    for (const texts of [fr, en])
+      expect(texts.browser.addressPlaceholder.length).toBeLessThanOrEqual(16)
+  })
+})

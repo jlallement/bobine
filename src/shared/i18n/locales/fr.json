@@ -2277,7 +2277,8 @@
     "forward": "Suivant",
     "stop": "Arrêter",
     "reload": "Recharger",
-    "addressPlaceholder": "Adresse (ex. localhost:3000)",
+    "addressPlaceholder": "localhost:3000",
+    "addressLabel": "Adresse de la page (ex. localhost:3000)",
     "attach": "Joindre cette page au message",
     "empty": "Les pages ouvertes par l’agent s’affichent ici. Vous pouvez aussi saisir une adresse.",
     "url": {

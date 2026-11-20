@@ -2182,7 +2182,8 @@
     "forward": "Forward",
     "stop": "Stop",
     "reload": "Reload",
-    "addressPlaceholder": "Address (e.g. localhost:3000)",
+    "addressPlaceholder": "localhost:3000",
+    "addressLabel": "Page address (e.g. localhost:3000)",
     "attach": "Attach this page to the message",
     "empty": "Pages opened by the agent show up here. You can also type an address.",
     "url": {

@@ -236,7 +236,7 @@ export type FrResources = {
       readonly starting: 'Démarrage de l’agent…'
       readonly busy: 'Ajouter une suite (envoyée à la fin de la réponse)…'
       readonly error: 'L’agent n’a pas pu démarrer : écrivez pour réessayer'
-      readonly exited: 'L’agent s’est arrêté : écrivez pour le relancer'
+      readonly exited: 'Écrivez pour relancer l’agent…'
       readonly 'needs-action': 'Action requise avant de commencer'
       readonly authExpired: 'Reconnectez-vous pour continuer'
       readonly modelRefused: 'Choisissez un autre modèle ou connectez-vous'
@@ -276,7 +276,6 @@ export type FrResources = {
       readonly queued: 'Envoyer à la fin de la réponse (Entrée)'
       readonly now: 'Envoyer (Entrée)'
     }
-    readonly exited: 'L’agent s’est arrêté.'
     readonly failedToStart: 'L’agent n’a pas pu démarrer.'
     readonly restart: 'Relancer'
     readonly pasted: {
@@ -2238,7 +2237,8 @@ export type FrResources = {
     readonly forward: 'Suivant'
     readonly stop: 'Arrêter'
     readonly reload: 'Recharger'
-    readonly addressPlaceholder: 'Adresse (ex. localhost:3000)'
+    readonly addressPlaceholder: 'localhost:3000'
+    readonly addressLabel: 'Adresse de la page (ex. localhost:3000)'
     readonly attach: 'Joindre cette page au message'
     readonly empty: 'Les pages ouvertes par l’agent s’affichent ici. Vous pouvez aussi saisir une adresse.'
     readonly url: {
@@ -3058,6 +3058,7 @@ export type FrResources = {
       readonly unresponsive: 'L’agent ne répondait plus à « Stop » : il a été arrêté.'
       readonly ended: 'processus terminé ({{status}})'
       readonly code: 'code {{code}}'
+      readonly killed: 'arrêt forcé par le système ou un autre programme (SIGKILL)'
       readonly status: 'Sortie : {{status}}.{{hint}}'
       readonly connectionLost: 'L’agent ne répond plus : sa connexion avec Bobine s’est coupée, et Bobine l’a arrêté. « Relancer » le redémarre ; la conversation est gardée.'
     }
