@@ -55,8 +55,9 @@ function host(roles: RoleView[], limit = 10) {
 }
 
 /** La requête de lancement sans la bulle de la demande (vérifiée à part, fiche 263). */
+/** La requête sans la bulle partagée ni le titre du travail (essayé à part, fiche 272). */
 function withoutAsk(request: unknown): unknown {
-  const { ask: _ask, ...rest } = request as Record<string, unknown>
+  const { ask: _ask, title: _title, ...rest } = request as Record<string, unknown>
   return rest
 }
 
@@ -118,6 +119,21 @@ describe('startRoleChildren', () => {
       ['mere', { text: 'Relis.', role: 'a' }],
       ['mere', { text: 'Relis.', role: 'b' }]
     ])
+  })
+
+  it('plusieurs rôles : chaque travail titré d’après son rôle ; un seul : titre de la demande (fiche 272)', async () => {
+    const { fake, start } = host([
+      role('a', { label: 'Tech lead' }),
+      role('b', { label: 'Expert sécurité' })
+    ])
+    await startRoleChildren(fake, 'mere', { roles: ['a', 'b'], text: 'Donne ton avis.' })
+    expect(start.mock.calls.map(([, request]) => (request as { title?: string }).title)).toEqual([
+      'Tech lead · Donne ton avis.',
+      'Expert sécurité · Donne ton avis.'
+    ])
+    const one = host([role('a', { label: 'Tech lead' })])
+    await startRoleChildren(one.fake, 'mere', { roles: ['a'], text: 'Donne ton avis.' })
+    expect((one.start.mock.calls[0]?.[1] as { title?: string }).title).toBeUndefined()
   })
 
   it('une seule bulle pour le message : la même demande passée à chaque rôle (fiche 263)', async () => {
