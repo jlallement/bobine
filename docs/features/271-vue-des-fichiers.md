@@ -464,6 +464,8 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
     entière au lecteur d'écran.
   - Icône de l'onglet : dossier, puis celle du fichier ouvert. Vocabulaire : « Mentionner dans la
     zone de saisie ». Le contenu n'est recoloré que si le fichier a changé (date et taille).
+  - Maquette : les trois chevauchements corrigés (écran 3 : panneau dans son cadre, plus de
+    recouvrement du titre de l'écran 4 ; écran 0 : pastille 3 hors du menu « + »).
   - **Écart à Q51** : « Mentionner » et le glisser d'une ligne vers la saisie joignent le fichier
     en **pièce jointe** (puce sous la zone de saisie, comme le trombone), pas un texte `@chemin`
     dans le message — même effet pour l'agent, et la confirmation des fichiers exclus (fiche 155)
