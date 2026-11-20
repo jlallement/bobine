@@ -206,12 +206,71 @@ Pas de nouvelle dépendance.
   après « Actualiser », fenêtre de 900 px) ; elle échoue sans le correctif (vérifié : 26 px, puis
   24 px défilés). Capture `267-relecture-900`.
 
+- 2026-11-20 : revues UX et QA indépendantes, tout appliqué (sauf le point 16 de la revue UX,
+  noté en suite), chaque défaut avec un essai qui échoue sans son correctif.
+  - **Portée d'office, règles écrites** (`review-target.ts`) :
+    - commits de la conversation = premier parent depuis HEAD, datés d'après sa création **et**,
+      quand `git config user.email` est connue, faits par l'utilisateur local : un commit d'un autre
+      (un `git pull`) arrête la plage ;
+    - depuis le **HEAD relu** de la dernière relecture finie d'une plage de commits
+      (`Review.reviewedHead`, toujours enregistré, non commité compris) ; `head`/`until` ne
+      servent qu'au diff ;
+    - tout relu jusqu'à HEAD : dossier propre, la plage de la conversation **relue de nouveau**,
+      et dit (« nouvelle relecture des N commits… ») ; avec du non commité, le non commité seul ;
+    - fusion seule : la base commune de ses parents seulement si les autres côtés apportent des
+      commits d'après la création, dans la limite de 50 commits ; sinon son premier parent ;
+    - clone superficiel : jamais l'arbre vide, la plage part du commit frontière, et dit ;
+    - sous-modules exclus des fichiers (`diff --raw`, mode 160000), comptés et dits ;
+    - git en échec ou trop lent : « La relecture n'a pas pu lister les fichiers », jamais « rien
+      à relire » (`ReviewListError`) ;
+    - `--end-of-options` avant les révisions venues d'ailleurs (base d'un worktree, branche de
+      base) : une base « `--output=…` » n'écrit plus de fichier (essai) ;
+    - « Relancer » repart sans rien de la portée d'avant ; le main refuse `retry` d'un travail qui
+      a répondu ou travaille encore.
+  - **Carte** : « Relu : les 4 commits de cette conversation, 3 fichiers », « … depuis la dernière
+    relecture », « les 5 derniers commits (début de la conversation introuvable) », historique
+    partiel, sous-modules ; plage en chasse fixe discrète (infobulle) ; sans remarque, fondu dans
+    « Rien à signaler · relu : … » ; avec remarques, sous l'avis, avant la liste.
+  - **Diff d'une remarque** : plage introuvable → contre HEAD, dit ; `changedSince` gardé pour un
+    binaire ou un trop gros ; fichier hors de la portée → ses lignes citées, telles qu'elles
+    sont, mises en avant, sans +/− ; « Corrigé depuis… » court avec « Voir la version actuelle » ;
+    liste Git vide sur une ligne sous un diff relu. Essais : supprimé, renommé, binaire, commit
+    inconnu.
+  - **Travail bloqué par un modèle refusé** : `ConversationSummary.modelRefused` (instantané de
+    son agent) ; en-tête « quota épuisé » / « modèle refusé » (`workCard.cue.*`, alerte), ligne
+    de groupe, barre latérale (alerte, pas la main), Session › En cours (« bloqué », sans durée ni
+    Arrêter) ; la carte dit « Le message repartira avec le modèle choisi » et un échec du
+    changement de modèle ; son état lu par `roles:workState` (sans le fil), une lecture plus
+    ancienne qu'un statut reçu jetée.
+  - **Carte de quota** : « Choisir un autre modèle » principal, la clé d'API en contour ; invite
+    « … ou ajoutez une clé d'API » ; pas d'avis en double dans le fil tant que la carte est là.
+  - **Activité** : blancs réduits à une espace puis coupe à 80 ; un heredoc se lit « un script node
+    (9 lignes) ».
+  - **N5** : une demande refusée revient toujours devant ce qui a été tapé depuis, séparée d'un
+    retour à la ligne.
+  - Actions d'une carte en un bloc qui passe à la ligne entier ; barre de défilement de la grille
+    de Mon activité au survol seulement, réglée par colonne ; e2e : les captures `echec-*` d'une
+    suite repassée au vert sont effacées (`staleFailureFiles`).
+  - **e2e** : `relecture-commits` (+ `267-relecture-rien-a-signaler`, `-hors-portee`),
+    `travail-recette` (en-tête bloqué, barre latérale, action principale, pas d'avis en double),
+    `activity` (`267-indicateur-etape`, `-720`, scénario `etapes-longues`), `roles-travail`
+    (`roles-travail-3a-jeton-vide`, aide grise vérifiée par sa couleur calculée),
+    `cout-connexion` (`267-activite-720`, pas de barre permanente).
+
 ## Écarts au plan
 
 - R7 : pas de signal « carte vue » du renderer : la règle de la 258, erreurs comprises, est retenue
   (décision du tech lead).
 
 ## Limites connues
+
+- Dépôt jeune : moins de 5 commits en tout, « les 5 derniers » relisent depuis le premier commit
+  (l'arbre vide) — accepté.
+- Les commits de la conversation sont reconnus à leur date (à la seconde) et à leur auteur
+  (`user.email` du dépôt) : un commit fait dans la même seconde que la création compte d'avant ;
+  sans adresse configurée, la date seule.
+- `lastReviewed` ne vient que d'une relecture de plage de commits (`commits`, `commit`) : une
+  relecture du non commité seul laisse les commits d'avant à relire.
 
 - Le pilote des recettes (`scripts/pilote`) ne donne pas le focus à la fenêtre. « Vu » l'exige
   (fiche 024) : en recette par le pilote, les « à lire » ne tombent pas.
@@ -226,6 +285,14 @@ Pas de nouvelle dépendance.
 - F6 : Big Pickle reste « coût inconnu » ; aucun signal fiable de gratuité.
 - La reconnaissance du quota épuisé est celle d'OpenCode 2.3.0 (motif déclaré dans son profil) ;
   un autre texte ou un autre code reste une erreur de tour ordinaire.
+
+## Suites
+
+- Revue UX, point 16 : harmoniser les formats de durée (« 1 min 05 » de l'indicateur, « 1:05 » de
+  la carte, « 1 min 46 s » du pied) — à décider.
+- À 720 px, l'invite de la saisie passe sous « Messages précédents » (vu dans
+  `267-indicateur-720`), et « Code ⌘1 / Discussion ⌘2 » déborde de la barre latérale (D25) :
+  constats à part, non traités ici.
 
 ## Hors de ce lot
 

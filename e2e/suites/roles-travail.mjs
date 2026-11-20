@@ -211,8 +211,12 @@ async function mainRun(ui, turnLock) {
   await ui.shot('roles-travail-3-jeton')
   // Le rôle sans demande (fiche 267, N7) : l'aide en gris, jamais la couleur d'alerte.
   const typed = await ui.ev(`${input}.value`)
-  await ui.ev(`(() => { const i = ${input}; i.setSelectionRange(0, i.value.length) })()`)
-  await ui.press('Delete')
+  // La demande effacée comme le ferait la saisie (évènement `input`), le jeton gardé.
+  await ui.ev(`(() => {
+    const i = ${input}
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(i, '')
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+  })()`)
   await ui.waitFor(`!!${ui.$('role-destination-empty')}`)
   const hint = await ui.ev(`(() => {
     const el = ${ui.$('role-destination-empty')}

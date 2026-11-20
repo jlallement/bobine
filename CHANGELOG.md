@@ -70,6 +70,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Un travail bloqué par un modèle refusé (quota gratuit épuisé…) le dit partout : « quota épuisé »
+  ou « modèle refusé » dans sa carte, la barre latérale et Session › En cours, au lieu de
+  « attend votre accord ».
+- La carte du Code reviewer dit d'où part ce qu'il a relu (« les 4 commits de cette conversation »,
+  « depuis la dernière relecture », « les 5 derniers commits ») ; un clone superficiel et les
+  sous-modules non relus sont signalés.
 - **« @Code reviewer Relis ce qui a été fait » relit ce qui a été fait** : sur la branche
   principale, les commits de la conversation (depuis la dernière relecture, sinon depuis son
   début), jamais un commit de fusion seul ; avec du non commité, le non commité et ces commits. La

@@ -118,7 +118,8 @@ const CONTEXT = 2
  */
 function CitedLines({ text, focus }: { text: string | null; focus: DiffFocus | undefined }) {
   const { t } = useTranslation()
-  const all = (text ?? '').split('\n')
+  // Le retour à la ligne final n'est pas une ligne de plus.
+  const all = (text ?? '').replace(/\n$/, '').split('\n')
   const from = Math.max(1, (focus?.from ?? 1) - CONTEXT)
   const to = Math.min(all.length, (focus?.to ?? focus?.from ?? 1) + CONTEXT)
   return (

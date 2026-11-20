@@ -83,10 +83,10 @@ export const LONG_COMMAND = [
 export const roleScenarios: Record<string, Scenario> = {
   'etapes-longues': {
     description:
-      'Deux étapes distinctes (fiche 267, D14) : du texte, ≈ 2 s, puis une commande en cours ≈ 4 s (l’indicateur donne la durée du tour et l’étape en plus petit), puis une réponse courte',
+      'Deux étapes distinctes (fiche 267, D14) : du texte, ≈ 2 s, puis une commande en cours ≈ 10 s (l’indicateur donne la durée du tour et l’étape en plus petit), puis une réponse courte',
     steps: [
       { kind: 'text', text: 'Je regarde le projet. ' },
-      { kind: 'pause', ticks: 50 },
+      { kind: 'pause', ticks: 75 },
       {
         kind: 'update',
         update: {
@@ -98,7 +98,7 @@ export const roleScenarios: Record<string, Scenario> = {
           rawInput: { command: 'npm test' }
         }
       },
-      { kind: 'pause', ticks: 100 },
+      { kind: 'pause', ticks: 250 },
       {
         kind: 'update',
         update: {

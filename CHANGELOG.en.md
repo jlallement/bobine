@@ -69,6 +69,10 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- A task blocked by a refused model (free quota used up…) says so everywhere: “quota used up” or
+  “model refused” in its card, the sidebar and Session › Running, instead of “waiting for you”.
+- The Code reviewer’s card says where its review starts (“this conversation’s 4 commits”, “since
+  the last review”, “the last 5 commits”); a shallow clone and unreviewed submodules are flagged.
 - **“@Code reviewer Review what was done” reviews what was done**: on the main branch, the
   conversation’s commits (since the last review, else since it started), never a lone merge
   commit; with uncommitted changes, those and the commits. The card always says what was reviewed

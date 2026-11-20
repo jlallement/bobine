@@ -98,6 +98,8 @@ export async function activitySuite(scheme) {
     // 4. Fiche 267 (D14) : la durée du tour, l'étape en cours en plus petit ; à 720 px aussi.
     await ui.send('/scenario etapes-longues')
     await ui.waitFor(`!!${ui.$('working-step')}`, 15000)
+    // Une seconde d'étape au moins : la durée du tour la dépasse (deux chiffres distincts).
+    await ui.waitFor(`/[1-9]/.test(${ui.$('working-step')}.innerText)`, 15000)
     const parts = await ui.ev(`(() => {
       const w = ${ui.$('working')}
       const time = w.querySelector('.working-time')
@@ -114,11 +116,8 @@ export async function activitySuite(scheme) {
     )
     await ui.shot('267-indicateur-etape')
     await ui.viewport(720, 760)
-    const lines = await ui.ev(`(() => {
-      const w = ${ui.$('working')}
-      return Math.round(w.getBoundingClientRect().height / parseFloat(getComputedStyle(w).lineHeight || '20'))
-    })()`)
-    check(lines <= 2, `indicateur à 720 px : tient sans s’étaler (${lines} ligne(s))`)
+    const height = await ui.ev(`Math.round(${ui.$('working')}.getBoundingClientRect().height)`)
+    check(height > 0 && height <= 40, `indicateur à 720 px : sur une ligne (${height} px de haut)`)
     await ui.shot('267-indicateur-720')
     await ui.viewport()
     await ui.ready()
