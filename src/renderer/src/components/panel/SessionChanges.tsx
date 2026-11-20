@@ -75,7 +75,8 @@ function ChangesRow(props: {
               data-testid={props.testId}
             >
               <FileDiff size={13} />
-              {props.text}
+              {/* Une ligne, alignée à gauche, coupée au besoin (fiche 272, recette). */}
+              <span className="session-link-text">{props.text}</span>
               <span className="diff-added">+{countText(summary.added)}</span>
               <span className="diff-removed">−{countText(summary.removed)}</span>
             </button>
