@@ -1,5 +1,5 @@
 import type { DiffTarget } from '@shared/review'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MarkdownDocument } from '@shared/file-links'
 import { isPanelTab, type PanelTab } from '@shared/panel'
 import type { TranscriptItem } from '@shared/transcript'
@@ -21,9 +21,13 @@ import { PANEL_DEFAULT_WIDTH, panelWidthToSave, savedPanelWidth } from './panel-
 import { fittedSidebarWidth, readSidebarWidth } from './components/sidebar/sidebar-width'
 import type { FilesRequest } from './components/files/useFilesTab'
 import type { OpenFileLink } from './components/thread/FileLink'
-import { findInOpenFile, TOGGLE_TREE_EVENT } from './files-state'
+import {
+  FILES_FORGET_EVENT,
+  FILES_OPEN_KEY,
+  findInOpenFile,
+  TOGGLE_TREE_EVENT
+} from './files-state'
 
-const FILES_OPEN_KEY = 'bobine.panel.filesOpen'
 /** Conversations dont on garde l'onglet Fichiers ouvert (les plus récentes). */
 const MAX_FILES_OPEN = 100
 
@@ -175,6 +179,17 @@ export function usePanel(options: {
   // Onglet Fichiers ouvert, par conversation, retenu au redémarrage (fiche 271, Q2).
   const [filesOpen, setFilesOpen] = useState(loadFilesOpen)
   useEffect(() => saveFilesOpen(filesOpen), [filesOpen])
+  // Conversation supprimée (M9) : son onglet Fichiers n'est plus retenu.
+  useEffect(() => {
+    const onForget = (event: Event) => {
+      const id = (event as CustomEvent<unknown>).detail
+      setFilesOpen((ids) =>
+        ids.includes(id as string) ? ids.filter((other) => other !== id) : ids
+      )
+    }
+    window.addEventListener(FILES_FORGET_EVENT, onForget)
+    return () => window.removeEventListener(FILES_FORGET_EVENT, onForget)
+  }, [])
   const [shownTab, setShownTab] = useState<PanelTab | null>(null)
   const tabsOf = conversationId
   if (panel.open && panel.tab === 'files' && tabsOf && !filesOpen.includes(tabsOf)) {
@@ -262,13 +277,23 @@ export function usePanel(options: {
   )
 
   // Onglet Fichiers (fiche 271) : ⌘P (curseur dans le filtre), lien de fichier du fil (à la ligne).
+  // Une demande vaut pour une conversation et se consomme une fois traitée (C1) : elle ne se
+  // rejoue ni au retour sur l'onglet, ni dans une autre conversation.
   const [filesRequest, setFilesRequest] = useState<FilesRequest>()
+  const filesSeq = useRef(0)
   const openFiles = useCallback(
-    (request: Omit<FilesRequest, 'seq'> = {}) => {
-      setFilesRequest((current) => ({ ...request, seq: (current?.seq ?? 0) + 1 }))
+    (request: Omit<FilesRequest, 'seq' | 'conversationId'> = {}, forId?: string) => {
+      const target = forId ?? conversationId
+      if (!target) return
+      filesSeq.current += 1
+      setFilesRequest({ ...request, conversationId: target, seq: filesSeq.current })
       update({ open: true, tab: 'files' })
     },
-    [update]
+    [update, conversationId]
+  )
+  const filesRequestDone = useCallback(
+    (seq: number) => setFilesRequest((current) => (current?.seq === seq ? undefined : current)),
+    []
   )
 
   // Onglets du panneau (fiche 082) : les outils qui servent dans la conversation.
@@ -356,7 +381,7 @@ export function usePanel(options: {
       onOpen: select,
       onBrowse: (id: string) => {
         select(id)
-        openFiles()
+        openFiles({}, id)
       }
     }),
     /** Ce que l'onglet Fichiers reçoit : demande, liens, mention dans la saisie, diff d'un fichier. */
@@ -365,6 +390,7 @@ export function usePanel(options: {
       inbox: { mention: (paths: string[]) => void; focus: () => void }
     ) => ({
       request: filesRequest,
+      onRequestDone: filesRequestDone,
       openLink,
       onMention: (paths: string[]) => inbox.mention(paths),
       onFocusComposer: () => inbox.focus(),

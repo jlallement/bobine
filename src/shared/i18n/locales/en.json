@@ -2361,6 +2361,7 @@
     "excluded": "Hidden from the agent ({{name}})",
     "excludedPlain": "Hidden from the agent",
     "modified": "Changed in this conversation",
+    "special": "Special file (pipe, socket or device): it can't be opened here",
     "linkOutside": "Link outside the conversation's folders: not followed",
     "noFolder": "This conversation has no folder yet.",
     "folderMissing": "This folder no longer exists.",

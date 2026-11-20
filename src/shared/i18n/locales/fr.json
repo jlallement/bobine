@@ -2456,6 +2456,7 @@
     "excluded": "Invisible pour l’agent ({{name}})",
     "excludedPlain": "Invisible pour l’agent",
     "modified": "Modifié dans cette conversation",
+    "special": "Fichier spécial (tube, socket ou périphérique) : il ne s’ouvre pas ici",
     "linkOutside": "Lien vers l’extérieur des dossiers de la conversation : non suivi",
     "noFolder": "Cette conversation n’a pas encore de dossier.",
     "folderMissing": "Ce dossier n’existe plus.",

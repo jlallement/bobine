@@ -16,6 +16,11 @@ export interface FilesState {
   forward: FileTarget[]
   /** Défilement du fichier ouvert (px). */
   scroll?: number
+  /**
+   * Chemins des racines quand l'état a été retenu : une racine désignée par son rang qui a changé
+   * de chemin (dossier retiré, ajouté avant) ne fait pas ouvrir le fichier d'un autre dossier (M2).
+   */
+  roots?: string[]
 }
 
 export type TreeSide = 'auto' | 'left' | 'right'
@@ -53,6 +58,12 @@ export interface FilesPreferences {
 }
 
 const STATE_KEY = 'bobine.files'
+/** Conversations où l'onglet Fichiers est ouvert (`usePanel`). */
+export const FILES_OPEN_KEY = 'bobine.panel.filesOpen'
+/** Évènement d'une conversation supprimée, vers l'état de l'onglet tenu en mémoire (M9). */
+export const FILES_FORGET_EVENT = 'bobine:files-forget'
+/** Dossiers dépliés retenus, les plus récents (C4). */
+export const MAX_EXPANDED = 200
 const PREFS_KEY = 'bobine.files.preferences'
 /** Conversations dont on garde l'état (les plus récentes). */
 const MAX_CONVERSATIONS = 50
@@ -82,11 +93,42 @@ export function parseFilesState(value: unknown): FilesState {
   const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
   const list = (key: string) => (Array.isArray(v[key]) ? (v[key] as unknown[]) : [])
   return {
-    expanded: list('expanded').filter((k): k is string => typeof k === 'string'),
+    expanded: list('expanded')
+      .filter((k): k is string => typeof k === 'string')
+      .slice(-MAX_EXPANDED),
     ...(isTarget(v['open']) ? { open: v['open'] } : {}),
     back: list('back').filter(isTarget).slice(-MAX_HISTORY),
     forward: list('forward').filter(isTarget).slice(-MAX_HISTORY),
-    ...(typeof v['scroll'] === 'number' && v['scroll'] >= 0 ? { scroll: v['scroll'] } : {})
+    ...(typeof v['scroll'] === 'number' && v['scroll'] >= 0 ? { scroll: v['scroll'] } : {}),
+    ...(Array.isArray(v['roots']) && v['roots'].every((r) => typeof r === 'string')
+      ? { roots: v['roots'] as string[] }
+      : {})
+  }
+}
+
+/**
+ * L'état face aux racines actuelles de la conversation (M2) : ce qui désigne une racine dont le
+ * chemin a changé, ou qui n'existe plus, est oublié ; l'état est ensuite daté de ces racines.
+ */
+export function reconcileRoots(state: FilesState, roots: readonly string[]): FilesState {
+  const before = state.roots
+  if (before && before.length === roots.length && before.every((r, i) => r === roots[i])) {
+    return state
+  }
+  // Sans racines retenues (état d'avant) : rien ne permet d'en juger, l'état est gardé.
+  const kept = (root: number) => !before || before[root] === roots[root]
+  const keyKept = (key: string) => kept(Number(key.slice(0, key.indexOf(':'))))
+  const targetKept = (t: FileTarget) => kept(t.root) && t.root < roots.length
+  const { open, scroll, ...rest } = state
+  const stays = !!open && targetKept(open)
+  return {
+    ...rest,
+    expanded: state.expanded.filter(keyKept),
+    back: state.back.filter(targetKept),
+    forward: state.forward.filter(targetKept),
+    ...(stays ? { open } : {}),
+    ...(stays && scroll !== undefined ? { scroll } : {}),
+    roots: [...roots]
   }
 }
 
@@ -127,6 +169,27 @@ export function loadFilesPreferences(): FilesPreferences {
   } catch {
     return DEFAULT_FILES_PREFERENCES
   }
+}
+
+/**
+ * Conversation supprimée (M9) : son état et son onglet ouvert quittent le stockage ; l'onglet tenu
+ * en mémoire par le panneau l'apprend par `FILES_FORGET_EVENT`.
+ */
+export function forgetFilesState(conversationId: string): void {
+  try {
+    const others = Object.entries(readAll()).filter(([id]) => id !== conversationId)
+    localStorage.setItem(STATE_KEY, JSON.stringify(Object.fromEntries(others)))
+    const open = JSON.parse(localStorage.getItem(FILES_OPEN_KEY) ?? '[]') as unknown
+    if (Array.isArray(open)) {
+      localStorage.setItem(
+        FILES_OPEN_KEY,
+        JSON.stringify(open.filter((id) => id !== conversationId))
+      )
+    }
+  } catch {
+    // Stockage indisponible : rien n'y est retenu.
+  }
+  window.dispatchEvent(new CustomEvent(FILES_FORGET_EVENT, { detail: conversationId }))
 }
 
 export function saveFilesPreferences(preferences: FilesPreferences): void {
@@ -194,15 +257,24 @@ export function toggleDir(state: FilesState, key: string, open?: boolean): Files
   if (wanted === has) return state
   return {
     ...state,
-    expanded: wanted ? [...state.expanded, key] : state.expanded.filter((k) => k !== key)
+    expanded: wanted
+      ? [...state.expanded, key].slice(-MAX_EXPANDED)
+      : state.expanded.filter((k) => k !== key)
   }
+}
+
+/** Dossier disparu (son listage dit qu'il n'existe plus) : lui et ses sous-dossiers sont oubliés. */
+export function forgetDir(state: FilesState, key: string): FilesState {
+  const kept = state.expanded.filter((k) => k !== key && !k.startsWith(`${key}/`))
+  return kept.length === state.expanded.length ? state : { ...state, expanded: kept }
 }
 
 /** Déplie les dossiers parents d'un fichier (il se voit dans l'arbre, Q31). */
 export function revealIn(state: FilesState, root: number, dirs: readonly string[]): FilesState {
   const keys = [dirKey(root, ''), ...dirs.map((d) => dirKey(root, d))]
   const missing = keys.filter((k) => !state.expanded.includes(k))
-  return missing.length ? { ...state, expanded: [...state.expanded, ...missing] } : state
+  if (!missing.length) return state
+  return { ...state, expanded: [...state.expanded, ...missing].slice(-MAX_EXPANDED) }
 }
 
 /** Replie tout (Q32) ; la racine principale reste dépliée. */

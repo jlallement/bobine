@@ -29,6 +29,7 @@ import { reduceTranscript, type TranscriptState } from '@shared/transcript'
 import { t } from 'i18next'
 import { ipcErrorText } from './ipc-errors'
 import { forgetView } from './changes-view-memory'
+import { forgetFilesState } from './files-state'
 import { useBesideActions } from './beside-actions'
 
 /**
@@ -490,6 +491,8 @@ export function useConversations() {
     backupHistory: (): Promise<string | null> => window.api.app.backupHistory(),
     remove: (id: string, options: DeleteOptions = {}) => {
       forgetView(id)
+      // Onglet Fichiers (fiche 271, M9) : son état et son onglet ouvert ne survivent pas.
+      forgetFilesState(id)
       window.api.conversations
         .delete(id, options)
         .then(async (list) => showView(await window.api.conversations.view(list.activeId)))

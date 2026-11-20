@@ -8,9 +8,14 @@ export const FILTER_DELAY_MS = 80
 export interface FilterHit {
   root: number
   path: string
+  /** Invisible pour l'agent (fiche 155) : marqué comme dans l'arbre (M6). */
+  excluded?: true
 }
 
-export type SearchRoot = (root: number, query: string) => Promise<string[]>
+export type SearchRoot = (
+  root: number,
+  query: string
+) => Promise<{ path: string; excluded?: true }[]>
 
 /**
  * Filtre de l'onglet Fichiers (Q33) : une liste à plat, cherchée sur toutes les racines un instant
@@ -30,7 +35,7 @@ export function useFileFilter(roots: readonly FileRoot[] | null, search: SearchR
       void Promise.all(
         roots.map((root) =>
           search(root.index, wanted.query)
-            .then((paths) => paths.map((path) => ({ root: root.index, path })))
+            .then((found) => found.map((hit) => ({ ...hit, root: root.index })))
             .catch(() => [] as FilterHit[])
         )
       ).then((all) => {

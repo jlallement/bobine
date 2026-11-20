@@ -25,27 +25,42 @@ function str(value: unknown, name: string): string {
   return value
 }
 
-function openOptions(value: unknown): { line?: number; base?: string } {
+function openOptions(value: unknown): { line?: number; base?: string; root?: number } {
   const o = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
   const line = o['line']
+  const root = o['root']
+  if (root !== undefined && (typeof root !== 'number' || !Number.isInteger(root) || root < 0)) {
+    throw new Error('Paramètre invalide : root')
+  }
   return {
+    ...(typeof root === 'number' ? { root } : {}),
     ...(typeof line === 'number' && Number.isInteger(line) && line > 0 ? { line } : {}),
     ...(typeof o['base'] === 'string' && o['base'] ? { base: o['base'] } : {})
   }
 }
 
+/** Hors du dossier de la conversation, `base` ne compte pas : la ligne seule. */
+const lineOnly = (o: { line?: number }) => (o.line ? { line: o.line } : {})
+
 export function threadHandlers(
   deps: ThreadIpcDeps | undefined,
-  workspaceOf: (id: string) => string
+  workspaceOf: (id: string) => string,
+  /** Autres dossiers de la conversation (fiche 179), dans l'ordre de leur rang à partir de 1. */
+  directoriesOf: (id: string) => readonly string[] = () => []
 ): Pick<IpcHandlers, ThreadChannels> {
   return {
     'editors:list': () => (deps?.editors() ?? []).map(({ id, name }) => ({ id, name })),
-    'editors:open': (id, editorId, path, options) => {
-      const workspace = workspaceOf(str(id, 'id'))
+    'editors:open': async (id, editorId, path, options) => {
+      const conversation = str(id, 'id')
+      const { root, ...rest } = openOptions(options)
+      // Onglet Fichiers (C3) : un autre dossier de la conversation, désigné par son rang ; le
+      // chemin y est relatif et vérifié comme dans le dossier de la conversation.
+      const workspace = root ? directoriesOf(conversation)[root - 1] : workspaceOf(conversation)
+      if (!workspace) throw new Error('Paramètre invalide : root')
       const wanted = str(editorId, 'editorId')
       const editor = deps?.editors().find((e) => e.id === wanted)
       return openInEditor(
-        { workspace, path: str(path, 'path'), ...openOptions(options) },
+        { workspace, path: str(path, 'path'), ...(root ? lineOnly(rest) : rest) },
         editor,
         deps?.runEditor ?? (() => Promise.resolve())
       )

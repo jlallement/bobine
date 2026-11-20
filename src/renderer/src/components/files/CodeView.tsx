@@ -30,6 +30,11 @@ interface Draft {
   from: number
   to: number
   text: string
+  /**
+   * Code cité, figé quand les lignes sont choisies (C5) : un fichier relu pendant la saisie ne
+   * change pas ce que la remarque cite.
+   */
+  code: string
 }
 
 function newNoteId(): string {
@@ -129,10 +134,13 @@ export function CodeView({
 
   const range = (from: number, to: number) =>
     from === to ? t('diffNotes.line', { line: from }) : t('diffNotes.lines', { from, to })
+  const codeOf = (from: number, to: number) => raw.slice(from - 1, to).join('\n')
   const start = (at: number, extend: boolean) => {
     if (extend && draft && !draft.id) {
-      setDraft({ ...draft, from: Math.min(draft.from, at), to: Math.max(draft.to, at) })
-    } else setDraft({ from: at, to: at, text: '' })
+      const from = Math.min(draft.from, at)
+      const to = Math.max(draft.to, at)
+      setDraft({ ...draft, from, to, code: codeOf(from, to) })
+    } else setDraft({ from: at, to: at, text: '', code: codeOf(at, at) })
   }
   const save = () => {
     if (!notes || !draft || !draft.text.trim()) return
@@ -142,7 +150,7 @@ export function CodeView({
       side: 'new',
       from: draft.from,
       to: draft.to,
-      code: raw.slice(draft.from - 1, draft.to).join('\n'),
+      code: draft.code,
       comment: draft.text.trim()
     })
     setDraft(null)
@@ -236,7 +244,13 @@ export function CodeView({
               aria-label={t('diffNotes.edit')}
               title={t('diffNotes.edit')}
               onClick={() =>
-                setDraft({ id: p.note.id, from: p.note.from, to: p.note.to, text: p.note.comment })
+                setDraft({
+                  id: p.note.id,
+                  from: p.note.from,
+                  to: p.note.to,
+                  text: p.note.comment,
+                  code: p.note.code
+                })
               }
             >
               <Pencil size={13} />

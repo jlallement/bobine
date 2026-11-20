@@ -2,6 +2,7 @@ import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import {
   Check,
   ChevronsDownUp,
+  EyeOff,
   MessageSquare,
   MoreHorizontal,
   Search,
@@ -21,6 +22,7 @@ import { Tip } from '../common/Menus'
 import type { FileActions } from './FileActions'
 import { FileTree, type TreeRow } from './FileTree'
 import type { FilesTabModel } from './useFilesTab'
+import type { FilterHit } from './useFileFilter'
 
 /** Touches d'un raccourci du menu, telles qu'affichées. */
 export const shortcutKeys = (command: MenuCommand) =>
@@ -137,6 +139,7 @@ export function TreePane(props: {
           searching={search.searching}
           active={current}
           roots={model.roots ?? []}
+          exclusionFiles={model.exclusionFiles}
           onActive={(hit) => setActive(hits.indexOf(hit))}
           onOpen={open}
           onAct={act}
@@ -171,21 +174,27 @@ function FilterResults({
   searching,
   active,
   roots,
+  exclusionFiles,
   onActive,
   onOpen,
   onAct,
   onBack
 }: {
-  hits: { root: number; path: string }[] | null
+  hits: FilterHit[] | null
   searching: boolean
   active: { root: number; path: string } | undefined
   roots: readonly FileRoot[]
+  exclusionFiles: readonly string[]
   onActive: (hit: { root: number; path: string }) => void
   onOpen: (hit: { root: number; path: string }) => void
   onAct: (hit: { root: number; path: string }, event: KeyboardEvent) => void
   onBack: () => void
 }) {
   const { t } = useTranslation()
+  // Exclu pour l'agent : marqué comme dans l'arbre (M6).
+  const excluded = exclusionFiles.length
+    ? t('files.excluded', { name: exclusionFiles.join(', ') })
+    : t('files.excludedPlain')
   const move = (event: KeyboardEvent<HTMLButtonElement>, delta: number) => {
     event.preventDefault()
     const all = [
@@ -235,8 +244,16 @@ function FilterResults({
             }}
             data-testid="files-hit"
             data-path={hit.path}
+            {...(hit.excluded ? { 'aria-description': excluded } : {})}
           >
             <span className="files-hit-name">{name}</span>
+            {hit.excluded && (
+              <Tip label={excluded}>
+                <span className="file-row-mark" data-testid="files-hit-excluded">
+                  <EyeOff size={12} />
+                </span>
+              </Tip>
+            )}
             <span className="files-hit-dir">{[rootName, dir].filter(Boolean).join('/')}</span>
           </button>
         )

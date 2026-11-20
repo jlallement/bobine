@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { diffFeedback, type DiffNote } from '@shared/diff-notes'
-import { placeNotes } from './file-notes'
+import { fileNoteKey, placeNotes } from './file-notes'
 
 const note = (from: number, to: number, code: string): DiffNote => ({
   id: `n${from}`,
@@ -41,5 +41,12 @@ describe('diffFeedback', () => {
     const text = diffFeedback([note(2, 2, 'b')])
     expect(text).toContain('Remarques sur le code :')
     expect(text).toContain('src/app.ts, ligne 2')
+  })
+})
+
+describe('fileNoteKey (M2)', () => {
+  it('désigne la racine par son chemin : même rang, autre dossier, autre clé', () => {
+    expect(fileNoteKey('/p/lib', 'a.ts')).not.toBe(fileNoteKey('/p/docs', 'a.ts'))
+    expect(fileNoteKey('/p/lib', 'a.ts')).toBe(fileNoteKey('/p/lib', 'a.ts'))
   })
 })

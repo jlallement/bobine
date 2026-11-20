@@ -31,6 +31,8 @@ export interface FileEntry {
   executable?: true
   /** Lien symbolique : `outside` s'il mène hors des dossiers de la conversation (jamais suivi). */
   link?: 'inside' | 'outside'
+  /** Ni fichier ni dossier (FIFO, socket, périphérique) : montré grisé, jamais ouvert (B1). */
+  special?: true
 }
 
 /** Contenu d'un dossier, un niveau. */
@@ -66,6 +68,8 @@ export type FileContent =
       executable?: true
     }
   | { kind: 'binary'; size: number; modified: number; executable?: true }
+  /** Relecture : le fichier n'a pas changé depuis la version que le renderer a déjà (C4). */
+  | { kind: 'unchanged'; size: number; modified: number }
 
 /** Un fichier désigné dans la vue (racine, chemin relatif), et la ligne à montrer. */
 export interface FileTarget {

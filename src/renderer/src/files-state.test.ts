@@ -6,7 +6,12 @@ import {
   collapseAll,
   dirKey,
   EMPTY_FILES_STATE,
+  forgetDir,
+  forgetFilesState,
+  FILES_OPEN_KEY,
   loadFilesPreferences,
+  MAX_EXPANDED,
+  reconcileRoots,
   loadFilesState,
   openFile,
   parseFilesState,
@@ -61,6 +66,79 @@ describe('dossiers dépliés', () => {
     s = revealIn(s, 0, ['src', 'src/ui'])
     expect(s.expanded).toEqual(['0:', '0:src', '0:src/ui'])
     expect(collapseAll(s).expanded).toEqual(['0:'])
+  })
+})
+
+describe('borne et purge des dossiers dépliés (C4)', () => {
+  it('garde les plus récents, au plus `MAX_EXPANDED`', () => {
+    let s = EMPTY_FILES_STATE
+    for (let i = 0; i < MAX_EXPANDED + 20; i++) s = toggleDir(s, dirKey(0, `d${i}`), true)
+    expect(s.expanded).toHaveLength(MAX_EXPANDED)
+    expect(s.expanded.at(-1)).toBe(dirKey(0, `d${MAX_EXPANDED + 19}`))
+    s = revealIn(s, 1, ['x', 'x/y'])
+    expect(s.expanded).toHaveLength(MAX_EXPANDED)
+    expect(s.expanded.slice(-3)).toEqual(['1:', '1:x', '1:x/y'])
+  })
+
+  it('un dossier disparu est oublié, avec ses sous-dossiers', () => {
+    const s = { ...EMPTY_FILES_STATE, expanded: ['0:', '0:a', '0:a/b', '0:ab', '1:a'] }
+    expect(forgetDir(s, '0:a').expanded).toEqual(['0:', '0:ab', '1:a'])
+    expect(forgetDir(s, '0:zz')).toBe(s)
+  })
+
+  it('relu du stockage : borné aussi', () => {
+    const expanded = Array.from({ length: MAX_EXPANDED + 5 }, (_, i) => `0:d${i}`)
+    expect(parseFilesState({ expanded }).expanded).toHaveLength(MAX_EXPANDED)
+  })
+})
+
+describe('racines désignées par leur rang (M2)', () => {
+  const saved = {
+    expanded: ['0:', '0:src', '1:', '1:lib', '2:x'],
+    open: { root: 1, path: 'lib/a.ts' },
+    back: [a, c],
+    forward: [{ root: 2, path: 'y' }],
+    scroll: 40,
+    roots: ['/p/app', '/p/lib', '/p/docs']
+  }
+
+  it('mêmes racines : rien ne change', () => {
+    const s = parseFilesState(saved)
+    expect(reconcileRoots(s, ['/p/app', '/p/lib', '/p/docs'])).toBe(s)
+  })
+
+  it('une racine a changé de chemin (ou disparu) : ce qui la désigne est oublié', () => {
+    const s = reconcileRoots(parseFilesState(saved), ['/p/app', '/p/autre'])
+    expect(s.expanded).toEqual(['0:', '0:src'])
+    expect(s.open).toBeUndefined()
+    expect(s.scroll).toBeUndefined()
+    expect(s.back).toEqual([a])
+    expect(s.forward).toEqual([])
+    expect(s.roots).toEqual(['/p/app', '/p/autre'])
+  })
+
+  it('état d’avant cette correction (sans racines) : retenu, puis daté des racines actuelles', () => {
+    const { roots: _roots, ...old } = saved
+    const s = reconcileRoots(parseFilesState(old), ['/p/app', '/p/lib', '/p/docs'])
+    expect(s.open).toEqual({ root: 1, path: 'lib/a.ts' })
+    expect(s.roots).toEqual(['/p/app', '/p/lib', '/p/docs'])
+  })
+})
+
+describe('conversation supprimée (M9)', () => {
+  it('son état et son onglet ouvert sont purgés, les autres gardés', () => {
+    saveFilesState('c1', openFile(EMPTY_FILES_STATE, a))
+    saveFilesState('c2', openFile(EMPTY_FILES_STATE, b))
+    localStorage.setItem(FILES_OPEN_KEY, JSON.stringify(['c1', 'c2']))
+    const heard: string[] = []
+    const listener = (event: Event) => heard.push(String((event as CustomEvent).detail))
+    window.addEventListener('bobine:files-forget', listener)
+    forgetFilesState('c1')
+    window.removeEventListener('bobine:files-forget', listener)
+    expect(loadFilesState('c1')).toEqual(EMPTY_FILES_STATE)
+    expect(loadFilesState('c2').open).toEqual(b)
+    expect(JSON.parse(localStorage.getItem(FILES_OPEN_KEY) ?? '[]')).toEqual(['c2'])
+    expect(heard).toEqual(['c1'])
   })
 })
 

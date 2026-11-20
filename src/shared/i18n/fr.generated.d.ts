@@ -2413,6 +2413,7 @@ export type FrResources = {
     readonly excluded: 'Invisible pour l’agent ({{name}})'
     readonly excludedPlain: 'Invisible pour l’agent'
     readonly modified: 'Modifié dans cette conversation'
+    readonly special: 'Fichier spécial (tube, socket ou périphérique) : il ne s’ouvre pas ici'
     readonly linkOutside: 'Lien vers l’extérieur des dossiers de la conversation : non suivi'
     readonly noFolder: 'Cette conversation n’a pas encore de dossier.'
     readonly folderMissing: 'Ce dossier n’existe plus.'

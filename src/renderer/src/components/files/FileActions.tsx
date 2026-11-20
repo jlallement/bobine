@@ -16,6 +16,8 @@ export interface FileItem {
   kind: 'dir' | 'file'
   /** S'exécuterait si on l'ouvrait : pas d'« Ouvrir avec l'app par défaut ». */
   executable?: boolean | undefined
+  /** FIFO, socket, périphérique : rien ne l'ouvre (B1). */
+  special?: boolean | undefined
 }
 
 /** Ce que l'onglet sait faire d'un fichier (Q50) ; les avis passent par `notify`. */
@@ -65,10 +67,12 @@ export function useFileActions(options: {
       ...(editor
         ? {
             editorName: editor.name,
+            // Jamais un chemin absolu : la racine par son rang, le main la vérifie (C3).
             openInEditor: (item: FileItem, line?: number) =>
-              item.root === 0
-                ? editor.open(item.path || '.', line ? { line } : {})
-                : editor.open(absolute(item), line ? { line } : {})
+              editor.open(item.path || '.', {
+                ...(item.root ? { root: item.root } : {}),
+                ...(line ? { line } : {})
+              })
           }
         : {}),
       openDefault: (item: FileItem) =>
@@ -120,9 +124,12 @@ export function FileActionItems({
   )
   const { openInEditor, mention, showDiff } = actions
   const file = item.kind === 'file'
+  // FIFO, socket, périphérique : ni éditeur, ni app, ni mention ; le Finder et le chemin restent.
+  const opens = !item.special
   return (
     <>
-      {openInEditor &&
+      {opens &&
+        openInEditor &&
         actions.editorName &&
         entry(
           t('editor.open', { editor: actions.editorName }),
@@ -131,10 +138,14 @@ export function FileActionItems({
         )}
       {/* Un exécutable ne s'ouvre jamais avec l'app par défaut (fiche 052, point 14). */}
       {file &&
+        opens &&
         !item.executable &&
         entry(t('files.openDefault'), () => actions.openDefault(item), 'file-action-default')}
       {entry(t('files.reveal'), () => actions.reveal(item), 'file-action-reveal')}
-      {mention && file && entry(t('files.mention'), () => mention(item), 'file-action-mention')}
+      {mention &&
+        file &&
+        opens &&
+        entry(t('files.mention'), () => mention(item), 'file-action-mention')}
       {onCollapse && entry(t('files.collapse'), onCollapse, 'file-action-collapse')}
       <Dropdown.Separator className="menu-separator" />
       {entry(t('files.copyRelative'), () => actions.copyRelative(item), 'file-action-copy')}

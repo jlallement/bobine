@@ -32,6 +32,8 @@ interface Props {
   items: TranscriptItem[]
   maximized: boolean
   request?: FilesRequest | undefined
+  /** Demande traitée : elle ne se rejoue plus (C1). */
+  onRequestDone?: ((seq: number) => void) | undefined
   /** Liens d'un Markdown, page HTML : comme les liens du fil. */
   openLink: OpenFileLink
   onSendNotes?: ((text: string, about?: string) => void) | undefined
@@ -98,8 +100,19 @@ function useElementWidth(element: RefObject<HTMLElement | null>): number {
 export function FilesTab(props: Props) {
   const { conversationId, items, maximized, request } = props
   const { t } = useTranslation()
-  const model = useFilesTab(conversationId, items)
-  const { state, roots, preferences } = model
+  const filter = useRef<HTMLInputElement>(null)
+  const focusFilter = useCallback(() => {
+    requestAnimationFrame(() => {
+      filter.current?.focus()
+      filter.current?.select()
+    })
+  }, [])
+  const model = useFilesTab(conversationId, items, {
+    request,
+    onRequestDone: props.onRequestDone,
+    onFocusFilter: focusFilter
+  })
+  const { state, roots, preferences, view: narrowView, setView: setNarrowView } = model
   const [notice, setNotice] = useState<string | null>(null)
   const changed = useMemo(() => changedPaths(items, roots?.[0]), [items, roots])
   const actions = useFileActions({
@@ -110,34 +123,12 @@ export function FilesTab(props: Props) {
     ...(props.onShowDiff ? { onShowDiff: props.onShowDiff } : {}),
     changed
   })
-  // Panneau étroit : l'arbre ou le fichier ouvert (Q18).
-  const [narrowView, setNarrowView] = useState<'tree' | 'file'>(state.open ? 'file' : 'tree')
-  const filter = useRef<HTMLInputElement>(null)
   const box = useRef<HTMLDivElement>(null)
   const width = useElementWidth(box)
   const sideBySide = maximized && preferences.tree && !!state.open && width >= SIDE_BY_SIDE_MIN
   const showTree = sideBySide || !state.open || narrowView === 'tree'
   const showFile = !!state.open && (sideBySide || narrowView === 'file')
 
-  // Demandes : ⌘P (curseur dans le filtre), lien du fil (fichier à la ligne).
-  // Ajustement pendant le rendu : la vue suit la demande ; le curseur va au filtre ensuite.
-  const [seenRequest, setSeenRequest] = useState(0)
-  if (request && request.seq !== seenRequest) {
-    setSeenRequest(request.seq)
-    if (request.target) {
-      model.show(request.target)
-      setNarrowView('file')
-    } else if (request.focusFilter) setNarrowView('tree')
-  }
-  const focusSeq = request?.focusFilter ? request.seq : 0
-  useEffect(() => {
-    if (!focusSeq) return
-    const frame = requestAnimationFrame(() => {
-      filter.current?.focus()
-      filter.current?.select()
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [focusSeq])
   // Titre de l'onglet : le fichier ouvert (Q9).
   const { onTitle } = props
   const openPath = state.open ? `${state.open.root}:${state.open.path}` : ''
@@ -147,7 +138,7 @@ export function FilesTab(props: Props) {
   const close = useCallback(() => {
     model.close()
     setNarrowView('tree')
-  }, [model])
+  }, [model, setNarrowView])
   useEffect(() => {
     if (!closeRef) return
     closeRef.current = () => {
@@ -163,7 +154,7 @@ export function FilesTab(props: Props) {
   const toggleTree = useCallback(() => {
     if (maximized) model.setPreferences({ tree: !preferences.tree })
     else setNarrowView((view) => (view === 'tree' && state.open ? 'file' : 'tree'))
-  }, [maximized, model, preferences.tree, state.open])
+  }, [maximized, model, preferences.tree, state.open, setNarrowView])
   useEffect(() => {
     const onToggle = () => toggleTree()
     window.addEventListener(TOGGLE_TREE_EVENT, onToggle)
@@ -197,7 +188,8 @@ export function FilesTab(props: Props) {
   const expanded = new Set([dirKey(0, ''), ...state.expanded])
   const rows = roots ? treeRows(roots, model.listings, expanded) : []
   const target = state.open
-  const fileKey = target ? fileNoteKey(target.root, target.path) : ''
+  const rootPath = target ? roots?.[target.root]?.path : undefined
+  const fileKey = target && rootPath ? fileNoteKey(rootPath, target.path) : ''
   const fileNotes = diffNotes.notes.filter((n) => n.view === 'file' && n.file === fileKey)
   // Remarque sur un autre dossier (fiche 179) : son chemin absolu, l'agent le connaît ainsi.
   const notePath = target ? (target.root === 0 ? target.path : actions.absolute(target)) : ''

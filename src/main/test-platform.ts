@@ -97,3 +97,15 @@ export function fakeProgram(
   writeFileSync(file, `@"${process.execPath}" "%~dp0${name}.js" %*\r\n`)
   return file
 }
+
+/**
+ * Tubes nommés du système de fichiers (`mkfifo`) : Windows n'en a pas dans un dossier (ses tubes
+ * nommés vivent sous `\\.\pipe\`), un FIFO ne peut donc pas s'y trouver parmi les fichiers.
+ */
+export const FIFOS = !ON_WINDOWS
+
+/**
+ * Noms de fichiers recomposés par git (`core.precomposeUnicode`, macOS seulement) : un nom écrit en
+ * NFD sur le disque y est le même fichier qu'en NFC. Ailleurs, ce sont deux noms distincts.
+ */
+export const PRECOMPOSED_NAMES = process.platform === 'darwin'

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { MarkdownDocument } from '@shared/file-links'
 import type { PanelTab } from '@shared/panel'
 import type { TranscriptItem } from '@shared/transcript'
+import { forgetFilesState } from './files-state'
 import { usePanel } from './usePanel'
 
 interface Props {
@@ -274,5 +275,42 @@ describe('ouverture d’office sur « Session » (fiche 166)', () => {
     const { result, rerender } = setup()
     rerender({ ...initialProps, conversationId: 'c2', autoOpen: eligible })
     expect(result.current).toMatchObject({ open: true, tab: 'browser' })
+  })
+})
+
+describe('onglet Fichiers : demandes et purge (fiche 271)', () => {
+  const inbox = { mention: () => {}, focus: () => {} }
+  const link = () => {}
+
+  it('une demande porte sa conversation, et se consomme une fois traitée (C1)', () => {
+    const { result, run } = setup()
+    run(() => result.current.filesCommands.files())
+    expect(result.current.filesRequest).toMatchObject({ conversationId: 'c1', focusFilter: true })
+    // « Parcourir les fichiers » d'un travail délégué : la demande est pour sa conversation.
+    run(() => result.current.childLinks(() => {}).onBrowse('c2'))
+    const request = result.current.filesRequest
+    expect(request).toMatchObject({ conversationId: 'c2' })
+    run(() => result.current.filesTab(link, inbox).onRequestDone(request?.seq ?? -1))
+    expect(result.current.filesRequest).toBeUndefined()
+  })
+
+  it('une demande traitée n’efface pas une demande plus récente', () => {
+    const { result, run } = setup()
+    run(() => result.current.openFiles({ target: { root: 0, path: 'a.ts' } }))
+    const first = result.current.filesRequest?.seq ?? -1
+    run(() => result.current.openFiles({ target: { root: 0, path: 'b.ts' } }))
+    run(() => result.current.filesTab(link, inbox).onRequestDone(first))
+    expect(result.current.filesRequest).toMatchObject({ target: { path: 'b.ts' } })
+  })
+
+  it('conversation supprimée : son onglet Fichiers n’est plus retenu (M9)', () => {
+    const { result, run, rerender } = setup()
+    run(() => result.current.update({ open: true, tab: 'files' }))
+    run(() => result.current.update({ tab: 'session' }))
+    // c1 supprimée, l'app passe à c2, qui ouvre son onglet : la liste réécrite n'a pas gardé c1.
+    rerender({ ...initialProps, conversationId: 'c2' })
+    run(() => forgetFilesState('c1'))
+    run(() => result.current.update({ tab: 'files' }))
+    expect(JSON.parse(localStorage.getItem('bobine.panel.filesOpen') ?? '[]')).toEqual(['c2'])
   })
 })

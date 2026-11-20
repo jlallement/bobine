@@ -56,15 +56,26 @@ describe('liens de fichiers du fil (fiche 052)', () => {
     open.mockResolvedValue({
       kind: 'file',
       path: '/p/src/app.ts',
+      root: 0,
       relative: 'src/app.ts',
       line: 12
     })
     const { result, panel } = setup()
     act(() => result.current.openActiveLink('src/app.ts:12', reveal))
     await waitFor(() =>
-      expect(panel.openFiles).toHaveBeenCalledWith({
-        target: { root: 0, path: 'src/app.ts', line: 12 }
-      })
+      expect(panel.openFiles).toHaveBeenCalledWith(
+        { target: { root: 0, path: 'src/app.ts', line: 12 } },
+        'c1'
+      )
+    )
+  })
+
+  it('un fichier d’un autre dossier : sa racine, et la demande porte la conversation (M10, C1)', async () => {
+    open.mockResolvedValue({ kind: 'file', path: '/lib/b.ts', root: 1, relative: 'b.ts' })
+    const { result, panel } = setup()
+    act(() => result.current.openActiveLink('/lib/b.ts', reveal))
+    await waitFor(() =>
+      expect(panel.openFiles).toHaveBeenCalledWith({ target: { root: 1, path: 'b.ts' } }, 'c1')
     )
   })
 

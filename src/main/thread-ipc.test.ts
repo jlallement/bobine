@@ -20,7 +20,7 @@ const PNG =
 let dir = ''
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
-function setup() {
+function setup(directories: string[] = []) {
   dir = realpathSync(mkdtempSync(join(tmpdir(), 'bobine-fil-')))
   writeFileSync(join(dir, 'a.ts'), 'x')
   const deps: ThreadIpcDeps = {
@@ -31,7 +31,14 @@ function setup() {
     dragImage: vi.fn(async () => {}),
     writeOutput: vi.fn(async () => '/app/tool-outputs/sortie-1.txt')
   }
-  return { deps, handlers: threadHandlers(deps, () => dir) }
+  return {
+    deps,
+    handlers: threadHandlers(
+      deps,
+      () => dir,
+      () => directories
+    )
+  }
 }
 
 describe('threadHandlers (fiche 156)', () => {
@@ -47,6 +54,29 @@ describe('threadHandlers (fiche 156)', () => {
     await handlers['editors:open']('c1', 'zed', 'a.ts', { line: 9 })
     expect(deps.runEditor).toHaveBeenNthCalledWith(1, 'zed', [join(dir, 'a.ts')])
     expect(deps.runEditor).toHaveBeenNthCalledWith(2, 'zed', [`${join(dir, 'a.ts')}:9`])
+  })
+
+  it('un fichier d’un autre dossier de la conversation : par son rang, vérifié (C3)', async () => {
+    const lib = realpathSync(mkdtempSync(join(tmpdir(), 'bobine-lib-')))
+    try {
+      writeFileSync(join(lib, 'b.ts'), 'x')
+      const { deps, handlers } = setup([lib])
+      expect(await handlers['editors:open']('c1', 'zed', 'b.ts', { root: 1, line: 2 })).toEqual({
+        kind: 'opened',
+        path: join(lib, 'b.ts')
+      })
+      expect(deps.runEditor).toHaveBeenCalledWith('zed', [`${join(lib, 'b.ts')}:2`])
+      // Jamais hors de ce dossier, jamais un rang inconnu.
+      expect(await handlers['editors:open']('c1', 'zed', '../a.ts', { root: 1 })).toMatchObject({
+        kind: 'outside'
+      })
+      await expect(handlers['editors:open']('c1', 'zed', 'b.ts', { root: 2 })).rejects.toThrow()
+      await expect(
+        handlers['editors:open']('c1', 'zed', 'b.ts', { root: -1 } as never)
+      ).rejects.toThrow()
+    } finally {
+      rmSync(lib, { recursive: true, force: true })
+    }
   })
 
   it('sortie trop grosse (fiche 192) : écrite par l’app, ouverte dans l’éditeur installé', async () => {

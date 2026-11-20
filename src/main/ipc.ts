@@ -529,7 +529,11 @@ export function createHandlers(
     ...scheduleHandlers(deps.scheduler),
     ...profileHandlers(deps.profile),
     ...handoverHandlers(c, () => deps.providers?.list() ?? []),
-    ...threadHandlers(deps.thread, (id) => c.workspaceOf(id)),
+    ...threadHandlers(
+      deps.thread,
+      (id) => c.workspaceOf(id),
+      (id) => c.view(id, true).summary.additionalDirectories ?? []
+    ),
     ...mcpHandlers(deps.mcp, c, settings),
     ...approvalRulesHandlers(deps.approvalRules, deps.changes.openPath),
     ...providersHandlers(deps.providers, deps.network, () =>
@@ -779,7 +783,9 @@ export function createHandlers(
         str(href, 'href'),
         {
           ...(typeof o.base === 'string' ? { base: o.base } : {}),
-          ...(o.reveal === true ? { reveal: true } : {})
+          ...(o.reveal === true ? { reveal: true } : {}),
+          // Autres dossiers de la conversation (fiche 179) : leurs fichiers aussi dans l'onglet.
+          roots: c.view(conversationId, true).summary.additionalDirectories ?? []
         },
         {
           openPath: deps.changes.openPath,

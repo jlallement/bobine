@@ -8,8 +8,11 @@ import type { LinkNotices } from './useFileLinks'
 export interface EditorAction {
   /** Nom de l'éditeur (« VS Code »). */
   name: string
-  /** Ouvre `path` (relatif au dossier, ou à `base`) à `line`. */
-  open: (path: string, options?: { line?: number; base?: string }) => void
+  /**
+   * Ouvre `path` (relatif au dossier, ou à `base`) à `line` ; `root` : relatif à l'autre dossier de
+   * la conversation de ce rang (onglet Fichiers), vérifié par le main.
+   */
+  open: (path: string, options?: { line?: number; base?: string; root?: number }) => void
   /** Ouvre un texte (sortie d'outil trop grosse pour le fil, fiche 192). */
   openText?: (text: string) => void
 }

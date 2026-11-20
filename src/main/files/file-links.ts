@@ -167,11 +167,14 @@ export async function real(path: string): Promise<string> {
   }
 }
 
-/** Ce qu'il advient d'un clic sur `href`, relatif à `base` (un dossier du dossier de travail). */
+/**
+ * Ce qu'il advient d'un clic sur `href`, relatif à `base` (un dossier de la conversation : le sien
+ * ou l'un de ses autres dossiers, `roots`, fiche 179).
+ */
 export async function openFileLink(
   workspace: string,
   href: string,
-  options: { base?: string; reveal?: boolean },
+  options: { base?: string; reveal?: boolean; roots?: readonly string[] },
   openers: FileOpeners
 ): Promise<FileLinkOutcome> {
   // Chemins Windows lus comme des fichiers seulement là où ils en sont (capacité, fiche 229).
@@ -180,8 +183,10 @@ export async function openFileLink(
   })
   if (!link) throw new Error(t('fileLink.invalid', { href }))
   const root = await real(workspace)
+  const all = [root, ...(await Promise.all((options.roots ?? []).map((r) => real(r))))]
   const base = options.base ? await real(options.base) : root
-  const from = inside(root, base) ? base : root
+  // Le lien d'un document d'un autre dossier se lit dans ce dossier (C6) ; ailleurs, jamais.
+  const from = all.some((r) => inside(r, base)) ? base : root
   const target = resolve(from, link.path)
   const info = await stat(target).catch(() => null)
   if (!info) return { kind: 'missing', path: target }
@@ -193,17 +198,25 @@ export async function openFileLink(
   if (info.isDirectory()) return reveal('folder')
   // Chemin réel : un lien symbolique du dossier ne mène pas au-dehors en douce.
   const targetReal = await real(target)
-  if (!inside(root, targetReal)) return reveal('outside')
-  // Texte, code, Markdown, image : dans l'onglet Fichiers, à la ligne (fiche 271, Q11). Un script
-  // s'y lit sans jamais s'exécuter ; HTML, PDF, bureautique, médias gardent leur chemin.
+  // Dossier de la conversation d'abord, puis ses autres dossiers (le plus précis s'ils s'emboîtent).
+  const rank = inside(root, targetReal) ? 0 : all.findIndex((r) => inside(r, targetReal))
+  if (rank < 0) return reveal('outside')
+  // Texte, code, Markdown, image : dans l'onglet Fichiers, à la ligne (fiche 271, Q11), y compris
+  // depuis un autre dossier de la conversation (M10). Un script s'y lit sans jamais s'exécuter ;
+  // HTML, PDF, bureautique, médias gardent leur chemin.
   if (openers.showFile && !isHtmlPath(target) && !opensElsewhere(target)) {
     return {
       kind: 'file',
       path: target,
-      relative: relative(root, targetReal).split(sep).join('/'),
+      root: rank,
+      relative: relative(all[rank] as string, targetReal)
+        .split(sep)
+        .join('/'),
       ...(link.line ? { line: link.line } : {})
     }
   }
+  // Le reste ne s'ouvre que depuis le dossier de la conversation, comme avant.
+  if (rank > 0) return reveal('outside')
   if (isMarkdownPath(target)) return { kind: 'preview', document: await readMarkdown(root, target) }
   if (isHtmlPath(target) && openers.previewHtml) {
     return {

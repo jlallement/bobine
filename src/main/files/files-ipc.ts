@@ -3,6 +3,8 @@
  * une racine (son rang) et un chemin relatif ; le main en déduit les dossiers, vérifie le chemin et
  * lit. Aucun canal n'écrit. Sortis d'`ipc.ts` pour tenir son plafond de lignes.
  */
+import { stat } from 'node:fs/promises'
+import { t } from 'i18next'
 import type { IpcHandlers } from '@shared/ipc'
 import type { FileRoot } from '@shared/files'
 import { exclusionsFor } from '../agent-config/exclusions'
@@ -20,6 +22,17 @@ const SEARCH_LIMIT = 50
 function str(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new Error(`Paramètre invalide : ${name}`)
   return value
+}
+
+/** Version déjà affichée d'un fichier (`files:read`), vérifiée. */
+function knownVersion(value: unknown): { modified: number; size: number } | undefined {
+  if (value === undefined) return undefined
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  const { modified, size } = v
+  if (typeof modified !== 'number' || typeof size !== 'number') {
+    throw new Error('Paramètre invalide : known')
+  }
+  return { modified, size }
 }
 
 function index(value: unknown): number {
@@ -45,15 +58,14 @@ export function filesHandlers(
     if (!chosen) throw new Error('Paramètre invalide : root')
     return { root: chosen, paths: roots.map((r) => r.path) }
   }
+  /** Exclusions de l'agent (fiche 155) : connues pour le dossier de la conversation seulement. */
+  const exclusionsOf = (id: unknown, chosen: FileRoot) =>
+    chosen.index === 0 ? exclusionsFor(c.profileOf(String(id))?.exclusions, chosen.path) : undefined
   return {
     'files:roots': async (id) => rootsOf(id),
     'files:list': async (id, root, dir) => {
       const { root: chosen, paths } = rootOf(id, root)
-      // Exclusions de l'agent (fiche 155) : connues pour le dossier de la conversation seulement.
-      const exclusions =
-        chosen.index === 0
-          ? exclusionsFor(c.profileOf(String(id))?.exclusions, chosen.path)
-          : undefined
+      const exclusions = exclusionsOf(id, chosen)
       return listDirectory({
         root: chosen.path,
         dir: str(dir, 'dir'),
@@ -64,15 +76,23 @@ export function filesHandlers(
           : {})
       })
     },
-    'files:read': async (id, root, path) => {
+    'files:read': async (id, root, path, known) => {
       const { root: chosen, paths } = rootOf(id, root)
-      return readFileForView(chosen.path, str(path, 'path'), paths)
+      return readFileForView(chosen.path, str(path, 'path'), paths, knownVersion(known))
     },
     'files:search': async (id, root, query) => {
       if (typeof query !== 'string' || query.length > 200) throw new Error('Recherche invalide')
       const { root: chosen } = rootOf(id, root)
       const found = await searchWorkspaceFiles(chosen.path, query, SEARCH_LIMIT)
-      return found.map((file) => file.relative)
+      // Exclus pour l'agent : montrés, marqués comme dans l'arbre (M6).
+      const isExcluded = exclusionsOf(id, chosen)?.isExcluded
+      return Promise.all(
+        found.map(async (file) =>
+          (await isExcluded?.(file.path))
+            ? { path: file.relative, excluded: true as const }
+            : { path: file.relative }
+        )
+      )
     },
     'files:reveal': async (id, root, path) => {
       const { root: chosen, paths } = rootOf(id, root)
@@ -81,7 +101,12 @@ export function filesHandlers(
     },
     'files:open': async (id, root, path) => {
       const { root: chosen, paths } = rootOf(id, root)
-      await resolveInRoot(chosen.path, str(path, 'path'), paths)
+      const target = await resolveInRoot(chosen.path, str(path, 'path'), paths)
+      // FIFO, socket, périphérique : jamais confiés à une app (B1).
+      const info = await stat(target)
+      if (!info.isFile() && !info.isDirectory()) {
+        throw new Error(t('files.error.notFile', { path: String(path) }))
+      }
       // Mêmes garde-fous que « Ouvrir » des Modifications : un exécutable n'est que montré.
       return openWorkspaceFile(chosen.path, str(path, 'path'), openers)
     }

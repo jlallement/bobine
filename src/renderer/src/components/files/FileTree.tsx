@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, EyeOff, Folder } from 'lucide-react'
+import { Ban, ChevronDown, ChevronRight, EyeOff, Folder } from 'lucide-react'
 import {
   useEffect,
   useRef,
@@ -22,7 +22,7 @@ import {
 } from './FileActions'
 import { EntryIcon } from './file-icons'
 import type { Listing } from './useFilesTab'
-import { FILE_DRAG_TYPE } from '../../useFileDrop'
+import { endTreeDrag, FILE_DRAG_TYPE, startTreeDrag } from '../../useFileDrop'
 
 /** Une ligne affichée de l'arbre. */
 export type TreeRow =
@@ -108,7 +108,8 @@ function itemOf(row: Exclude<TreeRow, { kind: 'note' }>): FileItem {
     root: row.root,
     path: row.entry.path,
     kind: row.entry.kind,
-    executable: row.entry.executable === true
+    executable: row.entry.executable === true,
+    special: row.entry.special === true
   }
 }
 
@@ -151,7 +152,8 @@ export function FileTree(props: Props) {
   const activate = (row: TreeRow) => {
     if (row.kind === 'root') onToggle(row.root.index, '', !row.open)
     else if (row.kind === 'entry') {
-      if (row.entry.link === 'outside') return
+      // Lien qui sort, FIFO, socket, périphérique : jamais ouvert (B1).
+      if (row.entry.link === 'outside' || row.entry.special) return
       if (row.entry.kind === 'dir') onToggle(row.root, row.entry.path)
       else onOpen(row.root, row.entry.path)
     }
@@ -210,7 +212,7 @@ export function FileTree(props: Props) {
     run()
   }
   const onDragStart = (event: DragEvent<HTMLDivElement>, root: number, path: string) => {
-    event.dataTransfer.setData(FILE_DRAG_TYPE, actions.absolute({ root, path }))
+    event.dataTransfer.setData(FILE_DRAG_TYPE, startTreeDrag(actions.absolute({ root, path })))
     event.dataTransfer.setData('text/plain', path)
     event.dataTransfer.effectAllowed = 'copy'
   }
@@ -297,6 +299,29 @@ function TreeNote({ row }: { row: Extract<TreeRow, { kind: 'note' }> }) {
 }
 
 /** Une ligne de dossier, de fichier ou de racine. */
+/** Marques d'une ligne : fichier spécial (B1), exclu pour l'agent (fiche 155). */
+function RowMarks({ special, excluded }: { special: boolean; excluded: string | undefined }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      {special && (
+        <Tip label={t('files.special')}>
+          <span className="file-row-mark" data-testid="file-row-special">
+            <Ban size={12} />
+          </span>
+        </Tip>
+      )}
+      {excluded && (
+        <Tip label={excluded}>
+          <span className="file-row-mark" data-testid="file-row-excluded">
+            <EyeOff size={12} />
+          </span>
+        </Tip>
+      )}
+    </>
+  )
+}
+
 function FileRow({
   row,
   selected,
@@ -327,6 +352,7 @@ function FileRow({
   const root = row.kind === 'root' ? row.root.index : row.root
   const isDir = !entry || entry.kind === 'dir'
   const outside = entry?.link === 'outside'
+  const special = entry?.special === true
   // Fichier modifié par la conversation ; dossier replié qui en contient (Q6).
   const marked = root === 0 && changed.has(path) && !!entry && (!isDir || !row.open)
   const excluded = exclusionFiles.length
@@ -338,12 +364,14 @@ function FileRow({
     entry?.ignored ? t('files.ignored') : '',
     entry?.excluded ? excluded : '',
     outside ? t('files.linkOutside') : '',
+    special ? t('files.special') : '',
     marked ? t('files.modified') : ''
   ]
   const classes = [
     'file-row',
     entry?.ignored ? 'ignored' : '',
     outside ? 'outside' : '',
+    special ? 'special' : '',
     selected ? 'selected' : '',
     row.kind === 'root' ? 'root' : ''
   ]
@@ -363,8 +391,9 @@ function FileRow({
       onClick={onActivate}
       onFocus={onFocus}
       onContextMenu={onContextMenu}
-      draggable={!isDir && !outside}
+      draggable={!isDir && !outside && !special}
       onDragStart={(event) => onDragStart(event, root, path)}
+      onDragEnd={endTreeDrag}
     >
       <span className="file-row-chevron">
         {isDir && !outside && (row.open ? <ChevronDown size={13} /> : <ChevronRight size={13} />)}
@@ -373,13 +402,7 @@ function FileRow({
         {entry ? <EntryIcon entry={entry} open={row.open} /> : <Folder size={14} />}
       </span>
       <span className="file-row-name">{name}</span>
-      {entry?.excluded && (
-        <Tip label={excluded}>
-          <span className="file-row-mark" data-testid="file-row-excluded">
-            <EyeOff size={12} />
-          </span>
-        </Tip>
-      )}
+      <RowMarks special={special} excluded={entry?.excluded ? excluded : undefined} />
       {marked && (
         <Tip label={t('files.modified')}>
           <span className="file-row-dot" data-testid="file-row-modified" />

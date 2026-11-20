@@ -548,9 +548,17 @@ export interface IpcInvokeContract
   /** Un niveau d'un dossier d'une racine (chemin relatif, `''` pour la racine). */
   'files:list': { args: [id: string, root: number, dir: string]; result: FileListing }
   /** Un fichier pour l'affichage, en lecture seule (texte, image ou binaire). */
-  'files:read': { args: [id: string, root: number, path: string]; result: FileContent }
+  'files:read': {
+    /** `known` : version déjà affichée ; inchangée, rien n'est relu (`unchanged`). */
+    args: [id: string, root: number, path: string, known?: { modified: number; size: number }]
+    result: FileContent
+  }
   /** Filtre de l'onglet Fichiers : chemins relatifs classés comme la mention `@`. */
-  'files:search': { args: [id: string, root: number, query: string]; result: string[] }
+  'files:search': {
+    args: [id: string, root: number, query: string]
+    /** `excluded` : invisible pour l'agent (fiche 155), marqué comme dans l'arbre. */
+    result: { path: string; excluded?: true }[]
+  }
   /** Montre un fichier d'une racine dans le Finder. */
   'files:reveal': { args: [id: string, root: number, path: string]; result: undefined }
   /** Ouvre un fichier d'une racine avec l'app par défaut (jamais un exécutable). */
@@ -562,7 +570,12 @@ export interface IpcInvokeContract
    * `base` : dossier des chemins relatifs (celui du document en aperçu).
    */
   'editors:open': {
-    args: [id: string, editorId: string, path: string, options?: { line?: number; base?: string }]
+    args: [
+      id: string,
+      editorId: string,
+      path: string,
+      options?: { line?: number; base?: string; root?: number }
+    ]
     result: EditorOpenOutcome
   }
   /**

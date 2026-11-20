@@ -1,17 +1,41 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  constants,
+  closeSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_DIR_ENTRIES, MAX_TEXT_BYTES } from '@shared/files'
-import {
-  fileRoots,
-  gitIgnored,
-  listDirectory,
-  readFileForView,
-  relativeInRoot,
-  resolveInRoot
-} from './file-tree'
+import { FIFOS, PRECOMPOSED_NAMES } from '../test-platform'
+import { fileRoots, gitIgnored, listDirectory, readFileForView, resolveInRoot } from './file-tree'
+
+/** Appels au disque comptés, et un crochet juste avant `open` (course contrôle / ouverture). */
+const disk = vi.hoisted(() => ({
+  lstat: 0,
+  beforeOpen: undefined as ((path: string) => void) | undefined
+}))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...fs,
+    lstat: ((...args: Parameters<typeof fs.lstat>) => {
+      disk.lstat++
+      return fs.lstat(...args)
+    }) as typeof fs.lstat,
+    open: (async (...args: Parameters<typeof fs.open>) => {
+      disk.beforeOpen?.(String(args[0]))
+      return fs.open(...args)
+    }) as typeof fs.open
+  }
+})
 
 let base: string
 let root: string
@@ -34,7 +58,35 @@ beforeEach(() => {
   writeFileSync(join(other, 'secret.txt'), 'dehors')
 })
 
-afterEach(() => rmSync(base, { recursive: true, force: true }))
+afterEach(() => {
+  disk.beforeOpen = undefined
+  rmSync(base, { recursive: true, force: true })
+})
+
+/** Un FIFO dans la racine (B1), et de quoi débloquer un lecteur resté en attente. */
+function makeFifo(name: string): { path: string; release: () => void } {
+  const path = join(root, name)
+  execFileSync('mkfifo', [path])
+  return {
+    path,
+    release: () => {
+      // Un écrivain non bloquant débloque un lecteur en attente ; sans lecteur : ENXIO, rien à faire.
+      try {
+        closeSync(openSync(path, constants.O_WRONLY | constants.O_NONBLOCK))
+      } catch {
+        // aucun lecteur
+      }
+    }
+  }
+}
+
+/** Échoue au lieu d'attendre sans fin. */
+function within<T>(promise: Promise<T>, ms = 2000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('bloqué')), ms))
+  ])
+}
 
 describe('fileRoots', () => {
   it('donne le dossier puis les autres dossiers, par rang', () => {
@@ -142,6 +194,64 @@ describe('listDirectory', () => {
   it('refuse un dossier hors de la racine', async () => {
     await expect(listDirectory({ root, dir: '..', roots: [root] })).rejects.toThrow()
   })
+
+  it.skipIf(!FIFOS)('marque un FIFO comme spécial, sans l’ouvrir (B1)', async () => {
+    const fifo = makeFifo('tuyau')
+    try {
+      const top = await within(listDirectory({ root, dir: '', roots: [root] }))
+      expect(top.entries.find((e) => e.name === 'tuyau')).toMatchObject({
+        kind: 'file',
+        special: true
+      })
+      expect(top.entries.find((e) => e.name === 'tuyau')?.executable).toBeUndefined()
+    } finally {
+      fifo.release()
+    }
+  })
+
+  it('borne avant d’interroger le disque : pas un `lstat` par entrée au-delà (C4)', async () => {
+    const many = join(root, 'many')
+    mkdirSync(many)
+    for (let i = 0; i < MAX_DIR_ENTRIES + 500; i++) writeFileSync(join(many, `f${i}`), 'x')
+    disk.lstat = 0
+    const listing = await listDirectory({ root, dir: 'many', roots: [root] })
+    expect(listing.more).toBe(500)
+    expect(listing.entries[0]?.size).toBe(1)
+    expect(disk.lstat).toBeLessThanOrEqual(MAX_DIR_ENTRIES)
+  })
+
+  it('un lien vers un dossier n’efface pas les marques « ignoré » (M4)', async () => {
+    execFileSync('git', ['init', '-q'], { cwd: root })
+    symlinkSync(join(root, 'src'), join(root, 'raccourci'))
+    const top = await listDirectory({ root, dir: '', roots: [root], ignored: gitIgnored })
+    expect(top.entries.find((e) => e.name === 'build')?.ignored).toBe(true)
+    expect(top.entries.find((e) => e.name === 'raccourci')).toMatchObject({ kind: 'dir' })
+  })
+
+  it.skipIf(!PRECOMPOSED_NAMES)(
+    'un nom décomposé (NFD) est marqué comme git le dit (M4)',
+    async () => {
+      execFileSync('git', ['init', '-q'], { cwd: root })
+      writeFileSync(join(root, '.gitignore'), 'build/\ncafé.log\n')
+      writeFileSync(join(root, 'café.log'.normalize('NFD')), 'x')
+      const top = await listDirectory({ root, dir: '', roots: [root], ignored: gitIgnored })
+      const name = (n: string) => n.normalize('NFC') === 'café.log'
+      expect(top.entries.find((e) => name(e.name))?.ignored).toBe(true)
+    }
+  )
+})
+
+describe('gitIgnored', () => {
+  it('un chemin au-delà d’un lien n’efface pas les autres marques (M4)', async () => {
+    execFileSync('git', ['init', '-q'], { cwd: root })
+    symlinkSync(join(root, 'src'), join(root, 'raccourci'))
+    const found = await gitIgnored(root, ['raccourci/app.ts', 'build/', 'src/'])
+    expect(found && [...found]).toEqual(['build'])
+  })
+
+  it('hors dépôt : `null`', async () => {
+    expect(await gitIgnored(root, ['build/'])).toBeNull()
+  })
 })
 
 describe('readFileForView', () => {
@@ -176,6 +286,47 @@ describe('readFileForView', () => {
     expect(svg).toMatchObject({ kind: 'image', text: '<svg xmlns="http://www.w3.org/2000/svg"/>' })
   })
 
+  it('reconnaît l’UTF-16 BE, l’UTF-16 sans BOM, et lit le Latin-1 (M5)', async () => {
+    const be = Buffer.from('\ufeffbonjour', 'utf16le').swap16()
+    writeFileSync(join(root, 'be.txt'), be)
+    writeFileSync(join(root, 'le.txt'), Buffer.from('const é = 1\n', 'utf16le'))
+    writeFileSync(join(root, 'nobom-be.txt'), Buffer.from('salut\n', 'utf16le').swap16())
+    writeFileSync(join(root, 'latin.txt'), Buffer.from('café crème\n', 'latin1'))
+    expect(await readFileForView(root, 'be.txt')).toMatchObject({ kind: 'text', text: 'bonjour' })
+    expect(await readFileForView(root, 'le.txt')).toMatchObject({
+      kind: 'text',
+      text: 'const é = 1\n'
+    })
+    expect(await readFileForView(root, 'nobom-be.txt')).toMatchObject({
+      kind: 'text',
+      text: 'salut\n'
+    })
+    expect(await readFileForView(root, 'latin.txt')).toMatchObject({
+      kind: 'text',
+      text: 'café crème\n'
+    })
+  })
+
+  it.skipIf(!FIFOS)('refuse un FIFO sans attendre un écrivain (B1)', async () => {
+    const fifo = makeFifo('tuyau')
+    try {
+      await expect(within(readFileForView(root, 'tuyau'))).rejects.toThrow(/tuyau/)
+    } finally {
+      fifo.release()
+    }
+  })
+
+  it('refuse un dossier intermédiaire remplacé par un lien entre contrôle et ouverture (M1)', async () => {
+    writeFileSync(join(other, 'app.ts'), 'dehors\n')
+    disk.beforeOpen = (path) => {
+      if (!path.endsWith(join('src', 'app.ts'))) return
+      disk.beforeOpen = undefined
+      renameSync(join(root, 'src'), join(root, 'src-avant'))
+      symlinkSync(other, join(root, 'src'))
+    }
+    await expect(readFileForView(root, 'src/app.ts')).rejects.toThrow()
+  })
+
   it('lit l’UTF-16 et retire le BOM UTF-8', async () => {
     writeFileSync(join(root, 'u16.txt'), Buffer.from('﻿bonjour', 'utf16le'))
     writeFileSync(join(root, 'bom.txt'), '﻿salut')
@@ -191,12 +342,5 @@ describe('readFileForView', () => {
   it('refuse un lien vers un fichier hors des racines', async () => {
     symlinkSync(join(other, 'secret.txt'), join(root, 'lien.txt'))
     await expect(readFileForView(root, 'lien.txt')).rejects.toThrow()
-  })
-})
-
-describe('relativeInRoot', () => {
-  it('rend le chemin relatif, ou rien s’il sort', async () => {
-    expect(await relativeInRoot(root, join(root, 'src', 'app.ts'))).toBe('src/app.ts')
-    expect(await relativeInRoot(root, join(other, 'secret.txt'))).toBeUndefined()
   })
 })

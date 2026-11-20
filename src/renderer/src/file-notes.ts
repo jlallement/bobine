@@ -38,5 +38,9 @@ export function placeNotes(notes: readonly DiffNote[], lines: readonly string[])
   })
 }
 
-/** Clé d'un fichier ouvert pour ses remarques (`DiffNote.file`). */
-export const fileNoteKey = (root: number, path: string) => `${root}:${path}`
+/**
+ * Clé d'un fichier ouvert pour ses remarques (`DiffNote.file`) : le chemin de sa racine, pas son
+ * rang (M2) ; une racine retirée ou ajoutée avant ne fait pas passer une remarque sur un autre
+ * fichier.
+ */
+export const fileNoteKey = (rootPath: string, path: string) => `${rootPath}::${path}`

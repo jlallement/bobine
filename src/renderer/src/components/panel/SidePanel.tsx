@@ -94,6 +94,7 @@ interface Props {
   /** Onglet « Fichiers » (fiche 271) : dernière demande (⌘P, lien du fil), liens, mention. */
   files?: {
     request?: FilesRequest | undefined
+    onRequestDone?: (seq: number) => void
     openLink: OpenFileLink
     onMention?: (paths: string[]) => void
     onShowDiff?: (absolutePath: string) => void
@@ -480,6 +481,7 @@ function ToolTab({
           items={files.items}
           maximized={files.maximized}
           request={files.request}
+          onRequestDone={files.onRequestDone}
           openLink={files.openLink}
           onSendNotes={files.onSendNotes}
           onMention={files.onMention}

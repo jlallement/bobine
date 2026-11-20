@@ -1,8 +1,34 @@
 import type { PromptAttachment } from '@shared/attachments'
 import { useRef, useState, type DragEvent } from 'react'
 
-/** Glisser d'une ligne de l'onglet Fichiers (fiche 271) : son chemin absolu. */
+/**
+ * Glisser d'une ligne de l'onglet Fichiers (fiche 271) : un jeton, jamais le chemin. N'importe
+ * quelle source (une page web, une autre app) peut poser ce type ; seul le jeton du glisser parti
+ * de l'arbre, gardé ici, mène à un fichier (C2).
+ */
 export const FILE_DRAG_TYPE = 'application/x-bobine-file'
+
+/** Glisser en cours depuis l'arbre : son jeton et le chemin absolu du fichier. */
+let treeDrag: { token: string; path: string } | null = null
+
+/** Début du glisser d'une ligne de l'arbre : rend le jeton à poser sous `FILE_DRAG_TYPE`. */
+export function startTreeDrag(path: string): string {
+  treeDrag = { token: crypto.randomUUID(), path }
+  return treeDrag.token
+}
+
+/** Fin du glisser (déposé ou non) : le jeton ne vaut plus. */
+export function endTreeDrag(): void {
+  treeDrag = null
+}
+
+/** Chemin du glisser de l'arbre si `token` est le sien ; consommé. */
+function takeTreeDrag(token: string): string | undefined {
+  if (!treeDrag || treeDrag.token !== token) return undefined
+  const { path } = treeDrag
+  treeDrag = null
+  return path
+}
 
 /**
  * Ce qu'on envoie à la zone de saisie de l'extérieur : fichiers déposés sur la conversation, texte
@@ -109,9 +135,11 @@ export function useFileDrop(inbox: ComposerInbox) {
       event.stopPropagation()
       depth.current = 0
       setDragging(false)
-      const path = event.dataTransfer.getData(FILE_DRAG_TYPE)
-      if (path) {
-        inbox.mention([path])
+      const token = event.dataTransfer.getData(FILE_DRAG_TYPE)
+      if (token) {
+        // Jeton inconnu (type posé par une autre source) : ignoré, rien n'est joint.
+        const path = takeTreeDrag(token)
+        if (path) inbox.mention([path])
         return
       }
       const files = [...event.dataTransfer.files]

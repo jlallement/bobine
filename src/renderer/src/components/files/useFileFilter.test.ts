@@ -9,7 +9,10 @@ afterEach(() => vi.useRealTimers())
 
 /** Réponses rendues à la main, dans l'ordre choisi par l'essai. */
 function deferred() {
-  const pending: { query: string; resolve: (paths: string[]) => void }[] = []
+  const pending: {
+    query: string
+    resolve: (paths: { path: string; excluded?: true }[]) => void
+  }[] = []
   const search: SearchRoot = (_root, query) =>
     new Promise((resolve) => pending.push({ query, resolve }))
   return { pending, search }
@@ -25,7 +28,7 @@ describe('filtre de l’onglet Fichiers', () => {
     expect(pending).toHaveLength(0)
     act(() => vi.advanceTimersByTime(1))
     expect(pending).toHaveLength(1)
-    await act(async () => pending[0]?.resolve(['src/app.ts']))
+    await act(async () => pending[0]?.resolve([{ path: 'src/app.ts' }]))
     expect(result.current).toMatchObject({
       hits: [{ root: 0, path: 'src/app.ts' }],
       searching: false
@@ -48,8 +51,8 @@ describe('filtre de l’onglet Fichiers', () => {
     act(() => vi.advanceTimersByTime(FILTER_DELAY_MS))
     act(() => result.current.setQuery('ab'))
     act(() => vi.advanceTimersByTime(FILTER_DELAY_MS))
-    await act(async () => pending[1]?.resolve(['ab.ts']))
-    await act(async () => pending[0]?.resolve(['a.ts', 'ab.ts']))
+    await act(async () => pending[1]?.resolve([{ path: 'ab.ts' }]))
+    await act(async () => pending[0]?.resolve([{ path: 'a.ts' }, { path: 'ab.ts' }]))
     expect(result.current.hits).toEqual([{ root: 0, path: 'ab.ts' }])
   })
 
@@ -58,5 +61,19 @@ describe('filtre de l’onglet Fichiers', () => {
     const { result } = renderHook(() => useFileFilter(roots, search))
     act(() => result.current.setQuery('app.ts:42'))
     expect(result.current.line).toBe(42)
+  })
+
+  it('garde la marque « exclu pour l’agent » d’un résultat (M6)', async () => {
+    const { pending, search } = deferred()
+    const { result } = renderHook(() => useFileFilter(roots, search))
+    act(() => result.current.setQuery('key'))
+    act(() => vi.advanceTimersByTime(FILTER_DELAY_MS))
+    await act(async () =>
+      pending[0]?.resolve([{ path: 'a.ts' }, { path: 'secret.key', excluded: true }])
+    )
+    expect(result.current.hits).toEqual([
+      { root: 0, path: 'a.ts' },
+      { root: 0, path: 'secret.key', excluded: true }
+    ])
   })
 })
