@@ -2835,7 +2835,9 @@
     "readOnly": {
       "title": "Usage not read",
       "text": "This profile is read-only: usage isn’t read here. Update Bobine to see it again."
-    }
+    },
+    "step": "step {{elapsed}}",
+    "stepStarted": "Current step started {{elapsed}} ago"
   },
   "mentions": {
     "gitChanges": {

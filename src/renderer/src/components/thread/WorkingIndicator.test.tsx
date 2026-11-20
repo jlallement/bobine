@@ -60,26 +60,30 @@ describe('chronomètre de l’étape (fiche 128)', () => {
   })
   const time = () => screen.getByTestId('working').querySelector('.working-time')
 
-  it('le temps repart de zéro à chaque étape ; la durée du tour est en infobulle', () => {
+  it('fiche 267 (D14) : la durée du tour, l’étape en cours en plus petit', () => {
     const ui = (items: TranscriptItem[]) => (
       <WorkingIndicator conversationId="c-etapes" items={items} />
     )
+    const step = () => screen.queryByTestId('working-step')
     const first = [user(1), thought(2)]
     const view = render(ui(first))
     wait(10_000)
+    // Première étape : c'est le tour entier, pas de doublon.
     expect(time()?.textContent).toBe('10 s')
-    // Le patch est annoncé : nouvelle étape, le temps repart de zéro.
+    expect(step()).toBeNull()
+    // Le patch est annoncé : nouvelle étape ; le tour continue de compter.
     view.rerender(ui([...first, patch(3)]))
     wait(5_000)
-    expect(time()?.textContent).toBe('5 s')
+    expect(time()?.textContent).toBe('15 s')
+    expect(step()?.textContent).toBe('étape 5 s')
+    expect(step()?.getAttribute('title')).toBe('Étape en cours depuis 5 s')
     expect(screen.getByTestId('working').querySelector('.working-label')?.textContent).toBe(
       'Prépare une modification…'
     )
-    // Le tour, lui, dure depuis le message.
     expect(time()?.getAttribute('title')).toBe('Tour commencé il y a 15 s')
     wait(55_000)
-    expect(time()?.textContent).toBe('1 min 00')
-    expect(time()?.getAttribute('title')).toBe('Tour commencé il y a 1 min 10')
+    expect(time()?.textContent).toBe('1 min 10')
+    expect(step()?.textContent).toBe('étape 1 min 00')
   })
 })
 

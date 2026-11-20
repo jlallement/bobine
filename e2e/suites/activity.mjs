@@ -37,13 +37,14 @@ export async function activitySuite(scheme) {
       !(await ui.ev(`document.querySelector('[data-testid=thread]').innerText.includes('patch')`)),
       'nulle part dans le fil, le mot « patch » n’apparaît pendant l’attente'
     )
-    // Une seule ligne d'état : le temps (de l'étape) à droite, la durée du tour en infobulle.
+    // Une seule ligne d'état : la durée du tour à droite (fiche 267, D14), dite aussi en infobulle ;
+    // l'étape en cours en plus petit quand ce n'est pas le tour entier.
     await ui.waitFor(`/^\\d+ s$/.test(${ui.$('working')}.querySelector('.working-time').innerText)`)
     check(
       (await ui.ev(`${ui.$('working')}.querySelector('.working-time').title`)).includes(
         Lpart('activity.turnStarted')
       ),
-      'la durée du tour est en infobulle du temps de l’étape'
+      'la durée du tour est dite en infobulle'
     )
     check(
       (await ui.ev(`document.querySelectorAll('[data-testid=tool] .working-time').length`)) === 0,

@@ -36,8 +36,9 @@ function stepStart(conversationId: string, userId: number, stepId: number): numb
 /**
  * Indicateur d'activité à la fin du fil pendant que l'agent travaille, comme Claude Desktop :
  * bobine dont le fil s'enroule (fiche 069), ce qu'il fait (réfléchit, écrit, outil, attend votre accord)
- * et depuis quand : le temps est celui de l'étape en cours, la durée du tour est en infobulle
- * (fiche 128). Après la fin du tour, quand l'agent travaille encore (`background`, fiche 255) : le
+ * et depuis quand : la durée du tour, et celle de l'étape en cours en plus petit (fiche 128 revue
+ * par la fiche 267, recette D14 : « Réfléchit… 2 s » faisait croire le tour tout juste commencé).
+ * Après la fin du tour, quand l'agent travaille encore (`background`, fiche 255) : le
  * sous-agent en cours ou « travaille après le tour », et le temps depuis l'envoi du message.
  */
 export function WorkingIndicator({
@@ -80,8 +81,9 @@ export function WorkingIndicator({
     ? backgroundActivity(items)
     : currentActivity(items, workspace, documents)
   const waiting = activity.kind === 'permission' || activity.kind === 'question'
-  // Après le tour, le temps depuis l'envoi : celui de l'étape ne dirait rien (fiche 255).
-  const shownFrom = background ? start : stepAt
+  // L'étape en plus petit, seulement si elle n'est pas le tour entier ; après le tour, le temps
+  // depuis l'envoi seul : celui de l'étape ne dirait rien (fiche 255).
+  const step = !background && stepAt - start >= 1000 ? elapsedLabel(now - stepAt) : undefined
   return (
     <div
       className={`working${waiting ? ' waiting' : ''}`}
@@ -96,8 +98,17 @@ export function WorkingIndicator({
         className="working-time"
         title={t('activity.turnStarted', { elapsed: elapsedLabel(now - start) })}
       >
-        {elapsedLabel(now - shownFrom)}
+        {elapsedLabel(now - start)}
       </span>
+      {step && (
+        <span
+          className="working-step"
+          title={t('activity.stepStarted', { elapsed: step })}
+          data-testid="working-step"
+        >
+          {t('activity.step', { elapsed: step })}
+        </span>
+      )}
     </div>
   )
 }

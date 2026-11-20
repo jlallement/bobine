@@ -8543,6 +8543,15 @@ kbd {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+/* L'étape en cours, plus petite que la durée du tour (fiche 267, D14). */
+.working-step {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
 @keyframes working-shimmer {
   from {
     background-position: 100% 0;

@@ -2798,6 +2798,8 @@ export type FrResources = {
       readonly title: 'Consommation non lue'
       readonly text: 'Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver.'
     }
+    readonly step: 'étape {{elapsed}}'
+    readonly stepStarted: 'Étape en cours depuis {{elapsed}}'
   }
   readonly mentions: {
     readonly gitChanges: {

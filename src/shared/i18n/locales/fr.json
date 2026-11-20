@@ -2935,7 +2935,9 @@
     "readOnly": {
       "title": "Consommation non lue",
       "text": "Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver."
-    }
+    },
+    "step": "étape {{elapsed}}",
+    "stepStarted": "Étape en cours depuis {{elapsed}}"
   },
   "mentions": {
     "gitChanges": {
