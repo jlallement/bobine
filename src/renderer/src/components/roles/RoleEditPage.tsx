@@ -147,8 +147,13 @@ function RoleEditForm(
     try {
       const result = await window.api.roles.save(target, checked.role, {
         ...options,
-        // Rôle fourni : « Enregistrer en rôle personnel » le remplace, explicitement (fiche 268).
-        ...(builtin ? { replaceBuiltin: true } : { previousName: role.name })
+        // Rôle fourni : « Enregistrer en rôle personnel » le remplace, explicitement, et seulement
+        // sous son propre identifiant ; un autre identifiant est une création (fiche 268).
+        ...(builtin
+          ? checked.role.name === role.name
+            ? { replaceBuiltin: role.name }
+            : {}
+          : { previousName: role.name })
       })
       if (!result.ok) return setErrors({ [errorField(result.error)]: result.error })
       rolesChanged()

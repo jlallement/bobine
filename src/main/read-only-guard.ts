@@ -183,6 +183,7 @@ export const READ_ONLY_SAFE = [
   'memory:reveal',
   'roles:list',
   'roles:read',
+  'roles:suggestName',
   'roles:exportPreview',
   'roles:exportStatus',
   'roles:exportOrphans'

@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { builtinRoles } from './builtin'
+import { rolesHandlers } from './ipc'
 import { RoleLibrary } from './library'
 
 const file = (description: string, extra = '') =>
@@ -206,7 +207,7 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       name,
       label: name,
       icon: 'shield-check',
-      color: 'orange',
+      color: 'orange' as const,
       description: `Rôle ${name}.`,
       readOnly: true,
       prompt: `Consigne de ${name}.`,
@@ -258,12 +259,16 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       expect(library.find(undefined, 'security-expert')?.scope).toBe('builtin')
       // Le geste explicite de l'écran d'un rôle fourni le remplace (ADR-0045), comme avant.
       expect(
-        library.save('user', role('security-expert'), undefined, { replaceBuiltin: true })
+        library.save('user', role('security-expert'), undefined, {
+          replaceBuiltin: 'security-expert'
+        })
       ).toMatchObject({ ok: true })
       expect(library.find(undefined, 'security-expert')?.scope).toBe('user')
       // Une seconde fois : le personnel existe, refusé.
       expect(
-        library.save('user', role('security-expert'), undefined, { replaceBuiltin: true })
+        library.save('user', role('security-expert'), undefined, {
+          replaceBuiltin: 'security-expert'
+        })
       ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'user' } } })
     })
 
@@ -324,6 +329,63 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       expect(library.save('user', role('qa-2'))).toMatchObject({
         error: { code: 'nameTaken', suggestion: 'qa-4' }
       })
+    })
+
+    it('`replaceBuiltin` n’exempte que le rôle fourni de ce nom, sous ce nom (revue QA)', () => {
+      const { library, userDir } = setup()
+      // Le nom d'un autre rôle fourni ne vaut pas permission.
+      expect(
+        library.save('user', role('code-reviewer'), undefined, { replaceBuiltin: 'tech-lead' })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'builtin' } } })
+      // L'ancien drapeau booléen (écran d'avant, IPC forgée) n'exempte plus rien.
+      expect(
+        library.save('user', role('code-reviewer'), undefined, {
+          replaceBuiltin: true as unknown as string
+        })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken' } })
+      // Le bon rôle fourni, mais un autre identifiant : une création, refusée si prise.
+      library.save('user', role('mine'))
+      expect(
+        library.save('user', role('mine'), undefined, { replaceBuiltin: 'mine' })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'user' } } })
+      expect(existsSync(join(userDir, 'code-reviewer.md'))).toBe(false)
+    })
+
+    it('IPC forgée : un `previousName` absent de la portée ne fait pas sauter le contrôle', () => {
+      const { library, userDir, project } = setup()
+      library.save('project', role('relecteur', { label: 'Relecteur maison' }), project)
+      const handlers = rolesHandlers({ library, folderOf: () => project })
+      // Ni `code-reviewer` ni `relecteur` n'existent en personnel : ce n'est pas un renommage.
+      expect(
+        handlers['roles:save']('user', role('code-reviewer'), {
+          conversationId: 'c',
+          previousName: 'code-reviewer'
+        })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'builtin' } } })
+      expect(
+        handlers['roles:save']('user', role('relecteur'), {
+          conversationId: 'c',
+          previousName: 'relecteur'
+        })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'project' } } })
+      expect(() =>
+        handlers['roles:save']('user', role('x'), { replaceBuiltin: true as unknown as string })
+      ).toThrow()
+      expect(existsSync(join(userDir, 'code-reviewer.md'))).toBe(false)
+      expect(existsSync(join(userDir, 'relecteur.md'))).toBe(false)
+    })
+
+    it('suggestion du main : rôles cachés et fichiers non lus compris, long nombre gardé', () => {
+      const { library, userDir, project, projectDir } = setup()
+      // `qa-2` personnel caché par `qa-2` du projet : son nom reste pris.
+      library.save('user', role('qa'))
+      writeFileSync(join(userDir, 'qa-2.md'), file('Caché', 'name: qa-2\n'))
+      writeFileSync(join(projectDir, 'qa-2.md'), file('Projet', 'name: qa-2\n'))
+      // Fichier écarté (en-tête faux) : son nom de fichier reste pris.
+      writeFileSync(join(userDir, 'qa-3.md'), 'pas un rôle')
+      expect(library.suggestName('user', 'qa', project)).toBe('qa-4')
+      library.save('user', role('release-2024'))
+      expect(library.suggestName('user', 'release-2024')).toBe('release-2024-2')
     })
   })
 })

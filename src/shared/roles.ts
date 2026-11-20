@@ -379,11 +379,12 @@ export function serializeRole(role: RoleDefinition): string {
 
 /**
  * Identifiant libre proche d'un identifiant pris (fiche 268) : `expert` → `expert-2`, `expert-2` →
- * `expert-3`, en restant dans `ROLE_NAME` (40 caractères). `undefined` si aucun n'est libre.
+ * `expert-3`, en restant dans `ROLE_NAME` (40 caractères). Seul un court suffixe (1 ou 2 chiffres)
+ * s'incrémente : `release-2024` → `release-2024-2`. `undefined` si aucun n'est libre.
  */
 export function freeRoleName(name: string, taken: (name: string) => boolean): string | undefined {
-  const match = /^(.*?)(?:-(\d+))?$/.exec(name)
-  const base = match?.[1] || name
+  const match = /^(.+)-(\d{1,2})$/.exec(name)
+  const base = match?.[1] ?? name
   const from = match?.[2] ? Number(match[2]) + 1 : 2
   for (let n = from; n < from + 100; n++) {
     const suffix = `-${n}`

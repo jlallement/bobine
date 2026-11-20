@@ -8,7 +8,6 @@
 import type { AccentColor } from '@shared/preferences'
 import {
   checkRole,
-  freeRoleName,
   ROLE_LIMITS,
   ROLE_NAME,
   type Role,
@@ -232,24 +231,17 @@ export function draftErrors(draft: RoleDraft, step: WizardStep | 'all'): DraftEr
 
 /**
  * Identifiant déjà porté par un rôle connu ici (fiche 268) : l'erreur `nameTaken` que le main
- * rendrait, avec un identifiant libre proche, pour la dire dès l'étape 1 de l'assistant. Le main
+ * rendrait, pour la dire dès l'étape 1 de l'assistant. L'identifiant libre proposé est demandé au
+ * main (`roles:suggestName`), qui voit aussi les rôles cachés et les fichiers déjà là ; le main
  * reste juge au moment d'enregistrer.
  */
 export function nameTakenError(
   name: string,
   roles: readonly Pick<Role, 'name' | 'label' | 'scope'>[]
 ): RoleError | undefined {
-  const wanted = name.trim()
-  const other = roles.find((role) => role.name === wanted)
+  const other = roles.find((role) => role.name === name.trim())
   if (!other) return undefined
-  const names = new Set(roles.map((role) => role.name))
-  const suggestion = freeRoleName(wanted, (candidate) => names.has(candidate))
-  return {
-    code: 'nameTaken',
-    field: 'name',
-    taken: { label: other.label, scope: other.scope },
-    ...(suggestion ? { suggestion } : {})
-  }
+  return { code: 'nameTaken', field: 'name', taken: { label: other.label, scope: other.scope } }
 }
 
 /** Champ d'une erreur de `checkRole` ou du main (`duplicateName` : le nom). */

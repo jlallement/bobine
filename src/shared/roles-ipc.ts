@@ -54,16 +54,24 @@ export interface RolesIpcContract extends RoleExportIpcContract {
   }
   /**
    * Écrit un rôle personnel ou du projet ; `previousName` : renommage. Un identifiant déjà pris
-   * par un autre rôle connu ici est refusé (`nameTaken`, fiche 268), sauf `replaceBuiltin` :
-   * « Enregistrer en rôle personnel » d'un rôle fourni.
+   * par un autre rôle connu ici est refusé (`nameTaken`, fiche 268), sauf `replaceBuiltin` (le
+   * nom du rôle fourni) : « Enregistrer en rôle personnel » d'un rôle fourni sous son identifiant.
    */
   'roles:save': {
     args: [
       scope: RoleFileScope,
       role: RoleDefinition,
-      options?: { conversationId?: string; previousName?: string; replaceBuiltin?: boolean }
+      options?: { conversationId?: string; previousName?: string; replaceBuiltin?: string }
     ]
     result: { ok: true } | { ok: false; error: RoleError }
+  }
+  /**
+   * Identifiant libre proche de `name` pour un rôle de cette portée (fiche 268) : aucun rôle connu
+   * ici, caché compris, ni fichier déjà là ; `null` si aucun.
+   */
+  'roles:suggestName': {
+    args: [scope: RoleFileScope, name: string, conversationId?: string]
+    result: string | null
   }
   /** Active ou désactive un rôle, par nom (toutes portées). */
   'roles:setEnabled': { args: [name: string, enabled: boolean]; result: undefined }
@@ -125,6 +133,7 @@ export const ROLES_CHANNELS = [
   'roles:list',
   'roles:read',
   'roles:save',
+  'roles:suggestName',
   'roles:setEnabled',
   'roles:remove',
   'roles:startChildren',

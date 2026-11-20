@@ -84,9 +84,8 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
         unknown
       >
       const previous = o['previousName'] === undefined ? undefined : name(o['previousName'])
-      const replaceBuiltin = o['replaceBuiltin'] ?? false
-      if (typeof replaceBuiltin !== 'boolean')
-        throw new Error('Paramètre invalide : replaceBuiltin')
+      const replaceBuiltin =
+        o['replaceBuiltin'] === undefined ? undefined : name(o['replaceBuiltin'])
       const result = available().library.save(
         target,
         role as Parameters<RoleLibrary['save']>[1],
@@ -95,6 +94,9 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       )
       return result.ok ? { ok: true } : result
     },
+    'roles:suggestName': (scope, roleName, conversationId) =>
+      available().library.suggestName(fileScope(scope), name(roleName), folder(conversationId)) ??
+      null,
     'roles:setEnabled': (roleName, enabled) => {
       if (typeof enabled !== 'boolean') throw new Error('Paramètre invalide : enabled')
       available().library.setEnabled(name(roleName), enabled)

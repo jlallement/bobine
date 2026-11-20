@@ -25,11 +25,13 @@ const profiles = [
 ] as ProfileSummary[]
 
 let save: ReturnType<typeof vi.fn>
+let suggestName: ReturnType<typeof vi.fn>
 const api = window.api
 
 beforeEach(() => {
   resetRolesUi()
   save = vi.fn(async () => ({ ok: true }))
+  suggestName = vi.fn(async () => null)
   Object.assign(window, {
     api: {
       ...api,
@@ -38,7 +40,8 @@ beforeEach(() => {
         read: vi.fn(async (_scope: string, name: string) =>
           name === security.name ? security : null
         ),
-        save
+        save,
+        suggestName
       }
     }
   })
@@ -189,7 +192,9 @@ describe('assistant de création d’un rôle (fiche 223, phase 3A)', () => {
   })
 
   // Fiche 268 : une création ne cache ni ne remplace jamais un rôle connu.
-  it('identifiant d’un rôle connu : dit dès l’étape 1, « Utiliser @…-2 » le corrige', async () => {
+  it('identifiant d’un rôle connu : dit dès l’étape 1, « Utiliser @… » propose celui du main', async () => {
+    // Le main voit aussi les rôles cachés et les fichiers déjà là : `-2` peut être pris.
+    suggestName.mockResolvedValue('security-expert-3')
     renderWizard({
       prefill: { label: 'Security expert', description: 'Audite.', prompt: 'Audite tout.' }
     })
@@ -200,8 +205,10 @@ describe('assistant de création d’un rôle (fiche 223, phase 3A)', () => {
     expect(screen.getByTestId('role-field-error').textContent?.replace(/\u00a0/g, ' ')).toBe(
       '@security-expert est déjà pris par « Expert sécu » (fourni) : choisissez un autre identifiant.'
     )
+    await act(async () => {})
+    expect(suggestName).toHaveBeenCalledWith('user', 'security-expert', 'c1')
     fireEvent.click(screen.getByTestId('role-name-suggestion'))
-    expect((screen.getByTestId('role-name') as HTMLInputElement).value).toBe('security-expert-2')
+    expect((screen.getByTestId('role-name') as HTMLInputElement).value).toBe('security-expert-3')
     expect(screen.queryByTestId('role-field-error')).toBeNull()
     fireEvent.click(screen.getByTestId('role-wizard-next'))
     fireEvent.click(screen.getByTestId('role-wizard-next'))
@@ -210,7 +217,7 @@ describe('assistant de création d’un rôle (fiche 223, phase 3A)', () => {
     })
     expect(save).toHaveBeenCalledWith(
       'user',
-      expect.objectContaining({ name: 'security-expert-2', label: 'Security expert' }),
+      expect.objectContaining({ name: 'security-expert-3', label: 'Security expert' }),
       { conversationId: 'c1' }
     )
   })

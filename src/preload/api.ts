@@ -526,6 +526,17 @@ export function createApi(
         role: IpcArgs<'roles:save'>[1],
         options?: IpcArgs<'roles:save'>[2]
       ) => invoke('roles:save', scope, role, ...(options !== undefined ? [options] : [])),
+      suggestName: (
+        scope: IpcArgs<'roles:suggestName'>[0],
+        name: string,
+        conversationId?: string
+      ) =>
+        invoke(
+          'roles:suggestName',
+          scope,
+          name,
+          ...(conversationId !== undefined ? [conversationId] : [])
+        ),
       setEnabled: (name: string, enabled: boolean) => invoke('roles:setEnabled', name, enabled),
       remove: (scope: IpcArgs<'roles:remove'>[0], name: string, conversationId?: string) =>
         invoke(

@@ -1,7 +1,7 @@
 # 268 — Rôles : deux rôles de même icône, et les vraies collisions d'identifiant
 
 - **Statut** : fait (relecture du tech lead)
-- **Dépend de** : 223 (rôles), ADR-0045, ADR-0047
+- **Dépend de** : 223 (rôles), ADR-0045, ADR-0047 ; décision : ADR-0063 (proposé)
 - **Agents** : les deux (rien de propre à un agent ; l'installation chez Bob et OpenCode est vérifiée)
 
 ## Pourquoi
@@ -59,14 +59,21 @@ fourni) n'en montrait qu'un :
 1. **L'identifiant reste le `name`** : il est déjà stable, unique par portée et indépendant de
    l'icône. Aucun nouvel identifiant, donc **aucune migration** : les fichiers déjà enregistrés et
    les installations chez les agents (registre par fichier et identifiant) restent reconnus tels
-   quels. Pas d'ADR : la décision d'ADR-0045 (portées, priorité par nom) ne change pas.
+   quels. La règle de lecture d'ADR-0045 (portées, priorité par nom) ne change pas ; ce que
+   l'interface permet d'écrire, si : ADR-0063 (proposé), qui la remplace en partie.
 2. **Une création ou un renommage ne prend jamais l'identifiant d'un rôle connu ici** (fourni,
-   personnel, du projet de la conversation) : refus `nameTaken` du main, qui fait foi, avec le rôle
-   qui le porte et un identifiant libre proche (`freeRoleName` : `-2`, `-3`…, 40 caractères au
-   plus, jamais le nom d'un fichier déjà là). L'assistant le dit dès l'étape 1, « Utiliser @…-2 »
-   le corrige d'un clic ; l'écran d'édition le dit au moment d'enregistrer.
-3. **Seul remplacement voulu** : « Enregistrer en rôle personnel » d'un rôle fourni, dit
-   explicitement au main (`replaceBuiltin`). Ne plus pouvoir créer depuis l'assistant un rôle de
+   personnel, du projet de la conversation, cachés compris) : refus `nameTaken` du main, qui fait
+   foi, avec le rôle qui le porte et un identifiant libre proche (`freeRoleName` : `-2`, `-3`… ;
+   seul un suffixe de 1 ou 2 chiffres s'incrémente, `release-2024` → `release-2024-2` ; 40
+   caractères au plus, jamais le nom d'un fichier déjà là). L'assistant le dit dès l'étape 1 et
+   demande l'identifiant libre au main (`roles:suggestName`, qui voit les rôles cachés et les
+   fichiers non lus) ; « Utiliser @… » le prend d'un clic ; l'écran d'édition le dit au moment
+   d'enregistrer. Un renommage n'est reconnu que si `previousName` existe dans la portée : sinon
+   (IPC forgée) c'est une création, contrôlée.
+3. **Seul remplacement voulu** : « Enregistrer en rôle personnel » d'un rôle fourni **sous son
+   propre identifiant**, dit explicitement au main (`replaceBuiltin` porte le nom de ce rôle
+   fourni ; le main n'exempte que lui, et seulement si le rôle enregistré porte ce nom ; l'écran ne
+   l'envoie pas si l'identifiant a été changé). Ne plus pouvoir créer depuis l'assistant un rôle de
    projet qui cache volontairement un rôle personnel : c'est à écrire à la main dans
    `.bobine/roles/` (toujours lu, toujours signalé « Remplace … » dans Réglages › Rôles).
 4. Par défaut, le main est strict : un appelant qui n'indique rien est une création.
@@ -90,8 +97,10 @@ fourni) n'en montrait qu'un :
 ## Plan
 
 1. Main : `RoleLibrary.save(scope, fields, projectDir, { previousName, replaceBuiltin })`, contrôle
-   `nameTaken` sur toutes les portées visibles ; `freeRoleName` dans `shared/roles.ts`.
-2. IPC `roles:save` : option `replaceBuiltin` vérifiée ; écran d'un rôle fourni la passe.
+   `nameTaken` sur toutes les portées visibles ; `suggestName` ; `freeRoleName` dans
+   `shared/roles.ts`.
+2. IPC `roles:save` : option `replaceBuiltin` (nom) vérifiée ; écran d'un rôle fourni la passe
+   sous son identifiant ; nouveau canal `roles:suggestName`.
 3. Assistant : erreur dès l'étape 1 (`nameTakenError`), bouton « Utiliser @…-2 » sous l'erreur
    (`NameFields`) ; la remarque « Remplacera le rôle … » disparaît (clé `roleForm.name.replaces`
    retirée), clés `roles.error.nameTaken` et `roleForm.name.useSuggestion` (fr, en).
@@ -112,4 +121,12 @@ fourni) n'en montrait qu'un :
   1, suggestion, refus du main, même icône sans alerte, `replaceBuiltin` de l'écran d'un rôle
   fourni). Suite e2e `roles-meme-icone` ajoutée au catalogue. Captures regardées : bouton de
   suggestion d'abord étiré sur toute la largeur, ramené à sa taille (`.role-name-suggestion`).
-- Écart au plan : aucun ADR ni migration, l'identifiant ne changeant pas (décision 1).
+- Écart au plan : aucune migration, l'identifiant ne changeant pas (décision 1).
+- **Revue QA** (même jour), chaque point avec un test rouge sans son correctif :
+  `replaceBuiltin` booléen exemptait tout rôle fourni → il porte le nom du rôle fourni, exempté
+  seulement sous ce nom, et l'écran ne l'envoie plus pour un identifiant changé ; un `previousName`
+  forgé (absent de la portée) faisait sauter le contrôle → plus maintenant (test par
+  `rolesHandlers`) ; `freeRoleName` incrémentait `release-2024` → seuls 1 ou 2 chiffres ;
+  la suggestion de l'assistant ignorait rôles cachés et fichiers → demandée au main
+  (`roles:suggestName`). ADR-0063 (proposé) écrit, index des ADR à jour (ADR-0045 : « remplacé en
+  partie »).

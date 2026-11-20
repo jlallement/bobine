@@ -144,7 +144,24 @@ describe('Réglages › Rôles (fiche 223, phase 3A)', () => {
       'user',
       expect.objectContaining({ name: 'tech-lead', description: 'Tranche.' }),
       // Fiche 268 : le remplacement d'un rôle fourni est dit au main, jamais supposé.
-      { conversationId: 'c1', replaceBuiltin: true }
+      { conversationId: 'c1', replaceBuiltin: 'tech-lead' }
+    )
+  })
+
+  it('rôle fourni enregistré sous un autre identifiant : une création, sans `replaceBuiltin`', async () => {
+    await show()
+    fireEvent.click(
+      within(screen.getAllByTestId('role-row')[2] as HTMLElement).getByTestId('role-row-open')
+    )
+    await waitFor(() => expect(screen.getByTestId('role-edit-builtin')).toBeTruthy())
+    fireEvent.change(screen.getByTestId('role-name'), { target: { value: 'mon-lead' } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('role-edit-save'))
+    })
+    expect(calls['save']).toHaveBeenCalledWith(
+      'user',
+      expect.objectContaining({ name: 'mon-lead' }),
+      { conversationId: 'c1' }
     )
   })
 

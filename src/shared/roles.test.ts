@@ -331,6 +331,10 @@ describe('identifiant libre proche (fiche 268)', () => {
     expect(freeRoleName('expert', taken('expert', 'expert-2', 'expert-3'))).toBe('expert-4')
     expect(freeRoleName('expert-2', taken('expert-2'))).toBe('expert-3')
     expect(freeRoleName('2024', taken('2024'))).toBe('2024-2')
+    // Un long nombre fait partie du nom (QA) : on ajoute, on n'incrémente pas.
+    expect(freeRoleName('release-2024', taken('release-2024'))).toBe('release-2024-2')
+    expect(freeRoleName('expert-99', taken('expert-99'))).toBe('expert-100')
+    expect(freeRoleName('v-100', taken('v-100'))).toBe('v-100-2')
   })
   it('reste un identifiant valide de 40 caractères au plus', () => {
     const long = 'a'.repeat(39) + 'b'

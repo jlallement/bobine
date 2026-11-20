@@ -116,6 +116,27 @@ export function RoleWizard(props: RoleWizardProps) {
     }
     return found
   }
+  // Identifiant pris dit à l'étape 1 : l'identifiant libre proposé vient du main (fiche 268).
+  const unsuggested =
+    errors.name?.code === 'nameTaken' && !errors.name.suggestion ? draft.name.trim() : undefined
+  useEffect(() => {
+    if (!unsuggested) return
+    let alive = true
+    window.api.roles.suggestName(draft.scope, unsuggested, props.conversationId).then(
+      (suggestion) => {
+        if (!alive || !suggestion) return
+        setErrors((shown) =>
+          shown.name?.code === 'nameTaken' && !shown.name.suggestion
+            ? { ...shown, name: { ...shown.name, suggestion } }
+            : shown
+        )
+      },
+      () => undefined
+    )
+    return () => {
+      alive = false
+    }
+  }, [unsuggested, draft.scope, props.conversationId])
   const change: DraftChange = (next) => {
     setDraft(next)
     // Une erreur montrée disparaît dès que son champ change.
