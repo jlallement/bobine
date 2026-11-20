@@ -349,6 +349,15 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(months[1]?.getAttribute('x')).toBe('75')
     expect(months[0]?.getAttribute('text-anchor')).toBe('start')
     expect(months[0]?.getAttribute('x')).toBe('0')
+    // Fenêtre étroite, grille défilée de 10 px : « oct. », à moitié cachée, n'est plus montrée.
+    const scroller = document.querySelector('.activity-heat-scroll') as HTMLElement
+    scroller.scrollLeft = 10
+    fireEvent.scroll(scroller)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('activity-heat-month').map((m) => m.textContent)).toEqual([
+        'nov.'
+      ])
+    )
   })
 
   it('grille : niveaux, aujourd’hui cerclé, jours hors période pâlis, infobulle, clic sur un jour', async () => {
