@@ -24,6 +24,19 @@ describe('Markdown', () => {
     expect(screen.getByTestId('copy-code')).not.toBeNull()
   })
 
+  it('`fichier:ligne` en code : lien de fichier ; une commande en code reste du texte (fiche 272)', () => {
+    const open = vi.fn()
+    render(
+      <FileLinksContext.Provider value={open}>
+        <Markdown text={'Voir `src/liste.js:5`, puis lancer `npm test`.\n\n```\nsrc/a.js:1\n```'} />
+      </FileLinksContext.Provider>
+    )
+    fireEvent.click(screen.getByText('src/liste.js:5'))
+    expect(open).toHaveBeenCalledWith('src/liste.js:5', { reveal: false })
+    expect(screen.getByText('npm test').closest('a')).toBeNull()
+    expect(document.querySelector('pre a')).toBeNull()
+  })
+
   it('GFM : listes de tâches et texte barré', () => {
     const { container } = render(<Markdown text={'- [x] fait\n- [ ] à faire\n\n~~barré~~'} />)
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2)
