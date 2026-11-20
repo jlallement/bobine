@@ -4,10 +4,9 @@
  * Bob s'affiche « Bobcoin(s) », avec sa majuscule. Les mots-clés de la recherche des réglages
  * (`settingsSearch.*`, `*.search.*`), jamais affichés, restent libres.
  */
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import fr from './locales/fr.json'
+import fr from '@shared/i18n/locales/fr.json'
+import changelog from '../../../CHANGELOG.md?raw'
 
 type Tree = { readonly [key: string]: string | Tree }
 const flatten = (tree: Tree, prefix = ''): [string, string][] =>
@@ -28,8 +27,7 @@ describe('typographie du glossaire (fiche 272)', () => {
   })
 
   it('Nouveautés (CHANGELOG.md) : apostrophe courbe hors du code', () => {
-    const changelog = readFileSync(join(__dirname, '../../../CHANGELOG.md'), 'utf8')
-    const lines = changelog.split('\n').filter((line) => STRAIGHT.test(prose(line)))
+    const lines = changelog.split('\n').filter((line: string) => STRAIGHT.test(prose(line)))
     expect(lines).toEqual([])
   })
 

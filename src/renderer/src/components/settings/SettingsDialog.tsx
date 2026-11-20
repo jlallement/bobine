@@ -21,7 +21,12 @@ import {
 } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { EmptyState } from '../common/EmptyState'
-import type { AgentSettingsView, ConversationSummary, NewConversationDefaults } from '@shared/agent'
+import type {
+  AgentSettingsView,
+  ConversationSummary,
+  NewConversationDefaults,
+  SessionControl
+} from '@shared/agent'
 import { type Preferences } from '@shared/preferences'
 import type { UserCommand } from '@shared/user-commands'
 import type { CustomAgentDraft } from '@shared/custom-agents'
@@ -139,6 +144,11 @@ export interface SettingsDialogProps {
     ConversationSummary,
     'id' | 'profileId' | 'workspace' | 'project'
   > | null
+  /**
+   * Réglages de session de la conversation affichée (fiche 272) : le mode d'exécution s'y nomme
+   * comme l'agent le nomme dans la saisie (« Build »), pas autrement.
+   */
+  activeControls?: readonly SessionControl[]
 }
 
 /** Réglages de l'app (fiche 027), comme ceux de Claude Desktop : ⌘, ou la roue dentée. */

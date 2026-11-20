@@ -1158,7 +1158,7 @@ export type FrResources = {
       }
       readonly commitDraft: {
         readonly label: 'Message de commit rédigé par l’agent'
-        readonly hint: 'Session à part, environ 10 000 jetons par commit (≈ 0,03 bobcoin chez IBM Bob).'
+        readonly hint: 'Session à part, environ 10 000 jetons par commit (≈ 0,03 Bobcoin chez IBM Bob).'
       }
     }
     readonly fontSize: { readonly smaller: 'Plus petit'; readonly larger: 'Plus grand' }
@@ -1642,7 +1642,7 @@ export type FrResources = {
     readonly memory: {
       readonly enabled: {
         readonly label: 'Mémoire activée'
-        readonly hint: "Les agents proposent, vous décidez : rien n'est gardé sans votre accord."
+        readonly hint: 'Les agents proposent, vous décidez : rien n’est gardé sans votre accord.'
         readonly hintOff: 'Désactivée : les agents ne reçoivent ni souvenirs ni outil ; les vôtres restent ici.'
       }
       readonly entries: 'Souvenirs'
@@ -1655,7 +1655,7 @@ export type FrResources = {
       readonly attach: 'Rattacher à un dossier…'
       readonly attached_one: '{{count}} souvenir rattaché.'
       readonly attached_other: '{{count}} souvenirs rattachés.'
-      readonly empty: "Aucun souvenir ici pour l'instant."
+      readonly empty: 'Aucun souvenir ici pour l’instant.'
       readonly broken: 'Un souvenir illisible a été mis de côté ({{file}}) ; « Tout effacer » le supprime.'
       readonly export: 'Exporter…'
       readonly exported: 'Exporté dans {{file}}'
@@ -1674,8 +1674,8 @@ export type FrResources = {
       readonly moveToProject: 'Déplacer vers ce projet'
       readonly moveError: {
         readonly changed: 'Ce souvenir a changé entre-temps : rouvrez-le.'
-        readonly exists: "Un souvenir du même nom existe déjà de l'autre côté."
-        readonly full: "L'autre mémoire est pleine."
+        readonly exists: 'Un souvenir du même nom existe déjà de l’autre côté.'
+        readonly full: 'L’autre mémoire est pleine.'
       }
       readonly delete: 'Supprimer'
       readonly deleteConfirm: 'Supprimer « {{description}} » ?'
@@ -1688,7 +1688,7 @@ export type FrResources = {
       readonly invalid: {
         readonly description: 'Une seule ligne, {{description}} caractères au plus.'
         readonly body: 'Entre 1 et {{body}} caractères.'
-        readonly other: "Ce souvenir n'est pas valide."
+        readonly other: 'Ce souvenir n’est pas valide.'
       }
       readonly changedWhileEditing: 'Ce souvenir a été modifié entre-temps.'
       readonly reload: 'Recharger (vos modifications seront perdues)'
@@ -1696,7 +1696,7 @@ export type FrResources = {
       readonly clearConfirm_many: 'Effacer les {{count}} souvenirs ? Les agents ne les recevront plus.'
       readonly where: 'Commune à tous les agents, en clair sur ce Mac.'
       readonly outside: 'Modifié hors de Bobine'
-      readonly outsideNotice: "Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n'est plus donné aux agents tant que vous ne l'avez pas relu."
+      readonly outsideNotice: 'Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n’est plus donné aux agents tant que vous ne l’avez pas relu.'
       readonly keepChanges: 'Garder ces modifications'
       readonly byUnknown: 'inconnu'
       readonly keyLocked: 'Bobine ne peut pas lire sa clé dans le trousseau : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Autorisez l’accès au trousseau, puis relancez Bobine.'
@@ -4885,10 +4885,10 @@ export type FrResources = {
   }
   readonly help: {
     readonly title: 'Aide de Bobine'
-    readonly nav: "Sommaire de l'aide"
+    readonly nav: 'Sommaire de l’aide'
     readonly search: {
       readonly placeholder: 'Rechercher'
-      readonly label: "Rechercher dans l'aide"
+      readonly label: 'Rechercher dans l’aide'
       readonly empty: 'Aucune page ne contient ces mots.'
       readonly keys: '↑↓ résultats · ↩ ouvrir · Échap effacer'
     }
@@ -5030,7 +5030,7 @@ export type FrResources = {
       readonly rememberTitle: 'Retenir ce souvenir ?'
       readonly forgetTitle: 'Oublier ce souvenir ?'
       readonly by: 'proposé par {{agent}}'
-      readonly external: "Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l'agent : vérifiez ce texte, il reviendra à chaque session de ce projet."
+      readonly external: 'Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l’agent : vérifiez ce texte, il reviendra à chaque session de ce projet.'
       readonly command: 'Il contient une commande à exécuter.'
       readonly changed: 'Modifié depuis la proposition (le {{date}})'
       readonly replaces: 'Remplace « {{description}} », retenu le {{date}} :'

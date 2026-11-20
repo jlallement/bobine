@@ -7,10 +7,22 @@ import {
   type Preferences
 } from '@shared/preferences'
 import { useState } from 'react'
-import type { AgentSettingsView, NewConversationDefaults } from '@shared/agent'
+import type { AgentSettingsView, NewConversationDefaults, SessionControl } from '@shared/agent'
+import { executionMode } from '@shared/plan-doc'
 import { CHILD_PROPOSALS } from '@shared/children'
 import { useTranslation } from 'react-i18next'
 import { Advanced, Row, SettingsCard, SettingsTitle, SizeStepper } from './rows'
+
+/**
+ * Nom que l'agent donne à son mode d'exécution (« Build » pour OpenCode), d'après le réglage de
+ * catégorie `mode` : celui que la saisie affiche (fiche 272). `undefined` sans modes connus.
+ */
+export function executeModeName(controls: readonly SessionControl[] | undefined) {
+  const mode = controls?.find((c) => c.category === 'mode' && c.type === 'select')
+  if (!mode) return undefined
+  const value = executionMode([], mode.options)
+  return mode.options.find((o) => o.value === value)?.name
+}
 
 /** Valeur spéciale de la liste des dossiers : ouvre le choix d'un dossier. */
 const CHOOSE_FOLDER = '\u0000choisir'
@@ -30,17 +42,31 @@ const NEW_MODES = [
 export function ConversationSettings({
   settings,
   onPreferences,
-  onNewConversation
+  onNewConversation,
+  activeProfileId,
+  activeControls
 }: {
   settings: AgentSettingsView
   onPreferences: (change: Partial<Preferences>) => void
   onNewConversation: (defaults: NewConversationDefaults) => void
+  /** Agent de la conversation affichée et ses réglages de session (fiche 272). */
+  activeProfileId?: string | undefined
+  activeControls?: readonly SessionControl[]
 }) {
   const { t } = useTranslation()
   const { preferences } = settings
+  // Nom du mode d'exécution dit par l'agent des nouvelles conversations, s'il est celui de la
+  // conversation affichée (seul agent dont on connaît les modes) ; sinon le mot du glossaire.
+  const agentOfNew = settings.newConversation.profileId ?? activeProfileId
+  const executeName =
+    agentOfNew && agentOfNew === activeProfileId ? executeModeName(activeControls) : undefined
   return (
     <section>
-      <NewConversationCard settings={settings} onNewConversation={onNewConversation} />
+      <NewConversationCard
+        settings={settings}
+        onNewConversation={onNewConversation}
+        executeName={executeName}
+      />
       <SettingsTitle>{t('settings.conversation.children')}</SettingsTitle>
       <SettingsCard>
         <Row
@@ -111,10 +137,12 @@ export function ConversationSettings({
 /** Nouvelle conversation : agent, dossier et mode de départ ; vide, comme maintenant. */
 function NewConversationCard({
   settings,
-  onNewConversation
+  onNewConversation,
+  executeName
 }: {
   settings: AgentSettingsView
   onNewConversation: (defaults: NewConversationDefaults) => void
+  executeName: string | undefined
 }) {
   const { t } = useTranslation()
   const defaults = settings.newConversation
@@ -190,7 +218,9 @@ function NewConversationCard({
                 onClick={() => update({ mode: m.id || undefined })}
                 data-testid={`new-conversation-mode-${m.id || 'last'}`}
               >
-                {t(`settings.conversation.mode.${m.key}`)}
+                {m.key === 'execute' && executeName
+                  ? executeName
+                  : t(`settings.conversation.mode.${m.key}`)}
               </button>
             ))}
           </div>

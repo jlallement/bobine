@@ -78,6 +78,8 @@ export function SettingsBody({
           settings={settings}
           onPreferences={props.onPreferences}
           onNewConversation={props.onNewConversation}
+          activeProfileId={props.activeConversation?.profileId}
+          {...(props.activeControls ? { activeControls: props.activeControls } : {})}
         />
       )
     case 'agents':
