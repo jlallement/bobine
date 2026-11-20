@@ -283,6 +283,79 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.queryByTestId('work-relay')).toBeNull()
   })
 
+  it('fiche 267 (N4) : une commande de dix lignes tient sur une ligne, l’entière en infobulle', () => {
+    fakeAgent()
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'busy' })])
+    )
+    const card = screen.getByTestId('work-card')
+    const command = [
+      "node - <<'JS'",
+      'function lum(hex){',
+      '  const n = parseInt(hex.slice(1), 16)',
+      '}',
+      'JS'
+    ].join('\n')
+    const long = `rg --files --hidden --glob '!node_modules' ${'src/composants/'.repeat(8)}`
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't1',
+          title: command,
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    const current = within(card).getByTestId('work-live-text')
+    expect(current.textContent).toBe("Lance node - <<'JS'…")
+    expect(current.getAttribute('title')).toBe(command)
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 't1', status: 'completed' }
+      })
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't2',
+          title: long,
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    const done = within(card).getByTestId('work-live-done')
+    expect(done.textContent).toBe("A lancé node - <<'JS'…")
+    expect(done.querySelector('li')?.getAttribute('title')).toBe(command)
+    const text = within(card).getByTestId('work-live-text').textContent ?? ''
+    expect(text.startsWith('Lance rg --files')).toBe(true)
+    // 80 caractères au plus pour la commande, « … » compris.
+    expect(text.length).toBeLessThanOrEqual('Lance '.length + 80)
+    expect(text.endsWith('…')).toBe(true)
+    expect(text.endsWith('……')).toBe(false)
+    expect(within(card).getByTestId('work-live-text').getAttribute('title')).toBe(long)
+    // Une commande courte : telle quelle, sans infobulle.
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't3',
+          title: 'npm test',
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    expect(within(card).getByTestId('work-live-text').textContent).toBe('Lance npm test…')
+    expect(within(card).getByTestId('work-live-text').getAttribute('title')).toBeNull()
+  })
+
   it('coût nul d’un modèle payant (abonnement, D12) : « coût inconnu » dans le pied (fiche 266)', () => {
     fakeAgent()
     view(answered({ usage: usd(0) }), info([child('a', ux)]))

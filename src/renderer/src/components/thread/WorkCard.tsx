@@ -544,16 +544,22 @@ function WorkLive({ childId, state }: { childId: string | undefined; state: Work
       {activity.done.length > 0 && (
         <ul className="work-facts-done" data-testid="work-live-done">
           {activity.done.map((fact) => (
-            <li key={fact.title}>
+            <li key={fact.title} title={factFull(fact)}>
               <Check size={12} aria-hidden />
-              {factText(fact, true)}
+              <span className="work-fact-text">{factText(fact, true)}</span>
             </li>
           ))}
         </ul>
       )}
       <div className="work-live" data-testid="work-live-current">
         <Activity size={13} aria-hidden />
-        <span>{activity.current ? factText(activity.current, false) : t('workCard.working')}</span>
+        <span
+          className="work-fact-text"
+          title={activity.current ? factFull(activity.current) : undefined}
+          data-testid="work-live-text"
+        >
+          {activity.current ? factText(activity.current, false) : t('workCard.working')}
+        </span>
       </div>
     </div>
   )
@@ -572,13 +578,35 @@ function factText(tool: WorkTool, done: boolean): string {
   if (tool.label) return done ? tool.label : `${tool.label}…`
   const kind = FACT_KINDS.find((k) => k === tool.kind)
   const target = kind === 'read' || kind === 'edit' ? shortPath(tool.path) : undefined
+  // En cours, le texte finit déjà par « … » : une commande coupée n'en prend pas un second.
+  const title = done ? oneLine(tool.title) : oneLine(tool.title).replace(/…$/, '')
   if (!kind || ((kind === 'read' || kind === 'edit') && !target)) {
-    return done ? tool.title : i18next.t('workCard.nowOther', { target: tool.title })
+    return done ? title : i18next.t('workCard.nowOther', { target: title })
   }
   const name = `${kind.charAt(0).toUpperCase()}${kind.slice(1)}` as Capitalize<FactKind>
   return i18next.t(done ? `workCard.fact${name}` : `workCard.now${name}`, {
-    target: target ?? tool.title
+    target: target ?? title
   })
+}
+
+/** Le titre entier d'un outil, en infobulle, quand la carte n'en montre qu'une partie. */
+function factFull(tool: WorkTool): string | undefined {
+  return !tool.label && oneLine(tool.title) !== tool.title ? tool.title : undefined
+}
+
+/** Caractères d'une activité au plus (recette N4, fiche 267). */
+export const ACTIVITY_CHARS = 80
+
+/**
+ * Une seule ligne pour l'activité en direct (recette N4, fiche 267 : un `node - <<'JS'` de dix
+ * lignes faisait enfler la carte) : la première ligne non vide, coupée à 80 caractères, « … »
+ * quand il y a plus (lignes suivantes ou fin coupée) ; l'entière est en infobulle.
+ */
+export function oneLine(text: string, max = ACTIVITY_CHARS): string {
+  const lines = text.split('\n').filter((line) => line.trim())
+  const first = (lines[0] ?? '').trim()
+  if (first.length > max) return `${first.slice(0, max - 1).trimEnd()}…`
+  return lines.length > 1 ? `${first}…` : first
 }
 
 /** Chemin court : relatif tel quel, absolu réduit à ses deux derniers éléments. */

@@ -152,6 +152,13 @@
   align-items: center;
   overflow-wrap: anywhere;
 }
+/* Une activité tient sur une ligne (recette N4, fiche 267) : coupée, l'entière en infobulle. */
+.work-fact-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* La réponse, en Markdown, repliée après dix lignes (16em à un interligne de 1,6). */
 .work-answer {
