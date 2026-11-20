@@ -191,6 +191,16 @@ async function reviewRun(ui, { workspace, turnLock }) {
     focused.line === '2' && focused.side === 'new' && focused.shown,
     `clic sur \`fichier:ligne\` : la ligne mise en avant, à l’écran (${JSON.stringify(focused)})`
   )
+  // Fiche 272 (recette) : la remarque se lit dans la largeur visible du diff, sans défiler.
+  const fits = await ui.ev(`[...document.querySelectorAll('[data-testid=diff-note]')].map((n) => {
+    const table = n.closest('.diff-table').getBoundingClientRect()
+    const note = n.getBoundingClientRect()
+    return { note: Math.round(note.right), table: Math.round(table.right), ok: note.left >= table.left - 1 && note.right <= table.right + 1 }
+  })`)
+  check(
+    fits.length > 0 && fits.every((f) => f.ok),
+    `remarques du diff dans la largeur visible du panneau (${JSON.stringify(fits)})`
+  )
   await ui.shot('177-4-remarque-sur-le-diff')
   await ui.closePanel()
 

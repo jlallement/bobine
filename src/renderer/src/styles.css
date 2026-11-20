@@ -1588,6 +1588,8 @@ pre.tool-output {
   display: block;
   max-height: 360px;
   overflow: auto;
+  /* Largeur visible du diff, pour les remarques (`cqw`, fiche 272). */
+  container-type: inline-size;
 }
 
 .diff-table td {
@@ -1700,7 +1702,9 @@ tr.diff-selected td {
 .diff-note-editor {
   position: sticky;
   left: 0;
-  max-width: 520px;
+  /* Jamais plus large que la partie visible du diff (marges comprises) : elle passe à la ligne au
+     lieu d'être coupée au bord d'un panneau étroit (fiche 272, recette). */
+  max-width: min(520px, calc(100cqw - 40px));
   margin: 4px 10px 6px 30px;
   font-family: var(--font-ui);
   font-size: 12.5px;
