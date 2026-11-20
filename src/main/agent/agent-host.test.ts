@@ -657,13 +657,15 @@ describe('AgentHost', () => {
     replayed.host.stop()
     expect(replayed.changes()).toEqual(live.changes())
 
-    // Sans l'adaptateur (comportement générique) : seuls restent les fichiers créés.
+    // Sans l'adaptateur (comportement générique) : les fichiers créés, et le fichier modifié sans
+    // diff compte comme modifié, sans totaux inventés (fiche 272).
     const generic = run({ reopen: { sessionId } }, { ...profile, diffSource: undefined })
     await generic.host.start()
     generic.host.stop()
     expect(generic.changes().map((f) => [f.path, f.added])).toEqual([
       ['notes.md', 14],
-      [native('src/calc.js'), 3]
+      [native('src/calc.js'), 3],
+      ['README.md', 0]
     ])
   })
 
@@ -1322,6 +1324,8 @@ describe('AgentHost', () => {
     await turn
     await waitFor(() => host.snapshot().status === 'exited')
     expect(host.snapshot().detail).toContain('SIGKILL')
+    // Dit en clair (fiche 272, recette).
+    expect(host.snapshot().detail).toContain('arrêt forcé')
     expect(transcript().at(-1)).toMatchObject({ kind: 'notice', level: 'error' })
 
     await host.restart()
@@ -1579,6 +1583,8 @@ describe('AgentHost', () => {
         await host.prompt('Compile')
         await waitFor(() => host.snapshot().status === 'exited', 10_000)
         expect(host.snapshot().detail).toContain('SIGKILL')
+    // Dit en clair (fiche 272, recette).
+    expect(host.snapshot().detail).toContain('arrêt forcé')
         await waitFor(() => sleeping().length === 0, 8000)
         expect(sleeping()).toEqual([])
         host.stop()
