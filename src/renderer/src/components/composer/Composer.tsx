@@ -280,7 +280,7 @@ function useInbox(
 
 export function Composer(props: Props) {
   const { snapshot, settings, onSend, onCancel, draftKey } = props
-  const view = composerView(snapshot, settings)
+  const view = composerView(snapshot)
   const { status, busy, queued, locked, controls, modeControl, agentLabel, blocker } = view
   // Brouillon (fiches 026, 155) : texte et pièces jointes.
   const { text, setText, attachments } = useComposerDraft({
@@ -492,7 +492,6 @@ export function Composer(props: Props) {
           items={commandMenu.matches}
           active={commandMenu.active}
           agentLabel={view.profileLabel}
-          agentLabels={view.installedAgents}
           onHover={commandMenu.setActive}
           onPick={(command) => pickCommand(command, false)}
         />

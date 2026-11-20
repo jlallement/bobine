@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AgentSettingsView, AgentSnapshot } from '@shared/agent'
+import type { AgentSnapshot } from '@shared/agent'
 import { composerView } from './composer-view'
 
 const snapshot = (change: Partial<AgentSnapshot> = {}): AgentSnapshot => ({
@@ -23,42 +23,33 @@ const snapshot = (change: Partial<AgentSnapshot> = {}): AgentSnapshot => ({
 
 describe('état de la zone de saisie (fiche 089)', () => {
   it('sans agent : rien à envoyer, noms par défaut', () => {
-    const view = composerView(null, null)
+    const view = composerView(null)
     expect(view).toMatchObject({ status: 'idle', busy: false, canSendNow: false, locked: false })
     expect(view.agentName).toBe('L’agent')
     expect(view.agentLabel).toBe('Agent')
-    expect(view.installedAgents).toEqual(['Agent'])
   })
 
   it('agent prêt, en réponse, arrêté : le message peut partir ; pendant une réponse, verrouillé', () => {
-    expect(composerView(snapshot(), null)).toMatchObject({ canSendNow: true, locked: false })
-    expect(composerView(snapshot({ status: 'busy' }), null)).toMatchObject({
+    expect(composerView(snapshot())).toMatchObject({ canSendNow: true, locked: false })
+    expect(composerView(snapshot({ status: 'busy' }))).toMatchObject({
       busy: true,
       canSendNow: true,
       locked: true
     })
-    expect(composerView(snapshot({ status: 'exited' }), null).canSendNow).toBe(true)
-    expect(composerView(snapshot({ status: 'starting' }), null)).toMatchObject({
+    expect(composerView(snapshot({ status: 'exited' })).canSendNow).toBe(true)
+    expect(composerView(snapshot({ status: 'starting' }))).toMatchObject({
       canSendNow: false,
       locked: true
     })
   })
 
-  it('noms de l’agent, mode, agents installés pour les badges du menu « / »', () => {
-    const settings = {
-      profiles: [
-        { label: 'IBM Bob', available: true },
-        { label: 'OpenCode', available: false }
-      ]
-    } as unknown as AgentSettingsView
+  it('noms de l’agent et mode ; badge du menu « / » : le profil de la conversation', () => {
     const view = composerView(
       snapshot({
         info: { profileId: 'bob', profileLabel: 'IBM Bob', agentName: 'Bob', workspace: '/p' }
-      }),
-      settings
+      })
     )
     expect(view).toMatchObject({ agentName: 'Bob', agentLabel: 'Bob', profileLabel: 'IBM Bob' })
-    expect(view.installedAgents).toEqual(['IBM Bob'])
     expect(view.modeControl?.id).toBe('mode')
     expect(view.modelControl).toBeUndefined()
   })
@@ -72,7 +63,7 @@ describe('état de la zone de saisie (fiche 089)', () => {
       currentValue: 'openai/gpt-6.1-sol',
       options: [{ value: 'openai/gpt-6.1-sol', name: 'openai/GPT-6.1 Sol' }]
     }
-    const view = composerView(snapshot({ controls: [...snapshot().controls, model] }), null)
+    const view = composerView(snapshot({ controls: [...snapshot().controls, model] }))
     expect(view.modelControl).toBe(model)
   })
 
@@ -89,11 +80,11 @@ describe('état de la zone de saisie (fiche 089)', () => {
       { value: 'plan', name: 'Plan' },
       { value: 'ask', name: 'Ask' }
     ]
-    expect(composerView(mode('plan', bob), null)).toMatchObject({
+    expect(composerView(mode('plan', bob))).toMatchObject({
       planMode: true,
       nextModeName: 'Ask'
     })
-    expect(composerView(mode('agent', bob), null)).toMatchObject({
+    expect(composerView(mode('agent', bob))).toMatchObject({
       planMode: false,
       nextModeName: undefined
     })
@@ -102,18 +93,18 @@ describe('état de la zone de saisie (fiche 089)', () => {
       { value: 'build', name: 'build' },
       { value: 'plan', name: 'plan' }
     ]
-    expect(composerView(mode('plan', opencode), null).nextModeName).toBe('build')
+    expect(composerView(mode('plan', opencode)).nextModeName).toBe('build')
     // Reconnu par le nom aussi ; un seul mode : pas de mode où aller.
-    expect(composerView(mode('p', [{ value: 'p', name: 'Plan' }]), null)).toMatchObject({
+    expect(composerView(mode('p', [{ value: 'p', name: 'Plan' }]))).toMatchObject({
       planMode: true,
       nextModeName: undefined
     })
-    expect(composerView(null, null).planMode).toBe(false)
+    expect(composerView(null).planMode).toBe(false)
   })
 
   it('action requise : le panneau de l’agent, seulement dans cet état', () => {
     const blocker = { kind: 'trust', message: 'Dossier non approuvé' } as AgentSnapshot['blocker']
-    expect(composerView(snapshot({ status: 'needs-action', blocker }), null).blocker).toBe(blocker)
-    expect(composerView(snapshot({ blocker }), null).blocker).toBeUndefined()
+    expect(composerView(snapshot({ status: 'needs-action', blocker })).blocker).toBe(blocker)
+    expect(composerView(snapshot({ blocker })).blocker).toBeUndefined()
   })
 })

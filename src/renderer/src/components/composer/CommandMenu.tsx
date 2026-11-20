@@ -8,8 +8,6 @@ interface Props {
   active: number
   /** Agent de la conversation : badge de ses propres commandes. */
   agentLabel: string
-  /** Agents installés : badges des commandes de l'app, valables avec chacun. */
-  agentLabels: readonly string[]
   onHover: (index: number) => void
   onPick: (command: AgentCommand) => void
 }
@@ -18,7 +16,7 @@ interface Props {
  * Liste des commandes « / » contre la zone de saisie, comme dans Claude Code : au-dessus, ou en
  * dessous quand il y a plus de place (écran d'accueil), sans jamais déborder de la fenêtre.
  */
-export function CommandMenu({ items, active, agentLabel, agentLabels, onHover, onPick }: Props) {
+export function CommandMenu({ items, active, agentLabel, onHover, onPick }: Props) {
   const { t } = useTranslation()
   const menu = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLDivElement>(null)
@@ -66,17 +64,14 @@ export function CommandMenu({ items, active, agentLabel, agentLabels, onHover, o
               </span>
               <span className="command-description">{command.description}</span>
               {/* Hors de la description (coupée si elle est longue) : toujours visibles. Commande
-                  de l'app : valable avec chaque agent, d'où un badge par agent installé. */}
+                  de l'app : valable avec chaque agent ; seul celui de la conversation est nommé
+                  (fiche 272, recette : « IBM Bob » dans une conversation OpenCode). */}
               <span
                 className="command-sources"
                 {...(command.source === 'app' ? { title: t('commandMenu.appCommand') } : {})}
               >
                 {command.source === 'app' ? (
-                  agentLabels.map((label) => (
-                    <span key={label} className="command-source from-app">
-                      {label}
-                    </span>
-                  ))
+                  <span className="command-source from-app">{agentLabel}</span>
                 ) : (
                   <span
                     className={`command-source${command.source ? ` from-${command.source}` : ''}`}
