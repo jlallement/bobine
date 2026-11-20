@@ -39,6 +39,9 @@ export async function fillesSuite(scheme) {
           await ui.waitFor(`!!${ui.$('child-dialog')}`)
           await ui.ev(`${ui.$('child-prompt')}.focus()`)
           await ui.type(prompt)
+          // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262) : un clic plus tôt
+          // est ignoré.
+          await ui.waitFor(`!${ui.$('child-launch')}.disabled`, 30000)
         }
 
         await ui.send('Organise le carnet')
@@ -463,6 +466,9 @@ async function agentChildren(ui, main) {
   const approve = async (title, action = 'start') => {
     await ui.waitFor(`!!${pendingRow(title)}`, 30000)
     const button = `${pendingRow(title)}.querySelector('[data-testid=proposal-${action}]')`
+    // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262) : un clic plus tôt est
+    // ignoré.
+    await ui.waitFor(`!${button}.disabled`, 30000)
     // Pointeur d'abord amené sur le bouton, puis visée de nouveau : une proposition qui arrive
     // déplace la mise en page sous le pointeur immobile ; Chromium y voit un survol de la zone de
     // saisie, qui lève la pause du fil (fiche 124), et le fil redescend après la première visée

@@ -44,6 +44,9 @@ export async function fillesVisibilitySuite(scheme) {
           await ui.waitFor(`!!${ui.$('child-prompt')}`)
           await ui.ev(`${ui.$('child-prompt')}.focus()`)
           await ui.type('/scenario attend-stop')
+          // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262) : un clic plus tôt
+          // est ignoré.
+          await ui.waitFor(`!${ui.$('child-launch')}.disabled`, 30000)
           const start = Date.now()
           await ui.click(ui.$('child-launch'))
           await ui.waitFor(`!!document.querySelector('[data-preparing]')`, 30000)

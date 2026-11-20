@@ -266,6 +266,23 @@ Pas de nouvelle dépendance.
   second passage, sans autre campagne (relevé toutes les 30 s), est vert en 21 min 14 s. Aucune
   capture `echec-*` restante. Captures `267-*` et `roles-travail-3a-jeton-vide` regardées.
 
+- 2026-11-20 : échec intermittent d'`inbox` sur `main` (suite complète, clair : « délai dépassé :
+  `!child-dialog` »). **Essai, pas l'app.** « Lancer en parallèle… » arme « Lancer » une fois le
+  dossier de la mère lu (fiches 240, 262 ; `ChildDialog.test.tsx` : un clic avant est ignoré) ;
+  l'essai cliquait aussitôt la consigne tapée. Sous charge, la lecture du dossier (git, juste après
+  le worktree de la première fille) arrive après le clic : la seconde fenêtre restait ouverte
+  (capture : une seule fille lancée, « Lancer » actif, aucune erreur). Prouvé en ralentissant
+  exprès la lecture du dossier (1,5 s, sonde temporaire retirée) : `inbox` échoue à coup sûr, clair
+  et sombre, au même endroit ; `filles` aussi, sur « Lancer » d'une proposition (même attente,
+  `ChildProposals`). Correction : `inbox`, `filles` (fenêtre et propositions) et
+  `filles-visibilite` attendent le bouton actif avant de cliquer ; aucune assertion relâchée. La
+  capture « compteur à 3 » (19/11, 21 h 36) est antérieure à `fe49ace` (22 h 00), qui a corrigé ce
+  cas-là (fiche 258, D35) : sondes dans `AttentionTracker` sur 5 campagnes chargées, le main voit
+  bien la conversation de l'accord au retour du focus. Même attente ensuite pour les clics sur
+  `proposal-start` de `filles-non-commite`, `filles-tech-lead` et `roles-travail` : avec la sonde,
+  `filles-tech-lead` échouait sans elle (les deux autres passaient, une attente plus haut couvrait
+  le délai) ; avec elle, les trois passent, avec et sans sonde.
+
 ## Écarts au plan
 
 - R7 : pas de signal « carte vue » du renderer : la règle de la 258, erreurs comprises, est retenue

@@ -197,6 +197,8 @@ async function proposalsRun(ui, git) {
       git('show', '--name-only', '--format=', 'HEAD') === 'plan.md',
     'Committer d’abord : plan.md commité seul, le .env reste non suivi dans le dossier'
   )
+  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   await unfold(ui, 1)
   await ui.waitFor(`${reports}.length === 1`, 30000)
@@ -251,6 +253,8 @@ async function noCommitRun(ui, git) {
     'Tâches proposées, dépôt sans commit : ce travail se fera dans ce dossier'
   )
   await ui.shot('filles-non-commite-8-sans-commit-proposition')
+  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   await unfold(ui, 1)
   await ui.waitFor(`${reports}.length === 2`, 30000)

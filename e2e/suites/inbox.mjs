@@ -124,6 +124,10 @@ async function inbox(ui, main) {
     await ui.waitFor(`!!${ui.$('child-dialog')}`)
     await ui.ev(`${ui.$('child-prompt')}.focus()`)
     await ui.type('/scenario streaming-texte')
+    // « Lancer » n'est armé qu'une fois le dossier de la mère lu (fiches 240, 262) : un clic plus
+    // tôt est ignoré (`ChildDialog.test.tsx`), et la fenêtre restait ouverte sous charge. On
+    // attend le bouton actif, comme un humain.
+    await ui.waitFor(`!${ui.$('child-launch')}.disabled`, 30000)
     await ui.click(ui.$('child-launch'))
     await ui.waitFor(`!${ui.$('child-dialog')}`, 30000)
     const id = await ui.ev(
