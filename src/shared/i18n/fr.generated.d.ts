@@ -4552,6 +4552,9 @@ export type FrResources = {
       readonly branch: 'Relu : la branche depuis {{base}}, {{files}}'
       readonly uncommitted: 'Relu : les modifications non commitées, {{files}}'
     }
+    readonly fileDiffReviewed: '{{path}} · version relue ({{range}})'
+    readonly fileChangedSince: 'Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.'
+    readonly fileUnchanged: 'Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien.'
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'

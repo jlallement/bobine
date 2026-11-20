@@ -319,17 +319,20 @@ export interface DiffTarget {
   line?: number
   endLine?: number
   since?: string
+  /** Fin de la portée relue, toute commitée (`Review.head`, fiche 267) : le diff relu. */
+  until?: string
 }
 
 /** Le fichier d'une remarque d'une relecture, à ouvrir. */
 export const findingTarget = (
   finding: Pick<ReviewFinding, 'file' | 'line' | 'endLine'>,
-  review: Pick<Review, 'since'>
+  review: Pick<Review, 'since' | 'head'>
 ): DiffTarget => ({
   path: finding.file,
   line: finding.line,
   ...(finding.endLine ? { endLine: finding.endLine } : {}),
-  ...(review.since ? { since: review.since } : {})
+  ...(review.since ? { since: review.since } : {}),
+  ...(review.since && review.head ? { until: review.head } : {})
 })
 
 /** Où se lit une remarque : « src/main.ts:42 », « src/main.ts:42-48 ». */

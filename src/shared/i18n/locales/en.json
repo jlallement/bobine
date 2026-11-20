@@ -4520,7 +4520,10 @@
       "commit": "Reviewed: commit {{commit}}, {{files}}",
       "branch": "Reviewed: the branch since {{base}}, {{files}}",
       "uncommitted": "Reviewed: the uncommitted changes, {{files}}"
-    }
+    },
+    "fileDiffReviewed": "{{path}} · reviewed version ({{range}})",
+    "fileChangedSince": "This file has changed since the review: this is what was reviewed; the list below shows its current state.",
+    "fileUnchanged": "This file did not change in what was reviewed: the finding is about older code."
   },
   "scheduled": {
     "title": "Scheduled tasks",

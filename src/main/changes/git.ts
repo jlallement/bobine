@@ -169,15 +169,21 @@ export class GitChangesReader {
   /**
    * Contenu au dernier commit et sur le disque d'un fichier du dossier, pour le diff. `since` :
    * un autre point de comparaison que `HEAD` — la base d'une branche ou le parent d'un commit relus
-   * par le Code reviewer (fiche 265) ; un identifiant de commit, rien d'autre.
+   * par le Code reviewer (fiche 265) ; un identifiant de commit, rien d'autre. `until` (avec
+   * `since`, fiche 267) : la fin d'une portée relue toute commitée — la version de ce commit au lieu
+   * du disque, pour montrer ce qui a été relu même si le fichier a été corrigé depuis
+   * (`changedSince`).
    */
   async fileDiff(
     workspace: string,
     path: string,
     from?: string,
-    since?: string
+    since?: string,
+    until?: string
   ): Promise<GitFileDiff> {
     if (since !== undefined && !COMMIT_ID.test(since)) throw new Error('Paramètre invalide : since')
+    if (until !== undefined && (since === undefined || !COMMIT_ID.test(until)))
+      throw new Error('Paramètre invalide : until')
     const file = insideWorkspace(workspace, path)
     const before = insideWorkspace(workspace, from ?? path)
     // `HEAD:./chemin` : relatif au dossier courant, même si son chemin passe par un lien symbolique.
@@ -187,14 +193,30 @@ export class GitChangesReader {
     })
     const old = shown.code === 0 ? shown.stdout : null
     const read = await readFile(file).catch(() => null)
-    const current = read && old ? await this.asGitSees(workspace, file, old, read) : read
+    const onDisk = read && old ? await this.asGitSees(workspace, file, old, read) : read
+    let current = onDisk
+    let changedSince = false
+    if (until !== undefined) {
+      const inRepoNow = relative(resolve(workspace), file).split(sep).join('/')
+      const reviewed = await this.run(this.git, ['show', `${until}:./${inRepoNow}`], {
+        cwd: workspace
+      })
+      current = reviewed.code === 0 ? reviewed.stdout : null
+      const disk =
+        onDisk && current ? await this.asGitSees(workspace, file, current, onDisk) : onDisk
+      changedSince = !(disk === null ? current === null : current !== null && disk.equals(current))
+    }
     if ((old && old.length > MAX_DIFF_BYTES) || (current && current.length > MAX_DIFF_BYTES)) {
       return { oldText: null, newText: null, tooLarge: true }
     }
     if ((old && isBinary(old)) || (current && isBinary(current))) {
       return { oldText: null, newText: null, binary: true }
     }
-    return { oldText: old ? text(old) : null, newText: current ? text(current) : null }
+    return {
+      oldText: old ? text(old) : null,
+      newText: current ? text(current) : null,
+      ...(changedSince ? { changedSince: true as const } : {})
+    }
   }
 
   /**

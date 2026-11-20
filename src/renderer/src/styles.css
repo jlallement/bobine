@@ -10736,6 +10736,29 @@ html.about-page body {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+/* Diff d'une remarque d'une branche ou de commits relus (fiches 265, 267). */
+.review-file-diff {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.review-file-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.review-file-diff-head svg {
+  flex: none;
+}
+.review-file-diff-note {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
 /* Gravité : pastille, la couleur doublée du mot (jamais la couleur seule). */
 .review-severity {
   flex-shrink: 0;

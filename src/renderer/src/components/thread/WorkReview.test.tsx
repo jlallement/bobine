@@ -294,6 +294,22 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     expect(within(card).getByTestId('work-show-diff').textContent).toBe('Voir sur le diff')
   })
 
+  it('fiche 267 (N2) : une portée commitée ouvre le diff de la portée relue (début et fin)', () => {
+    fakeAgent()
+    const subtasks = info([conversation('r', reviewer)])
+    view(
+      reviewedHere({ scope: 'commits', commits: 4, since: 'aaaa111', head: 'bbbb222' }),
+      subtasks
+    )
+    fireEvent.click(screen.getAllByTestId('work-finding-where')[0] as HTMLElement)
+    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('mere', {
+      path: 'src/main.ts',
+      line: 42,
+      since: 'aaaa111',
+      until: 'bbbb222'
+    })
+  })
+
   it('« Demander à OpenCode de corriger » : message qui nomme le relecteur, sa réponse visée à part', async () => {
     fakeAgent()
     const onAsk = vi.fn(async () => undefined)

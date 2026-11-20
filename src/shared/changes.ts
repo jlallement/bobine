@@ -161,6 +161,11 @@ export interface GitFileDiff {
   newText: string | null
   binary?: boolean
   tooLarge?: boolean
+  /**
+   * Diff d'une portée relue (`until`, fiche 267) : le fichier sur le disque n'est plus la version
+   * relue (corrigé depuis, par exemple).
+   */
+  changedSince?: true
 }
 
 /** Dossier et nom, pour l'affichage d'une ligne de la liste. */
@@ -184,7 +189,14 @@ export function relativeTo(workspace: string | undefined, path: string): string 
 }
 
 /**
- * Arguments de `changes:gitFile` : la conversation, le fichier, son ancien chemin (renommé), et un
- * point de comparaison autre que `HEAD` (`since`, relecture d'une branche ou d'un commit, fiche 265).
+ * Arguments de `changes:gitFile` : la conversation, le fichier, son ancien chemin (renommé), un
+ * point de comparaison autre que `HEAD` (`since`, relecture d'une branche ou d'un commit, fiche 265)
+ * et la fin d'une portée relue (`until`, fiche 267) : la version de ce commit plutôt que le disque.
  */
-export type GitFileArgs = [id: string, path: string, from?: string | null, since?: string]
+export type GitFileArgs = [
+  id: string,
+  path: string,
+  from?: string | null,
+  since?: string,
+  until?: string
+]

@@ -102,6 +102,28 @@ describe('GitChangesReader (vrai dépôt)', () => {
     await expect(reader.fileDiff(workspace, 'README.md', undefined, 'HEAD~1')).rejects.toThrow(
       'since'
     )
+    // Portée relue toute commitée (fiche 267, N2) : la version relue, pas le disque corrigé depuis.
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\nDEUX\n')
+    git('add', '.')
+    git('commit', '-q', '-m', 'relu')
+    const reviewed = String(git('rev-parse', 'HEAD')).trim()
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\ncorrigé\n')
+    expect(await reader.fileDiff(workspace, 'README.md', undefined, first, reviewed)).toEqual({
+      oldText: 'un\ndeux\ntrois\n',
+      newText: 'un\nDEUX\n',
+      changedSince: true
+    })
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\nDEUX\n')
+    expect(await reader.fileDiff(workspace, 'README.md', undefined, first, reviewed)).toEqual({
+      oldText: 'un\ndeux\ntrois\n',
+      newText: 'un\nDEUX\n'
+    })
+    await expect(
+      reader.fileDiff(workspace, 'README.md', undefined, undefined, reviewed)
+    ).rejects.toThrow('until')
+    await expect(reader.fileDiff(workspace, 'README.md', undefined, first, 'HEAD')).rejects.toThrow(
+      'until'
+    )
     await expect(reader.fileDiff(workspace, '../ailleurs.txt')).rejects.toThrow('hors du dossier')
   })
 })

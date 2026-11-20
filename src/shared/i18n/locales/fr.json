@@ -4721,7 +4721,10 @@
       "commit": "Relu : le commit {{commit}}, {{files}}",
       "branch": "Relu : la branche depuis {{base}}, {{files}}",
       "uncommitted": "Relu : les modifications non commitées, {{files}}"
-    }
+    },
+    "fileDiffReviewed": "{{path}} · version relue ({{range}})",
+    "fileChangedSince": "Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.",
+    "fileUnchanged": "Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien."
   },
   "scheduled": {
     "title": "Tâches planifiées",
