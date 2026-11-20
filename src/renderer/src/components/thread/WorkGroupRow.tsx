@@ -77,6 +77,9 @@ export function LaunchedRow({
       className={`work-group-item${open ? ' open' : ''}`}
       style={style}
       data-testid="work-row"
+      // Pointeur sur la ligne : la dépliée reste sous lui, le fil ne court pas vers le bas
+      // (fiches 124, 266 : l'appui sur « Ouvrir sa conversation » tombait à côté).
+      data-scroll-hold=""
       data-child-id={card.childId}
       data-state={state}
       data-role={card.role?.name}

@@ -25,7 +25,7 @@ What changes for you, version by version. Shown in Settings › About.
   per conversation, and says where to change the default model. A setting the agent applies after
   the timeout says so too.
 - Unfolding a row at the bottom of the conversation (tasks card, “Read more”) no longer scrolls the
-  conversation: the row stays under the pointer.
+  conversation under the pointer: it catches up with the bottom once the pointer leaves the card.
 - After the agent is woken up, the tasks card says “Responses passed to …”.
 - Durations: “< 1 s” under a second, never “0 s”, timeouts included.
 - “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the

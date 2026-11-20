@@ -156,10 +156,14 @@ restent en synonymes, avec les nouveaux.
   n'est pas la relecture du plan de fusion (le magasin `merge-plan-store` garde déjà l'ancien plan,
   hauteurs constantes au relevé) mais le **suivi du bas du fil** : une ligne dépliée en bas du fil
   agrandit le fil, qui défilait aussitôt vers le bas, et la ligne remontait sous le pointeur
-  (jusqu'à sortir de l'écran). Corrigé dans l'app (`useThreadScroll` : un clic sur un
-  `[aria-expanded]` du fil lâche le suivi du bas) ; essais `useThreadScroll.test.ts` ; l'e2e
-  `filles-fusion` clique juste après le retour, sans attente de stabilité (ligne désignée par son
-  travail).
+  (jusqu'à sortir de l'écran). Corrigé dans l'app par le mécanisme de la fiche 124 : chaque carte
+  de travail et chaque ligne d'une carte de groupe porte `data-scroll-hold` ; pointeur dessus, le
+  fil ne court pas vers le bas, il reprend en bas quand le pointeur en sort. (Un premier essai, qui
+  lâchait le suivi du bas au clic d'un `[aria-expanded]`, cassait `filles` : abandonné.) Essai
+  `WorkGroup.test.tsx` ; l'e2e `filles-fusion` clique juste après le retour, sans attente de
+  stabilité (ligne désignée par son travail), 8 fois sur 8 verte. Limite : pointeur posé sur une
+  carte de travail pendant qu'une réponse arrive, le fil attend qu'il en sorte (comme pour les
+  propositions).
 - **Coût** : « coût inconnu » remplace « coût non communiqué » ; partout (`/cost`, tâches
   planifiées, aparté, sous-agents, Mon activité : chiffre, tableau par modèle, conversations,
   infobulle du graphique ; moyenne et lignes du détail de la consommation) ; total partiel d'une

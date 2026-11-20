@@ -243,6 +243,9 @@ export function WorkCard({
       className={cardClass(state, inGroup, nested)}
       style={style}
       data-testid="work-card"
+      // Pointeur sur la carte : le fil ne court pas vers le bas sous lui (fiche 124) ; « Lire la
+      // suite » ou une réponse qui s'allonge ne déplacent pas le bouton visé (fiche 266).
+      data-scroll-hold=""
       // Dans un groupe, l'ancre du repère est sur la ligne (fiche 261).
       data-work-anchor={inGroup ? undefined : card.anchor}
       data-child-id={card.childId}

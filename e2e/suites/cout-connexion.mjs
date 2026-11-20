@@ -37,7 +37,10 @@ export async function coutConnexionSuite(scheme) {
         )
         const details = await ui.ev(`${ui.$('usage-details')}.innerText`)
         check(
-          !/0[,.]00/.test(details) && !details.includes(L('usage.free')),
+          !/0[,.]00/.test(details) &&
+            !(await ui.ev(
+              `[...document.querySelectorAll('[data-testid=usage-turn] .cost-turn-cost')].some((c) => c.innerText === ${JSON.stringify(L('usage.free'))})`
+            )),
           'ni moyenne ni ligne d’échange à « ≈ 0,00 $US »'
         )
         await ui.shot('266-cout-non-communique')

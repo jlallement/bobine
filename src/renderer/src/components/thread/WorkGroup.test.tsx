@@ -756,6 +756,15 @@ describe('revues UX et QA (fiche 264)', () => {
     expect(plain(relay.textContent)).toBe('Réponses transmises à OpenCode')
   })
 
+  it('ligne et carte retiennent le fil sous le pointeur : la ligne dépliée ne remonte pas (fiche 266)', async () => {
+    view(working(), info([child('a', { status: 'busy' }), child('b', { role: front })]))
+    await act(async () => {})
+    const rows = screen.getAllByTestId('work-row')
+    expect(rows.every((r) => r.closest('[data-scroll-hold]') === r)).toBe(true)
+    fireEvent.click(within(rows[1] as HTMLElement).getByTestId('work-row-toggle'))
+    expect(within(rows[1] as HTMLElement).getByTestId('work-card').dataset['scrollHold']).toBe('')
+  })
+
   it('après le réveil de l’agent : « Réponses transmises » (revue UX, fiche 266)', async () => {
     const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
     view(

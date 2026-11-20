@@ -225,8 +225,8 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   const said = await ui.ev(`${ui.$('subtasks-merge-advice')}?.innerText`)
   check(
     spaces(said) ===
-      'L’agent recommande « Tri des articles par rayon » ; « Tests de la sauvegarde locale » n’est pas encore prêt selon lui.',
-    `conseil : « … n’est pas encore prêt selon lui », sans « attend son avis » (${said})`
+      'L’agent recommande « Tri des articles par rayon » ; « Tests de la sauvegarde locale » n’est pas encore recommandé.',
+    `conseil : « … n’est pas encore recommandé », sans « attend son avis » (${said})`
   )
   await footInside(ui, group, 'largeur normale')
   await ui.reveal(group)

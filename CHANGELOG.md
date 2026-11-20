@@ -24,7 +24,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   brut, une seule fois par conversation, et dit où changer le modèle par défaut. Un réglage que
   l'agent applique après le délai le dit aussi.
 - Déplier une ligne en bas du fil (carte des travaux, « Lire la suite ») ne fait plus défiler le
-  fil : la ligne reste sous le pointeur.
+  fil sous le pointeur : il reprend en bas quand le pointeur quitte la carte.
 - Après le réveil de l'agent, la carte des travaux dit « Réponses transmises ».
 - Durées : « < 1 s » sous la seconde, jamais « 0 s », délais dépassés compris.
 - « Faire relire » lance le rôle **Code reviewer** : un seul chemin de relecture, depuis
