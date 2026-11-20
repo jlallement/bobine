@@ -99,9 +99,16 @@ mac:
   extraResources:
     - from: vendor/axe
       to: axe
+    # Langues de l'app déclarées à AppKit (fiche 272, recette : « Close All », « Enter Full Screen »
+    # restaient en anglais) : `fr.lproj` / `en.lproj` dans Contents/Resources, avec
+    # CFBundleLocalizations, pour que les éléments de menu ajoutés par macOS suivent la langue.
+    - from: build/lproj
+      to: .
   extendInfo:
     # Thème clair / sombre suivi automatiquement.
     NSRequiresAquaSystemAppearance: false
+    CFBundleDevelopmentRegion: en
+    CFBundleLocalizations: [en, fr]
 # Le hook crée le DMG avant la fermeture du trousseau temporaire de signature (ADR-0034).
 afterSign: ./scripts/native-dmg.mts
 dmg:

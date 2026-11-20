@@ -304,3 +304,20 @@ describe('version minimale de macOS', () => {
     expect(read('.github/workflows/release.yml')).toContain('macOS 15+')
   })
 })
+
+// Fiche 272 (recette) : menus de macOS à moitié en anglais faute de langues déclarées à AppKit.
+describe('langues de l’app déclarées à macOS', () => {
+  const root = join(import.meta.dirname, '..')
+  const read = (file: string) => readFileSync(join(root, file), 'utf8')
+
+  it('CFBundleLocalizations (en, fr) et un dossier .lproj par langue dans Contents/Resources', () => {
+    const config = read('electron-builder.yml')
+    expect(config).toMatch(/^ {4}CFBundleLocalizations: \[en, fr\]$/m)
+    expect(config).toMatch(/^ {4}- from: build\/lproj\n {6}to: \.$/m)
+    for (const lang of ['en', 'fr']) {
+      expect(read(`build/lproj/${lang}.lproj/InfoPlist.strings`)).toContain(
+        '"CFBundleName" = "Bobine";'
+      )
+    }
+  })
+})
