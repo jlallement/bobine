@@ -4639,7 +4639,8 @@
       "nothing": "Rien à relire : aucune modification dans ce dossier.",
       "notReviewer": "Cette conversation n’est pas une relecture.",
       "noRole": "Le rôle Code reviewer est introuvable.",
-      "reviewing": "Une relecture de « {{title}} » est déjà en cours : attendez sa fin."
+      "reviewing": "Une relecture de « {{title}} » est déjà en cours : attendez sa fin.",
+      "listFailed": "La relecture n’a pas pu lister les fichiers à relire (git n’a pas répondu à temps). Réessayez."
     },
     "title": "Relecture : {{title}}",
     "dialog": {
@@ -4720,16 +4721,36 @@
       "since": "depuis {{from}}",
       "sinceStart": "depuis le premier commit"
     },
-    "read": {
-      "commits": "Relu : {{commits}}, {{files}} ({{range}})",
-      "commitsDirty": "Relu : {{commits}} et le non commité, {{files}} ({{range}})",
-      "commit": "Relu : le commit {{commit}}, {{files}}",
-      "branch": "Relu : la branche depuis {{base}}, {{files}}",
-      "uncommitted": "Relu : les modifications non commitées, {{files}}"
-    },
     "fileDiffReviewed": "{{path}} · version relue ({{range}})",
     "fileChangedSince": "Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.",
-    "fileUnchanged": "Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien."
+    "fileUnchanged": "Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien.",
+    "read": {
+      "line": "Relu : {{what}}",
+      "clean": "Rien à signaler · relu : {{what}}"
+    },
+    "what": {
+      "conversation_one": "le commit de cette conversation, {{files}}",
+      "conversation_many": "les {{count}} commits de cette conversation, {{files}}",
+      "conversation_other": "les {{count}} commits de cette conversation, {{files}}",
+      "reviewed_one": "le commit fait depuis la dernière relecture, {{files}}",
+      "reviewed_many": "les {{count}} commits faits depuis la dernière relecture, {{files}}",
+      "reviewed_other": "les {{count}} commits faits depuis la dernière relecture, {{files}}",
+      "again_one": "nouvelle relecture du commit de cette conversation, {{files}}",
+      "again_many": "nouvelle relecture des {{count}} commits de cette conversation, {{files}}",
+      "again_other": "nouvelle relecture des {{count}} commits de cette conversation, {{files}}",
+      "fallback_one": "le dernier commit (début de la conversation introuvable), {{files}}",
+      "fallback_many": "les {{count}} derniers commits (début de la conversation introuvable), {{files}}",
+      "fallback_other": "les {{count}} derniers commits (début de la conversation introuvable), {{files}}",
+      "dirty": "les modifications non commitées et {{what}}",
+      "commit": "le commit {{commit}}, {{files}}",
+      "branch": "la branche depuis {{base}}, {{files}}",
+      "uncommitted": "les modifications non commitées, {{files}}",
+      "shallow": "historique partiel du dépôt",
+      "submodules_one": "{{count}} sous-module non relu",
+      "submodules_many": "{{count}} sous-modules non relus",
+      "submodules_other": "{{count}} sous-modules non relus",
+      "rangeTip": "Commits relus : {{range}}"
+    }
   },
   "scheduled": {
     "title": "Tâches planifiées",
@@ -4900,7 +4921,8 @@
     },
     "error": {
       "tooLong": "Message trop long (un million de caractères au plus).",
-      "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation."
+      "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation.",
+      "notRetryable": "Ce travail a répondu ou travaille encore : rien à relancer."
     },
     "agentNote": "Message de {{agent}} · {{time}}",
     "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous répondu, ou avec votre prochain message",
@@ -4919,8 +4941,7 @@
     "readOnlyBranch": "lecture seule · dans la branche relue",
     "findings": {
       "label": "Remarques de {{role}}",
-      "where": "Voir {{place}} sur le diff",
-      "clean": "Rien à signaler."
+      "where": "Voir {{place}} sur le diff"
     },
     "fixRequested": "Correction demandée",
     "fixRequestedAt": "Correction demandée · {{time}}",

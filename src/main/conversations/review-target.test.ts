@@ -4,13 +4,13 @@
  * sans commit, branche de travail sans changement, branches principales reconnues.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EMPTY_TREE, reviewBrief } from '@shared/review'
 import { gitCommand } from '../git/git-queue'
-import { reviewTarget, type TargetSource } from './review-target'
+import { ReviewListError, reviewTarget, type TargetSource } from './review-target'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -33,11 +33,13 @@ function repo(branch = 'main') {
       }
     }).trim()
   git('init', '-q', '-b', branch)
-  const commit = (file: string, content: string, message = file) => {
+  // L'utilisateur local du dépôt (revue QA : ses commits seuls sont ceux de la conversation).
+  git('config', 'user.email', 't@example.invalid')
+  const commit = (file: string, content: string, message = file, by?: string) => {
     clock += 60
     writeFileSync(join(dir, file), content)
     git('add', '.')
-    git('commit', '-q', '-m', message)
+    git(...(by ? ['-c', `user.email=${by}`] : []), 'commit', '-q', '-m', message)
     return git('rev-parse', 'HEAD')
   }
   const merge = (...args: string[]) => {
@@ -51,6 +53,14 @@ function repo(branch = 'main') {
     reviewTarget(gitCommand, { workspace: dir, title: 'T', ...extra }, auto)
   return { dir, git, commit, merge, now, target }
 }
+
+/** Un `run` dont la commande `sub` de git dépasse son délai ; les autres passent. */
+const slowOn =
+  (sub: string): typeof gitCommand =>
+  async (file, args, options) =>
+    args[0] === sub
+      ? { code: 1, stdout: Buffer.from(''), stderr: 'timeout', timedOut: true }
+      : gitCommand(file, args, options)
 
 describe('portée d’office du Code reviewer (fiche 265)', () => {
   it('dépôt sans commit : tout est nouveau, la consigne ne parle pas de `git diff HEAD`', async () => {
@@ -120,18 +130,39 @@ describe('portée d’office du Code reviewer (fiche 265)', () => {
     expect(gone).toMatchObject({ scope: 'commits', base: EMPTY_TREE, commits: 3 })
   })
 
-  it('jamais un commit de fusion seul : sa base devient le point commun de ses parents', async () => {
+  it('fusion seule qui réunit un travail de la conversation : sa base devient le point commun de ses parents', async () => {
     const r = repo()
     const common = r.commit('a.txt', 'a\n')
-    r.git('checkout', '-q', '-b', 'cote')
+    r.commit('c.txt', 'c\n')
+    // La conversation commence ; son travail part d'avant et commite sur sa branche.
+    const started = r.now()
+    r.git('checkout', '-q', '-b', 'cote', common)
     r.commit('b.txt', 'b\n')
     r.git('checkout', '-q', 'main')
-    r.commit('c.txt', 'c\n')
-    const started = r.now()
     const head = r.merge('cote')
     const target = await r.target(true, { startedAt: started })
     expect(target).toMatchObject({ scope: 'commits', base: common, commit: head, commits: 3 })
     expect(target.files.sort()).toEqual(['b.txt', 'c.txt'])
+  })
+
+  it('revue QA : seule la fusion est de la conversation (ses côtés d’avant) : contre son premier parent', async () => {
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    r.git('checkout', '-q', '-b', 'cote')
+    r.commit('b.txt', 'b\n')
+    r.git('checkout', '-q', 'main')
+    const parent = r.commit('c.txt', 'c\n')
+    // La conversation commence juste avant la fusion : elle n'a fait que fusionner.
+    const started = r.now()
+    const head = r.merge('cote')
+    const target = await r.target(true, { startedAt: started })
+    expect(target).toMatchObject({
+      scope: 'commits',
+      base: parent,
+      commit: head,
+      origin: 'conversation'
+    })
+    expect(target.files).toEqual(['b.txt'])
   })
 
   it('aucun commit de la conversation (ou création inconnue) : les 5 derniers', async () => {
@@ -179,6 +210,84 @@ describe('portée d’office du Code reviewer (fiche 265)', () => {
       scope: 'uncommitted',
       files: ['a.txt', 'neuf.txt']
     })
+  })
+
+  it('revue QA : un commit d’un autre (un `git pull`) arrête la plage de la conversation', async () => {
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    const started = r.now()
+    const theirs = r.commit('pull.txt', 'p\n', 'theirs', 'collegue@example.invalid')
+    const head = r.commit('b.txt', 'b\n')
+    const target = await r.target(true, { startedAt: started })
+    expect(target).toMatchObject({ scope: 'commits', base: theirs, commit: head, commits: 1 })
+    expect(target.files).toEqual(['b.txt'])
+  })
+
+  it('revue QA : tout est déjà relu, dossier propre : la plage relue de nouveau, et dit', async () => {
+    const r = repo()
+    const started = r.now()
+    r.commit('a.txt', 'a\n')
+    const head = r.commit('b.txt', 'b\n')
+    expect(await r.target(true, { startedAt: started, lastReviewed: head })).toMatchObject({
+      scope: 'commits',
+      origin: 'again',
+      commits: 2,
+      reviewedHead: head
+    })
+  })
+
+  it('revue QA : clone superficiel, la plage part du commit frontière, jamais de l’arbre vide', async () => {
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    r.commit('b.txt', 'b\n')
+    r.commit('c.txt', 'c\n')
+    const clone = realpathSync(mkdtempSync(join(tmpdir(), 'portee-clone-')))
+    dirs.push(clone)
+    execFileSync('git', ['clone', '-q', '--depth', '2', `file://${r.dir}`, clone])
+    execFileSync('git', ['config', 'user.email', 't@example.invalid'], { cwd: clone })
+    const boundary = execFileSync('git', ['rev-parse', 'HEAD~1'], {
+      cwd: clone,
+      encoding: 'utf8'
+    }).trim()
+    const target = await reviewTarget(gitCommand, { workspace: clone, title: 'T' }, true)
+    expect(target).toMatchObject({ scope: 'commits', base: boundary, shallow: true, commits: 1 })
+    expect(target.base).not.toBe(EMPTY_TREE)
+    expect(target.files).toEqual(['c.txt'])
+  })
+
+  it('revue QA : git trop lent, une erreur claire, jamais « rien à relire »', async () => {
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    await expect(
+      reviewTarget(slowOn('diff'), { workspace: r.dir, title: 'T' }, true)
+    ).rejects.toBeInstanceOf(ReviewListError)
+    await expect(
+      reviewTarget(slowOn('log'), { workspace: r.dir, title: 'T', startedAt: 0 }, true)
+    ).rejects.toBeInstanceOf(ReviewListError)
+  })
+
+  it('revue QA : un sous-module changé n’est pas dans les fichiers, il est compté', async () => {
+    const sub = repo()
+    sub.commit('s.txt', 's\n')
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    r.git('-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', sub.dir, 'vendor/sub')
+    writeFileSync(join(r.dir, 'b.txt'), 'b\n')
+    const target = await r.target(false)
+    expect(target.files.sort()).toEqual(['.gitmodules', 'b.txt'])
+    expect(target.submodules).toBe(1)
+  })
+
+  it('revue QA : une base de worktree qui ressemble à une option n’en est pas une', async () => {
+    const r = repo()
+    r.commit('a.txt', 'a\n')
+    const out = join(r.dir, 'sortie.txt')
+    await reviewTarget(
+      gitCommand,
+      { workspace: r.dir, title: 'T', worktree: { base: `--output=${out}` } },
+      true
+    ).catch(() => undefined)
+    expect(existsSync(out)).toBe(false)
   })
 
   it('non commité sur une branche : la branche contre sa base, fichiers nouveaux compris', async () => {

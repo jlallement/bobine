@@ -52,7 +52,7 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import type { ChildConversations, ChildOptions, ChildRequest } from './children'
 import type { ReadOnlyWatch } from '../roles/read-only-watch'
-import { reviewTarget } from './review-target'
+import { ReviewListError, reviewTarget } from './review-target'
 import { inGitRepo } from './helpers'
 import type { ConversationManager } from './manager'
 
@@ -564,12 +564,28 @@ export class ChildReviews {
     const target = await this.target(author, !!kept && kept.scope !== 'uncommitted')
     if (target.files.length === 0) throw new Error(t('review.error.nothing'))
     if (kept) {
-      const { error: _error, reply: _reply, ...rest } = kept
+      // La portée d'avant ne survit pas à la nouvelle (revue QA) : ni base, ni plage, ni compte.
+      const {
+        error: _error,
+        reply: _reply,
+        base: _base,
+        since: _since,
+        head: _head,
+        commits: _commits,
+        withUncommitted: _withUncommitted,
+        baseBranch: _baseBranch,
+        origin: _origin,
+        shallow: _shallow,
+        submodules: _submodules,
+        reviewedHead: _reviewedHead,
+        ...rest
+      } = kept
       this.post(reviewer, author.id, {
         ...rest,
         status: 'running',
         scope: target.scope,
         ...reviewBase(target),
+        ...(target.baseBranch ? { baseBranch: target.baseBranch } : {}),
         files: target.files.length
       })
     }
@@ -606,12 +622,20 @@ export class ChildReviews {
         ...(lastReviewed ? { lastReviewed } : {})
       },
       auto
-    )
+    ).catch((error: unknown) => {
+      // git en échec ou trop lent : dit tel quel, jamais « rien à relire » (revue QA, fiche 267).
+      if (error instanceof ReviewListError) {
+        log.warn('Relecture : portée illisible :', error.message)
+        throw new Error(t('review.error.listFailed'))
+      }
+      throw error
+    })
   }
 
   /**
-   * Fin de la dernière relecture finie de cette conversation sur sa branche principale (fiche 267) :
-   * la suivante part de là. Une relecture en échec, en cours ou arrêtée ne compte pas.
+   * HEAD relu par la dernière relecture finie d'une plage de commits de cette conversation
+   * (fiche 267, revue QA : toujours enregistré, non commité compris) : la suivante part de là. Une
+   * relecture en échec, en cours ou arrêtée ne compte pas.
    */
   private lastReviewed(authorId: string): string | undefined {
     let items: readonly TranscriptItem[]
@@ -624,11 +648,13 @@ export class ChildReviews {
       (i) =>
         i.kind === 'review' &&
         (i.authorId === undefined || i.authorId === authorId) &&
+        // Une plage de commits relue (non commité compris) : jusqu'à son HEAD, tout est relu. Pas
+        // une relecture du non commité seul, qui laisse les commits d'avant à relire.
         (i.scope === 'commits' || i.scope === 'commit') &&
         i.status === 'reported' &&
-        !!i.head
+        !!i.reviewedHead
     )
-    return done?.kind === 'review' ? done.head : undefined
+    return done?.kind === 'review' ? done.reviewedHead : undefined
   }
 
   /** Chemin vérifié (dans le dossier, rendu relatif) et code cité, lu dans le fichier. */
@@ -698,7 +724,18 @@ export function askText(
  */
 function reviewBase(
   target: ReviewTarget
-): Pick<Review, 'base' | 'since' | 'head' | 'commits' | 'withUncommitted'> {
+): Pick<
+  Review,
+  | 'base'
+  | 'since'
+  | 'head'
+  | 'commits'
+  | 'withUncommitted'
+  | 'origin'
+  | 'shallow'
+  | 'submodules'
+  | 'reviewedHead'
+> {
   const base = target.scope === 'commit' ? target.commit : target.base
   const since =
     target.scope === 'commit'
@@ -713,7 +750,11 @@ function reviewBase(
     ...(since ? { since } : {}),
     ...(committed && target.commit ? { head: target.commit } : {}),
     ...(target.scope === 'commits' ? { commits: target.commits ?? 1 } : {}),
-    ...(target.withUncommitted ? { withUncommitted: true as const } : {})
+    ...(target.withUncommitted ? { withUncommitted: true as const } : {}),
+    ...(target.origin ? { origin: target.origin } : {}),
+    ...(target.shallow ? { shallow: true as const } : {}),
+    ...(target.submodules ? { submodules: target.submodules } : {}),
+    ...(target.reviewedHead ? { reviewedHead: target.reviewedHead } : {})
   }
 }
 

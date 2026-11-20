@@ -4446,7 +4446,8 @@
       "nothing": "Nothing to review: no changes in this folder.",
       "notReviewer": "This conversation is not a review.",
       "noRole": "The Code reviewer role cannot be found.",
-      "reviewing": "A review of “{{title}}” is already running: wait until it ends."
+      "reviewing": "A review of “{{title}}” is already running: wait until it ends.",
+      "listFailed": "The review could not list the files to review (git did not answer in time). Try again."
     },
     "title": "Review: {{title}}",
     "dialog": {
@@ -4519,16 +4520,31 @@
       "since": "since {{from}}",
       "sinceStart": "since the first commit"
     },
-    "read": {
-      "commits": "Reviewed: {{commits}}, {{files}} ({{range}})",
-      "commitsDirty": "Reviewed: {{commits}} and the uncommitted changes, {{files}} ({{range}})",
-      "commit": "Reviewed: commit {{commit}}, {{files}}",
-      "branch": "Reviewed: the branch since {{base}}, {{files}}",
-      "uncommitted": "Reviewed: the uncommitted changes, {{files}}"
-    },
     "fileDiffReviewed": "{{path}} · reviewed version ({{range}})",
     "fileChangedSince": "This file has changed since the review: this is what was reviewed; the list below shows its current state.",
-    "fileUnchanged": "This file did not change in what was reviewed: the finding is about older code."
+    "fileUnchanged": "This file did not change in what was reviewed: the finding is about older code.",
+    "read": {
+      "line": "Reviewed: {{what}}",
+      "clean": "Nothing to report · reviewed: {{what}}"
+    },
+    "what": {
+      "conversation_one": "this conversation’s commit, {{files}}",
+      "conversation_other": "this conversation’s {{count}} commits, {{files}}",
+      "reviewed_one": "the commit made since the last review, {{files}}",
+      "reviewed_other": "the {{count}} commits made since the last review, {{files}}",
+      "again_one": "this conversation’s commit, reviewed again, {{files}}",
+      "again_other": "this conversation’s {{count}} commits, reviewed again, {{files}}",
+      "fallback_one": "the last commit (start of the conversation not found), {{files}}",
+      "fallback_other": "the last {{count}} commits (start of the conversation not found), {{files}}",
+      "dirty": "the uncommitted changes and {{what}}",
+      "commit": "commit {{commit}}, {{files}}",
+      "branch": "the branch since {{base}}, {{files}}",
+      "uncommitted": "the uncommitted changes, {{files}}",
+      "shallow": "partial repository history",
+      "submodules_one": "{{count}} submodule not reviewed",
+      "submodules_other": "{{count}} submodules not reviewed",
+      "rangeTip": "Reviewed commits: {{range}}"
+    }
   },
   "scheduled": {
     "title": "Scheduled tasks",
@@ -4695,7 +4711,8 @@
     },
     "error": {
       "tooLong": "Message too long (one million characters at most).",
-      "gone": "This task no longer exists, or is no longer linked to this conversation."
+      "gone": "This task no longer exists, or is no longer linked to this conversation.",
+      "notRetryable": "This task has replied or is still working: nothing to retry."
     },
     "agentNote": "Message from {{agent}} · {{time}}",
     "relayPendingWake": "Not yet passed to {{agent}} — it will be once all its tasks have replied, or with your next message",
@@ -4713,8 +4730,7 @@
     "readOnlyBranch": "read-only · in the reviewed branch",
     "findings": {
       "label": "Comments from {{role}}",
-      "where": "Show {{place}} on the diff",
-      "clean": "Nothing to report."
+      "where": "Show {{place}} on the diff"
     },
     "fixRequested": "Fix requested",
     "fixRequestedAt": "Fix requested · {{time}}",

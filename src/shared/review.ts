@@ -59,8 +59,27 @@ export type ReviewStatus = 'running' | 'reported' | 'silent' | 'failed'
  */
 export type ReviewScope = 'branch' | 'uncommitted' | 'commit' | 'commits'
 
+/**
+ * D'où part une portée `commits` (fiche 267) : la dernière relecture (`reviewed`), la création de
+ * la conversation (`conversation`), la même plage relue de nouveau (`again`), ou, à défaut, les
+ * derniers commits (`fallback`).
+ */
+export type ReviewRangeOrigin = 'reviewed' | 'conversation' | 'again' | 'fallback'
+
+/** Ce que disent d'une portée la carte et la consigne (fiche 267). */
+interface RangeFacts {
+  /** Portée `commits` : d'où part la plage. */
+  origin?: ReviewRangeOrigin
+  /** Clone superficiel : la plage part du commit frontière, l'historique d'avant manque. */
+  shallow?: true
+  /** Sous-modules changés, pas relus (un identifiant de commit seulement). */
+  submodules?: number
+  /** HEAD au départ de la relecture, toujours : la suivante part de là (`lastReviewed`). */
+  reviewedHead?: string
+}
+
 /** Carte « Relecture » du fil de l'auteur : un seul élément par relecture, remplacé à chaque étape. */
-export interface Review {
+export interface Review extends RangeFacts {
   /** Conversation du relecteur. */
   reviewId: string
   /**
@@ -117,7 +136,7 @@ export interface Review {
 }
 
 /** Ce que la consigne cite du travail relu. */
-export interface ReviewTarget {
+export interface ReviewTarget extends RangeFacts {
   scope: ReviewScope
   /** Commit complet du point de comparaison (branche), ou le parent du commit relu (`commit`). */
   base?: string
@@ -172,13 +191,26 @@ export function reviewBrief(target: ReviewTarget, focus?: string): string {
     ...shown.map((file) => `- ${file}`),
     ...(more > 0 ? [`- … and ${more} more`] : [])
   ].join('\n')
+  const notes = [
+    ...(target.shallow
+      ? [
+          'This repository is a shallow clone: the range starts at the oldest commit available, older history is missing.'
+        ]
+      : []),
+    ...(target.submodules
+      ? [
+          `${target.submodules} changed submodule(s) are not part of this review (only their commit id changed here).`
+        ]
+      : [])
+  ]
+  const noted = notes.length ? `\n\n${notes.join('\n')}` : ''
   const extra = focus?.trim()
     ? `\n\nThe user asks you to look in particular at:\n${focus.trim()}`
     : ''
   return (
     `${REVIEW_BRIEF_LEAD} Review the work of the conversation "${target.authorTitle}" before ` +
     `the user keeps or merges it.\n\n` +
-    `What to review: ${what}\n\nFiles changed:\n${files}${extra}\n\n` +
+    `What to review: ${what}${noted}\n\nFiles changed:\n${files}${extra}\n\n` +
     'How:\n' +
     '1. Correctness first: bugs, wrong logic, missed cases, broken error handling, security, ' +
     'races, tests that do not test what they claim. Then simplification: duplicated code, needless ' +

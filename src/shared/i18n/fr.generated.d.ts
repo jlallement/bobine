@@ -4474,6 +4474,7 @@ export type FrResources = {
       readonly notReviewer: 'Cette conversation n’est pas une relecture.'
       readonly noRole: 'Le rôle Code reviewer est introuvable.'
       readonly reviewing: 'Une relecture de « {{title}} » est déjà en cours : attendez sa fin.'
+      readonly listFailed: 'La relecture n’a pas pu lister les fichiers à relire (git n’a pas répondu à temps). Réessayez.'
     }
     readonly title: 'Relecture : {{title}}'
     readonly dialog: {
@@ -4550,16 +4551,36 @@ export type FrResources = {
       readonly since: 'depuis {{from}}'
       readonly sinceStart: 'depuis le premier commit'
     }
-    readonly read: {
-      readonly commits: 'Relu : {{commits}}, {{files}} ({{range}})'
-      readonly commitsDirty: 'Relu : {{commits}} et le non commité, {{files}} ({{range}})'
-      readonly commit: 'Relu : le commit {{commit}}, {{files}}'
-      readonly branch: 'Relu : la branche depuis {{base}}, {{files}}'
-      readonly uncommitted: 'Relu : les modifications non commitées, {{files}}'
-    }
     readonly fileDiffReviewed: '{{path}} · version relue ({{range}})'
     readonly fileChangedSince: 'Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.'
     readonly fileUnchanged: 'Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien.'
+    readonly read: {
+      readonly line: 'Relu : {{what}}'
+      readonly clean: 'Rien à signaler · relu : {{what}}'
+    }
+    readonly what: {
+      readonly conversation_one: 'le commit de cette conversation, {{files}}'
+      readonly conversation_many: 'les {{count}} commits de cette conversation, {{files}}'
+      readonly conversation_other: 'les {{count}} commits de cette conversation, {{files}}'
+      readonly reviewed_one: 'le commit fait depuis la dernière relecture, {{files}}'
+      readonly reviewed_many: 'les {{count}} commits faits depuis la dernière relecture, {{files}}'
+      readonly reviewed_other: 'les {{count}} commits faits depuis la dernière relecture, {{files}}'
+      readonly again_one: 'nouvelle relecture du commit de cette conversation, {{files}}'
+      readonly again_many: 'nouvelle relecture des {{count}} commits de cette conversation, {{files}}'
+      readonly again_other: 'nouvelle relecture des {{count}} commits de cette conversation, {{files}}'
+      readonly fallback_one: 'le dernier commit (début de la conversation introuvable), {{files}}'
+      readonly fallback_many: 'les {{count}} derniers commits (début de la conversation introuvable), {{files}}'
+      readonly fallback_other: 'les {{count}} derniers commits (début de la conversation introuvable), {{files}}'
+      readonly dirty: 'les modifications non commitées et {{what}}'
+      readonly commit: 'le commit {{commit}}, {{files}}'
+      readonly branch: 'la branche depuis {{base}}, {{files}}'
+      readonly uncommitted: 'les modifications non commitées, {{files}}'
+      readonly shallow: 'historique partiel du dépôt'
+      readonly submodules_one: '{{count}} sous-module non relu'
+      readonly submodules_many: '{{count}} sous-modules non relus'
+      readonly submodules_other: '{{count}} sous-modules non relus'
+      readonly rangeTip: 'Commits relus : {{range}}'
+    }
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'
@@ -4731,6 +4752,7 @@ export type FrResources = {
     readonly error: {
       readonly tooLong: 'Message trop long (un million de caractères au plus).'
       readonly gone: 'Ce travail n’existe plus, ou n’est plus rattaché à cette conversation.'
+      readonly notRetryable: 'Ce travail a répondu ou travaille encore : rien à relancer.'
     }
     readonly agentNote: 'Message de {{agent}} · {{time}}'
     readonly relayPendingWake: 'Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous répondu, ou avec votre prochain message'
@@ -4750,7 +4772,6 @@ export type FrResources = {
     readonly findings: {
       readonly label: 'Remarques de {{role}}'
       readonly where: 'Voir {{place}} sur le diff'
-      readonly clean: 'Rien à signaler.'
     }
     readonly fixRequested: 'Correction demandée'
     readonly fixRequestedAt: 'Correction demandée · {{time}}'

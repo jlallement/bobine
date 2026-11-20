@@ -517,6 +517,25 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     expect(first?.kind === 'user' && first.text).toContain('You are read-only')
   })
 
+  it('fiche 267, revue QA : « Relancer » refusé pour un travail qui a répondu', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    await env.settled(childId)
+    await env.waitFor(
+      () => env.items(env.mother).some((i) => i.kind === 'child-report' && i.outcome === 'done'),
+      'réponse'
+    )
+    expect(() => env.children.reply(env.mother, childId, 'Relis.', { retry: true })).toThrow(
+      'rien à relancer'
+    )
+    // Répondre, lui, reste possible.
+    expect(env.children.reply(env.mother, childId, 'Et ensuite ?')).toBe('sent')
+  })
+
   it('fiche 263, revue QA : « Répondre » refusé pour une mère archivée ; un échec d’envoi est dit à la mère', async () => {
     const env = await environment()
     const result = await startRoleChildren(env.children, env.mother, {

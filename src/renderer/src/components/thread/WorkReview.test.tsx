@@ -349,7 +349,10 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     const card = screen.getByTestId('work-card')
     expect(card.dataset['findings']).toBe('0')
     expect(within(card).getByTestId('work-state').textContent).toMatch(/^rien à signaler · /)
-    expect(within(card).getByTestId('work-findings-clean').textContent).toBe('Rien à signaler.')
+    // Rien à signaler, et sur quoi (fiche 267) : une seule ligne.
+    expect(plain(within(card).getByTestId('work-findings-clean').textContent)).toBe(
+      'Rien à signaler · relu : les modifications non commitées, 2 fichiers'
+    )
     expect(within(card).getByTestId('work-review-summary').textContent).toBe(
       'Le changement est correct.'
     )
@@ -374,10 +377,12 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
       info([conversation('r', reviewer)])
     )
     const card = screen.getByTestId('work-card')
-    expect(within(card).getByTestId('work-findings-clean')).toBeTruthy()
-    expect(plain(within(card).getByTestId('work-review-scope').textContent)).toBe(
-      'Relu : 4 commits, 12 fichiers (ffa5062..db4a5e1)'
+    expect(plain(within(card).getByTestId('work-findings-clean').textContent)).toBe(
+      'Rien à signaler · relu : les 4 commits de cette conversation, 12 fichiersffa5062..db4a5e1'
     )
+    const range = within(card).getByTestId('work-review-range')
+    expect(range.textContent).toBe('ffa5062..db4a5e1')
+    expect(plain(range.getAttribute('title'))).toBe('Commits relus : ffa5062..db4a5e1')
     unmount()
     // Depuis le premier commit, avec le non commité ; et avec des remarques.
     view(
@@ -391,8 +396,41 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
       info([conversation('r', reviewer)])
     )
     expect(screen.getAllByTestId('work-finding')).toHaveLength(3)
+    const line = screen.getByTestId('work-review-scope')
+    expect(plain(line.textContent)).toBe(
+      'Relu : les modifications non commitées et le commit de cette conversation, 3 fichiersdepuis le premier commit'
+    )
+    // Juste sous l'avis, avant la liste des remarques (revue UX).
+    const summary = screen.getByTestId('work-review-summary')
+    const list = screen.getByTestId('work-findings')
+    expect(summary.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(line.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('fiche 267, revue UX : d’où part la plage, historique partiel et sous-modules', () => {
+    fakeAgent()
+    const { unmount } = view(
+      reviewedHere({ findings: [], scope: 'commits', origin: 'reviewed', commits: 2, files: 3 }),
+      info([conversation('r', reviewer)])
+    )
+    expect(plain(screen.getByTestId('work-review-scope').textContent)).toContain(
+      'les 2 commits faits depuis la dernière relecture, 3 fichiers'
+    )
+    unmount()
+    view(
+      reviewedHere({
+        findings: [],
+        scope: 'commits',
+        origin: 'fallback',
+        commits: 5,
+        files: 4,
+        shallow: true,
+        submodules: 2
+      }),
+      info([conversation('r', reviewer)])
+    )
     expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
-      'Relu : 1 commit et le non commité, 3 fichiers (depuis le premier commit)'
+      'Rien à signaler · relu : les 5 derniers commits (début de la conversation introuvable), 4 fichiers · historique partiel du dépôt · 2 sous-modules non relus'
     )
   })
 
@@ -400,7 +438,7 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     fakeAgent()
     const { unmount } = view(reviewedHere({ findings: [] }), info([conversation('r', reviewer)]))
     expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
-      'Relu : les modifications non commitées, 2 fichiers'
+      'Rien à signaler · relu : les modifications non commitées, 2 fichiers'
     )
     unmount()
     view(
@@ -413,7 +451,7 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
       info([conversation('r', reviewer)])
     )
     expect(plain(screen.getByTestId('work-review-scope').textContent)).toBe(
-      'Relu : la branche depuis a3f2c1e, 2 fichiers'
+      'Rien à signaler · relu : la branche depuis a3f2c1e, 2 fichiers'
     )
   })
 

@@ -32,27 +32,56 @@ export function reviewRange(
     : t('review.scope.rangeFromStart', { to: short(to), ...o })
 }
 
-/** « Relu : … » d'une relecture enregistrée (carte du Code reviewer, carte « Relecture »). */
-export function reviewedText(
-  review: Pick<
-    Review,
-    'scope' | 'base' | 'since' | 'head' | 'commits' | 'withUncommitted' | 'files'
-  >,
-  o: Lng = {}
-): string {
+type Reviewed = Pick<
+  Review,
+  | 'scope'
+  | 'base'
+  | 'since'
+  | 'head'
+  | 'commits'
+  | 'withUncommitted'
+  | 'files'
+  | 'origin'
+  | 'shallow'
+  | 'submodules'
+>
+
+/**
+ * Ce qui a été relu, sans « Relu : » (fiche 267, revue UX) : d'où part la plage — « les 4 commits
+ * de cette conversation, 3 fichiers », « … depuis la dernière relecture », « les 5 derniers commits
+ * (début de la conversation introuvable) » —, l'historique partiel d'un clone superficiel et les
+ * sous-modules non relus.
+ */
+export function reviewedWhat(review: Reviewed, o: Lng = {}): string {
   const files = t('review.card.files', { count: review.files, ...o })
+  let what: string
   if (review.scope === 'commits') {
-    const dirty = !!review.withUncommitted
-    return t(dirty ? 'review.read.commitsDirty' : 'review.read.commits', {
-      commits: t('review.scope.commits', { count: review.commits ?? 1, ...o }),
-      files,
-      range: reviewRange(review.since, review.head, dirty, o),
-      ...o
-    })
+    const count = review.commits ?? 1
+    const range = t(`review.what.${review.origin ?? 'conversation'}`, { count, files, ...o })
+    what = review.withUncommitted ? t('review.what.dirty', { what: range, ...o }) : range
+  } else if (review.scope === 'commit' && review.base) {
+    what = t('review.what.commit', { commit: review.base, files, ...o })
+  } else if (review.scope === 'branch' && review.base) {
+    what = t('review.what.branch', { base: review.base, files, ...o })
+  } else {
+    what = t('review.what.uncommitted', { files, ...o })
   }
-  if (review.scope === 'commit' && review.base)
-    return t('review.read.commit', { commit: review.base, files, ...o })
-  if (review.scope === 'branch' && review.base)
-    return t('review.read.branch', { base: review.base, files, ...o })
-  return t('review.read.uncommitted', { files, ...o })
+  const extras = [
+    ...(review.shallow ? [t('review.what.shallow', { ...o })] : []),
+    ...(review.submodules ? [t('review.what.submodules', { count: review.submodules, ...o })] : [])
+  ]
+  return extras.length ? `${what} · ${extras.join(' · ')}` : what
+}
+
+/** La plage relue, « ffa5062..db4a5e1 », pour une portée `commits` ; sinon rien. */
+export function reviewedRange(review: Reviewed, o: Lng = {}): string | undefined {
+  if (review.scope !== 'commits') return undefined
+  return reviewRange(review.since, review.head, !!review.withUncommitted, o)
+}
+
+/** « Relu : … » d'une relecture enregistrée (carte « Relecture » d'avant la fiche 265). */
+export function reviewedText(review: Reviewed, o: Lng = {}): string {
+  const range = reviewedRange(review, o)
+  const line = t('review.read.line', { what: reviewedWhat(review, o), ...o })
+  return range ? `${line} (${range})` : line
 }
