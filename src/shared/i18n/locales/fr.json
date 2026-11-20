@@ -846,7 +846,7 @@
       "unknownStep": "Étape inconnue : {{step}}",
       "unknownKey": "Clé inconnue pour cet agent : {{env}}",
       "noApiKeys": "Clés d’API indisponibles",
-      "folderMissing": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.",
+      "folderMissing": "Dossier introuvable : {{folder}}",
       "noFolder": "Choisissez d’abord un dossier",
       "noWorktrees": "Worktrees indisponibles",
       "unknownAgent": "Agent inconnu : {{agent}}",
@@ -861,7 +861,8 @@
       "busyArchive": "L’agent répond encore : arrêtez-le avant d’archiver la conversation",
       "busyArchiveChild": "« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine",
       "unknown": "Conversation inconnue : {{id}}",
-      "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse"
+      "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse",
+      "folderGoneAtSend": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation."
     },
     "newTitle": "Nouvelle conversation",
     "retired": {

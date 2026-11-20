@@ -661,7 +661,7 @@ export class ConversationManager {
     if (this.promptGate?.(id, text, attachments, options)) return
     const conversation = this.get(id)
     const gone = missingFolder(conversation.record.workspace)
-    if (gone) throw new Error(t('conversations.error.folderMissing', { folder: gone }))
+    if (gone) throw new Error(t('conversations.error.folderGoneAtSend', { folder: gone }))
     // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
     const status = conversation.snapshot?.status
     if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)

@@ -832,7 +832,7 @@ export type FrResources = {
       readonly unknownStep: 'Étape inconnue : {{step}}'
       readonly unknownKey: 'Clé inconnue pour cet agent : {{env}}'
       readonly noApiKeys: 'Clés d’API indisponibles'
-      readonly folderMissing: 'Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.'
+      readonly folderMissing: 'Dossier introuvable : {{folder}}'
       readonly noFolder: 'Choisissez d’abord un dossier'
       readonly noWorktrees: 'Worktrees indisponibles'
       readonly unknownAgent: 'Agent inconnu : {{agent}}'
@@ -848,6 +848,7 @@ export type FrResources = {
       readonly busyArchiveChild: '« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine'
       readonly unknown: 'Conversation inconnue : {{id}}'
       readonly busyFolders: 'L’agent répond encore : changez les dossiers de la conversation après sa réponse'
+      readonly folderGoneAtSend: 'Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.'
     }
     readonly newTitle: 'Nouvelle conversation'
     readonly retired: {
