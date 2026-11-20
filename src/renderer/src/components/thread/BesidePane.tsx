@@ -12,6 +12,7 @@ import { PinnedPlan } from './PinnedPlan'
 import { pinnedPlanOf } from './PlanList'
 import { Tip } from '../common/Menus'
 import { Transcript } from './Transcript'
+import { withoutCardedRefusal } from '@shared/transcript-notice'
 import { useTranslation } from 'react-i18next'
 
 type Actions = BesideActions
@@ -90,7 +91,7 @@ export function BesidePane({
         <div className="column">
           <Transcript
             key={summary.id}
-            items={transcript.items}
+            items={withoutCardedRefusal(transcript.items, snapshot)}
             terminals={transcript.terminals}
             onRespondPermission={actions.respondPermission}
             onRespondElicitation={actions.respondElicitation}

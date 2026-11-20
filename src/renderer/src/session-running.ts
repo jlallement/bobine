@@ -7,6 +7,7 @@
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import { childState } from '@shared/children'
+import { refusedModel } from '@shared/model-refused'
 import type { DevServerView } from '@shared/launch'
 import type { TerminalTabInfo } from '@shared/terminal'
 import type { TranscriptItem } from '@shared/transcript'
@@ -31,6 +32,11 @@ export interface RunningEntry {
   stop?: RunningStop
   /** Conversation fille, à ouvrir d'un clic. */
   childId?: string
+  /**
+   * Fille bloquée par un modèle refusé (fiche 267) : « bloqué », sans durée qui court ni
+   * « Arrêter » (rien ne tourne).
+   */
+  blocked?: true
 }
 
 /** Ce que les sources disent maintenant ; `ended` : fini, à l'heure `endedAt` si connue. */
@@ -154,19 +160,20 @@ export function subagentObservations(items: readonly TranscriptItem[]): RunningO
  * qui ne travaille plus n'est pas observée : le suivi la range dans « Terminées ».
  */
 export function childObservations(
-  children: readonly Pick<ConversationSummary, 'id' | 'title' | 'status'>[],
+  children: readonly Pick<ConversationSummary, 'id' | 'title' | 'status' | 'modelRefused'>[],
   attention: AttentionState
 ): RunningObservation[] {
   return children.flatMap((child): RunningObservation[] => {
     const state = childState(child, attention[child.id])
     if (state !== 'running' && state !== 'waiting') return []
+    const blocked = !!refusedModel(child)
     return [
       {
         key: `child:${child.id}`,
         kind: 'child',
         label: child.title,
         childId: child.id,
-        stop: { kind: 'child', childId: child.id }
+        ...(blocked ? { blocked: true as const } : { stop: { kind: 'child', childId: child.id } })
       }
     ]
   })

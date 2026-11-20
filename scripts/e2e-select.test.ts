@@ -19,7 +19,8 @@ import {
   selectSuites,
   suiteSources,
   supported,
-  tasksFor
+  tasksFor,
+  staleFailureFiles
 } from './e2e-select.mts'
 import { ALL_FEATURES } from '../src/shared/platform.ts'
 
@@ -296,5 +297,31 @@ describe('catalogue des suites (e2e/catalog.mjs)', async () => {
       return !files.some((f) => re.test(f))
     })
     expect(orphans).toEqual([])
+  })
+})
+
+describe('captures d’échec périmées (fiche 267, revue UX)', () => {
+  const files = [
+    'echec-relecture-commits-01-de-lai-de-passe-light.png',
+    'echec-relecture-commits-01-de-lai-de-passe-light.txt',
+    'echec-relecture-commits-01-de-lai-de-passe-dark.png',
+    'echec-relecture-01-autre-light.png',
+    'en-echec-relecture-commits-01-x-light.png',
+    '267-relecture-portee-light.png'
+  ]
+  it('celles de la suite et du thème repassés au vert, rien d’autre', () => {
+    expect(staleFailureFiles(files, [{ name: 'relecture-commits', scheme: 'light' }])).toEqual([
+      'echec-relecture-commits-01-de-lai-de-passe-light.png',
+      'echec-relecture-commits-01-de-lai-de-passe-light.txt'
+    ])
+    // Une suite au nom plus court n'efface pas celle qui la prolonge.
+    expect(staleFailureFiles(files, [{ name: 'relecture', scheme: 'light' }])).toEqual([
+      'echec-relecture-01-autre-light.png'
+    ])
+    // Sans thème : tous ses thèmes ; en anglais : les captures `en-`.
+    expect(staleFailureFiles(files, [{ name: 'relecture-commits' }])).toHaveLength(3)
+    expect(
+      staleFailureFiles(files, [{ name: 'relecture-commits', scheme: 'light' }], 'en')
+    ).toEqual(['en-echec-relecture-commits-01-x-light.png'])
   })
 })

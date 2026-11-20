@@ -296,12 +296,146 @@ describe('remarques du Code reviewer (fiche 265)', () => {
       </Tooltip.Provider>
     )
     const block = await waitFor(() => screen.getByTestId('review-file-diff'))
-    expect(since).toHaveBeenCalledWith('c-branche', 'src/ordre.js', undefined, 'a3f2c1e0')
+    expect(since).toHaveBeenCalledWith(
+      'c-branche',
+      'src/ordre.js',
+      undefined,
+      'a3f2c1e0',
+      undefined
+    )
     expect(block.textContent).toContain('src/ordre.js depuis a3f2c1e')
     await waitFor(() => expect(block.querySelectorAll('tr.diff-focus')).toHaveLength(2))
     expect(
       [...block.querySelectorAll('tr.diff-focus')].map((r) => r.getAttribute('data-line'))
     ).toEqual(['2', '3'])
+  })
+
+  it('fiche 267 (N2) : portée commitée, le diff relu même corrigé depuis, et la vue le dit', async () => {
+    const gitFile = vi.fn(async () => ({
+      oldText: 'a\n',
+      newText: 'a\nb\n',
+      changedSince: true as const
+    }))
+    window.api = {
+      ...window.api,
+      changes: { git: async () => REPO, gitFile }
+    } as unknown as Window['api']
+    Element.prototype.scrollIntoView = vi.fn()
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c-relu"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+          initialFile={{
+            path: 'src/storage.ts',
+            line: 2,
+            since: 'ffa5062000',
+            until: 'db4a5e1000'
+          }}
+        />
+      </Tooltip.Provider>
+    )
+    const block = await waitFor(() => screen.getByTestId('review-file-diff'))
+    expect(gitFile).toHaveBeenCalledWith(
+      'c-relu',
+      'src/storage.ts',
+      undefined,
+      'ffa5062000',
+      'db4a5e1000'
+    )
+    expect(block.textContent).toContain('src/storage.ts · version relue (ffa5062..db4a5e1)')
+    await waitFor(() => screen.getByTestId('review-file-changed'))
+    expect(block.querySelectorAll('tr.diff-focus')).toHaveLength(1)
+    // « Voir la version actuelle » (revue UX) : le diff jusqu'au disque, puis retour.
+    fireEvent.click(screen.getByTestId('review-file-toggle'))
+    await waitFor(() =>
+      expect(gitFile).toHaveBeenLastCalledWith(
+        'c-relu',
+        'src/storage.ts',
+        undefined,
+        'ffa5062000',
+        undefined
+      )
+    )
+    expect(screen.getByTestId('review-file-toggle').textContent).toBe('Revoir la version relue')
+  })
+
+  it('fiche 267, revue QA : plage relue introuvable, le fichier contre HEAD, et dit', async () => {
+    window.api = {
+      ...window.api,
+      changes: {
+        git: async () => ({ ...REPO, files: [] }),
+        gitFile: vi.fn(async () => ({
+          oldText: 'a\n',
+          newText: 'b\n',
+          rangeMissing: true as const
+        }))
+      }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c-perdu"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+          initialFile={{ path: 'a.ts', line: 1, since: 'ffa5062000', until: 'db4a5e1000' }}
+        />
+      </Tooltip.Provider>
+    )
+    await waitFor(() => screen.getByTestId('review-file-missing'))
+    expect(screen.getByTestId('review-file-diff').textContent).toContain('a.ts depuis HEAD')
+    expect(screen.queryByTestId('review-file-changed')).toBeNull()
+    // La liste Git vide tient en une ligne sous le diff relu (revue UX).
+    await waitFor(() => expect(screen.getByTestId('changes-empty').tagName).toBe('P'))
+  })
+
+  it('fiche 267 (N2) : avec du non commité relu, le diff est relu quand le dépôt change ; inchangé : dit', async () => {
+    let content = 'a\n'
+    const gitFile = vi.fn(async () => ({ oldText: 'a\n', newText: content }))
+    let changed: ((change: { conversationIds: string[] }) => void) | undefined
+    window.api = {
+      ...window.api,
+      changes: {
+        git: async () => ({ ...REPO }),
+        gitFile,
+        onGitChanged: (listener: typeof changed) => {
+          changed = listener
+          return () => (changed = undefined)
+        }
+      }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c-sale"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+          initialFile={{ path: 'src/storage.ts', line: 1, since: 'ffa5062000' }}
+        />
+      </Tooltip.Provider>
+    )
+    // Rien de changé dans la portée : dit, avec les lignes citées mises en avant (revue UX).
+    await waitFor(() => screen.getByTestId('review-file-unchanged'))
+    expect(
+      [...document.querySelectorAll('[data-testid=review-cited] tr.diff-focus')].map((r) =>
+        r.getAttribute('data-line')
+      )
+    ).toEqual(['1'])
+    expect(screen.getByTestId('review-cited').textContent).not.toMatch(/[+−]/)
+    // Le correctif arrive (recette : +22 −8) : le dépôt est relu, le diff aussi.
+    content = 'a\ncorrigé\n'
+    act(() => changed?.({ conversationIds: ['c-sale'] }))
+    await waitFor(() =>
+      expect(screen.getByTestId('review-file-diff').textContent).toContain('corrigé')
+    )
+    expect(screen.queryByTestId('review-file-unchanged')).toBeNull()
   })
 
   it('« Demander de corriger » du panneau : le relecteur visé part avec, la carte le saura', async () => {

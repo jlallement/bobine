@@ -43,6 +43,55 @@ describe('GitChangesReader (vrai dépôt)', () => {
       cwd: dir
     })
 
+  it('fiche 267, revue QA : diff relu d’un fichier supprimé, renommé, binaire ; plage introuvable', async () => {
+    dir = realpathSync(mkdtempSync(join(tmpdir(), 'bob-git-')))
+    writeFileSync(join(dir, 'garde.txt'), 'g\n')
+    writeFileSync(join(dir, 'parti.txt'), 'p\n')
+    writeFileSync(join(dir, 'ancien.txt'), 'nom\n')
+    writeFileSync(join(dir, 'image.bin'), Buffer.from([0, 1, 2]))
+    git('init', '-q', '-b', 'main')
+    git('add', '.')
+    git('commit', '-q', '-m', 'init')
+    const since = String(git('rev-parse', 'HEAD')).trim()
+    rmSync(join(dir, 'parti.txt'))
+    git('mv', 'ancien.txt', 'nouveau.txt')
+    writeFileSync(join(dir, 'image.bin'), Buffer.from([0, 1, 3]))
+    git('add', '-A')
+    git('commit', '-q', '-m', 'relu')
+    const until = String(git('rev-parse', 'HEAD')).trim()
+    const reader = new GitChangesReader(gitCommand)
+    // Supprimé dans la plage relue : rien après, et rien de changé depuis.
+    expect(await reader.fileDiff(dir, 'parti.txt', undefined, since, until)).toEqual({
+      oldText: 'p\n',
+      newText: null
+    })
+    // Renommé : le nouveau nom relu, nouveau à ce point (l'ancien chemin n'est pas suivi).
+    expect(await reader.fileDiff(dir, 'nouveau.txt', undefined, since, until)).toEqual({
+      oldText: null,
+      newText: 'nom\n'
+    })
+    // Binaire corrigé depuis : « binaire », et toujours « a changé depuis ».
+    writeFileSync(join(dir, 'image.bin'), Buffer.from([0, 9, 9]))
+    expect(await reader.fileDiff(dir, 'image.bin', undefined, since, until)).toEqual({
+      oldText: null,
+      newText: null,
+      binary: true,
+      changedSince: true
+    })
+    // Plage introuvable (historique réécrit) : le fichier contre HEAD, et dit.
+    const gone = 'f'.repeat(40)
+    writeFileSync(join(dir, 'garde.txt'), 'g2\n')
+    expect(await reader.fileDiff(dir, 'garde.txt', undefined, gone, until)).toEqual({
+      oldText: 'g\n',
+      newText: 'g2\n',
+      rangeMissing: true
+    })
+    expect(await reader.fileDiff(dir, 'garde.txt', undefined, since, gone)).toMatchObject({
+      rangeMissing: true,
+      newText: 'g2\n'
+    })
+  })
+
   it('dossier hors dépôt : null', async () => {
     dir = realpathSync(mkdtempSync(join(tmpdir(), 'bob-git-')))
     expect(await new GitChangesReader(gitCommand).changes(dir)).toBeNull()
@@ -101,6 +150,28 @@ describe('GitChangesReader (vrai dépôt)', () => {
     })
     await expect(reader.fileDiff(workspace, 'README.md', undefined, 'HEAD~1')).rejects.toThrow(
       'since'
+    )
+    // Portée relue toute commitée (fiche 267, N2) : la version relue, pas le disque corrigé depuis.
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\nDEUX\n')
+    git('add', '.')
+    git('commit', '-q', '-m', 'relu')
+    const reviewed = String(git('rev-parse', 'HEAD')).trim()
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\ncorrigé\n')
+    expect(await reader.fileDiff(workspace, 'README.md', undefined, first, reviewed)).toEqual({
+      oldText: 'un\ndeux\ntrois\n',
+      newText: 'un\nDEUX\n',
+      changedSince: true
+    })
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\nDEUX\n')
+    expect(await reader.fileDiff(workspace, 'README.md', undefined, first, reviewed)).toEqual({
+      oldText: 'un\ndeux\ntrois\n',
+      newText: 'un\nDEUX\n'
+    })
+    await expect(
+      reader.fileDiff(workspace, 'README.md', undefined, undefined, reviewed)
+    ).rejects.toThrow('until')
+    await expect(reader.fileDiff(workspace, 'README.md', undefined, first, 'HEAD')).rejects.toThrow(
+      'until'
     )
     await expect(reader.fileDiff(workspace, '../ailleurs.txt')).rejects.toThrow('hors du dossier')
   })

@@ -73,6 +73,32 @@ describe('summaryOf : le projet de la conversation (fiche 131)', () => {
       () => undefined
     )
 
+  it('fiche 267 : un modèle refusé au message (quota épuisé) est dit dans la liste', () => {
+    const blocked = (blocker: unknown, status = 'needs-action') =>
+      summaryOf(
+        {
+          record: record(),
+          draft: false,
+          host: {} as never,
+          snapshot: { status, controls: [], blocker } as never
+        },
+        [{ id: 'mock', label: 'Agent factice' }],
+        () => undefined
+      ).modelRefused
+    const auth = {
+      kind: 'auth',
+      methods: [],
+      authenticating: false,
+      atTurn: true,
+      model: { id: 'f', name: 'Factice rapide', unavailable: true, quota: true }
+    }
+    expect(blocked(auth)).toEqual({ name: 'Factice rapide', quota: true })
+    // Une connexion à refaire sans modèle, une carte d'ouverture, ou plus de blocage : rien.
+    expect(blocked({ ...auth, model: undefined })).toBeUndefined()
+    expect(blocked({ ...auth, atTurn: undefined })).toBeUndefined()
+    expect(blocked(auth, 'busy')).toBeUndefined()
+  })
+
   it('hors worktree : son dossier de travail', () => {
     expect(summary(record()).project).toBe('/depots/carnet')
   })

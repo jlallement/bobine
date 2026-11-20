@@ -644,6 +644,17 @@ export function modelUnavailable(model: string): Step {
   return { kind: 'fail', code: -32603, message: `Internal error: Model unavailable: ${model}` }
 }
 
+/**
+ * Quota gratuit épuisé chez OpenCode 2.3.0 (recette du 2026-11-20, N3, fiche 267) : l'erreur telle
+ * que reçue dans `agents.log`, au message, pour le modèle gratuit de la session.
+ */
+export const FREE_USAGE_LIMIT: Step = {
+  kind: 'fail',
+  code: -32603,
+  message:
+    'Internal error: Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going, or switch models.'
+}
+
 /** Formulaire de licence de Bob 2.0.9 au premier message (élicitation `form`, relevé le 05/11). */
 export const BOB_LICENSE_FORM_MESSAGE = [
   'Bob Shell requires the IBM license agreement. Review the license files:',

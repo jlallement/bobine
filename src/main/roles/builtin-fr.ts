@@ -6,12 +6,15 @@
  */
 import type { BuiltinTexts } from './builtin-en'
 
-/** Ce que tout rôle rend à la mère : son compte rendu est le début de sa réponse. */
+/**
+ * Ce que tout rôle rend à la conversation qui l'a lancé : un résumé en tête de sa réponse, sans
+ * titre (recette N6, fiche 267 : « compte rendu » revenait en titre de la réponse).
+ */
 const REPORT = [
   '',
-  'Commence ta réponse finale par un court compte rendu pour la conversation qui t’a lancé : ce',
-  'que tu as fait ou trouvé, ce qui reste à faire et ce dont tu n’es pas sûr. Cite les fichiers',
-  'sous la forme chemin:ligne.'
+  'Commence ta réponse finale par un résumé de deux lignes, sans titre : ce que tu as fait ou',
+  'trouvé, et ce qui reste à faire. Puis le détail, avec ce dont tu n’es pas sûr. Cite les',
+  'fichiers sous la forme chemin:ligne.'
 ]
 
 export const BUILTIN_FR: BuiltinTexts = {

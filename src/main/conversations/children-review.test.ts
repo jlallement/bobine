@@ -343,30 +343,59 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(env.card(author)?.findings).toHaveLength(2)
   })
 
-  it('`@code-reviewer` sans rien de non commité : la branche courante, sinon le dernier commit', async () => {
+  it('`@code-reviewer` sans rien de non commité : la branche courante, sinon les commits de la conversation (fiche 267)', async () => {
     const env = await environment()
     const author = await env.author()
+    const init = env.git('rev-parse', 'HEAD')
     env.git('add', '.')
-    env.git('commit', '-q', '-m', 'travail')
+    // Un commit fait pendant la conversation (dates de git à la seconde : une minute plus tard).
+    const later = `@${Math.floor(Date.now() / 1000) + 60} +0000`
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'travail'],
+      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
+    )
     const head = env.git('rev-parse', 'HEAD')
     const first = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Relis'
     })
     expect(first.failed).toEqual([])
-    expect(env.card(author)).toMatchObject({ scope: 'commit', base: head.slice(0, 7), files: 2 })
+    // Le commit de la conversation, pas celui d'avant ; la fin relue gardée pour le diff.
+    expect(env.card(author)).toMatchObject({
+      scope: 'commits',
+      commits: 1,
+      since: init,
+      head,
+      files: 2
+    })
+    expect(env.card(author)?.withUncommitted).toBeUndefined()
     const reviewer = first.started[0]?.childId ?? ''
     await waitFor(() => env.items(reviewer).some((i) => i.kind === 'user'))
     const sent = env.items(reviewer).find((i) => i.kind === 'user')
     const opening = splitRoleBrief(sent?.kind === 'user' ? sent.text : '')
-    expect(
-      opening.request.startsWith(
-        t('review.ask.commit', { commit: head.slice(0, 7), count: 2, lng: 'en' })
-      )
-    ).toBe(true)
-    // Contre son premier parent (un commit de fusion compris).
-    expect(opening.brief).toContain(`git diff ${env.git('rev-parse', 'HEAD^1')} ${head}`)
+    expect(opening.request).toContain(`(2 files, ${init.slice(0, 7)}..${head.slice(0, 7)})`)
+    expect(opening.brief).toContain(`git diff ${init} ${head}`)
+    await waitFor(() => env.card(author)?.status === 'reported')
     await env.idle(reviewer)
+    await env.reviews.settled(reviewer)
+    // Un autre commit de la conversation : la relecture suivante part du dernier commit relu.
+    writeFileSync(join(env.repo, 'suite.js'), 'export const suite = 1\n')
+    env.git('add', '.')
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'suite'],
+      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
+    )
+    const next = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Et la suite ?'
+    })
+    expect(next.failed).toEqual([])
+    expect(env.card(author)).toMatchObject({ scope: 'commits', commits: 1, since: head, files: 1 })
+    await waitFor(() => env.card(author)?.status === 'reported')
+    await env.idle(next.started[0]?.childId ?? '')
+    await env.reviews.settled(next.started[0]?.childId ?? '')
     // Une branche de travail (pas main), sans rien de non commité : la branche contre main.
     env.git('checkout', '-q', '-b', 'tri')
     writeFileSync(join(env.repo, 'tri.js'), 'export const tri = 1\n')
@@ -379,7 +408,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(second.failed).toEqual([])
     const review = env.card(author)
     expect(review).toMatchObject({ scope: 'branch', baseBranch: 'main', files: 1 })
-    expect(review?.base).toBe(head.slice(0, 7))
+    expect(review?.base).toBe(env.git('rev-parse', '--short=7', 'main'))
     const bubble = env.items(author).findLast((i) => i.kind === 'role-request')
     expect(bubble?.kind === 'role-request' && bubble.text).toBe('Et la branche ?')
   })
@@ -429,6 +458,90 @@ describe('relecture avant fusion (fiche 177)', () => {
     // Finie : une autre peut partir.
     const second = await env.reviews.start(author)
     expect(second.id).not.toBe(first.id)
+  })
+
+  it('fiche 267, revue QA : le HEAD relu est gardé même avec du non commité ; la suivante part de là', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const later = (offset: number) => `@${Math.floor(Date.now() / 1000) + offset} +0000`
+    const commit = (message: string, offset: number) => {
+      env.git('add', '.')
+      execFileSync(
+        'git',
+        ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', message],
+        {
+          cwd: env.repo,
+          env: { ...process.env, GIT_COMMITTER_DATE: later(offset), GIT_AUTHOR_DATE: later(offset) }
+        }
+      )
+      return env.git('rev-parse', 'HEAD')
+    }
+    const first = commit('un', 60)
+    writeFileSync(join(env.repo, 'sale.js'), 'export const sale = 1\n')
+    const one = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Relis'
+    })
+    const reviewer = one.started[0]?.childId ?? ''
+    expect(env.card(author)).toMatchObject({
+      scope: 'commits',
+      withUncommitted: true,
+      reviewedHead: first
+    })
+    expect(env.card(author)?.head).toBeUndefined()
+    await waitFor(() => env.card(author)?.status === 'reported')
+    await env.idle(reviewer)
+    await env.reviews.settled(reviewer)
+    commit('deux', 120)
+    const two = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Et ?'
+    })
+    expect(two.failed).toEqual([])
+    expect(env.card(author)).toMatchObject({
+      scope: 'commits',
+      origin: 'reviewed',
+      since: first,
+      commits: 1
+    })
+  })
+
+  it('fiche 267, revue QA : « Relancer » ne garde rien de la portée d’avant', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const prompt = env.manager.prompt.bind(env.manager)
+    let refuse = true
+    env.manager.prompt = ((id: string, text: string, ...rest: unknown[]) => {
+      if (id !== author && refuse) return Promise.reject(new Error('agent indisponible'))
+      return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
+    }) as typeof env.manager.prompt
+    const later = `@${Math.floor(Date.now() / 1000) + 60} +0000`
+    env.git('add', '.')
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'un'],
+      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
+    )
+    const started = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Relis'
+    })
+    const reviewer = started.started[0]?.childId ?? ''
+    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    expect(env.card(author)).toMatchObject({ scope: 'commits', commits: 1 })
+    // Entre-temps, le travail passe sur une branche : la portée devient la branche.
+    env.git('checkout', '-q', '-b', 'tri')
+    writeFileSync(join(env.repo, 'tri.js'), 'export const tri = 1\n')
+    env.git('add', '.')
+    env.git('commit', '-q', '-m', 'tri')
+    refuse = false
+    expect(env.children.reply(author, reviewer, 'Relis', { retry: true })).toBe('sent')
+    await waitFor(() => env.card(author)?.scope === 'branch', 20_000)
+    const card = env.card(author)
+    expect(card?.commits).toBeUndefined()
+    expect(card?.head).toBeUndefined()
+    expect(card?.origin).toBeUndefined()
+    expect(card?.withUncommitted).toBeUndefined()
   })
 
   it('départ raté, puis une suite tapée : le premier message part, puis la suite (revue QA)', async () => {

@@ -318,12 +318,13 @@ export class ConversationManager {
     return { conversations, activeId: this.activeId }
   }
 
-  view(id: string): ConversationView {
+  /** `light` : sans son fil (fiche 267 : l'état d'un travail bloqué, pour sa carte). */
+  view(id: string, light = false): ConversationView {
     const conversation = this.get(id)
     return {
       summary: this.summary(conversation),
       snapshot: conversation.snapshot ?? null,
-      transcript: this.transcriptOf(conversation),
+      transcript: light ? emptyTranscript : this.transcriptOf(conversation),
       seq: conversation.seq ?? 0
     }
   }

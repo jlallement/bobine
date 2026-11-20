@@ -10,7 +10,10 @@ import { L, check, withApp } from '../lib.mjs'
  *   déclencher ;
  * - D31 : après le refus d'un modèle faute de connexion, les autres modèles du même fournisseur
  *   sont marqués « sans doute » (infobulle), sauf le modèle gratuit.
+ * - Fiche 267 (recette N10) : Mon activité, la tuile du coût compte ces échanges « sans coût
+ *   communiqué » comme le tableau les dit « coût inconnu » (capture `267-activite-cout-inconnu`).
  */
+const plain = (text) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 export async function coutConnexionSuite(scheme) {
   console.log(`\n— Coût inconnu et connexion à faire (${scheme})`)
   const workspace = mkdtempSync(join(tmpdir(), 'bob-e2e-cout-'))
@@ -44,6 +47,41 @@ export async function coutConnexionSuite(scheme) {
           'ni moyenne ni ligne d’échange à « ≈ 0,00 $US »'
         )
         await ui.shot('266-cout-non-communique')
+        await ui.press('Escape')
+
+        // Mon activité (fiche 267, N10) : la tuile et le tableau disent le même compte.
+        await ui.send('Et range les surgelés à part')
+        await ui.ready()
+        await ui.click(ui.$('open-activity'))
+        await ui.waitFor(`!!${ui.$('usage-kpi-cost')} && !!${ui.$('usage-model-row')}`, 30000)
+        await ui.waitFor(
+          `${ui.$('usage-kpi-cost')}.innerText.includes(${JSON.stringify(L('usage.costNotReported'))})`
+        )
+        const tile = plain(await ui.ev(`${ui.$('usage-kpi-cost')}.innerText`))
+        const row = plain(await ui.ev(`${ui.$('usage-model-row')}.innerText`))
+        check(
+          tile.includes(plain(L('usage.board.kpi.withoutCost', { count: 2 }))) &&
+            row.includes(L('usage.costNotReported')) &&
+            /\b2\b/.test(row),
+          `Mon activité : la tuile compte 2 échanges sans coût communiqué, comme le tableau (${tile.replace(/\n/g, ' · ')} | ${row.replace(/\n/g, ' · ')})`
+        )
+        await ui.shot('267-activite-cout-inconnu')
+        // 720 px (revue UX) : pas de barre de défilement permanente sous la grille, rien ne déborde.
+        await ui.viewport(720, 760)
+        const narrow = await ui.ev(`(() => {
+          const scroller = document.querySelector('.activity-heat-scroll')
+          const page = document.querySelector('[data-testid=activity-title]')?.closest('.scroll') ?? document.body
+          return {
+            bar: getComputedStyle(scroller).scrollbarWidth,
+            overflow: page.scrollWidth - page.clientWidth
+          }
+        })()`)
+        check(
+          narrow.bar === 'none' && narrow.overflow <= 0,
+          `Mon activité à 720 px : pas de barre permanente, rien ne déborde (${JSON.stringify(narrow)})`
+        )
+        await ui.shot('267-activite-720')
+        await ui.viewport()
       },
       undefined,
       'cout-nul-payant',

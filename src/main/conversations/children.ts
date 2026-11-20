@@ -44,6 +44,7 @@ import {
 } from '@shared/children'
 import { messageOf } from '@shared/errors'
 import { usageDigest } from '@shared/usage'
+import type { TranscriptItem } from '@shared/transcript'
 import type { IpcHandlers } from '@shared/ipc'
 import { log } from '../log'
 import { hasFolder } from './agentless'
@@ -678,14 +679,38 @@ export class ChildConversations {
   }
 
   /**
+   * Un travail à relancer : au repos, et sa dernière demande sans réponse ou à une réponse en échec
+   * ou arrêtée (les états « Relancer » de sa carte).
+   */
+  private retryable(motherId: string, child: ConversationSummary): boolean {
+    if (child.status === 'busy' || child.status === 'starting' || child.status === 'needs-action')
+      return false
+    const items = this.conversations.view(motherId).transcript.items
+    const asks = (i: TranscriptItem) =>
+      (i.kind === 'child-started' && i.childId === child.id) ||
+      (i.kind === 'role-request' && i.works.some((w) => w.childId === child.id))
+    const report = items.findLast((i) => i.kind === 'child-report' && i.childId === child.id)
+    if (report?.kind !== 'child-report') return true
+    if (report.outcome !== 'done' || child.turnStopped) return true
+    const ask = items.findLast(asks)
+    return !!ask && ask.id > report.id
+  }
+
+  /**
    * « Répondre à <rôle> » et « Relancer » (fiche 263, décision 2 de la fiche 260) : la bulle de
    * suite dans le fil de la mère (elle s'affiche dans la carte du travail), puis le message à la
    * même conversation, comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la
    * mère). Seulement un travail qui a sa carte (bulle, proposition, fiche 264) et un rôle, d'une mère et d'un travail non archivés. Un
    * travail qui n'a jamais reçu son premier message (démarrage raté) repart comme au lancement :
-   * consigne du rôle, lecture seule, travail dans le dossier.
+   * consigne du rôle, lecture seule, travail dans le dossier. `retry` (« Relancer », fiche 267,
+   * recette N9) : la demande est déjà dans la carte, pas de nouvelle bulle.
    */
-  reply(motherId: string, childId: string, text: string): 'queued' | 'sent' {
+  reply(
+    motherId: string,
+    childId: string,
+    text: string,
+    options: { retry?: true } = {}
+  ): 'queued' | 'sent' {
     const body = text.trim()
     if (!body) throw new Error(t('children.error.emptyPrompt'))
     const mother = this.conversations.state().conversations.find((c) => c.id === motherId)
@@ -701,6 +726,9 @@ export class ChildConversations {
       throw new Error(t('workCard.error.gone'))
     }
     if (mother.archived || child.archived) throw new Error(t('children.error.archived'))
+    // « Relancer » seulement ce qui a échoué, s'est arrêté ou n'a pas répondu (revue QA, fiche 267).
+    if (options.retry && !this.retryable(motherId, child))
+      throw new Error(t('workCard.error.notRetryable'))
     const { mcp: _mcp, ...role } = child.role
     const fresh = !this.conversations.view(childId).transcript.items.some((i) => i.kind === 'user')
     // Le rôle d'aujourd'hui, avec la lecture seule du lancement (« Juste un avis », fiche 262).
@@ -708,16 +736,18 @@ export class ChildConversations {
       fresh && !child.reviewOf
         ? { ...this.findRole(motherId, role.name), ...(role.readOnly ? { readOnly: true } : {}) }
         : undefined
-    this.conversations.post(motherId, {
-      type: 'role-request',
-      request: {
-        requestId: randomUUID(),
-        text: body,
-        works: [{ childId, role }],
-        followUp: true,
-        at: Date.now()
-      }
-    })
+    if (!options.retry) {
+      this.conversations.post(motherId, {
+        type: 'role-request',
+        request: {
+          requestId: randomUUID(),
+          text: body,
+          works: [{ childId, role }],
+          followUp: true,
+          at: Date.now()
+        }
+      })
+    }
     if (snapshot) return this.relaunch(child, body, snapshot)
     // Code reviewer qui n'a pas démarré (fiche 265) : son premier message, consigne de relecture
     // comprise ; jamais la demande seule.

@@ -238,7 +238,9 @@
       "needs-action": "Action requise avant de commencer",
       "authExpired": "Reconnectez-vous pour continuer",
       "modelRefused": "Choisissez un autre modèle ou connectez-vous",
-      "needsFolder": "Choisissez d’abord un dossier"
+      "needsFolder": "Choisissez d’abord un dossier",
+      "modelRefusedKey": "Choisissez un autre modèle ou ajoutez une clé d’API",
+      "modelRefusedOnly": "Choisissez un autre modèle"
     },
     "plan": {
       "placeholder": "Explorer et planifier avec {{agent}}…",
@@ -747,7 +749,8 @@
       "signIn": "Se connecter",
       "keyHint": "Enregistrée chiffrée dans le trousseau macOS ; modifiable dans Réglages → Agents.",
       "subtitle": "{{agent}} demande une connexion avant de commencer.",
-      "failed": "La connexion a échoué : {{error}}"
+      "failed": "La connexion a échoué : {{error}}",
+      "modelQuotaSubtitle": "Son quota gratuit est épuisé : choisissez un autre modèle, ou connectez un fournisseur."
     },
     "runInTerminal": "Lance « {{command}} » dans le terminal",
     "license": {
@@ -2934,7 +2937,9 @@
     "readOnly": {
       "title": "Consommation non lue",
       "text": "Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver."
-    }
+    },
+    "step": "étape {{elapsed}}",
+    "stepStarted": "Étape en cours depuis {{elapsed}}"
   },
   "mentions": {
     "gitChanges": {
@@ -3174,7 +3179,8 @@
     },
     "turnLimit": {
       "noReload": "L’agent ne sait pas recharger sa session : ouvrez une nouvelle session avec le résumé."
-    }
+    },
+    "modelQuota": "Le modèle {{model}} n’a pas répondu : son quota gratuit chez {{agent}} est épuisé."
   },
   "ipc": {
     "unavailable": {
@@ -4370,7 +4376,8 @@
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",
-    "thisDiscussion": "Cette discussion"
+    "thisDiscussion": "Cette discussion",
+    "blocked": "bloqué"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",
@@ -4634,7 +4641,8 @@
       "nothing": "Rien à relire : aucune modification dans ce dossier.",
       "notReviewer": "Cette conversation n’est pas une relecture.",
       "noRole": "Le rôle Code reviewer est introuvable.",
-      "reviewing": "Une relecture de « {{title}} » est déjà en cours : attendez sa fin."
+      "reviewing": "Une relecture de « {{title}} » est déjà en cours : attendez sa fin.",
+      "listFailed": "La relecture n’a pas pu lister les fichiers à relire (git n’a pas répondu à temps). Réessayez."
     },
     "title": "Relecture : {{title}}",
     "dialog": {
@@ -4701,9 +4709,54 @@
       "focus": "Points à surveiller : {{focus}}",
       "commit_one": "Relis le dernier commit {{commit}} ({{count}} fichier).",
       "commit_many": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
-      "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers)."
+      "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
+      "commits": "Relis {{commits}} de cette conversation ({{files}}, {{range}}).",
+      "commitsDirty": "Relis le non commité et {{commits}} de cette conversation ({{files}}, {{range}})."
     },
-    "fileDiff": "{{path}} depuis {{since}}"
+    "fileDiff": "{{path}} depuis {{since}}",
+    "scope": {
+      "commits_one": "{{count}} commit",
+      "commits_many": "{{count}} commits",
+      "commits_other": "{{count}} commits",
+      "range": "{{from}}..{{to}}",
+      "rangeFromStart": "du premier commit à {{to}}",
+      "since": "depuis {{from}}",
+      "sinceStart": "depuis le premier commit"
+    },
+    "fileDiffReviewed": "{{path}} · version relue ({{range}})",
+    "fileChangedSince": "Corrigé depuis la relecture : voici ce qui a été relu.",
+    "fileUnchanged": "Pas modifié dans ce qui a été relu : voici les lignes citées, telles qu’elles sont.",
+    "read": {
+      "line": "Relu : {{what}}",
+      "clean": "Rien à signaler · relu : {{what}}"
+    },
+    "what": {
+      "conversation_one": "le commit de cette conversation, {{files}}",
+      "conversation_many": "les {{count}} commits de cette conversation, {{files}}",
+      "conversation_other": "les {{count}} commits de cette conversation, {{files}}",
+      "reviewed_one": "le commit fait depuis la dernière relecture, {{files}}",
+      "reviewed_many": "les {{count}} commits faits depuis la dernière relecture, {{files}}",
+      "reviewed_other": "les {{count}} commits faits depuis la dernière relecture, {{files}}",
+      "again_one": "nouvelle relecture du commit de cette conversation, {{files}}",
+      "again_many": "nouvelle relecture des {{count}} commits de cette conversation, {{files}}",
+      "again_other": "nouvelle relecture des {{count}} commits de cette conversation, {{files}}",
+      "fallback_one": "le dernier commit (début de la conversation introuvable), {{files}}",
+      "fallback_many": "les {{count}} derniers commits (début de la conversation introuvable), {{files}}",
+      "fallback_other": "les {{count}} derniers commits (début de la conversation introuvable), {{files}}",
+      "dirty": "les modifications non commitées et {{what}}",
+      "commit": "le commit {{commit}}, {{files}}",
+      "branch": "la branche depuis {{base}}, {{files}}",
+      "uncommitted": "les modifications non commitées, {{files}}",
+      "shallow": "historique partiel du dépôt",
+      "submodules_one": "{{count}} sous-module non relu",
+      "submodules_many": "{{count}} sous-modules non relus",
+      "submodules_other": "{{count}} sous-modules non relus",
+      "rangeTip": "Commits relus : {{range}}"
+    },
+    "fileCurrent": "Version actuelle, corrections comprises.",
+    "fileShowCurrent": "Voir la version actuelle",
+    "fileShowReviewed": "Revoir la version relue",
+    "fileRangeMissing": "Plage relue introuvable (historique réécrit ?) : le fichier contre le dernier commit."
   },
   "scheduled": {
     "title": "Tâches planifiées",
@@ -4874,7 +4927,8 @@
     },
     "error": {
       "tooLong": "Message trop long (un million de caractères au plus).",
-      "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation."
+      "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation.",
+      "notRetryable": "Ce travail a répondu ou travaille encore : rien à relancer."
     },
     "agentNote": "Message de {{agent}} · {{time}}",
     "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous répondu, ou avec votre prochain message",
@@ -4893,12 +4947,22 @@
     "readOnlyBranch": "lecture seule · dans la branche relue",
     "findings": {
       "label": "Remarques de {{role}}",
-      "where": "Voir {{place}} sur le diff",
-      "clean": "Rien à signaler."
+      "where": "Voir {{place}} sur le diff"
     },
     "fixRequested": "Correction demandée",
     "fixRequestedAt": "Correction demandée · {{time}}",
-    "fixWork": "Faire corriger « {{work}} »"
+    "fixWork": "Faire corriger « {{work}} »",
+    "modelQuota": "Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.",
+    "modelRefused": "Le modèle {{model}} n’a pas répondu.",
+    "cue": {
+      "modelRefused": "modèle refusé",
+      "quota": "quota épuisé"
+    },
+    "modelRetry": "Le message repartira avec le modèle choisi.",
+    "modelChangeFailed": "Le modèle n’a pas pu être changé : {{error}}",
+    "script_one": "un script {{program}} ({{count}} ligne)",
+    "script_many": "un script {{program}} ({{count}} lignes)",
+    "script_other": "un script {{program}} ({{count}} lignes)"
   },
   "workCue": {
     "replied": "a répondu",

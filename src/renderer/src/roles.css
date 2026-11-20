@@ -1164,9 +1164,10 @@
 .role-destination-detail {
   color: var(--muted);
 }
-.role-destination-warn {
+/* Aide avant la frappe (recette N7, fiche 267) : grise, jamais la couleur d'alerte (règle 6 de la 260). */
+.role-destination-hint {
   display: block;
-  color: var(--warn);
+  color: var(--muted);
 }
 
 /* Fille d'un rôle dans le fil de sa mère (maquette 03-1). */

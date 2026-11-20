@@ -421,9 +421,11 @@ export function createApi(
     },
     changes: {
       git: (id: string) => invoke('changes:git', id),
-      gitFile: (id: string, path: string, from?: string, since?: string) =>
+      gitFile: (id: string, path: string, from?: string, since?: string, until?: string) =>
         since
-          ? invoke('changes:gitFile', id, path, from ?? null, since)
+          ? until
+            ? invoke('changes:gitFile', id, path, from ?? null, since, until)
+            : invoke('changes:gitFile', id, path, from ?? null, since)
           : invoke('changes:gitFile', id, path, ...(from ? [from] : [])),
       open: (id: string, path: string) => invoke('changes:open', id, path),
       reveal: (id: string, path: string) => invoke('changes:reveal', id, path),
@@ -550,6 +552,7 @@ export function createApi(
         invoke('roles:startChildren', conversationId, request),
       reply: (conversationId: string, request: IpcArgs<'roles:reply'>[1]) =>
         invoke('roles:reply', conversationId, request),
+      workState: (childId: string) => invoke('roles:workState', childId),
       /** « Installer dans… » un agent (phase 4, ADR-0047). */
       exportPreview: (role: IpcArgs<'roles:exportPreview'>[0], profileId: string) =>
         invoke('roles:exportPreview', role, profileId),

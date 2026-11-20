@@ -502,13 +502,38 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     )
     expect(env.items(childId).some((i) => i.kind === 'user')).toBe(false)
     failing.mockRestore()
-    expect(env.children.reply(env.mother, childId, 'Relis le carnet.')).toBe('sent')
+    const bubbles = () => env.items(env.mother).filter((i) => i.kind === 'role-request').length
+    const before = bubbles()
+    expect(env.children.reply(env.mother, childId, 'Relis le carnet.', { retry: true })).toBe(
+      'sent'
+    )
     await env.settled(childId)
+    // « Relancer » (fiche 267, recette N9) : la demande est déjà dans la carte, pas de 2e bulle.
+    expect(bubbles()).toBe(before)
     const first = env.firstMessage(childId)
     // Comme au lancement : la demande, puis la consigne du rôle et sa lecture seule.
     expect(first?.kind === 'user' && first.text).toMatch(/^Relis le carnet\./)
     expect(first?.kind === 'user' && first.text).toContain('<bobine_role name="security-expert">')
     expect(first?.kind === 'user' && first.text).toContain('You are read-only')
+  })
+
+  it('fiche 267, revue QA : « Relancer » refusé pour un travail qui a répondu', async () => {
+    const env = await environment()
+    const result = await startRoleChildren(env.children, env.mother, {
+      roles: ['security-expert'],
+      text: 'Relis.'
+    })
+    const childId = result.started[0]?.childId ?? ''
+    await env.settled(childId)
+    await env.waitFor(
+      () => env.items(env.mother).some((i) => i.kind === 'child-report' && i.outcome === 'done'),
+      'réponse'
+    )
+    expect(() => env.children.reply(env.mother, childId, 'Relis.', { retry: true })).toThrow(
+      'rien à relancer'
+    )
+    // Répondre, lui, reste possible.
+    expect(env.children.reply(env.mother, childId, 'Et ensuite ?')).toBe('sent')
   })
 
   it('fiche 263, revue QA : « Répondre » refusé pour une mère archivée ; un échec d’envoi est dit à la mère', async () => {

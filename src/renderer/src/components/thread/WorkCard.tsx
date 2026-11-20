@@ -1,9 +1,9 @@
 import { findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
+import { refusedCue, refusedModel } from '@shared/model-refused'
 import {
   Activity,
   Check,
   Eye,
-  Hand,
   EyeOff,
   GitBranch,
   LoaderCircle,
@@ -17,6 +17,7 @@ import type { ChildVerdict } from '@shared/children'
 import { mergeActive } from '@shared/children-merge'
 import { useWorkFacts, WorkLayoutContext } from './work-layout-context'
 import { ReviewChanged } from './WorkReview'
+import { WorkWaiting } from './WorkBlocked'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { messageTime } from '../../time'
@@ -448,6 +449,12 @@ function WorkHead({
               {elapsedText(now - exchangeStart(card))}
             </span>
           </>
+        ) : state === 'waiting' && refusedModel(child) ? (
+          // Bloqué par un modèle refusé (fiche 267) : « quota épuisé », « modèle refusé ».
+          <span className="work-state-blocked" data-testid="work-state-blocked">
+            <TriangleAlert size={13} aria-hidden />
+            {refusedCue(refusedModel(child) ?? { name: '' })}
+          </span>
         ) : state === 'replied' && report ? (
           // Code reviewer sans remarque (fiche 265) : « rien à signaler » dès l'en-tête.
           t(
@@ -538,29 +545,28 @@ function LeftBehindLine({ card }: { card: WorkCardData }) {
 function WorkLive({ childId, state }: { childId: string | undefined; state: WorkState }) {
   const { t } = useTranslation()
   const activity = useWorkActivity(state === 'running' ? childId : undefined)
-  if (state === 'waiting') {
-    return (
-      <div className="work-live" data-testid="work-live">
-        <Hand size={13} aria-hidden />
-        {t('workCard.waitingLine')}
-      </div>
-    )
-  }
+  if (state === 'waiting') return <WorkWaiting childId={childId} />
   return (
     <div className="work-activity" data-testid="work-live">
       {activity.done.length > 0 && (
         <ul className="work-facts-done" data-testid="work-live-done">
           {activity.done.map((fact) => (
-            <li key={fact.title}>
+            <li key={fact.title} title={factFull(fact)}>
               <Check size={12} aria-hidden />
-              {factText(fact, true)}
+              <span className="work-fact-text">{factText(fact, true)}</span>
             </li>
           ))}
         </ul>
       )}
       <div className="work-live" data-testid="work-live-current">
         <Activity size={13} aria-hidden />
-        <span>{activity.current ? factText(activity.current, false) : t('workCard.working')}</span>
+        <span
+          className="work-fact-text"
+          title={activity.current ? factFull(activity.current) : undefined}
+          data-testid="work-live-text"
+        >
+          {activity.current ? factText(activity.current, false) : t('workCard.working')}
+        </span>
       </div>
     </div>
   )
@@ -579,13 +585,40 @@ function factText(tool: WorkTool, done: boolean): string {
   if (tool.label) return done ? tool.label : `${tool.label}…`
   const kind = FACT_KINDS.find((k) => k === tool.kind)
   const target = kind === 'read' || kind === 'edit' ? shortPath(tool.path) : undefined
+  // En cours, le texte finit déjà par « … » : une commande coupée n'en prend pas un second.
+  const title = done ? oneLine(tool.title) : oneLine(tool.title).replace(/…$/, '')
   if (!kind || ((kind === 'read' || kind === 'edit') && !target)) {
-    return done ? tool.title : i18next.t('workCard.nowOther', { target: tool.title })
+    return done ? title : i18next.t('workCard.nowOther', { target: title })
   }
   const name = `${kind.charAt(0).toUpperCase()}${kind.slice(1)}` as Capitalize<FactKind>
   return i18next.t(done ? `workCard.fact${name}` : `workCard.now${name}`, {
-    target: target ?? tool.title
+    target: target ?? title
   })
+}
+
+/** Le titre entier d'un outil, en infobulle, quand la carte n'en montre qu'une partie. */
+function factFull(tool: WorkTool): string | undefined {
+  return !tool.label && oneLine(tool.title) !== tool.title ? tool.title : undefined
+}
+
+/** Caractères d'une activité au plus (recette N4, fiche 267). */
+export const ACTIVITY_CHARS = 80
+
+/**
+ * Une seule ligne pour l'activité en direct (recette N4, fiche 267 : un `node - <<'JS'` de dix
+ * lignes faisait enfler la carte) : un script passé en heredoc se dit « un script node (12
+ * lignes) » ; sinon tous les blancs, retours à la ligne compris, réduits à une espace, coupé à 80
+ * caractères (« … ») ; l'entier est en infobulle.
+ */
+export function oneLine(text: string, max = ACTIVITY_CHARS): string {
+  const heredoc = /^\s*([\w./-]+)[^\n]*<<-?\s*['"]?\w+/.exec(text)
+  const count = text.trim().split('\n').length
+  if (heredoc && count > 1) {
+    const program = heredoc[1]?.split('/').at(-1) ?? ''
+    return i18next.t('workCard.script', { program, count })
+  }
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat
 }
 
 /** Chemin court : relatif tel quel, absolu réduit à ses deux derniers éléments. */

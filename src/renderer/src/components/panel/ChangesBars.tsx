@@ -47,34 +47,41 @@ export function ChangesViews({
         {/* Git en dernier : il n'apparaît qu'une fois le dépôt lu, sans décaler les autres. */}
         {git && tab('git', t('changes.view.git'), git.files.length)}
       </div>
-      <span className="grow" />
-      {view === 'git' && git?.branch && (
-        <span className="changes-branch" title={git.root}>
-          {git.branch}
-        </span>
-      )}
-      {onReview && git && view !== 'children' && (
-        // Libellé « Faire relire » quand la barre est assez large (fiche 265, revue UX) ; sinon
-        // l'icône seule (fiche 177) : l'infobulle et le nom accessible disent « Faire relire… ».
-        <Tip label={t('review.actionTip')}>
+      {/* Branche et actions ensemble, calées à droite ; trop étroit, elles passent à la ligne
+          plutôt que de déborder du panneau (fiche 267 : « Actualiser » était hors du bord). */}
+      <div className="changes-bar-actions">
+        {view === 'git' && git?.branch && (
+          <span className="changes-branch" title={git.root}>
+            {git.branch}
+          </span>
+        )}
+        {onReview && git && view !== 'children' && (
+          // Libellé « Faire relire » quand la barre est assez large (fiche 265, revue UX) ; sinon
+          // l'icône seule (fiche 177) : l'infobulle et le nom accessible disent « Faire relire… ».
+          <Tip label={t('review.actionTip')}>
+            <button
+              className="btn ghost small changes-review"
+              aria-label={t('review.action')}
+              onClick={onReview}
+              data-testid="changes-review"
+            >
+              <ScanSearch size={14} aria-hidden />
+              <span className="changes-review-label" aria-hidden>
+                {t('workCard.review')}
+              </span>
+            </button>
+          </Tip>
+        )}
+        <Tip label={t('changes.refresh')}>
           <button
-            className="btn ghost small changes-review"
-            aria-label={t('review.action')}
-            onClick={onReview}
-            data-testid="changes-review"
+            className="icon-button small"
+            aria-label={t('changes.refresh')}
+            onClick={onRefresh}
           >
-            <ScanSearch size={14} aria-hidden />
-            <span className="changes-review-label" aria-hidden>
-              {t('workCard.review')}
-            </span>
+            <RefreshCw size={13} />
           </button>
         </Tip>
-      )}
-      <Tip label={t('changes.refresh')}>
-        <button className="icon-button small" aria-label={t('changes.refresh')} onClick={onRefresh}>
-          <RefreshCw size={13} />
-        </button>
-      </Tip>
+      </div>
     </div>
   )
 }

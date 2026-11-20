@@ -215,7 +215,8 @@ function AuthPanel(props: Props & { blocker: Blocker<'auth'> }) {
           ))}
           {apiKey && !keyOpen && (
             <button
-              className={`btn ${blocker.methods.length ? 'ghost' : 'primary'}`}
+              // Un autre modèle proposé : la clé d'API en second, en contour (revue UX, fiche 267).
+              className={`btn ${otherModel ? '' : blocker.methods.length ? 'ghost' : 'primary'}`}
               onClick={() => setKeyOpen(true)}
               data-testid="auth-api-key"
             >
@@ -386,7 +387,7 @@ function AuthHead({
   agentLabel
 }: {
   atTurn: boolean
-  model: { name: string; unavailable?: true } | undefined
+  model: { name: string; unavailable?: true; quota?: true } | undefined
   agentLabel: string
 }) {
   const { t } = useTranslation()
@@ -394,7 +395,11 @@ function AuthHead({
     ? [
         t('blocker.auth.modelTitle', { model: model.name }),
         t(
-          model.unavailable ? 'blocker.auth.modelUnavailableSubtitle' : 'blocker.auth.modelSubtitle'
+          model.quota
+            ? 'blocker.auth.modelQuotaSubtitle'
+            : model.unavailable
+              ? 'blocker.auth.modelUnavailableSubtitle'
+              : 'blocker.auth.modelSubtitle'
         )
       ]
     : atTurn

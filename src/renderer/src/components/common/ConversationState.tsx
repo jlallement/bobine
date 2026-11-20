@@ -5,7 +5,8 @@ import {
   CircleHelp,
   CircleStop,
   Hand,
-  LoaderCircle
+  LoaderCircle,
+  TriangleAlert
 } from 'lucide-react'
 import type { ChildState } from '@shared/children'
 
@@ -27,6 +28,8 @@ export function ConversationStateIcon({
     ...(reason ? { 'data-reason': reason } : {})
   }
   if (state === 'running') return <LoaderCircle {...props} />
+  // Bloquée par un modèle refusé (fiche 267) : une alerte, pas la main d'un accord à donner.
+  if (state === 'waiting' && reason === 'blocked') return <TriangleAlert {...props} />
   if (state === 'waiting')
     return reason === 'question' ? <CircleHelp {...props} /> : <Hand {...props} />
   if (state === 'error') return <CircleExclamationPoint {...props} />

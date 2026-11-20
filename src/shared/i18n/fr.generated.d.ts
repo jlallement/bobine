@@ -241,6 +241,8 @@ export type FrResources = {
       readonly authExpired: 'Reconnectez-vous pour continuer'
       readonly modelRefused: 'Choisissez un autre modèle ou connectez-vous'
       readonly needsFolder: 'Choisissez d’abord un dossier'
+      readonly modelRefusedKey: 'Choisissez un autre modèle ou ajoutez une clé d’API'
+      readonly modelRefusedOnly: 'Choisissez un autre modèle'
     }
     readonly plan: {
       readonly placeholder: 'Explorer et planifier avec {{agent}}…'
@@ -743,6 +745,7 @@ export type FrResources = {
       readonly keyHint: 'Enregistrée chiffrée dans le trousseau macOS ; modifiable dans Réglages → Agents.'
       readonly subtitle: '{{agent}} demande une connexion avant de commencer.'
       readonly failed: 'La connexion a échoué : {{error}}'
+      readonly modelQuotaSubtitle: 'Son quota gratuit est épuisé : choisissez un autre modèle, ou connectez un fournisseur.'
     }
     readonly runInTerminal: 'Lance « {{command}} » dans le terminal'
     readonly license: {
@@ -2797,6 +2800,8 @@ export type FrResources = {
       readonly title: 'Consommation non lue'
       readonly text: 'Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver.'
     }
+    readonly step: 'étape {{elapsed}}'
+    readonly stepStarted: 'Étape en cours depuis {{elapsed}}'
   }
   readonly mentions: {
     readonly gitChanges: {
@@ -3026,6 +3031,7 @@ export type FrResources = {
     readonly turnLimit: {
       readonly noReload: 'L’agent ne sait pas recharger sa session : ouvrez une nouvelle session avec le résumé.'
     }
+    readonly modelQuota: 'Le modèle {{model}} n’a pas répondu : son quota gratuit chez {{agent}} est épuisé.'
   }
   readonly ipc: {
     readonly unavailable: {
@@ -4210,6 +4216,7 @@ export type FrResources = {
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'
     readonly thisDiscussion: 'Cette discussion'
+    readonly blocked: 'bloqué'
   }
   readonly prTrack: {
     readonly title: '#{{number}} {{title}}'
@@ -4469,6 +4476,7 @@ export type FrResources = {
       readonly notReviewer: 'Cette conversation n’est pas une relecture.'
       readonly noRole: 'Le rôle Code reviewer est introuvable.'
       readonly reviewing: 'Une relecture de « {{title}} » est déjà en cours : attendez sa fin.'
+      readonly listFailed: 'La relecture n’a pas pu lister les fichiers à relire (git n’a pas répondu à temps). Réessayez.'
     }
     readonly title: 'Relecture : {{title}}'
     readonly dialog: {
@@ -4532,8 +4540,53 @@ export type FrResources = {
       readonly commit_one: 'Relis le dernier commit {{commit}} ({{count}} fichier).'
       readonly commit_many: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
       readonly commit_other: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
+      readonly commits: 'Relis {{commits}} de cette conversation ({{files}}, {{range}}).'
+      readonly commitsDirty: 'Relis le non commité et {{commits}} de cette conversation ({{files}}, {{range}}).'
     }
     readonly fileDiff: '{{path}} depuis {{since}}'
+    readonly scope: {
+      readonly commits_one: '{{count}} commit'
+      readonly commits_many: '{{count}} commits'
+      readonly commits_other: '{{count}} commits'
+      readonly range: '{{from}}..{{to}}'
+      readonly rangeFromStart: 'du premier commit à {{to}}'
+      readonly since: 'depuis {{from}}'
+      readonly sinceStart: 'depuis le premier commit'
+    }
+    readonly fileDiffReviewed: '{{path}} · version relue ({{range}})'
+    readonly fileChangedSince: 'Corrigé depuis la relecture : voici ce qui a été relu.'
+    readonly fileUnchanged: 'Pas modifié dans ce qui a été relu : voici les lignes citées, telles qu’elles sont.'
+    readonly read: {
+      readonly line: 'Relu : {{what}}'
+      readonly clean: 'Rien à signaler · relu : {{what}}'
+    }
+    readonly what: {
+      readonly conversation_one: 'le commit de cette conversation, {{files}}'
+      readonly conversation_many: 'les {{count}} commits de cette conversation, {{files}}'
+      readonly conversation_other: 'les {{count}} commits de cette conversation, {{files}}'
+      readonly reviewed_one: 'le commit fait depuis la dernière relecture, {{files}}'
+      readonly reviewed_many: 'les {{count}} commits faits depuis la dernière relecture, {{files}}'
+      readonly reviewed_other: 'les {{count}} commits faits depuis la dernière relecture, {{files}}'
+      readonly again_one: 'nouvelle relecture du commit de cette conversation, {{files}}'
+      readonly again_many: 'nouvelle relecture des {{count}} commits de cette conversation, {{files}}'
+      readonly again_other: 'nouvelle relecture des {{count}} commits de cette conversation, {{files}}'
+      readonly fallback_one: 'le dernier commit (début de la conversation introuvable), {{files}}'
+      readonly fallback_many: 'les {{count}} derniers commits (début de la conversation introuvable), {{files}}'
+      readonly fallback_other: 'les {{count}} derniers commits (début de la conversation introuvable), {{files}}'
+      readonly dirty: 'les modifications non commitées et {{what}}'
+      readonly commit: 'le commit {{commit}}, {{files}}'
+      readonly branch: 'la branche depuis {{base}}, {{files}}'
+      readonly uncommitted: 'les modifications non commitées, {{files}}'
+      readonly shallow: 'historique partiel du dépôt'
+      readonly submodules_one: '{{count}} sous-module non relu'
+      readonly submodules_many: '{{count}} sous-modules non relus'
+      readonly submodules_other: '{{count}} sous-modules non relus'
+      readonly rangeTip: 'Commits relus : {{range}}'
+    }
+    readonly fileCurrent: 'Version actuelle, corrections comprises.'
+    readonly fileShowCurrent: 'Voir la version actuelle'
+    readonly fileShowReviewed: 'Revoir la version relue'
+    readonly fileRangeMissing: 'Plage relue introuvable (historique réécrit ?) : le fichier contre le dernier commit.'
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'
@@ -4705,6 +4758,7 @@ export type FrResources = {
     readonly error: {
       readonly tooLong: 'Message trop long (un million de caractères au plus).'
       readonly gone: 'Ce travail n’existe plus, ou n’est plus rattaché à cette conversation.'
+      readonly notRetryable: 'Ce travail a répondu ou travaille encore : rien à relancer.'
     }
     readonly agentNote: 'Message de {{agent}} · {{time}}'
     readonly relayPendingWake: 'Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous répondu, ou avec votre prochain message'
@@ -4724,11 +4778,18 @@ export type FrResources = {
     readonly findings: {
       readonly label: 'Remarques de {{role}}'
       readonly where: 'Voir {{place}} sur le diff'
-      readonly clean: 'Rien à signaler.'
     }
     readonly fixRequested: 'Correction demandée'
     readonly fixRequestedAt: 'Correction demandée · {{time}}'
     readonly fixWork: 'Faire corriger « {{work}} »'
+    readonly modelQuota: 'Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.'
+    readonly modelRefused: 'Le modèle {{model}} n’a pas répondu.'
+    readonly cue: { readonly modelRefused: 'modèle refusé'; readonly quota: 'quota épuisé' }
+    readonly modelRetry: 'Le message repartira avec le modèle choisi.'
+    readonly modelChangeFailed: 'Le modèle n’a pas pu être changé : {{error}}'
+    readonly script_one: 'un script {{program}} ({{count}} ligne)'
+    readonly script_many: 'un script {{program}} ({{count}} lignes)'
+    readonly script_other: 'un script {{program}} ({{count}} lignes)'
   }
   readonly workCue: {
     readonly replied: 'a répondu'

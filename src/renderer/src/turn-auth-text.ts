@@ -11,8 +11,15 @@ export function refusedTurnText(
   where: 'status' | 'placeholder'
 ): string | undefined {
   if (blocker?.kind !== 'auth' || !blocker.atTurn) return undefined
-  const key = blocker.model ? 'modelRefused' : 'authExpired'
+  // Modèle refusé : ce que la carte propose vraiment (revue UX de la fiche 267).
+  const key = !blocker.model
+    ? 'authExpired'
+    : blocker.methods.length
+      ? 'modelRefused'
+      : blocker.apiKey
+        ? 'modelRefusedKey'
+        : 'modelRefusedOnly'
   return where === 'status'
-    ? i18next.t(`sidebar.status.${key}`)
+    ? i18next.t(`sidebar.status.${key === 'authExpired' ? key : 'modelRefused'}`)
     : i18next.t(`composer.placeholder.${key}`)
 }

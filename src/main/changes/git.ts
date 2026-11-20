@@ -169,32 +169,68 @@ export class GitChangesReader {
   /**
    * Contenu au dernier commit et sur le disque d'un fichier du dossier, pour le diff. `since` :
    * un autre point de comparaison que `HEAD` — la base d'une branche ou le parent d'un commit relus
-   * par le Code reviewer (fiche 265) ; un identifiant de commit, rien d'autre.
+   * par le Code reviewer (fiche 265) ; un identifiant de commit, rien d'autre. `until` (avec
+   * `since`, fiche 267) : la fin d'une portée relue toute commitée — la version de ce commit au lieu
+   * du disque, pour montrer ce qui a été relu même si le fichier a été corrigé depuis
+   * (`changedSince`).
    */
   async fileDiff(
     workspace: string,
     path: string,
     from?: string,
-    since?: string
+    since?: string,
+    until?: string
   ): Promise<GitFileDiff> {
     if (since !== undefined && !COMMIT_ID.test(since)) throw new Error('Paramètre invalide : since')
+    if (until !== undefined && (since === undefined || !COMMIT_ID.test(until)))
+      throw new Error('Paramètre invalide : until')
     const file = insideWorkspace(workspace, path)
     const before = insideWorkspace(workspace, from ?? path)
+    // Plage relue introuvable (historique réécrit, clone refait : revue QA de la fiche 267) : le
+    // fichier contre `HEAD`, et la vue le dit.
+    const missing =
+      (since !== undefined && !(await this.exists(workspace, since))) ||
+      (until !== undefined && !(await this.exists(workspace, until)))
+    const point = missing ? 'HEAD' : (since ?? 'HEAD')
+    const reviewedAt = missing ? undefined : until
     // `HEAD:./chemin` : relatif au dossier courant, même si son chemin passe par un lien symbolique.
     const inRepo = relative(resolve(workspace), before).split(sep).join('/')
-    const shown = await this.run(this.git, ['show', `${since ?? 'HEAD'}:./${inRepo}`], {
-      cwd: workspace
-    })
+    const shown = await this.run(this.git, ['show', `${point}:./${inRepo}`], { cwd: workspace })
     const old = shown.code === 0 ? shown.stdout : null
     const read = await readFile(file).catch(() => null)
-    const current = read && old ? await this.asGitSees(workspace, file, old, read) : read
+    const onDisk = read && old ? await this.asGitSees(workspace, file, old, read) : read
+    let current = onDisk
+    let changedSince = false
+    if (reviewedAt !== undefined) {
+      const inRepoNow = relative(resolve(workspace), file).split(sep).join('/')
+      const reviewed = await this.run(this.git, ['show', `${reviewedAt}:./${inRepoNow}`], {
+        cwd: workspace
+      })
+      current = reviewed.code === 0 ? reviewed.stdout : null
+      const disk =
+        onDisk && current ? await this.asGitSees(workspace, file, current, onDisk) : onDisk
+      changedSince = !(disk === null ? current === null : current !== null && disk.equals(current))
+    }
+    // Dit aussi pour un fichier binaire ou trop gros (revue QA).
+    const flags = {
+      ...(changedSince ? { changedSince: true as const } : {}),
+      ...(missing ? { rangeMissing: true as const } : {})
+    }
     if ((old && old.length > MAX_DIFF_BYTES) || (current && current.length > MAX_DIFF_BYTES)) {
-      return { oldText: null, newText: null, tooLarge: true }
+      return { oldText: null, newText: null, tooLarge: true, ...flags }
     }
     if ((old && isBinary(old)) || (current && isBinary(current))) {
-      return { oldText: null, newText: null, binary: true }
+      return { oldText: null, newText: null, binary: true, ...flags }
     }
-    return { oldText: old ? text(old) : null, newText: current ? text(current) : null }
+    return { oldText: old ? text(old) : null, newText: current ? text(current) : null, ...flags }
+  }
+
+  /** Un objet (commit, arbre) du dépôt existe-t-il ? */
+  private async exists(workspace: string, id: string): Promise<boolean> {
+    const result = await this.run(this.git, ['cat-file', '-e', '--end-of-options', id], {
+      cwd: workspace
+    })
+    return result.code === 0
   }
 
   /**

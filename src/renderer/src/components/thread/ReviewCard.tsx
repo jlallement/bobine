@@ -2,6 +2,7 @@ import { CircleAlert, CircleCheck, CircleDashed, ScanSearch, TriangleAlert } fro
 import { memo, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { severeCount, type ReviewStatus } from '@shared/review'
+import { reviewedText } from '@shared/review-scope'
 import type { TranscriptItem } from '@shared/transcript'
 import { ReportExcerpt, useUsageText } from './Subtasks'
 
@@ -80,14 +81,18 @@ export const ReviewCard = memo(function ReviewCard({
           )}
         </div>
         <div className="child-report-meta">
-          <span>
-            {item.scope === 'commit' && item.base
-              ? t('review.card.scopeCommit', { base: item.base })
-              : item.scope === 'branch' && item.base
-                ? t('review.card.scopeBranch', { base: item.base })
-                : t('review.card.scopeUncommitted')}
+          <span data-testid="review-card-scope">
+            {item.scope === 'commits'
+              ? reviewedText(item)
+              : item.scope === 'commit' && item.base
+                ? t('review.card.scopeCommit', { base: item.base })
+                : item.scope === 'branch' && item.base
+                  ? t('review.card.scopeBranch', { base: item.base })
+                  : t('review.card.scopeUncommitted')}
           </span>
-          {item.files > 0 && <span>{t('review.card.files', { count: item.files })}</span>}
+          {item.files > 0 && item.scope !== 'commits' && (
+            <span>{t('review.card.files', { count: item.files })}</span>
+          )}
           {severe > 0 && (
             <span className="review-severe" data-testid="review-card-severe">
               {t('review.card.severe', { count: severe })}

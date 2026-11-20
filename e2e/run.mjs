@@ -34,12 +34,15 @@
  * qui tourne avant chaque envoi.
  */
 import { execFileSync } from 'node:child_process'
+import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   formatDuration,
   isFullRun,
   orderTasks,
   parseArgs,
+  staleFailureFiles,
   quarantinedOn,
   selectSuites,
   supported,
@@ -185,6 +188,14 @@ if (parallel) {
 }
 const duration = formatDuration(Date.now() - started)
 if (!isChild) writeDurations(result.durations)
+// Captures d'échec périmées des suites repassées au vert (fiche 267, revue UX).
+if (!isChild) {
+  const dir = fileURLToPath(new URL('./captures/', import.meta.url))
+  const files = existsSync(dir) ? readdirSync(dir) : []
+  for (const file of staleFailureFiles(files, result.passed, options.lang)) {
+    rmSync(join(dir, file), { force: true })
+  }
+}
 if (fullRun && fingerprint && result.failures === 0) {
   writeGreen(options.lang, {
     fingerprint,
@@ -207,11 +218,13 @@ process.exit(result.failures ? 1 : 0)
 async function runHere(list) {
   const { fail, failureCount, setSuite } = await import('./lib.mjs')
   const durations = {}
+  const passed = []
   for (const task of list) {
     const entry = SUITES.find((s) => s.name === task.name)
     const run = (await import(`./suites/${entry.file}`))[entry.run]
     setSuite(task.name)
     const before = Date.now()
+    const failuresBefore = failureCount()
     let timer
     try {
       await Promise.race([
@@ -238,9 +251,10 @@ async function runHere(list) {
       clearTimeout(timer)
     }
     durations[task.key] = Date.now() - before
+    if (failureCount() === failuresBefore) passed.push(task)
     console.log(
       `  (${task.name}${task.scheme ? ` ${task.scheme}` : ''} : ${Math.round(durations[task.key] / 1000)} s)`
     )
   }
-  return { failures: failureCount(), durations }
+  return { failures: failureCount(), durations, passed }
 }

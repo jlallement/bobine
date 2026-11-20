@@ -61,6 +61,7 @@ function setup(
     reload?: ComposerRoles['reload']
     elsewhere?: RoleView[]
     reply?: ComposerRoles['reply']
+    motherId?: string
   } = {}
 ) {
   const send = vi.fn(
@@ -75,6 +76,7 @@ function setup(
     ...(options.reload ? { reload: options.reload } : {}),
     ...(options.elsewhere ? { elsewhere: options.elsewhere } : {}),
     ...(options.reply ? { reply: options.reply } : {}),
+    ...(options.motherId ? { motherId: options.motherId } : {}),
     send,
     profiles: (options.profiles ?? [
       { id: 'mock', label: 'Agent factice', available: true }
@@ -384,6 +386,41 @@ describe('« Répondre à <rôle> » : la suite va au même travail (fiche 263)'
     expect(screen.queryByTestId('role-token')).toBeNull()
   })
 
+  it('fiche 267 (F8) : le focus passe dans la saisie, même pris ailleurs (terminal du panneau)', async () => {
+    window.api.conversations = {
+      childFolder: vi.fn(async () => null)
+    } as unknown as Window['api']['conversations']
+    vi.useFakeTimers()
+    try {
+      const { input } = setup({ reply: vi.fn(async () => true), motherId: 'm' })
+      const terminal = document.createElement('textarea')
+      document.body.appendChild(terminal)
+      terminal.focus()
+      expect(document.activeElement).toBe(terminal)
+      act(() => {
+        invokeRole('ux-ui-expert', { replyTo: 'f1', motherId: 'm' })
+      })
+      expect(document.activeElement).toBe(input)
+      // Un dialogue qui rend le focus à son déclencheur (minuterie à 0 ms) : repris après.
+      terminal.focus()
+      act(() => void vi.runAllTimers())
+      expect(document.activeElement).toBe(input)
+      terminal.remove()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('fiche 267 (F8) : la suite d’un travail d’une autre conversation n’arrive pas dans cette saisie', () => {
+    const { input, onWarn } = setup({ reply: vi.fn(async () => true), motherId: 'm' })
+    act(() => {
+      invokeRole('ux-ui-expert', { replyTo: 'f1', motherId: 'autre' })
+    })
+    expect(screen.queryByTestId('role-token')).toBeNull()
+    expect(document.activeElement).not.toBe(input)
+    expect(onWarn).not.toHaveBeenCalled()
+  })
+
   it('un autre rôle ajouté : ce n’est plus une suite, un nouveau travail part pour chacun', async () => {
     const reply = vi.fn(async () => true)
     const { type, key, send } = setup({ reply })
@@ -501,9 +538,10 @@ describe('envoi aux rôles : un seul à la fois, rien de perdu (relecture phase 
     type('@security-expert')
     key('Escape')
     expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByTestId('role-destination-empty').textContent).toContain(
-      'Écrivez votre demande'
-    )
+    const hint = screen.getByTestId('role-destination-empty')
+    expect(hint.textContent).toContain('Écrivez votre demande')
+    // Une aide, pas une alerte (recette N7, fiche 267) : la classe grise (`--muted`, roles.css).
+    expect(hint.className).toBe('role-destination-hint')
     await act(async () => key('Enter'))
     expect(send).not.toHaveBeenCalled()
     expect(onSend).not.toHaveBeenCalled()

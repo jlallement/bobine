@@ -5662,8 +5662,9 @@ a.btn {
 
 .changes-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -5704,6 +5705,19 @@ a.btn {
 
 /* Le sélecteur de vues ne se coupe jamais : c'est la branche qui cède (fiche 185, F2). */
 .changes-bar > .segmented {
+  flex-shrink: 0;
+}
+/* Branche, « Faire relire », « Actualiser » : un bloc calé à droite, qui passe à la ligne entier
+   quand la barre est trop étroite (fiche 267), jamais hors du panneau. */
+.changes-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.changes-bar-actions > button {
   flex-shrink: 0;
 }
 
@@ -8543,6 +8557,15 @@ kbd {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+/* L'étape en cours, plus petite que la durée du tour (fiche 267, D14). */
+.working-step {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
 @keyframes working-shimmer {
   from {
     background-position: 100% 0;
@@ -10735,6 +10758,37 @@ html.about-page body {
   color: var(--muted);
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+/* Diff d'une remarque d'une branche ou de commits relus (fiches 265, 267). */
+.review-file-diff {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.review-file-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.review-file-diff-head svg {
+  flex: none;
+}
+.review-file-diff-note {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+/* Lignes citées d'un fichier hors de la portée relue : du code, sans marques +/− (fiche 267). */
+.review-cited {
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 /* Gravité : pastille, la couleur doublée du mot (jamais la couleur seule). */
 .review-severity {

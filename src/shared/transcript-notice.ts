@@ -5,7 +5,7 @@
  * sous la dernière réponse), puis remplacé par une ligne discrète quand l'agent a les outils.
  */
 import type { ParseKeys } from 'i18next'
-import type { AgentEvent, AppToolsState, NoticeLevel } from './agent'
+import type { AgentEvent, AgentSnapshot, AppToolsState, NoticeLevel } from './agent'
 import { translate, type Message } from './i18n/message'
 import type { TranscriptItem, TranscriptState } from './transcript'
 
@@ -95,4 +95,20 @@ export function reduceAppTools(
     items: [...state.items.filter((i) => !pending(i)), item],
     nextId: state.nextId + 1
   }
+}
+
+/**
+ * Le fil sans l'avis d'un message refusé tant que la carte de refus est à l'écran (revue UX de la
+ * fiche 267) : la carte « Le modèle … n'a pas répondu » le dit déjà ; l'avis reste dans le fil une
+ * fois la carte partie, jusqu'à la réponse suivante.
+ */
+export function withoutCardedRefusal<T extends TranscriptItem>(
+  items: T[],
+  snapshot: Pick<AgentSnapshot, 'status' | 'blocker'> | null | undefined
+): T[] {
+  const carded =
+    snapshot?.status === 'needs-action' &&
+    snapshot.blocker?.kind === 'auth' &&
+    snapshot.blocker.atTurn === true
+  return carded ? items.filter((item) => !isRefusal(item)) : items
 }

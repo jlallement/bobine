@@ -15,6 +15,12 @@ const STEP = 15
 /** Colonne des jours (lun., mer., ven.), hors de la zone qui défile. */
 const LEFT = 30
 const TOP = 18
+/**
+ * Place d'une étiquette de mois (« sept. ») : plus près du bord droit, elle y est calée par sa fin.
+ * Sinon elle dépassait de la grille, la zone défilait de ce dépassement et, calée à droite,
+ * coupait la première étiquette réduite à « . » (fiche 267, recette D24).
+ */
+const MONTH_LABEL = 30
 
 /** « mardi 20 oct. » */
 const tipDay = (day: string) =>
@@ -50,6 +56,11 @@ export function ActivityHeatmap({
   // Jour survolé, et où le montrer (la grille a pu défiler) : relevé au survol.
   const [tip, setTip] = useState<{ index: number; x: number; left: boolean } | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
+  // Défilement de la grille (fenêtre étroite) : une étiquette de mois à moitié cachée ne se montre
+  // pas (fiche 267, D24).
+  // Arrondi à la colonne : un re-rendu par colonne défilée, pas à chaque évènement (revue QA).
+  const [scrolled, setScrolledState] = useState(0)
+  const setScrolled = (left: number) => setScrolledState(Math.ceil(left / STEP) * STEP)
   useEffect(() => {
     let live = true
     window.api.usage.heatmap({ range, ...(profileId ? { profileId } : {}) }).then(
@@ -69,7 +80,10 @@ export function ActivityHeatmap({
   useLayoutEffect(() => {
     const element = scroller.current
     if (!element) return
-    const pin = () => (element.scrollLeft = element.scrollWidth)
+    const pin = () => {
+      element.scrollLeft = element.scrollWidth
+      setScrolled(element.scrollLeft)
+    }
     pin()
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(pin)
@@ -141,7 +155,14 @@ export function ActivityHeatmap({
             </text>
           ))}
         </svg>
-        <div className="activity-heat-scroll" ref={scroller} onScroll={() => setTip(null)}>
+        <div
+          className="activity-heat-scroll"
+          ref={scroller}
+          onScroll={(event) => {
+            setTip(null)
+            setScrolled(event.currentTarget.scrollLeft)
+          }}
+        >
           <div className="activity-heat-inner" style={{ width }}>
             <svg
               width={width}
@@ -150,7 +171,13 @@ export function ActivityHeatmap({
               role="img"
               aria-label={t('activity.heat.label')}
             >
-              <MonthLabels days={days} offset={offset} columns={columns} />
+              <MonthLabels
+                days={days}
+                offset={offset}
+                columns={columns}
+                width={width}
+                hidden={scrolled}
+              />
               {days.map((d, i) => {
                 const { x, y } = position(i)
                 const dim = d.day < first || d.day > last
@@ -231,11 +258,16 @@ function Ring({ x, y, pad, className }: { x: number; y: number; pad: number; cla
 function MonthLabels({
   days,
   offset,
-  columns
+  columns,
+  width,
+  hidden
 }: {
   days: readonly UsageHeatDay[]
   offset: number
   columns: number
+  width: number
+  /** Largeur défilée hors de la vue, à gauche. */
+  hidden: number
 }) {
   const start = days[0]?.day
   if (!start) return null
@@ -257,11 +289,22 @@ function MonthLabels({
       text: shown.toLocaleDateString(currentLocale(), { month: 'short' })
     })
   }
-  return labels.map(({ c, text }) => (
-    <text key={c} x={c * STEP} y={11}>
-      {text}
-    </text>
-  ))
+  // À moitié sous le bord gauche de la vue : coupée, elle se lirait « 's » ; pas montrée.
+  const shown = labels.filter(({ c }) => c * STEP >= hidden - 1 || c * STEP + MONTH_LABEL <= hidden)
+  return shown.map(({ c, text }) => {
+    const atEnd = c * STEP + MONTH_LABEL > width
+    return (
+      <text
+        key={c}
+        x={atEnd ? width : c * STEP}
+        y={11}
+        textAnchor={atEnd ? 'end' : 'start'}
+        data-testid="activity-heat-month"
+      >
+        {text}
+      </text>
+    )
+  })
 }
 
 /** Infobulle d'un jour : « 38 échanges · mardi 20 oct. », puis le partage par agent. */

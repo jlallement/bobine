@@ -1,3 +1,4 @@
+import { refusedCue, refusedModel } from '@shared/model-refused'
 import { t } from 'i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionDetail, AttentionKind } from '@shared/attention'
@@ -12,6 +13,9 @@ export function conversationState(
   preparing = false
 ): { state: ChildState; label: string; reason?: string } | undefined {
   if (preparing) return { state: 'running', label: t('children.preparing') }
+  // Modèle refusé (quota épuisé…, fiche 267) : bloquée, pas « attend un accord ».
+  const refused = refusedModel(conversation)
+  if (refused) return { state: 'waiting', label: refusedCue(refused), reason: 'blocked' }
   // Tour fini, l'agent travaille encore (sous-agent en arrière-plan, fiche 255) : « En cours »,
   // pas « Réponse à lire » ; ce qui attend l'utilisateur ou une erreur passe avant.
   if (conversation.backgroundWork && (attention === undefined || attention === 'done')) {

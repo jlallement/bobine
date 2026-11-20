@@ -89,25 +89,31 @@ function unavailableModel(
   code: unknown,
   message: string,
   controls: readonly SessionControl[]
-): { id: string; name: string } | undefined {
+): { id: string; name: string; quota?: true } | undefined {
   const rule = profile.modelRefusedAtTurn
   if (!rule || rule.code !== code) return undefined
-  const named = rule.pattern.exec(message)?.[1]
   const model = currentModel(controls)
+  // Quota gratuit épuisé (fiche 267) : le modèle de la session, que le message ne nomme pas.
+  if (rule.quota?.test(message.trim())) return model ? { ...model, quota: true } : undefined
+  const named = rule.pattern.exec(message)?.[1]
   return named && model?.id === named ? model : undefined
 }
 
 /** Avis du fil à la place de l'erreur brute (traduit à l'affichage, ADR-0014). */
 export function authExpiredNotice(
   agent: string,
-  model?: { name: string; unavailable?: true }
+  model?: { name: string; unavailable?: true; quota?: true }
 ): AgentEvent {
   return {
     type: 'notice',
     level: 'warning',
     message: model
       ? {
-          key: model.unavailable ? 'agentHost.modelUnavailable' : 'agentHost.modelAuthRefused',
+          key: model.quota
+            ? 'agentHost.modelQuota'
+            : model.unavailable
+              ? 'agentHost.modelUnavailable'
+              : 'agentHost.modelAuthRefused',
           params: { agent, model: model.name }
         }
       : { key: 'agentHost.authExpired', params: { agent } },

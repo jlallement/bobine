@@ -211,7 +211,9 @@
       "needs-action": "Action required before you start",
       "authExpired": "Sign in again to continue",
       "modelRefused": "Choose another model or sign in",
-      "needsFolder": "Choose a folder first"
+      "needsFolder": "Choose a folder first",
+      "modelRefusedKey": "Choose another model or add an API key",
+      "modelRefusedOnly": "Choose another model"
     },
     "plan": {
       "placeholder": "Explore and plan with {{agent}}…",
@@ -696,7 +698,8 @@
       "signIn": "Sign in",
       "keyHint": "Stored encrypted in the macOS Keychain; can be changed in Settings › Agents.",
       "subtitle": "{{agent}} needs you to sign in before you start.",
-      "failed": "Sign-in failed: {{error}}"
+      "failed": "Sign-in failed: {{error}}",
+      "modelQuotaSubtitle": "Its free quota is used up: choose another model, or connect a provider."
     },
     "runInTerminal": "Runs “{{command}}” in the terminal",
     "license": {
@@ -2834,7 +2837,9 @@
     "readOnly": {
       "title": "Usage not read",
       "text": "This profile is read-only: usage isn’t read here. Update Bobine to see it again."
-    }
+    },
+    "step": "step {{elapsed}}",
+    "stepStarted": "Current step started {{elapsed}} ago"
   },
   "mentions": {
     "gitChanges": {
@@ -3067,7 +3072,8 @@
     },
     "turnLimit": {
       "noReload": "The agent cannot reload its session: open a new session with the summary instead."
-    }
+    },
+    "modelQuota": "The {{model}} model didn’t answer: its free quota with {{agent}} is used up."
   },
   "ipc": {
     "unavailable": {
@@ -4196,7 +4202,8 @@
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
     "documents": "Documents",
     "discussionDocuments": "Chat documents",
-    "thisDiscussion": "This chat"
+    "thisDiscussion": "This chat",
+    "blocked": "blocked"
   },
   "prTrack": {
     "title": "#{{number}} {{title}}",
@@ -4441,7 +4448,8 @@
       "nothing": "Nothing to review: no changes in this folder.",
       "notReviewer": "This conversation is not a review.",
       "noRole": "The Code reviewer role cannot be found.",
-      "reviewing": "A review of “{{title}}” is already running: wait until it ends."
+      "reviewing": "A review of “{{title}}” is already running: wait until it ends.",
+      "listFailed": "The review could not list the files to review (git did not answer in time). Try again."
     },
     "title": "Review: {{title}}",
     "dialog": {
@@ -4501,9 +4509,48 @@
       "uncommittedOf_other": "Review the uncommitted changes of “{{title}}” ({{count}} files).",
       "focus": "What to look at: {{focus}}",
       "commit_one": "Review the last commit {{commit}} ({{count}} file).",
-      "commit_other": "Review the last commit {{commit}} ({{count}} files)."
+      "commit_other": "Review the last commit {{commit}} ({{count}} files).",
+      "commits": "Review the {{commits}} of this conversation ({{files}}, {{range}}).",
+      "commitsDirty": "Review the uncommitted changes and the {{commits}} of this conversation ({{files}}, {{range}})."
     },
-    "fileDiff": "{{path}} since {{since}}"
+    "fileDiff": "{{path}} since {{since}}",
+    "scope": {
+      "commits_one": "{{count}} commit",
+      "commits_other": "{{count}} commits",
+      "range": "{{from}}..{{to}}",
+      "rangeFromStart": "first commit to {{to}}",
+      "since": "since {{from}}",
+      "sinceStart": "since the first commit"
+    },
+    "fileDiffReviewed": "{{path}} · reviewed version ({{range}})",
+    "fileChangedSince": "Fixed since the review: this is what was reviewed.",
+    "fileUnchanged": "Not changed in what was reviewed: here are the cited lines, as they are.",
+    "read": {
+      "line": "Reviewed: {{what}}",
+      "clean": "Nothing to report · reviewed: {{what}}"
+    },
+    "what": {
+      "conversation_one": "this conversation’s commit, {{files}}",
+      "conversation_other": "this conversation’s {{count}} commits, {{files}}",
+      "reviewed_one": "the commit made since the last review, {{files}}",
+      "reviewed_other": "the {{count}} commits made since the last review, {{files}}",
+      "again_one": "this conversation’s commit, reviewed again, {{files}}",
+      "again_other": "this conversation’s {{count}} commits, reviewed again, {{files}}",
+      "fallback_one": "the last commit (start of the conversation not found), {{files}}",
+      "fallback_other": "the last {{count}} commits (start of the conversation not found), {{files}}",
+      "dirty": "the uncommitted changes and {{what}}",
+      "commit": "commit {{commit}}, {{files}}",
+      "branch": "the branch since {{base}}, {{files}}",
+      "uncommitted": "the uncommitted changes, {{files}}",
+      "shallow": "partial repository history",
+      "submodules_one": "{{count}} submodule not reviewed",
+      "submodules_other": "{{count}} submodules not reviewed",
+      "rangeTip": "Reviewed commits: {{range}}"
+    },
+    "fileCurrent": "Current version, fixes included.",
+    "fileShowCurrent": "See the current version",
+    "fileShowReviewed": "See the reviewed version again",
+    "fileRangeMissing": "Reviewed range not found (history rewritten?): the file against the last commit."
   },
   "scheduled": {
     "title": "Scheduled tasks",
@@ -4670,7 +4717,8 @@
     },
     "error": {
       "tooLong": "Message too long (one million characters at most).",
-      "gone": "This task no longer exists, or is no longer linked to this conversation."
+      "gone": "This task no longer exists, or is no longer linked to this conversation.",
+      "notRetryable": "This task has replied or is still working: nothing to retry."
     },
     "agentNote": "Message from {{agent}} · {{time}}",
     "relayPendingWake": "Not yet passed to {{agent}} — it will be once all its tasks have replied, or with your next message",
@@ -4688,12 +4736,21 @@
     "readOnlyBranch": "read-only · in the reviewed branch",
     "findings": {
       "label": "Comments from {{role}}",
-      "where": "Show {{place}} on the diff",
-      "clean": "Nothing to report."
+      "where": "Show {{place}} on the diff"
     },
     "fixRequested": "Fix requested",
     "fixRequestedAt": "Fix requested · {{time}}",
-    "fixWork": "Have “{{work}}” fix it"
+    "fixWork": "Have “{{work}}” fix it",
+    "modelQuota": "The {{model}} model didn’t answer: its free quota is used up.",
+    "modelRefused": "The {{model}} model didn’t answer.",
+    "cue": {
+      "modelRefused": "model refused",
+      "quota": "quota used up"
+    },
+    "modelRetry": "The message will be sent again with the model you choose.",
+    "modelChangeFailed": "The model could not be changed: {{error}}",
+    "script_one": "a {{program}} script ({{count}} line)",
+    "script_other": "a {{program}} script ({{count}} lines)"
   },
   "workCue": {
     "replied": "replied",

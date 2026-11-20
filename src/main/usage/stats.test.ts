@@ -235,6 +235,25 @@ describe('statistiques sur un journal fixe (fiche 137)', () => {
     })
   })
 
+  it('fiche 267 (recette N10) : un coût nul d’un modèle qui ne se dit pas gratuit compte « sans coût », comme le tableau', () => {
+    const zero = (id: string, model: { id: string; name: string }) =>
+      row(id, { model, cost: { amount: 0, currency: 'USD' }, tokens: { input: 10, output: 1 } })
+    const { totals } = stats([
+      // GPT-6.1 Sol par abonnement, Big Pickle : 0 $ annoncé, « coût inconnu » au tableau.
+      zero('sol:1', { id: 'openai/gpt-6.1-sol', name: 'GPT-6.1 Sol' }),
+      zero('sol:2', { id: 'openai/gpt-6.1-sol', name: 'GPT-6.1 Sol' }),
+      zero('pickle:1', { id: 'opencode/big-pickle', name: 'opencode/Big Pickle' }),
+      // Un modèle qui se dit gratuit : « gratuit », pas « sans coût ».
+      zero('free:1', { id: 'opencode/deepseek-v4.1-flash-free', name: 'DeepSeek V4.1 Flash Free' }),
+      // Un vrai coût, et un tour sans coût du tout.
+      row('paye:1', { model: { id: 'gpt', name: 'GPT' }, cost: { amount: 0.02, currency: 'USD' } }),
+      row('rien:1'),
+      // Bobcoins à zéro : le décompte de Bob, jamais « non communiqué ».
+      row('bob:1', { profileId: 'bob', cost: { amount: 0, currency: 'bobcoins' } })
+    ])
+    expect(totals.turnsWithoutCost).toBe(4)
+  })
+
   it('jours de la période, vides compris ; un tour compte le jour local où il commence', () => {
     const days = stats().buckets
     expect(days.map((d) => d.key)).toEqual([

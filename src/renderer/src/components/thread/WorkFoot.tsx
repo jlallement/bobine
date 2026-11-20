@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
+import type { RoleBadge } from '@shared/roles'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
@@ -138,7 +139,7 @@ export function WorkFoot({
             <button
               type="button"
               className="btn ghost small"
-              onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+              onClick={() => replyTo(role, card, info)}
               data-testid="work-reply"
             >
               <Reply size={13} aria-hidden />
@@ -311,7 +312,8 @@ function SettledActions({
   const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
   return (
-    <>
+    // Actions du travail en un bloc, qui passe à la ligne entier (fiche 267, revue UX).
+    <div className="work-actions-group" data-testid="work-actions-group">
       {applies && onAsk && role && (
         <button
           type="button"
@@ -369,7 +371,13 @@ function SettledActions({
           title={t('workCard.retryLabel', { role: role.label })}
           disabled={acting}
           onClick={() =>
-            act(() => window.api.roles.reply(motherId, { childId: card.childId, text: askText }))
+            act(() =>
+              window.api.roles.reply(motherId, {
+                childId: card.childId,
+                text: askText,
+                retry: true
+              })
+            )
           }
           data-testid="work-retry"
         >
@@ -382,14 +390,14 @@ function SettledActions({
         <button
           type="button"
           className="btn small"
-          onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+          onClick={() => replyTo(role, card, info)}
           data-testid="work-reply"
         >
           <Reply size={13} aria-hidden />
           {t('workCard.reply', { role: role.label })}
         </button>
       )}
-    </>
+    </div>
   )
 }
 
@@ -482,4 +490,16 @@ function WriterActions({
       )}
     </>
   )
+}
+
+/**
+ * « Répondre à <rôle> » : le jeton de suite dans la saisie de la conversation d'origine du
+ * travail, qui prend le focus (fiche 267, F8).
+ */
+function replyTo(role: RoleBadge, card: WorkCardData, info: SubtasksInfo | undefined): void {
+  invokeRole(role.name, {
+    replyTo: card.childId,
+    role,
+    ...(info?.motherId ? { motherId: info.motherId } : {})
+  })
 }

@@ -110,9 +110,10 @@ export type AgentBlocker =
       /**
        * Modèle de la session refusé au tour (réglage de catégorie `model`, fiche 210) : la carte le
        * nomme et propose d'en choisir un autre. `unavailable` : l'agent dit ce modèle indisponible
-       * (fiche 259), ce n'est pas une connexion à faire.
+       * (fiche 259), ce n'est pas une connexion à faire ; `quota` : parce que son quota gratuit est
+       * épuisé (fiche 267, N3).
        */
-      model?: { id: string; name: string; unavailable?: true }
+      model?: { id: string; name: string; unavailable?: true; quota?: true }
     }
   | {
       kind: 'license'
@@ -723,6 +724,11 @@ export interface ConversationSummary {
   turnStopped?: true
   /** Prête, mais son agent travaille encore après le tour (fiche 255) : « en cours » dans la liste. */
   backgroundWork?: true
+  /**
+   * Son modèle a été refusé au dernier message (indisponible, quota gratuit épuisé : fiches 259,
+   * 267) : elle est bloquée, pas « en attente d'un accord » ; partout où son état se dit.
+   */
+  modelRefused?: { name: string; quota?: true }
   /** Conversation encore vide (pas dans l'historique). */
   draft: boolean
   /** Épinglée en tête de la barre latérale (fiche 026). */

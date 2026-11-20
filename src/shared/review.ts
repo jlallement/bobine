@@ -53,13 +53,33 @@ export interface ReviewFinding {
 export type ReviewStatus = 'running' | 'reported' | 'silent' | 'failed'
 
 /**
- * Ce qui est relu (décision 7 de la fiche) ; `commit` : le dernier commit, quand `@code-reviewer`
- * est tapé dans la saisie sans rien d'autre à relire (fiche 265).
+ * Ce qui est relu (décision 7 de la fiche) ; `commit` : le dernier commit (portée d'office de la
+ * fiche 265, gardée pour les relectures d'avant) ; `commits` : les commits de la conversation sur
+ * la branche principale, non commité compris peut-être (portée d'office, fiche 267).
  */
-export type ReviewScope = 'branch' | 'uncommitted' | 'commit'
+export type ReviewScope = 'branch' | 'uncommitted' | 'commit' | 'commits'
+
+/**
+ * D'où part une portée `commits` (fiche 267) : la dernière relecture (`reviewed`), la création de
+ * la conversation (`conversation`), la même plage relue de nouveau (`again`), ou, à défaut, les
+ * derniers commits (`fallback`).
+ */
+export type ReviewRangeOrigin = 'reviewed' | 'conversation' | 'again' | 'fallback'
+
+/** Ce que disent d'une portée la carte et la consigne (fiche 267). */
+interface RangeFacts {
+  /** Portée `commits` : d'où part la plage. */
+  origin?: ReviewRangeOrigin
+  /** Clone superficiel : la plage part du commit frontière, l'historique d'avant manque. */
+  shallow?: true
+  /** Sous-modules changés, pas relus (un identifiant de commit seulement). */
+  submodules?: number
+  /** HEAD au départ de la relecture, toujours : la suivante part de là (`lastReviewed`). */
+  reviewedHead?: string
+}
 
 /** Carte « Relecture » du fil de l'auteur : un seul élément par relecture, remplacé à chaque étape. */
-export interface Review {
+export interface Review extends RangeFacts {
   /** Conversation du relecteur. */
   reviewId: string
   /**
@@ -83,6 +103,16 @@ export interface Review {
    * commit relu (l'arbre vide pour le premier commit) ; absent : le non commité, contre `HEAD`.
    */
   since?: string
+  /**
+   * Commit de fin relu (HEAD au départ) pour une portée commitée (fiche 267) : le diff d'une
+   * remarque est celui de la portée relue (`since..head`), même si le fichier a changé depuis ;
+   * absent avec du non commité (`withUncommitted`, branche, non commité) : comparé au disque.
+   */
+  head?: string
+  /** Portée `commits` : nombre de commits relus (fiche 267). */
+  commits?: number
+  /** Le non commité était relu aussi (fiche 267). */
+  withUncommitted?: true
   status: ReviewStatus
   findings: ReviewFinding[]
   /** Avis d'ensemble du relecteur. */
@@ -106,15 +136,22 @@ export interface Review {
 }
 
 /** Ce que la consigne cite du travail relu. */
-export interface ReviewTarget {
+export interface ReviewTarget extends RangeFacts {
   scope: ReviewScope
   /** Commit complet du point de comparaison (branche), ou le parent du commit relu (`commit`). */
   base?: string
   baseBranch?: string
   /** Branche courante relue, hors worktree (`@code-reviewer`, fiche 265). */
   branch?: string
-  /** Portée `commit` : le commit relu (`base` : son premier parent, absent pour le premier). */
+  /**
+   * Portée `commit` : le commit relu (`base` : son premier parent, absent pour le premier) ;
+   * `commits` : HEAD, fin de la plage relue (`base` : son début, l'arbre vide s'il part du début).
+   */
   commit?: string
+  /** Portée `commits` : nombre de commits de la plage (fiche 267). */
+  commits?: number
+  /** Portée `commits` : le non commité est relu aussi (`git diff <base>`). */
+  withUncommitted?: true
   /** Dépôt sans commit : tout est nouveau, rien à comparer. */
   noCommit?: true
   /** Fichiers modifiés (`git diff --name-only`, nouveaux compris). */
@@ -132,33 +169,48 @@ export const REVIEW_BRIEF_LEAD = 'Code review request from Bobine.'
  */
 export function reviewBrief(target: ReviewTarget, focus?: string): string {
   const what =
-    target.scope === 'commit' && target.commit
-      ? `the last commit ${target.commit} of this folder. Read it with ` +
-        (target.base
-          ? `\`git diff ${target.base} ${target.commit}\` (against its first parent).`
-          : `\`git show ${target.commit}\` (the first commit of the repository).`)
-      : target.noCommit
-        ? 'every file of this folder: the repository has no commit yet, so there is nothing to ' +
-          'compare with. Read the files listed below, and `git status`.'
-        : target.scope === 'branch' && target.base
-          ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
-            `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
-            'and `git status` for new files.'
-          : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
-            'for new files.'
+    target.scope === 'commits' && target.base && target.commit
+      ? commitsBrief(target.base, target.commit, target.commits ?? 1, !!target.withUncommitted)
+      : target.scope === 'commit' && target.commit
+        ? `the last commit ${target.commit} of this folder. Read it with ` +
+          (target.base
+            ? `\`git diff ${target.base} ${target.commit}\` (against its first parent).`
+            : `\`git show ${target.commit}\` (the first commit of the repository).`)
+        : target.noCommit
+          ? 'every file of this folder: the repository has no commit yet, so there is nothing to ' +
+            'compare with. Read the files listed below, and `git status`.'
+          : target.scope === 'branch' && target.base
+            ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
+              `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
+              'and `git status` for new files.'
+            : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
+              'for new files.'
   const shown = target.files.slice(0, BRIEF_FILES)
   const more = target.files.length - shown.length
   const files = [
     ...shown.map((file) => `- ${file}`),
     ...(more > 0 ? [`- … and ${more} more`] : [])
   ].join('\n')
+  const notes = [
+    ...(target.shallow
+      ? [
+          'This repository is a shallow clone: the range starts at the oldest commit available, older history is missing.'
+        ]
+      : []),
+    ...(target.submodules
+      ? [
+          `${target.submodules} changed submodule(s) are not part of this review (only their commit id changed here).`
+        ]
+      : [])
+  ]
+  const noted = notes.length ? `\n\n${notes.join('\n')}` : ''
   const extra = focus?.trim()
     ? `\n\nThe user asks you to look in particular at:\n${focus.trim()}`
     : ''
   return (
     `${REVIEW_BRIEF_LEAD} Review the work of the conversation "${target.authorTitle}" before ` +
     `the user keeps or merges it.\n\n` +
-    `What to review: ${what}\n\nFiles changed:\n${files}${extra}\n\n` +
+    `What to review: ${what}${noted}\n\nFiles changed:\n${files}${extra}\n\n` +
     'How:\n' +
     '1. Correctness first: bugs, wrong logic, missed cases, broken error handling, security, ' +
     'races, tests that do not test what they claim. Then simplification: duplicated code, needless ' +
@@ -175,6 +227,21 @@ export function reviewBrief(target: ReviewTarget, focus?: string): string {
     'answer. Your findings become comments on the diff that the user may send to the author.\n' +
     '4. Then end your turn with one or two sentences: your overall verdict.'
   )
+}
+
+/** L'arbre vide de git (SHA-1) : une plage qui part du premier commit du dépôt. */
+export const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
+/** Portée `commits` (fiche 267) : la plage, et comment la lire. */
+function commitsBrief(base: string, head: string, count: number, uncommitted: boolean): string {
+  const from = base === EMPTY_TREE ? 'the start of the repository' : `commit ${base}`
+  const commits = count === 1 ? 'the commit' : `the ${count} commits`
+  return uncommitted
+    ? `${commits} made during this conversation (from ${from} to ${head}) and the uncommitted ` +
+        `changes. Read everything with \`git diff ${base}\`, \`git log --oneline ${base === EMPTY_TREE ? head : `${base}..${head}`}\` ` +
+        'for the commits, and `git status` for new files.'
+    : `${commits} made during this conversation (from ${from} to ${head}), merges included. ` +
+        `Read them with \`git diff ${base} ${head}\` and \`git log --oneline ${base === EMPTY_TREE ? head : `${base}..${head}`}\`.`
 }
 
 const isInt = (value: unknown): value is number =>
@@ -284,17 +351,20 @@ export interface DiffTarget {
   line?: number
   endLine?: number
   since?: string
+  /** Fin de la portée relue, toute commitée (`Review.head`, fiche 267) : le diff relu. */
+  until?: string
 }
 
 /** Le fichier d'une remarque d'une relecture, à ouvrir. */
 export const findingTarget = (
   finding: Pick<ReviewFinding, 'file' | 'line' | 'endLine'>,
-  review: Pick<Review, 'since'>
+  review: Pick<Review, 'since' | 'head'>
 ): DiffTarget => ({
   path: finding.file,
   line: finding.line,
   ...(finding.endLine ? { endLine: finding.endLine } : {}),
-  ...(review.since ? { since: review.since } : {})
+  ...(review.since ? { since: review.since } : {}),
+  ...(review.since && review.head ? { until: review.head } : {})
 })
 
 /** Où se lit une remarque : « src/main.ts:42 », « src/main.ts:42-48 ». */

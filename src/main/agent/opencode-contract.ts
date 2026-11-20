@@ -24,7 +24,14 @@ export const AUTH_REQUIRED_MESSAGE = /authentication required/i
  */
 export const MODEL_UNAVAILABLE = {
   code: -32603,
-  pattern: /\bmodel unavailable: (\S+)\s*$/i
+  pattern: /\bmodel unavailable: (\S+)\s*$/i,
+  /**
+   * Quota gratuit épuisé (2.3.0, recette du 2026-11-20, N3 ; `agents.log`) : `-32603` « Internal
+   * error: Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going,
+   * or switch models. », pour le modèle gratuit de la session. Ancré au début : un message de
+   * l'agent qui cite cette phrase plus loin n'est pas un refus.
+   */
+  quota: /^(?:internal error: )?free usage limit reached\b/i
 }
 
 /** Titre des sessions jamais écrites (1.19 et 2.0.31) : « New session - <date ISO> ». */

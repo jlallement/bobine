@@ -283,6 +283,96 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.queryByTestId('work-relay')).toBeNull()
   })
 
+  it('fiche 267 (N4) : une commande de dix lignes tient sur une ligne, l’entière en infobulle', () => {
+    fakeAgent()
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'busy' })])
+    )
+    const card = screen.getByTestId('work-card')
+    const command = [
+      "node - <<'JS'",
+      'function lum(hex){',
+      '  const n = parseInt(hex.slice(1), 16)',
+      '}',
+      'JS'
+    ].join('\n')
+    const long = `rg --files --hidden --glob '!node_modules' ${'src/composants/'.repeat(8)}`
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't1',
+          title: command,
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    const current = within(card).getByTestId('work-live-text')
+    // Un heredoc (revue UX) : le programme et sa longueur, pas son contenu.
+    expect(current.textContent).toBe('Lance un script node (5 lignes)…')
+    expect(current.getAttribute('title')).toBe(command)
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 't1', status: 'completed' }
+      })
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't2',
+          title: long,
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    const done = within(card).getByTestId('work-live-done')
+    expect(done.textContent).toBe('A lancé un script node (5 lignes)')
+    expect(done.querySelector('li')?.getAttribute('title')).toBe(command)
+    const text = within(card).getByTestId('work-live-text').textContent ?? ''
+    expect(text.startsWith('Lance rg --files')).toBe(true)
+    // 80 caractères au plus pour la commande, « … » compris.
+    expect(text.length).toBeLessThanOrEqual('Lance '.length + 80)
+    expect(text.endsWith('…')).toBe(true)
+    expect(text.endsWith('……')).toBe(false)
+    expect(within(card).getByTestId('work-live-text').getAttribute('title')).toBe(long)
+    // Plusieurs lignes sans heredoc : les blancs réduits à une espace.
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't4',
+          title: 'npm run build &&\n    npm test',
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    expect(within(card).getByTestId('work-live-text').textContent).toBe(
+      'Lance npm run build && npm test…'
+    )
+    // Une commande courte : telle quelle, sans infobulle.
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't3',
+          title: 'npm test',
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    expect(within(card).getByTestId('work-live-text').textContent).toBe('Lance npm test…')
+    expect(within(card).getByTestId('work-live-text').getAttribute('title')).toBeNull()
+  })
+
   it('coût nul d’un modèle payant (abonnement, D12) : « coût inconnu » dans le pied (fiche 266)', () => {
     fakeAgent()
     view(answered({ usage: usd(0) }), info([child('a', ux)]))
@@ -343,6 +433,119 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(true)
     await act(async () => sending.resolve())
     expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('fiche 267 (N3, N8) : modèle du travail refusé (quota épuisé), dit dans sa carte, un autre modèle choisi depuis elle', async () => {
+    fakeAgent()
+    const setControl = vi.fn(async () => undefined)
+    window.api.agent = { ...window.api.agent, setControl } as unknown as Window['api']['agent']
+    const control = {
+      id: 'model',
+      name: 'Modèle',
+      category: 'model',
+      type: 'select',
+      currentValue: 'factice-rapide',
+      options: [
+        { value: 'factice-rapide', name: 'Factice rapide' },
+        { value: 'factice-precis', name: 'Factice précis' }
+      ]
+    }
+    const snapshot = (quota: boolean) => ({
+      status: 'needs-action',
+      controls: [control],
+      blocker: {
+        kind: 'auth',
+        methods: [],
+        authenticating: false,
+        atTurn: true,
+        model: {
+          id: 'factice-rapide',
+          name: 'Factice rapide',
+          unavailable: true,
+          ...(quota ? { quota: true } : {})
+        }
+      }
+    })
+    const views = vi.fn(async () => snapshot(true))
+    ;(window.api as unknown as { roles: unknown }).roles = { workState: views }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([
+        child('a', ux, {
+          status: 'needs-action',
+          modelRefused: { name: 'Factice rapide', quota: true }
+        })
+      ])
+    )
+    const text = await screen.findByTestId('work-refused-text')
+    expect(views).toHaveBeenCalledWith('a')
+    expect(plain(text.textContent)).toBe(
+      'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.Le message repartira avec le modèle choisi.'
+    )
+    // L'en-tête dit « quota épuisé » (alerte), pas « attend votre accord ».
+    expect(screen.getByTestId('work-state-blocked').textContent).toBe('quota épuisé')
+    fireEvent.click(screen.getByTestId('work-choose-model'))
+    fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+    expect(setControl).toHaveBeenCalledWith('a', 'model', 'factice-precis')
+    // Un échec du changement de modèle est dit dans la carte (revue UX, 13).
+    setControl.mockRejectedValueOnce(new Error('agent arrêté'))
+    fireEvent.click(screen.getByTestId('work-choose-model'))
+    fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+    expect((await screen.findByTestId('work-refused-error')).textContent).toContain('agent arrêté')
+    // Le travail repart : la carte suit son instantané, plus de refus.
+    act(() =>
+      emit('a', {
+        type: 'status',
+        snapshot: { ...snapshot(true), status: 'busy', blocker: undefined }
+      } as never)
+    )
+    expect(screen.queryByTestId('work-refused-text')).toBeNull()
+  })
+
+  it('fiche 267, revue QA : une lecture de l’état plus ancienne qu’un statut reçu est jetée', async () => {
+    fakeAgent()
+    let answer: (value: unknown) => void = () => {}
+    ;(window.api as unknown as { roles: unknown }).roles = {
+      workState: () => new Promise((resolve) => (answer = resolve))
+    }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'needs-action' })])
+    )
+    // Le refus est déjà levé (statut reçu), puis la lecture d'avant arrive avec l'ancien refus.
+    act(() =>
+      emit('a', { type: 'status', snapshot: { status: 'needs-action', controls: [] } } as never)
+    )
+    await act(async () =>
+      answer({
+        status: 'needs-action',
+        controls: [],
+        blocker: {
+          kind: 'auth',
+          methods: [],
+          authenticating: false,
+          atTurn: true,
+          model: { id: 'f', name: 'Factice rapide', quota: true }
+        }
+      })
+    )
+    expect(screen.queryByTestId('work-refused-text')).toBeNull()
+  })
+
+  it('fiche 267 : un travail qui attend autre chose (une autorisation) garde « Attend votre réponse »', async () => {
+    fakeAgent()
+    ;(window.api as unknown as { roles: unknown }).roles = {
+      workState: async () => ({ status: 'needs-action', controls: [] })
+    }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'needs-action' })])
+    )
+    await act(async () => {})
+    expect(screen.getByTestId('work-live').textContent).toBe(
+      'Attend votre réponse dans sa conversation.'
+    )
+    expect(screen.queryByTestId('work-choose-model')).toBeNull()
   })
 
   it('« Appliquer » sans titre : le rôle seul ; masqué quand un message attend dans la file', async () => {
@@ -464,9 +667,11 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     fireEvent.click(within(card).getByTestId('work-retry'))
     await act(async () => {})
     expect(reply).toHaveBeenCalledTimes(1)
+    // « Relancer » (fiche 267, N9) : la même demande, sans nouvelle bulle.
     expect(reply).toHaveBeenCalledWith('mere', {
       childId: 'a',
-      text: 'À quoi ça pourrait ressembler ? Propose une direction.'
+      text: 'À quoi ça pourrait ressembler ? Propose une direction.',
+      retry: true
     })
     await act(async () => sending.resolve())
     expect((within(card).getByTestId('work-retry') as HTMLButtonElement).disabled).toBe(false)
@@ -508,7 +713,11 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     const stop = onRoleInvoked(received)
     view(answered(), info([child('a', ux)]))
     fireEvent.click(screen.getByTestId('work-reply'))
-    expect(received).toHaveBeenCalledWith('ux-ui-expert', { replyTo: 'a', role: ux })
+    expect(received).toHaveBeenCalledWith('ux-ui-expert', {
+      replyTo: 'a',
+      role: ux,
+      motherId: 'mere'
+    })
     stop()
     expect(screen.getAllByTestId('work-card')).toHaveLength(1)
     expect(screen.getAllByTestId('role-request')).toHaveLength(1)

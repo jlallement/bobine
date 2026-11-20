@@ -76,6 +76,38 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   prendre un libre ; renommer un rôle suit la même règle. Deux rôles de même icône ou de même
   couleur ont toujours été deux rôles distincts. « Enregistrer en rôle personnel » d'un rôle fourni
   le remplace, comme avant.
+- Un travail bloqué par un modèle refusé (quota gratuit épuisé…) le dit partout : « quota épuisé »
+  ou « modèle refusé » dans sa carte, la barre latérale et Session › En cours, au lieu de
+  « attend votre accord ».
+- La carte du Code reviewer dit d'où part ce qu'il a relu (« les 4 commits de cette conversation »,
+  « depuis la dernière relecture », « les 5 derniers commits ») ; un clone superficiel et les
+  sous-modules non relus sont signalés.
+- **« @Code reviewer Relis ce qui a été fait » relit ce qui a été fait** : sur la branche
+  principale, les commits de la conversation (depuis la dernière relecture, sinon depuis son
+  début), jamais un commit de fusion seul ; avec du non commité, le non commité et ces commits. La
+  carte dit toujours ce qui a été relu (« Relu : 4 commits, 12 fichiers (a3f2c1e..9b8e7d0) »), même
+  quand il n'y a rien à signaler.
+- Un clic sur `fichier:ligne` d'une remarque ouvre le diff de ce qui a été relu, même si le fichier
+  a été corrigé depuis (la vue le dit), au lieu de « Aucune modification ».
+- **Quota gratuit épuisé** (OpenCode : « Free usage limit reached ») : la carte « Le modèle … n'a
+  pas répondu » avec « Choisir un autre modèle », au lieu de l'erreur en anglais ; dans la carte
+  d'un travail aussi, d'où l'on change le modèle du travail.
+- L'activité d'un travail tient sur une ligne : une longue commande est coupée, entière en
+  infobulle.
+- Le texte tapé pendant qu'un travail se prépare n'est plus effacé.
+- « Relancer » un travail ne répète plus sa demande dans la carte.
+- La réponse d'un rôle commence par un résumé de deux lignes, sans titre « Compte rendu ».
+- L'aide sous la saisie avec un rôle est grise, plus en couleur d'alerte.
+- « Répondre à <rôle> » met le curseur dans la bonne saisie, même avec deux conversations côte à
+  côte.
+- Une réponse en erreur vue dans sa carte n'est plus « à lire ».
+- L'indicateur de travail donne la durée du tour, l'étape en plus petit.
+- Les travaux restent dans leur ordre de lancement sous leur conversation.
+- Mon activité : la tuile du coût compte les échanges au coût inconnu comme le tableau (son chiffre
+  augmente si votre modèle est inclus dans un abonnement), et la première étiquette de mois n'est
+  plus coupée.
+- Onglet Modifications : la barre du haut passe à la ligne quand le panneau est étroit ;
+  « Actualiser » ne sort plus du panneau.
 - Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
   ligne discrète sous la saisie dit d'où il partira (« depuis le dernier commit, sans vos N
   modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de

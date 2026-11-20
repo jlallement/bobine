@@ -611,8 +611,10 @@ describe('catalogue', () => {
     // Refuse le message tant que le SSO n'est pas refait (fiche 200) : essayé par l'hôte d'agent
     // et la grille de conformité.
     'connexion-expiree-bob-tour',
-    // Refuse le message (modèle indisponible, fiche 259) : essayé par l'hôte d'agent.
+    // Refuse le message (modèle indisponible, fiche 259 ; quota épuisé, fiche 267) : essayé par
+    // l'hôte d'agent.
     'modele-indisponible',
+    'quota-gratuit',
     // Ne répond jamais (au-delà du délai de Bobine) : essayé par la rédaction (fiche 246).
     'message-commit-lent'
   ])

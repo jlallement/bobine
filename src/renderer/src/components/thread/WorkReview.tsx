@@ -1,14 +1,17 @@
-import { CircleCheck, TriangleAlert } from 'lucide-react'
+import { CircleCheck, ScanSearch, TriangleAlert } from 'lucide-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewItem } from '@shared/role-request'
 import { findingPlace, findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
+import { reviewedRange, reviewedWhat } from '@shared/review-scope'
 
 /**
  * Ce que le Code reviewer a trouvé, dans sa carte-réponse (fiche 265, écran G des maquettes de la
  * fiche 260, revue UX) : son avis d'ensemble d'abord, puis chaque remarque visible — gravité,
  * `fichier:ligne` qui ouvre le diff sur ces lignes, une phrase — ; « Rien à signaler » sans
- * remarque. Une fois la correction demandée, les pastilles s'effacent un peu.
+ * remarque. Une fois la correction demandée, les pastilles s'effacent un peu. Toujours, ce qui a été
+ * relu (« Relu : 4 commits, 12 fichiers (ffa5062..db4a5e1) », fiche 267) : « rien à signaler »
+ * ne vaut que pour cette portée.
  */
 export function ReviewFindings({
   review,
@@ -39,54 +42,93 @@ export function ReviewFindings({
         </p>
       )}
       {findings.length === 0 ? (
+        // Rien à signaler, et sur quoi (fiche 267, revue UX) : jamais l'un sans l'autre.
         <div className="work-review-clean" data-testid="work-findings-clean">
           <CircleCheck size={14} aria-hidden />
-          {t('workCard.findings.clean')}
+          <span>
+            <span data-testid="work-review-scope" data-scope={review.scope}>
+              {t('review.read.clean', { what: reviewedWhat(review) })}
+            </span>
+            <ReviewRange review={review} />
+          </span>
         </div>
       ) : (
-        <ul
-          className="work-findings"
-          aria-label={t('workCard.findings.label', { role })}
-          data-testid="work-findings"
-        >
-          {findings.map((finding) => {
-            const place = findingPlace(finding)
-            return (
-              <li
-                key={finding.id}
-                className="work-finding"
-                data-testid="work-finding"
-                data-severity={finding.severity}
-              >
-                <span className={`review-severity ${finding.severity}`}>
-                  {t(`review.severity.${finding.severity}`)}
-                </span>
-                <span className="work-finding-text">
-                  {onShow ? (
-                    <button
-                      type="button"
-                      className="work-finding-where"
-                      title={t('workCard.findings.where', { place })}
-                      onClick={() => onShow(findingTarget(finding, review))}
-                      data-testid="work-finding-where"
-                    >
-                      <Place text={place} />
-                    </button>
-                  ) : (
-                    <span className="work-finding-where">
-                      <Place text={place} />
-                    </span>
-                  )}
-                  <span className="work-finding-title" data-testid="work-finding-title">
-                    {finding.title}
+        <>
+          <ReviewedLine review={review} />
+          <ul
+            className="work-findings"
+            aria-label={t('workCard.findings.label', { role })}
+            data-testid="work-findings"
+          >
+            {findings.map((finding) => {
+              const place = findingPlace(finding)
+              return (
+                <li
+                  key={finding.id}
+                  className="work-finding"
+                  data-testid="work-finding"
+                  data-severity={finding.severity}
+                >
+                  <span className={`review-severity ${finding.severity}`}>
+                    {t(`review.severity.${finding.severity}`)}
                   </span>
-                </span>
-              </li>
-            )
-          })}
-        </ul>
+                  <span className="work-finding-text">
+                    {onShow ? (
+                      <button
+                        type="button"
+                        className="work-finding-where"
+                        title={t('workCard.findings.where', { place })}
+                        onClick={() => onShow(findingTarget(finding, review))}
+                        data-testid="work-finding-where"
+                      >
+                        <Place text={place} />
+                      </button>
+                    ) : (
+                      <span className="work-finding-where">
+                        <Place text={place} />
+                      </span>
+                    )}
+                    <span className="work-finding-title" data-testid="work-finding-title">
+                      {finding.title}
+                    </span>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
     </div>
+  )
+}
+
+/** « Relu : … » sous l'avis, avant la liste des remarques (fiche 267, revue UX). */
+function ReviewedLine({ review }: { review: ReviewItem }) {
+  const { t } = useTranslation()
+  return (
+    <p className="work-review-scope" data-testid="work-review-scope" data-scope={review.scope}>
+      <ScanSearch size={12} aria-hidden />
+      <span>
+        {t('review.read.line', { what: reviewedWhat(review) })}
+        <ReviewRange review={review} />
+      </span>
+    </p>
+  )
+}
+
+/** La plage relue, discrète, en chasse fixe ; en entier dans l'infobulle. */
+function ReviewRange({ review }: { review: ReviewItem }) {
+  const { t } = useTranslation()
+  const range = reviewedRange(review)
+  if (!range) return null
+  return (
+    <code
+      className="work-review-range"
+      title={t('review.what.rangeTip', { range })}
+      data-testid="work-review-range"
+    >
+      {range}
+    </code>
   )
 }
 

@@ -281,7 +281,10 @@ export const SUITES = [
       `${C}composer/UsageGuards.tsx`,
       `${C}composer/BlockerPanel.tsx`,
       `${C}common/ModelMenu.tsx`,
+      `${C}activity/ActivityKpis.tsx`,
+      `${C}activity/UsageTables.tsx`,
       'src/shared/usage.ts',
+      'src/main/usage/stats.ts',
       'src/main/agent/refused-models.ts',
       'src/mock-agent/scenarios-consommation.mts'
     ]
@@ -436,6 +439,7 @@ export const SUITES = [
       ...TOOLS,
       `${C}thread/WorkingIndicator.tsx`,
       `${C}thread/TerminalView.tsx`,
+      'src/mock-agent/scenarios-roles.mts',
       'src/shared/activity.ts',
       'src/shared/json-output.ts'
     ]
@@ -1020,6 +1024,47 @@ export const SUITES = [
       'src/main/mcp/children-tools.ts',
       'src/main/mcp/review-tools.ts',
       'src/mock-agent/scenarios-relecture.mts'
+    ]
+  },
+  {
+    name: 'relecture-commits',
+    file: 'relecture-commits.mjs',
+    run: 'relectureCommitsSuite',
+    themes: BOTH,
+    sources: [
+      `${C}panel/ChangesTab.tsx`,
+      `${C}panel/ReviewFileDiff.tsx`,
+      `${C}panel/ChangesBars.tsx`,
+      `${C}thread/WorkReview.tsx`,
+      `${C}thread/WorkCard.tsx`,
+      `${C}thread/DiffView.tsx`,
+      `${C}roles/`,
+      'src/shared/review.ts',
+      'src/shared/review-scope.ts',
+      'src/main/conversations/review-target.ts',
+      'src/main/conversations/children*.ts',
+      'src/main/changes/git.ts',
+      'src/mock-agent/scenarios-relecture.mts'
+    ]
+  },
+  {
+    name: 'travail-recette',
+    file: 'travail-recette.mjs',
+    run: 'travailRecetteSuite',
+    themes: BOTH,
+    sources: [
+      `${C}composer/BlockerPanel.tsx`,
+      `${C}common/ModelMenu.tsx`,
+      `${C}roles/`,
+      `${C}thread/WorkCard.tsx`,
+      `${C}thread/WorkBlocked.tsx`,
+      `${R}work-card.css`,
+      `${R}useComposerRoles.ts`,
+      'src/main/agent/turn-auth.ts',
+      'src/main/agent/opencode-contract.ts',
+      'src/main/roles/',
+      'src/main/conversations/children.ts',
+      'src/mock-agent/scenarios-roles.mts'
     ]
   },
   {

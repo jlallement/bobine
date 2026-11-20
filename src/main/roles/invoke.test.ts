@@ -61,6 +61,17 @@ function withoutAsk(request: unknown): unknown {
 }
 
 describe('parseRolesReplyRequest (fiche 263)', () => {
+  it('« Relancer » (fiche 267) : `retry` gardé s’il vaut vrai, refusé sinon', () => {
+    expect(parseRolesReplyRequest({ childId: 'f1', text: 'Relis', retry: true })).toEqual({
+      childId: 'f1',
+      text: 'Relis',
+      retry: true
+    })
+    expect(() => parseRolesReplyRequest({ childId: 'f1', text: 'Relis', retry: 'oui' })).toThrow(
+      'retry'
+    )
+  })
+
   it('garde le travail visé et le texte nettoyé', () => {
     expect(parseRolesReplyRequest({ childId: 'f1', text: '  Et le contraste ?  ' })).toEqual({
       childId: 'f1',

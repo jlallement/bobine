@@ -40,7 +40,7 @@ import {
   sameWeekdays,
   scopeRange
 } from '@shared/usage-periods'
-import { processedTokens } from '@shared/usage'
+import { costNotReported, isFreeModel, processedTokens } from '@shared/usage'
 import { localDay } from './report'
 import type { JournalSeries, TurnRow } from './usage-db'
 
@@ -276,8 +276,14 @@ function addTotals(totals: UsageTotals, row: TurnRow): void {
   totals.cachedRead = (totals.cachedRead ?? 0) + (row.tokens.cachedRead ?? 0)
   if (!hasTokens(row)) totals.turnsWithoutTokens += 1
   if (row.cost) addCost(totals.costs, row)
-  else totals.turnsWithoutCost += 1
+  // Sans coût, ou un coût nul en monnaie d'un modèle qui ne se dit pas gratuit (fiche 266) : le
+  // tableau l'affiche « coût inconnu », la tuile le compte pareil (recette N10, fiche 267).
+  if (!row.cost || costNotReported(row.cost, freeRow(row))) totals.turnsWithoutCost += 1
 }
+
+/** Le modèle du tour se dit gratuit (fiche 266) ; sans modèle connu, non. */
+const freeRow = (row: TurnRow): boolean =>
+  !!row.model && isFreeModel({ value: row.model.id, name: row.model.name })
 
 function addModel(rows: Map<string, UsageModelRow>, row: TurnRow): void {
   const key = modelKey(row.profileId, row.model?.id)

@@ -260,6 +260,9 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `connexion-expiree-modele-aucun` | Comme `connexion-expiree-modele`, mais aucun modèle ne répond avant la connexion : changer de modèle ramène la carte, avec le nouveau modèle |
 | `modele-indisponible` | Modèle que le fournisseur ne sert pas (fiche 259, comme OpenCode 2.3.0) : avec `factice-rapide`, le message est refusé par l'erreur exacte relevée, `-32603` « Internal error: Model unavailable: factice-rapide » ; avec `factice-precis`, « Ce modèle est disponible, je peux répondre. » |
 | `modele-indisponible-apres-connexion` | Le parcours D6 du 2026-11-19 : `factice-rapide` refusé faute de connexion (`-32000`), puis, une fois `.mock-agent-logged-in` posé (« Réessayer »), refusé comme indisponible (`-32603` « Model unavailable ») ; `factice-precis` répond |
+| `quota-gratuit` | Quota gratuit épuisé (fiche 267, comme OpenCode 2.3.0) : avec `factice-rapide`, le message est refusé par l'erreur exacte relevée, `-32603` « Internal error: Free usage limit reached… » ; avec `factice-precis`, « Ce modèle a encore du quota, je peux répondre. » |
+| `commande-longue` | Travail qui lance une commande de dix lignes (fiche 267, N4) : `node - <<'JS'…` en cours ≈ 6 s (150 pas), puis « Contrastes calculés : 9,8:1 et 3,4:1. » |
+| `etapes-longues` | Deux étapes distinctes (fiche 267, D14) : du texte, ≈ 2 s, puis `npm test` en cours ≈ 10 s, puis « Les tests passent. » |
 | `connexion-expiree-autre` | Refus `-32000` au message sans indice de connexion dans le texte : erreur de tour ordinaire, pas de carte de connexion |
 | `bob-elicitation` | Formulaire riche (`elicitation/create`, mode `form`) ; la réponse oriente la suite |
 | `elicitation-url` | Demande d'ouvrir une page web (`elicitation/create`, mode `url`) |
