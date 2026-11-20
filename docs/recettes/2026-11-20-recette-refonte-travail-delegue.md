@@ -119,3 +119,76 @@ assurance est pire qu'une absence de relecture. À corriger avant la rc.2, avec 
 indisponible en erreur brute, même famille que D6) et N4 (activité illisible), qui sont simples.
 N5 est à écarter par un essai ciblé. Les mineurs et les anciens restes (D17, D21, D24, D25, R7/D35)
 peuvent suivre.
+
+## Recette courte avant rc.2 (modèle gratuit) — 2026-11-20 après-midi
+
+Testeur : Claude (Opus 5.5), par `pnpm pilote` et des évènements DevTools (clavier touche par
+touche pour N5, vrais clics souris). Aucun fichier de code modifié, rien de commité dans le dépôt.
+Captures relatives à `.pilote/sessions/`.
+
+| | |
+|---|---|
+| Bobine | 1.0.0-rc.1 (développement), build de `main` **4288897** (fiche 267, 268, 269 fusionnées) ; `4acb623` arrivé pendant la recette ne touche que des essais |
+| Profil | copie `~/Development/bobine-recette/profil-recette-rc2` (`--profil`, `--vrai-trousseau`) ; journal Détaillé |
+| Projet | `~/Development/bobine-recette/recette-rc2`, dépôt git vide au départ |
+| Agent, modèle | OpenCode 2.3.0, **opencode/big-pickle** pour tout le parcours. Premier essai avec openai/gpt-6.1-sol : refusé (`-32000 Authentication required`, passage arrêté, `2026-11-20-135546/`). DeepSeek V4.1 Flash Free : quota épuisé dès le premier message (sert à vérifier N3) |
+| Session | `2026-11-20-135703/` : 18 min 41 s, 5 tours mesurés (médiane 44 s, max 2 min 22 s), 0 intervention |
+| Historique git obtenu | `eea2975` appli (Big Pickle, 6 tests) → travaux `ede7e05`, `9706593` (compteur) et `8fe61b6` (effacer les cochés) → fusion par la carte de groupe, conflit résolu par le travail : **`abba884 Merge branch 'master' into bobine/…`**, premier parent = la branche du travail (le cas exact de N1) → `b288021` correctif demandé au relecteur |
+
+### Points vérifiés
+
+| Point | Résultat | Preuve |
+|---|---|---|
+| **N1** portée de `@Code reviewer` « Relis ce qui a été fait » | **OK** : « Relu : les 5 commits de cette conversation, 9 fichiers du premier commit à abba884 » ; consigne `git diff 4b825dc… abba884` (arbre vide, aucun commit d'avant la conversation) ; 6 remarques (3 moyennes, 3 basses) au lieu d'un « Rien à signaler » sur la seule fusion | `2026-11-20-135703/captures/140638-capture-fenetre.png` |
+| **N2** clic sur `fichier:ligne` | **OK** : `src/shoppingList.ts:13-14` ouvre « version relue (du premier commit à abba884) », lignes 13–14 marquées d'une barre. Après le correctif : « Corrigé depuis la relecture : voici ce qui a été relu. Voir la version actuelle » | `140648-capture-fenetre.png`, `140901-capture-panneau.png` |
+| « Demander à OpenCode de corriger » | **OK** : « Correction demandée · 14:06 », bulle « Corrige les remarques de Code reviewer. », prompt de 5,2 Ko à l'agent, commit `b288021` (3 fichiers +78 −21) | `140658-capture-fenetre.png` |
+| **N4** activité d'un rôle | **OK** : une ligne par fait, coupée à ≈ 80 caractères avec « … » (« A lancé git diff 4b825dc… abba8844958eba494feae2940a9fa… »), commande entière en infobulle (`title` de la ligne) ; « Lance shell… » en cours | `140609-capture-fenetre.png` |
+| **N5** rôle, frappe rapide, Entrée aussitôt (×3) | **OK 3/3** : `@Tech` / `@Code` / `@Sécu` + Entrée, puis texte tapé touche par touche (15, 5 et 0 ms entre touches), Entrée sans délai (1,1 s, 0,38 s, 0,13 s après la première lettre). Les trois bulles portent le texte entier, les trois travaux partent et répondent | `140927-`, `140931-`, `140935-capture-fenetre.png` |
+| **N7** aide avant la frappe | **OK** : « Écrivez votre demande après le rôle : c'est elle qui part. » en `#9ea4b3` (= `--muted` ; `--warn` vaut `#e9b65c`) | `140456-capture-fenetre.png` |
+| **N3** quota gratuit épuisé | **OK** : DeepSeek V4.1 Flash Free → `-32603 « Internal error: Free usage limit reached… »` (agents.log 13:14:56) → carte « Le modèle opencode/DeepSeek V4.1 Flash Free n'a pas répondu · Son quota gratuit est épuisé… », « Choisir un autre modèle ». Big Pickle choisi : le message refusé repart seul et reçoit sa réponse | `141500-capture-fenetre.png` |
+| **268** nom d'un rôle fourni | **OK** : « Code reviewer » → « @code-reviewer est déjà pris par « Code reviewer » (fourni) : choisissez un autre identifiant. », bouton « Utiliser @code-reviewer-2 » (affiché au clic sur « Suivant », pas pendant la frappe) | `141128-` (avant) → `141136-capture-fenetre.png` |
+| **268** deux rôles de même icône | **OK** : « Relecteur strict » et « Relecteur rapide », icône `scan-search` et couleur Bleu tous deux : deux fichiers (`relecteur-strict.md`, `relecteur-rapide.md`), deux lignes dans Réglages › Rôles, deux pastilles dans Équipe | `141221-capture-fenetre.png` |
+| **269** avertissement | **OK** : « Votre connexion n'est pas privée », hôte et port, raison claire, « Revenir en lieu sûr » / « Avancé » ; empreinte SHA-256 affichée = celle d'`openssl x509 -fingerprint` (`B2:7E:FF:…:DC:FF`) | `141245-capture-fenetre.png`, `141322-capture-panneau.png` |
+| **269** Continuer, « Non sécurisé » | **OK** : la page s'ouvre (cible DevTools « Serveur de recette ») ; puce rouge dans la barre d'adresse, réduite à l'icône dans ce panneau étroit, libellé entier en infobulle et `aria-label` | `141332-capture-panneau.png`, `141340-page-5443.png` |
+| **269** révocation par la puce | **OK** : « Certificat accepté pour localhost:5443 · Ne plus accepter » → l'avertissement revient aussitôt | `141355-` → `141401-capture-panneau.png` |
+| **269** l'agent ne peut pas accepter | **OK** : `browser_navigate` → erreur « …its TLS certificate was refused (net::ERR_CERT_AUTHORITY_INVALID)… » en 8 ms ; l'agent dit ne pas pouvoir contourner, ne tente rien d'autre | `141317-capture-fenetre.png` |
+| Coût | **partiel** : jamais « ≈ 0,00 $US » (aucun « 0,00 » dans l'interface) ; Big Pickle « coût inconnu » sur les cartes et dans Mon activité (attendu, F6). Tuile « 33 échanges sans coût communiqué » = tableau 20 + 13 (**N10 OK**). DeepSeek « gratuit » **non vérifiable** : son quota était épuisé dès le premier message, aucun tour n'a abouti | `141414-capture-fenetre.png` |
+| **D24** première étiquette de mois | **KO** : toujours « . » (le texte SVG « déc. » commence à x = 362 px, la zone est coupée vers 380 px) | `141437-note-fenetre.png` |
+
+### Nouveaux constats — Bobine
+
+Gravité : **G** gênant, **m** mineur, **i** idée. Aucun bloquant, aucun gênant.
+
+| N° | Grav. | Constat | Reproduire | Capture |
+|---|---|---|---|---|
+| P1 | m | **D24 pas corrigé dans ce cas** : la carte « 12 derniers mois » de Mon activité affiche encore « . » comme première étiquette de mois. La fiche 267 le donne corrigé. | Mon activité, fenêtre de 1512 px avec le panneau Navigateur ouvert. | `141437-note-fenetre.png` |
+| P2 | m | Après la fusion, puis après l'envoi `@Code reviewer …`, **le fil ne descend pas** : il reste 1 166 px au-dessus du bas, et la bulle et la carte du relecteur sont hors de la vue. Le repère du bas dit toujours « **↑** 2 travaux ont répondu · Voir » (affiché depuis 14:03), alors que tout est plus bas (N12 non traité, et le repère est périmé). | Fusion par la carte de groupe, puis `@rôle` + Entrée. | `140609-capture-fenetre.png` |
+| P3 | m | Un Code reviewer qui répond sans rapport (« OK ») donne une carte **sans ligne « Relu : … »**. La 267 dit « toujours ». Ici, c'est ma consigne qui l'a provoqué, mais un modèle faible qui ne rend pas son rapport produit la même carte muette sur la portée. | `@Code reviewer` « réponds juste OK ». | `141058-capture-fenetre.png` |
+| P4 | m | Identifiant de rôle déjà pris : l'erreur n'apparaît qu'au clic sur « Suivant », pas pendant la frappe. On peut remplir tout le formulaire avant de l'apprendre. | Réglages › Rôles › Nouveau rôle, nom « Code reviewer ». | `141128-` → `141136-capture-fenetre.png` |
+| P5 | m | Premier tour : le pied de la réponse et l'en-tête disent « 5 fichiers +124 −6 », alors que le commit `eea2975` en a 9. Les fichiers créés par une commande de l'agent (squelette Vite) ne sont probablement pas comptés. Non creusé. | Créer un projet par commandes shell. | `135955-capture-fenetre.png` |
+| P6 | i | Trois rôles de même icône et même couleur (Code reviewer, Relecteur strict, Relecteur rapide) donnent trois pastilles identiques dans Équipe : seule l'infobulle les distingue. | Suite de 268. | `141221-capture-fenetre.png` |
+| — | rappel | Restes connus, hors des lots : N11 (le Code reviewer répète son résumé en fin de carte) ; le libellé « Continuer vers localhost » ne dit pas le port (le texte au-dessus le dit). | | `140638-`, `141322-` |
+
+### Constats — OpenCode, le modèle ou l'environnement
+
+| N° | Origine | Constat |
+|---|---|---|
+| Q1 | OpenCode / compte | openai/gpt-6.1-sol refusé (`-32000 Authentication required: provider authentication required`). Bobine affiche correctement la carte « Modèle refusé ». Recette jouée sur modèle gratuit. |
+| Q2 | OpenCode | DeepSeek V4.1 Flash Free : quota gratuit déjà épuisé (depuis le matin). |
+| Q3 | OpenCode | Big Pickle ne dit pas son coût (`0 USD`, comme un abonnement) : « coût inconnu », décision documentée (F6). |
+| Q4 | modèle (Big Pickle) | Bonne tenue sur ce parcours court : appli et tests, deux travaux parallèles bien découpés, conflit de fusion résolu par le travail, remarques du relecteur pertinentes (validation des données de `localStorage`, échappement, exceptions de stockage) et corrigées. Une erreur : le relecteur annonce « 28 tests », alors que le projet en avait 10 (8 + 2 après fusion). Le modèle commite avec `git -c user.name="Bobine" -c user.email=bobine@example.com` (dépôt sans identité) : choix du modèle. La reconnaissance des commits de la conversation (N1) a tenu malgré tout. |
+
+### Verdict
+
+**Publier la rc.2 : oui.** Les deux points qui bloquaient hier sont corrigés sur le parcours réel :
+- **N1** : la relecture dit exactement ce qu'elle a relu, les 5 commits de la conversation, même avec un commit de fusion `Merge branch 'master' into bobine/…` en tête de `master`. Elle trouve de vraies remarques, là où elle disait hier « Rien à signaler ».
+- **N2** : le clic sur `fichier:ligne` ouvre le diff relu, ligne marquée, et le dit après le correctif.
+
+« Faire corriger » envoie bien la correction. N3, N4, N5 (3 sur 3, frappe touche par touche), N7 et N10 tiennent. 268 refuse le nom d'un rôle fourni avec une suggestion, et garde deux rôles de même icône. 269 fait le parcours complet : avertissement, Avancé, Continuer, puce, révocation. L'agent n'a aucun moyen d'accepter le certificat.
+
+Ce qui reste est mineur et peut suivre la rc.2 :
+- D24 encore visible (P1) ;
+- le fil qui ne descend pas, et le repère périmé (P2, N12) ;
+- une carte de relecture sans portée quand le rôle ne rend pas de rapport (P3).
+
+**Réserve :** le parcours a été joué avec Big Pickle, pas avec GPT-6.1 Sol (compte non connecté), et DeepSeek « gratuit » n'a pas pu être vérifié. Les deux tiennent à OpenCode et au compte, pas à Bobine. Un tour court avec GPT-6.1 Sol, une fois Jérôme reconnecté, confirmerait N1 sur son modèle habituel. Ce n'est pas une condition de publication.
