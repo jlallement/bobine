@@ -186,6 +186,19 @@ describe('saisie avec un rôle : le texte part ou revient (recette N5, fiche 267
     // Ce qui part est la demande validée par Entrée ; ce qui a été tapé ensuite reste.
     expect(sent).toHaveBeenCalledTimes(1)
     expect(sent.mock.calls[0]?.[1]).toBe(ASK)
-    expect(input.value).toBe(' Et le mode sombre ?')
+    expect(input.value).toBe('Et le mode sombre ?')
+  })
+
+  it('revue QA : envoi refusé après une frappe : la demande revient devant, séparée', async () => {
+    const answer = deferred<{ started: string[]; failed: string[] }>()
+    const { input, type, pick, enter } = setup(() => answer.promise)
+    pick('ux')
+    type(ASK)
+    act(() => void enter())
+    expect(input.value).toBe('')
+    // Tapé pendant l'envoi, puis l'envoi est refusé : rien de perdu, rien de collé.
+    type('Autre chose')
+    await act(async () => answer.resolve({ started: [], failed: ['ux-ui-expert'] }))
+    expect(input.value).toBe(`${ASK}\nAutre chose`)
   })
 })

@@ -186,7 +186,9 @@ export function useRoleCompose(options: {
           return setReplyTo(undefined)
         }
         update(before)
-        if (textNow.current === '') at.changeText(at.text, at.text.length)
+        // Toujours remise, devant ce qui a été tapé depuis (revue QA de la fiche 267).
+        const back = joinBack(at.text, textNow.current)
+        at.changeText(back, back.length)
       })
       .finally(() => setBusy(false))
   }
@@ -224,9 +226,10 @@ export function useRoleCompose(options: {
     // dans la saisie : seul le texte validé part et s'efface.
     const rest = typedAfter(at.text, textNow.current)
     at.changeText(rest, rest.length)
-    /** Remet `text` devant ce qui est dans la saisie, si la saisie n'a pas changé depuis. */
+    /** Remet `text` devant ce qui est dans la saisie (revue QA : toujours, avec un séparateur). */
     const restore = (text: string) => {
-      if (textNow.current === rest) at.changeText(text + rest, text.length)
+      const back = joinBack(text, textNow.current)
+      at.changeText(back, text.length)
     }
     void (uncommitted ? roles.send(to.names, to.text, uncommitted) : roles.send(to.names, to.text))
       .then(({ started, failed }) => {
@@ -592,5 +595,13 @@ export { RoleTokens }
  */
 export function typedAfter(sent: string, now: string): string {
   if (now === sent) return ''
-  return now.startsWith(sent) ? now.slice(sent.length) : now
+  return (now.startsWith(sent) ? now.slice(sent.length) : now).trimStart()
+}
+
+/**
+ * Une demande qui n'est pas partie, remise devant ce qui est dans la saisie : séparée d'un retour à
+ * la ligne, jamais collée au texte tapé depuis (revue QA de la fiche 267).
+ */
+export function joinBack(text: string, now: string): string {
+  return now.trim() ? `${text.trimEnd()}\n${now.trimStart()}` : text
 }
