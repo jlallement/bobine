@@ -1033,6 +1033,7 @@ export const SUITES = [
     sources: [
       `${C}panel/ChangesTab.tsx`,
       `${C}panel/ReviewFileDiff.tsx`,
+      `${C}panel/ChangesBars.tsx`,
       `${C}thread/WorkReview.tsx`,
       `${C}thread/WorkCard.tsx`,
       `${C}thread/DiffView.tsx`,

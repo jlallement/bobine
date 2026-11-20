@@ -5662,8 +5662,9 @@ a.btn {
 
 .changes-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -5704,6 +5705,19 @@ a.btn {
 
 /* Le sélecteur de vues ne se coupe jamais : c'est la branche qui cède (fiche 185, F2). */
 .changes-bar > .segmented {
+  flex-shrink: 0;
+}
+/* Branche, « Faire relire », « Actualiser » : un bloc calé à droite, qui passe à la ligne entier
+   quand la barre est trop étroite (fiche 267), jamais hors du panneau. */
+.changes-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.changes-bar-actions > button {
   flex-shrink: 0;
 }
 

@@ -91,8 +91,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Une réponse en erreur vue dans sa carte n'est plus « à lire ».
 - L'indicateur de travail donne la durée du tour, l'étape en plus petit.
 - Les travaux restent dans leur ordre de lancement sous leur conversation.
-- Mon activité : la tuile du coût compte les échanges au coût inconnu comme le tableau, et la
-  première étiquette de mois n'est plus coupée.
+- Mon activité : la tuile du coût compte les échanges au coût inconnu comme le tableau (son chiffre
+  augmente si votre modèle est inclus dans un abonnement), et la première étiquette de mois n'est
+  plus coupée.
+- Onglet Modifications : la barre du haut passe à la ligne quand le panneau est étroit ;
+  « Actualiser » ne sort plus du panneau.
 - Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
   ligne discrète sous la saisie dit d'où il partira (« depuis le dernier commit, sans vos N
   modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de

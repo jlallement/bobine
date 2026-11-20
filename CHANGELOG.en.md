@@ -88,8 +88,10 @@ What changes for you, version by version. Shown in Settings › About.
 - A failed reply seen in its card is no longer “to read”.
 - The working indicator shows the turn’s duration, the step’s in smaller type.
 - Tasks keep their launch order under their conversation.
-- My activity: the cost tile counts unknown-cost exchanges like the table, and the first month
-  label is no longer cut.
+- My activity: the cost tile counts unknown-cost exchanges like the table (its number goes up if
+  your model comes with a subscription), and the first month label is no longer cut.
+- Changes tab: the top bar wraps when the panel is narrow; “Refresh” no longer sticks out of the
+  panel.
 - Handing work to a role that writes no longer shows a warning before you even type: a discreet
   line under the input says where it will work ("from the last commit, without your N uncommitted
   changes"), Enter always sends, and "Choose…" lets you commit first, ask for just a read-only

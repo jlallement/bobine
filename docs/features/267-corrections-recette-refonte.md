@@ -194,23 +194,38 @@ Pas de nouvelle dépendance.
   (fichiers globaux touchés : toute la suite, 228 tâches, clair et sombre, une campagne) : vert en
   20 min 38 s. Captures `267-*` regardées (clair et sombre).
 
+- 2026-11-20 : décisions du tech lead sur les doutes. R7 : la règle de la fiche 258, erreurs
+  comprises (pas de signal « carte vue »). Pilote, remontage de la saisie (N5), chiffre de la tuile,
+  rôles déjà installés (N6) : acceptés, en limites ci-dessous. « Actualiser » qui débordait de
+  l'onglet Modifications : corrigé. La barre (`ChangesBars.tsx`) regroupe branche, « Faire
+  relire » et « Actualiser » dans un bloc calé à droite (`.changes-bar-actions`), et la barre passe
+  à la ligne (`flex-wrap`) au lieu de déborder. Cause : la liste des vues ne rétrécit pas
+  (`flex-shrink: 0`), et la barre n'avait pas le droit de passer à la ligne. À la largeur des e2e,
+  « Actualiser » sortait de 24 à 26 px, et son clic faisait défiler l'onglet de côté. e2e
+  `relecture-commits` : contournement retiré ; assertion « aucun débordement horizontal » (diff relu,
+  après « Actualiser », fenêtre de 900 px) ; elle échoue sans le correctif (vérifié : 26 px, puis
+  24 px défilés). Capture `267-relecture-900`.
+
 ## Écarts au plan
 
-- R7 : pas de signal « carte vue » du renderer : la règle de la 258 suffit une fois les erreurs
-  comprises, et le cas observé venait du pilote sans focus. « Carte dépliée et visible » n'est donc
-  pas une condition plus stricte que « fil de la conversation affiché » (voir Doutes).
-- N5 : le remontage de la saisie pendant un envoi (conversation neuve, accueil → fil) ne remet pas
-  le texte en cas d'échec ; il reste dans l'historique de la saisie (↑), enregistré avant l'envoi.
+- R7 : pas de signal « carte vue » du renderer : la règle de la 258, erreurs comprises, est retenue
+  (décision du tech lead).
 
-## Doutes
+## Limites connues
 
-- R7 : faut-il que « vu » demande la carte à l'écran (et dépliée dans une carte de groupe), et non
-  seulement le fil de la mère affiché ? Ce serait plus strict que la fiche 258 ; à trancher.
-- Le pilote des recettes ne donne pas le focus à la fenêtre : toute recette future y verra des
-  « à lire » qui ne tombent pas.
-- Onglet Modifications à la largeur des e2e : « Actualiser » est au-delà du bord du panneau, et son
-  clic fait défiler le panneau de côté (vu dans `267-relecture-corrige-depuis`, corrigé dans la
-  capture seulement) ; constat à part.
+- Le pilote des recettes (`scripts/pilote`) ne donne pas le focus à la fenêtre. « Vu » l'exige
+  (fiche 024) : en recette par le pilote, les « à lire » ne tombent pas.
+- N5 : quand la saisie est remontée pendant un envoi (conversation neuve, de l'accueil au fil), un
+  échec ne remet pas le texte dans la zone. Il reste dans l'historique de la saisie (↑),
+  enregistré avant l'envoi.
+- Mon activité : les échanges à coût nul d'un modèle qui ne se dit pas gratuit comptent maintenant
+  « sans coût communiqué » dans la tuile. Son chiffre augmente pour les utilisateurs d'un
+  abonnement (dit dans le CHANGELOG).
+- N6 : un rôle intégré déjà installé dans un agent (mode natif) est signalé « à mettre à jour »
+  par le mécanisme existant, jusqu'à sa réinstallation.
+- F6 : Big Pickle reste « coût inconnu » ; aucun signal fiable de gratuité.
+- La reconnaissance du quota épuisé est celle d'OpenCode 2.3.0 (motif déclaré dans son profil) ;
+  un autre texte ou un autre code reste une erreur de tour ordinaire.
 
 ## Hors de ce lot
 

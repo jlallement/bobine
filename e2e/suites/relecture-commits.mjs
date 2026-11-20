@@ -114,6 +114,7 @@ async function run(ui, { workspace, git }) {
     `clic sur \`fichier:ligne\` : le diff relu, jamais « Aucune modification » (${JSON.stringify(shown)})`
   )
   await ui.shot('267-relecture-diff-relu')
+  await noSideScroll(ui, 'diff relu')
 
   // Corrigé depuis (non commité) : la vue montre toujours ce qui a été relu, et le dit.
   writeFileSync(
@@ -124,14 +125,43 @@ async function run(ui, { workspace, git }) {
     `[...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === ${JSON.stringify(L('changes.refresh'))})`
   )
   await ui.waitFor(`!!${block}?.querySelector('[data-testid=review-file-changed]')`, 20000)
-  // « Actualiser » est au bout d'une barre plus large que le panneau à cette largeur : son clic
-  // fait défiler le panneau de côté (constat à part, hors de cette fiche) ; on le remet.
-  await ui.ev(
-    `[...document.querySelectorAll('*')].filter((e) => e.scrollLeft > 0).forEach((e) => (e.scrollLeft = 0))`
-  )
   check(
     (await ui.ev(`${block}.innerText`)).includes('console.log("bonjour")'),
     'corrigé depuis : le diff relu reste, la vue dit que le fichier a changé'
   )
+  await noSideScroll(ui, 'après « Actualiser »')
   await ui.shot('267-relecture-corrige-depuis')
+  // Fenêtre de 900 px : la barre de l'onglet passe à la ligne, rien ne déborde (fiche 267).
+  await ui.viewport(900, 760)
+  // Le panneau se replie faute de place : rouvert par la remarque, comme l'utilisateur le ferait.
+  if (!(await ui.ev(`!!${block}`))) {
+    await ui.reveal(card)
+    await ui.click(
+      `${card}.querySelector('[data-testid=work-finding] [data-testid=work-finding-where]')`
+    )
+  }
+  await ui.waitFor(`!!${block}`, 20000)
+  await noSideScroll(ui, 'fenêtre de 900 px')
+  await ui.shot('267-relecture-900')
+  await ui.viewport()
+}
+
+/**
+ * Aucun débordement horizontal de l'onglet Modifications (fiche 267 : « Actualiser » sortait du
+ * panneau, et son clic le faisait défiler de côté) ; sinon, les éléments qui dépassent.
+ */
+async function noSideScroll(ui, when) {
+  const overflow = await ui.ev(`(() => {
+    const tab = document.querySelector('[data-testid=changes-tab]')
+    const box = tab.getBoundingClientRect()
+    const out = [...tab.querySelectorAll('*')]
+      .filter((e) => e.getBoundingClientRect().right > box.right + 1 && e.getClientRects().length > 0)
+      .slice(0, 5)
+      .map((e) => e.dataset.testid || e.getAttribute('class') || e.tagName)
+    return { scroll: tab.scrollWidth - tab.clientWidth, left: tab.scrollLeft, out }
+  })()`)
+  check(
+    overflow.scroll <= 0 && overflow.left === 0 && overflow.out.length === 0,
+    `onglet Modifications, ${when} : aucun débordement horizontal (${JSON.stringify(overflow)})`
+  )
 }
