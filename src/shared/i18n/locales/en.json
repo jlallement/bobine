@@ -211,7 +211,9 @@
       "needs-action": "Action required before you start",
       "authExpired": "Sign in again to continue",
       "modelRefused": "Choose another model or sign in",
-      "needsFolder": "Choose a folder first"
+      "needsFolder": "Choose a folder first",
+      "modelRefusedKey": "Choose another model or add an API key",
+      "modelRefusedOnly": "Choose another model"
     },
     "plan": {
       "placeholder": "Explore and plan with {{agent}}…",
@@ -4746,7 +4748,9 @@
       "quota": "quota used up"
     },
     "modelRetry": "The message will be sent again with the model you choose.",
-    "modelChangeFailed": "The model could not be changed: {{error}}"
+    "modelChangeFailed": "The model could not be changed: {{error}}",
+    "script_one": "a {{program}} script ({{count}} line)",
+    "script_other": "a {{program}} script ({{count}} lines)"
   },
   "workCue": {
     "replied": "replied",

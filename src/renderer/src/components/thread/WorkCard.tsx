@@ -606,14 +606,19 @@ export const ACTIVITY_CHARS = 80
 
 /**
  * Une seule ligne pour l'activité en direct (recette N4, fiche 267 : un `node - <<'JS'` de dix
- * lignes faisait enfler la carte) : la première ligne non vide, coupée à 80 caractères, « … »
- * quand il y a plus (lignes suivantes ou fin coupée) ; l'entière est en infobulle.
+ * lignes faisait enfler la carte) : un script passé en heredoc se dit « un script node (12
+ * lignes) » ; sinon tous les blancs, retours à la ligne compris, réduits à une espace, coupé à 80
+ * caractères (« … ») ; l'entier est en infobulle.
  */
 export function oneLine(text: string, max = ACTIVITY_CHARS): string {
-  const lines = text.split('\n').filter((line) => line.trim())
-  const first = (lines[0] ?? '').trim()
-  if (first.length > max) return `${first.slice(0, max - 1).trimEnd()}…`
-  return lines.length > 1 ? `${first}…` : first
+  const heredoc = /^\s*([\w./-]+)[^\n]*<<-?\s*['"]?\w+/.exec(text)
+  const count = text.trim().split('\n').length
+  if (heredoc && count > 1) {
+    const program = heredoc[1]?.split('/').at(-1) ?? ''
+    return i18next.t('workCard.script', { program, count })
+  }
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat
 }
 
 /** Chemin court : relatif tel quel, absolu réduit à ses deux derniers éléments. */

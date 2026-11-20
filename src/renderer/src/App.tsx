@@ -64,6 +64,7 @@ import { useTurnGuards } from './useTurnGuards'
 import { TurnControlsContext } from './turn-controls'
 import { GlobalRulesContext, type GlobalRules } from './components/thread/global-rules'
 import { ProfileNotices, ReadOnlyGate } from './components/common/Profile'
+import { withoutCardedRefusal } from '@shared/transcript-notice'
 
 /** Actions de la carte « Préparation du worktree » (fiche 175) pour la conversation affichée. */
 function worktreeSetupActions(id: string, warn: (message: string) => void) {
@@ -665,7 +666,7 @@ export function App() {
                           <TurnControlsContext.Provider value={guards.turnControls}>
                             <Transcript
                               key={c.activeId ?? ''} // rien de déplié ne passe à la suivante
-                              items={transcript.items}
+                              items={withoutCardedRefusal(transcript.items, snapshot)}
                               terminals={transcript.terminals}
                               onRespondPermission={c.respondPermission}
                               onRespondElicitation={c.respondElicitation}

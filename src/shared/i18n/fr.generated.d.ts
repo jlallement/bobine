@@ -241,6 +241,8 @@ export type FrResources = {
       readonly authExpired: 'Reconnectez-vous pour continuer'
       readonly modelRefused: 'Choisissez un autre modèle ou connectez-vous'
       readonly needsFolder: 'Choisissez d’abord un dossier'
+      readonly modelRefusedKey: 'Choisissez un autre modèle ou ajoutez une clé d’API'
+      readonly modelRefusedOnly: 'Choisissez un autre modèle'
     }
     readonly plan: {
       readonly placeholder: 'Explorer et planifier avec {{agent}}…'
@@ -4785,6 +4787,9 @@ export type FrResources = {
     readonly cue: { readonly modelRefused: 'modèle refusé'; readonly quota: 'quota épuisé' }
     readonly modelRetry: 'Le message repartira avec le modèle choisi.'
     readonly modelChangeFailed: 'Le modèle n’a pas pu être changé : {{error}}'
+    readonly script_one: 'un script {{program}} ({{count}} ligne)'
+    readonly script_many: 'un script {{program}} ({{count}} lignes)'
+    readonly script_other: 'un script {{program}} ({{count}} lignes)'
   }
   readonly workCue: {
     readonly replied: 'a répondu'

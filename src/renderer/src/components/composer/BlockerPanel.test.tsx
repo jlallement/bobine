@@ -486,6 +486,25 @@ describe('modèle indisponible (fiche 259, D6)', () => {
     expect(buttons()[0]).toEqual({ text: 'Choisir un autre modèle', primary: true })
   })
 
+  it('fiche 267, revue UX : « Utiliser une clé d’API » en second, en contour, quand un autre modèle est proposé', () => {
+    const blocker = unavailable([])
+    show(
+      blocker.kind === 'auth' && blocker.model
+        ? {
+            ...blocker,
+            apiKey: { env: 'K', label: 'Clé' },
+            model: { ...blocker.model, quota: true }
+          }
+        : blocker,
+      models(['openai/gpt-6.1-sol', 'openai/gpt-6.2-sol'])
+    )
+    expect(buttons()).toEqual([
+      { text: 'Choisir un autre modèle', primary: true },
+      { text: 'Utiliser une clé d’API', primary: false }
+    ])
+    expect(screen.getByTestId('auth-api-key').className).not.toContain('ghost')
+  })
+
   it('ni autre modèle ni connexion : « Réessayer » reste, jamais une carte sans issue', () => {
     show(unavailable([]), models(['openai/gpt-6.2-sol']))
     expect(screen.queryByTestId('auth-choose-model')).toBeNull()

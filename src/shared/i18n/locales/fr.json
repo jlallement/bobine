@@ -238,7 +238,9 @@
       "needs-action": "Action requise avant de commencer",
       "authExpired": "Reconnectez-vous pour continuer",
       "modelRefused": "Choisissez un autre modèle ou connectez-vous",
-      "needsFolder": "Choisissez d’abord un dossier"
+      "needsFolder": "Choisissez d’abord un dossier",
+      "modelRefusedKey": "Choisissez un autre modèle ou ajoutez une clé d’API",
+      "modelRefusedOnly": "Choisissez un autre modèle"
     },
     "plan": {
       "placeholder": "Explorer et planifier avec {{agent}}…",
@@ -4957,7 +4959,10 @@
       "quota": "quota épuisé"
     },
     "modelRetry": "Le message repartira avec le modèle choisi.",
-    "modelChangeFailed": "Le modèle n’a pas pu être changé : {{error}}"
+    "modelChangeFailed": "Le modèle n’a pas pu être changé : {{error}}",
+    "script_one": "un script {{program}} ({{count}} ligne)",
+    "script_many": "un script {{program}} ({{count}} lignes)",
+    "script_other": "un script {{program}} ({{count}} lignes)"
   },
   "workCue": {
     "replied": "a répondu",

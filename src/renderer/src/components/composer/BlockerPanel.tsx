@@ -215,7 +215,8 @@ function AuthPanel(props: Props & { blocker: Blocker<'auth'> }) {
           ))}
           {apiKey && !keyOpen && (
             <button
-              className={`btn ${blocker.methods.length ? 'ghost' : 'primary'}`}
+              // Un autre modèle proposé : la clé d'API en second, en contour (revue UX, fiche 267).
+              className={`btn ${otherModel ? '' : blocker.methods.length ? 'ghost' : 'primary'}`}
               onClick={() => setKeyOpen(true)}
               data-testid="auth-api-key"
             >

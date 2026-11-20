@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AgentEvent } from './agent'
 import { emptyTranscript, reduceTranscript } from './transcript'
+import { withoutCardedRefusal } from './transcript-notice'
 
 /**
  * Avis d'un message refusé (fiches 210, 259) : vrai jusqu'à la réponse suivante de l'agent. D6 de
@@ -68,5 +69,25 @@ describe('avis d’un refus au tour (fiche 259)', () => {
       emptyTranscript
     )
     expect(state.items.at(-1)).toMatchObject({ kind: 'notice', refusal: true })
+  })
+})
+
+describe('avis d’un refus et sa carte (fiche 267, revue UX)', () => {
+  const items = [user, refused('agentHost.modelUnavailable')].reduce(
+    reduceTranscript,
+    emptyTranscript
+  ).items
+  const card = {
+    status: 'needs-action' as const,
+    blocker: { kind: 'auth' as const, methods: [], authenticating: false, atTurn: true as const }
+  }
+  it('pas d’avis en double tant que la carte est à l’écran', () => {
+    expect(withoutCardedRefusal(items, card).some((i) => i.kind === 'notice')).toBe(false)
+    expect(withoutCardedRefusal(items, card).some((i) => i.kind === 'user')).toBe(true)
+  })
+  it('carte partie : l’avis reste jusqu’à la réponse suivante', () => {
+    expect(withoutCardedRefusal(items, { status: 'busy' }).some((i) => i.kind === 'notice')).toBe(
+      true
+    )
   })
 })

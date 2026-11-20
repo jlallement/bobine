@@ -311,7 +311,8 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       })
     })
     const current = within(card).getByTestId('work-live-text')
-    expect(current.textContent).toBe("Lance node - <<'JS'…")
+    // Un heredoc (revue UX) : le programme et sa longueur, pas son contenu.
+    expect(current.textContent).toBe('Lance un script node (5 lignes)…')
     expect(current.getAttribute('title')).toBe(command)
     act(() => {
       emit('a', {
@@ -330,7 +331,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       })
     })
     const done = within(card).getByTestId('work-live-done')
-    expect(done.textContent).toBe("A lancé node - <<'JS'…")
+    expect(done.textContent).toBe('A lancé un script node (5 lignes)')
     expect(done.querySelector('li')?.getAttribute('title')).toBe(command)
     const text = within(card).getByTestId('work-live-text').textContent ?? ''
     expect(text.startsWith('Lance rg --files')).toBe(true)
@@ -339,6 +340,22 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(text.endsWith('…')).toBe(true)
     expect(text.endsWith('……')).toBe(false)
     expect(within(card).getByTestId('work-live-text').getAttribute('title')).toBe(long)
+    // Plusieurs lignes sans heredoc : les blancs réduits à une espace.
+    act(() => {
+      emit('a', {
+        type: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't4',
+          title: 'npm run build &&\n    npm test',
+          kind: 'execute',
+          status: 'in_progress'
+        }
+      })
+    })
+    expect(within(card).getByTestId('work-live-text').textContent).toBe(
+      'Lance npm run build && npm test…'
+    )
     // Une commande courte : telle quelle, sans infobulle.
     act(() => {
       emit('a', {
