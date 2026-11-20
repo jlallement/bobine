@@ -5,6 +5,7 @@
  */
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
+import { resetPlans } from './components/thread/merge-plan-store'
 import { initI18n } from './i18n'
 
 Element.prototype.scrollIntoView = () => {}
@@ -49,3 +50,5 @@ window.api = {
 initI18n('fr')
 
 afterEach(() => cleanup())
+// Plans de fusion partagés entre cartes (fiche 264) : chaque essai lit les siens.
+afterEach(() => resetPlans())

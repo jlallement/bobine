@@ -97,19 +97,25 @@ export async function fillesSuite(scheme) {
         const soloCard = `document.querySelector('[data-testid=work-card]')`
         await ui.waitFor(`${soloCard}?.dataset.state === 'replied'`, 30000)
         const branch = await ui.ev(
-          `${soloCard}.querySelector('[data-testid=work-changes] .subtask-branch')?.innerText`
+          `${soloCard}.querySelector('[data-testid=work-changes] .work-changes-branch')?.innerText`
+        )
+        // La branche lue (plan de fusion) : ce qu'elle apporte, ici ses modifications non commitées.
+        await ui.waitFor(
+          `${soloCard}.innerText.includes(${JSON.stringify(L('workCard.dirty', { count: 2 }))})`,
+          20000
         )
         const report = await ui.ev(`${soloCard}.innerText`)
         check(
           branch?.startsWith('bobine/') &&
-            report.includes(L('children.files', { count: 2 })) &&
+            // Rien de commité : la branche n'apporte rien encore, ses modifications sont dites.
+            report.includes(L('workCard.dirty', { count: 2 })) &&
             report.includes('deux fichiers modifiés') &&
             (await ui.ev(`${soloCard}.querySelector('[data-testid=work-relay]')?.dataset.sent`)) ===
               'false' &&
             !(await ui.ev(
               `!!document.querySelector('[data-testid=child-report], [data-testid=subtasks], [data-testid=child-started]')`
             )),
-          'carte seule : branche, fichiers, réponse, en attente du prochain message ; rien de séparé'
+          `carte seule : branche, fichiers, réponse, en attente du prochain message ; rien de séparé (${JSON.stringify({ branch, report })})`
         )
         // Coût de la fille (fiche 117) : au pied de sa réponse, dans sa carte.
         const facts = await ui.ev(`${soloCard}.querySelector('[data-testid=work-facts]').innerText`)

@@ -479,7 +479,8 @@ export function createApi(
         invoke('children:mergePlan', motherId, ...(ids ? [ids] : [])),
       merge: (motherId: string, ids: string[], options: { cleanup: boolean; stash?: boolean }) =>
         invoke('children:merge', motherId, ids, options),
-      mergeStop: (motherId: string) => invoke('children:mergeStop', motherId),
+      mergeStop: (motherId: string, runId?: string) =>
+        invoke('children:mergeStop', motherId, ...(runId ? [runId] : [])),
       commitMain: (motherId: string, request: { message: string; files: string[] }) =>
         invoke('children:commitMain', motherId, request)
     },

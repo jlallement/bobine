@@ -6,6 +6,10 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- The agent's merge recommendation is no longer a line in the thread: it sits on the task's row
+  (“Recommended”, “Not ready yet”), with its note in the tooltip. Merging a task never deletes a
+  branch that changed since the merge, nor the folder of a task still working or with changes: it
+  says so, and everything stays.
 - The tasks the agent proposes in a turn form **a single card**, where it proposed them, that
   changes in place: proposed (Start, Do it here, Decline, “Start all”), then “3 tasks · 1 working,
   2 finished”; each row unfolds on the task's whole response. The card's footer merges its ready

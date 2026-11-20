@@ -13,10 +13,10 @@ import { currentLocale } from '@shared/i18n/format'
 import { translate } from '@shared/i18n/message'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
-import { lastMergeFor } from '@shared/work-groups'
+import { useWorkFacts } from './work-layout-context'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard } from '../panel/MainDirtyCard'
-import type { SubtasksInfo } from './Subtasks'
+import { FileStats, type SubtasksInfo } from './Subtasks'
 import {
   useChildrenMerge,
   type ChildrenMergeActions,
@@ -68,10 +68,18 @@ export function useWorkMerge(
   const motherId = info?.motherId
   const actions = info?.merge
   // Une fusion déjà faite reste dite après le nettoyage (plus de branche, conversation archivée).
-  const merged = useMemo(() => !!lastMergeFor(items, [card.childId]), [items, card.childId])
+  const merged = !!useWorkFacts(card.childId).merge
   const on =
     enabled && !card.role?.readOnly && (!!child?.branch || merged) && !!motherId && !!actions
-  const rows = on && child ? [{ child, state: childState(child, info?.attention[child.id]) }] : []
+  // Toutes les filles de la conversation : la même clé que les autres cartes, un seul plan lu.
+  const rows = useMemo(
+    () =>
+      (info?.children ?? []).map((c) => ({
+        child: c,
+        state: childState(c, info?.attention[c.id])
+      })),
+    [info?.children, info?.attention]
+  )
   const state = useChildrenMerge(on ? motherId : undefined, on ? actions : undefined, rows, items, [
     card.childId
   ])
@@ -162,7 +170,7 @@ export function WorkMergeBox({
             type="button"
             className="btn ghost small"
             disabled={merge.status === 'stopping' || control.busy}
-            onClick={() => control.run(() => actions.stop(motherId))}
+            onClick={() => control.run(() => actions.stop(motherId, merge.runId))}
             data-testid="work-merge-stop"
           >
             {merge.status === 'stopping' ? t('childrenMerge.stopping') : t('childrenMerge.stop')}
@@ -339,6 +347,24 @@ function MergeOutcome({
         {ok ? <Check size={13} aria-hidden /> : <CircleExclamationPoint size={13} aria-hidden />}
         <span>{first}</span>
       </div>
+      {ok && row.commit && (
+        // Ce que la fusion a fait (fiche 264, revue UX) : le commit de la base, et ce qu'elle a apporté.
+        <div className="work-merge-row muted" data-testid="work-merge-commit">
+          {t('workMerge.commit', { commit: row.commit })}
+          {row.fileCount !== undefined && (
+            <>
+              {' · '}
+              <FileStats
+                report={{
+                  fileCount: row.fileCount,
+                  added: row.added ?? 0,
+                  removed: row.removed ?? 0
+                }}
+              />
+            </>
+          )}
+        </div>
+      )}
       {rest.map((line) => (
         <div key={line} className="work-merge-row muted">
           {line}

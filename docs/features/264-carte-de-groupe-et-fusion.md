@@ -188,3 +188,94 @@ Pas de nouvelle dépendance.
   dit « Une autre fusion est en cours ici ».
 - « Tout lancer » n'apparaît qu'à partir de deux lignes à lancer (une seule : son « Lancer ») ; la
   note « où partent les travaux » n'est pas répétée quand la ligne de lancement de la 262 le dit.
+
+### Décisions du tech lead (2026-11-20)
+
+- Cartes seules pour « Lancer en parallèle… », archivage après la fusion d'un travail seul (le
+  résultat dit que sa conversation reste ouvrable), capture de la fusion en cours : acceptés.
+- Vocabulaire repris de la fiche 120 : lot 266.
+- **Ordre de fusion** : `start` fusionne dans l'ordre reçu, celui des lignes de la carte (lui-même
+  l'ordre de lancement, revue UX) ; « Sous-tâches » envoie toujours l'ordre de lancement.
+- **« N fichiers +a −r »** (corrigé) : calculé sur la branche du travail contre sa base
+  (`git diff --numstat <base>...<branche>`, lu avec le plan de fusion), plus sur la dernière
+  réponse ; rien une fois fusionné. Essais : `lineCounts`, plan (`children-merge.test.ts`), carte.
+
+### Revue UX (2026-11-20), tout appliqué sauf le point 18
+
+1. Bilan réel de la branche : « N fichiers +a −r · part de main <sha> » (`MergeCandidate.from`) ;
+   une branche vide dit « rien à fusionner », sans « Fusionner » ; captures refaites avec un vrai
+   diff.
+2. « Puis nettoyer (archiver, supprimer les branches) » : une vraie case, avant le bouton
+   principal (carte de groupe).
+3. Une seule colonne d'état par ligne : la fusion, sinon la recommandation (pastille neutre, sans
+   icône), sinon l'état. 4. La pastille de ligne dit seulement « fusionné ».
+5. Lignes lancées : plus de « un autre <agent> » ; méta sur une ligne, branche coupée par « … ».
+6. Une seule méta, en texte gris séparé par « · » (`workGroup.place.*`), aussi pour les lignes
+   proposées ; plus de « worktree » à l'écran.
+7. Titre seul en gras, rôle dans la méta ; sous 520 px (`@container`), les boutons d'une ligne
+   passent sous son texte ; captures `264-groupe-proposes-900`, `264-groupe-finis-900`.
+8. Pli « Lire la suite » 8 px sous la réponse (carte seule et groupe) ; la consigne sous la réponse,
+   12 px d'écart.
+9. « Tous les travaux ont fini : l'agent reprend avec leurs réponses. » ; « …relisez la carte des
+   travaux ».
+10. Fusion d'un travail seul : « commit <sha> · N fichiers +a −r » (retenus par le main pendant la
+    fusion) ; « Voir les modifications » reste. La transmission ne dit **pas** « avec le résultat
+    de la fusion » : ce n'est pas vrai (le résultat d'une fusion ne part pas à l'agent).
+11. Pied du groupe : la transmission en tête (« Réponses pas encore transmises à … »), « Voir les
+    modifications » en bouton secondaire (Modifications › Filles).
+12. Progression « Fusion dans main : 2 sur 3… » ; la phrase du conflit seulement s'il y en a un ;
+    captures `264-groupe-inclure-autres`, `264-groupe-conflit`.
+13. « en cours » d'une seule couleur ; 14. fond de ligne seulement au clavier (`:focus-visible`) ;
+    15. `whereMixed` reformulé ; 16. pas de coût dans la ligne dépliée (dit une fois en tête) ;
+    17. lignes lancées dans l'ordre de lancement (celui de la barre latérale et de la fusion) ;
+    19. écran C : ligne de branche en texte simple ; 20. « dossiers de travail ».
+18. **Noms de branche datés** : lot à part (non traité ici).
+
+### Revue QA (2026-11-20), tout corrigé ; chaque défaut a un essai qui échoue sans son correctif
+
+1. Nettoyage sans perte : `start` refuse un travail qui travaille ou attend un accord
+   (`childrenMerge.error.busy`) ; `mergeRow` retient la tête fusionnée de chaque branche
+   (`WorktreeCycle.worktreeHead`) ; `cleanup` saute un travail occupé, dont la tête a bougé ou dont
+   le dossier a des modifications, et le dit (`cleanupSkipped`), sans `force`. « Répondre » et
+   « Relancer » (et l'« Arrêter » du tour) masqués pendant la fusion d'un travail. Essais contre un
+   vrai dépôt git (`children-merge.test.ts`).
+2. Carte seule pendant la résolution d'un conflit : le contrôle de fusion reste actif (la fusion du
+   travail est active) ; « résout le conflit » et l'« Arrêter » de la fusion, pas celui du tour
+   (essai avec `status: 'busy'`).
+3. Clé de relecture du plan : toutes les fusions de la mère (`runId:status:états`).
+4. Le plan dit quelle fusion tourne (`ChildrenMergePlan.runId`) : une fusion d'une carte n'est « en
+   cours » que si c'est celle-là ; `stop(motherId, runId)` n'arrête jamais celle d'une autre carte.
+5. Un seul plan par mère et par état, partagé par toutes les cartes (`merge-plan-store.ts`) ; la
+   carte en garde ses travaux (`planFor`) ; relu quand la conversation est réaffichée.
+6. Recommandations et dernière fusion de chaque travail lues une fois dans `workLayout` (contexte
+   `WorkLayoutContext`).
+7. `AppToolsBridge` : une file par titre, vidée à la fin du tour ; un appel fini (refusé par le
+   plafond) en sort.
+8. Anciennes conversations : la note de recommandation reste lisible sur la pastille (infobulle et
+   texte pour les lecteurs d'écran) ; CHANGELOG.
+9. Un message `message_child` ouvre un échange (état, temps écoulé, rangement des réponses).
+10. Pilote : `busy()` voit une fusion en cours (`shot.merging`) ; les cartes dépliées d'un groupe ne
+    sont plus comptées en double ; JSDoc remis à sa place.
+11. Fil abîmé : une clé de proposition en double ne lance qu'une ligne.
+
+### Limites (revues)
+
+- Deux mères du même dépôt peuvent fusionner en même temps (une fusion par mère) : pas une
+  régression de ce lot, limite connue.
+- « Voir les modifications » d'un travail fusionné et nettoyé ouvre sa conversation archivée (sa vue
+  Git n'a plus de dossier de travail).
+- Pli « Lire la suite » : 8 px sous le fondu, aussi pour la carte seule (revue UX, écart à la
+  maquette A de la 263).
+
+### En appliquant les revues (2026-11-20)
+
+- Une ligne lancée dont l'appel `start_child` (caché derrière la carte) a échoué ne reste plus
+  « démarre… » : « pas lancé », la raison en infobulle (essai).
+- Branche avec des modifications non commitées : « N modifications non commitées » (la fusion ne
+  les prendra pas), plus « rien modifié » ; une branche vide : « rien à fusionner ».
+- Plan partagé : le dernier plan lu reste montré pendant qu'un nouvel état se lit (pas de
+  clignotement) ; seul un plan lu pour l'état exact dit qu'une fusion a été interrompue.
+- Pied de la carte de groupe en colonne : « Voir les modifications » passait sous le bouton de
+  fusion quand la ligne se repliait (vu en e2e : le clic ouvrait Modifications au lieu de fusionner).
+- e2e : les lignes lancées suivant l'ordre de lancement, les essais lisent les lignes par leur
+  titre ; `filles-fusion` suit la ligne en conflit, quelle qu'elle soit.

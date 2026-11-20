@@ -34,6 +34,14 @@ export interface ChildrenMergeRow {
   error?: string
   /** Archivée, worktree et branche supprimés (« Puis nettoyer »). */
   cleaned?: boolean
+  /**
+   * Fusionnée (fiche 264) : le commit de la base après elle, et ce que la branche apportait
+   * (fichiers et lignes contre la base, lus juste avant).
+   */
+  commit?: string
+  fileCount?: number
+  added?: number
+  removed?: number
 }
 
 /**
@@ -100,6 +108,8 @@ export interface MergeCandidate {
    */
   added?: number
   removed?: number
+  /** Commit de départ de la branche, court (« part de main a3f2c1e », fiche 264). */
+  from?: string
 }
 
 export interface MergeOverlap {
@@ -124,6 +134,8 @@ export interface ChildrenMergePlan {
     | ({ reason: 'main-dirty'; path: string } & Omit<MainDirty, 'root'>)
   /** Une fusion enchaînée de cette mère tourne en ce moment dans le main. */
   running: boolean
+  /** Laquelle (fiche 264) : une carte ne dit « en cours » que sa propre fusion. */
+  runId?: string
 }
 
 /**

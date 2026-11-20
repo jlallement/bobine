@@ -112,8 +112,12 @@ export async function fillesFusionSuite(scheme) {
           )
         }
         await reread()
+        // Dans l'ordre des lignes : celui du lancement (revue UX, fiche 264).
+        const order = await ui.ev(
+          `[...document.querySelectorAll('[data-testid=work-row-name]')].map((n) => n.innerText).filter((t) => t !== 'Notes de version')`
+        )
         const overlap = L('childrenMerge.summary.overlap', {
-          titles: titles('Import CSV', 'Page d’aide'),
+          titles: titles(...order),
           files: 'README.md'
         })
         const before = [
@@ -143,8 +147,7 @@ export async function fillesFusionSuite(scheme) {
         check(
           (await ui.ev(`${ui.$('subtasks-merge-summary')}.innerText`)) ===
             `${L('childrenMerge.summary.all', { count: 3 })} ${overlap}` &&
-            (await ui.ev(`${ui.$('subtasks-merge-cleanup')}.getAttribute('aria-pressed')`)) ===
-              'false',
+            !(await ui.ev(`${ui.$('subtasks-merge-cleanup')}.checked`)),
           '« Fusionner les 3 dans main », « Puis nettoyer » décoché par défaut'
         )
 
@@ -182,9 +185,7 @@ export async function fillesFusionSuite(scheme) {
         await ui.waitFor(`!${ui.$('main-dirty-commit-message')}`)
 
         await ui.click(ui.$('subtasks-merge-cleanup'))
-        await ui.waitFor(
-          `${ui.$('subtasks-merge-cleanup')}.getAttribute('aria-pressed') === 'true'`
-        )
+        await ui.waitFor(`${ui.$('subtasks-merge-cleanup')}.checked`)
         // L'état « l'agent résout le conflit » dure le tour de la fille, parfois moins d'une
         // sonde : la carte est relevée au moment même où il apparaît.
         await ui.ev(`(() => {
@@ -207,11 +208,17 @@ export async function fillesFusionSuite(scheme) {
               .map((r) => ({ title: r.querySelector('[data-testid=work-row-name]')?.innerText,
                 state: r.querySelector('[data-testid=subtask-merge-state]')?.dataset.state })))
             if (current !== last) window.__mergeTrace.dom.push(JSON.parse(last = current))
-            if (window.__resolving || state('Page d’aide') !== 'resolving') return
+            // Dans l'ordre des lignes (lancement) : celle qui résout, celles d'avant, d'après.
+            const states = [...document.querySelectorAll('[data-testid=work-row]')].map(
+              (r) => r.querySelector('[data-testid=subtask-merge-state]')?.dataset.state
+            )
+            const at = states.indexOf('resolving')
+            if (window.__resolving || at === -1) return
             window.__resolving = {
-              csv: state('Import CSV'),
-              notes: state('Notes de version'),
+              states,
+              at,
               progress: text('subtasks-merge-progress'),
+              resolving: text('subtasks-merge-resolving'),
               stash: text('subtasks-merge-stash')
             }
           }
@@ -236,10 +243,12 @@ export async function fillesFusionSuite(scheme) {
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         const seen = await ui.ev(`window.__resolving`)
         check(
-          seen.csv === 'merged' &&
-            seen.notes === 'pending' &&
-            seen.progress === L('workGroup.merge.progress', { count: 1, total: 3, base: 'main' }),
-          `en cours : la première fusionnée, la deuxième en conflit résolu par sa fille, la troisième en attente (${JSON.stringify(seen)})`
+          seen.states.slice(0, seen.at).every((st) => st === 'merged') &&
+            seen.states.slice(seen.at + 1).every((st) => st === 'pending') &&
+            seen.progress ===
+              L('workGroup.merge.progress', { count: seen.at, total: 3, base: 'main' }) &&
+            seen.resolving === L('workGroup.merge.resolving'),
+          `en cours : celles d’avant fusionnées, une en conflit résolu par son travail (dit), les suivantes en attente (${JSON.stringify(seen)})`
         )
         check(
           seen.stash === L('childrenMerge.stashKept', { count: 2 }),
@@ -259,7 +268,7 @@ export async function fillesFusionSuite(scheme) {
           `fin : « ${result} »`
         )
         const childTexts = await ui.ev(
-          `window.api.conversations.get().then((s) => Promise.all(s.conversations.filter((c) => c.title === 'Page d’aide').map((c) => window.api.conversations.view(c.id)))).then((v) => v.flatMap((x) => x.transcript.items.filter((i) => i.kind === 'user').map((i) => ({ text: i.text, from: i.from?.kind }))))`
+          `window.api.conversations.get().then((s) => Promise.all(s.conversations.filter((c) => ['Page d’aide', 'Import CSV'].includes(c.title)).map((c) => window.api.conversations.view(c.id)))).then((v) => v.flatMap((x) => x.transcript.items.filter((i) => i.kind === 'user').map((i) => ({ text: i.text, from: i.from?.kind }))))`
         )
         check(
           childTexts.some((m) => m.text.includes('left conflicts') && m.from === 'merge'),
@@ -286,12 +295,8 @@ export async function fillesFusionSuite(scheme) {
         )
         check(
           badges.length === 3 &&
-            badges.every(
-              (b) =>
-                b ===
-                `merged:${L('workGroup.merge.row.merged')} · ${L('workGroup.merge.row.cleaned')}`
-            ),
-          `chaque ligne : « fusionné · branche supprimée » (${badges.join(', ')})`
+            badges.every((b) => b === `merged:${L('workGroup.merge.row.merged')}`),
+          `chaque ligne : « fusionné » seul (${badges.join(', ')})`
         )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-finie')

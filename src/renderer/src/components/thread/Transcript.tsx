@@ -58,6 +58,8 @@ import type { ProposalsInfo } from './ChildProposals'
 import { RoleRequestEntry, WorkCard } from './WorkCard'
 import { WorkGroupEntry } from './WorkGroup'
 import { workLayout } from '@shared/work-groups'
+import { WorkLayoutContext } from './work-layout-context'
+import { forgetPlans } from './merge-plan-store'
 import { useTranslation } from 'react-i18next'
 import { stripAppContext } from '@shared/app-context'
 import { splitRoleBrief } from '@shared/roles'
@@ -224,6 +226,13 @@ export function Transcript({
   // (propositions d'un tour, bulle à plusieurs rôles), cartes seules ; ce qu'elles rendent est caché
   // à sa place, et leurs travaux ne sont pas dans « Sous-tâches » (anciennes conversations).
   const layout = useMemo(() => workLayout(items), [items])
+  // Conversation affichée (ou réaffichée) : ses branches se relisent, une fois pour toutes ses
+  // cartes (plan partagé, fiche 264) ; des commits faits ailleurs entre-temps y sont.
+  const motherId = subtasks?.motherId
+  // Avant les effets des cartes (qui lisent le plan) : une seule lecture.
+  useLayoutEffect(() => {
+    if (motherId) forgetPlans(motherId)
+  }, [motherId])
   const listed = useMemo(
     () => subtasks && withoutCards(subtasks, layout.childIds),
     [subtasks, layout.childIds]
@@ -394,14 +403,16 @@ export function Transcript({
     <WorkspaceContext.Provider value={workspace}>
       <AgentCardContext.Provider value={agent}>
         <FindQueryContext.Provider value={findQuery}>
-          <div className="thread" data-testid="thread" ref={thread}>
-            {start > 0 && <div ref={sentinel} className="thread-older" aria-hidden />}
-            {entries.slice(start).map((entry) => (
-              <ItemBoundary key={entryKey(entry)} kind={entryKind(entry)}>
-                {renderEntry(entry)}
-              </ItemBoundary>
-            ))}
-          </div>
+          <WorkLayoutContext.Provider value={layout}>
+            <div className="thread" data-testid="thread" ref={thread}>
+              {start > 0 && <div ref={sentinel} className="thread-older" aria-hidden />}
+              {entries.slice(start).map((entry) => (
+                <ItemBoundary key={entryKey(entry)} kind={entryKind(entry)}>
+                  {renderEntry(entry)}
+                </ItemBoundary>
+              ))}
+            </div>
+          </WorkLayoutContext.Provider>
         </FindQueryContext.Provider>
       </AgentCardContext.Provider>
     </WorkspaceContext.Provider>

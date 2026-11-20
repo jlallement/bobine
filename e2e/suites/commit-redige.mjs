@@ -127,7 +127,8 @@ async function withMergeCard(scheme) {
         // Revenir à la mère depuis la fille : la carte relit les branches.
         const open = `document.querySelector('[data-testid=work-card] [data-testid=work-open]')`
         await ui.reveal(open)
-        await ui.click(open)
+        // Lien ordinaire : cliqué sans viser (la carte grandit quand sa branche est lue).
+        await ui.ev(`${open}.click()`)
         await ui.waitFor(`!!${ui.$('title-origin')}`)
         await ui.click(ui.$('title-origin'))
         await ui.waitFor(

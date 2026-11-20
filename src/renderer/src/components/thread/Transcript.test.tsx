@@ -299,9 +299,7 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
     expect(onOpenConversation).toHaveBeenCalledWith('a')
     expect(screen.queryAllByTestId('message-edit')).toHaveLength(1)
     // Le réveil groupé : une ligne de l'app, traduite, pas une bulle.
-    expect(screen.getByTestId('wake-message').textContent).toContain(
-      'Les conversations filles ont toutes fini'
-    )
+    expect(screen.getByTestId('wake-message').textContent).toContain('Tous les travaux ont fini')
     expect(screen.queryByText('All the child conversations…')).toBeNull()
   })
 

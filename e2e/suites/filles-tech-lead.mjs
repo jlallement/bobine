@@ -175,11 +175,15 @@ export async function fillesTechLeadSuite(scheme) {
         // La ligne de la carte compte les fichiers ; dépliée, la réponse entière (fiche 264).
         const bavarde = `document.querySelector('[data-testid=work-row]')`
         await ui.waitFor(`${bavarde}?.dataset.state === 'replied'`, 30000)
+        await ui.waitFor(
+          `${bavarde}.querySelector('[data-testid=work-row-meta]').innerText.includes(${JSON.stringify(L('workCard.dirty', { count: 30 }))})`,
+          20000
+        )
         check(
           (
             await ui.ev(`${bavarde}.querySelector('[data-testid=work-row-meta]').innerText`)
-          ).includes(L('children.files', { count: 30 })),
-          'fille bavarde : 30 fichiers comptés sur sa ligne'
+          ).includes(L('workCard.dirty', { count: 30 })),
+          'fille bavarde : ses 30 fichiers non commités dits sur sa ligne (rien à fusionner encore)'
         )
         await ui.reveal(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)
         await ui.click(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)

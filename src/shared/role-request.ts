@@ -213,9 +213,9 @@ function placeReport(card: WorkCardData, item: Report): void {
   let at = card.steps.length
   while (at > 0) {
     const before = card.steps[at - 1]
-    if (before?.kind !== 'ask' || item.askedAt === undefined || item.askedAt >= before.item.at) {
-      break
-    }
+    // Une suite ou un message de l'agent (fiche 264) ouvre un échange.
+    if (!before || before.kind === 'report' || item.askedAt === undefined) break
+    if (item.askedAt >= before.item.at) break
     at--
   }
   card.steps.splice(at, 0, { kind: 'report', item })

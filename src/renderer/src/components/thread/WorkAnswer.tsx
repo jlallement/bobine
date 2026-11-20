@@ -9,7 +9,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { usePresentation } from '../../presentation'
 import { messageTime, turnDuration } from '../../time'
 import { Markdown } from './Markdown'
-import { Branch, FileStats, useUsageText } from './Subtasks'
+import { FileStats, useUsageText } from './Subtasks'
 import {
   answerText,
   currentReport,
@@ -39,12 +39,15 @@ export function WorkSteps({
   items,
   state,
   agent,
-  changes
+  changes,
+  inGroup = false
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
   items: readonly TranscriptItem[]
   state: WorkState
+  /** Dépliée dans une carte de groupe : son coût est dit une fois, en tête du groupe. */
+  inGroup?: boolean
   /** Nom de l'agent de la conversation : l'auteur des messages au travail (`message_child`). */
   agent: string
   /** Ce que sa branche apportera, pour la dernière réponse (`branchChanges`, fiche 264). */
@@ -53,8 +56,6 @@ export function WorkSteps({
   const current = currentReport(card)
   return (
     <>
-      {/* Sans bulle (proposition, « Lancer en parallèle… ») : sa consigne, repliée (fiche 150). */}
-      {!card.request && <WorkBrief card={card} />}
       {card.steps.map((step) =>
         step.kind === 'ask' ? (
           <FollowUp key={step.item.id} item={step.item} />
@@ -69,10 +70,14 @@ export function WorkSteps({
             relay={relayOf(step.item, items)}
             current={step.item.id === current?.id}
             state={state}
+            noCost={inGroup}
             {...(step.item.id === current?.id && changes !== undefined ? { changes } : {})}
           />
         )
       )}
+      {/* Sans bulle (proposition, « Lancer en parallèle… ») : sa consigne, repliée, sous la réponse
+          (fiches 150, 264). */}
+      {!card.request && <WorkBrief card={card} />}
     </>
   )
 }
@@ -146,8 +151,10 @@ function WorkAnswer({
   relay,
   current,
   state,
-  changes
+  changes,
+  noCost = false
 }: {
+  noCost?: boolean
   /** La branche lue (fiche 264) ; `null` : rien à dire ; absent : les fichiers de la réponse. */
   changes?: WorkChanges | null
   card: WorkCardData
@@ -185,11 +192,26 @@ function WorkAnswer({
         changes !== null &&
         (report.branch || report.fileCount > 0) && (
           <div className="work-changes" data-testid="work-changes">
-            {report.branch && <Branch name={report.branch} />}
-            <FileStats report={changes ?? report} />
+            {report.branch && <span className="work-changes-branch">{report.branch}</span>}
+            {changes?.empty && !changes.dirty ? (
+              <span>{t('workGroup.row.nothing')}</span>
+            ) : (
+              // Rien de commité mais des modifications : seules elles sont dites.
+              !(changes?.dirty && changes.fileCount === 0) && (
+                <FileStats report={changes ?? report} />
+              )
+            )}
+            {!!changes?.dirty && (
+              <span className="work-changes-dirty">
+                {t('workCard.dirty', { count: changes.dirty })}
+              </span>
+            )}
+            {changes?.from && changes.base && (
+              <span>{t('workCard.from', { base: changes.base, commit: changes.from })}</span>
+            )}
           </div>
         )}
-      <AnswerFacts card={card} child={child} report={report} current={current} />
+      <AnswerFacts card={card} child={child} report={report} current={current} noCost={noCost} />
       {/* Transmise : dit sous chaque réponse d'avant ; la dernière, en bas de la carte. */}
       {relay?.sent && !current && (
         <div className="work-relayed" data-testid="work-relayed">
@@ -212,12 +234,14 @@ function AnswerFacts({
   card,
   child,
   report,
-  current
+  current,
+  noCost
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
   report: Report
   current: boolean
+  noCost: boolean
 }) {
   const { t } = useTranslation()
   const usageText = useUsageText()
@@ -230,7 +254,11 @@ function AnswerFacts({
   const facts = [
     messageTime(report.at),
     turnDuration(Math.max(0, report.at - stepStart(card, report))),
-    usage?.cost?.amount === 0 && !presenting ? t('workCard.free') : usageText(usage)
+    noCost
+      ? undefined
+      : usage?.cost?.amount === 0 && !presenting
+        ? t('workCard.free')
+        : usageText(usage)
   ].filter(Boolean)
   return (
     <div className="work-facts" data-testid="work-facts">

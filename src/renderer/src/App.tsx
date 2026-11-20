@@ -690,9 +690,10 @@ export function App() {
                               {...(c.activeId
                                 ? { worktreeSetup: worktreeSetupActions(c.activeId, c.warn) }
                                 : {})}
-                              subtasks={threadSubtasks(c, childrenMerge, send, snapshot, (id) =>
-                                reviewOf(c.list.find((s) => s.id === id))
-                              )}
+                              subtasks={threadSubtasks(c, childrenMerge, send, snapshot, {
+                                review: (id) => reviewOf(c.list.find((s) => s.id === id)),
+                                changes: () => panel.openChanges('children')
+                              })}
                               {...(c.activeSummary
                                 ? {
                                     proposals: {

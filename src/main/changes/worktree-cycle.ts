@@ -181,6 +181,30 @@ export class WorktreeCycle {
     return head.code === 0 ? text(head.stdout) : 'main'
   }
 
+  /**
+   * Tête du worktree et ses modifications non commitées (fiche 264) : ce que le nettoyage vérifie
+   * avant de supprimer quoi que ce soit. `head` absent : illisible.
+   */
+  async worktreeHead(target: CycleTarget): Promise<{ head?: string; dirty: number }> {
+    const cwd = target.worktree.path
+    const head = await this.gitRun(cwd, ['rev-parse', 'HEAD'], target.id)
+    const status = await this.gitRun(
+      cwd,
+      ['--no-optional-locks', 'status', '--porcelain', '-uall'],
+      target.id
+    )
+    return {
+      ...(head.code === 0 && text(head.stdout) ? { head: text(head.stdout) } : {}),
+      dirty: status.code === 0 ? lines(status.stdout).length : 1
+    }
+  }
+
+  /** Commit court au bout de `ref` dans le dépôt de ce worktree ; `undefined` s'il est illisible. */
+  async shortHead(target: CycleTarget, ref: string): Promise<string | undefined> {
+    const result = await this.gitRun(target.worktree.root, ['rev-parse', '--short', ref], target.id)
+    return result.code === 0 ? text(result.stdout) || undefined : undefined
+  }
+
   private async count(cwd: string, range: string): Promise<number> {
     const result = await this.gitRun(cwd, ['rev-list', '--count', range])
     const n = Number(text(result.stdout))

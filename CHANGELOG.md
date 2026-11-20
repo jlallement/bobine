@@ -6,6 +6,10 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- La recommandation de fusion de l'agent n'est plus une ligne du fil : elle est sur la ligne du
+  travail (« Recommandé », « Pas encore prêt »), sa note en infobulle. Fusionner un travail ne
+  supprime plus jamais une branche qui a changé depuis la fusion, ni le dossier d'un travail qui
+  travaille ou a des modifications : c'est dit, et tout reste.
 - Les travaux que l'agent propose dans un tour forment **une seule carte**, à la place où il les a
   proposés, qui change d'état sur place : proposés (Lancer, Faire ici, Refuser, « Tout lancer »),
   puis « 3 travaux · 1 en cours, 2 finis » ; chaque ligne se déplie sur la réponse entière du

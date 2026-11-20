@@ -192,10 +192,9 @@
 .work-more:hover {
   color: var(--text);
 }
-/* Replié : le bouton remonte dans le fondu. */
+/* Replié : le bouton sous le fondu, 8 px plus bas (revue UX de la fiche 264). */
 .work-more.in-fade {
-  position: relative;
-  margin-top: -0.9em;
+  margin-top: 8px;
 }
 .work-note {
   margin-top: 6px;
@@ -208,18 +207,29 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* Branche et ce qu'elle apporte (fiche 264, revue UX) : une ligne de texte simple, « · » entre. */
 .work-changes {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  gap: 2px 8px;
+  margin-top: 8px;
   font-size: 13px;
   color: var(--text-2);
+}
+.work-changes > * + *::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--muted);
+}
+.work-changes-dirty {
+  color: var(--warn);
+}
+.work-changes-branch {
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
 }
 /* Pied de chaque réponse : heure · durée de l'échange · coût de l'échange. */
 .work-facts {
@@ -304,7 +314,7 @@
 
 /* Message de l'agent de la conversation au travail (`message_child`, fiche 264), replié. */
 .work-agent-note {
-  margin: 10px 14px 0 48px;
+  margin: 12px 14px 0 48px;
   font-size: 12.5px;
   color: var(--muted);
 }
@@ -401,6 +411,7 @@
 
 /* Carte de groupe (fiche 264, écran D) : une carte, une ligne par travail, qui change sur place. */
 .work-group {
+  container-type: inline-size;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -458,7 +469,16 @@
   padding: 7px 14px 7px 10px;
   min-width: 0;
 }
-.work-group-item.open > .work-group-row {
+/* Fond de ligne seulement au clavier (revue UX). */
+.work-group-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.work-group .proposal-row.focused {
+  background: none;
+}
+.work-group:focus-visible .proposal-row.focused {
   background: var(--surface-2);
 }
 .work-group-toggle {
@@ -491,13 +511,20 @@
   white-space: nowrap;
 }
 .work-group-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px 8px;
+  display: block;
   color: var(--muted);
   font-size: 12.5px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.work-group-branch {
+  display: inline-block;
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 .work-group-state {
   display: inline-flex;
@@ -509,7 +536,7 @@
   white-space: nowrap;
 }
 .work-group-state[data-state='running'] {
-  color: var(--role, var(--accent));
+  color: var(--accent);
 }
 .work-group-state[data-state='replied'] {
   color: var(--ok);
@@ -548,6 +575,15 @@
 .work-group-foot .grow {
   flex: 1;
 }
+/* Pied de fusion : la transmission, le pied de fusion, puis « Voir les modifications » ; en colonne,
+   rien ne passe sous un autre bouton quand la ligne se replie (essais e2e). */
+.work-group-merge {
+  flex-direction: column;
+  align-items: stretch;
+}
+.work-group-merge > .work-group-changes {
+  align-self: flex-start;
+}
 .work-group-note {
   flex: 1 1 auto;
   min-width: 0;
@@ -561,6 +597,29 @@
   border-top: 0;
   background: transparent;
 }
+.work-group-relay {
+  flex-basis: 100%;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.work-group-relay.sent {
+  color: var(--ok);
+}
+.merge-cleanup-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.subtask-recommendation.neutral {
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
 .work-group-merge .subtasks-merge-text {
   flex: 1 1 auto;
   text-align: left;
@@ -570,6 +629,21 @@
 }
 .work-group-merge:not(:has(.subtasks-merge)) {
   display: none;
+}
+
+/* Carte de groupe étroite (revue UX) : les boutons d'une ligne passent sous son texte. */
+@container (max-width: 520px) {
+  .work-group .proposal-main {
+    flex-wrap: wrap;
+  }
+  .work-group .proposal-main .grow {
+    display: none;
+  }
+  .work-group .proposal-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 }
 
 @container (max-width: 520px) {

@@ -117,7 +117,8 @@ function readScreen(main) {
   if (duration && after(duration, lastUser)) shot.turnDuration = text(duration)
   shot.messages = users.length
   // Cartes-réponses des travaux confiés à des rôles (fiche 263) : rôle, état, début de la réponse.
-  const works = $$('[data-testid=work-card]').map((card) => ({
+  // Sans les cartes dépliées dans une carte de groupe : elles sont ses lignes (fiche 264).
+  const works = $$('[data-testid=work-card]:not(.in-group)').map((card) => ({
     role: card.dataset.role ?? '',
     state: card.dataset.state ?? '',
     answer: clean($$('[data-testid=work-body]', card).at(-1)?.innerText).slice(0, 300)
@@ -142,6 +143,10 @@ function readScreen(main) {
     buttons: buttons($('.work-group-foot, .work-group-merge', g) ?? document.createElement('i'))
   }))
   if (workGroups.length) shot.groups = workGroups
+  // Une fusion avance (carte de groupe ou de travail, « Sous-tâches ») : `attendre` attend.
+  shot.merging = !!$(
+    '[data-testid=subtasks-merge][data-status=running], [data-testid=subtasks-merge][data-status=stopping], [data-testid=work-merge][data-status=running]'
+  )
   if (lastUser) shot.lastUser = text(lastUser).slice(0, 120)
 
   const agentMessages = sinceUser($$('.msg-agent'))

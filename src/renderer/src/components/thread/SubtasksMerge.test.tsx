@@ -149,7 +149,8 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
       'Fusion dans main, l’une après l’autre\u00a0: 1 sur 3 faite. Au premier conflit, la fille concernée le résout, puis la fusion reprend.'
     )
     fireEvent.click(screen.getByTestId('subtasks-merge-stop'))
-    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere'))
+    // L'« Arrêter » de cette fusion seulement (fiche 264).
+    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere', 'r1'))
   })
 
   it('arrêt demandé : la fusion en cours finit, « Arrêter » grisé', async () => {
@@ -172,7 +173,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     view([done], plan([]))
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '2 fusionnées dans main en 12 s. 1 déjà à jour. Conversations archivées, worktrees et branches supprimés.'
+      '2 fusionnées dans main en 12 s. 1 déjà à jour. Conversations archivées, dossiers de travail et branches supprimés.'
     )
     expect(badges()).toEqual(['merged', 'merged', 'up-to-date'])
     expect(screen.queryByTestId('subtasks-merge-start')).toBeNull()
@@ -391,6 +392,10 @@ describe('Recommandations de la mère (fiche 160)', () => {
     // Une seule mention (fiche 264) : la pastille de la ligne, sa note en infobulle ; plus de
     // ligne dans le fil pour une fille qui a sa ligne dans la carte.
     expect(screen.queryByTestId('child-recommendation')).toBeNull()
+    // Sa note reste lisible sur la pastille, sans survol (revue QA).
+    expect(screen.getAllByTestId('subtask-recommendation')[0]?.textContent).toContain(
+      'Relue, tests verts.'
+    )
     expect(screen.getAllByTestId('subtask-recommendation').map((b) => b.dataset['state'])).toEqual([
       'ready',
       'not-ready'
@@ -497,7 +502,8 @@ describe('travaux d’une bulle « @Rôle … » (fiche 263)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge'))
     expect(screen.getAllByTestId('subtask-row').map((r) => r.dataset['id'])).toEqual(['a', 'b'])
-    expect(actions.plan).toHaveBeenCalledWith('mere', ['a', 'b'])
+    // Un seul plan lu pour la conversation, gardé pour les lignes de la carte (fiche 264).
+    expect(actions.plan).toHaveBeenCalledWith('mere')
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
     // Le recouvrement avec le travail de la bulle (x.ts) n'est pas dit non plus.
     expect(text('subtasks-merge-summary')).not.toContain('Fille c')

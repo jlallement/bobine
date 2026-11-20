@@ -90,6 +90,8 @@ export interface SubtasksInfo {
   carded?: ReadonlySet<string>
   /** « Faire relire » d'un travail qui écrit (fiche 264) : la relecture actuelle (fiche 177). */
   onReview?: (childId: string) => void
+  /** « Voir les modifications » d'une carte de groupe (fiche 264) : Modifications › Filles. */
+  onShowChanges?: () => void
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
@@ -155,16 +157,20 @@ export function VerdictBadge({
   return (
     <Tip label={hint}>
       <span
-        className={`subtask-recommendation ${state}`}
+        className={`subtask-recommendation ${state}${works ? ' neutral' : ''}`}
         data-testid="subtask-recommendation"
         data-state={state}
       >
-        {verdict.ready && !verdict.stale ? (
-          <GitPullRequestArrow size={12} />
-        ) : (
-          <CircleDashed size={12} />
-        )}
+        {/* Carte de groupe (revue UX) : une pastille neutre, sans icône git. */}
+        {!works &&
+          (verdict.ready && !verdict.stale ? (
+            <GitPullRequestArrow size={12} />
+          ) : (
+            <CircleDashed size={12} />
+          ))}
         {label}
+        {/* Sa note reste lisible sans survol (anciennes conversations aussi, revue QA). */}
+        {hint && <span className="sr-only"> — {hint}</span>}
       </span>
     </Tip>
   )
@@ -181,7 +187,11 @@ export function rowMerge(
   items?: readonly TranscriptItem[]
 ): { mergeState: MergeRowState | undefined; cleaned: boolean } {
   const own = items && lastMergeFor(items, [childId])
-  const settled = own && merging.plan ? settledMerge(own, merging.plan.running) : own
+  const plan = merging.plan
+  const settled =
+    own && plan
+      ? settledMerge(own, plan.running && (plan.runId === undefined || plan.runId === own.runId))
+      : own
   const { merge: _last, ...rest } = merging
   const state: ChildrenMergeState = items
     ? { ...rest, ...(settled ? { merge: settled } : {}) }

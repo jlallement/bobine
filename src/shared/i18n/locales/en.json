@@ -3550,7 +3550,7 @@
     "from": {
       "parent": "From the parent conversation “{{title}}”",
       "child": "From the child conversation “{{title}}”",
-      "wake": "All the child conversations have finished: the agent resumes with their reports.",
+      "wake": "All tasks have finished: the agent resumes with their responses.",
       "merge": "Instruction from the merge started in “{{title}}”"
     },
     "leftBehind": {
@@ -3814,7 +3814,7 @@
     "action_one": "Merge into {{base}}",
     "action_other": "Merge the {{count}} into {{base}}",
     "cleanup": "Then clean up",
-    "cleanupHint": "Archive each merged conversation, then delete its worktree and branch",
+    "cleanupHint": "Archive each merged conversation, then delete its working folder and branch",
     "stop": "Stop",
     "progress_one": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that child conversation resolves it, then the merge resumes.",
     "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that child conversation resolves it, then the merge resumes.",
@@ -3824,8 +3824,8 @@
       "done_other": "{{count}} merged into {{base}} in {{duration}}.",
       "upToDate_one": "{{count}} already up to date.",
       "upToDate_other": "{{count}} already up to date.",
-      "cleaned_one": "Conversation archived, worktree and branch deleted.",
-      "cleaned_other": "Conversations archived, worktrees and branches deleted.",
+      "cleaned_one": "Conversation archived, working folder and branch deleted.",
+      "cleaned_other": "Conversations archived, working folders and branches deleted.",
       "stopped_one": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
       "stopped_other": "Merge stopped: {{count}} merged into {{base}}, the others are still waiting.",
       "interrupted_one": "Merge interrupted when the app was closed: {{count}} merged into {{base}}.",
@@ -3854,10 +3854,12 @@
     "error": {
       "running": "The child conversations are already being merged here.",
       "none": "No child conversation to merge.",
-      "gone": "A child conversation was deleted, archived or is no longer in a worktree: check the Subtasks card again.",
+      "gone": "A task was deleted, archived or is no longer in its working folder: reread the tasks card.",
       "prompt": "the resolution instructions could not be sent ({{error}})",
       "mainDirty_one": "The main folder has an uncommitted change ({{files}}): commit it or set it aside before merging.",
-      "mainDirty_other": "The main folder has {{count}} uncommitted changes ({{files}}): commit them or set them aside before merging."
+      "mainDirty_other": "The main folder has {{count}} uncommitted changes ({{files}}): commit them or set them aside before merging.",
+      "busy": "“{{title}}” is still working or waiting for approval: wait until it has finished to merge it.",
+      "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
     "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge."
@@ -4643,7 +4645,10 @@
     "otherAgent": "another {{agent}}",
     "review": "Get a review",
     "reviewLabel": "Get a review of this task’s branch",
-    "brief": "Task instruction"
+    "brief": "Task instruction",
+    "from": "from {{base}} {{commit}}",
+    "dirty_one": "{{count}} uncommitted change",
+    "dirty_other": "{{count}} uncommitted changes"
   },
   "workCue": {
     "replied": "replied",
@@ -5796,19 +5801,23 @@
     "startAll": "Start all",
     "startAllLabel": "Start every task still proposed, with the agent and model chosen on its row",
     "whereWorktree": "Each task starts from the last commit, in its own branch; your uncommitted changes stay here.",
-    "whereMixed": "An advisory role reads this folder without changing anything; the other tasks start from the last commit, in their own branch.",
+    "whereMixed": "Each task that writes starts from the last commit; your uncommitted changes stay here.",
     "whereReadOnly": "Each advisory role reads this folder without changing anything.",
     "whereHere": "No commit yet: each task will work in this folder.",
     "keys": "↑ ↓ to pick a row, Enter to start it",
     "place": {
       "readOnly": "read-only",
       "branch": "writes in its branch",
-      "folder": "writes in this folder"
+      "folder": "writes in this folder",
+      "readOnlyRequested": "read-only requested",
+      "mode": "{{mode}} mode",
+      "project": "project role"
     },
     "row": {
       "starting": "starting…",
       "toggle": "Show or hide the response of “{{title}}”",
-      "nothing": "nothing to merge"
+      "nothing": "nothing to merge",
+      "failed": "not started"
     },
     "state": {
       "running": "working",
@@ -5835,8 +5844,8 @@
         "only_other": "The agent recommends {{titles}}; the {{count}} others await its opinion.",
         "none": "The agent does not recommend any task yet."
       },
-      "progress_one": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
-      "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
+      "progress_one": "Merging into {{base}}: {{count}} of {{total}}…",
+      "progress_other": "Merging into {{base}}: {{count}} of {{total}}…",
       "result": {
         "done_one": "{{count}} merged into {{base}} in {{duration}}.",
         "done_other": "{{count}} merged into {{base}} in {{duration}}.",
@@ -5855,7 +5864,9 @@
         "dirty": "uncommitted",
         "failed": "failed",
         "cleaned": "branch deleted"
-      }
+      },
+      "cleanup": "Then clean up (archive, delete the branches)",
+      "resolving": "Conflict: that task resolves it, then the merge resumes."
     },
     "outcome": {
       "start": "Started",
@@ -5869,7 +5880,11 @@
       "notReady": "Not ready yet",
       "stale": "To review",
       "staleHint": "The task worked again since this recommendation."
-    }
+    },
+    "changes": "View changes",
+    "relayPending": "Responses not yet passed to {{agent}} — they will be with your next message",
+    "relayPendingWake": "Responses not yet passed to {{agent}} — they will be once all its tasks have finished, or with your next message",
+    "relayDone": "Responses passed to {{agent}}"
   },
   "workMerge": {
     "action": "Merge into {{base}}",
@@ -5892,6 +5907,7 @@
     "stopped": "Merge stopped before this task.",
     "interrupted": "Merge interrupted when the app closed.",
     "busy": "Another merge is running here: this task can be merged afterwards.",
-    "stateMerged": "merged · {{time}}"
+    "stateMerged": "merged · {{time}}",
+    "commit": "commit {{commit}}"
   }
 }

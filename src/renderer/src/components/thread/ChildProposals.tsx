@@ -231,15 +231,8 @@ export function ProposalRow({
         >
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           {role && <RoleAvatar role={role} size={22} />}
-          <span>
-            {role ? (
-              <>
-                <strong className="proposal-role-label">{role.label}</strong> — {title}
-              </>
-            ) : (
-              title
-            )}
-          </span>
+          {/* Le titre seul en gras ; son rôle est dans la méta (revue UX, fiche 264). */}
+          <span className="proposal-title-text">{title}</span>
         </button>
         <RowOutcome outcome={outcome}>{children}</RowOutcome>
         <span className="grow" />
@@ -295,18 +288,12 @@ export function ProposalRow({
           </span>
         )}
       </div>
-      {role && outcome === undefined && (
+      {outcome === undefined && (
         <ProposalRoleMeta
           role={role}
           profile={chosenProfile}
           // Agent proposé par la mère : déjà dit par la ligne de suggestion.
           agentLabel={suggestion.shown ? undefined : chosenProfile?.label}
-          inFolder={inFolder}
-        />
-      )}
-      {!role && outcome === undefined && (
-        <AgentMeta
-          agent={suggestion.shown ? undefined : chosenProfile?.label}
           inFolder={inFolder}
         />
       )}
@@ -363,18 +350,6 @@ function useStartAll(
 /** Sa clé suit une proposition expirée relancée : le travail reste sur sa ligne (fiche 264). */
 const cardOf = (item: ChildProposalItem): { card?: string } =>
   item.prompt.child.key ? { card: item.prompt.child.key } : {}
-
-/** Ligne sans rôle (fiche 264, maquette D) : « un autre OpenCode · écrit dans sa branche ». */
-function AgentMeta({ agent, inFolder }: { agent: string | undefined; inFolder: boolean }) {
-  const { t } = useTranslation()
-  if (!agent) return null
-  return (
-    <div className="proposal-note" data-testid="proposal-meta">
-      {t('workCard.otherAgent', { agent })} ·{' '}
-      {t(inFolder ? 'workGroup.place.folder' : 'workGroup.place.branch')}
-    </div>
-  )
-}
 
 /**
  * Suggestion de la mère sur une ligne (fiche 160) : choix initial, noms à afficher, et si elle

@@ -65,9 +65,6 @@ export interface AppToolsBridgeOptions {
   readOnly?: boolean | undefined
 }
 
-/** Appels `start_child` récents gardés pour relier leur carte (fiche 264). */
-const MAX_LINKED_PROPOSALS = 16
-
 export class AppToolsBridge {
   private readonly options: AppToolsBridgeOptions
   private tools: AppTool[] = []
@@ -102,10 +99,11 @@ export class AppToolsBridge {
   /** Dernier appel d'outil de l'agent qui ressemble à `ask_user` (pour lier la carte à l'outil). */
   private lastQuestion: { toolCallId: string; question: string } | undefined
   /**
-   * Appels qui ressemblent à `start_child`, par titre (fiche 112) : la carte de propositions s'y
-   * relie. Plusieurs à la fois (appels en parallèle, fiche 264) : chacun garde le sien.
+   * Appels qui ressemblent à `start_child`, en file par titre (fiche 112) : la carte de propositions
+   * se relie au premier. Plusieurs à la fois (appels en parallèle, fiche 264) : chacun le sien.
+   * Vidée à la fin du tour, et un appel fini (refusé par le plafond…) en sort.
    */
-  private readonly proposals = new Map<string, string>()
+  private readonly proposals = new Map<string, string[]>()
   /** Titres au format inconnu déjà signalés (une ligne de journal par titre). */
   private readonly unknownTitles = new Set<string>()
 
@@ -224,6 +222,16 @@ export class AppToolsBridge {
   turnEnded(): void {
     this.running.clear()
     this.orphans = []
+    this.proposals.clear()
+  }
+
+  /** Un appel `start_child` fini sort de la file de son titre (fiche 264). */
+  private forgetProposal(toolCallId: string): void {
+    for (const [title, ids] of this.proposals) {
+      const left = ids.filter((id) => id !== toolCallId)
+      if (left.length === 0) this.proposals.delete(title)
+      else if (left.length !== ids.length) this.proposals.set(title, left)
+    }
   }
 
   /** Mise à jour de la session de la conversation : seuls les appels d'outil comptent. */
@@ -242,13 +250,7 @@ export class AppToolsBridge {
     if (question) this.lastQuestion = { toolCallId: update.toolCallId, question }
     const proposal = proposalTitleOf(update.rawInput)
     if (proposal) {
-      this.proposals.delete(proposal)
-      this.proposals.set(proposal, update.toolCallId)
-      // Quelques titres récents suffisent : une carte se pose juste après son appel.
-      if (this.proposals.size > MAX_LINKED_PROPOSALS) {
-        const oldest = this.proposals.keys().next().value
-        if (oldest !== undefined) this.proposals.delete(oldest)
-      }
+      this.proposals.set(proposal, [...(this.proposals.get(proposal) ?? []), update.toolCallId])
     }
     const tool = matchAppTool(update.title, this.tools)
     if (!tool) {
@@ -265,6 +267,9 @@ export class AppToolsBridge {
     status?: string | null
     rawInput?: unknown
   }): void {
+    if (update.status === 'completed' || update.status === 'failed') {
+      this.forgetProposal(update.toolCallId)
+    }
     if (!this.running.has(update.toolCallId)) return
     if (update.rawInput !== undefined) {
       this.running.set(update.toolCallId, inputText(update.rawInput))
@@ -416,8 +421,9 @@ export class AppToolsBridge {
 
   /** Carte de propositions de `start_child` (fiche 112), reliée à l'appel par son titre. */
   private proposalPrompt(proposal: ChildProposal): ElicitationPrompt {
-    const linked = this.proposals.get(proposal.title)
-    this.proposals.delete(proposal.title)
+    const [linked, ...rest] = this.proposals.get(proposal.title) ?? []
+    if (rest.length > 0) this.proposals.set(proposal.title, rest)
+    else this.proposals.delete(proposal.title)
     return {
       mode: 'form',
       message: proposal.title,

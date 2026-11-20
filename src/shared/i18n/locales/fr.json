@@ -3674,7 +3674,7 @@
     "from": {
       "parent": "De la conversation mère « {{title}} »",
       "child": "De la conversation fille « {{title}} »",
-      "wake": "Les conversations filles ont toutes fini : l’agent reprend avec leurs comptes rendus.",
+      "wake": "Tous les travaux ont fini : l’agent reprend avec leurs réponses.",
       "merge": "Consigne de la fusion lancée depuis « {{title}} »"
     },
     "leftBehind": {
@@ -3970,7 +3970,7 @@
     "action_other": "Fusionner les {{count}} dans {{base}}",
     "action_many": "Fusionner les {{count}} dans {{base}}",
     "cleanup": "Puis nettoyer",
-    "cleanupHint": "Archiver chaque conversation fusionnée, puis supprimer son worktree et sa branche",
+    "cleanupHint": "Archiver chaque conversation fusionnée, puis supprimer son dossier de travail et sa branche",
     "stop": "Arrêter",
     "progress_one": "Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faite. Au premier conflit, la fille concernée le résout, puis la fusion reprend.",
     "progress_other": "Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faites. Au premier conflit, la fille concernée le résout, puis la fusion reprend.",
@@ -3983,9 +3983,9 @@
       "upToDate_one": "{{count}} déjà à jour.",
       "upToDate_other": "{{count}} déjà à jour.",
       "upToDate_many": "{{count}} déjà à jour.",
-      "cleaned_one": "Conversation archivée, worktree et branche supprimés.",
-      "cleaned_other": "Conversations archivées, worktrees et branches supprimés.",
-      "cleaned_many": "Conversations archivées, worktrees et branches supprimés.",
+      "cleaned_one": "Conversation archivée, dossier de travail et branche supprimés.",
+      "cleaned_other": "Conversations archivées, dossiers de travail et branches supprimés.",
+      "cleaned_many": "Conversations archivées, dossiers de travail et branches supprimés.",
       "stopped_one": "Fusion arrêtée : {{count}} fusionnée dans {{base}}, les autres restent en attente.",
       "stopped_other": "Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.",
       "stopped_many": "Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.",
@@ -4016,11 +4016,13 @@
     "error": {
       "running": "Une fusion des conversations filles est déjà en cours ici.",
       "none": "Aucune conversation fille à fusionner.",
-      "gone": "Une conversation fille a été supprimée, archivée ou n’est plus dans un worktree : relisez la carte « Sous-tâches ».",
+      "gone": "Un travail a été supprimé, archivé ou n’est plus dans son dossier de travail : relisez la carte des travaux.",
       "prompt": "la consigne de résolution n’a pas pu partir ({{error}})",
       "mainDirty_one": "Le dossier principal a une modification non commitée ({{files}}) : committez-la ou mettez-la de côté avant de fusionner.",
       "mainDirty_other": "Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.",
-      "mainDirty_many": "Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner."
+      "mainDirty_many": "Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.",
+      "busy": "« {{title}} » travaille encore ou attend un accord : attendez qu’il ait fini pour le fusionner.",
+      "cleanupSkipped": "Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent."
     },
     "stashKept_one": "Votre modification est mise de côté le temps de la fusion.",
     "stashKept_other": "Vos {{count}} modifications sont mises de côté le temps de la fusion.",
@@ -4843,7 +4845,11 @@
     "otherAgent": "un autre {{agent}}",
     "review": "Faire relire",
     "reviewLabel": "Faire relire la branche de ce travail",
-    "brief": "Consigne du travail"
+    "brief": "Consigne du travail",
+    "from": "part de {{base}} {{commit}}",
+    "dirty_one": "{{count}} modification non commitée",
+    "dirty_other": "{{count}} modifications non commitées",
+    "dirty_many": "{{count}} modifications non commitées"
   },
   "workCue": {
     "replied": "a répondu",
@@ -6037,19 +6043,23 @@
     "startAll": "Tout lancer",
     "startAllLabel": "Lancer chaque travail encore proposé, avec l’agent et le modèle choisis sur sa ligne",
     "whereWorktree": "Chaque travail part du dernier commit, dans sa branche ; vos modifications non commitées restent ici.",
-    "whereMixed": "Un rôle de conseil lit ce dossier sans rien modifier ; les autres travaux partent du dernier commit, dans leur branche.",
+    "whereMixed": "Chaque travail qui écrit part du dernier commit ; vos modifications non commitées restent ici.",
     "whereReadOnly": "Chaque rôle de conseil lit ce dossier sans rien modifier.",
     "whereHere": "Pas encore de commit : chaque travail se fera dans ce dossier.",
     "keys": "↑ ↓ pour choisir une ligne, Entrée pour la lancer",
     "place": {
       "readOnly": "lecture seule",
       "branch": "écrit dans sa branche",
-      "folder": "écrit dans ce dossier"
+      "folder": "écrit dans ce dossier",
+      "readOnlyRequested": "lecture seule demandée",
+      "mode": "mode {{mode}}",
+      "project": "rôle du projet"
     },
     "row": {
       "starting": "démarre…",
       "toggle": "Montrer ou cacher la réponse de « {{title}} »",
-      "nothing": "rien à fusionner"
+      "nothing": "rien à fusionner",
+      "failed": "pas lancé"
     },
     "state": {
       "running": "en cours",
@@ -6082,9 +6092,9 @@
         "only_many": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
         "none": "L’agent ne recommande encore aucun travail."
       },
-      "progress_one": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
-      "progress_other": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
-      "progress_many": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+      "progress_one": "Fusion dans {{base}} : {{count}} sur {{total}}…",
+      "progress_other": "Fusion dans {{base}} : {{count}} sur {{total}}…",
+      "progress_many": "Fusion dans {{base}} : {{count}} sur {{total}}…",
       "result": {
         "done_one": "{{count}} fusionné dans {{base}} en {{duration}}.",
         "done_other": "{{count}} fusionnés dans {{base}} en {{duration}}.",
@@ -6106,7 +6116,9 @@
         "dirty": "non commité",
         "failed": "échec",
         "cleaned": "branche supprimée"
-      }
+      },
+      "cleanup": "Puis nettoyer (archiver, supprimer les branches)",
+      "resolving": "Conflit : le travail concerné le résout, puis la fusion reprend."
     },
     "outcome": {
       "start": "Lancé",
@@ -6120,7 +6132,11 @@
       "notReady": "Pas encore prêt",
       "stale": "À revoir",
       "staleHint": "Le travail a refait un tour depuis cette recommandation."
-    }
+    },
+    "changes": "Voir les modifications",
+    "relayPending": "Réponses pas encore transmises à {{agent}} — elles le seront avec votre prochain message",
+    "relayPendingWake": "Réponses pas encore transmises à {{agent}} — elles le seront quand ses travaux auront tous fini, ou avec votre prochain message",
+    "relayDone": "Réponses transmises à {{agent}}"
   },
   "workMerge": {
     "action": "Fusionner dans {{base}}",
@@ -6143,6 +6159,7 @@
     "stopped": "Fusion arrêtée avant ce travail.",
     "interrupted": "Fusion interrompue par la fermeture de l’app.",
     "busy": "Une autre fusion est en cours ici : ce travail pourra être fusionné ensuite.",
-    "stateMerged": "fusionné · {{time}}"
+    "stateMerged": "fusionné · {{time}}",
+    "commit": "commit {{commit}}"
   }
 }

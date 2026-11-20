@@ -55,7 +55,6 @@ export function toolsLine(tools) {
   return `Outils du tour : ${total} (${kinds})${lastText}`
 }
 
-/** Lignes d'une carte en attente : titre, objet (commande, fichier, question), boutons. */
 /** Carte de groupe (fiche 264) : son titre et ses comptes, ses lignes, sa fusion. */
 export function groupLines(group) {
   const lines = [`Carte de groupe : ${join([group.title, group.counts], ' · ')}`]
@@ -67,6 +66,7 @@ export function groupLines(group) {
   return lines
 }
 
+/** Lignes d'une carte en attente : titre, objet (commande, fichier, question), boutons. */
 export function cardLines(card) {
   const lines = [`Carte (${card.type}) : ${join([card.title, card.sub], ' — ')}`]
   if (card.command) lines.push(`  Commande : ${excerpt(card.command, 300)}`)

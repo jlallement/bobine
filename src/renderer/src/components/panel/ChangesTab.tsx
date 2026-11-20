@@ -29,9 +29,9 @@ import type { ChildRow } from '@shared/children-rows'
 import { countText } from '@shared/i18n/format'
 
 /** Ce que montre l'onglet : les modifications de l'agent, ou l'état du dépôt git. */
-export type ChangesView = 'conversation' | 'git'
+export type ChangesView = 'conversation' | 'git' | 'children'
 /** … ou les worktrees des filles de la conversation (fiche 161). */
-type View = ChangesView | 'children'
+type View = ChangesView
 
 /** Filles directes de la conversation (fiche 161) : la vue « Filles », seulement s'il y en a. */
 export interface ChildWorktrees {

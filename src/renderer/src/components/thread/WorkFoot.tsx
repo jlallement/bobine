@@ -28,7 +28,8 @@ export function WorkFoot({
   state,
   report,
   items,
-  merge
+  merge,
+  mergeBusy = false
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -38,6 +39,11 @@ export function WorkFoot({
   items: readonly TranscriptItem[]
   /** Fusion du travail dans sa carte (fiche 264) : « Fusionner dans main ». */
   merge?: WorkMergeControl
+  /**
+   * Sa fusion avance (revue QA) : ni « Répondre » ni « Relancer » (sa branche bougerait sous la
+   * fusion), ni l'« Arrêter » du tour (celui de la fusion est dans sa boîte).
+   */
+  mergeBusy?: boolean
 }) {
   const { t } = useTranslation()
   const relay = relayOf(report, items)
@@ -48,11 +54,13 @@ export function WorkFoot({
   const canOpen = !!info && !!child
   const warn = (error: unknown) => info?.onWarn?.(ipcErrorText(error))
   const several = card.steps.filter((s) => s.kind === 'report').length > 1
+  const merged = merge?.row?.state === 'merged'
+  const openGit = info?.merge?.openGit
   return (
     <>
       {canOpen && (
         <div className="work-actions" data-testid="work-actions">
-          {live && state === 'running' && (
+          {live && state === 'running' && !mergeBusy && (
             <button
               type="button"
               className="btn ghost small"
@@ -63,7 +71,7 @@ export function WorkFoot({
               {t('workCard.stop')}
             </button>
           )}
-          {live && SETTLED.includes(state) && (
+          {live && SETTLED.includes(state) && !mergeBusy && (
             <SettledActions
               card={card}
               child={child}
@@ -75,6 +83,17 @@ export function WorkFoot({
               warn={warn}
               {...(merge ? { merge } : {})}
             />
+          )}
+          {!live && merged && openGit && (
+            // Fusionné puis nettoyé (conversation archivée) : ses modifications restent visibles.
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => openGit(card.childId)}
+              data-testid="work-changes-open"
+            >
+              {t('workCard.changes')}
+            </button>
           )}
           <button
             type="button"
@@ -177,12 +196,6 @@ function SettledActions({
   const lastAsk = card.steps.findLast((s) => s.kind === 'ask')
   const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
-  const openGit = info?.merge?.openGit
-  const writes = !role?.readOnly && !!child?.branch
-  // « Faire relire » (fiche 177) : un seul point d'entrée, la relecture actuelle (fiche 265 : le
-  // rôle Code reviewer) ; pas pour un relecteur, ni pendant une fusion.
-  const review = info?.onReview
-  const reviewable = writes && state === 'replied' && !child?.reviewOf && !merge?.active
   return (
     <>
       {applies && onAsk && role && (
@@ -197,29 +210,7 @@ function SettledActions({
           {t('workCard.apply', { agent })}
         </button>
       )}
-      {merge && <WorkMergeButton control={merge} />}
-      {writes && openGit && (
-        <button
-          type="button"
-          className="btn small"
-          onClick={() => openGit(card.childId)}
-          data-testid="work-changes-open"
-        >
-          {t('workCard.changes')}
-        </button>
-      )}
-      {reviewable && review && (
-        <button
-          type="button"
-          className="btn small"
-          title={t('workCard.reviewLabel')}
-          onClick={() => review(card.childId)}
-          data-testid="work-review"
-        >
-          <ScanSearch size={13} aria-hidden />
-          {t('workCard.review')}
-        </button>
-      )}
+      <WriterActions card={card} child={child} info={info} state={state} merge={merge} />
       {motherId && role && RETRY.includes(state) && (
         <button
           type="button"
@@ -273,5 +264,57 @@ function SaveAsRole({
       <BookmarkPlus size={13} aria-hidden />
       {t('roleWork.report.saveAsRole')}
     </button>
+  )
+}
+
+/**
+ * Travail qui écrit (fiche 264, écran C) : « Fusionner dans main », « Voir les modifications »,
+ * « Faire relire » (fiche 177 : un seul point d'entrée, la relecture actuelle ; fiche 265 : le rôle
+ * Code reviewer) ; pas pour un relecteur, ni pendant une fusion.
+ */
+function WriterActions({
+  card,
+  child,
+  info,
+  state,
+  merge
+}: {
+  card: WorkCardData
+  child: ConversationSummary | undefined
+  info: SubtasksInfo | undefined
+  state: WorkState
+  merge: WorkMergeControl | undefined
+}) {
+  const { t } = useTranslation()
+  const openGit = info?.merge?.openGit
+  const writes = (!card.role?.readOnly && !!child?.branch) || merge?.row?.state === 'merged'
+  const review = info?.onReview
+  const reviewable = writes && state === 'replied' && !child?.reviewOf && !merge?.active
+  return (
+    <>
+      {merge && <WorkMergeButton control={merge} />}
+      {writes && openGit && (
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => openGit(card.childId)}
+          data-testid="work-changes-open"
+        >
+          {t('workCard.changes')}
+        </button>
+      )}
+      {reviewable && review && (
+        <button
+          type="button"
+          className="btn small"
+          title={t('workCard.reviewLabel')}
+          onClick={() => review(card.childId)}
+          data-testid="work-review"
+        >
+          <ScanSearch size={13} aria-hidden />
+          {t('workCard.review')}
+        </button>
+      )}
+    </>
   )
 }

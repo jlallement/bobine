@@ -57,6 +57,8 @@ export interface ChildrenMergeDeps {
     | 'stashMain'
     | 'restoreMain'
     | 'commitMain'
+    | 'shortHead'
+    | 'worktreeHead'
   >
   /** Suppression d'un worktree et de sa branche (« Puis nettoyer »). */
   worktrees: Pick<Worktrees, 'remove'>
@@ -71,6 +73,8 @@ export interface ChildrenMergeDeps {
 
 interface Run {
   merge: ChildrenMerge
+  /** Tête de chaque branche fusionnée (fiche 264) : le nettoyage ne supprime que celle-là. */
+  heads: Map<string, string>
   stop: boolean
   done: Promise<void>
   /** Modifications du dossier principal mises de côté pour la chaîne (fiche 123). */
@@ -108,6 +112,12 @@ export class ChildrenMerger {
 
   private now(): number {
     return this.deps.now?.() ?? Date.now()
+  }
+
+  /** Le travail travaille encore ou attend un accord (fiche 264). */
+  private busy(child: ConversationSummary): boolean {
+    const state = childState(child, (this.deps.attention?.() ?? {})[child.id])
+    return state === 'running' || state === 'waiting'
   }
 
   /** Une fusion de cette mère tourne. */
@@ -174,7 +184,8 @@ export class ChildrenMerger {
       children: candidates,
       overlaps: mergeOverlaps(ready),
       ...(firstTarget ? await this.blocked(motherId, firstTarget) : {}),
-      running: this.running(motherId)
+      running: this.running(motherId),
+      ...(this.runs.get(motherId) ? { runId: this.runs.get(motherId)?.merge.runId } : {})
     }
   }
 
@@ -219,7 +230,12 @@ export class ChildrenMerger {
     target: CycleTarget,
     state: ReturnType<typeof childState>
   ): Promise<MergeCandidate> {
-    const base = { id: child.id, title: child.title, branch: target.worktree.branch }
+    const base = {
+      id: child.id,
+      title: child.title,
+      branch: target.worktree.branch,
+      ...(target.worktree.base ? { from: target.worktree.base.slice(0, 7) } : {})
+    }
     if (state === 'running' || state === 'waiting' || state === 'error') {
       // Une fille au travail : son dossier bouge, rien à lire avant qu'elle ait fini.
       const baseBranch = target.worktree.baseBranch ?? ''
@@ -277,6 +293,9 @@ export class ChildrenMerger {
     if (chosen.length !== new Set(ids).size || targets.some((target) => !target)) {
       throw new Error(t('childrenMerge.error.gone'))
     }
+    // Un travail qui travaille encore (ou attend un accord) ne se fusionne pas : sa branche bouge.
+    const busy = chosen.find((c) => this.busy(c))
+    if (busy) throw new Error(t('childrenMerge.error.busy', { title: busy.title }))
     const first = targets[0] as CycleTarget
     this.starting.add(motherId)
     let base: string
@@ -313,6 +332,7 @@ export class ChildrenMerger {
     }
     const run: Run = {
       merge,
+      heads: new Map(),
       stop: false,
       done: Promise.resolve(),
       ...(kept ? { stash: kept } : {})
@@ -325,10 +345,14 @@ export class ChildrenMerger {
     return initial
   }
 
-  /** « Arrêter » : la fusion en cours finit, les filles suivantes restent en attente. */
-  stop(motherId: string): void {
+  /**
+   * « Arrêter » : la fusion en cours finit, les filles suivantes restent en attente. `runId` : celle
+   * d'une carte (fiche 264) ; une autre fusion de la mère n'est jamais arrêtée.
+   */
+  stop(motherId: string, runId?: string): void {
     const run = this.runs.get(motherId)
     if (!run || run.stop) return
+    if (runId && run.merge.runId !== runId) return
     run.stop = true
     if (run.merge.status === 'running') run.merge.status = 'stopping'
     this.deps.log?.(motherId, 'children merge: stop requested')
@@ -346,7 +370,7 @@ export class ChildrenMerger {
       merge.status = merge.rows.some((r) => r.state === 'pending') ? 'stopped' : 'done'
     }
     if (run.stash) await this.restore(motherId, run, run.stash)
-    if (merge.cleanup) await this.cleanup(motherId, merge)
+    if (merge.cleanup) await this.cleanup(motherId, run)
     merge.endedAt = this.now()
     this.deps.log?.(motherId, `children merge: ${merge.status}`)
     this.emit(motherId, run)
@@ -366,6 +390,15 @@ export class ChildrenMerger {
     }
     set({ state: 'merging' })
     try {
+      // Ce que la branche apporte (fiche 264), lu avant qu'elle n'entre dans la base.
+      const brought = await this.deps.cycle.branchState(target).catch(() => undefined)
+      if (brought) {
+        Object.assign(row, {
+          fileCount: brought.files.length,
+          added: brought.added,
+          removed: brought.removed
+        })
+      }
       let outcome = await this.deps.cycle.merge(target)
       if (outcome.status === 'conflicts') {
         set({ state: 'resolving', files: outcome.files })
@@ -389,6 +422,16 @@ export class ChildrenMerger {
         }
         // Une fusion arrêtée reprend : marqueurs partis, elle est commitée et la base avance.
         outcome = await this.deps.cycle.merge(target)
+      }
+      if (outcome.status === 'merged') {
+        const commit = await this.deps.cycle.shortHead(target, outcome.base).catch(() => undefined)
+        if (commit) row.commit = commit
+      }
+      if (outcome.status === 'merged' || outcome.status === 'nothing') {
+        const { head } = await this.deps.cycle
+          .worktreeHead(target)
+          .catch(() => ({ head: undefined }))
+        if (head) run.heads.set(row.childId, head)
       }
       return this.settle(run, row, outcome, set)
     } catch (error) {
@@ -454,11 +497,22 @@ export class ChildrenMerger {
   }
 
   /** « Puis nettoyer » : chaque fille fusionnée est archivée, son worktree et sa branche supprimés. */
-  private async cleanup(motherId: string, merge: ChildrenMerge): Promise<void> {
-    for (const row of mergedRows(merge)) {
+  private async cleanup(motherId: string, run: Run): Promise<void> {
+    for (const row of mergedRows(run.merge)) {
       try {
+        // Jamais de travail détruit (fiche 264) : un travail qui travaille, dont la branche a bougé
+        // depuis sa fusion ou dont le dossier a des modifications reste tel quel, et c'est dit.
+        const target = this.target(row.childId)
+        const child = this.children(motherId).find((c) => c.id === row.childId)
+        const now = target ? await this.deps.cycle.worktreeHead(target) : undefined
+        const merged = run.heads.get(row.childId)
+        if (!target || !child || this.busy(child) || !merged || now?.head !== merged || now.dirty) {
+          row.error = t('childrenMerge.error.cleanupSkipped', { title: row.title })
+          this.deps.log?.(motherId, `children merge: cleanup skipped (${row.childId})`)
+          continue
+        }
         const worktree = this.deps.conversations.leaveWorktree(row.childId)
-        await this.deps.worktrees.remove(worktree, { force: true })
+        await this.deps.worktrees.remove(worktree)
         row.cleaned = true
       } catch (error) {
         row.error = messageOf(error)

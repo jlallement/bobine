@@ -128,7 +128,10 @@ const GROUP_WORKS = {
   a11y: 'Relire l’accessibilité de l’écran'
 } as const
 
-/** Réveil de la mère des trois travaux : elle recommande les deux branches, sans fusionner. */
+/**
+ * Réveil de la mère des trois travaux : elle recommande le tri, pas encore les tests (« Inclure
+ * l'autre… »), sans rien fusionner.
+ */
 const groupWake: Step[] = [
   {
     kind: 'mcp-tool',
@@ -138,11 +141,11 @@ const groupWake: Step[] = [
       {
         kind: 'mcp-tool',
         tool: 'recommend_merge',
-        args: { child: GROUP_WORKS.tests, ready: true, note: 'Tests relus.' },
+        args: { child: GROUP_WORKS.tests, ready: false, note: 'Un cas limite manque.' },
         onResult: () => [
           {
             kind: 'text',
-            text: 'Les trois travaux ont répondu. Je recommande de fusionner le tri et les tests ; l’avis sur l’accessibilité est à appliquer ensuite.'
+            text: 'Les trois travaux ont répondu. Je recommande de fusionner le tri ; les tests attendent un cas limite. L’avis sur l’accessibilité est à appliquer ensuite.'
           }
         ]
       }
@@ -153,7 +156,7 @@ const groupWake: Step[] = [
 export const childScenarios: Record<string, Scenario> = {
   'travaux-groupe': {
     description:
-      'Carte de groupe (fiche 264, maquette D) : trois `start_child` à la fois — « Tri des articles par rayon » (Architecte front, écrit `src/rayons.js`), « Tests de la sauvegarde locale » (sans rôle, écrit `test/stockage.test.js`), « Relire l’accessibilité de l’écran » (Expert UX/UI, long avis) ; au réveil, `recommend_merge` des deux branches',
+      'Carte de groupe (fiche 264, maquette D) : trois `start_child` à la fois — « Tri des articles par rayon » (Architecte front, écrit `src/rayons.js`), « Tests de la sauvegarde locale » (sans rôle, écrit `test/stockage.test.js`), « Relire l’accessibilité de l’écran » (Expert UX/UI, long avis) ; au réveil, `recommend_merge` du tri (prêt) et des tests (pas encore)',
     steps: [
       {
         kind: 'when-prompt',

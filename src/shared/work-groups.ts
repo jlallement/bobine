@@ -12,7 +12,12 @@
  * - Un lancement sans clé ni bulle (anciennes conversations) : affiché comme avant (« Sous-tâches »,
  *   lancement, compte rendu).
  */
-import { childProposalGroups, type ChildProposalItem } from './children'
+import {
+  childProposalGroups,
+  childRecommendations,
+  type ChildProposalItem,
+  type ChildVerdict
+} from './children'
 import { lastChildrenMerge, type ChildrenMerge } from './children-merge'
 import { workCards, type RoleRequestItem, type WorkCardData, type WorkCards } from './role-request'
 import type { TranscriptItem } from './transcript'
@@ -45,6 +50,10 @@ export interface WorkLayout {
   toolCallIds: ReadonlySet<string>
   /** Travaux rangés dans une carte : ni ligne dans « Sous-tâches », ni compte rendu séparé. */
   childIds: ReadonlySet<string>
+  /** Recommandation de fusion de l'agent pour chaque travail (fiche 160), lue une fois. */
+  verdicts: ReadonlyMap<string, ChildVerdict>
+  /** Dernière fusion qui touche chaque travail, lue une fois. */
+  merges: ReadonlyMap<string, ChildrenMerge>
 }
 
 /** Clé d'une proposition, telle que le main l'a donnée (absente d'une proposition d'avant). */
@@ -59,14 +68,17 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
   const hidden = new Set<number>([...cards.hidden, ...proposed.hidden])
   const groups = new Map<number, WorkGroupData>()
   const grouped = new Set<string>()
+  // Une clé en double (fil abîmé) : une seule ligne porte le travail.
+  const used = new Set<string>()
   for (const [at, proposals] of proposed.groups) {
     const rows = proposals.map((proposal): WorkGroupRow => {
       const key = keyOf(proposal)
-      const work = key ? cards.byCard.get(key) : undefined
+      const work = key && !used.has(key) ? cards.byCard.get(key) : undefined
+      if (key) used.add(key)
       if (work) grouped.add(work.childId)
       return { key: proposal.requestId, proposal, ...(work ? { work } : {}) }
     })
-    groups.set(at, { at, rows })
+    groups.set(at, { at, rows: inLaunchOrder(rows) })
   }
   for (const [at, list] of cards.byRequest) {
     if (list.length < 2) continue
@@ -92,8 +104,33 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
     solos,
     hidden,
     toolCallIds: proposed.toolCallIds,
-    childIds: cards.childIds
+    childIds: cards.childIds,
+    verdicts: childRecommendations(items),
+    merges: mergesByWork(items)
   }
+}
+
+/** Dernière fusion de chaque travail, dans l'ordre du fil. */
+function mergesByWork(items: readonly TranscriptItem[]): Map<string, ChildrenMerge> {
+  const merges = new Map<string, ChildrenMerge>()
+  for (const item of items) {
+    if (item.kind !== 'children-merge') continue
+    const { kind: _kind, id: _id, ...merge } = item
+    for (const row of item.rows) merges.set(row.childId, merge)
+  }
+  return merges
+}
+
+/**
+ * Les travaux lancés dans l'ordre de leur lancement (revue UX : celui de la barre latérale et de la
+ * fusion), à la place des lignes lancées ; les lignes non lancées gardent la leur.
+ */
+function inLaunchOrder(rows: WorkGroupRow[]): WorkGroupRow[] {
+  const launched = rows
+    .filter((r) => r.work?.started)
+    .sort((a, b) => (a.work?.started?.id ?? 0) - (b.work?.started?.id ?? 0))
+  let next = 0
+  return rows.map((row) => (row.work?.started ? (launched[next++] ?? row) : row))
 }
 
 /** Travaux d'une carte de groupe (lancés). */

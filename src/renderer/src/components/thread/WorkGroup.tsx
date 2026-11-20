@@ -1,14 +1,11 @@
-import { ChevronDown, ChevronRight, LoaderCircle, Split } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { LoaderCircle, Split } from 'lucide-react'
+import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ConversationSummary } from '@shared/agent'
-import { childRecommendations, childState, type ChildProposalItem } from '@shared/children'
-import type { WorkCardData } from '@shared/role-request'
+import { childState, type ChildProposalItem, type ChildVerdict } from '@shared/children'
 import type { TranscriptItem } from '@shared/transcript'
 import { digestsTotal, formatEstimate } from '@shared/usage'
 import { groupWorkIds, type WorkGroupData, type WorkGroupRow } from '@shared/work-groups'
 import { usePresentation } from '../../presentation'
-import { RoleAvatar, useRoleStyle } from '../roles/RoleAvatar'
 import { useChildActivity } from '../roles/RoleWork'
 import { childModelAllowed, useMotherModel } from '../sidebar/child-options'
 import {
@@ -19,26 +16,12 @@ import {
   type StartRegistry
 } from './ChildProposals'
 import type { RespondElicitation } from './ElicitationCard'
-import { Branch, FileStats, MergeOrVerdict, rowMerge, type SubtasksInfo } from './Subtasks'
+import type { SubtasksInfo } from './Subtasks'
 import { SubtasksMergeFooter, useChildrenMerge, type ChildrenMergeState } from './SubtasksMerge'
-import {
-  AGENT_BADGE,
-  AVATAR,
-  elapsedText,
-  RoleRequestBubble,
-  useNow,
-  WorkCard,
-  workAgent
-} from './WorkCard'
-import {
-  branchChanges,
-  currentReport,
-  exchangeStart,
-  workState,
-  workUsage,
-  type WorkChanges,
-  type WorkState
-} from './work-card'
+import { RoleRequestBubble, useNow } from './WorkCard'
+import { LaunchedRow, type RowWork } from './WorkGroupRow'
+import { WorkLayoutContext } from './work-layout-context'
+import { currentReport, relayOf, workState, workUsage, type WorkState } from './work-card'
 
 /**
  * Carte de groupe (fiche 264, écran D des maquettes de la fiche 260) : les travaux proposés par
@@ -60,13 +43,6 @@ export function WorkGroupEntry(props: Parameters<typeof WorkGroup>[0]) {
       <WorkGroup {...props} />
     </div>
   )
-}
-
-/** Ce qu'une ligne lancée sait de son travail. */
-interface RowWork {
-  card: WorkCardData
-  child: ConversationSummary | undefined
-  state: WorkState
 }
 
 export function WorkGroup({
@@ -113,13 +89,14 @@ export function WorkGroup({
   const merging = useChildrenMerge(
     info?.motherId,
     info?.merge,
-    works.flatMap(({ child }) =>
-      child ? [{ child, state: childState(child, info?.attention[child.id]) }] : []
-    ),
+    // Toutes les filles de la conversation : la même clé que les autres cartes, un seul plan lu.
+    useMotherChildren(info),
     items,
     ids
   )
-  const verdicts = useMemo(() => childRecommendations(items), [items])
+  // Recommandations lues une fois dans le rangement du fil (revue QA).
+  const layout = useContext(WorkLayoutContext)
+  const verdicts = layout?.verdicts ?? NO_VERDICTS
   const activity = useChildActivity(
     works.filter((w) => w.state === 'running').map((w) => w.card.childId)
   )
@@ -215,12 +192,25 @@ export function WorkGroup({
               onRespond={onRespond}
               starts={starts}
             >
-              {/* Lancée, son travail pas encore dans le fil : il démarre (une clé le rangera ici). */}
+              {/* Lancée, son travail pas encore dans le fil : il démarre (une clé le rangera ici) ;
+                  son appel `start_child` a échoué (caché derrière la carte) : « pas lancé », la
+                  raison en infobulle. */}
               {outcomeOf(row.proposal) === 'start' && row.proposal.prompt.child.key ? (
-                <span className="proposal-state start" data-testid="proposal-state">
-                  <LoaderCircle size={13} className="spin" aria-hidden />
-                  {t('workGroup.row.starting')}
-                </span>
+                launchFailure(items, row.proposal) !== undefined ? (
+                  <span
+                    className="proposal-state refuse"
+                    data-testid="proposal-state"
+                    data-failed=""
+                    title={launchFailure(items, row.proposal)}
+                  >
+                    {t('workGroup.row.failed')}
+                  </span>
+                ) : (
+                  <span className="proposal-state start" data-testid="proposal-state">
+                    <LoaderCircle size={13} className="spin" aria-hidden />
+                    {t('workGroup.row.starting')}
+                  </span>
+                )
               ) : undefined}
             </ProposalRow>
           )
@@ -261,6 +251,8 @@ export function WorkGroup({
               info={info}
               merging={merging}
               verdicts={verdicts}
+              works={works}
+              items={items}
             />
           )}
     </div>
@@ -272,16 +264,48 @@ function GroupMergeFoot({
   motherId,
   info,
   merging,
-  verdicts
+  verdicts,
+  works,
+  items
 }: {
   motherId: string
   info: SubtasksInfo
   merging: ChildrenMergeState
-  verdicts: ReturnType<typeof childRecommendations>
+  verdicts: ReadonlyMap<string, ChildVerdict>
+  works: readonly RowWork[]
+  items: readonly TranscriptItem[]
 }) {
+  const { t } = useTranslation()
   if (!info.merge) return null
+  const agent = info.agentLabel ?? t('workCard.mainAgent')
+  // Transmission des réponses, en tête du pied (revue UX) : une phrase pour toute la carte.
+  const relays = works.flatMap((w) => {
+    const relay = relayOf(currentReport(w.card), items)
+    return relay ? [{ sent: relay.sent, byAgent: !!w.card.byAgent }] : []
+  })
+  const pending = relays.filter((r) => !r.sent)
+  const relay =
+    relays.length === 0
+      ? undefined
+      : pending.length === 0
+        ? t('workGroup.relayDone', { agent })
+        : t(
+            pending.every((r) => r.byAgent)
+              ? 'workGroup.relayPendingWake'
+              : 'workGroup.relayPending',
+            { agent }
+          )
   return (
     <div className="work-group-merge" data-testid="work-group-merge">
+      {relay && (
+        <div
+          className={`work-group-relay${pending.length === 0 ? ' sent' : ''}`}
+          data-testid="work-group-relay"
+          data-sent={pending.length === 0}
+        >
+          {relay}
+        </div>
+      )}
       <SubtasksMergeFooter
         motherId={motherId}
         state={merging}
@@ -289,9 +313,50 @@ function GroupMergeFoot({
         verdicts={verdicts}
         works
       />
+      {info.onShowChanges && (
+        <button
+          type="button"
+          className="btn small work-group-changes"
+          onClick={info.onShowChanges}
+          data-testid="work-group-changes"
+        >
+          {t('workGroup.changes')}
+        </button>
+      )}
     </div>
   )
 }
+
+/** Les filles de la conversation et leur état : la clé du plan partagé (fiche 264, revue QA). */
+export function useMotherChildren(info: SubtasksInfo | undefined) {
+  return useMemo(
+    () =>
+      (info?.children ?? []).map((child) => ({
+        child,
+        state: childState(child, info?.attention[child.id])
+      })),
+    [info?.children, info?.attention]
+  )
+}
+
+/**
+ * Échec du lancement d'une ligne (fiche 264) : son appel `start_child`, caché derrière la carte, a
+ * fini en erreur ; son texte (la raison donnée à l'agent), sinon une chaîne vide.
+ */
+function launchFailure(
+  items: readonly TranscriptItem[],
+  proposal: ChildProposalItem
+): string | undefined {
+  const id = proposal.prompt.toolCallId
+  if (!id) return undefined
+  const tool = items.find((i) => i.kind === 'tool' && i.toolCallId === id)
+  if (tool?.kind !== 'tool' || tool.status !== 'failed') return undefined
+  return tool.content
+    .flatMap((c) => (c.type === 'content' && c.content.type === 'text' ? [c.content.text] : []))
+    .join('\n')
+}
+
+const NO_VERDICTS: ReadonlyMap<string, ChildVerdict> = new Map()
 
 /** Où partent les travaux proposés, dit au pied de la carte. */
 function whereKey(proposed: readonly ChildProposalItem[], inFolder: boolean) {
@@ -365,152 +430,4 @@ function groupCounts(
   ]
   // Tant que des lignes attendent, seules les décisions prises se disent (pas « 0 en cours »).
   return counts.filter((c) => c.count > 0 && (pending === 0 || c.key !== 'workGroup.count.done'))
-}
-
-const STATE_KEYS = {
-  running: 'workGroup.state.running',
-  pending: 'workGroup.state.running',
-  waiting: 'workGroup.state.waiting',
-  replied: 'workGroup.state.replied',
-  silent: 'workGroup.state.silent',
-  stopped: 'workGroup.state.stopped',
-  error: 'workGroup.state.error',
-  gone: 'workGroup.state.gone'
-} as const satisfies Partial<Record<WorkState, string>>
-
-/** Une ligne lancée : en-tête du travail, dépliable sur sa carte-réponse. */
-function LaunchedRow({
-  work,
-  items,
-  info,
-  merging,
-  verdict,
-  activity
-}: {
-  work: RowWork
-  items: readonly TranscriptItem[]
-  info: SubtasksInfo | undefined
-  merging: ChildrenMergeState
-  verdict: ReturnType<ReturnType<typeof childRecommendations>['get']>
-  activity: string | undefined
-}) {
-  const { t } = useTranslation()
-  const { card, child, state } = work
-  const [open, setOpen] = useState(false)
-  const style = useRoleStyle(card.role?.color ?? AGENT_BADGE.color)
-  const { mergeState, cleaned } = rowMerge(merging, card.childId)
-  const report = currentReport(card)
-  const name = card.role ? `${card.role.label} — ${card.title}` : card.title
-  const stateKey = state === 'unknown' ? undefined : STATE_KEYS[state]
-  return (
-    <div
-      className={`work-group-item${open ? ' open' : ''}`}
-      style={style}
-      data-testid="work-row"
-      data-child-id={card.childId}
-      data-state={state}
-      data-role={card.role?.name}
-      data-work-anchor={card.anchor}
-    >
-      <div className="work-group-row">
-        <button
-          type="button"
-          className="work-group-toggle"
-          aria-expanded={open}
-          aria-label={t('workGroup.row.toggle', { title: card.title })}
-          onClick={() => setOpen((o) => !o)}
-          data-testid="work-row-toggle"
-        >
-          {open ? <ChevronDown size={14} aria-hidden /> : <ChevronRight size={14} aria-hidden />}
-          <RoleAvatar role={card.role ?? AGENT_BADGE} size={22} state={AVATAR[state]} />
-          <span className="work-group-text">
-            <span className="work-group-name" data-testid="work-row-name">
-              {name}
-            </span>
-            <span className="work-group-meta" data-testid="work-row-meta">
-              <RowMeta
-                card={card}
-                child={child}
-                info={info}
-                state={state}
-                report={report}
-                activity={activity}
-                changes={branchChanges(
-                  child?.branch ? merging.plan : undefined,
-                  card.childId,
-                  mergeState === 'merged'
-                )}
-              />
-            </span>
-          </span>
-        </button>
-        <MergeOrVerdict mergeState={mergeState} cleaned={cleaned} verdict={verdict} works />
-        {stateKey && (
-          <span className="work-group-state" data-testid="work-row-state" data-state={state}>
-            {state === 'running' && <LoaderCircle size={13} className="spin" aria-hidden />}
-            {t(stateKey)}
-          </span>
-        )}
-      </div>
-      {open && (
-        <div className="work-group-open" data-testid="work-row-open">
-          <WorkCard
-            card={card}
-            items={items}
-            info={info}
-            inGroup
-            plan={merging.plan}
-            merged={mergeState === 'merged'}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * Sous le nom : en cours, l'outil en cours et le temps écoulé ; fini, sa branche et ses fichiers
- * (ou « lecture seule ») ; sans rôle, l'agent qui le fait.
- */
-function RowMeta({
-  card,
-  child,
-  info,
-  state,
-  report,
-  activity,
-  changes
-}: {
-  card: WorkCardData
-  child: ConversationSummary | undefined
-  info: SubtasksInfo | undefined
-  state: WorkState
-  report: ReturnType<typeof currentReport>
-  activity: string | undefined
-  /** Sa branche contre sa base (fiche 264) ; `null` : rien à dire ; absent : sa dernière réponse. */
-  changes: WorkChanges | null | undefined
-}) {
-  const { t } = useTranslation()
-  const now = useNow(state === 'running')
-  const agent = card.role ? undefined : workAgent(child, info)
-  const who = agent ? t('workCard.otherAgent', { agent }) : undefined
-  if (state === 'running') {
-    return (
-      <>{[activity ?? t('workCard.working'), elapsedText(now - exchangeStart(card))].join(' · ')}</>
-    )
-  }
-  if (card.role?.readOnly) {
-    return <>{[who, t('workGroup.place.readOnly')].filter(Boolean).join(' · ')}</>
-  }
-  const branch = child?.branch ?? report?.branch ?? card.started?.branch
-  return (
-    <>
-      {who && <span>{who}</span>}
-      {branch && <Branch name={branch} />}
-      {changes !== null && (changes ?? report) && (
-        <FileStats report={(changes ?? report) as WorkChanges} />
-      )}
-      {!branch && !report && !who && t('workGroup.place.folder')}
-    </>
-  )
 }

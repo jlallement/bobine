@@ -28,6 +28,7 @@ import type { RoleBadge } from '@shared/roles'
 import type { TranscriptItem } from '@shared/transcript'
 import type { SubtasksInfo } from './Subtasks'
 import type { ChildrenMergeActions } from './SubtasksMerge'
+import { resetPlans } from './merge-plan-store'
 import { Transcript } from './Transcript'
 
 const render = (ui: ReactNode) => testingRender(ui, { wrapper: Tooltip.Provider })
@@ -146,13 +147,14 @@ const mergeItem = (
 })
 
 /** Ce que le main lit des branches : seulement celles demandées (`plan(motherId, ids)`). */
-function mergeActions(candidates: MergeCandidate[], running = false) {
+function mergeActions(candidates: MergeCandidate[], running = false, runId = 'run') {
   return {
     plan: vi.fn(async (_mother: string, ids?: string[]): Promise<ChildrenMergePlan> => ({
       base: 'main',
       children: candidates.filter((c) => !ids || ids.includes(c.id)),
       overlaps: [],
-      running
+      running,
+      ...(running ? { runId } : {})
     })),
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
@@ -282,11 +284,12 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
       ['a', 'running', '6'],
       ['b', 'replied', '7']
     ])
+    // Le titre seul en gras ; le rôle dans la méta, en texte gris séparé par « · » (revue UX).
     expect(within(rows[1] as HTMLElement).getByTestId('work-row-name').textContent).toBe(
-      'Développeur front — Travail b'
+      'Travail b'
     )
     expect(plain(within(rows[1] as HTMLElement).getByTestId('work-row-meta').textContent)).toBe(
-      'bobine/b2 fichiers +64 −0'
+      'Développeur front · bobine/b · 2 fichiers +64 −0'
     )
     // Sans rôle : l'agent qui le fait.
     expect(plain(within(rows[0] as HTMLElement).getByTestId('work-row-meta').textContent)).toMatch(
@@ -325,9 +328,11 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
         prompt: 'Ajoute un test',
         at: T0
       },
+      // Le message de l'agent ouvre un échange (revue QA) : sa réponse le ferme.
+      report(10, 'b', { at: T0 + 120_000 }),
       {
         kind: 'child-recommendation',
-        id: 10,
+        id: 11,
         childId: 'b',
         title: 'Page',
         ready: true,
@@ -354,7 +359,8 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     const items = [...working(), report(9, 'a')]
     view(items, info([child('a'), child('b', { role: front }), child('z')], { merge: actions }))
     const start = await screen.findByTestId('subtasks-merge-start')
-    expect(actions.plan).toHaveBeenCalledWith('mere', ['a', 'b'])
+    // Un seul plan lu pour la conversation (revue QA) ; la carte garde ses travaux (pas « z »).
+    expect(actions.plan.mock.calls).toEqual([['mere']])
     expect(start.textContent).toBe('Fusionner les 2 prêts dans main')
     fireEvent.click(start)
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false))
@@ -372,9 +378,9 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ]
     view(items, info([child('a'), child('b', { role: front })], { merge: actions }))
     const progress = await screen.findByTestId('subtasks-merge-progress')
-    expect(plain(progress.textContent)).toBe(
-      'Fusion dans main, l’un après l’autre : 1 sur 2 fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
-    )
+    // Court ; la phrase du conflit seulement s'il y en a un (revue UX).
+    expect(plain(progress.textContent)).toBe('Fusion dans main : 1 sur 2…')
+    expect(screen.queryByTestId('subtasks-merge-resolving')).toBeNull()
     expect(
       screen.getAllByTestId('subtask-merge-state').map((s) => [s.dataset['state'], s.textContent])
     ).toEqual([
@@ -383,7 +389,7 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ])
     expect(screen.getByTestId('work-group').contains(progress)).toBe(true)
     fireEvent.click(screen.getByTestId('subtasks-merge-stop'))
-    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere'))
+    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere', 'run'))
   })
 
   it('fusion finie dans la carte : le résultat, « fusionné » sur les lignes', async () => {
@@ -464,7 +470,7 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     const onReview = vi.fn()
     view(writer(), info([child('a', { role: front })], { merge: actions, onReview }))
     const start = await screen.findByTestId('work-merge-start')
-    expect(actions.plan).toHaveBeenCalledWith('mere', ['a'])
+    expect(actions.plan).toHaveBeenCalledWith('mere')
     expect(start.textContent).toBe('Fusionner dans main')
     fireEvent.click(screen.getByTestId('work-review'))
     expect(onReview).toHaveBeenCalledWith('a')
@@ -515,16 +521,17 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     expect(box.textContent).not.toMatch(/bougé|tests? de la branche|réussis/i)
     expect(screen.queryByTestId('work-merge-start')).toBeNull()
     fireEvent.click(within(box).getByTestId('work-merge-stop'))
-    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere'))
+    await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere', 'run'))
   })
 
-  it('conflit pendant la fusion : le travail le résout, dit tel quel', async () => {
-    const actions = mergeActions([candidate('a', 'ready')], true)
+  it('conflit pendant la fusion : le travail (occupé) le résout ; l’« Arrêter » de la fusion, pas du tour', async () => {
+    const actions = mergeActions([candidate('a', 'running')], true)
     view(
       writer([
         mergeItem(4, 'running', [{ childId: 'a', state: 'resolving', files: ['src/list.ts'] }])
       ]),
-      info([child('a', { role: front })], { merge: actions })
+      // Il résout : sa conversation travaille (revue QA, la carte se taisait).
+      info([child('a', { role: front, status: 'busy' })], { merge: actions })
     )
     const box = await screen.findByTestId('work-merge')
     expect(
@@ -532,6 +539,10 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
         .getAllByTestId('work-merge-step')
         .map((s) => plain(s.textContent))
     ).toEqual(['Conflit dans src/list.ts', 'Développeur front résout le conflit…'])
+    expect(within(box).getByTestId('work-merge-stop')).toBeTruthy()
+    expect(screen.queryByTestId('work-stop')).toBeNull()
+    expect(screen.queryByTestId('work-reply')).toBeNull()
+    expect(screen.queryByTestId('work-retry')).toBeNull()
   })
 
   it('fusionné : « Fusionné dans main · branche supprimée », conversation archivée dite', async () => {
@@ -583,6 +594,304 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     )
     const result = await screen.findByTestId('work-merge-result')
     expect(plain(result.textContent)).toBe('La fusion n’a pas abouti : base extraite ailleurs')
+  })
+})
+
+describe('revues UX et QA (fiche 264)', () => {
+  it('un seul plan lu pour la conversation, partagé par la carte de groupe et la carte seule', async () => {
+    const actions = mergeActions([
+      candidate('a', 'ready'),
+      candidate('b', 'ready'),
+      candidate('s', 'ready')
+    ])
+    view(
+      [
+        ...working(),
+        report(9, 'a'),
+        started(20, 's', 'k-seul', { by: undefined }),
+        report(21, 's')
+      ],
+      info([child('a'), child('b', { role: front }), child('s')], { merge: actions })
+    )
+    await screen.findByTestId('subtasks-merge-start')
+    await screen.findByTestId('work-merge-start')
+    expect(actions.plan).toHaveBeenCalledTimes(1)
+  })
+
+  it('conversation réaffichée : ses branches se relisent (commits faits ailleurs entre-temps)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'empty')])
+    const subtasks = info([child('a'), child('b', { role: front })], { merge: actions })
+    const items = [...working(), report(9, 'a')]
+    const first = view(items, subtasks)
+    expect((await screen.findByTestId('subtasks-merge-start')).textContent).toBe(
+      'Fusionner le travail prêt dans main'
+    )
+    first.unmount()
+    // Entre-temps, « b » a été commité dans son dossier de travail.
+    actions.plan.mockResolvedValue({
+      base: 'main',
+      children: [candidate('a', 'ready'), candidate('b', 'ready')],
+      overlaps: [],
+      running: false
+    })
+    view(items, subtasks)
+    await waitFor(() =>
+      expect(screen.getByTestId('subtasks-merge-start').textContent).toBe(
+        'Fusionner les 2 prêts dans main'
+      )
+    )
+    expect(actions.plan).toHaveBeenCalledTimes(2)
+  })
+
+  it('une autre fusion de la mère change : le plan est relu (clé de toutes les fusions)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    const subtasks = info([child('a'), child('b', { role: front })], { merge: actions })
+    const items = [...working(), report(9, 'a')]
+    const { rerender } = view(items, subtasks)
+    await screen.findByTestId('subtasks-merge-start')
+    expect(actions.plan).toHaveBeenCalledTimes(1)
+    rerender(
+      <Tooltip.Provider>
+        <Transcript
+          items={[
+            ...items,
+            mergeItem(30, 'done', [{ childId: 'z', state: 'merged' }], { runId: 'autre' })
+          ]}
+          onRespondPermission={vi.fn()}
+          onRespondElicitation={vi.fn()}
+          subtasks={subtasks}
+        />
+      </Tooltip.Provider>
+    )
+    await waitFor(() => expect(actions.plan).toHaveBeenCalledTimes(2))
+  })
+
+  it('la fusion d’une autre carte tourne : celle-ci n’est pas « en cours » (le plan dit laquelle)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')], true, 'autre')
+    view(
+      [
+        ...working(),
+        report(9, 'a'),
+        mergeItem(10, 'running', [{ childId: 'a', state: 'merging' }])
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    const result = await screen.findByTestId('subtasks-merge-result')
+    expect(result.dataset['status']).toBe('stopped')
+    expect(screen.queryByTestId('subtasks-merge-progress')).toBeNull()
+  })
+
+  it('ligne dont la fusion avance : ni « Répondre » ni « Relancer » (revue QA)', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')], true)
+    view(
+      [
+        ...working(),
+        report(9, 'a'),
+        mergeItem(10, 'running', [
+          { childId: 'a', state: 'merged' },
+          { childId: 'b', state: 'merging' }
+        ])
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    await screen.findByTestId('subtasks-merge-progress')
+    const row = screen.getAllByTestId('work-row')[1] as HTMLElement
+    fireEvent.click(within(row).getByTestId('work-row-toggle'))
+    expect(within(row).getByTestId('work-card')).toBeTruthy()
+    expect(within(row).queryByTestId('work-reply')).toBeNull()
+    expect(within(row).queryByTestId('work-retry')).toBeNull()
+  })
+
+  it('pied : transmission en tête, « Puis nettoyer » en case avant le bouton, « Voir les modifications »', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    const onShowChanges = vi.fn()
+    view(
+      [...working(), report(9, 'a')],
+      info([child('a'), child('b', { role: front })], { merge: actions, onShowChanges })
+    )
+    await screen.findByTestId('subtasks-merge-start')
+    const foot = screen.getByTestId('work-group-merge')
+    expect(plain(within(foot).getByTestId('work-group-relay').textContent)).toContain(
+      'Réponses pas encore transmises à OpenCode'
+    )
+    const cleanup = within(foot).getByTestId('subtasks-merge-cleanup') as HTMLInputElement
+    expect(cleanup.type).toBe('checkbox')
+    expect(cleanup.closest('label')?.textContent).toBe(
+      'Puis nettoyer (archiver, supprimer les branches)'
+    )
+    const actionsRow = foot.querySelector('.subtasks-merge-actions') as HTMLElement
+    expect(actionsRow.firstElementChild?.contains(cleanup)).toBe(true)
+    fireEvent.click(cleanup)
+    fireEvent.click(screen.getByTestId('subtasks-merge-start'))
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], true))
+    fireEvent.click(within(foot).getByTestId('work-group-changes'))
+    expect(onShowChanges).toHaveBeenCalled()
+  })
+
+  it('une colonne d’état : « fusionné » seul remplace « a répondu » ; « Recommandé » neutre', async () => {
+    const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
+    view(
+      [
+        ...working(),
+        report(9, 'a'),
+        {
+          kind: 'child-recommendation',
+          id: 10,
+          childId: 'b',
+          title: 'Page',
+          ready: true,
+          note: 'Relue.',
+          at: T0
+        },
+        mergeItem(11, 'done', [{ childId: 'a', state: 'merged', cleaned: true }], { endedAt: T0 })
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    await screen.findByTestId('subtask-merge-state')
+    const [a, b] = screen.getAllByTestId('work-row-state')
+    expect(a?.textContent).toBe('fusionné')
+    const pill = within(b as HTMLElement).getByTestId('subtask-recommendation')
+    expect(pill.classList.contains('neutral')).toBe(true)
+    expect(pill.querySelector('svg')).toBeNull()
+    // Sa note reste lisible sans survol (revue QA).
+    expect(plain(pill.textContent)).toBe('Recommandé — Relue.')
+    expect(b?.textContent).not.toContain('a répondu')
+  })
+
+  it('branche vide : « rien à fusionner », pas de bouton ; une branche lue dit d’où elle part', async () => {
+    const empty = mergeActions([{ ...candidate('a', 'empty'), files: [], added: 0, removed: 0 }])
+    const { unmount } = view(
+      [
+        {
+          kind: 'role-request',
+          id: 1,
+          requestId: 'd1',
+          text: 'Tri',
+          works: [{ childId: 'a', role: front }],
+          at: T0
+        },
+        started(2, 'a', '', { role: front, request: 'd1', by: undefined, card: undefined }),
+        report(3, 'a', { branch: 'bobine/a' })
+      ],
+      info([child('a', { role: front })], { merge: empty })
+    )
+    await waitFor(() =>
+      expect(plain(screen.getByTestId('work-changes').textContent)).toBe('bobine/arien à fusionner')
+    )
+    expect(screen.queryByTestId('work-merge-start')).toBeNull()
+    unmount()
+    resetPlans()
+    const ready = mergeActions([
+      { ...candidate('a', 'ready'), files: ['a.ts'], added: 3, removed: 1, from: 'a3f2c1e' }
+    ])
+    view(
+      [
+        {
+          kind: 'role-request',
+          id: 1,
+          requestId: 'd1',
+          text: 'Tri',
+          works: [{ childId: 'a', role: front }],
+          at: T0
+        },
+        started(2, 'a', '', { role: front, request: 'd1', by: undefined, card: undefined }),
+        report(3, 'a', { branch: 'bobine/a' })
+      ],
+      info([child('a', { role: front })], { merge: ready })
+    )
+    await screen.findByTestId('work-merge-start')
+    expect(plain(screen.getByTestId('work-changes').textContent)).toBe(
+      'bobine/a1 fichier +3 −1part de main a3f2c1e'
+    )
+  })
+
+  it('modifications non commitées dans sa branche : dites, la fusion ne les prendra pas', async () => {
+    const actions = mergeActions([
+      { ...candidate('a', 'dirty'), files: [], dirty: 2, added: 0, removed: 0 }
+    ])
+    view(
+      [
+        {
+          kind: 'role-request',
+          id: 1,
+          requestId: 'd1',
+          text: 'Tri',
+          works: [{ childId: 'a', role: front }],
+          at: T0
+        },
+        started(2, 'a', '', { role: front, request: 'd1', by: undefined, card: undefined }),
+        report(3, 'a', { branch: 'bobine/a' })
+      ],
+      info([child('a', { role: front })], { merge: actions })
+    )
+    await waitFor(() =>
+      expect(plain(screen.getByTestId('work-changes').textContent)).toContain(
+        '2 modifications non commitées'
+      )
+    )
+    expect(screen.queryByTestId('work-merge-start')).toBeNull()
+    expect(screen.getByTestId('work-changes').textContent).not.toContain('rien modifié')
+  })
+
+  it('lancement refusé (appel caché derrière la carte) : « pas lancé », la raison en infobulle', async () => {
+    const accepted = proposal(2, 'API', 'k-api') as Extract<TranscriptItem, { kind: 'elicitation' }>
+    const items: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Découpe' },
+      {
+        kind: 'tool',
+        id: 3,
+        toolCallId: 'c1',
+        title: 'start_child',
+        status: 'failed',
+        content: [{ type: 'content', content: { type: 'text', text: 'Could not start: git lock' } }]
+      } as unknown as TranscriptItem,
+      { ...accepted, prompt: { ...accepted.prompt, toolCallId: 'c1' } } as TranscriptItem
+    ]
+    view(items, info([]))
+    await act(async () => {})
+    const state = screen.getByTestId('proposal-state')
+    expect(state.textContent).toBe('pas lancé')
+    expect(state.getAttribute('title')).toBe('Could not start: git lock')
+  })
+
+  it('fusionné seul : « commit <sha> · N fichiers », « Voir les modifications » reste', async () => {
+    const actions = mergeActions([])
+    view(
+      [
+        {
+          kind: 'role-request',
+          id: 1,
+          requestId: 'd1',
+          text: 'Tri',
+          works: [{ childId: 'a', role: front }],
+          at: T0
+        },
+        started(2, 'a', '', { role: front, request: 'd1', by: undefined, card: undefined }),
+        report(3, 'a', { branch: 'bobine/a' }),
+        mergeItem(
+          4,
+          'done',
+          [
+            {
+              childId: 'a',
+              state: 'merged',
+              cleaned: true,
+              commit: '7c41e9b',
+              fileCount: 4,
+              added: 115,
+              removed: 64
+            }
+          ],
+          { cleanup: true, endedAt: T0 }
+        )
+      ],
+      info([withoutBranch(child('a', { role: front, archived: true }))], { merge: actions })
+    )
+    expect(plain((await screen.findByTestId('work-merge-commit')).textContent)).toBe(
+      'commit 7c41e9b · 4 fichiers +115 −64'
+    )
+    fireEvent.click(screen.getByTestId('work-changes-open'))
+    expect(actions.openGit).toHaveBeenCalledWith('a')
   })
 })
 

@@ -358,6 +358,20 @@ describe('cartes en attente (fiche 248)', () => {
     expect(formatState(shot)).toContain('  Fusion : 1 fusionné dans main en 3 s.')
   })
 
+  it('fusion en cours dans une carte : `attendre` attend ; une carte dépliée n’est pas un travail de plus', () => {
+    const shot =
+      read(`<div data-testid="thread"><div class="work-group" data-testid="work-group" data-pending="0">
+      <strong data-testid="work-group-title">1 travail</strong>
+      <div data-testid="work-row" data-state="replied"><span data-testid="work-row-name">API</span>
+        <div class="work-card in-group" data-testid="work-card" data-state="replied"><div data-testid="work-body">Fait.</div></div>
+      </div>
+      <div class="work-group-merge"><div class="subtasks-merge" data-testid="subtasks-merge" data-status="running"><div data-testid="subtasks-merge-progress">Fusion dans main : 0 sur 1…</div></div></div>
+    </div></div>`)
+    expect(shot.works).toBeUndefined()
+    expect(shot.merging).toBe(true)
+    expect(busy(shot)).toBe(true)
+  })
+
   it('repondre vise la carte en attente, pas une carte de groupe décidée plus bas', async () => {
     const dom = makeDom(`<div id="root">${memoryCard}${proposals(0, decidedRow)}</div>`, MAIN_URL, {
       api: true

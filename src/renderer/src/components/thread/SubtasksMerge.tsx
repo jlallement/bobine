@@ -1,5 +1,5 @@
 import { Check, CircleExclamationPoint, GitMerge, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import { recommendedIds, type ChildVerdict } from '@shared/children'
@@ -20,6 +20,14 @@ import { translate } from '@shared/i18n/message'
 import type { TranscriptItem } from '@shared/transcript'
 import type { StashOutcome } from '@shared/worktree-cycle'
 import { lastMergeFor } from '@shared/work-groups'
+import {
+  forgetPlans,
+  loadPlan,
+  planFor,
+  plansVersion,
+  readPlan,
+  subscribePlans
+} from './merge-plan-store'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard, stashSentence } from '../panel/MainDirtyCard'
 
@@ -36,7 +44,8 @@ export interface ChildrenMergeActions {
   plan: (motherId: string, ids?: string[]) => Promise<ChildrenMergePlan>
   /** `stash` : « Mettre de côté » le dossier principal le temps de la fusion (fiche 123). */
   start: (motherId: string, ids: string[], cleanup: boolean, stash?: true) => Promise<unknown>
-  stop: (motherId: string) => Promise<unknown>
+  /** `runId` : la fusion de cette carte seulement (fiche 264). */
+  stop: (motherId: string, runId?: string) => Promise<unknown>
   /** « Committer d'abord » : ces fichiers, dans le dossier principal (fiche 123). */
   commitMain: (motherId: string, request: { message: string; files: string[] }) => Promise<unknown>
   /** « Abandonner » : `git merge --abort` dans la fille (fiche 110). */
@@ -67,10 +76,12 @@ export interface ChildrenMergeState {
 }
 
 /**
- * Lit les branches des filles quand leur état change, ou celui de la fusion : une fille qui
- * finit, une fusion qui avance. Pas à chaque évènement du fil (la mère qui écrit ne compte pas).
- * `ids` (fiche 264) : une carte de groupe ou de travail ne lit que ses branches, et ne montre que
- * la dernière fusion qui touche ses travaux ; absent : toutes (« Sous-tâches »).
+ * Lit les branches des filles quand leur état change, ou celui d'une fusion : une fille qui finit,
+ * une fusion qui avance. Pas à chaque évènement du fil (la mère qui écrit ne compte pas). Une seule
+ * lecture par mère et par état, partagée par toutes les cartes (`merge-plan-store`, fiche 264) ; la
+ * clé compte toutes les fusions de la mère, pas seulement celle de la carte (revue QA).
+ * `ids` (fiche 264) : une carte de groupe ou de travail ne garde que ses travaux, dans l'ordre de ses
+ * lignes, et ne montre que la dernière fusion qui les touche ; absent : toutes (« Sous-tâches »).
  */
 export function useChildrenMerge(
   motherId: string | undefined,
@@ -82,39 +93,43 @@ export function useChildrenMerge(
   const idsKey = ids?.join(',')
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `idsKey` résume `ids`, recréé à chaque rendu
   const last = useMemo(() => lastMergeFor(items, ids), [items, idsKey])
-  const [read, setRead] = useState<{
-    motherId: string
-    key: string
-    plan: ChildrenMergePlan
-  }>()
-  const [round, setRound] = useState(0)
-  const refresh = useCallback(() => setRound((n) => n + 1), [])
+  const merges = useMemo(
+    () =>
+      items
+        .flatMap((i) =>
+          i.kind === 'children-merge'
+            ? [`${i.runId}:${i.status}:${i.rows.map((r) => r.state).join(',')}`]
+            : []
+        )
+        .join(';'),
+    [items]
+  )
   const key = [
     ...children.map(({ child, state }) => `${child.id}:${state}:${child.branch ?? ''}`),
-    last ? `${last.runId}:${last.status}:${last.rows.map((r) => r.state).join(',')}` : '',
-    idsKey ?? '*',
-    round
+    merges
   ].join('|')
+  const active = !!motherId && !!actions && !(ids && ids.length === 0)
+  // Chaque lecture faite (ou demandée, `refresh`) : relu si l'état est à relire, sinon rien.
+  const version = useSyncExternalStore(subscribePlans, plansVersion)
   useEffect(() => {
-    if (!motherId || !actions) return
-    // Carte sans travail lancé : rien à lire.
-    if (ids && ids.length === 0) return
-    let current = true
-    ;(ids ? actions.plan(motherId, [...ids]) : actions.plan(motherId)).then(
-      (plan) => current && setRead({ motherId, key, plan }),
-      // Branches illisibles : pas de pied de carte.
-      () => current && setRead(undefined)
-    )
-    return () => {
-      current = false
-    }
+    if (!active || !motherId || !actions) return
+    loadPlan(motherId, key, (id) => actions.plan(id))
     // `key` résume ce qui change le plan ; `actions` est recréé à chaque rendu de l'app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [motherId, key])
-  const plan = motherId && actions && read?.motherId === motherId ? read.plan : undefined
-  // Une lecture d'avant le départ ne prouve pas que la fusion vient d'être interrompue.
-  // Seul un plan lu pour cette conversation et cet état peut constater l'arrêt au redémarrage.
-  const merge = last && plan && read?.key === key ? settledMerge(last, plan.running) : last
+  }, [active, motherId, key, version])
+  const refresh = useCallback(() => {
+    if (motherId) forgetPlans(motherId)
+  }, [motherId])
+  const read = active && motherId ? readPlan(motherId, key) : undefined
+  const full = read?.plan
+  const plan = full && ids ? planFor(full, ids) : full
+  // Une lecture d'avant le départ ne prouve pas que la fusion vient d'être interrompue : seul un
+  // plan lu pour cet état constate l'arrêt au redémarrage. Une fusion d'une autre carte qui tourne
+  // ne rend pas celle-ci « en cours » (le plan dit laquelle tourne, revue QA).
+  const merge =
+    last && plan && read?.exact
+      ? settledMerge(last, plan.running && (plan.runId === undefined || plan.runId === last.runId))
+      : last
   return { ...(merge ? { merge } : {}), ...(plan ? { plan } : {}), refresh }
 }
 
@@ -310,7 +325,7 @@ export function SubtasksMergeFooter({
       <MergeProgress
         merge={merge}
         vocabulary={vocabulary}
-        onStop={() => void run(() => actions.stop(motherId))}
+        onStop={() => void run(() => actions.stop(motherId, merge.runId))}
       >
         {errorLine}
       </MergeProgress>
@@ -325,7 +340,19 @@ export function SubtasksMergeFooter({
   const sentences = plan ? mergeSummary(plan, titles) : []
   if (!merge && sentences.length === 0) return null
   const { ids, others, advised } = mergeChoice(ready, verdicts)
-  const cleanupToggle = (
+  // Carte de groupe (revue UX) : une vraie case, avant le bouton principal, qui dit ce qu'elle fait.
+  const cleanupToggle = works ? (
+    <label className="merge-cleanup-check" title={t('childrenMerge.cleanupHint')}>
+      <input
+        type="checkbox"
+        checked={cleanup}
+        disabled={busy || ids.length === 0}
+        onChange={(e) => setCleanup(e.target.checked)}
+        data-testid="subtasks-merge-cleanup"
+      />
+      {t('workGroup.merge.cleanup')}
+    </label>
+  ) : (
     <button
       className={`btn small merge-cleanup${cleanup ? ' on' : ''}`}
       aria-pressed={cleanup}
@@ -478,6 +505,7 @@ function MergeButtons({
           })}
         </span>
         <div className="subtasks-merge-actions">
+          {vocabulary === 'works' && children}
           <button
             className="btn small ghost"
             onClick={() => setConfirming(false)}
@@ -497,13 +525,14 @@ function MergeButtons({
             <GitMerge size={13} />
             {t(texts.confirmAction, { count: all.length })}
           </button>
-          {children}
+          {vocabulary !== 'works' && children}
         </div>
       </div>
     )
   }
   return (
     <div className="subtasks-merge-actions">
+      {vocabulary === 'works' && children}
       {others.length > 0 && (
         <button
           className="btn small"
@@ -527,7 +556,7 @@ function MergeButtons({
             : t(texts.action, { count: ids.length, base })}
         </button>
       )}
-      {children}
+      {vocabulary !== 'works' && children}
     </div>
   )
 }
@@ -559,6 +588,12 @@ function MergeProgress({
               base: merge.base
             })}
       </div>
+      {/* Carte de groupe (revue UX) : la phrase du conflit seulement quand il y en a un. */}
+      {vocabulary === 'works' && merge.rows.some((r) => r.state === 'resolving') && (
+        <div className="subtasks-merge-text" data-testid="subtasks-merge-resolving">
+          {t('workGroup.merge.resolving')}
+        </div>
+      )}
       {merge.stash?.state === 'kept' && (
         <div className="subtasks-merge-text muted" data-testid="subtasks-merge-stash">
           {t('childrenMerge.stashKept', { count: merge.stash.count })}

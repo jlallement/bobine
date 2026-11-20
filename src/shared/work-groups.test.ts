@@ -215,6 +215,67 @@ describe('workLayout (fiche 264)', () => {
   })
 })
 
+describe('workLayout : revues (fiche 264)', () => {
+  it('clé de proposition en double (fil abîmé) : une seule ligne porte le travail', () => {
+    const items = [
+      proposal(1, 'API', 'k', 'accept'),
+      proposal(2, 'API bis', 'k', 'accept'),
+      started(3, 'a', { card: 'k' })
+    ]
+    expect(
+      workLayout(items)
+        .groups.get(1)
+        ?.rows.map((r) => r.work?.childId)
+    ).toEqual(['a', undefined])
+  })
+
+  it('un message de l’agent ouvre un échange : la réponse d’un tour commencé avant se range avant lui', () => {
+    const items: TranscriptItem[] = [
+      proposal(1, 'API', 'k', 'accept'),
+      started(2, 'a', { card: 'k' }),
+      { kind: 'child-instruction', id: 3, childId: 'a', title: 'API', prompt: 'Encore', at: 30 },
+      { ...report(4, 'a'), askedAt: 10 } as TranscriptItem
+    ]
+    const work = workLayout(items).groups.get(1)?.rows[0]?.work
+    expect(work?.steps.map((s) => s.kind)).toEqual(['report', 'note'])
+  })
+
+  it('recommandations et dernière fusion de chaque travail, lues une fois', () => {
+    const items: TranscriptItem[] = [
+      merge(1, 'r1', ['a']),
+      merge(2, 'r2', ['b']),
+      {
+        kind: 'child-recommendation',
+        id: 3,
+        childId: 'a',
+        title: 'A',
+        ready: true,
+        note: 'ok',
+        at: 3
+      }
+    ]
+    const layout = workLayout(items)
+    expect(layout.merges.get('a')?.runId).toBe('r1')
+    expect(layout.merges.get('b')?.runId).toBe('r2')
+    expect(layout.verdicts.get('a')).toMatchObject({ ready: true, note: 'ok', stale: false })
+  })
+})
+
+describe('ordre des lignes (fiche 264, revue UX)', () => {
+  it('les travaux lancés dans l’ordre de leur lancement, les autres lignes à leur place', () => {
+    const items = [
+      proposal(1, 'A', 'ka', 'accept'),
+      proposal(2, 'B', 'kb', 'decline'),
+      proposal(3, 'C', 'kc', 'accept'),
+      started(4, 'c', { card: 'kc' }),
+      started(5, 'a', { card: 'ka' })
+    ]
+    const group = workLayout(items).groups.get(1)
+    expect(group?.rows.map((r) => r.work?.childId ?? r.key)).toEqual(['c', 'r2', 'a'])
+    expect(group && groupWorkIds(group)).toEqual(['c', 'a'])
+  })
+})
+
 describe('lastMergeFor (fiche 264)', () => {
   const items = [merge(1, 'r1', ['a']), merge(2, 'r2', ['b', 'c']), merge(3, 'r3', ['x'])]
 

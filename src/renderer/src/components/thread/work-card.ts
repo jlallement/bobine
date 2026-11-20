@@ -62,7 +62,7 @@ export function workState(
     if (report) return outcomeState(report)
     if (state === 'error' || state === 'stopped') return state
     const last = card.steps.at(-1)
-    const asked = last?.kind === 'ask' ? last.item.at : card.askedAt
+    const asked = last && last.kind !== 'report' ? last.item.at : card.askedAt
     if (now - asked < SENDING_GRACE_MS) return 'running'
     // Au repos sans réponse posée : retenue pendant que la mère répond, ou jamais venue.
     return context.motherBusy ? 'pending' : 'silent'
@@ -75,10 +75,13 @@ function outcomeState(report: Report): WorkState {
   return report.outcome === 'done' ? 'replied' : report.outcome
 }
 
-/** Heure de la demande en cours : la dernière bulle de suite, sinon celle qui a lancé le travail. */
+/**
+ * Heure de la demande en cours : la dernière bulle de suite ou le dernier message de l'agent au
+ * travail (`message_child`, fiche 264), sinon la demande qui l'a lancé.
+ */
 export function exchangeStart(card: WorkCardData): number {
-  const ask = card.steps.findLast((s) => s.kind === 'ask')
-  return ask?.kind === 'ask' ? ask.item.at : card.askedAt
+  const ask = card.steps.findLast((s) => s.kind !== 'report')
+  return ask ? ask.item.at : card.askedAt
 }
 
 /**
@@ -139,8 +142,8 @@ export function answerText(report: Report): string {
 /** Début de l'échange qui a donné cette réponse : la bulle de suite d'avant, sinon la demande. */
 export function stepStart(card: WorkCardData, report: Report): number {
   const index = card.steps.findIndex((s) => s.kind === 'report' && s.item.id === report.id)
-  const ask = card.steps.slice(0, Math.max(0, index)).findLast((s) => s.kind === 'ask')
-  return ask?.kind === 'ask' ? ask.item.at : card.askedAt
+  const ask = card.steps.slice(0, Math.max(0, index)).findLast((s) => s.kind !== 'report')
+  return ask ? ask.item.at : card.askedAt
 }
 
 /** La réponse d'avant celle-ci, dans la carte (son coût cumulé se retranche). */
@@ -192,8 +195,17 @@ export function answerTitle(text: string): string | undefined {
   return bare.trim() || undefined
 }
 
-/** Fichiers et lignes d'un travail, comme `FileStats` les montre. */
-export type WorkChanges = Pick<Report, 'fileCount' | 'added' | 'removed'>
+/**
+ * Fichiers et lignes d'un travail, comme `FileStats` les montre ; lus sur sa branche (fiche 264) :
+ * son départ (`from`, sur `base`) et `empty` quand elle n'apporte rien.
+ */
+export type WorkChanges = Pick<Report, 'fileCount' | 'added' | 'removed'> & {
+  from?: string
+  base?: string
+  empty?: true
+  /** Modifications non commitées dans sa branche : la fusion ne les prend pas (à committer). */
+  dirty?: number
+}
 
 /**
  * Ce que la fusion d'un travail apportera (fiche 264) : sa branche contre sa base, lue par le main
@@ -211,5 +223,12 @@ export function branchChanges(
   const candidate = plan.children.find((c) => c.id === childId)
   if (!candidate || candidate.state === 'merged') return null
   if (candidate.added === undefined || candidate.removed === undefined) return undefined
-  return { fileCount: candidate.files.length, added: candidate.added, removed: candidate.removed }
+  return {
+    fileCount: candidate.files.length,
+    added: candidate.added,
+    removed: candidate.removed,
+    ...(candidate.from ? { from: candidate.from, base: candidate.base } : {}),
+    ...(candidate.state === 'empty' ? { empty: true as const } : {}),
+    ...(candidate.dirty > 0 ? { dirty: candidate.dirty } : {})
+  }
 }

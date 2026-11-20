@@ -1,5 +1,5 @@
-import { ChevronRight, Eye, EyeOff, FolderGit2, Pencil, TriangleAlert } from 'lucide-react'
-import { forwardRef, useEffect, useRef, useState } from 'react'
+import { ChevronRight, Eye, EyeOff, Pencil, TriangleAlert } from 'lucide-react'
+import { forwardRef, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { ChildState } from '@shared/children'
@@ -234,9 +234,10 @@ export function RoleSubtaskHead({
 const HIDDEN_SCOPES: readonly RoleScope[] = ['user', 'builtin']
 
 /**
- * Le rôle d'une proposition de l'agent (maquette 03-3), figé à la carte : ce qu'il pourra faire
- * (lecture seule garantie ou demandée, ou il écrit du code), son mode, et un rôle du projet qui en
- * remplace un autre du même nom.
+ * Méta d'une proposition de l'agent (maquette 03-3, fiche 264, revue UX) : une seule ligne de texte
+ * gris séparée par « · » — son rôle, ce qu'il pourra faire (lecture seule garantie ou demandée,
+ * écrit dans sa branche ou dans ce dossier), son mode, un rôle du projet, l'agent — et, à part, un
+ * rôle du projet qui en remplace un autre du même nom. Sans rôle : la même ligne, sans lui.
  */
 export function ProposalRoleMeta({
   role,
@@ -244,35 +245,59 @@ export function ProposalRoleMeta({
   agentLabel,
   inFolder = false
 }: {
-  role: RoleSnapshot
+  role: RoleSnapshot | undefined
   profile: Pick<ProfileSummary, 'writesWithoutAsking'> | undefined
   agentLabel: string | undefined
-  /** Dépôt sans commit (fiche 262) : un rôle qui écrit travaille aussi dans ce dossier. */
+  /** Dépôt sans commit (fiche 262) : un travail qui écrit travaille aussi dans ce dossier. */
   inFolder?: boolean
 }) {
   const { t } = useTranslation()
-  const hidden = HIDDEN_SCOPES.filter((s) => role.hides?.includes(s))
+  const hidden = HIDDEN_SCOPES.filter((s) => role?.hides?.includes(s))
+  const level = readOnlyShown(role?.readOnly, profile)
+  const parts: ReactNode[] = [
+    ...(role ? [<span key="role">{role.label}</span>] : []),
+    <span
+      key="place"
+      data-testid={level ? 'role-read-only' : 'proposal-place'}
+      {...(level ? { 'data-level': level } : {})}
+    >
+      {t(
+        level === 'requested'
+          ? 'workGroup.place.readOnlyRequested'
+          : level
+            ? 'workGroup.place.readOnly'
+            : inFolder
+              ? 'workGroup.place.folder'
+              : 'workGroup.place.branch'
+      )}
+    </span>,
+    ...(role?.mode
+      ? [
+          <span key="mode" data-testid="proposal-role-mode">
+            {t('workGroup.place.mode', { mode: role.mode })}
+          </span>
+        ]
+      : []),
+    ...(role?.scope === 'project'
+      ? [
+          <span key="project" data-testid="proposal-role-project">
+            {t('workGroup.place.project')}
+          </span>
+        ]
+      : []),
+    ...(agentLabel ? [<span key="agent">{agentLabel}</span>] : [])
+  ]
   return (
-    <div className="proposal-role" data-testid="proposal-role" data-role={role.name}>
-      <RoleReadOnlyTag level={readOnlyShown(role.readOnly, profile)} writes />
-      {role.mode && (
-        <span className="role-tag" data-testid="proposal-role-mode">
-          {t('roleWork.mode', { mode: role.mode })}
-        </span>
-      )}
-      <span className="role-tag" data-testid="proposal-role-where">
-        {t(role.readOnly || inFolder ? 'roleWork.where.sameFolder' : 'roleWork.where.worktree')}
-      </span>
-      {agentLabel && <span className="role-tag plain">{agentLabel}</span>}
-      {role.scope === 'project' && (
-        <span className="role-tag" data-testid="proposal-role-project">
-          <FolderGit2 size={12} />
-          {t('roleWork.menu.project')}
-        </span>
-      )}
+    <div className="proposal-role proposal-meta" data-testid="proposal-role" data-role={role?.name}>
+      {parts.map((part, i) => (
+        <Fragment key={i}>
+          {i > 0 && <span aria-hidden> · </span>}
+          {part}
+        </Fragment>
+      ))}
       {hidden.length > 0 && (
-        <span className="role-tag warn" role="note" data-testid="proposal-role-hides">
-          <TriangleAlert size={12} />
+        <span className="proposal-meta-warn" role="note" data-testid="proposal-role-hides">
+          <TriangleAlert size={12} aria-hidden />
           {t('roleWork.hides', {
             scopes: hidden.map((s) => t(`roleWork.scope.${s}`)).join(', ')
           })}

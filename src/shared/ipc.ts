@@ -668,7 +668,7 @@ export interface IpcInvokeContract
     result: CommitOutcome
   }
   /** « Arrêter » : la fusion en cours finit, les autres filles restent en attente. */
-  'children:mergeStop': { args: [motherId: string]; result: undefined }
+  'children:mergeStop': { args: [motherId: string, runId?: string]; result: undefined }
   /**
    * Aparté (fiche 180) : question posée au même agent dans une session à part, hors du fil ; la
    * réponse suit par `aside:changed`. `aside:view` : l'aparté ouvert de cette conversation.

@@ -322,6 +322,70 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(existsSync(join(env.root, 'a.txt'))).toBe(true)
   })
 
+  it('nettoyage : jamais de travail détruit — branche qui a bougé ou dossier modifié depuis la fusion (fiche 264)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'a.txt', 'a\n')
+    env.commit(b, 'b.txt', 'b\n')
+    // Pendant la chaîne, juste après leur fusion : A reçoit un commit, B une modification.
+    const touched = new Set<string>()
+    env.options.onPost = (merge) => {
+      for (const row of merge.rows) {
+        if (row.state !== 'merged' || touched.has(row.childId)) continue
+        touched.add(row.childId)
+        if (row.childId === 'f1') env.commit(a, 'apres.txt', 'après la fusion\n')
+        else writeFileSync(join(b.worktree.path, 'brouillon.txt'), 'en cours\n')
+      }
+    }
+    await env.merger.start('mere', ['f1', 'f2'], true)
+    await env.merger.settled('mere')
+    const done = last(env.merges)
+    expect(states(done)).toEqual(['merged', 'merged'])
+    expect(done.rows.map((r) => r.cleaned ?? false)).toEqual([false, false])
+    expect(done.rows.every((r) => r.error?.includes('pas nettoyé'))).toBe(true)
+    // Rien de supprimé : dossiers, branches, le commit d'après et la modification sont là.
+    expect(env.left).toEqual([])
+    expect(existsSync(join(a.worktree.path, 'apres.txt'))).toBe(true)
+    expect(existsSync(join(b.worktree.path, 'brouillon.txt'))).toBe(true)
+    expect(git(env.root, 'branch', '--list', a.worktree.branch)).not.toBe('')
+    // Ce que la fusion a apporté et le commit de la base, retenus sur la ligne.
+    expect(done.rows[0]).toMatchObject({ fileCount: 1, added: 1, removed: 0 })
+    // A est entrée en avance rapide : la base était alors au bout de sa branche.
+    const atMerge = git(env.root, 'log', '--format=%H', '-1', '--grep', 'feat: a.txt', 'main')
+    expect(atMerge.startsWith(done.rows[0]?.commit ?? '-')).toBe(true)
+  })
+
+  it('travail au travail ou qui attend un accord : la fusion le refuse (fiche 264)', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    a.status = 'busy'
+    await expect(env.merger.start('mere', ['f1'], true)).rejects.toThrow('travaille encore')
+    expect(env.merges).toEqual([])
+  })
+
+  it('« Arrêter » d’une autre carte : sans effet ; le plan dit quelle fusion tourne (fiche 264)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'a.txt', 'a\n')
+    env.commit(b, 'b.txt', 'b\n')
+    let runId = ''
+    let stoppedOther = false
+    env.options.onPost = (merge) => {
+      if (stoppedOther || merge.rows[0]?.state !== 'merging') return
+      stoppedOther = true
+      runId = merge.runId
+      env.merger.stop('mere', 'une-autre-fusion')
+    }
+    const first = await env.merger.start('mere', ['f1', 'f2'], false)
+    expect((await env.merger.plan('mere')).runId).toBe(first.runId)
+    await env.merger.settled('mere')
+    expect(runId).toBe(first.runId)
+    expect(env.merges.some((m) => m.status === 'stopping')).toBe(false)
+    expect(states(last(env.merges))).toEqual(['merged', 'merged'])
+    expect((await env.merger.plan('mere')).runId).toBeUndefined()
+  })
+
   it('fille avec des modifications non commitées : exclue du plan, sautée si demandée', async () => {
     const env = await setup(['A', 'B'])
     const [a, b] = env.children as [Child, Child]

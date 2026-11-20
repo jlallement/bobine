@@ -360,6 +360,46 @@ describe('propositions de filles (fiche 112)', () => {
       'call_8',
       'call_9'
     ])
+    // Même titre deux fois : une file, chaque carte le sien, dans l'ordre.
+    bridge.noteToolCall({
+      toolCallId: 'c10',
+      title: 'start_child',
+      rawInput: { title: 'X', prompt: 'p' }
+    })
+    bridge.noteToolCall({
+      toolCallId: 'c11',
+      title: 'start_child',
+      rawInput: { title: 'X', prompt: 'p' }
+    })
+    await tool?.call({ title: 'X', prompt: 'p' })
+    await tool?.call({ title: 'X', prompt: 'p' })
+    expect(prompts.slice(-2).map((p) => (p.mode === 'form' ? p.toolCallId : undefined))).toEqual([
+      'c10',
+      'c11'
+    ])
+    // Un appel refusé sans carte (plafond) sort de la file : la carte suivante ne s'y relie pas.
+    bridge.noteToolCall({
+      toolCallId: 'c12',
+      title: 'start_child',
+      rawInput: { title: 'Y', prompt: 'p' }
+    })
+    bridge.noteToolCallUpdate({ toolCallId: 'c12', status: 'failed' })
+    bridge.noteToolCall({
+      toolCallId: 'c13',
+      title: 'start_child',
+      rawInput: { title: 'Y', prompt: 'p' }
+    })
+    await tool?.call({ title: 'Y', prompt: 'p' })
+    expect(prompts.at(-1)).toMatchObject({ toolCallId: 'c13' })
+    // Fin du tour : la file se vide, une carte d'après n'est reliée à rien.
+    bridge.noteToolCall({
+      toolCallId: 'c14',
+      title: 'start_child',
+      rawInput: { title: 'Z', prompt: 'p' }
+    })
+    bridge.turnEnded()
+    await tool?.call({ title: 'Z', prompt: 'p' })
+    expect(prompts.at(-1)).not.toHaveProperty('toolCallId')
     // Aucune carte annoncée sous ce titre : pas de liaison.
     expect(prompts[1]).toMatchObject({ mode: 'form', message: 'Autre' })
     expect(prompts[1] && 'toolCallId' in prompts[1]).toBe(false)

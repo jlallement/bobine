@@ -19,8 +19,11 @@ export function threadSubtasks(
   merge: ChildrenMergeActions,
   send: (text: string, attachments?: [], options?: PromptRequest) => unknown,
   snapshot?: Pick<AgentSnapshot, 'status' | 'queued'> | null,
-  /** « Faire relire » d'un travail (fiche 264) : le dialogue de la relecture (fiche 177). */
-  onReview?: (childId: string) => void
+  /**
+   * Fiche 264 : « Faire relire » d'un travail (le dialogue de la relecture, fiche 177) ; « Voir les
+   * modifications » d'une carte de groupe (Modifications › Filles).
+   */
+  open?: { review: (childId: string) => void; changes: () => void }
 ): SubtasksInfo {
   const profiles = c.settings?.profiles ?? []
   const agentLabel = profiles.find((p) => p.id === c.activeSummary?.profileId)?.label
@@ -37,6 +40,6 @@ export function threadSubtasks(
     ...(snapshot?.queued.length ? { motherQueued: true } : {}),
     ...(agentLabel ? { agentLabel } : {}),
     onWarn: c.warn,
-    ...(onReview ? { onReview } : {})
+    ...(open ? { onReview: open.review, onShowChanges: open.changes } : {})
   }
 }

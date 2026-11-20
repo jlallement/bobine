@@ -67,8 +67,11 @@ export function childrenMergeHandlers(
         set?.stash === true
       )
     },
-    'children:mergeStop': (motherId) => {
-      available().stop(str(motherId, 'motherId'))
+    'children:mergeStop': (motherId, runId) => {
+      available().stop(
+        str(motherId, 'motherId'),
+        runId === undefined ? undefined : str(runId, 'runId')
+      )
       return undefined
     },
     'children:commitMain': (motherId, request) => {

@@ -249,14 +249,16 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
 
   it('badge, mode, lecture seule garantie, agent ; rôle du projet qui en remplace un autre', async () => {
     await show(snapshot())
-    expect(screen.getByTestId('proposal-title').textContent).toContain('Expert sécu — Audit')
+    // Le titre seul en gras ; le rôle dans la méta (revue UX de la fiche 264).
+    expect(screen.getByTestId('proposal-title').textContent).toBe('Audit')
     const meta = screen.getByTestId('proposal-role')
+    expect(meta.textContent?.startsWith('Expert sécu · ')).toBe(true)
+    expect(meta.textContent).not.toContain('worktree')
     expect(meta.querySelector('[data-testid=role-read-only]')?.textContent).toBe('lecture seule')
     expect(screen.getByTestId('proposal-role-mode').textContent).toBe('mode plan')
     expect(meta.textContent).toContain('Agent factice')
     expect(screen.getByTestId('proposal-role-hides').textContent).toContain('fourni')
-    // Lecture seule : dans le dossier de la mère, pas un worktree ; l'en-tête le dit aussi.
-    expect(screen.getByTestId('proposal-role-where').textContent).toBe('dans ce dossier')
+    // Lecture seule : dans le dossier de la mère ; le pied de la carte le dit.
     expect(screen.getByTestId('work-group-where').textContent).toBe(
       'Chaque rôle de conseil lit ce dossier sans rien modifier.'
     )
@@ -270,10 +272,9 @@ describe('proposition de l’agent avec un rôle (figé)', () => {
     expect(screen.queryByTestId('proposal-role-hides')).toBeNull()
   })
 
-  it('rôle qui écrit : « écrit du code »', async () => {
+  it('rôle qui écrit : « écrit dans sa branche »', async () => {
     await show(snapshot({ readOnly: false, hides: undefined }))
-    expect(screen.getByTestId('role-writes').textContent).toBe('écrit du code')
-    expect(screen.getByTestId('proposal-role-where').textContent).toBe('son worktree')
+    expect(screen.getByTestId('proposal-place').textContent).toBe('écrit dans sa branche')
     expect(screen.getByTestId('work-group-where').textContent).toContain(
       'Chaque travail part du dernier commit'
     )

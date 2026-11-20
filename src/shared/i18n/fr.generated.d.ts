@@ -3515,7 +3515,7 @@ export type FrResources = {
     readonly from: {
       readonly parent: 'De la conversation mère « {{title}} »'
       readonly child: 'De la conversation fille « {{title}} »'
-      readonly wake: 'Les conversations filles ont toutes fini : l’agent reprend avec leurs comptes rendus.'
+      readonly wake: 'Tous les travaux ont fini : l’agent reprend avec leurs réponses.'
       readonly merge: 'Consigne de la fusion lancée depuis « {{title}} »'
     }
     readonly leftBehind: {
@@ -3811,7 +3811,7 @@ export type FrResources = {
     readonly action_other: 'Fusionner les {{count}} dans {{base}}'
     readonly action_many: 'Fusionner les {{count}} dans {{base}}'
     readonly cleanup: 'Puis nettoyer'
-    readonly cleanupHint: 'Archiver chaque conversation fusionnée, puis supprimer son worktree et sa branche'
+    readonly cleanupHint: 'Archiver chaque conversation fusionnée, puis supprimer son dossier de travail et sa branche'
     readonly stop: 'Arrêter'
     readonly progress_one: 'Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faite. Au premier conflit, la fille concernée le résout, puis la fusion reprend.'
     readonly progress_other: 'Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faites. Au premier conflit, la fille concernée le résout, puis la fusion reprend.'
@@ -3824,9 +3824,9 @@ export type FrResources = {
       readonly upToDate_one: '{{count}} déjà à jour.'
       readonly upToDate_other: '{{count}} déjà à jour.'
       readonly upToDate_many: '{{count}} déjà à jour.'
-      readonly cleaned_one: 'Conversation archivée, worktree et branche supprimés.'
-      readonly cleaned_other: 'Conversations archivées, worktrees et branches supprimés.'
-      readonly cleaned_many: 'Conversations archivées, worktrees et branches supprimés.'
+      readonly cleaned_one: 'Conversation archivée, dossier de travail et branche supprimés.'
+      readonly cleaned_other: 'Conversations archivées, dossiers de travail et branches supprimés.'
+      readonly cleaned_many: 'Conversations archivées, dossiers de travail et branches supprimés.'
       readonly stopped_one: 'Fusion arrêtée : {{count}} fusionnée dans {{base}}, les autres restent en attente.'
       readonly stopped_other: 'Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.'
       readonly stopped_many: 'Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.'
@@ -3857,11 +3857,13 @@ export type FrResources = {
     readonly error: {
       readonly running: 'Une fusion des conversations filles est déjà en cours ici.'
       readonly none: 'Aucune conversation fille à fusionner.'
-      readonly gone: 'Une conversation fille a été supprimée, archivée ou n’est plus dans un worktree : relisez la carte « Sous-tâches ».'
+      readonly gone: 'Un travail a été supprimé, archivé ou n’est plus dans son dossier de travail : relisez la carte des travaux.'
       readonly prompt: 'la consigne de résolution n’a pas pu partir ({{error}})'
       readonly mainDirty_one: 'Le dossier principal a une modification non commitée ({{files}}) : committez-la ou mettez-la de côté avant de fusionner.'
       readonly mainDirty_other: 'Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.'
       readonly mainDirty_many: 'Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.'
+      readonly busy: '« {{title}} » travaille encore ou attend un accord : attendez qu’il ait fini pour le fusionner.'
+      readonly cleanupSkipped: 'Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.'
     }
     readonly stashKept_one: 'Votre modification est mise de côté le temps de la fusion.'
     readonly stashKept_other: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'
@@ -4674,6 +4676,10 @@ export type FrResources = {
     readonly review: 'Faire relire'
     readonly reviewLabel: 'Faire relire la branche de ce travail'
     readonly brief: 'Consigne du travail'
+    readonly from: 'part de {{base}} {{commit}}'
+    readonly dirty_one: '{{count}} modification non commitée'
+    readonly dirty_other: '{{count}} modifications non commitées'
+    readonly dirty_many: '{{count}} modifications non commitées'
   }
   readonly workCue: {
     readonly replied: 'a répondu'
@@ -5827,7 +5833,7 @@ export type FrResources = {
     readonly startAll: 'Tout lancer'
     readonly startAllLabel: 'Lancer chaque travail encore proposé, avec l’agent et le modèle choisis sur sa ligne'
     readonly whereWorktree: 'Chaque travail part du dernier commit, dans sa branche ; vos modifications non commitées restent ici.'
-    readonly whereMixed: 'Un rôle de conseil lit ce dossier sans rien modifier ; les autres travaux partent du dernier commit, dans leur branche.'
+    readonly whereMixed: 'Chaque travail qui écrit part du dernier commit ; vos modifications non commitées restent ici.'
     readonly whereReadOnly: 'Chaque rôle de conseil lit ce dossier sans rien modifier.'
     readonly whereHere: 'Pas encore de commit : chaque travail se fera dans ce dossier.'
     readonly keys: '↑ ↓ pour choisir une ligne, Entrée pour la lancer'
@@ -5835,11 +5841,15 @@ export type FrResources = {
       readonly readOnly: 'lecture seule'
       readonly branch: 'écrit dans sa branche'
       readonly folder: 'écrit dans ce dossier'
+      readonly readOnlyRequested: 'lecture seule demandée'
+      readonly mode: 'mode {{mode}}'
+      readonly project: 'rôle du projet'
     }
     readonly row: {
       readonly starting: 'démarre…'
       readonly toggle: 'Montrer ou cacher la réponse de « {{title}} »'
       readonly nothing: 'rien à fusionner'
+      readonly failed: 'pas lancé'
     }
     readonly state: {
       readonly running: 'en cours'
@@ -5872,9 +5882,9 @@ export type FrResources = {
         readonly only_many: 'L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.'
         readonly none: 'L’agent ne recommande encore aucun travail.'
       }
-      readonly progress_one: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
-      readonly progress_other: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
-      readonly progress_many: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
+      readonly progress_one: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
+      readonly progress_other: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
+      readonly progress_many: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
       readonly result: {
         readonly done_one: '{{count}} fusionné dans {{base}} en {{duration}}.'
         readonly done_other: '{{count}} fusionnés dans {{base}} en {{duration}}.'
@@ -5897,6 +5907,8 @@ export type FrResources = {
         readonly failed: 'échec'
         readonly cleaned: 'branche supprimée'
       }
+      readonly cleanup: 'Puis nettoyer (archiver, supprimer les branches)'
+      readonly resolving: 'Conflit : le travail concerné le résout, puis la fusion reprend.'
     }
     readonly outcome: {
       readonly start: 'Lancé'
@@ -5911,6 +5923,10 @@ export type FrResources = {
       readonly stale: 'À revoir'
       readonly staleHint: 'Le travail a refait un tour depuis cette recommandation.'
     }
+    readonly changes: 'Voir les modifications'
+    readonly relayPending: 'Réponses pas encore transmises à {{agent}} — elles le seront avec votre prochain message'
+    readonly relayPendingWake: 'Réponses pas encore transmises à {{agent}} — elles le seront quand ses travaux auront tous fini, ou avec votre prochain message'
+    readonly relayDone: 'Réponses transmises à {{agent}}'
   }
   readonly workMerge: {
     readonly action: 'Fusionner dans {{base}}'
@@ -5934,5 +5950,6 @@ export type FrResources = {
     readonly interrupted: 'Fusion interrompue par la fermeture de l’app.'
     readonly busy: 'Une autre fusion est en cours ici : ce travail pourra être fusionné ensuite.'
     readonly stateMerged: 'fusionné · {{time}}'
+    readonly commit: 'commit {{commit}}'
   }
 }

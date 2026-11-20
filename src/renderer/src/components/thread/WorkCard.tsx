@@ -9,10 +9,12 @@ import {
   Pencil,
   TriangleAlert
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
-import { childRecommendations, type ChildVerdict } from '@shared/children'
+import type { ChildVerdict } from '@shared/children'
+import { mergeActive } from '@shared/children-merge'
+import { useWorkFacts } from './work-layout-context'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { messageTime } from '../../time'
@@ -175,7 +177,8 @@ export function WorkCard({
   info,
   inGroup = false,
   plan,
-  merged = false
+  merged = false,
+  merging = false
 }: {
   card: WorkCardData
   items: readonly TranscriptItem[]
@@ -184,6 +187,8 @@ export function WorkCard({
   /** Dans un groupe : les branches lues par sa carte, et si ce travail a été fusionné (fiche 264). */
   plan?: ChildrenMergePlan | undefined
   merged?: boolean
+  /** Dans un groupe : sa fusion avance (ni « Répondre », ni « Relancer », ni « Arrêter » du tour). */
+  merging?: boolean
 }) {
   const { t } = useTranslation()
   const child = info?.children.find((c) => c.id === card.childId)
@@ -198,9 +203,19 @@ export function WorkCard({
   if (busy !== (state === 'running')) setBusy(state === 'running')
   const style = useRoleStyle(card.role?.color ?? AGENT_BADGE.color)
   const report = currentReport(card)
-  // Recommandation de fusion de l'agent (fiche 160) : sa seule mention, la pastille (fiche 264).
-  const verdict = useMemo(() => childRecommendations(items).get(card.childId), [items, card])
-  const merge = useWorkMerge(card, child, info, items, !inGroup && state !== 'running')
+  // Recommandation de fusion de l'agent (fiche 160) : sa seule mention, la pastille (fiche 264) ;
+  // lue dans le rangement du fil, une fois pour toutes les cartes (revue QA).
+  const facts = useWorkFacts(card.childId)
+  // Pendant la résolution d'un conflit, le travail « travaille » : sa fusion reste dite (revue QA).
+  const resolving = !!facts.merge && mergeActive(facts.merge)
+  const merge = useWorkMerge(
+    card,
+    child,
+    info,
+    items,
+    !inGroup && (state !== 'running' || resolving)
+  )
+  const mergeBusy = inGroup ? merging : !!merge?.active
   const agent = info?.agentLabel ?? t('workCard.mainAgent')
   const changes = cardChanges(card.childId, child, inGroup ? { plan, merged } : merge)
   return (
@@ -222,7 +237,7 @@ export function WorkCard({
           state={state}
           now={now}
           report={report}
-          verdict={verdict}
+          verdict={facts.verdict}
           merge={merge}
         />
       )}
@@ -234,10 +249,11 @@ export function WorkCard({
         state={state}
         agent={agent}
         changes={changes}
+        inGroup={inGroup}
       />
-      {(state === 'running' || state === 'waiting') && card.steps.at(-1)?.kind !== 'report' && (
-        <WorkLive childId={child?.id} state={state} />
-      )}
+      {(state === 'running' || state === 'waiting') &&
+        !mergeBusy &&
+        card.steps.at(-1)?.kind !== 'report' && <WorkLive childId={child?.id} state={state} />}
       {(state === 'pending' || state === 'silent') && (
         <div
           className="work-live work-waiting-answer"
@@ -257,6 +273,7 @@ export function WorkCard({
         state={state}
         report={report}
         items={items}
+        mergeBusy={mergeBusy}
         {...(merge ? { merge } : {})}
       />
     </div>

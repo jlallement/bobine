@@ -547,7 +547,7 @@ describe('carte « Tâches proposées » et dossier modifié (fiches 240, 262)',
       }
     } as Partial<ChildProposalItem>)
     await show([writer])
-    expect(plain(screen.getByTestId('proposal-role-where').textContent)).toBe('dans ce dossier')
+    expect(plain(screen.getByTestId('proposal-place').textContent)).toBe('écrit dans ce dossier')
   })
 
   it('fiche 244 : un fichier décoché ne part pas ; « Lancer » part sans lui', async () => {
