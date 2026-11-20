@@ -328,7 +328,9 @@ function GroupMergeFoot({
         verdicts={verdicts}
         works
         extra={
-          info.onShowChanges && (
+          // Rien à voir quand tous les travaux sont en lecture seule (fiche 272, recette).
+          info.onShowChanges &&
+          !works.every((w) => w.card.role?.readOnly) && (
             <button
               type="button"
               className="btn small work-group-changes"
