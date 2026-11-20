@@ -764,8 +764,10 @@ export function createHandlers(
       if (web) {
         if (web === 'integrated' && o.reveal !== true && openTab) {
           // Serveur local arrêté (ERR_CONNECTION_REFUSED…) : l'onglet s'ouvre quand même, sur la
-          // page d'erreur du navigateur, à recharger une fois le serveur lancé.
-          await openTab(conversationId, href as string).catch((error: unknown) =>
+          // page d'erreur du navigateur, à recharger une fois le serveur lancé. Le panneau passe
+          // sur le Navigateur sans attendre la fin du chargement (fiche 272, recette : jusqu'à 30 s
+          // sans rien de visible) ; l'onglet, lui, est créé tout de suite.
+          void openTab(conversationId, href as string).catch((error: unknown) =>
             log.warn(`files:openLink: local link not loaded: ${messageOf(error)}`)
           )
           return { kind: 'browser', path: href as string, url: href as string }

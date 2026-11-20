@@ -674,6 +674,18 @@ describe('IPC', () => {
     expect(browser.openTab).toHaveBeenCalledTimes(1)
   })
 
+  it('lien local dont la page tarde (fiche 272) : le panneau passe sur le Navigateur sans attendre', async () => {
+    const { call, browser } = setup()
+    browser.openTab.mockReturnValueOnce(new Promise<void>(() => {}))
+    const local = 'http://localhost:8099/index.html'
+    const outcome = await Promise.race([
+      call('files:openLink', 'c1', local),
+      new Promise((resolve) => setTimeout(() => resolve('attend la page'), 200))
+    ])
+    expect(outcome).toEqual({ kind: 'browser', path: local, url: local })
+    expect(browser.openTab).toHaveBeenCalledWith('c1', local)
+  })
+
   it('lien local vers un serveur arrêté (fiche 154) : le panneau s’ouvre quand même, sans erreur', async () => {
     const { call, browser, openExternal } = setup()
     browser.openTab.mockRejectedValueOnce(new Error('ERR_CONNECTION_REFUSED (-102)'))
