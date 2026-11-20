@@ -81,6 +81,7 @@ export const READ_ONLY_SAFE = [
   'conversations:get',
   'conversations:search',
   'conversation:view',
+  'conversation:snapshot',
   'conversation:select',
   'conversation:open',
   'conversation:release',

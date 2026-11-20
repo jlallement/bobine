@@ -40,15 +40,20 @@ export function useWorkRefusedModel(childId: string | undefined): Refused | unde
   useEffect(() => {
     if (!childId) return
     let alive = true
+    // Un statut reçu pendant la lecture fait foi : la réponse, plus ancienne, est jetée (revue QA).
+    let fresher = false
     const set = (snapshot: AgentSnapshot | null | undefined) =>
       alive && setState({ id: childId, refused: refusedOf(snapshot) })
-    window.api.conversations
-      ?.view?.(childId)
-      .then((view) => set(view.snapshot))
-      .catch(() => set(undefined))
     const off = window.api.agent.onEvent(({ conversationId, event }) => {
-      if (conversationId === childId && event.type === 'status') set(event.snapshot)
+      if (conversationId !== childId || event.type !== 'status') return
+      fresher = true
+      set(event.snapshot)
     })
+    // L'état de son agent seulement, pas tout son fil (revue QA).
+    window.api.conversations
+      ?.snapshot?.(childId)
+      .then((snapshot) => !fresher && set(snapshot))
+      .catch(() => !fresher && set(undefined))
     return () => {
       alive = false
       off()

@@ -466,9 +466,9 @@ describe('bulle et carte-réponse (fiche 263)', () => {
         }
       }
     })
-    const views = vi.fn(async () => ({ snapshot: snapshot(true) }))
+    const views = vi.fn(async () => snapshot(true))
     const conversations = (window.api as unknown as { conversations?: unknown }).conversations
-    ;(window.api as unknown as { conversations: unknown }).conversations = { view: views }
+    ;(window.api as unknown as { conversations: unknown }).conversations = { snapshot: views }
     try {
       view(
         [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
@@ -509,11 +509,46 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     }
   })
 
+  it('fiche 267, revue QA : une lecture de l’état plus ancienne qu’un statut reçu est jetée', async () => {
+    fakeAgent()
+    let answer: (value: unknown) => void = () => {}
+    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
+    ;(window.api as unknown as { conversations: unknown }).conversations = {
+      snapshot: () => new Promise((resolve) => (answer = resolve))
+    }
+    try {
+      view(
+        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+        info([child('a', ux, { status: 'needs-action' })])
+      )
+      // Le refus est déjà levé (statut reçu), puis la lecture d'avant arrive avec l'ancien refus.
+      act(() =>
+        emit('a', { type: 'status', snapshot: { status: 'needs-action', controls: [] } } as never)
+      )
+      await act(async () =>
+        answer({
+          status: 'needs-action',
+          controls: [],
+          blocker: {
+            kind: 'auth',
+            methods: [],
+            authenticating: false,
+            atTurn: true,
+            model: { id: 'f', name: 'Factice rapide', quota: true }
+          }
+        })
+      )
+      expect(screen.queryByTestId('work-refused-text')).toBeNull()
+    } finally {
+      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
+    }
+  })
+
   it('fiche 267 : un travail qui attend autre chose (une autorisation) garde « Attend votre réponse »', async () => {
     fakeAgent()
     const conversations = (window.api as unknown as { conversations?: unknown }).conversations
     ;(window.api as unknown as { conversations: unknown }).conversations = {
-      view: async () => ({ snapshot: { status: 'needs-action', controls: [] } })
+      snapshot: async () => ({ status: 'needs-action', controls: [] })
     }
     try {
       view(

@@ -24,6 +24,7 @@ import type {
   AgentEvent,
   AgentSessionView,
   AgentSettingsView,
+  AgentSnapshot,
   AgentStatus,
   ControlValue,
   ConversationEvent,
@@ -326,6 +327,14 @@ export class ConversationManager {
       transcript: this.transcriptOf(conversation),
       seq: conversation.seq ?? 0
     }
+  }
+
+  /**
+   * L'état de l'agent d'une conversation, sans son fil (fiche 267, revue QA : la carte d'un travail
+   * bloqué n'a besoin que de son refus et de ses réglages).
+   */
+  snapshotOf(id: string): AgentSnapshot | null {
+    return this.get(id).snapshot ?? null
   }
 
   /** Réglages globaux pour les menus, rapportés à la conversation active. */

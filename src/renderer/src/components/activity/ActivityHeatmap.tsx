@@ -58,7 +58,9 @@ export function ActivityHeatmap({
   const scroller = useRef<HTMLDivElement>(null)
   // Défilement de la grille (fenêtre étroite) : une étiquette de mois à moitié cachée ne se montre
   // pas (fiche 267, D24).
-  const [scrolled, setScrolled] = useState(0)
+  // Arrondi à la colonne : un re-rendu par colonne défilée, pas à chaque évènement (revue QA).
+  const [scrolled, setScrolledState] = useState(0)
+  const setScrolled = (left: number) => setScrolledState(Math.ceil(left / STEP) * STEP)
   useEffect(() => {
     let live = true
     window.api.usage.heatmap({ range, ...(profileId ? { profileId } : {}) }).then(

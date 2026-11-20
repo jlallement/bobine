@@ -276,6 +276,7 @@ export function createApi(
     conversations: {
       get: () => invoke('conversations:get'),
       view: (id: string) => invoke('conversation:view', id),
+      snapshot: (id: string) => invoke('conversation:snapshot', id),
       select: (id: string) => invoke('conversation:select', id),
       create: (request: AgentConfigureRequest = {}) => invoke('conversation:create', request),
       rename: (id: string, title: string) => invoke('conversation:rename', id, title),

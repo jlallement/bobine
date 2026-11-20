@@ -492,7 +492,7 @@ describe('modèle indisponible (fiche 259, D6)', () => {
       blocker.kind === 'auth' && blocker.model
         ? {
             ...blocker,
-            apiKey: { env: 'K', label: 'Clé' },
+            apiKey: { env: 'K', label: 'Clé', stored: false, fromEnvironment: false },
             model: { ...blocker.model, quota: true }
           }
         : blocker,
