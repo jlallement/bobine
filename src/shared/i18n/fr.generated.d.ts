@@ -4482,6 +4482,7 @@ export type FrResources = {
       readonly severe_one: '{{count}} haute'
       readonly severe_many: '{{count}} hautes'
       readonly severe_other: '{{count}} hautes'
+      readonly scopeCommit: 'Dernier commit {{base}}'
     }
     readonly severity: { readonly high: 'Haute'; readonly medium: 'Moyenne'; readonly low: 'Basse' }
     readonly category: {
@@ -4509,6 +4510,9 @@ export type FrResources = {
       readonly uncommittedOf_many: 'Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).'
       readonly uncommittedOf_other: 'Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).'
       readonly focus: 'Points à surveiller : {{focus}}'
+      readonly commit_one: 'Relis le dernier commit {{commit}} ({{count}} fichier).'
+      readonly commit_many: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
+      readonly commit_other: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
     }
   }
   readonly scheduled: {

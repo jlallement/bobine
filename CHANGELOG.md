@@ -14,7 +14,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   « Voir sur le diff », « Répondre à Code reviewer » et « Ouvrir sa conversation » suivent. La
   relecture d'un travail s'affiche dans la carte de ce travail. Un autre modèle que celui du
   travail relu est proposé d'office. Dans la conversation du relecteur, sa consigne est repliée
-  (« Consigne du rôle »).
+  (« Consigne du rôle »). `@code-reviewer` tapé dans la saisie fait la même relecture : ce qui
+  n'est pas commité, sinon la branche courante, sinon le dernier commit, avec votre texte comme
+  points à surveiller. Un clic sur `fichier:ligne` montre la ligne dans le diff.
 - La recommandation de fusion de l'agent n'est plus une ligne du fil : elle est sur la ligne du
   travail (« Recommandé », « Pas encore prêt »), sa note en infobulle. Fusionner un travail ne
   supprime plus jamais une branche qui a changé depuis la fusion, ni le dossier d'un travail qui

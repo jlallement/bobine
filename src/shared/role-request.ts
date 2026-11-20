@@ -16,6 +16,12 @@ import type { TranscriptItem, TranscriptState } from './transcript'
 export interface RoleRequestWork {
   childId: string
   role: RoleBadge
+  /**
+   * Relecture (fiche 265) : ce travail est le Code reviewer qui relit cette conversation (`of`).
+   * Un travail relu qui a sa carte montre sa relecture dans cette carte (ou sous sa ligne d'une
+   * carte de groupe), pas à la place de la bulle.
+   */
+  review?: { of: string }
 }
 
 /** Demande de l'utilisateur à un ou plusieurs rôles, posée par le main dans le fil de la mère. */
@@ -34,12 +40,6 @@ export interface RoleRequest {
    * travail (décision 2 de la fiche 260), pas à sa place.
    */
   followUp?: true
-  /**
-   * « Faire relire » (fiche 265) : la demande au rôle Code reviewer, et la conversation qu'il relit
-   * (`of`). Un travail relu qui a sa carte la montre dans cette carte (ou sous sa ligne d'une carte
-   * de groupe), pas à la place de la bulle.
-   */
-  review?: { of: string }
   at: number
 }
 
@@ -96,6 +96,8 @@ export interface WorkCardData {
   askedAt: number
   /** Texte de la demande qui l'a lancé : celui de la bulle, sinon sa consigne. */
   asked: string
+  /** Code reviewer (fiche 265) : la conversation qu'il relit, lue sur sa bulle. */
+  reviewOf?: string
   /** Lancé par l'agent (`start_child`) : sa réponse lui part à son réveil. */
   byAgent?: true
   /** Clé de sa carte (`ChildStart.card`) ; absente d'un travail d'une bulle. */
@@ -175,6 +177,9 @@ export function workCards(items: readonly TranscriptItem[]): WorkCards {
         role: work.role,
         title: started?.title ?? work.role.label,
         request,
+        ...(typeof work.review?.of === 'string' && work.review.of
+          ? { reviewOf: work.review.of }
+          : {}),
         // Ancre unique : le lancement de ce travail ; sans lancement, pas de repère.
         ...(started ? { started, anchor: started.id } : {}),
         askedAt: request.at,

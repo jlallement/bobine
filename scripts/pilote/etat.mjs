@@ -122,7 +122,31 @@ export function agentLine(shot) {
   return 'Bobine · agent non lu : nom de l’agent absent de la barre latérale (repliée ?)'
 }
 
-/** `etat` en lignes de texte ; `long` : message de l'agent en entier. */
+const SEVERITY_WORDS = { high: 'haute', medium: 'moyenne', low: 'basse' }
+
+/**
+ * Remarques du Code reviewer (fiche 265) : leur nombre par gravité ; avec `long`, les trois
+ * premières (gravité, lieu, phrase). Rien pour un autre travail.
+ */
+function findingLines(work, long) {
+  const counts = work.severities
+  if (!counts) return []
+  const total = counts.high + counts.medium + counts.low
+  if (total === 0) return ['  Remarques : aucune (rien à signaler)']
+  const parts = Object.entries(SEVERITY_WORDS)
+    .filter(([key]) => counts[key] > 0)
+    .map(([key, word]) => `${counts[key]} ${word}${counts[key] > 1 ? 's' : ''}`)
+  const lines = [`  Remarques : ${total} (${parts.join(', ')})`]
+  if (!long) return lines
+  for (const f of (work.findings ?? []).slice(0, 3)) {
+    lines.push(
+      `    · ${SEVERITY_WORDS[f.severity] ?? f.severity} ${f.where} — ${excerpt(f.title, 160)}`
+    )
+  }
+  return lines
+}
+
+/** `etat` en lignes de texte ; `long` : message de l'agent en entier, trois remarques par relecture. */
 export function formatState(shot, { long = false } = {}) {
   const lines = []
   lines.push(join([agentLine(shot), shot.temporary && 'profil temporaire']))
@@ -154,6 +178,7 @@ export function formatState(shot, { long = false } = {}) {
   if (turn) lines.push(turn)
   for (const w of shot.works ?? []) {
     lines.push(`Travail (${w.role}) : ${join([w.state, w.answer && excerpt(w.answer, 160)])}`)
+    lines.push(...findingLines(w, long))
   }
   for (const g of shot.groups ?? []) lines.push(...groupLines(g))
   for (const card of shot.cards ?? []) lines.push(...cardLines(card))

@@ -48,6 +48,31 @@ const REVERT_FAILURES = ['conflict', 'outside', 'failed'] as const
 const isRevertFailure = (outcome: RevertOutcome): outcome is (typeof REVERT_FAILURES)[number] =>
   (REVERT_FAILURES as readonly RevertOutcome[]).includes(outcome)
 
+/** La ligne d'un fichier à montrer dans la vue Git (fiche 265). */
+const lineFocus = (file: { path: string; line?: number } | undefined) =>
+  file?.line ? { file: file.path, line: file.line } : undefined
+
+interface ChangesTabProps {
+  conversationId: string
+  workspace?: string
+  items: TranscriptItem[]
+  /** Vue demandée à l'ouverture (puce de branche : `git`, fiche 049). */
+  initialView?: ChangesView
+  /** Numéro de la demande d'ouverture : une demande déjà servie n'impose plus sa vue. */
+  initialViewSeq?: number
+  /**
+   * Fichier à ouvrir d'emblée, et sa ligne à montrer et mettre en avant si le diff la contient
+   * (remarque du Code reviewer cliquée sur sa carte, fiche 265).
+   */
+  initialFile?: { path: string; line?: number }
+  /** Remarques sur les modifications (fiche 085) : envoie le message à l'agent. */
+  onSendNotes?: (text: string) => void
+  /** Filles de la conversation (fiche 161) ; vue « Filles » seulement s'il y en a. */
+  childWorktrees?: ChildWorktrees | undefined
+  /** « Faire relire… » cette conversation (fiche 177) ; proposé seulement dans un dépôt git. */
+  onReview?: (() => void) | undefined
+}
+
 /**
  * Onglet « Modifications » (fiche 021), comme le panneau de diff de Claude Code Desktop : ce que
  * l'agent a modifié dans la conversation (diffs ACP), ou l'état du dépôt git par rapport au
@@ -63,23 +88,7 @@ export function ChangesTab({
   onSendNotes,
   childWorktrees,
   onReview
-}: {
-  conversationId: string
-  workspace?: string
-  items: TranscriptItem[]
-  /** Vue demandée à l'ouverture (puce de branche : `git`, fiche 049). */
-  initialView?: ChangesView
-  /** Numéro de la demande d'ouverture : une demande déjà servie n'impose plus sa vue. */
-  initialViewSeq?: number
-  /** Fichier à ouvrir d'emblée (remarque du Code reviewer cliquée sur sa carte, fiche 265). */
-  initialFile?: string
-  /** Remarques sur les modifications (fiche 085) : envoie le message à l'agent. */
-  onSendNotes?: (text: string) => void
-  /** Filles de la conversation (fiche 161) ; vue « Filles » seulement s'il y en a. */
-  childWorktrees?: ChildWorktrees | undefined
-  /** « Faire relire… » cette conversation (fiche 177) ; proposé seulement dans un dépôt git. */
-  onReview?: (() => void) | undefined
-}) {
+}: ChangesTabProps) {
   const { t } = useTranslation()
   const conversation = useMemo(() => conversationChanges(items), [items])
   const [git, setGit] = useState<GitChanges | null | undefined>(undefined)
@@ -106,7 +115,9 @@ export function ChangesTab({
     })
     setChosenState(next)
   }
-  const [open, setOpen] = useState<Set<string>>(() => new Set(initialFile ? [initialFile] : []))
+  const [open, setOpen] = useState<Set<string>>(
+    () => new Set(initialFile ? [initialFile.path] : [])
+  )
   const [gitDiffs, setGitDiffs] = useState<Record<string, GitFileDiff | { error: string }>>({})
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -389,6 +400,7 @@ export function ChangesTab({
                 conversation={conversation}
                 gitDiffs={gitDiffs}
                 annotationsFor={annotationsFor}
+                focus={lineFocus(initialFile)}
               />
             </>
           )}

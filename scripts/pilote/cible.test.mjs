@@ -317,6 +317,59 @@ describe('cartes en attente (fiche 248)', () => {
     ])
   })
 
+  it('carte du Code reviewer (fiche 265) : ses remarques lues, comptées ; trois dans `etat --long`', () => {
+    const finding = (severity, where, title) =>
+      `<li data-testid="work-finding" data-severity="${severity}"><span class="review-severity">x</span><span><button data-testid="work-finding-where">${where}</button><span data-testid="work-finding-title">${title}</span></span></li>`
+    const shot = read(`<div data-testid="thread">
+      <div data-testid="work-card" data-role="front-architect" data-state="replied">
+        <div data-testid="work-body">Rayons ajoutés.</div>
+        <div data-testid="work-reviews">
+          <div data-testid="work-card" data-role="code-reviewer" data-state="replied" data-findings="4">
+            <ul data-testid="work-findings">
+              ${finding('high', 'src/main.ts:42', 'Pas de libellé')}
+              ${finding('medium', 'src/main.ts:77', 'Sauvegarde perdue')}
+              ${finding('low', 'src/style.css:118', 'Contraste faible')}
+              ${finding('low', 'src/style.css:9', 'Couleur en dur')}
+            </ul>
+            <p data-testid="work-review-summary">Une remarque à corriger.</p>
+          </div>
+        </div>
+      </div>
+      <div data-testid="work-card" data-role="code-reviewer" data-state="replied" data-findings="0">
+        <p data-testid="work-review-summary">Rien de grave.</p>
+      </div></div>`)
+    expect(shot.works).toEqual([
+      { role: 'front-architect', state: 'replied', answer: 'Rayons ajoutés.' },
+      {
+        role: 'code-reviewer',
+        state: 'replied',
+        answer: 'Une remarque à corriger.',
+        severities: { high: 1, medium: 1, low: 2 },
+        findings: [
+          { severity: 'high', where: 'src/main.ts:42', title: 'Pas de libellé' },
+          { severity: 'medium', where: 'src/main.ts:77', title: 'Sauvegarde perdue' },
+          { severity: 'low', where: 'src/style.css:118', title: 'Contraste faible' },
+          { severity: 'low', where: 'src/style.css:9', title: 'Couleur en dur' }
+        ]
+      },
+      {
+        role: 'code-reviewer',
+        state: 'replied',
+        answer: 'Rien de grave.',
+        severities: { high: 0, medium: 0, low: 0 },
+        findings: []
+      }
+    ])
+    const short = formatState(shot)
+    expect(short).toContain('  Remarques : 4 (1 haute, 1 moyenne, 2 basses)')
+    expect(short).toContain('  Remarques : aucune (rien à signaler)')
+    expect(short).not.toContain('src/main.ts:42')
+    const long = formatState(shot, { long: true })
+    expect(long).toContain('    · haute src/main.ts:42 — Pas de libellé')
+    expect(long).toContain('    · basse src/style.css:118 — Contraste faible')
+    expect(long).not.toContain('Couleur en dur')
+  })
+
   it('carte de groupe en attente : une carte, les boutons de la ligne en attente et « Tout lancer »', () => {
     const waiting = read(proposals(1, decidedRow + pendingRow))
     expect(waiting.cards).toEqual([

@@ -118,11 +118,32 @@ function readScreen(main) {
   shot.messages = users.length
   // Cartes-réponses des travaux confiés à des rôles (fiche 263) : rôle, état, début de la réponse.
   // Sans les cartes dépliées dans une carte de groupe : elles sont ses lignes (fiche 264).
-  const works = $$('[data-testid=work-card]:not(.in-group)').map((card) => ({
-    role: card.dataset.role ?? '',
-    state: card.dataset.state ?? '',
-    answer: clean($$('[data-testid=work-body]', card).at(-1)?.innerText).slice(0, 300)
-  }))
+  // Code reviewer (fiche 265) : ses remarques (gravité, lieu, phrase, dix au plus) et leur nombre ;
+  // sa réponse, à défaut : son avis d'ensemble. Une carte rangée dans une autre est lue à part.
+  const works = $$('[data-testid=work-card]:not(.in-group)').map((card) => {
+    const own = (el) => el.closest('[data-testid=work-card]') === card
+    const body = $$('[data-testid=work-body]', card).filter(own).at(-1)
+    const summary = $$('[data-testid=work-review-summary]', card).filter(own).at(-1)
+    const work = {
+      role: card.dataset.role ?? '',
+      state: card.dataset.state ?? '',
+      answer: clean((body ?? summary)?.innerText).slice(0, 300)
+    }
+    if (card.dataset.findings === undefined) return work
+    const findings = $$('[data-testid=work-finding]', card)
+      .filter(own)
+      .map((f) => ({
+        severity: f.dataset.severity ?? '',
+        where: text($('[data-testid=work-finding-where]', f)),
+        title: text($('[data-testid=work-finding-title]', f))
+      }))
+    const count = (severity) => findings.filter((f) => f.severity === severity).length
+    return {
+      ...work,
+      severities: { high: count('high'), medium: count('medium'), low: count('low') },
+      findings: findings.slice(0, 10)
+    }
+  })
   if (works.length) shot.works = works
   // Cartes de groupe (fiche 264) : titre, étape, comptes, une ligne par travail (proposé ou lancé,
   // dans l'ordre), et la fusion (progression, résultat) quand elle est dans la carte.

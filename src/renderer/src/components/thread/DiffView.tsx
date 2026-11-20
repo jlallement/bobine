@@ -1,5 +1,13 @@
 import { MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
-import { useContext, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode
+} from 'react'
 import { computeDiff, diffText, firstChangedLine, type DiffLine, type DiffRow } from '@shared/diff'
 import { diffSegments } from '@shared/display-cap'
 import type { DiffNote } from '@shared/diff-notes'
@@ -33,6 +41,11 @@ interface Props {
   /** Sans l'en-tête (chemin, +/−) : le récapitulatif des modifications l'affiche déjà. */
   bare?: boolean
   annotations?: DiffAnnotations
+  /**
+   * Ligne (côté nouveau) à montrer : amenée à l'écran et mise en avant (remarque du Code reviewer
+   * cliquée, fiche 265). Absente du diff : rien.
+   */
+  focus?: number | undefined
 }
 
 /**
@@ -85,7 +98,7 @@ interface Draft {
 }
 
 /** Diff ligne à ligne : numéros ancien / nouveau, ajouts et suppressions colorés, contexte replié. */
-export function DiffView({ path, oldText, newText, bare, annotations }: Props) {
+export function DiffView({ path, oldText, newText, bare, annotations, focus }: Props) {
   const { t } = useTranslation()
   const diff = useMemo(() => computeDiff(oldText, newText), [oldText, newText])
   const editorAction = useContext(EditorContext)
@@ -93,6 +106,12 @@ export function DiffView({ path, oldText, newText, bare, annotations }: Props) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const lines = diff.rows.filter((row): row is DiffLine => row.type !== 'skip')
   const columns = annotations ? 4 : 3
+  // La ligne demandée, à l'écran une fois rendue (fiche 265).
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (focus === undefined) return
+    box.current?.querySelector('tr.diff-focus')?.scrollIntoView?.({ block: 'center' })
+  }, [focus, diff])
 
   /** Code affiché sur les lignes `from` à `to` d'un côté. */
   const codeOf = (side: 'new' | 'old', from: number, to: number) =>
@@ -250,7 +269,7 @@ export function DiffView({ path, oldText, newText, bare, annotations }: Props) {
     const out: ReactNode[] = [
       <tr
         key={i}
-        className={`diff-${row.type}${selected ? ' diff-selected' : ''}`}
+        className={`diff-${row.type}${selected ? ' diff-selected' : ''}${at.side === 'new' && at.line === focus ? ' diff-focus' : ''}`}
         data-side={at.side}
         data-line={at.line}
       >
@@ -297,7 +316,7 @@ export function DiffView({ path, oldText, newText, bare, annotations }: Props) {
   const whole = () => diffText(path, oldText, newText)
 
   return (
-    <div className={`diff${bare ? ' bare' : ''}`}>
+    <div className={`diff${bare ? ' bare' : ''}`} ref={box}>
       {!bare && (
         <div className="diff-header">
           <FilePath path={path} />

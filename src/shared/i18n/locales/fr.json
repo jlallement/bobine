@@ -4647,7 +4647,8 @@
       "showNotes": "Voir sur le diff",
       "severe_one": "{{count}} haute",
       "severe_many": "{{count}} hautes",
-      "severe_other": "{{count}} hautes"
+      "severe_other": "{{count}} hautes",
+      "scopeCommit": "Dernier commit {{base}}"
     },
     "severity": {
       "high": "Haute",
@@ -4678,7 +4679,10 @@
       "uncommittedOf_one": "Relis les modifications non commitées de « {{title}} » ({{count}} fichier).",
       "uncommittedOf_many": "Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).",
       "uncommittedOf_other": "Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).",
-      "focus": "Points à surveiller : {{focus}}"
+      "focus": "Points à surveiller : {{focus}}",
+      "commit_one": "Relis le dernier commit {{commit}} ({{count}} fichier).",
+      "commit_many": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
+      "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers)."
     }
   },
   "scheduled": {

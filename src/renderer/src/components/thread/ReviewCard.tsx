@@ -81,9 +81,11 @@ export const ReviewCard = memo(function ReviewCard({
         </div>
         <div className="child-report-meta">
           <span>
-            {item.scope === 'branch' && item.base
-              ? t('review.card.scopeBranch', { base: item.base })
-              : t('review.card.scopeUncommitted')}
+            {item.scope === 'commit' && item.base
+              ? t('review.card.scopeCommit', { base: item.base })
+              : item.scope === 'branch' && item.base
+                ? t('review.card.scopeBranch', { base: item.base })
+                : t('review.card.scopeUncommitted')}
           </span>
           {item.files > 0 && <span>{t('review.card.files', { count: item.files })}</span>}
           {severe > 0 && (

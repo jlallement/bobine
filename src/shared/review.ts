@@ -50,8 +50,11 @@ export interface ReviewFinding {
  */
 export type ReviewStatus = 'running' | 'reported' | 'silent' | 'failed'
 
-/** Ce qui est relu (décision 7 de la fiche). */
-export type ReviewScope = 'branch' | 'uncommitted'
+/**
+ * Ce qui est relu (décision 7 de la fiche) ; `commit` : le dernier commit, quand `@code-reviewer`
+ * est tapé dans la saisie sans rien d'autre à relire (fiche 265).
+ */
+export type ReviewScope = 'branch' | 'uncommitted' | 'commit'
 
 /** Carte « Relecture » du fil de l'auteur : un seul élément par relecture, remplacé à chaque étape. */
 export interface Review {
@@ -87,15 +90,22 @@ export interface Review {
   error?: string
   /** Ce qu'a coûté le relecteur jusque-là (fiche 109), tel que son fil le sait. */
   usage?: UsageDigest
+  /**
+   * Points à surveiller demandés (fiche 265) : gardés avec la relecture pour que « Relancer » les
+   * renvoie, même après un redémarrage.
+   */
+  focus?: string
   at: number
 }
 
 /** Ce que la consigne cite du travail relu. */
 export interface ReviewTarget {
   scope: ReviewScope
-  /** Commit complet du point de comparaison (branche). */
+  /** Commit complet du point de comparaison (branche), ou le commit relu (`commit`). */
   base?: string
   baseBranch?: string
+  /** Branche courante relue, hors worktree (`@code-reviewer`, fiche 265). */
+  branch?: string
   /** Fichiers modifiés (`git diff --name-only`, nouveaux compris). */
   files: string[]
   /** Titre de la conversation relue. */
@@ -111,12 +121,14 @@ export const REVIEW_BRIEF_LEAD = 'Code review request from Bobine.'
  */
 export function reviewBrief(target: ReviewTarget, focus?: string): string {
   const what =
-    target.scope === 'branch' && target.base
-      ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
-        `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
-        'and `git status` for new files.'
-      : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
-        'for new files.'
+    target.scope === 'commit' && target.base
+      ? `the last commit ${target.base} of this folder. Read it with \`git show ${target.base}\`.`
+      : target.scope === 'branch' && target.base
+        ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
+          `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
+          'and `git status` for new files.'
+        : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
+          'for new files.'
   const shown = target.files.slice(0, BRIEF_FILES)
   const more = target.files.length - shown.length
   const files = [

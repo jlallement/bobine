@@ -4452,7 +4452,8 @@
       "open": "Open review",
       "showNotes": "Show on the diff",
       "severe_one": "{{count}} high",
-      "severe_other": "{{count}} high"
+      "severe_other": "{{count}} high",
+      "scopeCommit": "Last commit {{base}}"
     },
     "severity": {
       "high": "High",
@@ -4480,7 +4481,9 @@
       "uncommitted_other": "Review the uncommitted changes ({{count}} files).",
       "uncommittedOf_one": "Review the uncommitted changes of “{{title}}” ({{count}} file).",
       "uncommittedOf_other": "Review the uncommitted changes of “{{title}}” ({{count}} files).",
-      "focus": "What to look at: {{focus}}"
+      "focus": "What to look at: {{focus}}",
+      "commit_one": "Review the last commit {{commit}} ({{count}} file).",
+      "commit_other": "Review the last commit {{commit}} ({{count}} files)."
     }
   },
   "scheduled": {

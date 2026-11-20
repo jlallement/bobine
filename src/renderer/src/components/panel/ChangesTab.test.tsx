@@ -228,11 +228,45 @@ describe('remarques du Code reviewer (fiche 265)', () => {
           items={[]}
           initialView="git"
           initialViewSeq={1}
-          initialFile="gros.txt"
+          initialFile={{ path: 'gros.txt' }}
         />
       </Tooltip.Provider>
     )
     await waitFor(() => expect(gitFile).toHaveBeenCalledWith('c', 'gros.txt', undefined))
+  })
+
+  it('sa ligne, si le diff la contient : amenée à l’écran et mise en avant ; sinon le fichier ouvert', async () => {
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    const shown = (line: number) =>
+      render(
+        <Tooltip.Provider>
+          <ChangesTab
+            conversationId="c"
+            workspace="/depot"
+            items={[]}
+            initialView="git"
+            initialViewSeq={1}
+            initialFile={{ path: 'gros.txt', line }}
+          />
+        </Tooltip.Provider>
+      )
+    const { unmount } = shown(1)
+    const focused = await waitFor(() => {
+      const row = document.querySelector('tr.diff-focus')
+      if (!row) throw new Error('pas encore')
+      return row
+    })
+    expect(focused.getAttribute('data-line')).toBe('1')
+    expect(focused.getAttribute('data-side')).toBe('new')
+    expect(scroll).toHaveBeenCalledWith({ block: 'center' })
+    unmount()
+    scroll.mockClear()
+    // Ligne hors du diff : le fichier ouvert, rien de mis en avant.
+    shown(40)
+    await waitFor(() => expect(screen.getByTestId('changes-diff').textContent).toContain('b'))
+    expect(document.querySelector('tr.diff-focus')).toBeNull()
+    expect(scroll).not.toHaveBeenCalled()
   })
 
   it('remarques de diff : celles qui relisent cette conversation, pas un travail relu dans son fil', async () => {

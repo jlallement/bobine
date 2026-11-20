@@ -21,8 +21,8 @@ export function ReviewFindings({
   role: string
   /** Sa réponse du tour, entière ; repliée sous ses remarques. */
   reply: string
-  /** Ouvrir la vue Git de la conversation relue sur ce fichier ; absent : texte simple. */
-  onShow?: ((file: string) => void) | undefined
+  /** Ouvrir la vue Git de la conversation relue sur ce fichier, à cette ligne ; absent : texte. */
+  onShow?: ((file: string, line: number) => void) | undefined
 }) {
   const { t } = useTranslation()
   const findings = findingsBySeverity(review.findings)
@@ -57,7 +57,7 @@ export function ReviewFindings({
                       type="button"
                       className="work-finding-where"
                       title={t('workCard.findings.where', { place })}
-                      onClick={() => onShow(finding.file)}
+                      onClick={() => onShow(finding.file, finding.line)}
                       data-testid="work-finding-where"
                     >
                       {place}

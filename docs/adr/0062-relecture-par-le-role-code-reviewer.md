@@ -24,7 +24,8 @@ répondre, et sa consigne interne s'affichait en clair comme un message de l'uti
    empreinte du dossier, notes de diff.
 2. **Comme toute demande à un rôle**, dans le fil de la mère du relecteur : une bulle
    `role-request` (« Relis la branche … », « Relis les modifications non commitées (N
-   fichiers). ») qui porte la conversation relue (`RoleRequest.review.of`), puis le lancement qui
+   fichiers). », ou le texte tapé avec `@code-reviewer`) dont le travail du relecteur porte la
+   conversation relue (`RoleRequestWork.review.of`), puis le lancement qui
    la nomme (`ChildStart.request`). La carte-réponse de l'ADR-0060 en découle : sa réponse entière,
    sa transmission avec le prochain message, « Répondre », « Relancer », « Ouvrir sa conversation ».
 3. **Premier message** : la demande, puis le bloc du rôle (`<bobine_role>`) qui contient la consigne
@@ -51,7 +52,13 @@ répondre, et sa consigne interne s'affichait en clair comme un message de l'uti
 
 - Les relectures d'avant (élément `review` sans lancement, sans `authorId`) s'affichent comme avant
   (`ReviewCard`) ; aucune migration. Leur relecteur n'a ni réponse ni « Répondre ».
-- `@code-reviewer` tapé dans la saisie reste une demande ordinaire au rôle (même carte, réponse en
-  Markdown) : sans portée choisie, il n'a ni `report_findings` ni notes de diff.
+- `@code-reviewer` tapé dans la saisie passe par le même chemin (décision du tech lead) : portée
+  d'office — le non commité s'il y en a, sinon la branche courante contre sa base si ce n'est pas
+  la branche principale, sinon le dernier commit (portée `commit`) —, le texte tapé en points à
+  surveiller, la bulle du message partagée avec les autres rôles cités. Le lien de relecture est
+  donc porté par chaque travail de la bulle (`RoleRequestWork.review.of`), pas par la bulle.
+- Les points à surveiller sont gardés avec la carte de relecture (`Review.focus`) : « Relancer »
+  les renvoie, même après un redémarrage.
+- Un clic sur `fichier:ligne` montre et met en avant la ligne dans le diff s'il la contient.
 - La conversation relue qui n'est pas celle de la demande (un travail) garde la carte « Relecture »
   dans son propre fil, avec « Voir sur le diff ».

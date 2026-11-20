@@ -136,7 +136,7 @@ function reviewsByWork(
   for (const [at, list] of cards.byRequest) {
     const card = list[0]
     if (!card?.request || list.length !== 1) continue
-    const of = card.request.review?.of
+    const of = card.reviewOf
     if (!of || of === card.childId || !cards.childIds.has(of)) continue
     reviews.set(of, [...(reviews.get(of) ?? []), { request: card.request, card }])
     hidden.add(at)

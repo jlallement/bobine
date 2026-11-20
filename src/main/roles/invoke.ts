@@ -21,11 +21,18 @@ import {
   type RolesStartResult
 } from '@shared/roles-ipc'
 import type { ChildConversations } from '../conversations/children'
+import { REVIEWER_ROLE, type ChildReviews } from '../conversations/children-review'
 import { resolveChoice } from '../mcp/children-tools'
 import { roleDefaults } from './choice'
 import type { RoleRequest } from '@shared/role-request'
 
-export type RoleInvokeHost = Pick<ChildConversations, 'start' | 'choices' | 'findRole' | 'reply'>
+export type RoleInvokeHost = Pick<
+  ChildConversations,
+  'start' | 'choices' | 'findRole' | 'reply'
+> & {
+  /** Relectures (fiche 265) : `@code-reviewer` passe par « Faire relire ». */
+  reviews?: Pick<ChildReviews, 'start'>
+}
 
 /* « Répondre à <rôle> » (fiche 263) : arguments du renderer, vérifiés. */
 export function parseRolesReplyRequest(value: unknown): RolesReplyRequest {
@@ -108,6 +115,17 @@ export async function startRoleChildren(
       if (!ready) {
         beforeFirst?.()
         ready = true
+      }
+      // Code reviewer (fiche 265) : un seul chemin de relecture, `report_findings` et notes de
+      // diff ; portée choisie d'office, le texte tapé devient les points à surveiller.
+      if (role.name === REVIEWER_ROLE && host.reviews) {
+        const reviewer = await host.reviews.start(motherId, {
+          focus: request.text,
+          ask,
+          ...(typeof choice === 'string' ? {} : choice)
+        })
+        result.started.push({ role: role.name, childId: reviewer.id })
+        continue
       }
       const child = await host.start(motherId, {
         text: request.text,

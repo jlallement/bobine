@@ -402,9 +402,11 @@ function findingsLines(items: readonly TranscriptItem[], childId: string): strin
   const more =
     findings.length > shown.length ? [`  - … and ${findings.length - shown.length} more`] : []
   const where =
-    review.scope === 'branch' && review.base
-      ? `everything changed since commit ${review.base}`
-      : 'the uncommitted changes'
+    review.scope === 'commit' && review.base
+      ? `the last commit ${review.base}`
+      : review.scope === 'branch' && review.base
+        ? `everything changed since commit ${review.base}`
+        : 'the uncommitted changes'
   return [
     `\n  Structured review findings on ${where} (${findings.length}, paths relative to the reviewed folder):`,
     ...shown,

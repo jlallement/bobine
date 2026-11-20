@@ -53,7 +53,8 @@ export function ChangesFileList({
   onAct,
   conversation,
   gitDiffs,
-  annotationsFor
+  annotationsFor,
+  focus
 }: {
   view: 'conversation' | 'git'
   rows: Row[]
@@ -69,6 +70,8 @@ export function ChangesFileList({
   conversation: ReturnType<typeof conversationChanges>
   gitDiffs: Record<string, GitFileDiff | { error: string }>
   annotationsFor: (anchor: DiffAnnotations['anchor']) => DiffAnnotations | undefined
+  /** Ligne d'un fichier à montrer dans la vue Git (remarque du Code reviewer, fiche 265). */
+  focus?: { file: string; line: number } | undefined
 }) {
   const { t } = useTranslation()
   return (
@@ -205,6 +208,7 @@ export function ChangesFileList({
                       file: row.key,
                       path: row.key
                     })}
+                    focus={focus?.file === row.key ? focus.line : undefined}
                   />
                 )}
               </div>
@@ -255,11 +259,13 @@ function ConversationDiffs({
 function GitDiff({
   path,
   diff,
-  annotations
+  annotations,
+  focus
 }: {
   path: string
   diff?: GitFileDiff | { error: string }
   annotations?: DiffAnnotations | undefined
+  focus?: number | undefined
 }) {
   const { t } = useTranslation()
   if (!diff) return <div className="changes-caption">{t('changes.loading')}</div>
@@ -272,6 +278,7 @@ function GitDiff({
       oldText={diff.oldText}
       newText={diff.newText ?? ''}
       bare
+      focus={focus}
       {...(annotations ? { annotations } : {})}
     />
   )

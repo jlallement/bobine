@@ -315,15 +315,15 @@ const reviewData = (card: WorkCardData) =>
 function reviewShow(
   card: WorkCardData,
   info: SubtasksInfo | undefined
-): ((file?: string) => void) | undefined {
+): ((file?: string, line?: number) => void) | undefined {
   const reviewed = reviewedId(card)
   const show = info?.onShowDiff
-  return reviewed && show ? (file) => show(reviewed, file) : undefined
+  return reviewed && show ? (file, line) => show(reviewed, file, line) : undefined
 }
 
 /** Conversation relue par ce Code reviewer (fiche 265) ; `undefined` pour un autre travail. */
 export const reviewedId = (card: WorkCardData): string | undefined =>
-  card.request?.review?.of ?? card.review?.authorId
+  card.reviewOf ?? card.review?.authorId
 
 /**
  * Relectures d'un travail (fiche 265) : la bulle « @Code reviewer Relis … » et la carte du

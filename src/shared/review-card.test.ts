@@ -54,8 +54,7 @@ const asked = (id: number, of: string): TranscriptItem[] => [
     id,
     requestId: `d${id}`,
     text: 'Relis',
-    works: [{ childId: 'r', role: reviewer }],
-    review: { of },
+    works: [{ childId: 'r', role: reviewer, review: { of } }],
     at: id
   },
   {
@@ -114,7 +113,7 @@ describe('carte du Code reviewer (fiche 265)', () => {
     const cards = workCards(items)
     const card = cards.byRequest.get(1)?.[0]
     expect(card?.review?.id).toBe(3)
-    expect(card?.request?.review).toEqual({ of: 'mere' })
+    expect(card?.reviewOf).toBe('mere')
     expect(cards.hidden.has(3)).toBe(true)
     // Carte remplacée à chaque étape : la dernière fait foi.
     const later = workCards([...items, review(5, 'mere', { findings: [] })])

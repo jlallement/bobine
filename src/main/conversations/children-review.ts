@@ -49,6 +49,7 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import type { ChildConversations, ChildRequest } from './children'
 import { folderFingerprint } from './folder-fingerprint'
+import { reviewTarget } from './review-target'
 import { inGitRepo } from './helpers'
 import type { ConversationManager } from './manager'
 
@@ -60,7 +61,15 @@ export interface ReviewRequest {
   profileId?: string
   /** Modèle (réglage de catégorie `model` de l'auteur), seulement si le profil le permet. */
   model?: ChildRequest['model']
+  /**
+   * `@code-reviewer` tapé dans la saisie (fiche 265) : la bulle du message, partagée avec les
+   * autres rôles cités (complétée en place), et la portée choisie d'office (`reviewTarget`, `auto`).
+   */
+  ask?: RoleRequest
 }
+
+/** Points à surveiller gardés avec la relecture, au plus. */
+const FOCUS_KEEP_CHARS = 4_000
 
 export type ReviewHost = Pick<
   ConversationManager,
@@ -101,9 +110,6 @@ interface Watch {
 /** Nom du rôle intégré qui relit (fiche 265). */
 export const REVIEWER_ROLE = 'code-reviewer'
 
-const text = (buffer: Buffer) => buffer.toString('utf8')
-const lines = (output: string) => output.split('\n').filter(Boolean)
-
 export class ChildReviews {
   private readonly deps: ReviewDeps
   private readonly watching = new Map<string, Watch>()
@@ -122,6 +128,8 @@ export class ChildReviews {
     const { children, conversations } = this.deps
     const author = children.summary(authorId)
     if (author.reviewOf) throw new Error(t('review.error.reviewer'))
+    // Depuis la saisie, comme tout `@rôle` : pas depuis la conversation d'un travail (ADR-0019).
+    if (request.ask && author.startedFrom) throw new Error(t('children.error.oneLevel'))
     if (author.draft) throw new Error(t('children.error.draft'))
     if (author.archived) throw new Error(t('children.error.archived'))
     if (!hasFolder(author.workspace) || !inGitRepo(author.workspace))
@@ -135,7 +143,7 @@ export class ChildReviews {
     const { active, max } = children.capacity(motherId)
     if (active >= max) throw new Error(t('children.limit', { count: max }))
 
-    const target = await this.target(author)
+    const target = await this.target(author, !!request.ask)
     if (target.files.length === 0) throw new Error(t('review.error.nothing'))
     const fingerprint = await this.fingerprint(author.workspace).catch(() => undefined)
     const role = this.reviewerRole(motherId)
@@ -153,15 +161,17 @@ export class ChildReviews {
       first: true
     })
     // La demande dans le fil de la mère (fiche 265) : la bulle, puis le lancement qui la nomme ;
-    // la carte-réponse du Code reviewer se lit de ces deux éléments (fiche 263).
-    const ask: RoleRequest = {
+    // la carte-réponse du Code reviewer se lit de ces deux éléments (fiche 263). Depuis la saisie,
+    // la bulle du message (ce que l'utilisateur a tapé), complétée de ce travail.
+    const work = { childId: reviewer.id, role: roleBadge(role), review: { of: author.id } }
+    const ask: RoleRequest = request.ask ?? {
       requestId: randomUUID(),
       text: asked,
-      works: [{ childId: reviewer.id, role: roleBadge(role) }],
-      review: { of: author.id },
+      works: [],
       at: Date.now()
     }
-    conversations.post(motherId, { type: 'role-request', request: ask })
+    ask.works = [...ask.works, work]
+    conversations.post(motherId, { type: 'role-request', request: { ...ask } })
     conversations.post(motherId, {
       type: 'child-started',
       child: {
@@ -184,6 +194,7 @@ export class ChildReviews {
       files: target.files.length,
       status: 'running',
       findings: [],
+      ...(request.focus?.trim() ? { focus: clip(request.focus.trim(), FOCUS_KEEP_CHARS) } : {}),
       at: Date.now()
     }
     this.post(reviewer, author.id, review)
@@ -461,8 +472,8 @@ export class ChildReviews {
 
   /**
    * « Relancer » un relecteur dont le premier message n'est jamais parti (fiche 263) : le même
-   * premier message (rôle et consigne), sinon la consigne refaite sans les points à surveiller
-   * (perdus au redémarrage) ; `asked` : la demande de la bulle.
+   * premier message (rôle et consigne), sinon (redémarrage) la consigne refaite, avec la même portée
+   * et les points à surveiller gardés sur sa carte ; `asked` : la demande de la bulle.
    */
   async relaunch(reviewerId: string, asked: string): Promise<void> {
     const reviewer = this.deps.children.summary(reviewerId)
@@ -482,40 +493,20 @@ export class ChildReviews {
         .catch((error: unknown) => this.failed(reviewerId, messageOf(error)))
       return
     }
-    const target = await this.target(author)
+    const kept = this.current(author.id, reviewerId)
+    const target = await this.target(author, !!kept && kept.scope !== 'uncommitted')
     const role = this.reviewerRole(reviewer.startedFrom?.id ?? author.id)
-    void this.launch(reviewer, { role, asked, brief: reviewBrief(target) }, undefined)
+    void this.launch(reviewer, { role, asked, brief: reviewBrief(target, kept?.focus) }, undefined)
   }
 
-  /** Ce qui est relu : la branche d'un worktree depuis son départ, sinon le non commité. */
-  private async target(author: ConversationSummary): Promise<ReviewTarget> {
-    const { workspace } = author
+  /** Ce qui est relu (`review-target.ts`) ; `auto` : portée d'office de `@code-reviewer`. */
+  private target(author: ConversationSummary, auto: boolean): Promise<ReviewTarget> {
     const worktree = this.deps.conversations.worktreeOf(author.id)?.worktree
-    const untracked = lines(
-      text((await this.git(workspace, ['ls-files', '--others', '--exclude-standard'])).stdout)
+    return reviewTarget(
+      this.deps.run,
+      { workspace: author.workspace, title: author.title, worktree },
+      auto
     )
-    if (worktree) {
-      const merged = worktree.baseBranch
-        ? await this.git(workspace, ['merge-base', 'HEAD', worktree.baseBranch])
-        : undefined
-      const base = merged?.code === 0 ? text(merged.stdout).trim() : worktree.base
-      const changed = await this.git(workspace, ['diff', '--name-only', '--relative', base])
-      if (changed.code === 0) {
-        return {
-          scope: 'branch',
-          base,
-          ...(worktree.baseBranch ? { baseBranch: worktree.baseBranch } : {}),
-          files: unique([...lines(text(changed.stdout)), ...untracked]),
-          authorTitle: author.title
-        }
-      }
-    }
-    const changed = await this.git(workspace, ['diff', '--name-only', '--relative', 'HEAD'])
-    return {
-      scope: 'uncommitted',
-      files: unique([...(changed.code === 0 ? lines(text(changed.stdout)) : []), ...untracked]),
-      authorTitle: author.title
-    }
   }
 
   /** Empreinte du dossier (`folder-fingerprint.ts`). */
@@ -544,13 +535,7 @@ export class ChildReviews {
       .join('\n')
     return { ...finding, id, file, code }
   }
-
-  private git(cwd: string, args: string[]) {
-    return this.deps.run('git', args, { cwd, timeoutMs: 30_000 })
-  }
 }
-
-const unique = (files: string[]) => [...new Set(files)]
 
 /**
  * La demande au Code reviewer, telle que la bulle la montre et que son premier message la porte
@@ -559,16 +544,19 @@ const unique = (files: string[]) => [...new Set(files)]
  */
 export function askText(
   author: Pick<ConversationSummary, 'title' | 'branch' | 'startedFrom'>,
-  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch'>,
+  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch' | 'branch' | 'base'>,
   focus?: string
 ): string {
   const count = target.files.length
+  const branch = author.branch ?? target.branch
   const what =
-    target.scope === 'branch' && author.branch
-      ? t('review.ask.branch', { branch: author.branch, count })
-      : author.startedFrom
-        ? t('review.ask.uncommittedOf', { title: author.title, count })
-        : t('review.ask.uncommitted', { count })
+    target.scope === 'commit' && target.base
+      ? t('review.ask.commit', { commit: target.base.slice(0, 7), count })
+      : target.scope === 'branch' && branch
+        ? t('review.ask.branch', { branch, count })
+        : author.startedFrom
+          ? t('review.ask.uncommittedOf', { title: author.title, count })
+          : t('review.ask.uncommitted', { count })
   const points = focus?.trim()
   return points ? `${what}\n\n${t('review.ask.focus', { focus: points })}` : what
 }

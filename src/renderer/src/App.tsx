@@ -693,9 +693,9 @@ export function App() {
                               subtasks={threadSubtasks(c, childrenMerge, send, snapshot, {
                                 review: (id) => reviewOf(c.list.find((s) => s.id === id)),
                                 changes: () => panel.openChanges('children'),
-                                diff: (authorId, file) => {
+                                diff: (authorId, file, line) => {
                                   if (authorId !== c.activeId) c.select(authorId)
-                                  panel.openChanges('git', file)
+                                  panel.openChanges('git', file, line)
                                 }
                               })}
                               {...(c.activeSummary

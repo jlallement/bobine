@@ -199,17 +199,19 @@ export function usePanel(options: {
 
   const changesOpen = panel.open && panel.tab === 'changes'
   // « Modifications » sur une vue précise : celle de l'agent (pastille) ou l'état git (branche).
-  // `file` : un fichier à ouvrir dans la vue (remarque du Code reviewer cliquée, fiche 265).
+  // `file`, `line` : un fichier à ouvrir et sa ligne à montrer (remarque du Code reviewer, fiche 265).
   const [changesRequest, setChangesRequest] = useState<{
     view: ChangesView
     seq: number
     file?: string
+    line?: number
   }>()
-  const openChanges = (view: ChangesView, file?: string) => {
+  const openChanges = (view: ChangesView, file?: string, line?: number) => {
     setChangesRequest((current) => ({
       view,
       seq: (current?.seq ?? 0) + 1,
-      ...(file ? { file } : {})
+      ...(file ? { file } : {}),
+      ...(file && line ? { line } : {})
     }))
     update({ open: true, tab: 'changes' })
   }

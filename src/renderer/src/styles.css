@@ -10912,3 +10912,13 @@ html.about-page body {
   background: var(--border);
   color: var(--text);
 }
+
+/* Ligne d'une remarque du Code reviewer cliquée sur sa carte (fiche 265) : mise en avant. */
+tr.diff-focus td {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+tr.diff-focus td.diff-code {
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent);
+}

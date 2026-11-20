@@ -13,7 +13,9 @@ What changes for you, version by version. Shown in Settings › About.
   fix” sends its comments to the conversation's agent; “Show on the diff”, “Reply to Code reviewer”
   and “Open its conversation” follow. A task's review shows inside that task's card. A model other
   than the reviewed task's is suggested by default. In the reviewer's conversation, its instructions
-  are folded (“Role instructions”).
+  are folded (“Role instructions”). Typing `@code-reviewer` runs the same review: uncommitted
+  changes, otherwise the current branch, otherwise the last commit, with your text as what to look
+  at. A click on `file:line` shows that line in the diff.
 - The agent's merge recommendation is no longer a line in the thread: it sits on the task's row
   (“Recommended”, “Not ready yet”), with its note in the tooltip. Merging a task never deletes a
   branch that changed since the merge, nor the folder of a task still working or with changes: it

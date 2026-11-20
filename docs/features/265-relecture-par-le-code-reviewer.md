@@ -170,15 +170,36 @@ Pas de nouvelle dépendance.
   et `177-*` regardées. Suite complète non lancée (fichier i18n partagé : à la campagne du tech
   lead).
 
+- 2026-11-20 : décisions du tech lead sur les doutes, appliquées.
+  - **`@code-reviewer` tapé dans la saisie** passe par le même chemin (`startRoleChildren` →
+    `ChildReviews.start` avec `ask`) : bulle du message partagée (le lien de relecture passe de
+    la bulle à chaque travail, `RoleRequestWork.review.of`, pour qu'un autre rôle cité dans le
+    même message ne soit pas pris pour une relecture), le texte tapé en points à surveiller,
+    portée d'office (`review-target.ts`, `auto`) : le non commité, sinon la branche courante
+    contre sa base (`origin/HEAD`, sinon `main`, `master`) si ce n'est pas elle, sinon le dernier
+    commit (nouvelle portée `commit` : « Relis le dernier commit a3f2c1e (2 fichiers). », consigne
+    `git show`). Refusé depuis la conversation d'un travail (un seul niveau). Essais main :
+    non commité avec un autre rôle dans le même message, dernier commit, branche courante.
+  - **Clic sur `fichier:ligne`** : `onShowDiff(auteur, fichier, ligne)` → `openChanges('git',
+    fichier, ligne)` → `ChangesTab.initialFile { path, line }` → `DiffView.focus` : la ligne
+    (côté nouveau) amenée au centre et mise en avant (`tr.diff-focus`) ; absente du diff, le
+    fichier ouvert seulement. Essai `ChangesTab.test.tsx` (les deux cas).
+  - **Points à surveiller gardés** (`Review.focus`, 4 000 caractères au plus) : « Relancer »
+    après un redémarrage refait la consigne avec eux et la même portée. Essai main (premier
+    message refusé, mémoire perdue, relance : consigne avec les points).
+  - **Pilote** : `shot.works[]` d'un Code reviewer : `severities` (par gravité) et `findings`
+    (dix au plus) ; `etat` : « Remarques : 4 (1 haute, 1 moyenne, 2 basses) », « aucune » ;
+    `--long` : les trois premières. Essai `cible.test.mjs` ; `docs/pilote.md`.
+  - `ChangesTab` : props sorties en `ChangesTabProps` (fonction à 300 lignes).
+
 ## Limites connues
 
-- `@code-reviewer` tapé dans la saisie reste une demande ordinaire au rôle : même carte, réponse en
-  Markdown, mais ni portée, ni `report_findings`, ni notes de diff (il faudrait choisir une portée ;
-  « Faire relire » le fait).
+- `@code-reviewer` refusé pendant que l'agent de la conversation répond (comme « Faire relire » :
+  le dossier bouge) ; les autres rôles du message partent.
+- `start_child` de l'agent avec le rôle `code-reviewer` reste un travail ordinaire du rôle (pas
+  une relecture) : le chemin de l'utilisateur est unique, celui de l'agent n'a pas changé.
+- « Faire relire » (dialogue) garde sa portée : la branche d'un worktree, sinon le non commité
+  (rien : refusé) ; la portée d'office (branche courante, dernier commit) est celle de la saisie.
 - Le fil du travail relu garde la carte « Relecture » de la 177 (c'est sa conversation à lui).
-- Un clic sur `fichier:ligne` ouvre le fichier dans la vue Git (déplié) ; la ligne elle-même n'est
-  pas mise en avant, la remarque de diff est sous elle.
+- Ligne dans une partie plafonnée d'un très gros diff (fiche 192) : pas mise en avant.
 - Une relecture rangée sous une ligne de groupe est toujours visible (pas repliée avec la ligne).
-- Après un redémarrage, les points à surveiller d'un relecteur qui n'a jamais démarré sont perdus
-  pour « Relancer » (la consigne est refaite sans eux).
-- Le pilote (`shot.works`) lit la carte du relecteur comme toute carte, sans ses remarques.

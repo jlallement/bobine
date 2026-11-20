@@ -17,6 +17,9 @@ import { AppToolServer } from '../mcp/tool-server'
 import { ChildConversations } from './children'
 import { reviewHandlers } from './children-review'
 import { ConversationManager } from './manager'
+import { builtinRoles } from '../roles/builtin'
+import { startRoleChildren } from '../roles/invoke'
+import type { RoleView } from '@shared/roles'
 
 function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -77,7 +80,12 @@ async function environment() {
     worktrees: new Worktrees(run),
     agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
   })
-  children = new ChildConversations(manager, { run })
+  // Les rôles fournis par Bobine (fiche 223), dont Code reviewer.
+  const roles: RoleView[] = builtinRoles().map((role) => ({ ...role, enabled: true }))
+  children = new ChildConversations(manager, {
+    run,
+    roles: { active: () => roles, find: (_dir, name) => roles.find((r) => r.name === name) }
+  })
   const module = children
   const reviewModule = module.reviews
   manager.subscribe({
@@ -135,8 +143,13 @@ describe('relecture avant fusion (fiche 177)', () => {
     const bubble = env.items(author).find((i) => i.kind === 'role-request')
     expect(bubble).toMatchObject({
       text: t('review.ask.uncommitted', { count: 2 }),
-      works: [{ childId: reviewer.id, role: { name: 'code-reviewer', readOnly: true } }],
-      review: { of: author }
+      works: [
+        {
+          childId: reviewer.id,
+          role: { name: 'code-reviewer', readOnly: true },
+          review: { of: author }
+        }
+      ]
     })
     const started = env.items(author).find((i) => i.kind === 'child-started')
     expect(started).toMatchObject({
@@ -259,7 +272,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     const bubble = env.items(mother).find((i) => i.kind === 'role-request')
     expect(bubble).toMatchObject({
       text: t('review.ask.branch', { branch: child.branch ?? '' }),
-      review: { of: child.id }
+      works: [{ review: { of: child.id } }]
     })
     expect(env.card(mother)).toMatchObject({ reviewId: reviewer.id, authorId: child.id })
     await waitFor(() => env.card(child.id)?.status === 'reported')
@@ -288,6 +301,107 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(env.children.reply(author, reviewer.id, 'Relis les modifications')).toBe('sent')
     await waitFor(() => reports().length === 2, 20_000)
     expect(env.items(reviewer.id).some((i) => i.kind === 'user')).toBe(false)
+  })
+
+  it('`@code-reviewer` tapé dans la saisie : le même chemin, le texte tapé en points à surveiller', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const typed = 'Regarde surtout la gestion des erreurs'
+    const result = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer', 'ux-ui-expert'],
+      text: typed
+    })
+    expect(result.failed).toEqual([])
+    const reviewerId = result.started.find((s) => s.role === 'code-reviewer')?.childId ?? ''
+    const reviewer = env.children.summary(reviewerId)
+    expect(reviewer.reviewOf?.id).toBe(author)
+    expect(env.children.role(reviewerId)).toBe('reviewer')
+    // Une seule bulle pour le message : le texte tapé ; seul le Code reviewer y relit.
+    const bubbles = env.items(author).filter((i) => i.kind === 'role-request')
+    expect(bubbles).toHaveLength(1)
+    const bubble = bubbles[0]
+    expect(bubble?.kind === 'role-request' && bubble.text).toBe(typed)
+    expect(
+      bubble?.kind === 'role-request' && bubble.works.map((w) => [w.role.name, w.review])
+    ).toEqual([
+      ['code-reviewer', { of: author }],
+      ['ux-ui-expert', undefined]
+    ])
+    // Portée d'office : le non commité ; le texte tapé, gardé avec la relecture et dans sa consigne.
+    expect(env.card(author)).toMatchObject({ scope: 'uncommitted', files: 2, focus: typed })
+    await waitFor(() => env.items(reviewerId).some((i) => i.kind === 'user'))
+    const first = env.items(reviewerId).find((i) => i.kind === 'user')
+    const opening = splitRoleBrief(first?.kind === 'user' ? first.text : '')
+    expect(opening.brief).toContain(`look in particular at:\n${typed}`)
+    // `report_findings` comme « Faire relire ».
+    await waitFor(() => env.card(author)?.status === 'reported')
+    expect(env.card(author)?.findings).toHaveLength(2)
+  })
+
+  it('`@code-reviewer` sans rien de non commité : la branche courante, sinon le dernier commit', async () => {
+    const env = await environment()
+    const author = await env.author()
+    env.git('add', '.')
+    env.git('commit', '-q', '-m', 'travail')
+    const head = env.git('rev-parse', 'HEAD')
+    const first = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Relis'
+    })
+    expect(first.failed).toEqual([])
+    expect(env.card(author)).toMatchObject({ scope: 'commit', base: head.slice(0, 7), files: 2 })
+    const reviewer = first.started[0]?.childId ?? ''
+    await waitFor(() => env.items(reviewer).some((i) => i.kind === 'user'))
+    const sent = env.items(reviewer).find((i) => i.kind === 'user')
+    const opening = splitRoleBrief(sent?.kind === 'user' ? sent.text : '')
+    expect(
+      opening.request.startsWith(t('review.ask.commit', { commit: head.slice(0, 7), count: 2 }))
+    ).toBe(true)
+    expect(opening.brief).toContain(`git show ${head}`)
+    await env.idle(reviewer)
+    // Une branche de travail (pas main), sans rien de non commité : la branche contre main.
+    env.git('checkout', '-q', '-b', 'tri')
+    writeFileSync(join(env.repo, 'tri.js'), 'export const tri = 1\n')
+    env.git('add', '.')
+    env.git('commit', '-q', '-m', 'tri')
+    const second = await startRoleChildren(env.children, author, {
+      roles: ['code-reviewer'],
+      text: 'Et la branche ?'
+    })
+    expect(second.failed).toEqual([])
+    const review = env.card(author)
+    expect(review).toMatchObject({ scope: 'branch', baseBranch: 'main', files: 1 })
+    expect(review?.base).toBe(head.slice(0, 7))
+    const bubble = env.items(author).findLast((i) => i.kind === 'role-request')
+    expect(bubble?.kind === 'role-request' && bubble.text).toBe('Et la branche ?')
+  })
+
+  it('« Relancer » après un redémarrage : la même portée et les points à surveiller', async () => {
+    const env = await environment()
+    const author = await env.author()
+    // Le premier message du relecteur ne part pas (agent indisponible à ce moment-là).
+    const sent = new Map<string, string[]>()
+    const prompt = env.manager.prompt.bind(env.manager)
+    let refuse = true
+    env.manager.prompt = ((id: string, text: string, ...rest: unknown[]) => {
+      sent.set(id, [...(sent.get(id) ?? []), text])
+      if (id !== author && refuse) return Promise.reject(new Error('agent indisponible'))
+      return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
+    }) as typeof env.manager.prompt
+    const reviewer = await env.reviews.start(author, { focus: 'Les erreurs réseau' })
+    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    expect(env.card(author)?.focus).toBe('Les erreurs réseau')
+    // Redémarrage : le premier message gardé en mémoire est perdu ; la carte, elle, est enregistrée.
+    env.reviews.forget(reviewer.id)
+    refuse = false
+    expect(env.children.reply(author, reviewer.id, 'Relis les modifications')).toBe('sent')
+    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 2, 20_000)
+    const again = splitRoleBrief(sent.get(reviewer.id)?.[1] ?? '')
+    expect(again.request).toBe('Relis les modifications')
+    expect(again.brief).toContain(REVIEW_BRIEF_LEAD)
+    expect(again.brief).toContain('look in particular at:\nLes erreurs réseau')
+    expect(again.brief).toContain('git diff HEAD')
+    await waitFor(() => env.card(author)?.status === 'reported', 20_000)
   })
 
   it('relecture d’avant (sans lancement chez la mère) : ni compte rendu ni « Répondre »', async () => {

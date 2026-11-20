@@ -179,6 +179,11 @@ Cartes de groupe (fiche 264) : `etat` les dit (« Carte de groupe : 3 travaux ·
 finis », une ligne par travail — nom, état, pastille de fusion —, puis la fusion en cours ou son
 résultat) ; `attendre` attend tant qu'une ligne est en cours (`shot.groups`).
 
+Relecture par le Code reviewer (fiche 265) : sous la ligne « Travail (code-reviewer) », `etat` dit
+le nombre de remarques par gravité (« Remarques : 3 (1 haute, 2 basses) », « aucune ») ; avec
+`--long`, les trois premières (gravité, `fichier:ligne`, phrase). `shot.works[].severities` et
+`findings` (dix au plus) dans `--json`.
+
 ## Essais
 
 - `scripts/pilote/pilote.test.mjs` : parties pures (arguments, `etat`, raisons, journal, textes).

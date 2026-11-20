@@ -161,7 +161,7 @@ export function fixMessage(
   role: string,
   info: Pick<SubtasksInfo, 'children' | 'motherId'> | undefined
 ): string {
-  const of = card.request?.review?.of
+  const of = card.reviewOf
   const work = of && of !== info?.motherId ? info?.children.find((c) => c.id === of) : undefined
   return work
     ? i18next.t('workCard.fixMessageWork', { role, work: work.title })
@@ -220,7 +220,7 @@ function SettledActions({
     !info?.motherQueued
   // Code reviewer (fiche 265) : pas « appliquer » sa réponse, mais corriger ses remarques.
   const review = card.review?.status === 'reported' ? card.review : undefined
-  const reviewing = !!card.request?.review
+  const reviewing = !!card.reviewOf
   const applies = transmittable && !reviewing && !!answer
   const fixes = transmittable && !!review && review.findings.length > 0
   const lastAsk = card.steps.findLast((s) => s.kind === 'ask')

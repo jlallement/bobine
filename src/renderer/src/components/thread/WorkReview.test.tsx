@@ -97,8 +97,7 @@ const asked = (id: number, of: string, text = ASK): TranscriptItem[] => [
     id,
     requestId: `d${id}`,
     text,
-    works: [{ childId: 'r', role: reviewer }],
-    review: { of },
+    works: [{ childId: 'r', role: reviewer, review: { of } }],
     at: at(0)
   },
   {
@@ -271,12 +270,12 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     view(reviewedHere(), subtasks)
     const card = screen.getByTestId('work-card')
     fireEvent.click(within(card).getAllByTestId('work-finding-where')[1] as HTMLElement)
-    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('mere', 'src/main.ts')
+    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('mere', 'src/main.ts', 77)
     expect(within(card).getAllByTestId('work-finding-where')[0]?.getAttribute('title')).toBe(
       'Voir src/main.ts:42 sur le diff'
     )
     fireEvent.click(within(card).getByTestId('work-show-diff'))
-    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('mere', undefined)
+    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('mere', undefined, undefined)
     expect(within(card).getByTestId('work-show-diff').textContent).toBe('Voir sur le diff')
   })
 
@@ -434,7 +433,7 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     expect(screen.getAllByTestId('work-card')).toHaveLength(2)
     // « Voir sur le diff » : la vue Git du travail relu.
     fireEvent.click(within(nested).getByTestId('work-show-diff'))
-    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('b', undefined)
+    expect(subtasks.onShowDiff).toHaveBeenLastCalledWith('b', undefined, undefined)
     await act(async () => fireEvent.click(within(nested).getByTestId('work-fix')))
     const [message, about] = (onAsk.mock.calls[0] as unknown[] | undefined) ?? []
     expect(plain(message)).toBe(
