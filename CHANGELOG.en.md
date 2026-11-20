@@ -6,6 +6,15 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- The tasks the agent proposes in a turn form **a single card**, where it proposed them, that
+  changes in place: proposed (Start, Do it here, Decline, “Start all”), then “3 tasks · 1 working,
+  2 finished”; each row unfolds on the task's whole response. The card's footer merges its ready
+  tasks into main (“Merge the 2 ready into main”, with the agent's recommendation), and the
+  progress and outcome show in the card. Several `@roles` in one message form the same card. No
+  more “Subtasks” card jumping down the thread, nor separate “The agent started…” lines or reports.
+- A task that writes code (a coding `@role`, or “Start in parallel…”) merges from its own card:
+  “View changes”, “Get a review”, “Merge into main”; the card shows the merge steps, then “Merged
+  into main · branch deleted”.
 - A request to a role (`@UX/UI expert …`) stays in the thread, like a message, with the role's
   chip. Right below it, a single card that no longer moves: what the role is doing and for how
   long, then **its whole response** (collapsed after about ten lines, “Read more”), its duration

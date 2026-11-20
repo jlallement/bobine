@@ -1,6 +1,6 @@
 # 264 — Carte de groupe à place fixe, fusion dans la carte
 
-- **Statut** : en cours
+- **Statut** : fait (relecture du tech lead)
 - **Dépend de** : 260 (lot 3, écrans C et D des maquettes `docs/maquettes/260-travail-delegue.html`),
   263 (bulle @rôle, carte-réponse `WorkCard`, ADR-0060), 262 (ligne de lancement, « Changer… »),
   261 (repère), 258 (états, pastille « fusionnée »), 120 (fusion enchaînée), 160 (recommandations)
@@ -18,34 +18,34 @@ un travail qui écrit déroule sa fusion **dans sa carte** ; plusieurs travaux l
 
 ## Critères d'acceptation
 
-- [ ] Les propositions d'un tour (`start_child`) forment une seule carte, à leur place, qui change
+- [x] Les propositions d'un tour (`start_child`) forment une seule carte, à leur place, qui change
       d'état sur place : **proposés** (par ligne : avatar ou icône, « Rôle — titre », méta, Lancer,
       Faire ici, Refuser, Agent et modèle, consigne dépliable ; ligne de lancement de la 262 ; pied
       « Tout lancer ») → **en cours / finis** (« 3 travaux · 1 en cours, 2 finis », coût une fois) →
       chaque ligne se déplie sur la carte-réponse du travail (réponse entière, transmission,
       Appliquer, Répondre, Ouvrir).
-- [ ] Pied de la carte : « Fusionner les N prêts dans main », recommandation de l'agent,
+- [x] Pied de la carte : « Fusionner les N prêts dans main », recommandation de l'agent,
       « Inclure les autres… », « Puis nettoyer » ; progression et résultat dans la carte.
-- [ ] Plus de carte « Sous-tâches », de ligne « L'agent a lancé… » ni de compte rendu séparé pour
+- [x] Plus de carte « Sous-tâches », de ligne « L'agent a lancé… » ni de compte rendu séparé pour
       ces travaux.
-- [ ] Plusieurs @rôles dans un message : la bulle, puis la même carte de groupe, sans « proposés ».
-- [ ] Travail qui écrit (bulle @rôle seule, ou « Lancer en parallèle… ») : à la fin, branche,
+- [x] Plusieurs @rôles dans un message : la bulle, puis la même carte de groupe, sans « proposés ».
+- [x] Travail qui écrit (bulle @rôle seule, ou « Lancer en parallèle… ») : à la fin, branche,
       « N fichiers +a −r », « Voir les modifications », « Faire relire » (relecture actuelle),
       « Fusionner dans main » ; la fusion se déroule dans la carte (étapes réelles seulement,
       « Arrêter »), puis « Fusionné dans main · branche supprimée » ; conflits comme aujourd'hui
       (Réessayer, Abandonner, Voir le conflit). Ni « main n'a pas bougé » ni « tests de la
       branche » (décision 8 de la fiche 260).
-- [ ] Anciennes conversations : `child-started`, `child-report`, « Sous-tâches », `children-merge`
+- [x] Anciennes conversations : `child-started`, `child-report`, « Sous-tâches », `children-merge`
       enregistrés s'affichent comme avant ; aucune migration.
-- [ ] Inchangé : filles d'une fille, relecture, réveil de la mère (`WakeLine`), recommandations de
+- [x] Inchangé : filles d'une fille, relecture, réveil de la mère (`WakeLine`), recommandations de
       fusion ; consigne de conflit envoyée à un travail avec sa provenance.
-- [ ] Doublons : `message_child` (une seule mention : dans la carte du travail),
+- [x] Doublons : `message_child` (une seule mention : dans la carte du travail),
       `recommend_merge` (la pastille sur la ligne), cartes d'outils repliées dans le groupe d'outils.
-- [ ] Modifications › Filles : mêmes données, toujours juste. Repère (261) : vise la ligne ou la
+- [x] Modifications › Filles : mêmes données, toujours juste. Repère (261) : vise la ligne ou la
       carte du travail. Pilote : voit la carte de groupe (état, lignes, fusion).
-- [ ] Textes : « travail », « rôle », « réponse », « fusionner » (fr, en) ; jamais « fille »,
+- [x] Textes : « travail », « rôle », « réponse », « fusionner » (fr, en) ; jamais « fille »,
       « sous-tâche » ni « compte rendu » dans les nouveaux textes.
-- [ ] Testé contre l'agent factice : réducteur, composants, main, e2e (`filles`, `filles-fusion`,
+- [x] Testé contre l'agent factice : réducteur, composants, main, e2e (`filles`, `filles-fusion`,
       `filles-tech-lead`, `filles-non-commite`, `roles-travail`…), captures `264-*` clair et sombre.
 
 ## Plan
@@ -95,3 +95,96 @@ Pas de nouvelle dépendance.
 ## Journal
 
 - 2026-11-20 : fiche et plan.
+- 2026-11-20 : fait.
+  - **Lien carte ↔ lancement** (ADR-0061) : `start_child` donne une clé à chaque proposition
+    (`ChildProposal.key`, dans l'élicitation) et la repasse au lancement (`ChildStart.card`), même
+    tardif ; « Lancer » d'une proposition expirée la repasse (`conversation:startChild`, `card`
+    vérifiée, 100 caractères au plus) ; « Lancer en parallèle… » reçoit une clé neuve (carte seule).
+    Sans clé ni bulle : conversation d'avant, rendue comme avant (« Sous-tâches », lancement, compte
+    rendu), aucune migration.
+  - **Rangement** (`shared/work-groups.ts`, `workLayout`) sur `workCards` généralisé
+    (`WorkCardData` : rôle et bulle facultatifs, `title`, `askedAt`, `asked`, `byAgent`, `card` ;
+    étape `note` pour `child-instruction` ; `child-recommendation` cachée) : propositions d'un tour
+    → une carte de groupe à la place de la première ; bulle à plusieurs rôles → la bulle puis la
+    même carte (décision 5) ; clé sans proposition → carte seule à la place du lancement.
+  - **Décision : bulle à plusieurs rôles = carte de groupe** (remplace les cartes individuelles de
+    la 263 sous une telle bulle) : décision 5 de la fiche 260 et tableau « qui affiche quoi, où » de
+    la maquette ; une seule carte qui compte « N travaux · x en cours, y finis » et fusionne ses
+    branches prêtes ensemble, au lieu de N cartes empilées. Une bulle à un rôle garde sa carte.
+  - **Carte de groupe** (`WorkGroup.tsx`) : en-tête (« 3 travaux proposés · par OpenCode », puis
+    « 3 travaux · 1 en cours, 2 finis, 1 refusé », coût total une fois, « gratuit » si nul) ; lignes
+    proposées (`ProposalRow`, ligne de lancement de la 262 par `useProposalsLaunch`, ligne sans
+    rôle « un autre <agent> · écrit dans sa branche », issues « Lancé / Fait ici / Refusé /
+    Expiré ») ; « Tout lancer » (dès deux lignes à lancer : chaque ligne inscrit son lancement avec
+    le choix affiché) ; clavier ↑ ↓ Entrée gardé ; lignes lancées : avatar à l'état, « Rôle —
+    titre », méta (outil en cours et temps écoulé, ou branche et fichiers, ou lecture seule),
+    pastille (fusion, sinon recommandation « Recommandé »), état ; dépliée : la `WorkCard` du
+    travail sans en-tête (réponse entière, consigne repliée, message de l'agent, transmission —
+    « quand ses travaux auront tous fini » pour un travail lancé par l'agent —, Répondre, Ouvrir) ;
+    pied : `SubtasksMergeFooter` en « travaux » (« Fusionner les N prêts dans main », recommandés,
+    « Inclure les autres… », « Puis nettoyer », progression, résultat, conflit).
+  - **Fusion dans la carte d'un travail** (`WorkMerge.tsx`) : plan lu pour ce seul travail ;
+    « Fusionner dans main » (fusion de la fiche 120 sur ce travail, avec « Puis nettoyer ») ;
+    étapes réelles seulement (fusion de la branche ; conflit, puis « <rôle> résout le conflit… » ;
+    « En attente : une autre fusion passe avant ») et « Arrêter » ; résultat « Fusionné dans main ·
+    branche supprimée » et « Sa conversation est archivée… », dit aussi après le nettoyage ;
+    conflit : Réessayer, Abandonner, Voir le conflit ; échec dit ; dossier principal non commité :
+    la carte de la fiche 123 ; autre fusion en cours : dit. En-tête « fusion… », puis « fusionné ·
+    heure ». « Faire relire » ouvre la relecture actuelle (`SubtasksInfo.onReview`, un seul point
+    d'entrée pour la 265). « Enregistrer comme rôle » passe du compte rendu à la carte d'un travail
+    sans rôle.
+  - **Main** : `ChildrenMerger.plan(motherId, ids)` (canal `children:mergePlan`, liste vérifiée) :
+    seulement ces branches, dans l'ordre des lignes, et leurs recouvrements ; `start` fusionne dans
+    l'ordre reçu ; consigne de conflit avec `from: { kind: 'merge' }` (« Consigne de la fusion
+    lancée depuis « … » », sans « Modifier » ; rien de changé pour l'agent) ; réponse entière et
+    « Répondre » pour tout travail qui a sa carte ; cartes `start_child` en parallèle reliées
+    chacune à son appel (`AppToolsBridge`, elles s'affichaient dans le groupe d'outils).
+  - **Doublons** : `child-instruction` d'un travail rangé → dans sa carte (repliée) ;
+    `child-recommendation` → la pastille seule (aussi pour une ligne de « Sous-tâches ») ; les
+    cartes d'outils `message_child` / `recommend_merge` restent dans le groupe d'outils.
+  - **Vue « Filles »** : chaque ligne lit la dernière fusion qui la touche (`rowMerge(…, items)`) :
+    avec une fusion par carte, une fille fusionnée avant la dernière fusion du fil n'était plus
+    dite « fusionnée » (essai qui échoue sans le correctif).
+  - **Repère** : ancre de tout travail rangé (ligne de groupe ou carte seule). **Pilote** :
+    `shot.groups` (titre, comptes, lignes, fusion), carte de groupe en attente = `propositions`
+    (boutons des lignes et « Tout lancer »), `attendre` attend une ligne en cours.
+  - **Agent factice** : `travaux-groupe` (trois travaux de la maquette D, recommandations au
+    réveil), `rayons`, `tests-stockage`, `fusion-trois` ; `conflits` répond au réveil d'une mère
+    sans rien modifier.
+  - **Essais** : `work-groups.test.ts` (rangement, ancienne conversation, fil abîmé,
+    `lastMergeFor`) ; `WorkGroup.test.tsx` (proposés, Tout lancer, en cours, déplié, message et
+    recommandation, pied lu et lancé pour la carte seulement, fusion en cours, finie, conflit, autre
+    carte ; travail qui écrit : bouton, étapes, conflit en cours, fusionné après nettoyage, conflit,
+    échec ; carte seule ; ancienne conversation) ; `ChildrenView.test.tsx` (deux fusions) ;
+    `Transcript.test.tsx` (provenance `merge`) ; main : `children-merge.test.ts` (plan limité et
+    ordonné, provenance), `children-tools.test.ts` (clé reprise, aussi tardive),
+    `children.test.ts` (IPC, clé sur le lancement), `app-tools-bridge.test.ts` (appels en
+    parallèle) ; pilote (`cible.test.mjs`). Essais mis à jour : `ChildProposals`, `RoleWork`,
+    `WorkCard` (plusieurs rôles), `SubtasksMerge`.
+  - **e2e** : nouvelle suite `travaux-groupe` (captures `264-groupe-proposes`, `-en-cours`,
+    `-finis`, `-fusionne-carte`, `264-travail-ecrit`, `264-travail-ecrit-fusion`) ; `filles-fusion`
+    passe par la carte de groupe (`fusion-trois`, « Tout lancer » ; captures
+    `264-groupe-fusion-en-cours`, `264-groupe-fusionne`) ; `filles`, `filles-tech-lead`,
+    `filles-non-commite`, `roles-travail`, `roles-gestion`, `commit-redige` mis à jour.
+  - `repere` : un travail compté comme une carte seule ou une ligne de carte de groupe.
+- 2026-11-20 : `./scripts/verify` vert ; `pnpm build && pnpm e2e --changed` (toutes les suites
+  touchées, clair et sombre) : 220 tâches vertes sur 222 en 19 min 50 s, `repere` (2) rouge,
+  corrigé puis vert seul (clair et sombre). Captures `264-*` regardées.
+
+## Limites connues
+
+- Capture `264-groupe-fusion-en-cours` : prise pendant la fusion, mais souvent au nettoyage (« 3
+  sur 3 faits », « Arrêter ») ; la fusion de l'agent factice est trop rapide pour figer l'étape
+  « résout le conflit » à l'image (l'essai la vérifie, sans la photographier).
+- Fusionner un travail seul archive sa conversation (« Puis nettoyer », branche supprimée, comme
+  la maquette C) ; elle reste ouvrable. Pas d'option « garder la branche » dans la carte d'un
+  travail seul.
+- Ligne « N fichiers +a −r » d'un travail : celle de sa dernière réponse ; des commits faits à la
+  main après (comme dans les essais) n'y paraissent pas.
+- Textes repris de la fiche 120 et encore au vocabulaire d'avant (« fille », « Sous-tâches ») :
+  phrases de résumé et d'erreur de la fusion (`childrenMerge.summary.*`, `childrenMerge.error.*`),
+  `children.from.*`, réveil groupé ; lot 266 (vocabulaire unique).
+- Plusieurs fusions par conversation : une seule tourne à la fois dans le main ; une autre carte
+  dit « Une autre fusion est en cours ici ».
+- « Tout lancer » n'apparaît qu'à partir de deux lignes à lancer (une seule : son « Lancer ») ; la
+  note « où partent les travaux » n'est pas répétée quand la ligne de lancement de la 262 le dit.

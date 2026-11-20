@@ -170,10 +170,14 @@ Si la lecture ne permet pas de dire l'agent, la première ligne d'`etat` dit pou
 réglages ouverts, barre latérale sans nom d'agent, « État illisible » hors de la fenêtre
 principale) ; jamais « agent ? ».
 
-Cartes qui font sortir `attendre` en `carte` : autorisation, question, plan, « Tâches proposées »
-tant qu'une ligne est en attente (`data-pending`, une carte toute traitée garde « Lancer » mais
-n'attend plus), et souvenir (« Retenir ce souvenir ? », « Oublier ce souvenir ? », type
+Cartes qui font sortir `attendre` en `carte` : autorisation, question, plan, carte de groupe
+(fiche 264, type `propositions`) tant qu'une ligne est encore proposée (`data-pending`, ses boutons
+et « Tout lancer » ; une carte toute décidée garde « Lancer » mais n'attend plus), et souvenir (« Retenir ce souvenir ? », « Oublier ce souvenir ? », type
 `souvenir`). `repondre` et `capture --zone carte` visent la dernière de ces cartes.
+
+Cartes de groupe (fiche 264) : `etat` les dit (« Carte de groupe : 3 travaux · 1 en cours, 2
+finis », une ligne par travail — nom, état, pastille de fusion —, puis la fusion en cours ou son
+résultat) ; `attendre` attend tant qu'une ligne est en cours (`shot.groups`).
 
 ## Essais
 

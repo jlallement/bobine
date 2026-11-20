@@ -6,6 +6,16 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- Les travaux que l'agent propose dans un tour forment **une seule carte**, à la place où il les a
+  proposés, qui change d'état sur place : proposés (Lancer, Faire ici, Refuser, « Tout lancer »),
+  puis « 3 travaux · 1 en cours, 2 finis » ; chaque ligne se déplie sur la réponse entière du
+  travail. Le pied de la carte fusionne ses travaux prêts dans main (« Fusionner les 2 prêts dans
+  main », recommandation de l'agent), et la progression et le résultat s'affichent dans la carte.
+  Plusieurs `@rôles` dans un même message forment la même carte. Plus de carte « Sous-tâches » qui
+  saute vers le bas, ni de ligne « L'agent a lancé… » ni de compte rendu séparés.
+- Un travail qui écrit (un `@rôle` qui code, ou « Lancer en parallèle… ») se fusionne depuis sa
+  propre carte : « Voir les modifications », « Faire relire », « Fusionner dans main » ; la carte
+  montre les étapes de la fusion, puis « Fusionné dans main · branche supprimée ».
 - Une demande à un rôle (`@Expert UX/UI …`) reste dans le fil, comme un message, avec la puce du
   rôle. Juste dessous, une seule carte, qui ne bouge plus : ce que fait le rôle et depuis combien de
   temps, puis **sa réponse entière** (repliée après une dizaine de lignes, « Lire la suite »), sa

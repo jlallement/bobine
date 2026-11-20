@@ -74,8 +74,12 @@ const LONG_LABEL = 'Experte en accessibilité des écrans web'
 const input = `document.querySelector('[data-testid="composer-input"]')`
 const scroller = `document.querySelector('.thread').closest('.scroll')`
 const cue = `document.querySelector('[data-testid=work-cue]')`
-// Cartes-réponses qui ont répondu (fiche 263) : à place fixe, sous leur bulle.
-const reports = `[...document.querySelectorAll('[data-testid=work-card][data-state=replied]')]`
+// Travaux à place fixe : cartes-réponses sous leur bulle (fiche 263), lignes d'une carte de groupe
+// quand une bulle cite plusieurs rôles (fiche 264).
+const WORKS = '[data-testid=work-card]:not(.in-group), [data-testid=work-row]'
+const works = `document.querySelectorAll(${JSON.stringify(WORKS)})`
+// Ceux qui ont répondu.
+const reports = `[...${works}].filter((w) => w.dataset.state === 'replied')`
 
 /** Tours retenus par le verrou de l'agent factice (une ligne chacun, `docs/mock-agent.md`). */
 const held = (turnLock) => {
@@ -95,16 +99,13 @@ async function heldTurns(turnLock, count, timeoutMs = 30000) {
 async function delegate(ui, turnLock, text, roles) {
   writeFileSync(turnLock, '')
   const before = held(turnLock)
-  const launches = await ui.ev(`document.querySelectorAll('[data-testid=work-card]').length`)
+  const launches = await ui.ev(`${works}.length`)
   await ui.ev(`${input}.focus()`)
   await ui.type(text)
   await ui.press('Escape')
   await ui.waitFor(`!!document.querySelector('[data-testid=role-destination]')`)
   await ui.enter()
-  await ui.waitFor(
-    `document.querySelectorAll('[data-testid=work-card]').length === ${launches + roles}`,
-    30000
-  )
+  await ui.waitFor(`${works}.length === ${launches + roles}`, 30000)
   await heldTurns(turnLock, before + roles)
 }
 
