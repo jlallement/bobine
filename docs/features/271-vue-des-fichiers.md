@@ -82,6 +82,27 @@ sur le dossier qui évite ces allers-retours ».
   - **M7** : `relativeInRoot` retiré. **M9** : supprimer une conversation purge `bobine.files` et
     `bobine.panel.filesOpen`.
 
+- **2026-11-20 — clôture : remarques introuvables, revue de toutes les captures** :
+  - Une remarque dont la cible est introuvable (son dossier n'est plus parmi ceux de la
+    conversation) est listée sous la barre des remarques (chemin, texte, corbeille) et comptée
+    « sur un dossier retiré », jamais comptée sans être montrée (`isOrphanNote`, `NotesBar`). Pas
+    de migration de l'ancienne clé `rang:chemin` : ce format n'a jamais été publié.
+  - Captures ajoutées : `271-special` (FIFO grisé, marqué) et `271-filtre-exclu` (`.env` marqué
+    dans le filtre).
+  - Revue des 30 captures en français (clair et sombre) et de celles en anglais. Défauts trouvés et
+    corrigés :
+    - un fichier à la racine montrait un faux dossier dans le filtre (`.env` → « .en ») :
+      `nameAndDir` ;
+    - la marque « exclu » d'un résultat est maintenant à droite, comme dans l'arbre ;
+    - en sombre, le segment actif (Rendu / Source, et les vues des Modifications) se distinguait
+      mal : liseré ;
+    - la ligne visée par un clic droit n'était pas marquée (une autre, sous le pointeur, l'était) :
+      classe `menu-open` ;
+    - une toute petite image (2 × 2) était invisible : agrandie d'un facteur entier vers 64 px,
+      pixels nets ;
+    - à 360 px, le chemin coupé commençait par un « / » orphelin : fondu élargi ;
+    - la capture `271-remarque` prenait l'éclair passager d'une ligne : elle l'attend.
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - **Lecture seule d'abord.** Pas d'édition dans la première version ; une édition légère (comme

@@ -13,10 +13,11 @@ import {
 import { useEffect, useState, type KeyboardEvent, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DiffNote } from '@shared/diff-notes'
-import type { FileRoot, FileTarget } from '@shared/files'
+import { nameAndDir, type FileRoot, type FileTarget } from '@shared/files'
 import { countText } from '@shared/i18n/format'
 import { SHORTCUTS, type MenuCommand } from '@shared/shortcuts'
 import type { TreeSide } from '../../files-state'
+import { isOrphanNote } from '../../file-notes'
 import { platformFeatures } from '../../platform-features'
 import { Tip } from '../common/Menus'
 import type { FileActions } from './FileActions'
@@ -221,8 +222,7 @@ function FilterResults({
         </div>
       )}
       {hits?.map((hit) => {
-        const name = hit.path.split('/').at(-1) ?? hit.path
-        const dir = hit.path.slice(0, hit.path.length - name.length - 1)
+        const { name, dir } = nameAndDir(hit.path)
         const rootName = roots.length > 1 ? roots[hit.root]?.name : undefined
         const selected = active?.root === hit.root && active.path === hit.path
         return (
@@ -247,14 +247,14 @@ function FilterResults({
             {...(hit.excluded ? { 'aria-description': excluded } : {})}
           >
             <span className="files-hit-name">{name}</span>
+            <span className="files-hit-dir">{[rootName, dir].filter(Boolean).join('/')}</span>
             {hit.excluded && (
               <Tip label={excluded}>
-                <span className="file-row-mark" data-testid="files-hit-excluded">
+                <span className="file-row-mark files-hit-mark" data-testid="files-hit-excluded">
                   <EyeOff size={12} />
                 </span>
               </Tip>
             )}
-            <span className="files-hit-dir">{[rootName, dir].filter(Boolean).join('/')}</span>
           </button>
         )
       })}
@@ -365,18 +365,26 @@ export function ViewMenu(props: {
 export function NotesBar({
   notes,
   fileKey,
+  rootPaths,
   onSend,
   onShow,
   onClear,
-  onRestore
+  onRestore,
+  onDelete,
+  onOpenNote
 }: {
   notes: DiffNote[]
-  /** Fichier affiché (`racine:chemin`), pour compter ses remarques. */
+  /** Fichier affiché (`fileNoteKey`), pour compter ses remarques. */
   fileKey: string
+  /** Racines actuelles : une remarque sur un dossier retiré se montre ici (jamais comptée seule). */
+  rootPaths: readonly string[]
   onSend: () => void
   onShow?: (() => void) | undefined
   onClear: () => void
   onRestore: (notes: DiffNote[]) => void
+  onDelete: (id: string) => void
+  /** Ouvre le fichier d'une remarque (absent pour une remarque dont le dossier n'existe plus). */
+  onOpenNote?: ((note: DiffNote) => void) | undefined
 }) {
   const { t } = useTranslation()
   const [cleared, setCleared] = useState<DiffNote[] | null>(null)
@@ -406,45 +414,126 @@ export function NotesBar({
   }
   if (notes.length === 0) return null
   const here = notes.filter((n) => n.view === 'file' && n.file === fileKey).length
-  const files = notes.filter((n) => n.view === 'file').length - here
-  const diffs = notes.length - here - files
+  const orphans = notes.filter((n) => isOrphanNote(n, rootPaths))
+  const files = notes.filter((n) => n.view === 'file').length - here - orphans.length
+  const diffs = notes.length - here - files - orphans.length
+  const lost = orphans.length
   const where = [
     here ? t('files.notesHere', { count: here, n: countText(here) }) : '',
     files ? t('files.notesOther', { count: files, n: countText(files) }) : '',
-    diffs ? t('files.notesDiff', { count: diffs, n: countText(diffs) }) : ''
+    diffs ? t('files.notesDiff', { count: diffs, n: countText(diffs) }) : '',
+    lost ? t('files.notesOrphan', { count: lost, n: countText(lost) }) : ''
   ].filter(Boolean)
   return (
-    <div className="diff-notes-bar files-notes-bar" data-testid="diff-notes-bar">
-      <MessageSquare size={14} />
-      <span className="files-notes-count" data-testid="files-notes-count">
-        {t('diffNotes.count', { count: notes.length })}
-        {where.length > 0 && <span className="files-notes-where">{` · ${where.join(', ')}`}</span>}
-      </span>
-      <span className="grow" />
-      {onShow && (
-        <Tip label={t('files.notesShowTip')}>
-          <button className="btn small ghost" onClick={onShow} data-testid="files-notes-show">
-            {t('files.notesShow')}
+    <>
+      <div className="diff-notes-bar files-notes-bar" data-testid="diff-notes-bar">
+        <MessageSquare size={14} />
+        <span className="files-notes-count" data-testid="files-notes-count">
+          {t('diffNotes.count', { count: notes.length })}
+          {where.length > 0 && (
+            <span className="files-notes-where">{` · ${where.join(', ')}`}</span>
+          )}
+        </span>
+        <span className="grow" />
+        {onShow && (
+          <Tip label={t('files.notesShowTip')}>
+            <button className="btn small ghost" onClick={onShow} data-testid="files-notes-show">
+              {t('files.notesShow')}
+            </button>
+          </Tip>
+        )}
+        <Tip label={t('diffNotes.clear')}>
+          <button
+            className="icon-button small"
+            aria-label={t('diffNotes.clear')}
+            onClick={() => {
+              setCleared(notes)
+              onClear()
+            }}
+            data-testid="diff-notes-clear"
+          >
+            <Trash2 size={13} />
           </button>
         </Tip>
-      )}
-      <Tip label={t('diffNotes.clear')}>
-        <button
-          className="icon-button small"
-          aria-label={t('diffNotes.clear')}
-          onClick={() => {
-            setCleared(notes)
-            onClear()
-          }}
-          data-testid="diff-notes-clear"
-        >
-          <Trash2 size={13} />
+        <button className="btn small primary" onClick={onSend} data-testid="diff-notes-send">
+          <Send size={13} />
+          {t('diffNotes.send')}
         </button>
-      </Tip>
-      <button className="btn small primary" onClick={onSend} data-testid="diff-notes-send">
-        <Send size={13} />
-        {t('diffNotes.send')}
-      </button>
-    </div>
+      </div>
+      <ElsewhereNotes
+        notes={notes.filter((n) => n.view === 'file' && n.file !== fileKey)}
+        rootPaths={rootPaths}
+        onDelete={onDelete}
+        onOpen={onOpenNote}
+      />
+    </>
+  )
+}
+
+/**
+ * Remarques sur d'autres fichiers que celui affiché : listées sous la barre, jamais comptées sans
+ * être montrées. Un clic ouvre le fichier à la ligne ; une remarque dont le dossier n'est plus
+ * parmi ceux de la conversation se lit et se supprime ici.
+ */
+function ElsewhereNotes({
+  notes,
+  rootPaths,
+  onDelete,
+  onOpen
+}: {
+  notes: DiffNote[]
+  rootPaths: readonly string[]
+  onDelete: (id: string) => void
+  onOpen?: ((note: DiffNote) => void) | undefined
+}) {
+  const { t } = useTranslation()
+  if (notes.length === 0) return null
+  return (
+    <ul className="files-notes-orphans" aria-label={t('files.notesElsewhereList')}>
+      {notes.map((note) => {
+        const orphan = isOrphanNote(note, rootPaths)
+        const text = (
+          <>
+            <span className="files-note-orphan-path">{note.path}</span>
+            <span className="files-note-orphan-comment">{note.comment}</span>
+          </>
+        )
+        return (
+          <li
+            key={note.id}
+            className={`files-note-orphan${orphan ? ' orphan' : ''}`}
+            data-testid="files-note-elsewhere"
+            data-orphan={orphan || undefined}
+          >
+            {!orphan && onOpen ? (
+              <button
+                className="files-note-orphan-text"
+                onClick={() => onOpen(note)}
+                data-testid="files-note-elsewhere-open"
+              >
+                {text}
+              </button>
+            ) : (
+              <span className="files-note-orphan-text">
+                {text}
+                {orphan && (
+                  <span className="files-note-orphan-gone">{t('files.notesFolderGone')}</span>
+                )}
+              </span>
+            )}
+            <Tip label={t('diffNotes.delete')}>
+              <button
+                className="icon-button small"
+                aria-label={t('diffNotes.delete')}
+                onClick={() => onDelete(note.id)}
+                data-testid="files-note-elsewhere-delete"
+              >
+                <Trash2 size={13} />
+              </button>
+            </Tip>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

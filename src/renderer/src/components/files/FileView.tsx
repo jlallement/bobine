@@ -396,9 +396,20 @@ function Scrolled({
 }
 
 /** Image du dossier (Q41, Q42) : ajustée au panneau, taille réelle au clic. */
+/** Une image plus petite que cela est agrandie (pixels nets) pour se voir. */
+const SMALL_IMAGE = 64
+
+/** Facteur entier qui amène une petite image vers `SMALL_IMAGE` px ; 1 pour les autres. */
+export function smallImageScale(width: number, height: number): number {
+  const side = Math.max(width, height)
+  return side > 0 && side < SMALL_IMAGE ? Math.max(1, Math.floor(SMALL_IMAGE / side)) : 1
+}
+
 function ImageView({ url, name, size }: { url: string; name: string; size: string }) {
   const [actual, setActual] = useState(false)
-  const [dimensions, setDimensions] = useState<string>()
+  const [natural, setNatural] = useState<{ width: number; height: number }>()
+  const dimensions = natural ? `${natural.width} × ${natural.height}` : undefined
+  const scale = natural && !actual ? smallImageScale(natural.width, natural.height) : 1
   const onKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === 'Escape') setActual(false)
   }
@@ -408,9 +419,11 @@ function ImageView({ url, name, size }: { url: string; name: string; size: strin
         <img
           src={url}
           alt={name}
+          className={scale > 1 ? 'enlarged' : undefined}
+          style={scale > 1 && natural ? { width: natural.width * scale } : undefined}
           onLoad={(e) => {
             const img = e.currentTarget
-            setDimensions(`${img.naturalWidth} × ${img.naturalHeight}`)
+            setNatural({ width: img.naturalWidth, height: img.naturalHeight })
           }}
         />
       </button>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { DiffNote } from '@shared/diff-notes'
 import { placeNotes } from '../../file-notes'
 import { indentOf, notedLines } from './CodeView'
+import { smallImageScale } from './FileView'
 
 describe('retrait suspendu (point 5)', () => {
   it('compte l’indentation, une tabulation pour quatre colonnes', () => {
@@ -27,5 +28,16 @@ describe('lignes commentées (point 6)', () => {
     })
     const placed = placeNotes([note(2, 3, 'b\nc'), note(1, 1, 'disparu')], ['a', 'b', 'c'])
     expect([...notedLines(placed)]).toEqual([2, 3])
+  })
+})
+
+describe('petite image (revue des captures)', () => {
+  it('agrandie d’un facteur entier vers 64 px ; une image ordinaire, telle quelle', () => {
+    expect(smallImageScale(2, 2)).toBe(32)
+    expect(smallImageScale(16, 8)).toBe(4)
+    expect(smallImageScale(40, 10)).toBe(1)
+    expect(smallImageScale(64, 64)).toBe(1)
+    expect(smallImageScale(800, 600)).toBe(1)
+    expect(smallImageScale(0, 0)).toBe(1)
   })
 })

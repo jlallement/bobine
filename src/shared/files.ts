@@ -181,3 +181,9 @@ export function parentDirs(path: string): string[] {
   const parts = path.split('/').slice(0, -1)
   return parts.map((_, i) => parts.slice(0, i + 1).join('/'))
 }
+
+/** Nom et dossier d'un chemin relatif (`docs/guide.md` → `guide.md`, `docs` ; à la racine : `''`). */
+export function nameAndDir(path: string): { name: string; dir: string } {
+  const at = path.lastIndexOf('/')
+  return at < 0 ? { name: path, dir: '' } : { name: path.slice(at + 1), dir: path.slice(0, at) }
+}

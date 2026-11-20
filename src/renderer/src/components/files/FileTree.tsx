@@ -248,6 +248,7 @@ export function FileTree(props: Props) {
             key={row.key}
             row={row}
             selected={row.key === selected}
+            menuOpen={row.key === menu?.key}
             tabStop={row.key === tabStop}
             changed={changed}
             exclusionFiles={props.exclusionFiles}
@@ -298,7 +299,23 @@ function TreeNote({ row }: { row: Extract<TreeRow, { kind: 'note' }> }) {
   )
 }
 
-/** Une ligne de dossier, de fichier ou de racine. */
+/** Classes d'une ligne : ignorée, lien qui sort, spéciale, choisie, menu ouvert, racine. */
+function rowClasses(
+  row: Exclude<TreeRow, { kind: 'note' }>,
+  state: { selected: boolean; menuOpen: boolean }
+): string[] {
+  const entry = row.kind === 'entry' ? row.entry : undefined
+  return [
+    'file-row',
+    entry?.ignored ? 'ignored' : '',
+    entry?.link === 'outside' ? 'outside' : '',
+    entry?.special ? 'special' : '',
+    state.selected ? 'selected' : '',
+    state.menuOpen ? 'menu-open' : '',
+    row.kind === 'root' ? 'root' : ''
+  ]
+}
+
 /** Marques d'une ligne : fichier spécial (B1), exclu pour l'agent (fiche 155). */
 function RowMarks({ special, excluded }: { special: boolean; excluded: string | undefined }) {
   const { t } = useTranslation()
@@ -325,6 +342,7 @@ function RowMarks({ special, excluded }: { special: boolean; excluded: string | 
 function FileRow({
   row,
   selected,
+  menuOpen,
   tabStop,
   changed,
   exclusionFiles,
@@ -336,6 +354,8 @@ function FileRow({
 }: {
   row: Exclude<TreeRow, { kind: 'note' }>
   selected: boolean
+  /** Son menu contextuel est ouvert : la ligne visée reste marquée. */
+  menuOpen: boolean
   tabStop: boolean
   changed: ReadonlySet<string>
   exclusionFiles: readonly string[]
@@ -367,14 +387,7 @@ function FileRow({
     special ? t('files.special') : '',
     marked ? t('files.modified') : ''
   ]
-  const classes = [
-    'file-row',
-    entry?.ignored ? 'ignored' : '',
-    outside ? 'outside' : '',
-    special ? 'special' : '',
-    selected ? 'selected' : '',
-    row.kind === 'root' ? 'root' : ''
-  ]
+  const classes = rowClasses(row, { selected, menuOpen })
   return (
     <div
       className={classes.filter(Boolean).join(' ')}

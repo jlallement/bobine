@@ -44,3 +44,12 @@ export function placeNotes(notes: readonly DiffNote[], lines: readonly string[])
  * fichier.
  */
 export const fileNoteKey = (rootPath: string, path: string) => `${rootPath}::${path}`
+
+/**
+ * Remarque sur un fichier dont la cible est introuvable (son dossier n'est plus parmi ceux de la
+ * conversation) : la barre la montre, supprimable, au lieu de la compter sans la montrer.
+ */
+export function isOrphanNote(note: DiffNote, rootPaths: readonly string[]): boolean {
+  if (note.view !== 'file') return false
+  return !rootPaths.some((root) => note.file.startsWith(`${root}::`))
+}

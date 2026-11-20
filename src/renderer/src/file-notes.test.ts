@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { diffFeedback, type DiffNote } from '@shared/diff-notes'
-import { fileNoteKey, placeNotes } from './file-notes'
+import { fileNoteKey, isOrphanNote, placeNotes } from './file-notes'
 
 const note = (from: number, to: number, code: string): DiffNote => ({
   id: `n${from}`,
@@ -48,5 +48,27 @@ describe('fileNoteKey (M2)', () => {
   it('désigne la racine par son chemin : même rang, autre dossier, autre clé', () => {
     expect(fileNoteKey('/p/lib', 'a.ts')).not.toBe(fileNoteKey('/p/docs', 'a.ts'))
     expect(fileNoteKey('/p/lib', 'a.ts')).toBe(fileNoteKey('/p/lib', 'a.ts'))
+  })
+})
+
+describe('remarque dont la cible est introuvable', () => {
+  const note = (file: string): DiffNote => ({
+    id: file,
+    view: 'file',
+    file,
+    path: 'c.ts',
+    side: 'new',
+    from: 1,
+    to: 1,
+    code: 'a',
+    comment: 'x'
+  })
+  const roots = ['/p/app', '/p/lib']
+
+  it('orpheline si son dossier n’est plus parmi ceux de la conversation', () => {
+    expect(isOrphanNote(note(fileNoteKey('/p/retire', 'c.ts')), roots)).toBe(true)
+    expect(isOrphanNote(note('2:c.ts'), roots)).toBe(true)
+    expect(isOrphanNote(note(fileNoteKey('/p/lib', 'c.ts')), roots)).toBe(false)
+    expect(isOrphanNote({ ...note('x'), view: 'conversation' }, roots)).toBe(false)
   })
 })

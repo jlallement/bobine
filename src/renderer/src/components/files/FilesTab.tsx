@@ -167,6 +167,8 @@ export function FilesTab(props: Props) {
     model.filter.setQuery('')
   }
   const diffNotes = useDiffNotes(conversationId)
+  // Dossiers actuels : une remarque dont la cible est introuvable se montre dans la barre.
+  const rootPaths = useMemo(() => (roots ?? []).map((r) => r.path), [roots])
   const sendNotes = () => {
     if (!props.onSendNotes || diffNotes.notes.length === 0) return
     props.onSendNotes(
@@ -224,10 +226,18 @@ export function FilesTab(props: Props) {
         <NotesBar
           notes={diffNotes.notes}
           fileKey={fileKey}
+          rootPaths={rootPaths}
           onSend={sendNotes}
           onShow={props.onShowChanges}
           onClear={diffNotes.clear}
           onRestore={diffNotes.addAll}
+          onDelete={diffNotes.remove}
+          onOpenNote={(note) => {
+            const root = rootPaths.findIndex((r) => note.file.startsWith(`${r}::`))
+            if (root < 0) return
+            const path = note.file.slice((rootPaths[root] ?? '').length + 2)
+            open({ root, path, line: note.from })
+          }}
         />
       )}
       {notice && (

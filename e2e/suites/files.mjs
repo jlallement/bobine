@@ -69,6 +69,9 @@ export async function filesSuite(scheme) {
   writeFileSync(join(workspace, 'scripts', 'outil.sh'), '#!/bin/sh\necho bonjour\n')
   chmodSync(join(workspace, 'scripts', 'outil.sh'), 0o755)
   writeFileSync(join(workspace, 'docs', 'temporaire.txt'), 'à effacer\n')
+  // Un FIFO (B1) : listé grisé, jamais ouvert. Windows n'en a pas dans un dossier.
+  const fifo = process.platform !== 'win32'
+  if (fifo) execFileSync('mkfifo', [join(workspace, 'tuyau')])
   execFileSync('git', ['init', '-q'], { cwd: workspace })
   const log = join(workspace, '..', `ouvertures-fichiers-${scheme}-${Date.now()}.log`)
   writeFileSync(log, '')
@@ -125,6 +128,24 @@ export async function filesSuite(scheme) {
         )
         await ui.shot('271-arbre')
 
+        // FIFO (B1) : grisé, dit « spécial », un clic n'ouvre rien et rien ne fige l'app.
+        if (fifo) {
+          await ui.waitFor(`!!${row('tuyau')}`)
+          check(
+            await ui.ev(
+              `${row('tuyau')}.classList.contains('special') && !!${row('tuyau')}.querySelector('[data-testid=file-row-special]') && ${row('tuyau')}.getAttribute('draggable') === 'false'`
+            ),
+            'FIFO : grisé, marqué spécial, pas de glisser'
+          )
+          await ui.click(row('tuyau'))
+          await ui.ev(`new Promise((r) => setTimeout(r, 300))`)
+          check(!(await ui.ev(`!!${fileView}`)), 'FIFO : un clic n’ouvre rien')
+          await ui.ev(
+            `${row('tuyau')}.querySelector('[data-testid=file-row-special]').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))`
+          )
+          await ui.shot('271-special')
+        }
+
         // Une lettre tapée dans l'arbre part au filtre.
         await ui.ev(`${row('docs')}.focus()`)
         await ui.press('g')
@@ -132,6 +153,14 @@ export async function filesSuite(scheme) {
           `document.activeElement === ${ui.$('files-filter')} && ${ui.$('files-filter')}.value === 'g'`
         )
         check(true, 'une lettre tapée dans l’arbre part au filtre')
+        // Fichier exclu pour l'agent : marqué dans le filtre comme dans l'arbre (M6).
+        await ui.ev(`${ui.$('files-filter')}.select()`)
+        await ui.cdp('Input.insertText', { text: '.env' })
+        await ui.waitFor(
+          `[...document.querySelectorAll('[data-testid=files-hit]')].some((h) => h.dataset.path === '.env' && !!h.querySelector('[data-testid=files-hit-excluded]'))`
+        )
+        check(true, 'filtre : .env exclu pour l’agent, marqué')
+        await ui.shot('271-filtre-exclu')
         await ui.ev(`${ui.$('files-filter')}.select()`)
         await ui.cdp('Input.insertText', { text: 'guide' })
         await ui.waitFor(
@@ -233,6 +262,8 @@ export async function filesSuite(scheme) {
           ),
           'barre : « 1 remarque · 1 sur ce fichier »'
         )
+        // Capture sans l'éclair passager d'une ligne parcourue au clavier.
+        await ui.waitFor(`!document.querySelector('.file-line.flash')`, 5000)
         await ui.shot('271-remarque')
         // Corbeille : effacées, puis rendues par « Annuler ».
         await ui.click(ui.$('diff-notes-clear'))
@@ -288,6 +319,10 @@ export async function filesSuite(scheme) {
             return Math.abs(menu.left - (r.left + 40)) < 30
           })()`),
           'clic droit : le menu s’ouvre au pointeur'
+        )
+        check(
+          await ui.ev(`${row('README.md')}.classList.contains('menu-open')`),
+          'clic droit : la ligne visée reste marquée tant que son menu est ouvert'
         )
         await ui.shot('271-actions')
         await ui.key('Escape')
