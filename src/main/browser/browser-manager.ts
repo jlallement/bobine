@@ -12,6 +12,7 @@
  * (connexion Google…) s'ouvre vraiment, liée à sa page ; ouverte par une action de l'agent, elle est
  * bloquée et l'agent est prié de demander à l'utilisateur ; sans geste, bloquée comme dans Chrome.
  */
+import { randomUUID } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import {
@@ -25,16 +26,20 @@ import {
   type Session,
   webContents as allWebContents,
   type WebContents,
-  type NativeImage
+  type NativeImage,
+  type Certificate,
+  type Event as ElectronEvent
 } from 'electron'
 import { t } from 'i18next'
 import type {
   BrowserBounds,
+  BrowserCertificateProblem,
   BrowserCommand,
   BrowserDownload,
   BrowserGo,
   BrowserState,
-  BrowserZoom
+  BrowserZoom,
+  CertificateException
 } from '@shared/browser'
 import { normalizeUrl } from '@shared/browser'
 import type { PageFreeze, PageLayerEvent, PageLayerTheme, PagePin } from '@shared/page-notes'
@@ -43,6 +48,14 @@ import { createDriver, historyStep, loadWithin } from './browser-driver'
 import { CdpTab } from './cdp-tab'
 import { saveDownload } from './downloads'
 import { PageLayer, pageSnapshot } from './page-layer'
+import {
+  certificateAccepted,
+  certificateProblem,
+  certificateSite,
+  FINGERPRINT,
+  isPrivateDevHost,
+  type CertificateMemory
+} from './certificate-exceptions'
 import { agentActive, guardNavigations, stopsAgentNavigation } from './navigation-guard'
 import {
   emulationFrame,
@@ -81,6 +94,8 @@ interface Tab {
   blockedPopups: string[]
   /** Script du mode Annoter dans la page (fiche 146). */
   layer: PageLayer
+  /** Certificat refusé pour sa page (fiche 269) : l'avertissement la remplace. */
+  certificate?: BrowserCertificateProblem | undefined
 }
 
 /** Navigateur d'une conversation : ses onglets, l'actif, et où l'afficher. */
@@ -118,6 +133,8 @@ export interface BrowserManagerOptions {
   emitAnnotate?: (event: PageLayerEvent) => void
   /** Site accordé à l'agent dans cette conversation (fiche 249) ; sans lui, tout l'est. */
   siteAllowed?: (conversationId: string, url: string) => boolean
+  /** Certificats acceptés par l'utilisateur (fiche 269, ADR-0063) ; sans lui, tout est refusé. */
+  certificates?: CertificateMemory
 }
 
 export class BrowserManager {
@@ -277,7 +294,9 @@ export class BrowserManager {
       canGoBack: contents.navigationHistory.canGoBack(),
       canGoForward: contents.navigationHistory.canGoForward(),
       zoom: contents.getZoomFactor(),
-      ...(tab.cdp.emulation ? { emulation: tab.cdp.emulation } : {})
+      ...(tab.cdp.emulation ? { emulation: tab.cdp.emulation } : {}),
+      ...(tab.certificate ? { certificate: tab.certificate } : {}),
+      ...(!tab.certificate && this.underException(contents.getURL()) ? { insecure: true } : {})
     }
   }
 
@@ -570,7 +589,8 @@ export class BrowserManager {
    */
   private layout(browser: Browser): void {
     for (const tab of browser.tabs) {
-      const shown = !!browser.bounds && tab.id === browser.active
+      // Sous un avertissement de certificat (fiche 269), la page laisse voir l'interface.
+      const shown = !!browser.bounds && tab.id === browser.active && !tab.certificate
       if (browser.bounds) tab.view.setBounds(this.frameOf(tab, browser.bounds))
       tab.view.setVisible(shown)
     }
@@ -622,6 +642,13 @@ export class BrowserManager {
     }
     // Zoom au trackpad ou Ctrl + molette : la puce suit.
     contents.on('zoom-changed', () => setTimeout(emit))
+    // Nouvelle navigation : l'avertissement d'avant ne vaut plus (fiche 269) ; s'il y a lieu, un
+    // autre arrive par `certificate-error`.
+    contents.on('did-start-navigation', (details) => {
+      if (!details.isMainFrame || details.isSameDocument || !tab.certificate) return
+      tab.certificate = undefined
+      this.relayout(conversationId)
+    })
     // Nouveau document : le script du mode Annoter est à remettre (fiche 146).
     contents.on('did-navigate', () => tab.layer.navigated())
     contents.on('dom-ready', () => void tab.layer.documentReady())
@@ -698,6 +725,122 @@ export class BrowserManager {
     })
   }
 
+  /* ---------- Certificats refusés (fiche 269, ADR-0063) ---------- */
+
+  /**
+   * `app.on('certificate-error')` : pour une page du panneau (onglet ou popup de l'utilisateur),
+   * accepté seulement sous une exception exacte de l'utilisateur ; sinon refusé, et le cadre
+   * principal d'un onglet montre l'avertissement. Toute autre page (fenêtres de l'app…) : rien
+   * n'est fait, Electron refuse comme toujours.
+   */
+  private readonly certificateError = (
+    event: ElectronEvent,
+    contents: WebContents,
+    url: string,
+    error: string,
+    certificate: Certificate,
+    callback: (trusted: boolean) => void,
+    isMainFrame: boolean
+  ): void => {
+    if (!this.browserSession || contents.session !== this.browserSession) return
+    const owner = this.ownerOf(contents)
+    if (!owner) return
+    event.preventDefault()
+    if (certificateAccepted(this.options.certificates, url, certificate)) {
+      callback(true)
+      return
+    }
+    callback(false)
+    if (!isMainFrame || !owner.tab) return
+    const problem = certificateProblem(url, error, certificate, randomUUID())
+    if (!problem) return
+    owner.tab.certificate = problem
+    this.relayout(owner.conversationId)
+  }
+
+  /**
+   * « Continuer vers <hôte> (non sécurisé) » (fiche 269) : appelé seulement par l'IPC de
+   * l'interface. Le renderer ne donne que le jeton de l'avertissement ; hôte, port et empreinte
+   * viennent de la note du main. Adresse locale ou privée seulement, revérifiée ici.
+   */
+  async allowCertificate(conversationId: string, token: string, remember: boolean): Promise<void> {
+    const browser = this.browsers.get(conversationId)
+    const tab = browser?.tabs.find((t) => !!token && t.certificate?.token === token)
+    const problem = tab?.certificate
+    if (!tab || !problem) throw new Error('Certificate warning unknown or out of date')
+    const memory = this.options.certificates
+    if (
+      !memory ||
+      !problem.bypassable ||
+      !isPrivateDevHost(problem.host) ||
+      !FINGERPRINT.test(problem.fingerprint)
+    ) {
+      throw new Error(`No certificate exception allowed for ${problem.host}`)
+    }
+    const exception: CertificateException = {
+      host: problem.host,
+      port: problem.port,
+      fingerprint: problem.fingerprint
+    }
+    memory.add(exception, remember)
+    tab.certificate = undefined
+    this.relayout(conversationId)
+    await loadWithin(tab, problem.url)
+  }
+
+  /**
+   * « Retour » de l'avertissement : la dernière page d'un autre site (revenir sur le même hôte et
+   * port ramènerait l'avertissement), sinon une page vide.
+   */
+  async leaveCertificate(conversationId: string): Promise<void> {
+    const tab = this.currentTab(conversationId)
+    const problem = tab?.certificate
+    if (!tab || !problem) return
+    tab.certificate = undefined
+    this.relayout(conversationId)
+    const history = tab.view.webContents.navigationHistory
+    for (let index = history.getActiveIndex() - 1; index >= 0; index--) {
+      const site = certificateSite(history.getEntryAtIndex(index).url)
+      if (site?.host === problem.host && site.port === problem.port) continue
+      history.goToIndex(index)
+      return
+    }
+    await tab.view.webContents.loadURL('about:blank').catch(() => {})
+  }
+
+  /**
+   * Exception révoquée (Réglages) : les connexions déjà acceptées se ferment (Chromium les
+   * réutiliserait sans revérifier), et les onglets de cet hôte et port se rechargent.
+   */
+  certificateRevoked(exception: CertificateException): void {
+    void this.browserSession?.closeAllConnections().then(() => {
+      for (const [conversationId, browser] of this.browsers) {
+        for (const tab of browser.tabs) {
+          const site = certificateSite(tab.view.webContents.getURL())
+          if (site?.host !== exception.host || site.port !== exception.port) continue
+          tab.view.webContents.reload()
+        }
+        this.emit(conversationId)
+      }
+    })
+  }
+
+  /** Page affichée sous une exception de certificat encore valable (« Non sécurisé »). */
+  private underException(url: string): boolean {
+    const site = certificateSite(url)
+    return (
+      !!site &&
+      url.startsWith('https:') &&
+      !!this.options.certificates?.hasSite(site.host, site.port)
+    )
+  }
+
+  private relayout(conversationId: string): void {
+    const browser = this.browsers.get(conversationId)
+    if (browser) this.layout(browser)
+    this.emit(conversationId)
+  }
+
   /**
    * « Effacer les données du navigateur » (fiche 072) : cookies, connexions, stockage et cache, de
    * la session en cours comme de celle gardée sur le disque. Les pages ouvertes restent.
@@ -720,6 +863,8 @@ export class BrowserManager {
     // Fichiers restés en attente d'une décision (app arrêtée pendant « Enregistrer sous »).
     rmSync(pendingDownloadsDir(), { recursive: true, force: true })
     s.on('will-download', (_event, item, contents) => this.download(item, contents))
+    // Certificats refusés (fiche 269, ADR-0063) : seules les pages de cette session sont traitées.
+    app.on('certificate-error', this.certificateError)
     // Certains sites refusent un navigateur qui se présente comme Electron.
     s.setUserAgent(
       s

@@ -153,6 +153,10 @@ export const READ_ONLY_SAFE = [
   'browser:clearEmulation',
   'browser:freeze',
   'browser:pagePins',
+  // Avertissement de certificat (fiche 269) : comme une navigation ; une exception « retenue »
+  // n'est pas écrite en lecture seule (`writeFileAtomic`), elle vaut pour la session.
+  'browser:allowCertificate',
+  'browser:leaveCertificate',
   'preview:list',
   'preview:stop',
   'preview:logs',
@@ -225,6 +229,7 @@ export const PROFILE_CHANGING = [
   'settings:forgetWorkspace',
   'settings:forgetTool',
   'settings:forgetSite',
+  'settings:forgetCertificate',
   'settings:forgetCommand',
   'settings:forgetWorktreeSetup',
   'settings:setCommands',

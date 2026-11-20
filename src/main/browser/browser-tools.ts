@@ -12,6 +12,8 @@ import {
   type PageDialog
 } from './page-dialogs'
 import { blockedNavigationNote } from './navigation-guard'
+import { certificateAgentNote } from './certificate-exceptions'
+import type { BrowserCertificateProblem } from '@shared/browser'
 import type { SiteMemory } from '../approvals'
 import type { AppTool, AppToolModule, ToolArgs, ToolContent, ToolContext } from '../mcp/tools'
 import { argsOf, pointArg } from '../mcp/tools'
@@ -103,6 +105,11 @@ export interface BrowserDriver {
    */
   dialog?: () => PageDialog | undefined
   dialogAnswers?: () => DialogAnswer[]
+  /**
+   * Certificat refusé pour la page de l'onglet actif (fiche 269) : l'utilisateur seul peut
+   * continuer, dans le panneau ; aucun outil ne le peut.
+   */
+  certificateProblem?: () => BrowserCertificateProblem | undefined
   tabs: () => { id: string; title: string; url: string; active: boolean }[]
   newTab: () => Promise<string>
   selectTab: (id: string) => void
@@ -317,8 +324,18 @@ function createTools(
       : `The user refused to open ${site}. Do not try again.`
   }
 
+  /**
+   * Page sous un avertissement de certificat (fiche 269, ADR-0063) : l'outil échoue avec ce que
+   * l'agent doit savoir ; il ne peut ni accepter ni contourner.
+   */
+  const checkCertificate = (): void => {
+    const problem = page.certificateProblem?.()
+    if (problem) throw new Error(certificateAgentNote(problem))
+  }
+
   /** Page affichée sur un site non accordé : l'outil échoue (un lot s'arrête), rien n'est fait. */
   const checkShownSite = async (): Promise<void> => {
+    checkCertificate()
     const refused = await approve(page.current().url, true)
     if (refused) throw new Error(refused)
   }
@@ -359,6 +376,7 @@ function createTools(
       const target = str(args, 'url')
       if (target === 'back' || target === 'forward' || target === 'reload') {
         await page.go(target)
+        checkCertificate()
         // L'historique peut mener à un site non accordé : rien n'en est dit avant l'accord.
         await checkShownSite()
         return [{ type: 'text', text: pageInfo() }]
@@ -367,6 +385,7 @@ function createTools(
       const refused = await approve(url)
       if (refused) return [{ type: 'text', text: refused }]
       await page.navigate(url)
+      checkCertificate()
       return [{ type: 'text', text: pageInfo() }]
     },
     browser_screenshot: screenshot,
@@ -529,7 +548,10 @@ function createTools(
           if (refused) return [{ type: 'text', text: refused }]
         }
         await page.newTab()
-        if (target) await page.navigate(target)
+        if (target) {
+          await page.navigate(target)
+          checkCertificate()
+        }
       } else if (action === 'select') page.selectTab(str(args, 'tab_id'))
       else if (action === 'close') page.closeTab(str(args, 'tab_id'))
       else if (action !== 'list') throw new Error('`action` : list, new, select ou close')

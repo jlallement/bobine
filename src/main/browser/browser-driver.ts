@@ -18,6 +18,8 @@ const HISTORY_TIMEOUT_MS = 10_000
 interface LoadableTab {
   view: WebContentsView
   cdp: CdpTab
+  /** Certificat refusé pour la page (fiche 269) : l'onglet montre l'avertissement. */
+  certificate?: unknown
 }
 
 /** Charge une adresse ; au-delà du délai, on rend la main (la page continue de charger). */
@@ -26,6 +28,9 @@ export async function loadWithin(tab: LoadableTab, url: string): Promise<void> {
   const load = tab.view.webContents.loadURL(url).catch((error: unknown) => {
     // Navigation remplacée (redirection côté page) : la page a bien changé.
     if (error instanceof Error && /ERR_ABORTED/.test(error.message)) return
+    // Certificat refusé (fiche 269) : l'avertissement est dans l'onglet, pas une erreur à afficher ;
+    // l'outil de l'agent le lit ensuite (`certificateProblem`).
+    if (tab.certificate) return
     throw error
   })
   await Promise.race([load, delay(LOAD_TIMEOUT_MS, { unref: true })])
@@ -151,6 +156,7 @@ export function createDriver(manager: BrowserManager, conversationId: string): B
     blockedNavigations: () => manager.takeBlockedNavigations(conversationId),
     downloads: () => manager.takeDownloads(conversationId),
     dialog: () => manager.currentTab(conversationId)?.cdp.dialogs.current,
+    certificateProblem: () => manager.currentTab(conversationId)?.certificate,
     dialogAnswers: () => manager.currentTab(conversationId)?.cdp.dialogs.takeAnswers() ?? [],
     emulate: (size) => manager.emulate(conversationId, size),
     emulation: () => manager.currentTab(conversationId)?.cdp.emulation,

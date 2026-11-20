@@ -2067,6 +2067,25 @@ export const scenarios: Record<string, Scenario> = {
       )
     ]
   },
+  certificat: {
+    description:
+      'Ouvre MOCK_BROWSER_URL (HTTPS au certificat auto-signé) puis lit la page ; répète ce que les outils ont répondu (fiche 269 : l’agent ne peut pas accepter un certificat)',
+    steps: [
+      { kind: 'text', text: 'J’ouvre la page. ' },
+      ...toolChain(
+        [
+          { tool: 'browser_navigate', args: () => ({ url: browserBase() }) },
+          { tool: 'browser_get_page_text', args: () => ({}) }
+        ],
+        (results) => [
+          {
+            kind: 'text',
+            text: `Navigation : ${(results[0] ?? '').slice(0, 400)}\n\nLecture : ${(results[1] ?? '').slice(0, 400)}`
+          }
+        ]
+      )
+    ]
+  },
   'navigateur-clic': {
     description:
       'Clique au centre du bouton `#cible` par coordonnées CSS (page zoomée ou non), capture, puis dit les clics reçus et la fenêtre (fiche 129)',

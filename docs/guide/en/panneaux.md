@@ -94,6 +94,12 @@ Before opening a site, it asks for your approval (see
   saved without your approval.
 - **Dev servers.** The ones the agent starts get their own bar in the tab, with their log and
   **Stop server**.
+- **Self-signed certificate** (HTTPS dev server: Vite, Webpack…). The tab shows a warning instead
+  of the page. For a local or private address (`localhost`, `192.168.…`, `*.local`…),
+  **Advanced** then **Continue to … (not secure)** opens it, for that exact certificate, until
+  Bobine quits; tick **Remember this certificate** to keep it. “Not secure” then shows in the
+  address bar. A new certificate asks again; the agent can never accept one. To revoke: Settings ›
+  Privacy.
 - **Sign-ins.** Cookies and sign-ins in the built-in browser are kept from one launch to the
   next; see [Settings](reglages.md#navigateur).
 

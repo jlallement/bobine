@@ -179,9 +179,10 @@ export function reducer(state: State, action: Action): State {
 /** Ce que rend `useConversations`, pour les hooks qui en reçoivent une partie. */
 export type Conversations = ReturnType<typeof useConversations>
 
-/** Autorisation retenue oubliée, par le canal de son genre (fiches 072, 175). */
+/** Autorisation retenue oubliée, par le canal de son genre (fiches 072, 175, 269). */
 function forgetOne(approval: ForgottenApproval): Promise<AgentSettingsView> {
   if ('site' in approval) return window.api.settings.forgetSite(approval.site)
+  if ('certificate' in approval) return window.api.settings.forgetCertificate(approval.certificate)
   if ('worktreeSetup' in approval) {
     return window.api.settings.forgetWorktreeSetup(approval.worktreeSetup)
   }

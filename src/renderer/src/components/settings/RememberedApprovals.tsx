@@ -32,9 +32,9 @@ interface AllowedGroup {
 }
 
 /**
- * Réglages › Confidentialité › Autorisé sans demander (fiches 042, 072, 136) : outils, sites, puis
- * commandes regroupées par dossier, dans une seule liste. Révoquer se confirme dans la ligne, comme
- * une suppression (fiche 126).
+ * Réglages › Confidentialité › Autorisé sans demander (fiches 042, 072, 136, 269) : outils, sites,
+ * certificats acceptés, puis commandes regroupées par dossier, dans une seule liste. Révoquer se
+ * confirme dans la ligne, comme une suppression (fiche 126).
  */
 export function RememberedApprovals({
   settings,
@@ -83,6 +83,36 @@ export function RememberedApprovals({
         onRevoke: () => onForgetApproval({ site }),
         testId: 'forget-site'
       }))
+    },
+    // Certificats acceptés dans le navigateur intégré (fiche 269) : pour la session ou retenus.
+    {
+      key: 'certificates',
+      label: t('settings.privacy.certificates.label'),
+      testId: 'settings-accepted-certificates',
+      items: (settings.approvals.certificates ?? []).map(
+        ({ host, port, fingerprint, remembered }) => {
+          const site = port === 443 ? host : `${host}:${port}`
+          return {
+            key: `certificate:${host}:${port}:${fingerprint}`,
+            main: site,
+            mainTitle: `${site} · SHA-256 ${fingerprint}`,
+            // Deux certificats du même hôte et port (régénéré) : l'empreinte les distingue.
+            side: t('settings.privacy.certificates.side', {
+              state: t(
+                remembered
+                  ? 'settings.privacy.certificates.remembered'
+                  : 'settings.privacy.certificates.session'
+              ),
+              print: fingerprint.slice(0, 11)
+            }),
+            sideTitle: fingerprint,
+            revokeLabel: t('settings.privacy.certificates.revokeLabel', { site }),
+            revokeAsk: t('settings.privacy.certificates.revokeAsk', { site }),
+            onRevoke: () => onForgetApproval({ certificate: { host, port, fingerprint } }),
+            testId: 'forget-certificate'
+          }
+        }
+      )
     },
     ...settings.approvals.commands.map(({ workspace, commands }) => ({
       key: `commands:${workspace}`,

@@ -43,6 +43,8 @@ export function browserHandlers(
   | 'browser:noteShot'
   | 'browser:annotate'
   | 'browser:pagePins'
+  | 'browser:allowCertificate'
+  | 'browser:leaveCertificate'
 > {
   return {
     'browser:show': async (id, bounds) => {
@@ -115,6 +117,19 @@ export function browserHandlers(
     'browser:pagePins': async (id, pins) => {
       if (!browser.pagePins) throw new Error(t('ipc.unavailable.browser'))
       await browser.pagePins(str(id, 'id'), parsePins(pins))
+      return undefined
+    },
+    // Seul un clic dans l'interface arrive ici (émetteur vérifié par `registerIpcHandlers`) ; le
+    // jeton désigne l'avertissement noté par le main, qui en tire hôte, port et empreinte.
+    'browser:allowCertificate': async (id, token, remember) => {
+      if (!browser.allowCertificate) throw new Error(t('ipc.unavailable.browser'))
+      if (typeof remember !== 'boolean') throw new Error('Paramètre invalide : remember')
+      await browser.allowCertificate(str(id, 'id'), str(token, 'token'), remember)
+      return undefined
+    },
+    'browser:leaveCertificate': async (id) => {
+      if (!browser.leaveCertificate) throw new Error(t('ipc.unavailable.browser'))
+      await browser.leaveCertificate(str(id, 'id'))
       return undefined
     }
   }

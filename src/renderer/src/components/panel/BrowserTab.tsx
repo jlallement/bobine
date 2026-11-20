@@ -6,6 +6,7 @@ import {
   Globe,
   MessageSquarePlus,
   RotateCw,
+  ShieldAlert,
   X
 } from 'lucide-react'
 import type { ImageAttachment } from '@shared/attachments'
@@ -17,6 +18,7 @@ import { Tip } from '../common/Menus'
 import { useTranslation } from 'react-i18next'
 import { ipcErrorText } from '../../ipc-errors'
 import { AnnotateHint, PageAnnotator, PageNotesBar } from './PageAnnotator'
+import { CertificateWarning } from './CertificateWarning'
 import { usePageAnnotation } from '../../usePageAnnotation'
 
 /** Durée du bandeau d'un téléchargement terminé (fiche 094). */
@@ -107,6 +109,9 @@ export function BrowserTab({
   }, [download])
 
   const hasPage = !!state && state.url !== '' && state.url !== 'about:blank'
+  // Avertissement de certificat (fiche 269) : pas de page à joindre ni à annoter.
+  const certificate = state?.certificate
+  const pageShown = hasPage && !certificate
 
   // La vue native suit la zone réservée (fiche 129) : taille de la colonne, panneau agrandi,
   // fenêtre, zoom de l'interface. Le main convertit les pixels CSS envoyés selon ce zoom.
@@ -257,6 +262,7 @@ export function BrowserTab({
           </button>
         </Tip>
         <span className="browser-address-field">
+          {state?.insecure && hasPage && <InsecureChip url={state.url} />}
           <input
             ref={input}
             className="browser-address"
@@ -279,7 +285,7 @@ export function BrowserTab({
             <button
               type="button"
               className={`icon-button small${annotating ? ' annotating' : ''}`}
-              disabled={!hasPage && !annotating}
+              disabled={!pageShown && !annotating}
               aria-pressed={annotating}
               aria-label={t('browser.annotate.button')}
               onClick={() => void annotation.toggle()}
@@ -293,7 +299,7 @@ export function BrowserTab({
           <AttachImageButton
             label={t('browser.attach')}
             testId="browser-attach"
-            disabled={!hasPage}
+            disabled={!pageShown}
             take={() => window.api.browser.capture(conversationId)}
             onAttach={onAttach}
           />
@@ -321,6 +327,13 @@ export function BrowserTab({
             onSave={annotation.save}
             onCancel={annotation.cancel}
             onDelete={annotation.remove}
+          />
+        )}
+        {certificate && (
+          <CertificateWarning
+            key={certificate.token}
+            conversationId={conversationId}
+            problem={certificate}
           />
         )}
         {!hasPage && !annotating && (
@@ -374,6 +387,34 @@ function PageChips({ conversationId, state }: { conversationId: string; state: B
         </Tip>
       )}
     </>
+  )
+}
+
+/**
+ * « Non sécurisé » (fiche 269) : la page est affichée sous une exception de certificat accordée par
+ * l'utilisateur ; l'infobulle dit pour quel site et où la révoquer.
+ */
+function InsecureChip({ url }: { url: string }) {
+  const { t } = useTranslation()
+  let site = url
+  try {
+    site = new URL(url).host
+  } catch {
+    // Adresse illisible : affichée telle quelle.
+  }
+  const tip = t('browser.insecure.tip', { site })
+  return (
+    <Tip label={tip}>
+      <span
+        className="browser-chip browser-insecure"
+        tabIndex={0}
+        aria-label={tip}
+        data-testid="browser-insecure"
+      >
+        <ShieldAlert size={12} />
+        {t('browser.insecure.chip')}
+      </span>
+    </Tip>
   )
 }
 

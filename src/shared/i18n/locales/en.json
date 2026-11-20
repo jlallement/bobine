@@ -1489,6 +1489,14 @@
         "label": "Worktree setup · {{folder}}",
         "revokeLabel": "Stop running the setup of {{folder}} automatically",
         "revokeAsk": "Stop running “{{command}}” automatically in the worktrees of {{folder}}? Bobine will ask again."
+      },
+      "certificates": {
+        "label": "Accepted certificates",
+        "session": "this session",
+        "remembered": "remembered",
+        "revokeLabel": "Stop accepting the certificate of {{site}}",
+        "revokeAsk": "Stop accepting this certificate of {{site}}? Its pages will show the warning again.",
+        "side": "{{state}} · SHA-256 {{print}}…"
       }
     },
     "data": {
@@ -2206,6 +2214,37 @@
       "pin": "Comment {{n}}",
       "image": "Annotated page",
       "imageN": "Annotated page {{n}}"
+    },
+    "certificate": {
+      "title": "Your connection is not private",
+      "lead": "Bobine did not open {{host}}: its certificate is not recognised. Someone could be trying to read or change what you exchange with this site.",
+      "reason": {
+        "authority": "The certificate is not signed by a recognised authority. This is the case for a self-signed certificate, such as a development server’s.",
+        "name": "The certificate was issued for a different name than this address.",
+        "date": "The certificate has expired or is not valid yet.",
+        "other": "The certificate was refused."
+      },
+      "back": "Back",
+      "advanced": "Advanced",
+      "hideAdvanced": "Hide details",
+      "details": {
+        "address": "Address",
+        "subject": "Issued to",
+        "issuer": "Issued by",
+        "fingerprint": "SHA-256 fingerprint",
+        "error": "Code",
+        "unreadable": "unreadable"
+      },
+      "devHint": "If this is your development server (Vite, Webpack…), you can continue. Bobine will accept only this certificate, and only for {{site}}.",
+      "remember": "Remember this certificate",
+      "rememberHint": "Otherwise, until Bobine quits. You can revoke it in Settings › Privacy.",
+      "proceed": "Continue to {{host}} (not secure)",
+      "notAllowed": "Bobine only lets you continue to a local or private address, such as a development server. For this site, use your usual browser.",
+      "unreadable": "This certificate cannot be read: Bobine cannot accept it."
+    },
+    "insecure": {
+      "chip": "Not secure",
+      "tip": "You accepted the certificate of {{site}}: the connection is not verified. You can revoke it in Settings › Privacy."
     }
   },
   "devServers": {

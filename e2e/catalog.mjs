@@ -647,6 +647,26 @@ export const SUITES = [
     ]
   },
   {
+    // Certificat auto-signé d'un serveur de dev : avertissement, exception étroite, révocation
+    // (fiche 269, ADR-0063). Serveur HTTPS et certificats faits par l'essai (`openssl`).
+    name: 'certificats',
+    file: 'certificats.mjs',
+    run: 'certificatsSuite',
+    themes: BOTH,
+    sources: [
+      `${C}panel/BrowserTab.tsx`,
+      `${C}panel/CertificateWarning.tsx`,
+      `${C}settings/RememberedApprovals.tsx`,
+      `${C}settings/PrivacySettings.tsx`,
+      'src/main/browser/',
+      'src/main/approvals.ts',
+      'src/shared/browser.ts',
+      'src/shared/browser-ipc.ts',
+      'src/shared/approvals.ts',
+      'src/mock-agent/scenarios.mts'
+    ]
+  },
+  {
     name: 'launch',
     file: 'launch.mjs',
     run: 'launchSuite',

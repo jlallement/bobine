@@ -1560,6 +1560,14 @@
         "label": "Préparation des worktrees · {{folder}}",
         "revokeLabel": "Ne plus lancer d’office la préparation de {{folder}}",
         "revokeAsk": "Ne plus lancer d’office « {{command}} » dans les worktrees de {{folder}} ? Bobine redemandera."
+      },
+      "certificates": {
+        "label": "Certificats acceptés",
+        "session": "cette session",
+        "remembered": "retenu",
+        "revokeLabel": "Ne plus accepter le certificat de {{site}}",
+        "revokeAsk": "Ne plus accepter ce certificat de {{site}} ? Ses pages afficheront de nouveau l’avertissement.",
+        "side": "{{state}} · SHA-256 {{print}}…"
       }
     },
     "data": {
@@ -2300,6 +2308,37 @@
       "pin": "Remarque {{n}}",
       "image": "Page annotée",
       "imageN": "Page annotée {{n}}"
+    },
+    "certificate": {
+      "title": "Votre connexion n’est pas privée",
+      "lead": "Bobine n’a pas ouvert {{host}} : son certificat n’est pas reconnu. Quelqu’un pourrait tenter de lire ou de modifier ce que vous échangez avec ce site.",
+      "reason": {
+        "authority": "Le certificat n’est signé par aucune autorité reconnue. C’est le cas d’un certificat auto-signé, comme celui d’un serveur de développement.",
+        "name": "Le certificat est fait pour un autre nom que cette adresse.",
+        "date": "Le certificat a expiré ou n’est pas encore valable.",
+        "other": "Le certificat a été refusé."
+      },
+      "back": "Retour",
+      "advanced": "Avancé",
+      "hideAdvanced": "Masquer les détails",
+      "details": {
+        "address": "Adresse",
+        "subject": "Émis pour",
+        "issuer": "Émis par",
+        "fingerprint": "Empreinte SHA-256",
+        "error": "Code",
+        "unreadable": "illisible"
+      },
+      "devHint": "S’il s’agit de votre serveur de développement (Vite, Webpack…), vous pouvez continuer. Bobine n’acceptera que ce certificat, et seulement pour {{site}}.",
+      "remember": "Se souvenir de ce certificat",
+      "rememberHint": "Sinon, jusqu’à la fermeture de Bobine. Révocable dans Réglages › Confidentialité.",
+      "proceed": "Continuer vers {{host}} (non sécurisé)",
+      "notAllowed": "Bobine ne permet de continuer que vers une adresse locale ou privée, comme un serveur de développement. Pour ce site, utilisez votre navigateur habituel.",
+      "unreadable": "Ce certificat est illisible : Bobine ne peut pas l’accepter."
+    },
+    "insecure": {
+      "chip": "Non sécurisé",
+      "tip": "Vous avez accepté le certificat de {{site}} : la connexion n’est pas vérifiée. Révocable dans Réglages › Confidentialité."
     }
   },
   "devServers": {

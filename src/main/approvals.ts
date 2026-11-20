@@ -13,6 +13,12 @@
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { ApprovalsView } from '@shared/approvals'
+import type { CertificateException } from '@shared/browser'
+import {
+  parseException,
+  sameException,
+  type CertificateMemory
+} from './browser/certificate-exceptions'
 import type { SetupApprovals } from './changes/worktree-setup'
 import { quarantine, readJson, writeFileAtomic } from './storage'
 
@@ -22,11 +28,13 @@ interface Stored {
   commands: Record<string, string[]>
   /** Préparation des worktrees, par racine de dépôt (fiche 175). */
   worktreeSetups: Record<string, StoredSetup>
+  /** Certificats retenus du navigateur intégré (fiche 269) : hôte, port, empreinte. */
+  certificates: CertificateException[]
   /** Champs d'une version plus récente (fiche 196), réécrits tels quels. */
   extra?: Record<string, unknown>
 }
 
-const KNOWN_KEYS = new Set(['sites', 'commands', 'worktreeSetups'])
+const KNOWN_KEYS = new Set(['sites', 'commands', 'worktreeSetups', 'certificates'])
 
 interface StoredSetup {
   fingerprint: string
@@ -46,11 +54,16 @@ export interface CommandMemory {
 }
 
 const MAX_LENGTH = 2000
+/** Assez pour des années de serveurs de développement ; au-delà, les plus anciens partent. */
+const MAX_CERTIFICATES = 200
 
 export class ApprovalStore {
   private readonly file: string
   private readonly listeners = new Set<() => void>()
   private data: Stored
+  /** Certificats acceptés pour la session de l'app seulement (fiche 269), jamais écrits. */
+  private sessionCertificates: CertificateException[] = []
+  private readonly certificateForgets = new Set<(exception: CertificateException) => void>()
   /** Fichier abîmé mis de côté à la lecture (son nouveau chemin), pour le dire (fiche 196). */
   readonly damaged: string | undefined
 
@@ -105,6 +118,54 @@ export class ApprovalStore {
     }
   }
 
+  /**
+   * Certificats acceptés dans le navigateur intégré (fiche 269, ADR-0063) : pour la session, ou
+   * retenus dans le fichier. Une exception invalide (hôte public, empreinte mal formée) est ignorée.
+   */
+  readonly certificates: CertificateMemory = {
+    has: (exception) =>
+      [...this.sessionCertificates, ...this.data.certificates].some((e) =>
+        sameException(e, exception)
+      ),
+    hasSite: (host, port) =>
+      [...this.sessionCertificates, ...this.data.certificates].some(
+        (e) => e.host === host && e.port === port
+      ),
+    add: (raw, remember) => {
+      const exception = parseException(raw)
+      if (!exception) return
+      const others = (list: CertificateException[]) =>
+        list.filter((e) => !sameException(e, exception))
+      if (remember) {
+        // Retenu : il quitte la liste de la session (une seule ligne dans les Réglages).
+        this.sessionCertificates = others(this.sessionCertificates)
+        const kept = [...others(this.data.certificates), exception].slice(-MAX_CERTIFICATES)
+        this.data = { ...this.data, certificates: kept }
+        this.save()
+      } else if (!this.certificates.has(exception)) {
+        this.sessionCertificates = [...this.sessionCertificates, exception].slice(-MAX_CERTIFICATES)
+        this.notify()
+      }
+    }
+  }
+
+  /** Certificat révoqué (Réglages) : retiré de la session et du fichier, puis dit aux écouteurs. */
+  forgetCertificate(exception: CertificateException): void {
+    const keep = (list: CertificateException[]) => list.filter((e) => !sameException(e, exception))
+    this.sessionCertificates = keep(this.sessionCertificates)
+    if (this.data.certificates.some((e) => sameException(e, exception))) {
+      this.data = { ...this.data, certificates: keep(this.data.certificates) }
+      this.save()
+    } else this.notify()
+    for (const listener of [...this.certificateForgets]) listener(exception)
+  }
+
+  /** Prévient `listener` de chaque certificat révoqué (le navigateur ferme ses connexions). */
+  onCertificateForgotten(listener: (exception: CertificateException) => void): () => void {
+    this.certificateForgets.add(listener)
+    return () => this.certificateForgets.delete(listener)
+  }
+
   forgetWorktreeSetup(root: string): void {
     const { [root]: _gone, ...rest } = this.data.worktreeSetups
     this.data = { ...this.data, worktreeSetups: rest }
@@ -126,6 +187,10 @@ export class ApprovalStore {
   }
 
   view(): ApprovalsView {
+    const certificates = [
+      ...this.data.certificates.map((e) => ({ ...e, remembered: true })),
+      ...this.sessionCertificates.map((e) => ({ ...e, remembered: false }))
+    ].sort((a, b) => a.host.localeCompare(b.host) || a.port - b.port)
     return {
       sites: [...this.data.sites].sort(),
       commands: Object.entries(this.data.commands)
@@ -137,7 +202,8 @@ export class ApprovalStore {
           ...(setup ? { setup } : {}),
           ...(archive ? { archive } : {})
         }))
-        .sort((a, b) => a.root.localeCompare(b.root))
+        .sort((a, b) => a.root.localeCompare(b.root)),
+      ...(certificates.length ? { certificates } : {})
     }
   }
 
@@ -145,6 +211,10 @@ export class ApprovalStore {
     mkdirSync(dirname(this.file), { recursive: true })
     const { extra, ...known } = this.data
     writeFileAtomic(this.file, JSON.stringify({ ...extra, ...known }, null, 2) + '\n')
+    this.notify()
+  }
+
+  private notify(): void {
     for (const listener of [...this.listeners]) listener()
   }
 }
@@ -162,7 +232,7 @@ const strings = (value: unknown): string[] =>
 
 function load(file: string): { data: Stored; damaged?: string } {
   const read = readJson(file)
-  const empty: Stored = { sites: [], commands: {}, worktreeSetups: {} }
+  const empty: Stored = { sites: [], commands: {}, worktreeSetups: {}, certificates: [] }
   if (!read.ok) {
     return read.reason === 'missing'
       ? { data: empty }
@@ -188,6 +258,7 @@ function parseStored(obj: Record<string, unknown>): Stored {
     sites: strings(obj['sites']),
     commands,
     worktreeSetups: loadSetups(obj['worktreeSetups']),
+    certificates: loadCertificates(obj['certificates']),
     ...(Object.keys(extra).length ? { extra } : {})
   }
 }
@@ -209,4 +280,15 @@ function loadSetups(raw: unknown): Record<string, StoredSetup> {
     result[root] = { fingerprint, ...(setup ? { setup } : {}), ...(archive ? { archive } : {}) }
   }
   return result
+}
+
+/** Certificats retenus (fiche 269) : seuls ceux qui seraient accordés aujourd'hui sont relus. */
+function loadCertificates(raw: unknown): CertificateException[] {
+  if (!Array.isArray(raw)) return []
+  const result: CertificateException[] = []
+  for (const value of raw) {
+    const exception = parseException(value)
+    if (exception && !result.some((e) => sameException(e, exception))) result.push(exception)
+  }
+  return result.slice(-MAX_CERTIFICATES)
 }

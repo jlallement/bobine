@@ -1523,6 +1523,14 @@ export type FrResources = {
         readonly revokeLabel: 'Ne plus lancer d’office la préparation de {{folder}}'
         readonly revokeAsk: 'Ne plus lancer d’office « {{command}} » dans les worktrees de {{folder}} ? Bobine redemandera.'
       }
+      readonly certificates: {
+        readonly label: 'Certificats acceptés'
+        readonly session: 'cette session'
+        readonly remembered: 'retenu'
+        readonly revokeLabel: 'Ne plus accepter le certificat de {{site}}'
+        readonly revokeAsk: 'Ne plus accepter ce certificat de {{site}} ? Ses pages afficheront de nouveau l’avertissement.'
+        readonly side: '{{state}} · SHA-256 {{print}}…'
+      }
     }
     readonly data: {
       readonly backupTitle: 'Historique'
@@ -2257,6 +2265,37 @@ export type FrResources = {
       readonly pin: 'Remarque {{n}}'
       readonly image: 'Page annotée'
       readonly imageN: 'Page annotée {{n}}'
+    }
+    readonly certificate: {
+      readonly title: 'Votre connexion n’est pas privée'
+      readonly lead: 'Bobine n’a pas ouvert {{host}} : son certificat n’est pas reconnu. Quelqu’un pourrait tenter de lire ou de modifier ce que vous échangez avec ce site.'
+      readonly reason: {
+        readonly authority: 'Le certificat n’est signé par aucune autorité reconnue. C’est le cas d’un certificat auto-signé, comme celui d’un serveur de développement.'
+        readonly name: 'Le certificat est fait pour un autre nom que cette adresse.'
+        readonly date: 'Le certificat a expiré ou n’est pas encore valable.'
+        readonly other: 'Le certificat a été refusé.'
+      }
+      readonly back: 'Retour'
+      readonly advanced: 'Avancé'
+      readonly hideAdvanced: 'Masquer les détails'
+      readonly details: {
+        readonly address: 'Adresse'
+        readonly subject: 'Émis pour'
+        readonly issuer: 'Émis par'
+        readonly fingerprint: 'Empreinte SHA-256'
+        readonly error: 'Code'
+        readonly unreadable: 'illisible'
+      }
+      readonly devHint: 'S’il s’agit de votre serveur de développement (Vite, Webpack…), vous pouvez continuer. Bobine n’acceptera que ce certificat, et seulement pour {{site}}.'
+      readonly remember: 'Se souvenir de ce certificat'
+      readonly rememberHint: 'Sinon, jusqu’à la fermeture de Bobine. Révocable dans Réglages › Confidentialité.'
+      readonly proceed: 'Continuer vers {{host}} (non sécurisé)'
+      readonly notAllowed: 'Bobine ne permet de continuer que vers une adresse locale ou privée, comme un serveur de développement. Pour ce site, utilisez votre navigateur habituel.'
+      readonly unreadable: 'Ce certificat est illisible : Bobine ne peut pas l’accepter.'
+    }
+    readonly insecure: {
+      readonly chip: 'Non sécurisé'
+      readonly tip: 'Vous avez accepté le certificat de {{site}} : la connexion n’est pas vérifiée. Révocable dans Réglages › Confidentialité.'
     }
   }
   readonly devServers: {

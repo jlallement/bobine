@@ -98,4 +98,66 @@ describe('ApprovalStore (fiche 072)', () => {
       worktreeSetups: [{ root: '/r', setup: 'make' }]
     })
   })
+
+  it('certificats (fiche 269) : session en mémoire, retenus relus, révocation dite', () => {
+    const file = fileIn()
+    const changed = vi.fn()
+    const store = new ApprovalStore(file, changed)
+    const forgotten = vi.fn()
+    store.onCertificateForgotten(forgotten)
+    const dev = { host: 'localhost', port: 5173, fingerprint: FP }
+    const lan = { host: '192.168.1.20', port: 8443, fingerprint: FP2 }
+    store.certificates.add(dev, false)
+    store.certificates.add(lan, true)
+    // Hôte public ou empreinte mal formée : jamais retenus, même demandés.
+    store.certificates.add({ host: 'example.com', port: 443, fingerprint: FP }, true)
+    store.certificates.add({ host: 'localhost', port: 1, fingerprint: 'AB' }, false)
+    expect(changed).toHaveBeenCalledTimes(2)
+    expect(store.certificates.has(dev)).toBe(true)
+    expect(store.certificates.has({ ...dev, fingerprint: FP2 })).toBe(false)
+    expect(store.certificates.has({ ...dev, port: 5174 })).toBe(false)
+    expect(store.certificates.hasSite('localhost', 5173)).toBe(true)
+    expect(store.view().certificates).toEqual([
+      { ...lan, remembered: true },
+      { ...dev, remembered: false }
+    ])
+    // Relu au lancement suivant : le retenu seulement, la session est perdue.
+    const again = new ApprovalStore(file)
+    expect(again.certificates.has(lan)).toBe(true)
+    expect(again.certificates.has(dev)).toBe(false)
+    expect(JSON.parse(readFileSync(file, 'utf8')).certificates).toEqual([lan])
+
+    // Retenir un certificat de la session : une seule ligne, retenue.
+    store.certificates.add(dev, true)
+    expect(store.view().certificates).toEqual([
+      { ...lan, remembered: true },
+      { ...dev, remembered: true }
+    ])
+    store.forgetCertificate(dev)
+    expect(store.certificates.has(dev)).toBe(false)
+    expect(forgotten).toHaveBeenCalledWith(dev)
+    expect(new ApprovalStore(file).certificates.has(dev)).toBe(false)
+  })
+
+  it('certificats relus : seuls les valides, sans doublon', () => {
+    const file = fileIn()
+    writeFileSync(
+      file,
+      JSON.stringify({
+        certificates: [
+          { host: 'localhost', port: 5173, fingerprint: FP },
+          { host: 'localhost', port: 5173, fingerprint: FP },
+          { host: 'example.com', port: 443, fingerprint: FP },
+          { host: 'localhost', port: '5173', fingerprint: FP },
+          'localhost'
+        ]
+      })
+    )
+    expect(new ApprovalStore(file).view().certificates).toEqual([
+      { host: 'localhost', port: 5173, fingerprint: FP, remembered: true }
+    ])
+  })
 })
+
+const FP = `${'AB:'.repeat(31)}AB`
+const FP2 = `${'CD:'.repeat(31)}CD`

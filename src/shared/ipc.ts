@@ -12,22 +12,14 @@ import type { FreshStartInfo, ResetPlan } from './fresh-start'
 import type { InstallOffer, InstallScope } from './install'
 import type {
   ExcludedPaths,
-  ImageAttachment,
   PromptAttachment,
   ScreenCaptureResult,
   WorkspaceFile
 } from './attachments'
-import type {
-  BrowserBounds,
-  BrowserCommand,
-  BrowserDownload,
-  BrowserGo,
-  BrowserState,
-  BrowserZoom
-} from './browser'
+import type { BrowserCommand, BrowserDownload, BrowserState } from './browser'
 import type { DevServersChange, DevServerView } from './launch'
 import type { SentEntry } from './sent-history'
-import type { PageFreeze, PageLayerEvent, PageLayerTheme, PagePin } from './page-notes'
+import type { PageLayerEvent } from './page-notes'
 import type { SimulatorState } from './simulator'
 import type { AndroidState } from './android'
 import type { CommandLineStatus, LaunchPrefill } from './command-line'
@@ -42,6 +34,7 @@ import type { HandoverTarget } from './handover'
 import { MEMORY_CHANNELS, type MemoryIpcContract } from './memory-ipc'
 import { ROLES_CHANNELS, type RolesIpcContract } from './roles-ipc'
 import { DOCUMENTS_CHANNELS, type DocumentsIpcContract } from './documents-ipc'
+import { BROWSER_CHANNELS, type BrowserIpcContract } from './browser-ipc'
 import type { GitChanges, GitFileArgs, GitFileDiff, RevertOutcome } from './changes'
 import type { FileLinkOutcome, FileOpenOutcome, MarkdownDocument } from './file-links'
 import type { EditorInfo, EditorOpenOutcome } from './editors'
@@ -153,7 +146,8 @@ export interface IpcInvokeContract
     RolesIpcContract,
     AppMenuIpcContract,
     UsageIpcContract,
-    DocumentsIpcContract {
+    DocumentsIpcContract,
+    BrowserIpcContract {
   'app:getInfo': { args: []; result: AppInfo }
   /** Polices installées (fiche 136), lues une fois par le main. */
   'app:fonts': { args: []; result: InstalledFonts }
@@ -711,37 +705,6 @@ export interface IpcInvokeContract
   'workspace:pickFiles': { args: [id: string]; result: string[] }
   /** Chemins que les fichiers d'exclusion de l'agent de la conversation écartent (fiche 155). */
   'workspace:excludedPaths': { args: [id: string, paths: string[]]; result: ExcludedPaths }
-  /** Affiche la page du navigateur de la conversation à l'emplacement de l'onglet (fiche 007). */
-  'browser:show': { args: [id: string, bounds: BrowserBounds]; result: undefined }
-  /** Onglet masqué ou panneau fermé : plus de page affichée. */
-  /** « Effacer les données du navigateur » (fiche 072). */
-  'browser:clearData': { args: []; result: undefined }
-  'browser:hide': { args: []; result: undefined }
-  /** Adresse saisie par l'utilisateur dans la barre de l'onglet. */
-  'browser:navigate': { args: [id: string, input: string]; result: undefined }
-  /** Image de la page affichée, à joindre au message (fiche 066) ; `null` sans page. */
-  'browser:capture': { args: [id: string]; result: ImageAttachment | null }
-  'browser:go': { args: [id: string, action: BrowserGo]; result: undefined }
-  'browser:getState': { args: [id: string]; result: BrowserState | null }
-  'browser:selectTab': { args: [id: string, tabId: string]; result: undefined }
-  'browser:closeTab': { args: [id: string, tabId: string]; result: undefined }
-  /** « Afficher dans le Finder » un fichier téléchargé et enregistré (fiche 094). */
-  'browser:showDownload': { args: [id: string, path: string]; result: undefined }
-  /** Zoom de la page de l'onglet actif (fiche 129 : puce « 110 % » du champ d'adresse). */
-  'browser:zoom': { args: [id: string, action: BrowserZoom]; result: undefined }
-  /** La page reprend la largeur du panneau (taille imposée par l'agent, fiche 129). */
-  'browser:clearEmulation': { args: [id: string]; result: undefined }
-  /** Page figée le temps d'écrire une remarque (fiches 132, 146) ; `null` sans page. */
-  'browser:freeze': { args: [id: string]; result: PageFreeze | null }
-  /** Capture propre d'une remarque, sans ce que l'app dessine dans la page (fiche 146). */
-  'browser:noteShot': { args: [id: string]; result: PageFreeze | null }
-  /** Mode Annoter sur la page vivante (fiche 146) : script de la page, couleurs du thème. */
-  'browser:annotate': {
-    args: [id: string, on: boolean, theme: PageLayerTheme | null]
-    result: undefined
-  }
-  /** Épingles dessinées dans la page (fiche 146). */
-  'browser:pagePins': { args: [id: string, pins: PagePin[]]; result: undefined }
   /** Serveurs de dev lancés pour le dossier de la conversation (fiche 030). */
   'preview:list': { args: [id: string]; result: DevServerView[] }
   'preview:stop': { args: [id: string, name: string]; result: undefined }
@@ -1088,22 +1051,6 @@ export const IPC_CHANNELS = [
   'workspace:searchFiles',
   'workspace:pickFiles',
   'workspace:excludedPaths',
-  'browser:show',
-  'browser:clearData',
-  'browser:hide',
-  'browser:navigate',
-  'browser:capture',
-  'browser:go',
-  'browser:getState',
-  'browser:selectTab',
-  'browser:closeTab',
-  'browser:showDownload',
-  'browser:zoom',
-  'browser:clearEmulation',
-  'browser:freeze',
-  'browser:noteShot',
-  'browser:annotate',
-  'browser:pagePins',
   'preview:list',
   'preview:stop',
   'preview:logs',
@@ -1133,6 +1080,7 @@ export const IPC_CHANNELS = [
   ...APPROVAL_RULES_CHANNELS,
   ...ROLES_CHANNELS,
   ...DOCUMENTS_CHANNELS,
+  ...BROWSER_CHANNELS,
   ...APP_MENU_CHANNELS,
   ...USAGE_CHANNELS
 ] as const satisfies readonly IpcChannel[]

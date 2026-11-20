@@ -504,4 +504,47 @@ describe('site de la page vérifié avant chaque outil (fiche 249)', () => {
     expect(text).not.toContain('Jetons')
     expect(text).not.toContain('code=abc')
   })
+
+  it('certificat refusé (fiche 269) : l’agent ne peut rien accepter, ses outils le disent', async () => {
+    const problem = {
+      token: 'jeton-secret',
+      url: 'https://localhost:5173/',
+      host: 'localhost',
+      port: 5173,
+      error: 'net::ERR_CERT_AUTHORITY_INVALID',
+      subject: 'localhost',
+      issuer: 'localhost',
+      fingerprint: `${'AB:'.repeat(31)}AB`,
+      bypassable: true
+    }
+    let shown: typeof problem | undefined
+    const page = fakePage({
+      certificateProblem: () => shown,
+      navigate: vi.fn(async () => {
+        shown = problem
+      })
+    })
+    const t = setup(['Autoriser'], page)
+    await expect(t.call('browser_navigate', { url: 'https://localhost:5173/' })).rejects.toThrow(
+      'Only the user can decide to continue'
+    )
+    // Aucun outil de la page ne passe tant que l'avertissement est là, ni ne voit le jeton.
+    for (const [name, args] of [
+      ['browser_screenshot', {}],
+      ['browser_read_page', {}],
+      ['browser_click', { coordinate: [10, 10] }],
+      ['browser_javascript', { code: '1' }]
+    ] as const) {
+      await expect(t.call(name, args)).rejects.toThrow('net::ERR_CERT_AUTHORITY_INVALID')
+    }
+    expect(page.click).not.toHaveBeenCalled()
+    expect(page.evaluatePage).not.toHaveBeenCalled()
+    await expect(t.call('browser_navigate', { url: 'reload' })).rejects.toThrow('TLS certificate')
+    // Aucun outil n'accorde quoi que ce soit : rien qui parle de certificat dans la liste.
+    const names = t.module.tools(t.context).map((tool) => tool.definition.name)
+    expect(names.some((name) => /cert|tls|security|proceed|continue/i.test(name))).toBe(false)
+    // L'utilisateur a continué : l'avertissement n'est plus là, la page se lit.
+    shown = undefined
+    expect(await t.firstText('browser_get_page_text')).toContain('Bonjour')
+  })
 })

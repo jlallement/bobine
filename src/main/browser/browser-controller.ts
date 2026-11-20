@@ -36,4 +36,11 @@ export interface BrowserController {
   annotate?: (conversationId: string, on: boolean, theme?: PageLayerTheme) => Promise<void>
   /** Épingles dessinées dans la page (fiche 146). */
   pagePins?: (conversationId: string, pins: PagePin[]) => Promise<void>
+  /**
+   * « Continuer vers <hôte> (non sécurisé) » d'un avertissement de certificat (fiche 269) : le
+   * jeton de l'avertissement, rien d'autre ; `remember` : « Se souvenir de ce certificat ».
+   */
+  allowCertificate?: (conversationId: string, token: string, remember: boolean) => Promise<void>
+  /** « Retour » d'un avertissement de certificat. */
+  leaveCertificate?: (conversationId: string) => Promise<void>
 }

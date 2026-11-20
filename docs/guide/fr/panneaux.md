@@ -95,6 +95,12 @@ Avant d'ouvrir un site, il demande votre accord (voir
   clique : rien n'est enregistré sans votre accord.
 - **Serveurs de dev.** Ceux que l'agent lance ont leur barre dans l'onglet, avec leur journal et
   **Arrêter le serveur**.
+- **Certificat auto-signé** (serveur de dev en HTTPS : Vite, Webpack…). L'onglet affiche un
+  avertissement à la place de la page. Pour une adresse locale ou privée (`localhost`,
+  `192.168.…`, `*.local`…), **Avancé** puis **Continuer vers … (non sécurisé)** l'ouvre, pour ce
+  certificat précis, jusqu'à la fermeture de Bobine ; cochez **Se souvenir de ce certificat** pour
+  le garder. « Non sécurisé » s'affiche alors dans l'adresse. Un nouveau certificat redemande ;
+  l'agent, lui, ne peut jamais accepter. Révoquer : Réglages › Confidentialité.
 - **Connexions.** Les cookies et connexions du navigateur intégré sont gardés d'un lancement à
   l'autre ; voir [Réglages](reglages.md#navigateur).
 

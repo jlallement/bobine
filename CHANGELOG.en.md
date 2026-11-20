@@ -6,6 +6,12 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- **Built-in browser and self-signed certificates** (HTTPS dev server: Vite, Webpack…): instead of
+  a red `ERR_CERT_AUTHORITY_INVALID` line, a Chrome-like warning with the certificate’s
+  fingerprint; for a local or private address, **Advanced** then **Continue to … (not secure)**,
+  for that certificate only, for the session or remembered if you ask. “Not secure” shows in the
+  address bar; revoke it in Settings › Privacy. No admin rights needed, nothing installed in the
+  keychain; the agent can never accept a certificate.
 - **One vocabulary** for delegated work, everywhere (thread, sidebar, Session › Running, Changes,
   Settings, notifications, export, guide): what you hand to a role or another agent is a **task**,
   which sends back a **response** and comes from its **source conversation**; it has “replied”, is

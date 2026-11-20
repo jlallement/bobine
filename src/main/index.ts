@@ -402,6 +402,8 @@ async function start(): Promise<void> {
   } = setupBrowser({
     keepCookies: () => settings.preferences().browserKeepCookies,
     alwaysSites: approvals.sites,
+    // Certificats acceptés par l'utilisateur dans le panneau (fiche 269, ADR-0063).
+    certificates: approvals.certificates,
     imageCodec: nativeCodec,
     send,
     // « Enregistrer sous », boîte d'une page : la conversation attend l'utilisateur (fiche 097).
@@ -412,6 +414,8 @@ async function start(): Promise<void> {
     },
     titleOf: (id) => conversations.state().conversations.find((c) => c.id === id)?.title
   })
+  // Certificat révoqué dans les Réglages : connexions fermées, pages de cet hôte rechargées.
+  approvals.onCertificateForgotten((exception) => browser.certificateRevoked(exception))
   // Serveurs de dev du projet, lancés à la demande de l'agent (fiche 030).
   const devServers = new DevServers((change) => send('preview:changed', change))
   const previewTools = previewToolsModule({

@@ -6,6 +6,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- **Navigateur intégré et certificat auto-signé** (serveur de dev HTTPS : Vite, Webpack…) : au lieu
+  d'une ligne rouge `ERR_CERT_AUTHORITY_INVALID`, un avertissement comme dans Chrome, avec
+  l'empreinte du certificat ; pour une adresse locale ou privée, **Avancé** puis **Continuer vers
+  … (non sécurisé)**, pour ce certificat seulement, le temps de la session ou retenu sur demande.
+  « Non sécurisé » s'affiche dans l'adresse ; révocable dans Réglages › Confidentialité. Sans droits
+  d'administrateur, sans rien installer dans le trousseau ; l'agent ne peut jamais accepter.
 - **Un seul vocabulaire** pour le travail délégué, partout (fil, barre latérale, Session › En
   cours, Modifications, Réglages, notifications, export, guide) : ce qu'on confie à un rôle ou à un
   autre agent est un **travail**, qui rend une **réponse** et vient de sa **conversation

@@ -272,6 +272,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `question-opencode2` | Outil `question` d'OpenCode 2.0.31 : élicitation `form` (`q0`, `q0_custom`, `toolCallId`), réponse renvoyée dans le résultat de l'outil |
 | `navigateur` | Pilote le navigateur intégré sur la page `MOCK_BROWSER_URL` (saisie, clic, lecture, capture) avec les outils `browser_*` |
 | `navigateur-vue` | Ouvre `MOCK_BROWSER_URL` + `vue` : page longue avec un bouton `#cible` qui compte ses clics (fiche 129) |
+| `certificat` | Ouvre `MOCK_BROWSER_URL` (HTTPS au certificat auto-signé) puis lit la page, et répète ce que les outils ont répondu : sous l’avertissement, ils échouent et disent que seul l’utilisateur peut continuer (fiche 269) |
 | `navigateur-clic` | Clique au centre de `#cible` par coordonnées CSS (lues dans la page), capture, puis dit les clics reçus et la fenêtre CSS : juste même page zoomée (fiche 129) |
 | `navigateur-mobile` | `browser_resize` mobile, clic sur `#cible`, défilement, puis une demande d'autorisation qui garde le tour ouvert ; la taille s'annule à la fin du tour (fiche 129) |
 | `popup` | Clique sur un bouton de la page `MOCK_BROWSER_URL` + `popup` qui ouvre une fenêtre de connexion : l'app la bloque et le dit à l'agent (fiche 072) |

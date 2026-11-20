@@ -24,6 +24,41 @@ export interface BrowserState {
   zoom: number
   /** Taille d'écran imposée par l'agent (`browser_resize`), jusqu'à la fin de son tour. */
   emulation?: BrowserEmulation
+  /**
+   * Certificat refusé pour la page de l'onglet actif (fiche 269, ADR-0063) : l'onglet montre
+   * l'avertissement à la place de la page.
+   */
+  certificate?: BrowserCertificateProblem
+  /** La page est affichée sous une exception de certificat accordée par l'utilisateur (fiche 269). */
+  insecure?: boolean
+}
+
+/**
+ * Certificat refusé par Chromium pour la page d'un onglet (fiche 269, ADR-0063), tel que
+ * l'avertissement le montre. Tout vient du main ; le renderer ne renvoie que `token`.
+ */
+export interface BrowserCertificateProblem {
+  /** Jeton aléatoire de cet avertissement : « Continuer » le cite, rien d'autre. */
+  token: string
+  url: string
+  host: string
+  port: number
+  /** Code de Chromium (`net::ERR_CERT_AUTHORITY_INVALID`…). */
+  error: string
+  /** Nom commun du sujet et de l'émetteur, tels que le certificat les donne. */
+  subject: string
+  issuer: string
+  /** Empreinte SHA-256 du certificat (`AB:CD:…`, 32 octets) ; vide si illisible. */
+  fingerprint: string
+  /** Continuer est permis : adresse locale ou privée, empreinte lisible. */
+  bypassable: boolean
+}
+
+/** Exception de certificat (fiche 269) : hôte, port et empreinte SHA-256 exacte. */
+export interface CertificateException {
+  host: string
+  port: number
+  fingerprint: string
 }
 
 /**

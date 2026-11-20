@@ -124,7 +124,12 @@ function setup(trusted: (event: IpcSenderEvent) => boolean = () => true) {
   )
   const writeExport = vi.fn(async () => {})
   const backupHistory = vi.fn(async (dir: string) => `${dir}/bobine-sauvegarde-x`)
-  const approvals = { forgetSite: vi.fn(), forgetCommand: vi.fn(), forgetWorktreeSetup: vi.fn() }
+  const approvals = {
+    forgetSite: vi.fn(),
+    forgetCommand: vi.fn(),
+    forgetWorktreeSetup: vi.fn(),
+    forgetCertificate: vi.fn()
+  }
   const log = { status: vi.fn(), setLevel: vi.fn(), open: vi.fn(), reveal: vi.fn() }
   const android = {
     state: vi.fn(async () => ({
@@ -154,7 +159,9 @@ function setup(trusted: (event: IpcSenderEvent) => boolean = () => true) {
     freeze: vi.fn(async () => null),
     noteShot: vi.fn(async () => null),
     annotate: vi.fn(async () => {}),
-    pagePins: vi.fn(async () => {})
+    pagePins: vi.fn(async () => {}),
+    allowCertificate: vi.fn(async () => {}),
+    leaveCertificate: vi.fn(async () => {})
   }
   const listeners = new Map<string, (event: IpcSenderEvent, ...args: unknown[]) => unknown>()
   const ipcMain: IpcMainLike = { handle: (channel, listener) => listeners.set(channel, listener) }
@@ -308,6 +315,45 @@ describe('IPC', () => {
     await call('browser:pagePins', 'c1', pins)
     expect(browser.pagePins).toHaveBeenCalledWith('c1', pins)
     await expect(call('browser:pagePins', 'c1', [{ id: 'n1' }])).rejects.toThrow('pins')
+  })
+
+  it('certificat (fiche 269) : seul le jeton passe, et seulement d’une fenêtre de l’app', async () => {
+    const frame = {}
+    const sender = {}
+    const { listeners, browser } = setup(
+      (event) => event.sender === sender && event.senderFrame === frame
+    )
+    const allow = listeners.get('browser:allowCertificate')
+    // La page affichée (autre `webContents`) ou un `iframe` : refusé avant le contrôleur.
+    expect(() => allow?.({ sender: {}, senderFrame: {} }, 'c1', 'jeton', false)).toThrow(
+      'untrusted sender'
+    )
+    expect(() => allow?.({ sender, senderFrame: {} }, 'c1', 'jeton', false)).toThrow(
+      'untrusted sender'
+    )
+    expect(browser.allowCertificate).not.toHaveBeenCalled()
+    await allow?.({ sender, senderFrame: frame }, 'c1', 'jeton', true)
+    expect(browser.allowCertificate).toHaveBeenCalledWith('c1', 'jeton', true)
+    await expect(
+      Promise.resolve().then(() => allow?.({ sender, senderFrame: frame }, 'c1', '', false))
+    ).rejects.toThrow('token')
+    await expect(
+      Promise.resolve().then(() => allow?.({ sender, senderFrame: frame }, 'c1', 'jeton', 'oui'))
+    ).rejects.toThrow('remember')
+    expect(browser.allowCertificate).toHaveBeenCalledTimes(1)
+    await listeners.get('browser:leaveCertificate')?.({ sender, senderFrame: frame }, 'c1')
+    expect(browser.leaveCertificate).toHaveBeenCalledWith('c1')
+  })
+
+  it('certificat révoqué (fiche 269) : exception vérifiée avant d’être oubliée', async () => {
+    const { call, approvals } = setup()
+    const certificate = { host: 'localhost', port: 5173, fingerprint: `${'AB:'.repeat(31)}AB` }
+    await call('settings:forgetCertificate', certificate)
+    expect(approvals.forgetCertificate).toHaveBeenCalledWith(certificate)
+    expect(() => call('settings:forgetCertificate', { ...certificate, fingerprint: 'AB' })).toThrow(
+      'certificate'
+    )
+    expect(approvals.forgetCertificate).toHaveBeenCalledTimes(1)
   })
 
   it('branche (fiche 094) : elle reprend la page de la conversation d’origine', async () => {

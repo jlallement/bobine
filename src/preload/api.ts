@@ -6,7 +6,7 @@ import type { ScheduledTaskInput } from '@shared/schedule'
 import type { UserCommand } from '@shared/user-commands'
 import type { CustomAgentDraft } from '@shared/custom-agents'
 import type { PromptAttachment } from '@shared/attachments'
-import type { BrowserBounds, BrowserGo, BrowserZoom } from '@shared/browser'
+import type { BrowserBounds, BrowserGo, BrowserZoom, CertificateException } from '@shared/browser'
 import type { PageLayerTheme, PagePin } from '@shared/page-notes'
 import type {
   AgentConfigureRequest,
@@ -394,6 +394,9 @@ export function createApi(
       forgetCommand: (workspace: string, command: string) =>
         invoke('settings:forgetCommand', workspace, command),
       forgetWorktreeSetup: (root: string) => invoke('settings:forgetWorktreeSetup', root),
+      /** Certificat accepté dans le navigateur intégré, révoqué (fiche 269). */
+      forgetCertificate: (certificate: CertificateException) =>
+        invoke('settings:forgetCertificate', certificate),
       /** Relit le PATH du shell de connexion (agent installé mais introuvable, fiche 043). */
       reloadShellEnv: () => invoke('settings:reloadShellEnv'),
       setApiKey: (profileId: string, env: string, value: string) =>
@@ -679,6 +682,10 @@ export function createApi(
       annotate: (id: string, on: boolean, theme: PageLayerTheme | null) =>
         invoke('browser:annotate', id, on, theme),
       pagePins: (id: string, pins: PagePin[]) => invoke('browser:pagePins', id, pins),
+      /** Avertissement de certificat (fiche 269) : continuer (jeton seulement) ou revenir. */
+      allowCertificate: (id: string, token: string, remember: boolean) =>
+        invoke('browser:allowCertificate', id, token, remember),
+      leaveCertificate: (id: string) => invoke('browser:leaveCertificate', id),
       /** ⌘L tapé dans la page (fiche 129). */
       onCommand: (listener: (command: IpcEventContract['browser:command']) => void) =>
         subscribe('browser:command', listener),

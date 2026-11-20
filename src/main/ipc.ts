@@ -87,6 +87,7 @@ import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
 import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
 import { attachToDocuments, documentsHandlers } from './documents/ipc'
+import { parseException } from './browser/certificate-exceptions'
 
 /** Sous-ensemble d'`ipcMain` dont on a besoin : permet de tester sans Electron. */
 /** Envoie un évènement aux fenêtres de l'app (rien pendant la fermeture : à l'appelant de voir). */
@@ -327,7 +328,10 @@ export function createHandlers(
       /** « Autoriser et lancer » la préparation d'un worktree (fiche 175). */
       worktreeSetup?: WorktreeSetupControl
       /** Sites et commandes « toujours autorisés » (fiche 072). */
-      approvals?: Pick<ApprovalStore, 'forgetSite' | 'forgetCommand' | 'forgetWorktreeSetup'>
+      approvals?: Pick<
+        ApprovalStore,
+        'forgetSite' | 'forgetCommand' | 'forgetWorktreeSetup' | 'forgetCertificate'
+      >
       /** Quotas des agents (fiche 091) : derniers lus, et relecture en tâche de fond. */
       quotas?: UsageIpcDeps['quotas']
       /** Tableau de consommation (fiche 137) et « Enregistrer sous » de son export CSV. */
@@ -695,6 +699,12 @@ export function createHandlers(
     },
     'settings:forgetSite': (site) => {
       approvals().forgetSite(str(site, 'site'))
+      return c.settingsView()
+    },
+    'settings:forgetCertificate': (certificate) => {
+      const exception = parseException(certificate)
+      if (!exception) throw new Error('Paramètre invalide : certificate')
+      approvals().forgetCertificate(exception)
       return c.settingsView()
     },
     'settings:forgetCommand': (workspace, command) => {

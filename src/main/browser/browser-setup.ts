@@ -4,6 +4,7 @@
  */
 import { t } from 'i18next'
 import type { SiteMemory } from '../approvals'
+import type { CertificateMemory } from './certificate-exceptions'
 import type { ImageCodec } from '../filmstrip/sheet'
 import type { SendEvent } from '../ipc'
 import type { PageFreeze } from '@shared/page-notes'
@@ -23,6 +24,8 @@ export interface BrowserSetupOptions {
   onWaiting?: BrowserManagerOptions['onWaiting']
   /** Titre d'une conversation, cité dans « Enregistrer sous ». */
   titleOf?: BrowserManagerOptions['titleOf']
+  /** Certificats acceptés par l'utilisateur (fiche 269) ; sans eux, tout certificat refusé l'est. */
+  certificates?: CertificateMemory
 }
 
 export interface BrowserSetup {
@@ -40,6 +43,7 @@ export function setupBrowser(options: BrowserSetupOptions): BrowserSetup {
     keepCookies: options.keepCookies,
     ...(options.onWaiting ? { onWaiting: options.onWaiting } : {}),
     ...(options.titleOf ? { titleOf: options.titleOf } : {}),
+    ...(options.certificates ? { certificates: options.certificates } : {}),
     // Pendant une action de l'agent, la page ne va que vers un site accordé (fiche 249).
     siteAllowed: (id, url) => tools.allows(id, url)
   })
@@ -73,6 +77,8 @@ export function browserController(
     | 'noteShot'
     | 'annotate'
     | 'pagePins'
+    | 'allowCertificate'
+    | 'leaveCertificate'
   >,
   tools: Pick<BrowserSetup['tools'], 'approveSite'>
 ): BrowserController {
@@ -111,7 +117,9 @@ export function browserController(
     freeze: async (id) => asFreeze(await manager.freeze(id)),
     noteShot: async (id) => asFreeze(await manager.noteShot(id)),
     annotate: (id, on, theme) => manager.annotate(id, on, theme),
-    pagePins: (id, pins) => manager.pagePins(id, pins)
+    pagePins: (id, pins) => manager.pagePins(id, pins),
+    allowCertificate: (id, token, remember) => manager.allowCertificate(id, token, remember),
+    leaveCertificate: (id) => manager.leaveCertificate(id)
   }
 }
 

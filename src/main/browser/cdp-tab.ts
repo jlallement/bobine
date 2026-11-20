@@ -12,6 +12,7 @@ import type { MouseButton, Point } from './browser-tools'
 import { findInAxTree, formatAxTree, type AXNode } from './ax-tree'
 import { ISOLATED_WORLD } from './page-script'
 import { DialogWatch } from './page-dialogs'
+import { cdpMethodAllowed } from './certificate-exceptions'
 import type { FilmFrame } from '../filmstrip/sheet'
 import { delay } from '../delay'
 
@@ -109,6 +110,9 @@ export class CdpTab {
 
   /** Commande CDP, une fois le débogueur prêt. */
   async send<T = Record<string, unknown>>(method: string, params: object = {}): Promise<T> {
+    // Jamais de décision sur les certificats par le CDP (`Security.setIgnoreCertificateErrors`…) :
+    // seul l'utilisateur en prend une, dans l'interface (fiche 269, ADR-0063).
+    if (!cdpMethodAllowed(method)) throw new Error(`CDP method refused: ${method}`)
     await this.ready
     if (!this.contents.debugger.isAttached()) await this.attachDebugger()
     // Jamais d'attente sans fin derrière une boîte de la page (`page-dialogs.ts`).
