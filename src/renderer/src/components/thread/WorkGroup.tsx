@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import { childRecommendations, childState, type ChildProposalItem } from '@shared/children'
-import { mergeable } from '@shared/children-merge'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { digestsTotal, formatEstimate } from '@shared/usage'
@@ -219,37 +218,43 @@ export function WorkGroup({
           )
         })}
       </div>
-      {pending.length > 0 ? (
-        <div className="work-group-foot">
-          <span className="work-group-note" data-testid="work-group-where">
-            {t(whereKey(proposed, launch.inFolder))}
-          </span>
-          <span className="grow" />
-          <button
-            type="button"
-            className="btn primary small"
-            title={t('workGroup.startAllLabel')}
-            disabled={launch.held}
-            onClick={() => {
-              for (const start of [...starts.values()]) start()
-            }}
-            data-testid="work-group-start-all"
-          >
-            {t('workGroup.startAll')}
-          </button>
-        </div>
-      ) : (
-        info?.motherId &&
-        info.merge &&
-        ids.length > 0 && (
-          <GroupMergeFoot
-            motherId={info.motherId}
-            info={info}
-            merging={merging}
-            verdicts={verdicts}
-          />
-        )
-      )}
+      {pending.length > 0
+        ? // Où partent les travaux, sauf si la ligne de lancement le dit déjà (fiche 262) ;
+          // « Tout lancer » dès deux lignes à lancer (une seule : son « Lancer » suffit).
+          (!launch.place || pending.length > 1) && (
+            <div className="work-group-foot">
+              {!launch.place && (
+                <span className="work-group-note" data-testid="work-group-where">
+                  {t(whereKey(proposed, launch.inFolder))}
+                </span>
+              )}
+              <span className="grow" />
+              {pending.length > 1 && (
+                <button
+                  type="button"
+                  className="btn primary small"
+                  title={t('workGroup.startAllLabel')}
+                  disabled={launch.held}
+                  onClick={() => {
+                    for (const start of [...starts.values()]) start()
+                  }}
+                  data-testid="work-group-start-all"
+                >
+                  {t('workGroup.startAll')}
+                </button>
+              )}
+            </div>
+          )
+        : info?.motherId &&
+          info.merge &&
+          ids.length > 0 && (
+            <GroupMergeFoot
+              motherId={info.motherId}
+              info={info}
+              merging={merging}
+              verdicts={verdicts}
+            />
+          )}
     </div>
   )
 }
@@ -266,14 +271,9 @@ function GroupMergeFoot({
   merging: ChildrenMergeState
   verdicts: ReturnType<typeof childRecommendations>
 }) {
-  const { t } = useTranslation()
   if (!info.merge) return null
-  const ready = merging.plan ? mergeable(merging.plan).length : 0
   return (
     <div className="work-group-merge" data-testid="work-group-merge">
-      {ready > 0 && !merging.merge && (
-        <span className="work-group-note">{t('workGroup.ready', { count: ready })}</span>
-      )}
       <SubtasksMergeFooter
         motherId={motherId}
         state={merging}

@@ -4842,7 +4842,8 @@
     "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous fini, ou avec votre prochain message",
     "otherAgent": "un autre {{agent}}",
     "review": "Faire relire",
-    "reviewLabel": "Faire relire la branche de ce travail"
+    "reviewLabel": "Faire relire la branche de ce travail",
+    "brief": "Consigne du travail"
   },
   "workCue": {
     "replied": "a répondu",
@@ -6059,9 +6060,6 @@
       "error": "en erreur",
       "gone": "conversation supprimée"
     },
-    "ready_one": "{{count}} travail prêt à fusionner",
-    "ready_other": "{{count}} travaux prêts à fusionner",
-    "ready_many": "{{count}} travaux prêts à fusionner",
     "merge": {
       "action_one": "Fusionner le travail prêt dans {{base}}",
       "action_other": "Fusionner les {{count}} prêts dans {{base}}",
@@ -6116,7 +6114,13 @@
       "refuse": "Refusé",
       "expired": "Expiré"
     },
-    "expiredHint": "L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent."
+    "expiredHint": "L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.",
+    "verdict": {
+      "ready": "Recommandé",
+      "notReady": "Pas encore prêt",
+      "stale": "À revoir",
+      "staleHint": "Le travail a refait un tour depuis cette recommandation."
+    }
   },
   "workMerge": {
     "action": "Fusionner dans {{base}}",

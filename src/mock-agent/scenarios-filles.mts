@@ -53,7 +53,7 @@ const approve: Step[] = [
       note: 'Branche relue : le test du séparateur est là, rien hors de src/.'
     },
     onResult: said(
-      'Je recommande de fusionner « Import CSV » : à toi de la fusionner depuis « Sous-tâches ».'
+      'Je recommande de fusionner « Import CSV » : à toi de la fusionner depuis sa carte.'
     )
   }
 ]
@@ -108,7 +108,125 @@ const seesPlan: Step[] = [
   }
 ]
 
+/**
+ * Fiche 264 : un travail proposé par `start_child`, sans rien dire de plus (la carte de groupe le
+ * montre). `role` : un rôle de l'Équipe.
+ */
+const work = (title: string, prompt: string, role?: string): Step[] => [
+  {
+    kind: 'mcp-tool',
+    tool: 'start_child',
+    args: { title, prompt, ...(role ? { role } : {}) },
+    onResult: () => []
+  }
+]
+
+/** Les trois travaux de la maquette D (fiche 264) : un rôle qui écrit, un sans rôle, un avis. */
+const GROUP_WORKS = {
+  sort: 'Tri des articles par rayon',
+  tests: 'Tests de la sauvegarde locale',
+  a11y: 'Relire l’accessibilité de l’écran'
+} as const
+
+/** Réveil de la mère des trois travaux : elle recommande les deux branches, sans fusionner. */
+const groupWake: Step[] = [
+  {
+    kind: 'mcp-tool',
+    tool: 'recommend_merge',
+    args: { child: GROUP_WORKS.sort, ready: true, note: 'Tri relu, tests verts.' },
+    onResult: () => [
+      {
+        kind: 'mcp-tool',
+        tool: 'recommend_merge',
+        args: { child: GROUP_WORKS.tests, ready: true, note: 'Tests relus.' },
+        onResult: () => [
+          {
+            kind: 'text',
+            text: 'Les trois travaux ont répondu. Je recommande de fusionner le tri et les tests ; l’avis sur l’accessibilité est à appliquer ensuite.'
+          }
+        ]
+      }
+    ]
+  }
+]
+
 export const childScenarios: Record<string, Scenario> = {
+  'travaux-groupe': {
+    description:
+      'Carte de groupe (fiche 264, maquette D) : trois `start_child` à la fois — « Tri des articles par rayon » (Architecte front, écrit `src/rayons.js`), « Tests de la sauvegarde locale » (sans rôle, écrit `test/stockage.test.js`), « Relire l’accessibilité de l’écran » (Expert UX/UI, long avis) ; au réveil, `recommend_merge` des deux branches',
+    steps: [
+      {
+        kind: 'when-prompt',
+        includes: WAKE,
+        then: groupWake,
+        else: [
+          { kind: 'text', text: 'Je peux découper la suite en trois travaux indépendants :' },
+          {
+            kind: 'parallel',
+            branches: [
+              work(
+                GROUP_WORKS.sort,
+                'Ajoute un tri par rayon.\n/scenario rayons',
+                'front-architect'
+              ),
+              work(GROUP_WORKS.tests, 'Teste la sauvegarde locale.\n/scenario tests-stockage'),
+              work(GROUP_WORKS.a11y, 'Relis l’accessibilité.\n/scenario avis-long', 'ux-ui-expert')
+            ]
+          },
+          { kind: 'text', text: '\n\nJe m’arrête là : je serai réveillé quand ils auront fini.' }
+        ]
+      }
+    ]
+  },
+  rayons: {
+    description:
+      'Travail qui écrit (fiche 264) : crée `src/rayons.js` (tri par rayon), puis le résume ; à committer par l’essai',
+    steps: [
+      {
+        kind: 'edit-file',
+        path: 'src/rayons.js',
+        content: "export const RAYONS = ['Frais', 'Épicerie', 'Maison', 'Autre']\n"
+      },
+      {
+        kind: 'text',
+        text: 'Les articles ont maintenant un rayon (Frais, Épicerie, Maison, Autre) ; la liste est groupée par rayon, dans cet ordre.'
+      }
+    ]
+  },
+  'tests-stockage': {
+    description:
+      'Travail qui écrit, sans rôle (fiche 264) : crée `test/stockage.test.js`, puis le résume ; à committer par l’essai',
+    steps: [
+      {
+        kind: 'edit-file',
+        path: 'test/stockage.test.js',
+        content: "test('sauvegarde locale', () => expect(load(save([]))).toEqual([]))\n"
+      },
+      { kind: 'text', text: 'Deux tests de la sauvegarde locale ajoutés.' }
+    ]
+  },
+  'fusion-trois': {
+    description:
+      'Trois `start_child` à la fois (fiches 120, 264) : « Import CSV » (`modifications`), « Page d’aide » et « Notes de version » (`echo`) ; au réveil, dit qu’ils ont fini',
+    steps: [
+      {
+        kind: 'when-prompt',
+        includes: WAKE,
+        then: [{ kind: 'text', text: 'Les trois travaux ont fini : à vous de fusionner.' }],
+        else: [
+          {
+            kind: 'parallel',
+            branches: [
+              work('Import CSV', 'Ajoute l’import.\n/scenario modifications'),
+              work('Page d’aide', 'Écris la page.\n/scenario echo Page d’aide'),
+              work('Notes de version', 'Rédige les notes.\n/scenario echo Notes de version')
+            ]
+          },
+          { kind: 'text', text: 'Trois travaux proposés.' }
+        ]
+      }
+    ]
+  },
   'voit-le-plan': {
     description:
       'Dit si `plan.md` est dans le dossier de la session : une fille partie d’un dossier modifié le voit-elle ? (fiche 240)',

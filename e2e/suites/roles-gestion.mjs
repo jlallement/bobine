@@ -223,13 +223,14 @@ export async function rolesGestionSuite(scheme) {
         await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
         await ui.click(ui.$('child-launch'))
         await ui.waitFor(`!${ui.$('child-dialog')}`, 30_000)
-        const save = `document.querySelector('[data-testid=child-report]:not([data-role]) [data-testid=child-report-save-role]')`
+        // Sa carte seule (fiche 264) : « Enregistrer comme rôle » pour un travail sans rôle.
+        const save = `document.querySelector('[data-testid=work-card]:not([data-role]) [data-testid=work-save-role]')`
         await ui.waitFor(`!!${save}`, 30_000)
         check(
           !(await ui.ev(
-            `!!document.querySelector('[data-testid=child-report][data-role] [data-testid=child-report-save-role]')`
+            `!!document.querySelector('[data-testid=work-card][data-role] [data-testid=work-save-role]')`
           )),
-          'compte rendu : « Enregistrer comme rôle » seulement pour la fille sans rôle'
+          'carte du travail : « Enregistrer comme rôle » seulement pour un travail sans rôle'
         )
         await ui.ev(`${save}.scrollIntoView({ block: 'center' })`)
         await ui.shot('r11-enregistrer-comme-role')

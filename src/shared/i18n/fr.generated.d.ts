@@ -4673,6 +4673,7 @@ export type FrResources = {
     readonly otherAgent: 'un autre {{agent}}'
     readonly review: 'Faire relire'
     readonly reviewLabel: 'Faire relire la branche de ce travail'
+    readonly brief: 'Consigne du travail'
   }
   readonly workCue: {
     readonly replied: 'a répondu'
@@ -5849,9 +5850,6 @@ export type FrResources = {
       readonly error: 'en erreur'
       readonly gone: 'conversation supprimée'
     }
-    readonly ready_one: '{{count}} travail prêt à fusionner'
-    readonly ready_other: '{{count}} travaux prêts à fusionner'
-    readonly ready_many: '{{count}} travaux prêts à fusionner'
     readonly merge: {
       readonly action_one: 'Fusionner le travail prêt dans {{base}}'
       readonly action_other: 'Fusionner les {{count}} prêts dans {{base}}'
@@ -5907,6 +5905,12 @@ export type FrResources = {
       readonly expired: 'Expiré'
     }
     readonly expiredHint: 'L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.'
+    readonly verdict: {
+      readonly ready: 'Recommandé'
+      readonly notReady: 'Pas encore prêt'
+      readonly stale: 'À revoir'
+      readonly staleHint: 'Le travail a refait un tour depuis cette recommandation.'
+    }
   }
   readonly workMerge: {
     readonly action: 'Fusionner dans {{base}}'

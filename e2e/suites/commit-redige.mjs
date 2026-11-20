@@ -8,8 +8,8 @@ import { L, check, sleep, withApp } from '../lib.mjs'
  * Message de commit rédigé par l'agent (fiche 246, ADR-0056), dans un dépôt git jetable, contre
  * l'agent factice :
  * 1. « Committer » dans la vue Git d'une mère : le message est rédigé par l'agent (session à part,
- *    rien dans le fil), modifiable ; puis D4 : « Committer puis fusionner » depuis la carte
- *    « Sous-tâches » — la vue Git ouverte se relit d'elle-même, sans « Actualiser ».
+ *    rien dans le fil), modifiable ; puis D4 : « Committer puis fusionner » depuis la carte du
+ *    travail (fiche 264) — la vue Git ouverte se relit d'elle-même, sans « Actualiser ».
  * 2. Agent qui ne répond pas (`MOCK_AGENT_COMMIT=message-commit-lent`, délai raccourci) :
  *    « Rédaction par… », puis le repli en anglais déduit des fichiers et sa raison ; « Réessayer »
  *    puis « Arrêter ». Aucun processus de rédaction ne survit.
@@ -113,8 +113,9 @@ async function withMergeCard(scheme) {
         await ui.ev(
           `window.api.conversations.startChild('${mother}', ${JSON.stringify({ title: 'Page d’aide', text: '/scenario echo Page d’aide' })}).then(() => true)`
         )
+        // Sa carte seule (fiche 264) : « Fusionner dans main » s'y fera.
         await ui.waitFor(
-          `document.querySelectorAll('[data-testid=child-report]').length === 1`,
+          `document.querySelector('[data-testid=work-card]')?.dataset.state === 'replied'`,
           60000
         )
         const [help] = await ui.ev(
@@ -124,7 +125,7 @@ async function withMergeCard(scheme) {
         git(help, 'add', '-A')
         git(help, 'commit', '-q', '-m', 'docs: aide')
         // Revenir à la mère depuis la fille : la carte relit les branches.
-        const open = `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
+        const open = `document.querySelector('[data-testid=work-card] [data-testid=work-open]')`
         await ui.reveal(open)
         await ui.click(open)
         await ui.waitFor(`!!${ui.$('title-origin')}`)
@@ -184,7 +185,7 @@ async function withMergeCard(scheme) {
         await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         await ui.click(ui.$('main-dirty-commit-confirm'))
         await ui.waitFor(
-          `document.querySelector('[data-testid=subtask-merge-state]')?.dataset.state === 'merged'`,
+          `document.querySelector('[data-testid=work-merge-result]')?.dataset.state === 'merged'`,
           30000
         )
         // Sans « Actualiser » : la vue Git se relit d'elle-même (évènement `changes:gitChanged`).

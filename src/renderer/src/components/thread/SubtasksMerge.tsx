@@ -415,6 +415,7 @@ export function SubtasksMergeFooter({
               <MergeButtons
                 base={plan.base}
                 vocabulary={vocabulary}
+                order={ready.map((c) => c.id)}
                 ids={ids}
                 others={others}
                 advised={advised}
@@ -440,6 +441,7 @@ export function SubtasksMergeFooter({
 function MergeButtons({
   base,
   vocabulary,
+  order,
   ids,
   others,
   advised,
@@ -450,6 +452,8 @@ function MergeButtons({
 }: {
   base: string
   vocabulary: Vocabulary
+  /** Les prêtes, dans l'ordre des lignes. */
+  order: string[]
   ids: string[]
   others: MergeCandidate[]
   advised: boolean
@@ -462,7 +466,9 @@ function MergeButtons({
   const texts = TEXTS[vocabulary]
   const [confirming, setConfirming] = useState(false)
   if (confirming && others.length > 0) {
-    const all = [...ids, ...others.map((c) => c.id)]
+    // Dans l'ordre des lignes (le main fusionne dans l'ordre reçu, fiche 264).
+    const chosen = new Set([...ids, ...others.map((c) => c.id)])
+    const all = order.filter((id) => chosen.has(id))
     return (
       <div className="subtasks-merge-confirm" data-testid="subtasks-merge-confirm">
         <span className="subtasks-merge-text">

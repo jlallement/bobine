@@ -1,4 +1,4 @@
-import { Check, Reply, ScanSearch, Send } from 'lucide-react'
+import { BookmarkPlus, Check, Reply, ScanSearch, Send } from 'lucide-react'
 import i18next from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,8 @@ import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
 import { invokeRole } from '../../roles/roles-store'
+import { saveAsRoleAction } from '../../roles/save-as-role'
+import { useProfileStatus } from '../common/Profile'
 import { messageTime } from '../../time'
 import type { SubtasksInfo } from './Subtasks'
 import { answerText, answerTitle, relayOf, type WorkState } from './work-card'
@@ -104,6 +106,9 @@ export function WorkFoot({
     </>
   )
 }
+
+/** États où « Relancer » renvoie la même demande. */
+const RETRY: readonly WorkState[] = ['stopped', 'error', 'silent']
 
 /** États où le travail attend un geste : l'appliquer, le relancer, lui répondre. */
 const SETTLED: readonly WorkState[] = ['replied', 'stopped', 'error', 'silent', 'pending']
@@ -215,7 +220,7 @@ function SettledActions({
           {t('workCard.review')}
         </button>
       )}
-      {motherId && role && (state === 'stopped' || state === 'error' || state === 'silent') && (
+      {motherId && role && RETRY.includes(state) && (
         <button
           type="button"
           className="btn small"
@@ -229,6 +234,7 @@ function SettledActions({
           {t('workCard.retry')}
         </button>
       )}
+      {!role && report && <SaveAsRole card={card} report={report} info={info} />}
       {/* Sans rôle, pas de jeton pour lui répondre : sa conversation s'ouvre. */}
       {role && (
         <button
@@ -242,5 +248,30 @@ function SettledActions({
         </button>
       )}
     </>
+  )
+}
+
+/**
+ * « Enregistrer comme rôle » (fiche 223, maquette 01-C2) : un travail sans rôle qui a répondu
+ * ouvre l'assistant prérempli de sa consigne ; pas en lecture seule du profil (fiche 196).
+ */
+function SaveAsRole({
+  card,
+  report,
+  info
+}: {
+  card: WorkCardData
+  report: Report
+  info: SubtasksInfo | undefined
+}) {
+  const { t } = useTranslation()
+  const { readOnly } = useProfileStatus()
+  const save = saveAsRoleAction(report, { prompt: card.asked }, info?.children)
+  if (!save || readOnly) return null
+  return (
+    <button type="button" className="btn small" onClick={save} data-testid="work-save-role">
+      <BookmarkPlus size={13} aria-hidden />
+      {t('roleWork.report.saveAsRole')}
+    </button>
   )
 }

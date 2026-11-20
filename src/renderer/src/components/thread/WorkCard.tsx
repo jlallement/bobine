@@ -261,7 +261,7 @@ function WorkHead({
         </span>
       )}
       <WorkPlace card={card} child={child} info={info} />
-      {verdict && !merge?.row && <VerdictBadge verdict={verdict} />}
+      {verdict && !merge?.row && <VerdictBadge verdict={verdict} works />}
       <span className="grow" />
       <span className="work-state" data-testid="work-state" data-state={state}>
         {merge?.active ? (

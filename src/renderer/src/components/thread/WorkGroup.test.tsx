@@ -109,6 +109,9 @@ const child = (id: string, extra: Partial<ConversationSummary> = {}): Conversati
   ...extra
 })
 
+const withoutBranch = ({ branch: _branch, ...rest }: ConversationSummary): ConversationSummary =>
+  rest
+
 const candidate = (id: string, state: MergeCandidateState): MergeCandidate => ({
   id,
   title: `Travail ${id}`,
@@ -300,6 +303,8 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     fireEvent.click(within(row).getByTestId('work-row-toggle'))
     const card = within(row).getByTestId('work-card')
     expect(within(card).getByTestId('work-body').textContent).toBe('Réponse entière de b.')
+    // Sa consigne, repliée (fiche 150) : sans bulle, c'est ici qu'elle se relit.
+    expect(within(card).getByTestId('work-brief-text').textContent).toBe('Consigne b')
     // Lancé par l'agent : sa réponse lui part à son réveil.
     expect(plain(within(card).getByTestId('work-relay').textContent)).toContain(
       'quand ses travaux auront tous fini'
@@ -351,9 +356,6 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     const start = await screen.findByTestId('subtasks-merge-start')
     expect(actions.plan).toHaveBeenCalledWith('mere', ['a', 'b'])
     expect(start.textContent).toBe('Fusionner les 2 prêts dans main')
-    expect(screen.getByTestId('work-group-merge').textContent).toContain(
-      '2 travaux prêts à fusionner'
-    )
     fireEvent.click(start)
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false))
   })
@@ -518,7 +520,8 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
           endedAt: T0 + 5000
         })
       ]),
-      info([child('a', { role: front, archived: true })], { merge: actions })
+      // Nettoyée : archivée, plus de worktree ni de branche ; la carte le dit quand même.
+      info([withoutBranch(child('a', { role: front, archived: true }))], { merge: actions })
     )
     const result = await screen.findByTestId('work-merge-result')
     expect(result.dataset['state']).toBe('merged')
@@ -579,6 +582,8 @@ describe('« Lancer en parallèle… » : une carte seule, à sa place (fiche 26
     expect(screen.queryByTestId('subtasks')).toBeNull()
     // Sans rôle : pas de jeton pour lui répondre ; sa conversation s'ouvre.
     expect(within(card).queryByTestId('work-reply')).toBeNull()
+    // « Enregistrer comme rôle » (fiche 223) reste pour un travail sans rôle qui a répondu.
+    expect(within(card).getByTestId('work-save-role')).toBeTruthy()
     await within(card).findByTestId('work-merge-start')
   })
 })

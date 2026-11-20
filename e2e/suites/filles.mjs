@@ -17,8 +17,8 @@ const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
 
 /**
  * Conversations filles lancées par l'utilisateur (fiche 097, étape 1) : « Lancer en parallèle… »,
- * la fille sous sa mère, la carte « Sous-tâches », le compte rendu, son envoi avec le prochain
- * message, la mère supprimée. Dans un dépôt git jetable : une fille travaille dans un worktree.
+ * la fille sous sa mère, sa carte seule à la place de son lancement (fiche 264 : sa réponse, sa
+ * branche, son coût), son envoi avec le prochain message, la mère supprimée. Dans un dépôt git jetable : une fille travaille dans un worktree.
  */
 export async function fillesSuite(scheme) {
   console.log(`\n— Conversations filles (${scheme})`)
@@ -92,38 +92,30 @@ export async function fillesSuite(scheme) {
           'la fille est sous sa mère, la mère reste affichée'
         )
 
-        // Fin du tour de la fille : son compte rendu dans le fil de la mère.
-        await ui.waitFor(`!!${ui.$('child-report')}`, 30000)
+        // Fin du tour de la fille : sa carte seule, à la place de son lancement (fiche 264), avec
+        // sa réponse, sa branche et ses fichiers ; ni « Sous-tâches » ni compte rendu séparé.
+        const soloCard = `document.querySelector('[data-testid=work-card]')`
+        await ui.waitFor(`${soloCard}?.dataset.state === 'replied'`, 30000)
         const branch = await ui.ev(
-          `document.querySelector('[data-testid=subtask-row] .subtask-branch')?.innerText`
+          `${soloCard}.querySelector('[data-testid=work-changes] .subtask-branch')?.innerText`
         )
-        // Replié (fiche 171) : titre, coût et première phrase ; le détail se déplie.
-        check(
-          (await ui.ev(`${ui.$('child-report-toggle')}.getAttribute('aria-expanded')`)) ===
-            'false' && !(await ui.ev(`!!${ui.$('child-report-excerpt')}`)),
-          'compte rendu replié par défaut'
-        )
-        await ui.click(ui.$('child-report-toggle'))
-        const report = await ui.ev(`${ui.$('child-report')}.innerText`)
+        const report = await ui.ev(`${soloCard}.innerText`)
         check(
           branch?.startsWith('bobine/') &&
-            report.includes(branch) &&
             report.includes(L('children.files', { count: 2 })) &&
             report.includes('deux fichiers modifiés') &&
-            !!(await ui.ev(`!!${ui.$('child-report-pending')}`)),
-          'compte rendu : branche, fichiers, fin de la réponse, en attente du prochain message'
+            (await ui.ev(`${soloCard}.querySelector('[data-testid=work-relay]')?.dataset.sent`)) ===
+              'false' &&
+            !(await ui.ev(
+              `!!document.querySelector('[data-testid=child-report], [data-testid=subtasks], [data-testid=child-started]')`
+            )),
+          'carte seule : branche, fichiers, réponse, en attente du prochain message ; rien de séparé'
         )
-        // Coût de la fille (fiche 117) : sur sa ligne, en total de la carte, sur son compte rendu.
-        await ui.waitFor(`!!${ui.$('subtask-cost')}`)
-        const cost = await ui.ev(
-          `({ row: ${ui.$('subtask-cost')}.innerText, total: ${ui.$('subtasks-total')}?.innerText, report: ${ui.$('child-report-usage')}?.innerText, turns: ${ui.$('child-report-turns')}?.innerText })`
-        )
+        // Coût de la fille (fiche 117) : au pied de sa réponse, dans sa carte.
+        const facts = await ui.ev(`${soloCard}.querySelector('[data-testid=work-facts]').innerText`)
         check(
-          spaced(cost.row) === spaced(TURN_ESTIMATE) &&
-            spaced(cost.total) === spaced(TURN_ESTIMATE) &&
-            spaced(cost.report) === spaced(TURN_ESTIMATE) &&
-            cost.turns === L('children.report.turns', { count: 1 }),
-          `coût de la fille : sa ligne, le total de la carte, son compte rendu (${spaced(cost.report)})`
+          spaced(facts).includes(spaced(TURN_ESTIMATE)),
+          `coût de la fille : au pied de sa réponse (${spaced(facts)})`
         )
         // Finie, compte rendu vu : la mère est affichée quand il y arrive, il est lu (fiche 258,
         // D35). Sous sa mère, état et origine dans l'infobulle (fiche 149). La fille à lire (mère
@@ -154,37 +146,15 @@ export async function fillesSuite(scheme) {
         await ui.click(ui.$('child-launch'))
         await ui.waitFor(`!${ui.$('child-dialog')}`, 30000)
         await ui.waitFor(
-          `!!document.querySelector('[data-testid=subtask-row][data-state=waiting]')`,
+          `!!document.querySelector('[data-testid=work-card][data-state=waiting]')`,
           30000
         )
         check(
-          (await ui.ev(`${ui.$('subtasks')}.innerText`)).includes(
-            L('children.card.waiting', { count: 1 })
-          ),
-          'carte « Sous-tâches » : une ligne par fille, avec son état'
+          (await ui.ev(`document.querySelectorAll('[data-testid=work-card]').length`)) === 2 &&
+            !(await ui.ev(`!!${ui.$('subtasks')}`)),
+          'deux lancements, deux cartes à leur place ; la deuxième attend votre accord'
         )
         await ui.shot('filles-2-sous-taches')
-        const alignment = await ui.ev(`(() => {
-          const rows = [...document.querySelectorAll('[data-testid=subtask-row]')]
-          return rows.map((row) => ({
-            title: row.querySelector('.subtask-title').getBoundingClientRect().left,
-            state: row.querySelector('[data-testid=subtask-status]').getBoundingClientRect().left,
-            open: row.querySelector('[data-testid=subtask-open]').getBoundingClientRect().left,
-            text: row.querySelector('[data-testid=subtask-status]').textContent.trim(),
-            label: row.querySelector('[data-testid=subtask-status]').getAttribute('aria-label')
-          }))
-        })()`)
-        check(
-          alignment.length === 2 &&
-            ['title', 'state', 'open'].every(
-              (key) =>
-                Math.max(...alignment.map((row) => row[key])) -
-                  Math.min(...alignment.map((row) => row[key])) <
-                1
-            ) &&
-            alignment.every((row) => row.text === '' && row.label),
-          'carte : titres, icônes seules et boutons Ouvrir alignés, états accessibles'
-        )
 
         // Vue « Filles » des Modifications (fiche 161) : ses deux filles, comme la carte.
         await openChanges()
@@ -195,16 +165,16 @@ export async function fillesSuite(scheme) {
           `[...document.querySelectorAll('[data-testid=child-worktree]')].map((r) => r.dataset.id + ':' + r.dataset.state)`
         )
         const card = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=subtask-row]')].map((r) => r.dataset.id + ':' + r.dataset.state)`
+          `[...document.querySelectorAll('[data-testid=work-card]')].map((r) => r.dataset.childId)`
         )
         check(
           (await ui.ev(`${ui.$('changes-view-children')}.innerText`)).replace(/\s+/g, ' ') ===
             `${L('changes.view.children')} 2` &&
-            JSON.stringify(worktrees) === JSON.stringify(card) &&
+            JSON.stringify(worktrees.map((w) => w.split(':')[0])) === JSON.stringify(card) &&
             (await ui.ev(
               `document.querySelector('[data-testid=child-worktree]').innerText.includes(${JSON.stringify(branch)})`
             )),
-          `vue « Filles » : ses filles directes, dans l’état de la carte (${worktrees.join(', ')})`
+          `vue « Filles » : ses filles directes, celles des cartes, dans l’ordre (${worktrees.join(', ')})`
         )
         await ui.shot('filles-161-vue-filles')
         await closePanel()
@@ -216,7 +186,9 @@ export async function fillesSuite(scheme) {
         check(
           told.includes('<child_conversations>') &&
             told.includes(branch) &&
-            !(await ui.ev(`!!${ui.$('child-report-pending')}`)),
+            (await ui.ev(
+              `document.querySelector('[data-testid=work-card] [data-testid=work-relay]')?.dataset.sent`
+            )) === 'true',
           'le compte rendu part avec le prochain message'
         )
         await ui.send('/scenario echo')
@@ -228,7 +200,7 @@ export async function fillesSuite(scheme) {
 
         // « Ouvrir » : la fille qui attend son accord.
         await ui.click(
-          `document.querySelector('[data-testid=subtask-row][data-state=waiting] [data-testid=subtask-open]')`
+          `document.querySelector('[data-testid=work-card][data-state=waiting] [data-testid=work-open]')`
         )
         await ui.waitFor(`!!document.querySelector('[data-testid=permission]')`, 30000)
         check((await activeId()) !== mother, '« Ouvrir » affiche la fille')
@@ -458,7 +430,9 @@ async function agentChildren(ui, main) {
   const activeId = () => ui.ev(`document.querySelector('.history-item.active')?.dataset.id`)
   // Sous la mère dans tous les états (fiche 149).
   const children = () => ui.ev(`${rows}.filter((r) => r.dataset.mother).length`)
-  const card = () => ui.ev(`${ui.$('proposals')}?.innerText ?? ''`)
+  const card = () =>
+    ui.ev(`[...document.querySelectorAll('[data-testid=work-group]')].at(-1)?.innerText ?? ''`)
+  const groups = () => ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)
   /** Ligne en attente de la carte « Tâches proposées » (fiche 112) pour cette fille. */
   const pendingRow = (title) =>
     `document.querySelector('[data-testid=proposal-row][data-title=${JSON.stringify(title)}][data-outcome=pending]')`
@@ -488,14 +462,13 @@ async function agentChildren(ui, main) {
   await ui.waitFor(`!!${pendingRow('Import CSV')}`, 30000)
   const asked = await card()
   check(
-    asked.includes(L('children.proposals.title', { count: 1 })) &&
-      asked.includes(L('children.proposals.pending', { count: 1 })) &&
+    asked.includes(L('workGroup.titleProposed', { count: 1 })) &&
       asked.includes(L('children.proposals.start')) &&
       asked.includes(L('children.proposals.here')) &&
       asked.includes(L('children.proposals.refuse')) &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=proposals]').length`)) === 1 &&
+      (await groups()) === 1 &&
       (await ui.ev(`document.querySelectorAll('[data-testid=tool]').length`)) === 0,
-    'start_child : carte « Tâches proposées », l’appel caché derrière'
+    'start_child : une carte de groupe « 1 travail proposé », l’appel caché derrière'
   )
   // La consigne se déplie ; les options montrent l'agent de la mère et son modèle.
   await ui.click(`${pendingRow('Import CSV')}.querySelector('[data-testid=proposal-title]')`)
@@ -512,47 +485,45 @@ async function agentChildren(ui, main) {
   // La deuxième proposition rejoint la carte, la première y garde son issue.
   await ui.waitFor(`!!${pendingRow('Page d’aide')}`, 30000)
   const both = await card()
+  // La ligne lancée devient celle de son travail, sur place (fiche 264).
+  await ui.waitFor(
+    `[...document.querySelectorAll('[data-testid=work-row]')].some((r) => r.innerText.includes('Import CSV'))`,
+    30000
+  )
   check(
-    both.includes(L('children.proposals.title', { count: 2 })) &&
-      both.includes(L('children.proposals.started', { count: 1 })) &&
-      both.includes(L('children.proposals.pending', { count: 1 })) &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=proposals]').length`)) === 1 &&
-      (await ui.ev(
-        `document.querySelector('[data-testid=proposal-row][data-title="Import CSV"] [data-testid=proposal-state]')?.innerText`
-      )) === L('children.proposals.state.start'),
-    'deuxième start_child du tour : même carte, deux lignes, la première « Lancée »'
+    both.includes(L('workGroup.titleProposed', { count: 2 })) && (await groups()) === 1,
+    'deuxième start_child du tour : même carte, deux lignes, la première lancée sur place'
   )
   await ui.shot('filles-5b-deux-propositions')
   await approve('Page d’aide')
+  await ui.waitFor(`document.querySelectorAll('[data-testid=work-row]').length === 2`, 30000)
   check(
-    (await card()).includes(L('children.proposals.started', { count: 2 })) &&
+    (await card()).includes(L('workGroup.title', { count: 2 })) &&
       (await ui.ev(`document.querySelectorAll('[data-testid=proposal-start]').length`)) === 0,
-    'lignes lancées : plus de bouton, le compte sur la carte'
+    'lignes lancées : plus de bouton, « 2 travaux » sur la carte'
   )
   await ui.waitFor(`!!${ui.$('wake-message')}`, 60000)
   await ui.ready()
   const told = await ui.lastAgentText()
   check(
-    !(await ui.ev(`document.querySelector('[data-testid=child-report][data-outcome=error]')`)) &&
-      (await ui.ev(
-        `document.querySelectorAll('[data-testid=child-report][data-outcome=done]').length`
-      )) === 2,
-    'au-delà de la limite d’agents vivants, aucune fille n’est arrêtée (deux comptes rendus « fini »)'
+    (await ui.ev(
+      `[...document.querySelectorAll('[data-testid=work-row]')].map((r) => r.dataset.state).join()`
+    )) === 'replied,replied',
+    'au-delà de la limite d’agents vivants, aucune fille n’est arrêtée (deux réponses)'
   )
   check(
     (await children()) === 2 &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=child-report]').length`)) === 2 &&
-      (await ui.ev(`${ui.$('child-started')}.innerText`)) ===
-        L('children.startedByAgent', { title: 'Import CSV' }),
-    'deux filles lancées par l’agent, sous la mère, avec leurs comptes rendus'
+      !(await ui.ev(
+        `!!document.querySelector('[data-testid=child-report], [data-testid=child-started], [data-testid=subtasks]')`
+      )),
+    'deux filles lancées par l’agent, sous la mère, sur les lignes de leur carte'
   )
   check(
     told.includes('<child_conversations>') &&
       told.includes('Import CSV') &&
       told.includes('Page d’aide') &&
       told.includes('have finished their turn') &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=wake-message]').length`)) === 1 &&
-      !(await ui.ev(`!!${ui.$('child-report-pending')}`)),
+      (await ui.ev(`document.querySelectorAll('[data-testid=wake-message]').length`)) === 1,
     'réveil groupé : une seule fois, avec les deux comptes rendus'
   )
   await ui.ev(`${ui.$('wake-message')}.scrollIntoView({ block: 'center' }), true`)
@@ -568,7 +539,7 @@ async function agentChildren(ui, main) {
       (await children()) === 2 &&
       (await ui.ev(
         `document.querySelector('[data-testid=proposal-row][data-outcome=here] [data-testid=proposal-state]')?.innerText`
-      )) === L('children.proposals.state.here'),
+      )) === L('workGroup.outcome.here'),
     '« Faire ici » : l’agent reçoit la consigne et la fait dans la conversation, pas de fille'
   )
   await ui.ev(
@@ -587,7 +558,7 @@ async function agentChildren(ui, main) {
   // `filles-rafale` (fiche 124, D13) : trois propositions en parallèle, qui arrivent pendant que
   // la première attend. Pointeur sur « Lancer » de la première, dépliée : les suivantes s'ajoutent
   // en dessous, ni la ligne ni son bouton ne bougent ; pointeur sorti, le fil rattrape le bas.
-  const lastCard = `[...document.querySelectorAll('[data-testid=proposals]')].at(-1)`
+  const lastCard = `[...document.querySelectorAll('[data-testid=work-group]')].at(-1)`
   const scroller = `document.querySelector('.scroll')`
   const gapToBottom = () =>
     ui.ev(
@@ -757,31 +728,45 @@ async function agentChildren(ui, main) {
   if (!instruction) throw new Error('Consigne de reprise absente du fil de la mère')
   const receipt = { mother, ...instruction }
   await instructionDetails(ui, receipt, 'reprise')
-  const launch = `document.querySelector('[data-testid=child-started][data-child-id="${instruction.childId}"]')`
+  // Consigne initiale (fiche 150) : dans la carte du travail aussi, repliée, entière.
+  const row = `document.querySelector('[data-testid=work-row][data-child-id="${instruction.childId}"]')`
+  const brief = `${row}.querySelector('[data-testid=work-brief]')`
   const initialPrompt = await ui.ev(
     `window.api.conversations.view(${JSON.stringify(mother)}).then(v=>v.transcript.items.find(i=>i.kind==='child-started'&&i.childId===${JSON.stringify(instruction.childId)}).prompt)`
   )
-  check(!(await ui.ev(`${launch}.open`)), 'consigne initiale repliée par défaut')
-  await ui.click(`${launch}.querySelector('summary')`)
-  await ui.ev(`${launch}.scrollIntoView({block:'center'}), true`)
+  check(!(await ui.ev(`${brief}.open`)), 'consigne initiale repliée par défaut')
+  await ui.click(`${brief}.querySelector('summary')`)
+  await ui.ev(`${brief}.scrollIntoView({block:'center'}), true`)
   check(
-    (await ui.ev(`${launch}.querySelector('[data-testid=child-instruction-text]').textContent`)) ===
+    (await ui.ev(`${brief}.querySelector('[data-testid=work-brief-text]').textContent`)) ===
       initialPrompt,
     'consigne initiale complète, identique à celle du lancement'
   )
   await ui.shot('150-consigne-initiale')
-  await ui.click(`${launch}.querySelector('summary')`)
+  await ui.click(`${brief}.querySelector('summary')`)
   return receipt
 }
 
-/** Fiche 150 : texte complet, native details au clavier et retour à l'état replié. */
+/**
+ * Fiche 150 : texte complet, native details au clavier et retour à l'état replié. Fiche 264 : le
+ * message de l'agent au travail (`message_child`) est dans la carte du travail, sur sa ligne.
+ */
 async function instructionDetails(ui, receipt, name) {
-  const row = `document.querySelector('[data-testid=child-instruction][data-child-id="${receipt.childId}"]')`
+  const line = `document.querySelector('[data-testid=work-row][data-child-id="${receipt.childId}"]')`
+  await ui.waitFor(`!!${line}`)
+  if (
+    (await ui.ev(
+      `${line}.querySelector('[data-testid=work-row-toggle]').getAttribute('aria-expanded')`
+    )) !== 'true'
+  ) {
+    await ui.ev(`${line}.querySelector('[data-testid=work-row-toggle]').click(), true`)
+  }
+  const row = `${line}.querySelector('[data-testid=work-note]')`
   await ui.waitFor(`!!${row}`)
   check(!(await ui.ev(`${row}.open`)), `${name} : consigne repliée par défaut`)
   check(
-    (await ui.ev(`${row}.querySelector('summary').innerText`)) ===
-      L('children.instructionFor', { title: receipt.title }),
+    (await ui.ev(`${line}.querySelector('[data-testid=work-row-name]').innerText`)) ===
+      receipt.title,
     `${name} : consigne rattachée à la bonne fille`
   )
   await ui.ev(
@@ -792,7 +777,7 @@ async function instructionDetails(ui, receipt, name) {
   await ui.waitFor(`${row}.open`)
   await ui.ev(`${row}.scrollIntoView({block:'center'}), true`)
   check(
-    (await ui.ev(`${row}.querySelector('[data-testid=child-instruction-text]').textContent`)) ===
+    (await ui.ev(`${row}.querySelector('[data-testid=work-note-text]').textContent`)) ===
       receipt.prompt,
     `${name} : texte accepté par message_child conservé sans troncature`
   )
@@ -835,7 +820,7 @@ async function fillesProposedSuite(scheme) {
 
 async function proposedChildren(ui, main) {
   const pending = `document.querySelectorAll('[data-testid=proposal-row][data-outcome=pending]')`
-  const cards = () => ui.ev(`document.querySelectorAll('[data-testid=proposals]').length`)
+  const cards = () => ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)
   /** Refuse les propositions du tour, l'une après l'autre (le scénario les enchaîne). */
   const refuseAll = async (titles) => {
     for (const title of titles) {
@@ -893,10 +878,10 @@ async function proposedChildren(ui, main) {
   await fresh()
   await ui.send('/scenario chantiers')
   await ui.waitFor(`${pending}.length === 1`, 30000)
-  const card = await ui.ev(`${ui.$('proposals')}.innerText`)
+  const card = await ui.ev(`${ui.$('work-group')}.innerText`)
   const first = await ui.ev(`${pending}[0].dataset.title`)
   check(
-    card.includes(L('children.proposals.title', { count: 1 })) && first === titles[0],
+    card.includes(L('workGroup.titleProposed', { count: 1 })) && first === titles[0],
     `« Quand ça s’y prête » : sans consigne, carte « Tâches proposées » (${first})`
   )
   await ui.shot('filles-12-propositions-contexte')

@@ -11,8 +11,9 @@ const WHY = 'import délicat, modèle précis'
  * La mère tech lead (fiche 160), dans un dépôt git jetable. Scénario `filles-tech-lead` : un agent
  * inconnu refusé, puis « Import CSV » proposée avec un modèle et une raison (présélectionnés sur la
  * carte) ; au réveil, correction par `message_child` et « pas prête » ; au réveil suivant,
- * « prête ». Une deuxième fille, lancée à la main et non recommandée, ne part qu'après
- * confirmation. Puis `filles-bavarde` : le compte rendu reçu par la mère reste borné.
+ * « prête », la pastille sur sa ligne de la carte de groupe (fiche 264). Une deuxième fille,
+ * lancée à la main, a sa propre carte : la fusion de la carte de groupe ne prend que la sienne.
+ * Puis `filles-bavarde` : le compte rendu reçu par la mère reste borné.
  */
 export async function fillesTechLeadSuite(scheme) {
   console.log(`\n— Mère tech lead (${scheme})`)
@@ -71,31 +72,40 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
         await ui.waitFor(`!${pending}`)
 
-        // Deux réveils : la correction, puis la recommandation ; aucune fusion par l'agent.
+        // Deux réveils : la correction, puis la recommandation ; aucune fusion par l'agent. Une
+        // seule mention de la recommandation (fiche 264) : la pastille de la ligne de la carte.
+        const row = `document.querySelector('[data-testid=work-group] [data-testid=work-row]')`
         await ui.waitFor(
-          `document.querySelectorAll('[data-testid=child-recommendation]').length === 2`,
+          `${row}?.querySelector('[data-testid=subtask-recommendation]')?.dataset.state === 'ready'`,
           90000
         )
+        await ui.waitFor(`document.body.innerText.includes('à toi de la fusionner')`, 30000)
         await ui.ready()
-        const verdicts = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=child-recommendation]')].map((r) => r.dataset.ready)`
-        )
         check(
-          verdicts.join() === 'false,true' &&
-            (await ui.ev(`!!${ui.$('child-instruction')}`)) &&
-            (await ui.ev(`document.body.innerText`)).includes('Correction faite'),
-          'correction renvoyée par message_child, puis recommandation « prête »'
+          !(await ui.ev(`!!${ui.$('child-recommendation')}`)) &&
+            !(await ui.ev(`!!${ui.$('child-instruction')}`)) &&
+            !(await ui.ev(`!!${ui.$('subtasks')}`)) &&
+            !(await ui.ev(`!!${ui.$('child-report')}`)),
+          'carte de groupe : ni « Sous-tâches », ni compte rendu, ni recommandation ou consigne séparées'
+        )
+        await ui.reveal(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+        await ui.click(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+        await ui.waitFor(`!!${row}.querySelector('[data-testid=work-note]')`)
+        check(
+          (
+            await ui.ev(`${row}.querySelector('[data-testid=work-note-text]').textContent`)
+          ).includes('Il manque un test du séparateur') &&
+            (await ui.ev(`${row}.innerText`)).includes('Correction faite'),
+          'la correction (message_child) dans la carte du travail, puis sa réponse'
         )
         check(git(workspace, 'rev-list', '--count', 'main') === '1', 'rien de fusionné par l’agent')
 
-        // Une seconde fille, lancée à la main, que la mère ne recommande pas.
+        // Un second travail, lancé à la main (« Lancer en parallèle… ») : sa propre carte.
         await ui.ev(
           `window.api.conversations.startChild('${mother}', ${JSON.stringify({ text: '/scenario echo Notes', title: 'Notes' })}).then(() => true)`
         )
-        await ui.waitFor(
-          `document.querySelectorAll('[data-testid=child-report]').length >= 3`,
-          60000
-        )
+        const solo = `document.querySelector('[data-testid=work-card][data-state=replied]:not(.in-group)')`
+        await ui.waitFor(`!!${solo}`, 60000)
         const folders = Object.fromEntries(
           await ui.ev(
             `window.api.conversations.get().then((s) => s.conversations.filter((c) => c.startedFrom?.id === '${mother}').map((c) => [c.title, c.workspace]))`
@@ -104,9 +114,8 @@ export async function fillesTechLeadSuite(scheme) {
         await commitAll(folders['Import CSV'], 'feat: import CSV')
         writeFileSync(join(folders['Notes'], 'NOTES.md'), '# Notes\n')
         await commitAll(folders['Notes'], 'docs: notes')
-        // Revenir à la mère depuis une fille : la carte relit les branches.
-        // Le bouton d'abord à l'écran, comme un utilisateur (fiche 145).
-        const open = `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
+        // Revenir à la mère depuis un travail : les cartes relisent les branches.
+        const open = `${row}.querySelector('[data-testid=work-open]')`
         await ui.reveal(open)
         await ui.click(open)
         await ui.waitFor(`!!${ui.$('title-origin')}`)
@@ -114,29 +123,24 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.waitFor(
           `document.querySelector('.history-item.active')?.dataset.id === '${mother}'`
         )
-        await ui.waitFor(`!!${ui.$('subtasks-merge-others')}`, 30000)
+        await ui.waitFor(`!!${ui.$('subtasks-merge-start')}`, 30000)
+        await ui.waitFor(`!!${solo}?.querySelector('[data-testid=work-merge-start]')`, 30000)
         check(
-          (await ui.ev(
-            `[...document.querySelectorAll('[data-testid=subtask-recommendation]')].map((b) => b.dataset.state).join()`
-          )) === 'ready' &&
-            (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) ===
-              L('childrenMerge.recommended.action', { count: 1, base: 'main' }) &&
-            (await ui.ev(`${ui.$('subtasks-merge-others')}.innerText`)) ===
-              L('childrenMerge.recommended.others', { count: 1 }),
-          'Sous-tâches : pastille « Recommandée », seule la recommandée proposée'
+          (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) ===
+            L('workGroup.merge.recommended.action', { count: 1, base: 'main' }) &&
+            !(await ui.ev(`!!${ui.$('subtasks-merge-others')}`)),
+          'carte de groupe : pastille « Recommandée », le recommandé proposé ; l’autre travail a sa carte'
         )
+        await ui.reveal(ui.$('work-group'))
         await ui.shot('filles-tech-lead-2-recommandee')
-        await ui.click(ui.$('subtasks-merge-others'))
-        await ui.waitFor(`!!${ui.$('subtasks-merge-confirm')}`)
-        await ui.shot('filles-tech-lead-3-confirmation')
-        await ui.click(ui.$('subtasks-merge-confirm-cancel'))
         await ui.click(ui.$('subtasks-merge-start'))
         await ui.waitFor(`!!${ui.$('subtasks-merge-result')}`, 60000)
         check(
           git(workspace, 'log', '--format=%s', 'main').includes('feat: import CSV') &&
             !git(workspace, 'log', '--format=%s', 'main').includes('docs: notes'),
-          'fusion par l’utilisateur : la recommandée seulement'
+          'fusion depuis la carte : son travail seulement'
         )
+        await ui.reveal(ui.$('subtasks-merge-result'))
         await ui.shot('filles-tech-lead-4-fusionnee')
       },
       undefined,
@@ -168,19 +172,23 @@ export async function fillesTechLeadSuite(scheme) {
         // Tour fini (son pied « Terminé » arrive après le texte et fait défiler le fil) et bouton
         // à l'écran avant le clic : sinon le clic tombait là où le bouton n'était plus (fiche 145).
         await ui.ready()
-        await ui.reveal(ui.$('child-report-toggle'))
-        await ui.click(ui.$('child-report-toggle'))
-        // Le compte rendu se déplie au rendu suivant : sur une machine lente (job Linux de
-        // GitHub, fiche 145), lu tout de suite, il était encore replié.
-        await ui.waitFor(`!!${ui.$('child-report-excerpt')}?.innerText`)
-        const excerpt = await ui.ev(`${ui.$('child-report-excerpt')}?.innerText ?? ''`)
+        // La ligne de la carte compte les fichiers ; dépliée, la réponse entière (fiche 264).
+        const bavarde = `document.querySelector('[data-testid=work-row]')`
+        await ui.waitFor(`${bavarde}?.dataset.state === 'replied'`, 30000)
         check(
-          (await ui.ev(`${ui.$('child-report')}.innerText`)).includes(
-            L('children.files', { count: 30 })
-          ) &&
-            excerpt.startsWith('Récapitulatif') &&
-            !excerpt.includes('MARQUEUR-FIN-DE-REPONSE'),
-          'fille bavarde : 30 fichiers comptés, début du récapitulatif, contexte de la mère borné'
+          (
+            await ui.ev(`${bavarde}.querySelector('[data-testid=work-row-meta]').innerText`)
+          ).includes(L('children.files', { count: 30 })),
+          'fille bavarde : 30 fichiers comptés sur sa ligne'
+        )
+        await ui.reveal(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)
+        await ui.click(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)
+        await ui.waitFor(`!!${bavarde}.querySelector('[data-testid=work-body]')?.innerText`)
+        check(
+          (await ui.ev(`${bavarde}.querySelector('[data-testid=work-body]').innerText`)).startsWith(
+            'Récapitulatif'
+          ),
+          'fille bavarde : sa réponse dans la carte, repliée, commence par le récapitulatif'
         )
         await ui.shot('filles-tech-lead-5-bavarde')
       },

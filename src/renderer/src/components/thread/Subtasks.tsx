@@ -123,14 +123,35 @@ export function ChildRecommendationItem({ item }: { item: Recommendation }) {
   )
 }
 
+const VERDICT_KEYS = {
+  children: {
+    ready: 'children.recommendation.ready',
+    notReady: 'children.recommendation.notReady',
+    stale: 'children.recommendation.stale',
+    staleHint: 'children.recommendation.staleHint'
+  },
+  works: {
+    ready: 'workGroup.verdict.ready',
+    notReady: 'workGroup.verdict.notReady',
+    stale: 'workGroup.verdict.stale',
+    staleHint: 'workGroup.verdict.staleHint'
+  }
+} as const
+
 /** Pastille de la recommandation sur la ligne d'une fille, sa note en infobulle. */
-export function VerdictBadge({ verdict }: { verdict: ChildVerdict }) {
+export function VerdictBadge({
+  verdict,
+  works = false
+}: {
+  verdict: ChildVerdict
+  works?: boolean
+}) {
   const { t } = useTranslation()
   const state = verdict.stale ? 'stale' : verdict.ready ? 'ready' : 'not-ready'
-  const label = verdict.stale
-    ? t('children.recommendation.stale')
-    : t(verdict.ready ? 'children.recommendation.ready' : 'children.recommendation.notReady')
-  const hint = verdict.stale ? t('children.recommendation.staleHint') : verdict.note
+  // Ligne d'un travail (fiche 264) : « Recommandé », au masculin.
+  const keys = works ? VERDICT_KEYS.works : VERDICT_KEYS.children
+  const label = verdict.stale ? t(keys.stale) : t(verdict.ready ? keys.ready : keys.notReady)
+  const hint = verdict.stale ? t(keys.staleHint) : verdict.note
   return (
     <Tip label={hint}>
       <span
@@ -191,7 +212,7 @@ export function MergeOrVerdict({
   if (mergeState) {
     return <MergeRowBadge state={mergeState} works={works} {...(cleaned ? { cleaned } : {})} />
   }
-  return verdict ? <VerdictBadge verdict={verdict} /> : null
+  return verdict ? <VerdictBadge verdict={verdict} works={works} /> : null
 }
 
 /** Texte exact, sans interprétation Markdown ni troncature, replié par défaut (fiche 150). */

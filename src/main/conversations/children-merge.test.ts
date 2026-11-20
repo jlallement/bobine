@@ -174,7 +174,8 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     ])
     expect(plan.blocked).toBeUndefined()
 
-    const first = await env.merger.start('mere', ids(env.children), false)
+    // L'ordre reçu (celui du plan, donc des lignes de la carte) est celui de la fusion.
+    const first = await env.merger.start('mere', ['f2', 'f1'], false)
     expect(first).toMatchObject({ base: 'main', status: 'running', cleanup: false })
     expect(first.rows.map((r) => [r.childId, r.state])).toEqual([
       ['f2', 'pending'],
@@ -217,11 +218,12 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     env.commit(c, 'c.txt', 'c\n')
     const plan = await env.merger.plan('mere')
     expect(plan.overlaps).toEqual([{ first: 'A', second: 'B', files: ['README.md'] }])
-    // Une carte (fiche 264) : seulement ses travaux, et leurs recouvrements entre eux.
-    const card = await env.merger.plan('mere', ['f1', 'f3'])
+    // Une carte (fiche 264) : seulement ses travaux, dans l'ordre de ses lignes, et leurs
+    // recouvrements entre eux.
+    const card = await env.merger.plan('mere', ['f3', 'f1'])
     expect(card.children.map((c) => [c.id, c.state])).toEqual([
-      ['f1', 'ready'],
-      ['f3', 'ready']
+      ['f3', 'ready'],
+      ['f1', 'ready']
     ])
     expect(card.overlaps).toEqual([])
     expect((await env.merger.plan('mere', [])).children).toEqual([])

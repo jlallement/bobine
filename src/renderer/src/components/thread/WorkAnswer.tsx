@@ -49,6 +49,8 @@ export function WorkSteps({
   const current = currentReport(card)
   return (
     <>
+      {/* Sans bulle (proposition, « Lancer en parallèle… ») : sa consigne, repliée (fiche 150). */}
+      {!card.request && <WorkBrief card={card} />}
       {card.steps.map((step) =>
         step.kind === 'ask' ? (
           <FollowUp key={step.item.id} item={step.item} />
@@ -81,6 +83,22 @@ function FollowUp({ item }: { item: Ask }) {
         <span className="role-request-text">{item.text}</span>
       </div>
     </div>
+  )
+}
+
+/** Consigne d'un travail lancé sans bulle : son texte exact, replié (fiches 150, 264). */
+function WorkBrief({ card }: { card: WorkCardData }) {
+  const { t } = useTranslation()
+  return (
+    <details className="work-agent-note" data-testid="work-brief">
+      <summary>
+        <span>{t('workCard.brief')}</span>
+        <ChevronRight size={13} className="chevron" aria-hidden />
+      </summary>
+      <div className="work-agent-note-text" data-testid="work-brief-text">
+        {card.asked}
+      </div>
+    </details>
   )
 }
 

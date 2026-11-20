@@ -1,5 +1,5 @@
 import { Check, CircleExclamationPoint, GitMerge, LoaderCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import { childState } from '@shared/children'
@@ -13,6 +13,7 @@ import { currentLocale } from '@shared/i18n/format'
 import { translate } from '@shared/i18n/message'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
+import { lastMergeFor } from '@shared/work-groups'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard } from '../panel/MainDirtyCard'
 import type { SubtasksInfo } from './Subtasks'
@@ -66,7 +67,10 @@ export function useWorkMerge(
 ): WorkMergeControl | undefined {
   const motherId = info?.motherId
   const actions = info?.merge
-  const on = enabled && !card.role?.readOnly && !!child?.branch && !!motherId && !!actions
+  // Une fusion déjà faite reste dite après le nettoyage (plus de branche, conversation archivée).
+  const merged = useMemo(() => !!lastMergeFor(items, [card.childId]), [items, card.childId])
+  const on =
+    enabled && !card.role?.readOnly && (!!child?.branch || merged) && !!motherId && !!actions
   const rows = on && child ? [{ child, state: childState(child, info?.attention[child.id]) }] : []
   const state = useChildrenMerge(on ? motherId : undefined, on ? actions : undefined, rows, items, [
     card.childId

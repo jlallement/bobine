@@ -2967,7 +2967,7 @@ export const scenarios: Record<string, Scenario> = {
   },
   conflits: {
     description:
-      'Fiche 110 : sur la consigne de résolution de conflits de l’app (« left conflicts »), réécrit README.md sans marqueurs, sans committer ; sinon joue « modifications »',
+      'Fiche 110 : sur la consigne de résolution de conflits de l’app (« left conflicts »), réécrit README.md sans marqueurs, sans committer ; réveil d’une mère (fiche 264) : le dit, sans rien modifier ; sinon joue « modifications »',
     steps: [
       {
         kind: 'when-prompt',
@@ -2984,7 +2984,14 @@ export const scenarios: Record<string, Scenario> = {
           },
           { kind: 'text', text: 'Conflit résolu, je ne committe pas.' }
         ],
-        else: MODIFICATIONS
+        else: [
+          {
+            kind: 'when-prompt',
+            includes: 'have finished their turn',
+            then: [{ kind: 'text', text: 'Mes travaux ont fini : à vous de les fusionner.' }],
+            else: MODIFICATIONS
+          }
+        ]
       }
     ]
   },

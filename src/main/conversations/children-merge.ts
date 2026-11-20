@@ -139,6 +139,17 @@ export class ChildrenMerger {
   }
 
   /**
+   * Filles dans l'ordre d'une carte (fiche 264) : celui de `ids` (ses lignes), puis les autres
+   * dans l'ordre de lancement ; sans `ids`, l'ordre de lancement (« Sous-tâches », fiche 120).
+   */
+  private ordered(motherId: string, ids?: readonly string[]): ConversationSummary[] {
+    const children = this.children(motherId)
+    if (!ids) return children
+    const rank = (id: string) => (ids.includes(id) ? ids.indexOf(id) : ids.length)
+    return [...children].sort((a, b) => rank(a.id) - rank(b.id))
+  }
+
+  /**
    * Ce que montre le pied d'une carte : « Sous-tâches » (toutes les filles), ou une carte de
    * groupe ou de travail (fiche 264, `ids`) : seulement ses travaux, leurs recouvrements entre eux,
    * et le refus d'avance lu depuis le premier d'entre eux. Seules ces branches sont lues.
@@ -148,7 +159,7 @@ export class ChildrenMerger {
     const candidates: MergeCandidate[] = []
     const targets = new Map<string, CycleTarget>()
     const wanted = ids && new Set(ids)
-    for (const child of this.children(motherId)) {
+    for (const child of this.ordered(motherId, ids)) {
       if (wanted && !wanted.has(child.id)) continue
       const target = this.target(child.id)
       if (!target) continue
@@ -253,8 +264,7 @@ export class ChildrenMerger {
       throw new Error(t('childrenMerge.error.running'))
     }
     if (ids.length === 0) throw new Error(t('childrenMerge.error.none'))
-    const children = this.children(motherId)
-    const chosen = children.filter((c) => ids.includes(c.id))
+    const chosen = this.ordered(motherId, ids).filter((c) => ids.includes(c.id))
     const targets = chosen.map((c) => this.target(c.id))
     if (chosen.length !== new Set(ids).size || targets.some((target) => !target)) {
       throw new Error(t('childrenMerge.error.gone'))

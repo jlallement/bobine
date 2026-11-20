@@ -17,18 +17,15 @@ const MOTHER = 'Organise le carnet'
 /** Fichier de la mère, modifié dans le dossier principal pendant que ses filles travaillent. */
 const TODO = '- [ ] relire\n'
 const TODO_DRAFT = '- [ ] relire\n- [ ] publier\n'
-const CHILDREN = [
-  { title: 'Import CSV', text: '/scenario modifications' },
-  { title: 'Page d’aide', text: '/scenario echo Page d’aide' },
-  { title: 'Notes de version', text: '/scenario echo Notes de version' }
-]
+/** Les trois travaux proposés par le scénario `fusion-trois` (titres seulement : consignes là-bas). */
+const CHILDREN = [{ title: 'Import CSV' }, { title: 'Page d’aide' }, { title: 'Notes de version' }]
 
 /**
- * Fusionner toutes les filles depuis la carte « Sous-tâches » (fiche 120), dans un dépôt git
- * jetable : trois filles, deux qui touchent README.md (recouvrement dit), une avec des
- * modifications non commitées (exclue, dite) ; puis la fusion enchaînée avec « Puis nettoyer » :
- * la deuxième entre en conflit, l'agent factice le résout (scénario `conflits`), la fusion reprend.
- * Enfin, l'app redémarrée garde l'issue de la fusion dans la carte.
+ * Fusionner les travaux d'une carte de groupe (fiches 120, 264), dans un dépôt git jetable : trois
+ * travaux proposés par l'agent (`fusion-trois`), « Tout lancer » ; deux touchent README.md
+ * (recouvrement dit), un a des modifications non commitées (exclu, dit) ; puis la fusion enchaînée
+ * dans la carte, avec « Puis nettoyer » : la deuxième entre en conflit, l'agent factice le résout
+ * (scénario `conflits`), la fusion reprend. Enfin, l'app redémarrée garde l'issue dans la carte.
  */
 export async function fillesFusionSuite(scheme) {
   console.log(`\n— Fusionner toutes les filles (${scheme})`)
@@ -66,18 +63,21 @@ export async function fillesFusionSuite(scheme) {
       async (ui) => {
         await ui.ready()
         const activeId = () => ui.ev(`document.querySelector('.history-item.active')?.dataset.id`)
+        // Une conversation déjà commencée (un brouillon n'a pas de travaux, fiche 097).
         await ui.send(`/scenario echo ${MOTHER}`)
         await ui.ready()
+        await ui.send('/scenario fusion-trois')
+        await ui.waitFor(`!!${ui.$('work-group-start-all')}`, 30000)
         const mother = await activeId()
         await ui.ev(`window.api.conversations.rename('${mother}', ${JSON.stringify(MOTHER)})`)
-        for (const child of CHILDREN) {
-          await ui.ev(
-            `window.api.conversations.startChild('${mother}', ${JSON.stringify(child)}).then(() => true)`
-          )
-        }
+        await ui.click(ui.$('work-group-start-all'))
         await ui.waitFor(
-          `document.querySelectorAll('[data-testid=child-report]').length === 3`,
+          `document.querySelectorAll('[data-testid=work-row][data-state=replied]').length === 3`,
           60000
+        )
+        check(
+          !(await ui.ev(`!!${ui.$('subtasks')}`)) && !(await ui.ev(`!!${ui.$('child-report')}`)),
+          'trois travaux sur les lignes de leur carte : ni « Sous-tâches » ni compte rendu séparé'
         )
         /** Dossier (worktree) de chaque fille, par titre. */
         const folders = Object.fromEntries(
@@ -97,9 +97,12 @@ export async function fillesFusionSuite(scheme) {
 
         /** Revenir à la mère depuis une fille : la carte relit les branches. */
         const reread = async () => {
-          const open = `document.querySelector('[data-testid=subtask-row] [data-testid=subtask-open]')`
-          // Comme un utilisateur : le bouton d'abord à l'écran. Le haut de la carte peut être
-          // au-dessus du fil (selon la hauteur des lignes, fiche 145) : le clic tombait dehors.
+          // Comme un utilisateur : la ligne dépliée, puis « Ouvrir sa conversation » à l'écran.
+          const row = `document.querySelector('[data-testid=work-row]')`
+          await ui.reveal(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+          await ui.click(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+          const open = `${row}.querySelector('[data-testid=work-open]')`
+          await ui.waitFor(`!!${open}`)
           await ui.reveal(open)
           await ui.click(open)
           await ui.waitFor(`!!${ui.$('title-origin')}`)
@@ -124,17 +127,17 @@ export async function fillesFusionSuite(scheme) {
         )
         check(
           (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) ===
-            L('childrenMerge.action', { count: 2, base: 'main' }),
+            L('workGroup.merge.action', { count: 2, base: 'main' }),
           'pied de carte : deux prêtes, recouvrement sur README.md, la troisième non commitée et dite'
         )
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-pied')
 
         // La troisième est commitée : les trois sont prêtes.
         await commitAll(notes, 'docs: notes de version')
         await reread()
         await ui.waitFor(
-          `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(L('childrenMerge.action', { count: 3, base: 'main' }))}`,
+          `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(L('workGroup.merge.action', { count: 3, base: 'main' }))}`,
           20000
         )
         check(
@@ -161,7 +164,7 @@ export async function fillesFusionSuite(scheme) {
             !(await ui.ev(`!!${ui.$('subtasks-merge-start')}`)),
           `fusion refusée d’avance : dossier principal non commité (${dirtyFiles.join(', ')})`
         )
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('123-fusion-refusee')
         await ui.click(ui.$('main-dirty-commit'))
         await ui.waitFor(`!!${ui.$('main-dirty-commit-message')}`)
@@ -173,7 +176,7 @@ export async function fillesFusionSuite(scheme) {
           ),
           '« Committer d’abord » : message rédigé par l’agent de la mère, modifiable'
         )
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('123-fusion-committer-d-abord')
         await ui.click(ui.$('main-dirty-commit-cancel'))
         await ui.waitFor(`!${ui.$('main-dirty-commit-message')}`)
@@ -185,7 +188,7 @@ export async function fillesFusionSuite(scheme) {
         // L'état « l'agent résout le conflit » dure le tour de la fille, parfois moins d'une
         // sonde : la carte est relevée au moment même où il apparaît.
         await ui.ev(`(() => {
-          const state = (title) => [...document.querySelectorAll('[data-testid=subtask-row]')]
+          const state = (title) => [...document.querySelectorAll('[data-testid=work-row]')]
             .find((r) => r.innerText.includes(title))
             ?.querySelector('[data-testid=subtask-merge-state]')?.dataset.state
           const text = (id) => document.querySelector('[data-testid=' + id + ']')?.innerText
@@ -200,8 +203,8 @@ export async function fillesFusionSuite(scheme) {
           })
           let last
           const look = () => {
-            const current = JSON.stringify([...document.querySelectorAll('[data-testid=subtask-row]')]
-              .map((r) => ({ title: r.querySelector('.subtask-title')?.innerText,
+            const current = JSON.stringify([...document.querySelectorAll('[data-testid=work-row]')]
+              .map((r) => ({ title: r.querySelector('[data-testid=work-row-name]')?.innerText,
                 state: r.querySelector('[data-testid=subtask-merge-state]')?.dataset.state })))
             if (current !== last) window.__mergeTrace.dom.push(JSON.parse(last = current))
             if (window.__resolving || state('Page d’aide') !== 'resolving') return
@@ -221,7 +224,7 @@ export async function fillesFusionSuite(scheme) {
         await ui.click(ui.$('main-dirty-stash'))
         // La carte reste sous les yeux : le fil ne suit plus le bas pendant que les comptes rendus
         // de la fille arrivent.
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
 
         // La deuxième entre en conflit : la fille le résout (scénario `conflits`).
         try {
@@ -230,12 +233,12 @@ export async function fillesFusionSuite(scheme) {
           console.log('Trace de fusion :', JSON.stringify(await ui.ev('window.__mergeTrace')))
           throw error
         }
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         const seen = await ui.ev(`window.__resolving`)
         check(
           seen.csv === 'merged' &&
             seen.notes === 'pending' &&
-            seen.progress === L('childrenMerge.progress', { count: 1, total: 3, base: 'main' }),
+            seen.progress === L('workGroup.merge.progress', { count: 1, total: 3, base: 'main' }),
           `en cours : la première fusionnée, la deuxième en conflit résolu par sa fille, la troisième en attente (${JSON.stringify(seen)})`
         )
         check(
@@ -243,10 +246,11 @@ export async function fillesFusionSuite(scheme) {
           'pendant la fusion : les modifications de la mère sont mises de côté, et c’est dit'
         )
         await ui.shot('120-fusion-en-cours')
+        await ui.shot('264-groupe-fusion-en-cours')
 
         await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 90000)
         const result = await ui.ev(`${ui.$('subtasks-merge-result')}.innerText`)
-        const done = L('childrenMerge.result.done', { count: 3, base: 'main', duration: '§' })
+        const done = L('workGroup.merge.result.done', { count: 3, base: 'main', duration: '§' })
         const [head, tail] = done.split('§')
         check(
           result.startsWith(head) &&
@@ -255,11 +259,11 @@ export async function fillesFusionSuite(scheme) {
           `fin : « ${result} »`
         )
         const childTexts = await ui.ev(
-          `window.api.conversations.get().then((s) => Promise.all(s.conversations.filter((c) => c.title === 'Page d’aide').map((c) => window.api.conversations.view(c.id)))).then((v) => v.flatMap((x) => x.transcript.items.filter((i) => i.kind === 'user').map((i) => i.text)))`
+          `window.api.conversations.get().then((s) => Promise.all(s.conversations.filter((c) => c.title === 'Page d’aide').map((c) => window.api.conversations.view(c.id)))).then((v) => v.flatMap((x) => x.transcript.items.filter((i) => i.kind === 'user').map((i) => ({ text: i.text, from: i.from?.kind }))))`
         )
         check(
-          childTexts.some((text) => text.includes('left conflicts')),
-          'la consigne de conflit de la fiche 110 est partie à la fille'
+          childTexts.some((m) => m.text.includes('left conflicts') && m.from === 'merge'),
+          'la consigne de conflit de la fiche 110 est partie au travail, avec sa provenance (fiche 264)'
         )
         check(
           readFileSync(join(workspace, 'README.md'), 'utf8') === RESOLVED &&
@@ -284,12 +288,14 @@ export async function fillesFusionSuite(scheme) {
           badges.length === 3 &&
             badges.every(
               (b) =>
-                b === `merged:${L('childrenMerge.row.merged')} · ${L('childrenMerge.row.cleaned')}`
+                b ===
+                `merged:${L('workGroup.merge.row.merged')} · ${L('workGroup.merge.row.cleaned')}`
             ),
-          `chaque ligne : « fusionnée · nettoyée » (${badges.join(', ')})`
+          `chaque ligne : « fusionné · branche supprimée » (${badges.join(', ')})`
         )
-        await ui.ev(`${ui.$('subtasks')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-finie')
+        await ui.shot('264-groupe-fusionne')
       },
       userData,
       'conflits',

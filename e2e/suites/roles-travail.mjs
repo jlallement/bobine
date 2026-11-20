@@ -87,6 +87,8 @@ export async function rolesTravailSuite(scheme) {
 
 const input = `document.querySelector('[data-testid="composer-input"]')`
 const cards = `[...document.querySelectorAll('[data-testid=work-card]')]`
+/** Lignes des cartes de groupe (fiche 264) : plusieurs rôles d'un message, propositions. */
+const workRows = `[...document.querySelectorAll('[data-testid=work-row]')]`
 const roleItems = `[...document.querySelectorAll('[data-testid=role-item]')].map((i) => i.dataset.role)`
 
 /**
@@ -137,11 +139,12 @@ async function freshRun(ui) {
   await ui.press('Escape')
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=work-card]').length === 2`, 30000)
+  await ui.waitFor(`${workRows}.length === 2`, 30000)
   check(
     (await ui.ev(`${input}.value`)) === '' &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1,
-    'premier message `@rôle` : parti, saisie vidée, aucun refus ; une bulle, deux cartes'
+      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1 &&
+      (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 1,
+    'premier message `@rôle` : parti, saisie vidée, aucun refus ; une bulle, une carte de groupe à deux lignes'
   )
   await ui.waitFor(
     `[...document.querySelectorAll('[data-testid=history-item]')].some((i) => i.innerText.includes('relisez calc.js'))`
@@ -154,7 +157,7 @@ async function freshRun(ui) {
     true,
     'la conversation est dans l’historique, titrée d’après la demande ; deux filles dessous'
   )
-  await ui.waitFor(`${cards}.filter((c) => c.dataset.state === 'replied').length === 2`, 30000)
+  await ui.waitFor(`${workRows}.filter((c) => c.dataset.state === 'replied').length === 2`, 30000)
   await ui.shot('roles-travail-0-premier-message')
 }
 
@@ -251,11 +254,11 @@ async function mainRun(ui, turnLock) {
   // démarre passe par « prête » (rôle : consigne et empreinte du dossier) et s'affiche « a fini ».
   writeFileSync(turnLock, '')
   await ui.enter()
-  await ui.waitFor(`${cards}.length === 3`, 30000)
+  await ui.waitFor(`${workRows}.length === 2`, 30000)
   await heldTurns(turnLock, 2)
-  // Les deux nouveaux travaux (la première carte est celle d'avant) : leur carte et l'anneau de
-  // leur avatar disent « en cours ».
-  const fresh = `${cards}.slice(1)`
+  // Les deux nouveaux travaux, sur les lignes de la carte de groupe sous la bulle (fiche 264) :
+  // leur ligne et l'anneau de leur avatar disent « en cours ».
+  const fresh = workRows
   const bothRunning = `${fresh}.length === 2 && ${fresh}.every((l) => l.dataset.state === 'running' && l.querySelector('[data-testid=role-avatar]')?.dataset.state === 'running')`
   const states = `JSON.stringify(${fresh}.map((l) => [l.dataset.role, l.dataset.state]))`
   await ui.waitFor(bothRunning, 15000)
@@ -268,21 +271,24 @@ async function mainRun(ui, turnLock) {
     `capture prise pendant le travail (verrou tenu) ${await ui.ev(states)}`
   )
   rmSync(turnLock)
-  await ui.waitFor(`${cards}.every((c) => c.dataset.state === 'replied')`, 60000)
+  await ui.waitFor(
+    `[...${cards}, ...${workRows}].every((c) => c.dataset.state === 'replied')`,
+    60000
+  )
   check(
-    (await ui.ev(`${cards}.map((l) => l.dataset.role).join()`)) ===
+    (await ui.ev(`[...${cards}, ...${workRows}].map((l) => l.dataset.role).join()`)) ===
       'security-expert,security-expert,code-reviewer' &&
       (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 2 &&
       (await ui.ev(
         `[...document.querySelectorAll('[data-testid=role-request]')][1].querySelectorAll('[data-testid=role-mention]').length`
       )) === 2,
-    'deux rôles : une bulle à deux puces, une carte par rôle, dans l’ordre du message'
+    'deux rôles : une bulle à deux puces, une carte de groupe, une ligne par rôle, dans l’ordre du message'
   )
   check(
     !(await ui.ev(`!!document.querySelector('[data-testid=subtasks]')`)),
     'pas de carte « Sous-tâches » pour les travaux d’une bulle'
   )
-  await reveal(ui, `${cards}[1]`)
+  await reveal(ui, ui.$('work-group'))
   await ui.shot('roles-travail-6-sous-taches')
 
   // L'en-tête de la fille dit son rôle et sa lecture seule.
@@ -382,12 +388,16 @@ async function mainRun(ui, turnLock) {
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-8-proposition')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  // Travail lancé par l'agent : sa carte de lancement et « Sous-tâches », comme avant (lot 264).
-  await ui.waitFor(`document.querySelectorAll('[data-testid=role-launch]').length === 1`, 30000)
-  await ui.waitFor(`document.querySelectorAll('[data-testid=subtask-row]').length === 1`, 30000)
+  // Travail lancé par l'agent : sur sa ligne de la carte des propositions (fiche 264).
+  await ui.waitFor(`${workRows}.length === 3`, 30000)
   check(
-    (await ui.ev(`${cards}.length`)) === 3,
-    'proposition de l’agent : sa carte et « Sous-tâches » à part, les cartes-réponses inchangées'
+    (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 2 &&
+      (await ui.ev(`${workRows}[2].dataset.role`)) === 'security-expert' &&
+      !(await ui.ev(
+        `!!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')`
+      )) &&
+      (await ui.ev(`${cards}.length`)) === 1,
+    'proposition de l’agent : sa ligne dans sa carte de groupe, ni lancement ni « Sous-tâches »'
   )
 }
 
@@ -610,10 +620,13 @@ async function requestedRun(ui) {
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-10-proposition-demandee')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  // Travail lancé par l'agent : sa carte de lancement, comme avant (lot 264).
-  await ui.waitFor(`!!${ui.$('role-launch-open')}`, 30000)
-  // Bouton ordinaire : cliqué sans viser, le fil peut défiler (réveil de la mère).
-  await ui.ev(`${ui.$('role-launch-open')}.click()`)
+  // Travail lancé par l'agent : sa ligne de carte de groupe (fiche 264), dépliée, « Ouvrir ».
+  const launched = `${workRows}.at(-1)`
+  await ui.waitFor(`!!${launched}`, 30000)
+  // Boutons ordinaires : cliqués sans viser, le fil peut défiler (réveil de la mère).
+  await ui.ev(`${launched}.querySelector('[data-testid=work-row-toggle]').click()`)
+  await ui.waitFor(`!!${launched}.querySelector('[data-testid=work-open]')`)
+  await ui.ev(`${launched}.querySelector('[data-testid=work-open]').click()`)
   await ui.waitFor(`!!${ui.$('role-title-badge')}`)
   check(
     (await ui.ev(

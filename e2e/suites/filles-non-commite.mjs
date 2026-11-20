@@ -58,10 +58,18 @@ function repository(env = false, commit = true) {
 }
 
 const input = `document.querySelector('[data-testid="composer-input"]')`
-// Réponses dans l'ordre du fil : comptes rendus (travaux de l'agent) et cartes-réponses (bulles
-// « @Rôle … », fiche 263).
-const reports = `[...document.querySelectorAll('[data-testid=child-report], [data-testid=work-answer]')]`
-const leads = `${reports}.map((r) => (r.querySelector('[data-testid=child-report-lead]') ?? r).innerText ?? '')`
+// Réponses dans l'ordre du fil : cartes-réponses (bulle « @Rôle … », fiche 263) et lignes des
+// cartes de groupe dépliées (fiche 264).
+const reports = `[...document.querySelectorAll('[data-testid=work-answer]')]`
+const leads = `${reports}.map((r) => r.innerText ?? '')`
+/** Lignes des cartes de groupe qui ont répondu, dépliées sur leur réponse (fiche 264). */
+async function unfold(ui, count) {
+  const replied = `[...document.querySelectorAll('[data-testid=work-row][data-state=replied]')]`
+  await ui.waitFor(`${replied}.length === ${count}`, 30000)
+  await ui.ev(
+    `${replied}.forEach((r) => { const b = r.querySelector('[data-testid=work-row-toggle][aria-expanded=false]'); if (b) b.click() })`
+  )
+}
 
 async function typeRoles(ui, text) {
   await ui.ev(`${input}.focus()`)
@@ -134,7 +142,8 @@ async function roleRun(ui) {
   )
   await ui.shot('filles-non-commite-3-avis')
   await ui.enter()
-  await ui.waitFor(`document.querySelectorAll('[data-testid=work-card]').length === 3`, 30000)
+  // Deux rôles d'un message : une carte de groupe sous la bulle (fiche 264).
+  await unfold(ui, 2)
   await ui.waitFor(`${reports}.length === 3`, 30000)
   const opinions = (await ui.ev(`JSON.stringify(${leads}.slice(1))`)) ?? '[]'
   check(
@@ -189,10 +198,11 @@ async function proposalsRun(ui, git) {
     'Committer d’abord : plan.md commité seul, le .env reste non suivi dans le dossier'
   )
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
+  await unfold(ui, 1)
   await ui.waitFor(`${reports}.length === 1`, 30000)
   check(
     (await ui.ev(`${leads}[0]`)).includes('je vois plan.md') &&
-      !!(await ui.ev(`!!${ui.$('child-report-left-behind')}`)),
+      !!(await ui.ev(`!!${ui.$('work-left-behind')}`)),
     'Committer d’abord puis Lancer : la fille voit plan.md, et part sans le .env (rappelé)'
   )
   await ui.shot('filles-non-commite-6-fille-voit')
@@ -235,13 +245,14 @@ async function noCommitRun(ui, git) {
   await ui.send('Découpe la suite\n/scenario tache-plan')
   const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
   await ui.waitFor(`!!${pending}`, 30000)
-  await ui.waitFor(`!!${ui.$('proposals')}?.querySelector('[data-testid=launch-line]')`, 10000)
+  await ui.waitFor(`!!${ui.$('work-group')}?.querySelector('[data-testid=launch-line]')`, 10000)
   check(
-    (await ui.ev(`${ui.$('proposals')}.innerText`)).includes(L('launchLine.noCommit.work')),
+    (await ui.ev(`${ui.$('work-group')}.innerText`)).includes(L('launchLine.noCommit.work')),
     'Tâches proposées, dépôt sans commit : ce travail se fera dans ce dossier'
   )
   await ui.shot('filles-non-commite-8-sans-commit-proposition')
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
+  await unfold(ui, 1)
   await ui.waitFor(`${reports}.length === 2`, 30000)
   check(
     (await ui.ev(`${leads}[1]`)).includes('je vois plan.md') &&

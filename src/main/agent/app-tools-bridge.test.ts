@@ -343,6 +343,23 @@ describe('propositions de filles (fiche 112)', () => {
     } as unknown as PendingRequests
     await tool?.call({ title: 'Autre', prompt: 'Fais' })
     expect(decision).toEqual({ action: 'refuse' })
+    // Appels en parallèle (fiche 264) : chaque carte se relie à son appel, pas au dernier.
+    bridge.noteToolCall({
+      toolCallId: 'call_8',
+      title: 'start_child',
+      rawInput: { title: 'A', prompt: 'Fais A' }
+    })
+    bridge.noteToolCall({
+      toolCallId: 'call_9',
+      title: 'start_child',
+      rawInput: { title: 'B', prompt: 'Fais B' }
+    })
+    await tool?.call({ title: 'A', prompt: 'Fais A' })
+    await tool?.call({ title: 'B', prompt: 'Fais B' })
+    expect(prompts.slice(-2).map((p) => (p.mode === 'form' ? p.toolCallId : undefined))).toEqual([
+      'call_8',
+      'call_9'
+    ])
     // Aucune carte annoncée sous ce titre : pas de liaison.
     expect(prompts[1]).toMatchObject({ mode: 'form', message: 'Autre' })
     expect(prompts[1] && 'toolCallId' in prompts[1]).toBe(false)

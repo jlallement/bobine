@@ -4642,7 +4642,8 @@
     "relayPendingWake": "Not yet passed to {{agent}} — it will be once all its tasks have finished, or with your next message",
     "otherAgent": "another {{agent}}",
     "review": "Get a review",
-    "reviewLabel": "Get a review of this task’s branch"
+    "reviewLabel": "Get a review of this task’s branch",
+    "brief": "Task instruction"
   },
   "workCue": {
     "replied": "replied",
@@ -5818,8 +5819,6 @@
       "error": "failed",
       "gone": "conversation deleted"
     },
-    "ready_one": "{{count}} task ready to merge",
-    "ready_other": "{{count}} tasks ready to merge",
     "merge": {
       "action_one": "Merge the ready task into {{base}}",
       "action_other": "Merge the {{count}} ready into {{base}}",
@@ -5864,7 +5863,13 @@
       "refuse": "Declined",
       "expired": "Expired"
     },
-    "expiredHint": "The agent restarted in the meantime: “Start” starts this task like “Start in parallel…”, without waking the agent."
+    "expiredHint": "The agent restarted in the meantime: “Start” starts this task like “Start in parallel…”, without waking the agent.",
+    "verdict": {
+      "ready": "Recommended",
+      "notReady": "Not ready yet",
+      "stale": "To review",
+      "staleHint": "The task worked again since this recommendation."
+    }
   },
   "workMerge": {
     "action": "Merge into {{base}}",
