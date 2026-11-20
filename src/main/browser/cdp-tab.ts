@@ -92,6 +92,11 @@ export class CdpTab {
   readonly dialogs = new DialogWatch()
   /** Appel d'un binding (`Runtime.addBinding`) : le script du mode Annoter (fiche 146). */
   onBinding: ((name: string, payload: string, contextId: number) => void) | undefined
+  /**
+   * Réponse chargée malgré un certificat refusé (`securityState: 'insecure'`), même sur une
+   * connexion réutilisée sans nouvel évènement `certificate-error` (fiche 269).
+   */
+  onInsecureResponse: ((url: string) => void) | undefined
 
   constructor(contents: WebContents) {
     this.contents = contents
@@ -117,6 +122,16 @@ export class CdpTab {
     if (!this.contents.debugger.isAttached()) await this.attachDebugger()
     // Jamais d'attente sans fin derrière une boîte de la page (`page-dialogs.ts`).
     return (await this.dialogs.guard(() => this.contents.debugger.sendCommand(method, params))) as T
+  }
+
+  /**
+   * Certificat (DER) que la page a reçu de cette origine (`https://hôte:port`), pour en lire
+   * l'empreinte (fiche 269) ; `undefined` si Chromium n'en a pas.
+   */
+  async certificateOf(origin: string): Promise<Buffer | undefined> {
+    const result = await this.send<{ tableNames?: string[] }>('Network.getCertificate', { origin })
+    const first = result.tableNames?.[0]
+    return first ? Buffer.from(first, 'base64') : undefined
   }
 
   /** Arbre d'accessibilité de la page, mis en forme pour l'agent (voir `ax-tree.ts`). */
@@ -476,8 +491,16 @@ export class CdpTab {
       }
       case 'Network.responseReceived': {
         const entry = this.requests.get(String(params['requestId']))
-        const response = params['response'] as { status: number; mimeType: string }
+        const response = params['response'] as {
+          status: number
+          mimeType: string
+          url?: string
+          securityState?: string
+        }
         if (entry) Object.assign(entry, { status: response.status, mimeType: response.mimeType })
+        if (response.securityState === 'insecure' && response.url?.startsWith('https:')) {
+          this.onInsecureResponse?.(response.url)
+        }
         break
       }
       case 'Page.screencastFrame': {

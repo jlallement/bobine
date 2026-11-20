@@ -515,7 +515,8 @@ describe('site de la page vérifié avant chaque outil (fiche 249)', () => {
       subject: 'localhost',
       issuer: 'localhost',
       fingerprint: `${'AB:'.repeat(31)}AB`,
-      bypassable: true
+      bypassable: true,
+      rememberable: true
     }
     let shown: typeof problem | undefined
     const page = fakePage({
@@ -526,7 +527,7 @@ describe('site de la page vérifié avant chaque outil (fiche 249)', () => {
     })
     const t = setup(['Autoriser'], page)
     await expect(t.call('browser_navigate', { url: 'https://localhost:5173/' })).rejects.toThrow(
-      'Only the user can decide to continue'
+      'The user can choose to continue in the panel; do not insist.'
     )
     // Aucun outil de la page ne passe tant que l'avertissement est là, ni ne voit le jeton.
     for (const [name, args] of [

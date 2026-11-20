@@ -32,7 +32,8 @@ fois pour toutes :
 - **Outils** : les outils de l'agent pour lesquels vous avez répondu « toujours » ;
 - **Sites** : ceux que le navigateur intégré ouvre sans demander ;
 - **Certificats acceptés** : les certificats auto-signés que vous avez acceptés dans le navigateur
-  intégré, pour cette session ou retenus (révoquer ramène l'avertissement) ;
+  intégré, « toujours » ou « jusqu'à la fermeture » ; « (ancien) » : le serveur en présente un
+  autre. Révoquer ramène l'avertissement ;
 - **Commandes · dossier** : les commandes et compilations « Toujours cette commande ici » ;
 - **Préparation des worktrees · dossier** : les commandes de `.bobine/worktree.json` que vous avez
   autorisées (voir [Worktrees](worktrees.md#accord)).

@@ -20,7 +20,7 @@ import {
   type CertificateMemory
 } from './browser/certificate-exceptions'
 import type { SetupApprovals } from './changes/worktree-setup'
-import { quarantine, readJson, writeFileAtomic } from './storage'
+import { isReadOnly, quarantine, readJson, writeFileAtomic } from './storage'
 
 interface Stored {
   sites: string[]
@@ -64,6 +64,8 @@ export class ApprovalStore {
   /** Certificats acceptés pour la session de l'app seulement (fiche 269), jamais écrits. */
   private sessionCertificates: CertificateException[] = []
   private readonly certificateForgets = new Set<(exception: CertificateException) => void>()
+  /** Dernière empreinte présentée par hôte et port, cette session (« ancien » dans les Réglages). */
+  private readonly presented = new Map<string, string>()
   /** Fichier abîmé mis de côté à la lecture (son nouveau chemin), pour le dire (fiche 196). */
   readonly damaged: string | undefined
 
@@ -127,16 +129,26 @@ export class ApprovalStore {
       [...this.sessionCertificates, ...this.data.certificates].some((e) =>
         sameException(e, exception)
       ),
-    hasSite: (host, port) =>
-      [...this.sessionCertificates, ...this.data.certificates].some(
+    forSite: (host, port) =>
+      [...this.data.certificates, ...this.sessionCertificates].filter(
         (e) => e.host === host && e.port === port
       ),
+    canRemember: () => !isReadOnly(this.file),
+    seen: (presented) => {
+      const key = `${presented.host}:${presented.port}`
+      if (this.presented.get(key) === presented.fingerprint) return
+      this.presented.set(key, presented.fingerprint)
+      // Les Réglages ouverts ne changent que s'il y a une exception pour ce site.
+      if (this.certificates.forSite(presented.host, presented.port).length) this.notify()
+    },
     add: (raw, remember) => {
       const exception = parseException(raw)
       if (!exception) return
       const others = (list: CertificateException[]) =>
         list.filter((e) => !sameException(e, exception))
-      if (remember) {
+      // Profil en lecture seule (fiche 196) : rien n'est écrit, l'exception vaut pour la session
+      // (et le dit : « jusqu'à la fermeture »), jamais un « toujours » qui ne serait pas gardé.
+      if (remember && this.certificates.canRemember?.()) {
         // Retenu : il quitte la liste de la session (une seule ligne dans les Réglages).
         this.sessionCertificates = others(this.sessionCertificates)
         const kept = [...others(this.data.certificates), exception].slice(-MAX_CERTIFICATES)
@@ -187,10 +199,22 @@ export class ApprovalStore {
   }
 
   view(): ApprovalsView {
+    const stale = (e: CertificateException) => {
+      const now = this.presented.get(`${e.host}:${e.port}`)
+      return now !== undefined && now !== e.fingerprint
+    }
+    // Par hôte et port, les retenus d'abord ; « ancien » : le serveur en présente un autre.
     const certificates = [
       ...this.data.certificates.map((e) => ({ ...e, remembered: true })),
       ...this.sessionCertificates.map((e) => ({ ...e, remembered: false }))
-    ].sort((a, b) => a.host.localeCompare(b.host) || a.port - b.port)
+    ]
+      .map((e) => (stale(e) ? { ...e, stale: true } : e))
+      .sort(
+        (a, b) =>
+          a.host.localeCompare(b.host) ||
+          a.port - b.port ||
+          Number(b.remembered) - Number(a.remembered)
+      )
     return {
       sites: [...this.data.sites].sort(),
       commands: Object.entries(this.data.commands)

@@ -157,6 +157,10 @@ export const READ_ONLY_SAFE = [
   // n'est pas écrite en lecture seule (`writeFileAtomic`), elle vaut pour la session.
   'browser:allowCertificate',
   'browser:leaveCertificate',
+  'browser:openCertificateSite',
+  // Révoquer un certificat accepté (fiche 269) : toujours possible ; en lecture seule, rien n'est
+  // écrit (`writeFileAtomic`), l'exception de la session s'en va.
+  'settings:forgetCertificate',
   'preview:list',
   'preview:stop',
   'preview:logs',
@@ -229,7 +233,6 @@ export const PROFILE_CHANGING = [
   'settings:forgetWorkspace',
   'settings:forgetTool',
   'settings:forgetSite',
-  'settings:forgetCertificate',
   'settings:forgetCommand',
   'settings:forgetWorktreeSetup',
   'settings:setCommands',

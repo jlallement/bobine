@@ -686,6 +686,8 @@ export function createApi(
       allowCertificate: (id: string, token: string, remember: boolean) =>
         invoke('browser:allowCertificate', id, token, remember),
       leaveCertificate: (id: string) => invoke('browser:leaveCertificate', id),
+      openCertificateSite: (id: string, token: string) =>
+        invoke('browser:openCertificateSite', id, token),
       /** ⌘L tapé dans la page (fiche 129). */
       onCommand: (listener: (command: IpcEventContract['browser:command']) => void) =>
         subscribe('browser:command', listener),

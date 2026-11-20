@@ -161,7 +161,8 @@ function setup(trusted: (event: IpcSenderEvent) => boolean = () => true) {
     annotate: vi.fn(async () => {}),
     pagePins: vi.fn(async () => {}),
     allowCertificate: vi.fn(async () => {}),
-    leaveCertificate: vi.fn(async () => {})
+    leaveCertificate: vi.fn(async () => {}),
+    openCertificateSite: vi.fn(async () => {})
   }
   const listeners = new Map<string, (event: IpcSenderEvent, ...args: unknown[]) => unknown>()
   const ipcMain: IpcMainLike = { handle: (channel, listener) => listeners.set(channel, listener) }
@@ -343,11 +344,21 @@ describe('IPC', () => {
     expect(browser.allowCertificate).toHaveBeenCalledTimes(1)
     await listeners.get('browser:leaveCertificate')?.({ sender, senderFrame: frame }, 'c1')
     expect(browser.leaveCertificate).toHaveBeenCalledWith('c1')
+    await listeners.get('browser:openCertificateSite')?.({ sender, senderFrame: frame }, 'c1', 'j')
+    expect(browser.openCertificateSite).toHaveBeenCalledWith('c1', 'j')
+    expect(() =>
+      listeners.get('browser:openCertificateSite')?.({ sender: {}, senderFrame: {} }, 'c1', 'j')
+    ).toThrow('untrusted sender')
   })
 
   it('certificat révoqué (fiche 269) : exception vérifiée avant d’être oubliée', async () => {
     const { call, approvals } = setup()
-    const certificate = { host: 'localhost', port: 5173, fingerprint: `${'AB:'.repeat(31)}AB` }
+    const certificate = {
+      host: 'localhost',
+      port: 5173,
+      fingerprint: `${'AB:'.repeat(31)}AB`,
+      error: 'net::ERR_CERT_AUTHORITY_INVALID'
+    }
     await call('settings:forgetCertificate', certificate)
     expect(approvals.forgetCertificate).toHaveBeenCalledWith(certificate)
     expect(() => call('settings:forgetCertificate', { ...certificate, fingerprint: 'AB' })).toThrow(

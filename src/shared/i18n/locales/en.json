@@ -1452,7 +1452,7 @@
     },
     "privacy": {
       "allowed": "Allowed without asking",
-      "allowedHint": "“Always allow” on an agent’s request keeps it here.",
+      "allowedHint": "“Always allow” for an agent, and accepted certificates, are kept here.",
       "tools": {
         "label": "Tools",
         "revokeLabel": "Stop always allowing {{tool}}",
@@ -1492,11 +1492,11 @@
       },
       "certificates": {
         "label": "Accepted certificates",
-        "session": "this session",
-        "remembered": "remembered",
+        "session": "until Bobine quits",
+        "remembered": "always",
+        "stale": "(old)",
         "revokeLabel": "Stop accepting the certificate of {{site}}",
-        "revokeAsk": "Stop accepting this certificate of {{site}}? Its pages will show the warning again.",
-        "side": "{{state}} · SHA-256 {{print}}…"
+        "revokeAsk": "Stop accepting this certificate of {{site}}? Its pages will show the warning again."
       }
     },
     "data": {
@@ -2217,17 +2217,19 @@
     },
     "certificate": {
       "title": "Your connection is not private",
-      "lead": "Bobine did not open {{host}}: its certificate is not recognised. Someone could be trying to read or change what you exchange with this site.",
+      "lead": "Bobine did not open {{site}}: its certificate is not recognized. Someone could be trying to read or change what you exchange with this site.",
       "reason": {
-        "authority": "The certificate is not signed by a recognised authority. This is the case for a self-signed certificate, such as a development server’s.",
-        "name": "The certificate was issued for a different name than this address.",
+        "authority": "The certificate is not signed by a recognized authority. This is the case for a self-signed certificate, such as a development server’s.",
+        "authorityPublic": "The certificate is not signed by a recognized authority.",
+        "name": "The certificate was issued for a name other than this address.",
         "date": "The certificate has expired or is not valid yet.",
         "other": "The certificate was refused."
       },
-      "back": "Back",
+      "back": "Back to safety",
       "advanced": "Advanced",
-      "hideAdvanced": "Hide details",
-      "details": {
+      "details": "Details",
+      "openExternal": "Open in browser",
+      "field": {
         "address": "Address",
         "subject": "Issued to",
         "issuer": "Issued by",
@@ -2237,14 +2239,24 @@
       },
       "devHint": "If this is your development server (Vite, Webpack…), you can continue. Bobine will accept only this certificate, and only for {{site}}.",
       "remember": "Remember this certificate",
-      "rememberHint": "Otherwise, until Bobine quits. You can revoke it in Settings › Privacy.",
+      "rememberHint": "Otherwise, the exception ends when Bobine quits. You can remove it at any time in Settings › Privacy.",
+      "rememberReadOnly": "Read-only profile: nothing is saved, the exception ends when Bobine quits.",
       "proceed": "Continue to {{host}} (not secure)",
-      "notAllowed": "Bobine only lets you continue to a local or private address, such as a development server. For this site, use your usual browser.",
-      "unreadable": "This certificate cannot be read: Bobine cannot accept it."
+      "checking": "Checking the address of {{host}}…",
+      "refusal": {
+        "public": "Bobine only lets you continue to a local or private address, such as a development server. For this site, use your usual browser.",
+        "error": "This certificate is refused for a reason a development server does not explain (revoked, key too weak…): Bobine does not let you continue.",
+        "address": "{{host}} leads to a public IP address: Bobine only lets you continue to a local or private address.",
+        "unreadable": "This certificate cannot be read: Bobine cannot accept it."
+      },
+      "popupTitle": "Page refused",
+      "popupRefused": "Bobine did not open {{site}} in this window: its certificate is not recognized, and the built-in browser accepts no exception in a window opened by a page. Open the address in the panel’s Browser tab."
     },
     "insecure": {
       "chip": "Not secure",
-      "tip": "You accepted the certificate of {{site}}: the connection is not verified. You can revoke it in Settings › Privacy."
+      "tip": "You accepted the certificate of {{site}}: the connection is not verified.",
+      "menuLabel": "Certificate accepted for {{site}}",
+      "revoke": "Stop accepting"
     }
   },
   "devServers": {

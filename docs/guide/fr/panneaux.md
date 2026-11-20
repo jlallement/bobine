@@ -97,10 +97,13 @@ Avant d'ouvrir un site, il demande votre accord (voir
   **Arrêter le serveur**.
 - **Certificat auto-signé** (serveur de dev en HTTPS : Vite, Webpack…). L'onglet affiche un
   avertissement à la place de la page. Pour une adresse locale ou privée (`localhost`,
-  `192.168.…`, `*.local`…), **Avancé** puis **Continuer vers … (non sécurisé)** l'ouvre, pour ce
-  certificat précis, jusqu'à la fermeture de Bobine ; cochez **Se souvenir de ce certificat** pour
-  le garder. « Non sécurisé » s'affiche alors dans l'adresse. Un nouveau certificat redemande ;
-  l'agent, lui, ne peut jamais accepter. Révoquer : Réglages › Confidentialité.
+  `192.168.…`, un `*.local` ou `*.test` qui mène à votre réseau…), **Avancé** puis **Continuer
+  vers … (non sécurisé)** l'ouvre, pour ce certificat précis, jusqu'à la fermeture de Bobine ;
+  cochez **Se souvenir de ce certificat** pour le garder. « Non sécurisé » s'affiche alors dans
+  l'adresse ; un clic dessus propose **Ne plus accepter**. Un nouveau certificat redemande ; un
+  site public, ou un certificat révoqué, ne propose pas de continuer (**Ouvrir dans le
+  navigateur**). L'agent, lui, ne peut jamais accepter, et une fenêtre ouverte par une page
+  n'accepte aucune exception. Révoquer aussi dans Réglages › Confidentialité.
 - **Connexions.** Les cookies et connexions du navigateur intégré sont gardés d'un lancement à
   l'autre ; voir [Réglages](reglages.md#navigateur).
 

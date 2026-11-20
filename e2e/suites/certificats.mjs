@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
-import { X509Certificate } from 'node:crypto'
+import { createHash, X509Certificate } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { createServer as createHttpServer } from 'node:http'
 import { createServer } from 'node:https'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -48,30 +49,80 @@ function selfSigned(dir, name) {
   }
 }
 
+/** Nom hors du poste, résolu vers 127.0.0.1 par Chromium seulement : un « site public ». */
+const PUBLIC_HOST = 'bobine-e2e.example'
+/** Nom en `.test` résolu vers 127.0.0.1 : l'adresse contactée est vérifiée, puis permise. */
+const DEV_HOST = 'monapp.test'
+
+/** Page du serveur de dev : une WebSocket `wss:` ouverte (rechargement à chaud), un bouton popup. */
+const devPage = (port) =>
+  '<title>Dev HTTPS</title><h1>Serveur de dev</h1>' +
+  '<button style="position:fixed;left:0;top:80px;width:400px;height:200px" ' +
+  "onclick=\"window.open('/deux', 'connexion', 'width=400,height=400')\">Popup</button>" +
+  `<script>new WebSocket('wss://localhost:${port}/ws')</script>`
+
+/** Poignée de main WebSocket minimale (RFC 6455) : la connexion reste ouverte, comptée. */
+function acceptWebSocket(req, socket, sockets) {
+  const accept = createHash('sha1')
+    .update(`${req.headers['sec-websocket-key']}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
+    .digest('base64')
+  socket.write(
+    `HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`
+  )
+  sockets.add(socket)
+  // Trame de fermeture du navigateur (opcode 8) : on répond et on ferme, comme un vrai serveur.
+  socket.on('data', (frame) => {
+    if ((frame[0] & 0x0f) === 8) socket.end(Buffer.from([0x88, 0]))
+  })
+  socket.on('close', () => sockets.delete(socket))
+  socket.on('error', () => sockets.delete(socket))
+}
+
 /**
  * Navigateur intégré et certificat auto-signé (fiche 269, ADR-0064) : avertissement à la place de
- * la page, « Continuer » derrière « Avancé », « Non sécurisé », certificat changé redemandé, outils
- * de l'agent refusés, exception révoquée dans les Réglages ; le reste de l'app refuse toujours.
+ * la page, « Continuer » derrière « Avancé », « Non sécurisé » (même par une sous-ressource),
+ * certificat changé redemandé, outils de l'agent refusés, popups sans exception, exception
+ * révoquée (Réglages, puce) avec ses WebSocket fermées, site public sans « Continuer », nom en
+ * `.test` vérifié ; le reste de l'app refuse toujours.
  */
 export async function certificatsSuite(scheme) {
   console.log(`\n— Navigateur : certificats auto-signés (${scheme})`)
   const dir = mkdtempSync(join(tmpdir(), 'bob-e2e-certificats-'))
   const first = selfSigned(dir, 'premier')
   const second = selfSigned(dir, 'second')
-  const server = createServer({ key: first.key, cert: first.cert }, (_req, res) => {
+  const sockets = new Set()
+  const server = createServer({ key: first.key, cert: first.cert }, (req, res) => {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-    res.end('<title>Dev HTTPS</title><h1>Serveur de dev</h1>')
+    res.end(
+      req.url === '/deux'
+        ? '<title>Deux</title><h1>Page deux</h1>'
+        : req.url === '/pixel'
+          ? ''
+          : devPage(server.address().port)
+    )
   })
+  server.on('upgrade', (req, socket) => acceptWebSocket(req, socket, sockets))
   await new Promise((r) => server.listen(0, '127.0.0.1', r))
   const port = server.address().port
   const url = `https://localhost:${port}/`
+  // Page http ordinaire qui charge une image du serveur sous exception (sous-ressource seule).
+  const plain = createHttpServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+    res.end(`<title>Page http</title><img src="https://localhost:${port}/pixel" alt="">`)
+  })
+  await new Promise((r) => plain.listen(0, '127.0.0.1', r))
+  const plainUrl = `http://127.0.0.1:${plain.address().port}/`
   try {
     await withApp(
       scheme,
       async (ui) => {
         const main = await mainProcess()
         try {
-          await certificateChecks(ui, main, { url, port, server, first, second })
+          const context = { url, port, server, first, second, sockets, plainUrl }
+          await warningAndContinue(ui, main, context)
+          await subresourceAndPopup(ui, main, context)
+          await changedRememberedRevoked(ui, main, context)
+          await chipRevokePublicAndDevName(ui, main, context)
         } finally {
           main.close()
         }
@@ -79,27 +130,42 @@ export async function certificatsSuite(scheme) {
       undefined,
       'demo',
       { MOCK_BROWSER_URL: url },
-      [`--inspect=${MAIN_PORT}`]
+      [
+        `--inspect=${MAIN_PORT}`,
+        `--host-resolver-rules=MAP ${PUBLIC_HOST} 127.0.0.1, MAP ${DEV_HOST} 127.0.0.1`
+      ]
     )
   } finally {
+    for (const socket of sockets) socket.destroy()
     server.closeAllConnections()
     server.close()
+    plain.close()
     rmSync(dir, { recursive: true, force: true })
   }
 }
 
-async function certificateChecks(ui, main, { url, port, server, first, second }) {
-  const warning = ui.$('certificate-warning')
-  const viewTitle = () => main.evaluate(`${VIEW}?.webContents.getTitle() ?? null`)
-  const until = async (test, ms = 8000) => {
-    const start = Date.now()
-    while (Date.now() - start < ms) {
-      if (await test()) return true
-      await sleep(100)
-    }
-    return false
+/** Attend une condition (fonction asynchrone), au plus `ms`. */
+async function until(test, ms = 8000) {
+  const start = Date.now()
+  while (Date.now() - start < ms) {
+    if (await test()) return true
+    await sleep(100)
   }
+  return false
+}
 
+/** Adresse tapée dans la barre du panneau, validée par Entrée. */
+async function typeAddress(ui, address) {
+  await ui.ev(`${ui.$('browser-address')}.focus()`)
+  await ui.ev(`${ui.$('browser-address')}.select()`)
+  await ui.type(address)
+  await ui.enter()
+}
+
+const viewTitle = (main) => main.evaluate(`${VIEW}?.webContents.getTitle() ?? null`)
+
+async function warningAndContinue(ui, main, { url, port, first, sockets }) {
+  const warning = ui.$('certificate-warning')
   // L'agent ouvre la page : refusée, l'avertissement est dans le panneau, ses outils le disent.
   await ui.ready()
   await ui.send('/scenario certificat')
@@ -107,15 +173,17 @@ async function certificateChecks(ui, main, { url, port, server, first, second })
   const refused = await ui.lastAgentText()
   check(
     refused.includes('ERR_CERT_AUTHORITY_INVALID') &&
-      refused.includes('Only the user can decide') &&
+      refused.includes('do not insist') &&
+      !refused.includes('try again') &&
       !refused.includes('Serveur de dev'),
-    `outils de l’agent refusés : ni navigation ni lecture, l’utilisateur seul décide (${refused.slice(0, 160)})`
+    `outils de l’agent refusés : ni navigation ni lecture, sans l’inviter à insister (${refused.slice(0, 160)})`
   )
   await ui.waitFor(`!!${warning}`)
   check(
     (await ui.ev(`${warning}.innerText`)).includes(L('browser.certificate.title')) &&
+      (await ui.ev(`${warning}.innerText`)).includes(`localhost:${port}`) &&
       !(await ui.ev(`!!${ui.$('certificate-proceed')}`)),
-    'avertissement à la place de la page, « Continuer » caché derrière « Avancé »'
+    'avertissement à la place de la page (hôte et port), « Continuer » caché derrière « Avancé »'
   )
   check(
     await until(async () => (await main.evaluate(`!${VIEW}`)) === true),
@@ -127,11 +195,24 @@ async function certificateChecks(ui, main, { url, port, server, first, second })
   )
   await ui.shot('269-avertissement')
 
+  // « Revenir en lieu sûr » sans page précédente : une page vide, rien d'accordé.
+  await ui.click(ui.$('certificate-back'))
+  await ui.waitFor(`!${warning} && !!document.querySelector('.browser-page .side-panel-empty')`)
+  check(
+    !(await ui.ev(`!!${ui.$('browser-insecure')}`)),
+    '« Revenir en lieu sûr » sans page précédente : page vide, rien d’accordé'
+  )
+  await ui.shot('269-retour-page-vide')
+  await ui.send('/scenario certificat')
+  await ui.ready()
+  await ui.waitFor(`!!${warning}`)
+
   await ui.click(ui.$('certificate-advanced'))
   await ui.waitFor(`!!${ui.$('certificate-proceed')}`)
   check(
     (await ui.ev(`${ui.$('certificate-fingerprint')}.textContent`)) === first.fingerprint &&
-      (await ui.ev(`${ui.$('certificate-details')}.innerText`)).includes(`localhost:${port}`),
+      (await ui.ev(`${ui.$('certificate-details')}.innerText`)).includes(`localhost:${port}`) &&
+      (await ui.ev(`${ui.$('certificate-advanced')}.getAttribute('aria-expanded')`)) === 'true',
     'Avancé : hôte, port et empreinte SHA-256 exacte du certificat'
   )
   await ui.ev(`${ui.$('certificate-proceed')}.scrollIntoView({ block: 'end' })`)
@@ -141,8 +222,13 @@ async function certificateChecks(ui, main, { url, port, server, first, second })
   await ui.click(ui.$('certificate-proceed'))
   await ui.waitFor(`!${warning} && !!${ui.$('browser-insecure')}`)
   check(
-    await until(async () => (await viewTitle()) === 'Dev HTTPS'),
-    'Continuer : la page du serveur auto-signé s’affiche, « Non sécurisé » dans la barre'
+    (await until(async () => (await viewTitle(main)) === 'Dev HTTPS')) &&
+      (await ui.ev(`${ui.$('browser-address')}.value`)).startsWith(`localhost:${port}`),
+    'Continuer : la page s’affiche, « Non sécurisé » et l’hôte et le port dans la barre'
+  )
+  check(
+    await until(async () => sockets.size > 0),
+    'la WebSocket wss: de la page (rechargement à chaud) passe sous l’exception'
   )
   await ui.shot('269-site-non-securise')
 
@@ -180,9 +266,61 @@ async function certificateChecks(ui, main, { url, port, server, first, second })
     (await ui.lastAgentText()).includes('Serveur de dev'),
     'après « Continuer » de l’utilisateur, l’agent lit la page'
   )
+}
 
+async function subresourceAndPopup(ui, main, { url, plainUrl, port }) {
+  // Une page http qui ne charge qu'une image du site sous exception : « Non sécurisé » aussi.
+  await typeAddress(ui, plainUrl)
+  await until(async () => (await viewTitle(main)) === 'Page http')
+  check(
+    await until(async () => await ui.ev(`!!${ui.$('browser-insecure')}`)),
+    'sous-ressource chargée sous l’exception : « Non sécurisé » sur une page http'
+  )
+  await typeAddress(ui, url)
+  await until(async () => (await viewTitle(main)) === 'Dev HTTPS')
+  await ui.waitFor(`!!${ui.$('browser-insecure')}`)
+
+  // Popup de l'utilisateur vers le même site : aucune exception, un message clair.
+  await sleep(2000)
+  await main.evaluate(`(() => {
+    const page = ${VIEW}.webContents
+    for (const type of ['mouseDown', 'mouseUp']) page.sendInputEvent({ type, x: 60, y: 160, button: 'left', clickCount: 1 })
+    return true
+  })()`)
+  const popupText = () =>
+    main.evaluate(`(async () => {
+      const { BrowserWindow } = require('electron')
+      const popup = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w.webContents.getURL().startsWith('data:text/html'))
+      return popup ? await popup.webContents.executeJavaScript('document.body.innerText') : null
+    })()`)
+  let text = null
+  await until(async () => !!(text = await popupText()))
+  const leaked = await main.evaluate(
+    `require('electron').BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w.webContents.getURL().endsWith('/deux'))`
+  )
+  check(
+    !!text &&
+      text.includes(L('browser.certificate.popupTitle')) &&
+      text.includes(`localhost:${port}`) &&
+      !leaked,
+    `popup vers un site sous exception : refusée, avec un message (${String(text).slice(0, 80)})`
+  )
+  await main.evaluate(
+    `require('electron').BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.webContents.getURL().startsWith('data:text/html')).forEach((w) => w.close()); true`
+  )
+  await until(
+    async () =>
+      !(await main.evaluate(
+        `require('electron').BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w.webContents.getURL().startsWith('data:'))`
+      ))
+  )
+}
+
+async function changedRememberedRevoked(ui, main, { port, server, second, sockets }) {
+  const warning = ui.$('certificate-warning')
   // Certificat régénéré (serveur relancé) : redemandé, avec sa nouvelle empreinte.
   server.setSecureContext({ key: second.key, cert: second.cert })
+  for (const socket of sockets) socket.destroy()
   server.closeAllConnections()
   await ui.click(`document.querySelector('.browser-bar [aria-label="${L('browser.reload')}"]')`)
   await ui.waitFor(`!!${warning}`)
@@ -210,48 +348,110 @@ async function certificateChecks(ui, main, { url, port, server, first, second })
     kept.length === 1 &&
       kept[0].fingerprint === second.fingerprint &&
       kept[0].host === 'localhost' &&
-      kept[0].port === port,
-    '« Se souvenir » : seul le certificat retenu est écrit (hôte, port, empreinte)'
+      kept[0].port === port &&
+      kept[0].error === 'net::ERR_CERT_AUTHORITY_INVALID',
+    '« Se souvenir » : seul le certificat retenu est écrit (hôte, port, empreinte, code)'
   )
+  check(await until(async () => sockets.size > 0), 'WebSocket rouverte sous le certificat retenu')
 
   await ui.click(ui.$('open-settings'))
   await ui.waitFor(`!!${ui.$('settings')}`)
   await ui.click(ui.$('settings-privacy'))
   await ui.waitFor(`!!${ui.$('settings-accepted-certificates')}`)
   const rows = `[...document.querySelectorAll('[data-testid=forget-certificate]')].map((b) => b.closest('li'))`
-  const listed = await ui.ev(`${rows}.map((li) => li.innerText.replace(/\\s+/g, ' '))`)
+  const listed = await ui.ev(
+    `${rows}.map((li) => ({ text: li.innerText.replace(/\\s+/g, ' '), title: li.querySelector('.settings-list-side')?.title ?? '' }))`
+  )
+  const always = L('settings.privacy.certificates.remembered')
+  const session = L('settings.privacy.certificates.session')
   check(
     listed.length === 2 &&
-      listed.some((t) => t.includes(L('settings.privacy.certificates.remembered'))) &&
-      listed.some((t) => t.includes(L('settings.privacy.certificates.session'))) &&
-      listed.every((t) => t.includes(`localhost:${port}`)) &&
-      listed.some((t) => t.includes(second.fingerprint.slice(0, 11))) &&
-      listed.some((t) => t.includes(first.fingerprint.slice(0, 11))),
-    `Réglages : les deux certificats acceptés, retenu et cette session (${listed.join(' | ')})`
+      listed[0].text.includes(always) &&
+      listed[0].title.includes(second.fingerprint) &&
+      listed[1].text.includes(session) &&
+      listed[1].text.includes(L('settings.privacy.certificates.stale')) &&
+      listed.every(
+        (row) => row.text.includes(`localhost:${port}`) && !row.text.includes('SHA-256')
+      ),
+    `Réglages : « toujours » d’abord, puis l’ancien de la session ; empreinte en infobulle (${listed.map((r) => r.text).join(' | ')})`
   )
   await ui.shot('269-reglages-exceptions')
 
-  // Révoquer le certificat retenu (celui du serveur) : la page retombe sur l'avertissement.
-  await ui.click(
-    `${rows}.find((li) => li.innerText.includes(${JSON.stringify(L('settings.privacy.certificates.remembered'))})).querySelector('[data-testid=forget-certificate]')`
-  )
+  // Révoquer le certificat retenu (celui du serveur) : WebSocket fermée, avertissement de retour.
+  await ui.click(`${rows}[0].querySelector('[data-testid=forget-certificate]')`)
   await ui.waitFor(`!!${ui.$('confirm-row')}`)
   await ui.click(ui.$('confirm-row-confirm'))
   await ui.waitFor(`document.querySelectorAll('[data-testid=forget-certificate]').length === 1`)
   check((await stored()).length === 0, 'révoqué : plus rien dans approvals.json')
+  check(
+    await until(async () => sockets.size === 0),
+    `révoqué : la WebSocket ouverte sous l’exception est fermée (${sockets.size} ouverte(s))`
+  )
   await ui.key('Escape')
   await ui.waitFor(`!${ui.$('settings')}`)
   await ui.waitFor(`!!${warning}`)
   check(
-    !(await ui.ev(`!!${ui.$('browser-insecure')}`)),
+    !(await ui.ev(`!!${ui.$('browser-insecure')}`)) && sockets.size === 0,
     'révoqué : la page rechargée retombe sur l’avertissement, plus de « Non sécurisé »'
   )
 
-  // « Retour » : l'avertissement se ferme sans rien accorder.
+  // « Revenir en lieu sûr » : la dernière page d'un autre site (la page http), rien d'accordé.
   await ui.click(ui.$('certificate-back'))
   await ui.waitFor(`!${warning}`)
   check(
-    (await stored()).length === 0 && !(await ui.ev(`!!${ui.$('browser-insecure')}`)),
-    '« Retour » : l’avertissement se ferme, rien d’accordé'
+    (await until(async () => (await viewTitle(main)) === 'Page http')) &&
+      (await stored()).length === 0,
+    '« Revenir en lieu sûr » : la dernière page d’un autre site, rien d’accordé'
+  )
+}
+
+async function chipRevokePublicAndDevName(ui, main, { url, port, server, first, sockets }) {
+  const warning = ui.$('certificate-warning')
+  // Le premier certificat est encore accepté pour la session : le serveur le présente de nouveau.
+  server.setSecureContext({ key: first.key, cert: first.cert })
+  for (const socket of sockets) socket.destroy()
+  server.closeAllConnections()
+  await typeAddress(ui, url)
+  await ui.waitFor(`!!${ui.$('browser-insecure')}`)
+  // Puce « Non sécurisé » : son menu révoque l'exception de la page.
+  await ui.click(ui.$('browser-insecure'))
+  await ui.waitFor(`!!${ui.$('browser-insecure-menu')}`)
+  check(
+    (await ui.ev(`${ui.$('browser-insecure-menu')}.innerText`)).includes(
+      L('browser.insecure.menuLabel', { site: `localhost:${port}` })
+    ),
+    'puce « Non sécurisé » : « Certificat accepté pour <site> »'
+  )
+  await ui.click(ui.$('browser-insecure-revoke'))
+  await ui.waitFor(`!!${warning}`)
+  check(
+    !(await ui.ev(`!!${ui.$('browser-insecure')}`)),
+    'puce : « Ne plus accepter » révoque, l’avertissement revient'
+  )
+
+  // Site public : refus dit d'emblée, pas de « Continuer », « Ouvrir dans le navigateur ».
+  await typeAddress(ui, `https://${PUBLIC_HOST}:${port}/`)
+  await ui.waitFor(`!!${ui.$('certificate-not-allowed')}`)
+  await ui.click(ui.$('certificate-advanced'))
+  await ui.waitFor(`!!${ui.$('certificate-details')}`)
+  check(
+    !(await ui.ev(`!!${ui.$('certificate-proceed')}`)) &&
+      (await ui.ev(`!!${ui.$('certificate-open-external')}`)) &&
+      (await ui.ev(`${ui.$('certificate-advanced')}.innerText`)).includes(
+        L('browser.certificate.details')
+      ),
+    'site public : pas de « Continuer », « Ouvrir dans le navigateur », « Détails »'
+  )
+  await ui.shot('269-site-public')
+
+  // Nom en `.test` : l'adresse que Chromium contacte est vérifiée (ici 127.0.0.1), puis permis.
+  await typeAddress(ui, `https://${DEV_HOST}:${port}/`)
+  await ui.waitFor(
+    `!!${warning} && ${warning}.innerText.includes(${JSON.stringify(DEV_HOST)}) && !${ui.$('certificate-checking')}`
+  )
+  await ui.click(ui.$('certificate-advanced'))
+  check(
+    await until(async () => await ui.ev(`!!${ui.$('certificate-proceed')}`)),
+    `nom en .test vers une IP locale : « Continuer » proposé après vérification de l’adresse`
   )
 }

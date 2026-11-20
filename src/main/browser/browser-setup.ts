@@ -79,6 +79,7 @@ export function browserController(
     | 'pagePins'
     | 'allowCertificate'
     | 'leaveCertificate'
+    | 'openCertificateSite'
   >,
   tools: Pick<BrowserSetup['tools'], 'approveSite'>
 ): BrowserController {
@@ -119,7 +120,8 @@ export function browserController(
     annotate: (id, on, theme) => manager.annotate(id, on, theme),
     pagePins: (id, pins) => manager.pagePins(id, pins),
     allowCertificate: (id, token, remember) => manager.allowCertificate(id, token, remember),
-    leaveCertificate: (id) => manager.leaveCertificate(id)
+    leaveCertificate: (id) => manager.leaveCertificate(id),
+    openCertificateSite: (id, token) => manager.openCertificateSite(id, token)
   }
 }
 

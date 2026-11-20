@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { ApprovalStore } from './approvals'
+import { setReadOnlyProfile } from './storage'
 
 const fileIn = () => join(mkdtempSync(join(tmpdir(), 'approbations-')), 'approvals.json')
 
@@ -105,18 +106,18 @@ describe('ApprovalStore (fiche 072)', () => {
     const store = new ApprovalStore(file, changed)
     const forgotten = vi.fn()
     store.onCertificateForgotten(forgotten)
-    const dev = { host: 'localhost', port: 5173, fingerprint: FP }
-    const lan = { host: '192.168.1.20', port: 8443, fingerprint: FP2 }
+    const dev = { host: 'localhost', port: 5173, fingerprint: FP, error: E }
+    const lan = { host: '192.168.1.20', port: 8443, fingerprint: FP2, error: E }
     store.certificates.add(dev, false)
     store.certificates.add(lan, true)
     // Hôte public ou empreinte mal formée : jamais retenus, même demandés.
-    store.certificates.add({ host: 'example.com', port: 443, fingerprint: FP }, true)
-    store.certificates.add({ host: 'localhost', port: 1, fingerprint: 'AB' }, false)
+    store.certificates.add({ host: 'example.com', port: 443, fingerprint: FP, error: E }, true)
+    store.certificates.add({ host: 'localhost', port: 1, fingerprint: 'AB', error: E }, false)
     expect(changed).toHaveBeenCalledTimes(2)
     expect(store.certificates.has(dev)).toBe(true)
-    expect(store.certificates.has({ ...dev, fingerprint: FP2 })).toBe(false)
+    expect(store.certificates.has({ ...dev, fingerprint: FP2, error: E })).toBe(false)
     expect(store.certificates.has({ ...dev, port: 5174 })).toBe(false)
-    expect(store.certificates.hasSite('localhost', 5173)).toBe(true)
+    expect(store.certificates.forSite('localhost', 5173)).toEqual([dev])
     expect(store.view().certificates).toEqual([
       { ...lan, remembered: true },
       { ...dev, remembered: false }
@@ -139,25 +140,81 @@ describe('ApprovalStore (fiche 072)', () => {
     expect(new ApprovalStore(file).certificates.has(dev)).toBe(false)
   })
 
+  it('certificats (fiche 269) : retenus d’abord, « ancien » quand le serveur en présente un autre', () => {
+    const changed = vi.fn()
+    const store = new ApprovalStore(fileIn(), changed)
+    const old = { host: 'localhost', port: 5173, fingerprint: FP, error: E }
+    const fresh = { host: 'localhost', port: 5173, fingerprint: FP2, error: E }
+    store.certificates.add(old, false)
+    store.certificates.add(fresh, true)
+    store.certificates.add({ host: 'a.test', port: 443, fingerprint: FP, error: E }, false)
+    expect(store.view().certificates?.map((e) => [e.host, e.fingerprint, e.remembered])).toEqual([
+      ['a.test', FP, false],
+      ['localhost', FP2, true],
+      ['localhost', FP, false]
+    ])
+    expect(store.certificates.forSite('localhost', 5173)).toEqual([fresh, old])
+    changed.mockClear()
+    store.certificates.seen?.(fresh)
+    expect(changed).toHaveBeenCalledTimes(1)
+    // Même empreinte revue : rien ne change.
+    store.certificates.seen?.(fresh)
+    // Site sans exception : les Réglages ne bougent pas.
+    store.certificates.seen?.({ host: 'autre.test', port: 1, fingerprint: FP })
+    expect(changed).toHaveBeenCalledTimes(1)
+    const view = store.view().certificates ?? []
+    expect(view.find((e) => e.fingerprint === FP && e.host === 'localhost')?.stale).toBe(true)
+    expect(view.find((e) => e.fingerprint === FP2)?.stale).toBeUndefined()
+  })
+
+  it('certificats (fiche 269) : le code refusé fait partie de la clé', () => {
+    const store = new ApprovalStore(fileIn())
+    const dev = { host: 'localhost', port: 5173, fingerprint: FP, error: E }
+    store.certificates.add(dev, false)
+    expect(store.certificates.has({ ...dev, error: 'net::ERR_CERT_DATE_INVALID' })).toBe(false)
+    // Une erreur qu'aucun serveur de développement n'explique : jamais accordée.
+    store.certificates.add({ ...dev, port: 5174, error: 'net::ERR_CERT_REVOKED' }, false)
+    expect(store.certificates.forSite('localhost', 5174)).toEqual([])
+  })
+
+  it('certificats en profil en lecture seule (fiche 196) : « toujours » devient la session', () => {
+    const file = fileIn()
+    const store = new ApprovalStore(file)
+    setReadOnlyProfile(dirname(file))
+    try {
+      expect(store.certificates.canRemember?.()).toBe(false)
+      const dev = { host: 'localhost', port: 5173, fingerprint: FP, error: E }
+      store.certificates.add(dev, true)
+      expect(store.view().certificates).toEqual([{ ...dev, remembered: false }])
+      expect(existsSync(file)).toBe(false)
+    } finally {
+      setReadOnlyProfile(undefined)
+    }
+    expect(store.certificates.canRemember?.()).toBe(true)
+  })
+
   it('certificats relus : seuls les valides, sans doublon', () => {
     const file = fileIn()
     writeFileSync(
       file,
       JSON.stringify({
         certificates: [
-          { host: 'localhost', port: 5173, fingerprint: FP },
-          { host: 'localhost', port: 5173, fingerprint: FP },
-          { host: 'example.com', port: 443, fingerprint: FP },
-          { host: 'localhost', port: '5173', fingerprint: FP },
+          { host: 'localhost', port: 5173, fingerprint: FP, error: E },
+          { host: 'localhost', port: 5173, fingerprint: FP, error: E },
+          { host: 'example.com', port: 443, fingerprint: FP, error: E },
+          { host: 'localhost', port: '5173', fingerprint: FP, error: E },
+          { host: 'localhost', port: 5174, fingerprint: FP, error: 'net::ERR_CERT_REVOKED' },
+          { host: 'localhost', port: 5175, fingerprint: FP },
           'localhost'
         ]
       })
     )
     expect(new ApprovalStore(file).view().certificates).toEqual([
-      { host: 'localhost', port: 5173, fingerprint: FP, remembered: true }
+      { host: 'localhost', port: 5173, fingerprint: FP, error: E, remembered: true }
     ])
   })
 })
 
 const FP = `${'AB:'.repeat(31)}AB`
+const E = 'net::ERR_CERT_AUTHORITY_INVALID'
 const FP2 = `${'CD:'.repeat(31)}CD`

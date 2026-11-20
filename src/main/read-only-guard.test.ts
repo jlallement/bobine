@@ -57,4 +57,15 @@ describe('lecture seule : refus par défaut des canaux IPC (fiche 196)', () => {
     expect(READ_ONLY_SAFE).not.toContain('pr:options')
     expect(PROFILE_CHANGING).toContain('pr:options')
   })
+
+  it('certificats (fiche 269) : révoquer et l’avertissement restent permis en lecture seule', () => {
+    for (const channel of [
+      'settings:forgetCertificate',
+      'browser:allowCertificate',
+      'browser:leaveCertificate',
+      'browser:openCertificateSite'
+    ] as const) {
+      expect(READ_ONLY_SAFE, channel).toContain(channel)
+    }
+  })
 })

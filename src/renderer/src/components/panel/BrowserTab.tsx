@@ -12,7 +12,8 @@ import {
 import type { ImageAttachment } from '@shared/attachments'
 import { AttachImageButton } from './AttachImageButton'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { BrowserDownload, BrowserState } from '@shared/browser'
+import * as Dropdown from '@radix-ui/react-dropdown-menu'
+import type { BrowserDownload, BrowserState, CertificateException } from '@shared/browser'
 import { DevServersBar } from './DevServersBar'
 import { Tip } from '../common/Menus'
 import { useTranslation } from 'react-i18next'
@@ -262,11 +263,11 @@ export function BrowserTab({
           </button>
         </Tip>
         <span className="browser-address-field">
-          {state?.insecure && hasPage && <InsecureChip url={state.url} />}
+          {state?.insecure && hasPage && <InsecureChip exception={state.insecure} />}
           <input
             ref={input}
             className="browser-address"
-            value={editing ? address : hasPage ? (state?.url ?? '') : address}
+            value={editing ? address : hasPage ? shownAddress(state) : address}
             placeholder={t('browser.addressPlaceholder')}
             spellCheck={false}
             onFocus={(e) => {
@@ -391,30 +392,55 @@ function PageChips({ conversationId, state }: { conversationId: string; state: B
 }
 
 /**
- * « Non sécurisé » (fiche 269) : la page est affichée sous une exception de certificat accordée par
- * l'utilisateur ; l'infobulle dit pour quel site et où la révoquer.
+ * Adresse affichée hors saisie : entière, sauf sous une exception de certificat (fiche 269), où
+ * « https:// » laisse la place à l'hôte et au port, toujours visibles à côté de « Non sécurisé ».
  */
-function InsecureChip({ url }: { url: string }) {
+function shownAddress(state: BrowserState | null): string {
+  const url = state?.url ?? ''
+  return state?.insecure ? url.replace(/^https:\/\//i, '') : url
+}
+
+/**
+ * « Non sécurisé » (fiche 269) : la page est affichée sous une exception de certificat accordée
+ * par l'utilisateur. Le clic ouvre « Certificat accepté pour <site> — Ne plus accepter », la même
+ * action que la croix des Réglages. Champ étroit : l'icône seule, le texte en infobulle et en
+ * `aria-label`.
+ */
+function InsecureChip({ exception }: { exception: CertificateException }) {
   const { t } = useTranslation()
-  let site = url
-  try {
-    site = new URL(url).host
-  } catch {
-    // Adresse illisible : affichée telle quelle.
-  }
-  const tip = t('browser.insecure.tip', { site })
+  const site = exception.port === 443 ? exception.host : `${exception.host}:${exception.port}`
+  const tip = `${t('browser.insecure.chip')} — ${t('browser.insecure.tip', { site })}`
   return (
-    <Tip label={tip}>
-      <span
-        className="browser-chip browser-insecure"
-        tabIndex={0}
-        aria-label={tip}
-        data-testid="browser-insecure"
-      >
-        <ShieldAlert size={12} />
-        {t('browser.insecure.chip')}
-      </span>
-    </Tip>
+    <Dropdown.Root modal={false}>
+      <Tip label={tip}>
+        <Dropdown.Trigger
+          className="browser-chip browser-insecure"
+          aria-label={tip}
+          data-testid="browser-insecure"
+        >
+          <ShieldAlert size={12} />
+          <span className="browser-insecure-label">{t('browser.insecure.chip')}</span>
+        </Dropdown.Trigger>
+      </Tip>
+      <Dropdown.Portal>
+        <Dropdown.Content
+          className="menu"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          data-testid="browser-insecure-menu"
+        >
+          <div className="menu-label">{t('browser.insecure.menuLabel', { site })}</div>
+          <Dropdown.Item
+            className="menu-item"
+            onSelect={() => void window.api.settings.forgetCertificate(exception)}
+            data-testid="browser-insecure-revoke"
+          >
+            <span className="menu-text">{t('browser.insecure.revoke')}</span>
+          </Dropdown.Item>
+        </Dropdown.Content>
+      </Dropdown.Portal>
+    </Dropdown.Root>
   )
 }
 

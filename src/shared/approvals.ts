@@ -12,7 +12,11 @@ export interface ApprovalsView {
    * Certificats acceptés dans le navigateur intégré (fiche 269) : pour la session de l'app, ou
    * retenus (`remembered`).
    */
-  certificates?: (CertificateException & { remembered: boolean })[]
+  certificates?: (CertificateException & {
+    remembered: boolean
+    /** Le serveur présente maintenant un autre certificat (vu cette session). */
+    stale?: boolean
+  })[]
 }
 
 /** Autorisation retenue à oublier (Réglages › Agents). */

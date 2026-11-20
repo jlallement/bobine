@@ -43,4 +43,6 @@ export interface BrowserController {
   allowCertificate?: (conversationId: string, token: string, remember: boolean) => Promise<void>
   /** « Retour » d'un avertissement de certificat. */
   leaveCertificate?: (conversationId: string) => Promise<void>
+  /** « Ouvrir dans le navigateur » d'un avertissement : son adresse, dans celui du système. */
+  openCertificateSite?: (conversationId: string, token: string) => Promise<void>
 }

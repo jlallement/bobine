@@ -89,26 +89,24 @@ export function RememberedApprovals({
       key: 'certificates',
       label: t('settings.privacy.certificates.label'),
       testId: 'settings-accepted-certificates',
+      // Triés par le main : hôte, port, « toujours » d'abord. L'empreinte complète en infobulle ;
+      // « (ancien) » : le serveur présente maintenant un autre certificat.
       items: (settings.approvals.certificates ?? []).map(
-        ({ host, port, fingerprint, remembered }) => {
+        ({ host, port, fingerprint, error, remembered, stale }) => {
           const site = port === 443 ? host : `${host}:${port}`
+          const state = t(
+            remembered
+              ? 'settings.privacy.certificates.remembered'
+              : 'settings.privacy.certificates.session'
+          )
           return {
-            key: `certificate:${host}:${port}:${fingerprint}`,
+            key: `certificate:${host}:${port}:${fingerprint}:${error}`,
             main: site,
-            mainTitle: `${site} · SHA-256 ${fingerprint}`,
-            // Deux certificats du même hôte et port (régénéré) : l'empreinte les distingue.
-            side: t('settings.privacy.certificates.side', {
-              state: t(
-                remembered
-                  ? 'settings.privacy.certificates.remembered'
-                  : 'settings.privacy.certificates.session'
-              ),
-              print: fingerprint.slice(0, 11)
-            }),
-            sideTitle: fingerprint,
+            side: stale ? `${state} ${t('settings.privacy.certificates.stale')}` : state,
+            sideTitle: `SHA-256 ${fingerprint}`,
             revokeLabel: t('settings.privacy.certificates.revokeLabel', { site }),
             revokeAsk: t('settings.privacy.certificates.revokeAsk', { site }),
-            onRevoke: () => onForgetApproval({ certificate: { host, port, fingerprint } }),
+            onRevoke: () => onForgetApproval({ certificate: { host, port, fingerprint, error } }),
             testId: 'forget-certificate'
           }
         }

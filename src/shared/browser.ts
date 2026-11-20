@@ -29,8 +29,11 @@ export interface BrowserState {
    * l'avertissement à la place de la page.
    */
   certificate?: BrowserCertificateProblem
-  /** La page est affichée sous une exception de certificat accordée par l'utilisateur (fiche 269). */
-  insecure?: boolean
+  /**
+   * La page est affichée sous une exception de certificat accordée par l'utilisateur (fiche 269) :
+   * laquelle (« Non sécurisé », et « Ne plus accepter » de sa puce).
+   */
+  insecure?: CertificateException
 }
 
 /**
@@ -50,15 +53,32 @@ export interface BrowserCertificateProblem {
   issuer: string
   /** Empreinte SHA-256 du certificat (`AB:CD:…`, 32 octets) ; vide si illisible. */
   fingerprint: string
-  /** Continuer est permis : adresse locale ou privée, empreinte lisible. */
+  /**
+   * Continuer est permis : adresse locale ou privée (et, pour un nom, l'IP contactée aussi), erreur
+   * d'un certificat de serveur de développement, empreinte lisible.
+   */
   bypassable: boolean
+  /** L'adresse d'un nom (`*.test`, `*.local`) est en cours de vérification. */
+  checking?: boolean
+  /** Pourquoi continuer n'est pas permis (absent : permis, ou vérification en cours). */
+  refusal?: CertificateRefusal
+  /** « Se souvenir » possible (pas en profil en lecture seule). */
+  rememberable: boolean
 }
 
-/** Exception de certificat (fiche 269) : hôte, port et empreinte SHA-256 exacte. */
+/**
+ * Refus de continuer (fiche 269) : site public, erreur qu'un serveur de développement n'explique
+ * pas (révoqué, clé faible…), nom qui mène à une IP publique, certificat illisible.
+ */
+export type CertificateRefusal = 'public' | 'error' | 'address' | 'unreadable'
+
+/** Exception de certificat (fiche 269) : hôte, port, empreinte SHA-256 exacte et code refusé. */
 export interface CertificateException {
   host: string
   port: number
   fingerprint: string
+  /** Code de Chromium accepté (`net::ERR_CERT_AUTHORITY_INVALID`…) : un autre redemande. */
+  error: string
 }
 
 /**

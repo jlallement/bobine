@@ -57,6 +57,8 @@ export interface BrowserIpcContract {
   }
   /** « Retour » de l'avertissement de certificat : la page d'avant, ou une page vide. */
   'browser:leaveCertificate': { args: [id: string]; result: undefined }
+  /** « Ouvrir dans le navigateur » : l'adresse de l'avertissement, dans celui du système. */
+  'browser:openCertificateSite': { args: [id: string, token: string]; result: undefined }
   /** Certificat accepté, révoqué dans Réglages › Confidentialité. */
   'settings:forgetCertificate': {
     args: [certificate: CertificateException]
@@ -83,5 +85,6 @@ export const BROWSER_CHANNELS = [
   'browser:pagePins',
   'browser:allowCertificate',
   'browser:leaveCertificate',
+  'browser:openCertificateSite',
   'settings:forgetCertificate'
 ] as const satisfies readonly (keyof BrowserIpcContract)[]

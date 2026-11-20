@@ -45,6 +45,7 @@ export function browserHandlers(
   | 'browser:pagePins'
   | 'browser:allowCertificate'
   | 'browser:leaveCertificate'
+  | 'browser:openCertificateSite'
 > {
   return {
     'browser:show': async (id, bounds) => {
@@ -130,6 +131,11 @@ export function browserHandlers(
     'browser:leaveCertificate': async (id) => {
       if (!browser.leaveCertificate) throw new Error(t('ipc.unavailable.browser'))
       await browser.leaveCertificate(str(id, 'id'))
+      return undefined
+    },
+    'browser:openCertificateSite': async (id, token) => {
+      if (!browser.openCertificateSite) throw new Error(t('ipc.unavailable.browser'))
+      await browser.openCertificateSite(str(id, 'id'), str(token, 'token'))
       return undefined
     }
   }

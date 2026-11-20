@@ -31,7 +31,8 @@ Settings › Privacy › **Allowed without asking** lists everything you’ve al
 - **Tools**: the agent’s tools you answered “always” for;
 - **Sites**: the ones the built-in browser opens without asking;
 - **Accepted certificates**: the self-signed certificates you accepted in the built-in browser,
-  for this session or remembered (revoking brings the warning back);
+  “always” or “until Bobine quits”; “(old)”: the server now presents another one. Revoking brings
+  the warning back;
 - **Commands · folder**: commands and builds set to “Always this command here”;
 - **Worktree setup · folder**: the `.bobine/worktree.json` commands you’ve allowed (see
   [Worktrees](worktrees.md#accord)).
