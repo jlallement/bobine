@@ -792,6 +792,7 @@ export type FrResources = {
   }
   readonly fileMenu: {
     readonly empty: 'Aucun fichier ne correspond.'
+    readonly context: 'Contexte'
     readonly keys: '↑↓ choisir · Tab ou Entrée joindre · Échap fermer'
     readonly title: 'Fichiers · {{workspace}}'
   }

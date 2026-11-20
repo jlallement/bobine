@@ -95,42 +95,25 @@ export function FileMenu({ items, active, workspaceName, onHover, onPick, roles 
             />
           ) : null
         )}
-        <div className="menu-label">{t('fileMenu.title', { workspace: workspaceName })}</div>
-        {!items.some((entry) => !isRoleEntry(entry)) ? (
-          <div className="command-empty">{t('fileMenu.empty')}</div>
-        ) : (
-          items.map((entry, i) => {
-            if (isRoleEntry(entry)) return null
-            if (entry.kind === 'context') {
-              const { mention } = entry
-              return (
-                <button
-                  key={`@${mention.name}`}
-                  type="button"
-                  role="option"
-                  aria-selected={i === active}
-                  data-index={i}
-                  className={`command-item file-item${i === active ? ' active' : ''}`}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    onPick(entry)
-                  }}
-                  onMouseMove={() => onHover(i)}
-                  data-testid="context-item"
-                >
-                  <span className="file-item-icon">
-                    <ContextIcon source={mention.source} />
-                  </span>
-                  <span className="file-item-name">@{mention.name}</span>
-                  <span className="command-description">{mention.description}</span>
-                </button>
-              )
-            }
-            const { file } = entry
-            const slash = file.relative.lastIndexOf('/')
+        {/* `@git-changes`, `@terminal` : sous leur propre titre, pas sous les fichiers (fiche 272). */}
+        {items.some((entry) => !isRoleEntry(entry) && entry.kind === 'context') && (
+          <div className="menu-label">{t('fileMenu.context')}</div>
+        )}
+        {items.map((entry, i) => {
+          if (isRoleEntry(entry)) return null
+          const firstFile =
+            entry.kind !== 'context' &&
+            items.findIndex((e) => !isRoleEntry(e) && e.kind !== 'context') === i
+          const label = firstFile && (
+            <div key="files-label" className="menu-label">
+              {t('fileMenu.title', { workspace: workspaceName })}
+            </div>
+          )
+          if (entry.kind === 'context') {
+            const { mention } = entry
             return (
               <button
-                key={file.path}
+                key={`@${mention.name}`}
                 type="button"
                 role="option"
                 aria-selected={i === active}
@@ -141,16 +124,48 @@ export function FileMenu({ items, active, workspaceName, onHover, onPick, roles 
                   onPick(entry)
                 }}
                 onMouseMove={() => onHover(i)}
-                data-testid="file-item"
+                data-testid="context-item"
               >
-                <FileText size={14} className="file-item-icon" />
-                <span className="file-item-name">{file.relative.slice(slash + 1)}</span>
-                {slash > 0 && (
-                  <span className="command-description">{file.relative.slice(0, slash)}</span>
-                )}
+                <span className="file-item-icon">
+                  <ContextIcon source={mention.source} />
+                </span>
+                <span className="file-item-name">@{mention.name}</span>
+                <span className="command-description">{mention.description}</span>
               </button>
             )
-          })
+          }
+          const { file } = entry
+          const slash = file.relative.lastIndexOf('/')
+          return [
+            label,
+            <button
+              key={file.path}
+              type="button"
+              role="option"
+              aria-selected={i === active}
+              data-index={i}
+              className={`command-item file-item${i === active ? ' active' : ''}`}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onPick(entry)
+              }}
+              onMouseMove={() => onHover(i)}
+              data-testid="file-item"
+            >
+              <FileText size={14} className="file-item-icon" />
+              <span className="file-item-name">{file.relative.slice(slash + 1)}</span>
+              {slash > 0 && (
+                <span className="command-description">{file.relative.slice(0, slash)}</span>
+              )}
+            </button>
+          ]
+        })}
+        {/* Aucun fichier : le titre des fichiers, puis « aucun », après le contexte. */}
+        {!items.some((entry) => !isRoleEntry(entry) && entry.kind !== 'context') && (
+          <>
+            <div className="menu-label">{t('fileMenu.title', { workspace: workspaceName })}</div>
+            <div className="command-empty">{t('fileMenu.empty')}</div>
+          </>
         )}
         {items.some((entry) => entry.kind === 'role' && entry.byDescription) && (
           <div className="menu-label role-menu-label" data-testid="role-menu-by-description">

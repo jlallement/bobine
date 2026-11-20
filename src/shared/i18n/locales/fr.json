@@ -800,6 +800,7 @@
   },
   "fileMenu": {
     "empty": "Aucun fichier ne correspond.",
+    "context": "Contexte",
     "keys": "↑↓ choisir · Tab ou Entrée joindre · Échap fermer",
     "title": "Fichiers · {{workspace}}"
   },

@@ -200,6 +200,16 @@ describe('menu `@` : rôles en tête', () => {
     type('Relis @git')
     const options = [...screen.getByTestId('file-menu').querySelectorAll('[role=option]')]
     expect(options.at(-1)?.getAttribute('data-testid')).toBe('role-new')
+    // `@git-changes` sous « Contexte », jamais sous « Fichiers · … » (fiche 272, recette).
+    const labels = [...screen.getByTestId('file-menu').querySelectorAll('.menu-label')].map(
+      (l) => l.textContent
+    )
+    expect(labels).toContain('Contexte')
+    const context = screen.getByTestId('context-item')
+    const before = [
+      ...screen.getByTestId('file-menu').querySelectorAll('.menu-label, [data-testid=context-item]')
+    ]
+    expect(before[before.indexOf(context) - 1]?.textContent).toBe('Contexte')
     key('Enter')
     expect(input.value).toBe('Relis @git-changes ')
     expect(onCreate).not.toHaveBeenCalled()

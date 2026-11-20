@@ -747,6 +747,7 @@
   },
   "fileMenu": {
     "empty": "No matching file.",
+    "context": "Context",
     "keys": "↑↓ choose · Tab or Return attach · Esc close",
     "title": "Files · {{workspace}}"
   },
