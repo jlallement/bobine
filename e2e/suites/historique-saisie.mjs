@@ -9,7 +9,7 @@ import { L, check, withApp } from '../lib.mjs'
  * message à un rôle lance une fille dans un worktree) :
  * - trois messages : un long d'une ligne (replié à l'affichage), un de plusieurs lignes, un pour
  *   le rôle `security-expert` (jeton posé par le menu `@`) ;
- * - rappel « ↑ Messages précédents » ; ↑ ↑ ↑, pastille « n/3 », jeton et ligne « Partira à… » ;
+ * - rappel « ↑ Messages précédents » ; ↑ ↑ ↑, pastille « n/3 », jeton et ligne « Sera confié à… » ;
  * - lignes d'abord (replis compris), curseur à l'arrivée, bornes ;
  * - modification → brouillon ; Échap vide avant d'arrêter la réponse ; la fille commence par sa
  *   consigne ; le rappel s'efface après trois utilisations.
@@ -86,7 +86,7 @@ async function run(ui) {
   )
   await ui.shot('historique-1-rappel')
 
-  // ↑ : le dernier envoyé, avec son jeton et sa ligne « Partira à… ».
+  // ↑ : le dernier envoyé, avec son jeton et sa ligne « Sera confié à… ».
   await ui.arrow('ArrowUp')
   await ui.waitFor(`!!${ui.$('history-pill')}`)
   check(
@@ -94,7 +94,7 @@ async function run(ui) {
       (await pill()).includes(L('composer.history.position', { index: 3, count: 3 })) &&
       (await ui.ev(`${ui.$('role-token')}?.dataset.role`)) === 'security-expert' &&
       (await ui.ev(`!!${ui.$('role-destination')}`)),
-    '↑ : le dernier envoyé (3/3), jeton du rôle et ligne « Partira à… » repris'
+    '↑ : le dernier envoyé (3/3), jeton du rôle et ligne « Sera confié à… » repris'
   )
   check(
     (await ui.ev(`${ui.$('history-announce')}.textContent`)) ===

@@ -15,14 +15,14 @@ import { L, check, withApp } from '../lib.mjs'
 /**
  * Rôles au travail (fiche 223, phase 3B), contre l'agent factice, dans un dépôt git jetable qui a
  * un rôle du projet (`security-expert`, il remplace le rôle fourni du même nom) :
- * - menu `@` (rôles en tête, filtre, clavier), jeton, ligne « Partira à… », une fille ;
+ * - menu `@` (rôles en tête, filtre, clavier), jeton, ligne « Sera confié à… », une fille ;
  * - deux `@rôle` dans un message : une bulle, deux cartes-réponses (fiche 263) ;
  * - carte-réponse (fiche 263, scénario `avis-long`) : en cours, a répondu (repliée, « Lire la
  *   suite »), transmise (« Demander à … de l'appliquer »), « Répondre à … » dans la même carte ;
  * - en-tête de la fille ; proposition de l'agent (`roles-delegue`) : badge, mode, lecture seule,
  *   rôle du projet qui en remplace un autre ;
  * - un agent qui écrit sans demander (`MOCK_AGENT_WRITES=silent`) : lecture seule seulement
- *   demandée, sur la ligne « Partira à… », la carte de proposition et l'en-tête de la fille.
+ *   demandée, sur la ligne « Sera confié à… », la carte de proposition et l'en-tête de la fille.
  */
 export async function rolesTravailSuite(scheme) {
   console.log(`\n— Rôles au travail (${scheme})`)
@@ -206,7 +206,7 @@ async function mainRun(ui, turnLock) {
   const line = await ui.ev(`${ui.$('role-destination')}.innerText`)
   check(
     line.includes(L('roleWork.readOnly')) && line.includes(L('roleWork.destination.sameFolder')),
-    `ligne « Partira à… » : lecture seule, dans ce dossier (${line})`
+    `ligne « Sera confié à… » : lecture seule, dans ce dossier (${line})`
   )
   await ui.shot('roles-travail-3-jeton')
   // Le rôle sans demande (fiche 267, N7) : l'aide en gris, jamais la couleur d'alerte.
@@ -617,7 +617,7 @@ async function requestedRun(ui) {
   await ui.ready()
   await ui.send('Bonjour')
   await ui.ready()
-  // La ligne « Partira à… » le dit avant l'envoi.
+  // La ligne « Sera confié à… » le dit avant l'envoi.
   await typeIn(ui, '@security-expert relis le carnet')
   await ui.waitFor(`!!${ui.$('role-destination')}`)
   check(

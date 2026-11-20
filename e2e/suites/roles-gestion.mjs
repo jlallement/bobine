@@ -202,7 +202,7 @@ export async function rolesGestionSuite(scheme) {
           (await ui.ev(`${ui.$('role-destination')}.innerText`)).includes(
             L('roles.builtin.securityExpert')
           ),
-          'section Équipe : jeton du rôle dans la saisie, qui a le focus ; « Partira à… » le nomme'
+          'section Équipe : jeton du rôle dans la saisie, qui a le focus ; « Sera confié à… » le nomme'
         )
         await ui.shot('r5b-equipe-jeton')
         await ui.ev(`${input}.setSelectionRange(0, 0)`)

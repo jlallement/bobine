@@ -95,7 +95,7 @@ export function useRoleCompose(options: {
   const [hidden, setHidden] = useState(inviteHidden)
   // Envoi aux rôles en cours (plusieurs secondes : `git worktree add`) : un second envoi attend.
   const [sending, setSending] = useState(false)
-  // Rôles en cours de lancement : la ligne « Partira à… » les montre, saisie déjà vidée.
+  // Rôles en cours de lancement : la ligne « Sera confié à… » les montre, saisie déjà vidée.
   const [sendingTo, setSendingTo] = useState<string[]>([])
   const sendingNow = useRef(false)
   const setBusy = (busy: boolean, names: string[] = []) => {
@@ -385,7 +385,7 @@ export function useRoleCompose(options: {
             ...(roles.onManage ? { onManage: roles.onManage } : {})
           }
         : undefined,
-    /** Jetons et ligne « Partira à… » pour ce texte. */
+    /** Jetons et ligne « Sera confié à… » pour ce texte. */
     view: (text: string) => {
       textNow.current = text
       const typed = chosen(text)
@@ -537,7 +537,7 @@ export function useRoleFrame(targets: readonly RoleView[]): {
   return { className: single ? ' to-role' : ' to-roles', style: single ? style : undefined }
 }
 
-/** La ligne « Partira à… » sous la saisie, pour les rôles visés. */
+/** La ligne « Sera confié à… » sous la saisie, pour les rôles visés. */
 export function RoleDestinationFor({
   targets,
   empty,

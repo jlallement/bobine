@@ -170,7 +170,9 @@ const hasPlaceholder = (status: string): status is (typeof PLACEHOLDER_STATUSES)
 function placeholderOf(
   view: ComposerView,
   where: { fresh?: boolean | undefined; discussion?: boolean | undefined },
-  profileLabel: string | undefined
+  profileLabel: string | undefined,
+  /** Rôles visés par la saisie (fiche 272) : l'invite leur parle, pas à l'agent. */
+  roles: readonly { label: string }[] = []
 ) {
   const fresh = !!where.fresh
   const discussion = where.discussion
@@ -181,6 +183,10 @@ function placeholderOf(
   const refused = refusedTurnText(view.blocker, 'placeholder')
   if (refused) return refused
   if (hasPlaceholder(status)) return i18next.t(`composer.placeholder.${status}`)
+  const [role] = roles
+  if (role && roles.length === 1)
+    return i18next.t('composer.placeholder.role', { role: role.label })
+  if (roles.length > 1) return i18next.t('composer.placeholder.roles', { count: roles.length })
   if (view.planMode) {
     return profileLabel
       ? i18next.t('composer.plan.placeholder', { agent: profileLabel })
@@ -306,7 +312,7 @@ export function Composer(props: Props) {
     onSearchFiles: props.onSearchFiles,
     ...(props.roles ? { roles: { list: props.roles.list, canCreate: !!props.roles.onCreate } } : {})
   })
-  // Rôles (fiche 223) : jetons posés par le menu `@`, ligne « Partira à… ».
+  // Rôles (fiche 223) : jetons posés par le menu `@`, ligne « Sera confié à… ».
   const roleCompose = useRoleCompose({
     roles: props.roles,
     draftKey,
@@ -550,7 +556,7 @@ export function Composer(props: Props) {
           onClick={trackCaret}
           {...history.focusProps}
           onPaste={onPaste}
-          placeholder={placeholderOf(view, props, snapshot?.info.profileLabel)}
+          placeholder={placeholderOf(view, props, snapshot?.info.profileLabel, roleView.targets)}
           aria-describedby={view.planMode ? planHintId : undefined}
           rows={1}
           disabled={!!blocker}

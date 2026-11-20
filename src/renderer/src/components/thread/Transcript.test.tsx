@@ -356,7 +356,7 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
       ])
     )
     expect(screen.getByTestId('child-report-pending').textContent).toBe(
-      'Partira à l’agent quand ses travaux auront tous répondu.'
+      'Sera transmise à l’agent quand ses travaux auront tous répondu.'
     )
   })
 })

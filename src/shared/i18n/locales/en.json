@@ -213,7 +213,10 @@
       "modelRefused": "Choose another model or sign in",
       "needsFolder": "Choose a folder first",
       "modelRefusedKey": "Choose another model or add an API key",
-      "modelRefusedOnly": "Choose another model"
+      "modelRefusedOnly": "Choose another model",
+      "role": "Your request to {{role}}…",
+      "roles_one": "Your request to the role…",
+      "roles_other": "Your request to the {{count}} roles…"
     },
     "plan": {
       "placeholder": "Explore and plan with {{agent}}…",

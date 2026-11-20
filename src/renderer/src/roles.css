@@ -1,7 +1,7 @@
 /*
  * Rôles (fiche 223) : avatar d'un rôle et ses états (maquette 03-5), assistant de création,
  * Réglages › Rôles, section « Équipe » de la barre latérale (phase 3A) ; menu `@`, jetons et ligne
- * « Partira à… » de la saisie, fille d'un rôle dans le fil de sa mère, lignes de « Sous-tâches »,
+ * « Sera confié à… » de la saisie, fille d'un rôle dans le fil de sa mère, lignes de « Sous-tâches »,
  * proposition de l'agent, en-tête de la fille (phase 3B). Couleur d'un rôle : une des couleurs
  * d'accent de l'app, posée en `--role` par `useRoleStyle` (teinte de la palette affichée, claire ou
  * sombre) ; tout le reste en découle.
@@ -1080,7 +1080,7 @@
   margin-top: 4px;
 }
 
-/* Saisie pour des rôles (maquettes 02-3, 02-4) : jetons, liseré, ligne « Partira à… ». */
+/* Saisie pour des rôles (maquettes 02-3, 02-4) : jetons, liseré, ligne « Sera confié à… ». */
 .role-tokens {
   display: flex;
   flex-wrap: wrap;

@@ -9990,7 +9990,7 @@ html.about-page body {
 }
 
 /* Où partira un travail qui écrit (fiche 262, maquette 260 écran B) : un segment discret de la
-   ligne « Partira à… », de la carte de tâches ou du dialogue ; jamais un encadré. En orange quand
+   ligne « Sera confié à… », de la carte de tâches ou du dialogue ; jamais un encadré. En orange quand
    du non commité reste derrière. La liste des modifications et le choix de commit passent dessous,
    sur toute la largeur. */
 .launch-line-text {

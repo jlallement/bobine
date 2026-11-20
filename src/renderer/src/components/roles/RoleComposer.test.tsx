@@ -1,6 +1,6 @@
 /**
  * `@rôle` dans la saisie (fiche 223, phase 3B) : menu `@` avec les rôles en tête, jeton, retour
- * arrière, ligne « Partira à… », envoi d'une fille par rôle, rôle inconnu laissé en texte.
+ * arrière, ligne « Sera confié à… », envoi d'une fille par rôle, rôle inconnu laissé en texte.
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
@@ -231,7 +231,7 @@ describe('menu `@` : rôles en tête', () => {
 })
 
 describe('jeton et envoi', () => {
-  it('Entrée choisit le rôle : un jeton, `@requête` sort du texte ; « Partira à… »', () => {
+  it('Entrée choisit le rôle : un jeton, `@requête` sort du texte ; « Sera confié à… »', () => {
     const { type, key, input } = setup()
     type('@sécu')
     key('Enter')
@@ -239,10 +239,12 @@ describe('jeton et envoi', () => {
     const token = screen.getByTestId('role-token')
     expect(token.dataset['role']).toBe('security-expert')
     const line = screen.getByTestId('role-destination')
-    expect(line.textContent).toContain('Partira à Expert sécu, dans sa propre conversation')
+    expect(line.textContent).toContain('Sera confié à Expert sécu, dans sa propre conversation')
     expect(line.textContent).toContain('lecture seule')
     expect(line.textContent).toContain('dans ce dossier')
     expect(input.closest('form')?.className).toContain('to-role')
+    // L'invite parle au rôle, pas à l'agent (fiche 272, recette).
+    expect(input.getAttribute('placeholder')).toBe('Votre demande à Expert sécu…')
   })
 
   it('flèches puis Entrée : le rôle surligné ; Échap referme le menu', () => {
@@ -287,7 +289,7 @@ describe('jeton et envoi', () => {
     const { type, key, send } = setup()
     type('@security-expert @code-reviewer relisez avant la fusion')
     expect(screen.getByTestId('role-destination').textContent).toContain(
-      'Partira à 2 rôles, un travail chacun, en parallèle'
+      'Sera confié à 2 rôles, un travail chacun, en parallèle'
     )
     key('Escape')
     await act(async () => key('Enter'))
