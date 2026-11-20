@@ -93,9 +93,13 @@ describe('LaunchController', () => {
 
   it('une demande du premier lancement attend l’app, puis son message l’interface', async () => {
     const { controller, deps, shown, opened } = setup()
+    expect(controller.pending).toBe(false)
     controller.request({ folder: '/p', message: 'bonjour' })
     expect(opened).toEqual([])
+    // Le lancement sait qu'un dossier sera montré (fiche 272).
+    expect(controller.pending).toBe(true)
     controller.attach(deps)
+    expect(controller.pending).toBe(false)
     await flush()
     expect(opened).toEqual(['/p'])
     expect(shown).toEqual([])

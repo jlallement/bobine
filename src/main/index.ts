@@ -808,7 +808,8 @@ async function start(): Promise<void> {
   })
   // Fenêtre principale fermée ou rechargée : l'essai en cours s'arrête avec elle.
   mainWindowGone = () => onboarding.stop()
-  void conversations.startActive()
+  // `bobine <dossier>` : la conversation de ce dossier démarre, pas celle d'avant (fiche 272).
+  void conversations.startActive(!launch.pending)
 
   // L'app s'installe elle-même dans Applications (fiche 073), si la plateforme le permet.
   const installer = setupSelfInstall({

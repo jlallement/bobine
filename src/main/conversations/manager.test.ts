@@ -193,6 +193,15 @@ describe('ConversationManager', () => {
     manager.stopAll()
   })
 
+  it('lancement avec un dossier demandé : l’agent de la conversation d’avant ne démarre pas (fiche 272)', async () => {
+    const { launch } = environment()
+    const { manager } = launch()
+    const view = await manager.startActive(false)
+    expect(view.snapshot?.status ?? 'idle').not.toBe('ready')
+    expect(manager.view(view.summary.id).snapshot?.status ?? 'idle').not.toBe('starting')
+    manager.stopAll()
+  })
+
   it('nouvelle conversation : l’ancienne reste dans l’historique, avec son fil', async () => {
     const { launch } = environment()
     const { manager, ready } = launch()

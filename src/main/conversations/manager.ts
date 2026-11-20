@@ -1169,14 +1169,18 @@ export class ConversationManager {
     this.pendingNotices.push(message)
   }
 
-  /** Démarre l'agent de la conversation active (au lancement de l'app). */
-  async startActive(): Promise<ConversationView> {
+  /**
+   * Démarre l'agent de la conversation active (au lancement de l'app). `agent` faux : un dossier
+   * est demandé au lancement (`bobine <dossier>`), la conversation affichée sera une autre ; son
+   * agent ne démarre pas pour rien (fiche 272, recette). Les avis du lancement sont posés.
+   */
+  async startActive(agent = true): Promise<ConversationView> {
     const conversation = this.get(this.activeId)
     for (const message of this.pendingNotices.splice(0)) {
       this.onEvent(conversation, { type: 'notice', level: 'warning', message })
     }
     // Pas de dossier choisi : l'agent attend ce choix (fiche 093).
-    if (this.startable(conversation)) await this.ensureLive(conversation).start()
+    if (agent && this.startable(conversation)) await this.ensureLive(conversation).start()
     return this.view(this.activeId)
   }
 
