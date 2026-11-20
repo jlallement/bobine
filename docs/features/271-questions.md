@@ -3,7 +3,10 @@
 - **Fiche** : `docs/features/271-vue-des-fichiers.md` (option B, lecture seule) ; maquettes
   `docs/maquettes/271-vue-des-fichiers.html`.
 - **Rédigé le** 2026-11-20, sur la branche `1.1`, par une session « analyste métier et designer
-  UX » ; à relire par le tech lead avant d'être posé à l'utilisateur. **Rien n'est codé.**
+  UX » ; relu par le tech lead, puis posé à l'utilisateur. **Rien n'est codé.**
+- **Réponses de l'utilisateur** : 2026-11-20, ligne « Décision » sous chaque question de la
+  partie A ; partie B validée en bloc, avec les ajustements dus à Q3 et Q8 (Q15, Q23, Q57, Q60,
+  marqués « Ajusté »). Reportées dans la fiche 271 et l'ADR-0065.
 - **Déjà tranché, à ne pas reposer** : version 1.1 ; lecture seule d'abord (édition seulement plus
   tard, par un nouvel ADR) ; coloration du code dès le premier lot d'affichage (L2) ; commentaires
   sur une ligne gardés ; pas de palette : **⌘P ouvre l'onglet Fichiers, le curseur dans le
@@ -51,6 +54,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** L1 et L2 seulement dans la 1.1 (≈ 6 j) ; L3 et L4 dans une 1.1.x.
 - **Recommandation : A** — L3 est une des trois décisions déjà prises (commentaires gardés) et L4
   rend l'onglet utilisable en grand ; « ? » se remplace bien par `@` et par la question à l'agent.
+- **Décision de l'utilisateur (2026-11-20) : A** — L1 à L4 dans la 1.1, L5 plus tard.
 
 ### Ouverture et place dans l'app
 
@@ -64,6 +68,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Rien : l'onglet est oublié, comme l'Aperçu.
 - **Recommandation : A** — on revient à une conversation pour reprendre un fil de pensée ; retrouver
   le fichier qu'on lisait coûte un peu de stockage local, pas de disque.
+- **Décision de l'utilisateur (2026-11-20) : A** — tout est retenu, par conversation.
 
 #### Q3 — Que fait un clic sur la ligne « Dossier » de l'onglet Session ?
 
@@ -75,6 +80,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Inchangée : Fichiers ne s'ouvre que par le menu « + », ⌘P et ⇧⌘Y.
 - **Recommandation : A** — rester dans Bobine est le but de la fiche, et ⌥-clic → Finder est déjà
   la règle des liens de fichiers (052).
+- **Décision de l'utilisateur (2026-11-20) : C** — la ligne « Dossier » garde le Finder ; Fichiers s'ouvre seulement par « + », ⌘P et ⇧⌘Y (et les liens du fil, Q11).
 
 #### Q4 — Dans l'espace Discussion, que devient l'onglet Documents ?
 
@@ -88,6 +94,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Fichiers remplace Documents dans les deux espaces.
 - **Recommandation : A** pour la 1.1 — Documents vient d'être livré et sert un autre public ;
   B est une bonne suite une fois la vue du fichier stable, sans la mettre sur le chemin critique.
+- **Décision de l'utilisateur (2026-11-20) : A** — Documents inchangé dans l'espace Discussion.
 
 ### Arbre
 
@@ -101,6 +108,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Masqués par défaut ; « Afficher les fichiers ignorés » dans le menu ….
 - **Recommandation : A** — rien n'est caché, mais on distingue d'un coup d'œil ce que git suit de
   ce qui est généré, ce qui aide à s'orienter (B1).
+- **Décision de l'utilisateur (2026-11-20) : A** — ignorés visibles, repliés, atténués.
 
 #### Q6 — L'arbre signale-t-il ce que la conversation a touché ?
 
@@ -115,6 +123,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
 - **Recommandation : A** — le point guide vers le bon dossier sans dupliquer Modifications ; la
   section C attend CM7, sinon elle aurait le même défaut de compte que F14 (fichiers écrits par
   une commande absents).
+- **Décision de l'utilisateur (2026-11-20) : A** — un point discret sur les fichiers modifiés par la conversation.
 
 #### Q7 — Quel dossier montre l'arbre quand il y a des travaux délégués (worktrees) ?
 
@@ -130,6 +139,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Les worktrees des travaux délégués comme racines supplémentaires, sous le dossier.
 - **Recommandation : A** — une conversation, un dossier : la remarque sur une ligne part sans
   ambiguïté au bon agent (Q55), et rien ne mélange deux copies du même fichier dans un arbre.
+- **Décision de l'utilisateur (2026-11-20) : A** — le dossier de la conversation affichée, plus « Parcourir les fichiers » sur la carte d'un travail.
 
 ### Sécurité visible
 
@@ -147,6 +157,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Affiché comme les autres fichiers.
 - **Recommandation : A** — un écran partagé, une capture d'e2e ou une vidéo de démo ne peuvent
   pas montrer une clé ; l'éditeur reste à un clic pour qui en a vraiment besoin.
+- **Décision de l'utilisateur (2026-11-20) : C** — un `.env` ou une clé s'affiche comme les autres fichiers. Conséquence assumée : un écran partagé ou une capture peut montrer un secret ; les captures e2e ne montrent que des valeurs factices de test, jamais un vrai secret.
 
 ### Fichier ouvert
 
@@ -163,6 +174,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Un onglet Fichiers qui contient ses propres sous-onglets de fichiers.
 - **Recommandation : A** — fidèle aux photos, cohérent avec « pas un IDE », et ne charge pas la
   rangée d'onglets ; l'historique couvre le va-et-vient entre deux fichiers.
+- **Décision de l'utilisateur (2026-11-20) : A** — un seul fichier ouvert, précédent / suivant.
 
 #### Q10 — Un fichier Markdown s'ouvre-t-il rendu ou en source ?
 
@@ -176,6 +188,7 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Rendu seulement, comme aujourd'hui (pas de commentaire sur un `.md`).
 - **Recommandation : A** — on lit un `.md` plus qu'on ne le commente, et 052 a habitué à le voir
   rendu ; la bascule garde le commentaire possible sur un plan ou une fiche.
+- **Décision de l'utilisateur (2026-11-20) : A** — Markdown rendu, bascule « Source ».
 
 ### Lien avec la conversation
 
@@ -193,10 +206,14 @@ Ce que montrent les photos, en plus du relevé R1–R7 de la fiche :
   - **C.** Rien ne change ; l'Aperçu de 052 reste un onglet à part.
 - **Recommandation : A** — retrouver un fichier cité (B2) est le besoin le plus fréquent, la ligne
   est enfin respectée, et l'on n'a plus deux visionneuses qui font presque la même chose.
+- **Décision de l'utilisateur (2026-11-20) : A** — un lien de fichier ouvre l'onglet Fichiers à la ligne ; ⌘-clic l'éditeur, ⌥-clic le Finder.
 
 ---
 
 ## Partie B — Recommandations par défaut (à valider en bloc)
+
+**Décision de l'utilisateur (2026-11-20) : validées en bloc.** Quatre recommandations sont
+ajustées pour suivre Q3 (C) et Q8 (C) ; elles le disent par une ligne « Ajusté ».
 
 ### Périmètre et méthode
 
@@ -224,6 +241,8 @@ Contexte : Claude Code a une icône dossier dans la barre du panneau. Options : 
 ⌘P, ⇧⌘Y, ligne Dossier de Session (selon Q3), lien du fil (selon Q11) ; B en plus, une icône
 permanente dans la barre du panneau. **Recommandation : A** — Bobine n'a pas de barre d'icônes
 permanente ; le menu « + » est l'endroit des onglets à la demande.
+**Ajusté (Q3 = C)** : pas de ligne Dossier de Session ; l'onglet s'ouvre par le menu « + », ⌘P,
+⇧⌘Y et les liens du fil (Q11).
 
 **Q16 — L'onglet s'ouvre-t-il un jour tout seul ?**
 Contexte : `panelAutoOpens` ouvre certains onglets d'office. Options : A jamais ; B quand l'agent
@@ -269,6 +288,7 @@ alphabétique strict. **Recommandation : A**.
 Contexte : Claude Code : trois icônes (code, Markdown, page). Options : A un petit jeu maison :
 dossier, code, Markdown, image, PDF, texte, binaire, lien symbolique, cadenas ; B une icône par
 langage. **Recommandation : A** — lisible, sans dépendance, cohérent avec les icônes de Bobine.
+**Ajusté (Q8 = C)** : pas de cadenas ; un fichier de secret a l'icône de son type.
 
 **Q24 — Très gros dossiers ?**
 Contexte : un `node_modules` a des milliers d'entrées. Options : A chaque dossier lu à son
@@ -458,6 +478,8 @@ reste au même numéro. **Recommandation : A** — même comportement que 085 po
 **Q57 — Remarque sur un Markdown rendu, une image, un secret ?**
 Options : A seulement sur du texte avec numéros (Markdown en Source, Q10) ; jamais sur une image ni
 un secret (non affiché) ; B partout. **Recommandation : A**.
+**Ajusté (Q8 = C)** : un fichier de secret s'affiche, donc se commente comme un autre ; seules les
+images et le Markdown rendu n'ont pas de remarque.
 
 ### Mode agrandi
 
@@ -489,6 +511,10 @@ un fichier affiché, ce que `secret-scan.ts` reconnaît est masqué (`•••�
 (`agents.log`) note le chemin, jamais le contenu ; rien n'est envoyé à l'agent sans geste (mention,
 remarque) ; B confiance dans le renderer. **Recommandation : A** — règles de la fiche et de
 l'ADR, tests `..`, lien qui sort, lien vers `.env`, binaire, gros fichier.
+**Ajusté (Q8 = C)** : aucun secret n'est reconnu ni masqué à l'affichage ; un `.env` se lit comme
+un autre fichier. Restent : chemins vérifiés, `O_NOFOLLOW`, bornes, aucun canal d'écriture, journal
+sans contenu, rien envoyé à l'agent sans geste. Les essais et les captures e2e n'utilisent que des
+valeurs factices (`BOBINE_TEST_TOKEN=factice-…`), jamais un vrai secret.
 
 ### macOS, préversions Linux et Windows
 
@@ -533,5 +559,7 @@ qu'on ne veut pas devenir.
 | | Commentaire sur une ligne | Q54–Q57 |
 | | Agrandi, clavier, sécurité, plateformes, textes | Q58–Q62 |
 
-**11 questions à trancher, 51 recommandations par défaut.** Les réponses iront dans la section
-« Décisions de l'utilisateur » de la fiche 271, puis dans son plan.
+**11 questions à trancher, 51 recommandations par défaut.** Réponses du 2026-11-20 : Q1 A, Q2 A,
+**Q3 C**, Q4 A, Q5 A, Q6 A, Q7 A, **Q8 C**, Q9 A, Q10 A, Q11 A ; Q12 à Q62 validées en bloc
+(Q15, Q23, Q57, Q60 ajustées). Reportées dans la section « Décisions de l'utilisateur » de la
+fiche 271, son plan et l'ADR-0065.

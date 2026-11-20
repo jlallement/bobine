@@ -1333,7 +1333,10 @@
             Option recommandée <b>B</b> : l'onglet <b>Fichiers</b> de Claude Code (desktop), relevé
             sur l'app réelle, <b>en lecture seule</b> (décision de l'utilisateur), avec la
             <b>coloration de code</b> et le <b>commentaire sur une ligne</b> envoyé à l'agent
-            (écrans 0 à 4). Alternative <b>A</b> : la palette ⌘P seule (écran 5).
+            (écrans 0 à 4). Corrigées le 2026-11-20 selon les réponses de l'utilisateur
+            (<code>docs/features/271-questions.md</code>) : pas de palette, ⌘P met le curseur dans
+            le filtre, la ligne « Dossier » de Session garde le Finder, un <code>.env</code>
+            s'affiche comme un autre fichier.
           </p>
           <p>
             Couleurs et polices de Bobine (<code>themes.generated.css</code>, <code>styles.css</code>) ;
@@ -1378,7 +1381,7 @@
           <h3><b class="n">3</b>Le main lit, borne et vérifie</h3>
           <p>
             <code>(conversation, chemin relatif)</code> seulement ; rien hors des dossiers de la
-            conversation ; secrets jamais affichés ; pas de surveillance continue.
+            conversation ; tailles bornées, rien au journal ; pas de surveillance continue.
           </p>
         </div>
       </div>
@@ -1390,7 +1393,8 @@
       </h2>
       <p class="lede">
         Comme dans Claude Code : la conversation au centre, et l'onglet Fichiers parmi les outils du
-        panneau. Ouvert par le menu « + », ⌘P, ⇧⌘Y, ou la ligne « Dossier » de l'onglet Session.
+        panneau. Ouvert par le menu « + », ⌘P (le curseur dans le filtre), ⇧⌘Y, ou un lien de
+        fichier du fil. La ligne « Dossier » de l'onglet Session ne change pas.
       </p>
       <div class="stage">
         <div class="win">
@@ -1416,7 +1420,7 @@
               <span class="ibtn a on"><b class="pin r">2</b><svg class="i"><use href="#plus" /></svg></span>
             </div>
             <div class="side-body" style="padding: 14px; font-size: 13px">
-              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Dossier</span><span class="end a" style="color: var(--accent)"><b class="pin" style="left: -26px; top: -1px">3</b>carnet ›</span></div>
+              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Dossier</span><span class="end a"><b class="pin" style="left: -26px; top: -1px">3</b>carnet</span></div>
               <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Branche</span><span class="end">main</span></div>
             </div>
             <div class="menu" style="right: 8px; top: 46px">
@@ -1432,7 +1436,7 @@
           <ol>
             <li><span class="pin">1</span><div><b>La conversation au centre</b>, et les fichiers y passent comme aujourd'hui (liens, <code>@</code>, Ouvrir dans l'éditeur).<span class="not">aucun fichier ni éditeur au centre.</span></div></li>
             <li><span class="pin">2</span><div><b>Menu « + » du panneau</b> : Fichiers au rang de Navigateur et Terminal (chez Claude Code : l'icône dossier de la barre du panneau).<span class="not">pas ouvert d'office, pas de colonne permanente.</span></div></li>
-            <li><span class="pin">3</span><div><b>« Dossier » de Session</b> ouvre l'onglet Fichiers ; ⌥-clic garde « Afficher dans le Finder ».<span class="not">ne touche pas à la barre latérale des conversations.</span></div></li>
+            <li><span class="pin">3</span><div><b>« Dossier » de Session</b> : inchangé, il montre le dossier dans le Finder (décision Q3).<span class="not">n'ouvre pas l'onglet Fichiers.</span></div></li>
           </ol>
         </div>
       </div>
@@ -1445,7 +1449,8 @@
       <p class="lede">
         L'arbre complet du dossier de la conversation, dossiers d'abord, cachés compris.
         <code>build</code>, <code>node_modules</code>, <code>out</code> sont visibles et repliés,
-        pas grisés, comme chez Claude Code ; chaque dossier n'est lu qu'à son ouverture.
+        légèrement atténués ; un point marque les fichiers modifiés par la conversation ; chaque
+        dossier n'est lu qu'à son ouverture.
       </p>
       <div class="stage">
         <div class="win" id="screen1">
@@ -1477,24 +1482,24 @@
               </div>
               <div class="search a">
                 <b class="pin">3</b><svg class="i s"><use href="#search" /></svg
-                ><span class="grow">Filtrer ou ? pour chercher</span><kbd>⌘P</kbd>
+                ><span class="grow">Filtrer</span><kbd>⌘P</kbd>
               </div>
               <div class="tree a" style="position: relative">
                 <b class="pin" style="left: -12px; top: 4px">4</b>
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
+                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
                 <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">captures</span></div>
                 <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#image" /></svg></span><span class="name">shopping.png</span></div>
-                <div class="row a"><b class="pin" style="left: -12px; top: 3px">5</b><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">out</span></div>
+                <div class="row dim a"><b class="pin" style="left: -12px; top: 3px">5</b><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
+                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">out</span></div>
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
                 <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
-                <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span></div>
+                <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span><span class="end" style="color: var(--accent)" title="Modifié dans cette conversation">●</span></div>
                 <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ListItem.tsx</span></div>
                 <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">styles</span></div>
-                <div class="row a"><b class="pin" style="left: -12px; top: 3px">6</b><span class="chev"></span><span class="ico"><svg class="i s"><use href="#lock" /></svg></span><span class="name">.env</span><span class="end">non affiché</span></div>
+                <div class="row a"><b class="pin" style="left: -12px; top: 3px">6</b><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">.env</span></div>
                 <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">.gitignore</span></div>
                 <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">package.json</span></div>
                 <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">README.md</span></div>
@@ -1506,10 +1511,10 @@
           <ol>
             <li><span class="pin">1</span><div><b>Onglet « Fichiers »</b>, ouvert à la demande, avec Agrandir et ✕ comme les autres onglets.<span class="not">jamais ouvert d'office.</span></div></li>
             <li><span class="pin">2</span><div><b>Trois boutons</b>, comme Claude Code : Réduire tous les dossiers, Voir l'arborescence (⇧⌘Y), … (écran 2).<span class="not">pas de « Nouveau fichier », pas de « Nouveau dossier ».</span></div></li>
-            <li><span class="pin">3</span><div><b>« Filtrer ou ? pour chercher »</b> : le nom filtre l'arbre (rang de <code>@</code>) ; « ? » cherche dans le contenu (<code>git grep</code>, lot 5, question 2).<span class="not">pas d'index, pas de recherche hors du dossier.</span></div></li>
+            <li><span class="pin">3</span><div><b>« Filtrer »</b>, où ⌘P met le curseur : liste plate classée par le rang de <code>@</code>, <code>chemin:ligne</code> accepté. « Filtrer ou ? pour chercher » (contenu, <code>git grep</code>) viendra avec le lot 5, plus tard.<span class="not">pas de palette, pas d'index, pas de recherche hors du dossier.</span></div></li>
             <li><span class="pin">4</span><div><b>Arbre complet</b>, dossiers d'abord, cachés listés ; un niveau lu à l'ouverture d'un dossier, 2 000 entrées au plus. Relu à la fin des outils et des tours, et au retour sur la fenêtre.<span class="not">aucun parcours récursif, aucune surveillance continue.</span></div></li>
-            <li><span class="pin">5</span><div><b>Ignorés visibles, repliés</b>, sans grisé (comme Claude Code) : on peut ouvrir <code>out</code> ou <code>node_modules</code>.<span class="not">jamais ouverts ni comptés d'office.</span></div></li>
-            <li><span class="pin">6</span><div><b>Secrets</b> (<code>.env</code>, clés) : listés avec un cadenas, jamais affichés (écart avec Claude Code, question 1). Un lien symbolique qui sort du dossier n'est pas suivi.<span class="not">aucun affichage d'un secret ou d'un fichier hors du dossier.</span></div></li>
+            <li><span class="pin">5</span><div><b>Ignorés visibles, repliés, atténués</b> (« Ignoré par git ») : on peut ouvrir <code>out</code> ou <code>node_modules</code>. Le point ● marque un fichier modifié par la conversation.<span class="not">jamais ouverts ni comptés d'office ; pas de pastille git.</span></div></li>
+            <li><span class="pin">6</span><div><b>Secrets</b> (<code>.env</code>, clés) : listés et affichés comme les autres fichiers (décision Q8 ; les captures n'utilisent que des valeurs factices). Un lien symbolique qui sort du dossier n'est pas suivi.<span class="not">aucun affichage d'un fichier hors du dossier.</span></div></li>
           </ol>
         </div>
       </div>
@@ -1530,7 +1535,7 @@
         ><small>celui de Claude Code, sans ses réglages d'éditeur</small>
       </h2>
       <p class="lede">
-        Repris de Claude Code : aller au fichier, arborescence, côté, réduire. Ses réglages
+        Repris de Claude Code : filtrer, arborescence, côté, réduire. Ses réglages
         d'éditeur (onglets d'aperçu, enregistrement automatique, Tab, tabulation…) n'ont pas lieu
         d'être : la vue est en lecture seule. Seul « Retour à la ligne » reste, il sert à lire.
       </p>
@@ -1548,15 +1553,15 @@
                 <span class="ibtn on"><svg class="i"><use href="#list" /></svg></span>
                 <span class="ibtn on">···</span>
               </div>
-              <div class="search"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer ou ? pour chercher</span></div>
+              <div class="search"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span></div>
               <div class="tree">
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
+                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
                 <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
               </div>
             </div>
             <div class="menu" style="right: 8px; top: 92px; min-width: 300px">
-              <div class="it a"><b class="pin" style="left: -28px; top: 5px">1</b><span class="ck"></span>Accéder à un fichier ou rechercher<span class="sc">⌘P</span></div>
+              <div class="it a"><b class="pin" style="left: -28px; top: 5px">1</b><span class="ck"></span>Filtrer les fichiers<span class="sc">⌘P</span></div>
               <hr />
               <div class="it a"><b class="pin" style="left: -28px; top: 5px">2</b><span class="ck">✓</span>Voir l'arborescence<span class="sc">⇧⌘Y</span></div>
               <div class="it"><span class="ck"></span>Côté de l'arborescence<span class="sub">Automatique ›</span></div>
@@ -1570,7 +1575,7 @@
         </div>
         <div class="legend">
           <ol>
-            <li><span class="pin">1</span><div><b>⌘P</b> : aller à un fichier (même recherche que <code>@</code>) ; ouvre l'onglet s'il est fermé.<span class="not">pas de palette au centre de l'écran dans l'option B.</span></div></li>
+            <li><span class="pin">1</span><div><b>⌘P</b> : ouvre l'onglet s'il est fermé et met le curseur dans le filtre (même recherche que <code>@</code>).<span class="not">pas de palette, nulle part.</span></div></li>
             <li><span class="pin">2</span><div><b>Arborescence</b> : la montrer ou la cacher (⇧⌘Y) ; de quel côté du fichier en agrandi (Automatique, Gauche, Droite).<span class="not">jamais une colonne hors du panneau.</span></div></li>
             <li><span class="pin">3</span><div><b>Lecture</b> : retour à la ligne ; « Relire » à la demande.<span class="not">aucun réglage d'édition.</span></div></li>
           </ol>
@@ -1705,11 +1710,11 @@
               </div>
               <div class="treecol a">
                 <b class="pin" style="left: -12px; top: 12px">2</b>
-                <div class="search" style="margin-top: 10px"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer ou ? pour chercher</span></div>
+                <div class="search" style="margin-top: 10px"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span></div>
                 <div class="tree">
                   <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
                   <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
-                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
+                  <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
                   <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
                   <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
                   <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span></div>
@@ -1730,61 +1735,19 @@
         </div>
       </div>
 
-      <!-- ============ Écran 5 ============ -->
-      <h2 class="screen">
-        5 · Alternative A : la palette ⌘P seule, sans arbre<span class="tag alt">Option A</span
-        ><small>palette au-dessus de la conversation, comme ⌘K pour les conversations</small>
-      </h2>
-      <p class="lede">
-        Plus légère (≈ 2 jours) : pas d'onglet, pas d'arbre ; la recherche de <code>@</code>, et le
-        fichier choisi dans l'Aperçu. Dans l'option B, ⌘P fait la même recherche mais ouvre l'onglet
-        Fichiers.
-      </p>
-      <div class="stage">
-        <div class="win" style="grid-template-columns: minmax(0, 1fr)">
-          <div class="conv">
-            <div class="conv-head"><span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses</div>
-            <div class="thread">
-              <div class="msg-user">Ajoute une liste de courses partagée.</div>
-              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>…</p></div>
-            </div>
-            <div class="composer"><span class="ph">Répondre…</span></div>
-          </div>
-          <div class="scrim"></div>
-          <div class="palette">
-            <div class="q a"><b class="pin" style="left: -26px; top: 14px">1</b><svg class="i"><use href="#search" /></svg>list<span class="caret"></span></div>
-            <div class="res on"><svg class="i s"><use href="#code" /></svg><span>Shopping<mark>List</mark>.tsx</span><span class="path">src/components</span></div>
-            <div class="res"><svg class="i s"><use href="#code" /></svg><span><mark>list</mark>.css</span><span class="path">src/styles</span></div>
-            <div class="res"><svg class="i s"><use href="#code" /></svg><span><mark>List</mark>Item.tsx</span><span class="path">src/components</span></div>
-            <div class="res"><svg class="i s"><use href="#file" /></svg><span>check<mark>list</mark>.md</span><span class="path">docs</span></div>
-            <div class="keys a">
-              <b class="pin" style="left: -26px; top: 9px">2</b>
-              <span><kbd>↵</kbd> Aperçu</span><span><kbd>⌘↵</kbd> Ouvrir dans VS Code</span><span><kbd>⇧↵</kbd> Mentionner</span><span><kbd>⌥↵</kbd> Finder</span>
-            </div>
-          </div>
-        </div>
-        <div class="legend">
-          <ol>
-            <li><span class="pin">1</span><div><b>⌘P</b> : la recherche de <code>@</code>.<span class="not">ne trouve ni un fichier ignoré, ni ce dont on ignore le nom ; pas d'arbre.</span></div></li>
-            <li><span class="pin">2</span><div><b>Actions au clavier</b> : aperçu, éditeur, mention, Finder.<span class="not">aucune écriture.</span></div></li>
-          </ol>
-          <p style="margin-top: 18px; color: var(--muted)">Loin du modèle Claude Code relevé : écartée au profit de B, dont elle devient le raccourci ⌘P.</p>
-        </div>
-      </div>
-
       <!-- ============ Synthèse ============ -->
       <h2 class="screen">Ce que ça fait, ce que ça ne fait pas</h2>
       <table class="doc">
         <thead><tr><th>Geste</th><th>Claude Code (relevé)</th><th>Bobine, option B</th><th>Pas dans la première version</th></tr></thead>
         <tbody>
-          <tr><td>Ouvrir la vue</td><td>icône dossier du panneau</td><td class="yes">onglet du panneau, menu « + », ⌘P, ⇧⌘Y, Session</td><td>ouverte d'office, colonne permanente</td></tr>
+          <tr><td>Ouvrir la vue</td><td>icône dossier du panneau</td><td class="yes">onglet du panneau, menu « + », ⌘P (curseur dans le filtre), ⇧⌘Y, liens du fil</td><td>ouverte d'office, colonne permanente, palette</td></tr>
           <tr><td>Arbre</td><td>complet, ignorés visibles</td><td class="yes">idem, chargé un dossier à la fois</td><td>surveillance continue</td></tr>
-          <tr><td>Filtre, ⌘P</td><td>« Filtrez ou ? pour chercher », ⌘P</td><td class="yes">idem (« ? » : lot 5)</td><td>—</td></tr>
+          <tr><td>Filtre, ⌘P</td><td>« Filtrez ou ? pour chercher », ⌘P</td><td class="yes">« Filtrer », ⌘P</td><td>« ? » (lot 5, plus tard)</td></tr>
           <tr><td>Fichier ouvert</td><td>onglet, fil d'Ariane, coloration</td><td class="yes">idem, en lecture seule, coloré par highlight.js</td><td>—</td></tr>
           <tr><td>Commentaire sur une ligne</td><td>« Ligne N — Ajouter un commentaire »</td><td class="yes">idem, remarque de diff, « Envoyer à l'agent »</td><td>envoi sans geste</td></tr>
           <tr><td>Agrandi</td><td>fichier + arbre à droite</td><td class="yes">idem</td><td>—</td></tr>
           <tr><td>Éditer</td><td>oui (enregistrement automatique)</td><td class="no">non — lecture seule d'abord</td><td>édition légère : plus tard, si elle manque</td></tr>
-          <tr><td>Secrets</td><td>non relevé</td><td>listés, jamais affichés</td><td>affichage d'un <code>.env</code></td></tr>
+          <tr><td>Secrets</td><td>non relevé</td><td class="yes">affichés comme les autres fichiers</td><td>—</td></tr>
         </tbody>
       </table>
     </div>

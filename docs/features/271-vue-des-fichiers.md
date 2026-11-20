@@ -1,7 +1,7 @@
 # 271 — Vue des fichiers du dossier de travail
 
-- **Statut** : à faire — proposition (réflexion de design et d'architecture, rien n'est codé ;
-  décisions à trancher en fin de fiche ; maquettes `docs/maquettes/271-vue-des-fichiers.html`)
+- **Statut** : à faire — 1.1 ; décisions prises le 2026-11-20 (`docs/features/271-questions.md`),
+  ADR-0065 accepté, plan écrit ; rien n'est codé (maquettes `docs/maquettes/271-vue-des-fichiers.html`)
 - **Dépend de** : 005 et 126 (`@` et sa recherche), 052 (liens de fichiers, aperçu `.md`), 064 et
   114 (aperçu HTML cloisonné), 155 (exclusions de l'agent), 156 (« Ouvrir dans <éditeur> »), 021,
   161 et 265 (onglet Modifications), 166 et 179 (onglet Session, autres dossiers), 224 (onglet
@@ -11,8 +11,8 @@
   agent (ADR-0011), à part les exclusions de la fiche 155 qui viennent déjà du profil.
 - **Décision à remplacer en partie** : « Bobine n'est pas un IDE : pas d'éditeur de fichiers, pas
   d'explorateur de projet » (`docs/features/README.md`, section Périmètre ; fiche 052). Cette règle
-  n'est écrite dans aucun ADR : elle vit dans l'index et la fiche 052. La changer demande quand
-  même un ADR (règle d'`AGENTS.md`) — brouillon plus bas.
+  n'est écrite dans aucun ADR : elle vit dans l'index et la fiche 052. Remplacée par
+  **ADR-0065** (accepté le 2026-11-20, `docs/adr/0065-vue-des-fichiers-a-la-demande.md`).
 
 ## Pourquoi
 
@@ -147,9 +147,9 @@ section « fichiers de la conversation », aperçu d'image ou de PDF, comporteme
 L'onglet Fichiers de Claude Code, point par point (R1–R7), **sans l'édition**.
 
 - **Où** : un onglet **Fichiers** du panneau de droite (icône dossier), ouvert à la demande : menu
-  « + », **⌘P** (aller au fichier, qui ouvre l'onglet au besoin), **⇧⌘Y** (voir / cacher
-  l'arborescence), la ligne « Dossier » de l'onglet Session. Agrandir et Fermer comme les autres
-  onglets. Jamais ouvert d'office.
+  « + », **⌘P** (ouvre l'onglet au besoin, le curseur dans le filtre), **⇧⌘Y** (voir / cacher
+  l'arborescence), un lien de fichier du fil. La ligne « Dossier » de l'onglet Session garde le
+  Finder (Q3). Agrandir et Fermer comme les autres onglets. Jamais ouvert d'office.
 - **Arbre** (R2, R3) : champ « Filtrer ou ? pour chercher » (le nom filtre l'arbre ; « ? » cherche
   dans le contenu, lot 5) ; arbre complet du dossier de la conversation (son worktree s'il en a
   un), dossiers d'abord, fichiers et dossiers cachés listés, `node_modules`, `out`, `build`
@@ -164,8 +164,9 @@ L'onglet Fichiers de Claude Code, point par point (R1–R7), **sans l'édition**
   **coloration syntaxique** (voir « Coloration » ci-dessous), retour à la ligne ; mention discrète
   « Lecture seule » ; actions dans … : Ouvrir dans <éditeur> (à la ligne, fiche 156), Afficher dans
   le Finder, Mentionner dans la saisie, Copier le chemin, Voir le diff (fichier modifié). Markdown :
-  rendu, comme l'Aperçu de 052 (qui devient ce même écran) ; image : affichée ; HTML : navigateur
-  intégré (064) ; PDF, Office, binaire : « Ouvrir » avec l'app par défaut.
+  rendu, comme l'Aperçu de 052 (qui devient ce même écran), bascule « Source » ; image et SVG :
+  affichés ; HTML : source colorée et « Ouvrir dans le navigateur » (064) ; PDF, Office, binaire :
+  « Ouvrir » avec l'app par défaut.
 - **Coloration** (demandée par l'utilisateur, lot L2) : Bobine colore déjà le code du fil avec
   **highlight.js 11** (dépendance directe) par `rehype-highlight` dans `thread/Markdown.tsx`, et
   `syntax.css` (fiche 134) branche les classes `.hljs-*` sur les jetons `--syn-*` de chaque thème,
@@ -191,10 +192,10 @@ L'onglet Fichiers de Claude Code, point par point (R1–R7), **sans l'édition**
   lecture hors des dossiers de la conversation.
 - **Sécurité** (non négociable, et écart assumé si Claude Code fait autrement) : le renderer
   demande `(conversation, chemin relatif)`, le main résout le chemin réel et refuse ce qui sort des
-  dossiers de la conversation (liens symboliques compris, comme 052 et 114) ; un fichier de secret
-  (`.env*`, clés, ce que `secret-scan.ts` reconnaît) est **listé sans être affiché** (cadenas,
-  « Ouvrir dans <éditeur> » reste possible) — question 1 ; lecture bornée (1 Mo affiché,
-  coloration sous 200 Ko, binaire détecté) ; jamais d'ouverture d'un exécutable.
+  dossiers de la conversation (liens symboliques compris, comme 052 et 114) ; lecture bornée (1 Mo
+  affiché, coloration sous 200 Ko, binaire détecté) ; jamais d'ouverture d'un exécutable. **Un
+  fichier de secret (`.env`, clé) s'affiche comme les autres** (décision Q8) : un écran partagé ou
+  une capture peut le montrer ; les essais et captures e2e n'utilisent que des valeurs factices.
 - **Fraîcheur** : pas de surveillant (aucun aujourd'hui dans le main ; `fs.watch` récursif inégal
   sous Linux). Dossiers ouverts et fichier affiché relus **à la fin de chaque outil et de chaque
   tour**, au retour sur la fenêtre et par « Relire » ; un fichier affiché qui a changé est relu,
@@ -260,112 +261,123 @@ Chiffrage en jours de travail d'agent, relecture du tech lead et e2e comprises (
 
 | Lot | Contenu | Taille | Jours |
 |---|---|---|---|
-| **L1 — Onglet et arbre** | IPC `files:list(id, dossier)` (un niveau, trié, borné à 2 000 entrées, liens et secrets marqués), contrôles de chemin dans le main ; onglet Fichiers (icône, menu « + », Agrandir, Fermer), arbre paresseux, filtre par nom (rang de `@`), Réduire tous, ⇧⌘Y ; relecture fin d'outil, fin de tour, focus, « Relire » ; agent factice et e2e `files` | moyen | 3 |
-| **L2 — Fichier ouvert, coloré** | IPC `files:read(id, chemin)` (1 Mo, binaire, secret refusé) ; vue du fichier dans l'onglet (nom ✕, fil d'Ariane, numéros, retour à la ligne) ; **coloration** : highlight.js et `syntax.css` déjà livrés, langage par extension et `#!`, découpe en lignes, 200 Ko au plus (≈ 0,5 j des 3) ; Markdown (reprend 052), images, HTML → navigateur, PDF → Ouvrir ; menu … (éditeur, Finder, Mentionner, Copier le chemin, Voir le diff) ; ⌘P (aller au fichier) | moyen | 3 |
-| **L3 — Commentaire sur une ligne** | « + » au survol, plage par glisser, bulle « Ligne N » ; `DiffNote` vue `file` ; remarques en attente communes avec Modifications ; « Envoyer à l'agent » ; remarque gardée quand le fichier change (code cité) | petit-moyen | 1,5 |
-| **L4 — Agrandi et finitions** | arbre de côté en agrandi (Côté : Automatique / Gauche / Droite), ligne « Dossier » de Session vers Fichiers, autres dossiers (179) sous la racine, textes Linux/Windows (Finder → gestionnaire de fichiers / Explorateur) | petit | 1,5 |
-| L5 — « ? » cherche dans le contenu (optionnel) | `git grep` dans la file git (dépôt), rien hors dépôt ; résultats par fichier et ligne | petit | 1 |
+| **L1 — Onglet et arbre** | IPC `files:list(id, racine, dossier)` (un niveau, trié, borné à 2 000 entrées, liens marqués), contrôles de chemin dans le main ; onglet Fichiers (menu « + », Agrandir, Fermer), arbre paresseux (cachés listés, ignorés atténués, point sur les fichiers modifiés par la conversation, marque « invisible pour l'agent »), filtre par nom en liste plate (rang de `@`, `chemin:ligne`), Réduire tous, ⌘P (curseur dans le filtre), ⇧⌘Y ; état retenu par conversation ; relecture fin d'outil, fin de tour, focus, « Relire » ; agent factice et e2e `files` | moyen | 3 |
+| **L2 — Fichier ouvert, coloré** | IPC `files:read(id, racine, chemin)` (1 Mo, binaire, `O_NOFOLLOW`) ; vue du fichier dans l'onglet (nom ✕, fil d'Ariane, numéros, retour à la ligne, « Lecture seule », précédent / suivant) ; **coloration** : highlight.js et `syntax.css` déjà livrés, langage par extension, nom et `#!`, découpe en lignes, 200 Ko au plus ; Markdown rendu avec bascule « Source » (remplace l'Aperçu de 052), images, SVG en image, HTML en source avec « Ouvrir dans le navigateur », PDF → Ouvrir ; ⌃G, ⌘F dans le fichier ; menu contextuel et … (éditeur, app par défaut, Finder, Mentionner, copier les chemins, Voir le diff), glisser vers la saisie ; **liens du fil** vers l'onglet à la ligne (⌘-clic éditeur, ⌥-clic Finder) | moyen | 3,5 |
+| **L3 — Commentaire sur une ligne** | « + » au survol et au clavier, Maj-clic pour une plage, bulle « Ligne N » ; `DiffNote` vue `file` ; remarques en attente communes avec Modifications, barre en tête de l'onglet ; « Envoyer à l'agent » ; remarque qui suit son code quand le fichier change | petit-moyen | 1,5 |
+| **L4 — Agrandi et finitions** | arbre de côté en agrandi (Côté : Automatique / Gauche / Droite), autres dossiers (179) en racines, « Parcourir les fichiers » sur la carte d'un travail délégué, textes Linux / Windows (Finder → gestionnaire de fichiers / Explorateur) | petit | 1,5 |
+| L5 — « ? » cherche dans le contenu (**plus tard**, Q1) | `git grep` dans la file git (dépôt), rien hors dépôt ; résultats par fichier et ligne | petit | 1 |
 | L6 — Édition légère B′ (reportée : si elle manque) | CodeMirror 6, ADR, enregistrement automatique sûr (empreinte avant écriture, écriture atomique), conflit dit, lecture seule pendant un tour de l'agent sur le fichier, réglages Tab / tabulation, e2e de conflit | gros | 5 à 7 |
 
-Total B (L1–L4) : **≈ 9 jours**, coloration comprise, sans nouvelle dépendance ; plus 1 pour L5 ;
+Total de la 1.1 (L1–L4, décision Q1) : **≈ 9,5 jours** (L2 prend les liens du fil, Q11), coloration
+comprise, sans nouvelle dépendance ; L5 plus tard (1 jour) ;
 B′ (reportée) : **+ 5 à 7 jours**. Chaque lot se livre seul et
 garde l'app cohérente (L1 seul est déjà utile : voir et ouvrir dans l'éditeur).
 
-## 6. Brouillon d'ADR
+## 6. ADR
 
-> **ADR-0065 — Une vue des fichiers à la demande, comme Claude Code ; lecture seule d'abord**
->
-> - **Statut** : proposé
-> - **Remplace en partie** : la règle de périmètre « pas d'explorateur de projet »
->   (`docs/features/README.md`, Périmètre ; fiche 052), qui n'était pas un ADR. « Pas d'éditeur de
->   fichiers » est **maintenu** : lecture seule d'abord (décision de l'utilisateur du 2026-11-20),
->   l'édition légère seulement si elle manque, par un nouvel ADR.
->
-> **Contexte.** Les utilisateurs veulent voir les fichiers et les ressources du dossier de travail,
-> « dans l'esprit de Claude Code […], pas de manière centrale » (l'utilisateur, 2026-11-20).
-> Claude Code (relevé sur l'app) offre un onglet Fichiers dans le panneau de droite : filtre, arbre,
-> ⌘P, ⇧⌘Y, fichier ouvert dans l'onglet, commentaire sur une ligne, agrandi avec l'arbre de côté ;
-> il permet aussi d'éditer.
->
-> **Décision.**
-> 1. Bobine montre les fichiers des dossiers de la conversation dans un **onglet « Fichiers » du
->    panneau, ouvert à la demande** : jamais d'office, jamais une colonne permanente, jamais un
->    fichier dans la zone de la conversation.
-> 2. Un fichier s'y ouvre **en lecture seule** (fil d'Ariane, numéros, coloration syntaxique par
->    highlight.js et les jetons `--syn-*` déjà livrés ; Markdown rendu,
->    images ; HTML dans le navigateur intégré ; le reste dans l'app par défaut ou l'éditeur de
->    l'utilisateur).
-> 3. Une remarque posée sur une ou plusieurs lignes est une remarque de diff (fiche 085) : elle
->    part vers l'agent avec les autres, par « Envoyer à l'agent », jamais seule.
-> 4. **Le main seul lit le disque** : le renderer demande `(conversation, chemin relatif)` ; le main
->    résout le chemin réel, refuse ce qui sort des dossiers de la conversation (liens symboliques
->    compris), n'affiche jamais un fichier de secret, borne tailles et nombres.
-> 5. **Pas de surveillance continue** : relecture à la fin des outils et des tours, au retour sur la
->    fenêtre et à la demande.
-> 6. Aucune écriture de fichier par l'interface (édition, création, renommage, déplacement,
->    suppression). Une édition légère, comme celle de Claude Code, demandera un nouvel ADR qui dise
->    comment elle traite les écritures concurrentes de l'agent et l'annulation.
->
-> **Conséquences.** + Les besoins « retrouver, regarder, commenter, ouvrir ailleurs » sont couverts
-> sans quitter la conversation ; + aucune dépendance nouvelle ; + aucun conflit d'écriture avec
-> l'agent. − Corriger une ligne demande l'éditeur ou l'agent ; − une écriture faite hors d'un tour
-> n'apparaît qu'au retour sur la fenêtre ou par « Relire » ; − un PDF ne s'affiche pas dans l'app.
->
-> **Options écartées.** Palette ⌘P seule (on ne voit que ce qu'on sait nommer) ; explorateur
-> permanent et éditeur au centre (modèle « IDE d'abord », refusé) ; édition dès la première
-> version (reportée, voir la fiche 271).
+**ADR-0065 — Une vue des fichiers à la demande, comme Claude Code ; lecture seule d'abord**,
+accepté le 2026-11-20 : `docs/adr/0065-vue-des-fichiers-a-la-demande.md`. Le brouillon qui était
+ici y est repris, ajusté aux décisions (secrets affichés, Q8).
 
-Périmètre de `docs/features/README.md` après acceptation : « Bobine n'est **pas un IDE** : la
+Périmètre de `docs/features/README.md`, réécrit le même jour : « Bobine n'est **pas un IDE** : la
 conversation est au centre. Les fichiers du dossier se regardent à la demande, en lecture seule,
 dans l'onglet Fichiers du panneau (ADR-0065, fiche 271) ; toute modification passe par l'agent ou
 par l'éditeur de l'utilisateur. »
 
-## 7. Questions restantes, à trancher par l'utilisateur
+## 7. Questions — tranchées le 2026-11-20
 
-*Tranché* : édition → lecture seule d'abord ; coloration → dans le premier lot ; commentaires sur
-une ligne → gardés.
+Les 62 questions et leurs réponses sont dans `docs/features/271-questions.md`. En bref :
+Q1 A (L1 à L4 ; L5 plus tard), Q2 A (tout retenu par conversation), **Q3 C** (la ligne « Dossier »
+de Session garde le Finder), Q4 A (Documents inchangé), Q5 A (ignorés atténués), Q6 A (point sur
+les fichiers modifiés), Q7 A (dossier de la conversation ; « Parcourir les fichiers » sur la carte
+d'un travail), **Q8 C** (un secret s'affiche comme un autre fichier), Q9 A (un seul fichier,
+précédent / suivant), Q10 A (Markdown rendu, bascule « Source »), Q11 A (lien du fil → onglet
+Fichiers à la ligne) ; Q12 à Q62 validées en bloc (Q15, Q23, Q57, Q60 ajustées à Q3 et Q8).
 
-1. **Secrets** : Claude Code affiche sans doute un `.env` comme un autre fichier ; Bobine le liste
-   avec un cadenas sans l'afficher (recommandé), ou fait comme Claude Code ?
-2. **« ? » dans le filtre** : recherche dans le contenu (`git grep`, lot 5) dès la première
-   version, ou plus tard ?
-3. **Fichiers de la conversation** (créés, modifiés, cités) : Claude Code n'en a pas de section ;
-   on s'en passe (recommandé, Modifications et les liens le font), ou une section en tête de
-   l'arbre ?
-4. **Pastilles git** dans l'arbre (M, A) : absentes chez Claude Code d'après les photos ; on s'en
-   passe (recommandé) ?
-5. **Raccourcis** : ⌘P et ⇧⌘Y comme Claude Code (libres dans `shared/shortcuts.ts`) ?
-6. **Onglet retenu** : rouvert avec la conversation comme Terminal (recommandé), ou oublié au
-   redémarrage comme l'Aperçu de 052 ?
-7. **Ligne « Dossier » de Session** : ouvre l'onglet Fichiers (recommandé, ⌥-clic garde le
-   Finder) ?
-8. **PDF** : « Ouvrir » avec l'app par défaut en v1 (recommandé) ?
+## Critères d'acceptation
 
-## Critères d'acceptation (option B — à revoir après les réponses)
-
-- [ ] ADR-0065 accepté ; périmètre de `docs/features/README.md` réécrit.
-- [ ] Onglet Fichiers à la demande (menu « + », ⌘P, ⇧⌘Y, Session), Agrandir, Fermer ; jamais
-      ouvert d'office.
-- [ ] Arbre paresseux du dossier de la conversation (worktree compris), cachés listés, ignorés
-      visibles et repliés, 2 000 entrées au plus par dossier, liens qui sortent jamais suivis.
-- [ ] Filtre par nom ; Réduire tous ; Voir l'arborescence ; Côté de l'arborescence.
-- [ ] Fichier ouvert dans l'onglet : nom ✕, fil d'Ariane, numéros, coloration (highlight.js et
-      `syntax.css`, langage par extension, 200 Ko au plus, juste en clair et en sombre), retour à la ligne,
-      « Lecture seule » ; Markdown, images, HTML → navigateur, PDF → Ouvrir ; secret jamais affiché.
-- [ ] Commentaire sur une ligne ou une plage : remarque de diff (vue `file`), envoyée avec
-      « Envoyer à l'agent ».
-- [ ] Agrandi : fichier et arbre côte à côte.
-- [ ] Aucun canal IPC d'écriture ; chemins vérifiés dans le main (tests : `..`, lien qui sort, lien
-      vers `.env`, binaire, gros fichier).
+- [x] ADR-0065 accepté ; périmètre de `docs/features/README.md` réécrit.
+- [ ] Onglet Fichiers à la demande (menu « + », ⌘P avec le curseur dans le filtre, ⇧⌘Y, lien du
+      fil), Agrandir, Fermer ; jamais ouvert d'office ; la ligne « Dossier » de Session inchangée.
+- [ ] État retenu par conversation au redémarrage : onglet, fichier ouvert et position, dossiers
+      dépliés.
+- [ ] Arbre paresseux du dossier de la conversation (worktree compris) et des autres dossiers
+      (179) ; cachés listés (`.git`, `.DS_Store` jamais) ; ignorés visibles, repliés, atténués ;
+      point sur les fichiers modifiés par la conversation ; marque « invisible pour l'agent » ;
+      2 000 entrées au plus par dossier ; liens qui sortent jamais suivis.
+- [ ] Filtre : liste plate classée (rang de `@`), `chemin:ligne`, ↑ ↓ ↵ ⌘↵ ⇧↵ Échap ; Réduire
+      tous ; Voir l'arborescence ; Côté de l'arborescence.
+- [ ] Fichier ouvert : nom ✕, fil d'Ariane, numéros, coloration (200 Ko au plus, juste en clair et
+      en sombre), retour à la ligne, « Lecture seule », précédent / suivant, ⌃G, ⌘F ; Markdown
+      rendu avec « Source » ; images et SVG affichés ; HTML en source ; PDF et binaires → Ouvrir ;
+      1 Mo affiché au plus, au-delà tronqué et dit ; un `.env` s'affiche comme un autre fichier.
+- [ ] Liens du fil : fichier texte, image ou Markdown ouvert dans l'onglet à la ligne ; ⌘-clic
+      éditeur ; ⌥-clic Finder ; HTML et PDF inchangés ; l'onglet Aperçu de 052 disparaît.
+- [ ] Actions : menu contextuel et … (éditeur, app par défaut sauf exécutable, Finder, Mentionner,
+      copier le chemin relatif et absolu, Voir le diff) ; glisser vers la saisie = mention.
+- [ ] Commentaire sur une ligne ou une plage : remarque de diff (vue `file`), même file que
+      Modifications, envoyée avec « Envoyer à l'agent » ; suit son code quand le fichier change.
+- [ ] Agrandi : fichier et arbre côte à côte (à droite en Automatique).
+- [ ] « Parcourir les fichiers » sur la carte d'un travail délégué.
+- [ ] Aucun canal IPC d'écriture ; chemins vérifiés dans le main (tests : `..`, lien qui sort,
+      binaire, gros fichier) ; journal sans contenu de fichier.
 - [ ] Relecture fin d'outil, fin de tour, focus, « Relire » ; aucun surveillant.
-- [ ] Agent factice : scénario qui écrit un fichier ignoré et une image ; e2e `files`, captures
-      claires et sombres regardées.
-- [ ] Textes en `fr.json` et `en.json`, variantes Finder / gestionnaire de fichiers / Explorateur.
+- [ ] Clavier et lecteur d'écran : `role="tree"`, flèches, annonce du fichier ouvert.
+- [ ] Agent factice : scénario qui écrit un fichier ignoré, une image et un `.env` **aux valeurs
+      factices** ; e2e `files` (et `links` mis à jour), captures claires et sombres regardées, aucun
+      vrai secret à l'écran.
+- [ ] Textes en `fr.json` et `en.json`, variantes Finder / gestionnaire de fichiers / Explorateur ;
+      CHANGELOG fr et en ; `docs/architecture.md`.
 
 ## Plan
 
-À écrire après les réponses (plus de trois fichiers touchés : main `files/`, IPC partagé, panneau,
-`diff-notes`, agent factice, e2e, docs). Aucune nouvelle dépendance pour B.
+Quatre lots, chacun livré seul sur `1.1` (`./scripts/verify` et `pnpm e2e --changed` verts avant
+chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maquettes déjà corrigées
+(fait le 2026-11-20).
+
+**L1 — Onglet et arbre (3 j)**
+
+1. `src/shared/files-ipc.ts` : types `FileEntry` (nom, type, taille, ignoré, exclu, lien, cible
+   dans les racines), `FilesListRequest`, canaux `files:list`, `files:roots`.
+2. `src/main/files/file-tree.ts` (+ test) : racines d'une conversation (dossier ou worktree,
+   autres dossiers de la 179), résolution `realpath` et refus hors racine, lecture d'un niveau
+   (`readdir` + `lstat`), tri naturel, borne 2 000, ignorés par `git check-ignore --stdin` dans la
+   file git (`gitRun`) ou `ignore` hors dépôt, exclusions de la fiche 155 ; `src/main/files/ipc.ts`
+   branché dans `main/ipc.ts` ; preload.
+3. `src/shared/panel.ts` : onglet `files` ; `panel-tabs.ts` : menu « + », jamais dans
+   `panelAutoOpens` ; `shortcuts.ts` : `CmdOrCtrl+P`, `CmdOrCtrl+Shift+Y`.
+4. `src/renderer/src/components/files/` : `FilesTab.tsx`, `FileTree.tsx` (virtualisé, ARIA
+   `tree`), `FileFilter.tsx` (rang de `workspace-files.ts` exposé par `workspace:searchFiles`),
+   `useFileTree.ts` (état par conversation, `localStorage`, relecture sur les évènements de fin
+   d'outil, de tour et de focus) ; point « modifié » tiré des diffs ACP déjà chargés.
+5. Agent factice : scénario `fichiers` (fichier ignoré, image, `.env` factice) ; e2e `files`.
+
+**L2 — Fichier ouvert, coloré (3,5 j)**
+
+1. `files:read` dans `file-tree.ts` (1 Mo, `O_NOFOLLOW`, binaire par octet nul, encodage,
+   images en `data:` bornées à 20 Mo).
+2. `src/renderer/src/code-lines.ts` (+ test) : `hljs.highlight` par langage (table extension,
+   nom, `#!`), découpe en lignes avec `span` refermés et rouverts.
+3. `FileView.tsx` (barre, fil d'Ariane, numéros, retour à la ligne, ⌃G, ⌘F local, précédent /
+   suivant), `MarkdownView` repris de `DocumentTab` avec bascule « Source », `ImageView`.
+4. Menu contextuel et … partagés (`FileActions.tsx`) : `openInEditor` (156), `files:openLink`
+   (052), mention vers `ComposerInbox`, copier, « Voir le diff » vers `ChangesTab`.
+5. Liens du fil : `FileLinksContext` ouvre l'onglet Fichiers ; `DocumentTab` et l'onglet
+   `document` retirés ; e2e `links` mis à jour.
+
+**L3 — Commentaire sur une ligne (1,5 j)**
+
+1. `shared/diff-notes.ts` : vue `file` ; `diffFeedback` cite chemin, racine, lignes et code.
+2. Colonne « + » et bulle reprises de `DiffView` dans `FileView` ; barre « N remarques » commune
+   (`ReviewNotes` / `ChangesTab`) ; ancrage par le code cité à la relecture.
+3. e2e `files` : remarque, plage, envoi, fichier modifié entre-temps.
+
+**L4 — Agrandi et finitions (1,5 j)**
+
+1. Agrandi (⇧⌘J) : fichier et arbre côte à côte, Côté Automatique / Gauche / Droite retenu.
+2. Autres dossiers en racines ; « Parcourir les fichiers » sur la carte d'un travail délégué
+   (`ChildrenView`, carte de travail) ; libellés Linux / Windows.
+3. Docs : `docs/architecture.md`, `docs/README.md`, CHANGELOG fr et en, fiche close.
 
 ## Journal
 
@@ -383,6 +395,12 @@ une ligne → gardés.
   elle manque), commentaires sur une ligne gardés, **coloration de code** dans le premier lot (L2,
   highlight.js et `syntax.css` déjà livrés, aucune nouvelle dépendance ; L2 passe à 3 jours).
   Maquettes : menu … sans réglage d'éditeur.
+- 2026-11-20 — Réponses de l'utilisateur aux 62 questions (`271-questions.md`) : L1 à L4 dans la
+  1.1, L5 plus tard ; **ligne « Dossier » de Session inchangée** (Q3 C) ; **secrets affichés comme
+  les autres fichiers** (Q8 C : écran partagé et captures peuvent les montrer ; captures e2e aux
+  valeurs factices seulement) ; le reste comme recommandé. ADR-0065 accepté, périmètre de l'index
+  réécrit, lots, critères et plan mis à jour, maquettes corrigées (palette retirée, ⌘P → filtre,
+  ligne Dossier inchangée, `.env` affiché).
 
 ## Décisions de l'utilisateur (2026-11-20)
 
@@ -390,4 +408,13 @@ une ligne → gardés.
 - **Lecture seule d'abord** ; l'édition légère seulement plus tard, par un nouvel ADR, si elle manque.
 - **Coloration du code** dans le premier lot (fichier ouvert).
 - **Pas de palette ⌘P** (option A écartée, y compris comme fenêtre à part) : **⌘P ouvre l'onglet
-  Fichiers avec le curseur dans le filtre**. Maquettes à corriger en conséquence au début du lot.
+  Fichiers avec le curseur dans le filtre**. Maquettes corrigées le 2026-11-20.
+- **Réponses aux questions (2026-11-20, `271-questions.md`)** : L1 à L4 dans la 1.1, L5 plus
+  tard ; état de l'onglet retenu par conversation ; **la ligne « Dossier » de Session garde le
+  Finder** ; Documents inchangé dans l'espace Discussion ; ignorés visibles, repliés, atténués ;
+  point discret sur les fichiers modifiés ; dossier de la conversation affichée, plus « Parcourir
+  les fichiers » sur la carte d'un travail ; **un `.env` ou une clé s'affiche comme les autres
+  fichiers** (conséquence assumée : écran partagé, captures ; les captures e2e ne montrent que des
+  valeurs factices) ; un seul fichier ouvert, précédent / suivant ; Markdown rendu avec bascule
+  « Source » ; un lien de fichier du fil ouvre l'onglet à la ligne (⌘-clic éditeur, ⌥-clic
+  Finder). Q12 à Q62 validées en bloc.

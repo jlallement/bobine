@@ -274,11 +274,13 @@ chaque création ou changement de statut.
 | [268](268-roles-meme-icone.md) | Rôles : « le second rôle de même icône écrase le premier » — l'icône n'a jamais été une clé (identifiant = nom, fichier `<nom>.md`) ; la vraie cause : une création ou un renommage pouvait prendre l'identifiant d'un rôle d'une autre portée (fourni, personnel, projet) et le cacher sans un mot. Refusé désormais (`nameTaken`), avec le rôle qui le porte et « Utiliser @…-2 » ; « Enregistrer en rôle personnel » d'un rôle fourni reste le seul remplacement, explicite | fait (relecture du tech lead) | P1 |
 | [269](269-navigateur-certificats-auto-signes.md) | Navigateur intégré et certificat auto-signé d'un serveur de dev HTTPS (Vite, Webpack) : avertissement comme Chrome (raison, empreinte SHA-256) à la place de la page ; « Continuer vers … (non sécurisé) » derrière « Avancé », pour une adresse locale ou privée seulement ; exception par hôte, port et empreinte exacte, pour la session ou retenue, révocable dans Réglages › Confidentialité ; « Non sécurisé » dans l'adresse ; l'agent ne peut jamais accepter (ADR-0064) | fait (relecture du tech lead) | P1 |
 | [270](270-degrade-du-haut.md) | Dégradé du haut : un message visé (sommaire, message à rendre, focus, carte montrée) arrive sous le fondu de la barre de titre (`scroll-padding` du fil) ; la racine ne défile plus jamais (`overflow: clip`, D26), ni la fenêtre des Réglages en fenêtre basse — en-têtes jamais rognés, sur toutes les pages | fait (relecture du tech lead) | P1 |
-| [271](271-vue-des-fichiers.md) | Vue des fichiers du dossier de travail, comme Claude Code : onglet « Fichiers » du panneau ouvert à la demande (⌘P met le curseur dans le filtre, ⇧⌘Y), arbre, fichier ouvert en lecture seule avec coloration du code, commentaire sur une ligne envoyé à l'agent (maquettes `docs/maquettes/271-vue-des-fichiers.html`) | à faire — 1.1 | P2 |
+| [271](271-vue-des-fichiers.md) | Vue des fichiers du dossier de travail, comme Claude Code : onglet « Fichiers » du panneau ouvert à la demande (⌘P met le curseur dans le filtre, ⇧⌘Y), arbre, fichier ouvert en lecture seule avec coloration du code, commentaire sur une ligne envoyé à l'agent (maquettes `docs/maquettes/271-vue-des-fichiers.html`) | à faire — 1.1 (décisions prises, plan écrit) | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
-n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception
-(décision du 2026-10-14, fiche 052) : l'aperçu en lecture seule des `.md` que la conversation cite.
+n'est **pas un IDE** : la conversation est au centre. Les fichiers du dossier se regardent à la
+demande, en lecture seule, dans l'onglet Fichiers du panneau (ADR-0065, fiche 271, à partir de la
+1.1) ; toute modification passe par l'agent ou par l'éditeur de l'utilisateur. Jusqu'à la 1.1 :
+l'aperçu en lecture seule des `.md` que la conversation cite (fiche 052).
 
 Priorités (modèle : l'expérience Claude Code Desktop, centrée sur Bob) : **P1** = cœur de
 l'expérience, dans l'ordre indiqué ; **P2** = confort et finition ; **P3** = plus tard ou limité par
