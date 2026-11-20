@@ -23,6 +23,16 @@ export type TreeSide = 'auto' | 'left' | 'right'
 /** Évènement de ⇧⌘Y (menu Affichage) vers l'onglet Fichiers affiché. */
 export const TOGGLE_TREE_EVENT = 'bobine:files-toggle-tree'
 
+/** Évènement de ⌘F quand le focus est dans le fichier ouvert (Q48). */
+export const FILE_FIND_EVENT = 'bobine:files-find'
+
+/** ⌘F dans le fichier ouvert : cherche dans le fichier ; `false` si le focus est ailleurs. */
+export function findInOpenFile(): boolean {
+  if (!document.activeElement?.closest('[data-testid=file-view]')) return false
+  window.dispatchEvent(new Event(FILE_FIND_EVENT))
+  return true
+}
+
 export interface FilesPreferences {
   wrap: boolean
   side: TreeSide

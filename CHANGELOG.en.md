@@ -2,6 +2,20 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- **Files tab**, on demand in the right panel (“+” menu, **⌘P** puts the cursor in the filter,
+  **⇧⌘Y** for the tree): the tree of the conversation’s folder and its other folders, hidden and
+  ignored files included (dimmed), a dot on those the conversation changed; a filter by name or
+  path (`path:42` goes to the line). A file opens **read-only**, highlighted and numbered:
+  Markdown rendered or as source, images; ⌘F searches it, ⌃G goes to a line. A **comment on a line** or a range
+  goes to the agent with the diff comments. Each file’s menu: open in your editor or the default
+  app, Finder, mention in the message (or drag the row onto it), copy the path, show the diff.
+  Maximized (⇧⌘J), the file and the tree side by side. A `file:line` link in a reply opens the
+  tab at that line (⌘-click: your editor); “Browse files” on delegated work.
+
 ## 1.0.0-rc.2 — November 20, 2026
 
 ### New

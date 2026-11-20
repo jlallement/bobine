@@ -1,7 +1,8 @@
 # 271 — Vue des fichiers du dossier de travail
 
-- **Statut** : à faire — 1.1 ; décisions prises le 2026-11-20 (`docs/features/271-questions.md`),
-  ADR-0065 accepté, plan écrit ; rien n'est codé (maquettes `docs/maquettes/271-vue-des-fichiers.html`)
+- **Statut** : fait (L1 à L4) — 1.1, sur la branche `1.1` ; L5 (« ? » dans le contenu) plus tard.
+  Décisions : `docs/features/271-questions.md` ; ADR-0065 ; maquettes
+  `docs/maquettes/271-vue-des-fichiers.html`. Écarts au plan : voir le journal du 2026-11-20 (soir)
 - **Dépend de** : 005 et 126 (`@` et sa recherche), 052 (liens de fichiers, aperçu `.md`), 064 et
   114 (aperçu HTML cloisonné), 155 (exclusions de l'agent), 156 (« Ouvrir dans <éditeur> »), 021,
   161 et 265 (onglet Modifications), 166 et 179 (onglet Session, autres dossiers), 224 (onglet
@@ -297,36 +298,38 @@ Fichiers à la ligne) ; Q12 à Q62 validées en bloc (Q15, Q23, Q57, Q60 ajusté
 ## Critères d'acceptation
 
 - [x] ADR-0065 accepté ; périmètre de `docs/features/README.md` réécrit.
-- [ ] Onglet Fichiers à la demande (menu « + », ⌘P avec le curseur dans le filtre, ⇧⌘Y, lien du
+- [x] Onglet Fichiers à la demande (menu « + », ⌘P avec le curseur dans le filtre, ⇧⌘Y, lien du
       fil), Agrandir, Fermer ; jamais ouvert d'office ; la ligne « Dossier » de Session inchangée.
-- [ ] État retenu par conversation au redémarrage : onglet, fichier ouvert et position, dossiers
-      dépliés.
-- [ ] Arbre paresseux du dossier de la conversation (worktree compris) et des autres dossiers
+- [x] État retenu par conversation au redémarrage : onglet, fichier ouvert et position, dossiers
+      dépliés (stockage essayé en unitaire ; pas de relance de l'app en e2e).
+- [x] Arbre paresseux du dossier de la conversation (worktree compris) et des autres dossiers
       (179) ; cachés listés (`.git`, `.DS_Store` jamais) ; ignorés visibles, repliés, atténués ;
       point sur les fichiers modifiés par la conversation ; marque « invisible pour l'agent » ;
-      2 000 entrées au plus par dossier ; liens qui sortent jamais suivis.
-- [ ] Filtre : liste plate classée (rang de `@`), `chemin:ligne`, ↑ ↓ ↵ ⌘↵ ⇧↵ Échap ; Réduire
+      2 000 entrées au plus par dossier ; liens qui sortent jamais suivis. Plusieurs racines :
+      essayées en unitaire (`treeRows`, canaux), pas en e2e.
+- [x] Filtre : liste plate classée (rang de `@`), `chemin:ligne`, ↑ ↓ ↵ ⌘↵ ⇧↵ Échap ; Réduire
       tous ; Voir l'arborescence ; Côté de l'arborescence.
-- [ ] Fichier ouvert : nom ✕, fil d'Ariane, numéros, coloration (200 Ko au plus, juste en clair et
+- [x] Fichier ouvert : nom ✕, fil d'Ariane, numéros, coloration (200 Ko au plus, juste en clair et
       en sombre), retour à la ligne, « Lecture seule », précédent / suivant, ⌃G, ⌘F ; Markdown
       rendu avec « Source » ; images et SVG affichés ; HTML en source ; PDF et binaires → Ouvrir ;
       1 Mo affiché au plus, au-delà tronqué et dit ; un `.env` s'affiche comme un autre fichier.
-- [ ] Liens du fil : fichier texte, image ou Markdown ouvert dans l'onglet à la ligne ; ⌘-clic
-      éditeur ; ⌥-clic Finder ; HTML et PDF inchangés ; l'onglet Aperçu de 052 disparaît.
-- [ ] Actions : menu contextuel et … (éditeur, app par défaut sauf exécutable, Finder, Mentionner,
+      ⌘F, le focus dans le fichier : recherche ligne à ligne (↵ suivant, ⇧↵ précédent).
+- [x] Liens du fil : fichier texte, image ou Markdown ouvert dans l'onglet à la ligne ; ⌘-clic
+      éditeur ; ⌥-clic Finder ; HTML et PDF inchangés. L'onglet Aperçu de 052 ne sert plus qu'aux
+      règles actives (fiche 056), qui peuvent être hors du dossier.
+- [x] Actions : menu contextuel et … (éditeur, app par défaut sauf exécutable, Finder, Mentionner,
       copier le chemin relatif et absolu, Voir le diff) ; glisser vers la saisie = mention.
-- [ ] Commentaire sur une ligne ou une plage : remarque de diff (vue `file`), même file que
+- [x] Commentaire sur une ligne ou une plage : remarque de diff (vue `file`), même file que
       Modifications, envoyée avec « Envoyer à l'agent » ; suit son code quand le fichier change.
-- [ ] Agrandi : fichier et arbre côte à côte (à droite en Automatique).
-- [ ] « Parcourir les fichiers » sur la carte d'un travail délégué.
-- [ ] Aucun canal IPC d'écriture ; chemins vérifiés dans le main (tests : `..`, lien qui sort,
-      binaire, gros fichier) ; journal sans contenu de fichier.
-- [ ] Relecture fin d'outil, fin de tour, focus, « Relire » ; aucun surveillant.
-- [ ] Clavier et lecteur d'écran : `role="tree"`, flèches, annonce du fichier ouvert.
-- [ ] Agent factice : scénario qui écrit un fichier ignoré, une image et un `.env` **aux valeurs
-      factices** ; e2e `files` (et `links` mis à jour), captures claires et sombres regardées, aucun
-      vrai secret à l'écran.
-- [ ] Textes en `fr.json` et `en.json`, variantes Finder / gestionnaire de fichiers / Explorateur ;
+- [x] Agrandi : fichier et arbre côte à côte (à droite en Automatique).
+- [x] « Parcourir les fichiers » sur la ligne d'un travail délégué (Modifications › Travaux).
+- [x] Aucun canal IPC d'écriture ; chemins vérifiés dans le main (tests : `..`, chemin absolu,
+      octet nul, lien qui sort, binaire, gros fichier, racine inconnue) ; journal sans contenu.
+- [x] Relecture fin d'outil, fin de tour, focus, « Relire » ; aucun surveillant.
+- [x] Clavier et lecteur d'écran : `role="tree"`, flèches, Début / Fin, annonce du fichier ouvert.
+- [x] Agent factice : scénario `fichiers` (fichier modifié, sortie ignorée, `.env` **aux valeurs
+      factices**) ; e2e `files` et `links` mis à jour, captures claires et sombres regardées.
+- [x] Textes en `fr.json` et `en.json`, variantes Finder / gestionnaire de fichiers / Explorateur ;
       CHANGELOG fr et en ; `docs/architecture.md`.
 
 ## Plan
@@ -401,6 +404,31 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
   valeurs factices seulement) ; le reste comme recommandé. ADR-0065 accepté, périmètre de l'index
   réécrit, lots, critères et plan mis à jour, maquettes corrigées (palette retirée, ⌘P → filtre,
   ligne Dossier inchangée, `.env` affiché).
+- 2026-11-20 (soir) — **L1 à L4 faits**, à la demande de l'utilisateur (« en autonomie »).
+  - Main : `files/file-tree.ts` (racines, chemins réels, un niveau, ignorés par
+    `git check-ignore` — sans `-z`, qui exige `--stdin` —, lecture bornée en `O_NOFOLLOW`),
+    `files/files-ipc.ts` (six canaux de lecture, classés sûrs pour la lecture seule de la fiche
+    196) ; un lien de fichier du fil rend `file` pour le texte, le code, le Markdown et les images.
+  - Renderer : `components/files/` ; ⌘P et ⇧⌘Y dans le menu Affichage (`files`, `files-tree`) ;
+    remarques `DiffNote` vue `file` (message « Remarques sur le code ») ; mention par la boîte de la
+    saisie ; « Parcourir les fichiers » dans Modifications › Travaux.
+  - Agent factice : scénario `fichiers`. e2e : suite `files` (nouvelle), `links` mise à jour (un
+    `.md` et le code s'ouvrent dans l'onglet Fichiers ; un script s'y lit au lieu du Finder, Q53).
+  - **Écarts au plan** : coloration par la transformation de `rehype-highlight` (lowlight,
+    highlight.js 11.11 déjà livré avec le fil), pas par `highlight.js` en direct : la dépendance
+    directe (11.12) n'est importée nulle part, l'importer aurait livré une seconde copie et changé
+    les avis de licence ; ⌘F, le focus dans le fichier, cherche dans le fichier ligne à ligne
+    (la ligne trouvée est amenée et éclairée, sans surligner le mot) ; ⌃G pour aller à une ligne sur macOS, `chemin:ligne` dans le filtre partout (hors
+    macOS, Ctrl+G est « suivant » de la recherche) ; pas de vraie liste virtualisée, mais
+    `content-visibility` sur les lignes de l'arbre et du code ; l'onglet Aperçu (052) reste pour
+    les règles actives ; une remarque sur un autre dossier cite son chemin absolu ; hors dépôt git,
+    rien n'est marqué ignoré.
+  - Essais : unitaires (`file-tree`, `files-ipc`, `code-lines`, `files-state`, `file-notes`,
+    `FileTree`, `useFileLinks`) ; `./scripts/verify` vert ; `pnpm e2e --changed` (236 tâches) : vert sauf
+    `panel` (le menu « + » propose désormais Fichiers, attente mise à jour) et `files` (essai de ⌘F
+    écrit pendant la passe), relancés verts avec `links`, `history` et `degrade-haut` ; captures
+    `271-*` regardées en clair et en sombre. Linux et Windows : non essayés (textes et raccourcis
+    prévus, `CmdOrCtrl`).
 
 ## Décisions de l'utilisateur (2026-11-20)
 

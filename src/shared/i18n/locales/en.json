@@ -2394,7 +2394,9 @@
     "otherFolder": "Other folder, not sent to the agent",
     "clearFilter": "Clear the filter",
     "dismiss": "Dismiss",
-    "noteChanged": " · the code changed"
+    "noteChanged": " · the code changed",
+    "find": "Find in file",
+    "findCount": "{{at}} of {{count}}"
   },
   "sidePanel": {
     "resize": "Resize panel",

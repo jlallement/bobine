@@ -130,6 +130,22 @@ export async function filesSuite(scheme) {
           'fichier précédent disponible (historique)'
         )
 
+        // ⌘F, le focus dans le fichier : chercher dans le fichier, pas dans le fil (Q48).
+        await ui.ev(`${ui.$('file-code')}.focus()`)
+        await menu('find')
+        await ui.waitFor(`document.activeElement === ${ui.$('file-find')}`)
+        await ui.cdp('Input.insertText', { text: 'return' })
+        await ui.press('Enter')
+        await ui.waitFor(
+          `${ui.$('file-find-count')}.innerText === ${JSON.stringify(L('files.findCount', { at: 1, count: 1 }))}`
+        )
+        check(
+          !(await ui.ev(`!!document.querySelector('[data-testid=find-bar]')`)),
+          '⌘F dans le fichier : cherche dans le fichier, la recherche du fil reste fermée'
+        )
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('file-find')}`)
+
         // Remarque sur les lignes 3 à 4, envoyée à l'agent.
         const add = (n) =>
           `document.querySelector('.file-line[data-line="${n}"] [data-testid=file-note-add]')`

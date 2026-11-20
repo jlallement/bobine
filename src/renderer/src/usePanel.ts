@@ -21,7 +21,7 @@ import { PANEL_DEFAULT_WIDTH, panelWidthToSave, savedPanelWidth } from './panel-
 import { fittedSidebarWidth, readSidebarWidth } from './components/sidebar/sidebar-width'
 import type { FilesRequest } from './components/files/useFilesTab'
 import type { OpenFileLink } from './components/thread/FileLink'
-import { TOGGLE_TREE_EVENT } from './files-state'
+import { findInOpenFile, TOGGLE_TREE_EVENT } from './files-state'
 
 const FILES_OPEN_KEY = 'bobine.panel.filesOpen'
 /** Conversations dont on garde l'onglet Fichiers ouvert (les plus récentes). */
@@ -335,6 +335,8 @@ export function usePanel(options: {
     showDocument,
     filesRequest,
     openFiles,
+    /** ⌘F le focus dans un fichier ouvert : y chercher (fiche 271) ; `false` sinon. */
+    findInFile: findInOpenFile,
     /** ⌘P (curseur dans le filtre) et ⇧⌘Y (l'arbre) ; rien dans l'espace Discussion. */
     filesCommands: {
       files: () => {

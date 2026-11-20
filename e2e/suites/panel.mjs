@@ -111,8 +111,8 @@ export async function panelSuite(scheme) {
         // Simulateur iOS seulement là où la plateforme l'a (capacité `simulator`, fiche 145).
         offered ===
           (FEATURES.simulator
-            ? 'browser,simulator,android,terminal,acp,changes'
-            : 'browser,android,terminal,acp,changes'),
+            ? 'browser,simulator,android,terminal,acp,changes,files'
+            : 'browser,android,terminal,acp,changes,files'),
         `menu « + » : les autres outils (${offered})`
       )
       await ui.shot('23b-panneau-autres-outils')

@@ -247,7 +247,7 @@ export function App() {
     'space-code': () => spaces.choose('code'),
     'space-discussion': () => spaces.choose('discussion'),
     search: dialogs.openSearch,
-    find: () => openFind(),
+    find: () => panel.findInFile() || openFind(),
     'find-next': () => (find.open ? threadFind.next() : openFind()),
     'find-previous': () => (find.open ? threadFind.previous() : openFind()),
     'resume-session': () => dialogs.setResuming(true),

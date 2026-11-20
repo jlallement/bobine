@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import type { DiffNote } from '@shared/diff-notes'
 import type { CodeLine } from '../../code-lines'
 import { placeNotes } from '../../file-notes'
+import { FILE_FIND_EVENT } from '../../files-state'
 
 /** Remarques sur ce fichier (fiche 271, L3) : celles de la file commune (fiche 085). */
 export interface CodeNotes {
@@ -61,6 +62,13 @@ export function CodeView({
   const box = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [goto, setGoto] = useState<string | null>(null)
+  // ⌘F, le focus dans le fichier (Q48) : chercher dans le fichier, pas dans le fil.
+  const [finding, setFinding] = useState(0)
+  useEffect(() => {
+    const onFind = () => setFinding((n) => n + 1)
+    window.addEventListener(FILE_FIND_EVENT, onFind)
+    return () => window.removeEventListener(FILE_FIND_EVENT, onFind)
+  }, [])
   const raw = useMemo(() => text.split('\n'), [text])
   const placed = useMemo(() => placeNotes(notes?.notes ?? [], raw), [notes?.notes, raw])
   const byLine = new Map<number, typeof placed>()
@@ -219,6 +227,9 @@ export function CodeView({
           />
         </div>
       )}
+      {finding > 0 && (
+        <FileFind key={finding} lines={raw} onShow={show} onClose={() => setFinding(0)} />
+      )}
       {lines.map((tokens, i) => {
         const n = i + 1
         const selected = draft && !draft.id && n >= draft.from && n <= draft.to
@@ -261,6 +272,64 @@ export function CodeView({
         )
       })}
       {leftover.map(noteCard)}
+    </div>
+  )
+}
+
+/** Recherche dans le fichier ouvert (⌘F, Q48) : ↵ suivant, ⇧↵ précédent, Échap ferme. */
+function FileFind({
+  lines,
+  onShow,
+  onClose
+}: {
+  lines: readonly string[]
+  onShow: (line: number) => void
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const [query, setQuery] = useState('')
+  const [at, setAt] = useState(-1)
+  const needle = query.toLowerCase()
+  const found = useMemo(
+    () =>
+      needle
+        ? lines.flatMap((line, i) => (line.toLowerCase().includes(needle) ? [i + 1] : []))
+        : [],
+    [lines, needle]
+  )
+  const go = (delta: number) => {
+    if (found.length === 0) return
+    const next = (at + delta + found.length) % found.length
+    setAt(next)
+    const line = found[next]
+    if (line) onShow(line)
+  }
+  return (
+    <div className="file-goto">
+      <input
+        autoFocus
+        aria-label={t('files.find')}
+        placeholder={t('files.find')}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setAt(-1)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            e.stopPropagation()
+            onClose()
+          } else if (e.key === 'Enter') {
+            e.preventDefault()
+            go(e.shiftKey ? -1 : 1)
+          }
+        }}
+        data-testid="file-find"
+      />
+      <span className="file-find-count" data-testid="file-find-count">
+        {needle ? t('files.findCount', { at: Math.max(at + 1, 0), count: found.length }) : ''}
+      </span>
     </div>
   )
 }

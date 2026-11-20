@@ -2489,7 +2489,9 @@
     "otherFolder": "Autre dossier, non transmis à l’agent",
     "clearFilter": "Effacer le filtre",
     "dismiss": "Fermer l’avis",
-    "noteChanged": " · le code a changé"
+    "noteChanged": " · le code a changé",
+    "find": "Chercher dans le fichier",
+    "findCount": "{{at}} sur {{count}}"
   },
   "sidePanel": {
     "resize": "Redimensionner le panneau",

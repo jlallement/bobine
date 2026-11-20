@@ -460,6 +460,14 @@
   padding: 4px 8px;
 }
 
+.file-find-count {
+  align-self: center;
+  margin-left: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .file-goto input {
   width: 160px;
   padding: 4px 8px;

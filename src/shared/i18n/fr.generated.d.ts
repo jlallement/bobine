@@ -2447,6 +2447,8 @@ export type FrResources = {
     readonly clearFilter: 'Effacer le filtre'
     readonly dismiss: 'Fermer l’avis'
     readonly noteChanged: ' · le code a changé'
+    readonly find: 'Chercher dans le fichier'
+    readonly findCount: '{{at}} sur {{count}}'
   }
   readonly sidePanel: {
     readonly resize: 'Redimensionner le panneau'
