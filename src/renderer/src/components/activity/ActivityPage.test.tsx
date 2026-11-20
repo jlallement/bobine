@@ -333,6 +333,24 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(api['heatmap']).toHaveBeenLastCalledWith({ range: 'last12', profileId: 'bob' })
   })
 
+  it('fiche 267 (D24) : un mois qui commence dans la dernière colonne ne dépasse pas de la grille', async () => {
+    const days = Array.from({ length: 29 }, (_, i) => ({
+      day: addDays('2026-10-05', i),
+      turns: 0,
+      byAgent: {}
+    }))
+    api['heatmap']?.mockImplementation(async (query: UsageHeatQuery) => ({ ...HEAT, days, query }))
+    await shown()
+    await waitFor(() => expect(screen.getAllByTestId('activity-heat-day')).toHaveLength(29))
+    const months = screen.getAllByTestId('activity-heat-month')
+    expect(months.map((m) => m.textContent)).toEqual(['oct.', 'nov.'])
+    // Cinq semaines de 15 px : « nov. » (2 novembre, dernière colonne) calé sur le bord droit.
+    expect(months[1]?.getAttribute('text-anchor')).toBe('end')
+    expect(months[1]?.getAttribute('x')).toBe('75')
+    expect(months[0]?.getAttribute('text-anchor')).toBe('start')
+    expect(months[0]?.getAttribute('x')).toBe('0')
+  })
+
   it('grille : niveaux, aujourd’hui cerclé, jours hors période pâlis, infobulle, clic sur un jour', async () => {
     await shown()
     const cells = screen.getAllByTestId('activity-heat-day')

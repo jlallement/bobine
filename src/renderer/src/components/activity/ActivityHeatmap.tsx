@@ -15,6 +15,12 @@ const STEP = 15
 /** Colonne des jours (lun., mer., ven.), hors de la zone qui défile. */
 const LEFT = 30
 const TOP = 18
+/**
+ * Place d'une étiquette de mois (« sept. ») : plus près du bord droit, elle y est calée par sa fin.
+ * Sinon elle dépassait de la grille, la zone défilait de ce dépassement et, calée à droite,
+ * coupait la première étiquette réduite à « . » (fiche 267, recette D24).
+ */
+const MONTH_LABEL = 30
 
 /** « mardi 20 oct. » */
 const tipDay = (day: string) =>
@@ -150,7 +156,7 @@ export function ActivityHeatmap({
               role="img"
               aria-label={t('activity.heat.label')}
             >
-              <MonthLabels days={days} offset={offset} columns={columns} />
+              <MonthLabels days={days} offset={offset} columns={columns} width={width} />
               {days.map((d, i) => {
                 const { x, y } = position(i)
                 const dim = d.day < first || d.day > last
@@ -231,11 +237,13 @@ function Ring({ x, y, pad, className }: { x: number; y: number; pad: number; cla
 function MonthLabels({
   days,
   offset,
-  columns
+  columns,
+  width
 }: {
   days: readonly UsageHeatDay[]
   offset: number
   columns: number
+  width: number
 }) {
   const start = days[0]?.day
   if (!start) return null
@@ -257,11 +265,20 @@ function MonthLabels({
       text: shown.toLocaleDateString(currentLocale(), { month: 'short' })
     })
   }
-  return labels.map(({ c, text }) => (
-    <text key={c} x={c * STEP} y={11}>
-      {text}
-    </text>
-  ))
+  return labels.map(({ c, text }) => {
+    const atEnd = c * STEP + MONTH_LABEL > width
+    return (
+      <text
+        key={c}
+        x={atEnd ? width : c * STEP}
+        y={11}
+        textAnchor={atEnd ? 'end' : 'start'}
+        data-testid="activity-heat-month"
+      >
+        {text}
+      </text>
+    )
+  })
 }
 
 /** Infobulle d'un jour : « 38 échanges · mardi 20 oct. », puis le partage par agent. */
