@@ -10782,6 +10782,13 @@ html.about-page body {
   color: var(--muted);
   font-size: 12.5px;
 }
+/* Lignes citées d'un fichier hors de la portée relue : du code, sans marques +/− (fiche 267). */
+.review-cited {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
 /* Gravité : pastille, la couleur doublée du mot (jamais la couleur seule). */
 .review-severity {
   flex-shrink: 0;

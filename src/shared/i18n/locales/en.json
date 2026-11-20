@@ -4521,8 +4521,8 @@
       "sinceStart": "since the first commit"
     },
     "fileDiffReviewed": "{{path}} · reviewed version ({{range}})",
-    "fileChangedSince": "This file has changed since the review: this is what was reviewed; the list below shows its current state.",
-    "fileUnchanged": "This file did not change in what was reviewed: the finding is about older code.",
+    "fileChangedSince": "Fixed since the review: this is what was reviewed.",
+    "fileUnchanged": "Not changed in what was reviewed: here are the cited lines, as they are.",
     "read": {
       "line": "Reviewed: {{what}}",
       "clean": "Nothing to report · reviewed: {{what}}"
@@ -4544,7 +4544,11 @@
       "submodules_one": "{{count}} submodule not reviewed",
       "submodules_other": "{{count}} submodules not reviewed",
       "rangeTip": "Reviewed commits: {{range}}"
-    }
+    },
+    "fileCurrent": "Current version, fixes included.",
+    "fileShowCurrent": "See the current version",
+    "fileShowReviewed": "See the reviewed version again",
+    "fileRangeMissing": "Reviewed range not found (history rewritten?): the file against the last commit."
   },
   "scheduled": {
     "title": "Scheduled tasks",

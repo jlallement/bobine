@@ -166,6 +166,11 @@ export interface GitFileDiff {
    * relue (corrigé depuis, par exemple).
    */
   changedSince?: true
+  /**
+   * La plage relue n'existe plus dans le dépôt (historique réécrit) : le diff est celui du fichier
+   * contre `HEAD` (revue QA de la fiche 267).
+   */
+  rangeMissing?: true
 }
 
 /** Dossier et nom, pour l'affichage d'une ligne de la liste. */

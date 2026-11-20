@@ -4722,8 +4722,8 @@
       "sinceStart": "depuis le premier commit"
     },
     "fileDiffReviewed": "{{path}} · version relue ({{range}})",
-    "fileChangedSince": "Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.",
-    "fileUnchanged": "Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien.",
+    "fileChangedSince": "Corrigé depuis la relecture : voici ce qui a été relu.",
+    "fileUnchanged": "Pas modifié dans ce qui a été relu : voici les lignes citées, telles qu’elles sont.",
     "read": {
       "line": "Relu : {{what}}",
       "clean": "Rien à signaler · relu : {{what}}"
@@ -4750,7 +4750,11 @@
       "submodules_many": "{{count}} sous-modules non relus",
       "submodules_other": "{{count}} sous-modules non relus",
       "rangeTip": "Commits relus : {{range}}"
-    }
+    },
+    "fileCurrent": "Version actuelle, corrections comprises.",
+    "fileShowCurrent": "Voir la version actuelle",
+    "fileShowReviewed": "Revoir la version relue",
+    "fileRangeMissing": "Plage relue introuvable (historique réécrit ?) : le fichier contre le dernier commit."
   },
   "scheduled": {
     "title": "Tâches planifiées",

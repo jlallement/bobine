@@ -4552,8 +4552,8 @@ export type FrResources = {
       readonly sinceStart: 'depuis le premier commit'
     }
     readonly fileDiffReviewed: '{{path}} · version relue ({{range}})'
-    readonly fileChangedSince: 'Ce fichier a changé depuis la relecture : voici ce qui a été relu ; la liste ci-dessous montre son état actuel.'
-    readonly fileUnchanged: 'Ce fichier n’a pas changé dans ce qui a été relu : la remarque vise du code plus ancien.'
+    readonly fileChangedSince: 'Corrigé depuis la relecture : voici ce qui a été relu.'
+    readonly fileUnchanged: 'Pas modifié dans ce qui a été relu : voici les lignes citées, telles qu’elles sont.'
     readonly read: {
       readonly line: 'Relu : {{what}}'
       readonly clean: 'Rien à signaler · relu : {{what}}'
@@ -4581,6 +4581,10 @@ export type FrResources = {
       readonly submodules_other: '{{count}} sous-modules non relus'
       readonly rangeTip: 'Commits relus : {{range}}'
     }
+    readonly fileCurrent: 'Version actuelle, corrections comprises.'
+    readonly fileShowCurrent: 'Voir la version actuelle'
+    readonly fileShowReviewed: 'Revoir la version relue'
+    readonly fileRangeMissing: 'Plage relue introuvable (historique réécrit ?) : le fichier contre le dernier commit.'
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'

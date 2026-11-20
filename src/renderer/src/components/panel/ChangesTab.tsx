@@ -433,16 +433,7 @@ export function ChangesTab({
           )}
 
           {rows.length === 0 ? (
-            <div className="side-panel-empty" data-testid="changes-empty">
-              <FileDiff size={22} />
-              <p>
-                {view === 'conversation'
-                  ? git
-                    ? t('changes.empty.conversation')
-                    : t('changes.empty.conversationNoGit')
-                  : t('changes.empty.git')}
-              </p>
-            </div>
+            <ChangesEmpty view={view} git={!!git} compact={view === 'git' && !!fileAsked?.since} />
           ) : (
             <>
               <div className="changes-summary" data-testid="changes-summary">
@@ -472,6 +463,33 @@ export function ChangesTab({
           )}
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Rien à montrer dans la vue ; `compact` : un diff relu est affiché au-dessus (fiche 267, revue
+ * UX), l'état vide tient en une ligne discrète.
+ */
+function ChangesEmpty({ view, git, compact }: { view: View; git: boolean; compact: boolean }) {
+  const { t } = useTranslation()
+  if (compact) {
+    return (
+      <p className="changes-caption changes-empty-line" data-testid="changes-empty">
+        {t('changes.empty.git')}
+      </p>
+    )
+  }
+  return (
+    <div className="side-panel-empty" data-testid="changes-empty">
+      <FileDiff size={22} />
+      <p>
+        {view === 'conversation'
+          ? git
+            ? t('changes.empty.conversation')
+            : t('changes.empty.conversationNoGit')
+          : t('changes.empty.git')}
+      </p>
     </div>
   )
 }
