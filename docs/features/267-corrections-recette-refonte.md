@@ -257,6 +257,15 @@ Pas de nouvelle dépendance.
     (`roles-travail-3a-jeton-vide`, aide grise vérifiée par sa couleur calculée),
     `cout-connexion` (`267-activite-720`, pas de barre permanente).
 
+- 2026-11-20 : après les revues, `./scripts/verify` vert (5 438 essais). e2e ciblées, une
+  campagne à la fois : `relecture-commits travail-recette changes activity roles-travail
+  cout-connexion`, puis `filles repere connexion-expiree` — vertes. Suite complète (228 tâches,
+  clair et sombre) : un premier passage a eu 11 échecs (`filles`, `repere`, `inbox` sombre en
+  délai, sous la charge d'une campagne d'un autre worktree lancée pendant la nôtre, verts seuls ;
+  `connexion-expiree` attendait l'avis en double que la revue UX retire : essai mis à jour). Un
+  second passage, sans autre campagne (relevé toutes les 30 s), est vert en 21 min 14 s. Aucune
+  capture `echec-*` restante. Captures `267-*` et `roles-travail-3a-jeton-vide` regardées.
+
 ## Écarts au plan
 
 - R7 : pas de signal « carte vue » du renderer : la règle de la 258, erreurs comprises, est retenue
