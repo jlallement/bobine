@@ -34,6 +34,29 @@ const FINDINGS = [
   }
 ]
 
+/**
+ * Remarques sur la branche du travail `rayons` d'un essai (src/ordre.js, fiche 265) : une moyenne,
+ * une basse.
+ */
+const ORDER_FINDINGS = [
+  {
+    file: 'src/ordre.js',
+    line: 1,
+    severity: 'medium',
+    category: 'correctness',
+    title: 'L’ordre de tri est écrit en dur',
+    why: 'ORDRE vaut toujours « rayon » : le choix de l’utilisateur est ignoré. Le lire des réglages.'
+  },
+  {
+    file: 'src/ordre.js',
+    line: 1,
+    severity: 'low',
+    category: 'simplification',
+    title: 'Constante exportée jamais importée',
+    why: 'ORDRE n’est utilisée nulle part : la retirer, ou l’utiliser dans le tri.'
+  }
+]
+
 const report = (findings: unknown[], summary: string, lead: string): Step => ({
   kind: 'mcp-tool',
   tool: 'report_findings',
@@ -44,7 +67,7 @@ const report = (findings: unknown[], summary: string, lead: string): Step => ({
 export const reviewScenarios: Record<string, Scenario> = {
   relecture: {
     description:
-      'Relecteur (fiche 177) : lit la consigne de relecture, puis rend deux remarques sur src/app.js par `report_findings` (aucune si la consigne ne cite pas ce fichier)',
+      'Relecteur (fiches 177, 265) : lit la consigne de relecture, puis rend deux remarques sur src/app.js (ou src/ordre.js) par `report_findings` (aucune si la consigne ne cite aucun des deux)',
     steps: [
       { kind: 'text', text: 'Je relis le diff, sans rien modifier. ' },
       {
@@ -57,7 +80,20 @@ export const reviewScenarios: Record<string, Scenario> = {
             'Deux remarques rendues : une à corriger avant de fusionner.'
           )
         ],
-        else: [report([], 'Rien à signaler.', 'Rien à signaler.')]
+        else: [
+          {
+            kind: 'when-prompt',
+            includes: 'src/ordre.js',
+            then: [
+              report(
+                ORDER_FINDINGS,
+                'Le tri marche ; l’ordre écrit en dur est à revoir avant de fusionner.',
+                'Deux remarques rendues sur la branche.'
+              )
+            ],
+            else: [report([], 'Rien à signaler.', 'Rien à signaler.')]
+          }
+        ]
       }
     ]
   },

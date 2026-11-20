@@ -4440,7 +4440,7 @@ export type FrResources = {
   }
   readonly review: {
     readonly action: 'Faire relire…'
-    readonly actionTip: 'Faire relire : un autre agent relit ces modifications, sans rien modifier, et pose ses remarques sur le diff'
+    readonly actionTip: 'Faire relire : le Code reviewer relit ces modifications sans rien modifier ; ses remarques arrivent dans le fil et sur le diff'
     readonly error: {
       readonly noGit: 'Relecture impossible : le dossier de la conversation n’est pas dans un dépôt git.'
       readonly busy: 'La conversation répond encore : attendez la fin de sa réponse pour la faire relire.'

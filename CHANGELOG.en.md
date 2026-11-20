@@ -6,6 +6,14 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the
+  “Children” view or a task's card. The request shows in the thread (“@Code reviewer Review the
+  branch …”) with its card, which shows **every comment**: its severity, `file:line` (a click opens
+  the diff on that file), one sentence, then its verdict, or “Nothing to report”. “Ask <agent> to
+  fix” sends its comments to the conversation's agent; “Show on the diff”, “Reply to Code reviewer”
+  and “Open its conversation” follow. A task's review shows inside that task's card. A model other
+  than the reviewed task's is suggested by default. In the reviewer's conversation, its instructions
+  are folded (“Role instructions”).
 - The agent's merge recommendation is no longer a line in the thread: it sits on the task's row
   (“Recommended”, “Not ready yet”), with its note in the tooltip. Merging a task never deletes a
   branch that changed since the merge, nor the folder of a task still working or with changes: it

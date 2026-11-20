@@ -4414,7 +4414,7 @@
   },
   "review": {
     "action": "Request review…",
-    "actionTip": "Request review: another agent reviews these changes, without modifying anything, and leaves comments on the diff",
+    "actionTip": "Request a review: the Code reviewer reviews these changes without modifying anything; its comments arrive in the thread and on the diff",
     "error": {
       "noGit": "Cannot review: the conversation’s folder is not in a git repository.",
       "busy": "The conversation is still replying: wait for its reply to end before requesting a review.",

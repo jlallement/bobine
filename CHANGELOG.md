@@ -6,6 +6,15 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- « Faire relire » lance le rôle **Code reviewer** : un seul chemin de relecture, depuis
+  Modifications, la vue « Filles » ou la carte d'un travail. La demande s'affiche dans le fil
+  (« @Code reviewer Relis la branche … ») avec sa carte, qui montre **chaque remarque** : sa gravité,
+  `fichier:ligne` (un clic ouvre le diff sur ce fichier), une phrase, puis son avis, ou « Rien à
+  signaler ». « Demander à <agent> de corriger » envoie ses remarques à l'agent de la conversation ;
+  « Voir sur le diff », « Répondre à Code reviewer » et « Ouvrir sa conversation » suivent. La
+  relecture d'un travail s'affiche dans la carte de ce travail. Un autre modèle que celui du
+  travail relu est proposé d'office. Dans la conversation du relecteur, sa consigne est repliée
+  (« Consigne du rôle »).
 - La recommandation de fusion de l'agent n'est plus une ligne du fil : elle est sur la ligne du
   travail (« Recommandé », « Pas encore prêt »), sa note en infobulle. Fusionner un travail ne
   supprime plus jamais une branche qui a changé depuis la fusion, ni le dossier d'un travail qui

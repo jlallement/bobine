@@ -183,6 +183,23 @@ export async function fillesSuite(scheme) {
           `vue « Filles » : ses filles directes, celles des cartes, dans l’ordre (${worktrees.join(', ')})`
         )
         await ui.shot('filles-161-vue-filles')
+        // « Faire relire » d'une ligne (fiche 265) : le même dialogue, celui du Code reviewer, sur
+        // la branche de ce travail ; rien ne part sans « Lancer la relecture ».
+        const review = `document.querySelector('[data-testid=child-worktree-review]')`
+        if (await ui.ev(`!!${review}`)) {
+          await ui.click(review)
+          await ui.waitFor(`!!${ui.$('review-dialog')}`)
+          check(
+            (await ui.ev(`${ui.$('review-dialog')}.innerText`)).includes(
+              L('review.dialog.description')
+            ) &&
+              (await ui.ev(`${ui.$('review-scope')}.innerText`)) ===
+                L('review.dialog.scopeBranch', { branch }),
+            'vue « Filles » : « Faire relire » ouvre la relecture du Code reviewer, sur sa branche'
+          )
+          await ui.press('Escape')
+          await ui.waitFor(`!${ui.$('review-dialog')}`)
+        } else check(false, 'vue « Filles » : « Faire relire » sur la ligne d’un travail fini')
         await closePanel()
 
         // Le compte rendu part à l'agent de la mère avec le prochain message, une seule fois.

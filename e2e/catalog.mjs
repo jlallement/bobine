@@ -989,11 +989,17 @@ export const SUITES = [
       `${C}panel/ReviewDialog.tsx`,
       `${C}panel/ReviewNotes.tsx`,
       `${C}thread/ReviewCard.tsx`,
+      `${C}thread/WorkReview.tsx`,
+      `${C}thread/WorkCard.tsx`,
+      `${C}thread/WorkFoot.tsx`,
+      `${C}thread/WorkAnswer.tsx`,
       `${C}thread/DiffView.tsx`,
       `${C}sidebar/child-options.tsx`,
       `${C}dialogs/AppDialogs.tsx`,
       `${R}diff-notes-store.ts`,
       'src/shared/review.ts',
+      'src/shared/role-request.ts',
+      'src/shared/work-groups.ts',
       'src/shared/diff-notes.ts',
       'src/main/conversations/children*.ts',
       'src/main/mcp/children-tools.ts',
@@ -1222,14 +1228,17 @@ export const SUITES = [
     ]
   },
   {
-    // Carte de groupe et fusion dans la carte (fiche 264) : captures `264-*` des écrans C et D.
+    // Carte de groupe et fusion dans la carte (fiche 264) : captures `264-*` des écrans C et D ;
+    // relecture d'un travail dans sa carte (fiche 265) : `265-relecture-travail`.
     name: 'travaux-groupe',
     file: 'travaux-groupe.mjs',
     run: 'travauxGroupeSuite',
     themes: BOTH,
     sources: [
       `${C}thread/WorkGroup.tsx`,
+      `${C}thread/WorkGroupRow.tsx`,
       `${C}thread/WorkMerge.tsx`,
+      `${C}thread/WorkReview.tsx`,
       `${C}thread/WorkCard.tsx`,
       `${C}thread/WorkFoot.tsx`,
       `${C}thread/WorkAnswer.tsx`,
@@ -1239,8 +1248,10 @@ export const SUITES = [
       'src/shared/work-groups.ts',
       'src/shared/role-request.ts',
       'src/main/conversations/children-merge*.ts',
+      'src/main/conversations/children-review.ts',
       'src/main/mcp/children-tools.ts',
-      'src/mock-agent/scenarios-filles.mts'
+      'src/mock-agent/scenarios-filles.mts',
+      'src/mock-agent/scenarios-relecture.mts'
     ]
   },
   {

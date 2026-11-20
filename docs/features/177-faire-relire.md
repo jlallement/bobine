@@ -182,3 +182,7 @@ tel quel ; la seule décision nouvelle, « même dossier en lecture seule vérif
     échec) : sa réponse du tour est gardée sur la carte (`Review.reply`, 4 000 caractères au
     plus, rendue comme un compte rendu de fille), pour qu'une relecture en texte libre ne soit pas
     perdue. Testé (`relecture-muette`).
+- 2026-11-20 : « Faire relire » lance désormais le rôle Code reviewer, avec sa bulle et sa
+  carte-réponse dans le fil (fiche 265, ADR-0062) ; ce qui est dit ici (dossier de l'auteur,
+  `report_findings`, empreinte, notes de diff) reste dessous. Les relectures d'avant gardent leur
+  carte « Relecture ».

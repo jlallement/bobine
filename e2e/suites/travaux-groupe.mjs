@@ -10,7 +10,9 @@ import { L, check, sleep, withApp } from '../lib.mjs'
  * travaux proposés à la fois (un rôle qui écrit, un sans rôle, un avis) ; « Tout lancer » ; en
  * cours (retenus par le verrou de fin de tour), finis ; au réveil, l'agent recommande les deux
  * branches ; la carte les fusionne. Puis un travail qui écrit, demandé par une bulle `@rôle` :
- * « Fusionner dans main » dans sa carte. Captures `264-groupe-*` et `264-travail-ecrit-*`.
+ * « Fusionner dans main » dans sa carte ; avant, « Faire relire » : le Code reviewer, rangé dans la
+ * carte du travail (fiche 265). Captures `264-groupe-*`, `264-travail-ecrit-*`,
+ * `265-relecture-travail`.
  */
 export async function travauxGroupeSuite(scheme) {
   console.log(`\n— Carte de groupe et fusion dans la carte (${scheme})`)
@@ -288,6 +290,42 @@ async function writerRun(ui, { workspace, git, commitAll }) {
   )
   await ui.reveal(card)
   await ui.shot('264-travail-ecrit')
+
+  // « Faire relire » (fiche 265) : le Code reviewer relit la branche ; sa bulle et sa carte dans
+  // la carte du travail, pas plus bas dans le fil.
+  await ui.click(`${card}.querySelector('[data-testid=work-review]')`)
+  await ui.waitFor(`!!${ui.$('review-dialog')}`)
+  check(
+    (await ui.ev(`${ui.$('review-scope')}.innerText`)) ===
+      L('review.dialog.scopeBranch', { branch }),
+    'Faire relire un travail : sa branche relue'
+  )
+  await ui.click(ui.$('review-launch'))
+  await ui.waitFor(`!${ui.$('review-dialog')}`)
+  const nested = `${card}.querySelector('[data-testid=work-reviews] [data-testid=work-card][data-role=code-reviewer]')`
+  await ui.waitFor(
+    `${nested}?.dataset.state === 'replied' && ${nested}.dataset.findings === '2'`,
+    30000
+  )
+  const placed = await ui.ev(`(() => ({
+    ask: ${card}.querySelector('[data-testid=work-reviews] [data-testid=review-ask]')?.innerText ?? '',
+    elsewhere: [...document.querySelectorAll('[data-testid=role-request]')].some((b) => b.innerText.includes(${JSON.stringify(branch)})),
+    cards: document.querySelectorAll('[data-testid=work-card][data-role=code-reviewer]').length,
+    place: ${nested}.querySelector('[data-testid=work-place]')?.innerText,
+    places: [...${nested}.querySelectorAll('[data-testid=work-finding-where]')].map((w) => w.innerText),
+    fix: ${nested}.querySelector('[data-testid=work-fix]')?.innerText
+  }))()`)
+  check(
+    placed.ask.includes(L('review.ask.branch', { branch })) &&
+      !placed.elsewhere &&
+      placed.cards === 1 &&
+      placed.place === L('workCard.readOnlyBranch') &&
+      JSON.stringify(placed.places) === JSON.stringify(['src/ordre.js:1', 'src/ordre.js:1']) &&
+      !!placed.fix,
+    `relecture d’un travail : dans sa carte, remarques sur sa branche (${JSON.stringify(placed)})`
+  )
+  await ui.reveal(nested)
+  await ui.shot('265-relecture-travail')
   await ui.click(start)
   await ui.waitFor(
     `${card}.querySelector('[data-testid=work-merge-result]')?.dataset.state === 'merged'`,
@@ -302,7 +340,8 @@ async function writerRun(ui, { workspace, git, commitAll }) {
       !/bougé|tests de la branche/i.test(result),
     `fusionné dans la carte : « ${result.split('\n')[0]} », branche supprimée, aucune étape inventée`
   )
-  await ui.reveal(card)
+  // La carte, avec sa relecture (fiche 265), est plus haute que la fenêtre : son résultat à l'écran.
+  await ui.reveal(`${card}.querySelector('[data-testid=work-merge-result]')`)
   await ui.shot('264-travail-ecrit-fusion')
 }
 
