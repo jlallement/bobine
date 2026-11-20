@@ -501,9 +501,10 @@ describe('envoi aux rôles : un seul à la fois, rien de perdu (relecture phase 
     type('@security-expert')
     key('Escape')
     expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByTestId('role-destination-empty').textContent).toContain(
-      'Écrivez votre demande'
-    )
+    const hint = screen.getByTestId('role-destination-empty')
+    expect(hint.textContent).toContain('Écrivez votre demande')
+    // Une aide, pas une alerte (recette N7, fiche 267) : la classe grise (`--muted`, roles.css).
+    expect(hint.className).toBe('role-destination-hint')
     await act(async () => key('Enter'))
     expect(send).not.toHaveBeenCalled()
     expect(onSend).not.toHaveBeenCalled()

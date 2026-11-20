@@ -45,8 +45,16 @@ describe('rôles fournis (fiche 223, ADR-0046)', () => {
     for (const language of LANGUAGES) {
       for (const role of builtinRoles(language)) {
         expect([role.name, checkRole(role).ok]).toEqual([role.name, true])
-        // Le compte rendu pour la mère est toujours demandé.
-        expect(role.prompt).toMatch(language === 'fr' ? /court compte rendu/ : /short summary/)
+        // Le résumé pour la conversation qui l'a lancé est toujours demandé, sans titre ; plus de
+        // « compte rendu » (recette N6, fiche 267 : il revenait en titre de la réponse).
+        expect(role.prompt).toMatch(
+          language === 'fr'
+            ? /résumé de deux lignes, sans titre/
+            : /two-line summary, without a heading/
+        )
+        expect(role.prompt).not.toMatch(
+          language === 'fr' ? /compte rendu/i : /\bshort summary for\b/
+        )
       }
     }
     // Textes vraiment traduits : aucune description ni consigne identique d'une langue à l'autre.

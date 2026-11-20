@@ -20,11 +20,14 @@ export type BuiltinName = (typeof BUILTIN_NAMES)[number]
 /** Textes d'un rôle fourni dans une langue : sa description et sa consigne (lignes). */
 export type BuiltinTexts = Record<BuiltinName, { description: string; prompt: readonly string[] }>
 
-/** Ce que tout rôle rend à la mère : son compte rendu est le début de sa réponse. */
+/**
+ * Ce que tout rôle rend à la conversation qui l'a lancé : un résumé en tête de sa réponse, sans
+ * titre (recette N6, fiche 267).
+ */
 const REPORT = [
   '',
-  'Start your final reply with a short summary for the conversation that started you: what you',
-  'did or found, what is left, and what you are unsure of. Cite files as path:line.'
+  'Start your final reply with a two-line summary, without a heading: what you did or found, and',
+  'what is left. Then the details, including what you are unsure of. Cite files as path:line.'
 ]
 
 export const BUILTIN_EN: BuiltinTexts = {

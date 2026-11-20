@@ -195,7 +195,7 @@ export function RoleDestination({
       )}
       {launch && !sending && launch.node}
       {empty && !sending && (
-        <span className="role-destination-warn" data-testid="role-destination-empty">
+        <span className="role-destination-hint" data-testid="role-destination-empty">
           {t('roleWork.destination.empty')}
         </span>
       )}
