@@ -270,7 +270,8 @@ export function ChangesTab({
               ? { badge: { letter: 'A', label: t('changes.badge.created'), tone: 'add' as const } }
               : {}),
             added: file.added,
-            removed: file.removed
+            removed: file.removed,
+            ...(file.unknown ? { unknown: true } : {})
           }
         })
       : (git?.files ?? []).map((file) => ({

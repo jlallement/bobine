@@ -2091,7 +2091,9 @@
     "revertAsk": "Restore <strong>{{name}}</strong> to its state before the conversation?",
     "revertCreated": "Created by the agent: it will be deleted.",
     "binaryBadge": "binary",
+    "unknownBadge": "modified",
     "changeOf": "Change {{index}} of {{total}}",
+    "unknownDiff": "The agent wrote this file without sending its content, so the diff is unknown. The Git view shows the file’s actual state.",
     "children": {
       "revealLabel": "Show the worktree of “{{title}}” in Finder",
       "editorLabel": "Open the worktree of “{{title}}” in {{editor}}"

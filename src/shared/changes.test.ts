@@ -125,3 +125,67 @@ describe('conversationChanges', () => {
     expect(relativeTo('/p/', '/ailleurs/a.ts')).toBe('/ailleurs/a.ts')
   })
 })
+
+/**
+ * Contrat réel d'OpenCode 2.3 (recette du 2026-11-20, fiche 272) : `write` qui réécrit un fichier
+ * existant. Le `tool_call_update` `completed` ne porte qu'un texte et l'emplacement ; la création
+ * d'un fichier, elle, porte un `diff` (`oldText: null`). Forme relevée dans le fil enregistré
+ * (chemins anonymisés, contenus raccourcis).
+ */
+describe('écriture sans diff (contrat OpenCode, fiche 272)', () => {
+  const rewrite: TranscriptItem = {
+    kind: 'tool',
+    id: 41,
+    toolCallId: 'chatcmpl-tool-97862fb3a6335eb5',
+    title: 'write',
+    toolKind: 'edit',
+    status: 'completed',
+    content: [
+      { type: 'content', content: { type: 'text', text: 'Wrote file successfully: src/cli.js' } }
+    ],
+    locations: [{ path: '/projet/src/cli.js' }],
+    input: { path: 'src/cli.js' }
+  }
+  const create: TranscriptItem = {
+    kind: 'tool',
+    id: 42,
+    toolCallId: 'chatcmpl-tool-b6045651362a4e07',
+    title: 'write',
+    toolKind: 'edit',
+    status: 'completed',
+    content: [
+      {
+        type: 'content',
+        content: { type: 'text', text: 'Created file successfully: test/cli.test.js' }
+      },
+      { type: 'diff', path: '/projet/test/cli.test.js', oldText: null, newText: 'a\nb\n' }
+    ],
+    locations: [{ path: '/projet/test/cli.test.js' }],
+    input: { path: 'test/cli.test.js' }
+  }
+
+  it('le fichier réécrit compte comme modifié, sans totaux inventés', () => {
+    const files = conversationChanges([rewrite, create])
+    expect(files.map((f) => f.path)).toEqual(['/projet/src/cli.js', '/projet/test/cli.test.js'])
+    expect(files[0]).toMatchObject({ unknown: true, created: false, added: 0, removed: 0 })
+    expect(files[0]?.diffs).toEqual([])
+    expect(files[1]).toMatchObject({ created: true, added: 2, removed: 0 })
+    expect(files[1]?.unknown).toBeUndefined()
+  })
+
+  it('pas encore abouti, refusé ou en échec : rien ne compte', () => {
+    for (const status of ['in_progress', 'failed', 'refused'] as const) {
+      expect(conversationChanges([{ ...rewrite, status }])).toEqual([])
+    }
+  })
+
+  it('un outil qui n’est pas une modification (lecture) ne compte pas', () => {
+    expect(conversationChanges([{ ...rewrite, toolKind: 'read' }])).toEqual([])
+  })
+
+  it('un diff reçu ensuite pour ce fichier donne ses totaux', () => {
+    const later = tool(50, 'completed', [{ path: '/projet/src/cli.js', oldText: 'x\n', newText: 'y\n' }])
+    expect(conversationChanges([rewrite, later])[0]).toMatchObject({ added: 1, removed: 1 })
+    expect(conversationChanges([rewrite, later])[0]?.unknown).toBeUndefined()
+  })
+})

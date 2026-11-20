@@ -21,6 +21,8 @@ export interface Row {
   badge?: { letter: string; label: string; tone: 'add' | 'mod' | 'del' }
   added: number | null
   removed: number | null
+  /** Écrit sans diff connu (fiche 272) : ni totaux, ni annulation, une phrase à la place du diff. */
+  unknown?: boolean
 }
 
 /** Pastille d'un fichier dans la vue git ; son libellé : clé `changes.badge.<statut>`. */
@@ -108,7 +110,9 @@ export function ChangesFileList({
                 <span className="changes-dir">{dir}</span>
               </button>
               <span className="changes-stats">
-                {row.added === null ? (
+                {row.unknown ? (
+                  <span className="muted">{t('changes.unknownBadge')}</span>
+                ) : row.added === null ? (
                   <span className="muted">{t('changes.binaryBadge')}</span>
                 ) : (
                   <>
@@ -124,7 +128,7 @@ export function ChangesFileList({
               )}
               {/* Actions de la ligne : au survol ou au clavier dans un panneau étroit (fiche 226). */}
               <span className="changes-actions">
-                {view === 'conversation' && !reverted.has(row.key) && (
+                {view === 'conversation' && !row.unknown && !reverted.has(row.key) && (
                   <Tip label={t('changes.revert')}>
                     <button
                       className={`icon-button small${reverting === row.key ? ' active' : ''}`}
@@ -186,7 +190,11 @@ export function ChangesFileList({
             )}
             {expanded && (
               <div className="changes-diff" data-testid="changes-diff">
-                {view === 'conversation' ? (
+                {view === 'conversation' && row.unknown ? (
+                  <p className="muted changes-unknown" data-testid="changes-unknown">
+                    {t('changes.unknownDiff')}
+                  </p>
+                ) : view === 'conversation' ? (
                   <ConversationDiffs
                     path={row.path}
                     diffs={conversation.find((f) => f.path === row.key)?.diffs ?? []}

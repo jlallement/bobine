@@ -25,6 +25,12 @@ export interface ConversationFileChange {
   created: boolean
   added: number
   removed: number
+  /**
+   * L'agent a écrit le fichier sans en envoyer le contenu (`diff`) : un outil `edit` abouti qui ne
+   * porte que ses `locations` (contrat observé d'OpenCode : `write` sur un fichier existant, fiche
+   * 272). Le fichier compte comme modifié, sans diff ni totaux connus (`added`/`removed` à 0).
+   */
+  unknown?: true
 }
 
 /**
@@ -91,6 +97,14 @@ export function conversationChanges(items: readonly TranscriptItem[]): Conversat
   for (const item of withSubagentWork(items)) {
     // Seuls les outils aboutis ont modifié quelque chose (pas refusés, en attente ou annulés).
     if (item.kind !== 'tool' || item.status !== 'completed') continue
+    // Écriture sans contenu (fiche 272) : un outil `edit` abouti sans `diff`, avec ses fichiers dans
+    // `locations`. Règle générique, sans regarder le titre ni l'agent.
+    if (item.toolKind === 'edit' && !item.content.some((c) => c.type === 'diff')) {
+      for (const location of item.locations) {
+        if (location.path && !byPath.has(location.path)) byPath.set(location.path, [])
+      }
+      continue
+    }
     for (const content of item.content) {
       if (content.type !== 'diff') continue
       const oldText = content.oldText ?? null
@@ -113,6 +127,7 @@ export function conversationChanges(items: readonly TranscriptItem[]): Conversat
     // Règle générique (fiche 140) : un ancien texte vide vaut un fichier créé, comme `null` (certains
     // agents envoient `oldText: ""` pour un fichier qu'ils créent).
     const first = diffs[0]?.oldText
+    if (diffs.length === 0) return { path, diffs, created: false, added, removed, unknown: true }
     return { path, diffs, created: first === null || first === '', added, removed }
   })
 }

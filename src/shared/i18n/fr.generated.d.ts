@@ -2145,7 +2145,9 @@ export type FrResources = {
     readonly revertCreated: 'Créé par l’agent : il sera supprimé.'
     readonly files_many: '{{count}} fichiers'
     readonly binaryBadge: 'binaire'
+    readonly unknownBadge: 'modifié'
     readonly changeOf: 'Modification {{index}} sur {{total}}'
+    readonly unknownDiff: 'L’agent a écrit ce fichier sans envoyer son contenu : le diff n’est pas connu. La vue Git montre l’état réel du fichier.'
     readonly children: {
       readonly revealLabel: 'Afficher le worktree de « {{title}} » dans le Finder'
       readonly editorLabel: 'Ouvrir le worktree de « {{title}} » dans {{editor}}'

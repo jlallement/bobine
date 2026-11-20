@@ -126,7 +126,13 @@ describe('formes relevées dans les traces', () => {
       conversationChanges(byName(name)).map((c) => [
         // Relatif au dossier du rejeu (sous Windows, un fichier créé y est résolu en `D:\\dossier\\…`).
         relative(resolve('/dossier'), resolve(c.path)).split(sep).join('/'),
-        { created: c.created, added: c.added, removed: c.removed, old: c.diffs[0]?.oldText }
+        {
+          created: c.created,
+          added: c.added,
+          removed: c.removed,
+          old: c.diffs[0]?.oldText,
+          ...(c.unknown ? { unknown: true } : {})
+        }
       ])
     )
 
@@ -148,9 +154,22 @@ describe('formes relevées dans les traces', () => {
       removed: 1,
       old: 'ancien contenu\n'
     })
-    // Sans autorisation, l'ancien texte n'est dit nulle part : rien plutôt qu'un diff faux.
-    expect(changesOf('creation-autorisee-d-office.ndjson')['autre.md']).toBeUndefined()
   })
+
+  // Fiche 272 (recette du 2026-11-20) : sans autorisation, l'ancien texte n'est dit nulle part ;
+  // pas de diff inventé, mais le fichier réécrit compte comme modifié (avant : absent du bilan).
+  it.each(['opencode-2.2.5', 'opencode-2.3.0'])(
+    'OpenCode %s, réécriture par write sans autorisation : modifié, diff inconnu',
+    (version) => {
+      expect(changesOf(`${version}/creation-autorisee-d-office.ndjson`)['autre.md']).toEqual({
+        created: false,
+        added: 0,
+        removed: 0,
+        old: undefined,
+        unknown: true
+      })
+    }
+  )
 
   // Fiche 203, correctif de recette : OpenCode 2.2.5 envoie `workdir` RELATIF et l'emplacement
   // absolu ; la carte dit « Dans dossier/docs » sans répéter l'emplacement, et alerte hors du

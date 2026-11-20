@@ -2185,7 +2185,9 @@
     "revertCreated": "Créé par l’agent : il sera supprimé.",
     "files_many": "{{count}} fichiers",
     "binaryBadge": "binaire",
+    "unknownBadge": "modifié",
     "changeOf": "Modification {{index}} sur {{total}}",
+    "unknownDiff": "L’agent a écrit ce fichier sans envoyer son contenu : le diff n’est pas connu. La vue Git montre l’état réel du fichier.",
     "children": {
       "revealLabel": "Afficher le worktree de « {{title}} » dans le Finder",
       "editorLabel": "Ouvrir le worktree de « {{title}} » dans {{editor}}"

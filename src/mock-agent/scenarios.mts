@@ -3052,6 +3052,16 @@ export const scenarios: Record<string, Scenario> = {
       { kind: 'text', text: 'C’est fait.' }
     ]
   },
+  'reecriture-opencode': {
+    description:
+      'Comme OpenCode 2.3.0 (recette du 2026-11-20, fiche 272) : write réécrit README.md sans autorisation (fin « Wrote file successfully », sans diff), puis write crée nouveau.txt',
+    steps: [
+      { kind: 'text', text: 'Je réécris le README et j’ajoute un fichier. ' },
+      { kind: 'opencode-write', path: 'README.md', content: '# Projet\n\nVersion 2\n' },
+      { kind: 'opencode-write', path: 'nouveau.txt', content: 'bonjour\n' },
+      { kind: 'text', text: 'C’est fait.' }
+    ]
+  },
   'outil-en-preparation': {
     description:
       'Comme OpenCode : outil « patch » annoncé en pending avec rawInput {} pendant 3 s (le modèle écrit le patch), puis in_progress avec ses emplacements, puis terminé (fiche 128). Le délai de 3 s suppose le délai de base de 40 ms',
