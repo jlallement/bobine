@@ -134,7 +134,8 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(reviewer.role).toMatchObject({ name: 'code-reviewer', readOnly: true })
     const first = env.items(reviewer.id).find((i) => i.kind === 'user')
     const opening = splitRoleBrief(first?.kind === 'user' ? first.text : '')
-    expect(opening.request).toBe(t('review.ask.uncommitted', { count: 2 }))
+    // La demande à l'agent en anglais (ADR-0014) ; la bulle dans la langue de l'interface.
+    expect(opening.request).toBe(t('review.ask.uncommitted', { count: 2, lng: 'en' }))
     expect(opening.brief).toContain(REVIEW_BRIEF_LEAD)
     expect(opening.brief).toContain('git diff HEAD')
     expect(opening.request).not.toContain(REVIEW_BRIEF_LEAD)
@@ -359,9 +360,12 @@ describe('relecture avant fusion (fiche 177)', () => {
     const sent = env.items(reviewer).find((i) => i.kind === 'user')
     const opening = splitRoleBrief(sent?.kind === 'user' ? sent.text : '')
     expect(
-      opening.request.startsWith(t('review.ask.commit', { commit: head.slice(0, 7), count: 2 }))
+      opening.request.startsWith(
+        t('review.ask.commit', { commit: head.slice(0, 7), count: 2, lng: 'en' })
+      )
     ).toBe(true)
-    expect(opening.brief).toContain(`git show ${head}`)
+    // Contre son premier parent (un commit de fusion compris).
+    expect(opening.brief).toContain(`git diff ${env.git('rev-parse', 'HEAD^1')} ${head}`)
     await env.idle(reviewer)
     // Une branche de travail (pas main), sans rien de non commité : la branche contre main.
     env.git('checkout', '-q', '-b', 'tri')
@@ -448,6 +452,21 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(again).toBe(first)
     expect(splitRoleBrief(again ?? '').brief).toContain(REVIEW_BRIEF_LEAD)
     expect(extra).toBe(asked)
+  })
+
+  it('`@code-reviewer` : les avis « agent ou modèle du rôle indisponible » restent dits', async () => {
+    const env = await environment()
+    const author = await env.author()
+    const reviewer = await env.children.start(author, {
+      text: 'Relis',
+      role: 'code-reviewer',
+      notices: [{ key: 'roles.notice.agentMissing', params: { agent: 'Autre' } }]
+    })
+    expect(
+      env
+        .items(reviewer.id)
+        .some((i) => i.kind === 'notice' && i.message?.key === 'roles.notice.agentMissing')
+    ).toBe(true)
   })
 
   it('« Relancer » après un redémarrage : la même portée et les points à surveiller', async () => {

@@ -326,6 +326,10 @@ export class ChildConversations {
       ...(request.model ? { model: request.model } : {})
     })
     if (by) this.waking.await(motherId, reviewer.id)
+    // Agent ou modèle du rôle laissés de côté (`@code-reviewer`) : dit dans son fil, comme tout rôle.
+    for (const message of request.notices ?? []) {
+      this.conversations.post(reviewer.id, { type: 'notice', level: 'info', message })
+    }
     return reviewer
   }
 

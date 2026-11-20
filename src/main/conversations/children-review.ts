@@ -160,7 +160,9 @@ export class ChildReviews {
     const target = await this.target(author, !!request.auto)
     if (target.files.length === 0) throw new Error(t('review.error.nothing'))
     const role = this.reviewerRole(motherId)
+    // La bulle dans la langue de l'interface ; la demande à l'agent en anglais (ADR-0014).
     const asked = askText(author, target, request.focus)
+    const toAgent = askText(author, target, request.focus, 'en')
     const brief = reviewBrief(target, request.focus)
     const created = await conversations.createChild(motherId, asked, request.profileId, undefined, {
       of: author.id,
@@ -199,7 +201,7 @@ export class ChildReviews {
       title: reviewer.title,
       profileLabel: reviewer.profileLabel,
       scope: target.scope,
-      ...(target.base ? { base: target.base.slice(0, 7) } : {}),
+      ...reviewBase(target),
       ...(target.baseBranch ? { baseBranch: target.baseBranch } : {}),
       files: target.files.length,
       status: 'running',
@@ -209,7 +211,7 @@ export class ChildReviews {
     }
     this.post(reviewer, author.id, review)
     log.info(`Relecture lancée (${reviewer.id.slice(0, 8)}) de ${author.id.slice(0, 8)}`)
-    void this.launch(reviewer, { role, asked, brief }, request.model)
+    void this.launch(reviewer, { role, asked: toAgent, brief }, request.model)
     return reviewer
   }
 
@@ -565,7 +567,7 @@ export class ChildReviews {
         ...rest,
         status: 'running',
         scope: target.scope,
-        ...(target.base ? { base: target.base.slice(0, 7) } : {}),
+        ...reviewBase(target),
         files: target.files.length
       })
     }
@@ -627,21 +629,33 @@ export class ChildReviews {
  */
 export function askText(
   author: Pick<ConversationSummary, 'title' | 'branch' | 'startedFrom'>,
-  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch' | 'branch' | 'base'>,
-  focus?: string
+  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch' | 'branch' | 'commit'>,
+  focus?: string,
+  /** `en` : la demande telle que l'agent la reçoit (ADR-0014) ; absent : langue de l'interface. */
+  lng?: 'en'
 ): string {
   const count = target.files.length
   const branch = author.branch ?? target.branch
+  const o = lng ? { lng } : {}
   const what =
-    target.scope === 'commit' && target.base
-      ? t('review.ask.commit', { commit: target.base.slice(0, 7), count })
+    target.scope === 'commit' && target.commit
+      ? t('review.ask.commit', { commit: target.commit.slice(0, 7), count, ...o })
       : target.scope === 'branch' && branch
-        ? t('review.ask.branch', { branch, count })
+        ? t('review.ask.branch', { branch, count, ...o })
         : author.startedFrom
-          ? t('review.ask.uncommittedOf', { title: author.title, count })
-          : t('review.ask.uncommitted', { count })
+          ? t('review.ask.uncommittedOf', { title: author.title, count, ...o })
+          : t('review.ask.uncommitted', { count, ...o })
   const points = focus?.trim()
-  return points ? `${what}\n\n${t('review.ask.focus', { focus: points })}` : what
+  return points ? `${what}\n\n${t('review.ask.focus', { focus: points, ...o })}` : what
+}
+
+/**
+ * Point affiché et relu par la carte (fiche 265) : le commit relu (portée `commit`), sinon le point
+ * de départ de la branche ; abrégé.
+ */
+function reviewBase(target: ReviewTarget): Pick<Review, 'base'> {
+  const base = target.scope === 'commit' ? target.commit : target.base
+  return base ? { base: base.slice(0, 7) } : {}
 }
 
 /** Texte de l'agent depuis le dernier message reçu (tout le tour, coupé par ses outils). */

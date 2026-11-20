@@ -103,11 +103,15 @@ export interface Review {
 /** Ce que la consigne cite du travail relu. */
 export interface ReviewTarget {
   scope: ReviewScope
-  /** Commit complet du point de comparaison (branche), ou le commit relu (`commit`). */
+  /** Commit complet du point de comparaison (branche), ou le parent du commit relu (`commit`). */
   base?: string
   baseBranch?: string
   /** Branche courante relue, hors worktree (`@code-reviewer`, fiche 265). */
   branch?: string
+  /** Portée `commit` : le commit relu (`base` : son premier parent, absent pour le premier). */
+  commit?: string
+  /** Dépôt sans commit : tout est nouveau, rien à comparer. */
+  noCommit?: true
   /** Fichiers modifiés (`git diff --name-only`, nouveaux compris). */
   files: string[]
   /** Titre de la conversation relue. */
@@ -123,14 +127,20 @@ export const REVIEW_BRIEF_LEAD = 'Code review request from Bobine.'
  */
 export function reviewBrief(target: ReviewTarget, focus?: string): string {
   const what =
-    target.scope === 'commit' && target.base
-      ? `the last commit ${target.base} of this folder. Read it with \`git show ${target.base}\`.`
-      : target.scope === 'branch' && target.base
-        ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
-          `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
-          'and `git status` for new files.'
-        : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
-          'for new files.'
+    target.scope === 'commit' && target.commit
+      ? `the last commit ${target.commit} of this folder. Read it with ` +
+        (target.base
+          ? `\`git diff ${target.base} ${target.commit}\` (against its first parent).`
+          : `\`git show ${target.commit}\` (the first commit of the repository).`)
+      : target.noCommit
+        ? 'every file of this folder: the repository has no commit yet, so there is nothing to ' +
+          'compare with. Read the files listed below, and `git status`.'
+        : target.scope === 'branch' && target.base
+          ? `everything changed since commit ${target.base}${target.baseBranch ? ` (where this branch left ${target.baseBranch})` : ''}: ` +
+            `the commits of this branch and the uncommitted changes. Read it with \`git diff ${target.base}\`, ` +
+            'and `git status` for new files.'
+          : 'the uncommitted changes of this folder. Read them with `git diff HEAD`, and `git status` ' +
+            'for new files.'
   const shown = target.files.slice(0, BRIEF_FILES)
   const more = target.files.length - shown.length
   const files = [
