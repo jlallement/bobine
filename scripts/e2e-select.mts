@@ -322,3 +322,25 @@ export function formatDuration(ms: number): string {
  */
 export const countFailures = (output: string): number =>
   output.split('\n').filter((l) => l.startsWith('  ✗')).length
+
+/**
+ * Captures d'échec d'une suite repassée au vert (fiche 267, revue UX : des `echec-*` périmés
+ * faisaient croire à un échec) : `echec-<suite>-NN-…-<thème>.png|txt`, préfixées de la langue hors
+ * du français. Une suite sans thème : tous ses thèmes. Rien d'une autre suite au nom voisin
+ * (`relecture` n'efface pas `relecture-commits`).
+ */
+export function staleFailureFiles(
+  files: readonly string[],
+  passed: readonly { name: string; scheme?: string | undefined }[],
+  lang = 'fr'
+): string[] {
+  const prefix = lang === 'fr' ? '' : `${lang}-`
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const patterns = passed.map(
+    ({ name, scheme }) =>
+      new RegExp(
+        `^${escape(prefix)}echec-${escape(name)}-\\d{2}-.*-${scheme ? escape(scheme) : '[a-z]+'}\\.(png|txt)$`
+      )
+  )
+  return files.filter((file) => patterns.some((p) => p.test(file)))
+}

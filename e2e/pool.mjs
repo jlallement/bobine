@@ -122,6 +122,8 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
   const running = []
   const durations = {}
   let failures = 0
+  // Tâches vertes : leurs captures d'échec d'avant sont effacées (fiche 267).
+  const passed = []
   let finished = 0
   const total = tasks.length
 
@@ -165,6 +167,7 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
     const failed = result.code !== 0 || counted > 0
     const count = failed ? Math.max(counted, 1) : 0
     failures += count
+    if (!failed) passed.push(task)
     const head = `${failed ? '✗' : '✓'} [${String(finished).padStart(String(total).length)}/${total}] ${label(task)} · ${formatDuration(result.ms)} · job ${slot + 1}`
     const why = result.blocked
       ? ` — bloquée, arrêtée au bout de ${formatDuration(SUITE_TIMEOUT_MS + GUARD_MS)}`
@@ -177,5 +180,5 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
   }
   process.off('SIGINT', stop)
   process.off('SIGTERM', stop)
-  return { failures, durations }
+  return { failures, durations, passed }
 }
