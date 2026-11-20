@@ -42,10 +42,13 @@ export async function connexionExpireeSuite(scheme) {
         await ui.send('Ajoute un test pour la fonction de calcul')
         await ui.waitFor(`!!${ui.$('blocker-auth')}`)
         const text = await ui.ev('document.body.innerText')
+        // La carte dit le refus ; l'avis du fil n'y fait pas double emploi tant qu'elle est là
+        // (fiche 267, revue UX), et jamais l'erreur brute.
         check(
-          text.includes(L('agentHost.authExpired', { agent: L('profiles.mock.label') })) &&
+          !text.includes(L('agentHost.authExpired', { agent: L('profiles.mock.label') })) &&
+            text.includes(L('blocker.auth.expiredTitle')) &&
             !text.includes('Authentication required'),
-          'fil : avis court et traduit, pas l’erreur brute'
+          'carte « Connexion expirée », pas d’avis en double, pas l’erreur brute'
         )
         check(
           (await ui.ev(`${ui.$('agent-status')}.innerText`)) === L('sidebar.status.authExpired') &&
@@ -154,10 +157,10 @@ export async function connexionExpireeSuite(scheme) {
         await ui.waitFor(`!!${ui.$('blocker-auth')}`)
         const text = await ui.ev('document.body.innerText')
         check(
-          text.includes(L('agentHost.authExpired', { agent: L('profiles.mock.label') })) &&
+          !text.includes(L('agentHost.authExpired', { agent: L('profiles.mock.label') })) &&
             text.includes(L('blocker.auth.expiredTitle')) &&
             !text.includes('Invalid or expired API key'),
-          'Bob : carte « Connexion expirée » et avis court, pas l’erreur brute'
+          'Bob : carte « Connexion expirée », pas d’avis en double (fiche 267), pas l’erreur brute'
         )
         check(
           (await ui.ev(`${ui.$('agent-status')}.innerText`)) === L('sidebar.status.authExpired') &&
@@ -204,13 +207,13 @@ export async function connexionExpireeSuite(scheme) {
           'deux actions : « Choisir un autre modèle » (principal) et « Se connecter »'
         )
         check(
-          (await ui.ev(`document.body.innerText`)).includes(
+          !(await ui.ev(`document.body.innerText`)).includes(
             L('agentHost.modelAuthRefused', {
               agent: L('profiles.mock.label'),
               model: REFUSED_MODEL
             })
           ),
-          'fil : l’avis nomme le modèle'
+          'fil : pas d’avis en double tant que la carte nomme le modèle (fiche 267)'
         )
         check(
           !(await ui.ev(`!!${ui.$('message-retry')}`)) && (await ui.ev(conversations)) === 1,
