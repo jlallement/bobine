@@ -680,7 +680,7 @@ describe('IPC', () => {
     const local = 'http://localhost:8099/index.html'
     const outcome = await Promise.race([
       call('files:openLink', 'c1', local),
-      new Promise((resolve) => setTimeout(() => resolve('attend la page'), 200))
+      new Promise((resolve) => setTimeout(() => resolve('attend la page'), 50))
     ])
     expect(outcome).toEqual({ kind: 'browser', path: local, url: local })
     expect(browser.openTab).toHaveBeenCalledWith('c1', local)

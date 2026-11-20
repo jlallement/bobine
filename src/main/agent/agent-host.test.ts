@@ -1583,8 +1583,8 @@ describe('AgentHost', () => {
         await host.prompt('Compile')
         await waitFor(() => host.snapshot().status === 'exited', 10_000)
         expect(host.snapshot().detail).toContain('SIGKILL')
-    // Dit en clair (fiche 272, recette).
-    expect(host.snapshot().detail).toContain('arrêt forcé')
+        // Dit en clair (fiche 272, recette).
+        expect(host.snapshot().detail).toContain('arrêt forcé')
         await waitFor(() => sleeping().length === 0, 8000)
         expect(sleeping()).toEqual([])
         host.stop()
