@@ -2,6 +2,46 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
+  turn summary and in Changes › Conversation, marked “modified”; the Git view shows its actual
+  state.
+- **Run the plan** is disabled once the plan has run (“Plan already run”): no more double runs.
+- Panel tabs: a tab’s **✕** no longer appears under the pointer that just activated it, and a
+  double click never closes a tab.
+- Reviewer comments in the diff wrap within the panel’s visible width.
+- A task **moved to the trash** says so on its card, explains why its buttons are gone, and its
+  response is no longer sent to the agent.
+- `/compact` no longer carries pending task responses: they go with your next real message.
+- A conversation whose folder was **moved or deleted**: Bobine says so before sending, and nothing
+  is sent; the log no longer claims git is missing.
+- The thread follows the response after “Ask … to fix”, even with the pointer still on the card.
+- A local link (`http://localhost…`) switches the panel to the Browser right away, without waiting
+  for the page to load.
+- Texts: model and mode menus titled in the interface language; readable task activity (“Read
+  liste.js” rather than “read”); the line under the input and its hint address the chosen role;
+  curly apostrophes everywhere; “Bobcoin” capitalized; the start mode in Settings uses the agent’s
+  own name for it (“Build”).
+- macOS menus (Close All, Full Screen, Dictation…) follow the app’s language.
+- Conversation search no longer shows a role’s hidden instruction.
+- Narrow window: the Code / Discussion switch no longer overflows.
+- No more “View changes” on a card whose tasks are all read-only.
+- Bobine’s internal fallback folder no longer appears among recent folders.
+- Agent stopped: “The agent stopped” said once, and a forced stop explained.
+- The browser address hint is never cut; Discussion: no browser without its tab; the sidebar toggle
+  is named for VoiceOver.
+- `file:line` written as code in a response opens with a click.
+- The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on
+  one line; `@git-changes` and `@terminal` sit under “Context” in the `@` menu.
+- `/` menu: Bobine’s commands show the conversation’s agent only.
+- Launching with `bobine <folder>`: the previously shown conversation’s agent no longer starts for
+  nothing.
+- Several roles for one message: each task is named after its role; in English, built-in roles keep
+  their English names in the thread.
+
 ## 1.0.0-rc.2 — November 20, 2026
 
 ### New

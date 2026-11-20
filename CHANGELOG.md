@@ -2,6 +2,48 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
+  désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié » ; la vue
+  Git montre son état réel.
+- **Exécuter le plan** se désactive une fois le plan exécuté (« Plan déjà exécuté ») : plus de double
+  exécution.
+- Onglets du panneau : le **✕** d’un onglet n’apparaît plus sous le pointeur qui vient de l’activer,
+  et un double clic ne ferme jamais un onglet.
+- Les remarques du relecteur dans le diff passent à la ligne dans la largeur visible du panneau.
+- Un travail **mis à la corbeille** le dit sur sa carte (« mis à la corbeille »), explique pourquoi
+  ses boutons ont disparu, et sa réponse ne part plus à l’agent.
+- `/compact` n’emporte plus les réponses des travaux en attente : elles partent avec votre prochain
+  vrai message.
+- Dossier d’une conversation **déplacé ou supprimé** : Bobine le dit avant d’envoyer, et rien ne
+  part ; le journal ne prétend plus que git est absent.
+- Le fil suit la réponse après « Demander à … de corriger », même pointeur immobile sur la carte.
+- Un lien local (`http://localhost…`) passe le panneau sur le Navigateur tout de suite, sans
+  attendre la fin du chargement.
+- Textes : menus du modèle et du mode nommés en français (« Modèle », « Mode ») ; activité des
+  travaux lisible (« Lecture de liste.js » plutôt que « read ») ; « Sera confié à … » sous la saisie,
+  dont l’invite s’adresse au rôle choisi ; apostrophes typographiques partout ; « Bobcoin » avec sa
+  majuscule ; le mode de départ des Réglages porte le nom que l’agent lui donne (« Build »).
+- Menus de macOS (Fermer tout, Plein écran, Dictée…) dans la langue de l’app.
+- La recherche de conversations ne montre plus la consigne cachée d’un rôle.
+- Fenêtre étroite : le sélecteur Code / Discussion ne déborde plus.
+- Plus de « Voir les modifications » sur une carte de travaux tous en lecture seule.
+- Le dossier interne de repli de Bobine n’apparaît plus parmi les dossiers récents.
+- Agent arrêté : « L’agent s’est arrêté » une seule fois, et un arrêt forcé dit en clair.
+- Invite de l’adresse du navigateur jamais coupée ; Discussion : plus de navigateur sans son onglet ;
+  bouton de la barre latérale nommé pour VoiceOver.
+- `fichier:ligne` écrit en code dans une réponse s’ouvre d’un clic.
+- Carte du plan suivie de son pied (heure, durée) ; ligne « fichiers non commités » de l’onglet
+  Session sur une ligne ; `@git-changes` et `@terminal` rangés sous « Contexte » dans le menu `@`.
+- Menu `/` : les commandes de Bobine portent le nom de l’agent de la conversation seul.
+- Lancement par `bobine <dossier>` : l’agent de la conversation affichée avant ne démarre plus pour
+  rien.
+- Plusieurs rôles pour un même message : chaque travail porte le nom de son rôle ; en anglais, les
+  rôles fournis gardent leur nom anglais dans le fil.
+
 ## 1.0.0-rc.2 — 20 novembre 2026
 
 ### Nouveautés
