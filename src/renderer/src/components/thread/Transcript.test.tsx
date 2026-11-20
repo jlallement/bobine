@@ -497,6 +497,29 @@ describe('bilan de chaque tour dans le pied de sa réponse (fiches 255, 261)', (
       .map(({ mark }) => mark)
   }
 
+  it('tour du plan (fiche 272, recette) : la carte du plan, puis son pied « heure · durée »', () => {
+    const plan = `## Plan\n\n${'Étape détaillée du plan. '.repeat(12)}`
+    render(
+      <Transcript
+        items={[
+          {
+            kind: 'user',
+            id: 1,
+            text: 'Prépare un plan',
+            at: 0,
+            mode: { id: 'plan', name: 'Plan' }
+          },
+          { kind: 'agent', id: 2, text: plan, at: 22_000 }
+        ]}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={{ busy: false, onEdit: noop, onOpenConversation: noop }}
+      />
+    )
+    expect(screen.getByTestId('plan-document')).toBeTruthy()
+    expect(screen.getByTestId('turn-summary').textContent).toContain('22 s')
+  })
+
   it('message en file (D5) : chacun son pied, dans le groupe de sa réponse, avant les cartes d’après', () => {
     show({ busy: false })
     expect(order()).toEqual(['Fait.', '1 min 30 s', 'Aussi.', '4 s', 'Code reviewer'])

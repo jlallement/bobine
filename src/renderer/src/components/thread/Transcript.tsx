@@ -299,7 +299,24 @@ export function Transcript({
         {...(planActions ? { actions: planActions } : {})}
       />
     )
-    if (replaced.has(item.id)) return card ?? null
+    if (replaced.has(item.id)) {
+      // Réponse remplacée par la carte du plan : son pied (heure, durée) reste, sous la carte
+      // (fiche 272, recette : le tour du plan n'avait pas « 23:29 · 22 s »).
+      const foot = item.kind === 'agent' ? feet.get(item.id) : undefined
+      if (!foot || item.kind !== 'agent') return card ?? null
+      const text = item.text
+      return [
+        card,
+        <div key={`plan-foot-${item.id}`} className="msg-agent-group plan-foot">
+          <ReplyFoot
+            foot={foot}
+            text={() => text}
+            at={item.at}
+            onOpenChanges={onOpenChanges ? openChanges : undefined}
+          />
+        </div>
+      ]
+    }
     const group = layout.groups.get(item.id)
     if (group) {
       return (
