@@ -69,6 +69,11 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- **A new role no longer hides an existing one.** Creating a role whose identifier is already
+  taken (by a built-in role such as `@code-reviewer`, a personal role or a project role) is refused
+  at the first step, naming the role that has it, with “Use @…-2” to take a free one; renaming a
+  role follows the same rule. Two roles with the same icon or colour have always been two separate
+  roles. “Save as personal role” on a built-in role still replaces it.
 - Handing work to a role that writes no longer shows a warning before you even type: a discreet
   line under the input says where it will work ("from the last commit, without your N uncommitted
   changes"), Enter always sends, and "Choose…" lets you commit first, ask for just a read-only

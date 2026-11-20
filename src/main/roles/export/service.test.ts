@@ -384,3 +384,42 @@ describe('registre et copies', () => {
     expect(a).not.toBe(b)
   })
 })
+
+/**
+ * Fiche 268 : deux rôles de Bobine du même identifiant (deux projets, ou un rôle écrit à la main
+ * qui cache un autre) partagent la même entrée chez l'agent, qui n'a qu'un espace de noms. Le
+ * dernier installé l'emporte ; l'autre n'est jamais dit « à jour » : sa ligne propose la mise à
+ * jour. Deux identifiants différents (même icône, même couleur) ont chacun leur entrée.
+ */
+describe('installation : collisions d’identifiant (fiche 268)', () => {
+  it('même icône, identifiants différents : deux entrées, rien d’écrasé', () => {
+    const exports = service()
+    for (const profileId of ['bob', 'opencode']) {
+      const target = { profileId, scope: 'user' as const }
+      expect(
+        exports.install(role({ name: 'expert-web' }), target, undefined, { useInBobine: false }).ok
+      ).toBe(true)
+      expect(
+        exports.install(role({ name: 'expert-mobile' }), target, undefined, { useInBobine: false })
+          .ok
+      ).toBe(true)
+    }
+    const modes = (parse(readFileSync(bobFile(), 'utf8')) as { customModes: { slug: string }[] })
+      .customModes
+    expect(modes.map((m) => m.slug)).toEqual(['expert-web', 'expert-mobile'])
+    expect(existsSync(openCodeFile('expert-web'))).toBe(true)
+    expect(existsSync(openCodeFile('expert-mobile'))).toBe(true)
+  })
+
+  it('même identifiant, deux rôles : le second remplace l’entrée, le premier se dit à mettre à jour', () => {
+    const exports = service()
+    const target = { profileId: 'opencode', scope: 'user' as const }
+    const first = role({ prompt: 'Projet A : relis la sécurité.' }, 'project')
+    const second = role({ prompt: 'Projet B : relis la performance.' }, 'project')
+    expect(exports.install(first, target, join(root, 'a'), { useInBobine: false }).ok).toBe(true)
+    expect(exports.install(second, target, join(root, 'b'), { useInBobine: false }).ok).toBe(true)
+    expect(readFileSync(openCodeFile(), 'utf8')).toContain('Projet B')
+    expect(exports.status(second).map((s) => s.state)).toEqual(['upToDate'])
+    expect(exports.status(first).map((s) => s.state)).toEqual(['roleChanged'])
+  })
+})

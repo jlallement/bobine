@@ -143,7 +143,8 @@ describe('Réglages › Rôles (fiche 223, phase 3A)', () => {
     expect(calls['save']).toHaveBeenCalledWith(
       'user',
       expect.objectContaining({ name: 'tech-lead', description: 'Tranche.' }),
-      { conversationId: 'c1' }
+      // Fiche 268 : le remplacement d'un rôle fourni est dit au main, jamais supposé.
+      { conversationId: 'c1', replaceBuiltin: true }
     )
   })
 

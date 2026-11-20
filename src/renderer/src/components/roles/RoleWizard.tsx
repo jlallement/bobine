@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProfileSummary } from '@shared/agent'
-import type { Role, RolesListing, RoleScope } from '@shared/roles'
+import type { Role, RolesListing } from '@shared/roles'
 import { ipcErrorText } from '../../ipc-errors'
 import {
   draftDefinition,
@@ -11,6 +11,7 @@ import {
   draftTouched,
   emptyDraft,
   errorField,
+  nameTakenError,
   stepOfField,
   WIZARD_STEPS,
   type DraftErrors,
@@ -49,8 +50,6 @@ export interface RoleWizardProps {
   /** Rôle enregistré ; `tryIt` : « Créer et essayer » (son jeton `@rôle` dans la saisie). */
   onCreated: (name: string, tryIt: boolean) => void
 }
-
-const PRIORITY: readonly RoleScope[] = ['builtin', 'user', 'project']
 
 /**
  * Rôles fournis, pour les tuiles de l'étape 2 : leur définition d'origine, même remplacés, dans la
@@ -105,17 +104,24 @@ export function RoleWizard(props: RoleWizardProps) {
     body.current?.querySelector<HTMLElement>('input, textarea, select, button')?.focus()
   }, [step])
 
+  /**
+   * Erreurs d'une étape, plus l'identifiant déjà pris par un rôle connu (fiche 268) : une création
+   * ne cache ni ne remplace jamais un rôle, l'assistant le dit dès l'étape 1.
+   */
+  const errorsOf = (next: typeof draft, at: WizardStep | 'all'): DraftErrors => {
+    const found = draftErrors(next, at)
+    if ((at === 'all' || at === 'who') && !found.name && listing) {
+      const taken = nameTakenError(next.name, listing.roles)
+      if (taken) return { name: taken, ...found }
+    }
+    return found
+  }
   const change: DraftChange = (next) => {
     setDraft(next)
     // Une erreur montrée disparaît dès que son champ change.
-    if (Object.keys(errors).length) setErrors(draftErrors(next, step))
+    if (Object.keys(errors).length) setErrors(errorsOf(next, step))
     setFailure(null)
   }
-  const existing = listing?.roles.find((r) => r.name === draft.name.trim())
-  const replaces =
-    existing && PRIORITY.indexOf(existing.scope) < PRIORITY.indexOf(draft.scope)
-      ? existing
-      : undefined
 
   const pickTemplate = (template: Role | null, force = false) => {
     const fromTemplate = templates.find((r) => r.name === draft.template)?.prompt
@@ -138,7 +144,7 @@ export function RoleWizard(props: RoleWizardProps) {
   const goTo = (next: WizardStep) => {
     // En avant : l'étape quittée doit être juste ; en arrière, toujours possible.
     if (WIZARD_STEPS.indexOf(next) > index) {
-      const found = draftErrors(draft, step)
+      const found = errorsOf(draft, step)
       setErrors(found)
       if (Object.keys(found).length) return
       if (next === 'how' && draft.template === undefined && !draft.prompt.trim()) {
@@ -152,7 +158,7 @@ export function RoleWizard(props: RoleWizardProps) {
 
   const save = async (tryIt: boolean) => {
     if (busy) return
-    const found = draftErrors(draft, 'all')
+    const found = errorsOf(draft, 'all')
     const first = Object.keys(found)[0] as keyof DraftErrors | undefined
     if (first) {
       setErrors(found)
@@ -220,7 +226,6 @@ export function RoleWizard(props: RoleWizardProps) {
                     draft={draft}
                     onChange={change}
                     errors={errors}
-                    {...(replaces ? { replaces } : {})}
                     onEnter={() => goTo('how')}
                     autoFocus
                   />

@@ -52,12 +52,16 @@ export interface RolesIpcContract extends RoleExportIpcContract {
     args: [scope: RoleScope, name: string, conversationId?: string]
     result: Role | null
   }
-  /** Écrit un rôle personnel ou du projet ; `previousName` : renommage. */
+  /**
+   * Écrit un rôle personnel ou du projet ; `previousName` : renommage. Un identifiant déjà pris
+   * par un autre rôle connu ici est refusé (`nameTaken`, fiche 268), sauf `replaceBuiltin` :
+   * « Enregistrer en rôle personnel » d'un rôle fourni.
+   */
   'roles:save': {
     args: [
       scope: RoleFileScope,
       role: RoleDefinition,
-      options?: { conversationId?: string; previousName?: string }
+      options?: { conversationId?: string; previousName?: string; replaceBuiltin?: boolean }
     ]
     result: { ok: true } | { ok: false; error: RoleError }
   }

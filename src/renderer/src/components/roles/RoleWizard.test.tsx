@@ -187,4 +187,77 @@ describe('assistant de création d’un rôle (fiche 223, phase 3A)', () => {
     fireEvent.click(screen.getByTestId('role-replace-confirm'))
     expect((screen.getByTestId('role-prompt') as HTMLTextAreaElement).value).toBe(security.prompt)
   })
+
+  // Fiche 268 : une création ne cache ni ne remplace jamais un rôle connu.
+  it('identifiant d’un rôle connu : dit dès l’étape 1, « Utiliser @…-2 » le corrige', async () => {
+    renderWizard({
+      prefill: { label: 'Security expert', description: 'Audite.', prompt: 'Audite tout.' }
+    })
+    await act(async () => {})
+    expect((screen.getByTestId('role-name') as HTMLInputElement).value).toBe('security-expert')
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    expect(screen.getByTestId('role-wizard').dataset.step).toBe('who')
+    expect(screen.getByTestId('role-field-error').textContent?.replace(/\u00a0/g, ' ')).toBe(
+      '@security-expert est déjà pris par « Expert sécu » (fourni) : choisissez un autre identifiant.'
+    )
+    fireEvent.click(screen.getByTestId('role-name-suggestion'))
+    expect((screen.getByTestId('role-name') as HTMLInputElement).value).toBe('security-expert-2')
+    expect(screen.queryByTestId('role-field-error')).toBeNull()
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('role-wizard-create'))
+    })
+    expect(save).toHaveBeenCalledWith(
+      'user',
+      expect.objectContaining({ name: 'security-expert-2', label: 'Security expert' }),
+      { conversationId: 'c1' }
+    )
+  })
+
+  it('même icône qu’un rôle connu, autre identifiant : rien n’est signalé, création normale', async () => {
+    renderWizard({ prefill: { label: 'Auditeur', description: 'Audite.', prompt: 'Audite.' } })
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('role-icon-shield-check'))
+    fireEvent.click(screen.getByTestId('role-color-orange'))
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    expect(screen.getByTestId('role-wizard').dataset.step).toBe('how')
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('role-wizard-create'))
+    })
+    expect(save).toHaveBeenCalledWith(
+      'user',
+      expect.objectContaining({ name: 'auditeur', icon: 'shield-check', color: 'orange' }),
+      { conversationId: 'c1' }
+    )
+  })
+
+  it('refus du main (`nameTaken`, rôle d’un autre projet ou écrit entre-temps) : dit et corrigeable', async () => {
+    save.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'nameTaken',
+        field: 'name',
+        taken: { label: 'Testeur maison', scope: 'project' },
+        suggestion: 'testeur-2'
+      }
+    })
+    const { onCreated } = renderWizard({
+      prefill: { label: 'Testeur', description: 'Teste.', prompt: 'Teste tout.' }
+    })
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    fireEvent.click(screen.getByTestId('role-wizard-next'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('role-wizard-create'))
+    })
+    expect(screen.getByTestId('role-wizard').dataset.step).toBe('who')
+    expect(screen.getByTestId('role-field-error').textContent?.replace(/\u00a0/g, ' ')).toBe(
+      '@testeur est déjà pris par « Testeur maison » (du projet) : choisissez un autre identifiant.'
+    )
+    expect(onCreated).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('role-name-suggestion'))
+    expect((screen.getByTestId('role-name') as HTMLInputElement).value).toBe('testeur-2')
+  })
 })

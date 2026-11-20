@@ -249,6 +249,15 @@
   border: 0;
 }
 
+/* « Utiliser @x-2 » sous l'erreur d'un identifiant déjà pris (fiche 268) : à sa taille. */
+.role-name-suggestion {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .role-field-head {
   display: flex;
   align-items: center;

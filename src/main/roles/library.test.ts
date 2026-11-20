@@ -134,11 +134,16 @@ describe('bibliothèque des rôles (fiche 223)', () => {
     expect(readFileSync(join(userDir, 'doc-writer.md'), 'utf8')).toContain('label: Rédacteur')
     expect(library.save('user', draft)).toEqual({
       ok: false,
-      error: { code: 'duplicateName', field: 'name' }
+      error: {
+        code: 'nameTaken',
+        field: 'name',
+        taken: { label: 'Rédacteur', scope: 'user' },
+        suggestion: 'doc-writer-2'
+      }
     })
-    expect(library.save('user', { ...draft, name: 'doc' }, undefined, 'doc-writer')).toMatchObject({
-      ok: true
-    })
+    expect(
+      library.save('user', { ...draft, name: 'doc' }, undefined, { previousName: 'doc-writer' })
+    ).toMatchObject({ ok: true })
     expect(existsSync(join(userDir, 'doc-writer.md'))).toBe(false)
     expect(library.find(undefined, 'doc')?.label).toBe('Rédacteur')
     expect(library.save('user', { ...draft, color: 'red' })).toMatchObject({ ok: false })
@@ -191,5 +196,134 @@ describe('bibliothèque des rôles (fiche 223)', () => {
     })
     expect(result).toEqual({ ok: false, error: { code: 'duplicateName', field: 'name' } })
     expect(readFileSync(join(userDir, 'a.md'), 'utf8')).toContain('name: autre')
+  })
+
+  // Fiche 268 : « le second rôle de même icône écrase le premier ». L'identifiant d'un rôle est son
+  // nom (`<nom>.md`), jamais l'icône ; ce qui cachait un rôle sans un mot, c'était un nom déjà pris
+  // dans une autre portée (projet > personnel > fourni).
+  describe('collisions à la création (fiche 268)', () => {
+    const role = (name: string, extra: Record<string, unknown> = {}) => ({
+      name,
+      label: name,
+      icon: 'shield-check',
+      color: 'orange',
+      description: `Rôle ${name}.`,
+      readOnly: true,
+      prompt: `Consigne de ${name}.`,
+      ...extra
+    })
+
+    it('deux rôles de même icône et même couleur, noms différents : tous deux gardés', () => {
+      const { library, userDir } = setup()
+      expect(library.save('user', role('expert-web', { label: 'Expert web' }))).toMatchObject({
+        ok: true
+      })
+      expect(library.save('user', role('expert-mobile', { label: 'Expert mobile' }))).toMatchObject(
+        { ok: true }
+      )
+      expect(readFileSync(join(userDir, 'expert-web.md'), 'utf8')).toContain(
+        'Consigne de expert-web.'
+      )
+      expect(readFileSync(join(userDir, 'expert-mobile.md'), 'utf8')).toContain(
+        'Consigne de expert-mobile.'
+      )
+      const mine = library.active().filter((r) => r.scope === 'user')
+      expect(mine.map((r) => [r.name, r.icon, r.color])).toEqual([
+        ['expert-mobile', 'shield-check', 'orange'],
+        ['expert-web', 'shield-check', 'orange']
+      ])
+    })
+
+    it('même libellé, identifiants différents : deux rôles (le libellé n’est pas une clé)', () => {
+      const { library } = setup()
+      library.save('user', role('expert', { label: 'Expert' }))
+      expect(library.save('user', role('expert-2', { label: 'Expert' }))).toMatchObject({
+        ok: true
+      })
+      expect(library.active().filter((r) => r.label === 'Expert')).toHaveLength(2)
+    })
+
+    it('identifiant d’un rôle fourni : refusé à la création, sauf « Enregistrer en personnel »', () => {
+      const { library, userDir } = setup()
+      expect(library.save('user', role('security-expert'))).toEqual({
+        ok: false,
+        error: {
+          code: 'nameTaken',
+          field: 'name',
+          taken: { label: expect.any(String) as string, scope: 'builtin' },
+          suggestion: 'security-expert-2'
+        }
+      })
+      expect(existsSync(join(userDir, 'security-expert.md'))).toBe(false)
+      expect(library.find(undefined, 'security-expert')?.scope).toBe('builtin')
+      // Le geste explicite de l'écran d'un rôle fourni le remplace (ADR-0045), comme avant.
+      expect(
+        library.save('user', role('security-expert'), undefined, { replaceBuiltin: true })
+      ).toMatchObject({ ok: true })
+      expect(library.find(undefined, 'security-expert')?.scope).toBe('user')
+      // Une seconde fois : le personnel existe, refusé.
+      expect(
+        library.save('user', role('security-expert'), undefined, { replaceBuiltin: true })
+      ).toMatchObject({ ok: false, error: { code: 'nameTaken', taken: { scope: 'user' } } })
+    })
+
+    it('rôle du projet contre rôle personnel : ni l’un ni l’autre ne cache l’autre à la création', () => {
+      const { library, userDir, project, projectDir } = setup()
+      library.save('user', role('expert-perf', { label: 'Perso' }))
+      // Avant : écrit dans le projet, il cachait le personnel (simple remarque dans l'assistant).
+      expect(library.save('project', role('expert-perf', { label: 'Projet' }), project)).toEqual({
+        ok: false,
+        error: {
+          code: 'nameTaken',
+          field: 'name',
+          taken: { label: 'Perso', scope: 'user' },
+          suggestion: 'expert-perf-2'
+        }
+      })
+      expect(existsSync(join(projectDir, 'expert-perf.md'))).toBe(false)
+      // Dans l'autre sens : un personnel créé pendant qu'un rôle du projet a ce nom ne serait
+      // jamais visible dans ce projet (avant : sans un mot).
+      library.save('project', role('relecteur', { label: 'Relecteur maison' }), project)
+      expect(library.save('user', role('relecteur'), project)).toMatchObject({
+        ok: false,
+        error: { code: 'nameTaken', taken: { label: 'Relecteur maison', scope: 'project' } }
+      })
+      expect(existsSync(join(userDir, 'relecteur.md'))).toBe(false)
+      expect(library.list(project).roles.find((r) => r.name === 'expert-perf')?.label).toBe('Perso')
+    })
+
+    it('renommer vers un identifiant pris : refusé, le rôle reste où il était', () => {
+      const { library, userDir } = setup()
+      library.save('user', role('a'))
+      library.save('user', role('b'))
+      expect(library.save('user', role('b'), undefined, { previousName: 'a' })).toMatchObject({
+        ok: false,
+        error: { code: 'nameTaken', suggestion: 'b-2' }
+      })
+      expect(
+        library.save('user', role('code-reviewer'), undefined, { previousName: 'a' })
+      ).toMatchObject({
+        ok: false,
+        error: { code: 'nameTaken', taken: { scope: 'builtin' } }
+      })
+      expect(readFileSync(join(userDir, 'a.md'), 'utf8')).toContain('Consigne de a.')
+      // Garder son nom en modifiant le reste : permis (ce n'est pas une création).
+      expect(
+        library.save('user', role('a', { icon: 'bug' }), undefined, { previousName: 'a' })
+      ).toMatchObject({ ok: true })
+    })
+
+    it('suggestion libre : évite les noms pris et les fichiers déjà là', () => {
+      const { library, userDir } = setup()
+      library.save('user', role('qa'))
+      library.save('user', role('qa-2'))
+      writeFileSync(join(userDir, 'qa-3.md'), 'pas un rôle')
+      expect(library.save('user', role('qa'))).toMatchObject({
+        error: { code: 'nameTaken', suggestion: 'qa-4' }
+      })
+      expect(library.save('user', role('qa-2'))).toMatchObject({
+        error: { code: 'nameTaken', suggestion: 'qa-4' }
+      })
+    })
   })
 })

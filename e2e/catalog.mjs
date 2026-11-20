@@ -1182,6 +1182,21 @@ export const SUITES = [
     ]
   },
   {
+    // Deux rôles de même icône, collisions de noms (fiche 268) : capture `268-deux-roles-meme-icone`.
+    name: 'roles-meme-icone',
+    file: 'roles-meme-icone.mjs',
+    run: 'rolesMemeIconeSuite',
+    themes: BOTH,
+    sources: [
+      `${C}roles/`,
+      `${R}roles/`,
+      `${R}roles.css`,
+      'src/shared/roles.ts',
+      'src/shared/roles-ipc.ts',
+      'src/main/roles/'
+    ]
+  },
+  {
     // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, travaux des rôles, proposition ;
     // bulle « @Rôle … » et carte-réponse (fiche 263).
     name: 'roles-travail',

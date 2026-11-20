@@ -18,9 +18,17 @@ import { RoleAvatar, useRoleTint } from './RoleAvatar'
 export type DraftChange = (next: RoleDraft) => void
 
 /** Message d'une erreur de rôle (`roles.error.*`), libellé vide dit à part. */
-export function roleErrorText(error: RoleError, draft?: Pick<RoleDraft, 'label'>): string {
+export function roleErrorText(error: RoleError, draft?: Pick<RoleDraft, 'label' | 'name'>): string {
   if (error.code === 'label' && draft && !draft.label.trim()) {
     return i18next.t('roleForm.label.missing')
+  }
+  if (error.code === 'nameTaken') {
+    const scope = error.taken?.scope ?? 'user'
+    return i18next.t('roles.error.nameTaken', {
+      name: draft?.name.trim() ?? '',
+      label: error.taken?.label ?? '',
+      scope: i18next.t(`rolesSettings.scope.${scope}`)
+    })
   }
   return i18next.t(`roles.error.${error.code}`, {
     field: error.field ?? '',
@@ -44,7 +52,8 @@ function Field({
   error,
   draft,
   children,
-  aside
+  aside,
+  after
 }: {
   label: string
   hint?: ReactNode
@@ -52,6 +61,8 @@ function Field({
   draft: RoleDraft
   children: (ids: { input: string; error?: string }) => ReactNode
   aside?: ReactNode
+  /** Sous l'erreur : un geste qui la corrige. */
+  after?: ReactNode
 }) {
   const id = useId()
   const errorId = `${id}-error`
@@ -66,6 +77,7 @@ function Field({
       {children({ input: id, ...(error ? { error: errorId } : {}) })}
       {hint && <div className="field-help">{hint}</div>}
       <FieldError error={error} draft={draft} id={errorId} />
+      {after}
     </div>
   )
 }
@@ -73,20 +85,20 @@ function Field({
 const described = (ids: { error?: string }) =>
   ids.error ? { 'aria-invalid': true, 'aria-describedby': ids.error } : {}
 
-/** Nom affiché, identifiant après `@`, et rôle déjà connu sous ce nom ailleurs. */
+/**
+ * Nom affiché et identifiant après `@`. Identifiant déjà pris (fiche 268) : l'erreur le dit, et
+ * « Utiliser @x-2 » prend l'identifiant libre proposé.
+ */
 export function NameFields({
   draft,
   onChange,
   errors,
-  replaces,
   onEnter,
   autoFocus
 }: {
   draft: RoleDraft
   onChange: DraftChange
   errors: DraftErrors
-  /** Rôle d'une autre portée que celui-ci remplacera (même nom). */
-  replaces?: Pick<Role, 'label' | 'scope'>
   onEnter?: () => void
   autoFocus?: boolean
 }) {
@@ -122,13 +134,14 @@ export function NameFields({
         label={t('roleForm.name.label')}
         error={errors.name}
         draft={draft}
-        hint={
-          replaces
-            ? t('roleForm.name.replaces', {
-                label: replaces.label,
-                scope: t(`rolesSettings.scope.${replaces.scope}`)
-              })
-            : t('roleForm.name.hint')
+        hint={t('roleForm.name.hint')}
+        after={
+          errors.name?.code === 'nameTaken' && errors.name.suggestion ? (
+            <SuggestedName
+              name={errors.name.suggestion}
+              onUse={(name) => onChange({ ...draft, name, nameEdited: true })}
+            />
+          ) : undefined
         }
       >
         {(ids) => (
@@ -151,6 +164,22 @@ export function NameFields({
         )}
       </Field>
     </div>
+  )
+}
+
+/** « Utiliser @x-2 » : l'identifiant libre proposé quand le nom est déjà pris (fiche 268). */
+function SuggestedName({ name, onUse }: { name: string; onUse: (name: string) => void }) {
+  const { t } = useTranslation()
+  return (
+    <button
+      type="button"
+      className="btn small role-name-suggestion"
+      onClick={() => onUse(name)}
+      data-testid="role-name-suggestion"
+      data-name={name}
+    >
+      {t('roleForm.name.useSuggestion', { name })}
+    </button>
   )
 }
 

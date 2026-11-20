@@ -5108,7 +5108,7 @@
     "name": {
       "label": "Identifier",
       "hint": "Typed after @; lowercase letters, digits and hyphens.",
-      "replaces": "Will replace the role “{{label}}” ({{scope}}) with the same identifier."
+      "useSuggestion": "Use @{{name}}"
     },
     "icon": "Icon",
     "color": "Color",
@@ -5358,6 +5358,7 @@
       "prompt": "Instructions missing or too long (20,000 characters at most).",
       "tooLarge": "File too large (64 KB at most).",
       "duplicateName": "Another role already has this name here.",
+      "nameTaken": "@{{name}} is already taken by “{{label}}” ({{scope}}): choose another identifier.",
       "unreadable": "File cannot be read.",
       "unknownRole": "Unknown or disabled role: {{name}}. Roles: {{roles}}.",
       "noProject": "This conversation has no project folder.",

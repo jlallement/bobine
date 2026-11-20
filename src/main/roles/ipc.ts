@@ -84,11 +84,14 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
         unknown
       >
       const previous = o['previousName'] === undefined ? undefined : name(o['previousName'])
+      const replaceBuiltin = o['replaceBuiltin'] ?? false
+      if (typeof replaceBuiltin !== 'boolean')
+        throw new Error('Paramètre invalide : replaceBuiltin')
       const result = available().library.save(
         target,
         role as Parameters<RoleLibrary['save']>[1],
         folder(o['conversationId']),
-        previous
+        { previousName: previous, replaceBuiltin }
       )
       return result.ok ? { ok: true } : result
     },

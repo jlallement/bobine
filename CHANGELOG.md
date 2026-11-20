@@ -70,6 +70,12 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- **Un nouveau rôle ne cache plus un rôle existant.** Créer un rôle dont l'identifiant est déjà
+  pris (par un rôle fourni comme `@code-reviewer`, un rôle personnel ou un rôle du projet) est
+  refusé dès la première étape, en nommant le rôle qui le porte, avec « Utiliser @…-2 » pour en
+  prendre un libre ; renommer un rôle suit la même règle. Deux rôles de même icône ou de même
+  couleur ont toujours été deux rôles distincts. « Enregistrer en rôle personnel » d'un rôle fourni
+  le remplace, comme avant.
 - Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
   ligne discrète sous la saisie dit d'où il partira (« depuis le dernier commit, sans vos N
   modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de

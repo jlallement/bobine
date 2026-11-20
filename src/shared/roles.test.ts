@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { stripAppContext } from './app-context'
 import {
   checkRole,
+  freeRoleName,
   mentionedRoles,
   mergeRoles,
   parseRoleFile,
   parseRoleStamp,
   ROLE_LANGUAGE_LINE,
   roleLanguageLine,
+  ROLE_NAME,
   roleOpening,
   rolesParagraph,
   splitRoleBrief,
@@ -316,5 +318,29 @@ describe('relecture de la phase 2', () => {
     expect(listed[1]).toMatch(/^- mine:/)
     expect(listed[2]?.length).toBeLessThan(220)
     expect(listed[20]).toBe('- and 12 more role(s), usable by name.')
+  })
+})
+
+describe('identifiant libre proche (fiche 268)', () => {
+  const taken =
+    (...names: string[]) =>
+    (name: string) =>
+      names.includes(name)
+  it('ajoute ou incrémente un suffixe numérique', () => {
+    expect(freeRoleName('expert', taken('expert'))).toBe('expert-2')
+    expect(freeRoleName('expert', taken('expert', 'expert-2', 'expert-3'))).toBe('expert-4')
+    expect(freeRoleName('expert-2', taken('expert-2'))).toBe('expert-3')
+    expect(freeRoleName('2024', taken('2024'))).toBe('2024-2')
+  })
+  it('reste un identifiant valide de 40 caractères au plus', () => {
+    const long = 'a'.repeat(39) + 'b'
+    const free = freeRoleName(long, taken(long))
+    expect(free).toBe(`${'a'.repeat(38)}-2`)
+    expect(ROLE_NAME.test(free ?? '')).toBe(true)
+    // Coupé sur un tiret : pas de « --2 ».
+    expect(freeRoleName(`${'a'.repeat(37)}-bc`, () => false)).toBe(`${'a'.repeat(37)}-2`)
+  })
+  it('aucun libre dans la fenêtre : rien de proposé', () => {
+    expect(freeRoleName('x', () => true)).toBeUndefined()
   })
 })

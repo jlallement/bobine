@@ -28,6 +28,7 @@ import {
 import { basename, dirname, join } from 'node:path'
 import {
   checkRole,
+  freeRoleName,
   mergeRoles,
   parseRoleFile,
   PROJECT_ROLES_DIR,
@@ -52,6 +53,12 @@ export interface RoleLibraryOptions {
   off: () => ReadonlySet<string>
   setEnabled: (name: string, enabled: boolean) => void
   log?: (message: string) => void
+}
+
+/** `previousName` : renommage ; `replaceBuiltin` : rôle fourni enregistré en personnel. */
+export interface RoleSaveOptions {
+  previousName?: string | undefined
+  replaceBuiltin?: boolean
 }
 
 export type RoleSaveResult = { ok: true; role: RoleDefinition } | { ok: false; error: RoleError }
@@ -107,17 +114,24 @@ export class RoleLibrary {
 
   /**
    * Écrit un rôle personnel ou du projet (`<nom>.md`). Renommé (`previousName`) : l'ancien
-   * fichier est retiré une fois le nouveau écrit. Un nom déjà pris dans la même portée est refusé.
+   * fichier est retiré une fois le nouveau écrit.
+   *
+   * Une création ou un renommage ne prend jamais l'identifiant d'un rôle déjà connu ici, fourni,
+   * personnel ou du projet (fiche 268) : la fusion par nom (`mergeRoles`) cacherait l'un des deux
+   * sans un mot. Refusé (`nameTaken`), avec le rôle qui le porte et un identifiant libre proche.
+   * Seule exception, explicite : « Enregistrer en rôle personnel » d'un rôle fourni
+   * (`replaceBuiltin`), qui le remplace (ADR-0045).
    */
   save(
     scope: RoleFileScope,
     fields: Parameters<typeof checkRole>[0],
     projectDir?: string,
-    previousName?: string
+    options: RoleSaveOptions = {}
   ): RoleSaveResult {
     const checked = checkRole(fields)
     if (!checked.ok) return checked
     const { role } = checked
+    const { previousName } = options
     const dir = this.dirOf(scope, projectDir)
     // Jamais à travers un lien posé par un dépôt (`.bobine`, `.bobine/roles`, `<nom>.md`).
     if (linkedDir(dir)) return { ok: false, error: { code: 'link' } }
@@ -125,6 +139,10 @@ export class RoleLibrary {
     const previous = previousName ? existing.find((r) => r.name === previousName) : undefined
     const file = join(dir, `${role.name}.md`)
     if (isLink(file)) return { ok: false, error: { code: 'link', field: 'name' } }
+    if (role.name !== previousName) {
+      const taken = this.nameTaken(role.name, dir, projectDir, options.replaceBuiltin === true)
+      if (taken) return { ok: false, error: taken }
+    }
     // Un autre rôle porte ce nom, ou son fichier (un en-tête peut nommer le rôle autrement).
     if (
       (role.name !== previousName && existing.some((r) => r.name === role.name)) ||
@@ -138,6 +156,37 @@ export class RoleLibrary {
     this.cache.delete(dir)
     this.options.log?.(`Rôle ${role.name} enregistré (${scope})`)
     return { ok: true, role }
+  }
+
+  /**
+   * Le rôle connu ici (fourni, personnel, du projet) qui porte déjà cet identifiant, en erreur
+   * `nameTaken` ; `undefined` s'il est libre. `replaceBuiltin` : un rôle fourni du même nom ne
+   * compte pas (il sera remplacé, explicitement).
+   */
+  private nameTaken(
+    name: string,
+    dir: string,
+    projectDir: string | undefined,
+    replaceBuiltin: boolean
+  ): RoleError | undefined {
+    const known = [
+      ...this.options.builtin(),
+      ...this.read(this.options.userDir, 'user').roles,
+      ...(projectDir ? this.read(projectRolesDir(projectDir), 'project').roles : [])
+    ]
+    const other = known.find((r) => r.name === name && !(replaceBuiltin && r.scope === 'builtin'))
+    if (!other) return undefined
+    const names = new Set(known.map((r) => r.name))
+    const suggestion = freeRoleName(
+      name,
+      (candidate) => names.has(candidate) || existsSync(join(dir, `${candidate}.md`))
+    )
+    return {
+      code: 'nameTaken',
+      field: 'name',
+      taken: { label: other.label, scope: other.scope },
+      ...(suggestion ? { suggestion } : {})
+    }
   }
 
   /** Supprime le fichier d'un rôle personnel ou du projet ; un rôle fourni se désactive. */

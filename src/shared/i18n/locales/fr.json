@@ -5333,7 +5333,7 @@
     "name": {
       "label": "Identifiant",
       "hint": "Tapé après @ ; minuscules, chiffres et tirets.",
-      "replaces": "Remplacera le rôle « {{label}} » ({{scope}}) du même identifiant."
+      "useSuggestion": "Utiliser @{{name}}"
     },
     "icon": "Icône",
     "color": "Couleur",
@@ -5583,6 +5583,7 @@
       "prompt": "Consigne manquante ou trop longue (20 000 caractères au plus).",
       "tooLarge": "Fichier trop gros (64 Ko au plus).",
       "duplicateName": "Un autre rôle porte déjà ce nom à cet endroit.",
+      "nameTaken": "@{{name}} est déjà pris par « {{label}} » ({{scope}}) : choisissez un autre identifiant.",
       "unreadable": "Fichier illisible.",
       "unknownRole": "Rôle inconnu ou désactivé : {{name}}. Rôles : {{roles}}.",
       "noProject": "Cette conversation n’a pas de dossier de projet.",

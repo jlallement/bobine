@@ -97,6 +97,7 @@ export type RoleErrorCode =
   | 'prompt'
   | 'tooLarge'
   | 'duplicateName'
+  | 'nameTaken'
   | 'unreadable'
   | 'link'
   | 'tooMany'
@@ -107,6 +108,10 @@ export interface RoleError {
   /** Champ ou ligne concernés, quand on les connaît. */
   field?: string
   line?: number
+  /** `nameTaken` : le rôle qui porte déjà cet identifiant (fiche 268). */
+  taken?: { label: string; scope: RoleScope }
+  /** `nameTaken` : un identifiant libre proche (`expert-2`), s'il y en a un. */
+  suggestion?: string
 }
 
 /** Fichier de rôle écarté (signalé, sans bloquer les autres). */
@@ -370,6 +375,22 @@ export function serializeRole(role: RoleDefinition): string {
     ...(role.mcp ? [`mcp: [${role.mcp.join(', ')}]`] : [])
   ]
   return `---\n${lines.join('\n')}\n---\n\n${role.prompt.trim()}\n`
+}
+
+/**
+ * Identifiant libre proche d'un identifiant pris (fiche 268) : `expert` → `expert-2`, `expert-2` →
+ * `expert-3`, en restant dans `ROLE_NAME` (40 caractères). `undefined` si aucun n'est libre.
+ */
+export function freeRoleName(name: string, taken: (name: string) => boolean): string | undefined {
+  const match = /^(.*?)(?:-(\d+))?$/.exec(name)
+  const base = match?.[1] || name
+  const from = match?.[2] ? Number(match[2]) + 1 : 2
+  for (let n = from; n < from + 100; n++) {
+    const suffix = `-${n}`
+    const candidate = `${base.slice(0, 40 - suffix.length).replace(/-+$/, '')}${suffix}`
+    if (ROLE_NAME.test(candidate) && !taken(candidate)) return candidate
+  }
+  return undefined
 }
 
 const PRIORITY: readonly RoleScope[] = ['project', 'user', 'builtin']

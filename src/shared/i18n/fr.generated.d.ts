@@ -5163,7 +5163,7 @@ export type FrResources = {
     readonly name: {
       readonly label: 'Identifiant'
       readonly hint: 'Tapé après @ ; minuscules, chiffres et tirets.'
-      readonly replaces: 'Remplacera le rôle « {{label}} » ({{scope}}) du même identifiant.'
+      readonly useSuggestion: 'Utiliser @{{name}}'
     }
     readonly icon: 'Icône'
     readonly color: 'Couleur'
@@ -5400,6 +5400,7 @@ export type FrResources = {
       readonly prompt: 'Consigne manquante ou trop longue (20 000 caractères au plus).'
       readonly tooLarge: 'Fichier trop gros (64 Ko au plus).'
       readonly duplicateName: 'Un autre rôle porte déjà ce nom à cet endroit.'
+      readonly nameTaken: '@{{name}} est déjà pris par « {{label}} » ({{scope}}) : choisissez un autre identifiant.'
       readonly unreadable: 'Fichier illisible.'
       readonly unknownRole: 'Rôle inconnu ou désactivé : {{name}}. Rôles : {{roles}}.'
       readonly noProject: 'Cette conversation n’a pas de dossier de projet.'
