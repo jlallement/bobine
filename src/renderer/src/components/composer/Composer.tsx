@@ -708,7 +708,8 @@ function ComposerBelow({
       />
       {(status === 'error' || status === 'exited') && (
         <div className="composer-status error">
-          <span>{status === 'exited' ? t('composer.exited') : t('composer.failedToStart')}</span>
+          {/* Arrêté : le fil le dit déjà (une seule fois, fiche 272) ; ici, seulement « Relancer ». */}
+          {status !== 'exited' && <span>{t('composer.failedToStart')}</span>}
           <button className="link-button" onClick={props.onRestart} data-testid="restart">
             {t('composer.restart')}
           </button>

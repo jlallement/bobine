@@ -207,7 +207,7 @@
       "starting": "Starting the agent…",
       "busy": "Add a follow-up (sent when the response ends)…",
       "error": "The agent couldn’t start: write to try again",
-      "exited": "The agent stopped: write to restart it",
+      "exited": "Type to restart the agent…",
       "needs-action": "Action required before you start",
       "authExpired": "Sign in again to continue",
       "modelRefused": "Choose another model or sign in",
@@ -246,7 +246,6 @@
       "queued": "Send when the response ends (Return)",
       "now": "Send (Return)"
     },
-    "exited": "The agent stopped.",
     "failedToStart": "The agent couldn’t start.",
     "restart": "Restart",
     "pasted": {
@@ -3099,6 +3098,7 @@
       "unresponsive": "The agent stopped responding to “Stop”: it was shut down.",
       "ended": "process ended ({{status}})",
       "code": "code {{code}}",
+      "killed": "forced stop by the system or another program (SIGKILL)",
       "status": "Exit: {{status}}.{{hint}}",
       "connectionLost": "The agent stopped responding: its connection with Bobine was cut, and Bobine stopped it. “Restart” starts it again; the conversation is kept."
     },

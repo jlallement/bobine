@@ -234,7 +234,7 @@
       "starting": "Démarrage de l’agent…",
       "busy": "Ajouter une suite (envoyée à la fin de la réponse)…",
       "error": "L’agent n’a pas pu démarrer : écrivez pour réessayer",
-      "exited": "L’agent s’est arrêté : écrivez pour le relancer",
+      "exited": "Écrivez pour relancer l’agent…",
       "needs-action": "Action requise avant de commencer",
       "authExpired": "Reconnectez-vous pour continuer",
       "modelRefused": "Choisissez un autre modèle ou connectez-vous",
@@ -274,7 +274,6 @@
       "queued": "Envoyer à la fin de la réponse (Entrée)",
       "now": "Envoyer (Entrée)"
     },
-    "exited": "L’agent s’est arrêté.",
     "failedToStart": "L’agent n’a pas pu démarrer.",
     "restart": "Relancer",
     "pasted": {
@@ -3207,6 +3206,7 @@
       "unresponsive": "L’agent ne répondait plus à « Stop » : il a été arrêté.",
       "ended": "processus terminé ({{status}})",
       "code": "code {{code}}",
+      "killed": "arrêt forcé par le système ou un autre programme (SIGKILL)",
       "status": "Sortie : {{status}}.{{hint}}",
       "connectionLost": "L’agent ne répond plus : sa connexion avec Bobine s’est coupée, et Bobine l’a arrêté. « Relancer » le redémarre ; la conversation est gardée."
     },

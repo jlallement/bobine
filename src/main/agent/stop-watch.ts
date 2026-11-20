@@ -52,7 +52,11 @@ export class StopWatch {
     if (this.cause === 'unresponsive') return t('agentHost.exit.unresponsive')
     if (this.cause === 'connection') return t('agentHost.exit.connectionLost')
     return t('agentHost.exit.status', {
-      status: signal ?? t('agentHost.exit.code', { code: String(code) }),
+      // SIGKILL dit en clair (fiche 272, recette : « Sortie : SIGKILL ») ; un autre signal tel quel.
+      status:
+        signal === 'SIGKILL'
+          ? t('agentHost.exit.killed')
+          : (signal ?? t('agentHost.exit.code', { code: String(code) })),
       hint
     })
   }
