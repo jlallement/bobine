@@ -430,6 +430,50 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
     `271-*` regardées en clair et en sombre. Linux et Windows : non essayés (textes et raccourcis
     prévus, `CmdOrCtrl`).
 
+- 2026-11-20 (nuit) — **Revue UX indépendante, 26 points, tous corrigés** (demande du tech
+  lead : rien en « plus tard »).
+  - ⌘F ne répond dans le fichier que si du code est affiché (sinon la recherche du fil) ; ⌘P et
+    ⇧⌘Y désactivés dans l'espace Discussion (canal `app:setSpace`, menu reconstruit).
+  - Un seul ✕ : celui de l'onglet ramène à l'arbre, puis ferme ; un seul menu de vue (…) au niveau
+    de l'onglet (filtrer, arborescence, côté, réduire, retour à la ligne, « Aller à la ligne… ⌃G »,
+    relire), dans l'en-tête du fichier quand il est affiché ; les actions du fichier dans leur
+    propre menu (⋮), libellé « Actions sur … ».
+  - Code : retrait suspendu en retour à la ligne (indentation + 2ch, tabulation = 4) ; lignes
+    commentées marquées d'une barre d'accent dans la gouttière ; la ligne demandée n'est éclairée
+    que le temps d'un éclair ; la gouttière prend la teinte de sa ligne ; un seul arrêt de
+    tabulation dans la gouttière (↑ ↓, + ou ↵ pour remarquer).
+  - Recherche ⌘F : premier résultat dès la frappe, « 1 sur 3 », boutons ↑ ↓ ✕, barre au-dessus du
+    code (jamais par-dessus). « Aller à la ligne » dans la même barre.
+  - Filtre : 80 ms après la dernière frappe, derniers résultats gardés pendant la recherche,
+    « aucun » seulement après la réponse, numéro de recherche contre les réponses périmées
+    (`useFileFilter`) ; premier résultat présélectionné (`aria-selected`, `combobox`) ; ⌘↵ et ⇧↵
+    aussi sur un résultat qui a le focus ; pastille ⌘P dans le champ ; une lettre tapée dans
+    l'arbre part au filtre ; Échap sur un filtre vide rend le clavier à la zone de saisie.
+  - Barre des remarques : « N remarques · X sur ce fichier, Y sur d'autres fichiers, Z sur des
+    diffs », « Voir » (Modifications), corbeille avec « Annuler » pendant 6 s.
+  - Rendu / Source retenu pour la session, en contrôle segmenté ; « Lecture seule » en pastille à
+    droite du fil d'Ariane ; « Voir le diff » dans le bandeau « Modifié à … ».
+  - Exécutable : drapeau `executable` dans `FileEntry` et la lecture ; jamais « Ouvrir avec l'app
+    par défaut » (menu, fiche d'un binaire).
+  - Côte à côte selon la largeur de l'onglet (`ResizeObserver`), plus celle de la fenêtre. Fil
+    d'Ariane : le nom d'abord, dossiers du milieu en « … », ceux qui restent cèdent par la gauche ;
+    panneau de moins de 440 px, le fil d'Ariane passe sur sa propre ligne.
+  - Menu contextuel au pointeur, ou sous la ligne par Maj+F10 et la touche Menu ; « Réduire » dans
+    le menu d'un dossier déplié. Pas d'infobulle native sur les lignes : œil barré avec « Invisible
+    pour l'agent (.bobignore) », point « Modifié dans cette conversation » ; la ligne s'annonce
+    entière au lecteur d'écran.
+  - Icône de l'onglet : dossier, puis celle du fichier ouvert. Vocabulaire : « Mentionner dans la
+    zone de saisie ». Le contenu n'est recoloré que si le fichier a changé (date et taille).
+  - **Écart à Q51** : « Mentionner » et le glisser d'une ligne vers la saisie joignent le fichier
+    en **pièce jointe** (puce sous la zone de saisie, comme le trombone), pas un texte `@chemin`
+    dans le message — même effet pour l'agent, et la confirmation des fichiers exclus (fiche 155)
+    s'applique.
+  - Essais : unitaires (`useFileFilter`, `CodeView`, `useFilesTabTitle`, `files-state` ⌘F, menu,
+    `file-tree` exécutable) ; e2e `files` refaite (≈ 40 vérifications), captures `271-arbre`,
+    `-filtre`, `-menu`, `-actions`, `-image`, `-binaire`, `-disparu`, `-retour-ligne`,
+    `-recherche`, `-remarque`, `-markdown-source`, `-chemin-long` (panneau à 360 px), `-agrandi`,
+    en clair et en sombre, et en anglais (`--lang en`).
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - Version **1.1** (pas dans la 1.0), développée sur une branche `1.1`.

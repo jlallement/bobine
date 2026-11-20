@@ -13,7 +13,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   s'ouvre **en lecture seule**, coloré et numéroté : Markdown rendu ou source, images ; ⌘F y
   cherche, ⌃G va à une ligne. Une **remarque sur une ligne** ou une plage part à l'agent avec les remarques
   de diff. Menu de chaque fichier : ouvrir dans l'éditeur ou l'app par défaut, Finder, mentionner
-  dans la saisie (ou glisser la ligne sur la saisie), copier le chemin, voir le diff. Agrandi
+  dans la zone de saisie (ou glisser la ligne sur la saisie), copier le chemin, voir le diff. Agrandi
   (⇧⌘J), le fichier et l'arbre côte à côte. Un lien `fichier:ligne` dans une réponse ouvre l'onglet
   à la ligne (⌘-clic : l'éditeur) ; « Parcourir les fichiers » sur un travail délégué.
 

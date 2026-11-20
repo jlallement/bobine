@@ -12,7 +12,7 @@ What changes for you, version by version. Shown in Settings › About.
   path (`path:42` goes to the line). A file opens **read-only**, highlighted and numbered:
   Markdown rendered or as source, images; ⌘F searches it, ⌃G goes to a line. A **comment on a line** or a range
   goes to the agent with the diff comments. Each file’s menu: open in your editor or the default
-  app, Finder, mention in the message (or drag the row onto it), copy the path, show the diff.
+  app, Finder, mention in the message box (or drag the row onto it), copy the path, show the diff.
   Maximized (⇧⌘J), the file and the tree side by side. A `file:line` link in a reply opens the
   tab at that line (⌘-click: your editor); “Browse files” on delegated work.
 
