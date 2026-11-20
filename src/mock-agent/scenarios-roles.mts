@@ -4,7 +4,7 @@
  * OpenCode réglé par défaut (le garde-fou de Bobine le voit). Le mode natif se vérifie avec `echo`
  * (mode de la session et message reçu).
  */
-import type { Scenario, Step } from './scenario.mts'
+import { FREE_USAGE_LIMIT, type Scenario, type Step } from './scenario.mts'
 
 /** Résultat d'un outil de l'app, cité dans le fil. */
 const said = (lead: string) => (text: string) => [
@@ -64,7 +64,62 @@ const LONG_ADVICE = [
   'FIN-DE-L-AVIS'
 ].join('\n')
 
+/**
+ * Commande longue d'un travail (recette N4, fiche 267 ; vue avec DeepSeek) : un `node - <<'JS'` de
+ * dix lignes, titre de l'outil compris — la carte n'en montre que la première ligne, coupée.
+ */
+export const LONG_COMMAND = [
+  "node - <<'JS'",
+  'function lum(hex){',
+  '  const n = parseInt(hex.slice(1), 16)',
+  '  const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => v / 255)',
+  '  return c.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))',
+  '}',
+  "const pairs = [['#2f3a2f', '#f6f1e7'], ['#7a9a6b', '#f6f1e7']]",
+  'for (const [a, b] of pairs) console.log(a, b, ratio(lum(a), lum(b)).toFixed(2))',
+  'JS'
+].join('\n')
+
 export const roleScenarios: Record<string, Scenario> = {
+  'commande-longue': {
+    description:
+      'Travail qui lance une commande de dix lignes (recette N4, fiche 267) : l’outil reste en cours ≈ 6 s (la carte n’en montre que la première ligne, la commande entière en infobulle), puis une réponse courte',
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'commande_longue',
+          title: LONG_COMMAND,
+          kind: 'execute',
+          status: 'in_progress',
+          rawInput: { command: LONG_COMMAND }
+        }
+      },
+      { kind: 'pause', ticks: 150 },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'commande_longue',
+          status: 'completed'
+        }
+      },
+      { kind: 'text', text: 'Contrastes calculés : 9,8:1 et 3,4:1.' }
+    ]
+  },
+  'quota-gratuit': {
+    description:
+      'Quota gratuit épuisé (recette N3, fiche 267, comme OpenCode 2.3.0) : avec factice-rapide (modèle par défaut), le message est refusé par l’erreur exacte relevée (-32603 « Internal error: Free usage limit reached… ») ; factice-precis répond',
+    steps: [
+      {
+        kind: 'when-model',
+        model: 'factice-rapide',
+        then: [FREE_USAGE_LIMIT],
+        else: [{ kind: 'text', text: 'Ce modèle a encore du quota, je peux répondre.' }]
+      }
+    ]
+  },
   'avis-long': {
     description:
       'Avis long d’un rôle (fiche 263) : deux lectures, puis une réponse en Markdown de plus de dix lignes, qui finit par `FIN-DE-L-AVIS` ; une suite « Et les contrastes ? » : une lecture et une réponse courte ; « Vérifie la base » : le tour échoue ; la mère qui reçoit la réponse (`<child_conversations>`) : « C’est appliqué… »',

@@ -469,6 +469,23 @@ describe('modèle indisponible (fiche 259, D6)', () => {
     ])
   })
 
+  it('fiche 267 (N3) : quota gratuit épuisé, la raison dite, « Choisir un autre modèle » d’abord', () => {
+    const blocker = unavailable(login)
+    show(
+      blocker.kind === 'auth' && blocker.model
+        ? { ...blocker, model: { ...blocker.model, quota: true } }
+        : blocker,
+      models(['openai/gpt-6.1-sol', 'openai/gpt-6.2-sol'])
+    )
+    expect(screen.getByText('Le modèle OpenAI/GPT-6.2 Sol n’a pas répondu')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Son quota gratuit est épuisé : choisissez un autre modèle, ou connectez un fournisseur.'
+      )
+    ).toBeTruthy()
+    expect(buttons()[0]).toEqual({ text: 'Choisir un autre modèle', primary: true })
+  })
+
   it('ni autre modèle ni connexion : « Réessayer » reste, jamais une carte sans issue', () => {
     show(unavailable([]), models(['openai/gpt-6.2-sol']))
     expect(screen.queryByTestId('auth-choose-model')).toBeNull()

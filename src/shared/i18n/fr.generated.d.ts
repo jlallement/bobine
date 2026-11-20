@@ -743,6 +743,7 @@ export type FrResources = {
       readonly keyHint: 'Enregistrée chiffrée dans le trousseau macOS ; modifiable dans Réglages → Agents.'
       readonly subtitle: '{{agent}} demande une connexion avant de commencer.'
       readonly failed: 'La connexion a échoué : {{error}}'
+      readonly modelQuotaSubtitle: 'Son quota gratuit est épuisé : choisissez un autre modèle, ou connectez un fournisseur.'
     }
     readonly runInTerminal: 'Lance « {{command}} » dans le terminal'
     readonly license: {
@@ -3026,6 +3027,7 @@ export type FrResources = {
     readonly turnLimit: {
       readonly noReload: 'L’agent ne sait pas recharger sa session : ouvrez une nouvelle session avec le résumé.'
     }
+    readonly modelQuota: 'Le modèle {{model}} n’a pas répondu : son quota gratuit chez {{agent}} est épuisé.'
   }
   readonly ipc: {
     readonly unavailable: {
@@ -4750,6 +4752,8 @@ export type FrResources = {
     readonly fixRequested: 'Correction demandée'
     readonly fixRequestedAt: 'Correction demandée · {{time}}'
     readonly fixWork: 'Faire corriger « {{work}} »'
+    readonly modelQuota: 'Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.'
+    readonly modelRefused: 'Le modèle {{model}} n’a pas répondu.'
   }
   readonly workCue: {
     readonly replied: 'a répondu'

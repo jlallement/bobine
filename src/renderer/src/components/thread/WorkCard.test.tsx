@@ -345,6 +345,87 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect((screen.getByTestId('work-apply') as HTMLButtonElement).disabled).toBe(false)
   })
 
+  it('fiche 267 (N3, N8) : modèle du travail refusé (quota épuisé), dit dans sa carte, un autre modèle choisi depuis elle', async () => {
+    fakeAgent()
+    const setControl = vi.fn(async () => undefined)
+    window.api.agent = { ...window.api.agent, setControl } as unknown as Window['api']['agent']
+    const control = {
+      id: 'model',
+      name: 'Modèle',
+      category: 'model',
+      type: 'select',
+      currentValue: 'factice-rapide',
+      options: [
+        { value: 'factice-rapide', name: 'Factice rapide' },
+        { value: 'factice-precis', name: 'Factice précis' }
+      ]
+    }
+    const snapshot = (quota: boolean) => ({
+      status: 'needs-action',
+      controls: [control],
+      blocker: {
+        kind: 'auth',
+        methods: [],
+        authenticating: false,
+        atTurn: true,
+        model: {
+          id: 'factice-rapide',
+          name: 'Factice rapide',
+          unavailable: true,
+          ...(quota ? { quota: true } : {})
+        }
+      }
+    })
+    const views = vi.fn(async () => ({ snapshot: snapshot(true) }))
+    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
+    ;(window.api as unknown as { conversations: unknown }).conversations = { view: views }
+    try {
+      view(
+        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+        info([child('a', ux, { status: 'needs-action' })])
+      )
+      const text = await screen.findByTestId('work-refused-text')
+      expect(views).toHaveBeenCalledWith('a')
+      expect(plain(text.textContent)).toBe(
+        'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.'
+      )
+      fireEvent.click(screen.getByTestId('work-choose-model'))
+      fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+      expect(setControl).toHaveBeenCalledWith('a', 'model', 'factice-precis')
+      // Le travail repart : la carte suit son instantané, plus de refus.
+      act(() =>
+        emit('a', {
+          type: 'status',
+          snapshot: { ...snapshot(true), status: 'busy', blocker: undefined }
+        } as never)
+      )
+      expect(screen.queryByTestId('work-refused-text')).toBeNull()
+    } finally {
+      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
+    }
+  })
+
+  it('fiche 267 : un travail qui attend autre chose (une autorisation) garde « Attend votre réponse »', async () => {
+    fakeAgent()
+    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
+    ;(window.api as unknown as { conversations: unknown }).conversations = {
+      view: async () => ({ snapshot: { status: 'needs-action', controls: [] } })
+    }
+    try {
+      view(
+        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+        info([child('a', ux, { status: 'needs-action' })])
+      )
+      await act(async () => {})
+      expect(screen.getByTestId('work-live').textContent).toBe(
+        'Attend votre réponse dans sa conversation.'
+      )
+      expect(screen.queryByTestId('work-choose-model')).toBeNull()
+    } finally {
+      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
+    }
+  })
+
   it('« Appliquer » sans titre : le rôle seul ; masqué quand un message attend dans la file', async () => {
     fakeAgent()
     const onAsk = vi.fn()

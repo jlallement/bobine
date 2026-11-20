@@ -747,7 +747,8 @@
       "signIn": "Se connecter",
       "keyHint": "Enregistrée chiffrée dans le trousseau macOS ; modifiable dans Réglages → Agents.",
       "subtitle": "{{agent}} demande une connexion avant de commencer.",
-      "failed": "La connexion a échoué : {{error}}"
+      "failed": "La connexion a échoué : {{error}}",
+      "modelQuotaSubtitle": "Son quota gratuit est épuisé : choisissez un autre modèle, ou connectez un fournisseur."
     },
     "runInTerminal": "Lance « {{command}} » dans le terminal",
     "license": {
@@ -3174,7 +3175,8 @@
     },
     "turnLimit": {
       "noReload": "L’agent ne sait pas recharger sa session : ouvrez une nouvelle session avec le résumé."
-    }
+    },
+    "modelQuota": "Le modèle {{model}} n’a pas répondu : son quota gratuit chez {{agent}} est épuisé."
   },
   "ipc": {
     "unavailable": {
@@ -4919,7 +4921,9 @@
     },
     "fixRequested": "Correction demandée",
     "fixRequestedAt": "Correction demandée · {{time}}",
-    "fixWork": "Faire corriger « {{work}} »"
+    "fixWork": "Faire corriger « {{work}} »",
+    "modelQuota": "Le modèle {{model}} n’a pas répondu : son quota gratuit est épuisé.",
+    "modelRefused": "Le modèle {{model}} n’a pas répondu."
   },
   "workCue": {
     "replied": "a répondu",

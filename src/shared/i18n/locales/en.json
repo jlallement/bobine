@@ -696,7 +696,8 @@
       "signIn": "Sign in",
       "keyHint": "Stored encrypted in the macOS Keychain; can be changed in Settings › Agents.",
       "subtitle": "{{agent}} needs you to sign in before you start.",
-      "failed": "Sign-in failed: {{error}}"
+      "failed": "Sign-in failed: {{error}}",
+      "modelQuotaSubtitle": "Its free quota is used up: choose another model, or connect a provider."
     },
     "runInTerminal": "Runs “{{command}}” in the terminal",
     "license": {
@@ -3067,7 +3068,8 @@
     },
     "turnLimit": {
       "noReload": "The agent cannot reload its session: open a new session with the summary instead."
-    }
+    },
+    "modelQuota": "The {{model}} model didn’t answer: its free quota with {{agent}} is used up."
   },
   "ipc": {
     "unavailable": {
@@ -4713,7 +4715,9 @@
     },
     "fixRequested": "Fix requested",
     "fixRequestedAt": "Fix requested · {{time}}",
-    "fixWork": "Have “{{work}}” fix it"
+    "fixWork": "Have “{{work}}” fix it",
+    "modelQuota": "The {{model}} model didn’t answer: its free quota is used up.",
+    "modelRefused": "The {{model}} model didn’t answer."
   },
   "workCue": {
     "replied": "replied",

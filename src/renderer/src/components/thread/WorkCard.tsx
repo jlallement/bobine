@@ -3,7 +3,6 @@ import {
   Activity,
   Check,
   Eye,
-  Hand,
   EyeOff,
   GitBranch,
   LoaderCircle,
@@ -17,6 +16,7 @@ import type { ChildVerdict } from '@shared/children'
 import { mergeActive } from '@shared/children-merge'
 import { useWorkFacts, WorkLayoutContext } from './work-layout-context'
 import { ReviewChanged } from './WorkReview'
+import { WorkWaiting } from './WorkBlocked'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { messageTime } from '../../time'
@@ -538,14 +538,7 @@ function LeftBehindLine({ card }: { card: WorkCardData }) {
 function WorkLive({ childId, state }: { childId: string | undefined; state: WorkState }) {
   const { t } = useTranslation()
   const activity = useWorkActivity(state === 'running' ? childId : undefined)
-  if (state === 'waiting') {
-    return (
-      <div className="work-live" data-testid="work-live">
-        <Hand size={13} aria-hidden />
-        {t('workCard.waitingLine')}
-      </div>
-    )
-  }
+  if (state === 'waiting') return <WorkWaiting childId={childId} />
   return (
     <div className="work-activity" data-testid="work-live">
       {activity.done.length > 0 && (
