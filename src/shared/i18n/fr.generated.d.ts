@@ -4753,6 +4753,7 @@ export type FrResources = {
   readonly workCard: {
     readonly pendingLine: 'Sa réponse s’affichera à la fin de la réponse de {{agent}}.'
     readonly silentLine: 'Pas de réponse pour cette demande : rien n’est parti, ou la réponse s’est perdue. « Relancer » la renvoie.'
+    readonly goneLine: 'Sa conversation est à la corbeille : plus aucune action ici, et sa réponse ne part plus à {{agent}}. Restaurez-la depuis Réglages › Données.'
     readonly nowOther: '{{target}}…'
     readonly nowFetch: 'Consulte {{target}}…'
     readonly nowExecute: 'Lance {{target}}…'
@@ -4783,7 +4784,7 @@ export type FrResources = {
       readonly answered: 'a répondu'
       readonly stopped: 'arrêté'
       readonly error: 'en erreur'
-      readonly gone: 'conversation supprimée'
+      readonly gone: 'mis à la corbeille'
       readonly clean: 'rien à signaler · {{time}}'
     }
     readonly elapsed: 'Temps écoulé : {{time}}'
@@ -6023,7 +6024,7 @@ export type FrResources = {
       readonly silent: 'sans réponse'
       readonly stopped: 'arrêté'
       readonly error: 'en erreur'
-      readonly gone: 'conversation supprimée'
+      readonly gone: 'mis à la corbeille'
     }
     readonly merge: {
       readonly action_one: 'Fusionner le travail prêt dans {{base}}'

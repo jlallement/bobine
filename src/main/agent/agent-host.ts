@@ -585,12 +585,13 @@ export class AgentHost {
     const { views } = built
     // Tout ce que l'app joint part après le message (fiche 125 : un agent titre sa session d'après
     // le début du premier message, Bob) ; le contexte de session, au premier message de la session
-    // seulement (fiche 118), et après une compaction (fiche 182 : l'index a pu être résumé).
+    // seulement (fiche 118), et après une compaction (fiche 182 : l'index a pu être résumé), qui
+    // n'emporte pas ce qui attend le prochain message (réponses des travaux… : fiche 272).
     const compaction = isCompactionRequest(text, this.compactCommand())
     this.sessionContextDue = compaction ? 'compacted' : undefined
     const blocks = withContext(built.blocks, [
       options.askChildren && CHILDREN_REQUEST,
-      this.options.extraContext?.(text, this.appToolNames ?? [], options.about),
+      !compaction && this.options.extraContext?.(text, this.appToolNames ?? [], options.about),
       this.options.directories?.context(sessionId),
       options.from && originContext(options.from),
       options.context,

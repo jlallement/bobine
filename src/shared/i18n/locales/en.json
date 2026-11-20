@@ -4713,6 +4713,7 @@
   "workCard": {
     "pendingLine": "Its response will show when {{agent}}’s response ends.",
     "silentLine": "No response to this request: nothing was sent, or the response was lost. “Retry” sends it again.",
+    "goneLine": "Its conversation is in the trash: no more actions here, and its response is no longer sent to {{agent}}. Restore it from Settings › Data.",
     "nowOther": "{{target}}…",
     "nowFetch": "Fetching {{target}}…",
     "nowExecute": "Running {{target}}…",
@@ -4743,7 +4744,7 @@
       "answered": "replied",
       "stopped": "stopped",
       "error": "failed",
-      "gone": "conversation deleted",
+      "gone": "moved to the trash",
       "clean": "nothing to report · {{time}}"
     },
     "elapsed": "Elapsed: {{time}}",
@@ -5983,7 +5984,7 @@
       "silent": "no response",
       "stopped": "stopped",
       "error": "failed",
-      "gone": "conversation deleted"
+      "gone": "moved to the trash"
     },
     "merge": {
       "action_one": "Merge the ready task into {{base}}",

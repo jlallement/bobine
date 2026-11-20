@@ -87,3 +87,27 @@ describe('AgentHost : jauge de contexte après /compact (fiche 257)', () => {
     }
   })
 })
+
+describe('AgentHost : /compact n’emporte pas ce qui attend le prochain message (fiche 272)', () => {
+  it('le contexte joint (réponses des travaux…) part avec le message suivant, pas avec /compact', async () => {
+    const asked: string[] = []
+    const host = new AgentHost({
+      profile: profile(),
+      workspace: process.cwd(),
+      emit: () => {},
+      extraContext: (text) => {
+        asked.push(text)
+        return undefined
+      }
+    })
+    try {
+      await host.start()
+      await host.prompt('/compact')
+      expect(asked).toEqual([])
+      await host.prompt('Suite')
+      expect(asked).toEqual(['Suite'])
+    } finally {
+      host.stop()
+    }
+  })
+})

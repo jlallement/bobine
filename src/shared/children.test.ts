@@ -115,6 +115,15 @@ describe('conversations filles (fiche 097)', () => {
     expect(childNews(state.items)).toEqual([])
   })
 
+  it('une compaction ne les emporte pas : elles attendent le prochain vrai message (fiche 272)', () => {
+    let state = reduceTranscript(emptyTranscript, { type: 'user-message', text: 'Avant' })
+    state = reduceTranscript(state, { type: 'child-report', report })
+    state = reduceTranscript(state, { type: 'user-message', text: '/compact', compaction: true })
+    expect(childNews(state.items).map((n) => n.kind)).toEqual(['child-report'])
+    state = reduceTranscript(state, { type: 'user-message', text: 'Suite' })
+    expect(childNews(state.items)).toEqual([])
+  })
+
   it('contexte pour l’agent de la mère : lancements et comptes rendus, en anglais', () => {
     expect(childContext([])).toBeUndefined()
     const text = childContext([

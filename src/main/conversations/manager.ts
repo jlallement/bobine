@@ -95,6 +95,7 @@ import {
   type Origin
 } from './helpers'
 import { hostOptions } from './host-options'
+import { discardDraft } from './draft-discard'
 import { draftConversation, type Conversation, type ConversationListeners } from './conversation'
 import * as ds from './discussion-space'
 import { answerTurnLimit, type TurnLimitAnswer } from './turn-limit'
@@ -1254,17 +1255,9 @@ export class ConversationManager {
   }
 
   private discard(conversation: Conversation): void {
-    const host = conversation.host
-    // Plus rien n'est émis pour elle (l'hôte peut encore vivre le temps de supprimer sa session).
-    conversation.host = undefined
-    if (host) trackDraftDrop(this.dropping, host, AGENT_DELETE_TIMEOUT_MS)
-    this.conversations.delete(conversation.record.id)
-    // Conversation en worktree quittée sans message : le worktree, encore intact, disparaît aussi
-    // (sans `force` : s'il a été modifié entre-temps, il reste).
-    const { worktree } = conversation.record
-    if (worktree) void this.options.worktrees?.remove(worktree).catch(() => {})
-    // Discussion quittée sans message (fiche 224) : son dossier part s'il n'a aucun document.
-    ds.dropDraftFolder(this.options.conversationsDir, conversation.record)
+    const { conversations, dropping, options } = this
+    const { worktrees, conversationsDir } = options
+    discardDraft(conversation, { conversations, dropping, worktrees, conversationsDir })
   }
 
   /** Agent vivant pour cette conversation (créé si besoin), puis éviction des plus anciens. */
@@ -1313,6 +1306,7 @@ export class ConversationManager {
           settings: this.settings,
           works: this.subagentWorks,
           items: () => this.transcriptOf(conversation).items,
+          exists: (id) => this.conversations.has(id), // travail à la corbeille : fiche 272
           reopen: reopenOf(
             sessionId,
             conversation.draft,

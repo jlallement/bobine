@@ -184,7 +184,9 @@ describe('écriture sans diff (contrat OpenCode, fiche 272)', () => {
   })
 
   it('un diff reçu ensuite pour ce fichier donne ses totaux', () => {
-    const later = tool(50, 'completed', [{ path: '/projet/src/cli.js', oldText: 'x\n', newText: 'y\n' }])
+    const later = tool(50, 'completed', [
+      { path: '/projet/src/cli.js', oldText: 'x\n', newText: 'y\n' }
+    ])
     expect(conversationChanges([rewrite, later])[0]).toMatchObject({ added: 1, removed: 1 })
     expect(conversationChanges([rewrite, later])[0]?.unknown).toBeUndefined()
   })

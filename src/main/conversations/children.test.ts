@@ -267,6 +267,20 @@ describe('conversations filles (fiche 097)', () => {
     expect(env.lastReply(mother)).not.toContain('child_conversations')
   })
 
+  it('fille mise à la corbeille : ses nouvelles ne partent plus à la mère (fiche 272)', async () => {
+    const env = environment()
+    const { manager, children, items } = env
+    const mother = await env.mother()
+    const child = await children.start(mother, {
+      text: 'Ajoute un import CSV',
+      profileId: 'modifs'
+    })
+    await waitFor(() => items(mother).some((i) => i.kind === 'child-report'))
+    await manager.delete(child.id, { fromAgent: false })
+    await manager.prompt(mother, 'Où en est-on ?')
+    expect(env.lastReply(mother)).not.toContain('child_conversations')
+  })
+
   it('tour en erreur : compte rendu « erreur » avec le message', async () => {
     const env = environment()
     const mother = await env.mother()

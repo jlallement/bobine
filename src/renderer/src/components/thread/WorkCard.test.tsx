@@ -842,7 +842,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     const { unmount } = view(items, info([]))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('gone')
-    expect(within(card).getByTestId('work-state').textContent).toBe('conversation supprimée')
+    expect(within(card).getByTestId('work-state').textContent).toBe('mis à la corbeille')
     expect(within(card).queryAllByRole('button')).toHaveLength(0)
     unmount()
     const subtasks = info([child('a', ux, { archived: true })])
@@ -851,6 +851,22 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(subtasks.onOpen).toHaveBeenCalledWith('a')
     expect(screen.queryByTestId('work-reply')).toBeNull()
     expect(screen.queryByTestId('work-apply')).toBeNull()
+  })
+
+  it('mis à la corbeille après sa réponse : dit, pourquoi plus d’action, rien ne part (fiche 272)', () => {
+    fakeAgent()
+    const items = [
+      bubble(1, [{ childId: 'a', role: ux }]),
+      started(2, 'a', ux, 'd1'),
+      report(3, 'a')
+    ]
+    view(items, info([]))
+    const card = screen.getByTestId('work-card')
+    expect(card.dataset['state']).toBe('gone')
+    expect(within(card).getByTestId('work-state').textContent).toBe('mis à la corbeille')
+    expect(within(card).getByTestId('work-gone').textContent).toContain('corbeille')
+    expect(within(card).queryByTestId('work-relay')).toBeNull()
+    expect(within(card).queryByTestId('work-reply')).toBeNull()
   })
 
   it('fil lu côte à côte (sans la liste des conversations) : ni « supprimée », ni lecture seule supposée', () => {

@@ -293,6 +293,8 @@ function GroupMergeFoot({
       (x) => x.kind === 'user' && x.from?.kind === 'wake' && x.id > (w.card.anchor ?? Infinity)
     )
   const relays = works.flatMap((w) => {
+    // Un travail mis à la corbeille ne transmet plus rien (fiche 272).
+    if (w.state === 'gone') return []
     const relay = relayOf(currentReport(w.card), items)
     return relay ? [{ sent: relay.sent || woken(w), byAgent: !!w.card.byAgent }] : []
   })

@@ -110,7 +110,10 @@ async function rewritePhase(scheme, changes) {
           `pied du tour : 2 fichiers (${foot})`
         )
         live = await changes(ui)
-        check(live.files.length === 2, `en direct : README.md réécrit compte (${live.files.join(', ')})`)
+        check(
+          live.files.length === 2,
+          `en direct : README.md réécrit compte (${live.files.join(', ')})`
+        )
         check(
           (await ui.ev(`${readme}?.querySelector('.changes-stats')?.innerText ?? ''`)) ===
             L('changes.unknownBadge'),

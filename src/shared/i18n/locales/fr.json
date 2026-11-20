@@ -4923,6 +4923,7 @@
   "workCard": {
     "pendingLine": "Sa réponse s’affichera à la fin de la réponse de {{agent}}.",
     "silentLine": "Pas de réponse pour cette demande : rien n’est parti, ou la réponse s’est perdue. « Relancer » la renvoie.",
+    "goneLine": "Sa conversation est à la corbeille : plus aucune action ici, et sa réponse ne part plus à {{agent}}. Restaurez-la depuis Réglages › Données.",
     "nowOther": "{{target}}…",
     "nowFetch": "Consulte {{target}}…",
     "nowExecute": "Lance {{target}}…",
@@ -4953,7 +4954,7 @@
       "answered": "a répondu",
       "stopped": "arrêté",
       "error": "en erreur",
-      "gone": "conversation supprimée",
+      "gone": "mis à la corbeille",
       "clean": "rien à signaler · {{time}}"
     },
     "elapsed": "Temps écoulé : {{time}}",
@@ -6236,7 +6237,7 @@
       "silent": "sans réponse",
       "stopped": "arrêté",
       "error": "en erreur",
-      "gone": "conversation supprimée"
+      "gone": "mis à la corbeille"
     },
     "merge": {
       "action_one": "Fusionner le travail prêt dans {{base}}",
