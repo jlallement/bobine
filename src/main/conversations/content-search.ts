@@ -6,6 +6,7 @@
  * gardé** ; seul son texte cherchable l'est, dans un cache borné, tant que le fichier ne change pas.
  * Le texte est gardé déjà plié (sans casse ni accents) : une recherche ne replie rien.
  */
+import { stripAppContext } from '@shared/app-context'
 import {
   foldSameLength,
   matchContent,
@@ -160,7 +161,13 @@ export class ContentSearch {
 function searchableText(transcript: TranscriptState): SearchText {
   const text = transcript.items
     .flatMap((item) =>
-      item.kind === 'user' ? [item.text] : item.kind === 'agent' ? [plainText(item.text)] : []
+      // Message de l'utilisateur sans ce que l'app y joint (consigne cachée d'un rôle, contexte :
+      // fiche 272, recette) ; jamais montré ailleurs, il ne l'est pas dans un extrait.
+      item.kind === 'user'
+        ? [stripAppContext(item.text) ?? '']
+        : item.kind === 'agent'
+          ? [plainText(item.text)]
+          : []
     )
     .join('\n\n')
   return { text, folded: foldSameLength(text) }
