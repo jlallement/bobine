@@ -123,6 +123,27 @@ function failedTurn(items: readonly TranscriptItem[], start: number): boolean {
 }
 
 /**
+ * Demande faite à l'agent de la conversation au sujet de ce travail (« Demander à … de corriger »,
+ * « Appliquer », « Envoyer à l'agent » des remarques, fiches 263, 265) après sa dernière réponse :
+ * son heure ; `undefined` sinon.
+ */
+export function askedAbout(
+  card: Pick<WorkCardData, 'childId' | 'steps'>,
+  items: readonly TranscriptItem[]
+): { at: number | undefined } | undefined {
+  const report = currentReport(card as WorkCardData)
+  if (!report) return undefined
+  const asked = items.find((i) => i.id > report.id && i.kind === 'user' && i.about === card.childId)
+  return asked?.kind === 'user' ? { at: asked.at } : undefined
+}
+
+/** Remarques hautes ou moyennes d'une relecture rendue (fiche 265). */
+export const urgentFindings = (card: Pick<WorkCardData, 'review'>): number =>
+  card.review?.status === 'reported'
+    ? card.review.findings.filter((f) => f.severity !== 'low').length
+    : 0
+
+/**
  * Consommation à afficher au pied : celle de la conversation au repos (un agent peut rapporter son
  * coût juste après sa réponse, fiche 117), sinon celle de la dernière réponse.
  */

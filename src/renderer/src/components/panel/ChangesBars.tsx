@@ -80,11 +80,14 @@ export function ChangesViews({
 export function DiffNotesBar({
   count,
   onClear,
-  onSend
+  onSend,
+  fix = false
 }: {
   count: number
   onClear: () => void
   onSend: () => void
+  /** Toutes des remarques du Code reviewer : le même mot que sa carte (fiche 265, revue UX). */
+  fix?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -104,7 +107,7 @@ export function DiffNotesBar({
       </Tip>
       <button className="btn small primary" onClick={onSend} data-testid="diff-notes-send">
         <Send size={13} />
-        {t('diffNotes.send')}
+        {t(fix ? 'diffNotes.sendFix' : 'diffNotes.send')}
       </button>
     </div>
   )

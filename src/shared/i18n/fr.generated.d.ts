@@ -3353,6 +3353,7 @@ export type FrResources = {
     readonly cancel: 'Annuler'
     readonly edit: 'Modifier la remarque'
     readonly delete: 'Supprimer la remarque'
+    readonly sendFix: 'Demander de corriger'
   }
   readonly find: {
     readonly placeholder: 'Rechercher dans la conversation'
@@ -4706,8 +4707,10 @@ export type FrResources = {
       readonly label: 'Remarques de {{role}}'
       readonly where: 'Voir {{place}} sur le diff'
       readonly clean: 'Rien à signaler.'
-      readonly reply: 'Sa réponse entière'
     }
+    readonly fixRequested: 'Correction demandée'
+    readonly fixRequestedAt: 'Correction demandée · {{time}}'
+    readonly fixWork: 'Faire corriger « {{work}} »'
   }
   readonly workCue: {
     readonly replied: 'a répondu'

@@ -43,7 +43,9 @@ export function WorkSteps({
   agent,
   changes,
   inGroup = false,
-  onShowFile
+  onShowFile,
+  requested = false,
+  folded = false
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -57,6 +59,10 @@ export function WorkSteps({
   changes?: WorkChanges | null | undefined
   /** Code reviewer (fiche 265) : un fichier d'une remarque, ouvert dans la vue Git relue. */
   onShowFile?: ((file: DiffTarget) => void) | undefined
+  /** Code reviewer : la correction de ses remarques a été demandée. */
+  requested?: boolean
+  /** Une relecture est rangée sous ce travail : sa réponse se replie (fiche 265, revue UX). */
+  folded?: boolean
 }) {
   const current = currentReport(card)
   return (
@@ -76,8 +82,9 @@ export function WorkSteps({
             current={step.item.id === current?.id}
             state={state}
             noCost={inGroup}
+            folded={folded}
             {...(step.item.id === current?.id && card.review?.status === 'reported'
-              ? { review: card.review, onShowFile }
+              ? { review: card.review, onShowFile, requested }
               : {})}
             {...(step.item.id === current?.id && changes !== undefined ? { changes } : {})}
           />
@@ -162,8 +169,12 @@ function WorkAnswer({
   changes,
   noCost = false,
   review,
-  onShowFile
+  onShowFile,
+  requested = false,
+  folded = false
 }: {
+  requested?: boolean
+  folded?: boolean
   noCost?: boolean
   /** Remarques structurées du Code reviewer (fiche 265), sur sa dernière réponse. */
   review?: ReviewItem | undefined
@@ -182,22 +193,15 @@ function WorkAnswer({
   const relayed = relay?.sent === true
   return (
     <div className="work-answer" data-testid="work-answer" data-outcome={report.outcome}>
-      {report.outcome === 'error' ? (
-        <div className="work-error" data-testid="work-error">
-          {text}
-        </div>
-      ) : review ? (
-        <ReviewFindings
-          review={review}
-          role={card.role?.label ?? card.title}
-          reply={text}
-          onShow={onShowFile}
-        />
-      ) : text ? (
-        <FoldedAnswer text={text} relayed={relayed} />
-      ) : (
-        <div className="work-note">{t('workCard.noReply')}</div>
-      )}
+      <AnswerBody
+        report={report}
+        text={text}
+        folded={relayed || folded}
+        review={review}
+        role={card.role?.label ?? card.title}
+        requested={requested}
+        onShowFile={onShowFile}
+      />
       {report.replyCut && (
         <div className="work-note" data-testid="work-cut">
           {t('workCard.cut', {
@@ -231,7 +235,10 @@ function WorkAnswer({
             )}
           </div>
         )}
-      <AnswerFacts card={card} child={child} report={report} current={current} noCost={noCost} />
+      {/* Code reviewer : sa méta est sur la ligne de ses boutons (revue UX, `WorkFoot`). */}
+      {!(current && (card.reviewOf || card.review)) && (
+        <AnswerFacts card={card} child={child} report={report} current={current} noCost={noCost} />
+      )}
       {/* Transmise : dit sous chaque réponse d'avant ; la dernière, en bas de la carte. */}
       {relay?.sent && !current && (
         <div className="work-relayed" data-testid="work-relayed">
@@ -250,7 +257,49 @@ function WorkAnswer({
  * échange (le cumul de la conversation à cette réponse, moins celui de la réponse d'avant ; pour
  * la dernière, celui de la conversation au repos, son coût pouvant arriver après, fiche 117).
  */
-function AnswerFacts({
+/**
+ * Le corps d'une réponse : l'erreur, les remarques du Code reviewer (sa réponse repliée dessous),
+ * ou la réponse en Markdown, repliée.
+ */
+function AnswerBody({
+  report,
+  text,
+  folded,
+  review,
+  role,
+  requested,
+  onShowFile
+}: {
+  report: Report
+  text: string
+  folded: boolean
+  review: ReviewItem | undefined
+  role: string
+  requested: boolean
+  onShowFile: ((file: DiffTarget) => void) | undefined
+}) {
+  const { t } = useTranslation()
+  if (report.outcome === 'error') {
+    return (
+      <div className="work-error" data-testid="work-error">
+        {text}
+      </div>
+    )
+  }
+  if (review) {
+    return (
+      <>
+        <ReviewFindings review={review} role={role} requested={requested} onShow={onShowFile} />
+        {/* Sa réponse du tour, repliée comme à la 263 (« Lire la suite ») : ses remarques la disent. */}
+        {text && <FoldedAnswer text={text} relayed />}
+      </>
+    )
+  }
+  if (text) return <FoldedAnswer text={text} relayed={folded} />
+  return <div className="work-note">{t('workCard.noReply')}</div>
+}
+
+export function AnswerFacts({
   card,
   child,
   report,

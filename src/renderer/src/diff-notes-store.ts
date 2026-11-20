@@ -3,7 +3,7 @@
  * conversation et retrouvées après un redémarrage (stockage local du renderer, comme celles du plan,
  * `plan-notes.ts`). Envoyées, elles sont effacées.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { DiffNote } from '@shared/diff-notes'
 
 const STORAGE_KEY = 'bobine:remarques-diff'
@@ -99,6 +99,34 @@ export function takeNewReviewNotes(candidates: readonly DiffNote[]): DiffNote[] 
   return fresh
 }
 
+/** Onglets ouverts sur une conversation : relus quand ses remarques changent d'ailleurs. */
+const listeners = new Set<(conversationId: string) => void>()
+
+/**
+ * Remarques d'une relecture dont la correction a été demandée depuis la carte du Code reviewer
+ * (fiche 265, revue UX) : retirées des remarques en attente de cette conversation et notées comme
+ * reprises — elles ne repartent pas une seconde fois par « Envoyer à l'agent ».
+ */
+export function settleReviewNotes(conversationId: string, ids: readonly string[]): void {
+  if (ids.length === 0) return
+  const done = new Set(ids)
+  const seen = new Set(importedIds())
+  imported = [...importedIds(), ...ids.filter((id) => !seen.has(id))].slice(-MAX_IMPORTED)
+  try {
+    localStorage.setItem(IMPORTED_KEY, JSON.stringify(imported))
+  } catch {
+    // Stockage indisponible : reprises en mémoire seulement.
+  }
+  const notes = loadDiffNotes(conversationId)
+  const kept = notes.filter((n) => !done.has(n.id))
+  if (kept.length !== notes.length) saveDiffNotes(conversationId, kept)
+  for (const listener of listeners) listener(conversationId)
+}
+
+/** Relecteur d'une remarque de relecture (`<relecteur>:<rang>`, fiche 177) ; sinon `undefined`. */
+export const reviewerOfNote = (note: Pick<DiffNote, 'id' | 'review'>): string | undefined =>
+  note.review ? note.id.slice(0, note.id.lastIndexOf(':')) || undefined : undefined
+
 /** Tests : oublie le cache, le stockage est relu. */
 export function resetDiffNotesCache(): void {
   cache = null
@@ -108,6 +136,16 @@ export function resetDiffNotesCache(): void {
 /** Remarques d'une conversation, gardées à chaque changement. */
 export function useDiffNotes(conversationId: string) {
   const [notes, setNotes] = useState(() => loadDiffNotes(conversationId))
+  // Remarques réglées ailleurs (« Demander de corriger » sur une carte, fiche 265) : relues.
+  useEffect(() => {
+    const listener = (id: string) => {
+      if (id === conversationId) setNotes(loadDiffNotes(conversationId))
+    }
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  }, [conversationId])
   const update = (next: DiffNote[]) => {
     setNotes(next)
     saveDiffNotes(conversationId, next)

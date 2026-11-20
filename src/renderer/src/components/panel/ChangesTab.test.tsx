@@ -304,6 +304,26 @@ describe('remarques du Code reviewer (fiche 265)', () => {
     ).toEqual(['2', '3'])
   })
 
+  it('« Demander de corriger » du panneau : le relecteur visé part avec, la carte le saura', async () => {
+    const onSendNotes = vi.fn()
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c-envoi"
+          workspace="/depot"
+          items={[reviewOf('c-envoi', 'r9')]}
+          initialView="git"
+          initialViewSeq={1}
+          onSendNotes={onSendNotes}
+        />
+      </Tooltip.Provider>
+    )
+    const send = await waitFor(() => screen.getByTestId('diff-notes-send'))
+    expect(send.textContent).toBe('Demander de corriger')
+    fireEvent.click(send)
+    expect(onSendNotes).toHaveBeenCalledWith(expect.stringContaining('gros.txt'), 'r9')
+  })
+
   it('remarques de diff : celles qui relisent cette conversation, pas un travail relu dans son fil', async () => {
     render(
       <Tooltip.Provider>

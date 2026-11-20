@@ -12,7 +12,7 @@ import {
   type RevertOutcome
 } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
-import { useDiffNotes } from '../../diff-notes-store'
+import { reviewerOfNote, useDiffNotes } from '../../diff-notes-store'
 import type { DiffAnnotations } from '../thread/DiffView'
 import { useTranslation } from 'react-i18next'
 import { chosenView, rememberView } from '../../changes-view-memory'
@@ -57,6 +57,62 @@ const lineFocus = (file: ReviewFileRequest | undefined, seq: number) =>
 /** Fichier d'une remarque du Code reviewer à ouvrir (fiche 265). */
 type ReviewFileRequest = DiffTarget
 
+/**
+ * Au-dessus des fichiers : les remarques en attente et leur envoi, celles d'une relecture
+ * (fiche 177), et le diff d'une remarque d'une branche ou d'un commit relus (fiche 265).
+ */
+function NotesBars({
+  conversationId,
+  diffNotes,
+  onSendNotes,
+  onShowNote,
+  fileAsked,
+  seq
+}: {
+  conversationId: string
+  diffNotes: ReturnType<typeof useDiffNotes>
+  onSendNotes: ChangesTabProps['onSendNotes']
+  onShowNote: (note: DiffNote) => void
+  fileAsked: ReviewFileRequest | undefined
+  seq: number
+}) {
+  // Remarques d'une relecture envoyées d'ici : la carte du Code reviewer le sait (`about`) et ne
+  // propose plus de les faire corriger une seconde fois (fiche 265, revue UX).
+  const sendNotes = () => {
+    if (!onSendNotes || diffNotes.notes.length === 0) return
+    const reviewer = diffNotes.notes.map(reviewerOfNote).find(Boolean)
+    onSendNotes(diffFeedback(diffNotes.notes), reviewer)
+    diffNotes.clear()
+  }
+  return (
+    <>
+      {onSendNotes && diffNotes.notes.length > 0 && (
+        <DiffNotesBar
+          count={diffNotes.notes.length}
+          fix={diffNotes.notes.every((n) => n.review)}
+          onClear={diffNotes.clear}
+          onSend={sendNotes}
+        />
+      )}
+      {onSendNotes && (
+        <ReviewNotes
+          notes={diffNotes.notes.filter((n) => n.review)}
+          onShow={onShowNote}
+          onRemove={diffNotes.remove}
+        />
+      )}
+      {fileAsked?.since && (
+        <ReviewFileDiff
+          conversationId={conversationId}
+          path={fileAsked.path}
+          since={fileAsked.since}
+          focus={lineFocus(fileAsked, seq)}
+        />
+      )}
+    </>
+  )
+}
+
 interface ChangesTabProps {
   conversationId: string
   workspace?: string
@@ -71,7 +127,7 @@ interface ChangesTabProps {
    */
   initialFile?: ReviewFileRequest
   /** Remarques sur les modifications (fiche 085) : envoie le message à l'agent. */
-  onSendNotes?: (text: string) => void
+  onSendNotes?: (text: string, about?: string) => void
   /** Filles de la conversation (fiche 161) ; vue « Filles » seulement s'il y en a. */
   childWorktrees?: ChildWorktrees | undefined
   /** « Faire relire… » cette conversation (fiche 177) ; proposé seulement dans un dépôt git. */
@@ -152,12 +208,6 @@ export function ChangesTab({
   // Remarques des relectures de ce travail (fiche 177), reprises une fois en remarques de diff ;
   // pas celles d'un travail relu affichées dans ce fil (fiche 265).
   useReviewImport(items, diffNotes.addAll, !!onSendNotes, conversationId)
-  const reviewNotes = diffNotes.notes.filter((n) => n.review)
-  const sendNotes = () => {
-    if (!onSendNotes || diffNotes.notes.length === 0) return
-    onSendNotes(diffFeedback(diffNotes.notes))
-    diffNotes.clear()
-  }
   // Vue par défaut : la conversation si l'agent a modifié quelque chose, sinon git. La vue des
   // filles se ferme d'elle-même quand la dernière fille disparaît.
   const fallback: View = conversation.length === 0 && git ? 'git' : 'conversation'
@@ -326,24 +376,14 @@ export function ChangesTab({
         <ChildrenView {...childWorktrees} />
       ) : (
         <>
-          {onSendNotes && diffNotes.notes.length > 0 && (
-            <DiffNotesBar
-              count={diffNotes.notes.length}
-              onClear={diffNotes.clear}
-              onSend={sendNotes}
-            />
-          )}
-          {onSendNotes && (
-            <ReviewNotes notes={reviewNotes} onShow={showNote} onRemove={diffNotes.remove} />
-          )}
-          {fileAsked?.since && (
-            <ReviewFileDiff
-              conversationId={conversationId}
-              path={fileAsked.path}
-              since={fileAsked.since}
-              focus={lineFocus(fileAsked, initialViewSeq ?? 0)}
-            />
-          )}
+          <NotesBars
+            conversationId={conversationId}
+            diffNotes={diffNotes}
+            onSendNotes={onSendNotes}
+            onShowNote={showNote}
+            fileAsked={fileAsked}
+            seq={initialViewSeq ?? 0}
+          />
           {error && (
             <div className="browser-error">
               <CommandText text={error} />

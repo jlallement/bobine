@@ -50,3 +50,18 @@ export function threadSubtasks(
     ...(open?.diff ? { onShowDiff: open.diff } : {})
   }
 }
+
+/**
+ * « Voir sur le diff » d'une carte du Code reviewer (fiche 265) : la vue Git de la conversation
+ * relue, sélectionnée s'il le faut ; un travail supprimé entre-temps : rien (revue QA).
+ */
+export function showReviewDiff(
+  c: Pick<Conversations, 'list' | 'activeId' | 'select'>,
+  open: (file?: DiffTarget) => void
+): (authorId: string, file?: DiffTarget) => void {
+  return (authorId, file) => {
+    if (!c.list.some((s) => s.id === authorId)) return
+    if (authorId !== c.activeId) c.select(authorId)
+    open(file)
+  }
+}

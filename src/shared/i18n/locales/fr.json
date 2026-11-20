@@ -3511,7 +3511,8 @@
     "update": "Enregistrer",
     "cancel": "Annuler",
     "edit": "Modifier la remarque",
-    "delete": "Supprimer la remarque"
+    "delete": "Supprimer la remarque",
+    "sendFix": "Demander de corriger"
   },
   "find": {
     "placeholder": "Rechercher dans la conversation",
@@ -4875,9 +4876,11 @@
     "findings": {
       "label": "Remarques de {{role}}",
       "where": "Voir {{place}} sur le diff",
-      "clean": "Rien à signaler.",
-      "reply": "Sa réponse entière"
-    }
+      "clean": "Rien à signaler."
+    },
+    "fixRequested": "Correction demandée",
+    "fixRequestedAt": "Correction demandée · {{time}}",
+    "fixWork": "Faire corriger « {{work}} »"
   },
   "workCue": {
     "replied": "a répondu",

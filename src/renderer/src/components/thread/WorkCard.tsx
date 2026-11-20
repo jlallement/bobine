@@ -10,7 +10,7 @@ import {
   Pencil,
   TriangleAlert
 } from 'lucide-react'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { ChildVerdict } from '@shared/children'
@@ -25,12 +25,19 @@ import { Tip } from '../common/Menus'
 import { RoleAvatar, useRoleStyle, type RoleAvatarState } from '../roles/RoleAvatar'
 import { childReadOnly } from '../roles/RoleWork'
 import { useWorkActivity, type WorkTool } from '../roles/useWorkActivity'
-import { RoleMention, WorkSteps } from './WorkAnswer'
+import { AnswerFacts, RoleMention, WorkSteps } from './WorkAnswer'
 import { WorkFoot } from './WorkFoot'
 import i18next from 'i18next'
 import { MessageTime } from './MessageTime'
 import { VerdictBadge, type SubtasksInfo } from './Subtasks'
-import { branchChanges, currentReport, exchangeStart, workState, type WorkState } from './work-card'
+import {
+  askedAbout,
+  branchChanges,
+  currentReport,
+  exchangeStart,
+  workState,
+  type WorkState
+} from './work-card'
 import type { ChildrenMergePlan } from '@shared/children-merge'
 import { useWorkMerge, WorkMergeBox, type WorkMergeControl } from './WorkMerge'
 import '../../work-card.css'
@@ -135,8 +142,8 @@ function cardChanges(
   return child?.branch || changes === null ? changes : undefined
 }
 
-/** Nom d'un travail : son rôle, sinon son titre. */
-export const workName = (card: WorkCardData): string => card.role?.label ?? card.title
+export { workName } from './work-name'
+import { workName } from './work-name'
 
 export const AVATAR: Record<WorkState, RoleAvatarState> = {
   running: 'running',
@@ -184,7 +191,8 @@ export function WorkCard({
   plan,
   merged = false,
   merging = false,
-  nested = false
+  nested = false,
+  hostFix = false
 }: {
   card: WorkCardData
   items: readonly TranscriptItem[]
@@ -192,6 +200,8 @@ export function WorkCard({
   inGroup?: boolean
   /** Rangée dans la carte du travail qu'elle relit (Code reviewer, fiche 265). */
   nested?: boolean
+  /** Rangée dans une carte seule, qui porte « Faire corriger » (fiche 265, revue UX). */
+  hostFix?: boolean
   /** Dans un groupe : les branches lues par sa carte, et si ce travail a été fusionné (fiche 264). */
   plan?: ChildrenMergePlan | undefined
   merged?: boolean
@@ -227,6 +237,7 @@ export function WorkCard({
   const agent = info?.agentLabel ?? t('workCard.mainAgent')
   const changes = cardChanges(card.childId, child, inGroup ? { plan, merged } : merge)
   const showFile = reviewShow(card, info)
+  const layout = useContext(WorkLayoutContext)
   return (
     <div
       className={cardClass(state, inGroup, nested)}
@@ -261,6 +272,8 @@ export function WorkCard({
         changes={changes}
         inGroup={inGroup}
         onShowFile={showFile}
+        requested={!!askedAbout(card, items)}
+        folded={!!layout?.reviews.get(card.childId)?.length}
       />
       <ReviewChanged review={card.review} />
       {(state === 'running' || state === 'waiting') &&
@@ -278,9 +291,14 @@ export function WorkCard({
         mergeBusy={mergeBusy}
         {...(merge ? { merge } : {})}
         onShowDiff={showFile && (() => showFile(firstTarget(card)))}
+        nested={nested}
+        hostFix={hostFix}
+        facts={reviewFacts(card, child, report)}
       />
       {/* Ses relectures, dans sa carte (fiche 265) ; dans un groupe, sous sa ligne. */}
-      {!inGroup && !nested && <WorkReviews childId={card.childId} items={items} info={info} />}
+      {!inGroup && !nested && (
+        <WorkReviews childId={card.childId} items={items} info={info} hostFix />
+      )}
     </div>
   )
 }
@@ -312,6 +330,16 @@ const reviewData = (card: WorkCardData) =>
       }
     : {}
 
+/** Méta d'un Code reviewer sur la ligne de ses boutons (fiche 265, revue UX). */
+function reviewFacts(
+  card: WorkCardData,
+  child: ConversationSummary | undefined,
+  report: Report | undefined
+): ReactNode {
+  if (!report || !(card.reviewOf || card.review)) return undefined
+  return <AnswerFacts card={card} child={child} report={report} current noCost={false} />
+}
+
 /** « Voir sur le diff » (fiche 265) : la plus grave de ses remarques, depuis le point relu. */
 function firstTarget(card: WorkCardData): DiffTarget | undefined {
   const review = card.review
@@ -341,11 +369,14 @@ export const reviewedId = (card: WorkCardData): string | undefined =>
 export function WorkReviews({
   childId,
   items,
-  info
+  info,
+  hostFix = false
 }: {
   childId: string
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
+  /** La carte du travail porte « Faire corriger » (carte seule ; pas une ligne de groupe). */
+  hostFix?: boolean
 }) {
   const layout = useContext(WorkLayoutContext)
   const entries = layout?.reviews.get(childId)
@@ -355,7 +386,7 @@ export function WorkReviews({
       {entries.map((entry) => (
         <div key={entry.request.id} className="role-request-group in-review">
           <RoleRequestBubble item={entry.request} inReview />
-          <WorkCard card={entry.card} items={items} info={info} nested />
+          <WorkCard card={entry.card} items={items} info={info} nested hostFix={hostFix} />
         </div>
       ))}
     </div>

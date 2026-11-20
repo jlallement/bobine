@@ -118,14 +118,25 @@ export function useWorkMerge(
 }
 
 /** « Fusionner dans main » au pied de la carte. */
-export function WorkMergeButton({ control }: { control: WorkMergeControl }) {
+export function WorkMergeButton({
+  control,
+  secondary = false,
+  reviewing = false
+}: {
+  control: WorkMergeControl
+  /** Une remarque haute ou moyenne de sa relecture attend sa correction (fiche 265). */
+  secondary?: boolean
+  /** Sa relecture tourne : la fusion attend sa fin (revue QA de la fiche 265). */
+  reviewing?: boolean
+}) {
   const { t } = useTranslation()
   if (!control.startable || !control.candidate) return null
   return (
     <button
       type="button"
-      className="btn primary small"
-      disabled={control.busy}
+      className={`btn small${secondary ? '' : ' primary'}`}
+      disabled={control.busy || reviewing}
+      title={reviewing ? t('workMerge.reviewing') : undefined}
       onClick={() => control.start()}
       data-testid="work-merge-start"
     >

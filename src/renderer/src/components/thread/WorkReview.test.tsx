@@ -253,15 +253,26 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     // L'avis d'ensemble après les remarques ; la réponse du tour repliée dessous.
     const summary = within(card).getByTestId('work-review-summary')
     expect(summary.textContent).toContain('une remarque à corriger')
+    // L'avis d'ensemble d'abord (revue UX), puis la liste.
     expect(
-      within(card).getByTestId('work-findings').compareDocumentPosition(summary) &
+      summary.compareDocumentPosition(within(card).getByTestId('work-findings')) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
-    const fold = within(card).getByTestId('work-review-reply') as HTMLDetailsElement
-    expect(fold.open).toBe(false)
-    expect(fold.textContent).toContain('REPONSE-ENTIERE')
-    expect(within(card).queryByTestId('work-body')).toBeNull()
+    // Sa réponse du tour repliée comme à la 263 (« Lire la suite »), sous ses remarques.
+    const body = within(card).getByTestId('work-body')
+    expect(body.className).toContain('folded')
+    expect(body.className).toContain('relayed')
+    expect(body.textContent).toContain('REPONSE-ENTIERE')
     expect(screen.queryByTestId('review-card')).toBeNull()
+    // Méta sur la ligne des boutons ; « Répondre » (fantôme) et « Ouvrir » sur la suivante.
+    const first = within(card).getByTestId('work-actions')
+    expect(within(first).getByTestId('work-facts')).toBeTruthy()
+    expect(within(first).getByTestId('work-fix')).toBeTruthy()
+    expect(within(first).queryByTestId('work-reply')).toBeNull()
+    const second = within(card).getByTestId('work-actions-second')
+    expect(within(second).getByTestId('work-reply').className).toContain('ghost')
+    expect(within(second).getByTestId('work-open')).toBeTruthy()
+    expect(within(card).getAllByTestId('work-facts')).toHaveLength(1)
   })
 
   it('un clic sur `fichier:ligne` et « Voir sur le diff » ouvrent la vue Git de la conversation relue', () => {
@@ -443,7 +454,17 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
       line: 42,
       since: 'a3f2c1e0'
     })
-    await act(async () => fireEvent.click(within(nested).getByTestId('work-fix')))
+    // Une remarque haute à traiter : « Faire corriger « Rayons » » est l'action principale de la
+    // carte du travail, la sous-carte du relecteur n'a ni ce bouton ni sa transmission (revue UX).
+    expect(within(nested).queryByTestId('work-fix')).toBeNull()
+    expect(within(nested).queryByTestId('work-relay')).toBeNull()
+    expect(within(author).getAllByTestId('work-relay')).toHaveLength(1)
+    const fix = within(author).getByTestId('work-fix-work')
+    expect(plain(fix.textContent)).toBe('Faire corriger « Architecte front »')
+    expect(fix.className).toContain('primary')
+    // Sa réponse se replie dès qu'une relecture est rangée dessous.
+    expect(within(author).getAllByTestId('work-body')[0]?.className).toContain('relayed')
+    await act(async () => fireEvent.click(fix))
     const [message, about] = (onAsk.mock.calls[0] as unknown[] | undefined) ?? []
     expect(plain(message)).toBe(
       'Fais corriger par « Rayons » les remarques de Code reviewer sur sa branche.'

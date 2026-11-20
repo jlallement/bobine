@@ -3402,7 +3402,8 @@
     "update": "Save",
     "cancel": "Cancel",
     "edit": "Edit comment",
-    "delete": "Delete comment"
+    "delete": "Delete comment",
+    "sendFix": "Ask for a fix"
   },
   "find": {
     "placeholder": "Find in conversation",
@@ -4671,9 +4672,11 @@
     "findings": {
       "label": "Comments from {{role}}",
       "where": "Show {{place}} on the diff",
-      "clean": "Nothing to report.",
-      "reply": "Its full response"
-    }
+      "clean": "Nothing to report."
+    },
+    "fixRequested": "Fix requested",
+    "fixRequestedAt": "Fix requested · {{time}}",
+    "fixWork": "Have “{{work}}” fix it"
   },
   "workCue": {
     "replied": "replied",

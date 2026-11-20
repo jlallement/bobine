@@ -10913,12 +10913,24 @@ html.about-page body {
   color: var(--text);
 }
 
-/* Ligne d'une remarque du Code reviewer cliquée sur sa carte (fiche 265) : mise en avant. */
-tr.diff-focus td {
-  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent);
+/*
+ * Lignes d'une remarque du Code reviewer cliquée sur sa carte (fiche 265, revue UX) : le fond
+ * d'ajout ou de contexte reste ; un liseré à gauche en couleur de focus (le bleu du thème, pas
+ * l'accent), et un éclair d'une seconde et demie à chaque demande.
+ */
+tr.diff-focus td:first-child {
+  box-shadow: inset 3px 0 0 var(--focus-line, var(--syn-number));
 }
-tr.diff-focus td.diff-code {
-  box-shadow:
-    inset 3px 0 0 var(--accent),
-    inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent);
+tr.diff-focus.diff-flash td {
+  animation: diff-flash 1.5s ease-out;
+}
+@keyframes diff-flash {
+  from {
+    background-color: color-mix(in srgb, var(--focus-line, var(--syn-number)) 24%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  tr.diff-focus.diff-flash td {
+    animation: none;
+  }
 }

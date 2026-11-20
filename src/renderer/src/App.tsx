@@ -38,7 +38,7 @@ import { SidePanel } from './components/panel/SidePanel'
 import { ThreadDock } from './components/thread/ThreadDock'
 import { Transcript } from './components/thread/Transcript'
 import { useConversations } from './useConversations'
-import { threadSubtasks } from './thread-subtasks'
+import { showReviewDiff, threadSubtasks } from './thread-subtasks'
 import { useActivityPage } from './useActivityPage'
 import { ActivityPage } from './components/activity/ActivityPage'
 import { ScheduledPage } from './components/scheduled/ScheduledPage'
@@ -693,12 +693,7 @@ export function App() {
                               subtasks={threadSubtasks(c, childrenMerge, send, snapshot, {
                                 review: (id) => reviewOf(c.list.find((s) => s.id === id)),
                                 changes: () => panel.openChanges('children'),
-                                diff: (authorId, file) => {
-                                  // Travail supprimé entre-temps : rien (revue QA).
-                                  if (!c.list.some((s) => s.id === authorId)) return
-                                  if (authorId !== c.activeId) c.select(authorId)
-                                  panel.openChanges('git', file)
-                                }
+                                diff: showReviewDiff(c, (file) => panel.openChanges('git', file))
                               })}
                               {...(c.activeSummary
                                 ? {
@@ -776,7 +771,7 @@ export function App() {
                 counts={panelCounts}
                 onCloseTab={panel.closeTab}
                 // Remarques sur les modifications (fiche 085) : un message à la conversation active.
-                onSendDiffNotes={(text) => send(text)}
+                onSendDiffNotes={(text, about) => send(text, [], about ? { about } : {})}
                 // Worktrees des filles directes (fiche 161), tenus à jour comme la carte du fil.
                 childWorktrees={{
                   rows: childRows(childrenOf(c.activeId, c.list), c.attention, transcript.items),

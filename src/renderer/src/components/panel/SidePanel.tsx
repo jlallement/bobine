@@ -61,7 +61,7 @@ interface Props {
   /** ✕ d'un onglet (ou clic molette) : il quitte le panneau, l'outil continue (fiche 082). */
   onCloseTab: (tab: PanelTab) => void
   /** Remarques sur les modifications (fiche 085) : message envoyé à l'agent. */
-  onSendDiffNotes?: (text: string) => void
+  onSendDiffNotes?: (text: string, about?: string) => void
   /** Filles de la conversation : vue « Filles » des Modifications (fiche 161). */
   childWorktrees?: ChildWorktrees
   /** « Faire relire… » la conversation (fiche 177). */

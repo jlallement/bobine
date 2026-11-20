@@ -1,7 +1,6 @@
 import { BookmarkPlus, Check, FileDiff, Reply, ScanSearch, Send } from 'lucide-react'
 import i18next from 'i18next'
-import { useContext, useState } from 'react'
-import { childState } from '@shared/children'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { WorkCardData } from '@shared/role-request'
@@ -12,9 +11,10 @@ import { saveAsRoleAction } from '../../roles/save-as-role'
 import { useProfileStatus } from '../common/Profile'
 import { messageTime } from '../../time'
 import type { SubtasksInfo } from './Subtasks'
-import { answerText, answerTitle, relayOf, type WorkState } from './work-card'
+import { answerText, answerTitle, askedAbout, relayOf, type WorkState } from './work-card'
 import { WorkMergeButton, type WorkMergeControl } from './WorkMerge'
-import { WorkLayoutContext } from './work-layout-context'
+import { ReviewFixButton, settleFindings, useWorkReview } from './WorkReviewActions'
+import { workName } from './work-name'
 
 /**
  * Pied d'une carte-réponse (fiche 263, revue UX) : une seule rangée d'actions alignée à gauche,
@@ -32,7 +32,10 @@ export function WorkFoot({
   items,
   merge,
   mergeBusy = false,
-  onShowDiff
+  onShowDiff,
+  nested = false,
+  hostFix = false,
+  facts
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -40,6 +43,12 @@ export function WorkFoot({
   state: WorkState
   report: Report | undefined
   items: readonly TranscriptItem[]
+  /** Rangée dans la carte du travail qu'elle relit (fiche 265) : sa transmission n'y est pas redite. */
+  nested?: boolean
+  /** La carte du travail relu porte « Faire corriger » (fiche 265, revue UX). */
+  hostFix?: boolean
+  /** Code reviewer (fiche 265, revue UX) : « heure · durée · coût », sur la ligne des boutons. */
+  facts?: ReactNode
   /** Fusion du travail dans sa carte (fiche 264) : « Fusionner dans main ». */
   merge?: WorkMergeControl
   /**
@@ -61,10 +70,26 @@ export function WorkFoot({
   const several = card.steps.filter((s) => s.kind === 'report').length > 1
   const merged = merge?.row?.state === 'merged'
   const openGit = info?.merge?.openGit
+  // Code reviewer (fiche 265, revue UX) : la méta et ses gestes sur une ligne, « Répondre »
+  // (fantôme) et « Ouvrir sa conversation » sur la suivante.
+  const reviewer = !!card.reviewOf || !!card.review
+  const asked = reviewer ? askedAbout(card, items) : undefined
+  const role = card.role
+  const open = (
+    <button
+      type="button"
+      className="link-button work-open"
+      onClick={() => info?.onOpen(card.childId)}
+      data-testid="work-open"
+    >
+      {t('workCard.open')}
+    </button>
+  )
   return (
     <>
       {canOpen && (
-        <div className="work-actions" data-testid="work-actions">
+        <div className={`work-actions${reviewer ? ' review' : ''}`} data-testid="work-actions">
+          {reviewer && facts}
           {live && state === 'running' && !mergeBusy && (
             <button
               type="button"
@@ -86,6 +111,9 @@ export function WorkFoot({
               pending={relay?.sent === false}
               agent={agent}
               warn={warn}
+              items={items}
+              reviewer={reviewer}
+              hostFix={hostFix}
               {...(merge ? { merge } : {})}
               {...(onShowDiff ? { onShowDiff } : {})}
             />
@@ -101,34 +129,83 @@ export function WorkFoot({
               {t('workCard.changes')}
             </button>
           )}
-          <button
-            type="button"
-            className="link-button work-open"
-            onClick={() => info?.onOpen(card.childId)}
-            data-testid="work-open"
-          >
-            {t('workCard.open')}
-          </button>
+          {!reviewer && open}
         </div>
       )}
-      {relay && (
-        <div
-          className={`work-relay${relay.sent ? ' sent' : ''}`}
-          data-testid="work-relay"
-          data-sent={relay.sent}
-        >
-          {relay.sent ? <Check size={13} aria-hidden /> : <span className="work-dot" aria-hidden />}
-          {relay.sent
-            ? relay.at
-              ? t('workCard.relayDoneAt', { agent, time: messageTime(relay.at) })
-              : t('workCard.relayDone', { agent })
-            : card.byAgent
-              ? // Lancé par l'agent : sa réponse lui part à son réveil (fiche 097).
-                t('workCard.relayPendingWake', { agent })
-              : t(several ? 'workCard.relayPendingLast' : 'workCard.relayPending', { agent })}
+      {canOpen && reviewer && (
+        <div className="work-actions work-actions-second" data-testid="work-actions-second">
+          {live && role && SETTLED.includes(state) && !mergeBusy && (
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+              data-testid="work-reply"
+            >
+              <Reply size={13} aria-hidden />
+              {t('workCard.reply', { role: role.label })}
+            </button>
+          )}
+          {open}
         </div>
+      )}
+      {!nested && (
+        <RelayLine
+          relay={relay}
+          asked={asked}
+          agent={agent}
+          byAgent={!!card.byAgent}
+          several={several}
+        />
       )}
     </>
+  )
+}
+
+/**
+ * Dernière ligne de la carte : la transmission de la dernière réponse (fiche 263) ; pour un Code
+ * reviewer dont la correction a été demandée, « Correction demandée · heure » (fiche 265).
+ */
+function RelayLine({
+  relay,
+  asked,
+  agent,
+  byAgent,
+  several
+}: {
+  relay: ReturnType<typeof relayOf>
+  asked: { at: number | undefined } | undefined
+  agent: string
+  byAgent: boolean
+  several: boolean
+}) {
+  const { t } = useTranslation()
+  if (asked) {
+    return (
+      <div className="work-relay sent" data-testid="work-relay" data-sent="true" data-fix>
+        <Check size={13} aria-hidden />
+        {asked.at
+          ? t('workCard.fixRequestedAt', { time: messageTime(asked.at) })
+          : t('workCard.fixRequested')}
+      </div>
+    )
+  }
+  if (!relay) return null
+  return (
+    <div
+      className={`work-relay${relay.sent ? ' sent' : ''}`}
+      data-testid="work-relay"
+      data-sent={relay.sent}
+    >
+      {relay.sent ? <Check size={13} aria-hidden /> : <span className="work-dot" aria-hidden />}
+      {relay.sent
+        ? relay.at
+          ? t('workCard.relayDoneAt', { agent, time: messageTime(relay.at) })
+          : t('workCard.relayDone', { agent })
+        : byAgent
+          ? // Lancé par l'agent : sa réponse lui part à son réveil (fiche 097).
+            t('workCard.relayPendingWake', { agent })
+          : t(several ? 'workCard.relayPendingLast' : 'workCard.relayPending', { agent })}
+    </div>
   )
 }
 
@@ -161,7 +238,7 @@ export function fixMessage(
   role: string,
   info: Pick<SubtasksInfo, 'children' | 'motherId'> | undefined
 ): string {
-  const of = card.reviewOf
+  const of = card.reviewOf ?? card.review?.authorId
   const work = of && of !== info?.motherId ? info?.children.find((c) => c.id === of) : undefined
   return work
     ? i18next.t('workCard.fixMessageWork', { role, work: work.title })
@@ -182,7 +259,10 @@ function SettledActions({
   agent,
   warn,
   merge,
-  onShowDiff
+  onShowDiff,
+  items,
+  reviewer,
+  hostFix
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -194,6 +274,11 @@ function SettledActions({
   warn: (error: unknown) => void
   merge?: WorkMergeControl
   onShowDiff?: (() => void) | undefined
+  items: readonly TranscriptItem[]
+  /** Code reviewer : « Répondre » est sur la ligne suivante (`WorkFoot`). */
+  reviewer: boolean
+  /** « Faire corriger » est porté par la carte du travail relu. */
+  hostFix: boolean
 }) {
   const { t } = useTranslation()
   // Un geste à la fois : « Appliquer » et « Relancer » attendent l'acquittement (revue QA).
@@ -220,9 +305,8 @@ function SettledActions({
     !info?.motherQueued
   // Code reviewer (fiche 265) : pas « appliquer » sa réponse, mais corriger ses remarques.
   const review = card.review?.status === 'reported' ? card.review : undefined
-  const reviewing = !!card.reviewOf
-  const applies = transmittable && !reviewing && !!answer
-  const fixes = transmittable && !!review && review.findings.length > 0
+  const applies = transmittable && !reviewer && !!answer
+  const fixes = transmittable && !!review && review.findings.length > 0 && !hostFix
   const lastAsk = card.steps.findLast((s) => s.kind === 'ask')
   const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
@@ -245,7 +329,12 @@ function SettledActions({
           type="button"
           className="btn primary small"
           disabled={acting}
-          onClick={() => act(() => onAsk(fixMessage(card, role.label, info), card.childId))}
+          onClick={() =>
+            act(async () => {
+              await onAsk(fixMessage(card, role.label, info), card.childId)
+              settleFindings(card)
+            })
+          }
           data-testid="work-fix"
         >
           <Send size={13} aria-hidden />
@@ -263,7 +352,16 @@ function SettledActions({
           {t('workCard.showDiff')}
         </button>
       )}
-      <WriterActions card={card} child={child} info={info} state={state} merge={merge} />
+      {!reviewer && (
+        <WriterActions
+          card={card}
+          child={child}
+          info={info}
+          state={state}
+          merge={merge}
+          items={items}
+        />
+      )}
       {motherId && role && RETRY.includes(state) && (
         <button
           type="button"
@@ -280,7 +378,7 @@ function SettledActions({
       )}
       {!role && report && <SaveAsRole card={card} report={report} info={info} />}
       {/* Sans rôle, pas de jeton pour lui répondre : sa conversation s'ouvre. */}
-      {role && (
+      {role && !reviewer && (
         <button
           type="button"
           className="btn small"
@@ -330,30 +428,36 @@ function WriterActions({
   child,
   info,
   state,
-  merge
+  merge,
+  items
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
   info: SubtasksInfo | undefined
   state: WorkState
   merge: WorkMergeControl | undefined
+  items: readonly TranscriptItem[]
 }) {
   const { t } = useTranslation()
   const openGit = info?.merge?.openGit
   const writes = (!card.role?.readOnly && !!child?.branch) || merge?.row?.state === 'merged'
   const review = info?.onReview
-  // Une relecture de ce travail tourne encore (fiche 265) : pas une deuxième en même temps.
-  const layout = useContext(WorkLayoutContext)
-  const reviewing = layout?.reviews.get(card.childId)?.some((entry) => {
-    const reviewer = info?.children.find((c) => c.id === entry.card.childId)
-    const now = reviewer && childState(reviewer, info?.attention[reviewer.id])
-    return now === 'running' || now === 'waiting'
-  })
+  // Sa relecture (fiche 265) : pas une deuxième pendant qu'elle tourne, ni de fusion ; une remarque
+  // importante à faire corriger d'abord : l'action principale de la carte.
+  const { reviewing, toFix } = useWorkReview(card, items, info)
   const reviewable =
     writes && state === 'replied' && !child?.reviewOf && !merge?.active && !reviewing
   return (
     <>
-      {merge && <WorkMergeButton control={merge} />}
+      {toFix && toFix.card.role && (
+        <ReviewFixButton
+          entry={toFix}
+          name={workName(card)}
+          message={fixMessage(toFix.card, toFix.card.role.label, info)}
+          info={info}
+        />
+      )}
+      {merge && <WorkMergeButton control={merge} secondary={!!toFix} reviewing={reviewing} />}
       {writes && openGit && (
         <button
           type="button"

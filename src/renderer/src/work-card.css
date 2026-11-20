@@ -699,6 +699,9 @@
 }
 .work-finding-where {
   margin-right: 7px;
+  /* Coupé seulement après une barre oblique (`<wbr>`), jamais au milieu d'un nom. */
+  overflow-wrap: normal;
+  word-break: normal;
   padding: 0;
   border: 0;
   background: none;
@@ -718,8 +721,16 @@ button.work-finding-where:hover {
   text-decoration-color: currentColor;
 }
 .work-review-summary {
-  margin: 10px 0 0;
-  color: var(--text-2);
+  margin: 0 0 10px;
+  color: var(--text);
+}
+/* Correction demandée : les pastilles s'effacent un peu. */
+.work-review.requested .review-severity {
+  opacity: 0.55;
+}
+.work-review + .work-body,
+.work-review ~ .work-more {
+  margin-top: 10px;
 }
 .work-review-clean {
   display: flex;
@@ -774,9 +785,28 @@ button.work-finding-where:hover {
 .work-card.nested {
   background: color-mix(in srgb, var(--bg) 40%, var(--surface));
 }
+/* Code reviewer (revue UX) : sa méta à gauche de ses boutons ; « Répondre » et « Ouvrir » dessous. */
+.work-actions.review > .work-facts {
+  margin: 0 auto 0 0;
+}
+.work-actions-second {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+.work-actions-second .work-open {
+  margin-left: 0;
+}
 @container (max-width: 520px) {
   .work-reviews,
   .work-review-changed {
     margin-left: 14px;
+  }
+  /* `fichier:ligne` sur sa propre ligne, la phrase dessous. */
+  .work-finding-text {
+    display: flex;
+    flex-direction: column;
+  }
+  .work-finding-where {
+    margin-right: 0;
   }
 }
