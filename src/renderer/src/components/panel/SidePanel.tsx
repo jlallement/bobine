@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next'
 import { useCompactTabs } from './compact-tabs'
 import { PanelMoreMenu } from './PanelMoreMenu'
 import { FilesTab } from '../files/FilesTab'
+import { useFilesTabTitle } from '../files/useFilesTabTitle'
 import type { FilesRequest } from '../files/useFilesTab'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
@@ -96,6 +97,8 @@ interface Props {
     openLink: OpenFileLink
     onMention?: (paths: string[]) => void
     onShowDiff?: (absolutePath: string) => void
+    onShowChanges?: () => void
+    onFocusComposer?: () => void
   }
   onTab: (tab: PanelTab) => void
   onClose: () => void
@@ -200,10 +203,15 @@ export function SidePanel({
   const stopDrag = () => (dragging.current = false)
 
   const hidden = hiddenPanelTabs(tabs, unavailablePanelTabs(platformFeatures(), discussion))
-  // Onglet Fichiers : il prend le nom du fichier ouvert (fiche 271, Q9).
-  const [filesTitle, setFilesTitle] = useState<string>()
+  // Onglet Fichiers : nom et icône du fichier ouvert (fiche 271, Q9) ; son ✕ ramène d'abord à
+  // l'arbre (point 3).
+  const filesTab = useFilesTabTitle(conversationId)
   const label = (id: PanelTab) =>
-    (id === 'files' && filesTitle) || (PANEL_TABS.find((entry) => entry.id === id)?.label ?? id)
+    (id === 'files' && filesTab.name) || (PANEL_TABS.find((entry) => entry.id === id)?.label ?? id)
+  const closeTab = (id: PanelTab) => {
+    if (id === 'files' && filesTab.backToTree()) return
+    onCloseTab(id)
+  }
   const sizeLabel = maximized ? t('sidePanel.restore') : t('sidePanel.maximize')
 
   return (
@@ -246,9 +254,12 @@ export function SidePanel({
         )}
         <div className="side-panel-tabs no-drag" role="tablist" ref={tabList}>
           {tabs.map((id) => {
-            const Icon = PANEL_ICONS[id]
+            const Icon = (id === 'files' && filesTab.icon) || PANEL_ICONS[id]
             const count = counts?.[id]
-            const closeLabel = t('sidePanel.closeTab', { tab: label(id) })
+            const closeLabel =
+              id === 'files' && filesTab.name
+                ? t('files.back')
+                : t('sidePanel.closeTab', { tab: label(id) })
             return (
               <div
                 key={id}
@@ -256,7 +267,7 @@ export function SidePanel({
                 data-tab={id}
                 // Clic molette : ferme l'onglet, comme dans un navigateur.
                 onAuxClick={(event) => {
-                  if (event.button === 1) onCloseTab(id)
+                  if (event.button === 1) closeTab(id)
                 }}
               >
                 <Tip label={label(id)}>
@@ -277,7 +288,7 @@ export function SidePanel({
                   <button
                     className="side-panel-tab-close"
                     aria-label={closeLabel}
-                    onClick={() => onCloseTab(id)}
+                    onClick={() => closeTab(id)}
                     data-testid="panel-tab-close"
                   >
                     <X size={13} />
@@ -293,7 +304,7 @@ export function SidePanel({
           {...(counts ? { counts } : {})}
           label={label}
           onTab={onTab}
-          onCloseTab={onCloseTab}
+          onCloseTab={closeTab}
         />
         <span className="grow" />
         <span className="sr-only" aria-live="polite">
@@ -383,7 +394,7 @@ export function SidePanel({
               onTerminalFocused={onTerminalFocused}
               onSendPageNotes={onSendPageNotes}
               files={filesTabProps(files, items, maximized, onSendDiffNotes)}
-              onFilesTitle={setFilesTitle}
+              filesTitle={filesTab}
               {...(preferences ? { preferences } : {})}
               {...(attach ? { onAttach: attach } : {})}
             />
@@ -414,7 +425,7 @@ function ToolTab({
   onAttach,
   onSendPageNotes,
   files,
-  onFilesTitle
+  filesTitle
 }: {
   tab: PanelTab
   conversationId: string
@@ -432,7 +443,7 @@ function ToolTab({
         onSendNotes?: ((text: string, about?: string) => void) | undefined
       })
     | undefined
-  onFilesTitle: (title: string | undefined) => void
+  filesTitle: ReturnType<typeof useFilesTabTitle>
 }) {
   const attach = onAttach ? { onAttach } : {}
   switch (tab) {
@@ -473,7 +484,10 @@ function ToolTab({
           onSendNotes={files.onSendNotes}
           onMention={files.onMention}
           onShowDiff={files.onShowDiff}
-          onTitle={onFilesTitle}
+          onShowChanges={files.onShowChanges}
+          onFocusComposer={files.onFocusComposer}
+          onTitle={filesTitle.changed}
+          closeRef={filesTitle.close}
         />
       ) : null
     default:

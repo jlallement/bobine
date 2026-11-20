@@ -21,7 +21,8 @@ import {
   type FileRoot
 } from '@shared/files'
 import { gitRun } from '../git/git-queue'
-import { inside, real } from './file-links'
+import { inside, mayExecuteOn, real } from './file-links'
+import { launchSystem } from '../process-launch'
 
 /** Octets lus pour reconnaître un fichier binaire (un octet nul). */
 const SNIFF_BYTES = 8192
@@ -102,6 +103,8 @@ export async function listDirectory(options: {
   ignored?: IgnoredPaths
   /** Exclu pour l'agent (chemin absolu) ; absent : rien n'est marqué. */
   isExcluded?: (path: string) => Promise<boolean>
+  /** Fichiers d'où viennent ces exclusions (`.bobignore`…), rendus avec la liste. */
+  exclusionFiles?: string[]
 }): Promise<FileListing> {
   const { root, dir, roots } = options
   const folder = await resolveInRoot(root, dir, roots)
@@ -129,14 +132,14 @@ export async function listDirectory(options: {
     } else if (entry.isDirectory()) {
       entries.push({ name: entry.name, path, kind: 'dir' })
     } else {
-      const size = await lstat(full)
-        .then((s) => s.size)
-        .catch(() => undefined)
+      const info = await lstat(full).catch(() => undefined)
       entries.push({
         name: entry.name,
         path,
         kind: 'file',
-        ...(size === undefined ? {} : { size })
+        ...(info ? { size: info.size } : {}),
+        // S'exécuterait si on l'« ouvrait » : pas d'« Ouvrir avec l'app par défaut » (fiche 052).
+        ...(info && mayExecuteOn(full, info.mode, launchSystem()) ? { executable: true } : {})
       })
     }
   }
@@ -148,7 +151,8 @@ export async function listDirectory(options: {
       if (await options.isExcluded(join(folder, entry.name))) entry.excluded = true
     }
   }
-  return { entries: shown, more: entries.length - shown.length }
+  const files = options.exclusionFiles?.length ? { exclusionFiles: options.exclusionFiles } : {}
+  return { entries: shown, more: entries.length - shown.length, ...files }
 }
 
 /** Marque les entrées ignorées par git ; tout le dossier s'il est lui-même ignoré. */
@@ -198,6 +202,9 @@ export async function readFileForView(
     if (!info.isFile()) throw new Error(t('files.error.notFile', { path: relative }))
     const modified = Math.round(info.mtimeMs)
     const size = info.size
+    const runs = mayExecuteOn(target, info.mode, launchSystem())
+      ? { executable: true as const }
+      : {}
     const mime = imageType(target)
     if (mime && size <= MAX_IMAGE_BYTES) {
       const buffer = await readStart(handle, size)
@@ -207,13 +214,15 @@ export async function readFileForView(
         url: `data:${mime};base64,${buffer.toString('base64')}`,
         size,
         modified,
+        ...runs,
         ...(svg && size <= MAX_TEXT_BYTES ? { text: decode(buffer) } : {})
       }
     }
     const buffer = await readStart(handle, Math.min(size, MAX_TEXT_BYTES))
     const utf16 = buffer[0] === 0xff && buffer[1] === 0xfe
-    if (mime || (!utf16 && looksBinary(buffer))) return { kind: 'binary', size, modified }
-    return { kind: 'text', text: decode(buffer), size, truncated: size > MAX_TEXT_BYTES, modified }
+    if (mime || (!utf16 && looksBinary(buffer))) return { kind: 'binary', size, modified, ...runs }
+    const text = decode(buffer)
+    return { kind: 'text', text, size, truncated: size > MAX_TEXT_BYTES, modified, ...runs }
   } finally {
     await handle.close()
   }

@@ -54,6 +54,10 @@ export function useSpace(c: {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- une seule fois, au premier état chargé
   }, [ready])
+  // Le menu suit l'espace : ⌘P et ⇧⌘Y désactivés dans une discussion (fiche 271).
+  useEffect(() => {
+    void window.api.app.setSpace?.(space)?.catch(() => undefined)
+  }, [space])
   /** Nouvelle conversation de l'espace affiché (bouton, ⌘N). */
   const create = () => c.create(space === 'discussion' ? { space } : {})
   return { space, choose, create }

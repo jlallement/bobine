@@ -84,6 +84,8 @@ export function createApi(
       /** Mode présentation (fiche 159). */
       presentation: () => invoke('app:presentation'),
       setPresentation: (active: boolean) => invoke('app:setPresentation', active),
+      /** Espace affiché, pour le menu (fiche 271). */
+      setSpace: (space: 'code' | 'discussion') => invoke('app:setSpace', space),
       onPresentation: (listener: (active: boolean) => void) =>
         subscribe('app:presentationChanged', listener),
       /** Erreur de l'interface, pour le journal de l'app (fiche 041). */

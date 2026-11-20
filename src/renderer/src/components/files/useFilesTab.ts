@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   parentDirs,
-  splitFilterLine,
   type FileContent,
   type FileListing,
   type FileRoot,
@@ -9,6 +8,7 @@ import {
 } from '@shared/files'
 import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
+import { useFileFilter } from './useFileFilter'
 import {
   closeFile,
   collapseAll,
@@ -25,8 +25,6 @@ import {
   type FilesState
 } from '../../files-state'
 
-/** Délai avant de chercher pendant la frappe dans le filtre. */
-const SEARCH_DELAY_MS = 120
 /** Défilement retenu après ce délai sans mouvement. */
 const SCROLL_SAVE_MS = 400
 
@@ -36,12 +34,6 @@ export type Listing = { listing: FileListing } | { error: string }
 export type OpenContent =
   | { target: FileTarget; content: FileContent; seq: number }
   | { target: FileTarget; error: string; missing: boolean; seq: number }
-
-/** Résultat du filtre : un fichier d'une racine. */
-export interface FilterHit {
-  root: number
-  path: string
-}
 
 /** Demande venue d'ailleurs (⌘P, lien du fil) : `seq` change à chaque demande. */
 export interface FilesRequest {
@@ -139,7 +131,20 @@ export function useFilesTab(conversationId: string, items: readonly TranscriptIt
     const target = open
     api
       .read(conversationId, target.root, target.path)
-      .then((read) => alive && setContent({ target, content: read, seq: generation }))
+      .then((read) => {
+        if (!alive) return
+        // Rien n'a changé sur le disque : le même contenu, rien à recolorer (point 25).
+        setContent((current) =>
+          current &&
+          'content' in current &&
+          current.target.root === target.root &&
+          current.target.path === target.path &&
+          current.content.modified === read.modified &&
+          current.content.size === read.size
+            ? current
+            : { target, content: read, seq: generation }
+        )
+      })
       .catch((e: unknown) => {
         if (!alive) return
         const error = ipcErrorText(e)
@@ -167,31 +172,11 @@ export function useFilesTab(conversationId: string, items: readonly TranscriptIt
   }, [reload])
 
   // Filtre (Q33) : liste plate classée, sur toutes les racines.
-  const [query, setQuery] = useState('')
-  const [found, setHits] = useState<{ query: string; hits: FilterHit[] } | null>(null)
-  const search = splitFilterLine(query)
-  // Résultats de la recherche en cours seulement ; filtre vide : l'arbre.
-  const hits = search.query && found?.query === search.query ? found.hits : search.query ? [] : null
-  useEffect(() => {
-    if (!search.query || !roots) return
-    let stale = false
-    const timer = setTimeout(() => {
-      void Promise.all(
-        roots.map((root) =>
-          api
-            .search(conversationId, root.index, search.query)
-            .then((paths) => paths.map((path) => ({ root: root.index, path })))
-            .catch(() => [] as FilterHit[])
-        )
-      ).then((all) => {
-        if (!stale) setHits({ query: search.query, hits: all.flat() })
-      })
-    }, SEARCH_DELAY_MS)
-    return () => {
-      stale = true
-      clearTimeout(timer)
-    }
-  }, [api, conversationId, roots, search.query, generation])
+  const filter = useFileFilter(
+    roots,
+    (root, query) => api.search(conversationId, root, query),
+    generation
+  )
 
   // Défilement du fichier ouvert : retenu un instant après le dernier mouvement (Q2).
   const scrollTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -227,10 +212,9 @@ export function useFilesTab(conversationId: string, items: readonly TranscriptIt
     content: open ? content : null,
     preferences,
     setPreferences,
-    query,
-    setQuery,
-    hits,
-    filterLine: search.line,
+    filter,
+    /** Ce qui rend un fichier invisible pour l'agent (`.bobignore`…), lu avec la racine. */
+    exclusionFiles: exclusionFilesOf(listings),
     reload,
     show,
     toggle: (root: number, path: string, open?: boolean) =>
@@ -240,8 +224,20 @@ export function useFilesTab(conversationId: string, items: readonly TranscriptIt
     close: () => setState(closeFile),
     step: (delta: -1 | 1) => setState((s) => stepFile(s, delta)),
     collapse: () => setState(collapseAll),
+    /** « Réduire » un dossier : lui et ses sous-dossiers (point 24). */
+    collapseDir: (root: number, path: string) =>
+      setState((s) => {
+        const key = dirKey(root, path)
+        const kept = s.expanded.filter((k) => k !== key && !k.startsWith(`${key}/`))
+        return kept.length === s.expanded.length ? s : { ...s, expanded: kept }
+      }),
     saveScroll
   }
+}
+
+function exclusionFilesOf(listings: Record<string, Listing>): string[] {
+  const top = listings['0:']
+  return top && 'listing' in top ? (top.listing.exclusionFiles ?? []) : []
 }
 
 export type FilesTabModel = ReturnType<typeof useFilesTab>

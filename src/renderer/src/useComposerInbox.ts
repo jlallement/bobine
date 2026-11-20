@@ -14,6 +14,8 @@ export interface ComposerArrivals {
   insert: (text: string) => void
   /** Fichiers du dossier joints par leur chemin (onglet Fichiers, fiche 271). */
   paths?: (paths: string[]) => void
+  /** Le clavier revient à la zone de saisie. */
+  focus?: () => void
 }
 
 /**
@@ -36,6 +38,7 @@ export function useComposerInbox(
         files: (files) => latest.current.files(files),
         text: (value) => latest.current.text(value),
         paths: (paths) => latest.current.paths?.(paths),
+        focus: () => latest.current.focus?.(),
         ...(conversationId ? { conversationId } : {}),
         restore: (value, items) => latest.current.restore(value, items)
       }),

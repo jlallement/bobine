@@ -155,6 +155,8 @@ export interface IpcInvokeContract
   /** Mode présentation actif (fiche 159) ; jamais enregistré. */
   'app:presentation': { args: []; result: boolean }
   'app:setPresentation': { args: [active: boolean]; result: undefined }
+  /** Espace affiché (fiche 224) : le menu désactive ce qui n'y a pas cours (⌘P, ⇧⌘Y, fiche 271). */
+  'app:setSpace': { args: [space: 'code' | 'discussion']; result: undefined }
   /** Fenêtre À propos (fiche 116) : bloc d'infos techniques à copier (anglais, non traduit). */
   'about:technicalInfo': { args: []; result: string }
   /** Ferme la fenêtre À propos (Échap). */
@@ -873,6 +875,7 @@ export const IPC_CHANNELS = [
   'app:fonts',
   'app:presentation',
   'app:setPresentation',
+  'app:setSpace',
   'about:technicalInfo',
   'about:close',
   'about:showChangelog',

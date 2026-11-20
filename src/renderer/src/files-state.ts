@@ -23,12 +23,24 @@ export type TreeSide = 'auto' | 'left' | 'right'
 /** Évènement de ⇧⌘Y (menu Affichage) vers l'onglet Fichiers affiché. */
 export const TOGGLE_TREE_EVENT = 'bobine:files-toggle-tree'
 
+/** « Aller à la ligne… » du menu de l'onglet (point 11) vers le code affiché. */
+export const FILE_GOTO_EVENT = 'bobine:files-goto'
+
+/** Markdown en source plutôt que rendu, retenu le temps de la session (Q10, point 12). */
+let markdownSource = false
+export const markdownSourceWanted = () => markdownSource
+export const setMarkdownSourceWanted = (source: boolean) => {
+  markdownSource = source
+}
+
 /** Évènement de ⌘F quand le focus est dans le fichier ouvert (Q48). */
 export const FILE_FIND_EVENT = 'bobine:files-find'
 
 /** ⌘F dans le fichier ouvert : cherche dans le fichier ; `false` si le focus est ailleurs. */
 export function findInOpenFile(): boolean {
-  if (!document.activeElement?.closest('[data-testid=file-view]')) return false
+  // Un fichier de code affiché (pas une image, un Markdown rendu, un binaire) : sinon, le fil.
+  const view = document.activeElement?.closest('[data-testid=file-view]')
+  if (!view?.querySelector('[data-testid=file-code]')) return false
   window.dispatchEvent(new Event(FILE_FIND_EVENT))
   return true
 }

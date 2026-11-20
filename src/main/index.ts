@@ -519,6 +519,8 @@ async function start(): Promise<void> {
   nativeTheme.themeSource = settings.preferences().theme
   // Mode présentation (fiche 159) : jamais enregistré ; le menu et les fenêtres le suivent.
   const presentation = new Presentation()
+  // Espace affiché (fiche 224) : dans une discussion, l'onglet Fichiers n'existe pas (fiche 271).
+  let space: 'code' | 'discussion' = 'code'
 
   // Menu macOS et raccourcis (fiche 027) : chaque entrée envoie sa commande à l'interface ;
   // reconstruit quand le raccourci de la fenêtre rapide ou la langue changent.
@@ -531,6 +533,7 @@ async function start(): Promise<void> {
       fullScreen: mainWindow?.isFullScreen() === true,
       toggleFullScreen: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()),
       presentation: { active: presentation.active, toggle: () => presentation.toggle() },
+      disabled: space === 'discussion' ? ['files', 'files-tree'] : [],
       showLog,
       about: () => about.show(),
       help: () => help.show(null, { search: true }),
@@ -830,6 +833,11 @@ async function start(): Promise<void> {
         fonts: fontLister(fontSource(process.platform)),
         menu,
         presentation: { active: () => presentation.active, set: (on) => presentation.set(on) },
+        space: (next) => {
+          if (next === space) return
+          space = next
+          refreshMenu()
+        },
         showLog,
         alerts: failures.alertsIpc,
         onboarding,

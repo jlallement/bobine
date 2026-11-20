@@ -1,6 +1,7 @@
 /* Onglet « Fichiers » du panneau (fiche 271) : arbre, filtre, fichier ouvert en lecture seule. */
 
 .files-tab {
+  container-type: inline-size;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -58,6 +59,12 @@
 
 .files-filter:focus-within {
   border-color: var(--accent);
+}
+
+.files-filter-kbd {
+  flex-shrink: 0;
+  margin-right: 4px;
+  font-size: 11px;
 }
 
 .files-filter input {
@@ -206,6 +213,7 @@
   cursor: pointer;
 }
 
+.files-hit.active,
 .files-hit:hover,
 .files-hit:focus-visible {
   background: var(--surface-2);
@@ -228,6 +236,7 @@
 
 /* Fichier ouvert (Q38) */
 .file-view {
+  container-type: inline-size;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -248,10 +257,30 @@
   min-width: 0;
   display: flex;
   align-items: baseline;
-  overflow: hidden;
   white-space: nowrap;
   font-size: 12.5px;
   margin: 0 4px;
+}
+
+/*
+ * Le nom du fichier passe en priorité ; les dossiers cèdent la place par la gauche, fondus, sans
+ * être coupés en morceaux (point 16).
+ */
+.crumb-dirs {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.crumb-dirs.clipped {
+  mask-image: linear-gradient(to right, transparent, #000 14px);
+}
+
+.crumb-dirs .crumb,
+.crumb-dirs .crumb-part {
+  flex-shrink: 0;
 }
 
 .crumb {
@@ -269,17 +298,22 @@
 }
 
 .crumb.current {
+  flex-shrink: 0;
+  max-width: 100%;
   color: var(--text);
   font-weight: 600;
   cursor: default;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.crumb.current:hover {
+  text-decoration: none;
 }
 
 .crumb-sep {
   color: var(--muted);
   padding: 0 3px;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .crumb-part {
@@ -298,19 +332,15 @@
 }
 
 .file-readonly {
-  padding: 1px 6px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-}
-
-.file-source-toggle {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.file-source-toggle .btn.on {
-  background: var(--surface-2);
-  color: var(--text);
+  font-size: 10.5px;
+  line-height: 16px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .file-view-banner {
@@ -346,6 +376,13 @@
 }
 
 /* Code (Q46, Q47) : numéros non sélectionnables, retour à la ligne au choix. */
+.file-code-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .file-code {
   flex: 1;
   min-height: 0;
@@ -361,6 +398,9 @@
 }
 
 .file-line {
+  /* Teinte de la ligne, que la gouttière (collée à gauche) reprend (point 6). */
+  --line-bg: var(--bg);
+  background: var(--line-bg);
   display: flex;
   min-width: max-content;
   content-visibility: auto;
@@ -379,8 +419,13 @@
   align-items: flex-start;
   gap: 2px;
   padding: 0 10px 0 4px;
-  background: var(--bg);
+  background: var(--line-bg);
   user-select: none;
+}
+
+/* Ligne commentée : une barre d'accent dans la gouttière (point 6). */
+.file-line.noted .file-gutter {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .file-no {
@@ -399,6 +444,14 @@
 .file-code.wrap .file-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  tab-size: 4;
+  /* Retrait suspendu (point 5) : la suite s'aligne sur l'indentation, plus 2ch. */
+  padding-left: var(--hang, 2ch);
+  text-indent: calc(-1 * var(--hang, 2ch));
+}
+
+.file-text {
+  tab-size: 4;
 }
 
 .file-note-add {
@@ -421,24 +474,31 @@
   opacity: 1;
 }
 
-.file-line.selected,
-.file-line.target {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+.file-line.noted {
+  --line-bg: color-mix(in srgb, var(--accent) 6%, var(--bg));
 }
 
-.file-line.flash {
+.file-line.selected {
+  --line-bg: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+/* Ligne demandée (lien du fil, aller à la ligne, recherche) : éclairée un instant seulement. */
+.file-line.flash,
+.file-line.flash .file-gutter {
   animation: file-flash 1.5s ease-out;
 }
 
 @keyframes file-flash {
   from {
-    background: color-mix(in srgb, var(--accent) 35%, transparent);
+    background: color-mix(in srgb, var(--accent) 35%, var(--bg));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .file-line.flash {
+  .file-line.flash,
+  .file-line.flash .file-gutter {
     animation: none;
+    background: color-mix(in srgb, var(--accent) 20%, var(--bg));
   }
 }
 
@@ -451,31 +511,38 @@
   color: var(--muted);
 }
 
-.file-goto {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+/* Recherche et aller à la ligne : une barre au-dessus du code, jamais par-dessus (point 10). */
+.file-bar {
   display: flex;
-  justify-content: flex-end;
-  padding: 4px 8px;
+  align-items: center;
+  gap: 2px;
+  margin: 6px 8px;
+  padding: 4px 4px 4px 6px;
+  background: var(--surface);
+  border: 1px solid var(--glass-menu-line, var(--border));
+  border-radius: var(--radius-sm);
+  box-shadow: var(--glass-menu-shadow);
+  font-family: var(--font-ui);
+}
+
+.file-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
 }
 
 .file-find-count {
-  align-self: center;
-  margin-left: 8px;
-  font-family: var(--font-ui);
+  flex-shrink: 0;
+  margin: 0 4px;
   font-size: 12px;
   color: var(--muted);
-}
-
-.file-goto input {
-  width: 160px;
-  padding: 4px 8px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
+  white-space: nowrap;
 }
 
 /* Image (Q41) et binaire (Q40) */
@@ -539,4 +606,67 @@
 .menu-check-space {
   width: 14px;
   flex-shrink: 0;
+}
+
+/* Menu contextuel de l'arbre : ancré au pointeur, ou sous la ligne au clavier (point 17). */
+.file-context-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.files-hits.searching {
+  opacity: 0.75;
+}
+
+.files-notes-where {
+  color: var(--muted);
+}
+
+.files-notes-count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-row-mark {
+  display: inline-grid;
+  place-items: center;
+}
+
+/* Panneau étroit (point 16) : le fil d'Ariane prend sa propre ligne, le nom du fichier entier. */
+@container (max-width: 440px) {
+  .file-view-head {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .file-breadcrumb {
+    order: 10;
+    flex-basis: 100%;
+    margin: 0 4px 2px;
+  }
+
+  .file-readonly {
+    margin-left: auto;
+  }
+}
+
+/* Panneau étroit : la barre des remarques passe sur deux lignes, rien n'est coupé. */
+@container (max-width: 440px) {
+  .files-notes-bar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .files-notes-count {
+    flex: 1 1 calc(100% - 24px);
+    white-space: normal;
+  }
+}
+
+.files-notes-bar .btn {
+  white-space: nowrap;
 }

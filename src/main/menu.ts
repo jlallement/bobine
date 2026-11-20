@@ -40,6 +40,8 @@ export interface MenuOptions {
   zoom?: (action: 'in' | 'out' | 'reset') => void
   /** Affichage › Mode présentation (fiche 159) : case cochée quand il est actif. */
   presentation?: { active: boolean; toggle: () => void }
+  /** Commandes sans objet là où l'on est (⌘P et ⇧⌘Y dans l'espace Discussion, fiche 271). */
+  disabled?: readonly MenuCommand[]
 }
 
 /** Zoom de l'interface, comme les rôles `zoomIn`, `zoomOut` et `resetZoom` d'Electron. */
@@ -54,6 +56,7 @@ export function buildMenuTemplate(options: MenuOptions): MenuItemConstructorOpti
     id: shortcut.command,
     label: shortcut.label,
     accelerator: shortcut.accelerator,
+    ...(options.disabled?.includes(shortcut.command) ? { enabled: false } : {}),
     click: () =>
       shortcut.command === 'help' && options.help ? options.help() : options.send(shortcut.command)
   })

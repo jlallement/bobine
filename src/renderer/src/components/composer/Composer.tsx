@@ -260,6 +260,7 @@ function useInbox(
       void c.attachments.addPaths(paths)
       c.focus()
     },
+    focus: () => c.focus(),
     text: (value) => {
       c.changeText(value, value.length)
       c.focus()

@@ -27,6 +27,8 @@ export interface FileEntry {
   ignored?: true
   /** Exclu pour l'agent (`.bobignore`, fiche 155). */
   excluded?: true
+  /** S'exécuterait si on l'ouvrait (bit `x`, script, `.app`…) : jamais « Ouvrir avec l'app par défaut ». */
+  executable?: true
   /** Lien symbolique : `outside` s'il mène hors des dossiers de la conversation (jamais suivi). */
   link?: 'inside' | 'outside'
 }
@@ -36,6 +38,8 @@ export interface FileListing {
   entries: FileEntry[]
   /** Entrées au-delà de la borne, non listées. */
   more: number
+  /** Ce qui rend une entrée invisible pour l'agent (`.bobignore`…), pour le dire (fiche 155). */
+  exclusionFiles?: string[]
 }
 
 /** Fichier lu pour l'affichage, en lecture seule. */
@@ -49,6 +53,7 @@ export type FileContent =
       truncated: boolean
       /** Date de modification (ms) : un fichier relu qui a changé se signale. */
       modified: number
+      executable?: true
     }
   | {
       kind: 'image'
@@ -58,8 +63,9 @@ export type FileContent =
       modified: number
       /** SVG : son source, pour la bascule « Source ». */
       text?: string
+      executable?: true
     }
-  | { kind: 'binary'; size: number; modified: number }
+  | { kind: 'binary'; size: number; modified: number; executable?: true }
 
 /** Un fichier désigné dans la vue (racine, chemin relatif), et la ligne à montrer. */
 export interface FileTarget {

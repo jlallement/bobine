@@ -49,6 +49,8 @@ export interface AppIpcDeps {
   menu?: Pick<AppMenu, 'model' | 'invoke'>
   /** Mode présentation (fiche 159) : lecture et changement. */
   presentation?: { active: () => boolean; set: (active: boolean) => void }
+  /** Espace affiché (fiche 224) : le menu le suit (fiche 271). */
+  space?: (space: 'code' | 'discussion') => void
   /** Fenêtre À propos (fiche 116, injectée : fenêtres, agents). */
   about?: {
     technicalInfo: () => string
@@ -110,6 +112,11 @@ export function appHandlers(
     'app:setPresentation': (active) => {
       if (typeof active !== 'boolean') throw new Error('Paramètre invalide : active')
       deps.presentation?.set(active)
+      return undefined
+    },
+    'app:setSpace': (space) => {
+      if (space !== 'code' && space !== 'discussion') throw new Error('Paramètre invalide : space')
+      deps.space?.(space)
       return undefined
     },
     'app:reportError': (report) => {

@@ -20,6 +20,7 @@ export const READ_ONLY_SAFE = [
   'app:fonts',
   'app:presentation',
   'app:setPresentation',
+  'app:setSpace',
   // Menu ☰ (fiche 145) : ses entrées passent ensuite par leurs propres canaux, gardés.
   'app:menu',
   'app:menuInvoke',

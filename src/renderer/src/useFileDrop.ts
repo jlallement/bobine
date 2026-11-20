@@ -13,6 +13,8 @@ export interface ComposerHandler {
   files: (files: File[]) => void
   /** Fichiers du dossier joints par leur chemin (« Mentionner », fiche 271). */
   paths?: (paths: string[]) => void
+  /** Rend le clavier à la zone de saisie (Échap dans le filtre des fichiers, fiche 271). */
+  focus?: () => void
   text: (text: string) => void
   /** Conversation de la zone de saisie, et message à y remettre (fenêtre rapide, fiche 062). */
   conversationId?: string
@@ -59,6 +61,11 @@ export class ComposerInbox {
   /** Joint des fichiers par leur chemin absolu (onglet Fichiers, fiche 271, Q51). */
   mention(paths: string[]): void {
     this.handler?.paths?.(paths)
+  }
+
+  /** Rend le clavier à la zone de saisie. */
+  focus(): void {
+    this.handler?.focus?.()
   }
 
   /** Remplace le texte de la zone de saisie (sans envoyer). */

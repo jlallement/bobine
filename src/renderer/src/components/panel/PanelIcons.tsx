@@ -3,7 +3,7 @@ import {
   FileDiff,
   FileText,
   Files,
-  FolderTree,
+  Folder,
   Gauge,
   Globe,
   ListChecks,
@@ -72,5 +72,5 @@ export const PANEL_ICONS: Record<PanelTab, ComponentType<IconProps>> = {
   changes: FileDiff,
   document: FileText,
   documents: Files,
-  files: FolderTree
+  files: Folder
 }

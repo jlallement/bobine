@@ -65,7 +65,7 @@ export async function linksSuite(scheme) {
 
         await ui.click(link('src/app.ts:3'))
         await ui.waitFor(
-          `${fileView}?.dataset.path === 'src/app.ts' && !!document.querySelector('.file-line.target[data-line="3"]')`
+          `${fileView}?.dataset.path === 'src/app.ts' && document.querySelector('[data-testid=file-code]')?.dataset.asked === '3'`
         )
         check(opened().length === 0, 'code : dans l’onglet Fichiers, à la ligne (fiche 271)')
         const waitLog = async (line) => {
@@ -89,6 +89,11 @@ export async function linksSuite(scheme) {
           '⌥-clic : montré dans le Finder'
         )
 
+        // ✕ de l'onglet : d'abord l'arbre (un fichier est ouvert), puis l'onglet (fiche 271).
+        await ui.click(
+          `document.querySelector('.side-panel-tab[data-tab=files] [data-testid=panel-tab-close]')`
+        )
+        await ui.waitFor(`!document.querySelector('[data-testid=file-view]')`)
         await ui.click(
           `document.querySelector('.side-panel-tab[data-tab=files] [data-testid=panel-tab-close]')`
         )

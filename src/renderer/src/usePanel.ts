@@ -360,10 +360,15 @@ export function usePanel(options: {
       }
     }),
     /** Ce que l'onglet Fichiers reçoit : demande, liens, mention dans la saisie, diff d'un fichier. */
-    filesTab: (openLink: OpenFileLink, inbox: { mention: (paths: string[]) => void }) => ({
+    filesTab: (
+      openLink: OpenFileLink,
+      inbox: { mention: (paths: string[]) => void; focus: () => void }
+    ) => ({
       request: filesRequest,
       openLink,
       onMention: (paths: string[]) => inbox.mention(paths),
+      onFocusComposer: () => inbox.focus(),
+      onShowChanges: () => openChanges('conversation'),
       onShowDiff: (path: string) => openChanges('conversation', { path })
     }),
     updateDocument,

@@ -109,6 +109,23 @@ describe('menu de l’app', () => {
     ])
   })
 
+  it('Fichiers : ⌘P et ⇧⌘Y, désactivés dans l’espace Discussion (fiche 271)', () => {
+    const find = (disabled?: ('files' | 'files-tree')[]) =>
+      flatten(
+        buildMenuTemplate({
+          appName: 'Bobine',
+          dev: false,
+          send: vi.fn(),
+          ...(disabled ? { disabled } : {})
+        })
+      ).filter((i) => i.id === 'files' || i.id === 'files-tree')
+    expect(find().map((i) => [i.id, i.accelerator, i.enabled])).toEqual([
+      ['files', 'CmdOrCtrl+P', undefined],
+      ['files-tree', 'CmdOrCtrl+Shift+Y', undefined]
+    ])
+    expect(find(['files', 'files-tree']).map((i) => i.enabled)).toEqual([false, false])
+  })
+
   it('Fenêtre › Mon activité, ⇧⌘U (fiche 144)', () => {
     const send = vi.fn()
     const template = buildMenuTemplate({ appName: 'Bobine', dev: false, send })

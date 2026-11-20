@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  findInOpenFile,
+  FILE_FIND_EVENT,
   closeFile,
   collapseAll,
   dirKey,
@@ -78,5 +80,23 @@ describe('stockage', () => {
     expect(loadFilesPreferences()).toEqual({ wrap: true, side: 'auto', tree: true })
     saveFilesPreferences({ wrap: false, side: 'left', tree: false })
     expect(loadFilesPreferences()).toEqual({ wrap: false, side: 'left', tree: false })
+  })
+})
+
+describe('⌘F dans le fichier ouvert', () => {
+  it('seulement le focus dans une vue de fichier qui montre du code', () => {
+    const heard = vi.fn()
+    window.addEventListener(FILE_FIND_EVENT, heard)
+    document.body.innerHTML =
+      '<div data-testid="file-view"><button id="b">x</button><div id="md"></div></div>'
+    document.getElementById('b')?.focus()
+    expect(findInOpenFile()).toBe(false)
+    document.getElementById('md')?.setAttribute('data-testid', 'file-code')
+    expect(findInOpenFile()).toBe(true)
+    expect(heard).toHaveBeenCalledTimes(1)
+    document.body.innerHTML = '<button id="c">y</button>'
+    document.getElementById('c')?.focus()
+    expect(findInOpenFile()).toBe(false)
+    window.removeEventListener(FILE_FIND_EVENT, heard)
   })
 })

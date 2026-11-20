@@ -59,7 +59,9 @@ export function filesHandlers(
         dir: str(dir, 'dir'),
         roots: paths,
         ignored: gitIgnored,
-        ...(exclusions ? { isExcluded: exclusions.isExcluded } : {})
+        ...(exclusions
+          ? { isExcluded: exclusions.isExcluded, exclusionFiles: exclusions.files }
+          : {})
       })
     },
     'files:read': async (id, root, path) => {

@@ -1,12 +1,11 @@
-import * as Dropdown from '@radix-ui/react-dropdown-menu'
-import { Check, ChevronsDownUp, MoreHorizontal, Search, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
+  type MutableRefObject,
   type RefObject
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,20 +14,18 @@ import { diffFeedback, type DiffNote } from '@shared/diff-notes'
 import { parentDirs, type FileRoot, type FileTarget } from '@shared/files'
 import type { TranscriptItem } from '@shared/transcript'
 import { reviewerOfNote, useDiffNotes } from '../../diff-notes-store'
-import { dirKey, TOGGLE_TREE_EVENT, type TreeSide } from '../../files-state'
+import { dirKey, FILE_GOTO_EVENT, TOGGLE_TREE_EVENT } from '../../files-state'
 import { fileNoteKey } from '../../file-notes'
-import { Tip } from '../common/Menus'
-import { SHORTCUTS, type MenuCommand } from '@shared/shortcuts'
-import { DiffNotesBar } from '../panel/ChangesBars'
 import type { OpenFileLink } from '../thread/FileLink'
 import { useFileActions } from './FileActions'
-import { FileTree, treeRows } from './FileTree'
+import { treeRows } from './FileTree'
 import { FileView } from './FileView'
+import { NotesBar, TreePane, ViewMenu } from './FilesParts'
 import { useFilesTab, type FilesRequest } from './useFilesTab'
 import './files.css'
 
-/** Largeur à partir de laquelle, agrandi, l'arbre se met à côté du fichier (Q58). */
-const SIDE_BY_SIDE_MIN = 900
+/** Largeur de l'onglet à partir de laquelle, agrandi, l'arbre se met à côté du fichier (Q58). */
+export const SIDE_BY_SIDE_MIN = 900
 
 interface Props {
   conversationId: string
@@ -40,18 +37,27 @@ interface Props {
   onSendNotes?: ((text: string, about?: string) => void) | undefined
   onMention?: ((paths: string[]) => void) | undefined
   onShowDiff?: ((absolutePath: string) => void) | undefined
-  /** Nom du fichier ouvert, pour le titre de l'onglet (Q9) ; `undefined` : « Fichiers ». */
-  onTitle?: (title: string | undefined) => void
+  /** « Voir » de la barre des remarques : l'onglet Modifications. */
+  onShowChanges?: (() => void) | undefined
+  /** Échap sur un filtre vide : le clavier revient à la zone de saisie. */
+  onFocusComposer?: (() => void) | undefined
+  /** Un fichier a été ouvert ou fermé : le titre de l'onglet suit (Q9). */
+  onTitle?: () => void
+  /** Ce que fait le ✕ de l'onglet : `true` si un fichier ouvert a été fermé (point 3). */
+  closeRef?: MutableRefObject<(() => boolean) | null>
 }
 
 /** Chemins modifiés par la conversation, relatifs à la racine principale, et leurs dossiers (Q6). */
 function changedPaths(items: readonly TranscriptItem[], root: FileRoot | undefined): Set<string> {
   const changed = new Set<string>()
   if (!root) return changed
-  const base = root.path.replace(/[\\/]+$/, '')
+  const base = root.path
+    .replace(/[\\/]+$/, '')
+    .split('\\')
+    .join('/')
   for (const file of conversationChanges(items)) {
     const path = file.path.split('\\').join('/')
-    const relative = path.startsWith(`${base.split('\\').join('/')}/`)
+    const relative = path.startsWith(`${base}/`)
       ? path.slice(base.length + 1)
       : path.startsWith('/') || /^[a-z]:\//i.test(path)
         ? undefined
@@ -63,10 +69,31 @@ function changedPaths(items: readonly TranscriptItem[], root: FileRoot | undefin
   return changed
 }
 
+/** Le fichier affiché est du texte (code, Markdown, SVG en source) : « Aller à la ligne… ». */
+function showsText(content: ReturnType<typeof useFilesTab>['content']): boolean {
+  return !!content && 'content' in content && content.content.kind !== 'binary'
+}
+
+/** Largeur d'un élément, suivie (le seuil du côte à côte, point 15). */
+function useElementWidth(element: RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const node = element.current
+    // Le premier rappel arrive dès l'observation : la largeur de départ.
+    if (!node || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width)
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [element])
+  return width
+}
+
 /**
  * Onglet « Fichiers » du panneau (fiche 271, ADR-0065) : l'arbre du dossier de la conversation et
  * de ses autres dossiers, un filtre (⌘P y met le curseur), et le fichier ouvert, en lecture seule.
- * Panneau étroit : l'arbre ou le fichier (⇧⌘Y bascule) ; agrandi : côte à côte.
+ * Panneau étroit : l'arbre ou le fichier (⇧⌘Y bascule) ; agrandi et assez large : côte à côte.
  */
 export function FilesTab(props: Props) {
   const { conversationId, items, maximized, request } = props
@@ -86,8 +113,8 @@ export function FilesTab(props: Props) {
   // Panneau étroit : l'arbre ou le fichier ouvert (Q18).
   const [narrowView, setNarrowView] = useState<'tree' | 'file'>(state.open ? 'file' : 'tree')
   const filter = useRef<HTMLInputElement>(null)
-  const width = useWidth()
-  const side: TreeSide = preferences.side
+  const box = useRef<HTMLDivElement>(null)
+  const width = useElementWidth(box)
   const sideBySide = maximized && preferences.tree && !!state.open && width >= SIDE_BY_SIDE_MIN
   const showTree = sideBySide || !state.open || narrowView === 'tree'
   const showFile = !!state.open && (sideBySide || narrowView === 'file')
@@ -111,12 +138,27 @@ export function FilesTab(props: Props) {
     })
     return () => cancelAnimationFrame(frame)
   }, [focusSeq])
+  // Titre de l'onglet : le fichier ouvert (Q9).
   const { onTitle } = props
-  const title = state.open ? state.open.path.split('/').at(-1) : undefined
+  const openPath = state.open ? `${state.open.root}:${state.open.path}` : ''
+  useEffect(() => onTitle?.(), [onTitle, openPath])
+  // ✕ de l'onglet (point 3) : un fichier ouvert revient d'abord à l'arbre.
+  const { closeRef } = props
+  const close = useCallback(() => {
+    model.close()
+    setNarrowView('tree')
+  }, [model])
   useEffect(() => {
-    onTitle?.(title)
-  }, [onTitle, title])
-  useEffect(() => () => onTitle?.(undefined), [onTitle])
+    if (!closeRef) return
+    closeRef.current = () => {
+      if (!state.open) return false
+      close()
+      return true
+    }
+    return () => {
+      closeRef.current = null
+    }
+  }, [closeRef, close, state.open])
   // ⇧⌘Y (Q18) : agrandi, l'arbre à côté ou non ; étroit, l'arbre ou le fichier.
   const toggleTree = useCallback(() => {
     if (maximized) model.setPreferences({ tree: !preferences.tree })
@@ -131,7 +173,7 @@ export function FilesTab(props: Props) {
   const open = (target: FileTarget) => {
     model.show(target)
     setNarrowView('file')
-    model.setQuery('')
+    model.filter.setQuery('')
   }
   const diffNotes = useDiffNotes(conversationId)
   const sendNotes = () => {
@@ -154,38 +196,46 @@ export function FilesTab(props: Props) {
   }
   const expanded = new Set([dirKey(0, ''), ...state.expanded])
   const rows = roots ? treeRows(roots, model.listings, expanded) : []
-  const selected = state.open ? dirKey(state.open.root, state.open.path) : undefined
   const target = state.open
-  const root = target ? roots?.[target.root] : undefined
   const fileKey = target ? fileNoteKey(target.root, target.path) : ''
   const fileNotes = diffNotes.notes.filter((n) => n.view === 'file' && n.file === fileKey)
   // Remarque sur un autre dossier (fiche 179) : son chemin absolu, l'agent le connaît ainsi.
   const notePath = target ? (target.root === 0 ? target.path : actions.absolute(target)) : ''
-
-  const tree = (
-    <TreePane
-      model={model}
-      rows={rows}
-      selected={selected}
-      changed={changed}
-      actions={actions}
-      filter={filter}
-      treeChecked={preferences.tree || !maximized}
-      onToggleTree={toggleTree}
-      onOpen={open}
+  const codeShown = showFile && showsText(model.content)
+  // Un seul menu de vue (point 4) : dans l'en-tête du fichier s'il est affiché, sinon sur l'arbre.
+  const viewMenu = (
+    <ViewMenu
+      wrap={preferences.wrap}
+      side={preferences.side}
+      tree={showTree}
+      canGoTo={!!codeShown}
+      onFilter={() => {
+        setNarrowView('tree')
+        requestAnimationFrame(() => filter.current?.focus())
+      }}
+      onTree={toggleTree}
+      onSide={(next) => model.setPreferences({ side: next })}
+      onCollapse={model.collapse}
+      onWrap={() => model.setPreferences({ wrap: !preferences.wrap })}
+      onGoTo={() => window.dispatchEvent(new Event(FILE_GOTO_EVENT))}
+      onReload={model.reload}
     />
   )
+  const side = preferences.side === 'left' ? 'left' : 'right'
   return (
     <div
-      className={`files-tab${sideBySide ? ` side-by-side tree-${side === 'left' ? 'left' : 'right'}` : ''}`}
+      className={`files-tab${sideBySide ? ` side-by-side tree-${side}` : ''}`}
+      ref={box}
       data-testid="files-tab"
     >
-      {props.onSendNotes && diffNotes.notes.length > 0 && (
-        <DiffNotesBar
-          count={diffNotes.notes.length}
-          fix={diffNotes.notes.every((n) => n.review)}
-          onClear={diffNotes.clear}
+      {props.onSendNotes && (
+        <NotesBar
+          notes={diffNotes.notes}
+          fileKey={fileKey}
           onSend={sendNotes}
+          onShow={props.onShowChanges}
+          onClear={diffNotes.clear}
+          onRestore={diffNotes.addAll}
         />
       )}
       {notice && (
@@ -201,10 +251,22 @@ export function FilesTab(props: Props) {
         </div>
       )}
       <div className="files-body">
-        {showTree && tree}
+        {showTree && (
+          <TreePane
+            model={model}
+            rows={rows}
+            selected={target ? dirKey(target.root, target.path) : undefined}
+            changed={changed}
+            actions={actions}
+            filter={filter}
+            viewMenu={showFile ? null : viewMenu}
+            onOpen={open}
+            onFocusComposer={props.onFocusComposer}
+          />
+        )}
         {showFile && target && (
           <FileView
-            root={root}
+            root={roots?.[target.root]}
             showRoot={(roots?.length ?? 0) > 1}
             target={target}
             content={model.content}
@@ -225,308 +287,16 @@ export function FilesTab(props: Props) {
             treeShown={sideBySide}
             onToggleTree={toggleTree}
             onStep={model.step}
-            onClose={() => {
-              model.close()
-              setNarrowView('tree')
-            }}
             onRevealDir={(path) => {
               model.reveal(target.root, path)
               if (!sideBySide) setNarrowView('tree')
             }}
             onScroll={model.saveScroll}
             initialScroll={state.scroll}
+            viewMenu={viewMenu}
           />
         )}
       </div>
     </div>
   )
-}
-
-/** Filtre, barre d'outils et arbre (ou résultats du filtre). */
-function TreePane({
-  model,
-  rows,
-  selected,
-  changed,
-  actions,
-  filter,
-  treeChecked,
-  onToggleTree,
-  onOpen
-}: {
-  model: ReturnType<typeof useFilesTab>
-  rows: ReturnType<typeof treeRows>
-  selected: string | undefined
-  changed: ReadonlySet<string>
-  actions: ReturnType<typeof useFileActions>
-  filter: RefObject<HTMLInputElement | null>
-  treeChecked: boolean
-  onToggleTree: () => void
-  onOpen: (target: FileTarget) => void
-}) {
-  const { t } = useTranslation()
-  const { preferences } = model
-  const open = onOpen
-  return (
-    <div className="files-tree-pane" data-testid="files-tree-pane">
-      <div className="files-toolbar">
-        <div className="files-filter">
-          <Search size={13} />
-          <input
-            ref={filter}
-            value={model.query}
-            onChange={(e) => model.setQuery(e.target.value)}
-            onKeyDown={(e) => onFilterKey(e, model, open, actions)}
-            placeholder={t('files.filter')}
-            aria-label={t('files.filterLabel')}
-            data-testid="files-filter"
-          />
-          {model.query && (
-            <button
-              className="icon-button small"
-              aria-label={t('files.clearFilter')}
-              onClick={() => model.setQuery('')}
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-        <Tip label={t('files.collapseAll')}>
-          <button
-            className="icon-button small"
-            onClick={model.collapse}
-            aria-label={t('files.collapseAll')}
-            data-testid="files-collapse"
-          >
-            <ChevronsDownUp size={14} />
-          </button>
-        </Tip>
-        <FilesMenu
-          wrap={preferences.wrap}
-          side={preferences.side}
-          tree={treeChecked}
-          onFilter={() => filter.current?.focus()}
-          onTree={onToggleTree}
-          onSide={(next) => model.setPreferences({ side: next })}
-          onCollapse={model.collapse}
-          onWrap={() => model.setPreferences({ wrap: !preferences.wrap })}
-          onReload={model.reload}
-        />
-      </div>
-      {model.hits ? (
-        <FilterResults
-          hits={model.hits}
-          roots={model.roots ?? []}
-          onOpen={(hit) =>
-            open({ ...hit, ...(model.filterLine ? { line: model.filterLine } : {}) })
-          }
-        />
-      ) : (
-        <FileTree
-          rows={rows}
-          selected={selected}
-          changed={changed}
-          actions={actions}
-          onToggle={model.toggle}
-          onOpen={(rootIndex, path) => open({ root: rootIndex, path })}
-        />
-      )}
-    </div>
-  )
-}
-
-/** ↑ ↓ ↵ dans le filtre (Q36) : parcourir et ouvrir ; Échap efface, puis rend la main. */
-function onFilterKey(
-  event: KeyboardEvent<HTMLInputElement>,
-  model: ReturnType<typeof useFilesTab>,
-  open: (target: FileTarget) => void,
-  actions: ReturnType<typeof useFileActions>
-) {
-  const list = event.currentTarget
-    .closest('.files-tree-pane')
-    ?.querySelectorAll<HTMLElement>('[data-testid="files-hit"]')
-  if (event.key === 'Escape') {
-    if (model.query) {
-      event.preventDefault()
-      event.stopPropagation()
-      model.setQuery('')
-    }
-    return
-  }
-  if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    list?.[0]?.focus()
-    return
-  }
-  const first = model.hits?.[0]
-  if (event.key !== 'Enter' || !first) return
-  event.preventDefault()
-  const item = { ...first, kind: 'file' as const }
-  if (event.metaKey || event.ctrlKey) actions.openInEditor?.(item, model.filterLine)
-  else if (event.shiftKey) actions.mention?.(item)
-  else open({ ...first, ...(model.filterLine ? { line: model.filterLine } : {}) })
-}
-
-/** Résultats du filtre : liste plate, nom puis dossier (Q33, Q34). */
-function FilterResults({
-  hits,
-  roots,
-  onOpen
-}: {
-  hits: { root: number; path: string }[]
-  roots: readonly FileRoot[]
-  onOpen: (hit: { root: number; path: string }) => void
-}) {
-  const { t } = useTranslation()
-  const move = (event: KeyboardEvent<HTMLButtonElement>, delta: number) => {
-    const all = [
-      ...(event.currentTarget.parentElement?.querySelectorAll<HTMLElement>(
-        '[data-testid="files-hit"]'
-      ) ?? [])
-    ]
-    const index = all.indexOf(event.currentTarget)
-    const next = all[index + delta]
-    if (next) next.focus()
-    else if (delta < 0) {
-      event.currentTarget.closest('.files-tree-pane')?.querySelector<HTMLElement>('input')?.focus()
-    }
-  }
-  return (
-    <div className="files-hits" role="listbox" data-testid="files-hits">
-      {hits.length === 0 && <div className="file-tree-note">{t('files.noMatch')}</div>}
-      {hits.map((hit) => {
-        const name = hit.path.split('/').at(-1) ?? hit.path
-        const dir = hit.path.slice(0, hit.path.length - name.length - 1)
-        const rootName = roots.length > 1 ? roots[hit.root]?.name : undefined
-        return (
-          <button
-            key={`${hit.root}:${hit.path}`}
-            role="option"
-            aria-selected={false}
-            className="files-hit"
-            onClick={() => onOpen(hit)}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowDown') {
-                e.preventDefault()
-                move(e, 1)
-              } else if (e.key === 'ArrowUp') {
-                e.preventDefault()
-                move(e, -1)
-              }
-            }}
-            data-testid="files-hit"
-            data-path={hit.path}
-          >
-            <span className="files-hit-name">{name}</span>
-            <span className="files-hit-dir">{[rootName, dir].filter(Boolean).join('/')}</span>
-          </button>
-        )
-      })}
-      <div className="file-tree-note small">{t('files.ignoredNotSearched')}</div>
-    </div>
-  )
-}
-
-/** Menu … de l'onglet (Q38, R4 sans les réglages d'éditeur). */
-function FilesMenu(props: {
-  wrap: boolean
-  side: TreeSide
-  tree: boolean
-  onFilter: () => void
-  onTree: () => void
-  onSide: (side: TreeSide) => void
-  onCollapse: () => void
-  onWrap: () => void
-  onReload: () => void
-}) {
-  const { t } = useTranslation()
-  const check = (on: boolean) =>
-    on ? <Check size={14} className="menu-check" /> : <span className="menu-check-space" />
-  return (
-    <Dropdown.Root modal={false}>
-      <Tip label={t('files.more')}>
-        <Dropdown.Trigger
-          className="icon-button small"
-          aria-label={t('files.more')}
-          data-testid="files-menu"
-        >
-          <MoreHorizontal size={14} />
-        </Dropdown.Trigger>
-      </Tip>
-      <Dropdown.Portal>
-        <Dropdown.Content
-          className="menu"
-          align="end"
-          sideOffset={4}
-          collisionPadding={12}
-          data-testid="files-menu-content"
-        >
-          <Dropdown.Item className="menu-item" onSelect={props.onFilter}>
-            {check(false)}
-            <span className="menu-text">{t('files.filterLabel')}</span>
-            <span className="menu-value">{shortcutKeys('files')}</span>
-          </Dropdown.Item>
-          <Dropdown.Separator className="menu-separator" />
-          <Dropdown.Item
-            className="menu-item"
-            onSelect={props.onTree}
-            data-testid="files-menu-tree"
-          >
-            {check(props.tree)}
-            <span className="menu-text">{t('files.showTree')}</span>
-            <span className="menu-value">{shortcutKeys('files-tree')}</span>
-          </Dropdown.Item>
-          <div className="menu-label">{t('files.side.label')}</div>
-          {(['auto', 'left', 'right'] as const).map((value) => (
-            <Dropdown.Item
-              key={value}
-              className="menu-item"
-              onSelect={() => props.onSide(value)}
-              data-testid={`files-side-${value}`}
-            >
-              {check(props.side === value)}
-              <span className="menu-text">{t(`files.side.${value}`)}</span>
-            </Dropdown.Item>
-          ))}
-          <Dropdown.Separator className="menu-separator" />
-          <Dropdown.Item className="menu-item" onSelect={props.onCollapse}>
-            {check(false)}
-            <span className="menu-text">{t('files.collapseAll')}</span>
-          </Dropdown.Item>
-          <Dropdown.Separator className="menu-separator" />
-          <Dropdown.Item
-            className="menu-item"
-            onSelect={props.onWrap}
-            data-testid="files-menu-wrap"
-          >
-            {check(props.wrap)}
-            <span className="menu-text">{t('files.wrap')}</span>
-          </Dropdown.Item>
-          <Dropdown.Item
-            className="menu-item"
-            onSelect={props.onReload}
-            data-testid="files-menu-reload"
-          >
-            {check(false)}
-            <span className="menu-text">{t('files.reload')}</span>
-          </Dropdown.Item>
-        </Dropdown.Content>
-      </Dropdown.Portal>
-    </Dropdown.Root>
-  )
-}
-
-/** Touches d'un raccourci du menu, telles qu'affichées. */
-const shortcutKeys = (command: MenuCommand) =>
-  SHORTCUTS.find((s) => s.command === command)?.keys ?? ''
-
-/** Largeur de la fenêtre, suivie. */
-function useWidth(): number {
-  const [width, setWidth] = useState(() => window.innerWidth)
-  useEffect(() => {
-    const onResize = () => setWidth(window.innerWidth)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  return width
 }

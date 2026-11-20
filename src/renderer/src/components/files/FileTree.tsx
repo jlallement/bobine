@@ -1,22 +1,26 @@
+import { ChevronDown, ChevronRight, EyeOff, Folder } from 'lucide-react'
 import {
-  ChevronDown,
-  ChevronRight,
-  EyeOff,
-  File,
-  FileCode2,
-  FileImage,
-  FileJson,
-  FileSymlink,
-  FileText,
-  Folder,
-  FolderOpen
-} from 'lucide-react'
-import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent
+} from 'react'
 import { useTranslation } from 'react-i18next'
-import { extensionOf, imageType, type FileEntry, type FileRoot } from '@shared/files'
+import type { FileEntry, FileRoot } from '@shared/files'
 import { countText } from '@shared/i18n/format'
 import { dirKey } from '../../files-state'
-import { FileActionItems, FileActionsMenu, type FileActions } from './FileActions'
+import { Tip } from '../common/Menus'
+import {
+  FileActionItems,
+  FileActionsMenu,
+  FileContextMenu,
+  type ContextAt,
+  type FileActions,
+  type FileItem
+} from './FileActions'
+import { EntryIcon } from './file-icons'
 import type { Listing } from './useFilesTab'
 import { FILE_DRAG_TYPE } from '../../useFileDrop'
 
@@ -80,86 +84,52 @@ export function treeRows(
   return rows
 }
 
-const CODE = new Set([
-  'ts',
-  'tsx',
-  'js',
-  'jsx',
-  'mjs',
-  'cjs',
-  'mts',
-  'cts',
-  'py',
-  'rb',
-  'go',
-  'rs',
-  'java',
-  'kt',
-  'swift',
-  'c',
-  'h',
-  'cpp',
-  'hpp',
-  'cs',
-  'php',
-  'sh',
-  'bash',
-  'zsh',
-  'css',
-  'scss',
-  'less',
-  'html',
-  'htm',
-  'vue',
-  'svelte',
-  'sql',
-  'yml',
-  'yaml',
-  'toml',
-  'xml',
-  'lua',
-  'r',
-  'pl',
-  'm',
-  'mm'
-])
-
-/** Icône d'une entrée selon son type (Q23). */
-function EntryIcon({ entry, open }: { entry: FileEntry; open: boolean }) {
-  if (entry.kind === 'dir') return open ? <FolderOpen size={14} /> : <Folder size={14} />
-  if (entry.link) return <FileSymlink size={14} />
-  const extension = extensionOf(entry.name)
-  if (imageType(entry.name)) return <FileImage size={14} />
-  if (extension === 'json' || extension === 'jsonc') return <FileJson size={14} />
-  if (CODE.has(extension)) return <FileCode2 size={14} />
-  if (['md', 'mdx', 'markdown', 'txt', 'pdf', 'rst'].includes(extension)) {
-    return <FileText size={14} />
-  }
-  return <File size={14} />
-}
-
 interface Props {
   rows: TreeRow[]
   /** Ligne du fichier ouvert (surlignée). */
   selected?: string | undefined
   /** Fichiers modifiés par la conversation, et leurs dossiers (Q6). */
   changed: ReadonlySet<string>
-  /** Nom du fichier d'exclusions de l'agent, pour l'infobulle (fiche 155). */
+  /** Ce qui rend un fichier invisible pour l'agent (`.bobignore`…), pour l'infobulle. */
+  exclusionFiles: readonly string[]
   actions: FileActions
   onToggle: (root: number, path: string, open?: boolean) => void
   onOpen: (root: number, path: string) => void
+  /** « Réduire » un dossier et ses sous-dossiers. */
+  onCollapseDir: (root: number, path: string) => void
+  /** Une lettre tapée dans l'arbre : elle part au filtre (point 17). */
+  onType: (text: string) => void
+}
+
+/** Ce que désigne une ligne, pour ses actions. */
+function itemOf(row: Exclude<TreeRow, { kind: 'note' }>): FileItem {
+  if (row.kind === 'root') return { root: row.root.index, path: '', kind: 'dir' }
+  return {
+    root: row.root,
+    path: row.entry.path,
+    kind: row.entry.kind,
+    executable: row.entry.executable === true
+  }
 }
 
 /**
  * Arbre des fichiers (Q21 à Q32) : `role="tree"`, une ligne focalisable à la fois ; ↑ ↓ parcourent,
- * → déplie ou entre, ← replie ou remonte, ↵ ouvre, Début / Fin. Clic droit sur une ligne : son menu
- * d'actions. Une ligne de fichier se glisse sur la zone de saisie (mention).
+ * → déplie ou entre, ← replie ou remonte, ↵ ouvre, Début / Fin ; une lettre part au filtre. Menu
+ * contextuel au pointeur (clic droit), ou sous la ligne (Maj+F10, touche Menu). Une ligne de
+ * fichier se glisse sur la zone de saisie (mention).
  */
-export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }: Props) {
+export function FileTree(props: Props) {
+  const { rows, selected, changed, actions, onToggle, onOpen } = props
   const { t } = useTranslation()
   const items = rows.filter((row) => row.kind !== 'note')
   const [focused, setFocused] = useState<string | null>(null)
-  const [menuFor, setMenuFor] = useState<string | null>(null)
+  const [menu, setMenuState] = useState<{ key: string; at: ContextAt } | null>(null)
+  // Ligne du dernier menu ouvert : le clavier y revient à sa fermeture.
+  const lastMenu = useRef<string | null>(null)
+  const setMenu = (next: { key: string; at: ContextAt } | null) => {
+    if (next) lastMenu.current = next.key
+    setMenuState(next)
+  }
   const box = useRef<HTMLDivElement>(null)
   const current = items.find((row) => row.key === focused) ?? items.find((r) => r.key === selected)
   const tabStop = current?.key ?? items[0]?.key
@@ -171,10 +141,12 @@ export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }:
       ?.scrollIntoView?.({ block: 'nearest' })
   }, [selected, rows.length])
 
+  const rowElement = (key: string) =>
+    box.current?.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`)
   const focusRow = (key: string | undefined) => {
     if (!key) return
     setFocused(key)
-    box.current?.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`)?.focus()
+    rowElement(key)?.focus()
   }
   const activate = (row: TreeRow) => {
     if (row.kind === 'root') onToggle(row.root.index, '', !row.open)
@@ -184,10 +156,30 @@ export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }:
       else onOpen(row.root, row.entry.path)
     }
   }
+  const menuUnder = (key: string) => {
+    const box = rowElement(key)?.getBoundingClientRect()
+    setMenu({ key, at: { x: (box?.left ?? 0) + 24, y: box?.bottom ?? 0 } })
+  }
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = items.findIndex((row) => row.key === (focused ?? tabStop))
     const row = items[index]
     if (!row) return
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault()
+      menuUnder(row.key)
+      return
+    }
+    if (
+      event.key.length === 1 &&
+      event.key !== ' ' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      event.preventDefault()
+      props.onType(event.key)
+      return
+    }
     const parent = () => {
       for (let i = index - 1; i >= 0; i--) {
         const candidate = items[i]
@@ -218,10 +210,23 @@ export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }:
     run()
   }
   const onDragStart = (event: DragEvent<HTMLDivElement>, root: number, path: string) => {
-    const absolute = actions.absolute({ root, path })
-    event.dataTransfer.setData(FILE_DRAG_TYPE, absolute)
+    event.dataTransfer.setData(FILE_DRAG_TYPE, actions.absolute({ root, path }))
     event.dataTransfer.setData('text/plain', path)
     event.dataTransfer.effectAllowed = 'copy'
+  }
+  const menuRow = menu ? items.find((row) => row.key === menu.key) : undefined
+  const menuItems = (row: Exclude<TreeRow, { kind: 'note' }>) => {
+    const item = itemOf(row)
+    return (
+      <FileActionItems
+        item={item}
+        actions={actions}
+        changed={item.root === 0 && changed.has(item.path)}
+        {...(item.kind === 'dir' && row.open && row.kind === 'entry'
+          ? { onCollapse: () => props.onCollapseDir(item.root, item.path) }
+          : {})}
+      />
+    )
   }
 
   return (
@@ -243,9 +248,13 @@ export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }:
             selected={row.key === selected}
             tabStop={row.key === tabStop}
             changed={changed}
-            actions={actions}
-            menuOpen={menuFor === row.key}
-            onMenu={(open) => setMenuFor(open ? row.key : null)}
+            exclusionFiles={props.exclusionFiles}
+            menuItems={menuItems(row)}
+            onContextMenu={(event) => {
+              event.preventDefault()
+              setFocused(row.key)
+              setMenu({ key: row.key, at: { x: event.clientX, y: event.clientY } })
+            }}
             onFocus={() => setFocused(row.key)}
             onActivate={() => {
               setFocused(row.key)
@@ -255,6 +264,15 @@ export function FileTree({ rows, selected, changed, actions, onToggle, onOpen }:
           />
         )
       )}
+      <FileContextMenu
+        at={menuRow ? (menu?.at ?? null) : null}
+        onClose={() => setMenu(null)}
+        onCloseFocus={() => {
+          if (lastMenu.current) rowElement(lastMenu.current)?.focus()
+        }}
+      >
+        {menuRow && menuItems(menuRow)}
+      </FileContextMenu>
     </div>
   )
 }
@@ -284,9 +302,9 @@ function FileRow({
   selected,
   tabStop,
   changed,
-  actions,
-  menuOpen,
-  onMenu,
+  exclusionFiles,
+  menuItems,
+  onContextMenu,
   onFocus,
   onActivate,
   onDragStart
@@ -295,9 +313,9 @@ function FileRow({
   selected: boolean
   tabStop: boolean
   changed: ReadonlySet<string>
-  actions: FileActions
-  menuOpen: boolean
-  onMenu: (open: boolean) => void
+  exclusionFiles: readonly string[]
+  menuItems: React.ReactNode
+  onContextMenu: (event: MouseEvent<HTMLDivElement>) => void
   onFocus: () => void
   onActivate: () => void
   onDragStart: (event: DragEvent<HTMLDivElement>, root: number, path: string) => void
@@ -311,10 +329,14 @@ function FileRow({
   const outside = entry?.link === 'outside'
   // Fichier modifié par la conversation ; dossier replié qui en contient (Q6).
   const marked = root === 0 && changed.has(path) && !!entry && (!isDir || !row.open)
-  const title = [
-    row.kind === 'root' ? row.root.path : path,
+  const excluded = exclusionFiles.length
+    ? t('files.excluded', { name: exclusionFiles.join(', ') })
+    : t('files.excludedPlain')
+  // Ce que la ligne dit à un lecteur d'écran (pas d'infobulle native, point 22).
+  const label = [
+    name,
     entry?.ignored ? t('files.ignored') : '',
-    entry?.excluded ? t('files.excludedPlain') : '',
+    entry?.excluded ? excluded : '',
     outside ? t('files.linkOutside') : '',
     marked ? t('files.modified') : ''
   ]
@@ -331,19 +353,16 @@ function FileRow({
       role="treeitem"
       aria-level={row.depth + 1}
       aria-selected={selected}
+      aria-label={label.filter(Boolean).join(', ')}
       {...(isDir ? { 'aria-expanded': row.open } : {})}
       tabIndex={tabStop ? 0 : -1}
       data-key={row.key}
       data-path={path}
       data-testid="file-row"
-      title={title.filter(Boolean).join(' · ')}
       style={{ paddingLeft: 6 + row.depth * 14 }}
       onClick={onActivate}
       onFocus={onFocus}
-      onContextMenu={(event) => {
-        event.preventDefault()
-        onMenu(true)
-      }}
+      onContextMenu={onContextMenu}
       draggable={!isDir && !outside}
       onDragStart={(event) => onDragStart(event, root, path)}
     >
@@ -355,29 +374,25 @@ function FileRow({
       </span>
       <span className="file-row-name">{name}</span>
       {entry?.excluded && (
-        <EyeOff size={12} className="file-row-mark" aria-label={t('files.excludedPlain')} />
+        <Tip label={excluded}>
+          <span className="file-row-mark" data-testid="file-row-excluded">
+            <EyeOff size={12} />
+          </span>
+        </Tip>
       )}
       {marked && (
-        <span
-          className="file-row-dot"
-          aria-label={t('files.modified')}
-          data-testid="file-row-modified"
-        />
+        <Tip label={t('files.modified')}>
+          <span className="file-row-dot" data-testid="file-row-modified" />
+        </Tip>
       )}
       {!outside && (
         <span className="file-row-menu" onClick={(event) => event.stopPropagation()}>
           <FileActionsMenu
             label={t('files.actions', { name })}
-            open={menuOpen}
-            onOpenChange={onMenu}
             className="icon-button small file-row-more"
             testId="file-row-actions"
           >
-            <FileActionItems
-              item={{ root, path, kind: isDir ? 'dir' : 'file' }}
-              actions={actions}
-              changed={root === 0 && changed.has(path)}
-            />
+            {menuItems}
           </FileActionsMenu>
         </span>
       )}

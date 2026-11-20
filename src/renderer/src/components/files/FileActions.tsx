@@ -1,17 +1,21 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { openOutcomeNote } from '@shared/file-links'
 import type { FileRoot } from '@shared/files'
 import { useEditorAction } from '../../useEditor'
 import { ipcErrorText } from '../../ipc-errors'
+import { Tip } from '../common/Menus'
 
 /** Un fichier ou un dossier de l'arbre, désigné par sa racine et son chemin relatif. */
 export interface FileItem {
   root: number
   path: string
   kind: 'dir' | 'file'
+  /** S'exécuterait si on l'ouvrait : pas d'« Ouvrir avec l'app par défaut ». */
+  executable?: boolean | undefined
 }
 
 /** Ce que l'onglet sait faire d'un fichier (Q50) ; les avis passent par `notify`. */
@@ -93,25 +97,29 @@ export function useFileActions(options: {
   )
 }
 
-/** Entrées du menu d'un fichier ou d'un dossier (menu … et clic droit d'une ligne, Q50). */
+/** Entrées du menu d'un fichier ou d'un dossier (menu ⋮ et clic droit d'une ligne, Q50). */
 export function FileActionItems({
   item,
   actions,
   changed,
-  line
+  line,
+  onCollapse
 }: {
   item: FileItem
   actions: FileActions
   changed: boolean
   line?: number
+  /** Dossier déplié : « Réduire » (lui et ses sous-dossiers). */
+  onCollapse?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   const entry = (label: string, run: () => void, testId: string) => (
     <Dropdown.Item className="menu-item" onSelect={run} data-testid={testId}>
-      {label}
+      <span className="menu-text">{label}</span>
     </Dropdown.Item>
   )
   const { openInEditor, mention, showDiff } = actions
+  const file = item.kind === 'file'
   return (
     <>
       {openInEditor &&
@@ -121,48 +129,44 @@ export function FileActionItems({
           () => openInEditor(item, line),
           'file-action-editor'
         )}
-      {item.kind === 'file' &&
+      {/* Un exécutable ne s'ouvre jamais avec l'app par défaut (fiche 052, point 14). */}
+      {file &&
+        !item.executable &&
         entry(t('files.openDefault'), () => actions.openDefault(item), 'file-action-default')}
       {entry(t('files.reveal'), () => actions.reveal(item), 'file-action-reveal')}
-      {mention &&
-        item.kind === 'file' &&
-        entry(t('files.mention'), () => mention(item), 'file-action-mention')}
+      {mention && file && entry(t('files.mention'), () => mention(item), 'file-action-mention')}
+      {onCollapse && entry(t('files.collapse'), onCollapse, 'file-action-collapse')}
       <Dropdown.Separator className="menu-separator" />
       {entry(t('files.copyRelative'), () => actions.copyRelative(item), 'file-action-copy')}
       {entry(t('files.copyAbsolute'), () => actions.copyAbsolute(item), 'file-action-copy-abs')}
       {showDiff &&
         changed &&
+        file &&
         item.root === 0 &&
         entry(t('files.showDiff'), () => showDiff(item), 'file-action-diff')}
     </>
   )
 }
 
-/** Bouton … d'un fichier ou d'un dossier, ouvert aussi par un clic droit sur sa ligne. */
+/** Bouton ⋮ d'un fichier ou d'un dossier : ses actions (le menu … de l'onglet règle la vue). */
 export function FileActionsMenu({
   label,
-  open,
-  onOpenChange,
   children,
   className = 'icon-button small',
   testId = 'file-actions'
 }: {
   label: string
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
   children: ReactNode
   className?: string
   testId?: string
 }) {
   return (
-    <Dropdown.Root
-      modal={false}
-      {...(open === undefined ? {} : { open })}
-      {...(onOpenChange ? { onOpenChange } : {})}
-    >
-      <Dropdown.Trigger className={className} aria-label={label} title={label} data-testid={testId}>
-        <MoreHorizontal size={14} />
-      </Dropdown.Trigger>
+    <Dropdown.Root modal={false}>
+      <Tip label={label}>
+        <Dropdown.Trigger className={className} aria-label={label} data-testid={testId}>
+          <MoreVertical size={14} />
+        </Dropdown.Trigger>
+      </Tip>
       <Dropdown.Portal>
         <Dropdown.Content
           className="menu"
@@ -170,6 +174,62 @@ export function FileActionsMenu({
           sideOffset={4}
           collisionPadding={12}
           data-testid="file-actions-menu"
+        >
+          {children}
+        </Dropdown.Content>
+      </Dropdown.Portal>
+    </Dropdown.Root>
+  )
+}
+
+/** Où ouvrir le menu contextuel : au pointeur, ou sous la ligne (Maj+F10, touche Menu). */
+export interface ContextAt {
+  x: number
+  y: number
+}
+
+/**
+ * Menu contextuel de l'arbre (point 17) : ouvert au pointeur par un clic droit, ou sous la ligne
+ * au clavier. Un ancrage invisible, posé à cet endroit, sert de déclencheur au menu.
+ */
+export function FileContextMenu({
+  at,
+  onClose,
+  onCloseFocus,
+  children
+}: {
+  at: ContextAt | null
+  onClose: () => void
+  /** Où rendre le clavier à la fermeture (la ligne), plutôt qu'à l'ancrage invisible. */
+  onCloseFocus?: () => void
+  children: ReactNode
+}) {
+  return (
+    <Dropdown.Root modal={false} open={!!at} onOpenChange={(open) => !open && onClose()}>
+      {/* L'ancrage vit dans `body` : ses coordonnées sont celles de la fenêtre, quel que soit le
+          panneau (agrandi, animé). */}
+      {createPortal(
+        <Dropdown.Trigger asChild>
+          <span
+            className="file-context-anchor"
+            aria-hidden="true"
+            style={{ left: at?.x ?? 0, top: at?.y ?? 0 }}
+          />
+        </Dropdown.Trigger>,
+        document.body
+      )}
+      <Dropdown.Portal>
+        <Dropdown.Content
+          className="menu"
+          align="start"
+          side="bottom"
+          sideOffset={2}
+          collisionPadding={12}
+          data-testid="file-context-menu"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            onCloseFocus?.()
+          }}
         >
           {children}
         </Dropdown.Content>

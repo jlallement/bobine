@@ -79,6 +79,14 @@ describe('listDirectory', () => {
     expect(src.entries.find((e) => e.name === 'app.ts')?.size).toBe(12)
   })
 
+  it('marque un fichier qui s’exécuterait si on l’ouvrait', async () => {
+    writeFileSync(join(root, 'outil.command'), 'echo non\n')
+    const top = await listDirectory({ root, dir: '', roots: [root] })
+    expect(top.entries.find((e) => e.name === 'outil.command')?.executable).toBe(true)
+    expect(top.entries.find((e) => e.name === 'README.md')?.executable).toBeUndefined()
+    expect(await readFileForView(root, 'outil.command')).toMatchObject({ executable: true })
+  })
+
   it('ne liste jamais .git ni .DS_Store', async () => {
     mkdirSync(join(root, '.git'))
     writeFileSync(join(root, '.DS_Store'), '')
