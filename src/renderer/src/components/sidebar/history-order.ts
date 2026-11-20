@@ -101,9 +101,20 @@ export function nestChildren(items: readonly ConversationSummary[]): HistoryRow[
       roots.push(conversation)
     }
   }
+  // Les filles dans l'ordre de leur lancement (fiche 267, D17), pas de leur dernière activité : la
+  // liste est triée par activité, et les travaux changeaient de place à chaque outil. Sans date de
+  // création (données anciennes), l'ordre de la liste.
+  const rank = new Map(items.map((c, i) => [c.id, i]))
+  const launched = (a: ConversationSummary, b: ConversationSummary) => {
+    const ta = a.createdAt ? Date.parse(a.createdAt) : NaN
+    const tb = b.createdAt ? Date.parse(b.createdAt) : NaN
+    if (Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return ta - tb
+    return (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0)
+  }
+  for (const list of children.values()) list.sort(launched)
   const rows: HistoryRow[] = []
   const seen = new Set<string>()
-  // Toute la descendance d'une ligne, à plat, dans l'ordre de la liste.
+  // Toute la descendance d'une ligne, à plat, dans l'ordre de lancement.
   const descendants = (conversation: ConversationSummary): ConversationSummary[] =>
     (children.get(conversation.id) ?? []).flatMap((child) => {
       if (seen.has(child.id)) return []

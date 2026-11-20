@@ -72,6 +72,16 @@ describe('conversations filles sous leur mère (fiches 097, 131)', () => {
     ).toBe('x m ↳f1^ ↳f2$ b')
   })
 
+  it('fiche 267 (D17) : les travaux dans l’ordre de leur lancement, pas de leur activité', () => {
+    const at = (c: ConversationSummary, createdAt: string) => ({ ...c, createdAt })
+    const first = at(child('sombre', 'm'), '2026-11-20T09:07:00.000Z')
+    const second = at(child('edition', 'm'), '2026-11-20T09:07:01.000Z')
+    const third = at(child('relecture', 'm'), '2026-11-20T09:15:00.000Z')
+    // La liste triée par activité, dans les deux sens : le même ordre sous la mère.
+    expect(rows([second, conversation('m'), third, first])).toBe('m ↳sombre^ ↳edition ↳relecture$')
+    expect(rows([third, first, conversation('m'), second])).toBe('m ↳sombre^ ↳edition ↳relecture$')
+  })
+
   it('une seule fille : première et dernière', () => {
     expect(rows([conversation('m'), child('f', 'm')])).toBe('m ↳f^$')
   })
