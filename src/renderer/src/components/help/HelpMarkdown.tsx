@@ -47,7 +47,11 @@ export const HelpMarkdown = memo(function HelpMarkdown({ text, lang, page, onLin
   const Image = ({ src, alt }: ComponentProps<'img'> & { node?: unknown }): ReactNode => {
     const key = typeof src === 'string' ? guideImageKey(src, lang, page) : undefined
     const url = key ? GUIDE_IMAGES[key] : undefined
-    return url ? <img src={url} alt={alt ?? ''} loading="lazy" /> : null
+    // Chargée tout de suite, pas `loading="lazy"` : la racine de la fenêtre est en `overflow: clip`
+    // (fiche 270), et Chromium n'applique sa marge de chargement différé qu'à la fenêtre et aux
+    // zones qui défilent, pas à un ancêtre qui rogne ; une image plus bas que l'écran dans la page
+    // d'aide ne se chargeait qu'une fois atteinte. Une image par page, embarquée : rien à gagner.
+    return url ? <img src={url} alt={alt ?? ''} /> : null
   }
   const Table = ({ node: _node, ...props }: ComponentProps<'table'> & { node?: unknown }) => (
     <div className="table-wrap">

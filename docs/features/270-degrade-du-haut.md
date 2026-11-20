@@ -70,6 +70,25 @@ panneau de droite, accueil.
   usage-board scheduled panel history pinned-plan parallel debordements onglets-etroits` : 28
   tâches vertes, une campagne.
 
+- 2026-11-20, après fusion, suite complète de `main` : deux suites rouges, clair et sombre.
+  - **`aide`** : l'image de « Premiers pas », 960 px sous l'écran, ne se chargeait plus.
+    `loading="lazy"` : Chromium n'applique sa marge de chargement différé qu'à la fenêtre et aux
+    zones qui défilent, pas à un ancêtre en `overflow: clip` ; elle ne se chargeait qu'une fois
+    atteinte (sonde : `complete` faux à 1 782 px, vrai après `scrollIntoView`). Corrigé : images du
+    guide chargées tout de suite (une par page, embarquées) — `HelpMarkdown.tsx`. Aucun autre
+    `loading="lazy"`, aucun `IntersectionObserver` sans racine explicite, aucun
+    `content-visibility` dans l'app.
+  - **`repere`** (rouge 2 fois sur 3 sous charge, vert seul) : course dans `useThreadScroll`,
+    trouvée en journalisant les écritures de `scrollTop` : l'essai remonte le fil (`scrollTop = 0`),
+    le contenu glisse sous le pointeur posé sur une carte `data-scroll-hold`, le `pointerover`
+    qui suit relâche la carte (`release`) avant l'événement `scroll` de l'image suivante, alors que
+    le suivi du bas est encore actif : le fil repart en bas (6 ms après). Même chose pour un
+    élément qui arrive ou un redimensionnement dans cet intervalle. Un vrai défaut, pas de l'essai
+    (molette sur une carte de propositions). Corrigé : `noteScrolledUp` décroche du bas d'après la
+    position réelle avant tout rattrapage (`release`, éléments, redimensionnement). Essai de
+    composant ajouté, rouge sans le correctif. Pas établi que le lot l'ait fait apparaître : la
+    course ne dépend pas du CSS ; elle se montrait sous la charge de la campagne.
+
 ## Limites connues
 
 - À 640 px, la barre latérale (`.sidebar-body`, `overflow-x: hidden`) peut glisser de 7 px de côté

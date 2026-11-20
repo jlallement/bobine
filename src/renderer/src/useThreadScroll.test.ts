@@ -159,6 +159,36 @@ describe('suivi du bas du fil (fiche 050)', () => {
     el.remove()
   })
 
+  it('remonté sans que l’événement « scroll » soit encore arrivé : rien ne le ramène en bas (fiche 270)', () => {
+    const { box, el, result } = setup()
+    document.body.append(el)
+    const card = document.createElement('div')
+    card.setAttribute('data-scroll-hold', '')
+    el.firstElementChild?.append(card)
+    const other = document.createElement('p')
+    el.firstElementChild?.append(other)
+    expect(box.scrollTop).toBe(1000)
+    // Pointeur sur la carte ; le fil remonte (molette, essai), le contenu glisse sous le pointeur
+    // qui en sort, avant l'événement « scroll » de l'image suivante.
+    act(() => card.dispatchEvent(new Event('pointerover', { bubbles: true })))
+    box.scrollTop = 0
+    act(() => other.dispatchEvent(new Event('pointerover', { bubbles: true })))
+    expect(box.scrollTop).toBe(0)
+    expect(result.current.atBottom).toBe(false)
+    el.remove()
+
+    // Même chose quand un élément arrive, ou que le fil change de taille, dans cet intervalle.
+    const again = setup()
+    again.box.scrollTop = 100
+    again.box.scrollHeight = 1200
+    again.rerender({ conversation: 'c1', items: [1, 2], empty: false })
+    expect(again.box.scrollTop).toBe(100)
+    again.box.scrollTop = 50
+    act(() => resize?.())
+    expect(again.box.scrollTop).toBe(50)
+    expect(again.result.current.atBottom).toBe(false)
+  })
+
   it('message envoyé fil remonté : retour en bas tout de suite, la bulle et la réponse suivies (D26)', () => {
     const { box, el, result, rerender, scrollTo, userScroll } = setup()
     userScroll(300)

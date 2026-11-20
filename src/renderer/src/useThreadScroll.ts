@@ -38,15 +38,25 @@ export function useThreadScroll(options: {
     lastScrollTop.current = el?.scrollTop ?? 0
     setAtBottom(stickToBottom.current)
   }, [])
+  // Défilement vers le haut que l'événement `scroll` n'a pas encore dit (il n'arrive qu'à l'image
+  // suivante) : il décroche du bas avant tout rattrapage. Sans cela, un pointeur qui quitte une carte
+  // `data-scroll-hold` pendant qu'on remonte (le contenu glisse sous lui), un élément qui arrive ou
+  // un redimensionnement dans cet intervalle ramenaient le fil en bas (fiche 270).
+  const noteScrolledUp = useCallback(() => {
+    const el = scroller.current
+    if (!el || el.scrollTop >= lastScrollTop.current - 1) return
+    if (el.scrollHeight - el.scrollTop - el.clientHeight >= 60) stickToBottom.current = false
+  }, [])
   // Autre conversation : elle s'ouvre en bas de son fil.
   useLayoutEffect(() => {
     stickToBottom.current = true
   }, [conversation])
   useLayoutEffect(() => {
     const el = scroller.current
+    noteScrolledUp()
     if (el && stickToBottom.current && !held.current) el.scrollTop = el.scrollHeight
     measureBottom()
-  }, [items, measureBottom])
+  }, [items, measureBottom, noteScrolledUp])
   // Écouteurs natifs sur le document (comme la liste figée de la fiche 095) : `pointerover` arrive
   // à chaque élément survolé ; `pointerout` sans destination : sortie de la fenêtre.
   useEffect(() => {
@@ -54,6 +64,7 @@ export function useThreadScroll(options: {
       if (!held.current) return
       held.current = false
       const el = scroller.current
+      noteScrolledUp()
       if (el && stickToBottom.current) el.scrollTop = el.scrollHeight
       measureBottom()
     }
@@ -72,20 +83,21 @@ export function useThreadScroll(options: {
       document.removeEventListener('pointerover', over)
       document.removeEventListener('pointerout', out)
     }
-  }, [measureBottom])
+  }, [measureBottom, noteScrolledUp])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :
   // on reste en bas si on y était, et la flèche suit.
   useEffect(() => {
     const el = scroller.current
     if (!el) return
     const observer = new ResizeObserver(() => {
+      noteScrolledUp()
       if (stickToBottom.current && !held.current) el.scrollTop = el.scrollHeight
       measureBottom()
     })
     observer.observe(el)
     if (el.firstElementChild) observer.observe(el.firstElementChild)
     return () => observer.disconnect()
-  }, [empty, measureBottom])
+  }, [empty, measureBottom, noteScrolledUp])
   // Seul un défilement vers le haut décroche du bas du fil. Chromium décale aussi le défilement
   // quand un contenu grandit au-dessus (image chargée : il garde la place de ce qu'on lit) ; ce
   // décalage, vers le bas, ne doit pas arrêter le suivi, sinon la fin de la réponse reste cachée.
