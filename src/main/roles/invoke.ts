@@ -30,12 +30,13 @@ export type RoleInvokeHost = Pick<ChildConversations, 'start' | 'choices' | 'fin
 /* « Répondre à <rôle> » (fiche 263) : arguments du renderer, vérifiés. */
 export function parseRolesReplyRequest(value: unknown): RolesReplyRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { childId, text } = value as Record<string, unknown>
+  const { childId, text, retry } = value as Record<string, unknown>
   if (typeof childId !== 'string' || !childId) throw new Error('Paramètre invalide : childId')
   if (typeof text !== 'string' || !text.trim()) throw new Error(t('children.error.emptyPrompt'))
   // Même borne qu'un texte collé dans la saisie (`MAX_PASTED_TEXT_CHARS`).
   if (text.length > MAX_PASTED_TEXT_CHARS) throw new Error(t('workCard.error.tooLong'))
-  return { childId, text: text.trim() }
+  if (retry !== undefined && retry !== true) throw new Error('Paramètre invalide : retry')
+  return { childId, text: text.trim(), ...(retry ? { retry: true as const } : {}) }
 }
 
 /* Les arguments viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */

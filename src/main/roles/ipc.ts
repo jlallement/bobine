@@ -114,8 +114,8 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       if (!children) throw new Error(t('ipc.unavailable.children'))
       const id = optionalId(conversationId)
       if (!id) throw new Error('Paramètre invalide : conversationId')
-      const { childId, text } = parseRolesReplyRequest(request)
-      return children.reply(id, childId, text)
+      const { childId, text, retry } = parseRolesReplyRequest(request)
+      return children.reply(id, childId, text, retry ? { retry } : {})
     }
   }
 }

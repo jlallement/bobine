@@ -502,8 +502,14 @@ describe('rôles contre l’agent factice (fiche 223)', () => {
     )
     expect(env.items(childId).some((i) => i.kind === 'user')).toBe(false)
     failing.mockRestore()
-    expect(env.children.reply(env.mother, childId, 'Relis le carnet.')).toBe('sent')
+    const bubbles = () => env.items(env.mother).filter((i) => i.kind === 'role-request').length
+    const before = bubbles()
+    expect(env.children.reply(env.mother, childId, 'Relis le carnet.', { retry: true })).toBe(
+      'sent'
+    )
     await env.settled(childId)
+    // « Relancer » (fiche 267, recette N9) : la demande est déjà dans la carte, pas de 2e bulle.
+    expect(bubbles()).toBe(before)
     const first = env.firstMessage(childId)
     // Comme au lancement : la demande, puis la consigne du rôle et sa lecture seule.
     expect(first?.kind === 'user' && first.text).toMatch(/^Relis le carnet\./)

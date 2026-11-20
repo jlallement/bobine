@@ -618,9 +618,11 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     fireEvent.click(within(card).getByTestId('work-retry'))
     await act(async () => {})
     expect(reply).toHaveBeenCalledTimes(1)
+    // « Relancer » (fiche 267, N9) : la même demande, sans nouvelle bulle.
     expect(reply).toHaveBeenCalledWith('mere', {
       childId: 'a',
-      text: 'À quoi ça pourrait ressembler ? Propose une direction.'
+      text: 'À quoi ça pourrait ressembler ? Propose une direction.',
+      retry: true
     })
     await act(async () => sending.resolve())
     expect((within(card).getByTestId('work-retry') as HTMLButtonElement).disabled).toBe(false)

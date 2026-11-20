@@ -683,9 +683,15 @@ export class ChildConversations {
    * même conversation, comme si l'utilisateur l'y écrivait (sans provenance, sans réveil de la
    * mère). Seulement un travail qui a sa carte (bulle, proposition, fiche 264) et un rôle, d'une mère et d'un travail non archivés. Un
    * travail qui n'a jamais reçu son premier message (démarrage raté) repart comme au lancement :
-   * consigne du rôle, lecture seule, travail dans le dossier.
+   * consigne du rôle, lecture seule, travail dans le dossier. `retry` (« Relancer », fiche 267,
+   * recette N9) : la demande est déjà dans la carte, pas de nouvelle bulle.
    */
-  reply(motherId: string, childId: string, text: string): 'queued' | 'sent' {
+  reply(
+    motherId: string,
+    childId: string,
+    text: string,
+    options: { retry?: true } = {}
+  ): 'queued' | 'sent' {
     const body = text.trim()
     if (!body) throw new Error(t('children.error.emptyPrompt'))
     const mother = this.conversations.state().conversations.find((c) => c.id === motherId)
@@ -708,16 +714,18 @@ export class ChildConversations {
       fresh && !child.reviewOf
         ? { ...this.findRole(motherId, role.name), ...(role.readOnly ? { readOnly: true } : {}) }
         : undefined
-    this.conversations.post(motherId, {
-      type: 'role-request',
-      request: {
-        requestId: randomUUID(),
-        text: body,
-        works: [{ childId, role }],
-        followUp: true,
-        at: Date.now()
-      }
-    })
+    if (!options.retry) {
+      this.conversations.post(motherId, {
+        type: 'role-request',
+        request: {
+          requestId: randomUUID(),
+          text: body,
+          works: [{ childId, role }],
+          followUp: true,
+          at: Date.now()
+        }
+      })
+    }
     if (snapshot) return this.relaunch(child, body, snapshot)
     // Code reviewer qui n'a pas démarré (fiche 265) : son premier message, consigne de relecture
     // comprise ; jamais la demande seule.

@@ -92,6 +92,11 @@ export interface RolesIpcContract extends RoleExportIpcContract {
 export interface RolesReplyRequest {
   childId: string
   text: string
+  /**
+   * « Relancer » (fiche 267, recette N9) : la même demande repart, sans nouvelle bulle — elle est
+   * déjà dans la carte.
+   */
+  retry?: true
 }
 
 /**

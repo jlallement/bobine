@@ -369,7 +369,13 @@ function SettledActions({
           title={t('workCard.retryLabel', { role: role.label })}
           disabled={acting}
           onClick={() =>
-            act(() => window.api.roles.reply(motherId, { childId: card.childId, text: askText }))
+            act(() =>
+              window.api.roles.reply(motherId, {
+                childId: card.childId,
+                text: askText,
+                retry: true
+              })
+            )
           }
           data-testid="work-retry"
         >
