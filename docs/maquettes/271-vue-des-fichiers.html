@@ -1,0 +1,1813 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vue des fichiers — maquettes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      a {
+        color: var(--accent);
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .page > header p {
+        color: var(--text-2);
+        margin: 0 0 4px;
+        max-width: 860px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font: inherit;
+        font-size: 12.5px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 64px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      h2.screen small {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 14px;
+        margin-left: 8px;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .tag.alt {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .lede {
+        color: var(--text-2);
+        margin: 0 0 20px;
+        max-width: 920px;
+        line-height: 1.55;
+      }
+      .rules {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 28px 0;
+      }
+      .rule {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        line-height: 1.5;
+      }
+      .rule b.n {
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+        color: var(--on-accent);
+        font-size: 12px;
+        margin-right: 6px;
+      }
+      .rule h3 {
+        margin: 0 0 6px;
+        font-size: 14.5px;
+      }
+      .rule p {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 13px;
+      }
+      table.doc {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 8px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      table.doc th,
+      table.doc td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      table.doc th {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      table.doc td {
+        color: var(--text-2);
+      }
+      table.doc td:first-child {
+        color: var(--text);
+        font-weight: 500;
+      }
+      table.doc .yes {
+        color: var(--ok);
+      }
+      table.doc .no {
+        color: var(--err);
+      }
+
+      /* Scène : maquette + légende */
+      .stage {
+        display: grid;
+        grid-template-columns: 840px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+        margin-bottom: 18px;
+      }
+      .stage.narrow {
+        grid-template-columns: 420px minmax(0, 1fr);
+      }
+      .pair {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin: 8px 0 18px;
+      }
+      .pair figure {
+        margin: 0;
+      }
+      .pair figcaption {
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 6px;
+      }
+      @media (max-width: 1300px) {
+        .stage,
+        .stage.narrow {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .legend {
+          max-width: 840px;
+        }
+      }
+      .legend {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-2);
+      }
+      .legend ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .legend li {
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: 6px;
+      }
+      .legend li .pin {
+        position: static;
+      }
+      .legend li b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .legend .not {
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .legend .not::before {
+        content: 'Ne fait pas : ';
+        color: var(--err);
+      }
+      .pin {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: var(--radius-pill);
+        background: var(--pin);
+        color: #1a1918;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: var(--font-ui);
+        box-shadow: 0 0 0 2px var(--doc-bg);
+        z-index: 5;
+        line-height: 1;
+      }
+      .a {
+        position: relative;
+      }
+      .a > .pin {
+        left: -24px;
+        top: 4px;
+      }
+      .side .a > .pin:not(.r) {
+        left: -12px;
+      }
+      .a > .pin.r {
+        left: auto;
+        right: -10px;
+        top: -8px;
+      }
+
+      /* ===== Fenêtre de l'app ===== */
+      .win {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+        overflow: visible;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 380px;
+        height: 640px;
+        font-size: 14px;
+        position: relative;
+      }
+      .win.solo {
+        grid-template-columns: 380px;
+        width: 382px;
+      }
+      .conv {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+        overflow: hidden;
+      }
+      .conv-head {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-2);
+        font-weight: 500;
+      }
+      .conv-head .dots {
+        display: inline-flex;
+        gap: 6px;
+        margin-right: 6px;
+      }
+      .conv-head .dots i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--surface-3);
+      }
+      .thread {
+        flex: 1;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow: hidden;
+        line-height: 1.55;
+      }
+      .msg-user {
+        align-self: flex-end;
+        background: var(--surface-2);
+        border-radius: var(--radius-md);
+        padding: 9px 13px;
+        max-width: 80%;
+      }
+      .msg-agent {
+        color: var(--text);
+      }
+      .msg-agent p {
+        margin: 0 0 8px;
+      }
+      .flink {
+        color: var(--text);
+        border-bottom: 1px dotted var(--muted);
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+      }
+      .tool-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .composer {
+        margin: 0 16px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-md);
+        padding: 10px 12px;
+        min-height: 82px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+      }
+      .composer .ph {
+        color: var(--muted);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 2px 8px;
+        font-size: 12.5px;
+        font-family: var(--font-mono);
+        width: fit-content;
+      }
+      .composer.drop {
+        border: 1.5px dashed var(--accent);
+        background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+      }
+
+      /* Panneau de droite */
+      .side {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-left: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        position: relative;
+      }
+      .win.solo .side {
+        border-left: 0;
+        border-radius: var(--radius-md);
+      }
+      .side-head {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0 8px 0 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab {
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 9px;
+        border-radius: var(--radius-sm);
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .tab.active {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      .tab .x {
+        color: var(--muted);
+        font-size: 12px;
+        margin-left: 2px;
+      }
+      .grow {
+        flex: 1;
+      }
+      .ibtn {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        color: var(--muted);
+      }
+      .ibtn:hover {
+        background: var(--surface-2);
+      }
+      .side-body {
+        flex: 1;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      /* Onglet Fichiers */
+      .root-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px 6px 14px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .root-line b {
+        color: var(--text);
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: var(--radius-pill);
+        background: var(--surface-2);
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      .search {
+        margin: 4px 12px 8px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 9px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .search.focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+        color: var(--text);
+      }
+      .search kbd,
+      kbd {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 0 5px;
+        background: var(--surface-2);
+      }
+      .search .grow {
+        flex: 1;
+      }
+      .sec {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px 4px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .sec .count {
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .tree {
+        padding: 0 6px 8px;
+        font-size: 13px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 26px;
+        padding-right: 8px;
+        border-radius: 6px;
+        color: var(--text);
+        white-space: nowrap;
+        position: relative;
+      }
+      .row .chev {
+        width: 14px;
+        color: var(--muted);
+        display: inline-flex;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .row .ico {
+        color: var(--muted);
+        display: inline-flex;
+      }
+      .row .ico.folder {
+        color: var(--accent);
+      }
+      .row .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .row .dir {
+        color: var(--muted);
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .row .end {
+        margin-left: auto;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .row:hover {
+        background: var(--surface-2);
+      }
+      .row.sel {
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+      }
+      .row.dim .name,
+      .row.dim .ico {
+        color: var(--muted);
+        opacity: 0.8;
+      }
+      .row.dim .name {
+        font-style: italic;
+      }
+      .git {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        width: 12px;
+        text-align: center;
+      }
+      .git.m {
+        color: var(--warn);
+      }
+      .git.a {
+        color: var(--ok);
+      }
+      .git.u {
+        color: var(--muted);
+      }
+      .badge {
+        font-size: 10.5px;
+        padding: 0 6px;
+        border-radius: var(--radius-pill);
+        line-height: 17px;
+      }
+      .badge.new {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .badge.mod {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .badge.cite {
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .more {
+        color: var(--muted);
+        font-size: 12px;
+        padding: 3px 0 3px 46px;
+      }
+      .more a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .foot {
+        border-top: 1px solid var(--border);
+        padding: 7px 14px;
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .ind1 {
+        padding-left: 18px;
+      }
+      .ind2 {
+        padding-left: 36px;
+      }
+      .ind3 {
+        padding-left: 54px;
+      }
+
+      /* Aperçu */
+      .pv-head {
+        padding: 10px 12px 8px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .pv-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+      .pv-path {
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        margin: 2px 0 8px;
+      }
+      .pv-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 10px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12.5px;
+        white-space: nowrap;
+        position: relative;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .code {
+        flex: 1;
+        background: var(--code-bg);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.6;
+        padding: 10px 0;
+        overflow: hidden;
+        white-space: pre;
+      }
+      .code .ln {
+        display: inline-block;
+        width: 38px;
+        text-align: right;
+        padding-right: 12px;
+        color: var(--muted);
+        opacity: 0.7;
+        user-select: none;
+      }
+      .code .hl {
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        display: block;
+      }
+      .k {
+        color: var(--syn-keyword);
+      }
+      .s {
+        color: var(--syn-string);
+      }
+      .c {
+        color: var(--syn-comment);
+      }
+      .f {
+        color: var(--syn-function);
+      }
+      .t {
+        color: var(--syn-type);
+      }
+      .ro {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 11.5px;
+        font-weight: 400;
+        margin-left: auto;
+      }
+      .img-pv {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          repeating-conic-gradient(var(--surface-2) 0 25%, var(--surface) 0 50%) 50% / 16px 16px;
+        padding: 20px;
+      }
+      .fake-shot {
+        width: 250px;
+        height: 170px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: linear-gradient(160deg, #f6d6c7, #b75534 60%, #6b2c18);
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+      .fake-shot::after {
+        content: '';
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        top: 30px;
+        height: 14px;
+        border-radius: 7px;
+        background: rgb(255 255 255 / 0.7);
+        box-shadow:
+          0 30px 0 rgb(255 255 255 / 0.45),
+          0 54px 0 rgb(255 255 255 / 0.45);
+      }
+      .notice {
+        margin: 12px 14px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        color: var(--text-2);
+        font-size: 12.5px;
+        line-height: 1.5;
+        display: flex;
+        gap: 8px;
+      }
+
+      /* Menu contextuel */
+      .menu {
+        position: absolute;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-menu);
+        padding: 5px;
+        min-width: 232px;
+        font-size: 13px;
+        z-index: 4;
+      }
+      .menu .it {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 6px 9px;
+        border-radius: 6px;
+        color: var(--text);
+        position: relative;
+      }
+      .menu .it.on {
+        background: var(--surface-2);
+      }
+      .menu .it .sc {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .menu .it.off {
+        color: var(--muted);
+      }
+      .menu hr {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: 4px 2px;
+      }
+      .ghost {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--surface);
+        border: 1px solid var(--accent);
+        border-radius: var(--radius-sm);
+        padding: 4px 9px;
+        font-size: 12.5px;
+        box-shadow: var(--shadow-menu);
+        transform: rotate(-2deg);
+        z-index: 6;
+      }
+
+      /* Palette ⌘P (alternative A) */
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: rgb(0 0 0 / 0.18);
+        border-radius: var(--radius-md);
+        z-index: 3;
+      }
+      .palette {
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 560px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-menu);
+        z-index: 4;
+        overflow: visible;
+      }
+      .palette .pin-host {
+        position: relative;
+      }
+      .palette .q {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+      }
+      .palette .q .caret {
+        width: 1.5px;
+        height: 18px;
+        background: var(--accent);
+        margin-left: -6px;
+      }
+      .palette .grp {
+        padding: 8px 14px 3px;
+        font-size: 11.5px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+      }
+      .palette .res {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 6px 14px;
+        font-size: 13.5px;
+        position: relative;
+      }
+      .palette .res.on {
+        background: var(--surface-2);
+      }
+      .palette .res .path {
+        color: var(--muted);
+        font-size: 12px;
+        font-family: var(--font-mono);
+      }
+      .palette .res mark {
+        background: none;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .palette .keys {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        padding: 9px 14px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+        position: relative;
+      }
+
+      /* ===== Ajouts : onglet Fichiers façon Claude Code ===== */
+      .ptitle {
+        font-weight: 600;
+        font-size: 13.5px;
+        padding: 0 4px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 2px;
+        padding: 6px 8px 2px;
+        position: relative;
+      }
+      .ibtn.on {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      .crumb {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 8px 0 14px;
+        height: 40px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12.5px;
+        color: var(--text-2);
+        position: relative;
+      }
+      .crumb .sep {
+        color: var(--muted);
+      }
+      .crumb .seg:hover {
+        text-decoration: underline;
+      }
+      .crumb b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .tab.file {
+        font-family: var(--font-ui);
+      }
+      .codeview {
+        flex: 1;
+        background: var(--code-bg);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.65;
+        padding: 8px 0;
+        overflow: visible;
+        position: relative;
+      }
+      .lr {
+        display: grid;
+        grid-template-columns: 22px 30px minmax(0, 1fr);
+        align-items: start;
+        position: relative;
+      }
+      .lr .plus {
+        width: 16px;
+        height: 16px;
+        margin: 2px 0 0 4px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--on-accent);
+        font-size: 13px;
+        line-height: 15px;
+        text-align: center;
+        font-family: var(--font-ui);
+        visibility: hidden;
+      }
+      .lr.hover .plus {
+        visibility: visible;
+      }
+      .lr .n {
+        text-align: right;
+        padding-right: 10px;
+        color: var(--muted);
+        opacity: 0.75;
+        user-select: none;
+      }
+      .lr .src {
+        white-space: pre-wrap;
+        padding-right: 10px;
+        min-width: 0;
+      }
+      .lr.cur {
+        background: color-mix(in srgb, var(--text) 5%, transparent);
+      }
+      .lr.noted .n {
+        color: var(--accent);
+        opacity: 1;
+        font-weight: 600;
+      }
+      .lr.noted {
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+      .cmt {
+        margin: 4px 12px 8px 52px;
+        border: 1.5px solid var(--accent);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        padding: 8px 10px;
+        font-family: var(--font-ui);
+        font-size: 12.5px;
+        position: relative;
+        box-shadow: var(--shadow);
+      }
+      .cmt .who {
+        color: var(--muted);
+        font-size: 11.5px;
+        margin-bottom: 4px;
+      }
+      .cmt .txt {
+        color: var(--text);
+        min-height: 18px;
+      }
+      .cmt .txt .ph {
+        color: var(--muted);
+      }
+      .cmt .acts {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .btn.small {
+        height: 24px;
+        font-size: 12px;
+        padding: 0 8px;
+      }
+      .notes-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 12.5px;
+        color: var(--text-2);
+        position: relative;
+      }
+      .maxi {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 250px;
+        flex: 1;
+        min-height: 0;
+      }
+      .maxi .treecol {
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .win.max {
+        grid-template-columns: 54px minmax(0, 1fr);
+      }
+      .rail {
+        border-right: 1px solid var(--border);
+        background: var(--sidebar);
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+      }
+      .ro-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 1px 7px;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .menu .head {
+        padding: 4px 9px 2px;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .menu .it .ck {
+        width: 14px;
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .menu .it .sub {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .struck {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.6;
+      }
+      .struck s {
+        color: var(--muted);
+      }
+      .hljs-c {
+        color: var(--syn-comment);
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="folder" viewBox="0 0 24 24">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </symbol>
+      <symbol id="file" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+        <path d="M14 3v5h5" />
+      </symbol>
+      <symbol id="code" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+        <path d="M14 3v5h5M10 13l-2 2 2 2M14 13l2 2-2 2" />
+      </symbol>
+      <symbol id="image" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="1.8" />
+        <path d="m21 16-5-5-9 9" />
+      </symbol>
+      <symbol id="pdf" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+        <path d="M14 3v5h5M9 15h6M9 18h4" />
+      </symbol>
+      <symbol id="lock" viewBox="0 0 24 24">
+        <rect x="5" y="11" width="14" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </symbol>
+      <symbol id="link" viewBox="0 0 24 24">
+        <path d="M7 17 17 7M9 7h8v8" />
+      </symbol>
+      <symbol id="search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="m20 20-4-4" />
+      </symbol>
+      <symbol id="chev-r" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></symbol>
+      <symbol id="chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+      <symbol id="refresh" viewBox="0 0 24 24">
+        <path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" />
+      </symbol>
+      <symbol id="ext" viewBox="0 0 24 24">
+        <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+      </symbol>
+      <symbol id="finder" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="3" />
+        <path d="M12 4v16M8 10v1M16 10v1M8 15c2.5 1.5 5.5 1.5 8 0" />
+      </symbol>
+      <symbol id="at" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+      </symbol>
+      <symbol id="copy" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="12" height="12" rx="2" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+      </symbol>
+      <symbol id="diff" viewBox="0 0 24 24">
+        <path d="M12 3v8M8 7h8M8 17h8M5 21h14" />
+      </symbol>
+      <symbol id="eye" viewBox="0 0 24 24">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></symbol>
+      <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="branch" viewBox="0 0 24 24">
+        <circle cx="6" cy="5" r="2" />
+        <circle cx="6" cy="19" r="2" />
+        <circle cx="18" cy="8" r="2" />
+        <path d="M6 7v10M18 10c0 4-6 3-12 7" />
+      </symbol>
+    </svg>
+
+    <div class="page">
+      <header>
+        <div>
+          <h1>Vue des fichiers — maquettes (fiche 271)</h1>
+          <p>
+            Option recommandée <b>B</b> : l'onglet <b>Fichiers</b> de Claude Code (desktop), relevé
+            sur l'app réelle, <b>en lecture seule</b> (décision de l'utilisateur), avec la
+            <b>coloration de code</b> et le <b>commentaire sur une ligne</b> envoyé à l'agent
+            (écrans 0 à 4). Alternative <b>A</b> : la palette ⌘P seule (écran 5).
+          </p>
+          <p>
+            Couleurs et polices de Bobine (<code>themes.generated.css</code>, <code>styles.css</code>) ;
+            coloration : les jetons <code>--syn-*</code> de <code>syntax.css</code>, ceux du code du fil.
+            Pastilles jaunes : renvois à la légende, qui dit <b>ce que ça fait</b> et, en gris,
+            <b>ce que ça ne fait pas</b>. Données fictives (un projet « carnet »).
+          </p>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Thème">
+          <button type="button" data-set="system" aria-pressed="true">Système</button>
+          <button type="button" data-set="light" aria-pressed="false">Clair</button>
+          <button type="button" data-set="dark" aria-pressed="false">Sombre</button>
+        </div>
+      </header>
+
+      <blockquote
+        style="margin: 18px 0 8px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-2); line-height: 1.55; max-width: 920px"
+      >
+        « L'idée, c'est de ne pas faire un truc comme Bob IDE, un IDE en premier et Bob en
+        secondaire, mais plutôt dans l'esprit de Claude Code. Si on en a besoin, on peut voir
+        l'arborescence et les fichiers, mais pas de manière centrale dans le logiciel. »
+        <span style="color: var(--muted)">— l'utilisateur, 2026-11-20. Puis : lecture seule
+        d'abord ; « la coloration de code, ce serait aussi un vrai plus ».</span>
+      </blockquote>
+
+      <div class="rules">
+        <div class="rule">
+          <h3><b class="n">1</b>À la demande, jamais au centre</h3>
+          <p>
+            Un onglet du panneau de droite, comme Terminal ou Navigateur. La conversation garde le
+            centre ; aucun fichier ne s'y ouvre.
+          </p>
+        </div>
+        <div class="rule">
+          <h3><b class="n">2</b>Lire, commenter, ouvrir ailleurs</h3>
+          <p>
+            Lecture seule, colorée. Une remarque sur une ligne part à l'agent avec les remarques de
+            diff. Modifier : l'agent, ou « Ouvrir dans &lt;éditeur&gt; ».
+          </p>
+        </div>
+        <div class="rule">
+          <h3><b class="n">3</b>Le main lit, borne et vérifie</h3>
+          <p>
+            <code>(conversation, chemin relatif)</code> seulement ; rien hors des dossiers de la
+            conversation ; secrets jamais affichés ; pas de surveillance continue.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============ Écran 0 ============ -->
+      <h2 class="screen">
+        0 · À la demande<span class="tag reco">Option B</span
+        ><small>par défaut, pas d'onglet Fichiers</small>
+      </h2>
+      <p class="lede">
+        Comme dans Claude Code : la conversation au centre, et l'onglet Fichiers parmi les outils du
+        panneau. Ouvert par le menu « + », ⌘P, ⇧⌘Y, ou la ligne « Dossier » de l'onglet Session.
+      </p>
+      <div class="stage">
+        <div class="win">
+          <div class="conv">
+            <div class="conv-head">
+              <span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses
+            </div>
+            <div class="thread">
+              <div class="msg-user">Ajoute une liste de courses partagée.</div>
+              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx</div>
+              <div class="msg-agent a">
+                <b class="pin" style="left: -24px; top: 2px">1</b>
+                <p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p>
+              </div>
+            </div>
+            <div class="composer"><span class="ph">Répondre… (<code>@</code> pour joindre un fichier)</span></div>
+          </div>
+          <div class="side">
+            <div class="side-head">
+              <span class="tab active">Session<span class="x">✕</span></span>
+              <span class="tab">Modifications</span>
+              <span class="grow"></span>
+              <span class="ibtn a on"><b class="pin r">2</b><svg class="i"><use href="#plus" /></svg></span>
+            </div>
+            <div class="side-body" style="padding: 14px; font-size: 13px">
+              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Dossier</span><span class="end a" style="color: var(--accent)"><b class="pin" style="left: -26px; top: -1px">3</b>carnet ›</span></div>
+              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Branche</span><span class="end">main</span></div>
+            </div>
+            <div class="menu" style="right: 8px; top: 46px">
+              <div class="it"><svg class="i s"><use href="#ext" /></svg>Navigateur</div>
+              <div class="it"><svg class="i s"><use href="#code" /></svg>Terminal<span class="sc">⌃`</span></div>
+              <div class="it on"><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="sc">⇧⌘Y</span></div>
+              <div class="it"><svg class="i s"><use href="#file" /></svg>Tâches</div>
+              <div class="it off"><svg class="i s"><use href="#file" /></svg>Échanges ACP</div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <ol>
+            <li><span class="pin">1</span><div><b>La conversation au centre</b>, et les fichiers y passent comme aujourd'hui (liens, <code>@</code>, Ouvrir dans l'éditeur).<span class="not">aucun fichier ni éditeur au centre.</span></div></li>
+            <li><span class="pin">2</span><div><b>Menu « + » du panneau</b> : Fichiers au rang de Navigateur et Terminal (chez Claude Code : l'icône dossier de la barre du panneau).<span class="not">pas ouvert d'office, pas de colonne permanente.</span></div></li>
+            <li><span class="pin">3</span><div><b>« Dossier » de Session</b> ouvre l'onglet Fichiers ; ⌥-clic garde « Afficher dans le Finder ».<span class="not">ne touche pas à la barre latérale des conversations.</span></div></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ============ Écran 1 ============ -->
+      <h2 class="screen">
+        1 · L'onglet « Fichiers »<span class="tag reco">Option B</span
+        ><small>relevé de Claude Code : filtre, arbre complet, trois boutons</small>
+      </h2>
+      <p class="lede">
+        L'arbre complet du dossier de la conversation, dossiers d'abord, cachés compris.
+        <code>build</code>, <code>node_modules</code>, <code>out</code> sont visibles et repliés,
+        pas grisés, comme chez Claude Code ; chaque dossier n'est lu qu'à son ouverture.
+      </p>
+      <div class="stage">
+        <div class="win" id="screen1">
+          <div class="conv">
+            <div class="conv-head">
+              <span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses
+            </div>
+            <div class="thread">
+              <div class="msg-user">Ajoute une liste de courses partagée.</div>
+              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx</div>
+              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A modifié list.css</div>
+              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p></div>
+            </div>
+            <div class="composer"><span class="ph">Répondre…</span></div>
+          </div>
+          <div class="side">
+            <div class="side-head">
+              <span class="tab">Session</span>
+              <span class="tab active a"><b class="pin r">1</b><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="x">✕</span></span>
+              <span class="grow"></span>
+              <span class="ibtn" title="Agrandir"><svg class="i"><use href="#ext" /></svg></span>
+            </div>
+            <div class="side-body">
+              <div class="toolbar a">
+                <b class="pin" style="left: 8px; top: 8px">2</b>
+                <span class="ibtn" title="Réduire tous les dossiers"><svg class="i"><use href="#chev-r" /></svg></span>
+                <span class="ibtn on" title="Voir l'arborescence ⇧⌘Y"><svg class="i"><use href="#list" /></svg></span>
+                <span class="ibtn" title="Plus">···</span>
+              </div>
+              <div class="search a">
+                <b class="pin">3</b><svg class="i s"><use href="#search" /></svg
+                ><span class="grow">Filtrer ou ? pour chercher</span><kbd>⌘P</kbd>
+              </div>
+              <div class="tree a" style="position: relative">
+                <b class="pin" style="left: -12px; top: 4px">4</b>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
+                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">captures</span></div>
+                <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#image" /></svg></span><span class="name">shopping.png</span></div>
+                <div class="row a"><b class="pin" style="left: -12px; top: 3px">5</b><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">out</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
+                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
+                <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span></div>
+                <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ListItem.tsx</span></div>
+                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">styles</span></div>
+                <div class="row a"><b class="pin" style="left: -12px; top: 3px">6</b><span class="chev"></span><span class="ico"><svg class="i s"><use href="#lock" /></svg></span><span class="name">.env</span><span class="end">non affiché</span></div>
+                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">.gitignore</span></div>
+                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">package.json</span></div>
+                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">README.md</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <ol>
+            <li><span class="pin">1</span><div><b>Onglet « Fichiers »</b>, ouvert à la demande, avec Agrandir et ✕ comme les autres onglets.<span class="not">jamais ouvert d'office.</span></div></li>
+            <li><span class="pin">2</span><div><b>Trois boutons</b>, comme Claude Code : Réduire tous les dossiers, Voir l'arborescence (⇧⌘Y), … (écran 2).<span class="not">pas de « Nouveau fichier », pas de « Nouveau dossier ».</span></div></li>
+            <li><span class="pin">3</span><div><b>« Filtrer ou ? pour chercher »</b> : le nom filtre l'arbre (rang de <code>@</code>) ; « ? » cherche dans le contenu (<code>git grep</code>, lot 5, question 2).<span class="not">pas d'index, pas de recherche hors du dossier.</span></div></li>
+            <li><span class="pin">4</span><div><b>Arbre complet</b>, dossiers d'abord, cachés listés ; un niveau lu à l'ouverture d'un dossier, 2 000 entrées au plus. Relu à la fin des outils et des tours, et au retour sur la fenêtre.<span class="not">aucun parcours récursif, aucune surveillance continue.</span></div></li>
+            <li><span class="pin">5</span><div><b>Ignorés visibles, repliés</b>, sans grisé (comme Claude Code) : on peut ouvrir <code>out</code> ou <code>node_modules</code>.<span class="not">jamais ouverts ni comptés d'office.</span></div></li>
+            <li><span class="pin">6</span><div><b>Secrets</b> (<code>.env</code>, clés) : listés avec un cadenas, jamais affichés (écart avec Claude Code, question 1). Un lien symbolique qui sort du dossier n'est pas suivi.<span class="not">aucun affichage d'un secret ou d'un fichier hors du dossier.</span></div></li>
+          </ol>
+        </div>
+      </div>
+      <div class="pair">
+        <figure>
+          <div class="win solo force-dark" id="screen1-dark" style="height: 600px"></div>
+          <figcaption>Le même onglet en sombre (quel que soit le thème de la page).</figcaption>
+        </figure>
+        <figure>
+          <div class="win solo force-light" id="screen1-light" style="height: 600px"></div>
+          <figcaption>… et en clair.</figcaption>
+        </figure>
+      </div>
+
+      <!-- ============ Écran 2 ============ -->
+      <h2 class="screen">
+        2 · Le menu « … », en lecture seule<span class="tag reco">Option B</span
+        ><small>celui de Claude Code, sans ses réglages d'éditeur</small>
+      </h2>
+      <p class="lede">
+        Repris de Claude Code : aller au fichier, arborescence, côté, réduire. Ses réglages
+        d'éditeur (onglets d'aperçu, enregistrement automatique, Tab, tabulation…) n'ont pas lieu
+        d'être : la vue est en lecture seule. Seul « Retour à la ligne » reste, il sert à lire.
+      </p>
+      <div class="stage narrow">
+        <div class="win solo" style="height: 470px">
+          <div class="side">
+            <div class="side-head">
+              <span class="tab active"><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="x">✕</span></span>
+              <span class="grow"></span>
+              <span class="ibtn"><svg class="i"><use href="#ext" /></svg></span>
+            </div>
+            <div class="side-body">
+              <div class="toolbar">
+                <span class="ibtn"><svg class="i"><use href="#chev-r" /></svg></span>
+                <span class="ibtn on"><svg class="i"><use href="#list" /></svg></span>
+                <span class="ibtn on">···</span>
+              </div>
+              <div class="search"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer ou ? pour chercher</span></div>
+              <div class="tree">
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
+                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
+              </div>
+            </div>
+            <div class="menu" style="right: 8px; top: 92px; min-width: 300px">
+              <div class="it a"><b class="pin" style="left: -28px; top: 5px">1</b><span class="ck"></span>Accéder à un fichier ou rechercher<span class="sc">⌘P</span></div>
+              <hr />
+              <div class="it a"><b class="pin" style="left: -28px; top: 5px">2</b><span class="ck">✓</span>Voir l'arborescence<span class="sc">⇧⌘Y</span></div>
+              <div class="it"><span class="ck"></span>Côté de l'arborescence<span class="sub">Automatique ›</span></div>
+              <hr />
+              <div class="it"><span class="ck"></span>Réduire tous les dossiers</div>
+              <hr />
+              <div class="it a"><b class="pin" style="left: -28px; top: 5px">3</b><span class="ck">✓</span>Retour à la ligne automatique</div>
+              <div class="it"><span class="ck"></span>Relire le dossier</div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <ol>
+            <li><span class="pin">1</span><div><b>⌘P</b> : aller à un fichier (même recherche que <code>@</code>) ; ouvre l'onglet s'il est fermé.<span class="not">pas de palette au centre de l'écran dans l'option B.</span></div></li>
+            <li><span class="pin">2</span><div><b>Arborescence</b> : la montrer ou la cacher (⇧⌘Y) ; de quel côté du fichier en agrandi (Automatique, Gauche, Droite).<span class="not">jamais une colonne hors du panneau.</span></div></li>
+            <li><span class="pin">3</span><div><b>Lecture</b> : retour à la ligne ; « Relire » à la demande.<span class="not">aucun réglage d'édition.</span></div></li>
+          </ol>
+          <div class="struck">
+            Retirés du menu de Claude Code, faute d'édition : <s>Onglets d'aperçu</s> ·
+            <s>Enregistrement automatique</s> · <s>La touche Tab indente</s> ·
+            <s>Repères d'indentation</s> · <s>Afficher les espaces</s> ·
+            <s>Défilement au-delà de la fin</s> · <s>Taille de tabulation</s>. Ils reviendront avec
+            l'édition légère, si elle manque (fiche 271, option B′).
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ Écran 3 ============ -->
+      <h2 class="screen">
+        3 · Un fichier ouvert, coloré, et une remarque sur une ligne<span class="tag reco">Option B</span
+        ><small>clic sur un fichier de l'arbre, ou un lien du fil</small>
+      </h2>
+      <p class="lede">
+        L'onglet prend le nom du fichier ; dessous, le fil d'Ariane, puis le code en lecture seule,
+        numéroté et coloré (highlight.js et les jetons <code>--syn-*</code> déjà livrés). Au survol
+        d'un numéro, un « + » pose une remarque pour l'agent — la même que sur un diff.
+      </p>
+      <div class="stage">
+        <div class="win">
+          <div class="conv">
+            <div class="conv-head"><span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses</div>
+            <div class="thread">
+              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p></div>
+            </div>
+            <div class="composer"><span class="ph">Répondre…</span></div>
+          </div>
+          <div class="side">
+            <div class="side-head">
+              <span class="tab">Session</span>
+              <span class="tab active file a"><b class="pin r">1</b><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x">✕</span></span>
+              <span class="grow"></span>
+              <span class="ibtn"><svg class="i"><use href="#ext" /></svg></span>
+            </div>
+            <div class="side-body">
+              <div class="crumb a">
+                <b class="pin" style="left: -12px; top: 10px">2</b>
+                <span class="seg">src</span><span class="sep">/</span><span class="seg">components</span><span class="sep">/</span><b>ShoppingList.tsx</b>
+                <span class="ro-chip"><svg class="i s"><use href="#lock" /></svg>Lecture seule</span>
+                <span class="ibtn a" style="flex-shrink: 0">···<b class="pin" style="left: auto; right: -6px; top: -12px">3</b></span>
+              </div>
+              <div class="codeview a">
+                <b class="pin" style="left: -12px; top: 40px">4</b>
+                <div class="lr cur"><span></span><span class="n">1</span><span class="src"><span class="k">import</span> { useState } <span class="k">from</span> <span class="s">'react'</span></span></div>
+                <div class="lr"><span></span><span class="n">2</span><span class="src"><span class="k">import</span> { <span class="t">ListItem</span> } <span class="k">from</span> <span class="s">'./ListItem'</span></span></div>
+                <div class="lr"><span></span><span class="n">3</span><span class="src"><span class="k">import</span> <span class="s">'../styles/list.css'</span></span></div>
+                <div class="lr"><span></span><span class="n">4</span><span class="src"> </span></div>
+                <div class="lr"><span></span><span class="n">5</span><span class="src"><span class="hljs-c">// Liste partagée : un article par ligne, cochable.</span></span></div>
+                <div class="lr"><span></span><span class="n">6</span><span class="src"><span class="k">export function</span> <span class="f">ShoppingList</span>({ items }: <span class="t">Props</span>) {</span></div>
+                <div class="lr"><span></span><span class="n">7</span><span class="src">  <span class="k">const</span> [done, setDone] = <span class="f">useState</span>(<span class="k">new</span> <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span></div>
+                <div class="lr noted a"><b class="pin" style="left: -12px; top: 1px">5</b><span class="plus" style="visibility: visible">+</span><span class="n">8</span><span class="src">  <span class="k">const</span> toggle = (id: <span class="t">string</span>) =&gt; done.<span class="f">add</span>(id)</span></div>
+                <div class="cmt a">
+                  <b class="pin" style="left: -32px; top: 10px">6</b>
+                  <div class="who">Ligne 8</div>
+                  <div class="txt">Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.</div>
+                  <div class="acts"><span class="btn small">Annuler</span><span class="btn small primary">Ajouter la remarque</span></div>
+                </div>
+                <div class="lr hover"><span class="plus">+</span><span class="n">9</span><span class="src">  <span class="k">return</span> (</span></div>
+                <div class="lr"><span></span><span class="n">10</span><span class="src">    &lt;<span class="t">ul</span> className=<span class="s">"list"</span>&gt;</span></div>
+                <div class="lr"><span></span><span class="n">11</span><span class="src">      {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t">ListItem</span> key={item.id} {...item} /&gt;)}</span></div>
+                <div class="lr"><span></span><span class="n">12</span><span class="src">    &lt;/<span class="t">ul</span>&gt;</span></div>
+                <div class="lr"><span></span><span class="n">13</span><span class="src">  )</span></div>
+                <div class="lr"><span></span><span class="n">14</span><span class="src">}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <ol>
+            <li><span class="pin">1</span><div><b>L'onglet prend le nom du fichier</b> (comme Claude Code) ; ✕ revient à l'arbre. Un seul fichier à la fois dans l'onglet.<span class="not">pas de rangée d'onglets d'éditeur.</span></div></li>
+            <li><span class="pin">2</span><div><b>Fil d'Ariane</b> : chaque segment ouvre ce dossier dans l'arbre. « Lecture seule » est dit.<span class="not">pas de curseur de saisie, pas de « modifié ● ».</span></div></li>
+            <li><span class="pin">3</span><div><b>…</b> : Ouvrir dans &lt;éditeur&gt; (à la ligne, fiche 156), Afficher dans le Finder, Mentionner dans la saisie, Copier le chemin, Voir le diff (fichier modifié).<span class="not">jamais « Exécuter » ni d'ouverture d'un exécutable.</span></div></li>
+            <li><span class="pin">4</span><div><b>Coloration</b> : highlight.js (déjà dans Bobine pour le fil) et <code>syntax.css</code> ; langage par extension et <code>#!</code>, pas deviné ; jusqu'à 200 Ko, au-delà texte brut et c'est dit. Numéros, retour à la ligne, ligne courante.<span class="not">aucune nouvelle dépendance ; pas de pliage, pas de mini-carte.</span></div></li>
+            <li><span class="pin">5</span><div><b>« + » au survol d'un numéro</b> ; glisser sur plusieurs numéros pour une plage.<span class="not">ne change pas le fichier.</span></div></li>
+            <li><span class="pin">6</span><div><b>« Ligne 8 »</b> : une remarque de diff (fiche 085), vue « fichier » ; elle rejoint les remarques en attente (écran 4).<span class="not">rien n'est envoyé à l'agent à ce moment-là.</span></div></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ============ Écran 4 ============ -->
+      <h2 class="screen">
+        4 · Agrandi : le fichier et l'arbre côte à côte<span class="tag reco">Option B</span
+        ><small>⌘⇧J (agrandir le panneau) avec un fichier ouvert</small>
+      </h2>
+      <p class="lede">
+        Comme Claude Code : agrandi par-dessus la conversation (le panneau de Bobine le fait déjà),
+        le fichier à gauche, l'arbre à droite (« Côté : Automatique »). Les remarques posées
+        attendent en bas et partent ensemble, avec celles des diffs, par « Envoyer à l'agent ».
+      </p>
+      <div class="stage full" style="grid-template-columns: minmax(0, 1fr)">
+        <div class="win max" style="height: 600px">
+          <div class="rail"></div>
+          <div class="side" style="border-left: 0">
+            <div class="side-head">
+              <span class="tab">Session</span>
+              <span class="tab active file"><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x">✕</span></span>
+              <span class="grow"></span>
+              <span class="ibtn on a" title="Réduire"><b class="pin r">1</b><svg class="i"><use href="#ext" /></svg></span>
+            </div>
+            <div class="maxi">
+              <div style="display: flex; flex-direction: column; min-width: 0">
+                <div class="crumb">
+                  <span class="seg">src</span><span class="sep">/</span><span class="seg">components</span><span class="sep">/</span><b>ShoppingList.tsx</b>
+                  <span class="ro-chip"><svg class="i s"><use href="#lock" /></svg>Lecture seule</span>
+                  <span class="ibtn on"><svg class="i s"><use href="#list" /></svg></span>
+                  <span class="ibtn">···</span>
+                </div>
+                <div class="codeview">
+                  <div class="lr"><span></span><span class="n">5</span><span class="src"><span class="hljs-c">// Liste partagée : un article par ligne, cochable.</span></span></div>
+                  <div class="lr"><span></span><span class="n">6</span><span class="src"><span class="k">export function</span> <span class="f">ShoppingList</span>({ items }: <span class="t">Props</span>) {</span></div>
+                  <div class="lr"><span></span><span class="n">7</span><span class="src">  <span class="k">const</span> [done, setDone] = <span class="f">useState</span>(<span class="k">new</span> <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span></div>
+                  <div class="lr noted"><span></span><span class="n">8</span><span class="src">  <span class="k">const</span> toggle = (id: <span class="t">string</span>) =&gt; done.<span class="f">add</span>(id)</span></div>
+                  <div class="cmt"><div class="who">Ligne 8 · remarque en attente</div><div class="txt">Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.</div></div>
+                  <div class="lr"><span></span><span class="n">9</span><span class="src">  <span class="k">return</span> (</span></div>
+                  <div class="lr"><span></span><span class="n">10</span><span class="src">    &lt;<span class="t">ul</span> className=<span class="s">"list"</span>&gt;</span></div>
+                  <div class="lr"><span></span><span class="n">11</span><span class="src">      {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t">ListItem</span> key={item.id} {...item} /&gt;)}</span></div>
+                  <div class="lr"><span></span><span class="n">12</span><span class="src">    &lt;/<span class="t">ul</span>&gt;</span></div>
+                  <div class="lr"><span></span><span class="n">13</span><span class="src">  )</span></div>
+                  <div class="lr"><span></span><span class="n">14</span><span class="src">}</span></div>
+                </div>
+                <div class="notes-bar a">
+                  <b class="pin" style="left: -12px; top: 10px">3</b>
+                  <svg class="i s"><use href="#diff" /></svg>2 remarques en attente · 1 sur ce fichier, 1 sur un diff
+                  <span class="grow"></span>
+                  <span class="btn small">Voir</span><span class="btn small primary">Envoyer à l'agent</span>
+                </div>
+              </div>
+              <div class="treecol a">
+                <b class="pin" style="left: -12px; top: 12px">2</b>
+                <div class="search" style="margin-top: 10px"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer ou ? pour chercher</span></div>
+                <div class="tree">
+                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
+                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
+                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
+                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
+                  <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
+                  <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span></div>
+                  <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ListItem.tsx</span></div>
+                  <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">styles</span></div>
+                  <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">package.json</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="legend" style="max-width: 900px">
+          <ol>
+            <li><span class="pin">1</span><div><b>Agrandi / Réduire</b> : le panneau couvre la conversation (montée, inerte, comme aujourd'hui) ; Réduire la rend.<span class="not">ne devient jamais la vue par défaut.</span></div></li>
+            <li><span class="pin">2</span><div><b>Arbre de côté</b>, à droite par défaut comme Claude Code (« Côté de l'arborescence » : Automatique, Gauche, Droite) ; en panneau étroit, l'arbre et le fichier alternent (écrans 1 et 3).<span class="not">pas de deuxième colonne hors du panneau.</span></div></li>
+            <li><span class="pin">3</span><div><b>Remarques en attente</b> : celles des fichiers et celles des diffs, un seul envoi « Envoyer à l'agent » (message : fichier, lignes, code cité, remarque).<span class="not">pas d'envoi remarque par remarque, rien sans ce geste.</span></div></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ============ Écran 5 ============ -->
+      <h2 class="screen">
+        5 · Alternative A : la palette ⌘P seule, sans arbre<span class="tag alt">Option A</span
+        ><small>palette au-dessus de la conversation, comme ⌘K pour les conversations</small>
+      </h2>
+      <p class="lede">
+        Plus légère (≈ 2 jours) : pas d'onglet, pas d'arbre ; la recherche de <code>@</code>, et le
+        fichier choisi dans l'Aperçu. Dans l'option B, ⌘P fait la même recherche mais ouvre l'onglet
+        Fichiers.
+      </p>
+      <div class="stage">
+        <div class="win" style="grid-template-columns: minmax(0, 1fr)">
+          <div class="conv">
+            <div class="conv-head"><span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses</div>
+            <div class="thread">
+              <div class="msg-user">Ajoute une liste de courses partagée.</div>
+              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>…</p></div>
+            </div>
+            <div class="composer"><span class="ph">Répondre…</span></div>
+          </div>
+          <div class="scrim"></div>
+          <div class="palette">
+            <div class="q a"><b class="pin" style="left: -26px; top: 14px">1</b><svg class="i"><use href="#search" /></svg>list<span class="caret"></span></div>
+            <div class="res on"><svg class="i s"><use href="#code" /></svg><span>Shopping<mark>List</mark>.tsx</span><span class="path">src/components</span></div>
+            <div class="res"><svg class="i s"><use href="#code" /></svg><span><mark>list</mark>.css</span><span class="path">src/styles</span></div>
+            <div class="res"><svg class="i s"><use href="#code" /></svg><span><mark>List</mark>Item.tsx</span><span class="path">src/components</span></div>
+            <div class="res"><svg class="i s"><use href="#file" /></svg><span>check<mark>list</mark>.md</span><span class="path">docs</span></div>
+            <div class="keys a">
+              <b class="pin" style="left: -26px; top: 9px">2</b>
+              <span><kbd>↵</kbd> Aperçu</span><span><kbd>⌘↵</kbd> Ouvrir dans VS Code</span><span><kbd>⇧↵</kbd> Mentionner</span><span><kbd>⌥↵</kbd> Finder</span>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <ol>
+            <li><span class="pin">1</span><div><b>⌘P</b> : la recherche de <code>@</code>.<span class="not">ne trouve ni un fichier ignoré, ni ce dont on ignore le nom ; pas d'arbre.</span></div></li>
+            <li><span class="pin">2</span><div><b>Actions au clavier</b> : aperçu, éditeur, mention, Finder.<span class="not">aucune écriture.</span></div></li>
+          </ol>
+          <p style="margin-top: 18px; color: var(--muted)">Loin du modèle Claude Code relevé : écartée au profit de B, dont elle devient le raccourci ⌘P.</p>
+        </div>
+      </div>
+
+      <!-- ============ Synthèse ============ -->
+      <h2 class="screen">Ce que ça fait, ce que ça ne fait pas</h2>
+      <table class="doc">
+        <thead><tr><th>Geste</th><th>Claude Code (relevé)</th><th>Bobine, option B</th><th>Pas dans la première version</th></tr></thead>
+        <tbody>
+          <tr><td>Ouvrir la vue</td><td>icône dossier du panneau</td><td class="yes">onglet du panneau, menu « + », ⌘P, ⇧⌘Y, Session</td><td>ouverte d'office, colonne permanente</td></tr>
+          <tr><td>Arbre</td><td>complet, ignorés visibles</td><td class="yes">idem, chargé un dossier à la fois</td><td>surveillance continue</td></tr>
+          <tr><td>Filtre, ⌘P</td><td>« Filtrez ou ? pour chercher », ⌘P</td><td class="yes">idem (« ? » : lot 5)</td><td>—</td></tr>
+          <tr><td>Fichier ouvert</td><td>onglet, fil d'Ariane, coloration</td><td class="yes">idem, en lecture seule, coloré par highlight.js</td><td>—</td></tr>
+          <tr><td>Commentaire sur une ligne</td><td>« Ligne N — Ajouter un commentaire »</td><td class="yes">idem, remarque de diff, « Envoyer à l'agent »</td><td>envoi sans geste</td></tr>
+          <tr><td>Agrandi</td><td>fichier + arbre à droite</td><td class="yes">idem</td><td>—</td></tr>
+          <tr><td>Éditer</td><td>oui (enregistrement automatique)</td><td class="no">non — lecture seule d'abord</td><td>édition légère : plus tard, si elle manque</td></tr>
+          <tr><td>Secrets</td><td>non relevé</td><td>listés, jamais affichés</td><td>affichage d'un <code>.env</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // Bascule de thème de la page (Système / Clair / Sombre).
+      const root = document.documentElement
+      for (const button of document.querySelectorAll('.theme-switch button')) {
+        button.addEventListener('click', () => {
+          const value = button.dataset.set
+          if (value === 'system') root.removeAttribute('data-theme')
+          else root.setAttribute('data-theme', value)
+          for (const other of document.querySelectorAll('.theme-switch button'))
+            other.setAttribute('aria-pressed', String(other === button))
+        })
+      }
+      // Copies du panneau de l'écran 1, forcées en sombre et en clair (sans pastilles).
+      const panel = document.querySelector('#screen1 .side')
+      for (const id of ['screen1-dark', 'screen1-light']) {
+        const copy = panel.cloneNode(true)
+        for (const pin of copy.querySelectorAll('.pin')) pin.remove()
+        document.getElementById(id).appendChild(copy)
+      }
+    </script>
+  </body>
+</html>
