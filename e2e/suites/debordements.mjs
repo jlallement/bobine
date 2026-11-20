@@ -144,6 +144,21 @@ async function roomForConversation(ui) {
     narrow.conversation >= 500,
     `720 px : panneau replié, la conversation garde ${narrow.conversation} px`
   )
+  // Fiche 272 (recette) : le sélecteur Code / Discussion tient dans la barre latérale étroite.
+  const spaces = await ui.ev(`(() => {
+    const box = document.querySelector('.space-switch')
+    if (!box) return null
+    const r = box.getBoundingClientRect()
+    const out = [...box.querySelectorAll('button, button *')].filter((el) => {
+      const b = el.getBoundingClientRect()
+      return b.width > 0 && (b.left < r.left - 0.5 || b.right > r.right + 0.5)
+    })
+    return { width: Math.round(r.width), out: out.length }
+  })()`)
+  check(
+    !spaces || spaces.out === 0,
+    `720 px : sélecteur Code / Discussion sans débordement (${JSON.stringify(spaces)})`
+  )
   await ui.shot('173-panneau-replie')
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)
