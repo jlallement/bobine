@@ -45,7 +45,44 @@ retrouver un fichier sans se souvenir de son nom exact, il faut quitter Bobine p
 l'éditeur. La question n'est pas « faut-il un IDE » (non), mais « quel est le plus petit regard
 sur le dossier qui évite ces allers-retours ».
 
-### Décisions de l'utilisateur (2026-11-20)
+#- **2026-11-20 — revue QA et sécurité, tout corrigé** (un essai qui échouait avant chaque
+  correction) :
+  - **B1** FIFO : lu avec `O_NONBLOCK` et refusé s'il n'est pas un fichier, avant et après
+    l'ouverture ; listé « spécial » d'après `readdir` (FIFO, socket, périphérique), grisé, sans
+    ouverture, ni glisser, ni « Ouvrir » ; `files:open` le refuse ; un état retenu qui y mène
+    finit en erreur, sans bloquer (`file-tree`, `files-ipc`, `FileTree.special`, vrai `mkfifo`,
+    délai de garde, sauté sous Windows : `FIFOS`).
+  - **C1, M8** : une demande (⌘P, lien) porte sa conversation, est traitée après le rendu et
+    consommée (`onRequestDone`) ; l'état retenu s'écrit dans un effet, une fois par changement
+    (`usePanel`, `useFilesTab` sous `StrictMode`).
+  - **C2** : le glisser de l'arbre pose un jeton de module (`startTreeDrag` / `endTreeDrag`),
+    jamais le chemin ; un type `application/x-bobine-file` posé par une autre source est ignoré.
+  - **C3** : « Ouvrir dans l'éditeur » d'une autre racine envoie le rang et le chemin relatif ;
+    le main prend le dossier dans `additionalDirectories` et vérifie le chemin réel
+    (`editors:open`, option `root`).
+  - **C4** : listage borné avant tout `lstat` (genre lu dans `Dirent`), appels menés 16 à la fois ;
+    `files:read` reçoit la version affichée et répond `unchanged` sans rien lire ; relectures
+    regroupées (250 ms) ; dossiers dépliés bornés (200) et oubliés quand ils disparaissent.
+  - **C5** : le brouillon d'une remarque fige le code cité au choix des lignes.
+  - **C6, M10, M11** : un lien se résout dans la racine du document ; un fichier d'un autre
+    dossier de la conversation s'ouvre dans l'onglet, sur sa racine ; un lien par un dossier
+    intermédiaire qui sort reste « hors du dossier ».
+  - **M1** : après l'ouverture, le chemin est résolu à nouveau et doit désigner le même fichier
+    (appareil, inode) dans les racines. C'est portable (macOS, Linux, Windows), sans
+    `F_GETPATH` ni `/proc/self/fd`, et couvre l'échange d'un dossier intermédiaire contre un
+    lien (essai : l'échange fait juste avant `open`).
+  - **M2** : l'état retient le chemin des racines ; une racine changée est oubliée
+    (`reconcileRoots`) ; les remarques sur un fichier sont rangées par chemin de racine.
+  - **M3** : une réponse de listage d'une relecture dépassée est jetée.
+  - **M4** : `git check-ignore --stdin -z`, noms recomposés (NFC) sous macOS ; un lot refusé (lien,
+    sous-module) est coupé en deux jusqu'aux fautifs au lieu d'effacer toutes les marques ; un lien
+    vers un dossier est demandé sans `/`.
+  - **M5** : UTF-16 gros boutiste, UTF-16 sans BOM ; Latin-1 si ce n'est pas de l'UTF-8 valide.
+  - **M6** : le filtre marque les fichiers exclus pour l'agent, comme l'arbre.
+  - **M7** : `relativeInRoot` retiré. **M9** : supprimer une conversation purge `bobine.files` et
+    `bobine.panel.filesOpen`.
+
+## Décisions de l'utilisateur (2026-11-20)
 
 - **Lecture seule d'abord.** Pas d'édition dans la première version ; une édition légère (comme
   celle de Claude Code, option B′) pourra venir plus tard **si elle manque** à l'usage, avec son
