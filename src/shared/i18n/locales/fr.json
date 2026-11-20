@@ -702,6 +702,7 @@
     "deleteNote": "Supprimer la remarque {{number}}",
     "selectHint": "Sélectionnez un passage pour le commenter.",
     "agentWorking": "L’agent travaille…",
+    "executed": "Plan déjà exécuté",
     "sendNotes": "Envoyer mes remarques",
     "execute": "Exécuter le plan",
     "notes_one": "{{count}} remarque",

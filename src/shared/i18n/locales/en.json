@@ -652,6 +652,7 @@
     "deleteNote": "Delete comment {{number}}",
     "selectHint": "Select a passage to comment on it.",
     "agentWorking": "The agent is working…",
+    "executed": "Plan already run",
     "sendNotes": "Send my comments",
     "execute": "Run the plan",
     "notes_one": "{{count}} comment",

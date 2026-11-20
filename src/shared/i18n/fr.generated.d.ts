@@ -697,6 +697,7 @@ export type FrResources = {
     readonly deleteNote: 'Supprimer la remarque {{number}}'
     readonly selectHint: 'Sélectionnez un passage pour le commenter.'
     readonly agentWorking: 'L’agent travaille…'
+    readonly executed: 'Plan déjà exécuté'
     readonly sendNotes: 'Envoyer mes remarques'
     readonly execute: 'Exécuter le plan'
     readonly notes_one: '{{count}} remarque'

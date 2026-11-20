@@ -35,6 +35,11 @@ export interface PlanVersion {
   replyIds: number[]
   /** Dernier plan de la conversation : on peut l'annoter, l'envoyer, l'exécuter. */
   latest: boolean
+  /**
+   * Un message est parti hors du mode plan après lui (« Exécuter le plan », ou l'utilisateur est
+   * passé en exécution) : plus rien à envoyer ni à exécuter, pas de double exécution (fiche 272).
+   */
+  executed?: true
 }
 
 type Item = TranscriptItem
@@ -44,6 +49,8 @@ const isPlanFile = (path: string) => /\.(md|markdown)$/i.test(path)
 /** Plans des tours faits en mode plan, dans l'ordre du fil. */
 export function planVersions(items: readonly Item[]): PlanVersion[] {
   const plans: Omit<PlanVersion, 'version' | 'previous' | 'latest'>[] = []
+  /** Rang du dernier plan suivi d'un message hors du mode plan. */
+  let executedUpTo = -1
   let turn: Item[] = []
   let planTurn = false
   const close = () => {
@@ -57,6 +64,7 @@ export function planVersions(items: readonly Item[]): PlanVersion[] {
     if (item.kind === 'user') {
       close()
       planTurn = isPlanMode(item.mode)
+      if (!planTurn) executedUpTo = plans.length - 1
       continue
     }
     turn.push(item)
@@ -71,7 +79,8 @@ export function planVersions(items: readonly Item[]): PlanVersion[] {
       ...plan,
       version: (before?.n ?? 0) + 1,
       ...(before ? { previous: before.text } : {}),
-      latest: i === plans.length - 1
+      latest: i === plans.length - 1,
+      ...(i <= executedUpTo ? { executed: true as const } : {})
     }
   })
 }

@@ -74,6 +74,28 @@ describe('planVersions', () => {
   })
 })
 
+describe('plan exécuté (fiche 272, recette : double exécution possible)', () => {
+  it('un message hors du mode plan après lui : exécuté, plus d’action', () => {
+    const plan = [user('Propose un plan'), agent(long('Plan'))]
+    expect(planVersions(plan)[0]?.executed).toBeUndefined()
+    const after = [...plan, user('Exécute ce plan.', 'build'), agent('Fait.')]
+    expect(planVersions(after)[0]).toMatchObject({ latest: true, executed: true })
+  })
+
+  it('remarques en restant en mode plan : la nouvelle version n’est pas exécutée', () => {
+    const items = [
+      user('Propose un plan'),
+      agent(long('Plan v1')),
+      user('Remarques…'),
+      agent(long('Plan v2'))
+    ]
+    expect(planVersions(items).map((p) => [p.version, p.executed])).toEqual([
+      [1, undefined],
+      [2, undefined]
+    ])
+  })
+})
+
 describe('remarques et exécution', () => {
   it('message de remarques : passages cités, demande de mise à jour en restant en mode plan', () => {
     const text = planFeedback(
