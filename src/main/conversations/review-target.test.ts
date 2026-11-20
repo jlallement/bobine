@@ -9,7 +9,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EMPTY_TREE, reviewBrief } from '@shared/review'
-import { gitCommand } from '../git/git-queue'
+import { gitCommand, withGitLanguage } from '../git/git-queue'
+import { runCommand } from '../simulator/run'
 import { ReviewListError, reviewTarget, type TargetSource } from './review-target'
 
 const dirs: string[] = []
@@ -221,6 +222,31 @@ describe('portée d’office du Code reviewer (fiche 265)', () => {
     const target = await r.target(true, { startedAt: started })
     expect(target).toMatchObject({ scope: 'commits', base: theirs, commit: head, commits: 1 })
     expect(target.files).toEqual(['b.txt'])
+  })
+
+  it('utilisateur sans `user.email` (ni dans le dépôt, ni global, ni système) : la date seule décide', async () => {
+    const r = repo()
+    r.git('config', '--unset', 'user.email')
+    // Aucune config git hors du dépôt (CI rouge du 2026-11-20 : la portée dépendait de la machine).
+    const empty = join(r.dir, '.git', 'config-globale-vide')
+    writeFileSync(empty, '')
+    const run = withGitLanguage(runCommand, () => ({
+      ...process.env,
+      GIT_CONFIG_GLOBAL: empty,
+      GIT_CONFIG_NOSYSTEM: '1'
+    }))
+    const before = r.commit('a.txt', 'a\n')
+    const started = r.now()
+    r.commit('b.txt', 'b\n', 'b', 'quelquun@example.invalid')
+    const head = r.commit('c.txt', 'c\n', 'c', 'autre@example.invalid')
+    const target = await reviewTarget(
+      run,
+      { workspace: r.dir, title: 'T', startedAt: started },
+      true
+    )
+    // Adresse inconnue : aucun commit n'est « d'un autre », ceux d'après la création comptent.
+    expect(target).toMatchObject({ scope: 'commits', base: before, commit: head, commits: 2 })
+    expect(target.files).toEqual(['b.txt', 'c.txt'])
   })
 
   it('revue QA : tout est déjà relu, dossier propre : la plage relue de nouveau, et dit', async () => {

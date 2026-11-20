@@ -11,7 +11,8 @@ import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import { REVIEW_BRIEF_LEAD as MOCK_LEAD } from '../../mock-agent/agent.mts'
 import type { AgentProfile } from '../agent/profiles'
 import { Worktrees } from '../changes/worktrees'
-import { gitCommand, queuedGit } from '../git/git-queue'
+import { queuedGit, withGitLanguage } from '../git/git-queue'
+import { runCommand } from '../simulator/run'
 import { childrenToolsModule } from '../mcp/children-tools'
 import { AppToolServer } from '../mcp/tool-server'
 import { ChildConversations } from './children'
@@ -42,15 +43,31 @@ afterEach(() => {
 async function environment() {
   const root = mkdtempSync(join(tmpdir(), 'relecture-'))
   const repo = realpathSync(mkdtempSync(join(tmpdir(), 'relecture-depot-')))
+  // Config git de l'essai, la même partout (fiche 267, CI rouge du 2026-11-20) : la portée
+  // d'office ne prend que les commits de l'utilisateur (`git config user.email`). La config
+  // globale de la machine est remplacée par celle d'un autre (comme la CI, qui pose la sienne) ;
+  // l'identité de l'essai est celle du dépôt, qui fait ses commits.
+  const globalConfig = join(root, 'gitconfig-global')
+  writeFileSync(globalConfig, '[user]\n\tname = Autre\n\temail = autre@example.invalid\n')
+  const gitEnv = { ...process.env, GIT_CONFIG_GLOBAL: globalConfig, GIT_CONFIG_NOSYSTEM: '1' }
   const git = (...args: string[]) =>
-    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
-      cwd: repo,
-      encoding: 'utf8'
-    }).trim()
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8', env: gitEnv }).trim()
   writeFileSync(join(repo, 'README.md'), '# Carnet\n\nVersion 1\n\n## Utilisation\n')
   git('init', '-q', '-b', 'main')
+  git('config', 'user.name', 't')
+  git('config', 'user.email', 't@example.invalid')
   git('add', '.')
   git('commit', '-q', '-m', 'init')
+  /** Tout ajouté puis commité, daté de maintenant + `offset` s (dates de git à la seconde). */
+  const commitAt = (message: string, offset: number) => {
+    const date = `@${Math.floor(Date.now() / 1000) + offset} +0000`
+    git('add', '.')
+    execFileSync('git', ['commit', '-q', '-m', message], {
+      cwd: repo,
+      env: { ...gitEnv, GIT_COMMITTER_DATE: date, GIT_AUTHOR_DATE: date }
+    })
+    return git('rev-parse', 'HEAD')
+  }
   const mock = (id: string, scenario: string): AgentProfile => ({
     id,
     label: `Factice ${id}`,
@@ -62,7 +79,8 @@ async function environment() {
   const toolServer = new AppToolServer()
   await toolServer.start()
   let children: ChildConversations | undefined = undefined
-  const run = queuedGit(gitCommand)
+  // Le git de Bobine sous la même config que celui de l'essai.
+  const run = queuedGit(withGitLanguage(runCommand, () => gitEnv))
   const manager = new ConversationManager({
     profiles: [
       mock('modifs', 'modifications'),
@@ -109,7 +127,18 @@ async function environment() {
     return id
   }
   const idle = (id: string) => waitFor(() => manager.view(id).summary.status === 'ready')
-  return { repo, git, manager, children: module, reviews: reviewModule, items, card, author, idle }
+  return {
+    repo,
+    git,
+    commitAt,
+    manager,
+    children: module,
+    reviews: reviewModule,
+    items,
+    card,
+    author,
+    idle
+  }
 }
 
 describe('relecture avant fusion (fiche 177)', () => {
@@ -347,15 +376,8 @@ describe('relecture avant fusion (fiche 177)', () => {
     const env = await environment()
     const author = await env.author()
     const init = env.git('rev-parse', 'HEAD')
-    env.git('add', '.')
     // Un commit fait pendant la conversation (dates de git à la seconde : une minute plus tard).
-    const later = `@${Math.floor(Date.now() / 1000) + 60} +0000`
-    execFileSync(
-      'git',
-      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'travail'],
-      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
-    )
-    const head = env.git('rev-parse', 'HEAD')
+    const head = env.commitAt('travail', 60)
     const first = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Relis'
@@ -381,12 +403,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     await env.reviews.settled(reviewer)
     // Un autre commit de la conversation : la relecture suivante part du dernier commit relu.
     writeFileSync(join(env.repo, 'suite.js'), 'export const suite = 1\n')
-    env.git('add', '.')
-    execFileSync(
-      'git',
-      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'suite'],
-      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
-    )
+    env.commitAt('suite', 60)
     const next = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Et la suite ?'
@@ -463,20 +480,7 @@ describe('relecture avant fusion (fiche 177)', () => {
   it('fiche 267, revue QA : le HEAD relu est gardé même avec du non commité ; la suivante part de là', async () => {
     const env = await environment()
     const author = await env.author()
-    const later = (offset: number) => `@${Math.floor(Date.now() / 1000) + offset} +0000`
-    const commit = (message: string, offset: number) => {
-      env.git('add', '.')
-      execFileSync(
-        'git',
-        ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', message],
-        {
-          cwd: env.repo,
-          env: { ...process.env, GIT_COMMITTER_DATE: later(offset), GIT_AUTHOR_DATE: later(offset) }
-        }
-      )
-      return env.git('rev-parse', 'HEAD')
-    }
-    const first = commit('un', 60)
+    const first = env.commitAt('un', 60)
     writeFileSync(join(env.repo, 'sale.js'), 'export const sale = 1\n')
     const one = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
@@ -492,7 +496,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     await waitFor(() => env.card(author)?.status === 'reported')
     await env.idle(reviewer)
     await env.reviews.settled(reviewer)
-    commit('deux', 120)
+    env.commitAt('deux', 120)
     const two = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Et ?'
@@ -515,13 +519,7 @@ describe('relecture avant fusion (fiche 177)', () => {
       if (id !== author && refuse) return Promise.reject(new Error('agent indisponible'))
       return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
     }) as typeof env.manager.prompt
-    const later = `@${Math.floor(Date.now() / 1000) + 60} +0000`
-    env.git('add', '.')
-    execFileSync(
-      'git',
-      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'un'],
-      { cwd: env.repo, env: { ...process.env, GIT_COMMITTER_DATE: later, GIT_AUTHOR_DATE: later } }
-    )
+    env.commitAt('un', 60)
     const started = await startRoleChildren(env.children, author, {
       roles: ['code-reviewer'],
       text: 'Relis'

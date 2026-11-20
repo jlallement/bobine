@@ -282,6 +282,22 @@ Pas de nouvelle dépendance.
   `proposal-start` de `filles-non-commite`, `filles-tech-lead` et `roles-travail` : avec la sonde,
   `filles-tech-lead` échouait sans elle (les deux autres passaient, une attente plus haut couvrait
   le délai) ; avec elle, les trois passent, avec et sans sonde.
+- 2026-11-20 — **CI rouge sur `main` (4288897), Linux, macOS et Windows : 3 essais de
+  `children-review.test.ts` (portée d'office de `@code-reviewer`).** **Essai, pas l'app.** Les
+  essais commitaient avec `-c user.email=t@example.invalid` sans poser d'identité dans le dépôt :
+  la portée lit l'utilisateur par `git config user.email`, donc la config globale de la machine.
+  En local, aucune adresse globale : filtre par auteur inactif, la date seule, vert. En CI,
+  `ci.yml` pose `ci@users.noreply.github.com` : les commits de l'essai deviennent ceux « d'un
+  autre », aucun n'est de la conversation, d'où les 5 derniers (`commits: 2` depuis l'arbre vide),
+  ou le non commité seul quand il y en a. Reproduit en local avec `GIT_CONFIG_GLOBAL` (adresse de
+  la CI) et `GIT_CONFIG_NOSYSTEM=1` : les 3 mêmes échecs. Correction : l'essai pose son identité
+  dans le dépôt (`git config user.email`, comme `review-target.test.ts`), et son git comme celui
+  de Bobine tournent sous une config globale d'un autre (`autre@example.invalid`) : les conditions
+  de la CI partout, et le filtre par auteur enfin exercé ici. Sans la correction (identité par
+  `-c` seulement), les 3 essais échouent désormais sur toute machine. Code inchangé : la règle
+  (adresse du dépôt, sinon globale ; sans adresse, la date seule) est celle documentée plus bas ;
+  nouvel essai `review-target.test.ts` pour ce dernier cas (aucune config hors du dépôt), qui
+  échoue si une adresse s'y glisse.
 
 ## Écarts au plan
 
@@ -295,6 +311,9 @@ Pas de nouvelle dépendance.
 - Les commits de la conversation sont reconnus à leur date (à la seconde) et à leur auteur
   (`user.email` du dépôt) : un commit fait dans la même seconde que la création compte d'avant ;
   sans adresse configurée, la date seule.
+- Un agent qui commite sous une autre adresse que celle de `git config user.email` (variable
+  `GIT_AUTHOR_EMAIL`, `-c user.email=…`) : ses commits comptent comme ceux d'un autre ; la portée
+  retombe sur les 5 derniers commits, ou le non commité seul.
 - `lastReviewed` ne vient que d'une relecture de plage de commits (`commits`, `commit`) : une
   relecture du non commité seul laisse les commits d'avant à relire.
 
