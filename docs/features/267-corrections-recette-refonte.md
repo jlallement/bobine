@@ -189,6 +189,11 @@ Pas de nouvelle dépendance.
     `267-activite-commande`), `cout-connexion` (N10 ; `267-activite-cout-inconnu`) ; `activity`
     (commentaire D14).
 
+- 2026-11-20 : `./scripts/verify` vert (5 412 essais ; une fois, `bob-costs.test.ts` en délai sous
+  charge, vert seul puis au verify suivant, fichier non touché). `pnpm build && pnpm e2e --changed`
+  (fichiers globaux touchés : toute la suite, 228 tâches, clair et sombre, une campagne) : vert en
+  20 min 38 s. Captures `267-*` regardées (clair et sombre).
+
 ## Écarts au plan
 
 - R7 : pas de signal « carte vue » du renderer : la règle de la 258 suffit une fois les erreurs
