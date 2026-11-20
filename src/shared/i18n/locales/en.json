@@ -4420,20 +4420,22 @@
       "busy": "The conversation is still replying: wait for its reply to end before requesting a review.",
       "reviewer": "A review cannot be reviewed.",
       "nothing": "Nothing to review: no changes in this folder.",
-      "notReviewer": "This conversation is not a review."
+      "notReviewer": "This conversation is not a review.",
+      "noRole": "The Code reviewer role cannot be found."
     },
     "title": "Review: {{title}}",
     "dialog": {
       "title": "Request a review of “{{title}}”",
-      "description": "A child conversation reviews this work in its folder, without modifying anything: errors first, then what can be simpler. Its findings arrive as comments on the lines of the diff; you then choose which ones to send back.",
+      "description": "The Code reviewer role reviews this work in its folder, without changing anything: errors first, then what can be simpler. The request and its response show in the thread, with its comments, which also arrive on the lines of the diff.",
       "scopeBranch": "Reviewed: all the work of branch {{branch}}, commits and uncommitted changes.",
       "scopeUncommitted": "Reviewed: the uncommitted changes of the folder.",
       "focus": "What to look at (optional)",
       "placeholder": "For example: network error handling",
       "suggested": "Agent and model of the reviewed conversation, suggested: confirm or change them.",
-      "cost": "A review is one more conversation and costs like one. Its cost shows on its card and on its row.",
+      "cost": "A review is one more piece of work: it costs like a conversation. Its cost shows on its card.",
       "launch": "Start review",
-      "launching": "Starting…"
+      "launching": "Starting…",
+      "suggestedOther": "A model other than the reviewed conversation’s is suggested: fresh eyes find more. Confirm or change it."
     },
     "card": {
       "running": "Review in progress by {{agent}}",
@@ -4471,7 +4473,15 @@
       "changed": "The reviewed folder changed during this turn: a review must not modify anything. Check the Git view of the reviewed conversation."
     },
     "export_one": "Review “{{title}}”: {{count}} comment",
-    "export_other": "Review “{{title}}”: {{count}} comments"
+    "export_other": "Review “{{title}}”: {{count}} comments",
+    "ask": {
+      "branch": "Review the branch {{branch}}.",
+      "uncommitted_one": "Review the uncommitted changes ({{count}} file).",
+      "uncommitted_other": "Review the uncommitted changes ({{count}} files).",
+      "uncommittedOf_one": "Review the uncommitted changes of “{{title}}” ({{count}} file).",
+      "uncommittedOf_other": "Review the uncommitted changes of “{{title}}” ({{count}} files).",
+      "focus": "What to look at: {{focus}}"
+    }
   },
   "scheduled": {
     "title": "Scheduled tasks",
@@ -4610,7 +4620,8 @@
       "answered": "replied",
       "stopped": "stopped",
       "error": "failed",
-      "gone": "conversation deleted"
+      "gone": "conversation deleted",
+      "clean": "nothing to report · {{time}}"
     },
     "elapsed": "Elapsed: {{time}}",
     "waitingLine": "Waiting for your answer in its conversation.",
@@ -4648,7 +4659,18 @@
     "brief": "Task instruction",
     "from": "from {{base}} {{commit}}",
     "dirty_one": "{{count}} uncommitted change",
-    "dirty_other": "{{count}} uncommitted changes"
+    "dirty_other": "{{count}} uncommitted changes",
+    "fix": "Ask {{agent}} to fix",
+    "fixMessage": "Fix the comments from {{role}}.",
+    "fixMessageWork": "Have “{{work}}” fix the comments from {{role}} on its branch.",
+    "showDiff": "Show on the diff",
+    "readOnlyBranch": "read-only · in the reviewed branch",
+    "findings": {
+      "label": "Comments from {{role}}",
+      "where": "Show {{place}} on the diff",
+      "clean": "Nothing to report.",
+      "reply": "Its full response"
+    }
   },
   "workCue": {
     "replied": "replied",

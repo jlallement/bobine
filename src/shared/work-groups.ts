@@ -11,6 +11,9 @@
  *   une carte seule, à la place de ce lancement.
  * - Un lancement sans clé ni bulle (anciennes conversations) : affiché comme avant (« Sous-tâches »,
  *   lancement, compte rendu).
+ * - La relecture d'un travail qui a sa carte (« Faire relire », fiche 265) : sa bulle et la carte du
+ *   Code reviewer s'affichent dans la carte de ce travail (ou sous sa ligne d'une carte de groupe),
+ *   pas à leur place.
  */
 import {
   childProposalGroups,
@@ -38,6 +41,12 @@ export interface WorkGroupData {
   request?: RoleRequestItem
 }
 
+/** Une relecture rangée sous le travail qu'elle relit (fiche 265) : la bulle et sa carte. */
+export interface WorkReviewEntry {
+  request: RoleRequestItem
+  card: WorkCardData
+}
+
 export interface WorkLayout {
   cards: WorkCards
   /** Cartes de groupe, par id de l'élément du fil où elles s'affichent. */
@@ -54,6 +63,8 @@ export interface WorkLayout {
   verdicts: ReadonlyMap<string, ChildVerdict>
   /** Dernière fusion qui touche chaque travail, lue une fois. */
   merges: ReadonlyMap<string, ChildrenMerge>
+  /** Relectures de chaque travail rangé (fiche 265), dans l'ordre du fil. */
+  reviews: ReadonlyMap<string, WorkReviewEntry[]>
 }
 
 /** Clé d'une proposition, telle que le main l'a donnée (absente d'une proposition d'avant). */
@@ -106,8 +117,31 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
     toolCallIds: proposed.toolCallIds,
     childIds: cards.childIds,
     verdicts: childRecommendations(items),
-    merges: mergesByWork(items)
+    merges: mergesByWork(items),
+    reviews: reviewsByWork(items, cards, hidden)
   }
+}
+
+/**
+ * Relectures rangées sous leur travail (fiche 265) : une bulle « @Code reviewer … » qui relit un
+ * travail qui a sa carte (`RoleRequest.review.of`), cachée à sa place. Un travail relu sans carte
+ * (conversation d'avant, la conversation affichée elle-même) : la bulle reste à sa place.
+ */
+function reviewsByWork(
+  items: readonly TranscriptItem[],
+  cards: WorkCards,
+  hidden: Set<number>
+): Map<string, WorkReviewEntry[]> {
+  const reviews = new Map<string, WorkReviewEntry[]>()
+  for (const [at, list] of cards.byRequest) {
+    const card = list[0]
+    if (!card?.request || list.length !== 1) continue
+    const of = card.request.review?.of
+    if (!of || of === card.childId || !cards.childIds.has(of)) continue
+    reviews.set(of, [...(reviews.get(of) ?? []), { request: card.request, card }])
+    hidden.add(at)
+  }
+  return reviews
 }
 
 /** Dernière fusion de chaque travail, dans l'ordre du fil. */

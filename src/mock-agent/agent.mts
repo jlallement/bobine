@@ -798,9 +798,10 @@ function pickScenario(
   }
   // `/compress` : comme Bob 2.0.6, le résumé arrive en texte, sans `compaction_update` (fiche 126).
   if (/^\/compress\b/.test(text) && catalog['compaction-texte']) return catalog['compaction-texte']
-  // Consigne de relecture de l'app (fiche 177, `REVIEW_BRIEF_LEAD`) : `/scenario` peut venir des
-  // points à surveiller, n'importe où ; sinon le relecteur ordinaire.
-  if (text.startsWith(REVIEW_BRIEF_LEAD)) {
+  // Consigne de relecture de l'app (fiche 177, `REVIEW_BRIEF_LEAD`) : en tête (relecteur d'avant),
+  // ou dans le bloc du rôle Code reviewer (fiche 265) ; `/scenario` peut venir des points à
+  // surveiller, n'importe où ; sinon le relecteur ordinaire.
+  if (text.includes(REVIEW_BRIEF_LEAD)) {
     const named = /\/scenario\s+(\S+)/.exec(text)?.[1]
     const chosen = catalog[named ?? 'relecture']
     if (chosen && !chosen.session) return chosen

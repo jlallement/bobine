@@ -365,7 +365,7 @@ export function childContext(
       const left = item.leftBehind ? ` ${leftBehindText(item.leftBehind)}` : ''
       return `- ${who} the child conversation "${item.title}" (id: ${item.childId}${roleOf(item.role)})${branch}, with this instruction:\n${quoted(item.prompt)}${left}`
     }
-    const line = reportLine(item, roles.get(item.childId))
+    const line = `${reportLine(item, roles.get(item.childId))}${findingsLines(items, item.childId)}`
     return item.id === aboutReport ? `${line}\n  ${ABOUT_LINE}` : line
   })
   const reports = news.some((item) => item.kind === 'child-report')
@@ -377,6 +377,38 @@ export function childContext(
     '',
     ...lines,
     '</child_conversations>'
+  ].join('\n')
+}
+
+/** Remarques d'une relecture citées à l'agent de la mère, au plus (fiche 265). */
+export const CONTEXT_FINDINGS = 20
+/** Explication d'une remarque citée, au plus. */
+const FINDING_WHY_CONTEXT = 300
+
+/**
+ * Remarques structurées d'un relecteur (« Faire relire », fiche 265, `report_findings`) jointes à
+ * son compte rendu : la carte « Demander à <agent> de corriger » les nomme, le contexte les porte.
+ * Lues sur sa carte de relecture dans le fil de la mère ; rien pour un autre travail.
+ */
+function findingsLines(items: readonly TranscriptItem[], childId: string): string {
+  const review = items.findLast((i) => i.kind === 'review' && i.reviewId === childId)
+  if (review?.kind !== 'review' || review.status !== 'reported') return ''
+  const { findings } = review
+  if (findings.length === 0) return '\n  Structured review findings: none (nothing to report).'
+  const shown = findings.slice(0, CONTEXT_FINDINGS).map((f) => {
+    const place = `${clip(f.file, TITLE_CHARS)}:${f.line}${f.endLine ? `-${f.endLine}` : ''}`
+    return `  - [${f.severity}] ${place} — ${clip(f.title, TITLE_CHARS)}: ${clip(f.why, FINDING_WHY_CONTEXT)}`
+  })
+  const more =
+    findings.length > shown.length ? [`  - … and ${findings.length - shown.length} more`] : []
+  const where =
+    review.scope === 'branch' && review.base
+      ? `everything changed since commit ${review.base}`
+      : 'the uncommitted changes'
+  return [
+    `\n  Structured review findings on ${where} (${findings.length}, paths relative to the reviewed folder):`,
+    ...shown,
+    ...more
   ].join('\n')
 }
 

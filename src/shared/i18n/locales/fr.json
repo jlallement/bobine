@@ -4612,20 +4612,22 @@
       "busy": "La conversation répond encore : attendez la fin de sa réponse pour la faire relire.",
       "reviewer": "Une relecture ne se fait pas relire.",
       "nothing": "Rien à relire : aucune modification dans ce dossier.",
-      "notReviewer": "Cette conversation n’est pas une relecture."
+      "notReviewer": "Cette conversation n’est pas une relecture.",
+      "noRole": "Le rôle Code reviewer est introuvable."
     },
     "title": "Relecture : {{title}}",
     "dialog": {
       "title": "Faire relire « {{title}} »",
-      "description": "Une conversation fille relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. Ses remarques arrivent sur les lignes du diff ; vous choisissez ensuite celles à renvoyer.",
+      "description": "Le rôle Code reviewer relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. La demande et sa réponse s’affichent dans le fil, avec ses remarques, qui arrivent aussi sur les lignes du diff.",
       "scopeBranch": "Relu : tout le travail de la branche {{branch}}, commits et modifications non commitées.",
       "scopeUncommitted": "Relu : les modifications non commitées du dossier.",
       "focus": "Points à surveiller (facultatif)",
       "placeholder": "Par exemple : la gestion des erreurs réseau",
       "suggested": "Agent et modèle de la conversation relue, suggérés : à confirmer ou changer.",
-      "cost": "La relecture est une conversation de plus : elle coûte comme telle. Son coût s’affiche sur sa carte et sur sa ligne.",
+      "cost": "La relecture est un travail de plus : elle coûte comme une conversation. Son coût s’affiche sur sa carte.",
       "launch": "Lancer la relecture",
-      "launching": "Lancement…"
+      "launching": "Lancement…",
+      "suggestedOther": "Un autre modèle que celui de la conversation relue est proposé : un regard neuf trouve davantage. À confirmer ou changer."
     },
     "card": {
       "running": "Relecture en cours par {{agent}}",
@@ -4667,7 +4669,17 @@
     },
     "export_one": "Relecture « {{title}} » : {{count}} remarque",
     "export_many": "Relecture « {{title}} » : {{count}} remarques",
-    "export_other": "Relecture « {{title}} » : {{count}} remarques"
+    "export_other": "Relecture « {{title}} » : {{count}} remarques",
+    "ask": {
+      "branch": "Relis la branche {{branch}}.",
+      "uncommitted_one": "Relis les modifications non commitées ({{count}} fichier).",
+      "uncommitted_many": "Relis les modifications non commitées ({{count}} fichiers).",
+      "uncommitted_other": "Relis les modifications non commitées ({{count}} fichiers).",
+      "uncommittedOf_one": "Relis les modifications non commitées de « {{title}} » ({{count}} fichier).",
+      "uncommittedOf_many": "Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).",
+      "uncommittedOf_other": "Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).",
+      "focus": "Points à surveiller : {{focus}}"
+    }
   },
   "scheduled": {
     "title": "Tâches planifiées",
@@ -4810,7 +4822,8 @@
       "answered": "a répondu",
       "stopped": "arrêté",
       "error": "en erreur",
-      "gone": "conversation supprimée"
+      "gone": "conversation supprimée",
+      "clean": "rien à signaler · {{time}}"
     },
     "elapsed": "Temps écoulé : {{time}}",
     "waitingLine": "Attend votre réponse dans sa conversation.",
@@ -4849,7 +4862,18 @@
     "from": "part de {{base}} {{commit}}",
     "dirty_one": "{{count}} modification non commitée",
     "dirty_other": "{{count}} modifications non commitées",
-    "dirty_many": "{{count}} modifications non commitées"
+    "dirty_many": "{{count}} modifications non commitées",
+    "fix": "Demander à {{agent}} de corriger",
+    "fixMessage": "Corrige les remarques de {{role}}.",
+    "fixMessageWork": "Fais corriger par « {{work}} » les remarques de {{role}} sur sa branche.",
+    "showDiff": "Voir sur le diff",
+    "readOnlyBranch": "lecture seule · dans la branche relue",
+    "findings": {
+      "label": "Remarques de {{role}}",
+      "where": "Voir {{place}} sur le diff",
+      "clean": "Rien à signaler.",
+      "reply": "Sa réponse entière"
+    }
   },
   "workCue": {
     "replied": "a répondu",

@@ -34,6 +34,12 @@ export interface RoleRequest {
    * travail (décision 2 de la fiche 260), pas à sa place.
    */
   followUp?: true
+  /**
+   * « Faire relire » (fiche 265) : la demande au rôle Code reviewer, et la conversation qu'il relit
+   * (`of`). Un travail relu qui a sa carte la montre dans cette carte (ou sous sa ligne d'une carte
+   * de groupe), pas à la place de la bulle.
+   */
+  review?: { of: string }
   at: number
 }
 
@@ -41,6 +47,7 @@ export type RoleRequestItem = Extract<TranscriptItem, { kind: 'role-request' }>
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>
 type Report = Extract<TranscriptItem, { kind: 'child-report' }>
 type Instruction = Extract<TranscriptItem, { kind: 'child-instruction' }>
+export type ReviewItem = Extract<TranscriptItem, { kind: 'review' }>
 
 /** Bulle posée, ou complétée si elle existe déjà (même `requestId`) : elle garde sa place. */
 export function reduceRoleRequest(state: TranscriptState, request: RoleRequest): TranscriptState {
@@ -95,6 +102,11 @@ export interface WorkCardData {
   card?: string
   /** Réponses, bulles de suite et messages de l'agent, dans l'ordre du fil. */
   steps: WorkStep[]
+  /**
+   * Relecture (fiche 265) : la carte de ce relecteur (élément `review`, la dernière), ses remarques
+   * structurées ; cachée à sa place, dite dans la carte.
+   */
+  review?: ReviewItem
 }
 
 export interface WorkCards {
@@ -200,6 +212,7 @@ export function workCards(items: readonly TranscriptItem[]): WorkCards {
     if (item.kind === 'child-report') placeReport(card, item)
     else if (item.kind === 'role-request') card.steps.push({ kind: 'ask', item })
     else if (item.kind === 'child-instruction') card.steps.push({ kind: 'note', item })
+    else if (item.kind === 'review') card.review = item
   }
   return { byRequest, byCard, hidden, childIds: new Set(cards.keys()) }
 }
@@ -240,6 +253,9 @@ function workOf(
   ) {
     return cards.get(item.childId)
   }
+  // Remarques d'un relecteur qui a sa carte (fiche 265) : dans sa carte ; une relecture d'avant,
+  // sans lancement, garde sa carte « Relecture » à sa place.
+  if (item.kind === 'review') return cards.get(item.reviewId)
   if (item.kind === 'role-request' && item.followUp) {
     const works = worksOf(item)
     const work = works[0]

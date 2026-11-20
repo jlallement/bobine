@@ -1,24 +1,30 @@
 /**
- * Relecture avant fusion (fiche 177) : « Faire relire… » lance une conversation fille qui relit le
- * travail d'une autre, dans **son** dossier, sans worktree à elle, et rend ses remarques par
- * l'outil `report_findings` (`mcp/review-tools.ts`).
+ * Relecture avant fusion (fiche 177), par le rôle Code reviewer (fiche 265) : « Faire relire… »
+ * lance une conversation fille qui relit le travail d'une autre, dans **son** dossier, sans
+ * worktree à elle, et rend ses remarques par l'outil `report_findings` (`mcp/review-tools.ts`).
  *
  * - Le relecteur d'une fille est sa sœur (une fille n'a pas de fille, ADR-0019) ; celui d'une
  *   conversation ordinaire, sa fille. Il compte dans le plafond des filles (ADR-0020).
+ * - C'est le rôle `code-reviewer` (fiche 265, un seul chemin) : dans le fil de sa mère, une bulle
+ *   « @Code reviewer Relis … » (`role-request`, avec le travail relu) et son lancement, donc une
+ *   carte-réponse comme tout rôle (fiche 263) ; sa réponse lui part comme celle de tout travail, avec
+ *   ses remarques. Dans son propre fil, la consigne de relecture est repliée avec celle du rôle.
  * - Ce qui est relu : une branche de worktree depuis son point de départ (commits et modifications
  *   non commitées), sinon les modifications non commitées. Le point et les fichiers vont dans la
  *   consigne (`reviewBrief`).
  * - Lecture seule annoncée et vérifiée : une empreinte du dossier (HEAD, `git status`, `git diff`)
- *   est prise au départ et comparée à chaque fin de tour du relecteur ; un écart est signalé, rien
- *   n'est défait.
- * - Une seule carte par relecture dans le fil de l'auteur (élément `review`), remplacée à chaque
- *   étape : en cours, remarques rendues, fini sans remarques, échec.
+ *   est prise au départ de chaque tour et comparée à sa fin ; un écart est signalé, rien n'est
+ *   défait.
+ * - Une seule carte par relecture (élément `review`), remplacée à chaque étape : dans le fil de la
+ *   conversation relue (remarques de diff), et dans celui de la mère quand c'est une autre (carte du
+ *   Code reviewer).
  */
 import { t } from 'i18next'
+import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { relative, resolve, sep } from 'node:path'
 import type { ConversationEvent, ConversationSummary } from '@shared/agent'
-import { clip } from '@shared/children'
+import { childReport, clip } from '@shared/children'
 import { messageOf } from '@shared/errors'
 import type { TranscriptItem } from '@shared/transcript'
 import { usageDigest } from '@shared/usage'
@@ -33,6 +39,10 @@ import {
   type ReviewTarget
 } from '@shared/review'
 import type { IpcHandlers } from '@shared/ipc'
+import { roleBadge, roleStamp, type RoleSnapshot } from '@shared/roles'
+import type { RoleRequest } from '@shared/role-request'
+import { builtinRoles } from '../roles/builtin'
+import { roleFirstMessage } from '../roles/launch'
 import type { Run } from '../simulator/run'
 import { insideWorkspace } from '../changes/git'
 import { log } from '../log'
@@ -63,11 +73,12 @@ export type ReviewHost = Pick<
   | 'post'
   | 'rename'
   | 'worktreeOf'
+  | 'settingsView'
 >
 
 export interface ReviewDeps {
   conversations: ReviewHost
-  children: Pick<ChildConversations, 'summary' | 'capacity' | 'modelAllowed'>
+  children: Pick<ChildConversations, 'summary' | 'capacity' | 'modelAllowed' | 'findRole'>
   /** git, par la file du dépôt (`gitRun`). */
   run: Run
 }
@@ -76,7 +87,18 @@ export interface ReviewDeps {
 interface Watch {
   fingerprint?: string
   reported: boolean
+  /**
+   * Premier tour pas encore commencé : son empreinte est celle du lancement. Aux tours suivants
+   * (« Répondre à Code reviewer »), elle est reprise à leur départ : l'auteur a pu corriger entre-
+   * temps, ce n'est pas le relecteur.
+   */
+  first?: true
+  /** Premier message (rôle et consigne), pour « Relancer » un relecteur qui n'a pas démarré. */
+  opening?: string
 }
+
+/** Nom du rôle intégré qui relit (fiche 265). */
+export const REVIEWER_ROLE = 'code-reviewer'
 
 const text = (buffer: Buffer) => buffer.toString('utf8')
 const lines = (output: string) => output.split('\n').filter(Boolean)
@@ -84,12 +106,17 @@ const lines = (output: string) => output.split('\n').filter(Boolean)
 export class ChildReviews {
   private readonly deps: ReviewDeps
   private readonly watching = new Map<string, Watch>()
+  /** Fins de tour en cours de traitement, par relecteur. */
+  private readonly settling = new Map<string, Promise<void>>()
 
   constructor(deps: ReviewDeps) {
     this.deps = deps
   }
 
-  /** Lance le relecteur de `authorId` ; rend sa conversation (la conversation affichée ne change pas). */
+  /**
+   * Lance le relecteur de `authorId` : le rôle Code reviewer (fiche 265), sa bulle et sa carte dans
+   * le fil de sa mère ; rend sa conversation (la conversation affichée ne change pas).
+   */
   async start(authorId: string, request: ReviewRequest = {}): Promise<ConversationSummary> {
     const { children, conversations } = this.deps
     const author = children.summary(authorId)
@@ -110,15 +137,44 @@ export class ChildReviews {
     const target = await this.target(author)
     if (target.files.length === 0) throw new Error(t('review.error.nothing'))
     const fingerprint = await this.fingerprint(author.workspace).catch(() => undefined)
+    const role = this.reviewerRole(motherId)
+    const asked = askText(author, target, request.focus)
     const brief = reviewBrief(target, request.focus)
-    const created = await conversations.createChild(motherId, brief, request.profileId, undefined, {
-      of: author.id
+    const created = await conversations.createChild(motherId, asked, request.profileId, undefined, {
+      of: author.id,
+      role: roleStamp(role)
     })
     conversations.rename(created.id, t('review.title', { title: author.title }))
     const reviewer = children.summary(created.id)
-    this.watching.set(reviewer.id, { ...(fingerprint ? { fingerprint } : {}), reported: false })
+    this.watching.set(reviewer.id, {
+      ...(fingerprint ? { fingerprint } : {}),
+      reported: false,
+      first: true
+    })
+    // La demande dans le fil de la mère (fiche 265) : la bulle, puis le lancement qui la nomme ;
+    // la carte-réponse du Code reviewer se lit de ces deux éléments (fiche 263).
+    const ask: RoleRequest = {
+      requestId: randomUUID(),
+      text: asked,
+      works: [{ childId: reviewer.id, role: roleBadge(role) }],
+      review: { of: author.id },
+      at: Date.now()
+    }
+    conversations.post(motherId, { type: 'role-request', request: ask })
+    conversations.post(motherId, {
+      type: 'child-started',
+      child: {
+        childId: reviewer.id,
+        title: reviewer.title,
+        prompt: asked,
+        role: roleBadge(role),
+        request: ask.requestId,
+        at: Date.now()
+      }
+    })
     const review: Review = {
       reviewId: reviewer.id,
+      authorId: author.id,
       title: reviewer.title,
       profileLabel: reviewer.profileLabel,
       scope: target.scope,
@@ -129,10 +185,43 @@ export class ChildReviews {
       findings: [],
       at: Date.now()
     }
-    conversations.post(author.id, { type: 'review', review })
+    this.post(reviewer, author.id, review)
     log.info(`Relecture lancée (${reviewer.id.slice(0, 8)}) de ${author.id.slice(0, 8)}`)
-    void this.launch(reviewer.id, brief, request.model)
+    void this.launch(reviewer, { role, asked, brief }, request.model)
     return reviewer
+  }
+
+  /**
+   * Le rôle Code reviewer de la mère (celui du projet s'il le remplace) ; désactivé ou absent :
+   * celui de Bobine. Toujours en lecture seule : une relecture ne modifie rien (fiche 177).
+   */
+  private reviewerRole(motherId: string): RoleSnapshot {
+    let role: RoleSnapshot | undefined
+    try {
+      role = this.deps.children.findRole(motherId, REVIEWER_ROLE)
+    } catch {
+      role = builtinRoles().find((r) => r.name === REVIEWER_ROLE)
+    }
+    if (!role) throw new Error(t('review.error.noRole'))
+    return { ...role, readOnly: true }
+  }
+
+  /**
+   * Carte de la relecture : dans le fil de la conversation relue (remarques de diff, fiche 177), et
+   * dans celui de la mère du relecteur quand c'est une autre conversation (sa carte, fiche 265).
+   */
+  private post(
+    reviewer: Pick<ConversationSummary, 'startedFrom'>,
+    authorId: string,
+    review: Review
+  ): void {
+    const { conversations } = this.deps
+    conversations.post(authorId, { type: 'review', review })
+    // Relecture d'avant (sans `authorId`) : dans le fil de la conversation relue seulement.
+    const motherId = reviewer.startedFrom?.id
+    if (review.authorId && motherId && motherId !== authorId) {
+      conversations.post(motherId, { type: 'review', review })
+    }
   }
 
   /** La conversation est-elle un relecteur ? (rôle pour les outils de l'app) */
@@ -169,7 +258,7 @@ export class ChildReviews {
       ...this.usage(reviewerId),
       at: Date.now()
     }
-    this.deps.conversations.post(authorId, { type: 'review', review })
+    this.post(reviewer, authorId, review)
     const watch = this.watching.get(reviewerId)
     if (watch) watch.reported = true
     else this.watching.set(reviewerId, { reported: true })
@@ -186,6 +275,10 @@ export class ChildReviews {
    */
   onEvent(payload: ConversationEvent): void {
     const { conversationId, event } = payload
+    if (event.type === 'user-message') {
+      this.turnStarted(conversationId)
+      return
+    }
     if (event.type !== 'turn-end' && event.type !== 'turn-error') return
     let reviewer: ConversationSummary
     try {
@@ -197,14 +290,53 @@ export class ChildReviews {
     const watch = this.watching.get(conversationId) ?? { reported: false }
     this.watching.set(conversationId, { ...watch, reported: false })
     const error = event.type === 'turn-error' ? event.message : undefined
-    void this.afterTurn(reviewer, watch, error).catch((e: unknown) =>
+    const done = this.afterTurn(reviewer, watch, error).catch((e: unknown) =>
       log.warn('Relecture : fin de tour non traitée :', messageOf(e))
     )
+    this.settling.set(conversationId, done)
+    void done.finally(() => {
+      if (this.settling.get(conversationId) === done) this.settling.delete(conversationId)
+    })
+  }
+
+  /** Fin de tour du relecteur traitée (empreinte comparée, carte à jour) ; essais. */
+  settled(reviewerId: string): Promise<void> {
+    return this.settling.get(reviewerId) ?? Promise.resolve()
   }
 
   /** Conversation supprimée. */
   forget(id: string): void {
     this.watching.delete(id)
+  }
+
+  /**
+   * Un tour du relecteur commence : le premier garde l'empreinte prise au lancement ; un suivant
+   * (« Répondre à Code reviewer », fiche 265) part de l'état du dossier à ce moment-là — l'auteur a
+   * pu corriger entre-temps. Aussi après un redémarrage, où le suivi était perdu.
+   */
+  private turnStarted(id: string): void {
+    const watch = this.watching.get(id)
+    if (watch?.first) {
+      delete watch.first
+      return
+    }
+    let workspace: string
+    try {
+      const reviewer = this.deps.children.summary(id)
+      if (!reviewer.reviewOf) return
+      workspace = this.deps.children.summary(reviewer.reviewOf.id).workspace
+    } catch {
+      return
+    }
+    const next: Watch = { ...(watch ?? { reported: false }) }
+    delete next.fingerprint
+    this.watching.set(id, next)
+    void this.fingerprint(workspace)
+      .then((fingerprint) => {
+        // Le tour a pu finir avant l'empreinte (agent très rapide) : rien à comparer alors.
+        if (this.watching.get(id) === next) next.fingerprint = fingerprint
+      })
+      .catch(() => undefined)
   }
 
   private async afterTurn(
@@ -245,7 +377,7 @@ export class ChildReviews {
     }
     // Le coût suit chaque tour, même sans autre changement.
     next = { ...next, ...this.usage(reviewer.id) }
-    this.deps.conversations.post(authorId, { type: 'review', review: next })
+    this.post(reviewer, authorId, next)
   }
 
   /** Coût du relecteur selon son fil, à joindre à la carte. */
@@ -278,29 +410,83 @@ export class ChildReviews {
     }
   }
 
-  /** Démarrage, modèle choisi, puis la consigne ; un échec est dit sur la carte de l'auteur. */
+  /**
+   * Démarrage, modèle choisi, puis le premier message : la demande, avec la consigne du rôle et
+   * celle de la relecture dans le bloc du rôle (repliées dans son fil, fiche 265). Un échec est dit
+   * sur la carte de l'auteur, et dans le fil de la mère comme pour tout travail.
+   */
   private async launch(
-    reviewerId: string,
-    brief: string,
+    reviewer: ConversationSummary,
+    opening: { role: RoleSnapshot; asked: string; brief: string },
     model: ReviewRequest['model']
   ): Promise<void> {
     const { conversations } = this.deps
+    const reviewerId = reviewer.id
     try {
-      if (model) {
-        await conversations.ready(reviewerId)
-        await applyModel(conversations, reviewerId, model)
-      }
-      await conversations.prompt(reviewerId, brief)
+      await conversations.ready(reviewerId)
+      if (model) await applyModel(conversations, reviewerId, model)
+      const { role, asked, brief } = opening
+      const first = await roleFirstMessage(
+        conversations,
+        reviewer,
+        { ...role, prompt: `${role.prompt.trim()}\n\n${brief}` },
+        asked
+      )
+      const watch = this.watching.get(reviewerId)
+      if (watch) watch.opening = first
+      await conversations.prompt(reviewerId, first)
     } catch (error) {
-      const reviewer = this.deps.children.summary(reviewerId)
-      const authorId = reviewer.reviewOf?.id
-      if (!authorId) return
-      const current = this.current(authorId, reviewerId) ?? this.fallback(reviewer)
-      conversations.post(authorId, {
-        type: 'review',
-        review: { ...current, status: 'failed', error: messageOf(error) }
+      this.failed(reviewerId, messageOf(error))
+    }
+  }
+
+  /** Le premier message n'a pas pu partir : la carte de l'auteur et celle de la mère le disent. */
+  private failed(reviewerId: string, message: string): void {
+    let reviewer: ConversationSummary
+    try {
+      reviewer = this.deps.children.summary(reviewerId)
+    } catch {
+      return // Relecteur supprimé entre-temps.
+    }
+    const authorId = reviewer.reviewOf?.id
+    if (!authorId) return
+    const current = this.current(authorId, reviewerId) ?? this.fallback(reviewer)
+    this.post(reviewer, authorId, { ...current, status: 'failed', error: message })
+    const motherId = reviewer.startedFrom?.id
+    if (motherId && current.authorId) {
+      this.deps.conversations.post(motherId, {
+        type: 'child-report',
+        report: childReport(reviewer, [], { error: message })
       })
     }
+  }
+
+  /**
+   * « Relancer » un relecteur dont le premier message n'est jamais parti (fiche 263) : le même
+   * premier message (rôle et consigne), sinon la consigne refaite sans les points à surveiller
+   * (perdus au redémarrage) ; `asked` : la demande de la bulle.
+   */
+  async relaunch(reviewerId: string, asked: string): Promise<void> {
+    const reviewer = this.deps.children.summary(reviewerId)
+    const author = reviewer.reviewOf ? this.deps.children.summary(reviewer.reviewOf.id) : undefined
+    if (!author) throw new Error(t('review.error.notReviewer'))
+    const watch = this.watching.get(reviewerId) ?? { reported: false }
+    const fingerprint = await this.fingerprint(author.workspace).catch(() => undefined)
+    this.watching.set(reviewerId, {
+      ...watch,
+      ...(fingerprint ? { fingerprint } : {}),
+      reported: false,
+      first: true
+    })
+    if (watch.opening) {
+      void this.deps.conversations
+        .prompt(reviewerId, watch.opening)
+        .catch((error: unknown) => this.failed(reviewerId, messageOf(error)))
+      return
+    }
+    const target = await this.target(author)
+    const role = this.reviewerRole(reviewer.startedFrom?.id ?? author.id)
+    void this.launch(reviewer, { role, asked, brief: reviewBrief(target) }, undefined)
   }
 
   /** Ce qui est relu : la branche d'un worktree depuis son départ, sinon le non commité. */
@@ -367,6 +553,27 @@ export class ChildReviews {
 }
 
 const unique = (files: string[]) => [...new Set(files)]
+
+/**
+ * La demande au Code reviewer, telle que la bulle la montre et que son premier message la porte
+ * (fiche 265, maquette G) : « Relis la branche bobine/rayons-a3f2 », « Relis les modifications non
+ * commitées (2 fichiers). », et les points à surveiller.
+ */
+export function askText(
+  author: Pick<ConversationSummary, 'title' | 'branch' | 'startedFrom'>,
+  target: Pick<ReviewTarget, 'scope' | 'files' | 'baseBranch'>,
+  focus?: string
+): string {
+  const count = target.files.length
+  const what =
+    target.scope === 'branch' && author.branch
+      ? t('review.ask.branch', { branch: author.branch, count })
+      : author.startedFrom
+        ? t('review.ask.uncommittedOf', { title: author.title, count })
+        : t('review.ask.uncommitted', { count })
+  const points = focus?.trim()
+  return points ? `${what}\n\n${t('review.ask.focus', { focus: points })}` : what
+}
 
 /** Texte de l'agent depuis le dernier message reçu (tout le tour, coupé par ses outils). */
 export function turnReply(items: readonly TranscriptItem[]): string {

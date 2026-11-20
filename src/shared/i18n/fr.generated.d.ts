@@ -4447,19 +4447,21 @@ export type FrResources = {
       readonly reviewer: 'Une relecture ne se fait pas relire.'
       readonly nothing: 'Rien à relire : aucune modification dans ce dossier.'
       readonly notReviewer: 'Cette conversation n’est pas une relecture.'
+      readonly noRole: 'Le rôle Code reviewer est introuvable.'
     }
     readonly title: 'Relecture : {{title}}'
     readonly dialog: {
       readonly title: 'Faire relire « {{title}} »'
-      readonly description: 'Une conversation fille relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. Ses remarques arrivent sur les lignes du diff ; vous choisissez ensuite celles à renvoyer.'
+      readonly description: 'Le rôle Code reviewer relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. La demande et sa réponse s’affichent dans le fil, avec ses remarques, qui arrivent aussi sur les lignes du diff.'
       readonly scopeBranch: 'Relu : tout le travail de la branche {{branch}}, commits et modifications non commitées.'
       readonly scopeUncommitted: 'Relu : les modifications non commitées du dossier.'
       readonly focus: 'Points à surveiller (facultatif)'
       readonly placeholder: 'Par exemple : la gestion des erreurs réseau'
       readonly suggested: 'Agent et modèle de la conversation relue, suggérés : à confirmer ou changer.'
-      readonly cost: 'La relecture est une conversation de plus : elle coûte comme telle. Son coût s’affiche sur sa carte et sur sa ligne.'
+      readonly cost: 'La relecture est un travail de plus : elle coûte comme une conversation. Son coût s’affiche sur sa carte.'
       readonly launch: 'Lancer la relecture'
       readonly launching: 'Lancement…'
+      readonly suggestedOther: 'Un autre modèle que celui de la conversation relue est proposé : un regard neuf trouve davantage. À confirmer ou changer.'
     }
     readonly card: {
       readonly running: 'Relecture en cours par {{agent}}'
@@ -4498,6 +4500,16 @@ export type FrResources = {
     readonly export_one: 'Relecture « {{title}} » : {{count}} remarque'
     readonly export_many: 'Relecture « {{title}} » : {{count}} remarques'
     readonly export_other: 'Relecture « {{title}} » : {{count}} remarques'
+    readonly ask: {
+      readonly branch: 'Relis la branche {{branch}}.'
+      readonly uncommitted_one: 'Relis les modifications non commitées ({{count}} fichier).'
+      readonly uncommitted_many: 'Relis les modifications non commitées ({{count}} fichiers).'
+      readonly uncommitted_other: 'Relis les modifications non commitées ({{count}} fichiers).'
+      readonly uncommittedOf_one: 'Relis les modifications non commitées de « {{title}} » ({{count}} fichier).'
+      readonly uncommittedOf_many: 'Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).'
+      readonly uncommittedOf_other: 'Relis les modifications non commitées de « {{title}} » ({{count}} fichiers).'
+      readonly focus: 'Points à surveiller : {{focus}}'
+    }
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'
@@ -4641,6 +4653,7 @@ export type FrResources = {
       readonly stopped: 'arrêté'
       readonly error: 'en erreur'
       readonly gone: 'conversation supprimée'
+      readonly clean: 'rien à signaler · {{time}}'
     }
     readonly elapsed: 'Temps écoulé : {{time}}'
     readonly waitingLine: 'Attend votre réponse dans sa conversation.'
@@ -4680,6 +4693,17 @@ export type FrResources = {
     readonly dirty_one: '{{count}} modification non commitée'
     readonly dirty_other: '{{count}} modifications non commitées'
     readonly dirty_many: '{{count}} modifications non commitées'
+    readonly fix: 'Demander à {{agent}} de corriger'
+    readonly fixMessage: 'Corrige les remarques de {{role}}.'
+    readonly fixMessageWork: 'Fais corriger par « {{work}} » les remarques de {{role}} sur sa branche.'
+    readonly showDiff: 'Voir sur le diff'
+    readonly readOnlyBranch: 'lecture seule · dans la branche relue'
+    readonly findings: {
+      readonly label: 'Remarques de {{role}}'
+      readonly where: 'Voir {{place}} sur le diff'
+      readonly clean: 'Rien à signaler.'
+      readonly reply: 'Sa réponse entière'
+    }
   }
   readonly workCue: {
     readonly replied: 'a répondu'

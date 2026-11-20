@@ -583,8 +583,11 @@ export class ChildConversations {
     const conversations = this.conversations.state().conversations
     if (event.type === 'turn-end' || event.type === 'turn-error') {
       const child = conversations.find((c) => c.id === conversationId)
-      // Un relecteur (fiche 177) rend ses remarques à la conversation relue, pas de compte rendu.
-      const motherId = child?.reviewOf ? undefined : child?.startedFrom?.id
+      // Un relecteur d'avant (fiche 177) rend ses remarques à la conversation relue, sans compte
+      // rendu ; le Code reviewer (fiche 265) a sa carte-réponse, et sa réponse comme tout travail.
+      const parentId = child?.startedFrom?.id
+      const motherId =
+        child?.reviewOf && parentId && !this.hasCard(parentId, child.id) ? undefined : parentId
       if (child && motherId) {
         const { items, usage } = this.conversations.view(conversationId).transcript
         const end =
@@ -648,11 +651,11 @@ export class ChildConversations {
     if (!body) throw new Error(t('children.error.emptyPrompt'))
     const mother = this.conversations.state().conversations.find((c) => c.id === motherId)
     const child = this.conversations.state().conversations.find((c) => c.id === childId)
+    // Un relecteur d'avant la fiche 265 n'a pas de carte : refusé comme un travail sans carte.
     if (
       !mother ||
       !child ||
       child.startedFrom?.id !== motherId ||
-      child.reviewOf ||
       !child.role ||
       !this.hasCard(motherId, childId)
     ) {
@@ -662,9 +665,10 @@ export class ChildConversations {
     const { mcp: _mcp, ...role } = child.role
     const fresh = !this.conversations.view(childId).transcript.items.some((i) => i.kind === 'user')
     // Le rôle d'aujourd'hui, avec la lecture seule du lancement (« Juste un avis », fiche 262).
-    const snapshot = fresh
-      ? { ...this.findRole(motherId, role.name), ...(role.readOnly ? { readOnly: true } : {}) }
-      : undefined
+    const snapshot =
+      fresh && !child.reviewOf
+        ? { ...this.findRole(motherId, role.name), ...(role.readOnly ? { readOnly: true } : {}) }
+        : undefined
     this.conversations.post(motherId, {
       type: 'role-request',
       request: {
@@ -676,6 +680,18 @@ export class ChildConversations {
       }
     })
     if (snapshot) return this.relaunch(child, body, snapshot)
+    // Code reviewer qui n'a pas démarré (fiche 265) : son premier message, consigne de relecture
+    // comprise ; jamais la demande seule.
+    if (fresh && child.reviewOf) {
+      void this.reviews.relaunch(childId, body).catch((error: unknown) => {
+        this.conversations.post(childId, {
+          type: 'notice',
+          level: 'error',
+          message: { key: 'children.notice.messageFailed', params: { error: messageOf(error) } }
+        })
+      })
+      return 'sent'
+    }
     const fail = () =>
       this.conversations.post(motherId, {
         type: 'notice',

@@ -38,6 +38,14 @@ interface Turn {
   shared: boolean
 }
 
+/**
+ * Fille en lecture seule suivie ici : un rôle de conseil. Le Code reviewer de « Faire relire »
+ * (fiche 265) a sa propre empreinte, dite sur sa carte (`children-review.ts`) : pas deux avis.
+ */
+function watched(child: ConversationSummary | undefined): child is ConversationSummary {
+  return !!child?.role?.readOnly && !!child.startedFrom && !child.reviewOf
+}
+
 /** Genres d'outils ACP qui peuvent changer le dossier. */
 const WRITING_KINDS: ReadonlySet<string> = new Set(['edit', 'delete', 'move', 'execute'])
 
@@ -82,7 +90,7 @@ export class ReadOnlyWatch {
    */
   async prepare(id: string): Promise<void> {
     const child = this.find(id)
-    if (!child?.role?.readOnly || !child.startedFrom) return
+    if (!watched(child)) return
     const { workspace } = child
     const fingerprint = await folderFingerprint(this.deps.run, workspace).catch(
       (error: unknown) => {
@@ -120,7 +128,7 @@ export class ReadOnlyWatch {
       return
     }
     const child = this.find(id)
-    if (!child?.role?.readOnly || !child.startedFrom) return
+    if (!watched(child)) return
     const { workspace } = child
     this.turns.set(id, {
       workspace,

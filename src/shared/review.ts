@@ -57,6 +57,13 @@ export type ReviewScope = 'branch' | 'uncommitted'
 export interface Review {
   /** Conversation du relecteur. */
   reviewId: string
+  /**
+   * Conversation relue (fiche 265). La carte est posée dans son fil et, si la relecture a été
+   * demandée ailleurs (fil de sa mère), aussi dans celui-là : seules ses propres remarques
+   * deviennent des remarques de diff d'une conversation. Absente des relectures d'avant (fiche 177),
+   * toujours posées dans le fil de la conversation relue.
+   */
+  authorId?: string
   /** Titre du relecteur, agent choisi. */
   title: string
   profileLabel: string
@@ -222,11 +229,34 @@ export function findingNote(finding: ReviewFinding): DiffNote {
   }
 }
 
-/** Remarques de toutes les relectures d'un fil, dans l'ordre. */
+/**
+ * Remarques de toutes les relectures d'un fil, dans l'ordre. `conversationId` : seulement celles
+ * qui relisent cette conversation (fiche 265 : une relecture d'un travail est aussi posée dans le
+ * fil de sa mère, où ses remarques ne sont pas des remarques de diff).
+ */
 export function reviewFindings(
-  items: readonly { kind: string; findings?: ReviewFinding[] }[]
+  items: readonly { kind: string; findings?: ReviewFinding[]; authorId?: string }[],
+  conversationId?: string
 ): ReviewFinding[] {
-  return items.flatMap((item) => (item.kind === 'review' ? (item.findings ?? []) : []))
+  return items.flatMap((item) =>
+    item.kind === 'review' &&
+    (!conversationId || item.authorId === undefined || item.authorId === conversationId)
+      ? (item.findings ?? [])
+      : []
+  )
+}
+
+/** Où se lit une remarque : « src/main.ts:42 », « src/main.ts:42-48 ». */
+export const findingPlace = (finding: Pick<ReviewFinding, 'file' | 'line' | 'endLine'>): string =>
+  `${finding.file}:${finding.line}${finding.endLine ? `-${finding.endLine}` : ''}`
+
+/** Remarques rangées par gravité, haute d'abord, dans l'ordre du relecteur sinon. */
+export function findingsBySeverity(findings: readonly ReviewFinding[]): ReviewFinding[] {
+  const rank = (f: ReviewFinding) => REVIEW_SEVERITIES.indexOf(f.severity)
+  return findings
+    .map((finding, index) => ({ finding, index }))
+    .sort((a, b) => rank(a.finding) - rank(b.finding) || a.index - b.index)
+    .map((entry) => entry.finding)
 }
 
 /** Carte d'une relecture dans le fil : un seul élément par `reviewId`, remplacé à chaque étape. */
