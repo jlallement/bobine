@@ -20,12 +20,20 @@ export function CollapsedSidebarButtons({
     <>
       {!platformFeatures().appMenu && <AppMenuButton />}
       <Tip label={t('app.showSidebar')} command="toggle-sidebar">
-        <button className="icon-button no-drag" onClick={onShowSidebar}>
+        <button
+          className="icon-button no-drag"
+          onClick={onShowSidebar}
+          aria-label={t('app.showSidebar')}
+        >
           <PanelLeft size={18} />
         </button>
       </Tip>
       <Tip label={t('app.newConversation')} command="new-conversation">
-        <button className="icon-button no-drag" onClick={onNew}>
+        <button
+          className="icon-button no-drag"
+          onClick={onNew}
+          aria-label={t('app.newConversation')}
+        >
           <SquarePen size={17} />
         </button>
       </Tip>
