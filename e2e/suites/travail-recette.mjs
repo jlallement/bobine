@@ -49,8 +49,16 @@ async function quotaRun(ui) {
     `quota épuisé : la carte « Modèle refusé » et sa raison, jamais l’erreur brute (${card.replace(/\n/g, ' · ')})`
   )
   check(
-    (await ui.ev(`${ui.$('auth-choose-model')}?.innerText`)) === L('blocker.auth.chooseModel'),
-    '« Choisir un autre modèle » proposé'
+    (await ui.ev(`${ui.$('auth-choose-model')}?.innerText`)) === L('blocker.auth.chooseModel') &&
+      (await ui.ev(`${ui.$('auth-choose-model')}.classList.contains('primary')`)) &&
+      !(await ui.ev(`${ui.$('auth-api-key')}?.classList.contains('primary') ?? false`)),
+    '« Choisir un autre modèle » en principal, la clé d’API en second'
+  )
+  check(
+    !(await ui.ev(
+      `document.querySelector('.scroll').innerText.includes(${JSON.stringify(L('agentHost.modelQuota', { model: 'Factice rapide', agent: L('profiles.mock.label') }).slice(0, 30))})`
+    )),
+    'pas d’avis en double dans le fil tant que la carte est là'
   )
   await ui.shot('267-quota-carte')
   await ui.click(ui.$('auth-choose-model'))
@@ -90,7 +98,10 @@ async function workRun(ui) {
 
   // N4 : la commande de dix lignes, sur une ligne, l'entière en infobulle.
   const live = `${card}.querySelector('[data-testid=work-live-text]')`
-  await ui.waitFor(`${live}?.innerText.includes('node - <<')`, 30000)
+  await ui.waitFor(
+    `${live}?.innerText.includes(${JSON.stringify(L('workCard.script', { program: 'node', count: 9 }))})`,
+    30000
+  )
   const shown = await ui.ev(`(() => {
     const live = ${live}
     return {
@@ -119,6 +130,14 @@ async function workRun(ui) {
   await ui.enter()
   const blocked = `document.querySelector('[data-testid=work-card][data-role=security-expert]')`
   await ui.waitFor(`!!${blocked}?.querySelector('[data-testid=work-refused-text]')`, 30000)
+  check(
+    (await ui.ev(`${blocked}.querySelector('[data-testid=work-state-blocked]')?.innerText`)) ===
+      L('workCard.cue.quota') &&
+      (await ui.ev(
+        `document.querySelector('[data-testid=history-item] [data-reason=blocked]') !== null`
+      )),
+    'en-tête « quota épuisé » et barre latérale « bloqué » (pas la main d’un accord)'
+  )
   const said = await ui.ev(`${blocked}.innerText`)
   check(
     said.includes(L('workCard.modelQuota', { model: 'Factice rapide' })) &&

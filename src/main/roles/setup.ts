@@ -20,7 +20,7 @@ export function appRoles(
   settings: Pick<SettingsStore, 'rolesOff' | 'setRoleEnabled'>,
   /** Conversations, et leurs filles (`@rôle` de la saisie, phase 3B) : créées après. */
   live: () => {
-    conversations: Pick<ConversationManager, 'state' | 'keepDraft'>
+    conversations: Pick<ConversationManager, 'state' | 'keepDraft' | 'view'>
     children?: ChildConversations | undefined
   },
   /** Profils et dossier personnel de leurs fichiers (jamais les vrais dans les essais). */
@@ -64,6 +64,7 @@ export function appRoles(
       children: () => live().children,
       exports,
       keepDraft: (id, text) => live().conversations.keepDraft(id, text),
+      workState: (id) => live().conversations.view(id, true).snapshot,
       inDiscussion: (id) =>
         live()
           .conversations.state()

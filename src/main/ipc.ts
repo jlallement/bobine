@@ -117,7 +117,6 @@ export type ConversationController = Pick<
   ConversationManager,
   | 'state'
   | 'view'
-  | 'snapshotOf'
   | 'subagentWork'
   | 'rules'
   | 'readDocument'
@@ -474,7 +473,6 @@ export function createHandlers(
     ...diagnosticsHandlers(deps),
     'conversations:get': () => c.state(),
     'conversation:view': (id) => c.view(str(id, 'id')),
-    'conversation:snapshot': (id) => c.snapshotOf(str(id, 'id')),
     'conversation:select': (id) => c.select(str(id, 'id')),
     'conversation:create': (request) => c.create(parseConfigureRequest(request)),
     'conversation:rename': (id, title) => {

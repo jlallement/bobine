@@ -6,6 +6,7 @@
  * Le projet est désigné par une conversation (`conversationId`), jamais par un chemin venu du
  * renderer : le main en déduit le dossier (celui de la mère pour une fille).
  */
+import type { AgentSnapshot } from './agent'
 import type {
   Role,
   RoleDefinition,
@@ -120,6 +121,11 @@ export interface RoleExportIpcContract {
   'roles:exportOrphans': { args: [conversationId?: string]; result: RoleExportStatus[] }
   /** Retire l'entrée de Bobine ; `force` : même modifiée à la main (après confirmation). */
   'roles:exportRemove': { args: [key: string, force?: boolean]; result: RoleExportRemoveResult }
+  /**
+   * L'état de l'agent d'un travail, sans son fil (fiche 267, revue QA) : sa carte dit un modèle
+   * refusé et propose d'en choisir un autre.
+   */
+  'roles:workState': { args: [childId: string]; result: AgentSnapshot | null }
 }
 
 export const ROLES_CHANNELS = [
@@ -134,7 +140,8 @@ export const ROLES_CHANNELS = [
   'roles:export',
   'roles:exportStatus',
   'roles:exportOrphans',
-  'roles:exportRemove'
+  'roles:exportRemove',
+  'roles:workState'
 ] as const
 
 export type RolesChannel = (typeof ROLES_CHANNELS)[number]

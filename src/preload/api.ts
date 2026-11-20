@@ -276,7 +276,6 @@ export function createApi(
     conversations: {
       get: () => invoke('conversations:get'),
       view: (id: string) => invoke('conversation:view', id),
-      snapshot: (id: string) => invoke('conversation:snapshot', id),
       select: (id: string) => invoke('conversation:select', id),
       create: (request: AgentConfigureRequest = {}) => invoke('conversation:create', request),
       rename: (id: string, title: string) => invoke('conversation:rename', id, title),
@@ -542,6 +541,7 @@ export function createApi(
         invoke('roles:startChildren', conversationId, request),
       reply: (conversationId: string, request: IpcArgs<'roles:reply'>[1]) =>
         invoke('roles:reply', conversationId, request),
+      workState: (childId: string) => invoke('roles:workState', childId),
       /** « Installer dans… » un agent (phase 4, ADR-0047). */
       exportPreview: (role: IpcArgs<'roles:exportPreview'>[0], profileId: string) =>
         invoke('roles:exportPreview', role, profileId),

@@ -439,6 +439,7 @@ export const SUITES = [
       ...TOOLS,
       `${C}thread/WorkingIndicator.tsx`,
       `${C}thread/TerminalView.tsx`,
+      'src/mock-agent/scenarios-roles.mts',
       'src/shared/activity.ts',
       'src/shared/json-output.ts'
     ]

@@ -3,6 +3,7 @@
  * vérifiés ici ; le dossier du projet est déduit de la conversation par le main.
  */
 import { t } from 'i18next'
+import type { AgentSnapshot } from '@shared/agent'
 import type { IpcHandlers } from '@shared/ipc'
 import type { RoleFileScope, RoleScope } from '@shared/roles'
 import type { RolesChannel } from '@shared/roles-ipc'
@@ -31,6 +32,8 @@ export interface RolesIpcDeps {
   keepDraft?: (conversationId: string, text: string) => void
   /** Conversation de l'espace Discussion (fiche 224) : pas de rôles, `@rôle` refusé. */
   inDiscussion?: (conversationId: string) => boolean
+  /** L'état de l'agent d'une conversation, sans son fil (fiche 267) ; absent : `null`. */
+  workState?: (conversationId: string) => AgentSnapshot | null
 }
 
 const SCOPES: readonly RoleScope[] = ['builtin', 'user', 'project']
@@ -108,6 +111,11 @@ export function rolesHandlers(deps: RolesIpcDeps | undefined): Pick<IpcHandlers,
       const parsed = parseRolesStartRequest(request)
       const keep = available().keepDraft
       return startRoleChildren(children, id, parsed, keep ? () => keep(id, parsed.text) : undefined)
+    },
+    'roles:workState': (childId) => {
+      const id = optionalId(childId)
+      if (!id) throw new Error('Paramètre invalide : childId')
+      return available().workState?.(id) ?? null
     },
     'roles:reply': (conversationId, request) => {
       const children = available().children?.()

@@ -135,6 +135,12 @@
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  /* Pas de barre permanente sous la grille (fiche 267, revue UX) : elle paraît au survol. */
+  scrollbar-width: none;
+}
+.activity-heat-scroll:hover,
+.activity-heat-scroll:focus-within {
+  scrollbar-width: thin;
 }
 
 .activity-heat-inner {

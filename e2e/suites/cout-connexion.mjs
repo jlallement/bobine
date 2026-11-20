@@ -66,6 +66,22 @@ export async function coutConnexionSuite(scheme) {
           `Mon activité : la tuile compte 2 échanges sans coût communiqué, comme le tableau (${tile.replace(/\n/g, ' · ')} | ${row.replace(/\n/g, ' · ')})`
         )
         await ui.shot('267-activite-cout-inconnu')
+        // 720 px (revue UX) : pas de barre de défilement permanente sous la grille, rien ne déborde.
+        await ui.viewport(720, 760)
+        const narrow = await ui.ev(`(() => {
+          const scroller = document.querySelector('.activity-heat-scroll')
+          const page = document.querySelector('[data-testid=activity-title]')?.closest('.scroll') ?? document.body
+          return {
+            bar: getComputedStyle(scroller).scrollbarWidth,
+            overflow: page.scrollWidth - page.clientWidth
+          }
+        })()`)
+        check(
+          narrow.bar === 'none' && narrow.overflow <= 0,
+          `Mon activité à 720 px : pas de barre permanente, rien ne déborde (${JSON.stringify(narrow)})`
+        )
+        await ui.shot('267-activite-720')
+        await ui.viewport()
       },
       undefined,
       'cout-nul-payant',

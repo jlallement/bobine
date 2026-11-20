@@ -28,6 +28,8 @@ export async function relectureCommitsSuite(scheme) {
     }).trim()
   writeFileSync(join(workspace, 'README.md'), '# Courses\n')
   git(['init', '-q', '-b', 'main'])
+  // L'utilisateur local : ses commits seuls sont ceux de la conversation (revue QA).
+  git(['config', 'user.email', 'e2e@example.invalid'])
   git(['add', '.'])
   git(['commit', '-q', '-m', 'init'], yesterday)
   try {
@@ -79,15 +81,20 @@ async function run(ui, { workspace, git }) {
   await ui.enter()
   await ui.waitFor(`${card}?.dataset.state === 'replied'`, 30000)
   await ui.waitFor(`${card}.dataset.findings === '2'`, 30000)
-  const scope = await ui.ev(`${card}.querySelector('[data-testid=work-review-scope]')?.innerText`)
-  const expected = L('review.read.commits', {
-    commits: L('review.scope.commits', { count: 4 }),
-    files: L('review.card.files', { count: 3 }),
-    range: L('review.scope.range', { from: init.slice(0, 7), to: head.slice(0, 7) })
+  const said = await ui.ev(`(() => ({
+    line: ${card}.querySelector('[data-testid=work-review-scope]')?.innerText ?? '',
+    range: ${card}.querySelector('[data-testid=work-review-range]')?.innerText ?? ''
+  }))()`)
+  const expected = L('review.read.line', {
+    what: L('review.what.conversation', {
+      count: 4,
+      files: L('review.card.files', { count: 3 })
+    })
   })
+  const range = L('review.scope.range', { from: init.slice(0, 7), to: head.slice(0, 7) })
   check(
-    scope === expected,
-    `la carte dit ce qui a été relu : « ${scope} » (attendu « ${expected} »)`
+    said.line.startsWith(expected) && said.range === range,
+    `la carte dit ce qui a été relu, d'où : « ${said.line} » (attendu « ${expected} », ${range})`
   )
   await ui.reveal(card)
   await ui.shot('267-relecture-portee')
@@ -144,6 +151,56 @@ async function run(ui, { workspace, git }) {
   await noSideScroll(ui, 'fenêtre de 900 px')
   await ui.shot('267-relecture-900')
   await ui.viewport()
+  await ui.closePanel()
+
+  // La suite, depuis la dernière relecture ; rien à signaler, et sur quoi (revue UX).
+  git(['checkout', '--', 'src/app.js'])
+  const reviewers = `[...document.querySelectorAll('[data-testid=work-card][data-role=code-reviewer]')]`
+  const last = `${reviewers}.at(-1)`
+  const ask = async (text, count) => {
+    await ui.waitFor(`${reviewers}.every((c) => c.dataset.state === 'replied')`, 30000)
+    await ui.ev(`${input}.focus()`)
+    await ui.type(text)
+    await ui.press('Escape')
+    await ui.waitFor(`!!${ui.$('role-destination')}`)
+    await ui.enter()
+    await ui.waitFor(
+      `${reviewers}.length === ${count} && ${last}.dataset.state === 'replied'`,
+      30000
+    )
+  }
+  commit('README.md', '# Courses\n\nListe partagée.\n', 'docs: readme')
+  await ask('@code-reviewer Relis la suite.', 2)
+  const clean = await ui.ev(
+    `${last}.querySelector('[data-testid=work-findings-clean]')?.innerText ?? ''`
+  )
+  check(
+    clean.startsWith(
+      L('review.read.clean', {
+        what: L('review.what.reviewed', { count: 1, files: L('review.card.files', { count: 1 }) })
+      })
+    ),
+    `rien à signaler, et sur quoi : depuis la dernière relecture (« ${clean} »)`
+  )
+  await ui.reveal(last)
+  await ui.shot('267-relecture-rien-a-signaler')
+
+  // Une remarque sur un fichier hors de ce qui a été relu : ses lignes citées, telles qu'elles sont.
+  commit('src/notes.md', 'Notes\n', 'docs: notes')
+  await ask('@code-reviewer Regarde aussi src/app.js', 3)
+  await ui.waitFor(`${last}.dataset.findings === '2'`, 30000)
+  await ui.click(
+    `${last}.querySelector('[data-testid=work-finding] [data-testid=work-finding-where]')`
+  )
+  await ui.waitFor(`!!document.querySelector('[data-testid=review-cited] tr.diff-focus')`, 20000)
+  check(
+    (
+      await ui.ev(`document.querySelector('[data-testid=review-file-unchanged]').innerText`)
+    ).includes(L('review.fileUnchanged')),
+    'fichier hors de la portée relue : dit, avec ses lignes citées mises en avant'
+  )
+  await noSideScroll(ui, 'lignes citées')
+  await ui.shot('267-relecture-hors-portee')
 }
 
 /**

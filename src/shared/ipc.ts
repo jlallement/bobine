@@ -104,7 +104,6 @@ import type {
   ConversationsState,
   ConversationSummary,
   ConversationView,
-  AgentSnapshot,
   DeleteOptions,
   QueuedMessage,
   PromptRequest,
@@ -294,8 +293,6 @@ export interface IpcInvokeContract
   'conversations:get': { args: []; result: ConversationsState }
   /** Contenu d'une conversation, sans changer la conversation active. */
   'conversation:view': { args: [id: string]; result: ConversationView }
-  /** État de l'agent d'une conversation, sans son fil (fiche 267). */
-  'conversation:snapshot': { args: [id: string]; result: AgentSnapshot | null }
   /** Affiche une conversation et (re)démarre son agent si besoin. */
   'conversation:select': { args: [id: string]; result: ConversationView }
   /** Nouvelle conversation (éventuellement avec un autre agent ou dossier). */
@@ -962,7 +959,6 @@ export const IPC_CHANNELS = [
   'sound:preview',
   'conversations:get',
   'conversation:view',
-  'conversation:snapshot',
   'conversation:select',
   'conversation:create',
   'conversation:rename',

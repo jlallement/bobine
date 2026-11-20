@@ -21,7 +21,11 @@ describe('textes d’un message refusé faute de connexion (fiche 210)', () => {
     const model = { id: 'f', name: 'F', unavailable: true as const, quota: true as const }
     expect(
       refusedTurnText(
-        { ...atTurn, model, apiKey: { env: 'K', label: 'Clé', stored: false, fromEnvironment: false } } as AgentBlocker,
+        {
+          ...atTurn,
+          model,
+          apiKey: { env: 'K', label: 'Clé', stored: false, fromEnvironment: false }
+        } as AgentBlocker,
         'placeholder'
       )
     ).toBe('Choisissez un autre modèle ou ajoutez une clé d’API')

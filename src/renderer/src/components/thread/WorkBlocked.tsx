@@ -50,8 +50,8 @@ export function useWorkRefusedModel(childId: string | undefined): Refused | unde
       set(event.snapshot)
     })
     // L'état de son agent seulement, pas tout son fil (revue QA).
-    window.api.conversations
-      ?.snapshot?.(childId)
+    window.api.roles
+      ?.workState?.(childId)
       .then((snapshot) => !fresher && set(snapshot))
       .catch(() => !fresher && set(undefined))
     return () => {

@@ -209,6 +209,24 @@ async function mainRun(ui, turnLock) {
     `ligne « Partira à… » : lecture seule, dans ce dossier (${line})`
   )
   await ui.shot('roles-travail-3-jeton')
+  // Le rôle sans demande (fiche 267, N7) : l'aide en gris, jamais la couleur d'alerte.
+  const typed = await ui.ev(`${input}.value`)
+  await ui.ev(`(() => { const i = ${input}; i.setSelectionRange(0, i.value.length) })()`)
+  await ui.press('Delete')
+  await ui.waitFor(`!!${ui.$('role-destination-empty')}`)
+  const hint = await ui.ev(`(() => {
+    const el = ${ui.$('role-destination-empty')}
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--muted)'
+    el.appendChild(probe)
+    const muted = getComputedStyle(probe).color
+    probe.remove()
+    return { color: getComputedStyle(el).color, muted }
+  })()`)
+  check(hint.color === hint.muted, `rôle sans demande : l’aide en gris (${JSON.stringify(hint)})`)
+  await ui.shot('roles-travail-3a-jeton-vide')
+  await ui.type(typed)
+  await ui.waitFor(`!${ui.$('role-destination-empty')}`)
   // Retour arrière en tête de la saisie : le jeton part d'un coup ; on le remet.
   await ui.ev(`${input}.setSelectionRange(0, 0)`)
   await ui.press('Backspace')

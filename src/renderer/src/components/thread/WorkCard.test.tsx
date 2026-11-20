@@ -467,102 +467,85 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       }
     })
     const views = vi.fn(async () => snapshot(true))
-    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
-    ;(window.api as unknown as { conversations: unknown }).conversations = { snapshot: views }
-    try {
-      view(
-        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
-        info([
-          child('a', ux, {
-            status: 'needs-action',
-            modelRefused: { name: 'Factice rapide', quota: true }
-          })
-        ])
-      )
-      const text = await screen.findByTestId('work-refused-text')
-      expect(views).toHaveBeenCalledWith('a')
-      expect(plain(text.textContent)).toBe(
-        'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.Le message repartira avec le modèle choisi.'
-      )
-      // L'en-tête dit « quota épuisé » (alerte), pas « attend votre accord ».
-      expect(screen.getByTestId('work-state-blocked').textContent).toBe('quota épuisé')
-      fireEvent.click(screen.getByTestId('work-choose-model'))
-      fireEvent.click(screen.getByTestId('control-model-factice-precis'))
-      expect(setControl).toHaveBeenCalledWith('a', 'model', 'factice-precis')
-      // Un échec du changement de modèle est dit dans la carte (revue UX, 13).
-      setControl.mockRejectedValueOnce(new Error('agent arrêté'))
-      fireEvent.click(screen.getByTestId('work-choose-model'))
-      fireEvent.click(screen.getByTestId('control-model-factice-precis'))
-      expect((await screen.findByTestId('work-refused-error')).textContent).toContain(
-        'agent arrêté'
-      )
-      // Le travail repart : la carte suit son instantané, plus de refus.
-      act(() =>
-        emit('a', {
-          type: 'status',
-          snapshot: { ...snapshot(true), status: 'busy', blocker: undefined }
-        } as never)
-      )
-      expect(screen.queryByTestId('work-refused-text')).toBeNull()
-    } finally {
-      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
-    }
+    ;(window.api as unknown as { roles: unknown }).roles = { workState: views }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([
+        child('a', ux, {
+          status: 'needs-action',
+          modelRefused: { name: 'Factice rapide', quota: true }
+        })
+      ])
+    )
+    const text = await screen.findByTestId('work-refused-text')
+    expect(views).toHaveBeenCalledWith('a')
+    expect(plain(text.textContent)).toBe(
+      'Le modèle Factice rapide n’a pas répondu : son quota gratuit est épuisé.Le message repartira avec le modèle choisi.'
+    )
+    // L'en-tête dit « quota épuisé » (alerte), pas « attend votre accord ».
+    expect(screen.getByTestId('work-state-blocked').textContent).toBe('quota épuisé')
+    fireEvent.click(screen.getByTestId('work-choose-model'))
+    fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+    expect(setControl).toHaveBeenCalledWith('a', 'model', 'factice-precis')
+    // Un échec du changement de modèle est dit dans la carte (revue UX, 13).
+    setControl.mockRejectedValueOnce(new Error('agent arrêté'))
+    fireEvent.click(screen.getByTestId('work-choose-model'))
+    fireEvent.click(screen.getByTestId('control-model-factice-precis'))
+    expect((await screen.findByTestId('work-refused-error')).textContent).toContain('agent arrêté')
+    // Le travail repart : la carte suit son instantané, plus de refus.
+    act(() =>
+      emit('a', {
+        type: 'status',
+        snapshot: { ...snapshot(true), status: 'busy', blocker: undefined }
+      } as never)
+    )
+    expect(screen.queryByTestId('work-refused-text')).toBeNull()
   })
 
   it('fiche 267, revue QA : une lecture de l’état plus ancienne qu’un statut reçu est jetée', async () => {
     fakeAgent()
     let answer: (value: unknown) => void = () => {}
-    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
-    ;(window.api as unknown as { conversations: unknown }).conversations = {
-      snapshot: () => new Promise((resolve) => (answer = resolve))
+    ;(window.api as unknown as { roles: unknown }).roles = {
+      workState: () => new Promise((resolve) => (answer = resolve))
     }
-    try {
-      view(
-        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
-        info([child('a', ux, { status: 'needs-action' })])
-      )
-      // Le refus est déjà levé (statut reçu), puis la lecture d'avant arrive avec l'ancien refus.
-      act(() =>
-        emit('a', { type: 'status', snapshot: { status: 'needs-action', controls: [] } } as never)
-      )
-      await act(async () =>
-        answer({
-          status: 'needs-action',
-          controls: [],
-          blocker: {
-            kind: 'auth',
-            methods: [],
-            authenticating: false,
-            atTurn: true,
-            model: { id: 'f', name: 'Factice rapide', quota: true }
-          }
-        })
-      )
-      expect(screen.queryByTestId('work-refused-text')).toBeNull()
-    } finally {
-      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
-    }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'needs-action' })])
+    )
+    // Le refus est déjà levé (statut reçu), puis la lecture d'avant arrive avec l'ancien refus.
+    act(() =>
+      emit('a', { type: 'status', snapshot: { status: 'needs-action', controls: [] } } as never)
+    )
+    await act(async () =>
+      answer({
+        status: 'needs-action',
+        controls: [],
+        blocker: {
+          kind: 'auth',
+          methods: [],
+          authenticating: false,
+          atTurn: true,
+          model: { id: 'f', name: 'Factice rapide', quota: true }
+        }
+      })
+    )
+    expect(screen.queryByTestId('work-refused-text')).toBeNull()
   })
 
   it('fiche 267 : un travail qui attend autre chose (une autorisation) garde « Attend votre réponse »', async () => {
     fakeAgent()
-    const conversations = (window.api as unknown as { conversations?: unknown }).conversations
-    ;(window.api as unknown as { conversations: unknown }).conversations = {
-      snapshot: async () => ({ status: 'needs-action', controls: [] })
+    ;(window.api as unknown as { roles: unknown }).roles = {
+      workState: async () => ({ status: 'needs-action', controls: [] })
     }
-    try {
-      view(
-        [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
-        info([child('a', ux, { status: 'needs-action' })])
-      )
-      await act(async () => {})
-      expect(screen.getByTestId('work-live').textContent).toBe(
-        'Attend votre réponse dans sa conversation.'
-      )
-      expect(screen.queryByTestId('work-choose-model')).toBeNull()
-    } finally {
-      ;(window.api as unknown as { conversations: unknown }).conversations = conversations
-    }
+    view(
+      [bubble(1, [{ childId: 'a', role: ux }]), started(2, 'a', ux, 'd1')],
+      info([child('a', ux, { status: 'needs-action' })])
+    )
+    await act(async () => {})
+    expect(screen.getByTestId('work-live').textContent).toBe(
+      'Attend votre réponse dans sa conversation.'
+    )
+    expect(screen.queryByTestId('work-choose-model')).toBeNull()
   })
 
   it('« Appliquer » sans titre : le rôle seul ; masqué quand un message attend dans la file', async () => {

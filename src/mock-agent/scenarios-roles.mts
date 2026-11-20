@@ -81,6 +81,35 @@ export const LONG_COMMAND = [
 ].join('\n')
 
 export const roleScenarios: Record<string, Scenario> = {
+  'etapes-longues': {
+    description:
+      'Deux étapes distinctes (fiche 267, D14) : du texte, ≈ 2 s, puis une commande en cours ≈ 4 s (l’indicateur donne la durée du tour et l’étape en plus petit), puis une réponse courte',
+    steps: [
+      { kind: 'text', text: 'Je regarde le projet. ' },
+      { kind: 'pause', ticks: 50 },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'etape_commande',
+          title: 'npm test',
+          kind: 'execute',
+          status: 'in_progress',
+          rawInput: { command: 'npm test' }
+        }
+      },
+      { kind: 'pause', ticks: 100 },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'etape_commande',
+          status: 'completed'
+        }
+      },
+      { kind: 'text', text: 'Les tests passent.' }
+    ]
+  },
   'commande-longue': {
     description:
       'Travail qui lance une commande de dix lignes (recette N4, fiche 267) : l’outil reste en cours ≈ 6 s (la carte n’en montre que la première ligne, la commande entière en infobulle), puis une réponse courte',

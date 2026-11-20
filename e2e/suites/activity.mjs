@@ -4,7 +4,7 @@ import { L, Lpart, check, literal, withApp } from '../lib.mjs'
  * Activité lisible pendant un tour (fiche 128) : un outil annoncé sans rien d'autre (OpenCode : le
  * « patch » pendant que le modèle l'écrit) est dit « Prépare… » sur sa carte et dans l'indicateur,
  * jamais « patch » ; interrompu, il garde le nom de son genre ; le temps de l'indicateur est celui
- * de l'étape, la durée du tour est en infobulle ; une sortie de commande en JSON est indentée.
+ * du tour, l'étape en plus petit (fiche 267) ; une sortie de commande en JSON est indentée.
  */
 export async function activitySuite(scheme) {
   console.log(`\n— Activité lisible (${scheme})`)
@@ -94,5 +94,33 @@ export async function activitySuite(scheme) {
       'sortie JSON indentée, avec de vrais retours à la ligne dans les chaînes'
     )
     await ui.shot('128-sortie-json')
+
+    // 4. Fiche 267 (D14) : la durée du tour, l'étape en cours en plus petit ; à 720 px aussi.
+    await ui.send('/scenario etapes-longues')
+    await ui.waitFor(`!!${ui.$('working-step')}`, 15000)
+    const parts = await ui.ev(`(() => {
+      const w = ${ui.$('working')}
+      const time = w.querySelector('.working-time')
+      const step = w.querySelector('[data-testid=working-step]')
+      return {
+        time: time.innerText,
+        step: step.innerText,
+        smaller: parseFloat(getComputedStyle(step).fontSize) < parseFloat(getComputedStyle(time).fontSize)
+      }
+    })()`)
+    check(
+      /^\d+ s$/.test(parts.time) && parts.step.startsWith(Lpart('activity.step')) && parts.smaller,
+      `indicateur : la durée du tour, puis l’étape en plus petit (${JSON.stringify(parts)})`
+    )
+    await ui.shot('267-indicateur-etape')
+    await ui.viewport(720, 760)
+    const lines = await ui.ev(`(() => {
+      const w = ${ui.$('working')}
+      return Math.round(w.getBoundingClientRect().height / parseFloat(getComputedStyle(w).lineHeight || '20'))
+    })()`)
+    check(lines <= 2, `indicateur à 720 px : tient sans s’étaler (${lines} ligne(s))`)
+    await ui.shot('267-indicateur-720')
+    await ui.viewport()
+    await ui.ready()
   })
 }
