@@ -475,6 +475,29 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a'], true, undefined))
   })
 
+  it('fichiers et lignes : ceux de sa branche contre sa base, pas ceux de sa dernière réponse', async () => {
+    // La réponse disait 4 fichiers +115 −64 ; des commits faits ensuite : la branche apporte autre chose.
+    const actions = mergeActions([
+      { ...candidate('a', 'ready'), files: ['a.ts', 'b.ts'], added: 7, removed: 2 }
+    ])
+    view(writer(), info([child('a', { role: front })], { merge: actions }))
+    await screen.findByTestId('work-merge-start')
+    expect(plain(screen.getByTestId('work-changes').textContent)).toBe('bobine/a2 fichiers +7 −2')
+  })
+
+  it('fusionnée : plus de « N fichiers » d’une branche qui n’apporte plus rien', async () => {
+    view(
+      writer([
+        mergeItem(4, 'done', [{ childId: 'a', state: 'merged', cleaned: true }], { endedAt: T0 })
+      ]),
+      info([withoutBranch(child('a', { role: front, archived: true }))], {
+        merge: mergeActions([])
+      })
+    )
+    await screen.findByTestId('work-merge-result')
+    expect(screen.queryByTestId('work-changes')).toBeNull()
+  })
+
   it('en cours : les étapes réelles seulement, « Arrêter » ; jamais d’étape inventée', async () => {
     const actions = mergeActions([candidate('a', 'ready')], true)
     view(

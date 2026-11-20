@@ -15,7 +15,7 @@ import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Run } from '../simulator/run'
 import { gitCommand } from '../git/git-queue'
-import { WorktreeCycle, type CycleTarget } from './worktree-cycle'
+import { lineCounts, WorktreeCycle, type CycleTarget } from './worktree-cycle'
 import { Worktrees } from './worktrees'
 import { ON_WINDOWS } from '../test-platform'
 
@@ -724,5 +724,15 @@ describe('« Committer » hors worktree (fiche 123)', () => {
       t('worktreeCycle.error.pushed')
     )
     expect(git(root, 'rev-parse', 'HEAD')).toBe(done.hash)
+  })
+})
+
+describe('lineCounts (fiche 264)', () => {
+  it('totaux de git diff --numstat, un binaire compté à zéro', () => {
+    expect(lineCounts('12\t3\tsrc/a.ts\n-\t-\timage.png\n4\t0\tb.md\n')).toEqual({
+      added: 16,
+      removed: 3
+    })
+    expect(lineCounts('')).toEqual({ added: 0, removed: 0 })
   })
 })

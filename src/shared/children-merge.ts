@@ -94,6 +94,12 @@ export interface MergeCandidate {
   files: string[]
   /** Modifications non commitées. */
   dirty: number
+  /**
+   * Lignes ajoutées et retirées par la branche contre sa base (fiche 264) : ce que la fusion
+   * apportera. Absentes d'un travail pas lu (au travail, illisible).
+   */
+  added?: number
+  removed?: number
 }
 
 export interface MergeOverlap {

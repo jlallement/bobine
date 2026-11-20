@@ -30,7 +30,15 @@ import {
   WorkCard,
   workAgent
 } from './WorkCard'
-import { currentReport, exchangeStart, workState, workUsage, type WorkState } from './work-card'
+import {
+  branchChanges,
+  currentReport,
+  exchangeStart,
+  workState,
+  workUsage,
+  type WorkChanges,
+  type WorkState
+} from './work-card'
 
 /**
  * Carte de groupe (fiche 264, écran D des maquettes de la fiche 260) : les travaux proposés par
@@ -427,6 +435,11 @@ function LaunchedRow({
                 state={state}
                 report={report}
                 activity={activity}
+                changes={branchChanges(
+                  child?.branch ? merging.plan : undefined,
+                  card.childId,
+                  mergeState === 'merged'
+                )}
               />
             </span>
           </span>
@@ -441,7 +454,14 @@ function LaunchedRow({
       </div>
       {open && (
         <div className="work-group-open" data-testid="work-row-open">
-          <WorkCard card={card} items={items} info={info} inGroup />
+          <WorkCard
+            card={card}
+            items={items}
+            info={info}
+            inGroup
+            plan={merging.plan}
+            merged={mergeState === 'merged'}
+          />
         </div>
       )}
     </div>
@@ -458,7 +478,8 @@ function RowMeta({
   info,
   state,
   report,
-  activity
+  activity,
+  changes
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -466,6 +487,8 @@ function RowMeta({
   state: WorkState
   report: ReturnType<typeof currentReport>
   activity: string | undefined
+  /** Sa branche contre sa base (fiche 264) ; `null` : rien à dire ; absent : sa dernière réponse. */
+  changes: WorkChanges | null | undefined
 }) {
   const { t } = useTranslation()
   const now = useNow(state === 'running')
@@ -484,7 +507,9 @@ function RowMeta({
     <>
       {who && <span>{who}</span>}
       {branch && <Branch name={branch} />}
-      {report && <FileStats report={report} />}
+      {changes !== null && (changes ?? report) && (
+        <FileStats report={(changes ?? report) as WorkChanges} />
+      )}
       {!branch && !report && !who && t('workGroup.place.folder')}
     </>
   )

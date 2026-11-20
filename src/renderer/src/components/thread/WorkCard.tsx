@@ -26,7 +26,8 @@ import { WorkFoot } from './WorkFoot'
 import i18next from 'i18next'
 import { MessageTime } from './MessageTime'
 import { VerdictBadge, type SubtasksInfo } from './Subtasks'
-import { currentReport, exchangeStart, workState, type WorkState } from './work-card'
+import { branchChanges, currentReport, exchangeStart, workState, type WorkState } from './work-card'
+import type { ChildrenMergePlan } from '@shared/children-merge'
 import { useWorkMerge, WorkMergeBox, type WorkMergeControl } from './WorkMerge'
 import '../../work-card.css'
 
@@ -107,6 +108,26 @@ export function workAgent(
   return info?.profiles?.find((p) => p.id === child?.profileId)?.label ?? info?.agentLabel
 }
 
+/**
+ * Fichiers et lignes de sa branche contre sa base (fiche 264) : ce que la fusion apportera ; lus
+ * par sa carte (seule) ou par sa carte de groupe. Sans branche ni fusion : sa dernière réponse.
+ */
+function cardChanges(
+  childId: string,
+  child: ConversationSummary | undefined,
+  read: { plan?: ChildrenMergePlan | undefined; merged: boolean } | WorkMergeControl | undefined
+) {
+  const control = read && 'state' in read ? read : undefined
+  const plan = control ? control.state.plan : read && 'merged' in read ? read.plan : undefined
+  const merged = control
+    ? control.row?.state === 'merged' && control.candidate?.state !== 'ready'
+    : read && 'merged' in read
+      ? read.merged
+      : false
+  const changes = branchChanges(plan, childId, merged)
+  return child?.branch || changes === null ? changes : undefined
+}
+
 /** Nom d'un travail : son rôle, sinon son titre. */
 export const workName = (card: WorkCardData): string => card.role?.label ?? card.title
 
@@ -152,12 +173,17 @@ export function WorkCard({
   card,
   items,
   info,
-  inGroup = false
+  inGroup = false,
+  plan,
+  merged = false
 }: {
   card: WorkCardData
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
   inGroup?: boolean
+  /** Dans un groupe : les branches lues par sa carte, et si ce travail a été fusionné (fiche 264). */
+  plan?: ChildrenMergePlan | undefined
+  merged?: boolean
 }) {
   const { t } = useTranslation()
   const child = info?.children.find((c) => c.id === card.childId)
@@ -176,6 +202,7 @@ export function WorkCard({
   const verdict = useMemo(() => childRecommendations(items).get(card.childId), [items, card])
   const merge = useWorkMerge(card, child, info, items, !inGroup && state !== 'running')
   const agent = info?.agentLabel ?? t('workCard.mainAgent')
+  const changes = cardChanges(card.childId, child, inGroup ? { plan, merged } : merge)
   return (
     <div
       className={`work-card${state === 'running' ? ' running' : ''}${inGroup ? ' in-group' : ''}`}
@@ -200,7 +227,14 @@ export function WorkCard({
         />
       )}
       <LeftBehindLine card={card} />
-      <WorkSteps card={card} child={child} items={items} state={state} agent={agent} />
+      <WorkSteps
+        card={card}
+        child={child}
+        items={items}
+        state={state}
+        agent={agent}
+        changes={changes}
+      />
       {(state === 'running' || state === 'waiting') && card.steps.at(-1)?.kind !== 'report' && (
         <WorkLive childId={child?.id} state={state} />
       )}

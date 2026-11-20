@@ -18,6 +18,7 @@ import {
   relayOf,
   stepStart,
   workUsage,
+  type WorkChanges,
   type WorkState
 } from './work-card'
 
@@ -37,7 +38,8 @@ export function WorkSteps({
   child,
   items,
   state,
-  agent
+  agent,
+  changes
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -45,6 +47,8 @@ export function WorkSteps({
   state: WorkState
   /** Nom de l'agent de la conversation : l'auteur des messages au travail (`message_child`). */
   agent: string
+  /** Ce que sa branche apportera, pour la dernière réponse (`branchChanges`, fiche 264). */
+  changes?: WorkChanges | null | undefined
 }) {
   const current = currentReport(card)
   return (
@@ -65,6 +69,7 @@ export function WorkSteps({
             relay={relayOf(step.item, items)}
             current={step.item.id === current?.id}
             state={state}
+            {...(step.item.id === current?.id && changes !== undefined ? { changes } : {})}
           />
         )
       )}
@@ -140,8 +145,11 @@ function WorkAnswer({
   report,
   relay,
   current,
-  state
+  state,
+  changes
 }: {
+  /** La branche lue (fiche 264) ; `null` : rien à dire ; absent : les fichiers de la réponse. */
+  changes?: WorkChanges | null
   card: WorkCardData
   child: ConversationSummary | undefined
   report: Report
@@ -174,10 +182,11 @@ function WorkAnswer({
       {report.outcome === 'stopped' && <div className="work-note">{t('workCard.stoppedLine')}</div>}
       {!card.role?.readOnly &&
         !(current && state === 'running') &&
+        changes !== null &&
         (report.branch || report.fileCount > 0) && (
           <div className="work-changes" data-testid="work-changes">
             {report.branch && <Branch name={report.branch} />}
-            <FileStats report={report} />
+            <FileStats report={changes ?? report} />
           </div>
         )}
       <AnswerFacts card={card} child={child} report={report} current={current} />

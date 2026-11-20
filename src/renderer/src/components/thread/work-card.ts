@@ -8,6 +8,7 @@ import { childState } from '@shared/children'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import type { UsageDigest } from '@shared/usage'
+import type { ChildrenMergePlan } from '@shared/children-merge'
 
 type Report = Extract<TranscriptItem, { kind: 'child-report' }>
 
@@ -189,4 +190,26 @@ export function answerTitle(text: string): string | undefined {
   const named = /^[^:«»"“”]{1,40}?\s*:\s+(.+)$/.exec(heading)?.[1] ?? heading
   const bare = /^[«"“]\s*(.+?)\s*[»"”]$/.exec(named)?.[1] ?? named
   return bare.trim() || undefined
+}
+
+/** Fichiers et lignes d'un travail, comme `FileStats` les montre. */
+export type WorkChanges = Pick<Report, 'fileCount' | 'added' | 'removed'>
+
+/**
+ * Ce que la fusion d'un travail apportera (fiche 264) : sa branche contre sa base, lue par le main
+ * (`MergeCandidate`), plutôt que les fichiers de sa dernière réponse (des commits faits ensuite n'y
+ * sont pas). `undefined` : rien de lu (pas de branche, plan pas encore lu) — la réponse fait foi ;
+ * `null` : rien à dire (déjà fusionné, branche supprimée, illisible).
+ */
+export function branchChanges(
+  plan: Pick<ChildrenMergePlan, 'children'> | undefined,
+  childId: string,
+  merged: boolean
+): WorkChanges | null | undefined {
+  if (merged) return null
+  if (!plan) return undefined
+  const candidate = plan.children.find((c) => c.id === childId)
+  if (!candidate || candidate.state === 'merged') return null
+  if (candidate.added === undefined || candidate.removed === undefined) return undefined
+  return { fileCount: candidate.files.length, added: candidate.added, removed: candidate.removed }
 }

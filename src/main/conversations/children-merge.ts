@@ -236,7 +236,15 @@ export class ChildrenMerger {
             : branch.sinceBase > 0
               ? 'merged'
               : 'empty'
-      return { ...base, base: branch.base, state: status, files: branch.files, dirty: branch.dirty }
+      return {
+        ...base,
+        base: branch.base,
+        state: status,
+        files: branch.files,
+        dirty: branch.dirty,
+        added: branch.added,
+        removed: branch.removed
+      }
     } catch {
       // Dossier du worktree illisible (supprimé à la main) : la fille n'est pas proposée.
       return {

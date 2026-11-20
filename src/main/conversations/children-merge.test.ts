@@ -168,9 +168,10 @@ describe('fusion de toutes les filles (fiche 120)', () => {
 
     const plan = await env.merger.plan('mere')
     expect(plan).toMatchObject({ base: 'main', overlaps: [], running: false })
-    expect(plan.children.map((c) => [c.id, c.state, c.files])).toEqual([
-      ['f2', 'ready', ['b.txt']],
-      ['f1', 'ready', ['a.txt']]
+    // Fichiers et lignes de chaque branche contre sa base (fiche 264) : ce que la fusion apportera.
+    expect(plan.children.map((c) => [c.id, c.state, c.files, c.added, c.removed])).toEqual([
+      ['f2', 'ready', ['b.txt'], 1, 0],
+      ['f1', 'ready', ['a.txt'], 1, 0]
     ])
     expect(plan.blocked).toBeUndefined()
 

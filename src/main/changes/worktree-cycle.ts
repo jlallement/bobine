@@ -81,6 +81,9 @@ export interface BranchState {
   /** Commits de la branche depuis son départ (0 : rien n'a été commité). */
   sinceBase: number
   files: string[]
+  /** Lignes ajoutées et retirées par la branche depuis la base (`git diff --numstat`, fiche 264). */
+  added: number
+  removed: number
   /** Fusion arrêtée sur des conflits : fichiers encore en conflit. */
   conflicts?: string[]
 }
@@ -274,9 +277,17 @@ export class WorktreeCycle {
       ['diff', '--name-only', `${base}...${worktree.branch}`],
       target.id
     )
+    // Ce que la fusion apportera (fiche 264) : lignes de la branche contre sa base, binaires à 0.
+    const numstat = await this.gitRun(
+      cwd,
+      ['diff', '--numstat', `${base}...${worktree.branch}`],
+      target.id
+    )
+    const counts = numstat.code === 0 ? lineCounts(text(numstat.stdout)) : { added: 0, removed: 0 }
     return {
       base,
       dirty: lines(porcelain.stdout).length,
+      ...counts,
       ahead: await this.count(cwd, `${base}..${worktree.branch}`),
       sinceBase: await this.count(cwd, `${worktree.base}..${worktree.branch}`),
       files: diff.code === 0 ? lines(diff.stdout) : [],
@@ -978,4 +989,16 @@ export function toolError(stderr: string): string {
 function isInside(parent: string, child: string): boolean {
   const rel = relative(resolve(parent), resolve(child))
   return !!rel && !rel.startsWith('..') && !isAbsolute(rel) && !rel.includes(`..${sep}`)
+}
+
+/** Totaux de `git diff --numstat` (« 12\t3\tchemin », « -\t-\t… » pour un binaire). */
+export function lineCounts(stdout: string): { added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (const line of stdout.split('\n')) {
+    const [a, r] = line.split('\t')
+    added += Number(a) || 0
+    removed += Number(r) || 0
+  }
+  return { added, removed }
 }
