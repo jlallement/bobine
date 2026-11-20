@@ -43,6 +43,8 @@ export interface ChildWorktrees {
   onOpen: (id: string) => void
   /** « Faire relire… » une fille (fiche 177). */
   onReview?: (id: string) => void
+  /** « Parcourir les fichiers » d'une fille : sa conversation, onglet Fichiers (fiche 271, Q7). */
+  onBrowse?: (id: string) => void
 }
 
 /** Pourquoi une modification n'a pas été annulée (le fil le dit aussi). */

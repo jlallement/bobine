@@ -2245,7 +2245,8 @@
       "document": "Aperçu",
       "acp": "Échanges ACP",
       "session": "Session",
-      "documents": "Documents"
+      "documents": "Documents",
+      "files": "Fichiers"
     }
   },
   "android": {
@@ -2424,6 +2425,71 @@
     "reveal": "Montrer dans le Finder",
     "close": "Fermer l’aperçu",
     "truncated": "Document trop long : seul le début est montré. « Ouvrir avec l’app par défaut » pour la suite."
+  },
+  "files": {
+    "tab": "Fichiers",
+    "error": {
+      "outside": "Hors des dossiers de la conversation : {{path}}",
+      "notFolder": "Pas un dossier : {{path}}",
+      "notFile": "Pas un fichier : {{path}}"
+    },
+    "filter": "Filtrer",
+    "filterLabel": "Filtrer les fichiers",
+    "collapseAll": "Réduire tous les dossiers",
+    "showTree": "Voir l’arborescence",
+    "more": "Plus",
+    "reload": "Relire le dossier",
+    "wrap": "Retour à la ligne automatique",
+    "side": {
+      "label": "Côté de l’arborescence",
+      "auto": "Automatique",
+      "left": "Gauche",
+      "right": "Droite"
+    },
+    "treeLabel": "Fichiers de la conversation",
+    "moreEntries_one": "{{n}} de plus : filtrer pour le trouver",
+    "moreEntries_other": "{{n}} de plus : filtrer pour les trouver",
+    "moreEntries_many": "{{n}} de plus : filtrer pour les trouver",
+    "empty": "Dossier vide",
+    "noMatch": "Aucun fichier ne correspond.",
+    "ignoredNotSearched": "Les fichiers ignorés par git ne sont pas cherchés : les parcourir dans l’arbre.",
+    "ignored": "Ignoré par git",
+    "excluded": "Invisible pour l’agent ({{name}})",
+    "excludedPlain": "Invisible pour l’agent",
+    "modified": "Modifié dans cette conversation",
+    "linkOutside": "Lien vers l’extérieur des dossiers de la conversation : non suivi",
+    "noFolder": "Cette conversation n’a pas encore de dossier.",
+    "folderMissing": "Ce dossier n’existe plus.",
+    "readOnly": "Lecture seule",
+    "back": "Revenir à l’arborescence",
+    "previous": "Fichier précédent",
+    "next": "Fichier suivant",
+    "truncated": "Fichier tronqué ({{size}}) : seul le premier Mo est montré.",
+    "plain": "Fichier long : affiché sans coloration.",
+    "binary": "Fichier binaire · {{size}}",
+    "missing": "Ce fichier n’existe plus.",
+    "changed": "Modifié à {{time}}",
+    "source": "Source",
+    "rendered": "Rendu",
+    "openInBrowser": "Ouvrir dans le navigateur",
+    "goToLine": "Aller à la ligne…",
+    "goToLinePrompt": "Numéro de ligne",
+    "openDefault": "Ouvrir avec l’app par défaut",
+    "reveal": "Afficher dans le Finder",
+    "mention": "Mentionner dans la saisie",
+    "copyRelative": "Copier le chemin relatif",
+    "copyAbsolute": "Copier le chemin absolu",
+    "showDiff": "Voir le diff",
+    "browse": "Parcourir les fichiers",
+    "actions": "Actions sur {{name}}",
+    "fileLabel": "{{name}}, {{lines}} lignes, lecture seule",
+    "imageInfo": "{{size}}",
+    "loading": "Lecture…",
+    "rootTitle": "{{path}}",
+    "otherFolder": "Autre dossier, non transmis à l’agent",
+    "clearFilter": "Effacer le filtre",
+    "dismiss": "Fermer l’avis",
+    "noteChanged": " · le code a changé"
   },
   "sidePanel": {
     "resize": "Redimensionner le panneau",
@@ -2874,7 +2940,9 @@
       "aside": "Aparté…",
       "help": "Aide de Bobine",
       "space-code": "Espace Code",
-      "space-discussion": "Espace Discussion"
+      "space-discussion": "Espace Discussion",
+      "files": "Filtrer les fichiers",
+      "files-tree": "Voir l’arborescence"
     },
     "interface": {
       "send": {
@@ -5987,6 +6055,9 @@
         "crashed": {
           "detail": "Vos conversations sont gardées. Un rapport a été rangé sur cet ordinateur ; rien n’a été envoyé. Il peut contenir des extraits de vos conversations, voire des secrets (fin du journal, mémoire de Bobine dans les fichiers .dmp) : relisez-le avant de le joindre."
         }
+      },
+      "files": {
+        "reveal": "Afficher dans le gestionnaire de fichiers"
       }
     },
     "explorer": {
@@ -6092,6 +6163,9 @@
       },
       "memory": {
         "keyLocked": "Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : rien ne peut être retenu pour l’instant."
+      },
+      "files": {
+        "reveal": "Afficher dans l’Explorateur de fichiers"
       }
     }
   },

@@ -75,6 +75,10 @@ export type MenuCommand =
   | 'find-previous'
   | 'toggle-terminal'
   | 'show-changes'
+  /** Onglet Fichiers, le curseur dans le filtre (fiche 271). */
+  | 'files'
+  /** Onglet Fichiers : l'arbre à côté du fichier ouvert, ou l'un des deux (fiche 271). */
+  | 'files-tree'
   | 'previous-conversation'
   | 'next-conversation'
   /** Fenêtre › Mon activité (fiche 144). */
@@ -307,6 +311,28 @@ export const SHORTCUTS: readonly Shortcut[] = [
     accelerator: 'CmdOrCtrl+Shift+D',
     get keys() {
       return displayKeys('⇧⌘D')
+    },
+    menu: 'view'
+  },
+  {
+    command: 'files',
+    get label() {
+      return t('shortcuts.menu.files')
+    },
+    accelerator: 'CmdOrCtrl+P',
+    get keys() {
+      return displayKeys('⌘P')
+    },
+    menu: 'view'
+  },
+  {
+    command: 'files-tree',
+    get label() {
+      return t('shortcuts.menu.files-tree')
+    },
+    accelerator: 'CmdOrCtrl+Shift+Y',
+    get keys() {
+      return displayKeys('⇧⌘Y')
     },
     menu: 'view'
   },

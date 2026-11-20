@@ -1,4 +1,4 @@
-import { Code, FolderOpen, ScanSearch } from 'lucide-react'
+import { Code, FolderOpen, FolderTree, ScanSearch } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChildRow } from '@shared/children-rows'
@@ -32,7 +32,8 @@ export function ChildrenView({
   rows,
   merge,
   onOpen,
-  onReview
+  onReview,
+  onBrowse
 }: {
   rows: ChildRow[]
   /** Absent : pas d'état de fusion (la recommandation seule, comme avant). */
@@ -40,6 +41,8 @@ export function ChildrenView({
   onOpen: (id: string) => void
   /** « Faire relire… » une fille (fiche 177). */
   onReview?: ((id: string) => void) | undefined
+  /** « Parcourir les fichiers » (fiche 271, Q7). */
+  onBrowse?: ((id: string) => void) | undefined
 }) {
   const [error, setError] = useState<string | null>(null)
   // Même lecture que la carte (fiche 258, D11) : « fusionnée » vient de là, pas d'une copie.
@@ -54,6 +57,7 @@ export function ChildrenView({
           merging={merging}
           items={merge?.items}
           onOpen={onOpen}
+          onBrowse={onBrowse}
           onError={setError}
           // Une relecture ne se fait pas relire ; une fille qui travaille non plus (fiche 177).
           {...(onReview && !row.child.reviewOf && row.state !== 'running' ? { onReview } : {})}
@@ -68,6 +72,7 @@ function ChildWorktree({
   merging,
   items,
   onOpen,
+  onBrowse,
   onError,
   onReview
 }: {
@@ -76,6 +81,7 @@ function ChildWorktree({
   /** Fil de la mère : chaque ligne y lit la dernière fusion qui la touche (fiche 264). */
   items: readonly TranscriptItem[] | undefined
   onOpen: (id: string) => void
+  onBrowse?: ((id: string) => void) | undefined
   onError: (message: string | null) => void
   onReview?: (id: string) => void
 }) {
@@ -118,6 +124,18 @@ function ChildWorktree({
           <FolderOpen size={14} />
         </button>
       </Tip>
+      {onBrowse && (
+        <Tip label={t('files.browse')}>
+          <button
+            className="icon-button small"
+            aria-label={t('files.browse')}
+            onClick={() => onBrowse(child.id)}
+            data-testid="child-worktree-browse"
+          >
+            <FolderTree size={14} />
+          </button>
+        </Tip>
+      )}
       {editor && (
         <Tip label={t('editor.open', { editor: editor.name })}>
           <button

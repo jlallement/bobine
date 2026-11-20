@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Lpart, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /**
  * Liens vers des fichiers dans la conversation (fiche 052) : aperçu d'un `.md` dans le panneau,
@@ -26,7 +26,10 @@ export async function linksSuite(scheme) {
     '# Plan de travail\n\n1. Lire [la suite](docs/suite.md)\n2. Écrire le code\n'
   )
   writeFileSync(join(workspace, 'docs', 'suite.md'), '# Suite\n\nDeuxième document.\n')
-  writeFileSync(join(workspace, 'src', 'app.ts'), 'export const a = 1\n')
+  writeFileSync(
+    join(workspace, 'src', 'app.ts'),
+    'export const a = 1\nexport const b = 2\nexport const c = 3\n'
+  )
   writeFileSync(join(workspace, 'outil.command'), 'echo non\n')
   chmodSync(join(workspace, 'outil.command'), 0o755)
   const log = join(workspace, '..', `ouvertures-${scheme}-${Date.now()}.log`)
@@ -44,40 +47,40 @@ export async function linksSuite(scheme) {
         await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 4`)
         check(true, 'liens de fichiers reconnus (le lien web reste un lien web)')
 
+        const fileView = `document.querySelector('[data-testid=file-view]')`
         await ui.click(link('le plan'))
         await ui.waitFor(
-          `${ui.$('document-name')}?.innerText === 'plan.md' && ${ui.$('document-body')}.innerText.includes('Plan de travail')`
+          `${fileView}?.dataset.path === 'plan.md' && ${ui.$('file-markdown')}?.innerText.includes('Plan de travail')`
         )
         check(
           opened().length === 0,
-          '.md du dossier : aperçu dans le panneau, rien d’ouvert ailleurs'
+          '.md du dossier : rendu dans l’onglet Fichiers (fiche 271), rien d’ouvert ailleurs'
         )
         await ui.shot('41-apercu-md')
         await ui.click(
-          `[...${ui.$('document-body')}.querySelectorAll('a')].find((a) => a.textContent === 'la suite')`
+          `[...${ui.$('file-markdown')}.querySelectorAll('a')].find((a) => a.textContent === 'la suite')`
         )
-        await ui.waitFor(`${ui.$('document-name')}?.innerText === 'suite.md'`)
-        check(true, 'lien relatif dans l’aperçu : depuis le dossier du document (docs/suite.md)')
+        await ui.waitFor(`${fileView}?.dataset.path === 'docs/suite.md'`)
+        check(true, 'lien relatif du document : depuis son dossier (docs/suite.md)')
 
         await ui.click(link('src/app.ts:3'))
+        await ui.waitFor(
+          `${fileView}?.dataset.path === 'src/app.ts' && !!document.querySelector('.file-line.target[data-line="3"]')`
+        )
+        check(opened().length === 0, 'code : dans l’onglet Fichiers, à la ligne (fiche 271)')
         const waitLog = async (line) => {
           for (let i = 0; i < 50 && !opened().includes(line); i++)
             await new Promise((r) => setTimeout(r, 100))
           return opened().includes(line)
         }
-        check(await waitLog(`open ${join(workspace, 'src', 'app.ts')}`), 'code : app par défaut')
         await ui.click(link('docs'))
         check(await waitLog(`reveal ${join(workspace, 'docs')}`), 'dossier : montré dans le Finder')
         await ui.click(link('outil.command'))
+        await ui.waitFor(`${fileView}?.dataset.path === 'outil.command'`)
         check(
-          (await waitLog(`reveal ${join(workspace, 'outil.command')}`)) &&
-            !opened().includes(`open ${join(workspace, 'outil.command')}`),
-          'exécutable : montré dans le Finder, jamais ouvert'
+          !opened().some((line) => line.endsWith('outil.command')),
+          'script : lu dans l’onglet Fichiers, jamais ouvert ni lancé'
         )
-        await ui.waitFor(
-          `document.body.innerText.includes(${JSON.stringify(Lpart('fileLink.executable'))})`
-        )
-        check(true, 'le fil dit pourquoi l’exécutable n’a pas été ouvert')
         await ui.ev(
           `${link('le plan')}.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, altKey: true })); true`
         )
@@ -86,11 +89,11 @@ export async function linksSuite(scheme) {
           '⌥-clic : montré dans le Finder'
         )
 
-        await ui.click(ui.$('document-close'))
-        await ui.waitFor(
-          `!${ui.$('document-tab')} && !document.querySelector('[data-tab=document]')`
+        await ui.click(
+          `document.querySelector('.side-panel-tab[data-tab=files] [data-testid=panel-tab-close]')`
         )
-        check(true, 'aperçu fermé : l’onglet disparaît')
+        await ui.waitFor(`!${ui.$('files-tab')} && !document.querySelector('[data-tab=files]')`)
+        check(true, 'onglet Fichiers fermé : il disparaît')
       },
       undefined,
       'liens-fichiers',

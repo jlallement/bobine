@@ -24,6 +24,7 @@ import type { GitStatus } from '@shared/git'
 import type { UserCommand } from '@shared/user-commands'
 import type { BrowserController } from './browser/browser-controller'
 import { browserHandlers } from './browser/browser-ipc'
+import { filesHandlers } from './files/files-ipc'
 import type { GitChangesReader } from './changes/git'
 import { insideWorkspace } from './changes/git'
 import { openFileLink, openWorkspaceFile } from './files/file-links'
@@ -783,6 +784,7 @@ export function createHandlers(
         {
           openPath: deps.changes.openPath,
           reveal: deps.changes.reveal,
+          showFile: true,
           ...(deps.previewHtml && openTab ? { previewHtml: deps.previewHtml } : {})
         }
       )
@@ -848,6 +850,7 @@ export function createHandlers(
     },
     'workspace:pickFiles': (id) => deps.chooseFiles(c.workspaceOf(str(id, 'id'))),
     ...browserHandlers(deps.browser),
+    ...filesHandlers(c, deps.changes),
     'preview:list': (id) =>
       c.readFolder(str(id, 'id'), (folder) => deps.devServers.list(folder), []),
     'preview:stop': async (id, name) => {

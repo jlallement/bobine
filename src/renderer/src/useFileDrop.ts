@@ -1,6 +1,9 @@
 import type { PromptAttachment } from '@shared/attachments'
 import { useRef, useState, type DragEvent } from 'react'
 
+/** Glisser d'une ligne de l'onglet Fichiers (fiche 271) : son chemin absolu. */
+export const FILE_DRAG_TYPE = 'application/x-bobine-file'
+
 /**
  * Ce qu'on envoie à la zone de saisie de l'extérieur : fichiers déposés sur la conversation, texte
  * d'une suggestion de départ. La zone de saisie s'y abonne.
@@ -8,6 +11,8 @@ import { useRef, useState, type DragEvent } from 'react'
 /** Ce que la zone de saisie affichée sait recevoir. */
 export interface ComposerHandler {
   files: (files: File[]) => void
+  /** Fichiers du dossier joints par leur chemin (« Mentionner », fiche 271). */
+  paths?: (paths: string[]) => void
   text: (text: string) => void
   /** Conversation de la zone de saisie, et message à y remettre (fenêtre rapide, fiche 062). */
   conversationId?: string
@@ -51,6 +56,11 @@ export class ComposerInbox {
     this.handler?.files(files)
   }
 
+  /** Joint des fichiers par leur chemin absolu (onglet Fichiers, fiche 271, Q51). */
+  mention(paths: string[]): void {
+    this.handler?.paths?.(paths)
+  }
+
   /** Remplace le texte de la zone de saisie (sans envoyer). */
   fill(text: string): void {
     this.handler?.text(text)
@@ -65,7 +75,9 @@ export class ComposerInbox {
 export function useFileDrop(inbox: ComposerInbox) {
   const [dragging, setDragging] = useState(false)
   const depth = useRef(0)
-  const hasFiles = (event: DragEvent) => event.dataTransfer.types.includes('Files')
+  // Une ligne de l'onglet Fichiers (fiche 271, Q51) se dépose comme un fichier : une mention.
+  const hasFiles = (event: DragEvent) =>
+    event.dataTransfer.types.includes('Files') || event.dataTransfer.types.includes(FILE_DRAG_TYPE)
   const handlers = {
     onDragEnter: (event: DragEvent) => {
       if (!hasFiles(event)) return
@@ -90,6 +102,11 @@ export function useFileDrop(inbox: ComposerInbox) {
       event.stopPropagation()
       depth.current = 0
       setDragging(false)
+      const path = event.dataTransfer.getData(FILE_DRAG_TYPE)
+      if (path) {
+        inbox.mention([path])
+        return
+      }
       const files = [...event.dataTransfer.files]
       if (files.length) inbox.deliver(files)
     }

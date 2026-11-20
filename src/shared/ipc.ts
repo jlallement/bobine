@@ -38,6 +38,7 @@ import { BROWSER_CHANNELS, type BrowserIpcContract } from './browser-ipc'
 import type { GitChanges, GitFileArgs, GitFileDiff, RevertOutcome } from './changes'
 import type { FileLinkOutcome, FileOpenOutcome, MarkdownDocument } from './file-links'
 import type { EditorInfo, EditorOpenOutcome } from './editors'
+import type { FileContent, FileListing, FileRoot } from './files'
 import type { DraggedImage } from './images'
 import type { GitStatus } from './git'
 import type {
@@ -540,6 +541,18 @@ export interface IpcInvokeContract
   }
   /** Relit un document Markdown du dossier pour l'aperçu. */
   'files:readMarkdown': { args: [id: string, path: string]; result: MarkdownDocument }
+  /** Vue des fichiers (fiche 271) : racines de la conversation (dossier, autres dossiers). */
+  'files:roots': { args: [id: string]; result: FileRoot[] }
+  /** Un niveau d'un dossier d'une racine (chemin relatif, `''` pour la racine). */
+  'files:list': { args: [id: string, root: number, dir: string]; result: FileListing }
+  /** Un fichier pour l'affichage, en lecture seule (texte, image ou binaire). */
+  'files:read': { args: [id: string, root: number, path: string]; result: FileContent }
+  /** Filtre de l'onglet Fichiers : chemins relatifs classés comme la mention `@`. */
+  'files:search': { args: [id: string, root: number, query: string]; result: string[] }
+  /** Montre un fichier d'une racine dans le Finder. */
+  'files:reveal': { args: [id: string, root: number, path: string]; result: undefined }
+  /** Ouvre un fichier d'une racine avec l'app par défaut (jamais un exécutable). */
+  'files:open': { args: [id: string, root: number, path: string]; result: FileOpenOutcome }
   /** Éditeurs installés (fiche 156), détectés par le main. */
   'editors:list': { args: []; result: EditorInfo[] }
   /**
@@ -1040,6 +1053,12 @@ export const IPC_CHANNELS = [
   'changes:reveal',
   'files:openLink',
   'files:readMarkdown',
+  'files:roots',
+  'files:list',
+  'files:read',
+  'files:search',
+  'files:reveal',
+  'files:open',
   'editors:list',
   'editors:open',
   'editors:openText',

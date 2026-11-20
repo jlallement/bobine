@@ -114,7 +114,7 @@ export function unavailablePanelTabs(
   discussion = false
 ): ReadonlySet<PanelTab> {
   const tools: PanelTab[] = discussion
-    ? ['browser', 'simulator', 'android', 'terminal']
+    ? ['browser', 'simulator', 'android', 'terminal', 'files']
     : ['documents', ...(features.simulator ? [] : (['simulator'] as const))]
   return new Set<PanelTab>(tools)
 }

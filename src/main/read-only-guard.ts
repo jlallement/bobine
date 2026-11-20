@@ -131,6 +131,13 @@ export const READ_ONLY_SAFE = [
   'onboarding:hints',
   'files:openLink',
   'files:readMarkdown',
+  // Vue des fichiers (fiche 271) : lecture seule, ouvrir ailleurs, Finder.
+  'files:roots',
+  'files:list',
+  'files:read',
+  'files:search',
+  'files:reveal',
+  'files:open',
   'editors:list',
   'editors:open',
   'editors:openText',

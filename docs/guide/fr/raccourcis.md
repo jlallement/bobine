@@ -29,6 +29,8 @@ clavier.
 | ⇧⌘J | Agrandir le panneau | Affichage |
 | ⌃` | Terminal | Affichage |
 | ⇧⌘D | Modifications | Affichage |
+| ⌘P | Filtrer les fichiers | Affichage |
+| ⇧⌘Y | Voir l’arborescence | Affichage |
 | ⌘0 | Taille réelle | Affichage |
 | ⌘+ | Zoom avant | Affichage |
 | ⌘− | Zoom arrière | Affichage |

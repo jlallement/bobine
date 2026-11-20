@@ -1926,6 +1926,26 @@ export const SUITES = [
     ]
   },
   {
+    // Vue des fichiers (fiche 271) : onglet Fichiers, arbre, filtre, fichier ouvert, remarque.
+    name: 'files',
+    file: 'files.mjs',
+    run: 'filesSuite',
+    themes: BOTH,
+    sources: [
+      `${C}files/`,
+      ...PANEL,
+      `${R}useFileLinks.ts`,
+      `${R}usePanel.ts`,
+      `${R}code-lines.ts`,
+      `${R}files-state.ts`,
+      `${R}file-notes.ts`,
+      'src/main/files/',
+      'src/shared/files.ts',
+      'src/shared/diff-notes.ts',
+      'src/mock-agent/scenarios-fichiers.mts'
+    ]
+  },
+  {
     name: 'links',
     file: 'links.mjs',
     run: 'linksSuite',

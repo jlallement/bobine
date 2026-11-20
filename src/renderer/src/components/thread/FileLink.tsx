@@ -2,7 +2,7 @@ import { createContext, useContext, type ComponentProps } from 'react'
 import { parseFileLink, webLinkTarget } from '@shared/file-links'
 import { useTranslation } from 'react-i18next'
 import { useDisplayPath } from '../../presentation'
-import { OpenInEditorButton } from './OpenInEditor'
+import { EditorContext, OpenInEditorButton } from './OpenInEditor'
 import { platformFeatures } from '../../platform-features'
 
 /** Ouvre un lien de fichier (fiche 052) ; `reveal` : le montrer dans le Finder (⌥-clic). */
@@ -29,6 +29,7 @@ export function MarkdownLink({
   const displayPath = useDisplayPath()
   const open = useContext(FileLinksContext)
   const base = useContext(FileLinkBase)
+  const editor = useContext(EditorContext)
   const file = parseFileLink(href, { windowsPaths: platformFeatures().windowsPaths })
   if (open && href && webLinkTarget(href)) {
     return (
@@ -67,6 +68,14 @@ export function MarkdownLink({
         })}
         onClick={(event) => {
           event.preventDefault()
+          // ⌘-clic : dans l'éditeur, à la ligne (fiche 271, Q11) ; ⌥-clic : le Finder.
+          if ((event.metaKey || event.ctrlKey) && editor) {
+            editor.open(file.path, {
+              ...(file.line ? { line: file.line } : {}),
+              ...(base ? { base } : {})
+            })
+            return
+          }
           open(href, { reveal: event.altKey, ...(base ? { base } : {}) })
         }}
         data-testid="file-link"

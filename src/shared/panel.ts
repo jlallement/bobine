@@ -16,6 +16,8 @@ export type PanelTab =
   | 'document'
   /** Documents d'une discussion (fiche 224) : seulement dans l'espace Discussion. */
   | 'documents'
+  /** Fichiers du dossier (fiche 271) : ouvert à la demande, jamais d'office. */
+  | 'files'
 
 export const PANEL_TABS: { id: PanelTab; label: string }[] = [
   // Résumé de la session courante (fiche 166) : toujours en tête, sauf fermé à la main.
@@ -66,6 +68,13 @@ export const PANEL_TABS: { id: PanelTab; label: string }[] = [
     id: 'changes',
     get label() {
       return t('panel.tab.changes')
+    }
+  },
+  // Fichiers du dossier (fiche 271) : menu « + », ⌘P, ⇧⌘Y, liens de fichiers du fil.
+  {
+    id: 'files',
+    get label() {
+      return t('panel.tab.files')
     }
   },
   // Aperçu d'un document Markdown cité dans la conversation (fiche 052), seulement s'il y en a un.

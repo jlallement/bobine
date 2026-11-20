@@ -268,6 +268,7 @@ export function App() {
     'toggle-terminal': () => panel.toggleTerminal(),
     'show-changes': () =>
       panel.changesOpen ? panel.update({ open: false }) : panel.openChanges('conversation'),
+    ...panel.filesCommands,
     'previous-conversation': () => goTo(-1),
     'next-conversation': () => goTo(1),
     activity: activity.show,
@@ -786,7 +787,7 @@ export function App() {
                         }
                       }
                     : {}),
-                  onOpen: c.select,
+                  ...panel.childLinks(c.select),
                   onReview: (id) => reviewOf(c.list.find((s) => s.id === id))
                 }}
                 // « Faire relire… » (fiche 177) : pas une relecture, pas un brouillon.
@@ -811,6 +812,7 @@ export function App() {
                 focusTerminal={panel.focusTerminal}
                 {...(c.settings ? { preferences: c.settings.preferences } : {})}
                 {...(panel.changesRequest ? { changesRequest: panel.changesRequest } : {})}
+                files={panel.filesTab(links.openActiveLink, composerInbox)}
                 {...(panel.preview
                   ? {
                       preview: {

@@ -17,6 +17,7 @@ import {
   type MarkdownDocument
 } from '@shared/file-links'
 import { t } from 'i18next'
+import { opensElsewhere } from '@shared/files'
 import { currentPlatformFeatures } from '../platform'
 
 /** Aperçu : au-delà, seul le début du document est montré. */
@@ -149,6 +150,8 @@ export interface FileOpeners {
    * son dossier. Absente : app par défaut, comme les autres fichiers.
    */
   previewHtml?: (dir: string, file: string) => Promise<string>
+  /** L'interface sait montrer un fichier dans l'onglet Fichiers (fiche 271) ; absent : comme avant. */
+  showFile?: boolean
 }
 
 /** `target` est-il `root` ou dans `root` ? (chemins déjà résolus) */
@@ -189,7 +192,18 @@ export async function openFileLink(
   if (options.reveal) return reveal('requested')
   if (info.isDirectory()) return reveal('folder')
   // Chemin réel : un lien symbolique du dossier ne mène pas au-dehors en douce.
-  if (!inside(root, await real(target))) return reveal('outside')
+  const targetReal = await real(target)
+  if (!inside(root, targetReal)) return reveal('outside')
+  // Texte, code, Markdown, image : dans l'onglet Fichiers, à la ligne (fiche 271, Q11). Un script
+  // s'y lit sans jamais s'exécuter ; HTML, PDF, bureautique, médias gardent leur chemin.
+  if (openers.showFile && !isHtmlPath(target) && !opensElsewhere(target)) {
+    return {
+      kind: 'file',
+      path: target,
+      relative: relative(root, targetReal).split(sep).join('/'),
+      ...(link.line ? { line: link.line } : {})
+    }
+  }
   if (isMarkdownPath(target)) return { kind: 'preview', document: await readMarkdown(root, target) }
   if (isHtmlPath(target) && openers.previewHtml) {
     return {

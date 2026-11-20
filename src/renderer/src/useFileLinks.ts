@@ -17,6 +17,8 @@ export type OpenFileLinkIn = (
 /** Ce que les liens ouvrent dans le panneau (fonctions stables de `usePanel`). */
 export interface LinkPanel {
   showDocument: (conversationId: string, document: MarkdownDocument) => void
+  /** Onglet Fichiers sur un fichier, à la ligne (fiche 271, Q11). */
+  openFiles: (request: { target: { root: number; path: string; line?: number } }) => void
   update: (change: Partial<PanelState>) => void
 }
 
@@ -80,6 +82,15 @@ export function useFileLinks(options: {
         const note = openOutcomeNote(outcome)
         if (outcome.kind === 'preview') {
           side.showDocument(id, outcome.document)
+        } else if (outcome.kind === 'file') {
+          // Texte, code, Markdown, image du dossier : dans l'onglet Fichiers, à la ligne.
+          side.openFiles({
+            target: {
+              root: 0,
+              path: outcome.relative,
+              ...(outcome.line ? { line: outcome.line } : {})
+            }
+          })
         } else if (outcome.kind === 'browser') {
           // Page HTML (fiche 064) : ouverte dans le navigateur de la conversation.
           side.update({ open: true, tab: 'browser' })

@@ -37,7 +37,7 @@ interface Props {
 }
 
 function setup(props: Partial<Props> = {}) {
-  const panel = { showDocument: vi.fn(), update: vi.fn() }
+  const panel = { showDocument: vi.fn(), update: vi.fn(), openFiles: vi.fn() }
   const notices = { info: vi.fn(), warn: vi.fn() }
   const initialProps: Props = {
     conversationId: 'c1',
@@ -52,6 +52,22 @@ function setup(props: Partial<Props> = {}) {
 const reveal = { reveal: false }
 
 describe('liens de fichiers du fil (fiche 052)', () => {
+  it('un fichier du dossier s’ouvre dans l’onglet Fichiers, à la ligne (fiche 271)', async () => {
+    open.mockResolvedValue({
+      kind: 'file',
+      path: '/p/src/app.ts',
+      relative: 'src/app.ts',
+      line: 12
+    })
+    const { result, panel } = setup()
+    act(() => result.current.openActiveLink('src/app.ts:12', reveal))
+    await waitFor(() =>
+      expect(panel.openFiles).toHaveBeenCalledWith({
+        target: { root: 0, path: 'src/app.ts', line: 12 }
+      })
+    )
+  })
+
   it('un .md s’ouvre en aperçu dans le panneau, avec sa conversation', async () => {
     open.mockResolvedValue({ kind: 'preview', document: doc })
     const { result, panel } = setup()

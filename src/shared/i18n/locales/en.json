@@ -2151,7 +2151,8 @@
       "document": "Preview",
       "acp": "ACP messages",
       "session": "Session",
-      "documents": "Documents"
+      "documents": "Documents",
+      "files": "Files"
     }
   },
   "android": {
@@ -2330,6 +2331,70 @@
     "reveal": "Show in Finder",
     "close": "Close preview",
     "truncated": "Document too long: only the beginning is shown. “Open in default app” for the rest."
+  },
+  "files": {
+    "tab": "Files",
+    "error": {
+      "outside": "Outside the conversation's folders: {{path}}",
+      "notFolder": "Not a folder: {{path}}",
+      "notFile": "Not a file: {{path}}"
+    },
+    "filter": "Filter",
+    "filterLabel": "Filter files",
+    "collapseAll": "Collapse all folders",
+    "showTree": "Show tree",
+    "more": "More",
+    "reload": "Reload folder",
+    "wrap": "Word wrap",
+    "side": {
+      "label": "Tree side",
+      "auto": "Automatic",
+      "left": "Left",
+      "right": "Right"
+    },
+    "treeLabel": "Conversation files",
+    "moreEntries_one": "{{n}} more: filter to find it",
+    "moreEntries_other": "{{n}} more: filter to find them",
+    "empty": "Empty folder",
+    "noMatch": "No file matches.",
+    "ignoredNotSearched": "Files ignored by git are not searched: browse them in the tree.",
+    "ignored": "Ignored by git",
+    "excluded": "Hidden from the agent ({{name}})",
+    "excludedPlain": "Hidden from the agent",
+    "modified": "Changed in this conversation",
+    "linkOutside": "Link outside the conversation's folders: not followed",
+    "noFolder": "This conversation has no folder yet.",
+    "folderMissing": "This folder no longer exists.",
+    "readOnly": "Read-only",
+    "back": "Back to the tree",
+    "previous": "Previous file",
+    "next": "Next file",
+    "truncated": "File truncated ({{size}}): only the first MB is shown.",
+    "plain": "Long file: shown without highlighting.",
+    "binary": "Binary file · {{size}}",
+    "missing": "This file no longer exists.",
+    "changed": "Changed at {{time}}",
+    "source": "Source",
+    "rendered": "Rendered",
+    "openInBrowser": "Open in the browser",
+    "goToLine": "Go to line…",
+    "goToLinePrompt": "Line number",
+    "openDefault": "Open in default app",
+    "reveal": "Show in Finder",
+    "mention": "Mention in the message",
+    "copyRelative": "Copy relative path",
+    "copyAbsolute": "Copy absolute path",
+    "showDiff": "Show diff",
+    "browse": "Browse files",
+    "actions": "Actions for {{name}}",
+    "fileLabel": "{{name}}, {{lines}} lines, read-only",
+    "imageInfo": "{{size}}",
+    "loading": "Reading…",
+    "rootTitle": "{{path}}",
+    "otherFolder": "Other folder, not sent to the agent",
+    "clearFilter": "Clear the filter",
+    "dismiss": "Dismiss",
+    "noteChanged": " · the code changed"
   },
   "sidePanel": {
     "resize": "Resize panel",
@@ -2776,7 +2841,9 @@
       "aside": "Aside…",
       "help": "Bobine Help",
       "space-code": "Code space",
-      "space-discussion": "Chat space"
+      "space-discussion": "Chat space",
+      "files": "Filter files",
+      "files-tree": "Show tree"
     },
     "interface": {
       "send": {
@@ -5754,6 +5821,9 @@
         "crashed": {
           "detail": "Your conversations are kept. A report was saved on this computer; nothing was sent. It may contain excerpts of your conversations, or even secrets (end of the log, Bobine’s memory in the .dmp files): read it before attaching it."
         }
+      },
+      "files": {
+        "reveal": "Show in the file manager"
       }
     },
     "explorer": {
@@ -5859,6 +5929,9 @@
       },
       "memory": {
         "keyLocked": "Bobine cannot decrypt its key (Windows DPAPI): nothing can be kept for now."
+      },
+      "files": {
+        "reveal": "Show in File Explorer"
       }
     }
   },

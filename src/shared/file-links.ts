@@ -40,6 +40,11 @@ export type FileLinkOutcome =
   | { kind: 'missing'; path: string }
   /** Page HTML du dossier, ouverte dans le navigateur intégré (fiche 064). */
   | { kind: 'browser'; path: string; url: string }
+  /**
+   * Fichier du dossier à montrer dans l'onglet Fichiers (fiche 271, Q11) : texte, code, Markdown,
+   * image. `relative` : chemin relatif au dossier de la conversation, séparé par `/`.
+   */
+  | { kind: 'file'; path: string; relative: string; line?: number }
 
 /** Fichier ouvert par le système depuis l'onglet Modifications ou l'aperçu (fiche 071). */
 export type FileOpenOutcome = Extract<FileLinkOutcome, { kind: 'opened' | 'revealed' | 'missing' }>

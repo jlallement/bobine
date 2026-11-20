@@ -12,6 +12,8 @@ export interface ComposerArrivals {
   restore: (text: string, attachments: PromptAttachment[]) => void
   /** Extrait du terminal joint au message (fiche 034). */
   insert: (text: string) => void
+  /** Fichiers du dossier joints par leur chemin (onglet Fichiers, fiche 271). */
+  paths?: (paths: string[]) => void
 }
 
 /**
@@ -33,6 +35,7 @@ export function useComposerInbox(
       inbox?.subscribe({
         files: (files) => latest.current.files(files),
         text: (value) => latest.current.text(value),
+        paths: (paths) => latest.current.paths?.(paths),
         ...(conversationId ? { conversationId } : {}),
         restore: (value, items) => latest.current.restore(value, items)
       }),

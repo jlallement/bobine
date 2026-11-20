@@ -25,6 +25,8 @@ import { lastPlan, PlanList } from '../thread/PlanList'
 import { useTranslation } from 'react-i18next'
 import { useCompactTabs } from './compact-tabs'
 import { PanelMoreMenu } from './PanelMoreMenu'
+import { FilesTab } from '../files/FilesTab'
+import type { FilesRequest } from '../files/useFilesTab'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
 const ATTACHED_NOTICE_MS = 3000
@@ -88,6 +90,13 @@ interface Props {
   }
   /** Onglet « Session » (fiche 166) : ce qu'il montre de la conversation active. */
   session?: SessionTabData
+  /** Onglet « Fichiers » (fiche 271) : dernière demande (⌘P, lien du fil), liens, mention. */
+  files?: {
+    request?: FilesRequest | undefined
+    openLink: OpenFileLink
+    onMention?: (paths: string[]) => void
+    onShowDiff?: (absolutePath: string) => void
+  }
   onTab: (tab: PanelTab) => void
   onClose: () => void
   onResize: (width: number) => void
@@ -138,6 +147,7 @@ export function SidePanel({
   preview,
   onAttachImage,
   session,
+  files,
   onTab,
   onClose,
   onResize,
@@ -190,7 +200,10 @@ export function SidePanel({
   const stopDrag = () => (dragging.current = false)
 
   const hidden = hiddenPanelTabs(tabs, unavailablePanelTabs(platformFeatures(), discussion))
-  const label = (id: PanelTab) => PANEL_TABS.find((entry) => entry.id === id)?.label ?? id
+  // Onglet Fichiers : il prend le nom du fichier ouvert (fiche 271, Q9).
+  const [filesTitle, setFilesTitle] = useState<string>()
+  const label = (id: PanelTab) =>
+    (id === 'files' && filesTitle) || (PANEL_TABS.find((entry) => entry.id === id)?.label ?? id)
   const sizeLabel = maximized ? t('sidePanel.restore') : t('sidePanel.maximize')
 
   return (
@@ -369,6 +382,8 @@ export function SidePanel({
               focusTerminal={focusTerminal}
               onTerminalFocused={onTerminalFocused}
               onSendPageNotes={onSendPageNotes}
+              files={filesTabProps(files, items, maximized, onSendDiffNotes)}
+              onFilesTitle={setFilesTitle}
               {...(preferences ? { preferences } : {})}
               {...(attach ? { onAttach: attach } : {})}
             />
@@ -379,6 +394,16 @@ export function SidePanel({
   )
 }
 
+/** Ce que l'onglet Fichiers reçoit du panneau (fiche 271) ; rien sans `files`. */
+function filesTabProps(
+  files: Props['files'],
+  items: TranscriptItem[],
+  maximized: boolean,
+  onSendNotes: Props['onSendDiffNotes']
+) {
+  return files && { ...files, items, maximized, onSendNotes }
+}
+
 /** Outils de l'app d'une conversation (un par onglet), montés seulement s'ils sont affichés. */
 function ToolTab({
   tab,
@@ -387,7 +412,9 @@ function ToolTab({
   onTerminalFocused,
   preferences,
   onAttach,
-  onSendPageNotes
+  onSendPageNotes,
+  files,
+  onFilesTitle
 }: {
   tab: PanelTab
   conversationId: string
@@ -397,6 +424,15 @@ function ToolTab({
   onAttach?: (image: ImageAttachment) => void
   /** Remarques sur la page, envoyées à l'agent (fiche 132). */
   onSendPageNotes?: ((text: string, images: ImageAttachment[]) => void) | undefined
+  /** Onglet Fichiers (fiche 271). */
+  files?:
+    | (NonNullable<Props['files']> & {
+        items: TranscriptItem[]
+        maximized: boolean
+        onSendNotes?: ((text: string, about?: string) => void) | undefined
+      })
+    | undefined
+  onFilesTitle: (title: string | undefined) => void
 }) {
   const attach = onAttach ? { onAttach } : {}
   switch (tab) {
@@ -425,6 +461,21 @@ function ToolTab({
       )
     case 'acp':
       return <AcpTab key={conversationId} conversationId={conversationId} />
+    case 'files':
+      return files ? (
+        <FilesTab
+          key={conversationId}
+          conversationId={conversationId}
+          items={files.items}
+          maximized={files.maximized}
+          request={files.request}
+          openLink={files.openLink}
+          onSendNotes={files.onSendNotes}
+          onMention={files.onMention}
+          onShowDiff={files.onShowDiff}
+          onTitle={onFilesTitle}
+        />
+      ) : null
     default:
       return null
   }

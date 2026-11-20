@@ -19,6 +19,31 @@ import {
 import { platformFeatures } from './platform-features'
 import { PANEL_DEFAULT_WIDTH, panelWidthToSave, savedPanelWidth } from './panel-width'
 import { fittedSidebarWidth, readSidebarWidth } from './components/sidebar/sidebar-width'
+import type { FilesRequest } from './components/files/useFilesTab'
+import type { OpenFileLink } from './components/thread/FileLink'
+import { TOGGLE_TREE_EVENT } from './files-state'
+
+const FILES_OPEN_KEY = 'bobine.panel.filesOpen'
+/** Conversations dont on garde l'onglet Fichiers ouvert (les plus récentes). */
+const MAX_FILES_OPEN = 100
+
+/** Conversations où l'onglet Fichiers est ouvert, retenues d'un lancement à l'autre (fiche 271, Q2). */
+function loadFilesOpen(): string[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FILES_OPEN_KEY) ?? '[]') as unknown
+    return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveFilesOpen(ids: readonly string[]): void {
+  try {
+    localStorage.setItem(FILES_OPEN_KEY, JSON.stringify(ids.slice(-MAX_FILES_OPEN)))
+  } catch {
+    // Stockage indisponible : l'onglet ne reviendra pas au prochain lancement.
+  }
+}
 
 export interface PanelState {
   open: boolean
@@ -147,8 +172,14 @@ export function usePanel(options: {
   const [closedTabs, setClosedTabs] = useState(loadClosedTabs)
   useEffect(() => saveClosedTabs(closedTabs), [closedTabs])
   const [arrivalOrder, setArrivalOrder] = useState<Record<string, PanelTab[]>>({})
+  // Onglet Fichiers ouvert, par conversation, retenu au redémarrage (fiche 271, Q2).
+  const [filesOpen, setFilesOpen] = useState(loadFilesOpen)
+  useEffect(() => saveFilesOpen(filesOpen), [filesOpen])
   const [shownTab, setShownTab] = useState<PanelTab | null>(null)
   const tabsOf = conversationId
+  if (panel.open && panel.tab === 'files' && tabsOf && !filesOpen.includes(tabsOf)) {
+    setFilesOpen([...filesOpen, tabsOf])
+  }
   if (panel.open && panel.tab !== shownTab) {
     setShownTab(panel.tab)
     if (tabsOf && !openedTabs[tabsOf]?.includes(panel.tab)) {
@@ -230,13 +261,26 @@ export function usePanel(options: {
     []
   )
 
+  // Onglet Fichiers (fiche 271) : ⌘P (curseur dans le filtre), lien de fichier du fil (à la ligne).
+  const [filesRequest, setFilesRequest] = useState<FilesRequest>()
+  const openFiles = useCallback(
+    (request: Omit<FilesRequest, 'seq'> = {}) => {
+      setFilesRequest((current) => ({ ...request, seq: (current?.seq ?? 0) + 1 }))
+      update({ open: true, tab: 'files' })
+    },
+    [update]
+  )
+
   // Onglets du panneau (fiche 082) : les outils qui servent dans la conversation.
   const usedTabs = useMemo(() => panelTabsUsed(items), [items])
   const arrival = (conversationId && arrivalOrder[conversationId]) || []
   const tabs = visiblePanelTabs({
     used: usedTabs,
     active: panel.tab,
-    opened: new Set(conversationId ? (openedTabs[conversationId] ?? []) : []),
+    opened: new Set([
+      ...(conversationId ? (openedTabs[conversationId] ?? []) : []),
+      ...(conversationId && filesOpen.includes(conversationId) ? (['files'] as const) : [])
+    ]),
     closed: new Set(conversationId ? (closedTabs[conversationId] ?? []) : []),
     hasChanges,
     hasPreview: !!preview,
@@ -255,6 +299,7 @@ export function usePanel(options: {
     const id = conversationId
     if (tab === 'document') setPreview(null)
     else if (id) {
+      if (tab === 'files') setFilesOpen(filesOpen.filter((other) => other !== id))
       // En dernier : les conversations récentes sont celles qu'on garde (`saveClosedTabs`).
       const others = Object.entries(closedTabs).filter(([key]) => key !== id)
       const kept = [...(closedTabs[id] ?? []).filter((t) => t !== tab), tab]
@@ -288,6 +333,37 @@ export function usePanel(options: {
     openChanges,
     preview,
     showDocument,
+    filesRequest,
+    openFiles,
+    /** ⌘P (curseur dans le filtre) et ⇧⌘Y (l'arbre) ; rien dans l'espace Discussion. */
+    filesCommands: {
+      files: () => {
+        if (!discussion) openFiles({ focusFilter: true })
+      },
+      'files-tree': () => {
+        if (discussion) return
+        if (panel.open && panel.tab === 'files') window.dispatchEvent(new Event(TOGGLE_TREE_EVENT))
+        else openFiles()
+      }
+    },
+    /**
+     * Lignes des travaux délégués (fiche 161) : ouvrir leur conversation, ou « Parcourir les
+     * fichiers » — sa conversation, onglet Fichiers (fiche 271, Q7).
+     */
+    childLinks: (select: (id: string) => void) => ({
+      onOpen: select,
+      onBrowse: (id: string) => {
+        select(id)
+        openFiles()
+      }
+    }),
+    /** Ce que l'onglet Fichiers reçoit : demande, liens, mention dans la saisie, diff d'un fichier. */
+    filesTab: (openLink: OpenFileLink, inbox: { mention: (paths: string[]) => void }) => ({
+      request: filesRequest,
+      openLink,
+      onMention: (paths: string[]) => inbox.mention(paths),
+      onShowDiff: (path: string) => openChanges('conversation', { path })
+    }),
     updateDocument,
     /** Numéro de l'ouverture : change à chaque ouverture réelle, 0 au lancement. */
     opening: openings.count

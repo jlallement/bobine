@@ -70,7 +70,7 @@ describe('onglets du panneau (fiche 082)', () => {
       hasPreview: false
     })
     expect(visible).toEqual(['session', 'tasks', 'browser', 'terminal', 'android', 'changes'])
-    expect(hiddenPanelTabs(visible)).toEqual(['simulator', 'acp'])
+    expect(hiddenPanelTabs(visible)).toEqual(['simulator', 'acp', 'files'])
   })
 
   it('conversation neuve : l’onglet actif seul ; l’aperçu n’est jamais dans le menu « + »', () => {
@@ -89,7 +89,8 @@ describe('onglets du panneau (fiche 082)', () => {
       'android',
       'terminal',
       'acp',
-      'changes'
+      'changes',
+      'files'
     ])
   })
 

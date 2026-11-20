@@ -28,6 +28,8 @@ The same list is in the app: Help › Keyboard Shortcuts (⌘/), or Settings ›
 | ⇧⌘J | Maximize Panel | View |
 | ⌃` | Terminal | View |
 | ⇧⌘D | Changes | View |
+| ⌘P | Filter files | View |
+| ⇧⌘Y | Show tree | View |
 | ⌘0 | Actual Size | View |
 | ⌘+ | Zoom In | View |
 | ⌘− | Zoom Out | View |

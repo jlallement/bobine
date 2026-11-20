@@ -612,6 +612,15 @@ export function createApi(
         invoke('files:openLink', id, href, ...(options ? [options] : [])),
       readMarkdown: (id: string, path: string) => invoke('files:readMarkdown', id, path)
     },
+    /** Vue des fichiers du dossier (fiche 271) : lecture seule, chemins vérifiés par le main. */
+    fileTree: {
+      roots: (id: string) => invoke('files:roots', id),
+      list: (id: string, root: number, dir: string) => invoke('files:list', id, root, dir),
+      read: (id: string, root: number, path: string) => invoke('files:read', id, root, path),
+      search: (id: string, root: number, query: string) => invoke('files:search', id, root, query),
+      reveal: (id: string, root: number, path: string) => invoke('files:reveal', id, root, path),
+      open: (id: string, root: number, path: string) => invoke('files:open', id, root, path)
+    },
     /** Éditeur de l'utilisateur (fiche 156) : installés, et ouvrir un fichier à la ligne. */
     editors: {
       list: () => invoke('editors:list'),

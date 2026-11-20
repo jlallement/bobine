@@ -2206,6 +2206,7 @@ export type FrResources = {
       readonly acp: 'Échanges ACP'
       readonly session: 'Session'
       readonly documents: 'Documents'
+      readonly files: 'Fichiers'
     }
   }
   readonly android: {
@@ -2381,6 +2382,71 @@ export type FrResources = {
     readonly reveal: 'Montrer dans le Finder'
     readonly close: 'Fermer l’aperçu'
     readonly truncated: 'Document trop long : seul le début est montré. « Ouvrir avec l’app par défaut » pour la suite.'
+  }
+  readonly files: {
+    readonly tab: 'Fichiers'
+    readonly error: {
+      readonly outside: 'Hors des dossiers de la conversation : {{path}}'
+      readonly notFolder: 'Pas un dossier : {{path}}'
+      readonly notFile: 'Pas un fichier : {{path}}'
+    }
+    readonly filter: 'Filtrer'
+    readonly filterLabel: 'Filtrer les fichiers'
+    readonly collapseAll: 'Réduire tous les dossiers'
+    readonly showTree: 'Voir l’arborescence'
+    readonly more: 'Plus'
+    readonly reload: 'Relire le dossier'
+    readonly wrap: 'Retour à la ligne automatique'
+    readonly side: {
+      readonly label: 'Côté de l’arborescence'
+      readonly auto: 'Automatique'
+      readonly left: 'Gauche'
+      readonly right: 'Droite'
+    }
+    readonly treeLabel: 'Fichiers de la conversation'
+    readonly moreEntries_one: '{{n}} de plus : filtrer pour le trouver'
+    readonly moreEntries_other: '{{n}} de plus : filtrer pour les trouver'
+    readonly moreEntries_many: '{{n}} de plus : filtrer pour les trouver'
+    readonly empty: 'Dossier vide'
+    readonly noMatch: 'Aucun fichier ne correspond.'
+    readonly ignoredNotSearched: 'Les fichiers ignorés par git ne sont pas cherchés : les parcourir dans l’arbre.'
+    readonly ignored: 'Ignoré par git'
+    readonly excluded: 'Invisible pour l’agent ({{name}})'
+    readonly excludedPlain: 'Invisible pour l’agent'
+    readonly modified: 'Modifié dans cette conversation'
+    readonly linkOutside: 'Lien vers l’extérieur des dossiers de la conversation : non suivi'
+    readonly noFolder: 'Cette conversation n’a pas encore de dossier.'
+    readonly folderMissing: 'Ce dossier n’existe plus.'
+    readonly readOnly: 'Lecture seule'
+    readonly back: 'Revenir à l’arborescence'
+    readonly previous: 'Fichier précédent'
+    readonly next: 'Fichier suivant'
+    readonly truncated: 'Fichier tronqué ({{size}}) : seul le premier Mo est montré.'
+    readonly plain: 'Fichier long : affiché sans coloration.'
+    readonly binary: 'Fichier binaire · {{size}}'
+    readonly missing: 'Ce fichier n’existe plus.'
+    readonly changed: 'Modifié à {{time}}'
+    readonly source: 'Source'
+    readonly rendered: 'Rendu'
+    readonly openInBrowser: 'Ouvrir dans le navigateur'
+    readonly goToLine: 'Aller à la ligne…'
+    readonly goToLinePrompt: 'Numéro de ligne'
+    readonly openDefault: 'Ouvrir avec l’app par défaut'
+    readonly reveal: 'Afficher dans le Finder'
+    readonly mention: 'Mentionner dans la saisie'
+    readonly copyRelative: 'Copier le chemin relatif'
+    readonly copyAbsolute: 'Copier le chemin absolu'
+    readonly showDiff: 'Voir le diff'
+    readonly browse: 'Parcourir les fichiers'
+    readonly actions: 'Actions sur {{name}}'
+    readonly fileLabel: '{{name}}, {{lines}} lignes, lecture seule'
+    readonly imageInfo: '{{size}}'
+    readonly loading: 'Lecture…'
+    readonly rootTitle: '{{path}}'
+    readonly otherFolder: 'Autre dossier, non transmis à l’agent'
+    readonly clearFilter: 'Effacer le filtre'
+    readonly dismiss: 'Fermer l’avis'
+    readonly noteChanged: ' · le code a changé'
   }
   readonly sidePanel: {
     readonly resize: 'Redimensionner le panneau'
@@ -2754,6 +2820,8 @@ export type FrResources = {
       readonly help: 'Aide de Bobine'
       readonly 'space-code': 'Espace Code'
       readonly 'space-discussion': 'Espace Discussion'
+      readonly files: 'Filtrer les fichiers'
+      readonly 'files-tree': 'Voir l’arborescence'
     }
     readonly interface: {
       readonly send: { readonly label: 'Envoyer le message' }
@@ -5787,6 +5855,7 @@ export type FrResources = {
           readonly detail: 'Vos conversations sont gardées. Un rapport a été rangé sur cet ordinateur ; rien n’a été envoyé. Il peut contenir des extraits de vos conversations, voire des secrets (fin du journal, mémoire de Bobine dans les fichiers .dmp) : relisez-le avant de le joindre.'
         }
       }
+      readonly files: { readonly reveal: 'Afficher dans le gestionnaire de fichiers' }
     }
     readonly explorer: {
       readonly settings: {
@@ -5880,6 +5949,7 @@ export type FrResources = {
       readonly memory: {
         readonly keyLocked: 'Bobine ne peut pas déchiffrer sa clé (DPAPI de Windows) : rien ne peut être retenu pour l’instant.'
       }
+      readonly files: { readonly reveal: 'Afficher dans l’Explorateur de fichiers' }
     }
   }
   readonly launchLine: {

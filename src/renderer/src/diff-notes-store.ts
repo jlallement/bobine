@@ -17,7 +17,7 @@ const isNote = (v: unknown): v is DiffNote => {
   const note = v as Partial<DiffNote>
   return (
     typeof note.id === 'string' &&
-    (note.view === 'conversation' || note.view === 'git') &&
+    (note.view === 'conversation' || note.view === 'git' || note.view === 'file') &&
     typeof note.file === 'string' &&
     typeof note.path === 'string' &&
     (note.side === 'new' || note.side === 'old') &&

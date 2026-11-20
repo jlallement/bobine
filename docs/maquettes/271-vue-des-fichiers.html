@@ -877,8 +877,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background:
-          repeating-conic-gradient(var(--surface-2) 0 25%, var(--surface) 0 50%) 50% / 16px 16px;
+        background: repeating-conic-gradient(var(--surface-2) 0 25%, var(--surface) 0 50%) 50% /
+          16px 16px;
         padding: 20px;
       }
       .fake-shot {
@@ -1315,7 +1315,9 @@
         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
         <circle cx="12" cy="12" r="3" />
       </symbol>
-      <symbol id="list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></symbol>
+      <symbol id="list" viewBox="0 0 24 24">
+        <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
+      </symbol>
       <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
       <symbol id="branch" viewBox="0 0 24 24">
         <circle cx="6" cy="5" r="2" />
@@ -1339,10 +1341,11 @@
             s'affiche comme un autre fichier.
           </p>
           <p>
-            Couleurs et polices de Bobine (<code>themes.generated.css</code>, <code>styles.css</code>) ;
-            coloration : les jetons <code>--syn-*</code> de <code>syntax.css</code>, ceux du code du fil.
-            Pastilles jaunes : renvois à la légende, qui dit <b>ce que ça fait</b> et, en gris,
-            <b>ce que ça ne fait pas</b>. Données fictives (un projet « carnet »).
+            Couleurs et polices de Bobine (<code>themes.generated.css</code>,
+            <code>styles.css</code>) ; coloration : les jetons <code>--syn-*</code> de
+            <code>syntax.css</code>, ceux du code du fil. Pastilles jaunes : renvois à la légende,
+            qui dit <b>ce que ça fait</b> et, en gris, <b>ce que ça ne fait pas</b>. Données
+            fictives (un projet « carnet »).
           </p>
         </div>
         <div class="theme-switch" role="group" aria-label="Thème">
@@ -1353,13 +1356,24 @@
       </header>
 
       <blockquote
-        style="margin: 18px 0 8px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-2); line-height: 1.55; max-width: 920px"
+        style="
+          margin: 18px 0 8px;
+          padding: 12px 16px;
+          border-left: 3px solid var(--accent);
+          background: var(--surface);
+          border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+          color: var(--text-2);
+          line-height: 1.55;
+          max-width: 920px;
+        "
       >
         « L'idée, c'est de ne pas faire un truc comme Bob IDE, un IDE en premier et Bob en
         secondaire, mais plutôt dans l'esprit de Claude Code. Si on en a besoin, on peut voir
         l'arborescence et les fichiers, mais pas de manière centrale dans le logiciel. »
-        <span style="color: var(--muted)">— l'utilisateur, 2026-11-20. Puis : lecture seule
-        d'abord ; « la coloration de code, ce serait aussi un vrai plus ».</span>
+        <span style="color: var(--muted)"
+          >— l'utilisateur, 2026-11-20. Puis : lecture seule d'abord ; « la coloration de code, ce
+          serait aussi un vrai plus ».</span
+        >
       </blockquote>
 
       <div class="rules">
@@ -1404,39 +1418,88 @@
             </div>
             <div class="thread">
               <div class="msg-user">Ajoute une liste de courses partagée.</div>
-              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx</div>
+              <div class="tool-row">
+                <svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx
+              </div>
               <div class="msg-agent a">
                 <b class="pin" style="left: -24px; top: 2px">1</b>
-                <p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p>
+                <p>
+                  C'est fait : le composant est dans
+                  <span class="flink">src/components/ShoppingList.tsx</span>.
+                </p>
               </div>
             </div>
-            <div class="composer"><span class="ph">Répondre… (<code>@</code> pour joindre un fichier)</span></div>
+            <div class="composer">
+              <span class="ph">Répondre… (<code>@</code> pour joindre un fichier)</span>
+            </div>
           </div>
           <div class="side">
             <div class="side-head">
               <span class="tab active">Session<span class="x">✕</span></span>
               <span class="tab">Modifications</span>
               <span class="grow"></span>
-              <span class="ibtn a on"><b class="pin r">2</b><svg class="i"><use href="#plus" /></svg></span>
+              <span class="ibtn a on"
+                ><b class="pin r">2</b><svg class="i"><use href="#plus" /></svg
+              ></span>
             </div>
             <div class="side-body" style="padding: 14px; font-size: 13px">
-              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Dossier</span><span class="end a"><b class="pin" style="left: -26px; top: -1px">3</b>carnet</span></div>
-              <div class="row" style="padding-left: 4px"><span class="name" style="color: var(--muted)">Branche</span><span class="end">main</span></div>
+              <div class="row" style="padding-left: 4px">
+                <span class="name" style="color: var(--muted)">Dossier</span
+                ><span class="end a"
+                  ><b class="pin" style="left: -26px; top: -1px">3</b>carnet</span
+                >
+              </div>
+              <div class="row" style="padding-left: 4px">
+                <span class="name" style="color: var(--muted)">Branche</span
+                ><span class="end">main</span>
+              </div>
             </div>
             <div class="menu" style="right: 8px; top: 46px">
-              <div class="it"><svg class="i s"><use href="#ext" /></svg>Navigateur</div>
-              <div class="it"><svg class="i s"><use href="#code" /></svg>Terminal<span class="sc">⌃`</span></div>
-              <div class="it on"><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="sc">⇧⌘Y</span></div>
-              <div class="it"><svg class="i s"><use href="#file" /></svg>Tâches</div>
-              <div class="it off"><svg class="i s"><use href="#file" /></svg>Échanges ACP</div>
+              <div class="it">
+                <svg class="i s"><use href="#ext" /></svg>Navigateur
+              </div>
+              <div class="it">
+                <svg class="i s"><use href="#code" /></svg>Terminal<span class="sc">⌃`</span>
+              </div>
+              <div class="it on">
+                <svg class="i s"><use href="#folder" /></svg>Fichiers<span class="sc">⇧⌘Y</span>
+              </div>
+              <div class="it">
+                <svg class="i s"><use href="#file" /></svg>Tâches
+              </div>
+              <div class="it off">
+                <svg class="i s"><use href="#file" /></svg>Échanges ACP
+              </div>
             </div>
           </div>
         </div>
         <div class="legend">
           <ol>
-            <li><span class="pin">1</span><div><b>La conversation au centre</b>, et les fichiers y passent comme aujourd'hui (liens, <code>@</code>, Ouvrir dans l'éditeur).<span class="not">aucun fichier ni éditeur au centre.</span></div></li>
-            <li><span class="pin">2</span><div><b>Menu « + » du panneau</b> : Fichiers au rang de Navigateur et Terminal (chez Claude Code : l'icône dossier de la barre du panneau).<span class="not">pas ouvert d'office, pas de colonne permanente.</span></div></li>
-            <li><span class="pin">3</span><div><b>« Dossier » de Session</b> : inchangé, il montre le dossier dans le Finder (décision Q3).<span class="not">n'ouvre pas l'onglet Fichiers.</span></div></li>
+            <li>
+              <span class="pin">1</span>
+              <div>
+                <b>La conversation au centre</b>, et les fichiers y passent comme aujourd'hui
+                (liens, <code>@</code>, Ouvrir dans l'éditeur).<span class="not"
+                  >aucun fichier ni éditeur au centre.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">2</span>
+              <div>
+                <b>Menu « + » du panneau</b> : Fichiers au rang de Navigateur et Terminal (chez
+                Claude Code : l'icône dossier de la barre du panneau).<span class="not"
+                  >pas ouvert d'office, pas de colonne permanente.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">3</span>
+              <div>
+                <b>« Dossier » de Session</b> : inchangé, il montre le dossier dans le Finder
+                (décision Q3).<span class="not">n'ouvre pas l'onglet Fichiers.</span>
+              </div>
+            </li>
           </ol>
         </div>
       </div>
@@ -1460,24 +1523,44 @@
             </div>
             <div class="thread">
               <div class="msg-user">Ajoute une liste de courses partagée.</div>
-              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx</div>
-              <div class="tool-row"><svg class="i s"><use href="#code" /></svg>A modifié list.css</div>
-              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p></div>
+              <div class="tool-row">
+                <svg class="i s"><use href="#code" /></svg>A créé ShoppingList.tsx
+              </div>
+              <div class="tool-row">
+                <svg class="i s"><use href="#code" /></svg>A modifié list.css
+              </div>
+              <div class="msg-agent">
+                <p>
+                  C'est fait : le composant est dans
+                  <span class="flink">src/components/ShoppingList.tsx</span>.
+                </p>
+              </div>
             </div>
             <div class="composer"><span class="ph">Répondre…</span></div>
           </div>
           <div class="side">
             <div class="side-head">
               <span class="tab">Session</span>
-              <span class="tab active a"><b class="pin r">1</b><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="x">✕</span></span>
+              <span class="tab active a"
+                ><b class="pin r">1</b><svg class="i s"><use href="#folder" /></svg>Fichiers<span
+                  class="x"
+                  >✕</span
+                ></span
+              >
               <span class="grow"></span>
-              <span class="ibtn" title="Agrandir"><svg class="i"><use href="#ext" /></svg></span>
+              <span class="ibtn" title="Agrandir"
+                ><svg class="i"><use href="#ext" /></svg
+              ></span>
             </div>
             <div class="side-body">
               <div class="toolbar a">
                 <b class="pin" style="left: 8px; top: 8px">2</b>
-                <span class="ibtn" title="Réduire tous les dossiers"><svg class="i"><use href="#chev-r" /></svg></span>
-                <span class="ibtn on" title="Voir l'arborescence ⇧⌘Y"><svg class="i"><use href="#list" /></svg></span>
+                <span class="ibtn" title="Réduire tous les dossiers"
+                  ><svg class="i"><use href="#chev-r" /></svg
+                ></span>
+                <span class="ibtn on" title="Voir l'arborescence ⇧⌘Y"
+                  ><svg class="i"><use href="#list" /></svg
+                ></span>
                 <span class="ibtn" title="Plus">···</span>
               </div>
               <div class="search a">
@@ -1486,35 +1569,187 @@
               </div>
               <div class="tree a" style="position: relative">
                 <b class="pin" style="left: -12px; top: 4px">4</b>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
-                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
-                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">captures</span></div>
-                <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#image" /></svg></span><span class="name">shopping.png</span></div>
-                <div class="row dim a"><b class="pin" style="left: -12px; top: 3px">5</b><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
-                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">out</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
-                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
-                <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span><span class="end" style="color: var(--accent)" title="Modifié dans cette conversation">●</span></div>
-                <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ListItem.tsx</span></div>
-                <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">styles</span></div>
-                <div class="row a"><b class="pin" style="left: -12px; top: 3px">6</b><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">.env</span></div>
-                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">.gitignore</span></div>
-                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">package.json</span></div>
-                <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">README.md</span></div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">.github</span>
+                </div>
+                <div class="row dim">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">build</span>
+                </div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">docs</span>
+                </div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-d" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">e2e</span>
+                </div>
+                <div class="row ind1">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-d" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">captures</span>
+                </div>
+                <div class="row ind2">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#image" /></svg></span
+                  ><span class="name">shopping.png</span>
+                </div>
+                <div class="row dim a">
+                  <b class="pin" style="left: -12px; top: 3px">5</b
+                  ><span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">node_modules</span>
+                </div>
+                <div class="row dim">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">out</span>
+                </div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-d" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">src</span>
+                </div>
+                <div class="row ind1">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-d" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">components</span>
+                </div>
+                <div class="row ind2 sel">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#code" /></svg></span
+                  ><span class="name">ShoppingList.tsx</span
+                  ><span
+                    class="end"
+                    style="color: var(--accent)"
+                    title="Modifié dans cette conversation"
+                    >●</span
+                  >
+                </div>
+                <div class="row ind2">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#code" /></svg></span
+                  ><span class="name">ListItem.tsx</span>
+                </div>
+                <div class="row ind1">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">styles</span>
+                </div>
+                <div class="row a">
+                  <b class="pin" style="left: -12px; top: 3px">6</b><span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#file" /></svg></span
+                  ><span class="name">.env</span>
+                </div>
+                <div class="row">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#file" /></svg></span
+                  ><span class="name">.gitignore</span>
+                </div>
+                <div class="row">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#file" /></svg></span
+                  ><span class="name">package.json</span>
+                </div>
+                <div class="row">
+                  <span class="chev"></span
+                  ><span class="ico"
+                    ><svg class="i s"><use href="#file" /></svg></span
+                  ><span class="name">README.md</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="legend">
           <ol>
-            <li><span class="pin">1</span><div><b>Onglet « Fichiers »</b>, ouvert à la demande, avec Agrandir et ✕ comme les autres onglets.<span class="not">jamais ouvert d'office.</span></div></li>
-            <li><span class="pin">2</span><div><b>Trois boutons</b>, comme Claude Code : Réduire tous les dossiers, Voir l'arborescence (⇧⌘Y), … (écran 2).<span class="not">pas de « Nouveau fichier », pas de « Nouveau dossier ».</span></div></li>
-            <li><span class="pin">3</span><div><b>« Filtrer »</b>, où ⌘P met le curseur : liste plate classée par le rang de <code>@</code>, <code>chemin:ligne</code> accepté. « Filtrer ou ? pour chercher » (contenu, <code>git grep</code>) viendra avec le lot 5, plus tard.<span class="not">pas de palette, pas d'index, pas de recherche hors du dossier.</span></div></li>
-            <li><span class="pin">4</span><div><b>Arbre complet</b>, dossiers d'abord, cachés listés ; un niveau lu à l'ouverture d'un dossier, 2 000 entrées au plus. Relu à la fin des outils et des tours, et au retour sur la fenêtre.<span class="not">aucun parcours récursif, aucune surveillance continue.</span></div></li>
-            <li><span class="pin">5</span><div><b>Ignorés visibles, repliés, atténués</b> (« Ignoré par git ») : on peut ouvrir <code>out</code> ou <code>node_modules</code>. Le point ● marque un fichier modifié par la conversation.<span class="not">jamais ouverts ni comptés d'office ; pas de pastille git.</span></div></li>
-            <li><span class="pin">6</span><div><b>Secrets</b> (<code>.env</code>, clés) : listés et affichés comme les autres fichiers (décision Q8 ; les captures n'utilisent que des valeurs factices). Un lien symbolique qui sort du dossier n'est pas suivi.<span class="not">aucun affichage d'un fichier hors du dossier.</span></div></li>
+            <li>
+              <span class="pin">1</span>
+              <div>
+                <b>Onglet « Fichiers »</b>, ouvert à la demande, avec Agrandir et ✕ comme les autres
+                onglets.<span class="not">jamais ouvert d'office.</span>
+              </div>
+            </li>
+            <li>
+              <span class="pin">2</span>
+              <div>
+                <b>Trois boutons</b>, comme Claude Code : Réduire tous les dossiers, Voir
+                l'arborescence (⇧⌘Y), … (écran 2).<span class="not"
+                  >pas de « Nouveau fichier », pas de « Nouveau dossier ».</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">3</span>
+              <div>
+                <b>« Filtrer »</b>, où ⌘P met le curseur : liste plate classée par le rang de
+                <code>@</code>, <code>chemin:ligne</code> accepté. « Filtrer ou ? pour chercher »
+                (contenu, <code>git grep</code>) viendra avec le lot 5, plus tard.<span class="not"
+                  >pas de palette, pas d'index, pas de recherche hors du dossier.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">4</span>
+              <div>
+                <b>Arbre complet</b>, dossiers d'abord, cachés listés ; un niveau lu à l'ouverture
+                d'un dossier, 2 000 entrées au plus. Relu à la fin des outils et des tours, et au
+                retour sur la fenêtre.<span class="not"
+                  >aucun parcours récursif, aucune surveillance continue.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">5</span>
+              <div>
+                <b>Ignorés visibles, repliés, atténués</b> (« Ignoré par git ») : on peut ouvrir
+                <code>out</code> ou <code>node_modules</code>. Le point ● marque un fichier modifié
+                par la conversation.<span class="not"
+                  >jamais ouverts ni comptés d'office ; pas de pastille git.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">6</span>
+              <div>
+                <b>Secrets</b> (<code>.env</code>, clés) : listés et affichés comme les autres
+                fichiers (décision Q8 ; les captures n'utilisent que des valeurs factices). Un lien
+                symbolique qui sort du dossier n'est pas suivi.<span class="not"
+                  >aucun affichage d'un fichier hors du dossier.</span
+                >
+              </div>
+            </li>
           </ol>
         </div>
       </div>
@@ -1535,49 +1770,109 @@
         ><small>celui de Claude Code, sans ses réglages d'éditeur</small>
       </h2>
       <p class="lede">
-        Repris de Claude Code : filtrer, arborescence, côté, réduire. Ses réglages
-        d'éditeur (onglets d'aperçu, enregistrement automatique, Tab, tabulation…) n'ont pas lieu
-        d'être : la vue est en lecture seule. Seul « Retour à la ligne » reste, il sert à lire.
+        Repris de Claude Code : filtrer, arborescence, côté, réduire. Ses réglages d'éditeur
+        (onglets d'aperçu, enregistrement automatique, Tab, tabulation…) n'ont pas lieu d'être : la
+        vue est en lecture seule. Seul « Retour à la ligne » reste, il sert à lire.
       </p>
       <div class="stage narrow">
         <div class="win solo" style="height: 470px">
           <div class="side">
             <div class="side-head">
-              <span class="tab active"><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="x">✕</span></span>
+              <span class="tab active"
+                ><svg class="i s"><use href="#folder" /></svg>Fichiers<span class="x">✕</span></span
+              >
               <span class="grow"></span>
-              <span class="ibtn"><svg class="i"><use href="#ext" /></svg></span>
+              <span class="ibtn"
+                ><svg class="i"><use href="#ext" /></svg
+              ></span>
             </div>
             <div class="side-body">
               <div class="toolbar">
-                <span class="ibtn"><svg class="i"><use href="#chev-r" /></svg></span>
-                <span class="ibtn on"><svg class="i"><use href="#list" /></svg></span>
+                <span class="ibtn"
+                  ><svg class="i"><use href="#chev-r" /></svg
+                ></span>
+                <span class="ibtn on"
+                  ><svg class="i"><use href="#list" /></svg
+                ></span>
                 <span class="ibtn on">···</span>
               </div>
-              <div class="search"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span></div>
+              <div class="search">
+                <svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span>
+              </div>
               <div class="tree">
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">.github</span></div>
-                <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">build</span></div>
-                <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">.github</span>
+                </div>
+                <div class="row dim">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">build</span>
+                </div>
+                <div class="row">
+                  <span class="chev"
+                    ><svg class="i s"><use href="#chev-r" /></svg></span
+                  ><span class="ico folder"
+                    ><svg class="i s"><use href="#folder" /></svg></span
+                  ><span class="name">docs</span>
+                </div>
               </div>
             </div>
             <div class="menu" style="right: 8px; top: 92px; min-width: 300px">
-              <div class="it a"><b class="pin" style="left: -28px; top: 5px">1</b><span class="ck"></span>Filtrer les fichiers<span class="sc">⌘P</span></div>
+              <div class="it a">
+                <b class="pin" style="left: -28px; top: 5px">1</b><span class="ck"></span>Filtrer
+                les fichiers<span class="sc">⌘P</span>
+              </div>
               <hr />
-              <div class="it a"><b class="pin" style="left: -28px; top: 5px">2</b><span class="ck">✓</span>Voir l'arborescence<span class="sc">⇧⌘Y</span></div>
-              <div class="it"><span class="ck"></span>Côté de l'arborescence<span class="sub">Automatique ›</span></div>
+              <div class="it a">
+                <b class="pin" style="left: -28px; top: 5px">2</b><span class="ck">✓</span>Voir
+                l'arborescence<span class="sc">⇧⌘Y</span>
+              </div>
+              <div class="it">
+                <span class="ck"></span>Côté de l'arborescence<span class="sub">Automatique ›</span>
+              </div>
               <hr />
               <div class="it"><span class="ck"></span>Réduire tous les dossiers</div>
               <hr />
-              <div class="it a"><b class="pin" style="left: -28px; top: 5px">3</b><span class="ck">✓</span>Retour à la ligne automatique</div>
+              <div class="it a">
+                <b class="pin" style="left: -28px; top: 5px">3</b><span class="ck">✓</span>Retour à
+                la ligne automatique
+              </div>
               <div class="it"><span class="ck"></span>Relire le dossier</div>
             </div>
           </div>
         </div>
         <div class="legend">
           <ol>
-            <li><span class="pin">1</span><div><b>⌘P</b> : ouvre l'onglet s'il est fermé et met le curseur dans le filtre (même recherche que <code>@</code>).<span class="not">pas de palette, nulle part.</span></div></li>
-            <li><span class="pin">2</span><div><b>Arborescence</b> : la montrer ou la cacher (⇧⌘Y) ; de quel côté du fichier en agrandi (Automatique, Gauche, Droite).<span class="not">jamais une colonne hors du panneau.</span></div></li>
-            <li><span class="pin">3</span><div><b>Lecture</b> : retour à la ligne ; « Relire » à la demande.<span class="not">aucun réglage d'édition.</span></div></li>
+            <li>
+              <span class="pin">1</span>
+              <div>
+                <b>⌘P</b> : ouvre l'onglet s'il est fermé et met le curseur dans le filtre (même
+                recherche que <code>@</code>).<span class="not">pas de palette, nulle part.</span>
+              </div>
+            </li>
+            <li>
+              <span class="pin">2</span>
+              <div>
+                <b>Arborescence</b> : la montrer ou la cacher (⇧⌘Y) ; de quel côté du fichier en
+                agrandi (Automatique, Gauche, Droite).<span class="not"
+                  >jamais une colonne hors du panneau.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">3</span>
+              <div>
+                <b>Lecture</b> : retour à la ligne ; « Relire » à la demande.<span class="not"
+                  >aucun réglage d'édition.</span
+                >
+              </div>
+            </li>
           </ol>
           <div class="struck">
             Retirés du menu de Claude Code, faute d'édition : <s>Onglets d'aperçu</s> ·
@@ -1591,7 +1886,8 @@
 
       <!-- ============ Écran 3 ============ -->
       <h2 class="screen">
-        3 · Un fichier ouvert, coloré, et une remarque sur une ligne<span class="tag reco">Option B</span
+        3 · Un fichier ouvert, coloré, et une remarque sur une ligne<span class="tag reco"
+          >Option B</span
         ><small>clic sur un fichier de l'arbre, ou un lien du fil</small>
       </h2>
       <p class="lede">
@@ -1602,60 +1898,201 @@
       <div class="stage">
         <div class="win">
           <div class="conv">
-            <div class="conv-head"><span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses</div>
+            <div class="conv-head">
+              <span class="dots"><i></i><i></i><i></i></span>Carnet — liste de courses
+            </div>
             <div class="thread">
-              <div class="msg-agent"><p>C'est fait : le composant est dans <span class="flink">src/components/ShoppingList.tsx</span>.</p></div>
+              <div class="msg-agent">
+                <p>
+                  C'est fait : le composant est dans
+                  <span class="flink">src/components/ShoppingList.tsx</span>.
+                </p>
+              </div>
             </div>
             <div class="composer"><span class="ph">Répondre…</span></div>
           </div>
           <div class="side">
             <div class="side-head">
               <span class="tab">Session</span>
-              <span class="tab active file a"><b class="pin r">1</b><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x">✕</span></span>
+              <span class="tab active file a"
+                ><b class="pin r">1</b
+                ><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x"
+                  >✕</span
+                ></span
+              >
               <span class="grow"></span>
-              <span class="ibtn"><svg class="i"><use href="#ext" /></svg></span>
+              <span class="ibtn"
+                ><svg class="i"><use href="#ext" /></svg
+              ></span>
             </div>
             <div class="side-body">
               <div class="crumb a">
                 <b class="pin" style="left: -12px; top: 10px">2</b>
-                <span class="seg">src</span><span class="sep">/</span><span class="seg">components</span><span class="sep">/</span><b>ShoppingList.tsx</b>
-                <span class="ro-chip"><svg class="i s"><use href="#lock" /></svg>Lecture seule</span>
-                <span class="ibtn a" style="flex-shrink: 0">···<b class="pin" style="left: auto; right: -6px; top: -12px">3</b></span>
+                <span class="seg">src</span><span class="sep">/</span
+                ><span class="seg">components</span><span class="sep">/</span
+                ><b>ShoppingList.tsx</b>
+                <span class="ro-chip"
+                  ><svg class="i s"><use href="#lock" /></svg>Lecture seule</span
+                >
+                <span class="ibtn a" style="flex-shrink: 0"
+                  >···<b class="pin" style="left: auto; right: -6px; top: -12px">3</b></span
+                >
               </div>
               <div class="codeview a">
                 <b class="pin" style="left: -12px; top: 40px">4</b>
-                <div class="lr cur"><span></span><span class="n">1</span><span class="src"><span class="k">import</span> { useState } <span class="k">from</span> <span class="s">'react'</span></span></div>
-                <div class="lr"><span></span><span class="n">2</span><span class="src"><span class="k">import</span> { <span class="t">ListItem</span> } <span class="k">from</span> <span class="s">'./ListItem'</span></span></div>
-                <div class="lr"><span></span><span class="n">3</span><span class="src"><span class="k">import</span> <span class="s">'../styles/list.css'</span></span></div>
-                <div class="lr"><span></span><span class="n">4</span><span class="src"> </span></div>
-                <div class="lr"><span></span><span class="n">5</span><span class="src"><span class="hljs-c">// Liste partagée : un article par ligne, cochable.</span></span></div>
-                <div class="lr"><span></span><span class="n">6</span><span class="src"><span class="k">export function</span> <span class="f">ShoppingList</span>({ items }: <span class="t">Props</span>) {</span></div>
-                <div class="lr"><span></span><span class="n">7</span><span class="src">  <span class="k">const</span> [done, setDone] = <span class="f">useState</span>(<span class="k">new</span> <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span></div>
-                <div class="lr noted a"><b class="pin" style="left: -12px; top: 1px">5</b><span class="plus" style="visibility: visible">+</span><span class="n">8</span><span class="src">  <span class="k">const</span> toggle = (id: <span class="t">string</span>) =&gt; done.<span class="f">add</span>(id)</span></div>
+                <div class="lr cur">
+                  <span></span><span class="n">1</span
+                  ><span class="src"
+                    ><span class="k">import</span> { useState } <span class="k">from</span>
+                    <span class="s">'react'</span></span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">2</span
+                  ><span class="src"
+                    ><span class="k">import</span> { <span class="t">ListItem</span> }
+                    <span class="k">from</span> <span class="s">'./ListItem'</span></span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">3</span
+                  ><span class="src"
+                    ><span class="k">import</span> <span class="s">'../styles/list.css'</span></span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">4</span><span class="src"> </span>
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">5</span
+                  ><span class="src"
+                    ><span class="hljs-c"
+                      >// Liste partagée : un article par ligne, cochable.</span
+                    ></span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">6</span
+                  ><span class="src"
+                    ><span class="k">export function</span> <span class="f">ShoppingList</span>({
+                    items }: <span class="t">Props</span>) {</span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">7</span
+                  ><span class="src">
+                    <span class="k">const</span> [done, setDone] =
+                    <span class="f">useState</span>(<span class="k">new</span>
+                    <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span
+                  >
+                </div>
+                <div class="lr noted a">
+                  <b class="pin" style="left: -12px; top: 1px">5</b
+                  ><span class="plus" style="visibility: visible">+</span><span class="n">8</span
+                  ><span class="src">
+                    <span class="k">const</span> toggle = (id: <span class="t">string</span>) =&gt;
+                    done.<span class="f">add</span>(id)</span
+                  >
+                </div>
                 <div class="cmt a">
                   <b class="pin" style="left: -32px; top: 10px">6</b>
                   <div class="who">Ligne 8</div>
-                  <div class="txt">Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.</div>
-                  <div class="acts"><span class="btn small">Annuler</span><span class="btn small primary">Ajouter la remarque</span></div>
+                  <div class="txt">
+                    Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.
+                  </div>
+                  <div class="acts">
+                    <span class="btn small">Annuler</span
+                    ><span class="btn small primary">Ajouter la remarque</span>
+                  </div>
                 </div>
-                <div class="lr hover"><span class="plus">+</span><span class="n">9</span><span class="src">  <span class="k">return</span> (</span></div>
-                <div class="lr"><span></span><span class="n">10</span><span class="src">    &lt;<span class="t">ul</span> className=<span class="s">"list"</span>&gt;</span></div>
-                <div class="lr"><span></span><span class="n">11</span><span class="src">      {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t">ListItem</span> key={item.id} {...item} /&gt;)}</span></div>
-                <div class="lr"><span></span><span class="n">12</span><span class="src">    &lt;/<span class="t">ul</span>&gt;</span></div>
-                <div class="lr"><span></span><span class="n">13</span><span class="src">  )</span></div>
-                <div class="lr"><span></span><span class="n">14</span><span class="src">}</span></div>
+                <div class="lr hover">
+                  <span class="plus">+</span><span class="n">9</span
+                  ><span class="src"> <span class="k">return</span> (</span>
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">10</span
+                  ><span class="src">
+                    &lt;<span class="t">ul</span> className=<span class="s">"list"</span>&gt;</span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">11</span
+                  ><span class="src">
+                    {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t"
+                      >ListItem</span
+                    >
+                    key={item.id} {...item} /&gt;)}</span
+                  >
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">12</span
+                  ><span class="src"> &lt;/<span class="t">ul</span>&gt;</span>
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">13</span><span class="src"> )</span>
+                </div>
+                <div class="lr">
+                  <span></span><span class="n">14</span><span class="src">}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="legend">
           <ol>
-            <li><span class="pin">1</span><div><b>L'onglet prend le nom du fichier</b> (comme Claude Code) ; ✕ revient à l'arbre. Un seul fichier à la fois dans l'onglet.<span class="not">pas de rangée d'onglets d'éditeur.</span></div></li>
-            <li><span class="pin">2</span><div><b>Fil d'Ariane</b> : chaque segment ouvre ce dossier dans l'arbre. « Lecture seule » est dit.<span class="not">pas de curseur de saisie, pas de « modifié ● ».</span></div></li>
-            <li><span class="pin">3</span><div><b>…</b> : Ouvrir dans &lt;éditeur&gt; (à la ligne, fiche 156), Afficher dans le Finder, Mentionner dans la saisie, Copier le chemin, Voir le diff (fichier modifié).<span class="not">jamais « Exécuter » ni d'ouverture d'un exécutable.</span></div></li>
-            <li><span class="pin">4</span><div><b>Coloration</b> : highlight.js (déjà dans Bobine pour le fil) et <code>syntax.css</code> ; langage par extension et <code>#!</code>, pas deviné ; jusqu'à 200 Ko, au-delà texte brut et c'est dit. Numéros, retour à la ligne, ligne courante.<span class="not">aucune nouvelle dépendance ; pas de pliage, pas de mini-carte.</span></div></li>
-            <li><span class="pin">5</span><div><b>« + » au survol d'un numéro</b> ; glisser sur plusieurs numéros pour une plage.<span class="not">ne change pas le fichier.</span></div></li>
-            <li><span class="pin">6</span><div><b>« Ligne 8 »</b> : une remarque de diff (fiche 085), vue « fichier » ; elle rejoint les remarques en attente (écran 4).<span class="not">rien n'est envoyé à l'agent à ce moment-là.</span></div></li>
+            <li>
+              <span class="pin">1</span>
+              <div>
+                <b>L'onglet prend le nom du fichier</b> (comme Claude Code) ; ✕ revient à l'arbre.
+                Un seul fichier à la fois dans l'onglet.<span class="not"
+                  >pas de rangée d'onglets d'éditeur.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">2</span>
+              <div>
+                <b>Fil d'Ariane</b> : chaque segment ouvre ce dossier dans l'arbre. « Lecture seule
+                » est dit.<span class="not">pas de curseur de saisie, pas de « modifié ● ».</span>
+              </div>
+            </li>
+            <li>
+              <span class="pin">3</span>
+              <div>
+                <b>…</b> : Ouvrir dans &lt;éditeur&gt; (à la ligne, fiche 156), Afficher dans le
+                Finder, Mentionner dans la saisie, Copier le chemin, Voir le diff (fichier
+                modifié).<span class="not"
+                  >jamais « Exécuter » ni d'ouverture d'un exécutable.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">4</span>
+              <div>
+                <b>Coloration</b> : highlight.js (déjà dans Bobine pour le fil) et
+                <code>syntax.css</code> ; langage par extension et <code>#!</code>, pas deviné ;
+                jusqu'à 200 Ko, au-delà texte brut et c'est dit. Numéros, retour à la ligne, ligne
+                courante.<span class="not"
+                  >aucune nouvelle dépendance ; pas de pliage, pas de mini-carte.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">5</span>
+              <div>
+                <b>« + » au survol d'un numéro</b> ; glisser sur plusieurs numéros pour une
+                plage.<span class="not">ne change pas le fichier.</span>
+              </div>
+            </li>
+            <li>
+              <span class="pin">6</span>
+              <div>
+                <b>« Ligne 8 »</b> : une remarque de diff (fiche 085), vue « fichier » ; elle
+                rejoint les remarques en attente (écran 4).<span class="not"
+                  >rien n'est envoyé à l'agent à ce moment-là.</span
+                >
+              </div>
+            </li>
           </ol>
         </div>
       </div>
@@ -1676,51 +2113,173 @@
           <div class="side" style="border-left: 0">
             <div class="side-head">
               <span class="tab">Session</span>
-              <span class="tab active file"><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x">✕</span></span>
+              <span class="tab active file"
+                ><svg class="i s"><use href="#code" /></svg>ShoppingList.tsx<span class="x"
+                  >✕</span
+                ></span
+              >
               <span class="grow"></span>
-              <span class="ibtn on a" title="Réduire"><b class="pin r">1</b><svg class="i"><use href="#ext" /></svg></span>
+              <span class="ibtn on a" title="Réduire"
+                ><b class="pin r">1</b><svg class="i"><use href="#ext" /></svg
+              ></span>
             </div>
             <div class="maxi">
               <div style="display: flex; flex-direction: column; min-width: 0">
                 <div class="crumb">
-                  <span class="seg">src</span><span class="sep">/</span><span class="seg">components</span><span class="sep">/</span><b>ShoppingList.tsx</b>
-                  <span class="ro-chip"><svg class="i s"><use href="#lock" /></svg>Lecture seule</span>
-                  <span class="ibtn on"><svg class="i s"><use href="#list" /></svg></span>
+                  <span class="seg">src</span><span class="sep">/</span
+                  ><span class="seg">components</span><span class="sep">/</span
+                  ><b>ShoppingList.tsx</b>
+                  <span class="ro-chip"
+                    ><svg class="i s"><use href="#lock" /></svg>Lecture seule</span
+                  >
+                  <span class="ibtn on"
+                    ><svg class="i s"><use href="#list" /></svg
+                  ></span>
                   <span class="ibtn">···</span>
                 </div>
                 <div class="codeview">
-                  <div class="lr"><span></span><span class="n">5</span><span class="src"><span class="hljs-c">// Liste partagée : un article par ligne, cochable.</span></span></div>
-                  <div class="lr"><span></span><span class="n">6</span><span class="src"><span class="k">export function</span> <span class="f">ShoppingList</span>({ items }: <span class="t">Props</span>) {</span></div>
-                  <div class="lr"><span></span><span class="n">7</span><span class="src">  <span class="k">const</span> [done, setDone] = <span class="f">useState</span>(<span class="k">new</span> <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span></div>
-                  <div class="lr noted"><span></span><span class="n">8</span><span class="src">  <span class="k">const</span> toggle = (id: <span class="t">string</span>) =&gt; done.<span class="f">add</span>(id)</span></div>
-                  <div class="cmt"><div class="who">Ligne 8 · remarque en attente</div><div class="txt">Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.</div></div>
-                  <div class="lr"><span></span><span class="n">9</span><span class="src">  <span class="k">return</span> (</span></div>
-                  <div class="lr"><span></span><span class="n">10</span><span class="src">    &lt;<span class="t">ul</span> className=<span class="s">"list"</span>&gt;</span></div>
-                  <div class="lr"><span></span><span class="n">11</span><span class="src">      {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t">ListItem</span> key={item.id} {...item} /&gt;)}</span></div>
-                  <div class="lr"><span></span><span class="n">12</span><span class="src">    &lt;/<span class="t">ul</span>&gt;</span></div>
-                  <div class="lr"><span></span><span class="n">13</span><span class="src">  )</span></div>
-                  <div class="lr"><span></span><span class="n">14</span><span class="src">}</span></div>
+                  <div class="lr">
+                    <span></span><span class="n">5</span
+                    ><span class="src"
+                      ><span class="hljs-c"
+                        >// Liste partagée : un article par ligne, cochable.</span
+                      ></span
+                    >
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">6</span
+                    ><span class="src"
+                      ><span class="k">export function</span> <span class="f">ShoppingList</span>({
+                      items }: <span class="t">Props</span>) {</span
+                    >
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">7</span
+                    ><span class="src">
+                      <span class="k">const</span> [done, setDone] =
+                      <span class="f">useState</span>(<span class="k">new</span>
+                      <span class="t">Set</span>&lt;<span class="t">string</span>&gt;())</span
+                    >
+                  </div>
+                  <div class="lr noted">
+                    <span></span><span class="n">8</span
+                    ><span class="src">
+                      <span class="k">const</span> toggle = (id: <span class="t">string</span>)
+                      =&gt; done.<span class="f">add</span>(id)</span
+                    >
+                  </div>
+                  <div class="cmt">
+                    <div class="who">Ligne 8 · remarque en attente</div>
+                    <div class="txt">
+                      Décocher doit aussi marcher : <code>delete</code> si l'article est déjà fait.
+                    </div>
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">9</span
+                    ><span class="src"> <span class="k">return</span> (</span>
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">10</span
+                    ><span class="src">
+                      &lt;<span class="t">ul</span> className=<span class="s">"list"</span
+                      >&gt;</span
+                    >
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">11</span
+                    ><span class="src">
+                      {items.<span class="f">map</span>((item) =&gt; &lt;<span class="t"
+                        >ListItem</span
+                      >
+                      key={item.id} {...item} /&gt;)}</span
+                    >
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">12</span
+                    ><span class="src"> &lt;/<span class="t">ul</span>&gt;</span>
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">13</span><span class="src"> )</span>
+                  </div>
+                  <div class="lr">
+                    <span></span><span class="n">14</span><span class="src">}</span>
+                  </div>
                 </div>
                 <div class="notes-bar a">
                   <b class="pin" style="left: -12px; top: 10px">3</b>
-                  <svg class="i s"><use href="#diff" /></svg>2 remarques en attente · 1 sur ce fichier, 1 sur un diff
+                  <svg class="i s"><use href="#diff" /></svg>2 remarques en attente · 1 sur ce
+                  fichier, 1 sur un diff
                   <span class="grow"></span>
-                  <span class="btn small">Voir</span><span class="btn small primary">Envoyer à l'agent</span>
+                  <span class="btn small">Voir</span
+                  ><span class="btn small primary">Envoyer à l'agent</span>
                 </div>
               </div>
               <div class="treecol a">
                 <b class="pin" style="left: -12px; top: 12px">2</b>
-                <div class="search" style="margin-top: 10px"><svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span></div>
+                <div class="search" style="margin-top: 10px">
+                  <svg class="i s"><use href="#search" /></svg><span class="grow">Filtrer</span>
+                </div>
                 <div class="tree">
-                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">docs</span></div>
-                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">e2e</span></div>
-                  <div class="row dim"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">node_modules</span></div>
-                  <div class="row"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">src</span></div>
-                  <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-d" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">components</span></div>
-                  <div class="row ind2 sel"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ShoppingList.tsx</span></div>
-                  <div class="row ind2"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#code" /></svg></span><span class="name">ListItem.tsx</span></div>
-                  <div class="row ind1"><span class="chev"><svg class="i s"><use href="#chev-r" /></svg></span><span class="ico folder"><svg class="i s"><use href="#folder" /></svg></span><span class="name">styles</span></div>
-                  <div class="row"><span class="chev"></span><span class="ico"><svg class="i s"><use href="#file" /></svg></span><span class="name">package.json</span></div>
+                  <div class="row">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-r" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">docs</span>
+                  </div>
+                  <div class="row">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-r" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">e2e</span>
+                  </div>
+                  <div class="row dim">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-r" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">node_modules</span>
+                  </div>
+                  <div class="row">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-d" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">src</span>
+                  </div>
+                  <div class="row ind1">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-d" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">components</span>
+                  </div>
+                  <div class="row ind2 sel">
+                    <span class="chev"></span
+                    ><span class="ico"
+                      ><svg class="i s"><use href="#code" /></svg></span
+                    ><span class="name">ShoppingList.tsx</span>
+                  </div>
+                  <div class="row ind2">
+                    <span class="chev"></span
+                    ><span class="ico"
+                      ><svg class="i s"><use href="#code" /></svg></span
+                    ><span class="name">ListItem.tsx</span>
+                  </div>
+                  <div class="row ind1">
+                    <span class="chev"
+                      ><svg class="i s"><use href="#chev-r" /></svg></span
+                    ><span class="ico folder"
+                      ><svg class="i s"><use href="#folder" /></svg></span
+                    ><span class="name">styles</span>
+                  </div>
+                  <div class="row">
+                    <span class="chev"></span
+                    ><span class="ico"
+                      ><svg class="i s"><use href="#file" /></svg></span
+                    ><span class="name">package.json</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1728,9 +2287,35 @@
         </div>
         <div class="legend" style="max-width: 900px">
           <ol>
-            <li><span class="pin">1</span><div><b>Agrandi / Réduire</b> : le panneau couvre la conversation (montée, inerte, comme aujourd'hui) ; Réduire la rend.<span class="not">ne devient jamais la vue par défaut.</span></div></li>
-            <li><span class="pin">2</span><div><b>Arbre de côté</b>, à droite par défaut comme Claude Code (« Côté de l'arborescence » : Automatique, Gauche, Droite) ; en panneau étroit, l'arbre et le fichier alternent (écrans 1 et 3).<span class="not">pas de deuxième colonne hors du panneau.</span></div></li>
-            <li><span class="pin">3</span><div><b>Remarques en attente</b> : celles des fichiers et celles des diffs, un seul envoi « Envoyer à l'agent » (message : fichier, lignes, code cité, remarque).<span class="not">pas d'envoi remarque par remarque, rien sans ce geste.</span></div></li>
+            <li>
+              <span class="pin">1</span>
+              <div>
+                <b>Agrandi / Réduire</b> : le panneau couvre la conversation (montée, inerte, comme
+                aujourd'hui) ; Réduire la rend.<span class="not"
+                  >ne devient jamais la vue par défaut.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">2</span>
+              <div>
+                <b>Arbre de côté</b>, à droite par défaut comme Claude Code (« Côté de
+                l'arborescence » : Automatique, Gauche, Droite) ; en panneau étroit, l'arbre et le
+                fichier alternent (écrans 1 et 3).<span class="not"
+                  >pas de deuxième colonne hors du panneau.</span
+                >
+              </div>
+            </li>
+            <li>
+              <span class="pin">3</span>
+              <div>
+                <b>Remarques en attente</b> : celles des fichiers et celles des diffs, un seul envoi
+                « Envoyer à l'agent » (message : fichier, lignes, code cité, remarque).<span
+                  class="not"
+                  >pas d'envoi remarque par remarque, rien sans ce geste.</span
+                >
+              </div>
+            </li>
           </ol>
         </div>
       </div>
@@ -1738,16 +2323,65 @@
       <!-- ============ Synthèse ============ -->
       <h2 class="screen">Ce que ça fait, ce que ça ne fait pas</h2>
       <table class="doc">
-        <thead><tr><th>Geste</th><th>Claude Code (relevé)</th><th>Bobine, option B</th><th>Pas dans la première version</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Geste</th>
+            <th>Claude Code (relevé)</th>
+            <th>Bobine, option B</th>
+            <th>Pas dans la première version</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>Ouvrir la vue</td><td>icône dossier du panneau</td><td class="yes">onglet du panneau, menu « + », ⌘P (curseur dans le filtre), ⇧⌘Y, liens du fil</td><td>ouverte d'office, colonne permanente, palette</td></tr>
-          <tr><td>Arbre</td><td>complet, ignorés visibles</td><td class="yes">idem, chargé un dossier à la fois</td><td>surveillance continue</td></tr>
-          <tr><td>Filtre, ⌘P</td><td>« Filtrez ou ? pour chercher », ⌘P</td><td class="yes">« Filtrer », ⌘P</td><td>« ? » (lot 5, plus tard)</td></tr>
-          <tr><td>Fichier ouvert</td><td>onglet, fil d'Ariane, coloration</td><td class="yes">idem, en lecture seule, coloré par highlight.js</td><td>—</td></tr>
-          <tr><td>Commentaire sur une ligne</td><td>« Ligne N — Ajouter un commentaire »</td><td class="yes">idem, remarque de diff, « Envoyer à l'agent »</td><td>envoi sans geste</td></tr>
-          <tr><td>Agrandi</td><td>fichier + arbre à droite</td><td class="yes">idem</td><td>—</td></tr>
-          <tr><td>Éditer</td><td>oui (enregistrement automatique)</td><td class="no">non — lecture seule d'abord</td><td>édition légère : plus tard, si elle manque</td></tr>
-          <tr><td>Secrets</td><td>non relevé</td><td class="yes">affichés comme les autres fichiers</td><td>—</td></tr>
+          <tr>
+            <td>Ouvrir la vue</td>
+            <td>icône dossier du panneau</td>
+            <td class="yes">
+              onglet du panneau, menu « + », ⌘P (curseur dans le filtre), ⇧⌘Y, liens du fil
+            </td>
+            <td>ouverte d'office, colonne permanente, palette</td>
+          </tr>
+          <tr>
+            <td>Arbre</td>
+            <td>complet, ignorés visibles</td>
+            <td class="yes">idem, chargé un dossier à la fois</td>
+            <td>surveillance continue</td>
+          </tr>
+          <tr>
+            <td>Filtre, ⌘P</td>
+            <td>« Filtrez ou ? pour chercher », ⌘P</td>
+            <td class="yes">« Filtrer », ⌘P</td>
+            <td>« ? » (lot 5, plus tard)</td>
+          </tr>
+          <tr>
+            <td>Fichier ouvert</td>
+            <td>onglet, fil d'Ariane, coloration</td>
+            <td class="yes">idem, en lecture seule, coloré par highlight.js</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Commentaire sur une ligne</td>
+            <td>« Ligne N — Ajouter un commentaire »</td>
+            <td class="yes">idem, remarque de diff, « Envoyer à l'agent »</td>
+            <td>envoi sans geste</td>
+          </tr>
+          <tr>
+            <td>Agrandi</td>
+            <td>fichier + arbre à droite</td>
+            <td class="yes">idem</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Éditer</td>
+            <td>oui (enregistrement automatique)</td>
+            <td class="no">non — lecture seule d'abord</td>
+            <td>édition légère : plus tard, si elle manque</td>
+          </tr>
+          <tr>
+            <td>Secrets</td>
+            <td>non relevé</td>
+            <td class="yes">affichés comme les autres fichiers</td>
+            <td>—</td>
+          </tr>
         </tbody>
       </table>
     </div>

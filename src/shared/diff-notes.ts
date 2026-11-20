@@ -7,8 +7,11 @@
 
 export interface DiffNote {
   id: string
-  /** Vue de l'onglet où la remarque a été posée. */
-  view: 'conversation' | 'git'
+  /**
+   * Vue de l'onglet où la remarque a été posée ; `file` : un fichier ouvert dans l'onglet Fichiers
+   * (fiche 271), `file` valant alors `racine:chemin`.
+   */
+  view: 'conversation' | 'git' | 'file'
   /** Fichier : clé de la ligne de l'onglet (chemin tel que la vue le connaît). */
   file: string
   /** Chemin affiché, relatif au dossier de la conversation : celui que lit l'agent. */
@@ -62,5 +65,9 @@ export function diffFeedback(notes: readonly DiffNote[]): string {
       : 'Remarque'
     return `${i + 1}. ${note.path}, ${where(note)} :${code}\n   ${lead} : ${note.comment.trim()}`
   })
-  return `Remarques sur les modifications :\n\n${items.join('\n\n')}\n\nTiens compte de ces remarques dans le code.`
+  // Remarques posées sur des fichiers (fiche 271) : pas seulement sur des modifications.
+  const title = notes.some((note) => note.view === 'file')
+    ? 'Remarques sur le code'
+    : 'Remarques sur les modifications'
+  return `${title} :\n\n${items.join('\n\n')}\n\nTiens compte de ces remarques dans le code.`
 }

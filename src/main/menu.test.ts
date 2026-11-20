@@ -342,7 +342,7 @@ describe('menu du Mac figé (fiche 145 : « ne casse pas la barre système du Ma
       '[about, —, settings CmdOrCtrl+,, —, services, —, hide, hideOthers, unhide, —, quit]',
       '[new-conversation CmdOrCtrl+N, search CmdOrCtrl+K, resume-session CmdOrCtrl+Shift+O, quick-entry Alt+CommandOrControl+B, —, close]',
       '[undo, redo, —, cut, copy, paste, pasteAndMatchStyle, delete, selectAll, —, find CmdOrCtrl+F, find-next CmdOrCtrl+G, find-previous CmdOrCtrl+Shift+G]',
-      '[space-code CmdOrCtrl+1, space-discussion CmdOrCtrl+2, toggle-sidebar CmdOrCtrl+B, toggle-panel CmdOrCtrl+J, maximize-panel CmdOrCtrl+Shift+J, toggle-terminal Ctrl+`, show-changes CmdOrCtrl+Shift+D, —, reset-zoom CommandOrControl+0, zoom-in CommandOrControl+Plus, zoom-out CommandOrControl+-, —, presentation, —, fullscreen Ctrl+Cmd+F]',
+      '[space-code CmdOrCtrl+1, space-discussion CmdOrCtrl+2, toggle-sidebar CmdOrCtrl+B, toggle-panel CmdOrCtrl+J, maximize-panel CmdOrCtrl+Shift+J, toggle-terminal Ctrl+`, show-changes CmdOrCtrl+Shift+D, files CmdOrCtrl+P, files-tree CmdOrCtrl+Shift+Y, —, reset-zoom CommandOrControl+0, zoom-in CommandOrControl+Plus, zoom-out CommandOrControl+-, —, presentation, —, fullscreen Ctrl+Cmd+F]',
       '[focus-composer CmdOrCtrl+L, stop CmdOrCtrl+., aside CmdOrCtrl+Shift+A, previous-conversation Alt+CmdOrCtrl+Up, next-conversation Alt+CmdOrCtrl+Down]',
       'windowMenu [activity CmdOrCtrl+Shift+U, —, minimize, zoom, —, front]',
       'help [help CmdOrCtrl+?, shortcuts CmdOrCtrl+/, diagnostics, —, show-log]'

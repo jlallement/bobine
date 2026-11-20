@@ -18,6 +18,7 @@ import { showcaseScenarios } from './scenarios-vitrine.mts'
 import { discussionScenarios } from './scenarios-discussion.mts'
 import { reviewScenarios } from './scenarios-relecture.mts'
 import { commitScenarios } from './scenarios-commit.mts'
+import { filesScenarios } from './scenarios-fichiers.mts'
 import { memoryScenarios } from './scenarios-memoire.mts'
 import { limitScenarios } from './scenarios-limites.mts'
 import { commandScenarios } from './scenarios-commandes.mts'
@@ -3199,6 +3200,8 @@ export const scenarios: Record<string, Scenario> = {
   ...reviewScenarios,
   ...memoryScenarios,
   ...commitScenarios,
+  // Vue des fichiers (fiche 271).
+  ...filesScenarios,
   // Rôles (fiche 223) : délégation, rôle inconnu, lecture seule.
   ...roleScenarios,
   // Espace Discussion (fiche 224) : documents lus et écrits, écriture hors du dossier refusée.

@@ -244,13 +244,20 @@ function useInbox(
     text: string
     setText: (update: (current: string) => string) => void
     changeText: (value: string, nextCaret?: number) => void
-    attachments: Pick<ReturnType<typeof useComposerDraft>['attachments'], 'addFiles' | 'restore'>
+    attachments: Pick<
+      ReturnType<typeof useComposerDraft>['attachments'],
+      'addFiles' | 'addPaths' | 'restore'
+    >
     focus: () => void
   }
 ): void {
   useComposerInbox(inbox, draftKey, {
     files: (files) => {
       void c.attachments.addFiles(files)
+      c.focus()
+    },
+    paths: (paths) => {
+      void c.attachments.addPaths(paths)
       c.focus()
     },
     text: (value) => {
