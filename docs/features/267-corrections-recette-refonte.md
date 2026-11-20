@@ -278,8 +278,10 @@ Pas de nouvelle dépendance.
   `filles-visibilite` attendent le bouton actif avant de cliquer ; aucune assertion relâchée. La
   capture « compteur à 3 » (19/11, 21 h 36) est antérieure à `fe49ace` (22 h 00), qui a corrigé ce
   cas-là (fiche 258, D35) : sondes dans `AttentionTracker` sur 5 campagnes chargées, le main voit
-  bien la conversation de l'accord au retour du focus. Latents, non touchés : les clics sur
-  `proposal-start` de `filles-non-commite`, `filles-tech-lead` et `roles-travail`.
+  bien la conversation de l'accord au retour du focus. Même attente ensuite pour les clics sur
+  `proposal-start` de `filles-non-commite`, `filles-tech-lead` et `roles-travail` : avec la sonde,
+  `filles-tech-lead` échouait sans elle (les deux autres passaient, une attente plus haut couvrait
+  le délai) ; avec elle, les trois passent, avec et sans sonde.
 
 ## Écarts au plan
 

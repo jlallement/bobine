@@ -68,6 +68,11 @@ export async function fillesTechLeadSuite(scheme) {
           'carte : agent de la mère et modèle proposé présélectionnés'
         )
         await ui.shot('filles-tech-lead-1-proposition')
+        // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+        await ui.waitFor(
+          `!${pending}.querySelector('[data-testid=proposal-start]').disabled`,
+          30000
+        )
         await ui.hover(await ui.center(`${pending}.querySelector('[data-testid=proposal-start]')`))
         await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
         await ui.waitFor(`!${pending}`)
@@ -155,6 +160,8 @@ export async function fillesTechLeadSuite(scheme) {
         const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending] [data-testid=proposal-start]')`
         await ui.send('Fais le relevé')
         await ui.waitFor(`!!${pending}`, 30000)
+        // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+        await ui.waitFor(`!${pending}.disabled`, 30000)
         await ui.click(pending)
         await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
         // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite ; la mère la lit.

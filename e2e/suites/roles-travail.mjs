@@ -409,6 +409,8 @@ async function mainRun(ui, turnLock) {
   )
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-8-proposition')
+  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   // Travail lancé par l'agent : sur sa ligne de la carte des propositions (fiche 264).
   await ui.waitFor(`${workRows}.length === 3`, 30000)
@@ -641,6 +643,8 @@ async function requestedRun(ui) {
   )
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-10-proposition-demandee')
+  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
+  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   // Travail lancé par l'agent : sa ligne de carte de groupe (fiche 264), dépliée, « Ouvrir ».
   const launched = `${workRows}.at(-1)`
