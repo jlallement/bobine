@@ -522,13 +522,30 @@ describe('AttentionTracker — rebond du Dock (fiche 101)', () => {
       expect(tracker.state()).toEqual({ f1: 'done' })
     })
 
-    it('une erreur reste à voir dans la fille, même son compte rendu lu chez la mère', () => {
-      const { world, tracker } = setup()
+    it('fiche 267 (R7) : une erreur dite dans la carte chez la mère est vue aussi', () => {
+      const { world, tracker, withdrawn } = setup()
       world.focused = true
       world.active = 'm'
       turn(tracker, 'f1', { type: 'turn-error', message: 'boom' })
-      tracker.onEvent('m', report('f1'))
       expect(tracker.state()).toEqual({ f1: 'error' })
+      tracker.onEvent('m', report('f1'))
+      expect(tracker.state()).toEqual({})
+      expect(withdrawn).toContain('f1')
+    })
+
+    it('fiche 267 (R7) : fenêtre sans le focus (le pilote des recettes) : rien n’est vu, puis tout au retour', () => {
+      const { world, tracker } = setup()
+      world.focused = false
+      world.active = 'm'
+      turn(tracker, 'f1')
+      turn(tracker, 'f2', { type: 'turn-error', message: 'boom' })
+      turn(tracker, 'm')
+      tracker.onEvent('m', report('f1'))
+      tracker.onEvent('m', report('f2'))
+      expect(tracker.state()).toEqual({ f1: 'done', f2: 'error', m: 'done' })
+      world.focused = true
+      tracker.refresh()
+      expect(tracker.state()).toEqual({})
     })
 
     it('mère supprimée : plus rien n’est retenu pour elle', () => {

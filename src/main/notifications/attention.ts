@@ -279,12 +279,14 @@ export class AttentionTracker {
   }
 
   /**
-   * Compte rendu lu dans le fil de la mère : la réponse finie de la fille est vue. Une erreur ne
-   * l'est pas : la fille reste « en erreur » jusqu'à ce qu'on l'ouvre. Vrai si changé.
+   * Réponse lue dans le fil de la mère : la réponse finie de la fille est vue. Une erreur aussi
+   * (fiche 267, R7) : la carte du travail (fiche 263) la dit en entier, avec « Relancer ». Vrai si
+   * changé.
    */
   private reportSeen(childId: string): boolean {
     const entry = this.entries.get(childId)
-    if (entry?.unseen?.reason !== 'done') return false
+    const reason = entry?.unseen?.reason
+    if (!entry || (reason !== 'done' && reason !== 'error')) return false
     entry.unseen = undefined
     this.groups?.withdraw(childId)
     this.options.withdraw(childId)
