@@ -154,6 +154,13 @@ export interface FileOpeners {
   showFile?: boolean
 }
 
+/**
+ * Nom rendu au renderer : en NFC sous macOS, où le disque le rend parfois décomposé (NFD) et git
+ * recomposé ; un seul chemin pour un même fichier (C8). Ailleurs, NFC et NFD sont deux noms.
+ */
+export const shownName = (name: string) =>
+  process.platform === 'darwin' ? name.normalize('NFC') : name
+
 /** `target` est-il `root` ou dans `root` ? (chemins déjà résolus) */
 export const inside = (root: string, target: string) =>
   target === root || target.startsWith(root + sep)
@@ -198,8 +205,12 @@ export async function openFileLink(
   if (info.isDirectory()) return reveal('folder')
   // Chemin réel : un lien symbolique du dossier ne mène pas au-dehors en douce.
   const targetReal = await real(target)
-  // Dossier de la conversation d'abord, puis ses autres dossiers (le plus précis s'ils s'emboîtent).
-  const rank = inside(root, targetReal) ? 0 : all.findIndex((r) => inside(r, targetReal))
+  // Le dossier le plus précis s'ils s'emboîtent (un autre dossier dans celui de la conversation).
+  const rank = all.reduce(
+    (best, r, i) =>
+      inside(r, targetReal) && (best < 0 || r.length > (all[best] as string).length) ? i : best,
+    -1
+  )
   if (rank < 0) return reveal('outside')
   // Texte, code, Markdown, image : dans l'onglet Fichiers, à la ligne (fiche 271, Q11), y compris
   // depuis un autre dossier de la conversation (M10). Un script s'y lit sans jamais s'exécuter ;
@@ -209,9 +220,12 @@ export async function openFileLink(
       kind: 'file',
       path: target,
       root: rank,
-      relative: relative(all[rank] as string, targetReal)
-        .split(sep)
-        .join('/'),
+      // En NFC sous macOS, comme les chemins de l'arbre (C8).
+      relative: shownName(
+        relative(all[rank] as string, targetReal)
+          .split(sep)
+          .join('/')
+      ),
       ...(link.line ? { line: link.line } : {})
     }
   }

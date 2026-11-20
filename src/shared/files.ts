@@ -13,6 +13,10 @@ export interface FileRoot {
   name: string
   /** Chemin absolu (infobulle, copie du chemin). */
   path: string
+  /** Dossier de la conversation disparu ou démonté (Q19). */
+  missing?: true
+  /** Autre dossier que l'agent ne reçoit pas : marqué « non transmis » (Q26, fiche 179). */
+  notSent?: true
 }
 
 /** Une entrée d'un dossier. */

@@ -778,6 +778,7 @@ export function createHandlers(
         await deps.changes.openExternal(href as string)
         return { kind: 'opened', path: href as string }
       }
+      const summary = c.view(conversationId, true).summary
       const outcome = await openFileLink(
         c.workspaceOf(conversationId),
         str(href, 'href'),
@@ -785,12 +786,13 @@ export function createHandlers(
           ...(typeof o.base === 'string' ? { base: o.base } : {}),
           ...(o.reveal === true ? { reveal: true } : {}),
           // Autres dossiers de la conversation (fiche 179) : leurs fichiers aussi dans l'onglet.
-          roots: c.view(conversationId, true).summary.additionalDirectories ?? []
+          roots: summary.additionalDirectories ?? []
         },
         {
           openPath: deps.changes.openPath,
           reveal: deps.changes.reveal,
-          showFile: true,
+          // L'onglet Fichiers n'existe qu'en espace Code (Q4) : en Discussion, comme avant.
+          showFile: summary.space !== 'discussion',
           ...(deps.previewHtml && openTab ? { previewHtml: deps.previewHtml } : {})
         }
       )

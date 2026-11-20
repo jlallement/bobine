@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { FIFOS } from '../test-platform'
+import { FIFOS, PRECOMPOSED_NAMES } from '../test-platform'
 import { filesHandlers } from './files-ipc'
 import { openFileLink } from './file-links'
 
@@ -26,11 +26,15 @@ beforeEach(() => {
 
 afterEach(() => rmSync(base, { recursive: true, force: true }))
 
-const handlers = (exclusions?: { files: string[]; always?: string[] }) =>
+const handlers = (
+  exclusions?: { files: string[]; always?: string[] },
+  agent: { additionalDirectories?: true } = { additionalDirectories: true },
+  workspace = () => main
+) =>
   filesHandlers(
     {
-      workspaceOf: () => main,
-      view: () => ({ summary: { additionalDirectories: [extra] } }) as never,
+      workspaceOf: workspace,
+      view: () => ({ summary: { additionalDirectories: [extra] }, snapshot: agent }) as never,
       profileOf: () =>
         (exclusions
           ? {
@@ -53,6 +57,15 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
     expect(roots.map((r) => r.name)).toEqual(['app', 'lib'])
   })
 
+  it('dossier disparu ; autres dossiers non transmis si l’agent ne les prend pas (C10)', async () => {
+    const roots = await handlers(undefined, {}, () => join(base, 'parti'))['files:roots']('c1')
+    expect(roots[0]).toMatchObject({ name: 'parti', missing: true })
+    expect(roots[1]).toMatchObject({ name: 'lib', notSent: true })
+    const sent = await handlers()['files:roots']('c1')
+    expect(sent[0]?.missing).toBeUndefined()
+    expect(sent[1]?.notSent).toBeUndefined()
+  })
+
   it('liste, lit et cherche dans une racine', async () => {
     const h = handlers()
     expect((await h['files:list']('c1', 0, 'src')).entries.map((e) => e.path)).toEqual(['src/a.ts'])
@@ -61,6 +74,21 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
       text: 'export const b = 1\n'
     })
     expect(await h['files:search']('c1', 0, 'a.ts')).toEqual([{ path: 'src/a.ts' }])
+  })
+
+  it('plusieurs dossiers d’une racine en un appel ; un dossier disparu rend son erreur (C2)', async () => {
+    mkdirSync(join(main, 'docs'))
+    writeFileSync(join(main, 'docs', 'd.md'), '# d\n')
+    const many = await handlers()['files:listMany']('c1', 0, ['src', 'docs', 'parti'])
+    expect(Object.keys(many)).toEqual(['src', 'docs', 'parti'])
+    const paths = (dir: string) => {
+      const got = many[dir]
+      return got && 'entries' in got ? got.entries.map((e) => e.path) : got
+    }
+    expect(paths('src')).toEqual(['src/a.ts'])
+    expect(paths('docs')).toEqual(['docs/d.md'])
+    expect(many['parti']).toMatchObject({ error: expect.any(String) })
+    await expect(handlers()['files:listMany']('c1', 0, 'src' as never)).rejects.toThrow('dirs')
   })
 
   it('refuse une racine inconnue et un chemin qui sort', async () => {
@@ -96,6 +124,15 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
     execFileSync('mkfifo', [join(main, 'tuyau')])
     await expect(handlers()['files:open']('c1', 0, 'tuyau')).rejects.toThrow()
     expect(calls).toEqual([])
+  })
+
+  it('app par défaut : un lien vers un autre dossier de la conversation s’ouvre (pas « hors du dossier »)', async () => {
+    symlinkSync(join(extra, 'b.ts'), join(main, 'vers-b.ts'))
+    expect(await handlers()['files:open']('c1', 0, 'vers-b.ts')).toEqual({
+      kind: 'opened',
+      path: join(extra, 'b.ts')
+    })
+    expect(calls).toEqual([`open ${join(extra, 'b.ts')}`])
   })
 
   it('Finder et app par défaut : jamais un exécutable', async () => {
@@ -152,6 +189,26 @@ describe('lien de fichier du fil vers l’onglet Fichiers (Q11)', () => {
       await openFileLink(main, 'src/a.ts', { base: base, roots: [extra] }, openers)
     ).toMatchObject({ kind: 'file', root: 0, relative: 'src/a.ts' })
   })
+
+  it('dossiers emboîtés : le plus précis donne la racine', async () => {
+    const inner = join(main, 'src')
+    expect(await openFileLink(main, 'src/a.ts', { roots: [inner] }, openers)).toMatchObject({
+      kind: 'file',
+      root: 1,
+      relative: 'a.ts'
+    })
+  })
+
+  it.skipIf(!PRECOMPOSED_NAMES)(
+    'nom décomposé (NFD) : chemin relatif rendu en NFC (C8)',
+    async () => {
+      writeFileSync(join(main, 'Été.md'.normalize('NFD')), '# x\n')
+      expect(await openFileLink(main, 'Été.md'.normalize('NFD'), {}, openers)).toMatchObject({
+        kind: 'file',
+        relative: 'Été.md'.normalize('NFC')
+      })
+    }
+  )
 
   it('lien par un dossier intermédiaire qui est un lien symbolique (M11)', async () => {
     const dehors = join(base, 'dehors')

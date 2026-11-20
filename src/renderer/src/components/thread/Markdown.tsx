@@ -1,5 +1,5 @@
 import { memo, useRef, type ComponentProps } from 'react'
-import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
+import ReactMarkdown, { defaultUrlTransform, type Options } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
 import '../../syntax.css'
@@ -54,16 +54,24 @@ function Table({ node: _node, ...props }: ComponentProps<'table'> & { node?: unk
   )
 }
 
+/** Coloration des blocs de code (absente au-delà de la borne de l'onglet Fichiers). */
+const COLORED: NonNullable<Options['rehypePlugins']> = [
+  [rehypeHighlight, { detect: true, ignoreMissing: true }]
+]
+
 /**
  * Rendu Markdown (GFM + coloration). Mémoïsé : seul le message en cours se re-rend en streaming.
  * `streaming` : réponse en cours, son bloc de code encore ouvert n'est pas coloré (fiche 192).
  */
 export const Markdown = memo(function Markdown({
   text,
-  streaming = false
+  streaming = false,
+  highlight = true
 }: {
   text: string
   streaming?: boolean
+  /** `false` : sans coloration (gros document de l'onglet Fichiers, même borne que la source). */
+  highlight?: boolean
 }) {
   return (
     <div className="markdown">
@@ -73,7 +81,7 @@ export const Markdown = memo(function Markdown({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[
           [rehypeKnownLanguage, { source: text, streaming }],
-          [rehypeHighlight, { detect: true, ignoreMissing: true }],
+          ...(highlight ? COLORED : []),
           rehypeRememberLanguage
         ]}
         components={{

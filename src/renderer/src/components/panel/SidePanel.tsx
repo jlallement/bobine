@@ -27,7 +27,7 @@ import { useCompactTabs } from './compact-tabs'
 import { PanelMoreMenu } from './PanelMoreMenu'
 import { FilesTab } from '../files/FilesTab'
 import { useFilesTabTitle } from '../files/useFilesTabTitle'
-import type { FilesRequest } from '../files/useFilesTab'
+import { useFilesWork, type FilesRequest } from '../files/useFilesTab'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
 const ATTACHED_NOTICE_MS = 3000
@@ -100,6 +100,7 @@ interface Props {
     onShowDiff?: (absolutePath: string) => void
     onShowChanges?: () => void
     onFocusComposer?: () => void
+    onChooseFolder?: () => void
   }
   onTab: (tab: PanelTab) => void
   onClose: () => void
@@ -207,6 +208,8 @@ export function SidePanel({
   // Onglet Fichiers : nom et icône du fichier ouvert (fiche 271, Q9) ; son ✕ ramène d'abord à
   // l'arbre (point 3).
   const filesTab = useFilesTabTitle(conversationId)
+  // Le fil ne parvient à l'onglet Fichiers que par ses chemins modifiés et ses fins d'outil (C7).
+  const filesWork = useFilesWork(items)
   const label = (id: PanelTab) =>
     (id === 'files' && filesTab.name) || (PANEL_TABS.find((entry) => entry.id === id)?.label ?? id)
   const closeTab = (id: PanelTab) => {
@@ -394,7 +397,7 @@ export function SidePanel({
               focusTerminal={focusTerminal}
               onTerminalFocused={onTerminalFocused}
               onSendPageNotes={onSendPageNotes}
-              files={filesTabProps(files, items, maximized, onSendDiffNotes)}
+              files={filesTabProps(files, filesWork, maximized, onSendDiffNotes, discussion)}
               filesTitle={filesTab}
               {...(preferences ? { preferences } : {})}
               {...(attach ? { onAttach: attach } : {})}
@@ -409,11 +412,14 @@ export function SidePanel({
 /** Ce que l'onglet Fichiers reçoit du panneau (fiche 271) ; rien sans `files`. */
 function filesTabProps(
   files: Props['files'],
-  items: TranscriptItem[],
+  work: ReturnType<typeof useFilesWork>,
   maximized: boolean,
-  onSendNotes: Props['onSendDiffNotes']
+  onSendNotes: Props['onSendDiffNotes'],
+  discussion: boolean | undefined
 ) {
-  return files && { ...files, items, maximized, onSendNotes }
+  // L'onglet Fichiers n'existe qu'en espace Code (Q4).
+  if (discussion) return undefined
+  return files && { ...files, ...work, maximized, onSendNotes }
 }
 
 /** Outils de l'app d'une conversation (un par onglet), montés seulement s'ils sont affichés. */
@@ -439,7 +445,8 @@ function ToolTab({
   /** Onglet Fichiers (fiche 271). */
   files?:
     | (NonNullable<Props['files']> & {
-        items: TranscriptItem[]
+        changes: readonly string[]
+        done: number
         maximized: boolean
         onSendNotes?: ((text: string, about?: string) => void) | undefined
       })
@@ -478,7 +485,8 @@ function ToolTab({
         <FilesTab
           key={conversationId}
           conversationId={conversationId}
-          items={files.items}
+          changes={files.changes}
+          done={files.done}
           maximized={files.maximized}
           request={files.request}
           onRequestDone={files.onRequestDone}
@@ -488,6 +496,7 @@ function ToolTab({
           onShowDiff={files.onShowDiff}
           onShowChanges={files.onShowChanges}
           onFocusComposer={files.onFocusComposer}
+          onChooseFolder={files.onChooseFolder}
           onTitle={filesTitle.changed}
           closeRef={filesTitle.close}
         />

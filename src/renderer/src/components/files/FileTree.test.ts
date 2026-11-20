@@ -46,4 +46,21 @@ describe('treeRows', () => {
       error: 'refusé'
     })
   })
+
+  it('« de plus » sous un dossier ignoré : le filtre ne les trouve pas, c’est dit autrement', () => {
+    const rows = treeRows(
+      [root(0, 'app')],
+      {
+        '0:': {
+          listing: {
+            entries: [{ name: 'node_modules', path: 'node_modules', kind: 'dir', ignored: true }],
+            more: 0
+          }
+        },
+        '0:node_modules': listing([{ name: 'a', path: 'node_modules/a', kind: 'dir' }], 4000)
+      },
+      new Set(['0:', '0:node_modules'])
+    )
+    expect(rows.at(-1)).toMatchObject({ kind: 'note', text: 'moreIgnored', more: 4000 })
+  })
 })

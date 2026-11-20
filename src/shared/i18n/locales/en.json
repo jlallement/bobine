@@ -2337,7 +2337,10 @@
     "error": {
       "outside": "Outside the conversation's folders: {{path}}",
       "notFolder": "Not a folder: {{path}}",
-      "notFile": "Not a file: {{path}}"
+      "notFile": "Not a file: {{path}}",
+      "denied": "Access denied by the system.",
+      "gone": "This file or folder no longer exists.",
+      "stale": "This folder is no longer part of the conversation."
     },
     "filter": "Filter",
     "filterLabel": "Filter files",
@@ -2354,6 +2357,8 @@
     "treeLabel": "Conversation files",
     "moreEntries_one": "{{n}} more: filter to find it",
     "moreEntries_other": "{{n}} more: filter to find them",
+    "moreIgnored_one": "{{n}} more, in an ignored folder: the filter doesn't search it",
+    "moreIgnored_other": "{{n}} more, in an ignored folder: the filter doesn't search them",
     "empty": "Empty folder",
     "noMatch": "No file matches.",
     "ignoredNotSearched": "Files ignored by git are not searched: browse them in the tree.",
@@ -2364,6 +2369,7 @@
     "special": "Special file (pipe, socket or device): it can't be opened here",
     "linkOutside": "Link outside the conversation's folders: not followed",
     "noFolder": "This conversation has no folder yet.",
+    "chooseFolder": "Choose a folder…",
     "folderMissing": "This folder no longer exists.",
     "readOnly": "Read-only",
     "back": "Back to the tree",

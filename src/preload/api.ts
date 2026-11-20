@@ -618,6 +618,8 @@ export function createApi(
     fileTree: {
       roots: (id: string) => invoke('files:roots', id),
       list: (id: string, root: number, dir: string) => invoke('files:list', id, root, dir),
+      listMany: (id: string, root: number, dirs: string[]) =>
+        invoke('files:listMany', id, root, dirs),
       read: (id: string, root: number, path: string, known?: { modified: number; size: number }) =>
         invoke('files:read', id, root, path, ...(known ? [known] : [])),
       search: (id: string, root: number, query: string) => invoke('files:search', id, root, query),

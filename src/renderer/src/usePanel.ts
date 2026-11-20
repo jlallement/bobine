@@ -284,12 +284,13 @@ export function usePanel(options: {
   const openFiles = useCallback(
     (request: Omit<FilesRequest, 'seq' | 'conversationId'> = {}, forId?: string) => {
       const target = forId ?? conversationId
-      if (!target) return
+      // L'onglet Fichiers n'existe qu'en espace Code (Q4).
+      if (!target || discussion) return
       filesSeq.current += 1
       setFilesRequest({ ...request, conversationId: target, seq: filesSeq.current })
       update({ open: true, tab: 'files' })
     },
-    [update, conversationId]
+    [update, conversationId, discussion]
   )
   const filesRequestDone = useCallback(
     (seq: number) => setFilesRequest((current) => (current?.seq === seq ? undefined : current)),
@@ -387,8 +388,11 @@ export function usePanel(options: {
     /** Ce que l'onglet Fichiers reçoit : demande, liens, mention dans la saisie, diff d'un fichier. */
     filesTab: (
       openLink: OpenFileLink,
-      inbox: { mention: (paths: string[]) => void; focus: () => void }
+      inbox: { mention: (paths: string[]) => void; focus: () => void },
+      /** Dossier de la conversation disparu : le choix de dossier existant (Q19). */
+      chooseFolder?: () => void
     ) => ({
+      ...(chooseFolder ? { onChooseFolder: chooseFolder } : {}),
       request: filesRequest,
       onRequestDone: filesRequestDone,
       openLink,

@@ -537,3 +537,21 @@ function ElsewhereNotes({
     </ul>
   )
 }
+
+/**
+ * Dossier de la conversation disparu ou démonté (Q19) : dit en clair, avec « Choisir un
+ * dossier… » (le choix de dossier existant de la conversation).
+ */
+export function FolderMissing({ onChoose }: { onChoose?: (() => void) | undefined }) {
+  const { t } = useTranslation()
+  return (
+    <div className="file-view-note files-folder-missing" data-testid="files-folder-missing">
+      <p>{t('files.folderMissing')}</p>
+      {onChoose && (
+        <button className="btn small" onClick={onChoose} data-testid="files-choose-folder">
+          {t('files.chooseFolder')}
+        </button>
+      )}
+    </div>
+  )
+}

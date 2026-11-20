@@ -164,17 +164,25 @@ export function FileActionsMenu({
   label,
   children,
   className = 'icon-button small',
+  tabIndex,
   testId = 'file-actions'
 }: {
   label: string
   children: ReactNode
   className?: string
+  /** `-1` sur une ligne de l'arbre : la ligne seule est un arrêt de tabulation (B1). */
+  tabIndex?: number
   testId?: string
 }) {
   return (
     <Dropdown.Root modal={false}>
       <Tip label={label}>
-        <Dropdown.Trigger className={className} aria-label={label} data-testid={testId}>
+        <Dropdown.Trigger
+          className={className}
+          aria-label={label}
+          data-testid={testId}
+          {...(tabIndex === undefined ? {} : { tabIndex })}
+        >
           <MoreVertical size={14} />
         </Dropdown.Trigger>
       </Tip>

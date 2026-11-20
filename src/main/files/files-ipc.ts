@@ -10,11 +10,25 @@ import type { FileRoot } from '@shared/files'
 import { exclusionsFor } from '../agent-config/exclusions'
 import type { ConversationManager } from '../conversations/manager'
 import { searchWorkspaceFiles } from '../workspace-files'
-import { openWorkspaceFile, type FileOpeners } from './file-links'
-import { fileRoots, gitIgnored, listDirectory, readFileForView, resolveInRoot } from './file-tree'
+import { mayExecuteOn, type FileOpeners } from './file-links'
+import { launchSystem } from '../process-launch'
+import {
+  fileRoots,
+  gitIgnored,
+  listDirectories,
+  listDirectory,
+  readFileForView,
+  resolveInRoot
+} from './file-tree'
 
 type FilesChannels =
-  'files:roots' | 'files:list' | 'files:read' | 'files:search' | 'files:reveal' | 'files:open'
+  | 'files:roots'
+  | 'files:list'
+  | 'files:listMany'
+  | 'files:read'
+  | 'files:search'
+  | 'files:reveal'
+  | 'files:open'
 
 /** Résultats du filtre de l'onglet Fichiers. */
 const SEARCH_LIMIT = 50
@@ -62,13 +76,41 @@ export function filesHandlers(
   const exclusionsOf = (id: unknown, chosen: FileRoot) =>
     chosen.index === 0 ? exclusionsFor(c.profileOf(String(id))?.exclusions, chosen.path) : undefined
   return {
-    'files:roots': async (id) => rootsOf(id),
+    'files:roots': async (id) => {
+      const view = c.view(str(id, 'id'), true)
+      // L'agent ne prend pas d'autres dossiers (fiche 179) : ils sont montrés « non transmis ».
+      const sent = !!view.snapshot?.additionalDirectories
+      return Promise.all(
+        rootsOf(id).map(async (root) => {
+          if (root.index > 0) return sent ? root : { ...root, notSent: true as const }
+          // Dossier de la conversation disparu ou démonté : dit, avec de quoi en choisir un (Q19).
+          const info = await stat(root.path).catch(() => null)
+          return info?.isDirectory() ? root : { ...root, missing: true as const }
+        })
+      )
+    },
     'files:list': async (id, root, dir) => {
       const { root: chosen, paths } = rootOf(id, root)
       const exclusions = exclusionsOf(id, chosen)
       return listDirectory({
         root: chosen.path,
         dir: str(dir, 'dir'),
+        roots: paths,
+        ignored: gitIgnored,
+        ...(exclusions
+          ? { isExcluded: exclusions.isExcluded, exclusionFiles: exclusions.files }
+          : {})
+      })
+    },
+    'files:listMany': async (id, root, dirs) => {
+      if (!Array.isArray(dirs) || dirs.length > 500 || !dirs.every((d) => typeof d === 'string')) {
+        throw new Error('Paramètre invalide : dirs')
+      }
+      const { root: chosen, paths } = rootOf(id, root)
+      const exclusions = exclusionsOf(id, chosen)
+      return listDirectories({
+        root: chosen.path,
+        dirs,
         roots: paths,
         ignored: gitIgnored,
         ...(exclusions
@@ -101,14 +143,23 @@ export function filesHandlers(
     },
     'files:open': async (id, root, path) => {
       const { root: chosen, paths } = rootOf(id, root)
+      // Une seule résolution : le chemin réel vérifié dans les racines est celui qu'on ouvre ; un
+      // lien vers un autre dossier de la conversation s'ouvre comme un fichier de ce dossier.
       const target = await resolveInRoot(chosen.path, str(path, 'path'), paths)
-      // FIFO, socket, périphérique : jamais confiés à une app (B1).
-      const info = await stat(target)
-      if (!info.isFile() && !info.isDirectory()) {
-        throw new Error(t('files.error.notFile', { path: String(path) }))
+      const info = await stat(target).catch(() => null)
+      if (!info) return { kind: 'missing', path: target }
+      const reveal = (reason: 'folder' | 'executable') => {
+        openers.reveal(target)
+        return { kind: 'revealed' as const, path: target, reason }
       }
+      if (info.isDirectory()) return reveal('folder')
+      // FIFO, socket, périphérique : jamais confiés à une app (B1).
+      if (!info.isFile()) throw new Error(t('files.error.notFile', { path: String(path) }))
       // Mêmes garde-fous que « Ouvrir » des Modifications : un exécutable n'est que montré.
-      return openWorkspaceFile(chosen.path, str(path, 'path'), openers)
+      if (mayExecuteOn(target, info.mode, launchSystem())) return reveal('executable')
+      const error = await openers.openPath(target)
+      if (error) throw new Error(error)
+      return { kind: 'opened', path: target }
     }
   }
 }

@@ -9,10 +9,8 @@ import {
   type RefObject
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { conversationChanges } from '@shared/changes'
 import { diffFeedback, type DiffNote } from '@shared/diff-notes'
 import { parentDirs, type FileRoot, type FileTarget } from '@shared/files'
-import type { TranscriptItem } from '@shared/transcript'
 import { reviewerOfNote, useDiffNotes } from '../../diff-notes-store'
 import { dirKey, FILE_GOTO_EVENT, TOGGLE_TREE_EVENT } from '../../files-state'
 import { fileNoteKey } from '../../file-notes'
@@ -20,7 +18,7 @@ import type { OpenFileLink } from '../thread/FileLink'
 import { useFileActions } from './FileActions'
 import { treeRows } from './FileTree'
 import { FileView } from './FileView'
-import { NotesBar, TreePane, ViewMenu } from './FilesParts'
+import { FolderMissing, NotesBar, TreePane, ViewMenu } from './FilesParts'
 import { useFilesTab, type FilesRequest } from './useFilesTab'
 import './files.css'
 
@@ -29,7 +27,10 @@ export const SIDE_BY_SIDE_MIN = 900
 
 interface Props {
   conversationId: string
-  items: TranscriptItem[]
+  /** Chemins modifiés par la conversation (`useFilesWork`), stables entre deux fins d'outil. */
+  changes: readonly string[]
+  /** Outils finis dans la conversation : chaque fin relit l'arbre et le fichier. */
+  done: number
   maximized: boolean
   request?: FilesRequest | undefined
   /** Demande traitée : elle ne se rejoue plus (C1). */
@@ -41,6 +42,8 @@ interface Props {
   onShowDiff?: ((absolutePath: string) => void) | undefined
   /** « Voir » de la barre des remarques : l'onglet Modifications. */
   onShowChanges?: (() => void) | undefined
+  /** « Choisir un dossier… » quand celui de la conversation a disparu (Q19). */
+  onChooseFolder?: (() => void) | undefined
   /** Échap sur un filtre vide : le clavier revient à la zone de saisie. */
   onFocusComposer?: (() => void) | undefined
   /** Un fichier a été ouvert ou fermé : le titre de l'onglet suit (Q9). */
@@ -49,16 +52,20 @@ interface Props {
   closeRef?: MutableRefObject<(() => boolean) | null>
 }
 
-/** Chemins modifiés par la conversation, relatifs à la racine principale, et leurs dossiers (Q6). */
-function changedPaths(items: readonly TranscriptItem[], root: FileRoot | undefined): Set<string> {
+/**
+ * Chemins modifiés par la conversation, relatifs à la racine principale, et leurs dossiers (Q6) ;
+ * en NFC, comme ceux de l'arbre (C8).
+ */
+function changedPaths(paths: readonly string[], root: FileRoot | undefined): Set<string> {
   const changed = new Set<string>()
   if (!root) return changed
   const base = root.path
     .replace(/[\\/]+$/, '')
     .split('\\')
     .join('/')
-  for (const file of conversationChanges(items)) {
-    const path = file.path.split('\\').join('/')
+    .normalize('NFC')
+  for (const raw of paths) {
+    const path = raw.split('\\').join('/').normalize('NFC')
     const relative = path.startsWith(`${base}/`)
       ? path.slice(base.length + 1)
       : path.startsWith('/') || /^[a-z]:\//i.test(path)
@@ -98,7 +105,7 @@ function useElementWidth(element: RefObject<HTMLElement | null>): number {
  * Panneau étroit : l'arbre ou le fichier (⇧⌘Y bascule) ; agrandi et assez large : côte à côte.
  */
 export function FilesTab(props: Props) {
-  const { conversationId, items, maximized, request } = props
+  const { conversationId, changes, done, maximized, request } = props
   const { t } = useTranslation()
   const filter = useRef<HTMLInputElement>(null)
   const focusFilter = useCallback(() => {
@@ -107,14 +114,14 @@ export function FilesTab(props: Props) {
       filter.current?.select()
     })
   }, [])
-  const model = useFilesTab(conversationId, items, {
+  const model = useFilesTab(conversationId, done, {
     request,
     onRequestDone: props.onRequestDone,
     onFocusFilter: focusFilter
   })
   const { state, roots, preferences, view: narrowView, setView: setNarrowView } = model
   const [notice, setNotice] = useState<string | null>(null)
-  const changed = useMemo(() => changedPaths(items, roots?.[0]), [items, roots])
+  const changed = useMemo(() => changedPaths(changes, roots?.[0]), [changes, roots])
   const actions = useFileActions({
     conversationId,
     roots: roots ?? [],
@@ -178,6 +185,19 @@ export function FilesTab(props: Props) {
     diffNotes.clear()
   }
 
+  // Lignes de l'arbre, les mêmes tant que rien ne change (les lignes sont mémoïsées, C7).
+  const { listings } = model
+  const rows = useMemo(
+    () => (roots ? treeRows(roots, listings, new Set([dirKey(0, ''), ...state.expanded])) : []),
+    [roots, listings, state.expanded]
+  )
+  if (roots?.[0]?.missing) {
+    return (
+      <div className="files-tab" data-testid="files-tab">
+        <FolderMissing onChoose={props.onChooseFolder} />
+      </div>
+    )
+  }
   if (model.rootsError) {
     return (
       <div className="files-tab" data-testid="files-tab">
@@ -187,8 +207,6 @@ export function FilesTab(props: Props) {
       </div>
     )
   }
-  const expanded = new Set([dirKey(0, ''), ...state.expanded])
-  const rows = roots ? treeRows(roots, model.listings, expanded) : []
   const target = state.open
   const rootPath = target ? roots?.[target.root]?.path : undefined
   const fileKey = target && rootPath ? fileNoteKey(rootPath, target.path) : ''
@@ -294,6 +312,7 @@ export function FilesTab(props: Props) {
               if (!sideBySide) setNarrowView('tree')
             }}
             onScroll={model.saveScroll}
+            onLineShown={model.lineShown}
             initialScroll={state.scroll}
             viewMenu={viewMenu}
           />

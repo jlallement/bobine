@@ -698,6 +698,21 @@ describe('IPC', () => {
     expect(reveal).not.toHaveBeenCalled()
   })
 
+  it('lien de fichier (fiche 271, Q4) : l’onglet Fichiers en espace Code, jamais en Discussion', async () => {
+    const { call, conversations, openPath } = setup()
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'ipc-lien-')))
+    writeFileSync(join(workspace, 'notes.txt'), 'texte\n')
+    conversations.workspaceOf.mockReturnValue(workspace)
+    expect(await call('files:openLink', 'c1', 'notes.txt')).toMatchObject({ kind: 'file' })
+    conversations.view.mockReturnValue({
+      ...view,
+      summary: { ...view.summary, space: 'discussion' }
+    } as ConversationView)
+    // Discussion : comme avant la fiche 271, l'app par défaut (un `.md` : l'aperçu).
+    expect(await call('files:openLink', 'c1', 'notes.txt')).toMatchObject({ kind: 'opened' })
+    expect(openPath).toHaveBeenCalledWith(join(workspace, 'notes.txt'))
+  })
+
   it('historique : suppression avec ou sans l’agent, épinglage, recherche', async () => {
     const { call, conversations } = setup()
     await call('conversation:delete', 'c1')

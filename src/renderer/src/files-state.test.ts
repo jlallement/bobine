@@ -80,6 +80,24 @@ describe('borne et purge des dossiers dépliés (C4)', () => {
     expect(s.expanded.slice(-3)).toEqual(['1:', '1:x', '1:x/y'])
   })
 
+  it('la borne ne replie jamais un parent d’un dossier gardé (mineur)', () => {
+    // `src` déplié il y a longtemps (le plus ancien), d'autres ensuite, puis `src/ui` en dernier :
+    // la borne est dépassée, mais c'est un autre dossier qui part, pas le parent de `src/ui`.
+    let s = toggleDir(EMPTY_FILES_STATE, dirKey(0, 'src'), true)
+    for (let i = 0; i < MAX_EXPANDED - 1; i++) s = toggleDir(s, dirKey(0, `d${i}`), true)
+    s = toggleDir(s, dirKey(0, 'src/ui'), true)
+    expect(s.expanded).toContain('0:src/ui')
+    expect(s.expanded.length).toBeLessThanOrEqual(MAX_EXPANDED)
+    // Tout dossier gardé a ses parents gardés : rien de déplié sous un parent replié.
+    for (const key of s.expanded) {
+      const path = key.slice(2)
+      const parts = path.split('/')
+      for (let i = 1; i < parts.length; i++) {
+        expect(s.expanded).toContain(`0:${parts.slice(0, i).join('/')}`)
+      }
+    }
+  })
+
   it('un dossier disparu est oublié, avec ses sous-dossiers', () => {
     const s = { ...EMPTY_FILES_STATE, expanded: ['0:', '0:a', '0:a/b', '0:ab', '1:a'] }
     expect(forgetDir(s, '0:a').expanded).toEqual(['0:', '0:ab', '1:a'])

@@ -398,6 +398,12 @@ export async function filesSuite(scheme) {
           })()`),
           'panneau à 360 px : nom du fichier entier, dossiers du milieu en « … »'
         )
+        check(
+          await ui.ev(
+            `!!document.querySelector('[data-testid=file-breadcrumb] .crumb-dirs.clipped')`
+          ),
+          'panneau à 360 px : dossiers coupés, un « … » en tête (pas de « / » orphelin)'
+        )
         await ui.shot('271-chemin-long')
         await ui.ev(
           `document.querySelector('.side-panel-resize').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`

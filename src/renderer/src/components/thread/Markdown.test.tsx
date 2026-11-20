@@ -24,6 +24,16 @@ describe('Markdown', () => {
     expect(screen.getByTestId('copy-code')).not.toBeNull()
   })
 
+  it('sans coloration au-delà de la borne (Markdown rendu de l’onglet Fichiers)', () => {
+    const text = '```js\nconst a = 1\n```\n'
+    const colored = render(<Markdown text={text} />)
+    expect(colored.container.querySelector('[class*="hljs-"]')).not.toBeNull()
+    colored.unmount()
+    const plain = render(<Markdown text={text} highlight={false} />)
+    expect(plain.container.querySelector('[class*="hljs-"]')).toBeNull()
+    expect(plain.container.textContent).toContain('const a = 1')
+  })
+
   it('GFM : listes de tâches et texte barré', () => {
     const { container } = render(<Markdown text={'- [x] fait\n- [ ] à faire\n\n~~barré~~'} />)
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2)

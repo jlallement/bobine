@@ -45,65 +45,7 @@ retrouver un fichier sans se souvenir de son nom exact, il faut quitter Bobine p
 l'éditeur. La question n'est pas « faut-il un IDE » (non), mais « quel est le plus petit regard
 sur le dossier qui évite ces allers-retours ».
 
-#- **2026-11-20 — revue QA et sécurité, tout corrigé** (un essai qui échouait avant chaque
-  correction) :
-  - **B1** FIFO : lu avec `O_NONBLOCK` et refusé s'il n'est pas un fichier, avant et après
-    l'ouverture ; listé « spécial » d'après `readdir` (FIFO, socket, périphérique), grisé, sans
-    ouverture, ni glisser, ni « Ouvrir » ; `files:open` le refuse ; un état retenu qui y mène
-    finit en erreur, sans bloquer (`file-tree`, `files-ipc`, `FileTree.special`, vrai `mkfifo`,
-    délai de garde, sauté sous Windows : `FIFOS`).
-  - **C1, M8** : une demande (⌘P, lien) porte sa conversation, est traitée après le rendu et
-    consommée (`onRequestDone`) ; l'état retenu s'écrit dans un effet, une fois par changement
-    (`usePanel`, `useFilesTab` sous `StrictMode`).
-  - **C2** : le glisser de l'arbre pose un jeton de module (`startTreeDrag` / `endTreeDrag`),
-    jamais le chemin ; un type `application/x-bobine-file` posé par une autre source est ignoré.
-  - **C3** : « Ouvrir dans l'éditeur » d'une autre racine envoie le rang et le chemin relatif ;
-    le main prend le dossier dans `additionalDirectories` et vérifie le chemin réel
-    (`editors:open`, option `root`).
-  - **C4** : listage borné avant tout `lstat` (genre lu dans `Dirent`), appels menés 16 à la fois ;
-    `files:read` reçoit la version affichée et répond `unchanged` sans rien lire ; relectures
-    regroupées (250 ms) ; dossiers dépliés bornés (200) et oubliés quand ils disparaissent.
-  - **C5** : le brouillon d'une remarque fige le code cité au choix des lignes.
-  - **C6, M10, M11** : un lien se résout dans la racine du document ; un fichier d'un autre
-    dossier de la conversation s'ouvre dans l'onglet, sur sa racine ; un lien par un dossier
-    intermédiaire qui sort reste « hors du dossier ».
-  - **M1** : après l'ouverture, le chemin est résolu à nouveau et doit désigner le même fichier
-    (appareil, inode) dans les racines. C'est portable (macOS, Linux, Windows), sans
-    `F_GETPATH` ni `/proc/self/fd`, et couvre l'échange d'un dossier intermédiaire contre un
-    lien (essai : l'échange fait juste avant `open`).
-  - **M2** : l'état retient le chemin des racines ; une racine changée est oubliée
-    (`reconcileRoots`) ; les remarques sur un fichier sont rangées par chemin de racine.
-  - **M3** : une réponse de listage d'une relecture dépassée est jetée.
-  - **M4** : `git check-ignore --stdin -z`, noms recomposés (NFC) sous macOS ; un lot refusé (lien,
-    sous-module) est coupé en deux jusqu'aux fautifs au lieu d'effacer toutes les marques ; un lien
-    vers un dossier est demandé sans `/`.
-  - **M5** : UTF-16 gros boutiste, UTF-16 sans BOM ; Latin-1 si ce n'est pas de l'UTF-8 valide.
-  - **M6** : le filtre marque les fichiers exclus pour l'agent, comme l'arbre.
-  - **M7** : `relativeInRoot` retiré. **M9** : supprimer une conversation purge `bobine.files` et
-    `bobine.panel.filesOpen`.
-
-- **2026-11-20 — clôture : remarques introuvables, revue de toutes les captures** :
-  - Une remarque dont la cible est introuvable (son dossier n'est plus parmi ceux de la
-    conversation) est listée sous la barre des remarques (chemin, texte, corbeille) et comptée
-    « sur un dossier retiré », jamais comptée sans être montrée (`isOrphanNote`, `NotesBar`). Pas
-    de migration de l'ancienne clé `rang:chemin` : ce format n'a jamais été publié.
-  - Captures ajoutées : `271-special` (FIFO grisé, marqué) et `271-filtre-exclu` (`.env` marqué
-    dans le filtre).
-  - Revue des 30 captures en français (clair et sombre) et de celles en anglais. Défauts trouvés et
-    corrigés :
-    - un fichier à la racine montrait un faux dossier dans le filtre (`.env` → « .en ») :
-      `nameAndDir` ;
-    - la marque « exclu » d'un résultat est maintenant à droite, comme dans l'arbre ;
-    - en sombre, le segment actif (Rendu / Source, et les vues des Modifications) se distinguait
-      mal : liseré ;
-    - la ligne visée par un clic droit n'était pas marquée (une autre, sous le pointeur, l'était) :
-      classe `menu-open` ;
-    - une toute petite image (2 × 2) était invisible : agrandie d'un facteur entier vers 64 px,
-      pixels nets ;
-    - à 360 px, le chemin coupé commençait par un « / » orphelin : fondu élargi ;
-    - la capture `271-remarque` prenait l'éclair passager d'une ligne : elle l'attend.
-
-## Décisions de l'utilisateur (2026-11-20)
+### Décisions de l'utilisateur (2026-11-20)
 
 - **Lecture seule d'abord.** Pas d'édition dans la première version ; une édition légère (comme
   celle de Claude Code, option B′) pourra venir plus tard **si elle manque** à l'usage, avec son
@@ -533,6 +475,106 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
     `-filtre`, `-menu`, `-actions`, `-image`, `-binaire`, `-disparu`, `-retour-ligne`,
     `-recherche`, `-remarque`, `-markdown-source`, `-chemin-long` (panneau à 360 px), `-agrandi`,
     en clair et en sombre, et en anglais (`--lang en`).
+
+- **2026-11-20 — revue QA et sécurité, tout corrigé** (un essai qui échouait avant chaque
+  correction) :
+  - **B1** FIFO : lu avec `O_NONBLOCK` et refusé s'il n'est pas un fichier, avant et après
+    l'ouverture ; listé « spécial » d'après `readdir` (FIFO, socket, périphérique), grisé, sans
+    ouverture, ni glisser, ni « Ouvrir » ; `files:open` le refuse ; un état retenu qui y mène
+    finit en erreur, sans bloquer (`file-tree`, `files-ipc`, `FileTree.special`, vrai `mkfifo`,
+    délai de garde, sauté sous Windows : `FIFOS`).
+  - **C1, M8** : une demande (⌘P, lien) porte sa conversation, est traitée après le rendu et
+    consommée (`onRequestDone`) ; l'état retenu s'écrit dans un effet, une fois par changement
+    (`usePanel`, `useFilesTab` sous `StrictMode`).
+  - **C2** : le glisser de l'arbre pose un jeton de module (`startTreeDrag` / `endTreeDrag`),
+    jamais le chemin ; un type `application/x-bobine-file` posé par une autre source est ignoré.
+  - **C3** : « Ouvrir dans l'éditeur » d'une autre racine envoie le rang et le chemin relatif ;
+    le main prend le dossier dans `additionalDirectories` et vérifie le chemin réel
+    (`editors:open`, option `root`).
+  - **C4** : listage borné avant tout `lstat` (genre lu dans `Dirent`), appels menés 16 à la fois ;
+    `files:read` reçoit la version affichée et répond `unchanged` sans rien lire ; relectures
+    regroupées (250 ms) ; dossiers dépliés bornés (200) et oubliés quand ils disparaissent.
+  - **C5** : le brouillon d'une remarque fige le code cité au choix des lignes.
+  - **C6, M10, M11** : un lien se résout dans la racine du document ; un fichier d'un autre
+    dossier de la conversation s'ouvre dans l'onglet, sur sa racine ; un lien par un dossier
+    intermédiaire qui sort reste « hors du dossier ».
+  - **M1** : après l'ouverture, le chemin est résolu à nouveau et doit désigner le même fichier
+    (appareil, inode) dans les racines. C'est portable (macOS, Linux, Windows), sans
+    `F_GETPATH` ni `/proc/self/fd`, et couvre l'échange d'un dossier intermédiaire contre un
+    lien (essai : l'échange fait juste avant `open`).
+  - **M2** : l'état retient le chemin des racines ; une racine changée est oubliée
+    (`reconcileRoots`) ; les remarques sur un fichier sont rangées par chemin de racine.
+  - **M3** : une réponse de listage d'une relecture dépassée est jetée.
+  - **M4** : `git check-ignore --stdin -z`, noms recomposés (NFC) sous macOS ; un lot refusé (lien,
+    sous-module) est coupé en deux jusqu'aux fautifs au lieu d'effacer toutes les marques ; un lien
+    vers un dossier est demandé sans `/`.
+  - **M5** : UTF-16 gros boutiste, UTF-16 sans BOM ; Latin-1 si ce n'est pas de l'UTF-8 valide.
+  - **M6** : le filtre marque les fichiers exclus pour l'agent, comme l'arbre.
+  - **M7** : `relativeInRoot` retiré. **M9** : supprimer une conversation purge `bobine.files` et
+    `bobine.panel.filesOpen`.
+
+- **2026-11-20 — clôture : remarques introuvables, revue de toutes les captures** :
+  - Une remarque dont la cible est introuvable (son dossier n'est plus parmi ceux de la
+    conversation) est listée sous la barre des remarques (chemin, texte, corbeille) et comptée
+    « sur un dossier retiré », jamais comptée sans être montrée (`isOrphanNote`, `NotesBar`). Pas
+    de migration de l'ancienne clé `rang:chemin` : ce format n'a jamais été publié.
+  - Captures ajoutées : `271-special` (FIFO grisé, marqué) et `271-filtre-exclu` (`.env` marqué
+    dans le filtre).
+  - Revue des 30 captures en français (clair et sombre) et de celles en anglais. Défauts trouvés et
+    corrigés :
+    - un fichier à la racine montrait un faux dossier dans le filtre (`.env` → « .en ») :
+      `nameAndDir` ;
+    - la marque « exclu » d'un résultat est maintenant à droite, comme dans l'arbre ;
+    - en sombre, le segment actif (Rendu / Source, et les vues des Modifications) se distinguait
+      mal : liseré ;
+    - la ligne visée par un clic droit n'était pas marquée (une autre, sous le pointeur, l'était) :
+      classe `menu-open` ;
+    - une toute petite image (2 × 2) était invisible : agrandie d'un facteur entier vers 64 px,
+      pixels nets ;
+    - à 360 px, le chemin coupé commençait par un « / » orphelin : fondu élargi ;
+    - la capture `271-remarque` prenait l'éclair passager d'une ligne : elle l'attend.
+
+- **2026-11-21 — seconde revue indépendante, tout corrigé** (un essai qui échouait avant chaque
+  correction) :
+  - **B1** clavier : l'arbre n'écoute que les touches de ses lignes (`role=treeitem`) ; celles des
+    menus (portails) et du bouton ⋮ ne parcourent ni n'ouvrent plus rien ; ⋮ n'est plus un arrêt
+    de tabulation (`FileTree.keys`).
+  - **B2** espace Discussion : un lien de fichier n'ouvre jamais l'onglet Fichiers (`showFile`
+    seulement en espace Code ; gardes dans `openFiles` et le panneau) ; `.md` en aperçu, `.txt`
+    dans l'app par défaut, comme avant (`ipc`, `usePanel`).
+  - **C1** dossier atteint par un lien : git est interrogé par le chemin réel ; un lot refusé est
+    coupé au plus 12 fois (plus jamais des centaines d'appels).
+  - **C2** seuls les dossiers dont tous les parents sont dépliés sont relus, en un appel par racine
+    (`files:listMany`) et un seul `git check-ignore`.
+  - **C3** une demande (lien) n'est traitée qu'après la réconciliation des racines.
+  - **C4** la ligne d'un lien est oubliée une fois montrée (`lineShown`) ; au retour, le
+    défilement retenu reprend ; recliquer le même lien ramène à la ligne.
+  - **C5** l'arbre ne ramène le fichier ouvert à l'écran que quand il change.
+  - **C6** ⌘-clic sur un lien d'un Markdown d'un autre dossier : l'éditeur ouvre le fichier de ce
+    dossier (`editors:open` suit le dossier de `base`).
+  - **C7** l'onglet ne reçoit plus le fil : chemins modifiés et fins d'outil (`useFilesWork`),
+    stables entre deux fins ; lignes de l'arbre et du code mémoïsées ; la saisie d'une remarque
+    vit dans son éditeur (une touche ne redessine aucune ligne).
+  - **C8** noms en NFC sous macOS (arbre, liens) et comparaisons en NFC dans le renderer.
+  - **C9** l'éclair d'une ligne s'éteint par un minuteur (mouvement réduit compris).
+  - **C10** dossier de la conversation disparu : « Ce dossier n'existe plus. » et « Choisir un
+    dossier… » (le choix existant) ; autres dossiers que l'agent ne reçoit pas : marqués « non
+    transmis » (Q19, Q26).
+  - Mineurs : focus rendu au code après ⌘F et ⌃G ; relecture après un outil en échec ; défilement
+    en attente annulé à l'ouverture d'un autre fichier ; la borne des dossiers dépliés ne replie
+    jamais un parent ; « … de plus » adapté sous un dossier ignoré ; erreurs système dites en
+    clair (`filesErrorText`) ; cibles des liens interrogées après la borne et après le contrôle
+    des racines ; `files:open` ouvre le chemin réel vérifié (un lien vers un autre dossier n'est
+    plus « hors du dossier ») ; essai M1 sur le message attendu ; Markdown rendu sans coloration
+    au-delà de la borne ; le dossier le plus précis l'emporte pour un lien ; journal remis en
+    place.
+  - Captures (les 60 `271-*`, clair, sombre, `en-`) : à 360 px, le chemin coupé commençait
+    encore par un « / » orphelin — la coupure, calée à droite, échappait à `scrollWidth` ; elle
+    se mesure segment par segment et un « … » couvre la tête (essai e2e). Rien d'autre à reprendre
+    (le menu contextuel ouvert au pointeur recouvre la ligne visée, comme sous macOS).
+  - Décision : pas de migration des anciennes clés de remarques `rang:chemin` (format jamais
+    publié) ; une remarque dont la cible est introuvable reste montrée et supprimable sous la
+    barre, jamais comptée sans être montrée.
 
 ## Décisions de l'utilisateur (2026-11-20)
 

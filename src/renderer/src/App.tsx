@@ -812,7 +812,7 @@ export function App() {
                 focusTerminal={panel.focusTerminal}
                 {...(c.settings ? { preferences: c.settings.preferences } : {})}
                 {...(panel.changesRequest ? { changesRequest: panel.changesRequest } : {})}
-                files={panel.filesTab(links.openActiveLink, composerInbox)}
+                files={panel.filesTab(links.openActiveLink, composerInbox, c.chooseWorkspace)}
                 {...(panel.preview
                   ? {
                       preview: {

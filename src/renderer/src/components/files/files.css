@@ -296,9 +296,20 @@
   overflow: hidden;
 }
 
-.crumb-dirs.clipped {
-  /* Assez large pour fondre un séparateur coupé : jamais un « / » orphelin en tête. */
-  mask-image: linear-gradient(to right, transparent 6px, #000 40px);
+.crumb-dirs {
+  position: relative;
+}
+
+/* Dossiers coupés faute de place : un « … » en tête, sur fond opaque, couvre le début coupé —
+   jamais un « / » orphelin ni un nom tronqué à gauche. */
+.crumb-dirs.clipped::before {
+  content: '…';
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  padding-right: 10px;
+  color: var(--muted);
+  background: linear-gradient(to right, var(--bg) 60%, transparent);
 }
 
 .crumb-dirs .crumb,

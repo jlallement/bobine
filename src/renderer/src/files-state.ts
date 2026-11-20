@@ -93,9 +93,7 @@ export function parseFilesState(value: unknown): FilesState {
   const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
   const list = (key: string) => (Array.isArray(v[key]) ? (v[key] as unknown[]) : [])
   return {
-    expanded: list('expanded')
-      .filter((k): k is string => typeof k === 'string')
-      .slice(-MAX_EXPANDED),
+    expanded: bounded(list('expanded').filter((k): k is string => typeof k === 'string')),
     ...(isTarget(v['open']) ? { open: v['open'] } : {}),
     back: list('back').filter(isTarget).slice(-MAX_HISTORY),
     forward: list('forward').filter(isTarget).slice(-MAX_HISTORY),
@@ -250,6 +248,23 @@ export function stepFile(state: FilesState, delta: -1 | 1): FilesState {
       }
 }
 
+/**
+ * Garde au plus `MAX_EXPANDED` dossiers dépliés, les plus anciens partant d'abord, mais jamais un
+ * parent d'un dossier gardé (il serait replié avec tout ce qu'il contient).
+ */
+function bounded(expanded: string[]): string[] {
+  const kept = [...expanded]
+  for (let i = 0; kept.length > MAX_EXPANDED && i < kept.length;) {
+    const key = kept[i] as string
+    const isParent = kept.some((other) => other !== key && other.startsWith(`${key}/`))
+    // Racine (`n:`) : parent de tout ce qui suit dans cette racine.
+    const isRoot = key.endsWith(':') && kept.some((other) => other !== key && other.startsWith(key))
+    if (isParent || isRoot) i++
+    else kept.splice(i, 1)
+  }
+  return kept
+}
+
 /** Déplie (ou replie) un dossier. */
 export function toggleDir(state: FilesState, key: string, open?: boolean): FilesState {
   const has = state.expanded.includes(key)
@@ -257,9 +272,7 @@ export function toggleDir(state: FilesState, key: string, open?: boolean): Files
   if (wanted === has) return state
   return {
     ...state,
-    expanded: wanted
-      ? [...state.expanded, key].slice(-MAX_EXPANDED)
-      : state.expanded.filter((k) => k !== key)
+    expanded: wanted ? bounded([...state.expanded, key]) : state.expanded.filter((k) => k !== key)
   }
 }
 
@@ -274,7 +287,7 @@ export function revealIn(state: FilesState, root: number, dirs: readonly string[
   const keys = [dirKey(root, ''), ...dirs.map((d) => dirKey(root, d))]
   const missing = keys.filter((k) => !state.expanded.includes(k))
   if (!missing.length) return state
-  return { ...state, expanded: [...state.expanded, ...missing].slice(-MAX_EXPANDED) }
+  return { ...state, expanded: bounded([...state.expanded, ...missing]) }
 }
 
 /** Replie tout (Q32) ; la racine principale reste dépliée. */

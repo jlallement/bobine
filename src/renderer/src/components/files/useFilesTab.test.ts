@@ -2,18 +2,25 @@ import { act, renderHook } from '@testing-library/react'
 import { StrictMode, createElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FileContent, FileListing, FileRoot } from '@shared/files'
-import type { TranscriptItem } from '@shared/transcript'
 import { EMPTY_FILES_STATE, loadFilesState, openFile, saveFilesState } from '../../files-state'
-import { RELOAD_DELAY_MS, useFilesTab, type FilesRequest } from './useFilesTab'
+import type { TranscriptItem } from '@shared/transcript'
+import { RELOAD_DELAY_MS, useFilesTab, useFilesWork, type FilesRequest } from './useFilesTab'
 
 const ROOTS: FileRoot[] = [
   { index: 0, name: 'app', path: '/p/app' },
   { index: 1, name: 'lib', path: '/p/lib' }
 ]
 
+type Many = Record<string, FileListing | { error: string }>
+
 /** Réponses du main rendues à la main, dans l'ordre choisi par l'essai. */
 function fakeApi(roots: FileRoot[] = ROOTS) {
-  const lists: { dir: string; resolve: (l: FileListing) => void; reject: (e: Error) => void }[] = []
+  const lists: {
+    root: number
+    dirs: string[]
+    resolve: (l: Many) => void
+    reject: (e: Error) => void
+  }[] = []
   const reads: {
     path: string
     known: { modified: number; size: number } | undefined
@@ -21,9 +28,9 @@ function fakeApi(roots: FileRoot[] = ROOTS) {
   }[] = []
   const api = {
     roots: vi.fn(async () => roots),
-    list: vi.fn(
-      (_id: string, _root: number, dir: string) =>
-        new Promise<FileListing>((resolve, reject) => lists.push({ dir, resolve, reject }))
+    listMany: vi.fn(
+      (_id: string, root: number, dirs: string[]) =>
+        new Promise<Many>((resolve, reject) => lists.push({ root, dirs, resolve, reject }))
     ),
     read: vi.fn(
       (_id: string, _root: number, path: string, known?: { modified: number; size: number }) =>
@@ -48,7 +55,6 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const NO_ITEMS: TranscriptItem[] = []
 const listing = (...names: string[]): FileListing => ({
   entries: names.map((name) => ({ name, path: name, kind: 'file' as const })),
   more: 0
@@ -60,13 +66,11 @@ const text = (body: string, modified = 1): FileContent => ({
   truncated: false,
   modified
 })
-const tool = (id: string): TranscriptItem =>
-  ({ kind: 'tool', id, status: 'completed' }) as unknown as TranscriptItem
 
 /** Laisse passer les promesses déjà résolues (racines…). */
 const settle = () => act(async () => {})
 
-describe('demandes venues d’ailleurs (C1, M8)', () => {
+describe('demandes venues d’ailleurs (C1, M8, C3)', () => {
   it('une demande pour une autre conversation est ignorée et laissée à sa conversation', async () => {
     const done = vi.fn()
     const request: FilesRequest = {
@@ -74,9 +78,7 @@ describe('demandes venues d’ailleurs (C1, M8)', () => {
       conversationId: 'c2',
       target: { root: 0, path: 'x.ts' }
     }
-    const { result } = renderHook(() =>
-      useFilesTab('c1', NO_ITEMS, { request, onRequestDone: done })
-    )
+    const { result } = renderHook(() => useFilesTab('c1', 0, { request, onRequestDone: done }))
     await settle()
     expect(result.current.state.open).toBeUndefined()
     expect(done).not.toHaveBeenCalled()
@@ -89,19 +91,29 @@ describe('demandes venues d’ailleurs (C1, M8)', () => {
       conversationId: 'c1',
       target: { root: 0, path: 'x.ts' }
     }
-    const { result } = renderHook(() =>
-      useFilesTab('c1', NO_ITEMS, { request, onRequestDone: done })
-    )
+    const { result } = renderHook(() => useFilesTab('c1', 0, { request, onRequestDone: done }))
     await settle()
     expect(result.current.state.open).toEqual({ root: 0, path: 'x.ts' })
     expect(result.current.view).toBe('file')
     expect(done).toHaveBeenCalledWith(4)
   })
 
+  it('un lien vers une racine dont le rang a changé : traité après la réconciliation (C3)', async () => {
+    saveFilesState('c1', { ...EMPTY_FILES_STATE, roots: ['/p/app', '/p/ancienne'] })
+    const request: FilesRequest = {
+      seq: 2,
+      conversationId: 'c1',
+      target: { root: 1, path: 'b.ts', line: 3 }
+    }
+    const { result } = renderHook(() => useFilesTab('c1', 0, { request, onRequestDone: vi.fn() }))
+    await settle()
+    expect(result.current.state.open).toMatchObject({ root: 1, path: 'b.ts' })
+  })
+
   it('l’état retenu s’écrit une fois par changement, hors du rendu (StrictMode)', async () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(StrictMode, null, children)
-    const { result } = renderHook(() => useFilesTab('c1', NO_ITEMS), { wrapper })
+    const { result } = renderHook(() => useFilesTab('c1', 0), { wrapper })
     await settle()
     const setItem = vi.spyOn(Storage.prototype, 'setItem')
     act(() => result.current.show({ root: 0, path: 'a.ts' }))
@@ -118,7 +130,7 @@ describe('racines désignées par leur rang (M2)', () => {
       ...openFile(EMPTY_FILES_STATE, { root: 1, path: 'b.ts' }),
       roots: ['/p/app', '/p/ancienne']
     })
-    const { result } = renderHook(() => useFilesTab('c1', NO_ITEMS))
+    const { result } = renderHook(() => useFilesTab('c1', 0))
     await settle()
     expect(result.current.state.open).toBeUndefined()
     expect(fake.api.read).not.toHaveBeenCalled()
@@ -126,27 +138,43 @@ describe('racines désignées par leur rang (M2)', () => {
   })
 })
 
-describe('relectures (C4, M3)', () => {
+describe('relectures (C2, C4, M3)', () => {
   it('une réponse de listage périmée ne remplace pas une plus récente (M3)', async () => {
-    const { result } = renderHook(() => useFilesTab('c1', NO_ITEMS))
+    const { result } = renderHook(() => useFilesTab('c1', 0))
     await settle()
     expect(fake.lists).toHaveLength(1)
     act(() => result.current.reload())
     await settle()
     expect(fake.lists).toHaveLength(2)
-    await act(async () => fake.lists[1]?.resolve(listing('neuf.ts')))
-    await act(async () => fake.lists[0]?.resolve(listing('ancien.ts')))
+    await act(async () => fake.lists[1]?.resolve({ '': listing('neuf.ts') }))
+    await act(async () => fake.lists[0]?.resolve({ '': listing('ancien.ts') }))
     const top = result.current.listings['0:']
     expect(top && 'listing' in top && top.listing.entries.map((e) => e.name)).toEqual(['neuf.ts'])
   })
 
+  it('un appel par racine ; jamais un dossier sous un parent replié (C2)', async () => {
+    saveFilesState('c1', {
+      ...EMPTY_FILES_STATE,
+      expanded: ['0:', '0:src', '0:src/ui', '0:docs/vieux', '1:', '1:lib']
+    })
+    renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    expect(fake.lists.map((l) => [l.root, l.dirs])).toEqual([
+      [0, ['', 'src', 'src/ui']],
+      [1, ['', 'lib']]
+    ])
+  })
+
   it('un dossier déplié qui a disparu est oublié (C4)', async () => {
     saveFilesState('c1', { ...EMPTY_FILES_STATE, expanded: ['0:', '0:parti', '0:parti/sous'] })
-    const { result } = renderHook(() => useFilesTab('c1', NO_ITEMS))
+    const { result } = renderHook(() => useFilesTab('c1', 0))
     await settle()
-    const gone = fake.lists.find((l) => l.dir === 'parti')
     await act(async () =>
-      gone?.reject(new Error("ENOENT: no such file or directory, stat 'parti'"))
+      fake.lists[0]?.resolve({
+        '': listing('a.ts'),
+        parti: { error: "ENOENT: no such file or directory, stat 'parti'" },
+        'parti/sous': { error: "ENOENT: no such file or directory, stat 'parti/sous'" }
+      })
     )
     expect(result.current.state.expanded).toEqual(['0:'])
   })
@@ -154,15 +182,15 @@ describe('relectures (C4, M3)', () => {
   it('le fichier ouvert n’est relu que s’il a changé ; les relectures sont regroupées (C4)', async () => {
     vi.useFakeTimers()
     saveFilesState('c1', openFile(EMPTY_FILES_STATE, { root: 0, path: 'a.ts' }))
-    let items: TranscriptItem[] = []
-    const { result, rerender } = renderHook(() => useFilesTab('c1', items))
+    let done = 0
+    const { result, rerender } = renderHook(() => useFilesTab('c1', done))
     await settle()
     await act(async () => fake.reads[0]?.resolve(text('un', 10)))
     const shown = result.current.content
     expect(fake.reads[0]?.known).toBeUndefined()
     // Trois outils finis coup sur coup, et un retour sur la fenêtre : une seule relecture.
-    for (const id of ['t1', 't2', 't3']) {
-      items = [...items, tool(id)]
+    for (let i = 0; i < 3; i++) {
+      done++
       rerender()
     }
     act(() => {
@@ -173,5 +201,55 @@ describe('relectures (C4, M3)', () => {
     expect(fake.reads[1]?.known).toEqual({ modified: 10, size: 2 })
     await act(async () => fake.reads[1]?.resolve({ kind: 'unchanged', modified: 10, size: 2 }))
     expect(result.current.content).toBe(shown)
+  })
+
+  it('le défilement d’un fichier n’est pas rangé sur le suivant', async () => {
+    vi.useFakeTimers()
+    saveFilesState('c1', openFile(EMPTY_FILES_STATE, { root: 0, path: 'a.ts' }))
+    const { result } = renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    act(() => result.current.saveScroll(240))
+    act(() => result.current.show({ root: 0, path: 'b.ts' }))
+    await act(async () => vi.advanceTimersByTime(1000))
+    expect(result.current.state.open).toEqual({ root: 0, path: 'b.ts' })
+    expect(result.current.state.scroll).toBeUndefined()
+  })
+
+  it('la ligne d’un lien est oubliée une fois montrée (C4)', async () => {
+    const { result } = renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    act(() => result.current.show({ root: 0, path: 'a.ts', line: 42 }))
+    expect(result.current.state.open?.line).toBe(42)
+    act(() => result.current.lineShown())
+    expect(result.current.state.open).toEqual({ root: 0, path: 'a.ts' })
+    expect(loadFilesState('c1').open?.line).toBeUndefined()
+  })
+})
+
+describe('ce que l’onglet retient du fil (C7)', () => {
+  const edit = (id: string, path: string, status = 'completed') =>
+    ({
+      kind: 'tool',
+      id,
+      status,
+      content: [{ type: 'diff', path, oldText: 'a', newText: 'b' }]
+    }) as unknown as TranscriptItem
+  const say = (id: number, text: string) =>
+    ({ kind: 'agent', id, text }) as unknown as TranscriptItem
+
+  it('chemins stables tant qu’aucun outil ne finit ; un outil en échec compte comme une fin', () => {
+    let items: TranscriptItem[] = [edit('t1', '/p/app/a.ts')]
+    const { result, rerender } = renderHook(() => useFilesWork(items))
+    const first = result.current.changes
+    expect(first).toEqual(['/p/app/a.ts'])
+    // Un morceau de réponse de l'agent : rien ne change pour l'onglet.
+    items = [...items, say(2, 'Je regarde…')]
+    rerender()
+    expect(result.current.changes).toBe(first)
+    expect(result.current.done).toBe(1)
+    items = [...items, edit('t2', '/p/app/b.ts', 'failed')]
+    rerender()
+    expect(result.current.done).toBe(2)
+    expect(result.current.changes).toBe(first)
   })
 })

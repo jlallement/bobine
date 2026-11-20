@@ -135,6 +135,7 @@ export const READ_ONLY_SAFE = [
   // Vue des fichiers (fiche 271) : lecture seule, ouvrir ailleurs, Finder.
   'files:roots',
   'files:list',
+  'files:listMany',
   'files:read',
   'files:search',
   'files:reveal',

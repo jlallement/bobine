@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, ListTree } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { filesErrorText } from '../../files-errors'
 import { isHtmlPath, isMarkdownPath } from '@shared/file-links'
 import { MAX_HIGHLIGHT_BYTES, type FileRoot, type FileTarget } from '@shared/files'
 import { sizeText } from '../discussion/DocumentsPanel'
@@ -35,6 +36,8 @@ interface Props {
   /** Segment du fil d'Ariane : ce dossier révélé dans l'arbre. */
   onRevealDir: (path: string) => void
   onScroll?: (scroll: number) => void
+  /** La ligne demandée a été montrée : oubliée (C4). */
+  onLineShown?: () => void
   initialScroll?: number | undefined
   /** Menu de vue de l'onglet (un seul, point 4), à droite de l'en-tête. */
   viewMenu: ReactNode
@@ -156,13 +159,19 @@ function Breadcrumb(props: Props & { name: string }) {
       {label}
     </button>
   )
-  // Dossiers coupés faute de place : fondus à gauche (seulement alors).
+  // Dossiers coupés faute de place : un « … » en tête (seulement alors).
   const dirsBox = useRef<HTMLSpanElement>(null)
   const [clipped, setClipped] = useState(false)
   useEffect(() => {
     const node = dirsBox.current
     if (!node || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => setClipped(node.scrollWidth > node.clientWidth + 1))
+    // Calés à droite, les dossiers débordent à gauche, ce que `scrollWidth` ne compte pas : leur
+    // largeur se mesure segment par segment.
+    const measure = () => {
+      const wanted = [...node.children].reduce((w, c) => w + c.getBoundingClientRect().width, 0)
+      setClipped(wanted > node.clientWidth + 1)
+    }
+    const observer = new ResizeObserver(measure)
     observer.observe(node)
     return () => observer.disconnect()
   }, [target.path])
@@ -282,7 +291,7 @@ function FileBody(
   if ('error' in content) {
     return (
       <div className="file-view-note error" data-testid="file-error">
-        {content.missing ? t('files.missing') : content.error}
+        {content.missing ? t('files.missing') : filesErrorText(content.error)}
       </div>
     )
   }
@@ -319,7 +328,7 @@ function FileBody(
         <div className="file-markdown msg-agent" data-testid="file-markdown">
           <FileLinksContext.Provider value={props.openLink}>
             <FileLinkBase.Provider value={dir}>
-              <Markdown text={text} />
+              <Markdown text={text} highlight={text.length <= MAX_HIGHLIGHT_BYTES} />
             </FileLinkBase.Provider>
           </FileLinksContext.Provider>
           {read.truncated && (
@@ -362,6 +371,7 @@ function TextView(
         line={target.line}
         notes={props.notes}
         {...(props.onScroll ? { onScroll: props.onScroll } : {})}
+        onLineShown={props.onLineShown}
         initialScroll={props.initialScroll}
       />
     </>

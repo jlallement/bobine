@@ -2431,7 +2431,10 @@
     "error": {
       "outside": "Hors des dossiers de la conversation : {{path}}",
       "notFolder": "Pas un dossier : {{path}}",
-      "notFile": "Pas un fichier : {{path}}"
+      "notFile": "Pas un fichier : {{path}}",
+      "denied": "Accès refusé par le système.",
+      "gone": "Ce fichier ou ce dossier n’existe plus.",
+      "stale": "Ce dossier ne fait plus partie de la conversation."
     },
     "filter": "Filtrer",
     "filterLabel": "Filtrer les fichiers",
@@ -2449,6 +2452,9 @@
     "moreEntries_one": "{{n}} de plus : filtrer pour le trouver",
     "moreEntries_other": "{{n}} de plus : filtrer pour les trouver",
     "moreEntries_many": "{{n}} de plus : filtrer pour les trouver",
+    "moreIgnored_one": "{{n}} de plus, dans un dossier ignoré : le filtre ne le cherche pas",
+    "moreIgnored_other": "{{n}} de plus, dans un dossier ignoré : le filtre ne les cherche pas",
+    "moreIgnored_many": "{{n}} de plus, dans un dossier ignoré : le filtre ne les cherche pas",
     "empty": "Dossier vide",
     "noMatch": "Aucun fichier ne correspond.",
     "ignoredNotSearched": "Les fichiers ignorés par git ne sont pas cherchés : les parcourir dans l’arbre.",
@@ -2459,6 +2465,7 @@
     "special": "Fichier spécial (tube, socket ou périphérique) : il ne s’ouvre pas ici",
     "linkOutside": "Lien vers l’extérieur des dossiers de la conversation : non suivi",
     "noFolder": "Cette conversation n’a pas encore de dossier.",
+    "chooseFolder": "Choisir un dossier…",
     "folderMissing": "Ce dossier n’existe plus.",
     "readOnly": "Lecture seule",
     "back": "Revenir à l’arborescence",

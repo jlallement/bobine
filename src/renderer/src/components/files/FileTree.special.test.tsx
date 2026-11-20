@@ -56,3 +56,34 @@ describe('FIFO, socket, périphérique dans l’arbre (B1)', () => {
     expect(onOpen).toHaveBeenCalledWith(0, 'a.ts')
   })
 })
+
+describe('autres dossiers que l’agent ne reçoit pas (C10, Q26)', () => {
+  it('leur racine est marquée « non transmis », la principale non', () => {
+    const rows = treeRows(
+      [
+        { index: 0, name: 'app', path: '/p/app' },
+        { index: 1, name: 'lib', path: '/p/lib', notSent: true }
+      ],
+      { '0:': { listing: { entries: [], more: 0 } } },
+      new Set(['0:'])
+    )
+    render(
+      <Tooltip.Provider>
+        <FileTree
+          rows={rows}
+          changed={new Set()}
+          exclusionFiles={[]}
+          actions={actions}
+          onToggle={() => {}}
+          onOpen={() => {}}
+          onCollapseDir={() => {}}
+          onType={() => {}}
+        />
+      </Tooltip.Provider>
+    )
+    const [app, lib] = screen.getAllByTestId('file-row').filter((r) => r.classList.contains('root'))
+    expect(app?.querySelector('[data-testid=file-row-not-sent]')).toBeNull()
+    expect(lib?.querySelector('[data-testid=file-row-not-sent]')).not.toBeNull()
+    expect(lib?.getAttribute('aria-label')).toMatch(/lib, .+/)
+  })
+})

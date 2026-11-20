@@ -79,6 +79,21 @@ describe('threadHandlers (fiche 156)', () => {
     }
   })
 
+  it('lien d’un document d’un autre dossier : l’éditeur ouvre le fichier de ce dossier (C6)', async () => {
+    const lib = realpathSync(mkdtempSync(join(tmpdir(), 'bobine-lib-')))
+    try {
+      writeFileSync(join(lib, 'b.ts'), 'x')
+      const { handlers } = setup([lib])
+      writeFileSync(join(dir, 'b.ts'), 'pas celui-là')
+      expect(await handlers['editors:open']('c1', 'zed', 'b.ts', { base: lib })).toEqual({
+        kind: 'opened',
+        path: join(lib, 'b.ts')
+      })
+    } finally {
+      rmSync(lib, { recursive: true, force: true })
+    }
+  })
+
   it('sortie trop grosse (fiche 192) : écrite par l’app, ouverte dans l’éditeur installé', async () => {
     const { deps, handlers } = setup()
     expect(await handlers['editors:openText']('c1', 'vscode', 'x')).toEqual({ kind: 'no-editor' })

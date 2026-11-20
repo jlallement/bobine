@@ -1,20 +1,20 @@
-import { ChevronDown, ChevronUp, MessageSquarePlus, Pencil, Trash2, X } from 'lucide-react'
+import { MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
 import {
   Fragment,
+  memo,
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent,
-  type ReactNode
+  type KeyboardEvent
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DiffNote } from '@shared/diff-notes'
 import type { CodeLine } from '../../code-lines'
 import { placeNotes } from '../../file-notes'
 import { FILE_FIND_EVENT, FILE_GOTO_EVENT } from '../../files-state'
-import { Tip } from '../common/Menus'
+import { FileFind, GotoBar } from './CodeBars'
 
 /** Remarques sur ce fichier (fiche 271, L3) : celles de la file commune (fiche 085). */
 export interface CodeNotes {
@@ -29,6 +29,7 @@ interface Draft {
   id?: string
   from: number
   to: number
+  /** Texte de départ (remarque modifiée) ; la saisie vit dans l'éditeur (C7). */
   text: string
   /**
    * Code cité, figé quand les lignes sont choisies (C5) : un fichier relu pendant la saisie ne
@@ -65,12 +66,201 @@ export function notedLines(placed: ReturnType<typeof placeNotes>): Set<number> {
   return lines
 }
 
+/** Durée de l'éclair d'une ligne (l'animation CSS en dure 1,5 s). */
+const FLASH_MS = 1600
+
+/**
+ * Éclaire une ligne un instant (point 6). Retirée à la fin de l'animation, ou au plus tard après
+ * `FLASH_MS` : sans animation (mouvement réduit), elle s'éteint quand même et ne s'accumule pas
+ * (C9).
+ */
+export function flashLine(row: HTMLElement): void {
+  const timers = row as HTMLElement & { flashTimer?: ReturnType<typeof setTimeout> }
+  clearTimeout(timers.flashTimer)
+  row.classList.remove('flash')
+  void row.offsetWidth
+  row.classList.add('flash')
+  const off = () => {
+    clearTimeout(timers.flashTimer)
+    row.classList.remove('flash')
+  }
+  row.addEventListener('animationend', off, { once: true })
+  timers.flashTimer = setTimeout(off, FLASH_MS)
+}
+
+/** Ce que fait une ligne de code, stable d'un rendu à l'autre (les lignes sont mémoïsées, C7). */
+interface LineHandlers {
+  start: (line: number, extend: boolean) => void
+  gutterFocus: (line: number) => void
+  gutterKey: (event: KeyboardEvent<HTMLButtonElement>, line: number) => void
+}
+
+/** Une ligne de code : redessinée seulement si elle change (pas à chaque touche, C7). */
+const CodeLineRow = memo(function CodeLineRow(props: {
+  n: number
+  tokens: CodeLine
+  raw: string
+  wrap: boolean
+  selected: boolean
+  noted: boolean
+  notes: boolean
+  tabStop: boolean
+  handlers: LineHandlers
+}) {
+  const { t } = useTranslation()
+  const { n, tokens, handlers } = props
+  const classes = ['file-line', props.selected ? 'selected' : '', props.noted ? 'noted' : '']
+  // Retrait suspendu : la suite d'une ligne repliée s'aligne sur son indentation (point 5).
+  const style = props.wrap
+    ? ({ '--hang': `${indentOf(props.raw) + 2}ch` } as CSSProperties)
+    : undefined
+  return (
+    <div className={classes.filter(Boolean).join(' ')} data-line={n} style={style}>
+      <span className="file-gutter">
+        {props.notes && (
+          <button
+            className="file-note-add"
+            aria-label={t('diffNotes.comment', { line: n })}
+            title={t('diffNotes.comment', { line: n })}
+            tabIndex={props.tabStop ? 0 : -1}
+            onFocus={() => handlers.gutterFocus(n)}
+            onClick={(e) => handlers.start(n, e.shiftKey)}
+            onKeyDown={(e) => handlers.gutterKey(e, n)}
+            data-testid="file-note-add"
+          >
+            <MessageSquarePlus size={12} />
+          </button>
+        )}
+        <span className="file-no">{n}</span>
+      </span>
+      <span className="file-text">
+        {tokens.map((token, k) =>
+          token.className ? (
+            <span key={k} className={token.className}>
+              {token.text}
+            </span>
+          ) : (
+            <Fragment key={k}>{token.text}</Fragment>
+          )
+        )}
+        {tokens.length === 0 && '​'}
+      </span>
+    </div>
+  )
+})
+
+/** Éditeur d'une remarque : sa saisie lui appartient, les lignes ne la voient pas (C7). */
+function DraftEditor({
+  draft,
+  range,
+  onSave,
+  onCancel
+}: {
+  draft: Draft
+  range: string
+  onSave: (text: string) => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation()
+  const [text, setText] = useState(draft.text)
+  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      onCancel()
+    } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      if (text.trim()) onSave(text.trim())
+    }
+  }
+  return (
+    <div className="file-note-row">
+      <div className="diff-note-editor" data-testid="file-note-editor">
+        <div className="diff-note-where">{range}</div>
+        <textarea
+          autoFocus
+          value={text}
+          placeholder={t('diffNotes.placeholder')}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={2}
+          data-testid="file-note-input"
+        />
+        <div className="diff-note-actions">
+          <button className="btn small ghost" onClick={onCancel}>
+            {t('diffNotes.cancel')}
+          </button>
+          <button
+            className="btn small primary"
+            onClick={() => onSave(text.trim())}
+            disabled={!text.trim()}
+            data-testid="file-note-save"
+          >
+            {draft.id ? t('diffNotes.update') : t('diffNotes.add')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Une remarque placée sous ses lignes (ou en fin de fichier si son code a changé). */
+function NoteCard({
+  placed,
+  range,
+  onEdit,
+  onDelete
+}: {
+  placed: ReturnType<typeof placeNotes>[number]
+  range: string
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="file-note-row">
+      <div className="diff-note" data-testid="file-note">
+        <div className="diff-note-where">
+          {range}
+          {!placed.to && (
+            <span className="file-note-moved">
+              {' · '}
+              {t('files.noteChanged')}
+            </span>
+          )}
+        </div>
+        <div className="diff-note-text">{placed.note.comment}</div>
+        <div className="diff-note-tools">
+          <button
+            className="icon-button small"
+            aria-label={t('diffNotes.edit')}
+            title={t('diffNotes.edit')}
+            onClick={onEdit}
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            className="icon-button small"
+            aria-label={t('diffNotes.delete')}
+            title={t('diffNotes.delete')}
+            onClick={onDelete}
+            data-testid="file-note-delete"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /**
  * Code numéroté et coloré, en lecture seule (Q38, Q47, Q54) : numéros non sélectionnables, retour
  * à la ligne au choix (la suite d'une ligne s'aligne sur son indentation), « + » d'une ligne pour
  * une remarque (Maj-clic : une plage ; au clavier, une seule étape de tabulation dans la gouttière,
  * ↑ ↓ pour changer de ligne, + ou ↵ pour remarquer), ⌃G pour aller à une ligne, ⌘F pour chercher.
- * La ligne demandée (lien du fil, `chemin:ligne`) est amenée et éclairée un instant.
+ * La ligne demandée (lien du fil, `chemin:ligne`) est amenée et éclairée un instant, puis oubliée :
+ * au retour, le défilement retenu reprend (C4).
  */
 export function CodeView({
   lines,
@@ -80,6 +270,7 @@ export function CodeView({
   line,
   notes,
   onScroll,
+  onLineShown,
   initialScroll
 }: {
   lines: CodeLine[]
@@ -89,6 +280,8 @@ export function CodeView({
   line?: number | undefined
   notes?: CodeNotes | undefined
   onScroll?: (scroll: number) => void
+  /** La ligne demandée a été montrée : l'onglet l'oublie (C4). */
+  onLineShown?: (() => void) | undefined
   initialScroll?: number | undefined
 }) {
   const { t } = useTranslation()
@@ -119,31 +312,66 @@ export function CodeView({
     const row = box.current?.querySelector<HTMLElement>(`[data-line="${target}"]`)
     if (!row) return
     row.scrollIntoView?.({ block: 'center' })
-    // Éclairée le temps d'un éclair, pas plus (point 6).
-    row.classList.remove('flash')
-    void row.offsetWidth
-    row.classList.add('flash')
-    row.addEventListener('animationend', () => row.classList.remove('flash'), { once: true })
+    flashLine(row)
   }
-  // Ligne demandée : à l'écran une fois le fichier rendu ; sinon la position retenue.
+  // Ligne demandée : à l'écran, puis oubliée ; sinon, à l'ouverture, la position retenue.
+  const openedName = useRef<string | null>(null)
   useEffect(() => {
-    if (line) show(line)
-    else if (initialScroll && box.current) box.current.scrollTop = initialScroll
+    const opened = openedName.current !== name
+    openedName.current = name
+    if (line) {
+      // Pour les essais : la ligne demandée reste lisible une fois oubliée par l'onglet.
+      if (box.current) box.current.dataset['asked'] = String(line)
+      show(line)
+      onLineShown?.()
+    } else if (opened && initialScroll && box.current) box.current.scrollTop = initialScroll
     // eslint-disable-next-line react-hooks/exhaustive-deps -- à l'ouverture et à chaque ligne demandée
   }, [line, name])
 
   const range = (from: number, to: number) =>
     from === to ? t('diffNotes.line', { line: from }) : t('diffNotes.lines', { from, to })
   const codeOf = (from: number, to: number) => raw.slice(from - 1, to).join('\n')
-  const start = (at: number, extend: boolean) => {
-    if (extend && draft && !draft.id) {
-      const from = Math.min(draft.from, at)
-      const to = Math.max(draft.to, at)
-      setDraft({ ...draft, from, to, code: codeOf(from, to) })
-    } else setDraft({ from: at, to: at, text: '', code: codeOf(at, at) })
-  }
-  const save = () => {
-    if (!notes || !draft || !draft.text.trim()) return
+  // Lues au moment de l'évènement : les poignées des lignes restent les mêmes (C7).
+  const latest = useRef({ draft, codeOf, lines: lines.length })
+  useEffect(() => {
+    latest.current = { draft, codeOf, lines: lines.length }
+  })
+  const handlers = useMemo<LineHandlers>(
+    () => ({
+      start: (at, extend) => {
+        const { draft: current, codeOf: code } = latest.current
+        if (extend && current && !current.id) {
+          const from = Math.min(current.from, at)
+          const to = Math.max(current.to, at)
+          setDraft({ ...current, from, to, code: code(from, to) })
+        } else setDraft({ from: at, to: at, text: '', code: code(at, at) })
+      },
+      gutterFocus: (n) => setGutterLine(n),
+      // Gouttière : une seule étape de tabulation, ↑ ↓ changent de ligne (point 17).
+      gutterKey: (event, n) => {
+        const count = latest.current.lines
+        const move = (to: number) => {
+          event.preventDefault()
+          const next = Math.min(Math.max(to, 1), count)
+          setGutterLine(next)
+          box.current
+            ?.querySelector<HTMLElement>(`[data-line="${next}"] [data-testid=file-note-add]`)
+            ?.focus()
+        }
+        if (event.key === 'ArrowDown') move(n + 1)
+        else if (event.key === 'ArrowUp') move(n - 1)
+        else if (event.key === 'Home') move(1)
+        else if (event.key === 'End') move(count)
+        else if (event.key === '+' || event.key === 'Enter') {
+          event.preventDefault()
+          handlers.start(n, event.shiftKey)
+        }
+      }
+    }),
+    []
+  )
+  const save = (comment: string) => {
+    if (!notes || !draft || !comment) return
     notes.onSave({
       ...notes.anchor,
       id: draft.id ?? newNoteId(),
@@ -151,19 +379,9 @@ export function CodeView({
       from: draft.from,
       to: draft.to,
       code: draft.code,
-      comment: draft.text.trim()
+      comment
     })
     setDraft(null)
-  }
-  const onEditorKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      event.stopPropagation()
-      setDraft(null)
-    } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault()
-      save()
-    }
   }
   const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
     // ⌃G : aller à la ligne (Q48) — ⌘G et ⌘L sont déjà pris dans Bobine.
@@ -172,117 +390,56 @@ export function CodeView({
       setBar((b) => ({ kind: 'goto', seq: (b?.seq ?? 0) + 1 }))
     }
   }
-  // Gouttière : une seule étape de tabulation, ↑ ↓ changent de ligne (point 17).
-  const onGutterKey = (event: KeyboardEvent<HTMLButtonElement>, n: number) => {
-    const move = (to: number) => {
-      event.preventDefault()
-      const next = Math.min(Math.max(to, 1), lines.length)
-      setGutterLine(next)
-      box.current
-        ?.querySelector<HTMLElement>(`[data-line="${next}"] [data-testid=file-note-add]`)
-        ?.focus()
-    }
-    if (event.key === 'ArrowDown') move(n + 1)
-    else if (event.key === 'ArrowUp') move(n - 1)
-    else if (event.key === 'Home') move(1)
-    else if (event.key === 'End') move(lines.length)
-    else if (event.key === '+' || event.key === 'Enter') {
-      event.preventDefault()
-      start(n, event.shiftKey)
-    }
+  // Barre fermée par le clavier : il revient au code (mineur de la seconde revue).
+  const closeBar = (back: boolean) => {
+    setBar(null)
+    if (back) box.current?.focus()
   }
-
-  const editor = (key: string): ReactNode =>
+  const editor = (key: string) =>
     draft && (
-      <div key={key} className="file-note-row">
-        <div className="diff-note-editor" data-testid="file-note-editor">
-          <div className="diff-note-where">{range(draft.from, draft.to)}</div>
-          <textarea
-            autoFocus
-            value={draft.text}
-            placeholder={t('diffNotes.placeholder')}
-            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-            onKeyDown={onEditorKey}
-            rows={2}
-            data-testid="file-note-input"
-          />
-          <div className="diff-note-actions">
-            <button className="btn small ghost" onClick={() => setDraft(null)}>
-              {t('diffNotes.cancel')}
-            </button>
-            <button
-              className="btn small primary"
-              onClick={save}
-              disabled={!draft.text.trim()}
-              data-testid="file-note-save"
-            >
-              {draft.id ? t('diffNotes.update') : t('diffNotes.add')}
-            </button>
-          </div>
-        </div>
-      </div>
+      <DraftEditor
+        key={key}
+        draft={draft}
+        range={range(draft.from, draft.to)}
+        onSave={save}
+        onCancel={() => setDraft(null)}
+      />
     )
-  const noteCard = (p: (typeof placed)[number]): ReactNode =>
+  const noteCard = (p: (typeof placed)[number]) =>
     draft?.id === p.note.id ? (
       editor(`edit-${p.note.id}`)
     ) : (
-      <div key={`note-${p.note.id}`} className="file-note-row">
-        <div className="diff-note" data-testid="file-note">
-          <div className="diff-note-where">
-            {range(p.note.from, p.note.to)}
-            {!p.to && (
-              <span className="file-note-moved">
-                {' · '}
-                {t('files.noteChanged')}
-              </span>
-            )}
-          </div>
-          <div className="diff-note-text">{p.note.comment}</div>
-          <div className="diff-note-tools">
-            <button
-              className="icon-button small"
-              aria-label={t('diffNotes.edit')}
-              title={t('diffNotes.edit')}
-              onClick={() =>
-                setDraft({
-                  id: p.note.id,
-                  from: p.note.from,
-                  to: p.note.to,
-                  text: p.note.comment,
-                  code: p.note.code
-                })
-              }
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              className="icon-button small"
-              aria-label={t('diffNotes.delete')}
-              title={t('diffNotes.delete')}
-              onClick={() => notes?.onDelete(p.note.id)}
-              data-testid="file-note-delete"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <NoteCard
+        key={`note-${p.note.id}`}
+        placed={p}
+        range={range(p.note.from, p.note.to)}
+        onEdit={() =>
+          setDraft({
+            id: p.note.id,
+            from: p.note.from,
+            to: p.note.to,
+            text: p.note.comment,
+            code: p.note.code
+          })
+        }
+        onDelete={() => notes?.onDelete(p.note.id)}
+      />
     )
 
   return (
     <div className="file-code-wrap">
       {bar?.kind === 'find' && (
-        <FileFind key={bar.seq} lines={raw} onShow={show} onClose={() => setBar(null)} />
+        <FileFind key={bar.seq} lines={raw} onShow={show} onClose={closeBar} />
       )}
       {bar?.kind === 'goto' && (
         <GotoBar
           key={bar.seq}
           count={lines.length}
           onGo={(n) => {
-            setBar(null)
+            closeBar(true)
             show(n)
           }}
-          onClose={() => setBar(null)}
+          onClose={closeBar}
         />
       )}
       <div
@@ -294,50 +451,22 @@ export function CodeView({
         onKeyDown={onKey}
         onScroll={(e) => onScroll?.((e.target as HTMLDivElement).scrollTop)}
         data-testid="file-code"
-        // Ligne demandée (lien du fil, `chemin:ligne`), pour les essais : l'éclair ne dure pas.
-        {...(line ? { 'data-asked': line } : {})}
       >
         {lines.map((tokens, i) => {
           const n = i + 1
-          const selected = !!draft && !draft.id && n >= draft.from && n <= draft.to
-          const classes = ['file-line', selected ? 'selected' : '', noted.has(n) ? 'noted' : '']
-          // Retrait suspendu : la suite d'une ligne repliée s'aligne sur son indentation (point 5).
-          const style = wrap
-            ? ({ '--hang': `${indentOf(raw[i] ?? '') + 2}ch` } as CSSProperties)
-            : undefined
           return (
             <Fragment key={n}>
-              <div className={classes.filter(Boolean).join(' ')} data-line={n} style={style}>
-                <span className="file-gutter">
-                  {notes && (
-                    <button
-                      className="file-note-add"
-                      aria-label={t('diffNotes.comment', { line: n })}
-                      title={t('diffNotes.comment', { line: n })}
-                      tabIndex={n === gutterLine ? 0 : -1}
-                      onFocus={() => setGutterLine(n)}
-                      onClick={(e) => start(n, e.shiftKey)}
-                      onKeyDown={(e) => onGutterKey(e, n)}
-                      data-testid="file-note-add"
-                    >
-                      <MessageSquarePlus size={12} />
-                    </button>
-                  )}
-                  <span className="file-no">{n}</span>
-                </span>
-                <span className="file-text">
-                  {tokens.map((token, k) =>
-                    token.className ? (
-                      <span key={k} className={token.className}>
-                        {token.text}
-                      </span>
-                    ) : (
-                      <Fragment key={k}>{token.text}</Fragment>
-                    )
-                  )}
-                  {tokens.length === 0 && '​'}
-                </span>
-              </div>
+              <CodeLineRow
+                n={n}
+                tokens={tokens}
+                raw={raw[i] ?? ''}
+                wrap={wrap}
+                selected={!!draft && !draft.id && n >= draft.from && n <= draft.to}
+                noted={noted.has(n)}
+                notes={!!notes}
+                tabStop={n === gutterLine}
+                handlers={handlers}
+              />
               {(byLine.get(n) ?? []).map(noteCard)}
               {draft && !draft.id && draft.to === n && editor(`draft-${n}`)}
             </Fragment>
@@ -345,143 +474,6 @@ export function CodeView({
         })}
         {leftover.map(noteCard)}
       </div>
-    </div>
-  )
-}
-
-/** Aller à la ligne (⌃G, menu de l'onglet). */
-function GotoBar({
-  count,
-  onGo,
-  onClose
-}: {
-  count: number
-  onGo: (line: number) => void
-  onClose: () => void
-}) {
-  const { t } = useTranslation()
-  const [value, setValue] = useState('')
-  return (
-    <div className="file-bar" data-testid="file-goto-bar">
-      <input
-        autoFocus
-        inputMode="numeric"
-        aria-label={t('files.goToLinePrompt')}
-        placeholder={t('files.goToLine')}
-        value={value}
-        onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
-        onBlur={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault()
-            e.stopPropagation()
-            onClose()
-          } else if (e.key === 'Enter') {
-            const n = Number(value)
-            if (n > 0) onGo(Math.min(n, count))
-            else onClose()
-          }
-        }}
-        data-testid="file-goto"
-      />
-    </div>
-  )
-}
-
-/**
- * Recherche dans le fichier ouvert (⌘F, Q48) : le premier résultat est amené dès la frappe ; ↵ et ↓
- * suivant, ⇧↵ et ↑ précédent, Échap et ✕ ferment.
- */
-function FileFind({
-  lines,
-  onShow,
-  onClose
-}: {
-  lines: readonly string[]
-  onShow: (line: number) => void
-  onClose: () => void
-}) {
-  const { t } = useTranslation()
-  const [query, setQuery] = useState('')
-  const [at, setAt] = useState(0)
-  const needle = query.toLowerCase()
-  const found = useMemo(
-    () =>
-      needle
-        ? lines.flatMap((line, i) => (line.toLowerCase().includes(needle) ? [i + 1] : []))
-        : [],
-    [lines, needle]
-  )
-  const go = (index: number) => {
-    if (found.length === 0) return
-    const next = (index + found.length) % found.length
-    setAt(next)
-    const line = found[next]
-    if (line) onShow(line)
-  }
-  const type = (value: string) => {
-    setQuery(value)
-    setAt(0)
-    const lower = value.toLowerCase()
-    const first = value ? lines.findIndex((line) => line.toLowerCase().includes(lower)) : -1
-    if (first >= 0) onShow(first + 1)
-  }
-  const count = needle
-    ? found.length
-      ? t('files.findCount', { at: at + 1, count: found.length })
-      : t('files.findNone')
-    : ''
-  const button = (label: string, icon: ReactNode, run: () => void, testId: string, off = false) => (
-    <Tip label={label}>
-      <button
-        className="icon-button small"
-        aria-label={label}
-        disabled={off}
-        onClick={run}
-        data-testid={testId}
-      >
-        {icon}
-      </button>
-    </Tip>
-  )
-  return (
-    <div className="file-bar" role="search" data-testid="file-find-bar">
-      <input
-        autoFocus
-        aria-label={t('files.find')}
-        placeholder={t('files.find')}
-        value={query}
-        onChange={(e) => type(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault()
-            e.stopPropagation()
-            onClose()
-          } else if (e.key === 'Enter') {
-            e.preventDefault()
-            go(at + (e.shiftKey ? -1 : 1))
-          }
-        }}
-        data-testid="file-find"
-      />
-      <span className="file-find-count" aria-live="polite" data-testid="file-find-count">
-        {count}
-      </span>
-      {button(
-        t('files.findPrevious'),
-        <ChevronUp size={14} />,
-        () => go(at - 1),
-        'file-find-previous',
-        found.length === 0
-      )}
-      {button(
-        t('files.findNext'),
-        <ChevronDown size={14} />,
-        () => go(at + 1),
-        'file-find-next',
-        found.length === 0
-      )}
-      {button(t('files.findClose'), <X size={14} />, onClose, 'file-find-close')}
     </div>
   )
 }

@@ -547,6 +547,11 @@ export interface IpcInvokeContract
   'files:roots': { args: [id: string]; result: FileRoot[] }
   /** Un niveau d'un dossier d'une racine (chemin relatif, `''` pour la racine). */
   'files:list': { args: [id: string, root: number, dir: string]; result: FileListing }
+  /** Plusieurs dossiers d'une racine en une fois (relecture) : un seul appel à git (C2). */
+  'files:listMany': {
+    args: [id: string, root: number, dirs: string[]]
+    result: Record<string, FileListing | { error: string }>
+  }
   /** Un fichier pour l'affichage, en lecture seule (texte, image ou binaire). */
   'files:read': {
     /** `known` : version déjà affichée ; inchangée, rien n'est relu (`unchanged`). */
@@ -1071,6 +1076,7 @@ export const IPC_CHANNELS = [
   'files:readMarkdown',
   'files:roots',
   'files:list',
+  'files:listMany',
   'files:read',
   'files:search',
   'files:reveal',

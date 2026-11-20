@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   parentDirs,
   type FileContent,
@@ -6,6 +6,7 @@ import {
   type FileRoot,
   type FileTarget
 } from '@shared/files'
+import { conversationChanges } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
 import { useFileFilter } from './useFileFilter'
@@ -63,13 +64,32 @@ export interface FilesRequests {
   onFocusFilter?: (() => void) | undefined
 }
 
-/** Outils terminés et tours finis : l'arbre et le fichier sont relus (Q29). */
-function workDone(items: readonly TranscriptItem[]): number {
+/**
+ * Outils finis, réussis ou en échec (un outil en échec a pu écrire) : l'arbre et le fichier sont
+ * relus à chaque fin (Q29). Calculé par le panneau, l'onglet ne reçoit que ce nombre (C7).
+ */
+export function workDone(items: readonly TranscriptItem[]): number {
   let done = 0
   for (const item of items) {
-    if (item.kind === 'tool' && item.status === 'completed') done++
+    if (item.kind === 'tool' && (item.status === 'completed' || item.status === 'failed')) done++
   }
   return done
+}
+
+/**
+ * Ce que l'onglet Fichiers retient du fil (C7) : chemins modifiés par la conversation et outils
+ * finis, stables d'un morceau de réponse à l'autre (rien ne change tant qu'aucun outil ne finit).
+ */
+export function useFilesWork(items: readonly TranscriptItem[]): {
+  changes: readonly string[]
+  done: number
+} {
+  const paths = conversationChanges(items).map((file) => file.path)
+  const key = paths.join('\n')
+  // Mêmes chemins : le même tableau (l'arbre ne se redessine pas à chaque morceau de réponse).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recalculé quand la liste change
+  const changes = useMemo(() => paths, [key])
+  return { changes, done: workDone(items) }
 }
 
 const isMissing = (error: string) => /ENOENT|no such file/i.test(error)
@@ -93,7 +113,7 @@ function usePersistedState(conversationId: string) {
 }
 
 /** Relecture (Q29) : tout de suite (« Relire »), ou regroupée un instant (fins d'outil, fenêtre). */
-function useReload(items: readonly TranscriptItem[]) {
+function useReload(done: number) {
   const [generation, setGeneration] = useState(0)
   const reload = useCallback(() => setGeneration((g) => g + 1), [])
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -102,7 +122,6 @@ function useReload(items: readonly TranscriptItem[]) {
     timer.current = setTimeout(reload, RELOAD_DELAY_MS)
   }, [reload])
   useEffect(() => () => clearTimeout(timer.current), [])
-  const done = workDone(items)
   const lastDone = useRef(done)
   useEffect(() => {
     if (done === lastDone.current) return
@@ -116,37 +135,59 @@ function useReload(items: readonly TranscriptItem[]) {
   return { generation, reload }
 }
 
+/** Clé d'un dossier dont tous les parents sont dépliés (sinon, il n'est pas à l'écran). */
+function visibleKey(key: string, expanded: ReadonlySet<string>): boolean {
+  const { root, dir } = splitKey(key)
+  if (root > 0 && !expanded.has(dirKey(root, ''))) return false
+  return parentDirs(dir).every((parent) => expanded.has(dirKey(root, parent)))
+}
+
 /**
- * Dossiers dépliés (et la racine principale) : lus s'ils ne le sont pas, ou à chaque relecture.
- * Une réponse d'une relecture dépassée est jetée (M3) ; un dossier disparu est oublié (C4).
+ * Dossiers dépliés et à l'écran (C2) : lus s'ils ne le sont pas, ou à chaque relecture, en un appel
+ * par racine (un seul `git check-ignore`). Une réponse d'une relecture dépassée est jetée (M3) ; un
+ * dossier disparu est oublié (C4).
  */
 function useListings(
   conversationId: string,
   roots: readonly FileRoot[] | null,
-  expanded: readonly string[],
+  expandedKeys: readonly string[],
   generation: number,
   forget: (key: string) => void
 ) {
   const [listings, setListings] = useState<Record<string, Listing>>({})
   const api = window.api.fileTree
+  const expanded = new Set([dirKey(0, ''), ...expandedKeys])
   const wanted = roots
-    ? [...new Set([dirKey(0, ''), ...expanded])].filter((key) => !!roots[splitKey(key).root])
+    ? [...expanded].filter((key) => !!roots[splitKey(key).root] && visibleKey(key, expanded))
     : []
   const requested = useRef<Record<string, number>>({})
   useEffect(() => {
+    const byRoot = new Map<number, string[]>()
     for (const key of wanted) {
       if (requested.current[key] === generation) continue
       requested.current[key] = generation
       const { root, dir } = splitKey(key)
-      const current = () => requested.current[key] === generation
+      byRoot.set(root, [...(byRoot.get(root) ?? []), dir])
+    }
+    for (const [root, dirs] of byRoot) {
+      const current = (dir: string) => requested.current[dirKey(root, dir)] === generation
+      const put = (dir: string, value: Listing) =>
+        setListings((all) => ({ ...all, [dirKey(root, dir)]: value }))
       api
-        .list(conversationId, root, dir)
-        .then((listing) => current() && setListings((all) => ({ ...all, [key]: { listing } })))
+        .listMany(conversationId, root, dirs)
+        .then((found) => {
+          for (const dir of dirs) {
+            const got = found[dir]
+            if (!current(dir) || !got) continue
+            if ('error' in got) {
+              put(dir, { error: got.error })
+              if (dir && isMissing(got.error)) forget(dirKey(root, dir))
+            } else put(dir, { listing: got })
+          }
+        })
         .catch((e: unknown) => {
-          if (!current()) return
           const error = ipcErrorText(e)
-          setListings((all) => ({ ...all, [key]: { error } }))
-          if (dir && isMissing(error)) forget(key)
+          for (const dir of dirs) if (current(dir)) put(dir, { error })
         })
     }
   })
@@ -209,7 +250,8 @@ function useOpenContent(
  */
 export function useFilesTab(
   conversationId: string,
-  items: readonly TranscriptItem[],
+  /** Outils finis dans la conversation (`workDone`) : chaque fin relit l'arbre et le fichier. */
+  done: number,
   requests: FilesRequests = {}
 ) {
   const [state, setState] = usePersistedState(conversationId)
@@ -224,7 +266,7 @@ export function useFilesTab(
   const [view, setView] = useState<'tree' | 'file'>(state.open ? 'file' : 'tree')
   const [roots, setRoots] = useState<FileRoot[] | null>(null)
   const [rootsError, setRootsError] = useState<string | null>(null)
-  const { generation, reload } = useReload(items)
+  const { generation, reload } = useReload(done)
   const api = window.api.fileTree
 
   // Racines de la conversation ; l'état retenu est confronté à leurs chemins (M2).
@@ -275,9 +317,13 @@ export function useFilesTab(
     [setState]
   )
 
+  // Un autre fichier ouvert : le défilement en attente n'était pas le sien.
+  const cancelScroll = () => clearTimeout(scrollTimer.current)
   const show = useCallback(
-    (target: FileTarget) =>
-      setState((s) => revealIn(openFile(s, target), target.root, parentDirs(target.path))),
+    (target: FileTarget) => {
+      clearTimeout(scrollTimer.current)
+      setState((s) => revealIn(openFile(s, target), target.root, parentDirs(target.path)))
+    },
     [setState]
   )
 
@@ -291,12 +337,17 @@ export function useFilesTab(
     setViewFor(mine.seq)
     setView(mine.target ? 'file' : 'tree')
   }
+  // Après la réconciliation des racines (C3) : un rang retenu périmé ne referme pas le fichier.
+  const rootsReady = !!roots
+  // Chaque demande n'est traitée qu'une fois, même si le panneau tarde à la consommer.
+  const handled = useRef(0)
   useEffect(() => {
-    if (!mine) return
+    if (!mine || !rootsReady || handled.current === mine.seq) return
+    handled.current = mine.seq
     if (mine.target) show(mine.target)
     else if (mine.focusFilter) onFocusFilter?.()
     onRequestDone?.(mine.seq)
-  }, [mine, show, onRequestDone, onFocusFilter])
+  }, [mine, rootsReady, show, onRequestDone, onFocusFilter])
 
   return {
     state,
@@ -319,8 +370,21 @@ export function useFilesTab(
       setState((s) => toggleDir(s, dirKey(root, path), open)),
     reveal: (root: number, path: string) =>
       setState((s) => revealIn(s, root, [...parentDirs(path), path].filter(Boolean))),
-    close: () => setState(closeFile),
-    step: (delta: -1 | 1) => setState((s) => stepFile(s, delta)),
+    close: () => {
+      cancelScroll()
+      setState(closeFile)
+    },
+    step: (delta: -1 | 1) => {
+      cancelScroll()
+      setState((s) => stepFile(s, delta))
+    },
+    /** La ligne demandée (lien du fil) a été montrée : oubliée, le défilement prend le relais (C4). */
+    lineShown: () =>
+      setState((s) => {
+        if (!s.open?.line) return s
+        const { line: _line, ...open } = s.open
+        return { ...s, open }
+      }),
     collapse: () => setState(collapseAll),
     /** « Réduire » un dossier : lui et ses sous-dossiers (point 24). */
     collapseDir: (root: number, path: string) => setState((s) => forgetDir(s, dirKey(root, path))),

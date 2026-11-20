@@ -20,6 +20,9 @@ import { fileRoots, gitIgnored, listDirectory, readFileForView, resolveInRoot } 
 /** Appels au disque comptés, et un crochet juste avant `open` (course contrôle / ouverture). */
 const disk = vi.hoisted(() => ({
   lstat: 0,
+  realpath: 0,
+  /** Chemins passés à `stat`. */
+  stats: [] as string[],
   beforeOpen: undefined as ((path: string) => void) | undefined
 }))
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -30,6 +33,14 @@ vi.mock('node:fs/promises', async (importOriginal) => {
       disk.lstat++
       return fs.lstat(...args)
     }) as typeof fs.lstat,
+    realpath: ((...args: Parameters<typeof fs.realpath>) => {
+      disk.realpath++
+      return fs.realpath(...args)
+    }) as typeof fs.realpath,
+    stat: ((...args: Parameters<typeof fs.stat>) => {
+      disk.stats.push(String(args[0]))
+      return fs.stat(...args)
+    }) as typeof fs.stat,
     open: (async (...args: Parameters<typeof fs.open>) => {
       disk.beforeOpen?.(String(args[0]))
       return fs.open(...args)
@@ -241,7 +252,61 @@ describe('listDirectory', () => {
   )
 })
 
+describe('liens et dépôts (seconde revue)', () => {
+  it('liens : résolus après la borne ; la cible d’un lien qui sort n’est jamais interrogée', async () => {
+    const many = join(root, 'liens')
+    mkdirSync(many)
+    for (let i = 0; i < MAX_DIR_ENTRIES + 300; i++) {
+      symlinkSync(join(root, 'README.md'), join(many, `l${String(i).padStart(4, '0')}`))
+    }
+    symlinkSync(join(other, 'secret.txt'), join(many, 'a-dehors'))
+    disk.realpath = 0
+    disk.stats = []
+    const listing = await listDirectory({ root, dir: 'liens', roots: [root] })
+    expect(listing.more).toBe(301)
+    expect(disk.realpath).toBeLessThanOrEqual(MAX_DIR_ENTRIES + 20)
+    expect(disk.stats.some((p) => p.endsWith('secret.txt'))).toBe(false)
+    expect(listing.entries.find((e) => e.name === 'a-dehors')).toMatchObject({ link: 'outside' })
+  })
+
+  it('dossier atteint par un lien : git interrogé depuis le chemin réel, peu d’appels (C1)', async () => {
+    execFileSync('git', ['init', '-q'], { cwd: root })
+    mkdirSync(join(root, 'vrai'))
+    for (let i = 0; i < 60; i++) writeFileSync(join(root, 'vrai', `f${i}.log`), '')
+    writeFileSync(join(root, 'vrai', 'garde.ts'), '')
+    writeFileSync(join(root, '.gitignore'), 'build/\n*.log\n')
+    symlinkSync(join(root, 'vrai'), join(root, 'raccourci'))
+    let calls = 0
+    const counted: typeof gitIgnored = (r, paths) => {
+      calls++
+      return gitIgnored(r, paths)
+    }
+    const listing = await listDirectory({ root, dir: 'raccourci', roots: [root], ignored: counted })
+    expect(calls).toBe(1)
+    expect(listing.entries.find((e) => e.name === 'f1.log')?.ignored).toBe(true)
+    expect(listing.entries.find((e) => e.name === 'garde.ts')?.ignored).toBeUndefined()
+  })
+
+  it.skipIf(!PRECOMPOSED_NAMES)('nom décomposé (NFD) : chemin rendu en NFC (C8)', async () => {
+    writeFileSync(join(root, 'Café.md'.normalize('NFD')), '# x\n')
+    const top = await listDirectory({ root, dir: '', roots: [root] })
+    const entry = top.entries.find((e) => e.name.normalize('NFC') === 'Café.md')
+    expect(entry?.path).toBe('Café.md'.normalize('NFC'))
+    expect(entry?.name).toBe('Café.md'.normalize('NFC'))
+  })
+})
+
 describe('gitIgnored', () => {
+  it('lot refusé : bissection bornée, jamais des centaines d’appels (C1)', async () => {
+    execFileSync('git', ['init', '-q'], { cwd: root })
+    symlinkSync(join(root, 'src'), join(root, 'raccourci'))
+    const paths = Array.from({ length: 200 }, (_, i) => `raccourci/f${i}`)
+    const started = Date.now()
+    const found = await gitIgnored(root, [...paths, 'build/'])
+    expect(found && [...found]).not.toContain('raccourci/f1')
+    expect(Date.now() - started).toBeLessThan(1500)
+  })
+
   it('un chemin au-delà d’un lien n’efface pas les autres marques (M4)', async () => {
     execFileSync('git', ['init', '-q'], { cwd: root })
     symlinkSync(join(root, 'src'), join(root, 'raccourci'))
@@ -324,7 +389,9 @@ describe('readFileForView', () => {
       renameSync(join(root, 'src'), join(root, 'src-avant'))
       symlinkSync(other, join(root, 'src'))
     }
-    await expect(readFileForView(root, 'src/app.ts')).rejects.toThrow()
+    await expect(readFileForView(root, 'src/app.ts')).rejects.toThrow(
+      /Hors des dossiers de la conversation/
+    )
   })
 
   it('lit l’UTF-16 et retire le BOM UTF-8', async () => {

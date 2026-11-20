@@ -314,3 +314,15 @@ describe('onglet Fichiers : demandes et purge (fiche 271)', () => {
     expect(JSON.parse(localStorage.getItem('bobine.panel.filesOpen') ?? '[]')).toEqual(['c2'])
   })
 })
+
+describe('onglet Fichiers en espace Discussion (fiche 271, Q4)', () => {
+  it('aucune demande ne l’ouvre : ni lien, ni ⌘P', () => {
+    const hook = renderHook((p: Props & { discussion?: boolean }) => usePanel(p), {
+      initialProps: { ...initialProps, discussion: true }
+    })
+    act(() => hook.result.current.openFiles({ target: { root: 0, path: 'a.ts' } }))
+    act(() => hook.result.current.filesCommands.files())
+    expect(hook.result.current.filesRequest).toBeUndefined()
+    expect(hook.result.current.tab).not.toBe('files')
+  })
+})

@@ -1,16 +1,20 @@
-import { Ban, ChevronDown, ChevronRight, EyeOff, Folder } from 'lucide-react'
+import { Ban, ChevronDown, ChevronRight, EyeOff, Folder, Unlink } from 'lucide-react'
 import {
+  memo,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
   type KeyboardEvent,
-  type MouseEvent
+  type MouseEvent,
+  type ReactNode
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileEntry, FileRoot } from '@shared/files'
 import { countText } from '@shared/i18n/format'
 import { dirKey } from '../../files-state'
+import { filesErrorText } from '../../files-errors'
 import { Tip } from '../common/Menus'
 import {
   FileActionItems,
@@ -32,7 +36,8 @@ export type TreeRow =
       kind: 'note'
       key: string
       depth: number
-      text: 'empty' | 'loading' | 'more' | 'error'
+      /** `moreIgnored` : au-delà de la borne, dans un dossier ignoré (le filtre ne le cherche pas). */
+      text: 'empty' | 'loading' | 'more' | 'moreIgnored' | 'error'
       more?: number
       error?: string
     }
@@ -47,7 +52,7 @@ export function treeRows(
   expanded: ReadonlySet<string>
 ): TreeRow[] {
   const rows: TreeRow[] = []
-  const visit = (root: number, dir: string, depth: number) => {
+  const visit = (root: number, dir: string, depth: number, ignored = false) => {
     const key = dirKey(root, dir)
     const found = listings[key]
     if (!found) {
@@ -65,10 +70,11 @@ export function treeRows(
       const childKey = dirKey(root, entry.path)
       const open = entry.kind === 'dir' && entry.link !== 'outside' && expanded.has(childKey)
       rows.push({ kind: 'entry', key: childKey, root, entry, depth, open })
-      if (open) visit(root, entry.path, depth + 1)
+      if (open) visit(root, entry.path, depth + 1, ignored || entry.ignored === true)
     }
     if (found.listing.more > 0) {
-      rows.push({ kind: 'note', key: `${key}#more`, depth, text: 'more', more: found.listing.more })
+      const text = ignored ? 'moreIgnored' : 'more'
+      rows.push({ kind: 'note', key: `${key}#more`, depth, text, more: found.listing.more })
     }
   }
   if (roots.length === 1) {
@@ -134,12 +140,15 @@ export function FileTree(props: Props) {
   const box = useRef<HTMLDivElement>(null)
   const current = items.find((row) => row.key === focused) ?? items.find((r) => r.key === selected)
   const tabStop = current?.key ?? items[0]?.key
-  // Fichier ouvert révélé : sa ligne à l'écran (Q31).
+  // Fichier ouvert révélé : sa ligne à l'écran (Q31), une fois par fichier — déplier un dossier
+  // ensuite ne ramène pas l'arbre dessus (C5). Sa ligne peut n'arriver qu'avec la lecture du dossier.
+  const revealed = useRef<string | undefined>(undefined)
   useEffect(() => {
-    if (!selected) return
-    box.current
-      ?.querySelector<HTMLElement>(`[data-key="${CSS.escape(selected)}"]`)
-      ?.scrollIntoView?.({ block: 'nearest' })
+    if (!selected || revealed.current === selected) return
+    const element = box.current?.querySelector<HTMLElement>(`[data-key="${CSS.escape(selected)}"]`)
+    if (!element) return
+    revealed.current = selected
+    element.scrollIntoView?.({ block: 'nearest' })
   }, [selected, rows.length])
 
   const rowElement = (key: string) =>
@@ -163,6 +172,10 @@ export function FileTree(props: Props) {
     setMenu({ key, at: { x: (box?.left ?? 0) + 24, y: box?.bottom ?? 0 } })
   }
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // Seulement les touches d'une ligne : celles des menus (portails, qui remontent jusqu'ici) et du
+    // bouton ⋮ ne parcourent ni n'ouvrent l'arbre (B1).
+    const from = event.target
+    if (!(from instanceof HTMLElement) || from.getAttribute('role') !== 'treeitem') return
     const index = items.findIndex((row) => row.key === (focused ?? tabStop))
     const row = items[index]
     if (!row) return
@@ -231,6 +244,32 @@ export function FileTree(props: Props) {
     )
   }
 
+  // Poignées des lignes, stables : une ligne n'est redessinée que si elle change (C7).
+  const latest = useRef({ activate, menuItems, onDragStart })
+  useEffect(() => {
+    latest.current = { activate, menuItems, onDragStart }
+  })
+  const handlers = useMemo<RowHandlers>(
+    () => ({
+      contextMenu: (row, event) => {
+        event.preventDefault()
+        setFocused(row.key)
+        setMenu({ key: row.key, at: { x: event.clientX, y: event.clientY } })
+      },
+      focus: (row) => setFocused(row.key),
+      activate: (row) => {
+        setFocused(row.key)
+        latest.current.activate(row)
+      },
+      dragStart: (event, root, path) => latest.current.onDragStart(event, root, path),
+      menuItems: (row) => latest.current.menuItems(row)
+    }),
+    []
+  )
+  const excludedLabel = props.exclusionFiles.length
+    ? t('files.excluded', { name: props.exclusionFiles.join(', ') })
+    : t('files.excludedPlain')
+
   return (
     <div
       className="file-tree"
@@ -251,19 +290,8 @@ export function FileTree(props: Props) {
             menuOpen={row.key === menu?.key}
             tabStop={row.key === tabStop}
             changed={changed}
-            exclusionFiles={props.exclusionFiles}
-            menuItems={menuItems(row)}
-            onContextMenu={(event) => {
-              event.preventDefault()
-              setFocused(row.key)
-              setMenu({ key: row.key, at: { x: event.clientX, y: event.clientY } })
-            }}
-            onFocus={() => setFocused(row.key)}
-            onActivate={() => {
-              setFocused(row.key)
-              activate(row)
-            }}
-            onDragStart={onDragStart}
+            excluded={excludedLabel}
+            handlers={handlers}
           />
         )
       )}
@@ -283,10 +311,13 @@ export function FileTree(props: Props) {
 function TreeNote({ row }: { row: Extract<TreeRow, { kind: 'note' }> }) {
   const { t } = useTranslation()
   const text =
-    row.text === 'more'
-      ? t('files.moreEntries', { count: row.more ?? 0, n: countText(row.more ?? 0) })
+    row.text === 'more' || row.text === 'moreIgnored'
+      ? t(row.text === 'more' ? 'files.moreEntries' : 'files.moreIgnored', {
+          count: row.more ?? 0,
+          n: countText(row.more ?? 0)
+        })
       : row.text === 'error'
-        ? row.error
+        ? filesErrorText(row.error ?? '')
         : t(row.text === 'empty' ? 'files.empty' : 'files.loading')
   return (
     <div
@@ -316,11 +347,29 @@ function rowClasses(
   ]
 }
 
-/** Marques d'une ligne : fichier spécial (B1), exclu pour l'agent (fiche 155). */
-function RowMarks({ special, excluded }: { special: boolean; excluded: string | undefined }) {
+/**
+ * Marques d'une ligne : fichier spécial (B1), exclu pour l'agent (fiche 155), autre dossier que
+ * l'agent ne reçoit pas (Q26).
+ */
+function RowMarks({
+  special,
+  excluded,
+  notSent
+}: {
+  special: boolean
+  excluded: string | undefined
+  notSent: boolean
+}) {
   const { t } = useTranslation()
   return (
     <>
+      {notSent && (
+        <Tip label={t('files.otherFolder')}>
+          <span className="file-row-mark" data-testid="file-row-not-sent">
+            <Unlink size={12} />
+          </span>
+        </Tip>
+      )}
       {special && (
         <Tip label={t('files.special')}>
           <span className="file-row-mark" data-testid="file-row-special">
@@ -339,31 +388,36 @@ function RowMarks({ special, excluded }: { special: boolean; excluded: string | 
   )
 }
 
-function FileRow({
+/** Ce que fait une ligne, stable d'un rendu à l'autre (C7). */
+interface RowHandlers {
+  contextMenu: (row: ShownRow, event: MouseEvent<HTMLDivElement>) => void
+  focus: (row: ShownRow) => void
+  activate: (row: ShownRow) => void
+  dragStart: (event: DragEvent<HTMLDivElement>, root: number, path: string) => void
+  menuItems: (row: ShownRow) => ReactNode
+}
+
+type ShownRow = Exclude<TreeRow, { kind: 'note' }>
+
+/** Une ligne de dossier, de fichier ou de racine ; redessinée seulement si elle change (C7). */
+const FileRow = memo(function FileRow({
   row,
   selected,
   menuOpen,
   tabStop,
   changed,
-  exclusionFiles,
-  menuItems,
-  onContextMenu,
-  onFocus,
-  onActivate,
-  onDragStart
+  excluded,
+  handlers
 }: {
-  row: Exclude<TreeRow, { kind: 'note' }>
+  row: ShownRow
   selected: boolean
   /** Son menu contextuel est ouvert : la ligne visée reste marquée. */
   menuOpen: boolean
   tabStop: boolean
   changed: ReadonlySet<string>
-  exclusionFiles: readonly string[]
-  menuItems: React.ReactNode
-  onContextMenu: (event: MouseEvent<HTMLDivElement>) => void
-  onFocus: () => void
-  onActivate: () => void
-  onDragStart: (event: DragEvent<HTMLDivElement>, root: number, path: string) => void
+  /** Ce que dit la marque « exclu pour l'agent » (fichiers d'exclusion). */
+  excluded: string
+  handlers: RowHandlers
 }) {
   const { t } = useTranslation()
   const entry = row.kind === 'entry' ? row.entry : undefined
@@ -373,11 +427,9 @@ function FileRow({
   const isDir = !entry || entry.kind === 'dir'
   const outside = entry?.link === 'outside'
   const special = entry?.special === true
+  const notSent = row.kind === 'root' && row.root.notSent === true
   // Fichier modifié par la conversation ; dossier replié qui en contient (Q6).
   const marked = root === 0 && changed.has(path) && !!entry && (!isDir || !row.open)
-  const excluded = exclusionFiles.length
-    ? t('files.excluded', { name: exclusionFiles.join(', ') })
-    : t('files.excludedPlain')
   // Ce que la ligne dit à un lecteur d'écran (pas d'infobulle native, point 22).
   const label = [
     name,
@@ -385,6 +437,7 @@ function FileRow({
     entry?.excluded ? excluded : '',
     outside ? t('files.linkOutside') : '',
     special ? t('files.special') : '',
+    notSent ? t('files.otherFolder') : '',
     marked ? t('files.modified') : ''
   ]
   const classes = rowClasses(row, { selected, menuOpen })
@@ -401,11 +454,11 @@ function FileRow({
       data-path={path}
       data-testid="file-row"
       style={{ paddingLeft: 6 + row.depth * 14 }}
-      onClick={onActivate}
-      onFocus={onFocus}
-      onContextMenu={onContextMenu}
+      onClick={() => handlers.activate(row)}
+      onFocus={() => handlers.focus(row)}
+      onContextMenu={(event) => handlers.contextMenu(row, event)}
       draggable={!isDir && !outside && !special}
-      onDragStart={(event) => onDragStart(event, root, path)}
+      onDragStart={(event) => handlers.dragStart(event, root, path)}
       onDragEnd={endTreeDrag}
     >
       <span className="file-row-chevron">
@@ -415,7 +468,11 @@ function FileRow({
         {entry ? <EntryIcon entry={entry} open={row.open} /> : <Folder size={14} />}
       </span>
       <span className="file-row-name">{name}</span>
-      <RowMarks special={special} excluded={entry?.excluded ? excluded : undefined} />
+      <RowMarks
+        special={special}
+        excluded={entry?.excluded ? excluded : undefined}
+        notSent={notSent}
+      />
       {marked && (
         <Tip label={t('files.modified')}>
           <span className="file-row-dot" data-testid="file-row-modified" />
@@ -426,12 +483,13 @@ function FileRow({
           <FileActionsMenu
             label={t('files.actions', { name })}
             className="icon-button small file-row-more"
+            tabIndex={-1}
             testId="file-row-actions"
           >
-            {menuItems}
+            {handlers.menuItems(row)}
           </FileActionsMenu>
         </span>
       )}
     </div>
   )
-}
+})

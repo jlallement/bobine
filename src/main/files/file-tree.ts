@@ -6,7 +6,7 @@
  */
 import { constants, type Dirent } from 'node:fs'
 import { lstat, open, readdir, realpath, stat, type FileHandle } from 'node:fs/promises'
-import { basename, isAbsolute, join, resolve } from 'node:path'
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { t } from 'i18next'
 import {
   compareEntries,
@@ -21,7 +21,7 @@ import {
   type FileRoot
 } from '@shared/files'
 import { gitRun } from '../git/git-queue'
-import { inside, mayExecuteOn, real } from './file-links'
+import { inside, mayExecuteOn, real, shownName } from './file-links'
 import { launchSystem } from '../process-launch'
 
 /** Octets lus pour reconnaître un fichier binaire (un octet nul). */
@@ -73,8 +73,9 @@ export const gitIgnored: IgnoredPaths = async (root, paths) => {
   const repo = await gitRun('git', ['-C', root, 'rev-parse', '--git-dir'], { timeoutMs: 5000 })
   if (repo.code !== 0) return null
   // Dans un dépôt, un chemin au-delà d'un lien ou dans un sous-module fait échouer tout le lot :
-  // il est coupé en deux jusqu'à isoler les fautifs, qui restent sans marque (M4).
-  await bisectIgnored(root, paths, ignored)
+  // il est coupé en deux pour isoler les fautifs, qui restent sans marque (M4) ; quelques appels
+  // au plus (C1) : au-delà, le reste reste sans marque plutôt que de lancer git des centaines de fois.
+  await bisectIgnored(root, paths, ignored, { calls: BISECT_CALLS })
   return ignored
 }
 
@@ -106,15 +107,23 @@ async function checkIgnore(
  */
 const gitName = (path: string) => (process.platform === 'darwin' ? path.normalize('NFC') : path)
 
+/** Appels à git au plus pour isoler les chemins d'un lot refusé (C1). */
+const BISECT_CALLS = 12
+
 async function bisectIgnored(
   root: string,
   paths: readonly string[],
-  into: Set<string>
+  into: Set<string>,
+  budget: { calls: number }
 ): Promise<void> {
   if (paths.length <= 1) return
   const half = Math.ceil(paths.length / 2)
   for (const part of [paths.slice(0, half), paths.slice(half)]) {
-    if ((await checkIgnore(root, part, into)) === 'failed') await bisectIgnored(root, part, into)
+    if (budget.calls <= 0) return
+    budget.calls--
+    if ((await checkIgnore(root, part, into)) === 'failed') {
+      await bisectIgnored(root, part, into, budget)
+    }
   }
 }
 
@@ -148,50 +157,85 @@ interface RawEntry {
   full: string
 }
 
-/** Genre d'une entrée d'après `readdir` ; un lien est suivi (sans jamais sortir des racines). */
-async function describeEntry(
-  entry: Dirent,
-  folder: string,
-  dir: string,
-  allowed: readonly string[]
-): Promise<RawEntry> {
+/** Genre d'une entrée d'après `readdir`, sans toucher au disque (un lien : résolu après la borne). */
+function describeEntry(entry: Dirent, folder: string, dir: string): RawEntry {
   const full = join(folder, entry.name)
-  const path = joinRelative(dir, entry.name)
-  if (entry.isSymbolicLink()) {
-    const target = await realpath(full).catch(() => null)
-    const targetInfo = target ? await stat(target).catch(() => null) : null
-    const within = !!target && allowed.some((r) => inside(r, target))
-    return {
-      full,
-      entry: {
-        name: entry.name,
-        path,
-        kind: within && targetInfo?.isDirectory() ? 'dir' : 'file',
-        link: within ? 'inside' : 'outside',
-        ...(within && targetInfo?.isFile() ? { size: targetInfo.size } : {}),
-        // Un lien vers un FIFO, un périphérique… : jamais ouvert (B1).
-        ...(within && targetInfo && !targetInfo.isFile() && !targetInfo.isDirectory()
-          ? { special: true as const }
-          : {})
-      }
-    }
-  }
-  if (entry.isDirectory()) return { full, entry: { name: entry.name, path, kind: 'dir' } }
+  const name = shownName(entry.name)
+  const path = joinRelative(dir, name)
+  // Lien : provisoirement un fichier « interne », précisé seulement s'il est gardé sous la borne.
+  if (entry.isSymbolicLink()) return { full, entry: { name, path, kind: 'file', link: 'inside' } }
+  if (entry.isDirectory()) return { full, entry: { name, path, kind: 'dir' } }
   // Ni fichier, ni dossier, ni lien : FIFO, socket, périphérique. Montré, jamais ouvert (B1).
-  if (!entry.isFile())
-    return { full, entry: { name: entry.name, path, kind: 'file', special: true } }
-  return { full, entry: { name: entry.name, path, kind: 'file' } }
+  if (!entry.isFile()) return { full, entry: { name, path, kind: 'file', special: true } }
+  return { full, entry: { name, path, kind: 'file' } }
+}
+
+/** Lien gardé sous la borne : sa cible, interrogée seulement si elle reste dans les racines. */
+async function resolveLink(raw: RawEntry, allowed: readonly string[]): Promise<void> {
+  const { entry } = raw
+  const target = await realpath(raw.full).catch(() => null)
+  if (!target || !allowed.some((r) => inside(r, target))) {
+    entry.link = 'outside'
+    return
+  }
+  const info = await stat(target).catch(() => null)
+  if (info?.isDirectory()) entry.kind = 'dir'
+  else if (info?.isFile()) entry.size = info.size
+  // Un lien vers un FIFO, un périphérique… : jamais ouvert (B1).
+  else if (info) entry.special = true
+}
+
+/** Taille et droits d'un fichier ordinaire gardé sous la borne. */
+async function describeFile({ entry, full }: RawEntry): Promise<void> {
+  if (entry.kind !== 'file' || entry.link || entry.special) return
+  const fileInfo = await lstat(full).catch(() => undefined)
+  if (!fileInfo) return
+  entry.size = fileInfo.size
+  // S'exécuterait si on l'« ouvrait » : pas d'« Ouvrir avec l'app par défaut » (fiche 052).
+  if (mayExecuteOn(full, fileInfo.mode, launchSystem())) entry.executable = true
+}
+
+/** Un niveau lu, avant les marques de git et des exclusions. */
+interface Level {
+  dir: string
+  /** Chemin réel du dossier (un dossier atteint par un lien : celui de sa cible). */
+  folder: string
+  kept: RawEntry[]
+  more: number
 }
 
 /**
- * Un niveau d'un dossier : trié (Q22), borné (Q24), ignorés et exclus marqués, liens qui sortent
- * marqués (jamais suivis), FIFO et périphériques marqués « spéciaux » (jamais ouverts). `.git` et
- * `.DS_Store` ne sont jamais listés. Le genre vient de `readdir` : seules les entrées gardées sous
- * la borne sont interrogées (taille, droits), quelques-unes à la fois (C4).
+ * Un niveau : trié (Q22), borné (Q24), liens qui sortent marqués (jamais suivis), FIFO et
+ * périphériques marqués « spéciaux » (jamais ouverts). `.git` et `.DS_Store` ne sont jamais
+ * listés. Le genre vient de `readdir` : seules les entrées gardées sous la borne sont interrogées
+ * (cible d'un lien, taille, droits), quelques-unes à la fois (C4).
  */
-export async function listDirectory(options: {
+async function readLevel(
+  root: string,
+  dir: string,
+  roots: readonly string[],
+  allowed: readonly string[]
+): Promise<Level> {
+  const folder = await resolveInRoot(root, dir, roots)
+  const info = await stat(folder)
+  if (!info.isDirectory()) throw new Error(t('files.error.notFolder', { path: dir }))
+  const all = (await readdir(folder, { withFileTypes: true }))
+    .filter((entry) => !NEVER_LISTED.has(entry.name))
+    .map((e) => describeEntry(e, folder, dir))
+  all.sort((a, b) => compareEntries(a.entry, b.entry))
+  const kept = all.slice(0, MAX_DIR_ENTRIES)
+  await mapLimited(kept, DISK_PARALLEL, async (raw) => {
+    if (raw.entry.link) await resolveLink(raw, allowed)
+    else await describeFile(raw)
+  })
+  // Un lien vers un dossier se range avec les dossiers une fois connu.
+  kept.sort((a, b) => compareEntries(a.entry, b.entry))
+  return { dir, folder, kept, more: all.length - kept.length }
+}
+
+/** Options communes à la lecture d'un ou de plusieurs dossiers d'une racine. */
+interface ListOptions {
   root: string
-  dir: string
   /** Toutes les racines de la conversation (où un lien symbolique peut mener). */
   roots: readonly string[]
   ignored?: IgnoredPaths
@@ -199,54 +243,87 @@ export async function listDirectory(options: {
   isExcluded?: (path: string) => Promise<boolean>
   /** Fichiers d'où viennent ces exclusions (`.bobignore`…), rendus avec la liste. */
   exclusionFiles?: string[]
-}): Promise<FileListing> {
-  const { root, dir, roots } = options
-  const folder = await resolveInRoot(root, dir, roots)
-  const info = await stat(folder)
-  if (!info.isDirectory()) throw new Error(t('files.error.notFolder', { path: dir }))
-  const allowed = await Promise.all(roots.map((r) => real(r)))
-  const raw = (await readdir(folder, { withFileTypes: true })).filter(
-    (entry) => !NEVER_LISTED.has(entry.name)
-  )
-  const all = await mapLimited(raw, DISK_PARALLEL, (e) => describeEntry(e, folder, dir, allowed))
-  all.sort((a, b) => compareEntries(a.entry, b.entry))
-  const kept = all.slice(0, MAX_DIR_ENTRIES)
-  await mapLimited(kept, DISK_PARALLEL, async ({ entry, full }) => {
-    if (entry.kind !== 'file' || entry.link || entry.special) return
-    const fileInfo = await lstat(full).catch(() => undefined)
-    if (!fileInfo) return
-    entry.size = fileInfo.size
-    // S'exécuterait si on l'« ouvrait » : pas d'« Ouvrir avec l'app par défaut » (fiche 052).
-    if (mayExecuteOn(full, fileInfo.mode, launchSystem())) entry.executable = true
-  })
-  const shown = kept.map((k) => k.entry)
-  await markIgnored(root, dir, shown, options.ignored)
+}
+
+/** Marques des exclusions de l'agent, puis le listage rendu. */
+async function finishLevel(level: Level, options: ListOptions): Promise<FileListing> {
   const { isExcluded } = options
   if (isExcluded) {
-    await mapLimited(kept, DISK_PARALLEL, async ({ entry, full }) => {
+    await mapLimited(level.kept, DISK_PARALLEL, async ({ entry, full }) => {
       if (await isExcluded(full)) entry.excluded = true
     })
   }
   const files = options.exclusionFiles?.length ? { exclusionFiles: options.exclusionFiles } : {}
-  return { entries: shown, more: all.length - shown.length, ...files }
+  return { entries: level.kept.map((k) => k.entry), more: level.more, ...files }
 }
 
-/** Marque les entrées ignorées par git ; tout le dossier s'il est lui-même ignoré. */
+/** Un niveau d'un dossier, ignorés et exclus marqués. */
+export async function listDirectory(options: ListOptions & { dir: string }): Promise<FileListing> {
+  const allowed = await Promise.all(options.roots.map((r) => real(r)))
+  const level = await readLevel(options.root, options.dir, options.roots, allowed)
+  await markIgnored(options.root, [level], options.ignored)
+  return finishLevel(level, options)
+}
+
+/**
+ * Plusieurs dossiers d'une racine (relecture, C2) : chacun lu, puis un seul appel à git pour leurs
+ * marques « ignoré ». Un dossier illisible ou disparu rend son erreur, les autres leur contenu.
+ */
+export async function listDirectories(
+  options: ListOptions & { dirs: readonly string[] }
+): Promise<Record<string, FileListing | { error: string }>> {
+  const allowed = await Promise.all(options.roots.map((r) => real(r)))
+  const read = await mapLimited(options.dirs, 4, (dir) =>
+    readLevel(options.root, dir, options.roots, allowed).catch((e: unknown) => ({
+      dir,
+      error: e instanceof Error ? e.message : String(e)
+    }))
+  )
+  const levels = read.filter((r): r is Level => 'kept' in r)
+  await markIgnored(options.root, levels, options.ignored)
+  const out: Record<string, FileListing | { error: string }> = {}
+  for (const r of read)
+    out[r.dir] = 'kept' in r ? await finishLevel(r, options) : { error: r.error }
+  return out
+}
+
+/**
+ * Marque les entrées ignorées par git, en un appel pour tous les niveaux ; tout un dossier s'il
+ * est lui-même ignoré. Un dossier atteint par un lien est demandé par son chemin réel (git refuse
+ * tout chemin « au-delà d'un lien », C1) ; hors de la racine (autre dossier), rien n'est marqué.
+ */
 async function markIgnored(
   root: string,
-  dir: string,
-  entries: FileEntry[],
+  levels: readonly Level[],
   ignored: IgnoredPaths | undefined
 ): Promise<void> {
-  if (!ignored || entries.length === 0) return
+  if (!ignored) return
   const rootReal = await real(root)
-  // Un lien se demande sans `/` : git le voit comme un fichier (`lien/` serait « au-delà d'un lien »).
-  const queried = entries.map((e) => (e.kind === 'dir' && !e.link ? `${e.path}/` : e.path))
-  const found = await ignored(rootReal, dir ? [`${dir}/`, ...queried] : queried).catch(() => null)
+  const asked: { query: string; level: Level; entry?: FileEntry }[] = []
+  for (const level of levels) {
+    const rel = relative(rootReal, level.folder)
+    if (rel.startsWith('..') || isAbsolute(rel)) continue
+    const prefix = rel.split(sep).join('/')
+    if (prefix) asked.push({ query: `${prefix}/`, level })
+    for (const { entry, full } of level.kept) {
+      // Un lien se demande sans `/` : git le voit comme un fichier.
+      const name = basename(full)
+      const query = prefix ? `${prefix}/${name}` : name
+      asked.push({ query: entry.kind === 'dir' && !entry.link ? `${query}/` : query, level, entry })
+    }
+  }
+  if (asked.length === 0) return
+  const found = await ignored(
+    rootReal,
+    asked.map((a) => a.query)
+  ).catch(() => null)
   if (!found) return
-  const all = !!dir && found.has(dir.normalize('NFC'))
-  for (const entry of entries) {
-    if (all || found.has(entry.path.normalize('NFC'))) entry.ignored = true
+  const key = (query: string) => query.replace(/\/$/, '').normalize('NFC')
+  const whole = new Set(
+    asked.filter((a) => !a.entry && found.has(key(a.query))).map((a) => a.level)
+  )
+  for (const a of asked) {
+    if (a.entry && (whole.has(a.level) || found.has(key(a.query)))) a.entry.ignored = true
   }
 }
 
