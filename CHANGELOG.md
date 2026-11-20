@@ -6,8 +6,24 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveautés
 
+- **Un seul vocabulaire** pour le travail délégué, partout (fil, barre latérale, Session › En
+  cours, Modifications, Réglages, notifications, export, guide) : ce qu'on confie à un rôle ou à un
+  autre agent est un **travail**, qui rend une **réponse** ; il « a répondu », est « arrêté » ou
+  « en erreur ». Plus de « conversation fille », « sous-tâches », « compte rendu » ni « tâches
+  proposées » ; Modifications › Filles devient **Travaux**, la rubrique des Réglages **Travaux
+  délégués**. Les sous-agents de l'agent gardent leur nom.
+- **Coût honnête** : un coût nul s'affiche « gratuit » seulement pour un modèle qui se dit gratuit ;
+  sinon (OpenCode connecté par abonnement, par exemple) « coût non communiqué », jamais
+  « ≈ 0,00 $US ». Le plafond de coût dit alors qu'il ne peut pas se déclencher (Réglages et détail
+  de la consommation). Un seul coût par carte.
+- Menu des modèles : après un refus faute de connexion, les autres modèles du même fournisseur sont
+  marqués « connexion sans doute à faire ».
+- Un modèle retenu que l'agent ne propose plus : l'avis le dit en une phrase claire (« Le modèle
+  GPT-6.2 Sol n'est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
+  brut.
+- Durées : « < 1 s » sous la seconde, jamais « 0 s ».
 - « Faire relire » lance le rôle **Code reviewer** : un seul chemin de relecture, depuis
-  Modifications, la vue « Filles » ou la carte d'un travail. La demande s'affiche dans le fil
+  Modifications, la vue « Travaux » ou la carte d'un travail. La demande s'affiche dans le fil
   (« @Code reviewer Relis la branche … ») avec sa carte, qui montre **chaque remarque** : sa gravité,
   `fichier:ligne` (un clic ouvre le diff sur ce fichier), une phrase, puis son avis, ou « Rien à
   signaler ». « Demander à <agent> de corriger » envoie ses remarques à l'agent de la conversation ;
@@ -79,11 +95,11 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   agent qui ne sait pas la supprimer), sans contredire le pied de page.
 - Journal : l'avertissement bénin « ResizeObserver loop … » du redimensionnement n'est plus noté
   comme une erreur.
-- Conversations filles : une fille arrêtée par ■ est dite « Arrêtée » (barre latérale, carte
-  « Sous-tâches », carte d'un rôle, Modifications › Filles), et non plus « a fini » avec une coche
-  verte. Modifications › Filles dit « Fusionnée » comme la carte « Sous-tâches ». Le compte rendu
-  d'une fille compte comme lu dès que vous le voyez dans le fil de la mère. Les outils de la mère
-  citent la fille par son titre, plus par son identifiant.
+- Travaux délégués : un travail arrêté par ■ est dit « Arrêté » (barre latérale, carte des
+  travaux, carte d'un rôle, Modifications › Travaux), et non plus « a fini » avec une coche verte.
+  Modifications › Travaux dit « fusionné » comme la carte des travaux. La réponse d'un travail
+  compte comme lue dès que vous la voyez dans le fil de la conversation qui l'a lancé. Les outils
+  de l'agent citent le travail par son titre, plus par son identifiant.
 - Sous-agents en arrière-plan (OpenCode) : tant qu'un sous-agent travaille après la fin du tour,
   puis le temps que l'agent réponde à son rapport, la conversation reste « en cours » (indicateur
   sous le fil, « Travaille encore… » en bas de la barre latérale, ligne de la conversation).

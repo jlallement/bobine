@@ -5,8 +5,15 @@ import { useTranslation } from 'react-i18next'
 import { usePresentation } from '../../presentation'
 import { numberFormat } from '@shared/i18n/format'
 import { formatDuration } from '@shared/subagent'
-import { formatEstimate, formatTokens, isEstimate, processedTokens } from '@shared/usage'
-import type { UsageStats } from '@shared/usage-stats'
+import {
+  costText,
+  formatEstimate,
+  formatTokens,
+  isEstimate,
+  isFreeModel,
+  processedTokens
+} from '@shared/usage'
+import type { UsageModelRow, UsageStats } from '@shared/usage-stats'
 import {
   agentsWithUnit,
   deltaOf,
@@ -128,13 +135,7 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
               ? t('usage.board.kpi.costEstimate')
               : t('usage.board.kpi.cost')
           }
-          value={
-            totals.turns === 0
-              ? '—'
-              : main === undefined || mainCost === undefined
-                ? t('usage.board.unknown')
-                : formatEstimate({ amount: mainCost, currency: main })
-          }
+          value={totals.turns === 0 ? '—' : costValue(t, stats.byModel, main, mainCost)}
           sub={
             others.length > 0
               ? others
@@ -147,7 +148,7 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
                   .join(' · ')
               : totals.turnsWithoutCost > 0 && totals.turns > 0
                 ? t('usage.board.kpi.withoutCost', { count: totals.turnsWithoutCost })
-                : main !== undefined && mainCost !== undefined && totals.turns > 0
+                : main !== undefined && mainCost !== undefined && mainCost > 0 && totals.turns > 0
                   ? t('usage.board.kpi.costPerTurn', {
                       cost: formatEstimate({ amount: mainCost / totals.turns, currency: main })
                     })
@@ -164,6 +165,29 @@ export function ActivityKpis({ stats, units }: { stats: UsageStats; units: strin
         />
       )}
     </div>
+  )
+}
+
+/**
+ * Chiffre « Coût » : le montant ; un coût nul, « gratuit » seulement si chaque modèle de cette
+ * unité se dit gratuit, sinon « coût non communiqué » (fiche 266, D12).
+ */
+function costValue(
+  t: TFunction,
+  rows: readonly UsageModelRow[],
+  main: string | undefined,
+  amount: number | undefined
+): string {
+  if (main === undefined || amount === undefined) return t('usage.board.unknown')
+  return costText({ amount, currency: main }, rowsFree(rows, main))
+}
+
+/** Chaque modèle qui a un coût dans cette unité se dit gratuit (fiche 266). */
+function rowsFree(rows: readonly UsageModelRow[], unit: string): boolean {
+  const used = rows.filter((r) => r.costTurns[unit])
+  return (
+    used.length > 0 &&
+    used.every((r) => r.model !== undefined && isFreeModel({ value: r.key, name: r.model }))
   )
 }
 

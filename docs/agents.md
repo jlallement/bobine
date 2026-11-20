@@ -86,11 +86,30 @@ Rien de propre à un agent dans l'app : chaque différence vient de ce que l'age
 | `session/list` sans dossier | toutes les sessions | toutes (1.19 : seulement celles hors dépôt git ; l'app demande aussi chaque dossier connu, fiche 055) |
 | Questions à choix | outil `ask_user` de l'app | son outil `question` → formulaire (`elicitation/create`), affiché en questionnaire |
 | Liste de tâches | `plan` ACP, autorisation à chaque mise à jour | ni outil de liste ni `plan` (1.19 : outil `todowrite`, sans `plan`) |
-| Consommation (fiches 019, 109) | coût en bobcoins lu dans sa base locale après chaque réponse, pas de jetons | jetons du tour et coût en USD par ACP (0 pour les modèles gratuits) |
+| Consommation (fiches 019, 109) | coût en bobcoins lu dans sa base locale après chaque réponse, pas de jetons | jetons du tour et coût en USD par ACP ; 0 pour les modèles gratuits, mais aussi pour un modèle payant connecté par abonnement (recette du 2026-11-19, D12) : voir « Coût nul » plus bas |
 | Compaction | `/compress`, réponse texte | `/compact` → `compaction_update` (carte de compaction) |
 | Commandes « / » et skills | `.bob/commands`, `.bob/skills`… | `.opencode/commands`, `.opencode/skills`, `.agents/skills`, `.claude/skills`… |
 
 Détails et relevés : [acp.md](acp.md).
+
+### Coût nul : gratuit ou non communiqué (fiche 266)
+
+Règle générique, sans nom d'agent dans l'interface (`costText`, `costNotReported`, `freeModels` de
+`shared/usage.ts`) :
+
+| Ce que l'agent annonce | Affiché |
+|---|---|
+| un coût en monnaie > 0 (`usage_update`, `cost.amount`) | le montant, en estimation (« ≈ ») |
+| un coût en monnaie nul, et chaque modèle connu de la conversation se dit gratuit (« free » dans son nom ou son identifiant, heuristique de la fiche 265) | **gratuit** |
+| un coût en monnaie nul pour un autre modèle (abonnement, tarif inconnu de l'agent) | **coût non communiqué** ; le plafond de coût le dit (« ne peut pas se déclencher »), dans Réglages et dans le détail de la consommation |
+| aucun coût (Codex, tours sans `usage_update`) | les jetons, s'il en donne ; rien sinon |
+| un coût dans l'unité propre de l'agent (bobcoins de Bob, lus dans sa base) | son décompte tel quel, même à zéro : ce n'est pas une estimation |
+
+Aucun agent ne dit par ACP qu'un modèle est gratuit ni qu'il passe par un abonnement : « inclus dans
+l'abonnement » n'est donc jamais affiché (on ne peut pas le savoir). OpenCode 2.3.0 a aussi été vu
+annoncer un coût **non nul** avec un abonnement ChatGPT (recette du 2026-11-17) : c'est pourquoi tout
+coût en monnaie reste une estimation. **Bob** n'envoie rien par ACP : son coût en bobcoins vient de
+sa base (`cost-bob-db`), jamais concerné par cette règle.
 
 ## Pistes
 

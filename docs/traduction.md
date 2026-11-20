@@ -111,7 +111,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | outils de Bobine | Bobine's tools | Ceux du serveur MCP `bobine` (fiche 099). |
 | intégré (serveur MCP) | built-in | « bobine · intégré » → « bobine · built-in ». |
 | accord (de l'utilisateur) | approval | Pastilles des outils de Bobine : « Accord avant de compiler » → « Approval before building ». |
-| sous-agent | subagent | Comme Claude Code. |
+| sous-agent | subagent | Comme Claude Code. Ceux que l’agent lance lui-même, dans le flux de ses outils ; jamais pour un travail délégué (fiche 266). |
 | mémoire, souvenir | memory, memory (entry) | Fiche 182. « Retenir ? » → « Remember? », « Oublier ? » → « Forget? », « Non retenu » → « Not kept ». |
 | retenir, oublier | remember, forget | Noms des outils de l'agent (`remember`, `forget`, `recall`). |
 | session (de l'agent) | session | Ce que l'agent garde ; différent de « conversation ». |
@@ -139,7 +139,11 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | consigne (d'un rôle) | instructions | Le corps du fichier de rôle. |
 | équipe (section de la barre latérale) | team | Les rôles actifs. |
 | confier (un travail) à un rôle | hand (work) to a role | « Confier un travail à Expert sécurité » → « Hand work to Security expert ». |
-| travaux (repère du bas du fil) | tasks | Fiche 261 : « 2 travaux ont répondu » → « 2 tasks replied » ; « Voir » → « Show ». À revoir avec le vocabulaire unique (fiche 266). |
+| travail, travaux (délégués) | task, tasks | Fiche 266 : ce qu'on confie à un rôle ou à « un autre <agent> » ; jamais « conversation fille », « sous-tâche » ni « tâche proposée ». « 3 travaux proposés » → « 3 tasks proposed ». Attention : « tâches » (liste de tâches de l'agent) se dit aussi « tasks » ; le contexte les sépare. |
+| réponse (d'un travail) | response | Fiche 266 : ce que rend un travail ; jamais « compte rendu » (« report »). |
+| a répondu, arrêté, en erreur (fin d'un travail) | replied, stopped, failed | Fiche 266 : « a répondu · 4 fichiers » ; « arrêté » s'accorde avec le nom (« Arrêté » pour un travail, « Fusion arrêtée »). Jamais « a fini son tour », « Finie, à lire », « terminée ». |
+| la conversation qui l'a lancé | the conversation that started it | Fiche 266 : remplace « conversation mère » (« parent conversation »). |
+| Travaux délégués (réglages, famille d'outils) | Delegated tasks | Fiche 266 : titre de rubrique et de famille d'outils. |
 | fichier écarté | file left out | Fichier de rôle refusé, avec sa raison. |
 | installer (un rôle) dans un agent ; retirer | install (a role) in an agent; remove | Fiche 223, phase 4 : mode de Bob, agent d'OpenCode. |
 | règles actives | active rules | |
@@ -171,11 +175,8 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | annoter, appliquer | annotate, apply | |
 | repartir de ce message | branch from this message | Décision 4. |
 | branche (d'une conversation, de git) | branch | |
-| conversation fille, conversation mère | child conversation, parent conversation | Fiche 097 ; pas « sous-agent », réservé à ceux des agents. |
-| lancer en parallèle | run in parallel | Geste qui lance une conversation fille. |
-| sous-tâches (carte du fil) | subtasks | Carte des filles dans le fil de la mère. |
-| compte rendu (d'une fille) | report | |
-| proposer des conversations filles ; Quand ça s'y prête, Toujours demander | propose child conversations ; When it fits, Always ask | Fiche 118 (réglage et contexte de session). |
+| lancer en parallèle | run in parallel | Geste qui lance un travail sans rôle (fiche 266). |
+| proposer des travaux ; Quand ça s'y prête, Toujours demander | propose tasks ; When it fits, Always ask | Fiche 118 (réglage), fiche 266 (vocabulaire). |
 | historique | history | |
 | épinglées, archivées, récents | pinned, archived, recent | Titres de sections. |
 | sommaire (de la conversation) | outline | |
@@ -266,12 +267,13 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | échange (un tour) | exchange | Tableau de consommation : « Échanges », « Par échange » → « Exchanges », « Per exchange ». |
 | temps de travail | working time | Fiche 137. |
 | non communiqué | not reported | Valeur que l'agent ne donne pas (jetons, coût, modèle). |
+| gratuit ; coût non communiqué | free; cost not reported | Fiche 266 : coût nul d'un modèle qui se dit gratuit → « gratuit » ; d'un autre modèle (abonnement, tarif inconnu) → « coût non communiqué ». Jamais « ≈ 0,00 $US », jamais un modèle payant présenté comme gratuit. |
 | remettre à zéro | reset | « Remettre à zéro… » → « Reset… ». |
 | Bobcoins | Bobcoins | Unité de Bob : majuscule à l'affichage (fiche 144) ; `bobcoins` dans les données, le journal et le CSV. |
 | Mon activité | My activity | Page de la fenêtre principale (fiche 144) : la consommation de toutes les conversations. |
 | badge du Dock | Dock badge | |
 | compteur sur l'icône du Dock | count on the Dock icon | Réglage du badge « À traiter » (fiche 119). |
-| À traiter (section de la barre latérale) | Waiting on you | Fiche 119 ; « Réponse à lire » → « Unread response », « Compte rendu à lire » → « Unread report ». |
+| À traiter (section de la barre latérale) | Waiting on you | Fiche 119 ; « Réponse à lire » → « Unread response », « Réponse d’un travail à lire » → « Unread task response » (fiche 266). |
 | faire rebondir l'icône du Dock | bounce the Dock icon | Rebond : bounce. |
 | notifications | notifications | |
 

@@ -1,8 +1,8 @@
 # 260 — Travail délégué : une demande, une réponse, une place
 
-- **Statut** : en cours
+- **Statut** : fait (relecture du tech lead)
 - **Dépend de** : 255, 258 (lot 1 des retours d'usage)
-- **Agents** : les deux — tout est générique (rôles, filles, fusion, relecture)
+- **Agents** : les deux — tout est générique (rôles, travaux, fusion, relecture)
 
 ## Pourquoi
 
@@ -74,3 +74,19 @@ tech lead ; captures avant/après envoyées à Jérôme. À la fin : suite e2e c
 ## Journal
 
 - 2026-11-19 : maquettes validées, plan en 6 fiches (261–266).
+- 2026-11-19 → 20 : lots livrés, chacun avec revue du tech lead, puis revues UX et QA :
+  - **261** : bilan du tour dans le pied de la réponse qui le finit, « < 1 s » sous la seconde ;
+    repère « ↑ … a répondu · Voir » en bas du fil.
+  - **262** : saisie avec un rôle sans alerte avant la frappe, ligne discrète et « Changer… »,
+    Entrée envoie ; dépôt sans commit : travail dans le dossier, jamais de commit vide.
+  - **263** : bulle « @Rôle … » et carte-réponse unique (activité, réponse entière, transmission,
+    « Répondre à <rôle> » dans la même carte).
+  - **264** : carte de groupe à place fixe (proposés → en cours → ont répondu), fusion dans la carte ;
+    vérifications inventées de la fusion retirées (décision 8).
+  - **265** : « Faire relire » lance le rôle Code reviewer, remarques visibles, « Demander à <agent>
+    de corriger », un autre modèle proposé.
+  - **266** : vocabulaire unique (travail, réponse, a répondu, la conversation qui l'a lancé) en
+    fr, en et dans le guide, essai des mots retirés ; coût « gratuit » / « coût non communiqué »
+    (jamais un modèle payant présenté comme gratuit) ; écart à la décision 1 : « inclus dans
+    l'abonnement » jamais affiché, aucun agent ne le dit ; D31, D32.
+  Reste (hors de ce chantier) : recette réelle OpenCode (parcours rôles), rc.2.

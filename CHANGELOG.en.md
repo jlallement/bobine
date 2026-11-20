@@ -6,8 +6,21 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### New
 
+- **One vocabulary** for delegated work, everywhere (thread, sidebar, Session › Running, Changes,
+  Settings, notifications, export, guide): what you hand to a role or another agent is a **task**,
+  which sends back a **response**; it has “replied”, is “stopped” or “failed”. No more “child
+  conversation”, “subtasks” or “report”; Changes › Children becomes **Tasks**, the Settings section
+  **Delegated tasks**. The agent’s own subagents keep their name.
+- **Honest cost**: a zero cost shows as “free” only for a model that says it is free; otherwise
+  (OpenCode signed in with a subscription, for example) “cost not reported”, never “≈ $0.00”. The
+  cost cap then says it can’t trigger (Settings and usage details). One cost per card.
+- Model menu: after a refusal for lack of sign-in, the other models from the same provider are
+  marked “sign-in likely needed”.
+- A saved model the agent no longer offers: the notice says so in one plain sentence (“OpenCode no
+  longer offers the model GPT-6.2 Sol: this conversation uses …”), without a raw identifier.
+- Durations: “< 1 s” under a second, never “0 s”.
 - “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the
-  “Children” view or a task's card. The request shows in the thread (“@Code reviewer Review the
+  “Tasks” view or a task's card. The request shows in the thread (“@Code reviewer Review the
   branch …”) with its card, which shows **every comment**: its severity, `file:line` (a click opens
   the diff on that file), one sentence, then its verdict, or “Nothing to report”. “Ask <agent> to
   fix” sends its comments to the conversation's agent; “Show on the diff”, “Reply to Code reviewer”
@@ -75,10 +88,10 @@ What changes for you, version by version. Shown in Settings › About.
 - Settings › Diagnostics: a session that wasn’t tried says the real reason (test profile, or an
   agent that can’t delete it), without contradicting the footer.
 - Log: the harmless “ResizeObserver loop …” warning on resize is no longer recorded as an error.
-- Child conversations: a child stopped with ■ is shown as “Stopped” (sidebar, “Subtasks” card,
-  role card, Changes › Children), no longer “finished” with a green check. Changes › Children shows
-  “Merged” like the “Subtasks” card. A child’s report counts as read as soon as you see it in the
-  parent’s thread. The parent’s tools name the child by its title, no longer by its id.
+- Delegated tasks: a task stopped with ■ is shown as “Stopped” (sidebar, tasks card, role card,
+  Changes › Tasks), no longer “finished” with a green check. Changes › Tasks shows “merged” like the
+  tasks card. A task’s response counts as read as soon as you see it in the conversation that
+  started it. The agent’s tools name the task by its title, no longer by its id.
 - Background subagents (OpenCode): while a subagent keeps working after the turn ends, then while
   the agent answers its report, the conversation stays “in progress” (indicator under the thread,
   “Still working…” at the bottom of the sidebar, the conversation’s row). “Done in …” only shows

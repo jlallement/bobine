@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentQuota } from '@shared/usage'
 import { addDays } from '@shared/usage-periods'
@@ -435,6 +435,43 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(await screen.findByTestId('activity-empty')).toBeTruthy()
     expect(screen.queryByTestId('usage-kpis')).toBeNull()
     expect(screen.getByTestId('activity-empty').textContent).toContain('Nouvelle conversation')
+  })
+
+  it('coût nul en dollars : « coût non communiqué » pour un modèle payant, « gratuit » sinon (fiche 266, D12)', async () => {
+    const zero = (model: string, key: string): UsageStats => ({
+      ...STATS,
+      totals: { ...STATS.totals, costs: { USD: 0 }, turnsWithoutCost: 0 },
+      comparison: undefined,
+      byModel: [
+        {
+          key,
+          model,
+          profileId: 'opencode',
+          agentLabel: 'OpenCode',
+          turns: 5,
+          input: 1410,
+          output: 145,
+          turnsWithoutTokens: 0,
+          costs: { USD: 0 },
+          costTurns: { USD: 5 }
+        }
+      ]
+    })
+    api['stats']?.mockImplementation(async (query: UsageQuery) => ({
+      ...zero('GPT-6.1 Sol', 'opencode:openai/gpt-6.1-sol'),
+      query
+    }))
+    await shown()
+    expect(text('usage-kpi-cost')).toContain('coût non communiqué')
+    expect(text('usage-kpi-cost')).not.toContain('$')
+    cleanup()
+    api['stats']?.mockImplementation(async (query: UsageQuery) => ({
+      ...zero('Tidepool Alpha Free', 'opencode:opencode/tidepool-alpha-free'),
+      query
+    }))
+    await shown()
+    expect(text('usage-kpi-cost')).toContain('gratuit')
+    expect(text('usage-kpi-cost')).not.toContain('$')
   })
 
   it('période vide, journal non vide : chiffres à zéro, « — » plutôt que « non communiqué »', async () => {

@@ -98,11 +98,31 @@ export async function fillesFusionSuite(scheme) {
         /** Revenir à la mère depuis une fille : la carte relit les branches. */
         const reread = async () => {
           // Comme un utilisateur : la ligne dépliée, puis « Ouvrir sa conversation » à l'écran.
-          const row = `document.querySelector('[data-testid=work-row]')`
-          await ui.reveal(`${row}.querySelector('[data-testid=work-row-toggle]')`)
-          await ui.click(`${row}.querySelector('[data-testid=work-row-toggle]')`)
-          const open = `${row}.querySelector('[data-testid=work-open]')`
+          // Une ligne désignée par son travail, pas par sa place : des travaux lancés ensemble
+          // peuvent encore changer de rang le temps que leurs dates arrivent (fiche 266).
+          const id = await ui.ev(
+            `document.querySelector('[data-testid=work-row]')?.dataset.childId`
+          )
+          const row = `document.querySelector('[data-testid=work-row][data-child-id="${id}"]')`
+          const open = `${row}?.querySelector('[data-testid=work-open]')`
+          if (!(await ui.ev(`!!${open}`))) {
+            await ui.reveal(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+            await ui.click(`${row}.querySelector('[data-testid=work-row-toggle]')`)
+          }
           await ui.waitFor(`!!${open}`)
+          await ui.reveal(open)
+          // La carte relit les branches au retour (plan de fusion) : la ligne gagne sa méta et peut
+          // descendre d'une ligne. Comme un humain, on attend qu'elle ne bouge plus (fiche 266 :
+          // l'appui tombait sur la ligne de transmission, juste au-dessus).
+          await ui.waitFor(
+            `(() => { const y = ${open}?.getBoundingClientRect().y; const s = window.__openY; window.__openY = y; return y !== undefined && s === y })()`,
+            10000
+          )
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          await ui.waitFor(
+            `(() => { const y = ${open}?.getBoundingClientRect().y; const s = window.__openY; window.__openY = y; return s === y })()`,
+            10000
+          )
           await ui.reveal(open)
           await ui.click(open)
           await ui.waitFor(`!!${ui.$('title-origin')}`)
