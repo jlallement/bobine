@@ -15,6 +15,7 @@ import { InstallDialog } from './components/dialogs/InstallDialog'
 import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
+import { threadItems } from './role-labels'
 import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
 import { ResumeCard } from './components/thread/ResumeCard'
@@ -64,7 +65,6 @@ import { useTurnGuards } from './useTurnGuards'
 import { TurnControlsContext } from './turn-controls'
 import { GlobalRulesContext, type GlobalRules } from './components/thread/global-rules'
 import { ProfileNotices, ReadOnlyGate } from './components/common/Profile'
-import { withoutCardedRefusal } from '@shared/transcript-notice'
 
 /** Actions de la carte « Préparation du worktree » (fiche 175) pour la conversation affichée. */
 function worktreeSetupActions(id: string, warn: (message: string) => void) {
@@ -666,7 +666,7 @@ export function App() {
                           <TurnControlsContext.Provider value={guards.turnControls}>
                             <Transcript
                               key={c.activeId ?? ''} // rien de déplié ne passe à la suivante
-                              items={withoutCardedRefusal(transcript.items, snapshot)}
+                              items={threadItems(transcript.items, snapshot, composerRoles.labels)}
                               terminals={transcript.terminals}
                               onRespondPermission={c.respondPermission}
                               onRespondElicitation={c.respondElicitation}

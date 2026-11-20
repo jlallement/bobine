@@ -22,6 +22,8 @@ import { uncommittedOf, type LaunchChoice } from '../../launch-choice'
 export interface ComposerRoles {
   /** Rôles actifs ; vide pour une conversation qui ne lance pas de filles (fille, relecteur). */
   list: readonly RoleView[]
+  /** Libellés des rôles fournis dans la langue du moment, pour le fil (fiche 272). */
+  labels?: ReadonlyMap<string, string>
   /**
    * La conversation peut confier un travail à un rôle (ni fille ni relecteur) : un rôle invoqué
    * d'ailleurs (section Équipe, Réglages › Rôles, assistant) y devient un jeton, sinon c'est dit.
