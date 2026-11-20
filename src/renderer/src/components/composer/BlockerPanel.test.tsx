@@ -347,7 +347,7 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
     expect(onSetControl).toHaveBeenCalledWith('model', 'opencode/big-pickle')
   })
 
-  it('même fournisseur qu’un modèle refusé : « connexion sans doute à faire », jamais d’autres (fiche 266, D31)', () => {
+  it('même fournisseur qu’un modèle refusé : « sans doute », jamais d’autres (fiche 266, D31)', () => {
     const control = models()
     control.options.push(
       // Marqué par le main (`markRefused`, fiche 266) ; le sélecteur le dit.
@@ -358,8 +358,11 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
     fireEvent.click(screen.getByTestId('auth-choose-model'))
     const sibling = screen.getByTestId('control-model-openai/gpt-6.1-sol')
     expect(sibling.classList.contains('model-auth-likely')).toBe(true)
-    expect(sibling.textContent).toContain('connexion sans doute à faire')
-    expect(sibling.getAttribute('title')).toContain('Un autre modèle de ce fournisseur')
+    expect(sibling.textContent).toContain('sans doute')
+    expect(sibling.textContent).not.toContain('connexion à faire')
+    expect(sibling.getAttribute('title')).toMatch(
+      /Connexion sans doute à faire\s: un modèle de ce fournisseur a été refusé/
+    )
     for (const other of ['opencode/big-pickle', 'solo', 'openai/gpt-5.2']) {
       expect(screen.getByTestId(`control-model-${other}`).querySelector('.likely')).toBeNull()
     }

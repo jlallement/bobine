@@ -18,7 +18,7 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
   « ≈ 0,00 $US ». Le plafond de coût dit alors qu'il ne peut pas se déclencher. Un seul coût par
   carte ; une carte dont une partie des travaux n'a pas de coût dit « ≈ 0,05 $US + coût inconnu ».
 - Menu des modèles : après un refus faute de connexion, les autres modèles du même fournisseur sont
-  marqués « connexion sans doute à faire ».
+  marqués « sans doute » (connexion sans doute à faire, dit en infobulle).
 - Un modèle retenu que l'agent ne propose plus : l'avis le dit en une phrase claire (« Le modèle
   « GPT-6.2 Sol » n'est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
   brut, une seule fois par conversation, et dit où changer le modèle par défaut. Un réglage que

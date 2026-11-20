@@ -131,6 +131,15 @@ restent en synonymes, avec les nouveaux.
   anglais, déjà fixé par la fiche 261 ; noté au glossaire.
 - Le CHANGELOG garde, pour les versions publiées, les mots de l'époque.
 
+- (Revue du tech lead, acceptées) Pointeur posé sur une carte de travail : le suivi du bas du fil
+  attend qu'il en sorte (`data-scroll-hold`). Carte des conversations de Mon activité, exécutions
+  planifiées, aparté, sous-agents : pas de modèle connu, un coût nul y est toujours « coût
+  inconnu », même pour un modèle gratuit. Avis `controlLate` ajouté après l'avis d'échec, sans le
+  retirer ; valeurs déjà dites gardées en mémoire par conversation (un avis peut revenir une fois
+  après un redémarrage de l'app).
+- D31 : étiquette courte « sans doute » (infobulle « Connexion sans doute à faire : un modèle de ce
+  fournisseur a été refusé ») ; « connexion à faire » pour le modèle refusé lui-même.
+
 ## Journal
 
 - 2026-11-20 : inventaire, valeurs fr/en, guide, essai des mots retirés ; règle du coût et plafond ;

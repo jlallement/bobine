@@ -947,8 +947,8 @@ export type FrResources = {
     readonly none: 'Aucun modèle trouvé'
     readonly authRequired: 'connexion à faire'
     readonly authRequiredTip: 'Refusé faute de connexion à son fournisseur : choisissable, mais connectez-vous d’abord.'
-    readonly authLikely: 'connexion sans doute à faire'
-    readonly authLikelyTip: 'Un autre modèle de ce fournisseur a été refusé faute de connexion : celui-ci le sera sans doute aussi.'
+    readonly authLikely: 'sans doute'
+    readonly authLikelyTip: 'Connexion sans doute à faire : un modèle de ce fournisseur a été refusé'
   }
   readonly agentMenu: {
     readonly tip: 'Agent : {{agent}}'
@@ -3498,7 +3498,7 @@ export type FrResources = {
       readonly title_one: '{{count}} travail proposé'
       readonly title_many: '{{count}} travaux proposés'
       readonly title_other: '{{count}} travaux proposés'
-      readonly worktree: 'L’agent propose de confier ces travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de les faire ici.'
+      readonly worktree: 'L’agent propose de découper ceci en travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de tout faire ici.'
       readonly started_one: '{{count}} lancé'
       readonly started_many: '{{count}} lancés'
       readonly started_other: '{{count}} lancés'
@@ -4106,7 +4106,7 @@ export type FrResources = {
       readonly cap: {
         readonly label: 'Plafond par conversation'
         readonly hint: 'Pour les nouvelles conversations : au-delà, Bobine interrompt la réponse à la fin de l’outil en cours et demande s’il faut continuer ; un nouveau message attend votre accord. Modifiable dans le détail de la consommation de chaque conversation.'
-        readonly notReported: 'Avec un modèle payant dont l’agent annonce un coût nul (connexion par abonnement, par exemple), la dépense ne monte jamais : le plafond ne se déclenche pas, et la consommation affiche « coût inconnu ».'
+        readonly notReported: 'Si l’agent annonce un coût nul pour un modèle payant (connexion par abonnement, par exemple), Bobine ne voit aucune dépense : ce plafond ne se déclenche pas. Le coût s’affiche alors « coût inconnu ».'
       }
       readonly capAmount: {
         readonly label: 'Montant'
@@ -4618,7 +4618,7 @@ export type FrResources = {
       readonly worktreeHint: 'Le dossier doit être un dépôt git ; les modifications restent sur une branche à part.'
       readonly catchUp: 'Rattraper une échéance manquée (une seule exécution)'
       readonly capTitle: 'Plafond par exécution'
-      readonly capHint: 'Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.'
+      readonly capHint: 'Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (Bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.'
       readonly capAmount: 'Montant'
       readonly capTokens: 'Jetons, cache compris'
       readonly permissions: 'Une exécution planifiée n’accorde rien de plus qu’une conversation ordinaire : une demande d’autorisation attend votre réponse et vous prévient.'
@@ -5371,7 +5371,7 @@ export type FrResources = {
     readonly empty: 'Aucun rôle actif'
     readonly assign: 'Confier un travail à {{label}}'
     readonly roleTip: 'Rôle : {{label}}'
-    readonly notHere: 'Un travail ne confie pas de travail à un rôle : faites-le depuis sa conversation d’origine.'
+    readonly notHere: 'Depuis un travail, on ne fait pas appel à un rôle : ouvrez la conversation d’origine.'
   }
   readonly roles: {
     readonly none: 'aucun'

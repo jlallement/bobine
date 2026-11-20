@@ -541,7 +541,7 @@
     "estimate": "≈ {{cost}}",
     "free": "free",
     "costNotReported": "cost unknown",
-    "costNotReportedHint": "{{agent}} reports a zero cost, but the model doesn’t say it is free (subscription, price unknown to the agent): the real cost is unknown. The cost cap can’t trigger on this amount.",
+    "costNotReportedHint": "{{agent}} reports a zero cost, but the model isn’t marked as free (subscription, price unknown to the agent): the real cost is unknown. The cost cap can’t trigger on this amount.",
     "costEstimate": "Conversation cost (estimate)",
     "costHint": "Amount reported by {{agent}} from its own prices: what you are billed may differ (subscription, discounts).",
     "capTokensValue": "{{tokens}} tokens, cache included",
@@ -902,8 +902,8 @@
     "none": "No matching model",
     "authRequired": "sign-in needed",
     "authRequiredTip": "Refused because its provider isn’t signed in: you can pick it, but sign in first.",
-    "authLikely": "sign-in likely needed",
-    "authLikelyTip": "Another model from this provider was refused for lack of sign-in: this one likely will be too."
+    "authLikely": "likely",
+    "authLikelyTip": "Sign-in likely needed: a model from this provider was refused"
   },
   "agentMenu": {
     "tip": "Agent: {{agent}}",
@@ -3450,7 +3450,7 @@
       "ready": "Recommended",
       "notReady": "Not recommended yet",
       "stale": "To review",
-      "staleHint": "The task worked again since this recommendation.",
+      "staleHint": "The task has run again since this recommendation.",
       "itemReady": "The agent recommends merging “{{title}}”",
       "itemNotReady": "The agent does not recommend merging “{{title}}” yet"
     },
@@ -3512,7 +3512,7 @@
       "pendingWake": "Will go to the agent when all its tasks have replied.",
       "turns_one": "{{count}} exchange",
       "turns_other": "{{count}} exchanges",
-      "usage": "Usage of the task at this response"
+      "usage": "Task usage up to this response"
     },
     "error": {
       "emptyPrompt": "Write an instruction for this task.",
@@ -3537,7 +3537,7 @@
     "proposals": {
       "title_one": "{{count}} proposed task",
       "title_other": "{{count}} proposed tasks",
-      "worktree": "The agent proposes handing out these tasks, each in its own worktree. You can also ask it to do them here.",
+      "worktree": "The agent proposes splitting this into tasks, each in its own worktree. You can also ask it to do everything here.",
       "started_one": "{{count}} started",
       "started_other": "{{count}} started",
       "here_one": "{{count}} done here",
@@ -4096,7 +4096,7 @@
       "cap": {
         "label": "Cap per conversation",
         "hint": "For new conversations: past it, Bobine stops the response once the current tool finishes and asks whether to continue; a new message waits for your approval. Can be changed in each conversation’s usage details.",
-        "notReported": "With a paid model whose agent reports a zero cost (a subscription sign-in, for example), the spend never rises: the cap doesn’t trigger, and usage shows “cost unknown”."
+        "notReported": "If the agent reports a zero cost for a paid model (a subscription sign-in, for example), Bobine sees no spend: this cap doesn’t trigger. The cost then shows as “cost unknown”."
       },
       "capAmount": {
         "label": "Amount",
@@ -5329,7 +5329,7 @@
     "empty": "No active role",
     "assign": "Hand work to {{label}}",
     "roleTip": "Role: {{label}}",
-    "notHere": "A task can’t hand work to a role: do it from its source conversation."
+    "notHere": "From a task, you can’t call on a role: open the source conversation."
   },
   "roles": {
     "none": "none",
@@ -5931,7 +5931,7 @@
       "ready": "Recommended",
       "notReady": "Not recommended yet",
       "stale": "To review",
-      "staleHint": "The task worked again since this recommendation."
+      "staleHint": "The task has run again since this recommendation."
     },
     "changes": "View changes",
     "relayPending": "Responses not yet passed to {{agent}} — they will be with your next message",

@@ -19,7 +19,7 @@ What changes for you, version by version. Shown in Settings › About.
   unknown”.
 - The agent’s task list is now called **To-dos**; “Tasks” is kept for delegated tasks.
 - Model menu: after a refusal for lack of sign-in, the other models from the same provider are
-  marked “sign-in likely needed”.
+  marked “likely” (sign-in likely needed, said in the tooltip).
 - A saved model the agent no longer offers: the notice says so in one plain sentence (“OpenCode no
   longer offers the model “GPT-6.2 Sol”: this conversation uses …”), without a raw identifier, once
   per conversation, and says where to change the default model. A setting the agent applies after

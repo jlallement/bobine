@@ -961,8 +961,8 @@
     "none": "Aucun modèle trouvé",
     "authRequired": "connexion à faire",
     "authRequiredTip": "Refusé faute de connexion à son fournisseur : choisissable, mais connectez-vous d’abord.",
-    "authLikely": "connexion sans doute à faire",
-    "authLikelyTip": "Un autre modèle de ce fournisseur a été refusé faute de connexion : celui-ci le sera sans doute aussi."
+    "authLikely": "sans doute",
+    "authLikelyTip": "Connexion sans doute à faire : un modèle de ce fournisseur a été refusé"
   },
   "agentMenu": {
     "tip": "Agent : {{agent}}",
@@ -3657,7 +3657,7 @@
       "title_one": "{{count}} travail proposé",
       "title_many": "{{count}} travaux proposés",
       "title_other": "{{count}} travaux proposés",
-      "worktree": "L’agent propose de confier ces travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de les faire ici.",
+      "worktree": "L’agent propose de découper ceci en travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de tout faire ici.",
       "started_one": "{{count}} lancé",
       "started_many": "{{count}} lancés",
       "started_other": "{{count}} lancés",
@@ -4267,7 +4267,7 @@
       "cap": {
         "label": "Plafond par conversation",
         "hint": "Pour les nouvelles conversations : au-delà, Bobine interrompt la réponse à la fin de l’outil en cours et demande s’il faut continuer ; un nouveau message attend votre accord. Modifiable dans le détail de la consommation de chaque conversation.",
-        "notReported": "Avec un modèle payant dont l’agent annonce un coût nul (connexion par abonnement, par exemple), la dépense ne monte jamais : le plafond ne se déclenche pas, et la consommation affiche « coût inconnu »."
+        "notReported": "Si l’agent annonce un coût nul pour un modèle payant (connexion par abonnement, par exemple), Bobine ne voit aucune dépense : ce plafond ne se déclenche pas. Le coût s’affiche alors « coût inconnu »."
       },
       "capAmount": {
         "label": "Montant",
@@ -4788,7 +4788,7 @@
       "worktreeHint": "Le dossier doit être un dépôt git ; les modifications restent sur une branche à part.",
       "catchUp": "Rattraper une échéance manquée (une seule exécution)",
       "capTitle": "Plafond par exécution",
-      "capHint": "Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.",
+      "capHint": "Le tour s’arrête au plafond et la conversation attend votre accord. Montant dans la devise de l’agent (Bobcoins pour Bob) ; jetons, cache compris, quand l’agent ne donne pas de coût. Vide : le plafond des réglages.",
       "capAmount": "Montant",
       "capTokens": "Jetons, cache compris",
       "permissions": "Une exécution planifiée n’accorde rien de plus qu’une conversation ordinaire : une demande d’autorisation attend votre réponse et vous prévient.",
@@ -5554,7 +5554,7 @@
     "empty": "Aucun rôle actif",
     "assign": "Confier un travail à {{label}}",
     "roleTip": "Rôle : {{label}}",
-    "notHere": "Un travail ne confie pas de travail à un rôle : faites-le depuis sa conversation d’origine."
+    "notHere": "Depuis un travail, on ne fait pas appel à un rôle : ouvrez la conversation d’origine."
   },
   "roles": {
     "none": "aucun",

@@ -9,7 +9,7 @@ import { L, check, withApp } from '../lib.mjs'
  *   inconnu », jamais « gratuit » ni « ≈ 0,00 $US », et le plafond dit qu'il ne peut pas se
  *   déclencher ;
  * - D31 : après le refus d'un modèle faute de connexion, les autres modèles du même fournisseur
- *   sont marqués « connexion sans doute à faire », sauf le modèle gratuit.
+ *   sont marqués « sans doute » (infobulle), sauf le modèle gratuit.
  */
 export async function coutConnexionSuite(scheme) {
   console.log(`\n— Coût inconnu et connexion à faire (${scheme})`)
