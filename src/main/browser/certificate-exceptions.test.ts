@@ -52,7 +52,7 @@ function memory(list: CertificateException[]): CertificateMemory {
   }
 }
 
-describe('exceptions de certificat (fiche 269, ADR-0063)', () => {
+describe('exceptions de certificat (fiche 269, ADR-0064)', () => {
   it('site : hôte et port des adresses chiffrées seulement, 443 par défaut', () => {
     expect(certificateSite('https://localhost:5173/app')).toEqual({ host: 'localhost', port: 5173 })
     expect(certificateSite('https://Dev.Localhost/')).toEqual({ host: 'dev.localhost', port: 443 })

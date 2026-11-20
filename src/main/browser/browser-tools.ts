@@ -325,7 +325,7 @@ function createTools(
   }
 
   /**
-   * Page sous un avertissement de certificat (fiche 269, ADR-0063) : l'outil échoue avec ce que
+   * Page sous un avertissement de certificat (fiche 269, ADR-0064) : l'outil échoue avec ce que
    * l'agent doit savoir ; il ne peut ni accepter ni contourner.
    */
   const checkCertificate = (): void => {

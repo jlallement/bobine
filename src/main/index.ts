@@ -402,7 +402,7 @@ async function start(): Promise<void> {
   } = setupBrowser({
     keepCookies: () => settings.preferences().browserKeepCookies,
     alwaysSites: approvals.sites,
-    // Certificats acceptés par l'utilisateur dans le panneau (fiche 269, ADR-0063).
+    // Certificats acceptés par l'utilisateur dans le panneau (fiche 269, ADR-0064).
     certificates: approvals.certificates,
     imageCodec: nativeCodec,
     send,

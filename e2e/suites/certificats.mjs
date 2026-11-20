@@ -49,7 +49,7 @@ function selfSigned(dir, name) {
 }
 
 /**
- * Navigateur intégré et certificat auto-signé (fiche 269, ADR-0063) : avertissement à la place de
+ * Navigateur intégré et certificat auto-signé (fiche 269, ADR-0064) : avertissement à la place de
  * la page, « Continuer » derrière « Avancé », « Non sécurisé », certificat changé redemandé, outils
  * de l'agent refusés, exception révoquée dans les Réglages ; le reste de l'app refuse toujours.
  */

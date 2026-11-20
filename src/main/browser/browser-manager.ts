@@ -133,7 +133,7 @@ export interface BrowserManagerOptions {
   emitAnnotate?: (event: PageLayerEvent) => void
   /** Site accordé à l'agent dans cette conversation (fiche 249) ; sans lui, tout l'est. */
   siteAllowed?: (conversationId: string, url: string) => boolean
-  /** Certificats acceptés par l'utilisateur (fiche 269, ADR-0063) ; sans lui, tout est refusé. */
+  /** Certificats acceptés par l'utilisateur (fiche 269, ADR-0064) ; sans lui, tout est refusé. */
   certificates?: CertificateMemory
 }
 
@@ -725,7 +725,7 @@ export class BrowserManager {
     })
   }
 
-  /* ---------- Certificats refusés (fiche 269, ADR-0063) ---------- */
+  /* ---------- Certificats refusés (fiche 269, ADR-0064) ---------- */
 
   /**
    * `app.on('certificate-error')` : pour une page du panneau (onglet ou popup de l'utilisateur),
@@ -863,7 +863,7 @@ export class BrowserManager {
     // Fichiers restés en attente d'une décision (app arrêtée pendant « Enregistrer sous »).
     rmSync(pendingDownloadsDir(), { recursive: true, force: true })
     s.on('will-download', (_event, item, contents) => this.download(item, contents))
-    // Certificats refusés (fiche 269, ADR-0063) : seules les pages de cette session sont traitées.
+    // Certificats refusés (fiche 269, ADR-0064) : seules les pages de cette session sont traitées.
     app.on('certificate-error', this.certificateError)
     // Certains sites refusent un navigateur qui se présente comme Electron.
     s.setUserAgent(

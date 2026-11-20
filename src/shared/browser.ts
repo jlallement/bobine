@@ -25,7 +25,7 @@ export interface BrowserState {
   /** Taille d'écran imposée par l'agent (`browser_resize`), jusqu'à la fin de son tour. */
   emulation?: BrowserEmulation
   /**
-   * Certificat refusé pour la page de l'onglet actif (fiche 269, ADR-0063) : l'onglet montre
+   * Certificat refusé pour la page de l'onglet actif (fiche 269, ADR-0064) : l'onglet montre
    * l'avertissement à la place de la page.
    */
   certificate?: BrowserCertificateProblem
@@ -34,7 +34,7 @@ export interface BrowserState {
 }
 
 /**
- * Certificat refusé par Chromium pour la page d'un onglet (fiche 269, ADR-0063), tel que
+ * Certificat refusé par Chromium pour la page d'un onglet (fiche 269, ADR-0064), tel que
  * l'avertissement le montre. Tout vient du main ; le renderer ne renvoie que `token`.
  */
 export interface BrowserCertificateProblem {

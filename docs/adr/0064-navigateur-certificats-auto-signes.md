@@ -1,4 +1,4 @@
-# ADR-0063 — Navigateur intégré : avertissement de certificat et exception étroite, décidée par l'utilisateur seul
+# ADR-0064 — Navigateur intégré : avertissement de certificat et exception étroite, décidée par l'utilisateur seul
 
 - **Statut** : proposé (fiche 269)
 - **Date** : 2026-11-20

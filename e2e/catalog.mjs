@@ -648,7 +648,7 @@ export const SUITES = [
   },
   {
     // Certificat auto-signé d'un serveur de dev : avertissement, exception étroite, révocation
-    // (fiche 269, ADR-0063). Serveur HTTPS et certificats faits par l'essai (`openssl`).
+    // (fiche 269, ADR-0064). Serveur HTTPS et certificats faits par l'essai (`openssl`).
     name: 'certificats',
     file: 'certificats.mjs',
     run: 'certificatsSuite',

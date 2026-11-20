@@ -1,5 +1,5 @@
 /**
- * Avertissement de certificat (fiche 269, ADR-0063) : rien ne s'accepte sans « Avancé » puis
+ * Avertissement de certificat (fiche 269, ADR-0064) : rien ne s'accepte sans « Avancé » puis
  * « Continuer » ; seul le jeton part au main ; pas de « Continuer » pour un site public.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'

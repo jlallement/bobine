@@ -1,5 +1,5 @@
 /**
- * Exceptions de certificat du navigateur intégré (fiche 269, ADR-0063) : ce qui se décide sans
+ * Exceptions de certificat du navigateur intégré (fiche 269, ADR-0064) : ce qui se décide sans
  * Electron, donc testable. Une exception vaut pour un hôte, un port et une empreinte SHA-256
  * exacte ; elle ne se propose que pour une adresse locale ou privée (serveur de développement).
  */

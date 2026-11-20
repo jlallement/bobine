@@ -13,7 +13,7 @@ function reasonKey(error: string) {
 }
 
 /**
- * Avertissement d'un certificat refusé (fiche 269, ADR-0063), dans l'interface de l'app, à la place
+ * Avertissement d'un certificat refusé (fiche 269, ADR-0064), dans l'interface de l'app, à la place
  * de la page (la vue native est masquée par le main). Sur le modèle de Chrome : la raison, « Retour »,
  * et derrière « Avancé » l'empreinte et « Continuer vers <hôte> (non sécurisé) », seulement pour une
  * adresse locale ou privée. « Continuer » n'envoie que le jeton de l'avertissement.

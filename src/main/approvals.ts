@@ -119,7 +119,7 @@ export class ApprovalStore {
   }
 
   /**
-   * Certificats acceptés dans le navigateur intégré (fiche 269, ADR-0063) : pour la session, ou
+   * Certificats acceptés dans le navigateur intégré (fiche 269, ADR-0064) : pour la session, ou
    * retenus dans le fichier. Une exception invalide (hôte public, empreinte mal formée) est ignorée.
    */
   readonly certificates: CertificateMemory = {

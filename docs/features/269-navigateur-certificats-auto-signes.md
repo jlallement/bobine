@@ -1,7 +1,7 @@
 # 269 — Navigateur intégré : certificats auto-signés des serveurs de développement
 
 - **Statut** : fait (relecture du tech lead)
-- **Dépend de** : 007, 072, 114, 249 ; ADR-0063
+- **Dépend de** : 007, 072, 114, 249 ; ADR-0064
 - **Agents** : les deux (rien de propre à un agent : le navigateur intégré est de l'app)
 
 ## Pourquoi
@@ -47,7 +47,7 @@ de continuer.
 
 ## Plan
 
-Décisions : ADR-0063.
+Décisions : ADR-0064.
 
 1. `src/main/browser/certificate-exceptions.ts` (sans Electron) : site d'une URL (`https`/`wss`,
    port par défaut 443), hôtes locaux ou privés, empreinte depuis le PEM, raison lisible, décision
@@ -72,7 +72,7 @@ Pas de nouvelle dépendance (empreinte par `node:crypto`).
 
 ## Décisions
 
-ADR-0063 (proposé) : exception limitée à la session du panneau (gestionnaire `certificate-error`
+ADR-0064 (proposé) : exception limitée à la session du panneau (gestionnaire `certificate-error`
 qui ignore tout autre `webContents`) ; hôte + port + empreinte SHA-256 exacte ; adresses locales
 ou privées seulement (revérifié par le main) ; avertissement dans l'interface de l'app, jamais
 dans la page ; « Continuer » n'envoie que le jeton de l'avertissement ; pour la session par défaut,
@@ -99,7 +99,7 @@ révocables dans Réglages › Confidentialité ; l'agent ne peut jamais accepte
 
 ## Journal
 
-- 2026-11-20 : reproduction (pilote, Vite `basic-ssl`), cause, ADR-0063 (proposé), plan.
+- 2026-11-20 : reproduction (pilote, Vite `basic-ssl`), cause, ADR-0064 (proposé), plan.
 - 2026-11-20 : essai Electron 45 : `certificate-error` donne l'URL avec le port, le PEM ; aucune
   décision retenue par Electron (revient après `closeAllConnections`), d'où la fermeture des
   connexions à la révocation.

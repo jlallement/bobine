@@ -3,7 +3,7 @@
  * sortis de `ipc.ts` (taille bornée, fiche 089) : le contrat `IpcInvokeContract` les reprend
  * (`extends`), `IPC_CHANNELS` aussi. Les évènements (`browser:state`…) restent dans `ipc.ts`.
  *
- * Certificats refusés (fiche 269, ADR-0063) : le renderer ne donne jamais l'hôte ni l'empreinte
+ * Certificats refusés (fiche 269, ADR-0064) : le renderer ne donne jamais l'hôte ni l'empreinte
  * d'un certificat à accepter, seulement le jeton de l'avertissement que le main a noté. Comme tout
  * canal, l'émetteur est vérifié (fiche 114).
  */
