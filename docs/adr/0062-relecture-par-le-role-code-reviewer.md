@@ -44,15 +44,16 @@ répondre, et sa consigne interne s'affichait en clair comme un message de l'uti
 6. **Ses remarques partent à l'agent avec sa réponse** (`childContext` : gravité, `fichier:ligne`,
    titre, raison, 20 au plus). « Demander à <agent> de corriger » envoie un message préparé qui
    nomme le relecteur, avec la réponse visée (`about`, ADR-0060).
-7. **Empreinte par tour.** Le premier tour garde celle du lancement ; chaque tour suivant
-   (« Répondre ») la reprend à son départ : l'auteur a pu corriger entre-temps. Le garde-fou des
-   rôles en lecture seule (`ReadOnlyWatch`) laisse les relecteurs à `ChildReviews` : un seul avis.
+7. **Lecture seule par le garde-fou commun** (revue QA) : le relecteur est un rôle en lecture seule
+   comme un autre pour `ReadOnlyWatch` (empreinte avant chaque message, exclusion quand une autre
+   conversation du dossier écrit, avis neutre, `watchFailed`) ; l'écart est aussi dit sur sa carte.
 
 ## Conséquences
 
 - Les relectures d'avant (élément `review` sans lancement, sans `authorId`) s'affichent comme avant
   (`ReviewCard`) ; aucune migration. Leur relecteur n'a ni réponse ni « Répondre ».
-- `@code-reviewer` tapé dans la saisie passe par le même chemin (décision du tech lead) : portée
+- `@code-reviewer` tapé dans la saisie, et `start_child` de l'agent avec ce rôle, passent par le
+  même chemin (décisions du tech lead) : portée
   d'office — le non commité s'il y en a, sinon la branche courante contre sa base si ce n'est pas
   la branche principale, sinon le dernier commit (portée `commit`) —, le texte tapé en points à
   surveiller, la bulle du message partagée avec les autres rôles cités. Le lien de relecture est

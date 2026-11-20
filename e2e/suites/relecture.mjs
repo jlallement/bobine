@@ -230,7 +230,8 @@ async function reviewRun(ui, { workspace, turnLock }) {
     }
   })()`)
   check(
-    opened.text.includes(L('review.ask.uncommitted', { count: 2 })) &&
+    // La demande telle que l'agent la reçoit : en anglais (ADR-0014), jamais traduite.
+    opened.text.startsWith('Review the uncommitted changes (2 files).') &&
       !opened.text.includes('Code review request from Bobine') &&
       opened.folded &&
       opened.toggle.includes(L('roleWork.brief')),

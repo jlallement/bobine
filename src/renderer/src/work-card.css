@@ -808,5 +808,7 @@ button.work-finding-where:hover {
   }
   .work-finding-where {
     margin-right: 0;
+    align-self: flex-start;
+    text-align: left;
   }
 }

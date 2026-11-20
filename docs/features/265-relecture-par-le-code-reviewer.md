@@ -198,12 +198,69 @@ Pas de nouvelle dépendance.
   `@code-reviewer` tapés dans la saisie y passent désormais par la relecture), une campagne à la
   fois.
 
+- 2026-11-20 : revues UX et QA, tout appliqué ; chaque défaut QA a son essai qui échoue sans son
+  correctif.
+  - **Un seul chemin, sans exception** (décision du tech lead) : `ChildConversations.start` envoie
+    tout rôle `code-reviewer` à `ChildReviews.start` (`@code-reviewer` de la saisie, `start_child`
+    de l'agent avec sa clé de carte et `by: agent` — l'agent l'attend —, « Lancer en
+    parallèle… ») ; avis `agentMissing` / `modelMissing` gardés. Essais main.
+  - **Lecture seule** : le relecteur passe par le garde-fou commun `ReadOnlyWatch` (empreinte avant
+    chaque message, exclusion `shared` quand une autre conversation du dossier écrit, `watchFailed`
+    si git échoue, texte neutre « le dossier a changé… ») ; un écart est aussi dit sur sa carte
+    (`changed`). Mode installé (`nativeRoleMode`, `stale` / `installed` comme `children.ts`) :
+    lecture seule `enforced`. L'empreinte propre à `ChildReviews` est retirée. Essais
+    `read-only-watch.test.ts`, `roles-children.test.ts`.
+  - **Fusion pendant une relecture** : `ChildrenMerger.start` refuse un travail dont un relecteur
+    (`reviewOf`) travaille, et le nettoyage le saute ; « Fusionner dans main » désactivé, son
+    infobulle le dit. Essais `children-merge.test.ts`, `WorkReviewMerge.test.tsx`.
+  - **Une relecture à la fois** par conversation relue ; **plafond** de 100 remarques par relecture.
+  - **Contexte de la mère** : une ligne par remarque (`quoted`), triées par gravité avant la coupe
+    à 20, seulement les nouvelles depuis la réponse d'avant (`ChildReport.findingsSeen`).
+  - **Carte** : repasse « en cours » (erreur effacée) au départ de chaque tour ; `fallback` avec
+    `authorId` ; `failed` gardé, posé chez la mère même si la conversation relue a disparu ;
+    `relaunch` met la carte à jour (portée, fichiers), refuse une liste vide, et une suite tapée
+    après un départ raté part après le premier message.
+  - **Diff d'une remarque d'une branche ou d'un commit** : `Review.since` (base, parent, arbre vide
+    pour le premier commit) ; `changes:gitFile` accepte `since` (identifiant de commit seulement) ;
+    l'onglet Modifications montre « fichier depuis a3f2c1e » (`ReviewFileDiff`), la plage `line` à
+    `endLine` mise en avant (liseré bleu du thème, éclair de 1,5 s, recentré à chaque clic) ; la
+    demande n'est servie qu'une fois (pas à chaque remontage) ; un travail supprimé : rien.
+  - **Portée** (`review-target.ts`) : premier parent d'un commit de fusion, `--` après les
+    révisions, dépôt sans commit (consigne sans `git diff HEAD`), `develop` et `trunk`, branche de
+    travail sans changement : rien à relire. La demande à l'agent en anglais (ADR-0014), la bulle
+    dans la langue de l'interface. Essais `review-target.test.ts`.
+  - **Revue UX** : avis d'ensemble avant la liste ; réponse repliée « Lire la suite » ; méta sur la
+    ligne des boutons, « Répondre » fantôme avec « Ouvrir sa conversation » ; libellés traduits des
+    outils de l'app dans l'activité (« Rend 2 remarques de relecture ») ; carte d'un travail avec
+    sa relecture : « Faire corriger « … » » principal tant qu'une remarque haute ou moyenne n'est
+    pas traitée, « Fusionner » secondaire, une seule ligne de transmission, réponse du travail
+    repliée ; « Correction demandée · heure » et pastilles effacées ; `fichier:ligne` sur sa ligne
+    sous 520 px, coupé aux `/` ; dialogue (deux lignes, « À relire : … », « Autre que celui de la
+    conversation (X) », coût sur sa ligne, champ actif neutre ; un modèle gratuit appelle un autre
+    modèle gratuit, un modèle payant est signalé) ; « Faire relire » libellé dans Modifications
+    quand la place le permet ; « Demander de corriger » des deux côtés, sans double envoi
+    (`settleReviewNotes`, `about` porté par l'envoi du panneau, élément `user.about`) ; le factice
+    ne recopie plus la réponse de l'outil, son avis dit « Une remarque haute à corriger ».
+  - **Bulle « Fais les modifications » en fondu en haut du fil** (point 14) : pas un défaut — c'est
+    le premier message à moitié sous le fondu de la barre de titre (`.main-header::after`), quand
+    l'essai amène la carte au milieu de l'écran. Rien de changé.
+
+- 2026-11-20 : après les revues, `./scripts/verify` vert (5 335 essais) ; `pnpm build && pnpm e2e
+  relecture travaux-groupe changes roles-travail filles-fusion` : 10 tâches vertes, clair et
+  sombre, une campagne. Captures regardées : `265-relecture-en-cours`, `-remarques`,
+  `-remarques-900`, `-transmise`, `-travail`, `-travail-900`, `177-1`, `177-2`, `177-4`, `177-5`.
+
 ## Limites connues
 
 - `@code-reviewer` refusé pendant que l'agent de la conversation répond (comme « Faire relire » :
   le dossier bouge) ; les autres rôles du message partent.
-- `start_child` de l'agent avec le rôle `code-reviewer` reste un travail ordinaire du rôle (pas
-  une relecture) : le chemin de l'utilisateur est unique, celui de l'agent n'a pas changé.
+- `start_child` de l'agent avec le rôle `code-reviewer` est une relecture de la conversation de
+  l'agent (portée d'office), lancée même pendant son tour : le garde-fou n'accuse pas le relecteur
+  quand c'est l'agent qui écrit (exclusion `shared`).
+- La gratuité d'un modèle se lit dans son nom ou son identifiant (« free ») : heuristique.
+- « Correction demandée » : dit pour toute demande visant le relecteur (`about`), y compris
+  « Envoyer à l'agent » des remarques du panneau ; une demande faite à la main dans la saisie
+  n'est pas reconnue.
 - « Faire relire » (dialogue) garde sa portée : la branche d'un worktree, sinon le non commité
   (rien : refusé) ; la portée d'office (branche courante, dernier commit) est celle de la saisie.
 - Le fil du travail relu garde la carte « Relecture » de la 177 (c'est sa conversation à lui).
