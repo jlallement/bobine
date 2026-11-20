@@ -65,7 +65,14 @@ describe('GitRepo', () => {
     const missing = fakeRun({
       'rev-parse --show-toplevel': { code: 1, stderr: 'spawn git ENOENT' }
     })
-    await expect(new GitRepo(missing.run).status('/x')).rejects.toThrow('git est introuvable')
+    // Dossier existant : c'est git qui manque.
+    await expect(new GitRepo(missing.run).status(process.cwd())).rejects.toThrow(
+      'git est introuvable'
+    )
+    // Dossier disparu (recette, fiche 272) : le même ENOENT dit le dossier, pas git.
+    await expect(new GitRepo(missing.run).status('/x-disparu-272')).rejects.toThrow(
+      /dossier n’existe plus.*x-disparu-272/
+    )
     const refused = fakeRun({
       'rev-parse --show-toplevel': {
         code: 128,

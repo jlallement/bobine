@@ -790,7 +790,7 @@
       "unknownStep": "Unknown step: {{step}}",
       "unknownKey": "Unknown key for this agent: {{env}}",
       "noApiKeys": "API keys unavailable",
-      "folderMissing": "Folder not found: {{folder}}",
+      "folderMissing": "This conversation’s folder no longer exists: {{folder}}. Nothing was sent. Put it back, or continue in a new conversation.",
       "noFolder": "Choose a folder first",
       "noWorktrees": "Worktrees unavailable",
       "unknownAgent": "Unknown agent: {{agent}}",
@@ -3454,6 +3454,7 @@
   "git": {
     "missingWindows": "git can’t be found on this PC. Install Git for Windows (git-scm.com/install/windows), then restart Bobine. Already installed? Settings › Diagnostics › Reload PATH.",
     "missing": "git can’t be found on this Mac. Install Apple’s developer tools: in Terminal, type `xcode-select --install`. Already installed? Settings › Diagnostics › Reload PATH.",
+    "folderMissing": "This folder no longer exists: {{folder}}. Was it moved or deleted?",
     "failed": "git failed",
     "statusFailed": "git status failed"
   },

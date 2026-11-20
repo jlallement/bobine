@@ -842,7 +842,7 @@
       "unknownStep": "Étape inconnue : {{step}}",
       "unknownKey": "Clé inconnue pour cet agent : {{env}}",
       "noApiKeys": "Clés d’API indisponibles",
-      "folderMissing": "Dossier introuvable : {{folder}}",
+      "folderMissing": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.",
       "noFolder": "Choisissez d’abord un dossier",
       "noWorktrees": "Worktrees indisponibles",
       "unknownAgent": "Agent inconnu : {{agent}}",
@@ -3563,6 +3563,7 @@
   "git": {
     "missingWindows": "git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
     "missing": "git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
+    "folderMissing": "Le dossier n’existe plus : {{folder}}. A-t-il été déplacé ou supprimé ?",
     "failed": "git a échoué",
     "statusFailed": "git status a échoué"
   },

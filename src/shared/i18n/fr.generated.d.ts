@@ -828,7 +828,7 @@ export type FrResources = {
       readonly unknownStep: 'Étape inconnue : {{step}}'
       readonly unknownKey: 'Clé inconnue pour cet agent : {{env}}'
       readonly noApiKeys: 'Clés d’API indisponibles'
-      readonly folderMissing: 'Dossier introuvable : {{folder}}'
+      readonly folderMissing: 'Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.'
       readonly noFolder: 'Choisissez d’abord un dossier'
       readonly noWorktrees: 'Worktrees indisponibles'
       readonly unknownAgent: 'Agent inconnu : {{agent}}'
@@ -3406,6 +3406,7 @@ export type FrResources = {
   readonly git: {
     readonly missingWindows: 'git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
     readonly missing: 'git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
+    readonly folderMissing: 'Le dossier n’existe plus : {{folder}}. A-t-il été déplacé ou supprimé ?'
     readonly failed: 'git a échoué'
     readonly statusFailed: 'git status a échoué'
   }

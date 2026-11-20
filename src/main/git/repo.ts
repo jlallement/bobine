@@ -5,17 +5,19 @@
 import type { GitStatus } from '@shared/git'
 import type { Run } from '../simulator/run'
 import { gitError } from '../changes/git-errors'
-import { missingGitMessage } from './git-queue'
+import { missingFolderMessage, missingGitMessage } from './git-queue'
+import { isDirectory } from '../is-directory'
 import { nativeGitPath } from './git-platform'
 import { t } from 'i18next'
 
 const text = (b: Buffer) => b.toString('utf8')
 
 /** `rev-parse` a échoué : hors dépôt (`null`), ou une erreur à montrer (git absent, dépôt refusé). */
-export function notARepoOrError(stderr: string): null {
+export function notARepoOrError(stderr: string, cwd?: string): null {
   if (/not a git repository/i.test(stderr)) return null
   if (/ENOENT/.test(stderr)) {
-    throw new Error(missingGitMessage())
+    // Dossier disparu, pas git absent (fiche 272).
+    throw new Error(cwd && !isDirectory(cwd) ? missingFolderMessage(cwd) : missingGitMessage())
   }
   throw new Error(stderr.trim().split('\n').at(-1) || t('git.failed'))
 }
@@ -63,7 +65,7 @@ export class GitRepo {
       cwd: workspace,
       timeoutMs: 20_000
     })
-    if (top.code !== 0) return notARepoOrError(top.stderr)
+    if (top.code !== 0) return notARepoOrError(top.stderr, workspace)
     const status = await this.run(
       this.git,
       ['status', '--porcelain=v2', '--branch', '--untracked-files=all'],

@@ -1249,6 +1249,19 @@ describe('ConversationManager', () => {
     app.manager.stopAll()
   })
 
+  it('dossier d’une conversation commencée disparu : dit avant l’envoi, rien ne part (fiche 272)', async () => {
+    const env = environment()
+    const app = env.launch()
+    const folder = realpathSync(mkdtempSync(join(tmpdir(), 'ws-parti-')))
+    const view = await app.manager.create({ workspace: folder })
+    await app.manager.prompt(view.summary.id, 'Bonjour')
+    const before = app.manager.view(view.summary.id).transcript.items.length
+    vanish(folder, app.manager)
+    await expect(app.manager.prompt(view.summary.id, 'Encore ?')).rejects.toThrow(folder)
+    expect(app.manager.view(view.summary.id).transcript.items.length).toBe(before)
+    app.manager.stopAll()
+  })
+
   it('worktree préparé (fiche 175) : fichier ignoré copié, premier message après la commande, échec dit à l’agent', async () => {
     const env = environment()
     const repo = realpathSync(env.workspaceA)

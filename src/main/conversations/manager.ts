@@ -45,7 +45,7 @@ import {
 import { AgentHost, type AgentHostOptions, type PromptOptions } from '../agent/agent-host'
 import { isDirectory } from '../agent/process-utils'
 import { folderNeededSnapshot, hasFolder, retiredSnapshot } from './agentless'
-import { folderGoneMessage, usableFolder } from './folder-fallback'
+import { folderGoneMessage, missingFolder, usableFolder } from './folder-fallback'
 import { settingsViewOf } from './settings-view'
 import { addAsideSession, agentSessions, checkAgentIn } from './agent-outside'
 import { SubagentWorks } from '../agent/subagent-works'
@@ -660,6 +660,8 @@ export class ConversationManager {
   ): Promise<void> {
     if (this.promptGate?.(id, text, attachments, options)) return
     const conversation = this.get(id)
+    const gone = missingFolder(conversation.record.workspace)
+    if (gone) throw new Error(t('conversations.error.folderMissing', { folder: gone }))
     // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
     const status = conversation.snapshot?.status
     if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)
