@@ -31,8 +31,8 @@ faire, puis donne la marche à suivre.
 
 4. [Worktrees](worktrees.md) : une conversation sur sa propre branche, sa préparation
    (`.worktreeinclude`, `.bobine/worktree.json`), le retour dans `main`.
-5. [Conversations filles et fusion](conversations-filles.md) : confier des tâches à d'autres
-   conversations, puis fusionner leur travail.
+5. [Travaux délégués et fusion](conversations-filles.md) : confier un travail à un rôle ou à un
+   autre agent, lire sa réponse, puis fusionner ses modifications.
 6. [Faire relire](faire-relire.md) : demander à un autre agent de relire le travail.
 7. [Suivi des PR et de la CI](suivi-pr-ci.md) : ouvrir une pull request et suivre ses contrôles.
 8. [Tâches planifiées](taches-planifiees.md) : lancer une consigne à heure fixe.

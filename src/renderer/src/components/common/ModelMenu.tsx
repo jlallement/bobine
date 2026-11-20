@@ -172,6 +172,17 @@ function ModelList({
   const searchable = control.options.length > MODEL_SEARCH_THRESHOLD
   const [query, setQuery] = useState('')
   const visible = useMemo(() => modelOptions(control, query), [control, query])
+  // Fournisseurs (préfixe du nom, `modelProvider`) d'un modèle refusé faute de connexion.
+  const refusedProviders = useMemo(
+    () =>
+      new Set(
+        control.options.flatMap((o) => {
+          const provider = o.authRequired ? modelProvider(o.name) : undefined
+          return provider ? [provider] : []
+        })
+      ),
+    [control.options]
+  )
   const current = String(control.currentValue)
   /** Place du modèle en cours dans une liste (la première option s'il n'y est pas). */
   const currentIn = (options: SessionControl['options']) =>
@@ -262,6 +273,10 @@ function ModelList({
         {visible.map((option, index) => {
           const group = option.group !== visible[index - 1]?.group ? option.group : undefined
           const provider = modelProvider(option.name)
+          // Même fournisseur qu'un modèle refusé faute de connexion (D31, fiche 266) : dit, sans
+          // l'affirmer — seul le nom donné par l'agent le dit, aucun modèle n'est sondé.
+          const sibling =
+            !option.authRequired && provider !== undefined && refusedProviders.has(provider)
           const selected = option.value === current
           return (
             <Fragment key={option.value}>
@@ -274,7 +289,7 @@ function ModelList({
                 id={id(index)}
                 role="option"
                 aria-selected={selected}
-                className={`menu-item model-option${option.authRequired ? ' model-auth-required' : ''}`}
+                className={`menu-item model-option${option.authRequired ? ' model-auth-required' : ''}${sibling ? ' model-auth-likely' : ''}`}
                 data-index={index}
                 data-highlighted={index === active ? '' : undefined}
                 onMouseMove={() => index !== active && setActive(index)}
@@ -282,7 +297,9 @@ function ModelList({
                 title={
                   option.authRequired
                     ? `${option.name} — ${t('modelMenu.authRequiredTip')}`
-                    : option.name
+                    : sibling
+                      ? `${option.name} — ${t('modelMenu.authLikelyTip')}`
+                      : option.name
                 }
                 data-testid={`control-${control.id}-${option.value}`}
               >
@@ -294,6 +311,11 @@ function ModelList({
                 {option.authRequired && (
                   <span className="model-auth-tag" data-testid="model-auth-required">
                     {t('modelMenu.authRequired')}
+                  </span>
+                )}
+                {sibling && (
+                  <span className="model-auth-tag likely" data-testid="model-auth-likely">
+                    {t('modelMenu.authLikely')}
                   </span>
                 )}
                 {provider && <span className="model-provider">{provider}</span>}

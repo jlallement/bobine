@@ -26,7 +26,7 @@ Here you can:
 | Cost | in Bobcoins, monthly quota shown | in dollars (0 with a free model), with tokens |
 | Context usage | not reported | shown |
 | [Multiple folders](plusieurs-dossiers.md) | not yet | yes (2.0.31 and later) |
-| Child conversation’s model | the agent chooses | yours to choose, or suggested by the parent |
+| Delegated task’s model | the agent chooses | yours to choose, or suggested by the agent |
 | Excluded files | `.gitignore`, `.bobignore` and `.env`: not offered with `@` | none |
 | Instruction files | `AGENTS.md`, `.bob/rules/` | `AGENTS.md` (up to the home folder) |
 | MCP servers | `.bob/mcp.json`, `~/.bob/settings/mcp.json` | `opencode.json` |

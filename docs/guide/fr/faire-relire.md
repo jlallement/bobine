@@ -20,7 +20,7 @@ Ici, vous pouvez :
 
 1. Ouvrez l'onglet **Modifications** (⇧⌘D).
 2. Cliquez sur l'icône **Faire relire…** (une loupe sur un cadre, dans la barre des vues).
-   Pour relire une fille depuis sa mère : vue **Filles**, la même icône sur sa ligne.
+   Pour relire un travail depuis la conversation qui l'a lancé : vue **Travaux**, la même icône sur sa ligne.
 3. Le dialogue dit ce qui sera relu :
    - dans un worktree, tout le travail de la branche (commits et modifications non commitées) ;
    - sinon, les modifications non commitées du dossier.
@@ -30,8 +30,8 @@ Ici, vous pouvez :
    sont proposés. Un autre agent, ou un autre modèle, donne un regard différent.
 6. Cliquez sur **Lancer la relecture** (ou ⌘↩).
 
-La relecture est une conversation de plus, « Relecture : … », rangée comme une fille : elle coûte
-comme telle, et compte dans le plafond des conversations filles. Son coût s'affiche sur sa carte et
+La relecture est une conversation de plus, « Relecture : … », rangée comme un travail : elle coûte
+comme tel, et compte dans le plafond des travaux en cours. Son coût s'affiche sur sa carte et
 sur sa ligne.
 
 On ne peut pas faire relire une conversation qui répond encore, une relecture, un brouillon ou une
@@ -53,8 +53,8 @@ son coût.
 
 Une remarque se modifie ou se supprime comme les vôtres.
 
-Une relecture lancée depuis la vue **Filles** de la mère pose sa carte et ses remarques dans la
-**fille** relue : ouvrez la fille pour les lire.
+Une relecture lancée depuis la vue **Travaux** pose sa carte et ses remarques dans le **travail**
+relu : ouvrez sa conversation pour les lire.
 
 <a id="envoyer"></a>
 

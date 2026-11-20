@@ -47,8 +47,8 @@
       "folder": "Dossiers"
     },
     "resumeSession": "Reprendre une session…",
-    "childOf": "Conversation fille de « {{title}} » : {{state}}",
-    "childTip": "Conversation fille de « {{title}} »",
+    "childOf": "Travail lancé par « {{title}} » : {{state}}",
+    "childTip": "Travail lancé par « {{title}} »",
     "resize": "Redimensionner la barre latérale",
     "yesterday": "hier",
     "activity": "Mon activité",
@@ -87,9 +87,9 @@
         "terminal_many": "{{count}} actions dans le terminal",
         "preview_many": "{{count}} actions sur les serveurs de dev",
         "ask_many": "{{count}} actions pour poser une question",
-        "children_one": "{{count}} action sur les conversations filles",
-        "children_many": "{{count}} actions sur les conversations filles",
-        "children_other": "{{count}} actions sur les conversations filles",
+        "children_one": "{{count}} action sur les travaux",
+        "children_many": "{{count}} actions sur les travaux",
+        "children_other": "{{count}} actions sur les travaux",
         "memory_one": "{{count}} action sur la mémoire",
         "memory_many": "{{count}} actions sur la mémoire",
         "memory_other": "{{count}} actions sur la mémoire",
@@ -587,6 +587,9 @@
       "discussions": "Discussions"
     },
     "estimate": "≈ {{cost}}",
+    "free": "gratuit",
+    "costNotReported": "coût non communiqué",
+    "costNotReportedHint": "{{agent}} annonce un coût nul, mais le modèle ne se dit pas gratuit (abonnement, tarif inconnu de l’agent) : Bobine ne sait pas ce qui est facturé. Le plafond de coût ne peut pas se déclencher sur ce montant.",
     "costEstimate": "Coût de la conversation (estimation)",
     "costHint": "Montant annoncé par {{agent}} d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).",
     "capTokensValue": "{{tokens}} jetons, cache compris"
@@ -844,7 +847,7 @@
       "noLiveAgent": "Aucun agent actif pour cette conversation",
       "emptyTitle": "Titre vide",
       "busyArchive": "L’agent répond encore : arrêtez-le avant d’archiver la conversation",
-      "busyArchiveChild": "« {{title}} », une conversation fille, répond encore : arrêtez-la avant d’archiver sa mère",
+      "busyArchiveChild": "« {{title}} », un de ses travaux, est encore en cours : arrêtez-le avant d’archiver la conversation qui l’a lancé",
       "unknown": "Conversation inconnue : {{id}}",
       "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse"
     },
@@ -902,7 +905,7 @@
   "conversationTitle": {
     "label": "Titre de la conversation",
     "from": "↳ depuis « {{title}} »",
-    "fromTitle": "Afficher la conversation mère",
+    "fromTitle": "Afficher la conversation qui l’a lancé",
     "branchFrom": "↳ branche de « {{title}} »",
     "branchFromTitle": "Afficher la conversation d’origine"
   },
@@ -933,17 +936,17 @@
     "fromAgent": "Supprimer aussi chez {{agent}} <muted>(définitif : la conversation ne pourra plus être reprise)</muted>",
     "worktree": "Supprimer aussi le worktree et la branche <code>{{branch}}</code>",
     "losses": "— perdus : {{losses}}",
-    "children_one": "Supprimer aussi sa conversation fille",
-    "children_other": "Supprimer aussi ses {{count}} conversations filles",
-    "children_many": "Supprimer aussi ses {{count}} conversations filles",
+    "children_one": "Supprimer aussi son travail",
+    "children_other": "Supprimer aussi ses {{count}} travaux",
+    "children_many": "Supprimer aussi ses {{count}} travaux",
     "childBusy": "au travail",
-    "childBusyStop": "au travail, sera arrêtée",
-    "childrenDelete_one": "Elle va aussi à la corbeille. Son worktree est gardé.",
-    "childrenDelete_other": "Elles vont aussi à la corbeille. Leurs worktrees sont gardés.",
-    "childrenDelete_many": "Elles vont aussi à la corbeille. Leurs worktrees sont gardés.",
-    "childrenKeep_one": "Elle deviendra une conversation ordinaire ; son fil le dira.",
-    "childrenKeep_other": "Elles deviendront des conversations ordinaires ; leur fil le dira.",
-    "childrenKeep_many": "Elles deviendront des conversations ordinaires ; leur fil le dira.",
+    "childBusyStop": "au travail, sera arrêté",
+    "childrenDelete_one": "Il va aussi à la corbeille. Son worktree est gardé.",
+    "childrenDelete_other": "Ils vont aussi à la corbeille. Leurs worktrees sont gardés.",
+    "childrenDelete_many": "Ils vont aussi à la corbeille. Leurs worktrees sont gardés.",
+    "childrenKeep_one": "Il deviendra une conversation ordinaire ; son fil le dira.",
+    "childrenKeep_other": "Ils deviendront des conversations ordinaires ; leur fil le dira.",
+    "childrenKeep_many": "Ils deviendront des conversations ordinaires ; leur fil le dira.",
     "fromAgents": "Supprimer aussi chez {{agent}} <muted>(définitif : ces conversations ne pourront plus être reprises)</muted>",
     "fromAgentKeeping_one": "{{agents}} ne sait pas supprimer une session : celles de ses conversations y restent.",
     "fromAgentKeeping_other": "{{agents}} ne savent pas supprimer une session : celles de leurs conversations y restent.",
@@ -953,7 +956,9 @@
     "search": "Rechercher un modèle…",
     "none": "Aucun modèle trouvé",
     "authRequired": "connexion à faire",
-    "authRequiredTip": "Refusé faute de connexion à son fournisseur : choisissable, mais connectez-vous d’abord."
+    "authRequiredTip": "Refusé faute de connexion à son fournisseur : choisissable, mais connectez-vous d’abord.",
+    "authLikely": "connexion sans doute à faire",
+    "authLikelyTip": "Un autre modèle de ce fournisseur a été refusé faute de connexion : celui-ci le sera sans doute aussi."
   },
   "agentMenu": {
     "tip": "Agent : {{agent}}",
@@ -1187,7 +1192,7 @@
         "execute": "Exécution",
         "plan": "Plan"
       },
-      "children": "Sous-tâches",
+      "children": "Travaux délégués",
       "maxLive": {
         "label": "Conversations gardées actives",
         "hint": "Au-delà, les plus anciennes sont mises en veille, puis rechargées à votre retour.",
@@ -1195,14 +1200,14 @@
         "more": "Garder plus de conversations actives"
       },
       "maxChildren": {
-        "label": "Conversations filles en cours",
+        "label": "Travaux en cours",
         "hint": "Par conversation. Au-delà, « Lancer en parallèle… » est grisé.",
         "less": "Moins",
         "more": "Plus"
       },
       "childProposals": {
-        "label": "Proposer des conversations filles",
-        "hint": "L’agent peut proposer des conversations filles ; rien ne démarre sans votre accord.",
+        "label": "Proposer des travaux",
+        "hint": "L’agent peut proposer de confier des travaux ; rien ne démarre sans votre accord.",
         "never": "Jamais",
         "whenFitting": "Quand ça s’y prête",
         "always": "Toujours demander"
@@ -1755,8 +1760,8 @@
     "android": "sdk adb android studio",
     "about": "application nouveautés",
     "log": "journal log logs trace débogage détaillé main.log agents.log console finder ouvrir",
-    "maxChildren": "plafond limite nombre maximum conversations filles parallèle sous-tâches lancer en parallèle",
-    "childProposals": "proposer conversations filles sous-tâches découper chantiers parallèle worktree agent contexte",
+    "maxChildren": "plafond limite nombre maximum travaux délégués parallèle lancer en parallèle conversations filles sous-tâches",
+    "childProposals": "proposer travaux délégués découper chantiers parallèle worktree agent contexte conversations filles sous-tâches",
     "maxLive": "conversations actives ouvertes agents vivants mémoire ram rechargement recharger plafond limite nombre maximum",
     "providers": "fournisseur modèle llmaas openai compatible point d’accès interne entreprise opencode",
     "network": "réseau entreprise proxy certificat https_proxy no_proxy node_extra_ca_certs",
@@ -1774,7 +1779,7 @@
     "codeLigatures": "ligatures != ≠ flèche => police code jetbrains fira",
     "whenDone": "notifications dock bannière fini attend",
     "sound": "son alerte bip",
-    "children": "sous-tâches conversations filles parallèle",
+    "children": "travaux délégués parallèle conversations filles sous-tâches",
     "allowed": "permissions autorisations autorisés autorisées outils sites commandes toujours révoquer dossier",
     "browser": "navigateur intégré cookies connexions données",
     "backupTitle": "historique sauvegarde copie",
@@ -2133,7 +2138,7 @@
     "view": {
       "conversation": "Conversation",
       "git": "Git",
-      "children": "Filles"
+      "children": "Travaux"
     },
     "refresh": "Actualiser",
     "empty": {
@@ -2472,7 +2477,7 @@
       "mode": "Voir ou changer le mode (agent, plan…)",
       "init": "Créer ou compléter AGENTS.md pour ce projet",
       "review": "Revue des modifications en cours",
-      "split": "Découper le message en conversations filles, une par chantier",
+      "split": "Découper le message en travaux, un par chantier",
       "help": "Liste des commandes",
       "agentCompact": "Résumer la conversation pour libérer du contexte (commande de {{agent}} ; /compact y mène aussi)",
       "btw": "Aparté : une question à côté, répondue hors du fil"
@@ -2699,17 +2704,17 @@
       "default": "Pose une question :"
     },
     "start_child": {
-      "value": "Lance une conversation fille : {{value}}",
-      "default": "Lance une conversation fille"
+      "value": "Lance un travail : {{value}}",
+      "default": "Lance un travail"
     },
     "message_child": {
-      "value": "Écrit à une conversation fille : {{value}}",
+      "value": "Écrit à un travail : {{value}}",
       "to": "Écrit à « {{title}} » : {{value}}",
-      "default": "Écrit à une conversation fille"
+      "default": "Écrit à un travail"
     },
     "child_status": {
       "one": "Regarde où en est « {{value}} »",
-      "default": "Regarde où en sont les conversations filles"
+      "default": "Regarde où en sont ses travaux"
     },
     "recommend_merge": {
       "ready": "Recommande de fusionner « {{value}} »",
@@ -2717,8 +2722,8 @@
       "default": "Donne son avis sur une fusion"
     },
     "message_parent": {
-      "value": "Écrit à la conversation mère : {{value}}",
-      "default": "Écrit à la conversation mère"
+      "value": "Écrit à la conversation qui l’a lancé : {{value}}",
+      "default": "Écrit à la conversation qui l’a lancé"
     },
     "report_findings": {
       "count_one": "Rend {{count}} remarque de relecture",
@@ -2776,10 +2781,10 @@
       "approval": "Accord avant de compiler"
     },
     "children": {
-      "title": "Conversations filles",
-      "summary": "Lancer d’autres agents en parallèle, chacun dans son worktree git, leur écrire et suivre leur état ; une fille écrit à sa mère. Une relecture rend ses remarques.",
+      "title": "Travaux délégués",
+      "summary": "Confier des travaux à d’autres agents en parallèle, chacun dans son worktree git, leur écrire et suivre leur état ; un travail écrit à la conversation qui l’a lancé. Une relecture rend ses remarques.",
       "condition": "Dossier dans un dépôt git",
-      "approval": "Accord pour chaque fille"
+      "approval": "Accord pour chaque travail"
     },
     "memory": {
       "title": "Mémoire",
@@ -2955,16 +2960,16 @@
     "question": "Question de l’agent",
     "branch": "Branche de « {{title}} » ({{n}} fichier(s) remis en état)",
     "summary": "Résumé de l’échange",
-    "childStarted": "Conversation fille lancée : « {{title}} »",
-    "childReport": "Compte rendu de « {{title}} » : {{files}}",
-    "childRecommended": "La mère recommande de fusionner « {{title}} »",
-    "childNotRecommended": "La mère ne recommande pas encore de fusionner « {{title}} »",
+    "childStarted": "Travail lancé : « {{title}} »",
+    "childReport": "Réponse de « {{title}} » : {{files}}",
+    "childRecommended": "L’agent recommande de fusionner « {{title}} »",
+    "childNotRecommended": "L’agent ne recommande pas encore de fusionner « {{title}} »",
     "handover": "Suite avec {{agent}}",
     "worktreeStart": "Worktree parti de {{branch}} au commit {{hash}}",
     "worktreeStartDetached": "Worktree parti du commit {{hash}}",
-    "childrenMerge_one": "Fusion des conversations filles dans {{base}} : {{count}} fusionnée",
-    "childrenMerge_other": "Fusion des conversations filles dans {{base}} : {{count}} fusionnées",
-    "childrenMerge_many": "Fusion des conversations filles dans {{base}} : {{count}} fusionnées"
+    "childrenMerge_one": "Fusion des travaux dans {{base}} : {{count}} fusionné",
+    "childrenMerge_other": "Fusion des travaux dans {{base}} : {{count}} fusionnés",
+    "childrenMerge_many": "Fusion des travaux dans {{base}} : {{count}} fusionnés"
   },
   "menu": {
     "about": "À propos de {{app}}",
@@ -3085,9 +3090,9 @@
       "request_one": "{{count}} conversation attend votre réponse",
       "request_many": "{{count}} conversations attendent votre réponse",
       "request_other": "{{count}} conversations attendent votre réponse",
-      "childrenDone_one": "{{count}} conversation fille a fini",
-      "childrenDone_many": "{{count}} conversations filles ont fini",
-      "childrenDone_other": "{{count}} conversations filles ont fini",
+      "childrenDone_one": "{{count}} travail a répondu",
+      "childrenDone_many": "{{count}} travaux ont répondu",
+      "childrenDone_other": "{{count}} travaux ont répondu",
       "done_one": "{{count}} conversation a fini",
       "done_many": "{{count}} conversations ont fini",
       "done_other": "{{count}} conversations ont fini",
@@ -3153,6 +3158,11 @@
     "noSessionTrust": "Pas de confiance ponctuelle possible ici",
     "notice": {
       "controlFailed": "Réglage « {{name}} » non appliqué ({{value}}) : {{error}}",
+      "controlFailedKept": "Réglage « {{name}} » non appliqué ({{value}}) : {{error}} Cette conversation garde {{current}}.",
+      "modelNotOffered": "Le modèle {{wanted}} n’est plus proposé par {{agent}} : cette conversation utilise {{current}}.",
+      "modelNotOfferedNone": "Le modèle {{wanted}} n’est plus proposé par {{agent}} : cette conversation utilise le modèle par défaut de l’agent.",
+      "controlNotOffered": "« {{name}} » : {{wanted}} n’est plus proposé par {{agent}} ; cette conversation utilise {{current}}.",
+      "controlNotOfferedNone": "« {{name}} » : {{wanted}} n’est plus proposé par {{agent}} ; cette conversation garde le réglage de l’agent.",
       "modeFailed": "Mode de départ non appliqué : {{error}}",
       "elicitationUnsupported": "Demande d’information de l’agent non prise en charge (« {{message}} ») : déclinée."
     },
@@ -3171,11 +3181,11 @@
       "backup": "Sauvegarde indisponible",
       "browser": "Navigateur indisponible",
       "pageCapture": "Capture de la page indisponible",
-      "children": "Les conversations filles ne sont pas disponibles ici.",
+      "children": "Les travaux délégués ne sont pas disponibles ici.",
       "providers": "Fournisseurs de modèles indisponibles.",
       "worktree": "Le cycle des worktrees n’est pas disponible.",
       "about": "Fenêtre À propos indisponible",
-      "childrenMerge": "La fusion des conversations filles n’est pas disponible.",
+      "childrenMerge": "La fusion des travaux n’est pas disponible.",
       "commandLine": "Commande bobine indisponible",
       "commandExists": "{{path}} existe déjà et n’a pas été installé par Bobine.",
       "freshStart": "Recommencer à neuf indisponible",
@@ -3268,8 +3278,8 @@
       "detail": "Quand {{agent}} rouvre une conversation, il ne joint plus le diff d’une modification si le fichier a changé depuis : l’app le refait depuis le patch que l’outil a gardé (`rawOutput.metadata.files`), pour que l’onglet Modifications reste complet."
     },
     "childModel": {
-      "label": "Modèle des conversations filles",
-      "detail": "La conversation mère peut suggérer un modèle de {{agent}} pour une fille, avec sa raison ; vous le confirmez ou le changez avant le lancement."
+      "label": "Modèle d’un travail",
+      "detail": "L’agent peut suggérer un modèle de {{agent}} pour un travail, avec sa raison ; vous le confirmez ou le changez avant le lancement."
     },
     "hiddenEmptySessions": {
       "label": "Sessions vides masquées",
@@ -3541,21 +3551,21 @@
   },
   "children": {
     "recommendation": {
-      "ready": "Recommandée",
-      "notReady": "Pas encore prête",
+      "ready": "Recommandé",
+      "notReady": "Pas encore prêt",
       "stale": "À revoir",
-      "staleHint": "La fille a refait un tour depuis cette recommandation.",
-      "itemReady": "La mère recommande de fusionner « {{title}} »",
-      "itemNotReady": "La mère ne recommande pas encore de fusionner « {{title}} »"
+      "staleHint": "Le travail a refait un tour depuis cette recommandation.",
+      "itemReady": "L’agent recommande de fusionner « {{title}} »",
+      "itemNotReady": "L’agent ne recommande pas encore de fusionner « {{title}} »"
     },
     "preparing": "Création du worktree…",
     "openState": "Ouvrir « {{title}} » : {{state}}",
     "instructionFor": "Consigne pour « {{title}} »",
     "dialog": {
       "title": "Lancer en parallèle",
-      "description": "Une conversation fille travaille de son côté, dans son propre worktree, sur une nouvelle branche. À chaque fin de tour, elle rend compte à « {{title}} ».",
+      "description": "Un travail se fait de son côté, dans son propre worktree, sur une nouvelle branche. À la fin de chacun de ses tours, sa réponse revient à « {{title}} ».",
       "prompt": "Consigne",
-      "placeholder": "Ce que la conversation fille doit faire…",
+      "placeholder": "Ce que ce travail doit faire…",
       "agent": "Agent",
       "model": "Modèle",
       "modelOther": "Le dernier modèle choisi avec cet agent.",
@@ -3563,67 +3573,67 @@
       "launch": "Lancer",
       "launching": "Lancement…"
     },
-    "notRepo": "Le dossier de cette conversation n’est pas dans un dépôt git : une conversation fille travaille dans un worktree.",
-    "started": "Conversation fille lancée : « {{title}} »",
+    "notRepo": "Le dossier de cette conversation n’est pas dans un dépôt git : un travail délégué se fait dans un worktree.",
+    "started": "Travail lancé : « {{title}} »",
     "card": {
-      "title": "Sous-tâches",
+      "title": "Travaux",
       "running_one": "{{count}} en cours",
       "running_many": "{{count}} en cours",
       "running_other": "{{count}} en cours",
       "waiting_one": "{{count}} attend un accord",
       "waiting_many": "{{count}} attendent un accord",
       "waiting_other": "{{count}} attendent un accord",
-      "done_one": "{{count}} terminée",
-      "done_many": "{{count}} terminées",
-      "done_other": "{{count}} terminées",
-      "stopped_one": "{{count}} arrêtée",
-      "stopped_many": "{{count}} arrêtées",
-      "stopped_other": "{{count}} arrêtées",
+      "done_one": "{{count}} a répondu",
+      "done_many": "{{count}} ont répondu",
+      "done_other": "{{count}} ont répondu",
+      "stopped_one": "{{count}} arrêté",
+      "stopped_many": "{{count}} arrêtés",
+      "stopped_other": "{{count}} arrêtés",
       "error_one": "{{count}} en erreur",
       "error_many": "{{count}} en erreur",
       "error_other": "{{count}} en erreur"
     },
     "cost": {
       "tokens": "{{tokens}} jetons",
-      "title": "Consommation de cette conversation fille",
-      "total": "Coût total des conversations filles de cette carte"
+      "title": "Consommation de ce travail",
+      "total": "Coût total des travaux de cette carte"
     },
     "state": {
       "running": "En cours",
       "waiting": "Attend un accord",
-      "unread": "Finie, à lire",
-      "stopped": "Arrêtée",
-      "error": "Erreur",
-      "done": "Finie"
+      "unread": "A répondu, à lire",
+      "stopped": "Arrêté",
+      "error": "En erreur",
+      "done": "A répondu"
     },
     "open": "Ouvrir",
     "files_one": "{{count}} fichier",
     "files_many": "{{count}} fichiers",
     "files_other": "{{count}} fichiers",
     "report": {
-      "done": "« {{title}} » a fini son tour",
-      "stopped": "« {{title}} » a été arrêtée",
-      "error": "« {{title}} » s’est arrêtée sur une erreur",
+      "done": "« {{title}} » a répondu",
+      "stopped": "« {{title}} » a été arrêté",
+      "error": "« {{title}} » est en erreur",
       "noFiles": "rien modifié",
       "expand": "Afficher le détail",
       "collapse": "Masquer le détail",
       "pending": "Partira à l’agent avec votre prochain message.",
       "gone": "Conversation supprimée",
-      "pendingWake": "Partira à l’agent quand ses conversations filles auront toutes fini.",
+      "pendingWake": "Partira à l’agent quand ses travaux auront tous répondu.",
       "turns_one": "{{count}} échange",
       "turns_many": "{{count}} échanges",
       "turns_other": "{{count}} échanges",
-      "usage": "Consommation de la conversation fille à ce compte rendu"
+      "usage": "Consommation du travail à cette réponse"
     },
     "error": {
-      "emptyPrompt": "Écrivez une consigne pour la conversation fille.",
-      "draft": "Écrivez d’abord dans cette conversation : une conversation fille se rattache à une conversation de l’historique.",
-      "modelNotAllowed": "Cet agent ne permet pas de choisir le modèle d’une conversation fille : elle prend le sien.",
-      "oneLevel": "Une conversation fille ne lance pas de conversation fille : il n’y a qu’un niveau.",
+      "emptyPrompt": "Écrivez une consigne pour ce travail.",
+      "draft": "Écrivez d’abord dans cette conversation : un travail se rattache à une conversation de l’historique.",
+      "modelNotAllowed": "Cet agent ne permet pas de choisir le modèle d’un travail : il prend le sien.",
+      "oneLevel": "Un travail ne lance pas d’autre travail : il n’y a qu’un niveau.",
       "archived": "Désarchivez d’abord cette conversation.",
-      "needsAction": "Son agent attend une action de votre part (connexion, dossier à approuver) : ouvrez la conversation fille.",
+      "needsAction": "Son agent attend une action de votre part (connexion, dossier à approuver) : ouvrez sa conversation.",
       "agentFailed": "Son agent n’a pas démarré : {{detail}}",
-      "noStartChild": "Pas de conversation fille possible ici : il faut un dossier dans un dépôt git, une conversation qui n’est pas elle-même une fille, et la famille d’outils « Conversations filles » active (Réglages › Serveurs MCP).",
+      "noStartChild": "Pas de travail délégué possible ici : il faut un dossier dans un dépôt git, une conversation qui n’est pas elle-même un travail, et la famille d’outils « Travaux délégués » active (Réglages › Serveurs MCP).",
       "uncommitted_one": "Ce dossier a {{count}} modification non commitée : choisissez « Committer d’abord » ou « Partir sans elles » dans « Changer… ».",
       "uncommitted_many": "Ce dossier a {{count}} modifications non commitées : choisissez « Committer d’abord » ou « Partir sans elles » dans « Changer… ».",
       "uncommitted_other": "Ce dossier a {{count}} modifications non commitées : choisissez « Committer d’abord » ou « Partir sans elles » dans « Changer… »."
@@ -3631,29 +3641,29 @@
     "notice": {
       "promptFailed": "La consigne n’a pas pu partir ({{error}}). La voici, à renvoyer : {{prompt}}",
       "messageFailed": "Le message d’une autre conversation n’a pas pu partir ({{error}}).",
-      "motherDeleted": "Conversation mère « {{title}} » supprimée : cette conversation continue seule, ses comptes rendus restent ici."
+      "motherDeleted": "La conversation qui l’a lancé, « {{title}} », a été supprimée : cette conversation continue seule, ses réponses restent ici."
     },
-    "startedByAgent": "L’agent a lancé la conversation fille « {{title}} »",
-    "limit_one": "{{count}} conversation fille est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
-    "limit_many": "{{count}} conversations filles sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
-    "limit_other": "{{count}} conversations filles sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
+    "startedByAgent": "L’agent a lancé le travail « {{title}} »",
+    "limit_one": "{{count}} travail est déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
+    "limit_many": "{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
+    "limit_other": "{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
     "proposals": {
-      "title_one": "{{count}} tâche proposée",
-      "title_many": "{{count}} tâches proposées",
-      "title_other": "{{count}} tâches proposées",
-      "worktree": "L’agent propose de confier ce travail à des conversations filles, chacune dans son propre worktree. Vous pouvez aussi lui demander de le faire ici.",
-      "started_one": "{{count}} lancée",
-      "started_many": "{{count}} lancées",
-      "started_other": "{{count}} lancées",
-      "here_one": "{{count}} faite ici",
-      "here_many": "{{count}} faites ici",
-      "here_other": "{{count}} faites ici",
-      "refused_one": "{{count}} refusée",
-      "refused_many": "{{count}} refusées",
-      "refused_other": "{{count}} refusées",
-      "expired_one": "{{count}} expirée",
-      "expired_many": "{{count}} expirées",
-      "expired_other": "{{count}} expirées",
+      "title_one": "{{count}} travail proposé",
+      "title_many": "{{count}} travaux proposés",
+      "title_other": "{{count}} travaux proposés",
+      "worktree": "L’agent propose de confier ce travail, chaque part dans son propre worktree. Vous pouvez aussi lui demander de le faire ici.",
+      "started_one": "{{count}} lancé",
+      "started_many": "{{count}} lancés",
+      "started_other": "{{count}} lancés",
+      "here_one": "{{count}} fait ici",
+      "here_many": "{{count}} faits ici",
+      "here_other": "{{count}} faits ici",
+      "refused_one": "{{count}} refusé",
+      "refused_many": "{{count}} refusés",
+      "refused_other": "{{count}} refusés",
+      "expired_one": "{{count}} expiré",
+      "expired_many": "{{count}} expirés",
+      "expired_other": "{{count}} expirés",
       "pending_one": "{{count}} en attente",
       "pending_many": "{{count}} en attente",
       "pending_other": "{{count}} en attente",
@@ -3662,32 +3672,32 @@
       "refuse": "Refuser",
       "options": "Agent et modèle",
       "hint": "↑ ↓ pour choisir une ligne, Entrée pour la lancer",
-      "expiredHint": "L’agent a redémarré entre-temps : « Lancer » ouvre la conversation fille comme « Lancer en parallèle… », sans réveil de l’agent.",
-      "loadingChoice": "Lecture de la suggestion de la mère…",
-      "proposed": "Suggéré par la mère, à confirmer : {{choice}}",
+      "expiredHint": "L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.",
+      "loadingChoice": "Lecture de la suggestion de l’agent…",
+      "proposed": "Suggéré par l’agent, à confirmer : {{choice}}",
       "state": {
-        "start": "Lancée",
-        "here": "Faite ici",
-        "refuse": "Refusée",
-        "expired": "Expirée"
+        "start": "Lancé",
+        "here": "Fait ici",
+        "refuse": "Refusé",
+        "expired": "Expiré"
       }
     },
     "from": {
-      "parent": "De la conversation mère « {{title}} »",
-      "child": "De la conversation fille « {{title}} »",
-      "wake": "Tous les travaux ont fini : l’agent reprend avec leurs réponses.",
+      "parent": "De la conversation qui l’a lancé, « {{title}} »",
+      "child": "Du travail « {{title}} »",
+      "wake": "Tous les travaux ont répondu : l’agent reprend avec leurs réponses.",
       "merge": "Consigne de la fusion lancée depuis « {{title}} »"
     },
     "leftBehind": {
       "tag_one": "Sans {{count}} modification non commitée",
       "tag_many": "Sans {{count}} modifications non commitées",
       "tag_other": "Sans {{count}} modifications non commitées",
-      "line_one": "Partie du commit <code>{{commit}}</code> sans la modification non commitée de ce dossier : son travail ne l’a pas vue.",
-      "line_many": "Partie du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.",
-      "line_other": "Partie du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.",
-      "tagHint_one": "Partie du commit {{commit}} : la modification non commitée de ce dossier n’était pas dans son worktree.",
-      "tagHint_many": "Partie du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree.",
-      "tagHint_other": "Partie du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree."
+      "line_one": "Parti du commit <code>{{commit}}</code> sans la modification non commitée de ce dossier : son travail ne l’a pas vue.",
+      "line_many": "Parti du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.",
+      "line_other": "Parti du commit <code>{{commit}}</code> sans les {{count}} modifications non commitées de ce dossier : son travail ne les a pas vues.",
+      "tagHint_one": "Parti du commit {{commit}} : la modification non commitée de ce dossier n’était pas dans son worktree.",
+      "tagHint_many": "Parti du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree.",
+      "tagHint_other": "Parti du commit {{commit}} : les {{count}} modifications non commitées de ce dossier n’étaient pas dans son worktree."
     }
   },
   "providers": {
@@ -3923,37 +3933,37 @@
   },
   "childrenMerge": {
     "recommended": {
-      "action_one": "Fusionner la recommandée dans {{base}}",
-      "action_other": "Fusionner les {{count}} recommandées dans {{base}}",
-      "action_many": "Fusionner les {{count}} recommandées dans {{base}}",
+      "action_one": "Fusionner le recommandé dans {{base}}",
+      "action_other": "Fusionner les {{count}} recommandés dans {{base}}",
+      "action_many": "Fusionner les {{count}} recommandés dans {{base}}",
       "others_one": "Inclure l’autre…",
       "others_other": "Inclure les {{count}} autres…",
       "others_many": "Inclure les {{count}} autres…",
-      "confirm_one": "La mère ne recommande pas {{titles}}. Fusionner quand même ?",
-      "confirm_other": "La mère ne recommande pas {{titles}}. Fusionner quand même ?",
-      "confirm_many": "La mère ne recommande pas {{titles}}. Fusionner quand même ?",
+      "confirm_one": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
+      "confirm_other": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
+      "confirm_many": "L’agent ne recommande pas {{titles}}. Fusionner quand même ?",
       "confirmAction_one": "Fusionner les {{count}} quand même",
       "confirmAction_other": "Fusionner les {{count}} quand même",
       "confirmAction_many": "Fusionner les {{count}} quand même",
       "cancel": "Annuler",
-      "only_one": "La mère recommande {{titles}} ; l’autre attend son avis.",
-      "only_other": "La mère recommande {{titles}} ; les {{count}} autres attendent son avis.",
-      "only_many": "La mère recommande {{titles}} ; les {{count}} autres attendent son avis.",
-      "none": "La mère ne recommande encore aucune branche."
+      "only_one": "L’agent recommande {{titles}} ; l’autre attend son avis.",
+      "only_other": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
+      "only_many": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
+      "none": "L’agent ne recommande encore aucun travail."
     },
     "summary": {
-      "all_one": "La branche est finie.",
-      "all_other": "Les {{count}} branches sont finies.",
-      "all_many": "Les {{count}} branches sont finies.",
-      "disjoint_one": "La branche est finie.",
-      "disjoint_other": "Les {{count}} branches sont finies et ne touchent pas les mêmes fichiers.",
-      "disjoint_many": "Les {{count}} branches sont finies et ne touchent pas les mêmes fichiers.",
-      "some_one": "{{count}} branche finie ; {{first}}.",
-      "some_other": "{{count}} branches finies ; {{first}}.",
-      "some_many": "{{count}} branches finies ; {{first}}.",
-      "someTwo_one": "{{count}} branche finie ; {{first}}, {{second}}.",
-      "someTwo_other": "{{count}} branches finies ; {{first}}, {{second}}.",
-      "someTwo_many": "{{count}} branches finies ; {{first}}, {{second}}.",
+      "all_one": "Le travail a répondu.",
+      "all_other": "Les {{count}} travaux ont répondu.",
+      "all_many": "Les {{count}} travaux ont répondu.",
+      "disjoint_one": "Le travail a répondu.",
+      "disjoint_other": "Les {{count}} travaux ont répondu et ne touchent pas les mêmes fichiers.",
+      "disjoint_many": "Les {{count}} travaux ont répondu et ne touchent pas les mêmes fichiers.",
+      "some_one": "{{count}} travail a répondu ; {{first}}.",
+      "some_other": "{{count}} travaux ont répondu ; {{first}}.",
+      "some_many": "{{count}} travaux ont répondu ; {{first}}.",
+      "someTwo_one": "{{count}} travail a répondu ; {{first}}, {{second}}.",
+      "someTwo_other": "{{count}} travaux ont répondu ; {{first}}, {{second}}.",
+      "someTwo_many": "{{count}} travaux ont répondu ; {{first}}, {{second}}.",
       "working_one": "{{titles}} travaille encore",
       "working_other": "{{titles}} travaillent encore",
       "working_many": "{{titles}} travaillent encore",
@@ -3971,28 +3981,28 @@
     "action_other": "Fusionner les {{count}} dans {{base}}",
     "action_many": "Fusionner les {{count}} dans {{base}}",
     "cleanup": "Puis nettoyer",
-    "cleanupHint": "Archiver chaque conversation fusionnée, puis supprimer son dossier de travail et sa branche",
+    "cleanupHint": "Archiver la conversation de chaque travail fusionné, puis supprimer son dossier de travail et sa branche",
     "stop": "Arrêter",
-    "progress_one": "Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faite. Au premier conflit, la fille concernée le résout, puis la fusion reprend.",
-    "progress_other": "Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faites. Au premier conflit, la fille concernée le résout, puis la fusion reprend.",
-    "progress_many": "Fusion dans {{base}}, l’une après l’autre : {{count}} sur {{total}} faites. Au premier conflit, la fille concernée le résout, puis la fusion reprend.",
+    "progress_one": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+    "progress_other": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
+    "progress_many": "Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.",
     "stopping": "Arrêt après la fusion en cours…",
     "result": {
-      "done_one": "{{count}} fusionnée dans {{base}} en {{duration}}.",
-      "done_other": "{{count}} fusionnées dans {{base}} en {{duration}}.",
-      "done_many": "{{count}} fusionnées dans {{base}} en {{duration}}.",
+      "done_one": "{{count}} fusionné dans {{base}} en {{duration}}.",
+      "done_other": "{{count}} fusionnés dans {{base}} en {{duration}}.",
+      "done_many": "{{count}} fusionnés dans {{base}} en {{duration}}.",
       "upToDate_one": "{{count}} déjà à jour.",
       "upToDate_other": "{{count}} déjà à jour.",
       "upToDate_many": "{{count}} déjà à jour.",
       "cleaned_one": "Conversation archivée, dossier de travail et branche supprimés.",
       "cleaned_other": "Conversations archivées, dossiers de travail et branches supprimés.",
       "cleaned_many": "Conversations archivées, dossiers de travail et branches supprimés.",
-      "stopped_one": "Fusion arrêtée : {{count}} fusionnée dans {{base}}, les autres restent en attente.",
-      "stopped_other": "Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.",
-      "stopped_many": "Fusion arrêtée : {{count}} fusionnées dans {{base}}, les autres restent en attente.",
-      "interrupted_one": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnée dans {{base}}.",
-      "interrupted_other": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnées dans {{base}}.",
-      "interrupted_many": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnées dans {{base}}.",
+      "stopped_one": "Fusion arrêtée : {{count}} fusionné dans {{base}}, les autres restent en attente.",
+      "stopped_other": "Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.",
+      "stopped_many": "Fusion arrêtée : {{count}} fusionnés dans {{base}}, les autres restent en attente.",
+      "interrupted_one": "Fusion interrompue par la fermeture de l’app : {{count}} fusionné dans {{base}}.",
+      "interrupted_other": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.",
+      "interrupted_many": "Fusion interrompue par la fermeture de l’app : {{count}} fusionnés dans {{base}}.",
       "conflict": "Fusion arrêtée sur {{title}} : il reste des conflits dans {{files}}.",
       "failed": "Fusion arrêtée sur {{title}} : {{error}}"
     },
@@ -4003,26 +4013,26 @@
       "pending": "en attente",
       "merging": "fusion en cours",
       "resolving": "l’agent résout le conflit",
-      "merged": "fusionnée",
+      "merged": "fusionné",
       "upToDate": "déjà à jour",
       "conflict": "conflit",
-      "dirty": "non commitée",
+      "dirty": "non commité",
       "failed": "échec",
-      "cleaned": "nettoyée"
+      "cleaned": "nettoyé"
     },
     "duration": {
       "seconds": "{{count}} s",
       "minutes": "{{minutes}} min {{seconds}} s"
     },
     "error": {
-      "running": "Une fusion des conversations filles est déjà en cours ici.",
-      "none": "Aucune conversation fille à fusionner.",
+      "running": "Une fusion des travaux est déjà en cours ici.",
+      "none": "Aucun travail à fusionner.",
       "gone": "Un travail a été supprimé, archivé ou n’est plus dans son dossier de travail : relisez la carte des travaux.",
       "prompt": "la consigne de résolution n’a pas pu partir ({{error}})",
       "mainDirty_one": "Le dossier principal a une modification non commitée ({{files}}) : committez-la ou mettez-la de côté avant de fusionner.",
       "mainDirty_other": "Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.",
       "mainDirty_many": "Le dossier principal a {{count}} modifications non commitées ({{files}}) : committez-les ou mettez-les de côté avant de fusionner.",
-      "busy": "« {{title}} » travaille encore ou attend un accord : attendez qu’il ait fini pour le fusionner.",
+      "busy": "« {{title}} » travaille encore ou attend un accord : attendez sa réponse pour le fusionner.",
       "cleanupSkipped": "Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.",
       "reviewing": "« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner."
     },
@@ -4104,10 +4114,10 @@
       "pageDialogPlain": "Boîte d’une page en attente",
       "requestPlain": "Attend votre réponse",
       "donePlain": "Réponse à lire",
-      "report": "Compte rendu à lire",
+      "report": "Réponse d’un travail à lire",
       "errorPlain": "Erreur de l’agent"
     },
-    "childOf": "fille de « {{title}} »",
+    "childOf": "lancé par « {{title}} »",
     "ago": {
       "now": "à l’instant",
       "minutes_one": "{{count}} min",
@@ -4234,6 +4244,7 @@
       "input": "Plafond de cette conversation",
       "tokensUnit": "jetons, cache compris",
       "fromSettings": "{{limit}} (réglages)",
+      "notReported": "Coût non communiqué par l’agent : ce plafond ne peut pas se déclencher.",
       "export": "Plafond atteint : {{limit}}",
       "held": "Votre message attend votre accord :",
       "heldSent": "Votre message est parti :",
@@ -4249,7 +4260,8 @@
       },
       "cap": {
         "label": "Plafond par conversation",
-        "hint": "Pour les nouvelles conversations : au-delà, Bobine interrompt la réponse à la fin de l’outil en cours et demande s’il faut continuer ; un nouveau message attend votre accord. Modifiable dans le détail de la consommation de chaque conversation."
+        "hint": "Pour les nouvelles conversations : au-delà, Bobine interrompt la réponse à la fin de l’outil en cours et demande s’il faut continuer ; un nouveau message attend votre accord. Modifiable dans le détail de la consommation de chaque conversation.",
+        "notReported": "Un agent qui annonce un coût nul pour un modèle payant (connexion par abonnement, par exemple) ne fait jamais monter la dépense : le plafond ne se déclenche pas. Sa consommation l’indique « coût non communiqué »."
       },
       "capAmount": {
         "label": "Montant",
@@ -4336,11 +4348,11 @@
       "terminal": "Terminal",
       "server": "Serveur de dev",
       "subagent": "Sous-agent",
-      "child": "Conversation fille"
+      "child": "Travail"
     },
     "stop": "Arrêter « {{label}} »",
     "openChild": "Ouvrir « {{label}} »",
-    "finished": "Terminées : {{count}}",
+    "finished": "Terminés : {{count}}",
     "noStop": "Bobine ne sait pas arrêter un sous-agent seul : l’arrêt du tour l’arrête.",
     "pr": "Pull request",
     "prTip": "Voir la PR dans la vue Git",
@@ -4543,7 +4555,7 @@
     "menu": {
       "title": "Rôles",
       "byDescription": "Rôles dont la description correspond",
-      "hint": "Votre demande partira dans une conversation fille",
+      "hint": "Votre demande partira dans sa propre conversation",
       "all_one": "Tous les rôles ({{count}})",
       "all_many": "Tous les rôles ({{count}})",
       "all_other": "Tous les rôles ({{count}})",
@@ -4555,7 +4567,7 @@
     },
     "invite": {
       "title": "Confiez ce travail à un rôle",
-      "text": "Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, au travail dans une conversation fille.",
+      "text": "Un expert sécu, un reviewer, un architecte… créé une fois, appelé avec @, qui travaille dans sa propre conversation.",
       "create": "Créer un rôle",
       "hide": "Ne plus montrer"
     },
@@ -4589,18 +4601,18 @@
     "state": {
       "running": "au travail",
       "waiting": "attend votre accord",
-      "unread": "a rendu son compte rendu",
-      "stopped": "a été arrêté",
-      "done": "a fini",
-      "error": "en échec"
+      "unread": "a répondu",
+      "stopped": "arrêté",
+      "done": "a répondu",
+      "error": "en erreur"
     },
     "report": {
-      "done": "{{role}} a rendu son compte rendu — {{title}}",
+      "done": "{{role}} a répondu — {{title}}",
       "stopped": "{{role}} a été arrêté — {{title}}",
-      "error": "{{role}} a échoué — {{title}}",
+      "error": "{{role}} est en erreur — {{title}}",
       "saveAsRole": "Enregistrer comme rôle…"
     },
-    "proposalsWhere": "L’agent propose de confier ce travail à des conversations filles : un rôle en lecture seule travaille dans ce dossier, les autres chacune dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
+    "proposalsWhere": "L’agent propose de confier ce travail : un rôle en lecture seule travaille dans ce dossier, les autres chacun dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
     "where": {
       "sameFolder": "dans ce dossier",
       "worktree": "son worktree"
@@ -4639,7 +4651,7 @@
       "reported_many": "Relecture par {{agent}} : {{count}} remarques",
       "reported_other": "Relecture par {{agent}} : {{count}} remarques",
       "none": "Relecture par {{agent}} : rien à signaler",
-      "silent": "Relecture par {{agent}} : finie sans remarques structurées, sa réponse est dans son fil",
+      "silent": "Relecture par {{agent}} : a répondu sans remarques structurées, sa réponse est dans sa conversation",
       "failed": "Relecture impossible : {{error}}",
       "changed": "Le dossier a changé pendant la relecture (relecteur, cette conversation ou vous) : vérifiez la vue Git ; les lignes citées ont pu bouger.",
       "scopeBranch": "Branche depuis {{base}}",
@@ -4841,7 +4853,6 @@
     "cut": "Réponse coupée à {{shown}} caractères sur {{total}} : la suite est dans sa conversation.",
     "noReply": "Pas de réponse écrite.",
     "stoppedLine": "Arrêté avant la fin de sa réponse.",
-    "free": "gratuit",
     "apply": "Demander à {{agent}} d’appliquer cette réponse",
     "applyMessage": "Applique la proposition de {{role}}.",
     "reply": "Répondre à {{role}}",
@@ -4860,7 +4871,7 @@
       "gone": "Ce travail n’existe plus, ou n’est plus rattaché à cette conversation."
     },
     "agentNote": "Message de {{agent}} · {{time}}",
-    "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous fini, ou avec votre prochain message",
+    "relayPendingWake": "Pas encore transmise à {{agent}} — elle le sera quand ses travaux auront tous répondu, ou avec votre prochain message",
     "otherAgent": "un autre {{agent}}",
     "review": "Faire relire",
     "reviewLabel": "Faire relire la branche de ce travail",
@@ -4885,7 +4896,7 @@
   },
   "workCue": {
     "replied": "a répondu",
-    "finished": "a fini",
+    "finished": "a répondu",
     "several_one": "{{count}} travail a répondu",
     "several_many": "{{count}} travaux ont répondu",
     "several_other": "{{count}} travaux ont répondu",
@@ -5332,13 +5343,13 @@
     },
     "prompt": {
       "label": "Consigne",
-      "hint": "Reçue par le rôle au début de chaque conversation fille, avant votre demande. Markdown accepté.",
+      "hint": "Reçue par le rôle au début de chacun de ses travaux, avant votre demande. Markdown accepté.",
       "placeholder": "Tu es… Pour chaque problème trouvé : où, pourquoi, quoi faire."
     },
     "tools": {
       "label": "Outils de Bobine",
       "all": "Tous ceux de la conversation",
-      "hint": "Les questions et le lien avec la conversation mère restent toujours."
+      "hint": "Les questions et le lien avec la conversation qui l’a lancé restent toujours."
     },
     "agent": {
       "label": "Agent",
@@ -5407,7 +5418,7 @@
     }
   },
   "rolesSettings": {
-    "intro": "Des agents spécialisés, appelés avec @ ou choisis par l’agent. Chacun travaille dans une conversation fille.",
+    "intro": "Des agents spécialisés, appelés avec @ ou choisis par l’agent. Chacun travaille dans sa propre conversation.",
     "new": "Nouveau rôle",
     "userAside": "tous vos projets",
     "builtinAside": "{{active}} sur {{total}} actifs",
@@ -5463,7 +5474,7 @@
       "user": "pour vous",
       "project": "ce projet"
     },
-    "projectNote": "Partagé par git : à committer. Absent des filles en arbre de travail tant qu’il n’est pas commité.",
+    "projectNote": "Partagé par git : à committer. Absent des travaux faits dans un worktree tant qu’il n’est pas commité.",
     "rights": "Droits dans {{agent}}",
     "backup": "Sauvegarde",
     "later": "Les changements suivants du rôle ne sont pas recopiés tout seuls : Bobine vous proposera « Mettre à jour ».",
@@ -5537,7 +5548,7 @@
     "empty": "Aucun rôle actif",
     "assign": "Confier un travail à {{label}}",
     "roleTip": "Rôle : {{label}}",
-    "notHere": "Une conversation fille ne confie pas de travail à un rôle : ouvrez sa conversation mère."
+    "notHere": "Un travail ne confie pas de travail à un rôle : ouvrez la conversation qui l’a lancé."
   },
   "roles": {
     "none": "aucun",
@@ -5579,9 +5590,9 @@
       "readOnlyRequested": "Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.",
       "folderChanged": "Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).",
       "childFolderChanged": "Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).",
-      "agentMissing": "Agent du rôle « {{agent}} » indisponible ici : la fille travaille avec l’agent de cette conversation.",
+      "agentMissing": "Agent du rôle « {{agent}} » indisponible ici : le travail se fait avec l’agent de cette conversation.",
       "modelMissing": "Modèle du rôle « {{model}} » impossible à choisir ici : l’agent prend son propre modèle.",
-      "modeMissing": "L’agent n’a pas le mode « {{mode}} » du rôle : la fille travaille dans le mode courant, avec la consigne du rôle.",
+      "modeMissing": "L’agent n’a pas le mode « {{mode}} » du rôle : le travail se fait dans le mode courant, avec la consigne du rôle.",
       "projectOverrides": "Le rôle « {{name}} » vient du projet et remplace un rôle fourni ou personnel du même nom.",
       "watchFailed": "La surveillance du dossier n’a pas pu se faire pour ce tour (git en échec ou trop lent) : vérifiez vous-même qu’aucun fichier n’a changé (git status).",
       "installedStale": {
@@ -6044,9 +6055,9 @@
       "waiting_one": "{{count}} attend votre accord",
       "waiting_other": "{{count}} attendent votre accord",
       "waiting_many": "{{count}} attendent votre accord",
-      "done_one": "{{count}} fini",
-      "done_other": "{{count}} finis",
-      "done_many": "{{count}} finis",
+      "done_one": "{{count}} a répondu",
+      "done_other": "{{count}} ont répondu",
+      "done_many": "{{count}} ont répondu",
       "stopped_one": "{{count}} arrêté",
       "stopped_other": "{{count}} arrêtés",
       "stopped_many": "{{count}} arrêtés",
@@ -6175,7 +6186,7 @@
     },
     "changes": "Voir les modifications",
     "relayPending": "Réponses pas encore transmises à {{agent}} — elles le seront avec votre prochain message",
-    "relayPendingWake": "Réponses pas encore transmises à {{agent}} — elles le seront quand ses travaux auront tous fini, ou avec votre prochain message",
+    "relayPendingWake": "Réponses pas encore transmises à {{agent}} — elles le seront quand ses travaux auront tous répondu, ou avec votre prochain message",
     "relayDone": "Réponses transmises à {{agent}}"
   },
   "workMerge": {

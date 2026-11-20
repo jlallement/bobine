@@ -128,7 +128,7 @@ describe('repère en bas du fil (fiche 261, écran E)', () => {
   it('deux travaux : « ↑ 2 travaux ont répondu », « Voir » mène au plus ancien, puis l’autre reste', () => {
     const { update } = show([target('ux', 2, 'working'), target('front', 3, 'working', 'Front')])
     update([target('ux', 2, 'working'), target('front', 3, 'finished', 'Front')])
-    expect(screen.getByTestId('work-cue-text').textContent).toBe('Front a fini')
+    expect(screen.getByTestId('work-cue-text').textContent).toBe('Front a répondu')
     update([target('ux', 2, 'replied'), target('front', 3, 'finished', 'Front')])
     expect(screen.getByTestId('work-cue-text').textContent).toBe('2 travaux ont répondu')
     expect(screen.queryByTestId('role-avatar')).toBeNull()

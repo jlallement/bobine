@@ -41,7 +41,7 @@ La conversation d'un coup d'œil :
   Bobine, autres serveurs MCP, agent, libre). C'est une estimation, sans aucun coût ;
 - **Modifications** : les fichiers modifiés (un clic ouvre la vue Git) ;
 - **Pull request**, quand il y en a une : voir [Suivi des PR](suivi-pr-ci.md) ;
-- **En cours** : terminaux, serveurs de dev, sous-agents, conversations filles, avec leur durée et
+- **En cours** : terminaux, serveurs de dev, sous-agents, travaux délégués, avec leur durée et
   un bouton pour les arrêter.
 
 <a id="modifications"></a>
@@ -54,8 +54,8 @@ L'onglet **Modifications** (⇧⌘D) a deux ou trois vues :
   leur diff. Chaque modification s'annule fichier par fichier.
 - **Git** : l'état du dépôt, pour [committer](worktrees.md#committer) et, dans un worktree,
   [ouvrir une PR ou fusionner](worktrees.md#vue-git) ;
-- **Filles**, dans une conversation mère : voir
-  [Conversations filles](conversations-filles.md#suivre).
+- **Travaux**, dans une conversation qui en a lancé : voir
+  [Travaux délégués](conversations-filles.md#suivre).
 
 **Remarques sur le diff.** Au survol d'une ligne du diff, **+** ajoute une remarque (⇧-clic pour
 une plage de lignes ; ⌘↩ pour l'ajouter). **Envoyer à l'agent** les envoie toutes en un message

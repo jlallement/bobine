@@ -27,8 +27,9 @@ import {
 import { childRows } from '@shared/children-rows'
 import type { TranscriptItem } from '@shared/transcript'
 import {
+  costText,
+  digestsFree,
   digestsTotal,
-  formatEstimate,
   formatTokens,
   processedTokens,
   type UsageDigest
@@ -298,7 +299,7 @@ export function useUsageText(): (usage: UsageDigest | undefined) => string | und
   // Mode présentation (fiche 159) : jetons seulement, aucun montant.
   const presenting = usePresentation()
   return (usage) => {
-    if (usage?.cost && !presenting) return formatEstimate(usage.cost)
+    if (usage?.cost && !presenting) return costText(usage.cost, usage.free === true)
     const tokens = usage && (usage.input !== undefined ? processedTokens(usage) : usage.total)
     if (tokens) return t('children.cost.tokens', { tokens: formatTokens(tokens, true) })
     return undefined
@@ -422,7 +423,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
             title={t('children.cost.total')}
             data-testid="subtasks-total"
           >
-            {formatEstimate(total)}
+            {costText(total, digestsFree(rows.map((r) => r.child.usage)))}
           </span>
         )}
       </div>

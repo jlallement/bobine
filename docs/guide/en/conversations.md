@@ -135,7 +135,7 @@ every agent:
 | `/mode [name]` | Show or change the mode (agent, plan…) |
 | `/init` | Create or complete `AGENTS.md` for this project |
 | `/review` | Review of the current changes, by the conversation’s agent |
-| `/split [message]` | Split the message into [child conversations](conversations-filles.md#taches-proposees) |
+| `/split [message]` | Split the message into [tasks](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aside](aparte.md): a question on the side, answered outside the conversation |
 | `/help` | List of commands |
 

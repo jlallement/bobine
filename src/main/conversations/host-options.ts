@@ -115,6 +115,13 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // lus à chaque ouverture de session, jamais figés à la création de l'hôte (fiche 256).
     initialControls: (session) =>
       openingControls(record, profile, settings.current.controls?.[profile.id], session),
+    // Modèles retenus (fiche 108) : l'avis d'un modèle plus proposé le nomme (fiche 266, D32).
+    knownOptionName: (controlId, value) => {
+      const seen = settings.current.models?.[profile.id]
+      return seen?.controlId === controlId
+        ? seen.options.find((o) => o.value === value)?.name
+        : undefined
+    },
     credentials: () => settings.credentials(profile),
     apiKeyInfo: () => settings.keyInfo(profile)[0],
     onAnnounced: (announcement) => {

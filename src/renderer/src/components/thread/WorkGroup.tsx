@@ -3,7 +3,7 @@ import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } 
 import { useTranslation } from 'react-i18next'
 import { childState, type ChildProposalItem, type ChildVerdict } from '@shared/children'
 import type { TranscriptItem } from '@shared/transcript'
-import { digestsTotal, formatEstimate } from '@shared/usage'
+import { costText, digestsFree, digestsTotal } from '@shared/usage'
 import { groupWorkIds, type WorkGroupData, type WorkGroupRow } from '@shared/work-groups'
 import { usePresentation } from '../../presentation'
 import { useChildActivity } from '../roles/RoleWork'
@@ -114,13 +114,10 @@ export function WorkGroup({
       if (row) starts.get(row.proposal.requestId)?.()
     }
   }
-  const total = digestsTotal(works.map((w) => workUsage(currentReport(w.card), w.child)))
-  const cost =
-    total && !presenting
-      ? total.amount === 0
-        ? t('workCard.free')
-        : formatEstimate(total)
-      : undefined
+  const digests = works.map((w) => workUsage(currentReport(w.card), w.child))
+  const total = digestsTotal(digests)
+  // Un coût par carte (fiche 266) : « gratuit » seulement si chaque travail l'est.
+  const cost = total && !presenting ? costText(total, digestsFree(digests)) : undefined
   const head = groupCounts(group, works, pending.length)
   return (
     <div

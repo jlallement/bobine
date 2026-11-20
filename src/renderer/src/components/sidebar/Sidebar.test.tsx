@@ -241,7 +241,7 @@ describe('titres au bord (fiche 131)', () => {
     expect(trunk('f3')).toMatch(/^M8 0 L8 10 Q/)
   })
 
-  it('fille arrêtée par ■ : « Arrêtée », pas de coche ; une conversation ordinaire arrêtée, rien (fiche 258)', async () => {
+  it('fille arrêtée par ■ : « Arrêté », pas de coche ; une conversation ordinaire arrêtée, rien (fiche 258)', async () => {
     render(
       sidebar([
         conversation('m'),
@@ -251,8 +251,8 @@ describe('titres au bord (fiche 131)', () => {
     )
     const stopped = document.querySelector('[data-id=f] .child-state')
     expect(stopped?.getAttribute('data-state')).toBe('stopped')
-    expect(stopped?.getAttribute('aria-label')).toBe('Arrêtée')
-    expect(await rowTip('f')).toContain(': Arrêtée')
+    expect(stopped?.getAttribute('aria-label')).toBe('Arrêté')
+    expect(await rowTip('f')).toContain(': Arrêté')
     expect(document.querySelector('[data-id=o] .child-state')).toBeNull()
   })
 
@@ -269,8 +269,8 @@ describe('titres au bord (fiche 131)', () => {
     expect(document.querySelector('[data-id=m] .row-meta .spin')).toBeTruthy()
     const done = document.querySelector('[data-id=f] .child-state')
     expect(done?.getAttribute('data-state')).toBe('done')
-    expect(done?.getAttribute('aria-label')).toBe('Finie')
-    expect(await rowTip('f')).toContain(': Finie')
+    expect(done?.getAttribute('aria-label')).toBe('A répondu')
+    expect(await rowTip('f')).toContain(': A répondu')
     expect(document.querySelector('[data-id=v] [data-testid=history-day]')?.textContent).not.toBe(
       ''
     )

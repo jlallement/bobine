@@ -20,7 +20,7 @@ Here you can:
 
 1. Open the **Changes** tab (⇧⌘D).
 2. Click the **Request review…** icon (a magnifying glass over a frame, in the view bar).
-   To review a child from its parent: **Children** view, the same icon on its row.
+   To review a task from the conversation that started it: **Tasks** view, the same icon on its row.
 3. The dialog says what will be reviewed:
    - in a worktree, all the work of the branch (commits and uncommitted changes);
    - otherwise, the folder’s uncommitted changes.
@@ -29,8 +29,8 @@ Here you can:
    are suggested. Another agent, or another model, gives a fresh pair of eyes.
 6. Click **Start review** (or ⌘↩).
 
-The review is one more conversation, “Review: …”, filed like a child: it costs like one, and counts
-toward the child conversation limit. Its cost shows on its card and on its row.
+The review is one more conversation, “Review: …”, filed like a task: it costs like one, and counts
+toward the running tasks limit. Its cost shows on its card and on its row.
 
 You can’t request a review of a conversation that is still responding, of a review, of a draft or
 of an archived conversation.
@@ -50,8 +50,8 @@ then the number of comments (with how many are high severity), its overall verdi
 
 You can edit or delete a comment just like your own.
 
-A review started from the parent’s **Children** view puts its card and comments in the reviewed
-**child**: open the child to read them.
+A review started from the **Tasks** view puts its card and comments in the reviewed **task**: open
+its conversation to read them.
 
 <a id="envoyer"></a>
 

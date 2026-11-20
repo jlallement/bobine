@@ -1,94 +1,103 @@
-# Child conversations and merging
+# Delegated tasks and merging
 
-A child conversation works on its own, in its own [worktree](worktrees.md), on a new branch. You
-start it from a “parent” conversation, or the agent proposes it when your request contains several
-independent tasks. At the end of each turn, the child reports to its parent. When the work is
-ready, you merge the branches in one go.
+A **task** is a request handed to a role from the Team, or to another agent, which does it on its
+own, in its own conversation, then sends back a **response**. You start one with `@role` in the
+message box, from the **…** menu (“Run in parallel…”), or the agent proposes it when your request
+contains several independent pieces of work. A task that writes code works in its own
+[worktree](worktrees.md), on a new branch; when it is ready, you merge it from its card.
 
-A child conversation is a real conversation: you can open it, write to it, stop it. It is not a
-subagent (the ones the agent starts itself have their own “Subagents” card).
+A task has its own real conversation: you can open it, write to it, stop it. It is not a subagent
+(the ones the agent starts itself stay in the stream of its tools).
 
-You need a folder in a git repository. There is only one level: a child can’t start a child.
+You need a folder in a git repository. There is only one level: a task can’t start another task.
 
 Here you can:
 
-- [start a child conversation](#lancer);
+- [start a task](#lancer);
 - [answer the tasks the agent proposes](#taches-proposees);
-- [follow the children](#suivre) from the parent;
-- [merge their work](#fusionner);
+- [follow the tasks](#suivre);
+- [merge their changes](#fusionner);
 - [set what the agent proposes](#reglages).
 
 <a id="lancer"></a>
 
-## Start a child conversation
+## Start a task
 
-1. In the conversation’s **…** menu (in its header, or on its row in the sidebar), choose
-   **Run in parallel…**.
-2. Write the **Instruction**: what the child should do.
-3. Choose the **Agent** (by default, the parent’s) and, when the agent allows it, the **Model**.
-   With IBM Bob, the agent picks its own model.
-4. Click **Start** (or ⌘↩).
+**With a role.** Type `@` in the message box and pick a role (see [Agents](agents.md)), then write
+your request. The line under the message box says where it will go: an advisory role reads this
+folder without changing anything; a role that writes starts from the last commit, on its own branch
+(**Choose…** offers other options). Return always sends.
 
-The child appears under its parent in the sidebar; the conversation on screen doesn’t change. Its
-header says where it comes from (↳ from “…”) and takes you back there in one click.
+**Without a role.** In the conversation’s **…** menu (in its header, or on its row in the sidebar),
+choose **Run in parallel…**, write the **Instruction**, choose the **Agent** and, when the agent
+allows it, the **Model**, then **Start** (or ⌘↩). With IBM Bob, the agent picks its own model.
 
-“Run in parallel…” is greyed out outside a git repository, or when the number of running children
-reaches the limit (see [Settings](#reglages)). It doesn’t exist in a child, a draft or an archived
+The task appears under the conversation that started it, in the sidebar; the conversation on screen
+doesn’t change. Its header says where it comes from and takes you back there in one click.
+
+“Run in parallel…” is greyed out outside a git repository, or when the number of running tasks
+reaches the limit (see [Settings](#reglages)). It doesn’t exist in a task, a draft or an archived
 conversation.
 
-A child’s worktree is prepared like any other, but doesn’t wait for your approval: see
+A task’s worktree is prepared like any other, but doesn’t wait for your approval: see
 [Prepare each new worktree](worktrees.md#accord).
 
 <a id="taches-proposees"></a>
 
 ## Answer the tasks the agent proposes
 
-When the agent decides part of the work can go to a child, it proposes it on a **Proposed tasks**
+When the agent decides part of the work can go on its own, it proposes it on an **N tasks proposed**
 card. Nothing starts without you. For each row:
 
-- **Start**: the child starts;
+- **Start**: the task starts;
 - **Do it here**: the agent does it itself, in the conversation;
 - **Refuse**: the agent won’t propose it again;
 - the **Agent and model** icon: change the agent or the model before starting.
 
-With the keyboard: ↑ ↓ to pick a row, ↩ to start it. Click a row’s title to read the full
-instruction.
+**Start all** starts every row still proposed. With the keyboard: ↑ ↓ to pick a row, ↩ to start it.
 
-The parent can suggest each child’s agent, and its model with OpenCode (never with IBM Bob), with
-its reason: “Suggested by the parent, to confirm”. Keep the suggestion or change it.
+The agent can suggest each task’s agent, and its model with OpenCode (never with IBM Bob), with its
+reason: “Suggested by the agent, to confirm”. Keep the suggestion or change it.
 
 **Expired**: the agent restarted before you answered. **Start** still works.
 
-**Ask for a split.** Start your message with `/split`: the agent proposes one child per
-independent task. For example:
-`/split Three tasks: the import, the export, the help page.`
+**Ask for a split.** Start your message with `/split`: the agent proposes one task per independent
+piece of work. For example:
+`/split Three pieces: the import, the export, the help page.`
 
 <a id="suivre"></a>
 
-## Follow the children from the parent
+## Follow the tasks
 
-**In the sidebar**, each child sits under its parent, with its state: **Running**,
-**Waiting for approval**, **Finished, unread**, **Error**, **Finished**. It appears as soon as its
-worktree is created.
+**In the conversation**, each task has **a single card**, in the same place for good: under your
+`@Role …` bubble, or where the tasks were proposed (a **group card** for several tasks started
+together). The card shows the live activity, then the full **response**, in Markdown, then its
+actions: **Ask <agent> to apply this response**, **Reply to <role>**, **Open its conversation**.
+The footer of each response gives its time, its duration and its cost.
 
-**In the parent conversation**:
+How a task ended shows on its card: **replied** (with the number of files for a task that writes),
+**stopped** or **failed**. When a task replies out of view, a marker at the bottom of the
+conversation says so (“↑ 2 tasks replied · Show”); **Show** scrolls to its card.
 
-- one line per start (“Child conversation started: …”), which expands to the exact instruction;
-  the same for each “Instruction for…” sent later;
-- the **Subtasks** card: one row per child, with its branch, its changed files, its cost, its
-  state and **Open**; the total cost at the top;
-- a **report** at the end of each child turn, collapsed to two lines (title and cost, then the
-  first sentence); expand it for the response, the branch, the files and the number of exchanges.
+**The cost**, once per card: an amount; **free** for a model that says it is free; **cost not
+reported** when the agent reports a zero cost for a paid model (a subscription sign-in, for
+example). Bobine never presents a paid model as free.
 
-**What the parent’s agent receives.** A child you started: its report goes with your next message.
-Children the agent started: it is woken once, when all of them have finished.
+**In the sidebar**, each task sits under the conversation that started it, with its state:
+**Running**, **Waiting for approval**, **Replied, unread**, **Replied**, **Stopped**, **Failed**.
+It appears as soon as its worktree is created.
 
-**Messages between parent and children.** The parent’s agent can write to its children, and they
-can write to it. These messages go through the queue and say where they come from (“From the
-parent conversation…”, “From the child conversation…”); one click opens the other conversation.
+**What the agent receives.** The card says so: “Not yet passed to <agent> — it will be with your
+next message”, then “Passed”. Tasks the agent started: it is woken once, when all of them have
+replied.
 
-**The Children view.** In the parent’s **Changes** tab, the **Children** view lists the children’s
-worktrees: state, branch, changed files, the parent’s recommendation. For each one:
+**Messages between conversations.** The agent can write to its tasks, and a task can write to the
+conversation that started it. These messages go through the queue and say where they come from
+(“From the conversation that started it…”, “From the task…”); one click opens the other
+conversation.
+
+**The Tasks view.** In the **Changes** tab, the **Tasks** view lists the tasks’ worktrees: state,
+branch, changed files, the agent’s recommendation. For each one:
 <!-- si: finder -->
 show it in Finder,
 <!-- si: !finder !explorer
@@ -97,67 +106,60 @@ show it in the file manager,
 <!-- si: explorer
 show it in File Explorer,
 -->
-open it in your editor, [request review](faire-relire.md) or **Open** its conversation.
+open it in your editor, [get a review](faire-relire.md) or **Open** its conversation.
 
-**With IBM Bob in Agent mode**, each write or command of a child asks for your approval in the
-child: it stays on “Waiting for approval” until you answer.
+**With IBM Bob in Agent mode**, each write or command of a task asks for your approval in its
+conversation: it stays on “Waiting for approval” until you answer.
 
 <a id="avis-de-la-mere"></a>
 
-## The parent’s recommendation
+## The agent’s recommendation
 
-The parent reads the reports, checks the work, sends its fixes back to the child, then says whether
-the branch is ready. On the child’s row:
+The agent reads the responses, checks the work, sends its fixes back, then says whether the branch
+is ready. On the task’s row:
 
 - **Recommended**: ready to merge;
 - **Not ready yet**;
-- **To review**: the child worked again since this recommendation.
+- **To review**: the task worked again since this recommendation.
 
 Hover to see the reason. You always do the merging.
 
 <a id="fusionner"></a>
 
-## Merge the children’s work
+## Merge the changes
 
-At the bottom of the **Subtasks** card, as soon as a finished child has commits to merge, a
-sentence says which ones are ready, which are still working, which touch the same files and which
-have uncommitted changes (commit them from their Git view: they are left out).
+A task that writes is merged **from its card**: **Merge into main**, after **View changes** and,
+if you like, **Get a review** (see [Request review](faire-relire.md)). A group card offers
+**Merge the N ready into main**; with a recommendation from the agent, **Merge the N recommended
+into main**, and **Include the M others…** for the others, after confirmation.
 
-To merge:
-
-1. Turn on **Then clean up** if you then want to archive each merged child and delete its worktree
-   and branch (off by default).
-2. Click the merge button:
-   - without a recommendation from the parent: **Merge the N into main**;
-   - with a recommendation: **Merge the N recommended into main**. To take the others too:
-     **Include the M others…**, then confirm.
+**Then clean up (archive, delete the branches)**: a checkbox, before the button. It archives the
+conversation of each merged task and deletes its worktree and branch.
 
 The branches go in one after the other, in the order they were started, with each row’s state
 live. **Stop** stops after the current merge.
 
-**A conflict.** The child concerned resolves it itself, then the merge resumes. If conflicts
+**A conflict.** The task concerned resolves it itself, then the merge resumes. If conflicts
 remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 
 **The main folder has uncommitted changes**: the merge doesn’t start. As with a worktree:
 **Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner).
 
-Nothing is pushed, and no PR is opened: for a PR, use the
-[child’s Git view](worktrees.md#pr).
+Nothing is pushed, and no PR is opened: for a PR, use the [task’s Git view](worktrees.md#pr).
 
-**Archive or delete the parent**: its children become ordinary conversations. Unarchived, it gets
-them back.
+**Archive or delete the conversation that started them**: its tasks become ordinary conversations.
+Unarchived, it gets them back.
 
 <a id="reglages"></a>
 
 ## Set what the agent proposes
 
-Settings › Conversations, **Subtasks** section:
+Settings › Conversations, **Delegated tasks** section:
 
-- **Propose child conversations**: **Never**, **When it fits** (default) or **Always ask**. This
-  setting tells the agent whether to propose children; in every case, each proposal goes through
-  the “Proposed tasks” card and waits for your approval.
-- **Running child conversations**: 1 to 10 per conversation (5 by default). Beyond that,
-  “Run in parallel…” is greyed out. Reviews count toward this number.
+- **Propose tasks**: **Never**, **When it fits** (default) or **Always ask**. This setting tells the
+  agent whether to propose tasks; in every case, each proposal goes through the proposed tasks card
+  and waits for your approval.
+- **Running tasks**: 1 to 10 per conversation (5 by default). Beyond that, “Run in parallel…” is
+  greyed out. Reviews count toward this number.
 
-Turn off the children’s tools in Settings › MCP servers › Bobine tools, **Child conversations**
-family.
+Turn off the tasks’ tools in Settings › MCP servers › Bobine tools, **Delegated tasks** family.

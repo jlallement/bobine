@@ -1,96 +1,107 @@
-# Conversations filles et fusion
+# Travaux délégués et fusion
 
-Une conversation fille travaille de son côté, dans son propre [worktree](worktrees.md), sur une
-nouvelle branche. Vous la lancez depuis une conversation « mère », ou l'agent vous la propose
-quand votre demande contient plusieurs chantiers indépendants. À chaque fin de tour, la fille rend
-compte à sa mère. Quand le travail est prêt, vous fusionnez les branches d'un geste.
+Un **travail** est une demande confiée à un rôle de l'Équipe, ou à un autre agent, qui la fait de
+son côté, dans sa propre conversation, puis rend une **réponse**. Vous le lancez avec `@rôle` dans
+la saisie, depuis le menu **…** (« Lancer en parallèle… »), ou l'agent vous le propose quand votre
+demande contient plusieurs chantiers indépendants. Un travail qui écrit du code travaille dans son
+propre [worktree](worktrees.md), sur une nouvelle branche ; quand il est prêt, vous le fusionnez
+depuis sa carte.
 
-Une conversation fille est une vraie conversation : vous pouvez l'ouvrir, lui écrire, l'arrêter.
-Ce n'est pas un sous-agent (ceux que l'agent lance lui-même ont leur carte « Sous-agents »).
+Un travail a sa vraie conversation : vous pouvez l'ouvrir, lui écrire, l'arrêter. Ce n'est pas un
+sous-agent (ceux que l'agent lance lui-même restent dans le flux de ses outils).
 
-Il faut un dossier dans un dépôt git. Il n'y a qu'un niveau : une fille ne lance pas de fille.
+Il faut un dossier dans un dépôt git. Il n'y a qu'un niveau : un travail ne lance pas d'autre
+travail.
 
 Ici, vous pouvez :
 
-- [lancer une conversation fille](#lancer) ;
-- [répondre aux tâches proposées par l'agent](#taches-proposees) ;
-- [suivre les filles](#suivre) depuis la mère ;
-- [fusionner leur travail](#fusionner) ;
+- [lancer un travail](#lancer) ;
+- [répondre aux travaux proposés par l'agent](#taches-proposees) ;
+- [suivre les travaux](#suivre) ;
+- [fusionner leurs modifications](#fusionner) ;
 - [régler ce que l'agent propose](#reglages).
 
 <a id="lancer"></a>
 
-## Lancer une conversation fille
+## Lancer un travail
 
-1. Dans le menu **…** de la conversation (dans son en-tête, ou sur sa ligne de la barre latérale),
-   choisissez **Lancer en parallèle…**.
-2. Écrivez la **Consigne** : ce que la fille doit faire.
-3. Choisissez l'**Agent** (par défaut, celui de la mère) et, quand l'agent le permet, le
-   **Modèle**. Avec IBM Bob, l'agent choisit son modèle.
-4. Cliquez sur **Lancer** (ou ⌘↩).
+**Avec un rôle.** Tapez `@` dans la saisie et choisissez un rôle (voir [Agents](agents.md)), puis
+écrivez votre demande. La ligne sous la saisie dit où il partira : un rôle de conseil lit ce
+dossier sans rien modifier ; un rôle qui écrit part du dernier commit, dans sa branche
+(**Changer…** propose d'autres choix). Entrée envoie toujours.
 
-La fille apparaît sous sa mère dans la barre latérale ; la conversation affichée ne change pas.
-Son en-tête dit d'où elle vient (« ↳ depuis « … » ») et y ramène d'un clic.
+**Sans rôle.** Dans le menu **…** de la conversation (dans son en-tête, ou sur sa ligne de la barre
+latérale), choisissez **Lancer en parallèle…**, écrivez la **Consigne**, choisissez l'**Agent** et,
+quand l'agent le permet, le **Modèle**, puis **Lancer** (ou ⌘↩). Avec IBM Bob, l'agent choisit son
+modèle.
 
-« Lancer en parallèle… » est grisé hors d'un dépôt git, ou quand le nombre de filles en cours
-atteint le plafond (voir [Réglages](#reglages)). Il n'existe pas dans une fille, un brouillon ou
+Le travail apparaît sous la conversation qui l'a lancé, dans la barre latérale ; la conversation
+affichée ne change pas. Son en-tête dit d'où il vient et y ramène d'un clic.
+
+« Lancer en parallèle… » est grisé hors d'un dépôt git, ou quand le nombre de travaux en cours
+atteint le plafond (voir [Réglages](#reglages)). Il n'existe pas dans un travail, un brouillon ou
 une conversation archivée.
 
-Un worktree de fille se prépare comme les autres, mais n'attend pas votre accord : voir
+Le worktree d'un travail se prépare comme les autres, mais n'attend pas votre accord : voir
 [Préparer chaque nouveau worktree](worktrees.md#accord).
 
 <a id="taches-proposees"></a>
 
-## Répondre aux tâches proposées par l'agent
+## Répondre aux travaux proposés par l'agent
 
-Quand l'agent juge qu'une partie du travail peut partir dans une fille, il la propose sur une
-carte **Tâches proposées**. Rien ne démarre sans vous. Pour chaque ligne :
+Quand l'agent juge qu'une partie du travail peut partir à part, il la propose sur une carte
+**N travaux proposés**. Rien ne démarre sans vous. Pour chaque ligne :
 
-- **Lancer** : la fille démarre ;
+- **Lancer** : le travail démarre ;
 - **Faire ici** : l'agent s'en charge lui-même, dans la conversation ;
-- **Refuser** : l'agent ne la relance pas ;
+- **Refuser** : l'agent ne le relance pas ;
 - l'icône **Agent et modèle** : changer l'agent ou le modèle avant de lancer.
 
-Au clavier : ↑ ↓ pour choisir une ligne, ↩ pour la lancer. Cliquez sur le titre d'une ligne pour
-lire la consigne complète.
+**Tout lancer** lance chaque ligne encore proposée. Au clavier : ↑ ↓ pour choisir une ligne, ↩ pour
+la lancer.
 
-La mère peut suggérer l'agent de chaque fille, et son modèle avec OpenCode (jamais avec IBM Bob),
-avec sa raison : « Suggéré par la mère, à confirmer ». Vous gardez la suggestion ou la changez.
+L'agent peut suggérer l'agent de chaque travail, et son modèle avec OpenCode (jamais avec IBM Bob),
+avec sa raison : « Suggéré par l'agent, à confirmer ». Vous gardez la suggestion ou la changez.
 
-**Expirée** : l'agent a redémarré avant votre réponse. **Lancer** reste possible.
+**Expiré** : l'agent a redémarré avant votre réponse. **Lancer** reste possible.
 
-**Demander un découpage.** Commencez votre message par `/split` : l'agent propose une fille par
+**Demander un découpage.** Commencez votre message par `/split` : l'agent propose un travail par
 chantier indépendant. Par exemple :
 `/split Trois chantiers : l'import, l'export, la page d'aide.`
 
 <a id="suivre"></a>
 
-## Suivre les filles depuis la mère
+## Suivre les travaux
 
-**Dans la barre latérale**, chaque fille est sous sa mère, avec son état : **En cours**,
-**Attend un accord**, **Finie, à lire**, **Erreur**, **Finie**. Elle apparaît dès la création de
-son worktree.
+**Dans le fil**, chaque travail a **une seule carte**, à sa place pour toujours : sous votre bulle
+`@Rôle …`, ou à la place des travaux proposés (une **carte de groupe** pour plusieurs travaux
+lancés ensemble). La carte montre l'activité en direct, puis la **réponse** complète, en Markdown,
+puis ses actions : **Demander à <agent> d'appliquer cette réponse**, **Répondre à <rôle>**,
+**Ouvrir sa conversation**. Le pied de chaque réponse donne son heure, sa durée et son coût.
 
-**Dans le fil de la mère** :
+La fin d'un travail se lit sur sa carte : **a répondu** (avec le nombre de fichiers pour un travail
+qui écrit), **arrêté** ou **en erreur**. Quand un travail répond hors de vue, un repère en bas du
+fil le dit (« ↑ 2 travaux ont répondu · Voir ») ; **Voir** fait défiler jusqu'à sa carte.
 
-- une ligne par lancement (« Conversation fille lancée : … »), qui se déplie sur la consigne
-  exacte ; de même pour chaque « Consigne pour… » envoyée ensuite ;
-- la carte **Sous-tâches** : une ligne par fille, avec sa branche, ses fichiers modifiés, son coût,
-  son état et **Ouvrir** ; le coût total en tête ;
-- un **compte rendu** à chaque fin de tour d'une fille, replié sur deux lignes (titre et coût, puis
-  la première phrase) ; dépliez-le pour la réponse, la branche, les fichiers et le nombre
-  d'échanges.
+**Le coût**, une seule fois par carte : un montant ; **gratuit** pour un modèle qui se dit gratuit ;
+**coût non communiqué** quand l'agent annonce un coût nul pour un modèle payant (connexion par
+abonnement, par exemple). Bobine ne présente jamais un modèle payant comme gratuit.
 
-**Ce que reçoit l'agent de la mère.** Une fille que vous avez lancée : son compte rendu part avec
-votre prochain message. Des filles lancées par l'agent : il est réveillé une seule fois, quand
-toutes ont fini.
+**Dans la barre latérale**, chaque travail est sous la conversation qui l'a lancé, avec son état :
+**En cours**, **Attend un accord**, **A répondu, à lire**, **A répondu**, **Arrêté**, **En
+erreur**. Il apparaît dès la création de son worktree.
 
-**Les messages entre mère et filles.** L'agent de la mère peut écrire à ses filles, et elles
-peuvent lui écrire. Ces messages passent par la file d'attente et disent leur provenance (« De la
-conversation mère… », « De la conversation fille… ») ; un clic ouvre l'autre conversation.
+**Ce que reçoit l'agent.** La carte le dit : « Pas encore transmise à <agent> — elle le sera avec
+votre prochain message », puis « Transmise ». Des travaux lancés par l'agent : il est réveillé une
+seule fois, quand tous ont répondu.
 
-**La vue Filles.** Dans l'onglet **Modifications** de la mère, la vue **Filles** liste les
-worktrees des filles : état, branche, fichiers modifiés, avis de la mère. Pour chacune :
+**Les messages entre conversations.** L'agent peut écrire à ses travaux, et un travail peut écrire
+à la conversation qui l'a lancé. Ces messages passent par la file d'attente et disent leur
+provenance (« De la conversation qui l'a lancé… », « Du travail… ») ; un clic ouvre l'autre
+conversation.
+
+**La vue Travaux.** Dans l'onglet **Modifications**, la vue **Travaux** liste les worktrees des
+travaux : état, branche, fichiers modifiés, avis de l'agent. Pour chacun :
 <!-- si: finder -->
 l'afficher dans le Finder,
 <!-- si: !finder !explorer
@@ -99,47 +110,42 @@ l'afficher dans le gestionnaire de fichiers,
 <!-- si: explorer
 l'afficher dans l'Explorateur de fichiers,
 -->
-l'ouvrir dans votre éditeur, [la faire relire](faire-relire.md) ou
+l'ouvrir dans votre éditeur, [le faire relire](faire-relire.md) ou
 **Ouvrir** sa conversation.
 
-**Avec IBM Bob en mode Agent**, chaque écriture ou commande d'une fille demande votre accord dans
-la fille : elle reste sur « Attend un accord » tant que vous n'y avez pas répondu.
+**Avec IBM Bob en mode Agent**, chaque écriture ou commande d'un travail demande votre accord dans
+sa conversation : il reste sur « Attend un accord » tant que vous n'y avez pas répondu.
 
 <a id="avis-de-la-mere"></a>
 
-## L'avis de la mère
+## L'avis de l'agent
 
-La mère lit les comptes rendus, vérifie le travail, renvoie ses corrections à la fille, puis dit
-si la branche est prête. Sur la ligne de la fille :
+L'agent lit les réponses, vérifie le travail, renvoie ses corrections, puis dit si la branche est
+prête. Sur la ligne du travail :
 
-- **Recommandée** : prête à fusionner ;
-- **Pas encore prête** ;
-- **À revoir** : la fille a refait un tour depuis cet avis.
+- **Recommandé** : prêt à fusionner ;
+- **Pas encore prêt** ;
+- **À revoir** : le travail a refait un tour depuis cet avis.
 
 Le survol donne la raison. C'est toujours vous qui fusionnez.
 
 <a id="fusionner"></a>
 
-## Fusionner le travail des filles
+## Fusionner les modifications
 
-En bas de la carte **Sous-tâches**, dès qu'une fille finie a des commits à fusionner, une phrase
-dit lesquelles sont prêtes, lesquelles travaillent encore, lesquelles touchent les mêmes fichiers
-et lesquelles ont des modifications non commitées (à committer depuis leur vue Git : elles sont
-laissées de côté).
+Un travail qui écrit se fusionne **depuis sa carte** : **Fusionner dans main**, après **Voir les
+modifications** et, si vous le voulez, **Faire relire** (voir [Faire relire](faire-relire.md)). Une
+carte de groupe propose **Fusionner les N prêts dans main** ; avec un avis de l'agent,
+**Fusionner les N recommandés dans main**, et **Inclure les M autres…** pour les autres, après
+confirmation.
 
-Pour fusionner :
-
-1. Activez **Puis nettoyer** si vous voulez, ensuite, archiver chaque fille fusionnée et supprimer
-   son worktree et sa branche (désactivé par défaut).
-2. Cliquez sur le bouton de fusion :
-   - sans avis de la mère : **Fusionner les N dans main** ;
-   - avec un avis : **Fusionner les N recommandées dans main**. Pour prendre aussi les autres :
-     **Inclure les M autres…**, puis confirmez.
+**Puis nettoyer (archiver, supprimer les branches)** : une case, avant le bouton. Elle archive la
+conversation de chaque travail fusionné et supprime son worktree et sa branche.
 
 Les branches entrent l'une après l'autre, dans l'ordre de lancement, avec l'état de chaque ligne
 en direct. **Arrêter** s'arrête après la fusion en cours.
 
-**Un conflit.** La fille concernée le résout elle-même, puis la fusion reprend. S'il reste des
+**Un conflit.** Le travail concerné le résout lui-même, puis la fusion reprend. S'il reste des
 conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa vue Git).
 
 **Le dossier principal a des modifications non commitées** : la fusion ne part pas. Comme pour un
@@ -147,22 +153,22 @@ worktree : **Committer d'abord** ou **Mettre de côté**. Voir
 [Fusionner dans `main`](worktrees.md#fusionner).
 
 Rien n'est poussé, et aucune PR n'est ouverte : pour une PR, passez par la
-[vue Git de la fille](worktrees.md#pr).
+[vue Git du travail](worktrees.md#pr).
 
-**Archiver ou supprimer la mère** : ses filles deviennent des conversations ordinaires. Désarchivée,
-elle les retrouve.
+**Archiver ou supprimer la conversation qui les a lancés** : ses travaux deviennent des
+conversations ordinaires. Désarchivée, elle les retrouve.
 
 <a id="reglages"></a>
 
 ## Régler ce que l'agent propose
 
-Réglages › Conversations, rubrique **Sous-tâches** :
+Réglages › Conversations, rubrique **Travaux délégués** :
 
-- **Proposer des conversations filles** : **Jamais**, **Quand ça s'y prête** (par défaut) ou
-  **Toujours demander**. Ce réglage dit à l'agent s'il doit proposer des filles ; dans tous les
-  cas, chaque proposition passe par la carte « Tâches proposées » et attend votre accord.
-- **Conversations filles en cours** : de 1 à 10 par conversation (5 par défaut). Au-delà,
-  « Lancer en parallèle… » est grisé. Les relectures comptent dans ce nombre.
+- **Proposer des travaux** : **Jamais**, **Quand ça s'y prête** (par défaut) ou **Toujours
+  demander**. Ce réglage dit à l'agent s'il doit proposer des travaux ; dans tous les cas, chaque
+  proposition passe par la carte des travaux proposés et attend votre accord.
+- **Travaux en cours** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer en
+  parallèle… » est grisé. Les relectures comptent dans ce nombre.
 
-Les outils des filles se coupent dans Réglages › Serveurs MCP › Outils de Bobine, famille **Conversations
-filles**.
+Les outils des travaux se coupent dans Réglages › Serveurs MCP › Outils de Bobine, famille
+**Travaux délégués**.

@@ -45,7 +45,7 @@ barre latérale, **Ouvrir à côté**.
 
 Un worktree neuf ne contient que les fichiers suivis par git : pas de `.env`, pas de
 `node_modules`. Deux fichiers à la racine du dépôt le rendent prêt à l'emploi. Ils servent à toute
-conversation dans un worktree, y compris les [conversations filles](conversations-filles.md) et
+conversation dans un worktree, y compris les [travaux délégués](conversations-filles.md) et
 les [tâches planifiées](taches-planifiees.md).
 
 <a id="worktreeinclude"></a>
@@ -120,7 +120,7 @@ Pendant la commande :
 Si la commande échoue, la conversation continue et l'agent le sait ; la sortie est dépliée dans la
 carte. La liste des fichiers copiés se déplie aussi.
 
-**Sans vous.** Une conversation fille ou une tâche planifiée n'attend pas l'accord : elle part
+**Sans vous.** Un travail délégué ou une tâche planifiée n'attend pas l'accord : il part
 sans la préparation, et le dit. Une commande déjà autorisée est lancée normalement.
 
 **Retirer un accord** : Réglages › Confidentialité › **Autorisé sans demander**, ligne

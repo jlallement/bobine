@@ -70,3 +70,35 @@ describe('puce de consommation, pendant le tour (fiche 157)', () => {
     expect(screen.queryByTestId('usage-cap')).toBeNull()
   })
 })
+
+describe('plafond et coût non communiqué (fiche 266, D12)', () => {
+  const actions = (): UsageActions => ({
+    preferences: prefs,
+    onSetCostCap: vi.fn(),
+    costCap: 'settings'
+  })
+  const turn = (id: string, name: string) => ({ model: { id, name }, costStart: 0, costEnd: 0 })
+
+  it('coût nul d’un modèle payant : le plafond dit qu’il ne peut pas se déclencher', () => {
+    const paid: ConversationUsage = {
+      cost: { amount: 0, currency: 'USD' },
+      turns: [turn('openai/gpt-6.1-sol', 'GPT-6.1 Sol')]
+    }
+    render(<CostCapRow usage={paid} actions={actions()} />)
+    expect(screen.getByTestId('usage-cap-not-reported').textContent).toBe(
+      t('turnGuards.cap.notReported')
+    )
+  })
+
+  it('modèle gratuit, coût payé ou bobcoins : rien à dire', () => {
+    const free: ConversationUsage = {
+      cost: { amount: 0, currency: 'USD' },
+      turns: [turn('opencode/tidepool-alpha-free', 'Tidepool Alpha Free')]
+    }
+    for (const usage of [free, usd, { cost: { amount: 0, currency: 'bobcoins' } }]) {
+      const { unmount } = render(<CostCapRow usage={usage} actions={actions()} />)
+      expect(screen.queryByTestId('usage-cap-not-reported')).toBeNull()
+      unmount()
+    }
+  })
+})

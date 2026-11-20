@@ -27,7 +27,7 @@ describe('compte rendu d’une fille partie sans le non commité (fiche 240)', (
       />
     )
     expect(plain(screen.getByTestId('child-report-left-behind').textContent)).toBe(
-      'Partie du commit 9970242 sans les 17 modifications non commitées de ce dossier : son travail ne les a pas vues.'
+      'Parti du commit 9970242 sans les 17 modifications non commitées de ce dossier : son travail ne les a pas vues.'
     )
   })
 

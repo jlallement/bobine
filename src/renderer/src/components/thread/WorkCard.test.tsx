@@ -131,6 +131,8 @@ const report = (
 })
 
 const usd = (amount: number): UsageDigest => ({ cost: { amount, currency: 'USD' } })
+/** Coût d'un modèle qui se dit gratuit (fiche 266). */
+const free = (): UsageDigest => ({ ...usd(0), free: true })
 
 const info = (
   children: ConversationSummary[],
@@ -281,10 +283,20 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.queryByTestId('work-relay')).toBeNull()
   })
 
+  it('coût nul d’un modèle payant (abonnement, D12) : « coût non communiqué » dans le pied (fiche 266)', () => {
+    fakeAgent()
+    view(answered({ usage: usd(0) }), info([child('a', ux)]))
+    const facts =
+      within(screen.getByTestId('work-card')).getByTestId('work-facts').textContent ?? ''
+    expect(facts).toContain('coût non communiqué')
+    expect(facts).not.toContain('gratuit')
+    expect(facts).not.toContain('$')
+  })
+
   it('a répondu : la réponse entière, repliée, « Lire la suite » ; pied « heure · durée · gratuit »', () => {
     fakeAgent()
     overflowing()
-    view(answered({ usage: usd(0) }), info([child('a', ux)]))
+    view(answered({ usage: free() }), info([child('a', ux)]))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('replied')
     expect(within(card).getByTestId('work-state').textContent).toMatch(

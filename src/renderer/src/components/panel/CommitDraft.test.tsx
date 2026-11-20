@@ -58,7 +58,7 @@ describe('message de commit rédigé par l’agent (fiche 246)', () => {
     const { draft, stop, field, confirm } = setup()
     expect(draft).toHaveBeenCalledWith('c1', { files: FILES, place: 'conversation' })
     expect(plain(screen.getByTestId('t-draft').textContent)).toMatch(
-      /^Rédaction par OpenCode… 0 sArrêter$/
+      /^Rédaction par OpenCode… < 1 sArrêter$/
     )
     expect(field().disabled).toBe(true)
     expect(field().value).toBe('')

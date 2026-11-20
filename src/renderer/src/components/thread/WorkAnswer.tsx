@@ -7,7 +7,6 @@ import type { ReviewItem, WorkCardData } from '@shared/role-request'
 import type { RoleBadge } from '@shared/roles'
 import { RoleAvatar, useRoleStyle } from '../roles/RoleAvatar'
 import type { TranscriptItem } from '@shared/transcript'
-import { usePresentation } from '../../presentation'
 import { messageTime, turnDuration } from '../../time'
 import { Markdown } from './Markdown'
 import { ReviewFindings } from './WorkReview'
@@ -312,10 +311,8 @@ export function AnswerFacts({
   current: boolean
   noCost: boolean
 }) {
-  const { t } = useTranslation()
+  // Mode présentation (fiche 159) : aucun montant, pas même « gratuit » (`useUsageText`).
   const usageText = useUsageText()
-  // Mode présentation (fiche 159) : aucun montant, pas même « gratuit ».
-  const presenting = usePresentation()
   const usage = exchangeUsage(
     current ? workUsage(report, child) : report.usage,
     previousReport(card, report)?.usage
@@ -323,11 +320,7 @@ export function AnswerFacts({
   const facts = [
     messageTime(report.at),
     turnDuration(Math.max(0, report.at - stepStart(card, report))),
-    noCost
-      ? undefined
-      : usage?.cost?.amount === 0 && !presenting
-        ? t('workCard.free')
-        : usageText(usage)
+    noCost ? undefined : usageText(usage)
   ].filter(Boolean)
   return (
     <div className="work-facts" data-testid="work-facts">

@@ -197,7 +197,8 @@ export function exchangeUsage(
     ...(input === undefined ? {} : { input }),
     ...(output === undefined ? {} : { output }),
     ...(total === undefined ? {} : { total }),
-    ...(cost ? { cost } : {})
+    ...(cost ? { cost } : {}),
+    ...(usage.free ? { free: usage.free } : {})
   }
 }
 

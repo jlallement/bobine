@@ -116,7 +116,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
       chosen({ model: { controlId: 'model', value: 'soigne' }, why: 'relecture fine' })
     ])
     expect(screen.getByTestId('proposal-why').textContent).toBe(
-      'Suggéré par la mère, à confirmer\u00a0: Soigné — relecture fine'
+      'Suggéré par l’agent, à confirmer\u00a0: Soigné — relecture fine'
     )
     // Sélecteurs ouverts d'emblée : la suggestion se confirme ou se change.
     expect((screen.getByTestId('proposal-model') as HTMLSelectElement).value).toBe('soigne')
@@ -179,7 +179,7 @@ describe('carte « Tâches proposées » (fiche 112)', () => {
       } as Partial<ChildProposalItem>)
     ])
     expect(screen.getByTestId('proposal-why').textContent).toBe(
-      'Suggéré par la mère, à confirmer\u00a0: OpenCode'
+      'Suggéré par l’agent, à confirmer\u00a0: OpenCode'
     )
     const agent = screen.getByTestId('proposal-agent') as HTMLSelectElement
     expect(agent.value).toBe('opencode')

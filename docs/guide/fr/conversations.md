@@ -138,7 +138,7 @@ tous les agents :
 | `/mode [nom]` | Voir ou changer le mode (agent, plan…) |
 | `/init` | Créer ou compléter `AGENTS.md` pour ce projet |
 | `/review` | Revue des modifications en cours, par l'agent de la conversation |
-| `/split [message]` | Découper le message en [conversations filles](conversations-filles.md#taches-proposees) |
+| `/split [message]` | Découper le message en [travaux](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aparté](aparte.md) : une question à côté, répondue hors du fil |
 | `/help` | Liste des commandes |
 

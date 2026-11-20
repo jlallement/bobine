@@ -1651,9 +1651,10 @@ describe('AgentHost', () => {
       const notices = transcript().flatMap((i) => (i.kind === 'notice' ? [noticeOf(i)] : []))
       expect(notices).toHaveLength(2)
       expect(notices[0]).toMatch(
-        /Réglage.«.Mode.».non appliqué.\(ask\).*n’a pas appliqué.«.Mode.».en 0.s/
+        /Réglage.«.Mode.».non appliqué.\(Question\).*n’a pas appliqué.«.Mode.».*garde Code\./
       )
-      expect(notices[1]).toMatch(/non appliqué \(factice-precis\)/)
+      expect(notices[1]).toMatch(/non appliqué \(.*\).*Cette conversation garde/)
+      expect(notices[1]).not.toContain('factice-precis')
       await expect(host.setControl('mode', 'ask')).rejects.toThrow(/n’a pas appliqué.«.Mode.»/)
       expect(host.snapshot().status).toBe('ready')
       host.stop()

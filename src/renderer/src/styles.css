@@ -3303,6 +3303,11 @@ a.btn {
   white-space: nowrap;
 }
 
+/* Même fournisseur qu'un modèle refusé (fiche 266, D31) : probable, donc en pointillé. */
+.model-auth-tag.likely {
+  border-style: dashed;
+}
+
 /* ===== Historique ===== */
 
 .history-item {

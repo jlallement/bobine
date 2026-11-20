@@ -16,7 +16,7 @@ export function MessageTime({ at }: { at: number }) {
  */
 export function MessageDuration({ ms }: { ms: number }) {
   const { t } = useTranslation()
-  const text = ms < 1000 ? t('transcript.duration.underSecond') : turnDuration(ms)
+  const text = turnDuration(ms)
   return (
     <span
       className="msg-duration"

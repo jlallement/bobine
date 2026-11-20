@@ -40,8 +40,12 @@ export function rowDay(at: string | number, yesterday: string, now = new Date())
   })
 }
 
-/** Durée d'un tour (fiche 156) : « 8 s », « 2 min 14 s », « 1 h 05 min ». */
+/**
+ * Durée d'un tour (fiche 156) : « < 1 s », « 8 s », « 2 min 14 s », « 1 h 05 min ». Jamais « 0 s »
+ * (fiche 266) : sous la seconde, « < 1 s », comme le pied de la réponse (fiche 261).
+ */
 export function turnDuration(ms: number): string {
+  if (ms < 1000) return i18next.t('transcript.duration.underSecond')
   const { hours, minutes, seconds } = durationParts(ms)
   if (hours > 0) {
     return i18next.t('transcript.duration.hours', {

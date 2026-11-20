@@ -5,6 +5,7 @@ import { HelpFooterLink } from '../help/HelpLink'
 import { useTipsContext } from '../../useTips'
 import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
 import { ipcErrorText } from '../../ipc-errors'
+import { isFreeModel } from '@shared/usage'
 import {
   ChildOptions,
   childChoiceRequest,
@@ -30,11 +31,6 @@ export function otherModel(
   const pool = free.length > 0 ? free : others
   const group = current?.group
   return (pool.find((o) => group !== undefined && o.group === group) ?? pool[0])?.value ?? null
-}
-
-/** Modèle annoncé gratuit par son nom ou son identifiant (« … (free) », « …:free », « -free »). */
-export function isFreeModel(option: { value: string; name: string }): boolean {
-  return /(^|[\s:/(_-])free\b/i.test(`${option.value} ${option.name}`)
 }
 
 /**

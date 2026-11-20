@@ -2,7 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FoldVertical } from 'lucide-react'
 import { capUnitOf, effectiveCap, formatCap, TOKEN_UNIT } from '@shared/cost-cap'
-import { unitLabel, type ConversationUsage } from '@shared/usage'
+import {
+  conversationCost,
+  costNotReported,
+  freeModels,
+  unitLabel,
+  type ConversationUsage
+} from '@shared/usage'
 import type { UsageActions } from '../../useTurnGuards'
 import { Tip } from '../common/Menus'
 import '../../turn-guards.css'
@@ -115,6 +121,11 @@ export function CostCapRow({
           {t('turnGuards.cap.none')}
         </button>
       </div>
+      {cap && costNotReported(conversationCost(usage).total, freeModels(usage)) && (
+        <div className="usage-hint" data-testid="usage-cap-not-reported">
+          {t('turnGuards.cap.notReported')}
+        </div>
+      )}
     </div>
   )
 }

@@ -40,7 +40,7 @@ The conversation at a glance:
   Other MCP servers, Agent, Free). It’s an estimate, at no cost;
 - **Changes**: the changed files (a click opens the Git view);
 - **Pull request**, when there is one: see [PR and CI tracking](suivi-pr-ci.md);
-- **Running**: terminals, dev servers, subagents, child conversations, with how long they’ve been
+- **Running**: terminals, dev servers, subagents, delegated tasks, with how long they’ve been
   running and a button to stop them.
 
 <a id="modifications"></a>
@@ -53,8 +53,8 @@ The **Changes** tab (⇧⌘D) has two or three views:
   Each change can be reverted file by file.
 - **Git**: the repository status, to [commit](worktrees.md#committer) and, in a worktree,
   [open a PR or merge](worktrees.md#vue-git);
-- **Children**, in a parent conversation: see
-  [Child conversations](conversations-filles.md#suivre).
+- **Tasks**, in a conversation that started some: see
+  [Delegated tasks](conversations-filles.md#suivre).
 
 **Comments on the diff.** Hover over a line of the diff and click **+** to add a comment
 (⇧-click for a range of lines; ⌘↩ to add it). **Send to the agent** sends them all in one message

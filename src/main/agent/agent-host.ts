@@ -50,6 +50,7 @@ import { announcementOf, type AgentAnnouncement } from './capabilities'
 import { AgentIncompatible, refuseIncompatible } from './version-check'
 import {
   applyInitialSettings,
+  settingsOf,
   openWithStartMode,
   opensSession,
   sendControl
@@ -102,6 +103,8 @@ export interface AgentHostOptions {
    * `reopened` quand c'est la session rouverte elle-même, `new` pour une session neuve.
    */
   initialControls?: (session: 'new' | 'reopened') => Record<string, ControlValue> | undefined
+  /** Nom retenu d'une valeur de réglage que l'agent ne propose plus (fiche 266, D32). */
+  knownOptionName?: (controlId: string, value: string) => string | undefined
   /**
    * Session existante à rouvrir (conversation de l'historique) : `session/load` si l'agent sait la
    * rejouer, sinon `session/resume`, sinon une session neuve qui reçoit l'échange d'avant au
@@ -1241,9 +1244,7 @@ export class AgentHost {
       controls: () => this.snapshot().controls,
       apply: (id, value) => this.applyControl(connection, session.sessionId, id, value),
       failed,
-      emit: this.options.emit,
-      initialControls: this.options.initialControls?.(reopened ? 'reopened' : 'new'),
-      initialMode: reopen ? undefined : this.options.initialMode
+      ...settingsOf(this.options, reopened, reopen !== undefined)
     })
     if (this.child !== child) return
     const resend = this.turnAuth.opened()

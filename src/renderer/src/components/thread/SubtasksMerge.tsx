@@ -242,11 +242,13 @@ export function MergeRowBadge({
   )
 }
 
-/** Durée d'une fusion : « 12 s », « 1 min 5 s ». */
+/** Durée d'une fusion : « < 1 s », « 12 s », « 1 min 5 s ». */
 function useDuration(): (ms: number) => string {
   const { t } = useTranslation()
   return (ms) => {
-    const total = Math.max(1, Math.round(ms / 1000))
+    // Jamais « 0 s » ni « 1 s » pour une fusion éclair : « < 1 s » (fiche 266).
+    if (ms < 1000) return t('transcript.duration.underSecond')
+    const total = Math.round(ms / 1000)
     if (total < 60) return t('childrenMerge.duration.seconds', { count: total })
     return t('childrenMerge.duration.minutes', {
       minutes: Math.floor(total / 60),

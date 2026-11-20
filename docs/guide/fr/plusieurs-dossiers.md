@@ -51,7 +51,7 @@ votre message suivant.
 
 - Les mentions `@` et les pièces jointes ne proposent que les fichiers du dossier de travail.
 - L'onglet Modifications ne suit que le dossier de travail.
-- Les autres dossiers ne passent ni aux branches (« Repartir de ce message ») ni aux conversations
-  filles.
+- Les autres dossiers ne passent ni aux branches (« Repartir de ce message ») ni aux travaux
+  délégués.
 - Si vous passez la conversation à un agent qui ne prend pas plusieurs dossiers, la liste reste
   affichée en grisé, avec « Non transmis : … ».

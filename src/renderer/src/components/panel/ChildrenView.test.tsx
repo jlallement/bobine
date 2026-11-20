@@ -124,7 +124,7 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
       'changes-view-git'
     ])
     fireEvent.click(screen.getByTestId('changes-view-children'))
-    expect(screen.getByTestId('changes-view-children').textContent).toBe('Filles 2')
+    expect(screen.getByTestId('changes-view-children').textContent).toBe('Travaux 2')
     const rows = screen.getAllByTestId('child-worktree')
     expect(rows.map((r) => [r.dataset.id, r.dataset.state])).toEqual([
       ['b', 'unread'],
@@ -226,7 +226,7 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
       ).toBe('merged')
     )
     expect(actions.plan).toHaveBeenCalledWith('m')
-    expect(row('b')?.textContent).toContain('fusionnée')
+    expect(row('b')?.textContent).toContain('fusionné')
     expect(row('b')?.querySelector('[data-testid=subtask-recommendation]')).toBeNull()
     // `a` n'est pas fusionnée : sa recommandation reste.
     expect(row('a')?.querySelector('[data-testid=subtask-merge-state]')).toBeNull()
@@ -305,7 +305,7 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
     await waitFor(() => expect(badge('a')?.getAttribute('data-state')).toBe('merged'))
     // Avant : seule la dernière fusion du fil comptait, `b` restait sans rien.
     expect(badge('b')?.getAttribute('data-state')).toBe('merged')
-    expect(badge('b')?.textContent).toBe('fusionnée · nettoyée')
+    expect(badge('b')?.textContent).toBe('fusionné · nettoyé')
   })
 
   it('fille arrêtée par ■ : « Arrêtée » dans la vue aussi (fiche 258, D4)', () => {
@@ -325,7 +325,7 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
     fireEvent.click(screen.getByTestId('changes-view-children'))
     expect(screen.getAllByTestId('child-worktree')).toHaveLength(1)
     rerender(tab([summary('a', 'busy'), summary('b', 'ready')]))
-    expect(screen.getByTestId('changes-view-children').textContent).toBe('Filles 2')
+    expect(screen.getByTestId('changes-view-children').textContent).toBe('Travaux 2')
     expect(screen.getAllByTestId('child-worktree').map((r) => r.dataset.state)).toEqual([
       'unread',
       'running'

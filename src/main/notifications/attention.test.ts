@@ -331,7 +331,7 @@ describe('AttentionTracker', () => {
     for (const run of pending) run()
     expect(notices).toHaveLength(1)
     expect(notices[0]).toMatchObject({
-      title: '3 conversations filles ont fini',
+      title: '3 travaux ont répondu',
       body: 'Fille a, Fille b, Fille c'
     })
   })

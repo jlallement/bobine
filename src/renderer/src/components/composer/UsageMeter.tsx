@@ -3,7 +3,10 @@ import { useState } from 'react'
 import {
   contextRatio,
   conversationCost,
+  costNotReported,
+  costText,
   formatEstimate,
+  freeModels,
   formatTokens,
   hasUsage,
   isEstimate,
@@ -63,6 +66,8 @@ export function UsageMeter({
   const estimated = usage.context?.estimated === true
   // Toute la conversation, sessions précédentes comprises (fiche 164).
   const cost = conversationCost(usage)
+  // Coût nul d'un modèle qui ne se dit pas gratuit : « coût non communiqué » (fiche 266, D12).
+  const free = freeModels(usage)
   const r = 7
   const circumference = 2 * Math.PI * r
 
@@ -103,7 +108,7 @@ export function UsageMeter({
                 </span>
               </>
             ) : cost.total ? (
-              <span>{formatEstimate(cost.total)}</span>
+              <span>{costText(cost.total, free)}</span>
             ) : (
               <span>
                 {t('usage.tokensValue', {
@@ -169,11 +174,13 @@ export function UsageMeter({
                   <span>
                     {isEstimate(cost.total.currency) ? t('usage.costEstimate') : t('usage.cost')}
                   </span>
-                  <strong data-testid="usage-cost">{formatEstimate(cost.total)}</strong>
+                  <strong data-testid="usage-cost">{costText(cost.total, free)}</strong>
                 </div>
                 {isEstimate(cost.total.currency) && (
                   <div className="usage-hint" data-testid="usage-cost-hint">
-                    {t('usage.costHint', { agent: agentLabel })}
+                    {costNotReported(cost.total, free)
+                      ? t('usage.costNotReportedHint', { agent: agentLabel })
+                      : t('usage.costHint', { agent: agentLabel })}
                   </div>
                 )}
                 {cost.session && (

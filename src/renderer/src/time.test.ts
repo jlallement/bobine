@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rowDay } from './time'
+import { rowDay, turnDuration } from './time'
 
 describe('rowDay : jour d’une conversation dans la barre latérale (fiche 131)', () => {
   const now = new Date(2026, 9, 23, 9, 0)
@@ -18,5 +18,15 @@ describe('rowDay : jour d’une conversation dans la barre latérale (fiche 131)
     expect(rowDay(at(2026, 9, 12), 'hier', now)).toMatch(/12/)
     expect(rowDay(at(2025, 9, 12), 'hier', now)).toMatch(/2025/)
     expect(rowDay('pas une date', 'hier', now)).toBe('')
+  })
+})
+
+describe('turnDuration : jamais « 0 s » (fiche 266)', () => {
+  it('sous la seconde, « < 1 s » ; au-delà, secondes, minutes, heures', () => {
+    expect(turnDuration(0)).toBe('< 1 s')
+    expect(turnDuration(999)).toBe('< 1 s')
+    expect(turnDuration(1000)).toBe('1 s')
+    expect(turnDuration(134_000)).toBe('2 min 14 s')
+    expect(turnDuration(3_900_000)).toBe('1 h 05 min')
   })
 })

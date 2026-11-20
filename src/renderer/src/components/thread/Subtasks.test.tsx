@@ -74,10 +74,10 @@ it('état en icône : détail au clavier, accès à la fille, sans libellé visi
       info={{ children: [child('a')], attention: { a: 'done' }, onOpen }}
     />
   )
-  const state = screen.getByRole('button', { name: /Ouvrir.*Fille a.*Finie, à lire/ })
+  const state = screen.getByRole('button', { name: /Ouvrir.*Fille a.*A répondu, à lire/ })
   expect(state.textContent).toBe('')
   fireEvent.focus(state)
-  expect((await screen.findByRole('tooltip')).textContent).toBe('Finie, à lire')
+  expect((await screen.findByRole('tooltip')).textContent).toBe('A répondu, à lire')
   fireEvent.click(state)
   expect(onOpen).toHaveBeenCalledExactlyOnceWith('a')
   expect(screen.getByTestId('subtask-open').textContent).toBe('Ouvrir')
@@ -207,7 +207,7 @@ describe('Compte rendu replié (fiche 171)', () => {
 })
 
 describe('Fille arrêtée par ■ (fiche 258, D4)', () => {
-  it('ligne « Arrêtée » (icône d’arrêt, pas de coche) et compte à part des terminées', async () => {
+  it('ligne « Arrêté » (icône d’arrêt, pas de coche) et compte à part de ceux qui ont répondu', async () => {
     const items = [started(1, 'a'), started(2, 'b'), started(3, 'c')]
     view(items, [
       { ...child('a'), turnStopped: true },
@@ -215,15 +215,15 @@ describe('Fille arrêtée par ■ (fiche 258, D4)', () => {
       child('c')
     ])
     expect(screen.getByTestId('subtasks').querySelector('.subtasks-head')?.textContent).toMatch(
-      /1 terminée, 2 arrêtées/
+      /1 a répondu, 2 arrêtés/
     )
     const rows = screen.getAllByTestId('subtask-row')
     expect(rows.map((r) => r.dataset['state'])).toEqual(['stopped', 'stopped', 'done'])
     const icon = rows[0]?.querySelector('.child-state')
     expect(icon?.getAttribute('data-state')).toBe('stopped')
     expect(icon?.classList.contains('lucide-circle-stop')).toBe(true)
-    const state = screen.getByRole('button', { name: /Ouvrir.*Fille a.*Arrêtée/ })
+    const state = screen.getByRole('button', { name: /Ouvrir.*Fille a.*Arrêté/ })
     fireEvent.focus(state)
-    expect((await screen.findByRole('tooltip')).textContent).toBe('Arrêtée')
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Arrêté')
   })
 })

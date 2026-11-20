@@ -9,7 +9,9 @@ import type { AgentEvent, ControlValue, SessionControl } from '@shared/agent'
 import { executionMode, isPlanMode } from '@shared/plan-doc'
 import { log } from '../log'
 import { errorMessage } from './process-utils'
+import { isValidValue } from './session-controls'
 import type { AgentProfile } from './profiles'
+import type { AgentHostOptions } from './agent-host'
 
 /**
  * Une session s'ouvre-t-elle au démarrage de l'hôte (`newSession`, essai du diagnostic) ? Toujours
@@ -32,6 +34,14 @@ export interface InitialControlsInput {
   /** Rejetée si l'agent meurt pendant l'ouverture. */
   failed: Promise<never>
   emit: (event: AgentEvent) => void
+  /**
+   * Nom de l'agent et nom retenu d'une valeur qu'il ne propose plus (modèles retenus, fiche 108) :
+   * l'avis dit « GPT-6.2 Sol n'est plus proposé par OpenCode », sans identifiant brut (fiche 266).
+   */
+  labels?: {
+    agent: string
+    known?: ((controlId: string, value: string) => string | undefined) | undefined
+  }
   /**
    * Réglages de la conversation, sinon (nouvelle conversation) ceux retenus pour le profil
    * (préférences, sinon défauts du profil) ; fiche 256.
@@ -63,6 +73,26 @@ export async function sendControl(
   return response.configOptions
 }
 
+/**
+ * Ce que l'hôte d'agent fournit à `applyInitialSettings` : réglages relus à cette ouverture (fiche
+ * 256), mode de départ pour une session neuve seulement, noms dits dans l'avis (fiche 266).
+ */
+export function settingsOf(
+  host: Pick<
+    AgentHostOptions,
+    'emit' | 'profile' | 'knownOptionName' | 'initialControls' | 'initialMode'
+  >,
+  reopened: boolean,
+  reopening: boolean
+): Pick<InitialControlsInput, 'emit' | 'labels' | 'initialControls' | 'initialMode'> {
+  return {
+    emit: host.emit,
+    labels: { agent: host.profile.label, known: host.knownOptionName },
+    initialControls: host.initialControls?.(reopened ? 'reopened' : 'new'),
+    initialMode: reopening ? undefined : host.initialMode
+  }
+}
+
 /** Réglages retenus, puis mode de départ. */
 export async function applyInitialSettings(input: InitialControlsInput): Promise<void> {
   await applyInitialControls(input, input.initialControls ?? {})
@@ -77,18 +107,76 @@ async function applyInitialControls(
   for (const [id, value] of Object.entries(wanted)) {
     const control = input.controls().find((c) => c.id === id)
     if (control?.currentValue === value) continue
+    // Valeur que l'agent ne propose plus (modèle retiré, connexion perdue) : rien n'est envoyé,
+    // l'avis dit en clair ce qui est pris à la place (fiche 266, D32).
+    if (control && !isValidValue(control, value)) {
+      log.warn(`Réglage ${id} non proposé par l'agent : ${String(value)}`)
+      input.emit(notOffered(input, control, value))
+      continue
+    }
     try {
       await Promise.race([input.apply(id, value), input.failed])
     } catch (error) {
+      log.warn(`Réglage ${id} non appliqué (${String(value)}) : ${errorMessage(error)}`)
+      const current = control ? currentName(input.controls(), control.id) : undefined
       input.emit({
         type: 'notice',
         level: 'warning',
         message: {
-          key: 'agentHost.notice.controlFailed',
-          params: { name: control?.name ?? id, value: String(value), error: errorMessage(error) }
+          key: current ? 'agentHost.notice.controlFailedKept' : 'agentHost.notice.controlFailed',
+          params: {
+            name: control?.name ?? id,
+            value: control ? valueName(input, control, value) : String(value),
+            error: errorMessage(error),
+            ...(current ? { current } : {})
+          }
         }
       })
     }
+  }
+}
+
+/** Nom affiché d'une valeur : celui de l'option, sinon un nom retenu, sinon la valeur. */
+function valueName(input: InitialControlsInput, control: SessionControl, value: ControlValue) {
+  if (typeof value !== 'string') return String(value)
+  return (
+    control.options.find((o) => o.value === value)?.name ??
+    input.labels?.known?.(control.id, value) ??
+    value
+  )
+}
+
+/** Nom de la valeur courante d'un réglage `select`, relu après l'échec. */
+function currentName(controls: readonly SessionControl[], id: string): string | undefined {
+  const control = controls.find((c) => c.id === id)
+  if (control?.type !== 'select') return undefined
+  return control.options.find((o) => o.value === control.currentValue)?.name
+}
+
+/**
+ * Avis d'une valeur plus proposée : « Le modèle GPT-6.2 Sol n'est plus proposé par OpenCode : cette
+ * conversation utilise Tidepool Alpha Free. » ; un autre réglage, avec son nom.
+ */
+function notOffered(
+  input: InitialControlsInput,
+  control: SessionControl,
+  value: ControlValue
+): AgentEvent {
+  const wanted = valueName(input, control, value)
+  const current = currentName(input.controls(), control.id)
+  const agent = input.labels?.agent ?? ''
+  const model = control.category === 'model'
+  const key = model
+    ? current
+      ? 'agentHost.notice.modelNotOffered'
+      : 'agentHost.notice.modelNotOfferedNone'
+    : current
+      ? 'agentHost.notice.controlNotOffered'
+      : 'agentHost.notice.controlNotOfferedNone'
+  return {
+    type: 'notice',
+    level: 'warning',
+    message: { key, params: { name: control.name, wanted, agent, ...(current ? { current } : {}) } }
   }
 }
 

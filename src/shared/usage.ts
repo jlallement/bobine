@@ -302,6 +302,11 @@ export interface UsageDigest {
   total?: number
   turns?: number
   cost?: { amount: number; currency: string }
+  /**
+   * Tous les modèles connus de la conversation se disent gratuits (fiche 266, `freeModels`) : un
+   * coût nul y vaut « gratuit ». Absent : payant ou inconnu, un coût nul est « non communiqué ».
+   */
+  free?: true
 }
 
 export function usageDigest(usage: ConversationUsage | undefined): UsageDigest | undefined {
@@ -314,8 +319,51 @@ export function usageDigest(usage: ConversationUsage | undefined): UsageDigest |
       : {}),
     ...(turns ? { turns } : {}),
     // Toute la conversation (fiche 164), pas seulement sa session actuelle.
-    ...(cost ? { cost } : {})
+    ...(cost ? { cost } : {}),
+    ...(freeModels(usage) ? { free: true as const } : {})
   }
+}
+
+/**
+ * Modèle annoncé gratuit par son nom ou son identifiant (« … (free) », « …:free », « -free »,
+ * fiche 265). Heuristique : aucun agent ne dit par ACP qu'un modèle est gratuit (fiche 266).
+ */
+export function isFreeModel(option: { value: string; name: string }): boolean {
+  return /(^|[\s:/(_-])free\b/i.test(`${option.value} ${option.name}`)
+}
+
+/**
+ * Tous les modèles connus de la conversation (ceux de ses tours, celui du tour en cours) se disent
+ * gratuits ; faux sans aucun modèle connu (fiche 266).
+ */
+export function freeModels(usage: ConversationUsage | undefined): boolean {
+  const models = [
+    ...(usage?.turns ?? []).flatMap((turn) => (turn.model ? [turn.model] : [])),
+    ...(usage?.pending?.model ? [usage.pending.model] : [])
+  ]
+  return models.length > 0 && models.every((m) => isFreeModel({ value: m.id, name: m.name }))
+}
+
+/**
+ * Coût annoncé nul en monnaie pour un modèle qui ne se dit pas gratuit (fiche 266, D12) : agent
+ * connecté par abonnement, tarif inconnu de l'agent… Bobine ne peut pas savoir ce qui est facturé.
+ * Une unité propre à l'agent (bobcoins) est son propre décompte : jamais « non communiqué ».
+ */
+export function costNotReported(
+  cost: { amount: number; currency: string } | undefined,
+  free: boolean
+): boolean {
+  return !!cost && cost.amount === 0 && isEstimate(cost.currency) && !free
+}
+
+/**
+ * Coût à afficher (fiche 266) : le montant ; « gratuit » pour un coût nul d'un modèle qui se dit
+ * gratuit ; « coût non communiqué » pour un coût nul d'un autre modèle. Jamais un modèle payant
+ * présenté comme gratuit, jamais « ≈ 0,00 $US ».
+ */
+export function costText(cost: { amount: number; currency: string }, free: boolean): string {
+  if (cost.amount !== 0 || !isEstimate(cost.currency)) return formatEstimate(cost)
+  return free ? t('usage.free') : t('usage.costNotReported')
 }
 
 /**
@@ -330,6 +378,12 @@ export function digestsTotal(
   const currency = used[0]?.cost?.currency
   if (currency === undefined || !used.every((d) => d.cost?.currency === currency)) return undefined
   return { amount: round6(used.reduce((n, d) => n + (d.cost?.amount ?? 0), 0)), currency }
+}
+
+/** Tous les résumés viennent de modèles gratuits (total d'une carte de groupe, fiche 266). */
+export const digestsFree = (digests: readonly (UsageDigest | undefined)[]): boolean => {
+  const used = digests.filter((d): d is UsageDigest => !!d)
+  return used.length > 0 && used.every((d) => d.free === true)
 }
 
 export const sameDigest = (a: UsageDigest | undefined, b: UsageDigest | undefined): boolean =>
@@ -353,7 +407,8 @@ export function parseUsageDigest(raw: unknown): UsageDigest | undefined {
     Number.isFinite(cost.amount) &&
     typeof cost.currency === 'string'
       ? { cost: { amount: cost.amount, currency: cost.currency } }
-      : {})
+      : {}),
+    ...(r['free'] === true ? { free: true as const } : {})
   }
   return Object.keys(digest).length ? digest : undefined
 }

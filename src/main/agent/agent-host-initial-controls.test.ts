@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ControlValue } from '@shared/agent'
+import { noticeText } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import { AgentHost, type AgentHostOptions } from './agent-host'
 import type { AgentProfile } from './profiles'
@@ -86,6 +87,48 @@ describe('AgentHost : réglages de départ, session neuve ou rouverte (fiche 256
     expect(agent.currentSessionId).not.toBe('mock-perdue')
     expect(asked).toEqual(['new'])
     expect(value('mode')).toBe('plan')
+    agent.stop()
+  })
+})
+
+describe('AgentHost : modèle retenu que l’agent ne propose plus (fiche 266, D32)', () => {
+  function withNotices(
+    wanted: Record<string, ControlValue>,
+    knownOptionName?: AgentHostOptions['knownOptionName']
+  ) {
+    const notices: string[] = []
+    const agent = new AgentHost({
+      profile: storeProfile(),
+      workspace: process.cwd(),
+      emit: (event) => {
+        if (event.type === 'notice' && typeof event.message !== 'string')
+          notices.push(noticeText({ message: event.message }))
+      },
+      initialControls: () => wanted,
+      ...(knownOptionName ? { knownOptionName } : {})
+    })
+    return { agent, notices }
+  }
+
+  it('phrase claire : le modèle voulu par son nom retenu, celui pris à la place, sans identifiant brut', async () => {
+    const { agent, notices } = withNotices({ model: 'openai/gpt-6.2-sol' }, (id, value) =>
+      id === 'model' && value === 'openai/gpt-6.2-sol' ? 'GPT-6.2 Sol' : undefined
+    )
+    await agent.start()
+    const current = agent.snapshot().controls.find((c) => c.id === 'model')
+    const name = current?.options.find((o) => o.value === current.currentValue)?.name ?? ''
+    expect(notices).toEqual([
+      `Le modèle GPT-6.2 Sol n’est plus proposé par Agent factice\u00a0: cette conversation utilise ${name}.`
+    ])
+    expect(notices[0]).not.toContain('openai/')
+    expect(notices[0]).not.toContain('Valeur non proposée')
+    agent.stop()
+  })
+
+  it('sans nom retenu : la valeur telle quelle, faute de mieux', async () => {
+    const { agent, notices } = withNotices({ model: 'inconnu-42' })
+    await agent.start()
+    expect(notices[0]).toMatch(/^Le modèle inconnu-42 n’est plus proposé par Agent factice/)
     agent.stop()
   })
 })

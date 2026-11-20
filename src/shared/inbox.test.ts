@@ -101,7 +101,7 @@ describe('libellés', () => {
         { startedFrom: { id: 'm', title: 'Lots d’octobre' } },
         { reason: 'done', since: now - 3 * MIN }
       )
-    ).toBe('Compte rendu à lire · 3 min')
+    ).toBe('Réponse d’un travail à lire · 3 min')
   })
 
   it('temps écoulé : minutes, heures, jours', () => {

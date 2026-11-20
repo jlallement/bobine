@@ -247,7 +247,8 @@ function TurnGuardsCard({
         <Row
           sub
           label={t('turnGuards.settings.capAmount.label')}
-          hint={t('turnGuards.settings.capAmount.hint')}
+          // Coût annoncé nul pour un modèle payant (fiche 266, D12) : le plafond ne se déclenche pas.
+          hint={`${t('turnGuards.settings.capAmount.hint')} ${t('turnGuards.settings.cap.notReported')}`}
         >
           <NumberField
             value={preferences.costCapAmount}

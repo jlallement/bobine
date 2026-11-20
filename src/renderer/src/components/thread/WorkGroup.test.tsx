@@ -91,7 +91,8 @@ const report = (
   removed: 0,
   excerpt: 'Tests ajoutés.',
   reply: `Réponse entière de ${childId}.`,
-  usage: { cost: { amount: 0, currency: 'USD' } },
+  // Modèle gratuit (fiche 266) : un coût nul y vaut « gratuit ».
+  usage: { cost: { amount: 0, currency: 'USD' }, free: true },
   at: T0 + 60_000,
   ...extra
 })
@@ -260,7 +261,18 @@ describe('carte de groupe : proposés (fiche 264, écran D, état 1)', () => {
 })
 
 describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 3)', () => {
-  it('« 3 travaux · 1 en cours, 1 fini », à la place des propositions ; rien de séparé', async () => {
+  it('coût nul d’un modèle payant (abonnement, D12) : « coût non communiqué », jamais « gratuit » (fiche 266)', async () => {
+    const items = working().map((item) =>
+      item.kind === 'child-report'
+        ? { ...item, usage: { cost: { amount: 0, currency: 'USD' } } }
+        : item
+    )
+    view(items, info([child('a', { status: 'busy' }), child('b', { role: front })]))
+    await act(async () => {})
+    expect(screen.getByTestId('work-group-cost').textContent).toBe('coût non communiqué')
+  })
+
+  it('« 3 travaux · 1 en cours, 1 a répondu », à la place des propositions ; rien de séparé', async () => {
     const subtasks = info([child('a', { status: 'busy' }), child('b', { role: front })])
     view(working(), subtasks)
     await act(async () => {})
@@ -268,7 +280,7 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     expect(group.dataset['stage']).toBe('working')
     expect(within(group).getByTestId('work-group-title').textContent).toBe('3 travaux')
     expect(within(group).getByTestId('work-group-counts').textContent).toBe(
-      '· 1 en cours, 1 fini, 1 refusé'
+      '· 1 en cours, 1 a répondu, 1 refusé'
     )
     expect(within(group).getByTestId('work-group-cost').textContent).toBe('gratuit')
     // Plus de « Sous-tâches », de lancement « L'agent a lancé… » ni de compte rendu séparé.
@@ -310,7 +322,7 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     expect(within(card).getByTestId('work-brief-text').textContent).toBe('Consigne b')
     // Lancé par l'agent : sa réponse lui part à son réveil.
     expect(plain(within(card).getByTestId('work-relay').textContent)).toContain(
-      'quand ses travaux auront tous fini'
+      'quand ses travaux auront tous répondu'
     )
     expect(within(card).queryByTestId('work-apply')).toBeNull()
     fireEvent.click(within(card).getByTestId('work-open'))
@@ -1000,7 +1012,7 @@ describe('anciennes conversations : comme avant (fiche 264)', () => {
     expect(screen.queryByTestId('work-card')).toBeNull()
     // « Sous-tâches » lit toutes les branches, comme avant, et montre la fusion enregistrée.
     expect((await screen.findByTestId('subtasks-merge-result')).textContent).toContain(
-      '1 fusionnée dans main'
+      '1 fusionné dans main'
     )
     expect(actions.plan).toHaveBeenCalledWith('mere')
   })

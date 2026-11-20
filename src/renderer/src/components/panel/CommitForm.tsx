@@ -160,7 +160,9 @@ function Drafting({
       <span>
         {t('worktreeCycle.commit.draft.drafting', { agent })}{' '}
         <span className="commit-draft-time">
-          {t('worktreeCycle.commit.draft.seconds', { count: seconds })}
+          {seconds < 1
+            ? t('transcript.duration.underSecond')
+            : t('worktreeCycle.commit.draft.seconds', { count: seconds })}
         </span>
       </span>
       <button className="link-button" onClick={onStop} data-testid={`${testid}-draft-stop`}>

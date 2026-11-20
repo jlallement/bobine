@@ -26,7 +26,7 @@ Ici, vous pouvez :
 | Coût | en Bobcoins, quota du mois affiché | en dollars (0 avec un modèle gratuit), avec les jetons |
 | Remplissage du contexte | non communiqué | affiché |
 | [Plusieurs dossiers](plusieurs-dossiers.md) | pas encore | oui (2.0.31 et plus) |
-| Modèle d'une conversation fille | l'agent choisit | à choisir, ou suggéré par la mère |
+| Modèle d'un travail délégué | l'agent choisit | à choisir, ou suggéré par l'agent |
 | Fichiers exclus | `.gitignore`, `.bobignore` et `.env` : non proposés avec `@` | aucun |
 | Fichiers de consignes | `AGENTS.md`, `.bob/rules/` | `AGENTS.md` (jusqu'au dossier personnel) |
 | Serveurs MCP | `.bob/mcp.json`, `~/.bob/settings/mcp.json` | `opencode.json` |

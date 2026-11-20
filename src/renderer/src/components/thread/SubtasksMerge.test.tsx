@@ -119,7 +119,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => screen.getByTestId('subtasks-merge'))
     expect(actions.plan).toHaveBeenCalledWith('mere')
     expect(text('subtasks-merge-summary')).toBe(
-      '2 branches finies\u00a0; «\u00a0Fille c\u00a0» travaille encore.'
+      '2 travaux ont répondu\u00a0; «\u00a0Fille c\u00a0» travaille encore.'
     )
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
     const cleanup = screen.getByTestId('subtasks-merge-cleanup')
@@ -146,7 +146,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => screen.getByTestId('subtasks-merge-progress'))
     expect(badges()).toEqual(['merged', 'merging', 'pending'])
     expect(text('subtasks-merge-progress')).toBe(
-      'Fusion dans main, l’une après l’autre\u00a0: 1 sur 3 faite. Au premier conflit, la fille concernée le résout, puis la fusion reprend.'
+      'Fusion dans main, l’un après l’autre\u00a0: 1 sur 3 fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
     )
     fireEvent.click(screen.getByTestId('subtasks-merge-stop'))
     // L'« Arrêter » de cette fusion seulement (fiche 264).
@@ -164,7 +164,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     expect(badges()).toEqual(['resolving', 'pending', 'pending'])
   })
 
-  it('finie : « 2 fusionnées dans main en 12 s », déjà à jour, nettoyées', async () => {
+  it('finie : « 2 fusionnés dans main en 12 s », déjà à jour, nettoyées', async () => {
     const done = merge('done', ['merged', 'merged', 'up-to-date'], {
       cleanup: true,
       endedAt: 13_000
@@ -173,7 +173,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     view([done], plan([]))
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '2 fusionnées dans main en 12 s. 1 déjà à jour. Conversations archivées, dossiers de travail et branches supprimés.'
+      '2 fusionnés dans main en 12 s. 1 déjà à jour. Conversations archivées, dossiers de travail et branches supprimés.'
     )
     expect(badges()).toEqual(['merged', 'merged', 'up-to-date'])
     expect(screen.queryByTestId('subtasks-merge-start')).toBeNull()
@@ -216,7 +216,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      'Fusion interrompue par la fermeture de l’app\u00a0: 1 fusionnée dans main.'
+      'Fusion interrompue par la fermeture de l’app\u00a0: 1 fusionné dans main.'
     )
     expect(badges()).toEqual(['merged', 'pending', 'pending'])
     expect(text('subtasks-merge-start')).toBe('Fusionner les 2 dans main')
@@ -239,7 +239,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('main-dirty'))
     expect(text('subtasks-merge-summary')).toBe(
-      'Les 2 branches sont finies et ne touchent pas les mêmes fichiers.'
+      'Les 2 travaux ont répondu et ne touchent pas les mêmes fichiers.'
     )
     expect(text('main-dirty-title')).toBe(
       'Fusion refusée\u00a0: le dossier principal a 2 modifications non commitées.'
@@ -318,7 +318,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '2 fusionnées dans main en 12 s. Vos 2 modifications mises de côté sont revenues.'
+      '2 fusionnés dans main en 12 s. Vos 2 modifications mises de côté sont revenues.'
     )
   })
 
@@ -334,7 +334,7 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     await waitFor(() => screen.getByTestId('subtasks-merge-result'))
     expect(text('subtasks-merge-result')).toBe(
-      '1 fusionnée dans main en 12 s. Vos modifications mises de côté n’ont pas pu revenir sans conflit (README.md)\u00a0: elles restent dans git stash (a1b2c3d).'
+      '1 fusionné dans main en 12 s. Vos modifications mises de côté n’ont pas pu revenir sans conflit (README.md)\u00a0: elles restent dans git stash (a1b2c3d).'
     )
   })
 
@@ -400,16 +400,16 @@ describe('Recommandations de la mère (fiche 160)', () => {
       'ready',
       'not-ready'
     ])
-    expect(text('subtasks-merge-start')).toBe('Fusionner la recommandée dans main')
+    expect(text('subtasks-merge-start')).toBe('Fusionner le recommandé dans main')
     expect(text('subtasks-merge-advice')).toBe(
-      'La mère recommande « Fille a » ; les 2 autres attendent son avis.'
+      'L’agent recommande « Fille a » ; les 2 autres attendent son avis.'
     )
     fireEvent.click(screen.getByTestId('subtasks-merge-start'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a'], false))
     // Les autres : une confirmation, puis toutes, dans l'ordre de lancement.
     fireEvent.click(screen.getByTestId('subtasks-merge-others'))
     expect(text('subtasks-merge-confirm')).toContain(
-      'La mère ne recommande pas « Fille b » et « Fille c ».'
+      'L’agent ne recommande pas « Fille b » et « Fille c ».'
     )
     fireEvent.click(screen.getByTestId('subtasks-merge-confirm-cancel'))
     expect(screen.queryByTestId('subtasks-merge-confirm')).toBeNull()
@@ -438,7 +438,7 @@ describe('Recommandations de la mère (fiche 160)', () => {
     await waitFor(() => screen.getByTestId('subtasks-merge-others'))
     expect(screen.getByTestId('subtask-recommendation').dataset['state']).toBe('stale')
     expect(screen.queryByTestId('subtasks-merge-start')).toBeNull()
-    expect(text('subtasks-merge-advice')).toBe('La mère ne recommande encore aucune branche.')
+    expect(text('subtasks-merge-advice')).toBe('L’agent ne recommande encore aucun travail.')
   })
 
   it('sans recommandation : toutes les filles finies, comme avant', async () => {

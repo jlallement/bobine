@@ -63,7 +63,7 @@ describe('bannières groupées (fiche 119)', () => {
     expect(shown[0]).toMatchObject({
       conversationId: 'a',
       conversationIds: ['a', 'b', 'c'],
-      title: '3 conversations filles ont fini',
+      title: '3 travaux ont répondu',
       body: 'Titre a, Titre b, Titre c'
     })
   })

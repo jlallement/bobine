@@ -240,7 +240,7 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
       ['b', 'unread'],
       ['a', 'running']
     ])
-    expect(screen.getByTestId('subtasks').textContent).toContain('1 en cours, 1 terminée')
+    expect(screen.getByTestId('subtasks').textContent).toContain('1 en cours, 1 a répondu')
     expect(rows[0]?.textContent).toContain('3 fichiers +62 −4')
     expect(rows[0]?.textContent).toContain('bobine/b')
     fireEvent.click(screen.getAllByTestId('subtask-open')[1] ?? document.body)
@@ -250,11 +250,11 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
     // Replié (fiche 171) : titre et première phrase ; branche et fichiers au dépli. Fille sans
     // rôle qui a fini : « Enregistrer comme rôle… » (fiche 223).
     expect(reports[0]?.textContent).toBe(
-      '«\u00a0Fille b\u00a0» a fini son tour12 tests passent.Afficher le détailEnregistrer comme rôle…'
+      '«\u00a0Fille b\u00a0» a répondu12 tests passent.Afficher le détailEnregistrer comme rôle…'
     )
     fireEvent.click(reports[0]?.querySelector('[data-testid=child-report-toggle]') ?? document.body)
     expect(reports[0]?.textContent).toBe(
-      '«\u00a0Fille b\u00a0» a fini son tourMasquer le détail12 tests passent.bobine/b3 fichiers +62 −4Enregistrer comme rôle…'
+      '«\u00a0Fille b\u00a0» a réponduMasquer le détail12 tests passent.bobine/b3 fichiers +62 −4Enregistrer comme rôle…'
     )
     expect(reports.map((r) => !!r.querySelector('[data-testid=child-report-pending]'))).toEqual([
       false,
@@ -288,18 +288,18 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
     )
     const launch = screen.getByTestId('child-started')
     expect(launch.querySelector('summary')?.textContent).toBe(
-      'L’agent a lancé la conversation fille «\u00a0Fille a\u00a0»'
+      'L’agent a lancé le travail «\u00a0Fille a\u00a0»'
     )
     expect(launch.hasAttribute('open')).toBe(false)
     expect(launch.querySelector('[data-testid=child-instruction-text]')?.textContent).toBe('Fais')
     // Un message d'une autre conversation : sa provenance, sans « Modifier » ni « Réessayer ».
     const origin = screen.getByTestId('message-origin')
-    expect(origin.textContent).toBe('De la conversation fille «\u00a0Fille a\u00a0»')
+    expect(origin.textContent).toBe('Du travail «\u00a0Fille a\u00a0»')
     fireEvent.click(origin.querySelector('button') ?? document.body)
     expect(onOpenConversation).toHaveBeenCalledWith('a')
     expect(screen.queryAllByTestId('message-edit')).toHaveLength(1)
     // Le réveil groupé : une ligne de l'app, traduite, pas une bulle.
-    expect(screen.getByTestId('wake-message').textContent).toContain('Tous les travaux ont fini')
+    expect(screen.getByTestId('wake-message').textContent).toContain('Tous les travaux ont répondu')
     expect(screen.queryByText('All the child conversations…')).toBeNull()
   })
 
@@ -356,7 +356,7 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
       ])
     )
     expect(screen.getByTestId('child-report-pending').textContent).toBe(
-      'Partira à l’agent quand ses conversations filles auront toutes fini.'
+      'Partira à l’agent quand ses travaux auront tous répondu.'
     )
   })
 })

@@ -49,7 +49,7 @@ about it with your next message.
 
 - `@` mentions and attachments only offer files from the working folder.
 - The Changes tab only follows the working folder.
-- Other folders are not carried over to branches (“Branch from this message”) or to child
-  conversations.
+- Other folders are not carried over to branches (“Branch from this message”) or to delegated
+  tasks.
 - If you hand the conversation over to an agent that doesn’t support multiple folders, the list
   stays visible, greyed out, with “Not sent: …”.

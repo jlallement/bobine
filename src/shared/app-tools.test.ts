@@ -100,10 +100,10 @@ describe('outils des filles : la fille par son titre (fiche 258, D18)', () => {
       'Écrit à « Endpoint » : Corrige le test'
     )
     expect(named('message_child', { child: id, message: 'Corrige le test' })).toBe(
-      'Écrit à une conversation fille : Corrige le test'
+      'Écrit à un travail : Corrige le test'
     )
     expect(named('child_status', { child: id }, 'Endpoint')).toBe('Regarde où en est « Endpoint »')
-    expect(named('child_status', { child: id })).toBe('Regarde où en sont les conversations filles')
+    expect(named('child_status', { child: id })).toBe('Regarde où en sont ses travaux')
   })
 
   it('en anglais', async () => {

@@ -146,7 +146,7 @@ describe('filles des rôles dans le fil de la mère', () => {
     expect(launches[0]?.textContent).toContain('Lit token_store.dart')
   })
 
-  it('rôle arrêté par ■ : « a été arrêté », jamais « a fini » (fiche 258, D4)', () => {
+  it('rôle arrêté par ■ : « arrêté », jamais « a répondu » (fiche 258, D4)', () => {
     watchEvents()
     render(
       <Transcript
@@ -163,16 +163,16 @@ describe('filles des rôles dans le fil de la mère', () => {
     )
     const launch = screen.getByTestId('role-launch')
     expect(launch.dataset['state']).toBe('stopped')
-    expect(launch.textContent).toContain('a été arrêté')
-    expect(launch.textContent).not.toContain('a fini')
+    expect(launch.textContent).toContain('arrêté')
+    expect(launch.textContent).not.toContain('a répondu')
     // L'avatar : la pastille d'échec ou d'arrêt (maquette 03-5), comme son compte rendu.
     expect(launch.querySelector('[data-testid=role-avatar]')?.getAttribute('data-state')).toBe(
       'error'
     )
     const row = screen.getByTestId('subtask-row')
     expect(row.dataset['state']).toBe('stopped')
-    expect(row.querySelector('[data-testid=role-state]')?.textContent).toBe('a été arrêté')
-    expect(screen.getByTestId('subtasks').textContent).toContain('1 arrêtée')
+    expect(row.querySelector('[data-testid=role-state]')?.textContent).toBe('arrêté')
+    expect(screen.getByTestId('subtasks').textContent).toContain('1 arrêté')
   })
 
   it('compte rendu : titré du rôle, avec son avatar', () => {
@@ -201,7 +201,7 @@ describe('filles des rôles dans le fil de la mère', () => {
     )
     const report = screen.getByTestId('child-report')
     expect(report.dataset['role']).toBe('security-expert')
-    expect(report.textContent).toContain('Expert sécu a rendu son compte rendu — Fille a')
+    expect(report.textContent).toContain('Expert sécu a répondu — Fille a')
     expect(report.querySelector('[data-testid=role-avatar]')).toBeTruthy()
     // Fille d'un rôle : rien à enregistrer comme rôle.
     expect(report.querySelector('[data-testid=child-report-save-role]')).toBeNull()

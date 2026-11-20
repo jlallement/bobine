@@ -31,7 +31,7 @@ walks you through it.
 
 4. [Worktrees](worktrees.md): a conversation on its own branch, its setup (`.worktreeinclude`,
    `.bobine/worktree.json`), merging back into `main`.
-5. [Child conversations and merging](conversations-filles.md): hand tasks to other conversations,
+5. [Delegated tasks and merging](conversations-filles.md): hand tasks to a role or another agent,
    then merge their work.
 6. [Request review](faire-relire.md): ask another agent to review the work.
 7. [PR and CI tracking](suivi-pr-ci.md): open a pull request and follow its checks.

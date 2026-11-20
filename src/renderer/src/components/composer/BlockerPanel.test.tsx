@@ -347,6 +347,23 @@ describe('modèle refusé faute de connexion (fiche 210)', () => {
     expect(onSetControl).toHaveBeenCalledWith('model', 'opencode/big-pickle')
   })
 
+  it('même fournisseur qu’un modèle refusé : « connexion sans doute à faire », jamais d’autres (fiche 266, D31)', () => {
+    const control = models()
+    control.options.push(
+      { value: 'openai/gpt-6.1-sol', name: 'OpenAI/GPT-6.1 Sol' },
+      { value: 'solo', name: 'Sans fournisseur' }
+    )
+    modelPanel(refused(), control)
+    fireEvent.click(screen.getByTestId('auth-choose-model'))
+    const sibling = screen.getByTestId('control-model-openai/gpt-6.1-sol')
+    expect(sibling.classList.contains('model-auth-likely')).toBe(true)
+    expect(sibling.textContent).toContain('connexion sans doute à faire')
+    expect(sibling.getAttribute('title')).toContain('Un autre modèle de ce fournisseur')
+    for (const other of ['opencode/big-pickle', 'solo', 'openai/gpt-5.2']) {
+      expect(screen.getByTestId(`control-model-${other}`).querySelector('.likely')).toBeNull()
+    }
+  })
+
   it('outils déjà lancés : le choix d’un modèle demande la même confirmation que « Réessayer »', () => {
     const { onSetControl } = modelPanel(refused({ toolsRan: true }), models())
     const pick = () => {

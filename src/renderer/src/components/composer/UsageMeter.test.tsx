@@ -121,6 +121,20 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     expect(plain(screen.getByTestId('usage-average').textContent)).toContain('35 055 jetons')
   })
 
+  it('coût nul d’un modèle payant : « coût non communiqué », dit pourquoi (fiche 266, D12)', () => {
+    const usage: ConversationUsage = {
+      cost: { amount: 0, currency: 'USD' },
+      turns: [
+        { model: { id: 'openai/gpt-6.1-sol', name: 'GPT-6.1 Sol' }, costStart: 0, costEnd: 0 }
+      ]
+    }
+    render(meter(usage))
+    expect(screen.getByTestId('usage-meter').textContent).toBe('coût non communiqué')
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    expect(screen.getByTestId('usage-cost').textContent).toBe('coût non communiqué')
+    expect(screen.getByTestId('usage-cost-hint').textContent).toContain('ne se dit pas gratuit')
+  })
+
   it('bobcoins de Bob : ni « ≈ » ni explication d’estimation (fiche 245)', () => {
     render(meter({ cost: { amount: 0.0632, currency: 'bobcoins' } }))
     fireEvent.click(screen.getByTestId('usage-meter'))

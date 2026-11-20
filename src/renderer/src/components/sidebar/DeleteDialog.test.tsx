@@ -82,10 +82,10 @@ describe('supprimer une mère : ses filles (fiche 228)', () => {
     const onConfirm = open()
     const box = (await screen.findByTestId('delete-children')) as HTMLInputElement
     expect(box.checked).toBe(true)
-    expect(box.parentElement?.textContent).toContain('Supprimer aussi ses 3 conversations filles')
+    expect(box.parentElement?.textContent).toContain('Supprimer aussi ses 3 travaux')
     const rows = [...screen.getByTestId('delete-children-list').querySelectorAll('li')]
     expect(rows.map((r) => r.textContent)).toEqual([
-      'Importer les donnéesau travail, sera arrêtée',
+      'Importer les donnéesau travail, sera arrêté',
       'Corriger les tests',
       '↳Relire les tests'
     ])

@@ -44,7 +44,7 @@ In the conversation, the folder below the message box shows the worktree’s bra
 
 A fresh worktree only contains the files tracked by git: no `.env`, no `node_modules`. Two files at
 the root of the repository make it ready to use. They apply to every conversation in a worktree,
-including [child conversations](conversations-filles.md) and
+including [delegated tasks](conversations-filles.md) and
 [scheduled tasks](taches-planifiees.md).
 
 <a id="worktreeinclude"></a>
@@ -118,7 +118,7 @@ While the command runs:
 If the command fails, the conversation goes on and the agent knows; the output is expanded in the
 card. The list of copied files can be expanded too.
 
-**Without you.** A child conversation or a scheduled task doesn’t wait for approval: it goes ahead
+**Without you.** A delegated task or a scheduled task doesn’t wait for approval: it goes ahead
 without the setup, and says so. A command that is already allowed runs as usual.
 
 **Withdraw an approval**: Settings › Privacy › **Allowed without asking**, line
