@@ -69,6 +69,27 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- **“@Code reviewer Review what was done” reviews what was done**: on the main branch, the
+  conversation’s commits (since the last review, else since it started), never a lone merge
+  commit; with uncommitted changes, those and the commits. The card always says what was reviewed
+  (“Reviewed: 4 commits, 12 files (a3f2c1e..9b8e7d0)”), even when there is nothing to report.
+- Clicking a finding’s `file:line` opens the diff that was reviewed, even if the file was fixed
+  since (the view says so), instead of “No changes”.
+- **Free quota used up** (OpenCode: “Free usage limit reached”): the “The … model didn’t answer”
+  card with “Choose another model”, instead of the raw error; in a task’s card too, where you can
+  change the task’s model.
+- A task’s live activity holds on one line: a long command is cut, shown whole in a tooltip.
+- Text typed while a task is being prepared is no longer erased.
+- “Retry” on a task no longer repeats its request in the card.
+- A role’s reply starts with a two-line summary, without a “Report” heading.
+- The hint under the composer with a role is grey, no longer in the warning colour.
+- “Reply to <role>” puts the cursor in the right composer, even with two conversations side by
+  side.
+- A failed reply seen in its card is no longer “to read”.
+- The working indicator shows the turn’s duration, the step’s in smaller type.
+- Tasks keep their launch order under their conversation.
+- My activity: the cost tile counts unknown-cost exchanges like the table, and the first month
+  label is no longer cut.
 - Handing work to a role that writes no longer shows a warning before you even type: a discreet
   line under the input says where it will work ("from the last commit, without your N uncommitted
   changes"), Enter always sends, and "Choose…" lets you commit first, ask for just a read-only
