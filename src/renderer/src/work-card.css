@@ -305,6 +305,16 @@
 .work-actions .work-open {
   margin-left: auto;
 }
+/* Action principale et secondaires : un bloc qui passe à la ligne entier (fiche 267, revue UX). */
+.work-actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.work-actions-group:empty {
+  display: none;
+}
 .link-button.work-open {
   color: var(--muted);
   font-size: 12.5px;

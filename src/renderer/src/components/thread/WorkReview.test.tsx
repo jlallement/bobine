@@ -310,6 +310,14 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     })
   })
 
+  it('fiche 267, revue UX : « corriger » et « Voir sur le diff » dans un seul bloc', () => {
+    fakeAgent()
+    view(reviewedHere(), info([conversation('r', reviewer)]))
+    const group = screen.getByTestId('work-actions-group')
+    expect(within(group).getByTestId('work-fix')).toBeTruthy()
+    expect(within(group).getByTestId('work-show-diff')).toBeTruthy()
+  })
+
   it('« Demander à OpenCode de corriger » : message qui nomme le relecteur, sa réponse visée à part', async () => {
     fakeAgent()
     const onAsk = vi.fn(async () => undefined)

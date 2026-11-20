@@ -312,7 +312,8 @@ function SettledActions({
   const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
   return (
-    <>
+    // Actions du travail en un bloc, qui passe à la ligne entier (fiche 267, revue UX).
+    <div className="work-actions-group" data-testid="work-actions-group">
       {applies && onAsk && role && (
         <button
           type="button"
@@ -396,7 +397,7 @@ function SettledActions({
           {t('workCard.reply', { role: role.label })}
         </button>
       )}
-    </>
+    </div>
   )
 }
 
