@@ -220,19 +220,26 @@ export function useRoleCompose(options: {
     const before = tokensNow.current
     const others = before.filter((t) => !to.names.includes(t))
     update(others)
-    at.changeText('', 0)
+    // Ce qui a été tapé après Entrée (pendant la lecture du dossier, recette N5, fiche 267) reste
+    // dans la saisie : seul le texte validé part et s'efface.
+    const rest = typedAfter(at.text, textNow.current)
+    at.changeText(rest, rest.length)
+    /** Remet `text` devant ce qui est dans la saisie, si la saisie n'a pas changé depuis. */
+    const restore = (text: string) => {
+      if (textNow.current === rest) at.changeText(text + rest, text.length)
+    }
     void (uncommitted ? roles.send(to.names, to.text, uncommitted) : roles.send(to.names, to.text))
       .then(({ started, failed }) => {
         // Parti : « Juste un avis » ne vaut pas pour le message suivant.
         if (started.length > 0) choose('without')
         if (started.length === 0) {
           update(before)
-          if (textNow.current === '') at.changeText(at.text, at.text.length)
+          restore(at.text)
           return
         }
         if (!failed.length) return
         update([...others, ...to.names.filter((n) => failed.includes(n))])
-        if (textNow.current === '') at.changeText(to.text, to.text.length)
+        restore(to.text)
       })
       .finally(() => {
         setBusy(false)
@@ -574,3 +581,13 @@ export function RoleDestinationFor({
 }
 
 export { RoleTokens }
+
+/**
+ * Ce qui a été tapé dans la saisie après Entrée, pendant que l'envoi attendait (lecture du
+ * dossier, fiche 262) : la suite du texte validé, ou tout le texte s'il a été changé autrement —
+ * jamais effacé sans être parti (recette N5, fiche 267).
+ */
+export function typedAfter(sent: string, now: string): string {
+  if (now === sent) return ''
+  return now.startsWith(sent) ? now.slice(sent.length) : now
+}
