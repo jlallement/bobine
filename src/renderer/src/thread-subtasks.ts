@@ -1,3 +1,4 @@
+import type { DiffTarget } from '@shared/review'
 import type { AgentSnapshot, PromptRequest } from '@shared/agent'
 import { childrenOf } from '@shared/children-rows'
 import type { SubtasksInfo } from './components/thread/Subtasks'
@@ -27,7 +28,7 @@ export function threadSubtasks(
     review: (childId: string) => void
     changes: () => void
     /** « Voir sur le diff » du Code reviewer (fiche 265) : vue Git de la conversation relue. */
-    diff?: (authorId: string, file?: string, line?: number) => void
+    diff?: (authorId: string, file?: DiffTarget) => void
   }
 ): SubtasksInfo {
   const profiles = c.settings?.profiles ?? []

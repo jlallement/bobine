@@ -4483,7 +4483,8 @@
       "focus": "What to look at: {{focus}}",
       "commit_one": "Review the last commit {{commit}} ({{count}} file).",
       "commit_other": "Review the last commit {{commit}} ({{count}} files)."
-    }
+    },
+    "fileDiff": "{{path}} since {{since}}"
   },
   "scheduled": {
     "title": "Scheduled tasks",

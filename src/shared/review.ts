@@ -78,6 +78,11 @@ export interface Review {
   baseBranch?: string
   /** Fichiers à relire au départ. */
   files: number
+  /**
+   * Point de comparaison du diff d'une remarque (fiche 265) : la base de la branche, le parent du
+   * commit relu (l'arbre vide pour le premier commit) ; absent : le non commité, contre `HEAD`.
+   */
+  since?: string
   status: ReviewStatus
   findings: ReviewFinding[]
   /** Avis d'ensemble du relecteur. */
@@ -269,6 +274,28 @@ export function reviewFindings(
       : []
   )
 }
+
+/**
+ * Un fichier à ouvrir dans la vue Git de la conversation relue (fiche 265) : celui d'une remarque,
+ * sa plage de lignes, et le point relu (`Review.since`) pour une branche ou un commit.
+ */
+export interface DiffTarget {
+  path: string
+  line?: number
+  endLine?: number
+  since?: string
+}
+
+/** Le fichier d'une remarque d'une relecture, à ouvrir. */
+export const findingTarget = (
+  finding: Pick<ReviewFinding, 'file' | 'line' | 'endLine'>,
+  review: Pick<Review, 'since'>
+): DiffTarget => ({
+  path: finding.file,
+  line: finding.line,
+  ...(finding.endLine ? { endLine: finding.endLine } : {}),
+  ...(review.since ? { since: review.since } : {})
+})
 
 /** Où se lit une remarque : « src/main.ts:42 », « src/main.ts:42-48 ». */
 export const findingPlace = (finding: Pick<ReviewFinding, 'file' | 'line' | 'endLine'>): string =>

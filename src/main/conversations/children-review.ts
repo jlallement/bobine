@@ -653,10 +653,19 @@ export function askText(
  * Point affiché et relu par la carte (fiche 265) : le commit relu (portée `commit`), sinon le point
  * de départ de la branche ; abrégé.
  */
-function reviewBase(target: ReviewTarget): Pick<Review, 'base'> {
+function reviewBase(target: ReviewTarget): Pick<Review, 'base' | 'since'> {
   const base = target.scope === 'commit' ? target.commit : target.base
-  return base ? { base: base.slice(0, 7) } : {}
+  const since =
+    target.scope === 'commit'
+      ? (target.base ?? EMPTY_TREE)
+      : target.scope === 'branch'
+        ? target.base
+        : undefined
+  return { ...(base ? { base: base.slice(0, 7) } : {}), ...(since ? { since } : {}) }
 }
+
+/** L'arbre vide de git : point de comparaison du premier commit d'un dépôt. */
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 /** Texte de l'agent depuis le dernier message reçu (tout le tour, coupé par ses outils). */
 export function turnReply(items: readonly TranscriptItem[]): string {

@@ -733,11 +733,12 @@ export function createHandlers(
     // Le renderer désigne un fichier ; le main vérifie qu'il est dans le dossier de la conversation.
     'git:status': (id) => c.readFolder(str(id, 'id'), (folder) => deps.git.status(folder), null),
     'changes:git': (id) => deps.changes.git.changes(c.workspaceOf(str(id, 'id'))),
-    'changes:gitFile': (id, path, from) =>
+    'changes:gitFile': (id, path, from, since) =>
       deps.changes.git.fileDiff(
         c.workspaceOf(str(id, 'id')),
         str(path, 'path'),
-        from === undefined ? undefined : str(from, 'from')
+        from === undefined || from === null ? undefined : str(from, 'from'),
+        since === undefined ? undefined : str(since, 'since')
       ),
     // Mêmes garde-fous que les liens du fil : un fichier qui peut s'exécuter n'est que montré.
     'changes:open': (id, path) =>

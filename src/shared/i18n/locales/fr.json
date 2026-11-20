@@ -4682,7 +4682,8 @@
       "commit_one": "Relis le dernier commit {{commit}} ({{count}} fichier).",
       "commit_many": "Relis le dernier commit {{commit}} ({{count}} fichiers).",
       "commit_other": "Relis le dernier commit {{commit}} ({{count}} fichiers)."
-    }
+    },
+    "fileDiff": "{{path}} depuis {{since}}"
   },
   "scheduled": {
     "title": "Tâches planifiées",

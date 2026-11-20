@@ -1,3 +1,4 @@
+import type { DiffTarget } from '@shared/review'
 import {
   BookmarkPlus,
   Check,
@@ -94,10 +95,10 @@ export interface SubtasksInfo {
   onShowChanges?: () => void
   /**
    * « Voir sur le diff » d'une carte du Code reviewer (fiche 265) : la vue Git de la conversation
-   * relue (celle-ci, ou le travail relu), où ses remarques sont des remarques de diff ; `file`,
-   * `line` : le fichier d'une remarque, ouvert, et sa ligne montrée.
+   * relue (celle-ci, ou le travail relu), où ses remarques sont des remarques de diff ; `file` :
+   * le fichier d'une remarque, ouvert, ses lignes montrées (depuis le point relu, s'il y en a un).
    */
-  onShowDiff?: (authorId: string, file?: string, line?: number) => void
+  onShowDiff?: (authorId: string, file?: DiffTarget) => void
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>

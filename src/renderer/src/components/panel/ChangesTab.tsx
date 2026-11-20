@@ -25,6 +25,8 @@ import { ChangesFileList, GIT_BADGES, type Row } from './ChangesList'
 import { ChangesViews, DiffNotesBar } from './ChangesBars'
 import { ChildrenView, type ChildWorktreesMerge } from './ChildrenView'
 import { ReviewNotes, useReviewImport } from './ReviewNotes'
+import { ReviewFileDiff } from './ReviewFileDiff'
+import type { DiffTarget } from '@shared/review'
 import type { ChildRow } from '@shared/children-rows'
 import { countText } from '@shared/i18n/format'
 
@@ -49,8 +51,11 @@ const isRevertFailure = (outcome: RevertOutcome): outcome is (typeof REVERT_FAIL
   (REVERT_FAILURES as readonly RevertOutcome[]).includes(outcome)
 
 /** La ligne d'un fichier à montrer dans la vue Git (fiche 265). */
-const lineFocus = (file: { path: string; line?: number } | undefined) =>
-  file?.line ? { file: file.path, line: file.line } : undefined
+const lineFocus = (file: ReviewFileRequest | undefined, seq: number) =>
+  file?.line ? { file: file.path, from: file.line, to: file.endLine ?? file.line, seq } : undefined
+
+/** Fichier d'une remarque du Code reviewer à ouvrir (fiche 265). */
+type ReviewFileRequest = DiffTarget
 
 interface ChangesTabProps {
   conversationId: string
@@ -64,7 +69,7 @@ interface ChangesTabProps {
    * Fichier à ouvrir d'emblée, et sa ligne à montrer et mettre en avant si le diff la contient
    * (remarque du Code reviewer cliquée sur sa carte, fiche 265).
    */
-  initialFile?: { path: string; line?: number }
+  initialFile?: ReviewFileRequest
   /** Remarques sur les modifications (fiche 085) : envoie le message à l'agent. */
   onSendNotes?: (text: string) => void
   /** Filles de la conversation (fiche 161) ; vue « Filles » seulement s'il y en a. */
@@ -99,6 +104,13 @@ export function ChangesTab({
   // rouvert revient sur la même vue.
   // Une demande d'ouverture (puce de branche…) ne vaut qu'une fois : remonté ensuite, l'onglet
   // revient sur le dernier choix.
+  // Fichier demandé (remarque du Code reviewer, fiche 265) : une fois par demande, pas à chaque
+  // remontage de l'onglet (revue QA).
+  const [fileAsked] = useState(() =>
+    initialFile && (initialViewSeq ?? 0) > (chosenView<View>(conversationId)?.seq ?? 0)
+      ? initialFile
+      : undefined
+  )
   const [chosen, setChosenState] = useState<View | null>(() => {
     const remembered = chosenView<View>(conversationId)
     const seq = initialViewSeq ?? 0
@@ -116,7 +128,7 @@ export function ChangesTab({
     setChosenState(next)
   }
   const [open, setOpen] = useState<Set<string>>(
-    () => new Set(initialFile ? [initialFile.path] : [])
+    () => new Set(fileAsked && !fileAsked.since ? [fileAsked.path] : [])
   )
   const [gitDiffs, setGitDiffs] = useState<Record<string, GitFileDiff | { error: string }>>({})
   const [error, setError] = useState<string | null>(null)
@@ -324,6 +336,14 @@ export function ChangesTab({
           {onSendNotes && (
             <ReviewNotes notes={reviewNotes} onShow={showNote} onRemove={diffNotes.remove} />
           )}
+          {fileAsked?.since && (
+            <ReviewFileDiff
+              conversationId={conversationId}
+              path={fileAsked.path}
+              since={fileAsked.since}
+              focus={lineFocus(fileAsked, initialViewSeq ?? 0)}
+            />
+          )}
           {error && (
             <div className="browser-error">
               <CommandText text={error} />
@@ -400,7 +420,7 @@ export function ChangesTab({
                 conversation={conversation}
                 gitDiffs={gitDiffs}
                 annotationsFor={annotationsFor}
-                focus={lineFocus(initialFile)}
+                focus={fileAsked?.since ? undefined : lineFocus(fileAsked, initialViewSeq ?? 0)}
               />
             </>
           )}

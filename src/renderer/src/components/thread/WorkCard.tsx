@@ -1,3 +1,4 @@
+import { findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
 import {
   Activity,
   Check,
@@ -276,7 +277,7 @@ export function WorkCard({
         items={items}
         mergeBusy={mergeBusy}
         {...(merge ? { merge } : {})}
-        onShowDiff={showFile}
+        onShowDiff={showFile && (() => showFile(firstTarget(card)))}
       />
       {/* Ses relectures, dans sa carte (fiche 265) ; dans un groupe, sous sa ligne. */}
       {!inGroup && !nested && <WorkReviews childId={card.childId} items={items} info={info} />}
@@ -311,14 +312,21 @@ const reviewData = (card: WorkCardData) =>
       }
     : {}
 
+/** « Voir sur le diff » (fiche 265) : la plus grave de ses remarques, depuis le point relu. */
+function firstTarget(card: WorkCardData): DiffTarget | undefined {
+  const review = card.review
+  const first = review && findingsBySeverity(review.findings)[0]
+  return review && first ? findingTarget(first, review) : undefined
+}
+
 /** Code reviewer (fiche 265) : ses remarques ouvrent la vue Git de la conversation relue. */
 function reviewShow(
   card: WorkCardData,
   info: SubtasksInfo | undefined
-): ((file?: string, line?: number) => void) | undefined {
+): ((file?: DiffTarget) => void) | undefined {
   const reviewed = reviewedId(card)
   const show = info?.onShowDiff
-  return reviewed && show ? (file, line) => show(reviewed, file, line) : undefined
+  return reviewed && show ? (file) => show(reviewed, file) : undefined
 }
 
 /** Conversation relue par ce Code reviewer (fiche 265) ; `undefined` pour un autre travail. */

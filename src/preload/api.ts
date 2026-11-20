@@ -421,8 +421,10 @@ export function createApi(
     },
     changes: {
       git: (id: string) => invoke('changes:git', id),
-      gitFile: (id: string, path: string, from?: string) =>
-        invoke('changes:gitFile', id, path, ...(from ? [from] : [])),
+      gitFile: (id: string, path: string, from?: string, since?: string) =>
+        since
+          ? invoke('changes:gitFile', id, path, from ?? null, since)
+          : invoke('changes:gitFile', id, path, ...(from ? [from] : [])),
       open: (id: string, path: string) => invoke('changes:open', id, path),
       reveal: (id: string, path: string) => invoke('changes:reveal', id, path),
       /** Annule une modification de l'agent sur ce fichier (fiche 043). */

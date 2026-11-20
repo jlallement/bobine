@@ -7,7 +7,7 @@ import {
   type GitFileDiff,
   type TextChange
 } from '@shared/changes'
-import { DiffView, type DiffAnnotations } from '../thread/DiffView'
+import { DiffView, type DiffAnnotations, type DiffFocus } from '../thread/DiffView'
 import { Tip } from '../common/Menus'
 import { countText } from '@shared/i18n/format'
 
@@ -70,8 +70,8 @@ export function ChangesFileList({
   conversation: ReturnType<typeof conversationChanges>
   gitDiffs: Record<string, GitFileDiff | { error: string }>
   annotationsFor: (anchor: DiffAnnotations['anchor']) => DiffAnnotations | undefined
-  /** Ligne d'un fichier à montrer dans la vue Git (remarque du Code reviewer, fiche 265). */
-  focus?: { file: string; line: number } | undefined
+  /** Lignes d'un fichier à montrer dans la vue Git (remarque du Code reviewer, fiche 265). */
+  focus?: ({ file: string } & DiffFocus) | undefined
 }) {
   const { t } = useTranslation()
   return (
@@ -208,7 +208,7 @@ export function ChangesFileList({
                       file: row.key,
                       path: row.key
                     })}
-                    focus={focus?.file === row.key ? focus.line : undefined}
+                    focus={focus?.file === row.key ? focus : undefined}
                   />
                 )}
               </div>
@@ -265,7 +265,7 @@ function GitDiff({
   path: string
   diff?: GitFileDiff | { error: string }
   annotations?: DiffAnnotations | undefined
-  focus?: number | undefined
+  focus?: DiffFocus | undefined
 }) {
   const { t } = useTranslation()
   if (!diff) return <div className="changes-caption">{t('changes.loading')}</div>

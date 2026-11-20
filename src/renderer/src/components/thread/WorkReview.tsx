@@ -1,7 +1,7 @@
 import { ChevronRight, CircleCheck, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewItem } from '@shared/role-request'
-import { findingPlace, findingsBySeverity } from '@shared/review'
+import { findingPlace, findingsBySeverity, findingTarget, type DiffTarget } from '@shared/review'
 import { Markdown } from './Markdown'
 
 /**
@@ -21,8 +21,8 @@ export function ReviewFindings({
   role: string
   /** Sa réponse du tour, entière ; repliée sous ses remarques. */
   reply: string
-  /** Ouvrir la vue Git de la conversation relue sur ce fichier, à cette ligne ; absent : texte. */
-  onShow?: ((file: string, line: number) => void) | undefined
+  /** Ouvrir la vue Git de la conversation relue sur ce fichier, ces lignes ; absent : texte. */
+  onShow?: ((file: DiffTarget) => void) | undefined
 }) {
   const { t } = useTranslation()
   const findings = findingsBySeverity(review.findings)
@@ -57,7 +57,7 @@ export function ReviewFindings({
                       type="button"
                       className="work-finding-where"
                       title={t('workCard.findings.where', { place })}
-                      onClick={() => onShow(finding.file, finding.line)}
+                      onClick={() => onShow(findingTarget(finding, review))}
                       data-testid="work-finding-where"
                     >
                       {place}

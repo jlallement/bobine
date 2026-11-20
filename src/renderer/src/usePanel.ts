@@ -1,3 +1,4 @@
+import type { DiffTarget } from '@shared/review'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { MarkdownDocument } from '@shared/file-links'
 import { isPanelTab, type PanelTab } from '@shared/panel'
@@ -199,19 +200,17 @@ export function usePanel(options: {
 
   const changesOpen = panel.open && panel.tab === 'changes'
   // « Modifications » sur une vue précise : celle de l'agent (pastille) ou l'état git (branche).
-  // `file`, `line` : un fichier à ouvrir et sa ligne à montrer (remarque du Code reviewer, fiche 265).
+  // `file` : un fichier à ouvrir, ses lignes à montrer (remarque du Code reviewer, fiche 265).
   const [changesRequest, setChangesRequest] = useState<{
     view: ChangesView
     seq: number
-    file?: string
-    line?: number
+    file?: DiffTarget
   }>()
-  const openChanges = (view: ChangesView, file?: string, line?: number) => {
+  const openChanges = (view: ChangesView, file?: DiffTarget) => {
     setChangesRequest((current) => ({
       view,
       seq: (current?.seq ?? 0) + 1,
-      ...(file ? { file } : {}),
-      ...(file && line ? { line } : {})
+      ...(file ? { file } : {})
     }))
     update({ open: true, tab: 'changes' })
   }

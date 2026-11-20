@@ -89,6 +89,19 @@ describe('GitChangesReader (vrai dépôt)', () => {
       newText: null
     })
     expect(await reader.fileDiff(workspace, 'image.bin')).toMatchObject({ binary: true })
+    // Relecture d'une branche ou d'un commit (fiche 265) : contre ce point, pas `HEAD`.
+    const first = String(git('rev-parse', 'HEAD')).trim()
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\ndeux\ntrois\n')
+    git('add', '.')
+    git('commit', '-q', '-m', 'suite')
+    writeFileSync(join(dir, 'app', 'README.md'), 'un\n2\n')
+    expect(await reader.fileDiff(workspace, 'README.md', undefined, first)).toEqual({
+      oldText: 'un\ndeux\ntrois\n',
+      newText: 'un\n2\n'
+    })
+    await expect(reader.fileDiff(workspace, 'README.md', undefined, 'HEAD~1')).rejects.toThrow(
+      'since'
+    )
     await expect(reader.fileDiff(workspace, '../ailleurs.txt')).rejects.toThrow('hors du dossier')
   })
 })

@@ -1,3 +1,4 @@
+import type { DiffTarget } from '@shared/review'
 import { Check, ChevronDown, ChevronRight, ChevronUp, Send } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -55,7 +56,7 @@ export function WorkSteps({
   /** Ce que sa branche apportera, pour la dernière réponse (`branchChanges`, fiche 264). */
   changes?: WorkChanges | null | undefined
   /** Code reviewer (fiche 265) : un fichier d'une remarque, ouvert dans la vue Git relue. */
-  onShowFile?: ((file: string, line: number) => void) | undefined
+  onShowFile?: ((file: DiffTarget) => void) | undefined
 }) {
   const current = currentReport(card)
   return (
@@ -166,7 +167,7 @@ function WorkAnswer({
   noCost?: boolean
   /** Remarques structurées du Code reviewer (fiche 265), sur sa dernière réponse. */
   review?: ReviewItem | undefined
-  onShowFile?: ((file: string, line: number) => void) | undefined
+  onShowFile?: ((file: DiffTarget) => void) | undefined
   /** La branche lue (fiche 264) ; `null` : rien à dire ; absent : les fichiers de la réponse. */
   changes?: WorkChanges | null
   card: WorkCardData

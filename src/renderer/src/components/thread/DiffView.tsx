@@ -42,10 +42,17 @@ interface Props {
   bare?: boolean
   annotations?: DiffAnnotations
   /**
-   * Ligne (côté nouveau) à montrer : amenée à l'écran et mise en avant (remarque du Code reviewer
-   * cliquée, fiche 265). Absente du diff : rien.
+   * Lignes (côté nouveau) à montrer : amenées à l'écran et mises en avant (remarque du Code
+   * reviewer cliquée, fiche 265). Absentes du diff : rien. `seq` : un nouveau clic recentre.
    */
-  focus?: number | undefined
+  focus?: DiffFocus | undefined
+}
+
+/** Plage de lignes d'une remarque à montrer dans un diff (fiche 265). */
+export interface DiffFocus {
+  from: number
+  to: number
+  seq: number
 }
 
 /**
@@ -108,10 +115,22 @@ export function DiffView({ path, oldText, newText, bare, annotations, focus }: P
   const columns = annotations ? 4 : 3
   // La ligne demandée, à l'écran une fois rendue (fiche 265).
   const box = useRef<HTMLDivElement>(null)
+  const focusSeq = focus?.seq
   useEffect(() => {
-    if (focus === undefined) return
-    box.current?.querySelector('tr.diff-focus')?.scrollIntoView?.({ block: 'center' })
-  }, [focus, diff])
+    if (focusSeq === undefined) return
+    const rows = box.current?.querySelectorAll('tr.diff-focus')
+    const first = rows?.[0]
+    if (!rows || !first) return
+    first.scrollIntoView?.({ block: 'center' })
+    // Un éclair d'une seconde et demie, à chaque demande (le contour reste).
+    for (const row of rows) {
+      row.classList.remove('diff-flash')
+      void (row as HTMLElement).offsetWidth
+      row.classList.add('diff-flash')
+    }
+  }, [focusSeq, diff])
+  const focused = (side: string, line: number) =>
+    !!focus && side === 'new' && line >= focus.from && line <= focus.to
 
   /** Code affiché sur les lignes `from` à `to` d'un côté. */
   const codeOf = (side: 'new' | 'old', from: number, to: number) =>
@@ -269,7 +288,7 @@ export function DiffView({ path, oldText, newText, bare, annotations, focus }: P
     const out: ReactNode[] = [
       <tr
         key={i}
-        className={`diff-${row.type}${selected ? ' diff-selected' : ''}${at.side === 'new' && at.line === focus ? ' diff-focus' : ''}`}
+        className={`diff-${row.type}${selected ? ' diff-selected' : ''}${focused(at.side, at.line) ? ' diff-focus' : ''}`}
         data-side={at.side}
         data-line={at.line}
       >

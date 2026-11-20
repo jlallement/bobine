@@ -531,7 +531,11 @@ export interface IpcInvokeContract
   /** Modifications du dossier par rapport au dernier commit ; `null` hors d'un dépôt (fiche 021). */
   'changes:git': { args: [id: string]; result: GitChanges | null }
   /** Contenu au dernier commit et sur le disque d'un fichier du dossier (`from` : renommage). */
-  'changes:gitFile': { args: [id: string, path: string, from?: string]; result: GitFileDiff }
+  'changes:gitFile': {
+    /** `since` : point de comparaison autre que `HEAD` (relecture d'une branche ou d'un commit). */
+    args: [id: string, path: string, from?: string | null, since?: string]
+    result: GitFileDiff
+  }
   /** Ouvre un fichier du dossier dans son application par défaut. */
   'changes:open': { args: [id: string, path: string]; result: FileOpenOutcome }
   /** Montre un fichier du dossier dans le Finder. */

@@ -99,6 +99,9 @@ export function gitConvertsEol(lsFilesEol: string, autocrlf: string): boolean {
 /** `\r\n` → `\n`, pour comparer la copie de travail à l'index comme git le fait. */
 const toLf = (buffer: Buffer) => Buffer.from(buffer.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
 
+/** Identifiant de commit (abrégé ou entier), seul point de comparaison accepté du renderer. */
+const COMMIT_ID = /^[0-9a-f]{4,64}$/
+
 export class GitChangesReader {
   private readonly run: Run
   private readonly git: string
@@ -163,13 +166,25 @@ export class GitChangesReader {
     return { root, ...(branch.code === 0 ? { branch: text(branch.stdout).trim() } : {}), files }
   }
 
-  /** Contenu au dernier commit et sur le disque d'un fichier du dossier, pour le diff. */
-  async fileDiff(workspace: string, path: string, from?: string): Promise<GitFileDiff> {
+  /**
+   * Contenu au dernier commit et sur le disque d'un fichier du dossier, pour le diff. `since` :
+   * un autre point de comparaison que `HEAD` — la base d'une branche ou le parent d'un commit relus
+   * par le Code reviewer (fiche 265) ; un identifiant de commit, rien d'autre.
+   */
+  async fileDiff(
+    workspace: string,
+    path: string,
+    from?: string,
+    since?: string
+  ): Promise<GitFileDiff> {
+    if (since !== undefined && !COMMIT_ID.test(since)) throw new Error('Paramètre invalide : since')
     const file = insideWorkspace(workspace, path)
     const before = insideWorkspace(workspace, from ?? path)
     // `HEAD:./chemin` : relatif au dossier courant, même si son chemin passe par un lien symbolique.
     const inRepo = relative(resolve(workspace), before).split(sep).join('/')
-    const shown = await this.run(this.git, ['show', `HEAD:./${inRepo}`], { cwd: workspace })
+    const shown = await this.run(this.git, ['show', `${since ?? 'HEAD'}:./${inRepo}`], {
+      cwd: workspace
+    })
     const old = shown.code === 0 ? shown.stdout : null
     const read = await readFile(file).catch(() => null)
     const current = read && old ? await this.asGitSees(workspace, file, old, read) : read

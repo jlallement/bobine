@@ -1,3 +1,4 @@
+import type { DiffTarget } from '@shared/review'
 import type { ImageAttachment } from '@shared/attachments'
 import { DocumentsTab } from '../discussion/DocumentsPanel'
 import { PaneBoundary } from '../common/SafeBoundary'
@@ -74,7 +75,7 @@ interface Props {
   /** Police du terminal (réglages, fiche 027). */
   preferences?: Preferences
   /** « Modifications » ouvert par la puce de branche : sur l'état git (fiche 049). */
-  changesRequest?: { view: ChangesView; seq: number; file?: string; line?: number }
+  changesRequest?: { view: ChangesView; seq: number; file?: DiffTarget }
   /** Image de l'onglet (page, écran d'un simulateur) jointe au message (fiche 066). */
   onAttachImage?: (image: ImageAttachment) => void
   /** Document Markdown en aperçu (fiche 052) : l'onglet « Aperçu » n'existe que s'il y en a un. */
@@ -95,13 +96,11 @@ interface Props {
 }
 
 /** Vue demandée de l'onglet Modifications, et le fichier à ouvrir (fiche 265). */
-function changesOpening(request: { view: ChangesView; seq: number; file?: string; line?: number }) {
+function changesOpening(request: { view: ChangesView; seq: number; file?: DiffTarget }) {
   return {
     initialView: request.view,
     initialViewSeq: request.seq,
-    ...(request.file
-      ? { initialFile: { path: request.file, ...(request.line ? { line: request.line } : {}) } }
-      : {})
+    ...(request.file ? { initialFile: request.file } : {})
   }
 }
 

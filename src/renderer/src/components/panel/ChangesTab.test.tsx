@@ -219,11 +219,11 @@ describe('remarques du Code reviewer (fiche 265)', () => {
       at: 1
     }) as TranscriptItem
 
-  it('un clic sur `fichier:ligne` ouvre ce fichier dans la vue Git', async () => {
-    render(
+  it('un clic sur `fichier:ligne` ouvre ce fichier, une fois par demande (pas à chaque remontage)', async () => {
+    const tab = () => (
       <Tooltip.Provider>
         <ChangesTab
-          conversationId="c"
+          conversationId="c-fichier"
           workspace="/depot"
           items={[]}
           initialView="git"
@@ -232,7 +232,14 @@ describe('remarques du Code reviewer (fiche 265)', () => {
         />
       </Tooltip.Provider>
     )
-    await waitFor(() => expect(gitFile).toHaveBeenCalledWith('c', 'gros.txt', undefined))
+    const { unmount } = render(tab())
+    await waitFor(() => expect(gitFile).toHaveBeenCalledWith('c-fichier', 'gros.txt', undefined))
+    unmount()
+    gitFile.mockClear()
+    // Remonté (autre conversation, puis retour) avec la même demande : rien de rouvert.
+    render(tab())
+    await waitFor(() => expect(screen.getByTitle('gros.txt')).toBeTruthy())
+    expect(gitFile).not.toHaveBeenCalled()
   })
 
   it('sa ligne, si le diff la contient : amenée à l’écran et mise en avant ; sinon le fichier ouvert', async () => {
@@ -242,12 +249,12 @@ describe('remarques du Code reviewer (fiche 265)', () => {
       render(
         <Tooltip.Provider>
           <ChangesTab
-            conversationId="c"
+            conversationId={`c-ligne-${line}`}
             workspace="/depot"
             items={[]}
             initialView="git"
             initialViewSeq={1}
-            initialFile={{ path: 'gros.txt', line }}
+            initialFile={{ path: 'gros.txt', line, endLine: line + 1 }}
           />
         </Tooltip.Provider>
       )
@@ -267,6 +274,34 @@ describe('remarques du Code reviewer (fiche 265)', () => {
     await waitFor(() => expect(screen.getByTestId('changes-diff').textContent).toContain('b'))
     expect(document.querySelector('tr.diff-focus')).toBeNull()
     expect(scroll).not.toHaveBeenCalled()
+  })
+
+  it('remarque d’une branche ou d’un commit relus : le diff depuis ce point, la ligne mise en avant', async () => {
+    const since = vi.fn(async () => ({ oldText: 'a\n', newText: 'a\nb\nc\n' }))
+    window.api = {
+      ...window.api,
+      changes: { git: async () => REPO, gitFile: since }
+    } as unknown as Window['api']
+    Element.prototype.scrollIntoView = vi.fn()
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c-branche"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+          initialFile={{ path: 'src/ordre.js', line: 2, endLine: 3, since: 'a3f2c1e0' }}
+        />
+      </Tooltip.Provider>
+    )
+    const block = await waitFor(() => screen.getByTestId('review-file-diff'))
+    expect(since).toHaveBeenCalledWith('c-branche', 'src/ordre.js', undefined, 'a3f2c1e0')
+    expect(block.textContent).toContain('src/ordre.js depuis a3f2c1e')
+    await waitFor(() => expect(block.querySelectorAll('tr.diff-focus')).toHaveLength(2))
+    expect(
+      [...block.querySelectorAll('tr.diff-focus')].map((r) => r.getAttribute('data-line'))
+    ).toEqual(['2', '3'])
   })
 
   it('remarques de diff : celles qui relisent cette conversation, pas un travail relu dans son fil', async () => {

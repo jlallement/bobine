@@ -4513,6 +4513,7 @@ export type FrResources = {
       readonly commit_many: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
       readonly commit_other: 'Relis le dernier commit {{commit}} ({{count}} fichiers).'
     }
+    readonly fileDiff: '{{path}} depuis {{since}}'
   }
   readonly scheduled: {
     readonly title: 'Tâches planifiées'
