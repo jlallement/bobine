@@ -4621,16 +4621,17 @@
     "title": "Relecture : {{title}}",
     "dialog": {
       "title": "Faire relire « {{title}} »",
-      "description": "Le rôle Code reviewer relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. La demande et sa réponse s’affichent dans le fil, avec ses remarques, qui arrivent aussi sur les lignes du diff.",
-      "scopeBranch": "Relu : tout le travail de la branche {{branch}}, commits et modifications non commitées.",
-      "scopeUncommitted": "Relu : les modifications non commitées du dossier.",
+      "description": "Le Code reviewer relit ce travail sans rien modifier ; ses remarques arrivent dans le fil et sur le diff.",
+      "scopeBranch": "À relire : la branche {{branch}}, commits et modifications non commitées.",
+      "scopeUncommitted": "À relire : les modifications non commitées du dossier.",
       "focus": "Points à surveiller (facultatif)",
       "placeholder": "Par exemple : la gestion des erreurs réseau",
-      "suggested": "Agent et modèle de la conversation relue, suggérés : à confirmer ou changer.",
-      "cost": "La relecture est un travail de plus : elle coûte comme une conversation. Son coût s’affiche sur sa carte.",
+      "suggested": "Agent et modèle de la conversation relue : à confirmer ou changer.",
+      "cost": "La relecture est une conversation de plus : son coût s’affiche sur sa carte.",
       "launch": "Lancer la relecture",
       "launching": "Lancement…",
-      "suggestedOther": "Un autre modèle que celui de la conversation relue est proposé : un regard neuf trouve davantage. À confirmer ou changer."
+      "suggestedOther": "Autre que celui de la conversation ({{model}}) : un regard neuf trouve davantage.",
+      "costChanges": "Ce modèle n’est pas gratuit, celui de la conversation l’est : la relecture peut coûter."
     },
     "card": {
       "running": "Relecture en cours par {{agent}}",

@@ -42,7 +42,7 @@ import type { HandoverTarget } from './handover'
 import { MEMORY_CHANNELS, type MemoryIpcContract } from './memory-ipc'
 import { ROLES_CHANNELS, type RolesIpcContract } from './roles-ipc'
 import { DOCUMENTS_CHANNELS, type DocumentsIpcContract } from './documents-ipc'
-import type { GitChanges, GitFileDiff, RevertOutcome } from './changes'
+import type { GitChanges, GitFileArgs, GitFileDiff, RevertOutcome } from './changes'
 import type { FileLinkOutcome, FileOpenOutcome, MarkdownDocument } from './file-links'
 import type { EditorInfo, EditorOpenOutcome } from './editors'
 import type { DraggedImage } from './images'
@@ -531,11 +531,7 @@ export interface IpcInvokeContract
   /** Modifications du dossier par rapport au dernier commit ; `null` hors d'un dépôt (fiche 021). */
   'changes:git': { args: [id: string]; result: GitChanges | null }
   /** Contenu au dernier commit et sur le disque d'un fichier du dossier (`from` : renommage). */
-  'changes:gitFile': {
-    /** `since` : point de comparaison autre que `HEAD` (relecture d'une branche ou d'un commit). */
-    args: [id: string, path: string, from?: string | null, since?: string]
-    result: GitFileDiff
-  }
+  'changes:gitFile': { args: GitFileArgs; result: GitFileDiff }
   /** Ouvre un fichier du dossier dans son application par défaut. */
   'changes:open': { args: [id: string, path: string]; result: FileOpenOutcome }
   /** Montre un fichier du dossier dans le Finder. */

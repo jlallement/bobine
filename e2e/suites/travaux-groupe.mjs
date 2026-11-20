@@ -313,7 +313,10 @@ async function writerRun(ui, { workspace, git, commitAll }) {
     cards: document.querySelectorAll('[data-testid=work-card][data-role=code-reviewer]').length,
     place: ${nested}.querySelector('[data-testid=work-place]')?.innerText,
     places: [...${nested}.querySelectorAll('[data-testid=work-finding-where]')].map((w) => w.innerText),
-    fix: ${nested}.querySelector('[data-testid=work-fix]')?.innerText
+    fix: !!${nested}.querySelector('[data-testid=work-fix]'),
+    fixWork: ${card}.querySelector('[data-testid=work-fix-work]')?.className ?? '',
+    merge: ${card}.querySelector('[data-testid=work-merge-start]')?.className ?? '',
+    relays: ${card}.querySelectorAll('[data-testid=work-relay]').length
   }))()`)
   check(
     placed.ask.includes(L('review.ask.branch', { branch })) &&
@@ -321,11 +324,20 @@ async function writerRun(ui, { workspace, git, commitAll }) {
       placed.cards === 1 &&
       placed.place === L('workCard.readOnlyBranch') &&
       JSON.stringify(placed.places) === JSON.stringify(['src/ordre.js:1', 'src/ordre.js:1']) &&
-      !!placed.fix,
+      // Une remarque moyenne à traiter : « Faire corriger » principal, « Fusionner » secondaire ;
+      // une seule ligne de transmission (revue UX).
+      !placed.fix &&
+      placed.fixWork.includes('primary') &&
+      !placed.merge.includes('primary') &&
+      placed.relays === 1,
     `relecture d’un travail : dans sa carte, remarques sur sa branche (${JSON.stringify(placed)})`
   )
   await ui.reveal(nested)
   await ui.shot('265-relecture-travail')
+  await ui.viewport(900, 760)
+  await ui.reveal(nested)
+  await ui.shot('265-relecture-travail-900')
+  await ui.viewport()
   await ui.click(start)
   await ui.waitFor(
     `${card}.querySelector('[data-testid=work-merge-result]')?.dataset.state === 'merged'`,

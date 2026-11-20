@@ -78,12 +78,15 @@ describe('« Faire relire… » : le Code reviewer, un autre modèle (fiche 265)
     open(MODELS)
     await act(async () => {})
     expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('precis')
-    expect(plain(screen.getByTestId('review-suggested').textContent)).toContain(
-      'Un autre modèle que celui de la conversation relue est proposé'
+    expect(plain(screen.getByTestId('review-suggested').textContent)).toBe(
+      'Autre que celui de la conversation (Rapide) : un regard neuf trouve davantage.'
     )
     expect(plain(screen.getByTestId('review-dialog').textContent)).toContain(
-      'Le rôle Code reviewer relit ce travail'
+      'Le Code reviewer relit ce travail'
     )
+    // Le coût sur sa propre ligne ; pas de changement de coût annoncé (aucun n'est gratuit).
+    expect(screen.getByTestId('review-cost')).toBeTruthy()
+    expect(screen.queryByTestId('review-cost-change')).toBeNull()
     await act(async () => void fireEvent.click(screen.getByTestId('review-launch')))
     expect(startReview).toHaveBeenCalledWith('m', {
       model: { controlId: 'model', value: 'precis' }
@@ -100,12 +103,30 @@ describe('« Faire relire… » : le Code reviewer, un autre modèle (fiche 265)
     })
   })
 
+  it('modèle gratuit : un autre modèle gratuit d’abord ; un modèle payant choisi est signalé', async () => {
+    const free = model(
+      [
+        { value: 'zen/a-free', name: 'A (free)', group: 'zen' },
+        { value: 'zen/payant', name: 'Payant', group: 'zen' },
+        { value: 'or/b:free', name: 'B', group: 'or' }
+      ],
+      'zen/a-free'
+    )
+    expect(otherModel(free)).toBe('or/b:free')
+    open(free)
+    await act(async () => {})
+    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('or/b:free')
+    expect(screen.queryByTestId('review-cost-change')).toBeNull()
+    fireEvent.change(screen.getByTestId('review-model'), { target: { value: 'zen/payant' } })
+    expect(screen.getByTestId('review-cost-change').textContent).toContain('pas gratuit')
+  })
+
   it('profil sans choix du modèle, ou un seul modèle : rien d’autre proposé', async () => {
     open(MODELS, false)
     await act(async () => {})
     expect(screen.queryByTestId('review-model')).toBeNull()
     expect(plain(screen.getByTestId('review-suggested').textContent)).toContain(
-      'Agent et modèle de la conversation relue, suggérés'
+      'Agent et modèle de la conversation relue : à confirmer'
     )
     await act(async () => void fireEvent.click(screen.getByTestId('review-launch')))
     expect(startReview).toHaveBeenCalledWith('m', {})

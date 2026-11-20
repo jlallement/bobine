@@ -22,11 +22,19 @@ export function otherModel(
   control: Pick<SessionControl, 'type' | 'currentValue' | 'options'>
 ): string | null {
   if (control.type !== 'select') return null
-  const current = String(control.currentValue)
-  const group = control.options.find((o) => o.value === current)?.group
-  // Jamais un modèle refusé faute de connexion (fiche 210).
-  const others = control.options.filter((o) => o.value !== current && !o.authRequired)
-  return (others.find((o) => group !== undefined && o.group === group) ?? others[0])?.value ?? null
+  const current = control.options.find((o) => o.value === String(control.currentValue))
+  // Jamais un modèle refusé faute de connexion (fiche 210) ; un modèle gratuit appelle un autre
+  // modèle gratuit d'abord (revue QA) : la relecture ne coûte pas plus sans qu'on le dise.
+  const others = control.options.filter((o) => o.value !== current?.value && !o.authRequired)
+  const free = current && isFreeModel(current) ? others.filter(isFreeModel) : []
+  const pool = free.length > 0 ? free : others
+  const group = current?.group
+  return (pool.find((o) => group !== undefined && o.group === group) ?? pool[0])?.value ?? null
+}
+
+/** Modèle annoncé gratuit par son nom ou son identifiant (« … (free) », « …:free », « -free »). */
+export function isFreeModel(option: { value: string; name: string }): boolean {
+  return /(^|[\s:/(_-])free\b/i.test(`${option.value} ${option.name}`)
 }
 
 /**
@@ -56,6 +64,13 @@ export function ReviewDialog({
   const other = model ? otherModel(model) : null
   const shown: ChildChoice =
     choice.modelValue === null && other ? { ...choice, modelValue: other } : choice
+  const current = model ? String(model.currentValue) : undefined
+  const option = (value: string | null | undefined) => model?.options.find((o) => o.value === value)
+  const currentName = option(current)?.name
+  // Un modèle gratuit remplacé par un modèle qui ne l'est pas : dit (revue QA).
+  const chosen = option(shown.modelValue)
+  const was = option(current)
+  const costChanges = !!chosen && !!was && isFreeModel(was) && !isFreeModel(chosen)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const tips = useTipsContext()
@@ -88,7 +103,10 @@ export function ReviewDialog({
     <Dialog.Root open onOpenChange={(open) => !open && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog confirm-dialog child-dialog" data-testid="review-dialog">
+        <Dialog.Content
+          className="dialog confirm-dialog child-dialog review-dialog"
+          data-testid="review-dialog"
+        >
           <Dialog.Title className="confirm-title">
             {t('review.dialog.title', { title: author.title })}
           </Dialog.Title>
@@ -122,7 +140,16 @@ export function ReviewDialog({
             testId="review"
           />
           <p className="field-help" data-testid="review-suggested">
-            {t(other ? 'review.dialog.suggestedOther' : 'review.dialog.suggested')}{' '}
+            {shown.modelValue !== null && model && currentName && shown.modelValue !== current
+              ? t('review.dialog.suggestedOther', { model: currentName })
+              : t('review.dialog.suggested')}
+          </p>
+          {costChanges && (
+            <p className="field-help review-cost-change" data-testid="review-cost-change">
+              {t('review.dialog.costChanges')}
+            </p>
+          )}
+          <p className="field-help" data-testid="review-cost">
             {t('review.dialog.cost')}
           </p>
           {error && (

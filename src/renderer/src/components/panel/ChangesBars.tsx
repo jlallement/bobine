@@ -54,16 +54,19 @@ export function ChangesViews({
         </span>
       )}
       {onReview && git && view !== 'children' && (
-        // Icône seule (fiche 177) : avec la vue « Filles », un libellé ferait passer la barre sur
-        // deux lignes ; l'infobulle et le nom accessible disent « Faire relire… ».
+        // Libellé « Faire relire » quand la barre est assez large (fiche 265, revue UX) ; sinon
+        // l'icône seule (fiche 177) : l'infobulle et le nom accessible disent « Faire relire… ».
         <Tip label={t('review.actionTip')}>
           <button
-            className="icon-button small"
+            className="btn ghost small changes-review"
             aria-label={t('review.action')}
             onClick={onReview}
             data-testid="changes-review"
           >
-            <ScanSearch size={14} />
+            <ScanSearch size={14} aria-hidden />
+            <span className="changes-review-label" aria-hidden>
+              {t('workCard.review')}
+            </span>
           </button>
         </Tip>
       )}

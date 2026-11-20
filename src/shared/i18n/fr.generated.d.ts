@@ -4455,16 +4455,17 @@ export type FrResources = {
     readonly title: 'Relecture : {{title}}'
     readonly dialog: {
       readonly title: 'Faire relire « {{title}} »'
-      readonly description: 'Le rôle Code reviewer relit ce travail dans son dossier, sans rien modifier : les erreurs d’abord, puis ce qui se simplifie. La demande et sa réponse s’affichent dans le fil, avec ses remarques, qui arrivent aussi sur les lignes du diff.'
-      readonly scopeBranch: 'Relu : tout le travail de la branche {{branch}}, commits et modifications non commitées.'
-      readonly scopeUncommitted: 'Relu : les modifications non commitées du dossier.'
+      readonly description: 'Le Code reviewer relit ce travail sans rien modifier ; ses remarques arrivent dans le fil et sur le diff.'
+      readonly scopeBranch: 'À relire : la branche {{branch}}, commits et modifications non commitées.'
+      readonly scopeUncommitted: 'À relire : les modifications non commitées du dossier.'
       readonly focus: 'Points à surveiller (facultatif)'
       readonly placeholder: 'Par exemple : la gestion des erreurs réseau'
-      readonly suggested: 'Agent et modèle de la conversation relue, suggérés : à confirmer ou changer.'
-      readonly cost: 'La relecture est un travail de plus : elle coûte comme une conversation. Son coût s’affiche sur sa carte.'
+      readonly suggested: 'Agent et modèle de la conversation relue : à confirmer ou changer.'
+      readonly cost: 'La relecture est une conversation de plus : son coût s’affiche sur sa carte.'
       readonly launch: 'Lancer la relecture'
       readonly launching: 'Lancement…'
-      readonly suggestedOther: 'Un autre modèle que celui de la conversation relue est proposé : un regard neuf trouve davantage. À confirmer ou changer.'
+      readonly suggestedOther: 'Autre que celui de la conversation ({{model}}) : un regard neuf trouve davantage.'
+      readonly costChanges: 'Ce modèle n’est pas gratuit, celui de la conversation l’est : la relecture peut coûter.'
     }
     readonly card: {
       readonly running: 'Relecture en cours par {{agent}}'

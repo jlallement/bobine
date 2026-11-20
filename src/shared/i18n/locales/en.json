@@ -4429,16 +4429,17 @@
     "title": "Review: {{title}}",
     "dialog": {
       "title": "Request a review of “{{title}}”",
-      "description": "The Code reviewer role reviews this work in its folder, without changing anything: errors first, then what can be simpler. The request and its response show in the thread, with its comments, which also arrive on the lines of the diff.",
-      "scopeBranch": "Reviewed: all the work of branch {{branch}}, commits and uncommitted changes.",
-      "scopeUncommitted": "Reviewed: the uncommitted changes of the folder.",
+      "description": "The Code reviewer reviews this work without changing anything; its comments arrive in the thread and on the diff.",
+      "scopeBranch": "To review: branch {{branch}}, commits and uncommitted changes.",
+      "scopeUncommitted": "To review: the uncommitted changes of the folder.",
       "focus": "What to look at (optional)",
       "placeholder": "For example: network error handling",
-      "suggested": "Agent and model of the reviewed conversation, suggested: confirm or change them.",
-      "cost": "A review is one more piece of work: it costs like a conversation. Its cost shows on its card.",
+      "suggested": "Agent and model of the reviewed conversation: confirm or change them.",
+      "cost": "A review is one more conversation: its cost shows on its card.",
       "launch": "Start review",
       "launching": "Starting…",
-      "suggestedOther": "A model other than the reviewed conversation’s is suggested: fresh eyes find more. Confirm or change it."
+      "suggestedOther": "Other than the conversation’s ({{model}}): fresh eyes find more.",
+      "costChanges": "This model is not free, the conversation’s is: the review may cost."
     },
     "card": {
       "running": "Review in progress by {{agent}}",

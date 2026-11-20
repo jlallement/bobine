@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { L, Lpart, check, withApp } from '../lib.mjs'
 
 /**
  * Faire relire (fiches 177, 265) : « Faire relire… » dans l'onglet Modifications lance le rôle Code
@@ -85,8 +85,8 @@ async function reviewRun(ui, { workspace, turnLock }) {
   check(
     dialog.scope === L('review.dialog.scopeUncommitted') &&
       dialog.text.includes(L('review.dialog.description')) &&
-      dialog.suggested.includes(L('review.dialog.suggestedOther')) &&
-      dialog.suggested.includes(L('review.dialog.cost')) &&
+      dialog.suggested.includes(Lpart('review.dialog.suggestedOther')) &&
+      dialog.text.includes(L('review.dialog.cost')) &&
       !!dialog.model &&
       dialog.model !== authorModel,
     `dialogue : Code reviewer, non commité relu, un autre modèle (${dialog.model} ≠ ${authorModel}), coût`
@@ -161,6 +161,10 @@ async function reviewRun(ui, { workspace, turnLock }) {
   check(!existsSync(join(workspace, 'relecture.txt')), 'dossier relu intact')
   await ui.reveal(card)
   await ui.shot('265-relecture-remarques')
+  await ui.viewport(900, 760)
+  await ui.reveal(card)
+  await ui.shot('265-relecture-remarques-900')
+  await ui.viewport()
 
   // `fichier:ligne` : la vue Git, le fichier ouvert, les remarques sur leurs lignes.
   await ui.click(`${findings}[0].querySelector('[data-testid=work-finding-where]')`)

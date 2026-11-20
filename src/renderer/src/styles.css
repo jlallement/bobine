@@ -10934,3 +10934,26 @@ tr.diff-focus.diff-flash td {
     animation: none;
   }
 }
+
+/* « Faire relire » (fiche 265, revue UX) : le champ actif ne ressemble pas à une erreur. */
+.review-dialog .field-input:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-line, var(--syn-number)) 18%, transparent);
+  outline: none;
+}
+.review-dialog .review-cost-change {
+  color: var(--warn);
+}
+
+/* « Faire relire » dans Modifications (fiche 265, revue UX) : son libellé quand la place le permet. */
+.changes-bar {
+  container-type: inline-size;
+}
+.changes-review {
+  gap: 5px;
+}
+@container (max-width: 480px) {
+  .changes-review-label {
+    display: none;
+  }
+}

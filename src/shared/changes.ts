@@ -182,3 +182,9 @@ export function relativeTo(workspace: string | undefined, path: string): string 
   const root = workspace.endsWith('/') ? workspace : `${workspace}/`
   return path.startsWith(root) ? path.slice(root.length) : path
 }
+
+/**
+ * Arguments de `changes:gitFile` : la conversation, le fichier, son ancien chemin (renommé), et un
+ * point de comparaison autre que `HEAD` (`since`, relecture d'une branche ou d'un commit, fiche 265).
+ */
+export type GitFileArgs = [id: string, path: string, from?: string | null, since?: string]
