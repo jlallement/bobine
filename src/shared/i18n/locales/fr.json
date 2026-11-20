@@ -6087,9 +6087,6 @@
         "confirmAction_one": "Fusionner les {{count}} quand même",
         "confirmAction_other": "Fusionner les {{count}} quand même",
         "confirmAction_many": "Fusionner les {{count}} quand même",
-        "only_one": "L’agent recommande {{titles}} ; l’autre attend son avis.",
-        "only_other": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
-        "only_many": "L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.",
         "none": "L’agent ne recommande encore aucun travail."
       },
       "progress_one": "Fusion dans {{base}} : {{count}} sur {{total}}…",
@@ -6118,7 +6115,18 @@
         "cleaned": "branche supprimée"
       },
       "cleanup": "Puis nettoyer (archiver, supprimer les branches)",
-      "resolving": "Conflit : le travail concerné le résout, puis la fusion reprend."
+      "resolving": "Conflit : le travail concerné le résout, puis la fusion reprend.",
+      "advice": {
+        "recommended": "L’agent recommande {{titles}}",
+        "notReady_one": "{{titles}} n’est pas encore prêt selon lui",
+        "notReady_other": "{{titles}} ne sont pas encore prêts selon lui",
+        "unadvised_one": "{{titles}} n’a pas encore d’avis de l’agent",
+        "unadvised_other": "{{titles}} n’ont pas encore d’avis de l’agent",
+        "notReady_many": "{{titles}} ne sont pas encore prêts selon lui",
+        "unadvised_many": "{{titles}} n’ont pas encore d’avis de l’agent",
+        "separator": " ; ",
+        "end": "."
+      }
     },
     "outcome": {
       "start": "Lancé",

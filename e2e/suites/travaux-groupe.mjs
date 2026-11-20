@@ -100,6 +100,33 @@ async function reread(ui, mother, row) {
   await ui.waitFor(`document.querySelector('.history-item.active')?.dataset.id === '${mother}'`)
 }
 
+/** Espaces insécables (typographie française) ramenées à des espaces simples. */
+const spaces = (text) => String(text ?? '').replace(/[\u00a0\u202f]/g, ' ')
+
+/**
+ * Le pied de la carte de groupe : la case sur sa ligne, puis une rangée de boutons qui passe à la
+ * ligne dans la carte ; aucun bouton ne dépasse son bord (revue du lot 264 : « Fusionner le
+ * recomman » coupé à droite).
+ */
+async function footInside(ui, group, where) {
+  const out = await ui.ev(`(() => {
+    const card = ${group}.getBoundingClientRect()
+    const foot = ${group}.querySelector('[data-testid=work-group-merge]')
+    const buttons = [...(foot?.querySelectorAll('button, label') ?? [])]
+    const out = buttons
+      .filter((b) => {
+        const r = b.getBoundingClientRect()
+        return r.width > 0 && (r.right > card.right + 0.5 || r.left < card.left - 0.5 || b.scrollWidth > b.clientWidth + 1)
+      })
+      .map((b) => b.innerText.trim())
+    return { count: buttons.length, out }
+  })()`)
+  check(
+    out.count >= 2 && out.out.length === 0,
+    `pied (${where}) : aucun bouton ne dépasse la carte (${out.count} lus${out.out.length ? ', dehors : ' + out.out.join(', ') : ''})`
+  )
+}
+
 async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   await ui.ready()
   await ui.closePanel()
@@ -192,17 +219,27 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
       L('workGroup.merge.recommended.others', { count: 1 }) && column === expected,
     `une colonne d’état : « Recommandé », « Pas encore prêt », « a répondu » ; « Inclure l’autre… » (${column})`
   )
+  // Le conseil ne promet pas d'avis à venir : rien ne réveille l'agent pour le donner (D9).
+  const said = await ui.ev(`${ui.$('subtasks-merge-advice')}?.innerText`)
+  check(
+    spaces(said) ===
+      'L’agent recommande « Tri des articles par rayon » ; « Tests de la sauvegarde locale » n’est pas encore prêt selon lui.',
+    `conseil : « … n’est pas encore prêt selon lui », sans « attend son avis » (${said})`
+  )
+  await footInside(ui, group, 'largeur normale')
   await ui.reveal(group)
   await ui.shot('264-groupe-finis')
   await ui.viewport(900, 760)
   // Plus haute que la fenêtre (une ligne dépliée) : son haut à l'écran.
   await ui.ev(`${group}.scrollIntoView({ block: 'start' }), true`)
+  await footInside(ui, group, '900 px')
   await ui.shot('264-groupe-finis-900')
   await ui.viewport()
 
   // « Inclure l'autre… » : une confirmation, puis la fusion des deux branches ; l'avis n'a rien.
   await ui.click(ui.$('subtasks-merge-others'))
   await ui.waitFor(`!!${ui.$('subtasks-merge-confirm')}`)
+  await footInside(ui, group, 'confirmation')
   await ui.reveal(group)
   await ui.shot('264-groupe-inclure-autres')
   await ui.click(ui.$('subtasks-merge-confirm-go'))

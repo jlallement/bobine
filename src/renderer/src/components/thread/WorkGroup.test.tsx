@@ -702,7 +702,7 @@ describe('revues UX et QA (fiche 264)', () => {
     expect(within(row).queryByTestId('work-retry')).toBeNull()
   })
 
-  it('pied : transmission en tête, « Puis nettoyer » en case avant le bouton, « Voir les modifications »', async () => {
+  it('pied : « Puis nettoyer » sur sa ligne, puis [Voir les modifications] [Inclure…] [Fusionner…]', async () => {
     const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
     const onShowChanges = vi.fn()
     view(
@@ -719,13 +719,76 @@ describe('revues UX et QA (fiche 264)', () => {
     expect(cleanup.closest('label')?.textContent).toBe(
       'Puis nettoyer (archiver, supprimer les branches)'
     )
+    // La case sur sa propre ligne, hors de la rangée de boutons (revue du lot 264).
+    expect(cleanup.closest('.subtasks-merge-option')).toBeTruthy()
+    expect(cleanup.closest('.subtasks-merge-actions')).toBeNull()
     const actionsRow = foot.querySelector('.subtasks-merge-actions') as HTMLElement
-    expect(actionsRow.firstElementChild?.contains(cleanup)).toBe(true)
+    expect([...actionsRow.children].map((b) => (b as HTMLElement).dataset['testid'])).toEqual([
+      'work-group-changes',
+      'subtasks-merge-start'
+    ])
     fireEvent.click(cleanup)
     fireEvent.click(screen.getByTestId('subtasks-merge-start'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], true))
     fireEvent.click(within(foot).getByTestId('work-group-changes'))
     expect(onShowChanges).toHaveBeenCalled()
+  })
+
+  const verdict = (id: number, childId: string, ready: boolean): TranscriptItem => ({
+    kind: 'child-recommendation',
+    id,
+    childId,
+    title: `Travail ${childId}`,
+    ready,
+    note: '',
+    at: T0
+  })
+
+  it('conseil : « pas encore prêt selon lui » quand l’agent l’a dit ; le principal en dernier', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    view(
+      [...working(), report(9, 'a'), verdict(10, 'a', true), verdict(11, 'b', false)],
+      info([child('a'), child('b', { role: front })], { merge: actions, onShowChanges: vi.fn() })
+    )
+    const advice = await screen.findByTestId('subtasks-merge-advice')
+    expect(plain(advice.textContent)).toBe(
+      'L’agent recommande « Travail a » ; « Travail b » n’est pas encore prêt selon lui.'
+    )
+    const row = screen.getByTestId('work-group-merge').querySelector('.subtasks-merge-actions')
+    expect([...(row?.children ?? [])].map((b) => (b as HTMLElement).dataset['testid'])).toEqual([
+      'work-group-changes',
+      'subtasks-merge-others',
+      'subtasks-merge-start'
+    ])
+    // Confirmation : la rangée garde « Voir les modifications », le bouton principal en dernier.
+    fireEvent.click(screen.getByTestId('subtasks-merge-others'))
+    const confirm = screen.getByTestId('subtasks-merge-confirm')
+    const buttons = confirm.querySelector('.subtasks-merge-actions')?.children ?? []
+    expect([...buttons].map((b) => (b as HTMLElement).dataset['testid'])).toEqual([
+      'work-group-changes',
+      'subtasks-merge-confirm-cancel',
+      'subtasks-merge-confirm-go'
+    ])
+  })
+
+  it('conseil : sans avis sur l’autre (ou un avis caduc), « n’a pas encore d’avis de l’agent »', async () => {
+    const actions = mergeActions([candidate('a', 'ready'), candidate('b', 'ready')])
+    view(
+      // L'avis sur b précède son compte rendu : caduc, il ne compte pas.
+      [
+        ...working(),
+        verdict(9, 'b', false),
+        report(10, 'a'),
+        report(11, 'b'),
+        verdict(12, 'a', true)
+      ],
+      info([child('a'), child('b', { role: front })], { merge: actions })
+    )
+    const advice = await screen.findByTestId('subtasks-merge-advice')
+    expect(plain(advice.textContent)).toBe(
+      'L’agent recommande « Travail a » ; « Travail b » n’a pas encore d’avis de l’agent.'
+    )
+    expect(advice.textContent).not.toContain('attend')
   })
 
   it('une colonne d’état : « fusionné » seul remplace « a répondu » ; « Recommandé » neutre', async () => {

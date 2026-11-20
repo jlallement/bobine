@@ -5877,9 +5877,6 @@ export type FrResources = {
         readonly confirmAction_one: 'Fusionner les {{count}} quand même'
         readonly confirmAction_other: 'Fusionner les {{count}} quand même'
         readonly confirmAction_many: 'Fusionner les {{count}} quand même'
-        readonly only_one: 'L’agent recommande {{titles}} ; l’autre attend son avis.'
-        readonly only_other: 'L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.'
-        readonly only_many: 'L’agent recommande {{titles}} ; les {{count}} autres attendent son avis.'
         readonly none: 'L’agent ne recommande encore aucun travail.'
       }
       readonly progress_one: 'Fusion dans {{base}} : {{count}} sur {{total}}…'
@@ -5909,6 +5906,17 @@ export type FrResources = {
       }
       readonly cleanup: 'Puis nettoyer (archiver, supprimer les branches)'
       readonly resolving: 'Conflit : le travail concerné le résout, puis la fusion reprend.'
+      readonly advice: {
+        readonly recommended: 'L’agent recommande {{titles}}'
+        readonly notReady_one: '{{titles}} n’est pas encore prêt selon lui'
+        readonly notReady_other: '{{titles}} ne sont pas encore prêts selon lui'
+        readonly unadvised_one: '{{titles}} n’a pas encore d’avis de l’agent'
+        readonly unadvised_other: '{{titles}} n’ont pas encore d’avis de l’agent'
+        readonly notReady_many: '{{titles}} ne sont pas encore prêts selon lui'
+        readonly unadvised_many: '{{titles}} n’ont pas encore d’avis de l’agent'
+        readonly separator: ' ; '
+        readonly end: '.'
+      }
     }
     readonly outcome: {
       readonly start: 'Lancé'

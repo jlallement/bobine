@@ -1,5 +1,12 @@
 import { Check, CircleExclamationPoint, GitMerge, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import { recommendedIds, type ChildVerdict } from '@shared/children'
@@ -183,7 +190,6 @@ const TEXTS = {
     others: 'childrenMerge.recommended.others',
     confirm: 'childrenMerge.recommended.confirm',
     confirmAction: 'childrenMerge.recommended.confirmAction',
-    only: 'childrenMerge.recommended.only',
     none: 'childrenMerge.recommended.none',
     progress: 'childrenMerge.progress',
     done: 'childrenMerge.result.done',
@@ -197,7 +203,6 @@ const TEXTS = {
     others: 'workGroup.merge.recommended.others',
     confirm: 'workGroup.merge.recommended.confirm',
     confirmAction: 'workGroup.merge.recommended.confirmAction',
-    only: 'workGroup.merge.recommended.only',
     none: 'workGroup.merge.recommended.none',
     progress: 'workGroup.merge.progress',
     done: 'workGroup.merge.result.done',
@@ -284,7 +289,8 @@ export function SubtasksMergeFooter({
   state,
   actions,
   verdicts,
-  works = false
+  works = false,
+  extra
 }: {
   motherId: string
   state: ChildrenMergeState
@@ -293,11 +299,15 @@ export function SubtasksMergeFooter({
   verdicts?: ReadonlyMap<string, ChildVerdict>
   /** Pied d'une carte de groupe (fiche 264) : ses textes, en « travaux ». */
   works?: boolean
+  /**
+   * Bouton secondaire de la carte de groupe (« Voir les modifications ») : dans la rangée des
+   * boutons, avant les autres ; dans sa propre rangée quand il n'y en a pas (revue du lot 264).
+   */
+  extra?: ReactNode
 }) {
   const { t } = useTranslation()
   const titles = useTitles()
   const vocabulary: Vocabulary = works ? 'works' : 'children'
-  const texts = TEXTS[vocabulary]
   const [cleanup, setCleanup] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -338,8 +348,15 @@ export function SubtasksMergeFooter({
   const live =
     conflictRow && plan?.children.find((c) => c.id === conflictRow.childId)?.state === 'conflict'
   const sentences = plan ? mergeSummary(plan, titles) : []
-  if (!merge && sentences.length === 0) return null
+  const lone = extra ? <div className="subtasks-merge-actions">{extra}</div> : null
+  if (!merge && sentences.length === 0) return lone
   const { ids, others, advised } = mergeChoice(ready, verdicts)
+  // Le bouton secondaire va dans la rangée de « Fusionner … » ; sinon, dans sa propre rangée.
+  const inButtons =
+    !(live && conflictRow) &&
+    sentences.length > 0 &&
+    !!plan &&
+    plan.blocked?.reason !== 'main-dirty'
   // Carte de groupe (revue UX) : une vraie case, avant le bouton principal, qui dit ce qu'elle fait.
   const cleanupToggle = works ? (
     <label className="merge-cleanup-check" title={t('childrenMerge.cleanupHint')}>
@@ -409,15 +426,13 @@ export function SubtasksMergeFooter({
               {sentences.map(translate).join(' ')}
             </div>
             {advised && (
-              <div className="subtasks-merge-text" data-testid="subtasks-merge-advice">
-                {ids.length === 0
-                  ? t(texts.none)
-                  : others.length > 0 &&
-                    t(texts.only, {
-                      count: others.length,
-                      titles: titles(ready.filter((c) => ids.includes(c.id)).map((c) => c.title))
-                    })}
-              </div>
+              <MergeAdvice
+                vocabulary={vocabulary}
+                recommended={ready.filter((c) => ids.includes(c.id))}
+                others={others}
+                verdicts={verdicts}
+                titles={titles}
+              />
             )}
             {plan.blocked?.reason === 'main-dirty' ? (
               // Fiche 123 : le dossier principal a des modifications, la fusion ne part pas.
@@ -449,6 +464,7 @@ export function SubtasksMergeFooter({
                 disabled={busy || !!plan.blocked || plan.running}
                 titles={titles}
                 onStart={(list) => void run(() => actions.start(motherId, list, cleanup))}
+                extra={extra}
               >
                 {cleanupToggle}
               </MergeButtons>
@@ -456,6 +472,7 @@ export function SubtasksMergeFooter({
           </>
         )
       )}
+      {!inButtons && lone}
       {errorLine}
     </div>
   )
@@ -468,6 +485,7 @@ export function SubtasksMergeFooter({
 function MergeButtons({
   base,
   vocabulary,
+  extra,
   order,
   ids,
   others,
@@ -479,6 +497,8 @@ function MergeButtons({
 }: {
   base: string
   vocabulary: Vocabulary
+  /** Bouton secondaire de la carte de groupe, en tête de la rangée des boutons. */
+  extra?: ReactNode
   /** Les prêtes, dans l'ordre des lignes. */
   order: string[]
   ids: string[]
@@ -487,7 +507,7 @@ function MergeButtons({
   disabled: boolean
   titles: (list: readonly string[]) => string
   onStart: (ids: string[]) => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const { t } = useTranslation()
   const texts = TEXTS[vocabulary]
@@ -504,8 +524,9 @@ function MergeButtons({
             titles: titles(others.map((c) => c.title))
           })}
         </span>
+        {vocabulary === 'works' && <div className="subtasks-merge-option">{children}</div>}
         <div className="subtasks-merge-actions">
-          {vocabulary === 'works' && children}
+          {extra}
           <button
             className="btn small ghost"
             onClick={() => setConfirming(false)}
@@ -530,9 +551,9 @@ function MergeButtons({
       </div>
     )
   }
-  return (
+  const row = (
     <div className="subtasks-merge-actions">
-      {vocabulary === 'works' && children}
+      {extra}
       {others.length > 0 && (
         <button
           className="btn small"
@@ -558,6 +579,15 @@ function MergeButtons({
       )}
       {vocabulary !== 'works' && children}
     </div>
+  )
+  // Carte de groupe : la case sur sa propre ligne, puis la rangée de boutons, le principal en
+  // dernier ; la rangée passe à la ligne dans la carte (revue du lot 264).
+  if (vocabulary !== 'works') return row
+  return (
+    <>
+      <div className="subtasks-merge-option">{children}</div>
+      {row}
+    </>
   )
 }
 
@@ -685,4 +715,74 @@ function stashOutcome(merge: ChildrenMerge): StashOutcome | undefined {
     return { restored: false, count: stash.count, ref: stash.ref, conflicts: stash.conflicts }
   }
   return stash?.state === 'restored' ? { restored: true, count: stash.count } : undefined
+}
+
+/** Le conseil de la mère sous le bilan : rien de recommandé, ou ce qu'elle recommande (fiche 160). */
+function MergeAdvice({
+  vocabulary,
+  recommended,
+  others,
+  verdicts,
+  titles
+}: {
+  vocabulary: Vocabulary
+  recommended: readonly MergeCandidate[]
+  others: readonly MergeCandidate[]
+  verdicts: ReadonlyMap<string, ChildVerdict> | undefined
+  titles: (list: readonly string[]) => string
+}) {
+  const { t } = useTranslation()
+  const names = titles(recommended.map((c) => c.title))
+  return (
+    <div className="subtasks-merge-text" data-testid="subtasks-merge-advice">
+      {recommended.length === 0
+        ? t(TEXTS[vocabulary].none)
+        : others.length > 0 &&
+          (vocabulary === 'works' ? (
+            <WorkAdvice recommended={names} others={others} verdicts={verdicts} titles={titles} />
+          ) : (
+            t('childrenMerge.recommended.only', { count: others.length, titles: names })
+          ))}
+    </div>
+  )
+}
+
+/**
+ * Conseil de la mère pour une carte de groupe : ce qu'elle recommande, puis, pour les autres,
+ * ce qu'elle en a vraiment dit — « pas encore prêt » ou rien du tout. Rien ne la réveille pour
+ * donner un avis plus tard : la phrase ne le promet pas (constat D9 de la recette, lot 264).
+ */
+function WorkAdvice({
+  recommended,
+  others,
+  verdicts,
+  titles
+}: {
+  recommended: string
+  others: readonly MergeCandidate[]
+  verdicts: ReadonlyMap<string, ChildVerdict> | undefined
+  titles: (list: readonly string[]) => string
+}) {
+  const { t } = useTranslation()
+  const notReady = others.filter((c) => {
+    const v = verdicts?.get(c.id)
+    return v !== undefined && !v.stale && !v.ready
+  })
+  const unadvised = others.filter((c) => !notReady.includes(c))
+  const parts: string[] = [t('workGroup.merge.advice.recommended', { titles: recommended })]
+  if (notReady.length > 0)
+    parts.push(
+      t('workGroup.merge.advice.notReady', {
+        count: notReady.length,
+        titles: titles(notReady.map((c) => c.title))
+      })
+    )
+  if (unadvised.length > 0)
+    parts.push(
+      t('workGroup.merge.advice.unadvised', {
+        count: unadvised.length,
+        titles: titles(unadvised.map((c) => c.title))
+      })
+    )
+  return <>{parts.join(t('workGroup.merge.advice.separator')) + t('workGroup.merge.advice.end')}</>
 }

@@ -575,14 +575,12 @@
 .work-group-foot .grow {
   flex: 1;
 }
-/* Pied de fusion : la transmission, le pied de fusion, puis « Voir les modifications » ; en colonne,
-   rien ne passe sous un autre bouton quand la ligne se replie (essais e2e). */
+/* Pied de fusion : la transmission, le bilan, la case « Puis nettoyer » sur sa ligne, puis une
+   rangée de boutons (« Voir les modifications », « Inclure… », le principal en dernier) qui passe à
+   la ligne dans la carte, jamais au-delà (revue du lot 264). */
 .work-group-merge {
   flex-direction: column;
   align-items: stretch;
-}
-.work-group-merge > .work-group-changes {
-  align-self: flex-start;
 }
 .work-group-note {
   flex: 1 1 auto;
@@ -624,10 +622,28 @@
   flex: 1 1 auto;
   text-align: left;
 }
-.work-group-merge .subtasks-merge-actions {
-  margin-left: auto;
+.work-group-merge .subtasks-merge {
+  min-width: 0;
 }
-.work-group-merge:not(:has(.subtasks-merge)) {
+.work-group-merge .subtasks-merge-text,
+.work-group-merge .subtasks-merge-option,
+.work-group-merge .subtasks-merge-confirm {
+  flex-basis: 100%;
+  min-width: 0;
+}
+.work-group-merge .subtasks-merge-actions {
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-left: 0;
+}
+.work-group-merge .subtasks-merge-actions .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+.work-group-merge:not(:has(.subtasks-merge, .work-group-changes)) {
   display: none;
 }
 

@@ -312,17 +312,19 @@ function GroupMergeFoot({
         actions={info.merge}
         verdicts={verdicts}
         works
+        extra={
+          info.onShowChanges && (
+            <button
+              type="button"
+              className="btn small work-group-changes"
+              onClick={info.onShowChanges}
+              data-testid="work-group-changes"
+            >
+              {t('workGroup.changes')}
+            </button>
+          )
+        }
       />
-      {info.onShowChanges && (
-        <button
-          type="button"
-          className="btn small work-group-changes"
-          onClick={info.onShowChanges}
-          data-testid="work-group-changes"
-        >
-          {t('workGroup.changes')}
-        </button>
-      )}
     </div>
   )
 }

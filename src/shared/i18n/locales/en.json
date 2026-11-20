@@ -5840,8 +5840,6 @@
         "confirm_other": "The agent does not recommend {{titles}}. Merge anyway?",
         "confirmAction_one": "Merge the {{count}} anyway",
         "confirmAction_other": "Merge the {{count}} anyway",
-        "only_one": "The agent recommends {{titles}}; the other one awaits its opinion.",
-        "only_other": "The agent recommends {{titles}}; the {{count}} others await its opinion.",
         "none": "The agent does not recommend any task yet."
       },
       "progress_one": "Merging into {{base}}: {{count}} of {{total}}…",
@@ -5866,7 +5864,16 @@
         "cleaned": "branch deleted"
       },
       "cleanup": "Then clean up (archive, delete the branches)",
-      "resolving": "Conflict: that task resolves it, then the merge resumes."
+      "resolving": "Conflict: that task resolves it, then the merge resumes.",
+      "advice": {
+        "recommended": "The agent recommends {{titles}}",
+        "notReady_one": "{{titles}} is not ready yet according to it",
+        "notReady_other": "{{titles}} are not ready yet according to it",
+        "unadvised_one": "{{titles}} has no opinion from the agent yet",
+        "unadvised_other": "{{titles}} have no opinion from the agent yet",
+        "separator": "; ",
+        "end": "."
+      }
     },
     "outcome": {
       "start": "Started",

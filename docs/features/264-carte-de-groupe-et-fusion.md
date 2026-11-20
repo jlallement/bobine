@@ -279,3 +279,16 @@ Pas de nouvelle dépendance.
   fusion quand la ligne se repliait (vu en e2e : le clic ouvrait Modifications au lieu de fusionner).
 - e2e : les lignes lancées suivant l'ordre de lancement, les essais lisent les lignes par leur
   titre ; `filles-fusion` suit la ligne en conflit, quelle qu'elle soit.
+
+### Dernière relecture des captures (2026-11-20)
+
+- **Pied de fusion** : « Fusionner le recommandé dans main » débordait de la carte (coupé à
+  droite). La case « Puis nettoyer » a désormais sa propre ligne, puis une rangée de boutons
+  [Voir les modifications] [Inclure l'autre…] [Fusionner …], principal en dernier, qui passe à la
+  ligne dans la carte (`flex-wrap`, boutons bornés à sa largeur). « Voir les modifications » est
+  passé au pied de fusion (`extra`) ; seul, il garde sa rangée. L'essai `travaux-groupe` vérifie
+  qu'aucun bouton du pied ne dépasse la carte, en largeur normale, à 900 px et en confirmation.
+- **Conseil (constat D9)** : « l'autre attend son avis » promettait un avis que rien ne réveille
+  l'agent à donner. La phrase dit ce qu'il a vraiment dit : « … ; « X » n'est pas encore prêt
+  selon lui. » (avis « pas prêt » à jour), sinon « … n'a pas encore d'avis de l'agent. » (aucun
+  avis, ou un avis caduc). « Sous-tâches » (fiche 160) garde son texte.
