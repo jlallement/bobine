@@ -4654,11 +4654,9 @@ a.btn {
   background: var(--surface-3);
 }
 
+/* L'actif garde la marge droite des inactifs : son ✕ s'ajoute après, jamais sous le pointeur qui
+   vient de l'activer (fiche 272). */
 .side-panel-tabs.tight .side-panel-tab-main {
-  padding: 0 4px 0 7px;
-}
-
-.side-panel-tabs.tight .side-panel-tab:not(.active) .side-panel-tab-main {
   padding: 0 7px;
 }
 

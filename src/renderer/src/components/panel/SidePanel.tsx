@@ -25,6 +25,7 @@ import { lastPlan, PlanList } from '../thread/PlanList'
 import { useTranslation } from 'react-i18next'
 import { useCompactTabs } from './compact-tabs'
 import { PanelMoreMenu } from './PanelMoreMenu'
+import { mayCloseTab, type TabActivation } from './tab-close-guard'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
 const ATTACHED_NOTICE_MS = 3000
@@ -168,6 +169,8 @@ export function SidePanel({
   const attachedText = maximized && attached ? t(`sidePanel.attached.${attached.kind}`) : ''
   // Panneau étroit : les onglets défilent, l'onglet actif reste visible.
   const tabList = useRef<HTMLDivElement>(null)
+  /** Dernier onglet activé à la souris : son ✕ ne ferme pas tout de suite (fiche 272). */
+  const activation = useRef<TabActivation | null>(null)
   useEffect(() => {
     tabList.current
       ?.querySelector<HTMLElement>('[aria-selected="true"]')
@@ -252,7 +255,10 @@ export function SidePanel({
                     aria-selected={id === tab}
                     aria-label={label(id)}
                     className="side-panel-tab-main"
-                    onClick={() => onTab(id)}
+                    onClick={() => {
+                      if (id !== tab) activation.current = { tab: id, at: Date.now() }
+                      onTab(id)
+                    }}
                     data-tab={id}
                   >
                     <Icon size={15} />
@@ -264,7 +270,10 @@ export function SidePanel({
                   <button
                     className="side-panel-tab-close"
                     aria-label={closeLabel}
-                    onClick={() => onCloseTab(id)}
+                    onClick={(event) => {
+                      // Jamais au second clic d'un double clic, ni juste après l'activation (fiche 272).
+                      if (mayCloseTab(id, event, Date.now(), activation.current)) onCloseTab(id)
+                    }}
                     data-testid="panel-tab-close"
                   >
                     <X size={13} />

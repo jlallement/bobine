@@ -131,6 +131,34 @@ export async function narrowTabsSuite(scheme) {
           whole(state, `${id} actif`)
         }
 
+        // Fiche 272 (recette) : clic sur le bord droit d'un inactif, puis un second clic aussitôt au
+        // même endroit (double clic). Le ✕ de l'onglet activé n'est jamais sous le pointeur, et rien
+        // ne se ferme.
+        const edgeTarget = await ui.ev(
+          `[...document.querySelectorAll('.side-panel-tab:not([data-overflow]):not(.active)')].at(-1)?.dataset.tab ?? null`
+        )
+        if (edgeTarget) {
+          const before = (await rowState()).open
+          const at = await ui.ev(`(() => {
+            const b = document.querySelector('.side-panel-tab[data-tab=${edgeTarget}]').getBoundingClientRect()
+            return { x: Math.round(b.right - 2), y: Math.round(b.top + b.height / 2) }
+          })()`)
+          await ui.hover(at)
+          await ui.clickAt(at)
+          await ui.waitFor(
+            `!!document.querySelector('.side-panel-tab.active[data-tab=${edgeTarget}]')`
+          )
+          const under = await ui.ev(
+            `!!document.elementFromPoint(${at.x}, ${at.y})?.closest('[data-testid=panel-tab-close]')`
+          )
+          await ui.clickAt(at)
+          const after = await rowState()
+          check(
+            !under && after.open === before && after.active === edgeTarget,
+            `${language}, 280 px : clic au bord droit de ${edgeTarget} puis second clic : ✕ jamais sous le pointeur (${under}), aucun onglet fermé (${before} → ${after.open})`
+          )
+        }
+
         // ✕ d'une ligne rangée, à la souris : l'onglet se ferme (il ne s'ouvre pas).
         if ((await rowState()).stored.length > 0) {
           const before = await rowState()
