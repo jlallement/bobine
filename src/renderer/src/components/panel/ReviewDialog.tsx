@@ -3,7 +3,7 @@ import { useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HelpFooterLink } from '../help/HelpLink'
 import { useTipsContext } from '../../useTips'
-import type { ConversationSummary, ProfileSummary } from '@shared/agent'
+import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
 import { ipcErrorText } from '../../ipc-errors'
 import {
   ChildOptions,
@@ -14,10 +14,27 @@ import {
 } from '../sidebar/child-options'
 
 /**
+ * Un autre modèle que celui de la conversation relue (fiche 265, idée D39 de la recette du 19/11 :
+ * une relecture vaut surtout avec un regard neuf) : du même groupe (même fournisseur) d'abord,
+ * sinon le premier autre ; `null` s'il n'y en a pas.
+ */
+export function otherModel(
+  control: Pick<SessionControl, 'type' | 'currentValue' | 'options'>
+): string | null {
+  if (control.type !== 'select') return null
+  const current = String(control.currentValue)
+  const group = control.options.find((o) => o.value === current)?.group
+  // Jamais un modèle refusé faute de connexion (fiche 210).
+  const others = control.options.filter((o) => o.value !== current && !o.authRequired)
+  return (others.find((o) => group !== undefined && o.group === group) ?? others[0])?.value ?? null
+}
+
+/**
  * « Faire relire… » (fiche 177) : ce que relit la relecture, les points à surveiller, l'agent et
- * le modèle — ceux de la conversation relue, suggérés et à confirmer (règle de la fiche 160) —, et
- * ce qu'elle coûte. Rien ne part sans « Lancer la relecture » ; la conversation affichée ne change
- * pas, le relecteur apparaît parmi les filles.
+ * le modèle — l'agent de la conversation relue et, s'il en a un autre, un autre modèle (fiche 265),
+ * suggérés et à confirmer (règle de la fiche 160) —, et ce qu'elle coûte. Rien ne part sans
+ * « Lancer la relecture » ; la conversation affichée ne change pas : le rôle Code reviewer répond
+ * dans le fil (fiche 265).
  */
 export function ReviewDialog({
   author,
@@ -35,6 +52,10 @@ export function ReviewDialog({
     modelValue: null
   })
   const model = useMotherModel(author.id, childModelAllowed(profiles, author))
+  // Un autre modèle proposé d'office, une fois lu (fiche 265) ; un choix fait l'emporte.
+  const other = model ? otherModel(model) : null
+  const shown: ChildChoice =
+    choice.modelValue === null && other ? { ...choice, modelValue: other } : choice
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const tips = useTipsContext()
@@ -46,7 +67,7 @@ export function ReviewDialog({
     try {
       await window.api.conversations.startReview(author.id, {
         ...(focus.trim() ? { focus } : {}),
-        ...childChoiceRequest(author, model, choice)
+        ...childChoiceRequest(author, model, shown)
       })
       // Une relecture lancée : l'astuce « Faire relire » n'a plus lieu d'être (fiche 191).
       tips?.used('review')
@@ -96,12 +117,13 @@ export function ReviewDialog({
             mother={author}
             profiles={profiles}
             model={model}
-            choice={choice}
+            choice={shown}
             onChange={setChoice}
             testId="review"
           />
           <p className="field-help" data-testid="review-suggested">
-            {t('review.dialog.suggested')} {t('review.dialog.cost')}
+            {t(other ? 'review.dialog.suggestedOther' : 'review.dialog.suggested')}{' '}
+            {t('review.dialog.cost')}
           </p>
           {error && (
             <p className="field-error" role="alert" data-testid="review-error">

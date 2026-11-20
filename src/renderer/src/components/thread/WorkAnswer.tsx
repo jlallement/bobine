@@ -2,13 +2,14 @@ import { Check, ChevronDown, ChevronRight, ChevronUp, Send } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
-import type { WorkCardData } from '@shared/role-request'
+import type { ReviewItem, WorkCardData } from '@shared/role-request'
 import type { RoleBadge } from '@shared/roles'
 import { RoleAvatar, useRoleStyle } from '../roles/RoleAvatar'
 import type { TranscriptItem } from '@shared/transcript'
 import { usePresentation } from '../../presentation'
 import { messageTime, turnDuration } from '../../time'
 import { Markdown } from './Markdown'
+import { ReviewFindings } from './WorkReview'
 import { FileStats, useUsageText } from './Subtasks'
 import {
   answerText,
@@ -40,7 +41,8 @@ export function WorkSteps({
   state,
   agent,
   changes,
-  inGroup = false
+  inGroup = false,
+  onShowFile
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -52,6 +54,8 @@ export function WorkSteps({
   agent: string
   /** Ce que sa branche apportera, pour la dernière réponse (`branchChanges`, fiche 264). */
   changes?: WorkChanges | null | undefined
+  /** Code reviewer (fiche 265) : un fichier d'une remarque, ouvert dans la vue Git relue. */
+  onShowFile?: ((file: string) => void) | undefined
 }) {
   const current = currentReport(card)
   return (
@@ -71,6 +75,9 @@ export function WorkSteps({
             current={step.item.id === current?.id}
             state={state}
             noCost={inGroup}
+            {...(step.item.id === current?.id && card.review?.status === 'reported'
+              ? { review: card.review, onShowFile }
+              : {})}
             {...(step.item.id === current?.id && changes !== undefined ? { changes } : {})}
           />
         )
@@ -152,9 +159,14 @@ function WorkAnswer({
   current,
   state,
   changes,
-  noCost = false
+  noCost = false,
+  review,
+  onShowFile
 }: {
   noCost?: boolean
+  /** Remarques structurées du Code reviewer (fiche 265), sur sa dernière réponse. */
+  review?: ReviewItem | undefined
+  onShowFile?: ((file: string) => void) | undefined
   /** La branche lue (fiche 264) ; `null` : rien à dire ; absent : les fichiers de la réponse. */
   changes?: WorkChanges | null
   card: WorkCardData
@@ -173,6 +185,13 @@ function WorkAnswer({
         <div className="work-error" data-testid="work-error">
           {text}
         </div>
+      ) : review ? (
+        <ReviewFindings
+          review={review}
+          role={card.role?.label ?? card.title}
+          reply={text}
+          onShow={onShowFile}
+        />
       ) : text ? (
         <FoldedAnswer text={text} relayed={relayed} />
       ) : (

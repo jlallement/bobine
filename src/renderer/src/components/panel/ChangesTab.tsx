@@ -59,6 +59,7 @@ export function ChangesTab({
   items,
   initialView,
   initialViewSeq,
+  initialFile,
   onSendNotes,
   childWorktrees,
   onReview
@@ -70,6 +71,8 @@ export function ChangesTab({
   initialView?: ChangesView
   /** Numéro de la demande d'ouverture : une demande déjà servie n'impose plus sa vue. */
   initialViewSeq?: number
+  /** Fichier à ouvrir d'emblée (remarque du Code reviewer cliquée sur sa carte, fiche 265). */
+  initialFile?: string
   /** Remarques sur les modifications (fiche 085) : envoie le message à l'agent. */
   onSendNotes?: (text: string) => void
   /** Filles de la conversation (fiche 161) ; vue « Filles » seulement s'il y en a. */
@@ -103,7 +106,7 @@ export function ChangesTab({
     })
     setChosenState(next)
   }
-  const [open, setOpen] = useState<Set<string>>(new Set())
+  const [open, setOpen] = useState<Set<string>>(() => new Set(initialFile ? [initialFile] : []))
   const [gitDiffs, setGitDiffs] = useState<Record<string, GitFileDiff | { error: string }>>({})
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -123,8 +126,9 @@ export function ChangesTab({
           onDelete: diffNotes.remove
         }
       : undefined
-  // Remarques des relectures de ce travail (fiche 177), reprises une fois en remarques de diff.
-  useReviewImport(items, diffNotes.addAll, !!onSendNotes)
+  // Remarques des relectures de ce travail (fiche 177), reprises une fois en remarques de diff ;
+  // pas celles d'un travail relu affichées dans ce fil (fiche 265).
+  useReviewImport(items, diffNotes.addAll, !!onSendNotes, conversationId)
   const reviewNotes = diffNotes.notes.filter((n) => n.review)
   const sendNotes = () => {
     if (!onSendNotes || diffNotes.notes.length === 0) return

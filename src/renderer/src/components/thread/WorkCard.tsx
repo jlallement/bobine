@@ -9,12 +9,13 @@ import {
   Pencil,
   TriangleAlert
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { ChildVerdict } from '@shared/children'
 import { mergeActive } from '@shared/children-merge'
-import { useWorkFacts } from './work-layout-context'
+import { useWorkFacts, WorkLayoutContext } from './work-layout-context'
+import { ReviewChanged } from './WorkReview'
 import type { RoleRequestItem, WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { messageTime } from '../../time'
@@ -67,16 +68,19 @@ export function RoleRequestEntry({
 /** La bulle de l'utilisateur : la puce de chaque rôle, puis le texte demandé. */
 export function RoleRequestBubble({
   item,
-  inCard = false
+  inCard = false,
+  inReview = false
 }: {
   item: RoleRequestItem
   inCard?: boolean
+  /** Demande de relecture rangée dans la carte du travail relu (fiche 265). */
+  inReview?: boolean
 }) {
   const { t } = useTranslation()
   return (
     <div
-      className={`msg-user-group role-request${inCard ? ' in-card' : ''}`}
-      data-testid={inCard ? 'work-ask' : 'role-request'}
+      className={`msg-user-group role-request${inCard ? ' in-card' : ''}${inReview ? ' in-review' : ''}`}
+      data-testid={inCard ? 'work-ask' : inReview ? 'review-ask' : 'role-request'}
       data-item-id={item.id}
     >
       <div className="msg-user role-request-bubble">
@@ -178,12 +182,15 @@ export function WorkCard({
   inGroup = false,
   plan,
   merged = false,
-  merging = false
+  merging = false,
+  nested = false
 }: {
   card: WorkCardData
   items: readonly TranscriptItem[]
   info: SubtasksInfo | undefined
   inGroup?: boolean
+  /** Rangée dans la carte du travail qu'elle relit (Code reviewer, fiche 265). */
+  nested?: boolean
   /** Dans un groupe : les branches lues par sa carte, et si ce travail a été fusionné (fiche 264). */
   plan?: ChildrenMergePlan | undefined
   merged?: boolean
@@ -218,9 +225,10 @@ export function WorkCard({
   const mergeBusy = inGroup ? merging : !!merge?.active
   const agent = info?.agentLabel ?? t('workCard.mainAgent')
   const changes = cardChanges(card.childId, child, inGroup ? { plan, merged } : merge)
+  const showFile = reviewShow(card, info)
   return (
     <div
-      className={`work-card${state === 'running' ? ' running' : ''}${inGroup ? ' in-group' : ''}`}
+      className={cardClass(state, inGroup, nested)}
       style={style}
       data-testid="work-card"
       // Dans un groupe, l'ancre du repère est sur la ligne (fiche 261).
@@ -228,6 +236,7 @@ export function WorkCard({
       data-child-id={card.childId}
       data-role={card.role?.name}
       data-state={state}
+      {...reviewData(card)}
     >
       {!inGroup && (
         <WorkHead
@@ -250,21 +259,13 @@ export function WorkCard({
         agent={agent}
         changes={changes}
         inGroup={inGroup}
+        onShowFile={showFile}
       />
+      <ReviewChanged review={card.review} />
       {(state === 'running' || state === 'waiting') &&
         !mergeBusy &&
         card.steps.at(-1)?.kind !== 'report' && <WorkLive childId={child?.id} state={state} />}
-      {(state === 'pending' || state === 'silent') && (
-        <div
-          className="work-live work-waiting-answer"
-          data-testid="work-no-answer"
-          data-state={state}
-        >
-          {state === 'pending'
-            ? t('workCard.pendingLine', { agent: info?.agentLabel ?? t('workCard.mainAgent') })
-            : t('workCard.silentLine')}
-        </div>
-      )}
+      <NoAnswerLine state={state} agent={agent} />
       {merge && <WorkMergeBox control={merge} card={card} name={workName(card)} />}
       <WorkFoot
         card={card}
@@ -275,7 +276,80 @@ export function WorkCard({
         items={items}
         mergeBusy={mergeBusy}
         {...(merge ? { merge } : {})}
+        onShowDiff={showFile}
       />
+      {/* Ses relectures, dans sa carte (fiche 265) ; dans un groupe, sous sa ligne. */}
+      {!inGroup && !nested && <WorkReviews childId={card.childId} items={items} info={info} />}
+    </div>
+  )
+}
+
+/** Fini sans réponse posée : retenue pendant que la mère répond, ou jamais venue (fiche 263). */
+function NoAnswerLine({ state, agent }: { state: WorkState; agent: string }) {
+  const { t } = useTranslation()
+  if (state !== 'pending' && state !== 'silent') return null
+  return (
+    <div className="work-live work-waiting-answer" data-testid="work-no-answer" data-state={state}>
+      {state === 'pending' ? t('workCard.pendingLine', { agent }) : t('workCard.silentLine')}
+    </div>
+  )
+}
+
+const cardClass = (state: WorkState, inGroup: boolean, nested: boolean): string =>
+  ['work-card', state === 'running' && 'running', inGroup && 'in-group', nested && 'nested']
+    .filter(Boolean)
+    .join(' ')
+
+/** État de la relecture d'un Code reviewer et son nombre de remarques (essais, pilote). */
+const reviewData = (card: WorkCardData) =>
+  card.review
+    ? {
+        'data-review': card.review.status,
+        ...(card.review.status === 'reported'
+          ? { 'data-findings': card.review.findings.length }
+          : {})
+      }
+    : {}
+
+/** Code reviewer (fiche 265) : ses remarques ouvrent la vue Git de la conversation relue. */
+function reviewShow(
+  card: WorkCardData,
+  info: SubtasksInfo | undefined
+): ((file?: string) => void) | undefined {
+  const reviewed = reviewedId(card)
+  const show = info?.onShowDiff
+  return reviewed && show ? (file) => show(reviewed, file) : undefined
+}
+
+/** Conversation relue par ce Code reviewer (fiche 265) ; `undefined` pour un autre travail. */
+export const reviewedId = (card: WorkCardData): string | undefined =>
+  card.request?.review?.of ?? card.review?.authorId
+
+/**
+ * Relectures d'un travail (fiche 265) : la bulle « @Code reviewer Relis … » et la carte du
+ * relecteur, rangées dans la carte du travail (ou sous sa ligne d'une carte de groupe) plutôt qu'à
+ * leur place dans le fil.
+ */
+export function WorkReviews({
+  childId,
+  items,
+  info
+}: {
+  childId: string
+  items: readonly TranscriptItem[]
+  info: SubtasksInfo | undefined
+}) {
+  const layout = useContext(WorkLayoutContext)
+  const entries = layout?.reviews.get(childId)
+  if (!entries?.length) return null
+  return (
+    <div className="work-reviews" data-testid="work-reviews">
+      {entries.map((entry) => (
+        <div key={entry.request.id} className="role-request-group in-review">
+          <RoleRequestBubble item={entry.request} inReview />
+          <WorkCard card={entry.card} items={items} info={info} nested />
+        </div>
+      ))}
     </div>
   )
 }
@@ -333,7 +407,13 @@ function WorkHead({
             </span>
           </>
         ) : state === 'replied' && report ? (
-          t('workCard.state.replied', { time: messageTime(report.at) })
+          // Code reviewer sans remarque (fiche 265) : « rien à signaler » dès l'en-tête.
+          t(
+            card.review?.status === 'reported' && card.review.findings.length === 0
+              ? 'workCard.state.clean'
+              : 'workCard.state.replied',
+            { time: messageTime(report.at) }
+          )
         ) : state === 'replied' || state === 'pending' ? (
           t('workCard.state.answered')
         ) : state === 'unknown' ? null : (
@@ -360,6 +440,8 @@ function WorkPlace({
   if (card.role?.readOnly) {
     const level = childReadOnly(child, info?.profiles ?? [])
     const requested = level === 'requested'
+    // Code reviewer d'une branche (fiche 265) : il lit dans le dossier du travail relu.
+    const branch = !requested && card.review?.scope === 'branch'
     const tag = (
       <span
         className="work-place"
@@ -368,7 +450,13 @@ function WorkPlace({
         tabIndex={requested ? 0 : undefined}
       >
         {requested ? <EyeOff size={12} aria-hidden /> : <Eye size={12} aria-hidden />}
-        {t(requested ? 'workCard.readOnlyRequested' : 'workCard.readOnly')}
+        {t(
+          requested
+            ? 'workCard.readOnlyRequested'
+            : branch
+              ? 'workCard.readOnlyBranch'
+              : 'workCard.readOnly'
+        )}
       </span>
     )
     return requested ? <Tip label={t('workCard.readOnlyRequestedHint')}>{tag}</Tip> : tag

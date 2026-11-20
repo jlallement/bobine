@@ -85,7 +85,8 @@ export interface ReviewDeps {
 
 /** Relecteur suivi depuis son lancement (perdu au redémarrage : seule l'empreinte manque alors). */
 interface Watch {
-  fingerprint?: string
+  /** Empreinte du dossier au départ du tour (`undefined` : pas pu la prendre). */
+  baseline?: Promise<string | undefined>
   reported: boolean
   /**
    * Premier tour pas encore commencé : son empreinte est celle du lancement. Aux tours suivants
@@ -147,7 +148,7 @@ export class ChildReviews {
     conversations.rename(created.id, t('review.title', { title: author.title }))
     const reviewer = children.summary(created.id)
     this.watching.set(reviewer.id, {
-      ...(fingerprint ? { fingerprint } : {}),
+      baseline: Promise.resolve(fingerprint),
       reported: false,
       first: true
     })
@@ -328,15 +329,11 @@ export class ChildReviews {
     } catch {
       return
     }
-    const next: Watch = { ...(watch ?? { reported: false }) }
-    delete next.fingerprint
-    this.watching.set(id, next)
-    void this.fingerprint(workspace)
-      .then((fingerprint) => {
-        // Le tour a pu finir avant l'empreinte (agent très rapide) : rien à comparer alors.
-        if (this.watching.get(id) === next) next.fingerprint = fingerprint
-      })
-      .catch(() => undefined)
+    // Attendue par la fin du tour : un agent rapide ne fait pas sauter la vérification.
+    this.watching.set(id, {
+      ...(watch ?? { reported: false }),
+      baseline: this.fingerprint(workspace).catch(() => undefined)
+    })
   }
 
   private async afterTurn(
@@ -354,9 +351,10 @@ export class ChildReviews {
     }
     const current = this.current(authorId, reviewer.id) ?? this.fallback(reviewer)
     let next: Review = current
-    if (watch.fingerprint) {
-      const now = await this.fingerprint(author.workspace).catch(() => watch.fingerprint)
-      if (now !== watch.fingerprint && !current.changed) {
+    const before = await watch.baseline
+    if (before) {
+      const now = await this.fingerprint(author.workspace).catch(() => before)
+      if (now !== before && !current.changed) {
         next = { ...next, changed: true }
         this.deps.conversations.post(reviewer.id, {
           type: 'notice',
@@ -474,7 +472,7 @@ export class ChildReviews {
     const fingerprint = await this.fingerprint(author.workspace).catch(() => undefined)
     this.watching.set(reviewerId, {
       ...watch,
-      ...(fingerprint ? { fingerprint } : {}),
+      baseline: Promise.resolve(fingerprint),
       reported: false,
       first: true
     })

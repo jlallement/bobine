@@ -196,7 +196,9 @@ describe('relecture avant fusion (fiche 177)', () => {
     await env.reviews.settled(reviewer.id)
     // L'auteur corrige entre deux tours du relecteur : ce n'est pas le relecteur qui écrit.
     writeFileSync(join(env.repo, 'src', 'app.js'), 'export const corrige = true\n')
-    expect(env.children.reply(author, reviewer.id, 'Relis à nouveau')).toBe('sent')
+    // La suite relit sans rien écrire (l'agent factice de ce profil écrirait sinon).
+    const again = 'Relis à nouveau\n/scenario relecture-vide'
+    expect(env.children.reply(author, reviewer.id, again)).toBe('sent')
     await waitFor(
       () => env.items(author).filter((i) => i.kind === 'child-report').length === 2,
       20_000
@@ -205,11 +207,14 @@ describe('relecture avant fusion (fiche 177)', () => {
     await env.reviews.settled(reviewer.id)
     // Bulle de suite dans le fil de l'auteur ; la suite part au même relecteur.
     expect(
-      env.items(author).some((i) => i.kind === 'role-request' && i.followUp && i.text === 'Relis à nouveau')
+      env.items(author).some((i) => i.kind === 'role-request' && i.followUp && i.text === again)
     ).toBe(true)
     expect(
-      env.items(reviewer.id).filter((i) => i.kind === 'user').map((i) => i.kind === 'user' && i.text)
-    ).toContain('Relis à nouveau')
+      env
+        .items(reviewer.id)
+        .filter((i) => i.kind === 'user')
+        .map((i) => i.kind === 'user' && i.text)
+    ).toContain(again)
     await waitFor(() => env.card(author)?.status === 'reported')
     expect(env.card(author)?.changed).toBeUndefined()
   })
@@ -253,7 +258,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     // la carte de relecture y est aussi (celle du fil du travail donne les remarques de diff).
     const bubble = env.items(mother).find((i) => i.kind === 'role-request')
     expect(bubble).toMatchObject({
-      text: t('review.ask.branch', { branch: child.branch }),
+      text: t('review.ask.branch', { branch: child.branch ?? '' }),
       review: { of: child.id }
     })
     expect(env.card(mother)).toMatchObject({ reviewId: reviewer.id, authorId: child.id })
@@ -275,7 +280,9 @@ describe('relecture avant fusion (fiche 177)', () => {
     const reports = () =>
       env
         .items(author)
-        .filter((i) => i.kind === 'child-report' && i.childId === reviewer.id && i.outcome === 'error')
+        .filter(
+          (i) => i.kind === 'child-report' && i.childId === reviewer.id && i.outcome === 'error'
+        )
     expect(reports()).toHaveLength(1)
     // « Relancer » (la même demande) : le premier message refait, jamais la demande seule.
     expect(env.children.reply(author, reviewer.id, 'Relis les modifications')).toBe('sent')
@@ -295,7 +302,9 @@ describe('relecture avant fusion (fiche 177)', () => {
     view.transcript.items.splice(
       0,
       view.transcript.items.length,
-      ...view.transcript.items.filter((i) => i.kind !== 'child-started' && i.kind !== 'role-request')
+      ...view.transcript.items.filter(
+        (i) => i.kind !== 'child-started' && i.kind !== 'role-request'
+      )
     )
     expect(() => env.children.reply(author, reviewer.id, 'Encore')).toThrow(
       t('workCard.error.gone')

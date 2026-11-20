@@ -74,7 +74,7 @@ interface Props {
   /** Police du terminal (réglages, fiche 027). */
   preferences?: Preferences
   /** « Modifications » ouvert par la puce de branche : sur l'état git (fiche 049). */
-  changesRequest?: { view: ChangesView; seq: number }
+  changesRequest?: { view: ChangesView; seq: number; file?: string }
   /** Image de l'onglet (page, écran d'un simulateur) jointe au message (fiche 066). */
   onAttachImage?: (image: ImageAttachment) => void
   /** Document Markdown en aperçu (fiche 052) : l'onglet « Aperçu » n'existe que s'il y en a un. */
@@ -92,6 +92,15 @@ interface Props {
   onResize: (width: number) => void
   /** Double-clic sur le bord : largeur par défaut (fiche 226). */
   onResetWidth: () => void
+}
+
+/** Vue demandée de l'onglet Modifications, et le fichier à ouvrir (fiche 265). */
+function changesOpening(request: { view: ChangesView; seq: number; file?: string }) {
+  return {
+    initialView: request.view,
+    initialViewSeq: request.seq,
+    ...(request.file ? { initialFile: request.file } : {})
+  }
 }
 
 /**
@@ -334,9 +343,7 @@ export function SidePanel({
               key={`${conversationId}:${changesRequest?.seq ?? 0}`}
               conversationId={conversationId}
               items={items}
-              {...(changesRequest
-                ? { initialView: changesRequest.view, initialViewSeq: changesRequest.seq }
-                : {})}
+              {...(changesRequest ? changesOpening(changesRequest) : {})}
               {...(workspace ? { workspace } : {})}
               {...(onSendDiffNotes ? { onSendNotes: onSendDiffNotes } : {})}
               childWorktrees={childWorktrees}

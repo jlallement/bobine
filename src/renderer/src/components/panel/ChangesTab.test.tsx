@@ -2,6 +2,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GitChanges, GitFileDiff } from '@shared/changes'
+import type { TranscriptItem } from '@shared/transcript'
 import { ChangesTab } from './ChangesTab'
 
 /** Réponse de `gitFile` tenue en main : le diff arrive quand le test le décide. */
@@ -172,5 +173,82 @@ describe('vue Git relue après un commit fait hors du panneau (fiche 246, D4)', 
     expect(unsubscribed).not.toHaveBeenCalled()
     unmount()
     expect(unsubscribed).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('remarques du Code reviewer (fiche 265)', () => {
+  const api = window.api
+  const gitFile = vi.fn(async () => ({ oldText: 'a\n', newText: 'b\n' }))
+  beforeEach(() => {
+    localStorage.clear()
+    window.api = {
+      ...api,
+      changes: { git: async () => REPO, gitFile },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+  })
+  afterEach(() => {
+    cleanup()
+    window.api = api
+    gitFile.mockClear()
+  })
+
+  const reviewOf = (authorId: string | undefined, reviewId: string): TranscriptItem =>
+    ({
+      kind: 'review',
+      id: 1,
+      reviewId,
+      ...(authorId ? { authorId } : {}),
+      title: 'Relecture',
+      profileLabel: 'Factice',
+      scope: 'uncommitted',
+      files: 1,
+      status: 'reported',
+      findings: [
+        {
+          id: `${reviewId}:1`,
+          file: 'gros.txt',
+          line: 2,
+          severity: 'high',
+          category: 'correctness',
+          title: `Remarque de ${reviewId}`,
+          why: 'Parce que.',
+          code: 'b'
+        }
+      ],
+      at: 1
+    }) as TranscriptItem
+
+  it('un clic sur `fichier:ligne` ouvre ce fichier dans la vue Git', async () => {
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c"
+          workspace="/depot"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+          initialFile="gros.txt"
+        />
+      </Tooltip.Provider>
+    )
+    await waitFor(() => expect(gitFile).toHaveBeenCalledWith('c', 'gros.txt', undefined))
+  })
+
+  it('remarques de diff : celles qui relisent cette conversation, pas un travail relu dans son fil', async () => {
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="mere"
+          workspace="/depot"
+          items={[reviewOf('b', 'r1'), reviewOf('mere', 'r2'), reviewOf(undefined, 'r3')]}
+          initialView="git"
+          initialViewSeq={1}
+          onSendNotes={vi.fn()}
+        />
+      </Tooltip.Provider>
+    )
+    const notes = await waitFor(() => screen.getAllByTestId('review-note'))
+    expect(notes.map((n) => n.dataset['id'])).toEqual(['r2:1', 'r3:1'])
   })
 })

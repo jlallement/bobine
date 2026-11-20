@@ -1,6 +1,7 @@
-import { BookmarkPlus, Check, Reply, ScanSearch, Send } from 'lucide-react'
+import { BookmarkPlus, Check, FileDiff, Reply, ScanSearch, Send } from 'lucide-react'
 import i18next from 'i18next'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
+import { childState } from '@shared/children'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { WorkCardData } from '@shared/role-request'
@@ -13,6 +14,7 @@ import { messageTime } from '../../time'
 import type { SubtasksInfo } from './Subtasks'
 import { answerText, answerTitle, relayOf, type WorkState } from './work-card'
 import { WorkMergeButton, type WorkMergeControl } from './WorkMerge'
+import { WorkLayoutContext } from './work-layout-context'
 
 /**
  * Pied d'une carte-réponse (fiche 263, revue UX) : une seule rangée d'actions alignée à gauche,
@@ -29,7 +31,8 @@ export function WorkFoot({
   report,
   items,
   merge,
-  mergeBusy = false
+  mergeBusy = false,
+  onShowDiff
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -44,6 +47,8 @@ export function WorkFoot({
    * fusion), ni l'« Arrêter » du tour (celui de la fusion est dans sa boîte).
    */
   mergeBusy?: boolean
+  /** Code reviewer (fiche 265) : « Voir sur le diff », la vue Git de la conversation relue. */
+  onShowDiff?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   const relay = relayOf(report, items)
@@ -82,6 +87,7 @@ export function WorkFoot({
               agent={agent}
               warn={warn}
               {...(merge ? { merge } : {})}
+              {...(onShowDiff ? { onShowDiff } : {})}
             />
           )}
           {!live && merged && openGit && (
@@ -146,6 +152,23 @@ export function applyMessage(role: string, text: string): string {
 }
 
 /**
+ * Message préparé « Demander à <agent> de corriger » (fiche 265) : il nomme le relecteur ; ses
+ * remarques partent dans le contexte joint, avec sa réponse (`about`). La conversation affichée
+ * relue : elle corrige ; un travail relu : elle le fait corriger (sa branche n'est pas la sienne).
+ */
+export function fixMessage(
+  card: WorkCardData,
+  role: string,
+  info: Pick<SubtasksInfo, 'children' | 'motherId'> | undefined
+): string {
+  const of = card.request?.review?.of
+  const work = of && of !== info?.motherId ? info?.children.find((c) => c.id === of) : undefined
+  return work
+    ? i18next.t('workCard.fixMessageWork', { role, work: work.title })
+    : i18next.t('workCard.fixMessage', { role })
+}
+
+/**
  * Actions d'un travail qui a répondu, s'est arrêté ou a échoué : l'appliquer (rôle de conseil,
  * réponse pas encore transmise), voir ses modifications (rôle qui écrit), relancer, répondre.
  */
@@ -158,7 +181,8 @@ function SettledActions({
   pending,
   agent,
   warn,
-  merge
+  merge,
+  onShowDiff
 }: {
   card: WorkCardData
   child: ConversationSummary | undefined
@@ -169,6 +193,7 @@ function SettledActions({
   agent: string
   warn: (error: unknown) => void
   merge?: WorkMergeControl
+  onShowDiff?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   // Un geste à la fois : « Appliquer » et « Relancer » attendent l'acquittement (revue QA).
@@ -185,14 +210,19 @@ function SettledActions({
   // Un message attend déjà dans la file de la mère : il emportera la réponse, rien à proposer.
   // Lancé par l'agent : il la recevra à son réveil (fiche 097).
   const role = card.role
-  const applies =
+  // Une réponse à transmettre, d'un rôle de conseil lancé par l'utilisateur.
+  const transmittable =
     state === 'replied' &&
     report?.outcome === 'done' &&
     !!role?.readOnly &&
     !card.byAgent &&
     pending &&
-    !!answer &&
     !info?.motherQueued
+  // Code reviewer (fiche 265) : pas « appliquer » sa réponse, mais corriger ses remarques.
+  const review = card.review?.status === 'reported' ? card.review : undefined
+  const reviewing = !!card.request?.review
+  const applies = transmittable && !reviewing && !!answer
+  const fixes = transmittable && !!review && review.findings.length > 0
   const lastAsk = card.steps.findLast((s) => s.kind === 'ask')
   const askText = lastAsk?.kind === 'ask' ? lastAsk.item.text : card.asked
   const motherId = info?.motherId
@@ -208,6 +238,29 @@ function SettledActions({
         >
           <Send size={13} aria-hidden />
           {t('workCard.apply', { agent })}
+        </button>
+      )}
+      {fixes && onAsk && role && (
+        <button
+          type="button"
+          className="btn primary small"
+          disabled={acting}
+          onClick={() => act(() => onAsk(fixMessage(card, role.label, info), card.childId))}
+          data-testid="work-fix"
+        >
+          <Send size={13} aria-hidden />
+          {t('workCard.fix', { agent })}
+        </button>
+      )}
+      {review && review.findings.length > 0 && onShowDiff && (
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => onShowDiff()}
+          data-testid="work-show-diff"
+        >
+          <FileDiff size={13} aria-hidden />
+          {t('workCard.showDiff')}
         </button>
       )}
       <WriterActions card={card} child={child} info={info} state={state} merge={merge} />
@@ -289,7 +342,15 @@ function WriterActions({
   const openGit = info?.merge?.openGit
   const writes = (!card.role?.readOnly && !!child?.branch) || merge?.row?.state === 'merged'
   const review = info?.onReview
-  const reviewable = writes && state === 'replied' && !child?.reviewOf && !merge?.active
+  // Une relecture de ce travail tourne encore (fiche 265) : pas une deuxième en même temps.
+  const layout = useContext(WorkLayoutContext)
+  const reviewing = layout?.reviews.get(card.childId)?.some((entry) => {
+    const reviewer = info?.children.find((c) => c.id === entry.card.childId)
+    const now = reviewer && childState(reviewer, info?.attention[reviewer.id])
+    return now === 'running' || now === 'waiting'
+  })
+  const reviewable =
+    writes && state === 'replied' && !child?.reviewOf && !merge?.active && !reviewing
   return (
     <>
       {merge && <WorkMergeButton control={merge} />}

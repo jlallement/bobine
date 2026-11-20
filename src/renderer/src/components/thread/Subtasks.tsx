@@ -92,6 +92,12 @@ export interface SubtasksInfo {
   onReview?: (childId: string) => void
   /** « Voir les modifications » d'une carte de groupe (fiche 264) : Modifications › Filles. */
   onShowChanges?: () => void
+  /**
+   * « Voir sur le diff » d'une carte du Code reviewer (fiche 265) : la vue Git de la conversation
+   * relue (celle-ci, ou le travail relu), où ses remarques sont des remarques de diff ; `file` :
+   * le fichier d'une remarque, ouvert.
+   */
+  onShowDiff?: (authorId: string, file?: string) => void
 }
 
 type Started = Extract<TranscriptItem, { kind: 'child-started' }>

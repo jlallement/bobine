@@ -23,7 +23,12 @@ export function threadSubtasks(
    * Fiche 264 : « Faire relire » d'un travail (le dialogue de la relecture, fiche 177) ; « Voir les
    * modifications » d'une carte de groupe (Modifications › Filles).
    */
-  open?: { review: (childId: string) => void; changes: () => void }
+  open?: {
+    review: (childId: string) => void
+    changes: () => void
+    /** « Voir sur le diff » du Code reviewer (fiche 265) : vue Git de la conversation relue. */
+    diff?: (authorId: string, file?: string) => void
+  }
 ): SubtasksInfo {
   const profiles = c.settings?.profiles ?? []
   const agentLabel = profiles.find((p) => p.id === c.activeSummary?.profileId)?.label
@@ -40,6 +45,7 @@ export function threadSubtasks(
     ...(snapshot?.queued.length ? { motherQueued: true } : {}),
     ...(agentLabel ? { agentLabel } : {}),
     onWarn: c.warn,
-    ...(open ? { onReview: open.review, onShowChanges: open.changes } : {})
+    ...(open ? { onReview: open.review, onShowChanges: open.changes } : {}),
+    ...(open?.diff ? { onShowDiff: open.diff } : {})
   }
 }

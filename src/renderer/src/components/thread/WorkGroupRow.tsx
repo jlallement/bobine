@@ -9,7 +9,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { RoleAvatar, useRoleStyle } from '../roles/RoleAvatar'
 import { FileStats, MergeOrVerdict, rowMerge, type SubtasksInfo } from './Subtasks'
 import type { ChildrenMergeState } from './SubtasksMerge'
-import { AGENT_BADGE, AVATAR, elapsedText, useNow, WorkCard } from './WorkCard'
+import { AGENT_BADGE, AVATAR, elapsedText, useNow, WorkCard, WorkReviews } from './WorkCard'
 import {
   branchChanges,
   currentReport,
@@ -136,6 +136,8 @@ export function LaunchedRow({
           />
         </div>
       )}
+      {/* Ses relectures (fiche 265) : juste sous sa ligne, dépliée ou non. */}
+      <WorkReviews childId={card.childId} items={items} info={info} />
     </div>
   )
 }

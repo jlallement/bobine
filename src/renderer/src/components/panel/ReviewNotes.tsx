@@ -15,9 +15,11 @@ import { Tip } from '../common/Menus'
 export function useReviewImport(
   items: readonly TranscriptItem[],
   addAll: (notes: DiffNote[]) => void,
-  enabled: boolean
+  enabled: boolean,
+  /** La conversation de l'onglet : seules les relectures de son travail (fiche 265). */
+  conversationId?: string
 ): void {
-  const findings = useMemo(() => reviewFindings(items), [items])
+  const findings = useMemo(() => reviewFindings(items, conversationId), [items, conversationId])
   useEffect(() => {
     if (enabled) addAll(takeNewReviewNotes(findings.map(findingNote)))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `addAll` change à chaque rendu : seules de nouvelles remarques comptent
