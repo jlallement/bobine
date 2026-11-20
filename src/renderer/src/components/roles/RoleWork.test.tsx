@@ -144,6 +144,34 @@ describe('filles des rôles dans le fil de la mère', () => {
     expect(screen.getAllByTestId('role-subtask-doing')[0]?.textContent).toBe('Lit token_store.dart')
     expect(launches[0]?.dataset['state']).toBe('running')
     expect(launches[0]?.textContent).toContain('Lit token_store.dart')
+    // Recette (fiche 272) : OpenCode annonce « read » sans cible, puis la cible dans une mise à
+    // jour sans titre ; l'activité dit ce qu'il fait, jamais le titre brut.
+    const send = (update: Record<string, unknown>) =>
+      act(async () => {
+        for (const listener of listeners) {
+          listener({
+            conversationId: 'a',
+            event: { type: 'update', update }
+          } as unknown as IpcEventContract['agent:event'])
+        }
+      })
+    await send({
+      sessionUpdate: 'tool_call',
+      toolCallId: 'r',
+      title: 'read',
+      kind: 'read',
+      status: 'pending',
+      rawInput: {}
+    })
+    expect(screen.getAllByTestId('role-subtask-doing')[0]?.textContent).not.toBe('read')
+    await send({
+      sessionUpdate: 'tool_call_update',
+      toolCallId: 'r',
+      status: 'in_progress',
+      locations: [{ path: '/projet/src/liste.js' }],
+      rawInput: { filePath: '/projet/src/liste.js' }
+    })
+    expect(screen.getAllByTestId('role-subtask-doing')[0]?.textContent).toContain('liste.js')
   })
 
   it('rôle arrêté par ■ : « arrêté », jamais « a répondu » (fiche 258, D4)', () => {

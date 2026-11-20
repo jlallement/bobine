@@ -40,6 +40,7 @@ import { platformFeatures, revealLabelKey } from '../../platform-features'
 import i18next from 'i18next'
 import { SHORTCUTS, type MenuCommand } from '@shared/shortcuts'
 import { folderName } from '@shared/windows-paths'
+import { controlName } from '../../control-name'
 
 /** Dernier segment d'un chemin, pour un libellé court. */
 export const basename = (path: string) => folderName(path)
@@ -413,7 +414,7 @@ export function ModeChip({
   const plan = isPlanMode({ id: String(control.currentValue), name: value })
   return (
     <Dropdown.Root modal={false}>
-      <Tip label={t('sessionSettings.modeTip', { name: control.name, value })}>
+      <Tip label={t('sessionSettings.modeTip', { name: controlName(control), value })}>
         <Dropdown.Trigger
           className={`chip mode-chip${className ? ` ${className}` : ''}`}
           disabled={disabled}
@@ -425,7 +426,7 @@ export function ModeChip({
         </Dropdown.Trigger>
       </Tip>
       <MenuContent testId="mode-menu-content">
-        <div className="menu-label">{control.name}</div>
+        <div className="menu-label">{controlName(control)}</div>
         <SelectOptions control={control} onChange={(v) => onSetControl(control.id, v)} />
       </MenuContent>
     </Dropdown.Root>
@@ -556,7 +557,7 @@ export function SessionSettingsMenu({
               onSelect={(e) => e.preventDefault()}
               data-testid={`control-${control.id}`}
             >
-              <ItemText title={control.name} description={control.description} />
+              <ItemText title={controlName(control)} description={control.description} />
               <Dropdown.ItemIndicator>
                 <Check size={16} className="menu-check" />
               </Dropdown.ItemIndicator>
@@ -564,7 +565,7 @@ export function SessionSettingsMenu({
           ) : (
             <Dropdown.Sub key={control.id}>
               <Dropdown.SubTrigger className="menu-item" data-testid={`control-${control.id}`}>
-                <ItemText title={control.name} />
+                <ItemText title={controlName(control)} />
                 <span className="menu-value">{valueLabel(control)}</span>
                 <ChevronRight size={15} className="menu-icon" />
               </Dropdown.SubTrigger>

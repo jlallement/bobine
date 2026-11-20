@@ -6076,5 +6076,10 @@
     "stateMerged": "merged · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "Under review: merging waits for the Code reviewer to finish."
+  },
+  "controlCategory": {
+    "model": "Model",
+    "mode": "Mode",
+    "thought_level": "Thinking level"
   }
 }

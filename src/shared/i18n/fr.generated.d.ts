@@ -6128,4 +6128,9 @@ export type FrResources = {
     readonly commit: 'commit {{commit}}'
     readonly reviewing: 'En relecture : la fusion attend la fin du Code reviewer.'
   }
+  readonly controlCategory: {
+    readonly model: 'Modèle'
+    readonly mode: 'Mode'
+    readonly thought_level: 'Niveau de réflexion'
+  }
 }

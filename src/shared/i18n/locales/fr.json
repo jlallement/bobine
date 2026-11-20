@@ -6340,5 +6340,10 @@
     "stateMerged": "fusionné · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "En relecture : la fusion attend la fin du Code reviewer."
+  },
+  "controlCategory": {
+    "model": "Modèle",
+    "mode": "Mode",
+    "thought_level": "Niveau de réflexion"
   }
 }
