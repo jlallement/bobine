@@ -75,6 +75,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- The top of a message no longer slides under the title bar fade when you jump to it from the
+  outline, a card or the keyboard; and the window no longer stays shifted up with the title bar cut
+  off (conversation, My activity, Scheduled tasks, Settings in a short window).
 - **A new role no longer hides an existing one.** Creating a role whose identifier is already
   taken (by a built-in role such as `@code-reviewer`, a personal role or a project role) is refused
   at the first step, naming the role that has it, with “Use @…-2” to take a free one; renaming a

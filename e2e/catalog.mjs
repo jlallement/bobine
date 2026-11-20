@@ -1830,6 +1830,20 @@ export const SUITES = [
     ]
   },
   {
+    // Dégradé du haut (fiche 270) : défilement vers un message, racine immobile, Mon activité.
+    name: 'degrade-haut',
+    file: 'degrade-haut.mjs',
+    run: 'topFadeSuite',
+    themes: BOTH,
+    sources: [
+      `${C}thread/ConversationOutline.tsx`,
+      `${C}activity/`,
+      `${R}useThreadScroll.ts`,
+      `${R}useThreadFind.ts`,
+      `${R}usage-board.css`
+    ]
+  },
+  {
     name: 'sommaire',
     file: 'sommaire.mjs',
     run: 'outlineSuite',

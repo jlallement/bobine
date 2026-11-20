@@ -76,6 +76,9 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
+- Le haut d'un message ne passe plus sous le dégradé de la barre de titre quand on y va par le
+  sommaire, une carte ou le clavier ; et la fenêtre ne reste plus calée trop haut, barre de titre
+  rognée (conversation, Mon activité, Tâches planifiées, Réglages en fenêtre basse).
 - **Un nouveau rôle ne cache plus un rôle existant.** Créer un rôle dont l'identifiant est déjà
   pris (par un rôle fourni comme `@code-reviewer`, un rôle personnel ou un rôle du projet) est
   refusé dès la première étape, en nommant le rôle qui le porte, avec « Utiliser @…-2 » pour en

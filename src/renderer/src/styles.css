@@ -37,12 +37,18 @@
   box-sizing: border-box;
 }
 
+/*
+ * La racine ne défile jamais (fiche 270, D26). `clip` et non `hidden` : un élément `hidden` reste
+ * une zone qui défile pour le navigateur ; un `scrollIntoView`, un focus au clavier ou une sélection
+ * pouvaient la décaler dès qu'un contenu la dépassait, et toute la fenêtre restait calée trop haut,
+ * barre de titre rognée, sans geste pour revenir. Chaque page fait défiler sa propre zone.
+ */
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow: clip;
 }
 
 button {
@@ -494,10 +500,17 @@ html.native-frame .side-panel-head.with-lights {
   background-repeat: no-repeat;
   /* Le défilement du fil pilote le dégradé sous la barre de titre (fiche 049). */
   timeline-scope: --thread;
+  /* Hauteur des fondus du fil, sous la barre de titre et au-dessus de la saisie (fiche 270). */
+  --thread-fade: 28px;
 }
 
 .main > .scroll {
   scroll-timeline: --thread block;
+  /* Un défilement vers un élément (sommaire, message à rendre, focus, carte montrée) l'amène sous
+     le fondu du haut, pas dessous, et au-dessus de celui du bas (fiche 270). Le défilement à la
+     main n'en tient pas compte : le fondu garde son rôle. */
+  scroll-padding-top: calc(var(--thread-fade) + 8px);
+  scroll-padding-bottom: calc(var(--thread-fade) + 8px);
 }
 
 .main-header {
@@ -531,7 +544,7 @@ html.native-frame .side-panel-head.with-lights {
   position: absolute;
   left: 0;
   right: 0;
-  height: 28px;
+  height: var(--thread-fade, 28px);
   pointer-events: none;
   opacity: 0;
 }
@@ -6119,7 +6132,9 @@ kbd {
   width: min(940px, calc(100vw - 64px));
   height: min(720px, calc(100vh - 64px));
   display: flex;
-  overflow: hidden;
+  /* `clip` : la fenêtre des Réglages ne défile pas sous son en-tête quand le focus atteint le bas
+     d'une liste de rubriques plus haute qu'elle (fenêtre basse, fiche 270) ; la liste défile. */
+  overflow: clip;
   /* Aurore (fiche 226) : verre dépoli, la fenêtre des Réglages flotte (touche 6). */
   background: var(--glass-sheet);
   -webkit-backdrop-filter: var(--glass-blur-sheet);
@@ -6160,6 +6175,9 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Fenêtre basse : les rubriques défilent dans leur colonne (fiche 270). */
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .settings-title {
@@ -7055,7 +7073,8 @@ kbd {
   top: 18%;
   transform: translateX(-50%);
   width: 560px;
-  overflow: hidden;
+  /* Bords arrondis ; `clip` : le champ ne peut pas défiler hors de vue (fiche 270). */
+  overflow: clip;
 }
 
 .search-field {
