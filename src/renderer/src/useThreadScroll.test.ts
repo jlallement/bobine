@@ -221,4 +221,29 @@ describe('suivi du bas du fil (fiche 050)', () => {
     expect(box.scrollTop).toBe(1500)
     el.remove()
   })
+
+  it('envoyé depuis une carte, pointeur immobile (fiche 272, recette) : la réponse est suivie', () => {
+    const { box, el, result, rerender } = setup()
+    document.body.append(el)
+    const card = document.createElement('div')
+    card.setAttribute('data-scroll-hold', '')
+    el.firstElementChild?.append(card)
+    const at = (x: number) =>
+      card.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: x, clientY: 40 }))
+    // « Demander à … de corriger » cliqué dans la carte : le fil saute en bas.
+    act(() => at(50))
+    act(() => result.current.followSent())
+    // Le saut fait passer une carte sous le pointeur immobile : Chromium le signale, sans geste.
+    act(() => at(50))
+    box.scrollHeight = 1800
+    rerender({ conversation: 'c1', items: [1, 2], empty: false })
+    expect(box.scrollTop).toBe(1800)
+    expect(result.current.atBottom).toBe(true)
+    // Un vrai mouvement sur la carte la retient de nouveau (fiche 124).
+    act(() => at(60))
+    box.scrollHeight = 2000
+    rerender({ conversation: 'c1', items: [1, 2, 3], empty: false })
+    expect(box.scrollTop).toBe(1800)
+    el.remove()
+  })
 })

@@ -28,6 +28,13 @@ export function useThreadScroll(options: {
   const lastScrollTop = useRef(0)
   // Pointeur sur une carte qui demande que le fil ne bouge pas sous lui.
   const held = useRef(false)
+  /**
+   * Position du pointeur au dernier envoi (fiche 272, recette) : le saut en bas fait passer une
+   * autre carte sous un pointeur immobile, et Chromium le signale (`pointerover`) ; ce n'est pas un
+   * geste de l'utilisateur, le fil ne s'arrête pas pour autant. Un vrai mouvement l'efface.
+   */
+  const pointer = useRef<{ x: number; y: number } | null>(null)
+  const sentAt = useRef<{ x: number; y: number } | null>(null)
   // Message à rendre et à montrer, pour cette conversation seulement.
   const [reveal, setReveal] = useState<{ id: number; in: string | null }>()
   const measureBottom = useCallback(() => {
@@ -69,6 +76,12 @@ export function useThreadScroll(options: {
       measureBottom()
     }
     const over = (event: PointerEvent) => {
+      const at = typeof event.clientX === 'number' ? { x: event.clientX, y: event.clientY } : null
+      if (at) pointer.current = at
+      const still =
+        !!at && !!sentAt.current && at.x === sentAt.current.x && at.y === sentAt.current.y
+      if (still) return
+      sentAt.current = null
       const target = event.target instanceof Element ? event.target : null
       const card = target?.closest('[data-scroll-hold]')
       if (card && scroller.current?.contains(card)) held.current = true
@@ -120,6 +133,7 @@ export function useThreadScroll(options: {
   // sur une carte qui retient le fil ; la bulle et la réponse qui arrivent sont suivies.
   const followSent = () => {
     held.current = false
+    sentAt.current = pointer.current
     stickToBottom.current = true
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
