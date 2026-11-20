@@ -1,161 +1,161 @@
 # Nouveautés
 
-Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
+Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
 ## 1.0.0-rc.2 — 20 novembre 2026
 
 ### Nouveautés
 
 - **Navigateur intégré et certificat auto-signé** (serveur de dev HTTPS : Vite, Webpack…) : au lieu
-  d'une ligne rouge `ERR_CERT_AUTHORITY_INVALID`, un avertissement comme dans Chrome, avec
-  l'empreinte du certificat ; pour une adresse locale ou privée, **Avancé** puis **Continuer vers
+  d’une ligne rouge `ERR_CERT_AUTHORITY_INVALID`, un avertissement comme dans Chrome, avec
+  l’empreinte du certificat ; pour une adresse locale ou privée, **Avancé** puis **Continuer vers
   … (non sécurisé)**, pour ce certificat seulement, le temps de la session ou retenu sur demande.
-  « Non sécurisé » s'affiche dans l'adresse ; révocable dans Réglages › Confidentialité. Sans droits
-  d'administrateur, sans rien installer dans le trousseau ; l'agent ne peut jamais accepter.
+  « Non sécurisé » s’affiche dans l’adresse ; révocable dans Réglages › Confidentialité. Sans droits
+  d’administrateur, sans rien installer dans le trousseau ; l’agent ne peut jamais accepter.
 - **Un seul vocabulaire** pour le travail délégué, partout (fil, barre latérale, Session › En
-  cours, Modifications, Réglages, notifications, export, guide) : ce qu'on confie à un rôle ou à un
+  cours, Modifications, Réglages, notifications, export, guide) : ce qu’on confie à un rôle ou à un
   autre agent est un **travail**, qui rend une **réponse** et vient de sa **conversation
-  d'origine** ; il « a répondu », est « arrêté » ou « en erreur ». Plus de « conversation fille »,
+  d’origine** ; il « a répondu », est « arrêté » ou « en erreur ». Plus de « conversation fille »,
   « sous-tâches », « compte rendu » ni « tâches proposées » ; Modifications › Filles devient **Travaux**, la rubrique des Réglages **Travaux
-  délégués**. Les sous-agents de l'agent gardent leur nom.
+  délégués**. Les sous-agents de l’agent gardent leur nom.
 - **Coût honnête**, partout (cartes, détail de la consommation, `/cost`, Mon activité, tâches
-  planifiées, aparté, sous-agents) : un coût nul s'affiche « gratuit » seulement pour un modèle qui
+  planifiées, aparté, sous-agents) : un coût nul s’affiche « gratuit » seulement pour un modèle qui
   se dit gratuit ; sinon (OpenCode connecté par abonnement, par exemple) « coût inconnu », jamais
-  « ≈ 0,00 $US ». Le plafond de coût dit alors qu'il ne peut pas se déclencher. Un seul coût par
-  carte ; une carte dont une partie des travaux n'a pas de coût dit « ≈ 0,05 $US + coût inconnu ».
+  « ≈ 0,00 $US ». Le plafond de coût dit alors qu’il ne peut pas se déclencher. Un seul coût par
+  carte ; une carte dont une partie des travaux n’a pas de coût dit « ≈ 0,05 $US + coût inconnu ».
 - Menu des modèles : après un refus faute de connexion, les autres modèles du même fournisseur sont
   marqués « sans doute » (connexion sans doute à faire, dit en infobulle).
-- Un modèle retenu que l'agent ne propose plus : l'avis le dit en une phrase claire (« Le modèle
-  « GPT-6.2 Sol » n'est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
+- Un modèle retenu que l’agent ne propose plus : l’avis le dit en une phrase claire (« Le modèle
+  « GPT-6.2 Sol » n’est plus proposé par OpenCode : cette conversation utilise … »), sans identifiant
   brut, une seule fois par conversation, et dit où changer le modèle par défaut. Un réglage que
-  l'agent applique après le délai le dit aussi.
+  l’agent applique après le délai le dit aussi.
 - Déplier une ligne en bas du fil (carte des travaux, « Lire la suite ») ne fait plus défiler le
   fil sous le pointeur : il reprend en bas quand le pointeur quitte la carte.
-- Après le réveil de l'agent, la carte des travaux dit « Réponses transmises ».
+- Après le réveil de l’agent, la carte des travaux dit « Réponses transmises ».
 - Durées : « < 1 s » sous la seconde, jamais « 0 s », délais dépassés compris.
 - « Faire relire » lance le rôle **Code reviewer** : un seul chemin de relecture, depuis
-  Modifications, la vue « Travaux » ou la carte d'un travail. La demande s'affiche dans le fil
+  Modifications, la vue « Travaux » ou la carte d’un travail. La demande s’affiche dans le fil
   (« @Code reviewer Relis la branche … ») avec sa carte, qui montre **chaque remarque** : sa gravité,
   `fichier:ligne` (un clic ouvre le diff sur ce fichier), une phrase, puis son avis, ou « Rien à
-  signaler ». « Demander à <agent> de corriger » envoie ses remarques à l'agent de la conversation ;
+  signaler ». « Demander à <agent> de corriger » envoie ses remarques à l’agent de la conversation ;
   « Voir sur le diff », « Répondre à Code reviewer » et « Ouvrir sa conversation » suivent. La
-  relecture d'un travail s'affiche dans la carte de ce travail. Un autre modèle que celui du
-  travail relu est proposé d'office. Dans la conversation du relecteur, sa consigne est repliée
+  relecture d’un travail s’affiche dans la carte de ce travail. Un autre modèle que celui du
+  travail relu est proposé d’office. Dans la conversation du relecteur, sa consigne est repliée
   (« Consigne du rôle »). `@code-reviewer` tapé dans la saisie fait la même relecture : ce qui
-  n'est pas commité, sinon la branche courante, sinon le dernier commit, avec votre texte comme
+  n’est pas commité, sinon la branche courante, sinon le dernier commit, avec votre texte comme
   points à surveiller. Un clic sur `fichier:ligne` montre la ligne dans le diff.
-- La recommandation de fusion de l'agent n'est plus une ligne du fil : elle est sur la ligne du
+- La recommandation de fusion de l’agent n’est plus une ligne du fil : elle est sur la ligne du
   travail (« Recommandé », « Pas encore prêt »), sa note en infobulle. Fusionner un travail ne
-  supprime plus jamais une branche qui a changé depuis la fusion, ni le dossier d'un travail qui
-  travaille ou a des modifications : c'est dit, et tout reste.
-- Les travaux que l'agent propose dans un tour forment **une seule carte**, à la place où il les a
-  proposés, qui change d'état sur place : proposés (Lancer, Faire ici, Refuser, « Tout lancer »),
+  supprime plus jamais une branche qui a changé depuis la fusion, ni le dossier d’un travail qui
+  travaille ou a des modifications : c’est dit, et tout reste.
+- Les travaux que l’agent propose dans un tour forment **une seule carte**, à la place où il les a
+  proposés, qui change d’état sur place : proposés (Lancer, Faire ici, Refuser, « Tout lancer »),
   puis « 3 travaux · 1 en cours, 2 finis » ; chaque ligne se déplie sur la réponse entière du
   travail. Le pied de la carte fusionne ses travaux prêts dans main (« Fusionner les 2 prêts dans
-  main », recommandation de l'agent), et la progression et le résultat s'affichent dans la carte.
+  main », recommandation de l’agent), et la progression et le résultat s’affichent dans la carte.
   Plusieurs `@rôles` dans un même message forment la même carte. Plus de carte « Sous-tâches » qui
-  saute vers le bas, ni de ligne « L'agent a lancé… » ni de compte rendu séparés.
+  saute vers le bas, ni de ligne « L’agent a lancé… » ni de compte rendu séparés.
 - Un travail qui écrit (un `@rôle` qui code, ou « Lancer en parallèle… ») se fusionne depuis sa
   propre carte : « Voir les modifications », « Faire relire », « Fusionner dans main » ; la carte
   montre les étapes de la fusion, puis « Fusionné dans main · branche supprimée ».
 - Une demande à un rôle (`@Expert UX/UI …`) reste dans le fil, comme un message, avec la puce du
   rôle. Juste dessous, une seule carte, qui ne bouge plus : ce que fait le rôle et depuis combien de
   temps, puis **sa réponse entière** (repliée après une dizaine de lignes, « Lire la suite »), sa
-  durée et son coût. « Demander à <agent> d'appliquer cette réponse » envoie la réponse à l'agent de la
+  durée et son coût. « Demander à <agent> d’appliquer cette réponse » envoie la réponse à l’agent de la
   conversation ; « Répondre à <rôle> » poursuit le même travail, dans la même carte. Une ligne dit
-  si l'agent de la conversation connaît déjà cette réponse. Plus de carte de lancement, de ligne
+  si l’agent de la conversation connaît déjà cette réponse. Plus de carte de lancement, de ligne
   « Sous-tâches » ni de compte rendu séparés pour ces travaux.
-- Le bilan d'un tour est maintenant le pied de la réponse qui le finit : « 21:17 · 2 min 29 s ·
+- Le bilan d’un tour est maintenant le pied de la réponse qui le finit : « 21:17 · 2 min 29 s ·
   9 fichiers +346 −0 », avec le coût, sans répéter la durée. Il reste sous sa réponse, et ce qui
-  arrive ensuite s'affiche dessous. Quand l'agent travaille encore après la fin du tour (un
+  arrive ensuite s’affiche dessous. Quand l’agent travaille encore après la fin du tour (un
   sous-agent en arrière-plan, par exemple), ce pied dit « Travaille encore… · 32 s », une seule
-  fois. Le nombre de fichiers ouvre l'onglet Modifications.
-- Quand un travail confié à un rôle répond pendant que sa carte est hors de l'écran, une ligne fine
+  fois. Le nombre de fichiers ouvre l’onglet Modifications.
+- Quand un travail confié à un rôle répond pendant que sa carte est hors de l’écran, une ligne fine
   au-dessus de la saisie le dit (« ↑ Expert UX/UI a répondu · Voir ») ; « Voir » fait défiler
-  jusqu'à la carte et l'entoure un instant. La ligne disparaît dès que la carte a été vue.
+  jusqu’à la carte et l’entoure un instant. La ligne disparaît dès que la carte a été vue.
 
 ### Corrections
 
-- Le haut d'un message ne passe plus sous le dégradé de la barre de titre quand on y va par le
+- Le haut d’un message ne passe plus sous le dégradé de la barre de titre quand on y va par le
   sommaire, une carte ou le clavier ; et la fenêtre ne reste plus calée trop haut, barre de titre
   rognée (conversation, Mon activité, Tâches planifiées, Réglages en fenêtre basse).
-- **Un nouveau rôle ne cache plus un rôle existant.** Créer un rôle dont l'identifiant est déjà
+- **Un nouveau rôle ne cache plus un rôle existant.** Créer un rôle dont l’identifiant est déjà
   pris (par un rôle fourni comme `@code-reviewer`, un rôle personnel ou un rôle du projet) est
   refusé dès la première étape, en nommant le rôle qui le porte, avec « Utiliser @…-2 » pour en
   prendre un libre ; renommer un rôle suit la même règle. Deux rôles de même icône ou de même
-  couleur ont toujours été deux rôles distincts. « Enregistrer en rôle personnel » d'un rôle fourni
+  couleur ont toujours été deux rôles distincts. « Enregistrer en rôle personnel » d’un rôle fourni
   le remplace, comme avant.
 - Un travail bloqué par un modèle refusé (quota gratuit épuisé…) le dit partout : « quota épuisé »
   ou « modèle refusé » dans sa carte, la barre latérale et Session › En cours, au lieu de
   « attend votre accord ».
-- La carte du Code reviewer dit d'où part ce qu'il a relu (« les 4 commits de cette conversation »,
+- La carte du Code reviewer dit d’où part ce qu’il a relu (« les 4 commits de cette conversation »,
   « depuis la dernière relecture », « les 5 derniers commits ») ; un clone superficiel et les
   sous-modules non relus sont signalés.
 - **« @Code reviewer Relis ce qui a été fait » relit ce qui a été fait** : sur la branche
   principale, les commits de la conversation (depuis la dernière relecture, sinon depuis son
   début), jamais un commit de fusion seul ; avec du non commité, le non commité et ces commits. La
   carte dit toujours ce qui a été relu (« Relu : 4 commits, 12 fichiers (a3f2c1e..9b8e7d0) »), même
-  quand il n'y a rien à signaler.
-- Un clic sur `fichier:ligne` d'une remarque ouvre le diff de ce qui a été relu, même si le fichier
+  quand il n’y a rien à signaler.
+- Un clic sur `fichier:ligne` d’une remarque ouvre le diff de ce qui a été relu, même si le fichier
   a été corrigé depuis (la vue le dit), au lieu de « Aucune modification ».
-- **Quota gratuit épuisé** (OpenCode : « Free usage limit reached ») : la carte « Le modèle … n'a
-  pas répondu » avec « Choisir un autre modèle », au lieu de l'erreur en anglais ; dans la carte
-  d'un travail aussi, d'où l'on change le modèle du travail.
-- L'activité d'un travail tient sur une ligne : une longue commande est coupée, entière en
+- **Quota gratuit épuisé** (OpenCode : « Free usage limit reached ») : la carte « Le modèle … n’a
+  pas répondu » avec « Choisir un autre modèle », au lieu de l’erreur en anglais ; dans la carte
+  d’un travail aussi, d’où l’on change le modèle du travail.
+- L’activité d’un travail tient sur une ligne : une longue commande est coupée, entière en
   infobulle.
-- Le texte tapé pendant qu'un travail se prépare n'est plus effacé.
+- Le texte tapé pendant qu’un travail se prépare n’est plus effacé.
 - « Relancer » un travail ne répète plus sa demande dans la carte.
-- La réponse d'un rôle commence par un résumé de deux lignes, sans titre « Compte rendu ».
-- L'aide sous la saisie avec un rôle est grise, plus en couleur d'alerte.
+- La réponse d’un rôle commence par un résumé de deux lignes, sans titre « Compte rendu ».
+- L’aide sous la saisie avec un rôle est grise, plus en couleur d’alerte.
 - « Répondre à <rôle> » met le curseur dans la bonne saisie, même avec deux conversations côte à
   côte.
-- Une réponse en erreur vue dans sa carte n'est plus « à lire ».
-- L'indicateur de travail donne la durée du tour, l'étape en plus petit.
+- Une réponse en erreur vue dans sa carte n’est plus « à lire ».
+- L’indicateur de travail donne la durée du tour, l’étape en plus petit.
 - Les travaux restent dans leur ordre de lancement sous leur conversation.
 - Mon activité : la tuile du coût compte les échanges au coût inconnu comme le tableau (son chiffre
-  augmente si votre modèle est inclus dans un abonnement), et la première étiquette de mois n'est
+  augmente si votre modèle est inclus dans un abonnement), et la première étiquette de mois n’est
   plus coupée.
 - Onglet Modifications : la barre du haut passe à la ligne quand le panneau est étroit ;
   « Actualiser » ne sort plus du panneau.
-- Confier un travail à un rôle qui écrit n'affiche plus d'avertissement avant même de taper : une
-  ligne discrète sous la saisie dit d'où il partira (« depuis le dernier commit, sans vos N
-  modifications »), Entrée envoie toujours, et « Changer… » permet de committer d'abord, de
+- Confier un travail à un rôle qui écrit n’affiche plus d’avertissement avant même de taper : une
+  ligne discrète sous la saisie dit d’où il partira (« depuis le dernier commit, sans vos N
+  modifications »), Entrée envoie toujours, et « Changer… » permet de committer d’abord, de
   demander juste un avis en lecture seule (pour ce message) ou de voir les modifications. Sur un
   dépôt sans aucun commit, le rôle travaille directement dans le dossier : plus de « dernier
   commit () », ni de commit vide.
 - Le rôle Expert UX/UI propose une direction sans rien modifier (lecture seule), comme Expert
-  sécu ou Tech lead : l'agent principal ou un architecte l'applique. Une copie que vous avez
+  sécu ou Tech lead : l’agent principal ou un architecte l’applique. Une copie que vous avez
   modifiée dans Réglages › Rôles garde son réglage.
 - Chaque conversation garde son mode et son modèle : changer de mode ou de modèle dans une
-  conversation ne change plus ceux d'une autre conversation rouverte ensuite (après une relance ou
+  conversation ne change plus ceux d’une autre conversation rouverte ensuite (après une relance ou
   une mise en veille). Une conversation laissée en Plan est rouverte en Plan. Le dernier choix
   sert toujours de départ aux nouvelles conversations.
-- Jauge de contexte après un résumé de la conversation (`/compact`) : elle ne reste plus à l'ancien
-  remplissage jusqu'au message suivant. Quand l'agent ne donne pas le nouveau chiffre (OpenCode),
-  Bobine l'estime, précédé de « ≈ » et expliqué, jusqu'à ce que l'agent le donne. Dans Session ›
+- Jauge de contexte après un résumé de la conversation (`/compact`) : elle ne reste plus à l’ancien
+  remplissage jusqu’au message suivant. Quand l’agent ne donne pas le nouveau chiffre (OpenCode),
+  Bobine l’estime, précédé de « ≈ » et expliqué, jusqu’à ce que l’agent le donne. Dans Session ›
   Contexte, « Agent (non détaillé) » ne gonfle plus de la place libérée, et les messages échangés
   après le résumé restent comptés.
-- Modèle que l'agent dit indisponible (OpenCode : « Model unavailable ») : la carte « Le modèle …
-  n'a pas répondu » s'affiche, avec « Choisir un autre modèle », au lieu d'une erreur brute en
-  rouge. L'avis « … n'est pas connecté à son fournisseur » disparaît dès que l'agent répond
+- Modèle que l’agent dit indisponible (OpenCode : « Model unavailable ») : la carte « Le modèle …
+  n’a pas répondu » s’affiche, avec « Choisir un autre modèle », au lieu d’une erreur brute en
+  rouge. L’avis « … n’est pas connecté à son fournisseur » disparaît dès que l’agent répond
   autrement, par exemple après la connexion.
 - Premier lancement avec un dossier (`bobine <dossier>`) : aucun agent ne démarre avant votre
-  choix dans l'accueil ; la conversation de ce dossier s'ouvre ensuite, avec l'agent choisi.
+  choix dans l’accueil ; la conversation de ce dossier s’ouvre ensuite, avec l’agent choisi.
 - Accueil, étape « Où travailler ? » : pour un agent qui modifie les fichiers sans demander, le
   texte ne promet plus « avec votre accord ».
-- Réglages › Diagnostic : une session pas essayée l'est pour la vraie raison (profil d'essai, ou
+- Réglages › Diagnostic : une session pas essayée l’est pour la vraie raison (profil d’essai, ou
   agent qui ne sait pas la supprimer), sans contredire le pied de page.
-- Journal : l'avertissement bénin « ResizeObserver loop … » du redimensionnement n'est plus noté
+- Journal : l’avertissement bénin « ResizeObserver loop … » du redimensionnement n’est plus noté
   comme une erreur.
 - Travaux délégués : un travail arrêté par ■ est dit « Arrêté » (barre latérale, carte des
-  travaux, carte d'un rôle, Modifications › Travaux), et non plus « a fini » avec une coche verte.
-  Modifications › Travaux dit « fusionné » comme la carte des travaux. La réponse d'un travail
-  compte comme lue dès que vous la voyez dans le fil de la conversation qui l'a lancé. Les outils
-  de l'agent citent le travail par son titre, plus par son identifiant.
-- Sous-agents en arrière-plan (OpenCode) : tant qu'un sous-agent travaille après la fin du tour,
-  puis le temps que l'agent réponde à son rapport, la conversation reste « en cours » (indicateur
+  travaux, carte d’un rôle, Modifications › Travaux), et non plus « a fini » avec une coche verte.
+  Modifications › Travaux dit « fusionné » comme la carte des travaux. La réponse d’un travail
+  compte comme lue dès que vous la voyez dans le fil de la conversation qui l’a lancé. Les outils
+  de l’agent citent le travail par son titre, plus par son identifiant.
+- Sous-agents en arrière-plan (OpenCode) : tant qu’un sous-agent travaille après la fin du tour,
+  puis le temps que l’agent réponde à son rapport, la conversation reste « en cours » (indicateur
   sous le fil, « Travaille encore… » en bas de la barre latérale, ligne de la conversation).
-  « Terminé en … » ne s'affiche qu'à la vraie fin, durée de la réponse au rapport comprise.
+  « Terminé en … » ne s’affiche qu’à la vraie fin, durée de la réponse au rapport comprise.
 - Chaque tour garde son bilan « Terminé en … », sous sa propre réponse : avec un message en file,
   le tour précédent ne perd plus le sien, et le bilan ne reste plus collé sous les cartes arrivées
   après.
@@ -167,142 +167,142 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 ### Corrections
 
 - Electron 45.4.1 : correctifs de sécurité de Chromium et de V8 ; un élément cliqué du bouton
-  droit n'est plus gardé en mémoire après sa disparition.
-- Message de commit rédigé par l'agent : son coût est maintenant compté dans la conversation, son
-  plafond et Mon activité, même avec IBM Bob qui l'écrit après sa réponse. Le coût des apartés
+  droit n’est plus gardé en mémoire après sa disparition.
+- Message de commit rédigé par l’agent : son coût est maintenant compté dans la conversation, son
+  plafond et Mon activité, même avec IBM Bob qui l’écrit après sa réponse. Le coût des apartés
   apparaît aussi dans Mon activité.
 - Cartes de questions (dont « Site web » et les commandes à autoriser) : aucune option ne paraît
-  choisie tant que vous n'en avez pas désigné une, et « Envoyer » reste grisé sans choix ; une
+  choisie tant que vous n’en avez pas désigné une, et « Envoyer » reste grisé sans choix ; une
   réponse vide ne part plus (elle valait un refus). Pour ne pas répondre : « Passer ».
 - Réglages : chaque interrupteur (plafond par conversation, notifications, mémoire…) porte son nom
-  pour les lecteurs d'écran.
-- Navigateur intégré : l'accord par site ne se contourne plus. Avant de lire une page ou d'y agir
-  (capture, clic, saisie, JavaScript…), l'agent doit avoir l'accord pour le site affiché ; sinon la
-  carte « Site web » le demande. Pendant une action de l'agent, la page ne peut plus partir vers
-  un site non autorisé (lien, `location = …`, redirection) : la navigation est arrêtée et l'agent
-  prévenu. Votre propre navigation n'est pas gênée.
-- `main.log` masque désormais les secrets, comme `agents.log` : une clé passée en argument d'un
-  agent personnalisé (`--api-key …`) ou une clé enregistrée n'y apparaît plus en clair.
+  pour les lecteurs d’écran.
+- Navigateur intégré : l’accord par site ne se contourne plus. Avant de lire une page ou d’y agir
+  (capture, clic, saisie, JavaScript…), l’agent doit avoir l’accord pour le site affiché ; sinon la
+  carte « Site web » le demande. Pendant une action de l’agent, la page ne peut plus partir vers
+  un site non autorisé (lien, `location = …`, redirection) : la navigation est arrêtée et l’agent
+  prévenu. Votre propre navigation n’est pas gênée.
+- `main.log` masque désormais les secrets, comme `agents.log` : une clé passée en argument d’un
+  agent personnalisé (`--api-key …`) ou une clé enregistrée n’y apparaît plus en clair.
 - Un fichier de configuration écrit par Bobine (`mcp.json`, `opencode.json`…) garde ses droits :
   un fichier réservé à vous (0600) ne redevient plus lisible par les autres comptes, et un fichier
-  créé par Bobine l'est en 0600.
-- « Committer d'abord » signale aussi comme « secret ? » `.npmrc`, `.netrc`, `.pypirc`, les clés
+  créé par Bobine l’est en 0600.
+- « Committer d’abord » signale aussi comme « secret ? » `.npmrc`, `.netrc`, `.pypirc`, les clés
   SSH (`id_ed25519`, `id_ecdsa`…), `*.pfx`, `*.jks`, `*.keystore`, `credentials.json` et
   `service-account*.json`.
 - Les cookies du navigateur intégré sont chiffrés sur le disque (clé du trousseau). Vos sessions
   restent ouvertes.
-- « Toujours autoriser » n'est plus retenu pour les prochaines conversations quand l'agent ne dit
-  pas de quel genre d'outil il s'agit.
+- « Toujours autoriser » n’est plus retenu pour les prochaines conversations quand l’agent ne dit
+  pas de quel genre d’outil il s’agit.
 - Un agent qui ne répond pas à un changement de mode ou de modèle ne bloque plus la conversation
   au démarrage ni le sélecteur : au bout de 30 s, la conversation démarre sans ce réglage et le
-  dit (« Réglage … non appliqué »), et le sélecteur affiche l'erreur.
+  dit (« Réglage … non appliqué »), et le sélecteur affiche l’erreur.
 - Lecture du PATH au lancement : un fichier de démarrage du shell qui attend une saisie ne fait plus
-  patienter 10 s, et un shell qui ne s'y prête pas (tcsh, nushell…) n'empêche plus de trouver les
+  patienter 10 s, et un shell qui ne s’y prête pas (tcsh, nushell…) n’empêche plus de trouver les
   agents : Bobine lit alors le PATH avec zsh (macOS) ou sh.
 - Conversation ouverte à côté : la recherche de fichiers après `@` aboutit même pendant que cette
   conversation écrit sa réponse.
 - Fermer Bobine est plus rapide : seules les conversations modifiées sont réécrites sur le disque.
 ### Nouveautés
 
-- macOS 15 Sequoia ou plus récent est désormais requis : c'est le plus ancien macOS sur lequel
-  chaque version est essayée avant publication. Sous macOS 13 ou 14, Bobine refuse de s'ouvrir.
+- macOS 15 Sequoia ou plus récent est désormais requis : c’est le plus ancien macOS sur lequel
+  chaque version est essayée avant publication. Sous macOS 13 ou 14, Bobine refuse de s’ouvrir.
 - Le `.dmg` est publié avec sa somme SHA-256 (`SHA256SUMS-macos-arm64.txt`), comme les paquets
-  Linux et Windows, et chaque fichier d'une version avec une attestation de provenance de GitHub :
-  `gh attestation verify <fichier> --repo jlallement/bobine` dit qu'il a été construit par ce
+  Linux et Windows, et chaque fichier d’une version avec une attestation de provenance de GitHub :
+  `gh attestation verify <fichier> --repo jlallement/bobine` dit qu’il a été construit par ce
   dépôt, depuis ce tag. Le détail dans `docs/installation.md`.
-- Bobine déclare macOS 13 comme version minimale, celle qu'annonce le README : un Mac plus ancien
-  le dit à l'ouverture, au lieu de lancer une version jamais essayée sur lui.
+- Bobine déclare macOS 13 comme version minimale, celle qu’annonce le README : un Mac plus ancien
+  le dit à l’ouverture, au lieu de lancer une version jamais essayée sur lui.
 
 ## 1.0.0-beta.9 — 19 novembre 2026
 
 ### Corrections
 
-- Le choix « Toujours dans ce projet » des commandes s'appelle désormais « Toujours cette
-  commande ici » : il n'a jamais retenu que la commande exacte, dans ce dossier, et le dit.
+- Le choix « Toujours dans ce projet » des commandes s’appelle désormais « Toujours cette
+  commande ici » : il n’a jamais retenu que la commande exacte, dans ce dossier, et le dit.
 - Une conversation fille dont le compte rendu (ou un message à sa mère) est coupé ne force plus la
-  mère à le lui redemander : la ligne coupée dit à l'agent comment lire le texte entier.
-- File d'attente : un message modifié garde sa place au lieu de passer en dernier.
+  mère à le lui redemander : la ligne coupée dit à l’agent comment lire le texte entier.
+- File d’attente : un message modifié garde sa place au lieu de passer en dernier.
 - Export : un nom saisi avec son extension (« notes.md ») ne donne plus « notes.md.md ».
-- « Jetons traités » compte la même chose partout : l'entrée et la sortie annoncées par l'agent,
+- « Jetons traités » compte la même chose partout : l’entrée et la sortie annoncées par l’agent,
   dans `/cost`, le détail de la consommation et Mon activité. Avant, `/cost` y ajoutait le cache
   relu (4 051 903 au lieu de 242 370 dans un passage avec OpenCode). Le cache et la réflexion
-  s'affichent à part (« En plus : … relus en cache »). Le plafond en jetons, lui, compte toujours
+  s’affichent à part (« En plus : … relus en cache »). Le plafond en jetons, lui, compte toujours
   tout : il le dit désormais (« jetons, cache compris »).
-- Un coût en dollars annoncé par l'agent est une estimation (ses tarifs, sans votre abonnement ni
-  vos remises) : il s'affiche partout avec « ≈ », et « estimation » dans le détail de la
+- Un coût en dollars annoncé par l’agent est une estimation (ses tarifs, sans votre abonnement ni
+  vos remises) : il s’affiche partout avec « ≈ », et « estimation » dans le détail de la
   consommation, `/cost` et Mon activité (« Coût estimé »). Les bobcoins de Bob, son propre
   décompte, restent sans « ≈ ».
-- L'essai de l'accueil envoie son message avec le modèle de la conversation (celui de sa puce),
-  et non avec le modèle que l'agent choisit pour une session neuve. Si l'agent ne le propose pas,
+- L’essai de l’accueil envoie son message avec le modèle de la conversation (celui de sa puce),
+  et non avec le modèle que l’agent choisit pour une session neuve. Si l’agent ne le propose pas,
   le résultat dit avec quel modèle il a répondu.
 - « Toute mon activité… », au pied du détail de la consommation, ressemble enfin à un lien.
-- Un groupe d'outils arrêté montre tous ses états : « ✕ 1 échec · ⊘ 1 interrompu » au lieu du
+- Un groupe d’outils arrêté montre tous ses états : « ✕ 1 échec · ⊘ 1 interrompu » au lieu du
   seul échec.
 ### Nouveautés
 
-- Le message de commit proposé par « Committer » (vue Git, « Committer d'abord ») est rédigé par
-  l'agent de la conversation, d'après les fichiers cochés, leur diff et la mémoire du projet (par
-  exemple « Conventional Commits en anglais »), dans une session à part : rien n'arrive dans la
-  conversation, même si l'agent y travaille. « Arrêter » pendant la rédaction ; le message reste
-  modifiable. Sans réponse en 45 s, ou si l'agent ne peut pas répondre, le message proposé est en
+- Le message de commit proposé par « Committer » (vue Git, « Committer d’abord ») est rédigé par
+  l’agent de la conversation, d’après les fichiers cochés, leur diff et la mémoire du projet (par
+  exemple « Conventional Commits en anglais »), dans une session à part : rien n’arrive dans la
+  conversation, même si l’agent y travaille. « Arrêter » pendant la rédaction ; le message reste
+  modifiable. Sans réponse en 45 s, ou si l’agent ne peut pas répondre, le message proposé est en
   anglais, déduit des fichiers, sans mot coupé, et une ligne dit pourquoi. Un fichier « secret ? »
-  n'envoie que son nom. Réglages › Général › « Message de commit rédigé par l'agent » pour s'en
+  n’envoie que son nom. Réglages › Général › « Message de commit rédigé par l’agent » pour s’en
   passer.
 
 ### Corrections
 
 - Après « Committer puis fusionner » ou un autre commit fait par Bobine hors du panneau
-  Modifications, la vue Git se met à jour d'elle-même ; elle gardait « Committer (23) » jusqu'à
+  Modifications, la vue Git se met à jour d’elle-même ; elle gardait « Committer (23) » jusqu’à
   « Actualiser ».
 
 ## 1.0.0-beta.8 — 18 novembre 2026
 
 ### Corrections
 
-- « Committer d'abord » (fusion refusée, lancement d'une conversation fille) montre la liste
+- « Committer d’abord » (fusion refusée, lancement d’une conversation fille) montre la liste
   complète des fichiers avant de valider, une case par fichier, toutes cochées au départ. Avant,
-  tous les fichiers modifiés ou nouveaux partaient, même ceux qui n'étaient pas affichés (un
+  tous les fichiers modifiés ou nouveaux partaient, même ceux qui n’étaient pas affichés (un
   `.env` non ignoré, par exemple). Seuls les fichiers cochés partent, et le message proposé ne
-  cite qu'eux. Un nom qui ressemble à un fichier de secrets porte l'étiquette « secret ? ». Les
+  cite qu’eux. Un nom qui ressemble à un fichier de secrets porte l’étiquette « secret ? ». Les
   fichiers décochés restent non commités : la fusion les met de côté puis les remet, et une
   conversation fille part sans eux.
-- Bobine ne sollicite plus un agent que vous n'utilisez pas : si Bob n'est pas l'agent utilisé, son
-  quota n'apparaît plus au lancement ; il s'affiche quand une conversation avec Bob est prête, puis
+- Bobine ne sollicite plus un agent que vous n’utilisez pas : si Bob n’est pas l’agent utilisé, son
+  quota n’apparaît plus au lancement ; il s’affiche quand une conversation avec Bob est prête, puis
   se relit avec « Actualiser » ; chaque lecture crée puis supprime une session chez Bob. Un profil
-  jetable (« Essayer Bobine comme neuve », dossier de données d'essai) ne lit plus du tout ce
-  quota, et le diagnostic n'y ouvre plus de session d'essai d'office : rien ne s'écrit dans votre
-  vrai `~/.bob` sans que vous l'ayez demandé.
-- Projet iOS ou Android créé pendant une conversation : l'agent reçoit les outils de Bobine pour
-  le compiler et le lancer dans le simulateur ou l'émulateur dès la fin de sa réponse, s'il sait
-  relire sa liste d'outils (OpenCode) ; sinon, un avis dans le fil le dit, avec « Redémarrer
-  l'agent ».
-- Changement : Bobine ne s'ouvre plus sur une nouvelle conversation à chaque lancement ; elle
-  rouvre la conversation affichée quand on l'a quittée (quittée en plein tour, celle qui
-  travaillait, prête à reprendre). Une nouvelle conversation reste à un clic (⌘N) ; elle s'ouvre
+  jetable (« Essayer Bobine comme neuve », dossier de données d’essai) ne lit plus du tout ce
+  quota, et le diagnostic n’y ouvre plus de session d’essai d’office : rien ne s’écrit dans votre
+  vrai `~/.bob` sans que vous l’ayez demandé.
+- Projet iOS ou Android créé pendant une conversation : l’agent reçoit les outils de Bobine pour
+  le compiler et le lancer dans le simulateur ou l’émulateur dès la fin de sa réponse, s’il sait
+  relire sa liste d’outils (OpenCode) ; sinon, un avis dans le fil le dit, avec « Redémarrer
+  l’agent ».
+- Changement : Bobine ne s’ouvre plus sur une nouvelle conversation à chaque lancement ; elle
+  rouvre la conversation affichée quand on l’a quittée (quittée en plein tour, celle qui
+  travaillait, prête à reprendre). Une nouvelle conversation reste à un clic (⌘N) ; elle s’ouvre
   aussi au lancement si la dernière affichée était vide, ou a été archivée ou supprimée depuis.
 - Un message envoyé juste avant de quitter Bobine ne revient plus dans la zone de saisie au
   lancement suivant.
 - Conversations filles : une fille qui partirait dans son worktree sans le travail non commité de
   ce dossier ne part plus en silence. Bobine le dit avant (`@rôle`, carte « Tâches proposées »,
-  « Lancer en parallèle… ») avec le nombre de modifications, et propose « Committer d'abord » ou
+  « Lancer en parallèle… ») avec le nombre de modifications, et propose « Committer d’abord » ou
   « Partir quand même » ; pour des rôles cités avec `@`, « Demander un avis en lecture seule » :
   ils lisent ce dossier tel quel, non commité compris. Une fille partie quand même le rappelle
-  sur sa carte et sur chacun de ses comptes rendus, et l'agent qui lance des filles en est averti.
+  sur sa carte et sur chacun de ses comptes rendus, et l’agent qui lance des filles en est averti.
 
 ## 1.0.0-beta.7 — 17 novembre 2026
 
 ### Corrections
 
 - Conversations filles : une fille qui vient de partir reste « En cours » (« au travail » pour un
-  rôle) jusqu'à sa réponse ; elle ne s'affiche plus un instant « Finie », avec une coche, avant
-  même d'avoir reçu sa consigne.
-- Plafond de coût (Bob) : quand le coût relu à la fin d'une réponse dépasse le plafond, la
-  carte ne dit plus la réponse interrompue, et « Continuer » ne relance plus l'agent pour rien.
+  rôle) jusqu’à sa réponse ; elle ne s’affiche plus un instant « Finie », avec une coche, avant
+  même d’avoir reçu sa consigne.
+- Plafond de coût (Bob) : quand le coût relu à la fin d’une réponse dépasse le plafond, la
+  carte ne dit plus la réponse interrompue, et « Continuer » ne relance plus l’agent pour rien.
 - Réglages de la session : le menu ne grandit plus sous le pointeur quand ses règles et ses
-  outils arrivent tard : un clic sur « Modèle » ne tombe plus sur la ligne d'en dessous.
+  outils arrivent tard : un clic sur « Modèle » ne tombe plus sur la ligne d’en dessous.
 - OpenCode 2.3.0 : ses sous-agents, désormais toujours en arrière-plan, restent « en cours »
-  jusqu'à leur rapport, puis montrent leur réponse et tout leur travail ; la réponse que l'agent
-  donne ensuite de lui-même s'affiche en message à part, au lieu de se coller au précédent.
+  jusqu’à leur rapport, puis montrent leur réponse et tout leur travail ; la réponse que l’agent
+  donne ensuite de lui-même s’affiche en message à part, au lieu de se coller au précédent.
 - Electron 45.3.3 : correctifs de sécurité de Chromium et de V8 ; un cookie posé par un site du
   navigateur intégré juste avant de quitter Bobine est désormais bien gardé.
 
@@ -312,38 +312,38 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 - Bobine pour Linux et Windows, en préversion, à télécharger avec chaque version : paquet `.deb`
   pour Ubuntu 24.04 ou plus récent et Debian, installeur pour Windows 11, en x64 et arm64.
-  L'installeur Windows n'est pas signé : SmartScreen avertit au premier lancement
+  L’installeur Windows n’est pas signé : SmartScreen avertit au premier lancement
   (« Informations complémentaires › Exécuter quand même »).
 
 ### Amélioré
 
-- Linux et Windows (préversions) : l'app ne parle plus du Mac, du Finder, du Dock ni du trousseau
-  macOS ; elle dit « cet ordinateur », le gestionnaire de fichiers (l'Explorateur sous Windows), le
+- Linux et Windows (préversions) : l’app ne parle plus du Mac, du Finder, du Dock ni du trousseau
+  macOS ; elle dit « cet ordinateur », le gestionnaire de fichiers (l’Explorateur sous Windows), le
   trousseau de la session ou DPAPI, aide comprise.
-- Linux sans trousseau de session (ni GNOME Keyring ni KWallet) : une clé d'API est gardée en
+- Linux sans trousseau de session (ni GNOME Keyring ni KWallet) : une clé d’API est gardée en
   clair dans un fichier que vous seul pouvez lire, et Réglages › Agents le dit, avec de quoi la
-  chiffrer ; elle l'est dès qu'un trousseau répond.
+  chiffrer ; elle l’est dès qu’un trousseau répond.
 - Réglages › Apparence : « Ligatures du code », coupées par défaut (`!=` reste `!=`) ; activées,
   une police du code qui en a dessine `!=` en ≠ et `=>` en flèche.
-- Nouvelles polices, les mêmes sur Mac, Linux et Windows : Inter pour l'interface, JetBrains Mono
+- Nouvelles polices, les mêmes sur Mac, Linux et Windows : Inter pour l’interface, JetBrains Mono
   pour le code et les diffs, livrées avec Bobine. Celles du système (SF Pro, SF Mono sur le Mac)
   restent au choix dans Réglages › Apparence ; le terminal ne change pas.
 - Supprimer une conversation mère propose de supprimer aussi ses conversations filles (coché
-  d'office) ; décoché, elles continuent seules, comme des conversations ordinaires.
+  d’office) ; décoché, elles continuent seules, comme des conversations ordinaires.
 
 ### Corrections
 
-- Coût de Bob : un coût enregistré par Bob un peu tard après sa réponse s'affiche quand même,
+- Coût de Bob : un coût enregistré par Bob un peu tard après sa réponse s’affiche quand même,
   sans attendre le tour suivant.
 - Linux et Windows : le bandeau « Fichier enregistré » du navigateur ne réduit plus son texte
   à une lettre par ligne ; le bouton « Afficher dans le gestionnaire de fichiers » (ou
-  l'Explorateur) passe à la ligne.
+  l’Explorateur) passe à la ligne.
 - Linux : les agents et les commandes lancés par Bobine ne reçoivent plus ses fichiers et
-  connexions ouverts ; un agent resté seul après un arrêt brutal de Bobine ne l'empêche plus de
+  connexions ouverts ; un agent resté seul après un arrêt brutal de Bobine ne l’empêche plus de
   redémarrer.
 - Espace Discussion : un fichier qui porte aussi un autre nom ailleurs sur le Mac (lien physique)
-  n'est plus modifié sans vous demander ; la demande d'autorisation dit pourquoi. Bobine ne le
-  montre plus parmi les documents, et ne l'ouvre ni ne le copie.
+  n’est plus modifié sans vous demander ; la demande d’autorisation dit pourquoi. Bobine ne le
+  montre plus parmi les documents, et ne l’ouvre ni ne le copie.
 - Archiver une conversation mère archive aussi ses filles ; une fille dont la mère a été supprimée
   redevient une conversation ordinaire au lieu de rester rattachée à une conversation disparue.
 
@@ -351,17 +351,17 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Corrections
 
-- Espace Discussion : le dossier d'une discussion n'apparaît plus sous son identifiant
-  (« 3973c57d-… »). L'onglet Session dit « Documents : Cette discussion » (un clic l'affiche dans
-  le Finder), les outils et commandes de l'agent disent « Documents », et la recherche, la
-  corbeille, l'infobulle de la barre latérale et l'export n'en montrent plus le chemin ; dans Mon
+- Espace Discussion : le dossier d’une discussion n’apparaît plus sous son identifiant
+  (« 3973c57d-… »). L’onglet Session dit « Documents : Cette discussion » (un clic l’affiche dans
+  le Finder), les outils et commandes de l’agent disent « Documents », et la recherche, la
+  corbeille, l’infobulle de la barre latérale et l’export n’en montrent plus le chemin ; dans Mon
   activité, les discussions comptent sur une seule ligne « Discussions ». La fenêtre rapide,
   ouverte depuis une discussion, vise votre dossier de projet et non celui de la discussion.
-- En-tête d'une conversation fille dans une fenêtre étroite : le titre se raccourcit d'abord, puis
-  la pastille « lecture seule » se réduit à son icône (le texte en infobulle), au lieu d'être
-  coupée au milieu d'un mot.
+- En-tête d’une conversation fille dans une fenêtre étroite : le titre se raccourcit d’abord, puis
+  la pastille « lecture seule » se réduit à son icône (le texte en infobulle), au lieu d’être
+  coupée au milieu d’un mot.
 - Long fil : aller à un message du début par le sommaire, ou chercher dans le fil, ne fige plus
-  l'app (17 s sur un fil de 1 250 échanges, un peu plus d'une seconde maintenant) ; remonter le fil
+  l’app (17 s sur un fil de 1 250 échanges, un peu plus d’une seconde maintenant) ; remonter le fil
   est aussi plus fluide.
 
 ## 1.0.0-beta.4 — 14 novembre 2026
@@ -369,29 +369,29 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 ### Nouveau
 
 - Nouveau thème Aurore, en clair (« Aurore ») et en sombre (« Aurore nuit »), à la place de Sépia :
-  une base sobre et quelques touches d'aurore (une lueur en haut de la barre latérale, votre bulle
+  une base sobre et quelques touches d’aurore (une lueur en haut de la barre latérale, votre bulle
   en dégradé doux, un liseré coloré autour de la saisie quand vous écrivez, le bouton principal en
-  dégradé, une ombre teintée sous les demandes d'autorisation, du verre dépoli sur les menus et les
+  dégradé, une ombre teintée sous les demandes d’autorisation, du verre dépoli sur les menus et les
   Réglages). Avec « Réduire la transparence » ou « Augmenter le contraste » de macOS, le verre
   devient opaque et les dégradés unis. Si vous utilisiez Sépia, Bobine passe sur Clair.
-- Le panneau de droite s'ouvre à 320 px au lieu de 380 : plus de place pour la conversation. La
+- Le panneau de droite s’ouvre à 320 px au lieu de 380 : plus de place pour la conversation. La
   largeur que vous réglez en tirant le bord est retenue ; un double-clic sur le bord revient à la
   largeur par défaut (il agrandissait le panneau : le bouton ⤢ le fait toujours). Dans un panneau
-  étroit, les actions d'un fichier de Modifications apparaissent au survol, pour laisser le nom
+  étroit, les actions d’un fichier de Modifications apparaissent au survol, pour laisser le nom
   entier.
 - Espace Discussion : Bobine sert aussi de chat, à côté du code. Le sélecteur Code | Discussion,
   en haut de la barre latérale (⌘1 / ⌘2), ouvre un espace sans projet pour poser une question,
   rédiger un e-mail ou travailler sur des documents. Glissez-y des PDF, Word, Excel ou images :
   ils sont copiés dans la discussion (vos originaux ne sont pas touchés) et y restent avec elle.
-  Les documents que l'agent crée ou modifie apparaissent en cartes dans le fil et dans le panneau
-  « Documents » (aperçu, Ouvrir, Enregistrer une copie…). L'agent n'y a pas les outils de Bobine
+  Les documents que l’agent crée ou modifie apparaissent en cartes dans le fil et dans le panneau
+  « Documents » (aperçu, Ouvrir, Enregistrer une copie…). L’agent n’y a pas les outils de Bobine
   (navigateur, terminal, conversations filles) ; ses écritures sont accordées dans les documents
   de la discussion et refusées ailleurs, et chaque réponse est dite. « Continuer dans un projet… »
-  (menu du titre) reprend la discussion dans une conversation de l'espace Code, documents copiés
+  (menu du titre) reprend la discussion dans une conversation de l’espace Code, documents copiés
   si vous le voulez.
 - Saisie : ↑ dans une saisie vide reprend le dernier message envoyé de la conversation, ↑ encore
   les précédents, ↓ revient (puis rend la saisie vide). Le message revient tel que tapé, avec ses
-  jetons `@rôle` ; dans un message de plusieurs lignes, les flèches parcourent d'abord les lignes.
+  jetons `@rôle` ; dans un message de plusieurs lignes, les flèches parcourent d’abord les lignes.
   Une pastille « 9/10 » dit où vous en êtes, Échap vide la saisie, et toute modification en fait
   un brouillon ordinaire. Chaque conversation a son historique, gardé avec elle.
 
@@ -399,21 +399,21 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 
 ### Nouveau
 
-- Rôles : « Installer dans… » sur la page d'un rôle l'ajoute comme mode d'IBM Bob (Bob Shell, Bob
-  IDE) ou comme agent d'OpenCode, pour vous ou pour le projet. La feuille dit où et quoi, montre le
-  texte exact, copie le fichier avant d'écrire, et ne touche jamais un mode ou un agent que Bobine
-  n'a pas écrit ; la page dit ensuite s'il est à jour, propose « Mettre à jour » quand le rôle a
+- Rôles : « Installer dans… » sur la page d’un rôle l’ajoute comme mode d’IBM Bob (Bob Shell, Bob
+  IDE) ou comme agent d’OpenCode, pour vous ou pour le projet. La feuille dit où et quoi, montre le
+  texte exact, copie le fichier avant d’écrire, et ne touche jamais un mode ou un agent que Bobine
+  n’a pas écrit ; la page dit ensuite s’il est à jour, propose « Mettre à jour » quand le rôle a
   changé et « Retirer ». Dans Bobine, le rôle peut alors être lancé dans ce mode : sa lecture seule
-  est tenue par l'agent lui-même.
+  est tenue par l’agent lui-même.
 
 ### Amélioré
 
-- Rôles : `@rôle` peut être le tout premier message d'une nouvelle conversation ; elle entre dans
-  l'historique et la conversation fille s'y rattache. La fille d'un rôle répond dans la langue de
-  l'interface, nommée à l'agent.
+- Rôles : `@rôle` peut être le tout premier message d’une nouvelle conversation ; elle entre dans
+  l’historique et la conversation fille s’y rattache. La fille d’un rôle répond dans la langue de
+  l’interface, nommée à l’agent.
 - Rôles fournis : leur description (« Quand faire appel à lui ? ») et leur consigne sont
-  maintenant en français ou en anglais, selon la langue de l'interface ; un rôle personnel tiré
-  d'un rôle fourni garde la langue affichée.
+  maintenant en français ou en anglais, selon la langue de l’interface ; un rôle personnel tiré
+  d’un rôle fourni garde la langue affichée.
 
 ## 1.0.0-beta.2 — 14 novembre 2026
 
@@ -422,29 +422,29 @@ Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages �
 - Rôles : des spécialistes à qui confier un travail, chacun dans une conversation fille qui porte
   son icône et sa couleur. Sept rôles sont fournis (expert UX/UI, expert Flutter, architecte
   front-end, architecte back-end, expert sécurité, tech lead, code reviewer) ; créez les vôtres en
-  trois étapes (qui, comment, avec quoi), à partir d'un rôle fourni, d'une page blanche ou d'une
+  trois étapes (qui, comment, avec quoi), à partir d’un rôle fourni, d’une page blanche ou d’une
   conversation fille réussie (« Enregistrer comme rôle… » sur son compte rendu), pour vous seul ou
   pour le projet (`.bobine/roles/`, partagé par git). Pour faire appel à un rôle, tapez `@` dans la
   saisie (les rôles viennent en tête) ou cliquez-le dans la section « Équipe » de la barre
-  latérale : il devient un jeton, la ligne « Partira à… » dit où ira le message, et l'envoi lance
-  une conversation fille par rôle cité, en parallèle. L'agent connaît aussi vos rôles et peut
+  latérale : il devient un jeton, la ligne « Partira à… » dit où ira le message, et l’envoi lance
+  une conversation fille par rôle cité, en parallèle. L’agent connaît aussi vos rôles et peut
   proposer de leur confier un travail. Les rôles en lecture seule travaillent dans votre dossier
   sans rien y écrire : Bobine refuse leurs écritures et signale tout changement du dossier (pour
-  un agent qui écrit sans demander, la lecture seule n'est que demandée, et c'est dit). Modifiez,
+  un agent qui écrit sans demander, la lecture seule n’est que demandée, et c’est dit). Modifiez,
   désactivez ou supprimez-les dans Réglages › Rôles, qui signale aussi un rôle du projet qui en
   remplace un autre et les fichiers écartés.
 
 ### Amélioré
 
-- Conversations filles : l'agent les propose de lui-même quand elles servent — plusieurs tâches
+- Conversations filles : l’agent les propose de lui-même quand elles servent — plusieurs tâches
   indépendantes, un long travail à suivre à part, une relecture ou un audit par un regard neuf —
-  sans qu'il faille insister ; un court rappel le lui redit après un résumé de la conversation et
-  à la reprise d'une conversation (sauf réglage « Jamais »).
+  sans qu’il faille insister ; un court rappel le lui redit après un résumé de la conversation et
+  à la reprise d’une conversation (sauf réglage « Jamais »).
 
 ## 1.0.0-beta.1 — 10 novembre 2026
 
 Première bêta publique de Bobine : attendez-vous à des aspérités, et signalez-les sur GitHub.
-L'app n'est pas encore notarisée par Apple : macOS demande une étape de plus pour l'ouvrir (voir
+L’app n’est pas encore notarisée par Apple : macOS demande une étape de plus pour l’ouvrir (voir
 le README).
 
 ### Nouveau
@@ -452,37 +452,37 @@ le README).
 - IBM Bob : sur une carte de commande, « Pour tous les projets » (replié en bas de la carte) ajoute
   la commande — ou, pour une commande enchaînée, les parties choisies — aux commandes autorisées
   ou refusées partout, comme dans Bob IDE ; la carte en cours reçoit aussi votre réponse. Ces
-  règles sont celles de Bob IDE et Bob Shell : un refus s'applique tout de suite, même dans une
+  règles sont celles de Bob IDE et Bob Shell : un refus s’applique tout de suite, même dans une
   conversation ouverte ; une autorisation aussi si « Commandes de la liste » était déjà activé,
   sinon à partir de la conversation suivante, comme les groupes.
-  La première autorisation active aussi « Commandes de la liste », et c'est dit ; un préfixe d'un
-  seul mot est signalé, et se confirme dans les Réglages. Une commande refusée partout n'est pas
+  La première autorisation active aussi « Commandes de la liste », et c’est dit ; un préfixe d’un
+  seul mot est signalé, et se confirme dans les Réglages. Une commande refusée partout n’est pas
   non plus lancée par les outils de Bobine (terminal, serveurs, compilations).
 - Réglages › Agents › IBM Bob › Approbations : les groupes approuvés pour toutes les
-  conversations, l'accès hors du dossier, les commandes autorisées et refusées (ajouter, modifier,
-  retirer). Un fichier de réglages de Bob illisible n'est jamais réécrit ; Bobine garde une copie
+  conversations, l’accès hors du dossier, les commandes autorisées et refusées (ajouter, modifier,
+  retirer). Un fichier de réglages de Bob illisible n’est jamais réécrit ; Bobine garde une copie
   (`settings.json.bobine.bak`) avant chaque changement.
 
 ### Amélioré
 
-- Cartes d'autorisation : avec Bob, « Toujours dans cette conversation » dit la portée du choix
+- Cartes d’autorisation : avec Bob, « Toujours dans cette conversation » dit la portée du choix
   (une commande et chacune de ses parties, toutes les modifications de fichiers) ; avec un autre
-  agent, la carte ne promet rien de plus que « c'est l'agent qui décide ». Le dossier de la
+  agent, la carte ne promet rien de plus que « c’est l’agent qui décide ». Le dossier de la
   conversation, dans une commande, est montré par une pastille (chemin entier au survol). La liste de
   tâches montre ses tâches (faite, en cours, à faire) et leur compte ; un outil MCP montre ses
-  arguments ; une carte à risque dit pourquoi « Toujours » n'est pas proposé.
+  arguments ; une carte à risque dit pourquoi « Toujours » n’est pas proposé.
 - À propos de Bobine : une ligne discrète rappelle que Bobine est un projet indépendant, non
   affilié à IBM.
-- Les textes de licence sont livrés avec l'app (dossier `licenses` des ressources) : ceux de
-  Bobine, d'Electron et de Chromium, de la police du terminal, et les avis complets de chaque
+- Les textes de licence sont livrés avec l’app (dossier `licenses` des ressources) : ceux de
+  Bobine, d’Electron et de Chromium, de la police du terminal, et les avis complets de chaque
   composant tiers embarqué.
 
 ### Corrections
 
-- Quand l'agent retire lui-même sa demande d'autorisation (Bob le fait pour les autres demandes
-  déjà autorisées par un « Toujours »), la carte disparaît sans bruit et la pastille d'attente de la
+- Quand l’agent retire lui-même sa demande d’autorisation (Bob le fait pour les autres demandes
+  déjà autorisées par un « Toujours »), la carte disparaît sans bruit et la pastille d’attente de la
   liste des conversations aussi, au lieu de rester à attendre une réponse inutile.
-- Réglages › Confidentialité › Autorisé sans demander : « Updating todo list » s'affiche « Mise à
+- Réglages › Confidentialité › Autorisé sans demander : « Updating todo list » s’affiche « Mise à
   jour de la liste de tâches ».
 - Dans les libellés de cartes, votre dossier personnel est abrégé en `~` (le bloc de la commande à
   autoriser reste entier).
@@ -491,42 +491,42 @@ le README).
 
 ### Amélioré
 
-- Cartes d'autorisation : une commande ou une modification qui écrit hors du dossier de la
+- Cartes d’autorisation : une commande ou une modification qui écrit hors du dossier de la
   conversation, dans un fichier caché de votre dossier personnel (`~/.zshrc`…) ou dans un dossier
-  du système, ou qui demande les droits d'administrateur (`sudo`), est signalée par un bandeau
-  ambré, et « Toujours autoriser » n'y est plus proposé. C'est un avertissement, pas une garantie.
-  Sur les autres cartes, une note rappelle que c'est l'agent qui décide ce que couvre « toujours ».
-- Quand l'agent atteint son nombre maximal d'étapes, une carte le dit et propose « Continuer ». S'il
+  du système, ou qui demande les droits d’administrateur (`sudo`), est signalée par un bandeau
+  ambré, et « Toujours autoriser » n’y est plus proposé. C’est un avertissement, pas une garantie.
+  Sur les autres cartes, une note rappelle que c’est l’agent qui décide ce que couvre « toujours ».
+- Quand l’agent atteint son nombre maximal d’étapes, une carte le dit et propose « Continuer ». S’il
   refuse ensuite tout message sans rien faire (Bob compte sa limite sur toute la session), la carte
   propose « Rouvrir la session et continuer » ou « Nouvelle session avec le résumé », au lieu de
-  vous laisser bloqué ; un message en attente n'est plus envoyé tout seul pour se faire refuser.
+  vous laisser bloqué ; un message en attente n’est plus envoyé tout seul pour se faire refuser.
 - Onglet Session, « Modifications » : deux lignes qui ne se confondent plus. « Conversation » dit
   ce que la conversation a modifié (« Aucune » pour une conversation neuve), « Dossier » ce qui
-  n'est pas commité dans le dossier ; chacune ouvre sa vue de l'onglet Modifications.
+  n’est pas commité dans le dossier ; chacune ouvre sa vue de l’onglet Modifications.
 
 ### Corrections
 
-- Modèle dont le fournisseur n'est pas connecté : la carte dit « Le modèle … n'a pas répondu »
+- Modèle dont le fournisseur n’est pas connecté : la carte dit « Le modèle … n’a pas répondu »
   au lieu de « Connexion expirée », et propose « Choisir un autre modèle » (votre message repart
   aussitôt avec lui, une fois) ou « Se connecter ». Le modèle refusé est marqué « connexion à
   faire » dans la liste des modèles ; la conversation affiche « Modèle refusé ».
-- Sous une carte de connexion, l'icône « Réessayer » du message n'est plus affichée : elle ouvrait
+- Sous une carte de connexion, l’icône « Réessayer » du message n’est plus affichée : elle ouvrait
   une nouvelle branche qui échouait de la même façon. Son nom devient « Réessayer dans une nouvelle
   branche ».
-- Quitter Bobine pendant le Diagnostic (essai d'un agent en cours) ou pendant la lecture du
-  quota ne laisse plus d'agent ni de `bob chat` en marche après l'app.
+- Quitter Bobine pendant le Diagnostic (essai d’un agent en cours) ou pendant la lecture du
+  quota ne laisse plus d’agent ni de `bob chat` en marche après l’app.
 - Connexion par SSO (accueil et carte « Connexion requise ») : si rien ne se passe après la
-  connexion dans le navigateur, « Réessayer » relance la vérification au lieu d'attendre sans fin.
-- Clé d'API : l'enregistrement n'est plus silencieux quand le trousseau macOS attend une
-  autorisation. Bobine dit qu'il attend la fenêtre du trousseau ; sans réponse en 60 s, la clé
-  n'est pas enregistrée, la valeur saisie est gardée et « Réessayer » est proposé.
+  connexion dans le navigateur, « Réessayer » relance la vérification au lieu d’attendre sans fin.
+- Clé d’API : l’enregistrement n’est plus silencieux quand le trousseau macOS attend une
+  autorisation. Bobine dit qu’il attend la fenêtre du trousseau ; sans réponse en 60 s, la clé
+  n’est pas enregistrée, la valeur saisie est gardée et « Réessayer » est proposé.
 - Le bouton Arrêter de la zone de saisie a maintenant un nom (« Arrêter la réponse ») pour les
-  lecteurs d'écran et les outils d'accessibilité ; il n'avait que son icône.
+  lecteurs d’écran et les outils d’accessibilité ; il n’avait que son icône.
 - Plafond de Bobcoins : quand la lecture du quota avait échoué (Bob pas encore connecté au
-  lancement), il n'apparaissait plus de la session, même après la connexion par SSO. Il est
+  lancement), il n’apparaissait plus de la session, même après la connexion par SSO. Il est
   maintenant relu dès que Bob se montre prêt (conversation ouverte, essai de connexion réussi).
 - Cartes « Connexion requise » et « Connexion expirée », accueil, Diagnostic : le bouton de
-  connexion de Bob s'appelle « Se connecter par SSO » (et non plus « Log in with SSO » en
+  connexion de Bob s’appelle « Se connecter par SSO » (et non plus « Log in with SSO » en
   anglais).
 
 ## 0.11.1 — 8 novembre 2026
@@ -845,11 +845,11 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
 - Dans une conversation mère, l’onglet Modifications a une vue « Filles » : les worktrees de ses
   conversations filles, avec leur état, leur branche, ce qu’elles ont modifié et l’avis de la mère ;
   un clic les ouvre dans le Finder, dans votre éditeur ou dans leur conversation.
-- Le clic droit ouvre un menu réduit à l'essentiel : dans la saisie, les corrections d'orthographe
+- Le clic droit ouvre un menu réduit à l’essentiel : dans la saisie, les corrections d’orthographe
   puis Couper, Copier, Coller et Tout sélectionner ; sur un texte sélectionné, un lien ou une image,
   Copier.
-- Un lien vers une adresse de votre Mac (`http://localhost:3000`…) s'ouvre dans le navigateur
-  intégré du panneau (⌥-clic : dans celui du Mac) ; les autres liens web s'ouvrent dans le
+- Un lien vers une adresse de votre Mac (`http://localhost:3000`…) s’ouvre dans le navigateur
+  intégré du panneau (⌥-clic : dans celui du Mac) ; les autres liens web s’ouvrent dans le
   navigateur du Mac.
 - Densité compacte (Réglages › Apparence) : moins d’espace entre les messages, dans les cartes
   d’outils et entre les lignes de la barre latérale.
@@ -861,7 +861,7 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
   ouvre le terminal de Bobine dans ce dossier.
 - La commande `bobine` : dans un terminal, `bobine .` ouvre une nouvelle conversation dans le
   dossier courant, et `bobine . "premier message"` écrit aussi ce message dans la zone de saisie
-  (il n'est jamais envoyé tout seul). Réglages › Général › « Commande bobine » l'installe et la
+  (il n’est jamais envoyé tout seul). Réglages › Général › « Commande bobine » l’installe et la
   désinstalle.
 - Un long texte collé (plus de 40 lignes ou de 4 000 caractères) devient une pièce jointe
   « Texte collé · N lignes » : un clic l’affiche, et « Remettre dans la saisie » le replace dans
@@ -881,12 +881,12 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
 - En rouvrant une conversation laissée depuis plus d’un jour, une carte « Où en était-on ? »
   rappelle la dernière demande, les tâches faites et en cours, et les fichiers modifiés non
   commités. Bobine la construit seule : rien n’est envoyé à l’agent.
-- Pendant que l'agent travaille : une commande qui ne rend plus rien depuis quelques minutes est
+- Pendant que l’agent travaille : une commande qui ne rend plus rien depuis quelques minutes est
   signalée sur sa carte (« Aucune sortie depuis 3 min »), avec « Interrompre » ; le délai se règle
   dans Réglages › Conversations. Quand le contexte est presque plein, « Compacter » apparaît à
   côté de la puce orange de consommation. Et un plafond de coût pour les nouvelles conversations
   (Réglages › Conversations, désactivé par défaut ; modifiable dans le détail de la consommation de
-  chaque conversation) arrête la réponse à la fin de l'outil en cours une fois dépassé, puis
+  chaque conversation) arrête la réponse à la fin de l’outil en cours une fois dépassé, puis
   demande « Continuer » ou « Arrêter » ; au-delà, un nouveau message attend votre accord. En
   bobcoins pour Bob, en dollars sinon, en jetons pour un agent qui ne donne pas son coût.
 - La conversation mère pilote ses filles comme un tech lead : elle peut suggérer l’agent de
@@ -903,10 +903,10 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
 - Le DMG peut être construit sans télécharger d’outil auxiliaire supplémentaire : il utilise
   les outils de macOS. La fenêtre d’installation est simplifiée et garde le glisser-déposer
   vers Applications ainsi que l’installation proposée par Bobine.
-- Cliquer une conversation de l'historique juste après « Nouvelle conversation » n'affiche plus
-  d'erreur « Conversation inconnue ».
-- Les onglets du panneau restent à leur place : un nouvel onglet s'ajoute à droite au lieu de
-  s'intercaler et de décaler les autres.
+- Cliquer une conversation de l’historique juste après « Nouvelle conversation » n’affiche plus
+  d’erreur « Conversation inconnue ».
+- Les onglets du panneau restent à leur place : un nouvel onglet s’ajoute à droite au lieu de
+  s’intercaler et de décaler les autres.
 
 ## 0.6.0 — 27 octobre 2026
 
@@ -926,27 +926,27 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
   Le survol d’une conversation affiche une seule infobulle, également accessible au clavier.
 - Réglages › Données › « Recommencer à neuf » : « Essayer Bobine comme neuve » ouvre une seconde
   Bobine sur un profil vide, effacé à sa fermeture (et, si vous le voulez, des agents comme sur un
-  Mac neuf, qui redemandent leur connexion) ; « Réinitialiser Bobine » met tout ce qu'elle garde
+  Mac neuf, qui redemandent leur connexion) ; « Réinitialiser Bobine » met tout ce qu’elle garde
   sur ce Mac dans un dossier daté de la corbeille, avec un LISEZ-MOI, puis la relance comme au
   premier lancement — ou la désinstalle. Vos projets et vos agents ne sont jamais touchés.
 - Un bouton rouge survolé (Remettre à zéro, Supprimer…) reste rouge et lisible.
 - Mon activité compare ce qui se compare : le graphique gagne « Temps » (le temps de travail par
-  agent), et échanges et temps de travail passent en tête des chiffres. Une mesure qu'un agent ne
+  agent), et échanges et temps de travail passent en tête des chiffres. Une mesure qu’un agent ne
   communique pas le dit (« Jetons : OpenCode seulement. IBM Bob ne communique pas ses jetons. »),
   comme le chiffre « Jetons traités · OpenCode ». Filtrée sur un agent, la page ne montre plus que
   ses comptes (« IBM Bob sur ce Mac » seulement pour Bob).
 - Annoter une page du navigateur ne la fige plus : en mode Annoter, la page défile et zoome comme
-  d'habitude (molette, trackpad, pincement, ⌘+) et le clic pose la remarque, sans atteindre la
-  page. L'élément visé est entouré au survol ; les épingles et leurs bulles restent accrochées à
+  d’habitude (molette, trackpad, pincement, ⌘+) et le clic pose la remarque, sans atteindre la
+  page. L’élément visé est entouré au survol ; les épingles et leurs bulles restent accrochées à
   leur élément, et gardent leur taille quand la page est zoomée. On peut annoter plusieurs écrans :
-  l'agent reçoit une capture par écran annoté, et le message dit quelle remarque est sur laquelle.
+  l’agent reçoit une capture par écran annoté, et le message dit quelle remarque est sur laquelle.
   « Envoyer à l’agent » regroupe les remarques en un message, avec les captures et les éléments
   visés. Échap quitte le mode Annoter ; les remarques restent jusqu’à l’envoi.
-- Pendant que l'agent prépare un outil sans encore dire sur quoi (OpenCode écrit un patch pendant
-  près de 40 s), la carte et l'indicateur disent « Prépare une modification… » (ou une commande, une
-  lecture, une recherche) au lieu du mot brut « patch » ; le titre de l'agent reste en infobulle.
+- Pendant que l’agent prépare un outil sans encore dire sur quoi (OpenCode écrit un patch pendant
+  près de 40 s), la carte et l’indicateur disent « Prépare une modification… » (ou une commande, une
+  lecture, une recherche) au lieu du mot brut « patch » ; le titre de l’agent reste en infobulle.
   Un tel outil interrompu ou en échec garde le nom de son genre : « Modification · interrompu ».
-- Le temps de l'indicateur d'activité est celui de l'étape en cours (l'outil, le texte ou la
+- Le temps de l’indicateur d’activité est celui de l’étape en cours (l’outil, le texte ou la
   réflexion du moment) et repart de zéro à chaque étape ; la durée du tour est dans son infobulle
   (« Tour commencé il y a 2 min 10 »).
 - La consommation est désormais gardée : chaque échange avec un agent est noté sur ce Mac (agent,
@@ -954,30 +954,30 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
   ou continuée avec un autre agent.
 - « Mon activité » (barre latérale, sous « Nouvelle conversation », ou ⇧⌘U) montre toute la
   consommation, toutes conversations confondues, à la place de la conversation : une grille
-  d'activité sur les douze derniers mois (ou une année passée), comme celle de GitHub, puis la
-  semaine, le mois ou l'année, ou le jour cliqué dans la grille ; l'agent ; les échanges, jetons
-  traités, temps de travail et coût dans chaque unité (dollars et Bobcoins ne s'additionnent
-  jamais), avec l'écart à la période d'avant ; un graphique par heure, par jour ou par mois, par
+  d’activité sur les douze derniers mois (ou une année passée), comme celle de GitHub, puis la
+  semaine, le mois ou l’année, ou le jour cliqué dans la grille ; l’agent ; les échanges, jetons
+  traités, temps de travail et coût dans chaque unité (dollars et Bobcoins ne s’additionnent
+  jamais), avec l’écart à la période d’avant ; un graphique par heure, par jour ou par mois, par
   agent ou par modèle ; les tableaux par modèle, par projet et des conversations qui ont le plus
-  consommé (un clic l'ouvre). « Toute mon activité… », dans le détail de la consommation d'une
-  conversation, y mène. Les échanges d'avant sont repris une fois depuis l'historique.
-  « Exporter… » enregistre un CSV (une ligne par échange ou par jour, ou tout l'historique). Le
-  quota du mois et la dépense d'IBM Bob sur ce Mac y sont désormais. La page reste lisible en
+  consommé (un clic l’ouvre). « Toute mon activité… », dans le détail de la consommation d’une
+  conversation, y mène. Les échanges d’avant sont repris une fois depuis l’historique.
+  « Exporter… » enregistre un CSV (une ligne par échange ou par jour, ou tout l’historique). Le
+  quota du mois et la dépense d’IBM Bob sur ce Mac y sont désormais. La page reste lisible en
   fenêtre étroite, panneau ouvert compris.
 - « Remettre à zéro… » la consommation enregistrée est dans Réglages › Données.
 - « Rechercher » devient une loupe en haut de la barre latérale (⌘K ne change pas).
-- Dans les graphiques, IBM Bob est en bleu et OpenCode en vert d'eau ; l'unité de Bob s'écrit
+- Dans les graphiques, IBM Bob est en bleu et OpenCode en vert d’eau ; l’unité de Bob s’écrit
   « Bobcoins ».
-- Réglages › Diagnostic prévient quand un agent annonce une version que Bobine n'a pas vérifiée
+- Réglages › Diagnostic prévient quand un agent annonce une version que Bobine n’a pas vérifiée
   (par exemple IBM Bob 2.0.7, vérifié avec 2.0.6) : ses fonctions propres peuvent ne pas marcher.
   La page de chaque agent dans Réglages › Agents liste les versions vérifiées.
-- Réglages › Agents › « Ajouter un agent ACP… » : n'importe quel agent qui parle ACP se déclare
-  sans toucher au code (nom, commande avec ses arguments, variables d'environnement, et au besoin la
-  variable de sa clé d'API, saisie ensuite sur sa page et chiffrée dans le trousseau). Il a sa page
+- Réglages › Agents › « Ajouter un agent ACP… » : n’importe quel agent qui parle ACP se déclare
+  sans toucher au code (nom, commande avec ses arguments, variables d’environnement, et au besoin la
+  variable de sa clé d’API, saisie ensuite sur sa page et chiffrée dans le trousseau). Il a sa page
   comme les autres, avec « Modifier… » et « Supprimer cet agent ».
 - Un agent qui ne sait pas reprendre une conversation (ou qui a perdu sa session) ne la fige plus
   en lecture seule après un redémarrage ou une panne : la conversation continue dans une nouvelle
-  session, marquée « Nouvelle session avec … » dans le fil, et l'échange d'avant lui est transmis
+  session, marquée « Nouvelle session avec … » dans le fil, et l’échange d’avant lui est transmis
   avec votre prochain message.
 - La barre latérale est organisée en Épinglées, Récents (ou Dossiers) et Archivées, toujours
   en dernier et repliée par défaut. Chaque section et chaque dossier se replient d’un clic, et
@@ -988,72 +988,72 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
   de la conversation ouverte.
 - Le navigateur intégré se comporte comme dans Claude Code : la page défile à la molette, au
   trackpad et au clavier, et se remet en page quand on élargit la colonne ou agrandit le panneau.
-  ⌘+, ⌘− et ⌘0 zooment la page quand elle a le focus (une puce « 110 % » dans l'adresse la remet
-  à 100 % d'un clic), sans décaler la vue même quand l'interface est zoomée ; ⌘L, ⌘R, ⌘[ et ⌘]
-  marchent dans la page. Une taille d'écran imposée par l'agent (mobile…) est réduite pour tenir
-  entière dans le panneau, se signale dans l'adresse (un clic l'annule) et s'annule à la fin de
+  ⌘+, ⌘− et ⌘0 zooment la page quand elle a le focus (une puce « 110 % » dans l’adresse la remet
+  à 100 % d’un clic), sans décaler la vue même quand l’interface est zoomée ; ⌘L, ⌘R, ⌘[ et ⌘]
+  marchent dans la page. Une taille d’écran imposée par l’agent (mobile…) est réduite pour tenir
+  entière dans le panneau, se signale dans l’adresse (un clic l’annule) et s’annule à la fin de
   son tour.
 - Un nouvel outil du panneau, « Échanges ACP » (menu « + »), montre en direct les messages
-  échangés entre Bobine et l'agent, dans les deux sens : heure à la milliseconde, méthode, détail,
-  durée d'une réponse et taille. Un clic déplie le JSON brut ; les morceaux de texte d'un même
+  échangés entre Bobine et l’agent, dans les deux sens : heure à la milliseconde, méthode, détail,
+  durée d’une réponse et taille. Un clic déplie le JSON brut ; les morceaux de texte d’un même
   message sont regroupés ; filtre, pause et copie en NDJSON. Les clés et jetons sont masqués, les
   2 000 derniers messages de la conversation restent en mémoire seulement, quel que soit le niveau
   du journal.
-- Réglages › Diagnostic s'ouvre sur une carte « Journal » : `main.log` et `agents.log` avec leur
-  taille et ce qu'ils contiennent, « Ouvrir » et « Afficher dans le Finder », puis le niveau du
-  journal. Le chemin du dossier des journaux n'est plus écrit dans la section « Bobine ».
+- Réglages › Diagnostic s’ouvre sur une carte « Journal » : `main.log` et `agents.log` avec leur
+  taille et ce qu’ils contiennent, « Ouvrir » et « Afficher dans le Finder », puis le niveau du
+  journal. Le chemin du dossier des journaux n’est plus écrit dans la section « Bobine ».
 - Les réglages sont rangés en trois groupes de quatre onglets : Général, Apparence, Notifications,
   Raccourcis ; Conversations, Agents, Serveurs MCP, Commandes ; Confidentialité, Données,
   Diagnostic, Nouveautés. Chaque page présente ses réglages en cartes, sous un titre ; ce qui sert
   rarement est replié dans « Avancé ». La recherche retrouve toujours chaque réglage et le déplie.
   Nouveautés présente Bobine (icône, version), puis une ligne par version, la plus récente ouverte.
-- Nouvelle page Apparence, avec un aperçu qui change pendant qu'on règle : le thème en un clic
+- Nouvelle page Apparence, avec un aperçu qui change pendant qu’on règle : le thème en un clic
   parmi cinq (Système, qui suit le Mac en Clair et Sombre, Clair, Sépia, Sombre, Nuit noire), six
-  couleurs d'accent, police des réponses parmi
+  couleurs d’accent, police des réponses parmi
   celles installées sur le Mac, police et taille du code, police et taille du terminal, chacune
   prise parmi les polices à chasse fixe installées.
 - Chaque agent a sa page dans Réglages › Agents : état, version, commande, « Relancer », ses clés
-  d'API, ses fournisseurs de modèles, ce qu'il annonce et ce qui lui est propre. Le réseau
-  d'entreprise passe dans « Avancé », avec un résumé de ce qui est défini.
+  d’API, ses fournisseurs de modèles, ce qu’il annonce et ce qui lui est propre. Le réseau
+  d’entreprise passe dans « Avancé », avec un résumé de ce qui est défini.
 - Quand la connexion tombe pendant une réponse (réseau coupé, proxy, limite de débit atteinte),
   Bobine réessaie tout seul : un bandeau dans le fil dit « Connexion perdue » et « Nouvelle
   tentative dans 8 s (3 sur 5) », votre message reste en attente et repart sans avoir à le
   renvoyer. Cinq tentatives, de plus en plus espacées (2 s à 32 s), et tout de suite si le réseau
-  revient ou si le Mac sort de veille ; « Réessayer maintenant » n'attend pas, Échap ou Stop
+  revient ou si le Mac sort de veille ; « Réessayer maintenant » n’attend pas, Échap ou Stop
   arrête. Après la cinquième, « Connexion impossible » et « Réessayer ». Un message écrit pendant
-  l'attente part juste après.
-- Electron 45 (Chromium 156, Node 24.22) : correctifs de sécurité de Chromium. Les clés d'API
-  passent par l'accès au trousseau macOS non bloquant d'Electron ; celles déjà enregistrées restent
+  l’attente part juste après.
+- Electron 45 (Chromium 156, Node 24.22) : correctifs de sécurité de Chromium. Les clés d’API
+  passent par l’accès au trousseau macOS non bloquant d’Electron ; celles déjà enregistrées restent
   lisibles.
 
 ### Corrections
 
 - La progression des fusions reste visible pendant qu’une conversation fille résout un conflit.
-- Quand la connexion de l'agent tombe en plein tour, l'outil qu'il venait d'annoncer ne reste plus
-  « en cours » à côté de l'avis d'erreur : il est interrompu, et le reste à la réouverture. Un tour
-  coupé par l'arrêt de l'agent compte désormais dans la consommation de la conversation.
-- Un agent qui ne s'arrête pas quand on le lui demande est arrêté de force au bout de 3 s, et ceux
+- Quand la connexion de l’agent tombe en plein tour, l’outil qu’il venait d’annoncer ne reste plus
+  « en cours » à côté de l’avis d’erreur : il est interrompu, et le reste à la réouverture. Un tour
+  coupé par l’arrêt de l’agent compte désormais dans la consommation de la conversation.
+- Un agent qui ne s’arrête pas quand on le lui demande est arrêté de force au bout de 3 s, et ceux
   laissés en marche par un plantage de Bobine sont arrêtés au lancement suivant (le journal dit
-  lesquels). Le commit, la fusion et l'état git d'une conversation ne se gênent plus entre eux
-  (« index.lock ») ; un verrou laissé par un autre programme est réessayé une fois, puis l'erreur
+  lesquels). Le commit, la fusion et l’état git d’une conversation ne se gênent plus entre eux
+  (« index.lock ») ; un verrou laissé par un autre programme est réessayé une fois, puis l’erreur
   de git est montrée en entier.
 - Les couleurs suivent tout le thème : les blocs de code, la sortie des commandes et le terminal
   prennent les couleurs de Clair, Sombre, Sépia ou Nuit noire (fini le code toujours sombre), le
-  terminal change de couleurs avec le thème et l'accent sans rouvrir l'onglet, et la fenêtre s'ouvre
+  terminal change de couleurs avec le thème et l’accent sans rouvrir l’onglet, et la fenêtre s’ouvre
   directement sur le fond du thème choisi. Sépia et Nuit noire ont leurs propres accents.
-- Textes plus lisibles : les textes discrets, l'accent en lien, le texte posé sur l'accent et les
+- Textes plus lisibles : les textes discrets, l’accent en lien, le texte posé sur l’accent et les
   couleurs du terminal (le jaune sur fond clair) atteignent tous le contraste recommandé (AA).
-- La sortie d'une commande qui est du JSON s'affiche indentée, avec de vrais retours à la ligne dans
+- La sortie d’une commande qui est du JSON s’affiche indentée, avec de vrais retours à la ligne dans
   les chaînes.
 - Le message de commit proposé reprend le titre de la conversation coupé à un mot entier, sans finir
   sur « à une », avec « … ».
-- Réglages › Conversation : les polices des réponses s'appellent « Sans serif » et « Serif » ;
+- Réglages › Conversation : les polices des réponses s’appellent « Sans serif » et « Serif » ;
   chercher « empattements » les trouve toujours.
-- Réglages : plus de doublons. « Relire le PATH » n'est plus que dans Diagnostic (un lien y mène
+- Réglages : plus de doublons. « Relire le PATH » n’est plus que dans Diagnostic (un lien y mène
   depuis Agents quand un agent manque), et À propos ne répète plus la version, Electron et le
   système, déjà dans la fenêtre « À propos » et dans Diagnostic. Les aides tiennent en une phrase,
   les textes des notifications et du compteur du Dock ne se contredisent plus, et « Comme
-  maintenant » n'est plus coupé dans la liste de la nouvelle conversation.
+  maintenant » n’est plus coupé dans la liste de la nouvelle conversation.
 
 ### Limites connues
 
@@ -1064,143 +1064,143 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
 
 ### Nouveau
 
-- Les conversations filles finies se fusionnent toutes d'un geste depuis la carte « Sous-tâches » de
+- Les conversations filles finies se fusionnent toutes d’un geste depuis la carte « Sous-tâches » de
   la mère : une phrase dit lesquelles sont prêtes, lesquelles travaillent encore, lesquelles touchent
   les mêmes fichiers et lesquelles ont des modifications non commitées ; « Fusionner les N dans
-  main » les fusionne l'une après l'autre, dans l'ordre de lancement, avec l'état de chaque ligne en
+  main » les fusionne l’une après l’autre, dans l’ordre de lancement, avec l’état de chaque ligne en
   direct et « Arrêter ». Au premier conflit, la fille concernée le résout, puis la fusion reprend.
   « Puis nettoyer » archive ensuite les filles fusionnées et supprime leurs worktrees et branches.
 - Quand le dossier principal a des modifications non commitées, la fusion (depuis la carte
-  « Sous-tâches » ou la vue Git d'un worktree) ne part pas et dit pourquoi, fichiers à l'appui, avec
-  « Committer d'abord » (message proposé, puis la fusion part) et « Mettre de côté » (les
+  « Sous-tâches » ou la vue Git d’un worktree) ne part pas et dit pourquoi, fichiers à l’appui, avec
+  « Committer d’abord » (message proposé, puis la fusion part) et « Mettre de côté » (les
   modifications sont rangées le temps de la fusion, puis remises, et le fil le dit). Les erreurs de
   git sont montrées en entier, plus seulement « Aborting ».
-- « Committer » existe aussi dans la vue Git d'une conversation ordinaire, hors worktree : fichiers
-  cochés, message proposé modifiable, « Défaire » tant que c'est le dernier commit et qu'il n'est
+- « Committer » existe aussi dans la vue Git d’une conversation ordinaire, hors worktree : fichiers
+  cochés, message proposé modifiable, « Défaire » tant que c’est le dernier commit et qu’il n’est
   pas poussé.
-- Les sous-agents de l'agent ont leur propre carte « Sous-agents » dans le fil, distincte des outils :
+- Les sous-agents de l’agent ont leur propre carte « Sous-agents » dans le fil, distincte des outils :
   ceux lancés ensemble partagent la carte, une ligne chacun (état, type, consigne, durée et coût en
   direct), avec le nombre en cours et fini et leur coût total ; « Réponse » déplie la consigne, la
   réponse et son travail.
-- Chaque conversation fille montre ce qu'elle coûte : une pastille sur sa ligne de « Sous-tâches »
-  (bobcoins, dollars, ou ses jetons), le total des filles dans l'en-tête de la carte, et sur son
-  compte rendu le coût et le nombre d'échanges à ce moment-là.
-- Le départ d'une conversation en worktree tient en une carte en tête du fil : branche et commit de
-  départ, date, sujet du commit, et un avertissement s'il reste des modifications non commitées dans
-  le dossier d'origine ; « Vue Git » ouvre l'onglet Modifications. L'en-tête d'une conversation
-  fille dit de quelle conversation elle vient (« ↳ depuis « … » »), et y ramène d'un clic.
-- Le haut du fil ne passe plus sous le fondu de l'en-tête : le premier message reste lisible quand
+- Chaque conversation fille montre ce qu’elle coûte : une pastille sur sa ligne de « Sous-tâches »
+  (bobcoins, dollars, ou ses jetons), le total des filles dans l’en-tête de la carte, et sur son
+  compte rendu le coût et le nombre d’échanges à ce moment-là.
+- Le départ d’une conversation en worktree tient en une carte en tête du fil : branche et commit de
+  départ, date, sujet du commit, et un avertissement s’il reste des modifications non commitées dans
+  le dossier d’origine ; « Vue Git » ouvre l’onglet Modifications. L’en-tête d’une conversation
+  fille dit de quelle conversation elle vient (« ↳ depuis « … » »), et y ramène d’un clic.
+- Le haut du fil ne passe plus sous le fondu de l’en-tête : le premier message reste lisible quand
   le fil défile.
 - Bobine › « À propos de Bobine » ouvre une fenêtre sobre : la version et sa date, « Nouveautés »
   (Réglages › À propos), « Signaler un problème » (issue GitHub préremplie), les liens vers GitHub
   et la licence, et « Copier les infos techniques » (version, commit, Electron, macOS, agents
   installés) à coller dans un signalement.
-- L'agent propose de lui-même des conversations filles quand votre message contient plusieurs
-  chantiers indépendants : il sait, dès le début de la session, qu'il peut les confier à des
+- L’agent propose de lui-même des conversations filles quand votre message contient plusieurs
+  chantiers indépendants : il sait, dès le début de la session, qu’il peut les confier à des
   filles, chacune dans son worktree, et que rien ne démarre sans votre accord sur la carte
   « Tâches proposées ». Réglages › Conversation › « Proposer des conversations filles » : Jamais,
-  Quand ça s'y prête (par défaut) ou Toujours demander. La commande `/split` demande
+  Quand ça s’y prête (par défaut) ou Toujours demander. La commande `/split` demande
   explicitement ce découpage pour le message qui la suit.
 - Une section « À traiter » en tête de la barre latérale réunit les conversations qui vous
   attendent : autorisation ou question (en premier), erreur, réponse ou compte rendu de
-  conversation fille à lire, avec la raison et depuis quand. Le même nombre s'affiche sur l'icône
-  du Dock (Réglages › Général › « Compteur sur l'icône du Dock »). Plusieurs conversations qui
-  finissent ou attendent en même temps (des filles lancées ensemble) ne font plus qu'une
+  conversation fille à lire, avec la raison et depuis quand. Le même nombre s’affiche sur l’icône
+  du Dock (Réglages › Général › « Compteur sur l’icône du Dock »). Plusieurs conversations qui
+  finissent ou attendent en même temps (des filles lancées ensemble) ne font plus qu’une
   notification, un son et un rebond.
-- La barre latérale suit une seule grille : chaque titre commence au même endroit, qu'il ait une
-  icône ou non. Dans « À traiter », le titre en gras dit ce qui n'est pas lu, l'icône dit pourquoi
-  (en couleur quand l'agent est bloqué, en gris quand c'est à lire, en rouge pour une erreur), le
-  temps écoulé est à droite du titre et le compte s'écrit « À traiter · 2 ». Une branche porte un
+- La barre latérale suit une seule grille : chaque titre commence au même endroit, qu’il ait une
+  icône ou non. Dans « À traiter », le titre en gras dit ce qui n’est pas lu, l’icône dit pourquoi
+  (en couleur quand l’agent est bloqué, en gris quand c’est à lire, en rouge pour une erreur), le
+  temps écoulé est à droite du titre et le compte s’écrit « À traiter · 2 ». Une branche porte un
   repère « branche » visible même quand son titre est coupé, et son titre complet en infobulle.
 
 ### Corrections
 
-- Les titres d'outils de l'agent ne montrent plus de chemins absolus ni de « cd /chemin/du/projet
+- Les titres d’outils de l’agent ne montrent plus de chemins absolus ni de « cd /chemin/du/projet
   && … » : « Autorisation : Modification de src/books.js » plutôt que « Applying diff to
   /Users/… », et « Mise à jour de la liste de tâches (8) » (la liste en infobulle) plutôt que
   « Updating todo list », dans les cartes, « À traiter » et les notifications.
-- Le texte que Bobine joint à votre message (contexte de l'app, demande de `/split`, échange repris
-  d'une branche ou d'un autre agent) part après lui : il ne devient plus le titre de la tâche chez
-  IBM Bob, n'apparaît plus dans la carte « Nouvelle branche de … », et ne remplace plus le titre
-  d'une conversation après « Continuer avec… » ou une branche.
+- Le texte que Bobine joint à votre message (contexte de l’app, demande de `/split`, échange repris
+  d’une branche ou d’un autre agent) part après lui : il ne devient plus le titre de la tâche chez
+  IBM Bob, n’apparaît plus dans la carte « Nouvelle branche de … », et ne remplace plus le titre
+  d’une conversation après « Continuer avec… » ou une branche.
 
 ### Corrections
 
-- Après une panne de l'agent, le message qui le relance ne mélange plus l'historique rejoué par
-  l'agent avec sa nouvelle réponse : le fil reste celui d'avant la panne (bulles, cartes de plan,
+- Après une panne de l’agent, le message qui le relance ne mélange plus l’historique rejoué par
+  l’agent avec sa nouvelle réponse : le fil reste celui d’avant la panne (bulles, cartes de plan,
   compteurs de modifications), suivi du nouvel échange, comme après avoir quitté puis rouvert
   Bobine. Le message part une fois cet historique reçu, au plus 2 secondes après.
-- Un outil refusé n'a plus de coche verte : « refusé » est un état à part entière d'une carte du
-  fil (et d'un groupe d'outils, ou d'un sous-agent), que le refus vienne d'une autorisation de
-  l'agent ou d'une commande de Bobine (terminal, serveur, compilation). Un outil de Bobine en
-  erreur est « échec », même quand l'agent le dit fini.
-- Android : la compilation d'un projet Flutter qui réussit n'est plus dite « Build failed » ; l'APK
-  est cherché aussi là où Flutter l'écrit (`build/app/outputs/flutter-apk`), et s'il n'est nulle
-  part, la compilation reste réussie et l'agent sait où il a été cherché. L'erreur d'une
+- Un outil refusé n’a plus de coche verte : « refusé » est un état à part entière d’une carte du
+  fil (et d’un groupe d’outils, ou d’un sous-agent), que le refus vienne d’une autorisation de
+  l’agent ou d’une commande de Bobine (terminal, serveur, compilation). Un outil de Bobine en
+  erreur est « échec », même quand l’agent le dit fini.
+- Android : la compilation d’un projet Flutter qui réussit n’est plus dite « Build failed » ; l’APK
+  est cherché aussi là où Flutter l’écrit (`build/app/outputs/flutter-apk`), et s’il n’est nulle
+  part, la compilation reste réussie et l’agent sait où il a été cherché. L’erreur d’une
   installation (`adb install`) arrive entière, avec sa raison, et la carte « Lance … » nomme
-  l'APK même quand son chemin est long.
+  l’APK même quand son chemin est long.
 - Avec OpenCode, un outil de Bobine appelé par du code (`execute`) qui échoue met la carte en
-  échec, au lieu d'une coche verte.
-- Un sous-agent qu'OpenCode lance en arrière-plan n'est plus dit « fini, < 1 s » : sa ligne de la
-  carte « Sous-agents » reste en cours, même après la fin de la réponse, jusqu'à ce qu'il ait
+  échec, au lieu d’une coche verte.
+- Un sous-agent qu’OpenCode lance en arrière-plan n’est plus dit « fini, < 1 s » : sa ligne de la
+  carte « Sous-agents » reste en cours, même après la fin de la réponse, jusqu’à ce qu’il ait
   vraiment fini ; elle montre alors sa durée et sa réponse finale. « Voir son travail » montre
-  l'état du moment tant qu'il travaille.
-- Capture d'écran sans l'autorisation « Enregistrement de l'écran » de macOS : au lieu de laisser
+  l’état du moment tant qu’il travaille.
+- Capture d’écran sans l’autorisation « Enregistrement de l’écran » de macOS : au lieu de laisser
   choisir une zone pour ne rien joindre, la fenêtre rapide et la zone de saisie disent que la
   capture est indisponible et pourquoi, avec un bouton « Ouvrir les Réglages Système ». Une capture
   que macOS refuse après la sélection le dit aussi ; Échap reste silencieux.
 - Carte du plan : « Envoyer mes remarques » et « Exécuter le plan » restent à droite, à la même
-  place, quand le texte d'aide change (« 1 remarque ») : « Exécuter le plan » ne vient plus sous le
+  place, quand le texte d’aide change (« 1 remarque ») : « Exécuter le plan » ne vient plus sous le
   pointeur après « Ajouter la remarque ».
-- Carte « Tâches proposées » : quand l'agent ajoute des propositions pendant son tour, elles
+- Carte « Tâches proposées » : quand l’agent ajoute des propositions pendant son tour, elles
   arrivent en dessous et le fil ne défile plus tant que le pointeur est sur la carte : la ligne
-  qu'on s'apprête à lancer ne bouge plus sous le pointeur.
+  qu’on s’apprête à lancer ne bouge plus sous le pointeur.
 
 ### Corrections
 
 - `/context` et `/cost` donnent chacun un encadré titré (« Contexte de la conversation », « Coût de
-  la conversation ») ; quand l'agent ne transmet pas le remplissage de son contexte (IBM Bob),
-  `/context` le dit. `/compress` d'IBM Bob est dans la liste « / », et sa réponse s'affiche en carte
+  la conversation ») ; quand l’agent ne transmet pas le remplissage de son contexte (IBM Bob),
+  `/context` le dit. `/compress` d’IBM Bob est dans la liste « / », et sa réponse s’affiche en carte
   « Conversation résumée », avec le résumé mis en forme.
 - Un outil arrêté par Échap ou ■ est marqué « interrompu », plus « échec ».
-- Les commandes que l'agent lance dans le terminal tournent sans pager : `git log` ne reste plus
-  bloqué sur « (END) ». Elles s'ouvrent dans un onglet de l'agent ; vos onglets gardent votre pager.
-- La mention `@` propose d'abord les fichiers dont le nom ou un dossier commence par ce que vous
-  tapez : `@books` ne propose plus les fichiers d'Xcode qui contiennent ces lettres dans le désordre.
-- Une infobulle se ferme quand l'élément survolé défile ou disparaît (changement d'onglet, fil qui
+- Les commandes que l’agent lance dans le terminal tournent sans pager : `git log` ne reste plus
+  bloqué sur « (END) ». Elles s’ouvrent dans un onglet de l’agent ; vos onglets gardent votre pager.
+- La mention `@` propose d’abord les fichiers dont le nom ou un dossier commence par ce que vous
+  tapez : `@books` ne propose plus les fichiers d’Xcode qui contiennent ces lettres dans le désordre.
+- Une infobulle se ferme quand l’élément survolé défile ou disparaît (changement d’onglet, fil qui
   défile à la molette).
-- Supprimer un fournisseur, un serveur MCP, une commande ou une clé d'API, révoquer une autorisation
-  ou nettoyer un worktree orphelin se confirme dans la ligne, sous l'élément cliqué
-  (« Supprimer · Garder ») : plus de second clic sur une corbeille qui ne changeait pas d'aspect.
-- Retirer le dernier serveur MCP (ou fournisseur) d'un fichier ne laisse plus un `opencode.json`
-  vide : le fichier est supprimé s'il ne contient rien d'autre.
-- Le message de commit proposé ne coupe plus un mot : le titre d'une conversation s'arrête à un mot
+- Supprimer un fournisseur, un serveur MCP, une commande ou une clé d’API, révoquer une autorisation
+  ou nettoyer un worktree orphelin se confirme dans la ligne, sous l’élément cliqué
+  (« Supprimer · Garder ») : plus de second clic sur une corbeille qui ne changeait pas d’aspect.
+- Retirer le dernier serveur MCP (ou fournisseur) d’un fichier ne laisse plus un `opencode.json`
+  vide : le fichier est supprimé s’il ne contient rien d’autre.
+- Le message de commit proposé ne coupe plus un mot : le titre d’une conversation s’arrête à un mot
   entier.
-- Textes : « d'OpenCode », « d'IBM Bob » ; espaces insécables avant « : » et dans les guillemets
+- Textes : « d’OpenCode », « d’IBM Bob » ; espaces insécables avant « : » et dans les guillemets
   (plus de « » » en début de ligne) ; un seul « Plein écran » dans le menu Affichage, qui devient
-  « Quitter le plein écran » en plein écran ; « Remettre 1 fichier dans son état d'alors ».
-- Réglages › Serveurs MCP › Bobine : les interrupteurs des familles d'outils se prennent au clavier
-  et par l'accessibilité ; « Questions » affiche « Toujours fournie » au lieu d'un
+  « Quitter le plein écran » en plein écran ; « Remettre 1 fichier dans son état d’alors ».
+- Réglages › Serveurs MCP › Bobine : les interrupteurs des familles d’outils se prennent au clavier
+  et par l’accessibilité ; « Questions » affiche « Toujours fournie » au lieu d’un
   interrupteur grisé. La recherche des réglages trouve aussi ce que Bobine sait faire avec chaque
   agent (« quota » mène à IBM Bob).
-- Un sous-agent qu'OpenCode lance en arrière-plan finit dans sa carte (durée, réponse finale) même
-  si vous avez envoyé d'autres messages entre-temps ; avant, il restait « en cours » pour toujours.
+- Un sous-agent qu’OpenCode lance en arrière-plan finit dans sa carte (durée, réponse finale) même
+  si vous avez envoyé d’autres messages entre-temps ; avant, il restait « en cours » pour toujours.
 - Envoyer un message quand le fil est remonté ramène en bas : la bulle envoyée et la réponse se
   voient, on ne croit plus le message perdu. La flèche ↓ sert toujours à redescendre en lisant.
 - Carte du plan : quand le formulaire de remarque se replie, la barre « Envoyer mes remarques ·
-  Exécuter le plan » ne remonte plus sous le pointeur ; la place est gardée jusqu'à ce que le
+  Exécuter le plan » ne remonte plus sous le pointeur ; la place est gardée jusqu’à ce que le
   pointeur quitte la carte.
 
 ### Limites connues
 
-- Dans le fil, un lien `http://localhost…` écrit par l'agent ne s'ouvre pas encore dans le
-  navigateur intégré ; `prompt()` d'une page n'y est pas pris en charge ; « Ouvrir une PR » reste
-  sans effet quand le dépôt n'a pas de distant.
-- Le compte rendu d'une conversation fille menée par Bob n'indique pas son coût ; la pastille de la
+- Dans le fil, un lien `http://localhost…` écrit par l’agent ne s’ouvre pas encore dans le
+  navigateur intégré ; `prompt()` d’une page n’y est pas pris en charge ; « Ouvrir une PR » reste
+  sans effet quand le dépôt n’a pas de distant.
+- Le compte rendu d’une conversation fille menée par Bob n’indique pas son coût ; la pastille de la
   carte « Sous-tâches » le donne.
-- Après un changement de langue, la ligne de réponse d'une question déjà posée garde l'ancienne
+- Après un changement de langue, la ligne de réponse d’une question déjà posée garde l’ancienne
   langue.
-- Proxy d'entreprise : seules les variables `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` en
+- Proxy d’entreprise : seules les variables `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` en
   majuscules sont reprises du shell de connexion.
 
 ## 0.4.0 — 22 octobre 2026
@@ -1208,249 +1208,249 @@ Disponible pour macOS (Apple Silicon). La préversion Linux sera publiée ultér
 ### Nouveau
 
 - Une conversation en worktree revient dans `main` sans terminal. À sa création, le fil dit de
-  quelle branche et de quel commit elle part, et prévient si le dossier d'origine a des
-  modifications non commitées (elles ne sont pas dans le worktree). Dans l'onglet Modifications,
+  quelle branche et de quel commit elle part, et prévient si le dossier d’origine a des
+  modifications non commitées (elles ne sont pas dans le worktree). Dans l’onglet Modifications,
   vue « Git » : « Committer » les fichiers cochés avec un message proposé (modifiable, défaisable
-  tant qu'il est le dernier), « Ouvrir une PR » si `gh` est installé et connecté (sinon la raison
+  tant qu’il est le dernier), « Ouvrir une PR » si `gh` est installé et connecté (sinon la raison
   est dite), « Fusionner dans main » qui liste les conflits fichier par fichier avec « Laisser
-  l'agent résoudre », puis « Nettoyer » (conversation archivée, worktree et branche supprimés).
+  l’agent résoudre », puis « Nettoyer » (conversation archivée, worktree et branche supprimés).
   Réglages › Agents et dossiers liste les worktrees orphelins avec « Nettoyer ».
-- Le coût de la conversation (bobcoins, dollars ou jetons selon l'agent) se lit en un seul endroit :
+- Le coût de la conversation (bobcoins, dollars ou jetons selon l’agent) se lit en un seul endroit :
   la puce de consommation sous la zone de saisie, dont le détail donne le total, la moyenne par
   échange et une ligne par échange.
 - La barre latérale se règle en largeur à la souris (de 220 à 440 px, 300 par défaut) ; un
   double-clic sur sa poignée la ramène à sa largeur par défaut. Sur une fenêtre étroite, elle cède
   la place dont la conversation a besoin et la reprend ensuite.
-- Réglages › Serveurs MCP › Bobine : le poids estimé de chaque famille d'outils dans le contexte de
-  l'agent, et un interrupteur pour ne plus la proposer. Le menu ⚙ de la conversation dit quand le
-  changement s'applique et propose de redémarrer l'agent.
-- Continuer une conversation avec l'autre agent : dans le menu de l'agent, « Continuer avec »
+- Réglages › Serveurs MCP › Bobine : le poids estimé de chaque famille d’outils dans le contexte de
+  l’agent, et un interrupteur pour ne plus la proposer. Le menu ⚙ de la conversation dit quand le
+  changement s’applique et propose de redémarrer l’agent.
+- Continuer une conversation avec l’autre agent : dans le menu de l’agent, « Continuer avec »
   propose OpenCode (et ses derniers modèles utilisés ou ceux de vos fournisseurs) depuis Bob, ou
-  l'inverse. Avant de confirmer, Bobine dit où partiront vos messages (agent, modèle, fournisseur et
+  l’inverse. Avant de confirmer, Bobine dit où partiront vos messages (agent, modèle, fournisseur et
   adresse). La conversation reste la même : le fil est gardé, un trait « Suite avec … » marque la
-  bascule, et l'échange précédent part en texte avec votre prochain message, pas avant.
-- Quand l'agent propose des conversations filles, elles arrivent sur une seule carte « Tâches
-  proposées » : pour chacune, Lancer, Faire ici (l'agent s'en charge dans la conversation) ou
-  Refuser, avec l'agent et le modèle au choix. La carte garde ce que vous avez décidé.
+  bascule, et l’échange précédent part en texte avec votre prochain message, pas avant.
+- Quand l’agent propose des conversations filles, elles arrivent sur une seule carte « Tâches
+  proposées » : pour chacune, Lancer, Faire ici (l’agent s’en charge dans la conversation) ou
+  Refuser, avec l’agent et le modèle au choix. La carte garde ce que vous avez décidé.
 - Une conversation mise en veille ou rouverte après un redémarrage garde tout son fil : cartes des
   outils de Bobine, comptes rendus des conversations filles, remarques, « Réponse interrompue ».
   Si la session a continué ailleurs entre-temps (`bob chat`, Bob IDE, `opencode`), les échanges
   manquants sont ajoutés à la fin, avec un avis.
 - Réglages › Diagnostic : « Signaler un problème » ouvre dans le navigateur une issue GitHub
-  préremplie avec la version et le rapport de diagnostic (coupé s'il est trop long pour l'adresse :
+  préremplie avec la version et le rapport de diagnostic (coupé s’il est trop long pour l’adresse :
   le reste se colle depuis « Copier le rapport »). Rien ne part avant que vous ne validiez sur
   GitHub.
 - Bobine est publiée sous licence Apache 2.0 ; le dépôt a un README en anglais et en français, un
   guide de contribution et une politique de sécurité.
-- Les cartes d'outils de l'agent disent ce qu'il a fait et sur quoi, même repliées dans un groupe :
+- Les cartes d’outils de l’agent disent ce qu’il a fait et sur quoi, même repliées dans un groupe :
   « Lecture de src/books.js », « Modification de README.md », « Recherche « TODO » », « Page
-  example.com/doc », au lieu du nom brut de l'outil (« read », vingt fois). Les chemins sont
-  relatifs au dossier de la conversation, raccourcis au milieu s'ils sont longs ; le chemin entier
-  et le titre de l'agent restent au survol. Une commande garde son texte.
-- Réglages › Agents et dossiers › Fournisseurs de modèles : les points d'accès compatibles OpenAI
-  d'OpenCode (modèles internes de l'entreprise) se déclarent dans l'app, sans éditer
+  example.com/doc », au lieu du nom brut de l’outil (« read », vingt fois). Les chemins sont
+  relatifs au dossier de la conversation, raccourcis au milieu s’ils sont longs ; le chemin entier
+  et le titre de l’agent restent au survol. Une commande garde son texte.
+- Réglages › Agents et dossiers › Fournisseurs de modèles : les points d’accès compatibles OpenAI
+  d’OpenCode (modèles internes de l’entreprise) se déclarent dans l’app, sans éditer
   `opencode.json` à la main : nom, adresse, modèles, « Seulement ces fournisseurs ». La clé est
   chiffrée dans le trousseau macOS, jamais écrite dans le fichier. « Tester » dit si le point
-  d'accès répond, combien de modèles il liste, ou pourquoi pas (connexion refusée, proxy,
+  d’accès répond, combien de modèles il liste, ou pourquoi pas (connexion refusée, proxy,
   certificat non reconnu, clé refusée) et quoi faire ; Réglages › Diagnostic a une ligne par
   fournisseur.
-- Réglages › Agents et dossiers › Réseau d'entreprise : proxy, hôtes sans proxy et fichier des
-  certificats de l'entreprise, repris du shell de connexion ou saisis ici, transmis à tous les
+- Réglages › Agents et dossiers › Réseau d’entreprise : proxy, hôtes sans proxy et fichier des
+  certificats de l’entreprise, repris du shell de connexion ou saisis ici, transmis à tous les
   agents à leur lancement.
-- Quand une réponse est finie ou qu'un agent attend, fenêtre en arrière-plan, l'icône de Bobine
+- Quand une réponse est finie ou qu’un agent attend, fenêtre en arrière-plan, l’icône de Bobine
   rebondit dans le Dock, même quand macOS bloque les notifications (Réglages › Général › Faire
-  rebondir l'icône du Dock).
+  rebondir l’icône du Dock).
 - Réglages › Conversation : choisissez combien de conversations restent actives (6 par défaut, de 2
   à 12). Au-delà, les plus anciennes sont mises en veille et rechargées quand vous y revenez ;
   chacune garde son agent en mémoire, environ 300 Mo.
-- Réglages › Serveurs MCP s'ouvre sur un onglet « Bobine » : les outils que Bobine donne à tous les
-  agents (questions, navigateur intégré, lancer l'app, terminal, simulateur iOS, émulateur Android,
-  conversations filles), une carte par famille avec son nombre d'outils, quand elle est proposée et
+- Réglages › Serveurs MCP s’ouvre sur un onglet « Bobine » : les outils que Bobine donne à tous les
+  agents (questions, navigateur intégré, lancer l’app, terminal, simulateur iOS, émulateur Android,
+  conversations filles), une carte par famille avec son nombre d’outils, quand elle est proposée et
   quand elle demande votre accord ; dépliée, elle liste les outils, leur description au survol. Le
-  menu ⚙ de la conversation commence par « bobine · intégré » et le nombre d'outils qu'elle reçoit
+  menu ⚙ de la conversation commence par « bobine · intégré » et le nombre d’outils qu’elle reçoit
   vraiment, qui mène à cet onglet.
 - En mode Plan, la zone de saisie prend la couleur du mode (bordure, halo, fond teinté), la puce du
-  mode devient une pastille « Plan » et une ligne rappelle que l'agent lit et propose sans rien
+  mode devient une pastille « Plan » et une ligne rappelle que l’agent lit et propose sans rien
   modifier, et comment en sortir.
-- « Lancer en parallèle… », dans le menu d'une conversation, ouvre une conversation fille. Elle
+- « Lancer en parallèle… », dans le menu d’une conversation, ouvre une conversation fille. Elle
   travaille dans son propre worktree, et apparaît sous sa mère avec son état. À chaque fin de tour,
   la mère reçoit son compte rendu (carte « Sous-tâches »), qui part à son agent avec votre prochain
   message.
-- L'agent peut lancer lui-même des conversations filles pour des tâches longues et indépendantes :
+- L’agent peut lancer lui-même des conversations filles pour des tâches longues et indépendantes :
   chacune demande votre accord sur une carte (Lancer / Refuser). Il les suit, leur écrit, et elles
-  peuvent lui écrire ; ces messages passent par la file d'attente, avec leur provenance (« De la
+  peuvent lui écrire ; ces messages passent par la file d’attente, avec leur provenance (« De la
   conversation mère »). Quand toutes ont fini, il est réveillé une seule fois avec leurs comptes
   rendus. Le nombre de filles en cours se règle dans Réglages › Conversation (5 par défaut) ;
   au-delà, « Lancer en parallèle… » est grisé.
-- Au premier lancement, Bobine demande d'abord le dossier du projet : aucun agent ne démarre avant
-  ce choix, et le dossier « workspace » de l'app n'apparaît plus dans les dossiers récents.
+- Au premier lancement, Bobine demande d’abord le dossier du projet : aucun agent ne démarre avant
+  ce choix, et le dossier « workspace » de l’app n’apparaît plus dans les dossiers récents.
 - Le dossier et la branche passent sous la zone de saisie. Quand la place manque, la barre se
   replie étape par étape (capture dans le menu 📎, anneau seul pour la consommation, icône seule
   pour le mode) au lieu de tronquer toutes les puces ; le mode plan a sa propre icône.
-- Le menu des modèles s'ouvre sur le modèle choisi, tient dans la fenêtre et propose une recherche
+- Le menu des modèles s’ouvre sur le modèle choisi, tient dans la fenêtre et propose une recherche
   au-delà de 10 modèles (OpenCode) ; le fournisseur est estompé à droite.
 - Le navigateur intégré accepte les téléchargements : chaque fichier demande « Enregistrer sous »,
-  même quand c'est l'agent qui clique, et rien n'est enregistré sans votre accord ; un bandeau
+  même quand c’est l’agent qui clique, et rien n’est enregistré sans votre accord ; un bandeau
   confirme, avec « Afficher dans le Finder ».
-- Une branche s'affiche juste sous sa conversation d'origine, en retrait, avec une flèche.
-- La fenêtre rouvre à sa place et à sa taille, agrandie ou en plein écran si elle l'était ; restée
-  sur un écran débranché, elle revient sur l'écran principal.
-- Le quota de bobcoins de Bob s'affiche sous son nom, en bas de la barre latérale : part
+- Une branche s’affiche juste sous sa conversation d’origine, en retrait, avec une flèche.
+- La fenêtre rouvre à sa place et à sa taille, agrandie ou en plein écran si elle l’était ; restée
+  sur un écran débranché, elle revient sur l’écran principal.
+- Le quota de bobcoins de Bob s’affiche sous son nom, en bas de la barre latérale : part
   consommée et barre (orange à 80 %, rouge à 95 %) ; au clic, consommé, plafond, reste et
   « Actualiser ». Chiffres du serveur de Bob, toutes machines confondues, lus au démarrage.
-- Le modèle utilisé se voit dans la barre de saisie, à côté du choix de l'agent (OpenCode) : un
+- Le modèle utilisé se voit dans la barre de saisie, à côté du choix de l’agent (OpenCode) : un
   clic ouvre la liste des modèles.
-- Zoom des onglets iOS et Android : en haut de l'onglet, dézoomer, ajuster au panneau, taille
-  réelle et zoomer, avec le niveau affiché. Zoomé, l'appareil défile et la molette déplace la vue ;
-  on fait défiler l'app en glissant sur l'écran.
-- La zone de saisie demande « Que voulez-vous faire ? » sur l'accueil, propose « Répondre à … »
-  (avec le nom de l'agent) dans une conversation, et « Ajouter une suite… » pendant une réponse.
-- Remarques sur les modifications : dans l'onglet « Modifications », le « + » au survol d'une ligne
-  du diff ajoute une remarque (Maj-clic pour une plage) ; « Envoyer à l'agent » les envoie toutes
-  en un message qui cite le fichier, les lignes et le code. Elles sont gardées jusqu'à l'envoi.
+- Zoom des onglets iOS et Android : en haut de l’onglet, dézoomer, ajuster au panneau, taille
+  réelle et zoomer, avec le niveau affiché. Zoomé, l’appareil défile et la molette déplace la vue ;
+  on fait défiler l’app en glissant sur l’écran.
+- La zone de saisie demande « Que voulez-vous faire ? » sur l’accueil, propose « Répondre à … »
+  (avec le nom de l’agent) dans une conversation, et « Ajouter une suite… » pendant une réponse.
+- Remarques sur les modifications : dans l’onglet « Modifications », le « + » au survol d’une ligne
+  du diff ajoute une remarque (Maj-clic pour une plage) ; « Envoyer à l’agent » les envoie toutes
+  en un message qui cite le fichier, les lignes et le code. Elles sont gardées jusqu’à l’envoi.
 - ⌘F cherche dans la conversation ouverte (Édition › Rechercher…), sans tenir compte de la casse
-  ni des accents : résultats surlignés, compteur, ⌘G / ⇧⌘G pour passer de l'un à l'autre. Une
-  conversation trouvée par son contenu dans ⌘K s'ouvre directement sur les mots cherchés.
+  ni des accents : résultats surlignés, compteur, ⌘G / ⇧⌘G pour passer de l’un à l’autre. Une
+  conversation trouvée par son contenu dans ⌘K s’ouvre directement sur les mots cherchés.
 
 ### Corrections
 
-- Sans clé d'API enregistrée, Bobine ne demande plus le mot de passe du trousseau macOS au
-  lancement. Avec une clé, il n'est demandé qu'au démarrage de l'agent qui s'en sert, une fois par
+- Sans clé d’API enregistrée, Bobine ne demande plus le mot de passe du trousseau macOS au
+  lancement. Avec une clé, il n’est demandé qu’au démarrage de l’agent qui s’en sert, une fois par
   lancement.
-- Une boîte de confirmation d'une page du navigateur intégré ne bloque plus l'agent : ses outils
+- Une boîte de confirmation d’une page du navigateur intégré ne bloque plus l’agent : ses outils
   rendent la main, il sait que la page attend votre réponse, puis ce que vous avez répondu.
 - « Enregistrer sous » dit de quelle conversation vient le téléchargement. Pendant cette fenêtre ou
-  une boîte d'une page, la conversation est marquée « Attend votre réponse » dans la liste.
-- Le texte tapé après un choix dans un menu de la zone de saisie (mode, modèle…) n'est plus perdu :
+  une boîte d’une page, la conversation est marquée « Attend votre réponse » dans la liste.
+- Le texte tapé après un choix dans un menu de la zone de saisie (mode, modèle…) n’est plus perdu :
   le curseur revient dans la saisie, et les infobulles ne bloquent plus le clic.
-- L'accueil tient dans une fenêtre étroite.
+- L’accueil tient dans une fenêtre étroite.
 - « Faire confiance à ce dossier » devient le bouton principal de la carte « Dossier non
   approuvé ».
 - Menu Fenêtre en français : Minimiser, Réduire/agrandir, Tout ramener au premier plan.
 - Une branche de conversation (« Repartir de ce message ») reprend la page ouverte dans le
   navigateur.
 - Panneau agrandi : « Joindre cette page au message » affiche « Page jointe au message » dans
-  l'en-tête.
-- Annotation d'une image : un texte long revient à la ligne au lieu de sortir de l'image ;
+  l’en-tête.
+- Annotation d’une image : un texte long revient à la ligne au lieu de sortir de l’image ;
   Maj+Entrée pour aller à la ligne.
 - La liste des conversations ne bouge plus sous la souris : elle se réordonne quand le pointeur la
   quitte.
 - Le chronomètre du tour ne reprend plus la durée du tour précédent.
 - Le plan annoté se lit en entier : ses remarques ne cachent plus sa fin.
-- Après un redémarrage, l'onglet Modifications d'une conversation OpenCode liste de nouveau tous
+- Après un redémarrage, l’onglet Modifications d’une conversation OpenCode liste de nouveau tous
   les fichiers modifiés, même ceux qui ont changé depuis.
 - Une conversation dans un worktree travaille sur une branche `bobine/…` (et non plus `bob/…`).
-- Réglages › Agents et dossiers : « Comme la conversation en cours » s'affiche en entier.
-- Messages d'erreur sans préfixe technique : la cause seule, sans « Error invoking remote
+- Réglages › Agents et dossiers : « Comme la conversation en cours » s’affiche en entier.
+- Messages d’erreur sans préfixe technique : la cause seule, sans « Error invoking remote
   method… » ni « Error: » devant (onglets Simulateur, Android, Navigateur, Modifications, Aperçu,
-  Réglages, reprise d'une session, installation).
+  Réglages, reprise d’une session, installation).
 
 ### Sécurité
 
-- L'aperçu HTML cloisonne chaque dossier prévisualisé (une page ne peut plus lire les fichiers
-  d'un autre dossier ouvert dans la même session) et ne suit plus un lien symbolique vers un
+- L’aperçu HTML cloisonne chaque dossier prévisualisé (une page ne peut plus lire les fichiers
+  d’un autre dossier ouvert dans la même session) et ne suit plus un lien symbolique vers un
   fichier ou dossier caché (`.env`, `.git`…).
 
 ### Limites connues
 
-- Proxy d'entreprise : Bobine reprend du shell de connexion les variables `HTTPS_PROXY`,
+- Proxy d’entreprise : Bobine reprend du shell de connexion les variables `HTTPS_PROXY`,
   `HTTP_PROXY` et `NO_PROXY` écrites en majuscules ; leurs équivalents en minuscules ne sont pas
-  encore lus, et `localhost` n'est exclu automatiquement du proxy que pour celui réglé dans
+  encore lus, et `localhost` n’est exclu automatiquement du proxy que pour celui réglé dans
   Réglages › Agents. Un proxy local (PreProxy) déclaré en majuscules est pris en compte.
 
 ## 0.3.0 — 19 octobre 2026
 
 ### Nouveau
 
-- L'interface existe en anglais : Réglages › Général › Langue (Système, Français, English). Elle
+- L’interface existe en anglais : Réglages › Général › Langue (Système, Français, English). Elle
   change tout de suite, sans relancer ; vous écrivez aux agents dans la langue de votre choix.
 - La fenêtre du `.dmg` est en français et en anglais.
 - Journal réglable (Réglages › Diagnostic) : Normal, Détaillé (chaque échange avec les agents,
-  dans `agents.log`) ou Trace (avec des extraits, secrets masqués, jusqu'au prochain lancement),
+  dans `agents.log`) ou Trace (avec des extraits, secrets masqués, jusqu’au prochain lancement),
   pour comprendre un souci sans outil à part.
-- Planche contact : l'agent peut filmer la page du navigateur, le simulateur iOS ou l'émulateur
-  Android pendant un geste (défilement, transition, animation) et voir l'enchaînement en une
+- Planche contact : l’agent peut filmer la page du navigateur, le simulateur iOS ou l’émulateur
+  Android pendant un geste (défilement, transition, animation) et voir l’enchaînement en une
   seule image.
-- OpenCode 2 : le travail d'un sous-agent (ses outils, sa réponse) s'affiche en direct dans sa
-  carte « Sous-agent », au lieu de se mêler à la réponse de l'agent. Ses questions s'affichent
-  comme un questionnaire, et la suppression d'une session est proposée.
-- OpenCode 2 : les règles actives et les serveurs MCP suivent ses fichiers (`AGENTS.md` jusqu'au
+- OpenCode 2 : le travail d’un sous-agent (ses outils, sa réponse) s’affiche en direct dans sa
+  carte « Sous-agent », au lieu de se mêler à la réponse de l’agent. Ses questions s’affichent
+  comme un questionnaire, et la suppression d’une session est proposée.
+- OpenCode 2 : les règles actives et les serveurs MCP suivent ses fichiers (`AGENTS.md` jusqu’au
   dossier personnel, plus de `CLAUDE.md` ; serveurs au format `mcp.servers`). OpenCode 1 reste
   pris en charge.
-- La liste de tâches de l'agent reste affichée juste au-dessus de la zone de saisie pendant qu'il
+- La liste de tâches de l’agent reste affichée juste au-dessus de la zone de saisie pendant qu’il
   travaille, au lieu de remonter avec le fil ; un clic la replie sur une ligne. Les tâches faites
   sont cochées et grisées, plus barrées.
-- L'onglet Android montre l'émulateur dans un vrai téléphone ou une vraie tablette, de votre
-  couleur d'accent (Réglages › Général), tourné comme l'appareil en paysage. On y glisse pour
+- L’onglet Android montre l’émulateur dans un vrai téléphone ou une vraie tablette, de votre
+  couleur d’accent (Réglages › Général), tourné comme l’appareil en paysage. On y glisse pour
   balayer, la molette fait défiler, un appui long tient le toucher, et les boutons de la tranche
-  (marche/arrêt, volume) se cliquent. Son débit (images par seconde) s'affiche comme sur iOS.
-- Onglets iOS et Android : les commandes (Accueil, Retour, verrouillage, joindre l'écran au
-  message) sont dans une barre sous l'appareil.
-- Le panneau de droite s'agrandit à la place de la conversation (bouton ⤢, double-clic sur son
+  (marche/arrêt, volume) se cliquent. Son débit (images par seconde) s’affiche comme sur iOS.
+- Onglets iOS et Android : les commandes (Accueil, Retour, verrouillage, joindre l’écran au
+  message) sont dans une barre sous l’appareil.
+- Le panneau de droite s’agrandit à la place de la conversation (bouton ⤢, double-clic sur son
   bord, ou Affichage › Agrandir le panneau, ⇧⌘J) pour voir une page, un appareil ou des
-  modifications en grand. Il dit si l'agent travaille ou attend votre réponse ; un clic vous
+  modifications en grand. Il dit si l’agent travaille ou attend votre réponse ; un clic vous
   ramène à la conversation.
 - Ses onglets portent leur nom (« Navigateur », « Modifications 2 », « Tâches 3/5 ») et ne
   montrent que les outils qui servent dans la conversation ; les autres sont dans le menu « + ».
-  Un ✕ (ou un clic molette) retire un onglet sans arrêter l'outil ; il revient quand l'agent s'en
+  Un ✕ (ou un clic molette) retire un onglet sans arrêter l’outil ; il revient quand l’agent s’en
   sert à nouveau.
 
 ### Corrections
 
-- La flèche « Aller en bas » n'apparaît plus sur une conversation qui tient dans la page (par
+- La flèche « Aller en bas » n’apparaît plus sur une conversation qui tient dans la page (par
   exemple après avoir remonté un long fil puis ouvert une autre conversation).
-- OpenCode 2 : les outils de Bobine qu'il appelle depuis du code (« execute ») affichent de
-  nouveau ce qu'ils font et leurs captures, au lieu de « execute ».
-- Le fil suit de nouveau la fin de la réponse quand une image arrive dans une carte d'outil
-  (capture, planche contact) : la fin n'est plus cachée sous la zone de saisie.
-- Émulateur Android en paysage : l'écran n'est plus écrasé, et les touchers (les vôtres comme ceux
-  de l'agent) tombent au bon endroit.
-- L'iPhone de l'onglet iOS tient de nouveau en entier dans le panneau (il était coupé en bas).
-- Le menu « Réglages de la session » s'ouvre d'emblée à sa place : il ne saute plus de l'autre
-  côté de la zone de saisie quand ses règles arrivent, et le clic qui l'ouvre ne choisit plus,
-  parfois, une de ses lignes (une règle s'ouvrait en aperçu sans qu'on l'ait demandé).
+- OpenCode 2 : les outils de Bobine qu’il appelle depuis du code (« execute ») affichent de
+  nouveau ce qu’ils font et leurs captures, au lieu de « execute ».
+- Le fil suit de nouveau la fin de la réponse quand une image arrive dans une carte d’outil
+  (capture, planche contact) : la fin n’est plus cachée sous la zone de saisie.
+- Émulateur Android en paysage : l’écran n’est plus écrasé, et les touchers (les vôtres comme ceux
+  de l’agent) tombent au bon endroit.
+- L’iPhone de l’onglet iOS tient de nouveau en entier dans le panneau (il était coupé en bas).
+- Le menu « Réglages de la session » s’ouvre d’emblée à sa place : il ne saute plus de l’autre
+  côté de la zone de saisie quand ses règles arrivent, et le clic qui l’ouvre ne choisit plus,
+  parfois, une de ses lignes (une règle s’ouvrait en aperçu sans qu’on l’ait demandé).
 
 ## 0.2.0 — 16 octobre 2026
 
 ### Nouveau
 
-- Bob Desktop s'appelle désormais **Bobine**, avec sa nouvelle icône. L'historique et les
-  réglages de l'ancien nom sont repris au premier lancement.
-- Le `.dmg` s'ouvre sur une fenêtre illustrée. Double-cliquez sur Bobine : elle propose de
-  s'installer elle-même, pour tous les utilisateurs du Mac ou pour vous seul (dans le dossier
-  Applications de votre dossier personnel, sans droits d'administrateur).
-- Fenêtre rapide (⌥⌘B) : écrire à l'agent depuis n'importe quelle app, capture d'écran comprise.
-- Joindre au message la page du navigateur intégré ou l'écran d'un simulateur, et annoter une
-  image avant de l'envoyer.
+- Bob Desktop s’appelle désormais **Bobine**, avec sa nouvelle icône. L’historique et les
+  réglages de l’ancien nom sont repris au premier lancement.
+- Le `.dmg` s’ouvre sur une fenêtre illustrée. Double-cliquez sur Bobine : elle propose de
+  s’installer elle-même, pour tous les utilisateurs du Mac ou pour vous seul (dans le dossier
+  Applications de votre dossier personnel, sans droits d’administrateur).
+- Fenêtre rapide (⌥⌘B) : écrire à l’agent depuis n’importe quelle app, capture d’écran comprise.
+- Joindre au message la page du navigateur intégré ou l’écran d’un simulateur, et annoter une
+  image avant de l’envoyer.
 - Diagrammes Mermaid dessinés dans la conversation.
 - Aperçu des pages HTML du projet dans le navigateur intégré.
-- Navigateur intégré : les fenêtres de connexion (Google…) s'ouvrent quand vous cliquez vous-même ;
+- Navigateur intégré : les fenêtres de connexion (Google…) s’ouvrent quand vous cliquez vous-même ;
   « Effacer les données du navigateur » et « Garder les cookies du navigateur » dans
   Réglages › Général.
 - « Toujours autoriser » un site, « Toujours dans ce projet » pour une commande ou une
   compilation : retenus, listés et révocables dans Réglages › Agents.
 - Diagnostic intégré (Réglages › Diagnostic, ou Aide › Diagnostic…).
-- Serveurs MCP : bouton « Tester » et pastille d'état dans les réglages.
+- Serveurs MCP : bouton « Tester » et pastille d’état dans les réglages.
 - Un son quand un agent attend une action et que la fenêtre est en arrière-plan.
 - Installation sans accès à Internet, avec un Electron et AXe obtenus ailleurs.
 - Ces nouveautés, dans Réglages › À propos.
 
 ### Sécurité
 
-- Les outils de Bobine ne sont autorisés d'office que si l'agent les nomme exactement.
-- « Ouvrir » dans l'onglet Modifications ne lance plus un fichier exécutable écrit par l'agent :
+- Les outils de Bobine ne sont autorisés d’office que si l’agent les nomme exactement.
+- « Ouvrir » dans l’onglet Modifications ne lance plus un fichier exécutable écrit par l’agent :
   il est seulement montré dans le Finder.
 - Electron 44.7.2 (correctifs de sécurité de Chromium).
 
 ### Corrections
 
-- Les réponses de l'agent utilisent la police de l'app, avec des titres et des traits sobres.
-- Dialogues et menus ne perdent plus de clics sous la barre de titre ; l'app reste cliquable après
+- Les réponses de l’agent utilisent la police de l’app, avec des titres et des traits sobres.
+- Dialogues et menus ne perdent plus de clics sous la barre de titre ; l’app reste cliquable après
   un menu.
-- Une conversation vide abandonnée ne laisse plus de session chez l'agent.
+- Une conversation vide abandonnée ne laisse plus de session chez l’agent.
 - Réglages : en-tête fixe et fenêtre plus grande.
 - Menu « / » : on voit avec quels agents une commande fonctionne.
-- App plus légère d'environ 55 Mo.
+- App plus légère d’environ 55 Mo.
 
 ## 0.1.1 — 14 octobre 2026
 
@@ -1464,9 +1464,9 @@ Première version publiée (`.dmg` sur GitHub), sous le nom Bob Desktop.
   modifications, annulables fichier par fichier.
 - Plan annoté : remarques sur les passages, versions comparées, exécution.
 - Conversations en parallèle dans des worktrees git, côte à côte.
-- Panneaux pilotés par l'agent : navigateur intégré, simulateur iOS, émulateur Android, terminal,
+- Panneaux pilotés par l’agent : navigateur intégré, simulateur iOS, émulateur Android, terminal,
   serveurs de développement, liste de tâches.
-- Commandes « / » de l'agent, de l'app, personnelles et du projet ; mentions `@` de fichiers.
-- Serveurs MCP de Bob et d'OpenCode gérés depuis les réglages ; clés d'API chiffrées dans le
+- Commandes « / » de l’agent, de l’app, personnelles et du projet ; mentions `@` de fichiers.
+- Serveurs MCP de Bob et d’OpenCode gérés depuis les réglages ; clés d’API chiffrées dans le
   trousseau.
 - Notifications, thèmes (dont Sépia et Nuit noire), polices, raccourcis clavier.
