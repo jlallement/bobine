@@ -2,7 +2,7 @@
 
 Ce qui change pour l'utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## Prochaine version
+## 1.0.0-rc.2 — 20 novembre 2026
 
 ### Nouveautés
 

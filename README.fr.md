@@ -34,7 +34,7 @@
 
 <p align="center"><a href="docs/images/readme/fr/demo.mp4">▶ Voir la démo de 20 secondes</a></p>
 
-> **Version candidate (1.0.0-rc.1).** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
+> **Version candidate (1.0.0-rc.2).** Bobine sert tous les jours à son auteur, mais encore à peu de monde :
 > attendez-vous à des aspérités et [signalez-les](https://github.com/jlallement/bobine/issues/new/choose).
 > L'app n'est **pas notarisée par Apple** : macOS demande une étape de plus à la première
 > ouverture ([voir Installer](#installer)).
