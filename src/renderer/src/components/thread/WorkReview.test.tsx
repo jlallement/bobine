@@ -330,7 +330,11 @@ describe('relecture par le Code reviewer (fiche 265)', () => {
     view(reviewedHere(), subtasks)
     expect(screen.getByTestId('work-reply').textContent).toBe('Répondre à Code reviewer')
     fireEvent.click(screen.getByTestId('work-reply'))
-    expect(received).toHaveBeenCalledWith('code-reviewer', { replyTo: 'r', role: reviewer })
+    expect(received).toHaveBeenCalledWith('code-reviewer', {
+      replyTo: 'r',
+      role: reviewer,
+      motherId: 'mere'
+    })
     stop()
     fireEvent.click(screen.getByTestId('work-open'))
     expect(subtasks.onOpen).toHaveBeenCalledWith('r')

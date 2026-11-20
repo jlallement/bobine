@@ -664,7 +664,11 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     const stop = onRoleInvoked(received)
     view(answered(), info([child('a', ux)]))
     fireEvent.click(screen.getByTestId('work-reply'))
-    expect(received).toHaveBeenCalledWith('ux-ui-expert', { replyTo: 'a', role: ux })
+    expect(received).toHaveBeenCalledWith('ux-ui-expert', {
+      replyTo: 'a',
+      role: ux,
+      motherId: 'mere'
+    })
     stop()
     expect(screen.getAllByTestId('work-card')).toHaveLength(1)
     expect(screen.getAllByTestId('role-request')).toHaveLength(1)

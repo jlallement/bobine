@@ -266,6 +266,9 @@ export function useRoleCompose(options: {
     })
   }
   useRoleInvoked(roles, (name, invoked) => {
+    // La suite d'un travail d'une autre conversation (affichée côte à côte) : pas pour cette
+    // saisie, ni son focus (fiche 267, F8).
+    if (invoked.motherId && invoked.motherId !== roles?.motherId) return
     if (!roles?.invokable) return options.onWarn(i18next.t('team.notHere'))
     if (invoked.replyTo && roles.reply) {
       // La suite d'un travail va à lui seul : les autres jetons partent.

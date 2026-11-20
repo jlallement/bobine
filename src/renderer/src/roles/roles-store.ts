@@ -70,6 +70,11 @@ export function closeRoleWizard(): void {
 export interface RoleInvokeOptions {
   replyTo?: string
   /**
+   * La conversation d'origine du travail `replyTo` (fiche 267, F8) : seule sa saisie reçoit le
+   * jeton et le focus — pas celle d'une autre conversation affichée côte à côte.
+   */
+  motherId?: string
+  /**
    * Le rôle du travail tel que sa carte le connaît : son jeton s'affiche même si le rôle a été
    * désactivé ou supprimé depuis (la suite va au travail, jamais à l'agent principal).
    */

@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
+import type { RoleBadge } from '@shared/roles'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { ipcErrorText } from '../../ipc-errors'
@@ -138,7 +139,7 @@ export function WorkFoot({
             <button
               type="button"
               className="btn ghost small"
-              onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+              onClick={() => replyTo(role, card, info)}
               data-testid="work-reply"
             >
               <Reply size={13} aria-hidden />
@@ -388,7 +389,7 @@ function SettledActions({
         <button
           type="button"
           className="btn small"
-          onClick={() => invokeRole(role.name, { replyTo: card.childId, role })}
+          onClick={() => replyTo(role, card, info)}
           data-testid="work-reply"
         >
           <Reply size={13} aria-hidden />
@@ -488,4 +489,16 @@ function WriterActions({
       )}
     </>
   )
+}
+
+/**
+ * « Répondre à <rôle> » : le jeton de suite dans la saisie de la conversation d'origine du
+ * travail, qui prend le focus (fiche 267, F8).
+ */
+function replyTo(role: RoleBadge, card: WorkCardData, info: SubtasksInfo | undefined): void {
+  invokeRole(role.name, {
+    replyTo: card.childId,
+    role,
+    ...(info?.motherId ? { motherId: info.motherId } : {})
+  })
 }

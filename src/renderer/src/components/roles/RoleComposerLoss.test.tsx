@@ -38,7 +38,7 @@ const role = (name: string, label: string, readOnly: boolean): RoleView => ({
 const ROLES = [role('ux-ui-expert', 'Expert UX/UI', true), role('tech-lead', 'Tech lead', false)]
 
 /** Dépôt sans commit et non propre : le cas de la recette. */
-const NO_COMMIT: LaunchFolderState = { place: 'here', root: '/tmp/courses' }
+const NO_COMMIT: LaunchFolderState = { place: 'here', reason: 'noCommit' }
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {}
