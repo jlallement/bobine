@@ -51,6 +51,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Invite de l’adresse du navigateur jamais coupée ; Discussion : plus de navigateur sans son onglet ;
   bouton de la barre latérale nommé pour VoiceOver.
 - `fichier:ligne` écrit en code dans une réponse s’ouvre d’un clic.
+- Un lien vers un fichier sans dossier suivi d’une ligne (`liste.js:9`), en lien ou en code, s’ouvre
+  au clic : il ne restait plus souligné sans rien faire.
 - Carte du plan suivie de son pied (heure, durée) ; ligne « fichiers non commités » de l’onglet
   Session sur une ligne ; `@git-changes` et `@terminal` rangés sous « Contexte » dans le menu `@`.
 - Menu `/` : les commandes de Bobine portent le nom de l’agent de la conversation seul.

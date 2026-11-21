@@ -1207,13 +1207,14 @@ export const scenarios: Record<string, Scenario> = {
   },
   'liens-fichiers': {
     description:
-      'Réponse avec des liens vers des fichiers du dossier (plan.md, code, exécutable, dossier) et un lien web (fiche 052)',
+      'Réponse avec des liens vers des fichiers du dossier (plan.md, code, exécutable, dossier), un chemin sans dossier en code (`liste.js:2`) et un lien web (fiches 052, 272)',
     steps: [
       {
         kind: 'text',
         text:
           'J’ai préparé [le plan](plan.md) ; le point d’entrée est [src/app.ts:3](src/app.ts:3).\n\n' +
           'Le script [outil.command](outil.command) est prêt, la documentation est dans [docs](docs).\n\n' +
+          'La ligne modifiée est `liste.js:2`.\n\n' +
           'Voir aussi [la page du projet](https://example.com).'
       }
     ]

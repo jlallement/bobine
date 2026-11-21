@@ -30,6 +30,7 @@ export async function linksSuite(scheme) {
     join(workspace, 'src', 'app.ts'),
     'export const a = 1\nexport const b = 2\nexport const c = 3\n'
   )
+  writeFileSync(join(workspace, 'liste.js'), 'const liste = []\nliste.push(1)\n')
   writeFileSync(join(workspace, 'outil.command'), 'echo non\n')
   chmodSync(join(workspace, 'outil.command'), 0o755)
   const log = join(workspace, '..', `ouvertures-${scheme}-${Date.now()}.log`)
@@ -44,7 +45,7 @@ export async function linksSuite(scheme) {
         await ui.ready()
         await ui.send('Montre les fichiers')
         await ui.ready()
-        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 4`)
+        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 5`)
         check(true, 'liens de fichiers reconnus (le lien web reste un lien web)')
 
         const fileView = `document.querySelector('[data-testid=file-view]')`
@@ -73,6 +74,16 @@ export async function linksSuite(scheme) {
             await new Promise((r) => setTimeout(r, 100))
           return opened().includes(line)
         }
+        // Chemin sans dossier écrit en code (`liste.js:2`, fiche 272) : un lien de fichier comme
+        // les autres ; avant, `liste.js:` passait pour un schéma et l'adresse était vidée.
+        await ui.click(link('liste.js:2'))
+        await ui.waitFor(
+          `${fileView}?.dataset.path === 'liste.js' && document.querySelector('[data-testid=file-code]')?.dataset.asked === '2'`
+        )
+        check(
+          opened().length === 0,
+          'chemin sans dossier en code (`liste.js:2`) : dans l’onglet Fichiers, à la ligne'
+        )
         await ui.click(link('docs'))
         check(await waitLog(`reveal ${join(workspace, 'docs')}`), 'dossier : montré dans le Finder')
         await ui.click(link('outil.command'))

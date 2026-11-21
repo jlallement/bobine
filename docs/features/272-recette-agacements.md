@@ -109,6 +109,14 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   le tour, double clic), G7 (ordre des envois), et mineurs (libellé « conversation supprimée »,
   binaire, glossaire, `navigator.languages`, portée de l'essai de G3).
 
+- 2026-11-21 — Lien `fichier:ligne` sans dossier (`liste.js:17`, en code ou en lien Markdown) :
+  souligné, mais le clic ne faisait rien. react-markdown passe chaque adresse à `urlTransform`
+  après les plugins ; `defaultUrlTransform` prenait `liste.js:` pour un schéma inconnu et vidait
+  l'adresse (défaut de la 1.0 pour `[x](liste.js:9)`, étendu par les liens en code). Une seule
+  règle, `isPathNotScheme` (`@shared/file-links`), lue par `parseFileLink` et par le rendu
+  Markdown. Essais : `Markdown.test.tsx` (les deux formes, échouait avant), e2e `links`
+  (`liste.js:2` en code : app par défaut, notée dans le journal des ouvertures).
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent
