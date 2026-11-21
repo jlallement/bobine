@@ -6,6 +6,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- A message sent right after **New conversation** or **New discussion**, while the agent is still
+  starting, is no longer ignored: it stays in the input and is sent on its own as soon as the agent
+  is ready. If the agent first asks you to log in, it simply stays in the input.
 - A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
   turn summary and in Changes › Conversation, marked “modified”, “no line counts” rather than
   “+0 −0”; the Git view shows its actual state.

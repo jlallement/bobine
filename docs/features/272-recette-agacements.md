@@ -125,6 +125,34 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   de `urlTransform` (`javascript.js:1` gardé et ouvert par l'app, `javascript:`, `JaVaScRiPt:`,
   `vbscript:`, `data:` vidés, `C:/…` selon `windowsPaths`) et d'une durée bornée.
 
+- 2026-11-21 — Premier envoi d’un nouveau fil (pilote, OpenCode) : juste après « Nouvelle
+  conversation » ou « Nouvelle discussion », une Entrée dans la première seconde ne faisait rien,
+  texte laissé dans la saisie, sans aucun signe. Cause : le main ne rend la vue du nouveau fil
+  (`create` → `activate`) qu’une fois l’agent démarré, et le renderer écarte les évènements d’une
+  conversation sans vue ; la saisie a donc `snapshot` nul, puis `starting`, et `canSendNow` est
+  faux : `sendToConversation` rendait la main sans rien dire. Déjà le cas dans la rc.2 (mêmes
+  `canSendNow` et `activate`). `send-order.ts` et `draft-discard.ts` n’y sont pour rien.
+  Correctif, renderer seul (`usePendingSend`) : Entrée ou Envoyer pendant le démarrage d’une
+  conversation connue (`draftKey`) retient l’envoi ; le texte reste dans la saisie, le bouton
+  Envoyer passe grisé ; dès que l’agent est prêt (ou répond), l’envoi part par le chemin normal,
+  une seule fois. L’attente tombe, texte gardé comme dans la rc.2, si le texte ou les pièces
+  jointes changent, si la conversation change, si le démarrage finit autrement (connexion
+  demandée, échec, lecture seule) ou si la saisie est démontée. Essais : `Composer.test.tsx`
+  (envoi unique à `ready`, double Entrée, texte modifié, `needs-action`, autre conversation ;
+  échouaient avant), e2e `composer` (`firstSendWhileStarting` : démarrage lent de 1,5 s, Code et
+  Discussion, puis `bob-auth-requise` : texte resté, fil vide).
+  Approche abandonnée (gardée pour la 1.1 dans la branche `fix/rc3-premier-envoi-abandon-1.1`) :
+  accepter l’envoi tout de suite et laisser le main attendre le démarrage. La saisie se vidait
+  sans rien montrer (l’utilisateur retape, envoi en double) ; un message refusé ensuite
+  (`needs-action`, courant avec Bob) se perdait, ce qui a demandé une marque « pas parti » sur
+  tout le chemin main/IPC, fragile (un `catch` global) ; un changement de conversation avant la
+  fin du démarrage jetait le brouillon, et le message partait dans une session invisible. Elle
+  échouait aussi en Discussion à l’e2e : le message partait, mais sa bulle n’apparaissait jamais.
+  Cause : l’évènement « message de l’utilisateur » arrivait avant la vue du fil, donc écarté, et
+  la vue, prise un instant plus tôt, ne le contenait pas (course entre les deux voies, gagnée par
+  hasard en Code). La nouvelle approche n’envoie qu’une fois la vue chargée : elle n’y est pas
+  exposée.
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent

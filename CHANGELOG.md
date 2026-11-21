@@ -6,6 +6,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Un message envoyé juste après **Nouvelle conversation** ou **Nouvelle discussion**, pendant que
+  l’agent démarre, n’est plus ignoré : il reste dans la zone de saisie et part tout seul dès que
+  l’agent est prêt. Si l’agent demande d’abord une connexion, il reste simplement dans la saisie.
 - Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
   désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié », « sans
   totaux » plutôt qu’un « +0 −0 » ; la vue Git montre son état réel.
