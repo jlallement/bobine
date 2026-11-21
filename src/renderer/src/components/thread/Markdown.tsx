@@ -57,7 +57,6 @@ function Table({ node: _node, ...props }: ComponentProps<'table'> & { node?: unk
   )
 }
 
-/** Coloration des blocs de code (absente au-delà de la borne de l'onglet Fichiers). */
 /** Adresse d'un lien : un fichier gardé tel quel, le reste nettoyé par react-markdown. */
 function keepFileUrls(url: string): string {
   if (/^file:/i.test(url)) return url
@@ -65,6 +64,7 @@ function keepFileUrls(url: string): string {
   return defaultUrlTransform(url)
 }
 
+/** Coloration des blocs de code (absente au-delà de la borne de l'onglet Fichiers). */
 const COLORED: NonNullable<Options['rehypePlugins']> = [
   [rehypeHighlight, { detect: true, ignoreMissing: true }]
 ]

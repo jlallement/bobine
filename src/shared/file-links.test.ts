@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseFileLink, webLinkTarget } from './file-links'
+import { isPathNotScheme, parseFileLink, webLinkTarget } from './file-links'
 
 describe('parseFileLink (fiche 052)', () => {
   it('chemins relatifs, absolus, file://, lignes citées', () => {
@@ -76,5 +76,39 @@ describe('webLinkTarget (fiche 154)', () => {
     ]) {
       expect(webLinkTarget(href), String(href)).toBeUndefined()
     }
+  })
+})
+
+describe('isPathNotScheme (fiche 272, relecture)', () => {
+  it('fichier sans dossier suivi d’une ligne ; jamais une adresse `hôte:port`', () => {
+    for (const href of ['README.md:3', 'liste.js:17', 'deploy.sh:12', 'a.b.c.ts:4:2']) {
+      expect(isPathNotScheme(href), href).toBe(true)
+    }
+    for (const href of [
+      'example.com:8080',
+      '127.0.0.1:3000',
+      'docs.example.org:443',
+      'localhost:3000',
+      'javascript:alert(1)',
+      '.env:1',
+      'x.:1',
+      'src/a.ts:1'
+    ]) {
+      expect(isPathNotScheme(href), href).toBe(false)
+    }
+  })
+
+  it('Windows : `C:/x` et `C:\\x` seulement avec la capacité `windowsPaths`', () => {
+    expect(isPathNotScheme('C:/Users/a.ts')).toBe(false)
+    expect(isPathNotScheme('C:/Users/a.ts', { windowsPaths: true })).toBe(true)
+    expect(isPathNotScheme('C:\\Users\\a.ts', { windowsPaths: true })).toBe(true)
+  })
+
+  it('temps linéaire : une entrée géante pleine de points se lit vite (rendu en streaming)', () => {
+    const giant = ['.'.repeat(100_000), 'a.'.repeat(50_000) + ':x', 'a' + '.b'.repeat(50_000)]
+    const start = performance.now()
+    for (const href of giant) expect(isPathNotScheme(href)).toBe(false)
+    // Seuil large : la règle quadratique d'avant y passait plusieurs secondes.
+    expect(performance.now() - start).toBeLessThan(250)
   })
 })

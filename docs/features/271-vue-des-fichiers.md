@@ -637,6 +637,12 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
   - Mineur : les remarques sur des fichiers listées (Modifications, barre de l'onglet) disent leur
     ligne : `liste.js:9`, ou `liste.js:9-12` pour une plage.
 
+- **2026-11-21 — relecture des liens et du menu** : règle des liens `fichier:ligne` en temps
+  linéaire et jamais une adresse `hôte:port` (fiche 272, fusionnée) ; le menu contextuel d'une
+  ligne qui disparaît (fichier supprimé, dossier replié, racine changée) se ferme et ne se rouvre
+  pas quand la ligne revient (essai `FileTree.keys.test.tsx`, échouait avant) ; JSDoc de `COLORED`
+  rendue à sa place (`Markdown.tsx`).
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - Version **1.1** (pas dans la 1.0), développée sur une branche `1.1`.

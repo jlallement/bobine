@@ -142,6 +142,13 @@ export function FileTree(props: Props) {
     menuOpen.current = !!next
     setMenuState(next)
   }
+  // Ligne du menu disparue (fichier supprimé, dossier replié, racine changée) : le menu est oublié,
+  // il ne se rouvrira pas tout seul si la ligne revient (relecture).
+  const menuGone = !!menu && !items.some((row) => row.key === menu.key)
+  if (menuGone) setMenuState(null)
+  useEffect(() => {
+    if (!menu) menuOpen.current = false
+  }, [menu])
   const box = useRef<HTMLDivElement>(null)
   const current = items.find((row) => row.key === focused) ?? items.find((r) => r.key === selected)
   const tabStop = current?.key ?? items[0]?.key

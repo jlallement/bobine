@@ -91,3 +91,49 @@ describe('menu contextuel rouvert aussitôt fermé (e2e `files light`)', () => {
     expect(second.classList.contains('menu-open')).toBe(true)
   })
 })
+
+describe('menu d’une ligne qui disparaît (relecture)', () => {
+  it('ligne retirée : le menu se ferme ; revenue, il ne se rouvre pas tout seul', async () => {
+    const entries = (names: string[]) =>
+      treeRows(
+        [{ index: 0, name: 'app', path: '/p/app' }],
+        {
+          '0:': {
+            listing: { entries: names.map((n) => ({ name: n, path: n, kind: 'file' })), more: 0 }
+          }
+        },
+        new Set(['0:'])
+      )
+    const tree = (rows: ReturnType<typeof treeRows>) => (
+      <Tooltip.Provider>
+        <FileTree
+          rows={rows}
+          changed={new Set()}
+          exclusionFiles={[]}
+          actions={{
+            openDefault: vi.fn(),
+            reveal: vi.fn(),
+            copyRelative: vi.fn(),
+            copyAbsolute: vi.fn(),
+            absolute: (item) => `/p/app/${item.path}`
+          }}
+          onToggle={() => {}}
+          onOpen={() => {}}
+          onCollapseDir={() => {}}
+          onType={() => {}}
+        />
+      </Tooltip.Provider>
+    )
+    const view = render(tree(entries(['a.ts', 'b.ts'])))
+    const b = () =>
+      document.querySelector('[data-testid=file-row][data-path="b.ts"]') as HTMLElement
+    fireEvent.contextMenu(b(), { clientX: 40, clientY: 30 })
+    await screen.findByTestId('file-context-menu')
+    view.rerender(tree(entries(['a.ts'])))
+    expect(screen.queryByTestId('file-context-menu')).toBeNull()
+    view.rerender(tree(entries(['a.ts', 'b.ts'])))
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    expect(screen.queryByTestId('file-context-menu')).toBeNull()
+    expect(b().classList.contains('menu-open')).toBe(false)
+  })
+})

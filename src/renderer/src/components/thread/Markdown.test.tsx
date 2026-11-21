@@ -63,6 +63,48 @@ describe('Markdown', () => {
     ])
   })
 
+  it('pièges de `urlTransform` : un nom de fichier gardé, inerte ; les schémas dangereux vidés', () => {
+    const open = vi.fn()
+    render(
+      <FileLinksContext.Provider value={open}>
+        <Markdown
+          text={
+            '[f](javascript.js:1) [a](javascript:alert(1)) [b](JaVaScRiPt:alert(1)) ' +
+            '[c](vbscript:msgbox) [d](data:text/html,x) [e](example.com:8080) [g](127.0.0.1:3000)'
+          }
+        />
+      </FileLinksContext.Provider>
+    )
+    const href = (text: string) => screen.getByText(text).closest('a')?.getAttribute('href') ?? ''
+    // Un fichier qui s'appelle `javascript.js` : un lien de fichier, ouvert par l'app, jamais exécuté.
+    expect(href('f')).toBe('javascript.js:1')
+    fireEvent.click(screen.getByText('f'))
+    expect(open).toHaveBeenCalledWith('javascript.js:1', { reveal: false })
+    for (const text of ['a', 'b', 'c', 'd']) expect(href(text), text).toBe('')
+    // Une adresse `hôte:port` n'est pas un fichier (ni gardée comme tel, ni dite introuvable).
+    for (const text of ['e', 'g']) {
+      expect(screen.getByText(text).closest('[data-testid=file-link]'), text).toBeNull()
+    }
+  })
+
+  it('`C:/…` : un chemin sous Windows (`windowsPaths`), vidé ailleurs', () => {
+    const api = window.api
+    const text = '[w](C:/projet/a.ts)'
+    try {
+      const mac = render(<Markdown text={text} />)
+      expect(screen.getByText('w').closest('a')?.getAttribute('href')).toBe('')
+      mac.unmount()
+      window.api = {
+        ...api,
+        app: { ...(api as Partial<Window['api']>).app, features: { windowsPaths: true } }
+      } as unknown as Window['api']
+      render(<Markdown text={text} />)
+      expect(screen.getByText('w').closest('a')?.getAttribute('href')).toBe('C:/projet/a.ts')
+    } finally {
+      window.api = api
+    }
+  })
+
   it('GFM : listes de tâches et texte barré', () => {
     const { container } = render(<Markdown text={'- [x] fait\n- [ ] à faire\n\n~~barré~~'} />)
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2)

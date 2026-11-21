@@ -117,6 +117,14 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   Markdown. Essais : `Markdown.test.tsx` (les deux formes, échouait avant), e2e `links`
   (`liste.js:2` en code : app par défaut, notée dans le journal des ouvertures).
 
+- 2026-11-21 — Relecture de ce correctif : `isPathNotScheme` en temps linéaire (l'ancienne
+  expression revenait en arrière à chaque point : plusieurs secondes sur une entrée géante, à
+  chaque rendu en streaming) ; une adresse `hôte:port` (`example.com:8080`, `127.0.0.1:3000`) en
+  lien Markdown n'est plus prise pour un fichier : la règle d'adresse des chemins en code
+  (`pathLike`, `IP`, `HOST_TLD`) vit dans `@shared/file-links`, seul endroit ; essais des pièges
+  de `urlTransform` (`javascript.js:1` gardé et ouvert par l'app, `javascript:`, `JaVaScRiPt:`,
+  `vbscript:`, `data:` vidés, `C:/…` selon `windowsPaths`) et d'une durée bornée.
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent
