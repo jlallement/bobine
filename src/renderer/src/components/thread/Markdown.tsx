@@ -7,7 +7,9 @@ import { CopyButton } from '../common/CopyButton'
 import { isPathNotScheme } from '@shared/file-links'
 import { platformFeatures } from '../../platform-features'
 import { MarkdownLink } from './FileLink'
+import { remarkFrenchSpaces } from '../../help/remark-anchors'
 import { rehypeInlineFileCode } from './inline-file-code'
+import { useInlineFiles } from './useInlineFiles'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
 import { rehypeKnownLanguage, rehypeRememberLanguage, textOf } from './code-language'
@@ -76,26 +78,34 @@ const COLORED: NonNullable<Options['rehypePlugins']> = [
 export const Markdown = memo(function Markdown({
   text,
   streaming = false,
-  highlight = true
+  highlight = true,
+  french = false
 }: {
   text: string
   streaming?: boolean
   /** `false` : sans coloration (gros document de l'onglet Fichiers, même borne que la source). */
   highlight?: boolean
+  /**
+   * Texte français écrit à la main (Nouveautés) : espaces insécables posées à l'affichage dans les
+   * nœuds de texte seulement, jamais dans le code ni les adresses (fiche 126). Pas pour l'agent.
+   */
+  french?: boolean
 }) {
+  // Code en ligne vers un fichier : lien seulement si le fichier existe (fiche 272, rc.3).
+  const files = useInlineFiles(streaming)
   return (
     <div className="markdown">
       <ReactMarkdown
         // Liens `file://` gardés : ils désignent un fichier (fiche 052), comme `liste.js:17`, qui a
         // l'air d'un schéma (fiche 271) ; le reste comme d'habitude.
         urlTransform={keepFileUrls}
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={french ? [remarkGfm, remarkFrenchSpaces] : [remarkGfm]}
         rehypePlugins={[
           [rehypeKnownLanguage, { source: text, streaming }],
           ...(highlight ? COLORED : []),
           rehypeRememberLanguage,
-          // `fichier:ligne` en code : cliquable comme un lien de fichier (fiche 272).
-          rehypeInlineFileCode
+          // `fichier:ligne` en code : cliquable comme un lien de fichier, s'il existe (fiche 272).
+          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want }]
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.

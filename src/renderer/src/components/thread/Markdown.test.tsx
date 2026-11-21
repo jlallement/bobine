@@ -1,7 +1,30 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { FileLinkBase, FileLinksContext } from './FileLink'
+import { FileExistsContext, FileLinkBase, FileLinksContext } from './FileLink'
+import { FileChecks } from './file-checks'
 import { Markdown } from './Markdown'
+
+/** Fil d'une conversation dont le dossier contient `files` (mémoire neuve : rien de retenu). */
+function inThread(open: () => void, files: string[], children: ReactNode) {
+  const ui = (
+    <FileLinksContext.Provider value={open}>
+      <FileExistsContext.Provider
+        value={
+          new FileChecks((hrefs) =>
+            Promise.resolve({ existing: hrefs.filter((h) => files.includes(h)), unknown: [] })
+          )
+        }
+      >
+        {children}
+      </FileExistsContext.Provider>
+    </FileLinksContext.Provider>
+  )
+  return { ui }
+}
+
+/** Laisse passer la vérification (minuterie nulle, puis la réponse). */
+const settle = () => act(() => new Promise((done) => setTimeout(done, 0)))
 
 describe('Markdown', () => {
   it('liens vers le navigateur système, protocoles dangereux neutralisés', () => {
@@ -34,26 +57,30 @@ describe('Markdown', () => {
     expect(plain.container.textContent).toContain('const a = 1')
   })
 
-  it('`fichier:ligne` en code : lien de fichier ; une commande en code reste du texte (fiche 272)', () => {
+  it('`fichier:ligne` en code : lien de fichier ; une commande en code reste du texte (fiche 272)', async () => {
     const open = vi.fn()
-    render(
-      <FileLinksContext.Provider value={open}>
-        <Markdown text={'Voir `src/liste.js:5`, puis lancer `npm test`.\n\n```\nsrc/a.js:1\n```'} />
-      </FileLinksContext.Provider>
+    const { ui } = inThread(
+      open,
+      ['src/liste.js:5'],
+      <Markdown text={'Voir `src/liste.js:5`, puis lancer `npm test`.\n\n```\nsrc/a.js:1\n```'} />
     )
+    render(ui)
+    await settle()
     fireEvent.click(screen.getByText('src/liste.js:5'))
     expect(open).toHaveBeenCalledWith('src/liste.js:5', { reveal: false })
     expect(screen.getByText('npm test').closest('a')).toBeNull()
     expect(document.querySelector('pre a')).toBeNull()
   })
 
-  it('`fichier:ligne` sans dossier, en code ou en lien Markdown : le même lien de fichier', () => {
+  it('`fichier:ligne` sans dossier, en code ou en lien Markdown : le même lien de fichier', async () => {
     const open = vi.fn()
-    render(
-      <FileLinksContext.Provider value={open}>
-        <Markdown text={'La ligne modifiée est `liste.js:17`, voir [ici](liste.js:9).'} />
-      </FileLinksContext.Provider>
+    const { ui } = inThread(
+      open,
+      ['liste.js:17'],
+      <Markdown text={'La ligne modifiée est `liste.js:17`, voir [ici](liste.js:9).'} />
     )
+    render(ui)
+    await settle()
     expect(screen.getByText('liste.js:17').closest('a')?.getAttribute('href')).toBe('liste.js:17')
     fireEvent.click(screen.getByText('liste.js:17'))
     fireEvent.click(screen.getByText('ici'))
@@ -141,5 +168,28 @@ describe('Markdown', () => {
     // Sans personne pour les ouvrir (aperçu d'un message ailleurs), simples liens.
     render(<Markdown text={'[seul](seul.md)'} />)
     expect(screen.getByText('seul').dataset['testid']).toBeUndefined()
+  })
+
+  it('français (Nouveautés, fiche 272) : insécables dans le texte, jamais dans le code ni les adresses', () => {
+    const N = '\u00a0'
+    const text = [
+      '- Marqué « modifié » ; plutôt `code « x » ; y ?` : voir [la « page »](<https://exemple.org/a ?b>).',
+      '',
+      '```',
+      'bloc « z » !',
+      '```'
+    ].join('\n')
+    const { container } = render(<Markdown text={text} french />)
+    const item = container.querySelector('li') as HTMLElement
+    expect(item.textContent).toContain(`Marqué «${N}modifié${N}»${N}; plutôt`)
+    expect(item.textContent).toContain(`${N}: voir la «${N}page${N}».`)
+    expect(item.querySelector('code')?.textContent).toBe('code « x » ; y ?')
+    expect(container.querySelector('pre')?.textContent).toContain('bloc « z » !')
+    const href = container.querySelector('a')?.getAttribute('href') ?? ''
+    expect(href).toMatch(/^https:\/\/exemple\.org\/a/)
+    expect(href).not.toMatch(/\u00a0|%C2%A0/i)
+    // Sans `french` (anglais, fil de la conversation) : rien ne change.
+    const plain = render(<Markdown text={'Marqué « modifié » ;'} />)
+    expect(plain.container.textContent).toBe('Marqué « modifié » ;')
   })
 })

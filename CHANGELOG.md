@@ -17,8 +17,16 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   (⇧⌘J), le fichier et l’arbre côte à côte. Un lien `fichier:ligne` dans une réponse ouvre l’onglet
   à la ligne (⌘-clic : l’éditeur) ; « Parcourir les fichiers » sur un travail délégué.
 
+## 1.0.0-rc.3 — 21 novembre 2026
+
 ### Corrections
 
+- Panneau de droite : l’état vide de Modifications a sa marge et ne touche plus les bords ;
+  Mon activité ne montre plus un nom de mois coupé (« s » pour « mars ») ; dans les Nouveautés,
+  les guillemets et les signes « : ; ? ! » ne se séparent plus de leur mot en fin de ligne.
+- Un message envoyé juste après **Nouvelle conversation** ou **Nouvelle discussion**, pendant que
+  l’agent démarre, n’est plus ignoré : il reste dans la zone de saisie et part tout seul dès que
+  l’agent est prêt. Si l’agent demande d’abord une connexion, il reste simplement dans la saisie.
 - Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
   désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié », « sans
   totaux » plutôt qu’un « +0 −0 » ; la vue Git montre son état réel.
@@ -53,6 +61,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - `fichier:ligne` écrit en code dans une réponse s’ouvre d’un clic.
 - Un lien vers un fichier sans dossier suivi d’une ligne (`liste.js:9`), en lien ou en code, s’ouvre
   au clic : il ne reste plus souligné sans effet.
+- Un chemin écrit en code n’est souligné comme un lien que si le fichier existe dans le dossier de la
+  conversation : plus de lien vers un fichier à créer (`tests/liste.test.js`), relatif à un autre
+  fichier (`../liste.js`) ou hors du dossier de la conversation. Un fichier créé ensuite par l’agent
+  devient un lien dès que l’outil qui l’écrit se termine.
+- Un clic sur un lien vers un fichier introuvable n’empile plus un avis par clic, et le pied du tour
+  (heure, durée, fichiers) reste visible.
 - Carte du plan suivie de son pied (heure, durée) ; ligne « fichiers non commités » de l’onglet
   Session sur une ligne ; `@git-changes` et `@terminal` rangés sous « Contexte » dans le menu `@`.
 - Menu `/` : les commandes de Bobine portent le nom de l’agent de la conversation seul.
@@ -60,6 +74,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   rien.
 - Plusieurs rôles pour un même message : chaque travail porte le nom de son rôle ; en anglais, les
   rôles fournis gardent leur nom anglais dans le fil.
+- Sous Windows, un git installé dans « Program Files » est bien reconnu quand il manque ou que le
+  dossier du projet a disparu : un message clair plutôt que l’erreur brute « spawn … ENOENT ».
 
 ## 1.0.0-rc.2 — 20 novembre 2026
 

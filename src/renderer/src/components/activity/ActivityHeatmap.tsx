@@ -289,8 +289,10 @@ function MonthLabels({
       text: shown.toLocaleDateString(currentLocale(), { month: 'short' })
     })
   }
-  // À moitié sous le bord gauche de la vue : coupée, elle se lirait « 's » ; pas montrée.
-  const shown = labels.filter(({ c }) => c * STEP >= hidden - 1 || c * STEP + MONTH_LABEL <= hidden)
+  // Commencée sous le bord gauche de la vue : coupée, elle se lirait « s » ; pas montrée. `hidden`
+  // est arrondi à la colonne supérieure : il dit sûrement où commence la vue, pas où finit une
+  // étiquette cachée, qui ne se montre donc jamais (recette, « s » pour « mars »).
+  const shown = labels.filter(({ c }) => c * STEP >= hidden)
   return shown.map(({ c, text }) => {
     const atEnd = c * STEP + MONTH_LABEL > width
     return (

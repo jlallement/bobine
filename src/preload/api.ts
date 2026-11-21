@@ -612,6 +612,8 @@ export function createApi(
     fileLinks: {
       open: (id: string, href: string, options?: { base?: string; reveal?: boolean }) =>
         invoke('files:openLink', id, href, ...(options ? [options] : [])),
+      existing: (id: string, hrefs: string[], base?: string) =>
+        invoke('files:existing', id, hrefs, ...(base !== undefined ? [base] : [])),
       readMarkdown: (id: string, path: string) => invoke('files:readMarkdown', id, path)
     },
     /** Vue des fichiers du dossier (fiche 271) : lecture seule, chemins vérifiés par le main. */

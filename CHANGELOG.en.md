@@ -16,8 +16,16 @@ What changes for you, version by version. Shown in Settings › About.
   Maximized (⇧⌘J), the file and the tree side by side. A `file:line` link in a reply opens the
   tab at that line (⌘-click: your editor); “Browse files” on delegated work.
 
+## 1.0.0-rc.3 — November 21, 2026
+
 ### Fixes
 
+- Side panel: the empty Changes view has its margin and no longer touches the edges; My activity
+  no longer shows a clipped month name; in What’s new (French), quotes and “: ; ? !” no longer
+  break away from their word at the end of a line.
+- A message sent right after **New conversation** or **New discussion**, while the agent is still
+  starting, is no longer ignored: it stays in the input and is sent on its own as soon as the agent
+  is ready. If the agent first asks you to log in, it simply stays in the input.
 - A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
   turn summary and in Changes › Conversation, marked “modified”, “no line counts” rather than
   “+0 −0”; the Git view shows its actual state.
@@ -49,6 +57,12 @@ What changes for you, version by version. Shown in Settings › About.
 - `file:line` written as code in a response opens with a click.
 - A link to a file without a folder followed by a line (`list.js:9`), as a link or as code, opens on
   click: it no longer stays underlined with no effect.
+- A path written as code is underlined as a link only if the file exists in the conversation’s
+  folder: no more links to a file yet to be created (`tests/list.test.js`), relative to another
+  file (`../list.js`) or outside the conversation’s folder. A file the agent creates later becomes
+  a link as soon as the tool writing it finishes.
+- Clicking a link to a missing file no longer stacks one notice per click, and the turn’s foot
+  (time, duration, files) stays visible.
 - The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on
   one line; `@git-changes` and `@terminal` sit under “Context” in the `@` menu.
 - `/` menu: Bobine’s commands show the conversation’s agent only.
@@ -56,6 +70,8 @@ What changes for you, version by version. Shown in Settings › About.
   nothing.
 - Several roles for one message: each task is named after its role; in English, built-in roles keep
   their English names in the thread.
+- On Windows, a git installed under “Program Files” is now recognised when it’s missing or when the
+  project folder is gone: a clear message instead of the raw “spawn … ENOENT” error.
 
 ## 1.0.0-rc.2 — November 20, 2026
 

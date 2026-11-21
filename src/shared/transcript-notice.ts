@@ -6,7 +6,7 @@
  */
 import type { ParseKeys } from 'i18next'
 import type { AgentEvent, AgentSnapshot, AppToolsState, NoticeLevel } from './agent'
-import { translate, type Message } from './i18n/message'
+import { isMessage, translate, type Message } from './i18n/message'
 import type { TranscriptItem, TranscriptState } from './transcript'
 
 /** Action proposée par un avis : redémarrer l'agent (comme dans le menu ⚙). */
@@ -34,6 +34,14 @@ export interface TranscriptNotice {
    * refus.
    */
   refusal?: true
+  /**
+   * Avis de l'interface elle-même (un appel refusé, un fichier introuvable au clic — recette de la
+   * rc.3) : il ne dit rien du tour, qui garde son pied (`endedBadly`), et le même avis redonné
+   * dans le tour remplace le précédent au lieu de s'empiler. Jamais écrit sur disque : seul le
+   * renderer en crée, dans son propre état du fil ; le main, qui enregistre et exporte les fils,
+   * ne le reçoit pas (rechargé, le fil ne l'a plus).
+   */
+  local?: true
 }
 
 /**
@@ -46,6 +54,57 @@ export function withoutRefusal(state: TranscriptState): TranscriptState {
 }
 
 const isRefusal = (item: TranscriptItem): boolean => item.kind === 'notice' && item.refusal === true
+
+/**
+ * Le fil sans l'avis local le plus récent du tour en cours identique à `event` (niveau, titre,
+ * texte) ; même état s'il n'y en a pas. Les tours d'avant gardent les leurs.
+ */
+function withoutLastSameLocal(
+  state: TranscriptState,
+  event: Extract<AgentEvent, { type: 'notice' }>
+): TranscriptState {
+  if (typeof event.message !== 'string') return state
+  const turnStart = state.items.findLastIndex((item) => item.kind === 'user') + 1
+  const same = state.items.findLastIndex(
+    (item, index) =>
+      index >= turnStart &&
+      item.kind === 'notice' &&
+      item.local === true &&
+      item.level === event.level &&
+      item.title === event.title &&
+      item.text === event.message
+  )
+  if (same < 0) return state
+  return { ...state, items: state.items.filter((_, index) => index !== same) }
+}
+
+/**
+ * Avis venu de l'agent ou de l'app (`notice`). Un avis de refus remplace le précédent (fiche 259) ;
+ * un avis de l'interface redonné à l'identique dans le même tour (deux clics sur un fichier
+ * introuvable — recette de la rc.3) remplace le sien : un seul, en bas.
+ */
+export function reduceNotice(
+  state: TranscriptState,
+  event: Extract<AgentEvent, { type: 'notice' }>
+): TranscriptState {
+  const { message } = event
+  const kept = event.refusal
+    ? withoutRefusal(state)
+    : event.local
+      ? withoutLastSameLocal(state, event)
+      : state
+  const item: TranscriptItem = {
+    kind: 'notice',
+    id: kept.nextId,
+    level: event.level,
+    ...(isMessage(message) ? { message } : { text: message }),
+    ...(event.title ? { title: event.title } : {}),
+    ...(event.link ? { link: event.link } : {}),
+    ...(event.refusal ? { refusal: true as const } : {}),
+    ...(event.local ? { local: true as const } : {})
+  }
+  return { ...kept, items: [...kept.items, item], nextId: kept.nextId + 1 }
+}
 
 /** Texte d'un avis du fil, dans la langue courante. */
 export const noticeText = (notice: { message?: Message; text?: string }): string =>

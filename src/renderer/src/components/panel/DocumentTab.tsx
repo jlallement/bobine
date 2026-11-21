@@ -2,7 +2,13 @@ import { ExternalLink, FileText, FolderOpen, RefreshCw, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { openOutcomeNote, type MarkdownDocument } from '@shared/file-links'
 import type { TranscriptItem } from '@shared/transcript'
-import { FileLinkBase, FileLinksContext, type OpenFileLink } from '../thread/FileLink'
+import {
+  FileExistsContext,
+  FileLinkBase,
+  FileLinksContext,
+  type OpenFileLink
+} from '../thread/FileLink'
+import { useFileChecker } from '../thread/ConversationScope'
 import { Markdown } from '../thread/Markdown'
 import { Tip } from '../common/Menus'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +37,8 @@ export function DocumentTab({
 }) {
   const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
+  // Code en ligne du document : lien vers un fichier qui existe, relatif au document (fiche 272).
+  const checkFiles = useFileChecker(conversationId)
   const { path } = document
   const refresh = useCallback(() => {
     window.api.fileLinks
@@ -99,9 +107,11 @@ export function DocumentTab({
       {error && <div className="browser-error">{error}</div>}
       <div className="document-body msg-agent" data-testid="document-body">
         <FileLinksContext.Provider value={onOpenLink}>
-          <FileLinkBase.Provider value={document.dir}>
-            <Markdown text={document.text} />
-          </FileLinkBase.Provider>
+          <FileExistsContext.Provider value={checkFiles}>
+            <FileLinkBase.Provider value={document.dir}>
+              <Markdown text={document.text} />
+            </FileLinkBase.Provider>
+          </FileExistsContext.Provider>
         </FileLinksContext.Provider>
         {document.truncated && <p className="document-truncated">{t('document.truncated')}</p>}
       </div>

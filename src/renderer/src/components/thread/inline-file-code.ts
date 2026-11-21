@@ -1,7 +1,8 @@
 /**
  * Chemin `fichier:ligne` écrit en code dans une réponse (`src/liste.js:5`) : lien de fichier, comme
  * les mêmes références dans les remarques du relecteur (fiche 272, recette). Seulement ce qui a
- * l'air d'un chemin avec une extension : jamais une commande, ni un mot, ni une adresse.
+ * l'air d'un chemin avec une extension : jamais une commande, ni un mot, ni une adresse ; et
+ * seulement vers un fichier qui existe dans le dossier de la conversation (recette de la rc.3).
  */
 
 import { pathLike } from '@shared/file-links'
@@ -36,19 +37,37 @@ export function inlineFileHref(text: string): string | undefined {
 const textOf = (node: HastNode): string =>
   node.type === 'text' ? (node.value ?? '') : (node.children ?? []).map(textOf).join('')
 
-function wrap(node: HastNode): void {
+/** Ce que le plugin demande au fil : l'existence des fichiers cités (fiche 272, rc.3). */
+export interface InlineFileOptions {
+  /** Vrai seulement pour un fichier qui existe ; `undefined` tant qu'on ne sait pas. */
+  isFile?: (href: string) => boolean | undefined
+  /** Chemin candidat, à vérifier. */
+  want?: (href: string) => void
+}
+
+function wrap(node: HastNode, options: InlineFileOptions): void {
   if (!node.children || node.tagName === 'pre' || node.tagName === 'a') return
   node.children = node.children.map((child) => {
     if (child.type === 'element' && child.tagName === 'code') {
       const href = inlineFileHref(textOf(child))
-      if (href) return { type: 'element', tagName: 'a', properties: { href }, children: [child] }
+      if (href) {
+        options.want?.(href)
+        // Un fichier à créer, ou un chemin relatif à un autre fichier : pas un lien qui ne mène
+        // nulle part ; tant qu'on ne sait pas, du code.
+        if (options.isFile?.(href) === true) {
+          return { type: 'element', tagName: 'a', properties: { href }, children: [child] }
+        }
+      }
     }
-    wrap(child)
+    wrap(child, options)
     return child
   })
 }
 
-/** Plugin rehype : enveloppe chaque code en ligne qui désigne un fichier dans un lien. */
-export function rehypeInlineFileCode() {
-  return (tree: HastNode) => wrap(tree)
+/**
+ * Plugin rehype : enveloppe dans un lien chaque code en ligne qui désigne un fichier existant.
+ * Sans `isFile` (personne pour vérifier), aucun.
+ */
+export function rehypeInlineFileCode(options: InlineFileOptions = {}) {
+  return (tree: HastNode) => wrap(tree, options)
 }

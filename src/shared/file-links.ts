@@ -47,6 +47,15 @@ export type FileLinkOutcome =
    */
   | { kind: 'file'; path: string; root: number; relative: string; line?: number }
 
+/**
+ * Existence de fichiers cités en code (fiche 272, recette de la rc.3) : ceux qui existent, et ceux
+ * qui n'ont pas pu être vérifiés à temps (inconnus : ni oui ni non) ; les autres n'existent pas.
+ */
+export interface FileLinkCheck {
+  existing: string[]
+  unknown: string[]
+}
+
 /** Fichier ouvert par le système depuis l'onglet Modifications ou l'aperçu (fiche 071). */
 export type FileOpenOutcome = Extract<FileLinkOutcome, { kind: 'opened' | 'revealed' | 'missing' }>
 

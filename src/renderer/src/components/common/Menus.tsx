@@ -21,7 +21,7 @@ import {
   SquareTerminal,
   Wrench
 } from 'lucide-react'
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isPlanMode } from '@shared/plan-doc'
 import type { RuleFileView } from '@shared/rules'
 import { APP_TOOLS_SERVER_NAME, type ConversationAppTools, type McpAgentView } from '@shared/mcp'
@@ -483,7 +483,20 @@ export function SessionSettingsMenu({
    */
   const shown = useRef(false)
   const late = useRef<(() => void)[]>([])
+  /** Repli de 300 ms en attente : annulé à la fermeture, à une nouvelle ouverture, au démontage. */
+  const fallback = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /** Composant monté : les lectures qui aboutissent après le démontage ne touchent plus l'état. */
+  const mounted = useRef(false)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      clearTimeout(fallback.current)
+      late.current = []
+    }
+  }, [])
   const whenStill = (update: () => void) => {
+    if (!mounted.current) return
     if (shown.current) late.current.push(update)
     else update()
   }
@@ -496,6 +509,7 @@ export function SessionSettingsMenu({
       open={open}
       onOpenChange={(next) => {
         const ticket = ++opening.current
+        clearTimeout(fallback.current)
         if (!next) {
           shown.current = false
           for (const update of late.current.splice(0)) update()
@@ -507,7 +521,8 @@ export function SessionSettingsMenu({
         // qui se trouvait sous le pointeur. Passé 300 ms, il s'affiche tel quel (« … ») et ne
         // change plus de taille jusqu'à sa fermeture.
         const show = () => {
-          if (opening.current !== ticket) return
+          if (opening.current !== ticket || !mounted.current) return
+          clearTimeout(fallback.current)
           shown.current = true
           setOpen(true)
         }
@@ -528,7 +543,7 @@ export function SessionSettingsMenu({
             () => whenStill(() => setAppTools(null))
           )
         ]).then(show)
-        setTimeout(show, 300)
+        fallback.current = setTimeout(show, 300)
       }}
     >
       <Tip label={t('sessionSettings.label')}>

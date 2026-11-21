@@ -619,6 +619,36 @@ describe('IPC', () => {
     expect(conversations.readFolder).toHaveBeenCalledTimes(3)
   })
 
+  it('files:existing (fiche 272, rc.3) : dossier de la conversation, liste vérifiée, sans dossier rien', async () => {
+    const { call, conversations } = setup()
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'ipc-existe-')))
+    mkdirSync(join(workspace, 'docs'))
+    writeFileSync(join(workspace, 'liste.js'), 'export {}\n')
+    writeFileSync(join(workspace, 'docs', 'suite.md'), '# Suite\n')
+    conversations.readFolder.mockImplementation(
+      async <T>(_id: string, read: (folder: string) => T | Promise<T>) => read(workspace)
+    )
+    expect(await call('files:existing', 'c1', ['liste.js:2', 'tests/a.test.js'])).toEqual({
+      existing: ['liste.js:2'],
+      unknown: []
+    })
+    // Relatif au document en aperçu.
+    expect(
+      await call('files:existing', 'c1', ['suite.md', 'liste.js'], join(workspace, 'docs'))
+    ).toEqual({ existing: ['suite.md'], unknown: [] })
+    expect(conversations.readFolder).toHaveBeenCalledWith('c1', expect.any(Function), {
+      existing: [],
+      unknown: []
+    })
+    expect(() => call('files:existing', 'c1', 'liste.js')).toThrow('invalides')
+    expect(() => call('files:existing', 'c1', [1])).toThrow('invalides')
+    expect(() => call('files:existing', 'c1', Array(201).fill('a.js'))).toThrow('invalides')
+    conversations.readFolder.mockImplementation(
+      async <T>(_id: string, _read: unknown, none: T) => none
+    )
+    expect(await call('files:existing', 'c1', ['liste.js'])).toEqual({ existing: [], unknown: [] })
+  })
+
   it('settings:get et workspace:choose', async () => {
     const { call } = setup()
     expect(await call('settings:get')).toMatchObject({ profileId: 'mock' })

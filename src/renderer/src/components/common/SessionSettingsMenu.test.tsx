@@ -179,4 +179,40 @@ describe('menu « Réglages de la session »', () => {
     fireEvent.click(screen.getByTestId('session-mcp-none'))
     expect(open).toHaveBeenCalledWith()
   })
+
+  it('démonté avant 300 ms : plus de minuteur en attente, rien ne touche l’état ensuite', async () => {
+    // Le repli de 300 ms n'était jamais annulé : il appelait setOpen après le démontage, et en CI
+    // après la fin de jsdom (« window is not defined »).
+    vi.useFakeTimers()
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warnings = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const rules = deferred<RuleFileView[]>()
+      const { unmount } = render(
+        <Tooltip.Provider>
+          <SessionSettingsMenu
+            controls={[]}
+            agentLabel="Agent factice"
+            disabled={false}
+            onSetControl={vi.fn()}
+            onLoadRules={() => rules.promise}
+          />
+        </Tooltip.Provider>
+      )
+      fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+      expect(vi.getTimerCount()).toBeGreaterThan(0)
+      unmount()
+      expect(vi.getTimerCount()).toBe(0)
+      await act(async () => {
+        rules.resolve([rule])
+        vi.advanceTimersByTime(1000)
+      })
+      expect(errors).not.toHaveBeenCalled()
+      expect(warnings).not.toHaveBeenCalled()
+    } finally {
+      errors.mockRestore()
+      warnings.mockRestore()
+      vi.useRealTimers()
+    }
+  })
 })

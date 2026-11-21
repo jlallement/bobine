@@ -88,4 +88,28 @@ describe('vue et évènements d’une conversation (fiche 062)', () => {
     state = reducer(state, { type: 'notice', message: 'oups' })
     expect(texts(state)).toEqual(['a', 'oups'])
   })
+
+  it('le même avis de l’interface redonné (deux clics sur un fichier introuvable) : un seul, en bas', () => {
+    let state = reducer(initial, { type: 'view', view: view(1, 'a') })
+    state = reducer(state, { type: 'notice', message: 'Fichier introuvable : /p/x.js' })
+    state = reducer(state, { type: 'event', payload: { conversationId: 'c1', event: note('b') } })
+    state = reducer(state, { type: 'notice', message: 'Fichier introuvable : /p/x.js' })
+    expect(texts(state)).toEqual(['a', 'b', 'Fichier introuvable : /p/x.js'])
+    const items = state.loaded['c1']?.transcript.items ?? []
+    expect(items.at(-1)).toMatchObject({ kind: 'notice', level: 'error', local: true })
+    // Un autre avis s'ajoute ; un avis de l'agent au même texte n'est jamais retiré.
+    state = reducer(state, { type: 'notice', message: 'autre' })
+    state = reducer(state, {
+      type: 'event',
+      payload: { conversationId: 'c1', event: note('Fichier introuvable : /p/x.js') }
+    })
+    state = reducer(state, { type: 'notice', message: 'Fichier introuvable : /p/x.js' })
+    expect(texts(state)).toEqual([
+      'a',
+      'b',
+      'autre',
+      'Fichier introuvable : /p/x.js',
+      'Fichier introuvable : /p/x.js'
+    ])
+  })
 })

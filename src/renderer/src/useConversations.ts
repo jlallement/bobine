@@ -159,7 +159,8 @@ export function reducer(state: State, action: Action): State {
     case 'notificationStatus':
       return { ...state, notificationStatus: action.status }
     case 'notice': {
-      // Erreur d'appel côté UI : affichée dans la conversation active.
+      // Erreur d'appel côté UI : affichée dans la conversation active, sans dire la fin du tour
+      // (`local`).
       if (!state.activeId) return state
       return reducer(state, {
         type: 'event',
@@ -169,7 +170,8 @@ export function reducer(state: State, action: Action): State {
             type: 'notice',
             level: action.level ?? 'error',
             message: action.message,
-            ...(action.title ? { title: action.title } : {})
+            ...(action.title ? { title: action.title } : {}),
+            local: true
           }
         }
       })

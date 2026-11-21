@@ -4815,6 +4815,12 @@ a.btn {
   font-size: 13.5px;
 }
 
+/* Onglets sans marge (`flush`) : l'état vide garde la marge de `.side-panel-body`, sinon une
+   phrase longue touche les bords du panneau (fiche 272, recette). */
+.side-panel-body.flush .side-panel-empty {
+  padding: 0 16px;
+}
+
 .tasks-tab {
   display: flex;
   flex-direction: column;

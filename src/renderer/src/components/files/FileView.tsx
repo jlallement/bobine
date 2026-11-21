@@ -5,7 +5,13 @@ import { filesErrorText } from '../../files-errors'
 import { isHtmlPath, isMarkdownPath } from '@shared/file-links'
 import { MAX_HIGHLIGHT_BYTES, type FileRoot, type FileTarget } from '@shared/files'
 import { sizeText } from '../discussion/DocumentsPanel'
-import { FileLinkBase, FileLinksContext, type OpenFileLink } from '../thread/FileLink'
+import {
+  FileExistsContext,
+  FileLinkBase,
+  FileLinksContext,
+  type OpenFileLink
+} from '../thread/FileLink'
+import { useFileChecker } from '../thread/ConversationScope'
 import { Markdown } from '../thread/Markdown'
 import { Tip } from '../common/Menus'
 import { highlightLines, languageOf } from '../../code-lines'
@@ -15,6 +21,11 @@ import { CodeView, type CodeNotes } from './CodeView'
 import type { OpenContent } from './useFilesTab'
 
 interface Props {
+  /**
+   * Conversation de l'onglet : un code en ligne du Markdown rendu n'est un lien que si le fichier
+   * existe (fiche 272, rc.3).
+   */
+  conversationId: string
   root: FileRoot | undefined
   /** Plusieurs racines : la racine est nommée dans le fil d'Ariane. */
   showRoot: boolean
@@ -284,6 +295,7 @@ function FileBody(
 ) {
   const { t, i18n } = useTranslation()
   const { content, target, actions } = props
+  const checkFiles = useFileChecker(props.conversationId)
   const units = (bytes: number) => sizeText(bytes, i18n.language)
   if (!content || content.target.path !== target.path || content.target.root !== target.root) {
     return <div className="file-view-note">{t('files.loading')}</div>
@@ -327,9 +339,11 @@ function FileBody(
       <Scrolled onScroll={props.onScroll} initial={props.initialScroll}>
         <div className="file-markdown msg-agent" data-testid="file-markdown">
           <FileLinksContext.Provider value={props.openLink}>
-            <FileLinkBase.Provider value={dir}>
-              <Markdown text={text} highlight={text.length <= MAX_HIGHLIGHT_BYTES} />
-            </FileLinkBase.Provider>
+            <FileExistsContext.Provider value={checkFiles}>
+              <FileLinkBase.Provider value={dir}>
+                <Markdown text={text} highlight={text.length <= MAX_HIGHLIGHT_BYTES} />
+              </FileLinkBase.Provider>
+            </FileExistsContext.Provider>
           </FileLinksContext.Provider>
           {read.truncated && (
             <p className="file-view-note">{t('files.truncated', { size: units(read.size) })}</p>

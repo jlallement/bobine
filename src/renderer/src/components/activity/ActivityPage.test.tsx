@@ -358,6 +358,15 @@ describe('Mon activité (fiches 137 et 144)', () => {
         'nov.'
       ])
     )
+    // Défilée de 20 px (arrondie à 30, une colonne) : la fin de « oct. » dépasse encore dans la vue,
+    // elle ne se montre pas non plus (recette : « s » pour « mars »).
+    scroller.scrollLeft = 20
+    fireEvent.scroll(scroller)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('activity-heat-month').map((m) => m.textContent)).toEqual([
+        'nov.'
+      ])
+    )
   })
 
   it('grille : niveaux, aujourd’hui cerclé, jours hors période pâlis, infobulle, clic sur un jour', async () => {

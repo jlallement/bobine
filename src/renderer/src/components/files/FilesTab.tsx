@@ -291,6 +291,7 @@ export function FilesTab(props: Props) {
         )}
         {showFile && target && (
           <FileView
+            conversationId={conversationId}
             root={roots?.[target.root]}
             showRoot={(roots?.length ?? 0) > 1}
             target={target}

@@ -65,17 +65,7 @@ import { useTurnGuards } from './useTurnGuards'
 import { TurnControlsContext } from './turn-controls'
 import { GlobalRulesContext, type GlobalRules } from './components/thread/global-rules'
 import { ProfileNotices, ReadOnlyGate } from './components/common/Profile'
-
-/** Actions de la carte « Préparation du worktree » (fiche 175) pour la conversation affichée. */
-function worktreeSetupActions(id: string, warn: (message: string) => void) {
-  const fail = (error: unknown) => warn(String(error))
-  return {
-    onApprove: (signature: string) =>
-      void window.api.conversations.approveWorktreeSetup(id, signature).catch(fail),
-    onSkip: () => void window.api.conversations.skipWorktreeSetup(id).catch(fail),
-    onStop: () => void window.api.conversations.stopWorktreeSetup(id).catch(fail)
-  }
-}
+import { worktreeSetupActions } from './worktree-setup-actions'
 
 // eslint-disable-next-line max-lines-per-function, complexity -- décision 4 de la fiche 089 : hooks dédiés, dialogues à part ; le reste est le JSX de la fenêtre, à découper si App grossit
 export function App() {
@@ -493,6 +483,7 @@ export function App() {
               conversationId={c.activeId}
               discussion={discussion}
               notices={c}
+              items={transcript.items}
               openLink={links.openActiveLink}
               loadSubagentWork={links.loadActiveSubagentWork}
             >
@@ -747,6 +738,7 @@ export function App() {
               <ConversationScope
                 conversationId={beside.summary.id}
                 discussion={beside.summary.space === 'discussion'}
+                items={beside.view.transcript.items}
                 openLink={beside.openLink}
                 loadSubagentWork={beside.loadSubagentWork}
               >
