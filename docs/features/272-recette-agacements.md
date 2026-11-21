@@ -264,6 +264,19 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   la vue, prise un instant plus tôt, ne le contenait pas (course entre les deux voies, gagnée par
   hasard en Code). La nouvelle approche n’envoie qu’une fois la vue chargée : elle n’y est pas
   exposée.
+- 2026-11-21 — Minuteur du menu « Réglages de la session » (CI Linux de `main`, run
+  44904885423 : tous les essais verts, mais Vitest attrapait « window is not defined » venu de
+  `SessionSettingsMenu.test.tsx`). Cause : le repli de 300 ms posé à l'ouverture (`Menus.tsx`)
+  n'était jamais annulé ; il appelait `setOpen` après le démontage, en CI après la fin de jsdom.
+  Déjà le cas dans la rc.2. Correctif : minuteur gardé dans une ref, annulé à la fermeture, à
+  une nouvelle ouverture et au démontage ; au démontage, ni le repli ni les
+  lectures qui aboutissent ensuite (`show`, `whenStill`) ne touchent plus l'état. Comportement visible
+  inchangé. Essai : démonté avant 300 ms, plus aucun minuteur en attente, ni erreur ni
+  avertissement après les lectures et 1 s de minuteurs (échouait avant : un minuteur restait).
+  Même recherche dans `src/renderer` : les autres `setTimeout` qui mettent à jour un état sont
+  annulés au nettoyage de leur effet ; restent, sans `setState` et non touchés, le repli de la
+  molette de `screen-gestures.ts` (envoie un geste au simulateur s'il tombe après le démontage)
+  et le double minuteur de focus de `useRoleCompose.tsx`.
 
 ## Reste
 
