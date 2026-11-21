@@ -797,7 +797,8 @@ export function createHandlers(
     'files:existing': (id, hrefs, base) => {
       const list = linkList(hrefs)
       const options = typeof base === 'string' ? { base } : {}
-      return c.readFolder(str(id, 'id'), (dir) => existingFileLinks(dir, list, options), [])
+      const none = { existing: [], unknown: [] }
+      return c.readFolder(str(id, 'id'), (dir) => existingFileLinks(dir, list, options), none)
     },
     'files:readMarkdown': (id, path) => c.readDocument(str(id, 'id'), str(path, 'path')),
     'conversation:rules': (id) => c.rules(str(id, 'id')),
