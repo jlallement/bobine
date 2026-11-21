@@ -2,6 +2,7 @@
  * Le navigateur intégré dans l'app (fiche 089, sorti de `index.ts`) : son gestionnaire, ses outils
  * pour l'agent, et ce que l'interface lui demande par IPC.
  */
+import { app } from 'electron'
 import { t } from 'i18next'
 import type { SiteMemory } from '../approvals'
 import type { CertificateMemory } from './certificate-exceptions'
@@ -41,6 +42,7 @@ export function setupBrowser(options: BrowserSetupOptions): BrowserSetup {
     emitCommand: (command) => options.send('browser:command', command),
     emitAnnotate: (event) => options.send('browser:annotate', event),
     keepCookies: options.keepCookies,
+    systemLanguages: () => app.getPreferredSystemLanguages(),
     ...(options.onWaiting ? { onWaiting: options.onWaiting } : {}),
     ...(options.titleOf ? { titleOf: options.titleOf } : {}),
     ...(options.certificates ? { certificates: options.certificates } : {}),
