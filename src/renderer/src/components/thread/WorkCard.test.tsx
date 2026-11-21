@@ -860,13 +860,28 @@ describe('bulle et carte-réponse (fiche 263)', () => {
       started(2, 'a', ux, 'd1'),
       report(3, 'a')
     ]
-    view(items, info([]))
+    view(items, info([], { exists: () => false }))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('gone')
     expect(within(card).getByTestId('work-state').textContent).toBe('mis à la corbeille')
-    expect(within(card).getByTestId('work-gone').textContent).toContain('corbeille')
+    expect(within(card).getByTestId('work-gone').textContent).toContain('supprimée')
+    // Pas de restauration promise : elle n'existe peut-être plus (corbeille vidée).
+    expect(within(card).getByTestId('work-gone').textContent).not.toContain('Restaurez')
     expect(within(card).queryByTestId('work-relay')).toBeNull()
     expect(within(card).queryByTestId('work-reply')).toBeNull()
+  })
+
+  it('travail détaché mais existant (mère restaurée sans ses filles) : l’état de sa réponse (fiche 272)', () => {
+    fakeAgent()
+    const items = [
+      bubble(1, [{ childId: 'a', role: ux }]),
+      started(2, 'a', ux, 'd1'),
+      report(3, 'a')
+    ]
+    view(items, info([], { exists: (id) => id === 'a' }))
+    const card = screen.getByTestId('work-card')
+    expect(card.dataset['state']).toBe('replied')
+    expect(within(card).queryByTestId('work-gone')).toBeNull()
   })
 
   it('fil lu côte à côte (sans la liste des conversations) : ni « supprimée », ni lecture seule supposée', () => {

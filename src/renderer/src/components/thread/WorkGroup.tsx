@@ -397,6 +397,7 @@ function useRowWorks(group: WorkGroupData, info: SubtasksInfo | undefined): RowW
     const attention = child ? info?.attention[child.id] : undefined
     const state = workState(row.work, child, attention, now, {
       known: !!info,
+      ...(info?.exists && row.work ? { exists: info.exists(row.work.childId) } : {}),
       ...(info?.motherBusy ? { motherBusy: true } : {})
     })
     return [{ card: row.work, child, state }]

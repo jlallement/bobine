@@ -53,7 +53,15 @@ export function workState(
   child: Pick<ConversationSummary, 'status' | 'turnStopped'> | undefined,
   attention: AttentionKind | undefined,
   now: number,
-  context: { known: boolean; motherBusy?: boolean } = { known: true }
+  context: {
+    known: boolean
+    motherBusy?: boolean
+    /**
+     * Sa conversation existe encore quelque part dans la liste (fiche 272) : détachée de cette
+     * conversation, elle n'est pas « à la corbeille ». Absent : on ne sait pas.
+     */
+    exists?: boolean
+  } = { known: true }
 ): WorkState {
   const report = currentReport(card)
   if (child) {
@@ -68,10 +76,11 @@ export function workState(
     return context.motherBusy ? 'pending' : 'silent'
   }
   // Sa conversation n'existe plus (mise à la corbeille), même après avoir répondu : la carte le
-  // dit, plus d'action, sa réponse ne part plus à l'agent (fiche 272).
-  if (context.known) return 'gone'
+  // dit, plus d'action, sa réponse ne part plus à l'agent (fiche 272). Détachée mais existante
+  // (mère restaurée sans ses filles…) : l'état de sa dernière réponse.
+  if (context.known && context.exists === false) return 'gone'
   if (report) return outcomeState(report)
-  return 'unknown'
+  return context.known && context.exists === undefined ? 'gone' : 'unknown'
 }
 
 function outcomeState(report: Report): WorkState {

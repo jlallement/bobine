@@ -217,6 +217,7 @@ export function WorkCard({
   const now = useNow(busy)
   const state = workState(card, child, attention, now, {
     known: !!info,
+    ...(info?.exists ? { exists: info.exists(card.childId) } : {}),
     ...(info?.motherBusy ? { motherBusy: true } : {})
   })
   if (busy !== (state === 'running')) setBusy(state === 'running')

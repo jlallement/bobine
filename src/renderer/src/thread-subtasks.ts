@@ -35,6 +35,7 @@ export function threadSubtasks(
   const agentLabel = profiles.find((p) => p.id === c.activeSummary?.profileId)?.label
   return {
     children: childrenOf(c.activeId, c.list),
+    exists: (id) => c.list.some((s) => s.id === id),
     attention: c.attention,
     onOpen: c.select,
     profiles,
