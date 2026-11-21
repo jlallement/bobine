@@ -6,7 +6,10 @@ import type { TranscriptItem } from '@shared/transcript'
 import { Tip } from '../common/Menus'
 import { LineTotals } from '../common/LineTotals'
 
-type Summary = Omit<ReturnType<typeof changesSummary>, 'unknown'> & { unknown?: number }
+type Summary = Omit<ReturnType<typeof changesSummary>, 'unknown' | 'binary'> & {
+  unknown?: number
+  binary?: number
+}
 
 /**
  * « Modifications » de l'onglet Session (fiche 207, proposition A validée) : deux lignes qui ne se

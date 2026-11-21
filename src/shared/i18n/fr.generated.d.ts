@@ -2162,6 +2162,9 @@ export type FrResources = {
     readonly someNoTotals_one: '{{count}} sans totaux'
     readonly someNoTotals_many: '{{count}} sans totaux'
     readonly someNoTotals_other: '{{count}} sans totaux'
+    readonly someBinary_one: '{{count}} binaire'
+    readonly someBinary_many: '{{count}} binaires'
+    readonly someBinary_other: '{{count}} binaires'
   }
   readonly install: {
     readonly title: 'Installer Bobine'
@@ -4796,7 +4799,7 @@ export type FrResources = {
       readonly answered: 'a répondu'
       readonly stopped: 'arrêté'
       readonly error: 'en erreur'
-      readonly gone: 'mis à la corbeille'
+      readonly gone: 'conversation supprimée'
       readonly clean: 'rien à signaler · {{time}}'
     }
     readonly elapsed: 'Temps écoulé : {{time}}'
@@ -6036,7 +6039,7 @@ export type FrResources = {
       readonly silent: 'sans réponse'
       readonly stopped: 'arrêté'
       readonly error: 'en erreur'
-      readonly gone: 'mis à la corbeille'
+      readonly gone: 'conversation supprimée'
     }
     readonly merge: {
       readonly action_one: 'Fusionner le travail prêt dans {{base}}'

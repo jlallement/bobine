@@ -2103,9 +2103,11 @@
       "revealLabel": "Show the worktree of “{{title}}” in Finder",
       "editorLabel": "Open the worktree of “{{title}}” in {{editor}}"
     },
-    "noTotals": "no line counts",
+    "noTotals": "without line counts",
     "someNoTotals_one": "{{count}} without line counts",
-    "someNoTotals_other": "{{count}} without line counts"
+    "someNoTotals_other": "{{count}} without line counts",
+    "someBinary_one": "{{count}} binary",
+    "someBinary_other": "{{count}} binary"
   },
   "install": {
     "title": "Install Bobine",
@@ -4754,7 +4756,7 @@
       "answered": "replied",
       "stopped": "stopped",
       "error": "failed",
-      "gone": "moved to the trash",
+      "gone": "conversation deleted",
       "clean": "nothing to report · {{time}}"
     },
     "elapsed": "Elapsed: {{time}}",
@@ -5994,7 +5996,7 @@
       "silent": "no response",
       "stopped": "stopped",
       "error": "failed",
-      "gone": "moved to the trash"
+      "gone": "conversation deleted"
     },
     "merge": {
       "action_one": "Merge the ready task into {{base}}",

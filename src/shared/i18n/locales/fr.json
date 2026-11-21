@@ -2201,7 +2201,10 @@
     "noTotals": "sans totaux",
     "someNoTotals_one": "{{count}} sans totaux",
     "someNoTotals_many": "{{count}} sans totaux",
-    "someNoTotals_other": "{{count}} sans totaux"
+    "someNoTotals_other": "{{count}} sans totaux",
+    "someBinary_one": "{{count}} binaire",
+    "someBinary_many": "{{count}} binaires",
+    "someBinary_other": "{{count}} binaires"
   },
   "install": {
     "title": "Installer Bobine",
@@ -4966,7 +4969,7 @@
       "answered": "a répondu",
       "stopped": "arrêté",
       "error": "en erreur",
-      "gone": "mis à la corbeille",
+      "gone": "conversation supprimée",
       "clean": "rien à signaler · {{time}}"
     },
     "elapsed": "Temps écoulé : {{time}}",
@@ -6249,7 +6252,7 @@
       "silent": "sans réponse",
       "stopped": "arrêté",
       "error": "en erreur",
-      "gone": "mis à la corbeille"
+      "gone": "conversation supprimée"
     },
     "merge": {
       "action_one": "Fusionner le travail prêt dans {{base}}",

@@ -842,7 +842,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     const { unmount } = view(items, info([]))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('gone')
-    expect(within(card).getByTestId('work-state').textContent).toBe('mis à la corbeille')
+    expect(within(card).getByTestId('work-state').textContent).toBe('conversation supprimée')
     expect(within(card).queryAllByRole('button')).toHaveLength(0)
     unmount()
     const subtasks = info([child('a', ux, { archived: true })])
@@ -863,7 +863,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     view(items, info([], { exists: () => false }))
     const card = screen.getByTestId('work-card')
     expect(card.dataset['state']).toBe('gone')
-    expect(within(card).getByTestId('work-state').textContent).toBe('mis à la corbeille')
+    expect(within(card).getByTestId('work-state').textContent).toBe('conversation supprimée')
     expect(within(card).getByTestId('work-gone').textContent).toContain('supprimée')
     // Pas de restauration promise : elle n'existe peut-être plus (corbeille vidée).
     expect(within(card).getByTestId('work-gone').textContent).not.toContain('Restaurez')

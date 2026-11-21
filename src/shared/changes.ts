@@ -147,7 +147,9 @@ export function changesSummary(
     added: files.reduce((n, f) => n + (f.added ?? 0), 0),
     removed: files.reduce((n, f) => n + (f.removed ?? 0), 0),
     /** Fichiers écrits sans diff connu (fiche 272) : pas de totaux pour eux. */
-    unknown: files.filter((f) => f.unknown).length
+    unknown: files.filter((f) => f.unknown).length,
+    /** Fichiers binaires (`added` nul) : pas de lignes, jamais « +0 −0 ». */
+    binary: files.filter((f) => f.added === null).length
   }
 }
 

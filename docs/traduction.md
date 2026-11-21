@@ -133,6 +133,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | exécuter le plan | run the plan | |
 | compaction, résumer la conversation | compaction, summarize the conversation | |
 | commande « / » | slash command | |
+| sans totaux (fichier modifié sans diff connu) | without line counts | Fiche 272 : jamais « +0 −0 » ; « 1 sans totaux » → « 1 without line counts ». |
 | commande personnelle / du projet | personal command / project command | Comme Claude Code. |
 | commande de l'app | app command | |
 | rôle ; rôle fourni / personnel / du projet | role; built-in / personal / project role | Fiche 223 (phase 3A). Jamais « agent » ni « mode » pour un rôle. |

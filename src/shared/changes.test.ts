@@ -118,8 +118,9 @@ describe('conversationChanges', () => {
       files: 2,
       added: 3,
       removed: 1,
-      // Aucun fichier sans totaux connus ici (fiche 272).
-      unknown: 0
+      // Aucun fichier sans totaux connus ici ; un binaire (fiche 272).
+      unknown: 0,
+      binary: 1
     })
     expect(splitPath('src/ui/App.tsx')).toEqual({ dir: 'src/ui/', name: 'App.tsx' })
     expect(splitPath('README.md')).toEqual({ dir: '', name: 'README.md' })
