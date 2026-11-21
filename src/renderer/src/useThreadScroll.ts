@@ -75,12 +75,24 @@ export function useThreadScroll(options: {
       if (el && stickToBottom.current) el.scrollTop = el.scrollHeight
       measureBottom()
     }
+    /** Position d'un évènement du pointeur ; `null` sans coordonnées. */
+    const atOf = (event: PointerEvent) =>
+      typeof event.clientX === 'number' ? { x: event.clientX, y: event.clientY } : null
+    const same = (a: { x: number; y: number } | null, b: { x: number; y: number } | null) =>
+      !!a && !!b && a.x === b.x && a.y === b.y
+    // Position réelle du pointeur, au clic comme au mouvement (pas seulement à l'entrée d'une carte :
+    // le clic d'envoi a lieu ailleurs dans la carte) ; un vrai mouvement efface celle de l'envoi.
+    const track = (event: PointerEvent) => {
+      const at = atOf(event)
+      if (!at) return
+      pointer.current = at
+      if (sentAt.current && !same(at, sentAt.current)) sentAt.current = null
+    }
     const over = (event: PointerEvent) => {
-      const at = typeof event.clientX === 'number' ? { x: event.clientX, y: event.clientY } : null
+      const at = atOf(event)
       if (at) pointer.current = at
-      const still =
-        !!at && !!sentAt.current && at.x === sentAt.current.x && at.y === sentAt.current.y
-      if (still) return
+      // Pointeur immobile depuis l'envoi : la carte passée dessous par le saut en bas ne retient pas.
+      if (same(at, sentAt.current)) return
       sentAt.current = null
       const target = event.target instanceof Element ? event.target : null
       const card = target?.closest('[data-scroll-hold]')
@@ -92,9 +104,13 @@ export function useThreadScroll(options: {
     }
     document.addEventListener('pointerover', over)
     document.addEventListener('pointerout', out)
+    document.addEventListener('pointerdown', track, true)
+    document.addEventListener('pointermove', track, true)
     return () => {
       document.removeEventListener('pointerover', over)
       document.removeEventListener('pointerout', out)
+      document.removeEventListener('pointerdown', track, true)
+      document.removeEventListener('pointermove', track, true)
     }
   }, [measureBottom, noteScrolledUp])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :

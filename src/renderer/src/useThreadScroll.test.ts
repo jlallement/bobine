@@ -228,22 +228,46 @@ describe('suivi du bas du fil (fiche 050)', () => {
     const card = document.createElement('div')
     card.setAttribute('data-scroll-hold', '')
     el.firstElementChild?.append(card)
-    const at = (x: number) =>
-      card.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: x, clientY: 40 }))
-    // « Demander à … de corriger » cliqué dans la carte : le fil saute en bas.
-    act(() => at(50))
+    const fire = (type: string, x: number) =>
+      card.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: 40 }))
+    // Entrée dans la carte à gauche, puis clic sur « Demander à … de corriger » plus à droite.
+    act(() => fire('pointerover', 20))
+    act(() => fire('pointermove', 120))
+    act(() => fire('pointerdown', 120))
     act(() => result.current.followSent())
-    // Le saut fait passer une carte sous le pointeur immobile : Chromium le signale, sans geste.
-    act(() => at(50))
+    // Le saut en bas fait passer une carte sous le pointeur immobile : Chromium le signale.
+    act(() => fire('pointerover', 120))
     box.scrollHeight = 1800
     rerender({ conversation: 'c1', items: [1, 2], empty: false })
     expect(box.scrollTop).toBe(1800)
     expect(result.current.atBottom).toBe(true)
     // Un vrai mouvement sur la carte la retient de nouveau (fiche 124).
-    act(() => at(60))
+    act(() => fire('pointermove', 130))
+    act(() => fire('pointerover', 130))
     box.scrollHeight = 2000
     rerender({ conversation: 'c1', items: [1, 2, 3], empty: false })
     expect(box.scrollTop).toBe(1800)
+    el.remove()
+  })
+
+  it('sans envoi, une carte qui arrive sous un pointeur immobile retient le fil (fiche 124)', () => {
+    const { box, el, rerender } = setup()
+    document.body.append(el)
+    const card = document.createElement('div')
+    card.setAttribute('data-scroll-hold', '')
+    el.firstElementChild?.append(card)
+    act(() => {
+      document.body.dispatchEvent(
+        new MouseEvent('pointermove', { bubbles: true, clientX: 60, clientY: 40 })
+      )
+    })
+    // La carte arrive sous le pointeur, qui n'a pas bougé : Chromium signale l'entrée.
+    act(() => {
+      card.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: 60, clientY: 40 }))
+    })
+    box.scrollHeight = 1500
+    rerender({ conversation: 'c1', items: [1, 2], empty: false })
+    expect(box.scrollTop).toBe(1000)
     el.remove()
   })
 })
