@@ -92,7 +92,8 @@ export async function filesSuite(scheme) {
         await ui.ready()
         await ui.send('Ajoute une fonction somme')
         await ui.ready()
-        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 1`)
+        // Un lien Markdown (`src/app.ts:3`) et un chemin en code (`liste.js:2`).
+        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 2`)
         check(!(await ui.ev(`!!${filesTab}`)), 'jamais ouvert d’office')
 
         // ⌘P : l'onglet s'ouvre, le curseur dans le filtre ; icône dossier.
@@ -211,6 +212,19 @@ export async function filesSuite(scheme) {
         await ui.waitFor(`!document.querySelector('.file-line.flash')`, 5000)
         check(true, 'la ligne demandée n’est éclairée que le temps d’un éclair')
         check(opened().length === 0, 'rien d’ouvert dans une autre app')
+
+        // Chemin sans dossier écrit en code dans la réponse (`liste.js:2`) : le même lien, le même
+        // chemin (avant, `liste.js:` passait pour un schéma et le lien était vidé).
+        const codeLink = `[...document.querySelectorAll('[data-testid=file-link]')].find((a) => a.textContent === 'liste.js:2')`
+        await ui.click(codeLink)
+        await ui.waitFor(`${showing('liste.js')} && ${ui.$('file-code')}?.dataset.asked === '2'`)
+        check(
+          opened().length === 0,
+          'lien en code `liste.js:2` : le fichier dans l’onglet, à la ligne, rien d’ouvert ailleurs'
+        )
+        // Retour à src/app.ts (la suite cherche dedans) par son lien du fil.
+        await ui.click(`document.querySelector('[data-testid=file-link]')`)
+        await ui.waitFor(showing('src/app.ts'))
 
         // ⌘F dans le code : premier résultat dès la frappe, « 1 sur N ».
         await ui.ev(`${ui.$('file-code')}.focus()`)

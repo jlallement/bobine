@@ -26,7 +26,7 @@ describe('barre des remarques : remarques ailleurs', () => {
       note('n1', fileNoteKey('/p/app', 'a.ts'), 'a.ts'),
       note('n2', '2:vieux.ts', 'vieux.ts'),
       note('n3', fileNoteKey('/p/retire', 'c.ts'), 'c.ts'),
-      note('n4', fileNoteKey('/p/app', 'b.ts'), 'b.ts')
+      { ...note('n4', fileNoteKey('/p/app', 'b.ts'), 'b.ts'), from: 9, to: 12 }
     ]
     render(
       <Tooltip.Provider>
@@ -47,6 +47,9 @@ describe('barre des remarques : remarques ailleurs', () => {
     const rows = screen.getAllByTestId('files-note-elsewhere')
     expect(rows.map((o) => !!o.dataset['orphan'])).toEqual([true, true, false])
     expect(rows[0]?.textContent).toContain('vieux.ts')
+    // Le fichier et sa ligne, ou sa plage.
+    const places = rows.map((r) => r.querySelector('.files-note-orphan-path')?.textContent)
+    expect(places).toEqual(['vieux.ts:1', 'c.ts:1', 'b.ts:9-12'])
     fireEvent.click(screen.getAllByTestId('files-note-elsewhere-delete')[1] as HTMLElement)
     expect(onDelete).toHaveBeenCalledWith('n3')
     // Une remarque sur un autre fichier joignable s'ouvre ; une orpheline, non.

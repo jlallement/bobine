@@ -12,11 +12,12 @@ const APP_NEW =
 export const filesScenarios: Record<string, Scenario> = {
   fichiers: {
     description:
-      'Modifie src/app.ts (diff), écrit build/rapport.txt (ignoré) et .env (valeurs factices), puis cite src/app.ts:3 (fiche 271)',
+      'Modifie src/app.ts (diff), écrit build/rapport.txt (ignoré), .env (valeurs factices) et liste.js, puis cite src/app.ts:3 en lien et `liste.js:2` en code (fiche 271)',
     steps: [
       { kind: 'write-file', path: 'src/app.ts', content: APP_NEW },
       { kind: 'write-file', path: 'build/rapport.txt', content: 'Rapport de build\n' },
       { kind: 'write-file', path: '.env', content: 'BOBINE_TEST_TOKEN=factice-0000\n' },
+      { kind: 'write-file', path: 'liste.js', content: 'const liste = []\nliste.push(1)\n' },
       {
         kind: 'update',
         update: {
@@ -31,7 +32,10 @@ export const filesScenarios: Record<string, Scenario> = {
       },
       {
         kind: 'text',
-        text: 'La fonction est dans [src/app.ts:3](src/app.ts:3) ; le rapport est dans `build/`.'
+        // Chemin sans dossier en code (`liste.js:2`) : un lien de fichier comme l'autre (fiche 271).
+        text:
+          'La fonction est dans [src/app.ts:3](src/app.ts:3) ; le rapport est dans `build/`. ' +
+          'La ligne ajoutée est `liste.js:2`.'
       }
     ]
   }

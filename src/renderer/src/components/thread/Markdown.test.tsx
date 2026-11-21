@@ -47,6 +47,22 @@ describe('Markdown', () => {
     expect(document.querySelector('pre a')).toBeNull()
   })
 
+  it('`fichier:ligne` sans dossier, en code ou en lien Markdown : le même lien de fichier', () => {
+    const open = vi.fn()
+    render(
+      <FileLinksContext.Provider value={open}>
+        <Markdown text={'La ligne modifiée est `liste.js:17`, voir [ici](liste.js:9).'} />
+      </FileLinksContext.Provider>
+    )
+    expect(screen.getByText('liste.js:17').closest('a')?.getAttribute('href')).toBe('liste.js:17')
+    fireEvent.click(screen.getByText('liste.js:17'))
+    fireEvent.click(screen.getByText('ici'))
+    expect(open.mock.calls).toEqual([
+      ['liste.js:17', { reveal: false }],
+      ['liste.js:9', { reveal: false }]
+    ])
+  })
+
   it('GFM : listes de tâches et texte barré', () => {
     const { container } = render(<Markdown text={'- [x] fait\n- [ ] à faire\n\n~~barré~~'} />)
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2)

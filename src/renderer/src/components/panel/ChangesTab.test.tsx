@@ -525,6 +525,8 @@ describe('remarques sur des fichiers dans Modifications (3e revue, 4)', () => {
     )
     const row = await waitFor(() => screen.getByTestId('files-note-elsewhere'))
     expect(row.textContent).toContain('Pourquoi ce nom ?')
+    // Le fichier et sa ligne (une plage : `:9-12`).
+    expect(row.querySelector('.files-note-orphan-path')?.textContent).toBe('src/a.ts:7')
     fireEvent.click(screen.getByTestId('files-note-elsewhere-open'))
     expect(onOpenFile).toHaveBeenCalledWith({ root: 0, path: 'src/a.ts', line: 7 })
     fireEvent.click(screen.getByTestId('files-note-elsewhere-delete'))

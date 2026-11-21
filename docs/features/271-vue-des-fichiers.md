@@ -624,6 +624,19 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
   (menu non modal : focus dehors). Le focus n'est plus rendu si un autre menu est ouvert ; essai
   unitaire qui échouait avant (`FileTree.keys.test.tsx`).
 
+- **2026-11-21 — lien `fichier:ligne` sans dossier, en code (essai réel, OpenCode)** : `liste.js:17`
+  écrit en code dans une réponse (plugin `rehypeInlineFileCode`, fiche 272) était souligné mais ne
+  faisait rien. Cause : react-markdown passe chaque adresse à `urlTransform` après les plugins ;
+  `defaultUrlTransform` prenait `liste.js:` pour un schéma inconnu et vidait l'adresse (un lien
+  Markdown `[x](liste.js:9)` subissait le même sort ; `src/liste.js:5` passait, la barre précédant
+  le deux-points). Correctif : une seule règle, `isPathNotScheme` (`@shared/file-links`), lue par
+  `parseFileLink` et par le rendu Markdown, qui garde ces adresses ; lien en code et lien Markdown
+  prennent ensuite le même chemin (`MarkdownLink`, onglet Fichiers à la ligne, ⌘-clic éditeur).
+  Essais : `Markdown.test.tsx` (les deux formes, échouait avant) ; e2e `files` : l'agent factice
+  cite `liste.js:2` en code, le clic ouvre l'onglet à la ligne, rien d'ouvert ailleurs.
+  - Mineur : les remarques sur des fichiers listées (Modifications, barre de l'onglet) disent leur
+    ligne : `liste.js:9`, ou `liste.js:9-12` pour une plage.
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - Version **1.1** (pas dans la 1.0), développée sur une branche `1.1`.

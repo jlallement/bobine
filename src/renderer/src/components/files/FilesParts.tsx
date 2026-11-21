@@ -473,6 +473,10 @@ export function NotesBar({
   )
 }
 
+/** Où porte une remarque : `liste.js:9`, ou `liste.js:9-12` pour une plage. */
+const notePlace = (note: DiffNote) =>
+  `${note.path}:${note.from}${note.to > note.from ? `-${note.to}` : ''}`
+
 /**
  * Remarques sur d'autres fichiers que celui affiché : listées sous la barre, jamais comptées sans
  * être montrées. Un clic ouvre le fichier à la ligne ; une remarque dont le dossier n'est plus
@@ -498,7 +502,7 @@ export function ElsewhereNotes({
         const orphan = !!rootPaths && isOrphanNote(note, rootPaths)
         const text = (
           <>
-            <span className="files-note-orphan-path">{note.path}</span>
+            <span className="files-note-orphan-path">{notePlace(note)}</span>
             <span className="files-note-orphan-comment">{note.comment}</span>
           </>
         )
