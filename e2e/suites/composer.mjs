@@ -637,4 +637,96 @@ async function planModeVisible(scheme) {
   } finally {
     rmSync(workspace, { recursive: true, force: true })
   }
+
+  await firstSendWhileStarting(scheme)
+}
+
+const SLOW_START = { MOCK_AGENT_SLOW_START_MS: '1500' }
+
+/**
+ * Message tapé dans un nouveau fil pendant que l'agent démarre (démarrage lent de 1,5 s, vraie
+ * frappe, une seule vraie Entrée : `ui.send` en referait une), fiche 272. Entrée retient l'envoi :
+ * le texte reste dans la saisie, puis part tout seul, une fois, dès que l'agent est prêt. Code,
+ * puis Discussion ; puis un démarrage qui finit en connexion demandée : rien ne part, le texte reste.
+ */
+async function firstSendWhileStarting(scheme) {
+  const input = (ui) => ui.$('composer-input')
+  const users = `document.querySelectorAll('.msg-user').length`
+  const notReady = `!document.querySelector('.agent-avatar .status-dot.ready')`
+  const activeId = `window.api.conversations.get().then((s) => s.activeId)`
+  /** Frappe et Entrée aussitôt dans le fil qui vient de s'ouvrir ; rend « agent pas prêt ». */
+  const typeAndEnter = async (ui, text) => {
+    await ui.ev(`${input(ui)}.focus(); true`)
+    await ui.type(text)
+    const starting = await ui.ev(notReady)
+    await ui.enter()
+    return starting
+  }
+  await withApp(
+    scheme,
+    async (ui) => {
+      for (const space of ['code', 'discussion']) {
+        if (space === 'discussion') {
+          await ui.click(ui.$('space-discussion'))
+          await ui.waitFor(`!!${ui.$('discussion-drop-hint')}`)
+        }
+        await ui.ready()
+        // Un fil commencé : le clic suivant en ouvre bien un nouveau (pas le brouillon actuel).
+        await ui.send(`Avant (${space})`)
+        await ui.ready()
+        const before = await ui.ev(activeId)
+        await ui.click(ui.$('new-conversation'))
+        await ui.waitFor(
+          `${users} === 0 && ${activeId}.then((id) => id !== ${JSON.stringify(before)})`
+        )
+        const text = `Envoyé aussitôt (${space})`
+        const starting = await typeAndEnter(ui, text)
+        await sleep(150)
+        check(
+          starting && (await ui.ev(`${input(ui)}.value`)) === text,
+          `nouveau fil (${space}) : Entrée pendant le démarrage, le texte reste dans la saisie`
+        )
+        await ui.waitFor(
+          `[...document.querySelectorAll('.msg-user')].some((m) => m.innerText.includes(${JSON.stringify(text)}))`,
+          10000
+        )
+        await ui.ready()
+        check(
+          (await ui.ev(users)) === 1 && (await ui.ev(`${input(ui)}.value`)) === '',
+          `… puis il part tout seul, une seule fois, l’agent prêt ; la saisie se vide`
+        )
+        await ui.shot(`composer-17-premier-envoi-${space}`)
+      }
+    },
+    undefined,
+    'echo',
+    SLOW_START
+  )
+
+  // Connexion demandée au démarrage (`bob-auth-requise`, comme Bob à la session expirée).
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.waitFor(`!!${ui.$('blocker-auth')}`)
+      const before = await ui.ev(activeId)
+      // Nouvelle discussion (l'accueil du Code, vide, serait sinon simplement gardé).
+      await ui.click(ui.$('space-discussion'))
+      await ui.waitFor(
+        `!${ui.$('blocker-auth')} && ${activeId}.then((id) => id !== ${JSON.stringify(before)})`
+      )
+      const text = 'Envoyé pendant le démarrage, connexion demandée'
+      const starting = await typeAndEnter(ui, text)
+      check(starting, 'connexion demandée : Entrée pendant le démarrage de l’agent')
+      await ui.waitFor(`!!${ui.$('blocker-auth')}`, 10000)
+      await sleep(300)
+      check(
+        (await ui.ev(`${input(ui)}.value`)) === text && (await ui.ev(users)) === 0,
+        '… rien ne part : le texte reste dans la saisie, le fil reste vide'
+      )
+      await ui.shot('composer-18-premier-envoi-connexion')
+    },
+    undefined,
+    'bob-auth-requise',
+    SLOW_START
+  )
 }

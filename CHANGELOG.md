@@ -9,6 +9,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Panneau de droite : l’état vide de Modifications a sa marge et ne touche plus les bords ;
   Mon activité ne montre plus un nom de mois coupé (« s » pour « mars ») ; dans les Nouveautés,
   les guillemets et les signes « : ; ? ! » ne se séparent plus de leur mot en fin de ligne.
+- Un message envoyé juste après **Nouvelle conversation** ou **Nouvelle discussion**, pendant que
+  l’agent démarre, n’est plus ignoré : il reste dans la zone de saisie et part tout seul dès que
+  l’agent est prêt. Si l’agent demande d’abord une connexion, il reste simplement dans la saisie.
 - Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
   désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié », « sans
   totaux » plutôt qu’un « +0 −0 » ; la vue Git montre son état réel.
