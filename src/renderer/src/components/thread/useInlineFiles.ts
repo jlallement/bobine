@@ -1,48 +1,64 @@
-import { useContext, useEffect, useRef, useState } from 'react'
-import { FileExistsContext, FileLinkBase, type CheckFileLinks } from './FileLink'
+import { useContext, useEffect, useState } from 'react'
+import { FileExistsContext, FileLinkBase } from './FileLink'
+import type { FileChecks } from './file-checks'
 
 /**
  * Code en ligne qui désigne un fichier (fiche 272, recette de la rc.3) : un lien seulement si le
  * fichier existe dans le dossier de la conversation. Le rendu collecte les chemins candidats
- * (`want`) ; après lui, un seul appel groupé demande ceux qu'on ne connaît pas encore. Tant qu'on
- * ne sait pas, le code reste du code (`isFile` : `undefined`).
- *
- * Fichiers trouvés retenus par vérificateur (une conversation) : un message rendu de nouveau (fil
- * rouvert, conversation reprise) les montre en liens d'emblée, sans passer par du code. Un fichier
- * absent est redemandé à chaque nouveau rendu du message : il a pu être créé depuis.
+ * (`want`) ; après lui, ceux qu'on ne connaît pas sont demandés à la mémoire de la conversation
+ * (`FileChecks`), qui groupe les demandes. Tant qu'on ne sait pas, le code reste du code.
  */
 
-/** Chemins demandés par appel (même borne que le main). */
-const MAX_ASKED = 200
 /** Réponse en cours : on attend une pause du flux plutôt que de demander à chaque morceau. */
-const STREAMING_DELAY_MS = 300
-/** Fichiers trouvés retenus par conversation ; au-delà, on repart de zéro. */
-const MAX_REMEMBERED = 2000
+export const STREAMING_DELAY_MS = 300
 
-const found = new WeakMap<CheckFileLinks, Set<string>>()
-
-const keyOf = (base: string | undefined, href: string) => `${base ?? ''}\0${href}`
-
-function remember(check: CheckFileLinks, keys: readonly string[]): void {
-  let known = found.get(check)
-  if (!known || known.size + keys.length > MAX_REMEMBERED) {
-    known = new Set()
-    found.set(check, known)
+/** Chemins candidats d'un message, et l'état de chacun tel que son dernier rendu l'a montré. */
+class Candidates {
+  private rendering = new Map<string, boolean | undefined>()
+  private shown: string[] = []
+  private signature = ''
+  private renderRound = 0
+  /** Écouteur de la mémoire pour ce message (posé par son abonnement). */
+  private listener: (() => void) | undefined
+  listen(listener: (() => void) | undefined): void {
+    this.listener = listener
   }
-  for (const key of keys) known.add(key)
-}
-
-/** Chemins candidats d'un rendu. */
-class Wanted {
-  private hrefs = new Set<string>()
-  reset(): void {
-    this.hrefs = new Set()
+  /** Après le rendu, l'écouteur revérifie : une réponse a pu arriver entre-temps. */
+  wake(): void {
+    if (this.listener) queueMicrotask(this.listener)
+  }
+  /** Nouveau rendu, au signal `round` : la liste repart de zéro (remplie par le plugin rehype). */
+  reset(round: number): void {
+    this.rendering = new Map()
+    this.renderRound = round
   }
   readonly add = (href: string): void => {
-    this.hrefs.add(href)
+    if (!this.rendering.has(href)) this.rendering.set(href, undefined)
   }
-  list(): string[] {
-    return [...this.hrefs]
+  /** État lu par le rendu, retenu pour savoir plus tard s'il a changé. */
+  seen(href: string, status: boolean | undefined): boolean | undefined {
+    this.rendering.set(href, status)
+    return status
+  }
+  /** Après le rendu : la liste affichée, et l'état que le rendu en a montré. */
+  commit(): string[] {
+    this.shown = [...this.rendering.keys()]
+    this.signature = Candidates.sign([...this.rendering.values()], this.renderRound)
+    return this.shown
+  }
+  /**
+   * L'état d'un chemin affiché a-t-il changé depuis le dernier rendu ? Un chemin sans réponse
+   * compte aussi un nouveau signal : il est à redemander.
+   */
+  changed(read: (href: string) => boolean | undefined, round: number): boolean {
+    const next = Candidates.sign(this.shown.map(read), round)
+    if (next === this.signature) return false
+    this.signature = next
+    return true
+  }
+  private static sign(statuses: Array<boolean | undefined>, round: number): string {
+    const text = statuses.map(String).join(',')
+    return statuses.includes(undefined) ? `${text}@${round}` : text
   }
 }
 
@@ -54,49 +70,42 @@ export interface InlineFiles {
 }
 
 export function useInlineFiles(streaming: boolean): InlineFiles {
-  const check = useContext(FileExistsContext)
+  const checks: FileChecks | null = useContext(FileExistsContext)
   const base = useContext(FileLinkBase)
-  const [answers, setAnswers] = useState<ReadonlyMap<string, boolean>>(() => new Map())
-  const asked = useRef(new Set<string>())
-  // Rempli par le rendu en cours (plugin rehype), lu par l'effet qui le suit.
-  const [wanted] = useState(() => new Wanted())
-  wanted.reset()
-  const isFile = (href: string): boolean | undefined => {
-    const answer = answers.get(href)
-    if (answer !== undefined) return answer
-    return check && found.get(check)?.has(keyOf(base, href)) ? true : undefined
-  }
+  const [candidates] = useState(() => new Candidates())
+  const [, rerender] = useState(0)
+  candidates.reset(checks?.round ?? 0)
+  // Un nouveau rendu seulement quand l'un des chemins de ce message change d'état.
   useEffect(() => {
-    if (!check) return
-    const ask = wanted
-      .list()
-      .filter((href) => isFile(href) === undefined && !asked.current.has(href))
-      .slice(0, MAX_ASKED)
+    if (!checks) return
+    const read = (href: string) => checks.status(base, href)
+    const listener = () => {
+      if (candidates.changed(read, checks.round)) rerender((n) => n + 1)
+    }
+    candidates.listen(listener)
+    const off = checks.subscribe(listener)
+    return () => {
+      off()
+      candidates.listen(undefined)
+    }
+  }, [checks, base, candidates])
+  useEffect(() => {
+    if (!checks) return
+    const read = (href: string) => checks.status(base, href)
+    const shown = candidates.commit()
+    // Réponse arrivée entre le rendu et ici : l'écouteur le voit, et refait le rendu.
+    candidates.wake()
+    const ask = shown.filter((href) => read(href) === undefined)
     if (ask.length === 0) return
-    const timer = setTimeout(
-      () => {
-        for (const href of ask) asked.current.add(href)
-        check(ask, base)
-          .then((existing) => {
-            const yes = new Set(existing)
-            remember(
-              check,
-              existing.map((href) => keyOf(base, href))
-            )
-            setAnswers((previous) => {
-              const next = new Map(previous)
-              for (const href of ask) next.set(href, yes.has(href))
-              return next
-            })
-          })
-          // Vérification impossible : le code reste du code, redemandé au prochain rendu.
-          .catch(() => {
-            for (const href of ask) asked.current.delete(href)
-          })
-      },
-      streaming ? STREAMING_DELAY_MS : 0
-    )
+    if (!streaming) {
+      checks.request(base, ask)
+      return
+    }
+    const timer = setTimeout(() => checks.request(base, ask), STREAMING_DELAY_MS)
     return () => clearTimeout(timer)
   })
-  return { isFile, want: wanted.add }
+  return {
+    isFile: (href) => candidates.seen(href, checks?.status(base, href)),
+    want: candidates.add
+  }
 }

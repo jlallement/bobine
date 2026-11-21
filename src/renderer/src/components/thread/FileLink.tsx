@@ -1,4 +1,5 @@
 import { createContext, useContext, type ComponentProps } from 'react'
+import type { FileChecks } from './file-checks'
 import { parseFileLink, webLinkTarget } from '@shared/file-links'
 import { useTranslation } from 'react-i18next'
 import { useDisplayPath } from '../../presentation'
@@ -12,13 +13,10 @@ export type OpenFileLink = (href: string, options: { reveal: boolean; base?: str
 export const FileLinksContext = createContext<OpenFileLink | null>(null)
 
 /**
- * Parmi des liens de fichiers (relatifs à `base`, sinon au dossier du fil), ceux qui existent
- * (fiche 272) : un code en ligne n'est un lien que vers un fichier qui existe. Absent : aucun.
+ * Mémoire de l'existence des fichiers cités en code dans ce fil (fiche 272) : un code en ligne
+ * n'est un lien que vers un fichier qui existe. Absente : aucun.
  */
-export type CheckFileLinks = (hrefs: string[], base?: string) => Promise<string[]>
-
-/** Qui vérifie l'existence des fichiers cités en code dans ce fil (un appel par message). */
-export const FileExistsContext = createContext<CheckFileLinks | null>(null)
+export const FileExistsContext = createContext<FileChecks | null>(null)
 
 /** Dossier de base des liens relatifs (celui du document affiché ; absent : celui du fil). */
 export const FileLinkBase = createContext<string | undefined>(undefined)
