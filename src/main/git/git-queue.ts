@@ -180,8 +180,11 @@ function windowsGitEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 /**
  * git absent (fiche 195) : `spawn git ENOENT`, ou le git d'Apple sans ses outils de ligne de
  * commande (« invalid active developer path »). Message clair à la place, pour l'utilisateur.
+ * Le programme est `git` seul ou un chemin qui finit par `/git` ou `\git.exe`, espaces comprises
+ * (`C:\Program Files\Git\…\git.exe`, fiche 272) ; `gitk` ou `/usr/bin/digit` ne comptent pas.
  */
-const GIT_MISSING = /spawn \S*git(\.exe)? ENOENT|xcrun: error: invalid active developer path/i
+const GIT_MISSING =
+  /\bspawn (?:[^\n]*[\\/])?git(?:\.exe)? ENOENT\b|xcrun: error: invalid active developer path/i
 
 export function explainMissingGit(
   result: RunResult,

@@ -47,6 +47,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   rien.
 - Plusieurs rôles pour un même message : chaque travail porte le nom de son rôle ; en anglais, les
   rôles fournis gardent leur nom anglais dans le fil.
+- Sous Windows, un git installé dans « Program Files » est bien reconnu quand il manque ou que le
+  dossier du projet a disparu : un message clair plutôt que l’erreur brute « spawn … ENOENT ».
 
 ## 1.0.0-rc.2 — 20 novembre 2026
 

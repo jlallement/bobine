@@ -44,6 +44,8 @@ What changes for you, version by version. Shown in Settings › About.
   nothing.
 - Several roles for one message: each task is named after its role; in English, built-in roles keep
   their English names in the thread.
+- On Windows, a git installed under “Program Files” is now recognised when it’s missing or when the
+  project folder is gone: a clear message instead of the raw “spawn … ENOENT” error.
 
 ## 1.0.0-rc.2 — November 20, 2026
 
