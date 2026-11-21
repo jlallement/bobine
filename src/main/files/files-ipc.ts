@@ -10,7 +10,7 @@ import type { FileRoot } from '@shared/files'
 import { exclusionsFor } from '../agent-config/exclusions'
 import type { ConversationManager } from '../conversations/manager'
 import { searchWorkspaceFiles } from '../workspace-files'
-import { mayExecuteOn, type FileOpeners } from './file-links'
+import { mayExecuteOn, shownName, type FileOpeners } from './file-links'
 import { launchSystem } from '../process-launch'
 import {
   fileRoots,
@@ -79,10 +79,13 @@ export function filesHandlers(
     'files:roots': async (id) => {
       const view = c.view(str(id, 'id'), true)
       // L'agent ne prend pas d'autres dossiers (fiche 179) : ils sont montrés « non transmis ».
-      const sent = !!view.snapshot?.additionalDirectories
+      // Agent pas encore prêt (pas de réponse à `initialize`) : on ne sait pas, rien n'est marqué ;
+      // l'onglet relit les racines quand la capacité arrive.
+      const known = !!view.snapshot
+      const notSent = !view.snapshot?.additionalDirectories
       return Promise.all(
         rootsOf(id).map(async (root) => {
-          if (root.index > 0) return sent ? root : { ...root, notSent: true as const }
+          if (root.index > 0) return known ? { ...root, notSent } : root
           // Dossier de la conversation disparu ou démonté : dit, avec de quoi en choisir un (Q19).
           const info = await stat(root.path).catch(() => null)
           return info?.isDirectory() ? root : { ...root, missing: true as const }
@@ -131,8 +134,9 @@ export function filesHandlers(
       return Promise.all(
         found.map(async (file) =>
           (await isExcluded?.(file.path))
-            ? { path: file.relative, excluded: true as const }
-            : { path: file.relative }
+            ? { path: shownName(file.relative), excluded: true as const }
+            : // En NFC sous macOS, comme les chemins de l'arbre (3e revue, 3).
+              { path: shownName(file.relative) }
         )
       )
     },

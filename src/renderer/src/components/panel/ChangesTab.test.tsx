@@ -1,8 +1,11 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { t } from 'i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GitChanges, GitFileDiff } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
+import { resetDiffNotesCache, saveDiffNotes } from '../../diff-notes-store'
+import { fileNoteKey } from '../../file-notes'
 import { ChangesTab } from './ChangesTab'
 
 /** Réponse de `gitFile` tenue en main : le diff arrive quand le test le décide. */
@@ -473,5 +476,121 @@ describe('remarques du Code reviewer (fiche 265)', () => {
     )
     const notes = await waitFor(() => screen.getAllByTestId('review-note'))
     expect(notes.map((n) => n.dataset['id'])).toEqual(['r2:1', 'r3:1'])
+  })
+})
+
+describe('remarques sur des fichiers dans Modifications (3e revue, 4)', () => {
+  const api = window.api
+  beforeEach(() => {
+    localStorage.clear()
+    resetDiffNotesCache()
+    saveDiffNotes('c', [
+      {
+        id: 'n1',
+        view: 'file',
+        file: fileNoteKey('/depot', 'src/a.ts'),
+        path: 'src/a.ts',
+        side: 'new',
+        from: 7,
+        to: 7,
+        code: 'x',
+        comment: 'Pourquoi ce nom ?'
+      }
+    ])
+    window.api = {
+      ...api,
+      changes: { git: async () => REPO, gitFile: vi.fn() },
+      fileTree: { roots: async () => [{ index: 0, name: 'depot', path: '/depot' }] },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+  })
+  afterEach(() => {
+    cleanup()
+    window.api = api
+    resetDiffNotesCache()
+  })
+
+  it('comptées et montrées : un clic ouvre le fichier à la ligne, la corbeille la retire', async () => {
+    const onOpenFile = vi.fn()
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="c"
+          workspace="/depot"
+          items={[]}
+          onSendNotes={() => {}}
+          onOpenFile={onOpenFile}
+        />
+      </Tooltip.Provider>
+    )
+    const row = await waitFor(() => screen.getByTestId('files-note-elsewhere'))
+    expect(row.textContent).toContain('Pourquoi ce nom ?')
+    fireEvent.click(screen.getByTestId('files-note-elsewhere-open'))
+    expect(onOpenFile).toHaveBeenCalledWith({ root: 0, path: 'src/a.ts', line: 7 })
+    fireEvent.click(screen.getByTestId('files-note-elsewhere-delete'))
+    await waitFor(() => expect(screen.queryByTestId('files-note-elsewhere')).toBeNull())
+  })
+
+  const tab = (props: Partial<Parameters<typeof ChangesTab>[0]> = {}) => (
+    <Tooltip.Provider>
+      <ChangesTab
+        conversationId="c"
+        workspace="/depot"
+        items={[]}
+        onSendNotes={() => {}}
+        {...props}
+      />
+    </Tooltip.Provider>
+  )
+
+  it('sous un titre, comme les remarques de la relecture (4e revue, G3)', async () => {
+    render(tab())
+    const list = await waitFor(() => screen.getByTestId('changes-file-notes'))
+    expect(list.querySelector('.review-notes-title')?.textContent).toContain(
+      t('files.notesOnFiles')
+    )
+  })
+
+  it('B retiré de [A, B, C] onglet ouvert : la remarque sur C ouvre C (4e revue, G1)', async () => {
+    resetDiffNotesCache()
+    saveDiffNotes('c', [
+      {
+        id: 'nc',
+        view: 'file',
+        file: fileNoteKey('/c', 'c.ts'),
+        path: 'c.ts',
+        side: 'new',
+        from: 3,
+        to: 3,
+        code: 'x',
+        comment: 'Sur C'
+      }
+    ])
+    let paths = ['/a', '/b', '/c']
+    window.api = {
+      ...window.api,
+      fileTree: { roots: async () => paths.map((path, index) => ({ index, name: path, path })) }
+    } as unknown as Window['api']
+    const onOpenFile = vi.fn()
+    const { rerender } = render(tab({ onOpenFile, rootsKey: 'a b c' }))
+    await waitFor(() => screen.getByTestId('files-note-elsewhere-open'))
+    paths = ['/a', '/c']
+    rerender(tab({ onOpenFile, rootsKey: 'a c' }))
+    await act(async () => {})
+    fireEvent.click(await waitFor(() => screen.getByTestId('files-note-elsewhere-open')))
+    expect(onOpenFile).toHaveBeenLastCalledWith({ root: 1, path: 'c.ts', line: 3 })
+  })
+
+  it('dossiers illisibles : la remarque comptée reste montrée et supprimable (4e revue, G2)', async () => {
+    window.api = {
+      ...window.api,
+      fileTree: { roots: async () => Promise.reject(new Error('boom')) }
+    } as unknown as Window['api']
+    render(tab({ onOpenFile: vi.fn() }))
+    const row = await waitFor(() => screen.getByTestId('files-note-elsewhere'))
+    expect(row.textContent).toContain('Pourquoi ce nom ?')
+    expect(screen.queryByTestId('files-note-elsewhere-open')).toBeNull()
+    fireEvent.click(screen.getByTestId('files-note-elsewhere-delete'))
+    await waitFor(() => expect(screen.queryByTestId('files-note-elsewhere')).toBeNull())
   })
 })

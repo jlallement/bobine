@@ -2512,6 +2512,7 @@
     "notesOrphan_other": "{{n}} sur des dossiers retirés",
     "notesOrphan_many": "{{n}} sur des dossiers retirés",
     "notesElsewhereList": "Remarques sur d’autres fichiers",
+    "notesOnFiles": "Remarques sur des fichiers",
     "notesFolderGone": "dossier retiré",
     "notesShow": "Voir",
     "notesShowTip": "Voir les remarques dans Modifications",

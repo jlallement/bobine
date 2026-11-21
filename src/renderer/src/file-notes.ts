@@ -51,5 +51,31 @@ export const fileNoteKey = (rootPath: string, path: string) => `${rootPath}::${p
  */
 export function isOrphanNote(note: DiffNote, rootPaths: readonly string[]): boolean {
   if (note.view !== 'file') return false
-  return !rootPaths.some((root) => note.file.startsWith(`${root}::`))
+  return !noteTarget(note, rootPaths)
+}
+
+/**
+ * Le fichier d'une remarque : rang de sa racine, chemin relatif, première ligne ; `undefined` si
+ * son dossier n'est plus parmi ceux de la conversation.
+ */
+export function noteTarget(
+  note: DiffNote,
+  rootPaths: readonly string[]
+): { root: number; path: string; line: number } | undefined {
+  const root = rootPaths.findIndex((r) => note.file.startsWith(`${r}::`))
+  if (root < 0) return undefined
+  const path = note.file.slice((rootPaths[root] as string).length + 2)
+  return { root, path, line: note.from }
+}
+
+/** Remarques du fichier affiché : la même liste tant que rien ne change (le code ne se replace pas). */
+const fileNotesCache = new WeakMap<DiffNote[], Map<string, DiffNote[]>>()
+export function fileNotesOf(notes: DiffNote[], fileKey: string): DiffNote[] {
+  const byKey = fileNotesCache.get(notes) ?? new Map<string, DiffNote[]>()
+  fileNotesCache.set(notes, byKey)
+  const cached = byKey.get(fileKey)
+  if (cached) return cached
+  const found = notes.filter((n) => n.view === 'file' && n.file === fileKey)
+  byKey.set(fileKey, found)
+  return found
 }

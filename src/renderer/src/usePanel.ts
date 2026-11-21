@@ -19,6 +19,7 @@ import {
 import { platformFeatures } from './platform-features'
 import { PANEL_DEFAULT_WIDTH, panelWidthToSave, savedPanelWidth } from './panel-width'
 import { fittedSidebarWidth, readSidebarWidth } from './components/sidebar/sidebar-width'
+import type { FileTarget } from '@shared/files'
 import type { FilesRequest } from './components/files/useFilesTab'
 import type { OpenFileLink } from './components/thread/FileLink'
 import {
@@ -393,6 +394,8 @@ export function usePanel(options: {
       chooseFolder?: () => void
     ) => ({
       ...(chooseFolder ? { onChooseFolder: chooseFolder } : {}),
+      /** Remarque sur un fichier cliquée dans Modifications : le fichier, à la ligne. */
+      onOpenFile: (target: FileTarget) => openFiles({ target }),
       request: filesRequest,
       onRequestDone: filesRequestDone,
       openLink,

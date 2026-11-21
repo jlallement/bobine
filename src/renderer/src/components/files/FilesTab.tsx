@@ -13,7 +13,7 @@ import { diffFeedback, type DiffNote } from '@shared/diff-notes'
 import { parentDirs, type FileRoot, type FileTarget } from '@shared/files'
 import { reviewerOfNote, useDiffNotes } from '../../diff-notes-store'
 import { dirKey, FILE_GOTO_EVENT, TOGGLE_TREE_EVENT } from '../../files-state'
-import { fileNoteKey } from '../../file-notes'
+import { fileNoteKey, fileNotesOf, noteTarget } from '../../file-notes'
 import type { OpenFileLink } from '../thread/FileLink'
 import { useFileActions } from './FileActions'
 import { treeRows } from './FileTree'
@@ -31,6 +31,8 @@ interface Props {
   changes: readonly string[]
   /** Outils finis dans la conversation : chaque fin relit l'arbre et le fichier. */
   done: number
+  /** Ce qu'on sait des autres dossiers pour l'agent : relus quand cela change. */
+  rootsKey?: string
   maximized: boolean
   request?: FilesRequest | undefined
   /** Demande traitée : elle ne se rejoue plus (C1). */
@@ -114,11 +116,16 @@ export function FilesTab(props: Props) {
       filter.current?.select()
     })
   }, [])
-  const model = useFilesTab(conversationId, done, {
-    request,
-    onRequestDone: props.onRequestDone,
-    onFocusFilter: focusFilter
-  })
+  const model = useFilesTab(
+    conversationId,
+    done,
+    {
+      request,
+      onRequestDone: props.onRequestDone,
+      onFocusFilter: focusFilter
+    },
+    props.rootsKey
+  )
   const { state, roots, preferences, view: narrowView, setView: setNarrowView } = model
   const [notice, setNotice] = useState<string | null>(null)
   const changed = useMemo(() => changedPaths(changes, roots?.[0]), [changes, roots])
@@ -210,7 +217,7 @@ export function FilesTab(props: Props) {
   const target = state.open
   const rootPath = target ? roots?.[target.root]?.path : undefined
   const fileKey = target && rootPath ? fileNoteKey(rootPath, target.path) : ''
-  const fileNotes = diffNotes.notes.filter((n) => n.view === 'file' && n.file === fileKey)
+  const fileNotes = fileNotesOf(diffNotes.notes, fileKey)
   // Remarque sur un autre dossier (fiche 179) : son chemin absolu, l'agent le connaît ainsi.
   const notePath = target ? (target.root === 0 ? target.path : actions.absolute(target)) : ''
   const codeShown = showFile && showsText(model.content)
@@ -244,17 +251,15 @@ export function FilesTab(props: Props) {
         <NotesBar
           notes={diffNotes.notes}
           fileKey={fileKey}
-          rootPaths={rootPaths}
+          rootPaths={roots ? rootPaths : null}
           onSend={sendNotes}
           onShow={props.onShowChanges}
           onClear={diffNotes.clear}
           onRestore={diffNotes.addAll}
           onDelete={diffNotes.remove}
           onOpenNote={(note) => {
-            const root = rootPaths.findIndex((r) => note.file.startsWith(`${r}::`))
-            if (root < 0) return
-            const path = note.file.slice((rootPaths[root] ?? '').length + 2)
-            open({ root, path, line: note.from })
+            const target = noteTarget(note, rootPaths)
+            if (target) open(target)
           }}
         />
       )}

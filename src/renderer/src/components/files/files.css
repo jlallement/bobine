@@ -772,3 +772,10 @@ button.files-note-orphan-text:hover .files-note-orphan-comment {
   color: var(--muted);
   font-style: italic;
 }
+
+/* Remarques sur des fichiers dans Modifications : sous un titre, comme celles de la relecture. */
+.changes-file-notes .files-notes-orphans {
+  padding: 0;
+  border-bottom: 0;
+  background: none;
+}

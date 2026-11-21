@@ -2469,6 +2469,7 @@ export type FrResources = {
     readonly notesOrphan_other: '{{n}} sur des dossiers retirés'
     readonly notesOrphan_many: '{{n}} sur des dossiers retirés'
     readonly notesElsewhereList: 'Remarques sur d’autres fichiers'
+    readonly notesOnFiles: 'Remarques sur des fichiers'
     readonly notesFolderGone: 'dossier retiré'
     readonly notesShow: 'Voir'
     readonly notesShowTip: 'Voir les remarques dans Modifications'

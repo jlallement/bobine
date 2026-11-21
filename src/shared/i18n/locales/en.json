@@ -2412,6 +2412,7 @@
     "notesOrphan_one": "{{n}} on a removed folder",
     "notesOrphan_other": "{{n}} on removed folders",
     "notesElsewhereList": "Comments on other files",
+    "notesOnFiles": "Comments on files",
     "notesFolderGone": "folder removed",
     "notesShow": "Show",
     "notesShowTip": "Show the comments in Changes",

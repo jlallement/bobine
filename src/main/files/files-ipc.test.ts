@@ -63,7 +63,20 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
     expect(roots[1]).toMatchObject({ name: 'lib', notSent: true })
     const sent = await handlers()['files:roots']('c1')
     expect(sent[0]?.missing).toBeUndefined()
-    expect(sent[1]?.notSent).toBeUndefined()
+    expect(sent[1]?.notSent).toBe(false)
+  })
+
+  it('agent pas encore prêt : rien n’est marqué « non transmis » (état inconnu)', async () => {
+    const h = filesHandlers(
+      {
+        workspaceOf: () => main,
+        view: () => ({ summary: { additionalDirectories: [extra] }, snapshot: null }) as never,
+        profileOf: () => undefined
+      },
+      { openPath: async () => '', reveal: () => {} }
+    )
+    const roots = await h['files:roots']('c1')
+    expect(roots[1]?.notSent).toBeUndefined()
   })
 
   it('liste, lit et cherche dans une racine', async () => {
@@ -79,17 +92,59 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
   it('plusieurs dossiers d’une racine en un appel ; un dossier disparu rend son erreur (C2)', async () => {
     mkdirSync(join(main, 'docs'))
     writeFileSync(join(main, 'docs', 'd.md'), '# d\n')
-    const many = await handlers()['files:listMany']('c1', 0, ['src', 'docs', 'parti'])
-    expect(Object.keys(many)).toEqual(['src', 'docs', 'parti'])
+    const many = new Map(await handlers()['files:listMany']('c1', 0, ['src', 'docs', 'parti']))
+    expect([...many.keys()]).toEqual(['src', 'docs', 'parti'])
     const paths = (dir: string) => {
-      const got = many[dir]
+      const got = many.get(dir)
       return got && 'entries' in got ? got.entries.map((e) => e.path) : got
     }
     expect(paths('src')).toEqual(['src/a.ts'])
     expect(paths('docs')).toEqual(['docs/d.md'])
-    expect(many['parti']).toMatchObject({ error: expect.any(String) })
+    expect(many.get('parti')).toMatchObject({ error: expect.any(String) })
     await expect(handlers()['files:listMany']('c1', 0, 'src' as never)).rejects.toThrow('dirs')
   })
+
+  it('un dossier nommé `__proto__` : listé comme un autre, rien ne se perd (3e revue, 1)', async () => {
+    mkdirSync(join(main, '__proto__'))
+    writeFileSync(join(main, '__proto__', 'x.ts'), '')
+    const many = await handlers()['files:listMany']('c1', 0, ['', '__proto__'])
+    // Une réponse clonable telle quelle (comme par l'IPC) : des paires, pas un objet.
+    const cloned = structuredClone(many)
+    const proto = cloned.find(([dir]) => dir === '__proto__')?.[1]
+    expect(proto && 'entries' in proto && proto.entries.map((e) => e.path)).toEqual([
+      '__proto__/x.ts'
+    ])
+  })
+
+  it('pas plus de 500 dossiers par appel', async () => {
+    const dirs = Array.from({ length: 501 }, (_, i) => `d${i}`)
+    await expect(handlers()['files:listMany']('c1', 0, dirs)).rejects.toThrow('dirs')
+    expect(await handlers()['files:listMany']('c1', 0, dirs.slice(0, 500))).toHaveLength(500)
+  })
+
+  it.skipIf(!PRECOMPOSED_NAMES)(
+    'filtre : un nom décomposé (NFD) rendu en NFC, hors git (3e revue, 3)',
+    async () => {
+      writeFileSync(join(main, 'src', 'Été.ts'.normalize('NFD')), '')
+      const hits = await handlers()['files:search']('c1', 0, 'te.ts')
+      expect(hits.map((h) => h.path)).toContain('src/Été.ts'.normalize('NFC'))
+      expect(hits.map((h) => h.path)).not.toContain('src/Été.ts'.normalize('NFD'))
+    }
+  )
+
+  it.skipIf(!PRECOMPOSED_NAMES)(
+    'filtre puis ouverture : le chemin rendu (NFC) d’un fichier NFD se lit (4e revue, mineur)',
+    async () => {
+      writeFileSync(join(main, 'src', 'Été.ts'.normalize('NFD')), 'export const ete = 1\n')
+      const h = handlers()
+      const [hit] = await h['files:search']('c1', 0, 'te.ts')
+      expect(hit?.path).toBe('src/Été.ts'.normalize('NFC'))
+      expect(await h['files:read']('c1', 0, hit?.path ?? '')).toMatchObject({
+        kind: 'text',
+        text: 'export const ete = 1\n'
+      })
+    }
+  )
 
   it('refuse une racine inconnue et un chemin qui sort', async () => {
     const h = handlers()

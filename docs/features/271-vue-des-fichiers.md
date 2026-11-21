@@ -306,7 +306,10 @@ Fichiers à la ligne) ; Q12 à Q62 validées en bloc (Q15, Q23, Q57, Q60 ajusté
       (179) ; cachés listés (`.git`, `.DS_Store` jamais) ; ignorés visibles, repliés, atténués ;
       point sur les fichiers modifiés par la conversation ; marque « invisible pour l'agent » ;
       2 000 entrées au plus par dossier ; liens qui sortent jamais suivis. Plusieurs racines :
-      essayées en unitaire (`treeRows`, canaux), pas en e2e.
+      essayées en unitaire (`treeRows`, canaux), pas en e2e. Un autre dossier que l'agent ne
+      reçoit pas est marqué « non transmis » ; tant que l'agent n'a pas démarré (pas de réponse à
+      `initialize`), on ne le sait pas et rien n'est marqué ; à un redémarrage, la dernière valeur
+      connue reste affichée jusqu'à la réponse.
 - [x] Filtre : liste plate classée (rang de `@`), `chemin:ligne`, ↑ ↓ ↵ ⌘↵ ⇧↵ Échap ; Réduire
       tous ; Voir l'arborescence ; Côté de l'arborescence.
 - [x] Fichier ouvert : nom ✕, fil d'Ariane, numéros, coloration (200 Ko au plus, juste en clair et
@@ -575,6 +578,43 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
   - Décision : pas de migration des anciennes clés de remarques `rang:chemin` (format jamais
     publié) ; une remarque dont la cible est introuvable reste montrée et supprimable sous la
     barre, jamais comptée sans être montrée.
+
+- **2026-11-21 — troisième relecture, tout corrigé** (un essai qui échouait avant chaque
+  correction) :
+  - Un dossier `__proto__` : `files:listMany` rend des paires `[dossier, résultat]` (plus un objet
+    indexé par nom), lues par une `Map` (vrai dossier `__proto__`, réponse clonée).
+  - Une remarque étendue par Maj-clic garde son texte : lignes, remarques et éditeur forment une
+    seule liste à clés, l'éditeur garde la sienne (`draft`) quand il change de ligne.
+  - `files:search` rend ses chemins en NFC sous macOS (comme l'arbre).
+  - Les remarques sur des fichiers, comptées dans Modifications, y sont listées (`ElsewhereNotes`) :
+    un clic ouvre le fichier dans l'onglet Fichiers, à la ligne ; la corbeille en retire une.
+  - Mineurs : « non transmis » seulement une fois la capacité de l'agent connue, racines relues
+    quand elle arrive ; aucune remarque dite « dossier retiré » tant que les racines ne sont pas
+    lues ; mêmes racines relues, même tableau ; remarques du fichier affiché mémoïsées ; ↓ ↑ dans
+    ⌘F ; commentaire de `DiffNote.file` ; essais de la borne de 500, du calcul racine / chemin
+    d'une remarque (`noteTarget`), de l'arbre redessiné, `scrollIntoView` rendu après l'essai.
+
+- **2026-11-21 — quatrième relecture, tout corrigé** (un essai qui échouait avant chaque
+  correction) :
+  - **G1** Modifications relit les dossiers de la conversation sur les mêmes événements que
+    l'onglet Fichiers : dossiers ajoutés ou retirés (`rootsKey` : état de l'agent, dossier, autres
+    dossiers, calculé par le panneau ; l'onglet Fichiers le suit aussi), fin d'outil, retour sur la
+    fenêtre. Une réponse d'avant un changement de dossiers ne situe plus rien. Essai : B retiré de
+    [A, B, C], la remarque sur C ouvre C.
+  - **G2** dossiers illisibles : les remarques sur des fichiers restent montrées (non situées, pas
+    d'ouverture) et supprimables ; la lecture suivante réessaie.
+  - **G3** ces remarques ont un titre dans Modifications, « Remarques sur des fichiers », présenté
+    comme celui des remarques de la relecture (capture e2e de la suite `changes`, clair et sombre).
+  - Mineurs : « non transmis » à trois états (`true`, `false`, absent : inconnu) ; à un redémarrage
+    de l'agent, la dernière valeur connue reste (pas de clignotement) ; JSDoc de `SidePanel.tsx`
+    remises à leur place ; essai de `NotesBar` comparé au texte traduit ; essai de l'arbre aux
+    tableaux recréés rendu réel (même contenu, nouvelles références : aucune ligne redessinée, focus
+    gardé ; autre contenu : redessinée) ; essai d'ouverture d'un chemin rendu par le filtre pour un
+    nom NFD.
+  - Vérifié : `./scripts/verify` 0 (5 635 essais), `pnpm build` 0, `pnpm e2e files panel changes`
+    0 (un premier passage : deux contrôles du clic droit de `files light` en échec, passés aux
+    deux suivants ; non lié), `pnpm e2e files --lang en` 0. Captures regardées : `75-remarques-fichiers`
+    (clair, sombre), `271-remarque`, `en-271-remarque`, `271-arbre` sombre ; rien à reprendre.
 
 ## Décisions de l'utilisateur (2026-11-20)
 

@@ -376,8 +376,11 @@ export function NotesBar({
   notes: DiffNote[]
   /** Fichier affiché (`fileNoteKey`), pour compter ses remarques. */
   fileKey: string
-  /** Racines actuelles : une remarque sur un dossier retiré se montre ici (jamais comptée seule). */
-  rootPaths: readonly string[]
+  /**
+   * Racines actuelles : une remarque sur un dossier retiré se montre ici (jamais comptée seule) ;
+   * `null` tant qu'elles ne sont pas connues (aucune n'est alors dite « dossier retiré »).
+   */
+  rootPaths: readonly string[] | null
   onSend: () => void
   onShow?: (() => void) | undefined
   onClear: () => void
@@ -414,7 +417,7 @@ export function NotesBar({
   }
   if (notes.length === 0) return null
   const here = notes.filter((n) => n.view === 'file' && n.file === fileKey).length
-  const orphans = notes.filter((n) => isOrphanNote(n, rootPaths))
+  const orphans = rootPaths ? notes.filter((n) => isOrphanNote(n, rootPaths)) : []
   const files = notes.filter((n) => n.view === 'file').length - here - orphans.length
   const diffs = notes.length - here - files - orphans.length
   const lost = orphans.length
@@ -475,14 +478,15 @@ export function NotesBar({
  * être montrées. Un clic ouvre le fichier à la ligne ; une remarque dont le dossier n'est plus
  * parmi ceux de la conversation se lit et se supprime ici.
  */
-function ElsewhereNotes({
+export function ElsewhereNotes({
   notes,
   rootPaths,
   onDelete,
   onOpen
 }: {
   notes: DiffNote[]
-  rootPaths: readonly string[]
+  /** `null` : pas encore connues ; rien n'est alors dit orphelin ni ouvert. */
+  rootPaths: readonly string[] | null
   onDelete: (id: string) => void
   onOpen?: ((note: DiffNote) => void) | undefined
 }) {
@@ -491,7 +495,7 @@ function ElsewhereNotes({
   return (
     <ul className="files-notes-orphans" aria-label={t('files.notesElsewhereList')}>
       {notes.map((note) => {
-        const orphan = isOrphanNote(note, rootPaths)
+        const orphan = !!rootPaths && isOrphanNote(note, rootPaths)
         const text = (
           <>
             <span className="files-note-orphan-path">{note.path}</span>
@@ -505,7 +509,7 @@ function ElsewhereNotes({
             data-testid="files-note-elsewhere"
             data-orphan={orphan || undefined}
           >
-            {!orphan && onOpen ? (
+            {!orphan && rootPaths && onOpen ? (
               <button
                 className="files-note-orphan-text"
                 onClick={() => onOpen(note)}

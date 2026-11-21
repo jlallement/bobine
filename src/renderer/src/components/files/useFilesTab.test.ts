@@ -4,21 +4,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FileContent, FileListing, FileRoot } from '@shared/files'
 import { EMPTY_FILES_STATE, loadFilesState, openFile, saveFilesState } from '../../files-state'
 import type { TranscriptItem } from '@shared/transcript'
-import { RELOAD_DELAY_MS, useFilesTab, useFilesWork, type FilesRequest } from './useFilesTab'
+import {
+  RELOAD_DELAY_MS,
+  useFileRootPaths,
+  useFilesTab,
+  useFilesWork,
+  type FilesRequest
+} from './useFilesTab'
 
 const ROOTS: FileRoot[] = [
   { index: 0, name: 'app', path: '/p/app' },
   { index: 1, name: 'lib', path: '/p/lib' }
 ]
 
-type Many = Record<string, FileListing | { error: string }>
+type Many = [string, FileListing | { error: string }][]
 
 /** Réponses du main rendues à la main, dans l'ordre choisi par l'essai. */
 function fakeApi(roots: FileRoot[] = ROOTS) {
   const lists: {
     root: number
     dirs: string[]
-    resolve: (l: Many) => void
+    resolve: (l: Record<string, FileListing | { error: string }> | Many) => void
     reject: (e: Error) => void
   }[] = []
   const reads: {
@@ -27,10 +33,19 @@ function fakeApi(roots: FileRoot[] = ROOTS) {
     resolve: (c: FileContent) => void
   }[] = []
   const api = {
-    roots: vi.fn(async () => roots),
+    // Un tableau neuf à chaque appel, comme par l'IPC.
+    roots: vi.fn(async () => roots.map((r) => ({ ...r }))),
     listMany: vi.fn(
       (_id: string, root: number, dirs: string[]) =>
-        new Promise<Many>((resolve, reject) => lists.push({ root, dirs, resolve, reject }))
+        new Promise<Many>((resolve, reject) =>
+          lists.push({
+            root,
+            dirs,
+            // Les essais donnent un objet par commodité ; le main rend des paires.
+            resolve: (l) => resolve(Array.isArray(l) ? l : Object.entries(l)),
+            reject
+          })
+        )
     ),
     read: vi.fn(
       (_id: string, _root: number, path: string, known?: { modified: number; size: number }) =>
@@ -165,6 +180,22 @@ describe('relectures (C2, C4, M3)', () => {
     ])
   })
 
+  it('un dossier `__proto__` déplié : lu comme un autre (3e revue, 1)', async () => {
+    saveFilesState('c1', { ...EMPTY_FILES_STATE, expanded: ['0:', '0:__proto__'] })
+    const { result } = renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    await act(async () =>
+      fake.lists[0]?.resolve([
+        ['', listing('a.ts')],
+        ['__proto__', listing('x.ts')]
+      ])
+    )
+    const proto = result.current.listings['0:__proto__']
+    expect(proto && 'listing' in proto && proto.listing.entries.map((e) => e.name)).toEqual([
+      'x.ts'
+    ])
+  })
+
   it('un dossier déplié qui a disparu est oublié (C4)', async () => {
     saveFilesState('c1', { ...EMPTY_FILES_STATE, expanded: ['0:', '0:parti', '0:parti/sous'] })
     const { result } = renderHook(() => useFilesTab('c1', 0))
@@ -251,5 +282,92 @@ describe('ce que l’onglet retient du fil (C7)', () => {
     rerender()
     expect(result.current.done).toBe(2)
     expect(result.current.changes).toBe(first)
+  })
+})
+
+describe('capacité de l’agent connue après coup (3e revue, mineur)', () => {
+  it('les racines sont relues quand elle arrive', async () => {
+    let known = 'unknown'
+    const { rerender } = renderHook(() => useFilesTab('c1', 0, {}, known))
+    await settle()
+    expect(fake.api.roots).toHaveBeenCalledTimes(1)
+    known = 'yes'
+    rerender()
+    await settle()
+    expect(fake.api.roots).toHaveBeenCalledTimes(2)
+  })
+
+  it('mêmes racines relues : le même tableau (l’arbre et le filtre ne repartent pas)', async () => {
+    const { result } = renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    const first = result.current.roots
+    act(() => result.current.reload())
+    await settle()
+    expect(fake.api.roots).toHaveBeenCalledTimes(2)
+    expect(result.current.roots).toBe(first)
+  })
+
+  it('agent qui redémarre (état inconnu) : « non transmis » garde sa dernière valeur connue', async () => {
+    let notSent: boolean | undefined = true
+    fake.api.roots.mockImplementation(async () =>
+      ROOTS.map((r) => (r.index > 0 && notSent !== undefined ? { ...r, notSent } : { ...r }))
+    )
+    const { result } = renderHook(() => useFilesTab('c1', 0))
+    await settle()
+    expect(result.current.roots?.[1]?.notSent).toBe(true)
+    notSent = undefined
+    act(() => result.current.reload())
+    await settle()
+    expect(result.current.roots?.[1]?.notSent).toBe(true)
+    notSent = false
+    act(() => result.current.reload())
+    await settle()
+    expect(result.current.roots?.[1]?.notSent).toBe(false)
+  })
+})
+
+describe('dossiers de la conversation vus de Modifications (4e revue, G1, G2)', () => {
+  it('un dossier retiré pendant que l’onglet est ouvert : les racines sont relues', async () => {
+    let paths = ['/p/a', '/p/b', '/p/c']
+    fake.api.roots.mockImplementation(async () =>
+      paths.map((path, index) => ({ index, name: path, path }))
+    )
+    let key = 'a b c'
+    const { result, rerender } = renderHook(() => useFileRootPaths('c1', true, key, 0))
+    await settle()
+    expect(result.current).toEqual(['/p/a', '/p/b', '/p/c'])
+    paths = ['/p/a', '/p/c']
+    key = 'a c'
+    rerender()
+    await settle()
+    expect(result.current).toEqual(['/p/a', '/p/c'])
+  })
+
+  it('relues aussi à chaque fin d’outil et au retour sur la fenêtre', async () => {
+    vi.useFakeTimers()
+    let done = 0
+    const { rerender } = renderHook(() => useFileRootPaths('c1', true, '', done))
+    await act(async () => {})
+    expect(fake.api.roots).toHaveBeenCalledTimes(1)
+    done = 1
+    rerender()
+    await act(async () => vi.advanceTimersByTime(RELOAD_DELAY_MS))
+    expect(fake.api.roots).toHaveBeenCalledTimes(2)
+    window.dispatchEvent(new Event('focus'))
+    await act(async () => vi.advanceTimersByTime(RELOAD_DELAY_MS))
+    expect(fake.api.roots).toHaveBeenCalledTimes(3)
+    vi.useRealTimers()
+  })
+
+  it('lecture en échec : relue au prochain événement, la précédente réponse oubliée', async () => {
+    fake.api.roots.mockRejectedValueOnce(new Error('boom'))
+    let key = 'x'
+    const { result, rerender } = renderHook(() => useFileRootPaths('c1', true, key, 0))
+    await settle()
+    expect(result.current).toBeNull()
+    key = 'y'
+    rerender()
+    await settle()
+    expect(result.current).toEqual(['/p/app', '/p/lib'])
   })
 })

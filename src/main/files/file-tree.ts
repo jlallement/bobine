@@ -265,13 +265,18 @@ export async function listDirectory(options: ListOptions & { dir: string }): Pro
   return finishLevel(level, options)
 }
 
+/** Contenu d'un dossier lu, ou son erreur. */
+export type DirResult = FileListing | { error: string }
+
 /**
  * Plusieurs dossiers d'une racine (relecture, C2) : chacun lu, puis un seul appel à git pour leurs
- * marques « ignoré ». Un dossier illisible ou disparu rend son erreur, les autres leur contenu.
+ * marques « ignoré ». Un dossier illisible ou disparu rend son erreur, les autres leur contenu. Des
+ * paires `[dossier, résultat]`, jamais un objet indexé par nom : un dossier `__proto__` y serait
+ * pris pour le prototype (3e revue, 1).
  */
 export async function listDirectories(
   options: ListOptions & { dirs: readonly string[] }
-): Promise<Record<string, FileListing | { error: string }>> {
+): Promise<[string, DirResult][]> {
   const allowed = await Promise.all(options.roots.map((r) => real(r)))
   const read = await mapLimited(options.dirs, 4, (dir) =>
     readLevel(options.root, dir, options.roots, allowed).catch((e: unknown) => ({
@@ -281,9 +286,9 @@ export async function listDirectories(
   )
   const levels = read.filter((r): r is Level => 'kept' in r)
   await markIgnored(options.root, levels, options.ignored)
-  const out: Record<string, FileListing | { error: string }> = {}
+  const out: [string, DirResult][] = []
   for (const r of read)
-    out[r.dir] = 'kept' in r ? await finishLevel(r, options) : { error: r.error }
+    out.push([r.dir, 'kept' in r ? await finishLevel(r, options) : { error: r.error }])
   return out
 }
 

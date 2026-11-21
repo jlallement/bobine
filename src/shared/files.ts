@@ -15,8 +15,11 @@ export interface FileRoot {
   path: string
   /** Dossier de la conversation disparu ou démonté (Q19). */
   missing?: true
-  /** Autre dossier que l'agent ne reçoit pas : marqué « non transmis » (Q26, fiche 179). */
-  notSent?: true
+  /**
+   * Autre dossier : `true` si l'agent ne le reçoit pas, marqué « non transmis » (Q26, fiche 179) ;
+   * `false` s'il le reçoit ; absent tant que l'agent n'a pas répondu à `initialize` (inconnu).
+   */
+  notSent?: boolean
 }
 
 /** Une entrée d'un dossier. */

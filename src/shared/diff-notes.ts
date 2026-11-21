@@ -9,7 +9,7 @@ export interface DiffNote {
   id: string
   /**
    * Vue de l'onglet où la remarque a été posée ; `file` : un fichier ouvert dans l'onglet Fichiers
-   * (fiche 271), `file` valant alors `racine:chemin`.
+   * (fiche 271), `file` valant alors `cheminDeRacine::chemin` (`fileNoteKey`).
    */
   view: 'conversation' | 'git' | 'file'
   /** Fichier : clé de la ligne de l'onglet (chemin tel que la vue le connaît). */

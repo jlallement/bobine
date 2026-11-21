@@ -1,6 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { render } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FileEntry } from '@shared/files'
 import type { FileActions } from './FileActions'
 import { FileTree, treeRows } from './FileTree'
@@ -28,15 +28,28 @@ const actions: FileActions = {
 const ROOTS = [{ index: 0, name: 'app', path: '/p/app' }]
 const file = (name: string): FileEntry => ({ name, path: name, kind: 'file' })
 const changed = new Set<string>()
+const scrollIntoView = Element.prototype.scrollIntoView
+afterEach(() => {
+  Element.prototype.scrollIntoView = scrollIntoView
+})
 
-function tree(rows: ReturnType<typeof treeRows>, selected?: string) {
+/**
+ * L'arbre tel que l'onglet le rend : les lignes et les fichiers modifiés sont mémoïsés par
+ * l'onglet, le reste (fichiers d'exclusion, fonctions) est recréé à chaque rendu.
+ */
+function tree(
+  rows: ReturnType<typeof treeRows>,
+  selected?: string,
+  exclusions: readonly string[] = []
+) {
   return (
     <Tooltip.Provider>
       <FileTree
         rows={rows}
         selected={selected}
         changed={changed}
-        exclusionFiles={[]}
+        // Un tableau neuf à chaque rendu, de même contenu.
+        exclusionFiles={[...exclusions]}
         actions={actions}
         // Fonctions neuves à chaque rendu, comme dans l'onglet.
         onToggle={() => {}}
@@ -60,6 +73,22 @@ describe('arbre : rendus et défilement', () => {
     icons.renders = 0
     view.rerender(tree(rows))
     expect(icons.renders).toBe(0)
+  })
+
+  it('fichiers d’exclusion et fonctions recréés, même contenu : aucune ligne redessinée, focus gardé', () => {
+    const exclusions = ['.bobignore', '.gitignore']
+    const view = render(tree(rows, undefined, exclusions))
+    const row = view.getAllByRole('treeitem')[2] as HTMLElement
+    fireEvent.click(row)
+    expect(row.tabIndex).toBe(0)
+    icons.renders = 0
+    view.rerender(tree(rows, undefined, [...exclusions]))
+    view.rerender(tree(rows, undefined, [...exclusions]))
+    expect(icons.renders).toBe(0)
+    expect((view.getAllByRole('treeitem')[2] as HTMLElement).tabIndex).toBe(0)
+    // Un autre contenu, lui, se voit : les lignes sont redessinées.
+    view.rerender(tree(rows, undefined, ['.bobignore']))
+    expect(icons.renders).toBeGreaterThan(0)
   })
 
   it('le fichier ouvert n’est ramené à l’écran que quand il change (C5)', () => {

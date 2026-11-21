@@ -1,3 +1,4 @@
+import { t } from 'i18next'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -53,5 +54,26 @@ describe('barre des remarques : remarques ailleurs', () => {
     expect(open).toHaveLength(1)
     fireEvent.click(open[0] as HTMLElement)
     expect(onOpenNote).toHaveBeenCalledWith(expect.objectContaining({ id: 'n4' }))
+  })
+
+  it('racines pas encore connues : aucune remarque dite « dossier retiré »', () => {
+    render(
+      <Tooltip.Provider>
+        <NotesBar
+          notes={[note('n1', fileNoteKey('/p/app', 'b.ts'), 'b.ts')]}
+          fileKey=""
+          rootPaths={null}
+          onSend={() => {}}
+          onClear={() => {}}
+          onRestore={() => {}}
+          onDelete={() => {}}
+        />
+      </Tooltip.Provider>
+    )
+    expect(screen.getByTestId('files-note-elsewhere').dataset['orphan']).toBeUndefined()
+    const gone = t('files.notesFolderGone')
+    expect(gone).not.toBe('files.notesFolderGone')
+    expect(screen.getByTestId('files-note-elsewhere').textContent).not.toContain(gone)
+    expect(screen.getByTestId('files-notes-count').textContent).not.toContain(gone)
   })
 })

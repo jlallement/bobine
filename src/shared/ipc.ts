@@ -550,7 +550,8 @@ export interface IpcInvokeContract
   /** Plusieurs dossiers d'une racine en une fois (relecture) : un seul appel à git (C2). */
   'files:listMany': {
     args: [id: string, root: number, dirs: string[]]
-    result: Record<string, FileListing | { error: string }>
+    /** Paires `[dossier, contenu ou erreur]` (jamais un objet : un dossier peut s'appeler `__proto__`). */
+    result: [string, FileListing | { error: string }][]
   }
   /** Un fichier pour l'affichage, en lecture seule (texte, image ou binaire). */
   'files:read': {

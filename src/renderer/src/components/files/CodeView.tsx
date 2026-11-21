@@ -452,25 +452,26 @@ export function CodeView({
         onScroll={(e) => onScroll?.((e.target as HTMLDivElement).scrollTop)}
         data-testid="file-code"
       >
-        {lines.map((tokens, i) => {
+        {/* Une seule liste à plat, chaque enfant à sa clé : l'éditeur d'une remarque garde sa
+            clé (`draft`) quand Maj-clic étend la plage, et donc son texte (3e revue, 2). */}
+        {lines.flatMap((tokens, i) => {
           const n = i + 1
-          return (
-            <Fragment key={n}>
-              <CodeLineRow
-                n={n}
-                tokens={tokens}
-                raw={raw[i] ?? ''}
-                wrap={wrap}
-                selected={!!draft && !draft.id && n >= draft.from && n <= draft.to}
-                noted={noted.has(n)}
-                notes={!!notes}
-                tabStop={n === gutterLine}
-                handlers={handlers}
-              />
-              {(byLine.get(n) ?? []).map(noteCard)}
-              {draft && !draft.id && draft.to === n && editor(`draft-${n}`)}
-            </Fragment>
-          )
+          return [
+            <CodeLineRow
+              key={`line-${n}`}
+              n={n}
+              tokens={tokens}
+              raw={raw[i] ?? ''}
+              wrap={wrap}
+              selected={!!draft && !draft.id && n >= draft.from && n <= draft.to}
+              noted={noted.has(n)}
+              notes={!!notes}
+              tabStop={n === gutterLine}
+              handlers={handlers}
+            />,
+            ...(byLine.get(n) ?? []).map(noteCard),
+            ...(draft && !draft.id && draft.to === n ? [editor('draft')] : [])
+          ]
         })}
         {leftover.map(noteCard)}
       </div>

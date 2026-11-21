@@ -90,3 +90,34 @@ describe('remarque en cours de saisie (C7)', () => {
     expect(gutter.renders).toBe(0)
   })
 })
+
+describe('remarque en cours étendue par Maj-clic (3e revue, 2)', () => {
+  it('le texte tapé reste quand la plage s’étend', () => {
+    render(view())
+    const add = () => screen.getAllByTestId('file-note-add')
+    fireEvent.click(add()[3] as HTMLElement)
+    fireEvent.change(screen.getByTestId('file-note-input'), { target: { value: 'À revoir' } })
+    fireEvent.click(add()[6] as HTMLElement, { shiftKey: true })
+    expect((screen.getByTestId('file-note-input') as HTMLTextAreaElement).value).toBe('À revoir')
+    expect(screen.getByTestId('file-note-editor').textContent).toContain('4')
+    expect(screen.getByTestId('file-note-editor').textContent).toContain('7')
+  })
+})
+
+describe('recherche au clavier (3e revue, mineur)', () => {
+  it('↓ et ↑ passent au résultat suivant et au précédent', () => {
+    render(view())
+    act(() => {
+      window.dispatchEvent(new Event(FILE_FIND_EVENT))
+    })
+    const find = screen.getByTestId('file-find')
+    fireEvent.change(find, { target: { value: 'const v1' } })
+    // `const v1`, `const v10` à `const v19` : 11 résultats.
+    expect(screen.getByTestId('file-find-count').textContent).toMatch(/^1\D+11$/)
+    fireEvent.keyDown(find, { key: 'ArrowDown' })
+    expect(screen.getByTestId('file-find-count').textContent).toMatch(/^2\D+11$/)
+    fireEvent.keyDown(find, { key: 'ArrowUp' })
+    fireEvent.keyDown(find, { key: 'ArrowUp' })
+    expect(screen.getByTestId('file-find-count').textContent).toMatch(/^11\D+11$/)
+  })
+})

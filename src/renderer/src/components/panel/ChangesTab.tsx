@@ -1,4 +1,4 @@
-import { FileDiff } from 'lucide-react'
+import { FileDiff, FileText } from 'lucide-react'
 import { CommandText } from '../common/CommandText'
 import { diffFeedback, sameDiff, type DiffNote } from '@shared/diff-notes'
 import { openOutcomeNote } from '@shared/file-links'
@@ -23,6 +23,10 @@ import { WorktreeBar } from './WorktreeBar'
 import { WorktreeCleaned, rememberCleaned, useCleanedNote } from './WorktreeCleaned'
 import { ChangesFileList, GIT_BADGES, type Row } from './ChangesList'
 import { ChangesViews, DiffNotesBar } from './ChangesBars'
+import type { FileTarget } from '@shared/files'
+import { noteTarget } from '../../file-notes'
+import { ElsewhereNotes } from '../files/FilesParts'
+import { useFileRootPaths, workDone } from '../files/useFilesTab'
 import { ChildrenView, type ChildWorktreesMerge } from './ChildrenView'
 import { ReviewNotes, useReviewImport } from './ReviewNotes'
 import { ReviewFileDiff } from './ReviewFileDiff'
@@ -70,17 +74,29 @@ function NotesBars({
   onShowNote,
   fileAsked,
   seq,
-  refresh
+  refresh,
+  onOpenFile,
+  rootsKey,
+  done
 }: {
   conversationId: string
   diffNotes: ReturnType<typeof useDiffNotes>
   onSendNotes: ChangesTabProps['onSendNotes']
   onShowNote: (note: DiffNote) => void
+  onOpenFile: ChangesTabProps['onOpenFile']
   fileAsked: ReviewFileRequest | undefined
   seq: number
   /** État du dépôt relu (vue Git) : le diff d'une remarque relu avec lui (fiche 267, N2). */
   refresh: unknown
+  rootsKey: string | undefined
+  /** Outils finis : les dossiers sont relus à chaque fin, comme dans l'onglet Fichiers. */
+  done: number
 }) {
+  const { t } = useTranslation()
+  // Dossiers de la conversation, pour situer ses remarques sur des fichiers (onglet Fichiers).
+  const fileNotes = diffNotes.notes.filter((n) => n.view === 'file')
+  const hasFileNotes = fileNotes.length > 0
+  const rootPaths = useFileRootPaths(conversationId, hasFileNotes, rootsKey, done)
   // Remarques d'une relecture envoyées d'ici : la carte du Code reviewer le sait (`about`) et ne
   // propose plus de les faire corriger une seconde fois (fiche 265, revue UX).
   const sendNotes = () => {
@@ -98,6 +114,28 @@ function NotesBars({
           onClear={diffNotes.clear}
           onSend={sendNotes}
         />
+      )}
+      {onSendNotes && fileNotes.length > 0 && (
+        // Remarques sur des fichiers (onglet Fichiers) : comptées ici, donc montrées ici, même
+        // avant de savoir où sont leurs dossiers (non situées) ; un clic ouvre le fichier à la
+        // ligne (3e revue, 4 ; 4e revue, G2, G3).
+        <div className="review-notes changes-file-notes" data-testid="changes-file-notes">
+          <div className="review-notes-title">
+            <FileText size={13} aria-hidden /> {t('files.notesOnFiles')}
+          </div>
+          <ElsewhereNotes
+            notes={fileNotes}
+            rootPaths={rootPaths}
+            onDelete={diffNotes.remove}
+            onOpen={
+              onOpenFile &&
+              ((note) => {
+                const target = rootPaths && noteTarget(note, rootPaths)
+                if (target) onOpenFile(target)
+              })
+            }
+          />
+        </div>
       )}
       {onSendNotes && (
         <ReviewNotes
@@ -139,6 +177,10 @@ interface ChangesTabProps {
   childWorktrees?: ChildWorktrees | undefined
   /** « Faire relire… » cette conversation (fiche 177) ; proposé seulement dans un dépôt git. */
   onReview?: (() => void) | undefined
+  /** Une remarque sur un fichier cliquée : le fichier dans l'onglet Fichiers, à la ligne. */
+  onOpenFile?: ((target: FileTarget) => void) | undefined
+  /** Dossiers de la conversation (clé) : les remarques sur des fichiers sont resituées s'ils changent. */
+  rootsKey?: string | undefined
 }
 
 /**
@@ -155,10 +197,13 @@ export function ChangesTab({
   initialFile,
   onSendNotes,
   childWorktrees,
-  onReview
+  onReview,
+  onOpenFile,
+  rootsKey
 }: ChangesTabProps) {
   const { t } = useTranslation()
   const conversation = useMemo(() => conversationChanges(items), [items])
+  const toolsDone = workDone(items)
   const [git, setGit] = useState<GitChanges | null | undefined>(undefined)
   const [gitError, setGitError] = useState<string | null>(null)
   // « Actualiser » : compteur passé à la barre du worktree, qui efface sa dernière issue (fiche 189).
@@ -391,6 +436,9 @@ export function ChangesTab({
             fileAsked={fileAsked}
             seq={initialViewSeq ?? 0}
             refresh={git}
+            onOpenFile={onOpenFile}
+            rootsKey={rootsKey}
+            done={toolsDone}
           />
           {error && (
             <div className="browser-error">

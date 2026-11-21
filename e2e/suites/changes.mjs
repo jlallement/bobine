@@ -172,14 +172,59 @@ export async function changesSuite(scheme) {
           ),
           'remarques supprimée puis modifiée'
         )
+
+        // Remarque sur un fichier (onglet Fichiers, fiche 271) : comptée dans Modifications, donc
+        // listée ici, sous son titre (4e revue, G3) ; un clic ramène au fichier, à la ligne.
+        const panelTab = (id) => `document.querySelector('.side-panel-tab[data-tab=${id}]')`
+        await ui.click(ui.$('panel-more'))
+        await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
+        await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=files]')`)
+        // Un fichier de code (un Markdown s'ouvre rendu, sans gouttière).
+        const fileRow = (path) =>
+          `document.querySelector('[data-testid=file-row][data-path="${path}"]')`
+        await ui.waitFor(`!!${fileRow('src')}`)
+        await ui.click(fileRow('src'))
+        await ui.waitFor(`!!${fileRow('src/app.js')}`)
+        await ui.click(fileRow('src/app.js'))
+        const fileLine = `document.querySelector('.file-line[data-line="2"] [data-testid=file-note-add]')`
+        await ui.waitFor(`!!${fileLine}`)
+        await ui.click(fileLine)
+        await ui.waitFor(`!!${ui.$('file-note-input')}`)
+        await ui.ev(`${ui.$('file-note-input')}.focus()`)
+        await ui.type('Dater la version')
+        await ui.click(ui.$('file-note-save'))
+        await ui.waitFor(`!!${ui.$('file-note')}`)
+        await ui.click(panelTab('changes'))
+        const fileNotes = ui.$('changes-file-notes')
+        await ui.waitFor(`!!${fileNotes}?.querySelector('[data-testid=files-note-elsewhere-open]')`)
+        check(
+          (await ui.ev(`${fileNotes}.querySelector('.review-notes-title').innerText`)).includes(
+            L('files.notesOnFiles')
+          ) &&
+            (await ui.ev(`${fileNotes}.innerText`)).includes('Dater la version') &&
+            (await ui.ev(`${ui.$('diff-notes-bar')}.innerText`)).includes(
+              L('diffNotes.count', { count: 2 })
+            ),
+          'remarque sur un fichier : comptée et listée dans Modifications, sous son titre'
+        )
+        await ui.shot('75-remarques-fichiers')
+        await ui.click(`${fileNotes}.querySelector('[data-testid=files-note-elsewhere-open]')`)
+        await ui.waitFor(
+          `document.querySelector('[data-testid=file-view]')?.dataset.path === 'src/app.js'`
+        )
+        check(true, 'un clic sur la remarque ouvre le fichier dans l’onglet Fichiers')
+        await ui.click(panelTab('changes'))
+        await ui.waitFor(`!!${ui.$('diff-notes-send')}`)
         const lastUser = `[...document.querySelectorAll('.msg-user')].at(-1)?.innerText ?? ''`
         await ui.click(ui.$('diff-notes-send'))
-        await ui.waitFor(`(${lastUser}).includes('Remarques sur les modifications')`)
+        // Une remarque posée sur un fichier : le message parle du code, pas seulement des modifications.
+        await ui.waitFor(`(${lastUser}).includes('Remarques sur le code')`)
         const sent = await ui.ev(lastUser)
         check(
           !sent.includes('ligne 1 :') &&
             sent.includes('1. src/app.js, lignes 2 à 3 :') &&
             sent.includes('Remarque : Ajouter deux tests') &&
+            sent.includes('src/app.js, ligne 2 :') &&
             !(await ui.ev(`!!${ui.$('diff-notes-bar')}`)),
           'Envoyer : un message avec chaque remarque, son fichier et ses lignes ; remarques effacées'
         )

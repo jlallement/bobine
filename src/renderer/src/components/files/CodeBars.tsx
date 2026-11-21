@@ -119,6 +119,9 @@ export function FileFind({
           } else if (e.key === 'Enter') {
             e.preventDefault()
             go(at + (e.shiftKey ? -1 : 1))
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault()
+            go(at + (e.key === 'ArrowUp' ? -1 : 1))
           }
         }}
         data-testid="file-find"

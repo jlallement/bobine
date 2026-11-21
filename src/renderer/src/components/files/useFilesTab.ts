@@ -92,6 +92,63 @@ export function useFilesWork(items: readonly TranscriptItem[]): {
   return { changes, done: workDone(items) }
 }
 
+/**
+ * Chemins des dossiers de la conversation (pour situer ses remarques sur des fichiers, onglet
+ * Modifications). Relus sur les mêmes événements que l'onglet Fichiers : dossiers ajoutés ou
+ * retirés (`rootsKey`), fin d'outil, retour sur la fenêtre (4e revue, G1) ; une lecture en échec
+ * laisse `null` (remarques montrées sans être situées) et la suivante réessaie (G2).
+ */
+export function useFileRootPaths(
+  conversationId: string,
+  enabled = true,
+  rootsKey = '',
+  done = 0
+): string[] | null {
+  const [paths, setPaths] = useState<{ id: string; key: string; paths: string[] } | null>(null)
+  const { generation } = useReload(done)
+  useEffect(() => {
+    if (!enabled) return
+    let alive = true
+    window.api.fileTree
+      .roots(conversationId)
+      .then(
+        (roots) =>
+          alive && setPaths({ id: conversationId, key: rootsKey, paths: roots.map((r) => r.path) })
+      )
+      // Lecture en échec : les remarques restent montrées, non situées, jusqu'à la suivante.
+      .catch(() => alive && setPaths(null))
+    return () => {
+      alive = false
+    }
+  }, [conversationId, enabled, rootsKey, generation])
+  // Une réponse d'avant un changement de dossiers ne situe plus rien (les rangs ont pu bouger).
+  return paths?.id === conversationId && paths.key === rootsKey ? paths.paths : null
+}
+
+/**
+ * Racines relues : « non transmis » inconnu (agent qui redémarre) garde la dernière valeur connue
+ * du même dossier, sans clignoter (4e revue, mineur).
+ */
+function keepKnownNotSent(current: readonly FileRoot[] | null, found: FileRoot[]): FileRoot[] {
+  if (!current) return found
+  return found.map((root) => {
+    if (root.notSent !== undefined) return root
+    const before = current.find((r) => r.path === root.path)
+    return before?.notSent === undefined ? root : { ...root, notSent: before.notSent }
+  })
+}
+
+/** Deux listes de racines identiques (chemins, marques) ? */
+function sameRoots(a: readonly FileRoot[], b: readonly FileRoot[]): boolean {
+  return (
+    a.length === b.length &&
+    a.every((r, i) => {
+      const o = b[i]
+      return !!o && r.path === o.path && r.missing === o.missing && r.notSent === o.notSent
+    })
+  )
+}
+
 const isMissing = (error: string) => /ENOENT|no such file/i.test(error)
 
 /** Racine et chemin d'une clé de dossier (`racine:chemin`). */
@@ -175,9 +232,11 @@ function useListings(
         setListings((all) => ({ ...all, [dirKey(root, dir)]: value }))
       api
         .listMany(conversationId, root, dirs)
-        .then((found) => {
+        .then((pairs) => {
+          // Une table sans prototype : un dossier `__proto__` est un dossier (3e revue, 1).
+          const found = new Map(pairs)
           for (const dir of dirs) {
-            const got = found[dir]
+            const got = found.get(dir)
             if (!current(dir) || !got) continue
             if ('error' in got) {
               put(dir, { error: got.error })
@@ -252,7 +311,12 @@ export function useFilesTab(
   conversationId: string,
   /** Outils finis dans la conversation (`workDone`) : chaque fin relit l'arbre et le fichier. */
   done: number,
-  requests: FilesRequests = {}
+  requests: FilesRequests = {},
+  /**
+   * Dossiers de la conversation et ce qu'en sait l'agent : quand cela change, les racines sont
+   * relues (dossier ajouté ou retiré, marque « non transmis »).
+   */
+  rootsKey = ''
 ) {
   const [state, setState] = usePersistedState(conversationId)
   const [preferences, setPreferencesRaw] = useState(loadFilesPreferences)
@@ -276,7 +340,11 @@ export function useFilesTab(
       .roots(conversationId)
       .then((found) => {
         if (!alive) return
-        setRoots(found)
+        // Mêmes racines : le même tableau (l'arbre et le filtre ne repartent pas, 3e revue).
+        setRoots((current) => {
+          const next = keepKnownNotSent(current, found)
+          return current && sameRoots(current, next) ? current : next
+        })
         setRootsError(null)
         setState((s) =>
           reconcileRoots(
@@ -289,7 +357,7 @@ export function useFilesTab(
     return () => {
       alive = false
     }
-  }, [api, conversationId, generation, setState])
+  }, [api, conversationId, generation, setState, rootsKey])
 
   const forget = useCallback((key: string) => setState((s) => forgetDir(s, key)), [setState])
   const listings = useListings(conversationId, roots, state.expanded, generation, forget)

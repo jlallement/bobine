@@ -3,7 +3,7 @@ import type { ImageAttachment } from '@shared/attachments'
 import { DocumentsTab } from '../discussion/DocumentsPanel'
 import { PaneBoundary } from '../common/SafeBoundary'
 import { Check, ListChecks, Maximize2, Minimize2, PanelLeft, X } from 'lucide-react'
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { PANEL_TABS, type PanelTab } from '@shared/panel'
 import { hiddenPanelTabs, PANEL_MIN_WIDTH, unavailablePanelTabs } from '../../panel-tabs'
 import { platformFeatures } from '../../platform-features'
@@ -27,6 +27,7 @@ import { useCompactTabs } from './compact-tabs'
 import { PanelMoreMenu } from './PanelMoreMenu'
 import { FilesTab } from '../files/FilesTab'
 import { useFilesTabTitle } from '../files/useFilesTabTitle'
+import type { FileTarget } from '@shared/files'
 import { useFilesWork, type FilesRequest } from '../files/useFilesTab'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
@@ -101,6 +102,7 @@ interface Props {
     onShowChanges?: () => void
     onFocusComposer?: () => void
     onChooseFolder?: () => void
+    onOpenFile?: (target: FileTarget) => void
   }
   onTab: (tab: PanelTab) => void
   onClose: () => void
@@ -208,8 +210,9 @@ export function SidePanel({
   // Onglet Fichiers : nom et icône du fichier ouvert (fiche 271, Q9) ; son ✕ ramène d'abord à
   // l'arbre (point 3).
   const filesTab = useFilesTabTitle(conversationId)
-  // Le fil ne parvient à l'onglet Fichiers que par ses chemins modifiés et ses fins d'outil (C7).
-  const filesWork = useFilesWork(items)
+  // Le fil ne parvient à l'onglet Fichiers que par ses chemins modifiés et ses fins d'outil (C7),
+  // et l'agent par ce qu'on sait de ses autres dossiers (relus quand on l'apprend).
+  const filesWork = useFilesInput(items, session)
   const label = (id: PanelTab) =>
     (id === 'files' && filesTab.name) || (PANEL_TABS.find((entry) => entry.id === id)?.label ?? id)
   const closeTab = (id: PanelTab) => {
@@ -377,6 +380,8 @@ export function SidePanel({
               {...(onSendDiffNotes ? { onSendNotes: onSendDiffNotes } : {})}
               childWorktrees={childWorktrees}
               onReview={onReview}
+              onOpenFile={openFileOf(files)}
+              rootsKey={filesWork.rootsKey}
             />
           )}
           {tab === 'document' && preview && (
@@ -409,10 +414,31 @@ export function SidePanel({
   )
 }
 
+/**
+ * Dossiers de la conversation et ce qu'en sait l'agent (pas encore prêt, il les prend, ou non) :
+ * l'onglet Fichiers et Modifications relisent les racines quand cela change (4e revue, G1).
+ */
+function rootsKeyOf(session: Props['session']): string {
+  const snapshot = session?.snapshot
+  const agent = !snapshot ? 'unknown' : snapshot.additionalDirectories ? 'yes' : 'no'
+  return [agent, session?.workspace ?? '', ...(session?.additionalDirectories ?? [])].join('\n')
+}
+
+/** Ce que l'onglet Fichiers reçoit du fil et de l'agent, stable entre deux fins d'outil. */
+function useFilesInput(items: readonly TranscriptItem[], session: Props['session']) {
+  const work = useFilesWork(items)
+  const rootsKey = rootsKeyOf(session)
+  const { changes, done } = work
+  return useMemo(() => ({ changes, done, rootsKey }), [changes, done, rootsKey])
+}
+
+/** Remarque sur un fichier cliquée dans Modifications : vers l'onglet Fichiers (3e revue, 4). */
+const openFileOf = (files: Props['files']) => files?.onOpenFile
+
 /** Ce que l'onglet Fichiers reçoit du panneau (fiche 271) ; rien sans `files`. */
 function filesTabProps(
   files: Props['files'],
-  work: ReturnType<typeof useFilesWork>,
+  work: ReturnType<typeof useFilesWork> & { rootsKey: string },
   maximized: boolean,
   onSendNotes: Props['onSendDiffNotes'],
   discussion: boolean | undefined
@@ -447,6 +473,7 @@ function ToolTab({
     | (NonNullable<Props['files']> & {
         changes: readonly string[]
         done: number
+        rootsKey: string
         maximized: boolean
         onSendNotes?: ((text: string, about?: string) => void) | undefined
       })
@@ -487,6 +514,7 @@ function ToolTab({
           conversationId={conversationId}
           changes={files.changes}
           done={files.done}
+          rootsKey={files.rootsKey}
           maximized={files.maximized}
           request={files.request}
           onRequestDone={files.onRequestDone}
