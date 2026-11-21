@@ -88,16 +88,22 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
 - `manager.ts` au plafond de lignes : la sortie d'un brouillon passe dans `draft-discard.ts`.
 - Écart : la clé `conversations.error.folderMissing` existait (« Dossier introuvable ») ; elle est
   gardée, le refus d'envoi a sa clé (`folderGoneAtSend`).
+- e2e : `pnpm build && pnpm e2e --changed` (234 tâches, clair et sombre) : `panel` en échec, un
+  ✕ cliqué dans la foulée de l'activation de son onglet, désormais ignoré par conception (G3) ; la
+  suite attend la demi-seconde de garde. Puis `pnpm e2e panel about` vert, et une seconde campagne
+  `pnpm e2e --changed` entière, verte (code de sortie 0, 21 min 29 s).
 - Essais modifiés parce que le comportement attendu change : `trace-replay` (fichier réécrit sans
   autorisation : compté), `agent-host` (rejeu générique : README compté sans totaux), textes « Sera
   confié à », `repo.test` (`/x` inexistant : c'est le dossier qui manque), `invoke.test`
   (`withoutAsk` retire aussi le titre, essayé à part), e2e `commands` (un seul badge),
-  `manager-discussion` (dossier de repli à part, comme dans l'app).
+  `manager-discussion` (dossier de repli à part, comme dans l'app), e2e `panel` (garde du ✕).
 
 ## Reste
 
 - A2 : le doublon « Plein écran » (menu Affichage de l'app) / « Passer en plein écran » (ajouté par
-  macOS) n'est pas traité ; `NSFullScreenMenuItemEverywhere` serait la piste. Vérification de
-  l'`Info.plist` produit : voir le compte rendu de la tâche.
+  macOS) n'est pas traité ; `NSFullScreenMenuItemEverywhere` serait la piste. `.app` construit sans
+  signature (electron-builder `--dir`, `identity: null`, sans AXe ni DMG, dans un dossier jetable) :
+  `CFBundleLocalizations` = `["en","fr"]`, `CFBundleDevelopmentRegion` = `en`, `en.lproj` et
+  `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
