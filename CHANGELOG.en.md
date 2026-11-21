@@ -37,6 +37,11 @@ What changes for you, version by version. Shown in Settings › About.
 - `file:line` written as code in a response opens with a click.
 - A link to a file without a folder followed by a line (`list.js:9`), as a link or as code, opens on
   click: it no longer stays underlined with no effect.
+- A path written as code is underlined as a link only if the file exists in the conversation’s
+  folder: no more links to a file yet to be created (`tests/list.test.js`) or relative to another
+  file (`../list.js`).
+- Clicking a link to a missing file no longer stacks one notice per click, and the turn’s foot
+  (time, duration, files) stays visible.
 - The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on
   one line; `@git-changes` and `@terminal` sit under “Context” in the `@` menu.
 - `/` menu: Bobine’s commands show the conversation’s agent only.
