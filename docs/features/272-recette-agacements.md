@@ -125,6 +125,17 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   de `urlTransform` (`javascript.js:1` gardé et ouvert par l'app, `javascript:`, `JaVaScRiPt:`,
   `vbscript:`, `data:` vidés, `C:/…` selon `windowsPaths`) et d'une durée bornée.
 
+- 2026-11-21 — CI Windows de `main` (run 44894413723, verify (Windows)) : « dossier de travail
+  disparu » rouge, stderr reçu `spawn C:\Program Files\Git\ucrt64\bin\git.exe ENOENT`. Cause :
+  `GIT_MISSING` lisait le programme avec `\S*`, arrêté par l'espace de « Program Files » ; ni git
+  absent ni dossier disparu n'étaient reconnus, et l'erreur brute passait. Règle refaite
+  (`\bspawn (?:[^\n]*[\\/])?git(?:\.exe)? ENOENT\b`) : `git` seul ou un chemin qui finit par
+  `/git` ou `\git.exe`, espaces comprises, sur une seule ligne ; elle ne prend plus `digit`,
+  `legit.exe` ni `respawn` (faux positifs de l'ancienne). Essais unitaires indépendants de la
+  plateforme (`explainMissingGit` avec le système en paramètre) : chemins Windows avec et sans
+  espaces, Unix, faux positifs, dossier disparu avec git dans « Program Files ». Aucune autre règle
+  en `\S*` sur un chemin de programme dans `src/` (`repo.ts` teste `ENOENT` seul).
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent

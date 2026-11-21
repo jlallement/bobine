@@ -6,7 +6,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runCommand, type Run, type RunResult } from '../simulator/run'
 import { abs, ON_WINDOWS } from '../test-platform'
 import { windowsGitConfig } from './git-platform'
-import { gitCall, gitEnv, GitQueue, queuedGit, repoKeyOf, withGitLanguage } from './git-queue'
+import {
+  explainMissingGit,
+  gitCall,
+  gitEnv,
+  GitQueue,
+  missingFolderMessage,
+  missingGitMessage,
+  queuedGit,
+  repoKeyOf,
+  withGitLanguage
+} from './git-queue'
 
 /**
  * Environnement de git de la machine : tel quel sous Unix ; sous Windows, avec les chemins longs
@@ -97,6 +107,59 @@ describe('langue des messages de git (fiche 145)', () => {
     expect(result.code).not.toBe(0)
     expect(result.stderr).not.toContain(INSTALL_HINT)
     expect(result.stderr).toContain(gone)
+  })
+
+  describe('reconnaissance de « spawn … ENOENT », toutes plateformes (fiche 272)', () => {
+    const failed = (stderr: string): RunResult => ({ code: -2, stdout: Buffer.from(''), stderr })
+    const recognised = [
+      'spawn git ENOENT',
+      'spawn git.exe ENOENT',
+      'spawn /usr/bin/git ENOENT',
+      'spawn /opt/homebrew/bin/git ENOENT',
+      'spawn /Users/moi/mes outils/bin/git ENOENT',
+      'spawn C:\\Git\\cmd\\git.exe ENOENT',
+      'spawn C:\\Program Files\\Git\\ucrt64\\bin\\git.exe ENOENT',
+      'spawn C:\\Program Files (x86)\\Git\\cmd\\GIT.EXE ENOENT',
+      'Error: spawn C:\\Program Files\\Git\\cmd\\git ENOENT'
+    ]
+    const ignored = [
+      'spawn gitk ENOENT',
+      'spawn /usr/bin/digit ENOENT',
+      'spawn C:\\Tools\\legit.exe ENOENT',
+      'spawn C:\\Program Files\\Git\\bin\\git-lfs.exe ENOENT',
+      'spawn /usr/bin/git EACCES',
+      'respawn git ENOENT',
+      'fatal: not a git repository'
+    ]
+
+    it.each(recognised)('git introuvable : %s', (stderr) => {
+      for (const system of ['posix', 'windows'] as const) {
+        expect(explainMissingGit(failed(stderr), system).stderr).toBe(missingGitMessage(system))
+      }
+    })
+
+    it.each(ignored)('autre chose, laissé tel quel : %s', (stderr) => {
+      expect(explainMissingGit(failed(stderr), 'windows').stderr).toBe(stderr)
+    })
+
+    it('le chemin de git sur une ligne, ENOENT sur une autre : pas reconnu', () => {
+      const stderr = 'spawn C:\\Program Files\\Git\\cmd\\\ngit ENOENT'
+      expect(explainMissingGit(failed(stderr), 'windows').stderr).toBe(stderr)
+    })
+
+    it('dossier disparu, git dans « Program Files » : le dossier manque, pas git', () => {
+      const gone = join(realpathSync(tmpdir()), `bobine-disparu-program-files-${process.pid}`)
+      rmSync(gone, { recursive: true, force: true })
+      const stderr = 'spawn C:\\Program Files\\Git\\ucrt64\\bin\\git.exe ENOENT'
+      const result = explainMissingGit(failed(stderr), 'windows', gone)
+      expect(result.stderr).toBe(missingFolderMessage(gone))
+      expect(result.stderr).toContain(gone)
+    })
+
+    it('réussite : jamais réécrite, même avec un stderr qui ressemble', () => {
+      const result = { ...failed('spawn git ENOENT'), code: 0 }
+      expect(explainMissingGit(result, 'windows')).toBe(result)
+    })
   })
 })
 
