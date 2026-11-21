@@ -21,8 +21,21 @@ const MAX_LINK_LENGTH = 1024
  * attendre. Ce qui n'a pas répondu à temps est « inconnu », pas « absent ».
  */
 const CHECK_TIMEOUT_MS = 2000
-/** `stat` simultanés : le pool de libuv (4 fils par défaut) reste disponible pour le reste. */
-const CONCURRENCY = 8
+/**
+ * Opérations de fichiers simultanées (`stat`, `realpath`) : 2, pour laisser au reste de l'app au
+ * moins la moitié des 4 fils de libuv, même quand un partage réseau les bloque.
+ */
+const CONCURRENCY = 2
+/** Après un délai dépassé, plus aucune vérification dans ce dossier pendant ce temps. */
+export const PAUSE_AFTER_TIMEOUT_MS = 30_000
+
+/** Dossiers dont la dernière vérification a dépassé le délai : jusqu'à quand se taire. */
+const paused = new Map<string, number>()
+
+/** Pour les essais : oublie les dossiers en pause. */
+export function resetPausedFolders(): void {
+  paused.clear()
+}
 
 /** Liste de liens reçue par l'IPC, vérifiée : des textes, pas plus que la borne. */
 export function linkList(hrefs: unknown): string[] {
@@ -57,6 +70,11 @@ export async function existingFileLinks(
   options: { base?: string; timeoutMs?: number } = {}
 ): Promise<FileLinkCheck> {
   const unique = [...new Set(hrefs)]
+  // Dossier muet il y a peu : rien de lancé, tout reste inconnu (redemandé plus tard).
+  const folder = resolve(workspace)
+  const until = paused.get(folder)
+  if (until !== undefined && Date.now() < until) return { existing: [], unknown: unique }
+  paused.delete(folder)
   const checked = unique.slice(0, MAX_CHECKED_LINKS)
   const existing = new Set<string>()
   const settled = new Set<string>()
@@ -66,7 +84,7 @@ export async function existingFileLinks(
   const work = async () => {
     // Le dossier tel que donné et son chemin réel (`/var/…` et `/private/var/…` sous macOS) : un
     // chemin absolu écrit sous l'une ou l'autre forme est dans le dossier.
-    const given = resolve(workspace)
+    const given = folder
     const root = await real(workspace)
     const base = options.base ? await real(options.base) : root
     const from = inside(root, base) ? base : root
@@ -92,8 +110,12 @@ export async function existingFileLinks(
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, checked.length) }, worker))
   }
   let timer: ReturnType<typeof setTimeout> | undefined
+  let late = false
   const deadline = new Promise<void>((done) => {
-    timer = setTimeout(done, options.timeoutMs ?? CHECK_TIMEOUT_MS)
+    timer = setTimeout(() => {
+      late = true
+      done()
+    }, options.timeoutMs ?? CHECK_TIMEOUT_MS)
   })
   try {
     // Une erreur inattendue laisse les chemins non vérifiés « inconnus ».
@@ -101,6 +123,7 @@ export async function existingFileLinks(
   } finally {
     clearTimeout(timer)
   }
+  if (late && settled.size < checked.length) paused.set(folder, Date.now() + PAUSE_AFTER_TIMEOUT_MS)
   return {
     existing: checked.filter((href) => existing.has(href)),
     unknown: unique.filter((href) => !settled.has(href))
