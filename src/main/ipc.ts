@@ -27,6 +27,7 @@ import { browserHandlers } from './browser/browser-ipc'
 import type { GitChangesReader } from './changes/git'
 import { insideWorkspace } from './changes/git'
 import { openFileLink, openWorkspaceFile } from './files/file-links'
+import { existingFileLinks, linkList } from './files/file-exists'
 import { webLinkTarget } from '@shared/file-links'
 import { threadHandlers, type ThreadIpcDeps } from './thread-ipc'
 import {
@@ -791,6 +792,12 @@ export function createHandlers(
       // Page HTML (fiche 064) : dans le navigateur de la conversation.
       if (outcome.kind === 'browser' && openTab) await openTab(conversationId, outcome.url)
       return outcome
+    },
+    // Code en ligne qui désigne un fichier (fiche 272) : lien s'il existe ; sans dossier, aucun.
+    'files:existing': (id, hrefs, base) => {
+      const list = linkList(hrefs)
+      const options = typeof base === 'string' ? { base } : {}
+      return c.readFolder(str(id, 'id'), (dir) => existingFileLinks(dir, list, options), [])
     },
     'files:readMarkdown': (id, path) => c.readDocument(str(id, 'id'), str(path, 'path')),
     'conversation:rules': (id) => c.rules(str(id, 'id')),

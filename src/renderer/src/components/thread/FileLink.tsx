@@ -11,6 +11,15 @@ export type OpenFileLink = (href: string, options: { reveal: boolean; base?: str
 /** Qui ouvre les liens de fichiers de ce fil (absent : ils restent de simples liens). */
 export const FileLinksContext = createContext<OpenFileLink | null>(null)
 
+/**
+ * Parmi des liens de fichiers (relatifs à `base`, sinon au dossier du fil), ceux qui existent
+ * (fiche 272) : un code en ligne n'est un lien que vers un fichier qui existe. Absent : aucun.
+ */
+export type CheckFileLinks = (hrefs: string[], base?: string) => Promise<string[]>
+
+/** Qui vérifie l'existence des fichiers cités en code dans ce fil (un appel par message). */
+export const FileExistsContext = createContext<CheckFileLinks | null>(null)
+
 /** Dossier de base des liens relatifs (celui du document affiché ; absent : celui du fil). */
 export const FileLinkBase = createContext<string | undefined>(undefined)
 

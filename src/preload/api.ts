@@ -610,6 +610,8 @@ export function createApi(
     fileLinks: {
       open: (id: string, href: string, options?: { base?: string; reveal?: boolean }) =>
         invoke('files:openLink', id, href, ...(options ? [options] : [])),
+      existing: (id: string, hrefs: string[], base?: string) =>
+        invoke('files:existing', id, hrefs, ...(base !== undefined ? [base] : [])),
       readMarkdown: (id: string, path: string) => invoke('files:readMarkdown', id, path)
     },
     /** Éditeur de l'utilisateur (fiche 156) : installés, et ouvrir un fichier à la ligne. */

@@ -538,6 +538,11 @@ export interface IpcInvokeContract
     args: [id: string, href: string, options?: { base?: string; reveal?: boolean }]
     result: FileLinkOutcome
   }
+  /**
+   * Parmi des liens de fichiers d'un message (code en ligne, fiche 272), ceux qui existent dans le
+   * dossier de la conversation : un seul appel par message, borné, confiné au dossier.
+   */
+  'files:existing': { args: [id: string, hrefs: string[], base?: string]; result: string[] }
   /** Relit un document Markdown du dossier pour l'aperçu. */
   'files:readMarkdown': { args: [id: string, path: string]; result: MarkdownDocument }
   /** Éditeurs installés (fiche 156), détectés par le main. */
@@ -1039,6 +1044,7 @@ export const IPC_CHANNELS = [
   'changes:open',
   'changes:reveal',
   'files:openLink',
+  'files:existing',
   'files:readMarkdown',
   'editors:list',
   'editors:open',

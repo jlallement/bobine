@@ -1,5 +1,10 @@
-import type { ReactNode } from 'react'
-import { FileLinksContext, type OpenFileLink } from './FileLink'
+import { useMemo, type ReactNode } from 'react'
+import {
+  FileExistsContext,
+  FileLinksContext,
+  type CheckFileLinks,
+  type OpenFileLink
+} from './FileLink'
 import { EditorContext } from './OpenInEditor'
 import { SubagentWorkContext, type LoadSubagentWork } from '../../subagent-work'
 import { useEditorAction } from '../../useEditor'
@@ -28,15 +33,33 @@ export function ConversationScope({
   children: ReactNode
 }) {
   const editor = useEditorAction(conversationId, notices)
+  const checkFiles = useFileChecker(conversationId)
   return (
     <FileLinksContext.Provider value={openLink}>
-      <SubagentWorkContext.Provider value={loadSubagentWork}>
-        <EditorContext.Provider value={editor}>
-          <ThreadConversationContext.Provider value={conversationId ?? null}>
-            <DiscussionContext.Provider value={discussion}>{children}</DiscussionContext.Provider>
-          </ThreadConversationContext.Provider>
-        </EditorContext.Provider>
-      </SubagentWorkContext.Provider>
+      <FileExistsContext.Provider value={checkFiles}>
+        <SubagentWorkContext.Provider value={loadSubagentWork}>
+          <EditorContext.Provider value={editor}>
+            <ThreadConversationContext.Provider value={conversationId ?? null}>
+              <DiscussionContext.Provider value={discussion}>{children}</DiscussionContext.Provider>
+            </ThreadConversationContext.Provider>
+          </EditorContext.Provider>
+        </SubagentWorkContext.Provider>
+      </FileExistsContext.Provider>
     </FileLinksContext.Provider>
+  )
+}
+
+/**
+ * Vérificateur des fichiers cités en code dans le fil d'une conversation (fiche 272) : stable tant
+ * que la conversation l'est (il garde les fichiers trouvés) ; aucun sans conversation.
+ */
+export function useFileChecker(conversationId: string | null | undefined): CheckFileLinks | null {
+  return useMemo(
+    () =>
+      conversationId
+        ? (hrefs: string[], base?: string) =>
+            window.api.fileLinks.existing(conversationId, hrefs, base)
+        : null,
+    [conversationId]
   )
 }
