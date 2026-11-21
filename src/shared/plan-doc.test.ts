@@ -74,6 +74,66 @@ describe('planVersions', () => {
   })
 })
 
+describe('plan exécuté (fiche 272, recette : double exécution possible)', () => {
+  const plan = () => [user('Propose un plan'), agent(long('Plan'))]
+  const stopped = (): TranscriptItem => ({
+    kind: 'notice',
+    id: next++,
+    level: 'info',
+    message: { key: 'transcript.notice.cancelled' }
+  })
+
+  it('« Exécute ce plan. » hors plan, tour réussi : exécuté, plus d’action', () => {
+    const items = [...plan(), user('Exécute ce plan.', 'build'), { ...agent('Fait.'), at: 5 }]
+    expect(planVersions(items)[0]).toMatchObject({ latest: true, executed: true })
+  })
+
+  it('passage en Ask, ou simple question en Build : le plan reste actionnable', () => {
+    const ask = [...plan(), user('Pourquoi cette étape ?', 'ask'), agent('Parce que.')]
+    expect(planVersions(ask)[0]?.executed).toBeUndefined()
+    const askRun = [...plan(), user('Exécute ce plan.', 'ask'), agent('Je ne modifie rien.')]
+    expect(planVersions(askRun)[0]?.executed).toBeUndefined()
+    const build = [...plan(), user('Tu peux détailler ?', 'build'), agent('Oui.')]
+    expect(planVersions(build)[0]?.executed).toBeUndefined()
+  })
+
+  it('exécution arrêtée : le plan reste actionnable ; relancée et réussie : exécuté', () => {
+    const items = [...plan(), user('Exécute ce plan.', 'build'), stopped()]
+    expect(planVersions(items)[0]?.executed).toBeUndefined()
+    const again = [...items, user('Exécute ce plan.', 'build'), { ...agent('Fait.'), at: 9 }]
+    expect(planVersions(again)[0]?.executed).toBe(true)
+  })
+
+  it('tour d’exécution fini, puis l’agent plante : le plan reste exécuté (revue)', () => {
+    const crash: TranscriptItem = {
+      kind: 'notice',
+      id: next++,
+      level: 'error',
+      message: { key: 'transcript.notice.exited' }
+    }
+    const items = [
+      ...plan(),
+      user('Exécute ce plan.', 'build'),
+      { ...agent('Fait.'), at: 7 },
+      crash
+    ]
+    expect(planVersions(items)[0]?.executed).toBe(true)
+  })
+
+  it('remarques en restant en mode plan : la nouvelle version n’est pas exécutée', () => {
+    const items = [
+      user('Propose un plan'),
+      agent(long('Plan v1')),
+      user('Remarques…'),
+      agent(long('Plan v2'))
+    ]
+    expect(planVersions(items).map((p) => [p.version, p.executed])).toEqual([
+      [1, undefined],
+      [2, undefined]
+    ])
+  })
+})
+
 describe('remarques et exécution', () => {
   it('message de remarques : passages cités, demande de mise à jour en restant en mode plan', () => {
     const text = planFeedback(

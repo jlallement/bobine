@@ -149,7 +149,13 @@ export function WorkFoot({
           {open}
         </div>
       )}
-      {!nested && (
+      {state === 'gone' && (
+        // Mis à la corbeille (fiche 272) : pourquoi les boutons ont disparu, et rien ne part plus.
+        <div className="work-relay" data-testid="work-gone">
+          {t('workCard.goneLine', { agent })}
+        </div>
+      )}
+      {!nested && state !== 'gone' && (
         <RelayLine
           relay={relay}
           asked={asked}

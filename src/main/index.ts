@@ -63,7 +63,7 @@ import { setupUsageJournal, USAGE_DB_FILE } from './usage/setup'
 import { buildMenuTemplate, zoomInterface } from './menu'
 import { appMenu } from './app-menu'
 import { Presentation } from './presentation'
-import { followFullScreen } from './full-screen-menu'
+import { followFullScreen, hideSystemFullScreenItem } from './full-screen-menu'
 import { McpSettings } from './agent-config/mcp-settings'
 import { ApprovalRulesSettings } from './agent-config/approval-rules-settings'
 import { ProvidersSettings } from './agent-config/providers-settings'
@@ -236,6 +236,9 @@ const appLanguage = systemAppLanguage(systemPreferences)
 const startLanguage = savedLanguage(join(userData, 'settings.json'))
 if (managesNativeLanguage) syncNativeLanguage(appLanguage, startLanguage)
 initI18n(resolveLanguage(startLanguage, app.getPreferredSystemLanguages()), features)
+// Un seul « Plein écran », celui de l'app, traduit : pas d'« Enter Full Screen » de macOS (fiche 272).
+// App packagée seulement : en développement, le domaine est celui d'Electron, partagé (fiche 074).
+if (app.isPackaged) hideSystemFullScreenItem(process.platform, systemPreferences)
 // Dossier personnel : les libellés de cartes (et des notifications) disent `~` (fiche 214).
 setHomeFolder(homedir())
 
@@ -811,7 +814,8 @@ async function start(): Promise<void> {
   })
   // Fenêtre principale fermée ou rechargée : l'essai en cours s'arrête avec elle.
   mainWindowGone = () => onboarding.stop()
-  void conversations.startActive()
+  // `bobine <dossier>` : la conversation de ce dossier démarre, pas celle d'avant (fiche 272).
+  void conversations.startActive(!launch.pending)
 
   // L'app s'installe elle-même dans Applications (fiche 073), si la plateforme le permet.
   const installer = setupSelfInstall({

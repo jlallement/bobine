@@ -98,7 +98,7 @@ export function RoleAvatar({
   )
 }
 
-/** Avatars empilés (en-tête de « Sous-tâches », ligne « Partira à 3 rôles »). */
+/** Avatars empilés (en-tête de « Sous-tâches », ligne « Sera confié à 3 rôles »). */
 export function RoleStack({
   roles
 }: {

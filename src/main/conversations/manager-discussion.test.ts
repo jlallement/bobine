@@ -36,7 +36,8 @@ function launch(scenario = 'echo', root = tempDir('discussion-')) {
     settingsFile: join(root, 'settings.json'),
     conversationsDir,
     defaultWorkspace: workspace,
-    neutralFolder: workspace,
+    // Comme l'app : le dossier de repli interne est à part (`<données>/workspace`), jamais un projet.
+    neutralFolder: join(root, 'workspace'),
     pathEnv: () => process.env['PATH'],
     emit: (event) => events.push(event),
     emitList: () => {},

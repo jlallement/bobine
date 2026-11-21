@@ -21,6 +21,7 @@ import {
 } from '@shared/app-commands'
 import type { ConversationUsage } from '@shared/usage'
 import type { PromptAttachment } from '@shared/attachments'
+import { controlName } from './control-name'
 
 /** Ce que fait une commande de l'app, dans l'ordre. */
 export type AppCommandAction =
@@ -66,13 +67,13 @@ function choose(
     const list = control.options
       .map((o) => `${o.value === control.currentValue ? '•' : '◦'} ${o.name}`)
       .join('\n')
-    return info(i18next.t('appCommands.choices', { name: control.name, list }))
+    return info(i18next.t('appCommands.choices', { name: controlName(control), list }))
   }
   const option = pickOption(control, args)
   if (!option) return info(i18next.t(`appCommands.${category}.noMatch`, { args }))
   return [
     { type: 'setControl', controlId: control.id, value: option.value },
-    ...info(i18next.t('appCommands.chosen', { name: control.name, value: option.name }))
+    ...info(i18next.t('appCommands.chosen', { name: controlName(control), value: option.name }))
   ]
 }
 

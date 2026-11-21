@@ -46,6 +46,9 @@ describe('continuer avec un autre agent (fiche 108)', () => {
     // Une fois le premier message parti, plus rien.
     expect(handoverContext([...items, user(5, 'Suite')])).toBeUndefined()
     expect(handoverContext([user(1, 'Un'), agent(2, 'A')])).toBeUndefined()
+    // Une compaction ne l'emporte pas : il attend le premier vrai message (fiche 272).
+    const compact = { kind: 'user', id: 5, text: '/compact', compaction: true } as const
+    expect(handoverContext([...items, compact])).toContain('<earlier_conversation>')
   })
 
   it('deux bascules : tout l’échange part, la première bascule y est dite', () => {

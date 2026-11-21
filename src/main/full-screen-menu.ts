@@ -6,6 +6,23 @@
  */
 import { app, BrowserWindow } from 'electron'
 
+/**
+ * macOS ajoute aussi « Enter Full Screen » au menu Fenêtre de toute app aux fenêtres
+ * plein-écran-ables, dans la langue d'AppKit, même sans rôle `togglefullscreen` (recette du
+ * 2026-11-20, fiche 272 : « Plein écran » et « Enter Full Screen » côte à côte). La préférence
+ * `NSFullScreenMenuItemEverywhere` de l'app le retire : seul reste l'article de l'app, traduit.
+ * macOS seulement (la préférence n'existe pas ailleurs), avant la création du menu.
+ */
+export function hideSystemFullScreenItem(
+  platform: NodeJS.Platform,
+  prefs: {
+    setUserDefault: (key: 'NSFullScreenMenuItemEverywhere', type: 'boolean', value: boolean) => void
+  }
+): void {
+  if (platform !== 'darwin') return
+  prefs.setUserDefault('NSFullScreenMenuItemEverywhere', 'boolean', false)
+}
+
 export function followFullScreen(refreshMenu: () => void): void {
   const watch = (win: BrowserWindow) => {
     win.on('enter-full-screen', refreshMenu)

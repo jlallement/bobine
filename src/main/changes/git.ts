@@ -119,7 +119,7 @@ export class GitChangesReader {
       cwd: workspace,
       timeoutMs: 10_000
     })
-    if (top.code !== 0) return notARepoOrError(top.stderr)
+    if (top.code !== 0) return notARepoOrError(top.stderr, workspace)
     const [gitRoot, prefix = ''] = text(top.stdout).split('\n')
     const root = gitRoot ? nativeGitPath(gitRoot) : workspace
     const hasHead =

@@ -819,6 +819,29 @@ describe('revues UX et QA (fiche 264)', () => {
     expect(onShowChanges).toHaveBeenCalled()
   })
 
+  it('tous en lecture seule : pas de « Voir les modifications » (fiche 272, recette)', async () => {
+    const reader = { ...front, name: 'reader', label: 'Relecteur', readOnly: true as const }
+    const items: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Découpe' },
+      proposal(2, 'API', 'k-api'),
+      proposal(3, 'Page', 'k-page'),
+      started(4, 'a', 'k-api', { role: reader }),
+      started(5, 'b', 'k-page', { role: reader }),
+      report(6, 'a'),
+      report(7, 'b')
+    ]
+    const actions = mergeActions([])
+    view(
+      items,
+      info([child('a', { role: reader }), child('b', { role: reader })], {
+        merge: actions,
+        onShowChanges: vi.fn()
+      })
+    )
+    await act(async () => {})
+    expect(screen.queryByTestId('work-group-changes')).toBeNull()
+  })
+
   const verdict = (id: number, childId: string, ready: boolean): TranscriptItem => ({
     kind: 'child-recommendation',
     id,

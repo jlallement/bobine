@@ -106,7 +106,8 @@ export function handoverContext(items: readonly TranscriptItem[]): string | unde
   const at = lastHandoverIndex(items)
   const handover = items[at]
   if (handover?.kind !== 'handover') return undefined
-  if (items.slice(at + 1).some((item) => item.kind === 'user')) return undefined
+  // Une compaction ne l'a pas emporté (fiche 272).
+  if (items.slice(at + 1).some((item) => item.kind === 'user' && !item.compaction)) return undefined
   return [
     handover.reason
       ? `${APP_CONTEXT_OPENINGS.renewal} ${RENEWAL_CAUSE[handover.reason]}, and continues here: my new`

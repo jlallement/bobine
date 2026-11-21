@@ -194,7 +194,7 @@ describe('historique de la saisie (fiche 227)', () => {
     expect(onUnqueue).toHaveBeenCalledWith('q1', true)
   })
 
-  it('jetons de rôle repris (ligne « Partira à… ») ; rôle supprimé : « @Libellé » en texte', () => {
+  it('jetons de rôle repris (ligne « Sera confié à… ») ; rôle supprimé : « @Libellé » en texte', () => {
     const { input, key } = setup()
     for (let i = 0; i < 5; i++) key('ArrowUp')
     expect(input.value).toBe('relis le diff du paiement')

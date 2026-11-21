@@ -4,6 +4,7 @@
  * son plan dans un fichier Markdown (contenu complet du diff), OpenCode le met dans sa réponse.
  */
 import type { TranscriptItem } from './transcript'
+import { endedBadly } from './turn-end'
 import { folderName } from './windows-paths.ts'
 
 export interface ModeRef {
@@ -35,6 +36,12 @@ export interface PlanVersion {
   replyIds: number[]
   /** Dernier plan de la conversation : on peut l'annoter, l'envoyer, l'exécuter. */
   latest: boolean
+  /**
+   * « Exécuter le plan » est parti après lui (son texte exact, hors des modes plan et ask) et ce
+   * tour n'a pas mal fini : plus rien à envoyer ni à exécuter, pas de double exécution (fiche 272).
+   * Une question en Ask, un autre message, une exécution arrêtée ou en erreur ne le figent pas.
+   */
+  executed?: true
 }
 
 type Item = TranscriptItem
@@ -71,7 +78,8 @@ export function planVersions(items: readonly Item[]): PlanVersion[] {
       ...plan,
       version: (before?.n ?? 0) + 1,
       ...(before ? { previous: before.text } : {}),
-      latest: i === plans.length - 1
+      latest: i === plans.length - 1,
+      ...(executedAfter(items, plan) ? { executed: true as const } : {})
     }
   })
 }
@@ -157,3 +165,24 @@ export function executionMode(
 }
 
 const basenameOf = (path: string) => folderName(path)
+
+/** Mode « ask » (questions sans modification), comme `executionMode`. */
+const isAskMode = (mode: ModeRef) => /\bask\b/i.test(`${mode.id} ${mode.name}`)
+
+/** Le plan a-t-il été exécuté : demande exacte, hors plan et ask, tour qui n'a pas mal fini. */
+function executedAfter(items: readonly Item[], plan: Pick<PlanVersion, 'anchorId' | 'path'>) {
+  const from = items.findIndex((i) => i.id === plan.anchorId)
+  if (from < 0) return false
+  const asked = planExecution(plan.path)
+  for (let i = from + 1; i < items.length; i++) {
+    const item = items[i]
+    if (item?.kind !== 'user' || item.text !== asked) continue
+    if (item.mode && (isPlanMode(item.mode) || isAskMode(item.mode))) continue
+    const next = items.findIndex((x, j) => j > i && x.kind === 'user')
+    const turn = items.slice(i + 1, next < 0 ? undefined : next)
+    // Une réponse datée de l'agent : le plan a été exécuté, quoi qu'il arrive ensuite (panne de
+    // l'agent après le tour). Sans elle, seule une fin anormale le laisse actionnable.
+    if (turn.some((x) => x.kind === 'agent' && x.at) || !endedBadly(turn)) return true
+  }
+  return false
+}

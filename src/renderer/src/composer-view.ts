@@ -1,7 +1,6 @@
 import i18next from 'i18next'
 import type {
   AgentBlocker,
-  AgentSettingsView,
   AgentSnapshot,
   AgentStatus,
   QueuedMessageView,
@@ -30,9 +29,8 @@ export interface ComposerView {
   agentName: string
   /** Nom de l'agent dans la barre et ses menus (« Agent » à défaut). */
   agentLabel: string
-  /** Badges du menu « / » : le profil de l'agent, et les agents installés (commandes de l'app). */
+  /** Badge du menu « / » : le profil de l'agent de la conversation (fiche 272). */
   profileLabel: string
-  installedAgents: string[]
   /** Action requise par l'agent (connexion, dossier) : son panneau passe au-dessus de la saisie. */
   blocker: AgentBlocker | undefined
   /** Le mode courant est un mode plan (`isPlanMode`) : la zone de saisie le montre (fiche 098). */
@@ -54,10 +52,7 @@ function planState(
   return { planMode, nextModeName: leaves ? next.name : undefined }
 }
 
-export function composerView(
-  snapshot: AgentSnapshot | null,
-  settings: AgentSettingsView | null
-): ComposerView {
+export function composerView(snapshot: AgentSnapshot | null): ComposerView {
   const status = snapshot?.status ?? 'idle'
   const busy = status === 'busy'
   const controls = snapshot?.controls ?? []
@@ -65,7 +60,6 @@ export function composerView(
   const named = snapshot?.info.agentName ?? snapshot?.info.profileLabel
   const agentLabel = named ?? i18next.t('composer.agent')
   const profileLabel = snapshot?.info.profileLabel ?? agentLabel
-  const installed = settings?.profiles.filter((p) => p.available).map((p) => p.label) ?? []
   return {
     status,
     busy,
@@ -78,7 +72,6 @@ export function composerView(
     agentName: named ?? i18next.t('composer.theAgent'),
     agentLabel,
     profileLabel,
-    installedAgents: installed.length > 0 ? installed : [profileLabel],
     blocker: status === 'needs-action' ? snapshot?.blocker : undefined,
     ...planState(modeControl)
   }

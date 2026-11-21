@@ -10,6 +10,7 @@ import {
   panelFits,
   panelTabsUsed,
   saveClosedTabs,
+  shownPanelTab,
   tabAfterClose,
   unavailablePanelTabs,
   visiblePanelTabs
@@ -248,5 +249,16 @@ describe('place de la conversation à côté du panneau (fiche 173)', () => {
     expect(panelFits(999, 220)).toBe(false)
     expect(panelFits(780, 0)).toBe(true)
     expect(panelFits(720, 220)).toBe(false)
+  })
+})
+
+describe('onglet montré (fiche 272, recette : Navigateur affiché en Discussion sans son onglet)', () => {
+  it('un onglet absent de cet espace : le premier onglet affiché à la place', () => {
+    const absent = unavailablePanelTabs(ALL_FEATURES, true)
+    expect(shownPanelTab('browser', ['session', 'documents'], absent)).toBe('session')
+    expect(shownPanelTab('documents', ['session', 'documents'], absent)).toBe('documents')
+    expect(
+      shownPanelTab('browser', ['session', 'browser'], unavailablePanelTabs(ALL_FEATURES))
+    ).toBe('browser')
   })
 })

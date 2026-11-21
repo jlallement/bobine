@@ -379,6 +379,8 @@ describe('Mon activité et Rechercher (fiche 144)', () => {
     expect(buttons).toHaveLength(2)
     expect(buttons[0]).toBe(screen.getByTestId('open-search'))
     expect(buttons[0]?.getAttribute('aria-label')).toBe('Rechercher')
+    // Fiche 272 (recette) : le bouton qui masque la barre a un nom pour VoiceOver.
+    expect(buttons[1]?.getAttribute('aria-label')).toBeTruthy()
     fireEvent.click(screen.getByTestId('open-search'))
     expect(onSearch).toHaveBeenCalledOnce()
   })

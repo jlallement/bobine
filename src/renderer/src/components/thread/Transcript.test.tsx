@@ -356,7 +356,7 @@ describe('conversations filles dans le fil de la mère (fiche 097)', () => {
       ])
     )
     expect(screen.getByTestId('child-report-pending').textContent).toBe(
-      'Partira à l’agent quand ses travaux auront tous répondu.'
+      'Sera transmise à l’agent quand ses travaux auront tous répondu.'
     )
   })
 })
@@ -496,6 +496,29 @@ describe('bilan de chaque tour dans le pied de sa réponse (fiches 255, 261)', (
       .sort((a, b) => a.at - b.at)
       .map(({ mark }) => mark)
   }
+
+  it('tour du plan (fiche 272, recette) : la carte du plan, puis son pied « heure · durée »', () => {
+    const plan = `## Plan\n\n${'Étape détaillée du plan. '.repeat(12)}`
+    render(
+      <Transcript
+        items={[
+          {
+            kind: 'user',
+            id: 1,
+            text: 'Prépare un plan',
+            at: 0,
+            mode: { id: 'plan', name: 'Plan' }
+          },
+          { kind: 'agent', id: 2, text: plan, at: 22_000 }
+        ]}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={{ busy: false, onEdit: noop, onOpenConversation: noop }}
+      />
+    )
+    expect(screen.getByTestId('plan-document')).toBeTruthy()
+    expect(screen.getByTestId('turn-summary').textContent).toContain('22 s')
+  })
 
   it('message en file (D5) : chacun son pied, dans le groupe de sa réponse, avant les cartes d’après', () => {
     show({ busy: false })

@@ -198,6 +198,16 @@ export async function planSuite(scheme) {
             )) === 'code',
           'exécuter : retour au mode d’exécution, puis demande d’exécution'
         )
+        // Fiche 272 (recette) : le plan exécuté ne s'exécute pas deux fois.
+        check(
+          (await ui.ev(
+            `[...document.querySelectorAll('[data-testid=plan-execute]')].at(-1)?.disabled === true`
+          )) &&
+            (await ui.ev(
+              `[...document.querySelectorAll('[data-testid=plan-document-hint]')].at(-1)?.innerText`
+            )) === L('planDocument.executed'),
+          'plan exécuté : « Exécuter le plan » désactivé, « Plan déjà exécuté »'
+        )
       },
       undefined,
       'plan-fichier',

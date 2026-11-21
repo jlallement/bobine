@@ -20,13 +20,14 @@ export async function commandsSuite(scheme) {
         )) === 11,
       '« / » : commandes de l’agent (3) et de l’app (11, avec /btw), origine affichée'
     )
-    // Commande de l'app : un badge par agent installé (valable avec chacun), pas « Bobine ».
+    // Commande de l'app : le seul agent de la conversation (fiche 272, recette : « IBM Bob » dans
+    // une conversation OpenCode), pas « Bobine ».
     const appBadges = await ui.ev(
       `[...document.querySelector('.command-sources').querySelectorAll('.command-source')].map((b) => b.innerText)`
     )
     check(
-      appBadges.includes(M('Agent factice')) && !appBadges.includes('Bobine'),
-      `commande de l’app : badges des agents installés (${appBadges.join(', ')})`
+      appBadges.length === 1 && appBadges[0] === M('Agent factice'),
+      `commande de l’app : l’agent de la conversation seul (${appBadges.join(', ')})`
     )
     const badge = await ui.ev(
       `(() => { const b = document.querySelector('.command-source.from-app').getBoundingClientRect(); const row = b && document.querySelector('.command-source.from-app').closest('.command-item').getBoundingClientRect(); return { width: b.width, row: row.width } })()`

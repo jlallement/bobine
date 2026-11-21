@@ -69,6 +69,24 @@ describe('ContentSearch (fiche 046)', () => {
     expect(reads).toEqual([])
   })
 
+  it('consigne cachée d’un rôle : jamais cherchée ni montrée dans l’extrait (fiche 272)', async () => {
+    const { source } = disk({})
+    const search = new ContentSearch(source)
+    const text =
+      'Ajoute la persistance. Lance npm test.\n\n<bobine_role name="back-architect">\nTu es architecte persistance.\n</bobine_role>'
+    const role: TranscriptState = {
+      items: [
+        { kind: 'user', id: 1, text },
+        { kind: 'agent', id: 2, text: 'Fait.' }
+      ],
+      nextId: 3
+    }
+    const hits = await search.search([conv('a', '2026-10-01', role)], 'persistance')
+    expect(hits).toHaveLength(1)
+    expect(JSON.stringify(hits)).not.toContain('bobine_role')
+    expect(await search.search([conv('b', '2026-10-01', role)], 'architecte')).toEqual([])
+  })
+
   it('deux recherches simultanées : chaque fichier lu une seule fois', async () => {
     const files = { a: { stamp: '1', transcript: transcript('Postgres') } }
     const { source, reads, hold, flush } = disk(files)

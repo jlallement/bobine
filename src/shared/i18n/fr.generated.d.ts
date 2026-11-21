@@ -236,13 +236,17 @@ export type FrResources = {
       readonly starting: 'Démarrage de l’agent…'
       readonly busy: 'Ajouter une suite (envoyée à la fin de la réponse)…'
       readonly error: 'L’agent n’a pas pu démarrer : écrivez pour réessayer'
-      readonly exited: 'L’agent s’est arrêté : écrivez pour le relancer'
+      readonly exited: 'Écrivez pour relancer l’agent…'
       readonly 'needs-action': 'Action requise avant de commencer'
       readonly authExpired: 'Reconnectez-vous pour continuer'
       readonly modelRefused: 'Choisissez un autre modèle ou connectez-vous'
       readonly needsFolder: 'Choisissez d’abord un dossier'
       readonly modelRefusedKey: 'Choisissez un autre modèle ou ajoutez une clé d’API'
       readonly modelRefusedOnly: 'Choisissez un autre modèle'
+      readonly role: 'Votre demande à {{role}}…'
+      readonly roles_one: 'Votre demande au rôle…'
+      readonly roles_many: 'Votre demande aux {{count}} rôles…'
+      readonly roles_other: 'Votre demande aux {{count}} rôles…'
     }
     readonly plan: {
       readonly placeholder: 'Explorer et planifier avec {{agent}}…'
@@ -272,7 +276,6 @@ export type FrResources = {
       readonly queued: 'Envoyer à la fin de la réponse (Entrée)'
       readonly now: 'Envoyer (Entrée)'
     }
-    readonly exited: 'L’agent s’est arrêté.'
     readonly failedToStart: 'L’agent n’a pas pu démarrer.'
     readonly restart: 'Relancer'
     readonly pasted: {
@@ -697,6 +700,7 @@ export type FrResources = {
     readonly deleteNote: 'Supprimer la remarque {{number}}'
     readonly selectHint: 'Sélectionnez un passage pour le commenter.'
     readonly agentWorking: 'L’agent travaille…'
+    readonly executed: 'Plan déjà exécuté'
     readonly sendNotes: 'Envoyer mes remarques'
     readonly execute: 'Exécuter le plan'
     readonly notes_one: '{{count}} remarque'
@@ -788,6 +792,7 @@ export type FrResources = {
   }
   readonly fileMenu: {
     readonly empty: 'Aucun fichier ne correspond.'
+    readonly context: 'Contexte'
     readonly keys: '↑↓ choisir · Tab ou Entrée joindre · Échap fermer'
     readonly title: 'Fichiers · {{workspace}}'
   }
@@ -843,6 +848,7 @@ export type FrResources = {
       readonly busyArchiveChild: '« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine'
       readonly unknown: 'Conversation inconnue : {{id}}'
       readonly busyFolders: 'L’agent répond encore : changez les dossiers de la conversation après sa réponse'
+      readonly folderGoneAtSend: 'Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation.'
     }
     readonly newTitle: 'Nouvelle conversation'
     readonly retired: {
@@ -1153,7 +1159,7 @@ export type FrResources = {
       }
       readonly commitDraft: {
         readonly label: 'Message de commit rédigé par l’agent'
-        readonly hint: 'Session à part, environ 10 000 jetons par commit (≈ 0,03 bobcoin chez IBM Bob).'
+        readonly hint: 'Session à part, environ 10 000 jetons par commit (≈ 0,03 Bobcoin chez IBM Bob).'
       }
     }
     readonly fontSize: { readonly smaller: 'Plus petit'; readonly larger: 'Plus grand' }
@@ -1637,7 +1643,7 @@ export type FrResources = {
     readonly memory: {
       readonly enabled: {
         readonly label: 'Mémoire activée'
-        readonly hint: "Les agents proposent, vous décidez : rien n'est gardé sans votre accord."
+        readonly hint: 'Les agents proposent, vous décidez : rien n’est gardé sans votre accord.'
         readonly hintOff: 'Désactivée : les agents ne reçoivent ni souvenirs ni outil ; les vôtres restent ici.'
       }
       readonly entries: 'Souvenirs'
@@ -1650,7 +1656,7 @@ export type FrResources = {
       readonly attach: 'Rattacher à un dossier…'
       readonly attached_one: '{{count}} souvenir rattaché.'
       readonly attached_other: '{{count}} souvenirs rattachés.'
-      readonly empty: "Aucun souvenir ici pour l'instant."
+      readonly empty: 'Aucun souvenir ici pour l’instant.'
       readonly broken: 'Un souvenir illisible a été mis de côté ({{file}}) ; « Tout effacer » le supprime.'
       readonly export: 'Exporter…'
       readonly exported: 'Exporté dans {{file}}'
@@ -1669,8 +1675,8 @@ export type FrResources = {
       readonly moveToProject: 'Déplacer vers ce projet'
       readonly moveError: {
         readonly changed: 'Ce souvenir a changé entre-temps : rouvrez-le.'
-        readonly exists: "Un souvenir du même nom existe déjà de l'autre côté."
-        readonly full: "L'autre mémoire est pleine."
+        readonly exists: 'Un souvenir du même nom existe déjà de l’autre côté.'
+        readonly full: 'L’autre mémoire est pleine.'
       }
       readonly delete: 'Supprimer'
       readonly deleteConfirm: 'Supprimer « {{description}} » ?'
@@ -1683,7 +1689,7 @@ export type FrResources = {
       readonly invalid: {
         readonly description: 'Une seule ligne, {{description}} caractères au plus.'
         readonly body: 'Entre 1 et {{body}} caractères.'
-        readonly other: "Ce souvenir n'est pas valide."
+        readonly other: 'Ce souvenir n’est pas valide.'
       }
       readonly changedWhileEditing: 'Ce souvenir a été modifié entre-temps.'
       readonly reload: 'Recharger (vos modifications seront perdues)'
@@ -1691,7 +1697,7 @@ export type FrResources = {
       readonly clearConfirm_many: 'Effacer les {{count}} souvenirs ? Les agents ne les recevront plus.'
       readonly where: 'Commune à tous les agents, en clair sur ce Mac.'
       readonly outside: 'Modifié hors de Bobine'
-      readonly outsideNotice: "Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n'est plus donné aux agents tant que vous ne l'avez pas relu."
+      readonly outsideNotice: 'Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n’est plus donné aux agents tant que vous ne l’avez pas relu.'
       readonly keepChanges: 'Garder ces modifications'
       readonly byUnknown: 'inconnu'
       readonly keyLocked: 'Bobine ne peut pas lire sa clé dans le trousseau : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Autorisez l’accès au trousseau, puis relancez Bobine.'
@@ -2145,11 +2151,20 @@ export type FrResources = {
     readonly revertCreated: 'Créé par l’agent : il sera supprimé.'
     readonly files_many: '{{count}} fichiers'
     readonly binaryBadge: 'binaire'
+    readonly unknownBadge: 'modifié'
     readonly changeOf: 'Modification {{index}} sur {{total}}'
+    readonly unknownDiff: 'L’agent a écrit ce fichier sans envoyer son contenu : le diff n’est pas connu. La vue Git montre l’état réel du fichier.'
     readonly children: {
       readonly revealLabel: 'Afficher le worktree de « {{title}} » dans le Finder'
       readonly editorLabel: 'Ouvrir le worktree de « {{title}} » dans {{editor}}'
     }
+    readonly noTotals: 'sans totaux'
+    readonly someNoTotals_one: '{{count}} sans totaux'
+    readonly someNoTotals_many: '{{count}} sans totaux'
+    readonly someNoTotals_other: '{{count}} sans totaux'
+    readonly someBinary_one: '{{count}} binaire'
+    readonly someBinary_many: '{{count}} binaires'
+    readonly someBinary_other: '{{count}} binaires'
   }
   readonly install: {
     readonly title: 'Installer Bobine'
@@ -2231,7 +2246,8 @@ export type FrResources = {
     readonly forward: 'Suivant'
     readonly stop: 'Arrêter'
     readonly reload: 'Recharger'
-    readonly addressPlaceholder: 'Adresse (ex. localhost:3000)'
+    readonly addressPlaceholder: 'localhost:3000'
+    readonly addressLabel: 'Adresse de la page (ex. localhost:3000)'
     readonly attach: 'Joindre cette page au message'
     readonly empty: 'Les pages ouvertes par l’agent s’affichent ici. Vous pouvez aussi saisir une adresse.'
     readonly url: {
@@ -3153,6 +3169,7 @@ export type FrResources = {
       readonly unresponsive: 'L’agent ne répondait plus à « Stop » : il a été arrêté.'
       readonly ended: 'processus terminé ({{status}})'
       readonly code: 'code {{code}}'
+      readonly killed: 'arrêt forcé par le système ou un autre programme (SIGKILL)'
       readonly status: 'Sortie : {{status}}.{{hint}}'
       readonly connectionLost: 'L’agent ne répond plus : sa connexion avec Bobine s’est coupée, et Bobine l’a arrêté. « Relancer » le redémarre ; la conversation est gardée.'
     }
@@ -3506,6 +3523,7 @@ export type FrResources = {
   readonly git: {
     readonly missingWindows: 'git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
     readonly missing: 'git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.'
+    readonly folderMissing: 'Le dossier n’existe plus : {{folder}}. A-t-il été déplacé ou supprimé ?'
     readonly failed: 'git a échoué'
     readonly statusFailed: 'git status a échoué'
   }
@@ -3624,9 +3642,9 @@ export type FrResources = {
       readonly noFiles: 'rien modifié'
       readonly expand: 'Afficher le détail'
       readonly collapse: 'Masquer le détail'
-      readonly pending: 'Partira à l’agent avec votre prochain message.'
+      readonly pending: 'Sera transmise à l’agent avec votre prochain message.'
       readonly gone: 'Conversation supprimée'
-      readonly pendingWake: 'Partira à l’agent quand ses travaux auront tous répondu.'
+      readonly pendingWake: 'Sera transmise à l’agent quand ses travaux auront tous répondu.'
       readonly turns_one: '{{count}} échange'
       readonly turns_many: '{{count}} échanges'
       readonly turns_other: '{{count}} échanges'
@@ -4581,20 +4599,20 @@ export type FrResources = {
     readonly destination: {
       readonly reply: 'Répondra à <strong>{{label}}</strong>, dans le même travail'
       readonly replyToken: 'suite du travail'
-      readonly one: 'Partira à <strong>{{label}}</strong>, dans sa propre conversation'
-      readonly many_one: 'Partira à <strong>{{count}} rôle</strong>, un travail chacun, en parallèle'
-      readonly many_many: 'Partira à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle'
-      readonly many_other: 'Partira à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle'
+      readonly one: 'Sera confié à <strong>{{label}}</strong>, dans sa propre conversation'
+      readonly many_one: 'Sera confié à <strong>{{count}} rôle</strong>, un travail chacun, en parallèle'
+      readonly many_many: 'Sera confié à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle'
+      readonly many_other: 'Sera confié à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle'
       readonly sameFolder: 'dans ce dossier'
       readonly worktree: 'son worktree'
       readonly attachments: 'Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.'
       readonly empty: 'Écrivez votre demande après le rôle : c’est elle qui part.'
       readonly sending: 'Lancement…'
       readonly failed: '{{label}} n’est pas parti : {{error}}'
-      readonly opinionOne: 'Partira à <strong>{{label}}</strong>, pour un <strong>avis</strong>, dans sa propre conversation'
-      readonly opinionMany_one: 'Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
-      readonly opinionMany_many: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
-      readonly opinionMany_other: 'Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
+      readonly opinionOne: 'Sera confié à <strong>{{label}}</strong>, pour un <strong>avis</strong>, dans sa propre conversation'
+      readonly opinionMany_one: 'Sera confié à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
+      readonly opinionMany_many: 'Sera confié à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
+      readonly opinionMany_other: 'Sera confié à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle'
       readonly opinionSeesOne_one: 'voit la modification non commitée'
       readonly opinionSeesOne_many: 'voit les {{count}} modifications non commitées'
       readonly opinionSeesOne_other: 'voit les {{count}} modifications non commitées'
@@ -4853,6 +4871,7 @@ export type FrResources = {
   readonly workCard: {
     readonly pendingLine: 'Sa réponse s’affichera à la fin de la réponse de {{agent}}.'
     readonly silentLine: 'Pas de réponse pour cette demande : rien n’est parti, ou la réponse s’est perdue. « Relancer » la renvoie.'
+    readonly goneLine: 'Sa conversation a été supprimée : plus aucune action ici, et sa réponse ne part plus à {{agent}}.'
     readonly nowOther: '{{target}}…'
     readonly nowFetch: 'Consulte {{target}}…'
     readonly nowExecute: 'Lance {{target}}…'
@@ -4979,10 +4998,10 @@ export type FrResources = {
   }
   readonly help: {
     readonly title: 'Aide de Bobine'
-    readonly nav: "Sommaire de l'aide"
+    readonly nav: 'Sommaire de l’aide'
     readonly search: {
       readonly placeholder: 'Rechercher'
-      readonly label: "Rechercher dans l'aide"
+      readonly label: 'Rechercher dans l’aide'
       readonly empty: 'Aucune page ne contient ces mots.'
       readonly keys: '↑↓ résultats · ↩ ouvrir · Échap effacer'
     }
@@ -5124,7 +5143,7 @@ export type FrResources = {
       readonly rememberTitle: 'Retenir ce souvenir ?'
       readonly forgetTitle: 'Oublier ce souvenir ?'
       readonly by: 'proposé par {{agent}}'
-      readonly external: "Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l'agent : vérifiez ce texte, il reviendra à chaque session de ce projet."
+      readonly external: 'Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l’agent : vérifiez ce texte, il reviendra à chaque session de ce projet.'
       readonly command: 'Il contient une commande à exécuter.'
       readonly changed: 'Modifié depuis la proposition (le {{date}})'
       readonly replaces: 'Remplace « {{description}} », retenu le {{date}} :'
@@ -6227,5 +6246,10 @@ export type FrResources = {
     readonly stateMerged: 'fusionné · {{time}}'
     readonly commit: 'commit {{commit}}'
     readonly reviewing: 'En relecture : la fusion attend la fin du Code reviewer.'
+  }
+  readonly controlCategory: {
+    readonly model: 'Modèle'
+    readonly mode: 'Mode'
+    readonly thought_level: 'Niveau de réflexion'
   }
 }

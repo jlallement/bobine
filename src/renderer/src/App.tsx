@@ -15,6 +15,8 @@ import { InstallDialog } from './components/dialogs/InstallDialog'
 import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
+import { LineTotals } from './components/common/LineTotals'
+import { useThreadItems } from './role-labels'
 import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
 import { ResumeCard } from './components/thread/ResumeCard'
@@ -53,7 +55,6 @@ import { DropOverlay } from './components/composer/DropOverlay'
 import { TurnFooter } from './components/thread/TurnFooter'
 import { ConversationOutline } from './components/thread/ConversationOutline'
 import { childrenMergeActions } from './components/thread/SubtasksMerge'
-import { countText } from '@shared/i18n/format'
 import { Welcome } from './components/Welcome'
 import { useOnboarding } from './components/onboarding/useOnboarding'
 import { useTranslation } from 'react-i18next'
@@ -64,7 +65,6 @@ import { useTurnGuards } from './useTurnGuards'
 import { TurnControlsContext } from './turn-controls'
 import { GlobalRulesContext, type GlobalRules } from './components/thread/global-rules'
 import { ProfileNotices, ReadOnlyGate } from './components/common/Profile'
-import { withoutCardedRefusal } from '@shared/transcript-notice'
 
 /** Actions de la carte « Préparation du worktree » (fiche 175) pour la conversation affichée. */
 function worktreeSetupActions(id: string, warn: (message: string) => void) {
@@ -356,6 +356,7 @@ export function App() {
     onCreate: openRoleWizardNamed,
     onManage: () => dialogs.setSettingsSection('roles')
   })
+  const threadShown = useThreadItems(transcript.items, snapshot, composerRoles.labels)
   const editor = (
     <Composer
       roles={composerRoles}
@@ -573,8 +574,7 @@ export function App() {
                       >
                         <FileDiff size={15} />
                         {changes.files}
-                        <span className="diff-added">+{countText(changes.added)}</span>
-                        <span className="diff-removed">−{countText(changes.removed)}</span>
+                        <LineTotals {...changes} />
                       </button>
                     </Tip>
                   )}
@@ -667,7 +667,7 @@ export function App() {
                           <TurnControlsContext.Provider value={guards.turnControls}>
                             <Transcript
                               key={c.activeId ?? ''} // rien de déplié ne passe à la suivante
-                              items={withoutCardedRefusal(transcript.items, snapshot)}
+                              items={threadShown}
                               terminals={transcript.terminals}
                               onRespondPermission={c.respondPermission}
                               onRespondElicitation={c.respondElicitation}

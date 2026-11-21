@@ -3,13 +3,14 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { elapsedLabel } from '@shared/activity'
 import { useTranslation } from 'react-i18next'
 import { conversationChanges } from '@shared/changes'
+import { endedBadly } from '@shared/turn-end'
 import type { TranscriptItem } from '@shared/transcript'
 import { turnTimes, type TurnTime } from '@shared/turn-duration'
 import { formatEstimate, turnCost, type ConversationUsage } from '@shared/usage'
 import { usePresentation } from '../../presentation'
 import { turnDuration } from '../../time'
-import { countText } from '@shared/i18n/format'
 import { CopyButton } from '../common/CopyButton'
+import { LineTotals } from '../common/LineTotals'
 import { MessageDuration, MessageTime } from './MessageTime'
 
 export interface TurnFacts {
@@ -20,6 +21,8 @@ export interface TurnFacts {
   files: number
   added: number
   removed: number
+  /** Fichiers écrits sans diff connu (fiche 272), parmi `files`. */
+  unknown?: number
   cost?: { amount: number; currency: string }
 }
 
@@ -122,6 +125,7 @@ export function sameFoot(a: ReplyFootState | undefined, b: ReplyFootState | unde
     x.files === y.files &&
     x.added === y.added &&
     x.removed === y.removed &&
+    x.unknown === y.unknown &&
     x.cost?.amount === y.cost?.amount &&
     x.cost?.currency === y.cost?.currency
   )
@@ -155,6 +159,9 @@ function factsOf(
       files: changes.length,
       added,
       removed,
+      ...(changes.some((c) => c.unknown)
+        ? { unknown: changes.filter((c) => c.unknown).length }
+        : {}),
       ...(amount !== undefined && amount > 0 && currency ? { cost: { amount, currency } } : {})
     }
   }
@@ -166,30 +173,6 @@ const stillInBackground = (item: TranscriptItem): boolean =>
   !!item.subagentRun?.background &&
   item.subagentRun.endedAt === undefined &&
   !item.subagentRun.lost
-
-/** Avis de fin anormale d'un tour (`STOP_MESSAGES` et `turn-error` de `shared/transcript`, fils d'avant). */
-const BAD_ENDS = new Set<string>([
-  'transcript.notice.cancelled',
-  'transcript.notice.refusal',
-  'transcript.notice.maxTokens',
-  'transcript.notice.maxTurnRequests',
-  'transcript.notice.error'
-])
-
-function badEnd(item: TranscriptItem): boolean {
-  // Limite d'étapes (fiche 209) : la carte le dit (l'avis `maxTurnRequests` des fils d'avant aussi).
-  if (item.kind === 'turn-limit') return true
-  return (
-    item.kind === 'notice' &&
-    (item.level === 'error' || (!!item.message && BAD_ENDS.has(item.message.key)))
-  )
-}
-
-/** Le tour a fini mal : un avis de fin anormale, sans réponse datée après lui (« Réessayer »). */
-function endedBadly(turn: readonly TranscriptItem[]): boolean {
-  const bad = turn.findLastIndex(badEnd)
-  return bad >= 0 && !turn.slice(bad + 1).some((item) => item.kind === 'agent' && item.at)
-}
 
 /**
  * Pied de la réponse qui finit un tour (fiche 261, écran F), toujours visible, à sa place : la
@@ -234,9 +217,7 @@ export function ReplyFoot({
   if (facts.files > 0) {
     const files = (
       <>
-        {t('turnSummary.fileCount', { count: facts.files })}{' '}
-        <span className="diff-added">+{countText(facts.added)}</span>{' '}
-        <span className="diff-removed">−{countText(facts.removed)}</span>
+        {t('turnSummary.fileCount', { count: facts.files })} <LineTotals {...facts} spaced />
       </>
     )
     parts.push({

@@ -293,6 +293,8 @@ function GroupMergeFoot({
       (x) => x.kind === 'user' && x.from?.kind === 'wake' && x.id > (w.card.anchor ?? Infinity)
     )
   const relays = works.flatMap((w) => {
+    // Un travail mis à la corbeille ne transmet plus rien (fiche 272).
+    if (w.state === 'gone') return []
     const relay = relayOf(currentReport(w.card), items)
     return relay ? [{ sent: relay.sent || woken(w), byAgent: !!w.card.byAgent }] : []
   })
@@ -326,7 +328,9 @@ function GroupMergeFoot({
         verdicts={verdicts}
         works
         extra={
-          info.onShowChanges && (
+          // Rien à voir quand tous les travaux sont en lecture seule (fiche 272, recette).
+          info.onShowChanges &&
+          !works.every((w) => w.card.role?.readOnly) && (
             <button
               type="button"
               className="btn small work-group-changes"
@@ -393,6 +397,7 @@ function useRowWorks(group: WorkGroupData, info: SubtasksInfo | undefined): RowW
     const attention = child ? info?.attention[child.id] : undefined
     const state = workState(row.work, child, attention, now, {
       known: !!info,
+      ...(info?.exists && row.work ? { exists: info.exists(row.work.childId) } : {}),
       ...(info?.motherBusy ? { motherBusy: true } : {})
     })
     return [{ card: row.work, child, state }]

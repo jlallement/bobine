@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import '../../syntax.css'
 import { CopyButton } from '../common/CopyButton'
 import { MarkdownLink } from './FileLink'
+import { rehypeInlineFileCode } from './inline-file-code'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
 import { rehypeKnownLanguage, rehypeRememberLanguage, textOf } from './code-language'
@@ -82,7 +83,9 @@ export const Markdown = memo(function Markdown({
         rehypePlugins={[
           [rehypeKnownLanguage, { source: text, streaming }],
           ...(highlight ? COLORED : []),
-          rehypeRememberLanguage
+          rehypeRememberLanguage,
+          // `fichier:ligne` en code : cliquable comme un lien de fichier (fiche 272).
+          rehypeInlineFileCode
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.

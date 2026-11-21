@@ -11,6 +11,7 @@ import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { t } from 'i18next'
 import { delay } from '../delay'
+import { isDirectory } from '../is-directory'
 import { launchSystem, type ProcessSystem } from '../process-launch'
 import { runCommand, type Run, type RunResult } from '../simulator/run'
 import { isGitProgram, windowsGitConfig } from './git-platform'
@@ -184,10 +185,19 @@ const GIT_MISSING = /spawn \S*git(\.exe)? ENOENT|xcrun: error: invalid active de
 
 export function explainMissingGit(
   result: RunResult,
-  system: ProcessSystem = launchSystem()
+  system: ProcessSystem = launchSystem(),
+  cwd?: string
 ): RunResult {
   if (result.code === 0 || !GIT_MISSING.test(result.stderr)) return result
+  // `spawn git ENOENT` vient aussi d'un dossier de travail disparu : git est là, c'est le dossier
+  // qui manque (fiche 272, recette : « git est introuvable » pour un projet déplacé).
+  if (cwd && !isDirectory(cwd)) return { ...result, stderr: missingFolderMessage(cwd) }
   return { ...result, stderr: missingGitMessage(system) }
+}
+
+/** Dossier où git devait tourner, disparu (déplacé, supprimé). */
+export function missingFolderMessage(folder: string): string {
+  return t('git.folderMissing', { folder })
 }
 
 /** git introuvable : outils d'Apple sur Unix (comme avant), Git for Windows sous Windows. */
@@ -204,7 +214,7 @@ export function withGitLanguage(
   return (file, args, options = {}) =>
     isGit(file)
       ? run(file, args, { ...options, env: gitEnv(options.env ?? env()) }).then((result) =>
-          explainMissingGit(result)
+          explainMissingGit(result, launchSystem(), options.cwd)
         )
       : run(file, args, options)
 }

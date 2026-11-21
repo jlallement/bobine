@@ -8,6 +8,7 @@
  * sinon la fille prend l'agent de la mère. Un rôle qui ne part pas (inconnu, désactivé, plafond
  * des filles atteint) n'empêche pas les autres : il est rendu avec sa raison.
  */
+import { titleFrom } from '../conversations/helpers'
 import { t } from 'i18next'
 import { randomUUID } from 'node:crypto'
 import { messageOf } from '@shared/errors'
@@ -114,6 +115,11 @@ export async function startRoleChildren(
         text: request.text,
         role: role.name,
         ask,
+        // Plusieurs rôles pour une même demande : chaque travail se nomme d'après son rôle, sinon
+        // les lignes et la barre latérale disent deux fois le même titre (fiche 272, recette).
+        ...(request.roles.length > 1
+          ? { title: `${role.label} · ${titleFrom(request.text)}` }
+          : {}),
         ...(notices.length ? { notices } : {}),
         ...(request.uncommitted ? { uncommitted: request.uncommitted } : {}),
         // Agent ou modèle du rôle introuvables ici : la fille prend ceux de la mère.

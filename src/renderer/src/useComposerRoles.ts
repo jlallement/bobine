@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { builtinLabels } from './role-labels'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { RoleView } from '@shared/roles'
 import i18next from 'i18next'
@@ -108,8 +109,11 @@ export function useComposerRoles(
         : Promise.reject(new Error('no conversation')),
     [id]
   )
+  // Libellés des rôles fournis dans la langue du moment, pour le fil (fiche 272).
+  const labels = useMemo(() => builtinLabels(known), [known])
   return {
     list,
+    labels,
     invokable: eligible,
     ...(eligible ? {} : { elsewhere: known }),
     refresh,

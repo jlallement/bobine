@@ -32,7 +32,7 @@ import { ReviewNotes, useReviewImport } from './ReviewNotes'
 import { ReviewFileDiff } from './ReviewFileDiff'
 import type { DiffTarget } from '@shared/review'
 import type { ChildRow } from '@shared/children-rows'
-import { countText } from '@shared/i18n/format'
+import { LineTotals } from '../common/LineTotals'
 
 /** Ce que montre l'onglet : les modifications de l'agent, ou l'état du dépôt git. */
 export type ChangesView = 'conversation' | 'git' | 'children'
@@ -317,7 +317,8 @@ export function ChangesTab({
               ? { badge: { letter: 'A', label: t('changes.badge.created'), tone: 'add' as const } }
               : {}),
             added: file.added,
-            removed: file.removed
+            removed: file.removed,
+            ...(file.unknown ? { unknown: true } : {})
           }
         })
       : (git?.files ?? []).map((file) => ({
@@ -487,9 +488,7 @@ export function ChangesTab({
           ) : (
             <>
               <div className="changes-summary" data-testid="changes-summary">
-                {t('changes.files', { count: summary.files })}{' '}
-                <span className="diff-added">+{countText(summary.added)}</span>{' '}
-                <span className="diff-removed">−{countText(summary.removed)}</span>
+                {t('changes.files', { count: summary.files })} <LineTotals {...summary} spaced />
                 {view === 'git' && <span className="muted"> {t('changes.sinceLastCommit')}</span>}
               </div>
               <ChangesFileList

@@ -28,6 +28,13 @@ export function useThreadScroll(options: {
   const lastScrollTop = useRef(0)
   // Pointeur sur une carte qui demande que le fil ne bouge pas sous lui.
   const held = useRef(false)
+  /**
+   * Position du pointeur au dernier envoi (fiche 272, recette) : le saut en bas fait passer une
+   * autre carte sous un pointeur immobile, et Chromium le signale (`pointerover`) ; ce n'est pas un
+   * geste de l'utilisateur, le fil ne s'arrête pas pour autant. Un vrai mouvement l'efface.
+   */
+  const pointer = useRef<{ x: number; y: number } | null>(null)
+  const sentAt = useRef<{ x: number; y: number } | null>(null)
   // Message à rendre et à montrer, pour cette conversation seulement.
   const [reveal, setReveal] = useState<{ id: number; in: string | null }>()
   const measureBottom = useCallback(() => {
@@ -68,7 +75,25 @@ export function useThreadScroll(options: {
       if (el && stickToBottom.current) el.scrollTop = el.scrollHeight
       measureBottom()
     }
+    /** Position d'un évènement du pointeur ; `null` sans coordonnées. */
+    const atOf = (event: PointerEvent) =>
+      typeof event.clientX === 'number' ? { x: event.clientX, y: event.clientY } : null
+    const same = (a: { x: number; y: number } | null, b: { x: number; y: number } | null) =>
+      !!a && !!b && a.x === b.x && a.y === b.y
+    // Position réelle du pointeur, au clic comme au mouvement (pas seulement à l'entrée d'une carte :
+    // le clic d'envoi a lieu ailleurs dans la carte) ; un vrai mouvement efface celle de l'envoi.
+    const track = (event: PointerEvent) => {
+      const at = atOf(event)
+      if (!at) return
+      pointer.current = at
+      if (sentAt.current && !same(at, sentAt.current)) sentAt.current = null
+    }
     const over = (event: PointerEvent) => {
+      const at = atOf(event)
+      if (at) pointer.current = at
+      // Pointeur immobile depuis l'envoi : la carte passée dessous par le saut en bas ne retient pas.
+      if (same(at, sentAt.current)) return
+      sentAt.current = null
       const target = event.target instanceof Element ? event.target : null
       const card = target?.closest('[data-scroll-hold]')
       if (card && scroller.current?.contains(card)) held.current = true
@@ -79,9 +104,13 @@ export function useThreadScroll(options: {
     }
     document.addEventListener('pointerover', over)
     document.addEventListener('pointerout', out)
+    document.addEventListener('pointerdown', track, true)
+    document.addEventListener('pointermove', track, true)
     return () => {
       document.removeEventListener('pointerover', over)
       document.removeEventListener('pointerout', out)
+      document.removeEventListener('pointerdown', track, true)
+      document.removeEventListener('pointermove', track, true)
     }
   }, [measureBottom, noteScrolledUp])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :
@@ -120,6 +149,7 @@ export function useThreadScroll(options: {
   // sur une carte qui retient le fil ; la bulle et la réponse qui arrivent sont suivies.
   const followSent = () => {
     held.current = false
+    sentAt.current = pointer.current
     stickToBottom.current = true
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight

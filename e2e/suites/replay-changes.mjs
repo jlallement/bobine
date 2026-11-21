@@ -78,7 +78,82 @@ export async function replayChangesSuite(scheme) {
     rmSync(userData, { recursive: true, force: true })
   }
   await createdFilesPhase(scheme, changes)
+  await rewritePhase(scheme, changes)
   await bobCreationPhase(scheme)
+}
+
+/**
+ * Fichier réécrit par le `write` d'OpenCode sans autorisation (fiche 272, recette du 2026-11-20) :
+ * la fin ne dit que « Wrote file successfully ». Le fichier compte comme modifié (pied du tour,
+ * en-tête, vue « Conversation »), sans diff inventé, en direct comme après redémarrage.
+ */
+async function rewritePhase(scheme, changes) {
+  const workspace = mkdtempSync(join(tmpdir(), 'bob-e2e-reecriture-'))
+  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-reecriture-donnees-'))
+  writeFileSync(join(workspace, 'README.md'), '# Projet\n\nVersion 1\n')
+  const env = { BOBINE_WORKSPACE: workspace }
+  const readme = `[...document.querySelectorAll('[data-testid=changes-file]')].find((f) => f.querySelector('.changes-toggle').title === 'README.md')`
+  try {
+    let live
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.send('Réécris le README')
+        await ui.ready()
+        await ui.waitFor(`!!document.querySelector('[data-testid=turn-files]')`)
+        const foot = await ui.ev(
+          `document.querySelector('[data-testid=turn-files]').innerText.replace(/\\s+/g, ' ')`
+        )
+        check(
+          foot.includes(L('turnSummary.fileCount', { count: 2 })) &&
+            foot.includes(L('changes.someNoTotals', { count: 1 })),
+          `pied du tour : 2 fichiers, dont 1 sans totaux (${foot})`
+        )
+        live = await changes(ui)
+        check(
+          live.files.length === 2,
+          `en direct : README.md réécrit compte (${live.files.join(', ')})`
+        )
+        check(
+          (await ui.ev(`${readme}?.querySelector('.changes-stats')?.innerText ?? ''`)) ===
+            L('changes.unknownBadge'),
+          'README.md : « modifié », sans totaux inventés'
+        )
+        check(
+          !(await ui.ev(`!!${readme}?.querySelector('[data-testid=changes-revert]')`)),
+          'pas d’« Annuler cette modification » sans ancien texte'
+        )
+        await ui.click(`${readme}.querySelector('.changes-toggle')`)
+        await ui.waitFor(`!!${readme}.querySelector('[data-testid=changes-unknown]')`)
+        await ui.shot('133-modifications-write-reecrit')
+      },
+      userData,
+      'reecriture-opencode',
+      env
+    )
+    await withApp(
+      scheme,
+      async (ui) => {
+        const item = `document.querySelector('[data-testid=history-item] .history-open')`
+        await ui.waitFor(`!!${item}`)
+        await ui.click(item)
+        await ui.waitFor(`document.querySelectorAll('.msg-agent').length > 0`)
+        await ui.ready()
+        const replayed = await changes(ui)
+        check(
+          JSON.stringify(replayed) === JSON.stringify(live),
+          `après redémarrage : README.md réécrit compte toujours (${replayed.header})`
+        )
+      },
+      userData,
+      'reecriture-opencode',
+      env
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+    rmSync(userData, { recursive: true, force: true })
+  }
 }
 
 /**

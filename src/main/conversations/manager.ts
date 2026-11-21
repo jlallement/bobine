@@ -46,6 +46,8 @@ import { AgentHost, type AgentHostOptions, type PromptOptions } from '../agent/a
 import { isDirectory } from '../agent/process-utils'
 import { folderNeededSnapshot, hasFolder, retiredSnapshot } from './agentless'
 import { folderGoneMessage, usableFolder } from './folder-fallback'
+import { guardSendFolder } from './send-folder'
+import { SendOrder } from './send-order'
 import { settingsViewOf } from './settings-view'
 import { addAsideSession, agentSessions, checkAgentIn } from './agent-outside'
 import { SubagentWorks } from '../agent/subagent-works'
@@ -95,6 +97,7 @@ import {
   type Origin
 } from './helpers'
 import { hostOptions } from './host-options'
+import { discardDraft } from './draft-discard'
 import { draftConversation, type Conversation, type ConversationListeners } from './conversation'
 import * as ds from './discussion-space'
 import { answerTurnLimit, type TurnLimitAnswer } from './turn-limit'
@@ -233,6 +236,7 @@ export class ConversationManager {
   private readonly listeners = new Set<ConversationListeners>()
   /** Travail des sous-agents déjà rejoué (fiche 053), par profil et session ; les plus récents. */
   private readonly subagentWorks = new SubagentWorks()
+  private readonly sendOrder = new SendOrder()
 
   /** Modules d'outils des sessions, sans les familles coupées par l'utilisateur (fiche 109). */
   private readonly toolModules: AppToolModule[]
@@ -658,27 +662,33 @@ export class ConversationManager {
     options: PromptOptions = {}
   ): Promise<void> {
     if (this.promptGate?.(id, text, attachments, options)) return
-    const conversation = this.get(id)
-    // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
-    const status = conversation.snapshot?.status
-    if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)
-    const host = this.ensureLive(conversation)
-    await host.start()
-    if (conversation.record.archived) {
-      // Écrire dans une conversation archivée la ressort.
-      delete conversation.record.archived
-      delete conversation.record.archivedWith
-      this.indexChanged()
-    }
-    // Premier message : la conversation entre dans l'historique.
-    if (conversation.draft) this.enterHistory(conversation, text, attachments)
-    // `/split` (fiche 118) : sans `start_child` dans la session, rien ne part.
-    const tools = host.appToolNames
-    if (options.askChildren && tools && !tools.includes('start_child')) {
-      throw new Error(t('children.error.noStartChild'))
-    }
-    // Contexte d'une branche (fiche 023), message d'une autre conversation (fiche 097).
-    await host.send(text, attachments, options)
+    // Deux envois rapprochés gardent leur ordre : la préparation attend la précédente (fiche 272).
+    const sending = await this.sendOrder.run(id, async () => {
+      const conversation = this.get(id)
+      // Dossier disparu : dit avant l'envoi ; discussion : recréé (fiche 272, `send-folder.ts`).
+      await guardSendFolder(conversation.record, this.options.conversationsDir)
+      // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
+      const status = conversation.snapshot?.status
+      if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)
+      const host = this.ensureLive(conversation)
+      await host.start()
+      if (conversation.record.archived) {
+        // Écrire dans une conversation archivée la ressort.
+        delete conversation.record.archived
+        delete conversation.record.archivedWith
+        this.indexChanged()
+      }
+      // Premier message : la conversation entre dans l'historique.
+      if (conversation.draft) this.enterHistory(conversation, text, attachments)
+      // `/split` (fiche 118) : sans `start_child` dans la session, rien ne part.
+      const tools = host.appToolNames
+      if (options.askChildren && tools && !tools.includes('start_child')) {
+        throw new Error(t('children.error.noStartChild'))
+      }
+      // Contexte d'une branche (fiche 023), message d'une autre conversation (fiche 097).
+      return { done: host.send(text, attachments, options) }
+    })
+    await sending.done
   }
 
   /** Règles actives de la conversation (fiche 056) : selon le profil et le mode actif. */
@@ -751,23 +761,16 @@ export class ConversationManager {
    */
   subagentWork(id: string, toolCallId: string): Promise<TranscriptItem[]> {
     const conversation = this.get(id)
-    const profile = this.profileOf(id)
-    return subagentWorkOf(
-      this.transcriptOf(conversation).items,
-      toolCallId,
+    const profile = this.profileOf(id) as AgentProfile
+    const context = {
       profile,
-      (sessionId, fresh) =>
-        this.subagentWorks.load(
-          {
-            profile: profile as AgentProfile,
-            workspace: conversation.record.workspace,
-            clientVersion: this.options.clientVersion,
-            sessionId,
-            credentials: () => this.settings.credentials(profile as AgentProfile)
-          },
-          { fresh }
-        )
-    )
+      workspace: conversation.record.workspace,
+      clientVersion: this.options.clientVersion,
+      credentials: () => this.settings.credentials(profile)
+    }
+    const load = (sessionId: string, fresh: boolean) =>
+      this.subagentWorks.load({ ...context, sessionId }, { fresh })
+    return subagentWorkOf(this.transcriptOf(conversation).items, toolCallId, profile, load)
   }
 
   /**
@@ -1166,14 +1169,18 @@ export class ConversationManager {
     this.pendingNotices.push(message)
   }
 
-  /** Démarre l'agent de la conversation active (au lancement de l'app). */
-  async startActive(): Promise<ConversationView> {
+  /**
+   * Démarre l'agent de la conversation active (au lancement de l'app). `agent` faux : un dossier
+   * est demandé au lancement (`bobine <dossier>`), la conversation affichée sera une autre ; son
+   * agent ne démarre pas pour rien (fiche 272, recette). Les avis du lancement sont posés.
+   */
+  async startActive(agent = true): Promise<ConversationView> {
     const conversation = this.get(this.activeId)
     for (const message of this.pendingNotices.splice(0)) {
       this.onEvent(conversation, { type: 'notice', level: 'warning', message })
     }
     // Pas de dossier choisi : l'agent attend ce choix (fiche 093).
-    if (this.startable(conversation)) await this.ensureLive(conversation).start()
+    if (agent && this.startable(conversation)) await this.ensureLive(conversation).start()
     return this.view(this.activeId)
   }
 
@@ -1254,17 +1261,9 @@ export class ConversationManager {
   }
 
   private discard(conversation: Conversation): void {
-    const host = conversation.host
-    // Plus rien n'est émis pour elle (l'hôte peut encore vivre le temps de supprimer sa session).
-    conversation.host = undefined
-    if (host) trackDraftDrop(this.dropping, host, AGENT_DELETE_TIMEOUT_MS)
-    this.conversations.delete(conversation.record.id)
-    // Conversation en worktree quittée sans message : le worktree, encore intact, disparaît aussi
-    // (sans `force` : s'il a été modifié entre-temps, il reste).
-    const { worktree } = conversation.record
-    if (worktree) void this.options.worktrees?.remove(worktree).catch(() => {})
-    // Discussion quittée sans message (fiche 224) : son dossier part s'il n'a aucun document.
-    ds.dropDraftFolder(this.options.conversationsDir, conversation.record)
+    const { conversations, dropping, options } = this
+    const { worktrees, conversationsDir } = options
+    discardDraft(conversation, { conversations, dropping, worktrees, conversationsDir })
   }
 
   /** Agent vivant pour cette conversation (créé si besoin), puis éviction des plus anciens. */
@@ -1313,6 +1312,7 @@ export class ConversationManager {
           settings: this.settings,
           works: this.subagentWorks,
           items: () => this.transcriptOf(conversation).items,
+          exists: (id) => this.conversations.has(id), // travail à la corbeille : fiche 272
           reopen: reopenOf(
             sessionId,
             conversation.draft,

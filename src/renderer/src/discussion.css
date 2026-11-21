@@ -5,6 +5,8 @@
 
 /* Sélecteur d'espace : deux segments, celui de l'espace affiché en relief. */
 .space-switch {
+  /* Barre latérale étroite (fiche 272, recette) : le raccourci s'efface avant de déborder. */
+  container-type: inline-size;
   display: flex;
   gap: 2px;
   margin: 0 0 10px;
@@ -15,6 +17,9 @@
 }
 .space-switch button {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +45,12 @@
   font-weight: 400;
   color: var(--muted);
   opacity: 0.7;
+}
+
+@container (max-width: 260px) {
+  .space-switch kbd {
+    display: none;
+  }
 }
 
 /* Accueil : où déposer des documents. */

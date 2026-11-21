@@ -16,14 +16,16 @@ export function settingsViewOf(
   options: Pick<
     ConversationManagerOptions,
     'profiles' | 'pathEnv' | 'approvals' | 'quickEntryStatus'
-  >
+  > &
+    Partial<Pick<ConversationManagerOptions, 'neutralFolder'>>
 ): AgentSettingsView {
   const settings = store.current
   return {
     profiles: summarizeProfiles(options.profiles, options.pathEnv(), settings.agentsSeen),
     profileId: active.profileId,
     workspace: active.workspace,
-    recentWorkspaces: settings.recentWorkspaces,
+    // Dossier de repli interne de l'app : jamais un « dossier récent » (fiche 272, recette).
+    recentWorkspaces: settings.recentWorkspaces.filter((w) => w !== options.neutralFolder),
     notifications: store.notificationsEnabled(),
     preferences: store.preferences(),
     inGitRepo: hasFolder(active.workspace) && inGitRepo(active.workspace),

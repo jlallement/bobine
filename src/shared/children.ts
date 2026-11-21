@@ -315,7 +315,8 @@ export function childNews(items: readonly TranscriptItem[]): ChildNews[] {
   const news: ChildNews[] = []
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i]
-    if (!item || item.kind === 'user') break
+    // Une compaction ne les a pas emportées (fiche 272) : elles attendent le prochain vrai message.
+    if (!item || (item.kind === 'user' && !item.compaction)) break
     if (item.kind === 'child-started' || item.kind === 'child-report') news.unshift(item)
   }
   return news

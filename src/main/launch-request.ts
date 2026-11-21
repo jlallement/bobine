@@ -80,6 +80,11 @@ export class LaunchController {
   private held: LaunchPrefill | undefined
   private rendererReady = false
 
+  /** Une demande attend que l'app soit montée : le dossier du lancement sera montré (fiche 272). */
+  get pending(): boolean {
+    return this.waiting.length > 0
+  }
+
   request(request: LaunchRequest): void {
     if (this.deps) void this.run(this.deps, request)
     else this.waiting.push(request)

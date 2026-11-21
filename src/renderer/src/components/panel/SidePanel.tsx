@@ -5,7 +5,12 @@ import { PaneBoundary } from '../common/SafeBoundary'
 import { Check, ListChecks, Maximize2, Minimize2, PanelLeft, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { PANEL_TABS, type PanelTab } from '@shared/panel'
-import { hiddenPanelTabs, PANEL_MIN_WIDTH, unavailablePanelTabs } from '../../panel-tabs'
+import {
+  hiddenPanelTabs,
+  PANEL_MIN_WIDTH,
+  shownPanelTab,
+  unavailablePanelTabs
+} from '../../panel-tabs'
 import { platformFeatures } from '../../platform-features'
 import type { Preferences } from '@shared/preferences'
 import type { TranscriptItem } from '@shared/transcript'
@@ -29,6 +34,7 @@ import { FilesTab } from '../files/FilesTab'
 import { useFilesTabTitle } from '../files/useFilesTabTitle'
 import type { FileTarget } from '@shared/files'
 import { useFilesWork, type FilesRequest } from '../files/useFilesTab'
+import { mayCloseTab } from './tab-close-guard'
 
 /** Durée de « Page jointe au message » dans l'en-tête du panneau agrandi (fiche 094). */
 const ATTACHED_NOTICE_MS = 3000
@@ -131,7 +137,7 @@ export function SidePanel({
   discussion,
   conversationId,
   workspace,
-  tab,
+  tab: wantedTab,
   tabs,
   counts,
   width,
@@ -161,6 +167,9 @@ export function SidePanel({
   onResetWidth,
   opening = 0
 }: Props) {
+  // Onglet qui n'existe pas dans cet espace (le Navigateur, en Discussion) : le panneau montre le
+  // premier onglet affiché, jamais un contenu sans onglet (fiche 272, recette).
+  const tab = shownPanelTab(wantedTab, tabs, unavailablePanelTabs(platformFeatures(), discussion))
   const { t } = useTranslation()
   // Pas de glissé pour un panneau ouvert agrandi (pas d'animation, donc pas de fin pour la retirer).
   const [entering, setEntering] = useState(() => opening > animatedOpening && !maximized)
@@ -295,7 +304,10 @@ export function SidePanel({
                   <button
                     className="side-panel-tab-close"
                     aria-label={closeLabel}
-                    onClick={() => closeTab(id)}
+                    onClick={(event) => {
+                      // Jamais au second clic d'un double clic (fiche 272).
+                      if (mayCloseTab(event)) closeTab(id)
+                    }}
                     data-testid="panel-tab-close"
                   >
                     <X size={13} />

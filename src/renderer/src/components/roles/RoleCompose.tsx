@@ -6,7 +6,7 @@ import { RoleAvatar, RoleStack, useRoleStyle } from './RoleAvatar'
 
 /**
  * Saisie d'un message pour des rôles (fiche 223, maquettes 02-3 et 02-4) : les jetons des rôles
- * choisis, en tête de la saisie, et la ligne « Partira à… » sous elle, qui dit où ira le message.
+ * choisis, en tête de la saisie, et la ligne « Sera confié à… » sous elle, qui dit où ira le message.
  */
 
 /** Jetons des rôles choisis ; chacun se retire (×, ou retour arrière en tête de la saisie). */
@@ -79,7 +79,7 @@ function RoleToken({
 export type ReadOnlyShown = 'enforced' | 'requested' | undefined
 
 /**
- * « Partira à Expert sécu, dans une conversation fille · Factice · lecture seule · dans ce
+ * « Sera confié à Expert sécu, dans une conversation fille · Factice · lecture seule · dans ce
  * dossier » ; plusieurs rôles : un résumé. Annoncé aux lecteurs d'écran (`aria-live`).
  */
 export function RoleDestination({

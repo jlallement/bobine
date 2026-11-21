@@ -86,7 +86,8 @@ export function PlanDocument({ plan, actions }: { plan: PlanVersion; actions?: P
   const keepHeight = () => {
     if (hovered.current && review.current) setKeptHeight(review.current.offsetHeight)
   }
-  const editable = !!actions && plan.latest && !actions.busy
+  // Plan déjà exécuté (fiche 272) : ni remarques, ni seconde exécution.
+  const editable = !!actions && plan.latest && !plan.executed && !actions.busy
 
   // Passages commentés surlignés (CSS Custom Highlight API : le Markdown rendu n'est pas modifié).
   useLayoutEffect(() => {
@@ -287,11 +288,13 @@ export function PlanDocument({ plan, actions }: { plan: PlanVersion; actions?: P
         // remontant quand le formulaire se replie (zone des remarques gardée, fiche 127).
         <div className="plan-document-actions" data-testid="plan-actions">
           <span className="plan-document-hint" data-testid="plan-document-hint">
-            {editable
-              ? notes.length === 0
-                ? t('planDocument.selectHint')
-                : t('planDocument.notes', { count: notes.length })
-              : t('planDocument.agentWorking')}
+            {plan.executed
+              ? t('planDocument.executed')
+              : editable
+                ? notes.length === 0
+                  ? t('planDocument.selectHint')
+                  : t('planDocument.notes', { count: notes.length })
+                : t('planDocument.agentWorking')}
           </span>
           <span className="plan-document-buttons" data-testid="plan-buttons">
             <button

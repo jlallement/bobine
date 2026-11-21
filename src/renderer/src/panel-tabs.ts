@@ -119,6 +119,15 @@ export function unavailablePanelTabs(
   return new Set<PanelTab>(tools)
 }
 
+/** Onglet montré : le demandé, sauf s'il n'existe pas ici ; alors le premier qui existe (fiche 272). */
+export function shownPanelTab(
+  tab: PanelTab,
+  tabs: readonly PanelTab[],
+  absent: ReadonlySet<PanelTab>
+): PanelTab {
+  return absent.has(tab) ? (tabs.find((t) => !absent.has(t)) ?? 'session') : tab
+}
+
 /**
  * Onglets du panneau, dans l'ordre d'arrivée ; les autres sont dans le menu « + ». Ceux de
  * `arrival` d'abord, à leur place ; les nouveaux ensuite, dans l'ordre où le fil s'en est servi

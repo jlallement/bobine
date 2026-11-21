@@ -47,6 +47,10 @@ describe('onglet « Session » : Modifications (fiche 207)', () => {
     // « Aucune » n'est pas un lien.
     expect(screen.getByTestId('session-changes-conversation').tagName).toBe('SPAN')
     expect(text('session-changes-line')).toBe('1 fichier non commité+1−0')
+    // Sur une ligne, alignée à gauche (fiche 272, recette : centrée sur deux lignes).
+    expect(
+      screen.getByTestId('session-changes-line').querySelector('.session-link-text')?.textContent
+    ).toBe('1 fichier non commité')
     fireEvent.click(screen.getByTestId('session-changes-line'))
     expect(onOpenGit).toHaveBeenCalledTimes(1)
   })

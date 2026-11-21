@@ -271,7 +271,12 @@ export function Sidebar(props: Props) {
           </button>
         </Tip>
         <Tip label={t('sidebar.hide')} command="toggle-sidebar">
-          <button className="icon-button no-drag" onClick={props.onToggle}>
+          <button
+            className="icon-button no-drag"
+            onClick={props.onToggle}
+            aria-label={t('sidebar.hide')}
+            data-testid="sidebar-hide"
+          >
             <PanelLeft size={18} />
           </button>
         </Tip>

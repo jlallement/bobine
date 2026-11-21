@@ -268,7 +268,10 @@ export function BrowserTab({
             ref={input}
             className="browser-address"
             value={editing ? address : hasPage ? shownAddress(state) : address}
+            // Court, pour ne jamais être coupé (fiche 272, recette) ; le nom entier en aria-label.
             placeholder={t('browser.addressPlaceholder')}
+            aria-label={t('browser.addressLabel')}
+            title={t('browser.addressLabel')}
             spellCheck={false}
             onFocus={(e) => {
               setEditing(true)

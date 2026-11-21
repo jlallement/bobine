@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 import type { ControlValue, SessionControl } from '@shared/agent'
 import { modelProvider, shortModelName } from '@shared/models'
 import { Tip, useReturnFocus, valueLabel } from './Menus'
+import { controlName } from '../../control-name'
 
 export { modelProvider, shortModelName }
 
@@ -68,7 +69,7 @@ export function ModelChip({
   const name = valueLabel(control)
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <Tip label={t('sessionSettings.modelTip', { name: control.name, value: name })}>
+      <Tip label={t('sessionSettings.modelTip', { name: controlName(control), value: name })}>
         <Popover.Trigger
           className={`chip model-chip${className ? ` ${className}` : ''}`}
           disabled={disabled}
@@ -224,7 +225,7 @@ function ModelList({
   const activeId = visible[active] ? id(active) : undefined
   return (
     <>
-      <div className="menu-label">{control.name}</div>
+      <div className="menu-label">{controlName(control)}</div>
       {searchable && (
         <label className="model-search">
           <Search size={14} />
@@ -249,7 +250,7 @@ function ModelList({
         id={`model-list-${control.id}`}
         className="model-list"
         role="listbox"
-        aria-label={control.name}
+        aria-label={controlName(control)}
         tabIndex={searchable ? -1 : 0}
         onKeyDown={searchable ? undefined : onKeyDown}
         aria-activedescendant={searchable ? undefined : activeId}

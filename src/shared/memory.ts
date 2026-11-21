@@ -339,7 +339,8 @@ export const memoryProposals = (items: readonly TranscriptItem[]): MemoryProposa
 export function memoryOutcomes(items: readonly TranscriptItem[]): MemoryProposalItem[] {
   let lastSent = 0
   for (const item of items)
-    if (item.kind === 'user' && item.at) lastSent = Math.max(lastSent, item.at)
+    // Une compaction ne les a pas emportées (fiche 272).
+    if (item.kind === 'user' && item.at && !item.compaction) lastSent = Math.max(lastSent, item.at)
   return memoryProposals(items).filter(
     (p) => p.status !== 'pending' && p.decidedAt !== undefined && p.decidedAt > lastSent
   )

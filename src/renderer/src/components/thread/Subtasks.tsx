@@ -63,6 +63,11 @@ import { RoleLaunch, RoleSubtaskHead, useChildActivity } from '../roles/RoleWork
 export interface SubtasksInfo {
   /** Filles encore liées à cette conversation (liste des conversations). */
   children: ConversationSummary[]
+  /**
+   * La conversation existe dans la liste complète (fiche 272) : un travail détaché n'est pas « à
+   * la corbeille ». Absent : seules les filles liées sont connues.
+   */
+  exists?: (id: string) => boolean
   /** Conversations qui attendent l'utilisateur (fiche 024). */
   attention: AttentionState
   onOpen: (id: string) => void

@@ -89,6 +89,15 @@ describe('langue des messages de git (fiche 145)', () => {
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain(INSTALL_HINT)
   })
+
+  it('dossier de travail disparu (recette, fiche 272) : le dossier manque, pas git', async () => {
+    const gone = join(realpathSync(tmpdir()), `bobine-dossier-disparu-${process.pid}`)
+    rmSync(gone, { recursive: true, force: true })
+    const result = await withGitLanguage(runCommand)('git', ['status'], { cwd: gone })
+    expect(result.code).not.toBe(0)
+    expect(result.stderr).not.toContain(INSTALL_HINT)
+    expect(result.stderr).toContain(gone)
+  })
 })
 
 /** Faux `git` : chaque appel attend qu'on le libère ; relève ce qui tourne en même temps. */

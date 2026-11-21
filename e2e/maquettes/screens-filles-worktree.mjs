@@ -1,7 +1,7 @@
 // Maquettes de la fiche 240 : une fille en worktree part du dernier commit, sans le non commité
 // de la mère. Avertissement et choix avant le lancement (saisie `@rôle`, carte « Tâches
 // proposées »), avis en lecture seule dans le dossier de la mère, rappel dans la mère.
-// Sur la vraie fenêtre : `@rôle` est tapé pour de vrai (jetons et ligne « Partira à… » réels) ;
+// Sur la vraie fenêtre : `@rôle` est tapé pour de vrai (jetons et ligne « Sera confié à… » réels) ;
 // seuls les morceaux nouveaux sont injectés, avec les classes de l'app.
 // node e2e/maquettes/run.mjs light f240 — validées le 2026-11-18, « Mettre de côté » retiré.
 import { i } from './icons.mjs'
@@ -118,7 +118,7 @@ async function clearComposer(h) {
   await ui.ev(`document.activeElement?.blur()`)
 }
 
-/** Tape vraiment `@rôle…` dans la saisie : jetons et ligne « Partira à… » de l'app. */
+/** Tape vraiment `@rôle…` dans la saisie : jetons et ligne « Sera confié à… » de l'app. */
 async function typeRoles(h, text) {
   const ui = h.ui
   const input = `document.querySelector('[data-testid=composer-input]')`
@@ -128,7 +128,7 @@ async function typeRoles(h, text) {
   await ui.waitFor(`!!document.querySelector('[data-testid=role-destination]')`, 8000)
 }
 
-/** Insère `html` juste après la ligne « Partira à… » (ou à la place, `replace`). */
+/** Insère `html` juste après la ligne « Sera confié à… » (ou à la place, `replace`). */
 async function afterDestination(h, html, replace = false) {
   const keep = replace
     ? ''

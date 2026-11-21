@@ -16,8 +16,8 @@ type Report = Extract<TranscriptItem, { kind: 'child-report' }>
  * État d'un travail : il travaille (ou démarre), attend l'utilisateur, a répondu, s'est arrêté
  * avant la fin, a échoué ; `pending` : il a fini, sa réponse attend la fin de la réponse de la
  * mère pour être posée ; `silent` : au repos sans réponse pour sa dernière demande (envoi qui n'a
- * pas eu lieu, plafond de coût, réponse perdue) ; `gone` : sa conversation n'existe plus et il n'a
- * jamais répondu ; `unknown` : le fil est lu sans la liste des conversations (côte à côte).
+ * pas eu lieu, plafond de coût, réponse perdue) ; `gone` : sa conversation n'existe plus (à la
+ * corbeille), qu'il ait répondu ou non (fiche 272) ; `unknown` : le fil est lu sans la liste des conversations (côte à côte).
  */
 export type WorkState =
   | 'running'
@@ -53,7 +53,15 @@ export function workState(
   child: Pick<ConversationSummary, 'status' | 'turnStopped'> | undefined,
   attention: AttentionKind | undefined,
   now: number,
-  context: { known: boolean; motherBusy?: boolean } = { known: true }
+  context: {
+    known: boolean
+    motherBusy?: boolean
+    /**
+     * Sa conversation existe encore quelque part dans la liste (fiche 272) : détachée de cette
+     * conversation, elle n'est pas « à la corbeille ». Absent : on ne sait pas.
+     */
+    exists?: boolean
+  } = { known: true }
 ): WorkState {
   const report = currentReport(card)
   if (child) {
@@ -67,8 +75,12 @@ export function workState(
     // Au repos sans réponse posée : retenue pendant que la mère répond, ou jamais venue.
     return context.motherBusy ? 'pending' : 'silent'
   }
+  // Sa conversation n'existe plus (mise à la corbeille), même après avoir répondu : la carte le
+  // dit, plus d'action, sa réponse ne part plus à l'agent (fiche 272). Détachée mais existante
+  // (mère restaurée sans ses filles…) : l'état de sa dernière réponse.
+  if (context.known && context.exists === false) return 'gone'
   if (report) return outcomeState(report)
-  return context.known ? 'gone' : 'unknown'
+  return context.known && context.exists === undefined ? 'gone' : 'unknown'
 }
 
 function outcomeState(report: Report): WorkState {
@@ -98,7 +110,8 @@ export function relayOf(
   // ne dit que l'agent a reçu ce qui partait avec lui (revue QA).
   for (let i = items.findIndex((x) => x.id > report.id); i !== -1 && i < items.length; i++) {
     const item = items[i]
-    if (item?.kind !== 'user') continue
+    // Une compaction n'emporte pas les réponses (fiche 272) : elles attendent un vrai message.
+    if (item?.kind !== 'user' || item.compaction) continue
     if (!failedTurn(items, i)) return { sent: true, at: item.at }
   }
   return { sent: false }

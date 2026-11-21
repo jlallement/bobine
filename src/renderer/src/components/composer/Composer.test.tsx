@@ -87,6 +87,14 @@ function setup(
 }
 
 describe('Composer', () => {
+  it('agent arrêté : « Relancer », sans répéter « L’agent s’est arrêté » (fiche 272, recette)', () => {
+    const { input, onRestart } = setup({ status: 'exited' })
+    expect(document.body.textContent).not.toContain('L’agent s’est arrêté')
+    expect(input.getAttribute('placeholder')).not.toContain('s’est arrêté')
+    fireEvent.click(screen.getByTestId('restart'))
+    expect(onRestart).toHaveBeenCalled()
+  })
+
   it('Entrée envoie le message, Maj+Entrée non', () => {
     const t = setup()
     t.type('Bonjour')

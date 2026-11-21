@@ -207,13 +207,16 @@
       "starting": "Starting the agent…",
       "busy": "Add a follow-up (sent when the response ends)…",
       "error": "The agent couldn’t start: write to try again",
-      "exited": "The agent stopped: write to restart it",
+      "exited": "Type to restart the agent…",
       "needs-action": "Action required before you start",
       "authExpired": "Sign in again to continue",
       "modelRefused": "Choose another model or sign in",
       "needsFolder": "Choose a folder first",
       "modelRefusedKey": "Choose another model or add an API key",
-      "modelRefusedOnly": "Choose another model"
+      "modelRefusedOnly": "Choose another model",
+      "role": "Your request to {{role}}…",
+      "roles_one": "Your request to the role…",
+      "roles_other": "Your request to the {{count}} roles…"
     },
     "plan": {
       "placeholder": "Explore and plan with {{agent}}…",
@@ -243,7 +246,6 @@
       "queued": "Send when the response ends (Return)",
       "now": "Send (Return)"
     },
-    "exited": "The agent stopped.",
     "failedToStart": "The agent couldn’t start.",
     "restart": "Restart",
     "pasted": {
@@ -652,6 +654,7 @@
     "deleteNote": "Delete comment {{number}}",
     "selectHint": "Select a passage to comment on it.",
     "agentWorking": "The agent is working…",
+    "executed": "Plan already run",
     "sendNotes": "Send my comments",
     "execute": "Run the plan",
     "notes_one": "{{count}} comment",
@@ -744,6 +747,7 @@
   },
   "fileMenu": {
     "empty": "No matching file.",
+    "context": "Context",
     "keys": "↑↓ choose · Tab or Return attach · Esc close",
     "title": "Files · {{workspace}}"
   },
@@ -804,7 +808,8 @@
       "busyArchive": "The agent is still responding: stop it before archiving the conversation",
       "busyArchiveChild": "“{{title}}”, a task started here, is still running: stop it before archiving its source conversation",
       "unknown": "Unknown conversation: {{id}}",
-      "busyFolders": "The agent is still responding: change the conversation’s folders after its reply"
+      "busyFolders": "The agent is still responding: change the conversation’s folders after its reply",
+      "folderGoneAtSend": "This conversation’s folder no longer exists: {{folder}}. Nothing was sent. Put it back, or continue in a new conversation."
     },
     "newTitle": "New conversation",
     "retired": {
@@ -2091,11 +2096,18 @@
     "revertAsk": "Restore <strong>{{name}}</strong> to its state before the conversation?",
     "revertCreated": "Created by the agent: it will be deleted.",
     "binaryBadge": "binary",
+    "unknownBadge": "modified",
     "changeOf": "Change {{index}} of {{total}}",
+    "unknownDiff": "The agent wrote this file without sending its content, so the diff is unknown. The Git view shows the file’s actual state.",
     "children": {
       "revealLabel": "Show the worktree of “{{title}}” in Finder",
       "editorLabel": "Open the worktree of “{{title}}” in {{editor}}"
-    }
+    },
+    "noTotals": "without line counts",
+    "someNoTotals_one": "{{count}} without line counts",
+    "someNoTotals_other": "{{count}} without line counts",
+    "someBinary_one": "{{count}} binary",
+    "someBinary_other": "{{count}} binary"
   },
   "install": {
     "title": "Install Bobine",
@@ -2177,7 +2189,8 @@
     "forward": "Forward",
     "stop": "Stop",
     "reload": "Reload",
-    "addressPlaceholder": "Address (e.g. localhost:3000)",
+    "addressPlaceholder": "localhost:3000",
+    "addressLabel": "Page address (e.g. localhost:3000)",
     "attach": "Attach this page to the message",
     "empty": "Pages opened by the agent show up here. You can also type an address.",
     "url": {
@@ -3188,6 +3201,7 @@
       "unresponsive": "The agent stopped responding to “Stop”: it was shut down.",
       "ended": "process ended ({{status}})",
       "code": "code {{code}}",
+      "killed": "forced stop by the system or another program (SIGKILL)",
       "status": "Exit: {{status}}.{{hint}}",
       "connectionLost": "The agent stopped responding: its connection with Bobine was cut, and Bobine stopped it. “Restart” starts it again; the conversation is kept."
     },
@@ -3547,6 +3561,7 @@
   "git": {
     "missingWindows": "git can’t be found on this PC. Install Git for Windows (git-scm.com/install/windows), then restart Bobine. Already installed? Settings › Diagnostics › Reload PATH.",
     "missing": "git can’t be found on this Mac. Install Apple’s developer tools: in Terminal, type `xcode-select --install`. Already installed? Settings › Diagnostics › Reload PATH.",
+    "folderMissing": "This folder no longer exists: {{folder}}. Was it moved or deleted?",
     "failed": "git failed",
     "statusFailed": "git status failed"
   },
@@ -4806,6 +4821,7 @@
   "workCard": {
     "pendingLine": "Its response will show when {{agent}}’s response ends.",
     "silentLine": "No response to this request: nothing was sent, or the response was lost. “Retry” sends it again.",
+    "goneLine": "Its conversation was deleted: no more actions here, and its response is no longer sent to {{agent}}.",
     "nowOther": "{{target}}…",
     "nowFetch": "Fetching {{target}}…",
     "nowExecute": "Running {{target}}…",
@@ -6173,5 +6189,10 @@
     "stateMerged": "merged · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "Under review: merging waits for the Code reviewer to finish."
+  },
+  "controlCategory": {
+    "model": "Model",
+    "mode": "Mode",
+    "thought_level": "Thinking level"
   }
 }

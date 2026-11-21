@@ -259,7 +259,7 @@ async function typeRoles(h, text) {
   await ui.waitFor(`!!document.querySelector('[data-testid=role-destination]')`, 8000)
 }
 
-/** Avertissement de la fiche 240 (LaunchDirtyCard), formulaire ouvert, sous « Partira à… ». */
+/** Avertissement de la fiche 240 (LaunchDirtyCard), formulaire ouvert, sous « Sera confié à… ». */
 const launchDirty = (files, opts) => `
 <div class="main-dirty mq-dirty" data-testid="launch-dirty">
   <div class="main-dirty-title">${i('triangle-alert', 13)}<span>Ce dossier a ${files.length} modifications non commitées : les 2 conversations filles ne les verront pas.</span></div>
@@ -377,7 +377,7 @@ export const COMMIT_CHOOSER_SCREENS = [
       await h.stage(
         'body',
         legend(
-          '<b>Lancement de filles (fiche 240), « Committer d’abord ».</b> Le même composant sous « Partira à… » ; seul le bouton change (« Committer puis lancer »).'
+          '<b>Lancement de filles (fiche 240), « Committer d’abord ».</b> Le même composant sous « Sera confié à… » ; seul le bouton change (« Committer puis lancer »).'
         ),
         'append'
       )

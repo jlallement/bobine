@@ -1,4 +1,5 @@
 import { appToolText } from '@shared/app-tools'
+import { toolInputOf, toolText, type LabelledTool } from '@shared/tool-label'
 import { ChevronRight, Eye, EyeOff, Pencil, TriangleAlert } from 'lucide-react'
 import { forwardRef, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -27,17 +28,21 @@ export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, st
   useEffect(() => {
     const watched = new Set(key ? key.split('\n') : [])
     if (watched.size === 0) return
+    // Ce que chaque outil a dit (une mise à jour ne répète pas titre, genre ni cible).
+    const tools = new Map<string, LabelledTool>()
     return window.api.agent.onEvent(({ conversationId, event }) => {
       if (!watched.has(conversationId)) return
       const ended = event.type === 'turn-end' || event.type === 'turn-error'
       const update = event.type === 'update' ? event.update : undefined
       // Outil du serveur `bobine` (fiche 265) : son libellé traduit, pas le titre brut de l'agent.
+      // Outil de l'agent : son libellé lisible (« Lecture de liste.js »), jamais le titre brut
+      // (« read », fiche 272).
       const title =
         event.type === 'tool-app'
           ? appToolText(event.appTool)
           : update &&
               (update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update')
-            ? update.title
+            ? activityText(tools, `${conversationId}\n${update.toolCallId}`, update)
             : undefined
       if (!ended && !title) return
       setActivity((current) => {
@@ -49,6 +54,35 @@ export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, st
     })
   }, [key])
   return activity
+}
+
+/** Libellé d'un outil d'après tout ce que ses mises à jour ont dit ; `undefined` sans titre. */
+function activityText(
+  tools: Map<string, LabelledTool>,
+  key: string,
+  update: {
+    title?: string | null
+    kind?: string | null
+    status?: string | null
+    locations?: readonly { path: string }[] | null
+    rawInput?: unknown
+  }
+): string | undefined {
+  const known = tools.get(key)
+  const title = update.title ?? known?.title
+  if (!title) return undefined
+  const input = update.rawInput !== undefined ? toolInputOf(update.rawInput) : known?.input
+  const kind = (update.kind ?? known?.toolKind) as LabelledTool['toolKind']
+  const status = update.status ?? known?.status
+  const tool: LabelledTool = {
+    title,
+    locations: update.locations ?? known?.locations ?? [],
+    ...(kind ? { toolKind: kind } : {}),
+    ...(input ? { input } : {}),
+    ...(status ? { status } : {})
+  }
+  tools.set(key, tool)
+  return toolText(tool)
 }
 
 /** « au travail », « attend votre accord », « a rendu son compte rendu »… */

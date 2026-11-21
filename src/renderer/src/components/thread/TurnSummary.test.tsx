@@ -52,6 +52,39 @@ const lastTurnFacts = (items: TranscriptItem[], usage: ConversationUsage | undef
   return turnFacts(items, turnTimes(items), usage, IDLE).get(reply.id)
 }
 
+describe('fichier écrit sans diff connu (fiche 272)', () => {
+  const written = (id: number, path: string): TranscriptItem => ({
+    kind: 'tool',
+    id,
+    toolCallId: `w${id}`,
+    title: 'write',
+    toolKind: 'edit',
+    status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text: 'Wrote file successfully' } }],
+    locations: [{ path }]
+  })
+
+  it('jamais « +0 −0 » : « sans totaux », seul ou à côté des totaux connus', () => {
+    const only: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Réécris', at: 0 },
+      written(2, '/p/a.js'),
+      { kind: 'agent', id: 3, text: 'Fait', at: 2_000 }
+    ]
+    const facts = lastTurnFacts(only, undefined)
+    expect(facts).toMatchObject({ files: 1, unknown: 1 })
+    renderFoot(facts as TurnFacts)
+    expect(footText()).toContain('1 fichier sans totaux')
+    expect(footText()).not.toContain('+0')
+    const mixed: TranscriptItem[] = [
+      ...only.slice(0, 2),
+      edit(4, 'a\n', 'b\n'),
+      { kind: 'agent', id: 5, text: 'Fait', at: 2_000 }
+    ]
+    renderFoot(lastTurnFacts(mixed, undefined) as TurnFacts)
+    expect(footText()).toContain('2 fichiers +1 −1 · 1 sans totaux')
+  })
+})
+
 describe('bilan du dernier tour (fiche 185, P4)', () => {
   const items: TranscriptItem[] = [
     { kind: 'user', id: 1, text: 'avant', at: 1_000 },

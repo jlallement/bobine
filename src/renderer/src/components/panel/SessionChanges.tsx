@@ -2,11 +2,14 @@ import { FileDiff } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { changesSummary, conversationChanges } from '@shared/changes'
-import { countText } from '@shared/i18n/format'
 import type { TranscriptItem } from '@shared/transcript'
 import { Tip } from '../common/Menus'
+import { LineTotals } from '../common/LineTotals'
 
-type Summary = ReturnType<typeof changesSummary>
+type Summary = Omit<ReturnType<typeof changesSummary>, 'unknown' | 'binary'> & {
+  unknown?: number
+  binary?: number
+}
 
 /**
  * « Modifications » de l'onglet Session (fiche 207, proposition A validée) : deux lignes qui ne se
@@ -75,9 +78,9 @@ function ChangesRow(props: {
               data-testid={props.testId}
             >
               <FileDiff size={13} />
-              {props.text}
-              <span className="diff-added">+{countText(summary.added)}</span>
-              <span className="diff-removed">−{countText(summary.removed)}</span>
+              {/* Une ligne, alignée à gauche, coupée au besoin (fiche 272, recette). */}
+              <span className="session-link-text">{props.text}</span>
+              <LineTotals {...summary} />
             </button>
           </Tip>
         )}

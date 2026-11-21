@@ -193,6 +193,15 @@ describe('ConversationManager', () => {
     manager.stopAll()
   })
 
+  it('lancement avec un dossier demandé : l’agent de la conversation d’avant ne démarre pas (fiche 272)', async () => {
+    const { launch } = environment()
+    const { manager } = launch()
+    const view = await manager.startActive(false)
+    expect(view.snapshot?.status ?? 'idle').not.toBe('ready')
+    expect(manager.view(view.summary.id).snapshot?.status ?? 'idle').not.toBe('starting')
+    manager.stopAll()
+  })
+
   it('nouvelle conversation : l’ancienne reste dans l’historique, avec son fil', async () => {
     const { launch } = environment()
     const { manager, ready } = launch()
@@ -1246,6 +1255,19 @@ describe('ConversationManager', () => {
     const started = Date.now()
     await expect(new Worktrees(gitCommand).create(gone)).rejects.toThrow(gone)
     expect(Date.now() - started).toBeLessThan(1000)
+    app.manager.stopAll()
+  })
+
+  it('dossier d’une conversation commencée disparu : dit avant l’envoi, rien ne part (fiche 272)', async () => {
+    const env = environment()
+    const app = env.launch()
+    const folder = realpathSync(mkdtempSync(join(tmpdir(), 'ws-parti-')))
+    const view = await app.manager.create({ workspace: folder })
+    await app.manager.prompt(view.summary.id, 'Bonjour')
+    const before = app.manager.view(view.summary.id).transcript.items.length
+    vanish(folder, app.manager)
+    await expect(app.manager.prompt(view.summary.id, 'Encore ?')).rejects.toThrow(folder)
+    expect(app.manager.view(view.summary.id).transcript.items.length).toBe(before)
     app.manager.stopAll()
   })
 

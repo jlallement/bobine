@@ -31,6 +31,13 @@ export function planBadges(
 }
 
 /**
+ * Exécutions de plan en cours, par conversation (revue de la fiche 272) : un second clic pendant le
+ * changement de mode (`setControl`) n'envoie pas l'ordre deux fois. Le verrou tient jusqu'à ce que
+ * l'envoi aboutisse (le message est alors dans le fil, le plan s'y voit exécuté) ou échoue.
+ */
+const executing = new Set<string>()
+
+/**
  * Actions d'un plan annoté (fiche 040) : remarques renvoyées à l'agent, ou retour en mode
  * d'exécution (le mode choisi d'après le fil) puis l'ordre d'exécuter.
  */
@@ -42,16 +49,23 @@ export function planActionsFor(
 ) {
   if (!conversationId) return undefined
   const execute = async (path?: string) => {
-    const control = snapshot?.controls.find(
-      (ctl) => ctl.category === 'mode' && ctl.type === 'select'
-    )
-    if (control?.type === 'select') {
-      const mode = executionMode(items, control.options)
-      if (mode && mode !== control.currentValue) {
-        await window.api.agent.setControl(conversationId, control.id, mode).catch(() => {})
+    if (executing.has(conversationId)) return
+    executing.add(conversationId)
+    try {
+      const control = snapshot?.controls.find(
+        (ctl) => ctl.category === 'mode' && ctl.type === 'select'
+      )
+      if (control?.type === 'select') {
+        const mode = executionMode(items, control.options)
+        if (mode && mode !== control.currentValue) {
+          await window.api.agent.setControl(conversationId, control.id, mode).catch(() => {})
+        }
       }
+      // Jusqu'à la fin de l'envoi (message dans le fil), ou son échec.
+      await Promise.resolve(send(planExecution(path))).catch(() => {})
+    } finally {
+      executing.delete(conversationId)
     }
-    send(planExecution(path))
   }
   return {
     busy: snapshot?.status !== 'ready',

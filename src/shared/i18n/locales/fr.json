@@ -234,13 +234,17 @@
       "starting": "Démarrage de l’agent…",
       "busy": "Ajouter une suite (envoyée à la fin de la réponse)…",
       "error": "L’agent n’a pas pu démarrer : écrivez pour réessayer",
-      "exited": "L’agent s’est arrêté : écrivez pour le relancer",
+      "exited": "Écrivez pour relancer l’agent…",
       "needs-action": "Action requise avant de commencer",
       "authExpired": "Reconnectez-vous pour continuer",
       "modelRefused": "Choisissez un autre modèle ou connectez-vous",
       "needsFolder": "Choisissez d’abord un dossier",
       "modelRefusedKey": "Choisissez un autre modèle ou ajoutez une clé d’API",
-      "modelRefusedOnly": "Choisissez un autre modèle"
+      "modelRefusedOnly": "Choisissez un autre modèle",
+      "role": "Votre demande à {{role}}…",
+      "roles_one": "Votre demande au rôle…",
+      "roles_many": "Votre demande aux {{count}} rôles…",
+      "roles_other": "Votre demande aux {{count}} rôles…"
     },
     "plan": {
       "placeholder": "Explorer et planifier avec {{agent}}…",
@@ -270,7 +274,6 @@
       "queued": "Envoyer à la fin de la réponse (Entrée)",
       "now": "Envoyer (Entrée)"
     },
-    "exited": "L’agent s’est arrêté.",
     "failedToStart": "L’agent n’a pas pu démarrer.",
     "restart": "Relancer",
     "pasted": {
@@ -702,6 +705,7 @@
     "deleteNote": "Supprimer la remarque {{number}}",
     "selectHint": "Sélectionnez un passage pour le commenter.",
     "agentWorking": "L’agent travaille…",
+    "executed": "Plan déjà exécuté",
     "sendNotes": "Envoyer mes remarques",
     "execute": "Exécuter le plan",
     "notes_one": "{{count}} remarque",
@@ -796,6 +800,7 @@
   },
   "fileMenu": {
     "empty": "Aucun fichier ne correspond.",
+    "context": "Contexte",
     "keys": "↑↓ choisir · Tab ou Entrée joindre · Échap fermer",
     "title": "Fichiers · {{workspace}}"
   },
@@ -856,7 +861,8 @@
       "busyArchive": "L’agent répond encore : arrêtez-le avant d’archiver la conversation",
       "busyArchiveChild": "« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine",
       "unknown": "Conversation inconnue : {{id}}",
-      "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse"
+      "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse",
+      "folderGoneAtSend": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation."
     },
     "newTitle": "Nouvelle conversation",
     "retired": {
@@ -1172,7 +1178,7 @@
       },
       "commitDraft": {
         "label": "Message de commit rédigé par l’agent",
-        "hint": "Session à part, environ 10 000 jetons par commit (≈ 0,03 bobcoin chez IBM Bob)."
+        "hint": "Session à part, environ 10 000 jetons par commit (≈ 0,03 Bobcoin chez IBM Bob)."
       }
     },
     "fontSize": {
@@ -1675,7 +1681,7 @@
     "memory": {
       "enabled": {
         "label": "Mémoire activée",
-        "hint": "Les agents proposent, vous décidez : rien n'est gardé sans votre accord.",
+        "hint": "Les agents proposent, vous décidez : rien n’est gardé sans votre accord.",
         "hintOff": "Désactivée : les agents ne reçoivent ni souvenirs ni outil ; les vôtres restent ici."
       },
       "entries": "Souvenirs",
@@ -1688,7 +1694,7 @@
       "attach": "Rattacher à un dossier…",
       "attached_one": "{{count}} souvenir rattaché.",
       "attached_other": "{{count}} souvenirs rattachés.",
-      "empty": "Aucun souvenir ici pour l'instant.",
+      "empty": "Aucun souvenir ici pour l’instant.",
       "broken": "Un souvenir illisible a été mis de côté ({{file}}) ; « Tout effacer » le supprime.",
       "export": "Exporter…",
       "exported": "Exporté dans {{file}}",
@@ -1707,8 +1713,8 @@
       "moveToProject": "Déplacer vers ce projet",
       "moveError": {
         "changed": "Ce souvenir a changé entre-temps : rouvrez-le.",
-        "exists": "Un souvenir du même nom existe déjà de l'autre côté.",
-        "full": "L'autre mémoire est pleine."
+        "exists": "Un souvenir du même nom existe déjà de l’autre côté.",
+        "full": "L’autre mémoire est pleine."
       },
       "delete": "Supprimer",
       "deleteConfirm": "Supprimer « {{description}} » ?",
@@ -1721,7 +1727,7 @@
       "invalid": {
         "description": "Une seule ligne, {{description}} caractères au plus.",
         "body": "Entre 1 et {{body}} caractères.",
-        "other": "Ce souvenir n'est pas valide."
+        "other": "Ce souvenir n’est pas valide."
       },
       "changedWhileEditing": "Ce souvenir a été modifié entre-temps.",
       "reload": "Recharger (vos modifications seront perdues)",
@@ -1729,7 +1735,7 @@
       "clearConfirm_many": "Effacer les {{count}} souvenirs ? Les agents ne les recevront plus.",
       "where": "Commune à tous les agents, en clair sur ce Mac.",
       "outside": "Modifié hors de Bobine",
-      "outsideNotice": "Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n'est plus donné aux agents tant que vous ne l'avez pas relu.",
+      "outsideNotice": "Ce fichier a été modifié hors de Bobine (éditeur, ou un agent par ses propres outils) : il n’est plus donné aux agents tant que vous ne l’avez pas relu.",
       "keepChanges": "Garder ces modifications",
       "byUnknown": "inconnu",
       "keyLocked": "Bobine ne peut pas lire sa clé dans le trousseau : les souvenirs ne sont pas donnés aux agents, et rien ne peut être validé. Autorisez l’accès au trousseau, puis relancez Bobine.",
@@ -2185,11 +2191,20 @@
     "revertCreated": "Créé par l’agent : il sera supprimé.",
     "files_many": "{{count}} fichiers",
     "binaryBadge": "binaire",
+    "unknownBadge": "modifié",
     "changeOf": "Modification {{index}} sur {{total}}",
+    "unknownDiff": "L’agent a écrit ce fichier sans envoyer son contenu : le diff n’est pas connu. La vue Git montre l’état réel du fichier.",
     "children": {
       "revealLabel": "Afficher le worktree de « {{title}} » dans le Finder",
       "editorLabel": "Ouvrir le worktree de « {{title}} » dans {{editor}}"
-    }
+    },
+    "noTotals": "sans totaux",
+    "someNoTotals_one": "{{count}} sans totaux",
+    "someNoTotals_many": "{{count}} sans totaux",
+    "someNoTotals_other": "{{count}} sans totaux",
+    "someBinary_one": "{{count}} binaire",
+    "someBinary_many": "{{count}} binaires",
+    "someBinary_other": "{{count}} binaires"
   },
   "install": {
     "title": "Installer Bobine",
@@ -2271,7 +2286,8 @@
     "forward": "Suivant",
     "stop": "Arrêter",
     "reload": "Recharger",
-    "addressPlaceholder": "Adresse (ex. localhost:3000)",
+    "addressPlaceholder": "localhost:3000",
+    "addressLabel": "Adresse de la page (ex. localhost:3000)",
     "attach": "Joindre cette page au message",
     "empty": "Les pages ouvertes par l’agent s’affichent ici. Vous pouvez aussi saisir une adresse.",
     "url": {
@@ -3302,6 +3318,7 @@
       "unresponsive": "L’agent ne répondait plus à « Stop » : il a été arrêté.",
       "ended": "processus terminé ({{status}})",
       "code": "code {{code}}",
+      "killed": "arrêt forcé par le système ou un autre programme (SIGKILL)",
       "status": "Sortie : {{status}}.{{hint}}",
       "connectionLost": "L’agent ne répond plus : sa connexion avec Bobine s’est coupée, et Bobine l’a arrêté. « Relancer » le redémarre ; la conversation est gardée."
     },
@@ -3663,6 +3680,7 @@
   "git": {
     "missingWindows": "git est introuvable sur ce PC. Installez Git for Windows (git-scm.com/install/windows), puis relancez Bobine. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
     "missing": "git est introuvable sur ce Mac. Installez les outils de développement d’Apple : dans le Terminal, tapez `xcode-select --install`. Déjà installé ? Réglages › Diagnostic › Relire le PATH.",
+    "folderMissing": "Le dossier n’existe plus : {{folder}}. A-t-il été déplacé ou supprimé ?",
     "failed": "git a échoué",
     "statusFailed": "git status a échoué"
   },
@@ -3783,9 +3801,9 @@
       "noFiles": "rien modifié",
       "expand": "Afficher le détail",
       "collapse": "Masquer le détail",
-      "pending": "Partira à l’agent avec votre prochain message.",
+      "pending": "Sera transmise à l’agent avec votre prochain message.",
       "gone": "Conversation supprimée",
-      "pendingWake": "Partira à l’agent quand ses travaux auront tous répondu.",
+      "pendingWake": "Sera transmise à l’agent quand ses travaux auront tous répondu.",
       "turns_one": "{{count}} échange",
       "turns_many": "{{count}} échanges",
       "turns_other": "{{count}} échanges",
@@ -4744,20 +4762,20 @@
     "destination": {
       "reply": "Répondra à <strong>{{label}}</strong>, dans le même travail",
       "replyToken": "suite du travail",
-      "one": "Partira à <strong>{{label}}</strong>, dans sa propre conversation",
-      "many_one": "Partira à <strong>{{count}} rôle</strong>, un travail chacun, en parallèle",
-      "many_many": "Partira à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle",
-      "many_other": "Partira à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle",
+      "one": "Sera confié à <strong>{{label}}</strong>, dans sa propre conversation",
+      "many_one": "Sera confié à <strong>{{count}} rôle</strong>, un travail chacun, en parallèle",
+      "many_many": "Sera confié à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle",
+      "many_other": "Sera confié à <strong>{{count}} rôles</strong>, un travail chacun, en parallèle",
       "sameFolder": "dans ce dossier",
       "worktree": "son worktree",
       "attachments": "Les pièces jointes ne partent pas aux rôles : retirez-les, ou envoyez sans rôle.",
       "empty": "Écrivez votre demande après le rôle : c’est elle qui part.",
       "sending": "Lancement…",
       "failed": "{{label}} n’est pas parti : {{error}}",
-      "opinionOne": "Partira à <strong>{{label}}</strong>, pour un <strong>avis</strong>, dans sa propre conversation",
-      "opinionMany_one": "Partira à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
-      "opinionMany_many": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
-      "opinionMany_other": "Partira à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
+      "opinionOne": "Sera confié à <strong>{{label}}</strong>, pour un <strong>avis</strong>, dans sa propre conversation",
+      "opinionMany_one": "Sera confié à <strong>{{count}} rôle</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
+      "opinionMany_many": "Sera confié à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
+      "opinionMany_other": "Sera confié à <strong>{{count}} rôles</strong>, pour un <strong>avis</strong> : un travail chacun, en parallèle",
       "opinionSeesOne_one": "voit la modification non commitée",
       "opinionSeesOne_many": "voit les {{count}} modifications non commitées",
       "opinionSeesOne_other": "voit les {{count}} modifications non commitées",
@@ -5023,6 +5041,7 @@
   "workCard": {
     "pendingLine": "Sa réponse s’affichera à la fin de la réponse de {{agent}}.",
     "silentLine": "Pas de réponse pour cette demande : rien n’est parti, ou la réponse s’est perdue. « Relancer » la renvoie.",
+    "goneLine": "Sa conversation a été supprimée : plus aucune action ici, et sa réponse ne part plus à {{agent}}.",
     "nowOther": "{{target}}…",
     "nowFetch": "Consulte {{target}}…",
     "nowExecute": "Lance {{target}}…",
@@ -5152,10 +5171,10 @@
   },
   "help": {
     "title": "Aide de Bobine",
-    "nav": "Sommaire de l'aide",
+    "nav": "Sommaire de l’aide",
     "search": {
       "placeholder": "Rechercher",
-      "label": "Rechercher dans l'aide",
+      "label": "Rechercher dans l’aide",
       "empty": "Aucune page ne contient ces mots.",
       "keys": "↑↓ résultats · ↩ ouvrir · Échap effacer"
     },
@@ -5297,7 +5316,7 @@
       "rememberTitle": "Retenir ce souvenir ?",
       "forgetTitle": "Oublier ce souvenir ?",
       "by": "proposé par {{agent}}",
-      "external": "Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l'agent : vérifiez ce texte, il reviendra à chaque session de ce projet.",
+      "external": "Proposé juste après la lecture {{source}}. Un contenu externe peut glisser des consignes à l’agent : vérifiez ce texte, il reviendra à chaque session de ce projet.",
       "command": "Il contient une commande à exécuter.",
       "changed": "Modifié depuis la proposition (le {{date}})",
       "replaces": "Remplace « {{description}} », retenu le {{date}} :",
@@ -6444,5 +6463,10 @@
     "stateMerged": "fusionné · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "En relecture : la fusion attend la fin du Code reviewer."
+  },
+  "controlCategory": {
+    "model": "Modèle",
+    "mode": "Mode",
+    "thought_level": "Niveau de réflexion"
   }
 }

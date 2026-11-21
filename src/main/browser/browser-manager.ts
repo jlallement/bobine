@@ -12,6 +12,7 @@
  * (connexion Google…) s'ouvre vraiment, liée à sa page ; ouverte par une action de l'agent, elle est
  * bloquée et l'agent est prié de demander à l'utilisateur ; sans geste, bloquée comme dans Chrome.
  */
+import { acceptLanguages } from './accept-languages'
 import { rmSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import {
@@ -106,6 +107,11 @@ export interface BrowserManagerOptions {
   emitState: (state: BrowserState) => void
   /** Cookies gardés d'un lancement à l'autre (fiche 072) ; lu à la création de la session. */
   keepCookies?: () => boolean
+  /**
+   * Langues préférées de macOS (`app.getPreferredSystemLanguages()`), pour l'`Accept-Language` des
+   * pages (fiche 272) ; absent : celles de Chromium.
+   */
+  systemLanguages?: () => readonly string[]
   /** Téléchargement enregistré ou en échec (fiche 094), pour le bandeau de l'onglet. */
   emitDownload?: (download: BrowserDownload) => void
   /**
@@ -811,12 +817,14 @@ export class BrowserManager {
     // Certificats refusés (fiche 269, ADR-0064) : seules les pages de cette session sont traitées.
     app.on('certificate-error', this.certificates.onError)
     // Certains sites refusent un navigateur qui se présente comme Electron.
-    s.setUserAgent(
-      s
-        .getUserAgent()
-        .replace(/ Electron\/\S+/, '')
-        .replace(/ bobine\/\S+/i, '')
-    )
+    // Pages dans les langues de macOS, pas seulement celles de l'app (fiche 272).
+    const languages = acceptLanguages(this.options.systemLanguages?.() ?? [])
+    const agent = s
+      .getUserAgent()
+      .replace(/ Electron\/\S+/, '')
+      .replace(/ bobine\/\S+/i, '')
+    if (languages) s.setUserAgent(agent, languages)
+    else s.setUserAgent(agent)
     this.browserSession = s
     return s
   }

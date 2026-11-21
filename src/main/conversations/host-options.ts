@@ -56,6 +56,11 @@ export interface HostOptionsInput {
   emit: AgentHostOptions['emit']
   /** Travail des sous-agents rejoué à part (fiche 053), pour suivre ceux en arrière-plan. */
   works?: SubagentWorks
+  /**
+   * La conversation existe encore (pas mise à la corbeille) : les nouvelles d'un travail supprimé
+   * ne partent plus à l'agent (fiche 272). Absent : toutes partent.
+   */
+  exists?: (conversationId: string) => boolean
 }
 
 /** Commandes refusées partout par les règles de l'agent (fiche 215), pour les outils de l'app. */
@@ -171,7 +176,11 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       const items = input.items()
       return joinContext(
         handoverContext(items),
-        childContext(childNews(items), items, about),
+        childContext(
+          childNews(items).filter((news) => input.exists?.(news.childId) ?? true),
+          items,
+          about
+        ),
         memoryOutcomeContext(memoryOutcomes(items)),
         tools.includes('start_child') ? mentionReminder(text) : undefined
       )

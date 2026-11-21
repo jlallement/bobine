@@ -153,7 +153,7 @@ export function SessionTab({
   data: SessionTabData
 }) {
   const { t } = useTranslation()
-  const view = composerView(data.snapshot, data.settings)
+  const view = composerView(data.snapshot)
   const finished = finishedTools(data.transcript)
   const appTools = useAppToolsTokens(conversationId, data.snapshot?.status)
   const { line: mcp, measure: measureMcp } = useMcpTokens(

@@ -16,6 +16,45 @@ What changes for you, version by version. Shown in Settings › About.
   Maximized (⇧⌘J), the file and the tree side by side. A `file:line` link in a reply opens the
   tab at that line (⌘-click: your editor); “Browse files” on delegated work.
 
+### Fixes
+
+- A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
+  turn summary and in Changes › Conversation, marked “modified”, “no line counts” rather than
+  “+0 −0”; the Git view shows its actual state.
+- **Run the plan** is disabled once the plan has run successfully (“Plan already run”): no more
+  double runs; a question in Ask or a stopped run leave it available.
+- Panel tabs: a tab’s **✕** no longer appears under the pointer that just activated it, and a
+  double click never closes a tab.
+- Reviewer comments in the diff wrap within the panel’s visible width.
+- A task whose conversation was **deleted** says so on its card (“conversation deleted”) and
+  explains why its buttons are gone; its response is no longer sent to the agent nor wakes it.
+- `/compact` no longer carries pending task responses: they go with your next real message.
+- A conversation whose folder was **moved or deleted**: Bobine says so before sending, and nothing
+  is sent; the log no longer claims git is missing.
+- The thread follows the response after “Ask … to fix”, even with the pointer still on the card.
+- A local link (`http://localhost…`) switches the panel to the Browser right away, without waiting
+  for the page to load.
+- Texts: model and mode menus titled in the interface language; readable task activity (“Read
+  liste.js” rather than “read”); the line under the input and its hint address the chosen role;
+  curly apostrophes everywhere; “Bobcoin” capitalized.
+- macOS menus (Close All, Full Screen, Dictation…) follow the app’s language; the built-in browser
+  asks for pages in macOS’s languages.
+- Conversation search no longer shows a role’s hidden instruction.
+- Narrow window: the Code / Discussion switch no longer overflows.
+- No more “View changes” on a card whose tasks are all read-only.
+- Bobine’s internal fallback folder no longer appears among recent folders.
+- Agent stopped: “The agent stopped” said once, and a forced stop explained.
+- The browser address hint is never cut; Discussion: no browser without its tab; the sidebar toggle
+  is named for VoiceOver.
+- `file:line` written as code in a response opens with a click.
+- The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on
+  one line; `@git-changes` and `@terminal` sit under “Context” in the `@` menu.
+- `/` menu: Bobine’s commands show the conversation’s agent only.
+- Launching with `bobine <folder>`: the previously shown conversation’s agent no longer starts for
+  nothing.
+- Several roles for one message: each task is named after its role; in English, built-in roles keep
+  their English names in the thread.
+
 ## 1.0.0-rc.2 — November 20, 2026
 
 ### New
@@ -49,36 +88,36 @@ What changes for you, version by version. Shown in Settings › About.
 - After the agent is woken up, the tasks card says “Responses passed to …”.
 - Durations: “< 1 s” under a second, never “0 s”, timeouts included.
 - “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the
-  “Tasks” view or a task's card. The request shows in the thread (“@Code reviewer Review the
+  “Tasks” view or a task’s card. The request shows in the thread (“@Code reviewer Review the
   branch …”) with its card, which shows **every comment**: its severity, `file:line` (a click opens
   the diff on that file), one sentence, then its verdict, or “Nothing to report”. “Ask <agent> to
-  fix” sends its comments to the conversation's agent; “Show on the diff”, “Reply to Code reviewer”
-  and “Open its conversation” follow. A task's review shows inside that task's card. A model other
-  than the reviewed task's is suggested by default. In the reviewer's conversation, its instructions
+  fix” sends its comments to the conversation’s agent; “Show on the diff”, “Reply to Code reviewer”
+  and “Open its conversation” follow. A task’s review shows inside that task’s card. A model other
+  than the reviewed task’s is suggested by default. In the reviewer’s conversation, its instructions
   are folded (“Role instructions”). Typing `@code-reviewer` runs the same review: uncommitted
   changes, otherwise the current branch, otherwise the last commit, with your text as what to look
   at. A click on `file:line` shows that line in the diff.
-- The agent's merge recommendation is no longer a line in the thread: it sits on the task's row
+- The agent’s merge recommendation is no longer a line in the thread: it sits on the task’s row
   (“Recommended”, “Not ready yet”), with its note in the tooltip. Merging a task never deletes a
   branch that changed since the merge, nor the folder of a task still working or with changes: it
   says so, and everything stays.
 - The tasks the agent proposes in a turn form **a single card**, where it proposed them, that
   changes in place: proposed (Start, Do it here, Decline, “Start all”), then “3 tasks · 1 working,
-  2 finished”; each row unfolds on the task's whole response. The card's footer merges its ready
-  tasks into main (“Merge the 2 ready into main”, with the agent's recommendation), and the
+  2 finished”; each row unfolds on the task’s whole response. The card’s footer merges its ready
+  tasks into main (“Merge the 2 ready into main”, with the agent’s recommendation), and the
   progress and outcome show in the card. Several `@roles` in one message form the same card. No
   more “Subtasks” card jumping down the thread, nor separate “The agent started…” lines or reports.
 - A task that writes code (a coding `@role`, or “Start in parallel…”) merges from its own card:
   “View changes”, “Get a review”, “Merge into main”; the card shows the merge steps, then “Merged
   into main · branch deleted”.
-- A request to a role (`@UX/UI expert …`) stays in the thread, like a message, with the role's
+- A request to a role (`@UX/UI expert …`) stays in the thread, like a message, with the role’s
   chip. Right below it, a single card that no longer moves: what the role is doing and for how
   long, then **its whole response** (collapsed after about ten lines, “Read more”), its duration
-  and cost. “Ask <agent> to apply this response” sends the response to the conversation's agent; “Reply to
-  <role>” continues the same task, in the same card. A line says whether the conversation's agent
+  and cost. “Ask <agent> to apply this response” sends the response to the conversation’s agent; “Reply to
+  <role>” continues the same task, in the same card. A line says whether the conversation’s agent
   already knows this response. No more separate launch card, “Subtasks” row or report for these
   tasks.
-- A turn's summary is now the footer of the reply that ends it: “21:17 · 2m 29s · 9 files +346
+- A turn’s summary is now the footer of the reply that ends it: “21:17 · 2m 29s · 9 files +346
   −0”, with the cost, without repeating the duration. It stays under its reply, and whatever
   arrives later shows below it. When the agent is still working after the turn ends (a
   background subagent, for example), this footer says “Still working… · 32s”, only once. The file
@@ -232,9 +271,9 @@ What changes for you, version by version. Shown in Settings › About.
   cache included”).
 - A dollar cost reported by the agent is an estimate (its own prices, without your subscription or
   discounts): it now shows with “≈” everywhere, and “estimate” in the usage details, `/cost` and
-  My activity (“Estimated cost”). Bob's bobcoins, its own count, keep no “≈”.
-- The welcome trial sends its message with the conversation's model (the one on its chip), not
-  the model the agent picks for a new session. If the agent doesn't offer it, the result says
+  My activity (“Estimated cost”). Bob’s bobcoins, its own count, keep no “≈”.
+- The welcome trial sends its message with the conversation’s model (the one on its chip), not
+  the model the agent picks for a new session. If the agent doesn’t offer it, the result says
   which model answered.
 - “All my activity…”, at the bottom of the usage details, finally looks like a link.
 - A stopped tool group shows all its states: “✕ 1 failed · ⊘ 1 interrupted” instead of the
@@ -242,10 +281,10 @@ What changes for you, version by version. Shown in Settings › About.
 ### New
 
 - The commit message proposed by “Commit” (Git view, “Commit first”) is written by the
-  conversation's agent, from the checked files, their diff and the project memory (for example
+  conversation’s agent, from the checked files, their diff and the project memory (for example
   “Conventional Commits in English”), in a separate session: nothing shows up in the
   conversation, even while the agent works there. “Stop” while it writes; the message stays
-  editable. With no answer within 45 s, or if the agent can't answer, the proposed message is in
+  editable. With no answer within 45 s, or if the agent can’t answer, the proposed message is in
   English, based on the files, with no word cut, and a line says why. A “secret?” file only sends
   its name. Settings › General › “Commit message written by the agent” to do without it.
 
@@ -264,7 +303,7 @@ What changes for you, version by version. Shown in Settings › About.
   are committed, and the proposed message lists only them. A name that looks like a secrets file
   gets a “secret?” tag. Unchecked files stay uncommitted: the merge sets them aside then puts them
   back, and a child conversation leaves without them.
-- Bobine no longer calls on an agent you don't use: if Bob is not the agent you use, its quota no
+- Bobine no longer calls on an agent you don’t use: if Bob is not the agent you use, its quota no
   longer shows up at launch; it appears when a conversation with Bob is ready, then is read again
   with “Refresh”; each reading creates then deletes a session in Bob. A disposable profile (“Try
   Bobine as new”, a test data folder) no longer reads this quota at all, and diagnostics no longer
@@ -329,9 +368,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
-- Bob's cost: a cost that Bob records a little late after its reply is still shown, without
+- Bob’s cost: a cost that Bob records a little late after its reply is still shown, without
   waiting for the next turn.
-- Linux and Windows: the browser's “File saved” banner no longer squeezes its text to one
+- Linux and Windows: the browser’s “File saved” banner no longer squeezes its text to one
   letter per line; the “Show in the file manager” (or “Show in File Explorer”) button wraps instead.
 - Linux: agents and commands started by Bobine no longer receive its open files and
   connections; an agent left behind after Bobine was force-quit no longer stops it from
@@ -346,11 +385,11 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
-- Chat space: a chat's folder no longer shows up under its identifier (“3973c57d-…”). The
-  Session tab says “Documents: This chat” (a click shows it in Finder), the agent's tools and
+- Chat space: a chat’s folder no longer shows up under its identifier (“3973c57d-…”). The
+  Session tab says “Documents: This chat” (a click shows it in Finder), the agent’s tools and
   commands say “Documents”, and search, the trash, the sidebar tooltip and the export no longer
   show its path; in My activity, chats count on a single “Chats” row. The quick entry window,
-  opened from a chat, targets your project folder rather than the chat's.
+  opened from a chat, targets your project folder rather than the chat’s.
 - Header of a child conversation in a narrow window: the title shortens first, then the
   “read-only” pill shrinks to its icon (the text in a tooltip), instead of being cut mid-word.
 - Long thread: jumping to an early message from the outline, or searching the thread, no longer
@@ -369,7 +408,7 @@ What changes for you, version by version. Shown in Settings › About.
   Sepia, Bobine switches to Light.
 - The right panel opens at 320 px instead of 380, leaving more room for the conversation. The width
   you set by dragging its edge is kept; double-clicking the edge goes back to the default width (it
-  used to maximize the panel: the ⤢ button still does). In a narrow panel, a changed file's
+  used to maximize the panel: the ⤢ button still does). In a narrow panel, a changed file’s
   actions appear on hover, so its name stays whole.
 - Chat space: Bobine is also a chat, next to the code. The Code | Chat switcher at the top of the
   sidebar (⌘1 / ⌘2) opens a space with no project, to ask a question, write an email or work on
@@ -400,7 +439,7 @@ What changes for you, version by version. Shown in Settings › About.
 ### Improved
 
 - Roles: `@role` can be the very first message of a new conversation; it enters the history and
-  the child conversation is attached to it. A role's child answers in the interface language,
+  the child conversation is attached to it. A role’s child answers in the interface language,
   named to the agent.
 - Built-in roles: their description (“When to call on it?”) and their instructions now come in
   English or French, following the interface language; a personal role made from a built-in role
@@ -456,11 +495,11 @@ is not notarized by Apple yet, so macOS needs one extra step to open it (see the
   command and each of its parts, every file change); with another agent, the card promises nothing
   beyond “the agent decides”. The conversation folder in a command is shown as a chip (full path on
   hover). The task list shows its tasks (done, in progress, to do) and their count; an MCP tool shows
-  its arguments; a flagged card says why “Always” isn't offered.
+  its arguments; a flagged card says why “Always” isn’t offered.
 - About Bobine: a discreet line says that Bobine is an independent project, not affiliated with
   IBM.
-- License texts now ship with the app (the `licenses` folder of its resources): Bobine's,
-  Electron's and Chromium's, the terminal font's, and the full notices of every bundled
+- License texts now ship with the app (the `licenses` folder of its resources): Bobine’s,
+  Electron’s and Chromium’s, the terminal font’s, and the full notices of every bundled
   third-party component.
 
 ### Fixes
@@ -504,7 +543,7 @@ is not notarized by Apple yet, so macOS needs one extra step to open it (see the
 - API key: saving is no longer silent when the macOS Keychain is waiting for permission. Bobine
   says it is waiting for the Keychain window; with no answer within 60 s, the key isn’t saved, what
   you typed is kept and “Try again” is offered.
-- The composer's Stop button now has a name (“Stop Response”) for screen readers and
+- The composer’s Stop button now has a name (“Stop Response”) for screen readers and
   accessibility tools; it only had its icon.
 - Bobcoin cap: when the quota read had failed (Bob not yet signed in at launch), the cap never
   showed up for the rest of the session, even after signing in with SSO. It is now read again as
@@ -807,7 +846,7 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
 ### New
 
 - In a parent conversation, the Changes tab has a “Children” view: the worktrees of its child
-  conversations, with their state, branch, what they changed and the parent's verdict; one click
+  conversations, with their state, branch, what they changed and the parent’s verdict; one click
   opens them in Finder, in your editor or in their conversation.
 - Right-click opens a menu kept to the essentials: in the composer, spelling corrections then Cut,
   Copy, Paste and Select All; on selected text, a link or an image, Copy.
@@ -887,9 +926,9 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   agents are never touched.
 - A hovered red button (Reset, Delete…) stays red and readable.
 - My activity compares what can be compared: the chart gains “Time” (working time per agent), and
-  exchanges and working time lead the figures. A measure an agent doesn't report says so (“Tokens:
+  exchanges and working time lead the figures. A measure an agent doesn’t report says so (“Tokens:
   OpenCode only. IBM Bob does not report its tokens.”), as does the “Tokens processed · OpenCode”
-  figure. Filtered on one agent, the page only shows that agent's accounts (“IBM Bob on this Mac”
+  figure. Filtered on one agent, the page only shows that agent’s accounts (“IBM Bob on this Mac”
   only for Bob).
 - Annotating a browser page no longer freezes it: in Annotate mode, the page scrolls and zooms as
   usual (wheel, trackpad, pinch, ⌘+) and a click places the comment without reaching the page. The
@@ -900,35 +939,35 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   elements. Esc exits Annotate mode; comments stay until you send them.
 - While the agent prepares a tool without saying what on yet (OpenCode writes a patch for nearly
   40 s), the card and the activity indicator say “Preparing an edit…” (or a command, a read, a
-  search) instead of the raw word “patch”; the agent's title stays in the tooltip. Such a tool,
+  search) instead of the raw word “patch”; the agent’s title stays in the tooltip. Such a tool,
   interrupted or failed, keeps the name of its kind: “Edit · interrupted”.
-- The activity indicator's time is that of the current step (the tool, text or thinking of the
-  moment) and starts over at every step; the turn's duration is in its tooltip (“Turn started
+- The activity indicator’s time is that of the current step (the tool, text or thinking of the
+  moment) and starts over at every step; the turn’s duration is in its tooltip (“Turn started
   2 min 10 ago”).
 - Usage is now kept: every exchange with an agent is recorded on this Mac (agent, model, project,
   tokens, cost with its unit, duration), even if the conversation is later deleted or continued with
   another agent.
 - “My activity” (in the sidebar, under “New conversation”, or ⇧⌘U) shows all usage, across
   conversations, in place of the conversation: an activity grid over the last 12 months (or a past
-  year), like GitHub's, then the week, month or year, or the day clicked in the grid; the agent;
+  year), like GitHub’s, then the week, month or year, or the day clicked in the grid; the agent;
   exchanges, tokens processed, working time and cost in each unit (dollars and Bobcoins are never
   added up), with the change from the previous period; a chart per hour, day or month, by agent or
   by model; tables by model, by project and of the conversations that used the most (click one to
-  open it). “All my activity…”, in a conversation's usage details, leads there. Earlier exchanges
+  open it). “All my activity…”, in a conversation’s usage details, leads there. Earlier exchanges
   are imported once from the history. “Export…” saves a CSV (one row per exchange or per day, or
-  the entire history). IBM Bob's monthly quota and spend on this Mac are now there. The page stays
+  the entire history). IBM Bob’s monthly quota and spend on this Mac are now there. The page stays
   readable in a narrow window, side panel open included.
 - “Reset…” the recorded usage is in Settings › Data.
 - “Search” becomes a magnifying glass at the top of the sidebar (⌘K is unchanged).
-- In charts, IBM Bob is blue and OpenCode teal; Bob's unit is written “Bobcoins”.
+- In charts, IBM Bob is blue and OpenCode teal; Bob’s unit is written “Bobcoins”.
 - Settings › Diagnostics warns when an agent reports a version Bobine has not checked (for
-  example IBM Bob 2.0.7, checked with 2.0.6): its specific features may not work. Each agent's page
+  example IBM Bob 2.0.7, checked with 2.0.6): its specific features may not work. Each agent’s page
   in Settings › Agents lists the checked versions.
 - Settings › Agents › “Add an ACP agent…”: any agent that speaks ACP can be declared without
   touching code (name, command with its arguments, environment variables, and if needed its API key
   variable, entered afterwards on its page and encrypted in the Keychain). It gets its page like the
   others, with “Edit…” and “Remove this agent”.
-- An agent that can't resume a conversation (or lost its session) no longer leaves it read-only
+- An agent that can’t resume a conversation (or lost its session) no longer leaves it read-only
   after a restart or a crash: the conversation continues in a new session, marked “New session
   with …” in the thread, and the earlier exchange is passed on with your next message.
 - The sidebar is organized into Pinned, Recent (or Folders) and Archived, always last and
@@ -937,7 +976,7 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   is the project: child conversations started in a worktree stay under their parent. A fork
   (“Branch from this message”) names its original conversation in its header and tooltip and is
   listed as an independent conversation. Hovering looks different from the open conversation.
-- The built-in browser behaves like Claude Code's: the page scrolls with the mouse wheel, the
+- The built-in browser behaves like Claude Code’s: the page scrolls with the mouse wheel, the
   trackpad and the keyboard, and reflows when you widen the column or maximize the panel. ⌘+, ⌘−
   and ⌘0 zoom the page when it has focus (a “110%” chip in the address resets it to 100% in one
   click), without shifting the view even when the interface is zoomed; ⌘L, ⌘R, ⌘[ and ⌘] work in
@@ -967,28 +1006,28 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   again on its own: a banner in the thread says “Connection lost” and “Trying again in 8 s (3 of
   5)”, your message stays waiting and goes again without resending it. Five attempts, further and
   further apart (2 s to 32 s), and at once when the network comes back or the Mac wakes up; “Try
-  again now” doesn't wait, Escape or Stop ends it. After the fifth, “Can’t connect” and “Try
+  again now” doesn’t wait, Escape or Stop ends it. After the fifth, “Can’t connect” and “Try
   again”. A message written while waiting goes right after.
-- Electron 45 (Chromium 156, Node 24.22): Chromium security fixes. API keys go through Electron's
+- Electron 45 (Chromium 156, Node 24.22): Chromium security fixes. API keys go through Electron’s
   non-blocking access to the macOS keychain; keys already saved stay readable.
 
 ### Fixes
 
 - Merge progress stays visible while a child conversation resolves a conflict.
-- When the agent's connection drops mid-turn, the tool it had just announced no longer stays
+- When the agent’s connection drops mid-turn, the tool it had just announced no longer stays
   “in progress” next to the error notice: it is interrupted, and stays so when reopened. A turn cut
-  short by the agent stopping now counts in the conversation's usage.
+  short by the agent stopping now counts in the conversation’s usage.
 - An agent that does not stop when asked is forcibly stopped after 3 s, and those left running by a
   Bobine crash are stopped at the next launch (the log says which). Commits, merges and a
-  conversation's git status no longer get in each other's way (“index.lock”); a lock left by another
-  program is retried once, then git's error is shown in full.
+  conversation’s git status no longer get in each other’s way (“index.lock”); a lock left by another
+  program is retried once, then git’s error is shown in full.
 - Colors follow the whole theme: code blocks, command output and the terminal take the colors
   of Light, Dark, Sepia or Black (no more always-dark code), the terminal changes colors with the
   theme and the accent without reopening the tab, and the window opens straight on the chosen
-  theme's background. Sepia and Black have their own accents.
-- More readable text: muted text, accent links, text on the accent and the terminal's colors
+  theme’s background. Sepia and Black have their own accents.
+- More readable text: muted text, accent links, text on the accent and the terminal’s colors
   (yellow on a light background) all reach the recommended contrast (AA).
-- A command's output that is JSON is shown indented, with real line breaks inside strings.
+- A command’s output that is JSON is shown indented, with real line breaks inside strings.
 - The proposed commit message takes the conversation title cut at a whole word, never ending on a
   dangling “to a”, with “…”.
 - Settings: no more duplicates. “Reload PATH” now lives only in Diagnostics (a link leads there
@@ -1006,28 +1045,28 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
 
 ### New
 
-- Finished child conversations can all be merged at once from the parent's Subtasks card: a
+- Finished child conversations can all be merged at once from the parent’s Subtasks card: a
   sentence says which ones are ready, which are still working, which touch the same files and which
   have uncommitted changes; “Merge the N into main” merges them one after the other, in launch
-  order, with each row's state live and “Stop”. At the first conflict, that child conversation
+  order, with each row’s state live and “Stop”. At the first conflict, that child conversation
   resolves it, then the merge resumes. “Then clean up” archives the merged child conversations and
   deletes their worktrees and branches.
-- When the main folder has uncommitted changes, merging (from the Subtasks card or a worktree's Git
+- When the main folder has uncommitted changes, merging (from the Subtasks card or a worktree’s Git
   view) does not start and says why, listing the files, with “Commit first” (proposed message, then
   the merge starts) and “Set aside” (the changes are put away for the duration of the merge, then
   put back, and the thread says so). Git errors are shown in full, no longer just “Aborting”.
 - “Commit” is also available in the Git view of an ordinary conversation, outside a worktree:
   checked files, editable proposed message, “Undo” while it is the last commit and not pushed.
-- The agent's subagents have their own “Subagents” card in the thread, set apart from tools: those
+- The agent’s subagents have their own “Subagents” card in the thread, set apart from tools: those
   started together share the card, one row each (state, type, instructions, live duration and
   cost), with how many are running and done and their total cost; “Response” unfolds the
   instructions, the response and their work.
 - Each child conversation shows what it costs: a badge on its “Subtasks” row (bobcoins, dollars, or
-  its tokens), the children's total in the card header, and on its report the cost and number of
+  its tokens), the children’s total in the card header, and on its report the cost and number of
   exchanges at that point.
-- A worktree conversation's start fits in one card at the top of the thread: starting branch and
+- A worktree conversation’s start fits in one card at the top of the thread: starting branch and
   commit, date, commit subject, and a warning when the original folder still has uncommitted
-  changes; “Git view” opens the Changes tab. A child conversation's header says which conversation
+  changes; “Git view” opens the Changes tab. A child conversation’s header says which conversation
   it comes from (“↳ from “…””) and takes you back there in one click.
 - The top of the thread no longer slides under the header fade: the first message stays readable
   when the thread scrolls.
@@ -1054,13 +1093,13 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
 
 ### Fixes
 
-- The agent's tool titles no longer show absolute paths or “cd /path/to/project && …”:
+- The agent’s tool titles no longer show absolute paths or “cd /path/to/project && …”:
   “Permission: Edit src/books.js” instead of “Applying diff to /Users/…”, and “Update the task
   list (8)” (the list as a tooltip) instead of “Updating todo list”, in cards, “Waiting on you” and
   notifications.
 - The text Bobine attaches to your message (app context, `/split` request, exchange carried over
   from a branch or another agent) is now sent after it: it no longer becomes the task title in
-  IBM Bob, no longer shows in the “New branch of …” card, and no longer replaces a conversation's
+  IBM Bob, no longer shows in the “New branch of …” card, and no longer replaces a conversation’s
   title after “Continue with…” or a branch.
 
 ### Fixes
@@ -1084,7 +1123,7 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   the “Subagents” card stays running, even after the response ends, until it has really finished;
   it then shows its duration and final answer. “See its work” shows the current state while it is
   still working.
-- Screenshot without macOS's Screen Recording permission: instead of letting you select an area
+- Screenshot without macOS’s Screen Recording permission: instead of letting you select an area
   and then attaching nothing, the quick entry window and the message box say the screenshot is
   unavailable and why, with an “Open System Settings” button. A screenshot that macOS refuses after
   the selection says so too; Esc stays silent.
@@ -1098,12 +1137,12 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
 ### Fixes
 
 - `/context` and `/cost` each give a titled box (“Conversation context”, “Conversation cost”); when
-  the agent doesn't report how full its context is (IBM Bob), `/context` says so. IBM Bob's
+  the agent doesn’t report how full its context is (IBM Bob), `/context` says so. IBM Bob’s
   `/compress` is in the “/” list, and its reply shows as a “Conversation summarized” card, with the
   summary formatted.
 - A tool stopped with Esc or ■ is marked “interrupted”, no longer “failed”.
 - Commands the agent runs in the terminal run without a pager: `git log` no longer waits on
-  “(END)”. They open in a tab of the agent's own; your tabs keep your pager.
+  “(END)”. They open in a tab of the agent’s own; your tabs keep your pager.
 - `@` mentions first suggest files whose name or folder starts with what you type: `@books` no longer
   suggests Xcode files that merely contain those letters in order.
 - A tooltip closes when the hovered element scrolls away or disappears (tab switch, thread scrolled
@@ -1131,7 +1170,7 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
 ### Known limitations
 
 - In the thread, an `http://localhost…` link written by the agent does not open in the built-in
-  browser yet; a page's `prompt()` is not supported there; "Open a PR" does nothing when the
+  browser yet; a page’s `prompt()` is not supported there; "Open a PR" does nothing when the
   repository has no remote.
 - The report of a child conversation run by Bob does not show its cost; the badge on the
   "Subtasks" card does.
@@ -1152,14 +1191,14 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   listing conflicts file by file with “Let the agent resolve”, then “Clean up” (conversation
   archived, worktree and branch deleted). Settings › Agents and folders lists orphan worktrees
   with “Clean up”.
-- The conversation's cost (bobcoins, dollars or tokens depending on the agent) lives in one place:
+- The conversation’s cost (bobcoins, dollars or tokens depending on the agent) lives in one place:
   the usage chip under the input area, whose details give the total, the average per exchange
   and one line per exchange.
 - The sidebar can be resized with the mouse (from 220 to 440 px, 300 by default); double-click
   its handle to bring it back to the default width. In a narrow window it gives the conversation
   the room it needs and takes it back afterwards.
-- Settings › MCP servers › Bobine: the estimated weight of each tool family in the agent's context,
-  and a switch to stop offering it. The conversation's ⚙ menu says when the change applies and
+- Settings › MCP servers › Bobine: the estimated weight of each tool family in the agent’s context,
+  and a switch to stop offering it. The conversation’s ⚙ menu says when the change applies and
   offers to restart the agent.
 - Continue a conversation with the other agent: in the agent menu, “Continue with” offers OpenCode
   (with its recently used models or those of your providers) from Bob, or the other way round.
@@ -1182,13 +1221,13 @@ Available for macOS (Apple Silicon). The Linux preview will be released later.
   src/books.js”, “Edit README.md”, “Search “TODO””, “Page example.com/doc”, instead of the bare tool
   name (“read”, twenty times). Paths are relative to the conversation folder and shortened in the
   middle when long; the full path and the agent’s title stay on hover. A command keeps its text.
-- Settings › Agents and folders › Model providers: OpenCode's OpenAI-compatible endpoints (the
-  company's internal models) are declared in the app, without editing `opencode.json` by hand:
+- Settings › Agents and folders › Model providers: OpenCode’s OpenAI-compatible endpoints (the
+  company’s internal models) are declared in the app, without editing `opencode.json` by hand:
   name, address, models, "Only these providers". The key is encrypted in the macOS keychain, never
   written to the file. "Test" says whether the endpoint answers, how many models it lists, or why
   not (connection refused, proxy, unrecognised certificate, rejected key) and what to do; Settings ›
   Diagnostics has one line per provider.
-- Settings › Agents and folders › Corporate network: proxy, no-proxy hosts and the company's
+- Settings › Agents and folders › Corporate network: proxy, no-proxy hosts and the company’s
   certificate file, taken from the login shell or set here, passed to every agent at launch.
 - When a reply is done or an agent is waiting while the window is in the background, Bobine’s icon
   bounces in the Dock, even when macOS blocks notifications (Settings › General › Bounce the Dock
