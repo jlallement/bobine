@@ -65,17 +65,46 @@ const HTML = /\.html?$/i
 export const isMarkdownPath = (path: string) => MARKDOWN.test(path)
 export const isHtmlPath = (path: string) => HTML.test(path)
 
+/** Une adresse IP (`127.0.0.1`). */
+const IP = /^\d{1,3}(?:\.\d{1,3}){3}$/
 /**
- * Un lien qui a l'air d'un schéma mais désigne un fichier : `README.md:3` (chemin sans dossier
- * suivi d'une ligne) ; sous Windows, `C:\x` ou `C:/x`. Seule règle, partagée par la lecture d'un
- * lien (`parseFileLink`) et par le rendu Markdown, qui sinon le viderait (lien en code ou lien
- * Markdown : un seul chemin, fiche 272).
+ * Premier segment d'un chemin à dossiers qui a l'air d'un nom de domaine (`github.com`,
+ * `docs.rs`, `example.ch`) : des labels, le dernier en lettres. Un dossier à point en tête
+ * (`.github`) n'en est pas un.
+ */
+const DOMAIN_LIKE = /^(?!\.)[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,24}$/i
+/**
+ * `hôte:port` sans dossier : seulement les domaines de premier niveau qui ne sont jamais des
+ * extensions de fichier courantes (`example.org:443`) ; `deploy.sh:12`, `logo.ai:1`, `x.dev:1`
+ * restent des fichiers. Un domaine hors de cette liste est pris pour un fichier : risque accepté.
+ */
+const HOST_TLD = /\.(?:com|org|net|edu|gov|info|io|fr|de|uk|eu|ch|nl|be|it|es|us|ca|jp|localhost)$/i
+
+/**
+ * Chemin sans `./` en tête : ni compte (`user@…`), ni adresse (domaine ou IP, `hôte:port`).
+ * Seule règle d'adresse, partagée par les chemins en code (fiche 272) et `isPathNotScheme`.
+ */
+export function pathLike(text: string): boolean {
+  const [first = '', ...rest] = text.split('/')
+  if (first.indexOf('@') > 0) return false
+  if (rest.length > 0) return !IP.test(first) && !DOMAIN_LIKE.test(first)
+  const [host = '', port] = first.split(':')
+  return port === undefined || (!IP.test(host) && !HOST_TLD.test(host))
+}
+
+/**
+ * Un lien qui a l'air d'un schéma mais désigne un fichier : `README.md:3` (nom sans dossier, avec
+ * une extension, suivi d'une ligne) ; jamais une adresse `hôte:port` (`example.com:8080`,
+ * `127.0.0.1:3000`, même règle que `pathLike`) ; sous Windows, `C:\x` ou `C:/x`. Seule règle,
+ * partagée par la lecture d'un lien (`parseFileLink`) et par le rendu Markdown, qui sinon le
+ * viderait (lien en code ou lien Markdown : un seul chemin, fiche 272). En temps linéaire : elle
+ * tourne à chaque rendu en streaming.
  */
 export function isPathNotScheme(href: string, options: { windowsPaths?: boolean } = {}): boolean {
-  return (
-    /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(href) ||
-    (options.windowsPaths === true && isDriveAbsolute(href))
-  )
+  if (options.windowsPaths === true && isDriveAbsolute(href)) return true
+  const name = /^([^:/]+):\d+(?::\d+)?$/.exec(href)?.[1]
+  // Un point qui n'est ni le premier ni le dernier caractère : une extension.
+  return !!name && name.slice(1, -1).includes('.') && pathLike(href)
 }
 
 /**
