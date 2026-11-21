@@ -119,6 +119,14 @@ Bob 2.1.0) : contrat 12/12, réponses identiques à la référence 2.1.0 ; `pnpm
 --offline` (OpenCode 2.3.0) : contrat 12/12, réponses identiques. Ni Bob ni OpenCode n'annoncent
 `sessionCapabilities.systemPrompt`.
 
+**SDK ACP 2.8** (fiche 273, 2026-11-21, schéma 1.32 → 1.33, après la 1.0 : ADR-0057, point 4) :
+rien ne change sur le fil. Le schéma stable v1 est identique ; l'instable ajoute les curseurs de
+session (mise à jour `cursor_update`, envoyée seulement si le client annonce
+`sessionCapabilities.cursors`, et `cursorId` dans `session/fork`) : l'app n'annonce pas cette
+capacité et n'envoie aucun champ nouveau. Le SDK distribue désormais les notifications reçues juste
+avant que l'agent ferme son flux. `pnpm opencode-probe --offline` (OpenCode 2.3.0) : contrat
+12/12, réponses identiques. Sonde de Bob : à lancer par Jérôme.
+
 **Autres dossiers** (`additionalDirectories`, fiche 179) : Bob 2.0.9 ne l'annonce pas (sonde du
 2026-11-06) ; l'app ne lui envoie donc rien et ne propose pas d'en ajouter. Le jour où il
 l'annoncera, la fonction marchera sans rien changer au profil. Recevoir le champ ne suffit pas
