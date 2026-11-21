@@ -7,6 +7,7 @@ import { CopyButton } from '../common/CopyButton'
 import { isPathNotScheme } from '@shared/file-links'
 import { platformFeatures } from '../../platform-features'
 import { MarkdownLink } from './FileLink'
+import { remarkFrenchSpaces } from '../../help/remark-anchors'
 import { rehypeInlineFileCode } from './inline-file-code'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
@@ -70,10 +71,16 @@ function keepFileUrls(url: string): string {
  */
 export const Markdown = memo(function Markdown({
   text,
-  streaming = false
+  streaming = false,
+  french = false
 }: {
   text: string
   streaming?: boolean
+  /**
+   * Texte français écrit à la main (Nouveautés) : espaces insécables posées à l'affichage dans les
+   * nœuds de texte seulement, jamais dans le code ni les adresses (fiche 126). Pas pour l'agent.
+   */
+  french?: boolean
 }) {
   return (
     <div className="markdown">
@@ -81,7 +88,7 @@ export const Markdown = memo(function Markdown({
         // Liens `file://` gardés : ils désignent un fichier (fiche 052), comme `liste.js:17`, qui a
         // l'air d'un schéma (fiche 272) ; le reste comme d'habitude.
         urlTransform={keepFileUrls}
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={french ? [remarkGfm, remarkFrenchSpaces] : [remarkGfm]}
         rehypePlugins={[
           [rehypeKnownLanguage, { source: text, streaming }],
           [rehypeHighlight, { detect: true, ignoreMissing: true }],
