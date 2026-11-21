@@ -19,6 +19,7 @@ import {
   type WorkspaceFile
 } from '@shared/attachments'
 import { useComposerDraft } from '../../useComposerDraft'
+import { usePendingSend } from './usePendingSend'
 import { useCommandMenu } from '../../useCommandMenu'
 import { useMentions } from '../../useMentions'
 import { useComposerInbox } from '../../useComposerInbox'
@@ -278,6 +279,16 @@ function useInbox(
   })
 }
 
+/**
+ * Bouton Envoyer actif : message pour des rôles prêt, sinon envoi possible, ou à retenir pendant le
+ * démarrage de l'agent (`usePendingSend` ; une fois retenu, il reste grisé jusqu'au départ).
+ */
+const sendEnabled = (
+  roleView: { targets: readonly unknown[]; ready: boolean },
+  blocked: boolean,
+  canSend: boolean
+) => (roleView.targets.length > 0 ? roleView.ready && !blocked : canSend)
+
 export function Composer(props: Props) {
   const { snapshot, settings, onSend, onCancel, draftKey } = props
   const view = composerView(snapshot)
@@ -437,7 +448,7 @@ export function Composer(props: Props) {
     // Commande personnelle ou du projet (fiche 045) : la consigne développée part à l'agent.
     const own = userCommandOf(text, userCommands, agentCommands)
     if (own) {
-      if (!canSend) return
+      if (!canSend) return void later.hold()
       onSend(expandCommand(own.command.prompt, own.args), attachments.toSend())
       // L'historique garde la commande tapée, jamais sa consigne développée (fiche 227).
       recordSent(text)
@@ -451,7 +462,7 @@ export function Composer(props: Props) {
       changeText('', 0)
       return
     }
-    if (!canSend) return
+    if (!canSend) return void later.hold()
     onSend(text, attachments.toSend())
     recordSent(text)
     // Message tapé par l'utilisateur : compté pour l'astuce « Planifier… » (fiche 191).
@@ -460,6 +471,8 @@ export function Composer(props: Props) {
     changeText('', 0)
   }
 
+  // Agent qui démarre (nouveau fil) : Entrée retenue, le message part dès qu'il est prêt (fiche 272).
+  const later = usePendingSend(snapshot, draftKey, text, attachments.items, submit)
   // Touches de la zone de saisie : `composer-keys.ts`.
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) =>
     composerKeyDown(event, {
@@ -569,7 +582,7 @@ export function Composer(props: Props) {
           status={status}
           blocked={!!blocker}
           locked={locked}
-          canSend={roleView.targets.length > 0 ? roleView.ready && !blocker : canSend}
+          canSend={sendEnabled(roleView, !!blocker, canSend || (later.free && hasContent))}
           hasContent={hasContent}
           controls={controls}
           modeControl={modeControl}

@@ -198,6 +198,121 @@ describe('Composer', () => {
   })
 })
 
+/**
+ * Saisie dont l'état de l'agent change au fil de l'essai (`rerender`) : nouveau fil dont la vue
+ * arrive après le démarrage (fiche 272).
+ */
+function pendingSetup(first: AgentSnapshot | null, draftKey: string | null = 'nouveau-fil') {
+  const onSend = vi.fn()
+  const props = {
+    settings: null,
+    onSend,
+    onAppCommand: vi.fn(),
+    onSearchFiles: vi.fn(async () => []),
+    onPickFiles: vi.fn(async () => []),
+    onWarn: vi.fn(),
+    onCancel: vi.fn(),
+    onUnqueue: vi.fn(async () => undefined),
+    onSendNow: vi.fn(),
+    onRestart: vi.fn(),
+    onConfigure: vi.fn(),
+    onChooseWorkspace: vi.fn(),
+    onSetControl: vi.fn(),
+    onContinueInNew: vi.fn(),
+    onAuthenticate: vi.fn(),
+    onRetry: vi.fn(),
+    onUseApiKey: vi.fn(async () => {}),
+    onRunStep: vi.fn(),
+    onTrustForSession: vi.fn(),
+    onOpenTerminal: vi.fn()
+  }
+  const ui = (snap: AgentSnapshot | null, key: string | null = draftKey) => (
+    <Tooltip.Provider>
+      <Composer key="saisie" {...props} snapshot={snap} {...(key ? { draftKey: key } : {})} />
+    </Tooltip.Provider>
+  )
+  const view = render(ui(first))
+  const input = () => screen.getByTestId('composer-input') as HTMLTextAreaElement
+  return {
+    onSend,
+    input,
+    type: (value: string) => fireEvent.change(input(), { target: { value } }),
+    enter: () => fireEvent.keyDown(input(), { key: 'Enter' }),
+    become: (snap: AgentSnapshot | null, key: string | null = draftKey) =>
+      view.rerender(ui(snap, key))
+  }
+}
+
+const withStatus = (status: AgentSnapshot['status']): AgentSnapshot => ({ ...snapshot, status })
+
+describe('Composer : envoi pendant le démarrage d’un nouveau fil (fiche 272)', () => {
+  it('Entrée pendant le démarrage : le texte reste, puis part une seule fois quand l’agent est prêt', () => {
+    const t = pendingSetup(null)
+    t.type('Premier message')
+    t.enter()
+    expect(t.onSend).not.toHaveBeenCalled()
+    expect(t.input().value).toBe('Premier message')
+    // Retenu : le bouton Envoyer reste grisé jusqu'au départ.
+    expect(screen.getByTestId('send')).toHaveProperty('disabled', true)
+    t.become(withStatus('starting'))
+    expect(t.onSend).not.toHaveBeenCalled()
+    t.become(withStatus('ready'))
+    expect(t.onSend).toHaveBeenCalledTimes(1)
+    expect(t.onSend).toHaveBeenCalledWith('Premier message', [])
+    expect(t.input().value).toBe('')
+  })
+
+  it('double Entrée, ou Entrée puis clic sur Envoyer : un seul envoi', () => {
+    const t = pendingSetup(withStatus('starting'))
+    t.type('Une fois')
+    expect(screen.getByTestId('send')).toHaveProperty('disabled', false)
+    t.enter()
+    t.enter()
+    fireEvent.click(screen.getByTestId('send'))
+    t.become(withStatus('ready'))
+    t.become(withStatus('busy'))
+    expect(t.onSend).toHaveBeenCalledTimes(1)
+  })
+
+  it('texte modifié pendant l’attente : plus rien ne part tout seul, le texte reste', () => {
+    const t = pendingSetup(null)
+    t.type('Premier')
+    t.enter()
+    t.type('Premier message, corrigé')
+    t.become(withStatus('ready'))
+    expect(t.onSend).not.toHaveBeenCalled()
+    expect(t.input().value).toBe('Premier message, corrigé')
+  })
+
+  it('démarrage fini en connexion demandée (needs-action) : rien ne part, le texte reste', () => {
+    const t = pendingSetup(withStatus('starting'))
+    t.type('Premier message')
+    t.enter()
+    t.become(withStatus('needs-action'))
+    // Connexion faite ensuite : l'attente était tombée, rien ne part tout seul.
+    t.become(withStatus('ready'))
+    expect(t.onSend).not.toHaveBeenCalled()
+    expect(t.input().value).toBe('Premier message')
+  })
+
+  it('autre conversation avant que l’agent soit prêt : rien ne part', () => {
+    const t = pendingSetup(null, 'fil-a')
+    t.type('Pour le fil A')
+    t.enter()
+    t.become(withStatus('ready'), 'fil-b')
+    expect(t.onSend).not.toHaveBeenCalled()
+  })
+
+  it('sans conversation (aucune chargée) : Entrée ne retient rien', () => {
+    const t = pendingSetup(null, null)
+    t.type('Bonjour')
+    t.enter()
+    t.become(withStatus('starting'))
+    expect(t.onSend).not.toHaveBeenCalled()
+    expect(t.input().value).toBe('Bonjour')
+  })
+})
+
 describe('Composer : texte collé, fichiers exclus, brouillon (fiche 155)', () => {
   const paste = (input: HTMLTextAreaElement, text: string) =>
     fireEvent.paste(input, { clipboardData: { files: [], getData: () => text } })
