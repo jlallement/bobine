@@ -6,6 +6,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Panneau de droite : l’état vide de Modifications a sa marge et ne touche plus les bords ;
+  Mon activité ne montre plus un nom de mois coupé (« s » pour « mars ») ; dans les Nouveautés,
+  les guillemets et les signes « : ; ? ! » ne se séparent plus de leur mot en fin de ligne.
 - Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
   désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié », « sans
   totaux » plutôt qu’un « +0 −0 » ; la vue Git montre son état réel.

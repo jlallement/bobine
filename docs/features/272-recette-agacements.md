@@ -136,6 +136,28 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   espaces, Unix, faux positifs, dossier disparu avec git dans « Program Files ». Aucune autre règle
   en `\S*` sur un chemin de programme dans `src/` (`repo.ts` teste `ENOENT` seul).
 
+- 2026-11-21 — Trois défauts d'affichage relevés en usage réel, avant rc.3.
+  - Modifications vide : `.side-panel-empty` n'avait pas de marge dans les onglets `flush`
+    (Modifications, Activité ACP, Simulateur, Android, Navigateur), dont le corps n'a pas les 16 px
+    de `.side-panel-body` ; la phrase « …pas un dépôt git » touchait les bords et était rognée.
+    `.side-panel-body.flush .side-panel-empty { padding: 0 16px }` : la marge de Tâches, sans
+    changement pour les états vides courts.
+  - Carte de chaleur : le défilement retenu est arrondi à la colonne supérieure (revue QA,
+    `eaa9a67`) ; une étiquette jugée « entièrement cachée » pouvait donc dépasser de 14 px dans la
+    vue (« s » pour « mars »). Une étiquette qui commence avant le bord gauche de la vue n'est plus
+    montrée du tout ; la grille ne bouge pas. Essai : défilée de 20 px, « oct. » n'apparaît plus
+    (échouait avant).
+  - Typographie : `fr.json` était déjà juste (espaces ordinaires, insécables posées à l'affichage
+    par `typography.ts`, fiche 126 ; non modifié). Les Nouveautés, rendues telles quelles, ne
+    l'étaient pas. Une première version réécrivait `CHANGELOG.md` (1 619 insécables) : refusée en
+    relecture, contraire au choix de la fiche 126 et source de conflits avec les branches qui
+    ajoutent des lignes. Retenu : `Markdown` prend `french`, qui ajoute `remarkFrenchSpaces` (celui
+    du guide, fiche 186) ; il ne touche que les nœuds `text`, jamais le code en ligne, les blocs ni
+    les adresses. Réglages › Nouveautés le passe pour le journal français. `CHANGELOG.md` s'écrit
+    toujours avec des espaces ordinaires. Essais : `Markdown.test.tsx` (texte, code en ligne, bloc,
+    lien), et dans le glossaire, des guillemets de `fr.json` détachés de leur mot (sinon la
+    typographie ne les lie pas). Les e2e passent par `L()` et ne lisent pas les Nouveautés.
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent

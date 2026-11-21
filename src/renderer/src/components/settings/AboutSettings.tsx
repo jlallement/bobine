@@ -21,6 +21,8 @@ export function AboutSettings() {
     void window.api.app.getInfo().then(setInfo)
   }, [])
   const versions = changelogVersions(i18n.language)
+  // Le journal français (aussi celui d'une langue sans journal) : typographie posée au rendu.
+  const french = (CHANGELOGS[i18n.language as Language] ?? changelogFr) === changelogFr
   return (
     <section>
       <SettingsCard>
@@ -46,7 +48,7 @@ export function AboutSettings() {
               <ChevronRight size={15} className="settings-version-chevron" aria-hidden />
             </summary>
             <div className="settings-changelog">
-              <Markdown text={version.body} />
+              <Markdown text={version.body} french={french} />
             </div>
           </details>
         ))}

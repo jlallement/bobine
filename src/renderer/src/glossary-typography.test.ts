@@ -1,7 +1,8 @@
 /**
  * Typographie du glossaire (`docs/traduction.md`, fiche 272, recette) : apostrophe courbe `’` dans
  * les textes français de l'interface et dans les Nouveautés (`CHANGELOG.md`, hors code) ; l'unité de
- * Bob s'affiche « Bobcoin(s) », avec sa majuscule. Les mots-clés de la recherche des réglages
+ * Bob s'affiche « Bobcoin(s) », avec sa majuscule ; dans `fr.json`, les guillemets restent détachés de
+ * leur mot, pour que `typography.ts` les lie par une insécable à l'affichage. Les mots-clés de la recherche des réglages
  * (`settingsSearch.*`, `*.search.*`), jamais affichés, restent libres.
  */
 import { describe, expect, it } from 'vitest'
@@ -29,6 +30,11 @@ describe('typographie du glossaire (fiche 272)', () => {
   it('Nouveautés (CHANGELOG.md) : apostrophe courbe hors du code', () => {
     const lines = changelog.split('\n').filter((line: string) => STRAIGHT.test(prose(line)))
     expect(lines).toEqual([])
+  })
+
+  it('fr.json : guillemets détachés de leur mot, que la typographie lie par une insécable', () => {
+    const glued = /«[^\s]|[^\s]»/
+    expect(texts.filter(([key, text]) => !keywords(key) && glued.test(prose(text)))).toEqual([])
   })
 
   it('« Bobcoin(s) » avec sa majuscule à l’affichage', () => {

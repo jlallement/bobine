@@ -132,4 +132,27 @@ describe('Markdown', () => {
     render(<Markdown text={'[seul](seul.md)'} />)
     expect(screen.getByText('seul').dataset['testid']).toBeUndefined()
   })
+
+  it('français (Nouveautés, fiche 272) : insécables dans le texte, jamais dans le code ni les adresses', () => {
+    const N = '\u00a0'
+    const text = [
+      '- Marqué « modifié » ; plutôt `code « x » ; y ?` : voir [la « page »](<https://exemple.org/a ?b>).',
+      '',
+      '```',
+      'bloc « z » !',
+      '```'
+    ].join('\n')
+    const { container } = render(<Markdown text={text} french />)
+    const item = container.querySelector('li') as HTMLElement
+    expect(item.textContent).toContain(`Marqué «${N}modifié${N}»${N}; plutôt`)
+    expect(item.textContent).toContain(`${N}: voir la «${N}page${N}».`)
+    expect(item.querySelector('code')?.textContent).toBe('code « x » ; y ?')
+    expect(container.querySelector('pre')?.textContent).toContain('bloc « z » !')
+    const href = container.querySelector('a')?.getAttribute('href') ?? ''
+    expect(href).toMatch(/^https:\/\/exemple\.org\/a/)
+    expect(href).not.toMatch(/\u00a0|%C2%A0/i)
+    // Sans `french` (anglais, fil de la conversation) : rien ne change.
+    const plain = render(<Markdown text={'Marqué « modifié » ;'} />)
+    expect(plain.container.textContent).toBe('Marqué « modifié » ;')
+  })
 })
