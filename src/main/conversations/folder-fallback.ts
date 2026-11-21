@@ -64,11 +64,3 @@ export function folderGoneMessage(gone: string, workspace: string): Message {
     : { key: 'conversations.notice.folderGone', params: { folder: gone } }
 }
 
-/**
- * Dossier d'une conversation commencée qui a disparu (déplacé, supprimé) : dit avant l'envoi, rien
- * ne part (fiche 272, recette : l'agent tournait dans un dossier disparu sans un mot). `undefined`
- * s'il existe, ou si la conversation n'en a pas.
- */
-export function missingFolder(workspace: string): string | undefined {
-  return hasFolder(workspace) && !isDirectory(workspace) ? workspace : undefined
-}
