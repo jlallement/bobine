@@ -6,6 +6,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Side panel: the empty Changes view has its margin and no longer touches the edges; My activity
+  no longer shows a clipped month name; in What’s new (French), quotes and “: ; ? !” no longer
+  break away from their word at the end of a line.
 - A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
   turn summary and in Changes › Conversation, marked “modified”, “no line counts” rather than
   “+0 −0”; the Git view shows its actual state.
