@@ -223,9 +223,6 @@ export async function panelSuite(scheme) {
       const closeOf = (id) => `${tab(id)}.querySelector('[data-testid=panel-tab-close]')`
       await ui.click(tab('browser'))
       await ui.waitFor(`${tab('browser')}.classList.contains('active')`)
-      // Fiche 272 : un ✕ cliqué dans la demi-seconde qui suit l'activation de son onglet ne ferme
-      // pas (le double clic de la recette fermait l'onglet). Comme un humain : on lit, puis on ferme.
-      await ui.ev(`new Promise((r) => setTimeout(r, 600))`)
       await ui.click(closeOf('browser'))
       await ui.waitFor(`!${tab('browser')}`)
       check(
