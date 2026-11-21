@@ -16,7 +16,7 @@ import { BranchOrigin, ConversationTitle } from './components/sidebar/Conversati
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
 import { LineTotals } from './components/common/LineTotals'
-import { threadItems } from './role-labels'
+import { useThreadItems } from './role-labels'
 import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
 import { ResumeCard } from './components/thread/ResumeCard'
@@ -355,6 +355,7 @@ export function App() {
     onCreate: openRoleWizardNamed,
     onManage: () => dialogs.setSettingsSection('roles')
   })
+  const threadShown = useThreadItems(transcript.items, snapshot, composerRoles.labels)
   const editor = (
     <Composer
       roles={composerRoles}
@@ -665,7 +666,7 @@ export function App() {
                           <TurnControlsContext.Provider value={guards.turnControls}>
                             <Transcript
                               key={c.activeId ?? ''} // rien de déplié ne passe à la suivante
-                              items={threadItems(transcript.items, snapshot, composerRoles.labels)}
+                              items={threadShown}
                               terminals={transcript.terminals}
                               onRespondPermission={c.respondPermission}
                               onRespondElicitation={c.respondElicitation}

@@ -1,6 +1,7 @@
+import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { TranscriptItem } from '@shared/transcript'
-import { builtinLabels, relabelRoles } from './role-labels'
+import { builtinLabels, relabelRoles, useThreadItems } from './role-labels'
 
 const secu = {
   name: 'security-expert',
@@ -47,5 +48,23 @@ describe('libellés des rôles fournis dans la langue de l’interface (fiche 27
         builtinLabels([{ name: 'security-expert', label: 'Expert sécurité', scope: 'builtin' }])
       )
     ).toBe(items)
+  })
+})
+
+describe('fil affiché mémoïsé (revue de la fiche 272)', () => {
+  it('même fil, même état, mêmes libellés : le même tableau d’un rendu à l’autre', () => {
+    // Un libellé à remplacer : sans mémoire, chaque rendu referait un nouveau fil.
+    const items = [
+      { kind: 'child-started', id: 1, childId: 'a', title: 'A', prompt: 'x', role: secu, at: 0 }
+    ] as TranscriptItem[]
+    const labels = new Map([['security-expert', 'Security expert']])
+    const { result, rerender } = renderHook(
+      ({ snapshot }) => useThreadItems(items, snapshot, labels),
+      { initialProps: { snapshot: { status: 'ready' as const, blocker: undefined } } }
+    )
+    const first = result.current
+    // Nouvel objet d'état (chaque évènement de l'agent), même contenu : pas de nouveau fil.
+    rerender({ snapshot: { status: 'ready' as const, blocker: undefined } })
+    expect(result.current).toBe(first)
   })
 })

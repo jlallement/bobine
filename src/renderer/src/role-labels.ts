@@ -1,4 +1,6 @@
 import type { RoleView } from '@shared/roles'
+import { useMemo } from 'react'
+import type { AgentSnapshot } from '@shared/agent'
 import type { TranscriptItem } from '@shared/transcript'
 import { withoutCardedRefusal } from '@shared/transcript-notice'
 
@@ -56,4 +58,21 @@ export function threadItems(
   labels: ReadonlyMap<string, string> = NO_LABELS
 ): TranscriptItem[] {
   return relabelRoles(withoutCardedRefusal(items, snapshot), labels)
+}
+
+/**
+ * `threadItems` mémoïsé (revue de la fiche 272) : recalculé seulement quand le fil, l'état de refus
+ * ou les libellés changent, pas à chaque rendu de l'app.
+ */
+export function useThreadItems(
+  items: TranscriptItem[],
+  snapshot: Pick<AgentSnapshot, 'status' | 'blocker'> | null | undefined,
+  labels: ReadonlyMap<string, string> | undefined
+): TranscriptItem[] {
+  const status = snapshot?.status
+  const blocker = snapshot?.blocker
+  return useMemo(
+    () => threadItems(items, status === undefined ? null : { status, blocker }, labels),
+    [items, status, blocker, labels]
+  )
 }
