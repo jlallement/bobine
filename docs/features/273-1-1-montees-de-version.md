@@ -1,6 +1,6 @@
 # 273 — 1.1 : montées de version (ADR-0057 accepté, mineures, SDK ACP 2.8, AXe 2, outillage)
 
-- **Statut** : fait (relecture du tech lead ; `pnpm bob-probe` à lancer par Jérôme)
+- **Statut** : fait
 - **Dépend de** : 252 (rc-D, chaîne d'approvisionnement), 233 (lot 2 des dépendances), 218
   (Dependabot), 217 (avis de licence), 043 (AXe) ; ADR-0057, ADR-0009, ADR-0010 ; audit du
   2026-11-19 (LCM-4, 7, 8, 10, 11)
@@ -117,6 +117,10 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
 
 ## Journal
 
+- 2026-11-21 — `pnpm bob-probe` sur le SDK 2.8.0 (Bob 2.1.0, 0 bobcoin, `~/.bob` sauvegardé avant) :
+  code 0, contrat respecté, réponses identiques à la référence 2.1.0 ; `~/.bob` inchangé (seuls
+  les fichiers temporaires `-wal`/`-shm` de `bob.db` apparus à l'ouverture).
+
 - 2026-11-21 : fiche créée ; branche `chore/1.1-lcm` depuis `1.1` (`0458dcc`).
   - Lot 1 (`5fd6e46`) : ADR-0057 accepté. `verify` : 0.
   - Lot 2 (`63dc10a`) : mineures, icône renommée, avis de licence régénérés. `verify` : 0.
@@ -152,7 +156,7 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
 
 - [ ] **AXe au-delà de 2.0.4** : 2.1.0 et suivantes sont en GPL-3.0-only alors que Bobine livre le
       binaire. **Une décision (licence) est nécessaire avant toute montée.**
-- [ ] `pnpm bob-probe` après le SDK 2.8.0 (Jérôme, `~/.bob` sauvegardé).
+- [x] `pnpm bob-probe` après le SDK 2.8.0 : fait le 2026-11-21 (voir Journal).
 - [ ] `simulator-smoke` : il doit trouver un autre champ de texte sous iOS 27.2 (« aucun champ de
       texte dans Réglages », déjà présent avec AXe 1.8.0) ; d'ici là, le collage (`key-combo` ⌘V)
       n'est pas vérifié en réel.
