@@ -278,6 +278,22 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   molette de `screen-gestures.ts` (envoie un geste au simulateur s'il tombe après le démontage)
   et le double minuteur de focus de `useRoleCompose.tsx`.
 
+- 2026-11-21 — Petits restes (branche `feat/1.1-petits-restes`).
+  - Liens vérifiés de l'onglet Fichiers : le Markdown rendu par `FileView` (fiche 271) reçoit la
+    mémoire d'existence de la conversation (`useFileChecker`, `files:existing`), repris de `main`
+    à la fusion sans essai. Essai `FileView.links.test.tsx` : un chemin qui existe devient un
+    lien, un absent reste du code, une seule demande relative au dossier du document ; réponse
+    « inconnu » (délai dépassé) : du code, **pas redemandé par l'onglet seul**, redemandé au
+    prochain signal « des fichiers ont pu changer » du fil de la même conversation (mémoire
+    partagée), et le lien apparaît alors dans l'onglet ; appel en échec : du code. Comportement
+    actuel documenté, aucun défaut trouvé.
+  - D2, avis passager : maquettes seulement, rien de codé.
+    `docs/maquettes/272-avis-fichier-introuvable.html` (clair/sombre) : aujourd'hui ; A, avis
+    flottant au-dessus de la saisie (5 s) ; B, avis orangé dans le fil, effacé au message
+    suivant ; C (proposée), le lien devient du code barré, bulle « Fichier introuvable » 3 s,
+    rien dans le fil. Captures : `docs/maquettes/272-avis-fichier-introuvable/{now,option-a,
+    option-b,option-c}.png`. **À valider par Jérôme** avant tout code.
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent
@@ -288,8 +304,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
 - D2 (rc.3) : un avis passager (disparaît seul après quelques secondes, sans entrer dans le fil)
-  pour les erreurs de clic sur un lien demanderait un élément visuel nouveau : à maquetter et
-  valider avant de le coder. En attendant : un seul avis par texte, pied du tour intact.
+  pour les erreurs de clic sur un lien demanderait un élément visuel nouveau : maquetté
+  (`docs/maquettes/272-avis-fichier-introuvable.html`, trois options), à valider avant de le coder. En attendant : un seul avis par texte, pied du tour intact.
 - Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle
   d'à côté ne reçoit pas le signal « des fichiers ont pu changer » ; ses « non » ne sont
   revérifiés qu'au prochain signal de cette conversation. Laissé tel quel (relecture, point E).

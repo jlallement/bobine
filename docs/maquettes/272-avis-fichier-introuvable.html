@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fichier introuvable — maquettes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      a {
+        color: var(--accent);
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .page > header p {
+        color: var(--text-2);
+        margin: 0 0 4px;
+        max-width: 860px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font: inherit;
+        font-size: 12.5px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 56px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .tag.now {
+        background: var(--err-soft);
+        color: var(--err);
+      }
+      .lead {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 4px 0 14px;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+      }
+      @media (max-width: 900px) {
+        .pair {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+      ul.points {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 14px 0 0;
+        padding-left: 20px;
+      }
+      ul.points li + li {
+        margin-top: 4px;
+      }
+
+      /* ===== Fenêtre (conversation seule) ===== */
+      .win {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        height: 380px;
+        position: relative;
+        overflow: hidden;
+      }
+      .conv-head {
+        height: 46px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        font-size: 13.5px;
+      }
+      .conv-head .muted {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 12.5px;
+      }
+      .thread {
+        flex: 1;
+        overflow: hidden;
+        padding: 18px 22px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .msg-user {
+        align-self: flex-end;
+        max-width: 75%;
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 8px 13px;
+        line-height: 1.5;
+      }
+      .msg-agent {
+        line-height: 1.6;
+        color: var(--text);
+      }
+      .msg-agent p {
+        margin: 0 0 6px;
+      }
+      .msg-agent code {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xs);
+        padding: 0 4px;
+      }
+      a.file-link {
+        color: var(--accent);
+        text-decoration: underline dotted;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+      a.file-link code {
+        color: var(--accent);
+      }
+      a.file-link.clicked {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-xs);
+      }
+      .turn-foot {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+      }
+      .turn-foot .ic {
+        display: inline-flex;
+        gap: 10px;
+      }
+      .notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 9px 12px;
+        border-radius: var(--radius-md);
+      }
+      .notice svg {
+        margin-top: 2px;
+      }
+      .notice-error {
+        background: var(--err-soft);
+        color: var(--text-2);
+      }
+      .notice-error > svg {
+        color: var(--err);
+      }
+      .notice-warning {
+        background: var(--warn-soft);
+        color: var(--text-2);
+      }
+      .notice-warning > svg {
+        color: var(--warn);
+      }
+      .notice .grow {
+        flex: 1;
+      }
+      .notice .hint {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .composer {
+        margin: 0 18px 16px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 10px 12px;
+        color: var(--muted);
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .composer .send {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--on-accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ann {
+        position: absolute;
+        font-size: 11px;
+        font-weight: 600;
+        background: var(--accent);
+        color: var(--on-accent);
+        border-radius: var(--radius-pill);
+        padding: 2px 8px;
+        box-shadow: var(--shadow);
+      }
+
+      /* ===== Option A : avis passager (toast) ===== */
+      .toast {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 74px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: var(--surface);
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-menu);
+        padding: 8px 8px 8px 12px;
+        font-size: 13px;
+        max-width: calc(100% - 48px);
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .toast > svg {
+        color: var(--warn);
+      }
+      .toast .x {
+        color: var(--muted);
+        display: inline-flex;
+        padding: 3px;
+        border-radius: var(--radius-xs);
+      }
+      .toast .bar {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 2px;
+        width: 62%;
+        background: var(--warn);
+        opacity: 0.6;
+      }
+
+      /* ===== Option C : le lien lui-même ===== */
+      .gone {
+        position: relative;
+        display: inline-block;
+      }
+      .gone code {
+        color: var(--muted);
+        text-decoration: line-through;
+        text-decoration-color: var(--muted);
+      }
+      .bubble {
+        position: absolute;
+        left: 0;
+        top: calc(100% + 7px);
+        white-space: nowrap;
+        background: var(--text);
+        color: var(--bg);
+        font-size: 12px;
+        line-height: 1.4;
+        padding: 5px 9px;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-menu);
+        z-index: 2;
+      }
+      .bubble::before {
+        content: '';
+        position: absolute;
+        left: 14px;
+        top: -4px;
+        width: 8px;
+        height: 8px;
+        background: var(--text);
+        transform: rotate(45deg);
+      }
+
+      /* ===== Tableau ===== */
+      table.cmp {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        font-size: 13px;
+      }
+      table.cmp th,
+      table.cmp td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      table.cmp th {
+        background: var(--surface-2);
+        font-weight: 600;
+      }
+      table.cmp tr:last-child td {
+        border-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="alert" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7.5v5.5M12 16.5h.01" />
+      </symbol>
+      <symbol id="warn" viewBox="0 0 24 24">
+        <path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+        <path d="M12 9v4M12 17h.01" />
+      </symbol>
+      <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
+      <symbol id="up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></symbol>
+      <symbol id="copy" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="12" height="12" rx="2" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+      </symbol>
+      <symbol id="redo" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" /></symbol>
+    </svg>
+
+    <!--
+      Gabarit du fil (une conversation, un tour fini). Chaque écran le reprend avec sa variante :
+      le script clone chaque `.win` dans sa version sombre.
+    -->
+    <div class="page">
+      <header>
+        <div>
+          <h1>Fichier introuvable : un avis passager</h1>
+          <p>
+            Fiche 272, reste D2 (recette de la rc.3). Cliquer un lien de fichier qui n'existe plus
+            (supprimé ou déplacé depuis la réponse) pose aujourd'hui l'avis « Fichier introuvable :
+            {{path}} » (<code>fileLink.missing</code>) dans le fil, en rouge, jusqu'au prochain
+            chargement de la conversation — alors qu'il ne concerne qu'un clic. Trois options à
+            trancher ; aucune n'est codée.
+          </p>
+          <p>
+            Chemin actuel : <code>useFileLinks</code> → <code>notices.warn</code> →
+            <code>fail</code> (<code>useConversations</code>) → évènement <code>notice</code>
+            <code>local</code>, niveau <code>error</code> → <code>reduceNotice</code> (un même avis
+            local redonné dans le tour remplace le précédent) ; <code>endedBadly</code> l'ignore, le
+            pied du tour reste. L'avis n'est pas écrit sur disque.
+          </p>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Thème de la page">
+          <button data-set="system" aria-pressed="true">Système</button>
+          <button data-set="light" aria-pressed="false">Clair</button>
+          <button data-set="dark" aria-pressed="false">Sombre</button>
+        </div>
+      </header>
+
+      <!-- ===== Aujourd'hui ===== -->
+      <section id="now">
+        <h2 class="screen">Aujourd'hui<span class="tag now">à remplacer</span></h2>
+        <p class="lead">
+          Une carte rouge entre la réponse et la saisie ; elle reste après qu'on a compris, au
+          milieu de l'historique, et le lien, lui, n'a pas changé : on peut recliquer.
+        </p>
+        <div class="pair">
+          <div>
+            <p class="caption">Après le clic</p>
+            <div class="win force-light" data-dark>
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <a class="file-link clicked"><code>notes/brouillon.md</code></a
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+                <div class="notice notice-error">
+                  <svg class="i"><use href="#alert" /></svg>
+                  <span>Fichier introuvable : notes/brouillon.md</span>
+                </div>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Option A ===== -->
+      <section id="option-a">
+        <h2 class="screen">A. Avis passager au-dessus de la saisie</h2>
+        <p class="lead">
+          Un petit avis flottant, centré au-dessus de la saisie de la conversation : icône d'alerte,
+          texte actuel, ✕. Il disparaît seul après 5 s (le temps s'arrête tant que la souris est
+          dessus ou que le clavier y est), n'entre jamais dans le fil. Un second clic sur un fichier
+          introuvable remplace l'avis au lieu d'en empiler un deuxième.
+        </p>
+        <div class="pair">
+          <div>
+            <p class="caption">Juste après le clic (la barre fine : temps restant)</p>
+            <div class="win force-light" data-dark>
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <a class="file-link clicked"><code>notes/brouillon.md</code></a
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+              </div>
+              <div class="toast" role="status">
+                <svg class="i"><use href="#warn" /></svg>
+                <span>Fichier introuvable : notes/brouillon.md</span>
+                <span class="x" aria-label="Fermer"
+                  ><svg class="i s"><use href="#x" /></svg
+                ></span>
+                <span class="bar"></span>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="points">
+          <li>
+            <b>Pour</b> : le fil ne garde que la conversation ; le même avis sert à tout ce qui
+            n'est qu'un retour de clic (fichier exécutable montré dans le Finder, éditeur absent…).
+          </li>
+          <li>
+            <b>Contre</b> : nouvel élément visuel (composant, file d'attente, minuterie, annonce
+            <code>role="status"</code> pour VoiceOver) ; un avis qui s'efface peut être manqué ; le
+            lien reste cliquable et trompeur.
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== Option B ===== -->
+      <section id="option-b">
+        <h2 class="screen">B. Avis dans le fil, effacé au message suivant</h2>
+        <p class="lead">
+          L'avis reste où il est aujourd'hui, mais en orangé (une gêne, pas une panne) et avec ✕ ;
+          il s'efface seul dès que l'on envoie le message suivant, ou au changement de conversation.
+          Rien de nouveau à apprendre ; seul son cycle de vie change (avis
+          <code>local</code> retiré par l'envoi).
+        </p>
+        <div class="pair">
+          <div>
+            <p class="caption">Après le clic</p>
+            <div class="win force-light" data-dark>
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <a class="file-link clicked"><code>notes/brouillon.md</code></a
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+                <div class="notice notice-warning">
+                  <svg class="i"><use href="#warn" /></svg>
+                  <span class="grow"
+                    >Fichier introuvable : notes/brouillon.md
+                    <span class="hint">· disparaît au prochain message</span></span
+                  >
+                  <svg class="i s"><use href="#x" /></svg>
+                </div>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="caption">Message suivant envoyé : l'avis est parti</p>
+            <div class="win force-light">
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <a class="file-link"><code>notes/brouillon.md</code></a
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+                <div class="msg-user">Recrée-le, il a disparu.</div>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="points">
+          <li>
+            <b>Pour</b> : le plus petit changement (cycle de vie d'un avis existant, pas de nouvel
+            élément) ; l'avis ne peut pas être manqué.
+          </li>
+          <li>
+            <b>Contre</b> : il occupe encore le fil tant qu'on ne répond pas ; le lien reste
+            cliquable et trompeur.
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== Option C ===== -->
+      <section id="option-c">
+        <h2 class="screen">
+          C. Le lien lui-même : barré, une bulle le dit<span class="tag reco">proposée</span>
+        </h2>
+        <p class="lead">
+          Au clic, le lien cesse d'en être un : le chemin redevient du code, barré et grisé, et une
+          petite bulle « Fichier introuvable » s'affiche sous lui 3 s (annoncée à VoiceOver). Rien
+          n'entre dans le fil. Ensuite, le survol du chemin barré redit « Fichier introuvable ».
+          C'est la règle de la fiche 272 (un code n'est un lien que si le fichier existe) appliquée
+          au moment où l'on découvre qu'il n'existe plus ; si le fichier revient (signal « des
+          fichiers ont pu changer »), le lien revient.
+        </p>
+        <div class="pair">
+          <div>
+            <p class="caption">Juste après le clic</p>
+            <div class="win force-light" data-dark>
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <span class="gone" title="Fichier introuvable"
+                      ><code>notes/brouillon.md</code
+                      ><span class="bubble" role="status">Fichier introuvable</span></span
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot" style="margin-top: 30px">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="caption">3 s plus tard : le chemin barré, sans avis</p>
+            <div class="win force-light">
+              <div class="conv-head">Tri de la liste <span class="muted">· OpenCode</span></div>
+              <div class="thread">
+                <div class="msg-user">Où as-tu noté les cas limites ?</div>
+                <div class="msg-agent">
+                  <p>
+                    La fonction est dans
+                    <a class="file-link"><code>src/liste.js:4</code></a
+                    >. J'ai noté les cas limites dans
+                    <span class="gone" title="Fichier introuvable"
+                      ><code>notes/brouillon.md</code></span
+                    >.
+                  </p>
+                </div>
+                <div class="turn-foot">
+                  <span>Big Pickle · 14 s</span>
+                  <span class="ic"
+                    ><svg class="i s"><use href="#copy" /></svg
+                    ><svg class="i s"><use href="#redo" /></svg
+                  ></span>
+                </div>
+              </div>
+              <div class="composer">
+                Répondre…
+                <span class="send"
+                  ><svg class="i s"><use href="#up" /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="points">
+          <li>
+            <b>Pour</b> : la réponse est là où l'on regarde (sur le lien), le fil reste propre, et
+            le lien trompeur disparaît : plus de second clic inutile. S'appuie sur la mémoire
+            d'existence par conversation déjà en place (<code>FileChecks</code> : un « non » appris
+            au clic).
+          </li>
+          <li>
+            <b>Contre</b> : une bulle ancrée au lien est un petit élément nouveau ; un vrai lien
+            Markdown (<code>[texte](chemin)</code>) devrait suivre la même règle (aujourd'hui
+            toujours un lien) ; les liens des panneaux (aperçu, Modifications) gardent leur note
+            propre.
+          </li>
+        </ul>
+      </section>
+
+      <h2 class="screen">En bref</h2>
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th></th>
+            <th>A. Avis passager</th>
+            <th>B. Effacé au message suivant</th>
+            <th>C. Lien barré + bulle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Dans le fil</td>
+            <td>jamais</td>
+            <td>jusqu'au message suivant</td>
+            <td>jamais</td>
+          </tr>
+          <tr>
+            <td>Lien encore cliquable</td>
+            <td>oui</td>
+            <td>oui</td>
+            <td>non (revient si le fichier revient)</td>
+          </tr>
+          <tr>
+            <td>Élément nouveau</td>
+            <td>avis flottant (+ minuterie, file)</td>
+            <td>aucun</td>
+            <td>bulle ancrée au lien</td>
+          </tr>
+          <tr>
+            <td>Texte</td>
+            <td><code>fileLink.missing</code> (existant)</td>
+            <td><code>fileLink.missing</code> + « disparaît au prochain message »</td>
+            <td>« Fichier introuvable » (clé nouvelle, sans chemin)</td>
+          </tr>
+          <tr>
+            <td>Risque</td>
+            <td>avis manqué</td>
+            <td>encombrement résiduel</td>
+            <td>règle des liens Markdown à aligner</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // Bascule de thème de la page (Système / Clair / Sombre).
+      const root = document.documentElement
+      for (const button of document.querySelectorAll('.theme-switch button')) {
+        button.addEventListener('click', () => {
+          const value = button.dataset.set
+          if (value === 'system') root.removeAttribute('data-theme')
+          else root.setAttribute('data-theme', value)
+          for (const other of document.querySelectorAll('.theme-switch button'))
+            other.setAttribute('aria-pressed', String(other === button))
+        })
+      }
+      // Chaque écran : sa copie sombre à côté (la première fenêtre de la paire, si une seule ;
+      // sinon, la paire entière en sombre dessous).
+      for (const pair of document.querySelectorAll('.pair')) {
+        const wins = [...pair.querySelectorAll(':scope > div')]
+        const dark = document.createElement('div')
+        dark.className = 'pair'
+        dark.style.marginTop = '16px'
+        for (const cell of wins) {
+          const copy = cell.cloneNode(true)
+          copy.querySelector('.win').classList.replace('force-light', 'force-dark')
+          const caption = copy.querySelector('.caption')
+          if (caption) caption.textContent += ' — sombre'
+          if (wins.length === 1) pair.appendChild(copy)
+          else dark.appendChild(copy)
+        }
+        if (wins.length > 1) pair.after(dark)
+      }
+    </script>
+  </body>
+</html>
