@@ -15,6 +15,8 @@ What changes for you, version by version. Shown in Settings › About.
   app, Finder, mention in the message box (or drag the row onto it), copy the path, show the diff.
   Maximized (⇧⌘J), the file and the tree side by side. A `file:line` link in a reply opens the
   tab at that line (⌘-click: your editor); “Browse files” on delegated work.
+- iOS Simulator: AXe, shipped with the app, moves to 2.0.4; taps and screen reading are
+  faster (per AXe, a tap ≈ 0.1 s instead of about 1 s).
 
 ## 1.0.0-rc.3 — November 21, 2026
 

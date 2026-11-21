@@ -16,6 +16,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   dans la zone de saisie (ou glisser la ligne sur la saisie), copier le chemin, voir le diff. Agrandi
   (⇧⌘J), le fichier et l’arbre côte à côte. Un lien `fichier:ligne` dans une réponse ouvre l’onglet
   à la ligne (⌘-clic : l’éditeur) ; « Parcourir les fichiers » sur un travail délégué.
+- Simulateur iOS : AXe, livré avec l’app, passe en 2.0.4 ; touchers et lecture de l’écran
+  plus rapides (selon AXe, un toucher ≈ 0,1 s au lieu d’environ 1 s).
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

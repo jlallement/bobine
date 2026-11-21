@@ -1,6 +1,6 @@
 # 273 — 1.1 : montées de version (ADR-0057 accepté, mineures, SDK ACP 2.8, AXe 2, outillage)
 
-- **Statut** : en cours
+- **Statut** : fait (relecture du tech lead ; `pnpm bob-probe` à lancer par Jérôme)
 - **Dépend de** : 252 (rc-D, chaîne d'approvisionnement), 233 (lot 2 des dépendances), 218
   (Dependabot), 217 (avis de licence), 043 (AXe) ; ADR-0057, ADR-0009, ADR-0010 ; audit du
   2026-11-19 (LCM-4, 7, 8, 10, 11)
@@ -14,14 +14,15 @@ Dependabot) et les restes d'outillage de l'audit (LCM-7, 8, 10, 11). L'ADR-0057 
 
 ## Critères d'acceptation
 
-- [ ] ADR-0057 « accepté » (2026-11-21, accord de Jérôme), index des ADR à jour.
-- [ ] Mineures montées, chacune passée par le délai `minimumReleaseAge` de pnpm, sans exception.
-- [ ] `@agentclientprotocol/sdk` 2.8.0 exact ; changelog relu ; `pnpm opencode-probe --offline`
+- [x] ADR-0057 « accepté » (2026-11-21, accord de Jérôme), index des ADR à jour.
+- [x] Mineures montées, chacune passée par le délai `minimumReleaseAge` de pnpm, sans exception.
+- [x] `@agentclientprotocol/sdk` 2.8.0 exact ; changelog relu ; `pnpm opencode-probe --offline`
       (et en ligne si un modèle gratuit répond) ; `docs/acp.md` à jour si le contrat change.
 - [ ] AXe 2.0.4 : version et empreinte de l'archive publiée, notes de version relues, appels
-      adaptés, `pnpm fetch-axe`, `pnpm simulator-smoke`, avis de licence.
-- [ ] Outillage : ce que la fiche 252 n'a pas fait (runners nommés, sonde MCP, paquets dépréciés).
-- [ ] `./scripts/verify` à 0 après chaque lot ; `pnpm e2e --if-needed` (suite complète) à 0.
+      adaptés, `pnpm fetch-axe`, `pnpm simulator-smoke`, avis de licence — fait, sauf le collage
+      du smoke (champ introuvable sous iOS 27, même échec avec AXe 1.8.0, voir Journal).
+- [x] Outillage : ce que la fiche 252 n'a pas fait (runners nommés, sonde MCP, paquets dépréciés).
+- [x] `./scripts/verify` à 0 après chaque lot ; `pnpm e2e --if-needed` (suite complète) à 0.
 
 ## Plan
 
@@ -44,7 +45,106 @@ Aucune nouvelle dépendance.
 
 | Paquet | Avant | Après | Note |
 |---|---|---|---|
+| `vitest`, `@vitest/coverage-v8` | 5.1.0 | 5.1.1 | `^` gardé pour vitest, exact pour la couverture |
+| `i18next` | 27.1.2 | 27.2.2 | exact ; rend la PR Dependabot n° 15 (27.1.3) inutile, laissée ouverte |
+| `react-i18next` | 18.0.1 | 18.0.3 | exact |
+| `lucide-react` | 1.73.0 | 1.77.0 | `FoldVertical` → `ArrowsToAxisDashedHorizontal` (même dessin) |
+| `typescript-eslint` | 8.72.2 | 8.73.0 | |
+| `ignore` | 7.0.14 | 7.0.16 | exact |
+| `@agentclientprotocol/sdk` | 2.7.0 | **2.8.0** exact | schéma 1.33 |
+| AXe | 1.8.0 | **2.0.4** | dernière version MIT ; 2.1.0+ en GPL-3.0-only |
+| `typescript`, `@types/node` | — | inchangés | TS 7 incompatible avec typescript-eslint < 6.1 et sans API stable ; types de Node 24 (`.nvmrc`) |
+
+Délai de pnpm (défaut 1 jour) : la plus récente, lucide-react 1.77.0, publiée le 2026-11-20 à
+06 h 17 UTC, installée le 2026-11-21 à 15 h 20 UTC ; aucune exception ajoutée.
+
+## SDK ACP 2.8.0
+
+Notes de version (GitHub `agentclientprotocol/typescript-sdk`) : schéma 1.33.0 et
+2.0.0-alpha.17 ; notifications reçues avant que le pair ferme son flux désormais distribuées ;
+aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : `schema/v1/schema.json`
+(stable) **identique** ; l'instable ajoute les curseurs de session (`cursor_update`,
+`ClientSessionCapabilities.cursors`, `cursorId` de `session/fork`). Bobine n'annonce pas
+`cursors` : rien à adapter, aucun code changé. `docs/acp.md` : paragraphe « SDK ACP 2.8 ».
+
+## AXe 2.0.4
+
+- Archive `AXe-macOS-v2.0.4-universal.tar.gz` (publiée le 2026-11-12) téléchargée dans un dossier
+  neuf, jamais exécutée là ; SHA-256 `3178ec66…a208c3`, égal à l'empreinte publiée par GitHub pour
+  ce fichier. Rangée dans `vendor/archives/` (ADR-0010), 1.8.0 retirée.
+- **Licence** : 2.0.4 est la **dernière version MIT** ; depuis la 2.1.0, AXe est en GPL-3.0-only
+  (notes de la v2.1.0). Commentaire à côté de `AXE_VERSION` dans `scripts/fetch-axe`. Avis de
+  licence : `LICENSES.txt` assemblé par `fetch-axe` (MIT d'AXe, MIT d'idb) ; la section AXe de
+  `THIRD-PARTY-NOTICES.md` dit MIT, les frameworks d'idb de la 2.0.4 (FBControlCore,
+  FBSimulatorControl) et le détecteur de clavier adapté de sim-use (Apache-2.0, LY Corporation),
+  dont la licence et le NOTICE sont livrés tels quels dans `AXe_AXe.bundle` (nouveau en 2.0).
+- Notes de la 2.0 relues : options utilisées par l'app inchangées (`describe-ui`, `tap`, `touch
+  --down --up --delay`, `swipe`, `type --stdin`, `key-combo`, `button`, `stream-video --format
+  --fps --scale --quality`, vérifiées dans `--help`) ; `describe-ui` rend toujours son arbre JSON.
+  **Changement de sortie** : `axe --version` écrit `v2.0.4` (avant `1.8.0`). `parseAxeVersion`
+  ne le lisait pas (`\b` entre « v » et le chiffre) : l'app aurait déclaré l'AXe livré
+  « inutilisable ». Corrigé (`v?`), avec un test ; `fetch-axe` retire aussi le « v » ; le faux AXe
+  de la suite `simulator` répond désormais comme AXe 2.
+- `pnpm simulator-smoke` ne se lançait plus (`run.ts` importait `../process-launch` sans
+  extension : ERR_MODULE_NOT_FOUND sous Node) ; corrigé, et le smoke ajouté au garde-fou
+  `probe-imports.test.ts`. Il prenait aussi l'iPhone Duo (runtime iOS à part d'Xcode 27) : un
+  iPhone ordinaire passe d'abord.
+- ADR-0009 (accepté) cite encore 1.8.0 et les frameworks de la 1.8 : non modifié (un ADR accepté
+  ne change pas) ; la version courante est celle de `scripts/fetch-axe`.
+
+## Outillage (LCM-7, 8, 10, 11)
+
+- Déjà fait par la fiche 252 : `.nvmrc` = 24 (LCM-10), image `ubuntu:24.04` épinglée par digest
+  et écosystème `docker` dans Dependabot (LCM-11, partie image). Rien de refait.
+- **LCM-11, runners** : `ubuntu-latest` → `ubuntu-24.04` (cible D6, comme `e2e.yml` et la matrice
+  Linux de `release.yml`), `macos-latest` → `macos-26` (image actuelle de `macos-latest`),
+  `windows-latest` → `windows-2025` (idem), dans `ci.yml`, `e2e.yml`, `release.yml` et
+  `opencode-probe.yml`. Note : le dernier `ci.yml` a tourné sur `ubuntu-26.04` (bascule en cours
+  de GitHub) ; on revient à 24.04, l'image documentée de `ubuntu-latest`.
+- **LCM-7, sonde MCP** (« Tester » un serveur MCP, `mcp-probe.ts`) : annonçait `2025-06-18` ;
+  passe à `2025-11-25`, dernière révision à poignée de main `initialize`, la même que le serveur
+  de l'app accepte en tête. La révision `2026-07-28` (publiée) rend MCP sans état (plus
+  d'`initialize` ni de `Mcp-Session-Id`, `server/discover`) : autre client, à décider dans une
+  fiche (voir Reste).
+- **LCM-8, paquets dépréciés** : `pnpm install` signale toujours `boolean@3.2.0`, `glob@7.2.3`,
+  `inflight@1.0.6`, `rimraf@2.6.3`, tous tirés par electron-builder 26.18.1 (outillage, rien de
+  livré). electron-builder 27 n'est qu'en `next` (27.0.0-alpha.15) : on attend sa version stable,
+  comme le recommande l'audit. Rien changé.
 
 ## Journal
 
 - 2026-11-21 : fiche créée ; branche `chore/1.1-lcm` depuis `1.1` (`0458dcc`).
+  - Lot 1 (`5fd6e46`) : ADR-0057 accepté. `verify` : 0.
+  - Lot 2 (`63dc10a`) : mineures, icône renommée, avis de licence régénérés. `verify` : 0.
+  - Lot 3 (`0c2337d`) : SDK ACP 2.8.0. `verify` : 0. `pnpm opencode-probe --offline` : 0 (contrat
+    12/12, réponses identiques). `pnpm opencode-probe` (modèle gratuit `opencode/big-pickle`),
+    deux passages : 1er code 1 (« question en texte libre » : délai dépassé, le modèle n'a pas
+    répondu), 2e code 2 (« travail du sous-agent rangé sous sa carte » non vérifié, le modèle ne
+    l'a pas fait) ; chaque point manquant est vert dans l'autre passage, réponses **identiques**
+    au 2e. Aucun écart de contrat. `pnpm bob-probe` : non lancé, à la charge de Jérôme.
+  - Lot 4 (`630caeb`) : AXe 2.0.4. `verify` : 0. `pnpm fetch-axe` : 0.
+    `pnpm simulator-smoke` (simulateur « Bobine Smoke », iPhone 17, iOS 27.2) : code 1, un
+    échec sur onze : « saisie : aucun champ de texte trouvé dans Réglages ». Lecture de l'écran,
+    toucher, capture, flux MJPEG (≈ 10 i/s) et BGRA (≈ 28 i/s) verts. **Même échec avec AXe 1.8.0**
+    (archive versionnée, même script) : sans lien avec AXe ; probablement Réglages d'iOS 27, sans
+    champ de recherche lisible sur sa page d'accueil (non creusé) ; le collage (`key-combo`) n'est donc pas vérifié en réel. Un premier passage
+    interrompu par erreur a laissé un simulateur « Bobine Smoke » : supprimé à la main.
+  - Lot 5 (`6bd61d8`) : runners nommés, sonde MCP en 2025-11-25. `verify` : 0.
+  - Fin : `pnpm build && pnpm e2e --if-needed` (suite complète, aucune autre campagne en cours) :
+    **code 0**, 236/236, 21 min 47 s. AXe est livré dans l'app : `pnpm package` (signature ad hoc)
+    code 0, puis `pnpm e2e:packaged` code 0 (« AXe embarqué utilisé (2.0.4 : …/Contents/Resources/
+    axe/axe) »). Nouveautés : une ligne pour AXe 2.0.4 (FR et EN), ajoutée après la campagne
+    (texte seul).
+
+## Reste
+
+- [ ] **AXe au-delà de 2.0.4** : 2.1.0 et suivantes sont en GPL-3.0-only alors que Bobine livre le
+      binaire. **Une décision (licence) est nécessaire avant toute montée.**
+- [ ] `pnpm bob-probe` après le SDK 2.8.0 (Jérôme, `~/.bob` sauvegardé).
+- [ ] Collage du smoke (`key-combo` ⌘V) à revérifier en réel : trouver un champ de texte sous iOS 27
+      (le script cherche celui de Réglages, introuvable avec AXe 1.8.0 comme 2.0.4).
+- [ ] MCP 2026-07-28 (sans état) : fiche à ouvrir pour le serveur de l'app et « Tester ».
+- [ ] Paquets dépréciés de l'outillage : à revoir avec electron-builder 27 stable.
+- [ ] Hors périmètre, relevé : l'exception `minimumReleaseAgeExclude: electron@45.4.1` est encore
+      dans `pnpm-workspace.yaml` alors que son délai est écoulé (ADR-0057, point 2 ; fiche 252,
+      Suites à faire) : non retirée ici (consigne du lot).
