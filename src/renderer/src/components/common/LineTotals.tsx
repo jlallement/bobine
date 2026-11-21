@@ -10,13 +10,16 @@ export function LineTotals({
   files,
   added,
   removed,
-  unknown = 0
+  unknown = 0,
+  spaced = false
 }: {
   files: number
   added: number
   removed: number
   /** Fichiers aux totaux inconnus, parmi `files`. */
   unknown?: number
+  /** Une espace entre les deux totaux (texte courant) ; sans : l'écart vient du CSS (puces). */
+  spaced?: boolean
 }) {
   const { t } = useTranslation()
   if (files > 0 && unknown >= files) {
@@ -28,7 +31,8 @@ export function LineTotals({
   }
   return (
     <>
-      <span className="diff-added">+{countText(added)}</span>{' '}
+      <span className="diff-added">+{countText(added)}</span>
+      {spaced && ' '}
       <span className="diff-removed">−{countText(removed)}</span>
       {unknown > 0 && (
         <span className="muted" data-testid="line-totals-unknown">

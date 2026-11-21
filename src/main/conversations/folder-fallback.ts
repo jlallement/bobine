@@ -63,4 +63,3 @@ export function folderGoneMessage(gone: string, workspace: string): Message {
     ? { key: 'conversations.notice.folderFallback', params: { folder: gone, fallback: workspace } }
     : { key: 'conversations.notice.folderGone', params: { folder: gone } }
 }
-

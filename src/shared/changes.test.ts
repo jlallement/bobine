@@ -117,7 +117,9 @@ describe('conversationChanges', () => {
     ).toEqual({
       files: 2,
       added: 3,
-      removed: 1
+      removed: 1,
+      // Aucun fichier sans totaux connus ici (fiche 272).
+      unknown: 0
     })
     expect(splitPath('src/ui/App.tsx')).toEqual({ dir: 'src/ui/', name: 'App.tsx' })
     expect(splitPath('README.md')).toEqual({ dir: '', name: 'README.md' })

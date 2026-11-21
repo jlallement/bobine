@@ -438,7 +438,7 @@ export function ChangesTab({
           ) : (
             <>
               <div className="changes-summary" data-testid="changes-summary">
-                {t('changes.files', { count: summary.files })} <LineTotals {...summary} />
+                {t('changes.files', { count: summary.files })} <LineTotals {...summary} spaced />
                 {view === 'git' && <span className="muted"> {t('changes.sinceLastCommit')}</span>}
               </div>
               <ChangesFileList

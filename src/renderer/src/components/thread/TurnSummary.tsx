@@ -217,7 +217,7 @@ export function ReplyFoot({
   if (facts.files > 0) {
     const files = (
       <>
-        {t('turnSummary.fileCount', { count: facts.files })} <LineTotals {...facts} />
+        {t('turnSummary.fileCount', { count: facts.files })} <LineTotals {...facts} spaced />
       </>
     )
     parts.push({

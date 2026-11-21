@@ -75,7 +75,11 @@ describe('fichier écrit sans diff connu (fiche 272)', () => {
     renderFoot(facts as TurnFacts)
     expect(footText()).toContain('1 fichier sans totaux')
     expect(footText()).not.toContain('+0')
-    const mixed = [...only.slice(0, 2), edit(4, 'a\n', 'b\n'), { ...only[2]!, id: 5 }]
+    const mixed: TranscriptItem[] = [
+      ...only.slice(0, 2),
+      edit(4, 'a\n', 'b\n'),
+      { kind: 'agent', id: 5, text: 'Fait', at: 2_000 }
+    ]
     renderFoot(lastTurnFacts(mixed, undefined) as TurnFacts)
     expect(footText()).toContain('2 fichiers +1 −1 · 1 sans totaux')
   })
