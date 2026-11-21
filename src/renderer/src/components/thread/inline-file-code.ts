@@ -1,7 +1,7 @@
 /**
  * Chemin `fichier:ligne` écrit en code dans une réponse (`src/liste.js:5`) : lien de fichier, comme
  * les mêmes références dans les remarques du relecteur (fiche 272, recette). Seulement ce qui a
- * l'air d'un chemin (un dossier, ou une ligne) avec une extension : jamais une commande, ni un mot.
+ * l'air d'un chemin avec une extension : jamais une commande, ni un mot, ni une adresse.
  */
 
 interface HastNode {
@@ -17,23 +17,42 @@ const PATH = /^(?:\.{0,2}\/)?[\w@.-]+(?:\/[\w@.-]+)*\.[A-Za-z0-9]{1,8}(?::(\d+)(
 /** Une adresse IP (`127.0.0.1`). */
 const IP = /^\d{1,3}(?:\.\d{1,3}){3}$/
 /**
- * Un nom de domaine (`github.com`, `api.example.com`) : son dernier label est un domaine de premier
- * niveau courant. Une extension de fichier (`.js`, `.md`, `.json`) n'en est jamais un ici.
+ * Premier segment d'un chemin à dossiers qui a l'air d'un nom de domaine (`github.com`,
+ * `docs.rs`, `example.ch`) : des labels, le dernier en lettres. Un dossier à point en tête
+ * (`.github`) n'en est pas un.
  */
-const DOMAIN =
-  /^(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|ai|co|fr|de|uk|eu|edu|gov|info|me|sh|cloud|tech|xyz|localhost)$/i
+const DOMAIN_LIKE = /^(?!\.)[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,24}$/i
+/**
+ * `hôte:port` sans dossier : seulement les domaines de premier niveau qui ne sont jamais des
+ * extensions de fichier courantes (`example.org:443`) ; `deploy.sh:12`, `logo.ai:1`, `x.dev:1`
+ * restent des fichiers. Un domaine hors de cette liste est pris pour un fichier : risque accepté.
+ */
+const HOST_TLD = /\.(?:com|org|net|edu|gov|info|io|fr|de|uk|eu|ch|nl|be|it|es|us|ca|jp|localhost)$/i
 
-/** Lien visé par un code en ligne, ou `undefined` s'il ne désigne pas un fichier. */
+/**
+ * Lien visé par un code en ligne, ou `undefined` s'il ne désigne pas un fichier. Règle (revue de
+ * la fiche 272) : une extension avec au moins une lettre ; `./` ou `../` en tête : toujours un
+ * chemin ; sinon refus d'un `@` dans le premier segment (`user@host:22`, mais pas `@scope/…`), d'un
+ * premier segment domaine ou IP suivi d'un `/`, et d'un `hôte:port`.
+ */
 export function inlineFileHref(text: string): string | undefined {
   const match = PATH.exec(text)
   if (!match) return undefined
-  // `127.0.0.1:8080`, `example.org:443`, `github.com/org/repo.git` : une adresse, pas un chemin.
-  const first = text.replace(/^\.{0,2}\//, '').split(/[/:]/)[0] ?? ''
-  if (IP.test(first) || DOMAIN.test(first)) return undefined
+  const ext = /\.([A-Za-z0-9]{1,8})(?::\d+(?:-\d+)?)?$/.exec(text)?.[1] ?? ''
+  if (!/[A-Za-z]/.test(ext)) return undefined
+  if (!/^\.{1,2}\//.test(text) && !pathLike(text)) return undefined
   const line = match[1]
-  if (!line && !text.includes('/')) return undefined
   // Plage `:32-68` : le lien ouvre sa première ligne.
   return line ? text.replace(/:(\d+)(?:-\d+)?$/, `:${line}`) : text
+}
+
+/** Sans `./` en tête : ni compte (`user@…`), ni adresse (domaine ou IP, `hôte:port`). */
+function pathLike(text: string): boolean {
+  const [first = '', ...rest] = text.split('/')
+  if (first.indexOf('@') > 0) return false
+  if (rest.length > 0) return !IP.test(first) && !DOMAIN_LIKE.test(first)
+  const [host = '', port] = first.split(':')
+  return port === undefined || (!IP.test(host) && !HOST_TLD.test(host))
 }
 
 const textOf = (node: HastNode): string =>
