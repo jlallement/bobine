@@ -14,7 +14,13 @@ import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import { estimateTokens } from '@shared/usage'
 
-const PROTOCOL_VERSION = '2025-06-18'
+/**
+ * Dernière révision de MCP à poignée de main `initialize` (la même que le serveur de l'app accepte en
+ * tête, `mcp/tool-server.ts`) ; le serveur testé répond avec la sienne s'il ne la connaît pas. La
+ * révision 2026-07-28 rend MCP sans état (plus d'`initialize` ni de `Mcp-Session-Id`,
+ * `server/discover`) : un autre client, à décider dans une fiche (fiche 273, LCM-7).
+ */
+const PROTOCOL_VERSION = '2025-11-25'
 /** Premier lancement par `npx` : téléchargement du paquet compris. */
 export const MCP_TEST_TIMEOUT_MS = 90_000
 const STDERR_TAIL = 4000

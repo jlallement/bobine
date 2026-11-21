@@ -11,7 +11,7 @@
 # le lanceur ; celles en quarantaine sous Linux (`quarantine` de `e2e/catalog.mjs` : `terminal`,
 # flèche powerline) sont écartées et dites, avec une annotation à chaque passage (fiche 250).
 #
-# Windows, expérimental (fiche 229) : la même suite sur `windows-latest` (bureau réel, pas d'écran
+# Windows, expérimental (fiche 229) : la même suite sur `windows-2025` (bureau réel, pas d'écran
 # virtuel), en français, en Git Bash ; pnpm lance aussi ses scripts par bash (`script-shell`),
 # puisque `pree2e` est un script bash. Très rouge tant que les lots 2, 3 et 7 (processus, chemins,
 # faux outils en node) ne sont pas dans `main`. « les-deux » reste macOS + Linux.
@@ -162,7 +162,7 @@ jobs:
   e2e-windows:
     name: pnpm e2e (Windows x64, expérimental)
     if: inputs.systeme == 'windows'
-    runs-on: windows-latest
+    runs-on: windows-2025
     timeout-minutes: 60
     defaults:
       run:

@@ -4,6 +4,8 @@
 # version ne se construit que si ces trois jobs sont verts pour son commit (`release.yml`).
 # Les essais de bout en bout ne sont pas ici : `e2e.yml` (Linux à chaque poussée sur `main`, non
 # bloquant ; macOS et Windows à la main), et en local avant chaque poussée (AGENTS.md).
+# Runners nommés par version (`ubuntu-24.04`, `macos-26`, `windows-2025`), jamais `-latest` : une
+# autre image est une décision, pas une bascule de GitHub (fiche 273, LCM-11).
 name: CI
 
 on:
@@ -22,7 +24,7 @@ concurrency:
 jobs:
   verify:
     name: verify (Linux)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,7 +46,7 @@ jobs:
       # `node-pty` n'a pas de binaire précompilé pour Linux, et pnpm ne lance pas son script
       # d'installation (`allowBuilds: node-pty: false` dans pnpm-workspace.yaml, voulu sur macOS
       # où le binaire est livré). Compilé ici explicitement : python3, make et g++ sont sur
-      # ubuntu-latest ; le module se charge depuis build/Release. Premier passage (2026-10-21) :
+      # ubuntu-24.04 ; le module se charge depuis build/Release. Premier passage (2026-10-21) :
       # sans cette étape, les deux tests « terminaux (vrai shell) » échouaient.
       - name: Compiler node-pty (pas de binaire précompilé pour Linux)
         run: cd node_modules/node-pty && npx --yes node-gyp@12 rebuild && node scripts/post-install.js
@@ -63,7 +65,7 @@ jobs:
   # binaire, rien à compiler ; les essais propres à macOS y tournent).
   verify-macos:
     name: verify (macOS)
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,13 +88,13 @@ jobs:
 
       - run: ./scripts/verify
 
-  # Windows (fiche 229) : le même `verify` sur `windows-latest`, par le bash de Git for Windows
+  # Windows (fiche 229) : le même `verify` sur `windows-2025`, par le bash de Git for Windows
   # (présent sur le runner, et prérequis de Bobine sous Windows). Bloquant depuis le lot 7a :
   # 0 échec relevé dans la VM Windows 11 ARM64 ; les essais sans objet sous Windows y sont sautés
   # par capacité (`src/main/test-platform.ts`).
   verify-windows:
     name: verify (Windows)
-    runs-on: windows-latest
+    runs-on: windows-2025
     timeout-minutes: 40
     defaults:
       run:
@@ -130,7 +132,7 @@ jobs:
   # tests) : `.gitleaksignore`, une empreinte par ligne, avec la raison.
   secrets:
     name: gitleaks (historique)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       GITLEAKS_VERSION: 8.30.1
