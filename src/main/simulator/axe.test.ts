@@ -101,6 +101,8 @@ describe.runIf(MACOS_FEATURES)('version d’AXe', () => {
   it('lit « x.y.z » dans la sortie, compare les versions', () => {
     expect(parseAxeVersion('1.8.0\n')).toBe('1.8.0')
     expect(parseAxeVersion('axe version 1.10.2 (release)')).toBe('1.10.2')
+    // AXe 2 : « v » de tête (relevé sur 2.0.4).
+    expect(parseAxeVersion('v2.0.4\n')).toBe('2.0.4')
     expect(parseAxeVersion('rien')).toBeUndefined()
     expect(compareVersions('1.8.0', '1.8.0')).toBe(0)
     expect(compareVersions('1.10.0', '1.8.0')).toBeGreaterThan(0)

@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const PROBES = ['bob-probe.mts', 'opencode-probe.mts']
+const PROBES = ['bob-probe.mts', 'opencode-probe.mts', 'simulator-smoke.mts']
 
 /** Modules du dépôt importés par une sonde (imports relatifs, types exclus). */
 function repoImports(probe: string): string[] {

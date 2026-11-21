@@ -59,11 +59,13 @@ async function pickRuntime(): Promise<{ runtime: Runtime; deviceType: string } |
   const ios = runtimes
     .filter((r) => r.isAvailable !== false && (r.platform ?? r.name).includes('iOS'))
     .sort((a, b) => (b.version ?? '').localeCompare(a.version ?? '', undefined, { numeric: true }))
-  for (const runtime of ios) {
-    const types = runtime.supportedDeviceTypes ?? []
-    const phone =
-      types.find((t) => /^iPhone \d+$/.test(t.name)) ?? types.find((t) => /iPhone/.test(t.name))
-    if (phone) return { runtime, deviceType: phone.identifier }
+  // Un iPhone ordinaire d'abord, sur tous les runtimes : Xcode 27 range l'iPhone Duo (deux écrans)
+  // dans un runtime iOS à part, que le tri peut mettre en tête ; il ne sert qu'en dernier recours.
+  for (const pattern of [/^iPhone \d+$/, /^iPhone(?! Duo)/, /iPhone/]) {
+    for (const runtime of ios) {
+      const phone = (runtime.supportedDeviceTypes ?? []).find((t) => pattern.test(t.name))
+      if (phone) return { runtime, deviceType: phone.identifier }
+    }
   }
   return undefined
 }

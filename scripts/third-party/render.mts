@@ -114,10 +114,13 @@ function axeSection(version: string): string {
 
 [AXe](https://github.com/cameroncooke/AXe) ${version} (iOS Simulator automation: taps, screen
 reading, video), MIT — Copyright (c) 2025 Cameron Cooke, ships in \`Contents/Resources/axe\` with
-the [idb](https://github.com/facebook/idb) frameworks it bundles (FBControlCore, FBDeviceControl,
-XCTestBootstrap), MIT — Copyright (c) Meta Platforms, Inc. and affiliates. Their full license texts
-ship with them: \`Contents/Resources/axe/LICENSES.txt\` (in the repository:
-\`vendor/archives/AXe-${version}-LICENSES.txt\`).`
+the [idb](https://github.com/facebook/idb) frameworks it bundles (FBControlCore,
+FBSimulatorControl), MIT — Copyright (c) Meta Platforms, Inc. and affiliates. Their full license
+texts ship with them: \`Contents/Resources/axe/LICENSES.txt\` (in the repository:
+\`vendor/archives/AXe-${version}-LICENSES.txt\`). AXe adapts a keyboard detector from
+[sim-use](https://github.com/lycorp-jp/sim-use), Apache-2.0 — Copyright 2026 LY Corporation; its
+license and NOTICE ship unchanged in
+\`Contents/Resources/axe/AXe_AXe.bundle/Contents/Resources/licenses/sim-use/\`.`
 }
 
 function fontSection(input: NoticesInput, textIds: Map<string, number>): string {

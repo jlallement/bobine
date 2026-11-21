@@ -63,10 +63,11 @@ exit 0
     for (let p = 0; p < geometry.frameSize; p += 4) frame.set(color, p)
     writeFileSync(join(bin, name), frame)
   }
+  // Faux AXe : `--version` répond comme AXe 2 (« v2.0.4 », fiche 273).
   writeFileSync(
     join(bin, 'axe'),
     `#!/bin/sh
-if [ "$1" = "--version" ]; then echo 1.8.0; exit 0; fi
+if [ "$1" = "--version" ]; then echo v2.0.4; exit 0; fi
 echo "axe $*" >> '${log}'
 if [ "$1" = "describe-ui" ]; then echo '${screen}'; fi
 if [ "$1" = "stream-video" ] && [ "$5" = "bgra" ]; then
@@ -114,7 +115,7 @@ exit 0
         // à son apparition plutôt qu'après la réponse complète de l'agent.
         await ui.ev(`(() => {
           window.__axeVersionSeen = null
-          const expected = ${JSON.stringify(L('simulator.axe', { version: '1.8.0' }))}
+          const expected = ${JSON.stringify(L('simulator.axe', { version: '2.0.4' }))}
           const observer = new MutationObserver(() => {
             const version = [...document.querySelectorAll('.simulator-bar .simulator-name')]
               .find((el) => el.innerText.trim() === expected)
@@ -144,7 +145,7 @@ exit 0
           'aucune autorisation demandée ; onglet « Simulateur » ouvert tout seul'
         )
         check(
-          (await ui.ev('window.__axeVersionSeen')) === L('simulator.axe', { version: '1.8.0' }),
+          (await ui.ev('window.__axeVersionSeen')) === L('simulator.axe', { version: '2.0.4' }),
           'version d’AXe affichée avant le passage aux FPS'
         )
         await ui.waitFor(`!!${ui.$('simulator-live')} && ${ui.$('simulator-video')}.width > 10`)
@@ -161,10 +162,10 @@ exit 0
           fps >= 8 &&
             fps <= 30 &&
             !(await ui.ev(`document.querySelector('.simulator-bar').innerText`)).includes(
-              L('simulator.axe', { version: '1.8.0' })
+              L('simulator.axe', { version: '2.0.4' })
             ) &&
             (await ui.ev(`${ui.$('simulator-fps')}.getAttribute('title')`)) ===
-              L('simulator.fpsWithAxe', { version: '1.8.0' }),
+              L('simulator.fpsWithAxe', { version: '2.0.4' }),
           `débit en direct affiché (${fps} fps), version d’AXe dans l’infobulle pendant le direct`
         )
         await ui.shot('28b-simulateur-direct')

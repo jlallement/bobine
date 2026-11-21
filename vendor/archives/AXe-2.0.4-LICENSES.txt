@@ -1,4 +1,4 @@
-AXe 1.8.0 — https://github.com/cameroncooke/AXe
+AXe 2.0.4 — https://github.com/cameroncooke/AXe
 
 MIT License
 

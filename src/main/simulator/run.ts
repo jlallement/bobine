@@ -3,7 +3,7 @@
  * pouvoir le tester sans Xcode.
  */
 import { execFile } from 'node:child_process'
-import { launchContext, launchSystem, planLaunch, withClosedFds } from '../process-launch'
+import { launchContext, launchSystem, planLaunch, withClosedFds } from '../process-launch.ts'
 
 export interface RunResult {
   code: number

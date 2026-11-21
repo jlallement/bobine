@@ -70,9 +70,9 @@ export type AxeCheck =
   | { ok: true; version: string }
   | { ok: false; problem: 'missing' | 'unusable' | 'too-old'; version?: string; detail?: string }
 
-/** Première version « x.y.z » de la sortie de `axe --version`. */
+/** Première version « x.y.z » de la sortie de `axe --version` (AXe 2 écrit « v2.0.4 »). */
 export function parseAxeVersion(output: string): string | undefined {
-  return /\b(\d+\.\d+\.\d+)\b/.exec(output)?.[1]
+  return /\bv?(\d+\.\d+\.\d+)\b/.exec(output)?.[1]
 }
 
 /** Compare deux versions « x.y.z » : négatif si `a` est plus ancienne que `b`. */
