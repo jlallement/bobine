@@ -43,6 +43,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - `fichier:ligne` écrit en code dans une réponse s’ouvre d’un clic.
 - Un lien vers un fichier sans dossier suivi d’une ligne (`liste.js:9`), en lien ou en code, s’ouvre
   au clic : il ne reste plus souligné sans effet.
+- Un chemin écrit en code n’est souligné comme un lien que si le fichier existe dans le dossier de la
+  conversation : plus de lien vers un fichier à créer (`tests/liste.test.js`), relatif à un autre
+  fichier (`../liste.js`) ou hors du dossier de la conversation. Un fichier créé ensuite par l’agent
+  devient un lien dès que l’outil qui l’écrit se termine.
+- Un clic sur un lien vers un fichier introuvable n’empile plus un avis par clic, et le pied du tour
+  (heure, durée, fichiers) reste visible.
 - Carte du plan suivie de son pied (heure, durée) ; ligne « fichiers non commités » de l’onglet
   Session sur une ligne ; `@git-changes` et `@terminal` rangés sous « Contexte » dans le menu `@`.
 - Menu `/` : les commandes de Bobine portent le nom de l’agent de la conversation seul.

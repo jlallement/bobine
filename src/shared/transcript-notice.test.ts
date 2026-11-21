@@ -91,3 +91,34 @@ describe('avis d’un refus et sa carte (fiche 267, revue UX)', () => {
     )
   })
 })
+
+describe('avis de l’interface redonné (recette de la rc.3)', () => {
+  const local = (message: string, extra: Partial<Extract<AgentEvent, { type: 'notice' }>> = {}) =>
+    ({ type: 'notice', level: 'error', message, local: true, ...extra }) as AgentEvent
+  const shown = (events: AgentEvent[]) =>
+    events
+      .reduce(reduceTranscript, emptyTranscript)
+      .items.flatMap((i) => (i.kind === 'notice' ? [`${i.level}|${i.title ?? ''}|${i.text}`] : []))
+
+  it('le même avis dans le tour : seul le plus récent remplacé, en bas', () => {
+    expect(shown([user, local('x'), local('y'), local('x')])).toEqual(['error||y', 'error||x'])
+  })
+
+  it('niveau ou titre différent : un autre avis ; un tour précédent garde le sien', () => {
+    expect(
+      shown([
+        user,
+        local('x', { title: 'Contexte' }),
+        local('x'),
+        local('x', { level: 'info' }),
+        local('x', { title: 'Contexte' })
+      ])
+    ).toEqual(['error||x', 'info||x', 'error|Contexte|x'])
+    expect(shown([user, local('x'), user, local('x')])).toEqual(['error||x', 'error||x'])
+  })
+
+  it('un avis de l’agent au même texte n’est jamais retiré', () => {
+    const agent: AgentEvent = { type: 'notice', level: 'error', message: 'x' }
+    expect(shown([user, agent, local('x'), local('x')])).toEqual(['error||x', 'error||x'])
+  })
+})

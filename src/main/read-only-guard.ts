@@ -130,6 +130,7 @@ export const READ_ONLY_SAFE = [
   'onboarding:cancel',
   'onboarding:hints',
   'files:openLink',
+  'files:existing',
   'files:readMarkdown',
   'editors:list',
   'editors:open',

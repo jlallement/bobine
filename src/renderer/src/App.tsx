@@ -492,6 +492,7 @@ export function App() {
               conversationId={c.activeId}
               discussion={discussion}
               notices={c}
+              items={transcript.items}
               openLink={links.openActiveLink}
               loadSubagentWork={links.loadActiveSubagentWork}
             >
@@ -746,6 +747,7 @@ export function App() {
               <ConversationScope
                 conversationId={beside.summary.id}
                 discussion={beside.summary.space === 'discussion'}
+                items={beside.view.transcript.items}
                 openLink={beside.openLink}
                 loadSubagentWork={beside.loadSubagentWork}
               >

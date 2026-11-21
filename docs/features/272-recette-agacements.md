@@ -59,7 +59,7 @@ Recette exploratoire de la 1.0.0-rc.2 avec OpenCode 2.3.0 et le modèle gratuit 
 | A17 — « Adresse (ex. localhost:3C » | Invite « localhost:3000 », nom entier en `aria-label` et infobulle. | `glossary-typography.test.ts` (16 caractères au plus) |
 | A18 — Discussion : navigateur sans onglet | `shownPanelTab` : un onglet absent de l'espace cède la place au premier affiché. | `panel-tabs.test.ts` |
 | A19 — bouton sans nom accessible | `aria-label` sur « Masquer la barre latérale » (et les boutons de la barre repliée). | `Sidebar.test.tsx` |
-| A20 — `fichier:ligne` en code non cliquable | Plugin rehype `rehypeInlineFileCode` : code en ligne qui a l'air d'un chemin (dossier ou ligne, extension) → lien de fichier ; jamais dans un bloc de code ; règle (revue) : extension avec au moins une lettre ; `./` ou `../` en tête, toujours un chemin ; refus d'un `@` dans le premier segment (sauf en tête, `@scope/…`), d'un premier segment domaine ou IP suivi d'un `/`, d'un `hôte:port` dont le domaine de premier niveau n'est jamais une extension de fichier (`com`, `org`, `ch`…). Risque accepté : un domaine hors de cette liste, seul ou avec un port, est pris pour un fichier. | `inline-file-code.test.ts`, `Markdown.test.tsx` |
+| A20 — `fichier:ligne` en code non cliquable | Plugin rehype `rehypeInlineFileCode` : code en ligne qui a l'air d'un chemin (dossier ou ligne, extension) → lien de fichier ; jamais dans un bloc de code ; règle (revue) : extension avec au moins une lettre ; `./` ou `../` en tête, toujours un chemin ; refus d'un `@` dans le premier segment (sauf en tête, `@scope/…`), d'un premier segment domaine ou IP suivi d'un `/`, d'un `hôte:port` dont le domaine de premier niveau n'est jamais une extension de fichier (`com`, `org`, `ch`…). Risque accepté : un domaine hors de cette liste, seul ou avec un port, est pris pour un fichier. Recette de la rc.3 : lien seulement vers un fichier qui existe dans le dossier de la conversation (`files:existing`, voir le journal). | `inline-file-code.test.ts`, `Markdown.test.tsx`, `file-exists.test.ts`, e2e `links` |
 | A21 — « coût inconnu » pour Big Pickle | **Décision : gardé.** Règle de la fiche 266 (« gratuit » seulement pour un modèle qui se dit gratuit) ; l'infobulle explique ; reconnaître Big Pickle demanderait une liste propre à un agent. | — |
 | A22 — agent de l'ancienne conversation démarré au lancement avec un dossier | `startActive(false)` quand une demande `bobine <dossier>` attend (`launch.pending`) : avis posés, agent non démarré. | `launch-request.test.ts`, `manager.test.ts` |
 | A23 — carte de plan sans pied | Le pied de la réponse remplacée suit la carte du plan. | `Transcript.test.tsx` |
@@ -158,6 +158,85 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
     lien), et dans le glossaire, des guillemets de `fr.json` détachés de leur mot (sinon la
     typographie ne les lie pas). Les e2e passent par `L()` et ne lisent pas les Nouveautés.
 
+- 2026-11-21 — Recette du build de `main` avec OpenCode (avant le tag rc.3), branche
+  `fix/rc3-liens` :
+  - **D1 — code vers un fichier qui n'existe pas souligné comme un lien** (`package.json` absent,
+    `tests/liste.test.js` à créer, `../liste.js` relatif au fichier à créer). Un code en ligne
+    n'est plus un lien que si le fichier existe : nouveau canal `files:existing` (aucun moyen de
+    tester l'existence n'existait ; `openFileLink` ne le dit qu'au clic), `existingFileLinks`
+    (`main/files/file-exists.ts`) : 200 chemins par appel, 1024 caractères par chemin, 2 s en tout
+    (ce qui n'a pas répondu reste du code), confiné au dossier de travail comme les liens (base
+    hors du dossier ignorée, `..` qui en sort, chemin absolu ailleurs ou lien symbolique vers le
+    dehors : pas un fichier). Côté interface, `useInlineFiles` : le rendu collecte les candidats,
+    un seul appel groupé par message après lui (pendant le flux, après 300 ms de pause) ; tant
+    qu'on ne sait pas, du code ; fichiers trouvés retenus par conversation (un fil rouvert les
+    montre en liens d'emblée, sans passer par du code) ; un absent est redemandé quand le message
+    est remonté. Vérificateur fourni par `ConversationScope` et par l'aperçu d'un document
+    (`DocumentTab`, relatif au document) ; ailleurs (Réglages › Nouveautés…), aucun lien. Les
+    liens Markdown `[x](chemin)` ne changent pas. Limite d'abord assumée, levée par la relecture
+    (voir plus bas) : un fichier créé après sa mention restait du code ; seuls
+    les fichiers du dossier de travail comptent (pas les autres dossiers de la fiche 179, que les
+    liens ne savent pas ouvrir non plus, sinon dans le Finder).
+  - **D2 — carte rouge par clic sur un fichier introuvable, pied du tour disparu.** Cause : le
+    résultat `missing` de `files:openLink` part en `notices.warn` (`useFileLinks`), c'est-à-dire
+    `fail` de `useConversations`, qui pousse un avis de niveau `error` dans le fil de la
+    conversation active, donc dans le dernier tour ; `endedBadly` (`shared/turn-end.ts`) prend tout
+    avis `error` sans réponse datée après lui pour une fin anormale du tour, et le pied disparaît.
+    **Déjà le cas avant la fiche 272** pour un lien Markdown vers un fichier absent (avis depuis la
+    fiche 052, pied masqué depuis la fiche 261) ; la fiche 272 l'a rendu courant en faisant de
+    chaque chemin en code un lien. Correction à la cause : les avis de l'interface portent
+    `local` (`useConversations`, évènement `notice`), `endedBadly` les ignore (pied et plan), et
+    le même avis local redonné remplace le précédent au lieu de s'empiler (`reduceNotice`,
+    `transcript-notice.ts`). **Pas fait** : l'avis reste dans le fil jusqu'au prochain
+    chargement. L'app n'a aucun mécanisme d'avis passager (les avis du haut de la fenêtre,
+    fiche 194, sont persistants et réservés aux problèmes internes ; les notes passagères du
+    panneau sont propres au Navigateur et à l'onglet joint) : en faire un serait un nouvel
+    élément visuel, à maquetter d'abord (voir Reste).
+  - Essais : `file-exists.test.ts` (main), `Markdown.test.tsx` (absent, existant, un appel par
+    message, retenus, sans vérificateur, vérification en échec), `TurnSummary.test.tsx` (pied
+    gardé après deux avis locaux), `useConversations.test.ts` (un seul avis local) ; e2e `links`
+    (scénario `liens-fichiers` complété : codes absents pas des liens, `liste.js:2` lié et ouvert,
+    `absent.md` cliqué deux fois : un avis, pied visible).
+  - `./scripts/verify` vert (code 0) ; `pnpm build` (code 0) ; `pnpm e2e links fil changes` vert
+    (code 0, 6 tâches, clair et sombre, 36 s) ; captures `44-code-fichiers-absents` et
+    `45-fichier-absent-pied` (clair et sombre) regardées.
+- 2026-11-21 — Relecture indépendante de `fix/rc3-liens` (rien de bloquant), reprises :
+  - Mémoire par **conversation** (`file-checks.ts`, `fileChecksFor`, 30 conversations, 2000
+    réponses chacune) et non plus par fonction : A → B → A retrouve les liens de A sans clignoter
+    ni redemander. Les demandes de tous les messages d'un même instant partent en **un seul**
+    appel (200 chemins au plus par appel). Essai par le chemin réel de l'app (`ConversationScope`
+    remonté par `key`).
+  - Réponses indexées par `base` dans la mémoire de la conversation : une réponse arrivée après un
+    changement de document (aperçu) ne s'applique pas au nouveau.
+  - Un « non » n'est plus définitif : `filesRevision` (outil `edit`, `delete`, `move`, `execute`,
+    `other` terminé, réponse finie) passé à `ConversationScope` (fil actif et conversation à côté) ;
+    quand il change, les « non » sont oubliés et redemandés par les messages qui les citent. Un
+    délai dépassé ou un appel en échec n'est ni oui ni non : redemandé au signal suivant.
+  - Main : `files:existing` rend `{ existing, unknown }` ; le délai de 2 s couvre aussi les chemins
+    réels du dossier et de la base ; 8 `stat` à la fois ; chemin absolu accepté sous la forme
+    donnée du dossier comme sous son chemin réel (comme `openWorkspaceFile`) ; comparaison sans
+    casse sous Windows (`insideOn`).
+  - `reduceNotice` : ne remplace que l'avis local identique (niveau, titre, texte) le plus récent
+    du tour en cours. `local` documenté : jamais envoyé au main ni écrit sur disque.
+  - CHANGELOG : un chemin hors du dossier n'est plus un lien ; un fichier créé ensuite le devient.
+  - Essais : `inline-files.test.tsx` (fil entier en un appel, A → B → A, document changé, fichier
+    créé après sa mention, délai et échec, 300 ms pendant l'écriture, signal), `file-exists.test.ts`
+    (forme donnée, casse sous Windows, borne : non vérifiés inconnus), `file-exists-timeout.test.ts`
+    (chemin réel muet : rendu au délai), `ipc.test.ts` (raccordement de `files:existing`),
+    `transcript-notice.test.ts` (titre, niveau, tour).
+- 2026-11-21 — Deuxième relecture (8 points sur 9 validés), dernière reprise :
+  - Un signal ne refait plus aucun rendu : la mémoire garde ses « non » (affichés en code),
+    les revérifie elle-même en un appel groupé, et ne prévient les messages que si un lien apparaît
+    ou disparaît ; la signature d'un message ne porte que sur l'affichage (lien ou non). Essai qui
+    compte les rendus Markdown : 30 outils terminés, 30 revérifications, aucun rendu ; un fichier
+    apparu, un seul rendu.
+  - Signal arrivé pendant une demande : la réponse d'avant ne dit plus « non », le chemin est
+    redemandé (sauf « oui »).
+  - Main : 2 opérations de fichiers à la fois (la moitié des 4 fils de libuv au plus) ; après un
+    délai dépassé, plus aucune vérification dans ce dossier pendant 30 s (tout « inconnu »).
+  - Au-delà de 2000 réponses, les plus anciennes sont oubliées une à une (jamais une en cours de
+    demande), sans prévenir les messages : plus d'effacement complet qui faisait clignoter.
+
 ## Reste
 
 - A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent
@@ -167,3 +246,9 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
+- D2 (rc.3) : un avis passager (disparaît seul après quelques secondes, sans entrer dans le fil)
+  pour les erreurs de clic sur un lien demanderait un élément visuel nouveau : à maquetter et
+  valider avant de le coder. En attendant : un seul avis par texte, pied du tour intact.
+- Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle
+  d'à côté ne reçoit pas le signal « des fichiers ont pu changer » ; ses « non » ne sont
+  revérifiés qu'au prochain signal de cette conversation. Laissé tel quel (relecture, point E).

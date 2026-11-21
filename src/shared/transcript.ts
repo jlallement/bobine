@@ -10,7 +10,6 @@ import { withTodos, type TodoItem } from './todos'
 import type { ToolArg } from './tool-args'
 import { answeredAt, pendingWith, type ToolPermission } from './permissions'
 import { t, type ParseKeys } from 'i18next'
-import { isMessage } from './i18n/message'
 import type {
   PlanEntry,
   SessionUpdate,
@@ -54,7 +53,12 @@ import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
 import { userMessageFields } from './user-message'
 import { reduceRoleRequest, type RoleRequest } from './role-request'
-import { reduceAppTools, withoutRefusal, type TranscriptNotice } from './transcript-notice'
+import {
+  reduceAppTools,
+  reduceNotice,
+  withoutRefusal,
+  type TranscriptNotice
+} from './transcript-notice'
 export { noticeText } from './transcript-notice'
 import type { Handover } from './handover'
 import type { WorktreeStart } from './worktree-cycle'
@@ -395,14 +399,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
         }
       )
     case 'notice':
-      return push(event.refusal ? withoutRefusal(state) : state, {
-        kind: 'notice',
-        level: event.level,
-        ...(isMessage(event.message) ? { message: event.message } : { text: event.message }),
-        ...(event.title ? { title: event.title } : {}),
-        ...(event.link ? { link: event.link } : {}),
-        ...(event.refusal ? { refusal: true as const } : {})
-      })
+      return reduceNotice(state, event)
     case 'app-tools':
       return reduceAppTools(state, event)
     case 'usage-report':

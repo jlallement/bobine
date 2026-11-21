@@ -9,6 +9,7 @@ import { platformFeatures } from '../../platform-features'
 import { MarkdownLink } from './FileLink'
 import { remarkFrenchSpaces } from '../../help/remark-anchors'
 import { rehypeInlineFileCode } from './inline-file-code'
+import { useInlineFiles } from './useInlineFiles'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
 import { rehypeKnownLanguage, rehypeRememberLanguage, textOf } from './code-language'
@@ -82,6 +83,8 @@ export const Markdown = memo(function Markdown({
    */
   french?: boolean
 }) {
+  // Code en ligne vers un fichier : lien seulement si le fichier existe (fiche 272, rc.3).
+  const files = useInlineFiles(streaming)
   return (
     <div className="markdown">
       <ReactMarkdown
@@ -93,8 +96,8 @@ export const Markdown = memo(function Markdown({
           [rehypeKnownLanguage, { source: text, streaming }],
           [rehypeHighlight, { detect: true, ignoreMissing: true }],
           rehypeRememberLanguage,
-          // `fichier:ligne` en code : cliquable comme un lien de fichier (fiche 272).
-          rehypeInlineFileCode
+          // `fichier:ligne` en code : cliquable comme un lien de fichier, s'il existe (fiche 272).
+          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want }]
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.

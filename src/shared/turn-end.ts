@@ -17,6 +17,8 @@ const BAD_ENDS = new Set<string>([
 function badEnd(item: TranscriptItem): boolean {
   // Limite d'étapes (fiche 209) : la carte le dit (l'avis `maxTurnRequests` des fils d'avant aussi).
   if (item.kind === 'turn-limit') return true
+  // Avis de l'interface (fichier introuvable au clic…) : il ne dit rien du tour (recette de la rc.3).
+  if (item.kind === 'notice' && item.local) return false
   return (
     item.kind === 'notice' &&
     (item.level === 'error' || (!!item.message && BAD_ENDS.has(item.message.key)))

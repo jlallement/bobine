@@ -42,8 +42,20 @@ export async function linksSuite(scheme) {
         await ui.ready()
         await ui.send('Montre les fichiers')
         await ui.ready()
-        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 5`)
+        await ui.waitFor(`document.querySelectorAll('[data-testid=file-link]').length === 6`)
         check(true, 'liens de fichiers reconnus (le lien web reste un lien web)')
+        // Code vers un fichier qui n'existe pas (à créer, relatif à un autre fichier) : pas un lien
+        // (fiche 272, recette de la rc.3) ; vers un fichier qui existe (`liste.js:2`), un lien. Les
+        // réponses de la vérification arrivent ensemble : `liste.js:2` lié, les autres sont sus.
+        const codeLinked = (text) =>
+          `!![...document.querySelectorAll('.markdown code')].find((c) => c.textContent === ${JSON.stringify(text)})?.closest('a')`
+        check(
+          (await ui.ev(codeLinked('liste.js:2'))) &&
+            !(await ui.ev(codeLinked('tests/liste.test.js'))) &&
+            !(await ui.ev(codeLinked('../liste.js'))),
+          'code vers un fichier inexistant : pas un lien ; vers un fichier qui existe : un lien'
+        )
+        await ui.shot('44-code-fichiers-absents')
 
         await ui.click(link('le plan'))
         await ui.waitFor(
@@ -74,6 +86,19 @@ export async function linksSuite(scheme) {
           await waitLog(`open ${join(workspace, 'liste.js')}`),
           'chemin sans dossier en code (`liste.js:2`) : app par défaut'
         )
+        // Lien Markdown vers un fichier absent, cliqué deux fois : un seul avis, et le pied du tour
+        // reste visible (recette de la rc.3 : un avis rouge par clic, le pied disparaissait).
+        const missingText = Lpart('fileLink.missing')
+        const missingCount = `[...document.querySelectorAll('.notice')].filter((n) => n.innerText.includes(${JSON.stringify(missingText)})).length`
+        await ui.click(link('absent.md'))
+        await ui.waitFor(`${missingCount} === 1`)
+        await ui.click(link('absent.md'))
+        await new Promise((r) => setTimeout(r, 400))
+        check(
+          (await ui.ev(missingCount)) === 1 && (await ui.ev(`!!${ui.$('turn-summary')}`)),
+          'fichier absent cliqué deux fois : un seul avis, le pied du tour reste'
+        )
+        await ui.shot('45-fichier-absent-pied')
         await ui.click(link('docs'))
         check(await waitLog(`reveal ${join(workspace, 'docs')}`), 'dossier : montré dans le Finder')
         await ui.click(link('outil.command'))

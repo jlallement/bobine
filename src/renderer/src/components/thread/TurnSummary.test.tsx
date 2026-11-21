@@ -426,6 +426,21 @@ describe('pied de la réponse qui finit le tour (fiche 261)', () => {
     expect(feet(failed, IDLE).size).toBe(0)
   })
 
+  it('avis de l’interface après la réponse (fichier introuvable au clic) : le pied reste (rc.3)', () => {
+    const missing = (id: number): TranscriptItem => ({
+      kind: 'notice',
+      id,
+      level: 'error',
+      text: 'Fichier introuvable : /p/tests/liste.test.js',
+      local: true
+    })
+    const items: TranscriptItem[] = [user(1, 0), agent(2, 40_000), missing(3), missing(4)]
+    expect(feet(items, IDLE).get(2)).toMatchObject({ kind: 'done' })
+    // Une vraie erreur du tour, elle, retire toujours le bilan.
+    const failed = [...items, { ...missing(5), local: undefined }]
+    expect(feet(failed, IDLE).size).toBe(0)
+  })
+
   it('tour arrêté ou en erreur : aucun pied, même en cours (rien ne change pour ces cas)', () => {
     const stopped: TranscriptItem[] = [
       user(1, 0),
