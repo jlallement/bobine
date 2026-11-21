@@ -7,10 +7,10 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 ### Corrections
 
 - Un fichier **réécrit** par l’agent sans qu’il en envoie le contenu (OpenCode, `write`) compte
-  désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié » ; la vue
-  Git montre son état réel.
-- **Exécuter le plan** se désactive une fois le plan exécuté (« Plan déjà exécuté ») : plus de double
-  exécution.
+  désormais dans le bilan du tour et dans Modifications › Conversation, marqué « modifié », « sans
+  totaux » plutôt qu’un « +0 −0 » ; la vue Git montre son état réel.
+- **Exécuter le plan** se désactive une fois le plan exécuté avec succès (« Plan déjà exécuté ») :
+  plus de double exécution ; une question en Ask ou une exécution arrêtée le laissent actif.
 - Onglets du panneau : le **✕** d’un onglet n’apparaît plus sous le pointeur qui vient de l’activer,
   et un double clic ne ferme jamais un onglet.
 - Les remarques du relecteur dans le diff passent à la ligne dans la largeur visible du panneau.
@@ -26,8 +26,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Textes : menus du modèle et du mode nommés en français (« Modèle », « Mode ») ; activité des
   travaux lisible (« Lecture de liste.js » plutôt que « read ») ; « Sera confié à … » sous la saisie,
   dont l’invite s’adresse au rôle choisi ; apostrophes typographiques partout ; « Bobcoin » avec sa
-  majuscule ; le mode de départ des Réglages porte le nom que l’agent lui donne (« Build »).
-- Menus de macOS (Fermer tout, Plein écran, Dictée…) dans la langue de l’app.
+  majuscule.
+- Menus de macOS (Fermer tout, Plein écran, Dictée…) dans la langue de l’app ; le navigateur intégré
+  demande les pages dans les langues de macOS.
 - La recherche de conversations ne montre plus la consigne cachée d’un rôle.
 - Fenêtre étroite : le sélecteur Code / Discussion ne déborde plus.
 - Plus de « Voir les modifications » sur une carte de travaux tous en lecture seule.

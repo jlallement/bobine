@@ -7,9 +7,10 @@ What changes for you, version by version. Shown in Settings › About.
 ### Fixes
 
 - A file the agent **rewrites** without sending its content (OpenCode, `write`) now counts in the
-  turn summary and in Changes › Conversation, marked “modified”; the Git view shows its actual
-  state.
-- **Run the plan** is disabled once the plan has run (“Plan already run”): no more double runs.
+  turn summary and in Changes › Conversation, marked “modified”, “no line counts” rather than
+  “+0 −0”; the Git view shows its actual state.
+- **Run the plan** is disabled once the plan has run successfully (“Plan already run”): no more
+  double runs; a question in Ask or a stopped run leave it available.
 - Panel tabs: a tab’s **✕** no longer appears under the pointer that just activated it, and a
   double click never closes a tab.
 - Reviewer comments in the diff wrap within the panel’s visible width.
@@ -23,9 +24,9 @@ What changes for you, version by version. Shown in Settings › About.
   for the page to load.
 - Texts: model and mode menus titled in the interface language; readable task activity (“Read
   liste.js” rather than “read”); the line under the input and its hint address the chosen role;
-  curly apostrophes everywhere; “Bobcoin” capitalized; the start mode in Settings uses the agent’s
-  own name for it (“Build”).
-- macOS menus (Close All, Full Screen, Dictation…) follow the app’s language.
+  curly apostrophes everywhere; “Bobcoin” capitalized.
+- macOS menus (Close All, Full Screen, Dictation…) follow the app’s language; the built-in browser
+  asks for pages in macOS’s languages.
 - Conversation search no longer shows a role’s hidden instruction.
 - Narrow window: the Code / Discussion switch no longer overflows.
 - No more “View changes” on a card whose tasks are all read-only.
