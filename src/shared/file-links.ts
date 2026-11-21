@@ -66,6 +66,19 @@ export const isMarkdownPath = (path: string) => MARKDOWN.test(path)
 export const isHtmlPath = (path: string) => HTML.test(path)
 
 /**
+ * Un lien qui a l'air d'un schéma mais désigne un fichier : `README.md:3` (chemin sans dossier
+ * suivi d'une ligne) ; sous Windows, `C:\x` ou `C:/x`. Seule règle, partagée par la lecture d'un
+ * lien (`parseFileLink`) et par le rendu Markdown, qui sinon le viderait (lien en code ou lien
+ * Markdown : un seul chemin, fiche 272).
+ */
+export function isPathNotScheme(href: string, options: { windowsPaths?: boolean } = {}): boolean {
+  return (
+    /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(href) ||
+    (options.windowsPaths === true && isDriveAbsolute(href))
+  )
+}
+
+/**
  * Fichier désigné par un lien, ou `undefined` pour un lien web, une ancre, un courriel… :
  * `plan.md`, `./docs/a.md`, `src/app.ts:12`, `src/app.ts#L12`, `/chemin/absolu`, `file:///…`.
  */
@@ -79,8 +92,7 @@ export function parseFileLink(
   // `README.md:3` a l'air d'un schéma (`README.md:`) : c'est un chemin suivi d'une ligne. Sous
   // Windows seulement (capacité `windowsPaths`, fiche 229), de même `C:\x` ou `C:/x` : un chemin,
   // pas un schéma `c:`. Ailleurs, comme avant.
-  const pathWithLine =
-    /^[^:/]+\.[^:/]+:\d+(?::\d+)?$/.test(raw) || (windows && isDriveAbsolute(raw))
+  const pathWithLine = isPathNotScheme(raw, options)
   if (!pathWithLine && /^[a-z][a-z0-9+.-]*:/i.test(raw)) {
     if (!/^file:/i.test(raw)) return undefined
     try {

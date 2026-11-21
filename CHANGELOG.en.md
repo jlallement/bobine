@@ -35,6 +35,8 @@ What changes for you, version by version. Shown in Settings › About.
 - The browser address hint is never cut; Discussion: no browser without its tab; the sidebar toggle
   is named for VoiceOver.
 - `file:line` written as code in a response opens with a click.
+- A link to a file without a folder followed by a line (`list.js:9`), as a link or as code, opens on
+  click: it no longer stays underlined and does nothing.
 - The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on
   one line; `@git-changes` and `@terminal` sit under “Context” in the `@` menu.
 - `/` menu: Bobine’s commands show the conversation’s agent only.

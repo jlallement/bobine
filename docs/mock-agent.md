@@ -216,7 +216,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `message-commit-ecriture` | Même demande : tente d'écrire `README.md` puis de lancer `touch pwned.txt` (écrits seulement si l'app l'accorde), puis répond le message ; la session de Bobine est en lecture seule |
 | `lent` | Très longue réponse, pour tester le bouton Stop (`session/cancel`) |
 | `attend-stop` | Commence à répondre puis attend `session/cancel` sans limite : l'annulation ne peut pas arriver après la fin (grille de conformité, « annulation ») |
-| `liens-fichiers` | Réponse avec des liens vers `plan.md`, `src/app.ts:3`, `outil.command`, le dossier `docs` et une page web : aperçu, app par défaut, Finder (fiche 052, e2e `links`) |
+| `liens-fichiers` | Réponse avec des liens vers `plan.md`, `src/app.ts:3`, `outil.command`, le dossier `docs`, un chemin sans dossier en code (`liste.js:2`) et une page web : aperçu, app par défaut, Finder (fiches 052 et 272, e2e `links`) |
 | `liens-web` | Une adresse locale (`http://localhost:3000/essai`) et une adresse du web : navigateur intégré, navigateur du Mac (fiche 154, e2e `links`) |
 | `fil-long` | 300 appels d'outils terminés en 30 étapes (lectures, recherches, commandes), titrés comme OpenCode 2 (`read`, `grep`, la commande) avec `rawInput` et des emplacements sous le dossier de la session : rendu d'un long fil, mesuré par la suite e2e `long-thread` (fiche 047) ; cartes lisibles (fiche 107) |
 | `erreur` | Commence puis échoue avec une erreur JSON-RPC |

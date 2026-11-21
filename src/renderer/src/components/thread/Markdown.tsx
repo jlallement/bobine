@@ -4,6 +4,8 @@ import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
 import '../../syntax.css'
 import { CopyButton } from '../common/CopyButton'
+import { isPathNotScheme } from '@shared/file-links'
+import { platformFeatures } from '../../platform-features'
 import { MarkdownLink } from './FileLink'
 import { rehypeInlineFileCode } from './inline-file-code'
 import { MermaidBlock } from './MermaidBlock'
@@ -55,6 +57,13 @@ function Table({ node: _node, ...props }: ComponentProps<'table'> & { node?: unk
   )
 }
 
+/** Adresse d'un lien : un fichier gardé tel quel, le reste nettoyé par react-markdown. */
+function keepFileUrls(url: string): string {
+  if (/^file:/i.test(url)) return url
+  if (isPathNotScheme(url, { windowsPaths: platformFeatures().windowsPaths })) return url
+  return defaultUrlTransform(url)
+}
+
 /**
  * Rendu Markdown (GFM + coloration). Mémoïsé : seul le message en cours se re-rend en streaming.
  * `streaming` : réponse en cours, son bloc de code encore ouvert n'est pas coloré (fiche 192).
@@ -69,8 +78,9 @@ export const Markdown = memo(function Markdown({
   return (
     <div className="markdown">
       <ReactMarkdown
-        // Liens `file://` gardés : ils désignent un fichier (fiche 052) ; le reste comme d'habitude.
-        urlTransform={(url) => (/^file:/i.test(url) ? url : defaultUrlTransform(url))}
+        // Liens `file://` gardés : ils désignent un fichier (fiche 052), comme `liste.js:17`, qui a
+        // l'air d'un schéma (fiche 272) ; le reste comme d'habitude.
+        urlTransform={keepFileUrls}
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[
           [rehypeKnownLanguage, { source: text, streaming }],
