@@ -102,7 +102,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   (existence dans la liste complète, réveil de la mère), G8 (position du clic), G1 (« sans
   totaux », docs), G3 (fenêtre de 500 ms retirée), A14 (annulé, décision du glossaire), G7
   (Discussion, codes d'erreur, `stat` asynchrone borné), A20 (adresses), A25 (mémoïsation), A2
-  (`Accept-Language`), doublon de commentaire d'un essai.
+  (`Accept-Language`), doublon de commentaire d'un essai. `./scripts/verify` vert ;
+  `pnpm build && pnpm e2e --changed` vert (code 0, 21 min 33 s, clair et sombre).
 
 ## Reste
 
