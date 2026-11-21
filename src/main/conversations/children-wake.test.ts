@@ -104,6 +104,16 @@ describe('réveil groupé de la mère (fiche 097, étape 2)', () => {
     expect(t.woken).toEqual(['m'])
   })
 
+  it('fille mise à la corbeille après son compte rendu : pas de réveil facturé pour rien (fiche 272)', async () => {
+    const t = setup()
+    t.wake.await('m', 'a')
+    t.finish('a')
+    t.conversations.delete('a')
+    t.motherIdle()
+    await tick()
+    expect(t.woken).toEqual([])
+  })
+
   it('une fille qui a encore un message en file n’a pas fini', async () => {
     const t = setup()
     t.set('m', 'ready')

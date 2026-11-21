@@ -142,7 +142,9 @@ export class ChildWake {
     this.release(motherId)
     // Rien de neuf (comptes rendus partis avec un message, ou d'une fille dont la mère vient de
     // traiter le message) : pas de réveil.
-    const news = childNews(view.transcript.items)
+    // Un travail mis à la corbeille n'a plus de compte rendu à transmettre (`exists` de l'hôte,
+    // fiche 272) : il ne réveille pas la mère (un réveil facturé pour rien).
+    const news = childNews(view.transcript.items).filter((item) => byId.has(item.childId))
     if (news.some((item) => item.kind === 'child-report' && !informed.has(item.childId))) {
       this.host.wake(motherId)
     }
