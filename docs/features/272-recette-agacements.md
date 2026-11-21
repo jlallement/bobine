@@ -41,7 +41,7 @@ Recette exploratoire de la 1.0.0-rc.2 avec OpenCode 2.3.0 et le modèle gratuit 
 | Défaut | Correction (décision) | Essai |
 |---|---|---|
 | A1 — « Model », « Session Mode » | `controlName` : nom traduit pour les catégories ACP connues (`model`, `mode`, `thought_level`), sinon celui de l'agent. Descriptions et noms de fournisseurs viennent de l'agent : inchangés (ADR-0014). | `control-name.test.ts` |
-| A2 — menus macOS en anglais | `CFBundleLocalizations: [en, fr]`, `CFBundleDevelopmentRegion: en`, `en.lproj` et `fr.lproj` (`build/lproj`) copiés dans Contents/Resources. Conséquence vérifiée : `app.getLocale()` ne vaut plus que en ou fr. Seuls usages : la langue de l'app (déjà `app.getPreferredSystemLanguages()`), et `nativeLanguage` (langue des menus de macOS de ce lancement : c'est bien en/fr qu'il doit dire). Le navigateur intégré, qui suivait la langue de Chromium, envoie désormais un `Accept-Language` tiré de `getPreferredSystemLanguages()` (`accept-languages.ts`). Le doublon « Plein écran » / « Enter Full Screen » n'est pas traité (voir « Reste »). | `scripts/signing.test.ts` ; `accept-languages.test.ts` |
+| A2 — menus macOS en anglais | `CFBundleLocalizations: [en, fr]`, `CFBundleDevelopmentRegion: en`, `en.lproj` et `fr.lproj` (`build/lproj`) copiés dans Contents/Resources. Conséquence vérifiée : `app.getLocale()` ne vaut plus que en ou fr. Seuls usages : la langue de l'app (déjà `app.getPreferredSystemLanguages()`), et `nativeLanguage` (langue des menus de macOS de ce lancement : c'est bien en/fr qu'il doit dire). Le navigateur intégré, qui suivait la langue de Chromium, envoie désormais un `Accept-Language` tiré de `getPreferredSystemLanguages()` (`accept-languages.ts`). Doublon « Plein écran » / « Enter Full Screen » : l'article de l'app n'a déjà pas de rôle `togglefullscreen` (fiche 126) ; macOS ajoutait pourtant le sien au menu Fenêtre. Au démarrage de l'app packagée, sur macOS seulement, `NSFullScreenMenuItemEverywhere = false` (préférence de l'app, avant la création du menu ; pas en développement, où le domaine d'Electron est partagé) : seul reste « Plein écran » / « Quitter le plein écran » de l'app, traduit. Rien sous Linux ni Windows. | `scripts/signing.test.ts` ; `accept-languages.test.ts` ; `full-screen-menu.test.ts` (macOS, Linux, Windows simulés) ; `menu.test.ts` (un seul article de plein écran, traduit, sans rôle) |
 | A3 — « Partira à Code reviewer » | « Sera confié à … » (glossaire : confier un travail à un rôle) ; « Sera transmise à l'agent… » pour les réponses en attente. | `RoleComposer.test.tsx`, `Transcript.test.tsx` |
 | A4 — invite « Répondre à OpenCode… » avec un rôle | « Votre demande à {{role}}… », « Votre demande aux N rôles… ». | `RoleComposer.test.tsx` |
 | A5 — activité brute « read » | `useChildActivity` garde ce que chaque outil a dit et le libelle par `toolText` (« Lecture de liste.js »). | `RoleWork.test.tsx` |
@@ -107,8 +107,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
 
 ## Reste
 
-- A2 : le doublon « Plein écran » (menu Affichage de l'app) / « Passer en plein écran » (ajouté par
-  macOS) n'est pas traité ; `NSFullScreenMenuItemEverywhere` serait la piste. `.app` construit sans
+- A2 : doublon traité (`NSFullScreenMenuItemEverywhere`), essayé en unitaire ; les e2e tournent
+  sur l'app non packagée, où la préférence n'est pas posée : menus réels non regardés. `.app` construit sans
   signature (electron-builder `--dir`, `identity: null`, sans AXe ni DMG, dans un dossier jetable) :
   `CFBundleLocalizations` = `["en","fr"]`, `CFBundleDevelopmentRegion` = `en`, `en.lproj` et
   `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
