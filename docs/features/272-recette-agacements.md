@@ -191,6 +191,18 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
     (forme donnée, casse sous Windows, borne : non vérifiés inconnus), `file-exists-timeout.test.ts`
     (chemin réel muet : rendu au délai), `ipc.test.ts` (raccordement de `files:existing`),
     `transcript-notice.test.ts` (titre, niveau, tour).
+- 2026-11-21 — Deuxième relecture (8 points sur 9 validés), dernière reprise :
+  - Un signal ne refait plus aucun rendu : la mémoire garde ses « non » (affichés en code),
+    les revérifie elle-même en un appel groupé, et ne prévient les messages que si un lien apparaît
+    ou disparaît ; la signature d'un message ne porte que sur l'affichage (lien ou non). Essai qui
+    compte les rendus Markdown : 30 outils terminés, 30 revérifications, aucun rendu ; un fichier
+    apparu, un seul rendu.
+  - Signal arrivé pendant une demande : la réponse d'avant ne dit plus « non », le chemin est
+    redemandé (sauf « oui »).
+  - Main : 2 opérations de fichiers à la fois (la moitié des 4 fils de libuv au plus) ; après un
+    délai dépassé, plus aucune vérification dans ce dossier pendant 30 s (tout « inconnu »).
+  - Au-delà de 2000 réponses, les plus anciennes sont oubliées une à une (jamais une en cours de
+    demande), sans prévenir les messages : plus d'effacement complet qui faisait clignoter.
 
 ## Reste
 
@@ -204,3 +216,6 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
 - D2 (rc.3) : un avis passager (disparaît seul après quelques secondes, sans entrer dans le fil)
   pour les erreurs de clic sur un lien demanderait un élément visuel nouveau : à maquetter et
   valider avant de le coder. En attendant : un seul avis par texte, pied du tour intact.
+- Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle
+  d'à côté ne reçoit pas le signal « des fichiers ont pu changer » ; ses « non » ne sont
+  revérifiés qu'au prochain signal de cette conversation. Laissé tel quel (relecture, point E).
