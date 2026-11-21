@@ -47,6 +47,7 @@ import { isDirectory } from '../agent/process-utils'
 import { folderNeededSnapshot, hasFolder, retiredSnapshot } from './agentless'
 import { folderGoneMessage, usableFolder } from './folder-fallback'
 import { guardSendFolder } from './send-folder'
+import { SendOrder } from './send-order'
 import { settingsViewOf } from './settings-view'
 import { addAsideSession, agentSessions, checkAgentIn } from './agent-outside'
 import { SubagentWorks } from '../agent/subagent-works'
@@ -235,6 +236,7 @@ export class ConversationManager {
   private readonly listeners = new Set<ConversationListeners>()
   /** Travail des sous-agents déjà rejoué (fiche 053), par profil et session ; les plus récents. */
   private readonly subagentWorks = new SubagentWorks()
+  private readonly sendOrder = new SendOrder()
 
   /** Modules d'outils des sessions, sans les familles coupées par l'utilisateur (fiche 109). */
   private readonly toolModules: AppToolModule[]
@@ -660,29 +662,33 @@ export class ConversationManager {
     options: PromptOptions = {}
   ): Promise<void> {
     if (this.promptGate?.(id, text, attachments, options)) return
-    const conversation = this.get(id)
-    // Dossier disparu : dit avant l'envoi ; discussion : recréé (fiche 272, `send-folder.ts`).
-    await guardSendFolder(conversation.record, this.options.conversationsDir)
-    // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
-    const status = conversation.snapshot?.status
-    if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)
-    const host = this.ensureLive(conversation)
-    await host.start()
-    if (conversation.record.archived) {
-      // Écrire dans une conversation archivée la ressort.
-      delete conversation.record.archived
-      delete conversation.record.archivedWith
-      this.indexChanged()
-    }
-    // Premier message : la conversation entre dans l'historique.
-    if (conversation.draft) this.enterHistory(conversation, text, attachments)
-    // `/split` (fiche 118) : sans `start_child` dans la session, rien ne part.
-    const tools = host.appToolNames
-    if (options.askChildren && tools && !tools.includes('start_child')) {
-      throw new Error(t('children.error.noStartChild'))
-    }
-    // Contexte d'une branche (fiche 023), message d'une autre conversation (fiche 097).
-    await host.send(text, attachments, options)
+    // Deux envois rapprochés gardent leur ordre : la préparation attend la précédente (fiche 272).
+    const sending = await this.sendOrder.run(id, async () => {
+      const conversation = this.get(id)
+      // Dossier disparu : dit avant l'envoi ; discussion : recréé (fiche 272, `send-folder.ts`).
+      await guardSendFolder(conversation.record, this.options.conversationsDir)
+      // Agent arrêté (panne) ou en échec au démarrage : relancé avant d'envoyer, fil gardé.
+      const status = conversation.snapshot?.status
+      if (conversation.host && (status === 'exited' || status === 'error')) await this.restart(id)
+      const host = this.ensureLive(conversation)
+      await host.start()
+      if (conversation.record.archived) {
+        // Écrire dans une conversation archivée la ressort.
+        delete conversation.record.archived
+        delete conversation.record.archivedWith
+        this.indexChanged()
+      }
+      // Premier message : la conversation entre dans l'historique.
+      if (conversation.draft) this.enterHistory(conversation, text, attachments)
+      // `/split` (fiche 118) : sans `start_child` dans la session, rien ne part.
+      const tools = host.appToolNames
+      if (options.askChildren && tools && !tools.includes('start_child')) {
+        throw new Error(t('children.error.noStartChild'))
+      }
+      // Contexte d'une branche (fiche 023), message d'une autre conversation (fiche 097).
+      return { done: host.send(text, attachments, options) }
+    })
+    await sending.done
   }
 
   /** Règles actives de la conversation (fiche 056) : selon le profil et le mode actif. */
@@ -755,23 +761,16 @@ export class ConversationManager {
    */
   subagentWork(id: string, toolCallId: string): Promise<TranscriptItem[]> {
     const conversation = this.get(id)
-    const profile = this.profileOf(id)
-    return subagentWorkOf(
-      this.transcriptOf(conversation).items,
-      toolCallId,
+    const profile = this.profileOf(id) as AgentProfile
+    const context = {
       profile,
-      (sessionId, fresh) =>
-        this.subagentWorks.load(
-          {
-            profile: profile as AgentProfile,
-            workspace: conversation.record.workspace,
-            clientVersion: this.options.clientVersion,
-            sessionId,
-            credentials: () => this.settings.credentials(profile as AgentProfile)
-          },
-          { fresh }
-        )
-    )
+      workspace: conversation.record.workspace,
+      clientVersion: this.options.clientVersion,
+      credentials: () => this.settings.credentials(profile)
+    }
+    const load = (sessionId: string, fresh: boolean) =>
+      this.subagentWorks.load({ ...context, sessionId }, { fresh })
+    return subagentWorkOf(this.transcriptOf(conversation).items, toolCallId, profile, load)
   }
 
   /**
