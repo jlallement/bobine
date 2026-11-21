@@ -14,8 +14,8 @@ What changes for you, version by version. Shown in Settings › About.
 - Panel tabs: a tab’s **✕** no longer appears under the pointer that just activated it, and a
   double click never closes a tab.
 - Reviewer comments in the diff wrap within the panel’s visible width.
-- A task **moved to the trash** says so on its card, explains why its buttons are gone, and its
-  response is no longer sent to the agent.
+- A task whose conversation was **deleted** says so on its card (“conversation deleted”) and
+  explains why its buttons are gone; its response is no longer sent to the agent nor wakes it.
 - `/compact` no longer carries pending task responses: they go with your next real message.
 - A conversation whose folder was **moved or deleted**: Bobine says so before sending, and nothing
   is sent; the log no longer claims git is missing.

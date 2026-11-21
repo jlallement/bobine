@@ -14,8 +14,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Onglets du panneau : le **✕** d’un onglet n’apparaît plus sous le pointeur qui vient de l’activer,
   et un double clic ne ferme jamais un onglet.
 - Les remarques du relecteur dans le diff passent à la ligne dans la largeur visible du panneau.
-- Un travail **mis à la corbeille** le dit sur sa carte (« mis à la corbeille »), explique pourquoi
-  ses boutons ont disparu, et sa réponse ne part plus à l’agent.
+- Un travail dont la conversation a été **supprimée** le dit sur sa carte (« conversation
+  supprimée »), explique pourquoi ses boutons ont disparu ; sa réponse ne part plus à l’agent et ne le
+  réveille plus.
 - `/compact` n’emporte plus les réponses des travaux en attente : elles partent avec votre prochain
   vrai message.
 - Dossier d’une conversation **déplacé ou supprimé** : Bobine le dit avant d’envoyer, et rien ne

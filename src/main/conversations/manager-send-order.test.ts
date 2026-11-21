@@ -13,8 +13,7 @@ import { ConversationManager } from './manager'
 // Garde du dossier : la première lente (partage réseau), les suivantes immédiates.
 let calls = 0
 vi.mock('./send-folder', () => ({
-  guardSendFolder: () =>
-    new Promise<void>((resolve) => setTimeout(resolve, calls++ === 0 ? 80 : 0))
+  guardSendFolder: () => new Promise<void>((resolve) => setTimeout(resolve, calls++ === 0 ? 80 : 0))
 }))
 
 describe('ordre des envois d’une conversation (fiche 272)', () => {
