@@ -616,6 +616,14 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
     deux suivants ; non lié), `pnpm e2e files --lang en` 0. Captures regardées : `75-remarques-fichiers`
     (clair, sombre), `271-remarque`, `en-271-remarque`, `271-arbre` sombre ; rien à reprendre.
 
+- **2026-11-21 — clic droit en échec dans `files light`, cause trouvée** : à la fermeture d'un
+  menu contextuel, Radix rend le clavier sur un minuteur (`FocusScope`, `setTimeout(0)`) ; notre
+  `onCloseFocus` remettait alors le focus sur la ligne. Un menu rouvert avant ce minuteur (clic
+  droit aussitôt après Échap, ou clic droit sur une autre ligne, menu ouvert ; minuteurs ralentis
+  d'une fenêtre au second plan pendant les essais en parallèle) perdait le focus et se fermait
+  (menu non modal : focus dehors). Le focus n'est plus rendu si un autre menu est ouvert ; essai
+  unitaire qui échouait avant (`FileTree.keys.test.tsx`).
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - Version **1.1** (pas dans la 1.0), développée sur une branche `1.1`.

@@ -72,3 +72,22 @@ describe('clavier dans les menus de l’arbre (B1)', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 })
+
+describe('menu contextuel rouvert aussitôt fermé (e2e `files light`)', () => {
+  it('Échap puis clic droit sur une autre ligne : le nouveau menu reste ouvert, sur sa ligne', async () => {
+    setup()
+    const [first, second] = screen.getAllByTestId('file-row')
+    if (!first || !second) throw new Error('lignes attendues')
+    fireEvent.contextMenu(first, { clientX: 40, clientY: 10 })
+    const menu = await screen.findByTestId('file-context-menu')
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    expect(screen.queryByTestId('file-context-menu')).toBeNull()
+    // Avant que le menu fermé ne rende le clavier à sa ligne (minuteur de Radix) : un autre clic
+    // droit, comme un utilisateur rapide ou une fenêtre au second plan (minuteurs ralentis).
+    fireEvent.contextMenu(second, { clientX: 40, clientY: 30 })
+    expect(await screen.findByTestId('file-context-menu')).toBeTruthy()
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    expect(screen.queryByTestId('file-context-menu')).not.toBeNull()
+    expect(second.classList.contains('menu-open')).toBe(true)
+  })
+})

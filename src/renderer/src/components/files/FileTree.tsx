@@ -133,8 +133,13 @@ export function FileTree(props: Props) {
   const [menu, setMenuState] = useState<{ key: string; at: ContextAt } | null>(null)
   // Ligne du dernier menu ouvert : le clavier y revient à sa fermeture.
   const lastMenu = useRef<string | null>(null)
+  // Un menu ouvert en ce moment : Radix rend le clavier après la fermeture, sur un minuteur ; un
+  // autre menu ouvert entre-temps (clic droit aussitôt) ne doit pas perdre le focus, sinon il se
+  // ferme (menu non modal : focus dehors).
+  const menuOpen = useRef(false)
   const setMenu = (next: { key: string; at: ContextAt } | null) => {
     if (next) lastMenu.current = next.key
+    menuOpen.current = !!next
     setMenuState(next)
   }
   const box = useRef<HTMLDivElement>(null)
@@ -299,7 +304,7 @@ export function FileTree(props: Props) {
         at={menuRow ? (menu?.at ?? null) : null}
         onClose={() => setMenu(null)}
         onCloseFocus={() => {
-          if (lastMenu.current) rowElement(lastMenu.current)?.focus()
+          if (!menuOpen.current && lastMenu.current) rowElement(lastMenu.current)?.focus()
         }}
       >
         {menuRow && menuItems(menuRow)}
