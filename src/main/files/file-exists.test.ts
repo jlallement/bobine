@@ -102,12 +102,15 @@ describe('liens de fichiers qui existent (fiche 272, recette de la rc.3)', () =>
   })
 
   it('chemin absolu sous la forme donnée du dossier, pas seulement son chemin réel', async () => {
-    // macOS : `tmpdir()` est sous `/var/…`, lien vers `/private/var/…`.
-    const given = mkdtempSync(join(tmpdir(), 'forme-donnee-'))
-    writeFileSync(join(given, 'liste.js'), 'export {}\n')
-    expect(
-      await found(given, [join(given, 'liste.js'), join(realpathSync(given), 'liste.js')])
-    ).toEqual([join(given, 'liste.js'), join(realpathSync(given), 'liste.js')])
+    // Deux formes du même dossier sur tout système : un lien vers le dossier réel (une jonction
+    // sous Windows, permise sans droits d'administrateur ; le type est ignoré ailleurs).
+    const target = folder('forme-reelle-')
+    writeFileSync(join(target, 'liste.js'), 'export {}\n')
+    const given = join(folder('forme-lien-'), 'projet')
+    symlinkSync(target, given, 'junction')
+    expect(realpathSync(given)).not.toBe(given)
+    const paths = [join(given, 'liste.js'), join(target, 'liste.js')]
+    expect(await found(given, paths)).toEqual(paths)
   })
 
   it('dans le dossier : sous Windows sans tenir compte de la casse, ailleurs si', () => {

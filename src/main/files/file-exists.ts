@@ -6,7 +6,7 @@
  * n'existe pas pour l'app, et reste du code.
  */
 import { stat } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
+import { posix, resolve, win32 } from 'node:path'
 import { parseFileLink, type FileLinkCheck } from '@shared/file-links'
 import { currentPlatformFeatures } from '../platform'
 import { launchSystem, type ProcessSystem } from '../process-launch'
@@ -54,7 +54,8 @@ export function linkList(hrefs: unknown): string[] {
  * casse, comme le système de fichiers.
  */
 export function insideOn(system: ProcessSystem, root: string, target: string): boolean {
-  const separator = system === 'windows' ? '\\' : sep
+  // Séparateur du système reçu, pas de l'hôte : juste quel que soit l'hôte (essais).
+  const separator = system === 'windows' ? win32.sep : posix.sep
   const [r, t] = system === 'windows' ? [root.toLowerCase(), target.toLowerCase()] : [root, target]
   return t === r || t.startsWith(r.endsWith(separator) ? r : r + separator)
 }
