@@ -38,8 +38,9 @@ What changes for you, version by version. Shown in Settings › About.
 - A link to a file without a folder followed by a line (`list.js:9`), as a link or as code, opens on
   click: it no longer stays underlined with no effect.
 - A path written as code is underlined as a link only if the file exists in the conversation’s
-  folder: no more links to a file yet to be created (`tests/list.test.js`) or relative to another
-  file (`../list.js`).
+  folder: no more links to a file yet to be created (`tests/list.test.js`), relative to another
+  file (`../list.js`) or outside the conversation’s folder. A file the agent creates later becomes
+  a link as soon as the tool writing it finishes.
 - Clicking a link to a missing file no longer stacks one notice per click, and the turn’s foot
   (time, duration, files) stays visible.
 - The plan card keeps its foot (time, duration); the Session tab’s “uncommitted files” line stays on

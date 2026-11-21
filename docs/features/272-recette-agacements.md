@@ -140,8 +140,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
     montre en liens d'emblée, sans passer par du code) ; un absent est redemandé quand le message
     est remonté. Vérificateur fourni par `ConversationScope` et par l'aperçu d'un document
     (`DocumentTab`, relatif au document) ; ailleurs (Réglages › Nouveautés…), aucun lien. Les
-    liens Markdown `[x](chemin)` ne changent pas. Limite assumée : un fichier créé après sa
-    mention, message resté affiché, reste du code jusqu'au prochain rendu complet du fil ; seuls
+    liens Markdown `[x](chemin)` ne changent pas. Limite d'abord assumée, levée par la relecture
+    (voir plus bas) : un fichier créé après sa mention restait du code ; seuls
     les fichiers du dossier de travail comptent (pas les autres dossiers de la fiche 179, que les
     liens ne savent pas ouvrir non plus, sinon dans le Finder).
   - **D2 — carte rouge par clic sur un fichier introuvable, pied du tour disparu.** Cause : le
@@ -167,6 +167,30 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   - `./scripts/verify` vert (code 0) ; `pnpm build` (code 0) ; `pnpm e2e links fil changes` vert
     (code 0, 6 tâches, clair et sombre, 36 s) ; captures `44-code-fichiers-absents` et
     `45-fichier-absent-pied` (clair et sombre) regardées.
+- 2026-11-21 — Relecture indépendante de `fix/rc3-liens` (rien de bloquant), reprises :
+  - Mémoire par **conversation** (`file-checks.ts`, `fileChecksFor`, 30 conversations, 2000
+    réponses chacune) et non plus par fonction : A → B → A retrouve les liens de A sans clignoter
+    ni redemander. Les demandes de tous les messages d'un même instant partent en **un seul**
+    appel (200 chemins au plus par appel). Essai par le chemin réel de l'app (`ConversationScope`
+    remonté par `key`).
+  - Réponses indexées par `base` dans la mémoire de la conversation : une réponse arrivée après un
+    changement de document (aperçu) ne s'applique pas au nouveau.
+  - Un « non » n'est plus définitif : `filesRevision` (outil `edit`, `delete`, `move`, `execute`,
+    `other` terminé, réponse finie) passé à `ConversationScope` (fil actif et conversation à côté) ;
+    quand il change, les « non » sont oubliés et redemandés par les messages qui les citent. Un
+    délai dépassé ou un appel en échec n'est ni oui ni non : redemandé au signal suivant.
+  - Main : `files:existing` rend `{ existing, unknown }` ; le délai de 2 s couvre aussi les chemins
+    réels du dossier et de la base ; 8 `stat` à la fois ; chemin absolu accepté sous la forme
+    donnée du dossier comme sous son chemin réel (comme `openWorkspaceFile`) ; comparaison sans
+    casse sous Windows (`insideOn`).
+  - `reduceNotice` : ne remplace que l'avis local identique (niveau, titre, texte) le plus récent
+    du tour en cours. `local` documenté : jamais envoyé au main ni écrit sur disque.
+  - CHANGELOG : un chemin hors du dossier n'est plus un lien ; un fichier créé ensuite le devient.
+  - Essais : `inline-files.test.tsx` (fil entier en un appel, A → B → A, document changé, fichier
+    créé après sa mention, délai et échec, 300 ms pendant l'écriture, signal), `file-exists.test.ts`
+    (forme donnée, casse sous Windows, borne : non vérifiés inconnus), `file-exists-timeout.test.ts`
+    (chemin réel muet : rendu au délai), `ipc.test.ts` (raccordement de `files:existing`),
+    `transcript-notice.test.ts` (titre, niveau, tour).
 
 ## Reste
 
