@@ -9,10 +9,10 @@ type ToolKind = Extract<TranscriptItem, { kind: 'tool' }>['toolKind']
  * clignoter ni redemander. Les demandes de tous les messages d'un même instant partent en un seul
  * appel (200 chemins au plus par appel).
  *
- * Un « non » n'est jamais définitif : il est oublié quand le fil dit que des fichiers ont pu
- * changer (`sync` : fin d'un tour, outil d'écriture ou de commande terminé), et redemandé par les
- * messages qui le citent. Un chemin resté sans réponse (délai dépassé, appel en échec) n'est ni oui
- * ni non : il reste du code, redemandé au même signal.
+ * Un « non » n'est jamais définitif : quand le fil dit que des fichiers ont pu changer (`sync` :
+ * fin d'un tour, outil d'écriture ou de commande terminé), la mémoire revérifie elle-même ses
+ * « non » et ses chemins restés sans réponse (délai dépassé, appel en échec), en gardant leur
+ * affichage (du code) : les messages ne refont leur rendu que si un lien apparaît ou disparaît.
  */
 
 /** Demande au main : `files:existing` de la conversation. */
@@ -20,23 +20,29 @@ export type AskFiles = (hrefs: string[], base?: string) => Promise<FileLinkCheck
 
 /** Chemins par appel (même borne que le main). */
 const MAX_ASKED = 200
-/** Réponses retenues par conversation ; au-delà, on repart de zéro. */
-const MAX_KNOWN = 2000
+/** Réponses retenues par conversation ; au-delà, les plus anciennes sont oubliées une à une. */
+export const MAX_KNOWN = 2000
 /** Conversations retenues ; la plus ancienne est oubliée. */
 const MAX_CONVERSATIONS = 30
 
 const keyOf = (base: string | undefined, href: string) => `${base ?? ''}\0${href}`
 
+interface Entry {
+  base: string | undefined
+  href: string
+  /** `new` : jamais répondu ; `unknown` : sans réponse (délai, échec). */
+  state: 'yes' | 'no' | 'unknown' | 'new'
+  /** En file ou en cours de demande. */
+  pending: boolean
+}
+
 export class FileChecks {
-  private readonly known = new Map<string, boolean>()
-  /** Demandés, pas encore répondus. */
-  private readonly inFlight = new Set<string>()
-  /** Sans réponse (délai, échec) : pas redemandés avant le prochain signal. */
-  private readonly held = new Set<string>()
+  /** Par ordre d'arrivée (ou de dernière réponse) : les plus anciennes sont oubliées d'abord. */
+  private readonly entries = new Map<string, Entry>()
   private queue = new Map<string | undefined, Set<string>>()
   private timer: ReturnType<typeof setTimeout> | undefined
   private readonly listeners = new Set<() => void>()
-  /** Change à chaque oubli des « non » : une réponse d'avant ne dit plus « non ». */
+  /** Change à chaque signal : une réponse demandée avant n'est plus sûre, sauf un « oui ». */
   private epoch = 0
   private revision: number | undefined
 
@@ -46,40 +52,32 @@ export class FileChecks {
     this.ask = ask
   }
 
-  /** Numéro du dernier signal : un chemin sans réponse se redemande quand il change. */
-  get round(): number {
-    return this.epoch
-  }
-
-  /** Vrai : existe ; faux : n'existe pas ; `undefined` : pas (encore) su. */
+  /**
+   * Vrai : existe (un lien) ; faux : n'existe pas, ou pas encore su (du code) ; `undefined` :
+   * jamais demandé.
+   */
   status(base: string | undefined, href: string): boolean | undefined {
-    return this.known.get(keyOf(base, href))
+    const entry = this.entries.get(keyOf(base, href))
+    return entry ? entry.state === 'yes' : undefined
   }
 
-  /** Demande ceux qu'on ne connaît pas ; un seul appel pour tout ce qui arrive au même instant. */
+  /** Demande ceux qu'on n'a jamais demandés ; un seul appel pour ce qui arrive au même instant. */
   request(base: string | undefined, hrefs: readonly string[]): void {
-    let added = false
     for (const href of hrefs) {
       const key = keyOf(base, href)
-      if (this.known.has(key) || this.inFlight.has(key) || this.held.has(key)) continue
-      this.inFlight.add(key)
-      const set = this.queue.get(base) ?? new Set<string>()
-      set.add(href)
-      this.queue.set(base, set)
-      added = true
+      if (this.entries.has(key)) continue
+      this.remember(key, { base, href, state: 'new', pending: false })
+      this.enqueue(key)
     }
-    if (added && this.timer === undefined) this.timer = setTimeout(() => this.flush(), 0)
   }
 
-  /** Signal du fil (nombre qui grandit quand des fichiers ont pu changer) : oublie les « non ». */
+  /** Signal du fil (nombre qui grandit quand des fichiers ont pu changer) : revérifie les « non ». */
   sync(revision: number): void {
     const changed = this.revision !== undefined && revision !== this.revision
     this.revision = revision
     if (!changed) return
     this.epoch += 1
-    this.held.clear()
-    for (const [key, exists] of this.known) if (!exists) this.known.delete(key)
-    this.notify()
+    for (const [key, entry] of this.entries) if (entry.state !== 'yes') this.enqueue(key)
   }
 
   subscribe(listener: () => void): () => void {
@@ -87,8 +85,30 @@ export class FileChecks {
     return () => this.listeners.delete(listener)
   }
 
-  private notify(): void {
-    for (const listener of [...this.listeners]) listener()
+  /** Nombre de chemins retenus (essais). */
+  get size(): number {
+    return this.entries.size
+  }
+
+  private remember(key: string, entry: Entry): void {
+    this.entries.delete(key)
+    this.entries.set(key, entry)
+    // Les plus anciennes d'abord, une à une, jamais une en cours de demande ; sans prévenir les
+    // messages : un lien affiché le reste jusqu'à leur prochain rendu.
+    for (const [old, value] of this.entries) {
+      if (this.entries.size <= MAX_KNOWN) break
+      if (!value.pending && old !== key) this.entries.delete(old)
+    }
+  }
+
+  private enqueue(key: string): void {
+    const entry = this.entries.get(key)
+    if (!entry || entry.pending) return
+    entry.pending = true
+    const set = this.queue.get(entry.base) ?? new Set<string>()
+    set.add(entry.href)
+    this.queue.set(entry.base, set)
+    if (this.timer === undefined) this.timer = setTimeout(() => this.flush(), 0)
   }
 
   private flush(): void {
@@ -107,18 +127,24 @@ export class FileChecks {
     const settle = (answer: FileLinkCheck | null) => {
       const yes = new Set(answer?.existing ?? [])
       const unknown = new Set(answer ? answer.unknown : hrefs)
-      if (this.known.size + hrefs.length > MAX_KNOWN) this.known.clear()
+      let shown = false
+      const again: string[] = []
       for (const href of hrefs) {
         const key = keyOf(base, href)
-        this.inFlight.delete(key)
-        if (yes.has(href)) this.known.set(key, true)
-        else if (unknown.has(href)) {
-          if (epoch === this.epoch) this.held.add(key)
-        }
-        // Un « non » d'avant le dernier signal n'est plus sûr : redemandé.
-        else if (epoch === this.epoch) this.known.set(key, false)
+        const entry = this.entries.get(key)
+        if (!entry) continue
+        entry.pending = false
+        const before = entry.state === 'yes'
+        if (yes.has(href)) entry.state = 'yes'
+        else if (epoch !== this.epoch) {
+          // Signal arrivé pendant la demande : la réponse ne dit plus « non », redemandée.
+          again.push(key)
+        } else entry.state = unknown.has(href) ? 'unknown' : 'no'
+        if (before !== (entry.state === 'yes')) shown = true
       }
-      this.notify()
+      for (const key of again) this.enqueue(key)
+      // Les messages ne sont prévenus que si un lien apparaît ou disparaît.
+      if (shown) for (const listener of [...this.listeners]) listener()
     }
     this.ask(hrefs, base).then(settle, () => settle(null))
   }

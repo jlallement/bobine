@@ -4,9 +4,22 @@ import type { FileLinkCheck } from '@shared/file-links'
 import type { TranscriptItem } from '@shared/transcript'
 import { ConversationScope } from './ConversationScope'
 import { FileExistsContext, FileLinkBase, FileLinksContext } from './FileLink'
-import { FileChecks, filesRevision } from './file-checks'
+import { FileChecks, filesRevision, MAX_KNOWN } from './file-checks'
 import { Markdown } from './Markdown'
 import { STREAMING_DELAY_MS } from './useInlineFiles'
+
+// Rendus Markdown comptés : le plugin des codes en ligne tourne une fois par rendu.
+const renders = vi.hoisted(() => ({ count: 0 }))
+vi.mock('./inline-file-code', async (original) => {
+  const actual = await original<typeof import('./inline-file-code')>()
+  return {
+    ...actual,
+    rehypeInlineFileCode: (...args: Parameters<typeof actual.rehypeInlineFileCode>) => {
+      renders.count += 1
+      return actual.rehypeInlineFileCode(...args)
+    }
+  }
+})
 
 /**
  * Code en ligne vers un fichier qui existe (fiche 272, recette de la rc.3) : jamais un lien vers
@@ -176,7 +189,7 @@ describe('code en ligne : lien seulement vers un fichier qui existe (rc.3)', () 
     )
     const view = render(ui)
     await settle()
-    expect(checks.status(undefined, 'src/a.js')).toBeUndefined()
+    expect(checks.status(undefined, 'src/a.js')).toBe(false)
     view.rerender(ui)
     await settle()
     expect(ask).toHaveBeenCalledTimes(1)
@@ -241,5 +254,81 @@ describe('code en ligne : lien seulement vers un fichier qui existe (rc.3)', () 
         { kind: 'agent', id: 3, text: 'b', at: 1 }
       ])
     ).toBe(2)
+  })
+
+  it('signal sans fichier devenu lien : aucun rendu des messages, même revérifiés', async () => {
+    const user: TranscriptItem = { kind: 'user', id: 1, text: 'Va', at: 0 }
+    const texts = Array.from({ length: 5 }, (_, i) => `Crée \`tests/t${i}.test.js\`.`)
+    const tool = (id: number): TranscriptItem => ({
+      kind: 'tool',
+      id,
+      toolCallId: `t${id}`,
+      title: 'run',
+      toolKind: 'execute',
+      status: 'completed',
+      content: [],
+      locations: []
+    })
+    const thread = (items: TranscriptItem[]) => (
+      <ConversationScope
+        conversationId="A"
+        openLink={() => {}}
+        loadSubagentWork={vi.fn()}
+        items={items}
+      >
+        {texts.map((text) => (
+          <Markdown key={text} text={text} />
+        ))}
+      </ConversationScope>
+    )
+    const items: TranscriptItem[] = [user]
+    const view = render(thread(items))
+    await settle()
+    const settled = renders.count
+    for (let id = 10; id < 40; id++) {
+      items.push(tool(id))
+      view.rerender(thread([...items]))
+      await settle()
+    }
+    // 30 outils : 30 revérifications groupées (une par signal), aucun rendu Markdown de plus.
+    expect(existing).toHaveBeenCalledTimes(31)
+    expect(renders.count).toBe(settled)
+    // Le jour où un fichier apparaît : seul son message refait son rendu.
+    folders['A'] = ['tests/t2.test.js']
+    items.push(tool(99))
+    view.rerender(thread([...items]))
+    await settle()
+    expect(renders.count).toBe(settled + 1)
+    expect(linked('tests/t2.test.js')).toEqual(['file-link'])
+  })
+
+  it('signal pendant une demande en cours : la réponse d’avant ne dit plus « non », redemandée', async () => {
+    const answers: Array<(check: FileLinkCheck) => void> = []
+    const checks = new FileChecks(() => new Promise((done) => answers.push(done)))
+    checks.sync(0)
+    checks.request(undefined, ['src/a.js'])
+    await settle()
+    expect(answers).toHaveLength(1)
+    checks.sync(1)
+    // Le fichier n'existait pas à la première vérification, il existe après le signal.
+    await act(async () => answers[0]?.({ existing: [], unknown: [] }))
+    await settle()
+    expect(answers).toHaveLength(2)
+    await act(async () => answers[1]?.({ existing: ['src/a.js'], unknown: [] }))
+    expect(checks.status(undefined, 'src/a.js')).toBe(true)
+  })
+
+  it('au-delà de la borne : les plus anciennes oubliées une à une, les « oui » récents gardés', async () => {
+    const checks = new FileChecks((hrefs) => Promise.resolve({ existing: hrefs, unknown: [] }))
+    const all = Array.from({ length: MAX_KNOWN + 10 }, (_, i) => `f${i}.js`)
+    for (let i = 0; i < all.length; i += 200) {
+      checks.request(undefined, all.slice(i, i + 200))
+      await settle()
+    }
+    expect(checks.size).toBe(MAX_KNOWN)
+    expect(checks.status(undefined, 'f0.js')).toBeUndefined()
+    expect(checks.status(undefined, 'f9.js')).toBeUndefined()
+    expect(checks.status(undefined, 'f10.js')).toBe(true)
+    expect(checks.status(undefined, `f${MAX_KNOWN + 9}.js`)).toBe(true)
   })
 })

@@ -17,7 +17,6 @@ class Candidates {
   private rendering = new Map<string, boolean | undefined>()
   private shown: string[] = []
   private signature = ''
-  private renderRound = 0
   /** Écouteur de la mémoire pour ce message (posé par son abonnement). */
   private listener: (() => void) | undefined
   listen(listener: (() => void) | undefined): void {
@@ -27,10 +26,9 @@ class Candidates {
   wake(): void {
     if (this.listener) queueMicrotask(this.listener)
   }
-  /** Nouveau rendu, au signal `round` : la liste repart de zéro (remplie par le plugin rehype). */
-  reset(round: number): void {
+  /** Nouveau rendu : la liste repart de zéro (remplie par le plugin rehype). */
+  reset(): void {
     this.rendering = new Map()
-    this.renderRound = round
   }
   readonly add = (href: string): void => {
     if (!this.rendering.has(href)) this.rendering.set(href, undefined)
@@ -40,25 +38,22 @@ class Candidates {
     this.rendering.set(href, status)
     return status
   }
-  /** Après le rendu : la liste affichée, et l'état que le rendu en a montré. */
+  /** Après le rendu : la liste affichée, et ce que le rendu en a montré (lien ou non). */
   commit(): string[] {
     this.shown = [...this.rendering.keys()]
-    this.signature = Candidates.sign([...this.rendering.values()], this.renderRound)
+    this.signature = Candidates.sign([...this.rendering.values()])
     return this.shown
   }
-  /**
-   * L'état d'un chemin affiché a-t-il changé depuis le dernier rendu ? Un chemin sans réponse
-   * compte aussi un nouveau signal : il est à redemander.
-   */
-  changed(read: (href: string) => boolean | undefined, round: number): boolean {
-    const next = Candidates.sign(this.shown.map(read), round)
+  /** Un chemin affiché est-il devenu un lien, ou a-t-il cessé de l'être, depuis le dernier rendu ? */
+  changed(read: (href: string) => boolean | undefined): boolean {
+    const next = Candidates.sign(this.shown.map(read))
     if (next === this.signature) return false
     this.signature = next
     return true
   }
-  private static sign(statuses: Array<boolean | undefined>, round: number): string {
-    const text = statuses.map(String).join(',')
-    return statuses.includes(undefined) ? `${text}@${round}` : text
+  /** Seul l'affichage compte : un « non » revérifié qui reste « non » ne refait aucun rendu. */
+  private static sign(statuses: Array<boolean | undefined>): string {
+    return statuses.map((status) => (status === true ? '1' : '0')).join('')
   }
 }
 
@@ -74,13 +69,13 @@ export function useInlineFiles(streaming: boolean): InlineFiles {
   const base = useContext(FileLinkBase)
   const [candidates] = useState(() => new Candidates())
   const [, rerender] = useState(0)
-  candidates.reset(checks?.round ?? 0)
+  candidates.reset()
   // Un nouveau rendu seulement quand l'un des chemins de ce message change d'état.
   useEffect(() => {
     if (!checks) return
     const read = (href: string) => checks.status(base, href)
     const listener = () => {
-      if (candidates.changed(read, checks.round)) rerender((n) => n + 1)
+      if (candidates.changed(read)) rerender((n) => n + 1)
     }
     candidates.listen(listener)
     const off = checks.subscribe(listener)
