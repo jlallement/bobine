@@ -37,7 +37,9 @@ export interface TranscriptNotice {
   /**
    * Avis de l'interface elle-même (un appel refusé, un fichier introuvable au clic — recette de la
    * rc.3) : il ne dit rien du tour, qui garde son pied (`endedBadly`), et le même avis redonné
-   * remplace le précédent au lieu de s'empiler.
+   * dans le tour remplace le précédent au lieu de s'empiler. Jamais écrit sur disque : seul le
+   * renderer en crée, dans son propre état du fil ; le main, qui enregistre et exporte les fils,
+   * ne le reçoit pas (rechargé, le fil ne l'a plus).
    */
   local?: true
 }
@@ -54,22 +56,42 @@ export function withoutRefusal(state: TranscriptState): TranscriptState {
 const isRefusal = (item: TranscriptItem): boolean => item.kind === 'notice' && item.refusal === true
 
 /**
+ * Le fil sans l'avis local le plus récent du tour en cours identique à `event` (niveau, titre,
+ * texte) ; même état s'il n'y en a pas. Les tours d'avant gardent les leurs.
+ */
+function withoutLastSameLocal(
+  state: TranscriptState,
+  event: Extract<AgentEvent, { type: 'notice' }>
+): TranscriptState {
+  if (typeof event.message !== 'string') return state
+  const turnStart = state.items.findLastIndex((item) => item.kind === 'user') + 1
+  const same = state.items.findLastIndex(
+    (item, index) =>
+      index >= turnStart &&
+      item.kind === 'notice' &&
+      item.local === true &&
+      item.level === event.level &&
+      item.title === event.title &&
+      item.text === event.message
+  )
+  if (same < 0) return state
+  return { ...state, items: state.items.filter((_, index) => index !== same) }
+}
+
+/**
  * Avis venu de l'agent ou de l'app (`notice`). Un avis de refus remplace le précédent (fiche 259) ;
- * un avis de l'interface redonné à l'identique (deux clics sur un fichier introuvable — recette de
- * la rc.3) remplace le sien : un seul, en bas.
+ * un avis de l'interface redonné à l'identique dans le même tour (deux clics sur un fichier
+ * introuvable — recette de la rc.3) remplace le sien : un seul, en bas.
  */
 export function reduceNotice(
   state: TranscriptState,
   event: Extract<AgentEvent, { type: 'notice' }>
 ): TranscriptState {
   const { message } = event
-  const local = event.local === true && !event.title && typeof message === 'string'
-  const sameLocal = (item: TranscriptItem) =>
-    item.kind === 'notice' && item.local === true && item.text === message
   const kept = event.refusal
     ? withoutRefusal(state)
-    : local
-      ? { ...state, items: state.items.filter((item) => !sameLocal(item)) }
+    : event.local
+      ? withoutLastSameLocal(state, event)
       : state
   const item: TranscriptItem = {
     kind: 'notice',

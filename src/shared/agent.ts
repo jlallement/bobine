@@ -545,7 +545,8 @@ export type AgentEvent =
    * `message` : texte tel quel, ou code traduit à l'affichage (ADR-0014). `title` : titre de
    * l'encadré (sortie d'une commande de l'app, fiche 126). `refusal` : avis d'un message refusé
    * (connexion, modèle), vrai jusqu'à la réponse suivante de l'agent, qui le retire (fiche 259).
-   * `local` : avis de l'interface (appel refusé, fichier introuvable), jamais une fin de tour.
+   * `local` : avis de l'interface (appel refusé, fichier introuvable), jamais une fin de tour ;
+   * posé par le renderer seul, jamais envoyé au main ni écrit sur disque.
    */
   | {
       type: 'notice'
