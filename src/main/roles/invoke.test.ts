@@ -54,8 +54,10 @@ function host(roles: RoleView[], limit = 10) {
   return { fake, start }
 }
 
-/** La requête de lancement sans la bulle de la demande (vérifiée à part, fiche 263). */
-/** La requête sans la bulle partagée ni le titre du travail (essayé à part, fiche 272). */
+/**
+ * La requête de lancement sans la bulle de la demande (vérifiée à part, fiche 263) ni le titre du
+ * travail (essayé à part, fiche 272).
+ */
 function withoutAsk(request: unknown): unknown {
   const { ask: _ask, title: _title, ...rest } = request as Record<string, unknown>
   return rest
