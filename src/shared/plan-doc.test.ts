@@ -104,6 +104,22 @@ describe('plan exécuté (fiche 272, recette : double exécution possible)', () 
     expect(planVersions(again)[0]?.executed).toBe(true)
   })
 
+  it('tour d’exécution fini, puis l’agent plante : le plan reste exécuté (revue)', () => {
+    const crash: TranscriptItem = {
+      kind: 'notice',
+      id: next++,
+      level: 'error',
+      message: { key: 'transcript.notice.exited' }
+    }
+    const items = [
+      ...plan(),
+      user('Exécute ce plan.', 'build'),
+      { ...agent('Fait.'), at: 7 },
+      crash
+    ]
+    expect(planVersions(items)[0]?.executed).toBe(true)
+  })
+
   it('remarques en restant en mode plan : la nouvelle version n’est pas exécutée', () => {
     const items = [
       user('Propose un plan'),

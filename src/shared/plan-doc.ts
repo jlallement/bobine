@@ -179,7 +179,10 @@ function executedAfter(items: readonly Item[], plan: Pick<PlanVersion, 'anchorId
     if (item?.kind !== 'user' || item.text !== asked) continue
     if (item.mode && (isPlanMode(item.mode) || isAskMode(item.mode))) continue
     const next = items.findIndex((x, j) => j > i && x.kind === 'user')
-    if (!endedBadly(items.slice(i + 1, next < 0 ? undefined : next))) return true
+    const turn = items.slice(i + 1, next < 0 ? undefined : next)
+    // Une réponse datée de l'agent : le plan a été exécuté, quoi qu'il arrive ensuite (panne de
+    // l'agent après le tour). Sans elle, seule une fin anormale le laisse actionnable.
+    if (turn.some((x) => x.kind === 'agent' && x.at) || !endedBadly(turn)) return true
   }
   return false
 }
