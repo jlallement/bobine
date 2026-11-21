@@ -121,7 +121,6 @@ export function AppDialogs({
         projectCommands={projectCommands}
         onCommands={c.setCommands}
         activeConversation={c.activeSummary}
-        {...(c.active?.snapshot ? { activeControls: c.active.snapshot.controls } : {})}
         onNotifications={c.setNotifications}
         onOpenNotificationSettings={c.openNotificationSettings}
         onForgetWorkspace={c.forgetWorkspace}
