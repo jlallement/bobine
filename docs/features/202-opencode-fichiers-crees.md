@@ -67,7 +67,8 @@ d'autorisation disparaissait. Le texte « Created / Wrote » vient du code d'Ope
   remise en état fausse (voire la suppression d'un fichier qui existait). Donc :
   - **générique** : le diff de la demande d'autorisation est gardé quand la fin ne le porte pas ;
   - **OpenCode** : « Created file successfully » + `rawInput.content` → diff `null` → contenu.
-- **Reste, assumé** : un fichier **réécrit** par `write` **sans** demande d'autorisation
+- **Reste, assumé** (levé le 2026-11-21 par la fiche 272 : le fichier compte désormais comme
+  « modifié », sans diff ni totaux) : un fichier **réécrit** par `write` **sans** demande d'autorisation
   (réglage par défaut d'OpenCode) n'est pas compté — son ancien texte n'est dit nulle part. Même
   chose pour un fichier réécrit avec autorisation, après réouverture (la demande n'est pas
   rejouée). Les modèles GPT passent par `patch`, qui joint ses diffs (sonde du 2026-11-06).

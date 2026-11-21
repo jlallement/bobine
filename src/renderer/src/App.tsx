@@ -15,6 +15,7 @@ import { InstallDialog } from './components/dialogs/InstallDialog'
 import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
+import { LineTotals } from './components/common/LineTotals'
 import { threadItems } from './role-labels'
 import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
@@ -54,7 +55,6 @@ import { DropOverlay } from './components/composer/DropOverlay'
 import { TurnFooter } from './components/thread/TurnFooter'
 import { ConversationOutline } from './components/thread/ConversationOutline'
 import { childrenMergeActions } from './components/thread/SubtasksMerge'
-import { countText } from '@shared/i18n/format'
 import { Welcome } from './components/Welcome'
 import { useOnboarding } from './components/onboarding/useOnboarding'
 import { useTranslation } from 'react-i18next'
@@ -572,8 +572,7 @@ export function App() {
                       >
                         <FileDiff size={15} />
                         {changes.files}
-                        <span className="diff-added">+{countText(changes.added)}</span>
-                        <span className="diff-removed">−{countText(changes.removed)}</span>
+                        <LineTotals {...changes} />
                       </button>
                     </Tip>
                   )}

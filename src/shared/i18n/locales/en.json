@@ -2102,7 +2102,10 @@
     "children": {
       "revealLabel": "Show the worktree of “{{title}}” in Finder",
       "editorLabel": "Open the worktree of “{{title}}” in {{editor}}"
-    }
+    },
+    "noTotals": "no line counts",
+    "someNoTotals_one": "{{count}} without line counts",
+    "someNoTotals_other": "{{count}} without line counts"
   },
   "install": {
     "title": "Install Bobine",

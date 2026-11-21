@@ -139,11 +139,15 @@ export function conversationChanges(items: readonly TranscriptItem[]): Conversat
 export type RevertOutcome = 'restored' | 'unchanged' | 'conflict' | 'outside' | 'failed'
 
 /** Totaux pour le raccourci de l'en-tête (« 3 fichiers +12 −4 »). */
-export function changesSummary(files: readonly { added: number | null; removed: number | null }[]) {
+export function changesSummary(
+  files: readonly { added: number | null; removed: number | null; unknown?: boolean }[]
+) {
   return {
     files: files.length,
     added: files.reduce((n, f) => n + (f.added ?? 0), 0),
-    removed: files.reduce((n, f) => n + (f.removed ?? 0), 0)
+    removed: files.reduce((n, f) => n + (f.removed ?? 0), 0),
+    /** Fichiers écrits sans diff connu (fiche 272) : pas de totaux pour eux. */
+    unknown: files.filter((f) => f.unknown).length
   }
 }
 

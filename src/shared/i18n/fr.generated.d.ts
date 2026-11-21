@@ -2158,6 +2158,10 @@ export type FrResources = {
       readonly revealLabel: 'Afficher le worktree de « {{title}} » dans le Finder'
       readonly editorLabel: 'Ouvrir le worktree de « {{title}} » dans {{editor}}'
     }
+    readonly noTotals: 'sans totaux'
+    readonly someNoTotals_one: '{{count}} sans totaux'
+    readonly someNoTotals_many: '{{count}} sans totaux'
+    readonly someNoTotals_other: '{{count}} sans totaux'
   }
   readonly install: {
     readonly title: 'Installer Bobine'
@@ -4761,7 +4765,7 @@ export type FrResources = {
   readonly workCard: {
     readonly pendingLine: 'Sa réponse s’affichera à la fin de la réponse de {{agent}}.'
     readonly silentLine: 'Pas de réponse pour cette demande : rien n’est parti, ou la réponse s’est perdue. « Relancer » la renvoie.'
-    readonly goneLine: 'Sa conversation est à la corbeille : plus aucune action ici, et sa réponse ne part plus à {{agent}}. Restaurez-la depuis Réglages › Données.'
+    readonly goneLine: 'Sa conversation a été supprimée : plus aucune action ici, et sa réponse ne part plus à {{agent}}.'
     readonly nowOther: '{{target}}…'
     readonly nowFetch: 'Consulte {{target}}…'
     readonly nowExecute: 'Lance {{target}}…'

@@ -2197,7 +2197,11 @@
     "children": {
       "revealLabel": "Afficher le worktree de « {{title}} » dans le Finder",
       "editorLabel": "Ouvrir le worktree de « {{title}} » dans {{editor}}"
-    }
+    },
+    "noTotals": "sans totaux",
+    "someNoTotals_one": "{{count}} sans totaux",
+    "someNoTotals_many": "{{count}} sans totaux",
+    "someNoTotals_other": "{{count}} sans totaux"
   },
   "install": {
     "title": "Installer Bobine",

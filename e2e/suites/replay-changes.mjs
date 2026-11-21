@@ -106,8 +106,9 @@ async function rewritePhase(scheme, changes) {
           `document.querySelector('[data-testid=turn-files]').innerText.replace(/\\s+/g, ' ')`
         )
         check(
-          foot.includes(L('turnSummary.fileCount', { count: 2 })),
-          `pied du tour : 2 fichiers (${foot})`
+          foot.includes(L('turnSummary.fileCount', { count: 2 })) &&
+            foot.includes(L('changes.someNoTotals', { count: 1 })),
+          `pied du tour : 2 fichiers, dont 1 sans totaux (${foot})`
         )
         live = await changes(ui)
         check(
