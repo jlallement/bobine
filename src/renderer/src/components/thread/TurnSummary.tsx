@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { elapsedLabel } from '@shared/activity'
 import { useTranslation } from 'react-i18next'
 import { conversationChanges } from '@shared/changes'
+import { endedBadly } from '@shared/turn-end'
 import type { TranscriptItem } from '@shared/transcript'
 import { turnTimes, type TurnTime } from '@shared/turn-duration'
 import { formatEstimate, turnCost, type ConversationUsage } from '@shared/usage'
@@ -167,29 +168,6 @@ const stillInBackground = (item: TranscriptItem): boolean =>
   item.subagentRun.endedAt === undefined &&
   !item.subagentRun.lost
 
-/** Avis de fin anormale d'un tour (`STOP_MESSAGES` et `turn-error` de `shared/transcript`, fils d'avant). */
-const BAD_ENDS = new Set<string>([
-  'transcript.notice.cancelled',
-  'transcript.notice.refusal',
-  'transcript.notice.maxTokens',
-  'transcript.notice.maxTurnRequests',
-  'transcript.notice.error'
-])
-
-function badEnd(item: TranscriptItem): boolean {
-  // Limite d'étapes (fiche 209) : la carte le dit (l'avis `maxTurnRequests` des fils d'avant aussi).
-  if (item.kind === 'turn-limit') return true
-  return (
-    item.kind === 'notice' &&
-    (item.level === 'error' || (!!item.message && BAD_ENDS.has(item.message.key)))
-  )
-}
-
-/** Le tour a fini mal : un avis de fin anormale, sans réponse datée après lui (« Réessayer »). */
-function endedBadly(turn: readonly TranscriptItem[]): boolean {
-  const bad = turn.findLastIndex(badEnd)
-  return bad >= 0 && !turn.slice(bad + 1).some((item) => item.kind === 'agent' && item.at)
-}
 
 /**
  * Pied de la réponse qui finit un tour (fiche 261, écran F), toujours visible, à sa place : la

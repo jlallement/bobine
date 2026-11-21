@@ -75,11 +75,33 @@ describe('planVersions', () => {
 })
 
 describe('plan exécuté (fiche 272, recette : double exécution possible)', () => {
-  it('un message hors du mode plan après lui : exécuté, plus d’action', () => {
-    const plan = [user('Propose un plan'), agent(long('Plan'))]
-    expect(planVersions(plan)[0]?.executed).toBeUndefined()
-    const after = [...plan, user('Exécute ce plan.', 'build'), agent('Fait.')]
-    expect(planVersions(after)[0]).toMatchObject({ latest: true, executed: true })
+  const plan = () => [user('Propose un plan'), agent(long('Plan'))]
+  const stopped = (): TranscriptItem => ({
+    kind: 'notice',
+    id: next++,
+    level: 'info',
+    message: { key: 'transcript.notice.cancelled' }
+  })
+
+  it('« Exécute ce plan. » hors plan, tour réussi : exécuté, plus d’action', () => {
+    const items = [...plan(), user('Exécute ce plan.', 'build'), { ...agent('Fait.'), at: 5 }]
+    expect(planVersions(items)[0]).toMatchObject({ latest: true, executed: true })
+  })
+
+  it('passage en Ask, ou simple question en Build : le plan reste actionnable', () => {
+    const ask = [...plan(), user('Pourquoi cette étape ?', 'ask'), agent('Parce que.')]
+    expect(planVersions(ask)[0]?.executed).toBeUndefined()
+    const askRun = [...plan(), user('Exécute ce plan.', 'ask'), agent('Je ne modifie rien.')]
+    expect(planVersions(askRun)[0]?.executed).toBeUndefined()
+    const build = [...plan(), user('Tu peux détailler ?', 'build'), agent('Oui.')]
+    expect(planVersions(build)[0]?.executed).toBeUndefined()
+  })
+
+  it('exécution arrêtée : le plan reste actionnable ; relancée et réussie : exécuté', () => {
+    const items = [...plan(), user('Exécute ce plan.', 'build'), stopped()]
+    expect(planVersions(items)[0]?.executed).toBeUndefined()
+    const again = [...items, user('Exécute ce plan.', 'build'), { ...agent('Fait.'), at: 9 }]
+    expect(planVersions(again)[0]?.executed).toBe(true)
   })
 
   it('remarques en restant en mode plan : la nouvelle version n’est pas exécutée', () => {

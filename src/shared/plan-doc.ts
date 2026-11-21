@@ -4,6 +4,7 @@
  * son plan dans un fichier Markdown (contenu complet du diff), OpenCode le met dans sa réponse.
  */
 import type { TranscriptItem } from './transcript'
+import { endedBadly } from './turn-end'
 import { folderName } from './windows-paths.ts'
 
 export interface ModeRef {
@@ -36,8 +37,9 @@ export interface PlanVersion {
   /** Dernier plan de la conversation : on peut l'annoter, l'envoyer, l'exécuter. */
   latest: boolean
   /**
-   * Un message est parti hors du mode plan après lui (« Exécuter le plan », ou l'utilisateur est
-   * passé en exécution) : plus rien à envoyer ni à exécuter, pas de double exécution (fiche 272).
+   * « Exécuter le plan » est parti après lui (son texte exact, hors des modes plan et ask) et ce
+   * tour n'a pas mal fini : plus rien à envoyer ni à exécuter, pas de double exécution (fiche 272).
+   * Une question en Ask, un autre message, une exécution arrêtée ou en erreur ne le figent pas.
    */
   executed?: true
 }
@@ -49,8 +51,6 @@ const isPlanFile = (path: string) => /\.(md|markdown)$/i.test(path)
 /** Plans des tours faits en mode plan, dans l'ordre du fil. */
 export function planVersions(items: readonly Item[]): PlanVersion[] {
   const plans: Omit<PlanVersion, 'version' | 'previous' | 'latest'>[] = []
-  /** Rang du dernier plan suivi d'un message hors du mode plan. */
-  let executedUpTo = -1
   let turn: Item[] = []
   let planTurn = false
   const close = () => {
@@ -64,7 +64,6 @@ export function planVersions(items: readonly Item[]): PlanVersion[] {
     if (item.kind === 'user') {
       close()
       planTurn = isPlanMode(item.mode)
-      if (!planTurn) executedUpTo = plans.length - 1
       continue
     }
     turn.push(item)
@@ -80,7 +79,7 @@ export function planVersions(items: readonly Item[]): PlanVersion[] {
       version: (before?.n ?? 0) + 1,
       ...(before ? { previous: before.text } : {}),
       latest: i === plans.length - 1,
-      ...(i <= executedUpTo ? { executed: true as const } : {})
+      ...(executedAfter(items, plan) ? { executed: true as const } : {})
     }
   })
 }
@@ -166,3 +165,21 @@ export function executionMode(
 }
 
 const basenameOf = (path: string) => folderName(path)
+
+/** Mode « ask » (questions sans modification), comme `executionMode`. */
+const isAskMode = (mode: ModeRef) => /\bask\b/i.test(`${mode.id} ${mode.name}`)
+
+/** Le plan a-t-il été exécuté : demande exacte, hors plan et ask, tour qui n'a pas mal fini. */
+function executedAfter(items: readonly Item[], plan: Pick<PlanVersion, 'anchorId' | 'path'>) {
+  const from = items.findIndex((i) => i.id === plan.anchorId)
+  if (from < 0) return false
+  const asked = planExecution(plan.path)
+  for (let i = from + 1; i < items.length; i++) {
+    const item = items[i]
+    if (item?.kind !== 'user' || item.text !== asked) continue
+    if (item.mode && (isPlanMode(item.mode) || isAskMode(item.mode))) continue
+    const next = items.findIndex((x, j) => j > i && x.kind === 'user')
+    if (!endedBadly(items.slice(i + 1, next < 0 ? undefined : next))) return true
+  }
+  return false
+}
