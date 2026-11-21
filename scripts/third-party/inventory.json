@@ -473,12 +473,12 @@
     },
     {
       "name": "i18next",
-      "version": "27.1.2",
+      "version": "27.2.2",
       "in": ["main", "renderer"]
     },
     {
       "name": "ignore",
-      "version": "7.0.14",
+      "version": "7.0.16",
       "in": ["main"]
     },
     {
@@ -533,7 +533,7 @@
     },
     {
       "name": "lucide-react",
-      "version": "1.73.0",
+      "version": "1.77.0",
       "in": ["renderer"]
     },
     {
@@ -753,7 +753,7 @@
     },
     {
       "name": "react-i18next",
-      "version": "18.0.1",
+      "version": "18.0.3",
       "in": ["renderer"]
     },
     {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FoldVertical } from 'lucide-react'
+import { ArrowsToAxisDashedHorizontal } from 'lucide-react'
 import { capUnitOf, effectiveCap, formatCap, TOKEN_UNIT } from '@shared/cost-cap'
 import {
   conversationCost,
@@ -35,7 +35,7 @@ export function CompactButton({
         onClick={actions.onCompact}
         data-testid="usage-compact"
       >
-        <FoldVertical size={14} aria-hidden />
+        <ArrowsToAxisDashedHorizontal size={14} aria-hidden />
         <span className="chip-label">{t('turnGuards.compact.button')}</span>
       </button>
     </Tip>

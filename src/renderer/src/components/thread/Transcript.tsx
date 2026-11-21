@@ -15,7 +15,7 @@ import {
   Info,
   ListChecks,
   TriangleExclamationPoint,
-  FoldVertical,
+  ArrowsToAxisDashedHorizontal,
   FileText,
   LoaderCircle,
   Split
@@ -881,7 +881,11 @@ function Compaction({ item }: { item: Extract<TranscriptItem, { kind: 'compactio
   return (
     <details className="compaction" data-testid="compaction" data-status={item.status}>
       <summary>
-        {running ? <LoaderCircle size={14} className="spin" /> : <FoldVertical size={14} />}
+        {running ? (
+          <LoaderCircle size={14} className="spin" />
+        ) : (
+          <ArrowsToAxisDashedHorizontal size={14} />
+        )}
         <span>{label}</span>
         {item.summary && <ChevronRight size={13} className="chevron" />}
       </summary>
