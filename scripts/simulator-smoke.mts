@@ -85,6 +85,33 @@ async function describeSettled(axe: Axe, udid: string): Promise<AxeElement[]> {
   }
 }
 
+/** Types d'AXe d'un champ où l'on tape du texte (jamais un champ de mot de passe). */
+const TEXT_INPUTS = new Set(['TextField', 'SearchField', 'TextArea', 'TextView'])
+
+/** Premier champ de saisie visible de l'arbre brut d'AXe, nommé ou non. */
+function findTextField(roots: readonly AxeElement[]): AxeElement | undefined {
+  for (const el of roots) {
+    const { frame } = el
+    const visible = !!frame && frame.width > 0 && frame.height > 0
+    if (visible && el.enabled !== false && TEXT_INPUTS.has(clean(el.type))) return el
+    const inside = findTextField(el.children ?? [])
+    if (inside) return inside
+  }
+  return undefined
+}
+
+/** Le champ de saisie, attendu le temps que l'app s'affiche (barre d'outils posée après la liste). */
+async function waitTextField(axe: Axe, udid: string, budgetMs: number) {
+  const until = Date.now() + budgetMs
+  for (;;) {
+    const field = findTextField(await describeSettled(axe, udid))
+    if (field || Date.now() >= until) return field
+    await sleep(500)
+  }
+}
+
+const clean = (value: string | null | undefined): string => (value ?? '').trim()
+
 /** Largeur et hauteur en pixels d'un JPEG (marqueur SOF), sans décoder l'image. */
 function jpegSize(jpeg: Buffer): { width: number; height: number } {
   let offset = 2
@@ -226,30 +253,29 @@ async function main(): Promise<void> {
       check(false, 'toucher : aucun bouton trouvé dans Réglages')
     }
 
+    // Réglages relancé de zéro : rouvert, il reprendrait la page touchée plus haut, sans champ.
     await axe.button(udid, 'home')
     await sleep(1000)
+    await simctl.terminate(udid, 'com.apple.Preferences')
     await simctl.launch(udid, 'com.apple.Preferences')
-    await sleep(2000)
-    const fields: { x: number; y: number }[] = []
-    const home = formatScreen(await axe.describe(udid), 20_000, (c) => {
-      fields.push(c)
-      return `ref_${fields.length}`
-    })
-    const field = home.lines.findIndex((line) => /^\s*- (TextField|SearchField)/.test(line))
-    const fieldPoint = fields[field]
-    if (fieldPoint) {
-      await axe.tap(udid, fieldPoint)
+    // Le champ de recherche de Réglages : sous iOS 27, en bas, dans la barre d'outils, et sans
+    // libellé ni valeur tant qu'il est vide (`formatScreen` ne montre que les éléments nommés).
+    // On le cherche donc dans l'arbre brut, par son type, au lieu de la liste formatée.
+    const field = await waitTextField(axe, udid, 10_000)
+    if (field?.frame) {
+      const { x, y, width, height } = field.frame
+      await axe.tap(udid, { x: Math.round(x + width / 2), y: Math.round(y + height / 2) })
       await sleep(800)
       const encoded = toMacRoman('Zoé ça')
       if ('bytes' in encoded) {
         await simctl.pbcopy(udid, encoded.bytes)
         await axe.paste(udid)
         await sleep(800)
-        const typed = formatScreen(await describeSettled(axe, udid), 20_000, () => 'ref')
+        const typed = findTextField(await describeSettled(axe, udid))
         check(
-          typed.lines.some((line) => line.includes('Zoé ça')),
+          clean(typed?.AXValue).includes('Zoé ça'),
           'saisie exacte collée (pbcopy MacRoman + ⌘V)',
-          typed.lines.find((line) => /TextField|SearchField/.test(line))?.trim() ?? ''
+          `${typed?.type ?? 'champ disparu'} valeur="${clean(typed?.AXValue)}"`
         )
       }
     } else {

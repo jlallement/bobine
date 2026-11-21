@@ -18,9 +18,9 @@ Dependabot) et les restes d'outillage de l'audit (LCM-7, 8, 10, 11). L'ADR-0057 
 - [x] Mineures montées, chacune passée par le délai `minimumReleaseAge` de pnpm, sans exception.
 - [x] `@agentclientprotocol/sdk` 2.8.0 exact ; changelog relu ; `pnpm opencode-probe --offline`
       (et en ligne si un modèle gratuit répond) ; `docs/acp.md` à jour si le contrat change.
-- [ ] AXe 2.0.4 : version et empreinte de l'archive publiée, notes de version relues, appels
-      adaptés, `pnpm fetch-axe`, `pnpm simulator-smoke`, avis de licence — fait, sauf le collage
-      du smoke (champ introuvable sous iOS 27, même échec avec AXe 1.8.0, voir Journal).
+- [x] AXe 2.0.4 : version et empreinte de l'archive publiée, notes de version relues, appels
+      adaptés, `pnpm fetch-axe`, `pnpm simulator-smoke`, avis de licence — fait (collage du smoke
+      vérifié depuis le 2026-11-21, voir Journal).
 - [x] Outillage : ce que la fiche 252 n'a pas fait (runners nommés, sonde MCP, paquets dépréciés).
 - [x] `./scripts/verify` à 0 après chaque lot ; `pnpm e2e --if-needed` (suite complète) à 0.
 
@@ -117,6 +117,20 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
 
 ## Journal
 
+- 2026-11-21 — `simulator-smoke` sous iOS 27.2 (branche `feat/1.1-petits-restes`). Cause, lue
+  dans `axe describe-ui` : le champ de recherche de Réglages est passé en bas, dans la barre
+  d'outils (`Group 'Barre d'outils'`, à plus de vingt niveaux), et c'est un `TextField` **sans
+  libellé ni valeur** tant qu'il est vide ; `formatScreen` ne liste que les éléments nommés, donc
+  l'essai, qui cherchait dans sa liste, ne le voyait pas. De plus, Réglages rouvert reprenait la
+  page « Compte Apple » touchée plus haut, sans champ. Correctif (script seul) : Réglages quitté
+  puis relancé (`simctl terminate`), champ cherché dans l'arbre brut par son type (`TextField`,
+  `SearchField`, `TextArea`, `TextView` ; visible, actif ; jamais un champ de mot de passe),
+  attendu jusqu'à 10 s, touché en son centre ; la saisie est vérifiée sur la valeur du champ
+  (`AXValue` = « Zoé ça »). Aucune coordonnée en dur. Deux passages de suite : **code 0** et
+  **code 0** (11/11, simulateur supprimé à chaque fois ; deux simulateurs gardés pendant
+  l'enquête, `--keep`, supprimés à la main). `vendor/axe` extrait par `pnpm fetch-axe` (archive
+  versionnée). À noter, non corrigé : l'outil d'écran donné à l'agent (`formatScreen`) ne montre
+  pas non plus ce champ vide sans nom ; un agent ne peut pas le désigner par sa liste.
 - 2026-11-21 — `pnpm bob-probe` sur le SDK 2.8.0 (Bob 2.1.0, 0 bobcoin, `~/.bob` sauvegardé avant) :
   code 0, contrat respecté, réponses identiques à la référence 2.1.0 ; `~/.bob` inchangé (seuls
   les fichiers temporaires `-wal`/`-shm` de `bob.db` apparus à l'ouverture).
@@ -157,8 +171,7 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
 - [ ] **AXe au-delà de 2.0.4** : 2.1.0 et suivantes sont en GPL-3.0-only alors que Bobine livre le
       binaire. **Une décision (licence) est nécessaire avant toute montée.**
 - [x] `pnpm bob-probe` après le SDK 2.8.0 : fait le 2026-11-21 (voir Journal).
-- [ ] `simulator-smoke` : il doit trouver un autre champ de texte sous iOS 27.2 (« aucun champ de
-      texte dans Réglages », déjà présent avec AXe 1.8.0) ; d'ici là, le collage (`key-combo` ⌘V)
-      n'est pas vérifié en réel.
+- [x] `simulator-smoke` : champ de saisie de Réglages retrouvé sous iOS 27.2 (journal du
+      2026-11-21, « petits restes ») ; collage vérifié en réel.
 - [ ] MCP 2026-07-28 (sans état) : fiche à ouvrir pour le serveur de l'app et « Tester ».
 - [ ] Paquets dépréciés de l'outillage : à revoir avec electron-builder 27 stable.
