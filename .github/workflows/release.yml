@@ -53,7 +53,7 @@ concurrency:
 jobs:
   guard:
     name: tag ↔ version, commit de main, CI verte
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 70
     permissions:
       contents: read
@@ -416,7 +416,7 @@ jobs:
       !cancelled() && github.ref_type == 'tag' && needs.dmg.result == 'success' &&
       (needs.linux.result == 'success' || needs.linux.result == 'skipped') &&
       (needs.windows.result == 'success' || needs.windows.result == 'skipped')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     # `id-token` et `attestations` : l'attestation de provenance (fiche 250, audit SEC-5 / REL-2),
     # sur ce seul job, qui ne lance rien du dépôt (pas d'installation, pas de script du projet).

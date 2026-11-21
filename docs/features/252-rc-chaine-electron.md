@@ -95,9 +95,9 @@ schéma 1.33 comme à la fiche 233.
 
 ## Suites à faire
 
-- [ ] **Retirer l'exception** `minimumReleaseAgeExclude: [electron@45.4.1]` de
+- [x] **Retirer l'exception** `minimumReleaseAgeExclude: [electron@45.4.1]` de
       `pnpm-workspace.yaml` après le 2026-11-20 02 h 04 UTC (ADR-0057, point 2), puis
-      `pnpm install` : verrou inchangé.
+      `pnpm install` : verrou inchangé. Fait le 2026-11-21 (fiche 273).
 
 ## Journal
 

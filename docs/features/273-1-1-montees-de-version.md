@@ -96,11 +96,15 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
 
 - Déjà fait par la fiche 252 : `.nvmrc` = 24 (LCM-10), image `ubuntu:24.04` épinglée par digest
   et écosystème `docker` dans Dependabot (LCM-11, partie image). Rien de refait.
-- **LCM-11, runners** : `ubuntu-latest` → `ubuntu-24.04` (cible D6, comme `e2e.yml` et la matrice
-  Linux de `release.yml`), `macos-latest` → `macos-26` (image actuelle de `macos-latest`),
-  `windows-latest` → `windows-2025` (idem), dans `ci.yml`, `e2e.yml`, `release.yml` et
-  `opencode-probe.yml`. Note : le dernier `ci.yml` a tourné sur `ubuntu-26.04` (bascule en cours
-  de GitHub) ; on revient à 24.04, l'image documentée de `ubuntu-latest`.
+- **LCM-11, runners** : plus de `-latest`. Chaque runner est épinglé sur l'image de son dernier
+  passage vert (journaux `gh run view --log` du 2026-11-21) : `ubuntu-latest` → `ubuntu-26.04`
+  (`ci.yml` verify Linux et gitleaks, `release.yml` contrôle du tag et Release GitHub,
+  `opencode-probe.yml`), `macos-latest` → `macos-26` (image `macos-26-arm64`, `ci.yml`),
+  `windows-latest` → `windows-2025` (image `windows-2025-vs2026`, `ci.yml` et l'installeur NSIS
+  x64 de `release.yml` ; même étiquette pour le job Windows d'`e2e.yml`, qui n'a pas tourné parmi
+  les 60 derniers passages). Restent en `ubuntu-24.04`, comme avant ce lot : `e2e.yml` (Linux x64)
+  et la matrice `.deb` de `release.yml`, dont les derniers passages verts tournaient sur 24.04
+  (cible D6).
 - **LCM-7, sonde MCP** (« Tester » un serveur MCP, `mcp-probe.ts`) : annonçait `2025-06-18` ;
   passe à `2025-11-25`, dernière révision à poignée de main `initialize`, la même que le serveur
   de l'app accepte en tête. La révision `2026-07-28` (publiée) rend MCP sans état (plus
@@ -135,16 +139,22 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
     code 0, puis `pnpm e2e:packaged` code 0 (« AXe embarqué utilisé (2.0.4 : …/Contents/Resources/
     axe/axe) »). Nouveautés : une ligne pour AXe 2.0.4 (FR et EN), ajoutée après la campagne
     (texte seul).
+- 2026-11-21 : retouches demandées à la relecture (un commit).
+  - Runners : Linux épinglé en `ubuntu-26.04` (et non 24.04) là où ce lot avait remplacé
+    `ubuntu-latest`, pour ne pas revenir en arrière ; `macos-26` et `windows-2025` vérifiés contre
+    les images des derniers passages verts (`macos-26-arm64`, `windows-2025-vs2026`).
+  - Exception `minimumReleaseAgeExclude: electron@45.4.1` retirée de `pnpm-workspace.yaml`
+    (ADR-0057, point 2 : délai écoulé depuis le 2026-11-20 02 h 04 UTC ; suite de la fiche 252).
+    `pnpm install --frozen-lockfile` : code 0, verrou inchangé.
+  - `./scripts/verify` : code 0 ; pas d’e2e (workflows et configuration de pnpm seulement).
 
 ## Reste
 
 - [ ] **AXe au-delà de 2.0.4** : 2.1.0 et suivantes sont en GPL-3.0-only alors que Bobine livre le
       binaire. **Une décision (licence) est nécessaire avant toute montée.**
 - [ ] `pnpm bob-probe` après le SDK 2.8.0 (Jérôme, `~/.bob` sauvegardé).
-- [ ] Collage du smoke (`key-combo` ⌘V) à revérifier en réel : trouver un champ de texte sous iOS 27
-      (le script cherche celui de Réglages, introuvable avec AXe 1.8.0 comme 2.0.4).
+- [ ] `simulator-smoke` : il doit trouver un autre champ de texte sous iOS 27.2 (« aucun champ de
+      texte dans Réglages », déjà présent avec AXe 1.8.0) ; d'ici là, le collage (`key-combo` ⌘V)
+      n'est pas vérifié en réel.
 - [ ] MCP 2026-07-28 (sans état) : fiche à ouvrir pour le serveur de l'app et « Tester ».
 - [ ] Paquets dépréciés de l'outillage : à revoir avec electron-builder 27 stable.
-- [ ] Hors périmètre, relevé : l'exception `minimumReleaseAgeExclude: electron@45.4.1` est encore
-      dans `pnpm-workspace.yaml` alors que son délai est écoulé (ADR-0057, point 2 ; fiche 252,
-      Suites à faire) : non retirée ici (consigne du lot).
