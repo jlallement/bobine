@@ -80,6 +80,8 @@ export interface Settings {
   memoryEnabled?: boolean
   /** Message de commit rédigé par l'agent (fiche 246) ; oui si absent. */
   commitDraftEnabled?: boolean
+  /** Vérification des nouvelles versions (fiche 274) ; oui si absent. */
+  updateCheck?: boolean
   /** Réglages d'une nouvelle conversation. */
   newConversation?: NewConversationDefaults
   /** Outils « toujours autorisés », par profil d'agent (fiche 042). */
@@ -166,6 +168,7 @@ const KNOWN: Record<keyof Settings, true> = {
   onboarding: true,
   memoryEnabled: true,
   commitDraftEnabled: true,
+  updateCheck: true,
   versionNotices: true,
   extra: true
 }

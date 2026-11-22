@@ -198,6 +198,12 @@ aucun modèle. Elle lance sur votre Mac l'agent que vous avez choisi ; ce qui qu
 ce que cet agent envoie à son propre service. Réglages › Confidentialité et Réglages › Données
 montrent ce que Bobine garde sur votre Mac, et permettent de le sauvegarder ou de l'effacer.
 
+**Bobine contacte-t-elle autre chose ?** Une seule : au lancement, une fois par jour au plus, elle
+demande à l'API publique de GitHub la liste des versions de Bobine, pour vous dire qu'une version
+plus récente existe. Elle n'envoie rien sur vous (seulement sa propre version, dans le
+`User-Agent`) et n'installe rien. Le réglage est dans Réglages › Nouveautés ou Réglages ›
+Confidentialité.
+
 **Faut-il IBM Bob ?** Non. Bob est la cible principale, mais OpenCode marche avec ses modèles
 gratuits, et tout agent ACP se déclare dans Réglages › Agents.
 

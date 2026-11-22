@@ -93,6 +93,8 @@ async function launch(args, extraEnv = {}) {
         BOBINE_AGENT_PROFILE: 'opencode',
         // Jamais le vrai Bob dans un essai : pas de lecture de son quota (fiche 091).
         BOBINE_QUOTA: 'off',
+        // Jamais GitHub dans un essai (fiche 274) : pas de vérification de version.
+        BOBINE_UPDATE_CHECK: 'off',
         ...extraEnv
       },
       stdio: 'ignore'

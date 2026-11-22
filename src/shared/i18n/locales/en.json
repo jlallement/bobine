@@ -1750,7 +1750,8 @@
     "restore": "restore backup revert replace undo",
     "trash": "trash deleted erase permanently recover restore",
     "roles": "roles team expert specialist reviewer tech lead agents sub-agents modes @",
-    "commitDraft": "commit message git agent writing drafting conventional commits memory"
+    "commitDraft": "commit message git agent writing drafting conventional commits memory",
+    "updates": "update version new version github check"
   },
   "diagnostics": {
     "group": {
@@ -3260,7 +3261,8 @@
       "help": "Help unavailable",
       "onboarding": "First-launch welcome unavailable",
       "roles": "Roles are not available here.",
-      "commitDraft": "Commit message drafting isn’t available here."
+      "commitDraft": "Commit message drafting isn’t available here.",
+      "updates": "New version notice unavailable"
     },
     "emptyMessage": "Empty message",
     "emptyPrompt": "Empty prompt"
@@ -6195,5 +6197,35 @@
     "model": "Model",
     "mode": "Mode",
     "thought_level": "Thinking level"
+  },
+  "updates": {
+    "line": {
+      "available": "<b>Bobine {{version}}</b> is available",
+      "name": "Bobine {{version}}",
+      "preAvailable": "Pre-release available",
+      "view": "View",
+      "later": "Later (nothing more for {{version}})"
+    },
+    "settings": {
+      "label": "Check for new versions",
+      "hint": "At launch, at most once a day, Bobine looks at the releases published on GitHub. None of your data is sent, and nothing installs by itself.",
+      "last": "Last check",
+      "never": "Never",
+      "todayAt": "Today at {{time}}",
+      "checkNow": "Check now",
+      "checking": "Checking…",
+      "upToDate": "You have the latest version (<b>{{version}}</b>).",
+      "available": "<b>Bobine {{version}}</b> is available. You have {{current}}.",
+      "view": "View release",
+      "failed": {
+        "offline": "No answer from GitHub. Check your connection, then try again.",
+        "limit": "GitHub is limiting checks for now. Try again in an hour.",
+        "unreadable": "Unreadable answer from GitHub. Try again later."
+      }
+    },
+    "privacy": {
+      "title": "New versions",
+      "hint": "The only call Bobine makes that comes from neither an agent nor you: at launch, at most once a day, the public list of releases on GitHub. Only Bobine’s version is sent; nothing installs."
+    }
   }
 }

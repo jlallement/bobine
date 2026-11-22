@@ -491,8 +491,9 @@ describe('textes et lancement', () => {
     ).toBe(false)
   })
   it('environnement : langue et agent factice sur demande seulement', () => {
-    expect(launchEnv({ PATH: '/bin' }, {})).toEqual({ PATH: '/bin' })
+    expect(launchEnv({ PATH: '/bin' }, {})).toEqual({ PATH: '/bin', BOBINE_UPDATE_CHECK: 'off' })
     expect(launchEnv({}, { lang: 'en', 'agent-factice': 'permission' })).toEqual({
+      BOBINE_UPDATE_CHECK: 'off',
       BOBINE_LANG: 'en',
       MOCK_AGENT_LANG: 'en',
       BOBINE_AGENT_PROFILE: 'mock',
@@ -500,9 +501,19 @@ describe('textes et lancement', () => {
     })
     // `--dossier` sur le profil temporaire : le premier « Choisir… » de l'accueil le rend.
     expect(launchEnv({}, { dossier: abs('/tmp/projet') })).toEqual({
+      BOBINE_UPDATE_CHECK: 'off',
       BOBINE_PRESET_FOLDER: abs('/tmp/projet')
     })
-    expect(launchEnv({}, { dossier: abs('/tmp/projet'), profil: abs('/tmp/profil') })).toEqual({})
+    expect(launchEnv({}, { dossier: abs('/tmp/projet'), profil: abs('/tmp/profil') })).toEqual({
+      BOBINE_UPDATE_CHECK: 'off'
+    })
+  })
+  it('vérification des nouvelles versions coupée, sauf --verif-versions (fiche 274)', () => {
+    // Coupée même si l'environnement l'avait laissée active.
+    expect(launchEnv({ BOBINE_UPDATE_CHECK: 'on' }, {}).BOBINE_UPDATE_CHECK).toBe('off')
+    // Demandée : rien ne la coupe, pas même un `off` hérité.
+    expect(launchEnv({ BOBINE_UPDATE_CHECK: 'off' }, { 'verif-versions': true })).toEqual({})
+    expect(parseArgs(['lancer', '--verif-versions']).options).toEqual({ 'verif-versions': true })
   })
 })
 

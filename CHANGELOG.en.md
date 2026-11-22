@@ -21,6 +21,11 @@ What changes for you, version by version. Shown in Settings › About.
   code, a “File not found” bubble shows under it for a few seconds (hovering says it again), with
   no red notice in the conversation; if the file comes back, so does the link.
 - iOS Simulator: the agent also sees empty, unnamed text fields and can tap them to type.
+- **New version notice**: at launch, at most once a day, Bobine looks at the releases published
+  on GitHub. If a newer one exists, a discreet line at the bottom of the sidebar says so; **View**
+  opens its page in the browser, ✕ hides it, and that version won’t be announced again. Nothing is
+  downloaded or installed, and nothing shows when offline. Settings › What’s new: **Check for new
+  versions** (on by default) and **Check now**.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

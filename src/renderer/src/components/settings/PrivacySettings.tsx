@@ -49,6 +49,22 @@ export function PrivacySettings({
         </Row>
         <ClearBrowserDataRow />
       </SettingsCard>
+      {/* Seul appel de l'app vers GitHub (fiche 274, ADR-0066) : dit ici, coupé ici aussi. */}
+      <SettingsTitle>{t('updates.privacy.title')}</SettingsTitle>
+      <SettingsCard>
+        <Row label={t('updates.settings.label')} hint={t('updates.privacy.hint')}>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={settings.preferences.updateCheck}
+              onChange={(e) => onPreferences({ updateCheck: e.target.checked })}
+              aria-label={t('updates.settings.label')}
+              data-testid="settings-privacy-update-check"
+            />
+            <span />
+          </label>
+        </Row>
+      </SettingsCard>
     </section>
   )
 }

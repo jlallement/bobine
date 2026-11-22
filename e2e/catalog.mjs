@@ -2201,6 +2201,24 @@ export const SUITES = [
     ]
   },
   {
+    // Avis de nouvelle version (fiche 274) contre un faux serveur local.
+    name: 'nouvelle-version',
+    file: 'nouvelle-version.mjs',
+    run: 'nouvelleVersionSuite',
+    themes: BOTH,
+    sources: [
+      `${C}sidebar/UpdateLine.tsx`,
+      `${C}settings/UpdateCheckCard.tsx`,
+      `${C}settings/AboutSettings.tsx`,
+      `${C}settings/PrivacySettings.tsx`,
+      `${C}common/useUpdate.ts`,
+      `${R}update-notice.css`,
+      'src/shared/update-check.ts',
+      'src/main/update-check*.ts',
+      'e2e/fixtures/faux-versions.mjs'
+    ]
+  },
+  {
     name: 'about',
     file: 'about.mjs',
     run: 'aboutSuite',

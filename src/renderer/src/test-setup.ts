@@ -40,6 +40,19 @@ window.api = {
     },
     stop: async () => undefined
   },
+  // Avis de nouvelle version (fiche 274) : rien de connu, pas de ligne dans la barre latérale.
+  app: {
+    update: async () => ({
+      current: '1.0.0',
+      enabled: true,
+      lastCheckedAt: null,
+      checking: false,
+      available: null,
+      dismissed: false,
+      manual: null
+    }),
+    onUpdate: () => () => {}
+  },
   // Profil (fiche 196) : rien à dire, corbeille vide.
   profile: {
     status: async () => ({ readOnly: false, notices: [] }),
