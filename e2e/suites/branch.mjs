@@ -119,6 +119,14 @@ export async function branchSuite(scheme) {
         await ui.ev(`${users}.at(-1).scrollIntoView({ block: 'center' })`)
         await ui.click(`${users}.at(-1).querySelector('[data-testid=message-retry]')`)
         await ui.waitFor(`!!${ui.$('branch-banner')}`)
+        // La branche s'affiche avant que son message parte (`manager.branch` n'attend pas le tour),
+        // et son agent, à peine démarré, est « prêt » le temps de préparer ce message
+        // (`AgentHost.prompt`) : `ready()` seul passait avant même le tour, le README pas encore
+        // réécrit (Linux, issue #16). On attend le message rejoué dans la branche, comme `ui.send` :
+        // il n'apparaît qu'avec l'agent « répond… », et le `ready()` suivant attend bien sa fin.
+        await ui.waitFor(
+          `!!${ui.$('branch-banner')} && ${users}.length === 2 && ${users}.at(-1).querySelector('.msg-user').innerText.trim() === '/scenario modifications'`
+        )
         await ui.ready()
         await ui.waitFor(`document.querySelectorAll('[data-testid=history-item]').length === 3`)
         check(

@@ -35,15 +35,31 @@ export function bobDbCosts(dbPath = BOB_DB): CostSource {
   }
 }
 
+/** Veille d'un dossier, au format de `fs.watch` (remplaçable dans les essais). */
+export type WatchDir = (
+  dir: string,
+  options: { persistent: boolean },
+  listener: (event: string, file: string | Buffer | null) => void
+) => { close(): void; on(event: 'error', listener: (error: Error) => void): unknown }
+
 /**
  * Écritures dans la base de Bob : son dossier est guetté (la base, son journal `-journal` ou
  * `-wal` changent à chaque écriture). Dossier absent (Bob jamais lancé) ou veille refusée :
  * rien, les relectures à heure fixe restent.
+ *
+ * Un évènement peut manquer : sous macOS, `fs.watch` ouvre son flux FSEvents en différé (libuv,
+ * sur son fil CoreFoundation), et une écriture faite juste après l'appel n'est jamais signalée. La
+ * veille n'est donc qu'un raccourci : la relecture à la fin du tour et celles à heure fixe de
+ * `SessionCost` restent.
  */
-export function watchBobDb(dbPath: string, onChange: () => void): () => void {
+export function watchBobDb(
+  dbPath: string,
+  onChange: () => void,
+  watchDir: WatchDir = watch
+): () => void {
   const name = basename(dbPath)
   try {
-    const watcher = watch(dirname(dbPath), { persistent: false }, (_event, file) => {
+    const watcher = watchDir(dirname(dbPath), { persistent: false }, (_event, file) => {
       if (!file || file.toString().startsWith(name)) onChange()
     })
     watcher.on('error', () => watcher.close())

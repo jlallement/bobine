@@ -21,6 +21,7 @@ import {
   CHILD_SLEEP,
   DETACHED_SLEEP
 } from '../../mock-agent/scenarios-pannes.mts'
+import { WITHDRAW_SIGNAL } from '../../mock-agent/scenarios-commandes.mts'
 import { AppToolServer } from '../mcp/tool-server'
 import { initLog, setVerbosity } from '../log'
 import type { AppToolModule } from '../mcp/tools'
@@ -1140,6 +1141,33 @@ describe('AgentHost', () => {
     // Retirée par l'agent : ni carte, ni « annulée », ni échec ; l'outil finit comme l'agent le dit.
     expect(tool).toMatchObject({ status: 'completed' })
     expect(tool).not.toHaveProperty('permission')
+    host.stop()
+  })
+
+  // Fiche 250 : la variante des essais retire sa demande quand le fichier signal paraît, pas après
+  // une durée (l'e2e `permissions` attend la carte armée, 400 ms, avant de le poser).
+  it('permission : retrait au signal (fichier posé), la carte se ferme', async () => {
+    const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'bobine-annulee-signal-')))
+    const events: AgentEvent[] = []
+    const host = new AgentHost({
+      profile: mockProfile('annulation-par-agent-sur-signal'),
+      workspace,
+      emit: (e) => events.push(e)
+    })
+    await host.start()
+    const turn = host.prompt('Écris hors du dossier')
+    await waitFor(() => events.some((e) => e.type === 'permission-request'))
+    const request = events.find((e) => e.type === 'permission-request')
+    if (request?.type !== 'permission-request') throw new Error('pas de demande')
+    writeFileSync(join(workspace, WITHDRAW_SIGNAL), '')
+    await turn
+    expect(events).toContainEqual({
+      type: 'permission-resolved',
+      requestId: request.requestId,
+      optionId: null,
+      cancelledBy: 'agent',
+      at: expect.any(Number)
+    })
     host.stop()
   })
 

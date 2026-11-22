@@ -27,6 +27,42 @@ export interface StoredSession {
 
 const SAFE_ID = /^[\w-]+$/
 
+/** Codes de Windows pour un fichier tenu ouvert par un autre (lecteur, antivirus, indexation). */
+const BUSY_CODES = new Set(['EPERM', 'EACCES', 'EBUSY'])
+/** Attentes entre deux essais de remplacement : un peu plus de 3 s en tout, puis l'erreur. */
+const BUSY_WAITS_MS = [10, 20, 40, 80, 160, 320, 640, 1000, 1000]
+
+export interface ReplaceFileDeps {
+  platform?: NodeJS.Platform
+  rename?: (from: string, to: string) => void
+  /** Attente synchrone (le stockage de l'agent factice est synchrone). */
+  wait?: (ms: number) => void
+}
+
+const waitSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+
+/**
+ * Remplace `to` par `from`. Sous Windows, remplacer un fichier qu'un autre processus a ouvert
+ * à cet instant (un autre agent factice qui relit le dossier pour `session/list`, l'antivirus
+ * qui inspecte le fichier tout juste écrit) échoue en `EPERM`/`EACCES`/`EBUSY` le temps qu'il le
+ * referme : nouvel essai borné, comme graceful-fs. Ailleurs, le renommage n'est pas gêné par un
+ * lecteur : l'erreur est rendue telle quelle.
+ */
+export function replaceFile(from: string, to: string, deps: ReplaceFileDeps = {}): void {
+  const { platform = process.platform, rename = renameSync, wait = waitSync } = deps
+  for (let attempt = 0; ; attempt++) {
+    try {
+      rename(from, to)
+      return
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      const delay = BUSY_WAITS_MS[attempt]
+      if (platform !== 'win32' || !code || !BUSY_CODES.has(code) || delay === undefined) throw error
+      wait(delay)
+    }
+  }
+}
+
 export class SessionStore {
   private readonly dir: string
 
@@ -42,8 +78,16 @@ export class SessionStore {
 
   save(session: StoredSession): void {
     const file = this.file(session.sessionId)
-    writeFileSync(`${file}.tmp`, JSON.stringify(session))
-    renameSync(`${file}.tmp`, file)
+    // Temporaire propre au processus : deux agents factices sur le même dossier (relance, fille)
+    // n'écrivent jamais dans le même.
+    const tmp = `${file}.${process.pid}.tmp`
+    writeFileSync(tmp, JSON.stringify(session))
+    try {
+      replaceFile(tmp, file)
+    } catch (error) {
+      rmSync(tmp, { force: true })
+      throw error
+    }
   }
 
   load(sessionId: string): StoredSession | undefined {
