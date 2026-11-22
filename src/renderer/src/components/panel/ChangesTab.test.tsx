@@ -1,6 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { GitChanges, GitFileDiff } from '@shared/changes'
 import type { TranscriptItem } from '@shared/transcript'
 import { ChangesTab } from './ChangesTab'
@@ -243,8 +243,14 @@ describe('remarques du Code reviewer (fiche 265)', () => {
   })
 
   it('sa ligne, si le diff la contient : amenée à l’écran et mise en avant ; sinon le fichier ouvert', async () => {
+    // jsdom n'a pas `scrollIntoView` : remplacé le temps du test, rendu tel quel ensuite.
+    const original = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
     const scroll = vi.fn()
     Element.prototype.scrollIntoView = scroll
+    onTestFinished(() => {
+      if (original) Object.defineProperty(Element.prototype, 'scrollIntoView', original)
+      else delete (Element.prototype as Partial<Element>).scrollIntoView
+    })
     const shown = (line: number) =>
       render(
         <Tooltip.Provider>
@@ -266,7 +272,10 @@ describe('remarques du Code reviewer (fiche 265)', () => {
     })
     expect(focused.getAttribute('data-line')).toBe('1')
     expect(focused.getAttribute('data-side')).toBe('new')
-    expect(scroll).toHaveBeenCalledWith({ block: 'center' })
+    // La classe est posée au rendu, l'appel vient de l'effet passif qui suit (`DiffView`) :
+    // sous charge, React peut le jouer dans une tâche plus tard. On attend l'appel lui-même.
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: 'center' }))
+    expect(scroll.mock.contexts[0]).toBe(focused)
     unmount()
     scroll.mockClear()
     // Ligne hors du diff : le fichier ouvert, rien de mis en avant.
