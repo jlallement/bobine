@@ -1,3 +1,6 @@
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { WITHDRAW_SIGNAL } from '../../src/mock-agent/scenarios-commandes.mts'
 import { L, Lpart, check, withApp } from '../lib.mjs'
 
 /** « Toujours autoriser » retenu d'une conversation à l'autre, révocable (fiche 042). */
@@ -54,12 +57,19 @@ export async function permissionsSuite(scheme) {
 
     // Fiche 214 : l'agent retire lui-même sa demande ($/cancel_request, comme Bob 2.0.9 pour une
     // écriture hors du dossier) : la carte se ferme « annulée », plus rien n'attend l'utilisateur.
+    // Le retrait suit un signal de l'essai, pas une durée (fiche 250) : retirée 120 ms après son
+    // arrivée, la carte échappait parfois à l'attente (Linux, issue #16), et toujours à la capture.
     await ui.click(ui.$('new-conversation'))
     await ui.waitFor(`!document.querySelector('.history-item.active')`)
     await ui.ready()
-    await ui.send('/scenario annulation-par-agent')
+    await ui.send('/scenario annulation-par-agent-sur-signal')
     await ui.waitFor(`!!${card}`)
+    await ui.waitFor(`${card}.hasAttribute('data-armed')`)
     await ui.shot('c2-demande-avant-retrait')
+    const folder = await ui.ev(
+      `window.api.conversations.get().then((s) => s.conversations.find((c) => c.id === document.querySelector('.history-item.active')?.dataset.id)?.workspace)`
+    )
+    writeFileSync(join(folder, WITHDRAW_SIGNAL), '')
     await ui.waitFor(`!${card}`)
     await ui.ready()
     check(

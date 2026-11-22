@@ -135,3 +135,33 @@ Dependabot comme les autres.
   '15.0'`), le plus ancien macOS que GitHub permet d'essayer ; README fr/en, `installation.md`,
   notes de version, contrôle d'Info.plist de `release.yml` et `scripts/signing.test.ts` alignés ;
   ligne dans les deux changelogs (rc.1). R13 : la promesse est désormais celle qui est essayée.
+
+- 2026-11-22 — Suites instables, corrigées à la cause (branche `fix/essais-instables-e2e`) :
+  - `filles-fusion` (Mac, sombre, « délai dépassé » en attendant `work-open`) : reproduit 1 fois
+    sur 8 sous charge (avec `filles`, `filles-tech-lead`, `travaux-groupe`), avec un relevé des
+    évènements du pointeur. L'appui tombait sur le nom de la ligne (`work-row-name`, scrollTop
+    1885), le relâché 5 ms plus tard sur la ligne elle-même (`work-row`, scrollTop 1864,5) : le fil
+    avait bougé de 20,5 px entre les deux, le `click` est allé à la ligne, pas à son bouton, et
+    rien ne s'est déplié. Cause : la mère, réveillée par ses filles finies, termine son tour
+    pendant le premier dépliage ; le bas du fil rétrécit, le fil collé en bas remonte. L'essai
+    attend désormais la réponse de la mère réveillée puis `ready()` avant de toucher aux lignes.
+    Reste côté produit (non corrigé, à juger) : un clic humain sur une ligne au moment exact où un
+    tour finit peut aussi se perdre ; `data-scroll-hold` empêche le fil de suivre le bas, pas le
+    recalage du navigateur quand le contenu rétrécit.
+  - `branch` (Linux, clair et sombre, « Réessayer » : README pas réécrit) : la branche s'affiche
+    avant que son message parte (`manager.branch` n'attend pas le tour) et son agent, à peine
+    démarré, est « Prêt » pendant la préparation du message (`AgentHost.prompt`) : `ready()`
+    passait avant le tour. L'essai attend le message rejoué dans la branche (il n'apparaît
+    qu'avec l'agent « répond… », comme pour `ui.send`), puis `ready()`.
+  - `permissions` (Linux, clair, carte jamais vue) : l'agent factice retirait sa demande 3 pas
+    (120 ms) après l'avoir faite ; la carte pouvait naître et disparaître entre deux lectures de
+    l'essai (toutes les 100 ms, plus sous charge). Nouveau scénario `annulation-par-agent-sur-signal`
+    (`agentCancels.whenFile`) : l'agent retire sa demande quand l'essai pose un fichier signal dans
+    le dossier de la session, après avoir vu la carte armée et l'avoir capturée (la capture
+    `c2-demande-avant-retrait` la montre enfin). `annulation-par-agent` (3 pas, comme Bob) reste ;
+    essai unitaire du retrait au signal dans `agent-host.test.ts`.
+  - Preuve sur le Mac : 5 passages d'affilée de `filles-fusion` (avec ses trois voisines) et de
+    `branch permissions`, clair et sombre, codes de sortie 0 ; captures regardées. Rien n'a été
+    joué sous Linux (pas de machine Linux ici) : l'issue #16 se fermera sur des passages verts du
+    job Linux après la poussée. Vu en passant, non traité : `filles` (« mère supprimée : la
+    confirmation nomme ses 3 filles… »), rouge 1 fois sur 4 sous la même charge.

@@ -84,6 +84,12 @@ export const LONG_FILE_NAME =
  */
 export const LONG_NAME_IN_FOLDER = 'docs/guide-utilisateur-de-la-bobine-tres-long-nom.md'
 
+/**
+ * Fichier signal de `annulation-par-agent-sur-signal`, dans le dossier de la session : l'agent
+ * retire sa demande quand l'essai le crée (fiche 250).
+ */
+export const WITHDRAW_SIGNAL = '.mock-agent-retire-demande'
+
 /** Tableau d'arguments, avec un argument vide, des espaces, un guillemet et un nombre. */
 export const ARGV_COMMAND = ['bash', '-lc', "npm test && echo 'fini'", '', 'deux mots', 42]
 
@@ -357,14 +363,18 @@ function bobEditElsewhere(toolCallId: string, path: string): Step[] {
  * d'autorisation arrive, puis Bob la retire (`$/cancel_request`, la demande était déjà autorisée
  * par un « Toujours » sur une autre) et l'outil se termine `completed`, le fichier écrit.
  */
-function bobEditCancelledByAgent(toolCallId: string, path: string): Step[] {
+function bobEditCancelledByAgent(
+  toolCallId: string,
+  path: string,
+  when: { afterTicks: number } | { whenFile: string }
+): Step[] {
   const [asked] = bobEditElsewhere(toolCallId, path)
   if (asked?.kind !== 'permission') throw new Error('demande absente')
   return [
     {
       ...asked,
       agentCancels: {
-        afterTicks: 3,
+        ...when,
         steps: [
           {
             kind: 'update',
@@ -430,7 +440,13 @@ const riskScenarios: Record<string, Scenario> = {
   'annulation-par-agent': {
     description:
       'Comme Bob 2.0.9 (trace réelle) : modification de {cwd}/a.txt, demande retirée par l’agent ($/cancel_request) puis outil terminé ; la carte disparaît sans bruit (ni « annulée », ni échec), la pastille tombe, une réponse tardive est sans effet (fiche 214)',
-    steps: bobEditCancelledByAgent('tooluse_retiree_par_agent', '{cwd}/a.txt')
+    steps: bobEditCancelledByAgent('tooluse_retiree_par_agent', '{cwd}/a.txt', { afterTicks: 3 })
+  },
+  'annulation-par-agent-sur-signal': {
+    description: `Comme annulation-par-agent, mais l'agent retire sa demande quand le fichier {cwd}/${WITHDRAW_SIGNAL} existe : un essai voit la carte avant son retrait, sans durée devinée (fiche 250)`,
+    steps: bobEditCancelledByAgent('tooluse_retiree_sur_signal', '{cwd}/a.txt', {
+      whenFile: WITHDRAW_SIGNAL
+    })
   },
   'liste-taches-bob': {
     description:
