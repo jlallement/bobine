@@ -1,8 +1,8 @@
 # 182 — Mémoire commune aux agents
 
 - **Statut** : fait (fusionnée dans `main` ; statut remis au vrai le 2026-11-19, fiche 251) — sauf l'étape
-  5 (prompt système, aucun agent ne l'annonce) ; ADR-0040 reste proposé (écart à sa décision 6) ;
-  pour la 0.10
+  5 (prompt système, aucun agent ne l'annonce), reportée par l'ADR-0067 (proposé, remplace la
+  décision 6 de l'ADR-0040, toujours proposé) ; pour la 0.10
 - **Dépend de** : 056 (règles actives), 165 (outils MCP de l'app), 181 (SDK ACP 2 : prompt système
   fourni par le client)
 - **Agents** : les deux — la mémoire est tenue par Bobine, pas par l'agent ; rien de propre à Bob
@@ -628,3 +628,10 @@ seront perdues) ».
   `scripts/probe-imports.test.ts` : charge dans un Node sans bundler tout le graphe d'imports des
   deux sondes (sans les lancer), rouge sur la régression. `pnpm opencode-probe --offline` et
   `pnpm bob-probe` (0 bobcoin : clé factice, HOME jetable, aucun message au modèle) verts.
+- 2026-11-22 — Issue #22 : ADR-0067 (proposé) écrit, il remplace la décision 6 de l'ADR-0040 et
+  rien d'autre : l'index `<bobine_memory>` part au premier message de chaque session (neuve,
+  rouverte, renouvelée, renvoi après une perte de connexion) et après une compaction (demandée par
+  l'app ou `compaction_update`), pour tous les agents ; pas de prompt système, reporté à un nouvel
+  ADR quand un agent l'annoncera (étape 5). Vérifié dans le code : aucune trace de `systemPrompt`
+  dans `src/`, `scripts/`, `e2e/`. Texte de l'ADR-0040 inchangé ; index des ADR : « proposé —
+  décision 6 remplacée par ADR-0067 ». Rien de visible pour l'utilisateur : pas de CHANGELOG.
