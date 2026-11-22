@@ -131,6 +131,18 @@ aides du protocole hors du validateur. Schémas comparés à ceux de la 2.7.0 : 
   l'enquête, `--keep`, supprimés à la main). `vendor/axe` extrait par `pnpm fetch-axe` (archive
   versionnée). À noter, non corrigé : l'outil d'écran donné à l'agent (`formatScreen`) ne montre
   pas non plus ce champ vide sans nom ; un agent ne peut pas le désigner par sa liste.
+- 2026-11-22 — Champs de saisie vides pour l'agent (branche `feat/1.1-petits-restes`).
+  `formatScreen` montre un champ de saisie sans libellé ni valeur (`TextField`, `SearchField`,
+  `TextArea`, `TextView` ; visible ; jamais `SecureTextField`) sous la forme
+  « TextField (vide) » avec sa référence touchable ; même budget de taille que les autres lignes.
+  Essai `axe.test.ts` (types, cadre nul ou absent, désactivé, mot de passe, troncature).
+  `simulator-smoke` repasse par `formatScreen` (la ligne de champ que l'agent lirait, touchée par
+  sa référence ; collage vérifié sur la ligne, `valeur="Zoé ça"`) : plus de recherche dans
+  l'arbre brut. Deux passages de suite : **code 0** et **code 0** (12/12, simulateurs créés et
+  supprimés par l'essai). Un passage précédent, lancé pendant `verify`, avait échoué sur le seul
+  débit MJPEG (4 i/s pour 5 attendues, machine chargée). À noter : dans ces passages, le champ de
+  Réglages (iOS 27.2) s'est lu `TextField valeur="Recherche"` et non vide ; la forme « (vide) »
+  n'est donc vérifiée qu'en unitaire. Nouveautés : une ligne FR et EN.
 - 2026-11-21 — `pnpm bob-probe` sur le SDK 2.8.0 (Bob 2.1.0, 0 bobcoin, `~/.bob` sauvegardé avant) :
   code 0, contrat respecté, réponses identiques à la référence 2.1.0 ; `~/.bob` inchangé (seuls
   les fichiers temporaires `-wal`/`-shm` de `bob.db` apparus à l'ouverture).

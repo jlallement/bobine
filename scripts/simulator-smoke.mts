@@ -18,6 +18,7 @@ import {
   findAxe,
   formatScreen,
   MIN_AXE_VERSION,
+  TEXT_INPUTS,
   type AxeElement
 } from '../src/main/simulator/axe.ts'
 import {
@@ -85,32 +86,29 @@ async function describeSettled(axe: Axe, udid: string): Promise<AxeElement[]> {
   }
 }
 
-/** Types d'AXe d'un champ où l'on tape du texte (jamais un champ de mot de passe). */
-const TEXT_INPUTS = new Set(['TextField', 'SearchField', 'TextArea', 'TextView'])
+/** Ligne d'un champ de saisie dans l'écran tel que l'agent le lit (`formatScreen`, fiche 273). */
+const INPUT_LINE = new RegExp(`^\\s*- (${[...TEXT_INPUTS].join('|')})\\b`)
 
-/** Premier champ de saisie visible de l'arbre brut d'AXe, nommé ou non. */
-function findTextField(roots: readonly AxeElement[]): AxeElement | undefined {
-  for (const el of roots) {
-    const { frame } = el
-    const visible = !!frame && frame.width > 0 && frame.height > 0
-    if (visible && el.enabled !== false && TEXT_INPUTS.has(clean(el.type))) return el
-    const inside = findTextField(el.children ?? [])
-    if (inside) return inside
-  }
-  return undefined
-}
-
-/** Le champ de saisie, attendu le temps que l'app s'affiche (barre d'outils posée après la liste). */
+/**
+ * Le premier champ de saisie de l'écran lu comme l'agent le lit (vide et sans nom compris :
+ * « TextField (vide) ») : sa ligne et le point à toucher, attendu le temps que l'app s'affiche
+ * (barre d'outils posée après la liste).
+ */
 async function waitTextField(axe: Axe, udid: string, budgetMs: number) {
   const until = Date.now() + budgetMs
   for (;;) {
-    const field = findTextField(await describeSettled(axe, udid))
-    if (field || Date.now() >= until) return field
+    const points: { x: number; y: number }[] = []
+    const screen = formatScreen(await describeSettled(axe, udid), 20_000, (center) => {
+      points.push(center)
+      return `ref_${points.length}`
+    })
+    const index = screen.lines.findIndex((line) => INPUT_LINE.test(line))
+    const point = points[index]
+    if (point) return { line: screen.lines[index]?.trim() ?? '', point }
+    if (Date.now() >= until) return undefined
     await sleep(500)
   }
 }
-
-const clean = (value: string | null | undefined): string => (value ?? '').trim()
 
 /** Largeur et hauteur en pixels d'un JPEG (marqueur SOF), sans décoder l'image. */
 function jpegSize(jpeg: Buffer): { width: number; height: number } {
@@ -259,27 +257,24 @@ async function main(): Promise<void> {
     await simctl.terminate(udid, 'com.apple.Preferences')
     await simctl.launch(udid, 'com.apple.Preferences')
     // Le champ de recherche de Réglages : sous iOS 27, en bas, dans la barre d'outils, et sans
-    // libellé ni valeur tant qu'il est vide (`formatScreen` ne montre que les éléments nommés).
-    // On le cherche donc dans l'arbre brut, par son type, au lieu de la liste formatée.
+    // libellé ni valeur tant qu'il est vide ; l'agent le lit « SearchField (vide) » (fiche 273).
     const field = await waitTextField(axe, udid, 10_000)
-    if (field?.frame) {
-      const { x, y, width, height } = field.frame
-      await axe.tap(udid, { x: Math.round(x + width / 2), y: Math.round(y + height / 2) })
+    check(!!field, 'champ de saisie lu comme l’agent le lit', field?.line ?? 'aucun')
+    if (field) {
+      await axe.tap(udid, field.point)
       await sleep(800)
       const encoded = toMacRoman('Zoé ça')
       if ('bytes' in encoded) {
         await simctl.pbcopy(udid, encoded.bytes)
         await axe.paste(udid)
         await sleep(800)
-        const typed = findTextField(await describeSettled(axe, udid))
+        const typed = await waitTextField(axe, udid, 0)
         check(
-          clean(typed?.AXValue).includes('Zoé ça'),
+          !!typed?.line.includes('Zoé ça'),
           'saisie exacte collée (pbcopy MacRoman + ⌘V)',
-          `${typed?.type ?? 'champ disparu'} valeur="${clean(typed?.AXValue)}"`
+          typed?.line ?? 'champ disparu'
         )
       }
-    } else {
-      check(false, 'saisie : aucun champ de texte trouvé dans Réglages')
     }
 
     const jpeg = await simctl.screenshot(udid)

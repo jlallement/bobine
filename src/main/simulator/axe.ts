@@ -220,8 +220,24 @@ const clean = (value: unknown, max = 100): string => {
 }
 
 /**
+ * Types d'AXe d'un champ où l'on tape du texte. Jamais `SecureTextField` : un champ de mot de passe
+ * vide n'est pas montré à l'agent (fiche 273).
+ */
+export const TEXT_INPUTS: ReadonlySet<string> = new Set([
+  'TextField',
+  'SearchField',
+  'TextArea',
+  'TextView'
+])
+
+/** Marque d'un champ de saisie vide et sans nom (fiche 273) ; ce qui va à l'agent n'est pas traduit. */
+export const EMPTY_INPUT = '(vide)'
+
+/**
  * Écran mis en forme pour l'agent : une ligne par élément nommé, avec une référence `ref_N` (le
- * centre de son cadre, en points). Les textes répétant le libellé de leur parent sont omis.
+ * centre de son cadre, en points). Les textes répétant le libellé de leur parent sont omis. Un
+ * champ de saisie vide et sans nom (la recherche de Réglages sous iOS 27) est montré quand même,
+ * « TextField (vide) », pour que l'agent puisse le toucher avant d'écrire (fiche 273).
  */
 export function formatScreen(
   roots: readonly AxeElement[],
@@ -241,11 +257,14 @@ export function formatScreen(
     let childCovered = covered
     const redundant = type === 'StaticText' && !!label && covered.includes(label)
     const named = !!(label || value) && type !== 'Application'
-    if (named && !redundant && el.frame) {
+    const emptyInput =
+      !named && TEXT_INPUTS.has(type) && !!el.frame && el.frame.width > 0 && el.frame.height > 0
+    if ((named || emptyInput) && !redundant && el.frame) {
       const { x, y, width, height } = el.frame
       const center = { x: Math.round(x + width / 2), y: Math.round(y + height / 2) }
       let line = `${'  '.repeat(depth)}- ${type}`
       if (label) line += ` "${label.replace(/"/g, "'")}"`
+      if (emptyInput) line += ` ${EMPTY_INPUT}`
       if (value && value !== label) line += ` valeur="${value}"`
       if (el.AXUniqueId) line += ` id=${clean(el.AXUniqueId, 60)}`
       if (el.enabled === false) line += ' (désactivé)'

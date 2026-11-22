@@ -81,6 +81,45 @@ describe('lecture de l’écran du simulateur', () => {
     expect(centers[1]).toEqual({ x: 201, y: 424 })
   })
 
+  it('champ de saisie vide et sans nom : « (vide) », touchable ; jamais un champ de mot de passe', () => {
+    const frame = { x: 16, y: 780, width: 300, height: 40 }
+    const inputs: AxeElement[] = [
+      {
+        type: 'Application',
+        AXLabel: 'Réglages',
+        frame: { x: 0, y: 0, width: 402, height: 874 },
+        children: [
+          { type: 'SearchField', frame },
+          { type: 'TextField', AXLabel: '', AXValue: '', frame },
+          { type: 'TextArea', frame, enabled: false },
+          { type: 'TextView', frame },
+          { type: 'SecureTextField', frame },
+          // Caché (cadre nul) ou sans cadre : rien à toucher.
+          { type: 'TextField', frame: { x: 0, y: 0, width: 0, height: 0 } },
+          { type: 'TextField' },
+          // Un groupe sans nom reste caché, comme avant.
+          { type: 'Group', frame }
+        ]
+      }
+    ]
+    const centers: { x: number; y: number }[] = []
+    const { lines } = formatScreen(inputs, 10_000, (c) => {
+      centers.push(c)
+      return `ref_${centers.length}`
+    })
+    expect(lines).toEqual([
+      '- SearchField (vide) [ref_1]',
+      '- TextField (vide) [ref_2]',
+      '- TextArea (vide) (désactivé) [ref_3]',
+      '- TextView (vide) [ref_4]'
+    ])
+    expect(centers[0]).toEqual({ x: 166, y: 800 })
+    // Même budget que les autres lignes : coupé au-delà.
+    const short = formatScreen(inputs, 60, () => 'ref_1')
+    expect(short.truncated).toBe(true)
+    expect(short.lines).toEqual(['- SearchField (vide) [ref_1]', '- TextField (vide) [ref_1]'])
+  })
+
   it('tronqué au-delà de la taille demandée', () => {
     const { lines, truncated } = formatScreen(SCREEN, 40, () => 'ref')
     expect(truncated).toBe(true)

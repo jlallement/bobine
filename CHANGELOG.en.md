@@ -20,6 +20,7 @@ What changes for you, version by version. Shown in Settings › About.
 - A link to a file that no longer exists says so itself: when clicked, it turns into struck-through
   code, a “File not found” bubble shows under it for a few seconds (hovering says it again), with
   no red notice in the conversation; if the file comes back, so does the link.
+- iOS Simulator: the agent also sees empty, unnamed text fields and can tap them to type.
 
 ## 1.0.0-rc.3 — November 21, 2026
 
@@ -703,6 +704,7 @@ is not notarized by Apple yet, so macOS needs one extra step to open it (see the
   simulator video stream, and the commands the agent put in the background with it (a process the agent detaches itself, such as a server, keeps running). An agent that crashes no longer leaves behind the command it had started. An agent whose connection drops is stopped with a clear explanation. If
   git isn’t installed, Bobine says so and gives the command to copy. Coloured notices in the
   conversation are easier to read.
+
 
 - A profile opened by an older version of Bobine no longer loses the settings it doesn’t know. A
   profile written by a newer version opens read-only: conversations can be read, nothing is saved
