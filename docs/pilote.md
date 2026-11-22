@@ -29,7 +29,7 @@ détail) : `capture --demi` pour vérifier, taille réelle pour juger.
 pnpm pilote lancer [--app <Bobine.app | exécutable ou dossier Linux | dossier buildé>] [--dossier <projet>]
                    [--profil <dossier> | (profil temporaire par défaut)] [--agents-neufs]
                    [--port N] [--lang fr|en] [--journal <dossier>] [--agent-factice <scénario>]
-                   [--vrai-trousseau]
+                   [--vrai-trousseau] [--verif-versions]
 pnpm pilote etat [--json] [--long]
 pnpm pilote attendre [--max 20m] [--calme 3m] [--json]
 pnpm pilote capture [--demi] [--zone fil|carte|panneau|fenetre]
@@ -54,7 +54,10 @@ pnpm pilote arreter
   simulé (`--use-mock-keychain`) sauf `--vrai-trousseau` : la boîte du trousseau bloquerait Bobine,
   et Claude n'y tape pas de mot de passe. `--agent-factice <scénario>` : l'agent factice imposé
   (build de développement seulement, jamais dans l'app packagée). Une seule instance pilotée à la
-  fois.
+  fois. La vérification des nouvelles versions (fiche 274) est **coupée**
+  (`BOBINE_UPDATE_CHECK=off`) : aucune recette ni session longue n'appelle GitHub sans le
+  vouloir. `--verif-versions` la laisse active, pour essayer l'avis de nouvelle version lui-même
+  (une vraie requête à l'API de GitHub, au plus une par lancement).
 - **`lancer --dossier <projet>`** : Bobine ouverte sur ce dossier (comme `bobine <dossier>`, fiche
   158). Sur le profil temporaire, l'accueil demande encore « Où travailler ? » : le premier
   « Choisir… » rend ce dossier sans la fenêtre de macOS (`BOBINE_PRESET_FOLDER`, une seule fois ;

@@ -15,7 +15,8 @@ export const COMMANDS = {
     lang: true,
     'agent-factice': true,
     'agents-neufs': false,
-    'vrai-trousseau': false
+    'vrai-trousseau': false,
+    'verif-versions': false
   },
   arreter: {},
   etat: { json: false, long: false },

@@ -225,5 +225,5 @@ Aucune nouvelle dépendance : `net.fetch` d'Electron (proxy du système, comme C
   - Toutes les suites e2e coupent la vérification (`NEUTRAL_ENV` : `BOBINE_UPDATE_CHECK=off`,
     adresse locale fermée) : aucun essai ne contacte GitHub.
   - Docs : guide Réglages (fr, en), FAQ des README, CHANGELOG, `docs/architecture.md`.
-  - Reste : `pnpm pilote` (recette) ne coupe pas la vérification : une recette avec un profil
-    temporaire fait une vraie requête à GitHub, au plus une par lancement.
+  - `pnpm pilote lancer` coupe la vérification (`BOBINE_UPDATE_CHECK=off`) ; `--verif-versions`
+    la laisse active (`docs/pilote.md`, essai dans `scripts/pilote/pilote.test.mjs`).
