@@ -75,16 +75,6 @@ export async function fillesFusionSuite(scheme) {
           `document.querySelectorAll('[data-testid=work-row][data-state=replied]').length === 3`,
           60000
         )
-        // Ses filles finies, la mère est réveillée et répond (fiche 264) : on attend la fin de ce
-        // tour avant de toucher aux lignes (fiche 250). Sinon, à sa fin, le bas du fil rétrécit (le
-        // fil, en bas, remonte d'environ 20 px) entre l'appui et le relâché sur une ligne : le clic
-        // tombe sur la ligne, pas sur son bouton, et rien ne se déplie (relevé : pointerdown sur
-        // `work-row-name`, pointerup sur `work-row`, scrollTop 1885 puis 1864,5).
-        await ui.waitFor(
-          `[...document.querySelectorAll('.msg-agent')].at(-1)?.innerText.includes('Mes travaux ont fini')`,
-          30000
-        )
-        await ui.ready()
         check(
           !(await ui.ev(`!!${ui.$('subtasks')}`)) && !(await ui.ev(`!!${ui.$('child-report')}`)),
           'trois travaux sur les lignes de leur carte : ni « Sous-tâches » ni compte rendu séparé'

@@ -113,6 +113,49 @@ export function useThreadScroll(options: {
       document.removeEventListener('pointermove', track, true)
     }
   }, [measureBottom, noteScrolledUp])
+  // Appui dans le fil (fiche 250) : sa hauteur est gardée jusqu'au relâché. Sinon, un bas du fil
+  // qui rétrécit entre les deux (fin d'un tour) ramène le fil, s'il était près du bas, sous le
+  // pointeur (le navigateur borne le défilement à la nouvelle hauteur) : le relâché tombe ailleurs
+  // que l'appui, et le clic est perdu. La hauteur réservée est celle du défilement au moment de
+  // l'appui (marges du bas comprises) : rien ne bouge. Libérée après le `click`, qui suit
+  // `pointerup` dans la même tâche ; le fil reprend alors sa vraie hauteur.
+  useEffect(() => {
+    let pressed: HTMLElement | null = null
+    let unpress: ReturnType<typeof setTimeout> | undefined
+    const free = () => {
+      clearTimeout(unpress)
+      if (pressed) pressed.style.minHeight = ''
+      pressed = null
+    }
+    const keep = (event: PointerEvent) => {
+      free()
+      // Bouton principal seulement : un clic droit ouvre un menu, sans `click` à protéger.
+      if (event.button !== 0) return
+      const el = scroller.current
+      const column = el?.firstElementChild
+      if (!el || !(column instanceof HTMLElement)) return
+      if (!(event.target instanceof Node) || !el.contains(event.target)) return
+      // Haut de la colonne dans le contenu qui défile (`offsetTop` se compte depuis un autre parent).
+      const top = column.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop
+      pressed = column
+      column.style.minHeight = `${el.scrollHeight - top}px`
+    }
+    const letGo = () => {
+      clearTimeout(unpress)
+      unpress = setTimeout(free)
+    }
+    document.addEventListener('pointerdown', keep, true)
+    document.addEventListener('pointerup', letGo, true)
+    document.addEventListener('pointercancel', letGo, true)
+    window.addEventListener('blur', letGo)
+    return () => {
+      document.removeEventListener('pointerdown', keep, true)
+      document.removeEventListener('pointerup', letGo, true)
+      document.removeEventListener('pointercancel', letGo, true)
+      window.removeEventListener('blur', letGo)
+      free()
+    }
+  }, [])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :
   // on reste en bas si on y était, et la flèche suit.
   useEffect(() => {
