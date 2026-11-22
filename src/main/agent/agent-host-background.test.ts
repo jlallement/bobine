@@ -6,6 +6,7 @@ import type { AgentEvent } from '@shared/agent'
 import { emptyTranscript, reduceTranscript, type TranscriptItem } from '@shared/transcript'
 import { turnTimes } from '@shared/turn-duration'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { settleStoppedTrees } from '../process-tree'
 import { AgentHost } from './agent-host'
 import { OPENCODE_SUBAGENT_STREAM } from './opencode-contract'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
@@ -22,7 +23,13 @@ import { replaySession } from './session-replay'
 const SCENARIO = 'sous-agent-hors-tour-explo-2-3'
 const QUIET_MS = 400
 const stores: string[] = []
-afterEach(() => {
+afterEach(async () => {
+  // `host.stop()` envoie SIGTERM sans attendre la sortie : un enregistrement de l'agent factice
+  // déjà commencé (session réécrite après une réponse hors tour) peut encore créer un fichier
+  // pendant `rmSync`, qui échoue alors en ENOTEMPTY sous charge. On attend que les agents
+  // arrêtés soient sortis, comme l'app en quittant ; un agent encore là au bout du délai est une
+  // vraie anomalie, dite ici plutôt que masquée.
+  expect(await settleStoppedTrees()).toBe(0)
   for (const store of stores.splice(0)) rmSync(store, { recursive: true, force: true })
 })
 
