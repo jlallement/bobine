@@ -1,6 +1,6 @@
 # ADR-0067 — Index de la mémoire dans le premier message de chaque session, pour tous les agents
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-11-22
 - **Remplace en partie** : ADR-0040 (décision 6 seulement ; les décisions 1 à 5, 7 et 8 sont
   inchangées)

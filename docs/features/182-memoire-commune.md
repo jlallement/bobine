@@ -1,8 +1,8 @@
 # 182 — Mémoire commune aux agents
 
 - **Statut** : fait (fusionnée dans `main` ; statut remis au vrai le 2026-11-19, fiche 251) — sauf l'étape
-  5 (prompt système, aucun agent ne l'annonce), reportée par l'ADR-0067 (proposé, remplace la
-  décision 6 de l'ADR-0040, toujours proposé) ; pour la 0.10
+  5 (prompt système, aucun agent ne l'annonce), reportée par l'ADR-0067 (accepté, remplace la
+  décision 6 de l'ADR-0040, accepté) ; pour la 0.10
 - **Dépend de** : 056 (règles actives), 165 (outils MCP de l'app), 181 (SDK ACP 2 : prompt système
   fourni par le client)
 - **Agents** : les deux — la mémoire est tenue par Bobine, pas par l'agent ; rien de propre à Bob
@@ -635,3 +635,6 @@ seront perdues) ».
   ADR quand un agent l'annoncera (étape 5). Vérifié dans le code : aucune trace de `systemPrompt`
   dans `src/`, `scripts/`, `e2e/`. Texte de l'ADR-0040 inchangé ; index des ADR : « proposé —
   décision 6 remplacée par ADR-0067 ». Rien de visible pour l'utilisateur : pas de CHANGELOG.
+- 2026-11-22 — Décision de l'utilisateur : ADR-0067 et ADR-0040 acceptés. Seule la ligne de statut
+  de l'ADR-0040 change (« accepté — décision 6 remplacée par ADR-0067 ») ; le texte de ses
+  décisions ne bouge pas. Index des ADR à jour.

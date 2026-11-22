@@ -1,6 +1,6 @@
 # ADR-0040 — Mémoire commune tenue par Bobine, en clair, écrite par ses outils
 
-- **Statut** : proposé
+- **Statut** : accepté — décision 6 remplacée par ADR-0067
 - **Date** : 2026-11-06
 
 ## Contexte
