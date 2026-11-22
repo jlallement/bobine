@@ -1,9 +1,16 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { EventEmitter } from 'node:events'
+import { mkdtempSync, watch, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
-import { readBobSpend, readBobSubagents, readBobTaskCost, watchBobDb } from './bob-costs'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  readBobSpend,
+  readBobSubagents,
+  readBobTaskCost,
+  watchBobDb,
+  type WatchDir
+} from './bob-costs'
 import { writeBobTaskCost, writeBobTaskCostLogged } from '../../mock-agent/scenario.mts'
 
 function bobDb(rows: [string, string][]): string {
@@ -111,21 +118,88 @@ describe('sous-agents Bob (fiche 053)', () => {
 })
 
 describe('veille de la base de Bob (CI Windows du 2026-11-18)', () => {
-  it('prévient quand le coût est écrit, base créée à cette écriture comprise', async () => {
+  /** Veille simulée : les évènements sont donnés par l'essai, sans dépendre du système. */
+  function fakeWatchDir() {
+    const watcher = Object.assign(new EventEmitter(), { closed: false, close() {} })
+    watcher.close = () => {
+      watcher.closed = true
+    }
+    let listener: ((event: string, file: string | Buffer | null) => void) | undefined
+    let watched: string | undefined
+    const watchDir: WatchDir = (dir, _options, l) => {
+      watched = dir
+      listener = l
+      return watcher
+    }
+    return {
+      watchDir,
+      watcher,
+      emit: (file: string | Buffer | null) => listener?.('rename', file),
+      dir: () => watched
+    }
+  }
+
+  it('prévient pour la base, son journal et son WAL, base créée à cette écriture comprise', () => {
+    const fake = fakeWatchDir()
+    let changes = 0
+    const stop = watchBobDb(join('home', '.bob', 'db', 'bob.db'), () => changes++, fake.watchDir)
+    expect(fake.dir()).toBe(join('home', '.bob', 'db'))
+    fake.emit('bob.db') // Création de la base, à la première écriture du coût.
+    fake.emit('bob.db-wal')
+    fake.emit('bob.db-journal')
+    fake.emit(Buffer.from('bob.db-shm'))
+    fake.emit(null) // Nom inconnu (le système ne le dit pas toujours) : relu par prudence.
+    expect(changes).toBe(5)
+    fake.emit('autre.db')
+    fake.emit('notes.txt')
+    expect(changes).toBe(5)
+    stop()
+    expect(fake.watcher.closed).toBe(true)
+  })
+
+  it('veille en erreur : fermée, sans exception', () => {
+    const fake = fakeWatchDir()
+    watchBobDb(join('x', 'bob.db'), () => {}, fake.watchDir)
+    fake.watcher.emit('error', new Error('EPERM'))
+    expect(fake.watcher.closed).toBe(true)
+  })
+
+  it('vrai dossier : une écriture du coût par l’agent factice est signalée, base créée comprise', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bob-veille-'))
     const db = join(dir, 'bob.db')
+    const seen: string[] = []
     let changes = 0
-    const written = new Promise<void>((resolve) => {
-      const stop = watchBobDb(db, () => {
-        changes++
-        stop()
-        resolve()
-      })
-    })
-    writeBobTaskCost(db, 'mock-1', 0.0125)
-    await written
-    expect(changes).toBe(1)
-    expect(readBobTaskCost('mock-1', db)?.amount).toBe(0.0125)
+    const stop = watchBobDb(
+      db,
+      () => changes++,
+      (folder, options, listener) =>
+        watch(folder, options, (event, file) => {
+          seen.push(String(file))
+          listener(event, file)
+        })
+    )
+    try {
+      // Veille armée d'abord. Sous macOS, `fs.watch` ouvre son flux FSEvents en différé (libuv, sur
+      // son fil CoreFoundation) : une écriture faite avant est perdue pour de bon, et l'essai
+      // attendait jusqu'à son délai (15 s, suite complète en cours, 2026-11-21). Un fichier témoin,
+      // hors de la base, est écrit jusqu'à être vu : la veille est alors en place, sans supposer de
+      // délai. L'écriture vérifiée, elle, n'a lieu qu'une fois.
+      let probes = 0
+      await vi.waitFor(
+        () => {
+          writeFileSync(join(dir, 'temoin'), String(probes++))
+          expect(seen).toContain('temoin')
+        },
+        { timeout: 10_000, interval: 50 }
+      )
+      const before = changes
+      writeBobTaskCost(db, 'mock-1', 0.0125)
+      await vi.waitFor(() => expect(changes).toBeGreaterThan(before), { timeout: 10_000 })
+      expect(seen.some((file) => file.startsWith('bob.db'))).toBe(true)
+      expect(readBobTaskCost('mock-1', db)?.amount).toBe(0.0125)
+    } finally {
+      stop()
+    }
   })
 
   it('dossier absent : rien à guetter, sans erreur', () => {
