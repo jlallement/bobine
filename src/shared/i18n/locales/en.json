@@ -854,6 +854,7 @@
     "title": "{{location}} — ⌥-click: show in Finder",
     "withLine": "{{path}}, line {{line}}",
     "missing": "File not found: {{path}}",
+    "gone": "File not found",
     "executable": "“{{file}}” can run: shown in Finder instead of opened.",
     "outside": "“{{file}}” is outside the conversation’s folder: shown in Finder.",
     "invalid": "Invalid file link: {{href}}",

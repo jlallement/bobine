@@ -1,6 +1,11 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
 import type { TranscriptItem } from '@shared/transcript'
-import { FileExistsContext, FileLinksContext, type OpenFileLink } from './FileLink'
+import {
+  FileExistsContext,
+  FileLinksContext,
+  MissingInPlaceContext,
+  type OpenFileLink
+} from './FileLink'
 import { fileChecksFor, filesRevision, type FileChecks } from './file-checks'
 import { EditorContext } from './OpenInEditor'
 import { SubagentWorkContext, type LoadSubagentWork } from '../../subagent-work'
@@ -44,13 +49,18 @@ export function ConversationScope({
   return (
     <FileLinksContext.Provider value={openLink}>
       <FileExistsContext.Provider value={checkFiles}>
-        <SubagentWorkContext.Provider value={loadSubagentWork}>
-          <EditorContext.Provider value={editor}>
-            <ThreadConversationContext.Provider value={conversationId ?? null}>
-              <DiscussionContext.Provider value={discussion}>{children}</DiscussionContext.Provider>
-            </ThreadConversationContext.Provider>
-          </EditorContext.Provider>
-        </SubagentWorkContext.Provider>
+        {/* Fichier introuvable : dit par le lien lui-même, rien dans le fil (fiche 272, D2). */}
+        <MissingInPlaceContext.Provider value={true}>
+          <SubagentWorkContext.Provider value={loadSubagentWork}>
+            <EditorContext.Provider value={editor}>
+              <ThreadConversationContext.Provider value={conversationId ?? null}>
+                <DiscussionContext.Provider value={discussion}>
+                  {children}
+                </DiscussionContext.Provider>
+              </ThreadConversationContext.Provider>
+            </EditorContext.Provider>
+          </SubagentWorkContext.Provider>
+        </MissingInPlaceContext.Provider>
       </FileExistsContext.Provider>
     </FileLinksContext.Provider>
   )

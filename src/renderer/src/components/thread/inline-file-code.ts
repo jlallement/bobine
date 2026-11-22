@@ -43,6 +43,11 @@ export interface InlineFileOptions {
   isFile?: (href: string) => boolean | undefined
   /** Chemin candidat, à vérifier. */
   want?: (href: string) => void
+  /**
+   * Lien cliqué vers un fichier introuvable (fiche 272, D2) : gardé dans son lien, que le lien
+   * montre barré, pour que la bulle et l'état du lien survivent au nouveau rendu.
+   */
+  isGone?: (href: string) => boolean
 }
 
 function wrap(node: HastNode, options: InlineFileOptions): void {
@@ -54,7 +59,7 @@ function wrap(node: HastNode, options: InlineFileOptions): void {
         options.want?.(href)
         // Un fichier à créer, ou un chemin relatif à un autre fichier : pas un lien qui ne mène
         // nulle part ; tant qu'on ne sait pas, du code.
-        if (options.isFile?.(href) === true) {
+        if (options.isFile?.(href) === true || options.isGone?.(href) === true) {
           return { type: 'element', tagName: 'a', properties: { href }, children: [child] }
         }
       }

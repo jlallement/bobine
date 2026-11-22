@@ -293,6 +293,37 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
     suivant ; C (proposée), le lien devient du code barré, bulle « Fichier introuvable » 3 s,
     rien dans le fil. Captures : `docs/maquettes/272-avis-fichier-introuvable/{now,option-a,
     option-b,option-c}.png`. **À valider par Jérôme** avant tout code.
+- 2026-11-22 — D2, option C validée par Jérôme et codée (branche `feat/1.1-petits-restes`).
+  - Au clic sur un lien de fichier **du fil** dont le main répond « introuvable » : le lien
+    devient du code barré et grisé (`file-link-gone`, `title` « Fichier introuvable »), une bulle
+    « Fichier introuvable » s'affiche 3 s sous lui dans une zone `role="status"` posée d'avance
+    (annoncée à VoiceOver), et **aucun avis n'entre dans le fil**. Vaut pour le code en ligne et
+    pour un vrai lien Markdown. Le « non » est retenu par la mémoire `FileChecks` de la
+    conversation (`markGone`) ; au signal « des fichiers ont pu changer », il est revérifié et le
+    lien revient si le fichier est là.
+  - Portée : `ConversationScope` pose `MissingInPlaceContext` ; `MarkdownLink` passe alors
+    `onMissing` à l'ouverture, que `useFileLinks` appelle à la place de `notices.warn` (retiré de
+    l'objet envoyé à l'IPC). Aperçu et onglet Fichiers (hors de ce contexte) gardent l'avis
+    habituel, comme les erreurs d'IPC et les autres usages de `notices.warn`.
+  - Repris du travail interrompu : `isGone` dans `rehypeInlineFileCode` (un code barré reste un
+    élément `a` dans l'arbre, rendu par `MarkdownLink`, pour que la bulle survive au nouveau rendu
+    du message). Corrigé : un « oui » demandé **avant** le clic arrivait après et effaçait le
+    barré ; `gone` est maintenant horodaté (`clock`) et un « oui » plus ancien que le clic est
+    ignoré. Le barré d'un vrai lien Markdown, absent des candidats du message, est lu par
+    `useSyncExternalStore` dans `MarkdownLink`.
+  - Minuterie de la bulle : une par lien, nettoyée au démontage et quand la bulle cesse (autre
+    conversation : la bulle est liée à la mémoire de la conversation affichée ; fichier revenu).
+  - Essais : `missing-file-link.test.tsx` (minuteries simulées, aucune pause : bulle à 2 999 ms
+    puis partie à 3 000 ms, barré, `title`, mémoire ; retour du fichier ; vrai lien Markdown ;
+    changement de conversation et démontage sans minuterie restante ; hors du fil, pas de bulle ;
+    « oui » périmé), `useFileLinks.test.ts` (`onMissing` appelé, aucun avis, rien de plus à
+    l'IPC). Contre-épreuve : sans `markGone`, 3 essais sur 5 échouent. Suite e2e `links` mise à
+    jour (bulle et barré via `L('fileLink.gone')`, aucun avis, pied du tour intact, capture
+    `45-fichier-absent-bulle`) : **non lancée** (une autre campagne tournait), à lancer par
+    Jérôme. Nouvelle clé `fileLink.gone` (FR/EN). Nouveautés : une ligne FR et EN.
+  - Captures de l'état réel (pilote, profil temporaire, agent factice `liens-fichiers`, fichiers
+    supprimés après la réponse) : `docs/maquettes/272-avis-fichier-introuvable/reel-{light,dark}-
+    {1-bulle,2-barre,3-survol}.png`. `./scripts/verify` : code 0.
 
 ## Reste
 
@@ -303,9 +334,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
-- D2 (rc.3) : un avis passager (disparaît seul après quelques secondes, sans entrer dans le fil)
-  pour les erreurs de clic sur un lien demanderait un élément visuel nouveau : maquetté
-  (`docs/maquettes/272-avis-fichier-introuvable.html`, trois options), à valider avant de le coder. En attendant : un seul avis par texte, pied du tour intact.
+- D2 (rc.3) : option C codée le 2026-11-22 (voir le journal) ; la suite e2e `links` mise à jour
+  reste à lancer. Aperçu et onglet Fichiers gardent leur avis.
 - Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle
   d'à côté ne reçoit pas le signal « des fichiers ont pu changer » ; ses « non » ne sont
   revérifiés qu'au prochain signal de cette conversation. Laissé tel quel (relecture, point E).

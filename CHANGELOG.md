@@ -18,6 +18,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   à la ligne (⌘-clic : l’éditeur) ; « Parcourir les fichiers » sur un travail délégué.
 - Simulateur iOS : AXe, livré avec l’app, passe en 2.0.4 ; touchers et lecture de l’écran
   plus rapides (selon AXe, un toucher ≈ 0,1 s au lieu d’environ 1 s).
+- Un lien vers un fichier qui n’existe plus le dit lui-même : au clic, il devient du code barré,
+  une bulle « Fichier introuvable » s’affiche dessous quelques secondes (et le survol le redit),
+  sans avis rouge dans le fil ; si le fichier revient, le lien aussi.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 
@@ -741,7 +744,6 @@ le README).
   processus que l’agent détache lui-même, comme un serveur, continue). Un agent qui plante n’abandonne plus derrière lui la commande qu’il avait lancée. Un agent dont la connexion se coupe est arrêté avec une
   explication claire. Si git n’est pas installé, Bobine le dit et donne la commande à copier. Les
   avis colorés de la conversation sont plus lisibles.
-
 
 - Un profil ouvert par une version plus ancienne de Bobine ne perd plus les réglages qu’elle ne
   connaît pas. Un profil écrit par une version plus récente s’ouvre en lecture seule : les

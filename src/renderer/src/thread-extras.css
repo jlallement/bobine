@@ -88,6 +88,39 @@
   background: var(--bg);
 }
 
+/* Lien vers un fichier introuvable (fiche 272, D2) : du code barré et grisé, et une bulle 3 s. */
+.file-link-gone,
+.file-link-gone code {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+.file-gone-bubble {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 7px);
+  white-space: nowrap;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-menu);
+  z-index: 2;
+  pointer-events: none;
+}
+.file-gone-bubble::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--text);
+  transform: rotate(45deg);
+}
+
 /* « Où en était-on ? » : carte repliable en bas du fil. */
 .resume-card {
   margin: 18px 0 8px;

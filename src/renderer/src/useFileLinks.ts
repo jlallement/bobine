@@ -11,7 +11,7 @@ import type { PanelState } from './usePanel'
 export type OpenFileLinkIn = (
   conversationId: string,
   href: string,
-  options: { reveal: boolean; base?: string }
+  options: Parameters<OpenFileLink>[1]
 ) => void
 
 /** Ce que les liens ouvrent dans le panneau (fonctions stables de `usePanel`). */
@@ -80,8 +80,10 @@ export function useFileLinks(options: {
   })
   const openFileLink = useCallback<OpenFileLinkIn>((id, href, linkOptions) => {
     const { panel: side, notices: notes } = actions.current
+    // `onMissing` reste ici : une fonction ne passe pas l'IPC.
+    const { onMissing, ...ipcOptions } = linkOptions
     window.api.fileLinks
-      .open(id, href, linkOptions)
+      .open(id, href, ipcOptions)
       .then((outcome: FileLinkOutcome) => {
         const note = openOutcomeNote(outcome)
         if (outcome.kind === 'preview') {
@@ -102,6 +104,9 @@ export function useFileLinks(options: {
         } else if (outcome.kind === 'browser') {
           // Page HTML (fiche 064) : ouverte dans le navigateur de la conversation.
           side.update({ open: true, tab: 'browser' })
+        } else if (outcome.kind === 'missing' && onMissing) {
+          // Lien du fil : il le dit lui-même, barré, et rien n'entre dans le fil (fiche 272, D2).
+          onMissing()
         } else if (note && outcome.kind === 'missing') {
           notes.warn(note)
         } else if (note) {

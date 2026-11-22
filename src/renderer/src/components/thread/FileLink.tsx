@@ -1,4 +1,12 @@
-import { createContext, useContext, type ComponentProps } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ComponentProps
+} from 'react'
 import type { FileChecks } from './file-checks'
 import { parseFileLink, webLinkTarget } from '@shared/file-links'
 import { useTranslation } from 'react-i18next'
@@ -6,8 +14,14 @@ import { useDisplayPath } from '../../presentation'
 import { EditorContext, OpenInEditorButton } from './OpenInEditor'
 import { platformFeatures } from '../../platform-features'
 
-/** Ouvre un lien de fichier (fiche 052) ; `reveal` : le montrer dans le Finder (⌥-clic). */
-export type OpenFileLink = (href: string, options: { reveal: boolean; base?: string }) => void
+/**
+ * Ouvre un lien de fichier (fiche 052) ; `reveal` : le montrer dans le Finder (⌥-clic).
+ * `onMissing` : fichier introuvable, dit par le lien lui-même plutôt que par un avis (fiche 272).
+ */
+export type OpenFileLink = (
+  href: string,
+  options: { reveal: boolean; base?: string; onMissing?: () => void }
+) => void
 
 /** Qui ouvre les liens de fichiers de ce fil (absent : ils restent de simples liens). */
 export const FileLinksContext = createContext<OpenFileLink | null>(null)
@@ -18,8 +32,62 @@ export const FileLinksContext = createContext<OpenFileLink | null>(null)
  */
 export const FileExistsContext = createContext<FileChecks | null>(null)
 
+/**
+ * Fil d'une conversation (`ConversationScope`) : un lien vers un fichier introuvable le dit
+ * lui-même, barré, avec une bulle (fiche 272, D2), au lieu d'un avis dans le fil. Ailleurs
+ * (aperçu, onglet Fichiers), l'avis habituel.
+ */
+export const MissingInPlaceContext = createContext(false)
+
+/** Durée de la bulle « Fichier introuvable » sous le lien (fiche 272, D2). */
+export const GONE_BUBBLE_MS = 3000
+
 /** Dossier de base des liens relatifs (celui du document affiché ; absent : celui du fil). */
 export const FileLinkBase = createContext<string | undefined>(undefined)
+
+const noSubscription = () => () => {}
+
+/**
+ * Lien vers un fichier introuvable dans le fil (fiche 272, D2) : le « non » appris au clic, retenu
+ * par la mémoire de la conversation (barré jusqu'au retour du fichier), et la bulle de 3 s, liée
+ * à cette mémoire : un changement de conversation l'efface, sa minuterie avec.
+ */
+function useGoneLink(href: string | undefined) {
+  const checks = useContext(FileExistsContext)
+  const inPlace = useContext(MissingInPlaceContext)
+  const base = useContext(FileLinkBase)
+  const subscribe = useCallback(
+    (listener: () => void) => (checks ? checks.subscribe(listener) : noSubscription()),
+    [checks]
+  )
+  const gone = useSyncExternalStore(subscribe, () =>
+    checks && href ? checks.gone(base, href) : false
+  )
+  const [bubbleFor, setBubbleFor] = useState<FileChecks | null>(null)
+  const bubble = checks !== null && bubbleFor === checks && gone
+  useEffect(() => {
+    if (!bubble) return
+    const timer = setTimeout(() => setBubbleFor(null), GONE_BUBBLE_MS)
+    // Bulle cachée avant l'heure (autre conversation, fichier revenu) : oubliée, pas reportée.
+    return () => {
+      clearTimeout(timer)
+      setBubbleFor(null)
+    }
+  }, [bubble])
+  const onMissing =
+    inPlace && checks && href
+      ? () => {
+          checks.markGone(base, href)
+          setBubbleFor(checks)
+        }
+      : undefined
+  return {
+    gone: inPlace && gone,
+    bubble: inPlace && bubble,
+    live: inPlace && checks !== null,
+    onMissing
+  }
+}
 
 /**
  * Lien d'un texte Markdown : un lien de fichier s'ouvre par l'app (aperçu, app par défaut ou
@@ -38,6 +106,7 @@ export function MarkdownLink({
   const base = useContext(FileLinkBase)
   const editor = useContext(EditorContext)
   const file = parseFileLink(href, { windowsPaths: platformFeatures().windowsPaths })
+  const missing = useGoneLink(file ? href : undefined)
   if (open && href && webLinkTarget(href)) {
     return (
       <a
@@ -59,6 +128,23 @@ export function MarkdownLink({
       <a href={href} {...props} target="_blank" rel="noreferrer">
         {children}
       </a>
+    )
+  }
+  // Annonce de la bulle à VoiceOver : la zone existe avant son texte, pour être lue.
+  const status = missing.live && (
+    <span role="status" className={missing.bubble ? 'file-gone-bubble' : 'sr-only'}>
+      {missing.bubble ? t('fileLink.gone') : null}
+    </span>
+  )
+  if (missing.gone) {
+    // Le lien cesse d'en être un : du code barré et grisé, que le survol explique.
+    return (
+      <span className="file-link-group">
+        <span className="file-link-gone" title={t('fileLink.gone')} data-testid="file-link-gone">
+          {children}
+        </span>
+        {status}
+      </span>
     )
   }
   // « Ouvrir dans <éditeur> » juste après le lien, au survol (fiche 156).
@@ -83,13 +169,18 @@ export function MarkdownLink({
             })
             return
           }
-          open(href, { reveal: event.altKey, ...(base ? { base } : {}) })
+          open(href, {
+            reveal: event.altKey,
+            ...(base ? { base } : {}),
+            ...(missing.onMissing ? { onMissing: missing.onMissing } : {})
+          })
         }}
         data-testid="file-link"
       >
         {children}
       </a>
       <OpenInEditorButton path={file.path} line={file.line} base={base} />
+      {status}
     </span>
   )
 }

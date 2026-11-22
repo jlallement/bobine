@@ -104,6 +104,21 @@ describe('liens de fichiers du fil (fiche 052)', () => {
     await waitFor(() => expect(notices.info).toHaveBeenCalledTimes(1))
   })
 
+  it('fichier absent, lien du fil (fiche 272, D2) : dit par le lien, aucun avis ; rien de plus à l’IPC', async () => {
+    open.mockResolvedValueOnce({ kind: 'missing', path: '/w/x.md' })
+    open.mockRejectedValueOnce(new Error('refusé'))
+    const { result, notices } = setup()
+    const onMissing = vi.fn()
+    act(() => result.current.openActiveLink('x.md', { reveal: false, onMissing }))
+    await waitFor(() => expect(onMissing).toHaveBeenCalledTimes(1))
+    expect(open).toHaveBeenCalledWith('c1', 'x.md', { reveal: false })
+    expect(notices.warn).not.toHaveBeenCalled()
+    // Une erreur n'est pas un fichier introuvable : l'avis habituel.
+    act(() => result.current.openActiveLink('y.md', { reveal: false, onMissing }))
+    await waitFor(() => expect(notices.warn).toHaveBeenCalledWith('refusé'))
+    expect(onMissing).toHaveBeenCalledTimes(1)
+  })
+
   it('ouvert par le système : rien à dire ; erreur : avertissement', async () => {
     open.mockResolvedValueOnce({ kind: 'opened', path: '/w/a.ts' })
     open.mockRejectedValueOnce(new Error('refusé'))

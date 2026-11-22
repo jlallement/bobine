@@ -894,6 +894,7 @@ export type FrResources = {
     readonly title: '{{location}} — ⌥-clic : montrer dans le Finder'
     readonly withLine: '{{path}}, ligne {{line}}'
     readonly missing: 'Fichier introuvable : {{path}}'
+    readonly gone: 'Fichier introuvable'
     readonly executable: '« {{file}} » peut s’exécuter : montré dans le Finder plutôt qu’ouvert.'
     readonly outside: '« {{file}} » est hors du dossier de la conversation : montré dans le Finder.'
     readonly invalid: 'Lien de fichier invalide : {{href}}'

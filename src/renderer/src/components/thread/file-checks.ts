@@ -34,6 +34,12 @@ interface Entry {
   state: 'yes' | 'no' | 'unknown' | 'new'
   /** En file ou en cours de demande. */
   pending: boolean
+  /**
+   * Lien cliqué vers un fichier introuvable (fiche 272, D2) : montré barré tant qu'une
+   * revérification ne l'a pas retrouvé. Horodaté (`clock`) : un « oui » demandé avant le clic
+   * ne le fait pas revenir.
+   */
+  gone?: number
 }
 
 export class FileChecks {
@@ -45,6 +51,8 @@ export class FileChecks {
   /** Change à chaque signal : une réponse demandée avant n'est plus sûre, sauf un « oui ». */
   private epoch = 0
   private revision: number | undefined
+  /** Ordre des demandes et des clics « introuvable » (voir `gone`). */
+  private clock = 0
 
   private readonly ask: AskFiles
 
@@ -59,6 +67,30 @@ export class FileChecks {
   status(base: string | undefined, href: string): boolean | undefined {
     const entry = this.entries.get(keyOf(base, href))
     return entry ? entry.state === 'yes' : undefined
+  }
+
+  /** Lien cliqué dont le fichier est introuvable (fiche 272, D2) : barré jusqu'à son retour. */
+  gone(base: string | undefined, href: string): boolean {
+    return this.entries.get(keyOf(base, href))?.gone !== undefined
+  }
+
+  /**
+   * Clic sur un lien dont le fichier n'existe plus : retenu comme « non », barré ; revérifié au
+   * prochain signal du fil comme tout « non » (le lien revient si le fichier revient).
+   */
+  markGone(base: string | undefined, href: string): void {
+    const key = keyOf(base, href)
+    const entry = this.entries.get(key)
+    const stamp = ++this.clock
+    if (entry?.gone !== undefined && entry.state === 'no') {
+      entry.gone = stamp
+      return
+    }
+    if (entry) {
+      entry.state = 'no'
+      entry.gone = stamp
+    } else this.remember(key, { base, href, state: 'no', pending: false, gone: stamp })
+    this.notify()
   }
 
   /** Demande ceux qu'on n'a jamais demandés ; un seul appel pour ce qui arrive au même instant. */
@@ -88,6 +120,10 @@ export class FileChecks {
   /** Nombre de chemins retenus (essais). */
   get size(): number {
     return this.entries.size
+  }
+
+  private notify(): void {
+    for (const listener of [...this.listeners]) listener()
   }
 
   private remember(key: string, entry: Entry): void {
@@ -124,6 +160,7 @@ export class FileChecks {
 
   private send(base: string | undefined, hrefs: string[]): void {
     const epoch = this.epoch
+    const asked = ++this.clock
     const settle = (answer: FileLinkCheck | null) => {
       const yes = new Set(answer?.existing ?? [])
       const unknown = new Set(answer ? answer.unknown : hrefs)
@@ -135,8 +172,14 @@ export class FileChecks {
         if (!entry) continue
         entry.pending = false
         const before = entry.state === 'yes'
-        if (yes.has(href)) entry.state = 'yes'
-        else if (epoch !== this.epoch) {
+        if (yes.has(href) && entry.gone !== undefined && entry.gone > asked) {
+          // « Oui » demandé avant le clic qui a dit « introuvable » : plus à jour, le « non » reste.
+        } else if (yes.has(href)) {
+          entry.state = 'yes'
+          // Le fichier est revenu : le lien aussi.
+          if (entry.gone !== undefined) shown = true
+          delete entry.gone
+        } else if (epoch !== this.epoch) {
           // Signal arrivé pendant la demande : la réponse ne dit plus « non », redemandée.
           again.push(key)
         } else entry.state = unknown.has(href) ? 'unknown' : 'no'
@@ -144,7 +187,7 @@ export class FileChecks {
       }
       for (const key of again) this.enqueue(key)
       // Les messages ne sont prévenus que si un lien apparaît ou disparaît.
-      if (shown) for (const listener of [...this.listeners]) listener()
+      if (shown) this.notify()
     }
     this.ask(hrefs, base).then(settle, () => settle(null))
   }

@@ -62,6 +62,8 @@ export interface InlineFiles {
   isFile: (href: string) => boolean | undefined
   /** Chemin candidat vu par ce rendu. */
   want: (href: string) => void
+  /** Lien cliqué vers un fichier introuvable (fiche 272, D2) : barré. */
+  isGone: (href: string) => boolean
 }
 
 export function useInlineFiles(streaming: boolean): InlineFiles {
@@ -101,6 +103,7 @@ export function useInlineFiles(streaming: boolean): InlineFiles {
   })
   return {
     isFile: (href) => candidates.seen(href, checks?.status(base, href)),
-    want: candidates.add
+    want: candidates.add,
+    isGone: (href) => checks?.gone(base, href) === true
   }
 }

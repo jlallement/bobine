@@ -105,7 +105,7 @@ export const Markdown = memo(function Markdown({
           ...(highlight ? COLORED : []),
           rehypeRememberLanguage,
           // `fichier:ligne` en code : cliquable comme un lien de fichier, s'il existe (fiche 272).
-          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want }]
+          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want, isGone: files.isGone }]
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.

@@ -908,6 +908,7 @@
     "title": "{{location}} — ⌥-clic : montrer dans le Finder",
     "withLine": "{{path}}, ligne {{line}}",
     "missing": "Fichier introuvable : {{path}}",
+    "gone": "Fichier introuvable",
     "executable": "« {{file}} » peut s’exécuter : montré dans le Finder plutôt qu’ouvert.",
     "outside": "« {{file}} » est hors du dossier de la conversation : montré dans le Finder.",
     "invalid": "Lien de fichier invalide : {{href}}",

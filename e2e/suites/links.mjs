@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Lpart, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { L, Lpart, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /**
  * Liens vers des fichiers dans la conversation (fiche 052) : aperçu d'un `.md` dans le panneau,
@@ -96,17 +96,30 @@ export async function linksSuite(scheme) {
           opened().length === 0,
           'chemin sans dossier en code (`liste.js:2`) : dans l’onglet Fichiers, à la ligne'
         )
-        // Lien Markdown vers un fichier absent, cliqué deux fois : un seul avis, et le pied du tour
+        // Lien Markdown vers un fichier absent (fiche 272, D2) : au clic, le lien le dit lui-même,
+        // barré et grisé, avec une bulle 3 s (zone `status`) ; rien dans le fil, et le pied du tour
         // reste visible (recette de la rc.3 : un avis rouge par clic, le pied disparaissait).
         const missingText = Lpart('fileLink.missing')
         const missingCount = `[...document.querySelectorAll('.notice')].filter((n) => n.innerText.includes(${JSON.stringify(missingText)})).length`
+        const goneText = JSON.stringify(L('fileLink.gone'))
+        const struck = `[...document.querySelectorAll('[data-testid=file-link-gone]')].find((s) => s.textContent === 'absent.md')`
+        const bubble = `[...document.querySelectorAll('[role=status]')].some((s) => s.textContent === ${goneText})`
         await ui.click(link('absent.md'))
-        await ui.waitFor(`${missingCount} === 1`)
-        await ui.click(link('absent.md'))
-        await new Promise((r) => setTimeout(r, 400))
+        await ui.waitFor(`!!${struck} && ${bubble}`)
         check(
-          (await ui.ev(missingCount)) === 1 && (await ui.ev(`!!${ui.$('turn-summary')}`)),
-          'fichier absent cliqué deux fois : un seul avis, le pied du tour reste'
+          (await ui.ev(`${struck}.title === ${goneText} && !${struck}.closest('a')`)) &&
+            !(await ui.ev(`!!${link('absent.md')}`)),
+          'fichier absent : le lien devient du code barré, la bulle « introuvable » s’affiche'
+        )
+        await ui.shot('45-fichier-absent-bulle')
+        // Déjà barré : un second clic ne fait rien.
+        await ui.click(struck)
+        await ui.waitFor(`!${bubble}`, 6000)
+        check(
+          (await ui.ev(missingCount)) === 0 &&
+            !!(await ui.ev(struck)) &&
+            (await ui.ev(`!!${ui.$('turn-summary')}`)),
+          'bulle partie après 3 s : le chemin reste barré, aucun avis dans le fil, le pied du tour reste'
         )
         await ui.shot('45-fichier-absent-pied')
         await ui.click(link('docs'))
