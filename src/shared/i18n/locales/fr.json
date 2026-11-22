@@ -1828,7 +1828,8 @@
     "restore": "restaurer sauvegarde revenir remplacer annuler",
     "trash": "corbeille supprimées effacer définitivement récupérer restaurer",
     "roles": "rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @",
-    "commitDraft": "commit message git agent rédaction conventional commits mémoire"
+    "commitDraft": "commit message git agent rédaction conventional commits mémoire",
+    "updates": "mise à jour version nouvelle version github vérifier"
   },
   "diagnostics": {
     "group": {
@@ -3273,7 +3274,8 @@
       "help": "Aide indisponible",
       "onboarding": "Accueil du premier lancement indisponible",
       "roles": "Les rôles ne sont pas disponibles ici.",
-      "commitDraft": "La rédaction du message de commit n’est pas disponible ici."
+      "commitDraft": "La rédaction du message de commit n’est pas disponible ici.",
+      "updates": "Avis de nouvelle version indisponible"
     },
     "emptyMessage": "Message vide",
     "emptyPrompt": "Prompt vide"
@@ -6359,5 +6361,35 @@
     "model": "Modèle",
     "mode": "Mode",
     "thought_level": "Niveau de réflexion"
+  },
+  "updates": {
+    "line": {
+      "available": "<b>Bobine {{version}}</b> est disponible",
+      "name": "Bobine {{version}}",
+      "preAvailable": "Préversion disponible",
+      "view": "Voir",
+      "later": "Plus tard (plus rien pour la {{version}})"
+    },
+    "settings": {
+      "label": "Vérifier les nouvelles versions",
+      "hint": "Au lancement, une fois par jour au plus, Bobine regarde les versions publiées sur GitHub. Aucune de vos données n’est envoyée, rien ne s’installe tout seul.",
+      "last": "Dernière vérification",
+      "never": "Jamais",
+      "todayAt": "Aujourd’hui à {{time}}",
+      "checkNow": "Vérifier maintenant",
+      "checking": "Vérification…",
+      "upToDate": "Vous avez la dernière version (<b>{{version}}</b>).",
+      "available": "<b>Bobine {{version}}</b> est disponible. Vous avez la {{current}}.",
+      "view": "Voir la version",
+      "failed": {
+        "offline": "Pas de réponse de GitHub. Vérifiez la connexion, puis réessayez.",
+        "limit": "GitHub limite les vérifications pour l’instant. Réessayez dans une heure.",
+        "unreadable": "Réponse de GitHub illisible. Réessayez plus tard."
+      }
+    },
+    "privacy": {
+      "title": "Nouvelles versions",
+      "hint": "Le seul appel de Bobine qui ne vient ni d’un agent ni de vous : au lancement, une fois par jour au plus, la liste publique des versions sur GitHub. Seule la version de Bobine est transmise ; rien ne s’installe."
+    }
   }
 }

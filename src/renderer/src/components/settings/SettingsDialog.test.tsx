@@ -114,7 +114,18 @@ beforeEach(() => {
     api: {
       app: {
         getInfo: async () => ({ version: '0.1.0', electron: '44', os: 'macOS' }),
-        fonts: async () => ({ families: ['Avenir Next', 'Menlo'], monospace: ['Menlo'] })
+        fonts: async () => ({ families: ['Avenir Next', 'Menlo'], monospace: ['Menlo'] }),
+        // Avis de nouvelle version (fiche 274) : rien de connu.
+        update: async () => ({
+          current: '0.1.0',
+          enabled: true,
+          lastCheckedAt: null,
+          checking: false,
+          available: null,
+          dismissed: false,
+          manual: null
+        }),
+        onUpdate: () => () => {}
       },
       // Fournisseurs de modèles et réseau d'entreprise (fiche 104) : rien de configuré.
       providers: { list: async () => [] },

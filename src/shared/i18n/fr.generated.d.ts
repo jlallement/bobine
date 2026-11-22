@@ -1791,6 +1791,7 @@ export type FrResources = {
     readonly trash: 'corbeille supprimées effacer définitivement récupérer restaurer'
     readonly roles: 'rôles équipe expert spécialiste reviewer tech lead agents sous-agents modes @'
     readonly commitDraft: 'commit message git agent rédaction conventional commits mémoire'
+    readonly updates: 'mise à jour version nouvelle version github vérifier'
   }
   readonly diagnostics: {
     readonly group: {
@@ -3125,6 +3126,7 @@ export type FrResources = {
       readonly onboarding: 'Accueil du premier lancement indisponible'
       readonly roles: 'Les rôles ne sont pas disponibles ici.'
       readonly commitDraft: 'La rédaction du message de commit n’est pas disponible ici.'
+      readonly updates: 'Avis de nouvelle version indisponible'
     }
     readonly emptyMessage: 'Message vide'
     readonly emptyPrompt: 'Prompt vide'
@@ -6146,5 +6148,35 @@ export type FrResources = {
     readonly model: 'Modèle'
     readonly mode: 'Mode'
     readonly thought_level: 'Niveau de réflexion'
+  }
+  readonly updates: {
+    readonly line: {
+      readonly available: '<b>Bobine {{version}}</b> est disponible'
+      readonly name: 'Bobine {{version}}'
+      readonly preAvailable: 'Préversion disponible'
+      readonly view: 'Voir'
+      readonly later: 'Plus tard (plus rien pour la {{version}})'
+    }
+    readonly settings: {
+      readonly label: 'Vérifier les nouvelles versions'
+      readonly hint: 'Au lancement, une fois par jour au plus, Bobine regarde les versions publiées sur GitHub. Aucune de vos données n’est envoyée, rien ne s’installe tout seul.'
+      readonly last: 'Dernière vérification'
+      readonly never: 'Jamais'
+      readonly todayAt: 'Aujourd’hui à {{time}}'
+      readonly checkNow: 'Vérifier maintenant'
+      readonly checking: 'Vérification…'
+      readonly upToDate: 'Vous avez la dernière version (<b>{{version}}</b>).'
+      readonly available: '<b>Bobine {{version}}</b> est disponible. Vous avez la {{current}}.'
+      readonly view: 'Voir la version'
+      readonly failed: {
+        readonly offline: 'Pas de réponse de GitHub. Vérifiez la connexion, puis réessayez.'
+        readonly limit: 'GitHub limite les vérifications pour l’instant. Réessayez dans une heure.'
+        readonly unreadable: 'Réponse de GitHub illisible. Réessayez plus tard.'
+      }
+    }
+    readonly privacy: {
+      readonly title: 'Nouvelles versions'
+      readonly hint: 'Le seul appel de Bobine qui ne vient ni d’un agent ni de vous : au lancement, une fois par jour au plus, la liste publique des versions sur GitHub. Seule la version de Bobine est transmise ; rien ne s’installe.'
+    }
   }
 }

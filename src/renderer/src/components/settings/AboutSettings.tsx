@@ -6,6 +6,8 @@ import { type Language } from '@shared/i18n/language'
 import { AppIcon } from '../common/SpoolMark'
 import { Markdown } from '../thread/Markdown'
 import { SettingsCard } from './rows'
+import { UpdateCheckCard } from './UpdateCheckCard'
+import type { Preferences } from '@shared/preferences'
 import changelogFr from '../../../../../CHANGELOG.md?raw'
 import changelogEn from '../../../../../CHANGELOG.en.md?raw'
 
@@ -14,7 +16,14 @@ import changelogEn from '../../../../../CHANGELOG.en.md?raw'
  * journal des versions, une ligne par version, la plus récente ouverte (essai à la souris du 24/10 :
  * la page dépliée faisait plus de 500 lignes). Electron et le système sont dans Diagnostic.
  */
-export function AboutSettings() {
+export function AboutSettings({
+  updateCheck,
+  onPreferences
+}: {
+  /** Réglage « Vérifier les nouvelles versions » (fiche 274) ; absent tant que non reçu. */
+  updateCheck: boolean | undefined
+  onPreferences: (change: Partial<Preferences>) => void
+}) {
   const { t, i18n } = useTranslation()
   const [info, setInfo] = useState<AppInfo | null>(null)
   useEffect(() => {
@@ -39,6 +48,10 @@ export function AboutSettings() {
           </div>
         </div>
       </SettingsCard>
+      <UpdateCheckCard
+        enabled={updateCheck}
+        onEnabled={(enabled) => onPreferences({ updateCheck: enabled })}
+      />
       <SettingsCard testId="settings-changelog">
         {versions.map((version, index) => (
           <details key={version.title} className="settings-version" open={index === 0}>

@@ -15,6 +15,7 @@ import type { AppAlerts } from './app-alerts'
 import { isAppAlertKind } from '@shared/app-alerts'
 import { isHelpTopic, type HelpTarget, type HelpTopic } from '@shared/help-topics'
 import type { SelfInstaller } from './self-install'
+import type { UpdateChecker } from './update-check'
 
 export interface AppIpcDeps {
   appName: string
@@ -55,6 +56,8 @@ export interface AppIpcDeps {
     close: () => void
     showChangelog: () => void
   }
+  /** Avis de nouvelle version (fiche 274). */
+  updates?: Pick<UpdateChecker, 'view' | 'checkNow' | 'dismiss' | 'open'>
   /** Fenêtre d'aide (fiche 186, injectée : fenêtres). */
   help?: {
     open: (topic: HelpTopic | null) => void
@@ -83,6 +86,15 @@ export function appHandlers(
   const fresh = () => {
     if (!deps.freshStart) throw new Error(t('ipc.unavailable.freshStart'))
     return deps.freshStart
+  }
+  const updates = () => {
+    if (!deps.updates) throw new Error(t('ipc.unavailable.updates'))
+    return deps.updates
+  }
+  const version = (value: unknown): string => {
+    if (typeof value !== 'string' || value.length > 64)
+      throw new Error('Paramètre invalide : version')
+    return value
   }
   const commandLine = () => {
     if (!deps.commandLine) throw new Error(t('ipc.unavailable.commandLine'))
@@ -171,6 +183,16 @@ export function appHandlers(
     'app:commandStatus': () => deps.commandLine?.status() ?? null,
     'app:installCommand': () => commandLine().install(),
     'app:uninstallCommand': () => commandLine().uninstall(),
+    'app:updateView': () => updates().view(),
+    'app:updateCheck': () => updates().checkNow(),
+    'app:updateDismiss': (value) => {
+      updates().dismiss(version(value))
+      return undefined
+    },
+    'app:updateOpen': (value) => {
+      updates().open(version(value))
+      return undefined
+    },
     'about:technicalInfo': () => about().technicalInfo(),
     'about:close': () => {
       about().close()

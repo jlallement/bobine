@@ -1,9 +1,9 @@
 # 274 — Avis de nouvelle version
 
-- **Statut** : à faire (spec, ADR et maquettes à valider par Jérôme avant tout code)
+- **Statut** : fait, à relire (maquettes et ADR-0066 validés par Jérôme le 2026-11-22)
 - **Dépend de** : 073 (installation et corbeille de l'ancienne app), 074 et 136 (Réglages ›
   Nouveautés), 194 (avis de l'app), 196 (profil en lecture seule), 218 (préversions) ; ADR-0023,
-  ADR-0066 (proposé) ; risque R5 de la fiche 187 ; issue GitHub #19
+  ADR-0066 ; risque R5 de la fiche 187 ; issue GitHub #19
 - **Agents** : aucun (fonction de l'app, sans lien avec l'agent ni avec ACP)
 
 ## Pourquoi
@@ -25,15 +25,23 @@ télécharge ni ne s'installe.
 - **Pas d'installation.** L'avis ouvre la page de la version dans le navigateur du Mac.
   L'adresse est vérifiée : `https://github.com/jlallement/bobine/releases/tag/<tag>`.
 - **Préversions.** Elles dépendent de la version installée :
-  - une préversion (`-rc.N`, `-beta.N`) est avertie des préversions suivantes et de la version
-    finale ;
+  - une préversion (`-rc.N`, `-beta.N`) n'est avertie que des préversions **de sa ligne**
+    (même majeure.mineure) et des versions finales plus récentes, de n'importe quelle ligne : une
+    1.0.0-rc.3 apprend la rc.4, la 1.0.0 puis les 1.0.x, jamais une 1.1.0-beta ;
   - une version finale n'est avertie que des versions finales.
 
   La comparaison suit semver strictement, et les brouillons sont ignorés.
 - **Une fois par version.** « Plus tard » ou la fermeture de l'avis ne le remontre plus pour
   cette version-là. Une version plus récente fait revenir l'avis.
 
-Décision d'architecture : **ADR-0066** (proposé), qui remplace en partie l'ADR-0023 sur un seul
+Validation des maquettes et de l'ADR (2026-11-22) :
+
+- option **A**, la ligne en bas de la barre latérale ;
+- « Voir » ouvre la page **et** masque l'avis pour cette version ;
+- barre latérale masquée : rien de plus, l'information reste dans les Réglages ;
+- une ligne dans Réglages › Confidentialité dit ce seul appel vers GitHub.
+
+Décision d'architecture : **ADR-0066** (accepté), qui remplace en partie l'ADR-0023 sur un seul
 point, « aucun appel réseau de version ».
 
 ## Maquettes
@@ -62,72 +70,77 @@ pour une information qui n'est pas urgente.
 
 Comportement :
 
-- [ ] Au lancement, si le réglage est actif, que la dernière vérification réussie date de plus de
+- [x] Au lancement, si le réglage est actif, que la dernière vérification réussie date de plus de
   24 h et que le profil n'est pas en lecture seule, Bobine fait **une** requête
   `GET /repos/jlallement/bobine/releases?per_page=30`, quelques secondes après l'ouverture de la
   fenêtre principale, sans retarder le lancement.
-- [ ] La requête part sans cookie, jeton ni identifiant. Elle porte seulement les en-têtes
+- [x] La requête part sans cookie, jeton ni identifiant. Elle porte seulement les en-têtes
   `User-Agent: Bobine/<version>`, `Accept: application/vnd.github+json` et
   `X-GitHub-Api-Version`. Elle a un délai court (10 s), une réponse bornée (1 Mio) et ne suit
-  aucune redirection hors de `api.github.com`.
-- [ ] Les brouillons (`draft: true`) sont ignorés, ainsi que les étiquettes qui ne sont pas du
+  aucune redirection.
+- [x] Les brouillons (`draft: true`) sont ignorés, ainsi que les étiquettes qui ne sont pas du
   semver strict (`vX.Y.Z` ou `vX.Y.Z-<pré>`).
-- [ ] Une version **finale** installée n'est avertie que d'une version finale plus récente. Une
-  **préversion** installée l'est de toute version plus récente, préversion ou finale ; on prend la
-  plus haute. Une étiquette sans `-` mais marquée `prerelease` par GitHub compte comme une
-  préversion (prudence pour les versions finales).
-- [ ] Une release dont la page (`html_url`) n'est pas exactement
+- [x] Une version **finale** installée n'est avertie que d'une version finale plus récente. Une
+  **préversion** installée l'est d'une préversion plus récente de la même majeure.mineure, ou
+  d'une version finale plus récente de n'importe quelle ligne ; on prend la plus haute. Une
+  étiquette sans `-` mais marquée `prerelease` par GitHub compte comme une préversion (prudence
+  pour les versions finales).
+- [x] Une release dont la page (`html_url`) n'est pas exactement
   `https://github.com/jlallement/bobine/releases/tag/<tag_name encodé>` est ignorée, avec une ligne
   au journal.
-- [ ] Hors ligne, en cas d'erreur HTTP (403 ou 429 de la limite comprises), de délai dépassé, de
+- [x] Hors ligne, en cas d'erreur HTTP (403 ou 429 de la limite comprises), de délai dépassé, de
   JSON illisible ou de réponse trop grosse : aucun affichage automatique, une ligne
   `[update-check]` au journal. La date de dernière vérification réussie ne bouge pas, et le
   prochain lancement réessaie.
-- [ ] Une nouvelle version fait apparaître la ligne de la barre latérale (option A) : « Bobine
+- [x] Une nouvelle version fait apparaître la ligne de la barre latérale (option A) : « Bobine
   X.Y.Z est disponible », avec « préversion » si c'en est une. « Voir » ouvre la page vérifiée
-  dans le navigateur du Mac. ✕ (Plus tard) masque la ligne pour cette version, même après
-  relance ; une version plus récente la fait revenir.
-- [ ] Réglages › Nouveautés : interrupteur « Vérifier les nouvelles versions » (activé par défaut),
+  dans le navigateur du Mac et masque la ligne pour cette version, comme ✕ (Plus tard), même
+  après relance ; une version plus récente la fait revenir.
+- [x] Réglages › Nouveautés : interrupteur « Vérifier les nouvelles versions » (activé par défaut),
   « Dernière vérification : … », bouton « Vérifier maintenant ». Le bouton marche même quand
   l'interrupteur est coupé, puisque c'est un geste explicite. États montrés : en cours, à jour,
   nouvelle version (« Voir la version »), échec (raison courte, sans détail technique). Ce
   dernier état n'apparaît **que** pour une vérification lancée à la main.
-- [ ] Interrupteur coupé : aucune requête automatique ; la ligne déjà affichée disparaît.
-- [ ] Profil en lecture seule (fiche 196) : pas de vérification automatique, rien n'est écrit.
+- [x] Interrupteur coupé : aucune requête automatique ; la ligne déjà affichée disparaît.
+- [x] Profil en lecture seule (fiche 196) : pas de vérification automatique, rien n'est écrit.
   « Vérifier maintenant » affiche le résultat sans le garder.
 
 Sécurité :
 
-- [ ] Aucune donnée de l'utilisateur n'est envoyée : ni chemin, ni nom, ni identifiant de profil
+- [x] Aucune donnée de l'utilisateur n'est envoyée : ni chemin, ni nom, ni identifiant de profil
   ou de machine. La version de l'app (dans le `User-Agent`) et l'adresse IP, que GitHub voit
   forcément, sont les seules informations transmises.
-- [ ] Le renderer n'ouvre jamais d'adresse lui-même : il demande au main « ouvrir la page de la
+- [x] Le renderer n'ouvre jamais d'adresse lui-même : il demande au main « ouvrir la page de la
   version X ». Le main ouvre l'adresse qu'**il** a vérifiée et gardée, et revérifie hôte et chemin
   juste avant `shell.openExternal`.
-- [ ] Ce qui vient de GitHub (nom de la release, notes) n'est **jamais** rendu en HTML ni en
+- [x] Ce qui vient de GitHub (nom de la release, notes) n'est **jamais** rendu en HTML ni en
   Markdown. Seule l'étiquette de version, validée par l'expression semver, est affichée, comme du
   texte React. Les notes ne sont ni gardées ni affichées : elles sont dans la page GitHub et dans
   Réglages › Nouveautés de la version suivante.
-- [ ] Une adresse de flux de remplacement (`BOBINE_RELEASES_URL`, réservée aux essais) n'est
-  acceptée que vers `http://127.0.0.1` ou `http://localhost`. Elle ne change jamais la règle de la
-  page ouverte.
+- [x] Une adresse de flux de remplacement (`BOBINE_RELEASES_URL`, réservée aux essais) est
+  ignorée dans l'app packagée, et n'est acceptée que vers `http://127.0.0.1` ou
+  `http://localhost`. Elle ne change jamais la règle de la page ouverte. `BOBINE_UPDATE_CHECK=off`
+  coupe la vérification automatique (essais de l'app packagée, comme `BOBINE_QUOTA=off`).
+- [x] Réglages › Confidentialité dit ce seul appel vers GitHub, et renvoie au réglage.
 
 Essais :
 
-- [ ] Unitaires, sans réseau (`fetch` injecté) :
+- [x] Unitaires, sans réseau (`fetch` injecté) :
   - choix de la version (final/final, pré/pré, pré/final, final/pré ignorée, brouillon, étiquette
     invalide, `html_url` piégée : autre hôte, autre dépôt, `..`, `@`, schéma `http`) ;
   - délai de 24 h, échec silencieux, « Plus tard » par version, lecture seule ;
   - taille bornée et délai dépassé.
-- [ ] e2e `nouvelle-version` contre un **faux serveur de versions local**, lancé par l'essai, avec
+- [x] e2e `nouvelle-version` contre un **faux serveur de versions local**, lancé par l'essai, avec
   l'app en clair et en sombre :
-  - la ligne apparaît ; « Voir » est noté par `BOBINE_OPEN_LOG` avec la bonne adresse ;
-  - ✕ la masque, et elle ne revient pas à la relance ;
-  - à jour ; échec seulement en manuel ; interrupteur coupé → aucune requête reçue.
+  - la ligne apparaît (pièges ignorés) ; la requête reçue n'a ni cookie ni jeton ;
+  - ✕ la masque ; « Voir la version » ouvre la page vérifiée (ouverture observée en remplaçant
+    `shell.openExternal` dans le main) ; à la relance, ni requête ni avis ;
+  - à jour ; échec seulement en manuel ; échec automatique silencieux ; réglage coupé → aucune
+    requête reçue.
 
   **Jamais GitHub en essai.** `e2e/lib.mjs` fixe par défaut `BOBINE_RELEASES_URL` vers un port
   local fermé, pour qu'aucune autre suite ne sorte sur Internet.
-- [ ] Captures de la suite regardées, clair et sombre.
+- [x] Captures de la suite regardées, clair et sombre.
 
 ## Plan
 
@@ -182,21 +195,35 @@ Aucune nouvelle dépendance : `net.fetch` d'Electron (proxy du système, comme C
    - `CHANGELOG.md` et `CHANGELOG.en.md` ;
    - fiche 187 (R5) ; ADR-0066 accepté.
 
-## Points ouverts (à trancher par Jérôme)
-
-1. **Option A ou B** pour l'avis (recommandée : A).
-2. **« Voir »** ouvre la page et masque aussi l'avis pour cette version (proposé). L'information
-   reste dans Réglages › Nouveautés. Autre choix : garder la ligne jusqu'à « Plus tard ».
-3. **Barre latérale masquée** : rien de plus (proposé). L'avis reparaît à l'ouverture de la barre
-   et reste dans les Réglages. Autre choix : une pastille sur le bouton Réglages de la barre
-   repliée.
-4. **Préversion installée** : avertie de toute version plus récente, une 1.1.0-beta.1 comprise
-   pour une 1.0.0-rc.3 (proposé : c'est le plus simple, et qui teste une préversion veut la
-   suivante). Autre choix : seulement la même ligne de version et la finale.
-5. **Mention dans Réglages › Confidentialité** de ce seul appel vers GitHub, en plus de l'aide du
-   réglage (proposé : oui, une ligne).
-
 ## Journal
 
 - 2026-11-22 — Spec, ADR-0066 (proposé) et maquettes (options A et B, réglage et ses trois
   états, français et anglais), sans code. À valider par Jérôme.
+- 2026-11-22 — Jérôme tranche : option A ; « Voir » masque aussi l'avis ; préversions de la même
+  majeure.mineure seulement (finales de toute ligne) ; ADR-0066 accepté, avec une ligne dans
+  Réglages › Confidentialité ; rien de plus quand la barre latérale est masquée.
+- 2026-11-22 — Implémenté (branche `feat/r5-avis-nouvelle-version`).
+  - Partagé : `src/shared/update-check.ts` (semver strict, `pickUpdate`, page vérifiée) ;
+    préférence `updateCheck` (oui par défaut).
+  - Main : `update-check.ts` (sans Electron), `update-check-electron.ts` (`net.fetch`, 10 s,
+    1 Mio lu par morceaux, `credentials: 'omit'`, `redirect: 'error'`), `update-check-app.ts`
+    (branchement, 5 s après le lancement) ; état `update-check.json`. Canaux `app:update*`, classés
+    sûrs en lecture seule (rien n'y est écrit dans ce cas).
+  - Renderer : `UpdateLine.tsx` au-dessus du pied de la barre latérale, `UpdateCheckCard.tsx` dans
+    Nouveautés, ligne « Nouvelles versions » dans Confidentialité, recherche des réglages ; clés
+    `updates.*` en français et en anglais.
+  - Écarts au plan : `Accept-Language: en` posé (Chromium envoyait la langue de l'utilisateur,
+    vu par l'e2e) ; aucune redirection suivie (plus strict que « hors `api.github.com` ») ;
+    `BOBINE_UPDATE_CHECK=off` ajouté pour les essais de l'app packagée (`packaged.mjs`,
+    `packaged-installed.mjs`), où `BOBINE_RELEASES_URL` est ignorée ; « Voir » observé par
+    `shell.openExternal` remplacé dans le main plutôt que `BOBINE_OPEN_LOG`.
+  - Essais : unitaires `shared/update-check.test.ts`, `main/update-check.test.ts`,
+    `main/update-check-electron.test.ts`, `sidebar/UpdateLine.test.tsx` ; e2e `nouvelle-version`
+    (clair et sombre) vert, captures regardées ; `settings`, `about`, `base`, `language` verts.
+    `pnpm e2e --changed` choisirait toute la suite (fichiers globaux touchés) : pas lancée ici,
+    à faire avant la 1.0.
+  - Toutes les suites e2e coupent la vérification (`NEUTRAL_ENV` : `BOBINE_UPDATE_CHECK=off`,
+    adresse locale fermée) : aucun essai ne contacte GitHub.
+  - Docs : guide Réglages (fr, en), FAQ des README, CHANGELOG, `docs/architecture.md`.
+  - Reste : `pnpm pilote` (recette) ne coupe pas la vérification : une recette avec un profil
+    temporaire fait une vraie requête à GitHub, au plus une par lancement.

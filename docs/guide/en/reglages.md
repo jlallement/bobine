@@ -6,7 +6,8 @@ What Bobine remembers on this Mac,
 What Bobine remembers on this computer,
 -->
 and how to review, back up or erase it. Bobine sends nothing
-anywhere except to the agent you use: it has no telemetry.
+anywhere except to the agent you use: it has no telemetry. The one exception, which you can turn
+off: [checking for new versions](#nouvelles-versions).
 
 Settings (⌘,) come in three groups: General, Appearance, Notifications, Keyboard shortcuts;
 Conversations, Agents, MCP servers, Commands; Privacy, Data, Diagnostics, What’s new. The search
@@ -16,6 +17,7 @@ Here you can:
 
 - [review and revoke what you’ve allowed](#autorisations);
 - [manage the built-in browser’s data](#navigateur);
+- [be told about a new version, or stop it](#nouvelles-versions);
 - [back up your history, and restore it](#sauvegarde);
 - [recover a deleted conversation](#corbeille);
 - [forget a recent folder](#dossiers-recents) and [clean up orphan worktrees](#orphelins);
@@ -49,6 +51,22 @@ Settings › Privacy › **Built-in browser**:
   launch to the next;
 - **Browser data** › **Clear**: cookies, sign-ins, site storage and cache. You’ll have to sign in
   to sites again.
+
+<a id="nouvelles-versions"></a>
+
+## Be told about a new version
+
+Bobine doesn’t update itself. At launch, at most once a day, it looks at the public list of
+Bobine releases on GitHub; only the installed version is sent. If a newer version exists, a line
+at the bottom of the sidebar says so: **View** opens its page in your browser, ✕ hides it. Either
+way, that version won’t be announced again. Nothing is downloaded or installed: you install the
+new version the same way as the first.
+
+A final version only announces final versions; a pre-release (`-rc`, `-beta`) also announces the
+next pre-releases of its line. When offline, nothing shows.
+
+Settings › What’s new: **Check for new versions** (on by default), the date of the last check, and
+**Check now**. The same switch is in Settings › Privacy › **New versions**.
 
 <a id="sauvegarde"></a>
 

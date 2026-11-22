@@ -1,4 +1,5 @@
 import type { AppAlert, AppAlertKind } from '@shared/app-alerts'
+import type { UpdateView } from '@shared/update-check'
 import type { HintId, TipAction, TipId, TipsView } from '@shared/tips'
 import type { SentEntry } from '@shared/sent-history'
 import type { HelpTarget, HelpTopic } from '@shared/help-topics'
@@ -94,6 +95,12 @@ export function createApi(
       dismissAlert: (kind: AppAlertKind) => invoke('app:dismissAlert', kind),
       showCrashReport: () => invoke('app:showCrashReport'),
       onAlerts: (listener: (alerts: AppAlert[]) => void) => subscribe('app:alerts', listener),
+      /** Avis de nouvelle version (fiche 274). */
+      update: () => invoke('app:updateView'),
+      checkUpdate: () => invoke('app:updateCheck'),
+      dismissUpdate: (version: string) => invoke('app:updateDismiss', version),
+      openUpdate: (version: string) => invoke('app:updateOpen', version),
+      onUpdate: (listener: (view: UpdateView) => void) => subscribe('app:update', listener),
       /** Quitte puis relance l'app (fiche 074). */
       relaunch: () => invoke('app:relaunch'),
       /** Installation par l'app elle-même (fiche 073) : proposition, installation, « Ne plus proposer ». */

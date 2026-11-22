@@ -2,6 +2,16 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- **New version notice**: at launch, at most once a day, Bobine looks at the releases published
+  on GitHub. If a newer one exists, a discreet line at the bottom of the sidebar says so; **View**
+  opens its page in the browser, ✕ hides it, and that version won’t be announced again. Nothing is
+  downloaded or installed, and nothing shows when offline. Settings › What’s new: **Check for new
+  versions** (on by default) and **Check now**.
+
 ## 1.0.0-rc.3 — November 21, 2026
 
 ### Fixes

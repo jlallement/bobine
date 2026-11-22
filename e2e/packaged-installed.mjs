@@ -121,7 +121,13 @@ export async function main(argv = process.argv.slice(2)) {
     ['--profil-temporaire', `--remote-debugging-port=${port}`, '--use-mock-keychain'],
     // Jamais le vrai Bob : pas de lecture de son quota (fiche 091).
     {
-      env: { ...process.env, BOBINE_QUOTA: 'off', BOBINE_DEFAULT_WORKSPACE: workspace },
+      env: {
+        ...process.env,
+        BOBINE_QUOTA: 'off',
+        // Jamais GitHub dans un essai (fiche 274).
+        BOBINE_UPDATE_CHECK: 'off',
+        BOBINE_DEFAULT_WORKSPACE: workspace
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: false
     }
