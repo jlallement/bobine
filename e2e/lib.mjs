@@ -308,7 +308,11 @@ export const NEUTRAL_ENV = {
   // Vide : pas d'AXe (ni celui livré avec l'app, ni celui du PATH).
   BOBINE_AXE: '',
   ANDROID_HOME: join(neutral, 'sdk'),
-  ANDROID_SDK_ROOT: join(neutral, 'sdk')
+  ANDROID_SDK_ROOT: join(neutral, 'sdk'),
+  // Avis de nouvelle version (fiche 274) : jamais GitHub dans un essai. Vérification automatique
+  // coupée, et l'adresse pointe vers un port local fermé (la suite `nouvelle-version` la remplace).
+  BOBINE_UPDATE_CHECK: 'off',
+  BOBINE_RELEASES_URL: 'http://127.0.0.1:9/repos/jlallement/bobine/releases'
 }
 
 /**

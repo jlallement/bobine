@@ -2,6 +2,17 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- **Avis de nouvelle version** : au lancement, une fois par jour au plus, Bobine regarde les
+  versions publiées sur GitHub. S’il en existe une plus récente, une ligne discrète l’annonce en
+  bas de la barre latérale ; **Voir** ouvre sa page dans le navigateur, ✕ la masque, et cette
+  version ne sera plus annoncée. Rien ne se télécharge ni ne s’installe, et rien ne s’affiche hors
+  ligne. Réglages › Nouveautés : **Vérifier les nouvelles versions** (activé par défaut) et
+  **Vérifier maintenant**.
+
 ## 1.0.0-rc.3 — 21 novembre 2026
 
 ### Corrections

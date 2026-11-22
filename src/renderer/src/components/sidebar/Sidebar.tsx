@@ -55,6 +55,7 @@ import { GroupingMenu, NotificationsBlocked, type Grouping } from './SidebarMenu
 import { FolderGroup, SidebarSection, readLocal, useFoldedSet, writeLocal } from './SidebarSection'
 import { useProfileStatus } from '../common/Profile'
 import { TeamSection } from '../roles/TeamSection'
+import { UpdateLine } from './UpdateLine'
 
 interface Props {
   open: boolean
@@ -366,6 +367,7 @@ export function Sidebar(props: Props) {
         </div>
       </nav>
 
+      <UpdateLine />
       <div className="sidebar-footer">
         <div className="agent-avatar">
           {agentLabel.charAt(0).toUpperCase()}

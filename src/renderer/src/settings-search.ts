@@ -157,7 +157,10 @@ const INDEX: readonly IndexedSetting[] = [
   ['diagnostics', 'diagnostics.group.android', 'settingsSearch.android'],
   ['diagnostics', 'diagnostics.group.providers', 'settingsSearch.providersGroup'],
   ['diagnostics', 'diagnostics.log.label', 'settingsSearch.log'],
-  ['about', 'settings.section.about', 'settingsSearch.about']
+  ['about', 'settings.section.about', 'settingsSearch.about'],
+  ['about', 'updates.settings.label', 'settingsSearch.updates'],
+  ['privacy', 'updates.privacy.title', 'settingsSearch.updates'],
+  ['privacy', 'updates.settings.label', 'settingsSearch.updates']
 ]
 
 /** Tous les réglages cherchables, raccourcis clavier compris, dans la langue courante. */

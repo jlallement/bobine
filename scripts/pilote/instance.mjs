@@ -160,6 +160,10 @@ export function launchArgs({ base, port, options }) {
  */
 export function launchEnv(env, options) {
   const out = { ...env }
+  // Jamais GitHub sans le vouloir (fiche 274) : vérification des versions coupée, sauf
+  // `--verif-versions` (essai de l'avis de nouvelle version en recette).
+  if (options['verif-versions']) delete out.BOBINE_UPDATE_CHECK
+  else out.BOBINE_UPDATE_CHECK = 'off'
   if (options.dossier && !options.profil) out.BOBINE_PRESET_FOLDER = resolve(options.dossier)
   if (options.lang) {
     out.BOBINE_LANG = options.lang

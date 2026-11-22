@@ -6,7 +6,8 @@ Ce que Bobine retient sur ce Mac,
 Ce que Bobine retient sur cet ordinateur,
 -->
 et comment le relire, le sauvegarder ou l'effacer. Bobine
-n'envoie rien ailleurs qu'à l'agent que vous utilisez : elle n'a pas de télémétrie.
+n'envoie rien ailleurs qu'à l'agent que vous utilisez : elle n'a pas de télémétrie. Seule
+exception, que vous pouvez couper : la [vérification des nouvelles versions](#nouvelles-versions).
 
 Les réglages (⌘,) sont rangés en trois groupes : Général, Apparence, Notifications, Raccourcis
 clavier ; Conversations, Agents, Serveurs MCP, Commandes ; Confidentialité, Données, Diagnostic,
@@ -16,6 +17,7 @@ Ici, vous pouvez :
 
 - [revoir et révoquer ce que vous avez autorisé](#autorisations) ;
 - [gérer les données du navigateur intégré](#navigateur) ;
+- [être prévenu d'une nouvelle version, ou ne plus l'être](#nouvelles-versions) ;
 - [sauvegarder l'historique, et le restaurer](#sauvegarde) ;
 - [récupérer une conversation supprimée](#corbeille) ;
 - [oublier un dossier récent](#dossiers-recents) et [nettoyer les worktrees orphelins](#orphelins) ;
@@ -50,6 +52,24 @@ Réglages › Confidentialité › **Navigateur intégré** :
   d'un lancement à l'autre ;
 - **Données du navigateur** › **Effacer** : cookies, connexions, stockage des sites et cache. Il
   faudra se reconnecter aux sites.
+
+<a id="nouvelles-versions"></a>
+
+## Être prévenu d'une nouvelle version
+
+Bobine ne se met pas à jour toute seule. Au lancement, une fois par jour au plus, elle regarde
+la liste publique des versions de Bobine sur GitHub ; seule la version installée est transmise.
+Si une version plus récente existe, une ligne l'annonce en bas de la barre latérale : **Voir**
+ouvre sa page dans votre navigateur, ✕ la masque. Dans les deux cas, cette version ne sera plus
+annoncée. Rien ne se télécharge ni ne s'installe : la nouvelle version s'installe comme la
+première.
+
+Une version finale n'annonce que les versions finales ; une préversion (`-rc`, `-beta`) annonce
+aussi les préversions suivantes de sa ligne. Hors ligne, rien ne s'affiche.
+
+Réglages › Nouveautés : **Vérifier les nouvelles versions** (activé par défaut), la date de la
+dernière vérification et **Vérifier maintenant**. Le même interrupteur est dans Réglages ›
+Confidentialité › **Nouvelles versions**.
 
 <a id="sauvegarde"></a>
 

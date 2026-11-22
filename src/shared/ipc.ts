@@ -5,6 +5,7 @@
  */
 import { APP_MENU_CHANNELS, type AppMenuIpcContract } from './app-menu'
 import type { AppAlert, AppAlertKind } from './app-alerts'
+import type { UpdateView } from './update-check'
 import type { HintId, TipAction, TipId, TipsView } from './tips'
 import type { HelpTarget, HelpTopic } from './help-topics'
 import type { ScheduledTask, ScheduledTaskInput } from './schedule'
@@ -288,6 +289,14 @@ export interface IpcInvokeContract
   'app:commandStatus': { args: []; result: CommandLineStatus | null }
   'app:installCommand': { args: []; result: CommandLineStatus }
   'app:uninstallCommand': { args: []; result: CommandLineStatus }
+  /**
+   * Avis de nouvelle version (fiche 274, ADR-0066) : état, « Vérifier maintenant », « Plus tard »,
+   * « Voir ». Le renderer ne passe qu'un numéro de version : le main ouvre la page qu'il a vérifiée.
+   */
+  'app:updateView': { args: []; result: UpdateView }
+  'app:updateCheck': { args: []; result: UpdateView }
+  'app:updateDismiss': { args: [version: string]; result: undefined }
+  'app:updateOpen': { args: [version: string]; result: undefined }
   /** Liste des conversations et conversation active (au chargement de l'UI). */
   'conversations:get': { args: []; result: ConversationsState }
   /** Contenu d'une conversation, sans changer la conversation active. */
@@ -841,6 +850,8 @@ export interface IpcEventContract {
   'app:showChangelog': null
   /** Avis de l'app changés (fiche 194). */
   'app:alerts': AppAlert[]
+  /** Avis de nouvelle version changé (fiche 274). */
+  'app:update': UpdateView
   /** Astuces masquées ou réaffichées (fiche 191) : l'état à relire. */
   'tips:changed': TipsView
   /** Fenêtre d'aide déjà ouverte : page à afficher (fiche 186). */
@@ -892,6 +903,10 @@ export const IPC_CHANNELS = [
   'app:commandStatus',
   'app:installCommand',
   'app:uninstallCommand',
+  'app:updateView',
+  'app:updateCheck',
+  'app:updateDismiss',
+  'app:updateOpen',
   'schedule:list',
   'schedule:save',
   'schedule:setPaused',

@@ -193,6 +193,11 @@ the agent you chose on your Mac; what leaves your Mac is what that agent sends t
 Settings › Privacy and Settings › Data show what Bobine keeps on your Mac, and let you back it
 up or erase it.
 
+**Does Bobine contact anything else?** One thing only: at launch, at most once a day, it asks
+GitHub's public API for the list of Bobine releases, to tell you when a newer version exists. It
+sends nothing about you (just its own version, in the `User-Agent`), and installs nothing. Turn it
+off in Settings › What's new or Settings › Privacy.
+
 **Do I need IBM Bob?** No. Bob is the main target, but OpenCode works with its free models, and
 any ACP agent can be declared in Settings › Agents.
 

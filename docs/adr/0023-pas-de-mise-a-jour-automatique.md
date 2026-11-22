@@ -1,6 +1,7 @@
 # ADR-0023 — Pas de mise à jour automatique pour l'instant
 
-- **Statut** : accepté
+- **Statut** : accepté — « ni contrôle de version dans l'app : aucun appel réseau » remplacé en
+  partie par ADR-0066 (avis de nouvelle version, sans installation)
 - **Date** : 2026-10-21
 
 ## Contexte

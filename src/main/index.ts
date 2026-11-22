@@ -2,6 +2,7 @@ import type { BrowserManager } from './browser/browser-manager'
 import { setupBrowser } from './browser/browser-setup'
 import { ApprovalStore } from './approvals'
 import { setupSelfInstall } from './self-install-setup'
+import { startUpdateCheck } from './update-check-app'
 import { AppToolServer } from './mcp/tool-server'
 import { DevServers } from './preview/dev-servers'
 import { spawnNodePty } from './terminal/node-pty'
@@ -814,6 +815,9 @@ async function start(): Promise<void> {
   // `bobine <dossier>` : la conversation de ce dossier démarre, pas celle d'avant (fiche 272).
   void conversations.startActive(!launch.pending)
 
+  // Avis de nouvelle version (fiche 274, ADR-0066) : GitHub, une fois par jour au plus.
+  const updates = startUpdateCheck({ userData, settings, readOnly: profile.readOnly, send })
+
   // L'app s'installe elle-même dans Applications (fiche 073), si la plateforme le permet.
   const installer = setupSelfInstall({
     enabled: features.selfInstall,
@@ -871,6 +875,7 @@ async function start(): Promise<void> {
         network: networkController(settings),
         approvals,
         installer,
+        updates,
         ...commandLineDeps(),
         takeLaunch: () => launch.take(),
         // « Relire le PATH » (Réglages › Agents, fiche 043) : l'agent était installé après le

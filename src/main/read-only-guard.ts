@@ -38,6 +38,11 @@ export const READ_ONLY_SAFE = [
   'app:openTemporaryProfile',
   'app:takeLaunch',
   'app:commandStatus',
+  // Avis de nouvelle version (fiche 274) : en lecture seule, le main n'écrit rien (état en mémoire).
+  'app:updateView',
+  'app:updateCheck',
+  'app:updateDismiss',
+  'app:updateOpen',
   'app:installCommand',
   'app:uninstallCommand',
   'app:backupHistory',

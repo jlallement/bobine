@@ -49,7 +49,14 @@ export function SettingsBody({
   onAgentForm: (form: AgentForm | null) => void
 }) {
   if (props.section === 'shortcuts') return <ShortcutsSettings />
-  if (props.section === 'about') return <AboutSettings />
+  if (props.section === 'about') {
+    return (
+      <AboutSettings
+        updateCheck={settings?.preferences.updateCheck}
+        onPreferences={props.onPreferences}
+      />
+    )
+  }
   if (!settings) return null
   switch (props.section) {
     case 'general':

@@ -209,6 +209,11 @@ export interface Preferences {
    * message déduit des fichiers, aucun agent lancé.
    */
   commitDraftEnabled: boolean
+  /**
+   * Vérification des nouvelles versions au lancement, au plus une fois par 24 h (fiche 274,
+   * ADR-0066) : l'API publique des Releases de GitHub, rien d'installé.
+   */
+  updateCheck: boolean
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -246,7 +251,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // Activée dès l'installation (décision de l'utilisateur, fiche 182).
   memoryEnabled: true,
   // Activé par défaut (validation de la fiche 246).
-  commitDraftEnabled: true
+  commitDraftEnabled: true,
+  // Activée par défaut (décision de l'utilisateur, ADR-0066).
+  updateCheck: true
 }
 
 export const TERMINAL_FONT_SIZES = { min: 9, max: 24 }
@@ -319,7 +326,8 @@ const BOOLEAN_PREFERENCES = [
   'memoryEnabled',
   'commitDraftEnabled',
   'tipsEnabled',
-  'codeLigatures'
+  'codeLigatures',
+  'updateCheck'
 ] as const
 
 /** Nombre fini dans ses bornes (entier si demandé) ; sinon `undefined`. */
