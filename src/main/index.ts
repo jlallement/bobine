@@ -46,7 +46,6 @@ import {
   dialog,
   globalShortcut,
   ipcMain,
-  nativeImage,
   nativeTheme,
   powerMonitor,
   powerSaveBlocker,
@@ -111,7 +110,8 @@ import { createMainBrowserWindow, createQuickWindow, loadRenderer } from './rend
 import { technicalFacts } from './about-window'
 import { appAboutWindow, appHelpWindow, helpIpc } from './secondary-windows'
 import { technicalInfo } from './technical-info'
-import { captureScreen, SCREEN_RECORDING_SETTINGS, screenAccessOf } from './screen-capture'
+import { SCREEN_RECORDING_SETTINGS, screenAccessOf } from './screen-capture'
+import { appCaptureScreen } from './screen-capture-app'
 import { HtmlPreviewServer } from './files/html-preview'
 import { QUICK_SHORTCUTS } from '@shared/quick-entry'
 import { initI18n, resolveLanguage, savedLanguage } from './i18n'
@@ -897,42 +897,7 @@ async function start(): Promise<void> {
         previewHtml: (dir, file) => htmlPreview.urlFor(dir, file),
         thread: threadIpcDeps(),
         playSound: alerts.playSound,
-        captureScreen: () =>
-          captureScreen({
-            run: runCommand,
-            // BOBINE_SCREENCAPTURE : capture simulée (essais de bout en bout).
-            command: process.env['BOBINE_SCREENCAPTURE'] || 'screencapture',
-            decode: (data) => nativeImage.createFromBuffer(data),
-            access: () => screenAccessOf(process.env, systemPreferences),
-            // La fenêtre qui demande (et la fenêtre rapide) s'efface pendant la sélection.
-            hideWindows: () => {
-              // Fenêtre qui a le focus natif : `getFocusedWindow` passe par `isFocused`, que les
-              // essais forcent à vrai sur la fenêtre principale (fiche 119) ; on lit le focus réel.
-              const focusedContents = webContents.getFocusedWebContents()
-              const focused = focusedContents
-                ? BrowserWindow.fromWebContents(focusedContents)
-                : null
-              const hidden = BrowserWindow.getAllWindows().filter(
-                (w) => w.isVisible() && (w === focused || w !== mainWindow)
-              )
-              quickEntry.setCapturing(true)
-              for (const w of hidden) w.hide()
-              return () => {
-                // Essais (`BOBINE_SHOW_INACTIVE`, fiche 106) : remontrées sans prendre le focus de
-                // la machine. Avec `show()` et `focus()`, l'app d'essai passait au premier plan
-                // après chaque capture, et une frappe de l'utilisateur à côté tombait dans la
-                // fenêtre rapide (« plus tards » dans la suite `quick`).
-                for (const w of hidden) {
-                  if (!w.isDestroyed()) {
-                    if (SHOW_INACTIVE) w.showInactive()
-                    else w.show()
-                  }
-                }
-                if (focused && !focused.isDestroyed() && !SHOW_INACTIVE) focused.focus()
-                quickEntry.setCapturing(false)
-              }
-            }
-          }),
+        captureScreen: appCaptureScreen(quickEntry, () => mainWindow, SHOW_INACTIVE),
         openCaptureSettings: () => shell.openExternal(SCREEN_RECORDING_SETTINGS),
         diagnostics: {
           system: () =>
