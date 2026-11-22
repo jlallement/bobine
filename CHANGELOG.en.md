@@ -27,6 +27,12 @@ What changes for you, version by version. Shown in Settings › About.
   downloaded or installed, and nothing shows when offline. Settings › What’s new: **Check for new
   versions** (on by default) and **Check now**.
 
+### Fixes
+
+- A click in the thread is no longer lost when a turn ends at that very moment: the thread no
+  longer shifts under the pointer between press and release (for example on a row of a work card,
+  which did not expand).
+
 ## 1.0.0-rc.3 — November 21, 2026
 
 ### Fixes
