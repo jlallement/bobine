@@ -6,6 +6,7 @@ import type { AgentEvent } from '@shared/agent'
 import { contextBreakdown } from '@shared/context-breakdown'
 import { emptyTranscript, reduceTranscript } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { settleStoppedTrees } from '../process-tree'
 import { AgentHost } from './agent-host'
 import type { AgentProfile } from './profiles'
 
@@ -16,7 +17,13 @@ import type { AgentProfile } from './profiles'
  */
 
 const stores: string[] = []
-afterEach(() => {
+afterEach(async () => {
+  // `host.stop()` envoie SIGTERM sans attendre la sortie : un enregistrement de l'agent factice
+  // déjà commencé (session réécrite après une réponse hors tour) peut encore créer un fichier
+  // pendant `rmSync`, qui échoue alors en ENOTEMPTY sous charge. On attend que les agents
+  // arrêtés soient sortis, comme l'app en quittant ; un agent encore là au bout du délai est une
+  // vraie anomalie, dite ici plutôt que masquée.
+  expect(await settleStoppedTrees()).toBe(0)
   for (const store of stores.splice(0)) rmSync(store, { recursive: true, force: true })
 })
 
