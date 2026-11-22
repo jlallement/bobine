@@ -115,6 +115,20 @@ Dependabot comme les autres.
   joué en local : Docker n'était pas lancé, et une seule campagne tourne à la fois sur la machine.
   La preuve viendra du job Linux après la poussée.
 
+- 2026-11-22 — Trois tests unitaires instables, corrigés à la cause (branche
+  `fix/essais-instables-unitaires`). Ni délai allongé, ni nouvelle tentative de l'essai, ni essai
+  sauté :
+
+  | Essai | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `children-review` « Relancer ne garde rien » (Windows, 44894413723) | Deux choses. (1) Le démarrage de l'agent de l'auteur a pris 9,4 s au lieu de 0,5 à 1 s : c'est le ralentissement général des runners Windows déjà relevé (fiche 229), pas l'essai ; l'essai prend 3 à 4 s dans les passages verts. (2) Un vrai défaut : `stopAll` (fin de chaque essai, fermeture de l'app) arrêtait l'agent du relecteur en plein démarrage, `start()` rendait la main comme réussi, puis son premier message relançait l'agent. Ce fantôme faisait son tour et ses commandes git pendant l'essai suivant (5 par passage du fichier, relevés dans le journal). À la fermeture de l'app, c'était un agent lancé après l'arrêt. | `AgentHost.stop({ forGood: true })`, appelé par `stopAll` : `start()` est ensuite refusé. Un `stopAll` suivi d'une nouvelle conversation (essais « dossier disparu » sous Windows) marche comme avant : nouvelle conversation, nouvel hôte. | `manager-send-order.test.ts`, deux essais (arrêt pendant la garde du dossier, arrêt pendant le démarrage) : rouges sans le correctif, verts avec. Fichier `children-review` : 0 relance après arrêt (5 avant), 21 s au lieu de 33 s sur le Mac. Le ralentissement général, lui, n'est pas corrigé ici. |
+  | `bob-costs` « veille de la base » (Mac, suite complète) | Sous macOS, `fs.watch` ouvre son flux FSEvents en différé (libuv, sur son fil CoreFoundation). L'écriture faite juste après l'appel n'est jamais signalée, et l'essai attendait jusqu'à ses 15 s. Mesuré pendant `./scripts/verify` : 14 écritures perdues sur 400 faites aussitôt après `watch`, 0 sur 280 une fois la veille vue armée. Seul, rien n'est perdu. | L'essai attend que la veille soit armée (un fichier témoin, hors de la base, est écrit jusqu'à être vu), puis fait une seule écriture du coût. La logique de tri des noms (base, `-wal`, `-journal`, `-shm`, nom inconnu, autre fichier, erreur de la veille) est essayée à part, avec des évènements donnés par l'essai (`watchBobDb` reçoit sa fonction de veille). L'app ne change pas : elle relit le coût à la fin du tour, puis à 1,5 s et 5 s. | 10 passages seuls d'affilée, verts ; et dans les deux `verify`. |
+  | `mock-agent/store` (Windows, `rename` en `EPERM`) | Pas retrouvé dans les 40 derniers passages de `ci.yml`, ni dans les échecs de `e2e.yml` : correctif sur l'analyse, sans trace. Sous Windows, remplacer un fichier qu'un autre processus a ouvert à cet instant échoue en `EPERM`, `EACCES` ou `EBUSY` jusqu'à ce qu'il le referme. C'est le cas d'un autre agent factice qui relit le dossier pour `session/list`, ou de l'antivirus. En plus, deux agents factices sur le même dossier écrivaient le même `.tmp`. | `replaceFile` : sous Windows seulement, nouvel essai borné sur ces trois codes (10 essais, 3,27 s d'attente en tout), comme graceful-fs ; ailleurs, l'erreur est rendue telle quelle. Temporaire propre au processus (`<id>.json.<pid>.tmp`), supprimé si le remplacement échoue. | `store.test.ts` : nouvel essai puis réussite, abandon borné, autres systèmes et autres erreurs rendus tout de suite, enregistrement réel sans temporaire laissé. |
+
+  Remarque laissée telle quelle : dans `children-review.test.ts`, plusieurs `waitFor` ont un délai
+  de 20 s, au-delà des 15 s de l'essai. C'est le délai de l'essai qui tombe, sans dire quelle
+  attente bloquait.
+
 ## Reste à vérifier sur GitHub (après la poussée)
 
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
