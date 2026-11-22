@@ -1,6 +1,6 @@
 # ADR-0066 — Avis de nouvelle version : vérification des Releases GitHub, sans installation
 
-- **Statut** : proposé (fiche 274 ; décisions de Jérôme du 2026-11-22, maquettes à valider)
+- **Statut** : accepté (fiche 274 ; décision et maquettes validées par Jérôme le 2026-11-22)
 - **Date** : 2026-11-22
 - **Remplace en partie** : ADR-0023, sur un seul point : « ni contrôle de version dans l'app :
   aucun appel réseau pour cela ». Le reste de l'ADR-0023 reste valable : pas de mise à jour
@@ -35,18 +35,21 @@ installer règle R5 sans toucher à ces contraintes.
    illisible, rien ne s'affiche ; une ligne au journal. Seule une vérification lancée à la main
    dit qu'elle a échoué.
 4. **Préversions selon la version installée.** Une version finale n'est avertie que des versions
-   finales. Une préversion l'est des préversions suivantes et des versions finales. L'ordre est
+   finales. Une préversion l'est des préversions suivantes **de sa ligne** (même
+   majeure.mineure : une 1.0.0-rc.3 apprend la rc.4, jamais une 1.1.0-beta) et des versions
+   finales plus récentes, de n'importe quelle ligne. L'ordre est
    celui de semver strict, sur l'étiquette (`vX.Y.Z[-pré]`). Les brouillons et les étiquettes
    non conformes sont ignorés, et une release marquée `prerelease` compte comme une préversion.
-5. **Une fois par version.** « Plus tard », ou la fermeture de l'avis, le masque pour cette
+5. **Une fois par version.** « Voir », « Plus tard » ou la fermeture de l'avis le masquent pour cette
    version, même après relance. Une version plus récente le fait revenir.
 6. **Confiance minimale dans la réponse.** La page ouverte doit être exactement
    `https://github.com/jlallement/bobine/releases/tag/<étiquette>`. Elle est vérifiée par le main
    à la réception, puis de nouveau avant `shell.openExternal`, et le renderer ne passe qu'un numéro
    de version. Le nom et les notes de la release ne sont jamais rendus : seule l'étiquette validée
    s'affiche, comme du texte.
-7. **Sobre.** L'avis est une ligne discrète de la barre latérale (option recommandée de la fiche
-   274, à valider), jamais une fenêtre modale.
+7. **Sobre.** L'avis est une ligne discrète en bas de la barre latérale (option A de la fiche
+   274), jamais une fenêtre modale. Barre latérale masquée : rien de plus, l'information reste dans
+   Réglages › Nouveautés. Réglages › Confidentialité dit ce seul appel vers GitHub.
 
 ## Alternatives écartées
 
@@ -84,7 +87,8 @@ installer règle R5 sans toucher à ces contraintes.
   correspondrait plus. Il faudra alors une version qui porte la nouvelle adresse, et les anciennes
   versions resteront muettes.
 - Les essais ne contactent jamais GitHub : un faux serveur local, et par défaut une adresse locale
-  fermée pour toutes les suites e2e (`BOBINE_RELEASES_URL`, acceptée seulement vers `127.0.0.1` ou
-  `localhost`).
+  fermée pour toutes les suites e2e (`BOBINE_RELEASES_URL`, ignorée dans l'app packagée et acceptée
+  seulement vers `127.0.0.1` ou `localhost`) ; `BOBINE_UPDATE_CHECK=off` coupe la vérification
+  automatique (essais de l'app packagée).
 - Quand l'app sera signée un jour, cette vérification sera la base de la deuxième alternative de
   l'ADR-0023 (installation par Squirrel.Mac). Il faudra alors un nouvel ADR.
