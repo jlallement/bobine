@@ -115,11 +115,16 @@ export async function linksSuite(scheme) {
         // Déjà barré : un second clic ne fait rien.
         await ui.click(struck)
         await ui.waitFor(`!${bubble}`, 6000)
+        // Un élément de la page ne revient pas par valeur (`returnByValue`) : le test se fait
+        // dans la page, sinon `ui.ev` rend toujours `undefined`.
+        check(await ui.ev(`!!${struck}`), 'bulle partie après 3 s : le chemin reste barré')
         check(
-          (await ui.ev(missingCount)) === 0 &&
-            !!(await ui.ev(struck)) &&
-            (await ui.ev(`!!${ui.$('turn-summary')}`)),
-          'bulle partie après 3 s : le chemin reste barré, aucun avis dans le fil, le pied du tour reste'
+          (await ui.ev(missingCount)) === 0,
+          'bulle partie : aucun avis « introuvable » dans le fil'
+        )
+        check(
+          await ui.ev(`!!${ui.$('turn-summary')}`),
+          'bulle partie : le pied du tour reste visible'
         )
         await ui.shot('45-fichier-absent-pied')
         await ui.click(link('docs'))

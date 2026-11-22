@@ -324,6 +324,16 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   - Captures de l'état réel (pilote, profil temporaire, agent factice `liens-fichiers`, fichiers
     supprimés après la réponse) : `docs/maquettes/272-avis-fichier-introuvable/reel-{light,dark}-
     {1-bulle,2-barre,3-survol}.png`. `./scripts/verify` : code 0.
+- 2026-11-22 — Suite e2e `links` lancée : rouge, en clair comme en sombre, sur « bulle partie
+  après 3 s ». Mesuré (sonde temporaire, retirée) : aucun avis dans le fil, `absent.md` barré
+  (`file-link-gone`), pied du tour présent ; l'app faisait ce qu'il faut. **C'était l'essai** :
+  `ui.ev(struck)` rendait l'élément lui-même, qui ne revient pas par valeur (`returnByValue`),
+  donc toujours `undefined`. Corrigé en `ui.ev(`!!${struck}`)` (test fait dans la page). Le
+  contrôle est découpé en trois (barré, aucun avis, pied du tour) pour qu'un prochain échec dise
+  lequel tombe. Aucun changement de l'app, donc pas de nouvel essai unitaire. `./scripts/verify` :
+  0 ; `pnpm build` puis `pnpm e2e links` cinq fois : 0 à chaque fois (clair et sombre). Captures
+  `45-*` regardées : barré et bulle corrects ; la bulle déborde sur la ligne suivante du message
+  (« Voir aussi… » en partie caché pendant 3 s), non corrigé, à trancher.
 
 ## Reste
 
@@ -334,8 +344,9 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
-- D2 (rc.3) : option C codée le 2026-11-22 (voir le journal) ; la suite e2e `links` mise à jour
-  reste à lancer. Aperçu et onglet Fichiers gardent leur avis.
+- D2 (rc.3) : option C codée le 2026-11-22 (voir le journal) ; suite e2e `links` verte. Aperçu
+  et onglet Fichiers gardent leur avis. La bulle recouvre la ligne suivante pendant 3 s : à
+  trancher.
 - Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle
   d'à côté ne reçoit pas le signal « des fichiers ont pu changer » ; ses « non » ne sont
   revérifiés qu'au prochain signal de cette conversation. Laissé tel quel (relecture, point E).
