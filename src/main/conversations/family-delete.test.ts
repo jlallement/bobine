@@ -211,6 +211,30 @@ describe('supprimer une mère (fiche 228)', () => {
   })
 })
 
+describe('confirmation : qui est « en cours » (fiches 228, 250)', () => {
+  it('comme la barre latérale : une fille qui démarre l’est aussi, pas celle qui attend ou a fini', () => {
+    const statuses = {
+      a: 'busy',
+      b: 'starting',
+      c: 'ready',
+      d: 'needs-action',
+      e: 'stopped'
+    } as const
+    const host = {
+      family: () =>
+        Object.keys(statuses).map((id) => ({ id, title: id.toUpperCase(), motherId: 'm' })),
+      state: () => ({
+        conversations: Object.entries(statuses).map(([id, status]) => ({ id, status }))
+      })
+    } as unknown as Parameters<typeof familyOf>[0]
+    expect(
+      familyOf(host, 'm')
+        .filter((m) => m.busy)
+        .map((m) => m.id)
+    ).toEqual(['a', 'b'])
+  })
+})
+
 describe('archiver une mère (fiche 228)', () => {
   it('ses filles suivent, et ressortent avec elle ; une fille déjà archivée reste aux archives', async () => {
     const env = environment()
