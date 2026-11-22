@@ -5,7 +5,7 @@
  */
 import { log } from '../log'
 import type { ConversationsState, DeleteOptions } from '@shared/agent'
-import type { FamilyMember } from '@shared/children'
+import { childState, type FamilyMember } from '@shared/children'
 import type { ConversationManager } from './manager'
 
 /** Attente bornée de la fin du tour d'une fille arrêtée, avant de la supprimer. */
@@ -17,14 +17,18 @@ export type FamilyHost = Pick<
   'state' | 'delete' | 'cancel' | 'post' | 'updateRecord' | 'family'
 >
 
-/** Descendance de `id` pour la confirmation de suppression : qui répond en ce moment. */
+/**
+ * Descendance de `id` pour la confirmation de suppression : qui est « en cours » en ce moment,
+ * comme la barre latérale le montre (`childState`). Une fille qui démarre (worktree, agent, consigne
+ * pas encore partie, fiche 223) l'est aussi : elle va travailler, la supprimer l'arrête (fiche 250).
+ */
 export function familyOf(host: FamilyHost, id: string): FamilyMember[] {
   const summaries = new Map(host.state().conversations.map((c) => [c.id, c]))
   return host.family(id).map((m) => {
     const summary = summaries.get(m.id)
     return {
       ...m,
-      ...(summary?.status === 'busy' ? { busy: true } : {}),
+      ...(summary && childState(summary) === 'running' ? { busy: true } : {}),
       ...(summary ? { profileLabel: summary.profileLabel } : {}),
       ...(summary?.agentDeletes ? { agentDeletes: true } : {})
     }

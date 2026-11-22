@@ -8,7 +8,7 @@ function fakeScroller() {
   el.appendChild(document.createElement('div'))
   const box = { scrollHeight: 1000, clientHeight: 200, scrollTop: 0 }
   Object.defineProperties(el, {
-    scrollHeight: { get: () => box.scrollHeight },
+    scrollHeight: { get: () => box.scrollHeight, configurable: true },
     clientHeight: { get: () => box.clientHeight },
     scrollTop: {
       get: () => box.scrollTop,
@@ -269,5 +269,87 @@ describe('suivi du bas du fil (fiche 050)', () => {
     rerender({ conversation: 'c1', items: [1, 2], empty: false })
     expect(box.scrollTop).toBe(1000)
     el.remove()
+  })
+})
+
+describe('clic commencé dans le fil (fiche 250)', () => {
+  /**
+   * Fil près du bas, avec ce que fait le navigateur quand son contenu rétrécit : le défilement est
+   * borné à la nouvelle hauteur, que la hauteur minimale de la colonne (l'élément contenu) relève.
+   */
+  function clampingThread() {
+    const thread = setup()
+    const column = thread.el.firstElementChild as HTMLElement
+    const content = { height: 1000 }
+    // La colonne commence 52 px sous le haut du contenu qui défile (un bandeau au-dessus d'elle).
+    const above = 52
+    vi.spyOn(thread.el, 'getBoundingClientRect').mockReturnValue({ top: 100 } as DOMRect)
+    vi.spyOn(column, 'getBoundingClientRect').mockImplementation(
+      () => ({ top: 100 + above - thread.box.scrollTop }) as DOMRect
+    )
+    const reserved = () => parseFloat(column.style.minHeight) || 0
+    const height = () => Math.max(content.height, above + reserved())
+    Object.defineProperty(thread.el, 'scrollHeight', { get: height })
+    /** La fin d'un tour : le bas du fil perd `px` pixels. */
+    const shrink = (px: number) => {
+      content.height -= px
+      thread.box.scrollTop = Math.min(thread.box.scrollTop, height() - thread.box.clientHeight)
+    }
+    // Le fil s'est ouvert en bas ; le navigateur borne le `scrollTop = scrollHeight` du suivi.
+    shrink(0)
+    const button = document.createElement('button')
+    column.append(button)
+    document.body.append(thread.el)
+    return { ...thread, column, button, shrink }
+  }
+  const press = (target: Element, type: string) =>
+    act(() => {
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: 60, clientY: 150 }))
+    })
+
+  it('le bas qui rétrécit entre l’appui et le relâché ne déplace pas le fil sous le pointeur', () => {
+    vi.useFakeTimers()
+    try {
+      const { box, el, column, button, shrink } = clampingThread()
+      expect(box.scrollTop).toBe(800)
+      press(button, 'pointerdown')
+      // Rien ne bouge à l'appui : la hauteur réservée est celle du moment.
+      expect(column.style.minHeight).toBe('948px')
+      expect(el.scrollHeight).toBe(1000)
+      shrink(20)
+      expect(box.scrollTop).toBe(800)
+      press(button, 'pointerup')
+      // Le `click` part après `pointerup`, dans la même tâche : la hauteur tient encore.
+      expect(column.style.minHeight).toBe('948px')
+      act(() => vi.runAllTimers())
+      // Relâché : le fil reprend sa vraie hauteur.
+      expect(column.style.minHeight).toBe('')
+      shrink(0)
+      expect(box.scrollTop).toBe(780)
+      el.remove()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('appui hors du fil ou clic droit : rien n’est réservé ; appui annulé : la hauteur est rendue', () => {
+    vi.useFakeTimers()
+    try {
+      const { el, column, button } = clampingThread()
+      press(document.body, 'pointerdown')
+      expect(column.style.minHeight).toBe('')
+      act(() => {
+        button.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }))
+      })
+      expect(column.style.minHeight).toBe('')
+      press(button, 'pointerdown')
+      expect(column.style.minHeight).toBe('948px')
+      press(button, 'pointercancel')
+      act(() => vi.runAllTimers())
+      expect(column.style.minHeight).toBe('')
+      el.remove()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
