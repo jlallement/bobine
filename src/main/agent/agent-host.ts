@@ -254,6 +254,8 @@ export class AgentHost {
   private starting: Promise<void> | undefined
   /** Lancement en cours (le temps de lire les clés d'API) ; retiré par `stop`. */
   private launchToken: object | undefined
+  /** Arrêté pour de bon (`stop({ forGood: true })`) : `start` refusé. */
+  private closed = false
   /** Processus de l'agent et son journal : fin de la sortie d'erreur, relevé ACP (fiche 080). */
   private launched: AgentProcess | undefined
   /** Dernier octet reçu de l'agent : un agent qui se tait pendant un tour est signalé. */
@@ -479,6 +481,7 @@ export class AgentHost {
 
   /** Démarre l'agent si besoin. Idempotent : des appels concurrents partagent le même démarrage. */
   start(): Promise<void> {
+    if (this.closed) return Promise.reject(new Error(t('agentHost.notReady', { status: 'idle' })))
     // Carte d'action : l'agent est là et attend l'utilisateur, jamais un second processus.
     if (this.is('ready') || this.is('busy') || this.is('needs-action')) return Promise.resolve()
     return this.starting ?? this.tracked(this.doStart())
@@ -776,7 +779,7 @@ export class AgentHost {
       return this.afterTurn(connection, false)
     }
     // ACP : en annulant un tour, le client répond `cancelled` à toutes les permissions en attente.
-    this.cancelPermissions()
+    this.requests.cancelAll()
     // Agent figé qui ignore `session/cancel` : arrêté passé le délai de grâce (« Relancer » reprend).
     if (child) {
       this.stopWatch.armCancel(child, this.timeout('cancelGraceMs'), () => {
@@ -805,12 +808,14 @@ export class AgentHost {
     this.requests.respondElicitation(requestId, answer)
   }
 
-  private cancelPermissions(): void {
-    this.requests.cancelAll()
-  }
-
-  /** Arrête l'agent sans émettre d'erreur. */
-  stop(): void {
+  /**
+   * Arrête l'agent sans émettre d'erreur. `forGood` (fermeture de l'app, `stopAll`) : plus aucun
+   * lancement ensuite. Sans cela, un démarrage en cours rendait la main comme réussi à qui
+   * l'attendait, et son envoi suivant relançait l'agent : un processus né après la fermeture, qui
+   * faisait encore son tour (CI Windows du 2026-11-21, `children-review`).
+   */
+  stop({ forGood = false } = {}): void {
+    if (forGood) this.closed = true
     const { child, connection } = this
     this.launchToken = undefined
     this.child = undefined
@@ -823,7 +828,7 @@ export class AgentHost {
     this.retry.clear()
     this.silentSince = undefined
     this.turnAuth.clear()
-    this.cancelPermissions()
+    this.requests.cancelAll()
     this.appEndpoint.close()
     this.appTools.clear()
     this.subagents.reset()
@@ -1026,7 +1031,7 @@ export class AgentHost {
     // Sortie inattendue : ce que l'agent avait lancé (commande en cours) reste dans son groupe.
     killTree(child)
     this.child = undefined
-    this.cancelPermissions()
+    this.requests.cancelAll()
     this.connection?.close()
     this.connection = undefined
     this.sessionId = undefined

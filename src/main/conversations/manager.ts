@@ -1139,7 +1139,9 @@ export class ConversationManager {
     for (const listener of [...this.listeners]) listener.stopped?.()
     this.writer.cancelPending()
     for (const conversation of this.conversations.values()) {
-      conversation.host?.stop()
+      // Pour de bon : un travail commencé avant (premier message d'une fille ou d'un relecteur
+      // qui attendait son agent) ne le relance pas ensuite.
+      conversation.host?.stop({ forGood: true })
       // Plus de boucle d'évènements après : écriture synchrone.
       this.flush(conversation, { sync: true })
       // Conversation en worktree jamais commencée : son worktree ne doit pas survivre à l'app.
