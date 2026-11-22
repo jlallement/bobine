@@ -192,3 +192,19 @@ Dependabot comme les autres.
   Limite connue : sous Windows sans objets de tâche (essais), `stopGroup` arrête par le handle et
   ne note rien à attendre ; `settleStoppedTrees` y rend la main aussitôt. Aucun ENOTEMPTY relevé
   sous Windows pour ces fichiers.
+
+- 2026-11-22 — Clic perdu à la fin d'un tour, et `filles` instable : deux défauts de l'app,
+  corrigés à la cause (branche `fix/clic-perdu-et-filles`). Ni délai allongé, ni nouvelle
+  tentative, ni essai sauté, ni pause fixe :
+
+  | Essai | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `filles-fusion` (clic sur une ligne de travail perdu, relevé plus haut) | Défaut de l'app, pas de l'essai. Relevé sous charge : au moment de l'appui, `scrollHeight` du fil vaut la hauteur de la colonne plus environ 29 px de marge du bas (marge du dernier élément, qui déborde de la colonne) ; la mère finit son tour, la colonne grandit de 7,5 px mais la marge disparaît : le fil perd environ 21 px, le navigateur borne le défilement (1885 → 1864,5) et le contenu remonte sous le pointeur. `data-scroll-hold` empêche le suivi du bas, pas ce bornage. | `useThreadScroll` : pendant un appui du bouton principal dans le fil (`pointerdown` → `pointerup`/`pointercancel`, ou perte du focus de la fenêtre), la colonne garde en `min-height` la hauteur de défilement du moment (comptée depuis le haut de la colonne dans le contenu qui défile : `offsetTop` part d'un autre parent, 52 px d'écart relevés). Libérée à la tâche suivante, après le `click`. Rien ne change au repos ; à l'appui, la hauteur réservée est exactement celle du moment (relevé : `scrollHeight` 2494 avant et après l'appui). Le fil ne reprend sa vraie hauteur qu'au relâché. Non couvert : un fil qui s'agrandit parce que la zone du bas (saisie) rétrécit pendant l'appui ; pas observé ici. | `useThreadScroll.test.ts` (bornage du navigateur reproduit dans l'essai) : rouge sans le correctif (2 essais), vert avec. L'attente « Mes travaux ont fini » ajoutée à `filles-fusion` pour contourner le défaut est retirée. |
+  | `filles` (« mère supprimée : la confirmation nomme ses 3 filles… » et « case décochée », ensemble) | Défaut de l'app. La troisième fille (`attend-stop`) est lancée dans un worktree : pendant sa préparation (worktree, agent, consigne pas encore partie, fiche 223) son statut est `starting`. La barre latérale la montre déjà « en cours » (`childState` : `busy` ou `starting`), et c'est ce qu'attend l'essai ; la confirmation, elle, ne signalait que `busy` (`familyOf`). Relevé dans 6 passages sur 6 sous charge : au moment où l'essai voit « en cours », le statut est `starting` ; la confirmation lit la descendance environ 320 ms plus tard. Quand la préparation dure plus longtemps (charge), la fille au travail n'est pas signalée, et les deux contrôles tombent. Un utilisateur aurait vu « en cours » dans la barre latérale et rien dans la confirmation. | `familyOf` suit `childState` : une fille qui démarre est « en cours, sera arrêtée » comme dans la barre latérale ; celle qui attend un accord ou a fini ne l'est pas (inchangé). | `family-delete.test.ts`, « confirmation : qui est en cours » : rouge sans le correctif (`['a']` au lieu de `['a', 'b']`), vert avec. |
+
+  Preuve sur le Mac : `filles-fusion filles travaux-groupe --jobs 3`, clair et sombre, 5 passages
+  d'affilée, codes de sortie 0 (30 tâches vertes) ; avant cela, 9 passages de diagnostic de
+  `filles filles-fusion filles-tech-lead travaux-groupe --jobs 3`, tous verts (le défaut de
+  `filles` ne s'est pas montré en rouge pendant ces passages : la cause est établie par le relevé
+  du statut, pas par un échec rejoué). Captures regardées (`filles-4a-confirmation`,
+  `264-groupe-fusionne`). Rien n'a été joué sous Linux ni sous Windows.
