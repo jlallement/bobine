@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avis de nouvelle version — maquettes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Bobine Inter', 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      /* Polices livrées avec l'app (fiche 145) : la maquette s'affiche hors ligne comme l'app. */
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        border: 0;
+        background: none;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+      svg.i.l {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .page > header p,
+      .lead {
+        color: var(--text-2);
+        margin: 0 0 6px;
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font-size: 12.5px;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 56px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .shot {
+        width: fit-content;
+        max-width: calc(100% + 28px);
+        padding: 14px;
+        margin: 10px -14px 0;
+        background: var(--doc-bg);
+      }
+      /* Un écran par ligne, à la largeur d'une fenêtre de l'app (la seconde variante dessous). */
+      .pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        width: 960px;
+        max-width: 100%;
+      }
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+      ul.points {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 14px 0 0;
+        padding-left: 20px;
+      }
+      ul.points li + li {
+        margin-top: 4px;
+      }
+
+      /* ===== Fenêtre principale (barre latérale + conversation) ===== */
+      .win {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+        display: flex;
+        height: 500px;
+        position: relative;
+        overflow: hidden;
+      }
+      .sidebar {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+      }
+      .sidebar-header {
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px 0 16px;
+      }
+      .lights {
+        display: flex;
+        gap: 8px;
+      }
+      .lights span {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--surface-3);
+      }
+      .sidebar-fixed {
+        padding: 4px 8px 6px;
+        display: flex;
+        flex-direction: column;
+      }
+      .sidebar-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        padding: 0 8px 12px;
+      }
+      .sidebar-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: 13.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sidebar-item.active {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      .sidebar-item.primary {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .icon-badge {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+      }
+      .primary .icon-badge {
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+        color: var(--on-accent);
+      }
+      .sidebar-section {
+        height: 28px;
+        margin: 8px 0 2px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .sidebar-footer {
+        border-top: 1px solid var(--border);
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .agent-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius-pill);
+        background: var(--surface-3);
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        font-size: 13px;
+        position: relative;
+        flex-shrink: 0;
+      }
+      .status-dot {
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: 9px;
+        height: 9px;
+        border-radius: var(--radius-pill);
+        background: var(--ok);
+        border: 2px solid var(--sidebar);
+        box-sizing: content-box;
+      }
+      .who {
+        flex: 1;
+        min-width: 0;
+      }
+      .who .name {
+        font-weight: 500;
+        font-size: 13px;
+      }
+      .who .sub {
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .icon-button {
+        width: 26px;
+        height: 26px;
+        border-radius: var(--radius-sm);
+        display: inline-grid;
+        place-items: center;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .icon-button.hover {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+
+      /*
+       * Option A (nouveau) : une ligne au-dessus du pied de la barre latérale. Teinte de l'accent à
+       * peine posée sur la barre, comme un élément de la liste ; pas d'ombre, pas d'animation.
+       */
+      .update-line {
+        margin: 0 8px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 4px 6px 10px;
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--accent) 9%, var(--sidebar));
+        color: var(--text-2);
+        font-size: 12.5px;
+        line-height: 1.35;
+        position: relative;
+      }
+      .update-line > svg {
+        color: var(--accent);
+      }
+      .update-line .text {
+        flex: 1;
+        min-width: 0;
+      }
+      .update-line .text b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .update-line .text > span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .update-line .pre {
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .link-button {
+        color: var(--accent);
+        font-weight: 500;
+        font-size: 12.5px;
+        padding: 2px 4px;
+      }
+      .tooltip {
+        position: absolute;
+        right: -6px;
+        bottom: calc(100% + 6px);
+        white-space: nowrap;
+        background: var(--text);
+        color: var(--bg);
+        font-size: 12px;
+        padding: 5px 9px;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-menu);
+        z-index: 3;
+      }
+
+      /* Conversation à droite */
+      .main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .conv-head {
+        height: 46px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        font-size: 13.5px;
+        white-space: nowrap;
+      }
+      .conv-head .muted {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 12.5px;
+      }
+      .thread {
+        flex: 1;
+        overflow: hidden;
+        padding: 18px 22px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .msg-user {
+        align-self: flex-end;
+        max-width: 80%;
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 8px 13px;
+        line-height: 1.5;
+      }
+      .msg-agent {
+        line-height: 1.6;
+      }
+      .msg-agent p {
+        margin: 0 0 6px;
+      }
+      .msg-agent code {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xs);
+        padding: 0 4px;
+      }
+      .composer {
+        margin: 0 18px 16px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 10px 12px;
+        color: var(--muted);
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .composer .send {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface-3);
+        color: var(--muted);
+        display: inline-grid;
+        place-items: center;
+      }
+
+      /* Option B : avis de l'app (fiche 194, `app-alerts.css`), en haut de la conversation. */
+      .app-alert {
+        position: absolute;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(460px, calc(100% - 32px));
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 11px 10px 11px 14px;
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-menu);
+        font-size: 13.5px;
+        z-index: 2;
+      }
+      .app-alert > svg {
+        color: var(--accent);
+        margin-top: 2px;
+      }
+      .app-alert .text {
+        flex: 1;
+        min-width: 0;
+      }
+      .app-alert small {
+        display: block;
+        color: var(--text-2);
+        font-size: 12.5px;
+        margin-top: 2px;
+        line-height: 1.45;
+      }
+      .app-alert .actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      /* ===== Boutons (styles.css) ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 32px;
+        padding: 6px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+        white-space: nowrap;
+      }
+      .btn.small {
+        min-height: 0;
+        padding: 4px 10px;
+        font-size: 12px;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .btn.ghost {
+        border-color: transparent;
+        background: transparent;
+        color: var(--text-2);
+      }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== Fenêtre des Réglages (styles.css : .settings-*) ===== */
+      .sheet {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-menu);
+        display: flex;
+        height: 500px;
+        overflow: hidden;
+      }
+      .settings-nav {
+        width: 210px;
+        flex-shrink: 0;
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        padding: 18px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .settings-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 8px 12px;
+      }
+      .settings-nav-gap {
+        height: 14px;
+      }
+      .settings-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--text-2);
+        font-size: 13.5px;
+        padding: 7px 10px;
+        border-radius: var(--radius-sm);
+        white-space: nowrap;
+      }
+      .settings-nav-item.active {
+        background: var(--surface-3);
+        color: var(--text);
+        font-weight: 500;
+      }
+      .settings-nav-item.active svg {
+        color: var(--accent);
+      }
+      .settings-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 14px 10px 32px;
+      }
+      .settings-heading {
+        flex: 1;
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .settings-body {
+        flex: 1;
+        overflow: hidden;
+        padding: 6px 32px 32px;
+      }
+      .settings-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+      }
+      .settings-card + .settings-card {
+        margin-top: 10px;
+      }
+      .settings-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-row:last-child {
+        border-bottom: 0;
+      }
+      .settings-row:has(+ .settings-note) {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .settings-row-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .settings-row-label {
+        font-size: 14px;
+      }
+      .settings-row-hint {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-top: 3px;
+        line-height: 1.45;
+      }
+      .settings-row-control {
+        flex-shrink: 0;
+      }
+      .settings-note {
+        margin: 10px 16px 14px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 12.5px;
+        line-height: 1.5;
+        background: var(--surface-2);
+        color: var(--text-2);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .settings-note > svg {
+        margin-top: 1px;
+      }
+      .settings-note.ok > svg {
+        color: var(--ok);
+      }
+      .settings-note.new > svg {
+        color: var(--accent);
+      }
+      .settings-note.warn {
+        background: var(--warn-soft);
+      }
+      .settings-note.warn > svg {
+        color: var(--warn);
+      }
+      .settings-note .grow {
+        flex: 1;
+      }
+      .settings-note b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .settings-note .btn {
+        margin-top: -3px;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 22px;
+      }
+      .switch span {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+      }
+      .switch span::after {
+        content: '';
+        position: absolute;
+        left: 2px;
+        top: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: var(--radius-pill);
+        background: #fff;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+        transform: translateX(16px);
+      }
+      .settings-about-head {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 18px;
+      }
+      .settings-about-name {
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .settings-about-version {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 1px;
+      }
+      .settings-about-description {
+        font-size: 13px;
+        color: var(--text-2);
+        margin-top: 6px;
+      }
+      .settings-version {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .settings-version + .settings-version {
+        border-top: 1px solid var(--border);
+      }
+      .settings-version .date {
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .settings-version svg {
+        margin-left: auto;
+        align-self: center;
+        color: var(--muted);
+      }
+
+      /* ===== Tableau ===== */
+      table.cmp {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        font-size: 13px;
+      }
+      table.cmp th,
+      table.cmp td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      table.cmp th {
+        background: var(--surface-2);
+        font-weight: 600;
+      }
+      table.cmp tr:last-child td {
+        border-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Icônes Lucide de l'app (lucide-react), tracés repris tels quels. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="circle-arrow-up" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m16 12-4-4-4 4" />
+        <path d="M12 16V8" />
+      </symbol>
+      <symbol id="x" viewBox="0 0 24 24">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </symbol>
+      <symbol id="plus" viewBox="0 0 24 24">
+        <path d="M5 12h14" />
+        <path d="M12 5v14" />
+      </symbol>
+      <symbol id="search" viewBox="0 0 24 24">
+        <path d="m21 21-4.34-4.34" />
+        <circle cx="11" cy="11" r="8" />
+      </symbol>
+      <symbol id="panel-left" viewBox="0 0 24 24">
+        <rect width="18" height="18" x="3" y="3" rx="2" />
+        <path d="M9 3v18" />
+      </symbol>
+      <symbol id="settings" viewBox="0 0 24 24">
+        <path
+          d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+        />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="bell" viewBox="0 0 24 24">
+        <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+        <path
+          d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+        />
+      </symbol>
+      <symbol id="arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></symbol>
+      <symbol id="external-link" viewBox="0 0 24 24">
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </symbol>
+      <symbol id="refresh-cw" viewBox="0 0 24 24">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+        <path d="M8 16H3v5" />
+      </symbol>
+      <symbol id="loader-circle" viewBox="0 0 24 24">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </symbol>
+      <symbol id="circle-check" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m16 9-5.5 5.5L8 12" />
+      </symbol>
+      <symbol id="triangle-alert" viewBox="0 0 24 24">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </symbol>
+      <symbol id="chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+      <symbol id="sparkles" viewBox="0 0 24 24">
+        <path
+          d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+        />
+        <path d="M20 2v4" />
+        <path d="M22 4h-4" />
+        <circle cx="4" cy="20" r="2" />
+      </symbol>
+      <symbol id="palette" viewBox="0 0 24 24">
+        <path
+          d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
+        />
+      </symbol>
+      <symbol id="keyboard" viewBox="0 0 24 24">
+        <path d="M7 16h10" />
+        <rect width="20" height="16" x="2" y="4" rx="2" />
+      </symbol>
+      <symbol id="messages-square" viewBox="0 0 24 24">
+        <path
+          d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+        />
+        <path
+          d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"
+        />
+      </symbol>
+      <symbol id="bot" viewBox="0 0 24 24">
+        <path d="M12 8V4H8" />
+        <rect width="16" height="12" x="4" y="8" rx="2" />
+        <path d="M2 14h2M20 14h2M15 13v2M9 13v2" />
+      </symbol>
+      <symbol id="shield" viewBox="0 0 24 24">
+        <path
+          d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+        />
+      </symbol>
+      <symbol id="hard-drive" viewBox="0 0 24 24">
+        <path
+          d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+        />
+        <path d="M21.946 12.013H2.054M6 16h.01M10 16h.01" />
+      </symbol>
+      <symbol id="stethoscope" viewBox="0 0 24 24">
+        <path d="M11 2v2M5 2v2" />
+        <path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1" />
+        <path d="M8 15a6 6 0 0 0 12 0v-3" />
+        <circle cx="20" cy="10" r="2" />
+      </symbol>
+    </svg>
+
+    <div class="page">
+      <header>
+        <div>
+          <h1>Avis de nouvelle version</h1>
+          <p>
+            Fiche 274 (risque R5 de la fiche 187, ADR-0066 proposé). Au lancement, une fois par jour
+            au plus, Bobine regarde les versions publiées sur GitHub. S’il en existe une plus
+            récente, elle le dit sobrement : rien ne se télécharge ni ne s’installe, l’avis ouvre la
+            page de la version dans le navigateur. Hors ligne ou en cas d’erreur, rien ne s’affiche.
+            Deux emplacements possibles pour l’avis (A, recommandé ; B), puis le réglage et ses
+            états. Rien n’est codé.
+          </p>
+          <p>
+            Exemples : version installée 1.0.0, nouvelle version 1.0.1 ; pour une préversion
+            installée (1.0.0-rc.3), la préversion suivante ou la version finale.
+          </p>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Thème de la page">
+          <button data-set="system" aria-pressed="true">Système</button>
+          <button data-set="light" aria-pressed="false">Clair</button>
+          <button data-set="dark" aria-pressed="false">Sombre</button>
+        </div>
+      </header>
+
+      <!-- ===== Option A ===== -->
+      <section>
+        <h2 class="screen">
+          A. Une ligne en bas de la barre latérale<span class="tag reco">recommandée</span>
+        </h2>
+        <p class="lead">
+          Juste au-dessus du pied de l’agent, près de Réglages : « Bobine 1.0.1 est disponible », «
+          Voir » (ouvre la page de la version dans le navigateur) et ✕ (« Plus tard » : plus rien
+          pour cette version, même après relance). Teinte de l’accent à peine posée, ni ombre, ni
+          animation, ni son. Elle ne couvre rien et attend qu’on la regarde.
+        </p>
+        <div class="shot" data-shot="option-a">
+          <div class="pair">
+            <div>
+              <p class="caption">Version finale installée (1.0.0) → 1.0.1</p>
+              <div class="win" data-win="a-final"></div>
+            </div>
+            <div>
+              <p class="caption">Préversion installée (1.0.0-rc.3) → rc.4 ; survol du ✕</p>
+              <div class="win" data-win="a-pre"></div>
+            </div>
+          </div>
+        </div>
+        <ul class="points">
+          <li>
+            <b>Pour</b> : sobre, jamais par-dessus le travail ; visible sans interrompre, au même
+            endroit à chaque lancement jusqu’à la décision ; une version finale n’est avertie que
+            d’une version finale.
+          </li>
+          <li>
+            <b>Contre</b> : un élément nouveau (petit) dans la barre latérale ; barre latérale
+            masquée, l’avis attend qu’on la rouvre (il reste dans Réglages › Nouveautés).
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">A, en anglais</h2>
+        <div class="shot" data-shot="option-a-en">
+          <div class="pair">
+            <div>
+              <p class="caption">Installed 1.0.0 → 1.0.1</p>
+              <div class="win" data-win="a-final-en"></div>
+            </div>
+            <div>
+              <p class="caption">Installed 1.0.0-rc.3 → rc.4; hovering ✕</p>
+              <div class="win" data-win="a-pre-en"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Option B ===== -->
+      <section>
+        <h2 class="screen">B. Un avis non bloquant en haut de la fenêtre</h2>
+        <p class="lead">
+          Le composant des avis de l’app (fiche 194 : plantage précédent, problème interne), en haut
+          de la conversation : titre, une phrase, « Voir la version » et « Plus tard ». Il reste
+          jusqu’à l’un des deux ou au ✕ ; pas de minuterie.
+        </p>
+        <div class="shot" data-shot="option-b">
+          <div class="pair">
+            <div>
+              <p class="caption">Au lancement, version finale installée (1.0.0)</p>
+              <div class="win" data-win="b"></div>
+            </div>
+          </div>
+        </div>
+        <ul class="points">
+          <li><b>Pour</b> : composant existant (moins de code) ; impossible à manquer.</li>
+          <li>
+            <b>Contre</b> : posé par-dessus le fil, à l’endroit et avec le poids des incidents ;
+            pour une information qui n’a rien d’urgent, il interrompt.
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== Réglages ===== -->
+      <section>
+        <h2 class="screen">Réglage : Réglages › Nouveautés — à jour</h2>
+        <p class="lead">
+          La page qui donne déjà la version installée et le journal des versions. Une carte sous
+          l’en-tête : l’interrupteur (activé par défaut), la date de la dernière vérification
+          réussie, « Vérifier maintenant » (toujours possible, même interrupteur coupé). Pendant la
+          vérification, le bouton dit « Vérification… » et se désactive (à droite).
+        </p>
+        <div class="shot" data-shot="reglages-a-jour">
+          <div class="pair">
+            <div>
+              <p class="caption">Après « Vérifier maintenant » : à jour</p>
+              <div class="sheet" data-sheet="ok"></div>
+            </div>
+            <div>
+              <p class="caption">Pendant la vérification</p>
+              <div class="sheet" data-sheet="checking"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="screen">Réglage — nouvelle version</h2>
+        <p class="lead">
+          Ce que la vérification (automatique ou à la main) a trouvé reste affiché ici, même après «
+          Plus tard » sur la ligne de la barre latérale. « Voir la version » ouvre la page vérifiée
+          de GitHub. À gauche, version finale installée ; à droite, préversion installée, avertie de
+          la version finale.
+        </p>
+        <div class="shot" data-shot="reglages-nouvelle-version">
+          <div class="pair">
+            <div>
+              <p class="caption">1.0.0 installée → 1.0.1</p>
+              <div class="sheet" data-sheet="new"></div>
+            </div>
+            <div>
+              <p class="caption">1.0.0-rc.3 installée → 1.0.0</p>
+              <div class="sheet" data-sheet="new-pre"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="screen">Réglage — échec</h2>
+        <p class="lead">
+          Seulement après « Vérifier maintenant » : une vérification automatique qui échoue ne
+          montre rien (une ligne au journal). Une phrase courte, sans code d’erreur ; la date de la
+          dernière vérification réussie ne change pas. Trois raisons : pas de réponse (hors ligne,
+          délai), limite de GitHub atteinte (403, 429), réponse illisible.
+        </p>
+        <div class="shot" data-shot="reglages-echec">
+          <div class="pair">
+            <div>
+              <p class="caption">Hors ligne ou pas de réponse</p>
+              <div class="sheet" data-sheet="fail"></div>
+            </div>
+            <div>
+              <p class="caption">Limite de GitHub atteinte</p>
+              <div class="sheet" data-sheet="limit"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="screen">Réglage, en anglais</h2>
+        <div class="shot" data-shot="reglages-en">
+          <div class="pair">
+            <div>
+              <p class="caption">Installed 1.0.0-rc.3 → 1.0.0</p>
+              <div class="sheet" data-sheet="new-pre-en"></div>
+            </div>
+            <div>
+              <p class="caption">Manual check failed</p>
+              <div class="sheet" data-sheet="fail-en"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <h2 class="screen">En bref</h2>
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th></th>
+            <th>A. Ligne de la barre latérale</th>
+            <th>B. Avis en haut de la fenêtre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Couvre le travail</td>
+            <td>jamais</td>
+            <td>le haut du fil</td>
+          </tr>
+          <tr>
+            <td>Barre latérale masquée</td>
+            <td>attend sa réouverture (et Réglages)</td>
+            <td>visible</td>
+          </tr>
+          <tr>
+            <td>Élément nouveau</td>
+            <td>une ligne, sur les jetons existants</td>
+            <td>aucun (composant de la fiche 194)</td>
+          </tr>
+          <tr>
+            <td>Poids</td>
+            <td>une information</td>
+            <td>celui d’un incident</td>
+          </tr>
+          <tr>
+            <td>Commun</td>
+            <td colspan="2">
+              une fois par version (« Plus tard » ou ✕) ; ouvre la page vérifiée ; jamais de fenêtre
+              modale ; rien en cas d’échec automatique
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="screen">Textes</h2>
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th>Où</th>
+            <th>Français</th>
+            <th>English</th>
+          </tr>
+        </thead>
+        <tbody data-texts></tbody>
+      </table>
+    </div>
+
+    <script>
+      // Textes des écrans, en français et en anglais (repris dans le tableau « Textes »).
+      const T = {
+        fr: {
+          items: [
+            'Tri de la liste',
+            'Corriger le test d’export',
+            'Page d’accueil du site',
+            'Revue de la PR 42',
+            'Script de sauvegarde'
+          ],
+          newConv: 'Nouvelle conversation',
+          search: 'Rechercher',
+          recent: 'Récents',
+          ready: 'Prêt',
+          available: (v) => `<b>Bobine ${v}</b> est disponible`,
+          preAvailable: 'Préversion disponible',
+          view: 'Voir',
+          later: (v) => `Plus tard (plus rien pour la ${v})`,
+          reply: 'Répondre…',
+          settings: 'Réglages',
+          whatsNew: 'Nouveautés',
+          version: (v) => `Version ${v}`,
+          description:
+            'Application de bureau pour les agents de code ACP : IBM Bob en tête, OpenCode.',
+          checkLabel: 'Vérifier les nouvelles versions',
+          checkHint:
+            'Au lancement, une fois par jour au plus, Bobine regarde les versions publiées sur GitHub. Aucune de vos données n’est envoyée, rien ne s’installe tout seul.',
+          lastLabel: 'Dernière vérification',
+          lastValue: 'Aujourd’hui à 09:12',
+          checkNow: 'Vérifier maintenant',
+          checking: 'Vérification…',
+          upToDate: (v) => `Vous avez la dernière version (<b>${v}</b>).`,
+          newVersion: (v, cur) => `<b>Bobine ${v}</b> est disponible. Vous avez la ${cur}.`,
+          viewRelease: 'Voir la version',
+          failOffline: 'Pas de réponse de GitHub. Vérifiez la connexion, puis réessayez.',
+          failLimit: 'GitHub limite les vérifications pour l’instant. Réessayez dans une heure.',
+          failUnreadable: 'Réponse de GitHub illisible. Réessayez plus tard.',
+          alertTitle: (v) => `Bobine ${v} est disponible`,
+          alertDetail: (cur) =>
+            `Vous avez la ${cur}. Rien ne s’installe tout seul : la page de la version s’ouvre dans votre navigateur.`,
+          laterButton: 'Plus tard'
+        },
+        en: {
+          items: [
+            'Sort the list',
+            'Fix the export test',
+            'Website home page',
+            'Review PR 42',
+            'Backup script'
+          ],
+          newConv: 'New conversation',
+          search: 'Search',
+          recent: 'Recent',
+          ready: 'Ready',
+          available: (v) => `<b>Bobine ${v}</b> is available`,
+          preAvailable: 'Pre-release available',
+          view: 'View',
+          later: (v) => `Later (nothing more for ${v})`,
+          reply: 'Reply…',
+          settings: 'Settings',
+          whatsNew: 'What’s new',
+          version: (v) => `Version ${v}`,
+          description: 'Desktop app for ACP coding agents: IBM Bob first, OpenCode.',
+          checkLabel: 'Check for new versions',
+          checkHint:
+            'At launch, at most once a day, Bobine looks at the releases published on GitHub. None of your data is sent, and nothing installs by itself.',
+          lastLabel: 'Last check',
+          lastValue: 'Today at 9:12 AM',
+          checkNow: 'Check now',
+          checking: 'Checking…',
+          upToDate: (v) => `You have the latest version (<b>${v}</b>).`,
+          newVersion: (v, cur) => `<b>Bobine ${v}</b> is available. You have ${cur}.`,
+          viewRelease: 'View release',
+          failOffline: 'No answer from GitHub. Check your connection, then try again.',
+          failLimit: 'GitHub is limiting checks for now. Try again in an hour.',
+          failUnreadable: 'Unreadable answer from GitHub. Try again later.',
+          alertTitle: (v) => `Bobine ${v} is available`,
+          alertDetail: (cur) =>
+            `You have ${cur}. Nothing installs by itself: the release page opens in your browser.`,
+          laterButton: 'Later'
+        }
+      }
+      const icon = (name, cls = '') => `<svg class="i ${cls}"><use href="#${name}" /></svg>`
+
+      // ----- Fenêtre principale -----
+      function sidebar(t, update) {
+        const items = t.items.map((label, index) => [label, index === 0])
+        return `
+          <aside class="sidebar">
+            <div class="sidebar-header">
+              <div class="lights"><span></span><span></span><span></span></div>
+              <span class="icon-button">${icon('panel-left')}</span>
+            </div>
+            <div class="sidebar-fixed">
+              <div class="sidebar-item primary"><span class="icon-badge">${icon('plus', 's')}</span>${t.newConv}</div>
+              <div class="sidebar-item"><span class="icon-badge">${icon('search')}</span>${t.search}</div>
+            </div>
+            <div class="sidebar-scroll">
+              <div class="sidebar-section">${t.recent}</div>
+              ${items.map(([label, active]) => `<div class="sidebar-item${active ? ' active' : ''}">${label}</div>`).join('')}
+            </div>
+            ${update ?? ''}
+            <div class="sidebar-footer">
+              <div class="agent-avatar">O<span class="status-dot"></span></div>
+              <div class="who"><div class="name">OpenCode</div><div class="sub">${t.ready}</div></div>
+              <span class="icon-button">${icon('settings')}</span>
+              <span class="icon-button">${icon('bell')}</span>
+            </div>
+          </aside>`
+      }
+      function updateLine(t, version, { pre = false, hover = false } = {}) {
+        return `
+          <div class="update-line" role="status">
+            ${icon('circle-arrow-up')}
+            <span class="text">${pre ? `<span><b>Bobine ${version}</b></span><span class="pre">${t.preAvailable}</span>` : `<span>${t.available(version)}</span>`}</span>
+            <button class="link-button">${t.view}</button>
+            <span class="icon-button${hover ? ' hover' : ''}" aria-label="${t.later(version)}">${icon('x', 's')}</span>
+            ${hover ? `<span class="tooltip">${t.later(version)}</span>` : ''}
+          </div>`
+      }
+      function conversation(t, lang, alert) {
+        const fr = lang === 'fr'
+        return `
+          <div class="main">
+            <div class="conv-head">${fr ? 'Tri de la liste' : 'Sort the list'} <span class="muted">· OpenCode</span></div>
+            ${alert ?? ''}
+            <div class="thread">
+              <div class="msg-user">${fr ? 'Trie la liste par date, la plus récente en haut.' : 'Sort the list by date, newest first.'}</div>
+              <div class="msg-agent">
+                <p>${fr ? 'C’est fait dans' : 'Done in'} <code>src/liste.js</code>${fr ? ' : la comparaison prend la date, puis le titre à date égale.' : ': the comparison uses the date, then the title for equal dates.'}</p>
+              </div>
+            </div>
+            <div class="composer">${t.reply}<span class="send">${icon('arrow-up', 's')}</span></div>
+          </div>`
+      }
+      function appAlert(t, version, current) {
+        return `
+          <div class="app-alert" role="status">
+            ${icon('circle-arrow-up', 'l')}
+            <div class="text">
+              <b>${t.alertTitle(version)}</b>
+              <small>${t.alertDetail(current)}</small>
+              <div class="actions">
+                <button class="btn small primary">${icon('external-link', 's')}${t.viewRelease}</button>
+                <button class="btn small ghost">${t.laterButton}</button>
+              </div>
+            </div>
+            <span class="icon-button">${icon('x', 's')}</span>
+          </div>`
+      }
+      const WINS = {
+        'a-final': () => sidebar(T.fr, updateLine(T.fr, '1.0.1')) + conversation(T.fr, 'fr'),
+        'a-pre': () =>
+          sidebar(T.fr, updateLine(T.fr, '1.0.0-rc.4', { pre: true, hover: true })) +
+          conversation(T.fr, 'fr'),
+        'a-final-en': () => sidebar(T.en, updateLine(T.en, '1.0.1')) + conversation(T.en, 'en'),
+        'a-pre-en': () =>
+          sidebar(T.en, updateLine(T.en, '1.0.0-rc.4', { pre: true, hover: true })) +
+          conversation(T.en, 'en'),
+        b: () => sidebar(T.fr) + conversation(T.fr, 'fr', appAlert(T.fr, '1.0.1', '1.0.0'))
+      }
+
+      // ----- Réglages › Nouveautés -----
+      const APP_ICON = `
+        <svg viewBox="16 16 224 224" width="56" height="56" aria-hidden="true">
+          <rect x="16" y="16" width="224" height="224" rx="50" fill="#165C63" />
+          <g fill="#F4F0E5" transform="translate(0 -6)">
+            <path d="M76 61 H180 A14 14 0 0 1 180 89 H102 V99 Q102 102 107 102 L153 106 C171 107 181 112 181 121 C181 129 174 133 160 137 L91 156 C84 158 79 155 78 150 C77 144 81 140 87 138 L147 122 L100 119 C88 118 84 113 84 103 V89 H76 A14 14 0 0 1 76 61 Z" />
+            <path d="M170 142 C178 140 183 149 178 155 C175 159 168 161 160 163 L109 176 Q102 178 102 180 H180 A14 14 0 0 1 180 208 H76 A14 14 0 0 1 76 180 H84 V175 C84 163 91 158 103 155 Z" />
+          </g>
+          <path d="M111 181 L120 188 L111 195 M130 195 H145" fill="none" stroke="#165C63" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>`
+      const NAV = {
+        fr: [
+          ['settings', 'Général'],
+          ['palette', 'Apparence'],
+          ['bell', 'Notifications'],
+          ['keyboard', 'Raccourcis clavier'],
+          null,
+          ['messages-square', 'Conversations'],
+          ['bot', 'Agents'],
+          null,
+          ['shield', 'Confidentialité'],
+          ['hard-drive', 'Données'],
+          ['stethoscope', 'Diagnostic'],
+          ['sparkles', 'Nouveautés', true]
+        ],
+        en: [
+          ['settings', 'General'],
+          ['palette', 'Appearance'],
+          ['bell', 'Notifications'],
+          ['keyboard', 'Keyboard shortcuts'],
+          null,
+          ['messages-square', 'Conversations'],
+          ['bot', 'Agents'],
+          null,
+          ['shield', 'Privacy'],
+          ['hard-drive', 'Data'],
+          ['stethoscope', 'Diagnostics'],
+          ['sparkles', 'What’s new', true]
+        ]
+      }
+      function sheet(lang, { installed, state, found }) {
+        const t = T[lang]
+        const nav = NAV[lang]
+          .map((item) =>
+            item
+              ? `<div class="settings-nav-item${item[2] ? ' active' : ''}">${icon(item[0])}${item[1]}</div>`
+              : '<div class="settings-nav-gap"></div>'
+          )
+          .join('')
+        const button =
+          state === 'checking'
+            ? `<button class="btn small" disabled>${icon('loader-circle', 's spin')}${t.checking}</button>`
+            : `<button class="btn small">${icon('refresh-cw', 's')}${t.checkNow}</button>`
+        const note = {
+          ok: `<div class="settings-note ok">${icon('circle-check', 's')}<span class="grow">${t.upToDate(installed)}</span></div>`,
+          new: `<div class="settings-note new">${icon('circle-arrow-up', 's')}<span class="grow">${t.newVersion(found, installed)}</span><button class="btn small primary">${icon('external-link', 's')}${t.viewRelease}</button></div>`,
+          fail: `<div class="settings-note warn">${icon('triangle-alert', 's')}<span class="grow">${t.failOffline}</span></div>`,
+          limit: `<div class="settings-note warn">${icon('triangle-alert', 's')}<span class="grow">${t.failLimit}</span></div>`,
+          checking: ''
+        }[state]
+        const versions = [
+          [installed, lang === 'fr' ? '21 novembre 2026' : 'November 21, 2026'],
+          ['1.0.0-rc.2', lang === 'fr' ? '19 novembre 2026' : 'November 19, 2026'],
+          ['1.0.0-rc.1', lang === 'fr' ? '17 novembre 2026' : 'November 17, 2026']
+        ]
+        return `
+          <nav class="settings-nav">
+            <div class="settings-title">${t.settings}</div>
+            ${nav}
+          </nav>
+          <div class="settings-main">
+            <div class="settings-header">
+              <h3 class="settings-heading">${t.whatsNew}</h3>
+              <span class="icon-button">${icon('x')}</span>
+            </div>
+            <div class="settings-body">
+              <div class="settings-card">
+                <div class="settings-about-head">
+                  ${APP_ICON}
+                  <div>
+                    <div class="settings-about-name">Bobine</div>
+                    <div class="settings-about-version">${t.version(installed)}</div>
+                    <div class="settings-about-description">${t.description}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-row">
+                  <div class="settings-row-text">
+                    <div class="settings-row-label">${t.checkLabel}</div>
+                    <div class="settings-row-hint">${t.checkHint}</div>
+                  </div>
+                  <div class="settings-row-control"><span class="switch"><span></span></span></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-text">
+                    <div class="settings-row-label">${t.lastLabel}</div>
+                    <div class="settings-row-hint">${t.lastValue}</div>
+                  </div>
+                  <div class="settings-row-control">${button}</div>
+                </div>
+                ${note}
+              </div>
+              <div class="settings-card">
+                ${versions
+                  .map(
+                    ([name, date]) =>
+                      `<div class="settings-version">${name}<span class="date">${date}</span>${icon('chevron-right', 's')}</div>`
+                  )
+                  .join('')}
+              </div>
+            </div>
+          </div>`
+      }
+      const SHEETS = {
+        ok: () => sheet('fr', { installed: '1.0.0', state: 'ok' }),
+        checking: () => sheet('fr', { installed: '1.0.0', state: 'checking' }),
+        new: () => sheet('fr', { installed: '1.0.0', state: 'new', found: '1.0.1' }),
+        'new-pre': () => sheet('fr', { installed: '1.0.0-rc.3', state: 'new', found: '1.0.0' }),
+        fail: () => sheet('fr', { installed: '1.0.0', state: 'fail' }),
+        limit: () => sheet('fr', { installed: '1.0.0', state: 'limit' }),
+        'new-pre-en': () => sheet('en', { installed: '1.0.0-rc.3', state: 'new', found: '1.0.0' }),
+        'fail-en': () => sheet('en', { installed: '1.0.0', state: 'fail' })
+      }
+      for (const el of document.querySelectorAll('[data-win]'))
+        el.innerHTML = WINS[el.dataset.win]()
+      for (const el of document.querySelectorAll('[data-sheet]'))
+        el.innerHTML = SHEETS[el.dataset.sheet]()
+
+      // ----- Tableau des textes -----
+      const ROWS = [
+        ['Barre latérale', (t) => t.available('X.Y.Z').replace(/<\/?b>/g, '')],
+        ['Barre latérale, préversion (sous « Bobine X.Y.Z-rc.N »)', (t) => t.preAvailable],
+        ['Barre latérale, bouton', (t) => t.view],
+        ['Barre latérale, ✕ (infobulle)', (t) => t.later('X.Y.Z')],
+        ['Réglage', (t) => t.checkLabel],
+        ['Réglage, aide', (t) => t.checkHint],
+        ['Dernière vérification', (t) => `${t.lastLabel} · ${t.lastValue}`],
+        ['Bouton', (t) => `${t.checkNow} / ${t.checking}`],
+        ['À jour', (t) => t.upToDate('X.Y.Z').replace(/<\/?b>/g, '')],
+        ['Nouvelle version', (t) => t.newVersion('X.Y.Z', 'A.B.C').replace(/<\/?b>/g, '')],
+        ['Nouvelle version, bouton', (t) => t.viewRelease],
+        ['Échec : pas de réponse', (t) => t.failOffline],
+        ['Échec : limite', (t) => t.failLimit],
+        ['Échec : illisible', (t) => t.failUnreadable],
+        ['Option B, titre', (t) => t.alertTitle('X.Y.Z')],
+        ['Option B, phrase', (t) => t.alertDetail('A.B.C')]
+      ]
+      const tbody = document.querySelector('[data-texts]')
+      for (const [where, text] of ROWS) {
+        const tr = document.createElement('tr')
+        for (const value of [where, text(T.fr), text(T.en)]) {
+          const td = document.createElement('td')
+          td.textContent = value
+          tr.appendChild(td)
+        }
+        tbody.appendChild(tr)
+      }
+
+      // Bascule de thème de la page (Système / Clair / Sombre).
+      const root = document.documentElement
+      for (const button of document.querySelectorAll('.theme-switch button')) {
+        button.addEventListener('click', () => {
+          const value = button.dataset.set
+          if (value === 'system') root.removeAttribute('data-theme')
+          else root.setAttribute('data-theme', value)
+          for (const other of document.querySelectorAll('.theme-switch button'))
+            other.setAttribute('aria-pressed', String(other === button))
+        })
+      }
+    </script>
+  </body>
+</html>
