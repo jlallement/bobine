@@ -30,6 +30,13 @@ import { say, sayAll, type MockLanguage } from './langue.mts'
 /** Connexion faite dans un terminal (`touch .mock-agent-logged-in`, comme `opencode auth login`). */
 export const LOGIN_MARKER = '.mock-agent-logged-in'
 
+/**
+ * Quand l'agent retire sa demande d'autorisation : après `afterTicks` pas, ou dès que le fichier
+ * `whenFile` (relatif au dossier de la session) existe. Le second sert aux essais qui doivent voir
+ * la carte avant son retrait : le retrait suit alors leur signal, pas une durée devinée (fiche 250).
+ */
+export type AgentWithdrawal = ({ afterTicks: number } | { whenFile: string }) & { steps: Step[] }
+
 export type Step =
   /** Texte de l'agent, envoyé en plusieurs morceaux (streaming). */
   | {
@@ -56,11 +63,11 @@ export type Step =
       options: PermissionOption[]
       branches: Record<string, Step[]>
       /**
-       * Comme Bob 2.0.9 (écriture hors du dossier) : après `afterTicks`, l'agent retire sa demande
-       * (`$/cancel_request`) sans attendre ; le tour continue avec `steps` quand le client a
-       * répondu (fiche 214). Une réponse de l'utilisateur arrivée avant n'est pas retirée.
+       * Comme Bob 2.0.9 (écriture hors du dossier) : l'agent retire sa demande (`$/cancel_request`)
+       * sans attendre l'utilisateur ; le tour continue avec `steps` quand le client a répondu
+       * (fiche 214). Une réponse de l'utilisateur arrivée avant n'est pas retirée.
        */
-      agentCancels?: { afterTicks: number; steps: Step[] }
+      agentCancels?: AgentWithdrawal
     }
   /** Formulaire demandé à l'utilisateur (élicitation, comme Bob avec MCP). */
   | {
@@ -413,8 +420,8 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
       return
     case 'permission': {
       const withdrawal = new AbortController()
-      const timer = step.agentCancels
-        ? setTimeout(() => withdrawal.abort(), ctx.delayMs * step.agentCancels.afterTicks)
+      const stopWatching = step.agentCancels
+        ? withdrawWhen(step.agentCancels, ctx, () => withdrawal.abort())
         : undefined
       const response = await ctx.client
         .request(
@@ -427,7 +434,7 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
           // L'annulation envoie `$/cancel_request` ; la réponse du client est attendue quand même.
           { cancellationSignal: withdrawal.signal }
         )
-        .finally(() => clearTimeout(timer))
+        .finally(() => stopWatching?.())
       if (
         step.agentCancels &&
         withdrawal.signal.aborted &&
@@ -1099,6 +1106,27 @@ function openCodeChild(child: {
       ...(projected.title && child.title ? { title: `${child.title}: ${projected.title}` } : {})
     }
   }
+}
+
+/**
+ * Arme le retrait d'une demande (`agentCancels`) ; rend de quoi le désarmer. Un fichier signal est
+ * regardé à chaque pas (`--delay`, au moins 10 ms) : le retrait suit le signal, jamais une durée.
+ */
+function withdrawWhen(when: AgentWithdrawal, ctx: TurnContext, withdraw: () => void): () => void {
+  if ('afterTicks' in when) {
+    const timer = setTimeout(withdraw, ctx.delayMs * when.afterTicks)
+    return () => clearTimeout(timer)
+  }
+  const signal = join(ctx.cwd ?? '.', when.whenFile)
+  const watch = setInterval(
+    () => {
+      if (!existsSync(signal)) return
+      clearInterval(watch)
+      withdraw()
+    },
+    Math.max(ctx.delayMs, 10)
+  )
+  return () => clearInterval(watch)
 }
 
 /** Attend `ticks` × délai de base, en réagissant à l'annulation. */
