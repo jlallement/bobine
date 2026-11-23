@@ -23,6 +23,8 @@ What changes for you, version by version. Shown in Settings › About.
   which did not expand). Likewise when the thread was almost at the bottom, or a reply arrived
   during the press: it now only scrolls down on release (for example on **Allow once**, which had
   no effect).
+- A row of a work card no longer slides under the pointer when the turn ends just as you aim at it:
+  the click on its arrow is no longer lost.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

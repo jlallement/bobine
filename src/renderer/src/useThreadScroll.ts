@@ -4,7 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
  * Suivi du bas du fil : il défile tout seul tant que l'utilisateur est en bas, et la flèche « Aller
  * en bas » (fiche 050) se montre quand on l'a remonté. `scroller` va sur l'élément qui défile.
  * Pointeur sur une carte marquée `data-scroll-hold` (propositions de filles) : le fil attend
- * qu'il en sorte pour suivre, sans quoi la ligne visée remonte sous le pointeur (fiche 124).
+ * qu'il en sorte pour suivre, sans quoi la ligne visée remonte sous le pointeur (fiche 124), et sa
+ * hauteur est gardée, sans quoi un bas qui rétrécit la fait descendre sous lui (fiche 250).
  * Un message envoyé ramène toujours en bas (`followSent`, fiche 127) : sinon on croit qu'il n'est
  * pas parti. `reveal.go` : aller à un message pas encore rendu d'un long fil (sommaire, fiche 193) ; le
  * fil le rend (`reveal`) et l'amène à l'écran, le suivi du bas est lâché.
@@ -43,6 +44,29 @@ export function useThreadScroll(options: {
    */
   const pointer = useRef<{ x: number; y: number } | null>(null)
   const sentAt = useRef<{ x: number; y: number } | null>(null)
+  /**
+   * Colonne dont la hauteur est gardée (fiche 250) : tant que le pointeur retient le fil
+   * (`held`) ou qu'un appui y est en cours (`pressing`), la colonne garde en `min-height` la hauteur
+   * de défilement du moment où cela a commencé. Sinon un bas du fil qui rétrécit (fin d'un tour) borne
+   * le défilement à la nouvelle hauteur, et le contenu descend sous le pointeur : `data-scroll-hold`
+   * arrête le suivi du bas, pas ce bornage du navigateur.
+   */
+  const kept = useRef<HTMLElement | null>(null)
+  const keepHeight = useCallback(() => {
+    const el = scroller.current
+    const column = el?.firstElementChild
+    if (kept.current || !el || !(column instanceof HTMLElement)) return
+    // Haut de la colonne dans le contenu qui défile (`offsetTop` se compte depuis un autre parent).
+    const top = column.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop
+    kept.current = column
+    column.style.minHeight = `${el.scrollHeight - top}px`
+  }, [])
+  /** Rend sa vraie hauteur au fil quand plus rien ne la garde. */
+  const freeHeight = useCallback(() => {
+    if (held.current || pressing.current || !kept.current) return
+    kept.current.style.minHeight = ''
+    kept.current = null
+  }, [])
   // Message à rendre et à montrer, pour cette conversation seulement.
   const [reveal, setReveal] = useState<{ id: number; in: string | null }>()
   const measureBottom = useCallback(() => {
@@ -81,6 +105,7 @@ export function useThreadScroll(options: {
     const release = () => {
       if (!held.current) return
       held.current = false
+      freeHeight()
       const el = scroller.current
       noteScrolledUp()
       if (el && stickToBottom.current && !pressing.current) el.scrollTop = el.scrollHeight
@@ -107,8 +132,10 @@ export function useThreadScroll(options: {
       sentAt.current = null
       const target = event.target instanceof Element ? event.target : null
       const card = target?.closest('[data-scroll-hold]')
-      if (card && scroller.current?.contains(card)) held.current = true
-      else release()
+      if (card && scroller.current?.contains(card)) {
+        held.current = true
+        keepHeight()
+      } else release()
     }
     const out = (event: PointerEvent) => {
       if (!event.relatedTarget) release()
@@ -123,23 +150,22 @@ export function useThreadScroll(options: {
       document.removeEventListener('pointerdown', track, true)
       document.removeEventListener('pointermove', track, true)
     }
-  }, [measureBottom, noteScrolledUp])
+  }, [measureBottom, noteScrolledUp, keepHeight, freeHeight])
   // Appui dans le fil (fiche 250) : sa hauteur est gardée jusqu'au relâché. Sinon, un bas du fil
   // qui rétrécit entre les deux (fin d'un tour) ramène le fil, s'il était près du bas, sous le
   // pointeur (le navigateur borne le défilement à la nouvelle hauteur) : le relâché tombe ailleurs
   // que l'appui, et le clic est perdu. La hauteur réservée est celle du défilement au moment de
   // l'appui (marges du bas comprises) : rien ne bouge. Libérée après le `click`, qui suit
   // `pointerup` dans la même tâche ; le fil reprend alors sa vraie hauteur, et rattrape le bas s'il
-  // le suivait (`pressing`).
+  // le suivait (`pressing`). Pointeur déjà sur une carte qui retient le fil : la hauteur gardée
+  // depuis qu'il y est arrivé reste la même (`keepHeight`).
   useEffect(() => {
-    let pressed: HTMLElement | null = null
     let unpress: ReturnType<typeof setTimeout> | undefined
     const free = () => {
       clearTimeout(unpress)
-      if (pressed) pressed.style.minHeight = ''
-      pressed = null
       if (!pressing.current) return
       pressing.current = false
+      freeHeight()
       const el = scroller.current
       noteScrolledUp()
       if (el && stickToBottom.current && !held.current) el.scrollTop = el.scrollHeight
@@ -153,11 +179,8 @@ export function useThreadScroll(options: {
       const column = el?.firstElementChild
       if (!el || !(column instanceof HTMLElement)) return
       if (!(event.target instanceof Node) || !el.contains(event.target)) return
-      // Haut de la colonne dans le contenu qui défile (`offsetTop` se compte depuis un autre parent).
-      const top = column.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop
-      pressed = column
       pressing.current = true
-      column.style.minHeight = `${el.scrollHeight - top}px`
+      keepHeight()
     }
     const letGo = () => {
       clearTimeout(unpress)
@@ -174,7 +197,7 @@ export function useThreadScroll(options: {
       window.removeEventListener('blur', letGo)
       free()
     }
-  }, [measureBottom, noteScrolledUp])
+  }, [measureBottom, noteScrolledUp, keepHeight, freeHeight])
   // Fil ou fenêtre qui changent de taille (image chargée, détail déplié, fenêtre redimensionnée) :
   // on reste en bas si on y était, et la flèche suit.
   useEffect(() => {
@@ -215,6 +238,7 @@ export function useThreadScroll(options: {
     held.current = false
     // Envoyé d'un clic : le `click` est parti, l'appui ne retient plus le fil.
     pressing.current = false
+    freeHeight()
     sentAt.current = pointer.current
     stickToBottom.current = true
     const el = scroller.current

@@ -342,3 +342,30 @@ Dependabot comme les autres.
     Processus de Chromium, pas de Bobine ; l'attendre comme `chrome_crashpad_handler` assouplirait
     la règle « rien ne survit à l'app » : décision à prendre, pas faite ici.
   - `travaux-groupe` sombre (clic manqué) : non revu ici.
+
+- 2026-11-23 — `filles-fusion` encore rouge environ une fois sur cinq sur la branche 1.1 (« ⚠ clic
+  manqué : appui sur `div.work-group-row` », puis `work-open` jamais vu, au premier retour à la
+  mère). Branche `fix/filles-fusion-toggle`, partie de `main`. Relevé temporaire dans `ui.click`
+  (position de la flèche, défilement et bas du fil à la visée et à l'appui) : au premier retour, le
+  tour de la mère n'est pas encore fini (indicateur « au travail » en bas du fil). Visée à
+  `scrollTop` 1885 (`scrollHeight` 2544) ; le tour finit, l'indicateur part, le fil perd 50 px ;
+  à l'appui, `scrollHeight` 2494 et le navigateur a borné le défilement à 1864,5 : la ligne est
+  descendue de 20,5 px sous le pointeur immobile, l'appui tombe dans la marge de la ligne, hors de
+  la flèche. Mêmes chiffres que le relevé du 2026-11-22 : ce rétrécissement arrive **entre la
+  visée et l'appui**, pas seulement entre l'appui et le relâché, que seul couvrait le correctif.
+
+  | Cause | Correctif | Preuve |
+  |---|---|---|
+  | Défaut de l'app, commun à `main` et à 1.1 (`useThreadScroll` identique ; l'indicateur de la mère est encore là au premier retour dans 6 relevés sur 8 sur `main`, mêmes hauteurs ; le rétrécissement y tombe moins souvent entre visée et appui : 0 échec en 9 passages sur `main`, 2 en 12 sur 1.1 (plus 2 en 6 relevés avant)). Un utilisateur qui vise une ligne de carte pendant que le tour se termine la voit glisser sous son pointeur : `data-scroll-hold` arrête le suivi du bas, pas le bornage du navigateur. | `useThreadScroll` : la hauteur gardée en `min-height` (`keepHeight`) l'est aussi tant que le pointeur est sur une carte `data-scroll-hold` du fil (`held`), plus seulement pendant un appui ; prise à l'arrivée du pointeur, rendue quand ni l'un ni l'autre ne la retient (sortie de la carte, de la fenêtre, envoi d'un message). Un appui sur une carte déjà retenue garde la même hauteur. Limite : tant que le pointeur reste sur la carte, un bas qui a rétréci laisse une place vide sous le fil, rendue à la sortie. | `useThreadScroll.test.ts`, « pointeur sur une carte qui retient le fil… » et « message envoyé depuis une carte… » : rouges sans le correctif, verts avec. E2e : voir ci-dessous. |
+
+  Preuve sur le Mac (chaque passage : `pnpm build && pnpm e2e filles-fusion`, clair et sombre, un
+  à la fois sous verrou, codes de sortie relevés). Avant : sur 1.1, 2 rouges en 12 passages, forme
+  identique à celle signalée ; sur `main`, 0 en 9. Après : 10 passages verts sur `main` + correctif
+  (`fix/filles-fusion-toggle`) et 10 sur 1.1 + le même correctif posé sans commit (puis retiré),
+  soit 40 tâches vertes, 120 clics sur une flèche relevés, aucun manqué ; dans l'un d'eux sur `main`
+  + correctif, l'indicateur part entre la visée et l'appui, et la flèche reste à sa place
+  (`scrollTop` 1884,5 à la visée et à l'appui). Relevé temporaire de `ui.click` retiré. `./scripts/verify` vert. Suites touchées
+  (`--changed` : `finitions`, `filles`, `repere`, `degrade-haut`, `long-thread`, `perf`) et voisines
+  qui cliquent dans des cartes (`travaux-groupe`, `filles-tech-lead`, `autorisation-commande`,
+  `subagents`, `filles-fusion`), clair et sombre : 22 tâches vertes, code de sortie 0 ; captures
+  regardées par sondage (`120-fusion-pied`). Suite complète non jouée.

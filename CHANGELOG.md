@@ -24,6 +24,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   de travaux, qui ne se dépliait pas). De même quand le fil était presque en bas, ou qu’une
   réponse arrivait pendant l’appui : il ne descend plus qu’au relâché (par exemple sur
   **Autoriser une fois**, qui restait sans effet).
+- Une ligne d’une carte de travaux ne glisse plus sous le pointeur quand le tour se termine au
+  moment où on la vise : le clic sur sa flèche n’est plus perdu.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 
