@@ -36,6 +36,14 @@ What changes for you, version by version. Shown in Settings › About.
   instead of “working”; its tooltip says its response will show when the agent’s response ends.
   What it does is written without its folder’s path (“Edit README.md”), the full path in a
   tooltip.
+- Merge stopped on a remaining conflict: **Retry**, **Abort** and **Show the conflict** no longer
+  flash in and vanish at once; they wait until the branch has been read again after the stop, then
+  stay.
+- With the pointer resting on a work card, the thread stays still, but nothing signalled what
+  arrived below, out of view (a permission request, for example): the **Scroll to bottom** arrow
+  now appears, with the count of new items, without moving the card.
+- After **Move to Trash**, focus goes to the composer: it is no longer lost in the page along with
+  the deleted row.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

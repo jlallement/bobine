@@ -38,6 +38,14 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   latérale et le panneau, plus « en cours » ; l’infobulle précise que sa réponse s’affichera à la
   fin de celle de l’agent. Ce qu’il fait s’écrit sans le chemin de son dossier
   (« Modification de README.md »), le chemin complet en infobulle.
+- Fusion arrêtée sur un conflit qui reste : **Réessayer**, **Abandonner** et **Voir le conflit**
+  n’apparaissent plus un instant pour disparaître aussitôt ; ils attendent que la branche ait été
+  relue après l’arrêt, puis restent.
+- Pointeur posé sur une carte de travaux, le fil ne bouge pas, mais ce qui arrive en bas hors de
+  vue (une demande d’autorisation, par exemple) n’était signalé par rien : la flèche **Aller en
+  bas** apparaît désormais, avec le nombre de nouveautés, sans déplacer la carte.
+- Après **Mettre à la corbeille**, le focus va à la zone de saisie : il ne se perd plus dans la
+  page avec la ligne supprimée.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

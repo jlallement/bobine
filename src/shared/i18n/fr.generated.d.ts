@@ -6155,6 +6155,7 @@ export type FrResources = {
       readonly name: 'Bobine {{version}}'
       readonly preAvailable: 'Préversion disponible'
       readonly view: 'Voir'
+      readonly viewLabel: 'Voir la version {{version}}'
       readonly later: 'Plus tard (plus rien pour la {{version}})'
     }
     readonly settings: {

@@ -161,3 +161,22 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
   ordinaires. Changelogs raccourcis ; le détail (évènement écarté et noté dans le journal, liens
   morts réparés au lancement, filles ressorties des archives avec leur mère seulement si elles y
   sont entrées avec elle) reste ici.
+- 2026-11-23 — Recette avant la 1.0.0-rc.4 (branche `fix/chasse-correctifs`) :
+  - Erreurs « Conversation inconnue » (`git:status`, `commands:project`) au journal après la
+    suppression d'une mère affichée qui attendait une autorisation. Cause : le main retire la
+    conversation (`conversations.delete`) juste après avoir arrêté son agent, et ne publie la
+    liste (nouvelle active) qu'après sa mise à la corbeille ; l'arrêt fait passer la mère de
+    « répond » à « prête », et `useGitStatus` / `useProjectCommands` relisaient la conversation
+    affichée, déjà inconnue du main. Correctif à la cause : `useConversations` garde les
+    conversations dont la suppression est en cours (la mère, et sa descendance si elle part avec
+    elle ; `descendants` passé dans `@shared/children`, partagé avec le main) et rend `queryId`,
+    `null` pour elles jusqu'à la fin de la suppression (réussie ou refusée) ; `App` passe
+    `queryId` à ces deux lectures. Preuves : `useConversations.remove.test.ts` ; sonde réelle
+    (build, agent factice, `/scenario filles`, mère en attente d'autorisation supprimée avec ses
+    filles) : 2 erreurs IPC avant, 0 après. Garde e2e dans `filles` (mère affichée supprimée :
+    aucune erreur IPC de ces canaux), verte avant comme après (mère au repos dans ce parcours :
+    ne reproduit pas, garde seulement).
+  - Focus perdu sur `<body>` après « Mettre à la corbeille » : Radix le rendait au bouton qui avait
+    ouvert la boîte, dans la ligne supprimée juste après. `DeleteDialog` : confirmée, le focus va à
+    la zone de saisie (`onCloseAutoFocus`) ; annulée, rien ne change. Preuve :
+    `DeleteDialog.test.tsx`, rouge sans le correctif, vert avec.

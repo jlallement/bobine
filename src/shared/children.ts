@@ -901,3 +901,32 @@ export interface FamilyMember {
   /** Son agent sait supprimer une session (« Supprimer aussi chez… », fiche 196). */
   agentDeletes?: boolean
 }
+
+/**
+ * Descendance de `id` par `startedFrom`, des plus profondes aux plus proches (l'ordre où les
+ * supprimer : une fille ne perd jamais sa mère avant d'être traitée). Résiste aux boucles.
+ * Partagée par le main (suppression, archivage) et le renderer (suppression en cours, recette rc.4).
+ */
+export function descendants<R extends { id: string; startedFrom?: { id: string } }>(
+  records: readonly R[],
+  id: string
+): R[] {
+  const byMother = new Map<string, R[]>()
+  for (const record of records) {
+    const mother = record.startedFrom?.id
+    if (mother && mother !== record.id)
+      byMother.set(mother, [...(byMother.get(mother) ?? []), record])
+  }
+  const seen = new Set<string>([id])
+  const out: R[] = []
+  const visit = (motherId: string) => {
+    for (const child of byMother.get(motherId) ?? []) {
+      if (seen.has(child.id)) continue
+      seen.add(child.id)
+      visit(child.id)
+      out.push(child)
+    }
+  }
+  visit(id)
+  return out
+}

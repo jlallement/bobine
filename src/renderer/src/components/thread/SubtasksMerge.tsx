@@ -148,6 +148,33 @@ export function useChildrenMerge(
   }
 }
 
+/**
+ * Ce plan a été lu après l'arrêt de cette fusion (fiche 250) : une lecture faite pendant (le travail
+ * résolvait encore son conflit, ou pas encore) ne dit rien du conflit qui reste. Une fusion d'une
+ * autre carte qui tourne ne compte pas.
+ */
+export function planReadAfter(
+  plan: ChildrenMergePlan | undefined,
+  merge: Pick<ChildrenMerge, 'runId'> | undefined
+): boolean {
+  return !!plan && !(plan.running && (plan.runId === undefined || plan.runId === merge?.runId))
+}
+
+/**
+ * Ligne où la fusion s'est arrêtée sur un conflit qui reste : la branche le dit encore, lue après
+ * l'arrêt (`planReadAfter`) ; `undefined` sinon.
+ */
+export function conflictLeft(
+  merge: ChildrenMerge | undefined,
+  plan: ChildrenMergePlan | undefined
+): ChildrenMergeRow | undefined {
+  if (merge?.status !== 'conflict' || !planReadAfter(plan, merge)) return undefined
+  const row = merge.rows.find((r) => r.state === 'conflict')
+  return row && plan?.children.find((c) => c.id === row.childId)?.state === 'conflict'
+    ? row
+    : undefined
+}
+
 /** Ce que la ligne d'une fille montre de la fusion ; `undefined` : rien. */
 export function rowMergeState(
   { merge, plan }: ChildrenMergeState,
@@ -353,20 +380,14 @@ export function SubtasksMergeFooter({
   }
   const ready = plan ? mergeable(plan) : []
   // Arrêtée sur une fille encore en conflit : la reprise remplace « Fusionner les N ».
-  const conflictRow =
-    merge?.status === 'conflict' ? merge.rows.find((r) => r.state === 'conflict') : undefined
-  const live =
-    conflictRow && plan?.children.find((c) => c.id === conflictRow.childId)?.state === 'conflict'
+  const conflictRow = conflictLeft(merge, plan)
   const sentences = plan ? mergeSummary(plan, titles) : []
   const lone = extra ? <div className="subtasks-merge-actions">{extra}</div> : null
   if (!merge && sentences.length === 0) return lone
   const { ids, others, advised } = mergeChoice(ready, verdicts)
   // Le bouton secondaire va dans la rangée de « Fusionner … » ; sinon, dans sa propre rangée.
   const inButtons =
-    !(live && conflictRow) &&
-    sentences.length > 0 &&
-    !!plan &&
-    plan.blocked?.reason !== 'main-dirty'
+    !conflictRow && sentences.length > 0 && !!plan && plan.blocked?.reason !== 'main-dirty'
   // Carte de groupe (revue UX) : une vraie case, avant le bouton principal, qui dit ce qu'elle fait.
   const cleanupToggle = works ? (
     <label className="merge-cleanup-check" title={t('childrenMerge.cleanupHint')}>
@@ -395,14 +416,9 @@ export function SubtasksMergeFooter({
   return (
     <div className="subtasks-merge" data-testid="subtasks-merge">
       {merge && (
-        <MergeResult
-          merge={merge}
-          conflict={live ? conflictRow : undefined}
-          titles={titles}
-          vocabulary={vocabulary}
-        />
+        <MergeResult merge={merge} conflict={conflictRow} titles={titles} vocabulary={vocabulary} />
       )}
-      {live && conflictRow ? (
+      {conflictRow ? (
         <div className="subtasks-merge-actions">
           <button
             className="btn small primary"
