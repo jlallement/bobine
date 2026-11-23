@@ -20,7 +20,7 @@ import type { PageFreeze, PageLayerTheme, PagePin } from './page-notes'
 
 export interface BrowserIpcContract {
   /** Affiche la page du navigateur de la conversation à l'emplacement de l'onglet (fiche 007). */
-  'browser:show': { args: [id: string, bounds: BrowserBounds]; result: undefined }
+  'browser:show': { args: [id: string, bounds: BrowserBounds, focus?: true]; result: undefined }
   /** Onglet masqué ou panneau fermé : plus de page affichée. */
   /** « Effacer les données du navigateur » (fiche 072). */
   'browser:clearData': { args: []; result: undefined }

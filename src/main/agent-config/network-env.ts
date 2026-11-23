@@ -5,7 +5,7 @@
  * Bob et OpenCode). Les réglages saisis l'emportent sur le shell.
  */
 import type { NetworkSettings, NetworkView } from '@shared/providers'
-import type { EnvChanges } from './api-keys'
+import { withEnvChanges, type EnvChanges } from './api-keys'
 import { DEFAULT_NO_PROXY } from './provider-probe'
 
 const first = (env: NodeJS.ProcessEnv, names: string[]): string | undefined =>
@@ -21,6 +21,33 @@ export function networkFromEnv(env: NodeJS.ProcessEnv): NetworkSettings {
     ...(noProxy ? { noProxy } : {}),
     ...(caCerts ? { caCerts } : {})
   }
+}
+
+/**
+ * Proxy qu'un agent a vraiment dans son environnement (celui de l'app, son profil, puis ses
+ * variables posées au lancement), pour la piste réseau des bandeaux (fiche 275). Non masqué : à
+ * masquer avant tout affichage (`maskUrlCredentials`).
+ */
+export function agentProxy(
+  base: NodeJS.ProcessEnv,
+  profileEnv: Record<string, string>,
+  changes: EnvChanges
+): string | undefined {
+  return agentNetwork(base, profileEnv, changes).proxy
+}
+
+/** Réseau d'entreprise qu'un agent a dans son environnement : proxy, exceptions, certificats. */
+export function agentNetwork(
+  base: NodeJS.ProcessEnv,
+  profileEnv: Record<string, string>,
+  changes: EnvChanges
+): NetworkSettings {
+  return networkFromEnv(withEnvChanges({ ...base, ...profileEnv }, changes))
+}
+
+/** Mêmes proxy, exceptions et certificats (fiche 276 : réglages changés depuis le lancement). */
+export function sameNetwork(a: NetworkSettings, b: NetworkSettings): boolean {
+  return a.proxy === b.proxy && a.noProxy === b.noProxy && a.caCerts === b.caCerts
 }
 
 /** Réglages saisis, complétés par l'environnement : ce que les agents auront vraiment. */
@@ -85,4 +112,13 @@ export function networkController(store: {
     get: () => networkView(store.network(), process.env),
     set: (change) => networkView(store.setNetwork(change), process.env)
   }
+}
+
+/**
+ * Réseau d'entreprise d'un agent lancé maintenant, et changements des réglages (fiche 276) : de
+ * quoi dire, dans les bandeaux d'un agent déjà lancé, que ses réglages réseau ont changé.
+ */
+export interface NetworkSource {
+  env(): EnvChanges
+  onChange(listener: () => void): () => void
 }

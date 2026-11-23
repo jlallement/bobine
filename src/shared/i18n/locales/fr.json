@@ -684,6 +684,18 @@
     "willSend_other": "{{count}} messages partiront à la fin de la réponse",
     "willSend_many": "{{count}} messages partiront à la fin de la réponse"
   },
+  "agentRetry": {
+    "title": "{{agent}} n’arrive pas à joindre son modèle",
+    "detail": "Il réessaie de lui-même : tentative {{attempt}}, la prochaine dans {{seconds}} s. Votre message est gardé.",
+    "detailNow": "Il réessaie de lui-même : tentative {{attempt}} en cours. Votre message est gardé.",
+    "proxy": "Un proxy est défini pour les agents ({{proxy}}) : vérifiez son adresse dans Réglages › Agents › Avancé.",
+    "noProxy": "Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans Réglages › Agents › Avancé.",
+    "agentMessage": "Message de l’agent",
+    "settings": "Réglages réseau",
+    "stop": "Arrêter",
+    "networkStale": "Les réglages réseau ont changé depuis le lancement de {{agent}} : relancez-le pour les appliquer. La conversation est gardée.",
+    "restart": "Relancer l’agent"
+  },
   "turnRetry": {
     "network": "Connexion perdue",
     "rateLimit": "Limite de débit atteinte",
@@ -1430,7 +1442,8 @@
         "fjordNight": "Fjord nuit",
         "aurora": "Aurore",
         "auroraNight": "Aurore nuit",
-        "new": "Nouveau"
+        "new": "Nouveau",
+        "newName": "{{name}}, nouveau"
       },
       "accent": {
         "label": "Couleur d’accent",
@@ -1673,6 +1686,9 @@
         "erasedIn_other": "effacée dans {{count}} jours",
         "erasedToday": "effacée aujourd’hui",
         "noFolder": "Sans dossier",
+        "children_one": "avec son travail",
+        "children_other": "avec ses {{count}} travaux",
+        "children_many": "avec ses {{count}} travaux",
         "restore": "Restaurer",
         "erase": "Effacer définitivement",
         "eraseConfirm": "Effacer définitivement ?",
@@ -2167,7 +2183,8 @@
     "empty": {
       "conversation": "L’agent n’a encore modifié aucun fichier dans cette conversation.",
       "conversationNoGit": "L’agent n’a encore modifié aucun fichier dans cette conversation. (Le dossier n’est pas un dépôt git.)",
-      "git": "Aucune modification depuis le dernier commit."
+      "git": "Aucune modification depuis le dernier commit.",
+      "discussion": "L’agent n’a encore modifié aucun document de cette discussion."
     },
     "sinceLastCommit": "· depuis le dernier commit",
     "reverted": "annulée",
@@ -3111,7 +3128,8 @@
       "text": "Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver."
     },
     "step": "étape {{elapsed}}",
-    "stepStarted": "Étape en cours depuis {{elapsed}}"
+    "stepStarted": "Étape en cours depuis {{elapsed}}",
+    "silent": "Réponse en cours"
   },
   "mentions": {
     "gitChanges": {
@@ -3446,6 +3464,10 @@
     "subagentBackground": {
       "label": "Sous-agents en arrière-plan suivis jusqu’à leur fin",
       "detail": "Quand {{agent}} lance un sous-agent en arrière-plan, son outil rend la main tout de suite (`metadata.status: \"running\"`) : l’app le garde « en cours », relit sa session de temps en temps, et le dit fini avec sa réponse quand elle se termine."
+    },
+    "modelRetry": {
+      "label": "Modèle injoignable",
+      "detail": "Quand {{agent}} ne joint pas son modèle (proxy, réseau), il réessaie sans fin sans le dire au fil ; l’app lit ses reprises (`_meta[\"opencode/retry\"]`) et le montre : tentative, prochaine tentative, son message."
     },
     "executeErrors": {
       "label": "Erreurs des outils appelés par du code",
@@ -5023,7 +5045,11 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "pastDate": "Cette date est déjà passée.",
-      "noCapWarning": "Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense."
+      "noCapWarning": "Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense.",
+      "changeFolder": "Changer…",
+      "recent": "Dossiers récents",
+      "otherFolder": "Autre dossier…",
+      "current": "conversation ouverte"
     },
     "error": {
       "alreadyRunning": "Une exécution de cette tâche tourne encore.",
@@ -5365,8 +5391,12 @@
   "silenceBanner": {
     "title": "L’agent n’a rien envoyé depuis {{minutes}} min",
     "detail": "C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez attendre, ou arrêter la réponse : la conversation est gardée.",
+    "proxy": "Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.",
+    "settings": "Réglages réseau",
     "wait": "Attendre",
-    "stop": "Arrêter"
+    "stop": "Arrêter",
+    "networkStale": "Les réglages réseau ont changé depuis le lancement de l’agent : relancez-le pour les appliquer. La conversation est gardée.",
+    "restart": "Relancer l’agent"
   },
   "appAlert": {
     "internal": {
@@ -6311,12 +6341,18 @@
       "done_one": "{{count}} a répondu",
       "done_other": "{{count}} ont répondu",
       "done_many": "{{count}} ont répondu",
+      "merged_one": "{{count}} fusionné",
+      "merged_other": "{{count}} fusionnés",
+      "merged_many": "{{count}} fusionnés",
       "stopped_one": "{{count}} arrêté",
       "stopped_other": "{{count}} arrêtés",
       "stopped_many": "{{count}} arrêtés",
       "error_one": "{{count}} en erreur",
       "error_other": "{{count}} en erreur",
       "error_many": "{{count}} en erreur",
+      "gone_one": "{{count}} supprimé",
+      "gone_other": "{{count}} supprimés",
+      "gone_many": "{{count}} supprimés",
       "starting_one": "{{count}} démarre",
       "starting_other": "{{count}} démarrent",
       "starting_many": "{{count}} démarrent",
@@ -6478,6 +6514,7 @@
       "name": "Bobine {{version}}",
       "preAvailable": "Préversion disponible",
       "view": "Voir",
+      "viewLabel": "Voir la version {{version}}",
       "later": "Plus tard (plus rien pour la {{version}})"
     },
     "settings": {

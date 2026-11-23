@@ -220,7 +220,11 @@ function ResetConfirm({ onCancel }: { onCancel: () => void }) {
   )
 }
 
-/** Pastille de la barre de titre d'une seconde Bobine sur un profil temporaire. */
+/**
+ * Pastille de la barre de titre d'une seconde Bobine sur un profil temporaire. En-tête étroit : la
+ * fiole seule, le texte en infobulle et pour les lecteurs d'écran — un rappel cède la place avant
+ * le titre de la conversation (fiche 276, T10).
+ */
 export function TemporaryProfileChip() {
   const { t } = useTranslation()
   const info = useFreshStart()
@@ -228,11 +232,11 @@ export function TemporaryProfileChip() {
   return (
     <span
       className="temporary-chip no-drag"
-      title={t('settings.data.fresh.chipTip')}
+      title={`${t('settings.data.fresh.chip')}\n${t('settings.data.fresh.chipTip')}`}
       data-testid="temporary-profile"
     >
-      <FlaskConical size={13} />
-      {t('settings.data.fresh.chip')}
+      <FlaskConical size={13} aria-hidden />
+      <span className="temporary-chip-label">{t('settings.data.fresh.chip')}</span>
     </span>
   )
 }

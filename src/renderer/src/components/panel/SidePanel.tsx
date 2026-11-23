@@ -80,8 +80,9 @@ interface Props {
   onSendPageNotes?: (text: string, images: ImageAttachment[]) => void
   items: TranscriptItem[]
   /** Terminal ouvert par l'utilisateur (bouton « >_ ») : il prend le clavier. */
-  focusTerminal?: boolean
-  onTerminalFocused?: () => void
+  /** Onglet qui doit prendre le clavier en s'affichant (terminal, navigateur). */
+  focusTab?: PanelTab | null
+  onTabFocused?: () => void
   /** Police du terminal (réglages, fiche 027). */
   preferences?: Preferences
   /** « Modifications » ouvert par la puce de branche : sur l'état git (fiche 049). */
@@ -153,8 +154,8 @@ export function SidePanel({
   onReview,
   onSendPageNotes,
   items,
-  focusTerminal,
-  onTerminalFocused,
+  focusTab,
+  onTabFocused,
   preferences,
   changesRequest,
   preview,
@@ -394,6 +395,7 @@ export function SidePanel({
               onReview={onReview}
               onOpenFile={openFileOf(files)}
               rootsKey={filesWork.rootsKey}
+              discussion={!!discussion}
             />
           )}
           {tab === 'document' && preview && (
@@ -411,8 +413,8 @@ export function SidePanel({
             <ToolTab
               tab={tab}
               conversationId={conversationId}
-              focusTerminal={focusTerminal}
-              onTerminalFocused={onTerminalFocused}
+              focusTab={focusTab}
+              onTabFocused={onTabFocused}
               onSendPageNotes={onSendPageNotes}
               files={filesTabProps(files, filesWork, maximized, onSendDiffNotes, discussion)}
               filesTitle={filesTab}
@@ -464,8 +466,8 @@ function filesTabProps(
 function ToolTab({
   tab,
   conversationId,
-  focusTerminal,
-  onTerminalFocused,
+  focusTab,
+  onTabFocused,
   preferences,
   onAttach,
   onSendPageNotes,
@@ -474,8 +476,8 @@ function ToolTab({
 }: {
   tab: PanelTab
   conversationId: string
-  focusTerminal: boolean | undefined
-  onTerminalFocused: (() => void) | undefined
+  focusTab: PanelTab | null | undefined
+  onTabFocused: (() => void) | undefined
   preferences?: Preferences
   onAttach?: (image: ImageAttachment) => void
   /** Remarques sur la page, envoyées à l'agent (fiche 132). */
@@ -501,6 +503,8 @@ function ToolTab({
           conversationId={conversationId}
           {...attach}
           onSendNotes={onSendPageNotes}
+          focusRequested={focusTab === 'browser'}
+          onFocused={onTabFocused}
         />
       )
     case 'simulator':
@@ -512,9 +516,9 @@ function ToolTab({
         <TerminalTab
           key={conversationId}
           conversationId={conversationId}
-          focusRequested={focusTerminal}
+          focusRequested={focusTab === 'terminal'}
           {...(preferences ? { preferences } : {})}
-          onFocused={onTerminalFocused}
+          onFocused={onTabFocused}
         />
       )
     case 'acp':

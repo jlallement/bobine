@@ -170,6 +170,44 @@ Pas de nouvelle dépendance.
 - 2026-11-20 : `./scripts/verify` vert ; `pnpm build && pnpm e2e --changed` (toutes les suites
   touchées, clair et sombre) : 220 tâches vertes sur 222 en 19 min 50 s, `repere` (2) rouge,
   corrigé puis vert seul (clair et sombre). Captures `264-*` regardées.
+- 2026-11-23 : **travail fini dont la réponse attend (maquette
+  `docs/maquettes/rc4-travail-fini-en-attente.html`, variante 1, validée le 2026-11-23)**.
+  - État `pending` (fini pendant que la mère répond encore) : la ligne dit « a répondu »
+    (`STATE_KEYS.pending` → `workGroup.state.replied`, couleur de `replied`), la précision
+    existante `workCard.pendingLine` en infobulle de l'état et dans la ligne dépliée (déjà là) ;
+    `groupCounts` le compte dans « N a répondu », et « a répondu » se dit désormais aussi quand
+    d'autres travaux restent proposés (« 2 travaux proposés · par … · 1 a répondu »). Aucune clé
+    nouvelle.
+  - Activité de la ligne : chemins relatifs au dossier du travail (« Modification de README.md »),
+    hors de ce dossier avec `~`, le chemin complet en infobulle (`workToolText`, `tool-label.ts`).
+    Écart au brief : la méta de la ligne ne vient pas de `useWorkActivity` (carte seule) mais de
+    `useChildActivity` ; il est découpé en `useChildTools` (l'outil entier, libellé par la ligne
+    selon le dossier de sa conversation), `useChildActivity` (« Sous-tâches ») inchangé.
+  - Essais : `WorkGroup.test.tsx` (fr, en ; infobulle ; ligne dépliée ; activité),
+    `tool-label.test.ts` (`workToolText`) ; e2e `filles` (« Import CSV » fini pendant que la mère
+    attend « Page d'aide » : « a répondu », compté, infobulle ; capture
+    `filles-5c-travail-fini-en-attente`).
+- 2026-11-23 : **relecture — essai en anglais**. `travaux-groupe` comparait le conseil de fusion à
+  une phrase française en dur (rouge en `--lang en`) : il est recomposé par `L()` à partir de
+  `workGroup.merge.advice.*` et `childrenMerge.quote` (titres des travaux, venus de l'agent
+  factice, inchangés). Aucune autre comparaison en dur trouvée dans les suites touchées depuis
+  `main~30`.
+- 2026-11-23 — Seconde chasse rc.4, **ordre des lignes au lancement** : « Tout lancer » donnait
+  les lignes dans un ordre variable (proposé : Page d'aide, Import CSV, Notes de version ; lancé :
+  Notes de version, Import CSV, Page d'aide), et la ligne sous le pointeur changeait. Cause : les
+  lignes lancées sont rangées par l'id de leur `child-started` (ordre de lancement, revue UX), et
+  le main posait ce `child-started` à la fin de la préparation de chaque worktree, en parallèle :
+  le premier prêt passait devant. Correctif à la cause, dans `ChildConversations.start` : chaque
+  lancement d'une mère prend son tour à la demande (`launchTurn`) ; les préparations restent
+  parallèles et visibles tout de suite (fiche 149), mais chacune attend que celles demandées avant
+  elle soient posées (ou en échec) pour poser la sienne. Côté carte, « Tout lancer » lance les
+  lignes dans l'ordre des lignes, plus dans celui de leur inscription (une ligne rendue seule, par
+  exemple dépliée, se réinscrivait en dernier). La date de création des filles (ordre de la barre
+  latérale, fiche 267) reste celle de la fin de leur préparation : non touchée ici. Preuves :
+  `children.test.ts` (premier worktree plus lent : posés dans l'ordre demandé ; premier en échec :
+  le suivant posé), rouge sans le correctif ; `WorkGroup.test.tsx` (ligne dépliée puis « Tout
+  lancer » : r2 puis r3), rouge sans le correctif. `children.ts` dépassait 800 lignes : les
+  canaux IPC des filles sont passés dans `children-ipc.ts` (réexportés).
 
 ## Limites connues
 

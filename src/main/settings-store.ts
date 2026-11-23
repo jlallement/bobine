@@ -468,11 +468,17 @@ export class SettingsStore {
     return this.settings.network ?? {}
   }
 
+  /** Variables du réseau d'entreprise qu'un agent lancé maintenant recevrait (fiche 276). */
+  networkEnv(): EnvChanges {
+    return networkEnvChanges(this.network(), this.options.env ?? process.env)
+  }
+
   /** Proxy, certificats : enregistrés, pris en compte au prochain lancement d'un agent. */
   setNetwork(change: unknown): NetworkSettings {
     const network = parseNetworkSettings(change)
     this.settings = { ...this.settings, network }
-    this.save()
+    // Abonnés prévenus : les bandeaux des agents déjà lancés le disent (fiche 276).
+    this.changed()
     return network
   }
 

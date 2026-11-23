@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { L, check, sleep, withApp } from '../lib.mjs'
 
 /**
  * Espace Discussion (fiche 224, maquettes E1–E6) : sélecteur Code | Discussion, accueil de chat,
@@ -112,6 +112,28 @@ export async function discussionSuite(scheme) {
           'onglet « Session » : « Documents · Cette discussion », sans l’identifiant du dossier'
         )
         await ui.shot('discussion-3b-session')
+        // Onglet Modifications (fiche 276, T14) : ses documents, jamais la vue Git ni « depuis le
+        // dernier commit » (le dossier d'une discussion n'est pas un projet).
+        const changesTab = `document.querySelector('.side-panel-tab[data-tab=changes]')`
+        if (await ui.ev(`!!${changesTab} && !${changesTab}.closest('[data-overflow]')`)) {
+          await ui.click(changesTab)
+        } else {
+          await ui.click(ui.$('panel-more'))
+          await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
+          await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=changes]')`)
+        }
+        await ui.waitFor(`!!${ui.$('changes-tab')}`)
+        await sleep(500)
+        const changes = await ui.ev(
+          `({ git: !!${ui.$('changes-view-git')}, text: ${ui.$('changes-tab')}.innerText })`
+        )
+        check(
+          !changes.git &&
+            !changes.text.includes(L('changes.empty.git')) &&
+            !changes.text.includes(L('changes.sinceLastCommit')),
+          'onglet Modifications d’une discussion : ni vue Git ni « dernier commit »'
+        )
+        await ui.shot('276-discussion-modifications')
         check(
           !(await ui.ev(`${ui.$('thread')}.textContent`)).includes(id),
           'fil d’une discussion : les outils disent « Documents », jamais l’identifiant du dossier'

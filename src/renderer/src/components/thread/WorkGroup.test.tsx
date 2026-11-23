@@ -258,6 +258,18 @@ describe('carte de groupe : proposés (fiche 264, écran D, état 1)', () => {
       ['r3', 'start']
     ])
   })
+  it('« Tout lancer » dans l’ordre des lignes, même après une ligne dépliée (seconde chasse rc.4)', async () => {
+    const onRespond = vi.fn()
+    view(pending(), info([]), onRespond)
+    await act(async () => {})
+    // La ligne r2 dépliée se rend seule, et se réinscrit après r3.
+    const rows = screen.getAllByTestId('proposal-row')
+    const r2 = rows.find((row) => row.dataset.request === 'r2')
+    fireEvent.click(within(r2 as HTMLElement).getByTestId('proposal-title'))
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('work-group-start-all'))
+    expect(onRespond.mock.calls.map(([id]) => id)).toEqual(['r2', 'r3'])
+  })
 })
 
 describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 3)', () => {
@@ -445,6 +457,27 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ])
   })
 
+  it('en-tête : un fusionné se dit fusionné, un supprimé n’a pas « répondu » (recette rc.4, T7)', async () => {
+    const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
+    const items = [
+      ...working(),
+      report(9, 'a'),
+      mergeItem(10, 'done', [{ childId: 'a', state: 'merged' }], { endedAt: T0 + 1000 })
+    ]
+    // « b » a répondu, puis sa conversation est partie à la corbeille.
+    view(items, info([child('a')], { merge: actions, exists: (id) => id === 'a' }))
+    await screen.findByTestId('subtasks-merge-result')
+    expect(screen.getByTestId('work-group-counts').textContent).toBe(
+      '· 1 fusionné, 1 supprimé, 1 refusé'
+    )
+    expect(
+      screen.getAllByTestId('work-row-state').map((s) => [s.dataset['state'], s.textContent])
+    ).toEqual([
+      ['replied', 'fusionné'],
+      ['gone', 'conversation supprimée']
+    ])
+  })
+
   it('conflit qui reste : Réessayer, Abandonner, Voir le conflit, dans la carte', async () => {
     const actions = mergeActions([candidate('a', 'conflict'), candidate('b', 'ready')])
     const items = [
@@ -611,6 +644,23 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     expect(actions.openGit).toHaveBeenCalledWith('a')
     fireEvent.click(within(box).getByTestId('work-merge-retry'))
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a'], true, undefined))
+  })
+
+  it('conflit, branches lues pendant la fusion : pas encore de reprise (fiche 250)', async () => {
+    // Une lecture faite pendant la fusion (le travail résolvait encore) ne dit pas le conflit qui
+    // reste : « Réessayer » attend une lecture faite après son arrêt.
+    const actions = mergeActions([candidate('a', 'conflict')], true)
+    view(
+      writer([
+        mergeItem(4, 'conflict', [{ childId: 'a', state: 'conflict', files: ['src/list.ts'] }])
+      ]),
+      info([child('a', { role: front })], { merge: actions })
+    )
+    // Le pied montré : les branches sont lues.
+    await screen.findByTestId('work-open')
+    expect(actions.plan).toHaveBeenCalled()
+    expect(screen.queryByTestId('work-merge-retry')).toBeNull()
+    expect(screen.queryByTestId('work-merge-abort')).toBeNull()
   })
 
   it('échec dit, avec sa raison ; un rôle de conseil n’a rien à fusionner', async () => {
@@ -1112,5 +1162,79 @@ describe('anciennes conversations : comme avant (fiche 264)', () => {
       '1 travail fusionné dans main'
     )
     expect(actions.plan).toHaveBeenCalledWith('mere')
+  })
+})
+
+describe('travail fini dont la réponse attend, activité de la ligne (maquette rc4)', () => {
+  /** « API » lancée (fille `a`), « Page » encore proposée. */
+  const oneLeft = (): TranscriptItem[] => [
+    { kind: 'user', id: 1, text: 'Découpe' },
+    proposal(2, 'API', 'k-api'),
+    proposal(3, 'Page', 'k-page', 'pending'),
+    started(4, 'a', 'k-api')
+  ]
+
+  it('réponse remise à la fin de celle de l’agent : « a répondu », compté même avec une proposition', async () => {
+    view(oneLeft(), info([child('a')], { motherBusy: true }))
+    await act(async () => {})
+    const group = screen.getByTestId('work-group')
+    expect(within(group).getByTestId('work-group-title').textContent).toBe('2 travaux proposés')
+    expect(within(group).getByTestId('work-group-counts').textContent).toBe('· 1 a répondu')
+    const state = within(group).getByTestId('work-row-state')
+    expect(state.dataset['state']).toBe('pending')
+    expect(state.textContent).toBe('a répondu')
+    expect(plain(state.getAttribute('title'))).toBe(
+      'Sa réponse s’affichera à la fin de la réponse d’OpenCode.'
+    )
+    // Dépliée : la précision, dans la ligne.
+    fireEvent.click(within(group).getByTestId('work-row-toggle'))
+    expect(plain(within(group).getByTestId('work-no-answer').textContent)).toBe(
+      'Sa réponse s’affichera à la fin de la réponse d’OpenCode.'
+    )
+  })
+
+  it('en anglais : « replied », « 1 replied »', async () => {
+    const i18next = (await import('i18next')).default
+    await i18next.changeLanguage('en')
+    try {
+      view(oneLeft(), info([child('a')], { motherBusy: true }))
+      await act(async () => {})
+      expect(screen.getByTestId('work-group-counts').textContent).toBe('· 1 replied')
+      expect(screen.getByTestId('work-row-state').textContent).toBe('replied')
+    } finally {
+      await i18next.changeLanguage('fr')
+    }
+  })
+
+  it('activité : chemin relatif au dossier du travail, chemin complet en infobulle', async () => {
+    let emit: ((e: unknown) => void) | undefined
+    window.api.agent = {
+      onEvent: (listener: (e: unknown) => void) => {
+        emit = listener
+        return () => {}
+      },
+      cancel: vi.fn()
+    } as unknown as Window['api']['agent']
+    view(oneLeft(), info([child('a', { status: 'busy', workspace: '/private/tmp/wt/a' })]))
+    await act(async () => {})
+    act(() =>
+      emit?.({
+        conversationId: 'a',
+        event: {
+          type: 'update',
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: 't1',
+            title: 'edit',
+            kind: 'edit',
+            status: 'in_progress',
+            locations: [{ path: '/private/tmp/wt/a/README.md' }]
+          }
+        }
+      })
+    )
+    const activity = await screen.findByTestId('work-row-activity')
+    expect(activity.textContent).toBe('Modification de README.md')
+    expect(activity.getAttribute('title')).toBe('/private/tmp/wt/a/README.md')
   })
 })

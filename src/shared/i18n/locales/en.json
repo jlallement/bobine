@@ -633,6 +633,18 @@
     "willSend_one": "Will be sent when the response ends",
     "willSend_other": "{{count}} messages will be sent when the response ends"
   },
+  "agentRetry": {
+    "title": "{{agent}} can’t reach its model",
+    "detail": "It keeps retrying on its own: attempt {{attempt}}, next in {{seconds}} s. Your message is kept.",
+    "detailNow": "It keeps retrying on its own: attempt {{attempt}} in progress. Your message is kept.",
+    "proxy": "A proxy is set for agents ({{proxy}}): check its address in Settings › Agents › Advanced.",
+    "noProxy": "Check the connection (Wi-Fi, VPN); behind a corporate proxy, set it in Settings › Agents › Advanced.",
+    "agentMessage": "Agent’s message",
+    "settings": "Network settings",
+    "stop": "Stop",
+    "networkStale": "Network settings changed since {{agent}} started: restart it to apply them. The conversation is kept.",
+    "restart": "Restart the agent"
+  },
   "turnRetry": {
     "network": "Connection lost",
     "rateLimit": "Rate limit reached",
@@ -1358,7 +1370,8 @@
         "fjordNight": "Fjord Night",
         "aurora": "Aurora",
         "auroraNight": "Aurora Night",
-        "new": "New"
+        "new": "New",
+        "newName": "{{name}}, new"
       },
       "accent": {
         "label": "Accent color",
@@ -1596,6 +1609,8 @@
         "erasedIn_other": "erased in {{count}} days",
         "erasedToday": "erased today",
         "noFolder": "No folder",
+        "children_one": "with its task",
+        "children_other": "with its {{count}} tasks",
         "restore": "Restore",
         "erase": "Erase permanently",
         "eraseConfirm": "Erase permanently?",
@@ -2073,7 +2088,8 @@
     "empty": {
       "conversation": "The agent hasn’t changed any file in this conversation yet.",
       "conversationNoGit": "The agent hasn’t changed any file in this conversation yet. (The folder isn’t a git repository.)",
-      "git": "No changes since the last commit."
+      "git": "No changes since the last commit.",
+      "discussion": "The agent hasn’t changed any document in this chat yet."
     },
     "sinceLastCommit": "· since the last commit",
     "reverted": "reverted",
@@ -3001,7 +3017,8 @@
       "text": "This profile is read-only: usage isn’t read here. Update Bobine to see it again."
     },
     "step": "step {{elapsed}}",
-    "stepStarted": "Current step started {{elapsed}} ago"
+    "stepStarted": "Current step started {{elapsed}} ago",
+    "silent": "Response in progress"
   },
   "mentions": {
     "gitChanges": {
@@ -3329,6 +3346,10 @@
     "subagentBackground": {
       "label": "Background subagents followed until they end",
       "detail": "When {{agent}} starts a subagent in the background, its tool returns right away (`metadata.status: \"running\"`): the app keeps it “running”, rereads its session from time to time, and shows it done with its answer when it ends."
+    },
+    "modelRetry": {
+      "label": "Unreachable model",
+      "detail": "When {{agent}} can’t reach its model (proxy, network), it retries forever without saying so in the thread; the app reads its retries (`_meta[\"opencode/retry\"]`) and shows them: attempt, next attempt, its message."
     },
     "executeErrors": {
       "label": "Errors of tools called from code",
@@ -4804,7 +4825,11 @@
       "save": "Save",
       "cancel": "Cancel",
       "pastDate": "This date has already passed.",
-      "noCapWarning": "Cost unknown and up to {{count}} runs a day: set a cap to bound the spending."
+      "noCapWarning": "Cost unknown and up to {{count}} runs a day: set a cap to bound the spending.",
+      "changeFolder": "Change…",
+      "recent": "Recent folders",
+      "otherFolder": "Other folder…",
+      "current": "open conversation"
     },
     "error": {
       "alreadyRunning": "A run of this task is still going.",
@@ -5136,8 +5161,12 @@
   "silenceBanner": {
     "title": "The agent hasn’t sent anything for {{minutes}} min",
     "detail": "That’s normal during a long command or a long think. You can wait, or stop the reply: the conversation is kept.",
+    "proxy": "A proxy is set for agents ({{proxy}}): if it can’t be reached, the agent can’t reach its model. Check it in Settings › Agents › Advanced.",
+    "settings": "Network settings",
     "wait": "Wait",
-    "stop": "Stop"
+    "stop": "Stop",
+    "networkStale": "Network settings changed since the agent started: restart it to apply them. The conversation is kept.",
+    "restart": "Restart the agent"
   },
   "appAlert": {
     "internal": {
@@ -6056,10 +6085,14 @@
       "waiting_other": "{{count}} waiting for your approval",
       "done_one": "{{count}} replied",
       "done_other": "{{count}} replied",
+      "merged_one": "{{count}} merged",
+      "merged_other": "{{count}} merged",
       "stopped_one": "{{count}} stopped",
       "stopped_other": "{{count}} stopped",
       "error_one": "{{count}} failed",
       "error_other": "{{count}} failed",
+      "gone_one": "{{count}} deleted",
+      "gone_other": "{{count}} deleted",
       "starting_one": "{{count}} starting",
       "starting_other": "{{count}} starting",
       "here_one": "{{count}} done here",
@@ -6204,6 +6237,7 @@
       "name": "Bobine {{version}}",
       "preAvailable": "Pre-release available",
       "view": "View",
+      "viewLabel": "View version {{version}}",
       "later": "Later (nothing more for {{version}})"
     },
     "settings": {

@@ -46,8 +46,8 @@ describe('onglet « Session » : Modifications (fiche 207)', () => {
     expect(text('session-changes-conversation')).toBe('Aucune')
     // « Aucune » n'est pas un lien.
     expect(screen.getByTestId('session-changes-conversation').tagName).toBe('SPAN')
-    expect(text('session-changes-line')).toBe('1 fichier non commité+1−0')
-    // Sur une ligne, alignée à gauche (fiche 272, recette : centrée sur deux lignes).
+    expect(text('session-changes-line')).toBe('1 fichier non commité +1 −0')
+    // Alignée à gauche (fiche 272) ; le texte entier, jamais coupé (fiche 276, T10).
     expect(
       screen.getByTestId('session-changes-line').querySelector('.session-link-text')?.textContent
     ).toBe('1 fichier non commité')
@@ -61,8 +61,8 @@ describe('onglet « Session » : Modifications (fiche 207)', () => {
       edit(2, '/p/b.md', null, 'x\n')
     ]
     const { onOpenConversation, onOpenGit } = show(items, { files: 3, added: 5, removed: 1 })
-    expect(text('session-changes-conversation')).toBe('2 fichiers+3−1')
-    expect(text('session-changes-line')).toBe('3 fichiers non commités+5−1')
+    expect(text('session-changes-conversation')).toBe('2 fichiers +3 −1')
+    expect(text('session-changes-line')).toBe('3 fichiers non commités +5 −1')
     fireEvent.click(screen.getByTestId('session-changes-conversation'))
     expect(onOpenConversation).toHaveBeenCalledTimes(1)
     expect(onOpenGit).not.toHaveBeenCalled()

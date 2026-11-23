@@ -237,6 +237,12 @@ export class ConversationManager {
   /** Travail des sous-agents déjà rejoué (fiche 053), par profil et session ; les plus récents. */
   private readonly subagentWorks = new SubagentWorks()
   private readonly sendOrder = new SendOrder()
+  /**
+   * Numéro du dernier évènement émis, toutes conversations confondues : il ne recule jamais pour
+   * un même identifiant, même quand la conversation renaît (restaurée de la corbeille), car le
+   * renderer écarte ce qui n'est pas plus récent que ce qu'il a déjà vu (rc.4, T1).
+   */
+  private eventSeq = 0
 
   /** Modules d'outils des sessions, sans les familles coupées par l'utilisateur (fiche 109). */
   private readonly toolModules: AppToolModule[]
@@ -1032,7 +1038,7 @@ export class ConversationManager {
    */
   async delete(
     id: string,
-    options: { fromAgent?: boolean; removeWorktree?: boolean } = {}
+    options: { fromAgent?: boolean; removeWorktree?: boolean; deletedWith?: string } = {}
   ): Promise<ConversationsState> {
     // Lecture seule (fiche 196) : refusé avant tout (rien chez l'agent, worktree gardé).
     this.trashed.writable()
@@ -1064,7 +1070,7 @@ export class ConversationManager {
     this.options.onDeleted?.(id)
     for (const listener of [...this.listeners]) listener.deleted?.(id)
     // Corbeille (fiche 196) : plus aucune écriture du fil, celles en vol finies, puis il y part.
-    if (!conversation.draft) await this.trashed.put(conversation, agentDeleted)
+    if (!conversation.draft) await this.trashed.put(conversation, agentDeleted, options.deletedWith)
     this.contentSearch.forget(id)
     this.saveIndex()
     if (id === this.activeId) this.replaceActive(conversation.record, true)
@@ -1126,10 +1132,10 @@ export class ConversationManager {
   restoreFromTrash(id: string): ConversationsState {
     // Lecture seule : la corbeille refuse elle-même (`ConversationTrash`).
     if (this.conversations.has(id)) throw new Error(t('profile.trash.alreadyThere'))
-    const { record, notice } = this.trashed.restore(id, (p) => this.profileOrDefault(p).label)
-    const conversation: Conversation = { record, lastUsed: 0, readAt: 0, draft: false }
-    this.conversations.set(id, conversation)
-    if (notice) this.onEvent(conversation, notice)
+    // Sa descendance supprimée avec elle revient avec elle (fiche 228). `eventSeq` : voir le champ.
+    const label = (profileId: string) => this.profileOrDefault(profileId).label
+    const back = this.trashed.restoreFamily(id, label, this.conversations, this.eventSeq)
+    for (const { conversation, notice } of back) if (notice) this.onEvent(conversation, notice)
     this.indexChanged()
     return this.state()
   }
@@ -1412,7 +1418,7 @@ export class ConversationManager {
       this.scheduleSave(conversation, event.type === 'turn-end' || event.type === 'turn-error')
     }
 
-    conversation.seq = (conversation.seq ?? 0) + 1
+    conversation.seq = ++this.eventSeq
     const payload = { conversationId: conversation.record.id, event, seq: conversation.seq }
     // Le renderer puis chaque abonné ; un abonné qui lève ne prive pas les suivants (fiche 263).
     notifyAll(this.options.emit, this.listeners, payload)

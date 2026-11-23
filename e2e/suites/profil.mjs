@@ -80,6 +80,8 @@ export async function profileSuite(scheme) {
   }
   await damagedProfile(scheme)
   await trashAndRestoreConfirm(scheme)
+  await restoredResumes(scheme)
+  await trashFamily(scheme)
   await readOnly(scheme)
 }
 
@@ -285,6 +287,136 @@ async function trashAndRestoreConfirm(scheme) {
     )
   } finally {
     for (const d of [dir, legacy, empty]) rmSync(d, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Restaurée de la corbeille, une conversation se reprend comme une autre (recette rc.4, T1) : le
+ * renderer l'avait suivie avant sa suppression ; elle repartait « Arrêté », le message restait dans
+ * la saisie et rien ne partait.
+ */
+async function restoredResumes(scheme) {
+  const replies = `document.querySelectorAll('.msg-agent').length`
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.ready()
+      await ui.send('Avant la corbeille')
+      await ui.waitFor(`${replies} === 1`)
+      await ui.ready()
+      await ui.waitFor(`${HISTORY}.length === 1`)
+      const title = await ui.ev(`${HISTORY}[0].innerText.split('\\n')[0]`)
+      await deleteNamed(ui, title)
+      await ui.click(ui.$('delete-confirm'))
+      await ui.waitFor(
+        `![...${HISTORY}].some((i) => i.innerText.includes(${JSON.stringify(title)}))`
+      )
+      const main = await mainProcess()
+      try {
+        await openSettingsData(ui, main)
+        await ui.waitFor(`document.querySelectorAll('[data-testid=trash-item]').length === 1`)
+        await ui.click(ui.$('trash-restore'))
+        await ui.waitFor(`!!${ui.$('trash-empty')}`)
+        await ui.click(`document.querySelector('.settings-close')`)
+        await ui.waitFor(`!${ui.$('settings')}`)
+      } finally {
+        main.close()
+      }
+      const item = `[...${HISTORY}].find((i) => i.innerText.includes(${JSON.stringify(title)}))`
+      await ui.waitFor(`!!${item}`)
+      await ui.click(item)
+      await ui.waitFor(showing('Avant la corbeille'))
+      await ui.ready()
+      await ui.send('Après la corbeille')
+      await ui.waitFor(`${replies} === 2`)
+      await ui.ready()
+      check(
+        (await ui.ev(`${ui.$('composer-input')}.value`)) === '',
+        'restaurée : le message part, l’agent répond, elle redevient prête'
+      )
+      await ui.shot('196-restauree-reprise')
+    },
+    undefined,
+    'echo',
+    {},
+    [`--inspect=${MAIN_PORT}`]
+  )
+}
+
+/**
+ * Une mère supprimée avec son travail (recette rc.4, T7) : sa ligne de la corbeille le dit
+ * (« avec son travail »), et la restaurer ramène les deux. Corbeille posée sur le disque avant le
+ * lancement, comme `deleteConversation` l'écrit (`deletedWith`).
+ */
+async function trashFamily(scheme) {
+  const dir = mkdtempSync(join(tmpdir(), 'bob-e2e-corbeille-famille-'))
+  const workspace = mkdtempSync(join(tmpdir(), 'bob-e2e-carnet-'))
+  const trash = join(dir, 'conversations', '.trash')
+  mkdirSync(trash, { recursive: true })
+  const at = new Date().toISOString()
+  const put = (id, title, extra = {}, deletedWith) => {
+    const record = {
+      id,
+      title,
+      titleSource: 'user',
+      profileId: 'mock',
+      workspace,
+      createdAt: at,
+      updatedAt: at,
+      ...extra
+    }
+    writeFileSync(
+      join(trash, `${id}.json`),
+      JSON.stringify({ version: 1, items: [], nextId: 1, record })
+    )
+    writeFileSync(
+      join(trash, `${id}.meta.json`),
+      JSON.stringify({ record, deletedAt: at, ...(deletedWith ? { deletedWith } : {}) })
+    )
+  }
+  put('mere-e2e', 'Organise le carnet')
+  put(
+    'fille-e2e',
+    'Importer les données',
+    { startedFrom: { id: 'mere-e2e', title: 'Organise le carnet' } },
+    'mere-e2e'
+  )
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        const main = await mainProcess()
+        try {
+          await openSettingsData(ui, main)
+          await ui.waitFor(`document.querySelectorAll('[data-testid=trash-item]').length === 2`)
+          const said = await ui.ev(
+            `[...document.querySelectorAll('[data-testid=trash-children]')].map((s) => s.innerText)`
+          )
+          check(
+            said.length === 1 && said[0] === L('settings.data.trash.children', { count: 1 }),
+            `corbeille : la mère dit « ${L('settings.data.trash.children', { count: 1 })} », et elle seule (${said.join(' | ')})`
+          )
+          await ui.shot('228-corbeille-mere-travaux')
+          const mother = `[...document.querySelectorAll('[data-testid=trash-item]')].find((i) => i.querySelector('[data-testid=trash-children]'))`
+          await ui.click(`${mother}.querySelector('[data-testid=trash-restore]')`)
+          await ui.waitFor(`!!${ui.$('trash-empty')}`)
+          await ui.click(`document.querySelector('.settings-close')`)
+          await ui.waitFor(`!${ui.$('settings')}`)
+        } finally {
+          main.close()
+        }
+        await ui.waitFor(showing('Organise le carnet'))
+        await ui.waitFor(showing('Importer les données'))
+        check(true, 'restaurer la mère ramène son travail : corbeille vide, les deux dans la liste')
+      },
+      dir,
+      'echo',
+      {},
+      [`--inspect=${MAIN_PORT}`]
+    )
+  } finally {
+    for (const d of [dir, workspace]) rmSync(d, { recursive: true, force: true })
   }
 }
 

@@ -10,6 +10,10 @@ import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
  * de Bobine puis rapport local au lancement suivant et orphelins arrêtés, élément du fil illisible
  * remplacé sans emporter la fenêtre, avis d'erreur interne du main.
  */
+/** Proxy saisi pour la suite (fiche 275) : jamais affiché en clair. */
+const PROXY = 'http://jean:s3cr3t@proxy.exem21ple.test:3128'
+const MASKED = 'http://•••@proxy.exem21ple.test:3128'
+
 export async function failuresVisibleSuite(scheme) {
   console.log(`\n— Pannes visibles (${scheme})`)
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-pannes-visibles-'))
@@ -21,6 +25,71 @@ export async function failuresVisibleSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
+        // 0. Agent qui ne joint pas son modèle (OpenCode 2.3.0 derrière un proxy injoignable,
+        // fiche 275) : reprises lues par le profil, bandeau tout de suite, piste Wi-Fi / VPN sans
+        // proxy ; « Réglages réseau » mène au champ du proxy, qu'on renseigne pour la suite.
+        await ui.send('/scenario reseau-injoignable-2-3')
+        await ui.waitFor(`${ui.$('agent-unreachable')}?.dataset.attempt >= 3`, 15000)
+        const unreachable = await ui.ev(
+          `({ role: ${ui.$('agent-unreachable')}.getAttribute('role'), hint: ${ui.$('agent-unreachable-hint')}.innerText, working: !!${ui.$('working')}, silence: !!${ui.$('silence-banner')} })`
+        )
+        check(
+          unreachable.role === 'status' &&
+            unreachable.hint === L('agentRetry.noProxy') &&
+            !unreachable.working &&
+            !unreachable.silence,
+          `agent qui réessaie : « n’arrive pas à joindre son modèle », piste Wi-Fi / VPN, ni indicateur ni bandeau de silence (${JSON.stringify(unreachable)})`
+        )
+        await ui.ev(`${ui.$('agent-unreachable')}.querySelector('details').open = true; true`)
+        await ui.shot('275-injoignable')
+        await ui.click(ui.$('agent-unreachable-settings'))
+        await ui.waitFor(
+          `${ui.$('settings-agents-advanced')}?.open === true && document.activeElement === ${ui.$('network-proxy')}`,
+          10000
+        )
+        check(
+          true,
+          '« Réglages réseau » : Réglages › Agents, « Avancé » déplié, focus sur le proxy'
+        )
+        await ui.type(PROXY)
+        await ui.key('Enter')
+        await ui.waitFor(`!!${ui.$('network-note')}`)
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('settings')}`)
+        // Proxy enregistré, agent lancé sans lui (fiche 276, T4) : le bandeau le dit aussitôt, et
+        // « Relancer l'agent » prend la place de « Réglages réseau ».
+        await ui.waitFor(`${ui.$('agent-unreachable-hint')}?.hasAttribute('data-stale')`, 10000)
+        const stale = await ui.ev(
+          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, title: ${ui.$('agent-unreachable')}.querySelector('b').innerText, settings: !!${ui.$('agent-unreachable-settings')}, restart: ${ui.$('agent-unreachable-restart')}?.innerText })`
+        )
+        // Le nom de l'agent est celui qu'il annonce, relu dans le titre du bandeau.
+        const [pre, post] = L('agentRetry.title', { agent: '\u0000' }).split('\u0000')
+        const agent = stale.title.slice(pre.length, stale.title.length - post.length)
+        check(
+          stale.hint === L('agentRetry.networkStale', { agent }) &&
+            !stale.settings &&
+            stale.restart === L('agentRetry.restart'),
+          `proxy changé : « relancez-le pour les appliquer », « Relancer l’agent » (${JSON.stringify(stale)})`
+        )
+        await ui.shot('276-injoignable-relancer')
+        const sentBefore = await ui.ev(`document.querySelectorAll('.msg-user').length`)
+        await ui.click(ui.$('agent-unreachable-restart'))
+        await ui.ready()
+        const restarted = await ui.ev(
+          `({ input: ${ui.$('composer-input')}.value, sent: document.querySelectorAll('.msg-user').length, banner: !!${ui.$('agent-unreachable')} })`
+        )
+        check(
+          restarted.input.includes('/scenario reseau-injoignable-2-3') &&
+            restarted.sent === sentBefore &&
+            !restarted.banner,
+          `« Relancer l’agent » : agent relancé, message remis dans la saisie, rien d’envoyé (${JSON.stringify(restarted)})`
+        )
+        await ui.shot('276-message-remis')
+        // Saisie vidée pour la suite (comme un utilisateur qui efface).
+        await ui.ev(
+          `(() => { const el = ${ui.$('composer-input')}; Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, ''); el.dispatchEvent(new Event('input', { bubbles: true })); return true })()`
+        )
+        await ui.waitFor(`${ui.$('composer-input')}.value === ''`)
         // 1. Agent silencieux : bandeau neutre, « Attendre » le masque, « Arrêter » arrête.
         await ui.send('/scenario muet')
         await ui.waitFor(`!!${ui.$('silence-banner')}`, 15000)
@@ -32,6 +101,17 @@ export async function failuresVisibleSuite(scheme) {
             banner.text.includes(L('silenceBanner.title', { minutes: 1 })) &&
             banner.focus,
           'agent silencieux : bandeau « n’a rien envoyé depuis… », en statut, sans prendre le focus'
+        )
+        // Fiche 276 (T13, T5) : l'indicateur ne contredit plus le bandeau ; boutons sous le texte.
+        const quiet = await ui.ev(
+          `(() => { const b = ${ui.$('silence-banner')}; const text = b.querySelector('.silence-banner-text').getBoundingClientRect(); const actions = b.querySelector('.silence-banner-actions').getBoundingClientRect(); return { activity: ${ui.$('working')}?.dataset.activity, label: ${ui.$('working')}?.querySelector('.working-label')?.innerText, below: actions.top >= text.bottom - 1, aligned: Math.abs(actions.left - text.left) <= 1 } })()`
+        )
+        check(
+          quiet.activity === 'silent' &&
+            quiet.label === L('activity.silent') &&
+            quiet.below &&
+            quiet.aligned,
+          `silence : « Réponse en cours » sans verbe, boutons sous le texte et alignés sur lui (${JSON.stringify(quiet)})`
         )
         await ui.shot('194-silence')
         await ui.click(ui.$('silence-wait'))
@@ -48,6 +128,41 @@ export async function failuresVisibleSuite(scheme) {
           `agent figé qui ignore Stop et SIGTERM : arrêté, un seul avis clair (${stopped})`
         )
         await ui.send('/scenario streaming-texte')
+        await ui.ready()
+        // Agent relancé avec le proxy saisi plus haut (fiche 275) : silence sans contenu, puis
+        // reprises ; le proxy est cité, identifiants masqués, nulle part en clair.
+        await ui.send('/scenario silence-annulable')
+        await ui.waitFor(`!!${ui.$('silence-proxy')}`, 15000)
+        const silenceProxy = await ui.ev(
+          `({ hint: ${ui.$('silence-proxy')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
+        )
+        check(
+          silenceProxy.hint === L('silenceBanner.proxy', { proxy: MASKED }) && !silenceProxy.page,
+          `silence avec un proxy : cité masqué, « Réglages réseau » (${silenceProxy.hint})`
+        )
+        // Adresse d'une seule pièce avec ses parenthèses (fiche 276, T5), entière en infobulle.
+        const addr = await ui.ev(
+          `(() => { const a = ${ui.$('silence-proxy')}.querySelector('.network-addr'); const code = a.querySelector('code'); const tops = new Set([...a.getClientRects()].map((r) => Math.round(r.top))); return { text: a.innerText, lines: tops.size, title: code.title } })()`
+        )
+        check(
+          addr.text.startsWith(`(${MASKED})`) && addr.lines === 1 && addr.title === MASKED,
+          `adresse du proxy insécable, parenthèses comprises, en infobulle (${JSON.stringify(addr)})`
+        )
+        await ui.shot('275-silence-proxy')
+        await ui.click(ui.$('silence-stop'))
+        await ui.ready()
+        await ui.send('/scenario reseau-injoignable-2-3')
+        await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
+        const unreachableProxy = await ui.ev(
+          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
+        )
+        check(
+          unreachableProxy.hint === L('agentRetry.proxy', { proxy: MASKED }) &&
+            !unreachableProxy.page,
+          `modèle injoignable avec un proxy : cité masqué (${unreachableProxy.hint})`
+        )
+        await ui.shot('275-injoignable-proxy')
+        await ui.click(ui.$('agent-unreachable-stop'))
         await ui.ready()
         // Agent tué par kill -9 pendant une commande (fiche 195, D3) : la commande ne lui survit pas.
         await ui.send('/scenario plantage-avec-enfant')

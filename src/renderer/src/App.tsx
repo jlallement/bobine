@@ -12,7 +12,7 @@ import { appCommandActions, applyAppCommand, stepConversation } from './app-comm
 import { BesidePane } from './components/thread/BesidePane'
 import { AppDialogs, useAppDialogs } from './components/dialogs/AppDialogs'
 import { InstallDialog } from './components/dialogs/InstallDialog'
-import { BranchOrigin, ConversationTitle } from './components/sidebar/ConversationTitle'
+import { ConversationTitle, TitleOrigin } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
 import { LineTotals } from './components/common/LineTotals'
@@ -105,7 +105,7 @@ export function App() {
     discussion
   })
   // Branche git du dossier, à côté du dossier dans la zone de saisie (fiche 049).
-  const git = useGitStatus(c.activeId, snapshot?.status === 'busy')
+  const git = useGitStatus(c.queryId, snapshot?.status === 'busy')
   // « En cours » de l'onglet « Session » (fiche 166), suivi même panneau fermé.
   const running = useSessionRunning({
     conversationId: c.activeId,
@@ -136,7 +136,7 @@ export function App() {
     notices: c
   })
   // Commandes « / » personnelles et du projet (fiche 045).
-  const projectCommands = useProjectCommands(c.activeId, snapshot?.status === 'busy')
+  const projectCommands = useProjectCommands(c.queryId, snapshot?.status === 'busy')
   const globalCommands = c.settings?.commands
   const userCommands = useMemo(
     () => [...projectCommands, ...(globalCommands ?? [])],
@@ -518,26 +518,8 @@ export function App() {
                   {activeTitle?.role ? (
                     <RoleTitleBadge child={activeTitle} profiles={c.settings?.profiles ?? []} />
                   ) : null}
-                  {/* Une fille dit d'où elle vient, et y ramène (fiche 117). */}
-                  {activeTitle?.startedFrom ? (
-                    <button
-                      className="main-title-origin no-drag"
-                      title={t('conversationTitle.fromTitle')}
-                      onClick={() =>
-                        activeTitle.startedFrom && c.select(activeTitle.startedFrom.id)
-                      }
-                      data-testid="title-origin"
-                    >
-                      {t('conversationTitle.from', { title: activeTitle.startedFrom.title })}
-                    </button>
-                  ) : null}
-                  {/* Une branche aussi (fiche 131) : elle n'est plus rangée sous son origine. */}
-                  {activeTitle?.branchedFrom && !activeTitle.startedFrom ? (
-                    <BranchOrigin
-                      origin={activeTitle.branchedFrom}
-                      list={c.list}
-                      onSelect={(id) => c.select(id)}
-                    />
+                  {activeTitle ? (
+                    <TitleOrigin conversation={activeTitle} list={c.list} onSelect={c.select} />
                   ) : null}
                   {activity.open && (
                     <span className="main-title static" data-testid="activity-title">
@@ -610,6 +592,8 @@ export function App() {
                     defaultProfileId={
                       c.settings?.newConversation.profileId ?? c.settings?.profileId
                     }
+                    activeConversation={c.activeSummary}
+                    recentFolders={c.settings?.recentWorkspaces ?? []}
                   />
                 ) : activity.open ? (
                   <ActivityPage
@@ -714,6 +698,8 @@ export function App() {
                           workspace={c.activeSummary?.workspace}
                           onRetry={c.retryTurn}
                           onStop={c.cancel}
+                          onRestart={c.restart}
+                          inbox={composerInbox}
                         />
                       </div>
                     </div>
@@ -801,7 +787,7 @@ export function App() {
                   ? { onShowSidebar: () => setSidebarOpen(true) }
                   : {})}
                 items={transcript.items}
-                focusTerminal={panel.focusTerminal}
+                focusTab={panel.focusTab}
                 {...(c.settings ? { preferences: c.settings.preferences } : {})}
                 {...(panel.changesRequest ? { changesRequest: panel.changesRequest } : {})}
                 files={panel.filesTab(links.openActiveLink, composerInbox, c.chooseWorkspace)}
@@ -845,8 +831,8 @@ export function App() {
                   onLoadMcp: loadMcp,
                   onOpenMemory: () => dialogs.setSettingsSection('memory')
                 }}
-                onTerminalFocused={panel.terminalFocused}
-                onTab={(tab) => panel.update({ tab })}
+                onTabFocused={panel.tabFocused}
+                onTab={panel.select}
                 onClose={() => panel.update({ open: false })}
                 onResize={panel.resize}
                 onResetWidth={panel.resetWidth}

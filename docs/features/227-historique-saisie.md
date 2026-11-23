@@ -128,3 +128,40 @@ Aucune nouvelle dépendance.
   (clair et sombre) vertes en français et en anglais (`--lang en`) ; captures
   `e2e/captures/historique-{1-rappel,2-jeton-role,3-plusieurs-lignes,4-modification}-{light,dark}.png`
   (et `en-…`) comparées aux planches 1 à 5 des maquettes.
+- 2026-11-23 : **saisie étroite (maquette `docs/maquettes/rc4-saisie-etroite.html`, variante 1,
+  validée le 2026-11-23)**. Défaut de recette rc.4 : pendant une réponse, l'invite longue passait
+  sous le rappel « ↑ Messages précédents » (fenêtre à 760 px ; sans marge à 1280 px panneau
+  ouvert).
+  - `sent-history.css` : tant que le rappel est là (`.composer:has(.sent-history-hint)`), la saisie
+    lui réserve sa largeur (`--sent-history-hint-w`, mesurée : 158 px, 140 px en anglais ; plus
+    son retrait de 6 px et 12 px d'air — les 150 et 132 px de la maquette laissaient l'invite
+    toucher le rappel à 1280 px panneau ouvert) ;
+    requête de conteneur sur `.composer` (`container-type: inline-size`) : sous 520 px, le rappel
+    n'est plus que la touche « ↑ », son nom effacé comme `.sr-only` (lu par les lecteurs d'écran)
+    et en infobulle (`title`).
+  - Invite trop longue : **elle passe sur deux lignes** (repli prévu par la maquette), pas de
+    coupure par « … ». Essayée (`white-space: nowrap` et `text-overflow: ellipsis` sur
+    `::placeholder`), la coupure cassait l'essai `composer` à 500 px (« l'invite est entière »,
+    fiche 167) : la saisie gardait une ligne pour une invite mesurée sur deux. L'invite entière,
+    la saisie grandit d'une ligne, sans chevauchement.
+  - Écart : le rappel n'est plus `aria-hidden` (le nom accessible demandé par la maquette) ; un
+    appui dessus ne retire pas le focus à la saisie (`mousedown` empêché), sinon le rappel
+    disparaissait sous le pointeur. Aucun texte changé.
+  - À 760 px (saisie de 452 px), l'invite tient sur une ligne à côté de « ↑ » ; à 640 px, sur deux.
+  - Essais : `SentHistory.test.tsx` (infobulle, pas caché, focus gardé) ; e2e `historique-saisie`
+    (pendant `/scenario lent`, à 760 px puis 1280 px panneau ouvert : boîtes de l'invite et du
+    rappel séparées de 8 px au moins, invite entière, rappel « ↑ » seul ou entier ; captures
+    `historique-5-saisie-760`, `historique-5b-saisie-640` (invite sur deux lignes),
+    `historique-6-saisie-1280-panneau`).
+- 2026-11-23 : **relecture — panneau dans l'essai de la saisie étroite**. L'essai appuyait jusqu'à
+  deux fois sur le bouton du panneau, avec des `sleep`, pour le retrouver ouvert à 1280 px. Pas un
+  défaut de l'app, établi par une sonde dans l'essai (état affiché, `bobine.panel`, largeur) :
+  ouvert d'office au départ (fiche 166), le panneau est replié par l'app à 760 px et `open: false`
+  est mémorisé aussitôt (`useRoomForConversation`, fiche 173) ; à 1280 px, l'app le rouvre seule
+  (`open: true` mémorisé) ; un seul appui le referme. Affiché, mémorisé et bouton (libellé tiré du
+  même `panel.open`) ne divergent jamais ; l'appui de l'essai refermait parfois ce que l'app venait
+  de rouvrir, d'où le second appui. Essai réécrit sans boucle ni `sleep` : à chaque largeur, attente
+  de l'état réel (panneau absent et `open: false` à 760/640 px, présent et `open: true` à 1280 px,
+  glissé d'arrivée fini), puis un seul appui qui le referme (absent et `open: false`). Garde-fou
+  unitaire ajouté (`usePanel.test.ts`, « repli faute de place ») : vert d'emblée, il n'y avait rien
+  à corriger dans l'app. Aucun changement visible : pas de ligne au CHANGELOG.

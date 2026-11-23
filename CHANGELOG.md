@@ -2,7 +2,7 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## Prochaine version
+## 1.0.0-rc.4 — 23 novembre 2026
 
 ### Nouveau
 
@@ -32,6 +32,38 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Proxy changé dans Réglages pendant qu’un agent ne joint pas son modèle : le bandeau le dit
+  (« Les réglages réseau ont changé depuis le lancement… ») et **Relancer l’agent** l’applique ;
+  le message en cours revient dans la zone de saisie, sans partir.
+- Bandeau « L’agent n’a rien envoyé depuis… » : les boutons passent sous le texte, qui garde
+  toute la largeur ; l’adresse du proxy n’est plus coupée en deux. Pendant ce silence,
+  l’indicateur dit « Réponse en cours » au lieu de « Écrit… ».
+- Textes moins tronqués : dans un en-tête étroit, la pastille du profil temporaire ne garde que
+  son icône avant que le titre ne soit coupé ; Session › Modifications passe à la ligne au lieu
+  de couper « non commités » ; zone de saisie étroite, les réglages de la session rejoignent le
+  menu 📎 avant que le nom du modèle ne soit coupé.
+- Clic droit sur une conversation de la barre latérale : le menu de la conversation (comme ⋯),
+  plus un mot sélectionné et « Copier ».
+- Tâches planifiées › Nouvelle tâche : le dossier de la conversation ouverte est proposé d’office,
+  et **Changer…** liste les dossiers récents, puis « Autre dossier… ».
+- Discussion : le panneau Modifications parle des documents de la discussion, plus de « dernier
+  commit ».
+- Une conversation restaurée depuis la corbeille se reprend comme une autre : son agent repart et
+  le message part. Elle restait « Arrêté », le message dans la zone de saisie, sans explication.
+  Restaurer une conversation supprimée avec ses travaux les restaure avec elle ; dans la corbeille,
+  sa ligne le dit (« avec ses 2 travaux »). Un travail supprimé seul avant y reste.
+- Carte de travaux : l’en-tête ne dit plus « ont répondu » pour un travail dont la conversation a
+  été supprimée (« 1 supprimé »), ni pour un travail fusionné (« 1 fusionné »).
+- Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la
+  réponse sur « Réfléchit… » sans rien dire. OpenCode : un bandeau le dit dès sa deuxième
+  tentative, avec le décompte de la suivante, son message, et une piste : le proxy défini (sans
+  ses identifiants), ou la connexion (Wi-Fi, VPN) ; **Réglages réseau** ouvre le champ du proxy.
+  Tout agent : au bout de 5 min sans rien, le bandeau « L’agent n’a rien envoyé depuis… »
+  s’affiche, et cite le proxy quand il y en a un.
+- Réglages › Agents › Avancé, Réseau d’entreprise : le proxy n’est plus perdu quand on passe
+  aussitôt au champ suivant (« Sans proxy ») et qu’on le quitte à son tour.
+- Zone de saisie : quand la fenêtre rétrécit, la barre se replie dans la même image ; le bouton
+  d’envoi ne déborde plus un instant de la zone, sur une machine chargée.
 - Un clic dans le fil n’est plus perdu quand un tour se termine au même instant : le fil ne
   remonte plus sous le pointeur entre l’appui et le relâché (par exemple sur une ligne d’une carte
   de travaux, qui ne se dépliait pas). De même quand le fil était presque en bas, ou qu’une
@@ -39,9 +71,40 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   **Autoriser une fois**, qui restait sans effet).
 - Une ligne d’une carte de travaux ne glisse plus sous le pointeur quand le tour se termine au
   moment où on la vise : le clic sur sa flèche n’est plus perdu.
+- Carte « Retenir ce souvenir ? » : pendant que l’agent écrit dessous, elle ne remonte plus sous
+  le pointeur ; le clic sur **Retenir** ou **Non** n’est plus perdu.
 - Les boutons d’un travail qui écrit dans sa branche arrivent en une fois, à leur place, quand il
   a fini : **Fusionner dans main** ne s’ajoute plus en tête un instant après les autres, et ne
   fait plus glisser **Voir les modifications** ou **Ouvrir sa conversation** sous le pointeur.
+- Zone de saisie étroite : pendant une réponse, l’invite « Ajouter une suite… » ne passe plus
+  sous le rappel « ↑ Messages précédents ». La première ligne lui garde sa place ; dans une
+  fenêtre étroite, le rappel se réduit à la touche ↑ (son nom en infobulle) et l’invite passe à
+  la ligne si elle ne tient pas.
+- Carte de travaux : un travail qui a fini pendant que l’agent répond encore est dit « a répondu »
+  (et compté dans « 1 a répondu », même si d’autres travaux restent proposés), comme dans la barre
+  latérale et le panneau, plus « en cours » ; l’infobulle précise que sa réponse s’affichera à la
+  fin de celle de l’agent. Ce qu’il fait s’écrit sans le chemin de son dossier
+  (« Modification de README.md »), le chemin complet en infobulle.
+- Fusion arrêtée sur un conflit qui reste : **Réessayer**, **Abandonner** et **Voir le conflit**
+  n’apparaissent plus un instant pour disparaître aussitôt ; ils attendent que la branche ait été
+  relue après l’arrêt, puis restent.
+- Pointeur posé sur une carte de travaux, le fil ne bouge pas, mais ce qui arrive en bas hors de
+  vue (une demande d’autorisation, par exemple) n’était signalé par rien : la flèche **Aller en
+  bas** apparaît désormais, avec le nombre de nouveautés, sans déplacer la carte.
+- Après **Mettre à la corbeille**, le focus va à la zone de saisie : il ne se perd plus dans la
+  page avec la ligne supprimée.
+- Le clavier ne se perd plus dans la page quand le bouton utilisé disparaît ou se désactive
+  (**Autoriser une fois**, **Refuser**, **Retenir**, **Attendre** ou **Arrêter** d’un bandeau, le
+  bouton Stop, **Committer**, Réglages fermés par Échap ou ✕) : il va à la zone de saisie, ou à
+  l’élément suivant de la fenêtre encore ouverte (**Vérifier maintenant** pendant
+  « Vérification… »). **Modifier** un souvenir place le curseur dans son premier champ ; ouvrir
+  l’onglet Terminal ou Navigateur leur donne le clavier.
+- **Tout lancer** : les travaux d’une carte gardent l’ordre proposé, au lieu de changer d’ordre
+  (et de ligne sous le pointeur) selon celui qui démarre le premier.
+- Pendant un appui sur une ligne de travail, ce qui arrive en bas hors de vue montre aussitôt la
+  flèche **Aller en bas**, plus seulement au relâché.
+- Lecteur d’écran : les listes Langue, Fenêtre rapide, Éditeur (et celles des autres réglages)
+  ont un nom ; les thèmes nouveaux sont annoncés « Aurore, nouveau », plus « AuroreNouveau ».
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

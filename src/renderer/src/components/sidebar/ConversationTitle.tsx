@@ -66,6 +66,38 @@ export function ConversationTitle({
 }
 
 /**
+ * D'où vient la conversation, dans l'en-tête après son titre : une fille dit d'où elle vient et y
+ * ramène (fiche 117) ; une branche aussi (fiche 131), elle n'est plus rangée sous son origine.
+ */
+export function TitleOrigin({
+  conversation,
+  list,
+  onSelect
+}: {
+  conversation: Pick<ConversationSummary, 'startedFrom' | 'branchedFrom'>
+  list: readonly Pick<ConversationSummary, 'id' | 'title'>[]
+  onSelect: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const mother = conversation.startedFrom
+  if (mother) {
+    return (
+      <button
+        className="main-title-origin no-drag"
+        title={t('conversationTitle.fromTitle')}
+        onClick={() => onSelect(mother.id)}
+        data-testid="title-origin"
+      >
+        {t('conversationTitle.from', { title: mother.title })}
+      </button>
+    )
+  }
+  return conversation.branchedFrom ? (
+    <BranchOrigin origin={conversation.branchedFrom} list={list} onSelect={onSelect} />
+  ) : null
+}
+
+/**
  * Origine d'une branche dans l'en-tête (fiche 131), comme « ↳ depuis » pour une fille : la branche
  * n'est plus rangée sous elle dans la barre latérale. Ramène à l'origine si elle existe encore ; son
  * titre actuel, sinon celui retenu à la création.

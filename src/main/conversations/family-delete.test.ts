@@ -17,6 +17,7 @@ import { ChildConversations } from './children'
 import { deleteConversation, familyOf } from './family-delete'
 import { ConversationManager } from './manager'
 import { until } from './manager-until'
+import { ConversationTrash } from './trash'
 import type { ConversationRecord } from './store'
 
 function environment(dirs?: { root: string; repo: string }) {
@@ -122,6 +123,32 @@ describe('supprimer une mère (fiche 228)', () => {
     env.manager.stopAll()
   })
 
+  it('restaurer la mère restaure les filles supprimées avec elle, pas une supprimée avant (rc.4, T7)', async () => {
+    const env = environment()
+    const mother = await env.mother()
+    const quiet = await env.child(mother, 'Importer les données')
+    const grandchild = (await env.manager.createChild(quiet, 'Sous-tâche')).id
+    const before = await env.child(mother, 'Supprimée seule')
+    await env.manager.delete(before, { fromAgent: false })
+    await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
+    env.manager.restoreFromTrash(mother)
+    const left = env.manager.state().conversations
+    for (const id of [mother, quiet, grandchild]) expect(left.map((c) => c.id)).toContain(id)
+    expect(env.listed(quiet)?.startedFrom?.id).toBe(mother)
+    expect(env.listed(grandchild)?.startedFrom?.id).toBe(quiet)
+    // Supprimée seule, avant sa mère : un choix à part, elle reste à la corbeille.
+    expect(env.listed(before)).toBeUndefined()
+    expect(new ConversationTrash(join(env.root, 'conversations')).list().map((e) => e.id)).toEqual([
+      before
+    ])
+    // Restaurée, la fille se reprend comme une autre (T1) : son agent relancé, elle répond.
+    env.manager.select(quiet)
+    await env.manager.prompt(quiet, 'Encore une passe')
+    await env.waitFor(() => env.items(quiet).filter((i) => i.kind === 'agent').length === 2)
+    await env.manager.settled()
+    env.manager.stopAll()
+  })
+
   it('filles gardées : lien coupé, note dans leur fil, petite-fille sous sa mère survivante', async () => {
     const env = environment()
     const mother = await env.mother()
@@ -207,6 +234,38 @@ describe('supprimer une mère (fiche 228)', () => {
       )
     )
     await env.manager.settled()
+    env.manager.stopAll()
+  })
+})
+
+describe('mère supprimée avec ses filles juste après « Tout lancer » (chasse rc.4)', () => {
+  it('la consigne de la fille, partie avec elle, n’écrit rien dans un fil supprimé', async () => {
+    const env = environment()
+    const mother = await env.mother()
+    const prompt = env.manager.prompt.bind(env.manager)
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    // Consigne de la fille : le tour que `launch` attend, suivi ici jusqu'à son échec.
+    const turns: Promise<unknown>[] = []
+    vi.spyOn(env.manager, 'prompt').mockImplementation((id, ...rest) => {
+      if (id === mother) return prompt(id, ...rest)
+      const turn = gate.then(() => prompt(id, ...rest))
+      turns.push(turn)
+      return turn
+    })
+    const post = vi.spyOn(env.manager, 'post')
+    const child = await env.children.start(mother, { text: 'Importer', profileId: 'echo' })
+    await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
+    expect(env.listed(child.id)).toBeUndefined()
+    release()
+    // La consigne échoue (fille partie) ; `launch`, abonné avant, a fini son `catch` ensuite.
+    await env.waitFor(() => turns.length > 0)
+    await Promise.allSettled(turns)
+    await env.manager.settled()
+    // Avant : « children.notice.promptFailed » posé dans le fil de la fille supprimée, écarté au
+    // journal (« Évènement « notice » écarté : conversation … inconnue »).
+    const lost = post.mock.results.filter((r) => r.type === 'return' && r.value === false)
+    expect(lost).toEqual([])
     env.manager.stopAll()
   })
 })
@@ -298,8 +357,8 @@ describe('« Supprimer aussi chez… » d’une famille (fiche 228)', () => {
     }
     await deleteConversation(host as never, 'm', { children: 'delete', fromAgent: true })
     expect(deleted).toEqual([
-      ['f1', { fromAgent: true, removeWorktree: false }],
-      ['f2', { fromAgent: false, removeWorktree: false }],
+      ['f1', { fromAgent: true, removeWorktree: false, deletedWith: 'm' }],
+      ['f2', { fromAgent: false, removeWorktree: false, deletedWith: 'm' }],
       ['m', { fromAgent: false }]
     ])
   })

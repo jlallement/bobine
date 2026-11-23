@@ -1,8 +1,9 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ConversationSummary, DeleteOptions, WorktreeStatusView } from '@shared/agent'
 import type { FamilyMember } from '@shared/children'
+import { focusComposer } from '../../useAside'
 import { agentsOf, familyRows } from './delete-family'
 
 /**
@@ -33,6 +34,8 @@ export function DeleteDialog({
   const [family, setFamily] = useState<FamilyMember[]>([])
   // Coché d'office (fiche 228) : la famille part avec la mère.
   const [withChildren, setWithChildren] = useState(true)
+  // Confirmée : la ligne qui a ouvert la boîte va disparaître (recette rc.4).
+  const confirmed = useRef(false)
   useEffect(() => {
     if (!conversation.branch) return
     let alive = true
@@ -70,7 +73,18 @@ export function DeleteDialog({
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog confirm-dialog" data-testid="delete-dialog">
+        <Dialog.Content
+          className="dialog confirm-dialog"
+          data-testid="delete-dialog"
+          // Après « Mettre à la corbeille », Radix rendrait le focus au bouton qui a ouvert la boîte,
+          // dans la ligne supprimée juste après : il tombait sur la page (recette rc.4). Il va à la
+          // zone de saisie. Annuler le rend au bouton, qui reste.
+          onCloseAutoFocus={(event) => {
+            if (!confirmed.current) return
+            event.preventDefault()
+            focusComposer()
+          }}
+        >
           <Dialog.Title className="confirm-title">
             {t('deleteDialog.title', { title: conversation.title })}
           </Dialog.Title>
@@ -144,13 +158,14 @@ export function DeleteDialog({
             <button
               className="btn danger"
               autoFocus
-              onClick={() =>
+              onClick={() => {
+                confirmed.current = true
                 onConfirm({
                   fromAgent: fromAgent && agents.deleting.length > 0,
                   removeWorktree: !!conversation.branch && remove,
                   ...(family.length > 0 ? { children: withChildren ? 'delete' : 'keep' } : {})
                 })
-              }
+              }}
               data-testid="delete-confirm"
             >
               {t('deleteDialog.confirm')}

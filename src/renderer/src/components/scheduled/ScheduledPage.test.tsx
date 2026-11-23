@@ -168,4 +168,44 @@ describe('astuce « Planifier… » (fiche 191)', () => {
       })
     )
   })
+
+  it('nouvelle tâche : dossier de la conversation ouverte prérempli, les récents au menu (fiche 276)', async () => {
+    const choose = vi.fn(async () => '/Users/moi/autre')
+    window.api = {
+      ...window.api,
+      workspace: { ...original.workspace, choose }
+    } as unknown as Window['api']
+    render(
+      <ScheduledPage
+        onOpenConversation={() => {}}
+        profiles={profiles}
+        activeConversation={{ workspace: '/Users/moi/carnet' }}
+        recentFolders={['/Users/moi/site', '/Users/moi/carnet']}
+      />
+    )
+    fireEvent.click(screen.getByTestId('scheduled-new'))
+    expect(screen.getByTestId('scheduled-folder').textContent).toBe('/Users/moi/carnet')
+    const menu = screen.getByTestId('scheduled-folder-menu')
+    fireEvent.keyDown(menu, { key: 'Enter' })
+    const options = screen.getAllByTestId('scheduled-folder-option')
+    expect(options.map((o) => o.textContent)).toEqual([
+      expect.stringContaining('carnet'),
+      expect.stringContaining('site')
+    ])
+    fireEvent.click(options[1] as HTMLElement)
+    expect(screen.getByTestId('scheduled-folder').textContent).toBe('/Users/moi/site')
+    fireEvent.keyDown(screen.getByTestId('scheduled-folder-menu'), { key: 'Enter' })
+    fireEvent.click(screen.getByTestId('scheduled-folder-other'))
+    await waitFor(() =>
+      expect(screen.getByTestId('scheduled-folder').textContent).toBe('/Users/moi/autre')
+    )
+    expect(choose).toHaveBeenCalledTimes(1)
+  })
+
+  it('nouvelle tâche sans dossier récent : rien de prérempli, « Choisir… » comme avant', () => {
+    render(<ScheduledPage onOpenConversation={() => {}} profiles={profiles} />)
+    fireEvent.click(screen.getByTestId('scheduled-new'))
+    expect(screen.getByTestId('scheduled-folder').textContent).toBe('Aucun dossier choisi')
+    expect(screen.queryByTestId('scheduled-folder-menu')).toBeNull()
+  })
 })

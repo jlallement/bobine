@@ -187,11 +187,21 @@ describe('terminal (⌃`, fiche 034)', () => {
   it('⌃` ouvre le terminal avec le clavier, puis le referme', () => {
     const { result, run } = setup()
     fireEvent.keyDown(window, { code: 'Backquote', ctrlKey: true })
-    expect(result.current).toMatchObject({ open: true, tab: 'terminal', focusTerminal: true })
-    run(() => result.current.terminalFocused())
-    expect(result.current.focusTerminal).toBe(false)
+    expect(result.current).toMatchObject({ open: true, tab: 'terminal', focusTab: 'terminal' })
+    run(() => result.current.tabFocused())
+    expect(result.current.focusTab).toBeNull()
     run(() => result.current.toggleTerminal())
     expect(result.current.open).toBe(false)
+  })
+
+  it('onglet Terminal ou Navigateur choisi : il prend le clavier ; un autre, non (seconde chasse rc.4)', () => {
+    const { result, run } = setup()
+    run(() => result.current.select('terminal'))
+    expect(result.current).toMatchObject({ tab: 'terminal', focusTab: 'terminal' })
+    run(() => result.current.select('browser'))
+    expect(result.current).toMatchObject({ tab: 'browser', focusTab: 'browser' })
+    run(() => result.current.select('session'))
+    expect(result.current).toMatchObject({ tab: 'session', focusTab: null })
   })
 
   it('⌘` ou ⌥⌃` ne sont pas le raccourci', () => {
@@ -324,5 +334,49 @@ describe('onglet Fichiers en espace Discussion (fiche 271, Q4)', () => {
     act(() => hook.result.current.filesCommands.files())
     expect(hook.result.current.filesRequest).toBeUndefined()
     expect(hook.result.current.tab).not.toBe('files')
+  })
+})
+
+describe('repli faute de place (fiche 173) : un appui fait ce que le bouton montre', () => {
+  // Barre latérale ouverte (largeur par défaut) : à 760 px, le panneau ne laisse plus 500 px.
+  const room = { eligible: false, sidebarOpen: true }
+  const resizeTo = (width: number) => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    fireEvent(window, new Event('resize'))
+  }
+  const savedOpen = () => (saved() as { open: boolean }).open
+
+  it('replié à 760 px : fermé dans l’état et dans le stockage ; rouvert seul à 1280 px', () => {
+    resizeTo(1280)
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session' }))
+    const { result, run } = setup({ autoOpen: room })
+    expect(result.current.open).toBe(true)
+    run(() => resizeTo(760))
+    // Ce qui est affiché, ce que le bouton montre et ce qui est mémorisé disent la même chose.
+    expect(result.current.open).toBe(false)
+    expect(savedOpen()).toBe(false)
+    run(() => resizeTo(640))
+    expect(result.current.open).toBe(false)
+    run(() => resizeTo(1280))
+    expect(result.current).toMatchObject({ open: true, tab: 'session' })
+    expect(savedOpen()).toBe(true)
+    // Un seul appui sur le bouton du panneau le ferme.
+    run(() => result.current.update({ open: !result.current.open }))
+    expect(result.current.open).toBe(false)
+    expect(savedOpen()).toBe(false)
+  })
+
+  it('replié : un seul appui le rouvre, même dans la fenêtre étroite, et il y reste', () => {
+    resizeTo(1280)
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session' }))
+    const { result, run } = setup({ autoOpen: room })
+    run(() => resizeTo(760))
+    expect(result.current.open).toBe(false)
+    run(() => result.current.update({ open: !result.current.open }))
+    expect(result.current.open).toBe(true)
+    expect(savedOpen()).toBe(true)
+    // Élargie ensuite : rien n'est rejoué, le panneau ouvert à la main reste ouvert.
+    run(() => resizeTo(1280))
+    expect(result.current.open).toBe(true)
   })
 })

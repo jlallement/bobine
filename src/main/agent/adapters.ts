@@ -7,6 +7,7 @@
  * Types seuls : `opencode-contract.ts`, chargé sous Node par sa sonde, en importe sans bundler.
  */
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
+import type { AgentUnreachableView } from '@shared/agent'
 import type { McpServer } from '@shared/mcp'
 import type { ModelProvider } from '@shared/providers'
 import type { RuleFileView } from '@shared/rules'
@@ -120,6 +121,21 @@ export interface ToolStatusSource {
   id: 'opencode-tool-calls'
   /** La mise à jour, en échec si l'agent y décrit une erreur ; telle quelle sinon. */
   correct(update: SessionUpdate): SessionUpdate
+}
+
+/**
+ * Reprises que l'agent annonce quand il ne joint pas son modèle (fiche 275 ; OpenCode 2.3.0 :
+ * `session_info_update` à `_meta["opencode/retry"]`). Lu ici seulement : l'interface ne reçoit
+ * qu'un état générique (`AgentUnreachableView`).
+ */
+export interface RetryStatusSource {
+  /** Repère de la fonction dans « Propre à <agent> » et `docs/agents.md`. */
+  id: 'opencode-retry'
+  /**
+   * L'état annoncé par la mise à jour ; `null` : l'agent tente de nouveau (rien à changer) ;
+   * `undefined` : la mise à jour ne parle pas de reprise.
+   */
+  read(update: SessionUpdate): AgentUnreachableView | null | undefined
 }
 
 /** Ce dont une lecture de quota a besoin, fourni par l'app (fiche 091, ADR-0017). */

@@ -50,8 +50,8 @@ export const findClickable = (label, scope = 'document') => `(() => {
  * éléments entre lesquels choisir quand le libellé est ambigu (préciser la zone, ou un libellé
  * plus long).
  */
-export async function clickLabel(page, label, scope) {
-  const found = await page.ev(findClickable(label, scope))
+export async function clickLabel(page, label, scope, { steady = 80 } = {}) {
+  let found = await page.ev(findClickable(label, scope))
   if (found.error === 'ambigu') {
     throw new Error(
       `« ${label} » ambigu : ${found.matches.length} éléments — ${found.matches.join(' | ')} ; précisez la zone ou le libellé`
@@ -60,6 +60,17 @@ export async function clickLabel(page, label, scope) {
   if (found.error) {
     const seen = found.seen?.length ? ` — visibles : ${found.seen.join(' | ')}` : ''
     throw new Error(`« ${label} » ${found.error}${seen}`)
+  }
+  // Cible immobile avant le clic (seconde chasse rc.4) : le fil qui rattrape le bas la déplace, et
+  // le clic tombait à côté. Relue jusqu'à deux positions égales (2 s au plus), comme un humain qui
+  // attend que ça ne bouge plus.
+  for (let i = 0; steady > 0 && i < 25; i++) {
+    await sleep(steady)
+    const again = await page.ev(findClickable(label, scope))
+    if (again.error) break
+    const still = again.x === found.x && again.y === found.y
+    found = again
+    if (still) break
   }
   await page.mouse(found.x, found.y)
   return found.label
@@ -75,11 +86,20 @@ export const CARD =
   '.permission-card, [data-testid=work-group]:not([data-pending="0"]), [data-testid=memory-card]'
 
 /**
+ * Cartes dont chaque bouton décide : décidées, elles laissent la place à une ligne (réponse,
+ * souvenir retenu). Pas une carte de questions (un choix se coche avant « Envoyer ») ni de groupe.
+ */
+const DECIDING = '[data-testid=permission], [data-testid=memory-card]'
+
+/**
  * Répond à la dernière carte en attente par le libellé d'un de ses boutons. Une carte
  * d'autorisation n'accepte un clic qu'une fois armée (400 ms sans défilement, fiche 203) : on
- * attend, comme un humain.
+ * attend, comme un humain. Une carte d'autorisation ou de souvenir : on attend aussi qu'elle soit
+ * décidée (l'app répond après un aller-retour au main) ; sinon `attendre`, lancé aussitôt, la
+ * voyait encore et la rendait comme une nouvelle carte (runner macOS, fiche 250). Toujours là
+ * après `settle` ms : une erreur le dit.
  */
-export async function answerCard(page, label) {
+export async function answerCard(page, label, { settle = 10_000 } = {}) {
   const last = `[...document.querySelectorAll(${JSON.stringify(CARD)})].at(-1)`
   if (!(await page.ev(`!!${last}`))) throw new Error('aucune carte en attente')
   for (let i = 0; i < 50; i++) {
@@ -89,11 +109,26 @@ export async function answerCard(page, label) {
     if (armed) break
     await sleep(100)
   }
-  return clickLabel(page, label, CARD)
+  const deciding = await page.ev(
+    `(() => { const c = ${last}; window.__piloteCard = c.matches(${JSON.stringify(DECIDING)}) ? c : null; return !!window.__piloteCard })()`
+  )
+  const clicked = await clickLabel(page, label, CARD)
+  if (!deciding) return clicked
+  const pending = `(() => { const c = window.__piloteCard; return !!c && c.isConnected && c.matches(${JSON.stringify(DECIDING)}) })()`
+  const started = Date.now()
+  while (await page.ev(pending)) {
+    if (Date.now() - started > settle) {
+      throw new Error(`« ${clicked} » cliqué, mais la carte attend encore après ${settle / 1000} s`)
+    }
+    await sleep(100)
+  }
+  return clicked
 }
 
 /** Zone de saisie de la conversation. */
 const COMPOSER = '[data-testid=composer-input]'
+/** Menu « / » ou « @ » de la zone de saisie, ouvert par le texte écrit. */
+const COMPOSER_MENU = `!!document.querySelector('.command-menu')`
 /** Touche ⌘ des évènements du protocole DevTools (`modifiers`). */
 const META = 4
 
@@ -124,6 +159,14 @@ export async function sendMessage(page, text) {
     if (left !== '') throw new Error(`zone de saisie pas vidée : « ${left.slice(0, 120)} »`)
   }
   await page.insertText(text)
+  // Un texte qui commence par « / » (`/scenario …`) ouvre le menu des commandes : Entrée y
+  // choisirait une commande au lieu d'envoyer (seconde chasse rc.4). Échap le ferme d'abord.
+  await sleep(150)
+  if (await page.ev(COMPOSER_MENU)) {
+    await page.key('Escape')
+    for (let i = 0; i < 10 && (await page.ev(COMPOSER_MENU)); i++) await sleep(100)
+    if (await page.ev(COMPOSER_MENU)) throw new Error('menu de la zone de saisie resté ouvert')
+  }
   const typed = await page.ev(value)
   if (typed !== text) {
     throw new Error(`zone de saisie : « ${typed.slice(0, 120)} » au lieu du message`)

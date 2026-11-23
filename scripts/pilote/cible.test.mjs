@@ -430,8 +430,127 @@ describe('cartes en attente (fiche 248)', () => {
       api: true
     })
     const clicks = []
-    const page = { ev: async (e) => dom.window.eval(e), mouse: async (x, y) => clicks.push([x, y]) }
+    // Comme l'app, plus tard : la carte décidée laisse la place à sa ligne.
+    const decide = () =>
+      setTimeout(() => dom.window.document.querySelector('[data-testid=memory-card]').remove())
+    const page = {
+      ev: async (e) => dom.window.eval(e),
+      mouse: async (x, y) => {
+        clicks.push([x, y])
+        decide()
+      }
+    }
     expect(await answerCard(page, 'Retenir')).toBe('Retenir')
     expect(clicks).toHaveLength(1)
+    expect(dom.window.document.querySelector('[data-testid=memory-card]')).toBeNull()
+  })
+
+  it('repondre rend la main une fois la carte décidée ; toujours là, une erreur le dit (fiche 250)', async () => {
+    const dom = makeDom(`<div id="root">${memoryCard}</div>`, MAIN_URL, { api: true })
+    const page = { ev: async (e) => dom.window.eval(e), mouse: async () => {} }
+    await expect(answerCard(page, 'Retenir', { settle: 300 })).rejects.toThrow(
+      'la carte attend encore'
+    )
+  })
+})
+
+describe('seconde chasse rc.4 : outillage du pilote', () => {
+  const read = (html) =>
+    makeDom(`<div id="root">${html}</div>`, MAIN_URL, { api: true }).window.eval(READ_SCREEN)
+  // Le bandeau « modèle injoignable » prend la place de l'indicateur du tour (TurnFooter).
+  const unreachable = `<aside><span class="status-dot busy"></span><span data-testid="agent-status">Répond…</span></aside>
+    <main><div data-testid="thread"><div class="msg-user">Bonjour</div>
+    <div data-testid="agent-unreachable"><strong>OpenCode ne joint pas son modèle</strong> · tentative 9</div></div>
+    <textarea data-testid="composer-input"></textarea></main>`
+
+  it('modèle injoignable : attendre rend « blocage », etat dit le tour en cours', () => {
+    const shot = read(unreachable)
+    expect(pendingReason(shot, {})?.code).toBe('blocage')
+    expect(pendingReason(shot, {})?.detail).toContain('ne joint pas son modèle')
+    const watcher = new Watcher({ max: 60_000, calme: 30_000, now: 0 })
+    expect(watcher.observe(shot, 10)?.code).toBe('blocage')
+    expect(busy(shot)).toBe(true)
+    const text = formatState(shot)
+    expect(text).toContain('Tour : en cours — OpenCode ne joint pas son modèle')
+    expect(text).not.toContain('Tour : fini')
+  })
+
+  /** Zone de saisie qui ouvre le menu « / » comme l'app : Entrée y choisit la commande. */
+  function slashPage() {
+    const dom = makeDom(MAIN_HTML, MAIN_URL, { api: true })
+    const doc = dom.window.document
+    const box = doc.querySelector('[data-testid=composer-input]')
+    const menu = () => doc.querySelector('.command-menu')
+    const keys = []
+    const page = {
+      ev: async (e) => dom.window.eval(e),
+      mouse: async () => {},
+      insertText: async (text) => {
+        box.value += text
+        if (box.value.startsWith('/') && !menu()) {
+          const m = doc.createElement('div')
+          m.className = 'command-menu'
+          doc.body.append(m)
+        }
+      },
+      key: async (key) => {
+        keys.push(key)
+        if (key === 'Escape') menu()?.remove()
+        if (key !== 'Enter') return
+        // Menu ouvert : la commande surlignée remplace le texte, rien ne part.
+        if (menu()) {
+          box.value = '/scenario '
+          menu().remove()
+          return
+        }
+        const msg = doc.createElement('div')
+        msg.className = 'msg-user'
+        msg.textContent = box.value
+        doc.querySelector('[data-testid=thread]').append(msg)
+        box.value = ''
+      }
+    }
+    const sent = () => [...doc.querySelectorAll('.msg-user')].map((m) => m.textContent)
+    return { page, sent, keys }
+  }
+
+  it('envoyer « /scenario … » : le menu « / » fermé d’abord, le message part tel quel', async () => {
+    const { page, sent, keys } = slashPage()
+    await sendMessage(page, '/scenario echo')
+    expect(sent()).toEqual(['Bonjour', '/scenario echo'])
+    expect(keys).toEqual(['Escape', 'Enter'])
+  })
+
+  it('envoyer un texte ordinaire : pas d’Échap', async () => {
+    const { page, sent, keys } = slashPage()
+    await sendMessage(page, 'Bonjour encore')
+    expect(sent()).toEqual(['Bonjour', 'Bonjour encore'])
+    expect(keys).toEqual(['Enter'])
+  })
+
+  it('cliquer attend que la cible ne bouge plus (le fil qui rattrape le bas)', async () => {
+    const dom = makeDom(
+      `<div id="root"><div class="memory-card" data-testid="memory-card"><div class="memory-card-actions"><button>Retenir</button></div></div></div>`,
+      MAIN_URL,
+      { api: true }
+    )
+    const button = dom.window.document.querySelector('button')
+    // Le fil défile encore : la carte remonte de 40 px à chaque lecture, puis s'arrête.
+    const tops = [300, 260, 220, 200]
+    let reads = 0
+    button.getBoundingClientRect = () => {
+      const y = tops[Math.min(reads++, tops.length - 1)]
+      return { x: 10, y, width: 30, height: 10, right: 40, bottom: y + 10 }
+    }
+    const clicks = []
+    const page = {
+      ev: async (e) => dom.window.eval(e),
+      mouse: async (x, y) => {
+        clicks.push([x, y])
+        button.closest('[data-testid=memory-card]')?.remove()
+      }
+    }
+    expect(await answerCard(page, 'Retenir')).toBe('Retenir')
+    expect(clicks).toEqual([[25, 205]])
   })
 })

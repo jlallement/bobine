@@ -138,6 +138,32 @@ describe('version à annoncer (fiche 274, ADR-0066)', () => {
     expect(pickUpdate([release('v2.0.0-beta.1')], '1.0.0-rc.3')).toBeNull()
   })
 
+  it('deux lignes publiées en parallèle (ADR-0068) : jamais de saut de ligne ni de retour arrière', () => {
+    // Releases dans l'ordre de l'API (la plus récente d'abord) : une 1.0.x publiée après la 1.1 rc.
+    const parallel = [
+      release('v1.0.0'),
+      release('v1.1.0-rc.2'),
+      release('v1.1.0-rc.1'),
+      release('v1.0.0-rc.4')
+    ]
+    // 1.0.0-rc.4 : la 1.1 rc n'est pas de sa ligne ; la 1.0.0 finale, oui.
+    expect(pickUpdate([release('v1.1.0-rc.1'), release('v1.0.0-rc.4')], '1.0.0-rc.4')).toBeNull()
+    expect(pickUpdate(parallel, '1.0.0-rc.4')?.version).toBe('1.0.0')
+    // 1.0.0 : rien (la 1.1 n'a que des préversions).
+    expect(pickUpdate(parallel, '1.0.0')).toBeNull()
+    // 1.1.0-rc.1 : la rc suivante de sa ligne ; la 1.0.0, plus ancienne, jamais.
+    expect(pickUpdate(parallel, '1.1.0-rc.1')).toEqual({
+      version: '1.1.0-rc.2',
+      prerelease: true,
+      url: releasePageUrl('v1.1.0-rc.2')
+    })
+    expect(pickUpdate([release('v1.0.0'), release('v1.0.1')], '1.1.0-rc.1')).toBeNull()
+    expect(pickUpdate(parallel, '1.1.0-rc.2')).toBeNull()
+    // La 1.1.0 finale : proposée à la 1.1 rc comme à la 1.0.
+    expect(pickUpdate([release('v1.1.0'), ...parallel], '1.1.0-rc.2')?.version).toBe('1.1.0')
+    expect(pickUpdate([release('v1.1.0'), ...parallel], '1.0.0')?.version).toBe('1.1.0')
+  })
+
   it('marquée préversion par GitHub sans « - » : traitée en préversion', () => {
     const odd = release('v1.0.1', { prerelease: true })
     expect(pickUpdate([odd], '1.0.0')).toBeNull()

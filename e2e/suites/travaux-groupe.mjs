@@ -140,15 +140,19 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   await ui.send('Découpe la suite en travaux indépendants.')
   const group = ui.$('work-group')
   await ui.waitFor(`${group}?.dataset.pending === '3'`, 30000)
+  // Les trois `start_child` partent à la fois (deux requêtes HTTP chacun) : ils arrivent dans un
+  // ordre quelconque, et la carte les montre dans l'ordre d'arrivée (macOS CI, 2026-11-23 : les
+  // tests avant le tri). Chaque ligne se lit donc par son titre : rôle, sans rôle, avis.
+  const proposed = await ui.ev(
+    `[...document.querySelectorAll('[data-testid=proposal-row]')].map((r) => r.dataset.title + (r.querySelector('.role-avatar') ? ' (rôle)' : '')).sort().join(' / ')`
+  )
   check(
     (await ui.ev(`${ui.$('work-group-title')}.innerText`)) ===
       L('workGroup.titleProposed', { count: 3 }) &&
-      (await ui.ev(
-        `[...document.querySelectorAll('[data-testid=proposal-row]')].map((r) => r.dataset.title).join(' / ')`
-      )) ===
-        'Tri des articles par rayon / Tests de la sauvegarde locale / Relire l’accessibilité de l’écran' &&
+      proposed ===
+        'Relire l’accessibilité de l’écran (rôle) / Tests de la sauvegarde locale / Tri des articles par rayon (rôle)' &&
       (await ui.ev(`!!${ui.$('work-group-start-all')}`)),
-    'proposés : une carte de groupe, trois lignes (rôle, sans rôle, avis), « Tout lancer »'
+    `proposés : une carte de groupe, trois lignes (rôle, sans rôle, avis), « Tout lancer » (${proposed})`
   )
   await ui.reveal(group)
   await ui.shot('264-groupe-proposes')
@@ -223,9 +227,17 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   )
   // Le conseil ne promet pas d'avis à venir : rien ne réveille l'agent pour le donner (D9).
   const said = await ui.ev(`${ui.$('subtasks-merge-advice')}?.innerText`)
+  const quoted = (title) => L('childrenMerge.quote', { title })
+  const adviceText =
+    L('workGroup.merge.advice.recommended', { titles: quoted('Tri des articles par rayon') }) +
+    L('workGroup.merge.advice.separator') +
+    L('workGroup.merge.advice.notReady', {
+      count: 1,
+      titles: quoted('Tests de la sauvegarde locale')
+    }) +
+    L('workGroup.merge.advice.end')
   check(
-    spaces(said) ===
-      'L’agent recommande « Tri des articles par rayon » ; « Tests de la sauvegarde locale » n’est pas encore recommandé.',
+    spaces(said) === spaces(adviceText),
     `conseil : « … n’est pas encore recommandé », sans « attend son avis » (${said})`
   )
   await footInside(ui, group, 'largeur normale')

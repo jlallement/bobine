@@ -82,6 +82,7 @@ export function LogSettings() {
           </div>
           <select
             className="settings-input"
+            aria-label={t('diagnostics.log.level')}
             value={status.level}
             disabled={status.imposed}
             onChange={(e) => choose(e.target.value as Verbosity)}

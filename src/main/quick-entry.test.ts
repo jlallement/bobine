@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import { QuickShortcutRegistrar, type GlobalShortcuts } from './quick-entry'
+import { EventEmitter } from 'node:events'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  QuickShortcutRegistrar,
+  revealWhenLoaded,
+  type GlobalShortcuts,
+  type PaintSignals
+} from './quick-entry'
 
 function shortcuts(taken: string[] = []) {
   const registered = new Set<string>()
@@ -37,5 +43,49 @@ describe('raccourci global de la fenêtre rapide (fiche 062)', () => {
     expect(registrar.apply('alt-cmd-b').refused).toBe(false)
     registrar.dispose()
     expect(registered.size).toBe(0)
+  })
+})
+
+/** Fenêtre en chargement : ses évènements et ceux de sa page, émis à la main. */
+function loadingWindow() {
+  const win = new EventEmitter()
+  const page = new EventEmitter()
+  const signals = Object.assign(win, { webContents: page }) as unknown as PaintSignals
+  const listeners = () => win.listenerCount('ready-to-show') + page.listenerCount('did-finish-load')
+  return { win, page, signals, listeners }
+}
+
+describe('première ouverture de la fenêtre rapide : la page d’abord (fiches 062, 250)', () => {
+  it('macOS (`hiddenPaint`) : montrée à `ready-to-show`, pas avant', () => {
+    const { win, page, signals, listeners } = loadingWindow()
+    const reveal = vi.fn()
+    revealWhenLoaded(signals, reveal, true)
+    page.emit('did-finish-load')
+    expect(reveal).not.toHaveBeenCalled()
+    win.emit('ready-to-show')
+    expect(reveal).toHaveBeenCalledTimes(1)
+    expect(listeners()).toBe(0)
+  })
+
+  it('Linux : `ready-to-show` arrive le premier, montrée une fois', () => {
+    const { win, page, signals, listeners } = loadingWindow()
+    const reveal = vi.fn()
+    revealWhenLoaded(signals, reveal, false)
+    win.emit('ready-to-show')
+    page.emit('did-finish-load')
+    expect(reveal).toHaveBeenCalledTimes(1)
+    expect(listeners()).toBe(0)
+  })
+
+  it('Linux : `ready-to-show` ne vient pas, montrée à la fin du chargement', () => {
+    const { win, page, signals, listeners } = loadingWindow()
+    const reveal = vi.fn()
+    revealWhenLoaded(signals, reveal, false)
+    page.emit('did-finish-load')
+    expect(reveal).toHaveBeenCalledTimes(1)
+    // L'autre signal est oublié : pas de seconde révélation s'il vient plus tard.
+    expect(listeners()).toBe(0)
+    win.emit('ready-to-show')
+    expect(reveal).toHaveBeenCalledTimes(1)
   })
 })

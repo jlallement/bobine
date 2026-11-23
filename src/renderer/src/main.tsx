@@ -10,6 +10,7 @@ import { setHomeFolder } from '@shared/path-display'
 import { initI18n, setLanguage } from './i18n'
 import { startPresentation } from './presentation'
 import { installTitleTooltips } from './title-tooltips'
+import { installFocusKeeper } from './focus-keeper'
 import './themes.generated.css'
 import './styles.css'
 import './bundled-fonts.css'
@@ -39,6 +40,9 @@ startPresentation()
 // Fenêtre rapide (fiche 062), À propos (fiche 116) et aide (fiche 186) : même page, autre vue.
 const view = { '#quick': 'quick', '#about': 'about', '#help': 'help' }[window.location.hash]
 if (view) document.documentElement.classList.add(`${view}-page`)
+// Fenêtre principale : un focus qui tombe sur la page (élément parti, désactivé) va à un endroit
+// sensé, la zone de saisie par défaut (seconde chasse rc.4).
+else installFocusKeeper()
 // Cadre, barres de défilement et menus opaques hors macOS (fiche 145, styles.css).
 const features = platformFeatures()
 document.documentElement.classList.toggle('native-frame', !features.insetTitleBar)

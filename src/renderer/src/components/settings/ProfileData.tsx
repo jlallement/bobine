@@ -1,4 +1,4 @@
-import { Trash2, Undo2 } from 'lucide-react'
+import { Split, Trash2, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BackupCheck, TrashEntry } from '@shared/profile'
@@ -144,6 +144,13 @@ export function TrashList({ readOnly }: { readOnly: boolean }) {
               <span className="settings-row-hint">
                 {[folder(entry), deletedOn(entry), erasedIn(entry)].join(' · ')}
               </span>
+              {entry.children ? (
+                // Restaurée, ses travaux supprimés avec elle reviennent aussi (recette rc.4, T7).
+                <span className="settings-row-hint trash-item-family" data-testid="trash-children">
+                  <Split size={12} aria-hidden />
+                  {t('settings.data.trash.children', { count: entry.children })}
+                </span>
+              ) : null}
             </span>
             <button
               className="btn small"

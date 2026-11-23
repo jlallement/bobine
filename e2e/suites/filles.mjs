@@ -12,6 +12,8 @@ const TURN_COST = new Intl.NumberFormat(LANG, {
   maximumFractionDigits: 4
 }).format(0.0125)
 /** Coût en dollars annoncé par l'agent : affiché en estimation (« ≈ », fiche 245). */
+/** Début de l'erreur du main pour une conversation qu'il n'a plus (« Conversation inconnue : »). */
+const UNKNOWN_CONVERSATION = L('conversations.error.unknown', { id: '' }).trim()
 const TURN_ESTIMATE = L('usage.estimate', { cost: TURN_COST })
 const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
 
@@ -359,9 +361,24 @@ export async function fillesSuite(scheme) {
         await openDelete()
         await ui.click(ui.$('delete-children'))
         await ui.waitFor(`!${ui.$('delete-children')}.checked`)
+        // Appels vers une conversation que le main n'a plus, quel que soit le canal (git:status,
+        // commands:project, children:mergePlan, conversation:appTools… : chasses rc.4).
+        const unknownReads = () =>
+          ui
+            .output()
+            .split('\n')
+            .filter((line) => line.includes(UNKNOWN_CONVERSATION))
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${row(mother)}`)
         await sleep(300)
+        // Recettes rc.4 : la mère affichée supprimée, plus rien ne l'interroge (« Conversation
+        // inconnue » au journal). Sortie gardée sur 64 Kio glissants : toute la séance compte,
+        // filles arrêtées et supprimées avant comprises (aucune n'est attendue).
+        const unknown = unknownReads()
+        check(
+          unknown.length === 0,
+          `mère supprimée : aucune lecture d'une conversation supprimée${unknown.length ? ` (${unknown.join(' | ')})` : ''}`
+        )
         check(
           (await ui.ev(
             `${rows}.filter((r) => r.dataset.branch || r.closest('[data-testid=inbox]')).length`
@@ -524,6 +541,24 @@ async function agentChildren(ui, main) {
     'deuxième start_child du tour : même carte, deux lignes, la première lancée sur place'
   )
   await ui.shot('filles-5b-deux-propositions')
+  // « Import CSV » a fini pendant que la mère attend la décision sur « Page d'aide » : sa réponse
+  // lui sera remise à la fin de la sienne (état `pending`). Il a répondu, la carte le dit et le
+  // compte, la précision en infobulle (maquette rc4, variante 1).
+  const csvRow = `[...document.querySelectorAll('[data-testid=work-row]')].find((r) => r.innerText.includes('Import CSV'))`
+  await ui.waitFor(`${csvRow}?.dataset.state === 'pending'`, 30000)
+  const csvState = await ui.ev(
+    `(() => { const s = ${csvRow}.querySelector('[data-testid=work-row-state]'); return { text: s.innerText.trim(), title: s.title } })()`
+  )
+  const pendingStart = L('workCard.pendingLine', { agent: '\u0001' })
+    .split('\u0001')[0]
+    .slice(0, 20)
+  check(
+    csvState.text === L('workGroup.state.replied') &&
+      csvState.title.startsWith(pendingStart) &&
+      (await card()).includes(L('workGroup.count.done', { count: 1 })),
+    `travail fini, réponse remise à la fin de celle de l’agent : « ${csvState.text} », compté, précision en infobulle`
+  )
+  await ui.shot('filles-5c-travail-fini-en-attente')
   await approve('Page d’aide')
   await ui.waitFor(`document.querySelectorAll('[data-testid=work-row]').length === 2`, 30000)
   check(

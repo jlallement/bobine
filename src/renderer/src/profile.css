@@ -117,6 +117,14 @@
   min-width: 0;
 }
 
+/* « avec ses N travaux » : sous la ligne de la mère, l'icône des travaux (maquette rc.4). */
+.trash-item-family {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+}
+
 .trash-item-title {
   overflow: hidden;
   text-overflow: ellipsis;

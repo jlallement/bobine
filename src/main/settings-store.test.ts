@@ -356,3 +356,17 @@ describe('astuces : enregistrement et vie privée (fiche 191, relecture)', () =>
     }
   })
 })
+
+describe('réseau d’entreprise enregistré (fiches 104, 276)', () => {
+  it('enregistré, abonnés prévenus ; variables d’un agent lancé maintenant', () => {
+    const { settings, save, changed } = store()
+    settings.setNetwork({ proxy: ' http://p:3128 ' })
+    expect(save).toHaveBeenCalledTimes(1)
+    // Les bandeaux des agents déjà lancés le disent aussitôt (fiche 276).
+    expect(changed).toHaveBeenCalledTimes(1)
+    expect(settings.networkEnv()).toMatchObject({
+      HTTPS_PROXY: 'http://p:3128',
+      HTTP_PROXY: 'http://p:3128'
+    })
+  })
+})

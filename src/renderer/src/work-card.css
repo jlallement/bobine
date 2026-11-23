@@ -583,7 +583,8 @@
 .work-group-state[data-state='running'] {
   color: var(--accent);
 }
-.work-group-state[data-state='replied'] {
+.work-group-state[data-state='replied'],
+.work-group-state[data-state='pending'] {
   color: var(--ok);
 }
 .work-group-state[data-state='waiting'] {

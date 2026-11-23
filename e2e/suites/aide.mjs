@@ -92,7 +92,18 @@ export async function helpSuite(scheme) {
               const visible = [...h].filter((r) => { const b = r.getBoundingClientRect(); return b.top >= body.top && b.bottom <= body.bottom })
               return { page: ${help.$('help-page')}.dataset.page, size: h.size, visible: visible.length }
             })()`)
+          // Page affichée, puis ses effets (défilement au mot, puis surlignage, même rendu) : sur une
+          // machine chargée, ils passent après la lecture de `data-page` (fiche 250, runner macOS de
+          // GitHub : surlignage encore celui de la page d'avant, `visible: 0`). On attend le
+          // surlignage posé sur la page affichée, puis on vérifie, comme avant, qu'il est à l'écran.
+          const highlightsOnPage = () =>
+            help.waitFor(`(() => {
+              const h = CSS.highlights.get('help-search')
+              const page = ${help.$('help-page')}
+              return !!h && h.size > 0 && [...h].every((r) => page.contains(r.startContainer) && r.toString().toLowerCase() === 'worktree')
+            })()`)
           await help.waitFor(`${help.$('help-page')}.dataset.page === ${JSON.stringify(pages[0])}`)
+          await highlightsOnPage()
           const first = await highlighted()
           check(
             first?.page === pages[0] && first.visible > 0,
@@ -105,6 +116,7 @@ export async function helpSuite(scheme) {
           await help.waitFor(
             `${help.$('help-page')}.dataset.page === ${JSON.stringify(pages[other])}`
           )
+          await highlightsOnPage()
           const second = await highlighted()
           check(
             second?.page === pages[other] && second.visible > 0,

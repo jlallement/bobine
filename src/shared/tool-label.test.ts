@@ -10,6 +10,7 @@ import {
   toolInputOf,
   toolLabel,
   toolText,
+  workToolText,
   type LabelledTool,
   type ToolInput
 } from './tool-label'
@@ -471,5 +472,41 @@ describe('Création d’un fichier et chemin de l’en-tête d’un diff (fiche 
     expect(parts.dir).toContain('U+202E')
     expect(parts.dir).toContain('U+200B')
     expect(parts.name).toContain('U+202E')
+  })
+})
+
+describe('workToolText : activité d’un travail sur sa ligne (maquette rc4)', () => {
+  const FOLDER = '/private/tmp/bobine-worktrees/livres-import-csv'
+  const edit = (path: string) => tool({ title: 'edit', toolKind: 'edit', locations: [{ path }] })
+
+  it('chemin du dossier du travail : relatif, le chemin complet en détail', () => {
+    expect(workToolText(edit(`${FOLDER}/README.md`), FOLDER)).toEqual({
+      text: 'Modification de README.md',
+      detail: `${FOLDER}/README.md`
+    })
+    expect(workToolText(edit(`${FOLDER}/src/a.ts`), FOLDER).text).toBe('Modification de src/a.ts')
+  })
+
+  it('hors du dossier : `~` pour le dossier personnel, sinon entier', () => {
+    expect(workToolText(edit('/Users/ada/notes/plan.md'), FOLDER)).toEqual({
+      text: 'Modification de ~/notes/plan.md',
+      detail: '/Users/ada/notes/plan.md'
+    })
+    expect(workToolText(edit('/etc/hosts'), FOLDER).text).toBe('Modification de /etc/hosts')
+    // Voisin au nom qui commence pareil : pas relatif.
+    expect(workToolText(edit('/w/livres-copie/a.md'), '/w/livres').text).toBe(
+      'Modification de /w/livres-copie/a.md'
+    )
+  })
+
+  it('dossier inconnu : rien de relatif, `~` gardé', () => {
+    expect(workToolText(edit('/Users/ada/livres/README.md'), undefined).text).toBe(
+      'Modification de ~/livres/README.md'
+    )
+  })
+
+  it('le texte de l’agent n’est pas réécrit, seul le préfixe du dossier part', () => {
+    const raw = tool({ title: `Applying patch to ${FOLDER}/README.md`, toolKind: undefined })
+    expect(workToolText(raw, FOLDER).text).toBe('Applying patch to README.md')
   })
 })

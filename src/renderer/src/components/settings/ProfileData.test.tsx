@@ -33,4 +33,25 @@ describe('corbeille (fiche 196)', () => {
     expect(rows[0]?.textContent).not.toContain('3973c57d')
     expect(rows[1]?.textContent).toContain('carnet · ')
   })
+
+  it('la mère dit les travaux supprimés avec elle, qui reviendront avec elle (recette rc.4, T7)', async () => {
+    const entries = [
+      { ...entry('m', '/Users/ada/carnet'), children: 2 },
+      { ...entry('u', '/Users/ada/carnet'), children: 1 },
+      entry('f', '/Users/ada/carnet')
+    ]
+    window.api = {
+      ...originalApi,
+      profile: { trash: async () => entries }
+    } as unknown as Window['api']
+    render(<TrashList readOnly={false} />)
+    const rows = await screen.findAllByTestId('trash-item')
+    expect(rows[0]?.querySelector('[data-testid=trash-children]')?.textContent).toBe(
+      'avec ses 2 travaux'
+    )
+    expect(rows[1]?.querySelector('[data-testid=trash-children]')?.textContent).toBe(
+      'avec son travail'
+    )
+    expect(rows[2]?.querySelector('[data-testid=trash-children]')).toBeNull()
+  })
 })

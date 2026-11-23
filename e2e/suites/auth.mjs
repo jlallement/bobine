@@ -1,10 +1,9 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { KEYRING, L, Lpart, check, sleep, withApp } from '../lib.mjs'
+import { KEYRING, L, Lpart, TERMINAL_TEXT, check, sleep, withApp } from '../lib.mjs'
 
 const KEY = 'cle-e2e-0123456789' // gitleaks:allow — fake value for tests
-const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '')`
 
 /** Connexion aux agents (fiche 022) : clé d'API, connexion dans un terminal, licence. */
 export async function authSuite(scheme) {
@@ -198,7 +197,7 @@ export async function authSuite(scheme) {
       async (ui) => {
         await ui.waitFor(`!!${ui.$('blocker-auth')}`)
         await ui.click(ui.$('auth-mock-login'))
-        await ui.waitFor(`${rows}.includes('touch .mock-agent-logged-in')`)
+        await ui.waitFor(`${TERMINAL_TEXT}.includes('touch .mock-agent-logged-in')`)
         await ui.waitFor(`!!${ui.$('retry')}`)
         check(true, 'connexion dans un terminal : commande lancée dans le terminal de l’app')
         await ui.shot('f2-connexion-terminal')
@@ -228,7 +227,7 @@ export async function authSuite(scheme) {
           'licence : panneau dédié, avec le message de l’agent'
         )
         await ui.click(ui.$('step-show-license'))
-        await ui.waitFor(`${rows}.includes('licence-factice')`)
+        await ui.waitFor(`${TERMINAL_TEXT}.includes('licence-factice')`)
         check(true, 'licence : « Lire la licence » lance la commande dans le terminal')
         await ui.shot('f3-licence')
         check(

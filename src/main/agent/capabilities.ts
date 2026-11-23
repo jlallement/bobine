@@ -274,6 +274,13 @@ export function specificItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.replayDiffs.detail', { agent: name })
     })
   }
+  if (profile.retryStatus?.id === 'opencode-retry') {
+    items.push({
+      id: 'model-retry',
+      label: t('capabilities.modelRetry.label'),
+      detail: t('capabilities.modelRetry.detail', { agent: name })
+    })
+  }
   if (profile.toolStatus?.id === 'opencode-tool-calls') {
     items.push({
       id: 'execute-errors',

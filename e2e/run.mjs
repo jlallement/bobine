@@ -15,6 +15,8 @@
  *                                       (une suite en quarantaine sur ce système, `quarantine` du
  *                                       catalogue, est écartée et dite de même ; nommée, elle joue)
  *   pnpm e2e base --lang en             interface en anglais (captures `en-…`, fiche 074)
+ *   pnpm e2e --indicative perf          sur GitHub, chaque contrôle en échec devient une annotation
+ *                                       `::warning::` ; code de sortie inchangé (fiche 250)
  *
  * En parallèle (`--jobs N`, 3 par défaut), chaque suite et chaque thème tournent dans leur propre
  * processus (`pool.mjs`) : une ligne par suite finie (durée, job), sa sortie entière si elle
@@ -39,6 +41,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   formatDuration,
+  indicativeWarnings,
   isFullRun,
   orderTasks,
   parseArgs,
@@ -204,6 +207,11 @@ if (fullRun && fingerprint && result.failures === 0) {
     jobs: options.jobs
   })
 }
+// Suites indicatives (fiche 250) : sur GitHub, chaque contrôle en échec est annoncé, sans rien
+// changer au code de sortie (c'est l'étape du workflow qui ne bloque pas le job).
+if (options.indicative && !isChild && process.env.GITHUB_ACTIONS === 'true') {
+  for (const line of indicativeWarnings(result.failed, process.platform)) console.log(line)
+}
 console.log(
   result.failures
     ? `\n✗ ${result.failures} échec(s) en ${duration} — captures et journaux dans e2e/captures/`
@@ -216,15 +224,17 @@ process.exit(result.failures ? 1 : 0)
  * vérification au fil de l'eau. Une suite bloquée arrête le lancement (ses apps sont tuées).
  */
 async function runHere(list) {
-  const { fail, failureCount, setSuite } = await import('./lib.mjs')
+  const { fail, failureCount, failureLabels, setSuite } = await import('./lib.mjs')
   const durations = {}
   const passed = []
+  const failed = []
   for (const task of list) {
     const entry = SUITES.find((s) => s.name === task.name)
     const run = (await import(`./suites/${entry.file}`))[entry.run]
     setSuite(task.name)
     const before = Date.now()
     const failuresBefore = failureCount()
+    const labelsBefore = failureLabels().length
     let timer
     try {
       await Promise.race([
@@ -252,9 +262,13 @@ async function runHere(list) {
     }
     durations[task.key] = Date.now() - before
     if (failureCount() === failuresBefore) passed.push(task)
+    else {
+      const label = `${task.name}${task.scheme ? ` ${task.scheme}` : ''}`
+      failed.push({ label, controls: failureLabels().slice(labelsBefore) })
+    }
     console.log(
       `  (${task.name}${task.scheme ? ` ${task.scheme}` : ''} : ${Math.round(durations[task.key] / 1000)} s)`
     )
   }
-  return { failures: failureCount(), durations, passed }
+  return { failures: failureCount(), durations, passed, failed }
 }

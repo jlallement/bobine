@@ -3,6 +3,14 @@ import { join } from 'node:path'
 import { WITHDRAW_SIGNAL } from '../../src/mock-agent/scenarios-commandes.mts'
 import { L, Lpart, check, withApp } from '../lib.mjs'
 
+/** Seconde chasse rc.4 : le focus va à la zone de saisie, pas sur la page. */
+const COMPOSER_FOCUSED = `document.activeElement?.dataset.testid === 'composer-input'`
+const focusedOnComposer = (ui) =>
+  ui.waitFor(COMPOSER_FOCUSED, 2000).then(
+    () => true,
+    () => false
+  )
+
 /** « Toujours autoriser » retenu d'une conversation à l'autre, révocable (fiche 042). */
 export async function permissionsSuite(scheme) {
   console.log(`\n— Autorisations retenues (${scheme})`)
@@ -47,6 +55,10 @@ export async function permissionsSuite(scheme) {
     await ui.waitFor(`!${ui.$('settings-remembered-tools')}`)
     await ui.key('Escape')
     await ui.waitFor(`!${ui.$('settings')}`)
+    check(
+      await focusedOnComposer(ui),
+      'Réglages fermés par Échap : le focus va à la zone de saisie'
+    )
 
     await ui.click(ui.$('new-conversation'))
     await ui.waitFor(`!document.querySelector('.history-item.active')`)
@@ -93,10 +105,13 @@ export async function permissionsSuite(scheme) {
       // Carte armée (400 ms après son apparition, fiche 0.11 M1) : ses boutons sont atténués avant,
       // une capture trop tôt les montrerait comme désactivés.
       const armed = () => ui.waitFor(`${card}.hasAttribute('data-armed')`)
+      const answeredFocus = []
       const answerOnce = async () => {
         await armed()
         await ui.click(`${card}.querySelector('button[data-kind=allow_once]')`)
         await ui.waitFor(`!${card}`)
+        // Le bouton parti avec la carte : le focus ne tombe pas sur la page.
+        answeredFocus.push(await focusedOnComposer(ui))
         await ui.ready()
       }
       const text = (testId) => ui.ev(`${ui.$(testId)}?.innerText ?? ''`)
@@ -156,6 +171,10 @@ export async function permissionsSuite(scheme) {
       await armed()
       await ui.shot('c6-carte-a-risque')
       await answerOnce()
+      check(
+        answeredFocus.length > 0 && answeredFocus.every(Boolean),
+        `« Autoriser une fois » : le focus va à la zone de saisie (${answeredFocus.join(', ')})`
+      )
     },
     undefined,
     'demo',

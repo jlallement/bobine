@@ -32,6 +32,7 @@ import {
 import { costText, isEstimate } from '@shared/usage'
 import { ipcErrorText } from '../../ipc-errors'
 import { useProfileStatus } from '../common/Profile'
+import { codeProject } from './task-folder'
 import { TaskForm } from './TaskForm'
 import './scheduled.css'
 import { folderName } from '@shared/windows-paths'
@@ -274,11 +275,16 @@ function TaskCard({
 export function ScheduledPage({
   onOpenConversation,
   profiles,
-  defaultProfileId
+  defaultProfileId,
+  activeConversation,
+  recentFolders
 }: {
   onOpenConversation: (id: string) => void
   profiles: readonly ProfileSummary[]
   defaultProfileId?: string
+  /** Conversation ouverte : son projet (espace Code) est proposé aux nouvelles tâches (fiche 276). */
+  activeConversation?: Parameters<typeof codeProject>[0]
+  recentFolders?: readonly string[]
 }) {
   const { t } = useTranslation()
   const { readOnly } = useProfileStatus()
@@ -359,6 +365,8 @@ export function ScheduledPage({
             {...(editing === 'new' && prefill ? { prefill } : {})}
             profiles={profiles}
             defaultProfileId={defaultProfileId}
+            currentFolder={codeProject(activeConversation)}
+            {...(recentFolders ? { recentFolders } : {})}
             onSave={(input) => save(edited?.id ?? null, input)}
             onCancel={() => {
               setEditing(null)

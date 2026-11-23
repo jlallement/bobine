@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { L, TERMINAL_TEXT, check, withApp } from '../lib.mjs'
 import { rgb, tokensOf, variantOf, withPalette } from '../palette.mjs'
 
 /** Terminal à côté de la conversation (fiche 034). */
@@ -17,7 +17,7 @@ export async function terminalPanelSuite(scheme) {
         // Terminal de l'onglet affiché : les autres restent dans la page, cachés (fiche 126).
         const shown = (selector) =>
           `[...document.querySelectorAll('.terminal-host ${selector}')].find((e) => !e.closest('[hidden]'))`
-        const rows = `(${shown('.xterm-rows')}?.innerText ?? '')`
+        const rows = TERMINAL_TEXT
         await ui.press('`', 2)
         await ui.waitFor(`!!${ui.$('terminal-tab')}`)
         await ui.waitFor(
@@ -28,6 +28,19 @@ export async function terminalPanelSuite(scheme) {
         await ui.waitFor(`${rows}.includes('bouton-2')`)
         check(true, '⌃` : un terminal s’ouvre à droite et prend le clavier')
         await ui.shot('30-terminal-bouton')
+        // Marge intérieure (fiche 276, T14) : xterm.js donne la classe `terminal` à son élément,
+        // qui prenait le cadre arrondi de la sortie des commandes du fil, texte collé au bord.
+        const margin = await ui.ev(`(() => {
+          const xterm = ${shown('.xterm')}
+          const screen = ${shown('.xterm-screen')}.getBoundingClientRect()
+          const tab = ${ui.$('terminal-tab')}.getBoundingClientRect()
+          const s = getComputedStyle(xterm)
+          return { left: Math.round(screen.left - tab.left), border: s.borderLeftWidth, radius: s.borderRadius }
+        })()`)
+        check(
+          margin.left >= 12 && margin.border === '0px' && margin.radius === '0px',
+          `terminal : texte à 12 px du bord, sans cadre arrondi (${JSON.stringify(margin)})`
+        )
         // Icônes des invites (powerlevel10k, starship) : Nerd Font livrée avec l'app (fiche 201),
         // même sans Nerd Font installée. Ligne 1 : flèche powerline, branche git, dossier, icône
         // « md » au-delà du plan de base. Ligne 2, comme un segment de powerlevel10k : fond coloré,

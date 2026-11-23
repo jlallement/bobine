@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## Next version
+## 1.0.0-rc.4 — November 23, 2026
 
 ### New
 
@@ -29,6 +29,36 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Proxy changed in Settings while an agent can’t reach its model: the banner says so (“Network
+  settings changed since … started”) and **Restart the agent** applies it; the current message
+  comes back into the composer, without being sent.
+- “The agent hasn’t sent anything for…” banner: the buttons move under the text, which keeps the
+  full width; the proxy address is no longer split in two. During that silence, the indicator
+  says “Response in progress” instead of “Writing…”.
+- Less truncated text: in a narrow header, the temporary-profile chip keeps only its icon before
+  the title gets cut; Session › Changes wraps instead of cutting “uncommitted”; in a narrow
+  composer, the session settings join the 📎 menu before the model name gets cut.
+- Right-click on a conversation in the sidebar: the conversation menu (like ⋯), no longer a
+  selected word and “Copy”.
+- Scheduled tasks › New task: the open conversation’s folder is suggested, and **Change…** lists
+  the recent folders, then “Other folder…”.
+- Chat: the Changes panel talks about the chat’s documents, no more “last commit”.
+- A conversation restored from the trash picks up like any other: its agent starts again and the
+  message is sent. It used to stay “Stopped”, the message left in the composer, with no
+  explanation. Restoring a conversation deleted with its tasks restores them with it; in the
+  trash, its row says so (“with its 2 tasks”). A task deleted on its own before stays there.
+- Task card: the header no longer says “replied” for a task whose conversation was deleted
+  (“1 deleted”), nor for a merged task (“1 merged”).
+- An agent that can’t reach its model (unreachable proxy, network down) no longer leaves the
+  reply on “Thinking…” without a word. OpenCode: a banner says so from its second attempt, with
+  the countdown to the next one, its message, and a hint: the proxy that is set (without its
+  credentials), or the connection (Wi-Fi, VPN); **Network settings** opens the proxy field. Any
+  agent: after 5 min with nothing, the “The agent hasn’t sent anything for…” banner shows, and
+  cites the proxy when one is set.
+- Settings › Agents › Advanced, Corporate network: the proxy is no longer lost when you move
+  straight on to the next field (“No proxy”) and leave it too.
+- Composer: when the window narrows, the bar folds in the same frame; the send button no longer
+  briefly sticks out of the composer on a busy machine.
 - A click in the thread is no longer lost when a turn ends at that very moment: the thread no
   longer shifts under the pointer between press and release (for example on a row of a work card,
   which did not expand). Likewise when the thread was almost at the bottom, or a reply arrived
@@ -36,9 +66,38 @@ What changes for you, version by version. Shown in Settings › About.
   no effect).
 - A row of a work card no longer slides under the pointer when the turn ends just as you aim at it:
   the click on its arrow is no longer lost.
+- “Remember this?” card: while the agent writes below it, it no longer slides up under the
+  pointer; the click on **Remember** or **No** is no longer lost.
 - The buttons of a work that writes in its branch appear all at once, in place, when it finishes:
   **Merge into main** no longer pops in at the front a moment after the others, and no longer
   pushes **View changes** or **Open its conversation** out from under the pointer.
+- Narrow composer: during a response, the “Add a follow-up…” placeholder no longer runs under the
+  “↑ Previous messages” hint. The first line keeps room for it; in a narrow window, the hint
+  shrinks to the ↑ key (its name in a tooltip) and the placeholder wraps if it doesn’t fit.
+- Work card: a task that finished while the agent is still responding now reads “replied” (and
+  counts in “1 replied”, even while other tasks remain proposed), as in the sidebar and the panel,
+  instead of “working”; its tooltip says its response will show when the agent’s response ends.
+  What it does is written without its folder’s path (“Edit README.md”), the full path in a
+  tooltip.
+- Merge stopped on a remaining conflict: **Retry**, **Abort** and **Show the conflict** no longer
+  flash in and vanish at once; they wait until the branch has been read again after the stop, then
+  stay.
+- With the pointer resting on a work card, the thread stays still, but nothing signalled what
+  arrived below, out of view (a permission request, for example): the **Scroll to bottom** arrow
+  now appears, with the count of new items, without moving the card.
+- After **Move to Trash**, focus goes to the composer: it is no longer lost in the page along with
+  the deleted row.
+- The keyboard is no longer lost in the page when the button you used disappears or is disabled
+  (**Allow once**, **Deny**, **Remember**, a banner’s **Wait** or **Stop**, the Stop button,
+  **Commit**, Settings closed with Esc or ✕): it goes to the composer, or to the next element of
+  the window still open (**Check now** while “Checking…”). **Edit** on a memory puts the cursor in
+  its first field; opening the Terminal or Browser tab gives them the keyboard.
+- **Start all**: the tasks of a card keep the proposed order, instead of reordering (and changing
+  the row under the pointer) depending on which one starts first.
+- While pressing a task row, what arrives below, out of view, shows the **Scroll to bottom** arrow
+  at once, not only on release.
+- Screen readers: the Language, Quick window and Editor lists (and those of the other settings)
+  have a name; new themes are announced “Aurora, new” instead of “AuroraNew”.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

@@ -1,5 +1,6 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import { Camera, Paperclip } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ItemText, MenuContent, Tip } from '../common/Menus'
 
@@ -12,13 +13,19 @@ export function AttachButton({
   folded,
   disabled,
   onPickFiles,
-  onCaptureScreen
+  onCaptureScreen,
+  extra
 }: {
   /** Capture repliée dans le menu de 📎. */
   folded: boolean
   disabled: boolean
   onPickFiles: () => void
   onCaptureScreen: (() => void) | undefined
+  /**
+   * Repliés eux aussi dans le menu de 📎, sous un trait (réglages de la session, fiche 276). Sans
+   * capture d'écran, 📎 reste un bouton simple (fiche 145) : rien n'y est replié.
+   */
+  extra?: ReactNode
 }) {
   const { t } = useTranslation()
   const capture = onCaptureScreen && (
@@ -62,6 +69,12 @@ export function AttachButton({
               <Camera size={16} className="menu-icon" />
               <ItemText title={t('composer.capture.item')} />
             </Dropdown.Item>
+            {extra && (
+              <>
+                <Dropdown.Separator className="menu-separator" />
+                {extra}
+              </>
+            )}
           </MenuContent>
         </Dropdown.Root>
         {capture}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight, Pencil, Trash, TriangleAlert } from 'lucide-react'
 import { currentLocale } from '@shared/i18n/format'
@@ -295,6 +295,10 @@ function MemoryEditor({
   const [body, setBody] = useState(entry.body)
   const [error, setError] = useState<{ field?: 'description' | 'body'; text: string }>()
   const [changed, setChanged] = useState(false)
+  // « Modifier » : on écrit tout de suite, dans le premier champ (seconde chasse rc.4 : le bouton
+  // parti, le focus tombait sur la page).
+  const first = useRef<HTMLInputElement>(null)
+  useEffect(() => first.current?.focus({ preventScroll: true }), [])
   const save = () => {
     window.api.memory
       .save(place, { name: entry.name, description, type, body }, entry.version)
@@ -326,6 +330,7 @@ function MemoryEditor({
       <label className="memory-field">
         <span>{t('settings.memory.description')}</span>
         <input
+          ref={first}
           className={`settings-input${error?.field === 'description' ? ' invalid' : ''}`}
           value={description}
           maxLength={MEMORY_LIMITS.description}

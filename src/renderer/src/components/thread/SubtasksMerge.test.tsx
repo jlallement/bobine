@@ -209,6 +209,32 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     expect(actions.openGit).toHaveBeenCalledWith('b')
   })
 
+  it('arrêtée sur un conflit, branches lues pendant la fusion : ni « Réessayer » ni « Abandonner »', async () => {
+    // Relevé en CI macOS (fiche 250) : le plan montré avait été lu pendant que le travail résolvait
+    // son conflit ; « Réessayer » se fiait à un « conflit » de cette lecture-là, puis disparaissait.
+    // Seule une lecture faite après l'arrêt de cette fusion dit le conflit qui reste.
+    const stopped = merge('conflict', ['merged', 'conflict', 'pending'])
+    const during = {
+      ...plan(
+        [candidate('a', 'merged'), candidate('b', 'conflict'), candidate('c', 'ready')],
+        true
+      ),
+      runId: 'r1'
+    }
+    const actions = view([stopped], during)
+    // Le plan lu est appliqué : soit la reprise (à tort), soit la phrase d'état.
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('subtasks-merge-retry') ??
+          screen.queryByTestId('subtasks-merge-summary')
+      ).not.toBeNull()
+    )
+    expect(actions.plan).toHaveBeenCalled()
+    expect(screen.queryByTestId('subtasks-merge-retry')).toBeNull()
+    expect(screen.queryByTestId('subtasks-merge-abort')).toBeNull()
+    expect(screen.queryByTestId('subtasks-merge-show')).toBeNull()
+  })
+
   it('fusion interrompue par la fermeture de l’app : dite, lignes en cours remises en attente', async () => {
     view(
       [merge('running', ['merged', 'merging', 'pending'])],

@@ -49,7 +49,11 @@ async function subagents(scheme, home) {
       await ui.click(`${ui.$('permission')}.querySelector('[data-kind=allow_once]')`)
       // Pendant qu'il travaille : durée qui défile, coût relu dans la base de Bob.
       const meta = `${last}?.querySelector('[data-testid=subagent-meta]')?.innerText ?? ''`
-      await ui.waitFor(`(${meta}).includes(${JSON.stringify(bobcoins(0.0021))})`)
+      // Coût relu, et durée en secondes entières : lu dès le coût, le compteur pouvait encore dire
+      // « < 1 s » (coût relu avant la première seconde, runner macOS et Linux chargé, fiche 250).
+      await ui.waitFor(
+        `(${meta}).includes(${JSON.stringify(bobcoins(0.0021))}) && /^\\d+ s/.test(${meta})`
+      )
       const running = await ui.ev(`({ status: ${last}.dataset.status, meta: ${meta} })`)
       check(
         running.status !== 'completed' && /^\d+ s/.test(running.meta),

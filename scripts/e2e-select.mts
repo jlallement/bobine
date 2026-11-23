@@ -96,6 +96,12 @@ export interface Options {
   verbose: boolean
   /** Suites écartées (`--skip <suite>`, répétable) : dites par le lanceur, jamais en silence. */
   skip: string[]
+  /**
+   * Suites jouées à titre indicatif (`--indicative`, fiche 250) : sur GitHub, chaque contrôle en
+   * échec devient une annotation `::warning::`. Le code de sortie ne change pas ; c'est l'étape du
+   * workflow (`continue-on-error`) qui ne bloque pas le job.
+   */
+  indicative: boolean
 }
 
 /** Options qui prennent une valeur (`--jobs 3` ou `--jobs=3`). */
@@ -129,7 +135,8 @@ export function parseArgs(argv: readonly string[]): Options {
     '--if-needed',
     '--list',
     '--dry-run',
-    '--verbose'
+    '--verbose',
+    '--indicative'
   ]
   const unknown = [...flags].filter((f) => !known.includes(f))
   if (unknown.length) throw new Error(`option inconnue : ${unknown.join(', ')}`)
@@ -158,7 +165,8 @@ export function parseArgs(argv: readonly string[]): Options {
     list: flags.has('--list'),
     dryRun: flags.has('--dry-run'),
     verbose: flags.has('--verbose'),
-    skip
+    skip,
+    indicative: flags.has('--indicative')
   }
 }
 
@@ -320,8 +328,35 @@ export function formatDuration(ms: number): string {
  * Nombre d'échecs dans la sortie d'une suite : ses lignes `  ✗ …` (`check`, `fail` de `lib.mjs`),
  * pas le résumé final (`✗ N échec(s)…`, en début de ligne).
  */
-export const countFailures = (output: string): number =>
-  output.split('\n').filter((l) => l.startsWith('  ✗')).length
+export const countFailures = (output: string): number => failedControls(output).length
+
+/** Contrôles en échec dans la sortie d'une suite : ses lignes `  ✗ …`, sans la marque. */
+export const failedControls = (output: string): string[] =>
+  output
+    .split('\n')
+    .filter((l) => l.startsWith('  ✗'))
+    .map((l) => l.slice('  ✗'.length).trim())
+
+/** Données d'une commande de workflow GitHub (`%`, retours à la ligne), propriétés en plus (`:` `,`). */
+const escapeData = (s: string) =>
+  s.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+const escapeProperty = (s: string) => escapeData(s).replaceAll(':', '%3A').replaceAll(',', '%2C')
+
+/**
+ * Annotations GitHub d'une suite indicative (`--indicative`, fiche 250) : une par contrôle en échec,
+ * titrée par la tâche (`perf light`) ; une tâche en échec sans contrôle nommé (plantage, suite
+ * bloquée) en a une quand même.
+ */
+export function indicativeWarnings(
+  failed: readonly { label: string; controls: readonly string[] }[],
+  platform: string
+): string[] {
+  return failed.flatMap(({ label, controls }) => {
+    const title = escapeProperty(`e2e ${label} : indicative (${platform}), en échec`)
+    const lines = controls.length ? controls : ['échec sans contrôle nommé (voir le journal)']
+    return lines.map((c) => `::warning title=${title}::${escapeData(c)}`)
+  })
+}
 
 /**
  * Captures d'échec d'une suite repassée au vert (fiche 267, revue UX : des `echec-*` périmés

@@ -158,6 +158,7 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       warned: (controlId, value) => warnedOf(record).add(`${controlId}=${value}`)
     },
     credentials: () => settings.credentials(profile),
+    networkNow: { env: () => settings.networkEnv(), onChange: (l) => settings.onChange(l) },
     apiKeyInfo: () => settings.keyInfo(profile)[0],
     onAnnounced: (announcement) => {
       settings.agentSeen(profile.id, announcement)

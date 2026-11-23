@@ -181,6 +181,11 @@ interface ChangesTabProps {
   onOpenFile?: ((target: FileTarget) => void) | undefined
   /** Dossiers de la conversation (clé) : les remarques sur des fichiers sont resituées s'ils changent. */
   rootsKey?: string | undefined
+  /**
+   * Espace Discussion (fiche 224) : ses documents, pas de dépôt (fiche 276, T14) — ni vue Git, ni
+   * « depuis le dernier commit ».
+   */
+  discussion?: boolean
 }
 
 /**
@@ -199,7 +204,8 @@ export function ChangesTab({
   childWorktrees,
   onReview,
   onOpenFile,
-  rootsKey
+  rootsKey,
+  discussion = false
 }: ChangesTabProps) {
   const { t } = useTranslation()
   const conversation = useMemo(() => conversationChanges(items), [items])
@@ -278,6 +284,8 @@ export function ChangesTab({
    */
   const generation = useRef(0)
   const refresh = useCallback(() => {
+    // Discussion : son dossier n'est pas un projet, son état git n'est jamais lu ni montré.
+    if (discussion) return
     window.api.changes
       .git(conversationId)
       .then((next) => {
@@ -290,7 +298,7 @@ export function ChangesTab({
         setGit(null)
         setGitError(ipcErrorText(e))
       })
-  }, [conversationId])
+  }, [conversationId, discussion])
   useEffect(() => refresh(), [refresh, finished])
   // Fiche 246, D4 : un commit ou une fusion faits par Bobine hors de ce panneau (carte du fil,
   // barre d'une autre conversation du même dépôt) : l'état du dépôt est relu, sans « Actualiser ».
@@ -484,7 +492,12 @@ export function ChangesTab({
           )}
 
           {rows.length === 0 ? (
-            <ChangesEmpty view={view} git={!!git} compact={view === 'git' && !!fileAsked?.since} />
+            <ChangesEmpty
+              view={view}
+              git={!!git}
+              compact={view === 'git' && !!fileAsked?.since}
+              discussion={discussion}
+            />
           ) : (
             <>
               <div className="changes-summary" data-testid="changes-summary">
@@ -520,7 +533,17 @@ export function ChangesTab({
  * Rien à montrer dans la vue ; `compact` : un diff relu est affiché au-dessus (fiche 267, revue
  * UX), l'état vide tient en une ligne discrète.
  */
-function ChangesEmpty({ view, git, compact }: { view: View; git: boolean; compact: boolean }) {
+function ChangesEmpty({
+  view,
+  git,
+  compact,
+  discussion
+}: {
+  view: View
+  git: boolean
+  compact: boolean
+  discussion: boolean
+}) {
   const { t } = useTranslation()
   if (compact) {
     return (
@@ -533,11 +556,13 @@ function ChangesEmpty({ view, git, compact }: { view: View; git: boolean; compac
     <div className="side-panel-empty" data-testid="changes-empty">
       <FileDiff size={22} />
       <p>
-        {view === 'conversation'
-          ? git
-            ? t('changes.empty.conversation')
-            : t('changes.empty.conversationNoGit')
-          : t('changes.empty.git')}
+        {discussion
+          ? t('changes.empty.discussion')
+          : view === 'conversation'
+            ? git
+              ? t('changes.empty.conversation')
+              : t('changes.empty.conversationNoGit')
+            : t('changes.empty.git')}
       </p>
     </div>
   )

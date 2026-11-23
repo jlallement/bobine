@@ -287,6 +287,47 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Modifications (fiche 276, T10) : le texte passe à la ligne plutôt que d'être coupé, les totaux
+   le suivent sans jamais se couper eux-mêmes ; l'icône reste sur la première ligne. */
+.session-row.session-row-changes {
+  height: auto;
+  min-height: 32px;
+  align-items: flex-start;
+  padding: 2px 0;
+}
+
+.session-row-changes .session-row-label,
+.session-row-changes .session-none {
+  padding-top: 4px;
+  line-height: 1.45;
+}
+
+.session-link.session-changes {
+  display: block;
+  height: auto;
+  min-height: 28px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+
+.session-link.session-changes svg {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+.session-changes .session-link-text {
+  overflow: visible;
+  white-space: normal;
+}
+
+.session-totals {
+  white-space: nowrap;
+}
+
 .session-entry {
   display: flex;
   align-items: center;

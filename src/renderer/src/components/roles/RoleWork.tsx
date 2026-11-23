@@ -1,7 +1,7 @@
 import { appToolText } from '@shared/app-tools'
 import { toolInputOf, toolText, type LabelledTool } from '@shared/tool-label'
 import { ChevronRight, Eye, EyeOff, Pencil, TriangleAlert } from 'lucide-react'
-import { forwardRef, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { forwardRef, Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { ChildState } from '@shared/children'
@@ -19,11 +19,29 @@ import { useCompactBadge } from './useCompactBadge'
  */
 
 /**
+ * Ce que fait une fille en ce moment : le libellé d'un outil du serveur `bobine` (fiche 265), ou
+ * l'outil de son agent tel que ses mises à jour l'ont dit, libellé par celui qui l'affiche.
+ */
+export type ChildTool = { text: string } | { tool: LabelledTool }
+
+/**
  * Ce que fait chaque fille en ce moment : le dernier outil annoncé par son agent, effacé à la fin
  * de son tour. Seulement ce qui arrive pendant que la carte est affichée (rien n'est relu).
  */
 export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, string> {
-  const [activity, setActivity] = useState<ReadonlyMap<string, string>>(new Map())
+  const tools = useChildTools(ids)
+  return useMemo(
+    () => new Map([...tools].map(([id, entry]) => [id, childToolText(entry)])),
+    [tools]
+  )
+}
+
+/** Libellé d'une activité, sans dossier connu (« Sous-tâches »). */
+const childToolText = (entry: ChildTool) => ('text' in entry ? entry.text : toolText(entry.tool))
+
+/** Comme `useChildActivity`, l'outil entier : la ligne d'un groupe le libelle selon son dossier. */
+export function useChildTools(ids: readonly string[]): ReadonlyMap<string, ChildTool> {
+  const [activity, setActivity] = useState<ReadonlyMap<string, ChildTool>>(new Map())
   const key = ids.join('\n')
   useEffect(() => {
     const watched = new Set(key ? key.split('\n') : [])
@@ -37,18 +55,18 @@ export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, st
       // Outil du serveur `bobine` (fiche 265) : son libellé traduit, pas le titre brut de l'agent.
       // Outil de l'agent : son libellé lisible (« Lecture de liste.js »), jamais le titre brut
       // (« read », fiche 272).
-      const title =
+      const entry: ChildTool | undefined =
         event.type === 'tool-app'
-          ? appToolText(event.appTool)
+          ? { text: appToolText(event.appTool) }
           : update &&
               (update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update')
-            ? activityText(tools, `${conversationId}\n${update.toolCallId}`, update)
+            ? knownTool(tools, `${conversationId}\n${update.toolCallId}`, update)
             : undefined
-      if (!ended && !title) return
+      if (!ended && !entry) return
       setActivity((current) => {
         const next = new Map(current)
         if (ended) next.delete(conversationId)
-        else if (title) next.set(conversationId, title)
+        else if (entry) next.set(conversationId, entry)
         return next
       })
     })
@@ -56,8 +74,8 @@ export function useChildActivity(ids: readonly string[]): ReadonlyMap<string, st
   return activity
 }
 
-/** Libellé d'un outil d'après tout ce que ses mises à jour ont dit ; `undefined` sans titre. */
-function activityText(
+/** Un outil d'après tout ce que ses mises à jour ont dit ; `undefined` sans titre. */
+function knownTool(
   tools: Map<string, LabelledTool>,
   key: string,
   update: {
@@ -67,7 +85,7 @@ function activityText(
     locations?: readonly { path: string }[] | null
     rawInput?: unknown
   }
-): string | undefined {
+): ChildTool | undefined {
   const known = tools.get(key)
   const title = update.title ?? known?.title
   if (!title) return undefined
@@ -82,7 +100,7 @@ function activityText(
     ...(status ? { status } : {})
   }
   tools.set(key, tool)
-  return toolText(tool)
+  return { tool }
 }
 
 /** « au travail », « attend votre accord », « a rendu son compte rendu »… */

@@ -149,3 +149,6 @@ dans la ligne, liste bornée qui défile).
   marque (`READ_ONLY_ERROR`) : le renderer le dit dans sa langue (« Cette version ne peut pas
   modifier ce profil. »), jamais le texte d'Electron ; les erreurs venues du main passent toutes par
   `ipcErrorText`. Essais : `ipc-errors.test.ts`, e2e `profil` (menu en lecture seule).
+- 2026-11-23 — Recette rc.4 : une conversation restaurée depuis la corbeille restait « Arrêté »
+  (numéro d'évènement reparti de 0, écarté par le renderer) ; corrigé, et les filles supprimées
+  avec leur mère reviennent avec elle (`deletedWith` dans `<id>.meta.json`). Détail : fiche 228.

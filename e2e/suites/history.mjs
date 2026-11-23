@@ -166,6 +166,37 @@ export async function historySuite(scheme) {
         `titres au bord, « … » au survol dans la ligne, survol ≠ sélection (${JSON.stringify(layout)})`
       )
 
+      // Clic droit sur une ligne (fiche 276, T8) : le menu de ⋯, au pointeur, mêmes éléments ;
+      // aucun mot sélectionné (le menu natif « Copier » s'ouvrait).
+      const menuItems = `[...document.querySelectorAll('[role=menu] [role=menuitem]')].map((i) => i.innerText).join('|')`
+      await ui.click(
+        `${itemNamed('Écran de connexion')}.querySelector('[data-testid=history-more]')`
+      )
+      await ui.waitFor(`!!${ui.$('history-pin')}`)
+      const fromDots = await ui.ev(menuItems)
+      await ui.key('Escape')
+      await ui.waitFor(`!${ui.$('history-pin')}`)
+      const at = await ui.center(`${itemNamed('Écran de connexion')}.querySelector('.label')`)
+      await ui.hover(at)
+      for (const type of ['mousePressed', 'mouseReleased']) {
+        await ui.cdp('Input.dispatchMouseEvent', { type, ...at, button: 'right', clickCount: 1 })
+      }
+      await ui.waitFor(`!!${ui.$('history-context-menu')}`)
+      const context = await ui.ev(
+        `({ items: ${menuItems}, selection: getSelection().toString(), menu: (() => { const b = ${ui.$('history-context-menu')}.getBoundingClientRect(); return { x: b.x, y: b.y } })() })`
+      )
+      check(
+        context.items === fromDots &&
+          context.selection === '' &&
+          Math.abs(context.menu.x - at.x) < 12 &&
+          context.menu.y >= at.y - 2 &&
+          context.menu.y < at.y + 24,
+        `clic droit : le menu de ⋯ au pointeur, aucun mot sélectionné (${JSON.stringify({ ...context, at })})`
+      )
+      await ui.shot('276-clic-droit')
+      await ui.key('Escape')
+      await ui.waitFor(`!${ui.$('history-context-menu')}`)
+
       // Épingler.
       await ui.click(
         `${itemNamed('Écran de connexion')}.querySelector('[data-testid=history-more]')`

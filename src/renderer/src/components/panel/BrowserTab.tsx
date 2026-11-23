@@ -53,9 +53,14 @@ function coversChanged(records: MutationRecord[]): boolean {
 export function BrowserTab({
   conversationId,
   onAttach,
-  onSendNotes
+  onSendNotes,
+  focusRequested,
+  onFocused
 }: {
   conversationId: string
+  /** Ouvert par l'utilisateur : la page prend le clavier, ou le champ d'adresse sans page. */
+  focusRequested?: boolean
+  onFocused?: (() => void) | undefined
   /** « Joindre au message » (fiche 066). */
   onAttach?: (image: ImageAttachment) => void
   /** Remarques sur la page (fiches 132, 146) : un message à l'agent, captures annotées. */
@@ -81,10 +86,14 @@ export function BrowserTab({
   const { annotating, draft } = annotation
   const frozen = !!draft
 
+  // État lu une première fois : sans lui, « pas de page » ne se distingue pas de « pas encore lu ».
+  const [loaded, setLoaded] = useState(false)
   useEffect(() => {
     let alive = true
     void window.api.browser.getState(conversationId).then((s) => {
-      if (alive && s) setState(s)
+      if (!alive) return
+      if (s) setState(s)
+      setLoaded(true)
     })
     const off = window.api.browser.onState((s) => {
       if (s.conversationId === conversationId) setState(s)
@@ -114,6 +123,21 @@ export function BrowserTab({
   const certificate = state?.certificate
   const pageShown = hasPage && !certificate
 
+  // Onglet ouvert par l'utilisateur (seconde chasse rc.4) : la page prend le clavier à sa prochaine
+  // pose (`focusPage`, lu par `place`) ; sans page, le champ d'adresse.
+  const focusPage = useRef(false)
+  const placeNow = useRef<(() => void) | null>(null)
+  useEffect(() => {
+    if (!focusRequested || !loaded) return
+    if (pageShown && !frozen) {
+      focusPage.current = true
+      placeNow.current?.()
+    } else {
+      input.current?.focus()
+    }
+    onFocused?.()
+  }, [focusRequested, loaded, pageShown, frozen, onFocused])
+
   // La vue native suit la zone réservée (fiche 129) : taille de la colonne, panneau agrandi,
   // fenêtre, zoom de l'interface. Le main convertit les pixels CSS envoyés selon ce zoom.
   useEffect(() => {
@@ -135,15 +159,17 @@ export function BrowserTab({
         return
       }
       const key = `${r.x},${r.y},${r.width},${r.height}`
-      if (key === last) return
+      const focus = focusPage.current
+      if (key === last && !focus) return
       last = key
-      void window.api.browser.show(conversationId, {
-        x: r.x,
-        y: r.y,
-        width: r.width,
-        height: r.height
-      })
+      focusPage.current = false
+      void window.api.browser.show(
+        conversationId,
+        { x: r.x, y: r.y, width: r.width, height: r.height },
+        focus
+      )
     }
+    placeNow.current = place
     // Placée tout de suite, puis suivie quelques images (un menu se place après son ouverture).
     const follow = () => {
       place()
@@ -165,6 +191,7 @@ export function BrowserTab({
     window.addEventListener('resize', follow)
     follow()
     return () => {
+      placeNow.current = null
       resize.disconnect()
       covers.disconnect()
       window.removeEventListener('resize', follow)

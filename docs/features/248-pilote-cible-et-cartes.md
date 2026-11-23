@@ -73,3 +73,15 @@ complète avec Bob : le pilote doit être sûr.
   le pilote l'ignore dans les deux cas.
 - Hors périmètre : `e2e/lib.mjs` a son propre `mainPage` (premier `page` hors `#quick`) ; il ne
   sert qu'au démarrage d'une app d'essai, avant toute page du navigateur intégré.
+- 2026-11-23 — Seconde chasse rc.4, outillage du pilote :
+  - `attendre` ne classait pas le bandeau « modèle injoignable » (sortie en `delai`), et `etat`
+    disait « Tour : fini (sans résumé…) » pendant ce tour : le bandeau remplace l'indicateur. Lu
+    par `lecture.mjs` (`shot.unreachable`, avis `injoignable`), classé `blocage`, compté comme un
+    tour qui tourne ; `etat` : « Tour : en cours — <bandeau> ».
+  - `envoyer "/scenario …"` : le menu « / » ouvert par le texte prenait l'Entrée. Fermé d'abord
+    (Échap), le texte vérifié, puis Entrée.
+  - `repondre` (et `cliquer`, `panneau`) pouvait cliquer pendant que le fil rattrapait le bas :
+    `clickLabel` relit la cible jusqu'à deux positions égales (2 s au plus) avant le clic.
+  - Preuves : `cible.test.mjs` (bandeau → `blocage` et « en cours » ; `/scenario echo` envoyé tel
+    quel, Échap puis Entrée ; clic à la position finale d'une carte qui remonte), rouges sans les
+    correctifs. `docs/pilote.md` à jour.

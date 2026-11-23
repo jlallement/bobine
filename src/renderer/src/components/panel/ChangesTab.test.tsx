@@ -605,3 +605,46 @@ describe('remarques sur des fichiers dans Modifications (3e revue, 4)', () => {
     await waitFor(() => expect(screen.queryByTestId('files-note-elsewhere')).toBeNull())
   })
 })
+
+describe('onglet Modifications d’une discussion (fiche 276, T14)', () => {
+  const api = window.api
+  const git = vi.fn(async () => ({ ...REPO, files: [] }))
+  beforeEach(() => {
+    window.api = {
+      ...api,
+      changes: { git, gitFile: vi.fn() },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+  })
+  afterEach(() => {
+    cleanup()
+    window.api = api
+    git.mockClear()
+  })
+
+  it('ses documents, jamais l’état git ni « depuis le dernier commit »', async () => {
+    render(
+      <Tooltip.Provider>
+        <ChangesTab conversationId="d" workspace="/documents" items={[]} discussion />
+      </Tooltip.Provider>
+    )
+    const empty = await screen.findByTestId('changes-empty')
+    expect(empty.textContent).toBe('L’agent n’a encore modifié aucun document de cette discussion.')
+    expect(git).not.toHaveBeenCalled()
+    expect(screen.queryByText('Git')).toBeNull()
+  })
+
+  it('espace Code : la vue Git et son texte, comme avant', async () => {
+    render(
+      <Tooltip.Provider>
+        <ChangesTab conversationId="c" workspace="/depot" items={[]} />
+      </Tooltip.Provider>
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('changes-empty').textContent).toBe(
+        'Aucune modification depuis le dernier commit.'
+      )
+    )
+    expect(git).toHaveBeenCalled()
+  })
+})

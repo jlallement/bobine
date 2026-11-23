@@ -12,12 +12,15 @@ import { L, check, sleep, withApp } from '../lib.mjs'
  *    travail (fiche 264) — la vue Git ouverte se relit d'elle-même, sans « Actualiser ».
  * 2. Agent qui ne répond pas (`MOCK_AGENT_COMMIT=message-commit-lent`, délai raccourci) :
  *    « Rédaction par… », puis le repli en anglais déduit des fichiers et sa raison ; « Réessayer »
- *    puis « Arrêter ». Aucun processus de rédaction ne survit.
+ *    relance un agent, qui tombe à son tour au délai.
+ * 3. Même agent, délai habituel : « Arrêter » pendant la rédaction. Aucun processus de rédaction
+ *    ne survit.
  */
 export async function commitRedigeSuite(scheme) {
   console.log(`\n— Message de commit rédigé par l’agent (${scheme})`)
   await withMergeCard(scheme)
   await withSlowAgent(scheme)
+  await withStoppedDraft(scheme)
 }
 
 function repo(prefix) {
@@ -254,27 +257,24 @@ async function withSlowAgent(scheme) {
           'délai dépassé : message en anglais déduit des fichiers, la raison dite'
         )
         await ui.shot('246-repli')
-        // « Réessayer », puis « Arrêter » : la rédaction s'arrête, le repli revient.
+        // « Réessayer » : un nouvel agent, qui tombe lui aussi au délai. « Arrêter » s'essaie à
+        // part, au délai habituel : ici, il courait contre les 4 s, et sur le runner macOS le
+        // délai gagnait (agent lent à démarrer, raison « timeout », fiche 250).
         await ui.click(ui.$('changes-commit-draft-again'))
         await ui.waitFor(`${state} === 'drafting'`, 10000)
-        // « Arrêter » une fois l'agent de la nouvelle rédaction lancé (son pid inscrit), plutôt
-        // qu'après 500 ms devinées (fiche 250) : sous charge (3 jobs), l'arrêt partait avant que
-        // l'agent ait démarré, l'app ne le lançait donc jamais (arrêt pendant le démarrage, sans
-        // processus), et l'essai ne relevait qu'un pid sur les deux attendus.
         check(
           await until(() => pidsIn(pids).filter((pid) => !before.includes(pid)).length === 2),
           '« Réessayer » : un nouvel agent de rédaction est lancé'
         )
-        await ui.click(ui.$('changes-commit-draft-stop'))
-        await ui.waitFor(`${state} === 'fallback'`, 10000)
+        await ui.waitFor(`${state} === 'fallback'`, 15000)
         check(
-          (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'stopped',
-          '« Arrêter » : rédaction arrêtée, message déduit des fichiers'
+          (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'timeout',
+          '« Réessayer » sans réponse : de nouveau le repli, au délai'
         )
         const gone = await draftAgentsGone(pids, before)
         check(
           gone.length === 2 && gone.every((pid) => pid > 0),
-          `délai dépassé puis « Arrêter » : aucun agent de rédaction ne survit (${gone.join(', ')})`
+          `délai dépassé deux fois : aucun agent de rédaction ne survit (${gone.join(', ')})`
         )
         await ui.click(ui.$('changes-commit-confirm'))
         await ui.waitFor(`!!${ui.$('changes-commit-undo')}`, 15000)
@@ -290,6 +290,61 @@ async function withSlowAgent(scheme) {
         MOCK_AGENT_PID_FILE: pids,
         MOCK_AGENT_COMMIT: 'message-commit-lent',
         BOBINE_COMMIT_DRAFT_TIMEOUT_MS: '4000'
+      }
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+}
+
+/** « Arrêter » pendant la rédaction, au délai habituel (45 s) : rien ne court contre lui. */
+async function withStoppedDraft(scheme) {
+  const { workspace, git, work, pids } = repo('bob-e2e-commit-arret-')
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.send('/scenario echo Ajoute le filtre par statut')
+        await ui.ready()
+        work()
+        await openGitView(ui)
+        await ui.waitFor(`!!${ui.$('changes-commit')}`, 15000)
+        const before = pidsIn(pids)
+        await ui.click(ui.$('changes-commit'))
+        const state = `${ui.$('changes-commit-draft')}?.dataset.state`
+        await ui.waitFor(`${state} === 'drafting'`, 10000)
+        // « Arrêter » une fois l'agent de la rédaction lancé (son pid inscrit), plutôt qu'après
+        // 500 ms devinées : sous charge, l'arrêt partait avant que l'agent ait démarré, l'app ne le
+        // lançait donc jamais (arrêt pendant le démarrage, sans processus).
+        check(
+          await until(() => pidsIn(pids).filter((pid) => !before.includes(pid)).length === 1),
+          'rédaction : un agent de rédaction est lancé'
+        )
+        await ui.click(ui.$('changes-commit-draft-stop'))
+        await ui.waitFor(`${state} === 'fallback'`, 10000)
+        check(
+          (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'stopped',
+          '« Arrêter » : rédaction arrêtée, message déduit des fichiers'
+        )
+        const gone = await draftAgentsGone(pids, before)
+        check(
+          gone.length === 1 && gone.every((pid) => pid > 0),
+          `« Arrêter » : aucun agent de rédaction ne survit (${gone.join(', ')})`
+        )
+        await ui.click(ui.$('changes-commit-confirm'))
+        await ui.waitFor(`!!${ui.$('changes-commit-undo')}`, 15000)
+        check(
+          git(workspace, 'log', '-1', '--format=%s') === 'chore: update app.js and filters.js',
+          'commit fait avec le message du repli'
+        )
+      },
+      undefined,
+      'echo',
+      {
+        BOBINE_WORKSPACE: workspace,
+        MOCK_AGENT_PID_FILE: pids,
+        MOCK_AGENT_COMMIT: 'message-commit-lent'
       }
     )
   } finally {

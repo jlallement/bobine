@@ -105,6 +105,9 @@ function readScreen(main) {
       activity: working.dataset.activity ?? ''
     }
   }
+  // Bandeau « modèle injoignable » : il prend la place de l'indicateur du tour, qui tourne encore.
+  const unreachable = $('[data-testid=agent-unreachable]')
+  if (visible(unreachable)) shot.unreachable = text(unreachable).slice(0, 200)
   // Travail après le tour (fiche 261) : dit par le pied de la réponse, plus par l'indicateur du bas.
   const stillWorking = $$('[data-testid=turn-working]').at(-1)
   if (stillWorking) shot.turnWorking = text(stillWorking)
@@ -273,6 +276,8 @@ function readScreen(main) {
     .filter((e) => e.classList.contains('app-alert'))
     .forEach((e) => push('bandeau', e))
   push('silence', $('[data-testid=silence-banner]'))
+  // Modèle injoignable (OpenCode qui réessaie sans fin) : le tour tourne, l'humain décide.
+  push('injoignable', $('[data-testid=agent-unreachable]'))
   push('relance', $('[data-testid=turn-retry]'))
   push('bloque', $('[data-testid=stalled-notice]'))
   push('plafond', $('[data-testid=cost-cap-card]'))

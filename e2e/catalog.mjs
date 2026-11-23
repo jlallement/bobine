@@ -61,6 +61,7 @@ export const GLOBAL_SOURCES = [
   'src/main/agent/turn-retry.ts',
   'src/main/agent/silence-watch.ts',
   'src/main/agent/agent-process.ts',
+  'src/main/agent/agent-progress.ts',
   'src/main/agent/adapters.ts',
   'src/main/agent/profiles.ts',
   'src/main/agent/session-updates.ts',
@@ -148,6 +149,9 @@ const REPLAY = [
   'src/main/agent/replay-buffer.ts',
   'src/shared/replay-tail.ts'
 ]
+
+/** Parcours réels enchaînés (fiche 277) : leurs outils, la barre latérale, le fil. */
+const PARCOURS = ['e2e/parcours.mjs', `${C}sidebar/`, `${C}thread/`, `${R}useConversations.ts`]
 
 /**
  * Suites, dans l'ordre de `pnpm e2e --jobs 1`. `run` : nom de la fonction exportée par le fichier.
@@ -1420,6 +1424,12 @@ export const SUITES = [
       `${C}common/AppAlertsBar.tsx`,
       `${C}thread/SilenceBanner.tsx`,
       `${C}thread/TurnFooter.tsx`,
+      `${C}thread/AgentUnreachableBanner.tsx`,
+      `${C}thread/network-hint.tsx`,
+      `${C}settings/NetworkSettings.tsx`,
+      `${R}open-settings.ts`,
+      'src/main/agent/opencode-retry.ts',
+      'src/shared/url-credentials.ts',
       `${R}silence-banner.css`,
       `${R}safe-boundary.css`,
       `${R}app-alerts.css`,
@@ -2295,6 +2305,92 @@ export const SUITES = [
       `${C}sidebar/HistoryItem.tsx`,
       'src/main/fresh-start.ts',
       'src/main/onboarding/'
+    ]
+  },
+  // Parcours réels enchaînés (fiche 277) : une « journée » d'usage dans une même instance, avec
+  // un redémarrage ; ils touchent l'app presque entière, d'où des dossiers entiers en sources.
+  {
+    name: 'parcours-matinee',
+    file: 'parcours-matinee.mjs',
+    run: 'parcoursMatineeSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      ...GIT,
+      ...REPLAY,
+      ...TOOLS,
+      `${C}panel/`,
+      `${C}composer/`,
+      'src/main/approvals.ts',
+      'src/main/conversations/'
+    ]
+  },
+  {
+    name: 'parcours-deleguer',
+    file: 'parcours-deleguer.mjs',
+    run: 'parcoursDeleguerSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      ...GIT,
+      ...REPLAY,
+      `${C}settings/ProfileData.tsx`,
+      `${C}settings/DataSettings.tsx`,
+      'src/main/conversations/',
+      'src/main/storage.ts'
+    ]
+  },
+  {
+    name: 'parcours-reglages',
+    file: 'parcours-reglages.mjs',
+    run: 'parcoursReglagesSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      ...SETTINGS,
+      ...APPEARANCE,
+      `${C}settings/`,
+      `${C}composer/`,
+      'src/main/memory/',
+      'src/main/roles/',
+      'src/main/i18n.ts',
+      'src/shared/memory*.ts'
+    ]
+  },
+  {
+    name: 'parcours-outils',
+    file: 'parcours-outils.mjs',
+    run: 'parcoursOutilsSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      ...PANEL,
+      ...APP_TOOLS,
+      `${C}panel/`,
+      'src/main/quick-entry*.ts',
+      'src/main/browser/',
+      'src/main/terminal/',
+      'src/main/conversations/'
+    ]
+  },
+  {
+    name: 'parcours-longue',
+    file: 'parcours-longue.mjs',
+    run: 'parcoursLongueSuite',
+    themes: BOTH,
+    sources: [...PARCOURS, ...PANEL, ...REPLAY, `${R}useThreadScroll.ts`]
+  },
+  {
+    name: 'parcours-pannes',
+    file: 'parcours-pannes.mjs',
+    run: 'parcoursPannesSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      ...REPLAY,
+      'src/main/conversations/',
+      'src/main/quit-guard.ts',
+      'src/main/agent/'
     ]
   }
 ]

@@ -679,6 +679,18 @@ export type FrResources = {
     readonly willSend_other: '{{count}} messages partiront à la fin de la réponse'
     readonly willSend_many: '{{count}} messages partiront à la fin de la réponse'
   }
+  readonly agentRetry: {
+    readonly title: '{{agent}} n’arrive pas à joindre son modèle'
+    readonly detail: 'Il réessaie de lui-même : tentative {{attempt}}, la prochaine dans {{seconds}} s. Votre message est gardé.'
+    readonly detailNow: 'Il réessaie de lui-même : tentative {{attempt}} en cours. Votre message est gardé.'
+    readonly proxy: 'Un proxy est défini pour les agents ({{proxy}}) : vérifiez son adresse dans Réglages › Agents › Avancé.'
+    readonly noProxy: 'Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans Réglages › Agents › Avancé.'
+    readonly agentMessage: 'Message de l’agent'
+    readonly settings: 'Réglages réseau'
+    readonly stop: 'Arrêter'
+    readonly networkStale: 'Les réglages réseau ont changé depuis le lancement de {{agent}} : relancez-le pour les appliquer. La conversation est gardée.'
+    readonly restart: 'Relancer l’agent'
+  }
   readonly turnRetry: {
     readonly network: 'Connexion perdue'
     readonly rateLimit: 'Limite de débit atteinte'
@@ -1401,6 +1413,7 @@ export type FrResources = {
         readonly aurora: 'Aurore'
         readonly auroraNight: 'Aurore nuit'
         readonly new: 'Nouveau'
+        readonly newName: '{{name}}, nouveau'
       }
       readonly accent: {
         readonly label: 'Couleur d’accent'
@@ -1635,6 +1648,9 @@ export type FrResources = {
         readonly erasedIn_other: 'effacée dans {{count}} jours'
         readonly erasedToday: 'effacée aujourd’hui'
         readonly noFolder: 'Sans dossier'
+        readonly children_one: 'avec son travail'
+        readonly children_other: 'avec ses {{count}} travaux'
+        readonly children_many: 'avec ses {{count}} travaux'
         readonly restore: 'Restaurer'
         readonly erase: 'Effacer définitivement'
         readonly eraseConfirm: 'Effacer définitivement ?'
@@ -2128,6 +2144,7 @@ export type FrResources = {
       readonly conversation: 'L’agent n’a encore modifié aucun fichier dans cette conversation.'
       readonly conversationNoGit: 'L’agent n’a encore modifié aucun fichier dans cette conversation. (Le dossier n’est pas un dépôt git.)'
       readonly git: 'Aucune modification depuis le dernier commit.'
+      readonly discussion: 'L’agent n’a encore modifié aucun document de cette discussion.'
     }
     readonly sinceLastCommit: '· depuis le dernier commit'
     readonly reverted: 'annulée'
@@ -2974,6 +2991,7 @@ export type FrResources = {
     }
     readonly step: 'étape {{elapsed}}'
     readonly stepStarted: 'Étape en cours depuis {{elapsed}}'
+    readonly silent: 'Réponse en cours'
   }
   readonly mentions: {
     readonly gitChanges: {
@@ -3297,6 +3315,10 @@ export type FrResources = {
     readonly subagentBackground: {
       readonly label: 'Sous-agents en arrière-plan suivis jusqu’à leur fin'
       readonly detail: 'Quand {{agent}} lance un sous-agent en arrière-plan, son outil rend la main tout de suite (`metadata.status: "running"`) : l’app le garde « en cours », relit sa session de temps en temps, et le dit fini avec sa réponse quand elle se termine.'
+    }
+    readonly modelRetry: {
+      readonly label: 'Modèle injoignable'
+      readonly detail: 'Quand {{agent}} ne joint pas son modèle (proxy, réseau), il réessaie sans fin sans le dire au fil ; l’app lit ses reprises (`_meta["opencode/retry"]`) et le montre : tentative, prochaine tentative, son message.'
     }
     readonly executeErrors: {
       readonly label: 'Erreurs des outils appelés par du code'
@@ -4854,6 +4876,10 @@ export type FrResources = {
       readonly cancel: 'Annuler'
       readonly pastDate: 'Cette date est déjà passée.'
       readonly noCapWarning: 'Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense.'
+      readonly changeFolder: 'Changer…'
+      readonly recent: 'Dossiers récents'
+      readonly otherFolder: 'Autre dossier…'
+      readonly current: 'conversation ouverte'
     }
     readonly error: {
       readonly alreadyRunning: 'Une exécution de cette tâche tourne encore.'
@@ -5192,8 +5218,12 @@ export type FrResources = {
   readonly silenceBanner: {
     readonly title: 'L’agent n’a rien envoyé depuis {{minutes}} min'
     readonly detail: 'C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez attendre, ou arrêter la réponse : la conversation est gardée.'
+    readonly proxy: 'Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.'
+    readonly settings: 'Réglages réseau'
     readonly wait: 'Attendre'
     readonly stop: 'Arrêter'
+    readonly networkStale: 'Les réglages réseau ont changé depuis le lancement de l’agent : relancez-le pour les appliquer. La conversation est gardée.'
+    readonly restart: 'Relancer l’agent'
   }
   readonly appAlert: {
     readonly internal: {
@@ -6094,12 +6124,18 @@ export type FrResources = {
       readonly done_one: '{{count}} a répondu'
       readonly done_other: '{{count}} ont répondu'
       readonly done_many: '{{count}} ont répondu'
+      readonly merged_one: '{{count}} fusionné'
+      readonly merged_other: '{{count}} fusionnés'
+      readonly merged_many: '{{count}} fusionnés'
       readonly stopped_one: '{{count}} arrêté'
       readonly stopped_other: '{{count}} arrêtés'
       readonly stopped_many: '{{count}} arrêtés'
       readonly error_one: '{{count}} en erreur'
       readonly error_other: '{{count}} en erreur'
       readonly error_many: '{{count}} en erreur'
+      readonly gone_one: '{{count}} supprimé'
+      readonly gone_other: '{{count}} supprimés'
+      readonly gone_many: '{{count}} supprimés'
       readonly starting_one: '{{count}} démarre'
       readonly starting_other: '{{count}} démarrent'
       readonly starting_many: '{{count}} démarrent'
@@ -6261,6 +6297,7 @@ export type FrResources = {
       readonly name: 'Bobine {{version}}'
       readonly preAvailable: 'Préversion disponible'
       readonly view: 'Voir'
+      readonly viewLabel: 'Voir la version {{version}}'
       readonly later: 'Plus tard (plus rien pour la {{version}})'
     }
     readonly settings: {

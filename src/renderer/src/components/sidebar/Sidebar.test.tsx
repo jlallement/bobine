@@ -761,4 +761,23 @@ describe('travail après le tour (fiche 255)', () => {
     expect(screen.getByTestId('agent-status').textContent).toBe('Prêt')
     expect(document.querySelector('.status-dot.background')).toBeNull()
   })
+
+  it('clic droit sur une ligne : le menu de ⋯, mêmes éléments dans le même ordre, sans menu natif (fiche 276)', () => {
+    render(sidebar([conversation('a'), conversation('b'), conversation('c')]))
+    const more = screen.getAllByTestId('history-more')[1]
+    if (!more) throw new Error('menu absent')
+    fireEvent.keyDown(more, { key: 'Enter' })
+    const items = () =>
+      [...document.querySelectorAll('[role=menuitem]')].map((item) => item.textContent)
+    const fromDots = items()
+    expect(fromDots.length).toBeGreaterThan(3)
+    fireEvent.keyDown(screen.getByTestId('history-pin'), { key: 'Escape' })
+    const row = screen.getAllByTestId('history-item')[1] ?? document.body
+    // Ni sélection d'un mot ni « Copier » : le menu de la conversation (événement empêché).
+    expect(fireEvent.contextMenu(row, { clientX: 40, clientY: 10 })).toBe(false)
+    expect(screen.getByTestId('history-context-menu')).toBeTruthy()
+    expect(items()).toEqual(fromDots)
+    fireEvent.keyDown(screen.getByTestId('history-pin'), { key: 'Escape' })
+    expect(screen.queryByTestId('history-context-menu')).toBeNull()
+  })
 })

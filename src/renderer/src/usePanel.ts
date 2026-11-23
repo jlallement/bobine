@@ -121,6 +121,9 @@ export interface PanelPreview {
  * ses onglets (fiche 082), agrandi ou non, le terminal (⌃`, fiche 034), la vue demandée des
  * modifications et le document en aperçu.
  */
+/** Onglets qui prennent le clavier quand l'utilisateur les ouvre. */
+const KEYBOARD_TABS: readonly PanelTab[] = ['terminal', 'browser']
+
 export function usePanel(options: {
   /** Conversation active : les onglets ouverts et fermés sont les siens. */
   conversationId: string | null
@@ -219,17 +222,27 @@ export function usePanel(options: {
     update({ open: true, tab: request.tab })
   }
   // ⌃` et menu Affichage (fiche 034) : ouvre le terminal à droite, clavier compris, ou le referme.
-  const [focusTerminal, setFocusTerminal] = useState(false)
+  // Onglet qui doit prendre le clavier en s'affichant : le terminal, ou la page du navigateur quand
+  // l'utilisateur les ouvre (seconde chasse rc.4 : le focus restait sur la page de l'app).
+  const [focusTab, setFocusTab] = useState<PanelTab | null>(null)
   const terminalOpen = panel.open && panel.tab === 'terminal'
   const toggleTerminal = useCallback(() => {
-    setFocusTerminal(!terminalOpen)
+    setFocusTab(terminalOpen ? null : 'terminal')
     setPanel((current) =>
       terminalOpen ? { ...current, open: false } : { ...current, open: true, tab: 'terminal' }
     )
   }, [terminalOpen])
   /** Menu du dossier (fiche 158) : ouvre le terminal, clavier compris, sans jamais le refermer. */
+  /** Onglet choisi par l'utilisateur : le terminal et le navigateur prennent le clavier. */
+  const select = useCallback(
+    (tab: PanelTab) => {
+      setFocusTab(KEYBOARD_TABS.includes(tab) ? tab : null)
+      update({ tab })
+    },
+    [update]
+  )
   const showTerminal = useCallback(() => {
-    setFocusTerminal(true)
+    setFocusTab('terminal')
     setPanel((current) => ({ ...current, open: true, tab: 'terminal' }))
   }, [])
   useEffect(() => {
@@ -350,9 +363,10 @@ export function usePanel(options: {
     setMaximized,
     tabs,
     closeTab,
-    focusTerminal,
-    /** Le terminal a pris le clavier : la demande est faite. */
-    terminalFocused: () => setFocusTerminal(false),
+    focusTab,
+    /** L'onglet a pris le clavier : la demande est faite. */
+    tabFocused: () => setFocusTab(null),
+    select,
     toggleTerminal,
     showTerminal,
     changesOpen,

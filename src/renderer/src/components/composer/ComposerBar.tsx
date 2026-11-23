@@ -17,7 +17,7 @@ import { ModelChip } from '../common/ModelMenu'
 import { ChipPlaceholder, useRememberChipWidths, useReservedWidths } from './chip-slots'
 import { AttachButton } from './AttachButton'
 import { UsageMeter } from './UsageMeter'
-import { useBarFold } from './useBarFold'
+import { OPTIONS_FOLD, useBarFold } from './useBarFold'
 
 interface Props {
   settings: AgentSettingsView | null
@@ -82,14 +82,41 @@ export function ComposerBar(props: Props) {
     status === 'ready',
     `${String(props.modeControl?.currentValue)}|${String(props.modelControl?.currentValue)}`
   )
+  // Réglages de la session : leur bouton, ou (saisie étroite, fiche 276) un sous-menu de 📎. Le
+  // bouton reste dans la page, caché par le CSS, pour que la mesure du repli le voie.
+  const sessionSettings = (asSub: boolean) => (
+    <SessionSettingsMenu
+      controls={props.controls}
+      agentLabel={agentLabel}
+      disabled={status !== 'ready'}
+      onSetControl={props.onSetControl}
+      {...(props.onLoadRules ? { onLoadRules: props.onLoadRules } : {})}
+      {...(props.onOpenRule ? { onOpenRule: props.onOpenRule } : {})}
+      {...(props.onLoadMcp ? { onLoadMcp: props.onLoadMcp } : {})}
+      {...(props.onLoadAppTools ? { onLoadAppTools: props.onLoadAppTools } : {})}
+      {...(props.onOpenMcpSettings ? { onOpenMcpSettings: props.onOpenMcpSettings } : {})}
+      onRestartAgent={props.onRestart}
+      asSub={asSub}
+    />
+  )
   return (
     <ComposerFocus.Provider value={props.onFocusInput}>
-      <div className="composer-bar" ref={bar} data-fold={fold} data-testid="composer-bar">
+      <div
+        className="composer-bar"
+        ref={bar}
+        data-fold={fold}
+        // Sans capture d'écran, 📎 reste un bouton simple : les réglages gardent leur bouton.
+        {...(props.onCaptureScreen ? {} : { 'data-no-capture': '' })}
+        data-testid="composer-bar"
+      >
         <AttachButton
           folded={fold >= 1}
           disabled={props.blocked}
           onPickFiles={props.onPickFiles}
           onCaptureScreen={props.onCaptureScreen}
+          {...(fold >= OPTIONS_FOLD && props.onCaptureScreen
+            ? { extra: sessionSettings(true) }
+            : {})}
         />
         {props.modeControl && !props.hideMode ? (
           <ModeChip
@@ -100,18 +127,7 @@ export function ComposerBar(props: Props) {
         ) : (
           <ChipPlaceholder width={reserved.mode} />
         )}
-        <SessionSettingsMenu
-          controls={props.controls}
-          agentLabel={agentLabel}
-          disabled={status !== 'ready'}
-          onSetControl={props.onSetControl}
-          {...(props.onLoadRules ? { onLoadRules: props.onLoadRules } : {})}
-          {...(props.onOpenRule ? { onOpenRule: props.onOpenRule } : {})}
-          {...(props.onLoadMcp ? { onLoadMcp: props.onLoadMcp } : {})}
-          {...(props.onLoadAppTools ? { onLoadAppTools: props.onLoadAppTools } : {})}
-          {...(props.onOpenMcpSettings ? { onOpenMcpSettings: props.onOpenMcpSettings } : {})}
-          onRestartAgent={props.onRestart}
-        />
+        <span className="session-settings-slot">{sessionSettings(false)}</span>
         <span className="grow" />
         {/* D'un tenant : sur deux lignes (niveau 4), ce bloc forme la seconde. */}
         <div className="composer-bar-end">

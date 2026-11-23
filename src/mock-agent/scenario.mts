@@ -237,6 +237,11 @@ export type Step =
    * envoyé d'un bloc juste avant (aucun moment où « Stop » interromprait encore le tour).
    */
   | { kind: 'hang'; text?: string }
+  /**
+   * Reprise d'OpenCode 2.3.0 qui ne joint pas son modèle (fiche 275) : `session_info_update` à
+   * `_meta["opencode/retry"]`, tentative `attempt`, la suivante dans `inMs` (heure réelle).
+   */
+  | { kind: 'opencode-retry'; attempt: number; inMs: number; message: string }
   /** Écrit une ligne qui n'est pas du JSON-RPC sur stdout (journal mal placé). */
   | { kind: 'stdout-noise'; text: string }
   /**
@@ -592,6 +597,17 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
         })
       // Ignore `session/cancel` : seul l'arrêt du processus termine ce tour.
       return new Promise<void>(() => {})
+    case 'opencode-retry':
+      return send(ctx, {
+        sessionUpdate: 'session_info_update',
+        _meta: {
+          'opencode/retry': {
+            attempt: step.attempt,
+            nextRetryAt: new Date(Date.now() + step.inMs).toISOString(),
+            error: { type: 'provider.transport', message: step.message }
+          }
+        }
+      })
     case 'stdout-noise':
       process.stdout.write(`${step.text}\n`)
       return

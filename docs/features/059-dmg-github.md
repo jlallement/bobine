@@ -92,3 +92,7 @@ sur le quota gratuit (≈ 200 minutes de Mac par mois).
 - 2026-11-10 — Notes de la Release en anglais puis en français (fiche 220) : section de la
   version dans `CHANGELOG.en.md`, puis dans `CHANGELOG.md` ; liste des commits de GitHub
   seulement si aucune des deux n'existe.
+- 2026-11-23 — Deux lignes en parallèle (ADR-0068) : un tag `v1.0.*` part de `main`, un tag
+  `v1.1.*` (préversions de la 1.1) de la branche `1.1` ; toute autre ligne est refusée par le
+  job `guard`. `ci.yml` tourne aussi sur les poussées de `1.1`. Procédure inchangée sinon :
+  pousser la branche de la ligne, puis le tag.

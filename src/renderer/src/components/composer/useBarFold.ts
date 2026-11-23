@@ -5,13 +5,16 @@ import { useLayoutEffect, useRef, useState } from 'react'
  * de puces qui rétrécissent toutes ensemble jusqu'à « c… », « GP… ».
  *
  * 0 : tout est là ; 1 : la capture passe dans le menu de 📎 ; 2 : la consommation ne garde que son
- * anneau ; 3 : le mode ne garde que son icône. Au-delà, le modèle se tronque, puis l'agent.
- * 4 (conversation très étroite, que même cela ne suffit pas à loger) : la barre passe sur deux
- * lignes (outils, puis consommation, modèle, agent et envoi) plutôt que de pousser le bouton
- * d'envoi hors de la fenêtre.
+ * anneau ; 3 : le mode ne garde que son icône ; 4 : les réglages de la session passent dans le
+ * menu de 📎 (fiche 276, T10 : avant que le modèle ne soit coupé ; sans capture d'écran, 📎 reste
+ * un bouton simple et ils gardent le leur). Au-delà, le modèle se tronque,
+ * puis l'agent. 5 (conversation très étroite, que même cela ne suffit pas à loger) : la barre
+ * passe sur deux lignes (outils, puis consommation, modèle, agent et envoi) plutôt que de pousser
+ * le bouton d'envoi hors de la fenêtre.
  */
-export const MAX_FOLD = 3
-export const WRAPPED = 4
+export const OPTIONS_FOLD = 4
+export const MAX_FOLD = 4
+export const WRAPPED = 5
 
 /** Premier niveau auquel la barre tient (le dernier sinon). */
 export function fitFold(fits: (level: number) => boolean): number {
@@ -74,7 +77,6 @@ export function useBarFold() {
     if (!el || typeof ResizeObserver === 'undefined') return
     const width = (selector: string) => el.querySelector<HTMLElement>(selector)?.offsetWidth ?? 0
     const measure = () => {
-      const shown = el.dataset.fold
       el.dataset.measure = ''
       delete el.dataset.agentIcon
       const folded = fitFold((candidate) => {
@@ -96,8 +98,11 @@ export function useBarFold() {
       el.style.setProperty('--agent-min', `${result.agent}px`)
       if (result.agentIcon) el.dataset.agentIcon = ''
       delete el.dataset.measure
-      if (shown === undefined) delete el.dataset.fold
-      else el.dataset.fold = shown
+      // Le niveau mesuré reste posé : le CSS replie la barre dans l'image même où sa largeur change
+      // (l'observateur passe avant la peinture). Laissé au rendu de React, qui vient après, une
+      // machine chargée peignait plusieurs images où l'envoi sortait de la zone de saisie (fiche
+      // 250, runner macOS). React pose ensuite la même valeur.
+      el.dataset.fold = String(level)
       setFold(level)
     }
     // Largeur de la barre (fenêtre, panneau), avec une première mesure à l'observation.

@@ -277,6 +277,37 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   annulés au nettoyage de leur effet ; restent, sans `setState` et non touchés, le repli de la
   molette de `screen-gestures.ts` (envoie un geste au simulateur s'il tombe après le démontage)
   et le double minuteur de focus de `useRoleCompose.tsx`.
+- 2026-11-23 — Seconde chasse avant la 1.0.0-rc.4 (branche `fix/chasse2-correctifs`, journaux du
+  pilote `chasse-rc4/.pilote/sessions/2026-11-23-*`) :
+  - **Focus perdu sur `<body>`** après une décision (« Vérifier maintenant » désactivé pendant
+    « Vérification… », « Attendre » et « Arrêter » du bandeau de silence, « Arrêter » du bandeau
+    « modèle injoignable », « Autoriser une fois » / « Refuser », « Retenir », Stop, « Committer »,
+    Réglages fermés par Échap ou ✕). Cause commune : l'élément qui avait le focus part ou se
+    désactive, et Chromium pose le focus sur la page sans évènement. Un mécanisme unique,
+    `renderer/src/focus-keeper.ts`, posé par `main.tsx` pour la fenêtre principale : il retient le
+    dernier élément focalisé (`focusin`) et, quand le focus est sur la page (ou sur un élément
+    désactivé) parce que cet élément est parti, désactivé ou masqué (`focusout` sans destination,
+    ou mutation de la page), envoie le focus à l'élément suivant de la fenêtre modale ouverte
+    (sinon à son premier élément), sinon à la zone de saisie. Après 60 ms : Radix (qui rend le
+    focus dans un `setTimeout`) et quiconque pose le focus ailleurs passent d'abord ; un clic dans
+    le vide (élément toujours là) laisse le focus où il est, et l'oublie. Cas propres : « Modifier »
+    d'un souvenir met le focus dans le premier champ (`MemoryEntryRow`) ; ouvrir l'onglet Terminal
+    ou Navigateur leur donne le clavier (`usePanel.select`, `focusTab` remplace `focusTerminal` ;
+    le navigateur : `browser:show` prend un troisième argument `focus`, le main fait
+    `webContents.focus()` de la page ; sans page, le champ d'adresse). Preuves :
+    `focus-keeper.test.ts` (carte partie, bouton désactivé, fenêtre ouverte → suivant, fenêtre
+    fermée → saisie, clic dans le vide, quelqu'un d'autre d'abord), `MemoryEntryRow.test.tsx`,
+    `usePanel.test.ts`, `ipc.test.ts` (`focus` vérifié) ; e2e `permissions` (« Autoriser une fois »
+    et Réglages fermés par Échap : focus dans la zone de saisie).
+  - **Listes sans nom** de Réglages › Général (Langue, Fenêtre rapide, Éditeur), et de même
+    Conversation (agent, dossier), Notifications (son), Diagnostic (niveau du journal), polices de
+    l'Apparence : `aria-label` du libellé de leur ligne. Thèmes « Nouveau » annoncés
+    « AuroraNew » : nom accessible « Aurore, nouveau » (`settings.appearance.theme.newName`).
+    Preuve : l'essai « interrupteurs nommés » de `SettingsDialog.test.tsx` regarde aussi les
+    listes et les choix de chaque section (rouge sans le correctif), et le nom d'Aurore.
+  - « Mémoire : clé des empreintes créée » écrit en WARN : c'est une création normale (premier
+    lancement, profil neuf) ; le journal de `approvalSigner` prend un niveau, INFO ici, WARN pour
+    le reste (clé illisible, trousseau indisponible). Preuve : `approval-key.test.ts`.
 
 - 2026-11-21 — Petits restes (branche `feat/1.1-petits-restes`).
   - Liens vérifiés de l'onglet Fichiers : le Markdown rendu par `FileView` (fiche 271) reçoit la

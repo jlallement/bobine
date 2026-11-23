@@ -55,10 +55,24 @@ export async function nouvelleVersionSuite(scheme) {
           `une requête au lancement, User-Agent « Bobine/${VERSION} », sans cookie, jeton ni langue de l’utilisateur (${JSON.stringify(server.seen)})`
         )
         await ui.shot('nouvelle-version-ligne')
+        const viewName = await ui.ev(`${ui.$('update-line-open')}.getAttribute('aria-label')`)
+        check(
+          viewName === L('updates.line.viewLabel', { version: next }),
+          `« Voir » : nom accessible avec la version (« ${viewName} »)`
+        )
 
-        // « Plus tard » : la ligne part ; les Réglages gardent l'information.
+        // « Plus tard » : la ligne part, le focus va à la zone de saisie (recette rc.4 : il tombait
+        // sur la page) ; les Réglages gardent l'information.
         await ui.click(ui.$('update-line-later'))
         await ui.waitFor(`!${line(ui)}`)
+        await sleep(200)
+        const focused = await ui.ev(
+          `document.activeElement?.dataset?.testid ?? document.activeElement?.tagName`
+        )
+        check(
+          focused === 'composer-input',
+          `« Plus tard » : le focus va à la zone de saisie (${focused})`
+        )
         await ui.click(ui.$('open-settings'))
         await ui.click(ui.$('settings-about'))
         await ui.waitFor(`!!${ui.$('settings-update-available')}`)
@@ -66,6 +80,16 @@ export async function nouvelleVersionSuite(scheme) {
         check(
           note.includes(next) && note.includes(VERSION),
           `Réglages › Nouveautés après « Plus tard » : « ${note.replace(/\n/g, ' · ')} »`
+        )
+        // Texte et bouton « Voir la version » centrés l'un sur l'autre (recette rc.4).
+        const offset = await ui.ev(`(() => {
+          const note = ${ui.$('settings-update-available')}
+          const mid = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 }
+          return Math.abs(mid(note.querySelector('.update-note-text')) - mid(note.querySelector('.btn')))
+        })()`)
+        check(
+          offset <= 1.5,
+          `encart « est disponible » : texte et bouton centrés (écart ${offset} px)`
         )
         await ui.shot('nouvelle-version-reglages')
         await ui.click(ui.$('settings-update-open'))
@@ -75,6 +99,18 @@ export async function nouvelleVersionSuite(scheme) {
           opened.length === 1 && opened[0] === page,
           `« Voir la version » : la page vérifiée seulement (${JSON.stringify(opened)})`
         )
+
+        // Version déjà connue, « Vérifier maintenant » en échec : dit, la version reste (recette rc.4).
+        server.respond(() => ({ status: 429, body: { message: 'API rate limit exceeded' } }))
+        await ui.click(ui.$('settings-update-now'))
+        await ui.waitFor(`!!${ui.$('settings-update-failed')}`)
+        check(
+          (await ui.ev(`${ui.$('settings-update-failed')}.innerText`)) ===
+            L('updates.settings.failed.limit') &&
+            (await ui.ev(`${ui.$('settings-update-available')}?.innerText ?? ''`)).includes(next),
+          'version connue, « Vérifier maintenant » en échec : l’échec est dit, la version reste'
+        )
+        await ui.shot('nouvelle-version-connue-echec')
 
         // À la main : à jour, puis la limite de GitHub.
         server.respond(() => ({ status: 200, body: [] }))
