@@ -750,6 +750,15 @@ export async function withApp(
         await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme, features) })
         await sleep(150)
       },
+      /**
+       * Deux images rendues (fiche 250) : ce qui ne se met à jour qu'au rendu d'une image (lignes
+       * de temps de défilement, `ResizeObserver`) est alors à jour. Sur une machine chargée
+       * (runner macOS de GitHub), aucune image n'arrive parfois en 150 ou 300 ms.
+       */
+      frames: async () => {
+        await frame()
+        await frame()
+      },
       viewport: async (width, height = 820) => {
         if (width) {
           await cdp('Emulation.setDeviceMetricsOverride', {
