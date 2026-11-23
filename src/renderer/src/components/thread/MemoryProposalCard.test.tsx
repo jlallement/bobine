@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { MemoryDecisionResult, MemoryProposalItem } from '@shared/memory'
 import { TurnControlsContext, type MemoryControls, type TurnControls } from '../../turn-controls'
@@ -129,5 +129,15 @@ describe('MemoryProposalCard (fiche 182)', () => {
     renderCard(item({ status: 'kept', decidedAt: 1 }))
     expect(screen.getByTestId('memory-decided').textContent).toContain('Retenu')
     expect(screen.getByText('Voir')).not.toBeNull()
+  })
+
+  it('en attente : le fil ne défile pas sous le pointeur ; décidée, il suit de nouveau (fiche 250)', () => {
+    // Pilote, macOS CI 2026-11-23 : « Retenir » cliqué pendant que la réponse s'écrivait sous la
+    // carte ; le fil, qui suivait le bas, l'a remontée entre le survol et l'appui, clic perdu.
+    renderCard(item())
+    expect(screen.getByTestId('memory-card').dataset['scrollHold']).toBe('')
+    cleanup()
+    renderCard(item({ status: 'kept', decidedAt: 1 }))
+    expect(screen.getByTestId('memory-decided').closest('[data-scroll-hold]')).toBeNull()
   })
 })

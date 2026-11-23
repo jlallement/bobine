@@ -172,6 +172,14 @@ export function Lpart(key, params = {}) {
 /** `L(…)` dans une expression régulière. */
 export const literal = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+/**
+ * Expression : le texte du terminal affiché (les autres onglets restent cachés dans la page,
+ * fiche 126), ses lignes mises bout à bout. Une commande passe à la ligne n'importe où selon la
+ * longueur de l'invite (le nom de la machine varie d'un runner à l'autre) : à chercher avec
+ * `.includes(…)`, jamais ligne par ligne.
+ */
+export const TERMINAL_TEXT = `([...document.querySelectorAll('.terminal-host .xterm-rows')].find((e) => !e.closest('[hidden]'))?.innerText ?? '').replaceAll('\\n', '')`
+
 /** Fichier de capture : préfixé `en-` pour les essais en anglais. */
 const captureFile = (name, scheme, ext) =>
   join(captures, `${LANG === 'fr' ? '' : `${LANG}-`}${name}-${scheme}.${ext}`)

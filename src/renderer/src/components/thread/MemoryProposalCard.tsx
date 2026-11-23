@@ -82,6 +82,9 @@ export function MemoryProposalCard({ item }: { item: MemoryProposalItem }) {
       data-testid="memory-card"
       data-action={item.action}
       data-risky={risky ? 'true' : undefined}
+      // À décider : le fil ne défile pas tout seul sous le pointeur (fiche 124) ; sinon la réponse
+      // qui s'écrit dessous remonte « Retenir » entre le survol et l'appui (fiche 250).
+      data-scroll-hold=""
     >
       <div className="memory-card-title">
         {forget ? <Trash size={15} aria-hidden /> : <Bookmark size={15} aria-hidden />}

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 /**
  * Suivi du bas du fil : il défile tout seul tant que l'utilisateur est en bas, et la flèche « Aller
  * en bas » (fiche 050) se montre quand on l'a remonté. `scroller` va sur l'élément qui défile.
- * Pointeur sur une carte marquée `data-scroll-hold` (propositions de filles) : le fil attend
+ * Pointeur sur une carte marquée `data-scroll-hold` (propositions de filles, souvenir à décider) : le fil attend
  * qu'il en sorte pour suivre, sans quoi la ligne visée remonte sous le pointeur (fiche 124), et sa
  * hauteur est gardée, sans quoi un bas qui rétrécit la fait descendre sous lui (fiche 250) ; ce qui
  * arrive en bas pendant ce temps montre la flèche, sans défiler.

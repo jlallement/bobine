@@ -2,7 +2,18 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, Lpart, M, MAIN_PORT, attachPage, check, mainProcess, sleep, withApp } from '../lib.mjs'
+import {
+  L,
+  Lpart,
+  M,
+  MAIN_PORT,
+  TERMINAL_TEXT,
+  attachPage,
+  check,
+  mainProcess,
+  sleep,
+  withApp
+} from '../lib.mjs'
 import {
   ROWS,
   activeId,
@@ -21,8 +32,6 @@ const PAGE = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>
 <body><h1>Carnet</h1><button id="cible" onclick="window.clics = (window.clics || 0) + 1">Cible</button></body></html>`
 /** Vue native visible (la page de l'onglet actif du navigateur intégré), évaluée dans le main. */
 const VIEW = `require('electron').BrowserWindow.getAllWindows().flatMap((w) => w.contentView.children).find((v) => v.getVisible())`
-/** Lignes affichées du terminal de l'onglet visible. */
-const TERMINAL_ROWS = `([...document.querySelectorAll('.terminal-host .xterm-rows')].find((e) => !e.closest('[hidden]'))?.innerText ?? '')`
 
 /**
  * « Outils de l'app » (fiche 277) : dans une même session, le terminal à côté de la conversation
@@ -66,11 +75,11 @@ export async function parcoursOutilsSuite(scheme) {
             await ui.press('`', 2)
             await ui.waitFor(`!!${ui.$('terminal-tab')}`)
             await ui.waitFor(
-              `document.activeElement?.classList.contains('xterm-helper-textarea') && ${TERMINAL_ROWS}.trim() !== ''`
+              `document.activeElement?.classList.contains('xterm-helper-textarea') && ${TERMINAL_TEXT}.trim() !== ''`
             )
             await ui.type('echo parcours-$((2+3))')
             await ui.enter()
-            await ui.waitFor(`${TERMINAL_ROWS}.includes('parcours-5')`)
+            await ui.waitFor(`${TERMINAL_TEXT}.includes('parcours-5')`)
             check(true, '⌃` : terminal ouvert dans le dossier, commande lancée à la main')
           })
 
@@ -80,7 +89,7 @@ export async function parcoursOutilsSuite(scheme) {
             await ui.waitFor(`!!${ui.$('questions')}`)
             await ui.press('1')
             await ui.ready()
-            await ui.waitFor(`${TERMINAL_ROWS}.includes('bonjour du terminal 42')`)
+            await ui.waitFor(`${TERMINAL_TEXT}.includes('bonjour du terminal 42')`)
             check(
               (await ui.lastAgentText()).includes('bonjour du terminal 42'),
               'commande montrée puis lancée dans un onglet de l’agent, qui lit sa sortie'

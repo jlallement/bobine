@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { L, TERMINAL_TEXT, check, withApp } from '../lib.mjs'
 import { rgb, tokensOf, variantOf, withPalette } from '../palette.mjs'
 
 /** Terminal à côté de la conversation (fiche 034). */
@@ -17,7 +17,7 @@ export async function terminalPanelSuite(scheme) {
         // Terminal de l'onglet affiché : les autres restent dans la page, cachés (fiche 126).
         const shown = (selector) =>
           `[...document.querySelectorAll('.terminal-host ${selector}')].find((e) => !e.closest('[hidden]'))`
-        const rows = `(${shown('.xterm-rows')}?.innerText ?? '')`
+        const rows = TERMINAL_TEXT
         await ui.press('`', 2)
         await ui.waitFor(`!!${ui.$('terminal-tab')}`)
         await ui.waitFor(

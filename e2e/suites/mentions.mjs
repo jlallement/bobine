@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { check, withApp } from '../lib.mjs'
+import { TERMINAL_TEXT, check, withApp } from '../lib.mjs'
 
 /** Mentions `@git-changes` et `@terminal` (fiche 057) : contenu joint au message à l'envoi. */
 export async function mentionsSuite(scheme) {
@@ -29,7 +29,7 @@ export async function mentionsSuite(scheme) {
       async (ui) => {
         await ui.ready()
         // Une commande dans le terminal de la conversation.
-        const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '')`
+        const rows = TERMINAL_TEXT
         await ui.press('`', 2)
         await ui.waitFor(
           `document.activeElement?.classList.contains('xterm-helper-textarea') && ${rows}.trim() !== ''`
