@@ -187,6 +187,11 @@ Pas de nouvelle dépendance.
     `tool-label.test.ts` (`workToolText`) ; e2e `filles` (« Import CSV » fini pendant que la mère
     attend « Page d'aide » : « a répondu », compté, infobulle ; capture
     `filles-5c-travail-fini-en-attente`).
+- 2026-11-23 : **relecture — essai en anglais**. `travaux-groupe` comparait le conseil de fusion à
+  une phrase française en dur (rouge en `--lang en`) : il est recomposé par `L()` à partir de
+  `workGroup.merge.advice.*` et `childrenMerge.quote` (titres des travaux, venus de l'agent
+  factice, inchangés). Aucune autre comparaison en dur trouvée dans les suites touchées depuis
+  `main~30`.
 
 ## Limites connues
 
