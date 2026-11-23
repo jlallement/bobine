@@ -17,7 +17,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - Un clic dans le fil n’est plus perdu quand un tour se termine au même instant : le fil ne
   remonte plus sous le pointeur entre l’appui et le relâché (par exemple sur une ligne d’une carte
-  de travaux, qui ne se dépliait pas).
+  de travaux, qui ne se dépliait pas). De même quand le fil était presque en bas, ou qu’une
+  réponse arrivait pendant l’appui : il ne descend plus qu’au relâché (par exemple sur
+  **Autoriser une fois**, qui restait sans effet).
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 
