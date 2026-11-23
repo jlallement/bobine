@@ -227,3 +227,21 @@ Aucune nouvelle dépendance : `net.fetch` d'Electron (proxy du système, comme C
   - Docs : guide Réglages (fr, en), FAQ des README, CHANGELOG, `docs/architecture.md`.
   - `pnpm pilote lancer` coupe la vérification (`BOBINE_UPDATE_CHECK=off`) ; `--verif-versions`
     la laisse active (`docs/pilote.md`, essai dans `scripts/pilote/pilote.test.mjs`).
+- 2026-11-23 — Recette avant la 1.0.0-rc.4 (branche `fix/chasse-correctifs`) :
+  - « Vérifier maintenant » en échec invisible quand une version est déjà connue : `UpdateNote`
+    rendait l'encart de la version et s'arrêtait là. Il rend maintenant l'encart de la version
+    **puis** celui de l'échec (textes existants `updates.settings.failed.*`, pas de nouvelle clé),
+    l'échec effacé pendant une nouvelle vérification ; « à jour » reste réservé au cas sans
+    version connue. Conforme au critère « échec … pour une vérification lancée à la main ».
+  - Focus : « Voir » et ✕ (Plus tard) font disparaître la ligne avec le bouton qui avait le focus,
+    qui tombait sur `<body>` ; il va d'abord à la zone de saisie (`focusComposer`).
+  - « Voir » de la barre latérale : nom accessible avec la version, nouvelle clé
+    `updates.line.viewLabel` (« Voir la version {{version}} » / « View version {{version}} »),
+    qui commence par le texte visible.
+  - Réglages › Nouveautés : texte de « Bobine … est disponible » collé en haut du bouton « Voir la
+    version ». L'encart à bouton centre texte et bouton (`:has(> .btn)`), l'icône reste sur la
+    première ligne, le bouton déborde de 4 px en haut et en bas : même hauteur qu'un encart sans
+    bouton.
+  - Essais : `UpdateLine.test.tsx` (nom accessible, focus, échec avec version connue) rouges sans
+    le correctif, verts avec ; e2e `nouvelle-version` : nom accessible, focus après « Plus tard »,
+    écart de centrage ≤ 1,5 px, échec avec version connue (capture `nouvelle-version-connue-echec`).
