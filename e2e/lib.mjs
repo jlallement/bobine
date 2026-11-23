@@ -638,6 +638,8 @@ export async function withApp(
       ev,
       waitFor,
       $,
+      // Sortie de l'app jusqu'ici (journal du main, 64 Kio au plus) : erreurs IPC (recette rc.4).
+      output: () => output,
       // Protocole DevTools brut : images de la vidéo de la vitrine (fiche 225).
       cdp,
       dialogs,

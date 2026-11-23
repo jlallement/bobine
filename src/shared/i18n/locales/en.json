@@ -6101,6 +6101,7 @@
       "name": "Bobine {{version}}",
       "preAvailable": "Pre-release available",
       "view": "View",
+      "viewLabel": "View version {{version}}",
       "later": "Later (nothing more for {{version}})"
     },
     "settings": {

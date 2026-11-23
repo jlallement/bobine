@@ -57,12 +57,30 @@ describe('avis de nouvelle version (fiche 274)', () => {
     render(<Line />)
     const line = await screen.findByTestId('update-line')
     expect(line.textContent).toContain('Bobine 1.0.1 est disponible')
-    fireEvent.click(screen.getByTestId('update-line-open'))
+    // Nom accessible avec la version (recette rc.4) : « Voir » seul ne dit pas quoi.
+    fireEvent.click(
+      screen.getByRole('button', { name: t('updates.line.viewLabel', { version: '1.0.1' }) })
+    )
     expect(calls.open).toHaveBeenCalledWith('1.0.1')
     fireEvent.click(
       screen.getByRole('button', { name: t('updates.line.later', { version: '1.0.1' }) })
     )
     expect(calls.dismiss).toHaveBeenCalledWith('1.0.1')
+  })
+
+  it('✕ et « Voir » : le focus va à la zone de saisie, pas sur la page (recette rc.4)', async () => {
+    const composer = document.createElement('textarea')
+    composer.dataset.testid = 'composer-input'
+    document.body.append(composer)
+    first = { ...base, available }
+    render(<Line />)
+    for (const id of ['update-line-later', 'update-line-open']) {
+      const button = await screen.findByTestId(id)
+      button.focus()
+      fireEvent.click(button)
+      expect(document.activeElement).toBe(composer)
+    }
+    composer.remove()
   })
 
   it('préversion : « Préversion disponible » sous le numéro', async () => {
@@ -94,6 +112,23 @@ describe('avis de nouvelle version (fiche 274)', () => {
     const { container } = render(<Line />)
     await screen.findByTestId('update-line')
     expect(container.querySelector('img')).toBeNull()
+  })
+
+  it('Réglages : version déjà connue, « Vérifier maintenant » qui échoue le dit, la version reste (recette rc.4)', async () => {
+    first = { ...base, available }
+    render(<UpdateCheckCard enabled onEnabled={() => {}} />)
+    await screen.findByTestId('settings-update-available')
+    act(() => push({ ...base, available, manual: { result: 'failed', failure: 'offline' } }))
+    expect(screen.getByTestId('settings-update-available').textContent).toContain('1.0.1')
+    expect(screen.getByTestId('settings-update-failed').textContent).toBe(
+      t('updates.settings.failed.offline')
+    )
+    // Pendant une nouvelle vérification, l'ancien échec s'efface ; la version reste.
+    act(() =>
+      push({ ...base, available, checking: true, manual: { result: 'failed', failure: 'offline' } })
+    )
+    expect(screen.queryByTestId('settings-update-failed')).toBeNull()
+    expect(screen.getByTestId('settings-update-available')).toBeTruthy()
   })
 
   it('Réglages : jamais vérifié, à jour, nouvelle version, échec, en cours', async () => {

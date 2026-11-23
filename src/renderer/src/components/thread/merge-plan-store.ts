@@ -17,8 +17,14 @@ interface Entry {
 /** États gardés par mère (cartes, « Sous-tâches », vue « Filles », états qui passent). */
 const KEPT = 16
 const store = new Map<string, Map<string, Entry>>()
-/** Dernier plan lu de chaque mère, quel que soit l'état : montré le temps d'une nouvelle lecture. */
-const latest = new Map<string, ChildrenMergePlan>()
+/**
+ * Plan de l'état le plus récent lu de chaque mère : montré le temps d'une nouvelle lecture. Les
+ * lectures tournent en parallèle et finissent dans le désordre : une lecture lancée avant une autre
+ * déjà aboutie ne le remplace pas (fiche 250 : un état « en cours » revenait après le conflit).
+ */
+const latest = new Map<string, { plan: ChildrenMergePlan; order: number }>()
+/** Ordre de lancement des lectures. */
+let requests = 0
 const listeners = new Set<() => void>()
 let version = 0
 
@@ -47,7 +53,7 @@ export function readPlan(
   if (entry?.plan) return { plan: entry.plan, exact: true }
   if (entry?.failed) return undefined
   const last = latest.get(motherId)
-  return last ? { plan: last, exact: false } : undefined
+  return last ? { plan: last.plan, exact: false } : undefined
 }
 
 /**
@@ -77,10 +83,11 @@ export function loadPlan(
     if (oldest === undefined) break
     entries.delete(oldest)
   }
+  const order = ++requests
   entry.pending = read(motherId).then(
     (plan) => {
       entry.plan = plan
-      latest.set(motherId, plan)
+      if (order > (latest.get(motherId)?.order ?? 0)) latest.set(motherId, { plan, order })
       delete entry.failed
       notify()
     },

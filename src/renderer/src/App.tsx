@@ -115,7 +115,7 @@ export function App() {
     discussion
   })
   // Branche git du dossier, à côté du dossier dans la zone de saisie (fiche 049).
-  const git = useGitStatus(c.activeId, snapshot?.status === 'busy')
+  const git = useGitStatus(c.queryId, snapshot?.status === 'busy')
   // « En cours » de l'onglet « Session » (fiche 166), suivi même panneau fermé.
   const running = useSessionRunning({
     conversationId: c.activeId,
@@ -146,7 +146,7 @@ export function App() {
     notices: c
   })
   // Commandes « / » personnelles et du projet (fiche 045).
-  const projectCommands = useProjectCommands(c.activeId, snapshot?.status === 'busy')
+  const projectCommands = useProjectCommands(c.queryId, snapshot?.status === 'busy')
   const globalCommands = c.settings?.commands
   const userCommands = useMemo(
     () => [...projectCommands, ...(globalCommands ?? [])],

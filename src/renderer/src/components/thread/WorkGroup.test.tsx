@@ -613,6 +613,23 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a'], true, undefined))
   })
 
+  it('conflit, branches lues pendant la fusion : pas encore de reprise (fiche 250)', async () => {
+    // Une lecture faite pendant la fusion (le travail résolvait encore) ne dit pas le conflit qui
+    // reste : « Réessayer » attend une lecture faite après son arrêt.
+    const actions = mergeActions([candidate('a', 'conflict')], true)
+    view(
+      writer([
+        mergeItem(4, 'conflict', [{ childId: 'a', state: 'conflict', files: ['src/list.ts'] }])
+      ]),
+      info([child('a', { role: front })], { merge: actions })
+    )
+    // Le pied montré : les branches sont lues.
+    await screen.findByTestId('work-open')
+    expect(actions.plan).toHaveBeenCalled()
+    expect(screen.queryByTestId('work-merge-retry')).toBeNull()
+    expect(screen.queryByTestId('work-merge-abort')).toBeNull()
+  })
+
   it('échec dit, avec sa raison ; un rôle de conseil n’a rien à fusionner', async () => {
     const actions = mergeActions([candidate('a', 'ready')])
     view(
