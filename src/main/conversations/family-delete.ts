@@ -58,7 +58,8 @@ export async function deleteConversation(
     for (const member of family) {
       await stopWork(host, member.id)
       const fromAgent = rest.fromAgent !== false && deletes.has(member.id)
-      await host.delete(member.id, { fromAgent, removeWorktree: childWorktrees })
+      // Marquée « avec elle » : restaurer la mère la restaure aussi (recette rc.4, T7).
+      await host.delete(member.id, { fromAgent, removeWorktree: childWorktrees, deletedWith: id })
     }
     return host.delete(id, own)
   }

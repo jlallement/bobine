@@ -826,6 +826,30 @@ describe('ConversationManager', () => {
     app2.manager.stopAll()
   })
 
+  it('restaurée depuis la corbeille : sa vue et ses évènements passent après ceux d’avant (rc.4, T1)', async () => {
+    // Le renderer garde la conversation déjà vue et écarte une vue ou un évènement dont le numéro
+    // n'est pas plus récent que le sien (`useConversations`, `reducer`). Restaurée, la conversation
+    // repartait de 0 : son état « prête » et la réponse n'arrivaient jamais, elle restait « Arrêté ».
+    const env = environment()
+    const app = env.launch()
+    const id = app.manager.state().activeId
+    await app.manager.startActive()
+    await app.manager.prompt(id, 'Premier message')
+    await app.manager.delete(id, { fromAgent: false })
+    const seen = Math.max(
+      ...app.events.filter((e) => e.conversationId === id).map((e) => e.seq ?? 0)
+    )
+    app.events.length = 0
+    app.manager.restoreFromTrash(id)
+    expect(app.manager.select(id).seq).toBeGreaterThanOrEqual(seen)
+    await app.manager.prompt(id, 'Après la corbeille')
+    expect(kinds(app.manager.view(id))).toEqual(['user', 'agent', 'user', 'agent'])
+    const after = app.events.filter((e) => e.conversationId === id).map((e) => e.seq ?? 0)
+    expect(after.length).toBeGreaterThan(0)
+    expect(Math.min(...after)).toBeGreaterThan(seen)
+    app.manager.stopAll()
+  })
+
   it('supprimée aussi chez l’agent : restaurée, elle continuera dans une session neuve et le dit', async () => {
     const env = environment()
     const app = env.launch()

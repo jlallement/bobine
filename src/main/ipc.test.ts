@@ -768,7 +768,8 @@ describe('IPC', () => {
     expect(conversations.delete.mock.calls.map((c) => c[0])).toEqual(['pf', 'f', 'c1'])
     expect(conversations.delete).toHaveBeenNthCalledWith(1, 'pf', {
       fromAgent: false,
-      removeWorktree: false
+      removeWorktree: false,
+      deletedWith: 'c1'
     })
     conversations.delete.mockClear()
     await call('conversation:delete', 'c1', { children: 'oui' })
