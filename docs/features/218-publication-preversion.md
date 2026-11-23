@@ -102,6 +102,15 @@ Fichiers :
   Laissées ouvertes : `i18next` 27 (typage de `t()` cassé, à monter avec `react-i18next` 18) et
   `jsdom` 31 (trois tests du pilote, clic par libellé). Le générateur d'avis écrit
   `inventory.json` sans le format de Prettier : passer `prettier --write` après lui.
+- 2026-11-23 — Préversions de la ligne suivante depuis sa branche (ADR-0068, décision de
+  Jérôme) : `guard` accepte un tag `v1.0.*` sur `origin/main` et un tag `v1.1.*` sur
+  `origin/1.1`, refuse toute autre ligne ou un tag sur la mauvaise branche (`::error::`) ;
+  `ci.yml` tourne aussi sur les poussées de `1.1`. Script du `guard` rejoué en local contre
+  `origin/main` et `origin/1.1` (sept cas) ; `actionlint` propre. `publish` inchangé : `v1.1.0-rc.1`
+  → préversion, `--latest=false` ; une 1.0.x finale publiée ensuite devient « Latest ». Avis de
+  nouvelle version : cas des deux lignes ajoutés aux tests (`update-check.test.ts`), aucun
+  changement de code. Non prouvé sur GitHub : premier tag `v1.1.*`, après fusion de `main` dans
+  `1.1` (le tag lance le `release.yml` du commit tagué).
 
 ## Écarts au plan
 
