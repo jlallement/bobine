@@ -275,3 +275,42 @@ Dependabot comme les autres.
     1024 × 768, l'étape le dira en rouge et la décision revient (garder de nuit ce qui tient dans
     1024 × 768, ou un autre runner). À prouver sur GitHub : `startup panel session composer`
     seules, puis la suite complète.
+
+- 2026-11-23 — L'écran agrandi marche : sur `macos-15`, mode 1920x1080 appliqué, zone utile
+  1920 × 982 (45153110394, `startup panel session composer` : `startup` et `panel` verts). Suite
+  complète macOS sur la branche (45154507106, commit efb13c1, 49 min) : 40 échecs, contre 44 à 45
+  tâches rouges les nuits d'avant. Cause commune à la plupart : l'image macOS de GitHub active
+  **Réduire les animations** et **Réduire la transparence** (`configure-system.sh` de
+  `actions/runner-images` : `defaults write com.apple.universalaccess reduceMotion -bool true`,
+  `reduceTransparency` de même). L'app les suit, comme il se doit ; les suites supposaient le
+  réglage par défaut, et la réduction des animations rendait visibles des courses des essais.
+
+  | Échec | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `composer` « mode Code … transitions de 150 ms » ; `base` « le fil de la bobine s'enroule » ; `repere` (`work-cue` jamais à 1) ; `aurore` (verre dépoli, lueur, « préférences revenues ») | Réglages d'accessibilité du runner (ci-dessus) : l'app retire transitions, animation de la bobine, repère animé, verre dépoli. `ui.media()` revenait au seul mode clair ou sombre, donc au réglage du runner. | `e2e/lib.mjs` : `mediaFeatures` émule `prefers-reduced-motion`, `prefers-reduced-transparency` et `prefers-contrast` à `no-preference`, à côté du mode ; `ui.media({…})` ne change que ce qu'on lui donne et revient à ces valeurs. Les suites qui essaient une réduction la demandent (`aurore`). | En local, les mêmes suites avec `reduce` émulé : `composer` (même message), `base`, `repere` (clair), `aurore` (les 4 contrôles) rouges ; avec `no-preference`, vertes. |
+  | `session` « délai dépassé : `[role=tooltip]` » | Essai fragile. Radix rend le focus à la puce du modèle dans un `setTimeout` après la fermeture du menu. Sans animation de sortie, l'essai voyait le menu parti, écartait aussitôt le pointeur, puis le focus revenait : l'infobulle s'ouvrait (focus au clavier, Échap) et ne voyait jamais le pointeur partir. Comportement voulu de l'app. | L'essai attend le focus revenu sur la puce, puis écarte le pointeur. | D'après le code de Radix (`FocusScope`, focus rendu en `setTimeout`) et la capture (puce entourée, infobulle ouverte) ; pas reproduit sur le Mac, même avec `reduce` émulé. Vert en local. |
+  | `composer` « erreur dans la page : `getComputedStyle` … » | Essai : après « Exécuter le plan », `ready()` passait avant le tour (agent encore « Prêt », comme pour `branch` le 2026-11-22) ; la zone lue pendant le tour n'avait plus de bouton d'envoi (`send` nul, remplacé par Arrêter). Pas un défaut de l'app ni du code injecté (`underPointer`, `clickTrail`) : l'erreur vient de l'évaluation `planLook` de la suite (ligne 52, `getComputedStyle(send)`). | L'essai attend le message « Exécute le plan… » dans le fil, puis `ready()`. | Ligne 52 de l'évaluation ; vert en local. |
+  | `composer` « accueil à 760 px : … envoi dans la fenêtre » | Défaut de l'app, vu sur machine lente : le repli de la barre (`useBarFold`) mesurait au `ResizeObserver` puis remettait l'ancien niveau en attendant le rendu de React ; sur le runner, plusieurs images peintes avec l'envoi hors de la zone. Et l'essai mesurait 300 ms après le changement de largeur, parfois sans aucune image rendue entre-temps. | `useBarFold` laisse le niveau mesuré sur la barre (le CSS replie dans l'image même ; React pose ensuite la même valeur). `ui.viewport` attend deux images rendues à la nouvelle taille. | `useBarFold.dom.test.tsx` : rouge avant (`expected '0' to be '1'`), vert après. Captures `composer-9-accueil-760` regardées. |
+  | `rules` « menu ouvert d'emblée à sa place (côtés : ) » | Essai : le relevé des côtés du menu durait 1,5 s à partir d'avant le clic ; sur le runner, le clic (visée comprise) dépassait, rien n'était relevé. | Le relevé dure jusqu'à ce que l'essai l'arrête, une image après avoir vu les trois règles. | Vert en local ; pas reproduit (machine plus rapide). |
+  | `commit-redige` « Arrêter : rédaction arrêtée » (raison `timeout`) | Essai : « Arrêter » courait contre le délai raccourci à 4 s (agent qui ne répond jamais) ; sur le runner, le démarrage de l'agent mangeait le délai, qui gagnait (capture : « n'a pas répondu en 4 s »). | « Réessayer » reste essayé avec le délai de 4 s (nouvel agent, de nouveau le repli `timeout`, aucun agent ne survit) ; « Arrêter » passe dans un lancement à part, au délai habituel (45 s), où rien ne court contre lui. | Vert en local. |
+  | `providers` (le test du fournisseur ne passe pas par le proxy) | Défaut de l'app : Réglages › Agents › Avancé enregistre chaque champ en quittant ; le second enregistrement partait de l'ancienne vue et effaçait le proxy que le premier venait d'enregistrer, s'il n'avait pas encore répondu. Capture : « Répond · 0 s » (test direct), résumé « sans proxy » seul. | `NetworkSettings` : enregistrements l'un après l'autre, chacun parti des réglages rendus par le précédent. Ligne dans les deux changelogs. | `ProvidersSettings.test.tsx`, « deux champs quittés coup sur coup » : rouge avant, vert après. |
+  | `pilote` « souvenir décidé : plus de carte », « Tâches proposées traitée » (carte d'autorisation encore vue, 0 s) | Outil : `pnpm pilote repondre` rendait la main dès le clic ; la carte n'est décidée qu'après un aller-retour au main, et `attendre`, lancé aussitôt, la revoyait comme une carte en attente. Reproduit une fois sur le Mac (passage avec `reduce` émulé, sans lien : le pilote n'émule rien). | `answerCard` : pour une carte d'autorisation ou de souvenir (chaque bouton décide), attend qu'elle soit décidée ; toujours là au bout de 10 s, une erreur le dit. Pas pour une carte de questions (un choix se coche) ni de groupe. | `cible.test.mjs` : carte retirée par l'app → rend la main ; carte restée → erreur. Vert en local. |
+  | `subagents` « durée et coût … (< 1 s) » | Essai (déjà vu sous Linux à 1 processeur) : coût relu avant la première seconde, la durée disait encore « < 1 s ». | L'essai attend le coût et une durée en secondes entières, puis vérifie, comme avant, que le sous-agent travaille encore. | Vert en local. |
+
+  Restent, non corrigés (une seule occurrence, ou liés à la machine) :
+  - `browser` clair : « Bonjour, ! » (le nom n'a pas été saisi, « 1 échec » parmi les 8 actions).
+    Sans le journal des outils, cause inconnue ; vert en local, même avec `reduce` émulé. À
+    regarder au prochain passage (proposition : `BOBINE_LOG=trace` pour l'e2e de nuit et
+    `agents.log` dans les captures).
+  - `travaux-groupe` sombre : clic manqué (appui sur « Ouvrir sa conversation », relâché sur
+    `work-actions-group`) : la ligne a bougé entre l'appui et le relâché. Même famille que le
+    reste côté produit du 2026-11-22 ; pas traité ici.
+  - `filles-tech-lead` sombre : un `Electron Helper --type=utility` (NetworkService, processus de
+    Chromium) encore vivant 3 s après la sortie de l'app. Lenteur d'arrêt du runner ; à décider
+    (l'attendre comme `chrome_crashpad_handler`, ou garder la règle de 3 s).
+  - `perf` (gros diff, long fil, sommaire, streaming), `simulator` (5 images/s, planche contact),
+    `android` (flux jamais là) : mesures liées à la machine virtuelle (pas de GPU, CPU partagé).
+    Proposition, à trancher : ne pas jouer ces trois suites de nuit sur `macos-15` (ou les
+    marquer indicatives), elles restent jouées en local avant chaque tag.
+
+  À prouver sur GitHub après la poussée : suite complète macOS sur la branche.
