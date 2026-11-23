@@ -230,4 +230,58 @@ describe('fichiers qui s’exécutent sous Windows (fiche 229)', () => {
     expect(mayExecuteOn('/x/a.exe', 0o644, 'posix')).toBe(false)
     expect(mayExecuteOn('/x/a.txt', 0o644, 'posix')).toBe(false)
   })
+
+  it('Windows : la liste par défaut, sans casse, quel que soit le mode du disque', async () => {
+    const { mayExecuteOn } = await import('./file-links')
+    const none = {}
+    for (const ext of [
+      'com',
+      'exe',
+      'bat',
+      'cmd',
+      'vbs',
+      'vbe',
+      'js',
+      'jse',
+      'wsf',
+      'wsh',
+      'msc',
+      'ps1',
+      'msi',
+      'lnk',
+      'scr',
+      'cpl',
+      'hta',
+      'reg',
+      'jar'
+    ]) {
+      expect(mayExecuteOn(`C:\\x\\a.${ext}`, 0o666, 'windows', none)).toBe(true)
+      expect(mayExecuteOn(`C:\\x\\a.${ext.toUpperCase()}`, 0, 'windows', none)).toBe(true)
+    }
+    // Pas de bit `x` sous Windows : le mode ne rend rien exécutable.
+    expect(mayExecuteOn('C:\\x\\outil', 0o755, 'windows', none)).toBe(false)
+    expect(mayExecuteOn('C:\\x\\outil.command', 0o755, 'windows', none)).toBe(false)
+  })
+
+  it('Windows : les extensions de PATHEXT de la machine aussi (clé sans casse)', async () => {
+    const { mayExecuteOn } = await import('./file-links')
+    const env = { PathExt: '.COM;.EXE; .Foo ;;.BAR' }
+    expect(mayExecuteOn('C:\\x\\a.foo', 0o666, 'windows', env)).toBe(true)
+    expect(mayExecuteOn('C:\\x\\a.Bar', 0o666, 'windows', env)).toBe(true)
+    expect(mayExecuteOn('C:\\x\\a.foo', 0o666, 'windows', {})).toBe(false)
+    expect(mayExecuteOn('C:\\x\\a.txt', 0o666, 'windows', env)).toBe(false)
+    // Sous Unix, PATHEXT ne compte pas.
+    expect(mayExecuteOn('/x/a.foo', 0o644, 'posix', env)).toBe(false)
+  })
+
+  it('macOS et Linux : paquets et scripts de macOS, ou le bit x', async () => {
+    const { mayExecuteOn } = await import('./file-links')
+    for (const name of ['A.app', 'b.command', 'c.terminal', 'd.tool', 'e.SH']) {
+      expect(mayExecuteOn(`/x/${name}`, 0o644, 'posix')).toBe(true)
+    }
+    for (const mode of [0o744, 0o654, 0o645]) {
+      expect(mayExecuteOn('/x/outil', mode, 'posix')).toBe(true)
+    }
+    expect(mayExecuteOn('/x/notes.txt', 0o644, 'posix')).toBe(false)
+  })
 })

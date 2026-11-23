@@ -143,11 +143,11 @@ describe('listDirectory', () => {
   })
 
   it('marque un fichier qui s’exécuterait si on l’ouvrait', async () => {
-    writeFileSync(join(root, 'outil.command'), 'echo non\n')
+    writeFileSync(join(root, 'outil.sh'), 'echo non\n')
     const top = await listDirectory({ root, dir: '', roots: [root] })
-    expect(top.entries.find((e) => e.name === 'outil.command')?.executable).toBe(true)
+    expect(top.entries.find((e) => e.name === 'outil.sh')?.executable).toBe(true)
     expect(top.entries.find((e) => e.name === 'README.md')?.executable).toBeUndefined()
-    expect(await readFileForView(root, 'outil.command')).toMatchObject({ executable: true })
+    expect(await readFileForView(root, 'outil.sh')).toMatchObject({ executable: true })
   })
 
   it('ne liste jamais .git ni .DS_Store', async () => {

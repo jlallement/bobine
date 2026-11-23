@@ -643,6 +643,19 @@ chaque commit de lot) ; **aucune nouvelle dépendance**. Au début de L1 : maque
   pas quand la ligne revient (essai `FileTree.keys.test.tsx`, échouait avant) ; JSDoc de `COLORED`
   rendue à sa place (`Markdown.tsx`).
 
+- **2026-11-24 — « jamais un exécutable » sous Windows (CI `verify (Windows)` rouge)** : les deux
+  essais rouges (`file-tree.test.ts`, `files-ipc.test.ts`) prenaient pour exécutable
+  `outil.command`, un type de macOS que Windows n'exécute pas : l'app était juste, l'essai
+  supposait macOS. Sous Windows, la règle (`mayExecute`, `file-links.ts`, fiche 229) décidait déjà
+  par l'extension, sans casse (`.exe`, `.bat`, `.cmd`, `.ps1`, `.lnk`, `.msi`…), jamais par le bit
+  `x` ; elle lit désormais aussi `PATHEXT` de la machine (clé sans casse), pour une extension
+  ajoutée par un interpréteur. Les essais prennent `outil.sh`, exécutable pour les deux systèmes ;
+  la règle pure (`mayExecuteOn`, système et environnement en paramètres) est essayée pour Windows
+  (liste par défaut, casse, `PATHEXT`, mode ignoré) et pour Unix (macOS et Linux : `.app`,
+  `.command`, `.terminal`, `.tool`, `.sh`, bit `x` de chaque classe). macOS inchangé : ses paquets
+  et scripts étaient déjà dans la liste, pas de trou. Pas de ligne de CHANGELOG : rien de visible
+  hors d'un `PATHEXT` personnalisé.
+
 ## Décisions de l'utilisateur (2026-11-20)
 
 - Version **1.1** (pas dans la 1.0), développée sur une branche `1.1`.

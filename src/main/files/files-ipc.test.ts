@@ -20,7 +20,7 @@ beforeEach(() => {
   mkdirSync(join(main, 'src'), { recursive: true })
   mkdirSync(extra)
   writeFileSync(join(main, 'src', 'a.ts'), 'export {}\n')
-  writeFileSync(join(main, 'outil.command'), 'echo non\n')
+  writeFileSync(join(main, 'outil.sh'), 'echo non\n')
   writeFileSync(join(extra, 'b.ts'), 'export const b = 1\n')
 })
 
@@ -193,13 +193,13 @@ describe('canaux de la vue des fichiers (fiche 271)', () => {
   it('Finder et app par défaut : jamais un exécutable', async () => {
     const h = handlers()
     await h['files:reveal']('c1', 0, 'src/a.ts')
-    expect(await h['files:open']('c1', 0, 'outil.command')).toMatchObject({
+    expect(await h['files:open']('c1', 0, 'outil.sh')).toMatchObject({
       kind: 'revealed',
       reason: 'executable'
     })
     expect(calls).toEqual([
       `reveal ${join(main, 'src', 'a.ts')}`,
-      `reveal ${join(main, 'outil.command')}`
+      `reveal ${join(main, 'outil.sh')}`
     ])
   })
 })
@@ -216,9 +216,9 @@ describe('lien de fichier du fil vers l’onglet Fichiers (Q11)', () => {
       relative: 'src/a.ts',
       line: 3
     })
-    expect(await openFileLink(main, 'outil.command', {}, openers)).toMatchObject({
+    expect(await openFileLink(main, 'outil.sh', {}, openers)).toMatchObject({
       kind: 'file',
-      relative: 'outil.command'
+      relative: 'outil.sh'
     })
     writeFileSync(join(main, 'doc.pdf'), '%PDF')
     expect(await openFileLink(main, 'doc.pdf', {}, openers)).toMatchObject({ kind: 'opened' })

@@ -6,7 +6,7 @@
  * montré dans le Finder.
  */
 import { open, realpath, stat } from 'node:fs/promises'
-import { launchSystem, type ProcessSystem } from '../process-launch'
+import { envValue, launchSystem, type ProcessSystem } from '../process-launch'
 import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path'
 import {
   isHtmlPath,
@@ -275,16 +275,48 @@ export async function openWorkspaceFile(
   return { kind: 'opened', path: target }
 }
 
-/** Le système exécuterait ou installerait ce fichier en l'« ouvrant » (extension, bit `x`). */
-function mayExecute(target: string, mode: number, system: ProcessSystem = launchSystem()): boolean {
+/**
+ * Extensions de `PATHEXT` (`.COM;.EXE;.PY…`), sans point, en minuscules : ce que Windows lance de
+ * lui-même sur cette machine, en plus de la liste fixe (un interpréteur peut y ajouter les siennes).
+ */
+function pathExtensions(env: NodeJS.ProcessEnv): Set<string> {
+  const value = envValue(env, 'PATHEXT', 'windows') ?? ''
+  return new Set(
+    value
+      .split(';')
+      .map((e) => e.trim().replace(/^\./, '').toLowerCase())
+      .filter(Boolean)
+  )
+}
+
+/**
+ * Le système exécuterait ou installerait ce fichier en l'« ouvrant ». Sous Windows, l'extension
+ * seule (liste fixe et `PATHEXT`, sans casse) : le disque n'y a pas de bit `x`. Sous Unix, la
+ * liste de macOS (`.app`, `.command`, `.terminal`, `.tool`…) ou le bit `x`.
+ */
+function mayExecute(
+  target: string,
+  mode: number,
+  system: ProcessSystem = launchSystem(),
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
   const extension = extname(target).slice(1).toLowerCase()
-  if (system === 'windows') return WINDOWS_RISKY_EXTENSIONS.has(extension)
+  if (system === 'windows') {
+    return WINDOWS_RISKY_EXTENSIONS.has(extension) || pathExtensions(env).has(extension)
+  }
   return RISKY_EXTENSIONS.has(extension) || (mode & 0o111) !== 0
 }
 
-/** Pour les essais : ce fichier serait-il montré plutôt qu'ouvert, sous ce système ? */
-export const mayExecuteOn = (target: string, mode: number, system: ProcessSystem) =>
-  mayExecute(target, mode, system)
+/**
+ * Règle pure, système (et environnement, pour `PATHEXT`) en paramètre : ce fichier serait-il
+ * montré plutôt qu'ouvert ? Testée pour chaque système sur n'importe quelle machine.
+ */
+export const mayExecuteOn = (
+  target: string,
+  mode: number,
+  system: ProcessSystem,
+  env: NodeJS.ProcessEnv = process.env
+) => mayExecute(target, mode, system, env)
 
 /** Document Markdown du dossier de la conversation, pour l'aperçu (début seul s'il est long). */
 export async function readMarkdown(workspace: string, path: string): Promise<MarkdownDocument> {
