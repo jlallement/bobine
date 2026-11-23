@@ -240,7 +240,9 @@ export function WorkGroup({
                   title={t('workGroup.startAllLabel')}
                   disabled={launch.held}
                   onClick={() => {
-                    for (const start of [...starts.values()]) start()
+                    // Dans l'ordre des lignes, pas celui de l'inscription (une ligne rendue à part
+                    // se réinscrit en dernier) : le main les pose dans l'ordre demandé.
+                    for (const row of pending) starts.get(row.proposal.requestId)?.()
                   }}
                   data-testid="work-group-start-all"
                 >

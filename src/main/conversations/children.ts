@@ -264,34 +264,19 @@ export class ChildConversations {
     // consigne en points à surveiller.
     if (role?.name === REVIEWER_ROLE) return this.startReview(motherId, request, text, by)
 
-    const { created, inPlace } = await this.prepare(motherId, text, request, role)
-    const title = request.title?.trim()
-    if (title) this.conversations.rename(created.id, title)
-    const child = title ? { ...created, title: this.summary(created.id).title } : created
-    if (by) this.waking.await(motherId, child.id)
-    this.sending.add(child.id)
-    // Bulle de la demande (fiche 263), avant le lancement : seulement pour un travail parti.
-    const ask = request.ask && role ? request.ask : undefined
-    if (ask && role) {
-      // La demande est complétée en place : le travail suivant du même message s'y ajoute.
-      ask.works = [...ask.works, { childId: child.id, role: roleBadge(role) }]
-      this.conversations.post(motherId, { type: 'role-request', request: { ...ask } })
-    }
-    // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
-    const posted = this.conversations.post(motherId, {
-      type: 'child-started',
-      child: {
-        childId: child.id,
-        title: child.title,
-        ...(child.branch ? { branch: child.branch } : {}),
-        prompt: text,
-        ...(by ? { by } : {}),
-        ...(role ? { role: roleBadge(role) } : {}),
-        ...this.leftBehind(child.id),
-        ...(ask ? { request: ask.requestId } : request.card ? { card: request.card } : {}),
-        at: Date.now()
-      }
-    })
+    // Lancements d'une même mère posés dans l'ordre demandé (seconde chasse rc.4) : « Tout
+    // lancer » les demande ensemble, et chaque worktree se prépare plus ou moins vite (en parallèle,
+    // visibles tout de suite, fiche 149) ; sans ce tour, les `child-started` arrivaient au hasard,
+    // et la carte de groupe et la fusion changeaient d'ordre d'un essai à l'autre.
+    const turn = this.launchTurn(motherId)
+    const { child, inPlace, posted } = await this.born(
+      motherId,
+      text,
+      request,
+      role,
+      by,
+      turn.ready
+    ).finally(turn.done)
     if (!posted) {
       this.waking.forget(motherId)
       detachChild(this.conversations, child.id, mother.title)
@@ -418,6 +403,73 @@ export class ChildConversations {
   private publishLaunches(): void {
     this.launchRevision++
     this.launchesChanged(this.launchState())
+  }
+
+  /**
+   * Naissance d'une fille : préparée (en parallèle des autres), puis, à son tour (voir `start`),
+   * nommée, sa bulle et son lancement posés dans le fil de la mère. `posted` : la mère était là.
+   */
+  private async born(
+    motherId: string,
+    text: string,
+    request: ChildRequest,
+    role: RoleSnapshot | undefined,
+    by: 'agent' | undefined,
+    /** Les lancements demandés avant celui-ci sont posés (ou en échec). */
+    turn: Promise<void>
+  ): Promise<{ child: ConversationSummary; inPlace: boolean; posted: boolean }> {
+    const { created, inPlace } = await this.prepare(motherId, text, request, role)
+    await turn
+    const title = request.title?.trim()
+    if (title) this.conversations.rename(created.id, title)
+    const child = title ? { ...created, title: this.summary(created.id).title } : created
+    if (by) this.waking.await(motherId, child.id)
+    this.sending.add(child.id)
+    // Bulle de la demande (fiche 263), avant le lancement : seulement pour un travail parti.
+    const ask = request.ask && role ? request.ask : undefined
+    if (ask && role) {
+      // La demande est complétée en place : le travail suivant du même message s'y ajoute.
+      ask.works = [...ask.works, { childId: child.id, role: roleBadge(role) }]
+      this.conversations.post(motherId, { type: 'role-request', request: { ...ask } })
+    }
+    // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
+    const posted = this.conversations.post(motherId, {
+      type: 'child-started',
+      child: {
+        childId: child.id,
+        title: child.title,
+        ...(child.branch ? { branch: child.branch } : {}),
+        prompt: text,
+        ...(by ? { by } : {}),
+        ...(role ? { role: roleBadge(role) } : {}),
+        ...this.leftBehind(child.id),
+        ...(ask ? { request: ask.requestId } : request.card ? { card: request.card } : {}),
+        at: Date.now()
+      }
+    })
+    return { child, inPlace, posted }
+  }
+
+  /** Tour de lancement par mère (voir `start`) : le dernier demandé. */
+  private readonly launchTurns = new Map<string, Promise<void>>()
+
+  /**
+   * Prend son tour, sans attendre : `ready` quand les lancements demandés avant sont posés, `done`
+   * à appeler une fois le sien posé (ou en échec), quoi qu'il arrive.
+   */
+  private launchTurn(motherId: string): { ready: Promise<void>; done: () => void } {
+    const ready = this.launchTurns.get(motherId) ?? Promise.resolve()
+    let release = () => {}
+    const mine = new Promise<void>((resolve) => (release = resolve))
+    const tail = ready.then(() => mine)
+    this.launchTurns.set(motherId, tail)
+    return {
+      ready,
+      done: () => {
+        release()
+        if (this.launchTurns.get(motherId) === tail) this.launchTurns.delete(motherId)
+      }
+    }
   }
 
   private async prepare(
