@@ -586,11 +586,34 @@ export async function withApp(
      */
     const underPointer = (selector, box) =>
       ev(`(() => {
+        // Ce que touchent l'appui, le relâché et le clic (fiche 250) : relevé par \`clickTrail\`.
+        if (!window.__e2ePress) {
+          const trail = (window.__e2ePress = { down: null, up: null, click: null })
+          addEventListener('pointerdown', (e) => (trail.down = e.target), true)
+          addEventListener('pointerup', (e) => (trail.up = e.target), true)
+          addEventListener('click', (e) => (trail.click = e.target), true)
+        }
+        Object.assign(window.__e2ePress, { down: null, up: null, click: null })
         const el = ${selector}
         const hit = document.elementFromPoint(${box.x}, ${box.y})
         if (!el || !hit || el.contains(hit)) return true
         return getComputedStyle(el).pointerEvents === 'none' && hit.contains(el)
       })()`).catch(() => true)
+    /**
+     * Le dernier clic a-t-il manqué sa cible (fiche 250) ? Dit où sont tombés l'appui, le relâché et
+     * le clic, sinon rien. Un fil qui défile entre la visée et l'appui, ou entre l'appui et le
+     * relâché, perd le clic sans bruit ; l'essai échouait plus loin, sur une attente sans rapport.
+     */
+    const clickTrail = (selector) =>
+      ev(`(() => {
+        const el = ${selector}
+        const trail = window.__e2ePress
+        if (!el || !trail) return null
+        const on = (t) => !!t && (!t.isConnected || el.contains(t) || (getComputedStyle(el).pointerEvents === 'none' && t.contains(el)))
+        if (on(trail.down) && on(trail.up) && on(trail.click)) return null
+        const name = (t) => !t ? 'rien' : t.tagName.toLowerCase() + (t.dataset?.testid ? '[' + t.dataset.testid + ']' : '') + (typeof t.className === 'string' && t.className ? '.' + t.className.trim().split(/\\s+/).slice(0, 2).join('.') : '') + ' « ' + (t.innerText ?? '').replace(/\\s+/g, ' ').trim().slice(0, 40) + ' »'
+        return 'appui sur ' + name(trail.down) + ', relâché sur ' + name(trail.up) + ', clic sur ' + name(trail.click)
+      })()`).catch(() => null)
     const ui = {
       ev,
       waitFor,
@@ -681,6 +704,9 @@ export async function withApp(
             clickCount: 1
           })
         }
+        // Dit, sans échouer : le clic perdu se voit alors à côté de l'attente qui en échoue.
+        const missed = await clickTrail(selector)
+        if (missed) console.log(`    ⚠ clic manqué : ${missed}`)
       },
       // Vrai clic souris à un point de la fenêtre, sans viser d'élément (ce qui est dessous le prend).
       clickAt: async (at) => {
@@ -775,9 +801,24 @@ export async function withApp(
           clickCount: 1
         })
       },
-      // Crans de molette (ou trackpad) à un point.
-      wheel: (at, deltaX, deltaY) =>
-        cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', ...at, deltaX, deltaY }),
+      /**
+       * Crans de molette (ou trackpad) à un point, puis l'on attend que la page les ait reçus
+       * (fiche 250). Chromium rend la main dès que son compositeur a pris la molette ; l'évènement
+       * `wheel` n'arrive au fil principal de la page qu'ensuite, très en retard sur une machine
+       * chargée. Il désarmait alors une carte d'autorisation (`useArmedCard`) après que l'essai
+       * l'avait vue armée, et le clic qui suivait était refusé (Linux, `autorisation-commande`).
+       */
+      wheel: async (at, deltaX, deltaY) => {
+        const seen = await ev(`(() => {
+          if (!window.__e2eWheels) {
+            window.__e2eWheels = { count: 0 }
+            addEventListener('wheel', () => window.__e2eWheels.count++, { capture: true, passive: true })
+          }
+          return window.__e2eWheels.count
+        })()`)
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', ...at, deltaX, deltaY })
+        await waitFor(`window.__e2eWheels.count > ${seen}`)
+      },
       type: (text) => cdp('Input.insertText', { text }),
       /** Temps cumulés du renderer (`Performance.getMetrics`), en millisecondes, par nom. */
       metrics: async () => {
