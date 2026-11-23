@@ -6,6 +6,8 @@ import {
   type CatalogEntry,
   type Task,
   countFailures,
+  failedControls,
+  indicativeWarnings,
   fingerprint,
   firstMatch,
   formatDuration,
@@ -59,6 +61,11 @@ describe('parseArgs', () => {
     expect(parseArgs(['--if-needed']).ifNeeded).toBe(true)
     expect(() => parseArgs(['--if-needed', 'plan'])).toThrow(/--if-needed/)
     expect(() => parseArgs(['--if-needed', '--changed'])).toThrow(/--if-needed/)
+  })
+
+  it('--indicative : drapeau, absent par défaut (fiche 250)', () => {
+    expect(parseArgs([]).indicative).toBe(false)
+    expect(parseArgs(['--indicative', 'perf']).indicative).toBe(true)
   })
 
   it('--changed n’est pas une suite complète', () => {
@@ -231,6 +238,40 @@ describe('empreinte, durées, échecs', () => {
 
   it('compte les lignes d’échec, pas le résumé final', () => {
     expect(countFailures('  ✓ ok\n  ✗ un\n  ✗ deux\n\n✗ 2 échec(s) en 3 s')).toBe(2)
+  })
+
+  it('nomme les contrôles en échec, sans le résumé final', () => {
+    expect(failedControls('  ✓ ok\n  ✗ un < 5 ms\n  ✗ deux\n\n✗ 2 échec(s) en 3 s')).toEqual([
+      'un < 5 ms',
+      'deux'
+    ])
+  })
+})
+
+describe('suites indicatives (fiche 250)', () => {
+  it('une annotation par contrôle en échec, titrée par la tâche', () => {
+    expect(
+      indicativeWarnings(
+        [{ label: 'perf light', controls: ['streaming : aucune tâche > 400 ms'] }],
+        'darwin'
+      )
+    ).toEqual([
+      '::warning title=e2e perf light %3A indicative (darwin)%2C en échec::streaming : aucune tâche > 400 ms'
+    ])
+  })
+
+  it('échappe les données d’une commande de workflow', () => {
+    expect(
+      indicativeWarnings([{ label: 'a', controls: ['50 % fait\nsuite'] }], 'darwin')[0]
+    ).toMatch(/::50 %25 fait%0Asuite$/)
+  })
+
+  it('une tâche en échec sans contrôle nommé (plantage) a son annotation', () => {
+    expect(indicativeWarnings([{ label: 'android dark', controls: [] }], 'darwin')).toHaveLength(1)
+  })
+
+  it('rien en échec : rien à dire', () => {
+    expect(indicativeWarnings([], 'darwin')).toEqual([])
   })
 })
 

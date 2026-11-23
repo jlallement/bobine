@@ -225,6 +225,8 @@ const remoteValue = (arg) =>
 const exceptionText = (details) =>
   details.exception?.description ?? details.exception?.value ?? details.text
 let failures = 0
+/** Contrôles en échec, dans l'ordre (annotations des suites indicatives, fiche 250). */
+const failedLabels = []
 /** Suite en cours (`run.mjs`) : son nom préfixe les captures d'échec (fiche 115). */
 let suiteName = ''
 export const setSuite = (name) => {
@@ -232,16 +234,20 @@ export const setSuite = (name) => {
 }
 /** Nombre d'échecs depuis le début des essais. */
 export const failureCount = () => failures
+/** Contrôles en échec depuis le début des essais. */
+export const failureLabels = () => [...failedLabels]
 /** Échec hors `check` (exception d'une suite). */
 export const fail = (label) => {
   console.log(`  ✗ ${label}`)
   failures++
+  failedLabels.push(label)
   captureFailure(label)
 }
 export const check = (ok, label) => {
   console.log(`${ok ? '  ✓' : '  ✗'} ${label}`)
   if (!ok) {
     failures++
+    failedLabels.push(label)
     captureFailure(label)
   }
 }

@@ -76,14 +76,33 @@ jobs:
       - name: Écran 1920 × 1080
         run: scripts/ci/macos-screen.sh
       # Découpage voulu en mots (suites et options), chacun passé tel quel.
+      # Sans suites demandées : tout sauf les suites indicatives sur ce runner, jouées à part juste
+      # après (décision du 2026-11-23, fiche 250). Machine virtuelle sans GPU, CPU partagé : les
+      # seuils de `perf` (durées), le débit du flux de `simulator` (images/s) et le flux vidéo
+      # d'`android` y mesurent la machine, pas l'app. Elles restent bloquantes en local (avant
+      # chaque envoi et chaque tag), et le sont ici quand on les nomme.
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
-          pnpm e2e ${suites[@]+"${suites[@]}"}
+          skip=()
+          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android)
+          pnpm e2e ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       - name: Essais (anglais)
         run: |
           read -ra suites <<< "$SUITES"
-          pnpm e2e --lang en ${suites[@]+"${suites[@]}"}
+          skip=()
+          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android)
+          pnpm e2e --lang en ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+      # Jouées et montrées (une annotation par contrôle en échec, `--indicative`), sans faire
+      # échouer le job (voir plus haut). Français puis anglais, comme les autres.
+      - name: Suites indicatives sur ce runner (perf, simulator, android)
+        if: always() && env.SUITES == ''
+        continue-on-error: true
+        run: |
+          rc=0
+          pnpm e2e --indicative perf simulator android || rc=1
+          pnpm e2e --indicative --lang en perf simulator android || rc=1
+          exit $rc
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -153,11 +172,12 @@ jobs:
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf)
           xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs 2 ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
-      # `perf` jouée et montrée, sans faire échouer le job (voir plus haut) : ses mesures restent lisibles.
+      # `perf` jouée et montrée (une annotation par contrôle en échec), sans faire échouer le job
+      # (voir plus haut) : ses mesures restent lisibles.
       - name: Mesures de performance (indicatives sur cette machine)
         if: always() && env.SUITES == ''
         continue-on-error: true
-        run: xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e perf
+        run: xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --indicative perf
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
