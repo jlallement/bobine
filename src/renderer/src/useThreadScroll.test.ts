@@ -159,6 +159,42 @@ describe('suivi du bas du fil (fiche 050)', () => {
     el.remove()
   })
 
+  it('retenu par une carte, du nouveau arrive en bas hors de vue : la flèche le dit, rien ne défile (recette rc.4)', () => {
+    const { box, el, result, rerender } = setup()
+    document.body.append(el)
+    const card = document.createElement('div')
+    card.setAttribute('data-scroll-hold', '')
+    el.firstElementChild?.append(card)
+    const other = document.createElement('p')
+    el.firstElementChild?.append(other)
+    // En bas du fil, au vrai bas : 1000 de haut, 200 visibles.
+    box.scrollTop = 800
+    act(() => result.current.onScroll())
+    expect(result.current.atBottom).toBe(true)
+
+    // Pointeur immobile sur la carte ; quelques pixels de plus en bas : rien à signaler.
+    act(() => card.dispatchEvent(new Event('pointerover', { bubbles: true })))
+    box.scrollHeight = 1030
+    rerender({ conversation: 'c1', items: [1, 2], empty: false })
+    expect(result.current.atBottom).toBe(true)
+    // La mère demande une autorisation, sous le bord : la flèche se montre, le fil ne bouge pas.
+    box.scrollHeight = 1250
+    rerender({ conversation: 'c1', items: [1, 2, 3], empty: false })
+    expect(box.scrollTop).toBe(800)
+    expect(result.current.atBottom).toBe(false)
+    // Pareil quand c'est le redimensionnement qui l'apporte.
+    box.scrollHeight = 1300
+    act(() => resize?.())
+    expect(box.scrollTop).toBe(800)
+    expect(result.current.atBottom).toBe(false)
+
+    // Le suivi n'est pas perdu : à la sortie de la carte, le fil rattrape le bas, la flèche part.
+    act(() => other.dispatchEvent(new Event('pointerover', { bubbles: true })))
+    expect(box.scrollTop).toBe(1300)
+    expect(result.current.atBottom).toBe(true)
+    el.remove()
+  })
+
   it('remonté sans que l’événement « scroll » soit encore arrivé : rien ne le ramène en bas (fiche 270)', () => {
     const { box, el, result } = setup()
     document.body.append(el)

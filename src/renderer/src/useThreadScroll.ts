@@ -5,7 +5,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
  * en bas » (fiche 050) se montre quand on l'a remonté. `scroller` va sur l'élément qui défile.
  * Pointeur sur une carte marquée `data-scroll-hold` (propositions de filles) : le fil attend
  * qu'il en sorte pour suivre, sans quoi la ligne visée remonte sous le pointeur (fiche 124), et sa
- * hauteur est gardée, sans quoi un bas qui rétrécit la fait descendre sous lui (fiche 250).
+ * hauteur est gardée, sans quoi un bas qui rétrécit la fait descendre sous lui (fiche 250) ; ce qui
+ * arrive en bas pendant ce temps montre la flèche, sans défiler.
  * Un message envoyé ramène toujours en bas (`followSent`, fiche 127) : sinon on croit qu'il n'est
  * pas parti. `reveal.go` : aller à un message pas encore rendu d'un long fil (sommaire, fiche 193) ; le
  * fil le rend (`reveal`) et l'amène à l'écran, le suivi du bas est lâché.
@@ -71,9 +72,16 @@ export function useThreadScroll(options: {
   const [reveal, setReveal] = useState<{ id: number; in: string | null }>()
   const measureBottom = useCallback(() => {
     const el = scroller.current
-    // Pendant la pause, le fil est volontairement loin du bas : le suivi reste tel quel ; pendant un
-    // appui, le fil ne bouge pas, le suivi est relevé au relâché.
-    if (held.current || pressing.current) return
+    // Pendant un appui, le fil ne bouge pas, le suivi est relevé au relâché.
+    if (pressing.current) return
+    // Pointeur sur une carte qui retient le fil : le suivi reste tel quel (il rattrape le bas à la
+    // sortie), mais la flèche dit ce qui est arrivé en bas hors de vue (recette rc.4, fiche 250) ;
+    // sinon une demande d'autorisation de la mère reste cachée sans aucun signe. Rien ne défile : la
+    // flèche est posée sur le fil, la carte visée ne bouge pas.
+    if (held.current) {
+      if (el) setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
+      return
+    }
     stickToBottom.current = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 60
     lastScrollTop.current = el?.scrollTop ?? 0
     setAtBottom(stickToBottom.current)

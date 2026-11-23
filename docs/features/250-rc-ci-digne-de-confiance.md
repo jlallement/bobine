@@ -129,6 +129,27 @@ Dependabot comme les autres.
   de 20 s, au-delà des 15 s de l'essai. C'est le délai de l'essai qui tombe, sans dire quelle
   attente bloquait.
 
+- 2026-11-23 — Recette avant la 1.0.0-rc.4 (branche `fix/chasse-correctifs`) : fil retenu par une
+  carte de travaux, nouveauté en bas invisible.
+  - Constat : pointeur immobile sur une carte `data-scroll-hold` (`/scenario filles`, deux
+    « Lancer »), la mère finit par demander « Autoriser cette modification ? » sous le bord ; le fil
+    reste en place (voulu), mais la flèche « Aller en bas » n'apparaît pas : `measureBottom` ne
+    relevait rien tant que `held`.
+  - Correctif (`useThreadScroll`) : pendant le maintien, `measureBottom` relève l'écart au bas
+    pour la flèche (`atBottom`), sans toucher au suivi (`stickToBottom`, rattrapé à la sortie de la
+    carte) ni défiler. La flèche est posée sur le fil, hors de la colonne : la carte ne bouge pas, et
+    son compte « 1 nouveau » (fiche 185) dit ce qui est arrivé. Pendant un appui (`pressing`),
+    rien ne change : le relevé attend le relâché.
+  - Décision : une carte qui attend une décision (autorisation) **ne libère pas** le maintien.
+    Libérer ferait défiler le fil, donc glisser sous le pointeur la ligne qu'il vise, exactement ce
+    que le maintien empêche (fiches 124, 250) ; un clic parti à ce moment tomberait ailleurs. La
+    demande est signalée sans rien déplacer : la flèche et son compte, la main ✋ de la barre
+    latérale (déjà là) ; le fil la montre dès que le pointeur quitte la carte.
+  - Preuves : `useThreadScroll.test.ts`, « retenu par une carte, du nouveau arrive en bas hors de
+    vue » : rouge sans le correctif (`expected true to be false`), vert avec. Sonde réelle (build,
+    agent factice, sombre) : carte immobile (haut 173 → 173 px), flèche « ↓ 1 nouveau » montrée,
+    autorisation hors de la vue.
+
 ## Reste à vérifier sur GitHub (après la poussée)
 
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
