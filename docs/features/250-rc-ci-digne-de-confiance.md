@@ -231,6 +231,12 @@ Dependabot comme les autres.
   seules sont vertes (45137639736, `main`) ; la suite complète relancée sur `main` (45137631294)
   retombe sur les mêmes échecs (`title-origin`, conflit, `subagents`) plus `filles-tech-lead`.
 
+  Preuve sur le Mac : `./scripts/verify` vert (579 fichiers, 5656 essais, 3 sautés) ; suite e2e
+  complète, clair et sombre (`useThreadScroll` et `ui.click` servent partout), verte en 22 min
+  (236 tâches, code de sortie 0) ; captures regardées par sondage (`g2-sous-agent-opencode`,
+  `264-travail-ecrit`). Sous Linux : seulement le conteneur local ; la preuve reste à faire sur le
+  job de GitHub après la poussée (trois passages verts d'affilée, issue #16).
+
   Nuit macOS (45016538870, et de même 44896745072, 44728439297 : 44 à 45 tâches rouges chaque
   nuit, l'étape anglaise jamais jouée) : ce n'est pas d'abord la lenteur. L'écran du runner
   `macos-15` fait 1024 × 768 : la fenêtre de l'app (1280 × 820 par défaut) y est ramenée à
