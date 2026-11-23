@@ -31,6 +31,7 @@ import {
   forgetPlans,
   loadPlan,
   planFor,
+  planRead,
   plansVersion,
   readPlan,
   subscribePlans
@@ -78,6 +79,8 @@ export function childrenMergeActions(openGit: (childId: string) => void): Childr
 export interface ChildrenMergeState {
   merge?: ChildrenMerge & { interrupted?: true }
   plan?: ChildrenMergePlan
+  /** Les branches sont lues pour cet état (plan ou branches illisibles), pas seulement l'avant-dernier. */
+  read: boolean
   /** Relire les branches (après « Abandonner »). */
   refresh: () => void
 }
@@ -137,7 +140,12 @@ export function useChildrenMerge(
     last && plan && read?.exact
       ? settledMerge(last, plan.running && (plan.runId === undefined || plan.runId === last.runId))
       : last
-  return { ...(merge ? { merge } : {}), ...(plan ? { plan } : {}), refresh }
+  return {
+    ...(merge ? { merge } : {}),
+    ...(plan ? { plan } : {}),
+    read: active && !!motherId && planRead(motherId, key),
+    refresh
+  }
 }
 
 /** Ce que la ligne d'une fille montre de la fusion ; `undefined` : rien. */

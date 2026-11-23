@@ -1085,9 +1085,10 @@ describe('« Lancer en parallèle… » : une carte seule, à sa place (fiche 26
     expect(screen.queryByTestId('subtasks')).toBeNull()
     // Sans rôle : pas de jeton pour lui répondre ; sa conversation s'ouvre.
     expect(within(card).queryByTestId('work-reply')).toBeNull()
+    // Le pied arrive une fois la branche lue (fiche 250), « Fusionner » compris.
+    await within(card).findByTestId('work-merge-start')
     // « Enregistrer comme rôle » (fiche 223) reste pour un travail sans rôle qui a répondu.
     expect(within(card).getByTestId('work-save-role')).toBeTruthy()
-    await within(card).findByTestId('work-merge-start')
   })
 })
 

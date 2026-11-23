@@ -26,6 +26,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   **Autoriser une fois**, qui restait sans effet).
 - Une ligne d’une carte de travaux ne glisse plus sous le pointeur quand le tour se termine au
   moment où on la vise : le clic sur sa flèche n’est plus perdu.
+- Les boutons d’un travail qui écrit dans sa branche arrivent en une fois, à leur place, quand il
+  a fini : **Fusionner dans main** ne s’ajoute plus en tête un instant après les autres, et ne
+  fait plus glisser **Voir les modifications** ou **Ouvrir sa conversation** sous le pointeur.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

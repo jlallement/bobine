@@ -25,6 +25,9 @@ What changes for you, version by version. Shown in Settings › About.
   no effect).
 - A row of a work card no longer slides under the pointer when the turn ends just as you aim at it:
   the click on its arrow is no longer lost.
+- The buttons of a work that writes in its branch appear all at once, in place, when it finishes:
+  **Merge into main** no longer pops in at the front a moment after the others, and no longer
+  pushes **View changes** or **Open its conversation** out from under the pointer.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

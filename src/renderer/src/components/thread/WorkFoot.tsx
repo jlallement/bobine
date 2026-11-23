@@ -88,7 +88,7 @@ export function WorkFoot({
   )
   return (
     <>
-      {canOpen && (
+      {actionsShown(canOpen, merge) && (
         <div className={`work-actions${reviewer ? ' review' : ''}`} data-testid="work-actions">
           {reviewer && facts}
           {live && state === 'running' && !mergeBusy && (
@@ -214,6 +214,17 @@ function RelayLine({
           : t(several ? 'workCard.relayPendingLast' : 'workCard.relayPending', { agent })}
     </div>
   )
+}
+
+/**
+ * La rangée d'actions se montre-t-elle ? Branches pas encore lues pour cet état (fiche 250) : elle
+ * attend, plutôt que de se montrer puis de recevoir « Fusionner dans main » en tête ; ses boutons
+ * glissaient alors sous un pointeur déjà en route (« Voir les modifications » devenait
+ * « Fusionner », « Ouvrir sa conversation » descendait d'une ligne). Elle arrive en une fois, à sa
+ * place.
+ */
+function actionsShown(canOpen: boolean, merge: WorkMergeControl | undefined): boolean {
+  return canOpen && (!merge || merge.read)
 }
 
 /** États où « Relancer » renvoie la même demande. */
