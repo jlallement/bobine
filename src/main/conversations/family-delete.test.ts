@@ -211,6 +211,32 @@ describe('supprimer une mère (fiche 228)', () => {
   })
 })
 
+describe('mère supprimée avec ses filles juste après « Tout lancer » (chasse rc.4)', () => {
+  it('la consigne de la fille, partie avec elle, n’écrit rien dans un fil supprimé', async () => {
+    const env = environment()
+    const mother = await env.mother()
+    const prompt = env.manager.prompt.bind(env.manager)
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    vi.spyOn(env.manager, 'prompt').mockImplementation(async (id, ...rest) => {
+      if (id !== mother) await gate
+      return prompt(id, ...rest)
+    })
+    const post = vi.spyOn(env.manager, 'post')
+    const child = await env.children.start(mother, { text: 'Importer', profileId: 'echo' })
+    await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
+    expect(env.listed(child.id)).toBeUndefined()
+    release()
+    await env.manager.settled()
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    // Avant : « children.notice.promptFailed » posé dans le fil de la fille supprimée, écarté au
+    // journal (« Évènement « notice » écarté : conversation … inconnue »).
+    const lost = post.mock.results.filter((r) => r.type === 'return' && r.value === false)
+    expect(lost).toEqual([])
+    env.manager.stopAll()
+  })
+})
+
 describe('confirmation : qui est « en cours » (fiches 228, 250)', () => {
   it('comme la barre latérale : une fille qui démarre l’est aussi, pas celle qui attend ou a fini', () => {
     const statuses = {

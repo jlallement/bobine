@@ -921,8 +921,17 @@ export class ChildConversations {
       // la mère le sait par un compte rendu en erreur (son agent ne l'attend plus). Mère ou fille
       // supprimées entre-temps (fiche 228) : lues maintenant, pas au lancement.
       this.sending.delete(childId)
-      const reason = this.startFailure(childId) ?? messageOf(error)
       const current = this.conversations.state().conversations.find((c) => c.id === childId)
+      // Fille supprimée pendant son lancement (mère supprimée avec ses filles juste après « Tout
+      // lancer », chasse rc.4) : sa consigne a échoué parce qu'elle est partie ; plus de fil où le
+      // dire, et sa mère (partie avec elle, ou qui l'a vue supprimer) n'attend plus de compte rendu.
+      if (!current) {
+        log.info(
+          `Fille ${childId.slice(0, 8)} supprimée pendant son lancement : consigne abandonnée`
+        )
+        return
+      }
+      const reason = this.startFailure(childId) ?? messageOf(error)
       const motherId = current?.startedFrom?.id
       if (motherId) {
         this.conversations.post(motherId, {

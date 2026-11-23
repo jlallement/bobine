@@ -56,7 +56,7 @@ export type Subscribe = <C extends IpcEventChannel>(
 
 /** API exposée au renderer sous `window.api`. Volontairement minimale. */
 export function createApi(
-  invoke: Invoke,
+  ipc: Invoke,
   subscribe: Subscribe,
   /** Chemin d'un fichier glissé dans la fenêtre (`webUtils.getPathForFile`) ; '' s'il n'en a pas. */
   pathForFile: (file: File) => string = () => '',
@@ -67,6 +67,21 @@ export function createApi(
   /** Dossier personnel, passé de la même façon (fiche 214) : pour dire `~` dans les cartes ; '' si inconnu. */
   home = ''
 ) {
+  /**
+   * Conversations en cours de suppression (chasse rc.4) : le renderer les nomme avant de demander la
+   * suppression. Le main les retire de sa liste avant que la fenêtre n'en change d'active ; d'ici
+   * là, tout ce qui l'interroge encore (git, commandes, outils de Bobine, plan de fusion…) tombait
+   * sur « Conversation inconnue » au journal. Un appel dont la première valeur est l'une d'elles
+   * est refusé ici, sans aller au main ; la suppression elle-même passe.
+   */
+  const removing = new Map<string, number>()
+  const invoke = ((channel, ...args) => {
+    const [first] = args as unknown[]
+    if (channel !== 'conversation:delete' && typeof first === 'string' && removing.has(first)) {
+      return Promise.reject(new Error(`Conversation being deleted: ${first}`))
+    }
+    return ipc(channel, ...args)
+  }) as Invoke
   return {
     files: {
       /** Chemin sur le disque d'un fichier glissé-déposé (le renderer ne lit pas le disque). */
@@ -328,6 +343,18 @@ export function createApi(
       stopWorktreeSetup: (id: string) => invoke('conversation:stopWorktreeSetup', id),
       delete: (id: string, options?: IpcArgs<'conversation:delete'>[1]) =>
         invoke('conversation:delete', id, ...(options ? [options] : [])),
+      /**
+       * Nomme (`true`) ou libère (`false`) les conversations dont la suppression est en cours : plus
+       * aucun appel vers elles ne part au main d'ici là (voir `removing`). Sans IPC ; compté, deux
+       * suppressions de la même conversation se libèrent chacune.
+       */
+      removing: (ids: readonly string[], on: boolean) => {
+        for (const id of ids) {
+          const count = (removing.get(id) ?? 0) + (on ? 1 : -1)
+          if (count > 0) removing.set(id, count)
+          else removing.delete(id)
+        }
+      },
       /** Descendance d'une conversation (fiche 228). */
       family: (id: string) => invoke('conversation:family', id),
       pin: (id: string, pinned: boolean) => invoke('conversation:pin', id, pinned),
