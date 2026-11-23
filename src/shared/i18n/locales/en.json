@@ -1608,6 +1608,8 @@
         "erasedIn_other": "erased in {{count}} days",
         "erasedToday": "erased today",
         "noFolder": "No folder",
+        "children_one": "with its task",
+        "children_other": "with its {{count}} tasks",
         "restore": "Restore",
         "erase": "Erase permanently",
         "eraseConfirm": "Erase permanently?",

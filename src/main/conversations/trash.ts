@@ -106,14 +106,21 @@ export class ConversationTrash {
   }
 
   list(now = new Date()): TrashEntry[] {
-    return this.metas()
+    const metas = this.metas()
+    // Travaux supprimés avec chaque conversation, encore là (recette rc.4, T7).
+    const children = new Map<string, number>()
+    for (const { deletedWith } of metas) {
+      if (deletedWith) children.set(deletedWith, (children.get(deletedWith) ?? 0) + 1)
+    }
+    return metas
       .map(({ record, deletedAt }) => ({
         id: record.id,
         title: record.title,
         workspace: record.workspace,
         ...(record.space === 'discussion' ? { space: record.space } : {}),
         deletedAt,
-        erasedAt: new Date(Date.parse(deletedAt) + TRASH_DAYS * DAY_MS).toISOString()
+        erasedAt: new Date(Date.parse(deletedAt) + TRASH_DAYS * DAY_MS).toISOString(),
+        ...(children.get(record.id) ? { children: children.get(record.id) } : {})
       }))
       .filter(
         (entry) => Date.parse(entry.erasedAt) > now.getTime() || isNaN(Date.parse(entry.erasedAt))

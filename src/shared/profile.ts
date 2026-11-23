@@ -49,6 +49,11 @@ export interface TrashEntry {
   deletedAt: string
   /** Date à laquelle elle sera effacée pour de bon (ISO). */
   erasedAt: string
+  /**
+   * Travaux supprimés avec elle et encore dans la corbeille (fiche 228) : la restaurer les
+   * restaure aussi. Absent : aucun.
+   */
+  children?: number
 }
 
 /** Sauvegarde choisie pour une restauration, avant confirmation. */
