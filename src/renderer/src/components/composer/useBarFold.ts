@@ -6,7 +6,8 @@ import { useLayoutEffect, useRef, useState } from 'react'
  *
  * 0 : tout est là ; 1 : la capture passe dans le menu de 📎 ; 2 : la consommation ne garde que son
  * anneau ; 3 : le mode ne garde que son icône ; 4 : les réglages de la session passent dans le
- * menu de 📎 (fiche 276, T10 : avant que le modèle ne soit coupé). Au-delà, le modèle se tronque,
+ * menu de 📎 (fiche 276, T10 : avant que le modèle ne soit coupé ; sans capture d'écran, 📎 reste
+ * un bouton simple et ils gardent le leur). Au-delà, le modèle se tronque,
  * puis l'agent. 5 (conversation très étroite, que même cela ne suffit pas à loger) : la barre
  * passe sur deux lignes (outils, puis consommation, modèle, agent et envoi) plutôt que de pousser
  * le bouton d'envoi hors de la fenêtre.
