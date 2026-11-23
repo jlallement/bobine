@@ -86,3 +86,6 @@ au journal (premier avertissement à 1 min de silence).
   `capabilities.modelRetry.*` ; ligne `model-retry` de `docs/agents.md`. Écarts à la maquette : le
   bandeau B garde « Attendre » en plus de « Réglages réseau » et « Arrêter » (comme dessiné) ; sans
   heure de tentative suivante (ou une fois passée), « tentative N en cours » au lieu du décompte.
+  Après fusion de `main` : `./scripts/verify` vert ; `pnpm e2e pannes-visibles` vert (clair,
+  sombre ; un premier passage avait vu un délai DevTools dans l'étape `muet` d'avant, machine
+  chargée, vert au second) ; suite e2e complète verte (22 min 51 s).
