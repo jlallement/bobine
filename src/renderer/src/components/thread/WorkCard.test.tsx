@@ -723,7 +723,7 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(screen.getAllByTestId('role-request')).toHaveLength(1)
   })
 
-  it('rôle qui écrit : branche, fichiers, non commité laissé, « Voir les modifications »', () => {
+  it('rôle qui écrit : branche, fichiers, non commité laissé, « Voir les modifications »', async () => {
     fakeAgent()
     const openGit = vi.fn()
     // Branche lue sans rien de prêt (fiche 264) : pas de « Fusionner dans main ».
@@ -756,7 +756,8 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(changes.textContent).toContain('4 fichiers')
     expect(screen.queryByTestId('work-apply')).toBeNull()
     expect(within(card).getByTestId('work-left-behind').textContent).toContain('a3f2c1e')
-    fireEvent.click(within(card).getByTestId('work-changes-open'))
+    // Le pied arrive une fois la branche lue (fiche 250).
+    fireEvent.click(await within(card).findByTestId('work-changes-open'))
     expect(openGit).toHaveBeenCalledWith('b')
   })
 
