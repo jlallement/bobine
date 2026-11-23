@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Travail fini en attente — maquettes rc.4</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Bobine Inter', 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      /* Polices livrées avec l'app (fiche 145) : la maquette s'affiche hors ligne comme l'app. */
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        border: 0;
+        background: none;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+      svg.i.l {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .page > header p,
+      .lead {
+        color: var(--text-2);
+        margin: 0 0 6px;
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font-size: 12.5px;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 56px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .shot {
+        width: fit-content;
+        max-width: calc(100% + 28px);
+        padding: 14px;
+        margin: 10px -14px 0;
+        background: var(--doc-bg);
+      }
+      /* Un écran par ligne, à la largeur d'une fenêtre de l'app (la seconde variante dessous). */
+      .pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        width: 960px;
+        max-width: 100%;
+      }
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+      ul.points {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 14px 0 0;
+        padding-left: 20px;
+      }
+      ul.points li + li {
+        margin-top: 4px;
+      }
+
+      .before {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        margin-top: 10px;
+      }
+      .before figure {
+        margin: 0;
+      }
+      .before img {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+      }
+      .before figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+        max-width: 640px;
+      }
+      .note {
+        color: var(--text-2);
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .tag.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .meta-label {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+
+      /* ===== Scène : barre latérale (extrait), fil, panneau (extrait) ===== */
+      .scene {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 600px) 220px;
+        gap: 0;
+        margin-top: 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        max-width: 1060px;
+      }
+      @media (max-width: 900px) {
+        .scene {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .side {
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        padding: 14px 8px;
+      }
+      .side h4,
+      .panel h4 {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 8px 8px;
+        font-weight: 600;
+      }
+      .conv {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 8px;
+        border-radius: var(--radius-sm);
+        font-size: 13.5px;
+        color: var(--text);
+      }
+      .conv.active {
+        background: var(--surface-3);
+        font-weight: 600;
+      }
+      .conv .grow {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .conv.child {
+        padding-left: 26px;
+        position: relative;
+      }
+      .conv.child::before {
+        content: '↳';
+        position: absolute;
+        left: 10px;
+        color: var(--muted);
+      }
+      .tip {
+        margin: 4px 8px 0 26px;
+        font-size: 11.5px;
+        color: var(--text-2);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xs);
+        padding: 4px 7px;
+        box-shadow: var(--shadow-menu);
+        width: fit-content;
+      }
+      .thread {
+        padding: 18px 18px 22px;
+        min-width: 0;
+      }
+      .panel {
+        border-left: 1px solid var(--border);
+        padding: 14px 8px;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .panel p {
+        margin: 0 8px 8px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .panel .fold {
+        margin: 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text);
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .accent {
+        color: var(--accent);
+      }
+      .warn {
+        color: var(--warn);
+      }
+
+      /* ===== Carte de travaux (work-card.css : .work-group-*) ===== */
+      .wg {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+      }
+      .wg-head {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        padding: 11px 14px;
+      }
+      .wg-head .title {
+        font-weight: 600;
+      }
+      .wg-head .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .wg-head .changed {
+        border-radius: var(--radius-xs);
+        outline: 2px dashed var(--accent);
+        outline-offset: 2px;
+      }
+      .wg-item {
+        border-top: 1px solid var(--border);
+      }
+      .wg-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 14px 7px 10px;
+        min-width: 0;
+      }
+      .wg-row .chev {
+        color: var(--muted);
+      }
+      .avatar {
+        position: relative;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid var(--border-strong);
+        display: grid;
+        place-items: center;
+        color: var(--text-2);
+        flex-shrink: 0;
+      }
+      .avatar .dot {
+        position: absolute;
+        right: -3px;
+        bottom: -3px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1.5px solid var(--surface);
+        background: var(--ok);
+      }
+      .wg-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .wg-name {
+        font-weight: 500;
+      }
+      .wg-meta {
+        color: var(--muted);
+        font-size: 12.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .wg-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        font-size: 12.5px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .wg-state.changed {
+        outline: 2px dashed var(--accent);
+        outline-offset: 3px;
+        border-radius: var(--radius-xs);
+      }
+      .wg-state.replied {
+        color: var(--ok);
+      }
+      .wg-state.running {
+        color: var(--accent);
+      }
+      .wg-state.queued {
+        color: var(--text-2);
+      }
+      .proposal {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border-top: 1px solid var(--border);
+      }
+      .proposal .name {
+        font-weight: 600;
+        flex: 1;
+      }
+      .btn {
+        font-size: 13px;
+        padding: 5px 11px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        color: var(--text-2);
+      }
+      .btn.outline {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--on-accent);
+      }
+      .wg-foot {
+        border-top: 1px solid var(--border);
+        padding: 10px 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .open-line {
+        margin: 2px 14px 10px 66px;
+        font-size: 12.5px;
+        color: var(--text-2);
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        padding: 7px 10px;
+      }
+      .tooltip-demo {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin: -2px 14px 8px 66px;
+      }
+      .path-tip {
+        border-bottom: 1px dotted var(--muted);
+      }
+      table.cmp {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 1060px;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        font-size: 13px;
+      }
+      table.cmp th,
+      table.cmp td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      table.cmp th {
+        background: var(--surface-2);
+        font-weight: 600;
+      }
+      table.cmp tr:last-child td {
+        border-bottom: 0;
+      }
+      .lang-switch {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div>
+          <h1>Travail fini, réponse pas encore remise</h1>
+          <p>
+            Défaut trouvé en recette avant la 1.0.0-rc.4. Un travail a répondu pendant que la
+            conversation d’origine répond encore : sa réponse lui sera remise à la fin de cette
+            réponse (état <code>pending</code> de <code>workState</code>). La carte de travaux le
+            compte « en cours » (<code>STATE_KEYS.pending</code> →
+            <code>workGroup.state.running</code>, ligne sans roue ; <code>groupCounts</code> le
+            range avec <code>running</code>), alors que la barre latérale dit « Réponse d’un travail
+            à lire » et le panneau « Finis : 1 ». Deux variantes de libellé, la recommandée en
+            premier ; puis le chemin absolu montré dans la ligne au démarrage. Rien n’est codé.
+          </p>
+        </div>
+        <div>
+          <div class="theme-switch" role="group" aria-label="Thème de la page">
+            <button data-set="system" aria-pressed="true">Système</button>
+            <button data-set="light" aria-pressed="false">Clair</button>
+            <button data-set="dark" aria-pressed="false">Sombre</button>
+          </div>
+          <div class="theme-switch lang-switch" role="group" aria-label="Langue des maquettes">
+            <button data-lang="fr" aria-pressed="true">Français</button>
+            <button data-lang="en" aria-pressed="false">English</button>
+          </div>
+        </div>
+      </header>
+
+      <section>
+        <h2 class="screen">Avant <span class="tag warn">défaut</span></h2>
+        <div class="before">
+          <figure>
+            <img
+              src="rc4/avant-travail-fini-en-attente.png"
+              width="640"
+              alt="Carte : 1 en cours, alors que le panneau dit Finis : 1"
+            />
+            <figcaption>
+              « Import CSV » a fini : ligne « en cours » sans roue, en-tête « 1 en cours » ; le
+              panneau dit « Finis : 1 », la barre latérale le marque à lire.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="rc4/avant-travail-fini-demarre.png"
+              width="420"
+              alt="Carte : 1 en cours, 1 démarre"
+            />
+            <figcaption>
+              Même état pendant que l’agent lance le second : « 1 en cours, 1 démarre ».
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="screen">
+          1. « a répondu », comme ailleurs <span class="tag reco">recommandé</span>
+        </h2>
+        <p class="note">
+          Pour l’utilisateur, le travail a répondu : la ligne le dit comme pour tout travail fini («
+          a répondu », en vert), l’en-tête le compte dans « 1 a répondu ». Ce qui reste propre à cet
+          état — la réponse n’est pas encore remise à l’agent — est dit là où il y a la place : en
+          infobulle de l’état et dans la ligne dépliée, avec le texte qui existe déjà
+          (<code>workCard.pendingLine</code>). Aucune nouvelle clé.
+        </p>
+        <div id="v1"></div>
+        <ul class="points">
+          <li>
+            Pourquoi elle : les trois endroits disent la même chose (« à lire », « Finis : 1 », « a
+            répondu ») ; le glossaire réserve « a répondu » à la fin d’un travail (fiche 266).
+          </li>
+          <li>
+            Code : <code>STATE_KEYS.pending</code> → <code>workGroup.state.replied</code> (même
+            couleur que <code>replied</code>) ; dans <code>groupCounts</code>, <code>pending</code>
+            passe de « en cours » à « a répondu ».
+          </li>
+          <li>
+            À trancher avec : aujourd’hui « a répondu » n’est pas compté dans l’en-tête tant que des
+            travaux restent proposés (« seules les décisions prises se disent »). Sans changement,
+            l’exemple ci-dessus afficherait « 2 travaux proposés · par Agent factice » sans rien sur
+            le travail fini. Proposé : compter « a répondu » aussi dans ce cas (encadré en
+            pointillé).
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">2. « réponse en attente »</h2>
+        <p class="note">
+          Un libellé propre à l’état : la ligne dit « réponse en attente », l’en-tête « 1 réponse en
+          attente ». Plus précis, mais une clé de plus par endroit.
+        </p>
+        <div id="v2"></div>
+        <ul class="points">
+          <li>
+            Moins : « en attente » sert déjà dans cette même colonne d’état pour la fusion (<code
+              >workGroup.merge.row.pending</code
+            >
+            : « en attente » d’être fusionné) ; la barre latérale et le panneau, eux, disent « à
+            lire » et « Finis » : trois mots pour un même état.
+          </li>
+          <li>
+            L’état dure peu (jusqu’à la fin de la réponse) : il change deux fois de libellé en
+            quelques secondes.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">Chemin absolu au démarrage</h2>
+        <div class="before">
+          <figure>
+            <img
+              src="rc4/avant-chemin-absolu.png"
+              width="520"
+              alt="Ligne : Modification de /private/tmp/claude-501/.../README.md"
+            />
+            <figcaption>
+              Au lancement, la méta de la ligne montre le titre brut de l’outil : « Modification de
+              /private/tmp/…/README.md », chemin du dossier du travail (copie de travail Git). Le
+              fil de la conversation, lui, dit « /projet/README.md ».
+            </figcaption>
+          </figure>
+        </div>
+        <p class="note" style="margin-top: 14px">
+          Proposé : dans l’activité d’une ligne (<code>useWorkActivity</code> → méta de
+          <code>WorkGroupRow</code>), un chemin sous le dossier du travail s’écrit relatif à ce
+          dossier : « Modification de README.md » ; un chemin hors de ce dossier garde
+          <code>~</code> pour le dossier personnel. Le chemin complet reste en infobulle. Le texte
+          vient de l’agent (non traduit) : seul le préfixe du dossier est retiré, rien n’est
+          réécrit.
+        </p>
+        <div id="path"></div>
+      </section>
+
+      <section>
+        <h2 class="screen">Textes</h2>
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th>Endroit</th>
+              <th>Avant</th>
+              <th>1 (recommandée)</th>
+              <th>2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Ligne</td>
+              <td>en cours / working</td>
+              <td>a répondu / replied <small>(clé existante)</small></td>
+              <td>réponse en attente / response queued <small>(nouvelle)</small></td>
+            </tr>
+            <tr>
+              <td>En-tête</td>
+              <td>1 en cours / 1 working</td>
+              <td>1 a répondu / 1 replied <small>(existante)</small></td>
+              <td>
+                1 réponse en attente / 1 response queued ; 2 réponses en attente / 2 responses
+                queued <small>(nouvelle)</small>
+              </td>
+            </tr>
+            <tr>
+              <td>Infobulle de l’état, ligne dépliée</td>
+              <td>—</td>
+              <td colspan="2">
+                Sa réponse s’affichera à la fin de la réponse de {{agent}}. / Its response will show
+                when {{agent}}’s response ends. <small>(existante)</small>
+              </td>
+            </tr>
+            <tr>
+              <td>Barre latérale (inchangée)</td>
+              <td colspan="3">Réponse d’un travail à lire / Unread task response</td>
+            </tr>
+            <tr>
+              <td>Panneau (inchangé)</td>
+              <td colspan="3">Finis : 1 / Finished: 1</td>
+            </tr>
+            <tr>
+              <td>Méta au démarrage</td>
+              <td>Modification de /private/tmp/…/README.md</td>
+              <td colspan="2">
+                Modification de README.md <small>(chemin complet en infobulle)</small>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <script>
+      const T = {
+        fr: {
+          proposed: '2 travaux proposés',
+          by: 'par Agent factice',
+          running: '1 en cours',
+          replied1: '1 a répondu',
+          queued1: '1 réponse en attente',
+          stReplied: 'a répondu',
+          stQueued: 'réponse en attente',
+          stRunning: 'en cours',
+          meta: 'bobine/20261123-1438-9afd · 1 modification non commitée',
+          pendingLine: 'Sa réponse s’affichera à la fin de la réponse de Agent factice.',
+          tipLabel: 'Infobulle de l’état :',
+          refuse: 'Refuser',
+          here: 'Faire ici',
+          launch: 'Lancer',
+          where: 'écrit dans sa branche · Agent factice',
+          foot: 'Chaque travail part du dernier commit, dans sa branche ; vos modifications non commitées restent ici.',
+          recent: 'Récents',
+          mother: 'Bonjour, montre-moi la démo',
+          sideTip: 'Réponse d’un travail à lire',
+          panelH: 'En cours',
+          panelP: 'Rien en arrière-plan pour cette conversation.',
+          finished: 'Finis : 1',
+          editAbs: 'Modification de /private/tmp/claude-501/…/README.md',
+          editRel: 'Modification de README.md',
+          full: 'Infobulle : le chemin complet, /private/tmp/claude-501/…/README.md',
+          before: 'Avant',
+          after: 'Après',
+          open: 'Ligne dépliée (extrait) :'
+        },
+        en: {
+          proposed: '2 proposed tasks',
+          by: 'by Agent factice',
+          running: '1 working',
+          replied1: '1 replied',
+          queued1: '1 response queued',
+          stReplied: 'replied',
+          stQueued: 'response queued',
+          stRunning: 'working',
+          meta: 'bobine/20261123-1438-9afd · 1 uncommitted change',
+          pendingLine: 'Its response will show when Agent factice’s response ends.',
+          tipLabel: 'State tooltip:',
+          refuse: 'Refuse',
+          here: 'Do it here',
+          launch: 'Start',
+          where: 'writes in its branch · Agent factice',
+          foot: 'Each task starts from the last commit, in its own branch; your uncommitted changes stay here.',
+          recent: 'Recents',
+          mother: 'Bonjour, montre-moi la démo',
+          sideTip: 'Unread task response',
+          panelH: 'Running',
+          panelP: 'Nothing in the background for this conversation.',
+          finished: 'Finished: 1',
+          editAbs: 'Modification de /private/tmp/claude-501/…/README.md',
+          editRel: 'Modification de README.md',
+          full: 'Tooltip: the full path, /private/tmp/claude-501/…/README.md',
+          before: 'Before',
+          after: 'After',
+          open: 'Expanded row (excerpt):'
+        }
+      }
+      const svg = (d, c = 'i s') =>
+        `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`
+      const I = {
+        fork: svg(
+          '<circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9M12 12v3"/>',
+          'i accent'
+        ),
+        chev: svg('<path d="m9 18 6-6-6-6"/>', 'i s chev'),
+        bot: svg(
+          '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>',
+          'i s'
+        ),
+        spin: svg('<path d="M21 12a9 9 0 1 1-6.2-8.6"/>', 'i s'),
+        clock: svg('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', 'i s'),
+        sliders: svg(
+          '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>',
+          'i s'
+        ),
+        dotc: svg(
+          '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',
+          'i s ok'
+        ),
+        q: svg(
+          '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+          'i s warn'
+        )
+      }
+      let lang = 'fr'
+      function card(
+        t,
+        {
+          head,
+          state,
+          stateCls,
+          stateIcon = '',
+          changed = false,
+          headChanged = false,
+          meta,
+          open = false,
+          tip = false,
+          proposal = true
+        }
+      ) {
+        return `<div class="wg">
+          <div class="wg-head">${I.fork}<span class="title">${t.proposed}</span><span class="sub">· ${t.by}</span>${head ? `<span class="sub${headChanged ? ' changed' : ''}">· ${head}</span>` : ''}</div>
+          <div class="wg-item">
+            <div class="wg-row">${I.chev}<span class="avatar">${I.bot}<span class="dot"></span></span>
+              <span class="wg-text"><span class="wg-name">Import CSV</span><span class="wg-meta">${meta ?? t.meta}</span></span>
+              <span class="wg-state ${stateCls}${changed ? ' changed' : ''}">${stateIcon}${state}</span>
+            </div>
+            ${tip ? `<div class="tooltip-demo">${t.tipLabel} « ${t.pendingLine} »</div>` : ''}
+            ${open ? `<div class="open-line">${t.pendingLine}</div>` : ''}
+          </div>
+          ${
+            proposal
+              ? `<div class="proposal">${I.chev}<span class="name">Page d’aide</span><span class="btn">${I.sliders}</span><span class="btn">${t.refuse}</span><span class="btn outline">${t.here}</span><span class="btn primary">${t.launch}</span></div>
+          <div class="wg-foot">${t.foot}</div>`
+              : ''
+          }
+        </div>`
+      }
+      function scene(t, cardHtml) {
+        return `<div class="scene">
+          <div class="side"><h4>${t.recent}</h4>
+            <div class="conv active"><span class="grow">${t.mother}</span>${I.q}</div>
+            <div class="conv child"><span class="grow">Import CSV</span>${I.dotc}</div>
+            <div class="tip">${t.sideTip}</div>
+          </div>
+          <div class="thread">${cardHtml}</div>
+          <div class="panel"><h4>${t.panelH}</h4><p>${t.panelP}</p><div class="fold">${I.chev}${t.finished}</div></div>
+        </div>`
+      }
+      function render() {
+        const t = T[lang]
+        document.getElementById('v1').innerHTML =
+          scene(
+            t,
+            card(t, {
+              head: t.replied1,
+              headChanged: true,
+              state: t.stReplied,
+              stateCls: 'replied',
+              changed: true,
+              tip: true
+            })
+          ) +
+          `<p class="meta-label" style="margin-top:14px">${t.open}</p>` +
+          `<div style="max-width:600px">${card(t, { head: t.replied1, state: t.stReplied, stateCls: 'replied', open: true, proposal: false })}</div>`
+        document.getElementById('v2').innerHTML = scene(
+          t,
+          card(t, {
+            head: t.queued1,
+            headChanged: true,
+            state: t.stQueued,
+            stateCls: 'queued',
+            stateIcon: I.clock,
+            changed: true
+          })
+        )
+        document.getElementById('path').innerHTML =
+          `<div style="display:grid;gap:14px;max-width:600px;margin-top:12px">
+            <div><p class="meta-label">${t.before}</p>${card(t, { head: t.running, state: t.stRunning, stateCls: 'running', stateIcon: I.spin, meta: t.editAbs + ' · 0:00' })}</div>
+            <div><p class="meta-label">${t.after}</p>${card(t, { head: t.running, state: t.stRunning, stateCls: 'running', stateIcon: I.spin, meta: `<span class="path-tip">${t.editRel}</span> · 0:00` })}<p class="meta-label" style="margin-top:6px">${t.full}</p></div>
+          </div>`
+      }
+      render()
+      for (const button of document.querySelectorAll('[data-lang]')) {
+        button.addEventListener('click', () => {
+          lang = button.dataset.lang
+          for (const other of document.querySelectorAll('[data-lang]'))
+            other.setAttribute('aria-pressed', String(other === button))
+          render()
+        })
+      }
+
+      // Bascule de thème de la page (Système / Clair / Sombre).
+      const root = document.documentElement
+      for (const button of document.querySelectorAll('.theme-switch button[data-set]')) {
+        button.addEventListener('click', () => {
+          const value = button.dataset.set
+          if (value === 'system') root.removeAttribute('data-theme')
+          else root.setAttribute('data-theme', value)
+          for (const other of document.querySelectorAll('.theme-switch button[data-set]'))
+            other.setAttribute('aria-pressed', String(other === button))
+        })
+      }
+    </script>
+  </body>
+</html>

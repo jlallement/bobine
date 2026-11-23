@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Saisie étroite — maquettes rc.4</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Bobine Inter', 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      /* Polices livrées avec l'app (fiche 145) : la maquette s'affiche hors ligne comme l'app. */
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        border: 0;
+        background: none;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+      svg.i.l {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .page > header p,
+      .lead {
+        color: var(--text-2);
+        margin: 0 0 6px;
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font-size: 12.5px;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 56px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .shot {
+        width: fit-content;
+        max-width: calc(100% + 28px);
+        padding: 14px;
+        margin: 10px -14px 0;
+        background: var(--doc-bg);
+      }
+      /* Un écran par ligne, à la largeur d'une fenêtre de l'app (la seconde variante dessous). */
+      .pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        width: 960px;
+        max-width: 100%;
+      }
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+      ul.points {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 14px 0 0;
+        padding-left: 20px;
+      }
+      ul.points li + li {
+        margin-top: 4px;
+      }
+
+      .before img {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow);
+      }
+      .before {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        margin-top: 10px;
+      }
+      .before figure {
+        margin: 0;
+      }
+      .before figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+        max-width: 620px;
+      }
+      .row {
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        margin-top: 12px;
+      }
+      .stage {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 30px 18px 14px;
+        max-width: 100%;
+      }
+
+      /* ===== Saisie (styles.css : .composer, sent-history.css) ===== */
+      .composer {
+        container-type: inline-size;
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: 12px 10px 8px 16px;
+        max-width: 100%;
+      }
+      .composer .input {
+        position: relative;
+        height: 31px;
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 2px 6px 8px 0;
+      }
+      .placeholder {
+        display: block;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .placeholder.overflow {
+        overflow: visible;
+      }
+      .caret {
+        position: absolute;
+        left: 0;
+        top: 4px;
+        width: 1.5px;
+        height: 19px;
+        background: var(--text);
+      }
+      kbd {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        line-height: 15px;
+        padding: 0 5px;
+        border-radius: var(--radius-xs);
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .hint {
+        position: absolute;
+        top: 2px;
+        right: 6px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: -6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .bar .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 8px;
+        border-radius: var(--radius-sm);
+        white-space: nowrap;
+      }
+      .bar .grow {
+        flex: 1;
+      }
+      .bar .stop {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-3);
+        display: inline-grid;
+        place-items: center;
+        color: var(--text);
+        flex-shrink: 0;
+      }
+      .stop span {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        background: currentColor;
+      }
+      .w-narrow .chip.opt {
+        display: none;
+      }
+
+      /* Variante A : une place réservée au rappel ; étroit, le rappel n'est plus que la touche. */
+      .va .input {
+        padding-right: calc(var(--hint-w) + 12px);
+      }
+      .va .hint .label {
+        display: inline;
+      }
+      .va {
+        --hint-w: 150px;
+      }
+      .va.en {
+        --hint-w: 132px;
+      }
+      @container (max-width: 520px) {
+        .va .input {
+          padding-right: 38px;
+        }
+        .va .hint .label {
+          display: none;
+        }
+      }
+
+      /* Variante B : le rappel sur la bordure haute, à la place de la pastille de parcours. */
+      .pill {
+        position: absolute;
+        top: -13px;
+        right: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 9px 0 7px;
+        border-radius: var(--radius-pill);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+      }
+      .note {
+        color: var(--text-2);
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .tag.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      table.cmp {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 960px;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        font-size: 13px;
+      }
+      table.cmp th,
+      table.cmp td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      table.cmp th {
+        background: var(--surface-2);
+        font-weight: 600;
+      }
+      table.cmp tr:last-child td {
+        border-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div>
+          <h1>Saisie étroite : invite et rappel « Messages précédents »</h1>
+          <p>
+            Défaut trouvé en recette avant la 1.0.0-rc.4. Pendant une réponse, la saisie vide
+            affiche l’invite longue « Ajouter une suite (envoyée à la fin de la réponse)… » ; le
+            rappel « ↑ Messages précédents » (<code>SentHistoryHint</code>,
+            <code>sent-history.css</code>) est posé en absolu à droite de la première ligne, sans
+            place réservée. Fenêtre à 760 px : les deux textes se chevauchent. À 1280 px avec le
+            panneau ouvert, il reste quelques pixels. Trois variantes, la recommandée en premier.
+            Rien n’est codé.
+          </p>
+          <p>
+            Largeurs des maquettes : la saisie d’une fenêtre à 760 px (≈ 450 px) et celle d’une
+            fenêtre à 1280 px avec le panneau ouvert (≈ 610 px).
+          </p>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Thème de la page">
+          <button data-set="system" aria-pressed="true">Système</button>
+          <button data-set="light" aria-pressed="false">Clair</button>
+          <button data-set="dark" aria-pressed="false">Sombre</button>
+        </div>
+      </header>
+
+      <section>
+        <h2 class="screen">Avant <span class="tag warn">défaut</span></h2>
+        <div class="before">
+          <figure>
+            <img
+              src="rc4/avant-saisie-760.png"
+              width="380"
+              alt="Saisie à 760 px : invite et rappel se chevauchent"
+            />
+            <figcaption>
+              Fenêtre à 760 px : « …fin de la réponse)… » passe sous « ↑ Messages précédents ».
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="rc4/avant-saisie-1280-panneau.png"
+              width="620"
+              alt="Saisie à 1280 px, panneau ouvert"
+            />
+            <figcaption>
+              1280 px, panneau ouvert : l’invite s’arrête juste avant le rappel, sans marge.
+            </figcaption>
+          </figure>
+        </div>
+        <p class="meta" style="margin-top: 14px">Reproduction (mêmes textes, mêmes cotes) :</p>
+        <div class="row" id="avant"></div>
+      </section>
+
+      <section>
+        <h2 class="screen">
+          A. Place réservée, rappel réduit à « ↑ » quand c’est étroit
+          <span class="tag reco">recommandé</span>
+        </h2>
+        <p class="note">
+          L’invite ne va jamais sous le rappel : la première ligne lui réserve sa largeur. Quand la
+          saisie fait moins de ≈ 520 px, le rappel n’est plus que la touche <kbd>↑</kbd> (son nom
+          reste en infobulle et pour les lecteurs d’écran) ; l’invite, sur une ligne, se coupe par «
+          … » si elle ne tient pas.
+        </p>
+        <div class="row" id="va"></div>
+        <ul class="points">
+          <li>
+            Pourquoi elle : le chevauchement disparaît à toute largeur et dans les deux langues,
+            sans perdre le rappel (fiche 227) ni toucher aux textes. Le rappel reste où l’œil l’a
+            appris.
+          </li>
+          <li>
+            Code : une requête de conteneur sur la saisie (<code>container-type: inline-size</code>)
+            et une marge droite réservée à l’invite ; rien de neuf côté React. Invite d’une ligne
+            avec « … » à vérifier sur un <code>textarea</code> (sinon l’invite peut passer sur deux
+            lignes : la saisie grandit d’une ligne, sans chevauchement).
+          </li>
+          <li>
+            Essai e2e : à 760 px et à 1280 px panneau ouvert, boîtes de l’invite et du rappel
+            disjointes.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">B. Le rappel sur la bordure haute</h2>
+        <p class="note">
+          Le rappel quitte la ligne de saisie et se pose sur la bordure haute, à l’endroit exact de
+          la pastille qui montre la position pendant le parcours (« 2/5 · ↑ ↓ · Échap »). L’invite
+          retrouve toute la largeur.
+        </p>
+        <div class="row" id="vb"></div>
+        <ul class="points">
+          <li>Plus : cohérent avec la pastille de parcours (même place, même forme).</li>
+          <li>
+            Moins : un élément de plus en permanence au-dessus de la saisie, qui mord sur ce qui est
+            juste au-dessus (carte « Tâches », carte de travaux) ; le rappel et la pastille de
+            parcours ne se distinguent plus que par leur contenu.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">C. Pas de rappel quand il ne tient pas</h2>
+        <p class="note">
+          Le rappel ne s’affiche que s’il reste sa place après l’invite ; sinon il disparaît (la
+          touche <kbd>↑</kbd> marche toujours). En pratique : présent avec « Répondre à l’agent… »,
+          absent pendant une réponse sur une saisie étroite.
+        </p>
+        <div class="row" id="vc"></div>
+        <ul class="points">
+          <li>Plus : le plus simple ; aucune invite coupée.</li>
+          <li>
+            Moins : le rappel disparaît justement quand on travaille dans une fenêtre étroite ; il
+            apparaît et disparaît selon l’invite, ce qui se remarque.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="screen">En bref</h2>
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th></th>
+              <th>A (recommandée)</th>
+              <th>B</th>
+              <th>C</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chevauchement</td>
+              <td>jamais</td>
+              <td>jamais</td>
+              <td>jamais</td>
+            </tr>
+            <tr>
+              <td>Rappel visible à 760 px</td>
+              <td>oui, « ↑ » seul</td>
+              <td>oui, complet</td>
+              <td>non</td>
+            </tr>
+            <tr>
+              <td>Invite entière à 760 px</td>
+              <td>coupée par « … »</td>
+              <td>oui</td>
+              <td>oui</td>
+            </tr>
+            <tr>
+              <td>Recouvre le fil</td>
+              <td>non</td>
+              <td>oui, de 12 px</td>
+              <td>non</td>
+            </tr>
+            <tr>
+              <td>Code</td>
+              <td>CSS seul</td>
+              <td>CSS, position à reprendre</td>
+              <td>mesure de l’invite</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <script>
+      const T = {
+        fr: {
+          busy: 'Ajouter une suite (envoyée à la fin de la réponse)…',
+          idle: 'Répondre à Agent factice…',
+          hint: 'Messages précédents',
+          model: 'Factice rapide',
+          agent: 'Agent factice',
+          mode: 'Code'
+        },
+        en: {
+          busy: 'Add a follow-up (sent when the response ends)…',
+          idle: 'Reply to Agent factice…',
+          hint: 'Previous messages',
+          model: 'Factice rapide',
+          agent: 'Agent factice',
+          mode: 'Code'
+        }
+      }
+      const svg = (d) => `<svg class="i s" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`
+      const ICON = {
+        clip: svg(
+          '<path d="m21.4 11-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/>'
+        ),
+        cam: svg(
+          '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>'
+        ),
+        shield: svg(
+          '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>'
+        ),
+        sliders: svg(
+          '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>'
+        ),
+        down: svg('<path d="m6 9 6 6 6-6"/>')
+      }
+      function composer({ lang, width, variant, busy = true }) {
+        const t = T[lang]
+        const text = busy ? t.busy : t.idle
+        let hint = `<span class="hint" title="${t.hint}"><kbd>↑</kbd><span class="label">${t.hint}</span></span>`
+        let pill = ''
+        if (variant === 'vb') {
+          pill = `<span class="pill"><kbd>↑</kbd>${t.hint}</span>`
+          hint = ''
+        }
+        if (variant === 'vc' && busy && width < 700) hint = ''
+        const overflow = variant === 'avant' ? ' overflow' : ''
+        return `<div><p class="meta">${lang === 'fr' ? 'Français' : 'English'} · saisie ${width} px${busy ? ' · pendant une réponse' : ' · au repos'}</p>
+          <div class="stage"><div class="composer ${variant} ${lang}${width < 520 ? ' w-narrow' : ''}" style="width:${width}px">
+            ${pill}
+            <div class="input"><span class="caret"></span><span class="placeholder${overflow}">${text}</span>${hint}</div>
+            <div class="bar">
+              <span class="chip">${ICON.clip}</span><span class="chip opt">${ICON.cam}</span>
+              <span class="chip">${ICON.shield}<span class="opt-l">${width < 520 ? '' : t.mode}</span></span>
+              <span class="chip">${ICON.sliders}</span><span class="grow"></span>
+              <span class="chip opt">${t.model} ${ICON.down}</span>
+              <span class="chip">${t.agent} ${ICON.down}</span>
+              <span class="stop"><span></span></span>
+            </div>
+          </div></div></div>`
+      }
+      const fill = (id, list) =>
+        (document.getElementById(id).innerHTML = list.map(composer).join(''))
+      fill('avant', [
+        { lang: 'fr', width: 450, variant: 'avant' },
+        { lang: 'fr', width: 610, variant: 'avant' }
+      ])
+      for (const v of ['va', 'vb', 'vc'])
+        fill(v, [
+          { lang: 'fr', width: 450, variant: v },
+          { lang: 'fr', width: 610, variant: v },
+          { lang: 'en', width: 450, variant: v },
+          { lang: 'fr', width: 450, variant: v, busy: false }
+        ])
+
+      // Bascule de thème de la page (Système / Clair / Sombre).
+      const root = document.documentElement
+      for (const button of document.querySelectorAll('.theme-switch button')) {
+        button.addEventListener('click', () => {
+          const value = button.dataset.set
+          if (value === 'system') root.removeAttribute('data-theme')
+          else root.setAttribute('data-theme', value)
+          for (const other of document.querySelectorAll('.theme-switch button'))
+            other.setAttribute('aria-pressed', String(other === button))
+        })
+      }
+    </script>
+  </body>
+</html>
