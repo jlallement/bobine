@@ -35,8 +35,11 @@ export function FontSelect({
   installed,
   installedLabel,
   onChange,
-  testId
+  testId,
+  name
 }: {
+  /** Nom accessible : celui de la ligne de réglage. */
+  name: string
   value: string
   fixed: readonly { id: string; label: string }[]
   installed: readonly string[] | undefined
@@ -50,6 +53,7 @@ export function FontSelect({
   return (
     <select
       className="settings-input settings-input-font"
+      aria-label={name}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       data-testid={testId}
@@ -102,7 +106,8 @@ export function ThemeChoice({
   checked,
   onChoose,
   testId,
-  badge
+  badge,
+  name
 }: {
   palette: Palette | 'system'
   label: string
@@ -111,11 +116,14 @@ export function ThemeChoice({
   testId: string
   /** Mention sous le nom (« Nouveau », fiche 226). */
   badge?: string
+  /** Nom accessible avec la mention (« Aurore, nouveau ») : le texte collé disait « AuroreNouveau ». */
+  name?: string
 }) {
   return (
     <button
       role="radio"
       aria-checked={checked}
+      aria-label={name ?? label}
       className={`theme-choice${checked ? ' active' : ''}`}
       onClick={onChoose}
       data-testid={testId}

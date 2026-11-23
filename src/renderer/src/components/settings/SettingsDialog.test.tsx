@@ -339,6 +339,10 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
     expect(screen.getByTestId('theme-aurora').textContent).toContain('Nouveau')
     expect(screen.getByTestId('theme-auroraNight').textContent).toContain('Nouveau')
     expect(screen.getByTestId('theme-fjord').textContent).not.toContain('Nouveau')
+    // Nom accessible propre (chasse rc.4) : pas « AuroreNouveau », la mention collée au nom.
+    expect(screen.getByRole('radio', { name: 'Aurore, nouveau' })).toBe(
+      screen.getByTestId('theme-aurora')
+    )
     fireEvent.click(screen.getByTestId('theme-aurora'))
     fireEvent.click(screen.getByTestId('theme-black'))
     fireEvent.click(screen.getByTestId('theme-system'))
@@ -415,7 +419,7 @@ describe('SettingsDialog — apparence (fiche 136)', () => {
 })
 
 describe('SettingsDialog — interrupteurs nommés (fiche 254, D3)', () => {
-  it('chaque case à cocher de chaque section a un nom accessible', async () => {
+  it('chaque case à cocher, liste et choix de chaque section a un nom accessible', async () => {
     // Sections à interrupteurs (MCP : chaque serveur et outil nommé, essayé dans McpSettings.test).
     const sections: SettingsSection[] = [
       'general',
@@ -436,8 +440,9 @@ describe('SettingsDialog — interrupteurs nommés (fiche 254, D3)', () => {
     for (const section of sections) {
       const { unmount } = render(<Harness initial={section} />)
       await act(async () => {})
-      const unnamed = screen
-        .queryAllByRole('checkbox', { name: (name) => name.trim() === '' })
+      // Listes déroulantes aussi (chasse rc.4 : Langue, Fenêtre rapide, Éditeur sans nom).
+      const unnamed = ['checkbox', 'combobox', 'radio']
+        .flatMap((role) => screen.queryAllByRole(role, { name: (name) => name.trim() === '' }))
         .map((c) => c.getAttribute('data-testid') ?? c.outerHTML.slice(0, 80))
       expect([section, unnamed]).toEqual([section, []])
       unmount()

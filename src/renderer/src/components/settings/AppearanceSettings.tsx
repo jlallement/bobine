@@ -80,7 +80,12 @@ function InterfaceCard({
                 onChoose={() => onPreferences(themeChoicePreferences(choice))}
                 testId={`theme-${choice}`}
                 {...(NEW_THEME_CHOICES.includes(choice)
-                  ? { badge: t('settings.appearance.theme.new') }
+                  ? {
+                      badge: t('settings.appearance.theme.new'),
+                      name: t('settings.appearance.theme.newName', {
+                        name: t(`settings.appearance.theme.${choice}`)
+                      })
+                    }
                   : {})}
               />
             ))}
@@ -145,6 +150,7 @@ function ThreadCard({
           hint={t('settings.appearance.conversationFont.hint')}
         >
           <FontSelect
+            name={t('settings.appearance.conversationFont.label')}
             value={preferences.conversationFont}
             fixed={fixed}
             installed={fonts?.families}
@@ -214,6 +220,7 @@ function CodeCard({
           hint={t('settings.appearance.codeFont.hint')}
         >
           <FontSelect
+            name={t('settings.appearance.codeFont.label')}
             value={preferences.codeFont}
             fixed={fixed}
             installed={fonts?.monospace}
@@ -250,6 +257,7 @@ function CodeCard({
           hint={t('settings.appearance.terminalFont.hint')}
         >
           <FontSelect
+            name={t('settings.appearance.terminalFont.label')}
             value={preferences.terminalFontFamily ?? ''}
             fixed={[{ id: '', label: t('settings.appearance.terminalFont.auto') }]}
             installed={fonts?.monospace}

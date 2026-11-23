@@ -1410,6 +1410,7 @@ export type FrResources = {
         readonly aurora: 'Aurore'
         readonly auroraNight: 'Aurore nuit'
         readonly new: 'Nouveau'
+        readonly newName: '{{name}}, nouveau'
       }
       readonly accent: {
         readonly label: 'Couleur d’accent'
