@@ -1,6 +1,6 @@
 # 276 — Seconde chasse rc.4 : ce qui change à l'écran
 
-- **Statut** : en cours
+- **Statut** : fait (à relire ; e2e complètes à passer sur GitHub)
 - **Dépend de** : 275 (agent injoignable), 194 (bandeau de silence), 104 (réseau d'entreprise),
   092 (repli de la barre de saisie), 178 (tâches planifiées), 207 (onglet Session), 224 (espace
   Discussion), 034 (terminal)
@@ -50,7 +50,7 @@ dernier message est **remis dans la saisie, sans être envoyé**.
       prérempli, sinon le plus récent ; « Changer… » : dossiers récents puis « Autre dossier… ».
 - [x] T14 : terminal mesuré dans l'app avant de corriger ; Discussion : une seule vue,
       « L'agent n'a encore modifié aucun document de cette discussion. »
-- [ ] Testé : unitaires (logique) ; e2e touchées clair/sombre, et `--lang en`.
+- [x] Testé : unitaires (logique) ; e2e ciblées clair/sombre et `--lang en` (suite complète : GitHub, `e2e.yml`).
 
 ## Plan
 
@@ -93,4 +93,18 @@ dernier message est **remis dans la saisie, sans être envoyé**.
     `.terminal:not(.xterm)`, et marge du terminal à 12 px de côté, 8 px en haut et en bas.
   - **T14, Discussion** : l'état git n'est plus lu dans une discussion ; une seule vue
     (Conversation), texte vide propre aux documents.
+  - **Essais** : unitaires (réseau changé depuis le lancement, abonnement tenu seulement pendant un
+    bandeau, `setNetwork` qui prévient ; `lastUserText` et message remis sans envoi ; adresse
+    insécable ; dossier prérempli ; clic droit = menu ⋯ ; vue Discussion ; repli des réglages
+    avant le modèle). E2e en local, sous verrou, avant la fusion de `main` : `composer
+    fresh-start scheduled panel session terminal changes history discussion pannes-visibles
+    historique-saisie`, clair et sombre, fr (vert après correction de la comparaison du texte
+    avec élision « d’Agent factice ») et `--lang en` (vert). Vérifications ajoutées : relance et
+    message remis (`pannes-visibles`), « Réponse en cours » et boutons sous le texte, adresse
+    d'une seule pièce ; clic droit au pointeur sans sélection (`history`) ; dossier prérempli
+    (`scheduled`) ; ni vue Git ni « dernier commit » en Discussion (`discussion`) ; marge du
+    terminal (`terminal`) ; fiole seule dans un en-tête étroit (`fresh-start`) ; réglages sous 📎
+    à 640 px (`composer`, niveaux 4 et 5). Après fusion de `main` : `./scripts/verify` vert ; la
+    suite complète (`--changed` touche toutes les suites : `styles.css`) passe sur GitHub.
+  - Captures après (e2e locales) : `scratchpad/apres-chasse2/`.
 
