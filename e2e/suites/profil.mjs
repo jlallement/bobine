@@ -80,6 +80,7 @@ export async function profileSuite(scheme) {
   }
   await damagedProfile(scheme)
   await trashAndRestoreConfirm(scheme)
+  await restoredResumes(scheme)
   await readOnly(scheme)
 }
 
@@ -195,16 +196,6 @@ async function trashAndRestoreConfirm(scheme) {
       async (ui) => {
         await ui.waitFor(`${HISTORY}.length === 3`)
         await ui.ready()
-        // Affichée et suivie par le renderer avant sa suppression (recette rc.4, T1) : restaurée,
-        // elle repartait « Arrêté », et le message restait dans la saisie.
-        const pinned = `[...${HISTORY}].find((i) => i.innerText.includes('Épinglée et renommée'))`
-        await ui.click(pinned)
-        await ui.waitFor(showing('Première conversation'))
-        await ui.ready()
-        await ui.send('Avant la corbeille')
-        await ui.ready()
-        const replies = `document.querySelectorAll('.msg-agent').length`
-        const before = await ui.ev(replies)
         await deleteNamed(ui, 'Épinglée et renommée')
         check(
           (await ui.ev(`${ui.$('delete-from-agent')}?.checked`)) === false &&
@@ -227,21 +218,6 @@ async function trashAndRestoreConfirm(scheme) {
           await ui.waitFor(`!!${ui.$('trash-empty')}`)
           await ui.waitFor(`${HISTORY}.length === 3`)
           check(true, 'restaurée : de retour dans la liste, corbeille vide')
-          // Restaurée, elle se reprend comme une autre : son agent repart, la réponse arrive.
-          await ui.click(`document.querySelector('.settings-close')`)
-          await ui.waitFor(`!${ui.$('settings')}`)
-          await ui.click(pinned)
-          await ui.waitFor(showing('Avant la corbeille'))
-          await ui.ready()
-          await ui.send('Après la corbeille')
-          await ui.waitFor(`${replies} > ${before}`)
-          await ui.ready()
-          check(
-            (await ui.ev(`${ui.$('composer-input')}.value`)) === '',
-            'restaurée : le message part, l’agent répond, elle redevient prête'
-          )
-          await ui.shot('196-restauree-reprise')
-          await openSettingsData(ui, main)
 
           // Restauration d'une sauvegarde : refusée pour un dossier quelconque, confirmée sinon.
           const choose = (folder) =>
@@ -311,6 +287,59 @@ async function trashAndRestoreConfirm(scheme) {
   } finally {
     for (const d of [dir, legacy, empty]) rmSync(d, { recursive: true, force: true })
   }
+}
+
+/**
+ * Restaurée de la corbeille, une conversation se reprend comme une autre (recette rc.4, T1) : le
+ * renderer l'avait suivie avant sa suppression ; elle repartait « Arrêté », le message restait dans
+ * la saisie et rien ne partait.
+ */
+async function restoredResumes(scheme) {
+  const replies = `document.querySelectorAll('.msg-agent').length`
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.ready()
+      await ui.send('Avant la corbeille')
+      await ui.waitFor(`${replies} === 1`)
+      await ui.ready()
+      await ui.waitFor(`${HISTORY}.length === 1`)
+      const title = await ui.ev(`${HISTORY}[0].innerText.split('\\n')[0]`)
+      await deleteNamed(ui, title)
+      await ui.click(ui.$('delete-confirm'))
+      await ui.waitFor(
+        `![...${HISTORY}].some((i) => i.innerText.includes(${JSON.stringify(title)}))`
+      )
+      const main = await mainProcess()
+      try {
+        await openSettingsData(ui, main)
+        await ui.waitFor(`document.querySelectorAll('[data-testid=trash-item]').length === 1`)
+        await ui.click(ui.$('trash-restore'))
+        await ui.waitFor(`!!${ui.$('trash-empty')}`)
+        await ui.click(`document.querySelector('.settings-close')`)
+        await ui.waitFor(`!${ui.$('settings')}`)
+      } finally {
+        main.close()
+      }
+      const item = `[...${HISTORY}].find((i) => i.innerText.includes(${JSON.stringify(title)}))`
+      await ui.waitFor(`!!${item}`)
+      await ui.click(item)
+      await ui.waitFor(showing('Avant la corbeille'))
+      await ui.ready()
+      await ui.send('Après la corbeille')
+      await ui.waitFor(`${replies} === 2`)
+      await ui.ready()
+      check(
+        (await ui.ev(`${ui.$('composer-input')}.value`)) === '',
+        'restaurée : le message part, l’agent répond, elle redevient prête'
+      )
+      await ui.shot('196-restauree-reprise')
+    },
+    undefined,
+    'echo',
+    {},
+    [`--inspect=${MAIN_PORT}`]
+  )
 }
 
 /** Restauration faite au lancement, puis défaite en restaurant l'état d'avant (réversible). */
