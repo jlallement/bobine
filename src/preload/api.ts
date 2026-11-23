@@ -692,7 +692,9 @@ export function createApi(
     },
     /** Navigateur intégré du panneau (fiche 007). */
     browser: {
-      show: (id: string, bounds: BrowserBounds) => invoke('browser:show', id, bounds),
+      /** `focus` : la page prend le clavier (onglet ouvert par l'utilisateur). */
+      show: (id: string, bounds: BrowserBounds, focus = false) =>
+        invoke('browser:show', id, bounds, ...(focus ? [true as const] : [])),
       hide: () => invoke('browser:hide'),
       /** « Effacer les données du navigateur » (fiche 072). */
       clearData: () => invoke('browser:clearData'),
