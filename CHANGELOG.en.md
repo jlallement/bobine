@@ -28,6 +28,11 @@ What changes for you, version by version. Shown in Settings › About.
 - The buttons of a work that writes in its branch appear all at once, in place, when it finishes:
   **Merge into main** no longer pops in at the front a moment after the others, and no longer
   pushes **View changes** or **Open its conversation** out from under the pointer.
+- With the pointer resting on a work card, the thread stays still, but nothing signalled what
+  arrived below, out of view (a permission request, for example): the **Scroll to bottom** arrow
+  now appears, with the count of new items, without moving the card.
+- After **Move to Trash**, focus goes to the composer: it is no longer lost in the page along with
+  the deleted row.
 
 ## 1.0.0-rc.3 — November 21, 2026
 
