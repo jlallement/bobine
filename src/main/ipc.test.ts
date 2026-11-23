@@ -286,7 +286,24 @@ describe('IPC', () => {
   it('navigateur : emplacement et action validés avant d’atteindre la page', async () => {
     const { call, browser } = setup()
     await call('browser:show', 'c1', { x: 10, y: 20, width: 300, height: 200 })
-    expect(browser.show).toHaveBeenCalledWith('c1', { x: 10, y: 20, width: 300, height: 200 })
+    expect(browser.show).toHaveBeenCalledWith(
+      'c1',
+      { x: 10, y: 20, width: 300, height: 200 },
+      false
+    )
+    // Onglet ouvert par l'utilisateur : la page prend le clavier ; rien d'autre que `true` ne compte.
+    await call('browser:show', 'c1', { x: 10, y: 20, width: 300, height: 200 }, true)
+    expect(browser.show).toHaveBeenLastCalledWith(
+      'c1',
+      { x: 10, y: 20, width: 300, height: 200 },
+      true
+    )
+    await call('browser:show', 'c1', { x: 10, y: 20, width: 300, height: 200 }, 'oui' as never)
+    expect(browser.show).toHaveBeenLastCalledWith(
+      'c1',
+      { x: 10, y: 20, width: 300, height: 200 },
+      false
+    )
     await expect(call('browser:show', 'c1', { x: 'a' })).rejects.toThrow('bounds')
     await call('browser:go', 'c1', 'back')
     expect(browser.go).toHaveBeenCalledWith('c1', 'back')
@@ -768,7 +785,8 @@ describe('IPC', () => {
     expect(conversations.delete.mock.calls.map((c) => c[0])).toEqual(['pf', 'f', 'c1'])
     expect(conversations.delete).toHaveBeenNthCalledWith(1, 'pf', {
       fromAgent: false,
-      removeWorktree: false
+      removeWorktree: false,
+      deletedWith: 'c1'
     })
     conversations.delete.mockClear()
     await call('conversation:delete', 'c1', { children: 'oui' })

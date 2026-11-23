@@ -30,6 +30,7 @@ function LanguageRow({
       <Row label={t('settings.general.language.label')} hint={t('settings.general.language.hint')}>
         <select
           className="settings-input"
+          aria-label={t('settings.general.language.label')}
           value={preference}
           onChange={(e) => onChange(e.target.value as LanguagePreference)}
           data-testid="settings-language"
@@ -125,6 +126,7 @@ export function GeneralSettings({
         >
           <select
             className="settings-input"
+            aria-label={t('settings.general.quickEntry.label')}
             value={preferences.quickEntryShortcut}
             onChange={(e) => onPreferences({ quickEntryShortcut: e.target.value as QuickShortcut })}
             data-testid="settings-quick-shortcut"

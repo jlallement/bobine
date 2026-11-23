@@ -103,6 +103,7 @@ export function NotificationsSettings({
           <div className="settings-inline">
             <select
               className="settings-input"
+              aria-label={t('settings.notifications.attentionSound.label')}
               value={preferences.attentionSound}
               onChange={(e) => onPreferences({ attentionSound: e.target.value as AttentionSound })}
               data-testid="settings-attention-sound"

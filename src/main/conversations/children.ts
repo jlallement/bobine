@@ -45,7 +45,6 @@ import {
 import { messageOf } from '@shared/errors'
 import { usageDigest } from '@shared/usage'
 import type { TranscriptItem } from '@shared/transcript'
-import type { IpcHandlers } from '@shared/ipc'
 import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
@@ -67,7 +66,7 @@ import type {
   LeftBehind,
   UncommittedChoice
 } from '@shared/launch-folder'
-import { IN_PLACE_LINE, parseUncommittedChoice } from '@shared/launch-folder'
+import { IN_PLACE_LINE } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
 import type { RoleRequest } from '@shared/role-request'
 
@@ -264,34 +263,19 @@ export class ChildConversations {
     // consigne en points à surveiller.
     if (role?.name === REVIEWER_ROLE) return this.startReview(motherId, request, text, by)
 
-    const { created, inPlace } = await this.prepare(motherId, text, request, role)
-    const title = request.title?.trim()
-    if (title) this.conversations.rename(created.id, title)
-    const child = title ? { ...created, title: this.summary(created.id).title } : created
-    if (by) this.waking.await(motherId, child.id)
-    this.sending.add(child.id)
-    // Bulle de la demande (fiche 263), avant le lancement : seulement pour un travail parti.
-    const ask = request.ask && role ? request.ask : undefined
-    if (ask && role) {
-      // La demande est complétée en place : le travail suivant du même message s'y ajoute.
-      ask.works = [...ask.works, { childId: child.id, role: roleBadge(role) }]
-      this.conversations.post(motherId, { type: 'role-request', request: { ...ask } })
-    }
-    // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
-    const posted = this.conversations.post(motherId, {
-      type: 'child-started',
-      child: {
-        childId: child.id,
-        title: child.title,
-        ...(child.branch ? { branch: child.branch } : {}),
-        prompt: text,
-        ...(by ? { by } : {}),
-        ...(role ? { role: roleBadge(role) } : {}),
-        ...this.leftBehind(child.id),
-        ...(ask ? { request: ask.requestId } : request.card ? { card: request.card } : {}),
-        at: Date.now()
-      }
-    })
+    // Lancements d'une même mère posés dans l'ordre demandé (seconde chasse rc.4) : « Tout
+    // lancer » les demande ensemble, et chaque worktree se prépare plus ou moins vite (en parallèle,
+    // visibles tout de suite, fiche 149) ; sans ce tour, les `child-started` arrivaient au hasard,
+    // et la carte de groupe et la fusion changeaient d'ordre d'un essai à l'autre.
+    const turn = this.launchTurn(motherId)
+    const { child, inPlace, posted } = await this.born(
+      motherId,
+      text,
+      request,
+      role,
+      by,
+      turn.ready
+    ).finally(turn.done)
     if (!posted) {
       this.waking.forget(motherId)
       detachChild(this.conversations, child.id, mother.title)
@@ -418,6 +402,73 @@ export class ChildConversations {
   private publishLaunches(): void {
     this.launchRevision++
     this.launchesChanged(this.launchState())
+  }
+
+  /**
+   * Naissance d'une fille : préparée (en parallèle des autres), puis, à son tour (voir `start`),
+   * nommée, sa bulle et son lancement posés dans le fil de la mère. `posted` : la mère était là.
+   */
+  private async born(
+    motherId: string,
+    text: string,
+    request: ChildRequest,
+    role: RoleSnapshot | undefined,
+    by: 'agent' | undefined,
+    /** Les lancements demandés avant celui-ci sont posés (ou en échec). */
+    turn: Promise<void>
+  ): Promise<{ child: ConversationSummary; inPlace: boolean; posted: boolean }> {
+    const { created, inPlace } = await this.prepare(motherId, text, request, role)
+    await turn
+    const title = request.title?.trim()
+    if (title) this.conversations.rename(created.id, title)
+    const child = title ? { ...created, title: this.summary(created.id).title } : created
+    if (by) this.waking.await(motherId, child.id)
+    this.sending.add(child.id)
+    // Bulle de la demande (fiche 263), avant le lancement : seulement pour un travail parti.
+    const ask = request.ask && role ? request.ask : undefined
+    if (ask && role) {
+      // La demande est complétée en place : le travail suivant du même message s'y ajoute.
+      ask.works = [...ask.works, { childId: child.id, role: roleBadge(role) }]
+      this.conversations.post(motherId, { type: 'role-request', request: { ...ask } })
+    }
+    // Mère supprimée pendant la préparation (fiche 228) : la fille continue seule, jamais orpheline.
+    const posted = this.conversations.post(motherId, {
+      type: 'child-started',
+      child: {
+        childId: child.id,
+        title: child.title,
+        ...(child.branch ? { branch: child.branch } : {}),
+        prompt: text,
+        ...(by ? { by } : {}),
+        ...(role ? { role: roleBadge(role) } : {}),
+        ...this.leftBehind(child.id),
+        ...(ask ? { request: ask.requestId } : request.card ? { card: request.card } : {}),
+        at: Date.now()
+      }
+    })
+    return { child, inPlace, posted }
+  }
+
+  /** Tour de lancement par mère (voir `start`) : le dernier demandé. */
+  private readonly launchTurns = new Map<string, Promise<void>>()
+
+  /**
+   * Prend son tour, sans attendre : `ready` quand les lancements demandés avant sont posés, `done`
+   * à appeler une fois le sien posé (ou en échec), quoi qu'il arrive.
+   */
+  private launchTurn(motherId: string): { ready: Promise<void>; done: () => void } {
+    const ready = this.launchTurns.get(motherId) ?? Promise.resolve()
+    let release = () => {}
+    const mine = new Promise<void>((resolve) => (release = resolve))
+    const tail = ready.then(() => mine)
+    this.launchTurns.set(motherId, tail)
+    return {
+      ready,
+      done: () => {
+        release()
+        if (this.launchTurns.get(motherId) === tail) this.launchTurns.delete(motherId)
+      }
+    }
   }
 
   private async prepare(
@@ -921,8 +972,17 @@ export class ChildConversations {
       // la mère le sait par un compte rendu en erreur (son agent ne l'attend plus). Mère ou fille
       // supprimées entre-temps (fiche 228) : lues maintenant, pas au lancement.
       this.sending.delete(childId)
-      const reason = this.startFailure(childId) ?? messageOf(error)
       const current = this.conversations.state().conversations.find((c) => c.id === childId)
+      // Fille supprimée pendant son lancement (mère supprimée avec ses filles juste après « Tout
+      // lancer », chasse rc.4) : sa consigne a échoué parce qu'elle est partie ; plus de fil où le
+      // dire, et sa mère (partie avec elle, ou qui l'a vue supprimer) n'attend plus de compte rendu.
+      if (!current) {
+        log.info(
+          `Fille ${childId.slice(0, 8)} supprimée pendant son lancement : consigne abandonnée`
+        )
+        return
+      }
+      const reason = this.startFailure(childId) ?? messageOf(error)
       const motherId = current?.startedFrom?.id
       if (motherId) {
         this.conversations.post(motherId, {
@@ -960,93 +1020,4 @@ function launchRole<R extends RoleSnapshot>(request: ChildRequest, role: R | und
   return { ...role, readOnly: true }
 }
 
-/** Canaux IPC des conversations filles, branchés par `ipc.ts` (fiche 097). */
-export function childHandlers(
-  children:
-    | Pick<
-        ChildConversations,
-        'start' | 'capacity' | 'launchState' | 'folderState' | 'commitFolder'
-      >
-    | undefined
-): Pick<
-  IpcHandlers,
-  | 'conversation:startChild'
-  | 'conversation:childCapacity'
-  | 'conversation:childLaunches'
-  | 'conversation:childFolder'
-  | 'conversation:commitForChildren'
-> {
-  const available = () => {
-    if (!children) throw new Error(t('ipc.unavailable.children'))
-    return children
-  }
-  const idOf = (id: unknown) => {
-    if (typeof id !== 'string' || !id) throw new Error('Paramètre invalide : id')
-    return id
-  }
-  return {
-    'conversation:childLaunches': () => available().launchState(),
-    // Carte du travail (fiche 264) : celle de sa proposition expirée, sinon une carte seule.
-    'conversation:startChild': (id, request) => {
-      const parsed = parseChildRequest(request)
-      return available().start(idOf(id), { ...parsed, card: parsed.card ?? randomUUID() })
-    },
-    'conversation:childCapacity': (id) => available().capacity(idOf(id)),
-    'conversation:childFolder': async (id) => (await available().folderState(idOf(id))) ?? null,
-    'conversation:commitForChildren': (id, request) =>
-      available().commitFolder(idOf(id), parseCommitRequest(request))
-  }
-}
-
-function parseCommitRequest(value: unknown): { message: string; files: string[] } {
-  if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { message, files } = value as Record<string, unknown>
-  if (typeof message !== 'string') throw new Error('Paramètre invalide : message')
-  if (!Array.isArray(files) || !files.every((f) => typeof f === 'string' && f)) {
-    throw new Error('Paramètre invalide : files')
-  }
-  return { message, files: files as string[] }
-}
-
-/* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
-function parseChildRequest(value: unknown): ChildRequest {
-  if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
-  const { text, title, profileId, model, role, uncommitted, card } = value as Record<
-    string,
-    unknown
-  >
-  if (typeof text !== 'string') throw new Error('Paramètre invalide : text')
-  if (card !== undefined && (typeof card !== 'string' || !card || card.length > MAX_CARD_KEY)) {
-    throw new Error('Paramètre invalide : card')
-  }
-  if (title !== undefined && typeof title !== 'string')
-    throw new Error('Paramètre invalide : title')
-  if (profileId !== undefined && (typeof profileId !== 'string' || !profileId)) {
-    throw new Error('Paramètre invalide : profileId')
-  }
-  if (role !== undefined && (typeof role !== 'string' || !role.trim())) {
-    throw new Error('Paramètre invalide : role')
-  }
-  const choice =
-    typeof model === 'object' && model !== null ? (model as Record<string, unknown>) : {}
-  if (
-    model !== undefined &&
-    (typeof choice.controlId !== 'string' || typeof choice.value !== 'string')
-  ) {
-    throw new Error('Paramètre invalide : model')
-  }
-  return {
-    text,
-    ...(typeof title === 'string' && title.trim() ? { title } : {}),
-    ...(typeof profileId === 'string' ? { profileId } : {}),
-    ...(model !== undefined
-      ? { model: { controlId: String(choice.controlId), value: String(choice.value) } }
-      : {}),
-    ...(typeof role === 'string' ? { role: role.trim() } : {}),
-    ...(uncommitted !== undefined ? { uncommitted: parseUncommittedChoice(uncommitted) } : {}),
-    ...(typeof card === 'string' ? { card } : {})
-  }
-}
-
-/** Clé de carte reçue du renderer : un identifiant, jamais un texte (fiche 264). */
-const MAX_CARD_KEY = 100
+export { childHandlers } from './children-ipc'

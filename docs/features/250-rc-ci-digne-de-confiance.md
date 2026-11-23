@@ -149,6 +149,11 @@ Dependabot comme les autres.
     vue » : rouge sans le correctif (`expected true to be false`), vert avec. Sonde réelle (build,
     agent factice, sombre) : carte immobile (haut 173 → 173 px), flèche « ↓ 1 nouveau » montrée,
     autorisation hors de la vue.
+- 2026-11-23 — Seconde chasse rc.4 : pendant un appui sur une ligne de travail (`pressing` de
+  `useThreadScroll`), ce qui arrivait en bas ne montrait pas la flèche « Aller en bas » avant le
+  relâché. `measureBottom` traite l'appui comme le maintien : il mesure `atBottom` (la flèche),
+  sans toucher au suivi ni défiler. Preuve : `useThreadScroll.test.ts` (« près du bas sans y
+  être… » : flèche pendant l'appui, partie au relâché), rouge sans le correctif.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 

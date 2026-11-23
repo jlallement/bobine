@@ -258,6 +258,18 @@ describe('carte de groupe : proposés (fiche 264, écran D, état 1)', () => {
       ['r3', 'start']
     ])
   })
+  it('« Tout lancer » dans l’ordre des lignes, même après une ligne dépliée (seconde chasse rc.4)', async () => {
+    const onRespond = vi.fn()
+    view(pending(), info([]), onRespond)
+    await act(async () => {})
+    // La ligne r2 dépliée se rend seule, et se réinscrit après r3.
+    const rows = screen.getAllByTestId('proposal-row')
+    const r2 = rows.find((row) => row.dataset.request === 'r2')
+    fireEvent.click(within(r2 as HTMLElement).getByTestId('proposal-title'))
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('work-group-start-all'))
+    expect(onRespond.mock.calls.map(([id]) => id)).toEqual(['r2', 'r3'])
+  })
 })
 
 describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 3)', () => {
@@ -442,6 +454,27 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     expect(screen.getAllByTestId('subtask-merge-state').map((s) => s.textContent)).toEqual([
       'fusionné',
       'fusionné'
+    ])
+  })
+
+  it('en-tête : un fusionné se dit fusionné, un supprimé n’a pas « répondu » (recette rc.4, T7)', async () => {
+    const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
+    const items = [
+      ...working(),
+      report(9, 'a'),
+      mergeItem(10, 'done', [{ childId: 'a', state: 'merged' }], { endedAt: T0 + 1000 })
+    ]
+    // « b » a répondu, puis sa conversation est partie à la corbeille.
+    view(items, info([child('a')], { merge: actions, exists: (id) => id === 'a' }))
+    await screen.findByTestId('subtasks-merge-result')
+    expect(screen.getByTestId('work-group-counts').textContent).toBe(
+      '· 1 fusionné, 1 supprimé, 1 refusé'
+    )
+    expect(
+      screen.getAllByTestId('work-row-state').map((s) => [s.dataset['state'], s.textContent])
+    ).toEqual([
+      ['replied', 'fusionné'],
+      ['gone', 'conversation supprimée']
     ])
   })
 

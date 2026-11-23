@@ -180,3 +180,60 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
     ouvert la boîte, dans la ligne supprimée juste après. `DeleteDialog` : confirmée, le focus va à
     la zone de saisie (`onCloseAutoFocus`) ; annulée, rien ne change. Preuve :
     `DeleteDialog.test.tsx`, rouge sans le correctif, vert avec.
+- 2026-11-23 — Seconde chasse avant la 1.0.0-rc.4 (branche `fix/restauration`) :
+  - **T1, bloquant (déjà en rc.3)** : une conversation restaurée depuis la corbeille restait
+    « Arrêté », le message dans la saisie, rien ne partait. Cause : le renderer garde la vue d'une
+    conversation déjà affichée et écarte toute vue ou tout évènement dont le numéro (`seq`) n'est
+    pas plus récent (`useConversations`, `reducer`) ; restaurée, la conversation renaissait côté
+    main avec `seq` à 0. Son agent démarrait bien (« Agent lancé » au journal), mais ni son état
+    « prête » ni la réponse n'atteignaient la fenêtre, qui gardait l'état « arrêtée » de la
+    suppression. Ni `AgentHost.stop({ forGood })` ni un hôte gardé n'étaient en cause (la
+    restauration crée un hôte neuf). Correctif à la cause : le numéro des évènements est compté
+    pour tout le gestionnaire (`eventSeq`), et une conversation restaurée part du dernier émis.
+    Preuves : `manager.test.ts` (« restaurée depuis la corbeille… », rouge avant : vue à 1 après
+    28 évènements vus) ; e2e `profil` (`restoredResumes` : envoyer, supprimer, restaurer, rouvrir,
+    envoyer, réponse), rouge sur l'ancien code, vert avec le correctif, en clair et sombre.
+  - **T7** : restaurer une mère ne restaurait pas les filles supprimées avec elle. Elles sont
+    marquées dans la corbeille (`deletedWith`, fiche de corbeille `<id>.meta.json`) quand
+    `deleteConversation` les emmène, et `restoreFromTrash` les restaure avec la mère
+    (`TrashLink.restoreFamily`) ; une fille supprimée seule avant reste à la corbeille, une fille
+    qui ne revient pas (fichier abîmé) est consignée sans empêcher la mère. Pas de nouveau texte
+    ni bouton : le pendant de l'archivage (`archivedWith`). Preuve : `family-delete.test.ts`
+    (fille et petite-fille restaurées, liens intacts, fille supprimée avant laissée, fille
+    restaurée qui répond de nouveau). Un travail supprimé pendant son démarrage n'a jamais été une
+    conversation : rien à restaurer, sa ligne reste « conversation supprimée ».
+  - **T7, comptage** : l'en-tête d'une carte de travaux comptait un travail supprimé et un
+    travail fusionné comme « a répondu ». Désormais « N supprimé(s) » et « N fusionné(s) »
+    (`workGroup.count.gone`, `workGroup.count.merged`). Preuve : `WorkGroup.test.tsx`, rouge
+    avant (« 2 ont répondu »).
+  - Essais : `./scripts/verify` vert ; `pnpm build && pnpm e2e --changed --jobs 3` (236 tâches,
+    toutes les suites : `manager.ts` et les traductions touchés) : 235/236, l'échec isolé de
+    `travaux-groupe` sombre (« proposés : une carte de groupe… », avant tout lancement, que le
+    comptage ne touche pas) ne s'est pas reproduit en rejouant la suite seule (clair et sombre,
+    2/2). Capture `196-restauree-reprise` (clair, sombre) regardée : « Prêt », la réponse à
+    « Après la corbeille ».
+
+- 2026-11-23 — Seconde chasse avant la 1.0.0-rc.4 (branche `fix/chasse2-correctifs`) :
+  - Encore des « Conversation inconnue » au journal après la suppression d'une mère
+    (`children:mergePlan` 3 à 6 fois, `conversation:appTools`) : `queryId` ne couvrait que git et
+    les commandes. Recherche de toutes les lectures par conversation du renderer : une vingtaine de
+    canaux (outils de Bobine, plan de fusion des cartes, règles, worktree, documents, rôles…),
+    relus au changement d'état de la mère (agent arrêté) ou de la liste (filles parties). Plutôt
+    qu'une garde par lecture, une porte unique dans le preload : `conversations.removing(ids, on)`
+    (sans IPC, compté) ; tout appel dont la première valeur est une conversation en cours de
+    suppression est refusé sur place (`Conversation being deleted`), sauf `conversation:delete`.
+    `useConversations.remove` y nomme la mère et sa descendance avant la suppression, et les libère
+    à la fin (réussie ou refusée). Les appelants attrapaient déjà l'erreur du main : même chemin,
+    sans aller-retour ni ligne au journal. `queryId` reste (git et commandes ne sont même pas
+    demandés). Preuves : `api.test.ts` (refus, suppression qui passe, libération comptée),
+    `useConversations.remove.test.ts` (porte nommée puis libérée).
+  - WARN « Évènement « notice » écarté : conversation … inconnue » (3 fois) : la mère supprimée
+    avec ses filles juste après « Tout lancer » ; la consigne de chaque fille échouait (fille
+    partie), et `ChildConversations.launch` posait « La consigne n'a pas pu partir » dans le fil
+    de la fille supprimée. Supprimé à la source : fille partie, le `catch` s'arrête (ligne INFO,
+    ni avis ni compte rendu). Preuve : `family-delete.test.ts` (« mère supprimée avec ses filles
+    juste après Tout lancer »), rouge sans le correctif (`post` vers une conversation inconnue),
+    vert avec.
+  - e2e `filles` : le filtre ne regarde plus deux canaux mais toute erreur « Conversation
+    inconnue » (`L('conversations.error.unknown')`, fr ou en) dans la sortie de l'app, sur toute
+    la séance gardée (64 Kio glissants), et n'en accepte aucune.

@@ -1369,7 +1369,8 @@
         "fjordNight": "Fjord Night",
         "aurora": "Aurora",
         "auroraNight": "Aurora Night",
-        "new": "New"
+        "new": "New",
+        "newName": "{{name}}, new"
       },
       "accent": {
         "label": "Accent color",
@@ -5979,10 +5980,14 @@
       "waiting_other": "{{count}} waiting for your approval",
       "done_one": "{{count}} replied",
       "done_other": "{{count}} replied",
+      "merged_one": "{{count}} merged",
+      "merged_other": "{{count}} merged",
       "stopped_one": "{{count}} stopped",
       "stopped_other": "{{count}} stopped",
       "error_one": "{{count}} failed",
       "error_other": "{{count}} failed",
+      "gone_one": "{{count}} deleted",
+      "gone_other": "{{count}} deleted",
       "starting_one": "{{count}} starting",
       "starting_other": "{{count}} starting",
       "here_one": "{{count}} done here",

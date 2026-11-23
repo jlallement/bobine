@@ -16,7 +16,7 @@ import {
   type StartRegistry
 } from './ChildProposals'
 import type { RespondElicitation } from './ElicitationCard'
-import type { SubtasksInfo } from './Subtasks'
+import { rowMerge, type SubtasksInfo } from './Subtasks'
 import { SubtasksMergeFooter, useChildrenMerge, type ChildrenMergeState } from './SubtasksMerge'
 import { RoleRequestBubble, useNow } from './WorkCard'
 import { LaunchedRow, type RowWork } from './WorkGroupRow'
@@ -127,7 +127,7 @@ export function WorkGroup({
     partial && partial.missing > 0
       ? t('usage.costPartialTip', { count: partial.missing })
       : undefined
-  const head = groupCounts(group, works)
+  const head = groupCounts(group, works, (id) => rowMerge(merging, id).mergeState === 'merged')
   return (
     <div
       className="work-group"
@@ -240,7 +240,9 @@ export function WorkGroup({
                   title={t('workGroup.startAllLabel')}
                   disabled={launch.held}
                   onClick={() => {
-                    for (const start of [...starts.values()]) start()
+                    // Dans l'ordre des lignes, pas celui de l'inscription (une ligne rendue à part
+                    // se réinscrit en dernier) : le main les pose dans l'ordre demandé.
+                    for (const row of pending) starts.get(row.proposal.requestId)?.()
                   }}
                   data-testid="work-group-start-all"
                 >
@@ -411,8 +413,10 @@ type CountKey =
   | 'workGroup.count.running'
   | 'workGroup.count.waiting'
   | 'workGroup.count.done'
+  | 'workGroup.count.merged'
   | 'workGroup.count.stopped'
   | 'workGroup.count.error'
+  | 'workGroup.count.gone'
   | 'workGroup.count.starting'
   | 'workGroup.count.started'
   | 'workGroup.count.here'
@@ -425,9 +429,13 @@ type CountKey =
  */
 function groupCounts(
   group: WorkGroupData,
-  works: readonly RowWork[]
+  works: readonly RowWork[],
+  merged: (childId: string) => boolean
 ): { key: CountKey; count: number }[] {
-  const of = (states: WorkState[]) => works.filter((w) => states.includes(w.state)).length
+  // Fusionné : la ligne le dit à la place de « a répondu », l'en-tête aussi (recette rc.4, T7).
+  const fused = works.filter((w) => merged(w.card.childId))
+  const rest = works.filter((w) => !fused.includes(w))
+  const of = (states: WorkState[]) => rest.filter((w) => states.includes(w.state)).length
   // Lancée sans clé (conversation d'avant) : son travail s'affiche comme avant, hors de la carte.
   const outcomes = group.rows.flatMap((row) => {
     if (!row.proposal || row.work) return []
@@ -439,9 +447,12 @@ function groupCounts(
     { key: 'workGroup.count.running', count: of(['running']) },
     { key: 'workGroup.count.waiting', count: of(['waiting']) },
     // Fini, réponse remise à la fin de celle de l'agent (`pending`) : il a répondu (maquette rc4).
-    { key: 'workGroup.count.done', count: of(['replied', 'pending', 'silent', 'unknown', 'gone']) },
+    { key: 'workGroup.count.done', count: of(['replied', 'pending', 'silent', 'unknown']) },
+    { key: 'workGroup.count.merged', count: fused.length },
     { key: 'workGroup.count.stopped', count: of(['stopped']) },
     { key: 'workGroup.count.error', count: of(['error']) },
+    // Sa conversation partie (corbeille) : ni « a répondu », qu'elle ait répondu ou non (T7).
+    { key: 'workGroup.count.gone', count: of(['gone']) },
     { key: 'workGroup.count.starting', count: decided('start') },
     { key: 'workGroup.count.started', count: decided('started') },
     { key: 'workGroup.count.here', count: decided('here') },

@@ -49,7 +49,8 @@ export const plainSigner: ApprovalSigner = {
 export function approvalSigner(
   file: string,
   cipher: KeyCipher,
-  log: (message: string) => void,
+  /** `info` : un fait normal (clé créée) ; sans niveau, un avertissement (rien n'est donné…). */
+  log: (message: string, level?: 'info') => void,
   /** Des empreintes à clé (`hmac:`) existent déjà (fichier des empreintes). */
   hasKeyedApprovals: () => boolean = () => false
 ): ApprovalSigner {
@@ -87,7 +88,8 @@ export function approvalSigner(
     if (isReadOnly(file)) return { state: 'locked' }
     const key = randomBytes(32)
     await atomicWrite(file, await cipher.encrypt(key.toString('base64')))
-    log('Mémoire : clé des empreintes créée')
+    // Premier lancement, ou profil neuf : rien d'anormal (chasse rc.4, plus en WARN).
+    log('Mémoire : clé des empreintes créée', 'info')
     return { key, state: 'created' }
   }
   const loaded = () => (loading ??= load())

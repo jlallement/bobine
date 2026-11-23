@@ -12,6 +12,8 @@ const TURN_COST = new Intl.NumberFormat(LANG, {
   maximumFractionDigits: 4
 }).format(0.0125)
 /** Coût en dollars annoncé par l'agent : affiché en estimation (« ≈ », fiche 245). */
+/** Début de l'erreur du main pour une conversation qu'il n'a plus (« Conversation inconnue : »). */
+const UNKNOWN_CONVERSATION = L('conversations.error.unknown', { id: '' }).trim()
 const TURN_ESTIMATE = L('usage.estimate', { cost: TURN_COST })
 const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
 
@@ -359,19 +361,20 @@ export async function fillesSuite(scheme) {
         await openDelete()
         await ui.click(ui.$('delete-children'))
         await ui.waitFor(`!${ui.$('delete-children')}.checked`)
-        // Lectures d'une conversation que le main n'a plus (git:status, commands:project).
+        // Appels vers une conversation que le main n'a plus, quel que soit le canal (git:status,
+        // commands:project, children:mergePlan, conversation:appTools… : chasses rc.4).
         const unknownReads = () =>
           ui
             .output()
             .split('\n')
-            .filter((line) => /IPC (git:status|commands:project)/.test(line))
-        const before = unknownReads().length
+            .filter((line) => line.includes(UNKNOWN_CONVERSATION))
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${row(mother)}`)
         await sleep(300)
-        // Recette rc.4 : la mère affichée supprimée, le fil ne l'interroge plus (« Conversation
-        // inconnue » au journal).
-        const unknown = unknownReads().slice(before)
+        // Recettes rc.4 : la mère affichée supprimée, plus rien ne l'interroge (« Conversation
+        // inconnue » au journal). Sortie gardée sur 64 Kio glissants : toute la séance compte,
+        // filles arrêtées et supprimées avant comprises (aucune n'est attendue).
+        const unknown = unknownReads()
         check(
           unknown.length === 0,
           `mère supprimée : aucune lecture d'une conversation supprimée${unknown.length ? ` (${unknown.join(' | ')})` : ''}`
