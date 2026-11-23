@@ -33,7 +33,7 @@ Lire avant toute tâche non triviale :
 | Tests seuls | `pnpm test` |
 | Build | `pnpm build` |
 | Formater | `pnpm format` |
-| **Essais de bout en bout** | pendant le travail, les suites touchées par les fichiers modifiés depuis `main` : `pnpm build && pnpm e2e --changed` (ou nommées : `pnpm e2e <suite>…`, `pnpm e2e --list`) ; **avant chaque push** : `pnpm build && pnpm e2e --changed` ; **avant un tag de version** : `pnpm build && pnpm e2e --if-needed` (suite complète, 3 suites en parallèle, ≈ 4 min ; rien si elle est déjà verte pour ces sources et ce build) — captures dans `e2e/captures/` ; `--jobs N` (1 : une à la fois), `--dry-run` ; interface en anglais : `--lang en` (captures `en-…`) — fiche 115 |
+| **Essais de bout en bout** | pendant le travail, les suites touchées (`pnpm e2e --changed --dry-run` pour les nommer) jouées **sur GitHub** : `e2e.yml` lancé à la main sur la branche, macOS + Linux (`systeme: les-deux`) ; **avant de pousser `main`** : `verify` et ces suites vertes sur GitHub ; suite complète **chaque nuit** sur GitHub et **en local juste avant un tag** : `pnpm build && pnpm e2e --if-needed` ; fumée : journées `parcours-*` (fiche 277) ; suites instables en quarantaine (`e2e/catalog.mjs`) — ADR-0069 ; options du lanceur (`--list`, `--jobs N`, `--dry-run`, `--lang en`) : fiche 115 |
 | Essais de bout en bout sous Linux (en local, Docker) | `pnpm e2e:linux [suites…]` : Ubuntu 24.04 dans Docker (Docker Desktop lancé), `xvfb` + openbox, `node_modules` Linux dans un volume à part (ceux du Mac jamais touchés), captures dans `e2e/captures/linux/` ; `--reset` repart d'un volume vide ; `BOBINE_E2E_CPUS=1` simule une machine lente — fiche 145 |
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` (sous Linux et Windows : l'app installée, `.deb` ou NSIS, fiche 229) ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
@@ -55,10 +55,12 @@ Lire avant toute tâche non triviale :
 Une tâche est terminée seulement si :
 1. `./scripts/verify` passe (lint + typecheck + tests).
 2. Le comportement est testé — idéalement contre l'**agent factice**, jamais contre un vrai modèle en CI.
-   Si l'interface change : les suites e2e touchées passent (`pnpm e2e --changed`, clair et
-   sombre), et leurs captures ont été regardées ; c'est aussi ce qui tourne **avant chaque push**.
-   La suite complète (`pnpm e2e --if-needed`) tourne **avant un tag de version**, et quand le lot
-   le justifie (refonte, fichier partagé par beaucoup de suites). Sur GitHub, `verify`
+   Si l'interface change : les suites e2e touchées passent **sur GitHub** (`e2e.yml` sur la
+   branche, macOS + Linux), et leurs captures ont été regardées ; c'est la condition pour pousser
+   `main`. La suite complète tourne chaque nuit sur GitHub et en local juste avant un tag
+   (`pnpm e2e --if-needed`). Nouvelle fonction : son étape dans le parcours `parcours-*` concerné ;
+   essai instable : quarantaine nommée, corrigé à côté ; 1.0 gelée (corrections seulement) —
+   méthode complète : ADR-0069. Sur GitHub, `verify`
    tourne à chaque pull request et poussée sur `main`, **bloquant sur macOS, Linux et Windows**
    (`ci.yml`, fiche 229) : un essai propre à un système y est sauté par capacité, avec la raison
    (`src/main/test-platform.ts`), jamais en vrac. Les e2e Linux partent à chaque poussée sur
