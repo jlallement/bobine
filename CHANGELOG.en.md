@@ -15,8 +15,11 @@ What changes for you, version by version. Shown in Settings › About.
 ### Fixes
 
 - An agent that can’t reach its model (unreachable proxy, network down) no longer leaves the
-  reply on “Thinking…” without a word: after 5 min, the “The agent hasn’t sent anything for…”
-  banner shows, even when the agent reports behind the scenes that it is retrying.
+  reply on “Thinking…” without a word. OpenCode: a banner says so from its second attempt, with
+  the countdown to the next one, its message, and a hint: the proxy that is set (without its
+  credentials), or the connection (Wi-Fi, VPN); **Network settings** opens the proxy field. Any
+  agent: after 5 min with nothing, the “The agent hasn’t sent anything for…” banner shows, and
+  cites the proxy when one is set.
 - Settings › Agents › Advanced, Corporate network: the proxy is no longer lost when you move
   straight on to the next field (“No proxy”) and leave it too.
 - Composer: when the window narrows, the bar folds in the same frame; the send button no longer
