@@ -15,6 +15,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Une conversation restaurée depuis la corbeille se reprend comme une autre : son agent repart et
+  le message part. Elle restait « Arrêté », le message dans la zone de saisie, sans explication.
+  Restaurer une mère supprimée avec ses filles les restaure avec elle (une fille supprimée seule
+  avant reste dans la corbeille).
+- Carte de travaux : l’en-tête ne dit plus « ont répondu » pour un travail dont la conversation a
+  été supprimée (« 1 supprimé »), ni pour un travail fusionné (« 1 fusionné »).
 - Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la
   réponse sur « Réfléchit… » sans rien dire. OpenCode : un bandeau le dit dès sa deuxième
   tentative, avec le décompte de la suivante, son message, et une piste : le proxy défini (sans

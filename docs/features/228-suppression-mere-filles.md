@@ -180,3 +180,36 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
     ouvert la boîte, dans la ligne supprimée juste après. `DeleteDialog` : confirmée, le focus va à
     la zone de saisie (`onCloseAutoFocus`) ; annulée, rien ne change. Preuve :
     `DeleteDialog.test.tsx`, rouge sans le correctif, vert avec.
+- 2026-11-23 — Seconde chasse avant la 1.0.0-rc.4 (branche `fix/restauration`) :
+  - **T1, bloquant (déjà en rc.3)** : une conversation restaurée depuis la corbeille restait
+    « Arrêté », le message dans la saisie, rien ne partait. Cause : le renderer garde la vue d'une
+    conversation déjà affichée et écarte toute vue ou tout évènement dont le numéro (`seq`) n'est
+    pas plus récent (`useConversations`, `reducer`) ; restaurée, la conversation renaissait côté
+    main avec `seq` à 0. Son agent démarrait bien (« Agent lancé » au journal), mais ni son état
+    « prête » ni la réponse n'atteignaient la fenêtre, qui gardait l'état « arrêtée » de la
+    suppression. Ni `AgentHost.stop({ forGood })` ni un hôte gardé n'étaient en cause (la
+    restauration crée un hôte neuf). Correctif à la cause : le numéro des évènements est compté
+    pour tout le gestionnaire (`eventSeq`), et une conversation restaurée part du dernier émis.
+    Preuves : `manager.test.ts` (« restaurée depuis la corbeille… », rouge avant : vue à 1 après
+    28 évènements vus) ; e2e `profil` (`restoredResumes` : envoyer, supprimer, restaurer, rouvrir,
+    envoyer, réponse), rouge sur l'ancien code, vert avec le correctif, en clair et sombre.
+  - **T7** : restaurer une mère ne restaurait pas les filles supprimées avec elle. Elles sont
+    marquées dans la corbeille (`deletedWith`, fiche de corbeille `<id>.meta.json`) quand
+    `deleteConversation` les emmène, et `restoreFromTrash` les restaure avec la mère
+    (`TrashLink.restoreFamily`) ; une fille supprimée seule avant reste à la corbeille, une fille
+    qui ne revient pas (fichier abîmé) est consignée sans empêcher la mère. Pas de nouveau texte
+    ni bouton : le pendant de l'archivage (`archivedWith`). Preuve : `family-delete.test.ts`
+    (fille et petite-fille restaurées, liens intacts, fille supprimée avant laissée, fille
+    restaurée qui répond de nouveau). Un travail supprimé pendant son démarrage n'a jamais été une
+    conversation : rien à restaurer, sa ligne reste « conversation supprimée ».
+  - **T7, comptage** : l'en-tête d'une carte de travaux comptait un travail supprimé et un
+    travail fusionné comme « a répondu ». Désormais « N supprimé(s) » et « N fusionné(s) »
+    (`workGroup.count.gone`, `workGroup.count.merged`). Preuve : `WorkGroup.test.tsx`, rouge
+    avant (« 2 ont répondu »).
+  - Essais : `./scripts/verify` vert ; `pnpm build && pnpm e2e --changed --jobs 3` (236 tâches,
+    toutes les suites : `manager.ts` et les traductions touchés) : 235/236, l'échec isolé de
+    `travaux-groupe` sombre (« proposés : une carte de groupe… », avant tout lancement, que le
+    comptage ne touche pas) ne s'est pas reproduit en rejouant la suite seule (clair et sombre,
+    2/2). Capture `196-restauree-reprise` (clair, sombre) regardée : « Prêt », la réponse à
+    « Après la corbeille ».
+

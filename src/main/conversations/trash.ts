@@ -17,6 +17,7 @@ import type { TrashEntry } from '@shared/profile'
 import { log } from '../log'
 import { fsyncDir, isReadOnly, readJson, writeFileAtomic } from '../storage'
 import { discussionFolder, eraseDiscussionFolder, sweepDiscussionFolders } from './discussion-space'
+import type { Conversation } from './conversation'
 import type { HistoryWriter } from './history-writer'
 import {
   isRecord,
@@ -34,6 +35,11 @@ interface TrashMeta {
   deletedAt: string
   /** La session a aussi été supprimée chez l'agent : la reprendre n'est plus possible. */
   agentDeleted?: boolean
+  /**
+   * Supprimée avec sa mère (identifiant de la conversation supprimée, fiche 228) : restaurer cette
+   * mère la restaure aussi. Une fille supprimée seule avant reste à la corbeille.
+   */
+  deletedWith?: string
 }
 
 export class ConversationTrash {
@@ -51,7 +57,7 @@ export class ConversationTrash {
     record: ConversationRecord,
     transcript: TranscriptState | undefined,
     file: string,
-    options: { agentDeleted?: boolean; now?: Date } = {}
+    options: { agentDeleted?: boolean; deletedWith?: string; now?: Date } = {}
   ): void {
     const { id } = record
     if (!SAFE_ID.test(id)) throw new Error(`Identifiant de conversation invalide : ${id}`)
@@ -62,7 +68,8 @@ export class ConversationTrash {
     const meta: TrashMeta = {
       record,
       deletedAt: (options.now ?? new Date()).toISOString(),
-      ...(options.agentDeleted ? { agentDeleted: true } : {})
+      ...(options.agentDeleted ? { agentDeleted: true } : {}),
+      ...(options.deletedWith ? { deletedWith: options.deletedWith } : {})
     }
     writeFileAtomic(join(this.dir, `${id}.meta.json`), JSON.stringify(meta))
     const target = join(this.dir, `${id}.json`)
@@ -126,6 +133,13 @@ export class ConversationTrash {
     if (existsSync(source)) renameSync(source, targetFile)
     rmSync(join(this.dir, `${id}.meta.json`), { force: true })
     return { record: meta.record, agentDeleted: meta.agentDeleted === true }
+  }
+
+  /** Conversations de la corbeille supprimées avec `id` (sa descendance, fiche 228). */
+  deletedWith(id: string): string[] {
+    return this.metas()
+      .filter((meta) => meta.deletedWith === id)
+      .map((meta) => meta.record.id)
   }
 
   /**
@@ -207,7 +221,8 @@ function parseMeta(raw: unknown): TrashMeta | undefined {
   return {
     record: r.record,
     deletedAt: r.deletedAt,
-    ...(r.agentDeleted ? { agentDeleted: true } : {})
+    ...(r.agentDeleted ? { agentDeleted: true } : {}),
+    ...(typeof r.deletedWith === 'string' ? { deletedWith: r.deletedWith } : {})
   }
 }
 
@@ -237,20 +252,55 @@ export class TrashLink {
 
   async put(
     conversation: { record: ConversationRecord; transcript?: TranscriptState },
-    agentDeleted: boolean
+    agentDeleted: boolean,
+    deletedWith?: string
   ): Promise<void> {
     const { id } = conversation.record
     this.store.setGone(id, true)
     await this.writer.forget(id)
     // Fil d'une version plus récente : déplacé tel quel, jamais réécrit dans ce format-ci.
     const transcript = this.store.isNewer(id) ? undefined : conversation.transcript
-    this.trash.put(conversation.record, transcript, this.store.fileOf(id), { agentDeleted })
+    this.trash.put(conversation.record, transcript, this.store.fileOf(id), {
+      agentDeleted,
+      ...(deletedWith ? { deletedWith } : {})
+    })
   }
 
   /**
    * Sa session supprimée chez l'agent : l'enregistrement revient sans elle (session neuve), avec
    * l'avis à poser dans son fil. `agentLabel` : le nom de l'agent d'un profil.
    */
+  /**
+   * Restaure `id`, puis la descendance supprimée avec elle (fiche 228), mère avant filles : ce que
+   * la suppression a emmené revient avec elle, rangé dans `conversations`. Une fille qui ne revient
+   * pas (fichier abîmé) reste à la corbeille, consignée ; la mère, elle, est revenue.
+   *
+   * `seq` : le dernier numéro d'évènement émis par le gestionnaire. Le renderer a pu voir ces
+   * conversations avant leur suppression et écarte une vue moins récente que ce qu'il a vu : repartir
+   * de 0 les laissait figées, « Arrêté », sans que rien parte (recette rc.4, T1).
+   */
+  restoreFamily(
+    id: string,
+    agentLabel: (profileId: string) => string,
+    conversations: Map<string, Conversation>,
+    seq: number
+  ): { conversation: Conversation; notice?: AgentEvent }[] {
+    const revive = ({ record, notice }: ReturnType<TrashLink['restore']>) => {
+      const conversation: Conversation = { record, lastUsed: 0, readAt: 0, draft: false, seq }
+      conversations.set(record.id, conversation)
+      return { conversation, ...(notice ? { notice } : {}) }
+    }
+    const restored = [revive(this.restore(id, agentLabel))]
+    for (const child of this.trash.deletedWith(id)) {
+      try {
+        restored.push(revive(this.restore(child, agentLabel)))
+      } catch (error) {
+        log.warn(`Fille ${child.slice(0, 8)} non restaurée avec sa mère :`, error)
+      }
+    }
+    return restored
+  }
+
   restore(
     id: string,
     agentLabel: (profileId: string) => string

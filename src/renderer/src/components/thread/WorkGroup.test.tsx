@@ -445,6 +445,27 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ])
   })
 
+  it('en-tête : un fusionné se dit fusionné, un supprimé n’a pas « répondu » (recette rc.4, T7)', async () => {
+    const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
+    const items = [
+      ...working(),
+      report(9, 'a'),
+      mergeItem(10, 'done', [{ childId: 'a', state: 'merged' }], { endedAt: T0 + 1000 })
+    ]
+    // « b » a répondu, puis sa conversation est partie à la corbeille.
+    view(items, info([child('a')], { merge: actions, exists: (id) => id === 'a' }))
+    await screen.findByTestId('subtasks-merge-result')
+    expect(screen.getByTestId('work-group-counts').textContent).toBe(
+      '· 1 fusionné, 1 supprimé, 1 refusé'
+    )
+    expect(
+      screen.getAllByTestId('work-row-state').map((s) => [s.dataset['state'], s.textContent])
+    ).toEqual([
+      ['replied', 'fusionné'],
+      ['gone', 'conversation supprimée']
+    ])
+  })
+
   it('conflit qui reste : Réessayer, Abandonner, Voir le conflit, dans la carte', async () => {
     const actions = mergeActions([candidate('a', 'conflict'), candidate('b', 'ready')])
     const items = [
