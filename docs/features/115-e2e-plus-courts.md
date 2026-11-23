@@ -147,3 +147,7 @@ Aucune nouvelle dépendance.
   (`pnpm e2e --if-needed`) n'est exigée qu'**avant un tag de version**, plus avant chaque push ;
   avant un push, seulement les suites touchées (`pnpm e2e --changed`). `e2e:prepush` renommé
   `e2e:pretag` ; `AGENTS.md`, `CONTRIBUTING.md`, `docs/README.md`, en-tête de `e2e/run.mjs`.
+- 2026-11-23 — **Règles d'exécution remplacées** par ADR-0069 (décision de l'utilisateur, dès la
+  rc.4) : suites touchées jouées sur GitHub (`e2e.yml` sur la branche, macOS + Linux) et non plus
+  en local ni avant chaque push ; suite complète la nuit sur GitHub et en local avant un tag. Le
+  lanceur lui-même ne change pas. `AGENTS.md` et le skill `verifier` alignés.
