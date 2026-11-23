@@ -8,8 +8,12 @@
  * seules (un agent qui réessaie de joindre son modèle) ne l'interrompent pas, et le journal dit
  * quand la dernière est arrivée. Le silence se compte au plus tôt depuis le début du tour.
  */
+import type { AgentSnapshot, AgentUnreachableView } from '@shared/agent'
+import { maskUrlCredentials } from '@shared/url-credentials'
+import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import { log } from '../log'
 import { formatDuration } from './acp-log'
+import type { RetryStatusSource } from './adapters'
 
 const SILENCE_FIRST_MS = 60_000
 const SILENCE_REPEAT_MS = 5 * 60_000
@@ -37,6 +41,67 @@ export class AgentActivity {
     this.last = now
     if (progress) this.progress = now
     return progress
+  }
+}
+
+/**
+ * Ce que les bandeaux d'un tour disent de l'agent (fiches 194, 275), sorti de l'hôte d'agent pour
+ * tenir son plafond : silence, modèle injoignable (reprises lues par le profil, `retryStatus`) et
+ * le proxy de l'agent comme piste. `changed` : à réémettre l'instantané (l'hôte le fait en tour).
+ */
+export class TurnQuiet {
+  readonly activity = new AgentActivity()
+  /** Proxy de l'agent lancé (non masqué ; masqué dans `view`). */
+  proxy: string | undefined
+  private silentSince: number | undefined
+  private unreachable: AgentUnreachableView | undefined
+  private readonly retryStatus: RetryStatusSource | undefined
+  private readonly changed: () => void
+
+  constructor(options: { retryStatus?: RetryStatusSource | undefined; changed: () => void }) {
+    this.retryStatus = options.retryStatus
+    this.changed = options.changed
+  }
+
+  view(): Pick<AgentSnapshot, 'silentSince' | 'unreachable' | 'proxy'> {
+    const shown = this.silentSince !== undefined || this.unreachable !== undefined
+    return {
+      ...(this.silentSince !== undefined ? { silentSince: this.silentSince } : {}),
+      ...(this.unreachable ? { unreachable: this.unreachable } : {}),
+      ...(shown && this.proxy ? { proxy: maskUrlCredentials(this.proxy) } : {})
+    }
+  }
+
+  /** Ligne reçue de l'agent : s'il avance, plus de silence ni de modèle injoignable. */
+  note(progress: boolean): void {
+    if (this.activity.note(progress)) this.calm()
+  }
+
+  /** Mise à jour de la session pendant un tour : une reprise annoncée par l'agent ? */
+  noteUpdate(update: SessionUpdate): void {
+    const state = this.retryStatus?.read(update)
+    // `null` (nouvelle tentative en cours) : le bandeau reste jusqu'à ce que l'agent avance.
+    if (!state || JSON.stringify(state) === JSON.stringify(this.unreachable)) return
+    this.unreachable = state
+    this.changed()
+  }
+
+  setSilent(since: number | undefined): void {
+    if (this.silentSince === since) return
+    this.silentSince = since
+    this.changed()
+  }
+
+  /** L'agent avance, ou le tour finit : les bandeaux partent. */
+  calm(): void {
+    if (this.silentSince === undefined && this.unreachable === undefined) return
+    this.silentSince = this.unreachable = undefined
+    this.changed()
+  }
+
+  /** Agent arrêté ou parti : tout oublier, sans réémettre (l'instantané suivant le dira). */
+  clear(): void {
+    this.silentSince = this.unreachable = undefined
   }
 }
 

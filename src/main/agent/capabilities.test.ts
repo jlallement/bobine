@@ -110,6 +110,7 @@ describe('capacités des agents (fiche 054)', () => {
       'subagent-live',
       'subagent-background',
       'replay-diffs',
+      'model-retry',
       'execute-errors',
       'child-model',
       'writes-without-asking',

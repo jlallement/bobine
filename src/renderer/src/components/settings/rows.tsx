@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactNode, type Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HelpTopic } from '@shared/help-topics'
 import { HelpLink } from '../help/HelpLink'
@@ -33,15 +33,22 @@ export function SettingsCard({ children, testId }: { children: ReactNode; testId
 export function Advanced({
   summary,
   children,
-  testId
+  testId,
+  detailsRef
 }: {
   summary?: string
   children: ReactNode
   testId?: string
+  /** Pour le déplier d'ailleurs (« Réglages réseau » d'un bandeau, fiche 275). */
+  detailsRef?: Ref<HTMLDetailsElement>
 }) {
   const { t } = useTranslation()
   return (
-    <details className="settings-advanced" {...(testId ? { 'data-testid': testId } : {})}>
+    <details
+      ref={detailsRef}
+      className="settings-advanced"
+      {...(testId ? { 'data-testid': testId } : {})}
+    >
       <summary>
         <ChevronRight size={13} className="settings-advanced-chevron" aria-hidden />
         {t('settings.advanced')}

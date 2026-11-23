@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { silenceBannerMs, watchSilence } from './silence-watch'
+import type { SessionUpdate } from '../../shared/acp-sdk.mts'
+import { OPENCODE_RETRY_STATUS } from './opencode-retry'
+import { silenceBannerMs, TurnQuiet, watchSilence } from './silence-watch'
 
 describe('silence de l’agent pendant un tour (fiche 194)', () => {
   beforeEach(() => vi.useFakeTimers({ now: 0 }))
@@ -96,5 +98,39 @@ describe('silence de l’agent pendant un tour (fiche 194)', () => {
     expect(silenceBannerMs({})).toBe(300_000)
     expect(silenceBannerMs({ BOBINE_SILENCE_MS: '2000' })).toBe(2000)
     expect(silenceBannerMs({ BOBINE_SILENCE_MS: 'non' })).toBe(300_000)
+  })
+})
+
+describe('bandeaux du tour (fiche 275)', () => {
+  const retry = (attempt: number | null) =>
+    ({
+      sessionUpdate: 'session_info_update',
+      _meta: { 'opencode/retry': attempt === null ? null : { attempt, error: { message: 'x' } } }
+    }) as SessionUpdate
+
+  it('reprise lue par le profil ; `null` la garde ; l’agent qui avance l’efface', () => {
+    let changes = 0
+    const quiet = new TurnQuiet({ retryStatus: OPENCODE_RETRY_STATUS, changed: () => changes++ })
+    quiet.proxy = 'http://jean:s3cr3t@proxy:3128'
+    expect(quiet.view()).toEqual({})
+    quiet.noteUpdate(retry(2))
+    expect(quiet.view()).toEqual({
+      unreachable: { attempt: 2, message: 'x' },
+      proxy: 'http://•••@proxy:3128'
+    })
+    quiet.noteUpdate(retry(null))
+    quiet.noteUpdate(retry(2))
+    expect(changes).toBe(1)
+    quiet.note(false)
+    expect(quiet.view().unreachable).toBeDefined()
+    quiet.note(true)
+    expect(quiet.view()).toEqual({})
+    expect(changes).toBe(2)
+  })
+
+  it('sans source de reprises : rien de lu', () => {
+    const quiet = new TurnQuiet({ changed: () => undefined })
+    quiet.noteUpdate(retry(3))
+    expect(quiet.view()).toEqual({})
   })
 })

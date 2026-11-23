@@ -10,6 +10,10 @@ import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
  * de Bobine puis rapport local au lancement suivant et orphelins arrêtés, élément du fil illisible
  * remplacé sans emporter la fenêtre, avis d'erreur interne du main.
  */
+/** Proxy saisi pour la suite (fiche 275) : jamais affiché en clair. */
+const PROXY = 'http://jean:s3cr3t@proxy.exem21ple.test:3128'
+const MASKED = 'http://•••@proxy.exem21ple.test:3128'
+
 export async function failuresVisibleSuite(scheme) {
   console.log(`\n— Pannes visibles (${scheme})`)
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-pannes-visibles-'))
@@ -21,12 +25,38 @@ export async function failuresVisibleSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
-        // 0. Agent qui ne joint pas son modèle (OpenCode 2.3.0 derrière un proxy injoignable) :
-        // mises à jour d'état seules, pas de contenu ; le bandeau vient quand même, Stop finit.
+        // 0. Agent qui ne joint pas son modèle (OpenCode 2.3.0 derrière un proxy injoignable,
+        // fiche 275) : reprises lues par le profil, bandeau tout de suite, piste Wi-Fi / VPN sans
+        // proxy ; « Réglages réseau » mène au champ du proxy, qu'on renseigne pour la suite.
         await ui.send('/scenario reseau-injoignable-2-3')
-        await ui.waitFor(`!!${ui.$('silence-banner')}`, 15000)
-        check(true, 'agent qui ne fait que réessayer (états seuls) : bandeau de silence')
-        await ui.click(ui.$('silence-stop'))
+        await ui.waitFor(`${ui.$('agent-unreachable')}?.dataset.attempt >= 3`, 15000)
+        const unreachable = await ui.ev(
+          `({ role: ${ui.$('agent-unreachable')}.getAttribute('role'), hint: ${ui.$('agent-unreachable-hint')}.innerText, working: !!${ui.$('working')}, silence: !!${ui.$('silence-banner')} })`
+        )
+        check(
+          unreachable.role === 'status' &&
+            unreachable.hint === L('agentRetry.noProxy') &&
+            !unreachable.working &&
+            !unreachable.silence,
+          `agent qui réessaie : « n’arrive pas à joindre son modèle », piste Wi-Fi / VPN, ni indicateur ni bandeau de silence (${JSON.stringify(unreachable)})`
+        )
+        await ui.ev(`${ui.$('agent-unreachable')}.querySelector('details').open = true; true`)
+        await ui.shot('275-injoignable')
+        await ui.click(ui.$('agent-unreachable-settings'))
+        await ui.waitFor(
+          `${ui.$('settings-agents-advanced')}?.open === true && document.activeElement === ${ui.$('network-proxy')}`,
+          10000
+        )
+        check(
+          true,
+          '« Réglages réseau » : Réglages › Agents, « Avancé » déplié, focus sur le proxy'
+        )
+        await ui.type(PROXY)
+        await ui.key('Enter')
+        await ui.waitFor(`!!${ui.$('network-note')}`)
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('settings')}`)
+        await ui.click(ui.$('agent-unreachable-stop'))
         await ui.ready()
         check(true, '« Arrêter » termine le tour d’un agent qui réessaie')
         // 1. Agent silencieux : bandeau neutre, « Attendre » le masque, « Arrêter » arrête.
@@ -56,6 +86,33 @@ export async function failuresVisibleSuite(scheme) {
           `agent figé qui ignore Stop et SIGTERM : arrêté, un seul avis clair (${stopped})`
         )
         await ui.send('/scenario streaming-texte')
+        await ui.ready()
+        // Agent relancé avec le proxy saisi plus haut (fiche 275) : silence sans contenu, puis
+        // reprises ; le proxy est cité, identifiants masqués, nulle part en clair.
+        await ui.send('/scenario silence-annulable')
+        await ui.waitFor(`!!${ui.$('silence-proxy')}`, 15000)
+        const silenceProxy = await ui.ev(
+          `({ hint: ${ui.$('silence-proxy')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
+        )
+        check(
+          silenceProxy.hint === L('silenceBanner.proxy', { proxy: MASKED }) && !silenceProxy.page,
+          `silence avec un proxy : cité masqué, « Réglages réseau » (${silenceProxy.hint})`
+        )
+        await ui.shot('275-silence-proxy')
+        await ui.click(ui.$('silence-stop'))
+        await ui.ready()
+        await ui.send('/scenario reseau-injoignable-2-3')
+        await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
+        const unreachableProxy = await ui.ev(
+          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
+        )
+        check(
+          unreachableProxy.hint === L('agentRetry.proxy', { proxy: MASKED }) &&
+            !unreachableProxy.page,
+          `modèle injoignable avec un proxy : cité masqué (${unreachableProxy.hint})`
+        )
+        await ui.shot('275-injoignable-proxy')
+        await ui.click(ui.$('agent-unreachable-stop'))
         await ui.ready()
         // Agent tué par kill -9 pendant une commande (fiche 195, D3) : la commande ne lui survit pas.
         await ui.send('/scenario plantage-avec-enfant')

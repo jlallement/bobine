@@ -684,6 +684,16 @@
     "willSend_other": "{{count}} messages partiront à la fin de la réponse",
     "willSend_many": "{{count}} messages partiront à la fin de la réponse"
   },
+  "agentRetry": {
+    "title": "{{agent}} n’arrive pas à joindre son modèle",
+    "detail": "Il réessaie de lui-même : tentative {{attempt}}, la prochaine dans {{seconds}} s. Votre message est gardé.",
+    "detailNow": "Il réessaie de lui-même : tentative {{attempt}} en cours. Votre message est gardé.",
+    "proxy": "Un proxy est défini pour les agents ({{proxy}}) : vérifiez son adresse dans Réglages › Agents › Avancé.",
+    "noProxy": "Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans Réglages › Agents › Avancé.",
+    "agentMessage": "Message de l’agent",
+    "settings": "Réglages réseau",
+    "stop": "Arrêter"
+  },
   "turnRetry": {
     "network": "Connexion perdue",
     "rateLimit": "Limite de débit atteinte",
@@ -3343,6 +3353,10 @@
       "label": "Sous-agents en arrière-plan suivis jusqu’à leur fin",
       "detail": "Quand {{agent}} lance un sous-agent en arrière-plan, son outil rend la main tout de suite (`metadata.status: \"running\"`) : l’app le garde « en cours », relit sa session de temps en temps, et le dit fini avec sa réponse quand elle se termine."
     },
+    "modelRetry": {
+      "label": "Modèle injoignable",
+      "detail": "Quand {{agent}} ne joint pas son modèle (proxy, réseau), il réessaie sans fin sans le dire au fil ; l’app lit ses reprises (`_meta[\"opencode/retry\"]`) et le montre : tentative, prochaine tentative, son message."
+    },
     "executeErrors": {
       "label": "Erreurs des outils appelés par du code",
       "detail": "Quand {{agent}} appelle des outils par son outil `execute`, il dit la carte finie même si l’un d’eux a échoué ; l’app lit l’erreur qu’il note à part (`rawOutput.metadata.toolCalls`) et met la carte en échec."
@@ -5261,6 +5275,8 @@
   "silenceBanner": {
     "title": "L’agent n’a rien envoyé depuis {{minutes}} min",
     "detail": "C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez attendre, ou arrêter la réponse : la conversation est gardée.",
+    "proxy": "Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.",
+    "settings": "Réglages réseau",
     "wait": "Attendre",
     "stop": "Arrêter"
   },

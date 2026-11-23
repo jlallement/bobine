@@ -29,6 +29,14 @@ export const BACKGROUND_SLEEP = '41.3'
 export const DETACHED_SLEEP = '41.4'
 
 export const failureScenarios: Record<string, Scenario> = {
+  'silence-annulable': {
+    description:
+      'Commence à répondre puis ne dit plus rien pendant 10 min, mais s’arrête à Stop (agent qui attend un modèle injoignable sans le dire ; fiche 275)',
+    steps: [
+      { kind: 'text', text: 'Je commence… ' },
+      { kind: 'pause', ticks: 15_000 }
+    ]
+  },
   'plantage-signal': {
     description: 'Commence un outil puis le processus est tué par SIGKILL (mort sans un mot)',
     steps: [...TOOL_STARTED, { kind: 'signal', signal: 'SIGKILL' }]

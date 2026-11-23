@@ -679,6 +679,16 @@ export type FrResources = {
     readonly willSend_other: '{{count}} messages partiront à la fin de la réponse'
     readonly willSend_many: '{{count}} messages partiront à la fin de la réponse'
   }
+  readonly agentRetry: {
+    readonly title: '{{agent}} n’arrive pas à joindre son modèle'
+    readonly detail: 'Il réessaie de lui-même : tentative {{attempt}}, la prochaine dans {{seconds}} s. Votre message est gardé.'
+    readonly detailNow: 'Il réessaie de lui-même : tentative {{attempt}} en cours. Votre message est gardé.'
+    readonly proxy: 'Un proxy est défini pour les agents ({{proxy}}) : vérifiez son adresse dans Réglages › Agents › Avancé.'
+    readonly noProxy: 'Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans Réglages › Agents › Avancé.'
+    readonly agentMessage: 'Message de l’agent'
+    readonly settings: 'Réglages réseau'
+    readonly stop: 'Arrêter'
+  }
   readonly turnRetry: {
     readonly network: 'Connexion perdue'
     readonly rateLimit: 'Limite de débit atteinte'
@@ -3194,6 +3204,10 @@ export type FrResources = {
       readonly label: 'Sous-agents en arrière-plan suivis jusqu’à leur fin'
       readonly detail: 'Quand {{agent}} lance un sous-agent en arrière-plan, son outil rend la main tout de suite (`metadata.status: "running"`) : l’app le garde « en cours », relit sa session de temps en temps, et le dit fini avec sa réponse quand elle se termine.'
     }
+    readonly modelRetry: {
+      readonly label: 'Modèle injoignable'
+      readonly detail: 'Quand {{agent}} ne joint pas son modèle (proxy, réseau), il réessaie sans fin sans le dire au fil ; l’app lit ses reprises (`_meta["opencode/retry"]`) et le montre : tentative, prochaine tentative, son message.'
+    }
     readonly executeErrors: {
       readonly label: 'Erreurs des outils appelés par du code'
       readonly detail: 'Quand {{agent}} appelle des outils par son outil `execute`, il dit la carte finie même si l’un d’eux a échoué ; l’app lit l’erreur qu’il note à part (`rawOutput.metadata.toolCalls`) et met la carte en échec.'
@@ -5088,6 +5102,8 @@ export type FrResources = {
   readonly silenceBanner: {
     readonly title: 'L’agent n’a rien envoyé depuis {{minutes}} min'
     readonly detail: 'C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez attendre, ou arrêter la réponse : la conversation est gardée.'
+    readonly proxy: 'Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.'
+    readonly settings: 'Réglages réseau'
     readonly wait: 'Attendre'
     readonly stop: 'Arrêter'
   }
