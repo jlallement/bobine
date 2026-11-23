@@ -105,10 +105,17 @@ export async function linksSuite(scheme) {
         const struck = `[...document.querySelectorAll('[data-testid=file-link-gone]')].find((s) => s.textContent === 'absent.md')`
         const bubble = `[...document.querySelectorAll('[role=status]')].some((s) => s.textContent === ${goneText})`
         await ui.click(link('absent.md'))
-        await ui.waitFor(`!!${struck} && ${bubble}`)
+        // Chaque état attendu pour lui-même : la bulle (3 s) d'abord, puis le lien barré.
+        await ui.waitFor(bubble)
+        await ui.waitFor(`!!${struck} && !${struck}.closest('a') && !${link('absent.md')}`)
+        // Le `title` du barré est mis de côté tant que le pointeur le survole (infobulles de l'app,
+        // `title-tooltips.ts`, fiche 126) : le pointeur resté sur place après le clic le lui
+        // reprenait dès que Chromium recalculait le survol, d'où un `title` vide selon le moment
+        // (CI du 2026-11-23). Le pointeur s'en va, comme un utilisateur, et le `title` revient.
+        await ui.hover({ x: 5, y: 400 })
+        await ui.waitFor(`${struck}.title === ${goneText}`)
         check(
-          (await ui.ev(`${struck}.title === ${goneText} && !${struck}.closest('a')`)) &&
-            !(await ui.ev(`!!${link('absent.md')}`)),
+          true,
           'fichier absent : le lien devient du code barré, la bulle « introuvable » s’affiche'
         )
         await ui.shot('45-fichier-absent-bulle')

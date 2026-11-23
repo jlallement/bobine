@@ -365,6 +365,24 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   0 ; `pnpm build` puis `pnpm e2e links` cinq fois : 0 à chaque fois (clair et sombre). Captures
   `45-*` regardées : barré et bulle corrects ; la bulle déborde sur la ligne suivante du message
   (« Voir aussi… » en partie caché pendant 3 s), non corrigé, à trancher.
+- 2026-11-23 — e2e GitHub 45274253480 (`rc11/candidat`, commit de la 1.1.0-rc.1) : `links` rouge
+  sur Linux (clair) et macOS (sombre), « fichier absent : le lien devient du code barré, la bulle
+  « introuvable » s'affiche » ; suite complète verte en local sur Mac. Capture Linux : `absent.md`
+  barré, bulle affichée, plus de lien ; l'attente `barré && bulle` avait abouti (pas de délai
+  dépassé, suite en 13 s), c'est le contrôle d'après qui tombait. **Cause : l'essai.** Le
+  pointeur reste sur place après le clic ; le lien y est remplacé par le barré, et Chromium,
+  qui recalcule le survol au fil des images, envoie `pointerover` au nouvel élément :
+  `title-tooltips.ts` (fiche 126) met alors son `title` de côté pour sa propre infobulle. Le
+  contrôle `title === « Fichier introuvable »` lisait donc un `title` vide ou plein selon que ce
+  survol recalculé passait avant ou après lui : course perdue sur les machines de CI. L'app fait
+  ce qu'il faut (le survol redit « Fichier introuvable » par l'infobulle de l'app). Essai
+  corrigé : chaque état attendu pour lui-même, sans délai fixe — la bulle d'abord, puis le barré
+  (hors d'un lien, plus de lien `absent.md`), puis le pointeur écarté comme par un utilisateur
+  et le `title` revenu ; les trois sont toujours exigés. Aucun changement de l'app, pas d'essai
+  unitaire. Pas d'e2e en local (ADR-0069) : à confirmer par la CI. Point ouvert : pointeur
+  laissé sur le barré après le clic, l'infobulle de l'app (400 ms) peut s'ajouter à la bulle de
+  3 s, même texte ; le `pressed` de `title-tooltips.ts` ne vise que l'élément cliqué, remplacé
+  ici. Non observé à l'écran, non corrigé, à trancher.
 
 ## Reste
 
