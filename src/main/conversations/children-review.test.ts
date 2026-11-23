@@ -18,20 +18,23 @@ import { AppToolServer } from '../mcp/tool-server'
 import { ChildConversations } from './children'
 import { reviewHandlers } from './children-review'
 import { ConversationManager } from './manager'
+import { until } from './manager-until'
 import { builtinRoles } from '../roles/builtin'
 import { startRoleChildren } from '../roles/invoke'
 import type { RoleView } from '@shared/roles'
 
-function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const started = Date.now()
-    const check = () => {
-      if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
-      setTimeout(check, 10)
-    }
-    check()
-  })
+/** Gestionnaire de l'essai en cours (un seul par essai), suivi par `waitFor`. */
+let current: ConversationManager | undefined
+
+/**
+ * Attente sur évènement du gestionnaire de l'essai (`until`, comme `children.test.ts`) : pas de
+ * sondage toutes les 10 ms. Mesuré (30 passages, 4 en parallèle) : chaque attente dure moins
+ * d'une seconde, y compris les départs ratés. Délai sous celui d'un essai (15 s) : un échec dit
+ * ce qui était attendu plutôt qu'un essai coupé.
+ */
+function waitFor(predicate: () => boolean, timeoutMs = 10_000): Promise<void> {
+  if (!current) throw new Error('waitFor : aucun gestionnaire')
+  return until(current, predicate, predicate.toString(), timeoutMs)
 }
 
 const stops: (() => void)[] = []
@@ -98,6 +101,7 @@ async function environment() {
     worktrees: new Worktrees(run),
     agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
   })
+  current = manager
   // Les rôles fournis par Bobine (fiche 223), dont Code reviewer.
   const roles: RoleView[] = builtinRoles().map((role) => ({ ...role, enabled: true }))
   children = new ChildConversations(manager, {
@@ -246,10 +250,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     // La suite relit sans rien écrire (l'agent factice de ce profil écrirait sinon).
     const again = 'Relis à nouveau\n/scenario relecture-vide'
     expect(env.children.reply(author, reviewer.id, again)).toBe('sent')
-    await waitFor(
-      () => env.items(author).filter((i) => i.kind === 'child-report').length === 2,
-      20_000
-    )
+    await waitFor(() => env.items(author).filter((i) => i.kind === 'child-report').length === 2)
     await env.idle(reviewer.id)
     await env.reviews.settled(reviewer.id)
     // Bulle de suite dans le fil de l'auteur ; la suite part au même relecteur.
@@ -322,7 +323,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     const env = await environment()
     const author = await env.author()
     const reviewer = await env.reviews.start(author, { profileId: 'casse' })
-    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    await waitFor(() => env.card(author)?.status === 'failed')
     // Comme tout travail : une réponse en erreur dans le fil de la mère (carte « en erreur »).
     const reports = () =>
       env
@@ -333,7 +334,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     expect(reports()).toHaveLength(1)
     // « Relancer » (la même demande) : le premier message refait, jamais la demande seule.
     expect(env.children.reply(author, reviewer.id, 'Relis les modifications')).toBe('sent')
-    await waitFor(() => reports().length === 2, 20_000)
+    await waitFor(() => reports().length === 2)
     expect(env.items(reviewer.id).some((i) => i.kind === 'user')).toBe(false)
   })
 
@@ -525,7 +526,7 @@ describe('relecture avant fusion (fiche 177)', () => {
       text: 'Relis'
     })
     const reviewer = started.started[0]?.childId ?? ''
-    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    await waitFor(() => env.card(author)?.status === 'failed')
     expect(env.card(author)).toMatchObject({ scope: 'commits', commits: 1 })
     // Entre-temps, le travail passe sur une branche : la portée devient la branche.
     env.git('checkout', '-q', '-b', 'tri')
@@ -534,7 +535,7 @@ describe('relecture avant fusion (fiche 177)', () => {
     env.git('commit', '-q', '-m', 'tri')
     refuse = false
     expect(env.children.reply(author, reviewer, 'Relis', { retry: true })).toBe('sent')
-    await waitFor(() => env.card(author)?.scope === 'branch', 20_000)
+    await waitFor(() => env.card(author)?.scope === 'branch')
     const card = env.card(author)
     expect(card?.commits).toBeUndefined()
     expect(card?.head).toBeUndefined()
@@ -554,11 +555,11 @@ describe('relecture avant fusion (fiche 177)', () => {
       return (prompt as (...args: unknown[]) => Promise<void>)(id, text, ...rest)
     }) as typeof env.manager.prompt
     const reviewer = await env.reviews.start(author)
-    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    await waitFor(() => env.card(author)?.status === 'failed')
     refuse = false
     const asked = 'Regarde aussi les tests\n/scenario relecture-vide'
     expect(env.children.reply(author, reviewer.id, asked)).toBe('sent')
-    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 3, 20_000)
+    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 3)
     const [first, again, extra] = sent.get(reviewer.id) ?? []
     expect(again).toBe(first)
     expect(splitRoleBrief(again ?? '').brief).toContain(REVIEW_BRIEF_LEAD)
@@ -602,19 +603,19 @@ describe('relecture avant fusion (fiche 177)', () => {
       }
     })
     const reviewer = await env.reviews.start(author, { focus: 'Les erreurs réseau' })
-    await waitFor(() => env.card(author)?.status === 'failed', 20_000)
+    await waitFor(() => env.card(author)?.status === 'failed')
     expect(env.card(author)?.focus).toBe('Les erreurs réseau')
     // Redémarrage : le premier message gardé en mémoire est perdu ; la carte, elle, est enregistrée.
     env.reviews.forget(reviewer.id)
     refuse = false
     expect(env.children.reply(author, reviewer.id, 'Relis les modifications')).toBe('sent')
-    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 2, 20_000)
+    await waitFor(() => (sent.get(reviewer.id)?.length ?? 0) === 2)
     const again = splitRoleBrief(sent.get(reviewer.id)?.[1] ?? '')
     expect(again.request).toBe('Relis les modifications')
     expect(again.brief).toContain(REVIEW_BRIEF_LEAD)
     expect(again.brief).toContain('look in particular at:\nLes erreurs réseau')
     expect(again.brief).toContain('git diff HEAD')
-    await waitFor(() => env.card(author)?.status === 'reported', 20_000)
+    await waitFor(() => env.card(author)?.status === 'reported')
     // Au départ du tour relancé, la carte repasse « en cours », l'erreur effacée (revue QA).
     const failedAt = steps.indexOf('failed:erreur')
     expect(failedAt).toBeGreaterThan(-1)
