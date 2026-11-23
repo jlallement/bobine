@@ -14,6 +14,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- An agent that can’t reach its model (unreachable proxy, network down) no longer leaves the
+  reply on “Thinking…” without a word: after 5 min, the “The agent hasn’t sent anything for…”
+  banner shows, even when the agent reports behind the scenes that it is retrying.
 - Settings › Agents › Advanced, Corporate network: the proxy is no longer lost when you move
   straight on to the next field (“No proxy”) and leave it too.
 - Composer: when the window narrows, the bar folds in the same frame; the send button no longer

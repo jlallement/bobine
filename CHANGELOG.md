@@ -15,6 +15,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la
+  réponse sur « Réfléchit… » sans rien dire : au bout de 5 min, le bandeau « L’agent n’a rien
+  envoyé depuis… » s’affiche, même si l’agent signale en coulisses qu’il réessaie.
 - Réglages › Agents › Avancé, Réseau d’entreprise : le proxy n’est plus perdu quand on passe
   aussitôt au champ suivant (« Sans proxy ») et qu’on le quitte à son tour.
 - Zone de saisie : quand la fenêtre rétrécit, la barre se replie dans la même image ; le bouton
