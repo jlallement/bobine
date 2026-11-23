@@ -332,6 +332,56 @@ describe('clic commencé dans le fil (fiche 250)', () => {
     }
   })
 
+  it('pointeur sur une carte qui retient le fil : le bas qui rétrécit avant l’appui ne la déplace pas', () => {
+    vi.useFakeTimers()
+    try {
+      // Relevé dans `filles-fusion` : visée à 1885, le bas perd 50 px, appui à 1864,5 (20,5 px
+      // plus bas, à côté de la flèche de la ligne).
+      const { box, el, column, button, shrink } = clampingThread()
+      const card = document.createElement('div')
+      card.setAttribute('data-scroll-hold', '')
+      const row = document.createElement('button')
+      card.append(row)
+      column.append(card)
+      expect(box.scrollTop).toBe(800)
+      act(() => row.dispatchEvent(new Event('pointerover', { bubbles: true })))
+      expect(column.style.minHeight).toBe('948px')
+      shrink(20)
+      expect(box.scrollTop).toBe(800)
+      // Un clic sur la ligne : la hauteur gardée reste celle de l'arrivée du pointeur, et tient
+      // après le relâché tant que le pointeur est sur la carte.
+      press(row, 'pointerdown')
+      expect(column.style.minHeight).toBe('948px')
+      press(row, 'pointerup')
+      act(() => vi.runAllTimers())
+      expect(column.style.minHeight).toBe('948px')
+      expect(box.scrollTop).toBe(800)
+      // Pointeur sorti de la carte : le fil reprend sa vraie hauteur, et le bas qu'il suivait.
+      act(() => button.dispatchEvent(new Event('pointerover', { bubbles: true })))
+      expect(column.style.minHeight).toBe('')
+      shrink(0)
+      expect(box.scrollTop).toBe(780)
+      el.remove()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('message envoyé depuis une carte qui retient le fil : la hauteur est rendue, le fil va en bas', () => {
+    const { box, el, column, shrink, result } = clampingThread()
+    const card = document.createElement('div')
+    card.setAttribute('data-scroll-hold', '')
+    column.append(card)
+    act(() => card.dispatchEvent(new Event('pointerover', { bubbles: true })))
+    shrink(20)
+    expect(box.scrollTop).toBe(800)
+    act(() => result.current.followSent())
+    expect(column.style.minHeight).toBe('')
+    shrink(0)
+    expect(box.scrollTop).toBe(780)
+    el.remove()
+  })
+
   it('appui hors du fil ou clic droit : rien n’est réservé ; appui annulé : la hauteur est rendue', () => {
     vi.useFakeTimers()
     try {
