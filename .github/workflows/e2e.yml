@@ -68,6 +68,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # L'écran du runner fait 1024 × 768 : la fenêtre de l'app (1280 × 820) y est réduite et une
+      # quarantaine de suites tombaient chaque nuit, loin de la cause (fiche 250). On passe l'écran
+      # en 1920 × 1080 (displayplacer, Homebrew officiel, version vérifiée par le script), puis on
+      # vérifie la zone utile que macOS donne aux fenêtres : trop petite, le job s'arrête ici, rouge,
+      # avec les modes offerts dans le journal. Aucune suite ni assertion n'est assouplie.
+      - name: Écran 1920 × 1080
+        run: scripts/ci/macos-screen.sh
       # Découpage voulu en mots (suites et options), chacun passé tel quel.
       - name: Essais (français)
         run: |

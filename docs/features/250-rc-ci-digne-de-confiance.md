@@ -134,7 +134,8 @@ Dependabot comme les autres.
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
    être vert, avec l'annotation « e2e terminal en quarantaine (linux) ». Si oui, garder le dernier
    commit (`continue-on-error` retiré) ; sinon le retirer et noter ici ce qui échoue encore.
-2. Le lendemain de la fusion : le passage de nuit macOS (`schedule`) et sa durée.
+2. Le lendemain de la fusion : le passage de nuit macOS (`schedule`) et sa durée ; avant, sur la
+   branche `ci/nuit-macos-ecran`, l'étape « Écran 1920 × 1080 » verte (journal du 2026-11-23).
 3. `ci.yml` sous Windows : 10 passages verts d'affilée (audit B5).
 4. Au premier tag (rc.1) : `SHA256SUMS-macos-arm64.txt` et les attestations dans la Release.
    Vérifier ensuite `gh attestation verify Bobine-<version>-arm64.dmg --repo jlallement/bobine`
@@ -249,3 +250,28 @@ Dependabot comme les autres.
   `android` : 4 à 5 images/s). Rien n'est changé ici : il faut agrandir l'écran du runner avant
   les essais (à essayer sur GitHub, aucun outil vérifié), ou ne garder de nuit que ce qui tient
   dans 1024 × 768 ; décision à prendre.
+
+- 2026-11-23 — Décision de Jérôme : agrandir l'écran du runner macOS avant les essais (branche
+  `ci/nuit-macos-ecran`). Nouvelle étape « Écran 1920 × 1080 » du job macOS de `e2e.yml`, juste
+  avant les essais : `scripts/ci/macos-screen.sh`.
+  - Outil : `displayplacer` (« XRandR pour macOS »), formule `homebrew/core` 1.4.0, licence MIT,
+    bouteille vérifiée par Homebrew (SHA-256). Installé sans mise à jour de Homebrew ; une autre
+    version que 1.4.0 arrête le job (on la relit avant de changer `DISPLAYPLACER_VERSION`). Rien
+    n'est téléchargé hors de Homebrew. Écarté : `vmware-resolutionSet` (Intel sous VMware
+    seulement, absent des runners Apple Silicon), outils d'écran virtuel (BetterDisplay…), pas de
+    source établie pour la CI.
+  - Choix du mode : `1920x1080` de l'écran principal (sans mise à l'échelle de préférence), à
+    défaut le plus grand mode offert. Testé sans écran (`scripts/ci/macos-screen.test.ts`).
+  - Vérification qui ne dépend pas de displayplacer : la zone utile de l'écran principal
+    (`NSScreen.visibleFrame`, c'est le `screen.workArea` d'Electron), lue par `osascript`, doit
+    contenir la fenêtre par défaut (1280 × 820). Sinon le job s'arrête là, rouge, avec
+    `system_profiler SPDisplaysDataType` avant et après et la liste des modes offerts. Essayé sur
+    le Mac (vert à 1512 × 890, rouge en exigeant 3000 de large).
+  - Rien ne change sous Linux et Windows, ni dans les suites. L'étape anglaise ne joue toujours
+    que si l'étape française est verte (comportement inchangé).
+  - Non prouvé : on ne sait pas encore quels modes l'écran virtuel du runner `macos-15` (Apple
+    Silicon) offre. Une discussion de `actions/runner-images` (#5730, 2022) ne montrait qu'un mode,
+    et CircleCI documente un seul mode sur ses machines virtuelles M1. Si le runner n'offre que
+    1024 × 768, l'étape le dira en rouge et la décision revient (garder de nuit ce qui tient dans
+    1024 × 768, ou un autre runner). À prouver sur GitHub : `startup panel session composer`
+    seules, puis la suite complète.
