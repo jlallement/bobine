@@ -140,6 +140,12 @@ export async function sessionSuite(scheme) {
         check(true, 'le modèle ouvre le menu des modèles de la zone de saisie')
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('model-menu-content')}`)
+        // Radix rend le focus à la puce un peu après la fermeture (`setTimeout`) ; l'infobulle s'ouvre
+        // alors (focus au clavier) et ne se ferme qu'en voyant le pointeur quitter la puce. Écarté
+        // avant (runner macOS chargé, fiche 250), le pointeur ne la quittait plus : infobulle restée.
+        await ui.waitFor(
+          `document.activeElement === ${env}.querySelector('[data-testid=model-chip]')`
+        )
         // Souris écartée : l'infobulle du modèle ne masque pas la capture.
         await ui.hover({ x: 5, y: 400 })
         await ui.waitFor(`!document.querySelector('[role=tooltip]')`)
