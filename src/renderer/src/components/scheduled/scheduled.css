@@ -340,3 +340,16 @@
     margin-left: 0;
   }
 }
+
+/* Dossiers récents d'une tâche (fiche 276, T12) : largeur bornée, chemins sur une ligne. */
+.menu.scheduled-folder-options {
+  max-width: min(420px, calc(100vw - 24px));
+}
+
+.scheduled-folder-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}

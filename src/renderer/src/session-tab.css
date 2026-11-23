@@ -296,8 +296,10 @@
   padding: 2px 0;
 }
 
-.session-row-changes .session-row-label {
-  padding-top: 5px;
+.session-row-changes .session-row-label,
+.session-row-changes .session-none {
+  padding-top: 4px;
+  line-height: 1.45;
 }
 
 .session-link.session-changes {

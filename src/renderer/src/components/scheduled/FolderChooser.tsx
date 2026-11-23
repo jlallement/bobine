@@ -1,7 +1,7 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import { Check, ChevronDown, Folder, FolderOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { basename, ItemText } from '../common/Menus'
+import { basename } from '../common/Menus'
 import { useDisplayPath } from '../../presentation'
 
 /**
@@ -45,7 +45,7 @@ export function FolderChooser({
           </Dropdown.Trigger>
           <Dropdown.Portal>
             <Dropdown.Content
-              className="menu"
+              className="menu scheduled-folder-options"
               side="bottom"
               align="end"
               sideOffset={6}
@@ -61,14 +61,18 @@ export function FolderChooser({
                   data-testid="scheduled-folder-option"
                 >
                   <Folder size={16} className="menu-icon" />
-                  <ItemText
-                    title={basename(path)}
-                    description={
-                      path === current
-                        ? `${displayPath(path)} · ${t('scheduled.form.current')}`
-                        : displayPath(path)
-                    }
-                  />
+                  <span className="menu-text">
+                    <div className="menu-title">
+                      {basename(path)}
+                      {path === current && (
+                        <span className="menu-title-aside"> · {t('scheduled.form.current')}</span>
+                      )}
+                    </div>
+                    {/* Chemin d'une ligne, coupé par le début : la fin nomme le dossier. */}
+                    <div className="menu-desc scheduled-folder-path" title={path}>
+                      <bdi>{displayPath(path)}</bdi>
+                    </div>
+                  </span>
                   {path === folder && <Check size={16} className="menu-check" />}
                 </Dropdown.Item>
               ))}

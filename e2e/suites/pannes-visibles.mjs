@@ -60,13 +60,13 @@ export async function failuresVisibleSuite(scheme) {
         // « Relancer l'agent » prend la place de « Réglages réseau ».
         await ui.waitFor(`${ui.$('agent-unreachable-hint')}?.hasAttribute('data-stale')`, 10000)
         const stale = await ui.ev(
-          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, settings: !!${ui.$('agent-unreachable-settings')}, restart: ${ui.$('agent-unreachable-restart')}?.innerText })`
+          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, title: ${ui.$('agent-unreachable')}.querySelector('b').innerText, settings: !!${ui.$('agent-unreachable-settings')}, restart: ${ui.$('agent-unreachable-restart')}?.innerText })`
         )
-        // Le nom de l'agent est celui qu'il annonce : seul le texte autour est comparé.
-        const staleText = L('agentRetry.networkStale', { agent: '\u0000' }).split('\u0000')
+        // Le nom de l'agent est celui qu'il annonce, relu dans le titre du bandeau.
+        const [pre, post] = L('agentRetry.title', { agent: '\u0000' }).split('\u0000')
+        const agent = stale.title.slice(pre.length, stale.title.length - post.length)
         check(
-          stale.hint.startsWith(staleText[0]) &&
-            stale.hint.endsWith(staleText[1]) &&
+          stale.hint === L('agentRetry.networkStale', { agent }) &&
             !stale.settings &&
             stale.restart === L('agentRetry.restart'),
           `proxy changé : « relancez-le pour les appliquer », « Relancer l’agent » (${JSON.stringify(stale)})`
