@@ -690,11 +690,16 @@ describe('ConversationManager', () => {
     const notices = app.manager
       .view(id)
       .transcript.items.filter((i) => i.kind === 'notice' && i.level === 'error')
-    // Un avis par type d'écriture (index, fil), pas un par écriture.
-    expect(notices.map((n) => n.kind === 'notice' && noticeText(n).split('\u00a0:')[0])).toEqual([
-      'Impossible d’enregistrer l’historique',
-      'Impossible d’enregistrer la conversation'
-    ])
+    // Un avis par type d'écriture (index, fil), pas un par écriture. Leur ordre n'est pas garanti :
+    // l'index s'écrit en synchrone au message suivant, le fil en asynchrone (fiche 043), et
+    // l'écriture du fil de fin du premier tour peut échouer avant ou après (CI Linux, 2026-11-23).
+    const texts = notices.map((n) => n.kind === 'notice' && noticeText(n).split('\u00a0:')[0])
+    expect(texts.toSorted()).toEqual(
+      [
+        'Impossible d’enregistrer l’historique',
+        'Impossible d’enregistrer la conversation'
+      ].toSorted()
+    )
     expect(() => app.manager.stopAll()).not.toThrow()
   })
 

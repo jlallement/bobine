@@ -50,6 +50,15 @@ export function readPlan(
   return last ? { plan: last, exact: false } : undefined
 }
 
+/**
+ * La lecture de cet état est faite, plan lu ou branches illisibles (fiche 250) : ce que la carte en
+ * montre ne changera plus sans un nouvel état.
+ */
+export function planRead(motherId: string, key: string): boolean {
+  const entry = store.get(motherId)?.get(key)
+  return !!entry?.plan || !!entry?.failed
+}
+
 /** Lit le plan de cet état, une seule fois pour toutes les cartes qui le demandent. */
 export function loadPlan(
   motherId: string,

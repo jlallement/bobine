@@ -252,7 +252,9 @@ describe('carte d’un travail avec sa relecture (fiche 265)', () => {
     saveDiffNotes('a', [note])
     const subtasks = info('ready')
     view(reviewed('high'), subtasks)
-    await act(async () => fireEvent.click(within(authorCard()).getByTestId('work-fix-work')))
+    // Le pied arrive une fois la branche lue (fiche 250).
+    const fix = await within(authorCard()).findByTestId('work-fix-work')
+    await act(async () => fireEvent.click(fix))
     expect(subtasks.onAsk).toHaveBeenCalledWith(expect.stringContaining('Code reviewer'), 'r')
     expect(loadDiffNotes('a')).toEqual([])
     // Et jamais reprise de nouveau à l'ouverture de l'onglet.
