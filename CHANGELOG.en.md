@@ -28,6 +28,14 @@ What changes for you, version by version. Shown in Settings › About.
 - The buttons of a work that writes in its branch appear all at once, in place, when it finishes:
   **Merge into main** no longer pops in at the front a moment after the others, and no longer
   pushes **View changes** or **Open its conversation** out from under the pointer.
+- Narrow composer: during a response, the “Add a follow-up…” placeholder no longer runs under the
+  “↑ Previous messages” hint. The first line keeps room for it; in a narrow window, the hint
+  shrinks to the ↑ key (its name in a tooltip) and the placeholder wraps if it doesn’t fit.
+- Work card: a task that finished while the agent is still responding now reads “replied” (and
+  counts in “1 replied”, even while other tasks remain proposed), as in the sidebar and the panel,
+  instead of “working”; its tooltip says its response will show when the agent’s response ends.
+  What it does is written without its folder’s path (“Edit README.md”), the full path in a
+  tooltip.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

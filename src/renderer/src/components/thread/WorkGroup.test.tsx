@@ -1114,3 +1114,77 @@ describe('anciennes conversations : comme avant (fiche 264)', () => {
     expect(actions.plan).toHaveBeenCalledWith('mere')
   })
 })
+
+describe('travail fini dont la réponse attend, activité de la ligne (maquette rc4)', () => {
+  /** « API » lancée (fille `a`), « Page » encore proposée. */
+  const oneLeft = (): TranscriptItem[] => [
+    { kind: 'user', id: 1, text: 'Découpe' },
+    proposal(2, 'API', 'k-api'),
+    proposal(3, 'Page', 'k-page', 'pending'),
+    started(4, 'a', 'k-api')
+  ]
+
+  it('réponse remise à la fin de celle de l’agent : « a répondu », compté même avec une proposition', async () => {
+    view(oneLeft(), info([child('a')], { motherBusy: true }))
+    await act(async () => {})
+    const group = screen.getByTestId('work-group')
+    expect(within(group).getByTestId('work-group-title').textContent).toBe('2 travaux proposés')
+    expect(within(group).getByTestId('work-group-counts').textContent).toBe('· 1 a répondu')
+    const state = within(group).getByTestId('work-row-state')
+    expect(state.dataset['state']).toBe('pending')
+    expect(state.textContent).toBe('a répondu')
+    expect(plain(state.getAttribute('title'))).toBe(
+      'Sa réponse s’affichera à la fin de la réponse d’OpenCode.'
+    )
+    // Dépliée : la précision, dans la ligne.
+    fireEvent.click(within(group).getByTestId('work-row-toggle'))
+    expect(plain(within(group).getByTestId('work-no-answer').textContent)).toBe(
+      'Sa réponse s’affichera à la fin de la réponse d’OpenCode.'
+    )
+  })
+
+  it('en anglais : « replied », « 1 replied »', async () => {
+    const i18next = (await import('i18next')).default
+    await i18next.changeLanguage('en')
+    try {
+      view(oneLeft(), info([child('a')], { motherBusy: true }))
+      await act(async () => {})
+      expect(screen.getByTestId('work-group-counts').textContent).toBe('· 1 replied')
+      expect(screen.getByTestId('work-row-state').textContent).toBe('replied')
+    } finally {
+      await i18next.changeLanguage('fr')
+    }
+  })
+
+  it('activité : chemin relatif au dossier du travail, chemin complet en infobulle', async () => {
+    let emit: ((e: unknown) => void) | undefined
+    window.api.agent = {
+      onEvent: (listener: (e: unknown) => void) => {
+        emit = listener
+        return () => {}
+      },
+      cancel: vi.fn()
+    } as unknown as Window['api']['agent']
+    view(oneLeft(), info([child('a', { status: 'busy', workspace: '/private/tmp/wt/a' })]))
+    await act(async () => {})
+    act(() =>
+      emit?.({
+        conversationId: 'a',
+        event: {
+          type: 'update',
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: 't1',
+            title: 'edit',
+            kind: 'edit',
+            status: 'in_progress',
+            locations: [{ path: '/private/tmp/wt/a/README.md' }]
+          }
+        }
+      })
+    )
+    const activity = await screen.findByTestId('work-row-activity')
+    expect(activity.textContent).toBe('Modification de README.md')
+    expect(activity.getAttribute('title')).toBe('/private/tmp/wt/a/README.md')
+  })
+})

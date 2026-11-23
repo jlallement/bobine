@@ -491,3 +491,29 @@ function commandLabel(item: LabelledTool, workspace: string | undefined): ToolLa
 export function toolText(item: LabelledTool, workspace?: string, rootName?: string): string {
   return toolLabel(item, workspace, rootName)?.text ?? cleanTitle(item.title, workspace)
 }
+
+/**
+ * Activité d'un travail sur sa ligne de groupe (maquette rc4) : ses chemins écrits relatifs à son
+ * dossier (« Modification de README.md »), un chemin hors de ce dossier avec `~` pour le dossier
+ * personnel ; en `detail`, ce que dit l'infobulle (le chemin complet). Le reste du texte de l'agent
+ * n'est pas réécrit.
+ */
+export function workToolText(
+  item: LabelledTool,
+  workspace: string | undefined
+): { text: string; detail?: string } {
+  const home = currentHomeFolder()
+  // Hors du dossier : `~`, comme l'en-tête d'un diff (`filePathParts`).
+  const shownPath = (path: string) =>
+    workspace && relativePath(path, workspace) !== path
+      ? path
+      : (shortFolderPath(path, { home }) ?? abbreviateHome(path))
+  const shown: LabelledTool = {
+    ...item,
+    locations: item.locations.map(({ path }) => ({ path: shownPath(path) })),
+    ...(item.input?.path ? { input: { ...item.input, path: shownPath(item.input.path) } } : {})
+  }
+  const text = toolText(shown, workspace)
+  const detail = toolLabel(item, workspace)?.detail
+  return detail && detail !== text ? { text, detail } : { text }
+}

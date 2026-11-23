@@ -6,7 +6,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { costText, digestsPartial } from '@shared/usage'
 import { groupWorkIds, type WorkGroupData, type WorkGroupRow } from '@shared/work-groups'
 import { usePresentation } from '../../presentation'
-import { useChildActivity } from '../roles/RoleWork'
+import { useChildTools } from '../roles/RoleWork'
 import { childModelAllowed, useMotherModel } from '../sidebar/child-options'
 import {
   outcomeOf,
@@ -97,7 +97,7 @@ export function WorkGroup({
   // Recommandations lues une fois dans le rangement du fil (revue QA).
   const layout = useContext(WorkLayoutContext)
   const verdicts = layout?.verdicts ?? NO_VERDICTS
-  const activity = useChildActivity(
+  const activity = useChildTools(
     works.filter((w) => w.state === 'running').map((w) => w.card.childId)
   )
 
@@ -127,7 +127,7 @@ export function WorkGroup({
     partial && partial.missing > 0
       ? t('usage.costPartialTip', { count: partial.missing })
       : undefined
-  const head = groupCounts(group, works, pending.length)
+  const head = groupCounts(group, works)
   return (
     <div
       className="work-group"
@@ -425,8 +425,7 @@ type CountKey =
  */
 function groupCounts(
   group: WorkGroupData,
-  works: readonly RowWork[],
-  pending: number
+  works: readonly RowWork[]
 ): { key: CountKey; count: number }[] {
   const of = (states: WorkState[]) => works.filter((w) => states.includes(w.state)).length
   // Lancée sans clé (conversation d'avant) : son travail s'affiche comme avant, hors de la carte.
@@ -437,9 +436,10 @@ function groupCounts(
   })
   const decided = (outcome: string) => outcomes.filter((o) => o === outcome).length
   const counts: { key: CountKey; count: number }[] = [
-    { key: 'workGroup.count.running', count: of(['running', 'pending']) },
+    { key: 'workGroup.count.running', count: of(['running']) },
     { key: 'workGroup.count.waiting', count: of(['waiting']) },
-    { key: 'workGroup.count.done', count: of(['replied', 'silent', 'unknown', 'gone']) },
+    // Fini, réponse remise à la fin de celle de l'agent (`pending`) : il a répondu (maquette rc4).
+    { key: 'workGroup.count.done', count: of(['replied', 'pending', 'silent', 'unknown', 'gone']) },
     { key: 'workGroup.count.stopped', count: of(['stopped']) },
     { key: 'workGroup.count.error', count: of(['error']) },
     { key: 'workGroup.count.starting', count: decided('start') },
@@ -448,6 +448,7 @@ function groupCounts(
     { key: 'workGroup.count.refused', count: decided('refuse') },
     { key: 'workGroup.count.expired', count: decided('expired') }
   ]
-  // Tant que des lignes attendent, seules les décisions prises se disent (pas « 0 en cours »).
-  return counts.filter((c) => c.count > 0 && (pending === 0 || c.key !== 'workGroup.count.done'))
+  // Seuls les états présents se disent (pas « 0 en cours ») ; « a répondu » aussi tant que des
+  // lignes restent proposées (maquette rc4 : un travail fini n'est pas tu pour autant).
+  return counts.filter((c) => c.count > 0)
 }

@@ -29,6 +29,15 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Les boutons d’un travail qui écrit dans sa branche arrivent en une fois, à leur place, quand il
   a fini : **Fusionner dans main** ne s’ajoute plus en tête un instant après les autres, et ne
   fait plus glisser **Voir les modifications** ou **Ouvrir sa conversation** sous le pointeur.
+- Zone de saisie étroite : pendant une réponse, l’invite « Ajouter une suite… » ne passe plus
+  sous le rappel « ↑ Messages précédents ». La première ligne lui garde sa place ; dans une
+  fenêtre étroite, le rappel se réduit à la touche ↑ (son nom en infobulle) et l’invite passe à
+  la ligne si elle ne tient pas.
+- Carte de travaux : un travail qui a fini pendant que l’agent répond encore est dit « a répondu »
+  (et compté dans « 1 a répondu », même si d’autres travaux restent proposés), comme dans la barre
+  latérale et le panneau, plus « en cours » ; l’infobulle précise que sa réponse s’affichera à la
+  fin de celle de l’agent. Ce qu’il fait s’écrit sans le chemin de son dossier
+  (« Modification de README.md »), le chemin complet en infobulle.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 
