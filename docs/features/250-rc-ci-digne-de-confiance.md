@@ -276,3 +276,22 @@ Dependabot comme les autres.
   qui cliquent dans des cartes (`travaux-groupe`, `filles-tech-lead`, `autorisation-commande`,
   `subagents`, `filles-fusion`), clair et sombre : 22 tâches vertes, code de sortie 0 ; captures
   regardées par sondage (`120-fusion-pied`). Suite complète non jouée.
+
+- 2026-11-23 — `travaux-groupe` clair rouge sous Linux sur `main` (45166408045, push de
+  `fix/filles-fusion-toggle`) : « ⚠ clic manqué : appui sur `button[work-open]` « Ouvrir sa
+  conversation », relâché sur `div[work-actions-group]` « Fusionner dans main Voir les
+  modificatio… » », puis `title-origin` jamais vu (travail qui écrit, `writerRun`). Branche
+  `fix/clic-travaux-groupe`, partie de `main`.
+
+  | Cause | Correctif | Preuve |
+  |---|---|---|
+  | Défaut de l'app, pas le fil cette fois : c'est **le pied de la carte** qui bouge. Un travail qui écrit montre sa rangée d'actions dès qu'il a fini (`replied`), puis la lecture de ses branches (`children:mergePlan`, lancée par ce changement d'état) aboutit et ajoute « Fusionner dans main » **en tête** de la rangée : « Ouvrir sa conversation » descend d'une ligne (40 px), « Voir les modifications » glisse à la place de « Fusionner ». Capture de la CI : « Fusionner dans main » déjà là alors que le relevé du clic visait l'ancienne place. Dans l'essai, la lecture en cours voyait le commit que l'essai venait de faire ; pour un utilisateur, c'est le cas ordinaire d'un travail qui a commité : le bouton arrive après les autres, d'autant plus tard que la machine est chargée (lecture git). Pire qu'un clic perdu : un clic visé sur « Voir les modifications » pouvait lancer la fusion. Le Mac ne le montre pas seul (5 passages de `travaux-groupe filles-fusion filles-tech-lead --jobs 3` avec relevé : la lecture finit avant le clic). Rejoué en retardant de 800 ms la lecture des branches (relevé temporaire dans le main et l'essai, retiré) : « Ouvrir sa conversation » montré à y = 598, puis à 861 ms « Fusionner » arrive et la ramène à y = 638 (+40 px, comme en CI). | `useWorkMerge` dit si les branches ont été lues pour l'état où la carte en a besoin (`read`, verrouillé tant qu'elle en a besoin : un autre travail qui change d'état fait relire, et les boutons déjà montrés ne disparaissent pas) ; `WorkFoot` ne montre la rangée d'actions qu'une fois lue (ou illisible : `planRead`). Elle arrive en une fois, à sa place. Non couvert : un commit fait ailleurs pendant que la carte est affichée, vu à la relecture suivante (retour dans la conversation) : le bouton apparaît alors, comme avant. Même question pour le pied de la carte de groupe, non traitée (les essais y attendent le libellé). | `WorkFootPlaced.test.tsx` : « branches pas encore lues… » rouge sans le correctif (`work-changes-open`, `work-reply`, `work-open` montrés avant la lecture, au lieu de rien), vert avec ; « un autre travail change d'état… » rouge si le verrou est retiré, vert avec. Trois essais existants attendent désormais le pied (`findBy…`), assertions inchangées. Avec le retard de 800 ms et le correctif : rien avant la lecture, puis une seule mutation de la carte, « Fusionner » compris ; le pointeur appuie et relâche sur « Ouvrir sa conversation ». |
+
+  Preuve sur le Mac : `./scripts/verify` vert (580 fichiers, 5660 essais, 3 sautés) ; suites
+  touchées (`--changed` : `relecture`, `commit-redige`, `travaux-groupe`, `filles-tech-lead`,
+  `filles-fusion`) et voisines qui cliquent dans le pied des cartes (`filles`,
+  `historique-saisie`, `relecture-commits`, `roles-travail`), clair et sombre : 18 tâches vertes,
+  code de sortie 0 ; puis 3 passages de `travaux-groupe filles-fusion filles-tech-lead --jobs 3`
+  (18 tâches), codes de sortie 0, aucun « clic manqué » ; captures regardées (`264-travail-ecrit`,
+  clair et sombre : pied inchangé).
+  Sous Linux : rien de joué (Docker arrêté) ; la preuve reste à faire sur le job de GitHub.
