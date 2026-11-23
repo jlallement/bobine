@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { NetworkSettings, NetworkView } from '@shared/providers'
 import { ipcErrorText } from '../../ipc-errors'
@@ -30,22 +30,33 @@ export function NetworkSection() {
     }
   }, [])
 
+  // Enregistrements l'un après l'autre, chacun parti des réglages que le précédent a rendus : passé
+  // vite d'un champ au suivant, le second partait de l'ancienne vue et effaçait le premier (proxy
+  // perdu en quittant aussitôt « Sans proxy », runner macOS, fiche 250).
+  const saving = useRef<Promise<void>>(Promise.resolve())
+  const latest = useRef<NetworkSettings | null>(null)
   const save = (field: Field) => {
     if (!view || drafts[field] === undefined) return
     const value = drafts[field]?.trim() ?? ''
-    if (value === (view.settings[field] ?? '')) {
-      setDrafts((d) => ({ ...d, [field]: undefined }))
-      return
-    }
-    const change: NetworkSettings = { ...view.settings, [field]: value || undefined }
-    window.api.settings
-      .setNetwork(change)
-      .then((next) => {
+    saving.current = saving.current.then(async () => {
+      const settings = latest.current ?? view.settings
+      if (value === (settings[field] ?? '')) {
+        setDrafts((d) => ({ ...d, [field]: undefined }))
+        return
+      }
+      try {
+        const next = await window.api.settings.setNetwork({
+          ...settings,
+          [field]: value || undefined
+        })
+        latest.current = next.settings
         setView(next)
         setDrafts((d) => ({ ...d, [field]: undefined }))
         setNote({ error: false, text: t('settings.network.saved') })
-      })
-      .catch((e: unknown) => setNote({ error: true, text: ipcErrorText(e) }))
+      } catch (e: unknown) {
+        setNote({ error: true, text: ipcErrorText(e) })
+      }
+    })
   }
 
   const defined = view ? FIELDS.filter((field) => view.settings[field]) : []

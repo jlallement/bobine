@@ -14,6 +14,10 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Settings › Agents › Advanced, Corporate network: the proxy is no longer lost when you move
+  straight on to the next field (“No proxy”) and leave it too.
+- Composer: when the window narrows, the bar folds in the same frame; the send button no longer
+  briefly sticks out of the composer on a busy machine.
 - A click in the thread is no longer lost when a turn ends at that very moment: the thread no
   longer shifts under the pointer between press and release (for example on a row of a work card,
   which did not expand). Likewise when the thread was almost at the bottom, or a reply arrived

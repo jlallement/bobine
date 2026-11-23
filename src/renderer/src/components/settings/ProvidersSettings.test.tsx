@@ -222,4 +222,30 @@ describe('Réglages › Agents › Réseau d’entreprise (fiche 104)', () => {
     await act(async () => {})
     expect(network.setNetwork).toHaveBeenCalledTimes(1)
   })
+
+  it('deux champs quittés coup sur coup : le second garde le premier (fiche 250)', async () => {
+    render(<NetworkSection />)
+    await act(async () => {})
+    let release: () => void = () => {}
+    network.setNetwork.mockImplementationOnce(
+      (change) =>
+        new Promise((resolve) => {
+          release = () => resolve({ settings: change, fromShell: { caCerts: '/shell/ca.pem' } })
+        })
+    )
+    const proxy = screen.getByTestId('network-proxy')
+    const noProxy = screen.getByTestId('network-noProxy')
+    fireEvent.change(proxy, { target: { value: 'http://127.0.0.1:9' } })
+    fireEvent.blur(proxy)
+    fireEvent.change(noProxy, { target: { value: 'rien.test' } })
+    fireEvent.blur(noProxy)
+    await act(async () => {})
+    // Le premier n'a pas encore répondu : le second attend.
+    expect(network.setNetwork).toHaveBeenCalledTimes(1)
+    await act(async () => release())
+    expect(network.setNetwork).toHaveBeenLastCalledWith({
+      proxy: 'http://127.0.0.1:9',
+      noProxy: 'rien.test'
+    })
+  })
 })
