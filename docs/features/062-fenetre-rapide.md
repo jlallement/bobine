@@ -106,3 +106,9 @@ d'Electron).
   et la fenêtre d'avant reprenait le focus (`focus()`), même pour les essais montrés sans focus
   (`BOBINE_SHOW_INACTIVE`, fiche 106) : l'app d'essai passait au premier plan. Elles reviennent
   maintenant par `showInactive()`, sans `focus()`, dans ce mode (`index.ts`, `hideWindows`).
+- 2026-11-23 — Écart (fiche 250) : sous Linux, la première ouverture ne montrait rien. La fenêtre
+  transparente créée cachée charge sa page sans la peindre (X11/openbox, relevé de la CI) :
+  `ready-to-show` ne vient pas, et la fenêtre ne se montrait qu'à lui. Capacité de plateforme
+  `hiddenPaint` (macOS seulement) : avec elle, inchangé (`ready-to-show`) ; sans elle, montrée au
+  premier de `ready-to-show` et de la fin du chargement de la page (`revealWhenLoaded`), une seule
+  fois. Testé en unitaire (les deux chemins) ; preuve e2e `quick` sur GitHub à faire.

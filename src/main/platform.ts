@@ -39,7 +39,11 @@ export function platformFeatures(platform: string): PlatformFeatures {
     overlayScrollbars: mac,
     // Sous Linux, le flou d'arrière-plan et la fin des fondus dépendent du pilote graphique : un
     // menu y est resté à 88 % d'opacité, lisible à travers (VM VMware, fiche 145).
-    glass: mac
+    glass: mac,
+    // Sous Linux (job de la CI, X11 et openbox), la fenêtre rapide transparente créée cachée a
+    // chargé sa page sans jamais la peindre : pas de `ready-to-show` (fiches 062 et 250). Windows,
+    // non observé, prend le chemin sûr.
+    hiddenPaint: mac
   }
 }
 

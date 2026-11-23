@@ -512,6 +512,7 @@ async function start(): Promise<void> {
   const quickEntry = new QuickEntry({
     // Essais de bout en bout : montrée sans prendre le focus de la machine (fiche 106).
     inactive: SHOW_INACTIVE,
+    waitForPaint: features.hiddenPaint,
     create: () => createQuickWindow(features),
     workArea: () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
   })
