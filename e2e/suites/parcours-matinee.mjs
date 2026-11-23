@@ -265,12 +265,18 @@ export async function parcoursMatineeSuite(scheme) {
           await ui.waitFor(`${row(FIRST)}?.classList.contains('active')`, 20000)
           await ui.waitFor(`document.querySelectorAll('.msg-user').length === ${usersInFirst}`)
           await ui.ready()
+          const seen = {
+            second: await ui.ev(`!!${row(SECOND)}`),
+            reviewer: await ui.ev(`!!${reviewer}`),
+            model: await ui.ev(`${ui.$('model-chip')}?.innerText.trim()`),
+            mode: await ui.ev(`${ui.$('mode-chip')}?.innerText.trim()`)
+          }
           check(
-            !!(await ui.ev(`${row(SECOND)}`)) &&
-              !!(await ui.ev(`${reviewer}`)) &&
-              (await ui.ev(`${ui.$('model-chip')}?.innerText.trim()`)) === M('Factice précis') &&
-              (await ui.ev(`${ui.$('mode-chip')}?.innerText ?? ''`)).includes(M('Question')),
-            'relance : la conversation affichée, son fil (relecture comprise), son modèle et son mode'
+            seen.second &&
+              seen.reviewer &&
+              seen.model === M('Factice précis') &&
+              seen.mode?.includes(M('Question')),
+            `relance : la conversation affichée, son fil (relecture comprise), son modèle et son mode (${JSON.stringify(seen)})`
           )
           await ui.send('/scenario echo On reprend')
           await ui.ready()

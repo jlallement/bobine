@@ -32,11 +32,15 @@ async function setProxy(ui, value) {
     await ui.click(`${ui.$('settings-agents-advanced')}.querySelector('summary')`)
     await ui.waitFor(`${ui.$('settings-agents-advanced')}.open === true`)
   }
-  await ui.ev(
-    `(() => { const i = ${ui.$('network-proxy')}; i.focus(); i.select(); return true })()`
-  )
+  // Champ vidé (comme tout sélectionner puis effacer), puis la valeur tapée.
+  await ui.ev(`(() => {
+    const i = ${ui.$('network-proxy')}
+    i.focus()
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '')
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  })()`)
   if (value) await ui.type(value)
-  else await ui.press('Backspace')
   await ui.key('Enter')
   await ui.waitFor(`${ui.$('network-proxy')}.value === ${JSON.stringify(value)}`)
   await ui.waitFor(`!!${ui.$('network-note')}`)
