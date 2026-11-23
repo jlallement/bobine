@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import { DeleteDialog } from './DeleteDialog'
@@ -137,5 +138,44 @@ describe('supprimer une mère : ses filles (fiche 228)', () => {
     // Filles gardées : seule la mère est supprimée, et son agent ne sait pas le faire.
     fireEvent.click(screen.getByTestId('delete-children'))
     expect(screen.queryByTestId('delete-from-agent')).toBeNull()
+  })
+
+  it('confirmée : le focus va à la zone de saisie, pas sur la page (recette rc.4)', async () => {
+    const composer = document.createElement('textarea')
+    composer.dataset.testid = 'composer-input'
+    document.body.append(composer)
+    /** Le bouton « ⋯ » de la ligne, puis la boîte ; confirmer ou annuler la ferme. */
+    function Host() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button data-testid="opener" onClick={() => setOpen(true)} />
+          {open && (
+            <DeleteDialog
+              conversation={conversation()}
+              onWorktreeStatus={async () => null}
+              onClose={() => setOpen(false)}
+              onConfirm={() => setOpen(false)}
+            />
+          )}
+        </>
+      )
+    }
+    render(<Host />)
+    const opener = screen.getByTestId('opener')
+    opener.focus()
+    fireEvent.click(opener)
+    fireEvent.click(await screen.findByTestId('delete-confirm'))
+    await waitFor(() => expect(document.activeElement).toBe(composer))
+
+    // Annulée : rien n'est imposé (Radix le rend au bouton qui l'a ouverte, toujours là).
+    composer.blur()
+    opener.focus()
+    fireEvent.click(opener)
+    fireEvent.keyDown(await screen.findByTestId('delete-dialog'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('delete-dialog')).toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(document.activeElement).not.toBe(composer)
+    composer.remove()
   })
 })

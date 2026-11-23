@@ -6368,6 +6368,7 @@
       "name": "Bobine {{version}}",
       "preAvailable": "Préversion disponible",
       "view": "Voir",
+      "viewLabel": "Voir la version {{version}}",
       "later": "Plus tard (plus rien pour la {{version}})"
     },
     "settings": {

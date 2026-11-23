@@ -1,7 +1,7 @@
 import { CircleArrowUp, CircleCheck, ExternalLink, RefreshCw, TriangleAlert } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import type { UpdateView } from '@shared/update-check'
+import type { UpdateFailure, UpdateRelease, UpdateView } from '@shared/update-check'
 import { messageTime } from '../../time'
 import { useUpdate } from '../common/useUpdate'
 import { Row, SettingsCard } from './rows'
@@ -60,55 +60,72 @@ function lastChecked(view: UpdateView | null, t: TFunction): string {
   return today ? t('updates.settings.todayAt', { time: messageTime(at) }) : messageTime(at)
 }
 
-/** L'encart sous la carte : version disponible d'abord, sinon le résultat de « Vérifier maintenant ». */
+/**
+ * Les encarts sous la carte : version disponible d'abord, puis le résultat de « Vérifier
+ * maintenant ». Un échec reste dit même quand une version est déjà connue (recette rc.4) : sinon le
+ * bouton semble n'avoir rien fait. « À jour » ne peut pas l'être, une version étant connue.
+ */
 function UpdateNote({ view }: { view: UpdateView }) {
+  const failure = !view.checking && view.manual?.result === 'failed' ? view.manual.failure : null
+  return (
+    <>
+      {view.available && <AvailableNote view={view} available={view.available} />}
+      {failure && <FailedNote failure={failure} />}
+      {!view.available && !view.checking && view.manual?.result === 'up-to-date' && (
+        <UpToDateNote current={view.current} />
+      )}
+    </>
+  )
+}
+
+function AvailableNote({ view, available }: { view: UpdateView; available: UpdateRelease }) {
   const { t } = useTranslation()
-  const available = view.available
-  if (available) {
-    return (
-      <div className="settings-note update-note new" data-testid="settings-update-available">
-        <CircleArrowUp size={14} aria-hidden />
-        <span className="update-note-text">
-          <Trans
-            t={t}
-            i18nKey="updates.settings.available"
-            values={{ version: available.version, current: view.current }}
-            components={{ b: <b /> }}
-          />
-        </span>
-        <button
-          className="btn small primary"
-          onClick={() => void window.api.app.openUpdate(available.version)}
-          data-testid="settings-update-open"
-        >
-          <ExternalLink size={13} aria-hidden />
-          {t('updates.settings.view')}
-        </button>
-      </div>
-    )
-  }
-  if (view.checking || !view.manual) return null
-  if (view.manual.result === 'up-to-date') {
-    return (
-      <div className="settings-note update-note ok" data-testid="settings-update-current">
-        <CircleCheck size={14} aria-hidden />
-        <span className="update-note-text">
-          <Trans
-            t={t}
-            i18nKey="updates.settings.upToDate"
-            values={{ version: view.current }}
-            components={{ b: <b /> }}
-          />
-        </span>
-      </div>
-    )
-  }
+  return (
+    <div className="settings-note update-note new" data-testid="settings-update-available">
+      <CircleArrowUp size={14} aria-hidden />
+      <span className="update-note-text">
+        <Trans
+          t={t}
+          i18nKey="updates.settings.available"
+          values={{ version: available.version, current: view.current }}
+          components={{ b: <b /> }}
+        />
+      </span>
+      <button
+        className="btn small primary"
+        onClick={() => void window.api.app.openUpdate(available.version)}
+        data-testid="settings-update-open"
+      >
+        <ExternalLink size={13} aria-hidden />
+        {t('updates.settings.view')}
+      </button>
+    </div>
+  )
+}
+
+function UpToDateNote({ current }: { current: string }) {
+  const { t } = useTranslation()
+  return (
+    <div className="settings-note update-note ok" data-testid="settings-update-current">
+      <CircleCheck size={14} aria-hidden />
+      <span className="update-note-text">
+        <Trans
+          t={t}
+          i18nKey="updates.settings.upToDate"
+          values={{ version: current }}
+          components={{ b: <b /> }}
+        />
+      </span>
+    </div>
+  )
+}
+
+function FailedNote({ failure }: { failure: UpdateFailure }) {
+  const { t } = useTranslation()
   return (
     <div className="settings-note warn update-note" data-testid="settings-update-failed">
       <TriangleAlert size={14} aria-hidden />
-      <span className="update-note-text">
-        {t(`updates.settings.failed.${view.manual.failure}`)}
-      </span>
+      <span className="update-note-text">{t(`updates.settings.failed.${failure}`)}</span>
     </div>
   )
 }

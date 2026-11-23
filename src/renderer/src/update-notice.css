@@ -82,7 +82,21 @@
   color: var(--warn);
 }
 
+/*
+ * Encart avec un bouton (« Voir la version ») : texte et bouton centrés l'un sur l'autre, l'icône
+ * reste sur la première ligne ; le bouton déborde autant en haut qu'en bas, pour que l'encart garde
+ * la hauteur d'une ligne de texte (recette rc.4 : le texte était collé en haut du bouton).
+ */
+.update-note:has(> .btn) {
+  align-items: center;
+}
+
+.update-note:has(> .btn) > svg {
+  align-self: flex-start;
+  margin-top: 2.5px;
+}
+
 .update-note .btn {
-  margin-top: -3px;
+  margin-block: -4px;
   flex-shrink: 0;
 }
