@@ -208,3 +208,38 @@ Dependabot comme les autres.
   `filles` ne s'est pas montré en rouge pendant ces passages : la cause est établie par le relevé
   du statut, pas par un échec rejoué). Captures regardées (`filles-4a-confirmation`,
   `264-groupe-fusionne`). Rien n'a été joué sous Linux ni sous Windows.
+
+- 2026-11-23 — Job Linux rouge après la fusion de `fix/clic-perdu-et-filles` (45048839307 :
+  `travaux-groupe` clair, `autorisation-commande` clair, `subagents` clair et sombre ; `perf` reste
+  indicative), et nuit macOS rouge. Branche `fix/ci-linux`. Relevé des 11 derniers passages Linux
+  de `main` : `travaux-groupe` 3 fois (deux formes), `quick` et `filles` 1 fois (déjà traitées),
+  le reste vert. Reproduit en local sous Linux (`pnpm e2e:linux`, conteneur à 1 processeur,
+  `--jobs 3`), avec un nouveau relevé de `ui.click` : où sont tombés l'appui, le relâché et le
+  clic quand ce n'est pas sur la cible (`⚠ clic manqué : …`, dit sans échouer).
+
+  | Échec | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `autorisation-commande` (« Autoriser une fois » sans effet), `travaux-groupe` (« Ouvrir sa conversation » sans effet, `title-origin` jamais vu) | Défaut de l'app, apporté par le correctif du 2026-11-22 (`useThreadScroll`). Relevé : « appui sur `button.btn.primary` « Autoriser une fois », relâché sur `div[permission-agent-always-note]` ». À l'appui, la colonne reçoit sa hauteur gardée (`min-height`), qui reprend dedans la marge du bas : elle change de taille, le `ResizeObserver` la voit, et le fil, à moins de 60 px du bas sans y être (l'essai venait d'amener la carte à l'écran), était ramené tout en bas entre l'appui et le relâché. Même chose si un élément arrivait pendant l'appui (réponse de l'agent). Sur le Mac, appui et relâché tombent dans la même image ; sous Linux chargé, une image passe entre les deux. Relevé sur `autorisation-commande` ; pour `travaux-groupe`, d'après la capture de la CI (fil arrêté quelques dizaines de px au-dessus du bas, la ligne « Pas encore transmise » à demi cachée), sans relevé du clic. | `useThreadScroll` : pendant un appui dans le fil (`pressing`), le suivi du bas attend : ni le redimensionnement, ni un élément qui arrive, ni la sortie d'une carte `data-scroll-hold` ne déplacent le fil ; `measureBottom` ne relève rien. Au relâché (après le `click`), le fil rattrape le bas s'il le suivait. Un envoi (`followSent`) l'emporte sur l'appui. | `useThreadScroll.test.ts`, « près du bas sans y être… » : rouge sans le correctif (`expected 1000 to be 770`), vert avec. Sous Linux chargé : `autorisation-commande` rouge dans 3 passages sur 6 avant (clair ou sombre), vert dans les 3 passages après (6 tâches sur 6). |
+  | `subagents` (clair et sombre, « OpenCode : consigne complète… » puis « Voir son travail » jamais là) | L'essai cliquait sur la ligne du sous-agent dès qu'il était fini ; la réponse de l'agent arrive juste après et le fil, en bas, remonte la ligne de sa hauteur. En plus, l'essai attendait `subagent-answer`, présent dans la page même replié : rien ne vérifiait que le clic avait déplié la ligne. Reproduit sous Linux chargé (capture identique à celle de la CI). | L'essai attend la fin du tour (`ready()`), comme pour OpenCode 2 juste après, puis vérifie `open` après le clic. Le correctif de l'app ci-dessus couvre aussi la réponse qui arrive pendant l'appui. | Rouge sous Linux chargé avant le correctif de l'essai (capture `echec-subagents-01-OpenCode…`, comme en CI), plus jamais cette forme sur les 8 passages suivants (16 tâches). |
+  | `travaux-groupe`, conflit (44739785795, 44894413689 : `subtasks-merge-result` jamais `conflict`) | Capture : « 1 travail fusionné », seule « Notes de version » fusionnée, « Page d'aide » relue après. L'essai attendait le bouton actif : il l'est dès qu'une branche est prête, avant que l'autre commit ait été relu. | L'essai attend « Fusionner les 2 prêts dans main » (les deux branches commitées vues prêtes), pas seulement un bouton actif. | Pas reproduit en local (la partie conflit est passée dans les 9 passages sous charge) : correctif d'après la capture. |
+  | `filles-tech-lead` (45137631294, relancé sur `main` pour la statistique : « pastille Recommandée, le recommandé proposé ») | Même famille que le conflit : au retour à la mère, la carte montre le dernier plan lu (`readPlan`, `exact: false`, avant les commits : « 3 modifications non commitées ») le temps de relire les branches. L'essai lisait le libellé une seule fois, dès que le bouton existait. | L'essai attend le libellé du plan relu (« Fusionner le recommandé dans main »), puis vérifie comme avant. | Capture de la CI ; pas reproduit en local. |
+  | Molette (`ui.wheel`) | Pas une cause relevée en CI, mais une course réelle : essai hors de l'app (Electron, CDP), `Input.dispatchMouseEvent` rend la main avant que la page ait reçu l'évènement `wheel` (0 reçu lu juste après, même sans charge). Une carte d'autorisation désarmée par cette molette pouvait se montrer encore armée à l'essai. | `ui.wheel` attend que la page ait reçu la molette (compteur posé en capture sur `window`). | Essai hors de l'app ci-dessus. |
+
+  Vus sous Linux à 1 processeur seulement (trois apps pour un cœur), jamais en CI, non traités :
+  `subagents` « durée et coût pendant qu'il travaille » (le coût est lu avant la première seconde,
+  « < 1 s ») et un démarrage de l'app au-delà de 15 s (`ready()`). Sur GitHub, les trois suites
+  seules sont vertes (45137639736, `main`) ; la suite complète relancée sur `main` (45137631294)
+  retombe sur les mêmes échecs (`title-origin`, conflit, `subagents`) plus `filles-tech-lead`.
+
+  Nuit macOS (45016538870, et de même 44896745072, 44728439297 : 44 à 45 tâches rouges chaque
+  nuit, l'étape anglaise jamais jouée) : ce n'est pas d'abord la lenteur. L'écran du runner
+  `macos-15` fait 1024 × 768 : la fenêtre de l'app (1280 × 820 par défaut) y est ramenée à
+  1024 × 688 (« fenêtre 1024 » dans le journal de `panel`, « relance : fenêtre à sa place
+  {…1024…} » dans `startup`). Les suites qui supposent la taille habituelle tombent : `startup`,
+  `panel` (panneau à 280 px au lieu de 320), `session`, `dossiers`, `debordements` (panneau
+  absent), `composer` (« accueil à 760 px »), `plan`, `sommaire`, `degrade-haut`, `fun`
+  (barres du sommaire absentes), `aurore`, `rules`, `browser-view`, `travaux-groupe`… S'y
+  ajoutent des mesures liées à la machine (`perf` : gros diff 5000 en 2693 ms ; `simulator`,
+  `android` : 4 à 5 images/s). Rien n'est changé ici : il faut agrandir l'écran du runner avant
+  les essais (à essayer sur GitHub, aucun outil vérifié), ou ne garder de nuit que ce qui tient
+  dans 1024 × 768 ; décision à prendre.
