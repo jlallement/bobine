@@ -38,10 +38,11 @@ import type { Handover } from '@shared/handover'
 import { rememberableTool } from '@shared/permissions'
 import { APP_TOOLS_SERVER_NAME, type AppToolModule } from '../mcp/tools'
 import type { EnvChanges } from '../agent-config/api-keys'
+import { agentProxy } from '../agent-config/network-env'
 import type { NetworkWatch } from '../network-watch'
 import { log, type LogScope } from '../log'
 import { formatDuration, hostScope, scopeText } from './acp-log'
-import { watchSilence } from './silence-watch'
+import { TurnQuiet, watchSilence } from './silence-watch'
 import type { ChildSession, SubagentStream } from './adapters'
 import { launchAgent, type AgentProcess } from './agent-process'
 import { AppToolsBridge } from './app-tools-bridge'
@@ -258,10 +259,8 @@ export class AgentHost {
   private closed = false
   /** Processus de l'agent et son journal : fin de la sortie d'erreur, relevé ACP (fiche 080). */
   private launched: AgentProcess | undefined
-  /** Dernier octet reçu de l'agent : un agent qui se tait pendant un tour est signalé. */
-  private lastAgentActivity = 0
-  /** Silence de l'agent pendant le tour, au-delà du seuil du bandeau (fiche 194). */
-  private silentSince: number | undefined
+  /** Silence, modèle injoignable et proxy de l'agent : les bandeaux du tour (fiches 194, 275). */
+  private readonly quiet: TurnQuiet
   private readonly options: AgentHostOptions
   /** Autorisations, formulaires et questions en attente de l'utilisateur. */
   private readonly requests: PendingRequests
@@ -319,6 +318,9 @@ export class AgentHost {
 
   constructor(options: AgentHostOptions) {
     this.options = options
+    // Hors tour (arrêt, fin), l'instantané suivant le dira : pas de statut réémis (fiche 194).
+    const changed = () => void (this.is('busy') && this.emitSnapshot())
+    this.quiet = new TurnQuiet({ retryStatus: options.profile.retryStatus, changed })
     this.retry = new TurnRetry({
       resend: (blocks) => this.resendTurn(blocks),
       changed: () => this.emitSnapshot(),
@@ -384,17 +386,8 @@ export class AgentHost {
       queued: this.queue.views(),
       blocker: this.status === 'needs-action' ? this.blocker : undefined,
       retry: this.retry.view(),
-      ...(this.silentSince !== undefined ? { silentSince: this.silentSince } : {})
+      ...this.quiet.view()
     }
-  }
-
-  /** Bandeau de silence (fiche 194) : depuis quand l'agent se tait, ou `undefined`. */
-  private setSilent(since: number | undefined): void {
-    if (this.silentSince === since) return
-    this.silentSince = since
-    // Hors tour (arrêt, fin), l'instantané suivant le dira : pas de statut réémis (un `exited`
-    // répété ajouterait un avis au fil, fiche 194).
-    if (this.is('busy')) this.emitSnapshot()
   }
 
   /** Commande de compaction : celle que l'agent annonce, sinon celle du profil (fiche 039). */
@@ -637,10 +630,10 @@ export class AgentHost {
     const turnStarted = Date.now()
     let stopReason = 'erreur'
     const silence = watchSilence({
-      lastActivity: () => this.lastAgentActivity,
+      activity: this.quiet.activity,
       waiting: () => this.requests.waiting(),
       scope: scopeText(this.logScope()),
-      onSilent: (since) => this.setSilent(since)
+      onSilent: (since) => this.quiet.setSilent(since)
     })
     try {
       const response = await connection.agent.request(methods.agent.session.prompt, {
@@ -671,7 +664,7 @@ export class AgentHost {
       retrying = this.turnFailed(connection, error, { sessionId, blocks })
     } finally {
       clearInterval(silence)
-      this.setSilent(undefined)
+      this.quiet.calm()
       this.launched?.acpLog.flush()
       log.info(
         `Tour fini ${scopeText(this.logScope())} : ${stopReason} en ${formatDuration(Date.now() - turnStarted)}`
@@ -826,7 +819,7 @@ export class AgentHost {
     this.cost.stopWatching()
     this.replay.clear()
     this.retry.clear()
-    this.silentSince = undefined
+    this.quiet.clear()
     this.turnAuth.clear()
     this.requests.cancelAll()
     this.appEndpoint.close()
@@ -920,7 +913,11 @@ export class AgentHost {
     const params = { ...notification, update }
     if (params.sessionId === this.sessionId) {
       this.appTools.noteUpdate(update)
-      if (this.is('busy') && !this.replaying) this.turnLimit.note(update)
+      if (this.is('busy') && !this.replaying) {
+        this.turnLimit.note(update)
+        // Reprise annoncée par l'agent qui ne joint pas son modèle (fiche 275).
+        this.quiet.noteUpdate(update)
+      }
     }
     const route = routeUpdate(params, {
       sessionId: this.sessionId,
@@ -990,15 +987,13 @@ export class AgentHost {
       credentials,
       scope: this.logScope(),
       label: scopeText(this.logScope()),
-      onActivity: () => {
-        this.lastAgentActivity = Date.now()
-        if (this.silentSince !== undefined) this.setSilent(undefined)
-      }
+      onActivity: (progress) => this.quiet.note(progress)
     })
+    this.quiet.proxy = agentProxy(process.env, profile.env, credentials)
     const { child, failed } = launched
     this.child = child
     this.launched = launched
-    this.lastAgentActivity = launched.startedAt
+    this.quiet.activity.reset(launched.startedAt)
 
     child.on('exit', (code, signal) => this.onAgentExit(child, code, signal))
     const connection = this.connect(launched)
@@ -1037,7 +1032,7 @@ export class AgentHost {
     this.sessionId = undefined
     this.stopWatch.clearCancel()
     this.retry.clear()
-    this.silentSince = undefined
+    this.quiet.clear()
     this.setStatus('exited', this.stopWatch.exitReason(code, signal, this.stderrHint()))
   }
 

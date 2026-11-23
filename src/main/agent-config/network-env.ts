@@ -5,7 +5,7 @@
  * Bob et OpenCode). Les réglages saisis l'emportent sur le shell.
  */
 import type { NetworkSettings, NetworkView } from '@shared/providers'
-import type { EnvChanges } from './api-keys'
+import { withEnvChanges, type EnvChanges } from './api-keys'
 import { DEFAULT_NO_PROXY } from './provider-probe'
 
 const first = (env: NodeJS.ProcessEnv, names: string[]): string | undefined =>
@@ -21,6 +21,19 @@ export function networkFromEnv(env: NodeJS.ProcessEnv): NetworkSettings {
     ...(noProxy ? { noProxy } : {}),
     ...(caCerts ? { caCerts } : {})
   }
+}
+
+/**
+ * Proxy qu'un agent a vraiment dans son environnement (celui de l'app, son profil, puis ses
+ * variables posées au lancement), pour la piste réseau des bandeaux (fiche 275). Non masqué : à
+ * masquer avant tout affichage (`maskUrlCredentials`).
+ */
+export function agentProxy(
+  base: NodeJS.ProcessEnv,
+  profileEnv: Record<string, string>,
+  changes: EnvChanges
+): string | undefined {
+  return networkFromEnv(withEnvChanges({ ...base, ...profileEnv }, changes)).proxy
 }
 
 /** Réglages saisis, complétés par l'environnement : ce que les agents auront vraiment. */

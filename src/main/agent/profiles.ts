@@ -27,6 +27,7 @@ import type {
   RulesSource,
   SubagentFormat,
   SubagentStream,
+  RetryStatusSource,
   ToolStatusSource
 } from './adapters'
 import {
@@ -48,6 +49,7 @@ import {
   OPENCODE_TOOL_STATUS
 } from './opencode-contract'
 import { OPENCODE_DIFF_SOURCE } from './opencode-diffs'
+import { OPENCODE_RETRY_STATUS } from './opencode-retry'
 import { OPENCODE_SUBAGENT_FORMAT } from './opencode-subagents'
 import { describeCapabilities, type AgentAnnouncement } from './capabilities'
 import { t } from 'i18next'
@@ -135,6 +137,11 @@ export interface AgentProfile {
    * de son outil `execute`, `rawOutput.metadata.toolCalls[]`, fiche 122).
    */
   toolStatus?: ToolStatusSource
+  /**
+   * Reprises que l'agent annonce quand il ne joint pas son modèle (OpenCode 2.3.0 :
+   * `_meta["opencode/retry"]`, fiche 275) : bandeau « n'arrive pas à joindre son modèle ».
+   */
+  retryStatus?: RetryStatusSource
   /**
    * Titre des sessions jamais écrites, masquées dans « Reprendre une session… » (fiche 055) :
    * OpenCode 1.19 garde les sessions ouvertes sans message sous « New session - <date ISO> ».
@@ -488,6 +495,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Comme OpenCode 2 : diffs d'un « patch » rejoué retrouvés dans sa sortie (fiche 096).
       diffSource: OPENCODE_DIFF_SOURCE,
       toolStatus: OPENCODE_TOOL_STATUS,
+      // Comme OpenCode 2.3.0 : reprises quand le modèle est injoignable (fiche 275).
+      retryStatus: OPENCODE_RETRY_STATUS,
       // Pas d'invitation à `/scenario` dans les captures de la vitrine (fiche 225).
       get welcomeHint() {
         return showcase ? undefined : t('profiles.mock.welcomeHint')
@@ -636,6 +645,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       subagentStream: OPENCODE_SUBAGENT_STREAM,
       diffSource: OPENCODE_DIFF_SOURCE,
       toolStatus: OPENCODE_TOOL_STATUS,
+      // 2.3.0 qui ne joint pas son modèle : reprises sans fin, dites seulement en `_meta` (fiche 275).
+      retryStatus: OPENCODE_RETRY_STATUS,
       emptySessionTitle: EMPTY_SESSION_TITLE,
       // Connexion expirée au tour (2.2.5 : « Authentication required: provider authentication
       // required », recette 0.9 D10). Pas de clé d'API dans ce profil : `OPENCODE_API_KEY` (Zen) ne

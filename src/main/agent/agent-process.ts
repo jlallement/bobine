@@ -13,6 +13,7 @@ import { addSecret, excerpt } from '../log-redact'
 import { startProcess } from '../process-tree'
 import { acpExchanges } from './acp-exchanges'
 import { AcpLog, formatDuration, type Direction } from './acp-log'
+import { ProgressLines } from './agent-progress'
 import { spawnError } from './process-utils'
 import type { AgentProfile } from './profiles'
 import { t } from 'i18next'
@@ -55,8 +56,11 @@ export interface LaunchOptions {
   scope: LogScope
   /** Désignation de l'agent dans `main.log`, ex. « (mock, 1a2b3c4d) ». */
   label: string
-  /** Octets reçus de l'agent : sert à repérer un agent qui se tait pendant un tour. */
-  onActivity: () => void
+  /**
+   * Ligne reçue de l'agent : sert à repérer un agent qui se tait pendant un tour. `progress` faux :
+   * une mise à jour d'état seule, qui ne dit pas que l'agent avance (`agent-progress.ts`).
+   */
+  onActivity: (progress: boolean) => void
 }
 
 /** Agent lancé : son processus, ses flux pour la connexion ACP, et de quoi expliquer sa fin. */
@@ -128,10 +132,11 @@ export function launchAgent(options: LaunchOptions): AgentProcess {
     )
   })
   // Chaque ligne JSON-RPC passe par le relevé (fiche 080) ; l'activité de l'agent est notée.
+  const progress = new ProgressLines(options.onActivity)
   const tap = (direction: Direction) =>
     new TransformStream<Uint8Array, Uint8Array>({
       transform: (chunk, controller) => {
-        if (direction === 'in') options.onActivity()
+        if (direction === 'in') progress.bytes(chunk)
         acpLog.bytes(direction, chunk)
         controller.enqueue(chunk)
       }

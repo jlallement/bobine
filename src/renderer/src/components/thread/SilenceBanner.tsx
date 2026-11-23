@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Hourglass } from 'lucide-react'
+import { requestNetworkSettings } from '../../open-settings'
+import { withCode } from './network-hint'
 import '../../silence-banner.css'
 
 /** Minutes de silence affichées (au moins 1). */
@@ -12,8 +14,18 @@ export const silentMinutes = (since: number, now: number): number =>
  * fil. Ton neutre : rien n'est en panne, l'agent peut travailler (longue commande, longue
  * réflexion). `role="status"`, jamais d'alerte ni de focus. « Attendre » le masque jusqu'au
  * prochain silence (`since` change quand l'agent reparle) ; « Arrêter » arrête la réponse.
+ * Proxy défini pour l'agent (fiche 275, identifiants masqués par le main) : il est cité comme
+ * piste, avec « Réglages réseau ».
  */
-export function SilenceBanner({ since, onStop }: { since: number; onStop: () => void }) {
+export function SilenceBanner({
+  since,
+  proxy,
+  onStop
+}: {
+  since: number
+  proxy?: string | undefined
+  onStop: () => void
+}) {
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
   const [hiddenFor, setHiddenFor] = useState<number | undefined>()
@@ -28,8 +40,22 @@ export function SilenceBanner({ since, onStop }: { since: number; onStop: () => 
       <div className="silence-banner-text">
         <b>{t('silenceBanner.title', { minutes: silentMinutes(since, now) })}</b>
         <small>{t('silenceBanner.detail')}</small>
+        {proxy && (
+          <small className="silence-banner-hint" data-testid="silence-proxy">
+            {withCode((slot) => t('silenceBanner.proxy', { proxy: slot }), proxy)}
+          </small>
+        )}
       </div>
       <div className="silence-banner-actions">
+        {proxy && (
+          <button
+            className="btn small"
+            data-testid="silence-settings"
+            onClick={requestNetworkSettings}
+          >
+            {t('silenceBanner.settings')}
+          </button>
+        )}
         <button
           className="btn small"
           data-testid="silence-wait"

@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent injoignable — maquettes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçables (bascule en haut, ou .force-*).
+       */
+      :root,
+      .force-light {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --syn-keyword: #b3261e;
+        --syn-string: #22683a;
+        --syn-comment: #6d6b64;
+        --syn-function: #7041c4;
+        --syn-type: #8a4b08;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        --pin: #f2c94c;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --syn-keyword: #f08a7a;
+          --syn-string: #7fcb93;
+          --syn-comment: #a6a39a;
+          --syn-function: #c3a6f6;
+          --syn-type: #e0a84f;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          --pin: #f5d98a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'],
+      .force-dark {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --syn-keyword: #f08a7a;
+        --syn-string: #7fcb93;
+        --syn-comment: #a6a39a;
+        --syn-function: #c3a6f6;
+        --syn-type: #e0a84f;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        --pin: #f5d98a;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-pill: 999px;
+        --font-ui: 'Bobine Inter', 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      /* Polices livrées avec l'app (fiche 145) : la maquette s'affiche hors ligne comme l'app. */
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        border: 0;
+        background: none;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+      svg.i.l {
+        width: 16px;
+        height: 16px;
+      }
+
+      .page {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 36px 24px 120px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .page > header h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .lead,
+      .page > header p {
+        color: var(--text-2);
+        margin: 0 0 6px;
+        max-width: 900px;
+        line-height: 1.55;
+      }
+      .theme-switch {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 3px;
+        gap: 2px;
+      }
+      .theme-switch button {
+        font-size: 12.5px;
+        color: var(--muted);
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+      }
+      .theme-switch button[aria-pressed='true'] {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      h2.screen {
+        font-size: 20px;
+        margin: 48px 0 6px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 9px;
+        border-radius: var(--radius-pill);
+        vertical-align: 3px;
+        margin-left: 8px;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .tag.reco {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .tag.now {
+        background: var(--err-soft);
+        color: var(--err);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr));
+        gap: 20px;
+        margin-top: 14px;
+      }
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      .thread {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 22px 22px 6px;
+        font-size: 14px;
+      }
+      .bubble {
+        margin-left: auto;
+        width: fit-content;
+        max-width: 80%;
+        background: var(--surface-2);
+        border-radius: 16px;
+        padding: 9px 14px;
+        margin-bottom: 18px;
+      }
+      .working {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0 0 12px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .banner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        margin: 4px 0 18px;
+        font-size: 13.5px;
+      }
+      .banner.neutral {
+        background: var(--surface-2);
+      }
+      .banner.neutral > svg {
+        color: var(--muted);
+      }
+      .banner.warn {
+        background: var(--warn-soft);
+      }
+      .banner.warn > svg {
+        color: var(--warn);
+      }
+      .banner > svg {
+        margin-top: 2px;
+      }
+      .banner .text {
+        flex: 1 1 220px;
+        min-width: 0;
+      }
+      .banner small {
+        display: block;
+        color: var(--text-2);
+        font-size: 12.5px;
+        margin-top: 2px;
+        line-height: 1.45;
+      }
+      .banner .hint {
+        margin-top: 6px;
+      }
+      .new {
+        outline: 2px dashed var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      .banner details {
+        margin-top: 6px;
+        font-size: 12.5px;
+        color: var(--text-2);
+      }
+      .banner summary {
+        cursor: pointer;
+        color: var(--muted);
+      }
+      .banner pre {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: var(--code-bg);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        margin: 6px 0 0;
+      }
+      .actions {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+      .btn {
+        font-size: 12.5px;
+        padding: 5px 11px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+      }
+      .composer {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 12px 14px;
+        color: var(--muted);
+        margin: 8px 0 14px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .stop {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--text);
+        display: grid;
+        place-items: center;
+      }
+      .stop i {
+        width: 9px;
+        height: 9px;
+        background: var(--bg);
+        border-radius: 2px;
+      }
+      table.copy {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      table.copy th,
+      table.copy td {
+        border-top: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+      }
+      table.copy th {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .notes {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 900px;
+      }
+      .notes li {
+        margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <svg style="display: none" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="hourglass" viewBox="0 0 24 24">
+        <path
+          d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"
+        />
+      </symbol>
+      <symbol id="wifioff" viewBox="0 0 24 24">
+        <path
+          d="M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M2 8.82a15 15 0 0 1 4.17-2.65M10.66 5c4.01-.36 8.14.9 11.34 3.76M16.85 11.25a10 10 0 0 1 2.22 1.68M5 13a10 10 0 0 1 5.24-2.76M2 2l20 20"
+        />
+      </symbol>
+    </svg>
+    <main class="page">
+      <header>
+        <div>
+          <h1>Agent qui ne joint pas son modèle</h1>
+          <p>
+            Recette du 2026-11-23 : proxy injoignable dans Réglages › Agents › Avancé, OpenCode
+            lancé, un message envoyé → « Réfléchit… » pendant 6 min 43 s, sans aucun signe. Cause
+            relevée : OpenCode 2.3.0 réessaie sans fin et ne le dit que dans des
+            <code>session_info_update</code> (<code>_meta["opencode/retry"]</code>, au plus toutes
+            les 30 s) ; le garde-fou de silence comptait ces octets comme une activité.
+          </p>
+          <p>
+            Déjà corrigé côté main, sans texte nouveau : le bandeau de silence existant (5 min) ne
+            compte plus les mises à jour d’état seules. <b>À valider ici</b> : ce que le bandeau dit
+            en plus. Cadres pointillés = nouveau.
+          </p>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Thème">
+          <button aria-pressed="true" data-theme="">Système</button
+          ><button aria-pressed="false" data-theme="light">Clair</button
+          ><button aria-pressed="false" data-theme="dark">Sombre</button>
+        </div>
+      </header>
+      <h2 class="screen">0 · Aujourd’hui <span class="tag now">constat</span></h2>
+      <p class="lead">Aucun bandeau ; seul « Arrêter » (■) en sortait.</p>
+      <div class="grid">
+        <div class="force-light">
+          <p class="caption">Clair</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 6 min 43 s</div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div class="force-dark">
+          <p class="caption">Sombre</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 6 min 43 s</div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2 class="screen">
+        1 · Déjà fait : le bandeau de silence vient au bout de 5 min
+        <span class="tag">sans texte nouveau</span>
+      </h2>
+      <p class="lead">
+        Tous les agents, rien de propre à OpenCode. Mais il ne dit pas pourquoi, et 5 min, c’est
+        long quand l’agent sait dès la première seconde qu’il ne joint rien.
+      </p>
+      <div class="grid">
+        <div class="force-light">
+          <p class="caption">Clair</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 5 min 02 s</div>
+            <div class="banner neutral" role="status">
+              <svg class="i l"><use href="#hourglass" /></svg>
+              <div class="text">
+                <b>L’agent n’a rien envoyé depuis 5 min</b
+                ><small
+                  >C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez
+                  attendre, ou arrêter la réponse : la conversation est gardée.</small
+                >
+              </div>
+              <div class="actions">
+                <button class="btn">Attendre</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div class="force-dark">
+          <p class="caption">Sombre</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 5 min 02 s</div>
+            <div class="banner neutral" role="status">
+              <svg class="i l"><use href="#hourglass" /></svg>
+              <div class="text">
+                <b>L’agent n’a rien envoyé depuis 5 min</b
+                ><small
+                  >C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez
+                  attendre, ou arrêter la réponse : la conversation est gardée.</small
+                >
+              </div>
+              <div class="actions">
+                <button class="btn">Attendre</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2 class="screen">
+        2 · Proposition A : l’agent dit qu’il réessaie <span class="tag reco">recommandé</span>
+      </h2>
+      <p class="lead">
+        Dès la 2ᵉ tentative (≈ 3 s), à la place de « Réfléchit… », dans la famille du bandeau «
+        Connexion perdue » (fiche 142). Lu par un adaptateur du profil d’OpenCode (<code
+          >_meta["opencode/retry"]</code
+        >
+        ; ADR-0011 : déclaré dans le profil, listé dans « Propre à OpenCode » et dans
+        <code>docs/agents.md</code>) ; l’interface ne reçoit qu’un état générique (tentative, heure
+        de la suivante, message de l’agent). Le message de l’agent, non traduit (ADR-0014), est
+        replié. « Réglages réseau » ouvre Réglages › Agents › Avancé. Bob : rien de relevé, il garde
+        le bandeau 1 (ou 3).
+      </p>
+      <div class="grid">
+        <div class="force-light">
+          <p class="caption">Clair — proxy défini</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="banner warn" role="status">
+              <svg class="i l"><use href="#wifioff" /></svg>
+              <div class="text">
+                <b>OpenCode n’arrive pas à joindre son modèle</b
+                ><small
+                  >Il réessaie de lui-même : tentative 9, la prochaine dans 24 s. Votre message est
+                  gardé.</small
+                ><small class="hint new"
+                  >Un proxy est défini pour les agents
+                  (<code>http://proxy.exem21ple.test:3128</code>) : vérifiez son adresse dans
+                  Réglages › Agents › Avancé.</small
+                >
+                <details>
+                  <summary>Message de l’agent</summary>
+                  <pre>
+Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND proxy.exem21ple.test)</pre>
+                </details>
+              </div>
+              <div class="actions">
+                <button class="btn">Réglages réseau</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div class="force-dark">
+          <p class="caption">Sombre — proxy défini</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="banner warn" role="status">
+              <svg class="i l"><use href="#wifioff" /></svg>
+              <div class="text">
+                <b>OpenCode n’arrive pas à joindre son modèle</b
+                ><small
+                  >Il réessaie de lui-même : tentative 9, la prochaine dans 24 s. Votre message est
+                  gardé.</small
+                ><small class="hint new"
+                  >Un proxy est défini pour les agents
+                  (<code>http://proxy.exem21ple.test:3128</code>) : vérifiez son adresse dans
+                  Réglages › Agents › Avancé.</small
+                >
+                <details>
+                  <summary>Message de l’agent</summary>
+                  <pre>
+Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND proxy.exem21ple.test)</pre>
+                </details>
+              </div>
+              <div class="actions">
+                <button class="btn">Réglages réseau</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="force-light">
+          <p class="caption">Clair — sans proxy</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="banner warn" role="status">
+              <svg class="i l"><use href="#wifioff" /></svg>
+              <div class="text">
+                <b>OpenCode n’arrive pas à joindre son modèle</b
+                ><small
+                  >Il réessaie de lui-même : tentative 4, la prochaine dans 7 s. Votre message est
+                  gardé.</small
+                ><small class="hint new"
+                  >Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise,
+                  renseignez-le dans Réglages › Agents › Avancé.</small
+                >
+                <details>
+                  <summary>Message de l’agent</summary>
+                  <pre>
+Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND opencode.ai)</pre>
+                </details>
+              </div>
+              <div class="actions">
+                <button class="btn">Réglages réseau</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div class="force-dark">
+          <p class="caption">Sombre — sans proxy</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="banner warn" role="status">
+              <svg class="i l"><use href="#wifioff" /></svg>
+              <div class="text">
+                <b>OpenCode n’arrive pas à joindre son modèle</b
+                ><small
+                  >Il réessaie de lui-même : tentative 4, la prochaine dans 7 s. Votre message est
+                  gardé.</small
+                ><small class="hint new"
+                  >Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise,
+                  renseignez-le dans Réglages › Agents › Avancé.</small
+                >
+                <details>
+                  <summary>Message de l’agent</summary>
+                  <pre>
+Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND opencode.ai)</pre>
+                </details>
+              </div>
+              <div class="actions">
+                <button class="btn">Réglages réseau</button><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2 class="screen">
+        3 · Proposition B : le bandeau de silence cite le proxy
+        <span class="tag">générique, en plus de A</span>
+      </h2>
+      <p class="lead">
+        Tout agent (Bob compris), seulement quand un proxy est défini (réglages ou shell). Sans
+        proxy : bandeau 1 inchangé.
+      </p>
+      <div class="grid">
+        <div class="force-light">
+          <p class="caption">Clair — proxy défini</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 5 min 02 s</div>
+            <div class="banner neutral" role="status">
+              <svg class="i l"><use href="#hourglass" /></svg>
+              <div class="text">
+                <b>L’agent n’a rien envoyé depuis 5 min</b
+                ><small
+                  >C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez
+                  attendre, ou arrêter la réponse : la conversation est gardée.</small
+                ><small class="hint new"
+                  >Un proxy est défini pour les agents
+                  (<code>http://proxy.exem21ple.test:3128</code>) : s’il est injoignable, l’agent ne
+                  peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.</small
+                >
+              </div>
+              <div class="actions">
+                <button class="btn new">Réglages réseau</button><button class="btn">Attendre</button
+                ><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div class="force-dark">
+          <p class="caption">Sombre — proxy défini</p>
+          <div class="thread">
+            <div class="bubble">Ajoute un test pour la fonction <code>total()</code>.</div>
+            <div class="working"><span class="dot"></span>Réfléchit… · 5 min 02 s</div>
+            <div class="banner neutral" role="status">
+              <svg class="i l"><use href="#hourglass" /></svg>
+              <div class="text">
+                <b>L’agent n’a rien envoyé depuis 5 min</b
+                ><small
+                  >C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez
+                  attendre, ou arrêter la réponse : la conversation est gardée.</small
+                ><small class="hint new"
+                  >Un proxy est défini pour les agents
+                  (<code>http://proxy.exem21ple.test:3128</code>) : s’il est injoignable, l’agent ne
+                  peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.</small
+                >
+              </div>
+              <div class="actions">
+                <button class="btn new">Réglages réseau</button><button class="btn">Attendre</button
+                ><button class="btn">Arrêter</button>
+              </div>
+            </div>
+            <div class="composer">
+              <span>Écrire à OpenCode…</span><span class="stop"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2 class="screen">Textes</h2>
+      <table class="copy">
+        <tr>
+          <th>Clé (proposée)</th>
+          <th>Français</th>
+          <th>English</th>
+        </tr>
+        <tr>
+          <td><code>agentRetry.title</code></td>
+          <td>{{agent}} n’arrive pas à joindre son modèle</td>
+          <td>{{agent}} can’t reach its model</td>
+        </tr>
+        <tr>
+          <td><code>agentRetry.detail</code></td>
+          <td>
+            Il réessaie de lui-même : tentative {{attempt}}, la prochaine dans {{seconds}} s. Votre
+            message est gardé.
+          </td>
+          <td>
+            It keeps retrying on its own: attempt {{attempt}}, next in {{seconds}} s. Your message
+            is kept.
+          </td>
+        </tr>
+        <tr>
+          <td><code>agentRetry.proxy</code></td>
+          <td>
+            Un proxy est défini pour les agents ({{proxy}}) : vérifiez son adresse dans Réglages ›
+            Agents › Avancé.
+          </td>
+          <td>
+            A proxy is set for agents ({{proxy}}): check its address in Settings › Agents ›
+            Advanced.
+          </td>
+        </tr>
+        <tr>
+          <td><code>agentRetry.noProxy</code></td>
+          <td>
+            Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans
+            Réglages › Agents › Avancé.
+          </td>
+          <td>
+            Check the connection (Wi-Fi, VPN); behind a corporate proxy, set it in Settings › Agents
+            › Advanced.
+          </td>
+        </tr>
+        <tr>
+          <td><code>agentRetry.agentMessage</code></td>
+          <td>Message de l’agent</td>
+          <td>Agent’s message</td>
+        </tr>
+        <tr>
+          <td><code>agentRetry.settings</code></td>
+          <td>Réglages réseau</td>
+          <td>Network settings</td>
+        </tr>
+        <tr>
+          <td><code>silenceBanner.proxy</code></td>
+          <td>
+            Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut
+            pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.
+          </td>
+          <td>
+            A proxy is set for agents ({{proxy}}): if it can’t be reached, the agent can’t reach its
+            model. Check it in Settings › Agents › Advanced.
+          </td>
+        </tr>
+      </table>
+      <h2 class="screen">Questions</h2>
+      <ol class="notes">
+        <li>A seul, B seul, ou A + B ? (Recommandé : A + B.)</li>
+        <li>
+          Adresse du proxy affichée en clair ? Elle peut contenir des identifiants
+          (<code>http://utilisateur:mot@proxy:port</code>) : ils seraient masqués
+          (<code>http://utilisateur:•••@proxy:port</code>).
+        </li>
+        <li>A sans proxy défini : garder la piste « Wi-Fi, VPN », ou seulement le décompte ?</li>
+      </ol>
+    </main>
+    <script>
+      const root = document.documentElement
+      document.querySelectorAll('.theme-switch button').forEach((b) =>
+        b.addEventListener('click', () => {
+          const theme = b.dataset.theme
+          if (theme) root.dataset.theme = theme
+          else delete root.dataset.theme
+          document
+            .querySelectorAll('.theme-switch button')
+            .forEach((o) => o.setAttribute('aria-pressed', String(o === b)))
+        })
+      )
+    </script>
+  </body>
+</html>

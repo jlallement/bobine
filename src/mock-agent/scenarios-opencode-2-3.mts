@@ -289,7 +289,44 @@ const exploreSteps: Step[] = [
   }
 ]
 
+/**
+ * OpenCode 2.3.0 qui ne joint pas son modèle (relevé du 2026-11-23, proxy injoignable
+ * `HTTPS_PROXY=http://proxy.exem21ple.test:3128`, `opencode/big-pickle`) : aucune erreur au tour,
+ * il réessaie sans fin (2, 4, 7, 16, 26 s, puis toutes les 30 s) en n'envoyant que des
+ * `session_info_update` : `_meta["opencode/retry"]` à `null`, puis la tentative suivante, son heure
+ * et l'erreur (`provider.transport`, « Can't reach opencode.ai… »). Ici une tentative toutes les
+ * 10 pauses (0,4 s au délai par défaut), la suivante annoncée dans 30 s comme en régime établi,
+ * pendant 10 min au plus, jusqu'à l'annulation.
+ */
+const RETRY_FOREVER: Step[] = Array.from({ length: 1500 }, (_, i): Step[] => [
+  {
+    kind: 'update',
+    update: { sessionUpdate: 'session_info_update', _meta: { 'opencode/retry': null } }
+  },
+  {
+    kind: 'opencode-retry',
+    attempt: i + 2,
+    inMs: 30_000,
+    message:
+      "Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND proxy.exem21ple.test)"
+  },
+  { kind: 'pause', ticks: 10 }
+]).flat()
+
 export const openCode23Scenarios: Record<string, Scenario> = {
+  'reseau-injoignable-2-3': {
+    description:
+      'OpenCode 2.3.0 sans accès à son modèle (proxy injoignable) : réessaie sans fin, mises à jour d’état seules, jamais de contenu ni d’erreur',
+    steps: RETRY_FOREVER
+  },
+  'reseau-revenu-2-3': {
+    description:
+      'Comme `reseau-injoignable-2-3`, mais le réseau revient après deux reprises : la réponse arrive',
+    steps: [
+      ...RETRY_FOREVER.slice(0, 6),
+      { kind: 'text', text: 'Réseau revenu : voici la réponse.' }
+    ]
+  },
   'sous-agent-hors-tour-explo-2-3': {
     description:
       'Séquence réelle d’OpenCode 2.3.0 (exploration du 2026-11-19, fiche 255) : sous-agent explore en arrière-plan, tour fini en quelques secondes, puis sa fin et la réponse du parent hors tour, en deux morceaux',

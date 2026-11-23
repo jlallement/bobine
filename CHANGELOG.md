@@ -15,6 +15,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la
+  réponse sur « Réfléchit… » sans rien dire. OpenCode : un bandeau le dit dès sa deuxième
+  tentative, avec le décompte de la suivante, son message, et une piste : le proxy défini (sans
+  ses identifiants), ou la connexion (Wi-Fi, VPN) ; **Réglages réseau** ouvre le champ du proxy.
+  Tout agent : au bout de 5 min sans rien, le bandeau « L’agent n’a rien envoyé depuis… »
+  s’affiche, et cite le proxy quand il y en a un.
 - Réglages › Agents › Avancé, Réseau d’entreprise : le proxy n’est plus perdu quand on passe
   aussitôt au champ suivant (« Sans proxy ») et qu’on le quitte à son tour.
 - Zone de saisie : quand la fenêtre rétrécit, la barre se replie dans la même image ; le bouton

@@ -1,5 +1,6 @@
 import type { AgentSnapshot } from '@shared/agent'
 import type { TranscriptItem } from '@shared/transcript'
+import { AgentUnreachableBanner } from './AgentUnreachableBanner'
 import { SilenceBanner } from './SilenceBanner'
 import { TurnRetryBanner } from './TurnRetryBanner'
 import { WorkingIndicator } from './WorkingIndicator'
@@ -11,6 +12,8 @@ import { useMemo } from 'react'
  * la place de l'indicateur d'activité, et le bandeau de silence sous lui quand l'agent se tait.
  * Tour fini mais travail encore en cours (fiche 255) : le pied de la réponse le dit (« Travaille
  * encore… · 32 s », fiche 261) ; l'indicateur ne le répète pas. Sans pied (aucune réponse), il reste.
+ * Agent qui ne joint pas son modèle (fiche 275) : son bandeau à la place de l'indicateur et du
+ * bandeau de silence, qu'il explique mieux.
  */
 export function TurnFooter({
   snapshot,
@@ -37,10 +40,25 @@ export function TurnFooter({
     () => background && hasWorkingFoot(items, { busy: false, background: true }),
     [background, items]
   )
+  const unreachable =
+    snapshot?.status === 'busy' && !snapshot.retry && snapshot.unreachable
+      ? {
+          view: snapshot.unreachable,
+          agent: snapshot.info.agentName ?? snapshot.info.profileLabel,
+          proxy: snapshot.proxy
+        }
+      : undefined
   return (
     <>
       {snapshot?.retry ? (
         <TurnRetryBanner retry={snapshot.retry} onRetry={onRetry} />
+      ) : unreachable ? (
+        <AgentUnreachableBanner
+          unreachable={unreachable.view}
+          agent={unreachable.agent}
+          proxy={unreachable.proxy}
+          onStop={onStop}
+        />
       ) : (
         (busy || (background && !saidByFoot)) &&
         conversationId && (
@@ -53,8 +71,8 @@ export function TurnFooter({
           />
         )
       )}
-      {busy && snapshot.silentSince !== undefined && (
-        <SilenceBanner since={snapshot.silentSince} onStop={onStop} />
+      {busy && !unreachable && snapshot.silentSince !== undefined && (
+        <SilenceBanner since={snapshot.silentSince} proxy={snapshot.proxy} onStop={onStop} />
       )}
     </>
   )

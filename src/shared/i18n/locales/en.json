@@ -633,6 +633,16 @@
     "willSend_one": "Will be sent when the response ends",
     "willSend_other": "{{count}} messages will be sent when the response ends"
   },
+  "agentRetry": {
+    "title": "{{agent}} can’t reach its model",
+    "detail": "It keeps retrying on its own: attempt {{attempt}}, next in {{seconds}} s. Your message is kept.",
+    "detailNow": "It keeps retrying on its own: attempt {{attempt}} in progress. Your message is kept.",
+    "proxy": "A proxy is set for agents ({{proxy}}): check its address in Settings › Agents › Advanced.",
+    "noProxy": "Check the connection (Wi-Fi, VPN); behind a corporate proxy, set it in Settings › Agents › Advanced.",
+    "agentMessage": "Agent’s message",
+    "settings": "Network settings",
+    "stop": "Stop"
+  },
   "turnRetry": {
     "network": "Connection lost",
     "rateLimit": "Rate limit reached",
@@ -3233,6 +3243,10 @@
       "label": "Background subagents followed until they end",
       "detail": "When {{agent}} starts a subagent in the background, its tool returns right away (`metadata.status: \"running\"`): the app keeps it “running”, rereads its session from time to time, and shows it done with its answer when it ends."
     },
+    "modelRetry": {
+      "label": "Unreachable model",
+      "detail": "When {{agent}} can’t reach its model (proxy, network), it retries forever without saying so in the thread; the app reads its retries (`_meta[\"opencode/retry\"]`) and shows them: attempt, next attempt, its message."
+    },
     "executeErrors": {
       "label": "Errors of tools called from code",
       "detail": "When {{agent}} calls tools through its `execute` tool, it says the card finished even if one of them failed; the app reads the error it notes separately (`rawOutput.metadata.toolCalls`) and marks the card failed."
@@ -5039,6 +5053,8 @@
   "silenceBanner": {
     "title": "The agent hasn’t sent anything for {{minutes}} min",
     "detail": "That’s normal during a long command or a long think. You can wait, or stop the reply: the conversation is kept.",
+    "proxy": "A proxy is set for agents ({{proxy}}): if it can’t be reached, the agent can’t reach its model. Check it in Settings › Agents › Advanced.",
+    "settings": "Network settings",
     "wait": "Wait",
     "stop": "Stop"
   },

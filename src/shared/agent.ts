@@ -267,6 +267,26 @@ export interface AgentSnapshot {
    * hors attente de l'utilisateur (fiche 194).
    */
   silentSince?: number
+  /**
+   * L'agent dit qu'il ne joint pas son modèle et réessaie de lui-même (fiche 275) : lu par le
+   * profil de l'agent (`retryStatus`), effacé dès que l'agent avance ou que le tour finit.
+   */
+  unreachable?: AgentUnreachableView
+  /**
+   * Proxy de l'agent, identifiants masqués (`http://•••@hôte:port`), présent seulement avec
+   * `silentSince` ou `unreachable` : la piste réseau des bandeaux (fiche 275).
+   */
+  proxy?: string
+}
+
+/** Agent qui ne joint pas son modèle et réessaie de lui-même (fiche 275), en termes génériques. */
+export interface AgentUnreachableView {
+  /** Tentative annoncée par l'agent (la première reprise vaut 2 chez OpenCode). */
+  attempt: number
+  /** Heure de la tentative suivante (ms) ; absente : l'agent ne la donne pas. */
+  at?: number
+  /** Message de l'agent, tel quel (non traduit, ADR-0014), identifiants d'adresse masqués. */
+  message?: string
 }
 
 /**
