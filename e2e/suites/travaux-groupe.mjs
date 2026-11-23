@@ -386,8 +386,14 @@ async function conflictRun(ui, { workspace, git, commitAll }) {
   await ui.waitFor(`!!${ui.$('subtasks-merge-start')}`, 30000)
   await ui.ready()
   await ui.reveal(ui.$('subtasks-merge-start'))
-  // Le plan relu après le retour : le bouton s'active une fois les branches lues.
-  await ui.waitFor(`${ui.$('subtasks-merge-start')}?.disabled === false`, 30000)
+  // Le plan relu après le retour : les deux branches commitées prêtes (« Fusionner les 2 prêts »),
+  // pas seulement le bouton actif. Une seule vue prête, il s'activait déjà : sous Linux, la fusion
+  // est partie avec « Notes de version » seule, et rien n'a été en conflit (fiche 250).
+  const both = L('workGroup.merge.action', { count: 2, base: 'main' })
+  await ui.waitFor(
+    `${ui.$('subtasks-merge-start')}?.disabled === false && ${ui.$('subtasks-merge-start')}.innerText.trim() === ${JSON.stringify(both)}`,
+    30000
+  )
   await ui.click(ui.$('subtasks-merge-start'))
   await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'conflict'`, 90000)
   await ui.waitFor(`!!${ui.$('subtasks-merge-retry')}`, 30000)

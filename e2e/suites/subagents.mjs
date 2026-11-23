@@ -96,7 +96,13 @@ async function subagents(scheme, home) {
       await ui.waitFor(
         `${last}?.dataset.subagent === 'general' && ${last}.dataset.status === 'completed'`
       )
+      // La réponse de l'agent arrive juste après le sous-agent, et le fil (en bas) remonte la
+      // ligne de sa hauteur : sur une machine chargée, l'appui tombait au-dessus d'elle et rien ne
+      // se dépliait (Linux, fiche 250). On attend la fin du tour, comme un humain qui lit.
+      await ui.ready()
       await ui.click(`${last}.querySelector('summary')`)
+      // Dépliée : le détail est dans la page même replié, seul `open` dit que le clic a porté.
+      await ui.waitFor(`${last}.open`)
       await ui.waitFor(`!!${last}.querySelector('[data-testid=subagent-answer]')`)
       const details = await ui.ev(
         `${last}.querySelector('[data-testid=subagent-details]').innerText`

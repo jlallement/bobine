@@ -31,7 +31,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 - A click in the thread is no longer lost when a turn ends at that very moment: the thread no
   longer shifts under the pointer between press and release (for example on a row of a work card,
-  which did not expand).
+  which did not expand). Likewise when the thread was almost at the bottom, or a reply arrived
+  during the press: it now only scrolls down on release (for example on **Allow once**, which had
+  no effect).
 
 ## 1.0.0-rc.3 — November 21, 2026
 
