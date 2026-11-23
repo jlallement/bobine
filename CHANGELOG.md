@@ -17,8 +17,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - Une conversation restaurée depuis la corbeille se reprend comme une autre : son agent repart et
   le message part. Elle restait « Arrêté », le message dans la zone de saisie, sans explication.
-  Restaurer une mère supprimée avec ses filles les restaure avec elle (une fille supprimée seule
-  avant reste dans la corbeille).
+  Restaurer une conversation supprimée avec ses travaux les restaure avec elle ; dans la corbeille,
+  sa ligne le dit (« avec ses 2 travaux »). Un travail supprimé seul avant y reste.
 - Carte de travaux : l’en-tête ne dit plus « ont répondu » pour un travail dont la conversation a
   été supprimée (« 1 supprimé »), ni pour un travail fusionné (« 1 fusionné »).
 - Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la

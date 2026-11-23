@@ -16,8 +16,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 - A conversation restored from the trash picks up like any other: its agent starts again and the
   message is sent. It used to stay “Stopped”, the message left in the composer, with no
-  explanation. Restoring a mother deleted with her children restores them with her (a child
-  deleted on its own before stays in the trash).
+  explanation. Restoring a conversation deleted with its tasks restores them with it; in the
+  trash, its row says so (“with its 2 tasks”). A task deleted on its own before stays there.
 - Task card: the header no longer says “replied” for a task whose conversation was deleted
   (“1 deleted”), nor for a merged task (“1 merged”).
 - An agent that can’t reach its model (unreachable proxy, network down) no longer leaves the

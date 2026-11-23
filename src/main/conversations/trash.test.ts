@@ -120,6 +120,27 @@ describe('corbeille : relecture (fiches 196, 197)', () => {
     expect(trash.list().map((e) => e.id)).toEqual(['a'])
   })
 
+  it('la mère dit combien de travaux supprimés avec elle y sont encore (recette rc.4, T7)', () => {
+    const { dir, trash } = setup()
+    const put = (id: string, deletedWith?: string) => {
+      writeFileSync(join(dir, `${id}.json`), '{"items":[],"nextId":1}')
+      trash.put(record(id), undefined, join(dir, `${id}.json`), {
+        ...(deletedWith ? { deletedWith } : {})
+      })
+    }
+    put('f1', 'm')
+    put('pf', 'm')
+    put('seule')
+    put('m')
+    const children = () => Object.fromEntries(trash.list().map((e) => [e.id, e.children]))
+    expect(children()).toEqual({ m: 2, f1: undefined, pf: undefined, seule: undefined })
+    // Restaurée seule entre-temps : elle n'est plus comptée.
+    trash.restore('f1', join(dir, 'f1.json'))
+    expect(trash.list().find((e) => e.id === 'm')?.children).toBe(1)
+    trash.restore('pf', join(dir, 'pf.json'))
+    expect(trash.list().find((e) => e.id === 'm')).not.toHaveProperty('children')
+  })
+
   it('effacer définitivement : aussi ses copies abîmées et son titre dans la copie de l’index', () => {
     const { dir, trash } = setup()
     writeFileSync(join(dir, 'a.json'), '{"items":[],"nextId":1}')

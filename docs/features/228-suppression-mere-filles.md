@@ -212,4 +212,13 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
     comptage ne touche pas) ne s'est pas reproduit en rejouant la suite seule (clair et sombre,
     2/2). Capture `196-restauree-reprise` (clair, sombre) regardée : « Prêt », la réponse à
     « Après la corbeille ».
+  - Annonce dans la corbeille (maquette `docs/maquettes/rc4-corbeille-filles.html`, variante B
+    validée par Jérôme le 2026-11-23) : sous la ligne de la mère, « avec ses N travaux » /
+    « avec son travail » (en : « with its N tasks » / « with its task »), icône des travaux, si des
+    travaux supprimés avec elle sont encore dans la corbeille (petits-enfants compris ; un travail
+    restauré seul entre-temps n'est plus compté). `TrashEntry.children`, calculé par
+    `ConversationTrash.list()` ; `ProfileData.tsx`, clé `settings.data.trash.children`.
+    Preuves : `trash.test.ts`, `ProfileData.test.tsx` ; e2e `profil` (`trashFamily` : corbeille posée
+    sur le disque, la mère seule dit « avec son travail », la restaurer ramène les deux, capture
+    `228-corbeille-mere-travaux`). Nouvelle méthode : e2e lancées sur GitHub, pas en local.
 
