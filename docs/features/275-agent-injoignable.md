@@ -63,3 +63,5 @@ au journal (premier avertissement à 1 min de silence).
 
 - 2026-11-23 : relevé réel d'OpenCode 2.3.0 derrière un proxy injoignable (ci-dessus) ; correctif
   du critère de silence, scénario `reseau-injoignable-2-3`, essais ; maquette des textes.
+  `./scripts/verify` vert ; `pnpm e2e pannes-visibles` vert (clair et sombre). Suite complète non
+  lancée (fichier partagé par toutes les suites : `agent-process.ts`) : à faire avant fusion.
