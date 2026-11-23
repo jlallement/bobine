@@ -9,7 +9,8 @@
  *   autre conversation (barre latérale) ;
  * - `question` (11) : l'agent pose une question (choix, formulaire) ;
  * - `blocage` (12) : connexion, dossier, licence à régler, agent qui demande une action, commande
- *   sans sortie, agent silencieux, plafond de coût atteint, limite d'étapes de l'agent ;
+ *   sans sortie, agent silencieux, modèle injoignable, plafond de coût atteint, limite d'étapes de
+ *   l'agent ;
  * - `erreur` (13) : nouvelle erreur ou nouveau bandeau, agent planté ;
  * - `accueil` (14) : l'accueil du premier lancement attend l'utilisateur ;
  * - `calme` (15) : un tour tourne mais rien ne bouge à l'écran depuis `calme` ;
@@ -28,12 +29,21 @@ export const EXIT_CODES = {
 }
 
 /** Avis qui demandent une décision plutôt qu'ils ne signalent une erreur. */
-const BLOCKING_ALERTS = new Set(['silence', 'bloque', 'plafond', 'relance', 'limite'])
+const BLOCKING_ALERTS = new Set([
+  'silence',
+  'bloque',
+  'plafond',
+  'relance',
+  'limite',
+  'injoignable'
+])
 
 /** Quelque chose tourne : tour en cours, agent qui démarre, message en file, accueil qui attend. */
 export const busy = (shot) =>
   !!shot.working ||
   !!shot.turnWorking ||
+  // Modèle injoignable : son bandeau remplace l'indicateur, le tour tourne encore.
+  !!shot.unreachable ||
   ['busy', 'starting'].includes(shot.agent?.dot) ||
   (shot.queued ?? 0) > 0 ||
   !!shot.onboarding?.waiting ||
