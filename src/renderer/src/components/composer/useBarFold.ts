@@ -74,7 +74,6 @@ export function useBarFold() {
     if (!el || typeof ResizeObserver === 'undefined') return
     const width = (selector: string) => el.querySelector<HTMLElement>(selector)?.offsetWidth ?? 0
     const measure = () => {
-      const shown = el.dataset.fold
       el.dataset.measure = ''
       delete el.dataset.agentIcon
       const folded = fitFold((candidate) => {
@@ -96,8 +95,11 @@ export function useBarFold() {
       el.style.setProperty('--agent-min', `${result.agent}px`)
       if (result.agentIcon) el.dataset.agentIcon = ''
       delete el.dataset.measure
-      if (shown === undefined) delete el.dataset.fold
-      else el.dataset.fold = shown
+      // Le niveau mesuré reste posé : le CSS replie la barre dans l'image même où sa largeur change
+      // (l'observateur passe avant la peinture). Laissé au rendu de React, qui vient après, une
+      // machine chargée peignait plusieurs images où l'envoi sortait de la zone de saisie (fiche
+      // 250, runner macOS). React pose ensuite la même valeur.
+      el.dataset.fold = String(level)
       setFold(level)
     }
     // Largeur de la barre (fenêtre, panneau), avec une première mesure à l'observation.
