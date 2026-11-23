@@ -258,8 +258,15 @@ async function annotateChecks(ui, main) {
 
   // Envoi : un message, deux captures (le bas de la page, puis le haut à 150 %, qui montre aussi
   // les remarques 1 et 2) ; rien du champ saisi. Le fil rend la réponse en Markdown.
+  // La barre part dès que le message est confié à l'envoi (celui de la zone de saisie), avant que
+  // l'agent passe à « répond… » : un `ready()` aussitôt après passait sur l'état d'avant l'envoi,
+  // et la réponse était lue en cours d'écriture (Linux, fiche 250). Le message n'apparaît dans le
+  // fil qu'avec l'agent au travail, comme pour `ui.send` : on l'attend, puis la fin du tour.
+  const users = `document.querySelectorAll('.msg-user').length`
+  const usersBefore = await ui.ev(users)
   await ui.click(ui.$('page-notes-send'))
   await ui.waitFor(`!${ui.$('page-notes-bar')}`)
+  await ui.waitFor(`${users} > ${usersBefore}`)
   await ui.ready()
   const reply = await ui.lastAgentText()
   const flat = reply.replace(/\s+/g, ' ')

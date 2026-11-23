@@ -94,19 +94,52 @@ export async function quickSuite(scheme) {
             'raccourci global ⌥⌘B enregistré'
           )
           // Ce qui arrive à la fenêtre rapide (montrée, masquée, focus), dit si elle n'est pas vue
-          // ouverte (fiche 250 : intermittent sous Linux, au tout premier lancement du job).
+          // ouverte (fiche 250 : intermittent sous Linux, au tout premier lancement du job). Quatre
+          // relevés de la CI (44511650585, 44514570353, 44894413689, 45179819037) : aucun
+          // évènement de la fenêtre, pas même `ready-to-show`, alors que sa page affiche déjà son
+          // texte. S'y ajoutent le chargement de la page (webContents) et, à l'échec, l'état de la
+          // fenêtre et ce que la page croit d'elle-même (visible ? peinte ?), pour savoir pourquoi.
           await main.evaluate(`(() => {
             const { app } = require('electron')
             globalThis.__quickEvents = []
             const t0 = Date.now()
+            const note = (e) => globalThis.__quickEvents.push(e + ' +' + (Date.now() - t0) + ' ms')
             app.once('browser-window-created', (_, w) => {
-              for (const e of ['ready-to-show', 'show', 'hide', 'focus', 'blur'])
-                w.on(e, () => globalThis.__quickEvents.push(e + ' +' + (Date.now() - t0) + ' ms'))
+              globalThis.__quickWindow = w
+              for (const e of ['ready-to-show', 'show', 'hide', 'focus', 'blur']) w.on(e, () => note(e))
+              for (const e of ['did-start-loading', 'dom-ready', 'did-finish-load', 'did-stop-loading', 'render-process-gone', 'unresponsive'])
+                w.webContents.on(e, () => note('page:' + e))
             })
             return true
           })()`)
           const quickEvents = () =>
-            main.evaluate(`(globalThis.__quickEvents ?? []).join(', ')`).catch(() => '?')
+            main
+              .evaluate(
+                `(() => {
+                  const w = globalThis.__quickWindow
+                  const state = !w ? 'aucune fenêtre créée' : w.isDestroyed() ? 'détruite' : [
+                    'visible ' + w.isVisible(),
+                    'chargement ' + w.webContents.isLoading(),
+                    // 2 : celle du relevé et celle de l'app (révélation encore attendue) ; 1 : la seule du relevé.
+                    'attentes ready-to-show ' + w.listenerCount('ready-to-show')
+                  ].join(', ')
+                  return (globalThis.__quickEvents ?? []).join(', ') + ' ; état : ' + state
+                })()`
+              )
+              .catch(() => '?')
+          // Ce que la page de la fenêtre rapide croit d'elle-même : un rendu caché ne peint pas, et
+          // sans première peinture Electron n'émet pas `ready-to-show`.
+          const quickPageState = (page) =>
+            page
+              .ev(
+                `new Promise((done) => {
+                  const paints = performance.getEntriesByType('paint').map((p) => p.name + ' ' + Math.round(p.startTime) + ' ms').join(' + ') || 'aucune'
+                  const base = 'page : ' + document.visibilityState + ', peintures ' + paints + ', texte ' + document.body.innerText.length + ' car.'
+                  const timer = setTimeout(() => done(base + ', image suivante : pas en 1 s'), 1000)
+                  requestAnimationFrame(() => { clearTimeout(timer); done(base + ', image suivante : oui') })
+                })`
+              )
+              .catch((e) => `page : ? (${e.message})`)
           await menuItem(main, 'quick-entry')
           const quick = await attachPage('#quick', scheme)
           try {
@@ -117,7 +150,7 @@ export async function quickSuite(scheme) {
             const opened = await waitQuick(main, true, 5000)
             check(
               opened,
-              `Fichier › Fenêtre rapide : ouverte, rappelle où part le message${opened ? '' : ` (évènements : ${await quickEvents()})`}`
+              `Fichier › Fenêtre rapide : ouverte, rappelle où part le message${opened ? '' : ` (évènements : ${await quickEvents()} ; ${await quickPageState(quick)})`}`
             )
 
             // Capture d'écran (capacité `screenCapture`, fiche 145) : sans elle, pas de bouton.
