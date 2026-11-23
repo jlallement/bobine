@@ -15,6 +15,22 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Proxy changé dans Réglages pendant qu’un agent ne joint pas son modèle : le bandeau le dit
+  (« Les réglages réseau ont changé depuis le lancement… ») et **Relancer l’agent** l’applique ;
+  le message en cours revient dans la zone de saisie, sans partir.
+- Bandeau « L’agent n’a rien envoyé depuis… » : les boutons passent sous le texte, qui garde
+  toute la largeur ; l’adresse du proxy n’est plus coupée en deux. Pendant ce silence,
+  l’indicateur dit « Réponse en cours » au lieu de « Écrit… ».
+- Textes moins tronqués : dans un en-tête étroit, la pastille du profil temporaire ne garde que
+  son icône avant que le titre ne soit coupé ; Session › Modifications passe à la ligne au lieu
+  de couper « non commités » ; zone de saisie étroite, les réglages de la session rejoignent le
+  menu 📎 avant que le nom du modèle ne soit coupé.
+- Clic droit sur une conversation de la barre latérale : le menu de la conversation (comme ⋯),
+  plus un mot sélectionné et « Copier ».
+- Tâches planifiées › Nouvelle tâche : le dossier de la conversation ouverte est proposé d’office,
+  et **Changer…** liste les dossiers récents, puis « Autre dossier… ».
+- Discussion : le panneau Modifications parle des documents de la discussion, plus de « dernier
+  commit ».
 - Une conversation restaurée depuis la corbeille se reprend comme une autre : son agent repart et
   le message part. Elle restait « Arrêté », le message dans la zone de saisie, sans explication.
   Restaurer une conversation supprimée avec ses travaux les restaure avec elle ; dans la corbeille,
@@ -58,6 +74,18 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   bas** apparaît désormais, avec le nombre de nouveautés, sans déplacer la carte.
 - Après **Mettre à la corbeille**, le focus va à la zone de saisie : il ne se perd plus dans la
   page avec la ligne supprimée.
+- Le clavier ne se perd plus dans la page quand le bouton utilisé disparaît ou se désactive
+  (**Autoriser une fois**, **Refuser**, **Retenir**, **Attendre** ou **Arrêter** d’un bandeau, le
+  bouton Stop, **Committer**, Réglages fermés par Échap ou ✕) : il va à la zone de saisie, ou à
+  l’élément suivant de la fenêtre encore ouverte (**Vérifier maintenant** pendant
+  « Vérification… »). **Modifier** un souvenir place le curseur dans son premier champ ; ouvrir
+  l’onglet Terminal ou Navigateur leur donne le clavier.
+- **Tout lancer** : les travaux d’une carte gardent l’ordre proposé, au lieu de changer d’ordre
+  (et de ligne sous le pointeur) selon celui qui démarre le premier.
+- Pendant un appui sur une ligne de travail, ce qui arrive en bas hors de vue montre aussitôt la
+  flèche **Aller en bas**, plus seulement au relâché.
+- Lecteur d’écran : les listes Langue, Fenêtre rapide, Éditeur (et celles des autres réglages)
+  ont un nom ; les thèmes nouveaux sont annoncés « Aurore, nouveau », plus « AuroreNouveau ».
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

@@ -449,7 +449,7 @@ describe('suivi du bas pendant un appui (fiche 250)', () => {
   it('près du bas sans y être : ni la hauteur gardée ni un élément qui arrive ne le déplacent avant le relâché', () => {
     vi.useFakeTimers()
     try {
-      const { box, el, rerender, userScroll } = setup()
+      const { box, el, rerender, result, userScroll } = setup()
       const column = el.firstElementChild as HTMLElement
       const button = document.createElement('button')
       column.append(button)
@@ -460,15 +460,19 @@ describe('suivi du bas pendant un appui (fiche 250)', () => {
       // La hauteur gardée redimensionne la colonne (marge du bas reprise dedans) : observé.
       act(() => resize?.())
       expect(box.scrollTop).toBe(770)
-      // Un élément arrive pendant l'appui : le fil ne suit pas encore.
+      expect(result.current.atBottom).toBe(true)
+      // Un élément arrive pendant l'appui : le fil ne suit pas encore, mais la flèche le dit tout
+      // de suite, pas au relâché (seconde chasse rc.4, comme pendant le maintien).
       box.scrollHeight = 1100
       rerender({ conversation: 'c1', items: [1, 2], empty: false })
       expect(box.scrollTop).toBe(770)
+      expect(result.current.atBottom).toBe(false)
       press(button, 'pointerup')
       expect(box.scrollTop).toBe(770)
-      // Relâché (après le `click`) : le fil rattrape le bas qu'il suivait.
+      // Relâché (après le `click`) : le fil rattrape le bas qu'il suivait, la flèche part.
       act(() => vi.runAllTimers())
       expect(box.scrollTop).toBe(1100)
+      expect(result.current.atBottom).toBe(true)
       el.remove()
     } finally {
       vi.useRealTimers()

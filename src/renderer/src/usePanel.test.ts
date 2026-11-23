@@ -186,11 +186,21 @@ describe('terminal (⌃`, fiche 034)', () => {
   it('⌃` ouvre le terminal avec le clavier, puis le referme', () => {
     const { result, run } = setup()
     fireEvent.keyDown(window, { code: 'Backquote', ctrlKey: true })
-    expect(result.current).toMatchObject({ open: true, tab: 'terminal', focusTerminal: true })
-    run(() => result.current.terminalFocused())
-    expect(result.current.focusTerminal).toBe(false)
+    expect(result.current).toMatchObject({ open: true, tab: 'terminal', focusTab: 'terminal' })
+    run(() => result.current.tabFocused())
+    expect(result.current.focusTab).toBeNull()
     run(() => result.current.toggleTerminal())
     expect(result.current.open).toBe(false)
+  })
+
+  it('onglet Terminal ou Navigateur choisi : il prend le clavier ; un autre, non (seconde chasse rc.4)', () => {
+    const { result, run } = setup()
+    run(() => result.current.select('terminal'))
+    expect(result.current).toMatchObject({ tab: 'terminal', focusTab: 'terminal' })
+    run(() => result.current.select('browser'))
+    expect(result.current).toMatchObject({ tab: 'browser', focusTab: 'browser' })
+    run(() => result.current.select('session'))
+    expect(result.current).toMatchObject({ tab: 'session', focusTab: null })
   })
 
   it('⌘` ou ⌥⌃` ne sont pas le raccourci', () => {

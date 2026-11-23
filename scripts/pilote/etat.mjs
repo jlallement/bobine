@@ -28,6 +28,8 @@ export function turnLine(shot) {
       shot.queued ? ` · ${shot.queued} message(s) en file` : ''
     }`
   }
+  // Modèle injoignable : son bandeau remplace l'indicateur du tour, qui n'est pas fini.
+  if (shot.unreachable) return `Tour : en cours — ${excerpt(shot.unreachable, 160)}`
   // Tour fini, l'agent travaille encore après lui (fiche 261) : pas encore de bilan.
   if (shot.turnWorking) return `Tour : travaille encore — ${shot.turnWorking}`
   if (shot.turnSummary) return `Tour : fini — ${shot.turnSummary}`

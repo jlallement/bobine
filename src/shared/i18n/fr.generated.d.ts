@@ -688,6 +688,8 @@ export type FrResources = {
     readonly agentMessage: 'Message de l’agent'
     readonly settings: 'Réglages réseau'
     readonly stop: 'Arrêter'
+    readonly networkStale: 'Les réglages réseau ont changé depuis le lancement de {{agent}} : relancez-le pour les appliquer. La conversation est gardée.'
+    readonly restart: 'Relancer l’agent'
   }
   readonly turnRetry: {
     readonly network: 'Connexion perdue'
@@ -1410,6 +1412,7 @@ export type FrResources = {
         readonly aurora: 'Aurore'
         readonly auroraNight: 'Aurore nuit'
         readonly new: 'Nouveau'
+        readonly newName: '{{name}}, nouveau'
       }
       readonly accent: {
         readonly label: 'Couleur d’accent'
@@ -2137,6 +2140,7 @@ export type FrResources = {
       readonly conversation: 'L’agent n’a encore modifié aucun fichier dans cette conversation.'
       readonly conversationNoGit: 'L’agent n’a encore modifié aucun fichier dans cette conversation. (Le dossier n’est pas un dépôt git.)'
       readonly git: 'Aucune modification depuis le dernier commit.'
+      readonly discussion: 'L’agent n’a encore modifié aucun document de cette discussion.'
     }
     readonly sinceLastCommit: '· depuis le dernier commit'
     readonly reverted: 'annulée'
@@ -2880,6 +2884,7 @@ export type FrResources = {
     }
     readonly step: 'étape {{elapsed}}'
     readonly stepStarted: 'Étape en cours depuis {{elapsed}}'
+    readonly silent: 'Réponse en cours'
   }
   readonly mentions: {
     readonly gitChanges: {
@@ -4764,6 +4769,10 @@ export type FrResources = {
       readonly cancel: 'Annuler'
       readonly pastDate: 'Cette date est déjà passée.'
       readonly noCapWarning: 'Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense.'
+      readonly changeFolder: 'Changer…'
+      readonly recent: 'Dossiers récents'
+      readonly otherFolder: 'Autre dossier…'
+      readonly current: 'conversation ouverte'
     }
     readonly error: {
       readonly alreadyRunning: 'Une exécution de cette tâche tourne encore.'
@@ -5106,6 +5115,8 @@ export type FrResources = {
     readonly settings: 'Réglages réseau'
     readonly wait: 'Attendre'
     readonly stop: 'Arrêter'
+    readonly networkStale: 'Les réglages réseau ont changé depuis le lancement de l’agent : relancez-le pour les appliquer. La conversation est gardée.'
+    readonly restart: 'Relancer l’agent'
   }
   readonly appAlert: {
     readonly internal: {

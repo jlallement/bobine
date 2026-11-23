@@ -277,6 +277,11 @@ export interface AgentSnapshot {
    * `silentSince` ou `unreachable` : la piste réseau des bandeaux (fiche 275).
    */
   proxy?: string
+  /**
+   * Les réglages réseau des agents ont changé depuis le lancement de celui-ci (fiche 276) :
+   * présent seulement avec `silentSince` ou `unreachable` ; les bandeaux proposent de le relancer.
+   */
+  networkStale?: true
 }
 
 /** Agent qui ne joint pas son modèle et réessaie de lui-même (fiche 275), en termes génériques. */

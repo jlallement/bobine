@@ -14,6 +14,20 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Proxy changed in Settings while an agent can’t reach its model: the banner says so (“Network
+  settings changed since … started”) and **Restart the agent** applies it; the current message
+  comes back into the composer, without being sent.
+- “The agent hasn’t sent anything for…” banner: the buttons move under the text, which keeps the
+  full width; the proxy address is no longer split in two. During that silence, the indicator
+  says “Response in progress” instead of “Writing…”.
+- Less truncated text: in a narrow header, the temporary-profile chip keeps only its icon before
+  the title gets cut; Session › Changes wraps instead of cutting “uncommitted”; in a narrow
+  composer, the session settings join the 📎 menu before the model name gets cut.
+- Right-click on a conversation in the sidebar: the conversation menu (like ⋯), no longer a
+  selected word and “Copy”.
+- Scheduled tasks › New task: the open conversation’s folder is suggested, and **Change…** lists
+  the recent folders, then “Other folder…”.
+- Chat: the Changes panel talks about the chat’s documents, no more “last commit”.
 - A conversation restored from the trash picks up like any other: its agent starts again and the
   message is sent. It used to stay “Stopped”, the message left in the composer, with no
   explanation. Restoring a conversation deleted with its tasks restores them with it; in the
@@ -56,6 +70,17 @@ What changes for you, version by version. Shown in Settings › About.
   now appears, with the count of new items, without moving the card.
 - After **Move to Trash**, focus goes to the composer: it is no longer lost in the page along with
   the deleted row.
+- The keyboard is no longer lost in the page when the button you used disappears or is disabled
+  (**Allow once**, **Deny**, **Remember**, a banner’s **Wait** or **Stop**, the Stop button,
+  **Commit**, Settings closed with Esc or ✕): it goes to the composer, or to the next element of
+  the window still open (**Check now** while “Checking…”). **Edit** on a memory puts the cursor in
+  its first field; opening the Terminal or Browser tab gives them the keyboard.
+- **Start all**: the tasks of a card keep the proposed order, instead of reordering (and changing
+  the row under the pointer) depending on which one starts first.
+- While pressing a task row, what arrives below, out of view, shows the **Scroll to bottom** arrow
+  at once, not only on release.
+- Screen readers: the Language, Quick window and Editor lists (and those of the other settings)
+  have a name; new themes are announced “Aurora, new” instead of “AuroraNew”.
 
 ## 1.0.0-rc.3 — November 21, 2026
 

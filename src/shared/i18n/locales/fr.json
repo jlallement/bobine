@@ -692,7 +692,9 @@
     "noProxy": "Vérifiez la connexion (Wi-Fi, VPN) ; derrière un proxy d’entreprise, renseignez-le dans Réglages › Agents › Avancé.",
     "agentMessage": "Message de l’agent",
     "settings": "Réglages réseau",
-    "stop": "Arrêter"
+    "stop": "Arrêter",
+    "networkStale": "Les réglages réseau ont changé depuis le lancement de {{agent}} : relancez-le pour les appliquer. La conversation est gardée.",
+    "restart": "Relancer l’agent"
   },
   "turnRetry": {
     "network": "Connexion perdue",
@@ -1439,7 +1441,8 @@
         "fjordNight": "Fjord nuit",
         "aurora": "Aurore",
         "auroraNight": "Aurore nuit",
-        "new": "Nouveau"
+        "new": "Nouveau",
+        "newName": "{{name}}, nouveau"
       },
       "accent": {
         "label": "Couleur d’accent",
@@ -2179,7 +2182,8 @@
     "empty": {
       "conversation": "L’agent n’a encore modifié aucun fichier dans cette conversation.",
       "conversationNoGit": "L’agent n’a encore modifié aucun fichier dans cette conversation. (Le dossier n’est pas un dépôt git.)",
-      "git": "Aucune modification depuis le dernier commit."
+      "git": "Aucune modification depuis le dernier commit.",
+      "discussion": "L’agent n’a encore modifié aucun document de cette discussion."
     },
     "sinceLastCommit": "· depuis le dernier commit",
     "reverted": "annulée",
@@ -3020,7 +3024,8 @@
       "text": "Ce profil est en lecture seule : la consommation n’y est pas lue. Mettez Bobine à jour pour la retrouver."
     },
     "step": "étape {{elapsed}}",
-    "stepStarted": "Étape en cours depuis {{elapsed}}"
+    "stepStarted": "Étape en cours depuis {{elapsed}}",
+    "silent": "Réponse en cours"
   },
   "mentions": {
     "gitChanges": {
@@ -4936,7 +4941,11 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "pastDate": "Cette date est déjà passée.",
-      "noCapWarning": "Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense."
+      "noCapWarning": "Coût inconnu et jusqu’à {{count}} exécutions par jour : fixez un plafond pour borner la dépense.",
+      "changeFolder": "Changer…",
+      "recent": "Dossiers récents",
+      "otherFolder": "Autre dossier…",
+      "current": "conversation ouverte"
     },
     "error": {
       "alreadyRunning": "Une exécution de cette tâche tourne encore.",
@@ -5281,7 +5290,9 @@
     "proxy": "Un proxy est défini pour les agents ({{proxy}}) : s’il est injoignable, l’agent ne peut pas joindre son modèle. Vérifiez-le dans Réglages › Agents › Avancé.",
     "settings": "Réglages réseau",
     "wait": "Attendre",
-    "stop": "Arrêter"
+    "stop": "Arrêter",
+    "networkStale": "Les réglages réseau ont changé depuis le lancement de l’agent : relancez-le pour les appliquer. La conversation est gardée.",
+    "restart": "Relancer l’agent"
   },
   "appAlert": {
     "internal": {

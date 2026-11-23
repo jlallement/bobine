@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  agentNetwork,
   effectiveNetwork,
   networkEnvChanges,
   networkFromEnv,
-  parseNetworkSettings
+  parseNetworkSettings,
+  sameNetwork
 } from './network-env'
 
 describe('réseau d’entreprise (fiche 104)', () => {
@@ -53,5 +55,24 @@ describe('réseau d’entreprise (fiche 104)', () => {
       `${process.env['HOME']}/ca.pem`
     )
     expect(parseNetworkSettings('rien')).toEqual({})
+  })
+})
+
+describe('réseau d’un agent lancé, et réglages changés depuis (fiche 276)', () => {
+  it('l’environnement de l’agent : l’app, son profil, puis les variables posées au lancement', () => {
+    expect(
+      agentNetwork({ HTTPS_PROXY: 'http://shell:1' }, {}, { NODE_EXTRA_CA_CERTS: '/ca.pem' })
+    ).toEqual({ proxy: 'http://shell:1', caCerts: '/ca.pem' })
+    expect(agentNetwork({}, { HTTP_PROXY: 'http://profil:2' }, {})).toEqual({
+      proxy: 'http://profil:2'
+    })
+  })
+
+  it('même réseau : proxy, exceptions et certificats', () => {
+    expect(sameNetwork({}, {})).toBe(true)
+    expect(sameNetwork({ proxy: 'http://a:1' }, { proxy: 'http://a:1' })).toBe(true)
+    expect(sameNetwork({ proxy: 'http://a:1' }, {})).toBe(false)
+    expect(sameNetwork({ noProxy: 'x' }, { noProxy: 'y' })).toBe(false)
+    expect(sameNetwork({ caCerts: '/a' }, {})).toBe(false)
   })
 })

@@ -222,3 +222,27 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
     sur le disque, la mère seule dit « avec son travail », la restaurer ramène les deux, capture
     `228-corbeille-mere-travaux`). Nouvelle méthode : e2e lancées sur GitHub, pas en local.
 
+- 2026-11-23 — Seconde chasse avant la 1.0.0-rc.4 (branche `fix/chasse2-correctifs`) :
+  - Encore des « Conversation inconnue » au journal après la suppression d'une mère
+    (`children:mergePlan` 3 à 6 fois, `conversation:appTools`) : `queryId` ne couvrait que git et
+    les commandes. Recherche de toutes les lectures par conversation du renderer : une vingtaine de
+    canaux (outils de Bobine, plan de fusion des cartes, règles, worktree, documents, rôles…),
+    relus au changement d'état de la mère (agent arrêté) ou de la liste (filles parties). Plutôt
+    qu'une garde par lecture, une porte unique dans le preload : `conversations.removing(ids, on)`
+    (sans IPC, compté) ; tout appel dont la première valeur est une conversation en cours de
+    suppression est refusé sur place (`Conversation being deleted`), sauf `conversation:delete`.
+    `useConversations.remove` y nomme la mère et sa descendance avant la suppression, et les libère
+    à la fin (réussie ou refusée). Les appelants attrapaient déjà l'erreur du main : même chemin,
+    sans aller-retour ni ligne au journal. `queryId` reste (git et commandes ne sont même pas
+    demandés). Preuves : `api.test.ts` (refus, suppression qui passe, libération comptée),
+    `useConversations.remove.test.ts` (porte nommée puis libérée).
+  - WARN « Évènement « notice » écarté : conversation … inconnue » (3 fois) : la mère supprimée
+    avec ses filles juste après « Tout lancer » ; la consigne de chaque fille échouait (fille
+    partie), et `ChildConversations.launch` posait « La consigne n'a pas pu partir » dans le fil
+    de la fille supprimée. Supprimé à la source : fille partie, le `catch` s'arrête (ligne INFO,
+    ni avis ni compte rendu). Preuve : `family-delete.test.ts` (« mère supprimée avec ses filles
+    juste après Tout lancer »), rouge sans le correctif (`post` vers une conversation inconnue),
+    vert avec.
+  - e2e `filles` : le filtre ne regarde plus deux canaux mais toute erreur « Conversation
+    inconnue » (`L('conversations.error.unknown')`, fr ou en) dans la sortie de l'app, sur toute
+    la séance gardée (64 Kio glissants), et n'en accepte aucune.

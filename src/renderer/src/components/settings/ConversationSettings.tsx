@@ -134,6 +134,7 @@ function NewConversationCard({
         <Row label={t('settings.conversation.agent.label')}>
           <select
             className="settings-input settings-input-wide"
+            aria-label={t('settings.conversation.agent.label')}
             value={defaults.profileId ?? ''}
             onChange={(e) => update({ profileId: e.target.value || undefined })}
             data-testid="new-conversation-agent"
@@ -151,6 +152,7 @@ function NewConversationCard({
         <Row label={t('settings.conversation.folder.label')}>
           <select
             className="settings-input settings-input-wide"
+            aria-label={t('settings.conversation.folder.label')}
             value={defaults.workspace ?? ''}
             onChange={(e) => {
               if (e.target.value === CHOOSE_FOLDER) {

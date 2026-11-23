@@ -176,9 +176,22 @@ export async function scheduledSuite(scheme) {
       await ui.waitFor(`!!${ui.$('scheduled-form')}`)
       await ui.click(ui.$('scheduled-instruction'))
       await ui.type('/scenario cout-qui-monte')
-      await ui.click(
-        `[...document.querySelectorAll('[data-testid=scheduled-form] button')].find((b) => b.innerText === ${JSON.stringify(L('scheduled.form.chooseFolder'))})`
+      // Dossier proposé d'office (fiche 276, T12) : celui de la conversation ouverte, en tête des
+      // dossiers récents du menu ; « Autre dossier… » ouvre la fenêtre du système.
+      const prefilled = await ui.ev(`${ui.$('scheduled-folder')}.innerText`)
+      await ui.click(ui.$('scheduled-folder-menu'))
+      await ui.waitFor(`!!${ui.$('scheduled-folder-options')}`)
+      const firstOption = await ui.ev(
+        `document.querySelector('[data-testid=scheduled-folder-option]')?.innerText ?? ''`
       )
+      check(
+        prefilled !== L('scheduled.form.noFolder') &&
+          firstOption.includes(L('scheduled.form.current')) &&
+          firstOption.includes(prefilled.split('/').filter(Boolean).at(-1)),
+        `nouvelle tâche : dossier de la conversation ouverte proposé d’office, en tête du menu (${prefilled})`
+      )
+      await ui.shot('276-tache-dossiers-recents')
+      await ui.click(ui.$('scheduled-folder-other'))
       await ui.waitFor(`${ui.$('scheduled-folder')}.innerText.includes('projet')`)
       await ui.ev(`(() => {
         const select = ${ui.$('scheduled-kind')}

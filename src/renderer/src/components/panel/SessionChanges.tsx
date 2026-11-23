@@ -62,7 +62,7 @@ function ChangesRow(props: {
   const { t } = useTranslation()
   const { summary } = props
   return (
-    <div className="session-row">
+    <div className="session-row session-row-changes">
       <span className="session-row-label">{props.label}</span>
       <span className="session-row-value">
         {summary.files === 0 ? (
@@ -78,9 +78,12 @@ function ChangesRow(props: {
               data-testid={props.testId}
             >
               <FileDiff size={13} />
-              {/* Une ligne, alignée à gauche, coupée au besoin (fiche 272, recette). */}
-              <span className="session-link-text">{props.text}</span>
-              <LineTotals {...summary} />
+              {/* Alignée à gauche ; sur deux lignes plutôt que coupée, les totaux à la suite
+                  (fiche 276, T10 : « 2 fichiers non co… »). */}
+              <span className="session-link-text">{props.text}</span>{' '}
+              <span className="session-totals">
+                <LineTotals {...summary} spaced />
+              </span>
             </button>
           </Tip>
         )}

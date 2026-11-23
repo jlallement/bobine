@@ -45,10 +45,13 @@ describe('empreintes de la mémoire à clé chiffrée (fiche 182)', () => {
   it('clé créée chiffrée, HMAC stable d’un lancement à l’autre', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'cle-'))
     const file = join(dir, 'memory.key')
-    const sign = approvalSigner(file, cipher(), () => {})
+    const logs: [string, string | undefined][] = []
+    const sign = approvalSigner(file, cipher(), (m, level) => logs.push([m, level]))
     const first = await sign.sign('contenu')
     expect(first).toMatch(/^hmac:[0-9a-f]{64}$/)
     expect(await sign.state()).toBe('created')
+    // Création normale : une information, pas un avertissement (chasse rc.4).
+    expect(logs).toEqual([['Mémoire : clé des empreintes créée', 'info']])
     const again = approvalSigner(file, cipher(), () => {})
     expect(await again.sign('contenu')).toBe(first)
     expect(await again.state()).toBe('ok')

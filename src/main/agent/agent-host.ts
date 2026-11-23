@@ -38,7 +38,7 @@ import type { Handover } from '@shared/handover'
 import { rememberableTool } from '@shared/permissions'
 import { APP_TOOLS_SERVER_NAME, type AppToolModule } from '../mcp/tools'
 import type { EnvChanges } from '../agent-config/api-keys'
-import { agentProxy } from '../agent-config/network-env'
+import type { NetworkSource } from '../agent-config/network-env'
 import type { NetworkWatch } from '../network-watch'
 import { log, type LogScope } from '../log'
 import { formatDuration, hostScope, scopeText } from './acp-log'
@@ -190,6 +190,8 @@ export interface AgentHostOptions {
   loadSubagentWork?: (sessionId: string) => Promise<TranscriptItem[]>
   /** Retour du réseau et sortie de veille : un tour en attente réessaie tout de suite (fiche 142). */
   network?: NetworkWatch
+  /** Réseau d'entreprise d'un agent lancé maintenant, et ses changements (fiche 276). */
+  networkNow?: NetworkSource
   /** Attentes avant chaque nouvelle tentative (remplaçables en test) ; voir `RETRY_DELAYS_MS`. */
   retryDelaysMs?: readonly number[]
   /** Attentes avant chaque relecture d'un sous-agent en arrière-plan (remplaçables en test) ; voir `FOLLOW_MS`. */
@@ -989,7 +991,7 @@ export class AgentHost {
       label: scopeText(this.logScope()),
       onActivity: (progress) => this.quiet.note(progress)
     })
-    this.quiet.proxy = agentProxy(process.env, profile.env, credentials)
+    this.quiet.launch(profile.env, credentials, this.options.networkNow)
     const { child, failed } = launched
     this.child = child
     this.launched = launched

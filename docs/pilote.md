@@ -84,7 +84,7 @@ pnpm pilote arreter
   | `tour-fini` | 0 | plus rien ne tourne depuis 3 s (tour fini, ou rien n'a démarré ; un travail confié à un rôle, carte « en cours », tourne encore : fiche 263) |
   | `carte` | 10 | une carte attend une décision (autorisation, plan, propositions), ici ou dans une autre conversation |
   | `question` | 11 | l'agent pose une question (choix, formulaire) |
-  | `blocage` | 12 | connexion, dossier, licence, agent qui demande une action, commande sans sortie, agent silencieux, plafond de coût, limite d'étapes de l'agent (fiche 209) |
+  | `blocage` | 12 | connexion, dossier, licence, agent qui demande une action, commande sans sortie, agent silencieux, modèle injoignable, plafond de coût, limite d'étapes de l'agent (fiche 209) |
   | `erreur` | 13 | nouvelle erreur ou nouveau bandeau, agent planté, Bobine injoignable |
   | `accueil` | 14 | l'accueil du premier lancement attend l'utilisateur |
   | `calme` | 15 | un tour tourne mais rien ne bouge à l'écran depuis `--calme` (3 min) |
@@ -97,11 +97,13 @@ pnpm pilote arreter
 - **Actions de secours** (`envoyer`, `repondre`, `cliquer`, `panneau`) : de vrais évènements
   souris et clavier envoyés par le protocole DevTools, pas `element.click()`. `envoyer` vide d'abord
   la zone de saisie (⌘A puis ⌫ : un brouillon ne part pas avec le message), vérifie qu'elle contient
-  exactement le texte, puis Entrée ; s'il ne part pas, l'erreur dit ce qui reste dans la zone (les
-  pièces jointes, elles, restent). `repondre` attend
+  exactement le texte, puis Entrée ; un menu « / » ou « @ » ouvert par le texte (`/scenario …`) est
+  fermé d'abord (Échap), sinon Entrée y choisirait une commande ; s'il ne part pas, l'erreur dit ce
+  qui reste dans la zone (les pièces jointes, elles, restent). `repondre` attend
   que la carte soit armée (fiche 203). `cliquer` vise l'élément cliquable visible dont le nom
   (texte ou `aria-label`) vaut le libellé, à défaut le contient ; s'il ne le trouve pas, il liste
-  ce qui est cliquable. Computer use reste le chemin principal ; ces actions servent aux essais et
+  ce qui est cliquable. `repondre`, `cliquer` et `panneau` attendent que la cible ne bouge plus
+  (deux positions égales, 2 s au plus) : le fil qui rattrape le bas la déplaçait sous le clic. Computer use reste le chemin principal ; ces actions servent aux essais et
   quand computer use n'est pas disponible.
 - **`note`** et **`intervention`** : une entrée au journal avec l'heure, le texte, la gravité
   (note), l'`etat` du moment, et une capture en demi-taille avec `--capture`. Une intervention,
