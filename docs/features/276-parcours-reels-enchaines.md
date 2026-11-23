@@ -25,7 +25,8 @@ en cours de route, un redémarrage de l'app.
   rejetée ni `console.error` dans la page, et la cohérence de l'affichage (ligne active de la
   barre latérale = conversation affichée par le main, titre = ligne, point d'état = statut).
 - [x] Attentes sur des états réels (`waitFor`), jamais de délai au hasard.
-- [ ] Clair et sombre, et une en `--lang en` : voir le journal pour ce qui passe.
+- [ ] Clair et sombre : passés en local (2026-11-23) sauf les deux défauts ci-dessous ; `--lang en` pas
+  encore joué (e2e locales arrêtées, à jouer par `e2e.yml`).
 - [x] Moins de 3 min par suite et par thème (durées au journal).
 - [x] Un défaut de l'app trouvé : l'étape reste telle qu'elle doit être (rouge), le défaut est
   noté ici, rien n'est contourné.
@@ -92,7 +93,28 @@ reprend ; 9. l'autre a gardé ses avis et répond.
 
 ## Défauts trouvés
 
-Voir le journal pour l'état à chaque série. Les étapes restent rouges tant que le défaut est là.
+Les étapes restent rouges tant que le défaut est là ; rien n'est contourné.
+
+1. **Erreurs IPC après la suppression d'une mère** (gênant ; `parcours-deleguer`, étape 6, clair
+   et sombre, à chaque fois). Reproduction : une mère avec trois travaux fusionnés, un travail
+   supprimé, puis la mère supprimée (et ses travaux, choix par défaut) alors qu'elle est affichée.
+   Attendu : rien au journal. Obtenu : `WARN  IPC children:mergePlan : Error: Conversation
+   inconnue : <id de la mère>` (deux fois) et `WARN  IPC conversation:appTools : … Conversation
+   inconnue`, avec `Error occurred in handler for …`. Le renderer interroge encore la conversation
+   supprimée. Déjà en cours de correction : branche `fix/chasse2-correctifs` (« erreurs IPC après
+   suppression ») — les canaux `children:mergePlan` et `conversation:appTools` sont à vérifier
+   dans ce correctif (celui de `filles` ne regardait que `git:status` et `commands:project`).
+2. **Conversation restaurée depuis la corbeille inutilisable** (bloquant ; `parcours-deleguer`,
+   étape 8). Reproduction : la mère supprimée (étape 6), Réglages › Données › Corbeille ›
+   Restaurer, la rouvrir dans la barre latérale. Attendu : son fil, son agent prêt, un message
+   reçoit une réponse. Obtenu : l'agent reste « Arrêté » (point d'état jamais `ready`, 15 s),
+   impossible de converser. Déjà en cours de correction : branche `fix/restauration`. Les étapes
+   suivantes de la journée (⌘Q, relance, la mère restaurée répond) ne sont donc pas encore jouées.
+
+Observation (pas un défaut d'essai, à juger) : un proxy saisi dans Réglages ne vaut qu'au
+« prochain lancement d'un agent » (c'est dit) ; dans une conversation déjà ouverte, le bandeau
+« n'arrive pas à joindre son modèle » conseille alors de « renseigner le proxy »… qui vient de
+l'être. Le parcours vérifie donc le proxy dans une nouvelle conversation.
 
 ## Plan
 
@@ -105,4 +127,13 @@ Voir le journal pour l'état à chaque série. Les étapes restent rouges tant q
 
 ## Journal
 
-- 2026-11-23 : outil commun et six parcours écrits.
+- 2026-11-23 : outil commun et six parcours écrits. Écarts au plan : les trois premières séries
+  ont corrigé des défauts d'essai (Modifications comptent aussi le config.json autorisé plus tôt ;
+  le relecteur de l'agent factice prenait le `/scenario` de la première demande citée dans sa
+  consigne : premières demandes sans `/scenario` ; la relecture crée une conversation fille dans
+  la barre latérale ; proxy pris au lancement suivant d'un agent ; l'onglet Terminal n'est monté
+  que s'il est affiché ; étape ⌘Q : la page n'est plus là, seul le journal du main est relu).
+  Avertissement « ResizeObserver loop » de Chromium ignoré (pas un défaut de l'app).
+- Dernière série locale (clair et sombre, `--jobs 3`, 3 min en tout) : matinée 45 s, déléguer
+  36–38 s (rouge, défauts 1 et 2), réglages 38 s, outils 40 s, longue 58 s, pannes 49–50 s, par
+  thème. `--lang en` non joué : e2e locales arrêtées à la demande, `e2e.yml` les jouera.
