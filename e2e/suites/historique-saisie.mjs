@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { L, check, withApp } from '../lib.mjs'
 
 /**
  * Historique de la saisie (fiche 227), contre l'agent factice, dans un dépôt git jetable (un
@@ -74,17 +74,19 @@ async function narrowComposer(ui, focus) {
     { width: 640, panel: false, label: false, shot: 'historique-5b-saisie-640' },
     { width: 1280, panel: true, label: true, shot: 'historique-6-saisie-1280-panneau' }
   ]
+  // Panneau ouvert d'office sur « Session » (fiche 166) : l'app le replie faute de place à 760 px
+  // et le rouvre d'elle-même à 1280 px (fiche 173) ; l'état mémorisé suit ce qui est affiché.
+  await ui.waitFor(`!!${ui.$('side-panel')}`)
+  const panelShown = `!!${ui.$('side-panel')} && JSON.parse(localStorage.getItem('bobine.panel')).open === true`
+  const panelFolded = `!${ui.$('side-panel')} && JSON.parse(localStorage.getItem('bobine.panel')).open === false`
   for (const c of cases) {
     await ui.viewport(c.width)
+    await ui.waitFor(c.panel ? panelShown : panelFolded)
     if (c.panel) {
-      // Pas d'attente de fin d'animation : le panneau montre la roue de la réponse en cours.
-      // Bouton du panneau : il bascule ; s'il était replié par l'app à 760 px, un appui le rouvre.
-      for (let i = 0; i < 2 && !(await ui.ev(`!!${ui.$('side-panel')}`)); i++) {
-        await ui.ev(`${ui.$('panel-toggle')}.click()`)
-        await sleep(500)
-      }
-      await ui.waitFor(`!!${ui.$('side-panel')}`)
-      await sleep(400)
+      // Glissé d'arrivée du panneau fini (la roue de la réponse, infinie, est sur un enfant).
+      await ui.waitFor(
+        `${ui.$('side-panel')}.getAnimations().every((a) => a.playState !== 'running')`
+      )
       await ui.frames()
     }
     await focus()
@@ -103,8 +105,9 @@ async function narrowComposer(ui, focus) {
     )
     await ui.shot(c.shot)
     if (c.panel) {
+      // Un seul appui ferme le panneau que l'app a rouvert : affiché et mémorisé fermés.
       await ui.ev(`${ui.$('panel-toggle')}.click()`)
-      await ui.waitFor(`!${ui.$('side-panel')}`)
+      await ui.waitFor(panelFolded)
     }
   }
   await ui.viewport()

@@ -153,3 +153,15 @@ Aucune nouvelle dépendance.
     rappel séparées de 8 px au moins, invite entière, rappel « ↑ » seul ou entier ; captures
     `historique-5-saisie-760`, `historique-5b-saisie-640` (invite sur deux lignes),
     `historique-6-saisie-1280-panneau`).
+- 2026-11-23 : **relecture — panneau dans l'essai de la saisie étroite**. L'essai appuyait jusqu'à
+  deux fois sur le bouton du panneau, avec des `sleep`, pour le retrouver ouvert à 1280 px. Pas un
+  défaut de l'app, établi par une sonde dans l'essai (état affiché, `bobine.panel`, largeur) :
+  ouvert d'office au départ (fiche 166), le panneau est replié par l'app à 760 px et `open: false`
+  est mémorisé aussitôt (`useRoomForConversation`, fiche 173) ; à 1280 px, l'app le rouvre seule
+  (`open: true` mémorisé) ; un seul appui le referme. Affiché, mémorisé et bouton (libellé tiré du
+  même `panel.open`) ne divergent jamais ; l'appui de l'essai refermait parfois ce que l'app venait
+  de rouvrir, d'où le second appui. Essai réécrit sans boucle ni `sleep` : à chaque largeur, attente
+  de l'état réel (panneau absent et `open: false` à 760/640 px, présent et `open: true` à 1280 px,
+  glissé d'arrivée fini), puis un seul appui qui le referme (absent et `open: false`). Garde-fou
+  unitaire ajouté (`usePanel.test.ts`, « repli faute de place ») : vert d'emblée, il n'y avait rien
+  à corriger dans l'app. Aucun changement visible : pas de ligne au CHANGELOG.
