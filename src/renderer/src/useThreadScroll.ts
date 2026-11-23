@@ -72,13 +72,12 @@ export function useThreadScroll(options: {
   const [reveal, setReveal] = useState<{ id: number; in: string | null }>()
   const measureBottom = useCallback(() => {
     const el = scroller.current
-    // Pendant un appui, le fil ne bouge pas, le suivi est relevé au relâché.
-    if (pressing.current) return
-    // Pointeur sur une carte qui retient le fil : le suivi reste tel quel (il rattrape le bas à la
-    // sortie), mais la flèche dit ce qui est arrivé en bas hors de vue (recette rc.4, fiche 250) ;
-    // sinon une demande d'autorisation de la mère reste cachée sans aucun signe. Rien ne défile : la
-    // flèche est posée sur le fil, la carte visée ne bouge pas.
-    if (held.current) {
+    // Pointeur sur une carte qui retient le fil, ou appui en cours : le suivi reste tel quel (il
+    // rattrape le bas à la sortie ou au relâché), mais la flèche dit ce qui est arrivé en bas hors
+    // de vue (recette rc.4, fiche 250 ; seconde chasse : aussi pendant l'appui) ; sinon une demande
+    // d'autorisation de la mère reste cachée sans aucun signe. Rien ne défile : la flèche est posée
+    // sur le fil, la cible visée ne bouge pas.
+    if (held.current || pressing.current) {
       if (el) setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
       return
     }

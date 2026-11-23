@@ -15,6 +15,8 @@ const other = { id: 'o', title: 'Autre' } as ConversationSummary
 
 /** Suppression en attente, finie par le test. */
 let settle: { resolve: (state: ConversationsState) => void; reject: (error: Error) => void }
+/** Appels de `conversations.removing` (porte du preload). */
+let gated: [string[], boolean][] = []
 /** Liste poussée par le main (`conversations:changed`). */
 let pushList: (state: ConversationsState) => void = () => {}
 
@@ -44,6 +46,7 @@ function fakeApi(list: ConversationsState): Window['api'] {
       snapshot: null,
       transcript: { items: [] }
     }),
+    removing: (ids: readonly string[], on: boolean) => gated.push([[...ids], on]),
     delete: () =>
       new Promise<ConversationsState>((resolve, reject) => {
         settle = { resolve, reject }
@@ -58,6 +61,7 @@ function fakeApi(list: ConversationsState): Window['api'] {
 }
 
 beforeEach(() => {
+  gated = []
   window.api = fakeApi({
     conversations: [mother, child, other],
     activeId: 'm'
@@ -75,10 +79,16 @@ it('conversation en cours de suppression : plus interrogée en tâche de fond (r
   // Mère supprimée avec ses filles : ni elle, ni sa fille, le temps que le main finisse.
   act(() => result.current.remove('m', { children: 'delete' }))
   expect(result.current.queryId).toBeNull()
+  // Toutes les lectures, pas seulement git et commandes : la porte du preload les refuse.
+  expect(gated).toEqual([[['m', 'f'], true]])
 
   // Suppression refusée : la conversation est de nouveau interrogée.
   await act(async () => settle.reject(new Error('refusée')))
   await waitFor(() => expect(result.current.queryId).toBe('m'))
+  expect(gated).toEqual([
+    [['m', 'f'], true],
+    [['m', 'f'], false]
+  ])
 })
 
 it('suppression finie : la nouvelle conversation active est interrogée', async () => {

@@ -810,7 +810,7 @@ export function App() {
                   ? { onShowSidebar: () => setSidebarOpen(true) }
                   : {})}
                 items={transcript.items}
-                focusTerminal={panel.focusTerminal}
+                focusTab={panel.focusTab}
                 {...(c.settings ? { preferences: c.settings.preferences } : {})}
                 {...(panel.changesRequest ? { changesRequest: panel.changesRequest } : {})}
                 {...(panel.preview
@@ -853,8 +853,8 @@ export function App() {
                   onLoadMcp: loadMcp,
                   onOpenMemory: () => dialogs.setSettingsSection('memory')
                 }}
-                onTerminalFocused={panel.terminalFocused}
-                onTab={(tab) => panel.update({ tab })}
+                onTabFocused={panel.tabFocused}
+                onTab={panel.select}
                 onClose={() => panel.update({ open: false })}
                 onResize={panel.resize}
                 onResetWidth={panel.resetWidth}

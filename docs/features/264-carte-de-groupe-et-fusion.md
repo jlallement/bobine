@@ -192,6 +192,22 @@ Pas de nouvelle dépendance.
   `workGroup.merge.advice.*` et `childrenMerge.quote` (titres des travaux, venus de l'agent
   factice, inchangés). Aucune autre comparaison en dur trouvée dans les suites touchées depuis
   `main~30`.
+- 2026-11-23 — Seconde chasse rc.4, **ordre des lignes au lancement** : « Tout lancer » donnait
+  les lignes dans un ordre variable (proposé : Page d'aide, Import CSV, Notes de version ; lancé :
+  Notes de version, Import CSV, Page d'aide), et la ligne sous le pointeur changeait. Cause : les
+  lignes lancées sont rangées par l'id de leur `child-started` (ordre de lancement, revue UX), et
+  le main posait ce `child-started` à la fin de la préparation de chaque worktree, en parallèle :
+  le premier prêt passait devant. Correctif à la cause, dans `ChildConversations.start` : chaque
+  lancement d'une mère prend son tour à la demande (`launchTurn`) ; les préparations restent
+  parallèles et visibles tout de suite (fiche 149), mais chacune attend que celles demandées avant
+  elle soient posées (ou en échec) pour poser la sienne. Côté carte, « Tout lancer » lance les
+  lignes dans l'ordre des lignes, plus dans celui de leur inscription (une ligne rendue seule, par
+  exemple dépliée, se réinscrivait en dernier). La date de création des filles (ordre de la barre
+  latérale, fiche 267) reste celle de la fin de leur préparation : non touchée ici. Preuves :
+  `children.test.ts` (premier worktree plus lent : posés dans l'ordre demandé ; premier en échec :
+  le suivant posé), rouge sans le correctif ; `WorkGroup.test.tsx` (ligne dépliée puis « Tout
+  lancer » : r2 puis r3), rouge sans le correctif. `children.ts` dépassait 800 lignes : les
+  canaux IPC des filles sont passés dans `children-ipc.ts` (réexportés).
 
 ## Limites connues
 

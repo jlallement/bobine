@@ -48,8 +48,8 @@ export function browserHandlers(
   | 'browser:openCertificateSite'
 > {
   return {
-    'browser:show': async (id, bounds) => {
-      browser.show(str(id, 'id'), parseBounds(bounds))
+    'browser:show': async (id, bounds, focus) => {
+      browser.show(str(id, 'id'), parseBounds(bounds), focus === true)
       return undefined
     },
     'browser:clearData': async () => {

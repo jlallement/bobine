@@ -1439,7 +1439,8 @@
         "fjordNight": "Fjord nuit",
         "aurora": "Aurore",
         "auroraNight": "Aurore nuit",
-        "new": "Nouveau"
+        "new": "Nouveau",
+        "newName": "{{name}}, nouveau"
       },
       "accent": {
         "label": "Couleur d’accent",

@@ -39,7 +39,7 @@ export function appMemory(
           encrypt: (text) => safeStorage.encryptStringAsync(text),
           decrypt: async (data) => (await safeStorage.decryptStringAsync(data)).result
         },
-        (message) => log.warn(message),
+        (message, level) => (level === 'info' ? log.info(message) : log.warn(message)),
         () => keyedApprovals(`${join(userData, 'memory')}.approved.json`)
       )
     }),

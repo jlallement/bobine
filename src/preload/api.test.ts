@@ -13,6 +13,36 @@ function setup() {
   return { api: createApi(invoke, subscribe), invoke, listeners, unsubscribe }
 }
 
+describe('conversations en cours de suppression (chasse rc.4)', () => {
+  it('aucun appel vers elles ne part au main, sauf la suppression ; libérées, de nouveau', async () => {
+    const { api, invoke } = setup()
+    api.conversations.removing(['m', 'f'], true)
+    await expect(api.children.mergePlan('m')).rejects.toThrow('m')
+    await expect(api.conversations.appTools('f')).rejects.toThrow('f')
+    await expect(api.git.status('m')).rejects.toThrow()
+    await api.conversations.delete('m', { children: 'delete' })
+    await api.conversations.appTools('o')
+    expect(invoke.mock.calls).toEqual([
+      ['conversation:delete', 'm', { children: 'delete' }],
+      ['conversation:appTools', 'o']
+    ])
+    api.conversations.removing(['m', 'f'], false)
+    await api.conversations.appTools('m')
+    expect(invoke.mock.calls.at(-1)).toEqual(['conversation:appTools', 'm'])
+  })
+
+  it('compté : deux suppressions de la même conversation se libèrent chacune', async () => {
+    const { api, invoke } = setup()
+    api.conversations.removing(['m'], true)
+    api.conversations.removing(['m'], true)
+    api.conversations.removing(['m'], false)
+    await expect(api.conversations.rules('m')).rejects.toThrow()
+    api.conversations.removing(['m'], false)
+    await api.conversations.rules('m')
+    expect(invoke.mock.calls).toEqual([['conversation:rules', 'm']])
+  })
+})
+
 describe('createApi', () => {
   it('chaque méthode passe par le bon canal avec ses arguments', async () => {
     const { api, invoke } = setup()

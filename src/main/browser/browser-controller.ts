@@ -7,7 +7,8 @@ import type { BrowserBounds, BrowserGo, BrowserState, BrowserZoom } from '@share
 import type { PageFreeze, PageLayerTheme, PagePin } from '@shared/page-notes'
 
 export interface BrowserController {
-  show: (conversationId: string, bounds: BrowserBounds) => void
+  /** `focus` : la page prend le clavier (onglet ouvert par l'utilisateur). */
+  show: (conversationId: string, bounds: BrowserBounds, focus?: boolean) => void
   hide: () => void
   navigate: (conversationId: string, input: string) => Promise<void>
   /** Page ouverte par l'app dans un nouvel onglet (aperçu HTML, fiche 064). */

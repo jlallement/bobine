@@ -86,7 +86,7 @@ export function browserController(
   tools: Pick<BrowserSetup['tools'], 'approveSite'>
 ): BrowserController {
   return {
-    show: (id, bounds) => manager.show(id, bounds),
+    show: (id, bounds, focus) => manager.show(id, bounds, focus),
     hide: () => manager.hide(),
     // Site ouvert par l'utilisateur lui-même : l'agent pourra y revenir sans demander.
     navigate: async (id, input) => tools.approveSite(id, await manager.navigate(id, input)),

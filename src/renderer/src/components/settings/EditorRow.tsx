@@ -26,6 +26,7 @@ export function EditorRow({
       {installed.length > 0 && (
         <select
           className="settings-input"
+          aria-label={t('settings.general.editor.label')}
           value={current?.id ?? ''}
           onChange={(e) => onChange(e.target.value)}
           data-testid="settings-editor"

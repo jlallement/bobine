@@ -188,7 +188,7 @@ export class BrowserManager {
    * Affiche le navigateur de la conversation sur la zone de l'onglet (pixels CSS de l'interface,
    * convertis selon son zoom, fiche 129) ; masque les autres.
    */
-  show(conversationId: string, bounds: BrowserBounds): void {
+  show(conversationId: string, bounds: BrowserBounds, focus = false): void {
     for (const [id, browser] of this.browsers) {
       if (id !== conversationId && browser.bounds) {
         browser.bounds = undefined
@@ -199,6 +199,8 @@ export class BrowserManager {
     browser.bounds = windowBounds(bounds, this.uiZoom())
     browser.area = browser.bounds
     this.layout(browser)
+    // Onglet ouvert par l'utilisateur : le clavier va à la page (seconde chasse rc.4).
+    if (focus) this.currentTab(conversationId)?.view.webContents.focus()
   }
 
   /** Onglet masqué ou panneau fermé : plus aucune page visible (elles continuent de tourner). */

@@ -159,6 +159,54 @@ describe('conversations filles (fiche 097)', () => {
     }
   })
 
+  it('lancés ensemble (« Tout lancer ») : posés dans l’ordre demandé, même préparés dans le désordre', async () => {
+    const env = environment()
+    const mother = await env.mother()
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const create = env.manager.createChild.bind(env.manager)
+    // Le worktree du premier se prépare plus lentement que celui du second (seconde chasse rc.4).
+    vi.spyOn(env.manager, 'createChild').mockImplementationOnce(async (...args) => {
+      await gate
+      return create(...args)
+    })
+    const started = () =>
+      env.items(mother).flatMap((i) => (i.kind === 'child-started' ? [i.title] : []))
+    try {
+      const first = env.children.start(mother, { text: 'Page d’aide', title: 'Page d’aide' })
+      const second = env.children.start(mother, { text: 'Import CSV', title: 'Import CSV' })
+      // Les deux se préparent tout de suite (fiche 149), le second a fini avant le premier.
+      expect(env.children.launchState().entries).toHaveLength(2)
+      await waitFor(
+        () => env.manager.state().conversations.filter((c) => c.startedFrom).length === 1
+      )
+      expect(started()).toEqual([])
+      release()
+      await Promise.all([first, second])
+      expect(started()).toEqual(['Page d’aide', 'Import CSV'])
+    } finally {
+      release()
+      env.manager.stopAll()
+    }
+  })
+
+  it('premier lancement en erreur : le suivant est posé quand même', async () => {
+    const env = environment()
+    const mother = await env.mother()
+    vi.spyOn(env.manager, 'createChild').mockRejectedValueOnce(new Error('worktree indisponible'))
+    try {
+      const failed = env.children.start(mother, { text: 'Essai' })
+      const next = env.children.start(mother, { text: 'Suivant', title: 'Suivant' })
+      await expect(failed).rejects.toThrow('worktree indisponible')
+      await next
+      expect(
+        env.items(mother).flatMap((i) => (i.kind === 'child-started' ? [i.title] : []))
+      ).toEqual(['Suivant'])
+    } finally {
+      env.manager.stopAll()
+    }
+  })
+
   it('une création en erreur retire la préparation, sans conversation fantôme (149)', async () => {
     const env = environment()
     const mother = await env.mother()

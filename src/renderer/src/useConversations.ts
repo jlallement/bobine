@@ -505,13 +505,17 @@ export function useConversations() {
         ...(options.children === 'delete' ? descendants(state.list, id).map((c) => c.id) : [])
       ]
       setRemoving((current) => new Set([...current, ...ids]))
+      // Plus aucun appel vers elles ne part au main d'ici la fin (preload, chasse rc.4) : toutes les
+      // lectures du renderer (outils de Bobine, plan de fusion…), pas seulement git et commandes.
+      window.api.conversations.removing(ids, true)
       window.api.conversations
         .delete(id, options)
         .then(async (list) => showView(await window.api.conversations.view(list.activeId)))
         .catch(fail)
-        .finally(() =>
+        .finally(() => {
+          window.api.conversations.removing(ids, false)
           setRemoving((current) => new Set([...current].filter((c) => !ids.includes(c))))
-        )
+        })
     }
   }
 }

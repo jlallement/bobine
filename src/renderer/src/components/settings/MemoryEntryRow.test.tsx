@@ -61,6 +61,13 @@ describe('MemoryEntryRow : souvenir modifié hors de Bobine (fiche 182)', () => 
     expect(screen.getByTestId('memory-outside-banner')).not.toBeNull()
   })
 
+  it('« Modifier » : le focus va dans le premier champ (seconde chasse rc.4)', () => {
+    renderRow(entry())
+    screen.getByTestId('memory-edit').focus()
+    fireEvent.click(screen.getByTestId('memory-edit'))
+    expect(document.activeElement).toBe(screen.getByTestId('memory-editor').querySelector('input'))
+  })
+
   it('souvenir validé : son auteur, Markdown, déplacement possible, pas de bandeau', () => {
     renderRow(entry({ approved: true, description: 'Une préférence', body: 'Texte.' }))
     expect(screen.getAllByText('OpenCode').length).toBeGreaterThan(0)
