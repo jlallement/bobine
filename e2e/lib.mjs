@@ -35,6 +35,22 @@ mkdirSync(captures, { recursive: true })
 export const FEATURES = currentPlatformFeatures(process.env, process.platform)
 
 /**
+ * Préférences d'affichage émulées dans la page (CDP) : le mode des essais, et celles de la machine
+ * fixées à leur valeur par défaut (fiche 250). Le runner macOS de GitHub a « Réduire les
+ * animations » et « Réduire la transparence » (`configure-system.sh` de `actions/runner-images`) :
+ * l'app les suit, comme il se doit, et les suites qui supposent le réglage par défaut tombaient.
+ * Une suite qui essaie l'une d'elles la demande par `ui.media`.
+ */
+export const mediaFeatures = (scheme, features = {}) =>
+  Object.entries({
+    'prefers-color-scheme': scheme,
+    'prefers-reduced-motion': 'no-preference',
+    'prefers-reduced-transparency': 'no-preference',
+    'prefers-contrast': 'no-preference',
+    ...features
+  }).map(([name, value]) => ({ name, value }))
+
+/**
  * Un trousseau chiffre les clés d'API de l'app essayée (fiche 145, D4) : sur macOS (le trousseau
  * simulé de `--use-mock-keychain`) et sous Windows (DPAPI), toujours. Sous Linux, Chromium ne joint
  * GNOME Keyring ni KWallet qu'à travers le bus D-Bus de la session : sans lui (Docker, job Linux de
@@ -209,6 +225,8 @@ const remoteValue = (arg) =>
 const exceptionText = (details) =>
   details.exception?.description ?? details.exception?.value ?? details.text
 let failures = 0
+/** Contrôles en échec, dans l'ordre (annotations des suites indicatives, fiche 250). */
+const failedLabels = []
 /** Suite en cours (`run.mjs`) : son nom préfixe les captures d'échec (fiche 115). */
 let suiteName = ''
 export const setSuite = (name) => {
@@ -216,16 +234,20 @@ export const setSuite = (name) => {
 }
 /** Nombre d'échecs depuis le début des essais. */
 export const failureCount = () => failures
+/** Contrôles en échec depuis le début des essais. */
+export const failureLabels = () => [...failedLabels]
 /** Échec hors `check` (exception d'une suite). */
 export const fail = (label) => {
   console.log(`  ✗ ${label}`)
   failures++
+  failedLabels.push(label)
   captureFailure(label)
 }
 export const check = (ok, label) => {
   console.log(`${ok ? '  ✓' : '  ✗'} ${label}`)
   if (!ok) {
     failures++
+    failedLabels.push(label)
     captureFailure(label)
   }
 }
@@ -441,9 +463,7 @@ export async function withApp(
     // La fenêtre n'est jamais au premier plan (`BOBINE_SHOW_INACTIVE`, fiche 106) : la page doit se
     // croire active, sinon la saisie envoyée par CDP est perdue.
     await cdp('Emulation.setFocusEmulationEnabled', { enabled: true })
-    await cdp('Emulation.setEmulatedMedia', {
-      features: [{ name: 'prefers-color-scheme', value: scheme }]
-    })
+    await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme) })
     /** Évalue dans la page ; une exception de la page est levée telle quelle (fiche 106). */
     const ev = async (expression) => {
       const r = await cdp('Runtime.evaluate', {
@@ -724,16 +744,20 @@ export async function withApp(
       /**
        * Préférences d'affichage de macOS émulées en plus du mode des essais (fiche 226) :
        * `{ 'prefers-reduced-transparency': 'reduce' }`, `{ 'prefers-contrast': 'more' }` ; sans
-       * rien, retour au seul mode.
+       * rien, retour aux valeurs par défaut (`mediaFeatures`).
        */
       media: async (features = {}) => {
-        await cdp('Emulation.setEmulatedMedia', {
-          features: [
-            { name: 'prefers-color-scheme', value: scheme },
-            ...Object.entries(features).map(([name, value]) => ({ name, value }))
-          ]
-        })
+        await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme, features) })
         await sleep(150)
+      },
+      /**
+       * Deux images rendues (fiche 250) : ce qui ne se met à jour qu'au rendu d'une image (lignes
+       * de temps de défilement, `ResizeObserver`) est alors à jour. Sur une machine chargée
+       * (runner macOS de GitHub), aucune image n'arrive parfois en 150 ou 300 ms.
+       */
+      frames: async () => {
+        await frame()
+        await frame()
       },
       viewport: async (width, height = 820) => {
         if (width) {
@@ -745,6 +769,11 @@ export async function withApp(
           })
         } else await cdp('Emulation.clearDeviceMetricsOverride')
         await sleep(300)
+        // Deux images rendues à la nouvelle taille (fiche 250) : les `ResizeObserver` de la page
+        // (repli de la barre de saisie…) ne passent qu'au rendu d'une image, et une machine chargée
+        // n'en produit parfois aucune en 300 ms (runner macOS de GitHub).
+        await frame()
+        await frame()
       },
       enter: async () => {
         for (const type of ['keyDown', 'keyUp']) {
@@ -1053,9 +1082,7 @@ export async function attachPage(part, scheme) {
     })
   await cdp('Page.enable')
   await cdp('Emulation.setFocusEmulationEnabled', { enabled: true })
-  await cdp('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-color-scheme', value: scheme }]
-  })
+  await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme) })
   const ev = async (expression) =>
     (await cdp('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result
       .result.value

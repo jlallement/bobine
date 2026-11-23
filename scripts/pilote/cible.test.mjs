@@ -430,8 +430,26 @@ describe('cartes en attente (fiche 248)', () => {
       api: true
     })
     const clicks = []
-    const page = { ev: async (e) => dom.window.eval(e), mouse: async (x, y) => clicks.push([x, y]) }
+    // Comme l'app, plus tard : la carte décidée laisse la place à sa ligne.
+    const decide = () =>
+      setTimeout(() => dom.window.document.querySelector('[data-testid=memory-card]').remove())
+    const page = {
+      ev: async (e) => dom.window.eval(e),
+      mouse: async (x, y) => {
+        clicks.push([x, y])
+        decide()
+      }
+    }
     expect(await answerCard(page, 'Retenir')).toBe('Retenir')
     expect(clicks).toHaveLength(1)
+    expect(dom.window.document.querySelector('[data-testid=memory-card]')).toBeNull()
+  })
+
+  it('repondre rend la main une fois la carte décidée ; toujours là, une erreur le dit (fiche 250)', async () => {
+    const dom = makeDom(`<div id="root">${memoryCard}</div>`, MAIN_URL, { api: true })
+    const page = { ev: async (e) => dom.window.eval(e), mouse: async () => {} }
+    await expect(answerCard(page, 'Retenir', { settle: 300 })).rejects.toThrow(
+      'la carte attend encore'
+    )
   })
 })

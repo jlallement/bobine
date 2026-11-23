@@ -134,7 +134,8 @@ Dependabot comme les autres.
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
    être vert, avec l'annotation « e2e terminal en quarantaine (linux) ». Si oui, garder le dernier
    commit (`continue-on-error` retiré) ; sinon le retirer et noter ici ce qui échoue encore.
-2. Le lendemain de la fusion : le passage de nuit macOS (`schedule`) et sa durée.
+2. Le lendemain de la fusion : le passage de nuit macOS (`schedule`) et sa durée ; avant, sur la
+   branche `ci/nuit-macos-ecran`, l'étape « Écran 1920 × 1080 » verte (journal du 2026-11-23).
 3. `ci.yml` sous Windows : 10 passages verts d'affilée (audit B5).
 4. Au premier tag (rc.1) : `SHA256SUMS-macos-arm64.txt` et les attestations dans la Release.
    Vérifier ensuite `gh attestation verify Bobine-<version>-arm64.dmg --repo jlallement/bobine`
@@ -249,6 +250,98 @@ Dependabot comme les autres.
   `android` : 4 à 5 images/s). Rien n'est changé ici : il faut agrandir l'écran du runner avant
   les essais (à essayer sur GitHub, aucun outil vérifié), ou ne garder de nuit que ce qui tient
   dans 1024 × 768 ; décision à prendre.
+
+- 2026-11-23 — Décision de Jérôme : agrandir l'écran du runner macOS avant les essais (branche
+  `ci/nuit-macos-ecran`). Nouvelle étape « Écran 1920 × 1080 » du job macOS de `e2e.yml`, juste
+  avant les essais : `scripts/ci/macos-screen.sh`.
+  - Outil : `displayplacer` (« XRandR pour macOS »), formule `homebrew/core` 1.4.0, licence MIT,
+    bouteille vérifiée par Homebrew (SHA-256). Installé sans mise à jour de Homebrew ; une autre
+    version que 1.4.0 arrête le job (on la relit avant de changer `DISPLAYPLACER_VERSION`). Rien
+    n'est téléchargé hors de Homebrew. Écarté : `vmware-resolutionSet` (Intel sous VMware
+    seulement, absent des runners Apple Silicon), outils d'écran virtuel (BetterDisplay…), pas de
+    source établie pour la CI.
+  - Choix du mode : `1920x1080` de l'écran principal (sans mise à l'échelle de préférence), à
+    défaut le plus grand mode offert. Testé sans écran (`scripts/ci/macos-screen.test.ts`).
+  - Vérification qui ne dépend pas de displayplacer : la zone utile de l'écran principal
+    (`NSScreen.visibleFrame`, c'est le `screen.workArea` d'Electron), lue par `osascript`, doit
+    contenir la fenêtre par défaut (1280 × 820). Sinon le job s'arrête là, rouge, avec
+    `system_profiler SPDisplaysDataType` avant et après et la liste des modes offerts. Essayé sur
+    le Mac (vert à 1512 × 890, rouge en exigeant 3000 de large).
+  - Rien ne change sous Linux et Windows, ni dans les suites. L'étape anglaise ne joue toujours
+    que si l'étape française est verte (comportement inchangé).
+  - Non prouvé : on ne sait pas encore quels modes l'écran virtuel du runner `macos-15` (Apple
+    Silicon) offre. Une discussion de `actions/runner-images` (#5730, 2022) ne montrait qu'un mode,
+    et CircleCI documente un seul mode sur ses machines virtuelles M1. Si le runner n'offre que
+    1024 × 768, l'étape le dira en rouge et la décision revient (garder de nuit ce qui tient dans
+    1024 × 768, ou un autre runner). À prouver sur GitHub : `startup panel session composer`
+    seules, puis la suite complète.
+
+- 2026-11-23 — L'écran agrandi marche : sur `macos-15`, mode 1920x1080 appliqué, zone utile
+  1920 × 982 (45153110394, `startup panel session composer` : `startup` et `panel` verts). Suite
+  complète macOS sur la branche (45154507106, commit efb13c1, 49 min) : 40 échecs, contre 44 à 45
+  tâches rouges les nuits d'avant. Cause commune à la plupart : l'image macOS de GitHub active
+  **Réduire les animations** et **Réduire la transparence** (`configure-system.sh` de
+  `actions/runner-images` : `defaults write com.apple.universalaccess reduceMotion -bool true`,
+  `reduceTransparency` de même). L'app les suit, comme il se doit ; les suites supposaient le
+  réglage par défaut, et la réduction des animations rendait visibles des courses des essais.
+
+  | Échec | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `composer` « mode Code … transitions de 150 ms » ; `base` « le fil de la bobine s'enroule » ; `repere` (`work-cue` jamais à 1) ; `aurore` (verre dépoli, lueur, « préférences revenues ») | Réglages d'accessibilité du runner (ci-dessus) : l'app retire transitions, animation de la bobine, repère animé, verre dépoli. `ui.media()` revenait au seul mode clair ou sombre, donc au réglage du runner. | `e2e/lib.mjs` : `mediaFeatures` émule `prefers-reduced-motion`, `prefers-reduced-transparency` et `prefers-contrast` à `no-preference`, à côté du mode ; `ui.media({…})` ne change que ce qu'on lui donne et revient à ces valeurs. Les suites qui essaient une réduction la demandent (`aurore`). | En local, les mêmes suites avec `reduce` émulé : `composer` (même message), `base`, `repere` (clair), `aurore` (les 4 contrôles) rouges ; avec `no-preference`, vertes. |
+  | `session` « délai dépassé : `[role=tooltip]` » | Essai fragile. Radix rend le focus à la puce du modèle dans un `setTimeout` après la fermeture du menu. Sans animation de sortie, l'essai voyait le menu parti, écartait aussitôt le pointeur, puis le focus revenait : l'infobulle s'ouvrait (focus au clavier, Échap) et ne voyait jamais le pointeur partir. Comportement voulu de l'app. | L'essai attend le focus revenu sur la puce, puis écarte le pointeur. | D'après le code de Radix (`FocusScope`, focus rendu en `setTimeout`) et la capture (puce entourée, infobulle ouverte) ; pas reproduit sur le Mac, même avec `reduce` émulé. Vert en local. |
+  | `composer` « erreur dans la page : `getComputedStyle` … » | Essai : après « Exécuter le plan », `ready()` passait avant le tour (agent encore « Prêt », comme pour `branch` le 2026-11-22) ; la zone lue pendant le tour n'avait plus de bouton d'envoi (`send` nul, remplacé par Arrêter). Pas un défaut de l'app ni du code injecté (`underPointer`, `clickTrail`) : l'erreur vient de l'évaluation `planLook` de la suite (ligne 52, `getComputedStyle(send)`). | L'essai attend le message « Exécute le plan… » dans le fil, puis `ready()`. | Ligne 52 de l'évaluation ; vert en local. |
+  | `composer` « accueil à 760 px : … envoi dans la fenêtre » | Défaut de l'app, vu sur machine lente : le repli de la barre (`useBarFold`) mesurait au `ResizeObserver` puis remettait l'ancien niveau en attendant le rendu de React ; sur le runner, plusieurs images peintes avec l'envoi hors de la zone. Et l'essai mesurait 300 ms après le changement de largeur, parfois sans aucune image rendue entre-temps. | `useBarFold` laisse le niveau mesuré sur la barre (le CSS replie dans l'image même ; React pose ensuite la même valeur). `ui.viewport` attend deux images rendues à la nouvelle taille. | `useBarFold.dom.test.tsx` : rouge avant (`expected '0' to be '1'`), vert après. Captures `composer-9-accueil-760` regardées. |
+  | `rules` « menu ouvert d'emblée à sa place (côtés : ) » | Essai : le relevé des côtés du menu durait 1,5 s à partir d'avant le clic ; sur le runner, le clic (visée comprise) dépassait, rien n'était relevé. | Le relevé dure jusqu'à ce que l'essai l'arrête, une image après avoir vu les trois règles. | Vert en local ; pas reproduit (machine plus rapide). |
+  | `commit-redige` « Arrêter : rédaction arrêtée » (raison `timeout`) | Essai : « Arrêter » courait contre le délai raccourci à 4 s (agent qui ne répond jamais) ; sur le runner, le démarrage de l'agent mangeait le délai, qui gagnait (capture : « n'a pas répondu en 4 s »). | « Réessayer » reste essayé avec le délai de 4 s (nouvel agent, de nouveau le repli `timeout`, aucun agent ne survit) ; « Arrêter » passe dans un lancement à part, au délai habituel (45 s), où rien ne court contre lui. | Vert en local. |
+  | `providers` (le test du fournisseur ne passe pas par le proxy) | Défaut de l'app : Réglages › Agents › Avancé enregistre chaque champ en quittant ; le second enregistrement partait de l'ancienne vue et effaçait le proxy que le premier venait d'enregistrer, s'il n'avait pas encore répondu. Capture : « Répond · 0 s » (test direct), résumé « sans proxy » seul. | `NetworkSettings` : enregistrements l'un après l'autre, chacun parti des réglages rendus par le précédent. Ligne dans les deux changelogs. | `ProvidersSettings.test.tsx`, « deux champs quittés coup sur coup » : rouge avant, vert après. |
+  | `pilote` « souvenir décidé : plus de carte », « Tâches proposées traitée » (carte d'autorisation encore vue, 0 s) | Outil : `pnpm pilote repondre` rendait la main dès le clic ; la carte n'est décidée qu'après un aller-retour au main, et `attendre`, lancé aussitôt, la revoyait comme une carte en attente. Reproduit une fois sur le Mac (passage avec `reduce` émulé, sans lien : le pilote n'émule rien). | `answerCard` : pour une carte d'autorisation ou de souvenir (chaque bouton décide), attend qu'elle soit décidée ; toujours là au bout de 10 s, une erreur le dit. Pas pour une carte de questions (un choix se coche) ni de groupe. | `cible.test.mjs` : carte retirée par l'app → rend la main ; carte restée → erreur. Vert en local. |
+  | `subagents` « durée et coût … (< 1 s) » | Essai (déjà vu sous Linux à 1 processeur) : coût relu avant la première seconde, la durée disait encore « < 1 s ». | L'essai attend le coût et une durée en secondes entières, puis vérifie, comme avant, que le sous-agent travaille encore. | Vert en local. |
+
+  Restent, non corrigés (une seule occurrence, ou liés à la machine) :
+  - `browser` clair : « Bonjour, ! » (le nom n'a pas été saisi, « 1 échec » parmi les 8 actions).
+    Sans le journal des outils, cause inconnue ; vert en local, même avec `reduce` émulé. À
+    regarder au prochain passage (proposition : `BOBINE_LOG=trace` pour l'e2e de nuit et
+    `agents.log` dans les captures).
+  - `travaux-groupe` sombre : clic manqué (appui sur « Ouvrir sa conversation », relâché sur
+    `work-actions-group`) : la ligne a bougé entre l'appui et le relâché. Même famille que le
+    reste côté produit du 2026-11-22 ; pas traité ici.
+  - `filles-tech-lead` sombre : un `Electron Helper --type=utility` (NetworkService, processus de
+    Chromium) encore vivant 3 s après la sortie de l'app. Lenteur d'arrêt du runner ; à décider
+    (l'attendre comme `chrome_crashpad_handler`, ou garder la règle de 3 s).
+  - `perf` (gros diff, long fil, sommaire, streaming), `simulator` (5 images/s, planche contact),
+    `android` (flux jamais là) : mesures liées à la machine virtuelle (pas de GPU, CPU partagé).
+    Proposition, à trancher : ne pas jouer ces trois suites de nuit sur `macos-15` (ou les
+    marquer indicatives), elles restent jouées en local avant chaque tag.
+
+  À prouver sur GitHub après la poussée : suite complète macOS sur la branche.
+
+- 2026-11-23 — Suite complète macOS sur la branche (45168015601) : 8 tâches rouges sur 236 (contre
+  40 au passage d'avant), dans `perf`, `simulator`, `android`, `git` clair et `aide` clair.
+  - **Décision de Jérôme : `perf`, `simulator` et `android` indicatives sur le runner macOS de
+    GitHub seulement.** Même forme que `perf` sous Linux : sans suites demandées, les deux étapes
+    d'essais (français, anglais) les écartent (`--skip`), puis l'étape « Suites indicatives sur ce
+    runner » les joue (français puis anglais) avec `continue-on-error`. Nouvelle option du lanceur,
+    `--indicative` : sur GitHub, chaque contrôle en échec devient une annotation `::warning::`
+    titrée par la tâche (« e2e perf light : indicative (darwin), en échec ») ; le code de sortie ne
+    change pas, c'est l'étape qui ne bloque pas le job. L'étape `perf` de Linux la prend aussi.
+    Nommées dans les suites demandées, elles restent bloquantes ; en local, rien ne change (avant
+    chaque envoi et chaque tag). Aucune assertion modifiée. Essais : `e2e-select.test.ts`
+    (option, contrôles en échec, annotations échappées, plantage sans contrôle) ; sur le Mac,
+    `GITHUB_ACTIONS=true pnpm e2e --indicative git` avec la suite `git` rendue rouge exprès : une
+    annotation par contrôle, en parallèle comme une tâche à la fois.
+
+  | Échec | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `git` clair « fondus du fil : haut 1 → 1, bas 0 → 0 » | Essai. Les fondus suivent le défilement par une ligne de temps CSS (`animation-timeline`), que Chromium ne relève qu'au rendu d'une image. L'essai lisait l'opacité 150 ms après chaque `scrollTop` ; sur le runner chargé, aucune image rendue entre-temps : les trois lectures donnaient l'état d'avant (en bas du fil). Pas un défaut de l'app : à l'écran, le fondu suit à l'image suivante. | `ui.frames()` (deux images rendues, comme `ui.viewport`) remplace les trois `sleep(150)`. | Sans attente, en local : exactement le message du runner (« haut 1 → 1, bas 0 → 0 ») ; avec `ui.frames()`, `git` clair et sombre verts. |
+  | `aide` clair « ↓ change le résultat ET la page… (`{"page":"reglages","size":46,"visible":0}`) » | Essai. `data-page` change au rendu de React ; le défilement au mot et le surlignage sont des effets qui passent après. L'essai lisait dès `data-page` vu : surlignage encore celui de la page d'avant (46 plages, aucune dans la page affichée). Pas un défaut de l'app (une image plus tard, la page est défilée et surlignée). | L'essai attend le surlignage posé sur la page affichée (toutes les plages dans la page, chacune « worktree »), pour le premier résultat comme pour le suivant, puis vérifie comme avant qu'un mot surligné est à l'écran. | Sonde en local (observateur de `data-page`) : au changement de page, `{"page":"reglages","size":46,"onPage":false}`, l'état exact du runner ; après l'attente, `size 9, visible 4`. `aide` clair et sombre verts. |
+
+  Restent, non traités (verts au passage 45168015601, cause non établie) :
+  - `browser` clair « Bonjour, ! » : toujours sans journal des outils ; même proposition
+    (`BOBINE_LOG=trace` de nuit, `agents.log` dans les captures).
+  - `filles-tech-lead` sombre : `Electron Helper` (NetworkService) vivant 3 s après la sortie.
+    Processus de Chromium, pas de Bobine ; l'attendre comme `chrome_crashpad_handler` assouplirait
+    la règle « rien ne survit à l'app » : décision à prendre, pas faite ici.
+  - `travaux-groupe` sombre (clic manqué) : non revu ici.
 
 - 2026-11-23 — `filles-fusion` encore rouge environ une fois sur cinq sur la branche 1.1 (« ⚠ clic
   manqué : appui sur `div.work-group-row` », puis `work-open` jamais vu, au premier retour à la

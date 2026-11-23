@@ -15,6 +15,10 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Réglages › Agents › Avancé, Réseau d’entreprise : le proxy n’est plus perdu quand on passe
+  aussitôt au champ suivant (« Sans proxy ») et qu’on le quitte à son tour.
+- Zone de saisie : quand la fenêtre rétrécit, la barre se replie dans la même image ; le bouton
+  d’envoi ne déborde plus un instant de la zone, sur une machine chargée.
 - Un clic dans le fil n’est plus perdu quand un tour se termine au même instant : le fil ne
   remonte plus sous le pointeur entre l’appui et le relâché (par exemple sur une ligne d’une carte
   de travaux, qui ne se dépliait pas). De même quand le fil était presque en bas, ou qu’une

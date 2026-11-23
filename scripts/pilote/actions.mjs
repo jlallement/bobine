@@ -75,11 +75,20 @@ export const CARD =
   '.permission-card, [data-testid=work-group]:not([data-pending="0"]), [data-testid=memory-card]'
 
 /**
+ * Cartes dont chaque bouton décide : décidées, elles laissent la place à une ligne (réponse,
+ * souvenir retenu). Pas une carte de questions (un choix se coche avant « Envoyer ») ni de groupe.
+ */
+const DECIDING = '[data-testid=permission], [data-testid=memory-card]'
+
+/**
  * Répond à la dernière carte en attente par le libellé d'un de ses boutons. Une carte
  * d'autorisation n'accepte un clic qu'une fois armée (400 ms sans défilement, fiche 203) : on
- * attend, comme un humain.
+ * attend, comme un humain. Une carte d'autorisation ou de souvenir : on attend aussi qu'elle soit
+ * décidée (l'app répond après un aller-retour au main) ; sinon `attendre`, lancé aussitôt, la
+ * voyait encore et la rendait comme une nouvelle carte (runner macOS, fiche 250). Toujours là
+ * après `settle` ms : une erreur le dit.
  */
-export async function answerCard(page, label) {
+export async function answerCard(page, label, { settle = 10_000 } = {}) {
   const last = `[...document.querySelectorAll(${JSON.stringify(CARD)})].at(-1)`
   if (!(await page.ev(`!!${last}`))) throw new Error('aucune carte en attente')
   for (let i = 0; i < 50; i++) {
@@ -89,7 +98,20 @@ export async function answerCard(page, label) {
     if (armed) break
     await sleep(100)
   }
-  return clickLabel(page, label, CARD)
+  const deciding = await page.ev(
+    `(() => { const c = ${last}; window.__piloteCard = c.matches(${JSON.stringify(DECIDING)}) ? c : null; return !!window.__piloteCard })()`
+  )
+  const clicked = await clickLabel(page, label, CARD)
+  if (!deciding) return clicked
+  const pending = `(() => { const c = window.__piloteCard; return !!c && c.isConnected && c.matches(${JSON.stringify(DECIDING)}) })()`
+  const started = Date.now()
+  while (await page.ev(pending)) {
+    if (Date.now() - started > settle) {
+      throw new Error(`« ${clicked} » cliqué, mais la carte attend encore après ${settle / 1000} s`)
+    }
+    await sleep(100)
+  }
+  return clicked
 }
 
 /** Zone de saisie de la conversation. */

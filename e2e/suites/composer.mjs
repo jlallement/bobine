@@ -573,8 +573,13 @@ async function planModeVisible(scheme) {
         check(true, 'Maj+Tab deux fois : de nouveau en Plan')
 
         // « Exécuter le plan » : retour au mode d'exécution, la couleur part avec le mode.
+        const sent = await ui.ev(`document.querySelectorAll('.msg-user').length`)
         await ui.click(`[...document.querySelectorAll('[data-testid=plan-execute]')].at(-1)`)
         await ui.waitFor(`!(${planOn})`)
+        // Le message « Exécute le plan… » parti (il n'apparaît qu'avec l'agent au travail), puis
+        // la fin du tour : l'agent encore « Prêt » avant le tour laissait passer `ready()`, et
+        // la zone de saisie lue pendant le tour n'avait plus d'envoi (fiche 250, runner macOS).
+        await ui.waitFor(`document.querySelectorAll('.msg-user').length > ${sent}`)
         await ui.ready()
         state = await look()
         check(

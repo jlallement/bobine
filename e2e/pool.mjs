@@ -12,7 +12,7 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { countFailures, formatDuration, nextTask } from '../scripts/e2e-select.mts'
+import { failedControls, formatDuration, nextTask } from '../scripts/e2e-select.mts'
 import { root } from './state.mjs'
 
 /** Délai maximal d'une suite (un thème) : au-delà, elle est bloquée (attente sans fin, port pris…). */
@@ -124,6 +124,8 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
   let failures = 0
   // Tâches vertes : leurs captures d'échec d'avant sont effacées (fiche 267).
   const passed = []
+  // Tâches rouges et leurs contrôles en échec (suites indicatives, fiche 250).
+  const failed = []
   let finished = 0
   const total = tasks.length
 
@@ -163,22 +165,23 @@ export async function runPool(tasks, { jobs, lang, verbose }) {
     finished++
     durations[task.key] = result.ms
     // Échecs comptés dans la sortie ; un processus en échec sans ligne `✗` (plantage) en vaut un.
-    const counted = countFailures(result.output)
-    const failed = result.code !== 0 || counted > 0
-    const count = failed ? Math.max(counted, 1) : 0
+    const controls = failedControls(result.output)
+    const red = result.code !== 0 || controls.length > 0
+    const count = red ? Math.max(controls.length, 1) : 0
     failures += count
-    if (!failed) passed.push(task)
-    const head = `${failed ? '✗' : '✓'} [${String(finished).padStart(String(total).length)}/${total}] ${label(task)} · ${formatDuration(result.ms)} · job ${slot + 1}`
+    if (red) failed.push({ label: label(task), controls })
+    else passed.push(task)
+    const head = `${red ? '✗' : '✓'} [${String(finished).padStart(String(total).length)}/${total}] ${label(task)} · ${formatDuration(result.ms)} · job ${slot + 1}`
     const why = result.blocked
       ? ` — bloquée, arrêtée au bout de ${formatDuration(SUITE_TIMEOUT_MS + GUARD_MS)}`
-      : failed
+      : red
         ? ` — ${count} échec(s)`
         : ''
     console.log(`${head}${why}`)
-    if (failed || verbose) console.log(indent(result.output))
+    if (red || verbose) console.log(indent(result.output))
     start()
   }
   process.off('SIGINT', stop)
   process.off('SIGTERM', stop)
-  return { failures, durations, passed }
+  return { failures, durations, passed, failed }
 }

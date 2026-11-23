@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { L, check, withApp } from '../lib.mjs'
 
 /**
  * Barre de titre et branche git (fiche 049) : titre aligné à gauche avec le menu de la
@@ -179,6 +179,8 @@ export async function gitSuite(scheme) {
         await ui.ready()
 
         // Fondus du fil : en haut quand le fil défile sous la barre, en bas tant qu'il en reste.
+        // Ils suivent le défilement par une ligne de temps CSS, relevée au rendu d'une image : on
+        // lit après deux images rendues, pas après un délai (fiche 250, runner macOS de GitHub).
         const fades = async () => ({
           top: await ui.ev(shade),
           bottom: await ui.ev(
@@ -186,13 +188,13 @@ export async function gitSuite(scheme) {
           )
         })
         await ui.ev(`${scroller}.scrollTop = 0; true`)
-        await sleep(150)
+        await ui.frames()
         const atTop = await fades()
         await ui.ev(`${scroller}.scrollTop = 300; true`)
-        await sleep(150)
+        await ui.frames()
         const middle = await fades()
         await ui.ev(`${scroller}.scrollTop = ${scroller}.scrollHeight; true`)
-        await sleep(150)
+        await ui.frames()
         const atEnd = await fades()
         check(
           atTop.top < 0.05 &&
