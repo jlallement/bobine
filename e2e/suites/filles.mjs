@@ -359,9 +359,23 @@ export async function fillesSuite(scheme) {
         await openDelete()
         await ui.click(ui.$('delete-children'))
         await ui.waitFor(`!${ui.$('delete-children')}.checked`)
+        // Lectures d'une conversation que le main n'a plus (git:status, commands:project).
+        const unknownReads = () =>
+          ui
+            .output()
+            .split('\n')
+            .filter((line) => /IPC (git:status|commands:project)/.test(line))
+        const before = unknownReads().length
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${row(mother)}`)
         await sleep(300)
+        // Recette rc.4 : la mère affichée supprimée, le fil ne l'interroge plus (« Conversation
+        // inconnue » au journal).
+        const unknown = unknownReads().slice(before)
+        check(
+          unknown.length === 0,
+          `mère supprimée : aucune lecture d'une conversation supprimée${unknown.length ? ` (${unknown.join(' | ')})` : ''}`
+        )
         check(
           (await ui.ev(
             `${rows}.filter((r) => r.dataset.branch || r.closest('[data-testid=inbox]')).length`

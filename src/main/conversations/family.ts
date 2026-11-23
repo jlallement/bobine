@@ -4,6 +4,7 @@
  * gestionnaire les applique.
  */
 import { t } from 'i18next'
+import { descendants } from '@shared/children'
 import type { FamilyMember } from '@shared/children'
 import type { ConversationRecord } from './store'
 
@@ -17,30 +18,7 @@ export const memberOf = (
   motherId: record.startedFrom?.id ?? ''
 })
 
-/**
- * Descendance de `id` par `startedFrom`, des plus profondes aux plus proches (l'ordre où les
- * supprimer : une fille ne perd jamais sa mère avant d'être traitée). Résiste aux boucles.
- */
-export function descendants<R extends Linked>(records: readonly R[], id: string): R[] {
-  const byMother = new Map<string, R[]>()
-  for (const record of records) {
-    const mother = record.startedFrom?.id
-    if (mother && mother !== record.id)
-      byMother.set(mother, [...(byMother.get(mother) ?? []), record])
-  }
-  const seen = new Set<string>([id])
-  const out: R[] = []
-  const visit = (motherId: string) => {
-    for (const child of byMother.get(motherId) ?? []) {
-      if (seen.has(child.id)) continue
-      seen.add(child.id)
-      visit(child.id)
-      out.push(child)
-    }
-  }
-  visit(id)
-  return out
-}
+export { descendants } from '@shared/children'
 
 /**
  * Liens morts laissés par une version précédente (mère supprimée sans ses filles) : retirés des

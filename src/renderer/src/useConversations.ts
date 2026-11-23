@@ -1,8 +1,8 @@
 import { rememberAgentLabels } from './components/panel/useCommitDraft'
 import type { ForgottenApproval } from '@shared/approvals'
-import type { ChildLaunchState } from '@shared/children'
+import { descendants, type ChildLaunchState } from '@shared/children'
 import type { PromptAttachment, WorkspaceFile } from '@shared/attachments'
-import { useCallback, useEffect, useReducer } from 'react'
+import { useCallback, useEffect, useReducer, useState } from 'react'
 import type {
   AgentConfigureRequest,
   AgentSessionView,
@@ -210,6 +210,12 @@ export function useConversations() {
     []
   )
   const showView = useCallback((view: ConversationView) => dispatch({ type: 'view', view }), [])
+  /**
+   * Conversations dont la suppression est en cours (recette rc.4) : le main les retire avant que la
+   * liste ne change d'active, et l'arrêt de leur agent fait relire git et les commandes du projet ;
+   * ces lectures tombaient sur « Conversation inconnue ». `queryId` les tait jusqu'à la fin.
+   */
+  const [removing, setRemoving] = useState<ReadonlySet<string>>(() => new Set())
   // Nom de l'agent de chaque conversation, pour le message de commit rédigé (fiche 246).
   useEffect(() => rememberAgentLabels(state.list), [state.list])
 
@@ -289,6 +295,8 @@ export function useConversations() {
   return {
     ...state,
     active: activeId ? (state.loaded[activeId] ?? null) : null,
+    /** Conversation active à interroger en tâche de fond (git, commandes) ; `null` pendant sa suppression. */
+    queryId: activeId && !removing.has(activeId) ? activeId : null,
     activeSummary: state.list.find((c) => c.id === activeId) ?? null,
     select: (id: string) => {
       window.api.conversations.select(id).then(showView).catch(fail)
@@ -492,10 +500,18 @@ export function useConversations() {
     backupHistory: (): Promise<string | null> => window.api.app.backupHistory(),
     remove: (id: string, options: DeleteOptions = {}) => {
       forgetView(id)
+      const ids = [
+        id,
+        ...(options.children === 'delete' ? descendants(state.list, id).map((c) => c.id) : [])
+      ]
+      setRemoving((current) => new Set([...current, ...ids]))
       window.api.conversations
         .delete(id, options)
         .then(async (list) => showView(await window.api.conversations.view(list.activeId)))
         .catch(fail)
+        .finally(() =>
+          setRemoving((current) => new Set([...current].filter((c) => !ids.includes(c))))
+        )
     }
   }
 }
