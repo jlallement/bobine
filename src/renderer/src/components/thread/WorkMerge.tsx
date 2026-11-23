@@ -6,6 +6,8 @@ import { childState } from '@shared/children'
 import {
   mergeActive,
   mergeSummary,
+  type ChildrenMerge,
+  type ChildrenMergePlan,
   type ChildrenMergeRow,
   type MergeCandidate
 } from '@shared/children-merge'
@@ -18,6 +20,7 @@ import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard } from '../panel/MainDirtyCard'
 import { FileStats, type SubtasksInfo } from './Subtasks'
 import {
+  planReadAfter,
   useChildrenMerge,
   type ChildrenMergeActions,
   type ChildrenMergeState
@@ -201,8 +204,9 @@ export function WorkMergeBox({
       </div>
     )
   }
-  // Conflit encore là (la branche le dit) : reprise, abandon, ou le voir.
-  if (merge && row?.state === 'conflict' && candidate?.state === 'conflict') {
+  // Conflit encore là (la branche le dit, lue après l'arrêt de la fusion) : reprise, abandon, ou le
+  // voir.
+  if (merge && row && conflictStays(row, candidate, state.plan, merge)) {
     return (
       <div className="work-merge-box err" data-testid="work-merge" data-status="conflict">
         <div className="work-merge-row">
@@ -393,4 +397,14 @@ function MergeOutcome({
       ))}
     </div>
   )
+}
+
+/** Le conflit de ce travail reste : sa branche le dit encore, lue après l'arrêt de la fusion. */
+function conflictStays(
+  row: ChildrenMergeRow,
+  candidate: MergeCandidate | undefined,
+  plan: ChildrenMergePlan | undefined,
+  merge: ChildrenMerge
+): boolean {
+  return row.state === 'conflict' && candidate?.state === 'conflict' && planReadAfter(plan, merge)
 }

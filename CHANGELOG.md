@@ -29,6 +29,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Les boutons d’un travail qui écrit dans sa branche arrivent en une fois, à leur place, quand il
   a fini : **Fusionner dans main** ne s’ajoute plus en tête un instant après les autres, et ne
   fait plus glisser **Voir les modifications** ou **Ouvrir sa conversation** sous le pointeur.
+- Fusion arrêtée sur un conflit qui reste : **Réessayer**, **Abandonner** et **Voir le conflit**
+  n’apparaissent plus un instant pour disparaître aussitôt ; ils attendent que la branche ait été
+  relue après l’arrêt, puis restent.
 
 ## 1.0.0-rc.3 — 21 novembre 2026
 

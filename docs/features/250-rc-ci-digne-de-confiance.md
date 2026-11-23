@@ -388,3 +388,28 @@ Dependabot comme les autres.
   (18 tâches), codes de sortie 0, aucun « clic manqué » ; captures regardées (`264-travail-ecrit`,
   clair et sombre : pied inchangé).
   Sous Linux : rien de joué (Docker arrêté) ; la preuve reste à faire sur le job de GitHub.
+
+- 2026-11-23 — `travaux-groupe` clair rouge sur le job macOS (45180281395, écran 1920 × 1080),
+  seul échec bloquant sur 230 : « conflit qui reste : dit dans la carte, Réessayer, Abandonner,
+  Voir le conflit ; rien d’autre fusionné ». L'essai avait vu « Réessayer » (`waitFor`), puis,
+  quelques millisecondes plus tard, ni « Abandonner » ni « Voir le conflit ». Capture : résultat
+  « Fusion arrêtée : 1 travail fusionné… » (statut `conflict`, mais sans la phrase du conflit),
+  bouton « Fusionner le travail prêt dans main » grisé, ligne « Notes de version » avec les
+  chiffres de sa dernière réponse (README.md +7 −1) et non ceux de sa branche. Pas de « clic
+  manqué ». Branche `fix/travaux-groupe-conflit`, partie de `main`. Le pied de la carte de
+  travail qui écrit (`actionsShown`, `planRead`, fix/clic-travaux-groupe) n'y est pour rien :
+  c'est le pied de la carte de groupe (`SubtasksMergeFooter`), qui ne l'utilise pas.
+
+  | Cause | Correctif | Preuve |
+  |---|---|---|
+  | Défaut de l'app. Le plan montré était celui d'une lecture faite **pendant** la fusion, quand « Notes de version » résolvait son conflit (`running` : rien de lu sur sa branche, d'où les chiffres de sa réponse). Deux défauts se cumulent. (1) Le temps que l'état courant soit lu, la carte montre le « dernier plan lu » (`latest`) : celui de la lecture **arrivée** la dernière, pas de la plus récente ; les lectures tournent en parallèle (git, sans file) et finissent dans le désordre. Relevé sur le Mac (relevé temporaire du magasin et du pied, retiré) : la lecture lancée sur `running:merged,conflict` aboutit après celle de `conflict:merged,conflict`. (2) « Réessayer » se fiait à n'importe quel plan qui disait `conflict` pour ce travail, même lu pendant la fusion (avant qu'il ne résolve) : la fusion finie en conflit, la carte attendait sa lecture et montrait « Réessayer » d'après une lecture d'avant ; puis une lecture plus ancienne, lancée quand le travail résolvait, arrivait et la remplaçait (`running`) : la reprise disparaissait jusqu'à la lecture de l'état courant. Relevé sur le Mac aussi : pendant ~200 ms après l'arrivée du statut `conflict`, pied montré d'après un plan où le travail est `running`. L'essai n'était pas trop pressé : il attendait un état réel de l'écran, que l'app retirait ensuite. | `merge-plan-store` : chaque lecture a son numéro de lancement ; le plan montré en attendant n'est remplacé que par une lecture lancée plus tard (`latest` monotone). `planReadAfter` (`SubtasksMerge`) : un plan lu pendant cette fusion (`running` avec son `runId`) ne dit pas le conflit qui reste ; `conflictLeft` (pied de la carte de groupe et « Sous-tâches ») et la carte d'un travail qui écrit (`WorkMerge`) ne proposent Réessayer, Abandonner et Voir le conflit que d'après un plan lu après l'arrêt. Ils arrivent une fois, et restent : les plans lus ensuite sont plus récents. Essai e2e inchangé. | `merge-plan-store.test.ts` « une lecture plus ancienne qui finit après une plus récente… » ; `SubtasksMerge.test.tsx` « arrêtée sur un conflit, branches lues pendant la fusion… » ; `WorkGroup.test.tsx` « conflit, branches lues pendant la fusion… » : les 3 rouges sans le correctif (plan ancien rendu ; « Réessayer » montré), verts avec. |
+
+  Preuve sur le Mac : `./scripts/verify` vert (5679 essais, 3 sautés) ; suites touchées
+  (`--changed` : `filles-tech-lead`, `commit-redige`, `filles-fusion`, `travaux-groupe`), clair et
+  sombre, sous le verrou commun : 8 tâches vertes, code de sortie 0, aucun « clic manqué » ;
+  captures regardées (`264-groupe-conflit`, clair et sombre : « Fusion arrêtée sur « Page d’aide » :
+  il reste des conflits dans carnet.txt », Réessayer, Abandonner, Voir le conflit). Un passage
+  instrumenté avant le correctif (relevé retiré) pour l'ordre des lectures. Le rouge de la CI
+  n'a pas été reproduit tel quel en local (1 passage) : la cause est établie par la capture de la
+  CI et le relevé local de l'ordre des lectures, le correctif par les 3 essais unitaires. Suite
+  complète et job GitHub non joués.
