@@ -30,11 +30,13 @@ export async function rulesSuite(scheme) {
         // alors la ligne passée sous le pointeur).
         await ui.ev(`(() => {
           window.__sides = []
-          const t0 = performance.now()
+          window.__sidesDone = false
+          // Jusqu'à ce que l'essai ait tout vu, pas une durée : sur le runner macOS, le clic (visée
+          // comprise) prenait plus que les 1,5 s d'avant, et rien n'était relevé (fiche 250).
           const step = () => {
             const side = document.querySelector('[data-testid=session-settings-content]')?.dataset.side
             if (side && window.__sides.at(-1) !== side) window.__sides.push(side)
-            if (performance.now() - t0 < 1500) requestAnimationFrame(step)
+            if (!window.__sidesDone) requestAnimationFrame(step)
           }
           requestAnimationFrame(step)
           return true
@@ -42,7 +44,10 @@ export async function rulesSuite(scheme) {
         await ui.click(ui.$('session-settings'))
         await ui.waitFor(`${items}.length === 3`)
         await new Promise((r) => setTimeout(r, 300))
-        const sides = await ui.ev('window.__sides')
+        // Arrêt à l'image suivante : le relevé y passe une dernière fois avant.
+        const sides = await ui.ev(
+          `new Promise((r) => requestAnimationFrame(() => r(((window.__sidesDone = true), window.__sides))))`
+        )
         check(sides.length === 1, `menu ouvert d’emblée à sa place (côtés : ${sides.join(' → ')})`)
         const listed = await ui.ev(`${items}.map((i) => i.innerText.replace(/\\s+/g, ' '))`)
         check(
