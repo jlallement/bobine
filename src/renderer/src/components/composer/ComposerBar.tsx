@@ -101,13 +101,22 @@ export function ComposerBar(props: Props) {
   )
   return (
     <ComposerFocus.Provider value={props.onFocusInput}>
-      <div className="composer-bar" ref={bar} data-fold={fold} data-testid="composer-bar">
+      <div
+        className="composer-bar"
+        ref={bar}
+        data-fold={fold}
+        // Sans capture d'écran, 📎 reste un bouton simple : les réglages gardent leur bouton.
+        {...(props.onCaptureScreen ? {} : { 'data-no-capture': '' })}
+        data-testid="composer-bar"
+      >
         <AttachButton
           folded={fold >= 1}
           disabled={props.blocked}
           onPickFiles={props.onPickFiles}
           onCaptureScreen={props.onCaptureScreen}
-          {...(fold >= OPTIONS_FOLD ? { extra: sessionSettings(true) } : {})}
+          {...(fold >= OPTIONS_FOLD && props.onCaptureScreen
+            ? { extra: sessionSettings(true) }
+            : {})}
         />
         {props.modeControl && !props.hideMode ? (
           <ModeChip

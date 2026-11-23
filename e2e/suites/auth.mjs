@@ -4,7 +4,9 @@ import { join } from 'node:path'
 import { KEYRING, L, Lpart, check, sleep, withApp } from '../lib.mjs'
 
 const KEY = 'cle-e2e-0123456789' // gitleaks:allow — fake value for tests
-const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '')`
+// Lignes du terminal mises bout à bout : une commande peut passer à la ligne n'importe où (le
+// nom de la machine, dans l'invite, varie d'un runner à l'autre).
+const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '').replaceAll('\\n', '')`
 
 /** Connexion aux agents (fiche 022) : clé d'API, connexion dans un terminal, licence. */
 export async function authSuite(scheme) {

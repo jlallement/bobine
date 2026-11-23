@@ -2889,7 +2889,7 @@ a.btn {
 .composer-bar:not([data-fold='0']) .capture-chip,
 .composer-bar:is([data-fold='2'], [data-fold='3'], [data-fold='4'], [data-fold='5']) .usage-percent,
 .composer-bar:is([data-fold='3'], [data-fold='4'], [data-fold='5']) .mode-chip .chip-label,
-.composer-bar:is([data-fold='4'], [data-fold='5']) > .session-settings-slot {
+.composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5']) > .session-settings-slot {
   display: none;
 }
 
@@ -5835,17 +5835,20 @@ a.btn {
   flex-shrink: 0;
 }
 
-/* Marge intérieure du terminal (fiche 276, T14) : 12 px de côté, 8 px en haut et en bas. */
+/* Marge intérieure du terminal (fiche 276, T14) : 12 px à gauche, 8 px en haut et en bas ; 4 px
+   à droite (la barre de défilement d'xterm y est déjà). Largeur du texte inchangée (16 px en tout,
+   comme avant avec le cadre) : autant de colonnes, les lignes passent à la ligne au même endroit
+   (recette rc.4, `auth` sur macOS : une colonne de moins coupait la commande attendue). */
 .terminal-host {
   position: relative;
   flex: 1;
   min-height: 0;
-  padding: 8px 12px;
+  padding: 8px 4px 8px 12px;
 }
 
 .terminal-instance {
   position: absolute;
-  inset: 8px 12px;
+  inset: 8px 4px 8px 12px;
 }
 
 .btn.small {

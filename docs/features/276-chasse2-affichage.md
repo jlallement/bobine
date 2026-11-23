@@ -108,3 +108,22 @@ dernier message est **remis dans la saisie, sans être envoyé**.
     suite complète (`--changed` touche toutes les suites : `styles.css`) passe sur GitHub.
   - Captures après (e2e locales) : `scratchpad/apres-chasse2/`.
 
+- 2026-11-23 : régressions vues sur GitHub (run 45245467579, `rc4/candidat`), corrigées sur
+  `fix/regressions-rc4` :
+  - **composer (Linux)** : régression de l'app. Le niveau 4 faisait de 📎 un menu même sans
+    capture d'écran, contre le contrat de la fiche 145 (sans capture, 📎 reste « Joindre des
+    fichiers… »). Désormais les réglages de la session ne passent sous 📎 qu'avec la capture ;
+    sans elle, ils gardent leur bouton (`data-no-capture` sur la barre). `AttachButton.test.tsx`
+    rouge avant, vert après. Essai : réglages sous 📎 vérifiés seulement avec la capture.
+  - **roles-travail** : pas une régression de l'app. L'essai créait une fausse pastille « Profil
+    temporaire » pour manquer de place, en comptant qu'elle ne se raccourcit pas ; elle cède
+    désormais d'abord (T10, validé), donc le badge du rôle n'avait plus à se réduire. Le badge
+    se réduit toujours quand la place manque une fois la pastille réduite à sa fiole (mesure du
+    débordement inchangée). L'essai manque de place avec un élément de 260 px qui ne cède pas.
+  - **auth (macOS)** : lié à T14. La marge de 12 px à droite ôtait une colonne au terminal ; la
+    commande attendue passait à la ligne au milieu (« touch .mock-agent » / « -logged-in »,
+    endroit qui dépend du nom de la machine dans l'invite). Marge droite revenue à 4 px (largeur
+    du texte comme avant), et l'essai lit les lignes bout à bout.
+  - **browser-view (macOS, clair)** : indépendant (rien de touché à la vue du navigateur, sombre
+    vert) ; instable : molette envoyée à la page native, `scrollY` resté à 0 (même famille que le
+    défilement doux noté dans l'essai).

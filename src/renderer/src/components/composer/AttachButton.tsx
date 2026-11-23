@@ -21,7 +21,10 @@ export function AttachButton({
   disabled: boolean
   onPickFiles: () => void
   onCaptureScreen: (() => void) | undefined
-  /** Repliés eux aussi dans le menu de 📎, sous un trait (réglages de la session, fiche 276). */
+  /**
+   * Repliés eux aussi dans le menu de 📎, sous un trait (réglages de la session, fiche 276). Sans
+   * capture d'écran, 📎 reste un bouton simple (fiche 145) : rien n'y est replié.
+   */
   extra?: ReactNode
 }) {
   const { t } = useTranslation()
@@ -39,7 +42,7 @@ export function AttachButton({
       </button>
     </Tip>
   )
-  if ((folded && onCaptureScreen) || extra) {
+  if (folded && onCaptureScreen) {
     return (
       <>
         <Dropdown.Root modal={false}>
@@ -58,16 +61,14 @@ export function AttachButton({
               <Paperclip size={16} className="menu-icon" />
               <ItemText title={t('composer.attach.files')} />
             </Dropdown.Item>
-            {onCaptureScreen && (
-              <Dropdown.Item
-                className="menu-item"
-                onSelect={onCaptureScreen}
-                data-testid="attach-capture"
-              >
-                <Camera size={16} className="menu-icon" />
-                <ItemText title={t('composer.capture.item')} />
-              </Dropdown.Item>
-            )}
+            <Dropdown.Item
+              className="menu-item"
+              onSelect={onCaptureScreen}
+              data-testid="attach-capture"
+            >
+              <Camera size={16} className="menu-icon" />
+              <ItemText title={t('composer.capture.item')} />
+            </Dropdown.Item>
             {extra && (
               <>
                 <Dropdown.Separator className="menu-separator" />

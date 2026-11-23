@@ -381,10 +381,11 @@ export async function composerSuite(scheme) {
       check(
         !bar.othersCut &&
           bar.model >= 56 &&
-          (bar.modelCut ? bar.fold === 4 && !bar.settings : true),
+          (bar.modelCut ? bar.fold === 4 && (!bar.settings || !FEATURES.screenCapture) : true),
         `640 px : réglages de la session sous 📎 avant que le modèle (${Math.round(bar.model)} px${bar.modelCut ? ', tronqué' : ''}) et l’agent (${bar.agentIcon ? 'icône' : `${Math.round(bar.agent)} px`}) ne cèdent`
       )
-      if (bar.fold === 4) {
+      // Sans capture d'écran, 📎 reste un bouton simple : les réglages gardent leur bouton.
+      if (bar.fold === 4 && FEATURES.screenCapture) {
         await ui.click(ui.$('attach'))
         await ui.waitFor(`!!${ui.$('session-settings-item')}`)
         check(true, '📎 replié : « Réglages de la session » en sous-menu')

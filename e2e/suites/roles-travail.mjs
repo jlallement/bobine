@@ -374,14 +374,14 @@ async function mainRun(ui, turnLock) {
     `en-tête d'une fille à 800 px : pastille entière (${tight.compact ? 'icône' : 'texte'}), titre ${Math.round(tight.title)} px, rien ne déborde`
   )
   await ui.shot('roles-travail-7c-entete-800')
-  // Encore moins de place (la pastille « Profil temporaire », qui ne se raccourcit pas) : la
-  // pastille de la lecture seule se réduit à son icône, entière.
+  // Encore moins de place (un élément de 260 px qui ne cède pas ; la pastille « Profil
+  // temporaire » cède désormais d'abord, jusqu'à sa fiole, fiche 276) : la pastille de la lecture
+  // seule se réduit à son icône, entière.
   await ui.ev(`(() => {
-    const chip = document.createElement('span')
-    chip.className = 'temporary-chip no-drag'
-    chip.dataset.e2e = 'chip'
-    chip.textContent = ${JSON.stringify(L('settings.data.fresh.chip'))}
-    document.querySelector('.main-header .grow').after(chip)
+    const wall = document.createElement('span')
+    wall.dataset.e2e = 'chip'
+    wall.style.cssText = 'flex: 0 0 260px; height: 24px'
+    document.querySelector('.main-header .grow').after(wall)
   })()`)
   await ui.waitFor(`!!document.querySelector('[data-testid=role-title-badge][data-compact]')`, 5000)
   const squeezed = await ui.ev(header)
