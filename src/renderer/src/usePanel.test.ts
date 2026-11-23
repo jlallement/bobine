@@ -276,3 +276,47 @@ describe('ouverture d’office sur « Session » (fiche 166)', () => {
     expect(result.current).toMatchObject({ open: true, tab: 'browser' })
   })
 })
+
+describe('repli faute de place (fiche 173) : un appui fait ce que le bouton montre', () => {
+  // Barre latérale ouverte (largeur par défaut) : à 760 px, le panneau ne laisse plus 500 px.
+  const room = { eligible: false, sidebarOpen: true }
+  const resizeTo = (width: number) => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    fireEvent(window, new Event('resize'))
+  }
+  const savedOpen = () => (saved() as { open: boolean }).open
+
+  it('replié à 760 px : fermé dans l’état et dans le stockage ; rouvert seul à 1280 px', () => {
+    resizeTo(1280)
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session' }))
+    const { result, run } = setup({ autoOpen: room })
+    expect(result.current.open).toBe(true)
+    run(() => resizeTo(760))
+    // Ce qui est affiché, ce que le bouton montre et ce qui est mémorisé disent la même chose.
+    expect(result.current.open).toBe(false)
+    expect(savedOpen()).toBe(false)
+    run(() => resizeTo(640))
+    expect(result.current.open).toBe(false)
+    run(() => resizeTo(1280))
+    expect(result.current).toMatchObject({ open: true, tab: 'session' })
+    expect(savedOpen()).toBe(true)
+    // Un seul appui sur le bouton du panneau le ferme.
+    run(() => result.current.update({ open: !result.current.open }))
+    expect(result.current.open).toBe(false)
+    expect(savedOpen()).toBe(false)
+  })
+
+  it('replié : un seul appui le rouvre, même dans la fenêtre étroite, et il y reste', () => {
+    resizeTo(1280)
+    localStorage.setItem('bobine.panel', JSON.stringify({ open: true, tab: 'session' }))
+    const { result, run } = setup({ autoOpen: room })
+    run(() => resizeTo(760))
+    expect(result.current.open).toBe(false)
+    run(() => result.current.update({ open: !result.current.open }))
+    expect(result.current.open).toBe(true)
+    expect(savedOpen()).toBe(true)
+    // Élargie ensuite : rien n'est rejoué, le panneau ouvert à la main reste ouvert.
+    run(() => resizeTo(1280))
+    expect(result.current.open).toBe(true)
+  })
+})

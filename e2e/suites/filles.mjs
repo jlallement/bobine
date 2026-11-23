@@ -538,6 +538,24 @@ async function agentChildren(ui, main) {
     'deuxième start_child du tour : même carte, deux lignes, la première lancée sur place'
   )
   await ui.shot('filles-5b-deux-propositions')
+  // « Import CSV » a fini pendant que la mère attend la décision sur « Page d'aide » : sa réponse
+  // lui sera remise à la fin de la sienne (état `pending`). Il a répondu, la carte le dit et le
+  // compte, la précision en infobulle (maquette rc4, variante 1).
+  const csvRow = `[...document.querySelectorAll('[data-testid=work-row]')].find((r) => r.innerText.includes('Import CSV'))`
+  await ui.waitFor(`${csvRow}?.dataset.state === 'pending'`, 30000)
+  const csvState = await ui.ev(
+    `(() => { const s = ${csvRow}.querySelector('[data-testid=work-row-state]'); return { text: s.innerText.trim(), title: s.title } })()`
+  )
+  const pendingStart = L('workCard.pendingLine', { agent: '\u0001' })
+    .split('\u0001')[0]
+    .slice(0, 20)
+  check(
+    csvState.text === L('workGroup.state.replied') &&
+      csvState.title.startsWith(pendingStart) &&
+      (await card()).includes(L('workGroup.count.done', { count: 1 })),
+    `travail fini, réponse remise à la fin de celle de l’agent : « ${csvState.text} », compté, précision en infobulle`
+  )
+  await ui.shot('filles-5c-travail-fini-en-attente')
   await approve('Page d’aide')
   await ui.waitFor(`document.querySelectorAll('[data-testid=work-row]').length === 2`, 30000)
   check(

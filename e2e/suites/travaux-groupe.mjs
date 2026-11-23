@@ -223,9 +223,17 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   )
   // Le conseil ne promet pas d'avis à venir : rien ne réveille l'agent pour le donner (D9).
   const said = await ui.ev(`${ui.$('subtasks-merge-advice')}?.innerText`)
+  const quoted = (title) => L('childrenMerge.quote', { title })
+  const adviceText =
+    L('workGroup.merge.advice.recommended', { titles: quoted('Tri des articles par rayon') }) +
+    L('workGroup.merge.advice.separator') +
+    L('workGroup.merge.advice.notReady', {
+      count: 1,
+      titles: quoted('Tests de la sauvegarde locale')
+    }) +
+    L('workGroup.merge.advice.end')
   check(
-    spaces(said) ===
-      'L’agent recommande « Tri des articles par rayon » ; « Tests de la sauvegarde locale » n’est pas encore recommandé.',
+    spaces(said) === spaces(adviceText),
     `conseil : « … n’est pas encore recommandé », sans « attend son avis » (${said})`
   )
   await footInside(ui, group, 'largeur normale')

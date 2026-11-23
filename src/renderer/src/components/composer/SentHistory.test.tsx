@@ -258,6 +258,13 @@ describe('historique de la saisie (fiche 227)', () => {
     expect(screen.queryByTestId('history-hint')).toBeNull()
     fireEvent.focus(screen.getByTestId('composer-input'))
     expect(screen.getByTestId('history-hint').textContent).toContain('Messages précédents')
+    // Saisie étroite (maquette rc4) : la touche seule ; son nom reste en infobulle et pour les
+    // lecteurs d'écran (le rappel n'est plus caché de l'arbre d'accessibilité).
+    const hint = screen.getByTestId('history-hint')
+    expect(hint.getAttribute('title')).toBe('Messages précédents')
+    expect(hint.closest('[aria-hidden="true"]')).toBeNull()
+    // L'appuyer ne retire pas le focus à la saisie (le rappel ne vit qu'avec lui).
+    expect(fireEvent.mouseDown(hint)).toBe(false)
     fireEvent.change(screen.getByTestId('composer-input'), { target: { value: 'x' } })
     expect(screen.queryByTestId('history-hint')).toBeNull()
   })

@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, LoaderCircle, TriangleAlert } from 'lucide-react'
 import { refusedCue, refusedModel } from '@shared/model-refused'
+import { workToolText } from '@shared/tool-label'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
@@ -8,6 +9,7 @@ import { mergeActive } from '@shared/children-merge'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
 import { RoleAvatar, useRoleStyle } from '../roles/RoleAvatar'
+import type { ChildTool } from '../roles/RoleWork'
 import { FileStats, MergeOrVerdict, rowMerge, type SubtasksInfo } from './Subtasks'
 import type { ChildrenMergeState } from './SubtasksMerge'
 import { AGENT_BADGE, AVATAR, elapsedText, useNow, WorkCard, WorkReviews } from './WorkCard'
@@ -35,7 +37,9 @@ export interface RowWork {
 
 const STATE_KEYS = {
   running: 'workGroup.state.running',
-  pending: 'workGroup.state.running',
+  // Fini, sa réponse remise à la fin de celle de l'agent (maquette rc4, variante 1) : pour
+  // l'utilisateur il a répondu, comme le disent la barre latérale et le panneau.
+  pending: 'workGroup.state.replied',
   waiting: 'workGroup.state.waiting',
   replied: 'workGroup.state.replied',
   silent: 'workGroup.state.silent',
@@ -57,7 +61,7 @@ export function LaunchedRow({
   info: SubtasksInfo | undefined
   merging: ChildrenMergeState
   verdict: ChildVerdict | undefined
-  activity: string | undefined
+  activity: ChildTool | undefined
 }) {
   const { t } = useTranslation()
   const { card, child, state } = work
@@ -113,7 +117,16 @@ export function LaunchedRow({
             </span>
           </span>
         </button>
-        <span className="work-group-state" data-testid="work-row-state" data-state={state}>
+        <span
+          className="work-group-state"
+          data-testid="work-row-state"
+          data-state={state}
+          title={
+            state === 'pending' && !mergeState
+              ? t('workCard.pendingLine', { agent: info?.agentLabel ?? t('workCard.mainAgent') })
+              : undefined
+          }
+        >
           {mergeState || (verdict && state === 'replied') ? (
             // La fusion (« fusionné »), sinon la recommandation, remplacent « a répondu ».
             <MergeOrVerdict mergeState={mergeState} cleaned={false} verdict={verdict} works />
@@ -183,7 +196,7 @@ function RowMeta({
   child: ConversationSummary | undefined
   state: WorkState
   report: ReturnType<typeof currentReport>
-  activity: string | undefined
+  activity: ChildTool | undefined
   /** Sa branche contre sa base (fiche 264) ; `null` : rien à dire ; absent : sa dernière réponse. */
   changes: WorkChanges | null | undefined
 }) {
@@ -192,7 +205,14 @@ function RowMeta({
   const role = card.role?.label
   const parts: ReactNode[] = role ? [role] : []
   if (state === 'running') {
-    parts.push(activity ?? t('workCard.working'), elapsedText(now - exchangeStart(card)))
+    parts.push(
+      activity ? (
+        <RowActivity activity={activity} workspace={child?.workspace} />
+      ) : (
+        t('workCard.working')
+      ),
+      elapsedText(now - exchangeStart(card))
+    )
     return <Dotted parts={parts} />
   }
   if (card.role?.readOnly) {
@@ -215,4 +235,24 @@ function RowMeta({
   }
   if (changes?.dirty) parts.push(t('workCard.dirty', { count: changes.dirty }))
   return <Dotted parts={parts} />
+}
+
+/**
+ * Ce que fait le travail (maquette rc4) : ses chemins relatifs à son dossier, le chemin complet en
+ * infobulle.
+ */
+function RowActivity({
+  activity,
+  workspace
+}: {
+  activity: ChildTool
+  workspace: string | undefined
+}) {
+  const shown =
+    'text' in activity ? { text: activity.text } : workToolText(activity.tool, workspace)
+  return (
+    <span className="work-group-activity" title={shown.detail} data-testid="work-row-activity">
+      {shown.text}
+    </span>
+  )
 }

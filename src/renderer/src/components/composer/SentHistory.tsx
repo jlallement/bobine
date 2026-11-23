@@ -44,13 +44,24 @@ export function SentHistoryPill({
   )
 }
 
-/** « ↑ Messages précédents », à droite dans la saisie vide (il n'y a rien à recouvrir). */
+/**
+ * « ↑ Messages précédents », à droite dans la première ligne de la saisie vide, qui lui réserve sa
+ * place (maquette rc4, variante 1). Saisie étroite : la touche seule, son nom en infobulle et pour
+ * les lecteurs d'écran (`sent-history.css`). Appuyer dessus ne retire pas le focus à la saisie :
+ * le rappel, qui ne vit qu'avec lui, resterait affiché sans raison… puis disparaîtrait.
+ */
 export function SentHistoryHint() {
   const { t } = useTranslation()
+  const label = t('composer.history.hint')
   return (
-    <div className="sent-history-hint" aria-hidden="true" data-testid="history-hint">
-      <kbd>↑</kbd>
-      <span>{t('composer.history.hint')}</span>
+    <div
+      className="sent-history-hint"
+      title={label}
+      data-testid="history-hint"
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      <kbd aria-hidden="true">↑</kbd>
+      <span className="sent-history-hint-label">{label}</span>
     </div>
   )
 }
