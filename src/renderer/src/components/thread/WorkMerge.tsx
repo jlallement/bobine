@@ -45,6 +45,11 @@ export interface WorkMergeControl {
   row: ChildrenMergeRow | undefined
   /** Une fusion qui le touche avance. */
   active: boolean
+  /**
+   * Ses branches ont été lues depuis que la carte en a besoin (fiche 250) : avant, le pied ne sait
+   * pas encore s'il proposera « Fusionner dans main », qui arriverait en tête de ses boutons.
+   */
+  read: boolean
   /** « Fusionner dans main » se propose : branche prête, rien ne bloque, aucune fusion en cours. */
   startable: boolean
   busy: boolean
@@ -85,6 +90,10 @@ export function useWorkMerge(
   ])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Lu une fois pour cet état du travail, le reste : un autre travail qui change d'état fait relire
+  // les branches, et les boutons déjà montrés ne disparaissent pas le temps de cette lecture.
+  const [read, setRead] = useState(false)
+  if (read !== (on && (read || state.read))) setRead(on && (read || state.read))
   if (!on || !motherId || !actions) return undefined
   const candidate = state.plan?.children.find((c) => c.id === card.childId)
   const row = state.merge?.rows.find((r) => r.childId === card.childId)
@@ -108,6 +117,7 @@ export function useWorkMerge(
     candidate,
     row,
     active,
+    read,
     startable,
     busy,
     error,
