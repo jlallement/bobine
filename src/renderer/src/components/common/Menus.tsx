@@ -450,7 +450,8 @@ export function SessionSettingsMenu({
   onLoadMcp,
   onLoadAppTools,
   onOpenMcpSettings,
-  onRestartAgent
+  onRestartAgent,
+  asSub = false
 }: {
   controls: SessionControl[]
   agentLabel: string
@@ -467,6 +468,8 @@ export function SessionSettingsMenu({
   onOpenMcpSettings?: (tab?: string) => void
   /** Redémarre l'agent : ses outils suivent alors les réglages (fiche 109). */
   onRestartAgent?: () => void
+  /** Sous-menu d'un autre menu (celui de 📎, saisie étroite) plutôt que son propre bouton. */
+  asSub?: boolean
 }) {
   const { t } = useTranslation()
   const [rules, setRules] = useState<RuleFileView[] | 'loading' | 'error'>('loading')
@@ -501,51 +504,164 @@ export function SessionSettingsMenu({
     else update()
   }
   useMcpStatuses()
+  const onOpenChange = (next: boolean) => {
+    const ticket = ++opening.current
+    clearTimeout(fallback.current)
+    if (!next) {
+      shown.current = false
+      for (const update of late.current.splice(0)) update()
+      return setOpen(false)
+    }
+    // Affiché une fois les règles et les serveurs MCP lus (au plus 300 ms), à sa taille : un
+    // menu qui grandit après coup passe un instant sur le bouton puis saute de l'autre côté
+    // de la zone de saisie, et le relâché du clic qui l'a ouvert choisissait alors la ligne
+    // qui se trouvait sous le pointeur. Passé 300 ms, il s'affiche tel quel (« … ») et ne
+    // change plus de taille jusqu'à sa fermeture.
+    const show = () => {
+      if (opening.current !== ticket || !mounted.current) return
+      clearTimeout(fallback.current)
+      shown.current = true
+      setOpen(true)
+    }
+    void Promise.allSettled([
+      onLoadRules?.().then(
+        (rules) => whenStill(() => setRules(rules)),
+        () => whenStill(() => setRules('error'))
+      ),
+      onLoadMcp?.().then(
+        (view) => {
+          whenStill(() => setMcp(view ?? null))
+          if (view) void testMcpServers(view.profileId, view.servers, true)
+        },
+        () => whenStill(() => setMcp(null))
+      ),
+      onLoadAppTools?.().then(
+        (tools) => whenStill(() => setAppTools(tools)),
+        () => whenStill(() => setAppTools(null))
+      )
+    ]).then(show)
+    fallback.current = setTimeout(show, 300)
+  }
+  const body = (
+    <>
+      <div className="menu-label">{t('sessionSettings.title', { agent: agentLabel })}</div>
+      {controls.length === 0 && (
+        <div className="menu-item" aria-disabled>
+          <ItemText title={t('sessionSettings.none')} />
+        </div>
+      )}
+      {controls.map((control) =>
+        control.type === 'boolean' ? (
+          <Dropdown.CheckboxItem
+            key={control.id}
+            className="menu-item"
+            checked={control.currentValue === true}
+            onCheckedChange={(checked) => onSetControl(control.id, checked)}
+            onSelect={(e) => e.preventDefault()}
+            data-testid={`control-${control.id}`}
+          >
+            <ItemText title={controlName(control)} description={control.description} />
+            <Dropdown.ItemIndicator>
+              <Check size={16} className="menu-check" />
+            </Dropdown.ItemIndicator>
+          </Dropdown.CheckboxItem>
+        ) : (
+          <Dropdown.Sub key={control.id}>
+            <Dropdown.SubTrigger className="menu-item" data-testid={`control-${control.id}`}>
+              <ItemText title={controlName(control)} />
+              <span className="menu-value">{valueLabel(control)}</span>
+              <ChevronRight size={15} className="menu-icon" />
+            </Dropdown.SubTrigger>
+            <Dropdown.Portal>
+              <Dropdown.SubContent className="menu" sideOffset={6} collisionPadding={12}>
+                <SelectOptions control={control} onChange={(v) => onSetControl(control.id, v)} />
+              </Dropdown.SubContent>
+            </Dropdown.Portal>
+          </Dropdown.Sub>
+        )
+      )}
+      {onLoadMcp && (
+        <SessionMcpSection
+          mcp={mcp}
+          appTools={appTools}
+          onOpen={onOpenMcpSettings}
+          onRestart={onRestartAgent}
+        />
+      )}
+      {onLoadRules && (
+        <>
+          <Dropdown.Separator className="menu-separator" />
+          <div className="menu-label">{t('rules.title')}</div>
+          {rules === 'loading' && (
+            <div className="menu-item" aria-disabled>
+              <ItemText title="…" />
+            </div>
+          )}
+          {rules === 'error' && (
+            <div className="menu-item" aria-disabled>
+              <ItemText title={t('rules.unreadable')} />
+            </div>
+          )}
+          {Array.isArray(rules) && rules.length === 0 && (
+            <div className="menu-item" aria-disabled data-testid="rules-none">
+              <ItemText title={t('rules.none')} description={t('rules.noneHint')} />
+            </div>
+          )}
+          {Array.isArray(rules) &&
+            rules.map((rule) => (
+              <Dropdown.Item
+                key={rule.path}
+                className="menu-item"
+                onSelect={() => onOpenRule?.(rule)}
+                title={rule.path}
+                data-testid="rule-item"
+              >
+                {rule.url ? (
+                  <Globe size={15} className="menu-icon" />
+                ) : (
+                  <FileText size={15} className="menu-icon" />
+                )}
+                <span className="menu-text">
+                  <div className="menu-title rule-label">{rule.label}</div>
+                  <div className="menu-desc">{ruleScope(rule)}</div>
+                </span>
+              </Dropdown.Item>
+            ))}
+        </>
+      )}
+    </>
+  )
+  // Saisie étroite (fiche 276, T10) : dans le menu de 📎, en sous-menu, avant que le modèle ne
+  // soit coupé ; mêmes éléments, mêmes lectures à l'ouverture.
+  if (asSub) {
+    return (
+      <Dropdown.Sub open={open} onOpenChange={onOpenChange}>
+        <Dropdown.SubTrigger
+          className="menu-item"
+          disabled={disabled}
+          data-testid="session-settings-item"
+        >
+          <SlidersHorizontal size={16} className="menu-icon" />
+          <ItemText title={t('sessionSettings.label')} />
+          <ChevronRight size={15} className="menu-icon" />
+        </Dropdown.SubTrigger>
+        <Dropdown.Portal>
+          <Dropdown.SubContent
+            className="menu"
+            sideOffset={6}
+            collisionPadding={12}
+            data-testid="session-settings-content"
+          >
+            {body}
+          </Dropdown.SubContent>
+        </Dropdown.Portal>
+      </Dropdown.Sub>
+    )
+  }
   return (
     // Non modal : ses éléments ouvrent les Réglages ou un document ; un menu modal laisserait la
     // page sans clic possible une fois la fenêtre refermée.
-    <Dropdown.Root
-      modal={false}
-      open={open}
-      onOpenChange={(next) => {
-        const ticket = ++opening.current
-        clearTimeout(fallback.current)
-        if (!next) {
-          shown.current = false
-          for (const update of late.current.splice(0)) update()
-          return setOpen(false)
-        }
-        // Affiché une fois les règles et les serveurs MCP lus (au plus 300 ms), à sa taille : un
-        // menu qui grandit après coup passe un instant sur le bouton puis saute de l'autre côté
-        // de la zone de saisie, et le relâché du clic qui l'a ouvert choisissait alors la ligne
-        // qui se trouvait sous le pointeur. Passé 300 ms, il s'affiche tel quel (« … ») et ne
-        // change plus de taille jusqu'à sa fermeture.
-        const show = () => {
-          if (opening.current !== ticket || !mounted.current) return
-          clearTimeout(fallback.current)
-          shown.current = true
-          setOpen(true)
-        }
-        void Promise.allSettled([
-          onLoadRules?.().then(
-            (rules) => whenStill(() => setRules(rules)),
-            () => whenStill(() => setRules('error'))
-          ),
-          onLoadMcp?.().then(
-            (view) => {
-              whenStill(() => setMcp(view ?? null))
-              if (view) void testMcpServers(view.profileId, view.servers, true)
-            },
-            () => whenStill(() => setMcp(null))
-          ),
-          onLoadAppTools?.().then(
-            (tools) => whenStill(() => setAppTools(tools)),
-            () => whenStill(() => setAppTools(null))
-          )
-        ]).then(show)
-        fallback.current = setTimeout(show, 300)
-      }}
-    >
+    <Dropdown.Root modal={false} open={open} onOpenChange={onOpenChange}>
       <Tip label={t('sessionSettings.label')}>
         <Dropdown.Trigger
           className="icon-button"
@@ -555,93 +671,7 @@ export function SessionSettingsMenu({
           <SlidersHorizontal size={17} />
         </Dropdown.Trigger>
       </Tip>
-      <MenuContent testId="session-settings-content">
-        <div className="menu-label">{t('sessionSettings.title', { agent: agentLabel })}</div>
-        {controls.length === 0 && (
-          <div className="menu-item" aria-disabled>
-            <ItemText title={t('sessionSettings.none')} />
-          </div>
-        )}
-        {controls.map((control) =>
-          control.type === 'boolean' ? (
-            <Dropdown.CheckboxItem
-              key={control.id}
-              className="menu-item"
-              checked={control.currentValue === true}
-              onCheckedChange={(checked) => onSetControl(control.id, checked)}
-              onSelect={(e) => e.preventDefault()}
-              data-testid={`control-${control.id}`}
-            >
-              <ItemText title={controlName(control)} description={control.description} />
-              <Dropdown.ItemIndicator>
-                <Check size={16} className="menu-check" />
-              </Dropdown.ItemIndicator>
-            </Dropdown.CheckboxItem>
-          ) : (
-            <Dropdown.Sub key={control.id}>
-              <Dropdown.SubTrigger className="menu-item" data-testid={`control-${control.id}`}>
-                <ItemText title={controlName(control)} />
-                <span className="menu-value">{valueLabel(control)}</span>
-                <ChevronRight size={15} className="menu-icon" />
-              </Dropdown.SubTrigger>
-              <Dropdown.Portal>
-                <Dropdown.SubContent className="menu" sideOffset={6} collisionPadding={12}>
-                  <SelectOptions control={control} onChange={(v) => onSetControl(control.id, v)} />
-                </Dropdown.SubContent>
-              </Dropdown.Portal>
-            </Dropdown.Sub>
-          )
-        )}
-        {onLoadMcp && (
-          <SessionMcpSection
-            mcp={mcp}
-            appTools={appTools}
-            onOpen={onOpenMcpSettings}
-            onRestart={onRestartAgent}
-          />
-        )}
-        {onLoadRules && (
-          <>
-            <Dropdown.Separator className="menu-separator" />
-            <div className="menu-label">{t('rules.title')}</div>
-            {rules === 'loading' && (
-              <div className="menu-item" aria-disabled>
-                <ItemText title="…" />
-              </div>
-            )}
-            {rules === 'error' && (
-              <div className="menu-item" aria-disabled>
-                <ItemText title={t('rules.unreadable')} />
-              </div>
-            )}
-            {Array.isArray(rules) && rules.length === 0 && (
-              <div className="menu-item" aria-disabled data-testid="rules-none">
-                <ItemText title={t('rules.none')} description={t('rules.noneHint')} />
-              </div>
-            )}
-            {Array.isArray(rules) &&
-              rules.map((rule) => (
-                <Dropdown.Item
-                  key={rule.path}
-                  className="menu-item"
-                  onSelect={() => onOpenRule?.(rule)}
-                  title={rule.path}
-                  data-testid="rule-item"
-                >
-                  {rule.url ? (
-                    <Globe size={15} className="menu-icon" />
-                  ) : (
-                    <FileText size={15} className="menu-icon" />
-                  )}
-                  <span className="menu-text">
-                    <div className="menu-title rule-label">{rule.label}</div>
-                    <div className="menu-desc">{ruleScope(rule)}</div>
-                  </span>
-                </Dropdown.Item>
-              ))}
-          </>
-        )}
-      </MenuContent>
+      <MenuContent testId="session-settings-content">{body}</MenuContent>
     </Dropdown.Root>
   )
 }

@@ -45,7 +45,8 @@ export function WorkingIndicator({
   conversationId,
   items,
   workspace,
-  background = false
+  background = false,
+  silent = false
 }: {
   conversationId: string
   items: readonly TranscriptItem[]
@@ -53,6 +54,12 @@ export function WorkingIndicator({
   workspace?: string
   /** Tour fini, l'agent travaille encore (sous-agent en arrière-plan, réponse hors tour). */
   background?: boolean
+  /**
+   * Bandeau de silence (fiche 194) : l'agent n'a rien envoyé depuis longtemps. Plus de verbe ni de
+   * bobine qui tourne, qui contrediraient le bandeau : « Réponse en cours » et la durée du tour
+   * (fiche 276, T13). Le verbe revient dès que l'agent reparle.
+   */
+  silent?: boolean
 }) {
   // Recalculé quand le message de l'utilisateur change : le statut « occupé » arrive parfois avant
   // le message du nouveau tour, qui donnerait sinon le début du tour précédent (fiche 095).
@@ -83,17 +90,20 @@ export function WorkingIndicator({
   const waiting = activity.kind === 'permission' || activity.kind === 'question'
   // L'étape en plus petit, seulement si elle n'est pas le tour entier ; après le tour, le temps
   // depuis l'envoi seul : celui de l'étape ne dirait rien (fiche 255).
-  const step = !background && stepAt - start >= 1000 ? elapsedLabel(now - stepAt) : undefined
+  const step =
+    !background && !silent && stepAt - start >= 1000 ? elapsedLabel(now - stepAt) : undefined
   return (
     <div
       className={`working${waiting ? ' waiting' : ''}`}
       role="status"
       aria-live="polite"
       data-testid="working"
-      data-activity={activity.kind}
+      data-activity={silent ? 'silent' : activity.kind}
     >
-      <SpoolMark size={16} motion={waiting ? 'none' : 'loop'} className="working-icon" />
-      <span className="working-label">{activityLabel(activity)}</span>
+      <SpoolMark size={16} motion={waiting || silent ? 'none' : 'loop'} className="working-icon" />
+      <span className="working-label">
+        {silent ? t('activity.silent') : activityLabel(activity)}
+      </span>
       <span
         className="working-time"
         title={t('activity.turnStarted', { elapsed: elapsedLabel(now - start) })}

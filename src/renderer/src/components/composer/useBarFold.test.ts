@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_FOLD, WRAPPED, fitFold, squeeze } from './useBarFold'
+import { MAX_FOLD, OPTIONS_FOLD, WRAPPED, fitFold, squeeze } from './useBarFold'
 
 describe('repli de la barre de saisie (fiche 092)', () => {
   it('premier niveau auquel la barre tient', () => {
@@ -17,7 +17,13 @@ describe('repli de la barre de saisie (fiche 092)', () => {
       tried.push(level)
       return false
     })
-    expect(tried).toEqual([0, 1, 2])
+    expect(tried).toEqual([0, 1, 2, 3])
+  })
+
+  it('les réglages de la session passent sous 📎 avant que le modèle ne cède (fiche 276, T10)', () => {
+    // Le modèle ne se tronque qu'au dernier niveau (`squeeze`), celui des réglages repliés.
+    expect(OPTIONS_FOLD).toBe(MAX_FOLD)
+    expect(fitFold((level) => level >= OPTIONS_FOLD)).toBe(OPTIONS_FOLD)
   })
 
   const agent = { width: 120, label: 82 }

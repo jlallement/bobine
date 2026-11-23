@@ -9,9 +9,12 @@
  * quand la dernière est arrivée. Le silence se compte au plus tôt depuis le début du tour.
  */
 import type { AgentSnapshot, AgentUnreachableView } from '@shared/agent'
+import type { NetworkSettings } from '@shared/providers'
 import { maskUrlCredentials } from '@shared/url-credentials'
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
 import { log } from '../log'
+import type { EnvChanges } from '../agent-config/api-keys'
+import { agentNetwork, sameNetwork, type NetworkSource } from '../agent-config/network-env'
 import { formatDuration } from './acp-log'
 import type { RetryStatusSource } from './adapters'
 
@@ -53,6 +56,14 @@ export class TurnQuiet {
   readonly activity = new AgentActivity()
   /** Proxy de l'agent lancé (non masqué ; masqué dans `view`). */
   proxy: string | undefined
+  /**
+   * Réseau d'entreprise de l'agent lancé, et celui qu'il aurait s'il était relancé maintenant
+   * (fiche 276) : différents, les bandeaux disent de le relancer.
+   */
+  network: { launched: NetworkSettings; now: () => NetworkSettings } | undefined
+  private source: NetworkSource | undefined
+  /** Abonnement aux réglages, tenu seulement pendant qu'un bandeau est affiché. */
+  private unsubscribe: (() => void) | undefined
   private silentSince: number | undefined
   private unreachable: AgentUnreachableView | undefined
   private readonly retryStatus: RetryStatusSource | undefined
@@ -63,12 +74,44 @@ export class TurnQuiet {
     this.changed = options.changed
   }
 
-  view(): Pick<AgentSnapshot, 'silentSince' | 'unreachable' | 'proxy'> {
+  /**
+   * Agent lancé avec ces variables (clés et réseau compris) : son proxy pour la piste réseau, et
+   * son réseau d'entreprise pour savoir si les réglages ont changé depuis (fiche 276).
+   */
+  launch(profileEnv: Record<string, string>, changes: EnvChanges, source?: NetworkSource): void {
+    const launched = agentNetwork(process.env, profileEnv, changes)
+    this.proxy = launched.proxy
+    this.source = source
+    this.network = source && {
+      launched,
+      now: () => agentNetwork(process.env, profileEnv, source.env())
+    }
+  }
+
+  view(): Pick<AgentSnapshot, 'silentSince' | 'unreachable' | 'proxy' | 'networkStale'> {
     const shown = this.silentSince !== undefined || this.unreachable !== undefined
+    const stale = shown && !!this.network && !sameNetwork(this.network.launched, this.network.now())
     return {
       ...(this.silentSince !== undefined ? { silentSince: this.silentSince } : {}),
       ...(this.unreachable ? { unreachable: this.unreachable } : {}),
-      ...(shown && this.proxy ? { proxy: maskUrlCredentials(this.proxy) } : {})
+      ...(shown && this.proxy ? { proxy: maskUrlCredentials(this.proxy) } : {}),
+      ...(stale ? { networkStale: true as const } : {})
+    }
+  }
+
+  /** Réglages enregistrés : un bandeau affiché se redit (fiche 276). */
+  networkChanged(): void {
+    if (this.silentSince !== undefined || this.unreachable !== undefined) this.changed()
+  }
+
+  /** Bandeau affiché : écoute les réglages ; plus de bandeau : n'écoute plus. */
+  private follow(): void {
+    const shown = this.silentSince !== undefined || this.unreachable !== undefined
+    if (shown && !this.unsubscribe && this.source) {
+      this.unsubscribe = this.source.onChange(() => this.networkChanged())
+    } else if (!shown && this.unsubscribe) {
+      this.unsubscribe()
+      this.unsubscribe = undefined
     }
   }
 
@@ -83,12 +126,14 @@ export class TurnQuiet {
     // `null` (nouvelle tentative en cours) : le bandeau reste jusqu'à ce que l'agent avance.
     if (!state || JSON.stringify(state) === JSON.stringify(this.unreachable)) return
     this.unreachable = state
+    this.follow()
     this.changed()
   }
 
   setSilent(since: number | undefined): void {
     if (this.silentSince === since) return
     this.silentSince = since
+    this.follow()
     this.changed()
   }
 
@@ -96,12 +141,14 @@ export class TurnQuiet {
   calm(): void {
     if (this.silentSince === undefined && this.unreachable === undefined) return
     this.silentSince = this.unreachable = undefined
+    this.follow()
     this.changed()
   }
 
   /** Agent arrêté ou parti : tout oublier, sans réémettre (l'instantané suivant le dira). */
   clear(): void {
     this.silentSince = this.unreachable = undefined
+    this.follow()
   }
 }
 

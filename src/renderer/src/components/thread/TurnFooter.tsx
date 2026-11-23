@@ -6,6 +6,16 @@ import { TurnRetryBanner } from './TurnRetryBanner'
 import { WorkingIndicator } from './WorkingIndicator'
 import { hasWorkingFoot } from './TurnSummary'
 import { useMemo } from 'react'
+import type { ComposerInbox } from '../../useFileDrop'
+
+/**
+ * Dernier message de l'utilisateur, celui du tour en cours : remis dans la saisie quand l'agent est
+ * relancé (fiche 276) — la relance coupe le tour, rien ne le renvoie à sa place.
+ */
+export function lastUserText(items: readonly TranscriptItem[]): string | undefined {
+  const user = items.findLast((i) => i.kind === 'user' && !i.from && !i.compaction)
+  return user?.kind === 'user' && user.text.trim() ? user.text : undefined
+}
 
 /**
  * Fin du fil pendant un tour (sorti d'`App.tsx`, fiche 194) : le bandeau de reprise (fiche 142) à
@@ -14,6 +24,9 @@ import { useMemo } from 'react'
  * encore… · 32 s », fiche 261) ; l'indicateur ne le répète pas. Sans pied (aucune réponse), il reste.
  * Agent qui ne joint pas son modèle (fiche 275) : son bandeau à la place de l'indicateur et du
  * bandeau de silence, qu'il explique mieux.
+ * Bandeau de silence : l'indicateur ne dit plus de verbe (fiche 276, T13). Réglages réseau changés
+ * depuis le lancement : « Relancer l'agent », et le message du tour revient dans la saisie, sans
+ * partir (fiche 276, T4).
  */
 export function TurnFooter({
   snapshot,
@@ -22,7 +35,9 @@ export function TurnFooter({
   items,
   workspace,
   onRetry,
-  onStop
+  onStop,
+  onRestart,
+  inbox
 }: {
   snapshot: AgentSnapshot | null | undefined
   /** Tour fini, l'agent travaille encore (`ConversationSummary.backgroundWork`, fiche 255). */
@@ -32,6 +47,10 @@ export function TurnFooter({
   workspace: string | undefined
   onRetry: () => void
   onStop: () => void
+  /** Relance l'agent de la conversation (même session, fil gardé). */
+  onRestart?: () => void
+  /** Saisie où remettre le message du tour coupé par la relance. */
+  inbox?: ComposerInbox
 }) {
   const busy = snapshot?.status === 'busy'
   const background = !busy && afterTurn
@@ -48,6 +67,15 @@ export function TurnFooter({
           proxy: snapshot.proxy
         }
       : undefined
+  const networkStale = snapshot?.networkStale === true
+  const restart =
+    onRestart && conversationId
+      ? () => {
+          const text = lastUserText(items)
+          onRestart()
+          if (text) inbox?.prefill({ id: conversationId, text, attachments: [] })
+        }
+      : undefined
   return (
     <>
       {snapshot?.retry ? (
@@ -57,7 +85,9 @@ export function TurnFooter({
           unreachable={unreachable.view}
           agent={unreachable.agent}
           proxy={unreachable.proxy}
+          networkStale={networkStale}
           onStop={onStop}
+          {...(restart ? { onRestart: restart } : {})}
         />
       ) : (
         (busy || (background && !saidByFoot)) &&
@@ -67,12 +97,19 @@ export function TurnFooter({
             conversationId={conversationId}
             items={items}
             background={background}
+            silent={busy && snapshot.silentSince !== undefined}
             {...(workspace ? { workspace } : {})}
           />
         )
       )}
       {busy && !unreachable && snapshot.silentSince !== undefined && (
-        <SilenceBanner since={snapshot.silentSince} proxy={snapshot.proxy} onStop={onStop} />
+        <SilenceBanner
+          since={snapshot.silentSince}
+          proxy={snapshot.proxy}
+          networkStale={networkStale}
+          onStop={onStop}
+          {...(restart ? { onRestart: restart } : {})}
+        />
       )}
     </>
   )

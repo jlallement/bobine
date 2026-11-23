@@ -15,6 +15,22 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Proxy changé dans Réglages pendant qu’un agent ne joint pas son modèle : le bandeau le dit
+  (« Les réglages réseau ont changé depuis le lancement… ») et **Relancer l’agent** l’applique ;
+  le message en cours revient dans la zone de saisie, sans partir.
+- Bandeau « L’agent n’a rien envoyé depuis… » : les boutons passent sous le texte, qui garde
+  toute la largeur ; l’adresse du proxy n’est plus coupée en deux. Pendant ce silence,
+  l’indicateur dit « Réponse en cours » au lieu de « Écrit… ».
+- Textes moins tronqués : dans un en-tête étroit, la pastille du profil temporaire ne garde que
+  son icône avant que le titre ne soit coupé ; Session › Modifications passe à la ligne au lieu
+  de couper « non commités » ; zone de saisie étroite, les réglages de la session rejoignent le
+  menu 📎 avant que le nom du modèle ne soit coupé.
+- Clic droit sur une conversation de la barre latérale : le menu de la conversation (comme ⋯),
+  plus un mot sélectionné et « Copier ».
+- Tâches planifiées › Nouvelle tâche : le dossier de la conversation ouverte est proposé d’office,
+  et **Changer…** liste les dossiers récents, puis « Autre dossier… ».
+- Discussion : le panneau Modifications parle des documents de la discussion, plus de « dernier
+  commit ».
 - Un agent qui ne joint pas son modèle (proxy injoignable, réseau coupé) ne laisse plus la
   réponse sur « Réfléchit… » sans rien dire. OpenCode : un bandeau le dit dès sa deuxième
   tentative, avec le décompte de la suivante, son message, et une piste : le proxy défini (sans

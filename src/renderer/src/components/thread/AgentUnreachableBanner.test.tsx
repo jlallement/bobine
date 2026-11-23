@@ -57,4 +57,32 @@ describe('agent qui ne joint pas son modèle (fiche 275)', () => {
     expect((asked.mock.calls[0]?.[0] as CustomEvent).detail).toBe('agents')
     window.removeEventListener('bobine:open-settings', asked)
   })
+
+  it('réglages réseau changés (fiche 276) : piste et bouton de relance ; sans `onRestart`, comme avant', () => {
+    const onRestart = vi.fn()
+    const { rerender } = render(
+      <AgentUnreachableBanner
+        unreachable={{ attempt: 4 }}
+        agent="OpenCode"
+        networkStale
+        onStop={() => {}}
+        onRestart={onRestart}
+      />
+    )
+    expect(screen.getByTestId('agent-unreachable-hint').textContent).toBe(
+      t('agentRetry.networkStale', { agent: 'OpenCode' })
+    )
+    fireEvent.click(screen.getByTestId('agent-unreachable-restart'))
+    expect(onRestart).toHaveBeenCalledTimes(1)
+    rerender(
+      <AgentUnreachableBanner
+        unreachable={{ attempt: 4 }}
+        agent="OpenCode"
+        networkStale
+        onStop={() => {}}
+      />
+    )
+    expect(screen.getByTestId('agent-unreachable-hint').textContent).toBe(t('agentRetry.noProxy'))
+    expect(screen.getByTestId('agent-unreachable-settings')).toBeTruthy()
+  })
 })

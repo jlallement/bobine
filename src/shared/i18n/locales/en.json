@@ -641,7 +641,9 @@
     "noProxy": "Check the connection (Wi-Fi, VPN); behind a corporate proxy, set it in Settings › Agents › Advanced.",
     "agentMessage": "Agent’s message",
     "settings": "Network settings",
-    "stop": "Stop"
+    "stop": "Stop",
+    "networkStale": "Network settings changed since {{agent}} started: restart it to apply them. The conversation is kept.",
+    "restart": "Restart the agent"
   },
   "turnRetry": {
     "network": "Connection lost",
@@ -2082,7 +2084,8 @@
     "empty": {
       "conversation": "The agent hasn’t changed any file in this conversation yet.",
       "conversationNoGit": "The agent hasn’t changed any file in this conversation yet. (The folder isn’t a git repository.)",
-      "git": "No changes since the last commit."
+      "git": "No changes since the last commit.",
+      "discussion": "The agent hasn’t changed any document in this chat yet."
     },
     "sinceLastCommit": "· since the last commit",
     "reverted": "reverted",
@@ -2914,7 +2917,8 @@
       "text": "This profile is read-only: usage isn’t read here. Update Bobine to see it again."
     },
     "step": "step {{elapsed}}",
-    "stepStarted": "Current step started {{elapsed}} ago"
+    "stepStarted": "Current step started {{elapsed}} ago",
+    "silent": "Response in progress"
   },
   "mentions": {
     "gitChanges": {
@@ -4721,7 +4725,11 @@
       "save": "Save",
       "cancel": "Cancel",
       "pastDate": "This date has already passed.",
-      "noCapWarning": "Cost unknown and up to {{count}} runs a day: set a cap to bound the spending."
+      "noCapWarning": "Cost unknown and up to {{count}} runs a day: set a cap to bound the spending.",
+      "changeFolder": "Change…",
+      "recent": "Recent folders",
+      "otherFolder": "Other folder…",
+      "current": "open conversation"
     },
     "error": {
       "alreadyRunning": "A run of this task is still going.",
@@ -5056,7 +5064,9 @@
     "proxy": "A proxy is set for agents ({{proxy}}): if it can’t be reached, the agent can’t reach its model. Check it in Settings › Agents › Advanced.",
     "settings": "Network settings",
     "wait": "Wait",
-    "stop": "Stop"
+    "stop": "Stop",
+    "networkStale": "Network settings changed since the agent started: restart it to apply them. The conversation is kept.",
+    "restart": "Restart the agent"
   },
   "appAlert": {
     "internal": {

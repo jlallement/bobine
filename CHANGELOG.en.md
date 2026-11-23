@@ -14,6 +14,20 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Proxy changed in Settings while an agent can’t reach its model: the banner says so (“Network
+  settings changed since … started”) and **Restart the agent** applies it; the current message
+  comes back into the composer, without being sent.
+- “The agent hasn’t sent anything for…” banner: the buttons move under the text, which keeps the
+  full width; the proxy address is no longer split in two. During that silence, the indicator
+  says “Response in progress” instead of “Writing…”.
+- Less truncated text: in a narrow header, the temporary-profile chip keeps only its icon before
+  the title gets cut; Session › Changes wraps instead of cutting “uncommitted”; in a narrow
+  composer, the session settings join the 📎 menu before the model name gets cut.
+- Right-click on a conversation in the sidebar: the conversation menu (like ⋯), no longer a
+  selected word and “Copy”.
+- Scheduled tasks › New task: the open conversation’s folder is suggested, and **Change…** lists
+  the recent folders, then “Other folder…”.
+- Chat: the Changes panel talks about the chat’s documents, no more “last commit”.
 - An agent that can’t reach its model (unreachable proxy, network down) no longer leaves the
   reply on “Thinking…” without a word. OpenCode: a banner says so from its second attempt, with
   the countdown to the next one, its message, and a hint: the proxy that is set (without its

@@ -514,6 +514,8 @@ html.native-frame .side-panel-head.with-lights {
 }
 
 .main-header {
+  /* Repli des textes de l'en-tête (fiche 276, T10) : la pastille du profil temporaire d'abord. */
+  container: main-header / inline-size;
   position: relative;
   z-index: 1;
   height: 52px;
@@ -2885,22 +2887,28 @@ a.btn {
 }
 
 .composer-bar:not([data-fold='0']) .capture-chip,
-.composer-bar:is([data-fold='2'], [data-fold='3'], [data-fold='4']) .usage-percent,
-.composer-bar:is([data-fold='3'], [data-fold='4']) .mode-chip .chip-label {
+.composer-bar:is([data-fold='2'], [data-fold='3'], [data-fold='4'], [data-fold='5']) .usage-percent,
+.composer-bar:is([data-fold='3'], [data-fold='4'], [data-fold='5']) .mode-chip .chip-label,
+.composer-bar:is([data-fold='4'], [data-fold='5']) > .session-settings-slot {
   display: none;
 }
 
+/* Réglages de la session : leur bouton, à sa place (caché au niveau 4, dans le menu de 📎). */
+.session-settings-slot {
+  display: inline-flex;
+}
+
 /* Deux lignes : les outils, puis consommation, modèle, agent et envoi (à droite). */
-.composer-bar[data-fold='4'] {
+.composer-bar[data-fold='5'] {
   flex-wrap: wrap;
   row-gap: 4px;
 }
 
-.composer-bar[data-fold='4'] > .composer-bar-end {
+.composer-bar[data-fold='5'] > .composer-bar-end {
   flex-basis: 100%;
 }
 
-.composer-bar[data-fold='4'] .send-button {
+.composer-bar[data-fold='5'] .send-button {
   margin-left: auto;
 }
 
@@ -3331,6 +3339,17 @@ a.btn {
   padding: 0;
   gap: 0;
   position: relative;
+  /* Clic droit (fiche 276, T8) : le menu de la conversation, jamais un mot sélectionné. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Ancre du menu du clic droit, au point cliqué. */
+.history-context-anchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 /*
@@ -10713,7 +10732,10 @@ html.about-page body {
   flex: 1;
 }
 .temporary-chip {
-  flex-shrink: 0;
+  /* Cède avant le titre et « depuis… » (fiche 276, T10) ; jamais moins que sa fiole. */
+  flex: 0 1000 auto;
+  min-width: 30px;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -10728,7 +10750,28 @@ html.about-page body {
   white-space: nowrap;
 }
 .temporary-chip svg {
+  flex-shrink: 0;
   color: var(--accent);
+}
+.temporary-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* En-tête étroit : la fiole seule ; le texte reste lu (infobulle, lecteurs d'écran). */
+@container main-header (max-width: 760px) {
+  .temporary-chip {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .temporary-chip-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* Mode présentation (fiche 159) : rappel discret, comme la pastille du profil temporaire. */

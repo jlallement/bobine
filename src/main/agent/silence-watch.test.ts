@@ -134,3 +134,69 @@ describe('bandeaux du tour (fiche 275)', () => {
     expect(quiet.view()).toEqual({})
   })
 })
+
+describe('réglages réseau changés depuis le lancement (fiche 276)', () => {
+  const retry = {
+    sessionUpdate: 'session_info_update',
+    _meta: { 'opencode/retry': { attempt: 2, error: { message: 'x' } } }
+  } as SessionUpdate
+  /** Réglages réseau de l'app : variables d'un lancement maintenant, abonnés prévenus. */
+  function settings(env: Record<string, string> = {}) {
+    const listeners = new Set<() => void>()
+    return {
+      env,
+      listeners,
+      source: {
+        env: () => settings.current,
+        onChange: (listener: () => void) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }
+      },
+      save(next: Record<string, string>) {
+        settings.current = next
+        for (const listener of [...listeners]) listener()
+      }
+    }
+  }
+  settings.current = {} as Record<string, string>
+
+  it('dit `networkStale` seulement avec un bandeau, et quand le réseau diffère', () => {
+    let changes = 0
+    settings.current = {}
+    const app = settings()
+    const quiet = new TurnQuiet({ retryStatus: OPENCODE_RETRY_STATUS, changed: () => changes++ })
+    quiet.launch({}, {}, app.source)
+    // Pas de bandeau : rien à dire, personne n'écoute les réglages.
+    app.save({ HTTPS_PROXY: 'http://proxy:3128' })
+    expect(quiet.view()).toEqual({})
+    expect(app.listeners.size).toBe(0)
+    expect(changes).toBe(0)
+    quiet.noteUpdate(retry)
+    expect(quiet.view()).toMatchObject({ unreachable: { attempt: 2 }, networkStale: true })
+    expect(app.listeners.size).toBe(1)
+    // Réglages enregistrés pendant le bandeau : il se redit aussitôt ; revenus à ceux du lancement,
+    // plus rien à relancer.
+    app.save({})
+    expect(changes).toBe(2)
+    expect(quiet.view().networkStale).toBeUndefined()
+    // L'agent avance : plus de bandeau, plus d'abonnement.
+    quiet.note(true)
+    expect(app.listeners.size).toBe(0)
+  })
+
+  it('bandeau de silence aussi ; proxy du lancement gardé pour la piste ; sans source, jamais', () => {
+    settings.current = { HTTPS_PROXY: 'http://b:1' }
+    const app = settings()
+    const quiet = new TurnQuiet({ changed: () => undefined })
+    quiet.launch({}, { HTTPS_PROXY: 'http://a:1' }, app.source)
+    quiet.setSilent(1)
+    expect(quiet.view()).toEqual({ silentSince: 1, proxy: 'http://a:1', networkStale: true })
+    quiet.clear()
+    expect(app.listeners.size).toBe(0)
+    const alone = new TurnQuiet({ changed: () => undefined })
+    alone.launch({}, { HTTPS_PROXY: 'http://a:1' })
+    alone.setSilent(1)
+    expect(alone.view().networkStale).toBeUndefined()
+  })
+})

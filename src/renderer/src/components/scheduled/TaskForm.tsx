@@ -11,6 +11,8 @@ import {
   type ScheduledTask,
   type ScheduledTaskInput
 } from '@shared/schedule'
+import { FolderChooser } from './FolderChooser'
+import { initialTaskFolder, taskFolders } from './task-folder'
 
 const KINDS: readonly ScheduleKind[] = ['daily', 'weekdays', 'interval', 'once']
 
@@ -32,14 +34,16 @@ interface Draft {
 function draftOf(
   task: ScheduledTask | undefined,
   profiles: readonly ProfileSummary[],
-  defaultProfileId: string | undefined
+  defaultProfileId: string | undefined,
+  /** Dossier proposé d'office à une nouvelle tâche (fiche 276). */
+  folder = ''
 ): Draft {
   const s = task?.schedule
   const inAnHour = new Date(Date.now() + 3_600_000)
   return {
     name: task?.name ?? '',
     instruction: task?.instruction ?? '',
-    folder: task?.folder ?? '',
+    folder: task?.folder ?? folder,
     // Agent des nouvelles conversations (jamais « le premier de la liste », qui peut être payant).
     profileId: task?.profileId ?? defaultProfileId ?? profiles[0]?.id ?? '',
     kind: s?.kind ?? 'daily',
@@ -75,6 +79,8 @@ export function TaskForm({
   prefill,
   profiles,
   defaultProfileId,
+  currentFolder,
+  recentFolders = [],
   onSave,
   onCancel
 }: {
@@ -84,12 +90,16 @@ export function TaskForm({
   profiles: readonly ProfileSummary[]
   /** Agent des nouvelles conversations : choisi d'office pour une nouvelle tâche. */
   defaultProfileId?: string
+  /** Dossier de la conversation ouverte (espace Code) : proposé d'office (fiche 276, T12). */
+  currentFolder?: string | undefined
+  /** Dossiers récents, proposés dans le menu du dossier. */
+  recentFolders?: readonly string[]
   onSave: (input: ScheduledTaskInput) => void
   onCancel: () => void
 }) {
   const { t } = useTranslation()
   const [d, setD] = useState<Draft>(() => ({
-    ...draftOf(task, profiles, defaultProfileId),
+    ...draftOf(task, profiles, defaultProfileId, initialTaskFolder(currentFolder, recentFolders)),
     ...(!task && prefill ? prefill : {})
   }))
   // Heure à l'ouverture du formulaire : une date « une fois » doit être après elle.
@@ -166,15 +176,13 @@ export function TaskForm({
       <div className="scheduled-form-row">
         <div className="form-field scheduled-folder">
           <span className="field-label">{t('scheduled.form.folder')}</span>
-          <div className="scheduled-folder-line">
-            <span className="scheduled-path" title={d.folder} data-testid="scheduled-folder">
-              {/* Isolé : le début du chemin est coupé, sans renvoyer ses « / » à l'autre bout. */}
-              <bdi>{d.folder || t('scheduled.form.noFolder')}</bdi>
-            </span>
-            <button type="button" className="btn small" onClick={chooseFolder}>
-              {t('scheduled.form.chooseFolder')}
-            </button>
-          </div>
+          <FolderChooser
+            folder={d.folder}
+            folders={taskFolders(currentFolder, recentFolders)}
+            current={currentFolder}
+            onChange={(folder) => set('folder', folder)}
+            onChooseOther={chooseFolder}
+          />
         </div>
         <label className="form-field">
           <span className="field-label">{t('scheduled.form.agent')}</span>

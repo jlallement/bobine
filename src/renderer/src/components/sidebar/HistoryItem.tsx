@@ -1,6 +1,6 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import { CalendarClock, Ellipsis, GitFork, Bookmark } from 'lucide-react'
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionDetail, AttentionKind } from '@shared/attention'
@@ -24,7 +24,8 @@ export interface ChildLinkPlace {
  * Une ligne de la liste des conversations (fiches 125, 131) : le titre part du bord, à droite ce
  * qui change (état propre en icône, sinon le jour), et les détails en infobulle (fiche 149).
  * Seule une fille sous sa mère a une colonne à gauche,
- * avec le lien qui l'y rattache. Le menu « … » vient au survol par-dessus la droite.
+ * avec le lien qui l'y rattache. Le menu « … » vient au survol par-dessus la droite ; le clic droit
+ * ouvre le même menu, au pointeur (fiche 276, T8 : il sélectionnait un mot et ouvrait « Copier »).
  */
 export function HistoryItem({
   conversation,
@@ -69,8 +70,11 @@ export function HistoryItem({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(conversation.title)
   const [menuOpen, setMenuOpen] = useState(false)
+  // Clic droit : le menu, ouvert à cet endroit de la ligne.
+  const [contextAt, setContextAt] = useState<{ x: number; y: number } | null>(null)
+  const anyMenu = menuOpen || contextAt !== null
   // La liste ne bouge pas pendant qu'on choisit dans le menu ou qu'on renomme.
-  useEffect(() => (menuOpen || editing ? onHold() : undefined), [menuOpen, editing, onHold])
+  useEffect(() => (anyMenu || editing ? onHold() : undefined), [anyMenu, editing, onHold])
 
   const finish = (save: boolean) => {
     setEditing(false)
@@ -128,6 +132,31 @@ export function HistoryItem({
   ].join('\n')
   // Une conversation qui attend est « non lue » : son titre en gras, seul signal (fiche 125).
   const unread = !!attention
+  // Les éléments du menu « … », partagés par le clic droit (mêmes éléments, même ordre).
+  const menuItems = (
+    <ConversationMenuItems
+      conversation={conversation}
+      testIdPrefix="history"
+      onPin={onPin}
+      onRename={() => {
+        setDraft(conversation.title)
+        setEditing(true)
+      }}
+      onExport={onExport}
+      onArchive={onArchive}
+      onDelete={onDelete}
+      {...(onOpenBeside ? { onOpenBeside } : {})}
+      {...(onLaunchChild ? { onLaunchChild } : {})}
+    />
+  )
+  const openContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    // Ni sélection d'un mot, ni menu « Copier » : le menu de la conversation.
+    event.preventDefault()
+    if (preparing) return
+    const box = event.currentTarget.getBoundingClientRect()
+    setMenuOpen(false)
+    setContextAt({ x: event.clientX - box.left, y: event.clientY - box.top })
+  }
 
   return (
     <div
@@ -137,6 +166,7 @@ export function HistoryItem({
       data-mother={mother?.id}
       data-branch={conversation.branch}
       {...(preparing ? { 'data-preparing': true, 'aria-busy': true } : {})}
+      onContextMenu={openContextMenu}
     >
       <Tip label={tip} side="right" className="history-tooltip">
         <button
@@ -203,20 +233,33 @@ export function HistoryItem({
           </Dropdown.Trigger>
           <Dropdown.Portal>
             <Dropdown.Content className="menu" side="right" align="start" sideOffset={6}>
-              <ConversationMenuItems
-                conversation={conversation}
-                testIdPrefix="history"
-                onPin={onPin}
-                onRename={() => {
-                  setDraft(conversation.title)
-                  setEditing(true)
-                }}
-                onExport={onExport}
-                onArchive={onArchive}
-                onDelete={onDelete}
-                {...(onOpenBeside ? { onOpenBeside } : {})}
-                {...(onLaunchChild ? { onLaunchChild } : {})}
-              />
+              {menuItems}
+            </Dropdown.Content>
+          </Dropdown.Portal>
+        </Dropdown.Root>
+      )}
+      {contextAt && !preparing && (
+        <Dropdown.Root modal={false} open onOpenChange={(open) => !open && setContextAt(null)}>
+          {/* Point d'ancrage du menu, là où l'on a cliqué : rien à voir ni à atteindre au clavier. */}
+          <Dropdown.Trigger asChild>
+            <span
+              className="history-context-anchor"
+              style={{ left: contextAt.x, top: contextAt.y }}
+              aria-hidden
+              tabIndex={-1}
+            />
+          </Dropdown.Trigger>
+          <Dropdown.Portal>
+            <Dropdown.Content
+              className="menu"
+              side="bottom"
+              align="start"
+              sideOffset={2}
+              data-testid="history-context-menu"
+              // L'ancre disparaît avec le menu : le focus ne doit pas y revenir.
+              onCloseAutoFocus={(event) => event.preventDefault()}
+            >
+              {menuItems}
             </Dropdown.Content>
           </Dropdown.Portal>
         </Dropdown.Root>

@@ -361,6 +361,7 @@ export function SidePanel({
               {...(onSendDiffNotes ? { onSendNotes: onSendDiffNotes } : {})}
               childWorktrees={childWorktrees}
               onReview={onReview}
+              discussion={!!discussion}
             />
           )}
           {tab === 'document' && preview && (
