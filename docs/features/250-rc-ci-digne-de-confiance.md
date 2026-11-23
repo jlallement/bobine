@@ -314,3 +314,31 @@ Dependabot comme les autres.
     marquer indicatives), elles restent jouées en local avant chaque tag.
 
   À prouver sur GitHub après la poussée : suite complète macOS sur la branche.
+
+- 2026-11-23 — Suite complète macOS sur la branche (45168015601) : 8 tâches rouges sur 236 (contre
+  40 au passage d'avant), dans `perf`, `simulator`, `android`, `git` clair et `aide` clair.
+  - **Décision de Jérôme : `perf`, `simulator` et `android` indicatives sur le runner macOS de
+    GitHub seulement.** Même forme que `perf` sous Linux : sans suites demandées, les deux étapes
+    d'essais (français, anglais) les écartent (`--skip`), puis l'étape « Suites indicatives sur ce
+    runner » les joue (français puis anglais) avec `continue-on-error`. Nouvelle option du lanceur,
+    `--indicative` : sur GitHub, chaque contrôle en échec devient une annotation `::warning::`
+    titrée par la tâche (« e2e perf light : indicative (darwin), en échec ») ; le code de sortie ne
+    change pas, c'est l'étape qui ne bloque pas le job. L'étape `perf` de Linux la prend aussi.
+    Nommées dans les suites demandées, elles restent bloquantes ; en local, rien ne change (avant
+    chaque envoi et chaque tag). Aucune assertion modifiée. Essais : `e2e-select.test.ts`
+    (option, contrôles en échec, annotations échappées, plantage sans contrôle) ; sur le Mac,
+    `GITHUB_ACTIONS=true pnpm e2e --indicative git` avec la suite `git` rendue rouge exprès : une
+    annotation par contrôle, en parallèle comme une tâche à la fois.
+
+  | Échec | Cause | Correctif | Preuve |
+  |---|---|---|---|
+  | `git` clair « fondus du fil : haut 1 → 1, bas 0 → 0 » | Essai. Les fondus suivent le défilement par une ligne de temps CSS (`animation-timeline`), que Chromium ne relève qu'au rendu d'une image. L'essai lisait l'opacité 150 ms après chaque `scrollTop` ; sur le runner chargé, aucune image rendue entre-temps : les trois lectures donnaient l'état d'avant (en bas du fil). Pas un défaut de l'app : à l'écran, le fondu suit à l'image suivante. | `ui.frames()` (deux images rendues, comme `ui.viewport`) remplace les trois `sleep(150)`. | Sans attente, en local : exactement le message du runner (« haut 1 → 1, bas 0 → 0 ») ; avec `ui.frames()`, `git` clair et sombre verts. |
+  | `aide` clair « ↓ change le résultat ET la page… (`{"page":"reglages","size":46,"visible":0}`) » | Essai. `data-page` change au rendu de React ; le défilement au mot et le surlignage sont des effets qui passent après. L'essai lisait dès `data-page` vu : surlignage encore celui de la page d'avant (46 plages, aucune dans la page affichée). Pas un défaut de l'app (une image plus tard, la page est défilée et surlignée). | L'essai attend le surlignage posé sur la page affichée (toutes les plages dans la page, chacune « worktree »), pour le premier résultat comme pour le suivant, puis vérifie comme avant qu'un mot surligné est à l'écran. | Sonde en local (observateur de `data-page`) : au changement de page, `{"page":"reglages","size":46,"onPage":false}`, l'état exact du runner ; après l'attente, `size 9, visible 4`. `aide` clair et sombre verts. |
+
+  Restent, non traités (verts au passage 45168015601, cause non établie) :
+  - `browser` clair « Bonjour, ! » : toujours sans journal des outils ; même proposition
+    (`BOBINE_LOG=trace` de nuit, `agents.log` dans les captures).
+  - `filles-tech-lead` sombre : `Electron Helper` (NetworkService) vivant 3 s après la sortie.
+    Processus de Chromium, pas de Bobine ; l'attendre comme `chrome_crashpad_handler` assouplirait
+    la règle « rien ne survit à l'app » : décision à prendre, pas faite ici.
+  - `travaux-groupe` sombre (clic manqué) : non revu ici.
