@@ -74,6 +74,46 @@
   color: var(--muted);
 }
 
+/*
+ * Place réservée au rappel (maquette rc4 `rc4-saisie-etroite`, variante 1) : l'invite ne passe
+ * jamais dessous. Largeur du rappel par langue (touche, écart, nom, mesurée avec Inter), plus
+ * son retrait de 6 px et 12 px d'air ; une requête de conteneur sur la saisie le réduit à la
+ * touche quand elle est étroite. L'invite trop longue passe à la ligne, entière (fiche 167 : la
+ * saisie grandit d'une ligne), jamais sous le rappel. L'essai `historique-saisie` vérifie l'écart.
+ */
+.composer {
+  container-type: inline-size;
+  --sent-history-hint-w: 158px;
+}
+
+.composer:lang(en) {
+  --sent-history-hint-w: 140px;
+}
+
+.composer:has(.sent-history-hint) textarea {
+  padding-right: calc(var(--sent-history-hint-w) + 18px);
+}
+
+@container (max-width: 520px) {
+  .composer:has(.sent-history-hint) textarea {
+    padding-right: 38px;
+  }
+
+  /* Le nom reste lu par les lecteurs d'écran (même effacement que `.sr-only`) et en infobulle. */
+  .sent-history-hint-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .sent-history-hint {
+    pointer-events: auto;
+    cursor: default;
+  }
+}
+
 /* Pièces jointes du message repris, qui ne reviennent pas. */
 .sent-history-lost {
   display: flex;

@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { L, check, sleep, withApp } from '../lib.mjs'
 
 /**
  * Historique de la saisie (fiche 227), contre l'agent factice, dans un dépôt git jetable (un
@@ -35,6 +35,84 @@ export async function historiqueSaisieSuite(scheme) {
 }
 
 const input = `document.querySelector('[data-testid="composer-input"]')`
+
+/**
+ * Invite et rappel « ↑ Messages précédents » sur la première ligne de la saisie : bord droit du
+ * texte (marge réservée exclue), bord gauche du rappel, nom du rappel visible ou non, invite
+ * entière (la saisie a sa hauteur).
+ */
+const hintLayout = `(() => {
+  const input = ${input}
+  const hint = document.querySelector('[data-testid="history-hint"]')
+  if (!hint) return null
+  const box = input.getBoundingClientRect()
+  const style = getComputedStyle(input)
+  const px = (v) => parseFloat(v) || 0
+  const label = hint.querySelector('.sent-history-hint-label').getBoundingClientRect()
+  return {
+    composer: Math.round(document.querySelector('.composer').getBoundingClientRect().width),
+    textRight: box.right - px(style.paddingRight) - px(style.borderRightWidth),
+    hintLeft: hint.getBoundingClientRect().left,
+    label: label.width > 2,
+    title: hint.title,
+    whole: input.clientHeight >= input.scrollHeight - 1,
+    placeholder: input.placeholder
+  }
+})()`
+
+/**
+ * Pendant une réponse, la saisie vide (invite « Ajouter une suite (envoyée à la fin de la
+ * réponse)… ») : à 760 et 640 px, le rappel réduit à « ↑ », l'invite entière (sur deux lignes
+ * à 640 px) ; à 1280 px panneau ouvert, le rappel entier. Jamais l'un sur l'autre (maquette rc4).
+ */
+async function narrowComposer(ui, focus) {
+  await ui.send('/scenario lent')
+  await ui.waitFor(`!!${ui.$('stop')}`)
+  const cases = [
+    { width: 760, panel: false, label: false, shot: 'historique-5-saisie-760' },
+    // Plus étroite encore : l'invite ne tient plus sur une ligne, elle passe à la ligne, entière.
+    { width: 640, panel: false, label: false, shot: 'historique-5b-saisie-640' },
+    { width: 1280, panel: true, label: true, shot: 'historique-6-saisie-1280-panneau' }
+  ]
+  for (const c of cases) {
+    await ui.viewport(c.width)
+    if (c.panel) {
+      // Pas d'attente de fin d'animation : le panneau montre la roue de la réponse en cours.
+      // Bouton du panneau : il bascule ; s'il était replié par l'app à 760 px, un appui le rouvre.
+      for (let i = 0; i < 2 && !(await ui.ev(`!!${ui.$('side-panel')}`)); i++) {
+        await ui.ev(`${ui.$('panel-toggle')}.click()`)
+        await sleep(500)
+      }
+      await ui.waitFor(`!!${ui.$('side-panel')}`)
+      await sleep(400)
+      await ui.frames()
+    }
+    await focus()
+    await ui.waitFor(`!!document.querySelector('[data-testid=history-hint]')`)
+    await ui.frames()
+    const at = await ui.ev(hintLayout)
+    check(
+      at.placeholder === L('composer.placeholder.busy') &&
+        at.hintLeft - at.textRight >= 8 &&
+        at.whole &&
+        at.label === c.label &&
+        at.title === L('composer.history.hint'),
+      `${c.width} px${c.panel ? ' panneau ouvert' : ''} (saisie ${at.composer} px) : invite et rappel disjoints (8 px au moins), ` +
+        `${c.label ? 'rappel entier' : 'rappel « ↑ » seul, nom en infobulle'}, invite entière ` +
+        JSON.stringify(at)
+    )
+    await ui.shot(c.shot)
+    if (c.panel) {
+      await ui.ev(`${ui.$('panel-toggle')}.click()`)
+      await ui.waitFor(`!${ui.$('side-panel')}`)
+    }
+  }
+  await ui.viewport()
+  // La réponse s'arrête : l'essai d'Échap qui suit repart d'une saisie au repos.
+  await ui.ev(`${ui.$('stop')}?.click()`)
+  await ui.ready()
+  await focus()
+}
 const LONG =
   'Le test du panier vide échoue sur Android : regarde pourquoi le bouton Payer reste actif après la suppression du dernier article, puis vérifie que le total revient bien à zéro et que la bannière de promotion disparaît aussi.'
 const PLAN = [
@@ -179,6 +257,9 @@ async function run(ui) {
   // Échap : vide la saisie et quitte l'historique, avant d'arrêter la réponse.
   await ui.ev(`${input}.select(); document.execCommand('delete')`)
   await ui.waitFor(`${input}.value === ''`)
+  // Saisie étroite (maquette rc4, variante 1) : pendant une réponse, l'invite longue et le rappel.
+  // Sa commande est la même que la suivante : l'historique n'en garde qu'une.
+  await narrowComposer(ui, focus)
   await ui.send('/scenario lent')
   await ui.waitFor(`!!${ui.$('stop')}`)
   await focus()
