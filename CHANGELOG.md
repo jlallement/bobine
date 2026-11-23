@@ -2,7 +2,7 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## 1.0.0-rc.4 — 23 novembre 2026
+## 1.1.0-rc.1 — 23 novembre 2026
 
 ### Nouveau
 
@@ -23,6 +23,11 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   sans avis rouge dans le fil ; si le fichier revient, le lien aussi.
 - Simulateur iOS : l’agent voit aussi les champs de saisie vides et sans nom (« TextField
   (vide) »), et peut les toucher pour y écrire.
+
+## 1.0.0-rc.4 — 23 novembre 2026
+
+### Nouveau
+
 - **Avis de nouvelle version** : au lancement, une fois par jour au plus, Bobine regarde les
   versions publiées sur GitHub. S’il en existe une plus récente, une ligne discrète l’annonce en
   bas de la barre latérale ; **Voir** ouvre sa page dans le navigateur, ✕ la masque, et cette

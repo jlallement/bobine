@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## 1.0.0-rc.4 — November 23, 2026
+## 1.1.0-rc.1 — November 23, 2026
 
 ### New
 
@@ -21,6 +21,11 @@ What changes for you, version by version. Shown in Settings › About.
   code, a “File not found” bubble shows under it for a few seconds (hovering says it again), with
   no red notice in the conversation; if the file comes back, so does the link.
 - iOS Simulator: the agent also sees empty, unnamed text fields and can tap them to type.
+
+## 1.0.0-rc.4 — November 23, 2026
+
+### New
+
 - **New version notice**: at launch, at most once a day, Bobine looks at the releases published
   on GitHub. If a newer one exists, a discreet line at the bottom of the sidebar says so; **View**
   opens its page in the browser, ✕ hides it, and that version won’t be announced again. Nothing is
