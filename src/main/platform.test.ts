@@ -21,7 +21,8 @@ describe('capacités de la plateforme (fiche 145)', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      hiddenPaint: false
     })
   })
 
@@ -81,7 +82,8 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      hiddenPaint: false
     })
   })
 
@@ -100,7 +102,8 @@ describe('argument du renderer', () => {
       insetTitleBar: false,
       commandKey: false,
       overlayScrollbars: false,
-      glass: false
+      glass: false,
+      hiddenPaint: false
     })
   })
 })

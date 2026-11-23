@@ -42,7 +42,13 @@ export const PLATFORM_FEATURES = [
    * Surfaces flottantes en verre dépoli (Aurore) et menus qui apparaissent en fondu : fiables sur
    * le compositeur de macOS. Ailleurs, menus opaques, sans fondu (fiche 145).
    */
-  'glass'
+  'glass',
+  /**
+   * Une fenêtre transparente créée cachée peint sa page, et Electron émet `ready-to-show` : la
+   * fenêtre rapide attend ce signal pour se montrer (fiche 062). Ailleurs, montrée à la fin du
+   * chargement de sa page, `ready-to-show` pouvant ne jamais venir (fiche 250).
+   */
+  'hiddenPaint'
 ] as const
 
 export type PlatformFeature = (typeof PLATFORM_FEATURES)[number]
@@ -63,7 +69,8 @@ export const ALL_FEATURES: PlatformFeatures = {
   insetTitleBar: true,
   commandKey: true,
   overlayScrollbars: true,
-  glass: true
+  glass: true,
+  hiddenPaint: true
 }
 
 export const FEATURES_ARG = '--bobine-features='

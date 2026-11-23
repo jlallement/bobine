@@ -453,3 +453,35 @@ Dependabot comme les autres.
   n'a pas été reproduit tel quel en local (1 passage) : la cause est établie par la capture de la
   CI et le relevé local de l'ordre des lectures, le correctif par les 3 essais unitaires. Suite
   complète et job GitHub non joués.
+
+- 2026-11-23 — `quick` clair, cause établie (branche `fix/quick-linux`, partie de `main`). Le
+  relevé ajouté plus haut l'a dit au passage 45245467579 (toujours la première tâche du job, premier
+  essai) : `did-start-loading` +4 ms, `dom-ready`, `did-finish-load` et `did-stop-loading`
+  +132 ms ; fenêtre non visible, page plus en chargement, révélation encore attendue (2 écouteurs de
+  `ready-to-show`) ; page `visible`, **aucune peinture**, pas d'image suivante en 1 s. La page est
+  chargée mais la fenêtre rapide, transparente, créée cachée (`show: false`, `type: 'panel'`), ne
+  la peint jamais sous X11/openbox : Electron n'émet pas `ready-to-show` (émis à la première
+  peinture de la fenêtre cachée), et `QuickEntry.show` n'attendait que lui. **Défaut de l'app pour
+  un utilisateur Linux** : la première ouverture ne faisait rien.
+
+  Choix du correctif, d'après la doc d'Electron (`BrowserWindow`) :
+  - `paintWhenInitiallyHidden` vaut déjà `true` par défaut (rendu actif fenêtre cachée) : le relevé
+    montre justement une page `visible` qui ne peint pas ; à `false`, la doc dit que
+    `ready-to-show` n'est plus émis du tout. Rien à gagner.
+  - `backgroundThrottling` ne règle que les minuteries et animations d'une page en arrière-plan,
+    pas la première peinture d'une fenêtre jamais affichée. Hors sujet.
+  - Délai borné : attente arbitraire à chaque première ouverture, et une valeur à deviner.
+  - **Retenu** : sous une plateforme sans la nouvelle capacité `hiddenPaint` (déclarée par
+    `main/platform.ts`, vraie sur macOS seulement, Windows non observé prend le chemin sûr), la
+    première ouverture se montre au **premier** de `ready-to-show` et `did-finish-load` de sa page,
+    l'autre écouteur retiré (`revealWhenLoaded`, `quick-entry.ts`). La page est chargée : ce que
+    la règle « la page d'abord » protégeait (fiche 062) tient ; une fenêtre transparente montrée
+    avant sa première image ne montre rien de plus que le bureau. Sur macOS, chemin identique
+    (`ready-to-show` seul) : la fenêtre montrée trop tôt y perdait le focus.
+
+  Tests : `quick-entry.test.ts`, trois cas (macOS : `did-finish-load` ne montre pas, `ready-to-show`
+  oui ; Linux : `ready-to-show` d'abord, montrée une fois ; Linux : `ready-to-show` jamais, montrée
+  à `did-finish-load`, plus d'écouteur restant) ; `platform.test.ts` (capacité absente sous Linux et
+  Windows). `./scripts/verify` vert. Rien de joué en local (ADR-0069) : `quick` sur GitHub (Linux
+  et macOS) à lancer par Jérôme ; le relevé de `e2e/suites/quick.mjs` reste en place jusqu'à cette
+  preuve.

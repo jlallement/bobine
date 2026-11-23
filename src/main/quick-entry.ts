@@ -60,6 +60,41 @@ const MIN_HEIGHT = 96
 // Assez haute pour annoter une image (fiche 067).
 const MAX_HEIGHT = 680
 
+/** Ce dont l'attente de la page a besoin d'une fenêtre (remplaçable en test). */
+export interface PaintSignals {
+  once(event: 'ready-to-show', listener: () => void): unknown
+  removeListener(event: 'ready-to-show', listener: () => void): unknown
+  webContents: {
+    once(event: 'did-finish-load', listener: () => void): unknown
+    removeListener(event: 'did-finish-load', listener: () => void): unknown
+  }
+}
+
+/**
+ * Première ouverture : la page d'abord (montrée trop tôt sur le Mac, la fenêtre perdait le focus,
+ * fiche 062). `waitForPaint` : la plateforme peint une fenêtre transparente cachée, on attend
+ * `ready-to-show`. Sinon (Linux, fiche 250) la page chargée ne peint pas tant que la fenêtre est
+ * cachée, `ready-to-show` peut ne jamais venir : montrée au premier des deux signaux, le second
+ * oublié : montrée une fois.
+ */
+export function revealWhenLoaded(
+  win: PaintSignals,
+  reveal: () => void,
+  waitForPaint: boolean
+): void {
+  if (waitForPaint) {
+    win.once('ready-to-show', reveal)
+    return
+  }
+  const once = () => {
+    win.removeListener('ready-to-show', once)
+    win.webContents.removeListener('did-finish-load', once)
+    reveal()
+  }
+  win.once('ready-to-show', once)
+  win.webContents.once('did-finish-load', once)
+}
+
 export interface QuickEntryOptions {
   /** Crée la fenêtre (durcie, page `#quick` du renderer). */
   create: () => BrowserWindow
@@ -67,6 +102,11 @@ export interface QuickEntryOptions {
   workArea: () => { x: number; y: number; width: number; height: number }
   /** Montrée sans prendre le focus de la machine (essais de bout en bout, fiche 106). */
   inactive?: boolean
+  /**
+   * Première ouverture montrée à `ready-to-show` seulement (capacité `hiddenPaint`, macOS) ;
+   * sinon aussi à la fin du chargement de la page (`revealWhenLoaded`).
+   */
+  waitForPaint: boolean
 }
 
 export class QuickEntry {
@@ -100,8 +140,7 @@ export class QuickEntry {
       revealWindow(win, this.options.inactive)
       win.webContents.send('quick:shown')
     }
-    // Première ouverture : la page d'abord (affichée trop tôt, la fenêtre perdait le focus).
-    if (win.webContents.isLoading()) win.once('ready-to-show', reveal)
+    if (win.webContents.isLoading()) revealWhenLoaded(win, reveal, this.options.waitForPaint)
     else reveal()
   }
 
