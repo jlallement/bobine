@@ -353,3 +353,39 @@ describe('clic commencé dans le fil (fiche 250)', () => {
     }
   })
 })
+
+describe('suivi du bas pendant un appui (fiche 250)', () => {
+  const press = (target: Element, type: string) =>
+    act(() => {
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: 60, clientY: 150 }))
+    })
+
+  it('près du bas sans y être : ni la hauteur gardée ni un élément qui arrive ne le déplacent avant le relâché', () => {
+    vi.useFakeTimers()
+    try {
+      const { box, el, rerender, userScroll } = setup()
+      const column = el.firstElementChild as HTMLElement
+      const button = document.createElement('button')
+      column.append(button)
+      document.body.append(el)
+      // 30 px au-dessus du bas (fil de 1000, vue de 200) : encore « en bas » pour le suivi.
+      userScroll(770)
+      press(button, 'pointerdown')
+      // La hauteur gardée redimensionne la colonne (marge du bas reprise dedans) : observé.
+      act(() => resize?.())
+      expect(box.scrollTop).toBe(770)
+      // Un élément arrive pendant l'appui : le fil ne suit pas encore.
+      box.scrollHeight = 1100
+      rerender({ conversation: 'c1', items: [1, 2], empty: false })
+      expect(box.scrollTop).toBe(770)
+      press(button, 'pointerup')
+      expect(box.scrollTop).toBe(770)
+      // Relâché (après le `click`) : le fil rattrape le bas qu'il suivait.
+      act(() => vi.runAllTimers())
+      expect(box.scrollTop).toBe(1100)
+      el.remove()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

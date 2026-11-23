@@ -128,11 +128,17 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.waitFor(
           `document.querySelector('.history-item.active')?.dataset.id === '${mother}'`
         )
-        await ui.waitFor(`!!${ui.$('subtasks-merge-start')}`, 30000)
+        // Le plan relu : la carte montre d'abord le dernier plan lu (avant les commits, « 3
+        // modifications non commitées »), le temps de relire les branches. L'essai attend le plan
+        // de ces commits, pas seulement le bouton (Linux, fiche 250).
+        const recommended = L('workGroup.merge.recommended.action', { count: 1, base: 'main' })
+        await ui.waitFor(
+          `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(recommended)}`,
+          30000
+        )
         await ui.waitFor(`!!${solo}?.querySelector('[data-testid=work-merge-start]')`, 30000)
         check(
-          (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) ===
-            L('workGroup.merge.recommended.action', { count: 1, base: 'main' }) &&
+          (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) === recommended &&
             !(await ui.ev(`!!${ui.$('subtasks-merge-others')}`)),
           'carte de groupe : pastille « Recommandée », le recommandé proposé ; l’autre travail a sa carte'
         )
