@@ -21,6 +21,14 @@ export async function failuresVisibleSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.ready()
+        // 0. Agent qui ne joint pas son modèle (OpenCode 2.3.0 derrière un proxy injoignable) :
+        // mises à jour d'état seules, pas de contenu ; le bandeau vient quand même, Stop finit.
+        await ui.send('/scenario reseau-injoignable-2-3')
+        await ui.waitFor(`!!${ui.$('silence-banner')}`, 15000)
+        check(true, 'agent qui ne fait que réessayer (états seuls) : bandeau de silence')
+        await ui.click(ui.$('silence-stop'))
+        await ui.ready()
+        check(true, '« Arrêter » termine le tour d’un agent qui réessaie')
         // 1. Agent silencieux : bandeau neutre, « Attendre » le masque, « Arrêter » arrête.
         await ui.send('/scenario muet')
         await ui.waitFor(`!!${ui.$('silence-banner')}`, 15000)

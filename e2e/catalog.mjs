@@ -61,6 +61,7 @@ export const GLOBAL_SOURCES = [
   'src/main/agent/turn-retry.ts',
   'src/main/agent/silence-watch.ts',
   'src/main/agent/agent-process.ts',
+  'src/main/agent/agent-progress.ts',
   'src/main/agent/adapters.ts',
   'src/main/agent/profiles.ts',
   'src/main/agent/session-updates.ts',

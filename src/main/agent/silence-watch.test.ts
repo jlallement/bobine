@@ -6,17 +6,17 @@ describe('silence de l’agent pendant un tour (fiche 194)', () => {
   afterEach(() => vi.useRealTimers())
 
   function watch(waiting = () => false) {
-    let last = 0
+    const activity = { last: 0, progress: 0 }
     const calls: (number | undefined)[] = []
     const timer = watchSilence({
-      lastActivity: () => last,
+      activity,
       waiting,
       scope: '[essai]',
       onSilent: (since) => calls.push(since)
     })
     return {
       calls,
-      speak: (at: number) => (last = at),
+      speak: (at: number) => (activity.last = activity.progress = at),
       stop: () => clearInterval(timer)
     }
   }
@@ -53,6 +53,43 @@ describe('silence de l’agent pendant un tour (fiche 194)', () => {
     // Depuis la fin de l'attente (à un contrôle près), pas depuis le dernier octet d'il y a 15 min.
     expect(answeredAt - (w.calls[0] ?? 0)).toBeLessThanOrEqual(15_000)
     w.stop()
+  })
+
+  it('silence d’avant le tour (agent resté prêt longtemps) : compté depuis le début du tour', () => {
+    vi.setSystemTime(60 * 60_000)
+    // Dernière avancée il y a une heure : rien au premier contrôle, bandeau 5 min après le début.
+    const w = watch()
+    const startedAt = Date.now()
+    vi.advanceTimersByTime(4 * 60_000)
+    expect(w.calls).toEqual([])
+    vi.advanceTimersByTime(61_000)
+    expect(w.calls).toEqual([startedAt])
+    w.stop()
+  })
+
+  it('mises à jour d’état seules (agent qui réessaie) : bandeau quand même, journal qui les cite', async () => {
+    const { log } = await import('../log')
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
+    const activity = { last: 0, progress: 0 }
+    const calls: (number | undefined)[] = []
+    const timer = watchSilence({
+      activity,
+      waiting: () => false,
+      scope: '[essai]',
+      onSilent: (since) => calls.push(since)
+    })
+    for (let i = 0; i < 12; i++) {
+      vi.advanceTimersByTime(30_000)
+      activity.last = Date.now()
+    }
+    expect(calls).toEqual([0])
+    expect(warn.mock.calls.map(([line]) => line)).toContainEqual(
+      expect.stringMatching(
+        /rien envoyé depuis 60.0 s \(mises à jour d’état seules, la dernière il y a \d/
+      )
+    )
+    clearInterval(timer)
+    warn.mockRestore()
   })
 
   it('seuil imposé par `BOBINE_SILENCE_MS` (essais), sinon 5 min', () => {

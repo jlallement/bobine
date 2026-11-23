@@ -41,7 +41,7 @@ import type { EnvChanges } from '../agent-config/api-keys'
 import type { NetworkWatch } from '../network-watch'
 import { log, type LogScope } from '../log'
 import { formatDuration, hostScope, scopeText } from './acp-log'
-import { watchSilence } from './silence-watch'
+import { AgentActivity, watchSilence } from './silence-watch'
 import type { ChildSession, SubagentStream } from './adapters'
 import { launchAgent, type AgentProcess } from './agent-process'
 import { AppToolsBridge } from './app-tools-bridge'
@@ -258,8 +258,8 @@ export class AgentHost {
   private closed = false
   /** Processus de l'agent et son journal : fin de la sortie d'erreur, relevé ACP (fiche 080). */
   private launched: AgentProcess | undefined
-  /** Dernier octet reçu de l'agent : un agent qui se tait pendant un tour est signalé. */
-  private lastAgentActivity = 0
+  /** Dernière ligne reçue de l'agent, et dernière qui dit qu'il avance (`agent-progress.ts`). */
+  private readonly activity = new AgentActivity()
   /** Silence de l'agent pendant le tour, au-delà du seuil du bandeau (fiche 194). */
   private silentSince: number | undefined
   private readonly options: AgentHostOptions
@@ -637,7 +637,7 @@ export class AgentHost {
     const turnStarted = Date.now()
     let stopReason = 'erreur'
     const silence = watchSilence({
-      lastActivity: () => this.lastAgentActivity,
+      activity: this.activity,
       waiting: () => this.requests.waiting(),
       scope: scopeText(this.logScope()),
       onSilent: (since) => this.setSilent(since)
@@ -990,15 +990,15 @@ export class AgentHost {
       credentials,
       scope: this.logScope(),
       label: scopeText(this.logScope()),
-      onActivity: () => {
-        this.lastAgentActivity = Date.now()
-        if (this.silentSince !== undefined) this.setSilent(undefined)
+      onActivity: (progress) => {
+        if (this.activity.note(progress) && this.silentSince !== undefined)
+          this.setSilent(undefined)
       }
     })
     const { child, failed } = launched
     this.child = child
     this.launched = launched
-    this.lastAgentActivity = launched.startedAt
+    this.activity.reset(launched.startedAt)
 
     child.on('exit', (code, signal) => this.onAgentExit(child, code, signal))
     const connection = this.connect(launched)
