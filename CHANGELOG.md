@@ -54,6 +54,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   **Autoriser une fois**, qui restait sans effet).
 - Une ligne d’une carte de travaux ne glisse plus sous le pointeur quand le tour se termine au
   moment où on la vise : le clic sur sa flèche n’est plus perdu.
+- Carte « Retenir ce souvenir ? » : pendant que l’agent écrit dessous, elle ne remonte plus sous
+  le pointeur ; le clic sur **Retenir** ou **Non** n’est plus perdu.
 - Les boutons d’un travail qui écrit dans sa branche arrivent en une fois, à leur place, quand il
   a fini : **Fusionner dans main** ne s’ajoute plus en tête un instant après les autres, et ne
   fait plus glisser **Voir les modifications** ou **Ouvrir sa conversation** sous le pointeur.

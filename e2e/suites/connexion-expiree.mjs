@@ -1,9 +1,8 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, LANG, check, withApp } from '../lib.mjs'
+import { L, LANG, TERMINAL_TEXT, check, withApp } from '../lib.mjs'
 
-const rows = `(document.querySelector('.terminal-host .xterm-rows')?.innerText ?? '')`
 /** Réponse de l'agent factice une fois reconnecté (il parle la langue des essais, fiche 167). */
 const REPLY = LANG === 'en' ? 'Signed in again, I can answer.' : 'Reconnecté, je peux répondre.'
 /** Réponse du modèle connecté (fiche 210). */
@@ -77,7 +76,7 @@ export async function connexionExpireeSuite(scheme) {
         await ui.shot('expiree-1-carte')
 
         await ui.click(ui.$('auth-mock-login'))
-        await ui.waitFor(`${rows}.includes('touch .mock-agent-logged-in')`)
+        await ui.waitFor(`${TERMINAL_TEXT}.includes('touch .mock-agent-logged-in')`)
         for (let i = 0; i < 50 && !existsSync(join(workspace, '.mock-agent-logged-in')); i++) {
           await new Promise((r) => setTimeout(r, 100))
         }

@@ -140,15 +140,19 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   await ui.send('Découpe la suite en travaux indépendants.')
   const group = ui.$('work-group')
   await ui.waitFor(`${group}?.dataset.pending === '3'`, 30000)
+  // Les trois `start_child` partent à la fois (deux requêtes HTTP chacun) : ils arrivent dans un
+  // ordre quelconque, et la carte les montre dans l'ordre d'arrivée (macOS CI, 2026-11-23 : les
+  // tests avant le tri). Chaque ligne se lit donc par son titre : rôle, sans rôle, avis.
+  const proposed = await ui.ev(
+    `[...document.querySelectorAll('[data-testid=proposal-row]')].map((r) => r.dataset.title + (r.querySelector('.role-avatar') ? ' (rôle)' : '')).sort().join(' / ')`
+  )
   check(
     (await ui.ev(`${ui.$('work-group-title')}.innerText`)) ===
       L('workGroup.titleProposed', { count: 3 }) &&
-      (await ui.ev(
-        `[...document.querySelectorAll('[data-testid=proposal-row]')].map((r) => r.dataset.title).join(' / ')`
-      )) ===
-        'Tri des articles par rayon / Tests de la sauvegarde locale / Relire l’accessibilité de l’écran' &&
+      proposed ===
+        'Relire l’accessibilité de l’écran (rôle) / Tests de la sauvegarde locale / Tri des articles par rayon (rôle)' &&
       (await ui.ev(`!!${ui.$('work-group-start-all')}`)),
-    'proposés : une carte de groupe, trois lignes (rôle, sans rôle, avis), « Tout lancer »'
+    `proposés : une carte de groupe, trois lignes (rôle, sans rôle, avis), « Tout lancer » (${proposed})`
   )
   await ui.reveal(group)
   await ui.shot('264-groupe-proposes')

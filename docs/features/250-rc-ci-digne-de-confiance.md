@@ -485,3 +485,35 @@ Dependabot comme les autres.
   Windows). `./scripts/verify` vert. Rien de joué en local (ADR-0069) : `quick` sur GitHub (Linux
   et macOS) à lancer par Jérôme ; le relevé de `e2e/suites/quick.mjs` reste en place jusqu'à cette
   preuve.
+
+- 2026-11-23 — Passage e2e GitHub macOS 45256100087 (Linux vert, suite locale Mac verte) : trois
+  échecs, traités à la cause (branche `fix/macos-ci-rc4`).
+  - `connexion-expiree` clair (« délai dépassé » sur `touch .mock-agent-logged-in`) : la capture
+    montre la commande coupée par le terminal (`touch .mock-agent-log` / `ged-in`), l'invite du
+    runner (nom de machine long) remplissant la ligne. Même cause que `auth` (lot
+    `fix/regressions-rc4`). Aide commune `TERMINAL_TEXT` dans `e2e/lib.mjs` : le terminal affiché,
+    lignes mises bout à bout ; reprise par `auth`, `connexion-expiree`, `mentions`, `terminal`,
+    `parcours-outils` (toutes les suites qui cherchent un texte dans `.xterm-rows`). Défaut de
+    l'essai, pas de l'app.
+  - `pilote` (« Retenir » cliqué, carte souvenir toujours en attente 10 s plus tard, jamais
+    décidée ensuite) : `repondre` a cliqué pendant que la réponse de l'agent s'écrivait **sous** la
+    carte (état relevé : tour « Écrit… », 3 mots, puis 70). Le fil, collé en bas, remontait la carte
+    à chaque morceau : entre le survol et l'appui (60 ms), « Retenir » avait quitté le pointeur, et
+    le clic est tombé à côté (aucune erreur sur la carte, aucun appel au main). **Défaut de l'app** :
+    les propositions de filles retiennent le fil sous le pointeur (`data-scroll-hold`, fiche 124),
+    pas la carte souvenir ; un humain qui vise « Retenir » pendant que l'agent écrit le rate de la
+    même façon. Correctif : `data-scroll-hold` sur la carte souvenir en attente (la ligne décidée
+    ne retient pas). Preuve : `MemoryProposalCard.test.tsx` (« en attente : le fil ne défile pas
+    sous le pointeur… »), rouge sans le correctif. Le pilote n'est pas changé.
+  - `travaux-groupe` sombre (« proposés : … trois lignes ») : la capture montre les trois lignes
+    et « Tout lancer », mais « Tests de la sauvegarde locale » avant « Tri des articles par
+    rayon ». Les trois `start_child` de l'agent factice partent en parallèle (chacun : demande
+    d'autorisation, puis `initialize` et `tools/call` en HTTP) et la carte les range dans l'ordre
+    d'arrivée au serveur MCP, qui n'est pas garanti (ni pour un vrai agent). Sans rapport avec le
+    correctif T6 (ordre des lancements, respecté ici : la suite des vérifications est passée).
+    L'essai exigeait un ordre que l'app ne promet pas : il lit désormais chaque ligne par son titre
+    (rôle, sans rôle, avis, avatar de rôle compris), triées. Écart produit possible, non traité :
+    ranger les propositions simultanées dans l'ordre des `tool_call` ACP de l'agent.
+  `./scripts/verify` vert. Rien joué en local (ADR-0069) : à lancer sur GitHub (macOS, et Linux
+  pour les suites du terminal) : `connexion-expiree`, `auth`, `mentions`, `terminal`,
+  `parcours-outils`, `pilote`, `memoire`, `parcours-reglages`, `travaux-groupe`.
