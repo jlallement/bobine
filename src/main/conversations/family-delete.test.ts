@@ -218,17 +218,23 @@ describe('mère supprimée avec ses filles juste après « Tout lancer » (chass
     const prompt = env.manager.prompt.bind(env.manager)
     let release = () => {}
     const gate = new Promise<void>((resolve) => (release = resolve))
-    vi.spyOn(env.manager, 'prompt').mockImplementation(async (id, ...rest) => {
-      if (id !== mother) await gate
-      return prompt(id, ...rest)
+    // Consigne de la fille : le tour que `launch` attend, suivi ici jusqu'à son échec.
+    const turns: Promise<unknown>[] = []
+    vi.spyOn(env.manager, 'prompt').mockImplementation((id, ...rest) => {
+      if (id === mother) return prompt(id, ...rest)
+      const turn = gate.then(() => prompt(id, ...rest))
+      turns.push(turn)
+      return turn
     })
     const post = vi.spyOn(env.manager, 'post')
     const child = await env.children.start(mother, { text: 'Importer', profileId: 'echo' })
     await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
     expect(env.listed(child.id)).toBeUndefined()
     release()
+    // La consigne échoue (fille partie) ; `launch`, abonné avant, a fini son `catch` ensuite.
+    await env.waitFor(() => turns.length > 0)
+    await Promise.allSettled(turns)
     await env.manager.settled()
-    await new Promise((resolve) => setTimeout(resolve, 200))
     // Avant : « children.notice.promptFailed » posé dans le fil de la fille supprimée, écarté au
     // journal (« Évènement « notice » écarté : conversation … inconnue »).
     const lost = post.mock.results.filter((r) => r.type === 'return' && r.value === false)
