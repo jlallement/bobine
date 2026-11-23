@@ -45,6 +45,19 @@ async function temporaryProfile(scheme) {
         (await ui.ev(`${ui.$('temporary-profile')}.innerText`)) === L('settings.data.fresh.chip'),
         'profil temporaire : la pastille dans la barre de titre'
       )
+      // En-tête étroit (fiche 276, T10) : la fiole seule, le texte en infobulle ; large : entière.
+      const chip = `(() => { const c = ${ui.$('temporary-profile')}; return { width: Math.round(c.getBoundingClientRect().width), title: c.title, header: Math.round(document.querySelector('.main-header').getBoundingClientRect().width) } })()`
+      await ui.viewport(700, 820)
+      const narrow = await ui.ev(chip)
+      await ui.viewport(1600, 900)
+      const wide = await ui.ev(chip)
+      await ui.viewport()
+      check(
+        narrow.width <= 32 &&
+          narrow.title.startsWith(L('settings.data.fresh.chip')) &&
+          wide.width > 120,
+        `pastille du profil temporaire : fiole seule dans un en-tête étroit, entière sinon (${JSON.stringify({ narrow, wide })})`
+      )
       const main = await mainProcess()
       try {
         folder = await main.evaluate(`require('electron').app.getPath('userData')`)

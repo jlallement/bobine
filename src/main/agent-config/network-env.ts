@@ -33,7 +33,21 @@ export function agentProxy(
   profileEnv: Record<string, string>,
   changes: EnvChanges
 ): string | undefined {
-  return networkFromEnv(withEnvChanges({ ...base, ...profileEnv }, changes)).proxy
+  return agentNetwork(base, profileEnv, changes).proxy
+}
+
+/** Réseau d'entreprise qu'un agent a dans son environnement : proxy, exceptions, certificats. */
+export function agentNetwork(
+  base: NodeJS.ProcessEnv,
+  profileEnv: Record<string, string>,
+  changes: EnvChanges
+): NetworkSettings {
+  return networkFromEnv(withEnvChanges({ ...base, ...profileEnv }, changes))
+}
+
+/** Mêmes proxy, exceptions et certificats (fiche 276 : réglages changés depuis le lancement). */
+export function sameNetwork(a: NetworkSettings, b: NetworkSettings): boolean {
+  return a.proxy === b.proxy && a.noProxy === b.noProxy && a.caCerts === b.caCerts
 }
 
 /** Réglages saisis, complétés par l'environnement : ce que les agents auront vraiment. */
@@ -98,4 +112,13 @@ export function networkController(store: {
     get: () => networkView(store.network(), process.env),
     set: (change) => networkView(store.setNetwork(change), process.env)
   }
+}
+
+/**
+ * Réseau d'entreprise d'un agent lancé maintenant, et changements des réglages (fiche 276) : de
+ * quoi dire, dans les bandeaux d'un agent déjà lancé, que ses réglages réseau ont changé.
+ */
+export interface NetworkSource {
+  env(): EnvChanges
+  onChange(listener: () => void): () => void
 }

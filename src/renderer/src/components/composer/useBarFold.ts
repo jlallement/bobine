@@ -5,13 +5,15 @@ import { useLayoutEffect, useRef, useState } from 'react'
  * de puces qui rétrécissent toutes ensemble jusqu'à « c… », « GP… ».
  *
  * 0 : tout est là ; 1 : la capture passe dans le menu de 📎 ; 2 : la consommation ne garde que son
- * anneau ; 3 : le mode ne garde que son icône. Au-delà, le modèle se tronque, puis l'agent.
- * 4 (conversation très étroite, que même cela ne suffit pas à loger) : la barre passe sur deux
- * lignes (outils, puis consommation, modèle, agent et envoi) plutôt que de pousser le bouton
- * d'envoi hors de la fenêtre.
+ * anneau ; 3 : le mode ne garde que son icône ; 4 : les réglages de la session passent dans le
+ * menu de 📎 (fiche 276, T10 : avant que le modèle ne soit coupé). Au-delà, le modèle se tronque,
+ * puis l'agent. 5 (conversation très étroite, que même cela ne suffit pas à loger) : la barre
+ * passe sur deux lignes (outils, puis consommation, modèle, agent et envoi) plutôt que de pousser
+ * le bouton d'envoi hors de la fenêtre.
  */
-export const MAX_FOLD = 3
-export const WRAPPED = 4
+export const OPTIONS_FOLD = 4
+export const MAX_FOLD = 4
+export const WRAPPED = 5
 
 /** Premier niveau auquel la barre tient (le dernier sinon). */
 export function fitFold(fits: (level: number) => boolean): number {

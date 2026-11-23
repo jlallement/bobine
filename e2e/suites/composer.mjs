@@ -23,6 +23,7 @@ const barState = `(() => {
     fold: Number(bar.dataset.fold),
     fits: bar.scrollWidth <= bar.clientWidth + 1,
     capture: shown('[data-testid="capture"]'),
+    settings: shown('[data-testid="session-settings"]'),
     percent: shown('.usage-percent'),
     modeLabel: shown('.mode-chip .chip-label'),
     modelCut: cut('.model-chip'),
@@ -335,7 +336,7 @@ export async function composerSuite(scheme) {
         `760 px : la capture passe sous 📎 (niveau ${bar.fold}), la barre tient`
       )
       check(
-        !bar.agentCut && !bar.othersCut && (bar.modelCut ? bar.fold === 3 : true),
+        !bar.agentCut && !bar.othersCut && (bar.modelCut ? bar.fold === 4 : true),
         `760 px : rien de tronqué, sauf le modèle une fois tout replié (${Math.round(bar.model)} px)`
       )
       await ui.shot('composer-5-barre-760')
@@ -369,23 +370,34 @@ export async function composerSuite(scheme) {
       await ui.waitFor(`${ui.$('mode-chip')}.dataset.plan === 'true'`)
       check((await icon()) !== before, 'le mode plan a son icône, distincte des autres modes')
 
-      // Plus étroit encore : le mode garde son icône, puis le modèle se tronque, l'agent en dernier.
+      // Plus étroit encore : le mode garde son icône, les réglages de la session passent sous 📎
+      // (fiche 276, T10), puis seulement le modèle se tronque, l'agent en dernier.
       await ui.viewport(640)
       bar = await ui.ev(barState)
       check(
-        bar.fold === 3 && !bar.modeLabel && !bar.percent && bar.fits && bar.sendInside,
+        bar.fold >= 3 && !bar.modeLabel && !bar.percent && bar.fits && bar.sendInside,
         `640 px : mode en icône, anneau seul, envoi visible (niveau ${bar.fold})`
       )
       check(
-        !bar.othersCut && bar.modelCut && bar.model >= 56,
-        `640 px : seuls le modèle (${Math.round(bar.model)} px) et l’agent (${bar.agentIcon ? 'chevron seul' : `${Math.round(bar.agent)} px`}) cèdent`
+        !bar.othersCut &&
+          bar.model >= 56 &&
+          (bar.modelCut ? bar.fold === 4 && !bar.settings : true),
+        `640 px : réglages de la session sous 📎 avant que le modèle (${Math.round(bar.model)} px${bar.modelCut ? ', tronqué' : ''}) et l’agent (${bar.agentIcon ? 'icône' : `${Math.round(bar.agent)} px`}) ne cèdent`
       )
+      if (bar.fold === 4) {
+        await ui.click(ui.$('attach'))
+        await ui.waitFor(`!!${ui.$('session-settings-item')}`)
+        check(true, '📎 replié : « Réglages de la session » en sous-menu')
+        await ui.shot('composer-7b-reglages-sous-trombone')
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('attach-menu-content')}`)
+      }
       await ui.shot('composer-7-barre-640')
       // La barre latérale cède jusqu'à 220 px (fiche 113) : la conversation n'a plus que 280 px.
       await ui.viewport(500)
       bar = await ui.ev(barState)
       check(
-        bar.fold === 4 && bar.fits && bar.sendInside,
+        bar.fold === 5 && bar.fits && bar.sendInside,
         '500 px (panneau ouvert sur une petite fenêtre) : la barre passe sur deux lignes, envoi visible'
       )
       await ui.shot('composer-8-barre-500')

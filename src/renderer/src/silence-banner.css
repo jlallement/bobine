@@ -1,9 +1,11 @@
-/* Bandeau d'un agent silencieux (fiche 194) : ton neutre, de la famille du bandeau de reprise. */
+/* Bandeau d'un agent silencieux (fiche 194) : ton neutre, de la famille du bandeau de reprise.
+   Icône, puis le texte sur toute la largeur ; les boutons dessous, alignés sur le texte (fiche
+   276, T5 : à droite, ils écrasaient le texte en une colonne de huit lignes). */
 .silence-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 10px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -20,7 +22,6 @@
 }
 
 .silence-banner-text {
-  flex: 1 1 220px;
   min-width: 0;
 }
 
@@ -32,10 +33,11 @@
 }
 
 .silence-banner-actions {
+  grid-column: 2;
   display: flex;
-  margin-left: auto;
+  flex-wrap: wrap;
   gap: 6px;
-  flex-shrink: 0;
+  margin-top: 10px;
 }
 
 /* Agent qui ne joint pas son modèle (fiche 275) : même forme, ton du bandeau de reprise. */
@@ -52,11 +54,21 @@
   margin-top: 6px;
 }
 
+/* L'adresse du proxy d'une seule pièce, avec ses parenthèses : « … » si elle ne tient pas, entière
+   en infobulle (fiche 276, T5 ; avant, coupée en « http:// » / « •••@proxy… »). */
+.silence-banner-hint .network-addr {
+  white-space: nowrap;
+}
+
 .silence-banner-hint code {
+  display: inline-block;
+  max-width: calc(100% - 2ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
   font-family: var(--font-code, var(--font-mono));
   font-variant-ligatures: var(--code-ligatures, none);
   font-size: 11.5px;
-  overflow-wrap: anywhere;
 }
 
 .silence-banner-details {
