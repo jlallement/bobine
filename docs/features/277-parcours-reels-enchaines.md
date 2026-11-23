@@ -1,4 +1,4 @@
-# 276 — Parcours réels enchaînés (essais de bout en bout « journées types »)
+# 277 — Parcours réels enchaînés (essais de bout en bout « journées types »)
 
 - **Statut** : en cours — parcours écrits ; défauts trouvés notés ci-dessous, à corriger ailleurs
 - **Dépend de** : 115 (lanceur e2e), 002 (agent factice), 206 (pilote : même esprit, en automatique)

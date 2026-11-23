@@ -150,7 +150,7 @@ const REPLAY = [
   'src/shared/replay-tail.ts'
 ]
 
-/** Parcours réels enchaînés (fiche 276) : leurs outils, la barre latérale, le fil. */
+/** Parcours réels enchaînés (fiche 277) : leurs outils, la barre latérale, le fil. */
 const PARCOURS = ['e2e/parcours.mjs', `${C}sidebar/`, `${C}thread/`, `${R}useConversations.ts`]
 
 /**
@@ -2287,7 +2287,7 @@ export const SUITES = [
       'src/main/onboarding/'
     ]
   },
-  // Parcours réels enchaînés (fiche 276) : une « journée » d'usage dans une même instance, avec
+  // Parcours réels enchaînés (fiche 277) : une « journée » d'usage dans une même instance, avec
   // un redémarrage ; ils touchent l'app presque entière, d'où des dossiers entiers en sources.
   {
     name: 'parcours-matinee',
