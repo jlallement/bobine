@@ -878,6 +878,15 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       env.stop()
     })
 
+    /**
+     * Attente du réveil de la mère tech lead, la plus longue de ces essais (la fille travaille
+     * entre-temps). Mesuré (30 passages en parallèle) : 4,2 s au plus, 2,4 s en médiane ; les
+     * autres attentes, 1,8 s au plus, gardent le délai par défaut (10 s). Cumul des délais d'un
+     * essai (55 s au plus) sous sa limite (60 s) : une panne, même à la dernière attente, dit ce
+     * qui était attendu plutôt qu'un essai coupé.
+     */
+    const LEAD_WAKE_MS = 15_000
+
     /** Mère tech lead (fiche 160) : une conversation sur `profileId`, outils des filles fournis. */
     async function withLead(profileId: string) {
       const toolServer = new AppToolServer()
@@ -931,10 +940,9 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
         card: key
       })
       // Premier réveil : correction envoyée, « pas prête » ; second réveil : « prête ».
-      await waitFor(() => env.wakes(env.mother) === 2, 30_000)
+      await waitFor(() => env.wakes(env.mother) === 2, LEAD_WAKE_MS)
       await waitFor(
-        () => env.items(env.mother).filter((i) => i.kind === 'child-recommendation').length === 2,
-        20_000
+        () => env.items(env.mother).filter((i) => i.kind === 'child-recommendation').length === 2
       )
       const verdicts = env
         .items(env.mother)
@@ -946,7 +954,7 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       // La correction est partie à la fille, qui a gardé sa conversation.
       const [child] = env.manager.state().conversations.filter((c) => c.startedFrom)
       expect(env.lastReply(child?.id ?? '')).toContain('Correction faite')
-      await waitFor(() => env.replies().includes('à toi de la fusionner'), 20_000)
+      await waitFor(() => env.replies().includes('à toi de la fusionner'))
       // Rien n'est fusionné : la base n'a pas bougé.
       expect(env.git('rev-list', '--count', 'main')).toBe('1')
       env.stop()
@@ -999,11 +1007,11 @@ describe('conversations filles, étape 2 : l’agent lance et suit ses filles (f
       const turn = env.manager.prompt(env.mother, 'Fais le relevé')
       await env.start()
       await turn
-      await waitFor(() => env.wakes(env.mother) === 1, 30_000)
-      await waitFor(() => env.replies().includes('Compte rendu'), 20_000)
+      await waitFor(() => env.wakes(env.mother) === 1, LEAD_WAKE_MS)
+      await waitFor(() => env.replies().includes('Compte rendu'))
       expect(env.replies()).toContain('Compte rendu borné')
       // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite, et la mère la lit.
-      await waitFor(() => /(REPONSE|child_status|la suite)\.$/.test(env.replies()), 20_000)
+      await waitFor(() => /(REPONSE|child_status|la suite)\.$/.test(env.replies()))
       expect(env.replies()).toContain(
         'Suite lue par child_status : réponse entière, jusqu’à MARQUEUR-FIN-DE-REPONSE.'
       )
