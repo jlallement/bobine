@@ -531,6 +531,26 @@ describe('Composer — remplaçants des e2e', () => {
     expect(screen.queryAllByTestId('command-item')).toHaveLength(0)
   })
 
+  it('brouillon par conversation : vide ailleurs, retrouvé en revenant, texte collé compris (history n° 8, 9, 10)', () => {
+    const paste = (input: HTMLTextAreaElement, text: string) =>
+      fireEvent.paste(input, { clipboardData: { files: [], getData: () => text } })
+    const key = `c-brouillon-${Math.random()}`
+    const long = Array.from({ length: 41 }, (_, i) => `ligne ${i}`).join('\n')
+    const first = setup({}, { draftKey: key })
+    paste(first.input, long)
+    first.type('à finir')
+    cleanup()
+    // Autre conversation : la zone de saisie est vide.
+    const other = setup({}, { draftKey: `${key}-autre` })
+    expect(other.input.value).toBe('')
+    expect(screen.queryByTestId('attachment')).toBeNull()
+    cleanup()
+    // De retour : le texte et la pièce jointe (texte collé) reviennent.
+    const back = setup({}, { draftKey: key })
+    expect(back.input.value).toBe('à finir')
+    expect(screen.getByTestId('attachment-pasted').textContent).toContain('41 lignes')
+  })
+
   it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {
     const image = {
       kind: 'image' as const,
