@@ -35,10 +35,11 @@ export function AgentQuotaStatus({
       ? t('quota.usedShort', { used: amount(quota.used) })
       : t('quota.short', { percent: Math.round(ratio * 100) })
   const left = quota.limit === null ? undefined : quota.limit - quota.used
-  const time = new Date(quota.readAt).toLocaleTimeString(currentLocale(), {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const readAt = new Date(quota.readAt)
+  const time = readAt.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' })
+  // Quota gardé d'un lancement précédent (fiche 282) : lu un autre jour, la date le dit.
+  const earlier = readAt.toDateString() !== new Date().toDateString()
+  const date = readAt.toLocaleDateString(currentLocale(), { day: 'numeric', month: 'long' })
   const bar = ratio !== undefined && (
     <div className={`usage-bar${level ? ` ${level}` : ''}`}>
       <span style={{ width: `${Math.min(ratio, 1) * 100}%` }} />
@@ -92,7 +93,9 @@ export function AgentQuotaStatus({
               </div>
             )}
             <div className="usage-hint">
-              {t('quota.source', { agent: agentLabel, time })}
+              {earlier
+                ? t('quota.sourceEarlier', { agent: agentLabel, date, time })
+                : t('quota.source', { agent: agentLabel, time })}
               {' · '}
               <button
                 type="button"

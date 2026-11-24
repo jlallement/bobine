@@ -2,6 +2,17 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- IBM Bob : le quota de Bobcoins s’affiche en bas à gauche dès le lancement — le dernier relevé
+  du mois, avec son heure de lecture dans le détail —, puis se met à jour quelques secondes après
+  que Bob est prêt. Il n’apparaissait qu’une fois sa lecture finie.
+- Mon activité › IBM Bob sur ce Mac : l’aide de « Dépense sur ce Mac » dit pourquoi ce total peut
+  être plus bas que celui de la page : les sessions que Bobine supprime chez Bob (message de commit
+  rédigé, apartés…) n’y sont plus.
+
 ## 1.0.0 — 24 novembre 2026
 
 ### Corrections
