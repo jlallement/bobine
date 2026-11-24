@@ -8,6 +8,11 @@
  * « Arrêter » pendant une préparation (fiche 278) : l'agent n'a pas encore de tour à annuler (il
  * démarre, par exemple une fille qui vient d'être lancée). L'arrêt est retenu pour le message en
  * route, qui le prend en partant ; sans envoi en route, il n'y a rien à retenir.
+ *
+ * Fille qui démarre (`startingHeld`) : sa consigne n'est pas encore dans cette file pendant que son
+ * agent démarre, que son modèle est posé ou que son worktree se prépare (`children.ts`,
+ * `worktree-setup-wiring.ts`). L'arrêt est alors retenu jusqu'au départ de la consigne, ou oublié
+ * si elle ne part pas (`forget`).
  */
 export class SendOrder {
   private readonly tails = new Map<string, Promise<void>>()
@@ -34,9 +39,14 @@ export class SendOrder {
     return result
   }
 
-  /** « Arrêter » : retenu si un envoi est en préparation. */
-  stopPending(id: string): void {
-    if (this.preparing.has(id)) this.stops.add(id)
+  /** « Arrêter » : retenu si un envoi est en préparation, ou pour une fille qui démarre. */
+  stopPending(id: string, starting = false): void {
+    if (starting || this.preparing.has(id)) this.stops.add(id)
+  }
+
+  /** Consigne qui ne partira pas (lancement de la fille en échec) : l'arrêt retenu est oublié. */
+  forget(id: string): void {
+    this.stops.delete(id)
   }
 
   /** Envoi parti (`done` : son tour) : un arrêt retenu le suit aussitôt, une seule fois. */

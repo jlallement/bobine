@@ -1435,6 +1435,39 @@ describe('ConversationManager', () => {
     app.manager.stopAll()
   })
 
+  it('arrêter une fille qui démarre avant que sa consigne parte (agent prêt, modèle posé) : son tour s’arrête (fiche 278)', async () => {
+    const env = environment(['--delay', '2'])
+    const app = env.launch()
+    const id = app.manager.state().activeId
+    // Comme `children.ts` (`launch`) : « démarre » jusqu'au départ de la consigne, agent démarré et
+    // modèle posé avant l'envoi ; « Arrêter » arrive dans cet intervalle (e2e `session`, macOS CI).
+    app.manager.holdStarting(id, true)
+    await app.manager.ready(id)
+    expect(app.manager.state().conversations.find((c) => c.id === id)?.status).toBe('starting')
+    await app.manager.cancel(id)
+    await app.manager.prompt(id, '/scenario attend-stop')
+    const ends = app.events.flatMap((e) =>
+      e.conversationId === id && e.event.type === 'turn-end' ? [e.event.stopReason] : []
+    )
+    expect(ends).toEqual(['cancelled'])
+    app.manager.stopAll()
+  })
+
+  it('fille dont le lancement échoue après « Arrêter » : l’arrêt retenu est oublié (fiche 278)', async () => {
+    const env = environment(['--delay', '2'])
+    const app = env.launch()
+    const id = app.manager.state().activeId
+    app.manager.holdStarting(id, true)
+    await app.manager.cancel(id)
+    app.manager.holdStarting(id, false, true)
+    await app.manager.prompt(id, 'Bonjour')
+    const ends = app.events.flatMap((e) =>
+      e.conversationId === id && e.event.type === 'turn-end' ? [e.event.stopReason] : []
+    )
+    expect(ends).toEqual(['end_turn'])
+    app.manager.stopAll()
+  })
+
   it('mise en veille puis réveil (fiche 103) : le fil de l’app est gardé, réponse interrompue comprise', async () => {
     const env = environment(['--delay', '2'])
     const app = env.launch({ maxLive: 1 })

@@ -523,9 +523,11 @@ export class ConversationManager {
   /**
    * Fille lancée (fiche 223) : « démarre » dans la liste tant que sa consigne n'est pas partie
    * (`held`), avant le lancement de son agent comme une fois prêt (`listedStatus`). Posé et levé
-   * par le module des filles (`children.ts`).
+   * par le module des filles (`children.ts`). `failed` : sa consigne ne partira pas (lancement en
+   * échec), un « Arrêter » retenu pour elle est oublié (fiche 278).
    */
-  holdStarting(id: string, held: boolean): void {
+  holdStarting(id: string, held: boolean, failed = false): void {
+    if (failed) this.sendOrder.forget(id)
     if (setStartingHeld(this.conversations.get(id), held)) this.emitList()
   }
 
@@ -873,9 +875,10 @@ export class ConversationManager {
     const conversation = this.get(id)
     const busy = conversation.host?.snapshot().status === 'busy'
     if (busy) this.onEvent(conversation, { type: 'cancel-requested' })
-    // « Arrêter » sans tour en cours, message en route (démarrage, dossier) : l'arrêt le suit
-    // (fiche 278), sinon il serait perdu et le tour irait à son terme.
-    else if (stop) this.sendOrder.stopPending(id)
+    // « Arrêter » sans tour en cours, message en route (démarrage, dossier) ou fille qui démarre
+    // avant que sa consigne parte (modèle, worktree) : l'arrêt le suit (fiche 278), sinon il serait
+    // perdu et le tour irait à son terme.
+    else if (stop) this.sendOrder.stopPending(id, !!conversation.startingHeld)
     return conversation.host
   }
 

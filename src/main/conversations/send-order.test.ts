@@ -43,4 +43,24 @@ describe('SendOrder : « Arrêter » pendant une préparation (fiche 278)', () =
     await next.sending
     expect(next.host.cancel).not.toHaveBeenCalled()
   })
+
+  it('fille qui démarre, consigne pas encore en route : retenu jusqu’à son départ', async () => {
+    const order = new SendOrder()
+    order.stopPending('c', true)
+    const first = sendThrough(order)
+    await first.sending
+    expect(first.host.cancel).toHaveBeenCalledOnce()
+    const next = sendThrough(order)
+    await next.sending
+    expect(next.host.cancel).not.toHaveBeenCalled()
+  })
+
+  it('fille dont la consigne ne part pas : l’arrêt oublié ne touche pas le message suivant', async () => {
+    const order = new SendOrder()
+    order.stopPending('c', true)
+    order.forget('c')
+    const next = sendThrough(order)
+    await next.sending
+    expect(next.host.cancel).not.toHaveBeenCalled()
+  })
 })
