@@ -120,3 +120,13 @@ describe('cibles du repère : le travail délégué d’aujourd’hui (fiche 261
     ])
   })
 })
+
+describe('participants d’un tour de table (fiche 285)', () => {
+  it('le repère mène à la carte du tour, jamais à un compte rendu caché', async () => {
+    const { roundtable, thread } = await import('../roundtable/test-fixtures')
+    const { answered } = await import('../roundtable/test-fixtures')
+    const tour = thread(roundtable([answered('A')]), { A: ['avis'] })
+    const targets = delegatedWorkTargets(tour, [child('child-A', 'ready')], {})
+    expect(targets.map((t) => t.itemId)).toEqual([1])
+  })
+})

@@ -2,6 +2,18 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- **Tour de table** (`/roundtable`, ou le bouton de la barre de saisie) : la même question part à
+  deux à cinq modèles, sans qu’aucun voie les autres, puis la conversation compare les avis et rend
+  une synthèse qui tranche. Les participants se cochent dans un menu (le dernier choix est
+  retenu), en lecture seule ; une ligne dit avant l’envoi combien de fois plus de jetons cela
+  consomme. Une carte suit chaque avis ; la synthèse montre le vrai nom derrière « Participant
+  A, B… » ; « Demander de l’appliquer » et, une fois, « Faire réagir les participants ». Voir
+  l’aide : Tour de table.
+
 ## 1.1.0-rc.2 — 24 novembre 2026
 
 ### Corrections

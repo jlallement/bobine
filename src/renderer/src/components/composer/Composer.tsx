@@ -53,6 +53,7 @@ import { QueuedMessages } from './QueuedMessages'
 import {
   appCommandOf,
   mergeCommands,
+  ROUNDTABLE_COMMAND,
   withCompactCommand,
   type AppCommandName
 } from '@shared/app-commands'
@@ -76,6 +77,8 @@ import { LaunchDetails, LaunchLine } from '../thread/LaunchLine'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
 import { lastSegment } from '@shared/windows-paths'
+import { RoundtableComposerTag, RoundtableLine } from '../roundtable/RoundtableLine'
+import { useComposerRoundtable, type ComposerRoundtable } from '../roundtable/useRoundtableCompose'
 
 interface Props {
   /** Fichiers déposés sur la conversation, à joindre au message (`useFileDrop`). */
@@ -157,6 +160,8 @@ interface Props {
   roles?: ComposerRoles
   /** Historique de la saisie de la conversation (`sentHistory` de son fil, fiche 227). */
   sentHistory?: unknown
+  /** Tour de table (fiche 285) : participants retenus ; absent, pas de tour de table. */
+  roundtable?: ComposerRoundtable
 }
 
 /** Statuts qui ont leur propre texte d'invite (clé `composer.placeholder.<statut>`). */
@@ -213,7 +218,13 @@ const NO_AGENT_COMMANDS: AgentCommand[] = []
  * Commandes « / » de l'agent, personnelles et de l'app (fiches 039, 045) ; l'agent gagne à nom
  * égal. Sa commande de compaction figure sous son vrai nom (`/compress`, fiche 126).
  */
-function useCommands(snapshot: AgentSnapshot | null, userCommands: UserCommand[], agent: string) {
+function useCommands(
+  snapshot: AgentSnapshot | null,
+  userCommands: UserCommand[],
+  agent: string,
+  /** Espace Discussion (fiche 224) : pas de tour de table, sa commande n'est pas proposée. */
+  discussion: boolean
+) {
   const announced = snapshot?.commands ?? NO_AGENT_COMMANDS
   const compactCommand = snapshot?.compactCommand
   const agentCommands = useMemo(
@@ -222,8 +233,11 @@ function useCommands(snapshot: AgentSnapshot | null, userCommands: UserCommand[]
   )
   const ownCommands = useMemo(() => toAgentCommands(userCommands), [userCommands])
   const commands = useMemo(
-    () => mergeCommands(agentCommands, ownCommands, compactCommand),
-    [agentCommands, ownCommands, compactCommand]
+    () =>
+      mergeCommands(agentCommands, ownCommands, compactCommand).filter(
+        (c) => !(discussion && c.source === 'app' && c.name === ROUNDTABLE_COMMAND)
+      ),
+    [agentCommands, ownCommands, compactCommand, discussion]
   )
   return { agentCommands, ownCommands, commands }
 }
@@ -302,7 +316,12 @@ export function Composer(props: Props) {
   const view = composerView(snapshot)
   const { status, busy, queued, locked, controls, modeControl, agentLabel, blocker } = view
   // Brouillon (fiches 026, 155) : texte et pièces jointes.
-  const { text, setText, attachments } = useComposerDraft({
+  const {
+    text,
+    setText,
+    attachments,
+    roundtable: rtDraft
+  } = useComposerDraft({
     draftKey,
     caps: snapshot?.promptCapabilities,
     agentName: view.agentName,
@@ -318,7 +337,8 @@ export function Composer(props: Props) {
   const canSend = view.canSendNow && hasContent
 
   const userCommands = props.userCommands ?? NO_USER_COMMANDS
-  const { agentCommands, ownCommands, commands } = useCommands(snapshot, userCommands, agentLabel)
+  const listed = useCommands(snapshot, userCommands, agentLabel, !!props.discussion)
+  const { agentCommands, ownCommands, commands } = listed
   const commandMenu = useCommandMenu(text, commands)
 
   // Mentions `@` : fichiers du dossier proposés pendant la saisie, joints au message.
@@ -343,8 +363,13 @@ export function Composer(props: Props) {
   })
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)
+  // Tour de table (fiche 285) : `/roundtable ` ou le bouton de la barre ; Entrée l'envoie.
+  const roundtable = useComposerRoundtable(props, {
+    ...{ agentCommands, ownCommands, focusInput, text, draft: rtDraft }
+  })
 
-  const changeText = (value: string, nextCaret?: number) => {
+  const changeText = (typed: string, typedCaret?: number) => {
+    const [value, nextCaret] = roundtable.typed(typed, typedCaret)
     setText(value)
     commandMenu.textChanged(value)
     mentions.textChanged()
@@ -365,7 +390,7 @@ export function Composer(props: Props) {
     attachments: attachments.items.length,
     ...{ textarea, changeText, placeCaret, commandMenu, mentions, tips }
   })
-  const recordSent = history.recordSent
+  const { recordSent } = history
 
   const pickEntry = (entry: MentionEntry) => {
     const { mention } = mentions
@@ -382,9 +407,8 @@ export function Composer(props: Props) {
     textarea.current?.focus()
   }
 
-  const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-    if (attachments.paste(event.clipboardData)) event.preventDefault()
-  }
+  const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>) =>
+    attachments.paste(event.clipboardData) && event.preventDefault()
   /** Texte collé remis dans la saisie, au curseur (fiche 155). */
   const putBack = (value: string) => {
     const next = text.slice(0, caret) + value + text.slice(caret)
@@ -393,10 +417,7 @@ export function Composer(props: Props) {
   }
   // Fichiers déposés, suggestion de départ, message repris de la fenêtre rapide, extrait du terminal.
   useInbox(props.composerInbox, draftKey, {
-    text,
-    setText,
-    changeText,
-    attachments,
+    ...{ text, setText, changeText, attachments },
     focus: focusInput
   })
   const screenCapture = useScreenCapture({
@@ -406,29 +427,14 @@ export function Composer(props: Props) {
     onWarn: props.onWarn,
     focus: () => textarea.current?.focus()
   })
-  const pickFiles = async () => {
-    await attachments.addPaths(await props.onPickFiles())
-    textarea.current?.focus()
-  }
+  const pickFiles = async () => attachments.addPaths(await props.onPickFiles()).then(focusInput)
 
   /** Choix d'une commande : complétée si elle attend un argument, sinon envoyée telle quelle. */
-  const pickCommand = (command: AgentCommand, complete: boolean) => {
-    if (complete || command.hint || (command.source !== 'app' && status !== 'ready')) {
-      changeText(`/${command.name} `)
-      textarea.current?.focus()
-      return
-    }
-    if (command.source === 'app') props.onAppCommand(command.name as AppCommandName, '')
-    else if (command.source === 'user' || command.source === 'project') {
-      const own = userCommandOf(`/${command.name}`, userCommands, agentCommands)
-      if (own) onSend(expandCommand(own.command.prompt, ''))
-      if (own) recordSent(`/${command.name}`)
-    } else {
-      onSend(`/${command.name}`)
-      recordSent(`/${command.name}`)
-    }
-    changeText('')
-  }
+  const pickCommand = (command: AgentCommand, complete: boolean) =>
+    runPickedCommand(command, complete, {
+      ...{ status, props, userCommands, agentCommands, recordSent, changeText },
+      focus: focusInput
+    })
 
   /** Message en attente remis dans la zone de saisie, à la suite du texte en cours. */
   const editQueued = async (id: string) => {
@@ -442,6 +448,7 @@ export function Composer(props: Props) {
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
+    if (roundtable.active) return void roundtable.send(text, attachments, recordSent, changeText)
     // Message pour des rôles (fiche 223) : une fille par rôle, rien à la conversation ; un `@nom`
     // inconnu fait relire les rôles, puis l'envoi ordinaire s'il n'en nomme aucun.
     if (
@@ -485,7 +492,7 @@ export function Composer(props: Props) {
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) =>
     composerKeyDown(event, {
       ...{ roleCompose, mentions, commandMenu, busy, text, queued, modeControl, status },
-      ...{ pickEntry, pickCommand, submit, onCancel, editQueued },
+      ...{ pickEntry, pickCommand, submit, onCancel, editQueued, roundtable },
       setControl: props.onSetControl,
       ...history.keys
     })
@@ -561,6 +568,7 @@ export function Composer(props: Props) {
           onPutBack={putBack}
         />
         <RoleTokens roles={roleView.tokens} onRemove={roleView.remove} {...roleView.reply} />
+        {roundtable.active && <RoundtableComposerTag />}
         <LostAttachments count={history.lost} />
         {commandMenu.pendingHint && (
           <div className="command-pending" data-testid="command-hint">
@@ -583,6 +591,9 @@ export function Composer(props: Props) {
           autoFocus={props.autoFocus}
           data-testid="composer-input"
         />
+        {roundtable.active && (
+          <RoundtableLine roundtable={roundtable} files={attachments.items.length > 0} />
+        )}
         <ComposerBar
           settings={settings}
           profileId={snapshot?.info.profileId ?? settings?.profileId}
@@ -590,7 +601,11 @@ export function Composer(props: Props) {
           status={status}
           blocked={!!blocker}
           locked={locked}
-          canSend={sendEnabled(roleView, !!blocker, canSend || (later.free && hasContent))}
+          canSend={roundtable.barSend(
+            text,
+            sendEnabled(roleView, !!blocker, canSend || (later.free && hasContent))
+          )}
+          {...roundtable.bar}
           hasContent={hasContent}
           controls={controls}
           modeControl={modeControl}
@@ -627,6 +642,40 @@ export function Composer(props: Props) {
       />
     </div>
   )
+}
+
+/**
+ * Commande choisie dans le menu « / » (sortie de `Composer`, taille bornée, fiche 089) : complétée
+ * si elle attend un argument (ou si l'agent n'est pas prêt), sinon envoyée telle quelle.
+ */
+function runPickedCommand(
+  command: AgentCommand,
+  complete: boolean,
+  c: {
+    status: string
+    props: Pick<Props, 'onAppCommand' | 'onSend'>
+    userCommands: UserCommand[]
+    agentCommands: readonly AgentCommand[]
+    recordSent: (text: string) => void
+    changeText: (value: string) => void
+    focus: () => void
+  }
+) {
+  if (complete || command.hint || (command.source !== 'app' && c.status !== 'ready')) {
+    c.changeText(`/${command.name} `)
+    c.focus()
+    return
+  }
+  if (command.source === 'app') c.props.onAppCommand(command.name as AppCommandName, '')
+  else if (command.source === 'user' || command.source === 'project') {
+    const own = userCommandOf(`/${command.name}`, c.userCommands, c.agentCommands)
+    if (own) c.props.onSend(expandCommand(own.command.prompt, ''))
+    if (own) c.recordSent(`/${command.name}`)
+  } else {
+    c.props.onSend(`/${command.name}`)
+    c.recordSent(`/${command.name}`)
+  }
+  c.changeText('')
 }
 
 /**

@@ -1,4 +1,4 @@
-import { memo, useRef, type ComponentProps } from 'react'
+import { createContext, memo, useContext, useRef, type ComponentProps } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Options } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -13,6 +13,8 @@ import { useInlineFiles } from './useInlineFiles'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
 import { rehypeKnownLanguage, rehypeRememberLanguage, textOf } from './code-language'
+import { rehypeRoundtableLetters } from '../roundtable/roundtable-letters'
+import { Tip } from '../common/Menus'
 
 /** Nœud de l'arbre HTML produit par le Markdown (hast), juste ce qu'il faut ici. */
 interface HastNode {
@@ -71,6 +73,39 @@ const COLORED: NonNullable<Options['rehypePlugins']> = [
   [rehypeHighlight, { detect: true, ignoreMissing: true }]
 ]
 
+/** Noms des lettres de la synthèse affichée (fiche 285), lus par `LetterName`. */
+const LetterNames = createContext<Readonly<Record<string, string>> | undefined>(undefined)
+
+/**
+ * « Participant C » dans une synthèse de tour de table (fiche 285) : le vrai nom en infobulle, au
+ * survol et au focus (annoncé une fois, par l'infobulle). Une seule étape de tabulation par lettre
+ * (sa première mention). Défini hors du rendu : le même élément d'un morceau de réponse à l'autre.
+ */
+function LetterName({
+  node: _node,
+  children,
+  ...props
+}: ComponentProps<'abbr'> & { node?: unknown }) {
+  const names = useContext(LetterNames)
+  const attributes = props as Record<string, unknown>
+  const name = names?.[String(attributes['data-letter'] ?? '')]
+  if (!name) return <>{children}</>
+  return (
+    <Tip label={name}>
+      <abbr
+        className="roundtable-letter"
+        tabIndex={attributes['data-first'] ? 0 : -1}
+        data-testid="roundtable-letter"
+      >
+        {children}
+      </abbr>
+    </Tip>
+  )
+}
+
+/** Composants avec les lettres d'un tour de table : un seul objet, défini une fois. */
+const LETTER_COMPONENTS = { abbr: LetterName }
+
 /**
  * Rendu Markdown (GFM + coloration). Mémoïsé : seul le message en cours se re-rend en streaming.
  * `streaming` : réponse en cours, son bloc de code encore ouvert n'est pas coloré (fiche 192).
@@ -79,7 +114,8 @@ export const Markdown = memo(function Markdown({
   text,
   streaming = false,
   highlight = true,
-  french = false
+  french = false,
+  letters
 }: {
   text: string
   streaming?: boolean
@@ -90,10 +126,12 @@ export const Markdown = memo(function Markdown({
    * nœuds de texte seulement, jamais dans le code ni les adresses (fiche 126). Pas pour l'agent.
    */
   french?: boolean
+  /** Tour de table (fiche 285) : lettre → vrai nom, montré au survol de « Participant X ». */
+  letters?: Readonly<Record<string, string>> | undefined
 }) {
   // Code en ligne vers un fichier : lien seulement si le fichier existe (fiche 272, rc.3).
   const files = useInlineFiles(streaming)
-  return (
+  const rendered = (
     <div className="markdown">
       <ReactMarkdown
         // Liens `file://` gardés : ils désignent un fichier (fiche 052), comme `liste.js:17`, qui a
@@ -105,17 +143,26 @@ export const Markdown = memo(function Markdown({
           ...(highlight ? COLORED : []),
           rehypeRememberLanguage,
           // `fichier:ligne` en code : cliquable comme un lien de fichier, s'il existe (fiche 272).
-          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want, isGone: files.isGone }]
+          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want, isGone: files.isGone }],
+          ...(letters
+            ? ([[rehypeRoundtableLetters, { names: letters }]] as Options['rehypePlugins'] & object)
+            : [])
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.
           a: MarkdownLink,
           pre: CodeBlock,
-          table: Table
+          table: Table,
+          ...(letters ? LETTER_COMPONENTS : {})
         }}
       >
         {text}
       </ReactMarkdown>
     </div>
+  )
+  return letters ? (
+    <LetterNames.Provider value={letters}>{rendered}</LetterNames.Provider>
+  ) : (
+    rendered
   )
 })

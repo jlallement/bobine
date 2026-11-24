@@ -2249,5 +2249,47 @@ export const SUITES = [
       'src/main/onboarding/',
       'src/main/conversations/'
     ]
+  },
+  {
+    // Tour de table (fiche 285) : lancement, menu, ligne du surcoût mesurée à trois largeurs,
+    // carte, avis, synthèse et lettres, réplique, décision, cas dégradés, redémarrage.
+    name: 'tour-de-table',
+    file: 'tour-de-table.mjs',
+    run: 'roundtableSuite',
+    themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : contraste du surcoût et de la carte aux jetons du sombre.
+    dark: true,
+    sources: [
+      `${C}roundtable/`,
+      `${C}thread/Roundtable*.tsx`,
+      `${C}thread/Markdown.tsx`,
+      `${C}composer/ComposerBar.tsx`,
+      `${C}composer/composer-key-down.ts`,
+      `${R}roundtable.css`,
+      `${R}app-commands.ts`,
+      `${R}useComposerDraft.ts`,
+      'src/shared/roundtable*.ts',
+      'src/shared/work-groups.ts',
+      'src/shared/app-commands.ts',
+      'src/main/roundtable/',
+      'src/main/conversations/children*.ts',
+      'src/main/roles/',
+      'src/mock-agent/scenarios-tour-de-table.mts'
+    ]
+  },
+  {
+    // Journée « tour de table » (fiches 277, 285) : un tour complet au milieu d'un vrai usage.
+    name: 'parcours-tour-de-table',
+    file: 'parcours-tour-de-table.mjs',
+    run: 'parcoursTourDeTableSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      `${C}roundtable/`,
+      `${C}composer/`,
+      `${R}roundtable.css`,
+      'src/shared/roundtable*.ts',
+      'src/main/roundtable/'
+    ]
   }
 ]

@@ -26,6 +26,7 @@ export type AppCommandName =
   | 'review'
   | 'split'
   | 'btw'
+  | 'roundtable'
   | 'help'
 
 /**
@@ -33,6 +34,12 @@ export type AppCommandName =
  * conversations filles (`CHILDREN_REQUEST`). Le nom n'est pas traduit, comme les autres.
  */
 export const CHILDREN_COMMAND = 'split'
+
+/**
+ * `/roundtable` (fiche 285) : la question tapée après elle part en tour de table. Tapée suivie d'une
+ * espace, la saisie passe en tour de table (étiquette, ligne des participants) ; Entrée envoie.
+ */
+export const ROUNDTABLE_COMMAND = 'roundtable'
 
 export const APP_COMMANDS: (AgentCommand & { name: AppCommandName })[] = [
   {
@@ -112,6 +119,16 @@ export const APP_COMMANDS: (AgentCommand & { name: AppCommandName })[] = [
     name: 'btw',
     get description() {
       return t('appCommands.list.btw')
+    },
+    get hint() {
+      return t('appCommands.hint.question')
+    },
+    source: 'app'
+  },
+  {
+    name: ROUNDTABLE_COMMAND,
+    get description() {
+      return t('roundtable.command.description')
     },
     get hint() {
       return t('appCommands.hint.question')

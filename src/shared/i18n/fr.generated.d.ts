@@ -6352,6 +6352,8 @@ export type FrResources = {
       readonly sendsFiles: 'Chacun reçoit la question et les fichiers joints.'
       readonly sendsExchange: 'Chacun reçoit la question et le dernier échange de cette conversation.'
       readonly sendsAll: 'Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.'
+      readonly unknownAgent: 'Un agent retiré'
+      readonly byTo: '{{models}} · par {{agent}} · vers {{destination}}'
     }
     readonly cost: {
       readonly full: '≈ {{n}} fois les jetons d’une question simple'
@@ -6364,6 +6366,8 @@ export type FrResources = {
       readonly footer: 'Chacun reçoit la question et peut lire les fichiers de ce dossier.'
       readonly full: '5 participants au plus'
       readonly once: 'Une seule fois, sans choix de modèle'
+      readonly gone: 'N’existe plus : décochez-le'
+      readonly modelGone: 'Modèle indisponible : décochez-le'
     }
     readonly card: {
       readonly title: 'Tour de table'
@@ -6403,6 +6407,10 @@ export type FrResources = {
       readonly partial_one: 'Synthèse avec {{opinions}} avis : un participant n’a pas répondu.'
       readonly partial_many: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
       readonly partial_other: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
+      readonly resume: 'Reprendre'
+      readonly stopSeat: 'Arrêter {{name}}'
+      readonly attachments: 'Fichiers joints : {{files}}'
+      readonly withExchange: 'Avec le dernier échange de cette conversation'
     }
     readonly state: {
       readonly waiting: 'en attente'

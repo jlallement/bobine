@@ -1,0 +1,394 @@
+/*
+ * Tour de table (fiche 285, maquettes `1.2-tour-de-table-v2`). Rien de nouveau dans le système de
+ * design : les jetons de couleur de l'app, la carte de groupe (`work-card.css`) et le menu de
+ * modèle (`styles.css`) ; ici, seulement ce qui leur est propre.
+ */
+
+/* ===== Saisie : étiquette, ligne, menu ===== */
+
+.roundtable-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  animation: role-token-in 0.12s ease-out;
+}
+
+/* Une seule ligne, sobre, entre la question et la barre ; jamais coupée par des points. */
+.roundtable-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  margin: 2px 0 6px -2px;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.roundtable-line-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.roundtable-line .grow {
+  flex: 1;
+}
+.roundtable-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.roundtable-pick:hover,
+.roundtable-pick[data-state='open'] {
+  background: var(--surface-2);
+}
+.roundtable-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.roundtable-line-cost {
+  color: var(--muted);
+  min-width: 0;
+}
+/* Saisie trop étroite même pour la forme courte : le surcoût passe à la ligne, entier. */
+.roundtable-cost-full,
+.roundtable-cost-short {
+  white-space: nowrap;
+}
+.roundtable-line-alert {
+  color: var(--text-2);
+  min-width: 0;
+  white-space: normal;
+}
+.roundtable-line-alert[role='alert'] {
+  color: var(--err);
+}
+.roundtable-cost-short {
+  display: none;
+}
+/* Saisie étroite (fiche 285, maquette `fenetre-etroite`) : la forme courte, qui garde « jetons ». */
+@container (max-width: 560px) {
+  .roundtable-cost-full {
+    display: none;
+  }
+  .roundtable-cost-short {
+    display: inline;
+  }
+}
+/* Très étroite (sous 400 px de saisie) : « + synthèse » s'efface avant le surcoût. */
+@container (max-width: 400px) {
+  .roundtable-plus {
+    display: none;
+  }
+}
+.roundtable-close {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* Bouton de la barre de la saisie, allumé en tour de table. */
+.chip.roundtable-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Infobulle de « N participants » : une ligne par agent, puis ce qui part. */
+.tooltip.roundtable-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 360px;
+  white-space: normal;
+}
+.roundtable-tip-sends {
+  margin-top: 4px;
+  opacity: 0.75;
+}
+
+/* Le menu à cases : celui des modèles, avec des cases. */
+.roundtable-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  max-width: min(440px, calc(100vw - 32px));
+}
+.roundtable-menu-list {
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  outline: none;
+}
+.roundtable-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+.roundtable-option.roundtable-first-other {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.roundtable-option[data-disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+.roundtable-box {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--on-accent);
+}
+.roundtable-box[data-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.roundtable-option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.roundtable-option-agent {
+  color: var(--muted);
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+.roundtable-others {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.roundtable-search {
+  border-top: 1px solid var(--border);
+}
+.roundtable-menu-foot {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+/* ===== Fil : bulle, carte, synthèse ===== */
+
+.roundtable-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.roundtable-bubble .roundtable-tag {
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+.roundtable-bubble-files {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.roundtable-card .work-group-head {
+  flex-wrap: nowrap;
+}
+.roundtable-card .work-group-sub,
+.roundtable-names {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Repliée en une ligne après la synthèse : toute la ligne rouvre la carte. */
+.roundtable-head-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.roundtable-head-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.roundtable-progress {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.roundtable-state-icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.roundtable-state-icon[data-state='answered'] {
+  color: var(--ok);
+}
+.roundtable-state-icon[data-state='working'],
+.roundtable-state-icon[data-state='waiting'] {
+  color: var(--accent);
+}
+.roundtable-state-icon[data-state='error'] {
+  color: var(--err);
+}
+.roundtable-state-icon[data-state='warning'] {
+  color: var(--warn);
+}
+.roundtable-row .work-group-meta[data-wrap] {
+  white-space: normal;
+}
+.roundtable-readonly {
+  display: inline-flex;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.roundtable-readonly:is([data-level='requested'], [data-level='unverified']) {
+  color: var(--warn);
+}
+.roundtable-row-mark {
+  color: var(--warn);
+}
+.roundtable-row-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.roundtable-row-open {
+  padding: 4px 14px 12px 38px;
+}
+.roundtable-row-open .roundtable-open-links {
+  display: flex;
+  gap: 14px;
+  margin-top: 6px;
+}
+.roundtable-format {
+  font-style: italic;
+}
+.roundtable-foot .grow {
+  flex: 1;
+}
+.roundtable-foot-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+.roundtable-foot-short {
+  display: none;
+}
+.btn.roundtable-stop-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--err);
+}
+.roundtable-used {
+  padding: 9px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+/* Carte étroite (fiche 285, maquette `fenetre-etroite`) : sous 480 px, les formes courtes. */
+@container (max-width: 480px) {
+  .roundtable-foot-full {
+    display: none;
+  }
+  .roundtable-foot-short {
+    display: inline;
+  }
+  .roundtable-stop-all .roundtable-stop-label {
+    display: none;
+  }
+}
+
+/* Ligne de l'app à la place de la demande de synthèse ou de décision. */
+.roundtable-request {
+  color: var(--muted);
+}
+/* Étiquette au-dessus de la synthèse ou de la décision. */
+.roundtable-answer-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.roundtable-answer-label .roundtable-icon {
+  color: var(--accent);
+}
+.roundtable-letter {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  cursor: help;
+  border-radius: var(--radius-xs);
+}
+.roundtable-letter:hover,
+.roundtable-letter:focus-visible {
+  background: var(--surface-2);
+}
+.roundtable-letter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.roundtable-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.roundtable-actions-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roundtable-tag {
+    animation: none;
+  }
+  /* Participants au travail : la roue ne tourne pas, la durée suffit à dire qu'il travaille. */
+  .roundtable-state-icon .spin {
+    animation: none;
+  }
+}

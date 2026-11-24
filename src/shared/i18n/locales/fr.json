@@ -6568,7 +6568,9 @@
       "sendsQuestion": "Chacun reçoit la question.",
       "sendsFiles": "Chacun reçoit la question et les fichiers joints.",
       "sendsExchange": "Chacun reçoit la question et le dernier échange de cette conversation.",
-      "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation."
+      "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.",
+      "unknownAgent": "Un agent retiré",
+      "byTo": "{{models}} · par {{agent}} · vers {{destination}}"
     },
     "cost": {
       "full": "≈ {{n}} fois les jetons d’une question simple",
@@ -6580,7 +6582,9 @@
       "search": "Rechercher un modèle",
       "footer": "Chacun reçoit la question et peut lire les fichiers de ce dossier.",
       "full": "5 participants au plus",
-      "once": "Une seule fois, sans choix de modèle"
+      "once": "Une seule fois, sans choix de modèle",
+      "gone": "N’existe plus : décochez-le",
+      "modelGone": "Modèle indisponible : décochez-le"
     },
     "card": {
       "title": "Tour de table",
@@ -6619,7 +6623,11 @@
       "none": "Aucun avis : pas de synthèse.",
       "partial_one": "Synthèse avec {{opinions}} avis : un participant n’a pas répondu.",
       "partial_many": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
-      "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu."
+      "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
+      "resume": "Reprendre",
+      "stopSeat": "Arrêter {{name}}",
+      "attachments": "Fichiers joints : {{files}}",
+      "withExchange": "Avec le dernier échange de cette conversation"
     },
     "state": {
       "waiting": "en attente",

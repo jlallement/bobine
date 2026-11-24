@@ -61,8 +61,9 @@ export default defineConfig({
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           environment: 'jsdom',
           // La feuille de style de l'app, lisible par `?raw` (cascade des règles d'une carte,
-          // fiche 124) ; les autres CSS restent vides, comme par défaut.
-          css: { include: [/src\/renderer\/src\/styles\.css/] },
+          // fiche 124), et celle du tour de table (formes courtes en saisie étroite, fiche 285) ;
+          // les autres CSS restent vides, comme par défaut.
+          css: { include: [/src\/renderer\/src\/(styles|roundtable)\.css/] },
           setupFiles: ['src/renderer/src/test-setup.ts'],
           // Crochets « après » dans l'ordre où ils sont écrits (QUA-1/2, fiche 250) : le
           // `cleanup()` de Testing Library (test-setup.ts, posé en premier) démonte les composants

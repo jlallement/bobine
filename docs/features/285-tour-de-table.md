@@ -304,10 +304,12 @@ du fil. Il n'a aucun outil de Bobine (mémoire comprise).
 
 ### 8. La suite
 
-- **« Appliquer »**, sous la synthèse ou la décision : met dans la saisie un message préparé
-  (« Applique ta recommandation du tour de table. »), modifiable avant l'envoi, comme « Demander à
-  <agent> d'appliquer cette réponse » (fiche 263). L'agent travaille alors normalement, avec ses
-  autorisations habituelles : c'est le seul moment où des fichiers peuvent changer.
+- **« Demander à <agent> de l'appliquer »**, sous la synthèse ou la décision : envoie directement
+  le message « Applique ta recommandation du tour de table. », comme le bouton du même nom des
+  cartes de travaux (fiche 263) — décision du tech lead du 2026-11-24, qui remplace « met dans la
+  saisie ». Un envoi à la fois ; masqué si un message de l'utilisateur suit déjà le tour, ou si un
+  message attend dans la file. L'agent travaille alors normalement, avec ses autorisations
+  habituelles : c'est le seul moment où des fichiers peuvent changer.
 - « Ouvrir sa conversation » : la conversation du participant, ouvrable comme tout travail. Ce
   qu'on y échange ensuite ne revient pas au tech lead.
 
@@ -515,19 +517,19 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 
 **Lancement et participants**
 
-- [ ] `/roundtable <question>` (ou le bouton de la saisie) affiche la ligne du tour de table sous
+- [x] `/roundtable <question>` (ou le bouton de la saisie) affiche la ligne du tour de table sous
       la question : « N participants ▾ + synthèse · ≈ N + 1 fois les jetons d'une question
       simple », en gris, sur une ligne, forme courte en saisie étroite, jamais coupée ; Entrée
       envoie. `/roundtable` seul explique et n'envoie rien. La commande est listée dans l'aide.
-- [ ] « N participants ▾ » ouvre le menu à cases ; chaque case est retenue aussitôt pour les
+- [x] « N participants ▾ » ouvre le menu à cases ; chaque case est retenue aussitôt pour les
       tours suivants, sans bouton « Enregistrer » ni entrée dans les Réglages. Sans participant
       retenu, la ligne dit « Choisir les participants ▾ », rien n'est présélectionné, et Entrée
       ouvre le menu au lieu d'envoyer.
-- [ ] Le menu accepte de 2 à 5 participants : il refuse un doublon d'agent et de modèle, ne
+- [x] Le menu accepte de 2 à 5 participants : il refuse un doublon d'agent et de modèle, ne
       propose Bob qu'une fois et sans modèle, et montre l'agent de chacun ; l'infobulle de « N
       participants » donne la destination et ce qui part avec la question. Aucun modèle n'est mis
       en avant ou étiqueté à part.
-- [ ] S'il manque des places de travaux, la ligne le dit et rien ne part.
+- [x] S'il manque des places de travaux, la ligne le dit et rien ne part.
 
 **Indépendance et lecture seule**
 
@@ -542,33 +544,34 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 
 **Attente, avis, synthèse**
 
-- [ ] La bulle et la carte du tour de table restent à leur place. Chaque ligne a son état et sa
+- [x] La bulle et la carte du tour de table restent à leur place. Chaque ligne a son état et sa
       durée ; repliée, elle montre la réponse courte et la confiance ; dépliée, l'avis entier.
-- [ ] La synthèse part seule quand tous ont fini et qu'au moins deux avis sont là, au premier
+- [x] La synthèse part seule quand tous ont fini et qu'au moins deux avis sont là, au premier
       repos de l'agent, même avec un participant en erreur. « Synthétiser sans attendre » existe
       dès deux avis et arrête les participants restants. Moins de deux avis : pas de synthèse.
 - [x] La demande de synthèse contient les avis bornés à 6 000 caractères (coupure dite),
       anonymisés (« Participant A, B, C », ordre mélangé, sans table des lettres ni nom de
       modèle), avec les absents nommés par leur lettre. Les avis ne repartent pas avec le message
       suivant de l'utilisateur.
-- [ ] La synthèse est marquée dans le fil ; au survol, une lettre montre le vrai nom du
+- [x] La synthèse est marquée dans le fil ; au survol, une lettre montre le vrai nom du
       participant. La carte se replie en une ligne à l'arrivée de la synthèse et se rouvre d'un
       clic.
 
 **Réplique et suite**
 
-- [ ] « Faire réagir les participants », suivi en gris de « ≈ N + 1 fois les jetons d'une
+- [x] « Faire réagir les participants », suivi en gris de « ≈ N + 1 fois les jetons d'une
       question simple », envoie la synthèse et la lettre
       du participant à chaque participant qui a répondu, dans sa conversation. Les répliques
       s'ajoutent à la carte, puis la décision du tech lead. Le main refuse une seconde réplique.
-- [ ] « Appliquer » met un message préparé et modifiable dans la saisie.
+- [x] « Demander à <agent> de l'appliquer » envoie un message ordinaire, un seul à la fois (décision
+      du tech lead, 2026-11-24).
 
 **Surcoût et plafond**
 
-- [ ] Aucune estimation de coût, en argent ou en jetons, n'est affichée avant l'envoi.
-- [ ] Le pied de la carte affiche, en une ligne, le total consommé par unité (participants,
+- [x] Aucune estimation de coût, en argent ou en jetons, n'est affichée avant l'envoi.
+- [x] Le pied de la carte affiche, en une ligne, le total consommé par unité (participants,
       synthèse, réplique, décision), sans conversion, avec les participants sans chiffre comptés.
-- [ ] Aucun bandeau, aucun dialogue de confirmation, aucun encadré de premier usage.
+- [x] Aucun bandeau, aucun dialogue de confirmation, aucun encadré de premier usage.
 - [ ] Plafond par conversation activé : un participant au plafond est « arrêté : plafond
       atteint » ; une synthèse retenue par le plafond du tech lead affiche la carte habituelle, et
       « Continuer » l'envoie.
@@ -576,7 +579,7 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 **Cas limites**
 
 - [x] Un participant en erreur ou arrêté n'empêche pas la synthèse des autres.
-- [ ] Un second `/roundtable` dans la même conversation est refusé tant que le premier n'a pas
+- [x] Un second `/roundtable` dans la même conversation est refusé tant que le premier n'a pas
       rendu sa synthèse. Un message pendant le tour part sans les avis, et la synthèse attend la
       fin de la réponse.
 - [x] Après un redémarrage, la carte se relit du fil : les participants en cours sont « arrêtés
@@ -1016,3 +1019,52 @@ le main n'a pas livré l'étape 1) :
     `roundtable.error.question`. À reformuler par l'interface : `roundtable.state.readOnly.requested`
     (« vérifiée dans le dépôt seulement »).
 
+- 2026-11-24 : interface (renderer, branche `1.2-rt-ui`, lots 1 à 3 côté renderer), contre le
+  contrat gelé et un `window.api.roundtable` factice dans les essais. Livré :
+  - saisie : `/roundtable` (tapé, collé ou choisi dans le menu « / ») et le bouton de la barre ;
+    étiquette « Tour de table » ; ligne du tour (`RoundtableLine`) : participants, surcoût en jetons
+    et sa forme courte en saisie étroite (requête de conteneur, jamais coupée), infobulle par agent
+    avec la destination et ce qui part ; premier usage, places manquantes, participant
+    indisponible et refus du main (`selection`, `slots`, `running`, `task`, `archived`,
+    `discussion`) dits dans la ligne, la question gardée ; Échap, ✕ ou retour arrière en tête
+    ramènent à une question simple ;
+  - menu à cases (`RoundtableParticipants`) : récents puis « Autres modèles… » et sa recherche,
+    2 à 5 (cases désactivées au-delà, avec la raison), une ligne pour un agent sans choix de
+    modèle, préférence `roundtableParticipants` écrite à chaque case, liste à choix multiples au
+    clavier ;
+  - fil : `workLayout` range chaque participant dans la carte de son tour (clé de carte partagée
+    départagée par la place) ; bulle de la question et carte (`RoundtableCard`, `RoundtableRow`)
+    à place fixe, par phase ; carte repliée en une ligne à la synthèse ; pied « Consommé » ;
+    demande de l'app en ligne « Synthèse demandée · N avis » ; étiquette « Synthèse du tour de
+    table · <modèle> », lettres « Participant X » qui montrent le vrai nom (greffon rehype,
+    infobulle au survol et au focus) ; « Demander à <agent> de l'appliquer » et « Faire réagir
+    les participants » avec le rappel en jetons ; carte « Réplique » et décision
+    (`RoundtableTurn`) ;
+  - squelette de la suite e2e `e2e/suites/tour-de-table.mjs`, **hors catalogue, pas encore
+    lancée** (attend le moteur et les scénarios de l'agent factice).
+  Écarts aux maquettes : l'étiquette « Tour de table » est sur sa ligne au-dessus de la question
+  (comme les jetons de rôle), pas dans le texte ; la commande n'a pas d'icône dans le menu « / »
+  (le menu n'en montre aucune) ; « Appliquer » envoie un message ordinaire (comme la fiche 263),
+  au lieu de le poser dans la saisie. Non fait : l'état « silencieux depuis … » d'un participant.
+- 2026-11-24 : **intégration** (branche `1.2`, fusion de `1.2-rt-ui`) et relecture de l'interface.
+  - Adaptations au moteur : avis et réplique désignés par `askedAt` (comptes rendus `done`
+    seulement, plus aucune déduction par l'ordre) ; refus des gestes dits sur la carte
+    (`roundtable.error.unknown`, `attachmentsLost`, `phase`, `quorum`, `rebuttalOnce`) ; « Relancer »
+    non proposé après un redémarrage d'un tour avec pièces jointes, la raison dite ; les quatre
+    niveaux de lecture seule dits discrètement (bouclier, nom en clair) ; la question entre une
+    seule fois dans l'historique de la saisie (`conversation:recordSent` par le renderer).
+  - Relecture (20 points) : retenus disparus (agent retiré, modèle hors catalogue) en tête du menu,
+    décochables ; clavier de « Autres modèles… » ; lettres gardées pendant l'écriture (contexte,
+    composant défini une fois, une tabulation par lettre) ; « Appliquer » au motif de `WorkFoot` ;
+    texte tapé pendant un envoi lent gardé ; Échap rend le focus à la saisie ; gestes un à la fois ;
+    troisième palier de largeur ; la synthèse s'arrête à sa fin rendue ; participants reconnus par
+    leur clé de carte ; commande masquée en Discussion ; brouillon gardé en tour de table ;
+    lectures d'options concurrentes. Trouvé par l'e2e : la saisie qui passe de l'accueil au fil
+    rouvrait le tour de table depuis le brouillon (vidé au départ, rétabli sur un refus) ; un refus
+    lu plus tôt est relu à Entrée ; noms courts des modèles sur la carte ; la ligne passe à la ligne
+    plutôt que de déborder ; le repère « travaux ont répondu » mène à la carte du tour.
+  - Essais : suites e2e `tour-de-table` (clair et sombre, sombre ciblé) et
+    `parcours-tour-de-table` (journée type, fiche 277), au catalogue, vertes en local. Non joué :
+    `--lang en`, et le plafond par conversation en e2e (couvert par les essais du main).
+  - Docs : page d'aide « Tour de table » (fr, en), `CHANGELOG.md` et `CHANGELOG.en.md`,
+    `docs/architecture.md` (renderer).

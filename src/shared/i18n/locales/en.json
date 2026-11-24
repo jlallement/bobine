@@ -6289,7 +6289,9 @@
       "sendsQuestion": "Each one gets the question.",
       "sendsFiles": "Each one gets the question and the attached files.",
       "sendsExchange": "Each one gets the question and the last exchange of this conversation.",
-      "sendsAll": "Each one gets the question, the attached files and the last exchange of this conversation."
+      "sendsAll": "Each one gets the question, the attached files and the last exchange of this conversation.",
+      "unknownAgent": "A removed agent",
+      "byTo": "{{models}} · via {{agent}} · to {{destination}}"
     },
     "cost": {
       "full": "≈ {{n}}× the tokens of a plain question",
@@ -6301,7 +6303,9 @@
       "search": "Search models",
       "footer": "Each one gets the question and can read the files in this folder.",
       "full": "5 participants at most",
-      "once": "Once only, no model choice"
+      "once": "Once only, no model choice",
+      "gone": "No longer exists: uncheck it",
+      "modelGone": "Model unavailable: uncheck it"
     },
     "card": {
       "title": "Roundtable",
@@ -6335,7 +6339,11 @@
       "single": "Only one opinion: no synthesis.",
       "none": "No opinion: no synthesis.",
       "partial_one": "Synthesis with {{opinions}} opinions: one participant did not answer.",
-      "partial_other": "Synthesis with {{opinions}} opinions: {{count}} participants did not answer."
+      "partial_other": "Synthesis with {{opinions}} opinions: {{count}} participants did not answer.",
+      "resume": "Resume",
+      "stopSeat": "Stop {{name}}",
+      "attachments": "Attached files: {{files}}",
+      "withExchange": "With the last exchange of this conversation"
     },
     "state": {
       "waiting": "waiting",

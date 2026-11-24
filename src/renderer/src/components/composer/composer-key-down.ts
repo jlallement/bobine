@@ -28,6 +28,8 @@ export interface KeyContext {
   history: (input: HTMLTextAreaElement, key: string) => ComposerHistoryState
   recall: (index: number, from: 'up' | 'down') => void
   leaveHistory: () => void
+  /** Tour de table (fiche 285) : Échap, ou retour arrière en tête, ramène à une question simple. */
+  roundtable?: { active: boolean; exit: () => void }
 }
 
 /**
@@ -40,6 +42,22 @@ export function composerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>, c: Ke
   const input = event.currentTarget
   if (event.key === 'Backspace' && input.selectionStart === 0 && input.selectionEnd === 0) {
     if (c.roleCompose.removeLast()) return event.preventDefault()
+    if (c.roundtable?.active) {
+      c.roundtable.exit()
+      return event.preventDefault()
+    }
+  }
+  // Échap en tour de table, menus fermés : retour à une question simple, sans arrêter le tour en
+  // cours de l'agent (il a son bouton).
+  if (
+    event.key === 'Escape' &&
+    c.roundtable?.active &&
+    !mentions.open &&
+    !commandMenu.open &&
+    !event.nativeEvent.isComposing
+  ) {
+    c.roundtable.exit()
+    return event.preventDefault()
   }
   const action = composerKeyAction(
     {
