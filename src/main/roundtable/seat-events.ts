@@ -8,7 +8,7 @@
  */
 import type { AgentEvent } from '@shared/agent'
 import type { StopReason } from '@shared/acp-sdk.mts'
-import { lastReply } from '@shared/children'
+import { lastReply, type MessageOrigin } from '@shared/children'
 import { messageOf } from '@shared/errors'
 import type { CostCapReached } from '@shared/cost-cap'
 import {
@@ -49,9 +49,6 @@ const running = (state: RoundtableSeat['state'] | undefined) => !!state && !seat
 
 export class SeatEvents {
   private readonly host: SeatEventsHost
-  /** Réplique envoyée à un participant, pas encore partie (son `user-message` la reconnaît). */
-  private readonly pendingRebuttals = new Map<string, string>()
-
   constructor(host: SeatEventsHost) {
     this.host = host
   }
@@ -135,7 +132,7 @@ export class SeatEvents {
   onEvent(childId: string, ref: SeatRef, event: AgentEvent): void {
     switch (event.type) {
       case 'user-message':
-        return this.started(childId, ref, event.text, event.at)
+        return this.started(childId, ref, event.from, event.at)
       case 'turn-end':
         return this.ended(childId, ref, event.stopReason)
       case 'turn-error':
@@ -145,7 +142,12 @@ export class SeatEvents {
     }
   }
 
-  private started(childId: string, ref: SeatRef, text: string, sentAt?: number): void {
+  private started(
+    childId: string,
+    ref: SeatRef,
+    from: MessageOrigin | undefined,
+    sentAt?: number
+  ): void {
     const found = this.seat(ref)
     if (!found) return
     const { rt, seat } = found
@@ -169,9 +171,10 @@ export class SeatEvents {
       }
       return
     }
-    // Réplique : seulement le message envoyé par le tour (pas un message tapé dans la conversation).
-    if (rt.phase !== 'rebutting' || this.pendingRebuttals.get(childId) !== text) return
-    this.pendingRebuttals.delete(childId)
+    // Réplique : reconnue par sa provenance (jamais fusionnée avec un message tapé ni en attente).
+    const rebuttal =
+      from?.kind === 'roundtable' && from.step === 'rebuttal' && from.id === ref.roundtableId
+    if (rt.phase !== 'rebutting' || !rebuttal) return
     if (seat.rebuttal?.state === 'waiting') {
       this.apply(ref, { type: 'rebuttal-seat', letter: ref.letter, state: 'working', at, ...asked })
     }
@@ -274,6 +277,7 @@ export class SeatEvents {
     ref: SeatRef,
     childId: string,
     text: string,
+    title: string,
     children: Pick<ChildConversations, 'followUp'>
   ): void {
     const failed = (detail?: string) =>
@@ -285,14 +289,15 @@ export class SeatEvents {
         ...(detail ? { detail } : {}),
         at: this.host.now()
       })
-    this.pendingRebuttals.set(childId, text)
+    const from: MessageOrigin = {
+      kind: 'roundtable',
+      id: ref.roundtableId,
+      title,
+      step: 'rebuttal'
+    }
     try {
-      children.followUp(childId, text, () => {
-        this.pendingRebuttals.delete(childId)
-        failed()
-      })
+      children.followUp(childId, text, from, () => failed())
     } catch (error) {
-      this.pendingRebuttals.delete(childId)
       failed(messageOf(error))
     }
   }

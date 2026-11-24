@@ -40,6 +40,10 @@ export interface StepsHost {
   }
   attention: () => AttentionState
   apply: (motherId: string, roundtableId: string, event: RoundtableEvent) => Roundtable | undefined
+  /** Le tour tel que dans le fil de la conversation, suivi ou non. */
+  read: (motherId: string, roundtableId: string) => Roundtable | undefined
+  /** Arrête le tour en cours de la conversation. */
+  cancel: (motherId: string) => void
   /** Tours suivis de cette conversation, tels que dans son fil. */
   tours: (motherId: string) => Roundtable[]
   /** Texte d'un avis (`opinion`) ou d'une réplique, gardé en mémoire ou relu du fil de la mère. */
@@ -52,7 +56,8 @@ export interface StepsHost {
 /** Réessai d'un envoi refusé (l'agent préparait) : 100 ms, puis le double, 5 s au plus. */
 export const retryDelay = (tries: number): number => Math.min(100 * 2 ** (tries - 1), 5_000)
 
-const titleOf = (question: string) => {
+/** Titre d'une demande du tour dans le fil : la question, sur une ligne, coupée. */
+export const titleOf = (question: string): string => {
   const line = question.replace(/\s+/g, ' ').trim()
   return line.length > TITLE_CHARS ? `${line.slice(0, TITLE_CHARS - 1)}…` : line
 }
@@ -93,7 +98,11 @@ export class MotherSteps {
 
   /** La conversation a une demande de ce tour en cours de réponse. */
   answeringFor(motherId: string, roundtableId: string): boolean {
-    return this.answering.get(motherId)?.roundtableId === roundtableId
+    // En route aussi (avant son `user-message`) : un arrêt doit la couper.
+    return (
+      this.answering.get(motherId)?.roundtableId === roundtableId ||
+      this.sending.get(motherId)?.roundtableId === roundtableId
+    )
   }
 
   forget(motherId: string): void {
@@ -143,10 +152,18 @@ export class MotherSteps {
 
   private sent(motherId: string, from: MessageOrigin | undefined): void {
     this.costWatch.delete(motherId)
-    if (from?.kind !== 'roundtable') return
+    // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
+    if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return
     const ref = { roundtableId: from.id, step: from.step }
     this.retries.delete(motherId)
     this.sending.delete(motherId)
+    // Tour arrêté entre-temps (message en route, retenu puis « Continuer ») : rien n'est rédigé.
+    const state = this.host.read(motherId, ref.roundtableId)?.[ref.step]?.state
+    if (state !== 'waiting' && state !== 'held') {
+      log.info(`Tour de table ${ref.roundtableId.slice(0, 8)} : ${ref.step} arrivée après l'arrêt`)
+      this.host.cancel(motherId)
+      return
+    }
     this.answering.set(motherId, ref)
     this.host.apply(motherId, ref.roundtableId, {
       type: 'step-sent',

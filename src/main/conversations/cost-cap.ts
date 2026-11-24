@@ -101,6 +101,15 @@ export class CostCapGuard {
     }
   }
 
+  /**
+   * Oublie le message retenu de cette conversation s'il répond à `matches` (tour de table arrêté,
+   * fiche 285) : « Continuer » relève alors le plafond sans le renvoyer.
+   */
+  dropHeld(id: string, matches: (options: PromptOptions) => boolean): void {
+    const held = this.held.get(id)
+    if (held && matches(held.options)) this.held.delete(id)
+  }
+
   /** Plafond d'une conversation (le sien, `settings`, `none`) ; `null` : aucun posé. */
   setCap(id: string, cap: ConversationCap | null): void {
     this.manager.post(id, { type: 'cost-cap-set', cap })

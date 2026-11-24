@@ -706,7 +706,9 @@ async function start(): Promise<void> {
     children: childConversations,
     attention: () => attention.state(),
     providers: () => providers.list(),
-    nativeRoleMode: roles.forChildren.nativeRoleMode
+    nativeRoleMode: roles.forChildren.nativeRoleMode,
+    dropHeld: (id, rt) =>
+      costCap.dropHeld(id, ({ from }) => from?.kind === 'roundtable' && from.id === rt)
   })
   // Tâches planifiées (fiche 178, ADR-0039) : lancées tant que l'app est ouverte.
   // Ce que la lecture a mis de côté ou retrouvé (fiche 196, 197) : dit une fois.

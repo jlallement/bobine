@@ -56,7 +56,7 @@ import { refusalOf, roundtableOptions, type ParticipantMode } from './options'
 import { participantRole } from './participant-role'
 import { reportReply, stepReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
-import { MotherSteps } from './steps'
+import { MotherSteps, titleOf } from './steps'
 
 export type RoundtableManager = Pick<
   ConversationManager,
@@ -69,6 +69,7 @@ export type RoundtableManager = Pick<
   | 'settings'
   | 'keepDraft'
   | 'loadedTranscripts'
+  | 'unqueue'
 >
 
 export interface RoundtablesDeps {
@@ -86,6 +87,11 @@ export interface RoundtablesDeps {
   attention: () => AttentionState
   /** Fournisseurs déclarés chez chaque agent (destinations, fiche 108). */
   providers?: ProvidersList
+  /**
+   * Oublie le message de ce tour retenu par le plafond de cette conversation (fiche 157) : un tour
+   * arrêté ne repart pas par « Continuer ».
+   */
+  dropHeld?: (conversationId: string, roundtableId: string) => void
   /** Mode installé pour le rôle « Participant » (décision C3) ; absent : aucun. */
   participantMode?: ParticipantMode
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
@@ -152,6 +158,8 @@ export class Roundtables implements RoundtableService {
       conversations: deps.conversations,
       attention: deps.attention,
       apply,
+      read: (motherId, roundtableId) => this.read(motherId, roundtableId),
+      cancel: (motherId) => this.cancel(motherId),
       tours: (motherId) => this.tours(motherId),
       textOf: (rt, kind, letter) => this.textOf(rt, kind, letter as RoundtableLetter),
       watchesSettled: (rt) => this.watchesSettled(rt),
@@ -235,14 +243,23 @@ export class Roundtables implements RoundtableService {
   private changed(motherId: string, before: Roundtable, after: Roundtable): void {
     for (const seat of after.seats) {
       const old = before.seats.find((s) => s.letter === seat.letter)
-      const stoppedNow =
-        (seat.state === 'stopped' &&
-          old?.state !== 'stopped' &&
-          STOPS_HERE.has(seat.stopped ?? '')) ||
-        (seat.rebuttal?.state === 'stopped' &&
-          old?.rebuttal?.state !== 'stopped' &&
-          STOPS_HERE.has(seat.rebuttal.stopped ?? ''))
-      if (stoppedNow && seat.childId) this.cancel(seat.childId)
+      if (!seat.childId) continue
+      const seatStopped =
+        seat.state === 'stopped' && old?.state !== 'stopped' && STOPS_HERE.has(seat.stopped ?? '')
+      const rebuttalStopped =
+        seat.rebuttal?.state === 'stopped' &&
+        old?.rebuttal?.state !== 'stopped' &&
+        STOPS_HERE.has(seat.rebuttal.stopped ?? '')
+      if (seatStopped) this.cancel(seat.childId)
+      if (rebuttalStopped) {
+        // La réplique en cours s'arrête ; en file ou retenue, elle est retirée. Un tour que
+        // l'utilisateur a lancé lui-même dans cette conversation continue.
+        if (old?.rebuttal?.state === 'working') this.cancel(seat.childId)
+        this.dropPending(seat.childId, after.roundtableId)
+      }
+    }
+    if (after.phase === 'stopped' && before.phase !== 'stopped') {
+      this.deps.dropHeld?.(motherId, after.roundtableId)
     }
     if (before.phase !== after.phase) {
       log.info(`Tour de table ${after.roundtableId.slice(0, 8)} : ${before.phase} → ${after.phase}`)
@@ -263,6 +280,21 @@ export class Roundtables implements RoundtableService {
     this.live.delete(roundtableId)
     for (const [childId, ref] of this.seatsByChild) {
       if (ref.roundtableId === roundtableId) this.seatsByChild.delete(childId)
+    }
+  }
+
+  /** Réplique de ce tour encore en file ou retenue au plafond chez ce participant : retirée. */
+  private dropPending(childId: string, roundtableId: string): void {
+    this.deps.dropHeld?.(childId, roundtableId)
+    try {
+      const queued = this.deps.conversations.view(childId).snapshot?.queued ?? []
+      for (const message of queued) {
+        if (message.from?.kind === 'roundtable' && message.from.id === roundtableId) {
+          this.deps.conversations.unqueue(childId, message.id)
+        }
+      }
+    } catch {
+      // Conversation partie entre-temps : plus rien en file.
     }
   }
 
@@ -668,6 +700,7 @@ export class Roundtables implements RoundtableService {
         { motherId, roundtableId, letter: seat.letter },
         seat.childId,
         rebuttalMessage(seat.letter, synthesis),
+        titleOf(rt.question),
         this.deps.children
       )
     }

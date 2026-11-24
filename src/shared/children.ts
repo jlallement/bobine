@@ -558,8 +558,10 @@ export type MessageOrigin =
   /**
    * Demande de synthèse ou de décision d'un tour de table (fiche 285) : `id` est le `roundtableId`
    * (pas une conversation), `title` la question coupée. La consigne dit tout à l'agent.
+   * `rebuttal` : la réplique demandée à un participant, dans sa propre conversation (jamais fusionnée
+   * avec un message en attente, reconnue par sa provenance).
    */
-  | { kind: 'roundtable'; id: string; title: string; step: 'synthesis' | 'verdict' }
+  | { kind: 'roundtable'; id: string; title: string; step: 'synthesis' | 'verdict' | 'rebuttal' }
 
 /** Ce que l'interface dit de la provenance d'un message (hors réveil, qui a sa propre ligne). */
 export function originKey(

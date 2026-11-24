@@ -19,6 +19,7 @@ import { Worktrees } from '../changes/worktrees'
 import type { ChildConversations } from '../conversations/children'
 import { setupChildren } from '../conversations/children-setup'
 import { ConversationManager } from '../conversations/manager'
+import { CostCapGuard } from '../conversations/cost-cap'
 import { until } from '../conversations/manager-until'
 import { gitCommand, queuedGit } from '../git/git-queue'
 import { childrenToolsModule } from '../mcp/children-tools'
@@ -121,11 +122,16 @@ export async function roundtableEnv(options: EnvOptions = {}) {
   })
   const children = setupChildren(manager, {})
   late.children = children
+  // Plafond par conversation (fiche 157), comme dans l'app : réglé par conversation dans les essais.
+  const costCap = new CostCapGuard(manager, () => manager.settings.preferences())
+  costCap.start()
   const roundtables = setupRoundtables(manager, {
     children,
     attention: () => ({}),
     providers: () => [],
-    random: () => 0
+    random: () => 0,
+    dropHeld: (id, rt) =>
+      costCap.dropHeld(id, ({ from }) => from?.kind === 'roundtable' && from.id === rt)
   })
   late.roundtables = roundtables
   const events: { conversationId: string; event: AgentEvent }[] = []
@@ -154,6 +160,7 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     manager,
     children,
     roundtables,
+    costCap,
     events,
     items,
     waitFor,

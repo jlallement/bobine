@@ -220,6 +220,65 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     expect(env.roundtables.tracked()).toEqual({ tours: 0, seats: 0 })
   })
 
+  it('réplique en file derrière des messages de l’utilisateur : jamais fusionnée, reconnue par sa provenance', async () => {
+    const lock = lockFile()
+    rmSync(lock)
+    const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const id = env.rt(mother).roundtableId
+    const [a, b] = env.rt(mother).seats.map((s) => s.childId ?? '')
+    // L'utilisateur écrit dans la conversation de A : un tour tenu, puis un message en file.
+    writeFileSync(lock, '')
+    void env.manager.prompt(a ?? '', 'Une question à part')
+    await env.waitFor(
+      () => env.manager.view(a ?? '').snapshot?.status === 'busy',
+      'participant A occupé'
+    )
+    void env.manager.prompt(a ?? '', 'Et une autre')
+    env.roundtables.rebuttal(mother, id)
+    await env.waitFor(
+      () => (env.manager.view(a ?? '').snapshot?.queued.length ?? 0) === 2,
+      'réplique en file, à part'
+    )
+    const queued = env.manager.view(a ?? '').snapshot?.queued ?? []
+    expect(queued.map((q) => q.from?.kind ?? 'user')).toEqual(['user', 'roundtable'])
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    const sent = env.users(a ?? '').find((u) => u.from?.kind === 'roundtable')
+    expect(sent?.from).toMatchObject({ kind: 'roundtable', id, step: 'rebuttal' })
+    expect(sent?.text).toContain('You are participant')
+    expect(env.users(b ?? '').at(-1)?.from).toMatchObject({ step: 'rebuttal' })
+  })
+
+  it('tour arrêté pendant que la réplique attend en file : elle est retirée, elle ne part pas', async () => {
+    const lock = lockFile()
+    rmSync(lock)
+    const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const id = env.rt(mother).roundtableId
+    const a = env.rt(mother).seats[0]?.childId ?? ''
+    writeFileSync(lock, '')
+    void env.manager.prompt(a, 'Une question à part')
+    await env.waitFor(() => env.manager.view(a).snapshot?.status === 'busy', 'participant A occupé')
+    env.roundtables.rebuttal(mother, id)
+    await env.waitFor(
+      () => (env.manager.view(a).snapshot?.queued.length ?? 0) === 1,
+      'réplique en file'
+    )
+    env.roundtables.stop(mother, id)
+    expect(env.manager.view(a).snapshot?.queued ?? []).toEqual([])
+    // Le tour de l'utilisateur dans cette conversation n'est pas arrêté par le tour de table.
+    expect(env.manager.view(a).snapshot?.status).toBe('busy')
+    rmSync(lock)
+    await env.waitFor(
+      () => env.manager.view(a).snapshot?.status === 'ready',
+      'participant A au repos'
+    )
+    expect(env.users(a).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+  })
+
   it('un tour d’une autre conversation, ou une place inexistante, ne se pilote pas', async () => {
     const { env, mother } = await setup()
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })

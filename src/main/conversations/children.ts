@@ -835,9 +835,14 @@ export class ChildConversations {
     this.relaunch(this.summary(childId), text, role, { model, ...extras })
   }
 
-  /** Message de l'app à une fille, sans provenance (réplique d'un tour de table, fiche 285). */
-  followUp(childId: string, text: string, failed: () => void): 'queued' | 'sent' {
-    return this.deliver(this.summary(childId), text, undefined, failed)
+  /** Message de l'app à une fille, avec sa provenance (réplique d'un tour de table, fiche 285). */
+  followUp(
+    childId: string,
+    text: string,
+    from: MessageOrigin,
+    failed: () => void
+  ): 'queued' | 'sent' {
+    return this.deliver(this.summary(childId), text, from, failed)
   }
 
   /** Tour de table (fiche 285) : ce que le garde-fou de lecture seule dit des participants. */

@@ -7,7 +7,6 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CostCapGuard } from '../conversations/cost-cap'
 import {
   FAST,
   PRECISE,
@@ -484,8 +483,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     // L'archivage est refusé tant qu'un participant travaille (famille, fiche 228) : ici, la
     // synthèse attend, retenue par le plafond de la conversation.
     const { env, mother } = await setup()
-    const guard = new CostCapGuard(env.manager, () => env.manager.settings.preferences())
-    guard.start()
+    const guard = env.costCap
     guard.setCap(mother, { limit: 0.001, unit: 'USD' })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).synthesis?.state === 'held', 'synthèse retenue')
@@ -500,8 +498,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
 
   it('synthèse retenue par le plafond de la conversation, envoyée par « Continuer »', async () => {
     const { env, mother } = await setup()
-    const guard = new CostCapGuard(env.manager, () => env.manager.settings.preferences())
-    guard.start()
+    const guard = env.costCap
     // L'échange déjà fait a coûté plus que ce plafond : le prochain message est retenu.
     guard.setCap(mother, { limit: 0.001, unit: 'USD' })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
@@ -511,6 +508,35 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     guard.answer(mother, card?.id ?? 0, 'continue')
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.replies(mother).at(-1)).toContain('Avis reçus : A, B')
+  })
+
+  it('tour arrêté pendant que la synthèse est retenue : « Continuer » ne la renvoie pas', async () => {
+    const { env, mother } = await setup()
+    env.costCap.setCap(mother, { limit: 0.001, unit: 'USD' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).synthesis?.state === 'held', 'synthèse retenue')
+    env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    const card = env.items(mother).findLast((i) => i.kind === 'cost-cap')
+    env.costCap.answer(mother, card?.id ?? 0, 'continue')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+    expect(env.rt(mother).synthesis?.state).toBe('stopped')
+  })
+
+  it('demande du tour arrivée après l’arrêt : le tour de la conversation est coupé, rien n’est rédigé', async () => {
+    const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lockFile()] })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    const id = env.rt(mother).roundtableId
+    env.roundtables.stop(mother, id)
+    const cancel = vi.spyOn(env.manager, 'cancel')
+    // Ce que pose l'hôte quand un message de synthèse en route part quand même.
+    env.manager.post(mother, {
+      type: 'user-message',
+      text: 'Roundtable',
+      from: { kind: 'roundtable', id, title: 'Q', step: 'synthesis' }
+    })
+    expect(cancel).toHaveBeenCalledWith(mother)
+    expect(env.rt(mother).synthesis).toBeUndefined()
   })
 
   it('redémarrage pendant le recueil : « à reprendre », rien ne part seul, puis « Synthétiser avec N avis »', async () => {
