@@ -36,7 +36,8 @@ import {
   type IpcEventContract,
   type IpcHandlers
 } from '@shared/ipc'
-import type { AgentConfigureRequest, AgentSessionView, ElicitationAnswer } from '@shared/agent'
+import type { AgentConfigureRequest } from '@shared/agent'
+import { parseAgentSession, parseElicitationAnswer } from './ipc-parse'
 import { parsePromptRequest } from '@shared/agent'
 import type { ConversationManager } from './conversations/manager'
 import { childHandlers, type ChildConversations } from './conversations/children'
@@ -87,6 +88,7 @@ import { folderHandlers } from './conversations/additional-directories-ipc'
 import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
 import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
+import { roundtableHandlers, type RoundtableService } from './roundtable/ipc'
 import { attachToDocuments, documentsHandlers } from './documents/ipc'
 import { parseException } from './browser/certificate-exceptions'
 
@@ -251,18 +253,6 @@ export interface GitController {
   status: (workspace: string) => Promise<GitStatus | null>
 }
 
-/** Session choisie dans « Reprendre une session… » (fiche 055). */
-function parseAgentSession(value: unknown): AgentSessionView {
-  if (typeof value !== 'object' || value === null) throw new Error('Session invalide')
-  const { sessionId, cwd, title, updatedAt } = value as Record<string, unknown>
-  return {
-    sessionId: str(sessionId, 'sessionId'),
-    cwd: str(cwd, 'cwd'),
-    ...(typeof title === 'string' && title ? { title } : {}),
-    ...(typeof updatedAt === 'string' && updatedAt ? { updatedAt } : {})
-  }
-}
-
 function parseConfigureRequest(value: unknown): AgentConfigureRequest {
   if (typeof value !== 'object' || value === null) throw new Error('Requête invalide')
   const { profileId, workspace, space } = value as Record<string, unknown>
@@ -273,22 +263,6 @@ function parseConfigureRequest(value: unknown): AgentConfigureRequest {
     workspace: workspace === undefined ? undefined : str(workspace, 'workspace'),
     ...(space ? { space } : {})
   }
-}
-
-function parseElicitationAnswer(value: unknown): ElicitationAnswer {
-  if (typeof value !== 'object' || value === null) throw new Error('Réponse invalide')
-  const { action, content } = value as Record<string, unknown>
-  if (action !== 'accept' && action !== 'decline' && action !== 'cancel') {
-    throw new Error('Réponse invalide')
-  }
-  if (
-    content !== undefined &&
-    (typeof content !== 'object' || content === null || Array.isArray(content))
-  ) {
-    throw new Error('Réponse invalide')
-  }
-  // Le contenu lui-même est validé contre le schéma par l'AgentHost.
-  return { action, content: content as Record<string, unknown> | undefined }
 }
 
 // Nouveau canal : le ranger aussi dans `read-only-guard.ts` (sûr en lecture seule, ou il change le
@@ -363,6 +337,8 @@ export function createHandlers(
       memoryIpc?: MemoryIpcDeps
       /** Rôles (fiche 223). */
       roles?: RolesIpcDeps
+      /** Tour de table (fiche 285) ; absent : ses canaux refusent. */
+      roundtables?: RoundtableService
       /** Tâches planifiées (fiche 178). */
       scheduler?: Parameters<typeof scheduleHandlers>[0]
       /** Intégrité du profil : avis, corbeille, restauration (fiches 196, 197). */
@@ -520,6 +496,7 @@ export function createHandlers(
     ...sentHistoryHandlers(c),
     ...memoryHandlers(deps.memory, deps.memoryIpc),
     ...rolesHandlers(deps.roles),
+    ...roundtableHandlers(deps.roundtables),
     ...documentsHandlers(c, {
       chooseFiles: deps.chooseFiles,
       chooseDirectory: deps.chooseDirectory,

@@ -133,7 +133,8 @@ export class SettingsStore {
       costCapTokens: s.costCapTokens ?? DEFAULT_PREFERENCES.costCapTokens,
       memoryEnabled: s.memoryEnabled ?? DEFAULT_PREFERENCES.memoryEnabled,
       commitDraftEnabled: s.commitDraftEnabled ?? DEFAULT_PREFERENCES.commitDraftEnabled,
-      updateCheck: s.updateCheck ?? DEFAULT_PREFERENCES.updateCheck
+      updateCheck: s.updateCheck ?? DEFAULT_PREFERENCES.updateCheck,
+      roundtableParticipants: s.roundtableParticipants ?? DEFAULT_PREFERENCES.roundtableParticipants
     }
   }
 

@@ -8,6 +8,7 @@
  * (`read-only-guard.test.ts`) et échoue pour un canal non classé.
  */
 import { readOnlyError } from './read-only-error'
+import { ROUNDTABLE_CHANNELS, ROUNDTABLE_READ_ONLY_SAFE } from '@shared/roundtable-ipc'
 import type { IpcChannel, IpcHandlers } from '@shared/ipc'
 import type { ConversationManager } from './conversations/manager'
 
@@ -210,7 +211,9 @@ export const READ_ONLY_SAFE = [
   'roles:suggestName',
   'roles:exportPreview',
   'roles:exportStatus',
-  'roles:exportOrphans'
+  'roles:exportOrphans',
+  // Tour de table (fiche 285) : seuls les canaux déclarés sûrs par le contrat.
+  ...ROUNDTABLE_READ_ONLY_SAFE
 ] as const satisfies readonly IpcChannel[]
 
 /**
@@ -338,7 +341,9 @@ export const PROFILE_CHANGING = [
   // Copiés dans le dossier de la discussion, dans le profil (fiche 224).
   'documents:add',
   'documents:pick',
-  'discussion:continueInProject'
+  'discussion:continueInProject',
+  // Tour de table (fiche 285) : lance ou mène des agents.
+  ...ROUNDTABLE_CHANNELS.filter((c) => !ROUNDTABLE_READ_ONLY_SAFE.includes(c))
 ] as const satisfies readonly IpcChannel[]
 
 const SAFE: ReadonlySet<string> = new Set(READ_ONLY_SAFE)

@@ -4,6 +4,8 @@ import { DEFAULT_QUICK_SHORTCUT, isQuickShortcut, type QuickShortcut } from './q
 import { isLanguage, type Language } from './i18n/language'
 import { CHILD_PROPOSALS, type ChildProposals } from './children'
 import { parseEditorId, type EditorId } from './editors'
+import type { RoundtableChoice } from './roundtable'
+import { parseRoundtableChoices } from './roundtable-ipc'
 
 /** Mode : celui de macOS, clair ou sombre ; c'est le `nativeTheme.themeSource` du main. */
 export type ThemePreference = 'system' | 'light' | 'dark'
@@ -214,6 +216,11 @@ export interface Preferences {
    * ADR-0066) : l'API publique des Releases de GitHub, rien d'installé.
    */
   updateCheck: boolean
+  /**
+   * Participants retenus du tour de table (fiche 285) : le dernier choix du menu à cases de la
+   * saisie, 0 à 5 couples agent et modèle. Ni bouton « Enregistrer », ni entrée dans les Réglages.
+   */
+  roundtableParticipants: RoundtableChoice[]
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -253,7 +260,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // Activé par défaut (validation de la fiche 246).
   commitDraftEnabled: true,
   // Activée par défaut (décision de l'utilisateur, ADR-0066).
-  updateCheck: true
+  updateCheck: true,
+  // Rien de présélectionné au premier usage (fiche 285) : « Choisir les participants ».
+  roundtableParticipants: []
 }
 
 export const TERMINAL_FONT_SIZES = { min: 9, max: 24 }
@@ -410,5 +419,9 @@ export function parsePreferences(raw: unknown): Partial<Preferences> {
   const editor = parseEditorId(obj['editor'])
   if (editor) result.editor = editor
   parseTurnGuards(obj, result)
+  // Indulgent (fiche 285) : une entrée abîmée est écartée, jamais d'erreur au chargement.
+  if ('roundtableParticipants' in obj) {
+    result.roundtableParticipants = parseRoundtableChoices(obj['roundtableParticipants'])
+  }
   return result
 }

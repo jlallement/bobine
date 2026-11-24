@@ -6708,7 +6708,8 @@
         "model-not-allowed": "Cet agent ne permet pas de choisir son modèle.",
         "unknown-agent": "Cet agent n’existe plus.",
         "unavailable": "Cet agent est indisponible."
-      }
+      },
+      "unavailable": "Le tour de table n’est pas encore disponible dans cette version."
     },
     "export_one": "Tour de table à {{count}} participant",
     "export_many": "Tour de table à {{count}} participants",

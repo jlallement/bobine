@@ -82,6 +82,8 @@ export interface Settings {
   commitDraftEnabled?: boolean
   /** Vérification des nouvelles versions (fiche 274) ; oui si absent. */
   updateCheck?: boolean
+  /** Participants retenus du tour de table (fiche 285) ; aucun si absent. */
+  roundtableParticipants?: Preferences['roundtableParticipants']
   /** Réglages d'une nouvelle conversation. */
   newConversation?: NewConversationDefaults
   /** Outils « toujours autorisés », par profil d'agent (fiche 042). */
@@ -169,6 +171,7 @@ const KNOWN: Record<keyof Settings, true> = {
   memoryEnabled: true,
   commitDraftEnabled: true,
   updateCheck: true,
+  roundtableParticipants: true,
   versionNotices: true,
   extra: true
 }

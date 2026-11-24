@@ -608,6 +608,37 @@ export function createApi(
       exportRemove: (key: string, force?: boolean) =>
         invoke('roles:exportRemove', key, ...(force !== undefined ? [force] : []))
     },
+    /**
+     * Tour de table (fiche 285) : options du menu, lancement et gestes de la carte. L'élément du
+     * tour arrive par le flux d'évènements des conversations (pas d'abonnement propre).
+     */
+    roundtable: {
+      options: (conversationId: string) => invoke('roundtable:options', conversationId),
+      start: (conversationId: string, request: IpcArgs<'roundtable:start'>[1]) =>
+        invoke('roundtable:start', conversationId, request),
+      synthesize: (conversationId: string, roundtableId: string) =>
+        invoke('roundtable:synthesize', conversationId, roundtableId),
+      rebuttal: (conversationId: string, roundtableId: string) =>
+        invoke('roundtable:rebuttal', conversationId, roundtableId),
+      decide: (conversationId: string, roundtableId: string) =>
+        invoke('roundtable:decide', conversationId, roundtableId),
+      relaunch: (
+        conversationId: string,
+        roundtableId: string,
+        letter: IpcArgs<'roundtable:relaunch'>[2]
+      ) => invoke('roundtable:relaunch', conversationId, roundtableId, letter),
+      stop: (
+        conversationId: string,
+        roundtableId: string,
+        letter?: IpcArgs<'roundtable:stop'>[2]
+      ) =>
+        invoke(
+          'roundtable:stop',
+          conversationId,
+          roundtableId,
+          ...(letter !== undefined ? [letter] : [])
+        )
+    },
     /** Documents d'une discussion (fiche 224) : panneau « Documents », cartes du fil. */
     documents: {
       list: (conversationId: string) => invoke('documents:list', conversationId),

@@ -34,6 +34,7 @@ import type { ConversationCap } from './cost-cap'
 import type { HandoverTarget } from './handover'
 import { MEMORY_CHANNELS, type MemoryIpcContract } from './memory-ipc'
 import { ROLES_CHANNELS, type RolesIpcContract } from './roles-ipc'
+import { ROUNDTABLE_CHANNELS, type RoundtableIpcContract } from './roundtable-ipc'
 import { DOCUMENTS_CHANNELS, type DocumentsIpcContract } from './documents-ipc'
 import { BROWSER_CHANNELS, type BrowserIpcContract } from './browser-ipc'
 import type { GitChanges, GitFileArgs, GitFileDiff, RevertOutcome } from './changes'
@@ -146,6 +147,7 @@ export interface IpcInvokeContract
     ProfileIpcContract,
     ApprovalRulesIpcContract,
     RolesIpcContract,
+    RoundtableIpcContract,
     AppMenuIpcContract,
     UsageIpcContract,
     DocumentsIpcContract,
@@ -1097,6 +1099,7 @@ export const IPC_CHANNELS = [
   ...PROFILE_CHANNELS,
   ...APPROVAL_RULES_CHANNELS,
   ...ROLES_CHANNELS,
+  ...ROUNDTABLE_CHANNELS,
   ...DOCUMENTS_CHANNELS,
   ...BROWSER_CHANNELS,
   ...APP_MENU_CHANNELS,

@@ -6420,7 +6420,8 @@
         "model-not-allowed": "This agent does not let you choose its model.",
         "unknown-agent": "This agent no longer exists.",
         "unavailable": "This agent is unavailable."
-      }
+      },
+      "unavailable": "The roundtable is not available yet in this version."
     },
     "export_one": "Roundtable with {{count}} participant",
     "export_other": "Roundtable with {{count}} participants"

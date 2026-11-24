@@ -6492,6 +6492,7 @@ export type FrResources = {
         readonly 'unknown-agent': 'Cet agent n’existe plus.'
         readonly unavailable: 'Cet agent est indisponible.'
       }
+      readonly unavailable: 'Le tour de table n’est pas encore disponible dans cette version.'
     }
     readonly export_one: 'Tour de table à {{count}} participant'
     readonly export_many: 'Tour de table à {{count}} participants'
