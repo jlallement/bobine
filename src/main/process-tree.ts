@@ -8,7 +8,7 @@
  */
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
 import { launchProgram, type LaunchPlan } from './process-launch'
-import { settleStoppedGroups, stopGroup, stoppingByHandle, stoppingGroups } from './process-group'
+import { settleStoppedGroups, stopGroup, stoppingGroups } from './process-group'
 import { stopTrackedChildren, trackChild } from './process-registry'
 import type { WindowsTrees } from './process-tree-windows'
 
@@ -56,9 +56,7 @@ export function stopTree(child: ChildProcess, graceMs?: number): void {
 
 /** Des arbres sont en cours d'arrêt (en quittant, `will-quit` les attend). */
 export function treesStopping(): boolean {
-  return windows
-    ? windows.stopping() > 0
-    : stoppingGroups().length > 0 || stoppingByHandle().length > 0
+  return windows ? windows.stopping() > 0 : stoppingGroups().length > 0
 }
 
 /** En quittant : attend les arbres en cours d'arrêt, puis arrête de force ceux qui restent. */

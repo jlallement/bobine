@@ -71,17 +71,13 @@ export function stoppingGroups(): number[] {
  */
 export async function settleStoppedGroups(waitMs = 1500, stepMs = 50): Promise<number> {
   const deadline = Date.now() + waitMs
-  const waiting = () => stoppingGroups().length > 0 || stoppingByHandle().length > 0
-  while (waiting() && Date.now() < deadline) {
+  while (stoppingGroups().length > 0 && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, stepMs))
   }
   const alive = stoppingGroups()
   for (const pid of alive) signalOnlyGroup(pid, 'SIGKILL')
   stopping.clear()
-  const handles = stoppingByHandle()
-  for (const child of handles) child.kill('SIGKILL')
-  byHandle.clear()
-  return alive.length + handles.length
+  return alive.length
 }
 
 /**
@@ -129,27 +125,10 @@ export function stopGroup(
  * il est déjà sorti.
  */
 function stopByHandle(child: ChildProcess, graceMs: number): void {
-  if (!running(child)) return
-  byHandle.add(child)
+  const running = () => child.exitCode === null && child.signalCode === null
+  if (!running()) return
   child.kill('SIGTERM')
   setTimeout(() => {
-    byHandle.delete(child)
-    if (running(child)) child.kill('SIGKILL')
+    if (running()) child.kill('SIGKILL')
   }, graceMs).unref()
-}
-
-const running = (child: ChildProcess): boolean =>
-  child.exitCode === null && child.signalCode === null
-
-/**
- * Processus arrêtés par leur handle (Windows sans objets de tâche) qui n'ont pas encore quitté :
- * attendus par `settleStoppedGroups` comme les groupes Unix. Sans eux, l'attente rendait la main
- * tout de suite sous Windows, l'agent encore vivant dans son dossier (EPERM au nettoyage d'un essai).
- */
-const byHandle = new Set<ChildProcess>()
-
-/** Processus arrêtés par leur handle encore vivants (essais, attente en quittant). */
-export function stoppingByHandle(): ChildProcess[] {
-  for (const child of byHandle) if (!running(child)) byHandle.delete(child)
-  return [...byHandle]
 }
