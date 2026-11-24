@@ -986,19 +986,33 @@ export async function withApp(
     // ou le temps de son propre arrêt sur une machine chargée. On l'attend plus longtemps (10 s)
     // avant de supprimer le dossier qu'il utilise, sans échouer pour lui ; resté au-delà, il est
     // arrêté (il cite ce dossier jetable : c'est bien le nôtre).
+    //
+    // Restent seuls des processus de Chromium nés de l'app (`--type=`, service réseau…) : ils
+    // sortent d'eux-mêmes après elle, parfois au-delà de 3 s sur un runner chargé (macOS CI,
+    // `filles-tech-lead` 2026-11-23, `parcours-outils` 2026-11-24, fiche 250). Attendus 10 s en
+    // tout, comme crashpad ; encore là ensuite, l'essai échoue comme pour les autres.
     let survivors = processesUsing(userData)
-    for (let i = 0; i < 30 && survivors.some((line) => !isCrashpad(line)); i++) {
+    const lingering = () => survivors.filter((line) => !isCrashpad(line))
+    let waited = 0
+    for (; waited < 3000 && lingering().length > 0; waited += 100) {
       await sleep(100)
       survivors = processesUsing(userData)
     }
-    const ours = survivors.filter((line) => !isCrashpad(line))
+    while (waited < 10_000 && lingering().length > 0 && lingering().every(isChromiumHelper)) {
+      await sleep(100)
+      waited += 100
+      survivors = processesUsing(userData)
+    }
+    const ours = lingering()
     if (ours.length > 0 && !keep) {
       // Les nôtres (ils citent ce dossier jetable) : arrêtés, puis l'essai échoue en les nommant.
       killAll(ours)
       await sleep(200)
       await settleCrashpad(userData)
       removeUserData(userData)
-      throw new Error(`processus encore vivants 3 s après l'app :\n    ${ours.join('\n    ')}`)
+      throw new Error(
+        `processus encore vivants ${Math.round(waited / 1000)} s après l'app :\n    ${ours.join('\n    ')}`
+      )
     }
     if (!keep) await settleCrashpad(userData)
     if (!keep) removeUserData(userData)
@@ -1007,6 +1021,9 @@ export async function withApp(
 
 /** L'assistant de plantages d'Electron (voir la fin de `withApp`). */
 const isCrashpad = (line) => line.includes('chrome_crashpad_handler')
+
+/** Processus de Chromium lancé par Electron pour l'app (utilitaire, rendu, GPU) : pas par Bobine. */
+const isChromiumHelper = (line) => !isCrashpad(line) && /\s--type=[a-z-]+/.test(line)
 
 function killAll(lines) {
   for (const line of lines) {

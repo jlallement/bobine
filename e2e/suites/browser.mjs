@@ -383,9 +383,25 @@ export async function browserSuite(scheme) {
         await ui
           .waitFor(`${ui.$('browser-address')}?.value === ${JSON.stringify(origin)}`, 10_000)
           .catch(() => {})
+        const branchShown = await branchAddress()
+        // Panneau resté vide (macOS CI 2026-11-24, une fois, cause non établie : `inherit` avale
+        // ses erreurs) : l'état réel des pages du main est dit avec l'échec, pour la prochaine fois.
+        let pages = ''
+        if (branchShown !== origin) {
+          const probe = await mainProcess()
+          try {
+            pages = JSON.stringify(
+              await probe.evaluate(
+                `require('electron').webContents.getAllWebContents().filter((w) => w.getType() !== 'window').map((w) => ({ url: w.getURL(), loading: w.isLoading(), debugger: w.debugger.isAttached(), back: w.navigationHistory.canGoBack() }))`
+              )
+            )
+          } finally {
+            probe.close()
+          }
+        }
         check(
-          (await branchAddress()) === origin,
-          `branche : le navigateur reprend la page de l’originale (${await branchAddress()})`
+          branchShown === origin,
+          `branche : le navigateur reprend la page de l’originale (${branchShown}${pages && ` ; pages du main : ${pages}`})`
         )
         await ui.shot('28g-branche-navigateur')
       },
