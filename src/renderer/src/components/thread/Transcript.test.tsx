@@ -2,6 +2,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
 import { fireEvent, render as testingRender, screen } from '@testing-library/react'
+import { t } from 'i18next'
 import { describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import { childProposalSchema } from '@shared/children'
@@ -599,5 +600,213 @@ describe('bilan de chaque tour dans le pied de sa réponse (fiches 255, 261)', (
     expect(screen.queryByTestId('turn-summary')).toBeNull()
     expect(screen.queryByTestId('turn-working')).toBeNull()
     expect(screen.getAllByTestId('turn-duration')).toHaveLength(2)
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant des e2e `branch` (n° 2), `limite-etapes` (n° 7),
+ * `usage` (n° 12), `activity` (n° 4, 6), `attachments` (n° 6), `mentions` (n° 6), `questions`
+ * (n° 2), `permissions` (n° 6), `touches` (n° 3) et `long-thread` (n° 2). Ce qui va vraiment à
+ * l'agent (contexte, rejeu) reste au main et aux journées types.
+ */
+describe('Transcript — remplaçants des e2e', () => {
+  const noop = () => {}
+  const show = (items: TranscriptItem[], onEdit: (id: number, text: string) => void = noop) =>
+    render(
+      <Transcript
+        items={items}
+        onRespondPermission={noop}
+        onRespondElicitation={noop}
+        messageActions={{ busy: false, onEdit, onOpenConversation: noop }}
+      />
+    )
+
+  it('« Modifier » : le message devient modifiable sur place, Entrée renvoie le texte modifié (branch n° 2)', () => {
+    const onEdit = vi.fn()
+    show(
+      [
+        { kind: 'user', id: 1, text: 'Écris le README' },
+        { kind: 'agent', id: 2, text: 'Fait.' }
+      ],
+      onEdit
+    )
+    fireEvent.click(screen.getByTestId('message-edit'))
+    const input = screen.getByTestId('message-edit-input') as HTMLTextAreaElement
+    expect(input.value).toBe('Écris le README')
+    expect(document.activeElement).toBe(input)
+    expect(screen.getByTestId('message-editor').closest('[data-testid=thread]')).toBeTruthy()
+    fireEvent.change(input, { target: { value: 'Écris le README en anglais' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onEdit).toHaveBeenCalledWith(1, 'Écris le README en anglais')
+    expect(screen.queryByTestId('message-editor')).toBeNull()
+  })
+
+  it('session neuve après la limite d’étapes : repère « Nouvelle session » avec la raison (limite-etapes n° 7)', () => {
+    show([
+      { kind: 'user', id: 1, text: 'Continue' },
+      {
+        kind: 'handover',
+        id: 2,
+        from: { profileId: 'bob', label: 'IBM Bob' },
+        to: { profileId: 'bob', label: 'IBM Bob' },
+        reason: 'turn-limit'
+      }
+    ])
+    const divider = screen.getByTestId('handover-divider')
+    expect(divider.getAttribute('data-reason')).toBe('turn-limit')
+    expect(divider.textContent).toContain(t('handover.thread.renewTitle', { agent: 'IBM Bob' }))
+    expect(divider.textContent).toContain(
+      t('handover.thread.renewDetailTurnLimit', { agent: 'IBM Bob' })
+    )
+  })
+
+  it('compaction finie : « Conversation résumée » dans le fil, le résumé replié (usage n° 12)', () => {
+    show([
+      { kind: 'user', id: 1, text: '/compact', compaction: true },
+      {
+        kind: 'compaction',
+        id: 2,
+        compactionId: 'k1',
+        status: 'completed',
+        summary: 'On a corrigé le parseur.'
+      }
+    ])
+    const card = screen.getByTestId('compaction') as HTMLDetailsElement
+    expect(card.textContent).toContain(t('transcript.compaction.done'))
+    expect(card.open).toBe(false)
+    expect(card.textContent).toContain('On a corrigé le parseur.')
+  })
+
+  it('patch annoncé sans cible : jamais « patch » dans le fil, et pas de chronomètre par carte (activity n° 4, 6)', () => {
+    show([
+      { kind: 'user', id: 1, text: 'Modifie les notes' },
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 'p',
+        title: 'patch',
+        toolKind: 'edit',
+        status: 'pending',
+        content: [],
+        locations: []
+      }
+    ])
+    const thread = screen.getByTestId('thread')
+    expect(thread.textContent).not.toContain('patch')
+    expect(thread.textContent).toContain(t('toolCall.label.preparing.edit'))
+    expect(thread.querySelector('[data-testid=tool]')).toBeTruthy()
+    expect(thread.querySelector('[data-testid=tool] .working-time')).toBeNull()
+    expect(thread.querySelector('.working-time')).toBeNull()
+  })
+
+  it('message envoyé avec pièces jointes : fichier, mention de contexte et image montrés (attachments n° 6, mentions n° 6)', () => {
+    show([
+      {
+        kind: 'user',
+        id: 1,
+        text: 'Regarde',
+        attachments: [
+          { kind: 'file', name: 'app.ts', path: '/projet/app.ts' },
+          { kind: 'context', source: 'git-changes', name: 'Modifications git' },
+          { kind: 'context', source: 'terminal', name: 'Terminal' },
+          { kind: 'image', name: 'capture.png', mimeType: 'image/png', data: 'AA==' }
+        ]
+      }
+    ])
+    const box = screen.getByTestId('msg-attachments')
+    const files = [...box.querySelectorAll('.attachment.file')]
+    expect(files.map((f) => f.textContent)).toEqual(['app.ts', 'Modifications git', 'Terminal'])
+    expect(files.map((f) => f.getAttribute('title'))).toEqual([
+      '/projet/app.ts',
+      '@git-changes',
+      '@terminal'
+    ])
+    expect(box.querySelector('img')?.getAttribute('alt')).toBe('capture.png')
+    expect(screen.getByTestId('user-message').textContent).toContain('Regarde')
+  })
+
+  it('question posée par un outil : la carte de questions à la place de l’appel d’outil (questions n° 2)', () => {
+    show([
+      { kind: 'user', id: 1, text: 'Pose-moi une question' },
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 'ask',
+        title: 'AskUserQuestion',
+        toolKind: 'other',
+        status: 'pending',
+        content: [],
+        locations: []
+      },
+      {
+        kind: 'elicitation',
+        id: 3,
+        requestId: 'r1',
+        state: 'pending',
+        prompt: {
+          mode: 'form',
+          message: 'Une question',
+          toolCallId: 'ask',
+          schema: {
+            type: 'object',
+            properties: {
+              couleur: { type: 'string', title: 'Quelle couleur ?', enum: ['rouge', 'bleu'] }
+            },
+            required: ['couleur']
+          }
+        }
+      }
+    ])
+    expect(screen.getByTestId('thread').textContent).not.toContain('AskUserQuestion')
+    expect(screen.queryAllByTestId('tool')).toHaveLength(0)
+    expect(screen.getByTestId('questions')).toBeTruthy()
+  })
+
+  it('autorisation retirée par l’agent : plus de carte, ni « annulée » ni échec sur l’outil (permissions n° 6)', () => {
+    show([
+      { kind: 'user', id: 1, text: 'Écris' },
+      {
+        kind: 'tool',
+        id: 2,
+        toolCallId: 'w',
+        title: 'Écrire hello.txt',
+        toolKind: 'edit',
+        status: 'in_progress',
+        content: [],
+        locations: [{ path: '/projet/hello.txt' }]
+      }
+    ])
+    const thread = screen.getByTestId('thread')
+    expect(screen.queryByTestId('permission')).toBeNull()
+    const card = thread.querySelector('[data-testid=tool]')
+    expect(card).toBeTruthy()
+    expect(card?.getAttribute('data-status')).toBe('in_progress')
+    expect(thread.textContent).not.toMatch(/annulée|échec/i)
+  })
+
+  it('heure du message et de la réponse, en `<time>` avec la date complète en infobulle (touches n° 3)', () => {
+    const at = new Date(2026, 10, 24, 9, 5).getTime()
+    show([
+      { kind: 'user', id: 1, text: 'Bonjour', at },
+      { kind: 'agent', id: 2, text: 'Salut', at: at + 60_000 }
+    ])
+    const times = [...screen.getByTestId('thread').querySelectorAll('time.msg-time')]
+    expect(times).toHaveLength(2)
+    expect(times[0]?.getAttribute('dateTime')).toBe(new Date(at).toISOString())
+    expect(times[0]?.getAttribute('title')).toBeTruthy()
+    expect(times[1]?.getAttribute('dateTime')).toBe(new Date(at + 60_000).toISOString())
+  })
+
+  it('fil de 300 appels d’outils : regroupés en une ligne repliée, pas 300 cartes ouvertes (long-thread n° 2)', () => {
+    const tools = Array.from({ length: 300 }, (_, i) => tool(i + 2))
+    show([
+      { kind: 'user', id: 1, text: 'Teste tout' },
+      ...tools,
+      { kind: 'agent', id: 9999, text: 'Fini.' }
+    ])
+    expect(screen.getByTestId('tool-group-summary').textContent).toBe(
+      '300 actions dans le navigateur'
+    )
+    expect(screen.getAllByTestId('tool-group')).toHaveLength(1)
   })
 })
